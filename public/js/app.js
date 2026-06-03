@@ -41,8 +41,10 @@ import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
-import { settingsHelpWindowHandlers } from './features/settings-help.mjs';
-import { platformWindowHandlers } from './features/platform.mjs';
+import {
+  settingsHelpWindowHandlersLazy,
+  platformWindowHandlersLazy,
+} from './lazy-feature-routes.mjs';
 import { tendenciasWindowHandlers, seedTendHiddenDefaults } from './features/tendencias.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
 import { manejoWindowHandlers } from './features/manejo.mjs';
@@ -69,6 +71,7 @@ import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
+import { runBootSteps } from './boot/boot-steps.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -88,8 +91,8 @@ const allWindowHandlers = Object.assign(
   expedienteWindowHandlers,
   notesIndicacionesWindowHandlers,
   productivityWindowHandlers,
-  settingsHelpWindowHandlers,
-  platformWindowHandlers,
+  settingsHelpWindowHandlersLazy,
+  platformWindowHandlersLazy,
   tendenciasWindowHandlers,
   todosWindowHandlers,
   manejoWindowHandlers,
@@ -201,19 +204,19 @@ registerAppRuntimeContext({
 });
 
 appStateReady
-  .then(function () {
+  .then(async function () {
     try {
-      registerAllFeatureRuntimes();
+      await registerAllFeatureRuntimes();
       runInitialFeatureBoot();
     } catch (bootErr) {
       console.error('[R+] Error registrando runtimes de features:', bootErr);
     }
   })
-  .catch(function (stateErr) {
+  .catch(async function (stateErr) {
     console.error('[R+] Error cargando estado clínico:', stateErr);
     try {
       initAppState();
-      registerAllFeatureRuntimes();
+      await registerAllFeatureRuntimes();
       runInitialFeatureBoot();
     } catch (bootErr) {
       console.error('[R+] Error registrando runtimes de features:', bootErr);
@@ -244,6 +247,42 @@ function syncHeaderTodayDate() {
   todayEl.textContent = narrow ? compact : long;
   todayEl.title = long;
 }
+
+const CLINICAL_DB_BOOT_STEPS = [
+  {
+    id: 'clinical-access-init',
+    async run(ctx) {
+      await initClinicalAccessRuntime(ctx.settings, ctx.getClinicalClientId());
+    },
+  },
+  {
+    id: 'onboarding-dynamic-import',
+    async run() {
+      loadSettings();
+      const mod = await import('./features/clinical-onboarding-main.mjs');
+      await mod.showMainClinicalOnboarding();
+    },
+  },
+  {
+    id: 'clinical-teams-dynamic-import',
+    async run(ctx) {
+      wireClinicalRotationEntryControls();
+      wireClinicalTeamsControls();
+      syncClinicalRotationEntryChrome();
+      syncGuardiaModeButtonVisibility();
+      ctx.teamsMod = await import('./features/clinical-teams.mjs');
+    },
+  },
+  {
+    id: 'consume-team-join-url',
+    async run(ctx) {
+      const teamsMod = ctx.teamsMod;
+      if (teamsMod && typeof teamsMod.consumeClinicalTeamJoinFromUrl === 'function') {
+        await teamsMod.consumeClinicalTeamJoinFromUrl();
+      }
+    },
+  },
+];
 
 function runDomBoot() {
   appStateReady.then(function () {
@@ -289,29 +328,13 @@ function runDomBootAfterState() {
     syncProfileSectionVisibility();
     wireHeaderAppModeChip();
     if (isDbMode()) {
-      initClinicalAccessRuntime(settings, getClinicalClientId())
-        .then(function () {
-          loadSettings();
-          return import('./features/clinical-onboarding-main.mjs');
-        })
-        .then(function (mod) {
-          return mod.showMainClinicalOnboarding();
-        })
-        .then(function () {
-          wireClinicalRotationEntryControls();
-          wireClinicalTeamsControls();
-          syncClinicalRotationEntryChrome();
-          syncGuardiaModeButtonVisibility();
-          return import('./features/clinical-teams.mjs');
-        })
-        .then(function (teamsMod) {
-          if (teamsMod && typeof teamsMod.consumeClinicalTeamJoinFromUrl === 'function') {
-            return teamsMod.consumeClinicalTeamJoinFromUrl();
-          }
-        })
-        .catch(function (err) {
-          console.warn('[R+] Clinical access runtime init:', err && err.message);
-        });
+      void runBootSteps(CLINICAL_DB_BOOT_STEPS, {
+        settings,
+        getClinicalClientId,
+        teamsMod: null,
+      }).catch(function (err) {
+        console.warn('[R+] Clinical access runtime init:', err && err.message);
+      });
     }
   } catch (domErr) {
     console.error('[R+] Error en arranque de UI:', domErr);

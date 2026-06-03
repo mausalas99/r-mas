@@ -11,8 +11,8 @@ import {
 } from './draft-conflict-store.mjs';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
-const lanSyncSrc = readFileSync(join(jsDir, 'features/lan-sync.mjs'), 'utf8');
-const lanSyncPushSrc = readFileSync(join(jsDir, 'lan-sync-push.mjs'), 'utf8');
+const lanSyncSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'), 'utf8');
+const lanSyncPushSrc = readFileSync(join(jsDir, 'features/lan/push.mjs'), 'utf8');
 
 beforeEach(() => {
   __test.resetMemory();

@@ -2618,6 +2618,15 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   overflow: hidden;
 }
 
+/* Directorio LAN debe quedar encima de Mi rotación cuando ambos están abiertos */
+body.clinical-lan-directory-open #clinical-lan-users-backdrop.clinical-lan-users-backdrop.open {
+  z-index: 100050;
+}
+
+body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdrop.open {
+  z-index: 100020;
+}
+
 .clinical-admin-code-backdrop {
   z-index: 100040;
   background: color-mix(in oklab, var(--color-ink, #1a2332) 48%, transparent);

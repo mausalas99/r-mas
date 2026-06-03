@@ -54,8 +54,8 @@ let rt = {
 
 var _saveTimer = null;
 
-export function registerVpoPanelRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerVpoPanelRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function esc(s) {

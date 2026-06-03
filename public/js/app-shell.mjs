@@ -2,18 +2,22 @@
  * Shell de aplicación: chrome de contexto, toast, modales, export clínico, atajos y arranque diferido.
  */
 import { storage } from './storage.js';
-import { isModeSala } from './mode-features.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
-import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { prefillRegistrationFromUrlParams } from './features/clinical-registration.mjs';
-import { resolveQuickOutputAction } from './quick-output.mjs';
-import { handleOutputDirFallback } from './output-dir-fallback.mjs';
-import { syncApprovedOutputDir } from './document-export-client.mjs';
+import {
+  registerDocumentExportRuntime,
+  saveOutputDirSelection,
+} from './document-export-client.mjs';
+import {
+  quickExportCurrentPatient,
+  registerClinicalQuickExportRuntime,
+} from './clinical-quick-export.mjs';
 import {
   createModalDismissRegistry,
   isRpcOverlayVisible,
@@ -41,9 +45,7 @@ import {
   openProfileModal,
   toggleProfileSection,
   closeTemplatesModal,
-  normalizeQuickOutputFormat,
 } from './features/profile.mjs';
-import { applyNotaFormatScaffoldIfEmpty } from './profile-templates.mjs';
 import { closeClinicoUnlockModal } from './clinico-access.mjs';
 import {
   closeSOAPModal,
@@ -75,26 +77,24 @@ import {
   resolveAppVersionForTour,
   normalizeTourVersionLabel,
   markGuidedTourVersionDone,
+  initGuidedTourGate,
+  hideTourIntroModal,
+  closeLabBulkTourHintModal,
+} from './features/settings-help/tour-engine.mjs';
+import {
   syncTeamSyncHeaderButton,
   closeSettingsDropdown,
-  closeQuickHelp,
-  closeReleaseNotes,
-  hideTourIntroModal,
   toggleSettingsDropdown,
-  initGuidedTourGate,
-  closeLabBulkTourHintModal,
-} from './features/settings-help.mjs';
+} from './features/settings-help/settings-dropdown.mjs';
+import { closeQuickHelp } from './features/settings-help/help-content.mjs';
+import { closeReleaseNotes } from './features/settings-help/release-notes.mjs';
+import { hideUpdateModal } from './features/platform/updater.mjs';
 import {
-  incrementPendingJobs,
-  decrementPendingJobs,
-  formatDateSlug,
-  downloadTextPayload,
-  hideUpdateModal,
   closeWipeDataModal,
   initRpcServerHealthWatch,
   initIdleLockFeature,
-  initGoalGFeatures,
-} from './features/platform.mjs';
+} from './features/platform/offline.mjs';
+import { initGoalGFeatures } from './features/platform/import-backup.mjs';
 import {
   renderPatientList,
   closeModal,
@@ -107,19 +107,7 @@ import {
   renderPaseBoard,
 } from './features/pase-board.mjs';
 import { renderProcedureAgendaPanel } from './features/agenda.mjs';
-import {
-  generateWord,
-  generateIndicaciones,
-  applyProfileToNoteIfEmpty,
-} from './features/notes-indicaciones.mjs';
-import { generateListado } from './features/expediente.mjs';
-import {
-  patients,
-  notes,
-  indicaciones,
-  listadoProblemas,
-  saveState,
-} from './app-state.mjs';
+import { patients, saveState } from './app-state.mjs';
 
 const shellCtx = {
   getActiveId() { return null; },
@@ -128,8 +116,31 @@ const shellCtx = {
   getSettings() { return {}; },
 };
 
-export function registerAppShellContext(partial) {
-  if (partial && typeof partial === 'object') Object.assign(shellCtx, partial);
+export function registerAppShellContext(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(shellCtx, ctx);
+  wireShellExportRuntimes();
+}
+
+function wireShellExportRuntimes() {
+  registerDocumentExportRuntime({
+    showToast,
+    getSettings: function () {
+      return shellCtx.getSettings();
+    },
+    loadSettings,
+  });
+  registerClinicalQuickExportRuntime({
+    getActiveId: function () {
+      return shellCtx.getActiveId();
+    },
+    getActiveInner: function () {
+      return shellCtx.getActiveInner();
+    },
+    getSettings: function () {
+      return shellCtx.getSettings();
+    },
+    showToast,
+  });
 }
 
 function syncActivePatientContextBar() {
@@ -170,63 +181,11 @@ function chooseOutputDir() {
     showToast('Función no disponible en este entorno', 'error');
     return;
   }
-  window.electronAPI.selectOutputDir().then(function(dir) {
+  window.electronAPI.selectOutputDir().then(function (dir) {
     if (!dir) return;
-    shellCtx.getSettings().outputDir = dir;
-    localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
-    syncApprovedOutputDir(dir);
-    loadSettings();
+    saveOutputDirSelection(dir);
     showToast('Carpeta actualizada ✓', 'success');
   });
-}
-
-function saveOutputDirSelection(dir) {
-  if (!dir) return;
-  shellCtx.getSettings().outputDir = dir;
-  localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
-  syncApprovedOutputDir(dir);
-  loadSettings();
-}
-
-function requestDocumentJson(url, payload) {
-  return fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(function(r){ return r.json(); });
-}
-
-function getOutputDirSelector() {
-  if (!window.electronAPI || !window.electronAPI.selectOutputDir) return undefined;
-  return function() { return window.electronAPI.selectOutputDir(); };
-}
-
-function handleDocumentGenerateResponse(opts) {
-  return handleOutputDirFallback({
-    response: opts.response,
-    selectOutputDir: getOutputDirSelector(),
-    saveOutputDir: saveOutputDirSelection,
-    retry: function(dir) {
-      return requestDocumentJson(opts.url, opts.buildPayload(dir));
-    },
-    onSuccess: opts.onSuccess,
-    onError: function(message) {
-      showToast('Error: ' + message, 'error');
-    },
-    onPrompt: function() {
-      showToast('Selecciona una carpeta para guardar el documento.', 'error');
-    },
-    onCancel: function() {
-      showToast('No se guardó el documento: no se eligió carpeta.', 'error');
-    },
-  });
-}
-
-
-function guardMobileDocExport() {
-  if (!blockIfMobileDocExport()) return false;
-  mobileDocExportToast(showToast);
-  return true;
 }
 
 async function initMobileWebBoot() {
@@ -271,47 +230,6 @@ async function initMobileWebBoot() {
 }
 
 
-
-function applyDefaultsToNewPatient(patientId) {
-  if (!notes[patientId]) return;
-  applyProfileToNoteIfEmpty(notes[patientId]);
-  applyNotaFormatScaffoldIfEmpty(notes[patientId], shellCtx.getSettings() || {});
-}
-
-function applyDefaultsToNewIndicaciones(patientId) {
-  if (!indicaciones[patientId]) return;
-  var st = shellCtx.getSettings() || {};
-  if (st.defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = st.defaultDieta;
-  if (st.defaultCuidados && !indicaciones[patientId].cuidados) indicaciones[patientId].cuidados = st.defaultCuidados;
-  if (st.defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = st.defaultMedicamentos;
-  if (st.defaultIndicacionesEstudios && !indicaciones[patientId].estudios) indicaciones[patientId].estudios = st.defaultIndicacionesEstudios;
-  if (st.defaultIndicacionesInterconsultas && !indicaciones[patientId].interconsultas) indicaciones[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
-}
-
-
-
-
-
-function launchConfetti() {
-  var colors = ['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#fb7185'];
-  for (var i = 0; i < 40; i++) {
-    (function(idx) {
-      setTimeout(function() {
-        var el = document.createElement('div');
-        el.className = 'confetti-piece';
-        el.style.left = (Math.random() * 100) + 'vw';
-        el.style.top  = '-10px';
-        el.style.background = colors[Math.floor(Math.random() * colors.length)];
-        el.style.animationDelay = (Math.random() * 0.5) + 's';
-        el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-        document.body.appendChild(el);
-        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
-      }, idx * 40);
-    })(i);
-  }
-}
-
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showToast(msg, type) {
   var focused = document.activeElement;
@@ -785,181 +703,6 @@ function updatePatient(field, value) {
   }
 }
 
-function escHtml(value) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function toLines(value) {
-  if (Array.isArray(value)) return value.map(function(v){ return String(v || '').trim(); }).filter(Boolean);
-  return String(value || '').split('\n').map(function(v){ return v.trim(); }).filter(Boolean);
-}
-
-function slugFilePart(value, fallback) {
-  var base = String(value || '').trim().toLowerCase();
-  var slug = base
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  return slug || fallback;
-}
-
-function getCurrentPatientClinicalData() {
-  var patient = patients.find(function(p){ return p.id === shellCtx.getActiveId(); });
-  if (!patient) return null;
-  return {
-    patient: patient,
-    note: notes[shellCtx.getActiveId()] || {},
-    indicacion: indicaciones[shellCtx.getActiveId()] || {}
-  };
-}
-
-function buildClinicalTextExport(bundle) {
-  var patient = bundle.patient || {};
-  var note = bundle.note || {};
-  var ind = bundle.indicacion || {};
-  var mode = bundle.mode || 'both';
-  var blocks = [];
-  blocks.push('R+ - SALIDA CLINICA');
-  blocks.push('PACIENTE: ' + (patient.nombre || ''));
-  blocks.push('REGISTRO: ' + (patient.registro || ''));
-  blocks.push('SERVICIO: ' + (patient.servicio || ''));
-  blocks.push('CUARTO/CAMA: ' + (patient.cuarto || '') + '/' + (patient.cama || ''));
-  blocks.push('');
-  if (mode !== 'indica') {
-    blocks.push('== NOTA DE EVOLUCION ==');
-    blocks.push('FECHA/HORA: ' + (note.fecha || '') + ' ' + (note.hora || ''));
-    blocks.push('DIAGNOSTICOS:');
-    toLines(note.diagnosticos || []).forEach(function(v, idx){ blocks.push((idx + 1) + '. ' + v); });
-    if (!toLines(note.diagnosticos || []).length) blocks.push('(sin contenido)');
-  }
-  function pushBlock(label, value) {
-    blocks.push(label + ':');
-    var lines = toLines(value);
-    if (!lines.length) blocks.push('(sin contenido)');
-    lines.forEach(function(l){ blocks.push('- ' + l); });
-  }
-  if (mode !== 'indica') {
-    pushBlock('INTERROGATORIO', note.interrogatorio);
-    pushBlock('EXPLORACION FISICA', note.exploracion);
-    pushBlock('ESTUDIOS', note.estudios);
-    pushBlock('ANALISIS', note.analisis);
-    pushBlock('PLAN', note.plan);
-    blocks.push('SIGNOS VITALES: TA ' + (note.ta || '-') + ' | FR ' + (note.fr || '-') + ' | FC ' + (note.fc || '-') + ' | TEMP ' + (note.temp || '-') + ' | PESO ' + (note.peso || '-'));
-    pushBlock('TRATAMIENTO E INDICACIONES', note.tratamiento || []);
-    blocks.push('MEDICO TRATANTE: ' + (note.medico || ''));
-    blocks.push('PROFESOR RESPONSABLE: ' + (note.profesor || ''));
-  }
-  if (mode === 'both') blocks.push('');
-  if (mode !== 'note') {
-    blocks.push('== INDICACIONES ==');
-    blocks.push('FECHA/HORA: ' + (ind.fecha || '') + ' ' + (ind.hora || ''));
-    pushBlock('MEDICOS', ind.medicos);
-    pushBlock('DIETA', ind.dieta);
-    pushBlock('CUIDADOS', ind.cuidados);
-    pushBlock('ESTUDIOS', ind.estudios);
-    pushBlock('MEDICAMENTOS', ind.medicamentos);
-    pushBlock('INTERCONSULTAS', ind.interconsultas);
-    var otros = Array.isArray(ind.otros) ? ind.otros : [];
-    if (otros.length) {
-      blocks.push('OTROS:');
-      otros.forEach(function(item, idx) {
-        if (!item || typeof item !== 'object') return;
-        blocks.push((idx + 1) + '. ' + (item.titulo || 'Seccion sin titulo'));
-        toLines(item.contenido || '').forEach(function(line) { blocks.push('   - ' + line); });
-      });
-    }
-  }
-  return blocks.join('\n');
-}
-
-function buildClinicalHtmlExport(bundle) {
-  var patient = bundle.patient || {};
-  var note = bundle.note || {};
-  var ind = bundle.indicacion || {};
-  var mode = bundle.mode || 'both';
-  function renderList(values) {
-    var lines = toLines(values);
-    if (!lines.length) return '<p><em>Sin contenido</em></p>';
-    return '<ul>' + lines.map(function(line){ return '<li>' + escHtml(line) + '</li>'; }).join('') + '</ul>';
-  }
-  function renderOtherSections() {
-    var otros = Array.isArray(ind.otros) ? ind.otros : [];
-    if (!otros.length) return '<p><em>Sin secciones adicionales</em></p>';
-    return otros.filter(function(item) { return item && typeof item === 'object'; }).map(function(item) {
-      return '<article><h4>' + escHtml(item.titulo || 'Seccion sin titulo') + '</h4>' + renderList(item.contenido || '') + '</article>';
-    }).join('');
-  }
-  var noteHtml = '<section><h2>Nota de evolucion</h2>' +
-    '<p><strong>Fecha/Hora:</strong> ' + escHtml(note.fecha || '') + ' ' + escHtml(note.hora || '') + '</p>' +
-    '<h3>Diagnosticos</h3>' + renderList(note.diagnosticos || []) +
-    '<h3>Interrogatorio</h3>' + renderList(note.interrogatorio) +
-    '<h3>Exploracion fisica</h3>' + renderList(note.exploracion) +
-    '<h3>Estudios</h3>' + renderList(note.estudios) +
-    '<h3>Analisis</h3>' + renderList(note.analisis) +
-    '<h3>Plan</h3>' + renderList(note.plan) +
-    '<h3>Signos vitales</h3><p>TA ' + escHtml(note.ta || '-') + ' | FR ' + escHtml(note.fr || '-') + ' | FC ' + escHtml(note.fc || '-') + ' | TEMP ' + escHtml(note.temp || '-') + ' | PESO ' + escHtml(note.peso || '-') + '</p>' +
-    '<h3>Tratamiento e indicaciones medicas</h3>' + renderList(note.tratamiento || []) +
-    '</section>';
-  var indicaHtml = '<section><h2>Indicaciones</h2>' +
-    '<p><strong>Fecha/Hora:</strong> ' + escHtml(ind.fecha || '') + ' ' + escHtml(ind.hora || '') + '</p>' +
-    '<h3>Medicos</h3>' + renderList(ind.medicos) +
-    '<h3>Dieta</h3>' + renderList(ind.dieta) +
-    '<h3>Cuidados</h3>' + renderList(ind.cuidados) +
-    '<h3>Estudios</h3>' + renderList(ind.estudios) +
-    '<h3>Medicamentos</h3>' + renderList(ind.medicamentos) +
-    '<h3>Interconsultas</h3>' + renderList(ind.interconsultas) +
-    '<h3>Otros</h3>' + renderOtherSections() +
-    '</section>';
-  return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
-    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:;">' +
-    '<title>R+ salida clinica</title>' +
-    '<style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style>' +
-    '</head><body>' +
-    '<h1>R+ - Salida clinica</h1>' +
-    '<p><strong>Paciente:</strong> ' + escHtml(patient.nombre || '') + ' | <strong>Registro:</strong> ' + escHtml(patient.registro || '') + '</p>' +
-    '<p><strong>Servicio:</strong> ' + escHtml(patient.servicio || '') + ' | <strong>Cuarto/Cama:</strong> ' + escHtml(patient.cuarto || '') + '/' + escHtml(patient.cama || '') + '</p>' +
-    (mode !== 'indica' ? noteHtml : '') +
-    (mode !== 'note' ? indicaHtml : '') +
-    '</body></html>';
-}
-
-function exportCurrentPatientAsText() {
-  var bundle = getCurrentPatientClinicalData();
-  if (!bundle) return;
-  bundle.mode = shellCtx.getActiveInner() === 'indica' ? 'indica' : 'note';
-  var fileName = 'R-plus-' + slugFilePart(bundle.patient.nombre, 'paciente') + '-clinico-' + formatDateSlug(new Date()) + '.txt';
-  incrementPendingJobs();
-  try {
-    downloadTextPayload(buildClinicalTextExport(bundle), fileName, 'text/plain');
-    showToast('Salida .txt descargada', 'success');
-  } catch (e) {
-    showToast('No se pudo exportar: ' + (e && e.message ? e.message : 'error'), 'error');
-  } finally {
-    decrementPendingJobs();
-  }
-}
-
-function exportCurrentPatientAsHtml() {
-  var bundle = getCurrentPatientClinicalData();
-  if (!bundle) return;
-  bundle.mode = shellCtx.getActiveInner() === 'indica' ? 'indica' : 'note';
-  var fileName = 'R-plus-' + slugFilePart(bundle.patient.nombre, 'paciente') + '-clinico-' + formatDateSlug(new Date()) + '.html';
-  incrementPendingJobs();
-  try {
-    downloadTextPayload(buildClinicalHtmlExport(bundle), fileName, 'text/html');
-    showToast('Salida .html descargada', 'success');
-  } catch (e) {
-    showToast('No se pudo exportar: ' + (e && e.message ? e.message : 'error'), 'error');
-  } finally {
-    decrementPendingJobs();
-  }
-}
-
 export function rpcPrefersReducedMotion() {
   try {
     return (
@@ -972,40 +715,26 @@ export function rpcPrefersReducedMotion() {
   }
 }
 
-function quickExportCurrentPatient() {
-  if (guardMobileDocExport()) return;
-  if (!shellCtx.getActiveId()) {
-    showToast('Selecciona un paciente primero', 'error');
-    return;
-  }
-  var format = normalizeQuickOutputFormat(shellCtx.getSettings().quickOutputFormat);
-  var action = resolveQuickOutputAction({
-    format: format,
-    appMode: isModeSala(shellCtx.getSettings()) ? 'sala' : 'interconsulta',
-    activeInner: shellCtx.getActiveInner(),
-    listado: listadoProblemas[shellCtx.getActiveId()] || null,
-  });
-  switch (action.kind) {
-    case 'html':           exportCurrentPatientAsHtml(); return;
-    case 'txt':            exportCurrentPatientAsText(); return;
-    case 'listado':        generateListado(); return;
-    case 'listado_empty':  showToast(action.message, 'error'); return;
-    case 'indicaciones':   generateIndicaciones(); return;
-    case 'nota':
-    default:               generateWord(); return;
-  }
-}
+/** @deprecated import from document-export-client.mjs */
+export {
+  guardMobileDocExport,
+  requestDocumentJson,
+  handleDocumentGenerateResponse,
+} from './document-export-client.mjs';
+
+/** @deprecated import from features/chrome.mjs */
+export { launchConfetti } from './features/chrome.mjs';
+
+/** @deprecated import from features/patients.mjs */
+export {
+  applyDefaultsToNewPatient,
+  applyDefaultsToNewIndicaciones,
+} from './features/patients.mjs';
 
 export {
   showToast,
   syncWorkContextChrome,
   setMedTabAttention,
-  guardMobileDocExport,
-  requestDocumentJson,
-  handleDocumentGenerateResponse,
-  launchConfetti,
-  applyDefaultsToNewPatient,
-  applyDefaultsToNewIndicaciones,
   initModalDismiss,
 };
 
@@ -1059,3 +788,5 @@ export function scheduleDeferredShellInits() {
 export function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
 }
+
+wireShellExportRuntimes();

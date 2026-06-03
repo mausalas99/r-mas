@@ -30,7 +30,10 @@
     "release:republish": "node scripts/release.js publish -- --yes --allow-existing-gh",
     "build": "electron-builder",
     "rebuild:db-native": "node scripts/rebuild-native-db.mjs",
-    "postinstall": "node scripts/rebuild-native-db.mjs || true"
+    "postinstall": "node scripts/rebuild-native-db.mjs || true",
+    "metrics": "node scripts/metrics/run.mjs",
+    "metrics:check": "node scripts/metrics/check.mjs",
+    "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline"
   },
   "author": "Mauricio Salas",
   "license": "ISC",
@@ -48,10 +51,17 @@
   },
   "devDependencies": {
     "@electron/rebuild": "3.7.2",
+    "@eslint/js": "^9.39.1",
     "chart.js": "^4.5.1",
+    "dependency-cruiser": "^16.10.4",
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
-    "esbuild": "^0.25.12"
+    "esbuild": "^0.25.12",
+    "eslint": "^9.39.1",
+    "eslint-plugin-sonarjs": "^3.0.5",
+    "globals": "^16.2.0",
+    "jscpd": "^4.0.5",
+    "ts-api-utils": "^2.5.0"
   },
   "build": {
     "appId": "com.hospitaluniversitario.rplusclinical",

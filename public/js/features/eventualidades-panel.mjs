@@ -26,8 +26,8 @@ let rt = {
   showToast(_msg, _type) {},
 };
 
-export function registerEventualidadesRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerEventualidadesRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function pad2(n) {

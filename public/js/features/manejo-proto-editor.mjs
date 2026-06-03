@@ -19,8 +19,8 @@ var rt = {
   showToast() {},
 };
 
-export function registerManejoProtoEditorRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerManejoProtoEditorRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function protocolPatchFromSomeFields(fields, category) {

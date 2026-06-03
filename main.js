@@ -569,6 +569,12 @@ ipcMain.handle('lan-get-effective-team-code', () => {
 });
 
 /** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
+ipcMain.handle('lan-ensure-server-ready', async () => {
+  const lanServer = require('./server');
+  await lanServer.startLanServer();
+  return { ok: true };
+});
+
 ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
   const token = String(payload?.token || '').trim();
   if (!token || token.length < 32) return { ok: false, error: 'invalid_token' };
@@ -650,6 +656,7 @@ function buildMenu() {
 }
 
 // ── Startup ───────────────────────────────────────────────────────
+let unlockPromise;
 app.whenReady().then(async () => {
   try {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
@@ -687,16 +694,16 @@ app.whenReady().then(async () => {
       getClientId: () => 'desktop-host',
     });
 
-    try {
-      await dbManager.ensureUnlocked();
-    } catch (unlockErr) {
+    unlockPromise = dbManager.ensureUnlocked().catch((unlockErr) => {
       console.warn(
         '[R+] Clinical DB auto-open at startup failed:',
         unlockErr && unlockErr.message ? unlockErr.message : unlockErr
       );
-    }
+    });
 
-    server = await require('./server');
+    const lanServer = require('./server');
+    server = await lanServer.startLanServer();
+    if (unlockPromise) await unlockPromise;
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
     dialog.showErrorBox(
@@ -719,5 +726,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  if (server && server.close) server.close();
+  const lanServer = require('./server');
+  void lanServer.stopLanServer();
 });

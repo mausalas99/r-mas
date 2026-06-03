@@ -65,9 +65,9 @@ let rt = {
   },
 };
 
-export function registerExpedienteRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerExpedienteRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
 }
 
 function aid() {

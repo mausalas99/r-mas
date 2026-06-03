@@ -115,22 +115,29 @@ import {
   registerProductivityRuntime,
   pushUndoSnapshot,
 } from './features/productivity.mjs';
-import {
-  registerSettingsHelpRuntime,
-  syncTeamSyncHeaderButton,
-  closeSettingsDropdown,
-} from './features/settings-help.mjs';
 import { registerCensoRuntime, syncCensoExportButtonVisibility } from './censo-export.mjs';
+import { addAuditEntry } from './features/platform/audit.mjs';
 import {
-  registerPlatformRuntime,
-  addAuditEntry,
   incrementPendingJobs,
   decrementPendingJobs,
   syncOfflineButtonStates,
   isRpcOffline,
-  syncPreimportBackupUi,
-  applyImportEntry,
-} from './features/platform.mjs';
+} from './features/platform/offline.mjs';
+import { syncPreimportBackupUi, applyImportEntry } from './features/platform/import-backup.mjs';
+import {
+  syncTeamSyncHeaderButton,
+  closeSettingsDropdown,
+} from './features/settings-help/settings-dropdown.mjs';
+import {
+  guidedTourAdvanceAfterNotaGenerated,
+  guidedTourAdvanceAfterIndicaGenerated,
+  guidedTourAdvanceAfter,
+  onboardingAdvanceAfterParse,
+  onboardingAdvanceAfterSend,
+  tourAfterBulkLabParse,
+  tourOnBulkPreviewPatientSaved,
+} from './features/settings-help/tour-flow.mjs';
+import { registerLazyFeatureRuntimes } from './lazy-feature-routes.mjs';
 import {
   registerNotesIndicacionesRuntime,
   applyProfileToNoteIfEmpty,
@@ -236,15 +243,6 @@ import {
   renderPatientDataPane,
 } from './features/expediente.mjs';
 import {
-  guidedTourAdvanceAfterNotaGenerated,
-  guidedTourAdvanceAfterIndicaGenerated,
-  guidedTourAdvanceAfter,
-  onboardingAdvanceAfterParse,
-  onboardingAdvanceAfterSend,
-  tourAfterBulkLabParse,
-  tourOnBulkPreviewPatientSaved,
-} from './features/settings-help.mjs';
-import {
   advanceRondaPatient,
 } from './features/patients.mjs';
 import {
@@ -268,580 +266,230 @@ export function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 
-export function registerAppRuntimeContext(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function getAppRuntimeContext() {
+  return rt;
 }
 
-export function registerAllFeatureRuntimes() {
-  registerMedicationsRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
-});
-registerMedPharmProfileRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  refreshMedPanel: function () {
-    renderMedRecetaPanel();
-  },
-});
-registerProfileRuntime({
-  showToast: showToast,
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  syncWorkContextChrome: syncWorkContextChrome,
-});
-registerPaseBoardRuntime({
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  setActiveAppTab: function (v) {
-    rt.setActiveAppTab(v);
-  },
-  getActiveInner: function () {
-    return rt.getActiveInner();
-  },
-  setActiveInner: function (v) {
-    rt.setActiveInner(v);
-  },
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  renderMedRecetaPanel: renderMedRecetaPanel,
-  renderLabHistoryPanel: renderLabHistoryPanel,
-  renderProcedureAgendaPanel: renderProcedureAgendaPanel,
-  setMedTabAttention: setMedTabAttention,
-  syncWorkContextChrome: syncWorkContextChrome,
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  splitResLabsByTipo: splitResLabsByTipo,
-  primaryTipoForLabSet: primaryTipoForLabSet,
-  formatLabHistoryListMeta: function (set) {
-    return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
-  },
-});
+export function registerAppRuntimeContext(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
+}
 
-registerChromeRuntime({
-  switchAppTab,
-  renderPatientList,
-  scrollActiveRondaCardIntoView,
-  renderProcedureAgendaPanel,
-  getActiveAppTab: function () { return rt.getActiveAppTab(); },
-  getActiveInner: function () { return rt.getActiveInner(); },
-  getActiveId: function () { return rt.getActiveId(); },
-  setRoundOverviewMode: setRoundOverviewMode,
-  renderPaseBoard: renderPaseBoard,
-  renderGuardiaBoard: function () {
-    return renderGuardiaBoard(rt.getSettings());
-  },
-  syncLabOutputChrome: syncLabOutputChrome,
-});
-
-registerPatientsRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  setActiveId: function (id) {
-    rt.setActiveId(id);
-  },
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  getActiveInner: function () {
-    return rt.getActiveInner();
-  },
-  setActiveInner: function (v) {
-    rt.setActiveInner(v);
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  getActiveLab: function () {
-    return labPanelGetActiveLab();
-  },
-  consumeActiveLab: function () {
-    var x = labPanelGetActiveLab();
-    labPanelSetActiveLab(null);
-    return x;
-  },
-  restoreActiveLab: function (x) {
-    labPanelSetActiveLab(x);
-  },
-  clearLabOutputUi: clearLabWorkbenchMinimalDom,
-  switchAppTab: switchAppTab,
-  showToast: showToast,
-  renderInnerTabs: renderInnerTabs,
-  invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
-  refreshExpedienteAfterPatientSelect: refreshExpedienteAfterPatientSelect,
-  renderEstadoActualButton: renderEstadoActualButton,
-  renderNoteForm: renderNoteForm,
-  renderPatientDataPane: renderPatientDataPane,
-  renderIndicaForm: renderIndicaForm,
-  renderListadoForm: renderListadoForm,
-  refreshTendenciasOrCultivosPanel: refreshTendenciasOrCultivosPanel,
-  renderLabHistoryPanel: renderLabHistoryPanel,
-  renderMedRecetaPanel: renderMedRecetaPanel,
-  switchInnerTab: switchInnerTab,
-  syncInnerTabVisualOnly: syncInnerTabVisualOnly,
-  renderTodoForm: renderTodoForm,
-  limpiarReporte: limpiarReporte,
-  setLabHistoryPanelCollapsed: setLabHistoryPanelCollapsed,
-  syncLabHistoryCollapseUI: syncLabHistoryCollapseUI,
-  syncWorkContextChrome: syncWorkContextChrome,
-  rpcPrefersReducedMotion: rpcPrefersReducedMotion,
-  renderProcedureAgendaPanel: renderProcedureAgendaPanel,
-  refreshAllTodoUIs: refreshAllTodoUIs,
-  renderManejo: renderManejo,
-  renderVpo: renderVpo,
-  renderRecetaHu: renderRecetaHu,
-  renderPaseBoard: renderPaseBoard,
-  pushUndoSnapshot: pushUndoSnapshot,
-  addAuditEntry: addAuditEntry,
-  applyDefaultsToNewPatient: applyDefaultsToNewPatient,
-  applyDefaultsToNewIndicaciones: applyDefaultsToNewIndicaciones,
-  enviarLabsANota: enviarLabsANota,
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  primaryTipoForLabSet: primaryTipoForLabSet,
-  normalizeFechaLabHistory: normalizeFechaLabHistory,
-});
-
-v3MigratedThisBoot = migrateToV3(rt.getSettings());
-if (v3MigratedThisBoot) storage.saveSettings(rt.getSettings());
-
-registerLabHistoryMaintRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  renderLabHistoryPanel: renderLabHistoryPanel,
-  refreshTendenciasOrCultivosPanel: refreshTendenciasOrCultivosPanel,
-});
-installLabHistoryAuditHook();
-registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
-
-registerPlatformRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  setActiveId: function (id) {
-    rt.setActiveId(id);
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  showToast: showToast,
-  syncTeamSyncHeaderButton: syncTeamSyncHeaderButton,
-  pushUndoSnapshot: pushUndoSnapshot,
-});
-
-registerTendenciasRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  rerenderParsedLabOutputAfterPrefsChange: rerenderParsedLabOutputAfterPrefsChange,
-  rpcPrefersReducedMotion: rpcPrefersReducedMotion,
-  showToast: showToast,
-  buildLabSetDateLine: buildLabSetDateLine,
-});
-
-registerTodosRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  getRoundOverviewMode: getRoundOverviewMode,
-  renderPaseBoard: renderPaseBoard,
-});
-
-registerManejoRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  saveState: saveState,
-  showToast: showToast,
-  emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
-  refreshAllTodoUIs: refreshAllTodoUIs,
-});
-
-registerVpoRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  switchAppTab: switchAppTab,
-});
-
-registerRecetaHuRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  getActiveInner: function () {
-    return rt.getActiveInner();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  switchAppTab: switchAppTab,
-  switchInnerTab: switchInnerTab,
-  requestDocumentJson: requestDocumentJson,
-  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
-  showToast: showToast,
-  guardMobileDocExport: guardMobileDocExport,
-  isRpcOffline: isRpcOffline,
-  incrementPendingJobs: incrementPendingJobs,
-  decrementPendingJobs: decrementPendingJobs,
-  syncOfflineButtonStates: syncOfflineButtonStates,
-});
-
-registerSettingsHelpRuntime({
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  getActiveInner: function () {
-    return rt.getActiveInner();
-  },
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  setActiveId: function (id) {
-    rt.setActiveId(id);
-  },
-  switchInnerTab: switchInnerTab,
-  renderInnerTabs: renderInnerTabs,
-  renderEstadoActualButton: renderEstadoActualButton,
-  renderEstadoActualBar: renderEstadoActualBar,
-  switchAppTab: switchAppTab,
-  showToast: showToast,
-  launchConfetti: launchConfetti,
-  syncPreimportBackupUi: syncPreimportBackupUi,
-  syncSettingsLanHostDiskSection: syncSettingsLanHostDiskSection,
-  closeProfileModal: closeProfileModal,
-  openProfileModal: openProfileModal,
-  renderMedRecetaPanel: renderMedRecetaPanel,
-  renderListadoForm: renderListadoForm,
-  openAddModalFromLabPatient: openAddModalFromLabPatient,
-  refreshAllTodoUIs: refreshAllTodoUIs,
-  refreshExpedienteAfterPatientSelect: refreshExpedienteAfterPatientSelect,
-});
-
-registerCensoRuntime({
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  showToast: showToast,
-  requestDocumentJson: requestDocumentJson,
-  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
-  incrementPendingJobs: incrementPendingJobs,
-  decrementPendingJobs: decrementPendingJobs,
-  syncOfflineButtonStates: syncOfflineButtonStates,
-  guardMobileDocExport: guardMobileDocExport,
-  isRpcOffline: isRpcOffline,
-});
-
-registerHistoriaClinicaRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  showToast: showToast,
-  copyToClipboardSafe: copyToClipboardSafe,
-  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
-});
-
-registerEventualidadesRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-});
-
-registerExpedienteRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  getActiveInner: function () {
-    return rt.getActiveInner();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  showToast: showToast,
-  renderTendencias: renderTendencias,
-  renderPaseBoard: renderPaseBoard,
-  splitResLabsByTipo: splitResLabsByTipo,
-  buildLabSetDateLine: buildLabSetDateLine,
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  guardMobileDocExport: guardMobileDocExport,
-  isRpcOffline: isRpcOffline,
-  incrementPendingJobs: incrementPendingJobs,
-  decrementPendingJobs: decrementPendingJobs,
-  syncOfflineButtonStates: syncOfflineButtonStates,
-  copyToClipboardSafe: copyToClipboardSafe,
-  requestDocumentJson: requestDocumentJson,
-  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
-});
-
-registerNotesIndicacionesRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  showToast: showToast,
-  renderRoundOverviewPanels: renderRoundOverviewPanels,
-  syncOfflineButtonStates: syncOfflineButtonStates,
-  guardMobileDocExport: guardMobileDocExport,
-  isRpcOffline: isRpcOffline,
-  incrementPendingJobs: incrementPendingJobs,
-  decrementPendingJobs: decrementPendingJobs,
-  requestDocumentJson: requestDocumentJson,
-  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
-  guidedTourAdvanceAfterNotaGenerated: guidedTourAdvanceAfterNotaGenerated,
-  guidedTourAdvanceAfterIndicaGenerated: guidedTourAdvanceAfterIndicaGenerated,
-  addAuditEntry: addAuditEntry,
-});
-
-registerProcedureAgendaRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  renderPaseBoard: renderPaseBoard,
-});
-
-registerSoapEstadoRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
-});
-
-registerEstadoActualPanelRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  showToast: showToast,
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  switchConsolidatedTab: switchConsolidatedTab,
-  copyToClipboardSafe: copyToClipboardSafe,
-  invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
-  onMedicionRegistered: function () {
-    guidedTourAdvanceAfter('estado_actual_registro');
-  },
-});
-
-registerDriveImportRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getActivePatient: function () {
-    var id = rt.getActiveId();
-    if (!id) return null;
-    return (
-      patients.find(function (p) {
-        return String(p.id) === String(id);
-      }) || null
-    );
-  },
-  showToast: showToast,
-  pushUndoSnapshot: pushUndoSnapshot,
-  switchInnerTab: switchInnerTab,
-  switchAppTab: switchAppTab,
-  addAuditEntry: addAuditEntry,
-});
-
-registerEstadoActualPasteModalRuntime({
-  showToast: showToast,
-  applyParsed: function (parsed, opts) {
-    opts = opts || {};
-    if (opts.fromNestedPaste) {
-      applyEstadoActualParsedToForm(parsed);
-      var recorded = document.getElementById('ea-recorded-at');
-      if (recorded && 'value' in recorded) {
-        recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
-      }
-      return;
-    }
-    navigateToEstadoActualPanel();
-    renderEstadoActualPanel({
-      onReady: function () {
-        openEstadoActualRegistroModal({ preserveForm: true });
+function installAppRuntimeContextDeps() {
+  Object.assign(rt, {
+    showToast,
+    navigateToEstadoActualPanel,
+    refreshMedPanel: function refreshMedPanel() {
+      renderMedRecetaPanel();
+    },
+    syncWorkContextChrome,
+    renderMedRecetaPanel,
+    renderLabHistoryPanel,
+    renderProcedureAgendaPanel,
+    setMedTabAttention,
+    ensureParsedLabHistory,
+    ensureParsedLabHistoryCached,
+    splitResLabsByTipo,
+    primaryTipoForLabSet,
+    formatLabHistoryListMeta: function (set) {
+      return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+    },
+    switchAppTab,
+    renderPatientList,
+    scrollActiveRondaCardIntoView,
+    renderGuardiaBoard: function () {
+      return renderGuardiaBoard(rt.getSettings());
+    },
+    syncLabOutputChrome,
+    setRoundOverviewMode,
+    renderPaseBoard,
+    getActiveLab: function () {
+      return labPanelGetActiveLab();
+    },
+    consumeActiveLab: function () {
+      var x = labPanelGetActiveLab();
+      labPanelSetActiveLab(null);
+      return x;
+    },
+    restoreActiveLab: function (x) {
+      labPanelSetActiveLab(x);
+    },
+    clearLabOutputUi: clearLabWorkbenchMinimalDom,
+    renderInnerTabs,
+    invalidateInnerTabRenderCache,
+    refreshExpedienteAfterPatientSelect,
+    renderEstadoActualButton,
+    renderPatientDataPane,
+    renderNoteForm,
+    renderIndicaForm,
+    renderListadoForm,
+    refreshTendenciasOrCultivosPanel,
+    switchInnerTab,
+    syncInnerTabVisualOnly,
+    renderTodoForm,
+    limpiarReporte,
+    setLabHistoryPanelCollapsed,
+    syncLabHistoryCollapseUI,
+    rpcPrefersReducedMotion,
+    refreshAllTodoUIs,
+    renderManejo,
+    renderVpo,
+    renderRecetaHu,
+    pushUndoSnapshot,
+    addAuditEntry,
+    applyDefaultsToNewPatient,
+    applyDefaultsToNewIndicaciones,
+    enviarLabsANota,
+    normalizeFechaLabHistory,
+    rerenderParsedLabOutputAfterPrefsChange,
+    buildLabSetDateLine,
+    getRoundOverviewMode,
+    saveState,
+    emitLiveSyncTodoUpsert,
+    requestDocumentJson,
+    handleDocumentGenerateResponse,
+    guardMobileDocExport,
+    isRpcOffline,
+    incrementPendingJobs,
+    decrementPendingJobs,
+    syncOfflineButtonStates,
+    syncTeamSyncHeaderButton,
+    syncPreimportBackupUi,
+    syncSettingsLanHostDiskSection,
+    closeProfileModal,
+    openProfileModal,
+    openAddModalFromLabPatient,
+    copyToClipboardSafe,
+    renderTendencias,
+    renderRoundOverviewPanels,
+    switchConsolidatedTab,
+    getActivePatient: function () {
+      var id = rt.getActiveId();
+      if (!id) return null;
+      return (
+        patients.find(function (p) {
+          return String(p.id) === String(id);
+        }) || null
+      );
+    },
+    applyParsed: function (parsed, opts) {
+      opts = opts || {};
+      if (opts.fromNestedPaste) {
         applyEstadoActualParsedToForm(parsed);
         var recorded = document.getElementById('ea-recorded-at');
         if (recorded && 'value' in recorded) {
           recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
         }
-      },
-    });
-  },
-});
-
-registerEstadoActualRegistroModalRuntime({
-  showToast: showToast,
-  ensureForm: ensureEaRegistroModalForm,
-  syncGluMode: syncEaRegistroGluMode,
-  resetForm: function () {
-    var activeId = rt.getActiveId();
-    var patient =
-      activeId &&
-      patients.find(function (p) {
-        return p.id === activeId;
+        return;
+      }
+      navigateToEstadoActualPanel();
+      renderEstadoActualPanel({
+        onReady: function () {
+          openEstadoActualRegistroModal({ preserveForm: true });
+          applyEstadoActualParsedToForm(parsed);
+          var recorded = document.getElementById('ea-recorded-at');
+          if (recorded && 'value' in recorded) {
+            recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+          }
+        },
       });
-    resetEaRegistroForm(patient || null);
-  },
-});
+    },
+    ensureForm: ensureEaRegistroModalForm,
+    syncGluMode: syncEaRegistroGluMode,
+    resetForm: function () {
+      var activeId = rt.getActiveId();
+      var patient =
+        activeId &&
+        patients.find(function (p) {
+          return p.id === activeId;
+        });
+      resetEaRegistroForm(patient || null);
+    },
+    selectPatient,
+    onboardingAdvanceAfterParse,
+    onboardingAdvanceAfterSend,
+    tourAfterBulkLabParse,
+    tourOnBulkPreviewPatientSaved,
+    findPatientByRegistro,
+    openPaseSectionInNormal,
+    renderDiagramas,
+    closeSettingsDropdown,
+    extractParsedValues,
+    buildParsedBySectionFromResLabs,
+    rebuildEstudiosFromLabHistory,
+    inferFechaLabSetFromId,
+    dayKeyFromLabSet,
+    labSetIsFromSome,
+    removeAtbRisPanelsFromBody,
+    wireAtbRisHoverPanels,
+    getLabOutputPrefs,
+    isGasoInterpretacionResLabChunk,
+    isAscitisInterpretacionResLabChunk,
+    ascitisInterpretacionBody_,
+    formatBhExtendedTabLine,
+    isBhMainResLabChunk,
+    isResLabChunkPureCultivo,
+    buildCultivoOutputHtmlFragments,
+    refreshManejoPanel: renderManejo,
+    rebuildBulkLabPreviewBlocks: function (text) {
+      return buildBulkLabPreview(text, { findPatientByRegistro });
+    },
+    openAddModal,
+    advanceRondaPatient,
+    isMobileWeb,
+    ensureUniquePatientName,
+    applyImportEntry,
+    buildPatientEntry,
+    onMedicionRegistered: function () {
+      guidedTourAdvanceAfter('estado_actual_registro');
+    },
+    guidedTourAdvanceAfterNotaGenerated,
+    guidedTourAdvanceAfterIndicaGenerated,
+    launchConfetti,
+    renderEstadoActualBar,
+  });
+}
 
-registerLabPanelRuntime({
-  showToast: showToast,
-  copyToClipboardSafe: copyToClipboardSafe,
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  setActiveId: function (id) {
-    rt.setActiveId(id);
-  },
-  selectPatient: selectPatient,
-  renderRoundOverviewPanels: renderRoundOverviewPanels,
-  refreshTendenciasOrCultivosPanel: refreshTendenciasOrCultivosPanel,
-  renderPaseBoard: renderPaseBoard,
-  onboardingAdvanceAfterParse: onboardingAdvanceAfterParse,
-  onboardingAdvanceAfterSend: onboardingAdvanceAfterSend,
-  tourAfterBulkLabParse: tourAfterBulkLabParse,
-  tourOnBulkPreviewPatientSaved: tourOnBulkPreviewPatientSaved,
-  findPatientByRegistro: findPatientByRegistro,
-  addAuditEntry: addAuditEntry,
-  openPaseSectionInNormal: openPaseSectionInNormal,
-  renderDiagramas: renderDiagramas,
-  pushUndoSnapshot: pushUndoSnapshot,
-  setMedTabAttention: setMedTabAttention,
-  switchAppTab: switchAppTab,
-  closeSettingsDropdown: closeSettingsDropdown,
-  extractParsedValues: extractParsedValues,
-  buildParsedBySectionFromResLabs: buildParsedBySectionFromResLabs,
-  ensureParsedLabHistory: ensureParsedLabHistory,
-  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
-  rebuildEstudiosFromLabHistory: rebuildEstudiosFromLabHistory,
-  inferFechaLabSetFromId: inferFechaLabSetFromId,
-  dayKeyFromLabSet: dayKeyFromLabSet,
-  labSetIsFromSome: labSetIsFromSome,
-  formatLabHistoryListMeta: function (set) {
-    return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
-  },
-  primaryTipoForLabSet: primaryTipoForLabSet,
-  refreshAllTodoUIs: refreshAllTodoUIs,
-  emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
-  removeAtbRisPanelsFromBody: removeAtbRisPanelsFromBody,
-  wireAtbRisHoverPanels: wireAtbRisHoverPanels,
-  getLabOutputPrefs: getLabOutputPrefs,
-  isGasoInterpretacionResLabChunk: isGasoInterpretacionResLabChunk,
-  isAscitisInterpretacionResLabChunk: isAscitisInterpretacionResLabChunk,
-  ascitisInterpretacionBody_: ascitisInterpretacionBody_,
-  formatBhExtendedTabLine: formatBhExtendedTabLine,
-  isBhMainResLabChunk: isBhMainResLabChunk,
-  isResLabChunkPureCultivo: isResLabChunkPureCultivo,
-  buildCultivoOutputHtmlFragments: buildCultivoOutputHtmlFragments,
-  buildLabSetDateLine: buildLabSetDateLine,
-  refreshManejoPanel: renderManejo,
-});
+export async function registerAllFeatureRuntimes() {
+  installAppRuntimeContextDeps();
+  var ctx = getAppRuntimeContext();
 
-registerLabBulkPreviewModalRuntime({
-  showToast,
-  rebuildBulkLabPreviewBlocks: function (text) {
-    return buildBulkLabPreview(text, { findPatientByRegistro });
-  },
-  openAddModalFromLabPatient,
-  tourOnBulkPreviewPatientSaved,
-});
+  registerMedicationsRuntime(ctx);
+  registerMedPharmProfileRuntime(ctx);
+  registerProfileRuntime(ctx);
+  registerPaseBoardRuntime(ctx);
+  registerChromeRuntime(ctx);
+  registerPatientsRuntime(ctx);
 
-registerLabHistoryBatchCopyRuntime({
-  showToast,
-  copyToClipboardSafe,
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  ensureParsedLabHistory,
-  ensureParsedLabHistoryCached,
-});
+  v3MigratedThisBoot = migrateToV3(rt.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt.getSettings());
 
-registerProductivityRuntime({
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  getSettings: function () {
-    return rt.getSettings();
-  },
-  selectPatient: selectPatient,
-  switchAppTab: switchAppTab,
-  switchInnerTab: switchInnerTab,
-  saveState: saveState,
-  renderIndicaForm: renderIndicaForm,
-  closeSettingsDropdown: closeSettingsDropdown,
-  openAddModal: openAddModal,
-  addAuditEntry: addAuditEntry,
-  showToast: showToast,
-  advanceRondaPatient: advanceRondaPatient,
-});
+  await registerLazyFeatureRuntimes(ctx);
 
-registerLanRuntime({
-  showToast,
-  renderPatientList,
-  renderNoteForm,
-  renderLabHistoryPanel,
-  getActiveId: function () {
-    return rt.getActiveId();
-  },
-  setActiveId: function (id) {
-    rt.setActiveId(id);
-  },
-  getActiveAppTab: function () {
-    return rt.getActiveAppTab();
-  },
-  selectPatient,
-  isMobileWeb,
-  renderProcedureAgendaPanel,
-  refreshAllTodoUIs,
-  syncWorkContextChrome,
-  findPatientByRegistro,
-  ensureUniquePatientName,
-  applyImportEntry,
-  syncSettingsLanHostDiskSection,
-  buildPatientEntry,
-  closeSettingsDropdown,
-});
+  registerLabHistoryMaintRuntime(ctx);
+  installLabHistoryAuditHook();
+  registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
 
+  registerTendenciasRuntime(ctx);
+  registerTodosRuntime(ctx);
+  registerManejoRuntime(ctx);
+  registerVpoRuntime(ctx);
+  registerRecetaHuRuntime(ctx);
+  registerCensoRuntime(ctx);
+  registerHistoriaClinicaRuntime(ctx);
+  registerEventualidadesRuntime(ctx);
+  registerExpedienteRuntime(ctx);
+  registerNotesIndicacionesRuntime(ctx);
+  registerProcedureAgendaRuntime(ctx);
+  registerSoapEstadoRuntime(ctx);
+  registerEstadoActualPanelRuntime(ctx);
+  registerDriveImportRuntime(ctx);
+  registerEstadoActualPasteModalRuntime(ctx);
+  registerEstadoActualRegistroModalRuntime(ctx);
+  registerLabPanelRuntime(ctx);
+  registerLabBulkPreviewModalRuntime(ctx);
+  registerLabHistoryBatchCopyRuntime(ctx);
+  registerProductivityRuntime(ctx);
+  registerLanRuntime(ctx);
 }
 
 export function runInitialFeatureBoot() {

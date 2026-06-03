@@ -243,8 +243,8 @@ function wirePreviewBody(body) {
   body.onclick = handlePreviewBodyClick;
 }
 
-export function registerLabBulkPreviewModalRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerLabBulkPreviewModalRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 /**

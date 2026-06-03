@@ -86,8 +86,8 @@ let rt = {
   navigateToEstadoActualPanel() {},
 };
 
-export function registerHistoriaClinicaRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerHistoriaClinicaRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 let _version = 0;

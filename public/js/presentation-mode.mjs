@@ -36,9 +36,9 @@ let rt = {
   showToast() {},
 };
 
-export function registerPresentationRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerPresentationRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
 }
 
 export function isPresentationModeActive() {

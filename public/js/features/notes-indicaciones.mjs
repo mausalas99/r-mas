@@ -40,9 +40,9 @@ let rt = {
   addAuditEntry() {},
 };
 
-export function registerNotesIndicacionesRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+export function registerNotesIndicacionesRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
 }
 
 function aid() {

@@ -47,6 +47,8 @@ import {
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import { isManejoSectionHidden, migrateGranularInner } from '../expediente-tabs.mjs';
+import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
+import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
@@ -288,9 +290,33 @@ let rt = {
   },
 };
 
-export function registerPatientsRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerPatientsRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
+}
+
+export function applyDefaultsToNewPatient(patientId) {
+  if (!notes[patientId]) return;
+  applyProfileToNoteIfEmpty(notes[patientId]);
+  applyNotaFormatScaffoldIfEmpty(notes[patientId], rt.getSettings() || {});
+}
+
+export function applyDefaultsToNewIndicaciones(patientId) {
+  if (!indicaciones[patientId]) return;
+  var st = rt.getSettings() || {};
+  if (st.defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = st.defaultDieta;
+  if (st.defaultCuidados && !indicaciones[patientId].cuidados) {
+    indicaciones[patientId].cuidados = st.defaultCuidados;
+  }
+  if (st.defaultMedicamentos && !indicaciones[patientId].medicamentos) {
+    indicaciones[patientId].medicamentos = st.defaultMedicamentos;
+  }
+  if (st.defaultIndicacionesEstudios && !indicaciones[patientId].estudios) {
+    indicaciones[patientId].estudios = st.defaultIndicacionesEstudios;
+  }
+  if (st.defaultIndicacionesInterconsultas && !indicaciones[patientId].interconsultas) {
+    indicaciones[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
+  }
 }
 
 function esc(s) {

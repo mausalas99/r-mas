@@ -46,8 +46,8 @@ let maintRt = {
   refreshTendenciasOrCultivosPanel() {},
 };
 
-export function registerLabHistoryMaintRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(maintRt, partial);
+export function registerLabHistoryMaintRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(maintRt, ctx);
 }
 
 export { bumpLabHistoryRevision };

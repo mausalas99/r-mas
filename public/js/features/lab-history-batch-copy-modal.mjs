@@ -24,8 +24,8 @@ let rt = {
   },
 };
 
-export function registerLabHistoryBatchCopyRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerLabHistoryBatchCopyRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function esc(s) {

@@ -21,8 +21,8 @@ const SAMPLE_TEXT =
   'B: NC\n' +
   'EVAC: NO REPORTADAS';
 
-export function registerEstadoActualPasteModalRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerEstadoActualPasteModalRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function getTextarea() {

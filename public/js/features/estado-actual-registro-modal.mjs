@@ -9,8 +9,8 @@ let rt = {
 
 var dismissWired = false;
 
-export function registerEstadoActualRegistroModalRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerEstadoActualRegistroModalRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function getBackdrop() {

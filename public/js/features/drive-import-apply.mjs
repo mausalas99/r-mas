@@ -5,7 +5,6 @@ import { applyDriveImportHcPatch } from './historia-clinica-panel.mjs';
 import { applyDriveImportEventualidades } from './eventualidades-panel.mjs';
 import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
 import { applyDriveImportLabSets } from './lab-panel.mjs';
-import { withSuppressedLanConflictViewer } from './lan-sync.mjs';
 import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
 
 /**
@@ -18,9 +17,7 @@ import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
  * }} options
  */
 export async function applyDriveImport(parsed, options) {
-  return withSuppressedLanConflictViewer(async function () {
-    return applyDriveImportInner(parsed, options);
-  });
+  return applyDriveImportInner(parsed, options);
 }
 
 async function applyDriveImportInner(parsed, options) {

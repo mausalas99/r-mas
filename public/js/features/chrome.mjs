@@ -19,9 +19,9 @@ let runtime = {
 
 var _openedDetailFromPase = false;
 
-export function registerChromeRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(runtime, partial);
+export function registerChromeRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(runtime, ctx);
 }
 
 const THEME_ICON_SUN =
@@ -380,6 +380,27 @@ export function initChromeAppearance() {
   syncFontZoomButtons();
   syncHighContrastButtons();
   syncUiDensityButtons();
+}
+
+export function launchConfetti() {
+  var colors = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#fb7185'];
+  for (var i = 0; i < 40; i++) {
+    (function (idx) {
+      setTimeout(function () {
+        var el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.top = '-10px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animationDelay = Math.random() * 0.5 + 's';
+        el.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+        document.body.appendChild(el);
+        setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 3500);
+      }, idx * 40);
+    })(i);
+  }
 }
 
 export const windowHandlers = {

@@ -10,11 +10,19 @@ import { fileURLToPath } from 'node:url';
 const jsRoot = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(join(jsRoot, rel), 'utf8');
 
-const lanSyncFeature = read('features/lan-sync.mjs');
-const lanSyncPush = read('lan-sync-push.mjs');
-const lanSyncRoom = read('lan-sync-room.mjs');
-const lanSyncPanel = read('lan-sync-panel.mjs');
-const clinicalTeams = read('features/clinical-teams.mjs');
+const lanSyncFeature = read('features/lan/orchestrator.mjs');
+const lanSyncPush = read('features/lan/push.mjs');
+const lanSyncRoom = read('features/lan/room.mjs');
+const lanSyncPanel = read('features/lan/panel.mjs');
+function readClinicalTeamsSources() {
+  const dir = join(jsRoot, 'features/clinical-teams');
+  return readFileSync(join(dir, 'index.mjs'), 'utf8')
+    + '\n'
+    + readFileSync(join(dir, 'teams-roster.mjs'), 'utf8')
+    + '\n'
+    + readFileSync(join(dir, 'teams-invite.mjs'), 'utf8');
+}
+const clinicalTeams = readClinicalTeamsSources();
 const appJs = read('app.js');
 
 describe('LAN module boot wiring', () => {
@@ -83,18 +91,18 @@ describe('LAN event and handler wiring', () => {
   it('lan-sync-panel imports syncLiveSyncStatusChrome and resolveLanHostUrlAuto', () => {
     assert.match(
       lanSyncPanel,
-      /import\s*\{[\s\S]*?syncLiveSyncStatusChrome[\s\S]*?\}\s*from '\.\/lan-sync-room\.mjs'/
+      /import\s*\{[\s\S]*?syncLiveSyncStatusChrome[\s\S]*?\}\s*from '\.\/room\.mjs'/
     );
     assert.match(
       lanSyncPanel,
-      /import\s*\{[\s\S]*?resolveLanHostUrlAuto[\s\S]*?\}\s*from '\.\/lan-sync-transport\.mjs'/
+      /import\s*\{[\s\S]*?resolveLanHostUrlAuto[\s\S]*?\}\s*from '\.\/transport\.mjs'/
     );
   });
 
   it('lan-sync imports refreshClinicalSessionTeams for clinicalOps merge', () => {
     assert.match(
       lanSyncFeature,
-      /import\s*\{[\s\S]*?refreshClinicalSessionTeams[\s\S]*?\}\s*from "\.\.\/lan-sync-panel\.mjs"/
+      /import\s*\{[\s\S]*?refreshClinicalSessionTeams[\s\S]*?\}\s*from "\.\/panel\.mjs"/
     );
     const applyBlock = lanSyncFeature.slice(
       lanSyncFeature.indexOf('if (merged.clinicalOps && isClinicalOpsLanAvailable())'),

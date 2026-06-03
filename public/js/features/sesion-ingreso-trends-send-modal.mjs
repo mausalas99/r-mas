@@ -19,9 +19,9 @@ let rt = {
   sendPayload() {},
 };
 
-export function registerSesionIngresoTrendsSendRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerSesionIngresoTrendsSendRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
 }
 
 function escHtml(s) {

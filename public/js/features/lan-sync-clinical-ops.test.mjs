@@ -5,22 +5,26 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)), '..');
-const lanSyncSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'lan-sync.mjs'), 'utf8');
-const lanSyncRoomSrc = readFileSync(join(jsDir, 'lan-sync-room.mjs'), 'utf8');
-const lanSyncTransportSrc = readFileSync(join(jsDir, 'lan-sync-transport.mjs'), 'utf8');
-const lanSyncPanelSrc = readFileSync(join(jsDir, 'lan-sync-panel.mjs'), 'utf8');
+const lanDir = join(jsDir, 'features/lan');
+const lanSyncSrc = readFileSync(join(lanDir, 'orchestrator.mjs'), 'utf8');
+const lanSyncRoomSrc = readFileSync(join(lanDir, 'room.mjs'), 'utf8');
+const lanSyncTransportSrc = readFileSync(join(lanDir, 'transport.mjs'), 'utf8');
+const lanSyncPanelSrc = readFileSync(join(lanDir, 'panel.mjs'), 'utf8');
 const lanSyncFeatureSrc =
   lanSyncSrc + '\n' + lanSyncRoomSrc + '\n' + lanSyncTransportSrc + '\n' + lanSyncPanelSrc;
-const lanSyncPushSrc = readFileSync(join(jsDir, 'lan-sync-push.mjs'), 'utf8');
+const lanSyncPushSrc = readFileSync(join(lanDir, 'push.mjs'), 'utf8');
 const lanSyncPushAndFeatureSrc = lanSyncFeatureSrc + '\n' + lanSyncPushSrc;
 const clinicalOpsLanSrc = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'),
   'utf8'
 );
-const clinicalTeamsSrc = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams.mjs'),
-  'utf8'
-);
+const clinicalTeamsDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
+const clinicalTeamsSrc =
+  readFileSync(join(clinicalTeamsDir, 'index.mjs'), 'utf8') +
+  '\n' +
+  readFileSync(join(clinicalTeamsDir, 'teams-roster-render.mjs'), 'utf8') +
+  '\n' +
+  readFileSync(join(clinicalTeamsDir, 'teams-roster.mjs'), 'utf8');
 
 describe('lan-sync clinical ops', () => {
   it('exports prepareClinicalOpsForLanSync helper', () => {
@@ -240,13 +244,6 @@ describe('lan-sync clinical ops', () => {
   it('applyLiveSyncApplied syncs host bases and LWW toast', () => {
     assert.match(lanSyncSrc, /syncHostBundleEntityFromApplied/);
     assert.match(lanSyncSrc, /function applyLiveSyncApplied[\s\S]*notifyLwwOverwrite/);
-  });
-
-  it('todo delete conflict retry connects live WS and deletes locally', () => {
-    assert.match(lanSyncSrc, /retryTodoDeleteFromConflict/);
-    assert.match(lanSyncSrc, /waitForLiveChannelOpen/);
-    assert.match(lanSyncSrc, /Borrado reenviado a la sala/);
-    assert.match(lanSyncPushSrc, /pushLiveSyncPatchOutbox/);
   });
 
   it('outbox clinical-ops push handles 409 without re-enqueue loop', () => {

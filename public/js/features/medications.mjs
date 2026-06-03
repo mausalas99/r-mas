@@ -46,8 +46,8 @@ let rt = {
   },
 };
 
-export function registerMedicationsRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt, partial);
+export function registerMedicationsRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt, ctx);
 }
 
 var medOutputTab = "full";

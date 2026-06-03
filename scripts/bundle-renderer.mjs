@@ -9,17 +9,44 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = process.cwd();
 const ENTRY = path.join(ROOT, 'public/js/app.js');
-const OUTFILE = path.join(ROOT, 'public/js/app.bundle.mjs');
-const META_FILE = path.join(ROOT, 'public/js/app.bundle.meta.json');
+const OUT_DIR = path.join(ROOT, 'public/js');
+const OUTFILE = path.join(OUT_DIR, 'app.bundle.mjs');
+const META_FILE = path.join(OUT_DIR, 'app.bundle.meta.json');
 
 export function getBundleRendererPaths(root = ROOT) {
-  return { entry: path.join(root, 'public/js/app.js'), outfile: path.join(root, 'public/js/app.bundle.mjs') };
+  return {
+    entry: path.join(root, 'public/js/app.js'),
+    outfile: path.join(root, 'public/js/app.bundle.mjs'),
+    outdir: path.join(root, 'public/js'),
+  };
+}
+
+function findChartChunkImportUrl(metafile, outDir = OUT_DIR) {
+  if (metafile && metafile.outputs) {
+    for (const outPath of Object.keys(metafile.outputs)) {
+      const base = path.basename(outPath);
+      if (!/^auto-/.test(base) || !base.endsWith('.js')) continue;
+      return '/js/chunks/' + base;
+    }
+  }
+  const chunksDir = path.join(outDir, 'chunks');
+  if (fs.existsSync(chunksDir)) {
+    const hit = fs
+      .readdirSync(chunksDir)
+      .find((f) => /^auto-.*\.js$/.test(f) && !f.endsWith('.map'));
+    if (hit) return '/js/chunks/' + hit;
+  }
+  return null;
 }
 
 function buildOptions({ prod = false, write = true } = {}) {
   return {
     entryPoints: [ENTRY],
-    outfile: OUTFILE,
+    outdir: OUT_DIR,
+    entryNames: 'app.bundle',
+    chunkNames: 'chunks/[name]-[hash]',
+    publicPath: '/js/',
+    splitting: true,
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -46,7 +73,9 @@ export async function bundleRenderer(opts = {}) {
 
   if (check) {
     const result = await esbuild.build(buildOptions({ prod, write: false }));
-    const jsOut = result.outputFiles.find((f) => f.path === OUTFILE || f.path.endsWith('app.bundle.mjs'));
+    const jsOut = result.outputFiles.find(
+      (f) => f.path === OUTFILE || f.path.endsWith('app.bundle.mjs')
+    );
     if (!jsOut) throw new Error('bundle build produced no JS output');
     const onDisk = fs.existsSync(OUTFILE) ? fs.readFileSync(OUTFILE, 'utf8') : '';
     if (onDisk !== jsOut.text) {
@@ -64,6 +93,13 @@ export async function bundleRenderer(opts = {}) {
 
   const result = await esbuild.build(buildOptions({ prod, write: true }));
   fs.writeFileSync(META_FILE, JSON.stringify(result.metafile, null, 2) + '\n');
+  const chartImportUrl = findChartChunkImportUrl(result.metafile);
+  if (chartImportUrl) {
+    fs.writeFileSync(
+      path.join(OUT_DIR, 'chart-chunk.json'),
+      JSON.stringify({ importUrl: chartImportUrl }, null, 2) + '\n'
+    );
+  }
   console.log('wrote public/js/app.bundle.mjs');
   return result;
 }

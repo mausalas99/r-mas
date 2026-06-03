@@ -60,8 +60,8 @@ let uiWired = false;
 let dismissWired = false;
 let lastPharmPanelPatientId = null;
 
-export function registerMedPharmProfileRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerMedPharmProfileRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 export function getMedSubview() {

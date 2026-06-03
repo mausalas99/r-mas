@@ -34,8 +34,8 @@ var rt = {
   },
 };
 
-export function registerCensoRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerCensoRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 var CENSO_EXPORT_BUTTON_IDS = [

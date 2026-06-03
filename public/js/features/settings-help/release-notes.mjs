@@ -1,0 +1,136 @@
+/** In-app release notes modal. */
+import {
+  RELEASE_NOTES_HIGHLIGHTS,
+  RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
+} from './release-notes-curated.mjs';
+
+// ── Bloque L · Novedades in-app (release notes) ────────────────────
+/** TEMP: true = mostrar novedades en cada arranque (pruebas UX). Poner false antes de publicar. */
+export var RELEASE_NOTES_DEV_FORCE_SHOW = false;
+var RELEASE_NOTES_SEEN_PREFIX = 'rpc-release-notes-seen-';
+
+function getCuratedReleaseNotes(v) {
+  if (v && RELEASE_NOTES_HIGHLIGHTS[v]) return RELEASE_NOTES_HIGHLIGHTS[v];
+  return RELEASE_NOTES_HIGHLIGHTS_DEFAULT;
+}
+
+function stripHtmlFromReleaseBody(html) {
+  var raw = html == null ? '' : String(html);
+  if (!raw.trim()) return '';
+  try {
+    var el = document.createElement('div');
+    el.innerHTML = raw;
+    return (el.textContent || '').replace(/\s+/g, ' ').trim();
+  } catch (_err) {
+    return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+}
+
+/** HTML del cuerpo de novedades (solo contenido curado en RELEASE_NOTES_HIGHLIGHTS). */
+function releaseNoteBodyHtml(raw) {
+  return raw == null ? '' : String(raw);
+}
+
+/** Texto breve para el modal de actualización (no el changelog completo de GitHub). */
+export function formatCuratedReleaseNotesPlain(version) {
+  var notes = getCuratedReleaseNotes(version);
+  if (!notes || !notes.length) return '';
+  return notes
+    .map(function (n) {
+      var title = n.title ? String(n.title).trim() : '';
+      var body = stripHtmlFromReleaseBody(n.body || '');
+      if (title && body) return title + ' — ' + body;
+      return title || body;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+export function maybeShowReleaseNotesFor(version, prevVersion) {
+  if (!version || !prevVersion || prevVersion === version) return;
+  try {
+    if (localStorage.getItem(RELEASE_NOTES_SEEN_PREFIX + version)) return;
+  } catch (_err) {
+    return;
+  }
+  setTimeout(function(){ showReleaseNotesModal(version); }, 150);
+}
+
+/** Vista previa en desarrollo: ignora “ya visto” y abre al cargar la app. */
+export function initReleaseNotesDevPreviewIfEnabled(version) {
+  if (!RELEASE_NOTES_DEV_FORCE_SHOW || !version) return;
+  try {
+    localStorage.removeItem(RELEASE_NOTES_SEEN_PREFIX + version);
+  } catch (_err) {}
+  setTimeout(function () {
+    showReleaseNotesModal(version);
+  }, 400);
+}
+
+var releaseNotesDismissWired = false;
+
+function wireReleaseNotesDismiss() {
+  if (releaseNotesDismissWired) return;
+  releaseNotesDismissWired = true;
+  var bd = document.getElementById('release-notes-backdrop');
+  if (!bd) return;
+  bd.addEventListener('click', function (ev) {
+    if (!bd.classList.contains('open')) return;
+    var panel = bd.querySelector('.release-notes-modal');
+    if (panel && panel.contains(ev.target)) return;
+    closeReleaseNotes();
+  });
+  document.addEventListener(
+    'keydown',
+    function (ev) {
+      if (ev.key !== 'Escape' && ev.key !== 'Esc') return;
+      if (!bd.classList.contains('open')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeReleaseNotes();
+    },
+    true
+  );
+}
+
+function showReleaseNotesModal(version) {
+  wireReleaseNotesDismiss();
+  var el = document.getElementById('release-notes-backdrop');
+  if (!el) return;
+  var title = document.getElementById('release-notes-title');
+  if (title) title.textContent = 'Novedades de R+ v' + version;
+  var list = document.getElementById('release-notes-list');
+  if (list) {
+    var notes = getCuratedReleaseNotes(version);
+    list.innerHTML = '';
+    notes.forEach(function(n) {
+      var li = document.createElement('li');
+      var strong = document.createElement('strong');
+      strong.textContent = n.title;
+      li.appendChild(strong);
+      li.appendChild(document.createTextNode(' — '));
+      var span = document.createElement('span');
+      span.innerHTML = releaseNoteBodyHtml(n.body);
+      li.appendChild(span);
+      list.appendChild(li);
+    });
+  }
+  el.classList.add('open');
+  el.setAttribute('aria-hidden', 'false');
+  el.setAttribute('data-version', version);
+  setTimeout(function () {
+    var panel = el.querySelector('.release-notes-modal');
+    if (panel) panel.focus();
+  }, 50);
+}
+
+export function closeReleaseNotes() {
+  var el = document.getElementById('release-notes-backdrop');
+  if (!el) return;
+  var v = el.getAttribute('data-version');
+  el.classList.remove('open');
+  el.setAttribute('aria-hidden', 'true');
+  if (v && !RELEASE_NOTES_DEV_FORCE_SHOW) {
+    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch (_err) {}
+  }
+}

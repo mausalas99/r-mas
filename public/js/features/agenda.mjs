@@ -23,9 +23,9 @@ let rt = {
   renderPaseBoard() {},
 };
 
-export function registerProcedureAgendaRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+export function registerProcedureAgendaRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
 }
 
 /** @type {number} -1 pasado, 0 actual, +1 siguiente (spec agenda semanal) */

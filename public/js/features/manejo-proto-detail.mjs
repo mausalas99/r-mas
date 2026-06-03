@@ -57,8 +57,8 @@ var protoDetailDeps = {};
 /**
  * @param {{ ensureParsedLabHistory?: (pid: string) => unknown[], showToast?: (msg: string, type?: string) => void }} partial
  */
-export function registerManejoProtoDetailRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerManejoProtoDetailRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 /**

@@ -37,6 +37,7 @@ import {
 import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import { renderEstadoActualCharts } from './estado-actual-charts.mjs';
+import { loadChartJs } from '../vendor-loader.mjs';
 import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
 import {
   getDefaultRegistroRecordedAt,
@@ -108,9 +109,9 @@ let rt = {
   },
 };
 
-export function registerEstadoActualPanelRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerEstadoActualPanelRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
 }
 
 function pad2(n) {
@@ -1667,7 +1668,15 @@ function finishEaChartsAndReady(mount, monitoreo, patient, onReady, syncHeavy) {
   var chartsMount = mount.querySelector('#ea-charts-mount');
   var finishDeferred = function () {
     syncEstadoActualTextarea(monitoreo, patient);
-    if (chartsMount) renderEstadoActualCharts(/** @type {HTMLElement} */ (chartsMount), monitoreo);
+    if (chartsMount) {
+      void loadChartJs()
+        .then(function (Chart) {
+          renderEstadoActualCharts(/** @type {HTMLElement} */ (chartsMount), monitoreo, Chart);
+        })
+        .catch(function () {
+          renderEstadoActualCharts(/** @type {HTMLElement} */ (chartsMount), monitoreo, undefined);
+        });
+    }
     if (onReady) onReady();
   };
   if (syncHeavy) {

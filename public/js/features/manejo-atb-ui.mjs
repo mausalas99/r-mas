@@ -58,8 +58,8 @@ var readingPanelDeps = {};
 /**
  * @param {{ ensureParsedLabHistory?: (pid: string) => unknown[] }} partial
  */
-export function registerManejoAtbUiRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(atbRuntime, partial);
+export function registerManejoAtbUiRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(atbRuntime, ctx);
 }
 
 /**

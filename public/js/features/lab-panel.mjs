@@ -128,9 +128,9 @@ let rt = {
   },
 };
 
-export function registerLabPanelRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+export function registerLabPanelRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
 }
 
 var activeLab = null;

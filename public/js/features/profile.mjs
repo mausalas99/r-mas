@@ -11,16 +11,16 @@ import {
   syncUpdateChannelUI,
   syncUpdateTelemetryUI,
   syncHardwareAccelerationUI,
-  syncIdleLockSelectUi,
-  syncPreimportBackupUi,
-  syncDbSecuritySectionUi,
-} from "./platform.mjs";
+} from "./platform/updater.mjs";
+import { syncIdleLockSelectUi } from "./platform/offline.mjs";
+import { syncPreimportBackupUi } from "./platform/import-backup.mjs";
+import { syncDbSecuritySectionUi } from "./db-unlock.mjs";
 import { syncApprovedOutputDir } from "../document-export-client.mjs";
 import {
   maybeShowReleaseNotesFor,
   initReleaseNotesDevPreviewIfEnabled,
   RELEASE_NOTES_DEV_FORCE_SHOW,
-} from "./settings-help.mjs";
+} from "./settings-help/release-notes.mjs";
 import { notes, saveState } from "../app-state.mjs";
 import {
   renderNoteForm,
@@ -76,8 +76,8 @@ var rt = {
   },
 };
 
-export function registerProfileRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt, partial);
+export function registerProfileRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt, ctx);
 }
 
 var profileGetSettings = function () {

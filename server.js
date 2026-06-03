@@ -28,36 +28,6 @@ const rateLimit = require('express-rate-limit');
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
 
-const rateLimitHandler = (_req, res) => {
-  res.status(429).json({ error: 'rate_limit_exceeded' });
-};
-
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitHandler,
-});
-
-const generateLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 8,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: rateLimitHandler,
-});
-
-appExpress.use(globalLimiter);
-
-appExpress.use((req, _res, next) => {
-  req.__safeForLog = {
-    method: req.method,
-    path: redactUrlSecrets(req.originalUrl || req.url || ''),
-  };
-  next();
-});
-
 const LAN_HTTP_PORT = 3738;
 
 function isPrivateIpv4Host(host) {
@@ -85,22 +55,57 @@ function isAllowedLanCorsOrigin(originUrl, requestHost) {
   return false;
 }
 
-appExpress.use((req, res, next) => {
+/** CORS antes del rate limiter para que 429/OPTIONS sigan exponiendo Access-Control-Allow-Origin. */
+function applyLanCorsHeaders(req, res) {
   const rawOrigin = req.headers.origin;
-  if (rawOrigin) {
-    try {
-      const originUrl = new URL(rawOrigin);
-      if (isAllowedLanCorsOrigin(originUrl, req.headers.host)) {
-        res.setHeader('Access-Control-Allow-Origin', rawOrigin);
-        res.setHeader('Vary', 'Origin');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala');
-      }
-    } catch (_e) {
-      // Ignore malformed Origin headers and continue normal handling.
+  if (!rawOrigin) return;
+  try {
+    const originUrl = new URL(rawOrigin);
+    if (isAllowedLanCorsOrigin(originUrl, req.headers.host)) {
+      res.setHeader('Access-Control-Allow-Origin', rawOrigin);
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala');
     }
+  } catch (_e) {
+    // Ignore malformed Origin headers and continue normal handling.
   }
+}
+
+appExpress.use((req, res, next) => {
+  applyLanCorsHeaders(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
+  next();
+});
+
+const rateLimitHandler = (req, res) => {
+  applyLanCorsHeaders(req, res);
+  res.status(429).json({ error: 'rate_limit_exceeded' });
+};
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+appExpress.use(globalLimiter);
+
+appExpress.use((req, _res, next) => {
+  req.__safeForLog = {
+    method: req.method,
+    path: redactUrlSecrets(req.originalUrl || req.url || ''),
+  };
   next();
 });
 
@@ -387,21 +392,53 @@ appExpress.use((err, req, res, _next) => {
   if (!res.headersSent) res.status(500).json({ error: 'internal_error' });
 });
 
-const server = httpServer.listen(PORT, () => {
-  console.log(`R+ → http://localhost:${PORT}`);
-});
+let serverInstance = null;
+let listenPromise = null;
 
-module.exports = new Promise((resolve, reject) => {
-  server.once('listening', () => resolve(server));
-  server.once('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      reject(new Error(
-        `El puerto ${PORT} ya está en uso${portInUseProcessHint(PORT)}. ` +
-          'Cierra la otra instancia de R+ (o el proceso que escucha en ese puerto) y vuelve a abrir la aplicación. ' +
-          'En macOS/Linux: lsof -nP -iTCP:' + PORT + ' -sTCP:LISTEN'
-      ));
-    } else {
-      reject(err);
-    }
+function listenErrorMessage(err) {
+  if (err && err.code === 'EADDRINUSE') {
+    return new Error(
+      `El puerto ${PORT} ya está en uso${portInUseProcessHint(PORT)}. ` +
+        'Cierra la otra instancia de R+ (o el proceso que escucha en ese puerto) y vuelve a abrir la aplicación. ' +
+        'En macOS/Linux: lsof -nP -iTCP:' + PORT + ' -sTCP:LISTEN'
+    );
+  }
+  return err;
+}
+
+function startLanServer() {
+  if (serverInstance && serverInstance.listening) {
+    return Promise.resolve(serverInstance);
+  }
+  if (listenPromise) return listenPromise;
+
+  listenPromise = new Promise((resolve, reject) => {
+    const srv = httpServer.listen(PORT, () => {
+      console.log(`R+ → http://localhost:${PORT}`);
+      serverInstance = srv;
+      resolve(srv);
+    });
+    srv.once('error', (err) => {
+      listenPromise = null;
+      reject(listenErrorMessage(err));
+    });
   });
-});
+  return listenPromise;
+}
+
+function stopLanServer() {
+  return new Promise((resolve) => {
+    if (!serverInstance) {
+      listenPromise = null;
+      resolve();
+      return;
+    }
+    httpServer.close(() => {
+      serverInstance = null;
+      listenPromise = null;
+      resolve();
+    });
+  });
+}
+
+module.exports = { startLanServer, stopLanServer };

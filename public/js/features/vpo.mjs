@@ -8,10 +8,10 @@ let rt = {
   },
 };
 
-export function registerVpoRuntime(partial) {
-  if (partial && typeof partial === 'object') {
-    Object.assign(rt, partial);
-    registerVpoPanelRuntime(partial);
+export function registerVpoRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') {
+    Object.assign(rt, ctx);
+    registerVpoPanelRuntime(ctx);
   }
 }
 

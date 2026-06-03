@@ -64,8 +64,8 @@ docs/superpowers/     Specs and implementation plans (design before big features
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
-| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan-sync.mjs` (facade), `lan-sync-{push,room,transport,panel,runtime}.mjs`; overlap policy → LWW + optional toast (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
-| Clinical teams / guardia | `public/js/features/clinical-teams.mjs`, `clinical-rotation.mjs` |
+| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-sync-{state,diagnostics,bundle-push}.mjs`; overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
+| Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
@@ -75,8 +75,8 @@ docs/superpowers/     Specs and implementation plans (design before big features
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
 | Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes |
 | Debt metrics | `scripts/metrics/baseline.json`, `npm run metrics` (when wired) |
-| Onboarding / tour | `clinical-onboarding*.mjs`, `tour-targets.mjs`, `settings-help.mjs` |
-| UI shell / pase board | `features/pase-board.mjs`, `public/styles/pase-board.css` |
+| Onboarding / tour | `clinical-onboarding*.mjs`, `tour-targets.mjs`, `features/settings-help/` (tours, help, release notes), barrel `settings-help.mjs` |
+| UI shell / pase board | `app-shell.mjs` (chrome/toast/modals), `clinical-quick-export.mjs`, `document-export-client.mjs`, `features/pase-board.mjs`, `public/styles/pase-board.css` |
 
 ---
 
@@ -111,6 +111,13 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-03** `cold-start-phase2`: lazy Chart.js ESM-first (`vendor-loader.mjs`, no blocking `chart.umd` in HTML), lazy settings-help/platform (`lazy-feature-routes.mjs`), esbuild `splitting` + `chunks/`, metrics excludes generated bundles, pack/chunk smoke tests (BN-09–12).
+- **2026-06-03** `cold-start-shell`: trim `app-shell.mjs` (≤800 lines) — doc export → `document-export-client.mjs`, confetti → `chrome.mjs`, patient defaults → `patients.mjs`, quick export → `clinical-quick-export.mjs`; shell re-exports preserved.
+- **2026-06-03** `cold-start-clinical-teams`: split `clinical-teams.mjs` → `features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`); thin barrel `clinical-teams.mjs`.
+- **2026-06-03** `cold-start-platform`: split `platform.mjs` → `features/platform/` (`index`, `audit`, `offline`, `import-backup`, `updater`, `runtime`, `shared`); thin barrel `platform.mjs`.
+- **2026-06-03** `cold-start-settings-help`: split `settings-help.mjs` → `features/settings-help/` (`index`, `tour-*`, `help-content`, `release-notes`, `settings-dropdown`); thin barrel `settings-help.mjs`.
+- **2026-06-03** `cold-start-lan`: consolidate LAN under `features/lan/`; thin `lan-sync.mjs` barrel; `orchestrator.mjs`, `push.mjs`, `room.mjs`, `transport.mjs`, `panel.mjs`, `runtime.mjs`.
+- **2026-06-03** `lan-conflict-dead-code`: post-LWW cleanup — `lan-conflict-silent-match.mjs` (boot), removed modal/defer/reopen path from `lan-sync.mjs`; legacy draft clear in panel only.
 - **2026-06-03** `lan-conflict-lww`: renderer applies LWW on overlap (no modal/draft); `applyLwwConflictLocally`, `notifyLwwOverwrite`, host cache sync; `lan-sync.mjs`, `lan-sync-push.mjs`.
 - **2026-06-03** `release-6.6.2`: LAN ward-ready patch — ops outbox, wiring imports, host HC GET from bundle entries; `docs/RELEASE_NOTES_6.6.2.txt`.
 - **2026-06-03** `lan-ward-ready`: ops/bundle decouple, `clinical_ops` outbox drain+abort, QUEUED toasts, host revision on all PUTs; `lan-sync-push.mjs`, `host-router.js`.

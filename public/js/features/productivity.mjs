@@ -42,9 +42,9 @@ let rt = {
   },
 };
 
-export function registerProductivityRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+export function registerProductivityRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
 }
 
 function esc(s) {

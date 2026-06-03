@@ -77,6 +77,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       isWindows: process.platform === 'win32',
     };
   },
+  ensureLanServerReady: function() {
+    return ipcRenderer.invoke('lan-ensure-server-ready');
+  },
   writeLanHostTeamCode: function(plain) {
     return ipcRenderer.invoke('lan-host-write-team-code', plain);
   },

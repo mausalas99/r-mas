@@ -13,9 +13,9 @@ let rt = {
   },
 };
 
-export function registerSoapEstadoRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+export function registerSoapEstadoRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
 }
 
 /** Volcado medicinal → campos SOAP (desde pestaña Medicamentos). */

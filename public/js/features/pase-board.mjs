@@ -101,6 +101,11 @@ function granularMountIsEmpty(tab) {
     if (!tf) return true;
     return !tf.querySelector(".todo-add-row") && !tf.querySelector(".todo-list");
   }
+  if (tab === "datos") {
+    var pdf = document.getElementById("patient-data-form");
+    if (!pdf) return true;
+    return !String(pdf.innerHTML || "").trim();
+  }
   return false;
 }
 
@@ -307,8 +312,8 @@ var rt = {
   },
 };
 
-export function registerPaseBoardRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt, partial);
+export function registerPaseBoardRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt, ctx);
 }
 
 function esc(s) {
@@ -1133,6 +1138,9 @@ export function switchConsolidatedTab(compositeTab) {
     syncConsolidatedPaneVisibility(current, settings);
     syncConsolidatedSegmentBars(current, settings);
     syncInnerTabIndicator(current, { consolidated: true, settings: settings });
+    if (granularMountIsEmpty(current)) {
+      renderGranularInnerTab(current, { force: true });
+    }
     return;
   }
   switchInnerTab(defaultGranularForConsolidatedTab(compositeTab, settings));

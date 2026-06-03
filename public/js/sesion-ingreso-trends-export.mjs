@@ -33,9 +33,9 @@ let rt = {
   },
 };
 
-export function registerSesionIngresoTrendsRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
+export function registerSesionIngresoTrendsRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
 }
 
 function panelTitle(familyKey) {

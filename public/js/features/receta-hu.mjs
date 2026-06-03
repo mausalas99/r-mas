@@ -60,8 +60,8 @@ var rt = {
   syncOfflineButtonStates() {},
 };
 
-export function registerRecetaHuRuntime(partial) {
-  if (partial && typeof partial === 'object') Object.assign(rt, partial);
+export function registerRecetaHuRuntime(ctx) {
+  if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
 function aid() {

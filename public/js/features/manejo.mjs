@@ -156,18 +156,14 @@ var rt = {
   refreshAllTodoUIs() {},
 };
 
-export function registerManejoRuntime(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(rt, partial);
-  registerManejoElectrolitosRuntime(partial);
-  registerManejoProtoEditorRuntime(partial);
-  registerManejoProtoDetailRuntime(partial);
-  registerManejoCadAdaRuntime(partial);
-  registerManejoAtbUiRuntime({
-    ensureParsedLabHistory: function (pid) {
-      return rt.ensureParsedLabHistory(pid);
-    },
-  });
+export function registerManejoRuntime(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(rt, ctx);
+  registerManejoElectrolitosRuntime(ctx);
+  registerManejoProtoEditorRuntime(ctx);
+  registerManejoProtoDetailRuntime(ctx);
+  registerManejoCadAdaRuntime(ctx);
+  registerManejoAtbUiRuntime(ctx);
 }
 
 function aid() {

@@ -5,10 +5,18 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { filterJoinedTeams, CLINICAL_TEAM_SERVICES } from './clinical-teams.mjs';
 
-const clinicalTeamsSrc = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams.mjs'),
-  'utf8'
-);
+const featureDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
+const clinicalTeamsSrc = [
+  'shared.mjs',
+  'teams-roster.mjs',
+  'teams-roster-render.mjs',
+  'teams-roster-lan.mjs',
+  'teams-invite.mjs',
+  'teams-guardia-bridge.mjs',
+  'index.mjs',
+]
+  .map((name) => readFileSync(join(featureDir, name), 'utf8'))
+  .join('\n');
 
 describe('clinical-teams', () => {
   it('filterJoinedTeams returns teams where user is a member', () => {
@@ -87,6 +95,8 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /openLanUsersDirectoryModal/);
     assert.match(clinicalTeamsSrc, /clinical-lan-users-backdrop/);
     assert.match(clinicalTeamsSrc, /Abrir directorio de usuarios LAN/);
+    assert.match(clinicalTeamsSrc, /getClinicalTeamsPanelHost\(\)[\s\S]*_rpcLanDirOpenDelegated/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-directory-open/);
     assert.match(clinicalTeamsSrc, /clinical-lan-rank-group/);
     assert.equal(clinicalTeamsSrc.includes('clinical-teams-section--lan-users'), false);
   });
@@ -98,6 +108,13 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /clinical-lan-users-placement/);
     assert.match(clinicalTeamsSrc, /resolveMembershipCycleForUser/);
     assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
+  });
+
+  it('silent Mi rotación refresh skips LAN pull to avoid ops-sync loop', () => {
+    assert.match(clinicalTeamsSrc, /skipLanPull/);
+    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanel\(\{ silent: true, skipLanPull: true \}/);
+    assert.match(clinicalTeamsSrc, /LAN_CLINICAL_OPS_PULL_MIN_MS/);
+    assert.match(clinicalTeamsSrc, /opsSyncedTeamsRefreshTimer/);
   });
 
   it('elevated roster managers can edit and delete teams', () => {

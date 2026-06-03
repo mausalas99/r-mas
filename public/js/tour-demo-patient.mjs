@@ -19,9 +19,9 @@ const REGISTRO_TO_DEMO_ID = {
  * }} */
 let hooks = {};
 
-export function registerTourDemoPatientHooks(partial) {
-  if (!partial || typeof partial !== 'object') return;
-  Object.assign(hooks, partial);
+export function registerTourDemoPatientHooks(ctx) {
+  if (!ctx || typeof ctx !== 'object') return;
+  Object.assign(hooks, ctx);
 }
 
 export function isTourDemoRegistro(registro) {

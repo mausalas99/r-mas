@@ -1,6 +1,8 @@
 node_modules/
 dist/
 scripts/metrics/report.json
+scripts/metrics/.jscpd-tmp/
+scripts/metrics/.depcruise.json
 *.log
 python-runtime/
 .worktrees/
