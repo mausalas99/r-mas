@@ -1,0 +1,2 @@
+import{e as a,f as b,g as c,h as d,i as e,j as f}from"/js/chunks/chunk-H4KZTDBZ.js";import"/js/chunks/chunk-RMI3C6IQ.js";import"/js/chunks/chunk-L4EWIBTY.js";import"/js/chunks/chunk-4R6RWLLM.js";export{f as applyServerHistoriaClinicaToPatient,d as flushAllPendingHistoriaClinicaLanSync,b as flushPendingHistoriaClinicaLanSync,a as markHistoriaPendingLanSync,e as scheduleFlushAllPendingHistoriaClinicaLanSync,c as schedulePendingHistoriaClinicaLanSync};
+//# sourceMappingURL=/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js.map

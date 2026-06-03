@@ -8150,44 +8150,44 @@
     }
   },
   "outputs": {
-    "public/js/chunks/settings-help-TR36D3QB.js.map": {
+    "public/js/chunks/settings-help-5Y23LCYC.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 21633
+      "bytes": 22966
     },
-    "public/js/chunks/settings-help-TR36D3QB.js": {
+    "public/js/chunks/settings-help-5Y23LCYC.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-XFL7R6SV.js",
+          "path": "public/js/chunks/chunk-ZENAYHEQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8226,51 +8226,51 @@
       "entryPoint": "public/js/features/settings-help/index.mjs",
       "inputs": {
         "public/js/features/settings-help/index.mjs": {
-          "bytesInOutput": 1009
+          "bytesInOutput": 839
         },
         "public/js/features/settings-help/tour-runtime.mjs": {
-          "bytesInOutput": 78
+          "bytesInOutput": 34
         },
         "public/js/features/settings-help/tour-mini.mjs": {
-          "bytesInOutput": 8233
+          "bytesInOutput": 5620
         }
       },
-      "bytes": 12433
+      "bytes": 8316
     },
-    "public/js/chunks/platform-LDZI2AJQ.js.map": {
+    "public/js/chunks/platform-F4X32C2Q.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5626
+      "bytes": 6643
     },
-    "public/js/chunks/platform-LDZI2AJQ.js": {
+    "public/js/chunks/platform-F4X32C2Q.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8372,41 +8372,41 @@
       "entryPoint": "public/js/features/platform/index.mjs",
       "inputs": {
         "public/js/features/platform/index.mjs": {
-          "bytesInOutput": 1050
+          "bytesInOutput": 986
         }
       },
-      "bytes": 5927
+      "bytes": 4553
     },
-    "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js.map": {
+    "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4972
+      "bytes": 5405
     },
-    "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js": {
+    "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WAEO3FME.js",
+          "path": "public/js/chunks/chunk-3MCJZSGR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8423,33 +8423,33 @@
       "entryPoint": "public/js/features/clinical-onboarding-main.mjs",
       "inputs": {
         "public/js/features/clinical-onboarding-main.mjs": {
-          "bytesInOutput": 2830
+          "bytesInOutput": 1469
         }
       },
-      "bytes": 3655
+      "bytes": 2111
     },
-    "public/js/chunks/clinical-onboarding-GVL6EYMN.js.map": {
+    "public/js/chunks/clinical-onboarding-QJAIXHUW.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-onboarding-GVL6EYMN.js": {
+    "public/js/chunks/clinical-onboarding-QJAIXHUW.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8463,34 +8463,34 @@
       ],
       "entryPoint": "public/js/features/clinical-onboarding.mjs",
       "inputs": {},
-      "bytes": 547
+      "bytes": 406
     },
-    "public/js/chunks/clinical-rotation-entry-C66JH6O2.js.map": {
+    "public/js/chunks/clinical-rotation-entry-Y43FN23S.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-rotation-entry-C66JH6O2.js": {
+    "public/js/chunks/clinical-rotation-entry-Y43FN23S.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8502,42 +8502,42 @@
       ],
       "entryPoint": "public/js/features/clinical-rotation-entry.mjs",
       "inputs": {},
-      "bytes": 502
+      "bytes": 415
     },
-    "public/js/chunks/presentation-mode-AIMDDM2H.js.map": {
+    "public/js/chunks/presentation-mode-M3BJPU2X.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/presentation-mode-AIMDDM2H.js": {
+    "public/js/chunks/presentation-mode-M3BJPU2X.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8553,42 +8553,42 @@
       ],
       "entryPoint": "public/js/presentation-mode.mjs",
       "inputs": {},
-      "bytes": 808
+      "bytes": 644
     },
-    "public/js/chunks/patients-QVQXVUV2.js.map": {
+    "public/js/chunks/patients-FBKV3NA7.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/patients-QVQXVUV2.js": {
+    "public/js/chunks/patients-FBKV3NA7.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8632,26 +8632,26 @@
       ],
       "entryPoint": "public/js/features/patients.mjs",
       "inputs": {},
-      "bytes": 2130
+      "bytes": 1571
     },
-    "public/js/chunks/teams-roster-ZUNUUGQF.js.map": {
+    "public/js/chunks/teams-roster-3LQKITQN.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/teams-roster-ZUNUUGQF.js": {
+    "public/js/chunks/teams-roster-3LQKITQN.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8673,26 +8673,26 @@
       ],
       "entryPoint": "public/js/features/clinical-teams/teams-roster.mjs",
       "inputs": {},
-      "bytes": 923
+      "bytes": 689
     },
-    "public/js/chunks/clinical-teams-XXCF6Z47.js.map": {
+    "public/js/chunks/clinical-teams-H4E7ZEIX.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-teams-XXCF6Z47.js": {
+    "public/js/chunks/clinical-teams-H4E7ZEIX.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8714,26 +8714,26 @@
       ],
       "entryPoint": "public/js/features/clinical-teams.mjs",
       "inputs": {},
-      "bytes": 967
+      "bytes": 708
     },
-    "public/js/chunks/clinical-access-runtime-CWCG6A4Q.js.map": {
+    "public/js/chunks/clinical-access-runtime-PANRYX6H.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-access-runtime-CWCG6A4Q.js": {
+    "public/js/chunks/clinical-access-runtime-PANRYX6H.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -8767,66 +8767,66 @@
       ],
       "entryPoint": "public/js/clinical-access-runtime.mjs",
       "inputs": {},
-      "bytes": 1764
+      "bytes": 1235
     },
     "public/js/app.bundle.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 377252
+      "bytes": 390939
     },
     "public/js/app.bundle.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-XFL7R6SV.js",
+          "path": "public/js/chunks/chunk-ZENAYHEQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-WAEO3FME.js",
+          "path": "public/js/chunks/chunk-3MCJZSGR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/settings-help-TR36D3QB.js",
+          "path": "public/js/chunks/settings-help-5Y23LCYC.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/platform-LDZI2AJQ.js",
+          "path": "public/js/chunks/platform-F4X32C2Q.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-XXCF6Z47.js",
+          "path": "public/js/chunks/clinical-teams-H4E7ZEIX.js",
           "kind": "dynamic-import"
         }
       ],
@@ -8834,1150 +8834,1149 @@
       "entryPoint": "public/js/app.js",
       "inputs": {
         "public/js/quick-output.mjs": {
-          "bytesInOutput": 881
+          "bytesInOutput": 523
         },
         "public/js/clinical-quick-export.mjs": {
-          "bytesInOutput": 9510
+          "bytesInOutput": 5858
         },
         "public/js/modal-dismiss.mjs": {
-          "bytesInOutput": 2048
+          "bytesInOutput": 1095
         },
         "public/js/procedure-agenda-week.mjs": {
-          "bytesInOutput": 2224
+          "bytesInOutput": 1091
         },
         "public/js/features/agenda.mjs": {
-          "bytesInOutput": 14332
+          "bytesInOutput": 8695
         },
         "public/js/features/productivity.mjs": {
-          "bytesInOutput": 16047
+          "bytesInOutput": 10207
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 18303
+          "bytesInOutput": 10812
         },
         "public/js/features/lab-history-batch-copy-modal.mjs": {
-          "bytesInOutput": 7203
+          "bytesInOutput": 5443
         },
         "lib/drive-import/normalize.mjs": {
-          "bytesInOutput": 183
+          "bytesInOutput": 129
         },
         "lib/drive-import/segment.mjs": {
-          "bytesInOutput": 5288
+          "bytesInOutput": 2937
         },
         "lib/drive-import/parse-header.mjs": {
-          "bytesInOutput": 3388
+          "bytesInOutput": 2049
         },
         "lib/drive-import/hc-structured-extract.mjs": {
-          "bytesInOutput": 23106
+          "bytesInOutput": 12628
         },
         "lib/drive-import/hc-field-parsers.mjs": {
-          "bytesInOutput": 2313
+          "bytesInOutput": 1403
         },
         "lib/drive-import/filter-ficha-patient-fields.mjs": {
-          "bytesInOutput": 995
+          "bytesInOutput": 556
         },
         "lib/drive-import/profiles/drive-ficha-hc-v1.mjs": {
-          "bytesInOutput": 798
+          "bytesInOutput": 420
         },
         "lib/drive-import/profiles/drive-pipe-hc-v1.mjs": {
-          "bytesInOutput": 855
+          "bytesInOutput": 491
         },
         "lib/drive-import/map-universal-hc.mjs": {
-          "bytesInOutput": 1931
+          "bytesInOutput": 986
         },
         "lib/drive-import/eventualidad-dates.mjs": {
-          "bytesInOutput": 1369
+          "bytesInOutput": 930
         },
         "lib/drive-import/map-to-eventualidades.mjs": {
-          "bytesInOutput": 1161
+          "bytesInOutput": 565
         },
         "lib/drive-import/parse-drive-labs.mjs": {
-          "bytesInOutput": 4516
+          "bytesInOutput": 2309
         },
         "lib/drive-import/merge-drive-labs.mjs": {
-          "bytesInOutput": 2689
+          "bytesInOutput": 1339
         },
         "lib/drive-import/drive-import-hc-edit.mjs": {
-          "bytesInOutput": 4633
+          "bytesInOutput": 2547
         },
         "lib/drive-import/format-drive-import-preview.mjs": {
-          "bytesInOutput": 5634
+          "bytesInOutput": 3429
         },
         "lib/drive-import/parse-drive-document.mjs": {
-          "bytesInOutput": 2414
+          "bytesInOutput": 1260
         },
         "public/js/features/drive-import-apply.mjs": {
-          "bytesInOutput": 2280
+          "bytesInOutput": 1165
         },
         "lib/drive-import/drive-hc-sections.mjs": {
-          "bytesInOutput": 950
+          "bytesInOutput": 694
         },
         "lib/drive-import/drive-import-review.mjs": {
-          "bytesInOutput": 8697
+          "bytesInOutput": 5030
         },
         "public/js/features/drive-import-modal.mjs": {
-          "bytesInOutput": 27596
+          "bytesInOutput": 16217
         },
         "public/js/lazy-feature-routes.mjs": {
-          "bytesInOutput": 5731
+          "bytesInOutput": 4170
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 7136
+          "bytesInOutput": 4223
         },
         "public/js/boot/boot-steps.mjs": {
-          "bytesInOutput": 203
+          "bytesInOutput": 106
         },
         "public/js/app.js": {
-          "bytesInOutput": 7735
+          "bytesInOutput": 3941
         }
       },
-      "bytes": 201164
+      "bytes": 116088
     },
-    "public/js/chunks/chunk-XFL7R6SV.js.map": {
+    "public/js/chunks/chunk-ZENAYHEQ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 24105
+      "bytes": 23946
     },
-    "public/js/chunks/chunk-XFL7R6SV.js": {
+    "public/js/chunks/chunk-ZENAYHEQ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IKCJRIIN.js",
+          "path": "public/js/chunks/chunk-VO4PFUDO.js",
           "kind": "import-statement"
         }
       ],
       "exports": [
-        "closeQuickHelp",
-        "onHelpListKeydown",
-        "onHelpSearchInput",
-        "onHelpSearchKeydown",
-        "openQuickHelp"
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
       ],
       "inputs": {
         "public/js/features/settings-help/help-content.mjs": {
-          "bytesInOutput": 17629
+          "bytesInOutput": 15267
         }
       },
-      "bytes": 17921
+      "bytes": 15415
     },
-    "public/js/chunks/chunk-WAEO3FME.js.map": {
+    "public/js/chunks/chunk-3MCJZSGR.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 9821
+      "bytes": 10110
     },
-    "public/js/chunks/chunk-WAEO3FME.js": {
+    "public/js/chunks/chunk-3MCJZSGR.js": {
       "imports": [],
       "exports": [
-        "prefillRegistrationFromUrlParams",
-        "windowHandlers"
+        "a",
+        "b"
       ],
       "inputs": {
         "public/js/features/clinical-registration.mjs": {
-          "bytesInOutput": 1726
+          "bytesInOutput": 1085
         }
       },
-      "bytes": 1894
+      "bytes": 1162
     },
-    "public/js/chunks/chunk-IKCJRIIN.js.map": {
+    "public/js/chunks/chunk-VO4PFUDO.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2984185
+      "bytes": 3072717
     },
-    "public/js/chunks/chunk-IKCJRIIN.js": {
+    "public/js/chunks/chunk-VO4PFUDO.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GZVG47QG.js",
+          "path": "public/js/chunks/chunk-GECKSSRR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/presentation-mode-AIMDDM2H.js",
+          "path": "public/js/chunks/presentation-mode-M3BJPU2X.js",
           "kind": "dynamic-import"
         }
       ],
       "exports": [
-        "AHF_RELATIVES",
-        "APP_DEDICATED_IDS",
-        "DEMO_PATIENT_ID",
-        "GUIDED_TOUR_LS_KEY",
-        "HC_INTERROGADO_NEGADO",
-        "RELEASE_NOTES_DEV_FORCE_SHOW",
-        "addAuditEntry",
-        "advanceRondaPatient",
-        "applyDefaultsToNewIndicaciones",
-        "applyDefaultsToNewPatient",
-        "applyDriveImportEventualidades",
-        "applyDriveImportHcPatch",
-        "applyDriveImportLabSets",
-        "applyEstadoActualParsedToForm",
-        "applyImportEntry",
-        "applyTourDemoPatientBundle",
-        "ascitisInterpretacionBody_",
-        "askConflictAction",
-        "attachProfileSettingsGetter",
-        "base64ToBytes",
-        "buildBulkLabPreview",
-        "buildCultivoOutputHtmlFragments",
-        "buildEstudiosCopyLinesFromLabSets",
-        "buildFullBackupPayload",
-        "buildLabSetDateLine",
-        "buildPatientEntry",
-        "bytesToBase64",
-        "changeIdleLockPin",
-        "checkForAppUpdates",
-        "checkForRepairUpdate",
-        "checkMinVersionGate",
-        "checkRpcServerHealth",
-        "clearLabWorkbenchMinimalDom",
-        "closeLabBulkPreviewModal",
-        "closeLabBulkTourHintModal",
-        "closeLabDisplayPrefsModal",
-        "closeLabSomeTablesModal",
-        "closeModal",
-        "closeProfileModal",
-        "closeReleaseNotes",
-        "closeRondaQuickMoreMenu",
-        "closeRpcDatePopover",
-        "closeSesionIngresoSendModal",
-        "closeSesionIngresoTrendsSendModal",
-        "closeSettingsDropdown",
-        "closeTemplatesModal",
-        "closeTendDetail",
-        "closeTendGroupModal",
-        "closeTendHiddenModal",
-        "closeWipeDataModal",
-        "collectSyncEntries",
-        "compareSemver",
-        "confirmCloseAddPatientModal",
-        "dayKeyFromLabSet",
-        "decrementPendingJobs",
-        "decryptSyncPayload",
-        "defaultAutoBackupSettings",
-        "deletePatient",
-        "downloadBlob",
-        "downloadJsonPayload",
-        "downloadTextPayload",
-        "encryptSyncPayload",
-        "ensureEaRegistroModalForm",
-        "ensureParsedLabHistory",
-        "ensureParsedLabHistoryCached",
-        "ensureSettingsDropdownOpen",
-        "ensureUniquePatientName",
-        "enviarLabsANota",
-        "expandSettingsAccordionBackupSync",
-        "exportActivePatientBackup",
-        "exportAuditLog",
-        "exportCensoPdfFromHelp",
-        "exportClinicalDbBackupDb",
-        "exportClinicalDbBackupJson",
-        "exportDataBackup",
-        "exportMedCatalogBundle",
-        "exportRangeBackupPrompt",
-        "exportSyncBundlePrompt",
-        "findPatientByRegistro",
-        "focusPatientSearchInput",
-        "formatBhExtendedTabLine",
-        "formatCuratedReleaseNotesPlain",
-        "formatDateSlug",
-        "formatLabHistoryListMeta",
-        "generateIndicaciones",
-        "generateListado",
-        "generatePatientId",
-        "generateWord",
-        "getActiveLab",
-        "getAuditLog",
-        "getAutoBackupIndex",
-        "getAutoBackupSettings",
-        "getFirstStepIdForChapter",
-        "getGuidedTourContext",
-        "getLabOutputPrefs",
-        "getPlatformRuntime",
-        "getRoundOverviewMode",
-        "getSettingsHelpRuntime",
-        "getUpdateChannel",
-        "getUpdateTelemetryEnabled",
-        "groupLabHistoryByDay",
-        "guardMobileDocExport",
-        "guidedTourAdvanceAfter",
-        "guidedTourAdvanceAfterIndicaGenerated",
-        "guidedTourAdvanceAfterNotaGenerated",
-        "guidedTourClickNext",
-        "guidedTourClickPrev",
-        "guidedTourIntroChooseInterconsulta",
-        "guidedTourIntroChooseSala",
-        "guidedTourIntroSkip",
-        "guidedTourPause",
-        "handleDocumentGenerateResponse",
-        "hideTourDock",
-        "hideTourIntroModal",
-        "hideUpdateModal",
-        "hydrateProfileSettings",
-        "importBundledDemoPerez",
-        "importEntriesWithConflicts",
-        "incrementPendingJobs",
-        "inferFechaLabSetFromId",
-        "initGoalGFeatures",
-        "initGuidedTourGate",
-        "initIdleLockFeature",
-        "initPatientModalEnterSave",
-        "initPresentationShortcut",
-        "initReleaseNotesDevPreviewIfEnabled",
-        "initRpcDatePicker",
-        "initRpcServerHealthWatch",
-        "initSidebarAutoHide",
-        "initTabBarMotion",
-        "initUpdateChannelAndGate",
-        "insertLabTourSecondPatientExample",
-        "installLabHistoryAuditHook",
-        "installUpdate",
-        "invalidateEventualidadesPanel",
-        "invalidateInnerTabRenderCache",
-        "isAscitisInterpretacionResLabChunk",
-        "isBhMainResLabChunk",
-        "isGasoInterpretacionResLabChunk",
-        "isMobileWeb",
-        "isPresentationModeActive",
-        "isPresentationShortcut",
-        "isResLabChunkPureCultivo",
-        "isRpcDatePopoverOpen",
-        "isRpcOffline",
-        "isTendGroupModalOpen",
-        "isTourDemoPatientId",
-        "labSetIsFromSome",
-        "limpiarReporte",
-        "loadSettings",
-        "lockClinicalDatabaseNow",
-        "manejoWindowHandlers",
-        "markGuidedTourVersionDone",
-        "maybeRunScheduledAutoBackup",
-        "maybeShowReleaseNotesFor",
-        "medicationsWindowHandlers",
-        "mergeHcPatch",
-        "mergeMedCatalogStored",
-        "migrateUpdateChannelToStableDefault",
-        "mountRpcDatetimeInput",
-        "movePatientByOffset",
-        "navigateToEstadoActualPanel",
-        "normalizeQuickOutputFormat",
-        "normalizeTourVersionLabel",
-        "onBackupFileChosen",
-        "onHardwareAccelerationChange",
-        "onIdleLockSelectChange",
-        "onMedCatalogFileChosen",
-        "onPatientBackupFileChosen",
-        "onPatientSearchInput",
-        "onRangeBackupFileChosen",
-        "onSyncBundleFileChosen",
-        "onTourDockClick",
-        "onboardingAdvanceAfterParse",
-        "onboardingAdvanceAfterSend",
-        "openAddModal",
-        "openAddModalFromLab",
-        "openAddModalFromLabPatient",
-        "openEstadoActualRegistroModal",
-        "openFullExpedienteFromRound",
-        "openPaseSectionInNormal",
-        "openProfileModal",
-        "openUserDataFolderFromSettings",
-        "openWipeDataModal",
-        "parseDateDMY",
-        "parseDateRangePrompt",
-        "patientInDateRange",
-        "primaryTipoForLabSet",
-        "profileWindowHandlers",
-        "rebuildEstudiosFromLabHistory",
-        "recetaHuWindowHandlers",
-        "recoverPresentationPatientsOnBoot",
-        "refreshAllTodoUIs",
-        "refreshDbAuditCache",
-        "refreshExpedienteAfterPatientSelect",
-        "refreshTendenciasOrCultivosPanel",
-        "registerCensoRuntime",
-        "registerDocumentExportRuntime",
-        "registerEstadoActualPanelRuntime",
-        "registerEstadoActualPasteModalRuntime",
-        "registerEstadoActualRegistroModalRuntime",
-        "registerEventualidadesRuntime",
-        "registerExpedienteRuntime",
-        "registerHistoriaClinicaRuntime",
-        "registerLabBulkPreviewModalRuntime",
-        "registerLabHistoryMaintRuntime",
-        "registerLabPanelRuntime",
-        "registerManejoRuntime",
-        "registerMedPharmProfileRuntime",
-        "registerMedicationsRuntime",
-        "registerNotesIndicacionesRuntime",
-        "registerPaseBoardRuntime",
-        "registerPatientsRuntime",
-        "registerPlatformRuntime",
-        "registerPresentationRuntime",
-        "registerProfileRuntime",
-        "registerRecetaHuRuntime",
-        "registerSettingsHelpRuntime",
-        "registerTendenciasRuntime",
-        "registerTodosRuntime",
-        "registerTourDemoPatientHooks",
-        "registerVpoRuntime",
-        "removeAtbRisPanelsFromBody",
-        "renderDiagramas",
-        "renderEstadoActualPanel",
-        "renderEventualidadesPanel",
-        "renderIndicaForm",
-        "renderInnerTabs",
-        "renderLabHistoryPanel",
-        "renderListadoForm",
-        "renderManejo",
-        "renderMedRecetaPanel",
-        "renderNoteForm",
-        "renderPaseBoard",
-        "renderPatientDataPane",
-        "renderPatientList",
-        "renderRecetaHu",
-        "renderRoundOverviewPanels",
-        "renderTendencias",
-        "renderTodoForm",
-        "renderVpo",
-        "requestDocumentJson",
-        "rerenderParsedLabOutputAfterPrefsChange",
-        "resetAndStartOnboarding",
-        "resetEaRegistroForm",
-        "resetTourUiBeforeResume",
-        "resolveAppVersionForTour",
-        "restartAutoBackupScheduler",
-        "restorePreimportBackupPrompt",
-        "resumeGuidedTourFromProgress",
-        "returnToRoundOverview",
-        "runAutoBackupNow",
-        "safeExportSlug",
-        "saveAutoBackupIndex",
-        "saveAutoBackupSettings",
-        "saveOutputDirSelection",
-        "savePatient",
-        "scheduleLabHistoryPostSaveMaintenance",
-        "scheduleTourDemoPatientRegistrationFromLab",
-        "scrollActiveRondaCardIntoView",
-        "seedTendHiddenDefaults",
-        "selectPatient",
-        "setActiveLab",
-        "setLabHistoryPanelCollapsed",
-        "setRoundOverviewMode",
-        "setRpcOffline",
-        "setUpdateChannel",
-        "setUpdateTelemetryEnabled",
-        "settingsHelpBridge",
-        "shouldRunScheduledBackup",
-        "showTourDock",
-        "skipGuidedTour",
-        "splitResLabsByTipo",
-        "startNeoCompanionTour",
-        "startOnboarding",
-        "startPresentationMode",
-        "stopPresentationMode",
-        "submitIdleLockPin",
-        "switchAppTab",
-        "switchConsolidatedTab",
-        "switchInnerTab",
-        "syncAhfConditionsFromEntries",
-        "syncAutoBackupUi",
-        "syncCensoExportButtonVisibility",
-        "syncEaRegistroGluMode",
-        "syncHardwareAccelerationUI",
-        "syncHeaderAppModeChip",
-        "syncIdleLockSelectUi",
-        "syncInnerTabVisualOnly",
-        "syncLabHistoryCollapseUI",
-        "syncLabOutputChrome",
-        "syncLearnHubContinueVisibility",
-        "syncMainAppTabA11y",
-        "syncOfflineButtonStates",
-        "syncPreimportBackupUi",
-        "syncProfileSectionVisibility",
-        "syncRoundExpedienteLayout",
-        "syncTeamSyncHeaderButton",
-        "syncTourDockPlacement",
-        "syncUpdateChannelUI",
-        "syncUpdateTelemetryUI",
-        "tendenciasWindowHandlers",
-        "toDatetimeLocalValue",
-        "todosWindowHandlers",
-        "toggleArchivedSection",
-        "toggleHeaderWorkMode",
-        "togglePatientArchived",
-        "togglePatientPinned",
-        "togglePatientRoundSeen",
-        "togglePresentationMode",
-        "toggleProfileSection",
-        "toggleSettingsDropdown",
-        "toggleSettingsSection",
-        "toggleSidebarAutoHide",
-        "toggleTourDockCollapsed",
-        "tourAfterBulkLabParse",
-        "tourBridge",
-        "tourOnBulkPreviewPatientSaved",
-        "tourState",
-        "toxicomanias_substances_default",
-        "triggerImportActivePatientBackup",
-        "triggerImportBackup",
-        "triggerImportMedCatalog",
-        "triggerImportRangeBackup",
-        "triggerImportSyncBundle",
-        "updateAutoBackupSettingsFromUi",
-        "verifyForensicAuditChain",
-        "windowHandlers",
-        "windowHandlers2",
-        "windowHandlers3",
-        "windowHandlers4",
-        "windowHandlers5",
-        "windowHandlers6",
-        "windowHandlers7",
-        "windowHandlers8",
-        "windowHandlers9",
-        "wipeAllConfirmed",
-        "wipeCacheConfirmed",
-        "wireAtbRisHoverPanels",
-        "wireEaModalDismiss",
-        "wireEstadoActualPasteModal"
+        "$",
+        "$a",
+        "$b",
+        "$c",
+        "$d",
+        "$e",
+        "A",
+        "Aa",
+        "Ab",
+        "Ac",
+        "Ad",
+        "Ae",
+        "B",
+        "Ba",
+        "Bb",
+        "Bc",
+        "Bd",
+        "Be",
+        "C",
+        "Ca",
+        "Cb",
+        "Cc",
+        "Cd",
+        "Ce",
+        "D",
+        "Da",
+        "Db",
+        "Dc",
+        "Dd",
+        "De",
+        "E",
+        "Ea",
+        "Eb",
+        "Ec",
+        "Ed",
+        "Ee",
+        "F",
+        "Fa",
+        "Fb",
+        "Fc",
+        "Fd",
+        "Fe",
+        "G",
+        "Ga",
+        "Gb",
+        "Gc",
+        "Gd",
+        "Ge",
+        "H",
+        "Ha",
+        "Hb",
+        "Hc",
+        "Hd",
+        "He",
+        "I",
+        "Ia",
+        "Ib",
+        "Ic",
+        "Id",
+        "Ie",
+        "J",
+        "Ja",
+        "Jb",
+        "Jc",
+        "Jd",
+        "Je",
+        "K",
+        "Ka",
+        "Kb",
+        "Kc",
+        "Kd",
+        "Ke",
+        "L",
+        "La",
+        "Lb",
+        "Lc",
+        "Ld",
+        "Le",
+        "M",
+        "Ma",
+        "Mb",
+        "Mc",
+        "Md",
+        "Me",
+        "N",
+        "Na",
+        "Nb",
+        "Nc",
+        "Nd",
+        "Ne",
+        "O",
+        "Oa",
+        "Ob",
+        "Oc",
+        "Od",
+        "Oe",
+        "P",
+        "Pa",
+        "Pb",
+        "Pc",
+        "Pd",
+        "Pe",
+        "Q",
+        "Qa",
+        "Qb",
+        "Qc",
+        "Qd",
+        "Qe",
+        "R",
+        "Ra",
+        "Rb",
+        "Rc",
+        "Rd",
+        "Re",
+        "S",
+        "Sa",
+        "Sb",
+        "Sc",
+        "Sd",
+        "Se",
+        "T",
+        "Ta",
+        "Tb",
+        "Tc",
+        "Td",
+        "Te",
+        "U",
+        "Ua",
+        "Ub",
+        "Uc",
+        "Ud",
+        "Ue",
+        "V",
+        "Va",
+        "Vb",
+        "Vc",
+        "Vd",
+        "Ve",
+        "W",
+        "Wa",
+        "Wb",
+        "Wc",
+        "Wd",
+        "We",
+        "X",
+        "Xa",
+        "Xb",
+        "Xc",
+        "Xd",
+        "Xe",
+        "Y",
+        "Ya",
+        "Yb",
+        "Yc",
+        "Yd",
+        "Ye",
+        "Z",
+        "Za",
+        "Zb",
+        "Zc",
+        "Zd",
+        "Ze",
+        "_",
+        "_a",
+        "_b",
+        "_c",
+        "_d",
+        "_e",
+        "a",
+        "aa",
+        "ab",
+        "ac",
+        "ad",
+        "ae",
+        "af",
+        "b",
+        "ba",
+        "bb",
+        "bc",
+        "bd",
+        "be",
+        "bf",
+        "c",
+        "ca",
+        "cb",
+        "cc",
+        "cd",
+        "ce",
+        "cf",
+        "d",
+        "da",
+        "db",
+        "dc",
+        "dd",
+        "de",
+        "df",
+        "e",
+        "ea",
+        "eb",
+        "ec",
+        "ed",
+        "ee",
+        "ef",
+        "f",
+        "fa",
+        "fb",
+        "fc",
+        "fd",
+        "fe",
+        "ff",
+        "g",
+        "ga",
+        "gb",
+        "gc",
+        "gd",
+        "ge",
+        "gf",
+        "h",
+        "ha",
+        "hb",
+        "hc",
+        "hd",
+        "he",
+        "hf",
+        "i",
+        "ia",
+        "ib",
+        "ic",
+        "id",
+        "ie",
+        "if",
+        "j",
+        "ja",
+        "jb",
+        "jc",
+        "jd",
+        "je",
+        "jf",
+        "k",
+        "ka",
+        "kb",
+        "kc",
+        "kd",
+        "ke",
+        "kf",
+        "l",
+        "la",
+        "lb",
+        "lc",
+        "ld",
+        "le",
+        "lf",
+        "m",
+        "ma",
+        "mb",
+        "mc",
+        "md",
+        "me",
+        "mf",
+        "n",
+        "na",
+        "nb",
+        "nc",
+        "nd",
+        "ne",
+        "nf",
+        "o",
+        "oa",
+        "ob",
+        "oc",
+        "od",
+        "oe",
+        "of",
+        "p",
+        "pa",
+        "pb",
+        "pc",
+        "pd",
+        "pe",
+        "pf",
+        "q",
+        "qa",
+        "qb",
+        "qc",
+        "qd",
+        "qe",
+        "r",
+        "ra",
+        "rb",
+        "rc",
+        "rd",
+        "re",
+        "s",
+        "sa",
+        "sb",
+        "sc",
+        "sd",
+        "se",
+        "t",
+        "ta",
+        "tb",
+        "tc",
+        "td",
+        "te",
+        "u",
+        "ua",
+        "ub",
+        "uc",
+        "ud",
+        "ue",
+        "v",
+        "va",
+        "vb",
+        "vc",
+        "vd",
+        "ve",
+        "w",
+        "wa",
+        "wb",
+        "wc",
+        "wd",
+        "we",
+        "x",
+        "xa",
+        "xb",
+        "xc",
+        "xd",
+        "xe",
+        "y",
+        "ya",
+        "yb",
+        "yc",
+        "yd",
+        "ye",
+        "z",
+        "za",
+        "zb",
+        "zc",
+        "zd",
+        "ze"
       ],
       "inputs": {
         "public/js/features/estado-actual-meds.mjs": {
-          "bytesInOutput": 3600
+          "bytesInOutput": 1664
         },
         "public/js/ui-motion.mjs": {
-          "bytesInOutput": 5060
+          "bytesInOutput": 3052
         },
         "public/js/profile-templates.mjs": {
-          "bytesInOutput": 1964
+          "bytesInOutput": 1149
         },
         "public/js/profile-formats-editor.mjs": {
-          "bytesInOutput": 4772
+          "bytesInOutput": 3762
         },
         "public/js/mobile-web.mjs": {
-          "bytesInOutput": 545
+          "bytesInOutput": 342
         },
         "public/js/output-dir-fallback.mjs": {
-          "bytesInOutput": 1504
+          "bytesInOutput": 942
         },
         "public/js/document-export-client.mjs": {
-          "bytesInOutput": 5142
+          "bytesInOutput": 2959
         },
         "public/js/features/notes-indicaciones.mjs": {
-          "bytesInOutput": 24228
+          "bytesInOutput": 19788
         },
         "public/js/tend-export.mjs": {
-          "bytesInOutput": 13744
+          "bytesInOutput": 7202
         },
         "public/js/labs-some-table.mjs": {
-          "bytesInOutput": 37030
+          "bytesInOutput": 19447
         },
         "public/js/tour-guards.mjs": {
-          "bytesInOutput": 411
+          "bytesInOutput": 179
         },
         "public/js/features/lab-some-tables-modal.mjs": {
-          "bytesInOutput": 2996
+          "bytesInOutput": 1855
         },
         "public/js/sesion-ingreso-export.mjs": {
-          "bytesInOutput": 4088
+          "bytesInOutput": 2133
         },
         "public/js/features/sesion-ingreso-send-modal.mjs": {
-          "bytesInOutput": 3360
+          "bytesInOutput": 2362
         },
         "public/js/lab-history-auto-store-core.mjs": {
-          "bytesInOutput": 4221
+          "bytesInOutput": 2179
         },
         "public/js/lab-bulk-paste.mjs": {
-          "bytesInOutput": 12372
+          "bytesInOutput": 6384
         },
         "public/js/features/lab-bulk-preview-modal.mjs": {
-          "bytesInOutput": 8376
+          "bytesInOutput": 5307
         },
         "public/js/features/lab-panel.mjs": {
-          "bytesInOutput": 62879
+          "bytesInOutput": 38989
         },
         "public/js/rpc-date-picker.mjs": {
-          "bytesInOutput": 11171
+          "bytesInOutput": 7050
         },
         "public/js/patient-data-accesos-ui.mjs": {
-          "bytesInOutput": 4036
+          "bytesInOutput": 2538
         },
         "public/js/censo-header-format.mjs": {
-          "bytesInOutput": 1976
+          "bytesInOutput": 844
         },
         "public/js/patient-data-ingreso-ui.mjs": {
-          "bytesInOutput": 892
+          "bytesInOutput": 685
         },
         "public/js/censo-meds-format.mjs": {
-          "bytesInOutput": 864
+          "bytesInOutput": 525
         },
         "public/js/patient-data-censo-ui.mjs": {
-          "bytesInOutput": 4798
+          "bytesInOutput": 3128
         },
         "public/js/listado-problemas-ai-prompt.mjs": {
-          "bytesInOutput": 3689
+          "bytesInOutput": 3661
         },
         "public/js/deferred-work.mjs": {
-          "bytesInOutput": 736
-        },
-        "public/js/update-helpers.mjs": {
-          "bytesInOutput": 635
-        },
-        "lib/update-downgrade.mjs": {
-          "bytesInOutput": 1708
-        },
-        "public/js/min-version-fetch.mjs": {
-          "bytesInOutput": 678
-        },
-        "public/js/stable-downgrade-ui.mjs": {
-          "bytesInOutput": 8700
-        },
-        "public/js/features/settings-help/release-notes-curated.mjs": {
-          "bytesInOutput": 38230
-        },
-        "public/js/features/settings-help/release-notes.mjs": {
-          "bytesInOutput": 3914
-        },
-        "public/js/features/platform/runtime.mjs": {
-          "bytesInOutput": 461
-        },
-        "public/js/features/platform/updater.mjs": {
-          "bytesInOutput": 28911
-        },
-        "public/js/features/settings-help/runtime.mjs": {
-          "bytesInOutput": 1215
-        },
-        "public/js/features/settings-help/settings-dropdown.mjs": {
-          "bytesInOutput": 2426
-        },
-        "public/js/features/platform/shared.mjs": {
-          "bytesInOutput": 1171
-        },
-        "public/js/features/platform/audit.mjs": {
-          "bytesInOutput": 9905
-        },
-        "public/js/features/platform/offline.mjs": {
-          "bytesInOutput": 15664
-        },
-        "public/js/patient-export-format.mjs": {
-          "bytesInOutput": 4275
-        },
-        "public/js/features/settings-help/tour-state.mjs": {
-          "bytesInOutput": 744
-        },
-        "public/js/tour-demo-patient.mjs": {
-          "bytesInOutput": 3401
-        },
-        "public/js/features/platform/import-backup.mjs": {
-          "bytesInOutput": 30600
-        },
-        "public/js/censo-cultivo-format.mjs": {
-          "bytesInOutput": 9658
-        },
-        "public/js/censo-labs-format.mjs": {
-          "bytesInOutput": 2821
-        },
-        "public/js/features/estado-actual-parse-variants.mjs": {
-          "bytesInOutput": 982
-        },
-        "public/js/features/estado-actual-parser.mjs": {
-          "bytesInOutput": 10366
-        },
-        "public/js/censo-signos-format.mjs": {
-          "bytesInOutput": 6624
-        },
-        "public/js/censo-build.mjs": {
-          "bytesInOutput": 7948
-        },
-        "public/js/censo-preview-html.mjs": {
-          "bytesInOutput": 7460
-        },
-        "public/js/censo-export.mjs": {
-          "bytesInOutput": 7688
-        },
-        "public/js/expediente-tabs.mjs": {
-          "bytesInOutput": 14109
-        },
-        "public/js/features/profile.mjs": {
-          "bytesInOutput": 20811
-        },
-        "public/js/features/expediente.mjs": {
-          "bytesInOutput": 43921
-        },
-        "public/js/tend-prefs.mjs": {
-          "bytesInOutput": 6068
-        },
-        "public/js/gaso-extended.mjs": {
-          "bytesInOutput": 14340
-        },
-        "public/js/tend-group-modal.mjs": {
-          "bytesInOutput": 50245
-        },
-        "public/js/onboarding-curriculum.mjs": {
-          "bytesInOutput": 3739
-        },
-        "public/js/tour-targets.mjs": {
-          "bytesInOutput": 6044
-        },
-        "public/js/onboarding-progress.mjs": {
-          "bytesInOutput": 985
-        },
-        "public/js/tour-demo-monitoreo.mjs": {
-          "bytesInOutput": 3787
-        },
-        "public/js/tour-demo-dates.mjs": {
-          "bytesInOutput": 2466
-        },
-        "public/js/tour-demo-todos.mjs": {
-          "bytesInOutput": 1836
-        },
-        "public/js/features/eventualidades-panel.mjs": {
-          "bytesInOutput": 17729
-        },
-        "public/js/tour-demo-eventualidades.mjs": {
-          "bytesInOutput": 1150
-        },
-        "public/js/features/estado-actual-ranges.mjs": {
-          "bytesInOutput": 448
-        },
-        "public/js/features/estado-actual-text.mjs": {
-          "bytesInOutput": 4339
-        },
-        "public/js/features/estado-actual-charts.mjs": {
-          "bytesInOutput": 19947
-        },
-        "public/js/vendor-loader.mjs": {
-          "bytesInOutput": 1389
-        },
-        "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 60109
-        },
-        "public/js/features/estado-actual-paste-modal.mjs": {
-          "bytesInOutput": 2669
-        },
-        "public/js/features/estado-actual-registro-modal.mjs": {
-          "bytesInOutput": 2602
-        },
-        "public/js/sesion-ingreso-trends-export.mjs": {
-          "bytesInOutput": 5116
-        },
-        "public/js/features/sesion-ingreso-trends-send-modal.mjs": {
-          "bytesInOutput": 4391
-        },
-        "public/js/features/settings-help/bridges.mjs": {
-          "bytesInOutput": 126
-        },
-        "public/js/features/settings-help/tour-bridge.mjs": {
-          "bytesInOutput": 68
-        },
-        "public/js/features/settings-help/tour-demo-seed.mjs": {
-          "bytesInOutput": 4836
-        },
-        "public/js/features/settings-help/tour-engine.mjs": {
-          "bytesInOutput": 16030
-        },
-        "public/js/features/settings-help/tour-flow.mjs": {
-          "bytesInOutput": 31187
-        },
-        "public/js/features/tendencias.mjs": {
-          "bytesInOutput": 69844
-        },
-        "public/js/todos-priority.mjs": {
-          "bytesInOutput": 524
-        },
-        "public/js/features/todos.mjs": {
-          "bytesInOutput": 11971
-        },
-        "public/js/manejo-atb-catalog.mjs": {
-          "bytesInOutput": 11898
-        },
-        "public/js/manejo-atb-suggest.mjs": {
-          "bytesInOutput": 2001
-        },
-        "public/js/manejo-atb-family-colors.mjs": {
-          "bytesInOutput": 194
-        },
-        "public/js/manejo-atb-renal.mjs": {
-          "bytesInOutput": 5054
-        },
-        "public/js/manejo-cultivo-bridge.mjs": {
-          "bytesInOutput": 11548
-        },
-        "public/js/manejo-fluid-terms.mjs": {
-          "bytesInOutput": 990
-        },
-        "public/js/manejo-cad-ehh.mjs": {
-          "bytesInOutput": 14172
-        },
-        "public/js/manejo-calculators.mjs": {
-          "bytesInOutput": 5155
-        },
-        "public/js/manejo-insulin-pump-algorithms.mjs": {
-          "bytesInOutput": 2455
-        },
-        "public/js/manejo-some-format.mjs": {
-          "bytesInOutput": 15972
-        },
-        "public/js/features/manejo-some-ui.mjs": {
-          "bytesInOutput": 10554
-        },
-        "public/js/features/manejo-atb-ui.mjs": {
-          "bytesInOutput": 13804
-        },
-        "public/js/manejo-pathology-catalog.mjs": {
-          "bytesInOutput": 36753
-        },
-        "public/js/manejo-protocol-links.mjs": {
-          "bytesInOutput": 7440
-        },
-        "public/js/manejo-pathology-focus.mjs": {
-          "bytesInOutput": 2595
-        },
-        "public/js/manejo-pathology-branch-colors.mjs": {
-          "bytesInOutput": 218
-        },
-        "public/js/manejo-clinical-drug-link.mjs": {
-          "bytesInOutput": 2780
-        },
-        "public/js/manejo-proto-admin-display.mjs": {
-          "bytesInOutput": 28327
-        },
-        "public/js/manejo-clinical-text.mjs": {
-          "bytesInOutput": 11180
-        },
-        "public/js/features/manejo-patologias.mjs": {
-          "bytesInOutput": 5979
-        },
-        "public/js/features/manejo-guia-state.mjs": {
-          "bytesInOutput": 3041
-        },
-        "public/js/features/manejo-guia-context.mjs": {
-          "bytesInOutput": 852
-        },
-        "public/js/features/manejo-electrolitos.mjs": {
-          "bytesInOutput": 14447
-        },
-        "public/js/manejo-protocols-catalog.mjs": {
-          "bytesInOutput": 20946
-        },
-        "public/js/features/manejo-proto-editor.mjs": {
-          "bytesInOutput": 12766
-        },
-        "public/js/manejo-proto-category-colors.mjs": {
-          "bytesInOutput": 285
-        },
-        "public/js/manejo-dose-units.mjs": {
-          "bytesInOutput": 1974
-        },
-        "public/js/features/manejo-proto-detail.mjs": {
-          "bytesInOutput": 21039
-        },
-        "public/js/features/manejo-proto-toolbar.mjs": {
-          "bytesInOutput": 17971
-        },
-        "public/js/features/manejo-cad-ada-ui.mjs": {
-          "bytesInOutput": 13415
-        },
-        "public/js/features/manejo-guia-steps.mjs": {
-          "bytesInOutput": 499
-        },
-        "public/js/features/manejo-guia-patologia.mjs": {
-          "bytesInOutput": 16539
-        },
-        "public/js/features/manejo-guia-infusion.mjs": {
-          "bytesInOutput": 14112
-        },
-        "public/js/features/manejo-guia-atb.mjs": {
-          "bytesInOutput": 12087
-        },
-        "public/js/features/manejo-guia.mjs": {
-          "bytesInOutput": 2969
-        },
-        "public/js/ui-tab-motion.mjs": {
-          "bytesInOutput": 7215
-        },
-        "public/js/features/manejo.mjs": {
-          "bytesInOutput": 10615
-        },
-        "lib/clinical-safety-rules/catalog.json": {
-          "bytesInOutput": 10562
-        },
-        "lib/clinical-safety-rules/evaluate.mjs": {
-          "bytesInOutput": 2748
-        },
-        "public/js/clinical-history-safety.mjs": {
-          "bytesInOutput": 3587
-        },
-        "lib/historia-clinica/defaults.mjs": {
-          "bytesInOutput": 1666
-        },
-        "lib/historia-clinica/catalogs/genero-field-specs.json": {
-          "bytesInOutput": 1319
-        },
-        "lib/historia-clinica/medicamento-entry.mjs": {
-          "bytesInOutput": 1464
-        },
-        "lib/historia-clinica/genero-options.mjs": {
-          "bytesInOutput": 5935
-        },
-        "lib/historia-clinica/apnp-calculators.mjs": {
-          "bytesInOutput": 5052
-        },
-        "lib/historia-clinica/catalogs/toxicomanias-substances.json": {
-          "bytesInOutput": 382
-        },
-        "lib/historia-clinica/toxicomanias.mjs": {
-          "bytesInOutput": 2062
-        },
-        "lib/historia-clinica/flexible-date.mjs": {
-          "bytesInOutput": 1483
-        },
-        "lib/historia-clinica/erc-detail.mjs": {
-          "bytesInOutput": 3330
-        },
-        "lib/historia-clinica/compile-app.mjs": {
-          "bytesInOutput": 4735
-        },
-        "lib/historia-clinica/ahf-relatives.mjs": {
-          "bytesInOutput": 781
-        },
-        "lib/historia-clinica/compile-ahf.mjs": {
-          "bytesInOutput": 2441
-        },
-        "lib/historia-clinica/signos-vitales-ingreso.mjs": {
-          "bytesInOutput": 3540
-        },
-        "lib/historia-clinica/compile-narrative.mjs": {
-          "bytesInOutput": 5387
-        },
-        "lib/drive-import/merge-hc-patch.mjs": {
-          "bytesInOutput": 1448
-        },
-        "public/js/features/historia-clinica-checklist.mjs": {
-          "bytesInOutput": 3424
-        },
-        "public/js/features/historia-clinica-apnp-widgets.mjs": {
-          "bytesInOutput": 6300
-        },
-        "public/js/features/historia-clinica-toxicomanias.mjs": {
-          "bytesInOutput": 5494
-        },
-        "lib/historia-clinica/normalize-app.mjs": {
-          "bytesInOutput": 2570
-        },
-        "public/js/features/historia-clinica-app-panel.mjs": {
-          "bytesInOutput": 30993
-        },
-        "public/js/features/historia-clinica-ahf-panel.mjs": {
-          "bytesInOutput": 9743
-        },
-        "public/js/features/historia-clinica-medicamento-rows.mjs": {
-          "bytesInOutput": 4021
-        },
-        "public/js/features/historia-clinica-genero-panel.mjs": {
-          "bytesInOutput": 4828
-        },
-        "public/js/features/historia-clinica-uppercase.mjs": {
           "bytesInOutput": 401
         },
+        "public/js/update-helpers.mjs": {
+          "bytesInOutput": 353
+        },
+        "lib/update-downgrade.mjs": {
+          "bytesInOutput": 929
+        },
+        "public/js/min-version-fetch.mjs": {
+          "bytesInOutput": 412
+        },
+        "public/js/stable-downgrade-ui.mjs": {
+          "bytesInOutput": 4759
+        },
+        "public/js/features/settings-help/release-notes-curated.mjs": {
+          "bytesInOutput": 33796
+        },
+        "public/js/features/settings-help/release-notes.mjs": {
+          "bytesInOutput": 2145
+        },
+        "public/js/features/platform/runtime.mjs": {
+          "bytesInOutput": 234
+        },
+        "public/js/features/platform/updater.mjs": {
+          "bytesInOutput": 17810
+        },
+        "public/js/features/settings-help/runtime.mjs": {
+          "bytesInOutput": 833
+        },
+        "public/js/features/settings-help/settings-dropdown.mjs": {
+          "bytesInOutput": 1567
+        },
+        "public/js/features/platform/shared.mjs": {
+          "bytesInOutput": 680
+        },
+        "public/js/features/platform/audit.mjs": {
+          "bytesInOutput": 6179
+        },
+        "public/js/features/platform/offline.mjs": {
+          "bytesInOutput": 8903
+        },
+        "public/js/patient-export-format.mjs": {
+          "bytesInOutput": 2273
+        },
+        "public/js/features/settings-help/tour-state.mjs": {
+          "bytesInOutput": 448
+        },
+        "public/js/tour-demo-patient.mjs": {
+          "bytesInOutput": 1529
+        },
+        "public/js/features/platform/import-backup.mjs": {
+          "bytesInOutput": 17985
+        },
+        "public/js/censo-cultivo-format.mjs": {
+          "bytesInOutput": 4979
+        },
+        "public/js/censo-labs-format.mjs": {
+          "bytesInOutput": 1374
+        },
+        "public/js/features/estado-actual-parse-variants.mjs": {
+          "bytesInOutput": 705
+        },
+        "public/js/features/estado-actual-parser.mjs": {
+          "bytesInOutput": 6238
+        },
+        "public/js/censo-signos-format.mjs": {
+          "bytesInOutput": 3633
+        },
+        "public/js/censo-build.mjs": {
+          "bytesInOutput": 4342
+        },
+        "public/js/censo-preview-html.mjs": {
+          "bytesInOutput": 5882
+        },
+        "public/js/censo-export.mjs": {
+          "bytesInOutput": 5118
+        },
+        "public/js/expediente-tabs.mjs": {
+          "bytesInOutput": 7320
+        },
+        "public/js/features/profile.mjs": {
+          "bytesInOutput": 11803
+        },
+        "public/js/features/expediente.mjs": {
+          "bytesInOutput": 28088
+        },
+        "public/js/tend-prefs.mjs": {
+          "bytesInOutput": 2754
+        },
+        "public/js/gaso-extended.mjs": {
+          "bytesInOutput": 8955
+        },
+        "public/js/tend-group-modal.mjs": {
+          "bytesInOutput": 29063
+        },
+        "public/js/onboarding-curriculum.mjs": {
+          "bytesInOutput": 2237
+        },
+        "public/js/tour-targets.mjs": {
+          "bytesInOutput": 4541
+        },
+        "public/js/onboarding-progress.mjs": {
+          "bytesInOutput": 516
+        },
+        "public/js/tour-demo-monitoreo.mjs": {
+          "bytesInOutput": 2400
+        },
+        "public/js/tour-demo-dates.mjs": {
+          "bytesInOutput": 1213
+        },
+        "public/js/tour-demo-todos.mjs": {
+          "bytesInOutput": 1009
+        },
+        "public/js/features/eventualidades-panel.mjs": {
+          "bytesInOutput": 10202
+        },
+        "public/js/tour-demo-eventualidades.mjs": {
+          "bytesInOutput": 832
+        },
+        "public/js/features/estado-actual-ranges.mjs": {
+          "bytesInOutput": 282
+        },
+        "public/js/features/estado-actual-text.mjs": {
+          "bytesInOutput": 2312
+        },
+        "public/js/features/estado-actual-charts.mjs": {
+          "bytesInOutput": 9821
+        },
+        "public/js/vendor-loader.mjs": {
+          "bytesInOutput": 708
+        },
+        "public/js/features/estado-actual-panel.mjs": {
+          "bytesInOutput": 36240
+        },
+        "public/js/features/estado-actual-paste-modal.mjs": {
+          "bytesInOutput": 1648
+        },
+        "public/js/features/estado-actual-registro-modal.mjs": {
+          "bytesInOutput": 1497
+        },
+        "public/js/sesion-ingreso-trends-export.mjs": {
+          "bytesInOutput": 2203
+        },
+        "public/js/features/sesion-ingreso-trends-send-modal.mjs": {
+          "bytesInOutput": 3131
+        },
+        "public/js/features/settings-help/bridges.mjs": {
+          "bytesInOutput": 85
+        },
+        "public/js/features/settings-help/tour-bridge.mjs": {
+          "bytesInOutput": 42
+        },
+        "public/js/features/settings-help/tour-demo-seed.mjs": {
+          "bytesInOutput": 2335
+        },
+        "public/js/features/settings-help/tour-engine.mjs": {
+          "bytesInOutput": 8650
+        },
+        "public/js/features/settings-help/tour-flow.mjs": {
+          "bytesInOutput": 23500
+        },
+        "public/js/features/tendencias.mjs": {
+          "bytesInOutput": 39386
+        },
+        "public/js/todos-priority.mjs": {
+          "bytesInOutput": 222
+        },
+        "public/js/features/todos.mjs": {
+          "bytesInOutput": 6816
+        },
+        "public/js/manejo-atb-catalog.mjs": {
+          "bytesInOutput": 9817
+        },
+        "public/js/manejo-atb-suggest.mjs": {
+          "bytesInOutput": 1162
+        },
+        "public/js/manejo-atb-family-colors.mjs": {
+          "bytesInOutput": 75
+        },
+        "public/js/manejo-atb-renal.mjs": {
+          "bytesInOutput": 2793
+        },
+        "public/js/manejo-cultivo-bridge.mjs": {
+          "bytesInOutput": 6512
+        },
+        "public/js/manejo-fluid-terms.mjs": {
+          "bytesInOutput": 707
+        },
+        "public/js/manejo-cad-ehh.mjs": {
+          "bytesInOutput": 9825
+        },
+        "public/js/manejo-calculators.mjs": {
+          "bytesInOutput": 2978
+        },
+        "public/js/manejo-insulin-pump-algorithms.mjs": {
+          "bytesInOutput": 1580
+        },
+        "public/js/manejo-some-format.mjs": {
+          "bytesInOutput": 9320
+        },
+        "public/js/features/manejo-some-ui.mjs": {
+          "bytesInOutput": 6041
+        },
+        "public/js/features/manejo-atb-ui.mjs": {
+          "bytesInOutput": 7752
+        },
+        "public/js/manejo-pathology-catalog.mjs": {
+          "bytesInOutput": 25132
+        },
+        "public/js/manejo-protocol-links.mjs": {
+          "bytesInOutput": 5714
+        },
+        "public/js/manejo-pathology-focus.mjs": {
+          "bytesInOutput": 1857
+        },
+        "public/js/manejo-pathology-branch-colors.mjs": {
+          "bytesInOutput": 81
+        },
+        "public/js/manejo-clinical-drug-link.mjs": {
+          "bytesInOutput": 1481
+        },
+        "public/js/manejo-proto-admin-display.mjs": {
+          "bytesInOutput": 15677
+        },
+        "public/js/manejo-clinical-text.mjs": {
+          "bytesInOutput": 6322
+        },
+        "public/js/features/manejo-patologias.mjs": {
+          "bytesInOutput": 3705
+        },
+        "public/js/features/manejo-guia-state.mjs": {
+          "bytesInOutput": 1715
+        },
+        "public/js/features/manejo-guia-context.mjs": {
+          "bytesInOutput": 451
+        },
+        "public/js/features/manejo-electrolitos.mjs": {
+          "bytesInOutput": 9590
+        },
+        "public/js/manejo-protocols-catalog.mjs": {
+          "bytesInOutput": 17783
+        },
+        "public/js/features/manejo-proto-editor.mjs": {
+          "bytesInOutput": 7952
+        },
+        "public/js/manejo-proto-category-colors.mjs": {
+          "bytesInOutput": 110
+        },
+        "public/js/manejo-dose-units.mjs": {
+          "bytesInOutput": 1128
+        },
+        "public/js/features/manejo-proto-detail.mjs": {
+          "bytesInOutput": 12143
+        },
+        "public/js/features/manejo-proto-toolbar.mjs": {
+          "bytesInOutput": 11287
+        },
+        "public/js/features/manejo-cad-ada-ui.mjs": {
+          "bytesInOutput": 7852
+        },
+        "public/js/features/manejo-guia-steps.mjs": {
+          "bytesInOutput": 270
+        },
+        "public/js/features/manejo-guia-patologia.mjs": {
+          "bytesInOutput": 10062
+        },
+        "public/js/features/manejo-guia-infusion.mjs": {
+          "bytesInOutput": 9399
+        },
+        "public/js/features/manejo-guia-atb.mjs": {
+          "bytesInOutput": 7622
+        },
+        "public/js/features/manejo-guia.mjs": {
+          "bytesInOutput": 1750
+        },
+        "public/js/ui-tab-motion.mjs": {
+          "bytesInOutput": 4158
+        },
+        "public/js/features/manejo.mjs": {
+          "bytesInOutput": 6255
+        },
+        "lib/clinical-safety-rules/catalog.json": {
+          "bytesInOutput": 8899
+        },
+        "lib/clinical-safety-rules/evaluate.mjs": {
+          "bytesInOutput": 1458
+        },
+        "public/js/clinical-history-safety.mjs": {
+          "bytesInOutput": 2091
+        },
+        "lib/historia-clinica/defaults.mjs": {
+          "bytesInOutput": 1037
+        },
+        "lib/historia-clinica/catalogs/genero-field-specs.json": {
+          "bytesInOutput": 1045
+        },
+        "lib/historia-clinica/medicamento-entry.mjs": {
+          "bytesInOutput": 840
+        },
+        "lib/historia-clinica/genero-options.mjs": {
+          "bytesInOutput": 3109
+        },
+        "lib/historia-clinica/apnp-calculators.mjs": {
+          "bytesInOutput": 2560
+        },
+        "lib/historia-clinica/catalogs/toxicomanias-substances.json": {
+          "bytesInOutput": 313
+        },
+        "lib/historia-clinica/toxicomanias.mjs": {
+          "bytesInOutput": 1102
+        },
+        "lib/historia-clinica/flexible-date.mjs": {
+          "bytesInOutput": 965
+        },
+        "lib/historia-clinica/erc-detail.mjs": {
+          "bytesInOutput": 2114
+        },
+        "lib/historia-clinica/compile-app.mjs": {
+          "bytesInOutput": 2691
+        },
+        "lib/historia-clinica/ahf-relatives.mjs": {
+          "bytesInOutput": 591
+        },
+        "lib/historia-clinica/compile-ahf.mjs": {
+          "bytesInOutput": 1306
+        },
+        "lib/historia-clinica/signos-vitales-ingreso.mjs": {
+          "bytesInOutput": 1939
+        },
+        "lib/historia-clinica/compile-narrative.mjs": {
+          "bytesInOutput": 3188
+        },
+        "lib/drive-import/merge-hc-patch.mjs": {
+          "bytesInOutput": 611
+        },
+        "public/js/features/historia-clinica-checklist.mjs": {
+          "bytesInOutput": 2000
+        },
+        "public/js/features/historia-clinica-apnp-widgets.mjs": {
+          "bytesInOutput": 4219
+        },
+        "public/js/features/historia-clinica-toxicomanias.mjs": {
+          "bytesInOutput": 3404
+        },
+        "lib/historia-clinica/normalize-app.mjs": {
+          "bytesInOutput": 1744
+        },
+        "public/js/features/historia-clinica-app-panel.mjs": {
+          "bytesInOutput": 22316
+        },
+        "public/js/features/historia-clinica-ahf-panel.mjs": {
+          "bytesInOutput": 6344
+        },
+        "public/js/features/historia-clinica-medicamento-rows.mjs": {
+          "bytesInOutput": 2752
+        },
+        "public/js/features/historia-clinica-genero-panel.mjs": {
+          "bytesInOutput": 3223
+        },
+        "public/js/features/historia-clinica-uppercase.mjs": {
+          "bytesInOutput": 226
+        },
         "public/js/features/historia-clinica-panel.mjs": {
-          "bytesInOutput": 31376
+          "bytesInOutput": 18330
         },
         "public/js/vpo-lookups.mjs": {
-          "bytesInOutput": 4994
+          "bytesInOutput": 4057
         },
         "public/js/vpo-display.mjs": {
-          "bytesInOutput": 1740
+          "bytesInOutput": 1453
         },
         "public/js/vpo-data.mjs": {
-          "bytesInOutput": 9463
+          "bytesInOutput": 5556
         },
         "public/js/vpo-periop-meds.mjs": {
-          "bytesInOutput": 3009
+          "bytesInOutput": 2584
         },
         "public/js/vpo-text.mjs": {
-          "bytesInOutput": 3519
+          "bytesInOutput": 2373
         },
         "public/js/features/vpo-panel.mjs": {
-          "bytesInOutput": 24396
+          "bytesInOutput": 16381
         },
         "public/js/features/vpo.mjs": {
-          "bytesInOutput": 348
+          "bytesInOutput": 190
         },
         "public/js/features/receta-hu.mjs": {
-          "bytesInOutput": 24400
+          "bytesInOutput": 16762
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 40695
+          "bytesInOutput": 22421
         },
         "public/js/med-pharm-profile-core.mjs": {
-          "bytesInOutput": 10340
+          "bytesInOutput": 5155
         },
         "public/js/features/med-pharm-profile-panel.mjs": {
-          "bytesInOutput": 34222
+          "bytesInOutput": 20166
         },
         "public/js/features/medications.mjs": {
-          "bytesInOutput": 15949
+          "bytesInOutput": 9693
         },
         "public/js/patient-validation.mjs": {
-          "bytesInOutput": 983
+          "bytesInOutput": 715
         },
         "public/js/features/patients-clinical-filter.mjs": {
-          "bytesInOutput": 1312
+          "bytesInOutput": 661
         },
         "public/js/features/clinical-census-filters-ui.mjs": {
-          "bytesInOutput": 547
+          "bytesInOutput": 223
         },
         "public/js/features/diagrams.mjs": {
           "bytesInOutput": 0
         },
         "public/js/features/diagrams-render.mjs": {
-          "bytesInOutput": 11832
+          "bytesInOutput": 8036
         },
         "public/js/lab-history-set.mjs": {
-          "bytesInOutput": 18878
+          "bytesInOutput": 9341
         },
         "public/js/patient-delete-sync.mjs": {
-          "bytesInOutput": 1055
+          "bytesInOutput": 480
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 57501
+          "bytesInOutput": 34864
         },
         "public/js/presentation-mode.mjs": {
-          "bytesInOutput": 4035
+          "bytesInOutput": 2016
         }
       },
-      "bytes": 1662839
+      "bytes": 1018642
     },
-    "public/js/chunks/chunk-GZVG47QG.js.map": {
+    "public/js/chunks/chunk-GECKSSRR.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 7418
+      "bytes": 7874
     },
-    "public/js/chunks/chunk-GZVG47QG.js": {
+    "public/js/chunks/chunk-GECKSSRR.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-VXP5MSEM.js",
+          "path": "public/js/chunks/chunk-2VHN25ZA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-XXCF6Z47.js",
+          "path": "public/js/chunks/clinical-teams-H4E7ZEIX.js",
           "kind": "dynamic-import"
         }
       ],
       "exports": [
-        "openMiRotacion",
-        "syncClinicalContextBarVisibility",
-        "syncClinicalRotationEntryChrome",
-        "windowHandlers",
-        "wireClinicalRotationEntryControls"
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
       ],
       "inputs": {
         "public/js/features/clinical-context-bar.mjs": {
-          "bytesInOutput": 566
+          "bytesInOutput": 323
         },
         "public/js/features/clinical-rotation-entry.mjs": {
-          "bytesInOutput": 3413
+          "bytesInOutput": 2008
         }
       },
-      "bytes": 4559
+      "bytes": 2598
     },
-    "public/js/chunks/chunk-VXP5MSEM.js.map": {
+    "public/js/chunks/chunk-2VHN25ZA.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 21928
+      "bytes": 22326
     },
-    "public/js/chunks/chunk-VXP5MSEM.js": {
+    "public/js/chunks/chunk-2VHN25ZA.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-XXCF6Z47.js",
+          "path": "public/js/chunks/clinical-teams-H4E7ZEIX.js",
           "kind": "dynamic-import"
         }
       ],
       "exports": [
-        "needsClinicalOnboarding",
-        "needsProfileOnboarding",
-        "needsTeamOnboarding",
-        "needsUsernameClaim",
-        "renderOnboardingPanel",
-        "renderOnboardingPanelInto"
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
       ],
       "inputs": {
         "public/js/features/clinical-onboarding.mjs": {
-          "bytesInOutput": 13385
+          "bytesInOutput": 7915
         }
       },
-      "bytes": 14129
+      "bytes": 8244
     },
-    "public/js/chunks/app-state-IDGJ6IT5.js.map": {
+    "public/js/chunks/app-state-DIOJUCHR.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/app-state-IDGJ6IT5.js": {
+    "public/js/chunks/app-state-DIOJUCHR.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         }
       ],
@@ -10011,18 +10010,18 @@
       ],
       "entryPoint": "public/js/app-state.mjs",
       "inputs": {},
-      "bytes": 1174
+      "bytes": 898
     },
-    "public/js/chunks/clinical-settings-GV5OIR5F.js.map": {
+    "public/js/chunks/clinical-settings-NJ2RABDZ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-settings-GV5OIR5F.js": {
+    "public/js/chunks/clinical-settings-NJ2RABDZ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10036,30 +10035,30 @@
       ],
       "entryPoint": "public/js/clinical-settings.mjs",
       "inputs": {},
-      "bytes": 488
+      "bytes": 323
     },
-    "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js.map": {
+    "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js": {
+    "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-2BS2TABD.js",
+          "path": "public/js/chunks/chunk-H4KZTDBZ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10073,74 +10072,74 @@
       ],
       "entryPoint": "public/js/historia-clinica-lan-sync.mjs",
       "inputs": {},
-      "bytes": 725
+      "bytes": 528
     },
-    "public/js/chunks/chunk-2BS2TABD.js.map": {
+    "public/js/chunks/chunk-H4KZTDBZ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 16435
+      "bytes": 16559
     },
-    "public/js/chunks/chunk-2BS2TABD.js": {
+    "public/js/chunks/chunk-H4KZTDBZ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         }
       ],
       "exports": [
-        "ahf_conditions_default",
-        "app_conditions_default",
-        "applyServerHistoriaClinicaToPatient",
-        "flushAllPendingHistoriaClinicaLanSync",
-        "flushPendingHistoriaClinicaLanSync",
-        "ipas_systems_default",
-        "markHistoriaPendingLanSync",
-        "migrateLegacyHistoriaData",
-        "scheduleFlushAllPendingHistoriaClinicaLanSync",
-        "schedulePendingHistoriaClinicaLanSync"
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j"
       ],
       "inputs": {
         "lib/historia-clinica/migrate-legacy.mjs": {
-          "bytesInOutput": 2004
+          "bytesInOutput": 1305
         },
         "lib/historia-clinica/catalogs/app-conditions.json": {
-          "bytesInOutput": 657
+          "bytesInOutput": 556
         },
         "lib/historia-clinica/catalogs/ahf-conditions.json": {
-          "bytesInOutput": 465
+          "bytesInOutput": 388
         },
         "lib/historia-clinica/catalogs/ipas-systems.json": {
-          "bytesInOutput": 353
+          "bytesInOutput": 290
         },
         "public/js/historia-clinica-lan-sync.mjs": {
-          "bytesInOutput": 4869
+          "bytesInOutput": 2565
         }
       },
-      "bytes": 9235
+      "bytes": 5369
     },
-    "public/js/chunks/room-5GGIKL4O.js.map": {
+    "public/js/chunks/room-Q2UDWI5U.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/room-5GGIKL4O.js": {
+    "public/js/chunks/room-Q2UDWI5U.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10174,26 +10173,26 @@
       ],
       "entryPoint": "public/js/features/lan/room.mjs",
       "inputs": {},
-      "bytes": 1715
+      "bytes": 1201
     },
-    "public/js/chunks/push-5ER3WXO4.js.map": {
+    "public/js/chunks/push-N4YL35DS.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/push-5ER3WXO4.js": {
+    "public/js/chunks/push-N4YL35DS.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10215,26 +10214,26 @@
       ],
       "entryPoint": "public/js/features/lan/push.mjs",
       "inputs": {},
-      "bytes": 953
+      "bytes": 700
     },
-    "public/js/chunks/lan-sync-NX7PGY34.js.map": {
+    "public/js/chunks/lan-sync-MAVEAB6W.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/lan-sync-NX7PGY34.js": {
+    "public/js/chunks/lan-sync-MAVEAB6W.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10274,26 +10273,26 @@
       ],
       "entryPoint": "public/js/features/lan-sync.mjs",
       "inputs": {},
-      "bytes": 1980
+      "bytes": 1386
     },
-    "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js.map": {
+    "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js": {
+    "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-K77JVJ4O.js",
+          "path": "public/js/chunks/chunk-RMI3C6IQ.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         }
       ],
@@ -10311,927 +10310,927 @@
       ],
       "entryPoint": "public/js/clinical-profile-lan-sync.mjs",
       "inputs": {},
-      "bytes": 890
+      "bytes": 639
     },
-    "public/js/chunks/chunk-K77JVJ4O.js.map": {
+    "public/js/chunks/chunk-RMI3C6IQ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 1431564
+      "bytes": 1480029
     },
-    "public/js/chunks/chunk-K77JVJ4O.js": {
+    "public/js/chunks/chunk-RMI3C6IQ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-NWJJI23U.js",
+          "path": "public/js/chunks/chunk-L4EWIBTY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-ZYO74J2K.js",
+          "path": "public/js/chunks/chunk-4R6RWLLM.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/app-state-IDGJ6IT5.js",
+          "path": "public/js/chunks/app-state-DIOJUCHR.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-settings-GV5OIR5F.js",
+          "path": "public/js/chunks/clinical-settings-NJ2RABDZ.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-access-runtime-CWCG6A4Q.js",
+          "path": "public/js/chunks/clinical-access-runtime-PANRYX6H.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-6MDYGPBW.js",
+          "path": "public/js/chunks/clinical-onboarding-main-5AD5UXD4.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-C66JH6O2.js",
+          "path": "public/js/chunks/clinical-rotation-entry-Y43FN23S.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-GVL6EYMN.js",
+          "path": "public/js/chunks/clinical-onboarding-QJAIXHUW.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-C66JH6O2.js",
+          "path": "public/js/chunks/clinical-rotation-entry-Y43FN23S.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/patients-QVQXVUV2.js",
+          "path": "public/js/chunks/patients-FBKV3NA7.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-NX7PGY34.js",
+          "path": "public/js/chunks/lan-sync-MAVEAB6W.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/teams-roster-ZUNUUGQF.js",
+          "path": "public/js/chunks/teams-roster-3LQKITQN.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/teams-roster-ZUNUUGQF.js",
+          "path": "public/js/chunks/teams-roster-3LQKITQN.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/teams-roster-ZUNUUGQF.js",
+          "path": "public/js/chunks/teams-roster-3LQKITQN.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-C66JH6O2.js",
+          "path": "public/js/chunks/clinical-rotation-entry-Y43FN23S.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/push-5ER3WXO4.js",
+          "path": "public/js/chunks/push-N4YL35DS.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-XXCF6Z47.js",
+          "path": "public/js/chunks/clinical-teams-H4E7ZEIX.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-5GGIKL4O.js",
+          "path": "public/js/chunks/room-Q2UDWI5U.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-Z3R2CCMN.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-NBZZLYNA.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/patients-QVQXVUV2.js",
+          "path": "public/js/chunks/patients-FBKV3NA7.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-5GGIKL4O.js",
+          "path": "public/js/chunks/room-Q2UDWI5U.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-UJ3QBUJK.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-6VPVVMCP.js",
           "kind": "dynamic-import"
         }
       ],
       "exports": [
-        "CLINICAL_SALAS",
-        "CLINICAL_TEAM_SERVICES",
-        "DEMO_GARCIA_LAB_REPORT",
-        "DEMO_SOME_LAB_REPORT",
-        "LAN_PROFILE_PUSH_FAILED_MSG",
-        "LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG",
-        "OLDER_DEMO_SOME_LAB_REPORT",
-        "TREND_DETAIL_DOWNSAMPLE",
-        "TREND_REFRESH_DEBOUNCE_MS",
-        "TREND_SPARK_WINDOW",
-        "acceptServerBundleConflict",
-        "acceptServerClinicalOpsConflict",
-        "accesoFechaToDateInputValue",
-        "addCustomProtocol",
-        "addProblema",
-        "ageYearsFromLabDemographics",
-        "appendLanConflictDraftsSection",
-        "applyClinicalHistoryUppercase",
-        "applyDiagnosticosInference",
-        "applyEntryOverrides",
-        "applyPatientDiagnosticosList",
-        "applyPendingLanInviteFromPage",
-        "applyRoomSyncPhaseAfterReconcile",
-        "applyUppercaseToHcInput",
-        "assertClinicalWriteAllowed",
-        "assertLanRoomForUsernameRegister",
-        "bhTrendDisplayTitle",
-        "bootLanRoomMembership",
-        "bootstrapClinicalAccess",
-        "buildAtbRisSummaryHtml",
-        "buildGuardiasMap",
-        "buildLiveSyncBundleEnvelope",
-        "buildLiveSyncHelloPayload",
-        "buildParsedBySectionFromResLabs",
-        "buildProximaCitaText",
-        "buildRecetaHuGeneratePayload",
-        "buildRefsBySectionFromReport",
-        "buildTourDemoListadoProblemas",
-        "buildTrendSeriesIndexCached",
-        "bumpLabHistoryRevision",
-        "clearPitchDemo",
-        "clinicalSessionContext",
-        "closeClinicalTeamsPanel",
-        "closeConnectionDropdown",
-        "closeLanUsersDirectoryModal",
-        "closeSOAPModal",
-        "computeAnionGapValue_",
-        "computeEgfrCkdEpi2021Creatinine",
-        "configureLanFromMobileJoin",
-        "consumeClinicalTeamJoinFromUrl",
-        "copyToClipboardSafe",
-        "createMutationBuilder",
-        "dateInputValueToAccesoFecha",
-        "dbUnlockWindowHandlers",
-        "deleteCustomProtocol",
-        "diagnosticosTextForCenso",
-        "emitLiveSyncAgendaDelete",
-        "emitLiveSyncAgendaUpsert",
-        "emitLiveSyncPatientDelete",
-        "emitLiveSyncRevisionHint",
-        "emitLiveSyncTodoDelete",
-        "emitLiveSyncTodoUpsert",
-        "emptyListado",
-        "enrichLiveSyncHelloPayload",
-        "ensureClinicalPanelSession",
-        "ensureEffectiveLiveSyncRoomId",
-        "ensureLiveSyncRoomForUsernameRegister",
-        "ensurePatientAccesos",
-        "ensurePatientDiagnosticos",
-        "escTxt",
-        "extractLabReportHora",
-        "extractParsedValues",
-        "extractSensCrudasForGermFromSource",
-        "fetchActiveRotationCycleFromDb",
-        "fetchAndApplyClinicalOpsFromHost",
-        "fetchClinicalScopeContextFromDb",
-        "fetchClinicalTeamsFromDb",
-        "fetchIncomingAssignmentsFromDb",
-        "filterJoinedTeams",
-        "filterNewEventualidades",
-        "filterPatientsForPitchTour",
-        "flushClinicalProfileToLan",
-        "flushLiveSyncOutbox",
-        "formatAccesoFechaDisplay",
-        "formatAccesosForCenso",
-        "formatBhExtrasDisplayLine",
-        "formatCultivoCondensedForCopy",
-        "formatDiagnosticosCopy",
-        "formatRecetaHuFecha",
-        "getActiveLiveSyncRoomId",
-        "getClinicalScopeContextForEvaluate",
-        "getClinicalUser",
-        "getDefaultCama",
-        "getDefaultCuarto",
-        "getDefaultServicio",
-        "getLabHistoryRevision",
-        "getProcedureAgendaRowPx",
-        "getTrendRenderWindow",
-        "getUiDensity",
-        "guardAndSignLiveSyncMutation",
-        "handleAddMemberSubmit",
-        "handleCreateTeamSubmit",
-        "handleEditTeamSubmit",
-        "handleMyCycleSubmit",
-        "handleProfileFormSubmit",
-        "hasElevatedTeamPrivileges",
-        "hasProtocolOverride",
-        "hostBundleBodyFromEnvelope",
-        "initChromeAppearance",
-        "initClinicalAccessRuntime",
-        "isAscitisInterpretacionResLabChunk",
-        "isBenignLanPushSkipCode",
-        "isGuardiaMode",
-        "isLanSessionConfiguredForRest",
-        "isLegacyMachineUsername",
-        "isModeSala",
-        "isParsedCultivoHeaderLine",
-        "isPaseMode",
-        "isPitchPatientIsolationActive",
-        "isProtoFavorite",
-        "isUserTeamMember",
-        "isValidUsernameFormat",
-        "joinLanRoom",
-        "lanFetchHistoriaClinica",
-        "lanFetchHostPatientRow",
-        "lanPushHistoriaClinica",
-        "lanPushPatientVersioned",
-        "lanPushResult",
-        "lanSyncPatientArchivedFlag",
-        "launchConfetti",
-        "leaveLiveSyncRoom",
-        "liveSyncBundleHasPayload",
-        "loadCustomProtocols",
-        "loadProtoFavorites",
-        "loadProtoRecentIds",
-        "looksLikeSomeLabReport",
-        "mapPatientForGuardiaGrid",
-        "markOpenedDetailFromPaseBoard",
-        "markPitchTourSessionActive",
-        "maybeRevertSurrogateToPrimary",
-        "mergeCensoPatientFields",
-        "mergeSoapMedField",
-        "migrateLocalPatientsClinicalSala",
-        "migratePatientDiagnosticosFromVpo",
-        "migrateToV3",
-        "normalizeRecetaHuConsultServices",
-        "normalizeRecetaHuDraft",
-        "normalizeUsername",
-        "notifyLanProfilePushResult",
-        "onLiveSyncWireMessage",
-        "openClinicalTeamsPanel",
-        "openConnectionDropdown",
-        "openEntregaModal",
-        "openLanUsersDirectoryModal",
-        "openSOAPModalDirect",
-        "parseCuentaFromCultivoChunkLines",
-        "parseCultivo_",
-        "parseDiagnosticosText",
-        "parseLanJoinQuery",
-        "parsearSecciones",
-        "persistLanClientConfig",
-        "preloadNoteDxFromPatient",
-        "procesarLabs",
-        "promoteSelfToSurrogateHost",
-        "pushClinicalOpsLanNow",
-        "pushDiagnosticosToPatient",
-        "pushRoomSyncBundleToHost",
-        "reconcileLiveSyncRoom",
-        "refreshAscitisInterpretacionInResLabs_",
-        "refreshClinicalUserProfile",
-        "refreshGuardiaCensusFromDb",
-        "refreshLanClinicalDirectoryFromRoom",
-        "refreshTeamsUiAfterChange",
-        "registerChromeRuntime",
-        "registerLanRuntime",
-        "registerLanSaveHooks",
-        "registerLanSyncPushBridge",
-        "registerLanSyncRoomBridge",
-        "registerLanSyncRoomWireHandlers",
-        "registerSoapEstadoRuntime",
-        "rememberLiveSyncRoomMembership",
-        "removePatientLocally",
-        "removeProblema",
-        "removeProtocolOverride",
-        "renderClinicalTeamsPanel",
-        "renderCreateTeamForm",
-        "renderEntry",
-        "renderEstadoActualBar",
-        "renderEstadoActualButton",
-        "renderGuardiaBoard",
-        "renderGuardiaCensusGrid",
-        "renderLanPanel",
-        "reprocessLabResultLines_",
-        "resLabsHasAsciticFluid_",
-        "resolveClinicalRank",
-        "resolvePitchPersistPatients",
-        "resolveRoomIdForUsernameRegister",
-        "resolveSelfLanAdvertiseHostUrl",
-        "resumeClinicalIdentityByUsername",
-        "resumeClinicalSession",
-        "runSurrogateFailoverCheck",
-        "safeRenderClinicalTeamsPanel",
-        "saveLocalRoomSnapshot",
-        "saveProtocolOverride",
-        "scheduleLiveSyncOutboxFlush",
-        "scheduleLiveSyncPush",
-        "scheduleReconcileFromRevisionHint",
-        "scheduleSurrogateFailoverCheck",
-        "seedPitchDemo",
-        "sendLiveBundleIfOpen",
-        "setPitchPatientIsolation",
-        "setUiDensity",
-        "shouldUppercaseHcInput",
-        "signOutgoingLiveSyncMutation",
-        "sortTrendSpecsBySomeOrder",
-        "startLiveSyncReconnectLoop",
-        "stopClinicalAccessRuntime",
-        "stopLiveSyncReconnectLoop",
-        "stopSurrogateFailoverTimer",
-        "syncDbSecuritySectionUi",
-        "syncFontZoomButtons",
-        "syncGuardiaCensusPanelVisibility",
-        "syncGuardiaModeButtonVisibility",
-        "syncHighContrastButtons",
-        "syncLanHostTeamCodeSettingsInput",
-        "syncLegacyAccesoFields",
-        "syncLiveSyncAfterRoomJoin",
-        "syncLiveSyncStatusChrome",
-        "syncPaseReturnHeaderBtn",
-        "syncSettingsLanHostDiskSection",
-        "syncUiDensityButtons",
+        "$",
+        "$a",
+        "$b",
+        "$c",
+        "A",
+        "Aa",
+        "Ab",
+        "Ac",
+        "Ad",
+        "B",
+        "Ba",
+        "Bb",
+        "Bc",
+        "Bd",
+        "C",
+        "Ca",
+        "Cb",
+        "Cc",
+        "Cd",
+        "D",
+        "Da",
+        "Db",
+        "Dc",
+        "Dd",
+        "E",
+        "Ea",
+        "Eb",
+        "Ec",
+        "Ed",
+        "F",
+        "Fa",
+        "Fb",
+        "Fc",
+        "Fd",
+        "G",
+        "Ga",
+        "Gb",
+        "Gc",
+        "Gd",
+        "H",
+        "Ha",
+        "Hb",
+        "Hc",
+        "Hd",
+        "I",
+        "Ia",
+        "Ib",
+        "Ic",
+        "Id",
+        "J",
+        "Ja",
+        "Jb",
+        "Jc",
+        "Jd",
+        "K",
+        "Ka",
+        "Kb",
+        "Kc",
+        "Kd",
+        "L",
+        "La",
+        "Lb",
+        "Lc",
+        "Ld",
+        "M",
+        "Ma",
+        "Mb",
+        "Mc",
+        "Md",
+        "N",
+        "Na",
+        "Nb",
+        "Nc",
+        "Nd",
+        "O",
+        "Oa",
+        "Ob",
+        "Oc",
+        "Od",
+        "P",
+        "Pa",
+        "Pb",
+        "Pc",
+        "Q",
+        "Qa",
+        "Qb",
+        "Qc",
+        "R",
+        "Ra",
+        "Rb",
+        "Rc",
+        "S",
+        "Sa",
+        "Sb",
+        "Sc",
+        "T",
+        "Ta",
+        "Tb",
+        "Tc",
+        "U",
+        "Ua",
+        "Ub",
+        "Uc",
+        "V",
+        "Va",
+        "Vb",
+        "Vc",
+        "W",
+        "Wa",
+        "Wb",
+        "Wc",
+        "X",
+        "Xa",
+        "Xb",
+        "Xc",
+        "Y",
+        "Ya",
+        "Yb",
+        "Yc",
+        "Z",
+        "Za",
+        "Zb",
+        "Zc",
+        "_",
+        "_a",
+        "_b",
+        "_c",
+        "a",
+        "aa",
+        "ab",
+        "ac",
+        "ad",
+        "b",
+        "ba",
+        "bb",
+        "bc",
+        "bd",
+        "c",
+        "ca",
+        "cb",
+        "cc",
+        "cd",
+        "d",
+        "da",
+        "db",
+        "dc",
+        "dd",
+        "e",
+        "ea",
+        "eb",
+        "ec",
+        "ed",
+        "f",
+        "fa",
+        "fb",
+        "fc",
+        "fd",
+        "g",
+        "ga",
+        "gb",
+        "gc",
+        "gd",
+        "h",
+        "ha",
+        "hb",
+        "hc",
+        "hd",
+        "i",
+        "ia",
+        "ib",
+        "ic",
+        "id",
+        "j",
+        "ja",
+        "jb",
+        "jc",
+        "jd",
+        "k",
+        "ka",
+        "kb",
+        "kc",
+        "kd",
+        "l",
+        "la",
+        "lb",
+        "lc",
+        "ld",
+        "m",
+        "ma",
+        "mb",
+        "mc",
+        "md",
+        "n",
+        "na",
+        "nb",
+        "nc",
+        "nd",
+        "o",
+        "oa",
+        "ob",
+        "oc",
+        "od",
+        "p",
+        "pa",
+        "pb",
+        "pc",
+        "pd",
+        "q",
+        "qa",
+        "qb",
+        "qc",
+        "qd",
+        "r",
+        "ra",
+        "rb",
+        "rc",
+        "rd",
+        "s",
+        "sa",
+        "sb",
+        "sc",
+        "sd",
         "t",
-        "teamsModalEl",
-        "toClinicalHistoryText",
-        "toggleGuardiaMode",
-        "toggleProtoFavorite",
-        "touchPatientLanUpdatedAt",
-        "trendCatalogSeriesKey",
-        "tryMountClinicalTeamInviteBrowserGate",
-        "tryReconnectLanToHostUrl",
-        "tryRecoverPatientsFromPitchSandboxIfNeeded",
-        "unlockClinicalSessionOverlay",
-        "updateCustomProtocol",
-        "verifyIncomingClinicalLedger",
-        "waitForDbUnlock",
-        "waitForLiveChannelOpen",
-        "windowHandlers",
-        "windowHandlers2",
-        "windowHandlers3",
-        "wireBrowseSalaControl",
-        "wireClinicalOpsSyncRefresh",
-        "wireClinicalTeamsControls",
-        "wireClinicalTeamsModalChrome",
-        "wireClinicalTeamsPanelInteractions",
-        "wireCopyInviteButtons",
-        "wireJoinButtons",
-        "wireTeamManageModalDelegation"
+        "ta",
+        "tb",
+        "tc",
+        "td",
+        "u",
+        "ua",
+        "ub",
+        "uc",
+        "ud",
+        "v",
+        "va",
+        "vb",
+        "vc",
+        "vd",
+        "w",
+        "wa",
+        "wb",
+        "wc",
+        "wd",
+        "x",
+        "xa",
+        "xb",
+        "xc",
+        "xd",
+        "y",
+        "ya",
+        "yb",
+        "yc",
+        "yd",
+        "z",
+        "za",
+        "zb",
+        "zc",
+        "zd"
       ],
       "inputs": {
         "public/js/labs.js": {
-          "bytesInOutput": 121312
+          "bytesInOutput": 68315
         },
         "public/js/features/diagrams-parse.mjs": {
-          "bytesInOutput": 3002
+          "bytesInOutput": 1714
         },
         "public/js/tour-demo-some-lab.mjs": {
-          "bytesInOutput": 5326
+          "bytesInOutput": 5021
         },
         "public/js/tour-pitch-cultivos-some.mjs": {
-          "bytesInOutput": 4808
+          "bytesInOutput": 4038
         },
         "public/js/listado-problemas-core.mjs": {
-          "bytesInOutput": 1031
+          "bytesInOutput": 570
         },
         "public/js/tour-demo-listado-problemas.mjs": {
-          "bytesInOutput": 1510
+          "bytesInOutput": 1292
         },
         "public/js/receta-hu-core.mjs": {
-          "bytesInOutput": 4864
+          "bytesInOutput": 2833
         },
         "public/js/lab-history-cache.mjs": {
-          "bytesInOutput": 2843
+          "bytesInOutput": 1055
         },
         "public/js/tour-pitch-demo-todos.mjs": {
-          "bytesInOutput": 1899
+          "bytesInOutput": 1048
         },
         "public/js/tour-pitch-demo-seed.mjs": {
-          "bytesInOutput": 16415
+          "bytesInOutput": 8616
         },
         "public/js/live-sync-room.mjs": {
-          "bytesInOutput": 7763
+          "bytesInOutput": 3706
         },
         "public/js/live-sync-membership.mjs": {
-          "bytesInOutput": 1248
+          "bytesInOutput": 732
         },
         "public/js/livesync-patient-ids.mjs": {
-          "bytesInOutput": 3791
+          "bytesInOutput": 1758
         },
         "lib/historia-clinica/clinical-text.mjs": {
-          "bytesInOutput": 2644
+          "bytesInOutput": 1350
         },
         "lib/drive-import/merge-eventualidades.mjs": {
-          "bytesInOutput": 670
+          "bytesInOutput": 314
         },
         "public/js/lan-patient-merge.mjs": {
-          "bytesInOutput": 14150
+          "bytesInOutput": 7238
         },
         "public/js/manejo-custom-protocols.mjs": {
-          "bytesInOutput": 3184
+          "bytesInOutput": 1556
         },
         "public/js/manejo-protocol-favorites.mjs": {
-          "bytesInOutput": 1377
+          "bytesInOutput": 679
         },
         "public/js/manejo-room-data.mjs": {
-          "bytesInOutput": 4192
+          "bytesInOutput": 2167
         },
         "public/js/clinical-ops-bundle-merge.mjs": {
-          "bytesInOutput": 8159
+          "bytesInOutput": 3932
         },
         "public/js/clinical-ops-lan.mjs": {
-          "bytesInOutput": 1425
+          "bytesInOutput": 756
         },
         "public/js/lan-merge-registry.mjs": {
-          "bytesInOutput": 849
+          "bytesInOutput": 349
         },
         "public/js/host-bundle-bases.mjs": {
-          "bytesInOutput": 2776
+          "bytesInOutput": 1518
         },
         "public/js/lan-sync-state.mjs": {
-          "bytesInOutput": 1196
+          "bytesInOutput": 635
         },
         "public/js/lan-surrogate-host.mjs": {
-          "bytesInOutput": 4082
+          "bytesInOutput": 2315
         },
         "public/js/lan-host-pin.mjs": {
-          "bytesInOutput": 561
+          "bytesInOutput": 310
         },
         "public/js/live-sync-outbox.mjs": {
-          "bytesInOutput": 2592
+          "bytesInOutput": 1482
         },
         "public/js/lan-sync-diagnostics.mjs": {
-          "bytesInOutput": 1724
+          "bytesInOutput": 1159
         },
         "public/js/lan-lww-toast.mjs": {
-          "bytesInOutput": 1524
+          "bytesInOutput": 730
         },
         "public/js/lan-sync-bundle-push.mjs": {
-          "bytesInOutput": 517
+          "bytesInOutput": 252
         },
         "public/js/features/chrome.mjs": {
-          "bytesInOutput": 14725
+          "bytesInOutput": 10096
         },
         "public/js/features/crypto-signer.mjs": {
-          "bytesInOutput": 873
+          "bytesInOutput": 532
         },
         "public/js/guardia-mode-sync.mjs": {
-          "bytesInOutput": 1380
+          "bytesInOutput": 760
         },
         "public/js/vpo-dx-inference.mjs": {
-          "bytesInOutput": 4173
+          "bytesInOutput": 2911
         },
         "public/js/patient-date-fields.mjs": {
-          "bytesInOutput": 744
+          "bytesInOutput": 435
         },
         "public/js/patient-accesos.mjs": {
-          "bytesInOutput": 2498
+          "bytesInOutput": 1383
         },
         "public/js/patient-diagnosticos.mjs": {
-          "bytesInOutput": 2834
+          "bytesInOutput": 1577
         },
         "lib/entrega/entrega-handoff-context.mjs": {
-          "bytesInOutput": 6015
+          "bytesInOutput": 3504
         },
         "lib/entrega/entrega-vitals-plan.mjs": {
-          "bytesInOutput": 5480
+          "bytesInOutput": 2951
         },
         "lib/entrega/entrega-pendientes.mjs": {
-          "bytesInOutput": 3134
+          "bytesInOutput": 1781
         },
         "lib/entrega/entrega-chip-markers.mjs": {
-          "bytesInOutput": 1290
+          "bytesInOutput": 785
         },
         "lib/interno/vitals-banner.mjs": {
-          "bytesInOutput": 753
+          "bytesInOutput": 394
         },
         "lib/interno/interno-board.mjs": {
-          "bytesInOutput": 364
+          "bytesInOutput": 222
         },
         "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 6921
+          "bytesInOutput": 3472
         },
         "public/js/clinical-privileges.mjs": {
-          "bytesInOutput": 1106
+          "bytesInOutput": 417
         },
         "public/js/features/clinical-rotation.mjs": {
-          "bytesInOutput": 8980
+          "bytesInOutput": 5619
         },
         "public/js/clinical-username.mjs": {
-          "bytesInOutput": 464
+          "bytesInOutput": 246
         },
         "lib/admin-access-code.mjs": {
-          "bytesInOutput": 138
+          "bytesInOutput": 67
         },
         "public/js/features/clinical-teams/shared.mjs": {
-          "bytesInOutput": 5094
+          "bytesInOutput": 2672
         },
         "public/js/features/clinical-teams/index.mjs": {
-          "bytesInOutput": 3799
+          "bytesInOutput": 1917
         },
         "public/js/lan-join-link.mjs": {
-          "bytesInOutput": 3897
+          "bytesInOutput": 2195
         },
         "public/js/clinical-profile-lan-sync.mjs": {
-          "bytesInOutput": 4194
+          "bytesInOutput": 2296
         },
         "public/js/clinical-team-invite.mjs": {
-          "bytesInOutput": 6845
+          "bytesInOutput": 4517
         },
         "public/js/mode-features.mjs": {
-          "bytesInOutput": 886
+          "bytesInOutput": 484
         },
         "public/js/features/soap-estado.mjs": {
-          "bytesInOutput": 10046
+          "bytesInOutput": 7072
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 25954
+          "bytesInOutput": 15493
         },
         "public/js/features/clinical-panel-host.mjs": {
-          "bytesInOutput": 2213
+          "bytesInOutput": 1265
         },
         "public/js/features/clinical-teams/teams-guardia-bridge.mjs": {
-          "bytesInOutput": 2499
+          "bytesInOutput": 1320
         },
         "public/js/features/clinical-teams/teams-roster-lan.mjs": {
-          "bytesInOutput": 20396
+          "bytesInOutput": 12989
         },
         "public/js/features/clinical-teams/teams-roster-render.mjs": {
-          "bytesInOutput": 31849
+          "bytesInOutput": 23006
         },
         "public/js/features/clinical-teams/teams-roster.mjs": {
-          "bytesInOutput": 24126
+          "bytesInOutput": 13995
         },
         "public/js/features/clinical-teams/teams-invite.mjs": {
-          "bytesInOutput": 5004
+          "bytesInOutput": 2728
         },
         "public/js/features/clinical-teams.mjs": {
           "bytesInOutput": 0
         },
         "public/js/lan-client.mjs": {
-          "bytesInOutput": 6390
+          "bytesInOutput": 3808
         },
         "public/js/features/lan/runtime.mjs": {
-          "bytesInOutput": 1487
+          "bytesInOutput": 588
         },
         "public/js/versioned-mutation.mjs": {
-          "bytesInOutput": 797
+          "bytesInOutput": 384
         },
         "public/js/draft-conflict-store.mjs": {
-          "bytesInOutput": 2929
+          "bytesInOutput": 1723
         },
         "public/js/lan-conflict-silent-match.mjs": {
-          "bytesInOutput": 8420
+          "bytesInOutput": 4987
         },
         "public/js/features/lan/transport.mjs": {
-          "bytesInOutput": 20739
+          "bytesInOutput": 12464
         },
         "public/js/features/lan-hub-guardia-mode.mjs": {
-          "bytesInOutput": 906
+          "bytesInOutput": 586
         },
         "public/js/features/lan-hub-panel-shell.mjs": {
-          "bytesInOutput": 2480
+          "bytesInOutput": 1654
         },
         "node_modules/qrcode-generator/dist/qrcode.mjs": {
-          "bytesInOutput": 46224
+          "bytesInOutput": 20926
         },
         "public/js/interno-qr-render.mjs": {
-          "bytesInOutput": 1698
+          "bytesInOutput": 997
         },
         "public/js/features/interno-qr-panel.mjs": {
-          "bytesInOutput": 7563
+          "bytesInOutput": 4657
         },
         "public/js/features/lan/panel.mjs": {
-          "bytesInOutput": 50433
+          "bytesInOutput": 29617
         },
         "public/js/features/lan/orchestrator.mjs": {
-          "bytesInOutput": 39888
+          "bytesInOutput": 20700
         },
         "public/js/features/lan-sync.mjs": {
           "bytesInOutput": 0
         },
         "public/js/features/entrega-modal-ui.mjs": {
-          "bytesInOutput": 48005
+          "bytesInOutput": 33204
         },
         "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 18000
+          "bytesInOutput": 9371
         },
         "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 8310
+          "bytesInOutput": 4686
         },
         "public/js/features/session-manager.mjs": {
-          "bytesInOutput": 3723
+          "bytesInOutput": 1905
         },
         "public/js/clinical-access-runtime.mjs": {
-          "bytesInOutput": 16022
+          "bytesInOutput": 8043
         },
         "public/js/features/lan/push.mjs": {
-          "bytesInOutput": 21599
+          "bytesInOutput": 10363
         },
         "public/js/features/lan/room.mjs": {
-          "bytesInOutput": 24325
+          "bytesInOutput": 11141
         }
       },
-      "bytes": 777558
+      "bytes": 441126
     },
-    "public/js/chunks/chunk-NWJJI23U.js.map": {
+    "public/js/chunks/chunk-L4EWIBTY.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 312002
+      "bytes": 322330
     },
-    "public/js/chunks/chunk-NWJJI23U.js": {
+    "public/js/chunks/chunk-L4EWIBTY.js": {
       "imports": [],
       "exports": [
-        "ALBUMIN_MAX_GRAMS",
-        "BH_PANEL_FAMILIES",
-        "CLINICAL_LS_KEYS",
-        "HYPERTONIC_MAX_ML",
-        "INSULIN_MAX_U_PER_HR",
-        "LEVETIRACETAM_LOAD_MAX_MG",
-        "MAX_VITAL_LAYERS_IN_FORM",
-        "MAX_VITAL_READINGS_PER_DAY",
-        "MED_FIELD_KEYS",
-        "MEQ_PER_AMPOULE_8_4_PCT",
-        "PROPOFOL_MAX_MG_PER_KG_H",
-        "VANCO_LOAD_MAX_MG",
-        "VANCO_MAINT_MAX_MG",
-        "appendMedicion",
-        "applyMedCatalogOverlay",
-        "applySomePharmCatalogOverlay",
-        "areElectrolyteReplacementSuggestionsHidden",
-        "areLabClinicalSuggestionsHidden",
-        "assignSomePharmCategories",
-        "assignSomePharmCategory",
-        "balanceGlobalHistorico",
-        "balanceTurno",
-        "bootHydrateFromDb",
-        "buildMedRecetaCopyText",
-        "buildMedRecetaNameOnlyText",
-        "buildSectionTableModel",
-        "buildTendChartLabels",
-        "buildTrendAxisMeta",
-        "clamp",
-        "classifyMedicationSoapCategory",
-        "classifyTendPanelFamily",
-        "closeClinicoUnlockModal",
-        "colKeyForTrendSet",
-        "collectBombaInsulinaForRegistroWindow",
-        "collectGlucometriasForRegistroWindow",
-        "columnSetsForFields",
-        "computeDietKcalKgFromTotal",
-        "computeDietKcalTotal",
-        "computeIoBalanceFromIngEgr",
-        "computeSalaAbcdefDeficitWrite",
-        "confirmClinicoUnlock",
-        "countVitalReadingsInRegistroWindow",
-        "dedupeTrendSetsForSeries",
-        "deriveSnapshot",
-        "dismissManejoTodoFromTodo",
-        "diuresisValueFromParts",
-        "dosisBeforeSlash",
-        "ensureMonitoreo",
-        "evaluateClinicalScope",
-        "evaluateElectrolyteManejo",
-        "evaluateLabSuggestions",
-        "familyOrderForSection",
-        "filterNewLabSuggestions",
-        "filterTodosRespectingDismissals",
-        "flushSaveState",
-        "formatBalanceLive",
-        "formatEgresoPartForText",
-        "formatEvacForText",
-        "formatIoClauseForSoap",
-        "formatMedicationEgresoLine",
-        "formatMemberCycleLabel",
-        "formatSomeBlock",
-        "formatTendSeriesLabel",
-        "formatTrendColumnHeader",
-        "getCycleFieldMetaForTeamCreate",
-        "getCycleLettersForTeamCreate",
-        "getDefaultRegistroRecordedAt",
-        "getGlucometriaRegistroWindow",
-        "getJoinedTeams",
-        "getSetTrendValueForSeries",
-        "getVitalExtraStorageKey",
-        "gluPointMs",
-        "incrementMedItemsDiaTratamiento",
-        "indicaciones",
-        "inferMembershipCycleForJoin",
-        "initAppState",
-        "ioNumericEgressTotal",
-        "isAbgAnalysisHidden",
-        "isClinicalDecisionGuidanceHidden",
-        "isClinicoAccessHidden",
-        "isClinicoUnlocked",
-        "isDbMode",
-        "isGluPointInRegistroWindow",
-        "isHistoriaClinicaSafetyHidden",
-        "isIoNumericValue",
-        "isIoNumericValue2",
-        "isManejoTabGloballyHidden",
-        "isManejoTodoDismissed",
-        "isOnCallToday",
-        "isPatientReadableInClinicalScope",
-        "isPercentPanelFamily",
-        "isSomePharmCategoryLabel",
-        "isVpoDxInferenceHidden",
-        "isVpoPeriopMedGuidanceHidden",
-        "isVpoRiskCalculationDisabled",
-        "labHistory",
-        "listSomePharmFilterLabels",
-        "listadoProblemas",
-        "looksLikeSomeMedicationPaste",
-        "medNotaSelectionByPatient",
-        "medPharmProfileByPatient",
-        "medRecetaByPatient",
-        "mergeMonitoreo",
-        "mergePatientMonitoreoFromImported",
-        "migratePanelFamilyKey",
-        "migratePatientMonitoreo",
-        "migratePatientsClinicalSala",
-        "normalizeEvacAbbrev",
-        "normalizeFechaLabHistory",
-        "normalizeHoraLabHistory",
-        "normalizeIoNcAbbrev",
-        "normalizeLabHistoryPatientSets",
-        "notes",
-        "openClinicoUnlockModal",
-        "parseFechaLabToMs",
-        "parseIoEgresoLine",
-        "parseIoEvacField",
-        "parseIoIngresoField",
-        "parseMedicationPaste",
-        "parsePatientWeightKg",
-        "patientMatchesTeam",
-        "patients",
-        "recetaHuByPatient",
-        "removeMedicion",
-        "repairLabHistoryInMemory",
-        "replaceAppStateFromBackupData",
-        "requirePositiveFinite",
-        "resolveDietWeightKg",
-        "resolveFechaActualizacion",
-        "resolveMembershipCycleForUser",
-        "rowSomePharmCategory",
-        "salaOnCallR1",
-        "salaOnCallR2",
-        "saveState",
-        "serializeEgrPartsToFormText",
-        "setIndicaciones",
-        "setLabHistory",
-        "setMedPharmProfileByPatient",
-        "setMedRecetaByPatient",
-        "setNotes",
-        "setPatients",
-        "setPersistPatientsResolver",
-        "setRecetaHuByPatient",
-        "setSaveStateHooks",
-        "setVpoByPatient",
-        "shouldAllowManejoTodo",
-        "shouldClearManejoPendingForDismissals",
-        "sortLabHistoryChronological",
-        "stampPatientClinicalSala",
-        "storage",
-        "syncDietKcalFromWeight",
-        "teamForMemberCycle",
-        "tendEligibleSectionKey",
-        "toEaSalidaText",
-        "toSomeUpper",
-        "vitalSeriesFromMedicion",
-        "vitalSeriesToLegacyFields",
-        "vpoByPatient"
+        "$",
+        "$a",
+        "A",
+        "Aa",
+        "Ab",
+        "B",
+        "Ba",
+        "Bb",
+        "C",
+        "Ca",
+        "Cb",
+        "D",
+        "Da",
+        "Db",
+        "E",
+        "Ea",
+        "Eb",
+        "F",
+        "Fa",
+        "Fb",
+        "G",
+        "Ga",
+        "Gb",
+        "H",
+        "Ha",
+        "Hb",
+        "I",
+        "Ia",
+        "Ib",
+        "J",
+        "Ja",
+        "Jb",
+        "K",
+        "Ka",
+        "Kb",
+        "L",
+        "La",
+        "Lb",
+        "M",
+        "Ma",
+        "Mb",
+        "N",
+        "Na",
+        "Nb",
+        "O",
+        "Oa",
+        "Ob",
+        "P",
+        "Pa",
+        "Pb",
+        "Q",
+        "Qa",
+        "Qb",
+        "R",
+        "Ra",
+        "Rb",
+        "S",
+        "Sa",
+        "Sb",
+        "T",
+        "Ta",
+        "Tb",
+        "U",
+        "Ua",
+        "Ub",
+        "V",
+        "Va",
+        "Vb",
+        "W",
+        "Wa",
+        "Wb",
+        "X",
+        "Xa",
+        "Xb",
+        "Y",
+        "Ya",
+        "Z",
+        "Za",
+        "_",
+        "_a",
+        "a",
+        "aa",
+        "ab",
+        "b",
+        "ba",
+        "bb",
+        "c",
+        "ca",
+        "cb",
+        "d",
+        "da",
+        "db",
+        "e",
+        "ea",
+        "eb",
+        "f",
+        "fa",
+        "fb",
+        "g",
+        "ga",
+        "gb",
+        "h",
+        "ha",
+        "hb",
+        "i",
+        "ia",
+        "ib",
+        "j",
+        "ja",
+        "jb",
+        "k",
+        "ka",
+        "kb",
+        "l",
+        "la",
+        "lb",
+        "m",
+        "ma",
+        "mb",
+        "n",
+        "na",
+        "nb",
+        "o",
+        "oa",
+        "ob",
+        "p",
+        "pa",
+        "pb",
+        "q",
+        "qa",
+        "qb",
+        "r",
+        "ra",
+        "rb",
+        "s",
+        "sa",
+        "sb",
+        "t",
+        "ta",
+        "tb",
+        "u",
+        "ua",
+        "ub",
+        "v",
+        "va",
+        "vb",
+        "w",
+        "wa",
+        "wb",
+        "x",
+        "xa",
+        "xb",
+        "y",
+        "ya",
+        "yb",
+        "z",
+        "za",
+        "zb"
       ],
       "inputs": {
         "public/js/storage-quota.mjs": {
-          "bytesInOutput": 1872
+          "bytesInOutput": 888
         },
         "public/js/db-storage-bridge.mjs": {
-          "bytesInOutput": 2047
+          "bytesInOutput": 1435
         },
         "public/js/storage.js": {
-          "bytesInOutput": 25909
+          "bytesInOutput": 12024
         },
         "public/js/med-receta-core.mjs": {
-          "bytesInOutput": 20444
+          "bytesInOutput": 12416
         },
         "public/js/med-pharm-some-catalog.mjs": {
-          "bytesInOutput": 5726
+          "bytesInOutput": 3775
         },
         "public/js/lab-history-repair.mjs": {
-          "bytesInOutput": 892
+          "bytesInOutput": 386
         },
         "public/js/features/estado-actual-io.mjs": {
-          "bytesInOutput": 8151
+          "bytesInOutput": 4682
         },
         "public/js/features/estado-actual-vital-extras.mjs": {
-          "bytesInOutput": 173
+          "bytesInOutput": 97
         },
         "public/js/features/estado-actual-registro-defaults.mjs": {
-          "bytesInOutput": 2721
+          "bytesInOutput": 1452
         },
         "public/js/features/estado-actual-vital-series.mjs": {
-          "bytesInOutput": 5072
+          "bytesInOutput": 2250
         },
         "public/js/features/estado-actual-data.mjs": {
-          "bytesInOutput": 15251
+          "bytesInOutput": 6918
         },
         "public/js/lab-clinical-suggestions.mjs": {
-          "bytesInOutput": 2331
+          "bytesInOutput": 1175
         },
         "public/js/clinical-safety.mjs": {
-          "bytesInOutput": 2049
+          "bytesInOutput": 882
         },
         "public/js/electrolyte-manejo.mjs": {
-          "bytesInOutput": 21853
+          "bytesInOutput": 12872
         },
         "public/js/tend-core.mjs": {
-          "bytesInOutput": 12502
+          "bytesInOutput": 6902
         },
         "public/js/manejo-todo-dismiss.mjs": {
-          "bytesInOutput": 5389
+          "bytesInOutput": 2622
         },
         "public/js/clinical-product-policy.mjs": {
-          "bytesInOutput": 859
+          "bytesInOutput": 247
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 18953
+          "bytesInOutput": 9733
         },
         "public/js/app-state.mjs": {
-          "bytesInOutput": 5382
+          "bytesInOutput": 2152
         }
       },
-      "bytes": 162344
+      "bytes": 84333
     },
-    "public/js/chunks/chunk-ZYO74J2K.js.map": {
+    "public/js/chunks/chunk-4R6RWLLM.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4154
+      "bytes": 4274
     },
-    "public/js/chunks/chunk-ZYO74J2K.js": {
+    "public/js/chunks/chunk-4R6RWLLM.js": {
       "imports": [],
       "exports": [
-        "CLINICAL_LAN_PROFILE_GATE_VERSION",
-        "markClinicalLanProfileGateComplete",
-        "needsClinicalLanProfileGate",
-        "persistClinicalUserBinding",
-        "readRpcSettings",
-        "resolveClinicalClientId"
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
       ],
       "inputs": {
         "public/js/clinical-settings.mjs": {
-          "bytesInOutput": 1976
+          "bytesInOutput": 1102
         }
       },
-      "bytes": 2259
+      "bytes": 1207
     }
   }
 }
