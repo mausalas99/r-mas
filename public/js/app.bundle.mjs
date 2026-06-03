@@ -4563,6 +4563,12 @@ function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, now) {
     );
   });
 }
+function salaOnCallR1(teams, sala, now) {
+  const d = now instanceof Date ? now : new Date(String(now));
+  return (teams || []).filter((t2) => t2.sala === sala).filter((t2) => isOnCallToday(t2, "R1", d)).flatMap(
+    (t2) => (t2.members || []).filter((m) => m.rank === "R1").map((m) => ({ team_id: t2.team_id, user_id: m.user_id }))
+  );
+}
 function salaOnCallR2(teams, now) {
   const d = now instanceof Date ? now : new Date(String(now));
   const r2Teams = (teams || []).filter((t2) => isOnCallToday(t2, "R2", d));
@@ -17053,6 +17059,9 @@ function canConfigureRotation(user) {
   if (rank === "R4") return true;
   return hasProgramAdminPrivileges(user);
 }
+function canManageInternoQr(user) {
+  return canConfigureRotation(user);
+}
 function hasElevatedTeamPrivileges(user) {
   if (!user) return false;
   if (hasProgramAdminPrivileges(user)) return true;
@@ -17205,6 +17214,1895 @@ function appendLanHubRoomsCard(root, opts) {
 }
 var init_lan_hub_panel_shell = __esm({
   "public/js/features/lan-hub-panel-shell.mjs"() {
+  }
+});
+
+// node_modules/qrcode-generator/dist/qrcode.mjs
+var qrcode, QRMode, QRErrorCorrectionLevel, QRMaskPattern, QRUtil, QRMath, qrPolynomial, QRRSBlock, qrBitBuffer, qrNumber, qrAlphaNum, qr8BitByte, qrKanji, byteArrayOutputStream, base64EncodeOutputStream, base64DecodeInputStream, gifImage, createDataURL, qrcode_default, stringToBytes;
+var init_qrcode = __esm({
+  "node_modules/qrcode-generator/dist/qrcode.mjs"() {
+    qrcode = function(typeNumber, errorCorrectionLevel) {
+      const PAD0 = 236;
+      const PAD1 = 17;
+      let _typeNumber = typeNumber;
+      const _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+      let _modules = null;
+      let _moduleCount = 0;
+      let _dataCache = null;
+      const _dataList = [];
+      const _this = {};
+      const makeImpl = function(test, maskPattern) {
+        _moduleCount = _typeNumber * 4 + 17;
+        _modules = (function(moduleCount) {
+          const modules = new Array(moduleCount);
+          for (let row = 0; row < moduleCount; row += 1) {
+            modules[row] = new Array(moduleCount);
+            for (let col = 0; col < moduleCount; col += 1) {
+              modules[row][col] = null;
+            }
+          }
+          return modules;
+        })(_moduleCount);
+        setupPositionProbePattern(0, 0);
+        setupPositionProbePattern(_moduleCount - 7, 0);
+        setupPositionProbePattern(0, _moduleCount - 7);
+        setupPositionAdjustPattern();
+        setupTimingPattern();
+        setupTypeInfo(test, maskPattern);
+        if (_typeNumber >= 7) {
+          setupTypeNumber(test);
+        }
+        if (_dataCache == null) {
+          _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+        }
+        mapData(_dataCache, maskPattern);
+      };
+      const setupPositionProbePattern = function(row, col) {
+        for (let r = -1; r <= 7; r += 1) {
+          if (row + r <= -1 || _moduleCount <= row + r) continue;
+          for (let c = -1; c <= 7; c += 1) {
+            if (col + c <= -1 || _moduleCount <= col + c) continue;
+            if (0 <= r && r <= 6 && (c == 0 || c == 6) || 0 <= c && c <= 6 && (r == 0 || r == 6) || 2 <= r && r <= 4 && 2 <= c && c <= 4) {
+              _modules[row + r][col + c] = true;
+            } else {
+              _modules[row + r][col + c] = false;
+            }
+          }
+        }
+      };
+      const getBestMaskPattern = function() {
+        let minLostPoint = 0;
+        let pattern = 0;
+        for (let i = 0; i < 8; i += 1) {
+          makeImpl(true, i);
+          const lostPoint = QRUtil.getLostPoint(_this);
+          if (i == 0 || minLostPoint > lostPoint) {
+            minLostPoint = lostPoint;
+            pattern = i;
+          }
+        }
+        return pattern;
+      };
+      const setupTimingPattern = function() {
+        for (let r = 8; r < _moduleCount - 8; r += 1) {
+          if (_modules[r][6] != null) {
+            continue;
+          }
+          _modules[r][6] = r % 2 == 0;
+        }
+        for (let c = 8; c < _moduleCount - 8; c += 1) {
+          if (_modules[6][c] != null) {
+            continue;
+          }
+          _modules[6][c] = c % 2 == 0;
+        }
+      };
+      const setupPositionAdjustPattern = function() {
+        const pos = QRUtil.getPatternPosition(_typeNumber);
+        for (let i = 0; i < pos.length; i += 1) {
+          for (let j = 0; j < pos.length; j += 1) {
+            const row = pos[i];
+            const col = pos[j];
+            if (_modules[row][col] != null) {
+              continue;
+            }
+            for (let r = -2; r <= 2; r += 1) {
+              for (let c = -2; c <= 2; c += 1) {
+                if (r == -2 || r == 2 || c == -2 || c == 2 || r == 0 && c == 0) {
+                  _modules[row + r][col + c] = true;
+                } else {
+                  _modules[row + r][col + c] = false;
+                }
+              }
+            }
+          }
+        }
+      };
+      const setupTypeNumber = function(test) {
+        const bits = QRUtil.getBCHTypeNumber(_typeNumber);
+        for (let i = 0; i < 18; i += 1) {
+          const mod = !test && (bits >> i & 1) == 1;
+          _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+        }
+        for (let i = 0; i < 18; i += 1) {
+          const mod = !test && (bits >> i & 1) == 1;
+          _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+        }
+      };
+      const setupTypeInfo = function(test, maskPattern) {
+        const data = _errorCorrectionLevel << 3 | maskPattern;
+        const bits = QRUtil.getBCHTypeInfo(data);
+        for (let i = 0; i < 15; i += 1) {
+          const mod = !test && (bits >> i & 1) == 1;
+          if (i < 6) {
+            _modules[i][8] = mod;
+          } else if (i < 8) {
+            _modules[i + 1][8] = mod;
+          } else {
+            _modules[_moduleCount - 15 + i][8] = mod;
+          }
+        }
+        for (let i = 0; i < 15; i += 1) {
+          const mod = !test && (bits >> i & 1) == 1;
+          if (i < 8) {
+            _modules[8][_moduleCount - i - 1] = mod;
+          } else if (i < 9) {
+            _modules[8][15 - i - 1 + 1] = mod;
+          } else {
+            _modules[8][15 - i - 1] = mod;
+          }
+        }
+        _modules[_moduleCount - 8][8] = !test;
+      };
+      const mapData = function(data, maskPattern) {
+        let inc = -1;
+        let row = _moduleCount - 1;
+        let bitIndex = 7;
+        let byteIndex = 0;
+        const maskFunc = QRUtil.getMaskFunction(maskPattern);
+        for (let col = _moduleCount - 1; col > 0; col -= 2) {
+          if (col == 6) col -= 1;
+          while (true) {
+            for (let c = 0; c < 2; c += 1) {
+              if (_modules[row][col - c] == null) {
+                let dark = false;
+                if (byteIndex < data.length) {
+                  dark = (data[byteIndex] >>> bitIndex & 1) == 1;
+                }
+                const mask = maskFunc(row, col - c);
+                if (mask) {
+                  dark = !dark;
+                }
+                _modules[row][col - c] = dark;
+                bitIndex -= 1;
+                if (bitIndex == -1) {
+                  byteIndex += 1;
+                  bitIndex = 7;
+                }
+              }
+            }
+            row += inc;
+            if (row < 0 || _moduleCount <= row) {
+              row -= inc;
+              inc = -inc;
+              break;
+            }
+          }
+        }
+      };
+      const createBytes = function(buffer, rsBlocks) {
+        let offset = 0;
+        let maxDcCount = 0;
+        let maxEcCount = 0;
+        const dcdata = new Array(rsBlocks.length);
+        const ecdata = new Array(rsBlocks.length);
+        for (let r = 0; r < rsBlocks.length; r += 1) {
+          const dcCount = rsBlocks[r].dataCount;
+          const ecCount = rsBlocks[r].totalCount - dcCount;
+          maxDcCount = Math.max(maxDcCount, dcCount);
+          maxEcCount = Math.max(maxEcCount, ecCount);
+          dcdata[r] = new Array(dcCount);
+          for (let i = 0; i < dcdata[r].length; i += 1) {
+            dcdata[r][i] = 255 & buffer.getBuffer()[i + offset];
+          }
+          offset += dcCount;
+          const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+          const rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+          const modPoly = rawPoly.mod(rsPoly);
+          ecdata[r] = new Array(rsPoly.getLength() - 1);
+          for (let i = 0; i < ecdata[r].length; i += 1) {
+            const modIndex = i + modPoly.getLength() - ecdata[r].length;
+            ecdata[r][i] = modIndex >= 0 ? modPoly.getAt(modIndex) : 0;
+          }
+        }
+        let totalCodeCount = 0;
+        for (let i = 0; i < rsBlocks.length; i += 1) {
+          totalCodeCount += rsBlocks[i].totalCount;
+        }
+        const data = new Array(totalCodeCount);
+        let index = 0;
+        for (let i = 0; i < maxDcCount; i += 1) {
+          for (let r = 0; r < rsBlocks.length; r += 1) {
+            if (i < dcdata[r].length) {
+              data[index] = dcdata[r][i];
+              index += 1;
+            }
+          }
+        }
+        for (let i = 0; i < maxEcCount; i += 1) {
+          for (let r = 0; r < rsBlocks.length; r += 1) {
+            if (i < ecdata[r].length) {
+              data[index] = ecdata[r][i];
+              index += 1;
+            }
+          }
+        }
+        return data;
+      };
+      const createData = function(typeNumber2, errorCorrectionLevel2, dataList) {
+        const rsBlocks = QRRSBlock.getRSBlocks(typeNumber2, errorCorrectionLevel2);
+        const buffer = qrBitBuffer();
+        for (let i = 0; i < dataList.length; i += 1) {
+          const data = dataList[i];
+          buffer.put(data.getMode(), 4);
+          buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber2));
+          data.write(buffer);
+        }
+        let totalDataCount = 0;
+        for (let i = 0; i < rsBlocks.length; i += 1) {
+          totalDataCount += rsBlocks[i].dataCount;
+        }
+        if (buffer.getLengthInBits() > totalDataCount * 8) {
+          throw "code length overflow. (" + buffer.getLengthInBits() + ">" + totalDataCount * 8 + ")";
+        }
+        if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+          buffer.put(0, 4);
+        }
+        while (buffer.getLengthInBits() % 8 != 0) {
+          buffer.putBit(false);
+        }
+        while (true) {
+          if (buffer.getLengthInBits() >= totalDataCount * 8) {
+            break;
+          }
+          buffer.put(PAD0, 8);
+          if (buffer.getLengthInBits() >= totalDataCount * 8) {
+            break;
+          }
+          buffer.put(PAD1, 8);
+        }
+        return createBytes(buffer, rsBlocks);
+      };
+      _this.addData = function(data, mode) {
+        mode = mode || "Byte";
+        let newData = null;
+        switch (mode) {
+          case "Numeric":
+            newData = qrNumber(data);
+            break;
+          case "Alphanumeric":
+            newData = qrAlphaNum(data);
+            break;
+          case "Byte":
+            newData = qr8BitByte(data);
+            break;
+          case "Kanji":
+            newData = qrKanji(data);
+            break;
+          default:
+            throw "mode:" + mode;
+        }
+        _dataList.push(newData);
+        _dataCache = null;
+      };
+      _this.isDark = function(row, col) {
+        if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+          throw row + "," + col;
+        }
+        return _modules[row][col];
+      };
+      _this.getModuleCount = function() {
+        return _moduleCount;
+      };
+      _this.make = function() {
+        if (_typeNumber < 1) {
+          let typeNumber2 = 1;
+          for (; typeNumber2 < 40; typeNumber2++) {
+            const rsBlocks = QRRSBlock.getRSBlocks(typeNumber2, _errorCorrectionLevel);
+            const buffer = qrBitBuffer();
+            for (let i = 0; i < _dataList.length; i++) {
+              const data = _dataList[i];
+              buffer.put(data.getMode(), 4);
+              buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber2));
+              data.write(buffer);
+            }
+            let totalDataCount = 0;
+            for (let i = 0; i < rsBlocks.length; i++) {
+              totalDataCount += rsBlocks[i].dataCount;
+            }
+            if (buffer.getLengthInBits() <= totalDataCount * 8) {
+              break;
+            }
+          }
+          _typeNumber = typeNumber2;
+        }
+        makeImpl(false, getBestMaskPattern());
+      };
+      _this.createTableTag = function(cellSize, margin) {
+        cellSize = cellSize || 2;
+        margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+        let qrHtml = "";
+        qrHtml += '<table style="';
+        qrHtml += " border-width: 0px; border-style: none;";
+        qrHtml += " border-collapse: collapse;";
+        qrHtml += " padding: 0px; margin: " + margin + "px;";
+        qrHtml += '">';
+        qrHtml += "<tbody>";
+        for (let r = 0; r < _this.getModuleCount(); r += 1) {
+          qrHtml += "<tr>";
+          for (let c = 0; c < _this.getModuleCount(); c += 1) {
+            qrHtml += '<td style="';
+            qrHtml += " border-width: 0px; border-style: none;";
+            qrHtml += " border-collapse: collapse;";
+            qrHtml += " padding: 0px; margin: 0px;";
+            qrHtml += " width: " + cellSize + "px;";
+            qrHtml += " height: " + cellSize + "px;";
+            qrHtml += " background-color: ";
+            qrHtml += _this.isDark(r, c) ? "#000000" : "#ffffff";
+            qrHtml += ";";
+            qrHtml += '"/>';
+          }
+          qrHtml += "</tr>";
+        }
+        qrHtml += "</tbody>";
+        qrHtml += "</table>";
+        return qrHtml;
+      };
+      _this.createSvgTag = function(cellSize, margin, alt, title) {
+        let opts = {};
+        if (typeof arguments[0] == "object") {
+          opts = arguments[0];
+          cellSize = opts.cellSize;
+          margin = opts.margin;
+          alt = opts.alt;
+          title = opts.title;
+        }
+        cellSize = cellSize || 2;
+        margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+        alt = typeof alt === "string" ? { text: alt } : alt || {};
+        alt.text = alt.text || null;
+        alt.id = alt.text ? alt.id || "qrcode-description" : null;
+        title = typeof title === "string" ? { text: title } : title || {};
+        title.text = title.text || null;
+        title.id = title.text ? title.id || "qrcode-title" : null;
+        const size = _this.getModuleCount() * cellSize + margin * 2;
+        let c, mc, r, mr, qrSvg = "", rect;
+        rect = "l" + cellSize + ",0 0," + cellSize + " -" + cellSize + ",0 0,-" + cellSize + "z ";
+        qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+        qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : "";
+        qrSvg += ' viewBox="0 0 ' + size + " " + size + '" ';
+        qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+        qrSvg += title.text || alt.text ? ' role="img" aria-labelledby="' + escapeXml([title.id, alt.id].join(" ").trim()) + '"' : "";
+        qrSvg += ">";
+        qrSvg += title.text ? '<title id="' + escapeXml(title.id) + '">' + escapeXml(title.text) + "</title>" : "";
+        qrSvg += alt.text ? '<description id="' + escapeXml(alt.id) + '">' + escapeXml(alt.text) + "</description>" : "";
+        qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+        qrSvg += '<path d="';
+        for (r = 0; r < _this.getModuleCount(); r += 1) {
+          mr = r * cellSize + margin;
+          for (c = 0; c < _this.getModuleCount(); c += 1) {
+            if (_this.isDark(r, c)) {
+              mc = c * cellSize + margin;
+              qrSvg += "M" + mc + "," + mr + rect;
+            }
+          }
+        }
+        qrSvg += '" stroke="transparent" fill="black"/>';
+        qrSvg += "</svg>";
+        return qrSvg;
+      };
+      _this.createDataURL = function(cellSize, margin) {
+        cellSize = cellSize || 2;
+        margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+        const size = _this.getModuleCount() * cellSize + margin * 2;
+        const min = margin;
+        const max = size - margin;
+        return createDataURL(size, size, function(x, y) {
+          if (min <= x && x < max && min <= y && y < max) {
+            const c = Math.floor((x - min) / cellSize);
+            const r = Math.floor((y - min) / cellSize);
+            return _this.isDark(r, c) ? 0 : 1;
+          } else {
+            return 1;
+          }
+        });
+      };
+      _this.createImgTag = function(cellSize, margin, alt) {
+        cellSize = cellSize || 2;
+        margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+        const size = _this.getModuleCount() * cellSize + margin * 2;
+        let img = "";
+        img += "<img";
+        img += ' src="';
+        img += _this.createDataURL(cellSize, margin);
+        img += '"';
+        img += ' width="';
+        img += size;
+        img += '"';
+        img += ' height="';
+        img += size;
+        img += '"';
+        if (alt) {
+          img += ' alt="';
+          img += escapeXml(alt);
+          img += '"';
+        }
+        img += "/>";
+        return img;
+      };
+      const escapeXml = function(s) {
+        let escaped = "";
+        for (let i = 0; i < s.length; i += 1) {
+          const c = s.charAt(i);
+          switch (c) {
+            case "<":
+              escaped += "&lt;";
+              break;
+            case ">":
+              escaped += "&gt;";
+              break;
+            case "&":
+              escaped += "&amp;";
+              break;
+            case '"':
+              escaped += "&quot;";
+              break;
+            default:
+              escaped += c;
+              break;
+          }
+        }
+        return escaped;
+      };
+      const _createHalfASCII = function(margin) {
+        const cellSize = 1;
+        margin = typeof margin == "undefined" ? cellSize * 2 : margin;
+        const size = _this.getModuleCount() * cellSize + margin * 2;
+        const min = margin;
+        const max = size - margin;
+        let y, x, r1, r2, p;
+        const blocks = {
+          "\u2588\u2588": "\u2588",
+          "\u2588 ": "\u2580",
+          " \u2588": "\u2584",
+          "  ": " "
+        };
+        const blocksLastLineNoMargin = {
+          "\u2588\u2588": "\u2580",
+          "\u2588 ": "\u2580",
+          " \u2588": " ",
+          "  ": " "
+        };
+        let ascii = "";
+        for (y = 0; y < size; y += 2) {
+          r1 = Math.floor((y - min) / cellSize);
+          r2 = Math.floor((y + 1 - min) / cellSize);
+          for (x = 0; x < size; x += 1) {
+            p = "\u2588";
+            if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+              p = " ";
+            }
+            if (min <= x && x < max && min <= y + 1 && y + 1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+              p += " ";
+            } else {
+              p += "\u2588";
+            }
+            ascii += margin < 1 && y + 1 >= max ? blocksLastLineNoMargin[p] : blocks[p];
+          }
+          ascii += "\n";
+        }
+        if (size % 2 && margin > 0) {
+          return ascii.substring(0, ascii.length - size - 1) + Array(size + 1).join("\u2580");
+        }
+        return ascii.substring(0, ascii.length - 1);
+      };
+      _this.createASCII = function(cellSize, margin) {
+        cellSize = cellSize || 1;
+        if (cellSize < 2) {
+          return _createHalfASCII(margin);
+        }
+        cellSize -= 1;
+        margin = typeof margin == "undefined" ? cellSize * 2 : margin;
+        const size = _this.getModuleCount() * cellSize + margin * 2;
+        const min = margin;
+        const max = size - margin;
+        let y, x, r, p;
+        const white = Array(cellSize + 1).join("\u2588\u2588");
+        const black = Array(cellSize + 1).join("  ");
+        let ascii = "";
+        let line = "";
+        for (y = 0; y < size; y += 1) {
+          r = Math.floor((y - min) / cellSize);
+          line = "";
+          for (x = 0; x < size; x += 1) {
+            p = 1;
+            if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+              p = 0;
+            }
+            line += p ? white : black;
+          }
+          for (r = 0; r < cellSize; r += 1) {
+            ascii += line + "\n";
+          }
+        }
+        return ascii.substring(0, ascii.length - 1);
+      };
+      _this.renderTo2dContext = function(context, cellSize) {
+        cellSize = cellSize || 2;
+        const length = _this.getModuleCount();
+        for (let row = 0; row < length; row++) {
+          for (let col = 0; col < length; col++) {
+            context.fillStyle = _this.isDark(row, col) ? "black" : "white";
+            context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          }
+        }
+      };
+      return _this;
+    };
+    qrcode.stringToBytes = function(s) {
+      const bytes = [];
+      for (let i = 0; i < s.length; i += 1) {
+        const c = s.charCodeAt(i);
+        bytes.push(c & 255);
+      }
+      return bytes;
+    };
+    qrcode.createStringToBytes = function(unicodeData, numChars) {
+      const unicodeMap = (function() {
+        const bin = base64DecodeInputStream(unicodeData);
+        const read2 = function() {
+          const b = bin.read();
+          if (b == -1) throw "eof";
+          return b;
+        };
+        let count = 0;
+        const unicodeMap2 = {};
+        while (true) {
+          const b0 = bin.read();
+          if (b0 == -1) break;
+          const b1 = read2();
+          const b2 = read2();
+          const b3 = read2();
+          const k = String.fromCharCode(b0 << 8 | b1);
+          const v = b2 << 8 | b3;
+          unicodeMap2[k] = v;
+          count += 1;
+        }
+        if (count != numChars) {
+          throw count + " != " + numChars;
+        }
+        return unicodeMap2;
+      })();
+      const unknownChar = "?".charCodeAt(0);
+      return function(s) {
+        const bytes = [];
+        for (let i = 0; i < s.length; i += 1) {
+          const c = s.charCodeAt(i);
+          if (c < 128) {
+            bytes.push(c);
+          } else {
+            const b = unicodeMap[s.charAt(i)];
+            if (typeof b == "number") {
+              if ((b & 255) == b) {
+                bytes.push(b);
+              } else {
+                bytes.push(b >>> 8);
+                bytes.push(b & 255);
+              }
+            } else {
+              bytes.push(unknownChar);
+            }
+          }
+        }
+        return bytes;
+      };
+    };
+    QRMode = {
+      MODE_NUMBER: 1 << 0,
+      MODE_ALPHA_NUM: 1 << 1,
+      MODE_8BIT_BYTE: 1 << 2,
+      MODE_KANJI: 1 << 3
+    };
+    QRErrorCorrectionLevel = {
+      L: 1,
+      M: 0,
+      Q: 3,
+      H: 2
+    };
+    QRMaskPattern = {
+      PATTERN000: 0,
+      PATTERN001: 1,
+      PATTERN010: 2,
+      PATTERN011: 3,
+      PATTERN100: 4,
+      PATTERN101: 5,
+      PATTERN110: 6,
+      PATTERN111: 7
+    };
+    QRUtil = (function() {
+      const PATTERN_POSITION_TABLE = [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+      ];
+      const G15 = 1 << 10 | 1 << 8 | 1 << 5 | 1 << 4 | 1 << 2 | 1 << 1 | 1 << 0;
+      const G18 = 1 << 12 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 1 << 5 | 1 << 2 | 1 << 0;
+      const G15_MASK = 1 << 14 | 1 << 12 | 1 << 10 | 1 << 4 | 1 << 1;
+      const _this = {};
+      const getBCHDigit = function(data) {
+        let digit = 0;
+        while (data != 0) {
+          digit += 1;
+          data >>>= 1;
+        }
+        return digit;
+      };
+      _this.getBCHTypeInfo = function(data) {
+        let d = data << 10;
+        while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+          d ^= G15 << getBCHDigit(d) - getBCHDigit(G15);
+        }
+        return (data << 10 | d) ^ G15_MASK;
+      };
+      _this.getBCHTypeNumber = function(data) {
+        let d = data << 12;
+        while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+          d ^= G18 << getBCHDigit(d) - getBCHDigit(G18);
+        }
+        return data << 12 | d;
+      };
+      _this.getPatternPosition = function(typeNumber) {
+        return PATTERN_POSITION_TABLE[typeNumber - 1];
+      };
+      _this.getMaskFunction = function(maskPattern) {
+        switch (maskPattern) {
+          case QRMaskPattern.PATTERN000:
+            return function(i, j) {
+              return (i + j) % 2 == 0;
+            };
+          case QRMaskPattern.PATTERN001:
+            return function(i, j) {
+              return i % 2 == 0;
+            };
+          case QRMaskPattern.PATTERN010:
+            return function(i, j) {
+              return j % 3 == 0;
+            };
+          case QRMaskPattern.PATTERN011:
+            return function(i, j) {
+              return (i + j) % 3 == 0;
+            };
+          case QRMaskPattern.PATTERN100:
+            return function(i, j) {
+              return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0;
+            };
+          case QRMaskPattern.PATTERN101:
+            return function(i, j) {
+              return i * j % 2 + i * j % 3 == 0;
+            };
+          case QRMaskPattern.PATTERN110:
+            return function(i, j) {
+              return (i * j % 2 + i * j % 3) % 2 == 0;
+            };
+          case QRMaskPattern.PATTERN111:
+            return function(i, j) {
+              return (i * j % 3 + (i + j) % 2) % 2 == 0;
+            };
+          default:
+            throw "bad maskPattern:" + maskPattern;
+        }
+      };
+      _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+        let a = qrPolynomial([1], 0);
+        for (let i = 0; i < errorCorrectLength; i += 1) {
+          a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0));
+        }
+        return a;
+      };
+      _this.getLengthInBits = function(mode, type) {
+        if (1 <= type && type < 10) {
+          switch (mode) {
+            case QRMode.MODE_NUMBER:
+              return 10;
+            case QRMode.MODE_ALPHA_NUM:
+              return 9;
+            case QRMode.MODE_8BIT_BYTE:
+              return 8;
+            case QRMode.MODE_KANJI:
+              return 8;
+            default:
+              throw "mode:" + mode;
+          }
+        } else if (type < 27) {
+          switch (mode) {
+            case QRMode.MODE_NUMBER:
+              return 12;
+            case QRMode.MODE_ALPHA_NUM:
+              return 11;
+            case QRMode.MODE_8BIT_BYTE:
+              return 16;
+            case QRMode.MODE_KANJI:
+              return 10;
+            default:
+              throw "mode:" + mode;
+          }
+        } else if (type < 41) {
+          switch (mode) {
+            case QRMode.MODE_NUMBER:
+              return 14;
+            case QRMode.MODE_ALPHA_NUM:
+              return 13;
+            case QRMode.MODE_8BIT_BYTE:
+              return 16;
+            case QRMode.MODE_KANJI:
+              return 12;
+            default:
+              throw "mode:" + mode;
+          }
+        } else {
+          throw "type:" + type;
+        }
+      };
+      _this.getLostPoint = function(qrcode2) {
+        const moduleCount = qrcode2.getModuleCount();
+        let lostPoint = 0;
+        for (let row = 0; row < moduleCount; row += 1) {
+          for (let col = 0; col < moduleCount; col += 1) {
+            let sameCount = 0;
+            const dark = qrcode2.isDark(row, col);
+            for (let r = -1; r <= 1; r += 1) {
+              if (row + r < 0 || moduleCount <= row + r) {
+                continue;
+              }
+              for (let c = -1; c <= 1; c += 1) {
+                if (col + c < 0 || moduleCount <= col + c) {
+                  continue;
+                }
+                if (r == 0 && c == 0) {
+                  continue;
+                }
+                if (dark == qrcode2.isDark(row + r, col + c)) {
+                  sameCount += 1;
+                }
+              }
+            }
+            if (sameCount > 5) {
+              lostPoint += 3 + sameCount - 5;
+            }
+          }
+        }
+        ;
+        for (let row = 0; row < moduleCount - 1; row += 1) {
+          for (let col = 0; col < moduleCount - 1; col += 1) {
+            let count = 0;
+            if (qrcode2.isDark(row, col)) count += 1;
+            if (qrcode2.isDark(row + 1, col)) count += 1;
+            if (qrcode2.isDark(row, col + 1)) count += 1;
+            if (qrcode2.isDark(row + 1, col + 1)) count += 1;
+            if (count == 0 || count == 4) {
+              lostPoint += 3;
+            }
+          }
+        }
+        for (let row = 0; row < moduleCount; row += 1) {
+          for (let col = 0; col < moduleCount - 6; col += 1) {
+            if (qrcode2.isDark(row, col) && !qrcode2.isDark(row, col + 1) && qrcode2.isDark(row, col + 2) && qrcode2.isDark(row, col + 3) && qrcode2.isDark(row, col + 4) && !qrcode2.isDark(row, col + 5) && qrcode2.isDark(row, col + 6)) {
+              lostPoint += 40;
+            }
+          }
+        }
+        for (let col = 0; col < moduleCount; col += 1) {
+          for (let row = 0; row < moduleCount - 6; row += 1) {
+            if (qrcode2.isDark(row, col) && !qrcode2.isDark(row + 1, col) && qrcode2.isDark(row + 2, col) && qrcode2.isDark(row + 3, col) && qrcode2.isDark(row + 4, col) && !qrcode2.isDark(row + 5, col) && qrcode2.isDark(row + 6, col)) {
+              lostPoint += 40;
+            }
+          }
+        }
+        let darkCount = 0;
+        for (let col = 0; col < moduleCount; col += 1) {
+          for (let row = 0; row < moduleCount; row += 1) {
+            if (qrcode2.isDark(row, col)) {
+              darkCount += 1;
+            }
+          }
+        }
+        const ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+        return lostPoint;
+      };
+      return _this;
+    })();
+    QRMath = (function() {
+      const EXP_TABLE = new Array(256);
+      const LOG_TABLE = new Array(256);
+      for (let i = 0; i < 8; i += 1) {
+        EXP_TABLE[i] = 1 << i;
+      }
+      for (let i = 8; i < 256; i += 1) {
+        EXP_TABLE[i] = EXP_TABLE[i - 4] ^ EXP_TABLE[i - 5] ^ EXP_TABLE[i - 6] ^ EXP_TABLE[i - 8];
+      }
+      for (let i = 0; i < 255; i += 1) {
+        LOG_TABLE[EXP_TABLE[i]] = i;
+      }
+      const _this = {};
+      _this.glog = function(n) {
+        if (n < 1) {
+          throw "glog(" + n + ")";
+        }
+        return LOG_TABLE[n];
+      };
+      _this.gexp = function(n) {
+        while (n < 0) {
+          n += 255;
+        }
+        while (n >= 256) {
+          n -= 255;
+        }
+        return EXP_TABLE[n];
+      };
+      return _this;
+    })();
+    qrPolynomial = function(num4, shift) {
+      if (typeof num4.length == "undefined") {
+        throw num4.length + "/" + shift;
+      }
+      const _num = (function() {
+        let offset = 0;
+        while (offset < num4.length && num4[offset] == 0) {
+          offset += 1;
+        }
+        const _num2 = new Array(num4.length - offset + shift);
+        for (let i = 0; i < num4.length - offset; i += 1) {
+          _num2[i] = num4[i + offset];
+        }
+        return _num2;
+      })();
+      const _this = {};
+      _this.getAt = function(index) {
+        return _num[index];
+      };
+      _this.getLength = function() {
+        return _num.length;
+      };
+      _this.multiply = function(e) {
+        const num5 = new Array(_this.getLength() + e.getLength() - 1);
+        for (let i = 0; i < _this.getLength(); i += 1) {
+          for (let j = 0; j < e.getLength(); j += 1) {
+            num5[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i)) + QRMath.glog(e.getAt(j)));
+          }
+        }
+        return qrPolynomial(num5, 0);
+      };
+      _this.mod = function(e) {
+        if (_this.getLength() - e.getLength() < 0) {
+          return _this;
+        }
+        const ratio = QRMath.glog(_this.getAt(0)) - QRMath.glog(e.getAt(0));
+        const num5 = new Array(_this.getLength());
+        for (let i = 0; i < _this.getLength(); i += 1) {
+          num5[i] = _this.getAt(i);
+        }
+        for (let i = 0; i < e.getLength(); i += 1) {
+          num5[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i)) + ratio);
+        }
+        return qrPolynomial(num5, 0).mod(e);
+      };
+      return _this;
+    };
+    QRRSBlock = (function() {
+      const RS_BLOCK_TABLE = [
+        // L
+        // M
+        // Q
+        // H
+        // 1
+        [1, 26, 19],
+        [1, 26, 16],
+        [1, 26, 13],
+        [1, 26, 9],
+        // 2
+        [1, 44, 34],
+        [1, 44, 28],
+        [1, 44, 22],
+        [1, 44, 16],
+        // 3
+        [1, 70, 55],
+        [1, 70, 44],
+        [2, 35, 17],
+        [2, 35, 13],
+        // 4
+        [1, 100, 80],
+        [2, 50, 32],
+        [2, 50, 24],
+        [4, 25, 9],
+        // 5
+        [1, 134, 108],
+        [2, 67, 43],
+        [2, 33, 15, 2, 34, 16],
+        [2, 33, 11, 2, 34, 12],
+        // 6
+        [2, 86, 68],
+        [4, 43, 27],
+        [4, 43, 19],
+        [4, 43, 15],
+        // 7
+        [2, 98, 78],
+        [4, 49, 31],
+        [2, 32, 14, 4, 33, 15],
+        [4, 39, 13, 1, 40, 14],
+        // 8
+        [2, 121, 97],
+        [2, 60, 38, 2, 61, 39],
+        [4, 40, 18, 2, 41, 19],
+        [4, 40, 14, 2, 41, 15],
+        // 9
+        [2, 146, 116],
+        [3, 58, 36, 2, 59, 37],
+        [4, 36, 16, 4, 37, 17],
+        [4, 36, 12, 4, 37, 13],
+        // 10
+        [2, 86, 68, 2, 87, 69],
+        [4, 69, 43, 1, 70, 44],
+        [6, 43, 19, 2, 44, 20],
+        [6, 43, 15, 2, 44, 16],
+        // 11
+        [4, 101, 81],
+        [1, 80, 50, 4, 81, 51],
+        [4, 50, 22, 4, 51, 23],
+        [3, 36, 12, 8, 37, 13],
+        // 12
+        [2, 116, 92, 2, 117, 93],
+        [6, 58, 36, 2, 59, 37],
+        [4, 46, 20, 6, 47, 21],
+        [7, 42, 14, 4, 43, 15],
+        // 13
+        [4, 133, 107],
+        [8, 59, 37, 1, 60, 38],
+        [8, 44, 20, 4, 45, 21],
+        [12, 33, 11, 4, 34, 12],
+        // 14
+        [3, 145, 115, 1, 146, 116],
+        [4, 64, 40, 5, 65, 41],
+        [11, 36, 16, 5, 37, 17],
+        [11, 36, 12, 5, 37, 13],
+        // 15
+        [5, 109, 87, 1, 110, 88],
+        [5, 65, 41, 5, 66, 42],
+        [5, 54, 24, 7, 55, 25],
+        [11, 36, 12, 7, 37, 13],
+        // 16
+        [5, 122, 98, 1, 123, 99],
+        [7, 73, 45, 3, 74, 46],
+        [15, 43, 19, 2, 44, 20],
+        [3, 45, 15, 13, 46, 16],
+        // 17
+        [1, 135, 107, 5, 136, 108],
+        [10, 74, 46, 1, 75, 47],
+        [1, 50, 22, 15, 51, 23],
+        [2, 42, 14, 17, 43, 15],
+        // 18
+        [5, 150, 120, 1, 151, 121],
+        [9, 69, 43, 4, 70, 44],
+        [17, 50, 22, 1, 51, 23],
+        [2, 42, 14, 19, 43, 15],
+        // 19
+        [3, 141, 113, 4, 142, 114],
+        [3, 70, 44, 11, 71, 45],
+        [17, 47, 21, 4, 48, 22],
+        [9, 39, 13, 16, 40, 14],
+        // 20
+        [3, 135, 107, 5, 136, 108],
+        [3, 67, 41, 13, 68, 42],
+        [15, 54, 24, 5, 55, 25],
+        [15, 43, 15, 10, 44, 16],
+        // 21
+        [4, 144, 116, 4, 145, 117],
+        [17, 68, 42],
+        [17, 50, 22, 6, 51, 23],
+        [19, 46, 16, 6, 47, 17],
+        // 22
+        [2, 139, 111, 7, 140, 112],
+        [17, 74, 46],
+        [7, 54, 24, 16, 55, 25],
+        [34, 37, 13],
+        // 23
+        [4, 151, 121, 5, 152, 122],
+        [4, 75, 47, 14, 76, 48],
+        [11, 54, 24, 14, 55, 25],
+        [16, 45, 15, 14, 46, 16],
+        // 24
+        [6, 147, 117, 4, 148, 118],
+        [6, 73, 45, 14, 74, 46],
+        [11, 54, 24, 16, 55, 25],
+        [30, 46, 16, 2, 47, 17],
+        // 25
+        [8, 132, 106, 4, 133, 107],
+        [8, 75, 47, 13, 76, 48],
+        [7, 54, 24, 22, 55, 25],
+        [22, 45, 15, 13, 46, 16],
+        // 26
+        [10, 142, 114, 2, 143, 115],
+        [19, 74, 46, 4, 75, 47],
+        [28, 50, 22, 6, 51, 23],
+        [33, 46, 16, 4, 47, 17],
+        // 27
+        [8, 152, 122, 4, 153, 123],
+        [22, 73, 45, 3, 74, 46],
+        [8, 53, 23, 26, 54, 24],
+        [12, 45, 15, 28, 46, 16],
+        // 28
+        [3, 147, 117, 10, 148, 118],
+        [3, 73, 45, 23, 74, 46],
+        [4, 54, 24, 31, 55, 25],
+        [11, 45, 15, 31, 46, 16],
+        // 29
+        [7, 146, 116, 7, 147, 117],
+        [21, 73, 45, 7, 74, 46],
+        [1, 53, 23, 37, 54, 24],
+        [19, 45, 15, 26, 46, 16],
+        // 30
+        [5, 145, 115, 10, 146, 116],
+        [19, 75, 47, 10, 76, 48],
+        [15, 54, 24, 25, 55, 25],
+        [23, 45, 15, 25, 46, 16],
+        // 31
+        [13, 145, 115, 3, 146, 116],
+        [2, 74, 46, 29, 75, 47],
+        [42, 54, 24, 1, 55, 25],
+        [23, 45, 15, 28, 46, 16],
+        // 32
+        [17, 145, 115],
+        [10, 74, 46, 23, 75, 47],
+        [10, 54, 24, 35, 55, 25],
+        [19, 45, 15, 35, 46, 16],
+        // 33
+        [17, 145, 115, 1, 146, 116],
+        [14, 74, 46, 21, 75, 47],
+        [29, 54, 24, 19, 55, 25],
+        [11, 45, 15, 46, 46, 16],
+        // 34
+        [13, 145, 115, 6, 146, 116],
+        [14, 74, 46, 23, 75, 47],
+        [44, 54, 24, 7, 55, 25],
+        [59, 46, 16, 1, 47, 17],
+        // 35
+        [12, 151, 121, 7, 152, 122],
+        [12, 75, 47, 26, 76, 48],
+        [39, 54, 24, 14, 55, 25],
+        [22, 45, 15, 41, 46, 16],
+        // 36
+        [6, 151, 121, 14, 152, 122],
+        [6, 75, 47, 34, 76, 48],
+        [46, 54, 24, 10, 55, 25],
+        [2, 45, 15, 64, 46, 16],
+        // 37
+        [17, 152, 122, 4, 153, 123],
+        [29, 74, 46, 14, 75, 47],
+        [49, 54, 24, 10, 55, 25],
+        [24, 45, 15, 46, 46, 16],
+        // 38
+        [4, 152, 122, 18, 153, 123],
+        [13, 74, 46, 32, 75, 47],
+        [48, 54, 24, 14, 55, 25],
+        [42, 45, 15, 32, 46, 16],
+        // 39
+        [20, 147, 117, 4, 148, 118],
+        [40, 75, 47, 7, 76, 48],
+        [43, 54, 24, 22, 55, 25],
+        [10, 45, 15, 67, 46, 16],
+        // 40
+        [19, 148, 118, 6, 149, 119],
+        [18, 75, 47, 31, 76, 48],
+        [34, 54, 24, 34, 55, 25],
+        [20, 45, 15, 61, 46, 16]
+      ];
+      const qrRSBlock = function(totalCount, dataCount) {
+        const _this2 = {};
+        _this2.totalCount = totalCount;
+        _this2.dataCount = dataCount;
+        return _this2;
+      };
+      const _this = {};
+      const getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+        switch (errorCorrectionLevel) {
+          case QRErrorCorrectionLevel.L:
+            return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+          case QRErrorCorrectionLevel.M:
+            return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+          case QRErrorCorrectionLevel.Q:
+            return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+          case QRErrorCorrectionLevel.H:
+            return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+          default:
+            return void 0;
+        }
+      };
+      _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+        const rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+        if (typeof rsBlock == "undefined") {
+          throw "bad rs block @ typeNumber:" + typeNumber + "/errorCorrectionLevel:" + errorCorrectionLevel;
+        }
+        const length = rsBlock.length / 3;
+        const list = [];
+        for (let i = 0; i < length; i += 1) {
+          const count = rsBlock[i * 3 + 0];
+          const totalCount = rsBlock[i * 3 + 1];
+          const dataCount = rsBlock[i * 3 + 2];
+          for (let j = 0; j < count; j += 1) {
+            list.push(qrRSBlock(totalCount, dataCount));
+          }
+        }
+        return list;
+      };
+      return _this;
+    })();
+    qrBitBuffer = function() {
+      const _buffer = [];
+      let _length = 0;
+      const _this = {};
+      _this.getBuffer = function() {
+        return _buffer;
+      };
+      _this.getAt = function(index) {
+        const bufIndex = Math.floor(index / 8);
+        return (_buffer[bufIndex] >>> 7 - index % 8 & 1) == 1;
+      };
+      _this.put = function(num4, length) {
+        for (let i = 0; i < length; i += 1) {
+          _this.putBit((num4 >>> length - i - 1 & 1) == 1);
+        }
+      };
+      _this.getLengthInBits = function() {
+        return _length;
+      };
+      _this.putBit = function(bit) {
+        const bufIndex = Math.floor(_length / 8);
+        if (_buffer.length <= bufIndex) {
+          _buffer.push(0);
+        }
+        if (bit) {
+          _buffer[bufIndex] |= 128 >>> _length % 8;
+        }
+        _length += 1;
+      };
+      return _this;
+    };
+    qrNumber = function(data) {
+      const _mode = QRMode.MODE_NUMBER;
+      const _data2 = data;
+      const _this = {};
+      _this.getMode = function() {
+        return _mode;
+      };
+      _this.getLength = function(buffer) {
+        return _data2.length;
+      };
+      _this.write = function(buffer) {
+        const data2 = _data2;
+        let i = 0;
+        while (i + 2 < data2.length) {
+          buffer.put(strToNum(data2.substring(i, i + 3)), 10);
+          i += 3;
+        }
+        if (i < data2.length) {
+          if (data2.length - i == 1) {
+            buffer.put(strToNum(data2.substring(i, i + 1)), 4);
+          } else if (data2.length - i == 2) {
+            buffer.put(strToNum(data2.substring(i, i + 2)), 7);
+          }
+        }
+      };
+      const strToNum = function(s) {
+        let num4 = 0;
+        for (let i = 0; i < s.length; i += 1) {
+          num4 = num4 * 10 + chatToNum(s.charAt(i));
+        }
+        return num4;
+      };
+      const chatToNum = function(c) {
+        if ("0" <= c && c <= "9") {
+          return c.charCodeAt(0) - "0".charCodeAt(0);
+        }
+        throw "illegal char :" + c;
+      };
+      return _this;
+    };
+    qrAlphaNum = function(data) {
+      const _mode = QRMode.MODE_ALPHA_NUM;
+      const _data2 = data;
+      const _this = {};
+      _this.getMode = function() {
+        return _mode;
+      };
+      _this.getLength = function(buffer) {
+        return _data2.length;
+      };
+      _this.write = function(buffer) {
+        const s = _data2;
+        let i = 0;
+        while (i + 1 < s.length) {
+          buffer.put(
+            getCode(s.charAt(i)) * 45 + getCode(s.charAt(i + 1)),
+            11
+          );
+          i += 2;
+        }
+        if (i < s.length) {
+          buffer.put(getCode(s.charAt(i)), 6);
+        }
+      };
+      const getCode = function(c) {
+        if ("0" <= c && c <= "9") {
+          return c.charCodeAt(0) - "0".charCodeAt(0);
+        } else if ("A" <= c && c <= "Z") {
+          return c.charCodeAt(0) - "A".charCodeAt(0) + 10;
+        } else {
+          switch (c) {
+            case " ":
+              return 36;
+            case "$":
+              return 37;
+            case "%":
+              return 38;
+            case "*":
+              return 39;
+            case "+":
+              return 40;
+            case "-":
+              return 41;
+            case ".":
+              return 42;
+            case "/":
+              return 43;
+            case ":":
+              return 44;
+            default:
+              throw "illegal char :" + c;
+          }
+        }
+      };
+      return _this;
+    };
+    qr8BitByte = function(data) {
+      const _mode = QRMode.MODE_8BIT_BYTE;
+      const _data2 = data;
+      const _bytes = qrcode.stringToBytes(data);
+      const _this = {};
+      _this.getMode = function() {
+        return _mode;
+      };
+      _this.getLength = function(buffer) {
+        return _bytes.length;
+      };
+      _this.write = function(buffer) {
+        for (let i = 0; i < _bytes.length; i += 1) {
+          buffer.put(_bytes[i], 8);
+        }
+      };
+      return _this;
+    };
+    qrKanji = function(data) {
+      const _mode = QRMode.MODE_KANJI;
+      const _data2 = data;
+      const stringToBytes2 = qrcode.stringToBytes;
+      !(function(c, code) {
+        const test = stringToBytes2(c);
+        if (test.length != 2 || (test[0] << 8 | test[1]) != code) {
+          throw "sjis not supported.";
+        }
+      })("\u53CB", 38726);
+      const _bytes = stringToBytes2(data);
+      const _this = {};
+      _this.getMode = function() {
+        return _mode;
+      };
+      _this.getLength = function(buffer) {
+        return ~~(_bytes.length / 2);
+      };
+      _this.write = function(buffer) {
+        const data2 = _bytes;
+        let i = 0;
+        while (i + 1 < data2.length) {
+          let c = (255 & data2[i]) << 8 | 255 & data2[i + 1];
+          if (33088 <= c && c <= 40956) {
+            c -= 33088;
+          } else if (57408 <= c && c <= 60351) {
+            c -= 49472;
+          } else {
+            throw "illegal char at " + (i + 1) + "/" + c;
+          }
+          c = (c >>> 8 & 255) * 192 + (c & 255);
+          buffer.put(c, 13);
+          i += 2;
+        }
+        if (i < data2.length) {
+          throw "illegal char at " + (i + 1);
+        }
+      };
+      return _this;
+    };
+    byteArrayOutputStream = function() {
+      const _bytes = [];
+      const _this = {};
+      _this.writeByte = function(b) {
+        _bytes.push(b & 255);
+      };
+      _this.writeShort = function(i) {
+        _this.writeByte(i);
+        _this.writeByte(i >>> 8);
+      };
+      _this.writeBytes = function(b, off, len) {
+        off = off || 0;
+        len = len || b.length;
+        for (let i = 0; i < len; i += 1) {
+          _this.writeByte(b[i + off]);
+        }
+      };
+      _this.writeString = function(s) {
+        for (let i = 0; i < s.length; i += 1) {
+          _this.writeByte(s.charCodeAt(i));
+        }
+      };
+      _this.toByteArray = function() {
+        return _bytes;
+      };
+      _this.toString = function() {
+        let s = "";
+        s += "[";
+        for (let i = 0; i < _bytes.length; i += 1) {
+          if (i > 0) {
+            s += ",";
+          }
+          s += _bytes[i];
+        }
+        s += "]";
+        return s;
+      };
+      return _this;
+    };
+    base64EncodeOutputStream = function() {
+      let _buffer = 0;
+      let _buflen = 0;
+      let _length = 0;
+      let _base64 = "";
+      const _this = {};
+      const writeEncoded = function(b) {
+        _base64 += String.fromCharCode(encode(b & 63));
+      };
+      const encode = function(n) {
+        if (n < 0) {
+          throw "n:" + n;
+        } else if (n < 26) {
+          return 65 + n;
+        } else if (n < 52) {
+          return 97 + (n - 26);
+        } else if (n < 62) {
+          return 48 + (n - 52);
+        } else if (n == 62) {
+          return 43;
+        } else if (n == 63) {
+          return 47;
+        } else {
+          throw "n:" + n;
+        }
+      };
+      _this.writeByte = function(n) {
+        _buffer = _buffer << 8 | n & 255;
+        _buflen += 8;
+        _length += 1;
+        while (_buflen >= 6) {
+          writeEncoded(_buffer >>> _buflen - 6);
+          _buflen -= 6;
+        }
+      };
+      _this.flush = function() {
+        if (_buflen > 0) {
+          writeEncoded(_buffer << 6 - _buflen);
+          _buffer = 0;
+          _buflen = 0;
+        }
+        if (_length % 3 != 0) {
+          const padlen = 3 - _length % 3;
+          for (let i = 0; i < padlen; i += 1) {
+            _base64 += "=";
+          }
+        }
+      };
+      _this.toString = function() {
+        return _base64;
+      };
+      return _this;
+    };
+    base64DecodeInputStream = function(str) {
+      const _str = str;
+      let _pos = 0;
+      let _buffer = 0;
+      let _buflen = 0;
+      const _this = {};
+      _this.read = function() {
+        while (_buflen < 8) {
+          if (_pos >= _str.length) {
+            if (_buflen == 0) {
+              return -1;
+            }
+            throw "unexpected end of file./" + _buflen;
+          }
+          const c = _str.charAt(_pos);
+          _pos += 1;
+          if (c == "=") {
+            _buflen = 0;
+            return -1;
+          } else if (c.match(/^\s$/)) {
+            continue;
+          }
+          _buffer = _buffer << 6 | decode(c.charCodeAt(0));
+          _buflen += 6;
+        }
+        const n = _buffer >>> _buflen - 8 & 255;
+        _buflen -= 8;
+        return n;
+      };
+      const decode = function(c) {
+        if (65 <= c && c <= 90) {
+          return c - 65;
+        } else if (97 <= c && c <= 122) {
+          return c - 97 + 26;
+        } else if (48 <= c && c <= 57) {
+          return c - 48 + 52;
+        } else if (c == 43) {
+          return 62;
+        } else if (c == 47) {
+          return 63;
+        } else {
+          throw "c:" + c;
+        }
+      };
+      return _this;
+    };
+    gifImage = function(width, height) {
+      const _width = width;
+      const _height = height;
+      const _data2 = new Array(width * height);
+      const _this = {};
+      _this.setPixel = function(x, y, pixel) {
+        _data2[y * _width + x] = pixel;
+      };
+      _this.write = function(out) {
+        out.writeString("GIF87a");
+        out.writeShort(_width);
+        out.writeShort(_height);
+        out.writeByte(128);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(255);
+        out.writeByte(255);
+        out.writeByte(255);
+        out.writeString(",");
+        out.writeShort(0);
+        out.writeShort(0);
+        out.writeShort(_width);
+        out.writeShort(_height);
+        out.writeByte(0);
+        const lzwMinCodeSize = 2;
+        const raster = getLZWRaster(lzwMinCodeSize);
+        out.writeByte(lzwMinCodeSize);
+        let offset = 0;
+        while (raster.length - offset > 255) {
+          out.writeByte(255);
+          out.writeBytes(raster, offset, 255);
+          offset += 255;
+        }
+        out.writeByte(raster.length - offset);
+        out.writeBytes(raster, offset, raster.length - offset);
+        out.writeByte(0);
+        out.writeString(";");
+      };
+      const bitOutputStream = function(out) {
+        const _out = out;
+        let _bitLength = 0;
+        let _bitBuffer = 0;
+        const _this2 = {};
+        _this2.write = function(data, length) {
+          if (data >>> length != 0) {
+            throw "length over";
+          }
+          while (_bitLength + length >= 8) {
+            _out.writeByte(255 & (data << _bitLength | _bitBuffer));
+            length -= 8 - _bitLength;
+            data >>>= 8 - _bitLength;
+            _bitBuffer = 0;
+            _bitLength = 0;
+          }
+          _bitBuffer = data << _bitLength | _bitBuffer;
+          _bitLength = _bitLength + length;
+        };
+        _this2.flush = function() {
+          if (_bitLength > 0) {
+            _out.writeByte(_bitBuffer);
+          }
+        };
+        return _this2;
+      };
+      const getLZWRaster = function(lzwMinCodeSize) {
+        const clearCode = 1 << lzwMinCodeSize;
+        const endCode = (1 << lzwMinCodeSize) + 1;
+        let bitLength = lzwMinCodeSize + 1;
+        const table = lzwTable();
+        for (let i = 0; i < clearCode; i += 1) {
+          table.add(String.fromCharCode(i));
+        }
+        table.add(String.fromCharCode(clearCode));
+        table.add(String.fromCharCode(endCode));
+        const byteOut = byteArrayOutputStream();
+        const bitOut = bitOutputStream(byteOut);
+        bitOut.write(clearCode, bitLength);
+        let dataIndex = 0;
+        let s = String.fromCharCode(_data2[dataIndex]);
+        dataIndex += 1;
+        while (dataIndex < _data2.length) {
+          const c = String.fromCharCode(_data2[dataIndex]);
+          dataIndex += 1;
+          if (table.contains(s + c)) {
+            s = s + c;
+          } else {
+            bitOut.write(table.indexOf(s), bitLength);
+            if (table.size() < 4095) {
+              if (table.size() == 1 << bitLength) {
+                bitLength += 1;
+              }
+              table.add(s + c);
+            }
+            s = c;
+          }
+        }
+        bitOut.write(table.indexOf(s), bitLength);
+        bitOut.write(endCode, bitLength);
+        bitOut.flush();
+        return byteOut.toByteArray();
+      };
+      const lzwTable = function() {
+        const _map = {};
+        let _size = 0;
+        const _this2 = {};
+        _this2.add = function(key) {
+          if (_this2.contains(key)) {
+            throw "dup key:" + key;
+          }
+          _map[key] = _size;
+          _size += 1;
+        };
+        _this2.size = function() {
+          return _size;
+        };
+        _this2.indexOf = function(key) {
+          return _map[key];
+        };
+        _this2.contains = function(key) {
+          return typeof _map[key] != "undefined";
+        };
+        return _this2;
+      };
+      return _this;
+    };
+    createDataURL = function(width, height, getPixel) {
+      const gif = gifImage(width, height);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          gif.setPixel(x, y, getPixel(x, y));
+        }
+      }
+      const b = byteArrayOutputStream();
+      gif.write(b);
+      const base64 = base64EncodeOutputStream();
+      const bytes = b.toByteArray();
+      for (let i = 0; i < bytes.length; i += 1) {
+        base64.writeByte(bytes[i]);
+      }
+      base64.flush();
+      return "data:image/gif;base64," + base64;
+    };
+    qrcode_default = qrcode;
+    stringToBytes = qrcode.stringToBytes;
+  }
+});
+
+// public/js/interno-qr-render.mjs
+function drawInternoQrCanvas(canvas, text, opts = {}) {
+  const cellPx = opts.cellPx ?? 4;
+  const margin = opts.margin ?? 16;
+  const qr = qrcode_default(0, "M");
+  qr.addData(String(text || ""));
+  qr.make();
+  const n = qr.getModuleCount();
+  const size = n * cellPx + margin * 2;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas_context");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = "#000000";
+  for (let row = 0; row < n; row += 1) {
+    for (let col = 0; col < n; col += 1) {
+      if (!qr.isDark(row, col)) continue;
+      ctx.fillRect(margin + col * cellPx, margin + row * cellPx, cellPx, cellPx);
+    }
+  }
+  return canvas;
+}
+async function copyInternoQrImage(url, showToast2) {
+  const toast6 = typeof showToast2 === "function" ? showToast2 : (msg, kind) => {
+    if (typeof window.showToast === "function") window.showToast(msg, kind);
+  };
+  try {
+    const canvas = document.createElement("canvas");
+    drawInternoQrCanvas(canvas, url);
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => b ? resolve(b) : reject(new Error("blob_failed")), "image/png");
+    });
+    if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast6("QR copiado \u2014 p\xE9galo en WhatsApp o imprime", "success");
+      return;
+    }
+    const dataUrl = canvas.toDataURL("image/png");
+    await navigator.clipboard.writeText(dataUrl);
+    toast6("QR copiado como imagen (data URL)", "info");
+  } catch (_e) {
+    toast6("No se pudo copiar el QR", "error");
+  }
+}
+var init_interno_qr_render = __esm({
+  "public/js/interno-qr-render.mjs"() {
+    init_qrcode();
+  }
+});
+
+// public/js/features/interno-qr-panel.mjs
+function dbApi2() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function normalizeHostBase(hostBase) {
+  const base = String(hostBase || "").trim().replace(/\/+$/, "");
+  if (base) return base;
+  return "http://127.0.0.1:3738";
+}
+function internoUrl(sala, slug, token, hostBase) {
+  const host = normalizeHostBase(hostBase);
+  return `${host}/interno/${slug}?t=${encodeURIComponent(token)}&sala=${encodeURIComponent(sala)}`;
+}
+function isLocalOnlyHost(base) {
+  return /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/i.test(String(base || "").trim());
+}
+async function resolveHostBase(fallback) {
+  if (typeof window !== "undefined" && window.electronAPI?.getLanCandidateBaseUrl) {
+    try {
+      const u = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+      if (u && !isLocalOnlyHost(u)) return u;
+    } catch (_e) {
+    }
+  }
+  const fb = normalizeHostBase(fallback);
+  if (!isLocalOnlyHost(fb)) return fb;
+  return fb;
+}
+async function appendInternoQrPanel(root, opts = {}) {
+  const api3 = dbApi2();
+  const userId = String(opts.userId || "");
+  if (!api3 || !userId || typeof api3.dbInternoAccessList !== "function") return;
+  const details = document.createElement("details");
+  details.className = "lan-connect-card lan-hub-interno-details";
+  const summary = document.createElement("summary");
+  summary.className = "lan-hub-interno-summary";
+  summary.innerHTML = '<span class="lan-connect-card-title">QR Internos (MIP)</span><span class="lan-connect-card-hint lan-hub-interno-summary-hint">Celulares pregrado \xB7 config. \xFAnica</span>';
+  details.appendChild(summary);
+  const body = document.createElement("div");
+  body.className = "lan-hub-interno-body";
+  body.hidden = true;
+  details.appendChild(body);
+  root.appendChild(details);
+  const showToast2 = typeof opts.showToast === "function" ? opts.showToast : () => {
+  };
+  let hostBase = normalizeHostBase(opts.hostBaseUrl);
+  let loaded = false;
+  async function ensureLoaded() {
+    if (loaded) return;
+    loaded = true;
+    body.hidden = false;
+    await renderPanel2(body);
+  }
+  details.addEventListener("toggle", () => {
+    if (details.open) void ensureLoaded();
+  });
+  async function loadRows() {
+    const res = await api3.dbInternoAccessList({ userId });
+    if (!res || !res.ok) return null;
+    return Array.isArray(res.rows) ? res.rows : [];
+  }
+  async function renderPanel2(card) {
+    hostBase = await resolveHostBase(opts.hostBaseUrl || hostBase);
+    card.querySelectorAll(".interno-sala-block, .lan-connect-card-hint, .interno-qr-lan-warn").forEach((el) => el.remove());
+    if (isLocalOnlyHost(hostBase)) {
+      const warn = document.createElement("div");
+      warn.className = "interno-qr-lan-warn lan-connect-card-hint";
+      warn.style.cssText = "margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;";
+      warn.innerHTML = "<strong>Sin IP de red local.</strong> Conecta la Mac a Wi\u2011Fi/Ethernet y pulsa \xABActualizar IP\xBB. El celular no puede usar 127.0.0.1.";
+      card.appendChild(warn);
+      const refreshBtn = document.createElement("button");
+      refreshBtn.type = "button";
+      refreshBtn.className = "btn-lan-secondary";
+      refreshBtn.style.cssText = "font-size:12px;margin-bottom:8px;";
+      refreshBtn.textContent = "Actualizar IP";
+      refreshBtn.onclick = () => {
+        opts.hostBaseUrl = "";
+        void renderPanel2(card);
+      };
+      card.appendChild(refreshBtn);
+    } else {
+      const ok = document.createElement("p");
+      ok.className = "lan-connect-card-hint interno-qr-lan-warn";
+      ok.textContent = `Host LAN: ${hostBase}`;
+      card.appendChild(ok);
+    }
+    const rows = await loadRows();
+    if (rows === null) {
+      card.innerHTML = '<p class="lan-connect-card-hint">No se pudo cargar acceso interno.</p>';
+      return;
+    }
+    const bySala = new Map(rows.map((r) => [String(r.sala), r]));
+    for (const def of SALA_DEFS) {
+      const row = bySala.get(def.key) || {};
+      const active = row.is_active === 1;
+      const token = String(row.access_token || "");
+      const url = token ? internoUrl(def.key, def.slug, token, hostBase) : "";
+      const block = document.createElement("div");
+      block.className = "interno-sala-block";
+      block.style.marginTop = "12px";
+      block.style.paddingTop = "12px";
+      block.style.borderTop = "1px solid var(--border, rgba(128,128,128,0.25))";
+      block.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <strong>${def.key}</strong>
+        <span class="lan-connect-card-hint" style="margin:0">${active ? "Activo" : "Inactivo"}</span>
+      </div>`;
+      if (url) {
+        const link = document.createElement("p");
+        link.className = "lan-connect-card-hint";
+        link.style.wordBreak = "break-all";
+        link.style.fontSize = "11px";
+        link.textContent = url;
+        block.appendChild(link);
+      }
+      const btnRow = document.createElement("div");
+      btnRow.style.display = "flex";
+      btnRow.style.flexWrap = "wrap";
+      btnRow.style.gap = "6px";
+      btnRow.style.marginTop = "6px";
+      const mkBtn = (label, fn) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn-lan-secondary";
+        b.style.fontSize = "12px";
+        b.textContent = label;
+        b.onclick = () => void fn();
+        return b;
+      };
+      btnRow.appendChild(
+        mkBtn(active ? "Desactivar" : "Activar", async () => {
+          const r = await api3.dbInternoAccessSetActive({
+            userId,
+            sala: def.key,
+            active: !active
+          });
+          if (r?.ok) {
+            showToast2(active ? "Acceso interno desactivado" : "Acceso interno activado", "success");
+            await renderPanel2(body);
+          } else {
+            showToast2(r?.error || "Error", "error");
+          }
+        })
+      );
+      btnRow.appendChild(
+        mkBtn("Regenerar token", async () => {
+          if (!confirm(`\xBFRegenerar QR de ${def.key}? El enlace anterior dejar\xE1 de funcionar.`)) return;
+          const r = await api3.dbInternoAccessRotate({ userId, sala: def.key });
+          if (r?.ok) {
+            showToast2("Token regenerado \u2014 copia el QR de nuevo", "success");
+            await renderPanel2(body);
+          } else {
+            showToast2(r?.error || "Error", "error");
+          }
+        })
+      );
+      if (url) {
+        btnRow.appendChild(
+          mkBtn("Copiar enlace", async () => {
+            if (isLocalOnlyHost(hostBase)) {
+              showToast2("Primero obt\xE9n la IP LAN (Actualizar IP)", "error");
+              return;
+            }
+            try {
+              await navigator.clipboard.writeText(url);
+              showToast2("Enlace copiado", "success");
+            } catch (_e) {
+              showToast2("No se pudo copiar", "error");
+            }
+          })
+        );
+        btnRow.appendChild(
+          mkBtn("Copiar QR", () => {
+            if (isLocalOnlyHost(hostBase)) {
+              showToast2("Primero obt\xE9n la IP LAN (Actualizar IP)", "error");
+              return;
+            }
+            void copyInternoQrImage(url, showToast2);
+          })
+        );
+      }
+      block.appendChild(btnRow);
+      card.appendChild(block);
+    }
+  }
+}
+var SALA_DEFS;
+var init_interno_qr_panel = __esm({
+  "public/js/features/interno-qr-panel.mjs"() {
+    init_interno_qr_render();
+    SALA_DEFS = [
+      { key: "Sala 1", slug: "sala-1" },
+      { key: "Sala 2", slug: "sala-2" },
+      { key: "Sala E", slug: "sala-e" }
+    ];
   }
 });
 
@@ -18356,7 +20254,7 @@ function toast(msg, type = "info") {
     window.showToast(msg, type);
   }
 }
-function dbApi2() {
+function dbApi3() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
@@ -18453,7 +20351,7 @@ function wireRotationConfigFormOnce() {
       toast("Indica fin de mes y fecha de vigencia.", "error");
       return;
     }
-    const api3 = dbApi2();
+    const api3 = dbApi3();
     if (!api3 || typeof api3.dbRotationCycleUpsert !== "function") {
       toast("Base de datos no disponible.", "error");
       return;
@@ -18478,7 +20376,7 @@ async function confirmNuevaRotacion() {
     "\xBFIniciar nueva rotaci\xF3n?\n\n\u2022 Se archivan todos los equipos activos\n\u2022 Se limpian las guardias del d\xEDa\n\u2022 Los residentes deben volver a crear equipos\n\nEsta acci\xF3n no se puede deshacer."
   );
   if (!ok) return { ok: false, cancelled: true };
-  const api3 = dbApi2();
+  const api3 = dbApi3();
   const nuevaFn = api3 && (api3.dbRotationNueva || api3.rotationNueva);
   if (typeof nuevaFn !== "function") {
     toast("Base de datos no disponible.", "error");
@@ -18774,7 +20672,7 @@ __export(clinical_onboarding_exports, {
   renderOnboardingPanel: () => renderOnboardingPanel,
   renderOnboardingPanelInto: () => renderOnboardingPanelInto
 });
-function dbApi3() {
+function dbApi4() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
@@ -18855,7 +20753,7 @@ async function handleUsernameStepSubmit(ev) {
   }
   let settings2 = readRpcSettings();
   let sessionUserId = String(clinicalSessionContext.user?.user_id || "");
-  const api3 = dbApi3();
+  const api3 = dbApi4();
   if (!sessionUserId || !api3) {
     toast2("Sesi\xF3n cl\xEDnica no disponible.", "error");
     return;
@@ -19322,7 +21220,7 @@ function wireAdminCodeModalControls() {
     closeBtn.addEventListener("click", () => cancelAdminCodeModal());
   }
 }
-function dbApi4() {
+function dbApi5() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
@@ -19632,17 +21530,65 @@ function renderMyCycleEditBlock(team, user) {
       </form>
     </div>`;
 }
+function renderTeamManageActionsHtml(team) {
+  const teamId = escapeAttr3(String(team.team_id || ""));
+  const teamNameAttr = escapeAttr3(String(team.name || "Equipo"));
+  return `
+    <div class="clinical-teams-manage-actions">
+      <button type="button" class="btn-med-secondary clinical-teams-edit-btn" data-team-id="${teamId}">Editar</button>
+      <button type="button" class="btn-med-secondary clinical-teams-delete-btn" data-team-id="${teamId}" data-team-name="${teamNameAttr}">Eliminar</button>
+    </div>`;
+}
+function renderTeamEditPanelHtml(team) {
+  const teamId = escapeAttr3(String(team.team_id || ""));
+  const name = escapeHtml5(String(team.name || ""));
+  const sala = String(team.sala || "").trim();
+  return `
+    <div class="clinical-teams-edit-panel" hidden data-team-id="${teamId}">
+      <form class="clinical-teams-edit-form" data-team-id="${teamId}">
+        <div class="field-group">
+          <label for="clinical-edit-name-${teamId}">Nombre del equipo</label>
+          <input id="clinical-edit-name-${teamId}" type="text" class="profile-input clinical-teams-edit-name" value="${name}" required>
+        </div>
+        <div class="field-group">
+          <label for="clinical-edit-sala-${teamId}">Sala</label>
+          <select id="clinical-edit-sala-${teamId}" class="profile-input clinical-teams-edit-sala" required>
+            ${CLINICAL_SALAS.map(
+    (s) => `<option value="${escapeAttr3(s)}" ${sala === s ? "selected" : ""}>${escapeHtml5(s)}</option>`
+  ).join("")}
+          </select>
+        </div>
+        <div class="clinical-teams-edit-form-actions">
+          <button type="submit" class="btn-save">Guardar cambios</button>
+          <button type="button" class="btn-med-secondary clinical-teams-edit-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>`;
+}
+function renderTeamManageBlock(team) {
+  const user = clinicalSessionContext.user || {};
+  if (!canManageTeamRoster(user)) return { actionsHtml: "", editPanelHtml: "" };
+  return {
+    actionsHtml: renderTeamManageActionsHtml(team),
+    editPanelHtml: renderTeamEditPanelHtml(team)
+  };
+}
 function renderJoinedTeamCard(team) {
+  const user = clinicalSessionContext.user || {};
   const teamId = String(team.team_id || "");
   const members = Array.isArray(team.members) ? team.members : [];
-  const user = clinicalSessionContext.user || {};
+  const manage = renderTeamManageBlock(team);
   return `
     <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr3(teamId)}">
-      <div class="clinical-teams-card-top">
-        <p class="clinical-teams-card-eyebrow">Residente l\xEDder</p>
-        <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "Equipo")}</h5>
-        ${renderTeamMetaLine(team)}
+      <div class="clinical-teams-card-top${manage.actionsHtml ? " clinical-teams-card-top--directory" : ""}">
+        <div class="clinical-teams-card-top-text">
+          <p class="clinical-teams-card-eyebrow">Residente l\xEDder</p>
+          <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "Equipo")}</h5>
+          ${renderTeamMetaLine(team)}
+        </div>
+        ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ""}
       </div>
+      ${manage.editPanelHtml}
       ${renderMembersBlock(members)}
       ${renderMyCycleEditBlock(team, user)}
       <div class="clinical-teams-invite-box">
@@ -19673,16 +21619,20 @@ function renderDirectoryTeamCard(team, opts = {}) {
   const teamId = String(team.team_id || "");
   const members = Array.isArray(team.members) ? team.members : [];
   const action = opts.actionHtml || "";
+  const manage = opts.manageHtml || "";
+  const editPanel = opts.editPanelHtml || "";
+  const sideActions = [action, manage].filter(Boolean).join("");
   return `
-    <article class="clinical-teams-card clinical-teams-card--directory">
+    <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr3(teamId)}">
       <div class="clinical-teams-card-top clinical-teams-card-top--directory">
         <div class="clinical-teams-card-top-text">
           <p class="clinical-teams-card-eyebrow">Equipo en sala</p>
           <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "")}</h5>
           ${renderTeamMetaLine(team)}
         </div>
-        ${action ? `<div class="clinical-teams-card-actions">${action}</div>` : ""}
+        ${sideActions ? `<div class="clinical-teams-card-actions">${sideActions}</div>` : ""}
       </div>
+      ${editPanel}
       ${renderMembersBlock(members, { compact: true })}
     </article>`;
 }
@@ -19711,7 +21661,7 @@ async function tryReconcileTeamMemberships() {
   if (!userId || !user) return false;
   let joined = filterJoinedTeams(clinicalSessionContext.teams, user);
   if (joined.length) return false;
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalMembershipMigrate !== "function") return false;
   const settings2 = readRpcSettings();
   const fromUserId = String(settings2.clinicalStaleDeviceUserId || "");
@@ -20098,7 +22048,7 @@ function initLanUserRowAssignState(row) {
   syncLanAssignCycleSelect(teamSelect, preferred);
 }
 async function handleLanAssignUserToTeam(userId, teamId, subAreaFraction) {
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
     toast3("No se pudo asignar.", "error");
     return false;
@@ -20157,7 +22107,7 @@ async function openLanUsersDirectoryModal() {
   host.innerHTML = '<p class="clinical-teams-empty">Cargando directorio\u2026</p>';
   bd.classList.add("open");
   bd.setAttribute("aria-hidden", "false");
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalUsersList !== "function") {
     host.innerHTML = '<p class="clinical-teams-empty">Directorio no disponible.</p>';
     return;
@@ -20218,23 +22168,12 @@ function wireLanUsersDirectoryControls() {
 }
 async function renderDirectorySectionHtml(opts) {
   const { userId, elevated, browseSala, homeSala } = opts;
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsListBySala !== "function") return "";
   const listOpts = elevated && browseSala === "__all__" ? { sala: "", forUserId: userId, allSalas: true } : { sala: browseSala || homeSala, forUserId: userId };
   const res = await api3.dbClinicalTeamsListBySala(listOpts);
   let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
   directory = directory.filter((t2) => !t2.isMember);
-  if (!directory.length) {
-    const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
-    const emptyMsg = elevated ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label}.`;
-    return `<section class="clinical-teams-section clinical-teams-section--directory">
-      <div class="clinical-teams-section-intro">
-        <h4 class="clinical-teams-section-title">${elevated ? "Explorar sala" : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`}</h4>
-        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
-      </div>
-      <p class="clinical-teams-empty">${emptyMsg}</p>
-    </section>`;
-  }
   const browseControl = elevated ? `<label class="clinical-teams-browse-label" for="clinical-browse-sala">Sala</label>
         <select id="clinical-browse-sala" class="profile-input clinical-teams-browse-select" aria-label="Explorar equipos por sala">
           ${CLINICAL_SALAS.map(
@@ -20242,16 +22181,6 @@ async function renderDirectorySectionHtml(opts) {
   ).join("")}
           <option value="__all__" ${browseSala === "__all__" ? "selected" : ""}>Todas las salas</option>
         </select>` : "";
-  const cards = directory.map((team) => {
-    const teamId = String(team.team_id || "");
-    let action = "";
-    if (team.joinEligible) {
-      action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr3(teamId)}">Unirme</button>`;
-    } else if (team.joinReason) {
-      action = `<span class="clinical-teams-join-hint">${escapeHtml5(team.joinReason)}</span>`;
-    }
-    return renderDirectoryTeamCard(team, { actionHtml: action });
-  }).join("");
   const sectionTitle = elevated ? browseSala === "__all__" ? "Explorar \xB7 todas las salas" : `Explorar \xB7 ${escapeHtml5(browseSala)}` : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`;
   const headRow = browseControl ? `<div class="clinical-teams-section-head-row">
         <div class="clinical-teams-section-intro">
@@ -20263,6 +22192,29 @@ async function renderDirectorySectionHtml(opts) {
         <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
         <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
       </div>`;
+  if (!directory.length) {
+    const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
+    const emptyMsg = elevated ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label}.`;
+    return `<section class="clinical-teams-section clinical-teams-section--directory">
+      ${headRow}
+      <p class="clinical-teams-empty">${emptyMsg}</p>
+    </section>`;
+  }
+  const cards = directory.map((team) => {
+    const teamId = String(team.team_id || "");
+    let action = "";
+    if (team.joinEligible) {
+      action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr3(teamId)}">Unirme</button>`;
+    } else if (team.joinReason) {
+      action = `<span class="clinical-teams-join-hint">${escapeHtml5(team.joinReason)}</span>`;
+    }
+    const manage = elevated ? renderTeamManageBlock(team) : { actionsHtml: "", editPanelHtml: "" };
+    return renderDirectoryTeamCard(team, {
+      actionHtml: action,
+      manageHtml: manage.actionsHtml,
+      editPanelHtml: manage.editPanelHtml
+    });
+  }).join("");
   return `
     <section class="clinical-teams-section clinical-teams-section--directory">
       ${headRow}
@@ -20281,6 +22233,101 @@ function wireBrowseSalaControl(elevated) {
     }
     void renderClinicalTeamsPanel({ silent: true });
   });
+}
+function closeTeamEditPanels(exceptPanel) {
+  document.querySelectorAll(".clinical-teams-edit-panel").forEach((panel) => {
+    if (exceptPanel && panel === exceptPanel) return;
+    panel.hidden = true;
+  });
+}
+function wireTeamManageModalDelegation() {
+  const bd = teamsModalEl();
+  if (!bd || bd._rpcTeamManageDelegated) return;
+  bd._rpcTeamManageDelegated = true;
+  bd.addEventListener("click", (ev) => {
+    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
+    const target = ev.target instanceof Element ? ev.target : null;
+    if (!target) return;
+    const editBtn = target.closest(".clinical-teams-edit-btn");
+    if (editBtn) {
+      const card = editBtn.closest(".clinical-teams-card");
+      const panel = card?.querySelector(".clinical-teams-edit-panel");
+      if (panel instanceof HTMLElement) {
+        closeTeamEditPanels(panel);
+        panel.hidden = !panel.hidden;
+      }
+      return;
+    }
+    const cancelBtn = target.closest(".clinical-teams-edit-cancel");
+    if (cancelBtn) {
+      const panel = cancelBtn.closest(".clinical-teams-edit-panel");
+      if (panel instanceof HTMLElement) panel.hidden = true;
+      return;
+    }
+    const deleteBtn = target.closest(".clinical-teams-delete-btn");
+    if (deleteBtn instanceof HTMLButtonElement) {
+      void handleDeleteTeamClick(deleteBtn);
+    }
+  });
+}
+async function handleDeleteTeamClick(btn) {
+  const teamId = String(btn.dataset.teamId || "").trim();
+  const teamName = String(btn.dataset.teamName || "este equipo").trim();
+  if (!teamId) return;
+  const ok = window.confirm(
+    `\xBFEliminar el equipo \xAB${teamName}\xBB?
+
+Se quitar\xE1n sus integrantes. Esta acci\xF3n no se puede deshacer.`
+  );
+  if (!ok) return;
+  const userId = currentUserId();
+  const api3 = dbApi5();
+  if (!userId || !api3 || typeof api3.dbClinicalTeamsArchive !== "function") {
+    toast3("No se pudo eliminar el equipo.", "error");
+    return;
+  }
+  btn.disabled = true;
+  const res = await api3.dbClinicalTeamsArchive({ teamId, callerUserId: userId });
+  btn.disabled = false;
+  if (!res || res.ok === false) {
+    toast3(res?.error || "No se elimin\xF3 el equipo.", "error");
+    return;
+  }
+  toast3("Equipo eliminado.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+}
+async function handleEditTeamSubmit(ev, form) {
+  ev.preventDefault();
+  const teamId = String(form.dataset.teamId || "").trim();
+  const nameInput = form.querySelector(".clinical-teams-edit-name");
+  const salaSelect = form.querySelector(".clinical-teams-edit-sala");
+  const name = nameInput instanceof HTMLInputElement ? String(nameInput.value || "").trim() : "";
+  const sala = salaSelect instanceof HTMLSelectElement ? String(salaSelect.value || "").trim() : "";
+  if (!teamId || !name || !sala) {
+    toast3("Indica nombre y sala.", "error");
+    return;
+  }
+  const userId = currentUserId();
+  const api3 = dbApi5();
+  if (!userId || !api3 || typeof api3.dbClinicalTeamsUpdate !== "function") {
+    toast3("No se pudo guardar el equipo.", "error");
+    return;
+  }
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+  const res = await api3.dbClinicalTeamsUpdate({
+    teamId,
+    name,
+    sala,
+    callerUserId: userId
+  });
+  if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+  if (!res || res.ok === false) {
+    toast3(res?.error || "No se guard\xF3 el equipo.", "error");
+    return;
+  }
+  toast3("Equipo actualizado.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
 }
 async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
@@ -20320,7 +22367,7 @@ async function handleProfileFormSubmit(ev) {
     return;
   }
   const userId = currentUserId();
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!userId || !api3) {
     toast3("Sesi\xF3n cl\xEDnica no disponible. Desbloquea la base de datos.", "error");
     return;
@@ -20404,7 +22451,7 @@ function wireJoinButtons() {
     btn.addEventListener("click", async () => {
       const teamId = String(btn.dataset.teamId || "");
       const userId = currentUserId();
-      const api3 = dbApi4();
+      const api3 = dbApi5();
       if (!api3 || typeof api3.dbClinicalTeamsJoin !== "function") {
         toast3("No se pudo unir al equipo.", "error");
         return;
@@ -20460,7 +22507,7 @@ async function persistProfileFromPanel({
   adminAccessCode
 }) {
   const userId = currentUserId();
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!userId || !api3 || typeof api3.dbClinicalProfileUpsert !== "function") {
     toast3("Base de datos no disponible.", "error");
     return false;
@@ -20554,7 +22601,7 @@ function wireAdminCheckboxGate() {
 }
 async function handleCreateTeamSubmit(ev) {
   ev.preventDefault();
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsCreate !== "function") {
     toast3("Base de datos no disponible.", "error");
     return;
@@ -20633,7 +22680,7 @@ async function handleAddMemberSubmit(ev, form) {
     toast3("Escribe el username del residente.", "error");
     return;
   }
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
     toast3("Base de datos no disponible.", "error");
     return;
@@ -20672,7 +22719,7 @@ async function handleMyCycleSubmit(ev, form) {
     toast3("Elige tu ciclo.", "error");
     return;
   }
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
     toast3("Base de datos no disponible.", "error");
     return;
@@ -20697,7 +22744,7 @@ async function resolveTeamIdForInviteInput(codeOrId) {
   if (!teamId) {
     teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
   }
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!teamId && api3 && typeof api3.dbClinicalTeamResolveCode === "function") {
     const res = await api3.dbClinicalTeamResolveCode({ code: normalizeTeamInviteCode(raw) });
     if (res?.ok && res.team?.team_id) {
@@ -20725,7 +22772,7 @@ async function joinTeamById(teamId, subAreaFraction) {
     await openClinicalTeamsPanel();
     return true;
   }
-  const api3 = dbApi4();
+  const api3 = dbApi5();
   if (!api3 || typeof api3.dbClinicalTeamsJoin !== "function") {
     toast3("Base de datos no disponible.", "error");
     return false;
@@ -20820,6 +22867,9 @@ function wireClinicalTeamsModalChrome() {
         } else if (form.id === "clinical-team-join-code-form") {
           ev.preventDefault();
           void handleJoinWithCodeSubmit(ev);
+        } else if (form.classList.contains("clinical-teams-edit-form")) {
+          ev.preventDefault();
+          void handleEditTeamSubmit(ev, form);
         }
       });
     }
@@ -20849,6 +22899,7 @@ function wireClinicalTeamsModalChrome() {
   }
   wireLanUsersDirectoryControls();
   wireAdminCodeModalControls();
+  wireTeamManageModalDelegation();
 }
 function syncSalaFieldVisibility() {
   const salaSelect = document.getElementById("clinical-team-create-sala");
@@ -23043,6 +25094,17 @@ function isClinicalRegistered() {
 function isLanHostActive() {
   return !!lanClient.connected;
 }
+function maybeAppendInternoQrPanel(root) {
+  if (!isLanElectronDesktop() || !isLanHostActive()) return;
+  if (!canManageInternoQr(clinicalSessionContext.user)) return;
+  void resolveLanHostUrlAuto().then(function(hostBaseUrl) {
+    void appendInternoQrPanel(root, {
+      hostBaseUrl,
+      userId: getClinicalUserUserId(),
+      showToast: runtime2.showToast
+    });
+  });
+}
 function getClinicalUserUserId() {
   try {
     var user = typeof clinicalSessionContext !== "undefined" ? clinicalSessionContext.user : null;
@@ -23111,6 +25173,7 @@ async function renderLanPanelOnce() {
   } else if (isElevated) {
     buildR4Section(root);
   }
+  maybeAppendInternoQrPanel(root);
 }
 function buildR1Section(root) {
   var userSala = getUserSala();
@@ -24003,6 +26066,7 @@ var init_lan_sync = __esm({
     init_clinical_privileges();
     init_lan_hub_guardia_mode();
     init_lan_hub_panel_shell();
+    init_interno_qr_panel();
     init_draft_conflict_store();
     init_clinical_conflict_viewer();
     init_host_bundle_bases();
@@ -24654,6 +26718,7 @@ var init_unified_patient_grid_board = __esm({
         card.setAttribute("data-patient-id", p.id);
         const dnr = p.negativa_maniobras_firmada ? '<span class="dnr-badge">DNR</span>' : "";
         const vitals = calcVitalsBanner(meta?.last_vitals_check, meta?.vitals_frequency);
+        const alteredBadge = p.vitalsAltered ? '<span class="vitals-altered-badge" title="Signos alterados (interno)">\u26A0 Alterado</span>' : "";
         const bed = p.bed_label ? `Cama ${p.bed_label}` : "Sin cama";
         const name = String(p.name || "").toUpperCase();
         const dx = String(p.dxText || "Sin diagn\xF3stico registrado");
@@ -24669,7 +26734,7 @@ var init_unified_patient_grid_board = __esm({
       <div class="patient-chip-body">
         ${dnr ? `<div class="patient-chip-dnr-row">${dnr}</div>` : ""}
         <p class="patient-chip-dx">${dx}</p>
-        <div class="vitals-banner ${vitals.cls}">${vitals.str}</div>
+        <div class="vitals-banner ${vitals.cls}">${vitals.str}${alteredBadge}</div>
       </div>
       <div class="patient-chip-footer">
         <span class="patient-chip-tasks">\u{1F4CB} ${pending2} Pendiente${pending2 === 1 ? "" : "s"}</span>
@@ -24684,7 +26749,486 @@ var init_unified_patient_grid_board = __esm({
   }
 });
 
+// lib/entrega/entrega-pendientes.mjs
+function newItemId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+function createProcedimientoItem(partial) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return {
+    id: newItemId(),
+    type: "procedimiento",
+    kind: partial.kind === "imagen" ? "imagen" : "otro",
+    label: String(partial.label || "").trim(),
+    scheduledAt: partial.scheduledAt || null,
+    comentado: !!partial.comentado,
+    autorizado: !!partial.autorizado,
+    agendado: !!partial.agendado,
+    requires: {
+      familiar: !!partial.requires?.familiar,
+      consentimiento: !!partial.requires?.consentimiento,
+      anestesia: !!partial.requires?.anestesia
+    },
+    lockedBase: !!partial.lockedBase,
+    createdBy: partial.createdBy || null,
+    updatedAt: now,
+    completedAt: null,
+    completedBy: null
+  };
+}
+function normalizePendientesJson(raw) {
+  if (raw == null || raw === "") return { version: 2, items: [] };
+  let parsed;
+  try {
+    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return { version: 2, items: [] };
+  }
+  if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
+    return { version: 2, items: parsed.items.filter(Boolean) };
+  }
+  if (Array.isArray(parsed)) {
+    return {
+      version: 2,
+      items: parsed.map((line) => String(line).trim()).filter(Boolean).map((text) => ({
+        id: newItemId(),
+        type: "legacy_text",
+        text,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        completedAt: null
+      }))
+    };
+  }
+  return { ...EMPTY, items: [] };
+}
+function serializePendientesJson(doc) {
+  return JSON.stringify(normalizePendientesJson(doc));
+}
+function pendingRequirementBadges(item) {
+  const badges = [];
+  if (item.requires?.consentimiento && !item.autorizado) badges.push("consentimiento");
+  if (item.requires?.anestesia && !item.agendado) badges.push("anestesia");
+  if (item.requires?.familiar && !item.comentado) badges.push("familiar");
+  return badges;
+}
+function canDeletePendienteItem(item, actor) {
+  if (actor.role === "diurno") return true;
+  if (actor.role === "guardia") return !item.lockedBase;
+  return false;
+}
+var EMPTY;
+var init_entrega_pendientes = __esm({
+  "lib/entrega/entrega-pendientes.mjs"() {
+    EMPTY = { version: 2, items: [] };
+  }
+});
+
+// public/js/features/entrega-modal-ui.mjs
+function dbApi6() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function toast4(msg, type = "info") {
+  if (typeof window !== "undefined" && typeof window.showToast === "function") {
+    window.showToast(msg, type);
+  }
+}
+function formatHHmm(scheduledAt) {
+  if (!scheduledAt) return "";
+  const d = new Date(scheduledAt);
+  if (!Number.isNaN(d.getTime())) {
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  const m = String(scheduledAt).match(/(\d{1,2}:\d{2})/);
+  return m ? m[1] : "";
+}
+function scheduledAtFromTimeInput(hhmm) {
+  const t2 = String(hhmm || "").trim();
+  if (!t2) return null;
+  const [h, m] = t2.split(":").map((x) => parseInt(x, 10));
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  const d = /* @__PURE__ */ new Date();
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+}
+function resolveEntregaActorRole(currentUser, existingGuardia) {
+  const hasGuardia = !!(existingGuardia?.guardia_id || existingGuardia?.guardiaId);
+  return {
+    role: hasGuardia ? "guardia" : "diurno",
+    userId: String(currentUser?.user_id || currentUser?.userId || ""),
+    rank: String(currentUser?.rank || "")
+  };
+}
+function getEntregaDraftItems() {
+  return draftItems.slice();
+}
+function resetEntregaModalUi() {
+  draftItems = [];
+  draftActor = null;
+  templateCatalog = { user: [], team: [] };
+  draftSourceTeamId = "";
+  const list = document.getElementById("entrega-proc-list");
+  const formWrap = document.getElementById("entrega-proc-form");
+  if (list) list.innerHTML = "";
+  if (formWrap) {
+    formWrap.innerHTML = "";
+    formWrap.classList.add("hidden");
+    formWrap.setAttribute("aria-hidden", "true");
+  }
+}
+function escapeHtml6(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function renderBadgeChips(item) {
+  const badges = pendingRequirementBadges(item);
+  if (!badges.length) return "";
+  return badges.map(
+    (b) => `<span class="entrega-proc-chip entrega-proc-chip--req">${escapeHtml6(BADGE_LABELS[b] || b)}</span>`
+  ).join("");
+}
+function renderStatusChips(item) {
+  const chips = [];
+  if (item.comentado) chips.push('<span class="entrega-proc-chip">Comentado</span>');
+  if (item.autorizado) chips.push('<span class="entrega-proc-chip">Autorizado</span>');
+  if (item.agendado) chips.push('<span class="entrega-proc-chip">Agendado</span>');
+  if (item.lockedBase) chips.push('<span class="entrega-proc-chip entrega-proc-chip--lock">Base</span>');
+  return chips.join("");
+}
+function renderProcList() {
+  const list = document.getElementById("entrega-proc-list");
+  if (!list || !draftActor) return;
+  if (!draftItems.length) {
+    list.innerHTML = '<li class="entrega-proc-empty">Sin procedimientos. Usa + Agregar.</li>';
+    return;
+  }
+  list.innerHTML = draftItems.map((item) => {
+    if (item.type === "legacy_text") {
+      const canDel2 = canDeletePendienteItem(item, draftActor);
+      return `<li class="entrega-proc-card entrega-proc-card--legacy" data-item-id="${escapeHtml6(item.id)}">
+          <div class="entrega-proc-card-main">
+            <span class="entrega-proc-label">${escapeHtml6(item.text || "")}</span>
+            <span class="entrega-proc-meta">Texto legado</span>
+          </div>
+          ${canDel2 ? `<button type="button" class="btn-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
+        </li>`;
+    }
+    if (item.type !== "procedimiento") return "";
+    const time = formatHHmm(item.scheduledAt);
+    const canDel = canDeletePendienteItem(item, draftActor);
+    const kindLabel = item.kind === "imagen" ? "Imagen" : "Otro";
+    const flagRow = `
+        <div class="entrega-proc-flags">
+          <label><input type="checkbox" data-flag="comentado" ${item.comentado ? "checked" : ""}> Comentado</label>
+          <label><input type="checkbox" data-flag="autorizado" ${item.autorizado ? "checked" : ""}> Autorizado</label>
+          <label><input type="checkbox" data-flag="agendado" ${item.agendado ? "checked" : ""}> Agendado</label>
+        </div>`;
+    return `<li class="entrega-proc-card" data-item-id="${escapeHtml6(item.id)}">
+        <div class="entrega-proc-card-main">
+          <div class="entrega-proc-title-row">
+            <span class="entrega-proc-label">${escapeHtml6(item.label)}</span>
+            ${time ? `<span class="entrega-proc-time">${escapeHtml6(time)}</span>` : ""}
+            <span class="entrega-proc-kind">${escapeHtml6(kindLabel)}</span>
+          </div>
+          <div class="entrega-proc-chips">${renderStatusChips(item)}${renderBadgeChips(item)}</div>
+          ${flagRow}
+        </div>
+        ${canDel ? `<button type="button" class="btn-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
+      </li>`;
+  }).join("");
+}
+function updateItemFlags(itemId, flag, checked) {
+  draftItems = draftItems.map((it) => {
+    if (it.id !== itemId || it.type !== "procedimiento") return it;
+    return {
+      ...it,
+      [flag]: !!checked,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  });
+  renderProcList();
+}
+function deleteItem(itemId) {
+  const item = draftItems.find((it) => it.id === itemId);
+  if (!item || !draftActor || !canDeletePendienteItem(item, draftActor)) {
+    toast4("No puedes eliminar este procedimiento.", "error");
+    return;
+  }
+  draftItems = draftItems.filter((it) => it.id !== itemId);
+  renderProcList();
+}
+function readFormFields(formEl) {
+  const kind = formEl.querySelector('[name="entrega-proc-kind"]')?.value === "imagen" ? "imagen" : "otro";
+  const label = String(formEl.querySelector('[name="entrega-proc-label"]')?.value || "").trim();
+  const time = String(formEl.querySelector('[name="entrega-proc-time"]')?.value || "").trim();
+  return {
+    kind,
+    label,
+    scheduledAt: scheduledAtFromTimeInput(time),
+    comentado: !!formEl.querySelector('[name="entrega-proc-comentado"]')?.checked,
+    autorizado: !!formEl.querySelector('[name="entrega-proc-autorizado"]')?.checked,
+    agendado: !!formEl.querySelector('[name="entrega-proc-agendado"]')?.checked,
+    requires: {
+      familiar: !!formEl.querySelector('[name="entrega-req-familiar"]')?.checked,
+      consentimiento: !!formEl.querySelector('[name="entrega-req-consentimiento"]')?.checked,
+      anestesia: !!formEl.querySelector('[name="entrega-req-anestesia"]')?.checked
+    }
+  };
+}
+function buildAddFormMarkup(prefill = null) {
+  const p = prefill || {};
+  const timeVal = p.scheduledAt ? formatHHmm(p.scheduledAt) : "";
+  return `
+    <fieldset class="entrega-proc-form-inner">
+      <legend>Agregar procedimiento</legend>
+      <div class="entrega-proc-form-row">
+        <label>Tipo
+          <select name="entrega-proc-kind" class="profile-input">
+            <option value="imagen" ${p.kind === "imagen" ? "selected" : ""}>Imagen</option>
+            <option value="otro" ${p.kind !== "imagen" ? "selected" : ""}>Otro</option>
+          </select>
+        </label>
+        <label>Etiqueta
+          <input name="entrega-proc-label" class="profile-input" type="text" required value="${escapeHtml6(p.label || "")}">
+        </label>
+        <label>Hora
+          <input name="entrega-proc-time" class="profile-input" type="time" value="${escapeHtml6(timeVal)}">
+        </label>
+      </div>
+      <div class="entrega-proc-form-row entrega-proc-form-checks">
+        <label><input type="checkbox" name="entrega-proc-comentado" ${p.comentado ? "checked" : ""}> Comentado</label>
+        <label><input type="checkbox" name="entrega-proc-autorizado" ${p.autorizado ? "checked" : ""}> Autorizado</label>
+        <label><input type="checkbox" name="entrega-proc-agendado" ${p.agendado ? "checked" : ""}> Agendado</label>
+      </div>
+      <div class="entrega-proc-form-row entrega-proc-form-checks">
+        <span class="entrega-proc-req-label">Requiere:</span>
+        <label><input type="checkbox" name="entrega-req-familiar" ${p.requires?.familiar ? "checked" : ""}> Familiar</label>
+        <label><input type="checkbox" name="entrega-req-consentimiento" ${p.requires?.consentimiento ? "checked" : ""}> Consentimiento</label>
+        <label><input type="checkbox" name="entrega-req-anestesia" ${p.requires?.anestesia ? "checked" : ""}> Anestesia</label>
+      </div>
+      <div class="entrega-proc-form-actions">
+        <button type="button" class="btn-secondary" data-action="cancel-form">Cancelar</button>
+        <button type="button" class="btn-secondary" data-action="save-template">Guardar plantilla</button>
+        <button type="button" class="btn-save" data-action="add-item">A\xF1adir a lista</button>
+      </div>
+    </fieldset>`;
+}
+function showAddForm(prefill = null) {
+  const wrap = document.getElementById("entrega-proc-form");
+  if (!wrap) return;
+  wrap.innerHTML = buildAddFormMarkup(prefill);
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden", "false");
+  wrap.querySelector('[name="entrega-proc-label"]')?.focus();
+}
+function hideAddForm() {
+  const wrap = document.getElementById("entrega-proc-form");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  wrap.classList.add("hidden");
+  wrap.setAttribute("aria-hidden", "true");
+}
+function payloadFromFormFields(fields) {
+  return {
+    kind: fields.kind,
+    label: fields.label,
+    requires: fields.requires,
+    comentado: fields.comentado,
+    autorizado: fields.autorizado,
+    agendado: fields.agendado
+  };
+}
+async function saveTemplateFromForm(formEl) {
+  const fields = readFormFields(formEl);
+  if (!fields.label) {
+    toast4("Indica la etiqueta del procedimiento.", "error");
+    return;
+  }
+  const name = typeof window.prompt === "function" ? window.prompt("Nombre de la plantilla:") : "";
+  if (!name || !String(name).trim()) return;
+  const scope = typeof window.confirm === "function" && window.confirm("\xBFGuardar como plantilla del equipo? (Cancelar = solo para ti)") ? "team" : "user";
+  const api3 = dbApi6();
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const payload = payloadFromFormFields(fields);
+  try {
+    if (scope === "team") {
+      const teamId = draftSourceTeamId;
+      if (!teamId) {
+        toast4("Selecciona equipo de origen para plantilla de equipo.", "error");
+        return;
+      }
+      if (!api3?.dbEntregaTemplateSaveTeam) throw new Error("Plantillas no disponibles");
+      await api3.dbEntregaTemplateSaveTeam({
+        teamId,
+        createdBy: userId,
+        name: String(name).trim(),
+        payload
+      });
+    } else {
+      if (!api3?.dbEntregaTemplateSaveUser) throw new Error("Plantillas no disponibles");
+      await api3.dbEntregaTemplateSaveUser({
+        userId,
+        name: String(name).trim(),
+        payload
+      });
+    }
+    toast4("Plantilla guardada.", "success");
+    await refreshTemplateCatalog(userId);
+  } catch (err) {
+    toast4(err?.message || "No se guard\xF3 la plantilla", "error");
+  }
+}
+async function refreshTemplateCatalog(userId) {
+  const api3 = dbApi6();
+  if (!api3?.dbEntregaTemplateList) {
+    templateCatalog = { user: [], team: [] };
+    return;
+  }
+  const teamIds = draftSourceTeamId ? [draftSourceTeamId] : [];
+  const res = await api3.dbEntregaTemplateList({ userId, teamIds });
+  templateCatalog = {
+    user: Array.isArray(res?.user) ? res.user : [],
+    team: Array.isArray(res?.team) ? res.team : []
+  };
+}
+function showTemplatePicker() {
+  const all = [
+    ...templateCatalog.user.map((t2) => ({ ...t2, scopeLabel: "Mis plantillas" })),
+    ...templateCatalog.team.map((t2) => ({ ...t2, scopeLabel: "Del equipo" }))
+  ];
+  if (!all.length) {
+    toast4("No hay plantillas guardadas.", "info");
+    return;
+  }
+  const wrap = document.getElementById("entrega-proc-form");
+  if (!wrap) return;
+  const options = all.map(
+    (t2, i) => `<option value="${i}">[${escapeHtml6(t2.scopeLabel)}] ${escapeHtml6(t2.name)}</option>`
+  ).join("");
+  wrap.innerHTML = `
+    <fieldset class="entrega-proc-form-inner">
+      <legend>Aplicar plantilla</legend>
+      <label>Plantilla
+        <select id="entrega-template-pick" class="profile-input">${options}</select>
+      </label>
+      <div class="entrega-proc-form-actions">
+        <button type="button" class="btn-secondary" data-action="cancel-form">Cancelar</button>
+        <button type="button" class="btn-save" data-action="apply-template">Prefill formulario</button>
+      </div>
+    </fieldset>`;
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden", "false");
+  wrap.querySelector('[data-action="apply-template"]')?.addEventListener("click", () => {
+    const idx = parseInt(wrap.querySelector("#entrega-template-pick")?.value || "0", 10);
+    const picked = all[idx];
+    if (!picked?.payload) return;
+    const prefill = {
+      ...picked.payload,
+      scheduledAt: null
+    };
+    showAddForm(prefill);
+  });
+}
+function addItemFromForm(formEl) {
+  if (!draftActor) return;
+  const fields = readFormFields(formEl);
+  if (!fields.label) {
+    toast4("Indica la etiqueta del procedimiento.", "error");
+    return;
+  }
+  const item = createProcedimientoItem({
+    ...fields,
+    lockedBase: draftActor.role === "diurno",
+    createdBy: draftActor.userId ? { userId: draftActor.userId, rank: draftActor.rank || "" } : null
+  });
+  draftItems.push(item);
+  hideAddForm();
+  renderProcList();
+}
+function wireProcUiOnce() {
+  if (uiWired) return;
+  uiWired = true;
+  document.getElementById("btn-entrega-add-proc")?.addEventListener("click", () => {
+    showAddForm();
+  });
+  document.getElementById("btn-entrega-apply-template")?.addEventListener("click", () => {
+    showTemplatePicker();
+  });
+  const list = document.getElementById("entrega-proc-list");
+  if (list) {
+    list.addEventListener("click", (ev) => {
+      const btn = ev.target.closest('[data-action="delete"]');
+      if (!btn) return;
+      const card = btn.closest("[data-item-id]");
+      const id = card?.getAttribute("data-item-id");
+      if (id) deleteItem(id);
+    });
+    list.addEventListener("change", (ev) => {
+      const input = ev.target;
+      if (!(input instanceof HTMLInputElement) || !input.dataset.flag) return;
+      const card = input.closest("[data-item-id]");
+      const id = card?.getAttribute("data-item-id");
+      if (id) updateItemFlags(id, input.dataset.flag, input.checked);
+    });
+  }
+  const formWrap = document.getElementById("entrega-proc-form");
+  if (formWrap) {
+    formWrap.addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-action]");
+      if (!btn) return;
+      const action = btn.getAttribute("data-action");
+      const inner = formWrap.querySelector(".entrega-proc-form-inner");
+      if (action === "cancel-form") {
+        hideAddForm();
+        return;
+      }
+      if (!inner) return;
+      if (action === "add-item") addItemFromForm(inner);
+      if (action === "save-template") saveTemplateFromForm(inner);
+    });
+  }
+  document.getElementById("entrega-source-team")?.addEventListener("change", (ev) => {
+    draftSourceTeamId = String(ev.target?.value || "");
+    const userId = String(clinicalSessionContext.user?.user_id || "");
+    refreshTemplateCatalog(userId).catch(() => {
+    });
+  });
+}
+async function mountEntregaPendientesUi(opts) {
+  wireProcUiOnce();
+  draftActor = opts.actor;
+  draftSourceTeamId = String(opts.sourceTeamId || "");
+  const doc = normalizePendientesJson(opts.pendientesJson || "");
+  draftItems = doc.items.slice();
+  hideAddForm();
+  renderProcList();
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  await refreshTemplateCatalog(userId);
+}
+var BADGE_LABELS, draftItems, draftActor, templateCatalog, draftSourceTeamId, uiWired;
+var init_entrega_modal_ui = __esm({
+  "public/js/features/entrega-modal-ui.mjs"() {
+    init_entrega_pendientes();
+    init_clinical_access_runtime();
+    BADGE_LABELS = {
+      consentimiento: "Consent",
+      anestesia: "Anest",
+      familiar: "Familiar"
+    };
+    draftItems = [];
+    draftActor = null;
+    templateCatalog = { user: [], team: [] };
+    draftSourceTeamId = "";
+    uiWired = false;
+  }
+});
+
 // public/js/features/clinical-entrega.mjs
+function resolveEntregaActorRole2(currentUser, existingGuardia) {
+  return resolveEntregaActorRole(currentUser, existingGuardia);
+}
 function normalizeUsers(users) {
   return (users || []).map((u) => ({
     user_id: String(u.user_id || u.userId || ""),
@@ -24755,11 +27299,11 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   }
   return { flow: "generic", targets: all };
 }
-function dbApi5() {
+function dbApi7() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
-function toast4(msg, type = "info") {
+function toast5(msg, type = "info") {
   if (typeof window !== "undefined" && typeof window.showToast === "function") {
     window.showToast(msg, type);
   }
@@ -24776,7 +27320,7 @@ function resolveDefaultSourceTeamId() {
   return "";
 }
 async function submitEntregaAssignment(payload) {
-  const api3 = dbApi5();
+  const api3 = dbApi7();
   if (!api3 || typeof api3.dbGuardiaUpsert !== "function") {
     throw new Error("Base cl\xEDnica no disponible");
   }
@@ -24827,18 +27371,18 @@ function wireEntregaFormOnce() {
       document.getElementById("entrega-covering-user")?.value || ""
     );
     const sourceTeamId = String(document.getElementById("entrega-source-team")?.value || "") || resolveDefaultSourceTeamId();
-    const pendientes = String(document.getElementById("entrega-pendientes")?.value || "").trim();
     const isCritical = !!document.getElementById("entrega-critical")?.checked;
     const vitalsFrequency = String(
       document.getElementById("entrega-vitals-frequency")?.value || "None"
     );
     if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast4("Selecciona usuario cubridor y equipo de origen.", "error");
+      toast5("Selecciona usuario cubridor y equipo de origen.", "error");
       return;
     }
-    const pendientesJson = JSON.stringify(
-      pendientes ? pendientes.split("\n").map((l) => l.trim()).filter(Boolean) : []
-    );
+    const pendientesJson = serializePendientesJson({
+      version: 2,
+      items: getEntregaDraftItems()
+    });
     try {
       await submitEntregaAssignment({
         patientId,
@@ -24849,14 +27393,14 @@ function wireEntregaFormOnce() {
         pendientesJson,
         vitalsFrequency
       });
-      toast4("Entrega registrada.", "success");
+      toast5("Entrega registrada.", "success");
       const onConfirm = form._entregaOnConfirm;
       closeEntregaModal();
       await refreshGuardiaCensusFromDb(null);
       scheduleLiveSyncPush();
       if (typeof onConfirm === "function") onConfirm();
     } catch (err) {
-      toast4(err?.message || "Error al registrar entrega", "error");
+      toast5(err?.message || "Error al registrar entrega", "error");
     }
   });
 }
@@ -24894,7 +27438,8 @@ function openEntregaModal(opts) {
     select.innerHTML = targets.map(
       (u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`
     ).join("");
-    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : targets[0]?.user_id || "";
+    const phaseCovering = getEntregaPhaseCoveringUserId();
+    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : phaseCovering || targets[0]?.user_id || "";
     if (preferred) select.value = preferred;
   }
   if (teamSelect) {
@@ -24914,19 +27459,17 @@ function openEntregaModal(opts) {
     };
     hint.textContent = flowLabels[flow] || flowLabels.generic;
   }
-  const pendientesEl = document.getElementById("entrega-pendientes");
   const criticalEl = document.getElementById("entrega-critical");
   const vitalsEl = document.getElementById("entrega-vitals-frequency");
-  if (pendientesEl) {
-    try {
-      const arr = JSON.parse(String(existing?.pendientes_json || "[]"));
-      pendientesEl.value = Array.isArray(arr) ? arr.join("\n") : "";
-    } catch {
-      pendientesEl.value = "";
-    }
-  }
   if (criticalEl) criticalEl.checked = !!existing?.is_critical;
   if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || "None");
+  const actor = resolveEntregaActorRole2(clinicalSessionContext.user, existing);
+  const srcTeam = existing?.source_team_id || resolveDefaultSourceTeamId();
+  void mountEntregaPendientesUi({
+    actor,
+    pendientesJson: existing?.pendientes_json,
+    sourceTeamId: srcTeam
+  });
   const title = document.getElementById("entrega-modal-title");
   if (title) title.textContent = guardiaId ? "Actualizar entrega" : "Nueva entrega";
   bd.classList.add("open");
@@ -24938,31 +27481,126 @@ function closeEntregaModal() {
   if (!bd) return;
   bd.classList.remove("open");
   bd.setAttribute("aria-hidden", "true");
+  resetEntregaModalUi();
   const form = document.getElementById("entrega-form");
   if (form) form._entregaOnConfirm = null;
 }
+function resolveR1GuardiaCovering(teams, users, sala, now = /* @__PURE__ */ new Date()) {
+  const salaNorm = String(sala || "").trim();
+  if (!salaNorm) return null;
+  const onCall = salaOnCallR1(teams, salaNorm, now);
+  if (!onCall.length) return null;
+  const pick2 = onCall[0];
+  const u = normalizeUsers(users).find((x) => x.user_id === String(pick2.user_id));
+  return {
+    coveringUserId: String(pick2.user_id),
+    teamId: String(pick2.team_id || ""),
+    sala: salaNorm,
+    coveringLabel: u ? userOptionLabel(u) : String(pick2.user_id)
+  };
+}
+function resolveUserSalaForEntrega(teams, userId) {
+  const fromProfile = String(clinicalSessionContext.user?.sala || "").trim();
+  if (fromProfile) return fromProfile;
+  const joined = getJoinedTeams(teams || [], userId);
+  for (const t2 of joined) {
+    const sala = String(t2.sala || "").trim();
+    if (sala) return sala;
+  }
+  return "";
+}
+function getEntregaPhase() {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ENTREGA_PHASE_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (o && o.active) return o;
+  } catch {
+  }
+  return null;
+}
+function isEntregaPhaseActive() {
+  return !!getEntregaPhase()?.active;
+}
+function getEntregaPhaseCoveringUserId() {
+  return String(getEntregaPhase()?.coveringUserId || "");
+}
+function startEntregaPhase(covering) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(GUARDIA_GRID_MODE_KEY);
+    localStorage.setItem(
+      ENTREGA_PHASE_KEY,
+      JSON.stringify({
+        active: true,
+        coveringUserId: String(covering.coveringUserId || ""),
+        sala: String(covering.sala || ""),
+        coveringLabel: String(covering.coveringLabel || ""),
+        teamId: String(covering.teamId || ""),
+        startedAt: (/* @__PURE__ */ new Date()).toISOString()
+      })
+    );
+  } catch {
+  }
+}
+function endEntregaPhase() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(ENTREGA_PHASE_KEY);
+    localStorage.removeItem(GUARDIA_GRID_MODE_KEY);
+  } catch {
+  }
+}
+function toggleEntregaPhase(opts = {}) {
+  if (isEntregaPhaseActive()) {
+    endEntregaPhase();
+    toast5("Fase de entrega finalizada.", "info");
+    opts.renderGuardiaBoard?.(opts.settings);
+    return { active: false };
+  }
+  const ctx = clinicalSessionContext.scopeContext || {};
+  const teams = clinicalSessionContext.teams || ctx.teams || [];
+  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const sala = resolveUserSalaForEntrega(teams, userId);
+  if (!sala) {
+    toast5("Indica tu Sala en el perfil cl\xEDnico o \xFAnete a un equipo de Sala.", "error");
+    return { active: false };
+  }
+  const covering = resolveR1GuardiaCovering(teams, users, sala);
+  if (!covering) {
+    toast5(`No hay R1 de guardia en ${sala} hoy. Revisa \xABGuardia\xBB en Mi rotaci\xF3n.`, "error");
+    return { active: false };
+  }
+  startEntregaPhase(covering);
+  toast5(
+    `Entrega activa \u2192 ${covering.coveringLabel}. Toca cada paciente para entregar.`,
+    "success"
+  );
+  opts.renderGuardiaBoard?.(opts.settings);
+  return { active: true, covering };
+}
 function loadGuardiaGridViewContext() {
+  if (isEntregaPhaseActive()) return "HANDOFF";
   try {
     const mode = String(localStorage.getItem(GUARDIA_GRID_MODE_KEY) || "censo").toLowerCase();
-    return mode === "entrega" ? "HANDOFF" : "GUARDIA";
-  } catch {
-    return "GUARDIA";
-  }
-}
-function saveGuardiaGridMode(mode) {
-  try {
-    localStorage.setItem(GUARDIA_GRID_MODE_KEY, mode === "entrega" ? "entrega" : "censo");
+    if (mode === "entrega") return "HANDOFF";
   } catch {
   }
+  return "GUARDIA";
 }
-var GUARDIA_GRID_MODE_KEY, entregaFormWired;
+var GUARDIA_GRID_MODE_KEY, ENTREGA_PHASE_KEY, entregaFormWired;
 var init_clinical_entrega = __esm({
   "public/js/features/clinical-entrega.mjs"() {
     init_clinical_access_runtime();
     init_clinico_access();
     init_clinical_privileges();
+    init_entrega_pendientes();
     init_lan_sync();
+    init_entrega_modal_ui();
     GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
+    ENTREGA_PHASE_KEY = "guardia.entregaPhase";
     entregaFormWired = false;
   }
 });
@@ -24974,30 +27612,40 @@ function installGuardiaAppShell() {
   window.appShell = window.appShell || {};
   window.appShell.openEntregaModal = openEntregaModal;
 }
-function wireGuardiaGridModeToggle(settings2) {
+function syncEntregaPhaseChrome() {
+  const btn = document.getElementById("btn-guardia-entrega-phase");
+  const status = document.getElementById("guardia-entrega-phase-status");
+  const phase = getEntregaPhase();
+  const active = !!phase?.active;
+  if (btn) {
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", String(active));
+    btn.textContent = active ? "Salir de entrega" : "Entrega";
+    btn.title = active ? "Terminar fase de entrega y volver al censo" : "Iniciar entrega al R1 de guardia de tu sala";
+  }
+  if (status) {
+    if (active && phase?.coveringLabel) {
+      status.hidden = false;
+      status.textContent = `Entregando a ${phase.coveringLabel} \xB7 toca un paciente en el censo`;
+    } else {
+      status.hidden = true;
+      status.textContent = "";
+    }
+  }
+}
+function wireGuardiaEntregaPhaseButton(settings2) {
   if (gridModeControlsWired) return;
   gridModeControlsWired = true;
-  const censoBtn = document.getElementById("guardia-grid-mode-censo");
-  const entregaBtn = document.getElementById("guardia-grid-mode-entrega");
-  if (!censoBtn || !entregaBtn) return;
-  const syncButtons = (mode) => {
-    const isEntrega = mode === "entrega";
-    censoBtn.classList.toggle("is-active", !isEntrega);
-    entregaBtn.classList.toggle("is-active", isEntrega);
-    censoBtn.setAttribute("aria-pressed", String(!isEntrega));
-    entregaBtn.setAttribute("aria-pressed", String(isEntrega));
-  };
-  const applyMode = (mode) => {
-    saveGuardiaGridMode(mode);
-    syncButtons(mode);
-    if (gridBoard) {
-      gridBoard.setViewContext(mode === "entrega" ? "HANDOFF" : "GUARDIA");
-    }
-    renderGuardiaBoard(settings2);
-  };
-  syncButtons(loadGuardiaGridViewContext() === "HANDOFF" ? "entrega" : "censo");
-  censoBtn.addEventListener("click", () => applyMode("censo"));
-  entregaBtn.addEventListener("click", () => applyMode("entrega"));
+  const btn = document.getElementById("btn-guardia-entrega-phase");
+  if (!btn) return;
+  syncEntregaPhaseChrome();
+  btn.addEventListener("click", () => {
+    toggleEntregaPhase({
+      settings: settings2,
+      renderGuardiaBoard
+    });
+    syncEntregaPhaseChrome();
+  });
 }
 function pendingTodoCount(pid) {
   return storage.getTodos(pid).filter((t2) => !t2.completed).length;
@@ -25012,19 +27660,31 @@ function labsSnippetForPatient(pid) {
   const line = text.split("\n").find((l) => /★|crit|alter|↑|↓/i.test(l)) || text.split("\n")[0] || text;
   return line.slice(0, 48);
 }
+function lastMedicionHasAlterations(p) {
+  const hist = p?.monitoreo?.historial;
+  if (!Array.isArray(hist) || !hist.length) return false;
+  const last = hist[hist.length - 1];
+  const alt = last && typeof last === "object" ? (
+    /** @type {any} */
+    last.alteredAt
+  ) : null;
+  return !!(alt && typeof alt === "object" && Object.keys(alt).length > 0);
+}
 function enrichPatientForGuardiaCard(p, guardiasMap) {
   const base = mapPatientForGuardiaGrid(p);
   const g3 = guardiasMap.get(base.id);
   const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
   const dxText = diagnosticosTextForCenso(dxList, { max: 2 }) || String(p.diagnosticosText || p.motivo || "").trim() || "Sin diagn\xF3stico registrado";
   const openTodos = pendingTodoCount(base.id);
-  const isCritical = !!(g3?.is_critical || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
+  const vitalsAltered = lastMedicionHasAlterations(p);
+  const isCritical = !!(g3?.is_critical || vitalsAltered || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
   return {
     ...base,
     dxText: dxText.toUpperCase(),
     pendingCount: openTodos,
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
+    vitalsAltered,
     guardiaMeta: g3
   };
 }
@@ -25078,7 +27738,8 @@ function renderGuardiaBoard(settings2) {
   const guardiasMap = clinicalSessionContext.guardiasMap.size ? clinicalSessionContext.guardiasMap : buildGuardiasMap(clinicalSessionContext.guardias);
   let censusPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived).map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
   const gridViewContext = loadGuardiaGridViewContext();
-  wireGuardiaGridModeToggle(settings2);
+  wireGuardiaEntregaPhaseButton(settings2);
+  syncEntregaPhaseChrome();
   wireGuardiaModeToggle(settings2);
   syncRotationConfigButton();
   clinicalSessionContext.scopeContext = {
@@ -59983,8 +62644,8 @@ function onGridDayClick(rowKey, day) {
 function wireUiOnce() {
   wireMedPharmModalDismiss();
   wireMedPharmAdhHoverOnce();
-  if (uiWired) return;
-  uiWired = true;
+  if (uiWired2) return;
+  uiWired2 = true;
   var pasteOpen = document.getElementById("med-pharm-paste-open-btn");
   if (pasteOpen) pasteOpen.addEventListener("click", openMedPharmPasteModal);
   var imp = document.getElementById("med-pharm-import-btn");
@@ -60289,7 +62950,7 @@ function onRecetaMergedToProfile(patientId, recetaBlock) {
     renderMedPharmProfilePanel();
   }
 }
-var MONTH_NAMES, rt30, medSubview, viewYear, viewMonthIndex, listFilter, showHiddenMedRows, openRowKey, uiWired, dismissWired2, lastPharmPanelPatientId, _medPharmAdhHoverWired, _medPharmAdhHideDelayMs, MED_PHARM_MODAL_IDS, medPharmProfileWindowHandlers;
+var MONTH_NAMES, rt30, medSubview, viewYear, viewMonthIndex, listFilter, showHiddenMedRows, openRowKey, uiWired2, dismissWired2, lastPharmPanelPatientId, _medPharmAdhHoverWired, _medPharmAdhHideDelayMs, MED_PHARM_MODAL_IDS, medPharmProfileWindowHandlers;
 var init_med_pharm_profile_panel = __esm({
   "public/js/features/med-pharm-profile-panel.mjs"() {
     init_app_state();
@@ -60325,7 +62986,7 @@ var init_med_pharm_profile_panel = __esm({
     listFilter = "TODOS";
     showHiddenMedRows = false;
     openRowKey = null;
-    uiWired = false;
+    uiWired2 = false;
     dismissWired2 = false;
     lastPharmPanelPatientId = null;
     _medPharmAdhHoverWired = false;
@@ -67658,7 +70319,7 @@ function setModalStep(step) {
   if (step === "review") updateDocSummary();
   syncConfirmLabel();
 }
-function escapeHtml6(s) {
+function escapeHtml7(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function formatEvDate2(iso) {
@@ -67759,7 +70420,7 @@ function renderStructuredSuggestions(step) {
   host.hidden = false;
   let html = '<div class="drive-import-structured-head">Campos detectados \u2014 marcar para agregar a casillas estructuradas</div><div class="drive-import-structured-list">';
   suggestions.forEach(function(s, idx) {
-    html += '<label class="drive-import-structured-row" data-drive-struct-idx="' + idx + '"><input type="checkbox"' + (s.include !== false ? " checked" : "") + ' aria-label="' + escapeHtml6(s.label) + '" /><span class="drive-import-structured-label">' + escapeHtml6(s.label) + "</span></label>";
+    html += '<label class="drive-import-structured-row" data-drive-struct-idx="' + idx + '"><input type="checkbox"' + (s.include !== false ? " checked" : "") + ' aria-label="' + escapeHtml7(s.label) + '" /><span class="drive-import-structured-label">' + escapeHtml7(s.label) + "</span></label>";
   });
   html += "</div>";
   host.innerHTML = html;
@@ -67824,7 +70485,7 @@ function renderReviewStep() {
     if (h.cama) bits.push("Cama: " + h.cama);
     if (h.sexo) bits.push("Sexo: " + h.sexo);
     listEl.hidden = false;
-    listEl.innerHTML = '<pre class="drive-import-review-header-pre">' + escapeHtml6(bits.join("\n")) + "</pre>";
+    listEl.innerHTML = '<pre class="drive-import-review-header-pre">' + escapeHtml7(bits.join("\n")) + "</pre>";
     return;
   }
   if (step.kind === "eventos" && listEl) {
@@ -67832,7 +70493,7 @@ function renderReviewStep() {
     let html = "";
     step.entries.forEach(function(entry2, idx) {
       const date = formatEvDate2(entry2.at);
-      html += '<div class="drive-import-review-row" data-drive-ev-idx="' + idx + '"><label class="drive-import-review-row-check"><input type="checkbox"' + (entry2.include ? " checked" : "") + ' aria-label="Incluir eventualidad ' + (idx + 1) + '" /><span class="drive-import-review-row-date">' + escapeHtml6(date) + '</span></label><textarea class="drive-import-review-row-text" rows="3" spellcheck="true">' + escapeHtml6(entry2.text) + "</textarea></div>";
+      html += '<div class="drive-import-review-row" data-drive-ev-idx="' + idx + '"><label class="drive-import-review-row-check"><input type="checkbox"' + (entry2.include ? " checked" : "") + ' aria-label="Incluir eventualidad ' + (idx + 1) + '" /><span class="drive-import-review-row-date">' + escapeHtml7(date) + '</span></label><textarea class="drive-import-review-row-text" rows="3" spellcheck="true">' + escapeHtml7(entry2.text) + "</textarea></div>";
     });
     listEl.innerHTML = html;
     return;
@@ -67841,10 +70502,10 @@ function renderReviewStep() {
     listEl.hidden = false;
     let html = '<div class="drive-import-labs-table-wrap"><table class="drive-import-labs-table"><thead><tr><th scope="col" class="drive-import-labs-col-check">Incluir</th><th scope="col">Fecha</th><th scope="col">Paneles</th><th scope="col">Estado</th></tr></thead><tbody>';
     step.sets.forEach(function(set, idx) {
-      const panels = escapeHtml6(String(set.summary || "").replace(/^[^—]+—\s*/, ""));
+      const panels = escapeHtml7(String(set.summary || "").replace(/^[^—]+—\s*/, ""));
       const statusClass2 = set.isDuplicate ? "drive-import-lab-status drive-import-lab-status--dup" : "drive-import-lab-status drive-import-lab-status--new";
       const statusText = set.isDuplicate ? "En historial" : "Nueva";
-      html += '<tr class="drive-import-labs-row' + (set.isDuplicate ? " is-duplicate" : "") + '" data-drive-lab-idx="' + idx + '"><td class="drive-import-labs-col-check"><input type="checkbox"' + (set.include ? " checked" : "") + ' aria-label="Incluir laboratorio ' + escapeHtml6(set.fecha || "") + '" /></td><td class="drive-import-labs-fecha">' + escapeHtml6(set.fecha || "") + '</td><td class="drive-import-labs-panels">' + panels + '</td><td><span class="' + statusClass2 + '">' + statusText + "</span></td></tr>";
+      html += '<tr class="drive-import-labs-row' + (set.isDuplicate ? " is-duplicate" : "") + '" data-drive-lab-idx="' + idx + '"><td class="drive-import-labs-col-check"><input type="checkbox"' + (set.include ? " checked" : "") + ' aria-label="Incluir laboratorio ' + escapeHtml7(set.fecha || "") + '" /></td><td class="drive-import-labs-fecha">' + escapeHtml7(set.fecha || "") + '</td><td class="drive-import-labs-panels">' + panels + '</td><td><span class="' + statusClass2 + '">' + statusText + "</span></td></tr>";
     });
     html += "</tbody></table></div>";
     listEl.innerHTML = html;

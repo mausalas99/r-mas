@@ -864,7 +864,7 @@
       "format": "esm"
     },
     "public/js/clinical-privileges.mjs": {
-      "bytes": 1660,
+      "bytes": 1832,
       "imports": [],
       "format": "esm"
     },
@@ -898,6 +898,33 @@
     "public/js/features/lan-hub-panel-shell.mjs": {
       "bytes": 2907,
       "imports": [],
+      "format": "esm"
+    },
+    "node_modules/qrcode-generator/dist/qrcode.mjs": {
+      "bytes": 51907,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/interno-qr-render.mjs": {
+      "bytes": 2796,
+      "imports": [
+        {
+          "path": "node_modules/qrcode-generator/dist/qrcode.mjs",
+          "kind": "import-statement",
+          "original": "qrcode-generator"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/interno-qr-panel.mjs": {
+      "bytes": 8083,
+      "imports": [
+        {
+          "path": "public/js/interno-qr-render.mjs",
+          "kind": "import-statement",
+          "original": "../interno-qr-render.mjs"
+        }
+      ],
       "format": "esm"
     },
     "public/js/draft-conflict-store.mjs": {
@@ -1222,7 +1249,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-teams.mjs": {
-      "bytes": 77032,
+      "bytes": 83650,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1308,7 +1335,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 136157,
+      "bytes": 136667,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1404,6 +1431,11 @@
           "path": "public/js/features/lan-hub-panel-shell.mjs",
           "kind": "import-statement",
           "original": "./lan-hub-panel-shell.mjs"
+        },
+        {
+          "path": "public/js/features/interno-qr-panel.mjs",
+          "kind": "import-statement",
+          "original": "./interno-qr-panel.mjs"
         },
         {
           "path": "public/js/draft-conflict-store.mjs",
@@ -1535,12 +1567,33 @@
       "format": "esm"
     },
     "public/js/features/unified-patient-grid-board.mjs": {
-      "bytes": 6702,
+      "bytes": 6870,
       "imports": [],
       "format": "esm"
     },
+    "lib/entrega/entrega-pendientes.mjs": {
+      "bytes": 3360,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/entrega-modal-ui.mjs": {
+      "bytes": 16959,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/clinical-entrega.mjs": {
-      "bytes": 12392,
+      "bytes": 16767,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1558,15 +1611,25 @@
           "original": "../clinical-privileges.mjs"
         },
         {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
           "path": "public/js/features/lan-sync.mjs",
           "kind": "import-statement",
           "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/entrega-modal-ui.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-modal-ui.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/features/guardia-board.mjs": {
-      "bytes": 9231,
+      "bytes": 9981,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -5906,7 +5969,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4765924
+      "bytes": 4930705
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -5968,7 +6031,7 @@
           "bytesInOutput": 956
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 18866
+          "bytesInOutput": 19206
         },
         "public/js/app-state.mjs": {
           "bytesInOutput": 5879
@@ -6133,7 +6196,7 @@
           "bytesInOutput": 884
         },
         "public/js/clinical-privileges.mjs": {
-          "bytesInOutput": 1059
+          "bytesInOutput": 1134
         },
         "public/js/guardia-mode-sync.mjs": {
           "bytesInOutput": 1506
@@ -6143,6 +6206,15 @@
         },
         "public/js/features/lan-hub-panel-shell.mjs": {
           "bytesInOutput": 2578
+        },
+        "node_modules/qrcode-generator/dist/qrcode.mjs": {
+          "bytesInOutput": 53077
+        },
+        "public/js/interno-qr-render.mjs": {
+          "bytesInOutput": 1805
+        },
+        "public/js/features/interno-qr-panel.mjs": {
+          "bytesInOutput": 7731
         },
         "public/js/draft-conflict-store.mjs": {
           "bytesInOutput": 2756
@@ -6199,22 +6271,28 @@
           "bytesInOutput": 4175
         },
         "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 74834
+          "bytesInOutput": 81184
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 121480
+          "bytesInOutput": 121920
         },
         "public/js/clinical-access-runtime.mjs": {
           "bytesInOutput": 15535
         },
         "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 6830
+          "bytesInOutput": 6993
+        },
+        "lib/entrega/entrega-pendientes.mjs": {
+          "bytesInOutput": 2424
+        },
+        "public/js/features/entrega-modal-ui.mjs": {
+          "bytesInOutput": 16121
         },
         "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 11248
+          "bytesInOutput": 14599
         },
         "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 7933
+          "bytesInOutput": 8566
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11416
@@ -6592,7 +6670,7 @@
           "bytesInOutput": 10484
         },
         "public/js/features/med-pharm-profile-panel.mjs": {
-          "bytesInOutput": 34824
+          "bytesInOutput": 34828
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 16550
@@ -6709,7 +6787,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2690528
+      "bytes": 2783255
     }
   }
 }

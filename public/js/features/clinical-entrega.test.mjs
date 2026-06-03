@@ -1,6 +1,13 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { listEntregaTargets } from './clinical-entrega.mjs';
+import {
+  listEntregaTargets,
+  resolveR1GuardiaCovering,
+  resolveEntregaActorRole,
+  loadGuardiaGridViewContext,
+  startEntregaPhase,
+  endEntregaPhase,
+} from './clinical-entrega.mjs';
 import { isOnCallToday, getCycleConfig, salaOnCallR2 } from '../clinico-access.mjs';
 
 const users = [
@@ -105,5 +112,83 @@ describe('listEntregaTargets', () => {
     const { flow, targets } = listEntregaTargets('Admin', [], users, false, {});
     assert.equal(flow, 'generic');
     assert.equal(targets.length, users.length);
+  });
+});
+
+describe('resolveEntregaActorRole', () => {
+  it('diurno when no existing guardia', () => {
+    assert.deepEqual(resolveEntregaActorRole({ user_id: 'u1', rank: 'R1' }, null), {
+      role: 'diurno',
+      userId: 'u1',
+      rank: 'R1',
+    });
+    assert.deepEqual(resolveEntregaActorRole({ user_id: 'u1' }, {}), {
+      role: 'diurno',
+      userId: 'u1',
+      rank: '',
+    });
+  });
+
+  it('guardia when updating existing handoff', () => {
+    assert.equal(
+      resolveEntregaActorRole({ user_id: 'u1' }, { guardia_id: 'g-1' }).role,
+      'guardia'
+    );
+    assert.equal(
+      resolveEntregaActorRole({ user_id: 'u1' }, { guardiaId: 'g-2' }).role,
+      'guardia'
+    );
+  });
+});
+
+describe('resolveR1GuardiaCovering', () => {
+  it('returns R1 on call for the sala', () => {
+    const now = '2026-06-01T12:00:00Z';
+    const teams = [
+      {
+        team_id: 's1',
+        service: 'Sala',
+        sala: 'Sala 1',
+        sub_area_fraction: 'A1',
+        members: [{ user_id: 'r1a', rank: 'R1' }],
+      },
+    ];
+    const covering = resolveR1GuardiaCovering(teams, users, 'Sala 1', now);
+    assert.ok(covering);
+    assert.equal(covering.coveringUserId, 'r1a');
+    assert.equal(covering.sala, 'Sala 1');
+  });
+});
+
+describe('entrega phase session', () => {
+  const mem = new Map();
+
+  before(() => {
+    globalThis.localStorage = {
+      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+      setItem: (k, v) => {
+        mem.set(k, v);
+      },
+      removeItem: (k) => {
+        mem.delete(k);
+      },
+    };
+  });
+
+  afterEach(() => {
+    mem.clear();
+    endEntregaPhase();
+  });
+
+  it('loadGuardiaGridViewContext is HANDOFF while phase active', () => {
+    assert.equal(loadGuardiaGridViewContext(), 'GUARDIA');
+    startEntregaPhase({
+      coveringUserId: 'r1b',
+      sala: 'Sala 1',
+      coveringLabel: 'r1b · Test (R1)',
+    });
+    assert.equal(loadGuardiaGridViewContext(), 'HANDOFF');
+    endEntregaPhase();
+    assert.equal(loadGuardiaGridViewContext(), 'GUARDIA');
   });
 });
