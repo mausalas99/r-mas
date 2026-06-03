@@ -3274,6 +3274,16 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   background: color-mix(in oklab, var(--accent, #8b7cf6) 6%, var(--surface));
 }
 
+.clinical-teams-leave-box {
+  margin: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--divider);
+}
+
+.clinical-teams-leave-box .clinical-teams-leave-btn {
+  width: 100%;
+}
+
 .clinical-teams-my-cycle-title {
   margin: 0 0 4px;
   font-size: 0.8125rem;
