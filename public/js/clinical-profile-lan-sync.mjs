@@ -153,3 +153,15 @@ export async function flushClinicalProfileToLan(opts = {}) {
   const lan = await import('./features/lan-sync.mjs');
   return lan.pushClinicalOpsLanNow(opts);
 }
+
+/**
+ * @param {{ ok?: boolean, code?: string, channels?: { outbox?: boolean } }} lanPush
+ * @param {(msg: string, kind: string) => void} showToast
+ */
+export function notifyLanProfilePushResult(lanPush, showToast) {
+  if (!lanPush || lanPush.ok || typeof showToast !== 'function') return;
+  if (isBenignLanPushSkipCode(lanPush.code)) return;
+  if (lanPush.channels && lanPush.channels.outbox) {
+    showToast('Perfil guardado en esta Mac; se publicará al reconectar.', 'info');
+  }
+}

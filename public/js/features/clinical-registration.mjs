@@ -118,8 +118,13 @@ function wireRegistrationFormOnce() {
     const safeRank = RANKS.includes(rank) ? rank : 'R1';
     let savedUserId = String(settings.clinicalUserId || '');
 
-    const { assertLanRoomForUsernameRegister, flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG, isBenignLanPushSkipCode } =
-      await import('../clinical-profile-lan-sync.mjs');
+    const {
+      assertLanRoomForUsernameRegister,
+      flushClinicalProfileToLan,
+      LAN_PROFILE_PUSH_FAILED_MSG,
+      isBenignLanPushSkipCode,
+      notifyLanProfilePushResult,
+    } = await import('../clinical-profile-lan-sync.mjs');
     await assertLanRoomForUsernameRegister({ sala });
 
     const api = dbApi();
@@ -189,7 +194,8 @@ function wireRegistrationFormOnce() {
 
     if (errEl) errEl.hidden = true;
     const lanPush = await flushClinicalProfileToLan();
-    if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code) && errEl) {
+    notifyLanProfilePushResult(lanPush, (msg, kind) => runtime.showToast(msg, kind));
+    if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code) && !(lanPush.channels && lanPush.channels.outbox) && errEl) {
       errEl.textContent = LAN_PROFILE_PUSH_FAILED_MSG;
       errEl.hidden = false;
     }

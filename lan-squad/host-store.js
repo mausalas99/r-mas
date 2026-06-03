@@ -17,6 +17,7 @@ const { createHostStateCache } = require('./host-state-cache.js');
 const { readJson, writeJsonAtomic } = require('./atomic-json.js');
 const { migrateHostStateIfNeeded } = require('./migrate-host-state.js');
 const { mergeBundlePut } = require('./bundle-merge.js');
+const { mergeClinicalOpsSnapshotsData } = require('../lib/db/clinical-ops-bundle-merge.cjs');
 const { appendAudit } = require('./audit-log.js');
 
 function nowIso() {
@@ -407,6 +408,75 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     return result.bundle;
   }
 
+  function putRoomClinicalOps(roomId, body) {
+    const state = ensureLoadedSync();
+    const rid = String(roomId || '');
+    if (!rid) throw new Error('room id required');
+    const incoming = body && typeof body === 'object' ? body : {};
+    ensureRoomRecord(state, rid, incoming.roomDisplayName);
+    const bundle = ensureRoomBundle(state, rid);
+    const clientId = String(incoming.clientId || incoming.uploadedByClientId || '');
+    const baseRevision = Number(incoming.baseRevision != null ? incoming.baseRevision : 0);
+    const serverRevision = Number(bundle.revision || 0);
+
+    if (serverRevision > 0 && baseRevision !== serverRevision) {
+      const err = new Error('conflict');
+      err.code = 'CONFLICT';
+      err.serverSnapshot =
+        bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
+      err.revision = serverRevision;
+      err.conflicts = [
+        {
+          key: 'clinicalOps',
+          kind: 'clinicalOps',
+          localBaseVersion: baseRevision,
+          serverVersion: serverRevision,
+          local: { baseRevision },
+          server: { revision: serverRevision },
+        },
+      ];
+      throw err;
+    }
+
+    const incomingSnapshot =
+      incoming.snapshot && typeof incoming.snapshot === 'object' ? incoming.snapshot : null;
+    const serverOps =
+      bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
+
+    if (!incomingSnapshot) {
+      bundle.clinicalOps = incoming.snapshot === null ? null : bundle.clinicalOps;
+    } else if (!serverOps) {
+      bundle.clinicalOps = incomingSnapshot;
+    } else {
+      bundle.clinicalOps = mergeClinicalOpsSnapshotsData(serverOps, incomingSnapshot);
+    }
+
+    if (!bundle.entityVersions || typeof bundle.entityVersions !== 'object') {
+      bundle.entityVersions = {};
+    }
+    bundle.entityVersions.clinicalOps = Number(bundle.entityVersions.clinicalOps || 0) + 1;
+    bundle.revision = serverRevision + 1;
+    bundle.committedAt = nowIso();
+    bundle.uploadedByClientId = clientId;
+    if (!Array.isArray(bundle.audit_log)) bundle.audit_log = [];
+    appendAudit(
+      {
+        at: bundle.committedAt,
+        clientId: clientId || 'host',
+        action: 'clinical_ops.put',
+        detail: { revision: bundle.revision },
+      },
+      bundle.audit_log
+    );
+
+    state.roomSyncBundles[rid] = bundle;
+    persistState();
+    return {
+      snapshot: bundle.clinicalOps,
+      revision: bundle.revision,
+    };
+  }
+
   function ensureRoomBundle(state, roomId) {
     const rid = String(roomId || '');
     if (!rid) throw new Error('room id required');
@@ -423,6 +493,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         todos: {},
         entries: [],
         manejo: null,
+        clinicalOps: null,
         audit_log: [],
       };
       state.roomSyncBundles[rid] = b;
@@ -646,6 +717,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     deleteRoom,
     getRoomSyncBundle,
     putRoomSyncBundle,
+    putRoomClinicalOps,
     getEntity,
     setEntity,
     materializeRoomViews,

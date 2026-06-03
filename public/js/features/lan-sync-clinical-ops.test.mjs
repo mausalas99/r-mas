@@ -53,6 +53,34 @@ describe('lan-sync clinical ops', () => {
   it('mints a fresh LAN ticket when copying iPad or invite links', () => {
     assert.match(lanSyncSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
   });
+
+  it('does not reconnect live WS inside pushClinicalOpsLanNow', () => {
+    assert.match(lanSyncSrc, /function sendLiveBundleIfOpen/);
+    assert.match(lanSyncSrc, /pushedLive = sendLiveBundleIfOpen\(roomId, envelope\)/);
+    assert.doesNotMatch(
+      lanSyncSrc,
+      /if \(lanClient\.liveConnected\)[\s\S]{0,120}connectLiveChannel\(roomId\)/
+    );
+  });
+
+  it('returns structured channels from pushClinicalOpsLanNow', () => {
+    assert.match(lanSyncSrc, /function lanPushResult/);
+    assert.match(lanSyncSrc, /lanPushResult\(true, undefined, \{ http: !!okHttp, live: pushedLive \}\)/);
+    assert.match(lanSyncSrc, /\/clinical-ops/);
+  });
+
+  it('uses HTTP-primary debounced push without WS bundle', () => {
+    assert.match(lanSyncSrc, /HTTP sync-bundle is authoritative/);
+    assert.doesNotMatch(
+      lanSyncSrc,
+      /scheduleLiveSyncPush[\s\S]{0,400}lanClient\.sendLive\(bundle\)/
+    );
+  });
+
+  it('handles livesync revision hints from peers', () => {
+    assert.match(lanSyncSrc, /livesync:revision/);
+    assert.match(lanSyncSrc, /scheduleReconcileFromRevisionHint/);
+  });
 });
 
 describe('clinical-profile-lan-sync', () => {

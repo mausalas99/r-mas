@@ -668,7 +668,7 @@
       "format": "esm"
     },
     "public/js/live-sync-outbox.mjs": {
-      "bytes": 1803,
+      "bytes": 3217,
       "imports": [],
       "format": "esm"
     },
@@ -803,6 +803,21 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/lan-sync-state.mjs": {
+      "bytes": 1879,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/lan-host-pin.mjs": {
+      "bytes": 656,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/lan-sync-diagnostics.mjs": {
+      "bytes": 2184,
+      "imports": [],
+      "format": "esm"
+    },
     "lib/historia-clinica/migrate-legacy.mjs": {
       "bytes": 2231,
       "imports": [],
@@ -883,7 +898,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 145688,
+      "bytes": 159892,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1011,6 +1026,21 @@
           "original": "../lan-surrogate-host.mjs"
         },
         {
+          "path": "public/js/lan-sync-state.mjs",
+          "kind": "import-statement",
+          "original": "../lan-sync-state.mjs"
+        },
+        {
+          "path": "public/js/lan-host-pin.mjs",
+          "kind": "import-statement",
+          "original": "../lan-host-pin.mjs"
+        },
+        {
+          "path": "public/js/lan-sync-diagnostics.mjs",
+          "kind": "import-statement",
+          "original": "../lan-sync-diagnostics.mjs"
+        },
+        {
           "path": "public/js/app-state.mjs",
           "kind": "import-statement",
           "original": "../app-state.mjs"
@@ -1049,7 +1079,7 @@
       "format": "esm"
     },
     "public/js/clinical-profile-lan-sync.mjs": {
-      "bytes": 5401,
+      "bytes": 5887,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1090,7 +1120,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-registration.mjs": {
-      "bytes": 8052,
+      "bytes": 8245,
       "imports": [
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -1152,7 +1182,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-onboarding.mjs": {
-      "bytes": 14154,
+      "bytes": 14309,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -6258,7 +6288,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5109547
+      "bytes": 5144301
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6326,7 +6356,7 @@
           "bytesInOutput": 2585
         },
         "public/js/features/chrome.mjs": {
-          "bytesInOutput": 14491
+          "bytesInOutput": 14514
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 959
@@ -6446,7 +6476,7 @@
           "bytesInOutput": 14427
         },
         "public/js/live-sync-outbox.mjs": {
-          "bytesInOutput": 1223
+          "bytesInOutput": 2724
         },
         "public/js/manejo-custom-protocols.mjs": {
           "bytesInOutput": 3370
@@ -6493,6 +6523,15 @@
         "public/js/lan-surrogate-host.mjs": {
           "bytesInOutput": 4230
         },
+        "public/js/lan-sync-state.mjs": {
+          "bytesInOutput": 1363
+        },
+        "public/js/lan-host-pin.mjs": {
+          "bytesInOutput": 657
+        },
+        "public/js/lan-sync-diagnostics.mjs": {
+          "bytesInOutput": 1849
+        },
         "lib/historia-clinica/migrate-legacy.mjs": {
           "bytesInOutput": 2094
         },
@@ -6509,10 +6548,10 @@
           "bytesInOutput": 5855
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 130182
+          "bytesInOutput": 143365
         },
         "public/js/clinical-profile-lan-sync.mjs": {
-          "bytesInOutput": 4982
+          "bytesInOutput": 5378
         },
         "public/js/features/clinical-registration.mjs": {
           "bytesInOutput": 1993
@@ -6521,7 +6560,7 @@
           "bytesInOutput": 3823
         },
         "public/js/features/clinical-onboarding.mjs": {
-          "bytesInOutput": 14508
+          "bytesInOutput": 14681
         },
         "public/js/features/clinical-context-bar.mjs": {
           "bytesInOutput": 666
@@ -7100,7 +7139,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2888692
+      "bytes": 2907940
     }
   }
 }

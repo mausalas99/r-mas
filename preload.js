@@ -272,4 +272,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbInternoAccessSetActive: function(opts) {
     return ipcRenderer.invoke('db:interno-access-set-active', opts);
   },
+  dbLanOutboxEnqueue: function(opts) {
+    return ipcRenderer.invoke('db:lan-outbox-enqueue', opts);
+  },
+  dbLanOutboxDrain: function(opts) {
+    return ipcRenderer.invoke('db:lan-outbox-drain', opts);
+  },
+  dbLanOutboxCount: function(opts) {
+    return ipcRenderer.invoke('db:lan-outbox-count', opts);
+  },
 });

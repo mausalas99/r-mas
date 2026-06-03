@@ -116,6 +116,101 @@ test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
   }
 });
 
+test('PUT /rooms/:id/clinical-ops merges snapshot', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-merge-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala ops');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    clinicalOps: {
+      exportedAt: '2020-01-01T00:00:00',
+      teams: [{ team_id: 'team-a', name: 'A', created_at: '2020-01-01T00:00:00' }],
+      team_membership: [],
+    },
+  });
+  const baseRevision = store.getRoomSyncBundle(room.id).revision;
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/clinical-ops`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        baseRevision,
+        clientId: 'peer-b',
+        snapshot: {
+          exportedAt: '2025-01-01T00:00:00',
+          teams: [{ team_id: 'team-b', name: 'B', created_at: '2025-01-01T00:00:00' }],
+          team_membership: [],
+        },
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.revision, baseRevision + 1);
+    assert.strictEqual(body.snapshot.teams.length, 2);
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.strictEqual(bundle.clinicalOps.teams.length, 2);
+    assert.strictEqual(bundle.revision, body.revision);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('PUT /rooms/:id/clinical-ops stale revision returns 409', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-stale-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala ops stale');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    clinicalOps: {
+      exportedAt: '2020-01-01T00:00:00',
+      teams: [{ team_id: 'team-a', name: 'A', created_at: '2020-01-01T00:00:00' }],
+      team_membership: [],
+    },
+  });
+  const cur = store.getRoomSyncBundle(room.id);
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/clinical-ops`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        baseRevision: 0,
+        clientId: 'stale-peer',
+        snapshot: {
+          exportedAt: '2025-01-01T00:00:00',
+          teams: [{ team_id: 'team-b', name: 'B', created_at: '2025-01-01T00:00:00' }],
+          team_membership: [],
+        },
+      }),
+    });
+    assert.strictEqual(res.status, 409);
+    const body = await res.json();
+    assert.strictEqual(body.error, 'conflict');
+    assert.ok(Array.isArray(body.conflicts));
+    assert.ok(body.conflicts.length >= 1);
+    assert.strictEqual(body.snapshot.teams.length, 1);
+    assert.strictEqual(body.snapshot.teams[0].team_id, 'team-a');
+    assert.strictEqual(store.getRoomSyncBundle(room.id).clinicalOps.teams[0].team_id, 'team-a');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-bundle-conf-'));
   const statePath = path.join(dir, 'state.json');

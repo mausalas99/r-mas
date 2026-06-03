@@ -22,23 +22,23 @@ function mockLocalStorage() {
   };
 }
 
-test('enqueue and drain per roomId', () => {
+test('enqueue and drain per roomId', async () => {
   mockLocalStorage();
-  enqueueOutbox('room1', {
+  await enqueueOutbox('room1', {
     kind: 'bundle',
     payload: { type: 'livesync:bundle', roomId: 'room1' },
   });
-  assert.equal(outboxSize('room1'), 1);
-  assert.equal(outboxSize('room2'), 0);
-  const items = drainOutbox('room1');
+  assert.equal(await outboxSize('room1'), 1);
+  assert.equal(await outboxSize('room2'), 0);
+  const items = await drainOutbox('room1');
   assert.equal(items.length, 1);
   assert.equal(items[0].kind, 'bundle');
-  assert.equal(outboxSize('room1'), 0);
+  assert.equal(await outboxSize('room1'), 0);
 });
 
-test('peek does not drain', () => {
+test('peek does not drain', async () => {
   mockLocalStorage();
-  enqueueOutbox('r', { kind: 'patch', payload: { type: 'livesync:patch' } });
+  await enqueueOutbox('r', { kind: 'patch', payload: { type: 'livesync:patch' } });
   assert.equal(peekOutbox('r').length, 1);
-  assert.equal(outboxSize('r'), 1);
+  assert.equal(await outboxSize('r'), 1);
 });

@@ -28,7 +28,7 @@ import {
   clearRoomMembership,
   migrateLastRoomToMembership,
 } from "../live-sync-membership.mjs";
-import { enqueueOutbox, drainOutbox } from "../live-sync-outbox.mjs";
+import { enqueueOutbox, drainOutbox, outboxSize } from "../live-sync-outbox.mjs";
 import {
   collectManejoRoomPayload,
   mergeManejoFromSources,
@@ -89,6 +89,22 @@ import {
   isSurrogateHostActive,
 } from "../lan-surrogate-host.mjs";
 import {
+  RoomSyncPhase,
+  getRoomSyncPhase,
+  setRoomSyncPhase,
+  clearRoomSyncPhase,
+} from "../lan-sync-state.mjs";
+import {
+  getPinnedHostUrl,
+  setPinnedHostUrl,
+  clearPinnedHostUrl,
+} from "../lan-host-pin.mjs";
+import {
+  getLanSyncDiagnostics,
+  recordLanSyncError,
+  formatDiagnosticsReport,
+} from "../lan-sync-diagnostics.mjs";
+import {
   patients,
   notes,
   indicaciones,
@@ -105,6 +121,9 @@ import {
 } from "../app-state.mjs";
 
 /** Evita modal de conflicto durante importaciones masivas (p. ej. Drive). */
+let _lanLastPingAt = null;
+let _lanLastPingStatus = 0;
+
 let _suppressClinicalConflictViewer = 0;
 /** Tras refrescar: guardar borrador pero no abrir el comparador hasta que el usuario lo pida. */
 let _deferLanConflictModalUntil = 0;
@@ -415,15 +434,25 @@ function updateLanPairingDisplay(root) {
   var joinLine = p.joinUrl
     ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(p.joinUrl) + '</code></div>'
     : '';
+  var expiryLabel = formatLanTicketExpiryLabel(p.expiresAt);
+  var expirySoon = lanTicketExpirySoon(p.expiresAt);
+  var expiryLine = expiryLabel
+    ? '<p class="lan-pairing-expiry' +
+      (expirySoon ? ' lan-pairing-expiry--soon' : '') +
+      '" style="margin:8px 0 0;font-size:12px;">Válido hasta <strong>' +
+      esc(expiryLabel) +
+      '</strong></p>'
+    : '';
   box.innerHTML =
-    '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (válido unos minutos, un solo uso):</p>' +
+    '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (un solo uso por ticket):</p>' +
     '<div><strong>PIN:</strong> <code>' +
     esc(p.pin) +
     '</code></div>' +
     '<div><strong>Ticket:</strong> <code>' +
     esc(p.ticketId) +
     '</code></div>' +
-    joinLine;
+    joinLine +
+    expiryLine;
 }
 
 async function mintLanPairingFromUi() {
@@ -1629,6 +1658,34 @@ function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
   return true;
 }
 
+/** When pin is set, block auto host URL changes unless user confirms (IM-08). */
+function maybeApplyLanHostUrlSwitch(hostUrl, teamCode, opts) {
+  opts = opts || {};
+  var url = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!url) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  var pinned = getPinnedHostUrl();
+  if (url === currentUrl) return applyLanHostUrlSwitch(url, teamCode, opts);
+  if (opts.blockSwitch) return false;
+  if (pinned) {
+    if (url === pinned) return applyLanHostUrlSwitch(url, teamCode, opts);
+    runtime.showToast('Anfitrión fijado: ' + pinned + '.', 'info');
+    return false;
+  }
+  if (opts.requireConfirm) {
+    var msg =
+      opts.confirmMessage ||
+      '¿Cambiar al anfitrión ' + url + '?';
+    if (typeof confirm === 'function' && !confirm(msg)) return false;
+  }
+  return applyLanHostUrlSwitch(url, teamCode, opts);
+}
+
 function stopSurrogateFailoverTimer() {
   if (_surrogateFailoverTimer) {
     clearTimeout(_surrogateFailoverTimer);
@@ -1646,7 +1703,37 @@ function scheduleSurrogateFailoverCheck() {
 }
 
 async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
-  if (!applyLanHostUrlSwitch(hostUrl, teamCode, { skipRememberPrimary: true })) return false;
+  var targetUrl = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  var pinned = getPinnedHostUrl();
+  var switchOpts = { skipRememberPrimary: true };
+  if (targetUrl && targetUrl !== currentUrl) {
+    if (pinned) {
+      if (targetUrl !== pinned) {
+        var pinMsg =
+          'Se detectó otro anfitrión (' +
+          targetUrl +
+          '). Tienes fijado ' +
+          pinned +
+          '. ¿Cambiar de todos modos?';
+        if (typeof confirm !== 'function' || !confirm(pinMsg)) return false;
+      }
+    } else if (typeof confirm === 'function') {
+      if (
+        !confirm(
+          '¿Reconectar al anfitrión ' + targetUrl + '?'
+        )
+      ) {
+        return false;
+      }
+    }
+  }
+  if (!applyLanHostUrlSwitch(hostUrl, teamCode, switchOpts)) return false;
   var ok = await pingLanHostUrl(hostUrl, teamCode);
   if (!ok) return false;
   var rid = activeLiveSyncRoomId;
@@ -2215,7 +2302,10 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
       }
       if (resp.ok) {
         return resp.json().then(function (body) {
-          if (body && body.bundle) setHostBundleBases(rid, body.bundle);
+          if (body && body.bundle) {
+            setHostBundleBases(rid, body.bundle);
+            emitLiveSyncRevisionHint(rid, body.bundle.revision);
+          }
           return true;
         });
       }
@@ -2228,18 +2318,19 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
 function flushLiveSyncOutbox(roomId) {
   var rid = String(roomId || '').trim();
   if (!rid || !isLanSessionConfiguredForRest()) return Promise.resolve();
-  var items = drainOutbox(rid);
-  if (!items.length) return Promise.resolve();
-  var chain = Promise.resolve();
-  items.forEach(function (item) {
-    chain = chain.then(function () {
-      if (!item || item.kind !== 'bundle' || !item.payload) return;
-      return pushRoomSyncBundleToHost(rid, item.payload).then(function (ok) {
-        if (!ok) enqueueOutbox(rid, item);
+  return drainOutbox(rid).then(function (items) {
+    if (!items || !items.length) return;
+    var chain = Promise.resolve();
+    items.forEach(function (item) {
+      chain = chain.then(function () {
+        if (!item || item.kind !== 'bundle' || !item.payload) return;
+        return pushRoomSyncBundleToHost(rid, item.payload).then(function (ok) {
+          if (!ok) return enqueueOutbox(rid, item);
+        });
       });
     });
+    return chain;
   });
-  return chain;
 }
 function scheduleLiveSyncOutboxFlush() {
   if (_liveSyncOutboxFlushTimer) return;
@@ -2321,6 +2412,7 @@ export function bootLanRoomMembership() {
   deferLanConflictModalForMs(20000);
   activeLiveSyncRoomId = m.roomId;
   activeLiveSyncRoomLabel = m.label;
+  setRoomSyncPhase(m.roomId, RoomSyncPhase.catching_up);
   scheduleLiveSyncOutboxFlush();
   reconcileLiveSyncRoom(m.roomId)
     .then(function () {
@@ -2332,6 +2424,7 @@ export function bootLanRoomMembership() {
         if (!lanClient.connected) lanClient.connectSyncChannel();
         lanClient.connectLiveChannel(m.roomId);
       } catch (_e) {}
+      applyRoomSyncPhaseAfterReconcile(m.roomId);
       void import('../historia-clinica-lan-sync.mjs').then(function (mod) {
         return mod.scheduleFlushAllPendingHistoriaClinicaLanSync();
       });
@@ -2385,6 +2478,31 @@ async function buildLiveSyncBundleEnvelope(roomId) {
     clinicalOps: getCachedClinicalOpsSnapshot(),
   };
 }
+var _liveSyncRevisionReconcileTimer = null;
+
+function scheduleReconcileFromRevisionHint(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid || rid !== activeLiveSyncRoomId) return;
+  if (_liveSyncRevisionReconcileTimer) clearTimeout(_liveSyncRevisionReconcileTimer);
+  _liveSyncRevisionReconcileTimer = setTimeout(function () {
+    _liveSyncRevisionReconcileTimer = null;
+    void reconcileLiveSyncRoom(rid);
+  }, 500);
+}
+
+function emitLiveSyncRevisionHint(roomId, revision) {
+  if (!lanClient.liveConnected) return;
+  try {
+    lanClient.sendLive({
+      type: 'livesync:revision',
+      roomId: String(roomId || '').trim(),
+      revision: Number(revision || 0),
+      clientId: getLanClientId(),
+    });
+  } catch (_e) {}
+}
+
+/** Debounced room push: HTTP sync-bundle is authoritative; WS carries patches + revision hints (IM-05). */
 function scheduleLiveSyncPush() {
   if (!activeLiveSyncRoomId) return;
   if (isPitchPatientIsolationActive()) return;
@@ -2395,19 +2513,55 @@ function scheduleLiveSyncPush() {
     if (!roomId) return;
     void (async function () {
       var bundle = await buildLiveSyncBundleEnvelope(roomId);
-      if (lanClient.liveConnected) {
-        try {
-          lanClient.sendLive(bundle);
-        } catch (_e) {}
-      }
       saveLocalRoomSnapshot(roomId);
-      if (isLanSessionConfiguredForRest()) {
-        pushRoomSyncBundleToHost(roomId, bundle).then(function (ok) {
-          if (!ok) enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
-        });
-      }
+      if (!isLanSessionConfiguredForRest()) return;
+      var ok = await pushRoomSyncBundleToHost(roomId, bundle);
+      if (!ok) void enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
     })();
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
+}
+
+/** @returns {boolean} */
+function sendLiveBundleIfOpen(roomId, envelope) {
+  var rid = String(roomId || '').trim();
+  if (!rid || !envelope) return false;
+  var ws = lanClient._liveWs;
+  if (!lanClient.liveConnected || String(lanClient.liveRoomId || '').trim() !== rid) return false;
+  if (!ws || ws.readyState !== 1) return false;
+  try {
+    return lanClient.sendLive(envelope) === true;
+  } catch (_e) {
+    return false;
+  }
+}
+
+/**
+ * @param {boolean} ok
+ * @param {string} [code]
+ * @param {{ http?: boolean, live?: boolean, outbox?: boolean }} [channels]
+ */
+function lanPushResult(ok, code, channels) {
+  return { ok: !!ok, code: code || undefined, channels: channels || {} };
+}
+
+function formatLanTicketExpiryLabel(expiresAt) {
+  var raw = String(expiresAt || '').trim();
+  if (!raw) return '';
+  var d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return '';
+  try {
+    return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  } catch (_e) {
+    return d.toISOString().slice(11, 16);
+  }
+}
+
+function lanTicketExpirySoon(expiresAt) {
+  var raw = String(expiresAt || '').trim();
+  if (!raw) return false;
+  var d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getTime() - Date.now() < 60000;
 }
 
 /**
@@ -2415,23 +2569,23 @@ function scheduleLiveSyncPush() {
  * Used after registering @usuario so peers see the handle in the directory.
  *
  * @param {{ requireMembership?: boolean }} [opts]
- * @returns {Promise<{ ok: boolean, code?: string }>}
+ * @returns {Promise<{ ok: boolean, code?: string, channels?: { http?: boolean, live?: boolean, outbox?: boolean } }>}
  */
 export async function pushClinicalOpsLanNow(opts) {
-  if (isPitchPatientIsolationActive()) return { ok: false, code: 'PITCH_DEMO' };
-  if (!isClinicalOpsLanAvailable()) return { ok: false, code: 'NO_CLINICAL_OPS' };
+  if (isPitchPatientIsolationActive()) return lanPushResult(false, 'PITCH_DEMO');
+  if (!isClinicalOpsLanAvailable()) return lanPushResult(false, 'NO_CLINICAL_OPS');
 
   await prepareClinicalOpsForLanSync();
   var snap = getCachedClinicalOpsSnapshot();
-  if (!snap) return { ok: false, code: 'NO_SNAPSHOT' };
+  if (!snap) return lanPushResult(false, 'NO_SNAPSHOT');
 
   var requireMembership = opts.requireMembership !== false;
   var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) {
-    return requireMembership ? { ok: false, code: 'NO_ROOM' } : { ok: false, code: 'NO_ROOM' };
+    return lanPushResult(false, 'NO_ROOM');
   }
   if (!isLanSessionConfiguredForRest()) {
-    return { ok: false, code: 'NO_LAN' };
+    return lanPushResult(false, 'NO_LAN');
   }
 
   try {
@@ -2442,22 +2596,67 @@ export async function pushClinicalOpsLanNow(opts) {
   // Always attach fresh clinical ops (patients/todos can make hasPayload true while ops were stale).
   envelope.clinicalOps = snap;
 
-  var pushedLive = false;
-  if (lanClient.liveConnected) {
-    try {
-      lanClient.connectLiveChannel(roomId);
-      lanClient.sendLive(envelope);
-      pushedLive = true;
-    } catch (_e2) {}
+  var bases = getHostBundleBases(roomId);
+  var okHttp = false;
+  try {
+    var opsResp = await lanClient.fetch(
+      '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/clinical-ops',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          snapshot: snap,
+          baseRevision: bases && bases.revision != null ? bases.revision : 0,
+          clientId: getLanClientId(),
+        }),
+      }
+    );
+    if (opsResp && opsResp.ok) {
+      var opsBody = await opsResp.json();
+      if (opsBody && opsBody.revision != null) {
+        var prevBases = bases || {};
+        setHostBundleBases(roomId, {
+          revision: opsBody.revision,
+          entityVersions: prevBases.entityVersions || {},
+        });
+        emitLiveSyncRevisionHint(roomId, opsBody.revision);
+      }
+      okHttp = true;
+    } else if (!opsResp || opsResp.status !== 409) {
+      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    } else {
+      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    }
+  } catch (_opsErr) {
+    okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
   }
 
-  var okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+  var pushedLive = sendLiveBundleIfOpen(roomId, envelope);
   saveLocalRoomSnapshot(roomId);
   syncLiveSyncStatusChrome();
 
-  if (okHttp || pushedLive) return { ok: true };
-  enqueueOutbox(roomId, { kind: 'bundle', payload: envelope });
-  return { ok: false, code: 'PUSH_FAILED' };
+  if (okHttp || pushedLive) {
+    return lanPushResult(true, undefined, { http: !!okHttp, live: pushedLive });
+  }
+  void enqueueOutbox(roomId, { kind: 'bundle', payload: envelope });
+  return lanPushResult(false, 'PUSH_FAILED', { outbox: true });
+}
+
+function applyRoomSyncPhaseAfterReconcile(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid || activeLiveSyncRoomId !== rid) return;
+  if (
+    lanClient.liveConnected &&
+    String(lanClient.liveRoomId || '').trim() === rid
+  ) {
+    setRoomSyncPhase(rid, RoomSyncPhase.live);
+  } else if (getRoomMembership() && getRoomMembership().roomId === rid) {
+    setRoomSyncPhase(rid, RoomSyncPhase.degraded);
+  } else if (isLanSessionConfiguredForRest()) {
+    setRoomSyncPhase(rid, RoomSyncPhase.configured);
+  } else {
+    setRoomSyncPhase(rid, RoomSyncPhase.offline);
+  }
 }
 
 function syncLiveSyncStatusChrome() {
@@ -2470,12 +2669,19 @@ function syncLiveSyncStatusChrome() {
   }
   el.style.display = 'block';
   var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
-  if (lanClient.liveConnected) {
-    el.textContent = 'Sala: ' + label + ' · sincronizando pacientes, equipos, labs, agenda y pendientes';
-  } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
-    el.textContent = 'Sala: ' + label + ' · reconectando…';
+  var prefix = 'Sala: ' + label + ' · ';
+  var phase = getRoomSyncPhase(activeLiveSyncRoomId);
+  if (phase === RoomSyncPhase.live) {
+    el.textContent =
+      prefix + 'sincronizando pacientes, equipos, labs, agenda y pendientes';
+  } else if (phase === RoomSyncPhase.catching_up) {
+    el.textContent = prefix + 'sincronizando…';
+  } else if (phase === RoomSyncPhase.joining) {
+    el.textContent = prefix + 'conectando…';
+  } else if (phase === RoomSyncPhase.degraded) {
+    el.textContent = prefix + 'reconectando…';
   } else {
-    el.textContent = 'Sala: ' + label + ' · solo local (sin sync en vivo)';
+    el.textContent = prefix + 'solo local (sin sync en vivo)';
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
@@ -2654,6 +2860,10 @@ function onLiveSyncWireMessage(data) {
     );
     return;
   }
+  if (data.type === 'livesync:revision' && data.clientId !== myId) {
+    scheduleReconcileFromRevisionHint(data.roomId);
+    return;
+  }
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
     var mergedBundle = mergeLiveSyncFullBundles([buildLiveSyncLocalMergeSource(), data]);
@@ -2694,6 +2904,11 @@ export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
 }
 
 async function reconcileLiveSyncRoom(roomId) {
+  var rid = String(roomId || '').trim();
+  if (rid && activeLiveSyncRoomId === rid) {
+    setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
+    syncLiveSyncStatusChrome();
+  }
   if (isClinicalOpsLanAvailable()) {
     await prepareClinicalOpsForLanSync();
   }
@@ -2722,6 +2937,8 @@ async function reconcileLiveSyncRoom(roomId) {
   if (sources.length) {
     applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
   }
+  applyRoomSyncPhaseAfterReconcile(rid || roomId);
+  syncLiveSyncStatusChrome();
   return flushLiveSyncOutbox(roomId);
 }
 function syncLiveSyncAfterRoomJoin(roomId) {
@@ -2729,6 +2946,7 @@ function syncLiveSyncAfterRoomJoin(roomId) {
   if (!rid) return Promise.resolve();
   return reconcileLiveSyncRoom(rid).then(function () {
     if (activeLiveSyncRoomId !== rid) return;
+    applyRoomSyncPhaseAfterReconcile(rid);
     scheduleLiveSyncPush();
     if (lanClient.liveConnected) {
       void enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(rid)).then(function (hello) {
@@ -2769,6 +2987,7 @@ function leaveLiveSyncRoom(opts) {
   }
   activeLiveSyncRoomId = '';
   activeLiveSyncRoomLabel = '';
+  if (roomId) clearRoomSyncPhase(roomId);
   clearRoomMembership();
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
@@ -2800,6 +3019,7 @@ lanClient.addEventListener('lan-live-status', function (ev) {
     });
     void maybeRevertSurrogateToPrimary();
   } else if (!ev.detail.connected && activeLiveSyncRoomId) {
+    setRoomSyncPhase(activeLiveSyncRoomId, RoomSyncPhase.degraded);
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
     startLiveSyncReconnectLoop();
     if (!lanClient.connected) scheduleSurrogateFailoverCheck();
@@ -3067,7 +3287,116 @@ async function renderLanPanelOnce() {
     buildR4Section(root);
   }
 
+  appendLanHostPinSection(root);
+  void appendLanSyncDiagnosticsSection(root);
   maybeAppendInternoQrPanel(root);
+}
+
+function appendLanHostPinSection(root) {
+  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  var hostUrl = lanHostUrl();
+  if (!hostUrl) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'lan-connect-card lan-host-pin-card';
+  var label = document.createElement('label');
+  label.className = 'lan-host-pin-label';
+  label.setAttribute('for', 'lan-pin-host-checkbox');
+  var cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.id = 'lan-pin-host-checkbox';
+  var pinned = getPinnedHostUrl();
+  cb.checked = !!pinned && pinned === hostUrl.replace(/\/+$/, '');
+  cb.onchange = function () {
+    if (cb.checked) {
+      setPinnedHostUrl(hostUrl);
+      runtime.showToast('Anfitrión fijado para el turno: ' + hostUrl, 'success');
+    } else {
+      clearPinnedHostUrl();
+      runtime.showToast('Anfitrión ya no está fijado; la red puede sugerir otro servidor.', 'info');
+    }
+    void renderLanPanel();
+  };
+  label.appendChild(cb);
+  label.appendChild(document.createTextNode(' Fijar anfitrión del turno'));
+  wrap.appendChild(label);
+  if (pinned && pinned !== hostUrl.replace(/\/+$/, '')) {
+    var hint = document.createElement('p');
+    hint.className = 'lan-connect-card-hint';
+    hint.style.marginTop = '6px';
+    hint.textContent = 'Fijado: ' + pinned + ' (distinto del servidor actual).';
+    wrap.appendChild(hint);
+  }
+  root.appendChild(wrap);
+}
+
+async function buildLanSyncDiagnosticsDeps() {
+  var roomId = String(activeLiveSyncRoomId || '').trim();
+  var bases = roomId ? getHostBundleBases(roomId) : { revision: 0 };
+  var outCount = 0;
+  if (roomId) {
+    try {
+      outCount = await outboxSize(roomId);
+    } catch (_e) {}
+  }
+  var aligned = false;
+  try {
+    aligned = !!(await ensureLanClientTeamCodeAligned());
+  } catch (_e2) {}
+  return {
+    hostUrl: lanHostUrl(),
+    pingAt: _lanLastPingAt,
+    pingStatus: _lanLastPingStatus,
+    wsSync: !!lanClient.connected,
+    wsLive: !!lanClient.liveConnected,
+    liveRoomId: String(lanClient.liveRoomId || ''),
+    roomId: roomId,
+    phase: getRoomSyncPhase(roomId),
+    bundleRevision: Number(bases.revision || 0),
+    outboxCount: outCount,
+    pinnedHost: getPinnedHostUrl(),
+    teamCodeAligned: aligned,
+  };
+}
+
+async function appendLanSyncDiagnosticsSection(root) {
+  if (!root) return;
+  var deps = await buildLanSyncDiagnosticsDeps();
+  var diag = getLanSyncDiagnostics(deps);
+  var existing = root.querySelector('.lan-sync-diagnostics-panel');
+  if (existing) existing.remove();
+  var details = document.createElement('details');
+  details.className = 'lan-connect-card lan-sync-diagnostics-panel';
+  var sum = document.createElement('summary');
+  sum.textContent = 'Estado de sincronización';
+  sum.style.cursor = 'pointer';
+  sum.style.fontWeight = '600';
+  details.appendChild(sum);
+  var pre = document.createElement('pre');
+  pre.className = 'lan-sync-diagnostics-pre';
+  pre.style.fontSize = '11px';
+  pre.style.whiteSpace = 'pre-wrap';
+  pre.style.marginTop = '8px';
+  pre.style.maxHeight = '200px';
+  pre.style.overflow = 'auto';
+  pre.textContent = formatDiagnosticsReport(diag);
+  details.appendChild(pre);
+  var copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'btn-lan-secondary';
+  copyBtn.style.marginTop = '8px';
+  copyBtn.style.width = '100%';
+  copyBtn.textContent = 'Copiar informe';
+  copyBtn.onclick = function () {
+    var report = formatDiagnosticsReport(getLanSyncDiagnostics(deps));
+    void copyToClipboardSafe(report).then(function (ok) {
+      runtime.showToast(
+        ok ? 'Informe copiado (códigos redactados).' : 'No se pudo copiar el informe.',
+        ok ? 'success' : 'error'
+      );
+    });
+  };
+  details.appendChild(copyBtn);
+  root.appendChild(details);
 }
 
 function buildR1Section(root) {
@@ -3454,6 +3783,22 @@ function appendMobileLanJoinHintParams(url) {
   }
 }
 
+function classifyAutoJoinSource() {
+  if (typeof location !== 'undefined') {
+    var parsedUrl = parseLanJoinQuery(location.search, location.origin);
+    if (String(parsedUrl.roomId || '').trim()) return 'url';
+  }
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return 'membership';
+  try {
+    var s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    if (resolveLiveSyncRoomIdFromSala(s.clinicalSala)) return 'settings_sala';
+  } catch (_e) {
+    return 'none';
+  }
+  return 'none';
+}
+
 function resolveAutoJoinRoomId(explicitRoomId) {
   var rid = String(explicitRoomId || '').trim();
   if (rid) return rid;
@@ -3470,6 +3815,24 @@ function resolveAutoJoinRoomId(explicitRoomId) {
   } catch (_e) {
     return '';
   }
+}
+
+function lanAutoJoinConfirmedSessionKey(roomId) {
+  return 'rpc-lan-auto-join-confirmed-' + String(roomId || '').trim();
+}
+
+function hasLanAutoJoinConfirmed(roomId) {
+  try {
+    return sessionStorage.getItem(lanAutoJoinConfirmedSessionKey(roomId)) === '1';
+  } catch (_e) {
+    return false;
+  }
+}
+
+function setLanAutoJoinConfirmed(roomId) {
+  try {
+    sessionStorage.setItem(lanAutoJoinConfirmedSessionKey(roomId), '1');
+  } catch (_e) {}
 }
 
 async function generateMobilePairingLink() {
@@ -3550,11 +3913,32 @@ async function scanLanHosts() {
           var data = await resp.json();
           var peerRank = String(data.rank || '').trim();
           if (shouldSupersede(peerRank, currentRank)) {
-            if (isLanElectronDesktop() && typeof applyLanHostUrlSwitch === 'function') {
-              applyLanHostUrlSwitch(peerUrl, teamCode, { skipRememberPrimary: true });
-              runtime.showToast('Un host de mayor rango (' + peerRank + ') está activo. Conectando como cliente.', 'info');
-              renderLanPanel();
-              return;
+            if (isLanElectronDesktop() && typeof maybeApplyLanHostUrlSwitch === 'function') {
+              var pinnedScan = getPinnedHostUrl();
+              if (pinnedScan) {
+                runtime.showToast(
+                  'Anfitrión fijado: ' + pinnedScan + '. No se cambió a ' + peerUrl + ' (' + peerRank + ').',
+                  'info'
+                );
+                continue;
+              }
+              var supersedeMsg =
+                'Un host de mayor rango (' +
+                peerRank +
+                ') está en ' +
+                peerUrl +
+                '. ¿Conectar como cliente?';
+              if (
+                maybeApplyLanHostUrlSwitch(peerUrl, teamCode, {
+                  skipRememberPrimary: true,
+                  requireConfirm: true,
+                  confirmMessage: supersedeMsg,
+                })
+              ) {
+                runtime.showToast('Conectado al anfitrión de mayor rango (' + peerRank + ').', 'info');
+                renderLanPanel();
+                return;
+              }
             }
           }
         }
@@ -3685,8 +4069,10 @@ async function copyMobileLanLinkFromUi(opts) {
     var root = document.getElementById('lan-connection-panel-root');
     updateLanPairingDisplay(root);
     if (!silent) {
+      var expiryHint = formatLanTicketExpiryLabel(share.pairing.expiresAt);
       runtime.showToast(
-        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; tus pacientes deberían sincronizar solos.',
+        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; tus pacientes deberían sincronizar solos.' +
+          (expiryHint ? ' Válido hasta ' + expiryHint + '.' : ''),
         'success'
       );
     }
@@ -3722,7 +4108,13 @@ async function copyLanInviteLinkFromUi(opts) {
     updateLanPairingDisplay(root);
     if (!silent) {
       var pinHint = share.pairing.pin ? ' PIN: ' + share.pairing.pin + '.' : '';
-      runtime.showToast('Enlace de invitación copiado.' + pinHint, 'success');
+      var inviteExpiry = formatLanTicketExpiryLabel(share.pairing.expiresAt);
+      runtime.showToast(
+        'Enlace de invitación copiado.' +
+          pinHint +
+          (inviteExpiry ? ' Válido hasta ' + inviteExpiry + '.' : ''),
+        'success'
+      );
     }
     return true;
   }
@@ -3816,14 +4208,41 @@ async function saveLanSettingsFromUi(opts) {
     var r = await lanClient.fetch('/api/lan/v1/ping');
     pingStatus = r && r.status ? r.status : 0;
     pingOk = !!(r && r.ok);
-  } catch (_e) {}
+    _lanLastPingAt = new Date().toISOString();
+    _lanLastPingStatus = pingStatus;
+  } catch (pingErr) {
+    _lanLastPingAt = new Date().toISOString();
+    _lanLastPingStatus = 0;
+    recordLanSyncError({
+      op: 'ping',
+      code: 'NETWORK',
+      message: pingErr && pingErr.message ? pingErr.message : 'ping failed',
+    });
+  }
   var copiedOk = false;
   if (copyInviteAfter && pingStatus !== 401) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
+  if (pingStatus === 401) {
+    recordLanSyncError({ op: 'ping', code: '401', message: 'team code rejected' });
+  }
   if (pingOk) {
     var autoRoomId = resolveAutoJoinRoomId('');
     if (autoRoomId) {
+      var joinSource = classifyAutoJoinSource();
+      var needsConfirm =
+        joinSource === 'settings_sala' && !hasLanAutoJoinConfirmed(autoRoomId);
+      if (needsConfirm) {
+        var salaLabel = liveSyncRoomLabel(autoRoomId);
+        if (
+          typeof confirm !== 'function' ||
+          !confirm('¿Unirte a ' + salaLabel + '?')
+        ) {
+          renderLanPanel();
+          return;
+        }
+        setLanAutoJoinConfirmed(autoRoomId);
+      }
       joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
     }
     void import('../historia-clinica-lan-sync.mjs').then(function (m) {
@@ -3885,6 +4304,7 @@ function joinLanRoom(roomId, displayName) {
     String(lanClient.liveRoomId || '') === id &&
     lanClient.liveConnected
   ) {
+    setRoomSyncPhase(id, RoomSyncPhase.joining);
     syncLiveSyncAfterRoomJoin(id);
     syncLiveSyncStatusChrome();
     patchLanPanelJoinButtons();
@@ -3896,6 +4316,8 @@ function joinLanRoom(roomId, displayName) {
   }
   activeLiveSyncRoomId = id;
   activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id;
+  setRoomSyncPhase(id, RoomSyncPhase.joining);
+  syncLiveSyncStatusChrome();
   try {
     if (!lanClient.connected) {
       try {
@@ -3910,6 +4332,7 @@ function joinLanRoom(roomId, displayName) {
   } catch (_e) {
     activeLiveSyncRoomId = '';
     activeLiveSyncRoomLabel = '';
+    clearRoomSyncPhase(id);
     runtime.showToast('No se pudo activar relay de sala', 'error');
     return;
   }
