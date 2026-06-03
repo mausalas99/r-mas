@@ -39,6 +39,16 @@ describe('lan-sync clinical ops', () => {
   it('exports immediate clinical ops push after @usuario registration', () => {
     assert.match(lanSyncSrc, /export async function pushClinicalOpsLanNow/);
   });
+
+  it('always attaches fresh clinicalOps on immediate profile push', () => {
+    assert.match(lanSyncSrc, /envelope\.clinicalOps = snap/);
+    assert.doesNotMatch(lanSyncSrc, /if \(!liveSyncBundleHasPayload\(envelope\)\) \{\s*envelope\.clinicalOps = snap/);
+  });
+
+  it('directory refresh uses sticky room membership when active room is empty', () => {
+    assert.match(lanSyncSrc, /function ensureEffectiveLiveSyncRoomId/);
+    assert.match(lanSyncSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
+  });
 });
 
 describe('clinical-profile-lan-sync', () => {

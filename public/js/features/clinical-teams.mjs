@@ -1309,6 +1309,16 @@ export function closeLanUsersDirectoryModal() {
 }
 
 function wireLanUsersDirectoryControls() {
+  if (typeof document !== 'undefined' && !document._rpcLanUsersOpsSyncedWired) {
+    document._rpcLanUsersOpsSyncedWired = true;
+    document.addEventListener('rpc-clinical-ops-synced', () => {
+      const bd = lanUsersModalBackdropEl();
+      const host = lanUsersModalBodyEl();
+      if (!bd?.classList.contains('open') || !host) return;
+      void loadLanUsersDirectoryIntoHost(host);
+    });
+  }
+
   const openBtn = document.getElementById('btn-open-lan-users-directory');
   if (openBtn) {
     openBtn.onclick = () => void openLanUsersDirectoryModal();

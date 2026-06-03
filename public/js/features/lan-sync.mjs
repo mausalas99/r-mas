@@ -2302,6 +2302,18 @@ export function getActiveLiveSyncRoomId() {
   return activeLiveSyncRoomId;
 }
 
+/** Active sala or sticky membership (reconnect loop uses the same fallback). */
+function ensureEffectiveLiveSyncRoomId() {
+  var roomId = String(activeLiveSyncRoomId || '').trim();
+  if (roomId) return roomId;
+  var mem = getRoomMembership();
+  if (!mem || !mem.roomId) return '';
+  roomId = String(mem.roomId).trim();
+  activeLiveSyncRoomId = roomId;
+  activeLiveSyncRoomLabel = mem.label || roomId;
+  return roomId;
+}
+
 export function bootLanRoomMembership() {
   migrateLastRoomToMembership();
   var m = getRoomMembership();
@@ -2414,13 +2426,7 @@ export async function pushClinicalOpsLanNow(opts) {
   if (!snap) return { ok: false, code: 'NO_SNAPSHOT' };
 
   var requireMembership = opts.requireMembership !== false;
-  var roomId = String(activeLiveSyncRoomId || '').trim();
-  var mem = getRoomMembership();
-  if (!roomId && mem && mem.roomId) {
-    roomId = String(mem.roomId).trim();
-    activeLiveSyncRoomId = roomId;
-    activeLiveSyncRoomLabel = mem.label || roomId;
-  }
+  var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) {
     return requireMembership ? { ok: false, code: 'NO_ROOM' } : { ok: false, code: 'NO_ROOM' };
   }
@@ -2433,9 +2439,8 @@ export async function pushClinicalOpsLanNow(opts) {
   } catch (_e) {}
 
   var envelope = await buildLiveSyncBundleEnvelope(roomId);
-  if (!liveSyncBundleHasPayload(envelope)) {
-    envelope.clinicalOps = snap;
-  }
+  // Always attach fresh clinical ops (patients/todos can make hasPayload true while ops were stale).
+  envelope.clinicalOps = snap;
 
   var pushedLive = false;
   if (lanClient.liveConnected) {
@@ -2665,14 +2670,21 @@ function onLiveSyncWireMessage(data) {
  * @param {{ timeoutMs?: number }} [options]
  */
 export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
-  const roomId = String(activeLiveSyncRoomId || '').trim();
-  if (!roomId || !isClinicalOpsLanAvailable()) return false;
+  const roomId = ensureEffectiveLiveSyncRoomId();
+  if (!roomId || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+    return false;
+  }
   const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 5000);
   try {
+    if (!lanClient.connected) {
+      try {
+        lanClient.connectSyncChannel();
+      } catch (_e) {}
+    }
     await Promise.race([
       reconcileLiveSyncRoom(roomId),
-      new Promise((_resolve, reject) => {
-        setTimeout(() => reject(new Error('LAN sync timeout')), timeoutMs);
+      new Promise((resolve) => {
+        setTimeout(resolve, timeoutMs);
       }),
     ]);
     return true;
