@@ -1956,6 +1956,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.2': [
+    {
+      title: 'LAN ward-ready',
+      body:
+        '<strong>Clinical-ops</strong> y directorio ya no dependen de subir el bundle completo del turno. La cola offline se drena con avisos claros si algo queda pendiente.',
+    },
+    {
+      title: '⇄ sin errores al sincronizar',
+      body:
+        'Correcciones al abrir expediente y al fusionar <strong>eventualidades</strong>. El anfitrión sirve historia clínica del censo cuando aún no hay registro <code>hc:</code> dedicado.',
+    },
+    {
+      title: 'Actualiza todo el turno',
+      body:
+        'Instala <strong>6.6.2 en todas</strong> las Macs y PCs el mismo día. No mezcles <strong>6.6.1</strong> o anterior en la misma guardia.',
+    },
+  ],
   '6.6.1': [
     {
       title: 'LiveSync más fiable',

@@ -1,7 +1,7 @@
 {
   "name": "r-plus",
-  "version": "6.6.1",
-  "description": "R+ \u2014 Laboratoriazo + Notas de Evoluci\u00f3n",
+  "version": "6.6.2",
+  "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "build:ui": "node scripts/build-ui.mjs && node scripts/bundle-renderer.mjs",

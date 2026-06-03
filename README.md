@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.1](https://github.com/mausalas99/r-mas/releases/tag/v6.6.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.2](https://github.com/mausalas99/r-mas/releases/tag/v6.6.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.6.2 (LAN ward-ready — correcciones ⇄ y host)
+
+- **Clinical-ops** — Push y cola separados del bundle del turno; drenado con abort; toasts cuando queda en cola.
+- **⇄ runtime** — Imports y merge de eventualidades corregidos; panel de borradores de conflicto.
+- **Host HC** — GET historia clínica desde censo del bundle si no hay entidad `hc:` (menos 404 al abrir expediente).
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.2**; no mezclar con 6.6.0/6.6.1 en la misma guardia.
+
+Notas: `docs/RELEASE_NOTES_6.6.2.txt`.
 
 ## R+ 6.6.1 (LiveSync LAN — fiabilidad Phases 0–3)
 
@@ -436,6 +445,12 @@ Notas: `docs/RELEASE_NOTES_3.0.0.txt`.
 
 ---
 
+
+## R+ 6.6.2 (LAN ward-ready — correcciones ⇄ y host)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.6.2.txt`.
 ## R+ 2.4.1 (parche — medicamentos compactos y tooltip de tendencias)
 
 - **Medicamentos** — En la salida resumida «nombre + día», el formato ahora es compacto: `MEDICAMENTO + DOSIS + VÍA abreviada + FRECUENCIA abreviada + DÍA de uso` (por ejemplo: `MEROPENEM 2G IV C/8H DIA 2`).
