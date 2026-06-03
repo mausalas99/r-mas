@@ -29,6 +29,10 @@ function safeCloseWebSocket(ws) {
   }
 }
 
+function syncConnectBackoffMs(attempt) {
+  return Math.min(30000, 500 * Math.pow(2, Math.min(Math.max(0, attempt), 6)));
+}
+
 export class LanClient extends EventTarget {
   constructor() {
     super();
@@ -38,6 +42,8 @@ export class LanClient extends EventTarget {
     this._cfg = null;
     this._syncConnected = false;
     this._liveConnected = false;
+    this._syncConnectAttempt = 0;
+    this._syncLastConnectAt = 0;
   }
 
   /** Compat: canal sync (presencia / pacientes). */
@@ -62,6 +68,19 @@ export class LanClient extends EventTarget {
     const rs = ws.readyState;
     if (rs !== WebSocket.CONNECTING && rs !== WebSocket.OPEN) return false;
     return !want || want === have;
+  }
+
+  /** Canal sync en CONNECTING/OPEN — evita abrir otro socket mientras uno está activo. */
+  isSyncChannelBusy() {
+    const ws = this._syncWs;
+    if (!ws) return false;
+    const rs = ws.readyState;
+    return rs === WebSocket.CONNECTING || rs === WebSocket.OPEN;
+  }
+
+  _isSyncConnectThrottled() {
+    if (!this._syncLastConnectAt) return false;
+    return Date.now() - this._syncLastConnectAt < syncConnectBackoffMs(this._syncConnectAttempt);
   }
 
   configure(cfg) {
@@ -96,12 +115,17 @@ export class LanClient extends EventTarget {
 
   /** WebSocket de presencia / notificaciones LAN; no es el relay `live:*` de salas. */
   connectSyncChannel() {
+    if (!this.baseUrl() || !this._bearerToken()) return;
+    if (this.isSyncChannelBusy()) return;
+    if (this._isSyncConnectThrottled()) return;
+    this._syncLastConnectAt = Date.now();
     this._openChannelWs('sync', '_syncWs', 'sync');
   }
 
   connectLiveChannel(roomId) {
     const id = String(roomId || '').trim();
     if (!id) return;
+    if (this.isLiveChannelBusy(id)) return;
     this._liveRoomId = id;
     const ch = `live:${encodeURIComponent(id)}`;
     this._openChannelWs(ch, '_liveWs', 'live');
@@ -123,6 +147,8 @@ export class LanClient extends EventTarget {
       this._syncWs = null;
     }
     this._syncConnected = false;
+    this._syncConnectAttempt = 0;
+    this._syncLastConnectAt = 0;
   }
 
   sendLive(obj) {
@@ -154,6 +180,7 @@ export class LanClient extends EventTarget {
         /* ignore */
       }
       if (kind === 'sync') {
+        this._syncConnectAttempt = 0;
         this._syncConnected = true;
         this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: true, channel: 'sync' } }));
       } else {
@@ -164,10 +191,23 @@ export class LanClient extends EventTarget {
       }
     };
 
+    ws.onerror = () => {
+      if (this[prop] !== ws) return;
+      if (kind === 'sync') {
+        this._syncConnectAttempt += 1;
+      }
+    };
+
     ws.onclose = () => {
       if (this[prop] !== ws) return;
       if (kind === 'sync') {
+        if (!this._syncConnected) {
+          this._syncConnectAttempt += 1;
+        }
         this._syncConnected = false;
+        if (this[prop] === ws) {
+          this[prop] = null;
+        }
         this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: false, channel: 'sync' } }));
       } else {
         this._liveConnected = false;

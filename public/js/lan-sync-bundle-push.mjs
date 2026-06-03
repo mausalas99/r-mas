@@ -26,6 +26,6 @@ export function bundleConflictsAreClinicalOpsOnly(conflicts) {
   return conflicts.every(function (c) {
     if (!c) return true;
     var k = String(c.key || c.kind || '').trim();
-    return k === 'clinicalOps' || k === 'revision' || k === '';
+    return k === 'clinicalOps' || k === 'revision' || k === '*' || k === '';
   });
 }

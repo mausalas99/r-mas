@@ -10383,6 +10383,9 @@ function safeCloseWebSocket(ws) {
   } catch (_e) {
   }
 }
+function syncConnectBackoffMs(attempt) {
+  return Math.min(3e4, 500 * Math.pow(2, Math.min(Math.max(0, attempt), 6)));
+}
 var LanClient;
 var init_lan_client = __esm({
   "public/js/lan-client.mjs"() {
@@ -10395,6 +10398,8 @@ var init_lan_client = __esm({
         this._cfg = null;
         this._syncConnected = false;
         this._liveConnected = false;
+        this._syncConnectAttempt = 0;
+        this._syncLastConnectAt = 0;
       }
       /** Compat: canal sync (presencia / pacientes). */
       get connected() {
@@ -10415,6 +10420,17 @@ var init_lan_client = __esm({
         const rs = ws.readyState;
         if (rs !== WebSocket.CONNECTING && rs !== WebSocket.OPEN) return false;
         return !want || want === have;
+      }
+      /** Canal sync en CONNECTING/OPEN — evita abrir otro socket mientras uno está activo. */
+      isSyncChannelBusy() {
+        const ws = this._syncWs;
+        if (!ws) return false;
+        const rs = ws.readyState;
+        return rs === WebSocket.CONNECTING || rs === WebSocket.OPEN;
+      }
+      _isSyncConnectThrottled() {
+        if (!this._syncLastConnectAt) return false;
+        return Date.now() - this._syncLastConnectAt < syncConnectBackoffMs(this._syncConnectAttempt);
       }
       configure(cfg) {
         this._cfg = cfg;
@@ -10444,11 +10460,16 @@ var init_lan_client = __esm({
       }
       /** WebSocket de presencia / notificaciones LAN; no es el relay `live:*` de salas. */
       connectSyncChannel() {
+        if (!this.baseUrl() || !this._bearerToken()) return;
+        if (this.isSyncChannelBusy()) return;
+        if (this._isSyncConnectThrottled()) return;
+        this._syncLastConnectAt = Date.now();
         this._openChannelWs("sync", "_syncWs", "sync");
       }
       connectLiveChannel(roomId) {
         const id = String(roomId || "").trim();
         if (!id) return;
+        if (this.isLiveChannelBusy(id)) return;
         this._liveRoomId = id;
         const ch = `live:${encodeURIComponent(id)}`;
         this._openChannelWs(ch, "_liveWs", "live");
@@ -10468,6 +10489,8 @@ var init_lan_client = __esm({
           this._syncWs = null;
         }
         this._syncConnected = false;
+        this._syncConnectAttempt = 0;
+        this._syncLastConnectAt = 0;
       }
       sendLive(obj) {
         if (!this._liveWs || this._liveWs.readyState !== 1) return false;
@@ -10495,6 +10518,7 @@ var init_lan_client = __esm({
           } catch (_e) {
           }
           if (kind === "sync") {
+            this._syncConnectAttempt = 0;
             this._syncConnected = true;
             this.dispatchEvent(new CustomEvent("lan-status", { detail: { connected: true, channel: "sync" } }));
           } else {
@@ -10504,10 +10528,22 @@ var init_lan_client = __esm({
             );
           }
         };
+        ws.onerror = () => {
+          if (this[prop] !== ws) return;
+          if (kind === "sync") {
+            this._syncConnectAttempt += 1;
+          }
+        };
         ws.onclose = () => {
           if (this[prop] !== ws) return;
           if (kind === "sync") {
+            if (!this._syncConnected) {
+              this._syncConnectAttempt += 1;
+            }
             this._syncConnected = false;
+            if (this[prop] === ws) {
+              this[prop] = null;
+            }
             this.dispatchEvent(new CustomEvent("lan-status", { detail: { connected: false, channel: "sync" } }));
           } else {
             this._liveConnected = false;
@@ -11901,7 +11937,7 @@ function bundleConflictsAreClinicalOpsOnly(conflicts) {
   return conflicts.every(function(c) {
     if (!c) return true;
     var k = String(c.key || c.kind || "").trim();
-    return k === "clinicalOps" || k === "revision" || k === "";
+    return k === "clinicalOps" || k === "revision" || k === "*" || k === "";
   });
 }
 var _bundlePushPausedUntil;
@@ -12674,6 +12710,77 @@ function hostBundleBodyFromEnvelope(envelope, roomId) {
   body.uploadedByClientId = envelope.clientId || getLanClientId2();
   return body;
 }
+function finishBundle409Locally(rid, b, opts) {
+  opts = opts || {};
+  pauseBundlePushForRoom(rid, 45e3);
+  scheduleReconcileFromRevisionHint(rid);
+  if (opts.toast === "clinicalOps" && typeof b.showToast === "function") {
+    b.showToast(
+      "Sala alineada con el servidor (clinicalOps). Los reintentos autom\xE1ticos se pausaron un momento.",
+      "info"
+    );
+  } else if (opts.toast === "draft" && typeof b.showToast === "function") {
+    b.showToast(
+      "Conflicto al sincronizar la sala. Abre \u21C4 \u2192 Borradores de conflicto.",
+      "warn"
+    );
+  } else if (typeof b.markDeferredConflictToastShown === "function") {
+    b.markDeferredConflictToastShown();
+  }
+  if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+    b.applyRoomSyncPhaseAfterReconcile(rid);
+  }
+  if (typeof b.syncLiveSyncStatusChrome === "function") {
+    b.syncLiveSyncStatusChrome();
+  }
+  return BUNDLE_PUSH_HANDLED;
+}
+function resolveClinicalOps409(rid, b, body) {
+  var opsBody = body && typeof body === "object" ? body : {};
+  if (opsBody.revision != null) {
+    var prevBases = getHostBundleBases(rid) || {};
+    setHostBundleBases(rid, {
+      revision: opsBody.revision,
+      entityVersions: prevBases.entityVersions || {}
+    });
+    emitLiveSyncRevisionHint(rid, opsBody.revision);
+  }
+  if (typeof b.acceptServerClinicalOpsConflict === "function") {
+    b.acceptServerClinicalOpsConflict(rid, opsBody.snapshot, opsBody.revision);
+  }
+  pauseBundlePushForRoom(rid, 45e3);
+  if (typeof b.syncLiveSyncStatusChrome === "function") {
+    b.syncLiveSyncStatusChrome();
+  }
+  return CLINICAL_OPS_HANDLED;
+}
+function ensureClinicalOpsPushRevision(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return Promise.resolve();
+  var b = bridge();
+  if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
+    return Promise.resolve();
+  }
+  var bases = getHostBundleBases(rid) || {};
+  var localRev = Number(bases.revision || 0);
+  return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops").then(function(resp) {
+    if (!resp || !resp.ok) return;
+    return resp.json().then(function(body) {
+      var serverRev = Number(body && body.revision != null ? body.revision : 0);
+      if (serverRev > 0 && localRev !== serverRev) {
+        if (typeof b.acceptServerClinicalOpsConflict === "function") {
+          b.acceptServerClinicalOpsConflict(rid, body.snapshot, serverRev);
+        } else {
+          setHostBundleBases(rid, {
+            revision: serverRev,
+            entityVersions: bases.entityVersions || {}
+          });
+        }
+      }
+    });
+  }).catch(function() {
+  });
+}
 function pushClinicalOpsPayloadToHost(roomId, payload) {
   var rid = String(roomId || "").trim();
   var snap = payload && payload.snapshot;
@@ -12682,30 +12789,40 @@ function pushClinicalOpsPayloadToHost(roomId, payload) {
   if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
     return Promise.resolve(false);
   }
-  var bases = getHostBundleBases(rid);
-  return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      snapshot: snap,
-      baseRevision: payload.baseRevision != null ? payload.baseRevision : bases && bases.revision != null ? bases.revision : 0,
-      clientId: payload.clientId || getLanClientId2()
-    })
-  }).then(function(resp) {
-    if (!resp || !resp.ok) return false;
-    return resp.json().then(function(body) {
-      if (body && body.revision != null) {
-        var prev = bases || {};
-        setHostBundleBases(rid, {
-          revision: body.revision,
-          entityVersions: prev.entityVersions || {}
+  return ensureClinicalOpsPushRevision(rid).then(function() {
+    var bases = getHostBundleBases(rid);
+    return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        snapshot: snap,
+        baseRevision: bases && bases.revision != null ? bases.revision : 0,
+        clientId: payload.clientId || getLanClientId2()
+      })
+    }).then(function(resp) {
+      if (!resp) return false;
+      if (resp.status === 409) {
+        return resp.json().then(function(body) {
+          return resolveClinicalOps409(rid, b, body);
+        }).catch(function() {
+          return resolveClinicalOps409(rid, b, {});
         });
-        emitLiveSyncRevisionHint(rid, body.revision);
       }
-      return true;
+      if (!resp.ok) return false;
+      return resp.json().then(function(body) {
+        if (body && body.revision != null) {
+          var prev = bases || {};
+          setHostBundleBases(rid, {
+            revision: body.revision,
+            entityVersions: prev.entityVersions || {}
+          });
+          emitLiveSyncRevisionHint(rid, body.revision);
+        }
+        return true;
+      });
+    }).catch(function() {
+      return false;
     });
-  }).catch(function() {
-    return false;
   });
 }
 function pushRoomSyncBundleToHost(roomId, envelope) {
@@ -12715,7 +12832,7 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
   }
   var rid = String(roomId || "").trim();
   if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
-  if (isBundlePushPaused(rid)) return Promise.resolve(false);
+  if (isBundlePushPaused(rid)) return Promise.resolve("paused");
   return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -12726,14 +12843,9 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
     if (!resp) return false;
     if (resp.status === 409) {
       return resp.json().then(function(body) {
-        recordLanSyncError({
-          op: "sync-bundle",
-          code: "409",
-          message: "Conflicto de bundle de sala"
-        });
         if (typeof b.isLanConflictViewerSuppressed === "function" && b.isLanConflictViewerSuppressed()) {
           enqueueOutbox(rid, { kind: "bundle", payload: envelope });
-          return false;
+          return finishBundle409Locally(rid, b, {});
         }
         var conflicts = body && Array.isArray(body.conflicts) ? body.conflicts : [];
         var conflictKeys = conflicts.map(function(c) {
@@ -12748,24 +12860,14 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
             conflicts
           });
           if (accepted) {
-            pauseBundlePushForRoom(rid, 45e3);
-            if (typeof b.markDeferredConflictToastShown === "function") {
-              b.markDeferredConflictToastShown();
-            } else if (typeof b.showToast === "function") {
-              b.showToast(
-                "Sala alineada con el servidor (clinicalOps). Los reintentos autom\xE1ticos se pausaron un momento.",
-                "info"
-              );
-            }
-            if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
-              b.applyRoomSyncPhaseAfterReconcile(rid);
-            }
-            if (typeof b.syncLiveSyncStatusChrome === "function") {
-              b.syncLiveSyncStatusChrome();
-            }
-            return false;
+            return finishBundle409Locally(rid, b, { toast: "clinicalOps" });
           }
         }
+        recordLanSyncError({
+          op: "sync-bundle",
+          code: "409",
+          message: "Conflicto de bundle de sala"
+        });
         return clearRoomBundleDrafts(rid).catch(function() {
           return 0;
         }).then(function() {
@@ -12778,23 +12880,8 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
             localRevision: envelope && envelope.revision != null ? envelope.revision : null,
             serverRevision: serverBundle && serverBundle.revision != null ? serverBundle.revision : null
           });
-        }).then(function(draftId) {
-          pauseBundlePushForRoom(rid, 45e3);
-          if (typeof b.markDeferredConflictToastShown === "function") {
-            b.markDeferredConflictToastShown();
-          } else if (typeof b.showToast === "function") {
-            b.showToast(
-              "Conflicto al sincronizar la sala. Abre \u21C4 \u2192 Borradores de conflicto.",
-              "warn"
-            );
-          }
-          if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
-            b.applyRoomSyncPhaseAfterReconcile(rid);
-          }
-          if (typeof b.syncLiveSyncStatusChrome === "function") {
-            b.syncLiveSyncStatusChrome();
-          }
-          return false;
+        }).then(function() {
+          return finishBundle409Locally(rid, b, { toast: "draft" });
         });
       });
     }
@@ -12848,6 +12935,9 @@ function flushLiveSyncOutbox(roomId) {
       }
       return Promise.resolve(true);
     }
+    function outboxItemSucceeded(result) {
+      return result === true || result === BUNDLE_PUSH_HANDLED || result === CLINICAL_OPS_HANDLED;
+    }
     function reenqueueSlice(slice) {
       var chain = Promise.resolve();
       slice.forEach(function(it) {
@@ -12860,8 +12950,11 @@ function flushLiveSyncOutbox(roomId) {
     function drainFromIndex(index) {
       if (index >= sorted.length) return Promise.resolve();
       var item = sorted[index];
-      return pushOutboxItem(item).then(function(ok) {
-        if (!ok) {
+      return pushOutboxItem(item).then(function(result) {
+        if (result === "paused") {
+          return reenqueueSlice(sorted.slice(index));
+        }
+        if (!outboxItemSucceeded(result)) {
           return reenqueueSlice(sorted.slice(index));
         }
         return drainFromIndex(index + 1);
@@ -12941,8 +13034,10 @@ function scheduleLiveSyncPush() {
         var bundle = await b.buildLiveSyncBundleEnvelope(roomId2);
         b.saveLocalRoomSnapshot(roomId2);
         if (!b.isLanSessionConfiguredForRest()) return;
-        var ok = await pushRoomSyncBundleToHost(roomId2, bundle);
-        if (!ok) void enqueueOutbox(roomId2, { kind: "bundle", payload: bundle });
+        var pushResult = await pushRoomSyncBundleToHost(roomId2, bundle);
+        if (pushResult !== true && pushResult !== BUNDLE_PUSH_HANDLED && !isBundlePushPaused(roomId2)) {
+          void enqueueOutbox(roomId2, { kind: "bundle", payload: bundle });
+        }
       })();
     }, LIVE_SYNC_PUSH_DEBOUNCE_MS)
   );
@@ -12982,6 +13077,7 @@ async function pushClinicalOpsLanNow(opts) {
   }
   var envelope = await b.buildLiveSyncBundleEnvelope(roomId);
   envelope.clinicalOps = snap;
+  await ensureClinicalOpsPushRevision(roomId);
   var bases = getHostBundleBases(roomId);
   var okHttp = false;
   try {
@@ -13009,24 +13105,12 @@ async function pushClinicalOpsLanNow(opts) {
       }
       okHttp = true;
     } else if (opsResp && opsResp.status === 409) {
-      var opsBody = {};
+      var conflictBody = {};
       try {
-        opsBody = await opsResp.json();
+        conflictBody = await opsResp.json();
       } catch (_e409) {
       }
-      if (opsBody.revision != null) {
-        var prevBases = bases || {};
-        setHostBundleBases(roomId, {
-          revision: opsBody.revision,
-          entityVersions: prevBases.entityVersions || {}
-        });
-        emitLiveSyncRevisionHint(roomId, opsBody.revision);
-      }
-      if (typeof b.acceptServerClinicalOpsConflict === "function") {
-        b.acceptServerClinicalOpsConflict(roomId, opsBody.snapshot, opsBody.revision);
-      }
-      pauseBundlePushForRoom(roomId, 45e3);
-      if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+      resolveClinicalOps409(roomId, b, conflictBody);
       return lanPushResult(true, "CONFLICT_RESOLVED", { http: true });
     } else {
       okHttp = false;
@@ -13101,7 +13185,7 @@ async function reconcileLiveSyncRoom(roomId) {
     if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
   }
 }
-var pushBridge;
+var BUNDLE_PUSH_HANDLED, CLINICAL_OPS_HANDLED, pushBridge;
 var init_lan_sync_push = __esm({
   "public/js/lan-sync-push.mjs"() {
     init_storage();
@@ -13117,6 +13201,8 @@ var init_lan_sync_push = __esm({
     init_lan_sync_bundle_push();
     init_lan_merge_registry();
     init_lan_sync_runtime();
+    BUNDLE_PUSH_HANDLED = "handled";
+    CLINICAL_OPS_HANDLED = "handled";
     pushBridge = null;
   }
 });
@@ -19302,7 +19388,17 @@ function tryAutoResolveTodoConflict(payload) {
     version: server.version
   });
   if (payload.localSnapshot && payload.localSnapshot.op === "delete") {
-    emitLiveSyncTodoDelete(payload.patientId, merged);
+    rememberLiveSyncEntity(
+      "todo",
+      payload.entityId,
+      payload.patientId,
+      server.version,
+      Object.assign({}, server.data || {}, { id: payload.entityId })
+    );
+    emitLiveSyncTodoDelete(payload.patientId, {
+      id: payload.entityId,
+      version: server.version
+    });
     return true;
   }
   if (local.completed) {
@@ -19515,7 +19611,10 @@ async function handleSyncConflict(payload, options) {
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
     void renderLanPanel2();
-    runtime6.showToast("Pendiente alineado con la sala", "info");
+    var localDelete = payload.localSnapshot && payload.localSnapshot.op === "delete";
+    if (!localDelete) {
+      runtime6.showToast("Pendiente alineado con la sala", "info");
+    }
     return;
   }
   var viewerData = conflictDataForViewer(payload);
@@ -38223,6 +38322,20 @@ var init_settings_help = __esm({
       }
     ];
     RELEASE_NOTES_HIGHLIGHTS = {
+      "6.6.2": [
+        {
+          title: "LAN ward-ready",
+          body: "<strong>Clinical-ops</strong> y directorio ya no dependen de subir el bundle completo del turno. La cola offline se drena con avisos claros si algo queda pendiente."
+        },
+        {
+          title: "\u21C4 sin errores al sincronizar",
+          body: "Correcciones al abrir expediente y al fusionar <strong>eventualidades</strong>. El anfitri\xF3n sirve historia cl\xEDnica del censo cuando a\xFAn no hay registro <code>hc:</code> dedicado."
+        },
+        {
+          title: "Actualiza todo el turno",
+          body: "Instala <strong>6.6.2 en todas</strong> las Macs y PCs el mismo d\xEDa. No mezcles <strong>6.6.1</strong> o anterior en la misma guardia."
+        }
+      ],
       "6.6.1": [
         {
           title: "LiveSync m\xE1s fiable",

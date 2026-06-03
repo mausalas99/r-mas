@@ -539,7 +539,7 @@
       "format": "esm"
     },
     "public/js/lan-client.mjs": {
-      "bytes": 5289,
+      "bytes": 6578,
       "imports": [],
       "format": "esm"
     },
@@ -643,7 +643,7 @@
       "format": "esm"
     },
     "public/js/lan-sync-bundle-push.mjs": {
-      "bytes": 957,
+      "bytes": 970,
       "imports": [],
       "format": "esm"
     },
@@ -731,7 +731,7 @@
       "format": "esm"
     },
     "public/js/lan-sync-push.mjs": {
-      "bytes": 20528,
+      "bytes": 22492,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1233,7 +1233,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 56222,
+      "bytes": 56589,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2696,7 +2696,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 134339,
+      "bytes": 135067,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -6639,7 +6639,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5216268
+      "bytes": 5223547
     },
     "public/js/app.bundle.mjs": {
       "imports": [
@@ -6797,7 +6797,7 @@
           "bytesInOutput": 17053
         },
         "public/js/lan-client.mjs": {
-          "bytesInOutput": 5805
+          "bytesInOutput": 7220
         },
         "public/js/lan-sync-runtime.mjs": {
           "bytesInOutput": 1787
@@ -6836,7 +6836,7 @@
           "bytesInOutput": 5437
         },
         "public/js/lan-sync-bundle-push.mjs": {
-          "bytesInOutput": 930
+          "bytesInOutput": 943
         },
         "public/js/livesync-patient-ids.mjs": {
           "bytesInOutput": 3894
@@ -6854,7 +6854,7 @@
           "bytesInOutput": 1155
         },
         "public/js/lan-sync-push.mjs": {
-          "bytesInOutput": 19007
+          "bytesInOutput": 20815
         },
         "public/js/versioned-mutation.mjs": {
           "bytesInOutput": 884
@@ -6914,7 +6914,7 @@
           "bytesInOutput": 50732
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 53656
+          "bytesInOutput": 54022
         },
         "public/js/clinical-profile-lan-sync.mjs": {
           "bytesInOutput": 5378
@@ -7127,7 +7127,7 @@
           "bytesInOutput": 69768
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 129062
+          "bytesInOutput": 129829
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4460
@@ -7517,7 +7517,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2949774
+      "bytes": 2954143
     }
   }
 }

@@ -95,6 +95,38 @@ describe('LanClient live payload dispatch', () => {
   });
 });
 
+describe('LanClient sync channel lifecycle', () => {
+  it('isSyncChannelBusy when connecting or open', () => {
+    const client = new LanClient();
+    client._syncWs = { readyState: WebSocket.CONNECTING };
+    assert.strictEqual(client.isSyncChannelBusy(), true);
+    client._syncWs = { readyState: WebSocket.OPEN };
+    assert.strictEqual(client.isSyncChannelBusy(), true);
+    client._syncWs = { readyState: WebSocket.CLOSED };
+    assert.strictEqual(client.isSyncChannelBusy(), false);
+  });
+
+  it('connectSyncChannel is throttled after failed attempts', () => {
+    const client = new LanClient();
+    client.configure({ hostUrl: 'http://10.0.0.3:3738', teamCode: 'c'.repeat(64) });
+    client._syncConnectAttempt = 2;
+    client._syncLastConnectAt = Date.now();
+    const opened = [];
+    const orig = WebSocket;
+    globalThis.WebSocket = function (url) {
+      opened.push(url);
+      return { readyState: WebSocket.CONNECTING, onopen: null, onclose: null, onerror: null, onmessage: null };
+    };
+    try {
+      client.connectSyncChannel();
+      client.connectSyncChannel();
+      assert.strictEqual(opened.length, 0, 'must not open while throttled');
+    } finally {
+      globalThis.WebSocket = orig;
+    }
+  });
+});
+
 describe('LanClient fetch auth', () => {
   it('fetch sends Authorization Bearer from teamCode config', async () => {
     const calls = [];

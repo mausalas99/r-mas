@@ -606,7 +606,17 @@ function tryAutoResolveTodoConflict(payload) {
     version: server.version,
   });
   if (payload.localSnapshot && payload.localSnapshot.op === 'delete') {
-    emitLiveSyncTodoDelete(payload.patientId, merged);
+    rememberLiveSyncEntity(
+      'todo',
+      payload.entityId,
+      payload.patientId,
+      server.version,
+      Object.assign({}, server.data || {}, { id: payload.entityId })
+    );
+    emitLiveSyncTodoDelete(payload.patientId, {
+      id: payload.entityId,
+      version: server.version,
+    });
     return true;
   }
   if (local.completed) {
@@ -847,7 +857,10 @@ async function handleSyncConflict(payload, options) {
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
     void renderLanPanel();
-    runtime.showToast('Pendiente alineado con la sala', 'info');
+    var localDelete = payload.localSnapshot && payload.localSnapshot.op === 'delete';
+    if (!localDelete) {
+      runtime.showToast('Pendiente alineado con la sala', 'info');
+    }
     return;
   }
   var viewerData = conflictDataForViewer(payload);

@@ -176,6 +176,14 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncPushSrc, /isBundlePushPaused\(roomId\)/);
   });
 
+  it('does not re-enqueue bundle after handled 409', () => {
+    assert.match(lanSyncPushSrc, /BUNDLE_PUSH_HANDLED/);
+    assert.match(
+      lanSyncPushSrc,
+      /pushResult !== true[\s\S]*pushResult !== BUNDLE_PUSH_HANDLED[\s\S]*enqueueOutbox/
+    );
+  });
+
   it('exports clinical directory refresh for Mi rotación directorio', () => {
     assert.match(lanSyncFeatureSrc, /export[\s\S]*refreshLanClinicalDirectoryFromRoom/);
     assert.match(lanSyncFeatureSrc, /fetchAndApplyClinicalOpsFromHost/);
@@ -199,8 +207,14 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncPushSrc, /CONFLICT_RESOLVED/);
     assert.match(
       lanSyncPushSrc,
-      /acceptServerClinicalOpsConflict[\s\S]*lanPushResult\(true,\s*'CONFLICT_RESOLVED'/
+      /resolveClinicalOps409[\s\S]*lanPushResult\(true,\s*'CONFLICT_RESOLVED'/
     );
+  });
+
+  it('outbox clinical-ops push handles 409 without re-enqueue loop', () => {
+    assert.match(lanSyncPushSrc, /resolveClinicalOps409/);
+    assert.match(lanSyncPushSrc, /ensureClinicalOpsPushRevision/);
+    assert.match(lanSyncPushSrc, /CLINICAL_OPS_HANDLED/);
   });
 
   it('clinical-ops enqueue returns QUEUED deferred success', () => {

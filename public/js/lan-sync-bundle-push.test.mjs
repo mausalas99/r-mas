@@ -13,6 +13,7 @@ describe('lan-sync-bundle-push', () => {
       bundleConflictsAreClinicalOpsOnly([{ key: 'clinicalOps' }, { key: 'revision' }]),
       true
     );
+    assert.equal(bundleConflictsAreClinicalOpsOnly([{ key: '*' }]), true);
     assert.equal(bundleConflictsAreClinicalOpsOnly([{ key: 'agenda' }]), false);
   });
 
