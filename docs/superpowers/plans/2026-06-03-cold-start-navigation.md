@@ -37,7 +37,7 @@
 | 1 | `public/js/features/platform/*` | **Create** — split BN-06 |
 | 1 | `public/js/features/clinical-teams/*` | **Create** — split BN-07 |
 | 1 | `public/js/app-shell.mjs` | Trim BN-08 |
-| 2 | `public/index.html` | Remove blocking Chart script BN-09 |
+| 2 | `public/index.html` | Chart UMD before bundle (BN-09 revised — reliability over lazy-only) |
 | 2 | `scripts/bundle-renderer.mjs` | `splitting: true` BN-11 |
 | 2 | `public/js/app-boot-imports.test.mjs` | Boot graph denylist BN-12 |
 | * | `public/js/app.bundle.mjs` | Regenerate only via `npm run build:ui` |
@@ -340,21 +340,23 @@ Same pattern as Task 5 for `platform.mjs` → `features/platform/{audit,offline,
 
 ## Phase 2 — Lazy load & splitting (BN-09 – BN-12)
 
-### Task 9: BN-09 — Lazy Chart.js
+### Task 9: BN-09 — Chart.js loading (revised)
+
+**Decision:** Keep `chart.umd.min.js` in `index.src.html` before the bundle (sync global `Chart`). `vendor-loader.mjs` only injects UMD if missing; dropped brittle ESM/`chart-chunk.json` path after prod failures.
 
 **Files:**
-- Modify: `public/index.html`, `public/js/features/estado-actual-charts.mjs`, `public/js/features/tendencias.mjs`
-- Create: `public/js/vendor-loader.mjs`
+- Modify: `public/index.src.html`, `public/js/features/tendencias.mjs`, `public/js/vendor-loader.mjs`
+- Create: `public/js/vendor-loader.mjs`, `public/js/vendor-loader.test.mjs`
 
-- [ ] **Step 1: Add `loadChartJs()` promise cache in vendor-loader**
+- [x] **Step 1: Add `loadChartJs()` promise cache in vendor-loader**
 
-- [ ] **Step 2: Remove `<script src="vendor/chart.umd.min.js">` from index.html**
+- [x] **Step 2: Restore `<script src="vendor/chart.umd.min.js">` in index.src.html** (revised from lazy-only)
 
-- [ ] **Step 3: Call `await loadChartJs()` before first chart init**
+- [x] **Step 3: Call `await loadChartJs()` before first chart init; tendencias error toasts**
 
-- [ ] **Step 4: Manual — open tendencias chart + estado actual chart**
+- [x] **Step 4: Manual — open tendencias chart + estado actual chart**
 
-- [ ] **Step 5: Commit** `perf(renderer): lazy-load Chart.js on first chart render`
+- [x] **Step 5: Commit** `fix(chart): restore UMD in index; drop brittle ESM lazy path`
 
 ---
 
@@ -441,13 +443,13 @@ const LAZY_ONLY = [
 
 ## Verification checklist (end of initiative)
 
-- [ ] Phase 0: Window visible before LAN listen (LAN off scenario)
-- [ ] Phase 0: `metrics:check` in CI/local pre-push
-- [ ] Phase 1: No `features/*.mjs` > 1000 lines for touched BN splits
-- [ ] Phase 2: Chart not in initial HTML; pilot lazy routes work
-- [ ] Phase 2: esbuild chunks load in Electron prod build
-- [ ] `project-context.mdc` changelog updated
-- [ ] `docs(context):` in final merge commit if multiple phases shipped together
+- [x] Phase 0: Window visible before LAN listen (LAN off scenario) — lazy LAN in `main.js`; manual spot-check OK
+- [x] Phase 0: `metrics:check` in CI/local pre-push — wired in `pretest`
+- [x] Phase 1: No `features/*.mjs` > 1000 lines for touched BN splits
+- [x] Phase 2: Chart UMD in `index.src.html` before bundle; `loadChartJs()` fallback inject; pilot lazy routes (Ajustes / platform) work
+- [ ] Phase 2: esbuild chunks load in Electron prod build — run `npm run build:mac:arm64-only` smoke
+- [x] `project-context.mdc` changelog updated
+- [x] Initiative shipped on `main` (9967514 + follow-ups)
 
 ---
 
@@ -471,3 +473,4 @@ Do not parallelize Task 11 with Task 1 — splitting before lazy routes increase
 | Split `tendencias`, `estado-actual-panel`, `lab-panel`, `patients` | modularization-metrics god-file table |
 | IM-14–16 LAN future specs | lan-sync-improvements Phase 4 |
 | Full `onclick` → `data-action` migration | modular-app-refactor follow-up |
+| Boot graph: eager `features/platform/*` and `features/settings-help/*` sub-imports in `app-shell` / `app-runtimes` | cold-start follow-up — route through lazy barrels or dynamic `import()` |

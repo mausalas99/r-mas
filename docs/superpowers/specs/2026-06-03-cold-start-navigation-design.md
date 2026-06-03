@@ -124,7 +124,7 @@ sequenceDiagram
 | **BN-06** | 1 | Split `platform.mjs` by concern | L | `platform/` audit, offline, import |
 | **BN-07** | 1 | Split `clinical-teams.mjs` (halt growth) | L | `clinical-teams/` + existing `import()` |
 | **BN-08** | 1 | Trim `app-shell.mjs` — chrome/toast/defer only | M | `app-shell.mjs`, move doc-export/confetti/defaults |
-| **BN-09** | 2 | Lazy vendor: Chart.js (and Sortable if unused at boot) | S | `public/index.html`, chart call sites |
+| **BN-09** | 2 | Chart.js UMD in HTML + `loadChartJs()` fallback | S | `index.src.html`, `vendor-loader.mjs`, chart call sites |
 | **BN-10** | 2 | Feature lazy routes (stub register + `import()`) | L | `app-runtimes.mjs`, per-feature stubs |
 | **BN-11** | 2 | esbuild `splitting` + chunk naming | M | `scripts/bundle-renderer.mjs`, `index.html` |
 | **BN-12** | 2 | Boot graph regression test | S | `app-boot-imports.test.mjs`, `boot-graph.mjs` |
@@ -289,15 +289,15 @@ Move non-chrome concerns out of `app-shell.mjs`:
 
 ## Phase 2 — Lazy load & code splitting (BN-09 – BN-12)
 
-### BN-09 — Lazy vendor scripts
+### BN-09 — Chart.js loading (revised)
 
-- Load Chart.js on first chart render (`estado-actual-charts`, `tendencias`).
-- Evaluate Sortable: if only used in drag-drop panels, same pattern.
+**Decision:** Keep `chart.umd.min.js` synchronously in `index.src.html` before the app bundle (reliability over lazy-only). `vendor-loader.mjs` provides `loadChartJs()` that resolves the global or injects UMD if missing; **no** ESM/`chart-chunk.json` path.
 
 **Acceptance:**
 
-- [ ] `index.html` does not blocking-load Chart for paths that never open charts
-- [ ] Tour/demo paths still render charts when opened
+- [x] `index.src.html` loads Chart UMD before `app.bundle.mjs`
+- [x] Chart call sites use `loadChartJs()`; tendencias shows toast on failure
+- [x] Tour/demo paths still render charts when opened
 
 ### BN-10 — Feature lazy routes
 
