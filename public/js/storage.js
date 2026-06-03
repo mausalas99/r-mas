@@ -668,6 +668,23 @@ export const storage = {
     } catch (_e) {}
   },
 
+  /** Aviso no bloqueante cuando LWW sobrescribe un cambio concurrente en la sala. */
+  getLanLwwOverwriteToast() {
+    try {
+      var v = localStorage.getItem('rpc-lan-lww-overwrite-toast');
+      if (v === '0') return false;
+      return true;
+    } catch (_e) {
+      return true;
+    }
+  },
+
+  setLanLwwOverwriteToast(enabled) {
+    try {
+      localStorage.setItem('rpc-lan-lww-overwrite-toast', enabled ? '1' : '0');
+    } catch (_e) {}
+  },
+
   /**
    * Batch save all data to localStorage
    * @param {Array} patients - Array of patient objects
