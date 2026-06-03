@@ -3,10 +3,30 @@
 > **For implementation:** After this spec is approved in review, use **superpowers:writing-plans** for a task-by-task plan. Do not start coding from this document without an approved plan.
 
 **Date:** 2026-06-03  
-**Status:** Draft — pending user review  
+**Status:** Approved (2026-06-03) — build vs rewrite: **fix in place** (see §Build vs rewrite).  
+**Plan:** [`docs/superpowers/plans/2026-06-03-lan-ward-ready-remediation.md`](../plans/2026-06-03-lan-ward-ready-remediation.md)
 **Scope:** Close all production LAN pain reported through 6.6.1 pilot: teams/directorio, `catching_up` stuck, bundle 409 storms, outbox/network confusion, conflict UX. Builds on **LAN sync improvements Phases 0–3** ([2026-06-03-lan-sync-improvements-design.md](./2026-06-03-lan-sync-improvements-design.md)) and uncommitted ward fixes in the working tree.
 
 **Program choice:** **Approach 1** (complete the 6.6.1 HTTP-primary + `clinical-ops` model) plus **selective decoupling** (teams/directorio never escalate to full `sync-bundle`).
+
+---
+
+## Build vs rewrite (decision)
+
+**Question:** Refactor `clinicalOps` or rework LAN from scratch?
+
+**Conclusion: fix in place.** A full LAN rewrite would cost far more than completing this remediation and would not remove the real bugs (they are wiring mistakes, not a wrong topology).
+
+| Factor | Fix in place (this spec) | Full LAN / clinicalOps rewrite |
+|--------|--------------------------|--------------------------------|
+| **Effort** | ~1–2 dev days P0 + ship uncommitted ward fixes | 4–8+ weeks (host, WS, client, join/ticket, interno, tests) |
+| **Risk** | Low — targeted diffs, existing 1087+ tests | High — regression across expediente, entrega, guardia, iPad |
+| **Architecture** | Hub-and-spoke + HTTP bundle + `clinical-ops` slice is correct per ward requirements | Would redo the same shape unless product changes to mesh/cloud (IM-15/16) |
+| **Root cause** | Ops push falls back to heavy bundle; outbox ignores `clinical_ops`; host revision broadcast gated; 409 UX | Not broken merge in `clinical-ops-sync.mjs` (~500 lines, tested) |
+
+**Optional tactical refactor (only if touching `lan-sync-push.mjs` anyway):** extract `lan-sync-clinical-ops-push.mjs` (~120 lines) for `pushClinicalOpsLanNow` + ops outbox flush — **not required** for ship.
+
+**Do not:** replace `host-store` / `ConflictResolver`, delete `lan-sync.mjs` facade, or merge teams into `sync-bundle` only.
 
 ---
 
