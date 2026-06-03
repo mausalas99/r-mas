@@ -443,11 +443,11 @@ const LAZY_ONLY = [
 
 ## Verification checklist (end of initiative)
 
-- [x] Phase 0: Window visible before LAN listen (LAN off scenario) — lazy LAN in `main.js`; manual spot-check OK
+- [ ] Phase 0: Window visible before LAN listen (LAN off scenario) — **deferred**; boot still `await startLanServer()` before `createWindow()` (`main.js`, `main-lan-boot.test.mjs`); tiered lazy start tracked in BN-01 follow-up
 - [x] Phase 0: `metrics:check` in CI/local pre-push — wired in `pretest`
 - [x] Phase 1: No `features/*.mjs` > 1000 lines for touched BN splits
 - [x] Phase 2: Chart UMD in `index.src.html` before bundle; `loadChartJs()` fallback inject; pilot lazy routes (Ajustes / platform) work
-- [ ] Phase 2: esbuild chunks load in Electron prod build — run `npm run build:mac:arm64-only` smoke
+- [x] Phase 2: esbuild chunks load in Electron prod build — `npm run build:mac:arm64-only` OK (2026-06-03); `settings-help-*` and `platform-*` chunks present under `R+.app/.../public/js/chunks/`
 - [x] `project-context.mdc` changelog updated
 - [x] Initiative shipped on `main` (9967514 + follow-ups)
 
