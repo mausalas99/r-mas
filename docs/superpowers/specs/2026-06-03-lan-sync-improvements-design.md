@@ -1,9 +1,9 @@
 # LAN Sync Improvements — Design Spec
 
-> **For implementation:** After this spec is approved, use **superpowers:writing-plans** to produce the task-by-task implementation plan (`docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`). Ship in phases; do not big-bang rewrite.
+> **For implementation:** Use **superpowers:executing-plans** (or subagent-driven-development) with the task-by-task plan below. Ship in phases; do not big-bang rewrite.
 
 **Date:** 2026-06-03  
-**Status:** Draft  
+**Status:** Approved. **Plan:** [`docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`](../plans/2026-06-03-lan-sync-improvements.md).  
 **Scope:** Reliability, UX, and maintainability of guardia LAN / LiveSync — **without** replacing hub-and-spoke topology or SQLCipher local-first model.
 
 ## Related work
@@ -548,7 +548,7 @@ flowchart LR
 - [ ] No regression: `npm test` LAN-related suites green.
 - [ ] Support: user can paste diagnostics from ⇄ without DevTools (IM-09).
 - [ ] Debt: `totalScore` ≤ baseline after each phase.
-- [ ] Docs: implementation plan exists under `docs/superpowers/plans/`.
+- [x] Docs: implementation plan exists under `docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`.
 
 ---
 

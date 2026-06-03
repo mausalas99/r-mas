@@ -111,7 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-03** `lan-sync-improvements-spec`: design spec (P0–P4) — profile push WS fix, SQL outbox, clinical-ops endpoint, state machine, host pin, diagnostics; `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md`.
+- **2026-06-03** `lan-sync-improvements`: design spec + implementation plan (IM-01–16, Phases 0–3); `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md`, `docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`.
 - **2026-06-03** `release-6.6.0`: @usuario sin ⇄ obligatorio; merges cloud (directorio LAN, iPad ticket, labs batch-copy); `clinical-profile-lan-sync.mjs`, `lab-history-batch-copy-modal.mjs`.
 - **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, entrega/equipos; `pushClinicalOpsLanNow`.
 - **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.
