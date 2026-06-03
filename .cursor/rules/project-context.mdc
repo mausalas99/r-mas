@@ -111,7 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-03** `lan-conflict-lww`: host HTTP/WS return 200 + `lwwApplied`/`lwwAppliedKeys` on overlap/skew; `host-router.js`, `ws-hub.js`, `host-store.js`; renderer toast still pending; `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`.
+- **2026-06-03** `lan-conflict-lww`: renderer applies LWW on overlap (no modal/draft); `applyLwwConflictLocally`, `notifyLwwOverwrite`, host cache sync; `lan-sync.mjs`, `lan-sync-push.mjs`.
 - **2026-06-03** `release-6.6.2`: LAN ward-ready patch — ops outbox, wiring imports, host HC GET from bundle entries; `docs/RELEASE_NOTES_6.6.2.txt`.
 - **2026-06-03** `lan-ward-ready`: ops/bundle decouple, `clinical_ops` outbox drain+abort, QUEUED toasts, host revision on all PUTs; `lan-sync-push.mjs`, `host-router.js`.
 - **2026-06-03** `lan-ward-ready-spec`: remediation design; `docs/superpowers/specs/2026-06-03-lan-ward-ready-remediation-design.md`.

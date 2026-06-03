@@ -1,11 +1,18 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   saveDraftConflict,
   listDraftConflicts,
   deleteDraftConflict,
   __test,
 } from './draft-conflict-store.mjs';
+
+const jsDir = join(dirname(fileURLToPath(import.meta.url)));
+const lanSyncSrc = readFileSync(join(jsDir, 'features/lan-sync.mjs'), 'utf8');
+const lanSyncPushSrc = readFileSync(join(jsDir, 'lan-sync-push.mjs'), 'utf8');
 
 beforeEach(() => {
   __test.resetMemory();
@@ -38,4 +45,12 @@ test('room bundle draft stores entityType for labeling', async () => {
   const got = (await listDraftConflicts()).find((d) => d.id === id);
   assert.strictEqual(got.entityType, 'roomBundle');
   await deleteDraftConflict(id);
+});
+
+test('sync hot path does not save new bundle drafts on overlap', () => {
+  assert.doesNotMatch(
+    lanSyncPushSrc,
+    /saveDraftConflict\([\s\S]{0,200}entityType:\s*'roomBundle'/
+  );
+  assert.match(lanSyncSrc, /applyLwwConflictLocally/);
 });

@@ -158,17 +158,13 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncPushSrc, /recordLanSyncError[\s\S]*sync-bundle/);
   });
 
-  it('dedupes room-bundle drafts per sala before saving another', () => {
-    assert.match(lanSyncPushSrc, /clearRoomBundleDrafts\(rid\)/);
-  });
-
-  it('auto-accepts clinicalOps-only bundle 409 without saving heavy drafts', () => {
-    assert.match(lanSyncPushSrc, /acceptServerBundleConflict/);
-    assert.match(lanSyncPushSrc, /bundleConflictsAreClinicalOpsOnly/);
-    assert.match(lanSyncPushSrc, /pauseBundlePushForRoom/);
+  it('applies bundle LWW on legacy 409 with server bundle', () => {
+    assert.match(lanSyncPushSrc, /resp\.status === 409/);
+    assert.match(lanSyncPushSrc, /applyServerBundleLwwLocally/);
+    assert.match(lanSyncPushSrc, /notifyBundleLwwOverwrite/);
     assert.doesNotMatch(
       lanSyncPushSrc,
-      /saveDraftConflict\([\s\S]{0,200}localBundle:/
+      /saveDraftConflict\([\s\S]{0,200}entityType:\s*'roomBundle'/
     );
   });
 
@@ -209,6 +205,48 @@ describe('lan-sync clinical ops', () => {
       lanSyncPushSrc,
       /resolveClinicalOps409[\s\S]*lanPushResult\(true,\s*'CONFLICT_RESOLVED'/
     );
+  });
+
+  it('clinical-ops PUT retries once after 409 revision align', () => {
+    assert.match(lanSyncPushSrc, /putClinicalOpsSnapshotToHost/);
+    assert.match(lanSyncPushSrc, /retryResp/);
+    assert.match(lanSyncPushSrc, /clinicalOpsLanPushInFlight/);
+  });
+
+  it('handleSyncConflict applies LWW without conflict modal', () => {
+    assert.match(lanSyncSrc, /applyLwwConflictLocally/);
+    assert.match(lanSyncSrc, /notifyLwwOverwrite/);
+    assert.doesNotMatch(
+      lanSyncSrc,
+      /async function handleSyncConflict[\s\S]{0,800}saveDraftConflict/
+    );
+    assert.doesNotMatch(
+      lanSyncSrc,
+      /async function handleSyncConflict[\s\S]{0,800}openClinicalConflictViewer/
+    );
+  });
+
+  it('lanPushPatientVersioned toasts on lwwApplied without 409 modal', () => {
+    assert.match(
+      lanSyncSrc,
+      /export async function lanPushPatientVersioned[\s\S]{0,1200}notifyLwwOverwrite/
+    );
+    assert.doesNotMatch(
+      lanSyncSrc,
+      /export async function lanPushPatientVersioned[\s\S]{0,1200}resp\.status === 409/
+    );
+  });
+
+  it('applyLiveSyncApplied syncs host bases and LWW toast', () => {
+    assert.match(lanSyncSrc, /syncHostBundleEntityFromApplied/);
+    assert.match(lanSyncSrc, /function applyLiveSyncApplied[\s\S]*notifyLwwOverwrite/);
+  });
+
+  it('todo delete conflict retry connects live WS and deletes locally', () => {
+    assert.match(lanSyncSrc, /retryTodoDeleteFromConflict/);
+    assert.match(lanSyncSrc, /waitForLiveChannelOpen/);
+    assert.match(lanSyncSrc, /Borrado reenviado a la sala/);
+    assert.match(lanSyncPushSrc, /pushLiveSyncPatchOutbox/);
   });
 
   it('outbox clinical-ops push handles 409 without re-enqueue loop', () => {

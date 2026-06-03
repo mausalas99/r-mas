@@ -56,6 +56,12 @@ import {
   conflictSnapshotsMatchForAutoResolve,
   openClinicalConflictViewer,
 } from "./clinical-conflict-viewer.mjs";
+import { notifyLwwOverwrite } from "../lan-lww-toast.mjs";
+import {
+  agendaEntityKey,
+  todoEntityKey,
+  patientEntityKey,
+} from "../live-sync-room.mjs";
 import {
   patients,
   notes,
@@ -239,6 +245,27 @@ function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) 
   } catch (_e) {}
 }
 
+function syncHostBundleEntityFromApplied(msg) {
+  var rid = String((msg && msg.roomId) || activeLiveSyncRoomId || '').trim();
+  if (!rid || !msg || msg.version == null) return;
+  var bases = getHostBundleBases(rid);
+  var key = null;
+  if (msg.entityType === 'agenda') key = agendaEntityKey(msg.entityId);
+  else if (msg.entityType === 'todo' && msg.patientId) {
+    key = todoEntityKey(msg.patientId, msg.entityId);
+  } else if (msg.entityType === 'patient') {
+    var reg = msg.data && msg.data.registro;
+    key = patientEntityKey(msg.entityId, reg);
+  }
+  if (!key) return;
+  var entityVersions = Object.assign({}, bases.entityVersions || {});
+  entityVersions[key] = Number(msg.version);
+  setHostBundleBases(rid, {
+    revision: bases.revision,
+    entityVersions: entityVersions,
+  });
+}
+
 function stampTodosWithEntityVersions(todosMap, entityVersions) {
   var versions = entityVersions && typeof entityVersions === 'object' ? entityVersions : {};
   var out = {};
@@ -291,16 +318,35 @@ function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) 
 }
 
 function sendLiveSyncMutation(mutation) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
-  var envelope = wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation);
-  void guardAndSignLiveSyncMutation(mutation, envelope)
-    .then(function () {
-      lanClient.sendLive(envelope);
+  if (!activeLiveSyncRoomId || !mutation) return;
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  var envelope = wrapLiveSyncPatch(rid, getLanClientId(), mutation);
+
+  function transmit() {
+    if (!lanClient.liveConnected) return false;
+    void guardAndSignLiveSyncMutation(mutation, envelope)
+      .then(function () {
+        lanClient.sendLive(envelope);
+      })
+      .catch(function (err) {
+        if (err && err.code === 'CLINICAL_ACCESS_DENIED') {
+          runtime.showToast(String(err.message || 'Acceso clínico denegado'), 'error');
+        }
+      });
+    return true;
+  }
+
+  if (transmit()) return;
+  try {
+    lanClient.connectLiveChannel(rid);
+  } catch (_eConn) {}
+  void import('../lan-sync-room.mjs')
+    .then(function (mod) {
+      if (typeof mod.waitForLiveChannelOpen !== 'function') return;
+      return mod.waitForLiveChannelOpen(rid, 4500);
     })
-    .catch(function (err) {
-      if (err && err.code === 'CLINICAL_ACCESS_DENIED') {
-        runtime.showToast(String(err.message || 'Acceso clínico denegado'), 'error');
-      }
+    .then(function () {
+      transmit();
     });
 }
 
@@ -376,9 +422,10 @@ export function acceptServerBundleConflict(opts) {
   return true;
 }
 
+/** @returns {Promise<boolean>} */
 export function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
   var rid = String(roomId || '').trim();
-  if (!rid) return;
+  if (!rid) return Promise.resolve(false);
   if (revision != null) {
     var bases = getHostBundleBases(rid) || { entityVersions: {} };
     setHostBundleBases(rid, {
@@ -387,14 +434,17 @@ export function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
     });
   }
   if (snapshot && isClinicalOpsLanAvailable()) {
-    void applyClinicalOpsLanSnapshot(snapshot).then(function (ok) {
+    return applyClinicalOpsLanSnapshot(snapshot).then(function (ok) {
       if (ok) {
         void refreshClinicalOpsSnapshotCache();
         document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
       }
+      applyRoomSyncPhaseAfterReconcile(rid);
+      return !!ok;
     });
   }
   applyRoomSyncPhaseAfterReconcile(rid);
+  return Promise.resolve(revision != null);
 }
 
 async function applyRoomBundleServerChoice(draft) {
@@ -659,25 +709,120 @@ function conflictViewerContext(payload) {
   return ctx;
 }
 
+/**
+ * Re-send todo delete after 409 using host version (WS-primary; queues patch if live channel down).
+ * @returns {Promise<{ ok: boolean, code?: string }>}
+ */
+async function retryTodoDeleteFromConflict(payload) {
+  if (
+    !payload ||
+    payload.entityType !== 'todo' ||
+    !payload.localSnapshot ||
+    payload.localSnapshot.op !== 'delete'
+  ) {
+    return { ok: false, code: 'NOT_TODO_DELETE' };
+  }
+  var patientId = String(payload.patientId || '').trim();
+  var entityId = String(payload.entityId || '').trim();
+  if (!patientId || !entityId) {
+    runtime.showToast(
+      'No se pudo reenviar el borrado: falta el paciente o el id del pendiente.',
+      'warn'
+    );
+    return { ok: false, code: 'MISSING_IDS' };
+  }
+  var server = payload.serverSnapshot || {};
+  var serverVer = server.version != null ? Number(server.version) : NaN;
+  if (!Number.isFinite(serverVer) || serverVer < 1) {
+    runtime.showToast(
+      'No se pudo reenviar: el host no devolvió la versión del pendiente. Abre ⇄ y reconecta la sala.',
+      'warn'
+    );
+    return { ok: false, code: 'NO_SERVER_VERSION' };
+  }
+
+  var todos = storage.getTodos(patientId).filter(function (t) {
+    return t && t.id !== entityId;
+  });
+  storage.saveTodos(patientId, todos);
+  rememberLiveSyncEntity(
+    'todo',
+    entityId,
+    patientId,
+    serverVer,
+    Object.assign({}, server.data || {}, { id: entityId })
+  );
+  runtime.refreshAllTodoUIs();
+
+  var roomId = String(payload.roomId || activeLiveSyncRoomId || '').trim();
+  if (!roomId || !isLanSessionConfiguredForRest()) {
+    runtime.showToast('Eliminado en esta Mac. Conecta sala ⇄ para propagar el borrado.', 'info');
+    return { ok: true, code: 'LOCAL_ONLY' };
+  }
+
+  if (!lanClient.liveConnected) {
+    try {
+      lanClient.connectLiveChannel(roomId);
+    } catch (_eConn) {}
+    var roomMod = await import('../lan-sync-room.mjs');
+    if (typeof roomMod.waitForLiveChannelOpen === 'function') {
+      await roomMod.waitForLiveChannelOpen(roomId, 5000);
+    }
+  }
+
+  if (lanClient.liveConnected) {
+    emitLiveSyncTodoDelete(
+      patientId,
+      Object.assign(
+        {},
+        server.data && typeof server.data === 'object' ? server.data : {},
+        { id: entityId, version: serverVer }
+      )
+    );
+    runtime.showToast('Borrado reenviado a la sala.', 'success');
+    return { ok: true, code: 'WS_SENT' };
+  }
+
+  var base =
+    getLiveSyncEntityBase('todo', entityId, patientId) ||
+    Object.assign({}, server.data || {}, { id: entityId, version: serverVer });
+  var mutation = createMutationBuilder('todo', entityId)
+    .captureBase(base)
+    .build({ roomId: roomId, patientId: patientId, op: 'delete' });
+  var envelope = wrapLiveSyncPatch(roomId, getLanClientId(), mutation);
+  try {
+    await guardAndSignLiveSyncMutation(mutation, envelope);
+    var outboxMod = await import('../live-sync-outbox.mjs');
+    await outboxMod.enqueueOutbox(roomId, { kind: 'patch', payload: envelope });
+    scheduleLiveSyncPush();
+    runtime.showToast(
+      'Eliminado aquí. El borrado se enviará cuando ⇄ vuelva a conectar en vivo.',
+      'info'
+    );
+    return { ok: true, code: 'QUEUED' };
+  } catch (err) {
+    runtime.showToast(
+      err && err.message
+        ? String(err.message)
+        : 'No se pudo firmar el borrado para la sala.',
+      'error'
+    );
+    return { ok: false, code: 'SIGN_FAILED' };
+  }
+}
+
 function conflictEditDraftHandler(payload) {
-  var resolved = false;
   if (
     payload &&
     payload.entityType === 'todo' &&
     payload.localSnapshot &&
-    payload.localSnapshot.op === 'delete' &&
-    payload.serverSnapshot &&
-    payload.patientId
+    payload.localSnapshot.op === 'delete'
   ) {
-    var todo = Object.assign({}, payload.serverSnapshot.data || {}, {
-      id: payload.entityId,
-      version: payload.serverSnapshot.version,
+    void retryTodoDeleteFromConflict(payload).then(function (res) {
+      if (res && res.ok && payload.draftId) {
+        void clearConflictDraft(payload.draftId);
+      }
     });
-    emitLiveSyncTodoDelete(payload.patientId, todo);
-    resolved = true;
-  }
-  if (resolved && payload.draftId) {
-    void clearConflictDraft(payload.draftId);
   }
 }
 
@@ -849,14 +994,11 @@ async function appendLanConflictDraftsSection(root) {
   root.appendChild(card);
 }
 
-async function handleSyncConflict(payload, options) {
-  options = options || {};
-  if (isLanConflictViewerSuppressed()) {
-    return;
-  }
+async function applyLwwConflictLocally(payload) {
+  if (!payload) return;
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
-    void renderLanPanel();
+    clearHistoriaPendingAfterConflict(payload);
     var localDelete = payload.localSnapshot && payload.localSnapshot.op === 'delete';
     if (!localDelete) {
       runtime.showToast('Pendiente alineado con la sala', 'info');
@@ -864,56 +1006,37 @@ async function handleSyncConflict(payload, options) {
     return;
   }
   var viewerData = conflictDataForViewer(payload);
-  if (
-    conflictSnapshotsMatchForAutoResolve({
-      conflictingKeys: payload.conflictingKeys,
-      localData: viewerData.localData,
-      serverData: viewerData.serverData,
-    })
-  ) {
-    await applyConflictUseServer(payload);
-    await discardDraftsForConflictEntity(payload);
-    clearHistoriaPendingAfterConflict(payload);
-    void renderLanPanel();
-    runtime.showToast('Historia alineada con la sala (mismo contenido visible).', 'info');
-    return;
-  }
-  var draftId = await saveDraftConflict({
-    transport: payload.transport,
-    entityType: payload.entityType,
-    entityId: payload.entityId,
-    roomId: payload.roomId || null,
-    patientId: payload.patientId || null,
-    localSnapshot: payload.localSnapshot,
-    serverSnapshot: payload.serverSnapshot,
-    conflictingKeys: payload.conflictingKeys,
-  });
-  var deferModal = !!(options.background || shouldDeferLanConflictModal());
-  if (deferModal) {
-    void renderLanPanel();
-    if (!_deferredConflictToastShown) {
-      _deferredConflictToastShown = true;
-      runtime.showToast(
-        'Conflicto de sincronización guardado. Abre ⇄ → Borradores de conflicto.',
-        'info'
-      );
-    }
-    return;
-  }
-  openClinicalConflictViewer({
-    draftId: draftId,
+  var silentMatch = conflictSnapshotsMatchForAutoResolve({
     conflictingKeys: payload.conflictingKeys,
     localData: viewerData.localData,
     serverData: viewerData.serverData,
-    context: conflictViewerContext(payload),
-    onUseServer: function () {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId }));
-    },
-    onEditDraft: function () {
-      conflictEditDraftHandler(Object.assign({}, payload, { draftId: draftId }));
-    },
-    onClose: function () {},
   });
+  await applyConflictUseServer(payload);
+  await discardDraftsForConflictEntity(payload);
+  clearHistoriaPendingAfterConflict(payload);
+  var server = payload.serverSnapshot;
+  if (server && server.version != null) {
+    syncHostBundleEntityFromApplied({
+      roomId: payload.roomId || activeLiveSyncRoomId,
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      patientId: payload.patientId,
+      version: server.version,
+      data: server.data,
+    });
+  }
+  if (!silentMatch && payload.lwwApplied) {
+    notifyLwwOverwrite(runtime, {
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      overwrittenKeys: payload.overwrittenKeys || payload.conflictingKeys || [],
+    });
+  }
+}
+
+async function handleSyncConflict(payload, options) {
+  options = options || {};
+  await applyLwwConflictLocally(payload);
   void renderLanPanel();
 }
 
@@ -924,6 +1047,8 @@ function wsConflictDetailToPayload(detail) {
     entityId: detail.entityId,
     roomId: detail.roomId,
     patientId: detail.patientId,
+    lwwApplied: detail.lwwApplied === true,
+    overwrittenKeys: detail.overwrittenKeys || detail.conflictingKeys || [],
     conflictingKeys: detail.conflictingKeys || [],
     localSnapshot: {
       expectedVersion: detail.client && detail.client.version != null ? detail.client.version : detail.expectedVersion,
@@ -964,35 +1089,6 @@ export async function lanPushPatientVersioned(patientId, mutation) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(mutation),
   });
-  if (resp.status === 409) {
-    var body = {};
-    try {
-      body = await resp.json();
-    } catch (_eJson) {}
-    if (isLanConflictViewerSuppressed()) {
-      return { ok: false, conflict: true, conflictDeferred: true, body: body };
-    }
-    await handleSyncConflict(
-      {
-      transport: 'http',
-      entityType: body.entityType || 'patient',
-      entityId: body.entityId || pid,
-      roomId: null,
-      patientId: pid,
-      conflictingKeys: body.conflictingKeys || [],
-      localSnapshot: {
-        expectedVersion: mutation.expectedVersion,
-        changedKeys: mutation.changedKeys,
-        baseData: mutation.baseData,
-        data: mutation.data,
-        op: mutation.op,
-      },
-      serverSnapshot: { version: body.serverVersion, data: body.serverData },
-    },
-      { background: shouldDeferLanConflictModal() }
-    );
-    return { ok: false, conflict: true, body: body };
-  }
   if (!resp.ok) {
     return { ok: false, status: resp.status };
   }
@@ -1002,6 +1098,20 @@ export async function lanPushPatientVersioned(patientId, mutation) {
   } catch (_eOut) {}
   if (out && out.version != null && out.data) {
     rememberLiveSyncEntity('patient', pid, null, out.version, out.data);
+    syncHostBundleEntityFromApplied({
+      roomId: activeLiveSyncRoomId,
+      entityType: 'patient',
+      entityId: pid,
+      version: out.version,
+      data: out.data,
+    });
+  }
+  if (out && out.lwwApplied) {
+    notifyLwwOverwrite(runtime, {
+      entityType: 'patient',
+      entityId: pid,
+      overwrittenKeys: out.overwrittenKeys || [],
+    });
   }
   return { ok: true, body: out, version: out.version, data: out.data };
 }
@@ -1017,35 +1127,6 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
       body: JSON.stringify(mutation),
     }
   );
-  if (resp.status === 409) {
-    var body = {};
-    try {
-      body = await resp.json();
-    } catch (_eJson) {}
-    if (isLanConflictViewerSuppressed()) {
-      return { ok: false, conflict: true, conflictDeferred: true, body: body };
-    }
-    await handleSyncConflict(
-      {
-        transport: 'http',
-        entityType: body.entityType || 'historiaClinica',
-        entityId: body.entityId || pid,
-        roomId: mutation.roomId || null,
-        patientId: pid,
-        conflictingKeys: body.conflictingKeys || [],
-        localSnapshot: {
-          expectedVersion: mutation.expectedVersion,
-          changedKeys: mutation.changedKeys,
-          baseData: mutation.baseData,
-          data: mutation.data,
-          op: mutation.op,
-        },
-        serverSnapshot: { version: body.serverVersion, data: body.serverData },
-      },
-      { background: shouldDeferLanConflictModal() }
-    );
-    return { ok: false, conflict: true, body: body };
-  }
   if (!resp.ok) {
     return { ok: false, status: resp.status };
   }
@@ -1053,6 +1134,13 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
   try {
     out = await resp.json();
   } catch (_eOut) {}
+  if (out && out.lwwApplied) {
+    notifyLwwOverwrite(runtime, {
+      entityType: 'historiaClinica',
+      entityId: pid,
+      overwrittenKeys: out.overwrittenKeys || [],
+    });
+  }
   return { ok: true, version: out.version, data: out.data, body: out };
 }
 
@@ -1504,7 +1592,15 @@ function applyLiveSyncApplied(msg) {
     }
   }
 
-  if (msg.autoMerged) {
+  syncHostBundleEntityFromApplied(msg);
+
+  if (msg.lwwApplied) {
+    notifyLwwOverwrite(runtime, {
+      entityType: msg.entityType,
+      entityId: msg.entityId,
+      overwrittenKeys: msg.overwrittenKeys || [],
+    });
+  } else if (msg.autoMerged) {
     runtime.showToast('Cambios fusionados automáticamente con el servidor.', 'success');
   }
 }
@@ -1626,7 +1722,11 @@ lanClient.addEventListener('lan-applied', function (ev) {
 });
 lanClient.addEventListener('lan-conflict', function (ev) {
   if (!ev.detail) return;
-  void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
+  var payload = wsConflictDetailToPayload(ev.detail);
+  if (!payload.lwwApplied && payload.serverSnapshot && payload.serverSnapshot.data) {
+    payload.lwwApplied = true;
+  }
+  void handleSyncConflict(payload);
 });
 lanClient.addEventListener('lan-patch', function () {
   syncLiveSyncStatusChrome();
