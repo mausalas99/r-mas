@@ -28,8 +28,11 @@ describe('bundle-renderer', () => {
     );
   });
 
-  it('index.html no carga Chart.js bloqueante (BN-09)', () => {
+  it('index.html carga Chart UMD antes del bundle (BN-09)', () => {
     const html = fs.readFileSync(path.join(repoRoot, 'public/index.html'), 'utf8');
-    assert.doesNotMatch(html, /vendor\/chart\.umd\.min\.js/);
+    const chartIdx = html.indexOf('vendor/chart.umd.min.js');
+    const bundleIdx = html.indexOf('js/app.bundle.mjs');
+    assert.ok(chartIdx >= 0 && bundleIdx >= 0);
+    assert.ok(chartIdx < bundleIdx);
   });
 });

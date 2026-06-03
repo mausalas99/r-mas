@@ -21,11 +21,20 @@ export function getBundleRendererPaths(root = ROOT) {
   };
 }
 
+function isChartAutoChunk(metafile, outPath) {
+  const info = metafile?.outputs?.[outPath];
+  if (!info?.inputs) return false;
+  return Object.keys(info.inputs).some(
+    (k) => k.includes('node_modules/chart.js') || k.endsWith('chart.js/auto')
+  );
+}
+
 function findChartChunkImportUrl(metafile, outDir = OUT_DIR) {
   if (metafile && metafile.outputs) {
     for (const outPath of Object.keys(metafile.outputs)) {
       const base = path.basename(outPath);
-      if (!/^auto-/.test(base) || !base.endsWith('.js')) continue;
+      if (!/^auto-.*\.js$/.test(base)) continue;
+      if (!isChartAutoChunk(metafile, outPath)) continue;
       return '/js/chunks/' + base;
     }
   }
@@ -91,14 +100,22 @@ export async function bundleRenderer(opts = {}) {
     return ctx;
   }
 
+  const chunksDir = path.join(OUT_DIR, 'chunks');
+  if (fs.existsSync(chunksDir)) {
+    fs.rmSync(chunksDir, { recursive: true, force: true });
+  }
+
   const result = await esbuild.build(buildOptions({ prod, write: true }));
   fs.writeFileSync(META_FILE, JSON.stringify(result.metafile, null, 2) + '\n');
+  const chartChunkManifest = path.join(OUT_DIR, 'chart-chunk.json');
   const chartImportUrl = findChartChunkImportUrl(result.metafile);
   if (chartImportUrl) {
     fs.writeFileSync(
-      path.join(OUT_DIR, 'chart-chunk.json'),
+      chartChunkManifest,
       JSON.stringify({ importUrl: chartImportUrl }, null, 2) + '\n'
     );
+  } else if (fs.existsSync(chartChunkManifest)) {
+    fs.unlinkSync(chartChunkManifest);
   }
   console.log('wrote public/js/app.bundle.mjs');
   return result;

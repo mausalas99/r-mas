@@ -1265,7 +1265,8 @@ var tendGroupModalInitPromise = null;
 function initTendGroupModal() {
   if (tendGroupModal) return Promise.resolve(tendGroupModal);
   if (tendGroupModalInitPromise) return tendGroupModalInitPromise;
-  tendGroupModalInitPromise = loadChartJs().then(function (Chart) {
+  tendGroupModalInitPromise = loadChartJs()
+    .then(function (Chart) {
     if (tendGroupModal) return tendGroupModal;
     tendGroupModal = createTendGroupModal({
     onRequestClose: closeTendGroupModal,
@@ -1292,14 +1293,24 @@ function initTendGroupModal() {
     },
   });
     return tendGroupModal;
-  });
+  })
+    .catch(function (err) {
+      tendGroupModalInitPromise = null;
+      console.error('[R+ Tendencias] tend-group Chart.js', err);
+      rt.showToast('Gráfica no disponible (Chart.js no cargó). Recarga la app.', 'error');
+      throw err;
+    });
   return tendGroupModalInitPromise;
 }
 
 function openTendGroupModal(sectionKey) {
-  void initTendGroupModal().then(function (modal) {
-    if (modal) modal.open(sectionKey);
-  });
+  void initTendGroupModal()
+    .then(function (modal) {
+      if (modal) modal.open(sectionKey);
+    })
+    .catch(function () {
+      /* toast already shown in initTendGroupModal */
+    });
 }
 
 function openTendGasoExtendedModal() {
@@ -2087,10 +2098,16 @@ function openTendDetailAsync(sectionKey, fieldKey) {
         detailChart.destroy();
         detailChart = null;
       }
-      mountTendDetailChart(Chart, canvas, backdrop, labels, values, title, ref, latest, unit);
+      try {
+        mountTendDetailChart(Chart, canvas, backdrop, labels, values, title, ref, latest, unit);
+      } catch (mountErr) {
+        console.error('[R+ Tendencias] detail chart mount', mountErr);
+        rt.showToast('Gráfica no disponible (error al dibujar). Recarga la app.', 'error');
+        backdrop.style.display = 'none';
+      }
     })
     .catch(function (err) {
-      console.error('[R+ Tendencias] detail chart', err);
+      console.error('[R+ Tendencias] detail chart load', err);
       rt.showToast('Gráfica no disponible (Chart.js no cargó). Recarga la app.', 'error');
       backdrop.style.display = 'none';
     });

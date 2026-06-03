@@ -1,32 +1,24 @@
-/** Lazy Chart.js (BN-09) — vendor script + esbuild chunk with absolute /js/ URLs. */
+/** Chart.js — UMD in index.src.html (sync); this module only lazy-injects if missing. */
 
 let chartPromise = null;
 
 /**
- * @param {Record<string, unknown>} mod
- * @returns {typeof Chart}
+ * @param {string} pathname — e.g. `vendor/chart.umd.min.js`
+ * @returns {string}
  */
-function resolveChartExport(mod) {
-  var Chart = /** @type {any} */ (mod).default;
-  if (!Chart && /** @type {any} */ (mod).Chart) Chart = /** @type {any} */ (mod).Chart;
-  if (!Chart) throw new Error('chart.js export missing');
-  if (typeof globalThis !== 'undefined') /** @type {any} */ (globalThis).Chart = Chart;
-  if (typeof window !== 'undefined') /** @type {any} */ (window).Chart = Chart;
-  return Chart;
-}
-
-function chartVendorScriptUrl() {
+function publicAssetUrl(pathname) {
+  var clean = String(pathname || '').replace(/^\/+/, '');
   try {
-    return new URL('/vendor/chart.umd.min.js', window.location.origin).href;
+    return new URL(clean, window.location.href).href;
   } catch (_e) {
-    return '/vendor/chart.umd.min.js';
+    return '/' + clean;
   }
 }
 
 /**
  * @returns {Promise<typeof Chart>}
  */
-function loadChartJsScript() {
+function injectChartVendorScript() {
   return new Promise(function (resolve, reject) {
     var existing = getChartJsIfLoaded();
     if (existing) {
@@ -34,7 +26,7 @@ function loadChartJsScript() {
       return;
     }
     var script = document.createElement('script');
-    script.src = chartVendorScriptUrl();
+    script.src = publicAssetUrl('vendor/chart.umd.min.js');
     script.async = false;
     script.onload = function () {
       var Chart = getChartJsIfLoaded();
@@ -49,28 +41,6 @@ function loadChartJsScript() {
 }
 
 /**
- * @returns {Promise<string | null>}
- */
-async function resolveChartChunkUrl() {
-  try {
-    var res = await fetch('/js/chart-chunk.json', { cache: 'no-store' });
-    if (res.ok) {
-      var data = await res.json();
-      if (data && typeof data.importUrl === 'string') return data.importUrl;
-    }
-  } catch (_e) {}
-  return null;
-}
-
-async function loadChartJsEsm() {
-  var url = await resolveChartChunkUrl();
-  var mod = url
-    ? await import(/* @vite-ignore */ url)
-    : await import('chart.js/auto');
-  return resolveChartExport(mod);
-}
-
-/**
  * @returns {Promise<typeof Chart>}
  */
 export function loadChartJs() {
@@ -78,15 +48,10 @@ export function loadChartJs() {
   if (existing) return Promise.resolve(existing);
 
   if (!chartPromise) {
-    chartPromise = loadChartJsEsm()
-      .catch(function (esmErr) {
-        console.warn('[R+ Chart] ESM chunk failed, trying vendor script', esmErr);
-        return loadChartJsScript();
-      })
-      .catch(function (err) {
-        chartPromise = null;
-        throw err;
-      });
+    chartPromise = injectChartVendorScript().catch(function (err) {
+      chartPromise = null;
+      throw err;
+    });
   }
   return chartPromise;
 }
