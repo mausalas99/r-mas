@@ -55,6 +55,17 @@ describe('db-unlock', () => {
       }),
       false
     );
+    assert.equal(
+      isSqlcipherNativeReady({
+        nativeReady: false,
+        sqlcipherReady: true,
+        argon2Ready: false,
+        nativeFailures: [],
+      }),
+      true
+    );
+    assert.equal(isSqlcipherNativeReady({ sqlcipherReady: false }), false);
+    assert.equal(isSqlcipherNativeReady({ sqlcipherReady: true }), true);
   });
 
   describe('toggleDbUnlockSecretField', () => {

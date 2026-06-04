@@ -77,9 +77,21 @@ export async function ensureClinicalPanelSession() {
   if (!isDbMode()) return false;
   const settings = readRpcSettings();
   const clientId = resolveClinicalClientId(settings);
-  if (!clinicalSessionContext.user?.user_id) {
+
+  async function attemptSession() {
+    if (clinicalSessionContext.user?.user_id) return true;
     await tryAutoOpenClinicalDb();
+    if (clinicalSessionContext.user?.user_id) return true;
+    const ok = await bootstrapClinicalAccess(settings, clientId);
+    return !!(ok && clinicalSessionContext.user?.user_id);
   }
+
+  if (await attemptSession()) return true;
+
+  // Boot may have run bootstrap before main finished ensureUnlocked (common on Windows).
+  const { applyClinicalDbUnlockCompletion } = await import('./db-unlock.mjs');
+  await applyClinicalDbUnlockCompletion({ refreshOnboarding: false });
   if (clinicalSessionContext.user?.user_id) return true;
-  return bootstrapClinicalAccess(settings, clientId);
+
+  return attemptSession();
 }

@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.2](https://github.com/mausalas99/r-mas/releases/tag/v6.6.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.3](https://github.com/mausalas99/r-mas/releases/tag/v6.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -460,6 +460,16 @@ Notas: `docs/RELEASE_NOTES_2.4.1.txt`.
 
 ---
 
+
+## R+ 6.6.3 (cold-start — arranque, chunks, Chart y Windows)
+
+- **Cold-start** — Bundle inicial más liviano; Ajustes, plataforma y módulos clínicos en **chunks** con carga diferida.
+- **Chart UMD** — Tendencias y gráficas del expediente estables (sin rutas ESM rotas al arrancar).
+- **Windows** — «Configura tu rotación» deja de quedarse en «Desbloquea la base…» tras abrir SQLCipher; mensajes y reintento de sesión clínica mejorados.
+- **LAN** — Incluye correcciones **ward-ready** de **6.6.2** (clinical-ops, host HC, cola offline).
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.3**; firewall **3738** en Windows la primera vez en sala.
+
+Notas: `docs/RELEASE_NOTES_6.6.3.txt`.
 ## R+ 2.4.0 (sidebar, drag&drop y nuevos parsers)
 
 - **Sidebar pacientes** — Pinned/Fijados, archivado y reordenamiento por drag&drop con desplazamiento de tarjetas en tiempo real.
@@ -599,9 +609,10 @@ npm run build:ui
 # Ejecutar en modo desarrollo (prestart regenera el bundle si hace falta)
 npm start
 
-# Publicar release: bump (si falta), completar docs/RELEASE_NOTES_X.Y.Z.txt + README + highlights y onboarding en settings-help.mjs / tour-targets.mjs, luego:
+# Publicar release: versión en package.json, docs/RELEASE_NOTES_X.Y.Z.txt, README, release-notes-curated.mjs; luego:
 npm run build:ui
-npm run release:publish   # sincroniza build.files (lan-squad, lib/**/*.js) antes de tests y build
+npm run bundle:renderer:prod   # incluido en prebuild:mac/win; corre explícito si solo publicas
+npm run release:publish -- --yes   # tests, commit, build Mac+Win, tag, GitHub release
 
 # Solo revisar/actualizar empaquetado electron-builder:
 npm run release:sync-pack

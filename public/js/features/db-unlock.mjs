@@ -300,7 +300,7 @@ function configureUnlockForm(status, probe) {
   var rate = document.getElementById('rpc-db-unlock-rate-limited');
   if (rate) rate.style.display = status && status.rateLimited ? 'block' : 'none';
   var submit = document.getElementById('rpc-db-unlock-submit');
-  var nativeBlocked = !!(status && status.nativeReady === false);
+  var nativeBlocked = !!(status && !isSqlcipherNativeReady(status));
   if (submit) {
     submit.disabled = !!(status && status.rateLimited) || nativeBlocked;
     submit.textContent = needsConfirm ? 'Crear contraseña y continuar' : 'Desbloquear';
@@ -336,9 +336,12 @@ async function tryAutoUnlockDb(electron) {
 
 /** SQLCipher is required to open the DB; argon2 is only needed for passphrase KDF. */
 export function isSqlcipherNativeReady(status) {
-  if (!status || status.nativeReady !== false) return true;
+  if (!status) return true;
+  if (status.sqlcipherReady === true) return true;
+  if (status.sqlcipherReady === false) return false;
+  if (status.nativeReady !== false) return true;
   var failures = status.nativeFailures;
-  if (!Array.isArray(failures) || !failures.length) return false;
+  if (!Array.isArray(failures) || !failures.length) return true;
   return !failures.some(function (f) {
     return f && f.module === 'sqlcipher';
   });
@@ -361,8 +364,12 @@ async function presentDbUnlockGate(status) {
   return waitForUnlockOverlay();
 }
 
-/** Rehydrate clinical session after a late DB unlock (overlay / recovery). */
-export async function applyClinicalDbUnlockCompletion() {
+/**
+ * Rehydrate clinical session after a late DB unlock (overlay / recovery).
+ * @param {{ refreshOnboarding?: boolean }} [opts]
+ */
+export async function applyClinicalDbUnlockCompletion(opts) {
+  var refreshOnboarding = !opts || opts.refreshOnboarding !== false;
   if (!isDbMode() || typeof window === 'undefined') return;
   try {
     var appState = await import('../app-state.mjs');
@@ -383,12 +390,14 @@ export async function applyClinicalDbUnlockCompletion() {
   } catch (err) {
     console.warn('[R+] Clinical runtime after unlock:', err && err.message);
   }
-  try {
-    var onboardingMain = await import('./clinical-onboarding-main.mjs');
-    if (onboardingMain && typeof onboardingMain.refreshMainClinicalOnboardingIfNeeded === 'function') {
-      await onboardingMain.refreshMainClinicalOnboardingIfNeeded();
-    }
-  } catch (_e) {}
+  if (refreshOnboarding) {
+    try {
+      var onboardingMain = await import('./clinical-onboarding-main.mjs');
+      if (onboardingMain && typeof onboardingMain.refreshMainClinicalOnboardingIfNeeded === 'function') {
+        await onboardingMain.refreshMainClinicalOnboardingIfNeeded();
+      }
+    } catch (_e) {}
+  }
 }
 
 function handleUnlockSuccess(res) {

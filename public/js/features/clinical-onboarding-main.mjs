@@ -2,6 +2,7 @@
  * Main-area clinical onboarding host (#main-area).
  */
 import { ensureClinicalPanelSession } from './clinical-panel-host.mjs';
+import { isSqlcipherNativeReady } from './db-unlock.mjs';
 import {
   needsClinicalOnboarding,
   renderOnboardingPanelInto,
@@ -44,6 +45,35 @@ export function hideMainClinicalOnboarding() {
   syncClinicalRotationEntryChrome();
 }
 
+/** User-facing copy when onboarding cannot load the clinical session. */
+export async function describeOnboardingSessionBlock() {
+  if (typeof window === 'undefined') {
+    return 'Desbloquea la base de datos para configurar tu rotación.';
+  }
+  const api = window.rplusDb || window.electronAPI;
+  if (!api || typeof api.dbStatus !== 'function') {
+    return 'Desbloquea la base de datos para configurar tu rotación.';
+  }
+  try {
+    const status = await api.dbStatus();
+    if (status && !isSqlcipherNativeReady(status)) {
+      return (
+        'Esta instalación de R+ no cargó el módulo de base de datos (SQLCipher). ' +
+        'Reinstala desde GitHub o usa Ajustes → Aplicación → Reinstalar versión actual.'
+      );
+    }
+    if (status && status.state === 'unlocked') {
+      return (
+        'La base ya está abierta, pero la sesión clínica no inició. ' +
+        'Cierra R+ por completo (incluida la bandeja) y vuelve a abrir; si persiste, reinstala la misma versión desde GitHub.'
+      );
+    }
+  } catch (_e) {
+    /* fall through */
+  }
+  return 'Desbloquea la base de datos para configurar tu rotación.';
+}
+
 export function focusMainClinicalOnboarding() {
   const host = getClinicalOnboardingMainHost();
   if (!host) return false;
@@ -76,7 +106,8 @@ export async function showMainClinicalOnboarding() {
 
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">Desbloquea la base de datos para configurar tu rotación.</p></div>`;
+    const lead = await describeOnboardingSessionBlock();
+    host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">${escapeHtml(lead)}</p></div>`;
     return;
   }
 

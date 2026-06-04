@@ -1,28 +1,38 @@
 /** Curated release-note highlights by version (data only). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
+
+var RELEASE_NOTES_663 = [
   {
-    title: 'Copia automática programada',
-    body: 'R+ puede generar snapshots locales (hasta 14 rotativos) y restaurarlos desde Ajustes → Copias de seguridad.'
+    title: 'Arranque más rápido',
+    body:
+      'El primer paint carga menos código: <strong>Ajustes</strong>, plataforma y varios módulos clínicos entran con <strong>import()</strong> y <strong>chunks</strong> de esbuild.',
   },
   {
-    title: 'Exportar por paciente o por rango de fechas',
-    body: 'Respalda solo al paciente activo, o selecciona un rango de fechas (ingreso / última nota) para mover casos acotados entre equipos.'
+    title: 'Chart.js fiable',
+    body:
+      'Tendencias y gráficas del expediente vuelven a abrir con <strong>Chart UMD</strong> en el HTML, sin depender de rutas ESM que fallaban al arrancar.',
   },
   {
-    title: 'Paquete sync cifrado con passphrase',
-    body: 'Intercambia datos entre equipos sin pisar los del otro lado: el paquete combina cambios y se cifra con una frase que tú eliges.'
+    title: 'Windows — Configura tu rotación',
+    body:
+      'Corrige el cartel atascado en «Desbloquea la base…» cuando la base ya estaba abierta: reintento de sesión clínica tras el unlock, mensajes según SQLCipher/argon2 y arranque más robusto.',
   },
   {
-    title: 'Registro de auditoría ligero',
-    body: 'Exporta un JSON con exportaciones, importaciones y borrados recientes desde Ajustes, útil para rastrear movimientos.'
+    title: 'Sobre 6.6.2 (LAN ward-ready)',
+    body:
+      'Incluye la línea <strong>6.6.2</strong>: clinical-ops separado del bundle, cola offline con avisos, host con HC desde censo y menos 409 al sincronizar equipos.',
   },
   {
-    title: 'Salida rápida en varios formatos',
-    body: 'Elige docx, html o txt como formato de la Salida rápida para exportar el contenido clínico del paciente activo de un solo clic.'
-  }
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.6.3 en todas</strong> las Macs y PCs del turno el mismo día. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala ⇄.',
+  },
 ];
 
+/** Fallback when a version has no curated entry (keep aligned with latest stable). */
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_663;
+
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.3': RELEASE_NOTES_663,
   '6.6.2': [
     {
       title: 'LAN ward-ready',
