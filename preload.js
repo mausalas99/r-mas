@@ -80,6 +80,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ensureLanServerReady: function() {
     return ipcRenderer.invoke('lan-ensure-server-ready');
   },
+  syncLanHostClinicalMeta: function(payload) {
+    return ipcRenderer.invoke('lan-sync-host-clinical-meta', payload);
+  },
   writeLanHostTeamCode: function(plain) {
     return ipcRenderer.invoke('lan-host-write-team-code', plain);
   },

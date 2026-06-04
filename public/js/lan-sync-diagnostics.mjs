@@ -71,6 +71,7 @@ export function getLanSyncDiagnostics(deps) {
     outboxCount: Number(d.outboxCount || 0),
     pinnedHost: String(d.pinnedHost || ''),
     teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
+    peerHostCount: Number(d.peerHostCount || 0),
     clinicalOpsTrace: trace,
     lastErrors: lastErrors.map(function (e) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };

@@ -14,10 +14,10 @@ function bearerHeaders(token) {
   return { Authorization: `Bearer ${token}` };
 }
 
-function mountLanRouter(store, broadcast = () => {}) {
+function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta) {
   const resolver = createConflictResolver({ store });
   const app = express();
-  app.use('/api/lan/v1', createLanRouter({ store, broadcast, resolver }));
+  app.use('/api/lan/v1', createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }));
   return app;
 }
 
@@ -55,6 +55,54 @@ test('LAN /ping requiere Authorization Bearer válido', async () => {
     const body = await ok.json();
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.lan, true);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('LAN GET /host-rank returns synced host clinical meta', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-host-rank-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const app = mountLanRouter(store, () => {}, () => ({
+    rank: 'R4',
+    isProgramAdmin: true,
+    startedAt: 1717500000123,
+  }));
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/host-rank`;
+    const res = await fetch(url, { headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.rank, 'R4');
+    assert.strictEqual(body.isProgramAdmin, true);
+    assert.strictEqual(body.startedAt, 1717500000123);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('LAN POST /host-advertise is not mounted', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-host-advertise-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/host-advertise`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rank: 'R4' }),
+    });
+    assert.strictEqual(res.status, 404);
   } finally {
     await tearDownLanTest({ server, dir, store });
   }

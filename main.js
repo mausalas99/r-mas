@@ -572,7 +572,23 @@ ipcMain.handle('lan-get-effective-team-code', () => {
 ipcMain.handle('lan-ensure-server-ready', async () => {
   const lanServer = require('./server');
   await lanServer.startLanServer();
+  try {
+    const { ensureHostStartedAt } = require('./lan-squad/host-clinical-meta.js');
+    ensureHostStartedAt(app.getPath('userData'));
+  } catch (_e) {
+    // non-fatal — renderer may sync meta later
+  }
   return { ok: true };
+});
+
+ipcMain.handle('lan-sync-host-clinical-meta', (_e, payload) => {
+  try {
+    const { writeHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
+    const body = writeHostClinicalMeta(app.getPath('userData'), payload || {});
+    return { ok: true, meta: body };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
 });
 
 ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {

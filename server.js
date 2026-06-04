@@ -17,6 +17,7 @@ const { attachWsHub } = require('./lan-squad/ws-hub.js');
 const { createConflictResolver } = require('./lan-squad/conflict-resolver.js');
 const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
 const { pickLanCandidateBaseUrl } = require('./lan-squad/lan-candidate-url.js');
+const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
@@ -372,7 +373,15 @@ appExpress.use('/api/lan/v1', (req, res, next) => {
   next();
 });
 appExpress.use('/api/lan/v1', authRouter);
-appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast, resolver: lanResolver }));
+appExpress.use(
+  '/api/lan/v1',
+  createLanRouter({
+    store: lanStore,
+    broadcast,
+    resolver: lanResolver,
+    getHostClinicalMeta: () => readHostClinicalMeta(userData),
+  })
+);
 
 function getClinicalDbForInterno() {
   if (!lanDbManager || typeof lanDbManager.isUnlocked !== 'function') return null;

@@ -1,7 +1,8 @@
 # LAN Single-Host Consolidation — Design
 
 **Date:** 2026-06-04
-**Status:** Approved (brainstorm) — pending implementation plan
+**Status:** Approved — implementation plan:
+`docs/superpowers/plans/2026-06-04-lan-single-host-consolidation.md`
 **Scope:** Merge the local working-tree LAN host-election work with the cloud branch
 `origin/cursor/lan-single-host-discovery-bd80`, then extend it into automatic **host
 consolidation** so a ward never stays split across multiple R+ LAN servers.
@@ -66,7 +67,8 @@ over the existing WS hub (the same message surrogate-promotion already uses).
 | `public/js/lan-host-rank.mjs` | priority math, `prefersLanHosting`, `shouldAutoJoinPeerAsClient`, `shouldDeferToPeerHost`, `pickPreferredLanPeerHost`, **`resolveHostElection`** (new) | local + new fn |
 | `public/js/lan-host-rank-policy.mjs` | session/settings → meta, IPC sync (`syncLanHostClinicalMetaToDisk`) | local (kept) |
 | `public/js/lan-host-subnet-discovery.mjs` | **consolidated** discovery: cloud probing quality (candidate-IP seed, loopback/same-machine guards, dual ping+`/ping`), returns a **ranked list** | merge |
-| `public/js/features/lan/transport.mjs` | `tryAutoJoinPreferredLanHost`, `joinRemoteLanHostAsClient`, **`consolidateIntoHost`**, **`pushBundleToHostUrl`** (new) | local + new fn |
+| `public/js/lan-host-consolidation.mjs` | **Pure DI core:** `runConsolidateIntoHost`, `pushBundleToHostUrl` (testable in `node --test` without browser deps) | new |
+| `public/js/features/lan/transport.mjs` | `tryAutoJoinPreferredLanHost`, `joinRemoteLanHostAsClient`; **thin re-exports** of `consolidateIntoHost` / `pushBundleToHostUrl` wiring browser + room/push | local + wire |
 | `public/js/features/lan/panel.mjs` | `lanHubStatusCopy`, promote `confirm`, split-brain warnings, diagnostics hint, scan loop | cloud UX + local |
 
 **Deleted:** cloud `public/js/lan-host-discovery.mjs` (helpers folded into
@@ -102,6 +104,12 @@ Returns `'self' | 'peer' | 'tie-self' | 'tie-peer'`:
 | Either | self wins / `tie-self` | stay host; if peer also hosting → **warn** (split-brain toast + diagnostics hint) |
 
 ### 4.4 `consolidateIntoHost(winnerUrl, teamCode)` (loser runs this)
+
+**Implementation note:** The orchestration lives in `public/js/lan-host-consolidation.mjs`
+(dependency-injected `runConsolidateIntoHost`) so `node --test` can assert push-before-handoff
+ordering without importing browser-coupled `transport.mjs` deps. `transport.mjs` keeps the
+public `consolidateIntoHost` / `pushBundleToHostUrl` names as thin wiring into room/push/LAN
+client.
 
 Reuses the existing surrogate-promotion machinery (`livesync:host-handoff`,
 `pushRoomSyncBundleToHost`) so no new WS message type or merge code is introduced.
@@ -205,7 +213,8 @@ legitimate suplente case.
 
 Keep each touched file within Tier-1 budgets (≤15 cyclomatic, ≤80 lines/fn, ≤600
 lines/file). Election/tiebreak as small pure functions in `lan-host-rank.mjs`;
-consolidation as one focused function in `transport.mjs`. Logic moves **out** of
+consolidation orchestration in `lan-host-consolidation.mjs` (DI), thin wiring in
+`transport.mjs`. Logic moves **out** of
 `panel.mjs` rather than growing it. No new static boot imports — discovery and
 consolidation use existing modules or dynamic `import()` where already established.
 

@@ -326,7 +326,7 @@ async function applyClinicalDbUnlockCompletion(opts) {
   }
   try {
     var settingsMod = await import("/js/chunks/clinical-settings-GV5OIR5F.js");
-    var runtime = await import("/js/chunks/clinical-access-runtime-SZLZP5IJ.js");
+    var runtime = await import("/js/chunks/clinical-access-runtime-C7JBQ4YL.js");
     var settings = settingsMod.readRpcSettings();
     var clientId = settingsMod.resolveClinicalClientId(settings);
     if (runtime && typeof runtime.initClinicalAccessRuntime === "function") {
@@ -337,7 +337,7 @@ async function applyClinicalDbUnlockCompletion(opts) {
   }
   if (refreshOnboarding) {
     try {
-      var onboardingMain = await import("/js/chunks/clinical-onboarding-main-ZW3T4CMU.js");
+      var onboardingMain = await import("/js/chunks/clinical-onboarding-main-KCSVJBSZ.js");
       if (onboardingMain && typeof onboardingMain.refreshMainClinicalOnboardingIfNeeded === "function") {
         await onboardingMain.refreshMainClinicalOnboardingIfNeeded();
       }
@@ -681,4 +681,4 @@ export {
   dbUnlockWindowHandlers,
   __test
 };
-//# sourceMappingURL=/js/chunks/chunk-HZT4KOGH.js.map
+//# sourceMappingURL=/js/chunks/chunk-VYRFEJ6J.js.map

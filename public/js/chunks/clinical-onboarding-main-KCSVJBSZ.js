@@ -4,13 +4,13 @@ import {
 import {
   needsClinicalOnboarding,
   renderOnboardingPanelInto
-} from "/js/chunks/chunk-ZIN5WNGV.js";
+} from "/js/chunks/chunk-4U5R3HK2.js";
 import {
   ensureClinicalPanelSession
-} from "/js/chunks/chunk-IBHESUIK.js";
+} from "/js/chunks/chunk-UXZ2F33B.js";
 import {
   isSqlcipherNativeReady
-} from "/js/chunks/chunk-HZT4KOGH.js";
+} from "/js/chunks/chunk-VYRFEJ6J.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -39,7 +39,7 @@ function hideMainClinicalOnboarding() {
   document.documentElement.classList.remove(CLINICAL_ONBOARDING_ACTIVE_CLASS);
   const host = getClinicalOnboardingMainHost();
   if (host) host.remove();
-  void import("/js/chunks/clinical-rotation-entry-TE24ZBFH.js").then((m) => m.syncClinicalRotationEntryChrome());
+  void import("/js/chunks/clinical-rotation-entry-FR6NZZJH.js").then((m) => m.syncClinicalRotationEntryChrome());
 }
 async function describeOnboardingSessionBlock() {
   if (typeof window === "undefined") {
@@ -96,7 +96,7 @@ async function showMainClinicalOnboarding() {
   try {
     await renderOnboardingPanelInto(card || host);
     prefillRegistrationFromUrlParams();
-    const rot = await import("/js/chunks/clinical-rotation-entry-TE24ZBFH.js");
+    const rot = await import("/js/chunks/clinical-rotation-entry-FR6NZZJH.js");
     rot.syncClinicalRotationEntryChrome();
   } catch (err) {
     host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : "Error al cargar.")}</p></div>`;
@@ -117,4 +117,4 @@ export {
   refreshMainClinicalOnboardingIfNeeded,
   showMainClinicalOnboarding
 };
-//# sourceMappingURL=/js/chunks/clinical-onboarding-main-ZW3T4CMU.js.map
+//# sourceMappingURL=/js/chunks/clinical-onboarding-main-KCSVJBSZ.js.map

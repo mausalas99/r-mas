@@ -9,14 +9,34 @@ import {
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
 import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
+import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
+import {
+  evaluatePeerHostAction,
+  fetchLanHostRank,
+  getLocalLanHostMeta,
+  pickPreferredLanPeerHost,
+  resolveHostElection,
+  syncLanHostClinicalMetaToDisk,
+} from '../../lan-host-rank-policy.mjs';
+import {
+  pushBundleToHostUrl as pushBundleToHostUrlCore,
+  runConsolidateIntoHost,
+} from '../../lan-host-consolidation.mjs';
+import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import {
   lanClient,
   clearActiveLiveSyncRoom,
+  getLanClientId,
 } from './runtime.mjs';
+import { listLivePeerHostUrls } from '../../lan-surrogate-host.mjs';
 import { clearRoomMembership, getRoomMembership } from '../../live-sync-membership.mjs';
 
 const LAN_MIGRATION_NOTICE_KEY = 'rplus.lan.migrationNoticeShown';
+const LAN_CONSOLIDATE_COOLDOWN_MS = 10 * 60 * 1000;
 let _lastLanPairing = null;
+/** @type {Map<string, number>} */
+const _lanDeclinedConsolidateUntil = new Map();
+let _lanSplitBrainWarned = false;
 
 /** @type {{ runtime?: object, renderLanPanel?: () => void, joinLanRoom?: Function, resolveAutoJoinRoomId?: Function, openConnectionDropdown?: Function, bootLanRoomMembership?: Function } | null} */
 let transportDeps = null;
@@ -369,12 +389,136 @@ export async function ensureLanElectronHostReady(opts) {
   return true;
 }
 
+export async function pushBundleToHostUrl(winnerUrl, teamCode, roomId, envelope) {
+  return pushBundleToHostUrlCore(winnerUrl, teamCode, roomId, envelope);
+}
+
+export async function consolidateIntoHost(winnerUrl, teamCode, opts) {
+  opts = opts || {};
+  const room = await import('./room.mjs');
+  const roomId =
+    typeof room.getActiveLiveSyncRoomId === 'function' ? room.getActiveLiveSyncRoomId() : '';
+  return runConsolidateIntoHost(
+    { winnerUrl, teamCode, requireConfirm: !!opts.requireConfirm },
+    {
+      getRoomId: () => roomId,
+      buildBundle: (rid) => room.buildLiveSyncBundleEnvelope(rid),
+      pushBundle: (url, code, rid, env) => pushBundleToHostUrl(url, code, rid, env),
+      broadcastHandoff: async (url) => {
+        const handoff = await room.enrichLiveSyncHelloPayload(
+          room.buildLiveSyncHelloPayload(roomId)
+        );
+        handoff.type = 'livesync:host-handoff';
+        handoff.newHostUrl = url;
+        handoff.reason = 'consolidate-rank';
+        lanClient.sendLive(handoff);
+      },
+      switchToClient: async (url, code) => {
+        applyLanHostUrlSwitch(url, code, { skipRememberPrimary: false });
+        if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
+        persistLanClientConfig(url, code);
+        rememberPrimaryHostUrl(url);
+        await room.tryReconnectLanToHostUrl?.(url, code);
+      },
+      confirmYield: () => {
+        if (typeof confirm !== 'function') return true;
+        const yes = confirm(
+          opts.confirmMessage ||
+            'Un anfitrión de mayor rango ya está activo. ¿Combinar y conectar como cliente?'
+        );
+        if (!yes) {
+          _lanDeclinedConsolidateUntil.set(
+            normalizeLanHostBase(winnerUrl),
+            Date.now() + LAN_CONSOLIDATE_COOLDOWN_MS
+          );
+        }
+        return yes;
+      },
+      showToast: (msg, kind) => runtime().showToast(msg, kind),
+    }
+  );
+}
+
+function lanConsolidateCooldownActive(peerUrl) {
+  const until = _lanDeclinedConsolidateUntil.get(peerUrl) || 0;
+  return Date.now() < until;
+}
+
+/**
+ * Apply election matrix for one discovered peer host URL.
+ * @returns {Promise<boolean>} true if role/connection changed
+ */
+export async function reactToDiscoveredLanHost(peerUrl, teamCode, opts) {
+  opts = opts || {};
+  const url = normalizeLanHostBase(peerUrl);
+  const code = String(teamCode || '').trim();
+  if (!url || !code) return false;
+  if (getPinnedHostUrl()) return false;
+
+  const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
+  if (!ownUrl || lanHostBasesSameMachine(url, ownUrl)) return false;
+
+  const peer = await fetchLanHostRank(url, code);
+  if (!peer) return false;
+  const selfMeta = getLocalLanHostMeta();
+  const election = resolveHostElection(selfMeta, peer, { selfUrl: ownUrl, peerUrl: url });
+  const action = evaluatePeerHostAction(selfMeta, peer, election);
+
+  if (action === 'stay-warn') {
+    if (!_lanSplitBrainWarned) {
+      _lanSplitBrainWarned = true;
+      runtime().showToast(
+        'Otro servidor R+ activo en ' +
+          url +
+          '. Solo debe haber un anfitrión en el turno.',
+        'warning'
+      );
+    }
+    return false;
+  }
+  if (action === 'noop') return false;
+  if (action === 'silent-join') {
+    return joinRemoteLanHostAsClient(url, code, {
+      requireConfirm: false,
+      toastLabel: peer.rank || 'R4',
+    });
+  }
+  if (action === 'confirm-consolidate') {
+    if (lanConsolidateCooldownActive(url)) return false;
+    return consolidateIntoHost(url, code, {
+      requireConfirm: true,
+      confirmMessage:
+        'Un anfitrión de mayor rango (' +
+        (peer.rank || 'R4') +
+        ') está en ' +
+        url +
+        '. ¿Combinar servidores y conectar como cliente?',
+    });
+  }
+  return false;
+}
+
 /** Sin red o host remoto caído: usar el servidor embebido de esta Mac. */
 export async function promoteThisMacToLanHost(opts) {
   opts = opts || {};
   if (!isLanElectronDesktop()) {
     runtime().showToast('Solo disponible en la app de escritorio.', 'info');
     return false;
+  }
+  if (!opts.skipOtherHostCheck) {
+    const teamCode = getLanTeamCodeFromConfig();
+    const ownUrl = (await resolveLanShareBaseUrl()) || '';
+    if (teamCode && ownUrl) {
+      const peers = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+      if (peers.length) {
+        const peer = peers[0];
+        const msg =
+          'Ya hay un servidor R+ activo en ' +
+          peer +
+          '. ¿Activar otro servidor en esta Mac de todos modos?';
+        if (typeof confirm === 'function' && !confirm(msg)) return false;
+      }
+    }
   }
   var wasRemoteClient = isLanRemoteJoinMode();
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
@@ -395,8 +539,95 @@ export async function promoteThisMacToLanHost(opts) {
   return ok;
 }
 
+/**
+ * Descubre anfitrión de mayor prioridad (R4 / admin) y conecta como cliente.
+ * @param {{ boot?: boolean }} [opts]
+ */
+export { syncLanHostClinicalMetaToDisk } from '../../lan-host-rank-policy.mjs';
+
+export async function tryAutoJoinPreferredLanHost(opts) {
+  opts = opts || {};
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  const teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return false;
+
+  await syncLanHostClinicalMetaToDisk();
+
+  if (getPinnedHostUrl()) return false;
+
+  const ownUrl = (await resolveLanShareBaseUrl()) || '';
+  let peers = listLivePeerHostUrls(getLanClientId());
+  const subnetPeers = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+  const seen = new Set();
+  peers = [...peers, ...subnetPeers].filter((u) => {
+    const n = normalizeLanHostBase(u);
+    if (!n || seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  });
+  if (!peers.length) return false;
+
+  for (const peerUrl of peers) {
+    const reacted = await reactToDiscoveredLanHost(peerUrl, teamCode);
+    if (reacted) {
+      if (!opts.boot) deps().renderLanPanel?.();
+      return true;
+    }
+  }
+
+  const pick = await pickPreferredLanPeerHost(peers, teamCode, ownUrl);
+  if (!pick || !pick.url) return false;
+
+  const joined = await joinRemoteLanHostAsClient(pick.url, teamCode, {
+    requireConfirm: false,
+    toastLabel: pick.peer?.rank || 'R4',
+  });
+  if (joined && !opts.boot) {
+    deps().renderLanPanel?.();
+  }
+  return joined;
+}
+
+/** Cambia a cliente y apunta al anfitrión remoto. */
+export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
+  opts = opts || {};
+  const url = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!url) return false;
+  const ownUrl = (await resolveLanShareBaseUrl()) || '';
+  if (ownUrl && url === ownUrl.replace(/\/+$/, '')) return false;
+
+  if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
+    storage.saveLanUiRole('client');
+  }
+  const switched = maybeApplyLanHostUrlSwitch(url, teamCode, {
+    skipRememberPrimary: true,
+    requireConfirm: !!opts.requireConfirm,
+    confirmMessage: opts.confirmMessage,
+  });
+  if (!switched) return false;
+  try {
+    const room = await import('./room.mjs');
+    if (typeof room.tryReconnectLanToHostUrl === 'function') {
+      await room.tryReconnectLanToHostUrl(url, teamCode);
+    }
+  } catch (_e) {}
+  const label = String(opts.toastLabel || '').trim();
+  runtime().showToast(
+    label
+      ? 'Conectado al anfitrión del turno (' + label + ').'
+      : 'Conectado al anfitrión del turno.',
+    'success'
+  );
+  return true;
+}
+
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  await syncLanHostClinicalMetaToDisk();
+  const joined = await tryAutoJoinPreferredLanHost({ boot: true });
+  if (joined) return;
   await ensureLanElectronHostReady();
 }
 

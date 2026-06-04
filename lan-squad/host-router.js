@@ -3,7 +3,7 @@ const express = require('express');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { validateHistoriaClinicaPut } = require('./historia-clinica-validate.js');
 
-function createLanRouter({ store, broadcast, resolver }) {
+function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
   const r = express.Router();
   const getState = () => store.getState();
 
@@ -23,6 +23,18 @@ function createLanRouter({ store, broadcast, resolver }) {
 
   r.get('/ping', (_req, res) => {
     res.json({ ok: true, lan: true });
+  });
+
+  r.get('/host-rank', (_req, res) => {
+    const meta =
+      typeof getHostClinicalMeta === 'function'
+        ? getHostClinicalMeta()
+        : { rank: 'R1', isProgramAdmin: false, startedAt: 0 };
+    res.json({
+      rank: String(meta.rank || 'R1').trim() || 'R1',
+      isProgramAdmin: !!meta.isProgramAdmin,
+      startedAt: Number(meta.startedAt) || 0,
+    });
   });
 
   r.get('/patients', (_req, res) => {

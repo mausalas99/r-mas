@@ -1,6 +1,6 @@
 import {
   closeSettingsDropdown
-} from "/js/chunks/chunk-24OPC5EO.js";
+} from "/js/chunks/chunk-SX62X4I5.js";
 
 // public/js/features/settings-help/help-content.mjs
 var HELP_ARTICLES = [
@@ -237,4 +237,4 @@ export {
   onHelpSearchKeydown,
   onHelpListKeydown
 };
-//# sourceMappingURL=/js/chunks/chunk-DR5F6E2O.js.map
+//# sourceMappingURL=/js/chunks/chunk-IR57762P.js.map
