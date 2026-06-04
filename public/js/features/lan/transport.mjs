@@ -366,7 +366,25 @@ export async function ensureLanElectronHostReady(opts) {
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
+  void advertiseHostClinicalRank();
   return true;
+}
+
+/** Publica rango clínico en el servidor embebido (auto-discovery / host-rank). */
+export async function advertiseHostClinicalRank() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  var rank = 'R1';
+  try {
+    var s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    rank = String(s.clinicalRank || 'R1').trim() || 'R1';
+  } catch (_e) {}
+  try {
+    await lanFetchAuthed('/api/lan/v1/host-advertise', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rank: rank }),
+    });
+  } catch (_e2) {}
 }
 
 /** Sin red o host remoto caído: usar el servidor embebido de esta Mac. */
@@ -375,6 +393,26 @@ export async function promoteThisMacToLanHost(opts) {
   if (!isLanElectronDesktop()) {
     runtime().showToast('Solo disponible en la app de escritorio.', 'info');
     return false;
+  }
+  if (!opts.skipOtherHostCheck) {
+    var teamCode = await resolveHostBearerToken();
+    if (teamCode) {
+      try {
+        var { discoverOtherLanHostOnSubnet } = await import('../../lan-host-discovery.mjs');
+        var localUrl = await resolveLanShareBaseUrl();
+        var other = await discoverOtherLanHostOnSubnet({
+          teamCode: teamCode,
+          localBaseUrl: localUrl || lanClient.baseUrl(),
+        });
+        if (other) {
+          var warnMsg =
+            'Ya hay un servidor R+ activo en ' +
+            other +
+            '. Si tú eres el anfitrión del turno, pide al equipo que se unan con tu enlace. ¿Crear otro servidor en esta Mac?';
+          if (typeof confirm === 'function' && !confirm(warnMsg)) return false;
+        }
+      } catch (_disc) {}
+    }
   }
   var wasRemoteClient = isLanRemoteJoinMode();
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
@@ -397,6 +435,31 @@ export async function promoteThisMacToLanHost(opts) {
 
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  var teamCode = await resolveHostBearerToken();
+  if (teamCode && !getPinnedHostUrl()) {
+    try {
+      var discovery = await import('../../lan-host-discovery.mjs');
+      var other = await discovery.discoverOtherLanHostOnSubnet({
+        teamCode: teamCode,
+        localBaseUrl: '',
+      });
+      if (other) {
+        var bootMsg =
+          'Ya hay un servidor R+ del turno en ' +
+          other +
+          '. ¿Conectarte a esa Mac como cliente? (Recomendado si no eres el anfitrión.)';
+        if (typeof confirm === 'function' && confirm(bootMsg)) {
+          if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
+          persistLanClientConfig(other, teamCode);
+          rememberPrimaryHostUrl(other);
+          try {
+            lanClient.connectSyncChannel();
+          } catch (_e) {}
+          return;
+        }
+      }
+    } catch (_disc) {}
+  }
   await ensureLanElectronHostReady();
 }
 

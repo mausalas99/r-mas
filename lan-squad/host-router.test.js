@@ -35,6 +35,33 @@ async function tearDownLanTest({ server, dir, store }) {
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 });
 }
 
+test('LAN GET /host-rank returns advertised rank after POST /host-advertise', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-rank-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const base = `http://127.0.0.1:${port}/api/lan/v1`;
+    const headers = { ...bearerHeaders(code), 'Content-Type': 'application/json' };
+    const post = await fetch(`${base}/host-advertise`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ rank: 'R4' }),
+    });
+    assert.strictEqual(post.status, 200);
+    const get = await fetch(`${base}/host-rank`, { headers: bearerHeaders(code) });
+    assert.strictEqual(get.status, 200);
+    const body = await get.json();
+    assert.strictEqual(body.rank, 'R4');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('LAN /ping requiere Authorization Bearer válido', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ping-'));
   const statePath = path.join(dir, 'state.json');

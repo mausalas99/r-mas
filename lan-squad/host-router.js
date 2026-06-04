@@ -6,6 +6,8 @@ const { validateHistoriaClinicaPut } = require('./historia-clinica-validate.js')
 function createLanRouter({ store, broadcast, resolver }) {
   const r = express.Router();
   const getState = () => store.getState();
+  /** @type {string} Clinical rank advertised by this host process (renderer POST). */
+  let advertisedClinicalRank = 'R1';
 
   /** Notify all peers on the live room WS channel (6.6.1 HTTP-primary push). */
   function broadcastLiveRevision(roomId, revision, clientId) {
@@ -23,6 +25,16 @@ function createLanRouter({ store, broadcast, resolver }) {
 
   r.get('/ping', (_req, res) => {
     res.json({ ok: true, lan: true });
+  });
+
+  r.get('/host-rank', (_req, res) => {
+    res.json({ rank: advertisedClinicalRank || 'R1' });
+  });
+
+  r.post('/host-advertise', express.json({ limit: '4kb' }), (req, res) => {
+    const rank = String((req.body && req.body.rank) || '').trim();
+    if (rank) advertisedClinicalRank = rank;
+    res.json({ ok: true, rank: advertisedClinicalRank || 'R1' });
   });
 
   r.get('/patients', (_req, res) => {

@@ -29,6 +29,10 @@ import {
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
 import {
+  discoverOtherLanHostOnSubnet,
+  lanHostBasesSameMachine,
+} from '../../lan-host-discovery.mjs';
+import {
   lanClient,
   activeLiveSyncRoomId,
 } from './runtime.mjs';
@@ -76,6 +80,9 @@ var _lanPanelRenderChain = Promise.resolve();
 var _lanPanelDelegationWired = false;
 var _lanScanTimer = null;
 var LAN_SCAN_INTERVAL_MS = 5000;
+var _lastSubnetLanScanAt = 0;
+var SUBNET_LAN_SCAN_MIN_MS = 25000;
+var _lanOtherHostWarnedUrls = new Set();
 var _lanLastPingAt = null;
 var _lanLastPingStatus = 0;
 var LAN_DISCONNECT_BANNER_MSG =
@@ -434,11 +441,12 @@ function appendLanJoinOtherMacSection(root) {
   var details = document.createElement('details');
   details.className = 'lan-connect-other-mac';
   details.style.marginBottom = '12px';
+  details.open = true;
   var sum = document.createElement('summary');
   sum.style.cursor = 'pointer';
   sum.style.fontSize = '12px';
   sum.style.color = 'var(--text-muted)';
-  sum.textContent = 'Unirme a la sala de otra computadora (enlace de invitación)';
+  sum.textContent = 'Unirme al anfitrión de otra Mac (enlace de invitación)';
   details.appendChild(sum);
   var inner = document.createElement('div');
   inner.style.marginTop = '8px';
@@ -533,6 +541,32 @@ function isLanHostActive() {
   return !!lanClient.connected;
 }
 
+function lanHubStatusCopy() {
+  if (!lanClient.connected) {
+    return {
+      connected: false,
+      line: 'Sin red — buscando anfitrión en la Wi‑Fi del hospital…',
+      hint: 'Si otra Mac ya abrió ⇄, pide el enlace de invitación en lugar de activar otro servidor aquí.',
+    };
+  }
+  if (isLanRemoteJoinMode()) {
+    var remoteUrl = String(lanClient.baseUrl() || '').replace(/\/+$/, '');
+    return {
+      connected: true,
+      line: 'Conectado al anfitrión del turno',
+      hint: remoteUrl ? 'Servidor: ' + remoteUrl : '',
+    };
+  }
+  return {
+    connected: true,
+    line: activeLiveSyncRoomId
+      ? 'Esta Mac es el servidor del turno'
+      : 'Servidor local activo — comparte el enlace de invitación',
+    hint:
+      'El equipo debe unirse con tu enlace (⇄). No usen «Activar servidor» en otra Mac salvo suplente.',
+  };
+}
+
 /** Host Mac can mint /join tickets once LAN REST config exists (WS may still be connecting). */
 function canOfferMobileLanShare() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
@@ -625,9 +659,11 @@ async function renderLanPanelOnce() {
 
   var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
 
-  var connected = isLanHostActive();
+  var hubStatus = lanHubStatusCopy();
   appendLanHubStatusCard(root, {
-    connected: connected,
+    connected: hubStatus.connected,
+    statusLine: hubStatus.line,
+    statusHint: hubStatus.hint,
     isElectronDesktop: isLanElectronDesktop(),
     onBecomeHost: function () {
       void promoteThisMacToLanHost();
@@ -1209,6 +1245,75 @@ export function stopLanAutoDiscovery() {
   }
 }
 
+async function fetchPeerClinicalRank(peerUrl, teamCode) {
+  try {
+    var resp = await fetch(peerUrl + '/api/lan/v1/host-rank', {
+      headers: { Authorization: 'Bearer ' + teamCode },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!resp.ok) return '';
+    var data = await resp.json();
+    return String(data.rank || '').trim();
+  } catch (_e) {
+    return '';
+  }
+}
+
+async function considerDiscoveredLanHost(peerUrl, teamCode, currentRank) {
+  var url = String(peerUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!url || !teamCode) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (url === currentUrl || lanHostBasesSameMachine(url, currentUrl)) return false;
+
+  var peerRank = await fetchPeerClinicalRank(url, teamCode);
+  var pinnedScan = getPinnedHostUrl();
+
+  if (shouldSupersede(peerRank, currentRank)) {
+    if (pinnedScan && pinnedScan !== url) {
+      runtime().showToast(
+        'Anfitrión fijado: ' + pinnedScan + '. No se cambió a ' + url + ' (' + peerRank + ').',
+        'info'
+      );
+      return false;
+    }
+    var supersedeMsg =
+      'Un anfitrión de mayor rango (' +
+      peerRank +
+      ') está en ' +
+      url +
+      '. ¿Conectar como cliente?';
+    if (
+      maybeApplyLanHostUrlSwitch(url, teamCode, {
+        skipRememberPrimary: true,
+        requireConfirm: true,
+        confirmMessage: supersedeMsg,
+      })
+    ) {
+      runtime().showToast('Conectado al anfitrión de mayor rango (' + peerRank + ').', 'info');
+      renderLanPanel();
+      return true;
+    }
+    return false;
+  }
+
+  if (!_lanOtherHostWarnedUrls.has(url)) {
+    _lanOtherHostWarnedUrls.add(url);
+    runtime().showToast(
+      'Otro servidor R+ activo en ' +
+        url +
+        (peerRank ? ' (' + peerRank + ')' : '') +
+        '. Solo debe haber un anfitrión: pide al equipo tu enlace de ⇄ o únete al otro con «Unirme a otra computadora».',
+      'warn'
+    );
+  }
+  return false;
+}
+
 async function scanLanHosts() {
   if (!isLanElectronDesktop()) return;
   if (isLanRemoteJoinMode()) return;
@@ -1220,54 +1325,28 @@ async function scanLanHosts() {
     var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
     var peers = typeof listLivePeerHostUrls === 'function' ? listLivePeerHostUrls(clientId) : [];
     var currentRank = getClinicalRank();
+    var seen = new Set();
 
     for (var i = 0; i < peers.length; i += 1) {
       var peerUrl = peers[i];
-      if (!peerUrl) continue;
+      if (!peerUrl || seen.has(peerUrl)) continue;
+      seen.add(peerUrl);
       var alive = typeof pingLanHostUrl === 'function' ?
         await pingLanHostUrl(peerUrl, teamCode) : false;
       if (!alive) continue;
+      if (await considerDiscoveredLanHost(peerUrl, teamCode, currentRank)) return;
+    }
 
-      try {
-        var resp = await fetch(peerUrl + '/api/lan/v1/host-rank', {
-          headers: { 'Authorization': 'Bearer ' + teamCode },
-          signal: AbortSignal.timeout(3000),
-        });
-        if (resp.ok) {
-          var data = await resp.json();
-          var peerRank = String(data.rank || '').trim();
-          if (shouldSupersede(peerRank, currentRank)) {
-            if (isLanElectronDesktop() && typeof maybeApplyLanHostUrlSwitch === 'function') {
-              var pinnedScan = getPinnedHostUrl();
-              if (pinnedScan) {
-                runtime().showToast(
-                  'Anfitrión fijado: ' + pinnedScan + '. No se cambió a ' + peerUrl + ' (' + peerRank + ').',
-                  'info'
-                );
-                continue;
-              }
-              var supersedeMsg =
-                'Un host de mayor rango (' +
-                peerRank +
-                ') está en ' +
-                peerUrl +
-                '. ¿Conectar como cliente?';
-              if (
-                maybeApplyLanHostUrlSwitch(peerUrl, teamCode, {
-                  skipRememberPrimary: true,
-                  requireConfirm: true,
-                  confirmMessage: supersedeMsg,
-                })
-              ) {
-                runtime().showToast('Conectado al anfitrión de mayor rango (' + peerRank + ').', 'info');
-                renderLanPanel();
-                return;
-              }
-            }
-          }
-        }
-      } catch (_peerErr) {
-        // peer not reachable, skip
+    var now = Date.now();
+    if (now - _lastSubnetLanScanAt >= SUBNET_LAN_SCAN_MIN_MS) {
+      _lastSubnetLanScanAt = now;
+      var localUrl = String(lanClient.baseUrl() || '').trim();
+      var subnetHit = await discoverOtherLanHostOnSubnet({
+        teamCode: teamCode,
+        localBaseUrl: localUrl,
+      });
+      if (subnetHit && !seen.has(subnetHit)) {
+        await considerDiscoveredLanHost(subnetHit, teamCode, currentRank);
       }
     }
   } catch (_scanErr) {

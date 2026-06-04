@@ -4,25 +4,43 @@
 
 /**
  * @param {HTMLElement} root
- * @param {{ connected: boolean, isElectronDesktop: boolean, onBecomeHost?: () => void }} opts
+ * @param {{
+ *   connected: boolean,
+ *   isElectronDesktop: boolean,
+ *   statusLine?: string,
+ *   statusHint?: string,
+ *   onBecomeHost?: () => void,
+ * }} opts
  */
 export function appendLanHubStatusCard(root, opts) {
   const statusCard = document.createElement('div');
   statusCard.className = 'lan-connect-card lan-hub-status-card';
   const connected = !!opts.connected;
+  const defaultLine = connected
+    ? 'Conectado a la red del hospital'
+    : 'Sin red \u2014 buscando\u2026';
+  const line = String(opts.statusLine || defaultLine).trim() || defaultLine;
   statusCard.innerHTML =
     '<div class="lan-hub-status-line">' +
     (connected
-      ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> Conectado a la red del hospital'
-      : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> Sin red \u2014 buscando\u2026') +
+      ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> '
+      : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> ') +
+    line +
     '</div>';
+  if (opts.statusHint) {
+    const hint = document.createElement('p');
+    hint.className = 'lan-connect-card-hint';
+    hint.style.marginTop = '6px';
+    hint.textContent = String(opts.statusHint);
+    statusCard.appendChild(hint);
+  }
   if (!connected && opts.isElectronDesktop) {
     const becomeHostBtn = document.createElement('button');
     becomeHostBtn.type = 'button';
     becomeHostBtn.className = 'btn-lan-primary';
     becomeHostBtn.style.marginTop = '8px';
     becomeHostBtn.style.width = '100%';
-    becomeHostBtn.textContent = 'Convertirse en host';
+    becomeHostBtn.textContent = 'Activar servidor en esta Mac';
     becomeHostBtn.onclick = function () {
       if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
     };
