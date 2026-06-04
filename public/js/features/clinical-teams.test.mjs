@@ -11,6 +11,8 @@ const clinicalTeamsSrc = [
   'teams-roster.mjs',
   'teams-roster-render.mjs',
   'teams-roster-lan.mjs',
+  'teams-roster-interactions.mjs',
+  'teams-roster-modal-chrome.mjs',
   'teams-invite.mjs',
   'teams-guardia-bridge.mjs',
   'index.mjs',
