@@ -2,6 +2,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   recordLanSyncError,
+  recordClinicalOpsTrace,
+  clearClinicalOpsTrace,
+  getClinicalOpsTrace,
   getLanSyncDiagnostics,
   formatDiagnosticsReport,
   redactLanSecrets,
@@ -36,6 +39,19 @@ describe('lan-sync-diagnostics', () => {
     assert.equal(diag.lastErrors.length, 5);
     assert.equal(diag.lastErrors[0].message, 'm6');
     assert.equal(diag.lastErrors[4].message, 'm2');
+  });
+
+  it('recordClinicalOpsTrace appears in diagnostics report', () => {
+    clearClinicalOpsTrace();
+    recordClinicalOpsTrace('export', { usersExported: 3, teamMembership: 5 });
+    recordClinicalOpsTrace('merge', { ok: true, incomingUsers: 2 });
+    assert.equal(getClinicalOpsTrace().length, 2);
+    const diag = getLanSyncDiagnostics({ phase: 'live' });
+    assert.equal(diag.clinicalOpsTrace.length, 2);
+    assert.equal(diag.clinicalOpsTrace[0].boundary, 'merge');
+    const raw = formatDiagnosticsReport(diag);
+    assert.match(raw, /clinicalOpsTrace/);
+    assert.match(raw, /usersExported/);
   });
 
   it('formatDiagnosticsReport redacts Bearer and teamCode', () => {

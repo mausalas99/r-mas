@@ -18,7 +18,7 @@ import {
   isClinicalOpsLanAvailable,
 } from '../../clinical-ops-lan.mjs';
 import { RoomSyncPhase, setRoomSyncPhase } from '../../lan-sync-state.mjs';
-import { recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
+import { recordClinicalOpsTrace, recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
 import { notifyLwwOverwrite } from '../../lan-lww-toast.mjs';
 import {
   pauseBundlePushForRoom,
@@ -50,15 +50,58 @@ import {
 /** @type {Record<string, unknown> | null} */
 let pushBridge = null;
 
+/** @type {Promise<void> | null} */
+var pushBridgeWirePromise = null;
+
+/** Literal key — esbuild may run wireLanSyncBridges() before a module-level const here is initialized. */
+function lanSyncPushBridgeGlobal() {
+  return globalThis['__LAN_SYNC_PUSH_BRIDGE__'];
+}
+
+function setLanSyncPushBridgeGlobal(value) {
+  globalThis['__LAN_SYNC_PUSH_BRIDGE__'] = value;
+}
+
 /**
  * Wire lan-sync feature callbacks (avoids circular import with features/lan-sync.mjs).
  * @param {object} deps
  */
 export function registerLanSyncPushBridge(deps) {
   pushBridge = deps && typeof deps === 'object' ? deps : null;
+  if (pushBridge && typeof globalThis !== 'undefined') {
+    setLanSyncPushBridgeGlobal(pushBridge);
+  }
+}
+
+/**
+ * Ensures orchestrator boot wiring ran (esbuild may load push/room before registerLanSyncPushBridge).
+ * @returns {Promise<void>}
+ */
+export function ensureLanSyncPushBridgeWired() {
+  if (pushBridge) return Promise.resolve();
+  if (typeof globalThis !== 'undefined') {
+    var cached = lanSyncPushBridgeGlobal();
+    if (cached && typeof cached === 'object') {
+      pushBridge = cached;
+      return Promise.resolve();
+    }
+  }
+  if (!pushBridgeWirePromise) {
+    pushBridgeWirePromise = import('./orchestrator.mjs').then(function () {
+      if (!pushBridge && typeof globalThis !== 'undefined') {
+        var g = lanSyncPushBridgeGlobal();
+        if (g && typeof g === 'object') pushBridge = g;
+      }
+    });
+  }
+  return pushBridgeWirePromise;
 }
 
 function bridge() {
+  if (!pushBridge && typeof globalThis !== 'undefined') {
+    var cached = lanSyncPushBridgeGlobal();
+    if (cached && typeof cached === 'object') pushBridge = cached;
+  }
   if (!pushBridge) {
     throw new Error('lan-sync-push: registerLanSyncPushBridge() not called');
   }
@@ -344,6 +387,12 @@ function pushClinicalOpsPayloadToHost(roomId, payload) {
 }
 
 export function pushRoomSyncBundleToHost(roomId, envelope) {
+  return ensureLanSyncPushBridgeWired().then(function () {
+    return pushRoomSyncBundleToHostBody(roomId, envelope);
+  });
+}
+
+function pushRoomSyncBundleToHostBody(roomId, envelope) {
   var b = bridge();
   if (typeof b.isLanSessionConfiguredForRest !== 'function' || !b.isLanSessionConfiguredForRest()) {
     return Promise.resolve(false);
@@ -406,6 +455,12 @@ export function pushRoomSyncBundleToHost(roomId, envelope) {
 }
 
 export function flushLiveSyncOutbox(roomId) {
+  return ensureLanSyncPushBridgeWired().then(function () {
+    return flushLiveSyncOutboxBody(roomId);
+  });
+}
+
+function flushLiveSyncOutboxBody(roomId) {
   var b = bridge();
   var rid = String(roomId || '').trim();
   if (!rid || typeof b.isLanSessionConfiguredForRest !== 'function' || !b.isLanSessionConfiguredForRest()) {
@@ -567,6 +622,7 @@ export function scheduleLiveSyncPush() {
       var roomId = ensureEffectiveLiveSyncRoomId();
       if (!roomId) return;
       void (async function () {
+        await ensureLanSyncPushBridgeWired();
         var b = bridge();
         var bundle = await b.buildLiveSyncBundleEnvelope(roomId);
         b.saveLocalRoomSnapshot(roomId);
@@ -626,6 +682,7 @@ export async function pushClinicalOpsLanNow(opts) {
  * @param {{ requireMembership?: boolean }} [opts]
  */
 async function pushClinicalOpsLanNowBody(opts) {
+  await ensureLanSyncPushBridgeWired();
   if (isPitchPatientIsolationActive()) return lanPushResult(false, 'PITCH_DEMO');
   if (!isClinicalOpsLanAvailable()) return lanPushResult(false, 'NO_CLINICAL_OPS');
 
@@ -635,6 +692,7 @@ async function pushClinicalOpsLanNowBody(opts) {
 
   var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) {
+    recordClinicalOpsTrace('push', { code: 'NO_ROOM', usersExported: 0 });
     return lanPushResult(false, 'NO_ROOM');
   }
   var b = bridge();
@@ -663,6 +721,14 @@ async function pushClinicalOpsLanNowBody(opts) {
   b.saveLocalRoomSnapshot(roomId);
   if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
 
+  recordClinicalOpsTrace('push', {
+    roomId,
+    code: okHttp || pushedLive ? 'ok' : conflictHandled ? 'CONFLICT_RESOLVED' : 'QUEUED',
+    usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+    http: !!okHttp,
+    live: pushedLive,
+  });
+
   if (okHttp || pushedLive) {
     return lanPushResult(true, undefined, { http: !!okHttp, live: pushedLive });
   }
@@ -680,16 +746,33 @@ async function pushClinicalOpsLanNowBody(opts) {
   return lanPushResult(true, 'QUEUED', { outbox: true });
 }
 
+function finishReconcilePhase(rid, b) {
+  if (!rid) return;
+  if (b && typeof b.applyRoomSyncPhaseAfterReconcile === 'function') {
+    b.applyRoomSyncPhaseAfterReconcile(rid);
+    if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
+    return;
+  }
+  void import('./room.mjs').then(function (mod) {
+    if (typeof mod.applyRoomSyncPhaseAfterReconcile === 'function') {
+      mod.applyRoomSyncPhaseAfterReconcile(rid);
+    }
+    if (typeof mod.syncLiveSyncStatusChrome === 'function') mod.syncLiveSyncStatusChrome();
+  });
+}
+
 export async function reconcileLiveSyncRoom(roomId) {
-  var b = bridge();
+  await ensureLanSyncPushBridgeWired();
   var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || '').trim();
   if (!rid) return false;
   if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
-  if (String(activeLiveSyncRoomId || '').trim() === rid) {
-    setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
-    if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
-  }
+  var b;
   try {
+    b = bridge();
+    if (String(activeLiveSyncRoomId || '').trim() === rid) {
+      setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
+      if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
+    }
     if (isClinicalOpsLanAvailable()) {
       await prepareClinicalOpsForLanSync();
     }
@@ -727,10 +810,14 @@ export async function reconcileLiveSyncRoom(roomId) {
       b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
     }
     return flushLiveSyncOutbox(rid);
+  } catch (err) {
+    recordLanSyncError({
+      op: 'reconcile',
+      code: 'RECONCILE',
+      message: err && err.message ? err.message : 'reconcile failed',
+    });
+    return false;
   } finally {
-    if (typeof b.applyRoomSyncPhaseAfterReconcile === 'function') {
-      b.applyRoomSyncPhaseAfterReconcile(rid);
-    }
-    if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
+    finishReconcilePhase(rid, b);
   }
 }

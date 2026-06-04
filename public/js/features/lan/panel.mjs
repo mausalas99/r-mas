@@ -62,7 +62,11 @@ import {
   leaveLiveSyncRoom,
   syncLiveSyncStatusChrome,
 } from './room.mjs';
-import { scheduleLiveSyncPush, flushLiveSyncOutbox } from './push.mjs';
+import {
+  scheduleLiveSyncPush,
+  flushLiveSyncOutbox,
+  pushClinicalOpsLanNow,
+} from './push.mjs';
 import { recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
 
 const LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
@@ -348,11 +352,7 @@ export function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalTeamsChangedLanWired) {
     document._rpcClinicalTeamsChangedLanWired = true;
     document.addEventListener('rpc-clinical-teams-changed', function () {
-      void import('./push.mjs')
-        .then(function (m) {
-          if (typeof m.pushClinicalOpsLanNow === 'function') return m.pushClinicalOpsLanNow();
-        })
-        .catch(function () {});
+      void pushClinicalOpsLanNow().catch(function () {});
       scheduleLiveSyncPush();
     });
   }
@@ -531,6 +531,30 @@ function isClinicalRegistered() {
 
 function isLanHostActive() {
   return !!lanClient.connected;
+}
+
+/** Host Mac can mint /join tickets once LAN REST config exists (WS may still be connecting). */
+function canOfferMobileLanShare() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  if (lanClient.connected) return true;
+  return isLanSessionConfiguredForRest();
+}
+
+function appendMobileLanShareCard(root) {
+  if (!root || !canOfferMobileLanShare()) return;
+  var mobileCard = document.createElement('div');
+  mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
+  mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
+  var mobileBtn = document.createElement('button');
+  mobileBtn.type = 'button';
+  mobileBtn.className = 'btn-lan-primary';
+  mobileBtn.style.width = '100%';
+  mobileBtn.textContent = 'Copiar enlace para iPad';
+  mobileBtn.onclick = function () {
+    void copyMobileLanLinkFromUi();
+  };
+  mobileCard.appendChild(mobileBtn);
+  root.appendChild(mobileCard);
 }
 
 function lanHostUrl() {
@@ -824,26 +848,7 @@ function buildR1Section(root) {
 
   appendLanHubGuardiaModeCard(root);
 
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement('div');
-    mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
-    var mobileBtn = document.createElement('button');
-    mobileBtn.type = 'button';
-    mobileBtn.className = 'btn-lan-primary';
-    mobileBtn.style.width = '100%';
-    mobileBtn.textContent = 'Copiar enlace para iPad';
-    mobileBtn.onclick = function () {
-      void generateMobilePairingLink().then(function (url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime().showToast('Enlace móvil copiado. Pégalo en Safari en el iPad.', 'success');
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
+  appendMobileLanShareCard(root);
 }
 
 function buildR2Section(root) {
@@ -975,26 +980,7 @@ function buildR4Section(root) {
 
   root.appendChild(censusCard);
 
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement('div');
-    mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
-    var mobileBtn = document.createElement('button');
-    mobileBtn.type = 'button';
-    mobileBtn.className = 'btn-lan-primary';
-    mobileBtn.style.width = '100%';
-    mobileBtn.textContent = 'Copiar enlace para iPad';
-    mobileBtn.onclick = function () {
-      void generateMobilePairingLink().then(function (url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime().showToast('Enlace móvil copiado. Pégalo en Safari en el iPad.', 'success');
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
+  appendMobileLanShareCard(root);
 
   var rotCard = document.createElement('div');
   rotCard.className = 'lan-connect-card lan-hub-rotation-card';
@@ -1206,34 +1192,6 @@ export function setLanAutoJoinConfirmed(roomId) {
   try {
     sessionStorage.setItem(lanAutoJoinConfirmedSessionKey(roomId), '1');
   } catch (_e) {}
-}
-
-async function generateMobilePairingLink() {
-  var hostUrl = await resolveLanShareBaseUrl();
-  if (!hostUrl) {
-    runtime().showToast(
-      'No detectamos la IP de esta Mac en la red. Revisa Wi‑Fi y vuelve a copiar el enlace.',
-      'error'
-    );
-    return '';
-  }
-  try {
-    var share = await ensureLanPairingForShare({ forceNew: true });
-    return appendMobileLanJoinHintParams(
-      buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
-    );
-  } catch (_ticket) {
-    /* fallback: legacy query link with LAN IP */
-  }
-  if (!hostUrl || isLocalLoopbackLanUrl(hostUrl)) return '';
-  var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) return '';
-  var params = new URLSearchParams();
-  params.set('host', hostUrl.replace(/\/+$/, ''));
-  params.set('code', teamCode);
-  var roomId = resolveMobilePairingRoomId();
-  if (roomId) params.set('room', roomId);
-  return appendMobileLanJoinHintParams(hostUrl + '/?' + params.toString());
 }
 
 export function startLanAutoDiscovery() {
@@ -1448,7 +1406,9 @@ export async function copyLanInviteLinkFromUi(opts) {
     }
     return false;
   }
-  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
+  var link = appendMobileLanJoinHintParams(
+    buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
+  );
   var copied = await copyToClipboardSafe(link);
   if (copied) {
     var root = document.getElementById('lan-connection-panel-root');

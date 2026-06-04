@@ -92,6 +92,7 @@ import {
   leaveLiveSyncRoom,
   refreshLanClinicalDirectoryFromRoom,
   fetchAndApplyClinicalOpsFromHost,
+  waitForLiveChannelOpen,
 } from "./room.mjs";
 import { registerLanSyncTransportDeps } from "./transport.mjs";
 import { getSurrogateHostState } from "../../lan-surrogate-host.mjs";
@@ -111,6 +112,7 @@ import {
   createLanRoomFromUi,
   deleteLanRoom,
   copyLanInviteLinkFromUi,
+  copyMobileLanLinkFromUi,
   toggleConnectionDropdown,
   closeConnectionDropdown,
   openTeamSyncFromHeader,
@@ -319,14 +321,9 @@ function sendLiveSyncMutation(mutation) {
   try {
     lanClient.connectLiveChannel(rid);
   } catch (_eConn) {}
-  void import('./room.mjs')
-    .then(function (mod) {
-      if (typeof mod.waitForLiveChannelOpen !== 'function') return;
-      return mod.waitForLiveChannelOpen(rid, 4500);
-    })
-    .then(function () {
-      transmit();
-    });
+  void waitForLiveChannelOpen(rid, 4500).then(function () {
+    transmit();
+  });
 }
 
 function isRoomBundleConflictDraft(draft) {
@@ -1231,69 +1228,79 @@ function emitLiveSyncPatientDelete(patient) {
   sendLiveSyncMutation(mutation);
 }
 
-registerLanSyncTransportDeps({
-  get runtime() { return runtime; },
-  renderLanPanel,
-  joinLanRoom,
-  resolveAutoJoinRoomId,
-  openConnectionDropdown,
-  bootLanRoomMembership,
-});
+var lanSyncBridgesWired = false;
 
-registerLanSyncPanelRuntime(
-  Object.assign(runtime, {
-    appendLanConflictDraftsSection: appendLanConflictDraftsSection,
-  })
-);
+/** Idempotent LAN bridge registration (safe when esbuild loads room/push before this module). */
+export function wireLanSyncBridges() {
+  if (lanSyncBridgesWired) return;
+  lanSyncBridgesWired = true;
 
-registerLanSyncRoomBridge({
-  runtime: runtime,
-  renderLanPanel,
-  patchLanPanelJoinButtons,
-  rememberLanRoomJoined,
-  initLanClientFromStorage,
-  applyLiveSyncMerged,
-  applyLiveSyncApplied,
-  buildLiveSyncLocalMergeSource,
-  collectPatientEntriesForLanSync,
-  collectPatientIdsForLiveSync,
-  collectTodosMapForLiveSync,
-  maybeRevertSurrogateToPrimary,
-});
+  registerLanSyncPushBridge({
+    isLanSessionConfiguredForRest,
+    buildLiveSyncBundleEnvelope,
+    saveLocalRoomSnapshot,
+    buildLiveSyncLocalMergeSource,
+    applyLiveSyncMerged,
+    applyRoomSyncPhaseAfterReconcile,
+    fetchAndApplyClinicalOpsFromHost,
+    syncLiveSyncStatusChrome,
+    acceptServerBundleConflict,
+    acceptServerClinicalOpsConflict,
+    renderLanPanel,
+    showToast: function (msg, type) {
+      runtime.showToast(msg, type);
+    },
+  });
 
-registerLanSyncPushBridge({
-  isLanSessionConfiguredForRest,
-  buildLiveSyncBundleEnvelope,
-  saveLocalRoomSnapshot,
-  buildLiveSyncLocalMergeSource,
-  applyLiveSyncMerged,
-  applyRoomSyncPhaseAfterReconcile,
-  fetchAndApplyClinicalOpsFromHost,
-  syncLiveSyncStatusChrome,
-  acceptServerBundleConflict,
-  acceptServerClinicalOpsConflict,
-  renderLanPanel,
-  showToast: function (msg, type) {
-    runtime.showToast(msg, type);
-  },
-});
+  registerLanSyncTransportDeps({
+    get runtime() { return runtime; },
+    renderLanPanel,
+    joinLanRoom,
+    resolveAutoJoinRoomId,
+    openConnectionDropdown,
+    bootLanRoomMembership,
+  });
 
-registerLanSyncRoomWireHandlers();
+  registerLanSyncPanelRuntime(
+    Object.assign(runtime, {
+      appendLanConflictDraftsSection: appendLanConflictDraftsSection,
+    })
+  );
 
-lanClient.addEventListener('lan-applied', function (ev) {
-  applyLiveSyncApplied(ev.detail);
-});
-lanClient.addEventListener('lan-conflict', function (ev) {
-  if (!ev.detail) return;
-  var payload = wsConflictDetailToPayload(ev.detail);
-  if (!payload.lwwApplied && payload.serverSnapshot && payload.serverSnapshot.data) {
-    payload.lwwApplied = true;
-  }
-  void handleSyncConflict(payload);
-});
-lanClient.addEventListener('lan-patch', function () {
-  syncLiveSyncStatusChrome();
-});
+  registerLanSyncRoomBridge({
+    runtime: runtime,
+    renderLanPanel,
+    patchLanPanelJoinButtons,
+    rememberLanRoomJoined,
+    initLanClientFromStorage,
+    applyLiveSyncMerged,
+    applyLiveSyncApplied,
+    buildLiveSyncLocalMergeSource,
+    collectPatientEntriesForLanSync,
+    collectPatientIdsForLiveSync,
+    collectTodosMapForLiveSync,
+    maybeRevertSurrogateToPrimary,
+  });
+
+  registerLanSyncRoomWireHandlers();
+
+  lanClient.addEventListener('lan-applied', function (ev) {
+    applyLiveSyncApplied(ev.detail);
+  });
+  lanClient.addEventListener('lan-conflict', function (ev) {
+    if (!ev.detail) return;
+    var payload = wsConflictDetailToPayload(ev.detail);
+    if (!payload.lwwApplied && payload.serverSnapshot && payload.serverSnapshot.data) {
+      payload.lwwApplied = true;
+    }
+    void handleSyncConflict(payload);
+  });
+  lanClient.addEventListener('lan-patch', function () {
+    syncLiveSyncStatusChrome();
+  });
+}
+
+wireLanSyncBridges();
 
 if (typeof document !== 'undefined') {
   initLanClientFromStorage();
@@ -1362,4 +1369,5 @@ export const windowHandlers = {
   createLanRoomFromUi,
   deleteLanRoom,
   copyLanInviteLinkFromUi,
+  copyMobileLanLinkFromUi,
 };

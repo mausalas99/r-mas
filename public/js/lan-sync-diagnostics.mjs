@@ -1,9 +1,13 @@
 /** LAN sync diagnostics ring buffer and support report (IM-09). */
 
 const MAX_ERRORS = 5;
+const MAX_OPS_TRACE = 12;
 
 /** @type {{ at: string, op: string, code: string, message: string }[]} */
 const lastErrors = [];
+
+/** @type {{ at: string, boundary: string, data: Record<string, unknown> }[]} */
+const clinicalOpsTrace = [];
 
 /**
  * @param {{ op?: string, code?: string, message?: string }} entry
@@ -20,10 +24,40 @@ export function recordLanSyncError(entry) {
 }
 
 /**
+ * Record a clinical-ops pipeline boundary (export, push, GET, merge, display).
+ * @param {string} boundary
+ * @param {Record<string, unknown>} [data]
+ */
+export function recordClinicalOpsTrace(boundary, data) {
+  const row = {
+    at: new Date().toISOString(),
+    boundary: String(boundary || 'unknown'),
+    data: data && typeof data === 'object' ? { ...data } : {},
+  };
+  clinicalOpsTrace.unshift(row);
+  if (clinicalOpsTrace.length > MAX_OPS_TRACE) clinicalOpsTrace.length = MAX_OPS_TRACE;
+}
+
+/** @returns {{ at: string, boundary: string, data: Record<string, unknown> }[]} */
+export function getClinicalOpsTrace() {
+  return clinicalOpsTrace.map(function (e) {
+    return { at: e.at, boundary: e.boundary, data: { ...e.data } };
+  });
+}
+
+export function clearClinicalOpsTrace() {
+  clinicalOpsTrace.length = 0;
+}
+
+/**
  * @param {Record<string, unknown>} [deps]
  */
 export function getLanSyncDiagnostics(deps) {
   const d = deps && typeof deps === 'object' ? deps : {};
+  const trace =
+    Array.isArray(d.clinicalOpsTrace) && d.clinicalOpsTrace.length
+      ? d.clinicalOpsTrace
+      : getClinicalOpsTrace();
   return {
     hostUrl: String(d.hostUrl || ''),
     pingAt: d.pingAt != null ? d.pingAt : null,
@@ -37,6 +71,7 @@ export function getLanSyncDiagnostics(deps) {
     outboxCount: Number(d.outboxCount || 0),
     pinnedHost: String(d.pinnedHost || ''),
     teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
+    clinicalOpsTrace: trace,
     lastErrors: lastErrors.map(function (e) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };
     }),

@@ -106,6 +106,18 @@ export async function bundleRenderer(opts = {}) {
   }
 
   const result = await esbuild.build(buildOptions({ prod, write: true }));
+  const bundleJs = path.join(OUT_DIR, 'app.bundle.js');
+  if (!fs.existsSync(bundleJs)) {
+    throw new Error('bundle build produced no public/js/app.bundle.js');
+  }
+  if (fs.existsSync(OUTFILE)) fs.unlinkSync(OUTFILE);
+  fs.renameSync(bundleJs, OUTFILE);
+  const bundleJsMap = path.join(OUT_DIR, 'app.bundle.js.map');
+  const bundleMjsMap = path.join(OUT_DIR, 'app.bundle.mjs.map');
+  if (fs.existsSync(bundleJsMap)) {
+    if (fs.existsSync(bundleMjsMap)) fs.unlinkSync(bundleMjsMap);
+    fs.renameSync(bundleJsMap, bundleMjsMap);
+  }
   fs.writeFileSync(META_FILE, JSON.stringify(result.metafile, null, 2) + '\n');
   const chartChunkManifest = path.join(OUT_DIR, 'chart-chunk.json');
   const chartImportUrl = findChartChunkImportUrl(result.metafile);

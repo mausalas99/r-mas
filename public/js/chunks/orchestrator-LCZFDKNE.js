@@ -30,9 +30,10 @@ import {
   syncLanHostTeamCodeSettingsInput,
   syncSettingsLanHostDiskSection,
   touchPatientLanUpdatedAt,
-  windowHandlers3 as windowHandlers
-} from "/js/chunks/chunk-RDCNFRLI.js";
-import "/js/chunks/chunk-5WTPZK2L.js";
+  windowHandlers3 as windowHandlers,
+  wireLanSyncBridges
+} from "/js/chunks/chunk-EI7DZYLS.js";
+import "/js/chunks/chunk-P3GTOHSD.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -68,6 +69,7 @@ export {
   syncLanHostTeamCodeSettingsInput,
   syncSettingsLanHostDiskSection,
   touchPatientLanUpdatedAt,
-  windowHandlers
+  windowHandlers,
+  wireLanSyncBridges
 };
-//# sourceMappingURL=/js/chunks/lan-sync-U5TI3HYK.js.map
+//# sourceMappingURL=/js/chunks/orchestrator-LCZFDKNE.js.map

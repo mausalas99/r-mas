@@ -111,6 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-04** `lan-directorio-sync`: fix users missing while team membership syncs — export teammates by membership, stub→@usuario upgrade, tombstone resurrection, handle-collision merge; `clinicalOpsTrace` in ⇄ diagnostics; `lib/db/clinical-ops-sync.mjs`, `lan-sync-diagnostics.mjs`.
 - **2026-06-03** `cold-start-phase2`: esbuild `splitting` + chunks, lazy settings-help/platform (`lazy-feature-routes.mjs`), Chart UMD in HTML + `vendor-loader.mjs` fallback (revised from ESM-only BN-09); metrics excludes generated bundles; pack/chunk smoke tests (BN-09–12).
 - **2026-06-03** `cold-start-shell`: trim `app-shell.mjs` (≤800 lines) — doc export → `document-export-client.mjs`, confetti → `chrome.mjs`, patient defaults → `patients.mjs`, quick export → `clinical-quick-export.mjs`; shell re-exports preserved.
 - **2026-06-03** `cold-start-clinical-teams`: split `clinical-teams.mjs` → `features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`); thin barrel `clinical-teams.mjs`.

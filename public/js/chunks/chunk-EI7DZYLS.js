@@ -1,6 +1,6 @@
 import {
   collectClinicalLsSnapshot
-} from "/js/chunks/chunk-5WTPZK2L.js";
+} from "/js/chunks/chunk-P3GTOHSD.js";
 import {
   computeSalaAbcdefDeficitWrite,
   dedupeTrendSetsForSeries,
@@ -5267,7 +5267,18 @@ function mergeClinicalUsersData(localRows, incomingRows) {
     if (!handle || !isValidUsernameFormat(handle)) continue;
     const uid = String(row.user_id);
     const existingByHandle = byUsername.get(handle);
-    if (existingByHandle && existingByHandle.user_id !== uid) continue;
+    if (existingByHandle && existingByHandle.user_id !== uid) {
+      const prevByUid = byUserId.get(uid) || null;
+      const mergedByUid = prevByUid ? {
+        ...prevByUid,
+        rank: row.rank ?? prevByUid.rank,
+        clinical_name: row.clinical_name ?? prevByUid.clinical_name,
+        sala: row.sala ?? prevByUid.sala,
+        is_program_admin: row.is_program_admin != null ? row.is_program_admin : prevByUid.is_program_admin
+      } : { ...row, username: prevByUid ? prevByUid.username : row.username };
+      byUserId.set(uid, mergedByUid);
+      continue;
+    }
     const prev = byUserId.get(uid) || existingByHandle || null;
     const merged = prev ? {
       ...prev,
@@ -5351,6 +5362,65 @@ function mergeClinicalOpsFromSourcesData(sources) {
   return merged;
 }
 
+// public/js/lan-sync-diagnostics.mjs
+var MAX_ERRORS = 5;
+var MAX_OPS_TRACE = 12;
+var lastErrors = [];
+var clinicalOpsTrace = [];
+function recordLanSyncError(entry) {
+  const row = {
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    op: String(entry && entry.op != null ? entry.op : "unknown"),
+    code: String(entry && entry.code != null ? entry.code : ""),
+    message: String(entry && entry.message != null ? entry.message : "")
+  };
+  lastErrors.unshift(row);
+  if (lastErrors.length > MAX_ERRORS) lastErrors.length = MAX_ERRORS;
+}
+function recordClinicalOpsTrace(boundary, data) {
+  const row = {
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    boundary: String(boundary || "unknown"),
+    data: data && typeof data === "object" ? { ...data } : {}
+  };
+  clinicalOpsTrace.unshift(row);
+  if (clinicalOpsTrace.length > MAX_OPS_TRACE) clinicalOpsTrace.length = MAX_OPS_TRACE;
+}
+function getClinicalOpsTrace() {
+  return clinicalOpsTrace.map(function(e) {
+    return { at: e.at, boundary: e.boundary, data: { ...e.data } };
+  });
+}
+function getLanSyncDiagnostics(deps2) {
+  const d = deps2 && typeof deps2 === "object" ? deps2 : {};
+  const trace = Array.isArray(d.clinicalOpsTrace) && d.clinicalOpsTrace.length ? d.clinicalOpsTrace : getClinicalOpsTrace();
+  return {
+    hostUrl: String(d.hostUrl || ""),
+    pingAt: d.pingAt != null ? d.pingAt : null,
+    pingStatus: d.pingStatus != null ? d.pingStatus : null,
+    wsSync: !!d.wsSync,
+    wsLive: !!d.wsLive,
+    liveRoomId: String(d.liveRoomId || ""),
+    roomId: String(d.roomId || ""),
+    phase: String(d.phase || "offline"),
+    bundleRevision: Number(d.bundleRevision || 0),
+    outboxCount: Number(d.outboxCount || 0),
+    pinnedHost: String(d.pinnedHost || ""),
+    teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
+    clinicalOpsTrace: trace,
+    lastErrors: lastErrors.map(function(e) {
+      return { at: e.at, op: e.op, code: e.code, message: e.message };
+    })
+  };
+}
+function redactLanSecrets(text) {
+  return String(text || "").replace(/Bearer\s+[A-Za-z0-9._+/=-]+/gi, "Bearer ***").replace(/"teamCode"\s*:\s*"[^"]*"/gi, '"teamCode":"***"').replace(/teamCode[=:]\s*[A-Za-z0-9._+/=-]+/gi, "teamCode=***").replace(/"code"\s*:\s*"[A-Za-z0-9._+/=-]{8,}"/gi, '"code":"***"');
+}
+function formatDiagnosticsReport(diag) {
+  const payload = diag && typeof diag === "object" ? diag : getLanSyncDiagnostics();
+  return redactLanSecrets(JSON.stringify(payload, null, 2));
+}
+
 // public/js/clinical-ops-lan.mjs
 var cachedSnapshot = null;
 function dbApi() {
@@ -5377,14 +5447,27 @@ async function collectClinicalOpsForLanSync() {
   if (!api2 || typeof api2.dbClinicalOpsExport !== "function") return null;
   const res = await api2.dbClinicalOpsExport();
   if (!res || res.ok === false) return null;
-  return res.snapshot && typeof res.snapshot === "object" ? res.snapshot : null;
+  const snap = res.snapshot && typeof res.snapshot === "object" ? res.snapshot : null;
+  if (snap) {
+    recordClinicalOpsTrace("export", {
+      usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+      teamMembership: Array.isArray(snap.team_membership) ? snap.team_membership.length : 0
+    });
+  }
+  return snap;
 }
 async function applyClinicalOpsLanSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== "object") return false;
   const api2 = dbApi();
   if (!api2 || typeof api2.dbClinicalOpsMerge !== "function") return false;
   const res = await api2.dbClinicalOpsMerge({ snapshot });
-  return !!(res && res.ok !== false);
+  const ok = !!(res && res.ok !== false);
+  recordClinicalOpsTrace("merge", {
+    ok,
+    incomingUsers: Array.isArray(snapshot.clinical_users) ? snapshot.clinical_users.length : 0,
+    mergeStats: res && res.mergeStats ? res.mergeStats : null
+  });
+  return ok;
 }
 function mergeClinicalOpsFromSources(sources) {
   return mergeClinicalOpsFromSourcesData(sources);
@@ -5795,47 +5878,6 @@ async function outboxSize(roomId) {
     return 0;
   }
   return sizeLocal(roomId);
-}
-
-// public/js/lan-sync-diagnostics.mjs
-var MAX_ERRORS = 5;
-var lastErrors = [];
-function recordLanSyncError(entry) {
-  const row = {
-    at: (/* @__PURE__ */ new Date()).toISOString(),
-    op: String(entry && entry.op != null ? entry.op : "unknown"),
-    code: String(entry && entry.code != null ? entry.code : ""),
-    message: String(entry && entry.message != null ? entry.message : "")
-  };
-  lastErrors.unshift(row);
-  if (lastErrors.length > MAX_ERRORS) lastErrors.length = MAX_ERRORS;
-}
-function getLanSyncDiagnostics(deps2) {
-  const d = deps2 && typeof deps2 === "object" ? deps2 : {};
-  return {
-    hostUrl: String(d.hostUrl || ""),
-    pingAt: d.pingAt != null ? d.pingAt : null,
-    pingStatus: d.pingStatus != null ? d.pingStatus : null,
-    wsSync: !!d.wsSync,
-    wsLive: !!d.wsLive,
-    liveRoomId: String(d.liveRoomId || ""),
-    roomId: String(d.roomId || ""),
-    phase: String(d.phase || "offline"),
-    bundleRevision: Number(d.bundleRevision || 0),
-    outboxCount: Number(d.outboxCount || 0),
-    pinnedHost: String(d.pinnedHost || ""),
-    teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
-    lastErrors: lastErrors.map(function(e) {
-      return { at: e.at, op: e.op, code: e.code, message: e.message };
-    })
-  };
-}
-function redactLanSecrets(text) {
-  return String(text || "").replace(/Bearer\s+[A-Za-z0-9._+/=-]+/gi, "Bearer ***").replace(/"teamCode"\s*:\s*"[^"]*"/gi, '"teamCode":"***"').replace(/teamCode[=:]\s*[A-Za-z0-9._+/=-]+/gi, "teamCode=***").replace(/"code"\s*:\s*"[A-Za-z0-9._+/=-]{8,}"/gi, '"code":"***"');
-}
-function formatDiagnosticsReport(diag) {
-  const payload = diag && typeof diag === "object" ? diag : getLanSyncDiagnostics();
-  return redactLanSecrets(JSON.stringify(payload, null, 2));
 }
 
 // public/js/lan-lww-toast.mjs
@@ -7860,7 +7902,7 @@ function resolveRoomIdForUsernameRegister(opts = {}) {
   return resolveLiveSyncRoomIdFromSala(clinicalSessionContext.user?.sala);
 }
 async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
-  const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+  const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
   if (!lan.isLanSessionConfiguredForRest()) {
     return { roomId: "", lanConfigured: false };
   }
@@ -7887,7 +7929,7 @@ async function applyPendingLanInviteFromPage() {
   const hostUrl = String(parsed.hostUrl || "").trim();
   const teamCode = String(parsed.teamCode || "").trim();
   if (!hostUrl || !teamCode) return;
-  const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+  const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
   if (typeof lan.persistLanClientConfig === "function") {
     lan.persistLanClientConfig(hostUrl, teamCode);
   }
@@ -7897,7 +7939,7 @@ async function applyPendingLanInviteFromPage() {
   }
 }
 async function assertLanRoomForUsernameRegister(opts = {}) {
-  const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+  const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
   const lanConfigured = !!lan.isLanSessionConfiguredForRest?.();
   await applyPendingLanInviteFromPage();
   const ensured = await ensureLiveSyncRoomForUsernameRegister({
@@ -7913,7 +7955,7 @@ async function assertLanRoomForUsernameRegister(opts = {}) {
   };
 }
 async function flushClinicalProfileToLan(opts = {}) {
-  const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+  const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
   return lan.pushClinicalOpsLanNow(opts);
 }
 function notifyLanProfilePushResult(lanPush, showToast) {
@@ -8461,7 +8503,7 @@ async function ensureClinicalPanelSession() {
   }
   if (await attemptSession()) return true;
   try {
-    const { applyClinicalDbUnlockCompletion } = await import("/js/chunks/db-unlock-CESXMYT7.js");
+    const { applyClinicalDbUnlockCompletion } = await import("/js/chunks/db-unlock-V33XNNP5.js");
     await applyClinicalDbUnlockCompletion({ refreshOnboarding: false });
   } catch (err) {
     console.warn("[Mi rotaci\xF3n] clinical session recovery:", err && err.message);
@@ -8473,7 +8515,7 @@ async function ensureClinicalPanelSession() {
 // public/js/features/clinical-teams/teams-guardia-bridge.mjs
 async function publishClinicalTeamsToLan() {
   try {
-    const mod = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+    const mod = await import("/js/chunks/lan-sync-KMOBDPCX.js");
     if (typeof mod.pushClinicalOpsLanNow === "function") {
       return mod.pushClinicalOpsLanNow();
     }
@@ -8524,7 +8566,7 @@ async function pullClinicalOpsFromLanRoom(options = {}) {
   if (lanClinicalOpsPullInFlight) return lanClinicalOpsPullInFlight;
   lanClinicalOpsPullInFlight = (async () => {
     try {
-      const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+      const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
       if (typeof lan.refreshLanClinicalDirectoryFromRoom !== "function") return false;
       return !!await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8e3 });
     } catch (_e) {
@@ -8809,7 +8851,7 @@ Desaparecer\xE1 del directorio LAN. Las dem\xE1s R+ en la misma sala \u21C4 lo q
     return;
   }
   toast2("Usuario eliminado de esta Mac.", "success");
-  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js");
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await import("/js/chunks/clinical-profile-lan-sync-5AIT3RMD.js");
   const lanPush = await flushClinicalProfileToLan2();
   if (!lanPush.ok && !isBenignLanPushSkipCode2(lanPush.code)) {
     toast2(
@@ -8878,13 +8920,18 @@ async function loadLanUsersDirectoryIntoHost(host) {
   });
   host.querySelectorAll(".clinical-lan-user-row").forEach((row) => initLanUserRowAssignState(row));
   const title = document.getElementById("clinical-lan-users-title");
+  const users = Array.isArray(usersRes.users) ? usersRes.users : [];
+  const pending = users.filter((u) => u && u.lanDirectoryPending).length;
+  recordClinicalOpsTrace("display", {
+    directoryCount: users.length,
+    lanDirectoryPending: pending
+  });
   if (title) {
-    const n = Array.isArray(usersRes.users) ? usersRes.users.length : 0;
-    title.textContent = `Directorio de usuarios LAN (${n})`;
+    title.textContent = `Directorio de usuarios LAN (${users.length})`;
   }
 }
 function backgroundRefreshLanUsersDirectory() {
-  void import("/js/chunks/lan-sync-U5TI3HYK.js").then((lanMod) => {
+  void import("/js/chunks/lan-sync-KMOBDPCX.js").then((lanMod) => {
     if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== "function") return false;
     return lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 5e3 });
   }).then((refreshed) => {
@@ -9490,7 +9537,7 @@ async function renderClinicalTeamsPanelInto(host, opts = {}) {
     </section>`;
   wireLanUsersDirectoryControls();
   wireNuevaRotacionControl(host);
-  const { wireRenderedClinicalTeamsPanel: wireRenderedClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-interactions-QXDZIWH6.js");
+  const { wireRenderedClinicalTeamsPanel: wireRenderedClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-interactions-4HIYTZAY.js");
   wireRenderedClinicalTeamsPanel2(elevated);
 }
 function renderJoinWithCodeSectionHtml() {
@@ -9718,7 +9765,7 @@ function isClinicalTeamsPanelOpen() {
 }
 async function refreshTeamsUiAfterChange() {
   await fetchClinicalTeamsFromDb();
-  import("/js/chunks/clinical-rotation-entry-CMMDMCOM.js").then((m) => m.syncClinicalRotationEntryChrome());
+  import("/js/chunks/clinical-rotation-entry-ISERVCVB.js").then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelOpen()) {
     await renderClinicalTeamsPanel({ silent: true, skipLanPull: true });
   }
@@ -9728,7 +9775,7 @@ async function openClinicalTeamsPanel() {
   if (!bd) return;
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    const mainMod = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
+    const mainMod = await import("/js/chunks/clinical-onboarding-main-7LFZAOQT.js");
     const msg = await mainMod.describeOnboardingSessionBlock();
     if (typeof window.showToast === "function") {
       window.showToast(msg, "error");
@@ -9737,10 +9784,10 @@ async function openClinicalTeamsPanel() {
     return;
   }
   try {
-    const { needsClinicalOnboarding } = await import("/js/chunks/clinical-onboarding-QGAYIKXS.js");
+    const { needsClinicalOnboarding } = await import("/js/chunks/clinical-onboarding-YIC6VCZK.js");
     if (needsClinicalOnboarding()) {
       closeClinicalTeamsPanel();
-      const { openMiRotacion } = await import("/js/chunks/clinical-rotation-entry-CMMDMCOM.js");
+      const { openMiRotacion } = await import("/js/chunks/clinical-rotation-entry-ISERVCVB.js");
       await openMiRotacion();
       return;
     }
@@ -9950,7 +9997,7 @@ async function handleProfileFormSubmit(ev) {
   const currentUsername = normalizeUsername2(clinicalSessionContext.user?.username || "");
   const usernameWillChange = username !== currentUsername;
   if (usernameWillChange) {
-    const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js");
+    const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await import("/js/chunks/clinical-profile-lan-sync-5AIT3RMD.js");
     await assertLanRoomForUsernameRegister2({ sala });
     if (currentUsername && !isLegacyMachineUsername(currentUsername, clientIdFromSettings())) {
       const ok2 = window.confirm(
@@ -10009,7 +10056,7 @@ async function handleProfileFormSubmit(ev) {
   if (!ok) return;
   await refreshClinicalUserProfile();
   const msg = wantsProgramAdmin && (isProgramAdmin === true || wasProgramAdmin) ? "Perfil guardado. Privilegios de administraci\xF3n activos." : "Perfil guardado.";
-  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js");
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await import("/js/chunks/clinical-profile-lan-sync-5AIT3RMD.js");
   const lanPush = await flushClinicalProfileToLan2();
   if (!lanPush.ok && !isBenignLanPushSkipCode2(lanPush.code)) {
     toast2(LAN_PROFILE_PUSH_FAILED_MSG2, "warning");
@@ -10020,11 +10067,11 @@ async function handleProfileFormSubmit(ev) {
   }
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  void import("/js/chunks/lan-sync-U5TI3HYK.js").then((mod) => {
+  void import("/js/chunks/lan-sync-KMOBDPCX.js").then((mod) => {
     if (typeof mod.scheduleLiveSyncPush === "function") mod.scheduleLiveSyncPush();
   }).catch(() => {
   });
-  void import("/js/chunks/patients-L33NAVXU.js").then((m) => m.renderPatientList()).catch(() => {
+  void import("/js/chunks/patients-OSHDAGQH.js").then((m) => m.renderPatientList()).catch(() => {
   });
 }
 function clientIdFromSettings() {
@@ -10261,7 +10308,7 @@ async function resolveTeamIdForInviteInput(codeOrId) {
   }
   if (!teamId) {
     try {
-      const lan = await import("/js/chunks/lan-sync-U5TI3HYK.js");
+      const lan = await import("/js/chunks/lan-sync-KMOBDPCX.js");
       if (typeof lan.refreshLanClinicalDirectoryFromRoom === "function") {
         await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8e3 });
         await fetchClinicalTeamsFromDb();
@@ -10295,7 +10342,7 @@ async function joinTeamById(teamId, subAreaFraction) {
     (t2) => String(t2.team_id) === teamId
   )) {
     toast2("Ya perteneces a este equipo.", "info");
-    const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-D2YIX5XD.js");
+    const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-YMT2PFCX.js");
     await openClinicalTeamsPanel2();
     return true;
   }
@@ -10314,7 +10361,7 @@ async function joinTeamById(teamId, subAreaFraction) {
   toast2(`Te uniste al equipo ${team.name || ""} (ciclo ${cycle}).`, "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
   await publishClinicalTeamsToLan();
-  const { refreshTeamsUiAfterChange: refreshTeamsUiAfterChange2 } = await import("/js/chunks/teams-roster-D2YIX5XD.js");
+  const { refreshTeamsUiAfterChange: refreshTeamsUiAfterChange2 } = await import("/js/chunks/teams-roster-YMT2PFCX.js");
   await refreshTeamsUiAfterChange2();
   return true;
 }
@@ -10353,7 +10400,7 @@ async function consumeClinicalTeamJoinFromUrl() {
   if (!parsed.teamId && !parsed.inviteCode) return;
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) return;
-  const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-D2YIX5XD.js");
+  const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await import("/js/chunks/teams-roster-YMT2PFCX.js");
   await openClinicalTeamsPanel2();
   const input = document.getElementById("clinical-team-join-code-input");
   if (input instanceof HTMLInputElement && parsed.inviteCode) {
@@ -10376,7 +10423,7 @@ function teamsModalBackdrop() {
   return document.getElementById("clinical-teams-backdrop");
 }
 function loadRoster() {
-  return import("/js/chunks/teams-roster-D2YIX5XD.js");
+  return import("/js/chunks/teams-roster-YMT2PFCX.js");
 }
 function wireClinicalTeamsModalChrome() {
   const bd = teamsModalBackdrop();
@@ -10451,10 +10498,10 @@ function wireClinicalTeamsModalChrome() {
 // public/js/features/clinical-teams/index.mjs
 var teamsControlsWired = false;
 function wireClinicalTeamsControls() {
-  void import("/js/chunks/teams-roster-modal-chrome-NNHL5HNT.js").then((m) => m.wireClinicalTeamsModalChrome());
+  void import("/js/chunks/teams-roster-modal-chrome-GYZAQHQU.js").then((m) => m.wireClinicalTeamsModalChrome());
   if (teamsControlsWired) return;
   teamsControlsWired = true;
-  import("/js/chunks/clinical-rotation-entry-CMMDMCOM.js").then((mod) => {
+  import("/js/chunks/clinical-rotation-entry-ISERVCVB.js").then((mod) => {
     mod.wireClinicalRotationEntryControls();
     mod.syncClinicalRotationEntryChrome();
   });
@@ -13735,9 +13782,7 @@ function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalTeamsChangedLanWired) {
     document._rpcClinicalTeamsChangedLanWired = true;
     document.addEventListener("rpc-clinical-teams-changed", function() {
-      void import("/js/chunks/push-UGOZ23G7.js").then(function(m) {
-        if (typeof m.pushClinicalOpsLanNow === "function") return m.pushClinicalOpsLanNow();
-      }).catch(function() {
+      void pushClinicalOpsLanNow().catch(function() {
       });
       scheduleLiveSyncPush();
     });
@@ -13837,6 +13882,27 @@ function isClinicalRegistered() {
 }
 function isLanHostActive() {
   return !!lanClient.connected;
+}
+function canOfferMobileLanShare() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  if (lanClient.connected) return true;
+  return isLanSessionConfiguredForRest();
+}
+function appendMobileLanShareCard(root) {
+  if (!root || !canOfferMobileLanShare()) return;
+  var mobileCard = document.createElement("div");
+  mobileCard.className = "lan-connect-card lan-hub-mobile-card";
+  mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
+  var mobileBtn = document.createElement("button");
+  mobileBtn.type = "button";
+  mobileBtn.className = "btn-lan-primary";
+  mobileBtn.style.width = "100%";
+  mobileBtn.textContent = "Copiar enlace para iPad";
+  mobileBtn.onclick = function() {
+    void copyMobileLanLinkFromUi();
+  };
+  mobileCard.appendChild(mobileBtn);
+  root.appendChild(mobileCard);
 }
 function lanHostUrl() {
   return lanClient.baseUrl() || "";
@@ -14101,26 +14167,7 @@ function buildR1Section(root) {
     };
   }
   appendLanHubGuardiaModeCard(root);
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement("div");
-    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
-    var mobileBtn = document.createElement("button");
-    mobileBtn.type = "button";
-    mobileBtn.className = "btn-lan-primary";
-    mobileBtn.style.width = "100%";
-    mobileBtn.textContent = "Copiar enlace para iPad";
-    mobileBtn.onclick = function() {
-      void generateMobilePairingLink().then(function(url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime3().showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
+  appendMobileLanShareCard(root);
 }
 function buildR2Section(root) {
   buildR1Section(root);
@@ -14156,7 +14203,7 @@ function buildR2Section(root) {
 }
 async function openR4TeamCreationModal() {
   try {
-    var mod = await import("/js/chunks/clinical-teams-LMWEZARH.js");
+    var mod = await import("/js/chunks/clinical-teams-BMZ3ADQ2.js");
     if (typeof mod.openClinicalTeamsPanel === "function") {
       mod.openClinicalTeamsPanel();
     } else {
@@ -14234,26 +14281,7 @@ function buildR4Section(root) {
   };
   censusCard.appendChild(viewBtn);
   root.appendChild(censusCard);
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement("div");
-    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
-    var mobileBtn = document.createElement("button");
-    mobileBtn.type = "button";
-    mobileBtn.className = "btn-lan-primary";
-    mobileBtn.style.width = "100%";
-    mobileBtn.textContent = "Copiar enlace para iPad";
-    mobileBtn.onclick = function() {
-      void generateMobilePairingLink().then(function(url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime3().showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
+  appendMobileLanShareCard(root);
   var rotCard = document.createElement("div");
   rotCard.className = "lan-connect-card lan-hub-rotation-card";
   rotCard.innerHTML = '<div class="lan-connect-card-title">Rotaci\xF3n</div>';
@@ -14445,32 +14473,6 @@ function setLanAutoJoinConfirmed(roomId) {
   } catch (_e) {
   }
 }
-async function generateMobilePairingLink() {
-  var hostUrl = await resolveLanShareBaseUrl();
-  if (!hostUrl) {
-    runtime3().showToast(
-      "No detectamos la IP de esta Mac en la red. Revisa Wi\u2011Fi y vuelve a copiar el enlace.",
-      "error"
-    );
-    return "";
-  }
-  try {
-    var share = await ensureLanPairingForShare({ forceNew: true });
-    return appendMobileLanJoinHintParams(
-      buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
-    );
-  } catch (_ticket) {
-  }
-  if (!hostUrl || isLocalLoopbackLanUrl(hostUrl)) return "";
-  var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) return "";
-  var params = new URLSearchParams();
-  params.set("host", hostUrl.replace(/\/+$/, ""));
-  params.set("code", teamCode);
-  var roomId = resolveMobilePairingRoomId();
-  if (roomId) params.set("room", roomId);
-  return appendMobileLanJoinHintParams(hostUrl + "/?" + params.toString());
-}
 function startLanAutoDiscovery() {
   if (_lanScanTimer) return;
   _lanScanTimer = setInterval(function() {
@@ -14597,7 +14599,7 @@ async function resetLanSquadHostStateFromUi() {
     runtime3().showToast(res && res.error ? res.error : "No se pudo borrar el archivo.", "error");
   }
 }
-async function copyLanInviteLinkFromUi(opts) {
+async function copyMobileLanLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
   var share;
@@ -14617,6 +14619,44 @@ async function copyLanInviteLinkFromUi(opts) {
     return false;
   }
   var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
+  var copied = await copyToClipboardSafe(appendMobileLanJoinHintParams(link));
+  if (copied) {
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
+    if (!silent) {
+      var expiryHint = formatLanTicketExpiryLabel(share.pairing.expiresAt);
+      runtime3().showToast(
+        "Enlace m\xF3vil copiado. \xC1brelo en Safari en la misma Wi\u2011Fi; tus pacientes deber\xEDan sincronizar solos." + (expiryHint ? " V\xE1lido hasta " + expiryHint + "." : ""),
+        "success"
+      );
+    }
+    return true;
+  }
+  if (!silent) runtime3().showToast("No se pudo copiar al portapapeles.", "error");
+  return false;
+}
+async function copyLanInviteLinkFromUi(opts) {
+  opts = opts || {};
+  var silent = !!opts.silent;
+  var share;
+  try {
+    share = await ensureLanPairingForShare({ forceNew: true });
+  } catch (e) {
+    if (!silent) {
+      if (e && e.code === "no_host_url") {
+        runtime3().showToast(
+          "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora).",
+          "error"
+        );
+      } else {
+        runtime3().showToast("Genera primero un enlace / PIN o revisa el token del anfitri\xF3n.", "error");
+      }
+    }
+    return false;
+  }
+  var link = appendMobileLanJoinHintParams(
+    buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
+  );
   var copied = await copyToClipboardSafe(link);
   if (copied) {
     var root = document.getElementById("lan-connection-panel-root");
@@ -14741,7 +14781,7 @@ async function saveLanSettingsFromUi(opts) {
       }
       joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
     }
-    void import("/js/chunks/historia-clinica-lan-sync-X7ROXLDE.js").then(function(m) {
+    void import("/js/chunks/historia-clinica-lan-sync-7JB5A6HU.js").then(function(m) {
       return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
     });
     void maybeShowLanMigrationNotice();
@@ -15108,10 +15148,7 @@ function sendLiveSyncMutation(mutation) {
     lanClient.connectLiveChannel(rid);
   } catch (_eConn) {
   }
-  void import("/js/chunks/room-Z3HLWWXM.js").then(function(mod) {
-    if (typeof mod.waitForLiveChannelOpen !== "function") return;
-    return mod.waitForLiveChannelOpen(rid, 4500);
-  }).then(function() {
+  void waitForLiveChannelOpen(rid, 4500).then(function() {
     transmit();
   });
 }
@@ -15194,7 +15231,7 @@ async function applyConflictUseServer(payload) {
         return p && String(p.id) === String(payload.patientId);
       });
       if (hcRow) {
-        var mod = await import("/js/chunks/historia-clinica-lan-sync-X7ROXLDE.js");
+        var mod = await import("/js/chunks/historia-clinica-lan-sync-7JB5A6HU.js");
         mod.applyServerHistoriaClinicaToPatient(hcRow, server.version, server.data);
       }
     } else {
@@ -15942,66 +15979,72 @@ function emitLiveSyncPatientDelete(patient) {
   );
   sendLiveSyncMutation(mutation);
 }
-registerLanSyncTransportDeps({
-  get runtime() {
-    return runtime4;
-  },
-  renderLanPanel: renderLanPanel2,
-  joinLanRoom,
-  resolveAutoJoinRoomId,
-  openConnectionDropdown,
-  bootLanRoomMembership
-});
-registerLanSyncPanelRuntime(
-  Object.assign(runtime4, {
-    appendLanConflictDraftsSection
-  })
-);
-registerLanSyncRoomBridge({
-  runtime: runtime4,
-  renderLanPanel: renderLanPanel2,
-  patchLanPanelJoinButtons,
-  rememberLanRoomJoined,
-  initLanClientFromStorage,
-  applyLiveSyncMerged,
-  applyLiveSyncApplied,
-  buildLiveSyncLocalMergeSource,
-  collectPatientEntriesForLanSync,
-  collectPatientIdsForLiveSync,
-  collectTodosMapForLiveSync,
-  maybeRevertSurrogateToPrimary
-});
-registerLanSyncPushBridge({
-  isLanSessionConfiguredForRest,
-  buildLiveSyncBundleEnvelope,
-  saveLocalRoomSnapshot,
-  buildLiveSyncLocalMergeSource,
-  applyLiveSyncMerged,
-  applyRoomSyncPhaseAfterReconcile,
-  fetchAndApplyClinicalOpsFromHost,
-  syncLiveSyncStatusChrome,
-  acceptServerBundleConflict,
-  acceptServerClinicalOpsConflict,
-  renderLanPanel: renderLanPanel2,
-  showToast: function(msg, type) {
-    runtime4.showToast(msg, type);
-  }
-});
-registerLanSyncRoomWireHandlers();
-lanClient.addEventListener("lan-applied", function(ev) {
-  applyLiveSyncApplied(ev.detail);
-});
-lanClient.addEventListener("lan-conflict", function(ev) {
-  if (!ev.detail) return;
-  var payload = wsConflictDetailToPayload(ev.detail);
-  if (!payload.lwwApplied && payload.serverSnapshot && payload.serverSnapshot.data) {
-    payload.lwwApplied = true;
-  }
-  void handleSyncConflict(payload);
-});
-lanClient.addEventListener("lan-patch", function() {
-  syncLiveSyncStatusChrome();
-});
+var lanSyncBridgesWired = false;
+function wireLanSyncBridges() {
+  if (lanSyncBridgesWired) return;
+  lanSyncBridgesWired = true;
+  registerLanSyncPushBridge({
+    isLanSessionConfiguredForRest,
+    buildLiveSyncBundleEnvelope,
+    saveLocalRoomSnapshot,
+    buildLiveSyncLocalMergeSource,
+    applyLiveSyncMerged,
+    applyRoomSyncPhaseAfterReconcile,
+    fetchAndApplyClinicalOpsFromHost,
+    syncLiveSyncStatusChrome,
+    acceptServerBundleConflict,
+    acceptServerClinicalOpsConflict,
+    renderLanPanel: renderLanPanel2,
+    showToast: function(msg, type) {
+      runtime4.showToast(msg, type);
+    }
+  });
+  registerLanSyncTransportDeps({
+    get runtime() {
+      return runtime4;
+    },
+    renderLanPanel: renderLanPanel2,
+    joinLanRoom,
+    resolveAutoJoinRoomId,
+    openConnectionDropdown,
+    bootLanRoomMembership
+  });
+  registerLanSyncPanelRuntime(
+    Object.assign(runtime4, {
+      appendLanConflictDraftsSection
+    })
+  );
+  registerLanSyncRoomBridge({
+    runtime: runtime4,
+    renderLanPanel: renderLanPanel2,
+    patchLanPanelJoinButtons,
+    rememberLanRoomJoined,
+    initLanClientFromStorage,
+    applyLiveSyncMerged,
+    applyLiveSyncApplied,
+    buildLiveSyncLocalMergeSource,
+    collectPatientEntriesForLanSync,
+    collectPatientIdsForLiveSync,
+    collectTodosMapForLiveSync,
+    maybeRevertSurrogateToPrimary
+  });
+  registerLanSyncRoomWireHandlers();
+  lanClient.addEventListener("lan-applied", function(ev) {
+    applyLiveSyncApplied(ev.detail);
+  });
+  lanClient.addEventListener("lan-conflict", function(ev) {
+    if (!ev.detail) return;
+    var payload = wsConflictDetailToPayload(ev.detail);
+    if (!payload.lwwApplied && payload.serverSnapshot && payload.serverSnapshot.data) {
+      payload.lwwApplied = true;
+    }
+    void handleSyncConflict(payload);
+  });
+  lanClient.addEventListener("lan-patch", function() {
+    syncLiveSyncStatusChrome();
+  });
+}
+wireLanSyncBridges();
 if (typeof document !== "undefined") {
   initLanClientFromStorage();
   wireClinicalOpsLanSyncEvents();
@@ -16040,7 +16083,8 @@ var windowHandlers3 = {
   joinLanFromInviteUi,
   createLanRoomFromUi,
   deleteLanRoom,
-  copyLanInviteLinkFromUi
+  copyLanInviteLinkFromUi,
+  copyMobileLanLinkFromUi
 };
 
 // public/js/features/entrega-modal-ui.mjs
@@ -17993,7 +18037,7 @@ async function applyBootstrapResult(res) {
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
   if (typeof document !== "undefined") {
-    void import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js").then((mod) => mod.flushClinicalProfileToLan()).catch(() => {
+    void import("/js/chunks/clinical-profile-lan-sync-5AIT3RMD.js").then((mod) => mod.flushClinicalProfileToLan()).catch(() => {
     });
   }
   migrateLocalPatientsClinicalSala();
@@ -18008,7 +18052,7 @@ function migrateLocalPatientsClinicalSala() {
   if (migrated > 0) {
     void saveState({ immediate: true });
     if (typeof document !== "undefined") {
-      void import("/js/chunks/patients-L33NAVXU.js").then((mod) => mod.renderPatientList()).catch(() => {
+      void import("/js/chunks/patients-OSHDAGQH.js").then((mod) => mod.renderPatientList()).catch(() => {
       });
     }
   }
@@ -18317,10 +18361,43 @@ async function resumeClinicalSession(settings, clientId) {
 var BUNDLE_PUSH_HANDLED = "handled";
 var CLINICAL_OPS_HANDLED = "handled";
 var pushBridge = null;
+var pushBridgeWirePromise = null;
+function lanSyncPushBridgeGlobal() {
+  return globalThis["__LAN_SYNC_PUSH_BRIDGE__"];
+}
+function setLanSyncPushBridgeGlobal(value) {
+  globalThis["__LAN_SYNC_PUSH_BRIDGE__"] = value;
+}
 function registerLanSyncPushBridge(deps2) {
   pushBridge = deps2 && typeof deps2 === "object" ? deps2 : null;
+  if (pushBridge && typeof globalThis !== "undefined") {
+    setLanSyncPushBridgeGlobal(pushBridge);
+  }
+}
+function ensureLanSyncPushBridgeWired() {
+  if (pushBridge) return Promise.resolve();
+  if (typeof globalThis !== "undefined") {
+    var cached = lanSyncPushBridgeGlobal();
+    if (cached && typeof cached === "object") {
+      pushBridge = cached;
+      return Promise.resolve();
+    }
+  }
+  if (!pushBridgeWirePromise) {
+    pushBridgeWirePromise = import("/js/chunks/orchestrator-LCZFDKNE.js").then(function() {
+      if (!pushBridge && typeof globalThis !== "undefined") {
+        var g2 = lanSyncPushBridgeGlobal();
+        if (g2 && typeof g2 === "object") pushBridge = g2;
+      }
+    });
+  }
+  return pushBridgeWirePromise;
 }
 function bridge() {
+  if (!pushBridge && typeof globalThis !== "undefined") {
+    var cached = lanSyncPushBridgeGlobal();
+    if (cached && typeof cached === "object") pushBridge = cached;
+  }
   if (!pushBridge) {
     throw new Error("lan-sync-push: registerLanSyncPushBridge() not called");
   }
@@ -18556,6 +18633,11 @@ function pushClinicalOpsPayloadToHost(roomId, payload) {
   return putClinicalOpsSnapshotToHost(rid, snap, payload.clientId || getLanClientId2());
 }
 function pushRoomSyncBundleToHost(roomId, envelope) {
+  return ensureLanSyncPushBridgeWired().then(function() {
+    return pushRoomSyncBundleToHostBody(roomId, envelope);
+  });
+}
+function pushRoomSyncBundleToHostBody(roomId, envelope) {
   var b = bridge();
   if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
     return Promise.resolve(false);
@@ -18613,6 +18695,11 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
   });
 }
 function flushLiveSyncOutbox(roomId) {
+  return ensureLanSyncPushBridgeWired().then(function() {
+    return flushLiveSyncOutboxBody(roomId);
+  });
+}
+function flushLiveSyncOutboxBody(roomId) {
   var b = bridge();
   var rid = String(roomId || "").trim();
   if (!rid || typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
@@ -18645,7 +18732,7 @@ function flushLiveSyncOutbox(roomId) {
           lanClient.connectLiveChannel(rid);
         } catch (_eConn) {
         }
-        return import("/js/chunks/room-Z3HLWWXM.js").then(function(mod) {
+        return import("/js/chunks/room-RMN5UJV3.js").then(function(mod) {
           if (typeof mod.waitForLiveChannelOpen !== "function") return false;
           return mod.waitForLiveChannelOpen(rid, 4e3).then(function() {
             return trySend();
@@ -18761,6 +18848,7 @@ function scheduleLiveSyncPush() {
       var roomId2 = ensureEffectiveLiveSyncRoomId();
       if (!roomId2) return;
       void (async function() {
+        await ensureLanSyncPushBridgeWired();
         var b = bridge();
         var bundle = await b.buildLiveSyncBundleEnvelope(roomId2);
         b.saveLocalRoomSnapshot(roomId2);
@@ -18797,6 +18885,7 @@ async function pushClinicalOpsLanNow(opts) {
   return clinicalOpsLanPushInFlight;
 }
 async function pushClinicalOpsLanNowBody(opts) {
+  await ensureLanSyncPushBridgeWired();
   if (isPitchPatientIsolationActive()) return lanPushResult(false, "PITCH_DEMO");
   if (!isClinicalOpsLanAvailable()) return lanPushResult(false, "NO_CLINICAL_OPS");
   await prepareClinicalOpsForLanSync();
@@ -18804,6 +18893,7 @@ async function pushClinicalOpsLanNowBody(opts) {
   if (!snap) return lanPushResult(false, "NO_SNAPSHOT");
   var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) {
+    recordClinicalOpsTrace("push", { code: "NO_ROOM", usersExported: 0 });
     return lanPushResult(false, "NO_ROOM");
   }
   var b = bridge();
@@ -18828,6 +18918,13 @@ async function pushClinicalOpsLanNowBody(opts) {
   var pushedLive = sendLiveBundleIfOpen(roomId, envelope);
   b.saveLocalRoomSnapshot(roomId);
   if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+  recordClinicalOpsTrace("push", {
+    roomId,
+    code: okHttp || pushedLive ? "ok" : conflictHandled ? "CONFLICT_RESOLVED" : "QUEUED",
+    usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+    http: !!okHttp,
+    live: pushedLive
+  });
   if (okHttp || pushedLive) {
     return lanPushResult(true, void 0, { http: !!okHttp, live: pushedLive });
   }
@@ -18844,16 +18941,32 @@ async function pushClinicalOpsLanNowBody(opts) {
   });
   return lanPushResult(true, "QUEUED", { outbox: true });
 }
+function finishReconcilePhase(rid, b) {
+  if (!rid) return;
+  if (b && typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+    b.applyRoomSyncPhaseAfterReconcile(rid);
+    if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+    return;
+  }
+  void import("/js/chunks/room-RMN5UJV3.js").then(function(mod) {
+    if (typeof mod.applyRoomSyncPhaseAfterReconcile === "function") {
+      mod.applyRoomSyncPhaseAfterReconcile(rid);
+    }
+    if (typeof mod.syncLiveSyncStatusChrome === "function") mod.syncLiveSyncStatusChrome();
+  });
+}
 async function reconcileLiveSyncRoom(roomId) {
-  var b = bridge();
+  await ensureLanSyncPushBridgeWired();
   var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || "").trim();
   if (!rid) return false;
   if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
-  if (String(activeLiveSyncRoomId || "").trim() === rid) {
-    setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
-    if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
-  }
+  var b;
   try {
+    b = bridge();
+    if (String(activeLiveSyncRoomId || "").trim() === rid) {
+      setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
+      if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+    }
     if (isClinicalOpsLanAvailable()) {
       await prepareClinicalOpsForLanSync();
     }
@@ -18888,20 +19001,57 @@ async function reconcileLiveSyncRoom(roomId) {
       b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
     }
     return flushLiveSyncOutbox(rid);
+  } catch (err) {
+    recordLanSyncError({
+      op: "reconcile",
+      code: "RECONCILE",
+      message: err && err.message ? err.message : "reconcile failed"
+    });
+    return false;
   } finally {
-    if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
-      b.applyRoomSyncPhaseAfterReconcile(rid);
-    }
-    if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+    finishReconcilePhase(rid, b);
   }
 }
 
 // public/js/features/lan/room.mjs
 var roomBridge = null;
+var roomBridgeWirePromise = null;
+function lanSyncRoomBridgeGlobal() {
+  return globalThis["__LAN_SYNC_ROOM_BRIDGE__"];
+}
+function setLanSyncRoomBridgeGlobal(value) {
+  globalThis["__LAN_SYNC_ROOM_BRIDGE__"] = value;
+}
 function registerLanSyncRoomBridge(deps2) {
   roomBridge = deps2 && typeof deps2 === "object" ? deps2 : null;
+  if (roomBridge && typeof globalThis !== "undefined") {
+    setLanSyncRoomBridgeGlobal(roomBridge);
+  }
+}
+function ensureLanSyncRoomBridgeWired() {
+  if (roomBridge) return Promise.resolve();
+  if (typeof globalThis !== "undefined") {
+    var cached = lanSyncRoomBridgeGlobal();
+    if (cached && typeof cached === "object") {
+      roomBridge = cached;
+      return Promise.resolve();
+    }
+  }
+  if (!roomBridgeWirePromise) {
+    roomBridgeWirePromise = import("/js/chunks/orchestrator-LCZFDKNE.js").then(function() {
+      if (!roomBridge && typeof globalThis !== "undefined") {
+        var g2 = lanSyncRoomBridgeGlobal();
+        if (g2 && typeof g2 === "object") roomBridge = g2;
+      }
+    });
+  }
+  return roomBridgeWirePromise;
 }
 function bridge2() {
+  if (!roomBridge && typeof globalThis !== "undefined") {
+    var cached = lanSyncRoomBridgeGlobal();
+    if (cached && typeof cached === "object") roomBridge = cached;
+  }
   if (!roomBridge) throw new Error("lan-sync-room: registerLanSyncRoomBridge() not called");
   return roomBridge;
 }
@@ -18955,6 +19105,7 @@ function scheduleSurrogateFailoverCheck() {
   }, 1200);
 }
 async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
+  await ensureLanSyncRoomBridgeWired();
   var targetUrl = String(hostUrl || "").trim().replace(/\/+$/, "");
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
@@ -18991,6 +19142,7 @@ async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
   return true;
 }
 async function promoteSelfToSurrogateHost() {
+  await ensureLanSyncRoomBridgeWired();
   if (typeof window !== "undefined" && window.electronAPI?.ensureLanServerReady) {
     await window.electronAPI.ensureLanServerReady();
   }
@@ -19036,6 +19188,7 @@ async function promoteSelfToSurrogateHost() {
   return true;
 }
 async function maybeRevertSurrogateToPrimary() {
+  await ensureLanSyncRoomBridgeWired();
   var st = getSurrogateHostState();
   if (!st || !st.formerHostUrl) return false;
   var code = st.formerTeamCode || getLanTeamCodeFromConfig();
@@ -19115,6 +19268,11 @@ async function runSurrogateFailoverCheck() {
   await promoteSelfToSurrogateHost();
 }
 function saveLocalRoomSnapshot(roomId) {
+  void ensureLanSyncRoomBridgeWired().then(function() {
+    saveLocalRoomSnapshotBody(roomId);
+  });
+}
+function saveLocalRoomSnapshotBody(roomId) {
   var rid = String(roomId || "").trim();
   if (!rid) return;
   var snap = buildRoomSnapshotFromStorage(storage, bridge2().collectPatientIdsForLiveSync());
@@ -19131,6 +19289,7 @@ function saveLocalRoomSnapshot(roomId) {
   });
 }
 async function buildLiveSyncBundleEnvelope(roomId) {
+  await ensureLanSyncRoomBridgeWired();
   if (isClinicalOpsLanAvailable()) {
     await prepareClinicalOpsForLanSync();
   }
@@ -19289,23 +19448,46 @@ function bootLanRoomMembership() {
   setRoomSyncPhase(m.roomId, RoomSyncPhase.catching_up);
   scheduleLiveSyncOutboxFlush();
   void (async function() {
+    var rid = m.roomId;
     try {
-      if (!lanClient.connected) lanClient.connectSyncChannel();
-      lanClient.connectLiveChannel(m.roomId);
-    } catch (_e) {
+      try {
+        if (!lanClient.connected) lanClient.connectSyncChannel();
+        lanClient.connectLiveChannel(rid);
+      } catch (_eConn) {
+      }
+      var liveOpen = await waitForLiveChannelOpen(rid, 8e3);
+      if (!liveOpen) {
+        recordLanSyncError({
+          op: "live-ws",
+          code: "TIMEOUT",
+          message: "Canal live no conect\xF3 en 8s; sync HTTP sigue activo"
+        });
+      }
+      await syncLiveSyncAfterRoomJoin(rid);
+      await flushLiveSyncOutbox(rid);
+      if (!getRoomMembership()) return;
+      _liveSyncSessionResyncDone = true;
+      startLiveSyncReconnectLoop();
+    } catch (err) {
+      recordLanSyncError({
+        op: "boot-membership",
+        code: "BOOT",
+        message: err && err.message ? err.message : "boot membership sync failed"
+      });
+    } finally {
+      applyRoomSyncPhaseAfterReconcile(rid);
+      syncLiveSyncStatusChrome();
     }
-    await waitForLiveChannelOpen(m.roomId, 5e3);
-    await syncLiveSyncAfterRoomJoin(m.roomId);
-    await flushLiveSyncOutbox(m.roomId);
-    if (!getRoomMembership()) return;
-    _liveSyncSessionResyncDone = true;
-    startLiveSyncReconnectLoop();
-    syncLiveSyncStatusChrome();
   })();
 }
 function onLiveSyncWireMessage(data) {
   if (!data || !isLiveSyncEnvelope(data)) return;
   if (data.roomId && activeLiveSyncRoomId && data.roomId !== activeLiveSyncRoomId) return;
+  void ensureLanSyncRoomBridgeWired().then(function() {
+    onLiveSyncWireMessageBody(data);
+  });
+}
+function onLiveSyncWireMessageBody(data) {
   var myId = getLanClientId2();
   if (data.type === "livesync:hello" || data.type === "livesync:host-handoff") {
     if (data.clientId !== myId) {
@@ -19363,8 +19545,22 @@ async function fetchAndApplyClinicalOpsFromHost(roomId) {
     const resp = await lanClient.fetch(
       "/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops"
     );
-    if (!resp || !resp.ok) return false;
+    if (!resp || !resp.ok) {
+      recordClinicalOpsTrace("get", {
+        roomId: rid,
+        httpStatus: resp ? resp.status : 0,
+        incomingUsers: 0,
+        ok: false
+      });
+      return false;
+    }
     const body = await resp.json();
+    recordClinicalOpsTrace("get", {
+      roomId: rid,
+      httpStatus: resp.status,
+      incomingUsers: Array.isArray(body?.snapshot?.clinical_users) ? body.snapshot.clinical_users.length : 0,
+      ok: true
+    });
     if (body && body.revision != null) {
       const prev = getHostBundleBases(rid) || {};
       setHostBundleBases(rid, {
@@ -19418,6 +19614,11 @@ async function refreshLanClinicalDirectoryFromRoom(options = {}) {
 function syncLiveSyncAfterRoomJoin(roomId) {
   var rid = String(roomId || "").trim();
   if (!rid) return Promise.resolve();
+  return ensureLanSyncRoomBridgeWired().then(function() {
+    return syncLiveSyncAfterRoomJoinBody(rid);
+  });
+}
+function syncLiveSyncAfterRoomJoinBody(rid) {
   return reconcileLiveSyncRoom(rid).then(function() {
     if (activeLiveSyncRoomId !== rid) return;
     return fetchAndApplyClinicalOpsFromHost(rid);
@@ -19438,7 +19639,7 @@ function syncLiveSyncAfterRoomJoin(roomId) {
     runtime5().renderProcedureAgendaPanel();
     runtime5().refreshAllTodoUIs();
     runtime5().renderPatientList();
-    void import("/js/chunks/historia-clinica-lan-sync-X7ROXLDE.js").then(function(m) {
+    void import("/js/chunks/historia-clinica-lan-sync-7JB5A6HU.js").then(function(m) {
       return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
     });
   });
@@ -19447,21 +19648,23 @@ function leaveLiveSyncRoom(opts) {
   opts = opts || {};
   var roomId = activeLiveSyncRoomId;
   if (roomId) {
-    void (async function() {
-      var bundle = await buildLiveSyncBundleEnvelope(roomId);
-      if (!opts.silentLeave) {
-        lanClient.sendLive({
-          type: "livesync:leave",
-          roomId,
-          clientId: getLanClientId2(),
-          bundle
-        });
-      }
-      saveLocalRoomSnapshot(roomId);
-      if (liveSyncBundleHasPayload(bundle)) {
-        pushRoomSyncBundleToHost(roomId, bundle);
-      }
-    })();
+    void ensureLanSyncRoomBridgeWired().then(function() {
+      return (async function() {
+        var bundle = await buildLiveSyncBundleEnvelope(roomId);
+        if (!opts.silentLeave) {
+          lanClient.sendLive({
+            type: "livesync:leave",
+            roomId,
+            clientId: getLanClientId2(),
+            bundle
+          });
+        }
+        saveLocalRoomSnapshot(roomId);
+        if (liveSyncBundleHasPayload(bundle)) {
+          pushRoomSyncBundleToHost(roomId, bundle);
+        }
+      })();
+    });
   }
   clearActiveLiveSyncRoom();
   if (roomId) clearRoomSyncPhase(roomId);
@@ -19470,10 +19673,13 @@ function leaveLiveSyncRoom(opts) {
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
   syncLiveSyncStatusChrome();
-  bridge2().patchLanPanelJoinButtons();
-  if (typeof renderLanPanel === "function") bridge2().renderLanPanel();
+  void ensureLanSyncRoomBridgeWired().then(function() {
+    bridge2().patchLanPanelJoinButtons();
+    if (typeof renderLanPanel === "function") bridge2().renderLanPanel();
+  });
 }
 async function joinLanRoom(roomId, displayName) {
+  await ensureLanSyncRoomBridgeWired();
   var id = String(roomId || "").trim();
   if (!id) {
     runtime5().showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
@@ -19547,7 +19753,7 @@ function registerLanSyncRoomWireHandlers() {
     if (ev.detail.connected && activeLiveSyncRoomId) {
       syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
       flushLiveSyncOutbox(activeLiveSyncRoomId);
-      void import("/js/chunks/historia-clinica-lan-sync-X7ROXLDE.js").then(function(m) {
+      void import("/js/chunks/historia-clinica-lan-sync-7JB5A6HU.js").then(function(m) {
         return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
       });
       void maybeRevertSurrogateToPrimary();
@@ -19683,6 +19889,7 @@ export {
   persistLanClientConfig,
   configureLanFromMobileJoin,
   registerLanSyncRoomBridge,
+  ensureLanSyncRoomBridgeWired,
   resolveSelfLanAdvertiseHostUrl,
   buildLiveSyncHelloPayload,
   enrichLiveSyncHelloPayload,
@@ -19707,20 +19914,8 @@ export {
   leaveLiveSyncRoom,
   joinLanRoom,
   registerLanSyncRoomWireHandlers,
-  registerLanSyncPushBridge,
-  ensureEffectiveLiveSyncRoomId,
-  liveSyncBundleHasPayload,
-  hostBundleBodyFromEnvelope,
-  pushRoomSyncBundleToHost,
-  flushLiveSyncOutbox,
-  scheduleLiveSyncOutboxFlush,
-  scheduleReconcileFromRevisionHint,
-  emitLiveSyncRevisionHint,
   scheduleLiveSyncPush,
-  sendLiveBundleIfOpen,
-  lanPushResult,
   pushClinicalOpsLanNow,
-  reconcileLiveSyncRoom,
   isModeSala,
   getDefaultServicio,
   getDefaultCuarto,
@@ -19755,6 +19950,7 @@ export {
   emitLiveSyncTodoUpsert,
   emitLiveSyncTodoDelete,
   emitLiveSyncPatientDelete,
+  wireLanSyncBridges,
   registerLanSaveHooks,
   windowHandlers3,
   LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG,
@@ -19825,4 +20021,4 @@ export {
   unlockClinicalSessionOverlay,
   resumeClinicalSession
 };
-//# sourceMappingURL=/js/chunks/chunk-RDCNFRLI.js.map
+//# sourceMappingURL=/js/chunks/chunk-EI7DZYLS.js.map

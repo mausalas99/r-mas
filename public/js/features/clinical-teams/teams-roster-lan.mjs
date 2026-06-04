@@ -20,6 +20,7 @@ import {
   teamInviteCode,
 } from '../../clinical-team-invite.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
+import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
 import {
   effectiveClinicalRank,
   hasElevatedTeamPrivileges,
@@ -476,9 +477,14 @@ export async function loadLanUsersDirectoryIntoHost(host) {
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initLanUserRowAssignState(row));
 
   const title = document.getElementById('clinical-lan-users-title');
+  const users = Array.isArray(usersRes.users) ? usersRes.users : [];
+  const pending = users.filter((u) => u && u.lanDirectoryPending).length;
+  recordClinicalOpsTrace('display', {
+    directoryCount: users.length,
+    lanDirectoryPending: pending,
+  });
   if (title) {
-    const n = Array.isArray(usersRes.users) ? usersRes.users.length : 0;
-    title.textContent = `Directorio de usuarios LAN (${n})`;
+    title.textContent = `Directorio de usuarios LAN (${users.length})`;
   }
 }
 

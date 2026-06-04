@@ -31,24 +31,31 @@ describe('LAN module boot wiring', () => {
     assert.match(appJs, /lanWindowHandlers|windowHandlers as lanWindowHandlers/);
   });
 
-  it('lan-sync registers push and room bridges before document init', () => {
+  it('lan-sync wires push bridge before transport and document init', () => {
+    const wireFnIdx = lanSyncFeature.indexOf('function wireLanSyncBridges');
     const pushIdx = lanSyncFeature.indexOf('registerLanSyncPushBridge({');
+    const transportIdx = lanSyncFeature.indexOf('registerLanSyncTransportDeps({');
     const roomIdx = lanSyncFeature.indexOf('registerLanSyncRoomBridge({');
-    const wireIdx = lanSyncFeature.indexOf('registerLanSyncRoomWireHandlers();');
+    const wireHandlersIdx = lanSyncFeature.indexOf('registerLanSyncRoomWireHandlers();');
     const initIdx = lanSyncFeature.indexOf('initLanClientFromStorage();');
-    assert.ok(pushIdx >= 0 && roomIdx >= 0 && wireIdx >= 0 && initIdx >= 0);
+    assert.ok(wireFnIdx >= 0 && pushIdx >= 0 && transportIdx >= 0 && roomIdx >= 0);
+    assert.ok(wireHandlersIdx >= 0 && initIdx >= 0);
+    assert.ok(pushIdx < transportIdx, 'push bridge before transport deps');
     assert.ok(pushIdx < initIdx, 'push bridge before init');
     assert.ok(roomIdx < initIdx, 'room bridge before init');
-    assert.ok(wireIdx < initIdx, 'room wire handlers before init');
+    assert.ok(wireHandlersIdx < initIdx, 'room wire handlers before init');
   });
 
   it('push bridge includes fetchAndApplyClinicalOpsFromHost for reconcile', () => {
     const block = lanSyncFeature.slice(
       lanSyncFeature.indexOf('registerLanSyncPushBridge({'),
-      lanSyncFeature.indexOf('registerLanSyncRoomWireHandlers();')
+      lanSyncFeature.indexOf('registerLanSyncRoomBridge({')
     );
     assert.match(block, /fetchAndApplyClinicalOpsFromHost/);
+    assert.match(lanSyncPush, /ensureLanSyncPushBridgeWired/);
     assert.match(lanSyncPush, /b\.fetchAndApplyClinicalOpsFromHost\(rid\)/);
+    assert.match(lanSyncRoom, /ensureLanSyncRoomBridgeWired/);
+    assert.match(lanSyncRoom, /buildLiveSyncBundleEnvelope[\s\S]*ensureLanSyncRoomBridgeWired/);
   });
 
   it('panel runtime registers conflict drafts append', () => {

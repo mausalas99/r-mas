@@ -69,6 +69,9 @@ describe('lan-sync clinical ops', () => {
 
   it('mints a fresh LAN ticket when copying iPad or invite links', () => {
     assert.match(lanSyncPanelSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
+    assert.match(lanSyncPanelSrc, /copyMobileLanLinkFromUi/);
+    assert.match(lanSyncPanelSrc, /canOfferMobileLanShare/);
+    assert.doesNotMatch(lanSyncPanelSrc, /params\.set\('code', teamCode\)/);
   });
 
   it('does not reconnect live WS inside pushClinicalOpsLanNow', () => {

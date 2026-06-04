@@ -6,6 +6,7 @@ import {
   mergeClinicalOpsFromSourcesData,
   mergeClinicalOpsSnapshotsData,
 } from './clinical-ops-bundle-merge.mjs';
+import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
 
 let cachedSnapshot = null;
 
@@ -46,7 +47,14 @@ export async function collectClinicalOpsForLanSync() {
   if (!api || typeof api.dbClinicalOpsExport !== 'function') return null;
   const res = await api.dbClinicalOpsExport();
   if (!res || res.ok === false) return null;
-  return res.snapshot && typeof res.snapshot === 'object' ? res.snapshot : null;
+  const snap = res.snapshot && typeof res.snapshot === 'object' ? res.snapshot : null;
+  if (snap) {
+    recordClinicalOpsTrace('export', {
+      usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+      teamMembership: Array.isArray(snap.team_membership) ? snap.team_membership.length : 0,
+    });
+  }
+  return snap;
 }
 
 /** @param {object|null} snapshot */
@@ -55,7 +63,13 @@ export async function applyClinicalOpsLanSnapshot(snapshot) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalOpsMerge !== 'function') return false;
   const res = await api.dbClinicalOpsMerge({ snapshot });
-  return !!(res && res.ok !== false);
+  const ok = !!(res && res.ok !== false);
+  recordClinicalOpsTrace('merge', {
+    ok,
+    incomingUsers: Array.isArray(snapshot.clinical_users) ? snapshot.clinical_users.length : 0,
+    mergeStats: res && res.mergeStats ? res.mergeStats : null,
+  });
+  return ok;
 }
 
 /** @param {object[]} sources */

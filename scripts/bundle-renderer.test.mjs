@@ -28,6 +28,18 @@ describe('bundle-renderer', () => {
     );
   });
 
+  it('emite app.bundle.mjs (no dejar solo app.bundle.js)', () => {
+    const bundleMjs = path.join(repoRoot, 'public/js/app.bundle.mjs');
+    const bundleJs = path.join(repoRoot, 'public/js/app.bundle.js');
+    assert.ok(fs.existsSync(bundleMjs), 'run npm run bundle:renderer');
+    assert.ok(!fs.existsSync(bundleJs), 'app.bundle.js must be renamed to .mjs');
+    const text = fs.readFileSync(bundleMjs, 'utf8');
+    assert.ok(
+      text.includes('/js/chunks/'),
+      'bundle entry must import split chunks, not inline whole features'
+    );
+  });
+
   it('index.html carga Chart UMD antes del bundle (BN-09)', () => {
     const html = fs.readFileSync(path.join(repoRoot, 'public/index.html'), 'utf8');
     const chartIdx = html.indexOf('vendor/chart.umd.min.js');

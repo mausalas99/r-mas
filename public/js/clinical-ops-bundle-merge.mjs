@@ -138,7 +138,21 @@ function mergeClinicalUsersData(localRows, incomingRows) {
     if (!handle || !isValidUsernameFormat(handle)) continue;
     const uid = String(row.user_id);
     const existingByHandle = byUsername.get(handle);
-    if (existingByHandle && existingByHandle.user_id !== uid) continue;
+    if (existingByHandle && existingByHandle.user_id !== uid) {
+      const prevByUid = byUserId.get(uid) || null;
+      const mergedByUid = prevByUid
+        ? {
+            ...prevByUid,
+            rank: row.rank ?? prevByUid.rank,
+            clinical_name: row.clinical_name ?? prevByUid.clinical_name,
+            sala: row.sala ?? prevByUid.sala,
+            is_program_admin:
+              row.is_program_admin != null ? row.is_program_admin : prevByUid.is_program_admin,
+          }
+        : { ...row, username: prevByUid ? prevByUid.username : row.username };
+      byUserId.set(uid, mergedByUid);
+      continue;
+    }
     const prev = byUserId.get(uid) || existingByHandle || null;
     const merged = prev
       ? {
