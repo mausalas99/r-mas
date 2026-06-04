@@ -636,7 +636,7 @@ function onLiveSyncWireMessageBody(data) {
   }
   if (data.type === 'livesync:leave' && data.bundle && data.clientId !== myId) {
     bridge().applyLiveSyncMerged(
-      mergeLiveSyncFullBundles([bridge().buildLiveSyncLocalMergeSource(), data.bundle])
+      mergeLiveSyncFullBundles([data.bundle, bridge().buildLiveSyncLocalMergeSource()])
     );
     return;
   }
@@ -646,7 +646,7 @@ function onLiveSyncWireMessageBody(data) {
   }
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
-    var mergedBundle = mergeLiveSyncFullBundles([bridge().buildLiveSyncLocalMergeSource(), data]);
+    var mergedBundle = mergeLiveSyncFullBundles([data, bridge().buildLiveSyncLocalMergeSource()]);
     bridge().applyLiveSyncMerged(mergedBundle);
     return;
   }
@@ -657,15 +657,19 @@ function onLiveSyncWireMessageBody(data) {
 }
 
 /** GET /clinical-ops from host and merge into local SQLCipher (directorio LAN). */
-export async function fetchAndApplyClinicalOpsFromHost(roomId) {
+export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
   const rid = String(roomId || '').trim();
   if (!rid || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
     return false;
   }
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 8000);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
     const resp = await lanClient.fetch(
-      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/clinical-ops'
+      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/clinical-ops',
+      { signal: ctrl.signal, cache: 'no-store' }
     );
     if (!resp || !resp.ok) {
       recordClinicalOpsTrace('get', {
@@ -702,6 +706,8 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId) {
     return true;
   } catch (_e) {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -718,7 +724,7 @@ export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
       } catch (_e) {}
     }
     const applied = await Promise.race([
-      fetchAndApplyClinicalOpsFromHost(roomId),
+      fetchAndApplyClinicalOpsFromHost(roomId, { timeoutMs }),
       new Promise((resolve) => {
         setTimeout(() => resolve(false), timeoutMs);
       }),
@@ -807,7 +813,14 @@ export function leaveLiveSyncRoom(opts) {
   });
 }
 
-export async function joinLanRoom(roomId, displayName) {
+/**
+ * @param {string} roomId
+ * @param {string} [displayName]
+ * @param {{ silent?: boolean, mobileSharerSync?: boolean }} [opts]
+ */
+export async function joinLanRoom(roomId, displayName, opts) {
+  opts = opts || {};
+  var silent = !!(opts.silent || opts.mobileSharerSync);
   await ensureLanSyncRoomBridgeWired();
   var id = String(roomId || '').trim();
   if (!id) {
@@ -840,7 +853,7 @@ export async function joinLanRoom(roomId, displayName) {
     _liveSyncSessionResyncDone = true;
     syncLiveSyncStatusChrome();
     bridge().patchLanPanelJoinButtons();
-    runtime().showToast('Ya estás en esta sala', 'success');
+    if (!silent) runtime().showToast('Ya estás en esta sala', 'success');
     return;
   }
   if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
@@ -866,14 +879,36 @@ export async function joinLanRoom(roomId, displayName) {
     runtime().showToast('No se pudo activar relay de sala', 'error');
     return;
   }
-  runtime().showToast('Sala: sincronizando expediente, agenda y pendientes', 'success');
+  if (!silent) {
+    runtime().showToast('Sala: sincronizando expediente, agenda y pendientes', 'success');
+  }
   syncLiveSyncStatusChrome();
   bridge().patchLanPanelJoinButtons();
+  if (opts.mobileSharerSync) {
+    void finishMobileRoomJoinSync(id);
+    return;
+  }
   await waitForLiveChannelOpen(id, 5000);
   await syncLiveSyncAfterRoomJoin(id);
   applyRoomSyncPhaseAfterReconcile(id);
   _liveSyncSessionResyncDone = true;
   syncLiveSyncStatusChrome();
+}
+
+async function finishMobileRoomJoinSync(roomId) {
+  var id = String(roomId || '').trim();
+  if (!id) return;
+  try {
+    await waitForLiveChannelOpen(id, 3500);
+    await syncLiveSyncAfterRoomJoin(id);
+    applyRoomSyncPhaseAfterReconcile(id);
+    _liveSyncSessionResyncDone = true;
+    syncLiveSyncStatusChrome();
+  } finally {
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('rpc-mobile-lan-sync-settled'));
+    }
+  }
 }
 export function registerLanSyncRoomWireHandlers() {
   lanClient.addEventListener('lan-live', function (ev) {

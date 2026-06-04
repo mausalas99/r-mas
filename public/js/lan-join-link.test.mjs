@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildLanJoinUrls,
+  buildPermanentMobileJoinUrl,
   parseLanJoinQuery,
   parseLanInviteInput,
   resolveLanJoinHostUrl,
@@ -10,6 +11,12 @@ import {
 } from './lan-join-link.mjs';
 
 describe('lan-join-link', () => {
+  it('buildPermanentMobileJoinUrl usa /mobile/?token= sin ticket', () => {
+    const u = buildPermanentMobileJoinUrl('http://192.168.1.5:3738/', 'ward-token-abc');
+    assert.equal(u, 'http://192.168.1.5:3738/mobile/?token=ward-token-abc');
+    assert.ok(!u.includes('/join/req_'));
+  });
+
   it('buildLanJoinUrls usa ruta /join/req_ sin code en query', () => {
     const ticketId = 'req_a1b2c3d4e5f6';
     const u = buildLanJoinUrls('http://192.168.1.5:3738/', ticketId);
@@ -74,11 +81,15 @@ describe('lan-join-link', () => {
     assert.equal(p.ticketId, '');
   });
 
-  it('parseLanInviteInput marca legacy /mobile/?code=', () => {
-    const p = parseLanInviteInput('http://192.168.0.10:3738/mobile/?code=sec');
+  it('parseLanInviteInput lee enlace permanente /mobile/?token=', () => {
+    const p = parseLanInviteInput(
+      'http://192.168.0.10:3738/mobile/?token=ward-sec&user=jperez&room=sala-2'
+    );
     assert.equal(p.hostUrl, 'http://192.168.0.10:3738');
-    assert.equal(p.teamCode, '');
-    assert.equal(p.legacyInvite, true);
+    assert.equal(p.teamCode, 'ward-sec');
+    assert.equal(p.roomId, 'sala-2');
+    assert.equal(p.legacyInvite, false);
+    assert.equal(p.ticketId, '');
   });
 
   it('parseLanInviteInput extrae ticket de texto con contexto', () => {

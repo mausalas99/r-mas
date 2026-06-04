@@ -56,6 +56,31 @@ test('monitoreoUpdatedAt combina historial y texto guardado', () => {
   );
 });
 
+test('mergePatientEntry conserva medPharmProfile más reciente', () => {
+  const older = {
+    patient: { id: 'p', registro: 'R' },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+    medPharmProfile: {
+      months: {
+        '2026-05': { lastSomePasteAt: '2026-05-01T00:00:00.000Z', rows: [{ rowKey: 'a' }] },
+      },
+    },
+  };
+  const newer = {
+    patient: { id: 'p', registro: 'R' },
+    note: { fecha: '10/01/2026' },
+    labHistory: [],
+    medPharmProfile: {
+      months: {
+        '2026-05': { lastSomePasteAt: '2026-06-01T00:00:00.000Z', rows: [{ rowKey: 'b' }] },
+      },
+    },
+  };
+  const merged = mergePatientEntry(older, newer);
+  assert.equal(merged.medPharmProfile.months['2026-05'].rows[0].rowKey, 'b');
+});
+
 test('mergePatientEntry fusiona monitoreo con mergeMonitoreo si ambos tienen carga', () => {
   const longHist = {
     historial: [

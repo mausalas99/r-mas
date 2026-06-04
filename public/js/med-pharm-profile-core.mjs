@@ -349,6 +349,33 @@ export function applySomePasteToProfile(profile, parsed) {
   return { months };
 }
 
+/** ISO timestamp for LAN LWW — latest SOME paste or Receta merge across months. */
+export function medPharmProfileUpdatedAt(profile) {
+  if (!profile || typeof profile !== 'object') return '';
+  const months = profile.months;
+  if (!months || typeof months !== 'object') return '';
+  let best = '';
+  Object.keys(months).forEach(function (k) {
+    const m = months[k];
+    if (!m || typeof m !== 'object') return;
+    const paste = m.lastSomePasteAt ? String(m.lastSomePasteAt).trim() : '';
+    if (paste && paste > best) best = paste;
+    const rec = m.lastRecetaMergeDate ? String(m.lastRecetaMergeDate).trim() : '';
+    if (!rec) return;
+    const parts = rec.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!parts) return;
+    const iso =
+      parts[3] +
+      '-' +
+      String(parts[2]).padStart(2, '0') +
+      '-' +
+      String(parts[1]).padStart(2, '0') +
+      'T12:00:00.000Z';
+    if (iso > best) best = iso;
+  });
+  return best;
+}
+
 export function getMonthFromProfile(profile, year, monthIndex) {
   if (!profile || !profile.months) return null;
   return profile.months[monthKeyFromParts(year, monthIndex)] || null;

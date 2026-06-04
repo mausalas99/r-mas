@@ -1,6 +1,7 @@
 /**
  * Persist clinical identity binding in rpc-settings (device ↔ DB user).
  */
+import { normalizeUsername } from './clinical-username.mjs';
 
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '6.6.6';
@@ -18,6 +19,34 @@ export const CLINICAL_LAN_USERNAME_HINT_HTML =
 export const CLINICAL_LAN_DISPLAY_NAME_HINT_HTML =
   '<strong>Nombre en guardia</strong> — cómo te ven en el censo y las entregas: ' +
   'p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.';
+
+/** Device uses SQLCipher only — no LAN LiveSync, Mi rotación, or @usuario in sala. */
+export function isClinicalLocalOnlyMode(settings = readRpcSettings()) {
+  return settings?.clinicalLocalOnly === true;
+}
+
+/** User chose LAN vs local before first profile save (`clinicalLocalOnly` true | false). */
+export function isClinicalSyncModeChosen(settings = readRpcSettings()) {
+  return settings?.clinicalLocalOnly === true || settings?.clinicalLocalOnly === false;
+}
+
+/**
+ * @param {boolean} localOnly
+ * @returns {Record<string, unknown>}
+ */
+export function setClinicalSyncModeLocalOnly(localOnly) {
+  const settings = readRpcSettings();
+  settings.clinicalLocalOnly = !!localOnly;
+  try {
+    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  } catch (_e) {}
+  return settings;
+}
+
+/** Auto @usuario assigned in solo-equipo mode; must be replaced for LAN. */
+export function isLocalOnlyPlaceholderUsername(raw) {
+  return /^local_[a-z0-9_]+$/.test(normalizeUsername(raw || ''));
+}
 
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
@@ -42,6 +71,7 @@ export function resolveClinicalClientId(settings = readRpcSettings()) {
 
 /** @param {Record<string, unknown>|null|undefined} [settings] */
 export function needsClinicalLanProfileGate(settings = readRpcSettings()) {
+  if (isClinicalLocalOnlyMode(settings)) return false;
   return (
     String(settings?.clinicalLanProfileGateVersion || '') !== CLINICAL_LAN_PROFILE_GATE_VERSION
   );

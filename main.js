@@ -519,6 +519,50 @@ ipcMain.handle('save-exported-document', async (_e, { fileName, buffer }) => {
   return { success: true, path: resolvedFile };
 });
 
+const docExport = require('./lib/doc-export-service.js');
+const { logDocExport } = require('./lib/doc-export-audit.js');
+
+ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
+  const paths = {
+    userDataPath: app.getPath('userData'),
+    downloadsPath: app.getPath('downloads'),
+  };
+  try {
+    switch (kind) {
+      case 'note': {
+        const { buffer, fileName } = await docExport.exportNoteDocx(payload || {});
+        logDocExport({ type: 'nota', patient: payload && payload.patient, status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
+      case 'indicaciones': {
+        const { buffer, fileName } = await docExport.exportIndicacionesDocx(payload || {});
+        logDocExport({ type: 'indicaciones', patient: payload && payload.patient, status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
+      case 'listado': {
+        const { buffer, fileName } = await docExport.exportListadoDocx(payload || {});
+        logDocExport({ type: 'listado', patient: payload && payload.patient, status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
+      case 'censo': {
+        const { buffer, fileName } = await docExport.exportCensoPdf(payload || {}, paths);
+        logDocExport({ type: 'censo', status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
+      case 'receta-hu':
+        return await docExport.exportRecetaHuPdf(payload || {}, paths);
+      default:
+        return { ok: false, error: 'Tipo de documento no soportado.' };
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e && e.message) || 'No se pudo generar el documento. Intenta de nuevo.',
+      code: e && e.code ? e.code : undefined,
+    };
+  }
+});
+
 ipcMain.handle('select-output-dir', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return undefined;
   const result = await dialog.showOpenDialog(mainWindow, {

@@ -9,6 +9,7 @@ const ONBOARDING_WINDOW_HANDLERS = [
   'startTourModule',
   'startHelpTourInterconsulta',
   'startNeoCompanionTour',
+  'resetAndStartOnboarding',
 ];
 
 test('settingsHelpWindowHandlers expone handlers de onboarding en window', () => {

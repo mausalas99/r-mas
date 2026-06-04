@@ -39,7 +39,7 @@ export function mergeLiveSyncFullBundles(sources) {
   const base = domainMergers.agendaTodosPatients(list);
   let entries = domainMergers.patientEntries(list);
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
-  base.entries = attachTodosMapToPatientEntries(entries, base.todos);
+  base.entries = attachTodosMapToPatientEntries(entries, base.todos, base.todoTouchedPatientIds);
   if (isLanManejoRoomSyncEnabled()) {
     base.manejo = domainMergers.manejo(list);
   }

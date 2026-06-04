@@ -10,6 +10,7 @@ import {
   runInitialFeatureBoot,
   wasV3MigratedThisBoot,
 } from './app-runtimes.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
 import {
   registerAppShellContext,
   appShellWindowHandlers,
@@ -67,6 +68,7 @@ import {
   wireClinicalRotationEntryControls,
   syncClinicalRotationEntryChrome,
 } from './features/clinical-rotation-entry.mjs';
+import { windowHandlers as clinicalSyncModeSettingsHandlers } from './features/clinical-sync-mode-settings.mjs';
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
@@ -102,6 +104,7 @@ const allWindowHandlers = Object.assign(
   profileWindowHandlers,
   clinicalRegistrationWindowHandlers,
   clinicalRotationEntryHandlers,
+  clinicalSyncModeSettingsHandlers,
   appShellWindowHandlers,
   {
     resumeClinicalSession: function () {
@@ -203,11 +206,20 @@ registerAppRuntimeContext({
   },
 });
 
+async function registerFeatureRuntimesForBoot() {
+  if (isMobileWeb()) {
+    void registerAllFeatureRuntimes();
+    runInitialFeatureBoot();
+    return;
+  }
+  await registerAllFeatureRuntimes();
+  runInitialFeatureBoot();
+}
+
 appStateReady
   .then(async function () {
     try {
-      await registerAllFeatureRuntimes();
-      runInitialFeatureBoot();
+      await registerFeatureRuntimesForBoot();
     } catch (bootErr) {
       console.error('[R+] Error registrando runtimes de features:', bootErr);
     }
@@ -216,8 +228,7 @@ appStateReady
     console.error('[R+] Error cargando estado clínico:', stateErr);
     try {
       initAppState();
-      await registerAllFeatureRuntimes();
-      runInitialFeatureBoot();
+      await registerFeatureRuntimesForBoot();
     } catch (bootErr) {
       console.error('[R+] Error registrando runtimes de features:', bootErr);
     }
@@ -313,7 +324,7 @@ function runDomBootAfterState() {
     syncMainAppTabA11y(activeAppTab);
     renderInnerTabs();
     initTabBarMotion();
-    if (wasV3MigratedThisBoot()) {
+    if (wasV3MigratedThisBoot() && !isMobileWeb()) {
       setTimeout(function () {
         try {
           showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.');

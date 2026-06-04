@@ -733,6 +733,18 @@ export function __resetDbUnlockWaitForTests() {
   setOverlayVisible(false);
 }
 
+/**
+ * Re-open DB unlock from onboarding / Mi rotación when boot auto-unlock did not run.
+ * @returns {Promise<boolean>}
+ */
+export async function retryClinicalDbUnlockForOnboarding() {
+  if (!isDbMode()) return false;
+  const result = await waitForDbUnlock();
+  if (!result || !result.unlocked) return false;
+  await applyClinicalDbUnlockCompletion({ refreshOnboarding: true });
+  return true;
+}
+
 export const dbUnlockWindowHandlers = {
   dismissRecoveryCodeReveal,
   submitDbUnlockPassphrase,
@@ -741,6 +753,7 @@ export const dbUnlockWindowHandlers = {
   openChangeMasterPasswordModal,
   closeChangeMasterPasswordModal,
   submitChangeMasterPassword,
+  retryClinicalDbUnlockForOnboarding,
 };
 
 /** @internal tests */

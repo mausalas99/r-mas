@@ -520,7 +520,18 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   }
 
   if (!opts.skipLanPull) {
-    await pullClinicalOpsFromLanRoom();
+    const panelPullMs = 3500;
+    const pulled = await Promise.race([
+      pullClinicalOpsFromLanRoom({ timeoutMs: panelPullMs }),
+      new Promise((resolve) => setTimeout(() => resolve(false), panelPullMs)),
+    ]);
+    if (!pulled) {
+      void pullClinicalOpsFromLanRoom({ timeoutMs: 12000 }).then((ok) => {
+        const bd = document.getElementById('clinical-teams-backdrop');
+        if (!ok || !bd?.classList.contains('open')) return;
+        void renderClinicalTeamsPanel({ silent: true, skipLanPull: true });
+      });
+    }
   }
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();

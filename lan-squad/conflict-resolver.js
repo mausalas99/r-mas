@@ -130,7 +130,7 @@ function createConflictResolver({ store }) {
           patientId,
           version,
           data: merged,
-          deleted: false,
+          deleted: mutation.op === 'delete' || !!server.deleted,
         },
         setOpts
       );

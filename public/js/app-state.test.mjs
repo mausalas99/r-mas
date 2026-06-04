@@ -69,6 +69,32 @@ describe('app-state', () => {
     assert.strictEqual(storage.getPatients().length, 0);
   });
 
+  it('flushSaveState runs again after an in-flight save when queued', async () => {
+    const orig = storage.saveAll.bind(storage);
+    let calls = 0;
+    let release;
+    storage.saveAll = (...args) => {
+      calls += 1;
+      if (calls === 1) {
+        return new Promise(function (resolve) {
+          release = function () {
+            resolve(orig(...args));
+          };
+        });
+      }
+      return orig(...args);
+    };
+    appState.setPatients([{ id: 'p1', name: 'A' }]);
+    const first = appState.saveState({ immediate: true });
+    appState.setPatients([{ id: 'p1', name: 'B' }]);
+    const flushed = appState.flushSaveState();
+    assert.ok(release);
+    release();
+    await Promise.all([first, flushed]);
+    assert.ok(calls >= 2);
+    storage.saveAll = orig;
+  });
+
   it('flushSaveState persists without debounce wait', async () => {
     const orig = storage.saveAll.bind(storage);
     let calls = 0;

@@ -64,6 +64,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveExportedDocument: function(opts) {
     return ipcRenderer.invoke('save-exported-document', opts);
   },
+  generateDocument: function(opts) {
+    return ipcRenderer.invoke('generate-document', opts);
+  },
   setUpdateChannel: function(channel) {
     ipcRenderer.send('set-update-channel', channel);
   },

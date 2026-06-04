@@ -6,12 +6,14 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  medPharmProfileByPatient,
   listadoProblemas,
   vpoByPatient,
   saveState,
   flushSaveState,
 } from '../app-state.mjs';
 import { stashMedInputForPatient } from './medications.mjs';
+import { stashMedPharmPasteForPatient } from './med-pharm-profile-panel.mjs';
 import { stashVpoForPatient } from './vpo.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
@@ -35,6 +37,7 @@ import {
   stampPatientClinicalSala,
 } from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import { isMobileWeb } from '../mobile-web.mjs';
 import {
   applyElevatedPatientFilters,
   filterPatientsForClinicalSidebar,
@@ -530,6 +533,9 @@ export function toggleSidebarAutoHide() {
 export function initSidebarAutoHide() {
   var strip = document.getElementById('sidebar-hover-strip');
   var aside = document.getElementById('patient-sidebar');
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('rpc-mobile-web')) {
+    writeSidebarAutoHide(false);
+  }
   applySidebarAutoHideUi();
   if (!strip || !aside) return;
   function reveal() {
@@ -565,6 +571,7 @@ function handlePatientSortZoneEnd(evt) {
 
 function mountPatientListSortables() {
   destroyPatientListSortables();
+  if (isMobileWeb()) return;
   var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
   if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
   var listRoot = document.getElementById('patient-list');
@@ -1182,6 +1189,7 @@ function selectPatientCore(id) {
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
     stashMedInputForPatient(prevId);
+    stashMedPharmPasteForPatient(prevId);
     stashVpoForPatient(prevId);
     flushSaveState();
   }
@@ -1806,6 +1814,7 @@ export function buildPatientEntry(patientId) {
     indicaciones: indicaciones[patientId] || {},
     labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
     medReceta: medRecetaByPatient[patientId] || null,
+    medPharmProfile: medPharmProfileByPatient[patientId] || null,
     vpo: vpoByPatient[patientId] || null,
     listadoProblemas: listadoProblemas[patientId] || null,
     todos: storage.getTodos(patientId),

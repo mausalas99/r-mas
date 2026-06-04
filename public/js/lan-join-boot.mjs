@@ -33,12 +33,22 @@ export function persistLanJoinCredentials(hostUrl, token) {
   }
 }
 
+const EXCHANGE_TIMEOUT_MS = 12000;
+
 export async function runJoinTicketExchange(ticketId) {
-  const res = await fetch('/api/lan/v1/auth/exchange', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ticket: ticketId }),
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), EXCHANGE_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch('/api/lan/v1/auth/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: ticketId }),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error('join_failed');
   const data = await res.json();
   const hostUrl =

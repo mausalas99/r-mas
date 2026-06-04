@@ -6,6 +6,8 @@
 
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { parseCamaCellForCenso, formatCamaCellLabel } from './public/js/censo-build.mjs';
+import { classifyCensoTableLine } from './public/js/censo-table-style.mjs';
+import { CENSO_COL_WEIGHTS } from './public/js/censo-table-columns.mjs';
 
 const PAGE_W = 1008;
 const PAGE_H = 612;
@@ -13,50 +15,49 @@ const MARGIN = 24;
 /** Bloque título + subtítulo (debe coincidir con drawPageHeader). */
 const DOC_HEADER_H = 40;
 const FOOTER_H = 10;
-const TABLE_HEAD_H = 20;
-const FONT = 8;
-const FONT_LABS = 6.5;
+const TABLE_HEAD_H = 22;
+const FONT = 8.25;
+const FONT_LABS = 7.25;
 const FONT_HEAD = 8.5;
-const FONT_TITLE = 10;
-const LINE_H = 8.2;
-const ROW_PAD = 2;
+const FONT_TITLE = 11;
+const LINE_H = 9;
+const LINE_H_LABS = 8.4;
+const ROW_PAD = 3;
+const CELL_PAD_X = 4;
 
 const COLORS = {
-  ink: rgb(0.12, 0.14, 0.18),
-  muted: rgb(0.42, 0.44, 0.48),
-  rule: rgb(0.78, 0.8, 0.84),
-  head: rgb(0.92, 0.94, 0.96),
-  zebra: rgb(0.97, 0.98, 0.99),
-  accent: rgb(0.15, 0.35, 0.55),
+  ink: rgb(0.102, 0.137, 0.196),
+  muted: rgb(0.361, 0.404, 0.471),
+  rule: rgb(0.82, 0.85, 0.89),
+  head: rgb(0.93, 0.95, 0.97),
+  zebra: rgb(0.975, 0.98, 0.99),
+  accent: rgb(0.29, 0.322, 0.91),
   white: rgb(1, 1, 1),
 };
 
 /** Pesos relativos de columnas (se escalan al ancho útil de la hoja). */
-const COL_WEIGHTS = [
-  { key: 'num', title: '#', weight: 8 },
-  { key: 'cama', title: 'Cama', weight: 16 },
-  { key: 'paciente', title: 'Paciente', weight: 40 },
-  { key: 'dx', title: 'Dx', weight: 62 },
-  { key: 'meds', title: 'ATB / Meds', weight: 50 },
-  { key: 'labs', title: 'Labs', weight: 168 },
-  { key: 'signos', title: 'Signos', weight: 88 },
-  { key: 'io', title: 'I / E / B', weight: 72 },
-  { key: 'accesos', title: 'Accesos', weight: 28 },
-  { key: 'cultivos', title: 'Cultivos', weight: 58 },
-  { key: 'pend', title: 'Pend.', weight: 78 },
-];
+const COL_WEIGHTS = CENSO_COL_WEIGHTS;
 
-/** Centrado horizontal en cuerpo de tabla. */
-const CENTER_COLS = { num: true, cama: true, paciente: true, dx: true, meds: true };
-/** Alineado arriba (multilínea en filas altas). */
-const TOP_ALIGN_COLS = { labs: true, signos: true, io: true, pend: true };
-/** Diagnósticos y cama en negrita. */
-const BOLD_COLS = { dx: true, cama: true };
+/** Centrado horizontal del bloque en la celda. */
+const CENTER_COLS = { num: true, paciente: true, dx: true, meds: true };
+/** Reducir tamaño antes de elipsis (evita «…» en # y cortes dentro de un fármaco). */
+const SHRINK_FIT_COLS = { num: true, meds: true };
+/** Sin partir líneas (solo saltos explícitos \\n). */
+const NO_WRAP_COLS = { paciente: true, num: true, meds: true };
+/** Cama en negrita. */
+const BOLD_COLS = { cama: true };
 
 /** @param {string} colKey */
 function colFontSize(colKey) {
   if (colKey === 'labs') return FONT_LABS;
+  if (colKey === 'meds') return 7.5;
+  if (colKey === 'num' || colKey === 'cama') return 9;
   return FONT;
+}
+
+function colLineHeight(colKey) {
+  if (colKey === 'labs') return LINE_H_LABS;
+  return LINE_H;
 }
 
 /**
@@ -199,6 +200,33 @@ function fitLineToWidth(font, line, maxWidth, fontSize) {
 }
 
 /**
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {string} line
+ * @param {number} maxWidth
+ * @param {number} maxSize
+ * @param {number} [minSize]
+ * @returns {{ text: string, size: number, textW: number }}
+ */
+function fitLineShrinkToWidth(font, line, maxWidth, maxSize, minSize) {
+  minSize = minSize != null ? minSize : 6;
+  var s = pdfSafeLine(line) || '—';
+  var size = maxSize;
+  while (size >= minSize) {
+    var w = font.widthOfTextAtSize(s, size);
+    if (w <= maxWidth) {
+      return { text: s, size: size, textW: w };
+    }
+    size -= 0.25;
+  }
+  var fitted = fitLineToWidth(font, s, maxWidth, minSize);
+  return {
+    text: fitted,
+    size: minSize,
+    textW: font.widthOfTextAtSize(fitted, minSize),
+  };
+}
+
+/**
  * @param {CensoRow} row
  * @returns {Record<string, string>}
  */
@@ -273,13 +301,40 @@ function maxLinesInRow(rowH) {
  * @returns {string[]}
  */
 function cellLines(font, fontBold, text, innerW, rowH, colKey) {
+  if (SHRINK_FIT_COLS[colKey] || NO_WRAP_COLS[colKey]) {
+    var lines = splitCellLinesNoWrap(text);
+    var max = maxLinesInRow(rowH);
+    if (max > 0 && lines.length > max) {
+      return lines.slice(0, max);
+    }
+    return lines;
+  }
   var measureFont = BOLD_COLS[colKey] ? fontBold : font;
   return wrapCell(measureFont, text, innerW, maxLinesInRow(rowH), colFontSize(colKey));
 }
 
 function cellLinesUnbounded(font, fontBold, text, innerW, colKey) {
+  if (SHRINK_FIT_COLS[colKey] || NO_WRAP_COLS[colKey]) {
+    return splitCellLinesNoWrap(text);
+  }
   var measureFont = BOLD_COLS[colKey] ? fontBold : font;
   return wrapCell(measureFont, text, innerW, 0, colFontSize(colKey));
+}
+
+/**
+ * Una línea de salida por línea de entrada (sin partir palabras en varias filas).
+ * @param {string} text
+ * @returns {string[]}
+ */
+function splitCellLinesNoWrap(text) {
+  var raw = String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return pdfSafeLine(l);
+    })
+    .filter(Boolean);
+  return raw.length ? raw : ['—'];
 }
 
 /**
@@ -302,7 +357,12 @@ function measureRowLineCount(font, fontBold, row, layout) {
   var maxLines = 1;
   layout.cols.forEach(function (col) {
     if (col.key === 'cama') return;
-    var innerW = col.w - 6;
+    if (SHRINK_FIT_COLS[col.key] || NO_WRAP_COLS[col.key]) {
+      var n = splitCellLinesNoWrap(cells[col.key] || '').length;
+      if (n > maxLines) maxLines = n;
+      return;
+    }
+    var innerW = col.w - CELL_PAD_X * 2;
     var count = cellLinesUnbounded(font, fontBold, cells[col.key] || '', innerW, col.key).length;
     if (count > maxLines) maxLines = count;
   });
@@ -398,25 +458,21 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
   var tx = x;
   cols.forEach(function (col) {
     var title = col.title;
-    var headY = headTop + 2;
-    if (CENTER_COLS[col.key]) {
-      var tw = fontBold.widthOfTextAtSize(title, FONT_HEAD);
-      safeDrawText(page, title, {
+    var headSize = col.key === 'labs' || col.key === 'meds' ? 7.5 : FONT_HEAD;
+    var lines = wrapText(fontBold, pdfSafeLine(title), col.w - 4, headSize);
+    if (!lines.length) lines = [title];
+    var blockH = lines.length * (headSize + 1);
+    var y0 = headTop + (TABLE_HEAD_H - blockH) / 2 + headSize - 1;
+    lines.forEach(function (line, i) {
+      var tw = fontBold.widthOfTextAtSize(line, headSize);
+      safeDrawText(page, line, {
         x: tx + (col.w - tw) / 2,
-        y: headTop + (TABLE_HEAD_H - FONT_HEAD) / 2 + 1,
-        size: FONT_HEAD,
+        y: y0 - i * (headSize + 1),
+        size: headSize,
         font: fontBold,
         color: COLORS.accent,
       });
-    } else {
-      safeDrawText(page, title, {
-        x: tx + 2,
-        y: headY,
-        size: FONT_HEAD,
-        font: fontBold,
-        color: COLORS.accent,
-      });
-    }
+    });
     tx += col.w;
   });
 }
@@ -441,61 +497,83 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
  * @param {import('pdf-lib').PDFFont} fontBold
  * @param {string} colKey
  */
+/**
+ * @param {string} colKey
+ * @param {string} role
+ * @param {number} lineIndex
+ * @returns {{ font: import('pdf-lib').PDFFont, color: import('pdf-lib').RGB, size: number }}
+ */
+function cellLineStyle(font, fontBold, colKey, role, lineIndex) {
+  var size = colFontSize(colKey);
+  if (role === 'muted') {
+    return { font: font, color: COLORS.muted, size: Math.max(7, size - 0.5) };
+  }
+  if (role === 'lab-date') {
+    return { font: fontBold, color: COLORS.accent, size: size };
+  }
+  if (role === 'lab-panel' || role === 'emphasis' || role === 'label-led') {
+    return { font: fontBold, color: COLORS.ink, size: size };
+  }
+  if (colKey === 'num' || colKey === 'cama') {
+    return { font: fontBold, color: COLORS.accent, size: size };
+  }
+  if (BOLD_COLS[colKey]) {
+    return { font: fontBold, color: COLORS.ink, size: size };
+  }
+  return { font: font, color: COLORS.ink, size: size };
+}
+
 function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold, colKey) {
   var centered = !!CENTER_COLS[colKey];
-  var topAlign = !!TOP_ALIGN_COLS[colKey];
-  var vCenter = centered && !topAlign;
-  var useBold = !!BOLD_COLS[colKey] || colKey === 'num';
-  var cellFont = useBold ? fontBold : font;
-  var fontSize = colFontSize(colKey);
+  var lineStep = colLineHeight(colKey);
   var minY = yTop - rowH + ROW_PAD;
   var maxLines = maxLinesInRow(rowH);
   var toDraw = [];
-  lines.forEach(function (ln) {
+  lines.forEach(function (ln, idx) {
     if (toDraw.length >= maxLines) return;
-    var fitted = fitLineToWidth(cellFont, ln, innerW, fontSize);
+    var role = classifyCensoTableLine(ln, colKey, idx);
+    var style = cellLineStyle(font, fontBold, colKey, role, idx);
+    var useShrink =
+      SHRINK_FIT_COLS[colKey] || (colKey === 'paciente' && idx === 0);
+    var fit;
+    if (useShrink) {
+      fit = fitLineShrinkToWidth(style.font, ln, innerW, style.size, colKey === 'num' ? 7 : 6);
+    } else {
+      var fitted = fitLineToWidth(style.font, ln, innerW, style.size);
+      fit = {
+        text: fitted,
+        size: style.size,
+        textW: style.font.widthOfTextAtSize(fitted, style.size),
+      };
+    }
     toDraw.push({
-      fitted: fitted,
-      textW: cellFont.widthOfTextAtSize(fitted, fontSize),
+      fitted: fit.text,
+      textW: fit.textW,
+      style: { font: style.font, color: style.color, size: fit.size },
     });
   });
-  var blockH = toDraw.length * LINE_H;
+  if (!toDraw.length) return;
+  if (toDraw.length === 1 && toDraw[0].fitted === '—' && colKey !== 'num' && colKey !== 'cama') {
+    toDraw[0].style = {
+      font: font,
+      color: COLORS.muted,
+      size: toDraw[0].style.size,
+    };
+  }
+  var blockH = toDraw.length * lineStep;
   var innerH = rowH - ROW_PAD * 2;
-  var y = topAlign || !vCenter
-    ? yTop - ROW_PAD - fontSize
-    : yTop - ROW_PAD - (innerH - blockH) / 2 - fontSize;
+  var y = yTop - ROW_PAD - (innerH - blockH) / 2 - toDraw[0].style.size;
   toDraw.forEach(function (item) {
     if (y < minY) return;
-    var x = centered ? tx + (colW - item.textW) / 2 : tx + 2;
+    var x = centered ? tx + (colW - item.textW) / 2 : tx + CELL_PAD_X;
     safeDrawText(page, item.fitted, {
       x: x,
       y: y,
-      size: fontSize,
-      font: cellFont,
-      color: colKey === 'num' ? COLORS.accent : COLORS.ink,
+      size: item.style.size,
+      font: item.style.font,
+      color: item.style.color,
     });
-    y -= LINE_H;
-  });
-}
-
-/**
- * Cuarto y cama en vertical, bloque centrado en la celda.
- * @param {import('pdf-lib').PDFPage} page
- * @param {string} text
- * @param {number} tx
- * @param {number} colW
- * @param {number} yBottom
- * @param {number} rowH
- * @param {import('pdf-lib').PDFFont} fontBold
- */
-function drawCamaCell(page, text, tx, colW, yBottom, rowH, fontBold) {
-  var label = formatCamaCellLabel(parseCamaCellForCenso(text));
-  var pad = 4;
-  var innerH = rowH - pad * 2;
-  drawTextVerticalInBox(page, label, tx, yBottom + pad, colW, innerH, fontBold, FONT, COLORS.accent, {
-    minSize: 7,
-    valign: 'center',
-    allowTruncate: true,
+    y -= lineStep;
   });
 }
 
@@ -518,12 +596,25 @@ function drawTableRow(page, row, yTop, rowH, font, fontBold, zebra, layout) {
   var tx = x;
   cols.forEach(function (col) {
     if (col.key === 'cama') {
-      drawCamaCell(page, cells.cama, tx, col.w, yBottom, rowH, fontBold);
+      var label = formatCamaCellLabel(parseCamaCellForCenso(cells.cama));
+      drawTextVerticalInBox(
+        page,
+        label,
+        tx,
+        yBottom + ROW_PAD,
+        col.w,
+        rowH - ROW_PAD * 2,
+        fontBold,
+        10,
+        COLORS.accent,
+        { minSize: 7, valign: 'center', allowTruncate: true }
+      );
       tx += col.w;
       return;
     }
-    var innerW = col.w - 6;
-    var lines = cellLines(font, fontBold, cells[col.key] || '', innerW, rowH, col.key);
+    var innerW = col.w - CELL_PAD_X * 2;
+    var cellText = cells[col.key] || '';
+    var lines = cellLines(font, fontBold, cellText, innerW, rowH, col.key);
     drawCellText(page, lines, tx, col.w, innerW, yTop, rowH, font, fontBold, col.key);
     tx += col.w;
   });

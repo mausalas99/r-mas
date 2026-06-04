@@ -111,6 +111,14 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-04** `onboarding-local-first`: sync-mode (LAN vs solo equipo) before DB session; unlock/retry CTAs + Windows session backoff; not gated on ⇄; `clinical-onboarding-main.mjs`, `clinical-panel-host.mjs`, `db-unlock.mjs`.
+- **2026-06-04** `mobile-pwa`: Safari A2HS + barebones chrome (sin censo PDF, Mi Perfil, Ajustes, pestaña Salida); `/mobile/` stub, `mobile-web.mjs`, `mobile.css`, `expediente-tabs.mjs`.
+- **2026-06-04** `lan-mobile-join`: auth exchange uses request Host; mobile auto-join sala + resume sync; 20s sync-bundle fetch + host-empty toasts; host must Unirse before copy invite; `transport.mjs`, `push.mjs`, `panel.mjs`.
+- **2026-06-04** `lan-ward-ux`: rate-limit exempt LAN API; ping 500ms timeout; discovery concurrency 6 (was 32); Mi rotación fail-open ≤3.5s + pause ⇄ scan while open; `room.mjs`, `teams-roster*`, `lan-host-subnet-discovery.mjs`.
+- **2026-06-04** `lan-mobile-permanent`: iPad link `/mobile/?token=…` + sharer params (bookmarkable, no ticket TTL); sala invite stays one-time `/join/req_`; `buildPermanentMobileJoinUrl`, `panel.mjs`.
+- **2026-06-04** `lan-invite-split`: ⇄ panel splits **iPad/móvil** (copy identity link) vs **otra Mac/sala** (ticket only, own @usuario); `appendMobileSharerParamsToJoinUrl`, `panel.mjs`, `transport.mjs`.
+- **2026-06-04** `lan-mobile-sharer`: iPad mirrors invite sharer (`user`/`name`/`rank`/`sala`/`room`) — silent bundle sync, no auto-open ⇄ blocking taps; distinct from desktop «Unirse» UX; `mobile-sharer-sync.mjs`, `transport.mjs`, `panel.mjs`, `app-shell.mjs`.
+- **2026-06-04** `lan-host-escalation`: sin R4/admin en red — escalada 10+10+10 min → R3, R2, R1 pueden anfitrionar; timer se reinicia al detectar R4; `lan-host-escalation.mjs`, `lan-host-rank.mjs`, `panel.mjs` scan.
 - **2026-06-04** `clinical-profile-gate-6.6.6`: force re-register @usuario vs nombre en guardia on update — bump `CLINICAL_LAN_PROFILE_GATE_VERSION`, `ensureLanProfileGateDeviceReset`, empty prefills + Spanish hints; `clinical-settings.mjs`, `clinical-onboarding.mjs`, registration modal.
 - **2026-06-04** `lan-single-host-r1`: R1–R3 cannot be turn host — rank gate before discovery; Electron LAN UI role defaults client; `canLocalMacBeLanHost` / `isClinicalRankConfiguredForLan`; `lan-host-rank-policy.mjs`, `transport.mjs`, `panel.mjs`, `storage.js`.
 - **2026-06-04** `lan-single-host-consolidation`: `startedAt` disk meta + `GET /host-rank`; `resolveHostElection` + `lan-host-consolidation.mjs` (push-before-handoff); subnet discovery merge; transport/panel election scan; `docs/superpowers/plans/2026-06-04-lan-single-host-consolidation.md`.

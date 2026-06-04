@@ -150,6 +150,8 @@ export async function assertLanRoomForUsernameRegister(opts = {}) {
  * @returns {Promise<{ ok: boolean, code?: string }>}
  */
 export async function flushClinicalProfileToLan(opts = {}) {
+  const { isClinicalLocalOnlyMode } = await import('./clinical-settings.mjs');
+  if (isClinicalLocalOnlyMode()) return { ok: false, code: 'NO_LAN' };
   const lan = await import('./features/lan-sync.mjs');
   return lan.pushClinicalOpsLanNow(opts);
 }

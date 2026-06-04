@@ -1,4 +1,5 @@
 /** Settings gear dropdown: a11y, focus, team-sync header button. */
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeConnectionDropdown } from '../lan-sync.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
@@ -27,6 +28,7 @@ function focusSettingsDropdownEntry() {
 }
 
 export function toggleSettingsDropdown() {
+  if (isMobileWeb()) return;
   closeConnectionDropdown();
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
@@ -39,6 +41,13 @@ export function toggleSettingsDropdown() {
   if (nextOpen) {
     getSettingsHelpRuntime().syncPreimportBackupUi();
     getSettingsHelpRuntime().syncSettingsLanHostDiskSection();
+    void import('../clinical-sync-mode-settings.mjs')
+      .then((m) => {
+        if (typeof m.syncClinicalSyncModeSettingsUi === 'function') {
+          m.syncClinicalSyncModeSettingsUi();
+        }
+      })
+      .catch(() => {});
     focusSettingsDropdownEntry();
   }
 }
@@ -62,6 +71,10 @@ export function expandSettingsAccordionBackupSync() {
 export function syncTeamSyncHeaderButton() {
   var btn = document.getElementById('btn-header-team-sync');
   if (!btn) return;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) {
+    btn.style.display = 'none';
+    return;
+  }
   var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
   btn.style.display = desktop || isMobileWeb() ? 'flex' : 'none';
 }

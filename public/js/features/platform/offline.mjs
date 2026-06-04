@@ -47,10 +47,11 @@ function decrementPendingJobs() {
 var rpcOffline = false;
 function syncOfflineButtonStates() {
   try {
+    var desktopDocIpc = !!(window.electronAPI && window.electronAPI.generateDocument);
     ['btn-gen', 'btn-gen-ind'].forEach(function(id) {
       var b = document.getElementById(id);
       if (!b) return;
-      if (rpcOffline) {
+      if (rpcOffline && !desktopDocIpc) {
         b.disabled = true;
         b.setAttribute('aria-disabled', 'true');
         b.dataset.rpcOffline = '1';
@@ -80,7 +81,10 @@ function setRpcOffline(offline) {
   setRpcOfflineVisible(rpcOffline);
   syncOfflineButtonStates();
   if (!prev && rpcOffline) {
-    try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) {}
+    var desktopDocIpc = !!(window.electronAPI && window.electronAPI.generateDocument);
+    if (!desktopDocIpc) {
+      try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) {}
+    }
   } else if (prev && !rpcOffline) {
     try { rt.showToast('Servidor local reconectado.', 'success'); } catch (_e) {}
   }
@@ -91,10 +95,12 @@ function checkRpcServerHealth() {
   try {
     fetch('/health', { method: 'GET', cache: 'no-store' })
       .then(function(r) {
+        if (r.status === 429) return;
         if (!r.ok) throw new Error('bad status');
         return r.json();
       })
       .then(function(j) {
+        if (j === undefined) return;
         try {
           if (!j || !j.ok) throw new Error('bad payload');
           setRpcOffline(false);

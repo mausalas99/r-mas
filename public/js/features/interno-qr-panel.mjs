@@ -59,17 +59,19 @@ export async function appendInternoQrPanel(root, opts = {}) {
   if (!api || !userId || typeof api.dbInternoAccessList !== 'function') return;
 
   const details = document.createElement('details');
-  details.className = 'lan-connect-card lan-hub-interno-details';
+  details.className =
+    'rpc-disclosure lan-connect-card lan-hub-interno-details';
 
   const summary = document.createElement('summary');
-  summary.className = 'lan-hub-interno-summary';
+  summary.className =
+    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-hub-interno-summary';
   summary.innerHTML =
     '<span class="lan-connect-card-title">QR Internos (MIP)</span>' +
     '<span class="lan-connect-card-hint lan-hub-interno-summary-hint">Celulares pregrado · config. única</span>';
   details.appendChild(summary);
 
   const body = document.createElement('div');
-  body.className = 'lan-hub-interno-body';
+  body.className = 'rpc-disclosure__body lan-hub-interno-body';
   body.hidden = true;
   details.appendChild(body);
 

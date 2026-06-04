@@ -32,6 +32,7 @@ import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
+import { isMobileWeb } from "../mobile-web.mjs";
 import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
 import {
   isClinicoUnlocked,
@@ -423,6 +424,7 @@ export function toggleHeaderWorkMode() {
 }
 
 export function openProfileModal() {
+  if (isMobileWeb()) return;
   var modal = document.getElementById("profile-modal");
   if (!modal) return;
   loadSettings();

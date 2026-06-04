@@ -1768,7 +1768,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 10px 14px 12px;
+  padding: 8px 10px 10px;
 }
 
 .guardia-incoming-summary {
@@ -2725,8 +2725,8 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 10px;
+  padding: 7px 10px;
   cursor: pointer;
   list-style: none;
   font-weight: 700;
@@ -2741,6 +2741,10 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-lan-rank-group-summary::-webkit-details-marker {
   display: none;
+}
+.clinical-lan-rank-group-summary::marker {
+  content: '';
+  font-size: 0;
 }
 
 .clinical-lan-rank-group-summary::before {
@@ -2955,8 +2959,8 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 .clinical-teams-details > summary {
   list-style: none;
   cursor: pointer;
-  padding: 12px 14px;
-  font-size: 0.875rem;
+  padding: 8px 10px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
   display: flex;
@@ -2968,6 +2972,10 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-teams-details > summary::-webkit-details-marker {
   display: none;
+}
+.clinical-teams-details > summary::marker {
+  content: '';
+  font-size: 0;
 }
 
 .clinical-teams-details > summary::after {
@@ -2994,7 +3002,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 }
 
 .clinical-teams-details-body {
-  padding: 14px 14px 16px;
+  padding: 10px 10px 12px;
   border-top: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
 }
 
@@ -3756,6 +3764,56 @@ html.clinical-onboarding-active #main-area {
   font-size: 0.9375rem;
   line-height: 1.55;
   max-width: 52rem;
+}
+
+.clinical-onboard-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.clinical-onboard-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px 20px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated, var(--surface));
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.clinical-onboard-mode-card:hover,
+.clinical-onboard-mode-card:focus-visible {
+  border-color: var(--accent, #2563eb);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+}
+
+.clinical-onboard-mode-card--muted {
+  background: var(--surface);
+}
+
+.clinical-onboard-mode-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.clinical-onboard-mode-card-desc {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-muted, var(--text-secondary, inherit));
+  font-weight: 400;
+}
+
+#clinical-onboard-local-form.clinical-onboard-form--local {
+  grid-template-columns: 1fr;
+  max-width: 28rem;
 }
 
 #clinical-onboard-username-form.clinical-teams-create-form {

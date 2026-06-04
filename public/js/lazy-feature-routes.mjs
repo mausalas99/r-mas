@@ -2,6 +2,8 @@
  * Lazy feature routes (BN-10) — boot hubs must not statically import index shells.
  */
 
+import { isMobileWeb } from './mobile-web.mjs';
+
 let settingsHelpPromise = null;
 let platformPromise = null;
 let settingsHelpModule = null;
@@ -174,7 +176,7 @@ export const platformWindowHandlersLazy = buildLazyWindowHandlers(
  * Register platform + settings-help runtimes and replace lazy window stubs with real handlers.
  * @param {object} ctx
  */
-export async function registerLazyFeatureRuntimes(ctx) {
+async function registerLazyFeatureRuntimesBody(ctx) {
   const [platformMod, settingsMod] = await Promise.all([
     ensurePlatformLoaded(),
     ensureSettingsHelpLoaded(),
@@ -183,4 +185,12 @@ export async function registerLazyFeatureRuntimes(ctx) {
   settingsMod.registerSettingsHelpRuntime(ctx);
   patchWindowHandlers(settingsMod.settingsHelpWindowHandlers);
   patchWindowHandlers(platformMod.platformWindowHandlers);
+}
+
+export async function registerLazyFeatureRuntimes(ctx) {
+  if (isMobileWeb()) {
+    void registerLazyFeatureRuntimesBody(ctx);
+    return;
+  }
+  return registerLazyFeatureRuntimesBody(ctx);
 }

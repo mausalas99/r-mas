@@ -5,6 +5,7 @@ import { isDbMode } from '../db-storage-bridge.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
+import { readRpcSettings, isClinicalLocalOnlyMode } from '../clinical-settings.mjs';
 import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 
@@ -14,6 +15,15 @@ export async function openMiRotacion() {
   if (!isDbMode()) {
     if (typeof window.showToast === 'function') {
       window.showToast('Mi rotación requiere la base de datos clínica.', 'info');
+    }
+    return;
+  }
+  if (isClinicalLocalOnlyMode(readRpcSettings())) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(
+        'Mi rotación y equipos LAN no están disponibles en modo solo este equipo.',
+        'info'
+      );
     }
     return;
   }
@@ -50,6 +60,13 @@ export async function openMiRotacion() {
  * @returns {{ primary: string, sub: string, pending: boolean }}
  */
 function buildEntryStatus() {
+  if (isClinicalLocalOnlyMode(readRpcSettings())) {
+    return {
+      primary: 'Solo este equipo',
+      sub: 'Sin LAN ni Mi rotación',
+      pending: false,
+    };
+  }
   if (needsClinicalOnboarding()) {
     return {
       primary: 'Configura tu rotación',
@@ -86,7 +103,7 @@ function buildEntryStatus() {
 
 export function syncClinicalRotationEntryChrome() {
   const rotationSection = document.getElementById('clinical-rotation-section');
-  const show = isDbMode();
+  const show = isDbMode() && !isClinicalLocalOnlyMode(readRpcSettings());
 
   if (rotationSection) rotationSection.hidden = !show;
   if (!show) {

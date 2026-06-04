@@ -59,6 +59,12 @@ export async function safeRenderClinicalTeamsPanel(renderFn) {
   }
 }
 
+function delayMs(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 async function tryAutoOpenClinicalDb() {
   if (!isDbMode() || typeof window === 'undefined') return false;
   const api = window.rplusDb || window.electronAPI;
@@ -71,13 +77,8 @@ async function tryAutoOpenClinicalDb() {
   }
 }
 
-/** Ensure DB clinical session exists before rendering the panel. */
-export async function ensureClinicalPanelSession() {
-  if (clinicalSessionContext.user?.user_id) return true;
-  if (!isDbMode()) return false;
-  const settings = readRpcSettings();
-  const clientId = resolveClinicalClientId(settings);
-
+/** @param {number[]} delaysMs */
+async function attemptClinicalPanelSessionWithDelays(settings, clientId, delaysMs) {
   async function attemptSession() {
     if (clinicalSessionContext.user?.user_id) return true;
     await tryAutoOpenClinicalDb();
@@ -86,7 +87,24 @@ export async function ensureClinicalPanelSession() {
     return !!(ok && clinicalSessionContext.user?.user_id);
   }
 
-  if (await attemptSession()) return true;
+  for (const ms of delaysMs) {
+    if (ms > 0) await delayMs(ms);
+    if (await attemptSession()) return true;
+  }
+  return false;
+}
+
+/** Ensure DB clinical session exists before rendering the panel. */
+export async function ensureClinicalPanelSession() {
+  if (clinicalSessionContext.user?.user_id) return true;
+  if (!isDbMode()) return false;
+  const settings = readRpcSettings();
+  const clientId = resolveClinicalClientId(settings);
+  const bootDelays = [0, 120, 300, 600];
+
+  if (await attemptClinicalPanelSessionWithDelays(settings, clientId, bootDelays)) {
+    return true;
+  }
 
   try {
     const { applyClinicalDbUnlockCompletion } = await import('./db-unlock.mjs');
@@ -96,5 +114,5 @@ export async function ensureClinicalPanelSession() {
   }
   if (clinicalSessionContext.user?.user_id) return true;
 
-  return attemptSession();
+  return attemptClinicalPanelSessionWithDelays(settings, clientId, [0, 200, 500]);
 }

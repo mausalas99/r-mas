@@ -1,4 +1,5 @@
 import { isModeSala } from './mode-features.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
 import {
   patients,
   labHistory,
@@ -11,6 +12,10 @@ import { buildCensusPayload } from './censo-build.mjs';
 import { openCensoPreviewInApp } from './censo-preview-html.mjs';
 import { migratePatientDiagnosticosFromVpo } from './patient-diagnosticos.mjs';
 import { setAsyncButtonLoading } from './ui-motion.mjs';
+import {
+  exportWithOutputDirFallback,
+  saveOutputDirSelection,
+} from './document-export-client.mjs';
 
 var rt = {
   getSettings() {
@@ -46,7 +51,7 @@ var CENSO_EXPORT_BUTTON_IDS = [
 ];
 
 export function syncCensoExportButtonVisibility() {
-  var show = isModeSala(rt.getSettings());
+  var show = isModeSala(rt.getSettings()) && !isMobileWeb();
   CENSO_EXPORT_BUTTON_IDS.forEach(function (id) {
     var btn = document.getElementById(id);
     if (!btn) return;
@@ -150,7 +155,7 @@ function closeCensoModal() {
 export function exportCensoPdf(includeArchived) {
   if (!isModeSala(rt.getSettings())) return;
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline && rt.isRpcOffline()) {
+  if (rt.isRpcOffline && rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
     rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
   }
@@ -167,46 +172,55 @@ export function exportCensoPdf(includeArchived) {
     rt.showToast('Sin pacientes para el censo', 'error');
     return;
   }
-  var st = rt.getSettings() || {};
-  var outputDir = String(st.outputDir || '').trim();
   var exportBtns = censoExportLoadingButtons();
   exportBtns.forEach(function (btn) {
     setAsyncButtonLoading(btn, true, { loadingText: 'Exportando…' });
   });
   rt.incrementPendingJobs();
 
-  function buildBody(dir) {
+  function buildBody() {
     return {
       header: payload.header,
       rows: payload.rows,
       servicio: payload.servicio,
-      outputDir: dir || '',
     };
   }
 
-  return rt
-    .requestDocumentJson('/generate-censo', buildBody(outputDir))
-    .then(function (response) {
-      return rt.handleDocumentGenerateResponse({
-        response: response,
-        url: '/generate-censo',
-        buildPayload: buildBody,
-        onSuccess: function (data) {
-          var name = data && data.fileName ? data.fileName : 'PDF';
-          var msg = data && data.replaced ? 'Censo actualizado: ' + name : 'Censo guardado: ' + name;
-          rt.showToast(msg, 'success');
-        },
-        onError: function (message) {
-          rt.showToast('Error: ' + message, 'error');
-        },
-        onPrompt: function () {
-          rt.showToast('Selecciona una carpeta para guardar el PDF.', 'error');
-        },
-        onCancel: function () {
-          rt.showToast('No se guardó el PDF: no se eligió carpeta.', 'error');
-        },
+  function selectOutputDir() {
+    if (!window.electronAPI || !window.electronAPI.selectOutputDir) {
+      return Promise.resolve(undefined);
+    }
+    return window.electronAPI.selectOutputDir();
+  }
+
+  return exportWithOutputDirFallback({
+    url: '/generate-censo',
+    buildPayload: buildBody,
+    defaultFileName: 'Censo.pdf',
+    selectOutputDir: selectOutputDir,
+    saveOutputDir: function (dir) {
+      saveOutputDirSelection(dir, {
+        getSettings: rt.getSettings,
+        loadSettings: rt.loadSettings,
       });
-    })
+    },
+    onSuccess: function (data) {
+      var name =
+        data && (data.fileName || data.path)
+          ? data.fileName || String(data.path).split(/[/\\]/).pop()
+          : 'PDF';
+      rt.showToast('Censo guardado: ' + name, 'success');
+    },
+    onPrompt: function () {
+      rt.showToast('Selecciona una carpeta para guardar el PDF.', 'error');
+    },
+    onCancel: function () {
+      rt.showToast('No se guardó el PDF: no se eligió carpeta.', 'error');
+    },
+    onError: function (message) {
+      rt.showToast('Error: ' + message, 'error');
+    },
+  })
     .catch(function () {
       rt.showToast('Error de conexión al generar el censo', 'error');
     })

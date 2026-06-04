@@ -71,6 +71,22 @@ export function buildLanJoinUrls(hostUrl, ticketId) {
 }
 
 /**
+ * Bookmarkable iPad URL (team token in query — no one-time /join ticket).
+ * @param {string} hostUrl
+ * @param {string} teamCode — LAN bearer / código del equipo
+ */
+export function buildPermanentMobileJoinUrl(hostUrl, teamCode) {
+  const base = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  const code = String(teamCode || '').trim();
+  if (!base || !code) return '';
+  const u = new URL(`${base}/mobile/`);
+  u.searchParams.set('token', code);
+  return u.toString();
+}
+
+/**
  * @param {string} [search] — location.search
  * @param {string} [origin] — location.origin
  */
@@ -118,6 +134,18 @@ export function parseLanInviteInput(raw) {
         return { hostUrl, teamCode: '', roomId: '', ticketId: ticketM[1], legacyInvite: false };
       }
       const search = u.search || '';
+      if (/\/mobile\/?$/i.test(u.pathname)) {
+        const mobileParsed = parseLanJoinQuery(search, hostUrl);
+        if (mobileParsed.teamCode) {
+          return {
+            hostUrl,
+            teamCode: mobileParsed.teamCode,
+            roomId: mobileParsed.roomId,
+            ticketId: '',
+            legacyInvite: false,
+          };
+        }
+      }
       if (search.includes('code=') || search.includes('token=')) {
         const room = String(new URLSearchParams(search).get('room') || '').trim();
         return { hostUrl, teamCode: '', roomId: room, ticketId: '', legacyInvite: true };

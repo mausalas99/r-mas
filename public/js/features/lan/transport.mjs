@@ -4,6 +4,14 @@
 
 import { storage } from '../../storage.js';
 import { buildLanJoinUrls, resolveLanJoinHostUrl, liveSyncRoomLabel } from '../../lan-join-link.mjs';
+import { isMobileWeb } from '../../mobile-web.mjs';
+import { restoreMobilePairingFromStorage } from '../../mobile-lan-query-persist.mjs';
+import {
+  applyMobileSharerContextFromUrl,
+  appendMobileSharerParamsToJoinUrl,
+  hydrateMobileSharerSessionFromSettings,
+  mobileSharerDisplayLabel,
+} from '../../mobile-sharer-sync.mjs';
 import {
   rememberPrimaryHostUrl,
   pingLanHostUrl,
@@ -75,7 +83,11 @@ function esc(s) {
 export function isLanSessionConfiguredForRest() {
   try {
     var c = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
-    return !!(c && String(c.hostUrl || '').trim());
+    return !!(
+      c &&
+      String(c.hostUrl || '').trim() &&
+      trimStoredLanBearer(c.teamCode)
+    );
   } catch (_e) {
     return false;
   }
@@ -233,25 +245,45 @@ async function persistGuestBearerFromExchange(data) {
   } catch (_e) {}
 }
 
-export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
-  var base = String(hostUrl || '')
+function fixMobileLanHostUrl(hostUrl) {
+  var raw = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
+  if (!isMobileWeb() || typeof location === 'undefined') return raw;
+  var fixed = resolveLanJoinHostUrl(raw, location.origin);
+  if (fixed) return fixed;
+  if (isLocalLoopbackLanUrl(raw)) {
+    return String(location.origin || '')
+      .trim()
+      .replace(/\/+$/, '');
+  }
+  return raw;
+}
+
+export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
+  var base = fixMobileLanHostUrl(hostUrl);
   var tid = String(ticketId || '').trim();
   if (!base || !tid) {
     runtime().showToast('Falta la dirección del servidor o el ticket de invitación.', 'error');
     return;
   }
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () {
+    ctrl.abort();
+  }, 12000);
   var res;
   try {
     res = await fetch(base + '/api/lan/v1/auth/exchange', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ticket: tid }),
+      signal: ctrl.signal,
     });
   } catch (_e) {
     runtime().showToast('Error de red al unirse. Revisa Wi‑Fi y que R+ siga abierto en el anfitrión.', 'error');
     return;
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) {
     runtime().showToast(
@@ -946,59 +978,107 @@ export async function ensureLanPairingForShare(opts) {
   }
   return { hostUrl: hostUrl, pairing: _lastLanPairing };
 }
+/**
+ * R+ Móvil: mirror the sharer's sala bundle (invite room / identity), not manual «Unirse» UX.
+ * @param {string} [hintRoomId]
+ */
+export async function syncMobileWithSharedInvite(hintRoomId) {
+  if (!isMobileWeb()) return false;
+  if (!isLanSessionConfiguredForRest()) return false;
+  applyMobileSharerContextFromUrl();
+  hydrateMobileSharerSessionFromSettings();
+  var d = deps();
+  if (!lanClient.baseUrl()) return false;
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_e) {}
+  var rid = '';
+  if (typeof d.resolveAutoJoinRoomId === 'function') {
+    rid = String(d.resolveAutoJoinRoomId(hintRoomId || '') || '').trim();
+  }
+  if (!rid) {
+    runtime().showToast(
+      'Conectado al anfitrión. Pide a quien compartió el enlace que esté en una sala ⇄ activa antes de abrir R+ Móvil.',
+      'warn'
+    );
+    d.renderLanPanel?.();
+    return false;
+  }
+  if (typeof d.joinLanRoom !== 'function') return false;
+  runtime().showToast(
+    'Sincronizando el turno de ' + mobileSharerDisplayLabel() + '…',
+    'info'
+  );
+  d.renderLanPanel?.();
+  void d
+    .joinLanRoom(rid, liveSyncRoomLabel(rid), { silent: true, mobileSharerSync: true })
+    .catch(function () {});
+  return true;
+}
+
+/** @deprecated Use syncMobileWithSharedInvite */
+export async function resumeMobileLanRoomJoin(hintRoomId) {
+  return syncMobileWithSharedInvite(hintRoomId);
+}
+
 export function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
-  var resolvedHost =
-    resolveLanJoinHostUrl(hostUrl, typeof location !== 'undefined' ? location.origin : '') ||
-    String(hostUrl || '')
-      .trim()
-      .replace(/\/+$/, '');
+  var resolvedHost = fixMobileLanHostUrl(hostUrl);
+  if (!resolvedHost) {
+    resolvedHost =
+      resolveLanJoinHostUrl(hostUrl, typeof location !== 'undefined' ? location.origin : '') ||
+      String(hostUrl || '')
+        .trim()
+        .replace(/\/+$/, '');
+  }
   var cfg = { hostUrl: resolvedHost, teamCode: String(teamCode || '').trim() };
-  if (!cfg.teamCode) return;
+  if (!cfg.teamCode || !cfg.hostUrl) return;
   if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
     storage.saveLanUiRole('client');
   }
   storage.saveLanConfig(cfg);
+  if (isMobileWeb() && roomId) {
+    try {
+      var merged = Object.assign({}, cfg, { roomId: String(roomId || '').trim() });
+      if (merged.roomId) storage.saveLanConfig(merged);
+    } catch (_eRoom) {}
+  }
   rememberPrimaryHostUrl(cfg.hostUrl);
   lanClient.configure(cfg);
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
+  var pingMs = isMobileWeb() ? 3000 : 5000;
+  var pingCtrl = new AbortController();
+  var pingTimer = setTimeout(function () {
+    pingCtrl.abort();
+  }, pingMs);
   lanClient
-    .fetch('/api/lan/v1/ping')
+    .fetch('/api/lan/v1/ping', { signal: pingCtrl.signal, cache: 'no-store' })
     .then(function (r) {
+      clearTimeout(pingTimer);
       if (!r || !r.ok) {
+        if (typeof document !== 'undefined') {
+          document.dispatchEvent(new CustomEvent('rpc-mobile-lan-sync-settled'));
+        }
         runtime().showToast(
           'No se pudo conectar al servidor. Revisa Wi‑Fi y que R+ esté abierto en el anfitrión.',
           'error'
         );
-        deps().renderLanPanel();
-        setTimeout(function () {
-          if (typeof deps().openConnectionDropdown === 'function') deps().openConnectionDropdown();
-        }, 400);
+        deps().renderLanPanel?.();
         return;
       }
       void maybeShowLanMigrationNotice();
-      var rid = deps().resolveAutoJoinRoomId(roomId);
-      if (rid) {
-        deps().joinLanRoom(rid, liveSyncRoomLabel(rid));
-        runtime().showToast(
-          'Sincronizando pacientes de ' + liveSyncRoomLabel(rid) + '…',
-          'success'
-        );
-        return;
-      }
-      runtime().showToast(
-        'Conectado al servidor, pero el enlace no trae sala. Pide un enlace nuevo desde ⇄ en la Mac.',
-        'warn'
-      );
-      deps().renderLanPanel();
-      setTimeout(function () {
-        if (typeof deps().openConnectionDropdown === 'function') deps().openConnectionDropdown();
-      }, 500);
+      applyMobileSharerContextFromUrl();
+      void syncMobileWithSharedInvite(roomId);
+      deps().renderLanPanel?.();
     })
     .catch(function () {
+      clearTimeout(pingTimer);
+      if (isMobileWeb() && typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('rpc-mobile-lan-sync-settled'));
+      }
       runtime().showToast('Error de red al conectar con el anfitrión', 'error');
-      deps().renderLanPanel();
+      deps().renderLanPanel?.();
     });
 }
 
@@ -1010,43 +1090,85 @@ export function getLastLanPairing() {
   return _lastLanPairing;
 }
 
-export function updateLanPairingDisplay(root) {
+/**
+ * @param {HTMLElement|null} root
+ * @param {{ boxId?: string, mobileHints?: boolean, activeRoomId?: string, displayUrl?: string, permanent?: boolean }} [opts]
+ */
+export function updateLanPairingDisplay(root, opts) {
+  opts = opts || {};
+  var boxId = String(opts.boxId || 'lan-pairing-display-sala').trim();
+  if (!root) root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
-  var box = root.querySelector('#lan-pairing-display');
+  var box = root.querySelector('#' + boxId);
   if (!box) return;
-  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
-    box.hidden = true;
-    box.textContent = '';
-    return;
+  var displayUrl = String(opts.displayUrl || '').trim();
+  var pairing = _lastLanPairing;
+  if (!displayUrl) {
+    if (!pairing || !pairing.ticketId) {
+      box.hidden = true;
+      box.textContent = '';
+      return;
+    }
+    displayUrl = pairing.joinUrl || '';
+    if (opts.mobileHints && displayUrl) {
+      displayUrl = appendMobileSharerParamsToJoinUrl(displayUrl, opts.activeRoomId);
+    }
   }
   box.hidden = false;
-  var p = _lastLanPairing;
-  var joinLine = p.joinUrl
-    ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(p.joinUrl) + '</code></div>'
+  var joinLine = displayUrl
+    ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(displayUrl) + '</code></div>'
     : '';
-  var expiryLabel = formatLanTicketExpiryLabel(p.expiresAt);
-  var expirySoon = lanTicketExpirySoon(p.expiresAt);
-  var expiryLine = expiryLabel
-    ? '<p class="lan-pairing-expiry' +
-      (expirySoon ? ' lan-pairing-expiry--soon' : '') +
-      '" style="margin:8px 0 0;font-size:12px;">Válido hasta <strong>' +
-      esc(expiryLabel) +
-      '</strong></p>'
-    : '';
+  var lead;
+  var pinLine = '';
+  var expiryLine = '';
+  if (opts.permanent) {
+    lead =
+      'Enlace permanente para Safari (favoritos). Incluye tu identidad; no caduca mientras el código del equipo no cambie. No lo compartas fuera del turno.';
+  } else if (opts.mobileHints) {
+    lead = 'Enlace móvil (incluye tu identidad). Un solo uso por ticket:';
+  } else {
+    lead = 'Enlace de sala (sin tu identidad). Un solo uso por ticket:';
+  }
+  if (!opts.permanent && pairing) {
+    pinLine = '<div><strong>PIN:</strong> <code>' + esc(pairing.pin) + '</code></div>';
+    var expiryLabel = formatLanTicketExpiryLabel(pairing.expiresAt);
+    var expirySoon = lanTicketExpirySoon(pairing.expiresAt);
+    if (expiryLabel) {
+      expiryLine =
+        '<p class="lan-pairing-expiry' +
+        (expirySoon ? ' lan-pairing-expiry--soon' : '') +
+        '" style="margin:8px 0 0;font-size:12px;">Válido hasta <strong>' +
+        esc(expiryLabel) +
+        '</strong></p>';
+    }
+  }
   box.innerHTML =
-    '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (un solo uso por ticket):</p>' +
-    '<div><strong>PIN:</strong> <code>' + esc(p.pin) + '</code></div>' +
-    '<div><strong>Ticket:</strong> <code>' + esc(p.ticketId) + '</code></div>' +
+    '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">' + esc(lead) + '</p>' +
+    pinLine +
     joinLine +
     expiryLine;
 }
 
-export async function mintLanPairingFromUi() {
+/**
+ * @param {{ mobileHints?: boolean, boxId?: string, activeRoomId?: string, toastMsg?: string }} [opts]
+ */
+export async function mintLanPairingFromUi(opts) {
+  opts = opts || {};
   try {
     await mintLanPairingTicket();
     var root = document.getElementById('lan-connection-panel-root');
-    updateLanPairingDisplay(root);
-    runtime().showToast('Enlace y PIN generados. Compártelos con el equipo.', 'success');
+    updateLanPairingDisplay(root, {
+      boxId: opts.boxId || (opts.mobileHints ? 'lan-pairing-display-mobile' : 'lan-pairing-display-sala'),
+      mobileHints: !!opts.mobileHints,
+      activeRoomId: opts.activeRoomId,
+    });
+    runtime().showToast(
+      opts.toastMsg ||
+        (opts.mobileHints
+          ? 'Enlace móvil generado. Cópialo abajo o usa «Copiar enlace móvil».'
+          : 'Enlace de sala generado. Cópialo abajo o usa «Copiar enlace de sala».'),
+      'success'
+    );
   } catch (e) {
     if (e && e.code === 'no_host_bearer') {
       runtime().showToast(
@@ -1064,9 +1186,18 @@ export async function mintLanPairingFromUi() {
 }
 
 export function initLanClientFromStorage() {
+  if (isMobileWeb()) restoreMobilePairingFromStorage();
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (!cfg || !String(cfg.hostUrl || '').trim()) return;
-  persistLanClientConfig(cfg.hostUrl, cfg.teamCode);
+  var hostUrl = fixMobileLanHostUrl(cfg.hostUrl);
+  var teamCode = cfg.teamCode;
+  if (hostUrl !== String(cfg.hostUrl || '').trim().replace(/\/+$/, '')) {
+    storage.saveLanConfig({ hostUrl: hostUrl, teamCode: teamCode });
+  }
+  persistLanClientConfig(hostUrl, teamCode);
+  if (isMobileWeb()) {
+    return;
+  }
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}

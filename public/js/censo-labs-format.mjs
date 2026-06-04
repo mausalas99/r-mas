@@ -1,6 +1,7 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
 import { splitResLabsByTipo } from './censo-cultivo-format.mjs';
 import { formatBhExtrasDisplayLine, isAscitisInterpretacionResLabChunk } from './labs.js';
+import { normalizeCensoPanelLine, reflowLabsForCensoDisplay } from './censo-table-style.mjs';
 
 var PANEL_ORDER = ['BH', 'QS', 'ELECTROLITOS', 'PFHs', 'GASES', 'COAG', 'ORINA', 'OTRO'];
 
@@ -61,7 +62,7 @@ export function formatLabsForCenso(sets, maxDates) {
         var keys = PANEL_KEYS[panelName];
         var panelLines = linesFromParsedSection(sec, keys);
         if (panelLines.length) {
-          blockLines.push(panelName + ': ' + panelLines.join('  '));
+          blockLines.push(panelName + ' · ' + panelLines.join('  '));
         }
       });
     }
@@ -108,7 +109,7 @@ function linesFromParsedBySectionFull(pb) {
     if (!sec && panelName === 'OTRO') return;
     var panelLines = linesFromParsedSection(sec, null);
     if (panelLines.length) {
-      blockLines.push(panelName + ': ' + panelLines.join('  '));
+      blockLines.push(panelName + ' · ' + panelLines.join('  '));
     }
   });
   Object.keys(pb).forEach(function (panelName) {
@@ -117,7 +118,7 @@ function linesFromParsedBySectionFull(pb) {
     if (!sec || typeof sec !== 'object' || Array.isArray(sec)) return;
     var panelLines = linesFromParsedSection(sec, null);
     if (panelLines.length) {
-      blockLines.push(panelName + ': ' + panelLines.join('  '));
+      blockLines.push(panelName + ' · ' + panelLines.join('  '));
     }
   });
   return blockLines;
@@ -167,5 +168,5 @@ export function formatLabsForCensoCompact(sets) {
   }
 
   if (!lines.length || (fecha && lines.length === 1)) return [];
-  return lines;
+  return reflowLabsForCensoDisplay(lines.map(normalizeCensoPanelLine));
 }

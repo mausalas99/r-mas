@@ -14,6 +14,7 @@ import {
   scheduleReconcileFromRevisionHint,
 } from "./push.mjs";
 import { mergeLiveSyncFullBundles } from "../../lan-merge-registry.mjs";
+import { liveSyncDeletePatchesFromEntityMap } from "../../live-sync-room.mjs";
 import {
   mergeEventualidades,
   mergeHistoriaClinica,
@@ -41,6 +42,7 @@ import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../../manejo-todo-dismiss.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
 import { guardAndSignLiveSyncMutation, clinicalSessionContext, migrateLocalPatientsClinicalSala } from "../../clinical-access-runtime.mjs";
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import {
   deleteDraftConflict,
   listDraftConflicts,
@@ -815,6 +817,7 @@ function buildLiveSyncLocalMergeSource() {
     todos: collectTodosMapForLiveSync(),
     entries: collectPatientEntriesForLanSync(),
     clinicalOps: getCachedClinicalOpsSnapshot(),
+    patches: liveSyncDeletePatchesFromEntityMap(readLiveSyncEntityMap()),
   };
 }
 
@@ -853,7 +856,8 @@ function saveEntryTodosOnLocalPatient(localPatientId, entry) {
   );
 }
 
-function applyLanPatientEntries(entries) {
+function applyLanPatientEntries(entries, opts) {
+  opts = opts || {};
   if (!entries || !entries.length) return { added: 0, updated: 0 };
   var added = 0;
   var updated = 0;
@@ -897,15 +901,19 @@ function applyLanPatientEntries(entries) {
       notes[existing.id] = entry.note || {};
       indicaciones[existing.id] = entry.indicaciones || {};
       labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-      if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
-      else delete medRecetaByPatient[existing.id];
-      if (entry.medPharmProfile) medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
-      else delete medPharmProfileByPatient[existing.id];
+      if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
+        if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
+        else delete medRecetaByPatient[existing.id];
+      }
+      if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile')) {
+        if (entry.medPharmProfile) medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
+        else delete medPharmProfileByPatient[existing.id];
+      }
       if (entry.vpo) vpoByPatient[existing.id] = entry.vpo;
       else delete vpoByPatient[existing.id];
       if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
       mergePatientMonitoreoFromImported(existing, entry.patient);
-      saveEntryTodosOnLocalPatient(existing.id, entry);
+      if (!opts.skipTodos) saveEntryTodosOnLocalPatient(existing.id, entry);
       updated += 1;
     } else {
       var remoteId = String(entry.patient.id || '').trim();
@@ -943,15 +951,19 @@ function applyLanPatientEntries(entries) {
         notes[remoteId] = entry.note || {};
         indicaciones[remoteId] = entry.indicaciones || {};
         labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-        if (entry.medReceta) medRecetaByPatient[remoteId] = entry.medReceta;
-        if (entry.medPharmProfile) medPharmProfileByPatient[remoteId] = entry.medPharmProfile;
+        if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && entry.medReceta) {
+          medRecetaByPatient[remoteId] = entry.medReceta;
+        }
+        if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile') && entry.medPharmProfile) {
+          medPharmProfileByPatient[remoteId] = entry.medPharmProfile;
+        }
         if (entry.vpo) vpoByPatient[remoteId] = entry.vpo;
         newId = remoteId;
       } else {
         newId = runtime.applyImportEntry(entry, 'duplicate', null);
       }
       if (entry.listadoProblemas && newId) listadoProblemas[newId] = entry.listadoProblemas;
-      saveEntryTodosOnLocalPatient(newId, entry);
+      if (!opts.skipTodos) saveEntryTodosOnLocalPatient(newId, entry);
       added += 1;
     }
   }
@@ -1032,9 +1044,6 @@ function applyLiveSyncMerged(merged) {
   if (!merged) return;
   if (isPitchPatientIsolationActive()) return;
   var entries = merged.entries || [];
-  if (entries.length) {
-    applyLanPatientEntries(entries);
-  }
   var idMap = buildLiveSyncPatientIdMap(entries, patients, merged.todos || {});
   var patientRemoved = applyLiveSyncPatientDeletes(merged.patientDeletes || [], idMap);
   storage.saveScheduledProcedures(remapAgendaPatientIds(merged.agenda || [], idMap));
@@ -1056,6 +1065,9 @@ function applyLiveSyncMerged(merged) {
     var todoList = todosMap[pid] || [];
     storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todoList));
   });
+  if (entries.length) {
+    applyLanPatientEntries(entries, { skipTodos: true });
+  }
   if (patientRemoved) {
     runtime.renderPatientList();
     if (runtime.getActiveId()) runtime.selectPatient(runtime.getActiveId());
@@ -1233,6 +1245,13 @@ function emitLiveSyncTodoDelete(patientId, todoRef, updatedAt) {
   var mutation = createMutationBuilder('todo', eid)
     .captureBase(base)
     .build({ roomId: activeLiveSyncRoomId, patientId: patientId, op: 'delete' });
+  var tombVer = Number(base.version || 0) + 1;
+  rememberLiveSyncEntity('todo', eid, patientId, tombVer, {
+    id: eid,
+    patientId: patientId,
+    _deleted: true,
+    updatedAt: String((todo && todo.updatedAt) || updatedAt || new Date().toISOString()),
+  });
   sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncPatientDelete(patient) {
@@ -1321,14 +1340,25 @@ export function wireLanSyncBridges() {
 
 wireLanSyncBridges();
 
-if (typeof document !== 'undefined') {
+let _lanRuntimeStarted = false;
+
+/** Start LAN client + discovery when not in solo-equipo mode (boot or after Ajustes switch). */
+export function ensureLanSyncRuntimeStarted() {
+  if (typeof document === 'undefined') return;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+  if (_lanRuntimeStarted) return;
+  _lanRuntimeStarted = true;
   initLanClientFromStorage();
   wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();
+  if (isLanElectronDesktop()) {
+    scheduleTierALanServerWarm();
+    startLanAutoDiscovery();
+  }
 }
-if (typeof document !== 'undefined' && isLanElectronDesktop()) {
-  scheduleTierALanServerWarm();
-  startLanAutoDiscovery();
+
+if (typeof document !== 'undefined') {
+  ensureLanSyncRuntimeStarted();
 }
 
 export function registerLanSaveHooks(deps) {

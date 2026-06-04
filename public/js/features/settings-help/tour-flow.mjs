@@ -109,6 +109,7 @@ import {
   markGuidedTourVersionDone,
   closeLabBulkTourHintModal,
   openLabBulkTourHintModal,
+  openTutorialIntroFromSettings,
 } from './tour-engine.mjs';
 import {
   purgeTourDemoPatientsFromState,
@@ -693,15 +694,7 @@ function resetAndStartOnboarding() {
   } catch (err) {
     console.error('resetAndStartOnboarding cleanup:', err && err.message);
   }
-  resolveAppVersionForTour()
-    .then(function (v) {
-      window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
-      showTourIntroModal();
-    })
-    .catch(function () {
-      window.__RPC_APP_VERSION__ = 'dev';
-
-  });
+  void openTutorialIntroFromSettings();
 }
 
 export {

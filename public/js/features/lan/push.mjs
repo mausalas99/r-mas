@@ -29,6 +29,8 @@ import {
 var BUNDLE_PUSH_HANDLED = 'handled';
 var CLINICAL_OPS_HANDLED = 'handled';
 import { mergeLiveSyncFullBundles } from '../../lan-merge-registry.mjs';
+import { isMobileWeb } from '../../mobile-web.mjs';
+import { patients } from '../../app-state.mjs';
 import { guardAndSignLiveSyncMutation } from '../../clinical-access-runtime.mjs';
 import { wrapLiveSyncPatch } from '../../versioned-mutation.mjs';
 import {
@@ -779,22 +781,41 @@ export async function reconcileLiveSyncRoom(roomId) {
     var sources = [];
     var local = storage.getLanRoomSnapshot(rid);
     if (local) sources.push(local);
-    sources.push(b.buildLiveSyncLocalMergeSource());
+    var hostBundleLoaded = false;
     try {
       const syncPath = '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle';
       const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const fetchMs = isMobileWeb()
+        ? window.__RPC_MOBILE_SYNC_BUNDLE_DONE__
+          ? 20000
+          : 12000
+        : 8000;
       const timer =
         ac &&
         setTimeout(() => {
           ac.abort();
-        }, 5000);
-      var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
+        }, fetchMs);
+      var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal, cache: 'no-store' } : {});
       if (timer) clearTimeout(timer);
-      if (resp.ok) {
+      if (resp && resp.status === 404) {
+        recordLanSyncError({
+          op: 'sync-bundle',
+          code: 'NO_BUNDLE',
+          message: 'host has no room bundle yet',
+        });
+        if (isMobileWeb() && typeof b.showToast === 'function') {
+          b.showToast(
+            'El anfitrión aún no compartió pacientes en esta sala. En la Mac anfitrión: abre ⇄ y pulsa «Unirse» en la misma sala; luego en el iPad ⇄ → Unirse otra vez.',
+            'warn'
+          );
+        }
+      } else if (resp && resp.ok) {
         var j = await resp.json();
         if (j && j.bundle) {
           setHostBundleBases(rid, j.bundle);
           sources.push(j.bundle);
+          hostBundleLoaded = true;
+          if (isMobileWeb()) window.__RPC_MOBILE_SYNC_BUNDLE_DONE__ = true;
         }
       }
     } catch (_eBundle) {}
@@ -806,8 +827,23 @@ export async function reconcileLiveSyncRoom(roomId) {
         await b.fetchAndApplyClinicalOpsFromHost(rid);
       }
     } catch (_eOps) {}
+    sources.push(b.buildLiveSyncLocalMergeSource());
     if (sources.length) {
-      b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
+      var merged = mergeLiveSyncFullBundles(sources);
+      b.applyLiveSyncMerged(merged);
+      if (
+        isMobileWeb() &&
+        hostBundleLoaded &&
+        (!merged || !merged.entries || !merged.entries.length) &&
+        (!patients || !patients.length)
+      ) {
+        if (typeof b.showToast === 'function') {
+          b.showToast(
+            'La sala está vacía en el anfitrión. Confirma que la Mac anfitrión tiene pacientes y está unida a esta sala.',
+            'info'
+          );
+        }
+      }
     }
     return flushLiveSyncOutbox(rid);
   } catch (err) {

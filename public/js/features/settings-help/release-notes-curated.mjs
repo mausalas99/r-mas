@@ -28,6 +28,39 @@ var RELEASE_NOTES_663 = [
   },
 ];
 
+var RELEASE_NOTES_667 = [
+  {
+    title: 'iPad y enlace móvil',
+    body:
+      'En ⇄: <strong>Copiar enlace móvil</strong> (<code>/mobile/?token=…</code>, permanente para Safari) vs <strong>Copiar enlace de sala</strong> para otra Mac. El anfitrión debe <strong>Unirse</strong> antes de compartir.',
+  },
+  {
+    title: 'Onboarding sin ⇄',
+    body:
+      'Al abrir R+ eliges <strong>sala LAN</strong> o <strong>solo mi equipo</strong> y desbloqueas la base local. Reintentos claros en Windows si la sesión clínica falla.',
+  },
+  {
+    title: '⇄ más fluido',
+    body:
+      '<strong>Mi rotación</strong> ya no congela el barrido LAN; ping más rápido y menos saturación al descubrir anfitriones. El iPad puede unirse solo y avisar si el censo del host tarda.',
+  },
+  {
+    title: 'Censo PDF/HTML',
+    body:
+      'Mismas columnas en exportación y vista previa: <strong>Signos</strong>, <strong>I / E / B</strong> y labs con paneles en líneas separadas.',
+  },
+  {
+    title: 'Sobre 6.6.6',
+    body:
+      'Incluye <strong>perfil @usuario</strong>, escalada de anfitrión sin R4 y <strong>un anfitrión por turno</strong>.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.6.7 en todas</strong> las Macs, PCs e iPads el mismo día. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala ⇄.',
+  },
+];
+
 var RELEASE_NOTES_666 = [
   {
     title: 'Perfil @usuario (6.6.6)',
@@ -80,16 +113,17 @@ var RELEASE_NOTES_665 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_666;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_667;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.7': RELEASE_NOTES_667,
   '6.6.6': RELEASE_NOTES_666,
   '6.6.5': RELEASE_NOTES_665,
   '6.6.4': [
     {
       title: 'Enlace ⇄ para iPad',
       body:
-        'Copia un enlace <code>/join/req_…</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.6</strong>.',
+        'Copia un enlace <code>/join/req_…</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.7</strong>.',
     },
     {
       title: 'Arranque en chunks',

@@ -5,6 +5,7 @@ import { mergeTodoListsById } from './livesync-patient-ids.mjs';
 import { mergeMonitoreo } from './features/estado-actual-data.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
+import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -141,7 +142,11 @@ export function mergeHistoriaClinica(a, b) {
 function medRecetaTimestamp(med) {
   if (!med || typeof med !== 'object') return '';
   if (med.updatedAt) return String(med.updatedAt);
-  return docTimestamp(med.fecha, med.hora);
+  return docTimestamp(med.fechaActualizacion, med.hora);
+}
+
+function medPharmTimestamp(profile) {
+  return medPharmProfileUpdatedAt(profile);
 }
 
 /**
@@ -192,6 +197,7 @@ export function entryUpdatedAt(entry) {
     noteTimestamp(entry.note),
     noteTimestamp(entry.indicaciones),
     medRecetaTimestamp(entry.medReceta),
+    medPharmTimestamp(entry.medPharmProfile),
     listadoTimestamp(entry.listadoProblemas),
     monitoreoUpdatedAt(p.monitoreo),
     eventualidadesUpdatedAt(p.eventualidades),
@@ -320,6 +326,14 @@ export function mergePatientEntry(a, b) {
       : b.medReceta
         ? { ...b.medReceta }
         : null;
+  const medPharmProfile =
+    compareIso(medPharmTimestamp(a.medPharmProfile), medPharmTimestamp(b.medPharmProfile)) >= 0
+      ? a.medPharmProfile
+        ? structuredClone(a.medPharmProfile)
+        : null
+      : b.medPharmProfile
+        ? structuredClone(b.medPharmProfile)
+        : null;
 
   const monOlder = second.patient?.monitoreo;
   const monNewer = first.patient?.monitoreo;
@@ -349,6 +363,7 @@ export function mergePatientEntry(a, b) {
     indicaciones,
     labHistory: mergeLabHistorySets(a.labHistory, b.labHistory),
     medReceta,
+    medPharmProfile,
     vpo: mergeVpoPayload(a.vpo, b.vpo),
     listadoProblemas: mergeListadoProblemas(a.listadoProblemas, b.listadoProblemas),
     todos: mergeTodoListsById(a.todos, b.todos),
@@ -385,6 +400,7 @@ export function cloneEntry(entry) {
     indicaciones: { ...(entry.indicaciones || {}) },
     labHistory: Array.isArray(entry.labHistory) ? entry.labHistory.map((s) => ({ ...s })) : [],
     medReceta: entry.medReceta ? { ...entry.medReceta } : null,
+    medPharmProfile: entry.medPharmProfile ? structuredClone(entry.medPharmProfile) : null,
     vpo: entry.vpo ? structuredClone(entry.vpo) : null,
     listadoProblemas: entry.listadoProblemas ? { ...entry.listadoProblemas } : null,
     todos: Array.isArray(entry.todos) ? entry.todos.map((t) => ({ ...t })) : [],

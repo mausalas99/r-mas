@@ -114,6 +114,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   width: min(400px, calc(100vw - 24px));
   max-height: min(85vh, calc(100vh - 56px));
   overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  overflow-anchor: none;
   padding: 14px; flex-direction: column; gap: 10px;
   visibility: hidden;
   opacity: 0;
@@ -171,7 +172,14 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .connection-dropdown-head-sub {
   font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
 }
-.lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+.lan-connection-panel-root { display: flex; flex-direction: column; gap: 6px; }
+.lan-sync-diagnostics-pre {
+  font-size: 11px;
+  white-space: pre-wrap;
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+}
 .lan-disconnect-banner-pref {
   display: flex;
   align-items: flex-start;
@@ -184,9 +192,9 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .lan-disconnect-banner-pref input { flex-shrink: 0; margin-top: 2px; }
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
-  border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
-  padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: none;
 }
 .lan-connect-card-title {
   font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 2px 0;
@@ -195,21 +203,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .lan-connect-card-hint {
   font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
 }
-.lan-hub-interno-details { padding: 0; gap: 0; }
-.lan-hub-interno-summary {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 12px 14px; cursor: pointer; list-style: none; user-select: none;
-}
-.lan-hub-interno-summary::-webkit-details-marker { display: none; }
-.lan-hub-interno-summary::before {
-  content: '▸'; float: right; color: var(--text-muted); font-size: 12px; line-height: 1.6;
-}
-.lan-hub-interno-details[open] .lan-hub-interno-summary::before { content: '▾'; }
-.lan-hub-interno-summary-hint { font-size: 11px; }
-.lan-hub-interno-body {
-  padding: 0 14px 12px;
-  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.2));
-}
+.lan-hub-interno-summary-hint { font-size: 11px; font-weight: 400; }
 .lan-connect-field { display: flex; flex-direction: column; gap: 4px; }
 .lan-connection-panel-root .profile-input {
   font-size: 13px;
@@ -310,7 +304,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   justify-content: space-between;
   align-items: center;
   list-style: none;
-  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
   font-size: calc(13px * var(--density-font));
   font-weight: 600;
   text-transform: none;
@@ -320,6 +314,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   user-select: none;
 }
 .settings-accordion > summary::-webkit-details-marker { display: none; }
+.settings-accordion > summary::marker { content: ''; font-size: 0; }
 .settings-accordion > summary::after {
   content: '▾';
   font-size: 11px;
@@ -351,6 +346,18 @@ details.settings-accordion:not([open]) > .settings-acc-body {
   padding-bottom: 0;
   pointer-events: none;
 }
+.settings-clinical-sync-mode {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated, var(--surface));
+}
+
+.settings-clinical-sync-mode-lead {
+  margin: 0 0 10px;
+}
+
 .settings-acc-hint {
   font-size: calc(11px * var(--density-font));
   color: var(--text-muted);

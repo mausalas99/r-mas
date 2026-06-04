@@ -2,6 +2,32 @@ import { blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 import { isOutputDirError } from './output-dir-fallback.mjs';
 
+const DOC_EXPORT_URL_KIND = {
+  '/generate': 'note',
+  '/generate-indicaciones': 'indicaciones',
+  '/generate-listado': 'listado',
+  '/generate-censo': 'censo',
+  '/generate-receta-hu': 'receta-hu',
+};
+
+function canUseDesktopDocumentIpc() {
+  return !!(window.electronAPI && window.electronAPI.generateDocument);
+}
+
+function documentKindForUrl(url) {
+  return DOC_EXPORT_URL_KIND[String(url || '').split('?')[0]] || null;
+}
+
+async function invokeDesktopDocumentExport(kind, payload) {
+  const result = await window.electronAPI.generateDocument({ kind, payload });
+  if (!result || result.ok === false) {
+    const err = new Error((result && result.error) || 'No se pudo generar el documento.');
+    if (result && result.code) err.code = result.code;
+    throw err;
+  }
+  return result;
+}
+
 const docExportRt = {
   showToast() {},
   getSettings() {
@@ -47,6 +73,10 @@ export function saveOutputDirSelection(dir, deps) {
 }
 
 export function requestDocumentJson(url, payload) {
+  const kind = documentKindForUrl(url);
+  if (canUseDesktopDocumentIpc() && kind) {
+    return invokeDesktopDocumentExport(kind, payload);
+  }
   return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -103,10 +133,22 @@ export function parseContentDispositionFilename(header) {
 }
 
 export async function exportGeneratedDocument({ url, buildPayload, defaultFileName }) {
+  const payload = buildPayload();
+  const kind = documentKindForUrl(url);
+
+  if (canUseDesktopDocumentIpc() && kind) {
+    const result = await invokeDesktopDocumentExport(kind, payload);
+    const fileName = result.fileName || defaultFileName;
+    if (window.electronAPI?.saveExportedDocument) {
+      return window.electronAPI.saveExportedDocument({ fileName, buffer: result.buffer });
+    }
+    return { success: true, fileName };
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildPayload()),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -157,6 +199,10 @@ export async function exportWithOutputDirFallback(opts) {
     if (typeof opts.onError === 'function') opts.onError(message);
     throw e;
   }
+}
+
+export function canGenerateDocumentsOffline() {
+  return canUseDesktopDocumentIpc();
 }
 
 export function syncApprovedOutputDir(dir) {

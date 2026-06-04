@@ -8,7 +8,7 @@ import {
   buildCensusPayload,
   formatPacienteMetaForCenso,
   formatCamaCellForCenso,
-  abbreviatePatientNameToInitials,
+  formatPatientNameForCenso,
 } from './censo-build.mjs';
 
 test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
@@ -18,13 +18,13 @@ test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
   assert.equal(formatCamaCellForCenso({ cuarto: '305', cama: '' }), '305');
 });
 
-test('abbreviatePatientNameToInitials por palabra', () => {
-  assert.equal(abbreviatePatientNameToInitials('GARCIA LOPEZ JUAN CARLOS'), 'G.L.J.C.');
-  assert.equal(abbreviatePatientNameToInitials('MARIA'), 'M.');
-  assert.equal(abbreviatePatientNameToInitials(''), '—');
+test('formatPatientNameForCenso conserva nombre completo', () => {
+  assert.equal(formatPatientNameForCenso('GARCIA LOPEZ JUAN CARLOS'), 'GARCIA LOPEZ JUAN CARLOS');
+  assert.equal(formatPatientNameForCenso('  MARIA  '), 'MARIA');
+  assert.equal(formatPatientNameForCenso(''), '—');
 });
 
-test('buildCensusPayload abrevia nombre del paciente', () => {
+test('buildCensusPayload usa nombre completo del paciente', () => {
   var payload = buildCensusPayload({
     settings: {},
     patients: [{ id: '1', nombre: 'PEREZ SOTO ANA', archived: false }],
@@ -33,7 +33,7 @@ test('buildCensusPayload abrevia nombre del paciente', () => {
     medRecetaByPatient: {},
     todosByPatient: { 1: [] },
   });
-  assert.equal(payload.rows[0].pacienteNombre, 'P.S.A.');
+  assert.equal(payload.rows[0].pacienteNombre, 'PEREZ SOTO ANA');
 });
 
 test('formatPacienteMetaForCenso líneas sin sexo', () => {

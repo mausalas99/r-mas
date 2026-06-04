@@ -55,7 +55,9 @@ function formatEvacShort(evac) {
   if (evac == null || evac === '') return '';
   var norm = normalizeEvacAbbrev(evac);
   if (norm === 'NC') return 'NO REPORTADAS';
-  if (isIoNumericValue(evac)) return formatCc(evac) || String(evac);
+  if (isIoNumericValue(evac)) {
+    return Number(evac).toLocaleString('es-MX');
+  }
   if (/no\s+reportad|sin\s+evac/i.test(String(evac))) return 'NO REPORTADAS';
   return toEaSalidaText(evac);
 }

@@ -67,11 +67,21 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncRoomSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
   });
 
-  it('mints a fresh LAN ticket when copying iPad or invite links', () => {
+  it('mints a fresh LAN ticket when copying sala invite; mobile uses permanent URL', () => {
     assert.match(lanSyncPanelSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
     assert.match(lanSyncPanelSrc, /copyMobileLanLinkFromUi/);
+    assert.match(lanSyncPanelSrc, /buildPermanentMobileJoinUrl/);
+    assert.match(lanSyncPanelSrc, /resolvePermanentMobileShareUrl/);
+    assert.match(lanSyncPanelSrc, /appendMobileSharerParamsToJoinUrl/);
+    assert.match(lanSyncPanelSrc, /lan-pairing-display-mobile/);
+    assert.match(lanSyncPanelSrc, /lan-pairing-display-sala/);
     assert.match(lanSyncPanelSrc, /canOfferMobileLanShare/);
     assert.doesNotMatch(lanSyncPanelSrc, /params\.set\('code', teamCode\)/);
+    const salaCopyBlock = lanSyncPanelSrc.match(
+      /export async function copyLanInviteLinkFromUi[\s\S]{0,900}/
+    );
+    assert.ok(salaCopyBlock);
+    assert.doesNotMatch(salaCopyBlock[0], /appendMobileSharerParamsToJoinUrl/);
   });
 
   it('does not reconnect live WS inside pushClinicalOpsLanNow', () => {

@@ -4,12 +4,8 @@ const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
 const { execSync } = require('child_process');
-const { fillRecetaHuPdf } = require('./generate-receta-hu.js');
-const { renderCensusPdf } = require('./generate-censo.js');
-const { generateNoteBuffer } = require('./lib/doc-generators/note.js');
-const { generateIndicacionesBuffer } = require('./lib/doc-generators/indicaciones.js');
-const { generateListadoBuffer } = require('./lib/doc-generators/listado.js');
-const { sendDocxBuffer } = require('./lib/doc-export-http.js');
+const docExport = require('./lib/doc-export-service.js');
+const { sendDocxBuffer, sendPdfBuffer } = require('./lib/doc-export-http.js');
 const { logDocExport } = require('./lib/doc-export-audit.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
@@ -21,8 +17,10 @@ const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
-const { createDocumentExportAuthMiddleware } = require('./lib/server-http-security.js');
-const { resolveAllowedOutputDir } = require('./lib/output-dir-policy.js');
+const {
+  createDocumentExportAuthMiddleware,
+  shouldSkipGlobalRateLimit,
+} = require('./lib/server-http-security.js');
 const { createInternoRouter } = require('./lib/interno/interno-router.js');
 const rateLimit = require('express-rate-limit');
 
@@ -90,6 +88,7 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  skip: shouldSkipGlobalRateLimit,
 });
 
 const generateLimiter = rateLimit({
@@ -143,6 +142,10 @@ appExpress.use('/js', (req, res, next) => {
   }
   next();
 });
+appExpress.get('/manifest.webmanifest', (_req, res) => {
+  res.type('application/manifest+json');
+  res.sendFile(path.join(__dirname, 'public', 'manifest.webmanifest'));
+});
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
@@ -178,136 +181,71 @@ const getLanHostUrl = () =>
 
 const documentExportAuth = createDocumentExportAuthMiddleware(() => lanStore.getState());
 
-function safeName(str) {
-  return (str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');
-}
+const exportPaths = () => ({ userDataPath: userData, downloadsPath: DOWNLOADS });
 
-const SCRIPTS_DIR = __dirname.includes('app.asar')
-  ? __dirname.replace('app.asar', 'app.asar.unpacked')
-  : __dirname;
-
-function resolveExportDirFromBody(outputDir) {
-  try {
-    return resolveAllowedOutputDir(outputDir, {
-      userDataPath: userData,
-      downloadsPath: DOWNLOADS,
-    });
-  } catch (e) {
-    if (e && e.code === 'OUTPUT_DIR_NOT_ALLOWED') {
-      const err = new Error('La carpeta de exportación no está autorizada. Configúrala en Mi Perfil.');
-      err.code = 'OUTPUT_DIR_NOT_ALLOWED';
-      throw err;
-    }
-    if (e && e.code === 'OUTPUT_DIR_NOT_WRITABLE') {
-      const err = new Error('No se puede escribir en la carpeta seleccionada.');
-      err.code = 'OUTPUT_DIR_NOT_WRITABLE';
-      throw err;
-    }
-    throw e;
+function docExportHttpError(res, e, meta) {
+  if (meta) logDocExport(Object.assign({ status: 500, error: e && e.message }, meta));
+  if (e && e.code === 'BAD_REQUEST') {
+    return res.status(400).json({ error: e.message });
+  }
+  if (e && (e.code === 'OUTPUT_DIR_NOT_ALLOWED' || e.code === 'OUTPUT_DIR_NOT_WRITABLE')) {
+    return res.status(400).json({ error: e.message });
+  }
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 }
 
 appExpress.post('/generate', generateLimiter, documentExportAuth, async (req, res) => {
   const { patient, note } = req.body;
-  if (!patient || !note) return res.status(400).json({ error: 'Missing patient or note' });
   try {
-    const buf = await generateNoteBuffer({ patient, note });
-    const fileName = `Nota_Evolucion_${safeName(patient.nombre)}_${safeName(note.fecha || '')}.docx`;
-    sendDocxBuffer(res, { buf, fileName, type: 'nota', patient });
+    const { buffer, fileName } = await docExport.exportNoteDocx({ patient, note });
+    sendDocxBuffer(res, { buf: buffer, fileName, type: 'nota', patient });
   } catch (e) {
-    logDocExport({ type: 'nota', patient, status: 500, error: e && e.message });
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
-    }
+    docExportHttpError(res, e, { type: 'nota', patient });
   }
 });
 
 appExpress.post('/generate-indicaciones', generateLimiter, documentExportAuth, async (req, res) => {
   const { patient, indicaciones } = req.body;
-  if (!patient || !indicaciones) {
-    return res.status(400).json({ error: 'Missing patient or indicaciones' });
-  }
   try {
-    const buf = await generateIndicacionesBuffer({ patient, indicaciones });
-    const fileName = `Indicaciones_${safeName(patient.nombre)}_${safeName(indicaciones.fecha || '')}.docx`;
-    sendDocxBuffer(res, { buf, fileName, type: 'indicaciones', patient });
+    const { buffer, fileName } = await docExport.exportIndicacionesDocx({ patient, indicaciones });
+    sendDocxBuffer(res, { buf: buffer, fileName, type: 'indicaciones', patient });
   } catch (e) {
-    logDocExport({ type: 'indicaciones', patient, status: 500, error: e && e.message });
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
-    }
+    docExportHttpError(res, e, { type: 'indicaciones', patient });
   }
 });
 
 appExpress.post('/generate-listado', generateLimiter, documentExportAuth, async (req, res) => {
   const { patient, listado, medicos } = req.body;
-  if (!patient || !listado) return res.status(400).json({ error: 'Missing patient or listado' });
   try {
-    const buf = await generateListadoBuffer({
-      patient,
-      listado,
-      medicos: medicos || {},
-    });
-    const now = new Date();
-    const stamp = [
-      String(now.getHours()).padStart(2, '0'),
-      String(now.getMinutes()).padStart(2, '0'),
-      String(now.getSeconds()).padStart(2, '0'),
-    ].join('-');
-    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha || '')}_${stamp}.docx`;
-    sendDocxBuffer(res, { buf, fileName, type: 'listado', patient });
+    const { buffer, fileName } = await docExport.exportListadoDocx({ patient, listado, medicos });
+    sendDocxBuffer(res, { buf: buffer, fileName, type: 'listado', patient });
   } catch (e) {
-    logDocExport({ type: 'listado', patient, status: 500, error: e && e.message });
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
-    }
+    docExportHttpError(res, e, { type: 'listado', patient });
   }
 });
 
 appExpress.post('/generate-censo', generateLimiter, documentExportAuth, async (req, res) => {
-  const { header, rows, outputDir, servicio } = req.body;
-  if (!Array.isArray(rows) || !rows.length) {
-    return res.status(400).json({ error: 'No hay pacientes para el censo.' });
-  }
-  let dest;
+  const { header, rows, servicio } = req.body;
   try {
-    dest = resolveExportDirFromBody(outputDir);
+    const { buffer, fileName } = await docExport.exportCensoPdf({ header, rows, servicio });
+    sendPdfBuffer(res, { buf: buffer, fileName, type: 'censo' });
   } catch (e) {
-    return res.status(400).json({ error: (e && e.message) || 'Carpeta no válida.' });
-  }
-  try {
-    const { censoFileName, writeCensoPdfForToday } = await import('./lib/censo-export-file.mjs');
-    const buf = await renderCensusPdf({ header: header || {}, rows });
-    const now = new Date();
-    const fileName = censoFileName(servicio || (header && header.servicio) || 'guardia', now);
-    const saved = writeCensoPdfForToday(dest, fileName, buf, now);
-    res.json({ ok: true, fileName: saved.fileName, replaced: saved.replaced });
-  } catch (e) {
-    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    docExportHttpError(res, e);
   }
 });
 
 appExpress.post('/generate-receta-hu', generateLimiter, documentExportAuth, async (req, res) => {
   const { patient, receta, doctorName, cedulaProfesional, outputDir } = req.body;
-  if (!patient) return res.status(400).json({ error: 'Missing patient' });
-  let dest;
   try {
-    dest = resolveExportDirFromBody(outputDir);
+    const result = await docExport.exportRecetaHuPdf(
+      { patient, receta, doctorName, cedulaProfesional, outputDir },
+      exportPaths()
+    );
+    res.json(result);
   } catch (e) {
-    return res.status(400).json({ error: (e && e.message) || 'Carpeta no válida.' });
-  }
-  try {
-    const payload = Object.assign({}, receta || {}, {
-      patient,
-      doctorName: doctorName || '',
-      cedulaProfesional: cedulaProfesional || '',
-    });
-    const buf = await fillRecetaHuPdf(payload, SCRIPTS_DIR);
-    const fileName = `Receta_HU_${safeName(patient.nombre)}_${safeName(receta && receta.fecha ? receta.fecha : '')}.pdf`;
-    fs.writeFileSync(path.join(dest, fileName), buf);
-    res.json({ ok: true, fileName });
-  } catch (e) {
-    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    docExportHttpError(res, e);
   }
 });
 

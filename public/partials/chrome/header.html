@@ -54,6 +54,10 @@
         <button type="button" class="btn-settings-help-secondary" onclick="closeSettingsDropdown(); resetAndStartOnboarding();"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial completo · elegir Sala o Interconsulta</button>
         <p class="settings-help-cta-hint overview-hint">Guías, atajos y <strong>Aprender R+</strong> en el centro de ayuda (tutorial, módulos y Neo).</p>
       </div>
+      <div id="settings-clinical-sync-mode" class="settings-clinical-sync-mode" hidden>
+        <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong>: sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
+        <button type="button" class="btn-edit-templates" onclick="enableClinicalLanFromSettings()">Activar guardia en red (LAN)…</button>
+      </div>
 
       <details class="settings-accordion" open>
         <summary data-i18n="settings.appearance">Apariencia</summary>

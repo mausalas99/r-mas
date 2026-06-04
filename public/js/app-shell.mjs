@@ -7,9 +7,19 @@ import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
-import { isMobileWeb } from './mobile-web.mjs';
+import { isMobileWeb, syncMobileBarebonesChrome } from './mobile-web.mjs';
+import {
+  persistMobilePairingFromSearch,
+  restoreMobilePairingFromStorage,
+  resolveStoredMobileRoomId,
+} from './mobile-lan-query-persist.mjs';
+import { scheduleMobileLanWork } from './mobile-lan-boot.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { prefillRegistrationFromUrlParams } from './features/clinical-registration.mjs';
+import {
+  applyMobileSharerContextFromUrl,
+  hydrateMobileSharerSessionFromSettings,
+} from './mobile-sharer-sync.mjs';
 import {
   registerDocumentExportRuntime,
   saveOutputDirSelection,
@@ -188,10 +198,25 @@ function chooseOutputDir() {
   });
 }
 
+function setMobileBootBanner(visible, text) {
+  if (!isMobileWeb()) return;
+  var el = document.getElementById('rpc-mobile-boot-banner');
+  if (!el) return;
+  if (text) el.textContent = text;
+  el.classList.toggle('is-visible', !!visible);
+}
+
 async function initMobileWebBoot() {
   tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
+  setMobileBootBanner(true, 'Cargando R+ Móvil…');
+  persistMobilePairingFromSearch(location.search, location.origin);
+  restoreMobilePairingFromStorage();
   prefillRegistrationFromUrlParams();
+  applyMobileSharerContextFromUrl();
+  hydrateMobileSharerSessionFromSettings();
+  closeConnectionDropdown();
+  syncMobileBarebonesChrome();
   try {
     document.title = 'R+ Móvil';
   } catch (_e) {}
@@ -207,26 +232,35 @@ async function initMobileWebBoot() {
     intro.setAttribute('aria-hidden', 'true');
   }
   var parsed = parseLanJoinQuery(location.search, location.origin);
-  if (!parsed.teamCode) {
-    var savedCfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
-    if (savedCfg && savedCfg.teamCode && savedCfg.hostUrl) {
-      configureLanFromMobileJoin(
-        savedCfg.hostUrl,
-        savedCfg.teamCode,
-        parsed.roomId || ''
-      );
+  var storedRoomId = resolveStoredMobileRoomId();
+  var roomId = String(parsed.roomId || storedRoomId || '').trim();
+  if (!window._rpcMobileLanSettledWired) {
+    window._rpcMobileLanSettledWired = true;
+    document.addEventListener('rpc-mobile-lan-sync-settled', function () {
+      setMobileBootBanner(false);
+    });
+  }
+  setMobileBootBanner(false);
+  scheduleMobileLanWork(function () {
+    setMobileBootBanner(true, 'Sincronizando con el anfitrión…');
+    if (!parsed.teamCode) {
+      var savedCfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
+      if (savedCfg && savedCfg.teamCode && savedCfg.hostUrl) {
+        configureLanFromMobileJoin(savedCfg.hostUrl, savedCfg.teamCode, roomId);
+      } else {
+        setMobileBootBanner(false);
+      }
       return;
     }
-    setTimeout(function () {
-      if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
-    }, 600);
-    return;
-  }
-  var hostUrl = String(parsed.hostUrl || location.origin || '')
-    .trim()
-    .replace(/\/+$/, '');
-  if (!hostUrl) return;
-  configureLanFromMobileJoin(hostUrl, parsed.teamCode, parsed.roomId);
+    var hostUrl = String(parsed.hostUrl || location.origin || '')
+      .trim()
+      .replace(/\/+$/, '');
+    if (!hostUrl) {
+      setMobileBootBanner(false);
+      return;
+    }
+    configureLanFromMobileJoin(hostUrl, parsed.teamCode, roomId);
+  });
 }
 
 
@@ -780,7 +814,11 @@ export function scheduleDeferredShellInits() {
   _rpcDeferInit(installClinicalAppShell);
   _rpcDeferInit(initGoalGFeatures);
   _rpcDeferInit(initGuidedTourGate);
-  _rpcDeferInit(initMobileWebBoot);
+  if (isMobileWeb()) {
+    void initMobileWebBoot();
+  } else {
+    _rpcDeferInit(initMobileWebBoot);
+  }
   _rpcDeferInit(initRpcServerHealthWatch);
   _rpcDeferInit(initIdleLockFeature);
 }

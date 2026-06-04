@@ -68,6 +68,7 @@ import {
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
 import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
+import { isMobileWeb } from "../mobile-web.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
@@ -1257,7 +1258,8 @@ export function renderInnerTabs() {
     el.style.display = consolidated ? "none" : "";
   });
   document.querySelectorAll(".exp-consolidated-tab").forEach(function (el) {
-    el.style.display = consolidated ? "" : "none";
+    var hideSalida = isMobileWeb() && el.id === "itab-salida";
+    el.style.display = consolidated && !hideSalida ? "" : "none";
   });
   applyExpedientePaneLayout(consolidated, settings);
 
@@ -1269,13 +1271,9 @@ export function renderInnerTabs() {
     var order = 1;
     setOrder("itab-paciente", order++);
     if (showClinico) setOrder("itab-clinico", order++);
-    if (sala) {
-      setOrder("itab-resultados", order++);
-      setOrder("itab-salida", order++);
-    } else {
-      setOrder("itab-resultados", order++);
-      setOrder("itab-salida", order++);
-    }
+    setOrder("itab-resultados", order++);
+    if (sala && !isMobileWeb()) setOrder("itab-salida", order++);
+    show("itab-salida", sala && !isMobileWeb());
     wireExpedienteDatosCollapseRender();
     var activeInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
     if (activeInner !== rt.getActiveInner()) rt.setActiveInner(activeInner);

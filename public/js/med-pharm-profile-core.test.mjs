@@ -10,6 +10,7 @@ import {
   mergeRecetaIntoMonth,
   parseRecetaDateToDay,
   applySomePasteToProfile,
+  medPharmProfileUpdatedAt,
   formatFreqShort,
 } from './med-pharm-profile-core.mjs';
 
@@ -230,6 +231,18 @@ describe('applySomePasteToProfile', () => {
       return r.rowKey === key;
     });
     assert.equal(row.hidden, true);
+  });
+});
+
+describe('medPharmProfileUpdatedAt', () => {
+  it('elige el lastSomePasteAt más reciente entre meses', () => {
+    const at = medPharmProfileUpdatedAt({
+      months: {
+        '2026-04': { lastSomePasteAt: '2026-04-10T08:00:00.000Z', rows: [] },
+        '2026-05': { lastSomePasteAt: '2026-05-20T12:00:00.000Z', rows: [] },
+      },
+    });
+    assert.equal(at, '2026-05-20T12:00:00.000Z');
   });
 });
 

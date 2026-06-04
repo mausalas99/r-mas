@@ -150,7 +150,7 @@ function removeTx(i) { if (!notes[aid()]||notes[aid()].tratamiento.length<=1) re
 // ── Word nota ───────────────────────────────────────────────────────────
 function generateWord() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline()) {
+  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
     rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
   }
@@ -318,7 +318,7 @@ function applyExtraTemplateFromIndica() {
 // ── Word indicaciones ────────────────────────────────────────────────
 function generateIndicaciones() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline()) {
+  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
     rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
   }

@@ -25,6 +25,45 @@ export function patientEntityKey(id, registro) {
   return 'id:' + String(id || '');
 }
 
+/**
+ * Tombstones locales (_deleted) → parches para que el merge no reviva pendientes del host.
+ * @param {Record<string, { version?: number, updatedAt?: string, _deleted?: boolean }>} entityMap
+ */
+export function liveSyncDeletePatchesFromEntityMap(entityMap) {
+  const patches = [];
+  if (!entityMap || typeof entityMap !== 'object') return patches;
+  for (const key of Object.keys(entityMap)) {
+    const row = entityMap[key];
+    if (!row || row._deleted !== true) continue;
+    if (key.startsWith('todo:')) {
+      const rest = key.slice(5);
+      const colon = rest.indexOf(':');
+      if (colon < 0) continue;
+      patches.push({
+        type: 'livesync:patch',
+        entity: 'todo',
+        op: 'delete',
+        id: rest.slice(colon + 1),
+        patientId: rest.slice(0, colon),
+        entityVersion: row.version != null ? Number(row.version) : null,
+        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+      });
+      continue;
+    }
+    if (key.startsWith('agenda:')) {
+      patches.push({
+        type: 'livesync:patch',
+        entity: 'agenda',
+        op: 'delete',
+        id: key.slice(7),
+        entityVersion: row.version != null ? Number(row.version) : null,
+        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+      });
+    }
+  }
+  return patches;
+}
+
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
 }
@@ -80,6 +119,12 @@ export function mergeLiveSyncBundles(sources) {
   const patientDeletes = new Map();
   const todoTouchedPatientIds = new Set();
 
+  function blocksResurrectingDeleted(cur, deleted, ver) {
+    if (!cur || !cur.deleted || deleted) return false;
+    if (ver == null || cur.entityVersion == null) return true;
+    return ver <= cur.entityVersion;
+  }
+
   function upsertAgenda(ev, deleted, entityVersion, updatedAt, src) {
     if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
     const k = agendaEntityKey(ev.id);
@@ -89,6 +134,7 @@ export function mergeLiveSyncBundles(sources) {
         : versionFromSource(src, k) ?? (ev.version != null ? Number(ev.version) : null);
     const at = String(updatedAt || ev.updatedAt || ev.createdAt || '');
     const cur = agenda.get(k);
+    if (blocksResurrectingDeleted(cur, deleted, ver)) return;
     if (shouldAcceptEntry(cur, ver, at)) {
       agenda.set(k, {
         kind: 'agenda',
@@ -109,6 +155,7 @@ export function mergeLiveSyncBundles(sources) {
         : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
     const at = String(updatedAt || item.updatedAt || item.createdAt || '');
     const cur = todos.get(k);
+    if (blocksResurrectingDeleted(cur, deleted, ver)) return;
     if (shouldAcceptEntry(cur, ver, at)) {
       todos.set(k, {
         kind: 'todo',
@@ -134,6 +181,10 @@ export function mergeLiveSyncBundles(sources) {
       for (let j = 0; j < arr.length; j += 1) {
         upsertTodo(pid, arr[j], false, null, null, src);
       }
+    }
+    const patches = Array.isArray(src.patches) ? src.patches : [];
+    for (let p = 0; p < patches.length; p += 1) {
+      applyPatch(patches[p]);
     }
   }
 

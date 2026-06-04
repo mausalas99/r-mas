@@ -1120,7 +1120,7 @@ async function copyListadoProblemasAiPrompt() {
 }
 function generateListado() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline()) {
+  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
     rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
   }

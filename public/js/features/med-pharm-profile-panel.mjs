@@ -129,6 +129,39 @@ function getProfile(pid) {
   return medPharmProfileByPatient[pid] || null;
 }
 
+function isDemoPatientId(patientId) {
+  return String(patientId || '').indexOf('demo-') === 0;
+}
+
+function profileHasMonthData(profile) {
+  if (!profile || !profile.months || typeof profile.months !== 'object') return false;
+  return Object.keys(profile.months).some(function (k) {
+    var m = profile.months[k];
+    return m && Array.isArray(m.rows) && m.rows.length > 0;
+  });
+}
+
+/** Guarda el pegado SOME del modal antes de cambiar de paciente. */
+export function stashMedPharmPasteForPatient(patientId) {
+  if (!patientId || isDemoPatientId(patientId)) return;
+  var ta = document.getElementById('med-pharm-paste');
+  if (!ta) return;
+  var raw = (ta.value || '').trim();
+  var profile = getProfile(patientId);
+  if (!raw) {
+    if (profile && profile.draftPaste) {
+      delete profile.draftPaste;
+      if (!profileHasMonthData(profile)) delete medPharmProfileByPatient[patientId];
+      else saveState();
+    }
+    return;
+  }
+  if (!profile) profile = { months: {} };
+  profile.draftPaste = raw;
+  medPharmProfileByPatient[patientId] = profile;
+  saveState();
+}
+
 function getViewMonth(pid) {
   var profile = getProfile(pid);
   if (!profile) return null;
@@ -716,6 +749,8 @@ export function openMedPharmPasteModal() {
   var ta = document.getElementById('med-pharm-paste');
   openMedPharmModal('med-pharm-paste-modal');
   if (ta) {
+    var profile = getProfile(pid);
+    ta.value = profile && profile.draftPaste ? profile.draftPaste : '';
     requestAnimationFrame(function () {
       ta.focus();
     });
@@ -1054,6 +1089,7 @@ export function importMedPharmMonthPaste() {
   }
   var profile = getProfile(pid) || { months: {} };
   medPharmProfileByPatient[pid] = applySomePasteToProfile(profile, parsed);
+  if (medPharmProfileByPatient[pid].draftPaste) delete medPharmProfileByPatient[pid].draftPaste;
   saveState();
   if (ta) ta.value = '';
   closeModals();

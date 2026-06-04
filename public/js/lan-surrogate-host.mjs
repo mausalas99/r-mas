@@ -99,20 +99,28 @@ export function surrogateElectionDelayMs(clientId) {
   return 400 + (h % 2400);
 }
 
+const LAN_PING_TIMEOUT_MS = 500;
+
 export async function pingLanHostUrl(hostUrl, teamCode) {
   const url = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
   if (!url) return false;
   const code = String(teamCode || '').trim();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), LAN_PING_TIMEOUT_MS);
   try {
     const r = await fetch(`${url}/api/lan/v1/ping`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${code}` },
+      cache: 'no-store',
+      signal: ctrl.signal,
     });
     return !!(r && r.ok);
   } catch (_e) {
     return false;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -176,7 +176,7 @@ function initGuidedTourGate() {
     });
 }
 
-function showTourIntroModal() {
+export function showTourIntroModal() {
   var el = document.getElementById('onboarding-intro-backdrop');
   if (!el) return;
   try { settingsHelpBridge.closeReleaseNotes(); } catch (_e) {}
@@ -185,6 +185,19 @@ function showTourIntroModal() {
   if (h2) h2.textContent = ver && ver !== 'dev' ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
+}
+
+/** Resolve app version then open Sala / Interconsulta picker (Ajustes → tutorial). */
+export function openTutorialIntroFromSettings() {
+  return resolveAppVersionForTour()
+    .then(function (v) {
+      window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
+      showTourIntroModal();
+    })
+    .catch(function () {
+      window.__RPC_APP_VERSION__ = 'dev';
+      showTourIntroModal();
+    });
 }
 
 export function hideTourIntroModal() {

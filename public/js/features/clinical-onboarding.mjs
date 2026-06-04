@@ -13,6 +13,9 @@ import {
   CLINICAL_LAN_PROFILE_GATE_LEAD_HTML,
   CLINICAL_LAN_USERNAME_HINT_HTML,
   ensureLanProfileGateDeviceReset,
+  isClinicalLocalOnlyMode,
+  isClinicalSyncModeChosen,
+  isLocalOnlyPlaceholderUsername,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
   readRpcSettings,
@@ -26,6 +29,11 @@ import {
 } from '../clinical-username.mjs';
 
 import { filterJoinedTeams } from './clinical-teams.mjs';
+import {
+  renderLocalOnlyProfilePanel,
+  renderSyncModeChoicePanel,
+  wireSyncModeOnboardingInteractions,
+} from './clinical-onboarding-sync-mode.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -68,11 +76,28 @@ export function needsTeamOnboarding() {
   return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
 }
 
+/** First screen: LAN guardia vs solo este equipo (before any profile fields). */
+export function needsClinicalSyncModeChoice() {
+  if (!isDbMode()) return false;
+  const settings = readRpcSettings();
+  if (settings.clinicalRegistered === true) return false;
+  if (isClinicalSyncModeChosen(settings)) return false;
+  return true;
+}
+
 /** Falta perfil clínico mínimo antes de usar guardia / Mi rotación con datos. */
 export function needsProfileOnboarding() {
   if (!isDbMode()) return false;
   if (!clinicalSessionContext.user?.user_id) return true;
-  if (needsClinicalLanProfileGate(readRpcSettings())) return true;
+  if (needsClinicalSyncModeChoice()) return true;
+  const settings = readRpcSettings();
+  if (isClinicalLocalOnlyMode(settings)) {
+    if (settings.clinicalRegistered !== true) return true;
+    const name = String(clinicalSessionContext.user?.clinical_name || '').trim();
+    return !name;
+  }
+  if (needsClinicalLanProfileGate(settings)) return true;
+  if (isLocalOnlyPlaceholderUsername(clinicalSessionContext.user?.username)) return true;
   if (needsUsernameClaim()) return true;
   const name = String(clinicalSessionContext.user?.clinical_name || '').trim();
   if (!name) return true;
@@ -304,6 +329,8 @@ async function handleResumeIdentityClick() {
 }
 
 async function wireOnboardingInteractions() {
+  wireSyncModeOnboardingInteractions();
+
   const form = document.getElementById('clinical-onboard-username-form');
   if (form && !form._rpcOnboardWired) {
     form._rpcOnboardWired = true;
@@ -327,8 +354,13 @@ export async function renderOnboardingPanel() {
 export async function renderOnboardingPanelInto(host) {
   const userId = String(clinicalSessionContext.user?.user_id || '');
   if (!userId) {
-    host.innerHTML =
-      '<p class="clinical-teams-lead">Activa la sesión clínica para continuar.</p>';
+    if (needsClinicalSyncModeChoice()) {
+      renderSyncModeChoicePanel(host);
+      await wireOnboardingInteractions();
+      return;
+    }
+    const { buildOnboardingSessionBlockHtml } = await import('./clinical-onboarding-main.mjs');
+    host.innerHTML = await buildOnboardingSessionBlockHtml();
     return;
   }
 
@@ -361,6 +393,18 @@ export async function renderOnboardingPanelInto(host) {
       const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
       await renderClinicalTeamsPanel();
     }
+    return;
+  }
+
+  if (needsClinicalSyncModeChoice()) {
+    renderSyncModeChoicePanel(host);
+    await wireOnboardingInteractions();
+    return;
+  }
+
+  if (isClinicalLocalOnlyMode(settings)) {
+    renderLocalOnlyProfilePanel(host, settings);
+    await wireOnboardingInteractions();
     return;
   }
 

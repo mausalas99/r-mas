@@ -3,11 +3,18 @@
  */
 import { ensureClinicalPanelSession } from './clinical-panel-host.mjs';
 import { isSqlcipherNativeReady } from './db-unlock.mjs';
+import { isDbMode } from '../db-storage-bridge.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import {
   needsClinicalOnboarding,
+  needsClinicalSyncModeChoice,
   renderOnboardingPanelInto,
 } from './clinical-onboarding.mjs';
 import { prefillRegistrationFromUrlParams } from './clinical-registration.mjs';
+import {
+  renderSyncModeChoicePanel,
+  wireSyncModeOnboardingInteractions,
+} from './clinical-onboarding-sync-mode.mjs';
 
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
@@ -44,33 +51,87 @@ export function hideMainClinicalOnboarding() {
   void import('./clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
 }
 
+/** @returns {Promise<'locked'|'unlocked'|'native_blocked'|'no_api'|'unknown'>} */
+export async function readClinicalDbGateKind() {
+  if (typeof window === 'undefined' || !isDbMode()) return 'no_api';
+  const api = window.rplusDb || window.electronAPI;
+  if (!api || typeof api.dbStatus !== 'function') return 'no_api';
+  try {
+    const status = await api.dbStatus();
+    if (status && !isSqlcipherNativeReady(status)) return 'native_blocked';
+    if (status && status.state === 'unlocked') return 'unlocked';
+    if (status && status.state) return 'locked';
+    return 'unknown';
+  } catch (_e) {
+    return 'unknown';
+  }
+}
+
 /** User-facing copy when onboarding cannot load the clinical session. */
 export async function describeOnboardingSessionBlock() {
   if (typeof window === 'undefined') {
-    return 'Desbloquea la base de datos para configurar tu rotación.';
+    return 'Abre la base de datos local de R+ para continuar. No necesitas red LAN ni ⇄.';
   }
-  const api = window.rplusDb || window.electronAPI;
-  if (!api || typeof api.dbStatus !== 'function') {
-    return 'Desbloquea la base de datos para configurar tu rotación.';
+  const gate = await readClinicalDbGateKind();
+  if (gate === 'native_blocked') {
+    return (
+      'Esta instalación de R+ no cargó el módulo de base de datos (SQLCipher). ' +
+      'Reinstala desde GitHub o usa Ajustes → Aplicación → Reinstalar versión actual.'
+    );
   }
-  try {
-    const status = await api.dbStatus();
-    if (status && !isSqlcipherNativeReady(status)) {
-      return (
-        'Esta instalación de R+ no cargó el módulo de base de datos (SQLCipher). ' +
-        'Reinstala desde GitHub o usa Ajustes → Aplicación → Reinstalar versión actual.'
-      );
+  if (gate === 'unlocked') {
+    return (
+      'La base local ya está abierta, pero la sesión clínica no inició. ' +
+      'Pulsa Reintentar abajo o cierra R+ por completo (incluida la bandeja) y vuelve a abrir.'
+    );
+  }
+  if (gate === 'locked') {
+    return (
+      'Abre la base de datos local de R+ para continuar. ' +
+      'No necesitas red LAN ni conexión ⇄ — solo el almacenamiento cifrado de este equipo.'
+    );
+  }
+  if (gate === 'no_api') {
+    return 'R+ no detectó el acceso a la base local. Reinicia la aplicación.';
+  }
+  return 'Abre la base de datos local de R+ para continuar. No necesitas red LAN ni ⇄.';
+}
+
+/** Card HTML when session bootstrap failed (local-first; unlock is not LAN). */
+export async function buildOnboardingSessionBlockHtml() {
+  const lead = await describeOnboardingSessionBlock();
+  const gate = await readClinicalDbGateKind();
+  const unlockBtn =
+    gate === 'locked' || gate === 'unknown'
+      ? '<button type="button" class="btn-save" id="clinical-onboard-unlock-btn">Abrir base de datos</button>'
+      : '';
+  const retryBtn =
+    gate === 'unlocked'
+      ? '<button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button>'
+      : '';
+  const actions =
+    unlockBtn || retryBtn
+      ? `<div class="modal-actions clinical-onboard-session-actions">${unlockBtn}${retryBtn}</div>`
+      : '';
+  return `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">${escapeHtml(lead)}</p>${actions}</div>`;
+}
+
+function wireOnboardingSessionRecoveryOnce(host) {
+  if (!host || host._rpcSessionRecoveryWired) return;
+  host._rpcSessionRecoveryWired = true;
+  host.addEventListener('click', (ev) => {
+    const unlockBtn = ev.target.closest('#clinical-onboard-unlock-btn');
+    if (unlockBtn) {
+      void import('./db-unlock.mjs').then((mod) => {
+        if (typeof mod.retryClinicalDbUnlockForOnboarding === 'function') {
+          void mod.retryClinicalDbUnlockForOnboarding();
+        }
+      });
+      return;
     }
-    if (status && status.state === 'unlocked') {
-      return (
-        'La base ya está abierta, pero la sesión clínica no inició. ' +
-        'Cierra R+ por completo (incluida la bandeja) y vuelve a abrir; si persiste, reinstala la misma versión desde GitHub.'
-      );
-    }
-  } catch (_e) {
-    /* fall through */
-  }
-  return 'Desbloquea la base de datos para configurar tu rotación.';
+    const retryBtn = ev.target.closest('#clinical-onboard-retry-session-btn');
+    if (retryBtn) void showMainClinicalOnboarding();
+  });
 }
 
 export function focusMainClinicalOnboarding() {
@@ -97,16 +158,27 @@ export async function showMainClinicalOnboarding() {
     host.id = CLINICAL_ONBOARDING_MAIN_ID;
     host.className = 'clinical-onboarding-main';
     host.setAttribute('role', 'region');
-    host.setAttribute('aria-label', 'Configura tu rotación');
+    host.setAttribute(
+      'aria-label',
+      isClinicalLocalOnlyMode(readRpcSettings())
+        ? 'Configura tu perfil local'
+        : 'Configura tu rotación'
+    );
     main.prepend(host);
   }
 
   document.documentElement.classList.add(CLINICAL_ONBOARDING_ACTIVE_CLASS);
 
+  if (needsClinicalSyncModeChoice()) {
+    renderSyncModeChoicePanel(host);
+    wireSyncModeOnboardingInteractions();
+    return;
+  }
+
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    const lead = await describeOnboardingSessionBlock();
-    host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">${escapeHtml(lead)}</p></div>`;
+    host.innerHTML = await buildOnboardingSessionBlockHtml();
+    wireOnboardingSessionRecoveryOnce(host);
     return;
   }
 
@@ -123,7 +195,21 @@ export async function showMainClinicalOnboarding() {
   }
 }
 
+async function syncChromeAfterOnboardingChange() {
+  try {
+    const rot = await import('./clinical-rotation-entry.mjs');
+    if (typeof rot.syncClinicalRotationEntryChrome === 'function') rot.syncClinicalRotationEntryChrome();
+  } catch (_e) {}
+  try {
+    const settings = await import('./settings-help/settings-dropdown.mjs');
+    if (typeof settings.syncTeamSyncHeaderButton === 'function') {
+      settings.syncTeamSyncHeaderButton();
+    }
+  } catch (_e) {}
+}
+
 export async function refreshMainClinicalOnboardingIfNeeded() {
   if (needsClinicalOnboarding()) await showMainClinicalOnboarding();
   else hideMainClinicalOnboarding();
+  await syncChromeAfterOnboardingChange();
 }

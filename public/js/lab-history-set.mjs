@@ -31,9 +31,13 @@ import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import {
   patients,
   notes,
+  indicaciones,
   labHistory,
   medRecetaByPatient,
   listadoProblemas,
+  recetaHuByPatient,
+  vpoByPatient,
+  medPharmProfileByPatient,
   saveState,
 } from './app-state.mjs';
 import { storage } from './storage.js';
@@ -545,7 +549,17 @@ export function scheduleLabHistoryPostSaveMaintenance() {
     try {
       var changed = runLabHistoryPostSaveMaintenance();
       if (changed) {
-        storage.saveAll(patients, notes, labHistory, medRecetaByPatient, listadoProblemas);
+        storage.saveAll(
+          patients,
+          notes,
+          indicaciones,
+          labHistory,
+          medRecetaByPatient,
+          listadoProblemas,
+          recetaHuByPatient,
+          vpoByPatient,
+          medPharmProfileByPatient
+        );
         var aid = maintRt.getActiveId();
         if (aid) {
           try {
@@ -569,7 +583,17 @@ export function installLabHistoryAuditHook() {
     window.runRpcLabAuditNow = function () {
       var ch = runLabHistoryPostSaveMaintenance();
       if (ch) {
-        storage.saveAll(patients, notes, labHistory, medRecetaByPatient, listadoProblemas);
+        storage.saveAll(
+          patients,
+          notes,
+          indicaciones,
+          labHistory,
+          medRecetaByPatient,
+          listadoProblemas,
+          recetaHuByPatient,
+          vpoByPatient,
+          medPharmProfileByPatient
+        );
         var aid = maintRt.getActiveId();
         if (aid) {
           try {

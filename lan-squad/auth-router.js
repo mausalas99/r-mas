@@ -4,6 +4,7 @@ const express = require('express');
 const { hashTeamCode } = require('./team-code.js');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { redactAuthBody } = require('./redact-secrets.js');
+const { resolveHostUrlForClient } = require('./lan-request-host.js');
 
 function auditLanSecurity(eventType, meta = {}) {
   const dbManager =
@@ -34,7 +35,7 @@ function createAuthRouter({
     try {
       const { ticketId, pin, expiresAt } = ticketStore.mint();
       auditLanSecurity('lan.ticket.mint', {});
-      const hostUrl = String(getHostUrl() || '').replace(/\/+$/, '');
+      const hostUrl = resolveHostUrlForClient(_req, getHostUrl);
       res.json({
         ticketId,
         pin,
@@ -75,7 +76,7 @@ function createAuthRouter({
       auditLanSecurity('lan.ticket.exchange', {});
       res.json({
         token: result.token,
-        hostUrl: String(getHostUrl() || '').replace(/\/+$/, ''),
+        hostUrl: resolveHostUrlForClient(req, getHostUrl),
         persist: true,
         storageTarget: 'userData',
       });

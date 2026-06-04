@@ -3,7 +3,7 @@
  */
 const PING_PATH = '/api/interno/v1/ping';
 const PROBE_TIMEOUT_MS = 500;
-const PROBE_BATCH = 32;
+const PROBE_CONCURRENCY = 6;
 const HOST_OVERRIDE_KEY = 'rpc-interno-host-override';
 
 /** @param {string} hostname */
@@ -111,9 +111,9 @@ async function probeBatch(bases, signal) {
  */
 async function probeHosts(protocol, port, hosts, signal) {
   const bases = hosts.map((host) => `${protocol}//${host}:${port}`);
-  for (let i = 0; i < bases.length; i += PROBE_BATCH) {
+  for (let i = 0; i < bases.length; i += PROBE_CONCURRENCY) {
     if (signal?.aborted) return null;
-    const hit = await probeBatch(bases.slice(i, i + PROBE_BATCH), signal);
+    const hit = await probeBatch(bases.slice(i, i + PROBE_CONCURRENCY), signal);
     if (hit) return hit;
   }
   return null;

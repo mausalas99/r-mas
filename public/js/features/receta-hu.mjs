@@ -654,7 +654,7 @@ function exportRecetaHuPdf() {
     if (!recetaHuPanelVisible()) {
       ensureRecetaHuPanelVisible();
     }
-    if (rt.isRpcOffline && rt.isRpcOffline()) {
+    if (rt.isRpcOffline && rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
       rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
       return;
     }

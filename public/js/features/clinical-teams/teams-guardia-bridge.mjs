@@ -69,11 +69,12 @@ export async function pullClinicalOpsFromLanRoom(options = {}) {
     return false;
   }
   if (lanClinicalOpsPullInFlight) return lanClinicalOpsPullInFlight;
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 8000);
   lanClinicalOpsPullInFlight = (async () => {
     try {
       const lan = await import('../lan-sync.mjs');
       if (typeof lan.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-      return !!(await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 }));
+      return !!(await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs }));
     } catch (_e) {
       return false;
     } finally {

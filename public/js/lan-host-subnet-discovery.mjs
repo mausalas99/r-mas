@@ -11,7 +11,8 @@ import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 
 const LAN_PING_PATH = '/api/lan/v1/ping';
 const PROBE_TIMEOUT_MS = 500;
-const PROBE_BATCH = 32;
+/** Chrome ~6 connections per host; ward scans must not flood the pool. */
+const PROBE_CONCURRENCY = 6;
 const MAX_FOUND = 4;
 const DEFAULT_PORT = '3738';
 
@@ -112,8 +113,8 @@ export async function discoverLanHostsOnSubnet(teamCode, ownBaseUrl) {
   /** @type {Set<string>} */
   const found = new Set();
 
-  for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_BATCH) {
-    const batch = hosts.slice(i, i + PROBE_BATCH);
+  for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
+    const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
     const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
     const probes = await Promise.all(bases.map((base) => probeLanHostBase(base, code)));
     for (const url of probes) {

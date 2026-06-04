@@ -23,6 +23,7 @@ let _onSaveResult = null;
 let _persistPatientsResolver = null;
 let _saveTimer = null;
 let _saveInFlight = null;
+let _flushSaveQueued = false;
 const SAVE_DEBOUNCE_MS = 400;
 
 /**
@@ -215,6 +216,15 @@ export function flushSaveState() {
     clearTimeout(_saveTimer);
     _saveTimer = null;
   }
-  if (_saveInFlight) return _saveInFlight;
+  if (_saveInFlight) {
+    _flushSaveQueued = true;
+    return _saveInFlight.then(function () {
+      if (_flushSaveQueued) {
+        _flushSaveQueued = false;
+        return runSaveNow();
+      }
+    });
+  }
+  _flushSaveQueued = false;
   return runSaveNow();
 }

@@ -283,6 +283,90 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   min-height: 40px;
 }
 .ronda-quick-more-btn::-webkit-details-marker { display: none; }
+
+/* Compact <details> disclosure (LAN ⇄, settings-adjacent panels, etc.) */
+.rpc-disclosure {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  padding: 0;
+  gap: 0;
+  box-shadow: none;
+}
+.rpc-disclosure > summary,
+.rpc-disclosure__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+}
+.rpc-disclosure > summary::-webkit-details-marker,
+.rpc-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+.rpc-disclosure > summary::marker,
+.rpc-disclosure__summary::marker {
+  content: '';
+  font-size: 0;
+}
+.rpc-disclosure > summary::after,
+.rpc-disclosure__summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 0.42em;
+  height: 0.42em;
+  border-right: 1.5px solid var(--text-muted);
+  border-bottom: 1.5px solid var(--text-muted);
+  transform: rotate(-45deg);
+  opacity: 0.75;
+  transition: transform var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.rpc-disclosure[open] > summary::after,
+.rpc-disclosure[open] > .rpc-disclosure__summary::after {
+  transform: rotate(45deg);
+  margin-top: 1px;
+}
+.rpc-disclosure[open] > summary,
+.rpc-disclosure[open] > .rpc-disclosure__summary {
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+}
+.rpc-disclosure__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+}
+.rpc-disclosure__summary--stacked {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding-right: 26px;
+}
+.rpc-disclosure__summary--stacked::after {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  margin-top: -0.22em;
+}
+.lan-connect-card.rpc-disclosure {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
 .ronda-quick-more-btn:hover {
   border-color: color-mix(in oklab, var(--action) 35%, var(--border));
   color: var(--action);

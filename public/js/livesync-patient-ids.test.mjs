@@ -39,6 +39,35 @@ describe('livesync-patient-ids', () => {
     assert.equal(entries[1].todos[0].text, 'dos');
   });
 
+  it('no revive pendientes borrados que siguen en entry.todos', () => {
+    const entries = [
+      {
+        patient: { id: 'r1', registro: 'A' },
+        todos: [{ id: 't1', text: 'fantasma', updatedAt: '2026-06-04T12:00:00Z' }],
+      },
+    ];
+    attachTodosMapToPatientEntries(entries, {}, ['r1']);
+    assert.equal(entries[0].todos.length, 0);
+  });
+
+  it('reemplaza entry.todos con el mapa autoritativo (no unión)', () => {
+    const entries = [
+      {
+        patient: { id: 'r1' },
+        todos: [
+          { id: 't1', text: 'viejo', updatedAt: '2026-06-01T00:00:00Z' },
+          { id: 't2', text: 'sobra', updatedAt: '2026-06-01T00:00:00Z' },
+        ],
+      },
+    ];
+    attachTodosMapToPatientEntries(entries, {
+      r1: [{ id: 't1', text: 'nuevo', completed: true, updatedAt: '2026-06-04T10:00:00Z' }],
+    });
+    assert.equal(entries[0].todos.length, 1);
+    assert.equal(entries[0].todos[0].text, 'nuevo');
+    assert.equal(entries[0].todos[0].completed, true);
+  });
+
   it('remapa patientId en agenda', () => {
     const idMap = { remote_x: 'local_x' };
     const agenda = [{ id: 'e1', patientId: 'remote_x', procedure: 'Cirugía' }];

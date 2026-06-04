@@ -75,4 +75,79 @@ describe('lan-merge-registry', () => {
     assert.ok(merged.todos && typeof merged.todos === 'object');
     assert.ok(Array.isArray(merged.entries));
   });
+
+  it('delete patch + entry stale no reviven pendiente; local gana completion', () => {
+    const merged = mergeLiveSyncFullBundles([
+      {
+        entityVersions: { 't:p1:t1': 5 },
+        agenda: [],
+        todos: { p1: [{ id: 't1', text: 'host', completed: false, updatedAt: '2026-06-04T08:00:00Z' }] },
+        entries: [
+          {
+            patient: { id: 'p1', registro: 'R1' },
+            todos: [{ id: 't1', text: 'host', completed: false, updatedAt: '2026-06-04T08:00:00Z' }],
+          },
+        ],
+      },
+      {
+        entityVersions: { 't:p1:t1': 5 },
+        agenda: [],
+        todos: { p1: [{ id: 't1', text: 'local', completed: true, updatedAt: '2026-06-04T09:00:00Z' }] },
+        entries: [],
+        patches: [
+          {
+            type: 'livesync:patch',
+            entity: 'todo',
+            op: 'delete',
+            id: 't2',
+            patientId: 'p1',
+            entityVersion: 2,
+            updatedAt: '2026-06-04T10:00:00Z',
+          },
+        ],
+      },
+    ]);
+    assert.equal(merged.todos.p1.length, 1);
+    assert.equal(merged.todos.p1[0].completed, true);
+    const entry = merged.entries.find((e) => e && e.patient && e.patient.id === 'p1');
+    assert.ok(entry);
+    assert.equal(entry.todos.length, 1);
+    assert.equal(entry.todos[0].completed, true);
+  });
+
+  it('delete patch elimina pendiente aunque el host lo envíe en bundle', () => {
+    const merged = mergeLiveSyncFullBundles([
+      {
+        entityVersions: { 't:p1:t1': 4 },
+        agenda: [],
+        todos: { p1: [{ id: 't1', text: 'host', updatedAt: '2026-06-04T08:00:00Z' }] },
+        entries: [
+          {
+            patient: { id: 'p1' },
+            todos: [{ id: 't1', text: 'host', updatedAt: '2026-06-04T08:00:00Z' }],
+          },
+        ],
+      },
+      {
+        agenda: [],
+        todos: {},
+        entries: [],
+        patches: [
+          {
+            type: 'livesync:patch',
+            entity: 'todo',
+            op: 'delete',
+            id: 't1',
+            patientId: 'p1',
+            entityVersion: 5,
+            updatedAt: '2026-06-04T11:00:00Z',
+          },
+        ],
+      },
+    ]);
+    assert.equal(merged.todos.p1, undefined);
+    assert.ok(merged.todoTouchedPatientIds.includes('p1'));
+    const entry = merged.entries.find((e) => e && e.patient && e.patient.id === 'p1');
+    assert.equal(entry.todos.length, 0);
+  });
 });

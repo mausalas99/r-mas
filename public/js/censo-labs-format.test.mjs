@@ -17,7 +17,7 @@ test('formatLabsForCenso estructura por fecha', () => {
     1
   );
   assert.ok(lines.some((l) => l.includes('29/05')));
-  assert.ok(lines.some((l) => l.includes('BH:')));
+  assert.ok(lines.some((l) => l.includes('BH ·') || l.includes('BH:')));
   assert.ok(lines.some((l) => l.includes('Hb 5.8')));
 });
 

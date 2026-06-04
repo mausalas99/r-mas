@@ -132,6 +132,11 @@ export async function openClinicalTeamsPanel() {
   document.body.classList.add('clinical-teams-modal-open');
 
   try {
+    const { stopLanAutoDiscovery } = await import('../lan/panel.mjs');
+    stopLanAutoDiscovery();
+  } catch (_disc) {}
+
+  try {
     await renderClinicalTeamsPanel();
     const nameInput = document.getElementById('clinical-team-create-name');
     if (nameInput) nameInput.focus();
@@ -149,6 +154,11 @@ export function closeClinicalTeamsPanel() {
   bd.classList.remove('open');
   bd.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('clinical-teams-modal-open');
+  import('../lan/panel.mjs')
+    .then((m) => {
+      if (typeof m.startLanAutoDiscovery === 'function') m.startLanAutoDiscovery();
+    })
+    .catch(() => {});
 }
 
 function closeTeamEditPanels(exceptPanel) {

@@ -103,6 +103,33 @@ describe('live-sync-room merge by entity version', () => {
     assert.strictEqual(merged.agenda.length, 0);
   });
 
+  it('no revive todo borrado desde bundle posterior con versión menor', () => {
+    const merged = mergeLiveSyncBundles([
+      {
+        entityVersions: { 't:p1:t1': 3 },
+        agenda: [],
+        todos: {},
+        patches: [
+          {
+            type: 'livesync:patch',
+            entity: 'todo',
+            op: 'delete',
+            id: 't1',
+            patientId: 'p1',
+            entityVersion: 3,
+            updatedAt: '2026-06-04T11:00:00Z',
+          },
+        ],
+      },
+      {
+        entityVersions: { 't:p1:t1': 2 },
+        agenda: [],
+        todos: { p1: [{ id: 't1', text: 'stale', updatedAt: '2026-06-04T08:00:00Z' }] },
+      },
+    ]);
+    assert.equal(merged.todos.p1, undefined);
+  });
+
   it('delete de último todo marca paciente tocado', () => {
     const merged = mergeLiveSyncBundles([
       {

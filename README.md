@@ -27,9 +27,26 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.6](https://github.com/mausalas99/r-mas/releases/tag/v6.6.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.7](https://github.com/mausalas99/r-mas/releases/tag/v6.6.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 6.6.7 (LAN — iPad/móvil, onboarding local y censonpm)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.6.7.txt`.
+## R+ 6.6.7 (LAN — iPad/móvil, onboarding local y censo)
+
+- **iPad / móvil** — Enlace permanente `/mobile/?token=…` (Safari + pantalla de inicio); invitación **móvil** separada de **sala** para otra Mac; el anfitrión debe **Unirse** antes de copiar.
+- **Onboarding** — Elige **sala LAN** o **solo mi equipo** antes de desbloquear la base; reintentos en Windows sin depender de ⇄.
+- **⇄ en sala** — Menos bloqueos (Mi rotación, ping 500 ms, descubrimiento ×6); auto-unión móvil y avisos si el bundle tarda o el host está vacío.
+- **Censo** — Columnas alineadas PDF/HTML (signos, I/O, labs/cultivos más legibles).
+- **Sobre 6.6.6** — Perfil @usuario, escalada de anfitrión, un anfitrión por turno.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.7** el mismo día; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.6.7.txt`.
 
 ## R+ 6.6.6 (LAN — perfil @usuario y escalada de anfitrión)
 

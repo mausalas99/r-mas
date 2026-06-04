@@ -7,11 +7,23 @@ import { patients } from '../../app-state.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { hasElevatedTeamPrivileges, canManageInternoQr } from '../../clinical-privileges.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { filterJoinedTeams } from '../clinical-teams.mjs';
 import { appendLanHubGuardiaModeCard } from '../lan-hub-guardia-mode.mjs';
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
-import { parseLanInviteInput, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala, liveSyncRoomLabel } from '../../lan-join-link.mjs';
+import {
+  buildPermanentMobileJoinUrl,
+  parseLanInviteInput,
+  parseLanJoinQuery,
+  resolveLiveSyncRoomIdFromSala,
+  liveSyncRoomLabel,
+} from '../../lan-join-link.mjs';
+import {
+  appendMobileSharerParamsToJoinUrl,
+  mobileSharerDisplayLabel,
+  resolveMobilePairingRoomId,
+} from '../../mobile-sharer-sync.mjs';
 import { outboxSize } from '../../live-sync-outbox.mjs';
 import { getHostBundleBases } from '../../host-bundle-bases.mjs';
 import { getRoomMembership } from '../../live-sync-membership.mjs';
@@ -109,6 +121,8 @@ var LAN_DISCONNECT_BANNER_MSG =
   'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
 var _lanLastConnected = true;
 const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
+const LAN_INVITE_MOBILE_OPEN_KEY = 'rpc-lan-invite-mobile-open';
+const LAN_INVITE_SALA_OPEN_KEY = 'rpc-lan-invite-sala-open';
 
 /** @type {{ runtime?: object } | null} */
 let panelRuntime = null;
@@ -407,7 +421,7 @@ export function wireLanPanelDelegation() {
       joinLanRoom(btn.getAttribute('data-room-id'), btn.getAttribute('data-room-label'));
     } else if (action === 'forget-known') {
       forgetLanRoomSession(btn.getAttribute('data-room-id'));
-      renderLanPanel();
+      renderLanPanel({ force: true });
     } else if (action === 'delete-room') {
       deleteLanRoom(btn.getAttribute('data-room-id'));
     } else if (action === 'join-invite') {
@@ -417,8 +431,10 @@ export function wireLanPanelDelegation() {
       joinLanFromInviteUi();
     } else if (action === 'host-activate') {
       saveLanSettingsFromUi({ copyInviteAfter: true });
-    } else if (action === 'mint-pairing') {
-      void mintLanPairingFromUi();
+    } else if (action === 'mint-pairing-mobile') {
+      void mintMobileLanPairingFromUi();
+    } else if (action === 'mint-pairing-sala' || action === 'mint-pairing') {
+      void mintSalaLanPairingFromUi();
     }
   });
 }
@@ -429,13 +445,26 @@ function resetLanToLocalHostFromUi() {
   });
 }
 
+function appendLanMobileSharerCard(root) {
+  if (!root || !runtime().isMobileWeb()) return;
+  var card = document.createElement('div');
+  card.className = 'lan-connect-card lan-mobile-sharer-card';
+  var who = esc(mobileSharerDisplayLabel());
+  card.innerHTML =
+    '<div class="lan-connect-card-title">Turno compartido</div>' +
+    '<p class="lan-connect-card-hint">Sincronizando con <strong>' +
+    who +
+    '</strong>. Este enlace copia su identidad en la red; no uses «Unirse» a sala como en el escritorio.</p>';
+  root.appendChild(card);
+}
+
 function appendLanMobileJoinSection(root) {
   if (!root || !runtime().isMobileWeb()) return;
   var card = document.createElement('div');
   card.className = 'lan-connect-card lan-mobile-join-card';
   card.innerHTML =
-    '<div class="lan-connect-card-title">Unirte a la guardia</div>' +
-    '<p class="lan-connect-card-hint">Pega el <strong>enlace de invitación</strong> que te compartió el anfitrión (⇄ → <strong>Copiar enlace de invitación</strong>). También puedes abrirlo en Safari en iPad.</p>';
+    '<div class="lan-connect-card-title">Conectar al turno</div>' +
+    '<p class="lan-connect-card-hint">Abre el <strong>enlace móvil</strong> que te compartieron (⇄ → invitación al turno) o pégalo aquí. Debe incluir el anfitrión y la identidad de quien lo compartió.</p>';
   var inputInvite = document.createElement('textarea');
   inputInvite.className = 'profile-input';
   inputInvite.id = 'lan-input-invite-link';
@@ -461,17 +490,17 @@ function appendLanJoinOtherMacSection(root, opts) {
   opts = opts || {};
   if (!root || !isLanElectronDesktop()) return;
   var details = document.createElement('details');
-  details.className = 'lan-connect-other-mac';
-  details.style.marginBottom = '12px';
+  details.className = 'rpc-disclosure lan-connect-other-mac';
+  details.style.marginBottom = '8px';
   if (opts.open) details.open = true;
   var sum = document.createElement('summary');
-  sum.style.cursor = 'pointer';
+  sum.className = 'rpc-disclosure__summary';
   sum.style.fontSize = '12px';
   sum.style.color = 'var(--text-muted)';
   sum.textContent = 'Unirme a la sala de otra computadora (enlace de invitación)';
   details.appendChild(sum);
   var inner = document.createElement('div');
-  inner.style.marginTop = '8px';
+  inner.className = 'rpc-disclosure__body';
   var hint = document.createElement('p');
   hint.className = 'lan-connect-card-hint';
   hint.style.marginTop = '0';
@@ -532,14 +561,56 @@ function isLanConnectionDropdownOpen() {
   return !!(dd && dd.classList.contains('open'));
 }
 
+function getConnectionDropdownScrollEl() {
+  return document.getElementById('connection-dropdown');
+}
+
+function captureConnectionDropdownScrollTop() {
+  var dd = getConnectionDropdownScrollEl();
+  if (!dd || !dd.classList.contains('open')) return 0;
+  return dd.scrollTop;
+}
+
+function restoreConnectionDropdownScrollTop(scrollTop) {
+  var dd = getConnectionDropdownScrollEl();
+  if (!dd || !dd.classList.contains('open')) return;
+  var top = Math.max(0, Number(scrollTop) || 0);
+  function apply() {
+    if (dd.scrollHeight > 0) dd.scrollTop = Math.min(top, dd.scrollHeight - dd.clientHeight);
+  }
+  apply();
+  requestAnimationFrame(function () {
+    apply();
+    requestAnimationFrame(apply);
+  });
+  setTimeout(apply, 0);
+  setTimeout(apply, 50);
+}
+
+/** @param {{ force?: boolean } | undefined} [opts] */
+function normalizeLanPanelRenderOpts(opts) {
+  if (opts && typeof opts === 'object') return { force: !!opts.force };
+  return { force: false };
+}
+
 function captureLanPanelExpandState(root) {
-  var state = { syncDiagnostics: false };
+  var state = {
+    syncDiagnostics: false,
+    inviteMobile: false,
+    inviteSala: false,
+  };
   try {
     if (sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1') state.syncDiagnostics = true;
+    if (sessionStorage.getItem(LAN_INVITE_MOBILE_OPEN_KEY) === '1') state.inviteMobile = true;
+    if (sessionStorage.getItem(LAN_INVITE_SALA_OPEN_KEY) === '1') state.inviteSala = true;
   } catch (_ss) {}
   if (!root) return state;
   var diag = root.querySelector('.lan-sync-diagnostics-panel');
   if (diag && diag.open) state.syncDiagnostics = true;
+  var mobile = root.querySelector('.lan-invite-collapsible--mobile');
+  if (mobile && mobile.open) state.inviteMobile = true;
+  var sala = root.querySelector('.lan-invite-collapsible--sala');
+  if (sala && sala.open) state.inviteSala = true;
   return state;
 }
 
@@ -547,6 +618,53 @@ function restoreLanPanelExpandState(root, state) {
   if (!root || !state) return;
   var diag = root.querySelector('.lan-sync-diagnostics-panel');
   if (diag && state.syncDiagnostics) diag.open = true;
+  var mobile = root.querySelector('.lan-invite-collapsible--mobile');
+  if (mobile && state.inviteMobile) mobile.open = true;
+  var sala = root.querySelector('.lan-invite-collapsible--sala');
+  if (sala && state.inviteSala) sala.open = true;
+}
+
+/** Light refresh while ⇄ is open (avoids full rebuild + scroll jump on LAN scan). */
+async function refreshLanPanelChromeInPlace() {
+  if (!isLanConnectionDropdownOpen()) return;
+  var root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  var scrollTop = captureConnectionDropdownScrollTop();
+  var hubStatus = lanHubStatusCopy();
+  var statusCard = root.querySelector('.lan-hub-status-card');
+  if (statusCard) {
+    var connected = !!hubStatus.connected;
+    var line =
+      String(hubStatus.line || '').trim() ||
+      (connected
+        ? 'Conectado a la red del hospital'
+        : 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026');
+    var lineEl = statusCard.querySelector('.lan-hub-status-line');
+    if (lineEl) {
+      lineEl.innerHTML =
+        (connected
+          ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> '
+          : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> ') + esc(line);
+    }
+    var hints = statusCard.querySelectorAll('.lan-connect-card-hint');
+    var hintText = String(hubStatus.hint || '').trim();
+    if (hintText) {
+      if (hints.length) hints[0].textContent = hintText;
+      else {
+        var hintEl = document.createElement('p');
+        hintEl.className = 'lan-connect-card-hint';
+        hintEl.style.marginTop = '6px';
+        hintEl.textContent = hintText;
+        statusCard.appendChild(hintEl);
+      }
+    } else if (hints.length) hints[0].remove();
+  }
+  await refreshLanSyncDiagnosticsInPlace();
+  restoreConnectionDropdownScrollTop(scrollTop);
+}
+
+function requestRenderLanPanelAfterScan() {
+  renderLanPanel();
 }
 
 /** Update diagnostics block without rebuilding the whole ⇄ panel (keeps &lt;details&gt; open). */
@@ -554,10 +672,21 @@ async function refreshLanSyncDiagnosticsInPlace() {
   if (!isLanConnectionDropdownOpen()) return;
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
+  var scrollTop = captureConnectionDropdownScrollTop();
   await appendLanSyncDiagnosticsSection(root);
+  restoreConnectionDropdownScrollTop(scrollTop);
 }
 
-export function renderLanPanel() {
+/**
+ * @param {{ force?: boolean } | undefined} [opts] Pass `{ force: true }` after explicit user actions in ⇄.
+ */
+export function renderLanPanel(opts) {
+  var o = normalizeLanPanelRenderOpts(opts);
+  if (!o.force && isLanConnectionDropdownOpen()) {
+    void refreshLanPanelChromeInPlace();
+    patchLanPanelJoinButtons();
+    return _lanPanelRenderChain;
+  }
   _lanPanelRenderChain = _lanPanelRenderChain
     .catch(function () {})
     .then(function () {
@@ -600,38 +729,155 @@ function canOfferMobileLanShare() {
   return isLanSessionConfiguredForRest();
 }
 
-function appendLanInviteShareCard(root) {
+function appendLanInviteShareCards(root) {
   if (!root || !canOfferMobileLanShare()) return;
-  var card = document.createElement('div');
-  card.className = 'lan-connect-card lan-hub-invite-card';
-  card.innerHTML =
-    '<div class="lan-connect-card-title">Invitación al turno</div>' +
-    '<p class="lan-connect-card-hint" style="margin:0 0 8px;">Comparte este enlace con otra Mac del equipo o con iPad (misma Wi\u2011Fi). R1\u2013R3 suelen conectarse solos; el enlace sirve si no los detecta.</p>';
-  var copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'btn-lan-primary';
-  copyBtn.style.width = '100%';
-  copyBtn.textContent = 'Copiar enlace de invitación';
-  copyBtn.onclick = function () {
-    void copyLanInviteLinkFromUi();
-  };
-  card.appendChild(copyBtn);
-  var pinBtn = document.createElement('button');
-  pinBtn.type = 'button';
-  pinBtn.className = 'btn-lan-secondary';
-  pinBtn.style.width = '100%';
-  pinBtn.style.marginTop = '6px';
-  pinBtn.textContent = 'Generar enlace / PIN';
-  pinBtn.setAttribute('data-lan-action', 'mint-pairing');
-  card.appendChild(pinBtn);
-  var pairingBox = document.createElement('div');
-  pairingBox.id = 'lan-pairing-display';
-  pairingBox.hidden = true;
-  pairingBox.style.marginTop = '8px';
-  pairingBox.style.fontSize = '12px';
-  card.appendChild(pairingBox);
-  root.appendChild(card);
-  updateLanPairingDisplay(root);
+  appendLanMobileInviteCard(root);
+  appendLanSalaInviteCard(root);
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {{ title: string, openKey: string, extraClass: string, fill: (body: HTMLElement) => void }} opts
+ */
+function appendLanInviteCollapsible(root, opts) {
+  var details = document.createElement('details');
+  details.className =
+    'rpc-disclosure lan-connect-card lan-invite-collapsible lan-hub-invite-card ' +
+    String(opts.extraClass || '');
+  try {
+    details.open = sessionStorage.getItem(opts.openKey) === '1';
+  } catch (_openKey) {}
+  details.addEventListener('toggle', function () {
+    try {
+      sessionStorage.setItem(opts.openKey, details.open ? '1' : '0');
+    } catch (_toggle) {}
+  });
+  var sum = document.createElement('summary');
+  sum.className = 'rpc-disclosure__summary lan-invite-collapsible-summary';
+  sum.textContent = opts.title;
+  details.appendChild(sum);
+  var body = document.createElement('div');
+  body.className = 'rpc-disclosure__body lan-invite-collapsible-body';
+  opts.fill(body);
+  details.appendChild(body);
+  root.appendChild(details);
+}
+
+function appendLanMobileInviteCard(root) {
+  appendLanInviteCollapsible(root, {
+    title: 'iPad / R+ Móvil',
+    openKey: LAN_INVITE_MOBILE_OPEN_KEY,
+    extraClass: 'lan-invite-collapsible--mobile lan-hub-invite-card--mobile',
+    fill: function (body) {
+      var hint = document.createElement('p');
+      hint.className = 'lan-connect-card-hint';
+      hint.style.margin = '0 0 8px';
+      hint.innerHTML =
+        'Para que alguien use <strong>tu turno</strong> en el iPad (tu @usuario y pacientes). Enlace <strong>permanente</strong> para favoritos en Safari. <strong>No</strong> lo uses si debe entrar con su propia cuenta.';
+      body.appendChild(hint);
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'btn-lan-primary';
+      copyBtn.style.width = '100%';
+      copyBtn.textContent = 'Copiar enlace móvil';
+      copyBtn.onclick = function () {
+        void copyMobileLanLinkFromUi();
+      };
+      body.appendChild(copyBtn);
+      var genBtn = document.createElement('button');
+      genBtn.type = 'button';
+      genBtn.className = 'btn-lan-secondary';
+      genBtn.style.width = '100%';
+      genBtn.style.marginTop = '6px';
+      genBtn.textContent = 'Generar y mostrar';
+      genBtn.setAttribute('data-lan-action', 'mint-pairing-mobile');
+      body.appendChild(genBtn);
+      var pairingBox = document.createElement('div');
+      pairingBox.id = 'lan-pairing-display-mobile';
+      pairingBox.hidden = true;
+      pairingBox.style.marginTop = '8px';
+      pairingBox.style.fontSize = '12px';
+      body.appendChild(pairingBox);
+    },
+  });
+}
+
+function appendLanSalaInviteCard(root) {
+  appendLanInviteCollapsible(root, {
+    title: 'Otra Mac del equipo',
+    openKey: LAN_INVITE_SALA_OPEN_KEY,
+    extraClass: 'lan-invite-collapsible--sala lan-hub-invite-card--sala',
+    fill: function (body) {
+      var hint = document.createElement('p');
+      hint.className = 'lan-connect-card-hint';
+      hint.style.margin = '0 0 8px';
+      hint.innerHTML =
+        'Para que un compañero se conecte a la red y entre a la sala con <strong>su</strong> @usuario. El enlace <strong>no</strong> lleva tu identidad; después debe pulsar «Unirse» en su sala.';
+      body.appendChild(hint);
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'btn-lan-secondary';
+      copyBtn.style.width = '100%';
+      copyBtn.textContent = 'Copiar enlace de sala';
+      copyBtn.onclick = function () {
+        void copyLanInviteLinkFromUi();
+      };
+      body.appendChild(copyBtn);
+      var genBtn = document.createElement('button');
+      genBtn.type = 'button';
+      genBtn.className = 'btn-lan-secondary';
+      genBtn.style.width = '100%';
+      genBtn.style.marginTop = '6px';
+      genBtn.textContent = 'Generar y mostrar';
+      genBtn.setAttribute('data-lan-action', 'mint-pairing-sala');
+      body.appendChild(genBtn);
+      var pairingBox = document.createElement('div');
+      pairingBox.id = 'lan-pairing-display-sala';
+      pairingBox.hidden = true;
+      pairingBox.style.marginTop = '8px';
+      pairingBox.style.fontSize = '12px';
+      body.appendChild(pairingBox);
+    },
+  });
+}
+
+async function resolvePermanentMobileShareUrl() {
+  var hostUrl = await resolveLanShareBaseUrl();
+  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  if (!hostUrl || !teamCode) return '';
+  return appendMobileSharerParamsToJoinUrl(
+    buildPermanentMobileJoinUrl(hostUrl, teamCode),
+    activeLiveSyncRoomId
+  );
+}
+
+export async function mintMobileLanPairingFromUi() {
+  var link = await resolvePermanentMobileShareUrl();
+  if (!link) {
+    runtime().showToast(
+      'No hay anfitrión o código del equipo. Conéctate a la red del turno e inténtalo de nuevo.',
+      'error'
+    );
+    return;
+  }
+  var root = document.getElementById('lan-connection-panel-root');
+  updateLanPairingDisplay(root, {
+    boxId: 'lan-pairing-display-mobile',
+    displayUrl: link,
+    permanent: true,
+  });
+  runtime().showToast(
+    'Enlace listo abajo. En el iPad ábrelo en Safari (verás la app cargar) y luego Añadir a pantalla de inicio. Si el acceso directo no sincroniza, borra el icono y repite desde este enlace.',
+    'success'
+  );
+}
+
+export function mintSalaLanPairingFromUi() {
+  return mintLanPairingFromUi({
+    mobileHints: false,
+    boxId: 'lan-pairing-display-sala',
+    toastMsg: 'Enlace de sala listo abajo. También puedes usar «Copiar enlace de sala».',
+  });
 }
 
 function lanHostUrl() {
@@ -682,13 +928,19 @@ async function renderLanPanelOnce() {
     } catch (_hostReadyErr) {
       // Non-fatal — still render panel so ⇄ stays usable offline.
     }
-    if (getPinnedHostUrl()) {
+    if (getPinnedHostUrl() && !isLanConnectionDropdownOpen()) {
       void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
     }
   }
   if (lanPanelRenderStale(gen)) return;
+  if (isLanConnectionDropdownOpen()) {
+    await refreshLanPanelChromeInPlace();
+    patchLanPanelJoinButtons();
+    return;
+  }
 
   var expandState = captureLanPanelExpandState(root);
+  var dropdownScrollTop = captureConnectionDropdownScrollTop();
   root.innerHTML = '';
 
   if (!registered && !clinicalUserId) {
@@ -743,10 +995,13 @@ async function renderLanPanelOnce() {
   if (runtime().isMobileWeb() && !hubStatus.connected) {
     appendLanMobileJoinSection(root);
   }
+  if (runtime().isMobileWeb() && hubStatus.connected) {
+    appendLanMobileSharerCard(root);
+  }
 
   if (isLanElectronDesktop()) {
     if (canOfferMobileLanShare()) {
-      appendLanInviteShareCard(root);
+      appendLanInviteShareCards(root);
     }
     appendLanJoinOtherMacSection(root, {
       open: isLanRemoteJoinMode() || !canOfferMobileLanShare(),
@@ -773,10 +1028,12 @@ async function renderLanPanelOnce() {
     visibleSalaDefs = [];
   }
 
-  appendLanHubRoomsCard(root, {
-    visibleSalaDefs: visibleSalaDefs,
-    activeRoomId: activeLiveSyncRoomId,
-  });
+  if (!runtime().isMobileWeb() || !hubStatus.connected) {
+    appendLanHubRoomsCard(root, {
+      visibleSalaDefs: visibleSalaDefs,
+      activeRoomId: activeLiveSyncRoomId,
+    });
+  }
 
   if (rank === 'R1') {
     buildR1Section(root);
@@ -793,6 +1050,7 @@ async function renderLanPanelOnce() {
   }
   await appendLanSyncDiagnosticsSection(root);
   restoreLanPanelExpandState(root, expandState);
+  restoreConnectionDropdownScrollTop(dropdownScrollTop);
   maybeAppendInternoQrPanel(root);
 }
 
@@ -830,7 +1088,7 @@ function appendLanHostPinSection(root) {
                 'success'
               );
             }
-            void renderLanPanel();
+            renderLanPanel({ force: true });
           });
         });
       } else {
@@ -839,7 +1097,7 @@ function appendLanHostPinSection(root) {
           'Anfitrión ya no está fijado; la red puede sugerir otro servidor.',
           'info'
         );
-        void renderLanPanel();
+        renderLanPanel({ force: true });
       }
     };
   });
@@ -918,10 +1176,34 @@ async function appendLanSyncDiagnosticsSection(root) {
   if (!root) return;
   var deps = await buildLanSyncDiagnosticsDeps();
   var diag = getLanSyncDiagnostics(deps);
+  var report = formatDiagnosticsReport(diag);
   var existing = root.querySelector('.lan-sync-diagnostics-panel');
-  if (existing) existing.remove();
+  if (existing) {
+    var pre = existing.querySelector('.lan-sync-diagnostics-pre');
+    if (pre) pre.textContent = report;
+    var splitHint = existing.querySelector('.lan-sync-diagnostics-split-hint');
+    var showSplit =
+      diag.phase === 'live' &&
+      diag.wsLive &&
+      Number(diag.peerHostCount || 0) === 0 &&
+      isLanElectronDesktop() &&
+      !isLanRemoteJoinMode();
+    if (showSplit && !splitHint) {
+      var hint = document.createElement('p');
+      hint.className = 'lan-connect-card-hint lan-sync-diagnostics-split-hint';
+      hint.style.marginTop = '8px';
+      hint.innerHTML =
+        'Si el equipo no aparece en el directorio pero <strong>hostUrl</strong> difiere entre las Macs, hay <strong>dos servidores</strong> en la misma sala. Una Mac debe ser anfitrión y la otra conectarse con el enlace de invitación (⇄). Desactiva «Fijar anfitrión» si apunta a tu propia IP.';
+      var insertPre = existing.querySelector('.lan-sync-diagnostics-pre');
+      if (insertPre) existing.insertBefore(hint, insertPre);
+      else existing.appendChild(hint);
+    } else if (!showSplit && splitHint) {
+      splitHint.remove();
+    }
+    return;
+  }
   var details = document.createElement('details');
-  details.className = 'lan-connect-card lan-sync-diagnostics-panel';
+  details.className = 'rpc-disclosure lan-connect-card lan-sync-diagnostics-panel';
   try {
     details.open = sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1';
   } catch (_open) {}
@@ -931,18 +1213,14 @@ async function appendLanSyncDiagnosticsSection(root) {
     } catch (_t) {}
   });
   var sum = document.createElement('summary');
+  sum.className = 'rpc-disclosure__summary';
   sum.textContent = 'Estado de sincronización';
-  sum.style.cursor = 'pointer';
-  sum.style.fontWeight = '600';
   details.appendChild(sum);
+  var diagBody = document.createElement('div');
+  diagBody.className = 'rpc-disclosure__body';
   var pre = document.createElement('pre');
   pre.className = 'lan-sync-diagnostics-pre';
-  pre.style.fontSize = '11px';
-  pre.style.whiteSpace = 'pre-wrap';
-  pre.style.marginTop = '8px';
-  pre.style.maxHeight = '200px';
-  pre.style.overflow = 'auto';
-  pre.textContent = formatDiagnosticsReport(diag);
+  pre.textContent = report;
   if (
     diag.phase === 'live' &&
     diag.wsLive &&
@@ -951,17 +1229,16 @@ async function appendLanSyncDiagnosticsSection(root) {
     !isLanRemoteJoinMode()
   ) {
     var hint = document.createElement('p');
-    hint.className = 'lan-connect-card-hint';
-    hint.style.marginTop = '8px';
+    hint.className = 'lan-connect-card-hint lan-sync-diagnostics-split-hint';
+    hint.style.margin = '0';
     hint.innerHTML =
       'Si el equipo no aparece en el directorio pero <strong>hostUrl</strong> difiere entre las Macs, hay <strong>dos servidores</strong> en la misma sala. Una Mac debe ser anfitrión y la otra conectarse con el enlace de invitación (⇄). Desactiva «Fijar anfitrión» si apunta a tu propia IP.';
-    details.appendChild(hint);
+    diagBody.appendChild(hint);
   }
-  details.appendChild(pre);
+  diagBody.appendChild(pre);
   var copyBtn = document.createElement('button');
   copyBtn.type = 'button';
   copyBtn.className = 'btn-lan-secondary';
-  copyBtn.style.marginTop = '8px';
   copyBtn.style.width = '100%';
   copyBtn.textContent = 'Copiar informe';
   copyBtn.onclick = function () {
@@ -973,7 +1250,7 @@ async function appendLanSyncDiagnosticsSection(root) {
       );
     });
   };
-  details.appendChild(copyBtn);
+  diagBody.appendChild(copyBtn);
   var retryBtn = document.createElement('button');
   retryBtn.type = 'button';
   retryBtn.className = 'btn-lan-secondary';
@@ -990,10 +1267,11 @@ async function appendLanSyncDiagnosticsSection(root) {
     }
     void flushLiveSyncOutbox(rid).then(function () {
       runtime().showToast('Cola reintentada. Revisa el informe abajo.', 'info');
-      void renderLanPanel();
+      renderLanPanel({ force: true });
     });
   };
-  details.appendChild(retryBtn);
+  diagBody.appendChild(retryBtn);
+  details.appendChild(diagBody);
   root.appendChild(details);
 }
 function buildR1Section(root) {
@@ -1103,7 +1381,7 @@ async function handleFinalizarRotacion() {
   if (res && res.ok) {
     runtime().showToast('Rotación finalizada. Crea nuevos equipos para el siguiente mes.', 'success');
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-    renderLanPanel();
+    renderLanPanel({ force: true });
   } else {
     runtime().showToast(res && res.error || 'No se pudo finalizar la rotación.', 'error');
   }
@@ -1273,7 +1551,7 @@ async function joinClinicalTeam(teamId) {
   runtime().showToast('Unido al equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await refreshClinicalSessionTeams();
-  renderLanPanel();
+  renderLanPanel({ force: true });
 }
 
 export async function refreshClinicalSessionTeams() {
@@ -1297,37 +1575,6 @@ export async function refreshClinicalSessionTeams() {
     }
   }
 }
-function resolveMobilePairingRoomId() {
-  var rid = String(activeLiveSyncRoomId || '').trim();
-  if (rid) return rid;
-  var mem = getRoomMembership();
-  if (mem && mem.roomId) return String(mem.roomId).trim();
-  try {
-    var s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
-  } catch (_e) {
-    return '';
-  }
-}
-
-function appendMobileLanJoinHintParams(url) {
-  var s = {};
-  try {
-    s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch (_e) {}
-  try {
-    var u = new URL(url);
-    if (s.clinicalDisplayName) u.searchParams.set('name', s.clinicalDisplayName);
-    if (s.clinicalRank) u.searchParams.set('rank', s.clinicalRank);
-    if (s.clinicalSala) u.searchParams.set('sala', s.clinicalSala);
-    var roomId = resolveMobilePairingRoomId();
-    if (roomId) u.searchParams.set('room', roomId);
-    return u.toString();
-  } catch (_eUrl) {
-    return url;
-  }
-}
-
 export function classifyAutoJoinSource() {
   if (typeof location !== 'undefined') {
     var parsedUrl = parseLanJoinQuery(location.search, location.origin);
@@ -1391,7 +1638,7 @@ export function lanHubStatusCopy() {
     return {
       connected: false,
       line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
-      hint: 'Si otra Mac ya es anfitri\u00f3n, pide su enlace (\u21C4 \u2192 Copiar enlace de invitaci\u00f3n) o usa la secci\u00f3n de abajo para pegarlo.',
+      hint: 'Si otra Mac ya es anfitri\u00f3n, pide su enlace (\u21C4 \u2192 Copiar enlace de sala) o pégalo abajo.',
     };
   }
   if (isLanRemoteJoinMode()) {
@@ -1408,7 +1655,7 @@ export function lanHubStatusCopy() {
       ? 'Esta Mac es el servidor del turno'
       : 'Servidor local activo \u2014 comparte el enlace de invitaci\u00f3n',
     hint:
-      'Comparte el enlace con \u21C4 \u2192 Copiar enlace de invitaci\u00f3n. No activen otro servidor salvo suplente.',
+      'Comparte el enlace de sala (\u21C4 \u2192 Copiar enlace de sala). Para iPad usa «Copiar enlace móvil». No activen otro servidor salvo suplente.',
   };
 }
 
@@ -1431,6 +1678,7 @@ export function setLanAutoJoinConfirmed(roomId) {
 }
 
 export function startLanAutoDiscovery() {
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
   if (_lanScanTimer) return;
   _lanScanTimer = setInterval(function () {
     void scanLanHosts();
@@ -1454,7 +1702,7 @@ async function scanLanHosts() {
 
   if (getPinnedHostUrl()) {
     if (await applyPinnedHostOverride(teamCode, { quiet: true })) {
-      await refreshLanSyncDiagnosticsInPlace();
+      await refreshLanPanelChromeInPlace();
       return;
     }
   }
@@ -1488,7 +1736,7 @@ async function scanLanHosts() {
       addPeer(wsUrl);
       if (typeof reactToDiscoveredLanHost === 'function') {
         if (await reactToDiscoveredLanHost(wsUrl, teamCode)) {
-          renderLanPanel();
+          requestRenderLanPanelAfterScan();
           return;
         }
       }
@@ -1522,7 +1770,7 @@ async function scanLanHosts() {
         addPeer(scanned[si]);
         if (typeof reactToDiscoveredLanHost === 'function') {
           if (await reactToDiscoveredLanHost(scanned[si], teamCode)) {
-            renderLanPanel();
+            requestRenderLanPanelAfterScan();
             return;
           }
         }
@@ -1534,7 +1782,7 @@ async function scanLanHosts() {
     if (peers.length && typeof tryAutoJoinPreferredLanHost === 'function') {
       var joined = await tryAutoJoinPreferredLanHost();
       if (joined) {
-        renderLanPanel();
+        requestRenderLanPanelAfterScan();
         return;
       }
     }
@@ -1542,7 +1790,7 @@ async function scanLanHosts() {
     if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) {
       void initLanHostPlugAndPlay();
     }
-    void refreshLanSyncDiagnosticsInPlace();
+    void refreshLanPanelChromeInPlace();
   } catch (_scanErr) {
     // scan errors are non-fatal
   }
@@ -1611,7 +1859,7 @@ export async function resetLanSquadHostStateFromUi() {
         : 'Estado LAN del host borrado. Si sigues con error 401, escribe en «Código del equipo» el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).',
       'success'
     );
-    renderLanPanel();
+    renderLanPanel({ force: true });
   } else {
     runtime().showToast(res && res.error ? res.error : 'No se pudo borrar el archivo.', 'error');
   }
@@ -1620,33 +1868,27 @@ export async function resetLanSquadHostStateFromUi() {
 export async function copyMobileLanLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
-  var share;
-  try {
-    share = await ensureLanPairingForShare({ forceNew: true });
-  } catch (e) {
+  var link = await resolvePermanentMobileShareUrl();
+  if (!link) {
     if (!silent) {
-      if (e && e.code === 'no_host_url') {
-        runtime().showToast(
-          'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).',
-          'error'
-        );
-      } else {
-        runtime().showToast('Genera primero un enlace / PIN o revisa el token del anfitrión.', 'error');
-      }
+      runtime().showToast(
+        'Falta la dirección del anfitrión o el código del equipo. Revisa ⇄ y que esta Mac sea anfitriona.',
+        'error'
+      );
     }
     return false;
   }
-  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
-  var copied = await copyToClipboardSafe(appendMobileLanJoinHintParams(link));
+  var copied = await copyToClipboardSafe(link);
   if (copied) {
-    var root = document.getElementById('lan-connection-panel-root');
-    updateLanPairingDisplay(root);
     if (!silent) {
-      var expiryHint = formatLanTicketExpiryLabel(share.pairing.expiresAt);
+      var roomHint = resolveMobilePairingRoomId(activeLiveSyncRoomId);
+      var roomMsg = roomHint
+        ? ''
+        : ' Primero únete tú a una sala en ⇄ (Unirse) para que el iPad reciba pacientes.';
       runtime().showToast(
-        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; tus pacientes deberían sincronizar solos.' +
-          (expiryHint ? ' Válido hasta ' + expiryHint + '.' : ''),
-        'success'
+        'Enlace móvil copiado. Abre /mobile/?token=… en Safari y luego Añadir a pantalla de inicio (así no se pierde el token).' +
+          roomMsg,
+        roomHint ? 'success' : 'warn'
       );
     }
     return true;
@@ -1674,18 +1916,14 @@ export async function copyLanInviteLinkFromUi(opts) {
     }
     return false;
   }
-  var link = appendMobileLanJoinHintParams(
-    buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
-  );
+  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
   var copied = await copyToClipboardSafe(link);
   if (copied) {
-    var root = document.getElementById('lan-connection-panel-root');
-    updateLanPairingDisplay(root);
     if (!silent) {
       var pinHint = share.pairing.pin ? ' PIN: ' + share.pairing.pin + '.' : '';
       var inviteExpiry = formatLanTicketExpiryLabel(share.pairing.expiresAt);
       runtime().showToast(
-        'Enlace de invitación copiado.' +
+        'Enlace de sala copiado (sin tu identidad).' +
           pinHint +
           (inviteExpiry ? ' Válido hasta ' + inviteExpiry + '.' : ''),
         'success'
@@ -1709,6 +1947,16 @@ export function joinLanFromInviteUi() {
     runtime().showToast(
       'Este enlace ya no es válido. Pide al anfitrión un nuevo enlace o PIN.',
       'error'
+    );
+    return;
+  }
+  var teamCode = String(parsed.teamCode || '').trim();
+  if (teamCode && parsed.hostUrl) {
+    var mobileJoin = parseLanJoinQuery(raw.includes('?') ? raw.slice(raw.indexOf('?')) : '', parsed.hostUrl);
+    configureLanFromMobileJoin(
+      parsed.hostUrl,
+      teamCode,
+      mobileJoin.roomId || parsed.roomId
     );
     return;
   }
@@ -1813,7 +2061,7 @@ export async function saveLanSettingsFromUi(opts) {
           typeof confirm !== 'function' ||
           !confirm('¿Unirte a ' + salaLabel + '?')
         ) {
-          renderLanPanel();
+          renderLanPanel({ force: true });
           return;
         }
         setLanAutoJoinConfirmed(autoRoomId);
@@ -1828,7 +2076,7 @@ export async function saveLanSettingsFromUi(opts) {
       runtime().showToast(
         copiedOk
           ? 'Anfitrión listo. La invitación ya está en el portapapeles; compártela por WhatsApp o correo.'
-          : 'Anfitrión listo, pero no se pudo copiar solo. Pulsa «Generar enlace / PIN» o «Copiar enlace de invitación».',
+          : 'Anfitrión listo, pero no se pudo copiar solo. Pulsa «Copiar enlace de sala» o «Generar y mostrar» en ⇄.',
         copiedOk ? 'success' : 'error'
       );
     } else {
@@ -1849,7 +2097,7 @@ export async function saveLanSettingsFromUi(opts) {
       );
     }
   }
-  renderLanPanel();
+  renderLanPanel({ force: true });
 }
 
 export async function createLanRoomFromUi() {
@@ -1901,7 +2149,7 @@ export async function createLanRoomFromUi() {
     newRoom && newRoom.id ? 'Sala creada y conectada' : 'Sala creada — pulsa Unirse',
     'success'
   );
-  renderLanPanel();
+  renderLanPanel({ force: true });
 }
 
 export async function deleteLanRoom(roomId) {
@@ -1931,7 +2179,7 @@ export async function deleteLanRoom(roomId) {
     return;
   }
   runtime().showToast('Sala eliminada', 'success');
-  renderLanPanel();
+  renderLanPanel({ force: true });
 }
 function syncLanHostFirstTimeHintUi() {
   var hint = document.getElementById('lan-host-first-time-hint');
@@ -1992,7 +2240,7 @@ export function openConnectionDropdown() {
   wireLanPanelDelegation();
   wireLanLwwToastPref();
   syncLanLwwOverwriteToastPrefUi();
-  renderLanPanel();
+  renderLanPanel({ force: true });
 }
 
 export function toggleConnectionDropdown(ev) {

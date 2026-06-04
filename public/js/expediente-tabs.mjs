@@ -4,6 +4,7 @@
 import { isModeSala } from './mode-features.mjs';
 import { isClinicoAccessHidden } from './clinico-access.mjs';
 import { isManejoTabGloballyHidden } from './clinical-product-policy.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
 
 export const GRANULAR_TABS = [
   'datos',
@@ -56,8 +57,13 @@ export function isClinicoCompositeVisible(settings) {
 export function getConsolidatedTabs(settings) {
   var tabs = isModeSala(settings) ? CONSOLIDATED_TABS_SALA.slice() : CONSOLIDATED_TABS_INTER.slice();
   if (!isClinicoCompositeVisible(settings)) {
-    return tabs.filter(function (tab) {
+    tabs = tabs.filter(function (tab) {
       return tab !== 'clinico';
+    });
+  }
+  if (isMobileWeb()) {
+    tabs = tabs.filter(function (tab) {
+      return tab !== 'salida';
     });
   }
   return tabs;
@@ -154,6 +160,7 @@ export function getClinicoSections(settings) {
 }
 
 export function getSalidaSections(settings) {
+  if (isMobileWeb()) return [];
   return isModeSala(settings) ? SALIDA_SECTIONS_SALA : [];
 }
 
@@ -168,7 +175,16 @@ export function resolveConsolidatedTarget(granularTab, settings) {
       : { tab: 'clinico', section: 'notas' };
   }
   var map = granularToConsolidatedMap(settings || {});
-  return map[granularTab] || { tab: 'paciente', section: null };
+  var target = map[granularTab] || { tab: 'paciente', section: null };
+  if (isMobileWeb() && target.tab === 'salida') {
+    if (!isModeSala(settings) && granularTab === 'vpo') {
+      return { tab: 'clinico', section: 'vpo' };
+    }
+    return isModeSala(settings)
+      ? { tab: 'clinico', section: 'historia' }
+      : { tab: 'paciente', section: null };
+  }
+  return target;
 }
 
 export function consolidatedTabForGranular(granularTab, settings) {
@@ -186,6 +202,12 @@ export function migrateGranularInner(granularTab, settings) {
   }
   var map = granularToConsolidatedMap(settings || {});
   if (map[granularTab]) {
+    if (isMobileWeb()) {
+      if (granularTab === 'listado' || granularTab === 'recetaHu') {
+        return isModeSala(settings) ? 'historia' : 'todo';
+      }
+      if (isModeSala(settings) && granularTab === 'vpo') return 'historia';
+    }
     if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'historia';
     if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
     return granularTab;
@@ -201,7 +223,13 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
     paciente: 'todo',
     clinico: clinicoDefault,
     resultados: 'tend',
-    salida: sala ? 'listado' : 'recetaHu',
+    salida: isMobileWeb()
+      ? sala
+        ? 'historia'
+        : 'todo'
+      : sala
+        ? 'listado'
+        : 'recetaHu',
   };
   return defaults[compositeTab] || 'todo';
 }
@@ -335,7 +363,7 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   }
   var salidaBar = document.getElementById('exp-segment-salida');
   if (salidaBar) {
-    salidaBar.style.display = sala ? '' : 'none';
+    salidaBar.style.display = sala && getSalidaSections(settings).length ? '' : 'none';
     var vpoSalidaBtn = salidaBar.querySelector('[data-exp-segment="vpo"]');
     if (vpoSalidaBtn) vpoSalidaBtn.style.display = sala ? '' : 'none';
   }

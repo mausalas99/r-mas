@@ -40,6 +40,15 @@ test('formatCensoIoColumn — ingresos, egresos NC, balance y evac', () => {
   assert.equal(lines[3], 'EVAC: NO REPORTADAS');
 });
 
+test('formatCensoIoColumn — evac numérico sin CC', () => {
+  var lines = formatCensoIoColumn({ ing: 100, evac: 2 });
+  var evacLine = lines.find(function (l) {
+    return l.startsWith('EVAC:');
+  });
+  assert.equal(evacLine, 'EVAC: 2');
+  assert.doesNotMatch(evacLine || '', /CC\b/);
+});
+
 test('formatCensoSignosIoFromPatient — parsea textoGuardado', () => {
   var out = formatCensoSignosIoFromPatient({
     monitoreo: {

@@ -9,6 +9,7 @@ import {
   CLINICAL_LAN_PROFILE_GATE_LEAD_HTML,
   CLINICAL_LAN_USERNAME_HINT_HTML,
   ensureLanProfileGateDeviceReset,
+  isClinicalLocalOnlyMode,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
   readRpcSettings,
@@ -19,8 +20,12 @@ const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 /** @param {Record<string, unknown>|null|undefined} settings */
 export function needsClinicalRegistration(settings) {
   if (!isDbMode()) return false;
-  if (needsClinicalLanProfileGate(settings)) return true;
-  return !settings || settings.clinicalRegistered !== true;
+  const s = settings || readRpcSettings();
+  if (isClinicalLocalOnlyMode(s)) {
+    return s.clinicalRegistered !== true;
+  }
+  if (needsClinicalLanProfileGate(s)) return true;
+  return !s || s.clinicalRegistered !== true;
 }
 
 /** @type {((ok: boolean) => void)|null} */

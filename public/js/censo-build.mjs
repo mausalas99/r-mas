@@ -79,7 +79,7 @@ function buildPatientSections(patient, ctx) {
   var meds =
     String(patient.censoMedsText || '').trim() ||
     formatCensoMedsFromReceta(/** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]));
-  var medLines = splitLines(meds).slice(0, 2);
+  var medLines = splitLines(meds).slice(0, 6);
   if (medLines.length) {
     sections.push({ label: 'ATB / Medicamentos', lines: medLines });
   }
@@ -223,21 +223,12 @@ export function formatCamaCellForCenso(patient) {
   return formatCamaCellLabel({ cuarto: cuarto, cama: cama });
 }
 
-/** Iniciales del nombre del paciente para columna Paciente del censo (no aplica al equipo). */
-export function abbreviatePatientNameToInitials(name) {
-  var s = String(name || '').trim();
-  if (!s || s === '—') return '—';
-  var parts = [];
-  s.split(/\s+/)
-    .map(function (w) {
-      return w.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
-    })
-    .filter(Boolean)
-    .forEach(function (word) {
-      parts.push(word.charAt(0).toUpperCase());
-    });
-  if (!parts.length) return '—';
-  return parts.join('.') + '.';
+/** Nombre completo del paciente para columna Paciente del censo (no aplica al equipo). */
+export function formatPatientNameForCenso(name) {
+  var s = String(name || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return s || '—';
 }
 
 /**
@@ -311,7 +302,7 @@ export function buildCensusPayload(opts) {
     return {
       num: String(idx + 1),
       cama: cama,
-      pacienteNombre: abbreviatePatientNameToInitials(patient.nombre),
+      pacienteNombre: formatPatientNameForCenso(patient.nombre),
       pacienteMeta: formatPacienteMetaForCenso(patient, settings),
       sections: built.sections,
       dx: flat.dx,
