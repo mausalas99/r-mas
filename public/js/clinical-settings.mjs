@@ -3,7 +3,21 @@
  */
 
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
-export const CLINICAL_LAN_PROFILE_GATE_VERSION = '5.5.7';
+export const CLINICAL_LAN_PROFILE_GATE_VERSION = '6.6.6';
+
+/** Spanish copy shown when the gate forces re-registration (LAN @usuario vs nombre en guardia). */
+export const CLINICAL_LAN_PROFILE_GATE_LEAD_HTML =
+  'Tras actualizar a <strong>6.6.6</strong>, cada dispositivo debe volver a registrar el perfil. ' +
+  'Son dos datos distintos: no copies el nombre en guardia en el campo de usuario.';
+
+export const CLINICAL_LAN_USERNAME_HINT_HTML =
+  '<strong>Usuario LAN (@usuario)</strong> — identificador único en minúsculas, sin espacios ni tildes: ' +
+  'apellido + inicio del nombre, p. ej. <code>drmendoza</code> o <code>garcia</code>. ' +
+  'No escribas «Dr. …» aquí.';
+
+export const CLINICAL_LAN_DISPLAY_NAME_HINT_HTML =
+  '<strong>Nombre en guardia</strong> — cómo te ven en el censo y las entregas: ' +
+  'p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>.';
 
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
@@ -40,6 +54,29 @@ export function markClinicalLanProfileGateComplete(settings = readRpcSettings())
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
   } catch (_e) {}
   return settings;
+}
+
+/**
+ * Clears cached username/display name on device when the gate is pending so users
+ * cannot accept stale prefills (e.g. machine id or placeholder names).
+ * @param {Record<string, unknown>|null|undefined} [settings]
+ */
+export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
+  if (!needsClinicalLanProfileGate(settings)) return settings;
+  const next = { ...settings };
+  let dirty = false;
+  for (const key of ['clinicalUsername', 'clinicalDisplayName']) {
+    if (next[key]) {
+      delete next[key];
+      dirty = true;
+    }
+  }
+  if (dirty) {
+    try {
+      localStorage.setItem('rpc-settings', JSON.stringify(next));
+    } catch (_e) {}
+  }
+  return next;
 }
 
 /**

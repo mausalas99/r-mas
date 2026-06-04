@@ -536,9 +536,16 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const rawUsername = String(user.username || '');
   const legacyUsername = isLegacyMachineUsername(rawUsername, clientId);
-  const usernameForInput = legacyUsername
-    ? String(settings.clinicalUsername || '').trim()
-    : rawUsername;
+  const { needsClinicalLanProfileGate, ensureLanProfileGateDeviceReset } = await import(
+    '../../clinical-settings.mjs'
+  );
+  settings = ensureLanProfileGateDeviceReset(settings);
+  const profileGatePending = needsClinicalLanProfileGate(settings);
+  const usernameForInput = profileGatePending
+    ? ''
+    : legacyUsername
+      ? String(settings.clinicalUsername || '').trim()
+      : rawUsername;
   const displayHandle = resolveDisplayLanHandle(user, usernameForInput);
   const savedHandle = normalizeUsername(user.username || '');
   const handleHint = displayHandle
@@ -554,7 +561,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const canViewLanUsers = canViewLanUserDirectory(user);
   const sala = String(user.sala || '').trim();
 
-  const clinicalName = escapeHtml(user.clinical_name || '');
+  const clinicalName = profileGatePending ? '' : escapeHtml(user.clinical_name || '');
 
   const legacyBanner = legacyUsername
     ? '<p class="clinical-teams-legacy-banner">Registra tu usuario LAN (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
@@ -579,9 +586,9 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
           <label for="clinical-profile-username">Usuario LAN *</label>
           <input id="clinical-profile-username" type="text" class="profile-input"
             value="${escapeAttr(usernameForInput)}"
-            placeholder="mgarcia" autocomplete="username"
+            placeholder="ej. drmendoza" autocomplete="off" spellcheck="false"
             pattern="[a-z][a-z0-9_]{2,31}" required>
-          ${hintHtml('Minúsculas, 3–32 caracteres. Tus compañeros lo usan para agregarte a equipos.')}
+          ${hintHtml('Usuario LAN (@usuario): minúsculas, sin espacios — p. ej. drmendoza. No es tu nombre en guardia.')}
         </div>
         <div class="field-group">
           <label for="clinical-profile-name">Nombre en guardia</label>

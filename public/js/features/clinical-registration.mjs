@@ -5,8 +5,13 @@ import { persistLanClientConfig } from './lan-sync.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../clinical-username.mjs';
 import {
+  CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
+  CLINICAL_LAN_PROFILE_GATE_LEAD_HTML,
+  CLINICAL_LAN_USERNAME_HINT_HTML,
+  ensureLanProfileGateDeviceReset,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
+  readRpcSettings,
 } from '../clinical-settings.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
@@ -58,10 +63,24 @@ function backdropEl() {
 }
 
 export function openClinicalRegistrationModal() {
+  ensureLanProfileGateDeviceReset(readRpcSettings());
   const bd = backdropEl();
   if (!bd) return;
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
+  const gatePending = needsClinicalLanProfileGate(readRpcSettings());
+  const pairs = [
+    ['clinical-reg-username', 'onboard-username'],
+    ['clinical-reg-name', 'onboard-clinical-name'],
+  ];
+  if (gatePending) {
+    for (const [regId, onboardId] of pairs) {
+      const regEl = document.getElementById(regId);
+      const onboardEl = document.getElementById(onboardId);
+      if (regEl) regEl.value = '';
+      if (onboardEl) onboardEl.value = '';
+    }
+  }
   const usernameInput = document.getElementById('clinical-reg-username');
   if (usernameInput) usernameInput.focus();
 }
@@ -89,7 +108,7 @@ function wireRegistrationFormOnce() {
     if (!isValidUsernameFormat(username)) {
       if (errEl) {
         errEl.textContent =
-          'Usuario inválido. Usa 3–32 caracteres en minúsculas: letras, números y _.';
+          'Usuario LAN inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _), p. ej. drmendoza — no tu nombre en guardia.';
         errEl.hidden = false;
       }
       return;

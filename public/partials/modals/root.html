@@ -571,16 +571,17 @@
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
     <h3 id="clinical-registration-title">Registro de guardia</h3>
-    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Es independiente del modo Sala / Interconsulta.</p>
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
     <form id="clinical-registration-form">
       <div class="field-group">
-        <label for="clinical-reg-username">Usuario LAN *</label>
-        <input id="clinical-reg-username" type="text" class="profile-input" placeholder="mgarcia" autocomplete="username" required pattern="[a-z][a-z0-9_]{2,31}">
-        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Minúsculas, 3–32 caracteres (a-z, 0-9, _). Lo usan tus compañeros para equipos y entregas.</p>
+        <label for="clinical-reg-username">Usuario LAN (@usuario) *</label>
+        <input id="clinical-reg-username" type="text" class="profile-input" placeholder="ej. drmendoza" autocomplete="off" spellcheck="false" required pattern="[a-z][a-z0-9_]{2,31}">
+        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;"><strong>Usuario LAN</strong> — minúsculas, sin espacios: apellido + inicio del nombre (p. ej. <code>drmendoza</code>). No uses «Dr. …» ni tu nombre en guardia aquí.</p>
       </div>
       <div class="field-group">
         <label for="clinical-reg-name">Nombre en guardia *</label>
-        <input id="clinical-reg-name" type="text" class="profile-input" placeholder="Dr. Pérez / R2 García" autocomplete="name" required>
+        <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
+        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
       </div>
       <div class="field-group">
         <label for="clinical-reg-rank">Rango</label>

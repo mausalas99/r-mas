@@ -227,6 +227,8 @@ export async function resumeClinicalIdentityByUsername(username, settings, clien
 
 /** Reload username, rank, sala, admin flag from DB into session. */
 export async function refreshClinicalUserProfile() {
+  const { ensureLanProfileGateDeviceReset } = await import('./clinical-settings.mjs');
+  ensureLanProfileGateDeviceReset();
   const api = electronApi();
   const userId = String(clinicalSessionContext.user?.user_id || '');
   if (!api || !userId || typeof api.dbClinicalProfileGet !== 'function') return;

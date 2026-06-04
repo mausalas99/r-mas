@@ -12,7 +12,7 @@ describe('clinical-onboarding helpers', () => {
     assert.equal(isLegacyMachineUsername('mgarcia', 'lc_device_x'), false);
   });
 
-  it('requires LAN profile gate until version 5.5.7 is recorded', () => {
+  it('requires LAN profile gate until version 6.6.6 is recorded', () => {
     assert.equal(needsClinicalLanProfileGate({}), true);
     assert.equal(needsClinicalLanProfileGate({ clinicalRegistered: true }), true);
     assert.equal(
