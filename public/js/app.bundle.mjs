@@ -1,6 +1,6 @@
 import {
   closeQuickHelp
-} from "/js/chunks/chunk-IR57762P.js";
+} from "/js/chunks/chunk-X5N3YVWE.js";
 import {
   prefillRegistrationFromUrlParams,
   windowHandlers as windowHandlers4
@@ -208,17 +208,17 @@ import {
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-SX62X4I5.js";
+} from "/js/chunks/chunk-JK5ZBQ2F.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers5,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-UABNEPRU.js";
-import "/js/chunks/chunk-4U5R3HK2.js";
+} from "/js/chunks/chunk-N64CSTHX.js";
+import "/js/chunks/chunk-4LSVKF2K.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-4K72DEW7.js";
+} from "/js/chunks/chunk-BXP2EX43.js";
 import {
   buildParsedBySectionFromResLabs,
   closeConnectionDropdown,
@@ -267,11 +267,11 @@ import {
   windowHandlers2,
   windowHandlers3,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-UXZ2F33B.js";
+} from "/js/chunks/chunk-Q2FBCRTM.js";
 import {
   dbUnlockWindowHandlers,
   waitForDbUnlock
-} from "/js/chunks/chunk-VYRFEJ6J.js";
+} from "/js/chunks/chunk-K7IRW6AZ.js";
 import {
   bootHydrateFromDb,
   closeClinicoUnlockModal,
@@ -5137,7 +5137,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-7VDENEST.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-HGYGLZCH.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -5147,7 +5147,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-PW5WTDMH.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-UKAECTUR.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -5707,7 +5707,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-KCSVJBSZ.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-34ECU6Z5.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -5718,7 +5718,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-AHHQMD2K.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-LN757TSW.js");
     }
   },
   {

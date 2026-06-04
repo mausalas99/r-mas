@@ -414,7 +414,7 @@ function appendLanMobileJoinSection(root) {
   card.className = 'lan-connect-card lan-mobile-join-card';
   card.innerHTML =
     '<div class="lan-connect-card-title">Unirte a la guardia</div>' +
-    '<p class="lan-connect-card-hint">Pega el <strong>enlace para iPad</strong> que generó quien tiene R+ en la Mac (⇄ → Copiar enlace). Al abrirlo se conecta y bajan tus pacientes de la sala.</p>';
+    '<p class="lan-connect-card-hint">Pega el <strong>enlace de invitación</strong> que te compartió el anfitrión (⇄ → <strong>Copiar enlace de invitación</strong>). También puedes abrirlo en Safari en iPad.</p>';
   var inputInvite = document.createElement('textarea');
   inputInvite.className = 'profile-input';
   inputInvite.id = 'lan-input-invite-link';
@@ -436,11 +436,13 @@ function appendLanMobileJoinSection(root) {
   root.insertBefore(card, root.firstChild);
 }
 
-function appendLanJoinOtherMacSection(root) {
-  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+function appendLanJoinOtherMacSection(root, opts) {
+  opts = opts || {};
+  if (!root || !isLanElectronDesktop()) return;
   var details = document.createElement('details');
   details.className = 'lan-connect-other-mac';
   details.style.marginBottom = '12px';
+  if (opts.open) details.open = true;
   var sum = document.createElement('summary');
   sum.style.cursor = 'pointer';
   sum.style.fontSize = '12px';
@@ -547,21 +549,38 @@ function canOfferMobileLanShare() {
   return isLanSessionConfiguredForRest();
 }
 
-function appendMobileLanShareCard(root) {
+function appendLanInviteShareCard(root) {
   if (!root || !canOfferMobileLanShare()) return;
-  var mobileCard = document.createElement('div');
-  mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
-  mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
-  var mobileBtn = document.createElement('button');
-  mobileBtn.type = 'button';
-  mobileBtn.className = 'btn-lan-primary';
-  mobileBtn.style.width = '100%';
-  mobileBtn.textContent = 'Copiar enlace para iPad';
-  mobileBtn.onclick = function () {
-    void copyMobileLanLinkFromUi();
+  var card = document.createElement('div');
+  card.className = 'lan-connect-card lan-hub-invite-card';
+  card.innerHTML =
+    '<div class="lan-connect-card-title">Invitación al turno</div>' +
+    '<p class="lan-connect-card-hint" style="margin:0 0 8px;">Comparte este enlace con otra Mac del equipo o con iPad (misma Wi\u2011Fi). R1\u2013R3 suelen conectarse solos; el enlace sirve si no los detecta.</p>';
+  var copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'btn-lan-primary';
+  copyBtn.style.width = '100%';
+  copyBtn.textContent = 'Copiar enlace de invitación';
+  copyBtn.onclick = function () {
+    void copyLanInviteLinkFromUi();
   };
-  mobileCard.appendChild(mobileBtn);
-  root.appendChild(mobileCard);
+  card.appendChild(copyBtn);
+  var pinBtn = document.createElement('button');
+  pinBtn.type = 'button';
+  pinBtn.className = 'btn-lan-secondary';
+  pinBtn.style.width = '100%';
+  pinBtn.style.marginTop = '6px';
+  pinBtn.textContent = 'Generar enlace / PIN';
+  pinBtn.setAttribute('data-lan-action', 'mint-pairing');
+  card.appendChild(pinBtn);
+  var pairingBox = document.createElement('div');
+  pairingBox.id = 'lan-pairing-display';
+  pairingBox.hidden = true;
+  pairingBox.style.marginTop = '8px';
+  pairingBox.style.fontSize = '12px';
+  card.appendChild(pairingBox);
+  root.appendChild(card);
+  updateLanPairingDisplay(root);
 }
 
 function lanHostUrl() {
@@ -644,8 +663,17 @@ async function renderLanPanelOnce() {
     },
   });
 
-  if (runtime().isMobileWeb() && !connected) {
+  if (runtime().isMobileWeb() && !hubStatus.connected) {
     appendLanMobileJoinSection(root);
+  }
+
+  if (isLanElectronDesktop()) {
+    if (canOfferMobileLanShare()) {
+      appendLanInviteShareCard(root);
+    }
+    appendLanJoinOtherMacSection(root, {
+      open: isLanRemoteJoinMode() || !canOfferMobileLanShare(),
+    });
   }
 
   var salaDefs = [
@@ -875,8 +903,6 @@ function buildR1Section(root) {
   }
 
   appendLanHubGuardiaModeCard(root);
-
-  appendMobileLanShareCard(root);
 }
 
 function buildR2Section(root) {
@@ -1007,8 +1033,6 @@ function buildR4Section(root) {
   censusCard.appendChild(viewBtn);
 
   root.appendChild(censusCard);
-
-  appendMobileLanShareCard(root);
 
   var rotCard = document.createElement('div');
   rotCard.className = 'lan-connect-card lan-hub-rotation-card';
@@ -1209,7 +1233,7 @@ export function lanHubStatusCopy() {
     return {
       connected: false,
       line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
-      hint: 'Si otra Mac ya abri\u00f3 \u21C4, pide el enlace de invitaci\u00f3n en lugar de activar otro servidor aqu\u00ed.',
+      hint: 'Si otra Mac ya es anfitri\u00f3n, pide su enlace (\u21C4 \u2192 Copiar enlace de invitaci\u00f3n) o usa la secci\u00f3n de abajo para pegarlo.',
     };
   }
   if (isLanRemoteJoinMode()) {
@@ -1226,7 +1250,7 @@ export function lanHubStatusCopy() {
       ? 'Esta Mac es el servidor del turno'
       : 'Servidor local activo \u2014 comparte el enlace de invitaci\u00f3n',
     hint:
-      'El equipo debe unirse con tu enlace (\u21C4). No usen \u00abActivar servidor\u00bb en otra Mac salvo suplente.',
+      'Comparte el enlace con \u21C4 \u2192 Copiar enlace de invitaci\u00f3n. No activen otro servidor salvo suplente.',
   };
 }
 
