@@ -32,6 +32,16 @@ var RELEASE_NOTES_663 = [
 export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_663;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.4': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
   '6.6.3': RELEASE_NOTES_663,
   '6.6.2': [
     {

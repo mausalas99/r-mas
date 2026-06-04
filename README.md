@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.3](https://github.com/mausalas99/r-mas/releases/tag/v6.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.4](https://github.com/mausalas99/r-mas/releases/tag/v6.6.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -480,6 +480,12 @@ Notas: `docs/RELEASE_NOTES_2.4.0.txt`.
 
 ---
 
+
+## R+ 6.6.4 (LAN — iPad links y sync en chunks)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.6.4.txt`.
 ## R+ 2.3.1 (parche — tendencias sin cultivos)
 
 - **Tendencias** — Solo paneles de laboratorio clínico; no se muestran secciones de cultivos (urocultivo, hemocultivo, etc.) como gráficas. Los cultivos siguen en la pestaña **Cultivos**.
