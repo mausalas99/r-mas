@@ -32,11 +32,6 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ---
 
 
-## R+ 6.6.7 (LAN — iPad/móvil, onboarding local y censonpm)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_6.6.7.txt`.
 ## R+ 6.6.7 (LAN — iPad/móvil, onboarding local y censo)
 
 - **iPad / móvil** — Enlace permanente `/mobile/?token=…` (Safari + pantalla de inicio); invitación **móvil** separada de **sala** para otra Mac; el anfitrión debe **Unirse** antes de copiar.

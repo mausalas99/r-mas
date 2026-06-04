@@ -22,7 +22,12 @@ test('main boot: clinical DB unlock finishes before createWindow', () => {
   const body = whenReadyBody(MAIN_SRC);
   const createIdx = body.indexOf('createWindow()');
   assert.ok(createIdx >= 0, 'createWindow in whenReady');
-  assert.ok(body.includes('ensureUnlocked().catch'), 'unlock promise started early');
+  assert.ok(MAIN_SRC.includes('unlockClinicalDbAtStartup'), 'clinical DB unlock helper defined');
+  assert.ok(
+    MAIN_SRC.includes('await dbManager.ensureUnlocked'),
+    'ensureUnlocked invoked from startup helper'
+  );
+  assert.ok(body.includes('unlockClinicalDbAtStartup(dbManager)'), 'helper used in whenReady');
   const awaitUnlock = body.indexOf('await unlockPromise');
   assert.ok(awaitUnlock >= 0 && awaitUnlock < createIdx, 'await unlockPromise before createWindow');
 });

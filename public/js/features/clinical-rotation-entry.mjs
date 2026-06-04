@@ -79,7 +79,7 @@ function buildEntryStatus() {
   if (!user?.user_id) {
     return {
       primary: 'Mi rotación',
-      sub: 'Desbloquea la base de datos para continuar',
+      sub: 'Completa la configuración inicial abajo',
       pending: true,
     };
   }

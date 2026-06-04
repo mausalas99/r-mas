@@ -1,6 +1,11 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { needsPassphraseConfirm, isSqlcipherNativeReady, __test } from './db-unlock.mjs';
+import {
+  needsPassphraseConfirm,
+  isSqlcipherNativeReady,
+  getClinicalBootDelays,
+  __test,
+} from './db-unlock.mjs';
 
 describe('db-unlock', () => {
   it('requires confirm when migration is pending and db does not exist yet', () => {
@@ -37,6 +42,28 @@ describe('db-unlock', () => {
       needsPassphraseConfirm({ migrationPending: false, dbFileExists: false }, { needed: true }),
       true
     );
+  });
+
+  it('getClinicalBootDelays uses longer schedule on Windows desktop', () => {
+    const prev = globalThis.window;
+    globalThis.window = {
+      electronAPI: {
+        getWindowChromeFlags() {
+          return { isWindows: true };
+        },
+      },
+    };
+    try {
+      const winDelays = getClinicalBootDelays();
+      assert.ok(winDelays.length >= 6);
+      assert.ok(winDelays[winDelays.length - 1] >= 5000);
+    } finally {
+      if (prev === undefined) delete globalThis.window;
+      else globalThis.window = prev;
+    }
+    globalThis.window = undefined;
+    const macDelays = getClinicalBootDelays();
+    assert.ok(macDelays.length < 6);
   });
 
   it('isSqlcipherNativeReady allows auto-unlock when only argon2 fails', () => {

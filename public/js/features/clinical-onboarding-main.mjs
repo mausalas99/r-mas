@@ -2,7 +2,7 @@
  * Main-area clinical onboarding host (#main-area).
  */
 import { ensureClinicalPanelSession } from './clinical-panel-host.mjs';
-import { isSqlcipherNativeReady } from './db-unlock.mjs';
+import { ensureClinicalDbUnlocked, isSqlcipherNativeReady } from './db-unlock.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import {
@@ -87,8 +87,8 @@ export async function describeOnboardingSessionBlock() {
   }
   if (gate === 'locked') {
     return (
-      'Abre la base de datos local de R+ para continuar. ' +
-      'No necesitas red LAN ni conexión ⇄ — solo el almacenamiento cifrado de este equipo.'
+      'R+ está preparando el almacenamiento local de este equipo. ' +
+      'Pulsa Reintentar en unos segundos; no necesitas red LAN ni ⇄.'
     );
   }
   if (gate === 'no_api') {
@@ -97,22 +97,14 @@ export async function describeOnboardingSessionBlock() {
   return 'Abre la base de datos local de R+ para continuar. No necesitas red LAN ni ⇄.';
 }
 
-/** Card HTML when session bootstrap failed (local-first; unlock is not LAN). */
+/** Card HTML when session bootstrap failed (auto-unlock retries; no manual DB gate). */
 export async function buildOnboardingSessionBlockHtml() {
   const lead = await describeOnboardingSessionBlock();
   const gate = await readClinicalDbGateKind();
-  const unlockBtn =
-    gate === 'locked' || gate === 'unknown'
-      ? '<button type="button" class="btn-save" id="clinical-onboard-unlock-btn">Abrir base de datos</button>'
-      : '';
-  const retryBtn =
-    gate === 'unlocked'
-      ? '<button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button>'
-      : '';
   const actions =
-    unlockBtn || retryBtn
-      ? `<div class="modal-actions clinical-onboard-session-actions">${unlockBtn}${retryBtn}</div>`
-      : '';
+    gate === 'native_blocked'
+      ? ''
+      : `<div class="modal-actions clinical-onboard-session-actions"><button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button></div>`;
   return `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">${escapeHtml(lead)}</p>${actions}</div>`;
 }
 
@@ -120,15 +112,6 @@ function wireOnboardingSessionRecoveryOnce(host) {
   if (!host || host._rpcSessionRecoveryWired) return;
   host._rpcSessionRecoveryWired = true;
   host.addEventListener('click', (ev) => {
-    const unlockBtn = ev.target.closest('#clinical-onboard-unlock-btn');
-    if (unlockBtn) {
-      void import('./db-unlock.mjs').then((mod) => {
-        if (typeof mod.retryClinicalDbUnlockForOnboarding === 'function') {
-          void mod.retryClinicalDbUnlockForOnboarding();
-        }
-      });
-      return;
-    }
     const retryBtn = ev.target.closest('#clinical-onboard-retry-session-btn');
     if (retryBtn) void showMainClinicalOnboarding();
   });
@@ -175,7 +158,21 @@ export async function showMainClinicalOnboarding() {
     return;
   }
 
-  const sessionOk = await ensureClinicalPanelSession();
+  host.innerHTML =
+    '<div class="clinical-onboarding-card"><p class="clinical-teams-lead">Preparando almacenamiento local…</p></div>';
+
+  const dbReady = await ensureClinicalDbUnlocked();
+  if (!dbReady.unlocked) {
+    host.innerHTML = await buildOnboardingSessionBlockHtml();
+    wireOnboardingSessionRecoveryOnce(host);
+    return;
+  }
+
+  let sessionOk = await ensureClinicalPanelSession();
+  if (!sessionOk) {
+    await ensureClinicalDbUnlocked();
+    sessionOk = await ensureClinicalPanelSession();
+  }
   if (!sessionOk) {
     host.innerHTML = await buildOnboardingSessionBlockHtml();
     wireOnboardingSessionRecoveryOnce(host);

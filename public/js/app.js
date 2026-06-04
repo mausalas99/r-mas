@@ -1,6 +1,6 @@
 import { storage } from './storage.js';
 import { isDbMode } from './db-storage-bridge.mjs';
-import { waitForDbUnlock, dbUnlockWindowHandlers } from './features/db-unlock.mjs';
+import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers } from './features/db-unlock.mjs';
 import { bootHydrateFromDb, initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import './censo-export.mjs';
@@ -121,11 +121,16 @@ try {
 
 const appStateReady = (async function loadClinicalStateOnBoot() {
   if (isDbMode()) {
-    const unlockResult = await waitForDbUnlock();
-    if (!unlockResult || !unlockResult.unlocked) {
-      throw new Error('DB_LOCKED');
+    const unlockResult = await ensureClinicalDbUnlocked();
+    if (unlockResult && unlockResult.unlocked) {
+      await bootHydrateFromDb();
+    } else {
+      console.warn(
+        '[R+] Clinical DB not ready at boot:',
+        (unlockResult && unlockResult.reason) || 'locked'
+      );
+      initAppState();
     }
-    await bootHydrateFromDb();
   } else {
     initAppState();
   }

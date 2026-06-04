@@ -717,6 +717,25 @@ function buildMenu() {
 
 // ── Startup ───────────────────────────────────────────────────────
 let unlockPromise;
+
+/** @param {{ ensureUnlocked: () => Promise<unknown> }} dbManager */
+async function unlockClinicalDbAtStartup(dbManager) {
+  const maxAttempts = process.platform === 'win32' ? 8 : 3;
+  let lastErr;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      await dbManager.ensureUnlocked();
+      return;
+    } catch (unlockErr) {
+      lastErr = unlockErr;
+      if (attempt < maxAttempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 200 + attempt * 250));
+      }
+    }
+  }
+  throw lastErr || new Error('Clinical DB auto-open failed');
+}
+
 app.whenReady().then(async () => {
   try {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
@@ -754,12 +773,7 @@ app.whenReady().then(async () => {
       getClientId: () => 'desktop-host',
     });
 
-    unlockPromise = dbManager.ensureUnlocked().catch((unlockErr) => {
-      console.warn(
-        '[R+] Clinical DB auto-open at startup failed:',
-        unlockErr && unlockErr.message ? unlockErr.message : unlockErr
-      );
-    });
+    unlockPromise = unlockClinicalDbAtStartup(dbManager);
 
     const lanServer = require('./server');
     server = await lanServer.startLanServer();

@@ -7,7 +7,11 @@ import {
   clinicalSessionContext,
 } from '../clinical-access-runtime.mjs';
 import { readRpcSettings, resolveClinicalClientId } from '../clinical-settings.mjs';
-import { collectClinicalLsSnapshot } from './db-unlock.mjs';
+import {
+  collectClinicalLsSnapshot,
+  ensureClinicalDbUnlocked,
+  getClinicalBootDelays,
+} from './db-unlock.mjs';
 
 function escapeHtml(s) {
   return String(s || '')
@@ -100,7 +104,10 @@ export async function ensureClinicalPanelSession() {
   if (!isDbMode()) return false;
   const settings = readRpcSettings();
   const clientId = resolveClinicalClientId(settings);
-  const bootDelays = [0, 120, 300, 600];
+  const bootDelays = getClinicalBootDelays();
+
+  const dbReady = await ensureClinicalDbUnlocked();
+  if (!dbReady.unlocked) return false;
 
   if (await attemptClinicalPanelSessionWithDelays(settings, clientId, bootDelays)) {
     return true;
@@ -114,5 +121,6 @@ export async function ensureClinicalPanelSession() {
   }
   if (clinicalSessionContext.user?.user_id) return true;
 
-  return attemptClinicalPanelSessionWithDelays(settings, clientId, [0, 200, 500]);
+  await ensureClinicalDbUnlocked();
+  return attemptClinicalPanelSessionWithDelays(settings, clientId, bootDelays);
 }

@@ -334,6 +334,67 @@ async function tryAutoUnlockDb(electron) {
   }
 }
 
+function delayMs(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Boot retry schedule — Windows IPC/native init is slower than macOS. */
+export function getClinicalBootDelays() {
+  if (typeof window !== 'undefined' && window.electronAPI) {
+    var flags =
+      typeof window.electronAPI.getWindowChromeFlags === 'function'
+        ? window.electronAPI.getWindowChromeFlags()
+        : null;
+    if (flags && flags.isWindows) {
+      return [0, 200, 500, 1000, 2000, 3500, 5000];
+    }
+  }
+  return [0, 120, 300, 600, 1200];
+}
+
+/**
+ * Poll + auto-unlock clinical DB (no manual gate). Used at boot and onboarding.
+ * @returns {Promise<{ unlocked: boolean, status?: object, reason?: string }>}
+ */
+export async function ensureClinicalDbUnlocked() {
+  if (!isDbMode()) return { unlocked: true };
+  var electron = api();
+  if (!electron || typeof electron.dbStatus !== 'function') {
+    return { unlocked: false, reason: 'no_api' };
+  }
+
+  var delays = getClinicalBootDelays();
+  for (var i = 0; i < delays.length; i += 1) {
+    if (delays[i] > 0) await delayMs(delays[i]);
+    var status;
+    try {
+      status = await electron.dbStatus();
+    } catch (_e) {
+      continue;
+    }
+    if (status && !isSqlcipherNativeReady(status)) {
+      return { unlocked: false, reason: 'native_blocked', status: status };
+    }
+    if (!status || status.state === 'unlocked') {
+      return { unlocked: true, status: status || {} };
+    }
+    var autoRes = await tryAutoUnlockDb(electron);
+    if (autoRes && autoRes.ok !== false && autoRes.state === 'unlocked') {
+      handleUnlockSuccess(autoRes);
+      return { unlocked: true, status: autoRes };
+    }
+  }
+
+  var final = await waitForDbUnlock();
+  return {
+    unlocked: !!(final && final.unlocked),
+    status: final && final.status,
+    reason: final && final.unlocked ? undefined : 'locked',
+  };
+}
+
 /** SQLCipher is required to open the DB; argon2 is only needed for passphrase KDF. */
 export function isSqlcipherNativeReady(status) {
   if (!status) return true;
@@ -739,7 +800,7 @@ export function __resetDbUnlockWaitForTests() {
  */
 export async function retryClinicalDbUnlockForOnboarding() {
   if (!isDbMode()) return false;
-  const result = await waitForDbUnlock();
+  const result = await ensureClinicalDbUnlocked();
   if (!result || !result.unlocked) return false;
   await applyClinicalDbUnlockCompletion({ refreshOnboarding: true });
   return true;
