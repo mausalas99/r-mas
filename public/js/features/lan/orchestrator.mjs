@@ -194,9 +194,21 @@ let runtime = {
   closeSettingsDropdown() {},
 };
 
+let _lanNetworkRefreshWired = false;
+
+function wireLanNetworkRefresh() {
+  if (_lanNetworkRefreshWired || typeof window === 'undefined') return;
+  _lanNetworkRefreshWired = true;
+  window.addEventListener('online', function () {
+    void initLanHostPlugAndPlay();
+    if (typeof renderLanPanel === 'function') void renderLanPanel();
+  });
+}
+
 export function registerLanRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(runtime, ctx);
+  wireLanNetworkRefresh();
   void initLanHostPlugAndPlay();
 }
 

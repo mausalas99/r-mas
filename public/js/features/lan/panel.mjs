@@ -19,6 +19,8 @@ import {
   getPinnedHostUrl,
   setPinnedHostUrl,
   clearPinnedHostUrl,
+  isPinnedHostLocal,
+  isPinnedHostRemote,
 } from '../../lan-host-pin.mjs';
 import {
   getLanSyncDiagnostics,
@@ -30,11 +32,19 @@ import {
 } from '../../lan-surrogate-host.mjs';
 import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
 import {
+  formatEscalationCountdown,
+  getHostEscalationStatus,
+  isWardTierHostMeta,
+  markWardTierHostSeen,
+  updateLanHostEscalationFromPeerMetas,
+} from '../../lan-host-escalation.mjs';
+import {
   canLocalMacBeLanHost,
   isClinicalRankConfiguredForLan,
   prefersLanHosting,
   fetchLanHostRank,
 } from '../../lan-host-rank-policy.mjs';
+import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
 import {
   lanClient,
   activeLiveSyncRoomId,
@@ -66,6 +76,10 @@ import {
   tryAutoJoinPreferredLanHost,
   reactToDiscoveredLanHost,
   syncLanHostClinicalMetaToDisk,
+  tryConnectToPinnedHost,
+  initLanHostPlugAndPlay,
+  applyPinnedHostOverride,
+  resolveOwnLanBaseForPin,
 } from './transport.mjs';
 import {
   joinLanRoom,
@@ -94,6 +108,7 @@ var _lanLastPingStatus = 0;
 var LAN_DISCONNECT_BANNER_MSG =
   'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
 var _lanLastConnected = true;
+const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
 
 /** @type {{ runtime?: object } | null} */
 let panelRuntime = null;
@@ -512,6 +527,36 @@ function purgeDuplicateLanRoomsPanels(root) {
   }
 }
 
+function isLanConnectionDropdownOpen() {
+  var dd = document.getElementById('connection-dropdown');
+  return !!(dd && dd.classList.contains('open'));
+}
+
+function captureLanPanelExpandState(root) {
+  var state = { syncDiagnostics: false };
+  try {
+    if (sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1') state.syncDiagnostics = true;
+  } catch (_ss) {}
+  if (!root) return state;
+  var diag = root.querySelector('.lan-sync-diagnostics-panel');
+  if (diag && diag.open) state.syncDiagnostics = true;
+  return state;
+}
+
+function restoreLanPanelExpandState(root, state) {
+  if (!root || !state) return;
+  var diag = root.querySelector('.lan-sync-diagnostics-panel');
+  if (diag && state.syncDiagnostics) diag.open = true;
+}
+
+/** Update diagnostics block without rebuilding the whole ⇄ panel (keeps &lt;details&gt; open). */
+async function refreshLanSyncDiagnosticsInPlace() {
+  if (!isLanConnectionDropdownOpen()) return;
+  var root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  await appendLanSyncDiagnosticsSection(root);
+}
+
 export function renderLanPanel() {
   _lanPanelRenderChain = _lanPanelRenderChain
     .catch(function () {})
@@ -626,13 +671,24 @@ async function renderLanPanelOnce() {
   var rankConfigured = isClinicalRankConfiguredForLan();
 
   if (rankConfigured) {
-    await syncLanHostClinicalMetaToDisk();
-    if (canLocalMacBeLanHost()) {
-      await ensureLanElectronHostReady();
+    try {
+      await syncLanHostClinicalMetaToDisk();
+      if (canLocalMacBeLanHost()) {
+        if (isWardTierHostMeta(buildLocalLanHostMeta())) {
+          markWardTierHostSeen();
+        }
+        await ensureLanElectronHostReady();
+      }
+    } catch (_hostReadyErr) {
+      // Non-fatal — still render panel so ⇄ stays usable offline.
+    }
+    if (getPinnedHostUrl()) {
+      void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
     }
   }
   if (lanPanelRenderStale(gen)) return;
 
+  var expandState = captureLanPanelExpandState(root);
   root.innerHTML = '';
 
   if (!registered && !clinicalUserId) {
@@ -735,14 +791,15 @@ async function renderLanPanelOnce() {
   if (typeof appendConflictDrafts === 'function') {
     void appendConflictDrafts(root);
   }
-  void appendLanSyncDiagnosticsSection(root);
+  await appendLanSyncDiagnosticsSection(root);
+  restoreLanPanelExpandState(root, expandState);
   maybeAppendInternoQrPanel(root);
 }
 
 function appendLanHostPinSection(root) {
-  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  if (!root || !isLanElectronDesktop() || !canLocalMacBeLanHost()) return;
   var hostUrl = lanHostUrl();
-  if (!hostUrl) return;
+  if (!hostUrl && !getPinnedHostUrl()) return;
   var wrap = document.createElement('div');
   wrap.className = 'lan-connect-card lan-host-pin-card';
   var label = document.createElement('label');
@@ -751,27 +808,75 @@ function appendLanHostPinSection(root) {
   var cb = document.createElement('input');
   cb.type = 'checkbox';
   cb.id = 'lan-pin-host-checkbox';
+  var ownBase = hostUrl || '';
   var pinned = getPinnedHostUrl();
-  cb.checked = !!pinned && pinned === hostUrl.replace(/\/+$/, '');
-  cb.onchange = function () {
-    if (cb.checked) {
-      setPinnedHostUrl(hostUrl);
-      runtime().showToast('Anfitrión fijado para el turno: ' + hostUrl, 'success');
-    } else {
-      clearPinnedHostUrl();
-      runtime().showToast('Anfitrión ya no está fijado; la red puede sugerir otro servidor.', 'info');
-    }
-    void renderLanPanel();
-  };
+  void resolveOwnLanBaseForPin().then(function (resolvedOwn) {
+    var ownForPin = resolvedOwn || ownBase;
+    cb.checked =
+      !!pinned &&
+      (pinned === String(hostUrl || '').replace(/\/+$/, '') ||
+        isPinnedHostLocal(ownForPin) ||
+        (ownForPin && pinned === ownForPin));
+    cb.disabled = false;
+    cb.onchange = function () {
+      if (cb.checked) {
+        void resolveLanShareBaseUrl().then(function (shareUrl) {
+          var pinUrl = shareUrl || hostUrl || resolvedOwn;
+          setPinnedHostUrl(pinUrl);
+          void applyPinnedHostOverride(getLanTeamCodeFromConfig(), {}).then(function (ok) {
+            if (ok) {
+              runtime().showToast(
+                'Anfitrión fijado: esta Mac asume el servidor del turno.',
+                'success'
+              );
+            }
+            void renderLanPanel();
+          });
+        });
+      } else {
+        clearPinnedHostUrl();
+        runtime().showToast(
+          'Anfitrión ya no está fijado; la red puede sugerir otro servidor.',
+          'info'
+        );
+        void renderLanPanel();
+      }
+    };
+  });
   label.appendChild(cb);
-  label.appendChild(document.createTextNode(' Fijar anfitrión del turno'));
+  label.appendChild(document.createTextNode(' Fijar anfitrión del turno (solo en la Mac servidor)'));
   wrap.appendChild(label);
-  if (pinned && pinned !== hostUrl.replace(/\/+$/, '')) {
-    var hint = document.createElement('p');
-    hint.className = 'lan-connect-card-hint';
-    hint.style.marginTop = '6px';
-    hint.textContent = 'Fijado: ' + pinned + ' (distinto del servidor actual).';
-    wrap.appendChild(hint);
+  var hint = document.createElement('p');
+  hint.className = 'lan-connect-card-hint';
+  hint.style.marginTop = '6px';
+  if (isLanRemoteJoinMode()) {
+    hint.textContent =
+      'Marca la casilla para forzar esta Mac como anfitrión (anula modo cliente y elección automática).';
+  } else {
+    hint.textContent =
+      'Override del turno: esta Mac será el servidor aunque haya otros en la red. Desmarca para volver a elección automática.';
+  }
+  wrap.appendChild(hint);
+  if (pinned) {
+    void resolveOwnLanBaseForPin().then(function (resolvedOwn) {
+      var ownResolved = resolvedOwn || ownBase;
+      if (!isPinnedHostLocal(ownResolved) && isLanRemoteJoinMode()) {
+        var remoteHint = document.createElement('p');
+        remoteHint.className = 'lan-connect-card-hint';
+        remoteHint.style.marginTop = '4px';
+        remoteHint.textContent = 'Conectando al anfitrión fijado: ' + pinned;
+        wrap.appendChild(remoteHint);
+      } else if (isPinnedHostLocal(ownResolved) && isLanRemoteJoinMode()) {
+        var localHint = document.createElement('p');
+        localHint.className = 'lan-connect-card-hint';
+        localHint.style.marginTop = '4px';
+        localHint.textContent =
+          'Fijado en esta Mac (' +
+          pinned +
+          '). La casilla fuerza servidor local (override).';
+        wrap.appendChild(localHint);
+      }
+    });
   }
   root.appendChild(wrap);
 }
@@ -817,6 +922,14 @@ async function appendLanSyncDiagnosticsSection(root) {
   if (existing) existing.remove();
   var details = document.createElement('details');
   details.className = 'lan-connect-card lan-sync-diagnostics-panel';
+  try {
+    details.open = sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1';
+  } catch (_open) {}
+  details.addEventListener('toggle', function () {
+    try {
+      sessionStorage.setItem(LAN_SYNC_DIAG_OPEN_KEY, details.open ? '1' : '0');
+    } catch (_t) {}
+  });
   var sum = document.createElement('summary');
   sum.textContent = 'Estado de sincronización';
   sum.style.cursor = 'pointer';
@@ -1259,10 +1372,20 @@ export function lanHubStatusCopy() {
       };
     }
     if (!canLocalMacBeLanHost()) {
+      var esc = getHostEscalationStatus();
+      var nextRank = ['R3', 'R2', 'R1'][esc.tier] || '';
+      var escHint =
+        esc.tier < 3 && esc.msUntilNext > 0
+          ? 'Sin R4/admin en la red: en ' +
+            formatEscalationCountdown(esc.msUntilNext) +
+            ' podrá anfitrionar ' +
+            nextRank +
+            ' (escalada automática 10+10+10 min).'
+          : 'R1\u2013R3 esperan anfitri\u00f3n R4 o escalada. Pide enlace (\u21C4) o pégalo abajo.';
       return {
         connected: false,
         line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
-        hint: 'R1\u2013R3 no pueden ser servidor. Pide el enlace al R4 (\u21C4) o pégalo abajo si no te detecta.',
+        hint: escHint,
       };
     }
     return {
@@ -1324,11 +1447,19 @@ export function stopLanAutoDiscovery() {
 
 async function scanLanHosts() {
   if (!isLanElectronDesktop()) return;
-  if (isLanRemoteJoinMode()) return;
   if (!isClinicalRankConfiguredForLan()) return;
 
   var teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return;
+
+  if (getPinnedHostUrl()) {
+    if (await applyPinnedHostOverride(teamCode, { quiet: true })) {
+      await refreshLanSyncDiagnosticsInPlace();
+      return;
+    }
+  }
+
+  if (isLanRemoteJoinMode()) return;
 
   try {
     var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
@@ -1336,6 +1467,7 @@ async function scanLanHosts() {
       typeof listLivePeerHostUrls === 'function' ? listLivePeerHostUrls(clientId) : [];
     var seen = new Set();
     var peers = [];
+    var peerMetasForEscalation = [];
 
     function addPeer(url) {
       var u = String(url || '')
@@ -1351,6 +1483,8 @@ async function scanLanHosts() {
       if (!wsUrl) continue;
       var alive = await pingLanHostUrl(wsUrl, teamCode);
       if (!alive) continue;
+      var wsMeta = await fetchLanHostRank(wsUrl, teamCode);
+      if (wsMeta) peerMetasForEscalation.push(wsMeta);
       addPeer(wsUrl);
       if (typeof reactToDiscoveredLanHost === 'function') {
         if (await reactToDiscoveredLanHost(wsUrl, teamCode)) {
@@ -1368,7 +1502,10 @@ async function scanLanHosts() {
       var wardHosts = [];
       for (var hi = 0; hi < scanned.length; hi += 1) {
         var peerMeta = await fetchLanHostRank(scanned[hi], teamCode);
-        if (peerMeta && prefersLanHosting(peerMeta)) wardHosts.push(scanned[hi]);
+        if (peerMeta) {
+          peerMetasForEscalation.push(peerMeta);
+          if (prefersLanHosting(peerMeta)) wardHosts.push(scanned[hi]);
+        }
       }
       if (wardHosts.length && !wsPeers.length && !sessionStorage.getItem(LAN_SPLIT_BRAIN_HINT_KEY)) {
         try {
@@ -1392,12 +1529,20 @@ async function scanLanHosts() {
       }
     }
 
+    updateLanHostEscalationFromPeerMetas(peerMetasForEscalation);
+
     if (peers.length && typeof tryAutoJoinPreferredLanHost === 'function') {
       var joined = await tryAutoJoinPreferredLanHost();
       if (joined) {
         renderLanPanel();
+        return;
       }
     }
+
+    if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) {
+      void initLanHostPlugAndPlay();
+    }
+    void refreshLanSyncDiagnosticsInPlace();
   } catch (_scanErr) {
     // scan errors are non-fatal
   }

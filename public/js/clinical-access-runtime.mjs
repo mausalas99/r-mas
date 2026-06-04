@@ -242,6 +242,9 @@ export async function refreshClinicalUserProfile() {
     clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
     clinicalSessionContext.user.is_program_admin =
       profile.is_program_admin === 1 ? 1 : 0;
+    persistClinicalUserBinding({
+      isProgramAdmin: clinicalSessionContext.user.is_program_admin === 1,
+    });
   } catch (_e) {}
   migrateLocalPatientsClinicalSala();
 }

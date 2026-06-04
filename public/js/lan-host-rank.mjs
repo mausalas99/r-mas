@@ -5,8 +5,32 @@ import {
   needsClinicalLanProfileGate,
   readRpcSettings,
 } from './clinical-settings.mjs';
+import { clinicalSessionContext } from './clinical-access-runtime.mjs';
+import { hasProgramAdminPrivileges } from './clinical-privileges.mjs';
+import {
+  canRankHostAtEscalationTier,
+  getHostEscalationTier,
+  isWardTierHostMeta,
+} from './lan-host-escalation.mjs';
 
 const RANK_PRIORITY = { R1: 1, R2: 2, R3: 3, R4: 4, Admin: 5 };
+
+/** Program admin from rpc-settings or active clinical session (DB profile). */
+export function resolveLocalProgramAdmin(settings = readRpcSettings()) {
+  if (settings.clinicalProgramAdmin === true || settings.clinicalIsProgramAdmin === true) {
+    return true;
+  }
+  return hasProgramAdminPrivileges(clinicalSessionContext.user);
+}
+
+/** Rank + admin flag for LAN election (no startedAt). */
+export function buildLocalLanHostMeta(settings = readRpcSettings()) {
+  const rank = String(settings?.clinicalRank || '').trim();
+  return {
+    rank: rank || 'R1',
+    isProgramAdmin: resolveLocalProgramAdmin(settings),
+  };
+}
 
 /** User completed «Configura tu rotación» with an explicit rango (required before LAN election). */
 export function isClinicalRankConfiguredForLan(settings = readRpcSettings()) {
@@ -16,11 +40,12 @@ export function isClinicalRankConfiguredForLan(settings = readRpcSettings()) {
   return true;
 }
 
-/** R4/admin with configured rango — may run plug-and-play host on this Mac. */
+/** R4/admin immediately; R3/R2/R1 after 10 min steps if no ward-tier host on the LAN. */
 export function canLocalMacBeLanHost(meta) {
   if (!isClinicalRankConfiguredForLan()) return false;
-  const m = meta || { rank: String(readRpcSettings()?.clinicalRank || '').trim() };
-  return prefersLanHosting(m);
+  const m = meta || buildLocalLanHostMeta();
+  if (isWardTierHostMeta(m)) return true;
+  return canRankHostAtEscalationTier(m, getHostEscalationTier());
 }
 
 /** @param {{ rank?: string, isProgramAdmin?: boolean }} meta */
@@ -54,7 +79,11 @@ export function shouldDeferToPeerHost(peer, self) {
 export function shouldAutoJoinPeerAsClient(peer, self) {
   if (!peer || !self) return false;
   if (shouldDeferToPeerHost(peer, self)) return true;
-  return !prefersLanHosting(self) && prefersLanHosting(peer);
+  if (!prefersLanHosting(self) && prefersLanHosting(peer)) return true;
+  const tier = getHostEscalationTier();
+  if (!canRankHostAtEscalationTier(peer, tier)) return false;
+  if (!canRankHostAtEscalationTier(self, tier)) return true;
+  return lanHostPriority(peer) > lanHostPriority(self);
 }
 
 /**

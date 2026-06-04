@@ -28,6 +28,34 @@ var RELEASE_NOTES_663 = [
   },
 ];
 
+var RELEASE_NOTES_666 = [
+  {
+    title: 'Perfil @usuario (6.6.6)',
+    body:
+      'Tras actualizar, cada Mac/PC debe volver a confirmar <strong>@usuario LAN</strong> (identificador único) y <strong>nombre en guardia</strong> por separado. No copies el nombre visible en el campo de usuario.',
+  },
+  {
+    title: 'Anfitrión sin R4',
+    body:
+      'Solo <strong>R4/admin</strong> mientras estén en la red. Si nadie responde: cada <strong>10 min</strong> puede anfitrionar R3, luego R2, luego R1. Al detectar R4, el temporizador se reinicia.',
+  },
+  {
+    title: 'Rango antes de ⇄',
+    body:
+      'Sin rango clínico configurado (y puerta cumplida), esta Mac no entra en elección LAN ni abre servidor «fantasma».',
+  },
+  {
+    title: 'Sobre 6.6.5',
+    body:
+      'Incluye <strong>un anfitrión por turno</strong>, consolidación sin pérdida, plug and play y enlaces de invitación en ⇄.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.6.6 en todas</strong> las Macs y PCs el mismo día. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala ⇄.',
+  },
+];
+
 var RELEASE_NOTES_665 = [
   {
     title: 'Un anfitrión por turno',
@@ -52,15 +80,16 @@ var RELEASE_NOTES_665 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_665;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_666;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.6': RELEASE_NOTES_666,
   '6.6.5': RELEASE_NOTES_665,
   '6.6.4': [
     {
       title: 'Enlace ⇄ para iPad',
       body:
-        'Copia un enlace <code>/join/req_…</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.5</strong>.',
+        'Copia un enlace <code>/join/req_…</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.6</strong>.',
     },
     {
       title: 'Arranque en chunks',

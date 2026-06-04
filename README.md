@@ -27,9 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.5](https://github.com/mausalas99/r-mas/releases/tag/v6.6.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.6](https://github.com/mausalas99/r-mas/releases/tag/v6.6.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 6.6.6 (LAN — perfil @usuario y escalada de anfitrión)
+
+- **Perfil obligatorio** — Tras actualizar, cada dispositivo vuelve a registrar **@usuario LAN** y **nombre en guardia** por separado (puerta 6.6.6; sin copiar el nombre visible en el campo de usuario).
+- **Anfitrión** — Solo **R4/admin** mientras estén en la red; sin ellos, escalada **10+10+10 min** → R3, R2, R1; el temporizador se reinicia al ver R4.
+- **Rango antes de ⇄** — Sin rango clínico y puerta cumplida, no hay elección ni servidor LAN «fantasma».
+- **Sobre 6.6.5** — Un anfitrión por turno, consolidación, plug and play y enlaces ⇄.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.6** el mismo día; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.6.6.txt`.
 
 ## R+ 6.6.5 (LAN — un solo anfitrión por turno)
 
@@ -494,7 +504,7 @@ Notas: `docs/RELEASE_NOTES_2.4.0.txt`.
 - **⇄** — Enlace `/join/req_…` para iPad y invitación; parámetros opcionales de perfil en la URL.
 - **Renderer** — Chunks de esbuild; carga diferida de módulos pesados (continúa línea 6.6.3 cold-start).
 
-Notas: `docs/RELEASE_NOTES_6.6.4.txt` (notas internas incompletas; usar **6.6.5** en guardia).
+Notas: `docs/RELEASE_NOTES_6.6.4.txt` (notas internas incompletas; usar **6.6.6** en guardia).
 ## R+ 2.3.1 (parche — tendencias sin cultivos)
 
 - **Tendencias** — Solo paneles de laboratorio clínico; no se muestran secciones de cultivos (urocultivo, hemocultivo, etc.) como gráficas. Los cultivos siguen en la pestaña **Cultivos**.

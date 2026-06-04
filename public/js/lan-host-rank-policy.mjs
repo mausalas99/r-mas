@@ -1,15 +1,13 @@
 /**
  * Renderer policy helpers: local meta + peer pick (uses lan-host-rank.mjs).
  */
-import {
-  needsClinicalLanProfileGate,
-  readRpcSettings,
-} from './clinical-settings.mjs';
+import { readRpcSettings } from './clinical-settings.mjs';
 import {
   pickPreferredLanPeerHost as pickPeer,
   prefersLanHosting,
   isClinicalRankConfiguredForLan,
   canLocalMacBeLanHost,
+  buildLocalLanHostMeta,
 } from './lan-host-rank.mjs';
 
 export {
@@ -22,20 +20,27 @@ export {
   canLocalMacBeLanHost,
 } from './lan-host-rank.mjs';
 
-/** @returns {{ rank: string, isProgramAdmin: boolean, rankConfigured: boolean }} */
+/** @type {{ rank?: string, isProgramAdmin?: boolean, startedAt?: number } | null} */
+let _diskHostMeta = null;
+
+/** @returns {{ rank: string, isProgramAdmin: boolean, rankConfigured: boolean, startedAt: number }} */
 export function getLocalLanHostMeta() {
   try {
     const settings = readRpcSettings();
     const rankConfigured = isClinicalRankConfiguredForLan(settings);
+    const startedAt = Number(_diskHostMeta?.startedAt) || 0;
     if (!rankConfigured) {
-      return { rank: '', isProgramAdmin: false, rankConfigured: false };
+      return { rank: '', isProgramAdmin: false, rankConfigured: false, startedAt };
     }
-    const rank = String(settings.clinicalRank || '').trim() || 'R1';
-    const isProgramAdmin =
-      settings.clinicalProgramAdmin === true || settings.clinicalIsProgramAdmin === true;
-    return { rank, isProgramAdmin: !!isProgramAdmin, rankConfigured: true };
+    const { rank, isProgramAdmin } = buildLocalLanHostMeta(settings);
+    return {
+      rank: rank || 'R1',
+      isProgramAdmin: !!isProgramAdmin,
+      rankConfigured: true,
+      startedAt,
+    };
   } catch (_e) {
-    return { rank: '', isProgramAdmin: false, rankConfigured: false };
+    return { rank: '', isProgramAdmin: false, rankConfigured: false, startedAt: 0 };
   }
 }
 
@@ -48,9 +53,12 @@ export async function syncLanHostClinicalMetaToDisk() {
   ) {
     return false;
   }
-  const meta = getLocalLanHostMeta();
+  const { startedAt: _drop, rankConfigured: _rc, ...meta } = getLocalLanHostMeta();
   try {
     const res = await window.electronAPI.syncLanHostClinicalMeta(meta);
+    if (res?.ok && res.meta && typeof res.meta === 'object') {
+      _diskHostMeta = res.meta;
+    }
     return !!(res && res.ok);
   } catch (_e) {
     return false;

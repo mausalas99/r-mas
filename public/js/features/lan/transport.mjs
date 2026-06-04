@@ -8,8 +8,15 @@ import {
   rememberPrimaryHostUrl,
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
-import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
+import {
+  getPinnedHostUrl,
+  hasPinnedHostOverride,
+  isPinnedHostLocal,
+} from '../../lan-host-pin.mjs';
+import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
+import { isWardTierHostMeta, markWardTierHostSeen } from '../../lan-host-escalation.mjs';
+import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
 import {
   canLocalMacBeLanHost,
   evaluatePeerHostAction,
@@ -25,7 +32,6 @@ import {
   pushBundleToHostUrl as pushBundleToHostUrlCore,
   runConsolidateIntoHost,
 } from '../../lan-host-consolidation.mjs';
-import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import {
   lanClient,
   clearActiveLiveSyncRoom,
@@ -308,16 +314,40 @@ export function isLocalLoopbackLanUrl(url) {
   }
 }
 
-/** IP LAN para compartir con iPad / otras R+ (nunca localhost si hay interfaz). */
-export async function resolveLanShareBaseUrl() {
-  if (isLanElectronDesktop() && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === 'function') {
+/**
+ * Wi‑Fi may not expose IPv4 until after link-up; retry instead of sticking on 127.0.0.1.
+ * @param {{ ensureServer?: boolean, tries?: number, delayMs?: number }} [opts]
+ */
+async function refreshElectronLanCandidateUrl(opts) {
+  opts = opts || {};
+  if (!isLanElectronDesktop() || !window.electronAPI?.getLanCandidateBaseUrl) return '';
+  const tries = Math.max(1, Number(opts.tries) || 5);
+  const delayMs = Math.max(50, Number(opts.delayMs) || 300);
+  for (let i = 0; i < tries; i += 1) {
+    if (opts.ensureServer && i === 0 && typeof window.electronAPI.ensureLanServerReady === 'function') {
+      try {
+        await window.electronAPI.ensureLanServerReady();
+      } catch (_e) {}
+    }
     try {
-      var fromElectron = String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
+      const url = String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
         .trim()
         .replace(/\/+$/, '');
-      if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
+      if (url && !isLocalLoopbackLanUrl(url)) return url;
     } catch (_e) {}
+    if (i < tries - 1) {
+      await new Promise(function (resolve) {
+        setTimeout(resolve, delayMs);
+      });
+    }
   }
+  return '';
+}
+
+/** IP LAN para compartir con iPad / otras R+ (nunca localhost si hay interfaz). */
+export async function resolveLanShareBaseUrl() {
+  var fromElectron = await refreshElectronLanCandidateUrl({ ensureServer: true });
+  if (fromElectron) return fromElectron;
   var el = document.getElementById('lan-input-host-url');
   var fromInput = el && String(el.value || '').trim().replace(/\/+$/, '');
   if (fromInput && !isLocalLoopbackLanUrl(fromInput)) return fromInput;
@@ -345,6 +375,73 @@ export async function resolveLanHostUrlAuto() {
   return 'http://127.0.0.1:3738';
 }
 
+/** Best-effort LAN base for this Mac (share URL, config, Electron candidate). */
+export async function resolveOwnLanBaseForPin() {
+  const share = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
+  if (share && !isLocalLoopbackLanUrl(share)) return share;
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  const fromCfg = normalizeLanHostBase(String(cfg.hostUrl || '').trim());
+  if (fromCfg && !isLocalLoopbackLanUrl(fromCfg)) return fromCfg;
+  if (isLanElectronDesktop() && window.electronAPI?.getLanCandidateBaseUrl) {
+    try {
+      const fromElectron = normalizeLanHostBase(
+        String((await window.electronAPI.getLanCandidateBaseUrl()) || '').trim()
+      );
+      if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
+    } catch (_e) {}
+  }
+  return share || fromCfg || '';
+}
+
+function pinTargetsThisMac(pinned, ownBase) {
+  const target = normalizeLanHostBase(pinned);
+  const own = normalizeLanHostBase(ownBase || '');
+  if (!target || !own) return false;
+  return isPinnedHostLocal(own) || lanHostBasesSameMachine(target, own);
+}
+
+/**
+ * Pin wins over rank election: local pin → promote this Mac; remote pin → join that URL.
+ * @param {string} [teamCode]
+ * @param {{ boot?: boolean, quiet?: boolean }} [opts]
+ */
+export async function applyPinnedHostOverride(teamCode, opts) {
+  opts = opts || {};
+  const pinned = getPinnedHostUrl();
+  const code = String(teamCode || getLanTeamCodeFromConfig() || '').trim();
+  if (!pinned || !code) return false;
+  if (!isClinicalRankConfiguredForLan()) return false;
+
+  const ownUrl = await resolveOwnLanBaseForPin();
+  if (pinTargetsThisMac(pinned, ownUrl)) {
+    if (!canLocalMacBeLanHost()) {
+      if (!opts.quiet) {
+        runtime().showToast(
+          'No puedes fijar esta Mac como anfitrión con tu rango todavía (escalada o R4/admin).',
+          'info'
+        );
+      }
+      return false;
+    }
+    if (isWardTierHostMeta(buildLocalLanHostMeta())) markWardTierHostSeen();
+    const current = normalizeLanHostBase(lanClient.baseUrl() || '');
+    const alreadyHost =
+      !isLanRemoteJoinMode() &&
+      current &&
+      (pinTargetsThisMac(pinned, current) || lanHostBasesSameMachine(pinned, current));
+    if (alreadyHost) {
+      await ensureLanElectronHostReady({ forceLocal: true });
+      return true;
+    }
+    return promoteThisMacToLanHost({
+      skipOtherHostCheck: true,
+      skipToast: !!opts.quiet || !!opts.boot,
+    });
+  }
+
+  return tryConnectToPinnedHost(code, opts);
+}
+
 /** Corrige rol «cliente» en escritorio sin URL guardada (UI antigua con pestañas). */
 function migrateLanElectronStaleClientRole() {
   if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
@@ -357,6 +454,7 @@ function migrateLanElectronStaleClientRole() {
 /** Escritorio: detecta IP, alinea código y deja lista la URL del servidor embebido. */
 function demoteIneligibleLanHostUiRole() {
   if (!isLanElectronDesktop() || !isClinicalRankConfiguredForLan()) return;
+  if (hasPinnedHostOverride()) return;
   if (canLocalMacBeLanHost()) return;
   if (typeof storage.getLanUiRole !== 'function' || storage.getLanUiRole() !== 'host') return;
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
@@ -395,9 +493,15 @@ export async function ensureLanElectronHostReady(opts) {
     }
   }
 
+  if (!url || isLocalLoopbackLanUrl(url)) {
+    var shareUrl = await resolveLanShareBaseUrl();
+    if (shareUrl) url = shareUrl;
+  }
   if (!url) url = autoUrl || 'http://127.0.0.1:3738';
-  var shareUrl = await resolveLanShareBaseUrl();
-  if (shareUrl && isLocalLoopbackLanUrl(url)) url = shareUrl;
+  if (isLocalLoopbackLanUrl(url)) {
+    var retried = await refreshElectronLanCandidateUrl({ ensureServer: true, tries: 6, delayMs: 400 });
+    if (retried) url = retried;
+  }
   persistLanClientConfig(url, bearer);
   try {
     lanClient.connectSyncChannel();
@@ -470,9 +574,18 @@ export async function reactToDiscoveredLanHost(peerUrl, teamCode, opts) {
   const code = String(teamCode || '').trim();
   if (!url || !code) return false;
   if (!isClinicalRankConfiguredForLan()) return false;
-  if (getPinnedHostUrl()) return false;
 
-  const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
+  const pinned = getPinnedHostUrl();
+  const ownUrl = await resolveOwnLanBaseForPin();
+  if (pinned) {
+    if (pinTargetsThisMac(pinned, ownUrl)) return false;
+    if (normalizeLanHostBase(pinned) !== url) return false;
+    return joinRemoteLanHostAsClient(url, code, {
+      requireConfirm: false,
+      toastLabel: 'fijado',
+    });
+  }
+
   if (!ownUrl || lanHostBasesSameMachine(url, ownUrl)) return false;
 
   const peer = await fetchLanHostRank(url, code);
@@ -530,10 +643,20 @@ export async function promoteThisMacToLanHost(opts) {
     return false;
   }
   if (!canLocalMacBeLanHost()) {
-    runtime().showToast(
-      'Solo R4 o administrador de programa pueden ser anfitrión del turno. Busca al anfitrión en la red.',
-      'info'
+    const { getHostEscalationStatus, formatEscalationCountdown } = await import(
+      '../../lan-host-escalation.mjs'
     );
+    const esc = getHostEscalationStatus();
+    const nextRank = ['R3', 'R2', 'R1'][esc.tier] || 'R1';
+    const msg =
+      esc.tier < 3 && esc.msUntilNext > 0
+        ? 'Sin R4 en la red: en ' +
+          formatEscalationCountdown(esc.msUntilNext) +
+          ' podrá anfitrionar ' +
+          nextRank +
+          ' (escalada 10 min por nivel).'
+        : 'Aún no puedes ser anfitrión en esta Mac. Busca al R4 o espera la escalada automática.';
+    runtime().showToast(msg, 'info');
     return false;
   }
   if (!opts.skipOtherHostCheck) {
@@ -581,18 +704,67 @@ export async function promoteThisMacToLanHost(opts) {
  */
 export { syncLanHostClinicalMetaToDisk } from '../../lan-host-rank-policy.mjs';
 
+/**
+ * When pin targets a remote host, connect as client (IM-08 client-side pin).
+ * @param {{ boot?: boolean, quiet?: boolean }} [opts]
+ */
+export async function tryConnectToPinnedHost(teamCode, opts) {
+  opts = opts || {};
+  const pinned = getPinnedHostUrl();
+  const code = String(teamCode || '').trim();
+  if (!pinned || !code) return false;
+
+  const ownUrl = await resolveOwnLanBaseForPin();
+  if (pinTargetsThisMac(pinned, ownUrl)) {
+    return applyPinnedHostOverride(code, opts);
+  }
+
+  const target = normalizeLanHostBase(pinned);
+  const current = normalizeLanHostBase(
+    isLanRemoteJoinMode() ? lanClient.baseUrl() || '' : ownUrl
+  );
+  if (current && (current === target || lanHostBasesSameMachine(current, target))) {
+    return false;
+  }
+
+  const alive = await pingLanHostUrl(target, code);
+  if (!alive) {
+    if (!opts.quiet && !opts.boot) {
+      runtime().showToast(
+        'Anfitrión fijado no responde (' + target + '). Verifica la red o el enlace.',
+        'warning'
+      );
+    }
+    return false;
+  }
+
+  const joined = await joinRemoteLanHostAsClient(target, code, {
+    requireConfirm: false,
+    toastLabel: 'fijado',
+  });
+  if (joined && !opts.boot) {
+    deps().renderLanPanel?.();
+  }
+  return joined;
+}
+
 export async function tryAutoJoinPreferredLanHost(opts) {
   opts = opts || {};
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  if (!isLanElectronDesktop()) return false;
   if (!isClinicalRankConfiguredForLan()) return false;
   const teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return false;
 
   await syncLanHostClinicalMetaToDisk();
 
-  if (getPinnedHostUrl()) return false;
+  if (getPinnedHostUrl()) {
+    return applyPinnedHostOverride(teamCode, opts);
+  }
 
-  const ownUrl = (await resolveLanShareBaseUrl()) || '';
+  if (isLanRemoteJoinMode()) return false;
+
+  const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
+
   let peers = listLivePeerHostUrls(getLanClientId());
   const subnetPeers = await discoverLanHostsOnSubnet(teamCode, ownUrl);
   const seen = new Set();
@@ -632,8 +804,10 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
     .trim()
     .replace(/\/+$/, '');
   if (!url) return false;
-  const ownUrl = (await resolveLanShareBaseUrl()) || '';
-  if (ownUrl && url === ownUrl.replace(/\/+$/, '')) return false;
+  const ownUrl = (await resolveOwnLanBaseForPin()) || '';
+  if (ownUrl && (url === ownUrl.replace(/\/+$/, '') || lanHostBasesSameMachine(url, ownUrl))) {
+    return false;
+  }
 
   if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
     storage.saveLanUiRole('client');
@@ -661,10 +835,14 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
 }
 
 export async function initLanHostPlugAndPlay() {
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  if (!isLanElectronDesktop()) return;
   demoteIneligibleLanHostUiRole();
   if (!isClinicalRankConfiguredForLan()) return;
   await syncLanHostClinicalMetaToDisk();
+  if (getPinnedHostUrl()) {
+    if (await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { boot: true })) return;
+  }
+  if (isLanRemoteJoinMode()) return;
   const joined = await tryAutoJoinPreferredLanHost({ boot: true });
   if (joined) return;
   if (canLocalMacBeLanHost()) {

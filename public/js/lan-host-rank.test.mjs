@@ -10,6 +10,12 @@ import {
   canLocalMacBeLanHost,
 } from './lan-host-rank.mjs';
 import { CLINICAL_LAN_PROFILE_GATE_VERSION } from './clinical-settings.mjs';
+import {
+  clearHostEscalation,
+  ensureEscalationAnchor,
+  getHostEscalationTier,
+  LAN_HOST_ESCALATION_STEP_MS,
+} from './lan-host-escalation.mjs';
 
 describe('lan-host-rank', () => {
   it('rank gate and host eligibility', () => {
@@ -43,8 +49,23 @@ describe('lan-host-rank', () => {
         })
       );
       assert.equal(canLocalMacBeLanHost({ rank: 'R4' }), true);
+      assert.equal(canLocalMacBeLanHost({ rank: 'R1', isProgramAdmin: true }), true);
+      clearHostEscalation();
+      ls.setItem(
+        'rpc-settings',
+        JSON.stringify({
+          clinicalRank: 'R3',
+          clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
+        })
+      );
+      assert.equal(canLocalMacBeLanHost(), false);
+      ensureEscalationAnchor(Date.now() - LAN_HOST_ESCALATION_STEP_MS - 1000);
+      assert.equal(getHostEscalationTier(), 1);
+      assert.equal(canLocalMacBeLanHost(), true);
+      clearHostEscalation();
     } finally {
       global.localStorage = prev;
+      clearHostEscalation();
     }
   });
 
