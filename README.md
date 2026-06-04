@@ -27,10 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.4](https://github.com/mausalas99/r-mas/releases/tag/v6.6.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.5](https://github.com/mausalas99/r-mas/releases/tag/v6.6.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 6.6.5 (LAN — un solo anfitrión por turno)
+
+- **Un anfitrión por Wi‑Fi** — Elección por rango (R4/admin) y `startedAt`; consolidación sube datos al ganador antes de redirigir clientes por `livesync:host-handoff`.
+- **Plug and play** — R1–R3 se conectan solos al anfitrión; barrido 5 s / 25 s; enlace solo si hace falta (iPad, otra PC o split-brain).
+- **⇄** — **Copiar enlace de invitación**, **Generar enlace / PIN**, y en escritorio **Unirme con enlace** para pegar la URL del anfitrión.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.5** el mismo día; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.6.5.txt`.
 
 ## R+ 6.6.2 (LAN ward-ready — correcciones ⇄ y host)
 
@@ -481,11 +489,12 @@ Notas: `docs/RELEASE_NOTES_2.4.0.txt`.
 ---
 
 
-## R+ 6.6.4 (LAN — iPad links y sync en chunks)
+## R+ 6.6.4 (LAN — enlaces móviles y bundle en chunks)
 
-- **TODO:** completar bullets en README.
+- **⇄** — Enlace `/join/req_…` para iPad y invitación; parámetros opcionales de perfil en la URL.
+- **Renderer** — Chunks de esbuild; carga diferida de módulos pesados (continúa línea 6.6.3 cold-start).
 
-Notas: `docs/RELEASE_NOTES_6.6.4.txt`.
+Notas: `docs/RELEASE_NOTES_6.6.4.txt` (notas internas incompletas; usar **6.6.5** en guardia).
 ## R+ 2.3.1 (parche — tendencias sin cultivos)
 
 - **Tendencias** — Solo paneles de laboratorio clínico; no se muestran secciones de cultivos (urocultivo, hemocultivo, etc.) como gráficas. Los cultivos siguen en la pestaña **Cultivos**.
@@ -493,6 +502,7 @@ Notas: `docs/RELEASE_NOTES_6.6.4.txt`.
 Notas: `docs/RELEASE_NOTES_2.3.1.txt`.
 
 ---
+
 
 ## R+ 2.3.0 (tendencias por sección, ocultos y gasometría)
 

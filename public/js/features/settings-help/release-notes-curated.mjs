@@ -28,18 +28,44 @@ var RELEASE_NOTES_663 = [
   },
 ];
 
+var RELEASE_NOTES_665 = [
+  {
+    title: 'Un anfitrión por turno',
+    body:
+      'En la misma Wi‑Fi, R+ elige un solo servidor por <strong>rango</strong> (R4/admin) y antigüedad. Si dos Macs eran anfitrión, la de menor rango puede <strong>combinar</strong> datos y clientes con el ganador.',
+  },
+  {
+    title: 'Plug and play + enlace',
+    body:
+      '<strong>R1–R3</strong> suelen unirse solos al R4 sin pegar nada. En ⇄: <strong>Copiar enlace de invitación</strong> para iPad u otra PC, o <strong>Unirme con enlace</strong> en escritorio si el barrido no alcanzó.',
+  },
+  {
+    title: 'Sin pérdida al ceder',
+    body:
+      'Al combinar servidores, primero sube el bundle al anfitrión ganador; solo después redirige al equipo. Si falla la subida, sigues como servidor en esta Mac.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.6.5 en todas</strong> las Macs y PCs el mismo día. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala ⇄.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_663;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_665;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.5': RELEASE_NOTES_665,
   '6.6.4': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Enlace ⇄ para iPad',
+      body:
+        'Copia un enlace <code>/join/req_…</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.5</strong>.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Arranque en chunks',
+      body:
+        'Continúa la mejora de arranque de <strong>6.6.3</strong> (menos código en el primer paint).',
     },
   ],
   '6.6.3': RELEASE_NOTES_663,
