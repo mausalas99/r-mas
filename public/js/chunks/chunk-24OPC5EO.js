@@ -1,7 +1,7 @@
 import {
   syncClinicalContextBarVisibility,
   syncClinicalRotationEntryChrome
-} from "/js/chunks/chunk-M7MDRK24.js";
+} from "/js/chunks/chunk-PRB5OYKJ.js";
 import {
   ahf_conditions_default,
   app_conditions_default,
@@ -9,7 +9,7 @@ import {
   markHistoriaPendingLanSync,
   migrateLegacyHistoriaData,
   schedulePendingHistoriaClinicaLanSync
-} from "/js/chunks/chunk-WTSFSWUD.js";
+} from "/js/chunks/chunk-TPIXEUPD.js";
 import {
   DEMO_GARCIA_LAB_REPORT,
   DEMO_SOME_LAB_REPORT,
@@ -137,10 +137,10 @@ import {
   trendCatalogSeriesKey,
   tryRecoverPatientsFromPitchSandboxIfNeeded,
   updateCustomProtocol
-} from "/js/chunks/chunk-EI7DZYLS.js";
+} from "/js/chunks/chunk-IBHESUIK.js";
 import {
   syncDbSecuritySectionUi
-} from "/js/chunks/chunk-P3GTOHSD.js";
+} from "/js/chunks/chunk-HZT4KOGH.js";
 import {
   ALBUMIN_MAX_GRAMS,
   BH_PANEL_FAMILIES,
@@ -6348,6 +6348,16 @@ var RELEASE_NOTES_663 = [
 ];
 var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_663;
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.6.4": [
+    {
+      title: "TODO",
+      body: "Completar antes de publicar."
+    },
+    {
+      title: "TODO",
+      body: "Completar antes de publicar."
+    }
+  ],
   "6.6.3": RELEASE_NOTES_663,
   "6.6.2": [
     {
@@ -8021,7 +8031,7 @@ function getSettingsHelpRuntime() {
 function registerSettingsHelpRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(state2.rt, ctx);
-  import("/js/chunks/presentation-mode-N4S4POGO.js").then(function(mod) {
+  import("/js/chunks/presentation-mode-QWVVSTSX.js").then(function(mod) {
     if (typeof mod.registerPresentationRuntime === "function") {
       mod.registerPresentationRuntime(state2.rt);
     }
@@ -42589,4 +42599,4 @@ export {
   initPatientModalEnterSave,
   windowHandlers9
 };
-//# sourceMappingURL=/js/chunks/chunk-CTT5TBFL.js.map
+//# sourceMappingURL=/js/chunks/chunk-24OPC5EO.js.map

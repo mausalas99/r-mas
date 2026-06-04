@@ -1,13 +1,20 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-03",
+  "updatedAt": "2026-06-04",
   "entries": [
+    {
+      "version": "6.6.3",
+      "label": "6.6.3",
+      "publishedAt": "2026-06-04",
+      "summary": "Release estable 6.6.3",
+      "recommended": true
+    },
     {
       "version": "6.5.9",
       "label": "6.5.9",
       "publishedAt": "2026-06-03",
       "summary": "LAN directorio, fusión usuarios Mac/Windows, entrega y equipos.",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "6.5.8",

@@ -3,7 +3,7 @@ import {
   getActiveLiveSyncRoomId,
   isLanSessionConfiguredForRest,
   lanPushHistoriaClinica
-} from "/js/chunks/chunk-EI7DZYLS.js";
+} from "/js/chunks/chunk-IBHESUIK.js";
 import {
   patients,
   saveState
@@ -266,4 +266,4 @@ export {
   scheduleFlushAllPendingHistoriaClinicaLanSync,
   applyServerHistoriaClinicaToPatient
 };
-//# sourceMappingURL=/js/chunks/chunk-WTSFSWUD.js.map
+//# sourceMappingURL=/js/chunks/chunk-TPIXEUPD.js.map

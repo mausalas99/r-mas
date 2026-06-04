@@ -1,12 +1,12 @@
 import {
   needsClinicalOnboarding,
   needsTeamOnboarding
-} from "/js/chunks/chunk-6HHMVXOB.js";
+} from "/js/chunks/chunk-ZIN5WNGV.js";
 import {
   clinicalSessionContext,
   filterJoinedTeams,
   normalizeUsername
-} from "/js/chunks/chunk-EI7DZYLS.js";
+} from "/js/chunks/chunk-IBHESUIK.js";
 import {
   isDbMode
 } from "/js/chunks/chunk-K6QXHWFW.js";
@@ -34,10 +34,10 @@ async function openMiRotacion() {
     }
     return;
   }
-  const { ensureClinicalPanelSession } = await import("/js/chunks/clinical-panel-host-LVYNFVVF.js");
+  const { ensureClinicalPanelSession } = await import("/js/chunks/clinical-panel-host-R64KO4YK.js");
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    const mainMod = await import("/js/chunks/clinical-onboarding-main-7LFZAOQT.js");
+    const mainMod = await import("/js/chunks/clinical-onboarding-main-ZW3T4CMU.js");
     const msg = await mainMod.describeOnboardingSessionBlock();
     if (typeof window.showToast === "function") {
       window.showToast(msg, "error");
@@ -47,14 +47,14 @@ async function openMiRotacion() {
     return;
   }
   if (needsClinicalOnboarding()) {
-    const mainMod = await import("/js/chunks/clinical-onboarding-main-7LFZAOQT.js");
+    const mainMod = await import("/js/chunks/clinical-onboarding-main-ZW3T4CMU.js");
     await mainMod.showMainClinicalOnboarding();
     mainMod.focusMainClinicalOnboarding();
     return;
   }
-  const { wireClinicalTeamsModalChrome } = await import("/js/chunks/teams-roster-modal-chrome-GYZAQHQU.js");
+  const { wireClinicalTeamsModalChrome } = await import("/js/chunks/teams-roster-modal-chrome-HLYSYRTP.js");
   wireClinicalTeamsModalChrome();
-  const { openClinicalTeamsPanel } = await import("/js/chunks/teams-roster-YMT2PFCX.js");
+  const { openClinicalTeamsPanel } = await import("/js/chunks/teams-roster-BAODHBF7.js");
   await openClinicalTeamsPanel();
 }
 function buildEntryStatus() {
@@ -137,4 +137,4 @@ export {
   wireClinicalRotationEntryControls,
   windowHandlers
 };
-//# sourceMappingURL=/js/chunks/chunk-M7MDRK24.js.map
+//# sourceMappingURL=/js/chunks/chunk-PRB5OYKJ.js.map

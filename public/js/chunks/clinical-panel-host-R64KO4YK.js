@@ -4,8 +4,8 @@ import {
   safeRenderClinicalTeamsPanel,
   setClinicalTeamsPanelError,
   setClinicalTeamsPanelLoading
-} from "/js/chunks/chunk-EI7DZYLS.js";
-import "/js/chunks/chunk-P3GTOHSD.js";
+} from "/js/chunks/chunk-IBHESUIK.js";
+import "/js/chunks/chunk-HZT4KOGH.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -16,4 +16,4 @@ export {
   setClinicalTeamsPanelError,
   setClinicalTeamsPanelLoading
 };
-//# sourceMappingURL=/js/chunks/clinical-panel-host-LVYNFVVF.js.map
+//# sourceMappingURL=/js/chunks/clinical-panel-host-R64KO4YK.js.map
