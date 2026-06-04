@@ -54,19 +54,19 @@ reads it for `GET /host-rank`. Cloud's in-memory `POST /host-advertise` is dropp
 
 All election + consolidation logic lives in the **renderer** (Approach A). The host
 server stays "dumb": it serves `GET /host-rank` (now with `startedAt`),
-`PUT /sync-bundle` (exists), and relays a `host-redirect` event over the existing WS
-hub.
+`PUT /sync-bundle` (exists), and relays the existing `livesync:host-handoff` event
+over the existing WS hub (the same message surrogate-promotion already uses).
 
 ### 3.1 Module layout
 
 | Module | Role | Origin |
 |--------|------|--------|
 | `lan-squad/host-clinical-meta.js` | read/write `{rank, isProgramAdmin, startedAt, updatedAt}` on disk; stamp `startedAt` once | local (kept) |
-| `lan-squad/host-router.js` | `GET /host-rank` → meta **+ `startedAt`**; `PUT /sync-bundle`; WS relay of `host-redirect` | merge |
+| `lan-squad/host-router.js` | `GET /host-rank` → meta **+ `startedAt`**; `PUT /sync-bundle`; WS relay of existing `livesync:host-handoff` | merge |
 | `public/js/lan-host-rank.mjs` | priority math, `prefersLanHosting`, `shouldAutoJoinPeerAsClient`, `shouldDeferToPeerHost`, `pickPreferredLanPeerHost`, **`resolveHostElection`** (new) | local + new fn |
 | `public/js/lan-host-rank-policy.mjs` | session/settings → meta, IPC sync (`syncLanHostClinicalMetaToDisk`) | local (kept) |
 | `public/js/lan-host-subnet-discovery.mjs` | **consolidated** discovery: cloud probing quality (candidate-IP seed, loopback/same-machine guards, dual ping+`/ping`), returns a **ranked list** | merge |
-| `public/js/features/lan/transport.mjs` | `tryAutoJoinPreferredLanHost`, `joinRemoteLanHostAsClient`, **`consolidateIntoHost`** (new) | local + new fn |
+| `public/js/features/lan/transport.mjs` | `tryAutoJoinPreferredLanHost`, `joinRemoteLanHostAsClient`, **`consolidateIntoHost`**, **`pushBundleToHostUrl`** (new) | local + new fn |
 | `public/js/features/lan/panel.mjs` | `lanHubStatusCopy`, promote `confirm`, split-brain warnings, diagnostics hint, scan loop | cloud UX + local |
 
 **Deleted:** cloud `public/js/lan-host-discovery.mjs` (helpers folded into
@@ -103,19 +103,29 @@ Returns `'self' | 'peer' | 'tie-self' | 'tie-peer'`:
 
 ### 4.4 `consolidateIntoHost(winnerUrl, teamCode)` (loser runs this)
 
-1. `await pushRoomSyncBundleToHost(winnerUrl)` — full bundle (patients + `clinicalOps`)
-   → winner's `PUT /sync-bundle`; winner's **LWW conflict-resolver merges**.
-2. Broadcast WS `livesync:host-redirect { url: winnerUrl }` on this Mac's own hub so
-   connected clients persist the new host config and reconnect.
-3. Switch self to client: `saveLanUiRole('client')`, `persistLanClientConfig(winnerUrl)`,
-   `rememberPrimaryHostUrl(winnerUrl)`, reconnect sync channel.
+Reuses the existing surrogate-promotion machinery (`livesync:host-handoff`,
+`pushRoomSyncBundleToHost`) so no new WS message type or merge code is introduced.
+
+1. Build the room bundle (`buildLiveSyncBundleEnvelope`) and push it to the winner via a
+   new helper **`pushBundleToHostUrl(winnerUrl, teamCode, roomId, envelope)`** (direct
+   authed `PUT /rooms/:id/sync-bundle` to the winner *without* changing the persistent
+   host config yet, so our live channel to our own hub stays open). Winner's **LWW
+   conflict-resolver merges**. Require 2xx.
+2. On success, broadcast `livesync:host-handoff { newHostUrl: winnerUrl, reason:
+   'consolidate-rank' }` on our own hub (clients are still connected to us) → existing
+   `room.mjs` handler reconnects them to the winner.
+3. Switch self to client: `applyLanHostUrlSwitch(winnerUrl, …)`, `saveLanUiRole('client')`,
+   `persistLanClientConfig(winnerUrl, teamCode)`, `rememberPrimaryHostUrl(winnerUrl)`,
+   reconnect live channel to the winner.
 4. Toast: "Servidores combinados — ahora conectado al anfitrión del turno."
 
-**Ordering is atomic:** push must return 2xx **before** broadcasting redirect or
-switching role. Never redirect clients to a host we could not sync to.
+**Ordering is atomic:** the bundle push must return 2xx **before** the handoff broadcast
+or any role switch. Never hand clients off to a host we could not sync to. If push fails,
+abort: stay host, no handoff, no role switch.
 
-**Clients receiving `host-redirect`:** persist `winnerUrl`, reconnect WS to it. If the
-target is unreachable, fall back to existing re-discovery (no hard failure).
+**Clients receiving `livesync:host-handoff`:** the existing handler persists `newHostUrl`
+and calls `tryReconnectLanToHostUrl` when in remote-join mode. If the target is
+unreachable, existing re-discovery applies (no hard failure).
 
 ---
 
@@ -170,7 +180,7 @@ legitimate suplente case.
 - **Two equal hosts started same ms** → URL tiebreak guarantees both pick the same
   winner (no mutual yield / ping-pong).
 - **Non-Electron / mobile clients:** discovery + consolidation are desktop-only; mobile
-  just follows `host-redirect`.
+  just follows `livesync:host-handoff`.
 
 ---
 
@@ -183,8 +193,11 @@ legitimate suplente case.
 - `lan-squad/host-router.test.js`: `GET /host-rank` returns `startedAt`; assert
   `host-advertise` route is gone (404).
 - `lan-squad/host-clinical-meta.test.js`: `startedAt` stamped once and stable across reads.
-- New `public/js/lan-host-consolidation.test.mjs`: bundle-push-before-redirect ordering;
-  push failure aborts yield (no role switch, no redirect); declined confirm keeps host.
+- New `public/js/lan-host-consolidation.test.mjs`: `consolidateIntoHost` calls
+  `pushBundleToHostUrl` and only emits `livesync:host-handoff` after a 2xx push
+  (push-before-handoff ordering); push failure aborts yield (no handoff, no role switch);
+  declined confirm keeps host. `pushBundleToHostUrl` targets the winner URL (not the
+  current config) and returns false on non-2xx.
 
 ---
 
