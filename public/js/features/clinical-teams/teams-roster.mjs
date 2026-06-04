@@ -78,15 +78,6 @@ import {
   renderJoinWithCodeSectionHtml,
   resolveBrowseSala,
 } from './teams-roster-render.mjs';
-import {
-  openLanUsersDirectoryModal,
-  closeLanUsersDirectoryModal,
-  lanUsersModalBackdropEl,
-  lanUsersModalBodyEl,
-  loadLanUsersDirectoryIntoHost,
-  wireLanUsersDirectoryControls,
-  renderLanUsersDirectoryEntryHtml,
-} from './teams-roster-lan.mjs';
 export function teamsModalEl() {
   return document.getElementById('clinical-teams-backdrop');
 }
@@ -106,18 +97,17 @@ export async function refreshTeamsUiAfterChange() {
 }
 
 export async function openClinicalTeamsPanel() {
-  wireClinicalTeamsModalChrome();
   const bd = teamsModalEl();
   if (!bd) return;
-  bd.classList.add('open');
-  bd.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('clinical-teams-modal-open');
 
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    setClinicalTeamsPanelError(
-      'Activa la sesión clínica (desbloquea la base de datos) para usar Mi rotación.'
-    );
+    const mainMod = await import('../clinical-onboarding-main.mjs');
+    const msg = await mainMod.describeOnboardingSessionBlock();
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, 'error');
+    }
+    if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
     return;
   }
 
@@ -129,6 +119,19 @@ export async function openClinicalTeamsPanel() {
       await openMiRotacion();
       return;
     }
+  } catch (err) {
+    console.error('[Mi rotación]', err);
+    setClinicalTeamsPanelError(
+      err instanceof Error ? err.message : 'No se pudo abrir Mi rotación.'
+    );
+    return;
+  }
+
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('clinical-teams-modal-open');
+
+  try {
     await renderClinicalTeamsPanel();
     const nameInput = document.getElementById('clinical-team-create-name');
     if (nameInput) nameInput.focus();
@@ -146,20 +149,6 @@ export function closeClinicalTeamsPanel() {
   bd.classList.remove('open');
   bd.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('clinical-teams-modal-open');
-}
-
-
-export function wireBrowseSalaControl(elevated) {
-  if (!elevated) return;
-  const select = document.getElementById('clinical-browse-sala');
-  if (!select || select._rpcBrowseWired) return;
-  select._rpcBrowseWired = true;
-  select.addEventListener('change', () => {
-    try {
-      localStorage.setItem(BROWSE_SALA_LS, String(select.value || ''));
-    } catch (_e) {}
-    void renderClinicalTeamsPanel({ silent: true });
-  });
 }
 
 function closeTeamEditPanels(exceptPanel) {
@@ -469,63 +458,6 @@ function clientIdFromSettings() {
   }
 }
 
-export function wireJoinButtons() {
-  document.querySelectorAll('.clinical-teams-join-btn').forEach((btn) => {
-    if (!(btn instanceof HTMLButtonElement) || btn._rpcJoinWired) return;
-    btn._rpcJoinWired = true;
-    btn.addEventListener('click', async () => {
-      const teamId = String(btn.dataset.teamId || '');
-      const userId = currentUserId();
-      const api = dbApi();
-      if (!api || typeof api.dbClinicalTeamsJoin !== 'function') {
-        toast('No se pudo unir al equipo.', 'error');
-        return;
-      }
-      const team = (clinicalSessionContext.teams || []).find(
-        (t) => String(t.team_id) === teamId
-      );
-      const rank = effectiveClinicalRank(clinicalSessionContext.user);
-      const cycle = inferMembershipCycleForJoin(team || {}, rank);
-      const res = await api.dbClinicalTeamsJoin({
-        teamId,
-        userId,
-        subAreaFraction: cycle,
-      });
-      if (!res || res.ok === false) {
-        toast(res?.error || 'No se pudo unir al equipo.', 'error');
-        return;
-      }
-      toast('Te uniste al equipo.', 'success');
-      document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-      void publishClinicalTeamsToLan();
-    });
-  });
-}
-
-export function wireCopyInviteButtons() {
-  document.querySelectorAll('.clinical-teams-copy-invite-btn').forEach((btn) => {
-    if (!(btn instanceof HTMLButtonElement) || btn._rpcInviteWired) return;
-    btn._rpcInviteWired = true;
-    btn.addEventListener('click', () => {
-      const teamId = String(btn.dataset.teamId || '');
-      const team = (clinicalSessionContext.teams || []).find(
-        (t) => String(t.team_id) === teamId
-      );
-      if (!team) {
-        toast('Equipo no encontrado.', 'error');
-        return;
-      }
-      const text = buildClinicalTeamInviteMessage(team);
-      void copyToClipboardSafe(text).then((ok) => {
-        toast(
-          ok ? 'Invitación copiada. Pégala en WhatsApp o correo.' : 'No se pudo copiar.',
-          ok ? 'success' : 'error'
-        );
-      });
-    });
-  });
-}
-
 async function persistProfileFromPanel({
   rank,
   sala,
@@ -581,65 +513,6 @@ async function persistProfileFromPanel({
     }
   }
   return true;
-}
-
-function syncSalaFieldVisibility() {
-  const salaSelect = document.getElementById('clinical-team-create-sala');
-  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
-  if (salaSelect && userSala && !String(salaSelect.value || '').trim()) {
-    salaSelect.value = userSala;
-  }
-}
-
-export function wireClinicalTeamsPanelInteractions() {
-  syncSalaFieldVisibility();
-  wireAdminCheckboxGate();
-
-  const serviceSelect = document.getElementById('clinical-team-create-service');
-  if (serviceSelect && !serviceSelect._rpcServiceWired) {
-    serviceSelect._rpcServiceWired = true;
-    serviceSelect.addEventListener('change', () => {
-      syncCreateTeamCycleField();
-      syncSalaFieldVisibility();
-    });
-  }
-
-  const r1LineSelect = document.getElementById('clinical-team-create-r1-line');
-  if (r1LineSelect && !r1LineSelect._rpcR1LineWired) {
-    r1LineSelect._rpcR1LineWired = true;
-    r1LineSelect.addEventListener('change', () => syncCreateTeamCycleField());
-  }
-}
-
-function wireAdminCheckboxGate() {
-  const cb = document.getElementById('clinical-profile-admin');
-  if (!(cb instanceof HTMLInputElement) || cb._rpcAdminGateWired) return;
-  cb._rpcAdminGateWired = true;
-
-  const hadAdminOnLoad =
-    cb.checked || hasProgramAdminPrivileges(clinicalSessionContext.user);
-  if (hadAdminOnLoad) {
-    markAdminAccessGrantedThisSession();
-  }
-
-  cb.addEventListener('click', (ev) => {
-    if (cb.checked) {
-      clearAdminAccessGrant();
-      return;
-    }
-    if (isAdminAccessGrantedThisSession()) return;
-
-    ev.preventDefault();
-    void promptAdminAccessCode().then((code) => {
-      if (code && verifyAdminAccessCode(code)) {
-        cb.checked = true;
-        rememberAdminAccessCode(code);
-        return;
-      }
-      cb.checked = false;
-      if (code != null) toast('Código incorrecto.', 'error');
-    });
-  });
 }
 
 /** @param {Event} ev */
@@ -803,6 +676,14 @@ export async function handleAddMemberSubmit(ev, form) {
  * @param {Event} ev
  * @param {HTMLFormElement} form
  */
+export {
+  wireBrowseSalaControl,
+  wireJoinButtons,
+  wireCopyInviteButtons,
+  wireClinicalTeamsPanelInteractions,
+  wireRenderedClinicalTeamsPanel,
+} from './teams-roster-interactions.mjs';
+
 export async function handleMyCycleSubmit(ev, form) {
   ev.preventDefault();
   const teamId = String(form.dataset.teamId || '');

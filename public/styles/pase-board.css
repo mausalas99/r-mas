@@ -3675,7 +3675,6 @@ html.dark .clinical-lan-rank-group-summary {
 
 html.clinical-onboarding-active #patient-sidebar,
 html.clinical-onboarding-active .app-tabs-row,
-html.clinical-onboarding-active #clinical-context-bar,
 html.clinical-onboarding-active #guardia-census-panel,
 html.clinical-onboarding-active #appcontent-lab,
 html.clinical-onboarding-active #appcontent-med,
@@ -3685,6 +3684,21 @@ html.clinical-onboarding-active #appcontent-pase,
 html.clinical-onboarding-active #appcontent-guardia {
   pointer-events: none;
   opacity: 0.35;
+}
+
+/* Barra clínica: atenuar filtros de censo, pero Mi rotación sigue clickable */
+html.clinical-onboarding-active #clinical-context-bar {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+html.clinical-onboarding-active #clinical-rotation-section,
+html.clinical-onboarding-active #clinical-rotation-section * {
+  pointer-events: auto;
+}
+
+html.clinical-onboarding-active #clinical-rotation-section .app-bar-mi-rotacion {
+  opacity: 1;
 }
 
 html.clinical-onboarding-active #main-area {

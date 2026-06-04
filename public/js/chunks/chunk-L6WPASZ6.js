@@ -8,7 +8,7 @@ import {
   refreshClinicalUserProfile,
   resumeClinicalIdentityByUsername,
   safeRenderClinicalTeamsPanel
-} from "/js/chunks/chunk-N67FP2U7.js";
+} from "/js/chunks/chunk-RDCNFRLI.js";
 import {
   isDbMode
 } from "/js/chunks/chunk-K6QXHWFW.js";
@@ -108,7 +108,7 @@ async function handleUsernameStepSubmit(ev) {
   const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || "");
   const needsClaim = currentHandle !== username;
   if (needsClaim) {
-    const { assertLanRoomForUsernameRegister } = await import("/js/chunks/clinical-profile-lan-sync-2M6OMXJN.js");
+    const { assertLanRoomForUsernameRegister } = await import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js");
     await assertLanRoomForUsernameRegister({ sala });
   }
   if (needsClaim && typeof api.dbClinicalUsernameClaim === "function") {
@@ -196,7 +196,7 @@ async function handleUsernameStepSubmit(ev) {
     LAN_PROFILE_PUSH_FAILED_MSG,
     isBenignLanPushSkipCode,
     notifyLanProfilePushResult
-  } = await import("/js/chunks/clinical-profile-lan-sync-2M6OMXJN.js");
+  } = await import("/js/chunks/clinical-profile-lan-sync-3X5TVNQH.js");
   const lanPush = await flushClinicalProfileToLan();
   notifyLanProfilePushResult(lanPush, toast);
   if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code) && !(lanPush.channels && lanPush.channels.outbox)) {
@@ -209,7 +209,7 @@ async function handleUsernameStepSubmit(ev) {
       "success"
     );
   }
-  const { refreshMainClinicalOnboardingIfNeeded } = await import("/js/chunks/clinical-onboarding-main-COR34ZQB.js");
+  const { refreshMainClinicalOnboardingIfNeeded } = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
   await refreshMainClinicalOnboardingIfNeeded();
 }
 async function handleResumeIdentityClick() {
@@ -247,12 +247,12 @@ async function handleResumeIdentityClick() {
     toast("Cuenta recuperada.", "success");
     await refreshClinicalUserProfile();
     if (!needsUsernameClaim()) {
-      const { refreshMainClinicalOnboardingIfNeeded: refreshMainClinicalOnboardingIfNeeded2 } = await import("/js/chunks/clinical-onboarding-main-COR34ZQB.js");
+      const { refreshMainClinicalOnboardingIfNeeded: refreshMainClinicalOnboardingIfNeeded2 } = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
       await refreshMainClinicalOnboardingIfNeeded2();
       return;
     }
     toast("Completa tu perfil y pulsa Continuar.", "info");
-    const { refreshMainClinicalOnboardingIfNeeded } = await import("/js/chunks/clinical-onboarding-main-COR34ZQB.js");
+    const { refreshMainClinicalOnboardingIfNeeded } = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
     await refreshMainClinicalOnboardingIfNeeded();
   } finally {
     if (resumeBtn instanceof HTMLButtonElement) {
@@ -296,10 +296,10 @@ async function renderOnboardingPanelInto(host) {
     }
   }
   if (!needsProfileOnboarding()) {
-    const { hideMainClinicalOnboarding } = await import("/js/chunks/clinical-onboarding-main-COR34ZQB.js");
+    const { hideMainClinicalOnboarding } = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
     hideMainClinicalOnboarding();
     if (host.closest("#clinical-teams-panel-body")) {
-      const { renderClinicalTeamsPanel } = await import("/js/chunks/clinical-teams-WL7BKYN2.js");
+      const { renderClinicalTeamsPanel } = await import("/js/chunks/clinical-teams-LMWEZARH.js");
       await renderClinicalTeamsPanel();
     }
     return;
@@ -363,4 +363,4 @@ export {
   renderOnboardingPanel,
   renderOnboardingPanelInto
 };
-//# sourceMappingURL=/js/chunks/chunk-6MYVTW2E.js.map
+//# sourceMappingURL=/js/chunks/chunk-L6WPASZ6.js.map

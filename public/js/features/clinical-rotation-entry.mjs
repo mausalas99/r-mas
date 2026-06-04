@@ -4,7 +4,7 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
-import { filterJoinedTeams } from './clinical-teams.mjs';
+import { filterJoinedTeams } from './clinical-teams/shared.mjs';
 import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 
@@ -17,12 +17,32 @@ export async function openMiRotacion() {
     }
     return;
   }
-  if (needsClinicalOnboarding()) {
+
+  const { ensureClinicalPanelSession } = await import('./clinical-panel-host.mjs');
+  const sessionOk = await ensureClinicalPanelSession();
+  if (!sessionOk) {
     const mainMod = await import('./clinical-onboarding-main.mjs');
+    const msg = await mainMod.describeOnboardingSessionBlock();
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, 'error');
+    }
     if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
+    syncClinicalRotationEntryChrome();
     return;
   }
-  const { openClinicalTeamsPanel } = await import('./clinical-teams.mjs');
+
+  if (needsClinicalOnboarding()) {
+    const mainMod = await import('./clinical-onboarding-main.mjs');
+    await mainMod.showMainClinicalOnboarding();
+    mainMod.focusMainClinicalOnboarding();
+    return;
+  }
+
+  const { wireClinicalTeamsModalChrome } = await import(
+    './clinical-teams/teams-roster-modal-chrome.mjs'
+  );
+  wireClinicalTeamsModalChrome();
+  const { openClinicalTeamsPanel } = await import('./clinical-teams/teams-roster.mjs');
   await openClinicalTeamsPanel();
 }
 

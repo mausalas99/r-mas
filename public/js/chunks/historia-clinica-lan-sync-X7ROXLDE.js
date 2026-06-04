@@ -5,9 +5,9 @@ import {
   markHistoriaPendingLanSync,
   scheduleFlushAllPendingHistoriaClinicaLanSync,
   schedulePendingHistoriaClinicaLanSync
-} from "/js/chunks/chunk-R7IB2ESW.js";
-import "/js/chunks/chunk-N67FP2U7.js";
-import "/js/chunks/chunk-4PVOF7Q7.js";
+} from "/js/chunks/chunk-U56LXR3C.js";
+import "/js/chunks/chunk-RDCNFRLI.js";
+import "/js/chunks/chunk-5WTPZK2L.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -19,4 +19,4 @@ export {
   scheduleFlushAllPendingHistoriaClinicaLanSync,
   schedulePendingHistoriaClinicaLanSync
 };
-//# sourceMappingURL=/js/chunks/historia-clinica-lan-sync-C36RYHFI.js.map
+//# sourceMappingURL=/js/chunks/historia-clinica-lan-sync-X7ROXLDE.js.map

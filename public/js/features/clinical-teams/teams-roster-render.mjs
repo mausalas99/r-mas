@@ -64,12 +64,9 @@ import {
 } from './teams-guardia-bridge.mjs';
 
 import {
-  wireClinicalTeamsPanelInteractions,
-  wireJoinButtons,
-  wireCopyInviteButtons,
-  wireBrowseSalaControl,
-} from './teams-roster.mjs';
-import { wireLanUsersDirectoryControls } from './teams-roster-lan.mjs';
+  renderLanUsersDirectoryEntryHtml,
+  wireLanUsersDirectoryControls,
+} from './teams-roster-lan.mjs';
 export function syncCreateTeamCycleField() {
   const service = String(document.getElementById('clinical-team-create-service')?.value || 'Sala');
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
@@ -664,12 +661,10 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
       </details>
     </section>`;
 
-  wireClinicalTeamsPanelInteractions();
   wireLanUsersDirectoryControls();
   wireNuevaRotacionControl(host);
-  wireJoinButtons();
-  wireCopyInviteButtons();
-  wireBrowseSalaControl(elevated);
+  const { wireRenderedClinicalTeamsPanel } = await import('./teams-roster-interactions.mjs');
+  wireRenderedClinicalTeamsPanel(elevated);
 }
 
 export function renderJoinWithCodeSectionHtml() {

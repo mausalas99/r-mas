@@ -88,9 +88,12 @@ export async function ensureClinicalPanelSession() {
 
   if (await attemptSession()) return true;
 
-  // Boot may have run bootstrap before main finished ensureUnlocked (common on Windows).
-  const { applyClinicalDbUnlockCompletion } = await import('./db-unlock.mjs');
-  await applyClinicalDbUnlockCompletion({ refreshOnboarding: false });
+  try {
+    const { applyClinicalDbUnlockCompletion } = await import('./db-unlock.mjs');
+    await applyClinicalDbUnlockCompletion({ refreshOnboarding: false });
+  } catch (err) {
+    console.warn('[Mi rotación] clinical session recovery:', err && err.message);
+  }
   if (clinicalSessionContext.user?.user_id) return true;
 
   return attemptSession();

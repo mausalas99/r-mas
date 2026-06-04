@@ -1,7 +1,7 @@
 import {
   syncClinicalContextBarVisibility,
   syncClinicalRotationEntryChrome
-} from "/js/chunks/chunk-ULIO2HW5.js";
+} from "/js/chunks/chunk-TDUJSWOE.js";
 import {
   ahf_conditions_default,
   app_conditions_default,
@@ -9,7 +9,7 @@ import {
   markHistoriaPendingLanSync,
   migrateLegacyHistoriaData,
   schedulePendingHistoriaClinicaLanSync
-} from "/js/chunks/chunk-R7IB2ESW.js";
+} from "/js/chunks/chunk-U56LXR3C.js";
 import {
   DEMO_GARCIA_LAB_REPORT,
   DEMO_SOME_LAB_REPORT,
@@ -137,10 +137,10 @@ import {
   trendCatalogSeriesKey,
   tryRecoverPatientsFromPitchSandboxIfNeeded,
   updateCustomProtocol
-} from "/js/chunks/chunk-N67FP2U7.js";
+} from "/js/chunks/chunk-RDCNFRLI.js";
 import {
   syncDbSecuritySectionUi
-} from "/js/chunks/chunk-4PVOF7Q7.js";
+} from "/js/chunks/chunk-5WTPZK2L.js";
 import {
   ALBUMIN_MAX_GRAMS,
   BH_PANEL_FAMILIES,
@@ -8021,7 +8021,7 @@ function getSettingsHelpRuntime() {
 function registerSettingsHelpRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(state2.rt, ctx);
-  import("/js/chunks/presentation-mode-NLEXRYVW.js").then(function(mod) {
+  import("/js/chunks/presentation-mode-QSPDST6T.js").then(function(mod) {
     if (typeof mod.registerPresentationRuntime === "function") {
       mod.registerPresentationRuntime(state2.rt);
     }
@@ -42589,4 +42589,4 @@ export {
   initPatientModalEnterSave,
   windowHandlers9
 };
-//# sourceMappingURL=/js/chunks/chunk-K4FEKM64.js.map
+//# sourceMappingURL=/js/chunks/chunk-H6BPGXP3.js.map

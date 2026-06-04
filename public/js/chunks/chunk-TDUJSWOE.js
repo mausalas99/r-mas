@@ -1,12 +1,12 @@
 import {
   needsClinicalOnboarding,
   needsTeamOnboarding
-} from "/js/chunks/chunk-6MYVTW2E.js";
+} from "/js/chunks/chunk-L6WPASZ6.js";
 import {
   clinicalSessionContext,
   filterJoinedTeams,
   normalizeUsername
-} from "/js/chunks/chunk-N67FP2U7.js";
+} from "/js/chunks/chunk-RDCNFRLI.js";
 import {
   isDbMode
 } from "/js/chunks/chunk-K6QXHWFW.js";
@@ -34,12 +34,27 @@ async function openMiRotacion() {
     }
     return;
   }
-  if (needsClinicalOnboarding()) {
-    const mainMod = await import("/js/chunks/clinical-onboarding-main-COR34ZQB.js");
+  const { ensureClinicalPanelSession } = await import("/js/chunks/clinical-panel-host-CPFRLJCS.js");
+  const sessionOk = await ensureClinicalPanelSession();
+  if (!sessionOk) {
+    const mainMod = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
+    const msg = await mainMod.describeOnboardingSessionBlock();
+    if (typeof window.showToast === "function") {
+      window.showToast(msg, "error");
+    }
     if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
+    syncClinicalRotationEntryChrome();
     return;
   }
-  const { openClinicalTeamsPanel } = await import("/js/chunks/clinical-teams-WL7BKYN2.js");
+  if (needsClinicalOnboarding()) {
+    const mainMod = await import("/js/chunks/clinical-onboarding-main-3N5WAGPM.js");
+    await mainMod.showMainClinicalOnboarding();
+    mainMod.focusMainClinicalOnboarding();
+    return;
+  }
+  const { wireClinicalTeamsModalChrome } = await import("/js/chunks/teams-roster-modal-chrome-NNHL5HNT.js");
+  wireClinicalTeamsModalChrome();
+  const { openClinicalTeamsPanel } = await import("/js/chunks/teams-roster-D2YIX5XD.js");
   await openClinicalTeamsPanel();
 }
 function buildEntryStatus() {
@@ -122,4 +137,4 @@ export {
   wireClinicalRotationEntryControls,
   windowHandlers
 };
-//# sourceMappingURL=/js/chunks/chunk-ULIO2HW5.js.map
+//# sourceMappingURL=/js/chunks/chunk-TDUJSWOE.js.map

@@ -13,8 +13,8 @@ import {
   wireClinicalTeamsControls,
   wireClinicalTeamsModalChrome,
   wireClinicalTeamsPanelInteractions
-} from "/js/chunks/chunk-N67FP2U7.js";
-import "/js/chunks/chunk-4PVOF7Q7.js";
+} from "/js/chunks/chunk-RDCNFRLI.js";
+import "/js/chunks/chunk-5WTPZK2L.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -34,4 +34,4 @@ export {
   wireClinicalTeamsModalChrome,
   wireClinicalTeamsPanelInteractions
 };
-//# sourceMappingURL=/js/chunks/clinical-teams-WL7BKYN2.js.map
+//# sourceMappingURL=/js/chunks/clinical-teams-LMWEZARH.js.map

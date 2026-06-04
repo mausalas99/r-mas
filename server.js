@@ -135,6 +135,13 @@ appExpress.get('/health', (_req, res) => {
     catch (_inner) { /* response already broken; nothing else to do */ }
   }
 });
+/** Dev/desktop: avoid stale renderer modules after `npm run build:ui`. */
+appExpress.use('/js', (req, res, next) => {
+  if (/\.(mjs|js|css)(\?|$)/i.test(req.path || '')) {
+    res.setHeader('Cache-Control', 'no-store, must-revalidate');
+  }
+  next();
+});
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');

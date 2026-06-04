@@ -4,7 +4,7 @@ import {
   onHelpSearchInput,
   onHelpSearchKeydown,
   openQuickHelp
-} from "/js/chunks/chunk-MXGFOYGB.js";
+} from "/js/chunks/chunk-N4NHLSII.js";
 import {
   DEMO_PATIENT_ID,
   GUIDED_TOUR_LS_KEY,
@@ -66,12 +66,12 @@ import {
   tourBridge,
   tourOnBulkPreviewPatientSaved,
   tourState
-} from "/js/chunks/chunk-K4FEKM64.js";
-import "/js/chunks/chunk-ULIO2HW5.js";
-import "/js/chunks/chunk-6MYVTW2E.js";
-import "/js/chunks/chunk-R7IB2ESW.js";
-import "/js/chunks/chunk-N67FP2U7.js";
-import "/js/chunks/chunk-4PVOF7Q7.js";
+} from "/js/chunks/chunk-H6BPGXP3.js";
+import "/js/chunks/chunk-TDUJSWOE.js";
+import "/js/chunks/chunk-L6WPASZ6.js";
+import "/js/chunks/chunk-U56LXR3C.js";
+import "/js/chunks/chunk-RDCNFRLI.js";
+import "/js/chunks/chunk-5WTPZK2L.js";
 import "/js/chunks/chunk-UXASVKZ4.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
@@ -366,4 +366,4 @@ export {
   tourAfterBulkLabParse,
   tourOnBulkPreviewPatientSaved
 };
-//# sourceMappingURL=/js/chunks/settings-help-IVL7T2N6.js.map
+//# sourceMappingURL=/js/chunks/settings-help-73PQMX5L.js.map

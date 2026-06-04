@@ -8,7 +8,6 @@ import {
   renderOnboardingPanelInto,
 } from './clinical-onboarding.mjs';
 import { prefillRegistrationFromUrlParams } from './clinical-registration.mjs';
-import { syncClinicalRotationEntryChrome } from './clinical-rotation-entry.mjs';
 
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
@@ -42,7 +41,7 @@ export function hideMainClinicalOnboarding() {
   document.documentElement.classList.remove(CLINICAL_ONBOARDING_ACTIVE_CLASS);
   const host = getClinicalOnboardingMainHost();
   if (host) host.remove();
-  syncClinicalRotationEntryChrome();
+  void import('./clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
 }
 
 /** User-facing copy when onboarding cannot load the clinical session. */
@@ -117,7 +116,8 @@ export async function showMainClinicalOnboarding() {
   try {
     await renderOnboardingPanelInto(card || host);
     prefillRegistrationFromUrlParams();
-    syncClinicalRotationEntryChrome();
+    const rot = await import('./clinical-rotation-entry.mjs');
+    rot.syncClinicalRotationEntryChrome();
   } catch (err) {
     host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : 'Error al cargar.')}</p></div>`;
   }
