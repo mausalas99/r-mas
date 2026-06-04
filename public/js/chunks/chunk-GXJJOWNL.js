@@ -1,7 +1,7 @@
 import {
   syncClinicalContextBarVisibility,
   syncClinicalRotationEntryChrome
-} from "/js/chunks/chunk-N64CSTHX.js";
+} from "/js/chunks/chunk-GH7TKERR.js";
 import {
   ahf_conditions_default,
   app_conditions_default,
@@ -9,7 +9,7 @@ import {
   markHistoriaPendingLanSync,
   migrateLegacyHistoriaData,
   schedulePendingHistoriaClinicaLanSync
-} from "/js/chunks/chunk-BXP2EX43.js";
+} from "/js/chunks/chunk-SGKGWZPE.js";
 import {
   DEMO_GARCIA_LAB_REPORT,
   DEMO_SOME_LAB_REPORT,
@@ -137,10 +137,10 @@ import {
   trendCatalogSeriesKey,
   tryRecoverPatientsFromPitchSandboxIfNeeded,
   updateCustomProtocol
-} from "/js/chunks/chunk-Q2FBCRTM.js";
+} from "/js/chunks/chunk-IXTNHR3P.js";
 import {
   syncDbSecuritySectionUi
-} from "/js/chunks/chunk-K7IRW6AZ.js";
+} from "/js/chunks/chunk-6MNK2ZOB.js";
 import {
   ALBUMIN_MAX_GRAMS,
   BH_PANEL_FAMILIES,
@@ -6346,16 +6346,35 @@ var RELEASE_NOTES_663 = [
     body: "Instala <strong>6.6.3 en todas</strong> las Macs y PCs del turno el mismo d\xEDa. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala \u21C4."
   }
 ];
-var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_663;
+var RELEASE_NOTES_665 = [
+  {
+    title: "Un anfitri\xF3n por turno",
+    body: "En la misma Wi\u2011Fi, R+ elige un solo servidor por <strong>rango</strong> (R4/admin) y antig\xFCedad. Si dos Macs eran anfitri\xF3n, la de menor rango puede <strong>combinar</strong> datos y clientes con el ganador."
+  },
+  {
+    title: "Plug and play + enlace",
+    body: "<strong>R1\u2013R3</strong> suelen unirse solos al R4 sin pegar nada. En \u21C4: <strong>Copiar enlace de invitaci\xF3n</strong> para iPad u otra PC, o <strong>Unirme con enlace</strong> en escritorio si el barrido no alcanz\xF3."
+  },
+  {
+    title: "Sin p\xE9rdida al ceder",
+    body: "Al combinar servidores, primero sube el bundle al anfitri\xF3n ganador; solo despu\xE9s redirige al equipo. Si falla la subida, sigues como servidor en esta Mac."
+  },
+  {
+    title: "Actualiza todo el turno",
+    body: "Instala <strong>6.6.5 en todas</strong> las Macs y PCs el mismo d\xEDa. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala \u21C4."
+  }
+];
+var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_665;
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.6.5": RELEASE_NOTES_665,
   "6.6.4": [
     {
-      title: "TODO",
-      body: "Completar antes de publicar."
+      title: "Enlace \u21C4 para iPad",
+      body: "Copia un enlace <code>/join/req_\u2026</code> para abrir R+ en iPad en la misma red. Para guardia con sala en vivo, preferir <strong>6.6.5</strong>."
     },
     {
-      title: "TODO",
-      body: "Completar antes de publicar."
+      title: "Arranque en chunks",
+      body: "Contin\xFAa la mejora de arranque de <strong>6.6.3</strong> (menos c\xF3digo en el primer paint)."
     }
   ],
   "6.6.3": RELEASE_NOTES_663,
@@ -8031,7 +8050,7 @@ function getSettingsHelpRuntime() {
 function registerSettingsHelpRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(state2.rt, ctx);
-  import("/js/chunks/presentation-mode-N6V6QMJP.js").then(function(mod) {
+  import("/js/chunks/presentation-mode-EAGSVSDP.js").then(function(mod) {
     if (typeof mod.registerPresentationRuntime === "function") {
       mod.registerPresentationRuntime(state2.rt);
     }
@@ -42599,4 +42618,4 @@ export {
   initPatientModalEnterSave,
   windowHandlers9
 };
-//# sourceMappingURL=/js/chunks/chunk-JK5ZBQ2F.js.map
+//# sourceMappingURL=/js/chunks/chunk-GXJJOWNL.js.map
