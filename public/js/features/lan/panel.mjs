@@ -30,6 +30,12 @@ import {
 } from '../../lan-surrogate-host.mjs';
 import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
 import {
+  canLocalMacBeLanHost,
+  isClinicalRankConfiguredForLan,
+  prefersLanHosting,
+  fetchLanHostRank,
+} from '../../lan-host-rank-policy.mjs';
+import {
   lanClient,
   activeLiveSyncRoomId,
 } from './runtime.mjs';
@@ -480,7 +486,7 @@ function appendLanJoinOtherMacSection(root, opts) {
 }
 
 function appendLanBackToLocalHostSection(root) {
-  if (!root || !isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  if (!root || !isLanElectronDesktop() || !isLanRemoteJoinMode() || !canLocalMacBeLanHost()) return;
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';
   row.style.marginBottom = '12px';
@@ -613,16 +619,21 @@ async function renderLanPanelOnce() {
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
 
-  await syncLanHostClinicalMetaToDisk();
-  await ensureLanElectronHostReady();
-  if (lanPanelRenderStale(gen)) return;
-
-  root.innerHTML = '';
-
   var registered = isClinicalRegistered();
   var userSala = getUserSala();
   var rank = getClinicalRank();
   var clinicalUserId = getClinicalUserUserId();
+  var rankConfigured = isClinicalRankConfiguredForLan();
+
+  if (rankConfigured) {
+    await syncLanHostClinicalMetaToDisk();
+    if (canLocalMacBeLanHost()) {
+      await ensureLanElectronHostReady();
+    }
+  }
+  if (lanPanelRenderStale(gen)) return;
+
+  root.innerHTML = '';
 
   if (!registered && !clinicalUserId) {
     var unregCard = document.createElement('div');
@@ -650,6 +661,15 @@ async function renderLanPanelOnce() {
     return;
   }
 
+  if (registered && !rankConfigured) {
+    var needRankCard = document.createElement('div');
+    needRankCard.className = 'lan-connect-card';
+    needRankCard.innerHTML =
+      '<p class="lan-connect-card-hint">Primero completa <strong>Configura tu rotación</strong> (rango y sala). Después R+ buscará al anfitrión del turno en la Wi\u2011Fi.</p>';
+    root.appendChild(needRankCard);
+    return;
+  }
+
   var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
 
   var hubStatus = lanHubStatusCopy();
@@ -658,6 +678,7 @@ async function renderLanPanelOnce() {
     statusLine: hubStatus.line,
     statusHint: hubStatus.hint,
     isElectronDesktop: isLanElectronDesktop(),
+    showBecomeHost: canLocalMacBeLanHost(),
     onBecomeHost: function () {
       void promoteThisMacToLanHost();
     },
@@ -1230,6 +1251,20 @@ export function resolveAutoJoinRoomId(explicitRoomId) {
 
 export function lanHubStatusCopy() {
   if (!lanClient.connected) {
+    if (!isClinicalRankConfiguredForLan()) {
+      return {
+        connected: false,
+        line: 'Configura tu rotación para usar la red del turno',
+        hint: 'Abre «Configura tu rotación» y confirma rango y sala; después buscaremos al anfitrión en la Wi\u2011Fi.',
+      };
+    }
+    if (!canLocalMacBeLanHost()) {
+      return {
+        connected: false,
+        line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
+        hint: 'R1\u2013R3 no pueden ser servidor. Pide el enlace al R4 (\u21C4) o pégalo abajo si no te detecta.',
+      };
+    }
     return {
       connected: false,
       line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
@@ -1290,6 +1325,7 @@ export function stopLanAutoDiscovery() {
 async function scanLanHosts() {
   if (!isLanElectronDesktop()) return;
   if (isLanRemoteJoinMode()) return;
+  if (!isClinicalRankConfiguredForLan()) return;
 
   var teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return;
@@ -1329,13 +1365,18 @@ async function scanLanHosts() {
       _lastSubnetLanScanAt = now;
       var ownUrl = lanHostUrl() || (await resolveLanShareBaseUrl());
       var scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
-      if (scanned.length && !wsPeers.length && !sessionStorage.getItem(LAN_SPLIT_BRAIN_HINT_KEY)) {
+      var wardHosts = [];
+      for (var hi = 0; hi < scanned.length; hi += 1) {
+        var peerMeta = await fetchLanHostRank(scanned[hi], teamCode);
+        if (peerMeta && prefersLanHosting(peerMeta)) wardHosts.push(scanned[hi]);
+      }
+      if (wardHosts.length && !wsPeers.length && !sessionStorage.getItem(LAN_SPLIT_BRAIN_HINT_KEY)) {
         try {
           sessionStorage.setItem(LAN_SPLIT_BRAIN_HINT_KEY, '1');
         } catch (_ss) {}
         runtime().showToast(
           'Otra R+ en la red (' +
-            scanned[0] +
+            wardHosts[0] +
             '). Para ver el directorio juntos, una Mac debe ser anfitri\u00f3n.',
           'warning'
         );

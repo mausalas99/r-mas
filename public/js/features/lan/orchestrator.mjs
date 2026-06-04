@@ -70,6 +70,10 @@ import {
   saveState,
 } from "../../app-state.mjs";
 import {
+  canLocalMacBeLanHost,
+  isClinicalRankConfiguredForLan,
+} from '../../lan-host-rank-policy.mjs';
+import {
   isLanSessionConfiguredForRest,
   lanFetchAuthed,
   initLanClientFromStorage,
@@ -134,14 +138,17 @@ let _lanLastPingStatus = 0;
 function scheduleTierALanServerWarm() {
   if (!isLanElectronDesktop()) return;
   if (typeof window === 'undefined' || !window.electronAPI?.ensureLanServerReady) return;
+  if (!isClinicalRankConfiguredForLan()) return;
   var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : '';
-  if (uiRole === 'host' || uiRole === 'client') {
+  if (uiRole === 'host' && canLocalMacBeLanHost()) {
     void window.electronAPI.ensureLanServerReady();
     return;
   }
-  if (typeof storage.getLanConfig === 'function' && storage.getLanConfig()) {
-    void window.electronAPI.ensureLanServerReady();
-    return;
+  if (uiRole === 'client') {
+    if (typeof storage.getLanConfig === 'function' && storage.getLanConfig()) {
+      void window.electronAPI.ensureLanServerReady();
+      return;
+    }
   }
   if (getSurrogateHostState()) {
     void window.electronAPI.ensureLanServerReady();

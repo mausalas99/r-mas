@@ -3,11 +3,11 @@ import {
   getActiveLiveSyncRoomId,
   isLanSessionConfiguredForRest,
   lanPushHistoriaClinica
-} from "/js/chunks/chunk-IXTNHR3P.js";
+} from "/js/chunks/chunk-3LULIQ2D.js";
 import {
   patients,
   saveState
-} from "/js/chunks/chunk-UXASVKZ4.js";
+} from "/js/chunks/chunk-6QPJP2WH.js";
 
 // lib/historia-clinica/migrate-legacy.mjs
 function migrateLegacyHistoriaData(legacy) {
@@ -266,4 +266,4 @@ export {
   scheduleFlushAllPendingHistoriaClinicaLanSync,
   applyServerHistoriaClinicaToPatient
 };
-//# sourceMappingURL=/js/chunks/chunk-SGKGWZPE.js.map
+//# sourceMappingURL=/js/chunks/chunk-7SO2ZZYJ.js.map

@@ -32,9 +32,9 @@ import {
   touchPatientLanUpdatedAt,
   windowHandlers3 as windowHandlers,
   wireLanSyncBridges
-} from "/js/chunks/chunk-IXTNHR3P.js";
-import "/js/chunks/chunk-6MNK2ZOB.js";
-import "/js/chunks/chunk-UXASVKZ4.js";
+} from "/js/chunks/chunk-3LULIQ2D.js";
+import "/js/chunks/chunk-UKKADGBC.js";
+import "/js/chunks/chunk-6QPJP2WH.js";
 import "/js/chunks/chunk-K6QXHWFW.js";
 import "/js/chunks/chunk-ZYO74J2K.js";
 export {
@@ -72,4 +72,4 @@ export {
   windowHandlers,
   wireLanSyncBridges
 };
-//# sourceMappingURL=/js/chunks/orchestrator-MEXPDMB6.js.map
+//# sourceMappingURL=/js/chunks/lan-sync-7GBEFNPA.js.map

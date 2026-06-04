@@ -10,6 +10,7 @@
  *   statusLine?: string,
  *   statusHint?: string,
  *   onBecomeHost?: () => void,
+ *   showBecomeHost?: boolean,
  * }} opts
  */
 export function appendLanHubStatusCard(root, opts) {
@@ -36,7 +37,7 @@ export function appendLanHubStatusCard(root, opts) {
     hintEl.textContent = hint;
     statusCard.appendChild(hintEl);
   }
-  if (!connected && opts.isElectronDesktop) {
+  if (!connected && opts.isElectronDesktop && opts.showBecomeHost !== false) {
     const becomeHostBtn = document.createElement('button');
     becomeHostBtn.type = 'button';
     becomeHostBtn.className = 'btn-lan-primary';

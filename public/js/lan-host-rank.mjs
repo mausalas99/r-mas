@@ -1,8 +1,27 @@
 /**
  * LAN anfitrión: prioridad R4 / admin de programa; rangos menores buscan primero.
  */
+import {
+  needsClinicalLanProfileGate,
+  readRpcSettings,
+} from './clinical-settings.mjs';
 
 const RANK_PRIORITY = { R1: 1, R2: 2, R3: 3, R4: 4, Admin: 5 };
+
+/** User completed «Configura tu rotación» with an explicit rango (required before LAN election). */
+export function isClinicalRankConfiguredForLan(settings = readRpcSettings()) {
+  const rank = String(settings?.clinicalRank || '').trim();
+  if (!rank) return false;
+  if (needsClinicalLanProfileGate(settings)) return false;
+  return true;
+}
+
+/** R4/admin with configured rango — may run plug-and-play host on this Mac. */
+export function canLocalMacBeLanHost(meta) {
+  if (!isClinicalRankConfiguredForLan()) return false;
+  const m = meta || { rank: String(readRpcSettings()?.clinicalRank || '').trim() };
+  return prefersLanHosting(m);
+}
 
 /** @param {{ rank?: string, isProgramAdmin?: boolean }} meta */
 export function lanHostPriority(meta) {
@@ -14,7 +33,11 @@ export function lanHostPriority(meta) {
 
 /** R4 o administrador de programa — esta Mac puede ser servidor del turno. */
 export function prefersLanHosting(meta) {
-  return lanHostPriority(meta) >= RANK_PRIORITY.R4;
+  if (!meta) return false;
+  if (meta.isProgramAdmin) return true;
+  const rank = String(meta.rank || '').trim();
+  if (!rank) return false;
+  return (RANK_PRIORITY[rank] || 0) >= RANK_PRIORITY.R4;
 }
 
 /** @param {{ rank?: string, isProgramAdmin?: boolean }} peer */

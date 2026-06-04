@@ -11,10 +11,13 @@ import {
 import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
 import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
 import {
+  canLocalMacBeLanHost,
   evaluatePeerHostAction,
   fetchLanHostRank,
   getLocalLanHostMeta,
+  isClinicalRankConfiguredForLan,
   pickPreferredLanPeerHost,
+  prefersLanHosting,
   resolveHostElection,
   syncLanHostClinicalMetaToDisk,
 } from '../../lan-host-rank-policy.mjs';
@@ -345,20 +348,33 @@ export async function resolveLanHostUrlAuto() {
 /** Corrige rol «cliente» en escritorio sin URL guardada (UI antigua con pestañas). */
 function migrateLanElectronStaleClientRole() {
   if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  if (!canLocalMacBeLanHost()) return;
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (cfg && String(cfg.hostUrl || '').trim()) return;
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
 }
 
 /** Escritorio: detecta IP, alinea código y deja lista la URL del servidor embebido. */
+function demoteIneligibleLanHostUiRole() {
+  if (!isLanElectronDesktop() || !isClinicalRankConfiguredForLan()) return;
+  if (canLocalMacBeLanHost()) return;
+  if (typeof storage.getLanUiRole !== 'function' || storage.getLanUiRole() !== 'host') return;
+  if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
+}
+
 export async function ensureLanElectronHostReady(opts) {
   opts = opts || {};
+  demoteIneligibleLanHostUiRole();
   migrateLanElectronStaleClientRole();
   if (!isLanElectronDesktop()) return false;
+  if (!opts.forceLocal && !canLocalMacBeLanHost()) return false;
+  if (opts.forceLocal && !canLocalMacBeLanHost()) return false;
   if (opts.forceLocal) {
     if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
   } else if (isLanRemoteJoinMode()) {
     return false;
+  } else if (typeof storage.saveLanUiRole === 'function') {
+    storage.saveLanUiRole('host');
   }
   await syncLanSavedTeamCodeWithEffectiveHostCode();
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
@@ -453,6 +469,7 @@ export async function reactToDiscoveredLanHost(peerUrl, teamCode, opts) {
   const url = normalizeLanHostBase(peerUrl);
   const code = String(teamCode || '').trim();
   if (!url || !code) return false;
+  if (!isClinicalRankConfiguredForLan()) return false;
   if (getPinnedHostUrl()) return false;
 
   const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
@@ -505,11 +522,30 @@ export async function promoteThisMacToLanHost(opts) {
     runtime().showToast('Solo disponible en la app de escritorio.', 'info');
     return false;
   }
+  if (!isClinicalRankConfiguredForLan()) {
+    runtime().showToast(
+      'Completa «Configura tu rotación» (rango y sala) antes de usar la red del turno.',
+      'info'
+    );
+    return false;
+  }
+  if (!canLocalMacBeLanHost()) {
+    runtime().showToast(
+      'Solo R4 o administrador de programa pueden ser anfitrión del turno. Busca al anfitrión en la red.',
+      'info'
+    );
+    return false;
+  }
   if (!opts.skipOtherHostCheck) {
     const teamCode = getLanTeamCodeFromConfig();
     const ownUrl = (await resolveLanShareBaseUrl()) || '';
     if (teamCode && ownUrl) {
-      const peers = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+      const scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+      const peers = [];
+      for (const url of scanned) {
+        const peerMeta = await fetchLanHostRank(url, teamCode);
+        if (peerMeta && prefersLanHosting(peerMeta)) peers.push(url);
+      }
       if (peers.length) {
         const peer = peers[0];
         const msg =
@@ -548,6 +584,7 @@ export { syncLanHostClinicalMetaToDisk } from '../../lan-host-rank-policy.mjs';
 export async function tryAutoJoinPreferredLanHost(opts) {
   opts = opts || {};
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  if (!isClinicalRankConfiguredForLan()) return false;
   const teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return false;
 
@@ -625,10 +662,14 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
 
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  demoteIneligibleLanHostUiRole();
+  if (!isClinicalRankConfiguredForLan()) return;
   await syncLanHostClinicalMetaToDisk();
   const joined = await tryAutoJoinPreferredLanHost({ boot: true });
   if (joined) return;
-  await ensureLanElectronHostReady();
+  if (canLocalMacBeLanHost()) {
+    await ensureLanElectronHostReady();
+  }
 }
 
 export async function resolveLanTeamCodeForShare() {

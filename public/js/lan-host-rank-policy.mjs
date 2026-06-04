@@ -1,8 +1,16 @@
 /**
  * Renderer policy helpers: local meta + peer pick (uses lan-host-rank.mjs).
  */
-import { clinicalSessionContext } from './clinical-access-runtime.mjs';
-import { pickPreferredLanPeerHost as pickPeer, prefersLanHosting } from './lan-host-rank.mjs';
+import {
+  needsClinicalLanProfileGate,
+  readRpcSettings,
+} from './clinical-settings.mjs';
+import {
+  pickPreferredLanPeerHost as pickPeer,
+  prefersLanHosting,
+  isClinicalRankConfiguredForLan,
+  canLocalMacBeLanHost,
+} from './lan-host-rank.mjs';
 
 export {
   prefersLanHosting,
@@ -10,26 +18,29 @@ export {
   shouldAutoJoinPeerAsClient,
   evaluatePeerHostAction,
   resolveHostElection,
+  isClinicalRankConfiguredForLan,
+  canLocalMacBeLanHost,
 } from './lan-host-rank.mjs';
 
-/** @returns {{ rank: string, isProgramAdmin: boolean }} */
+/** @returns {{ rank: string, isProgramAdmin: boolean, rankConfigured: boolean }} */
 export function getLocalLanHostMeta() {
   try {
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    const user =
-      typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
-    const rank = String(settings.clinicalRank || user?.rank || 'R1').trim() || 'R1';
+    const settings = readRpcSettings();
+    const rankConfigured = isClinicalRankConfiguredForLan(settings);
+    if (!rankConfigured) {
+      return { rank: '', isProgramAdmin: false, rankConfigured: false };
+    }
+    const rank = String(settings.clinicalRank || '').trim() || 'R1';
     const isProgramAdmin =
-      user?.is_program_admin === 1 ||
-      user?.is_program_admin === true ||
-      settings.clinicalIsProgramAdmin === true;
-    return { rank, isProgramAdmin: !!isProgramAdmin };
+      settings.clinicalProgramAdmin === true || settings.clinicalIsProgramAdmin === true;
+    return { rank, isProgramAdmin: !!isProgramAdmin, rankConfigured: true };
   } catch (_e) {
-    return { rank: 'R1', isProgramAdmin: false };
+    return { rank: '', isProgramAdmin: false, rankConfigured: false };
   }
 }
 
 export async function syncLanHostClinicalMetaToDisk() {
+  if (!isClinicalRankConfiguredForLan()) return false;
   if (
     typeof window === 'undefined' ||
     !window.electronAPI ||
@@ -51,5 +62,6 @@ export async function syncLanHostClinicalMetaToDisk() {
  * @param {string} teamCode
  */
 export async function pickPreferredLanPeerHost(peerUrls, teamCode, selfUrl = '') {
+  if (!isClinicalRankConfiguredForLan()) return null;
   return pickPeer(peerUrls, teamCode, getLocalLanHostMeta(), selfUrl);
 }

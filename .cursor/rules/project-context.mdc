@@ -111,6 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-04** `lan-single-host-r1`: R1–R3 cannot be turn host — rank gate before discovery; Electron LAN UI role defaults client; `canLocalMacBeLanHost` / `isClinicalRankConfiguredForLan`; `lan-host-rank-policy.mjs`, `transport.mjs`, `panel.mjs`, `storage.js`.
 - **2026-06-04** `lan-single-host-consolidation`: `startedAt` disk meta + `GET /host-rank`; `resolveHostElection` + `lan-host-consolidation.mjs` (push-before-handoff); subnet discovery merge; transport/panel election scan; `docs/superpowers/plans/2026-06-04-lan-single-host-consolidation.md`.
 - **2026-06-04** `lan-directorio-sync`: fix users missing while team membership syncs — export teammates by membership, stub→@usuario upgrade, tombstone resurrection, handle-collision merge; `clinicalOpsTrace` in ⇄ diagnostics; `lib/db/clinical-ops-sync.mjs`, `lan-sync-diagnostics.mjs`.
 - **2026-06-03** `cold-start-phase2`: esbuild `splitting` + chunks, lazy settings-help/platform (`lazy-feature-routes.mjs`), Chart UMD in HTML + `vendor-loader.mjs` fallback (revised from ESM-only BN-09); metrics excludes generated bundles; pack/chunk smoke tests (BN-09–12).

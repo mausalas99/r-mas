@@ -596,9 +596,6 @@ var storage = {
   getLanUiRole() {
     var v = localStorage.getItem("rpc-lan-ui-role");
     if (v === "host" || v === "client") return v;
-    if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
-      return "host";
-    }
     return "client";
   },
   saveLanUiRole(role) {
@@ -4438,4 +4435,4 @@ export {
   saveState,
   flushSaveState
 };
-//# sourceMappingURL=/js/chunks/chunk-UXASVKZ4.js.map
+//# sourceMappingURL=/js/chunks/chunk-6QPJP2WH.js.map

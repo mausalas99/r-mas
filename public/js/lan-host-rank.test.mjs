@@ -6,14 +6,55 @@ import {
   resolveHostElection,
   shouldAutoJoinPeerAsClient,
   shouldDeferToPeerHost,
+  isClinicalRankConfiguredForLan,
+  canLocalMacBeLanHost,
 } from './lan-host-rank.mjs';
+import { CLINICAL_LAN_PROFILE_GATE_VERSION } from './clinical-settings.mjs';
 
 describe('lan-host-rank', () => {
+  it('rank gate and host eligibility', () => {
+    const memory = new Map();
+    const ls = {
+      getItem(k) {
+        return memory.has(k) ? memory.get(k) : null;
+      },
+      setItem(k, v) {
+        memory.set(k, String(v));
+      },
+    };
+    const prev = global.localStorage;
+    global.localStorage = ls;
+    try {
+      assert.equal(isClinicalRankConfiguredForLan(), false);
+      ls.setItem(
+        'rpc-settings',
+        JSON.stringify({
+          clinicalRank: 'R1',
+          clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
+        })
+      );
+      assert.equal(isClinicalRankConfiguredForLan(), true);
+      assert.equal(canLocalMacBeLanHost({ rank: 'R1' }), false);
+      ls.setItem(
+        'rpc-settings',
+        JSON.stringify({
+          clinicalRank: 'R4',
+          clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
+        })
+      );
+      assert.equal(canLocalMacBeLanHost({ rank: 'R4' }), true);
+    } finally {
+      global.localStorage = prev;
+    }
+  });
+
   it('prefers R4 and program admin for hosting', () => {
     assert.equal(prefersLanHosting({ rank: 'R4', isProgramAdmin: false }), true);
     assert.equal(prefersLanHosting({ rank: 'R2', isProgramAdmin: true }), true);
     assert.equal(prefersLanHosting({ rank: 'R3', isProgramAdmin: false }), false);
     assert.equal(prefersLanHosting({ rank: 'R1', isProgramAdmin: false }), false);
+    assert.equal(prefersLanHosting({ rank: '', isProgramAdmin: false }), false);
+    assert.equal(prefersLanHosting(null), false);
   });
 
   it('shouldAutoJoinPeerAsClient defers lower ranks to R4', () => {
