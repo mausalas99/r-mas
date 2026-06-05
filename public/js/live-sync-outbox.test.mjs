@@ -53,3 +53,14 @@ test('enqueue clinical_ops kind round-trip', async () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].kind, 'clinical_ops');
 });
+
+test('enqueue delta kind round-trip', async () => {
+  mockLocalStorage();
+  await enqueueOutbox('room1', {
+    kind: 'delta',
+    payload: { type: 'livesync:delta', delta: { txId: 'tx_1' } },
+  });
+  const items = await drainOutbox('room1');
+  assert.equal(items[0].kind, 'delta');
+  assert.equal(items[0].payload.delta.txId, 'tx_1');
+});

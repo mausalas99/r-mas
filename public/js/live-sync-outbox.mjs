@@ -31,11 +31,13 @@ function enqueueLocal(roomId, item) {
   const all = readAll();
   const list = Array.isArray(all[rid]) ? all[rid].slice() : [];
   const kind =
-    item.kind === 'patch'
-      ? 'patch'
-      : item.kind === 'clinical_ops'
-        ? 'clinical_ops'
-        : 'bundle';
+    item.kind === 'delta'
+      ? 'delta'
+      : item.kind === 'patch'
+        ? 'patch'
+        : item.kind === 'clinical_ops'
+          ? 'clinical_ops'
+          : 'bundle';
   list.push({
     kind,
     payload: item.payload,
@@ -74,7 +76,7 @@ function logIpcFallbackOnce() {
 
 /**
  * @param {string} roomId
- * @param {{ kind: 'bundle'|'patch'|'clinical_ops', payload: object, enqueuedAt?: string }} item
+ * @param {{ kind: 'bundle'|'patch'|'clinical_ops'|'delta', payload: object, enqueuedAt?: string }} item
  */
 export async function enqueueOutbox(roomId, item) {
   const api = getApi();
