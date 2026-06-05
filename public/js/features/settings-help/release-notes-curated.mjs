@@ -145,10 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_669 = [
+  {
+    title: 'Windows — arranque corregido',
+    body:
+      'Corrige <strong>R+ no pudo iniciar</strong> por <em>not a valid Win32 application</em> en <code>better_sqlite3.node</code>. Reinstala desde Releases si tenías <strong>6.6.7</strong> o <strong>6.6.8</strong> en PC.',
+  },
+  {
+    title: 'Empaquetado SQLCipher',
+    body:
+      'El instalador Windows incluye el binario nativo <strong>win32-x64</strong> correcto (no el Mach-O de macOS).',
+  },
+  {
+    title: 'Incluye 6.6.8',
+    body:
+      'LiveSync Wi‑Fi en el header, directorio LAN y el resto de la línea <strong>6.6.8</strong>.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_668;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_669;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.9': RELEASE_NOTES_669,
   '6.6.8': RELEASE_NOTES_668,
   '6.6.7': RELEASE_NOTES_667,
   '6.6.6': RELEASE_NOTES_666,

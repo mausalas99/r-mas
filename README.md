@@ -27,10 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.8](https://github.com/mausalas99/r-mas/releases/tag/v6.6.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.9](https://github.com/mausalas99/r-mas/releases/tag/v6.6.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.6.9 (Windows — arranque SQLCipher)
+
+- **Windows** — Corrige *not a valid Win32 application* en SQLCipher al abrir R+ (6.6.7/6.6.8 empaquetados desde macOS). Desinstala e instala **6.6.9**.
+- **Empaquetado** — `fetch-sqlite-win.mjs` en `prebuild:win`; test PE antes de publicar el `.exe`.
+- **Sobre 6.6.8** — LiveSync Wi‑Fi, directorio LAN, iPad/móvil y onboarding local.
+
+Notas: `docs/RELEASE_NOTES_6.6.9.txt`.
 ## R+ 6.6.8 (LiveSync — icono Wi‑Fi y estados de conexión)
 
 - **Header** — El botón **⇄** pasa a un icono **Wi‑Fi** cuadrado (como Perfil/Ajustes); sin etiqueta de texto.
