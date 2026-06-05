@@ -142,7 +142,7 @@ test('patientCoveredByGuardia returns true for matching patient and user', () =>
   assert.equal(patientCoveredByGuardia('p1', 'u2', guardias), false);
 });
 
-test('normal mode: R1 sees patient in same sala', () => {
+test('normal mode: R1 without team sees patient in same sala', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
     { id: 'p1', service: 'Sala', sub_area: 'Sala B', sala: 'Sala 1' },
@@ -167,7 +167,93 @@ test('normal mode: R1 sees patient in same sala', () => {
   assert.match(scope.reasoning, /sala/i);
 });
 
-test('normal mode: R2 sees patient in same sala without team or handoff', () => {
+test('normal mode: R1 on team denies other team patient in same sala', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala A', sala: 'Sala 1' },
+    null,
+    {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+        {
+          team_id: 't-other',
+          service: 'Sala',
+          sub_area_fraction: 'A',
+          sala: 'Sala 1',
+          members: [{ user_id: 'other' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, false);
+});
+
+test('normal mode: R1 on team sees assigned patient', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala B', sala: 'Sala 1' },
+    null,
+    {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-mine', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.match(scope.reasoning, /equipo/i);
+});
+
+test('entrega phase: R1 sees other team patient in same sala', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala A', sala: 'Sala 1' },
+    null,
+    {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      entregaPhaseActive: true,
+      now: '2026-06-02T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, false);
+  assert.match(scope.reasoning, /entrega/i);
+});
+
+test('normal mode: R2 without team denies same-sala patient', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r2', rank: 'R2', sala: 'Sala 2' },
     { id: 'p1', service: 'Sala', sala: 'Sala 2' },
@@ -179,8 +265,7 @@ test('normal mode: R2 sees patient in same sala without team or handoff', () => 
       now: '2026-06-01T12:00:00Z',
     }
   );
-  assert.equal(scope.readable, true);
-  assert.match(scope.reasoning, /sala/i);
+  assert.equal(scope.readable, false);
 });
 
 test('stampPatientClinicalSala uses creator profile sala', () => {

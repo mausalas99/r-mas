@@ -486,6 +486,20 @@ export function patientInUserSala(patient, userSala) {
   return ps !== '' && ps === String(userSala || '').trim();
 }
 
+export const ENTREGA_PHASE_LS_KEY = 'guardia.entregaPhase';
+
+/** @param {Storage|undefined} storage */
+export function readEntregaPhaseActive(storage = globalThis.localStorage) {
+  try {
+    const raw = storage?.getItem(ENTREGA_PHASE_LS_KEY);
+    if (!raw) return false;
+    const o = JSON.parse(raw);
+    return !!(o && o.active);
+  } catch (_e) {
+    return false;
+  }
+}
+
 /**
  * Tag a new chart row with the creator's sala so LAN peers can see it without admin.
  * @param {Record<string, unknown>} patient
@@ -669,6 +683,7 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
  *   assignments?: object[],
  *   salaGuardiaToday?: object[],
  *   guardiaMode?: boolean,
+ *   entregaPhaseActive?: boolean,
  *   now?: string|Date,
  * }|null|undefined} [context]
  */
@@ -773,11 +788,38 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return allow('R4: acceso global');
   }
 
-  if (patientInUserSala(targetPatient, userSala)) {
-    return allow('Censo compartido de sala');
+  const entregaPhaseActive = !!ctx.entregaPhaseActive;
+
+  if (entregaPhaseActive && rank === 'R1') {
+    if (patientInUserSala(targetPatient, userSala)) {
+      return allow('Fase entrega R1: censo de sala', true, false);
+    }
+    return deny('Fase entrega R1: fuera de mi sala');
   }
 
   if (rank === 'R1') {
+    if (strictTeamFilter) {
+      if (
+        patientInJoinedTeamScope(
+          targetPatient,
+          joinedTeams,
+          assignments,
+          joinedTeamIds,
+          userId,
+          now,
+          { strictTeamFilter: true }
+        )
+      ) {
+        return allow('R1: paciente de mi equipo');
+      }
+      if (patientCoveredByGuardia(patientId, userId, guardias)) {
+        return allow('R1: paciente entregado');
+      }
+      return deny('R1: fuera de mi equipo');
+    }
+    if (patientInUserSala(targetPatient, userSala)) {
+      return allow('R1: paciente en mi sala');
+    }
     return deny('R1: fuera de mi sala');
   }
 

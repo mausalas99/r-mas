@@ -5,7 +5,7 @@ import {
   needsClinicalLanProfileGate,
   readRpcSettings,
 } from './clinical-settings.mjs';
-import { clinicalSessionContext } from './clinical-access-runtime.mjs';
+import { clinicalSessionContext } from './clinical-session-context.mjs';
 import { hasProgramAdminPrivileges } from './clinical-privileges.mjs';
 import {
   canRankHostAtEscalationTier,
@@ -20,7 +20,7 @@ export function resolveLocalProgramAdmin(settings = readRpcSettings()) {
   if (settings.clinicalProgramAdmin === true || settings.clinicalIsProgramAdmin === true) {
     return true;
   }
-  return hasProgramAdminPrivileges(clinicalSessionContext.user);
+  return hasProgramAdminPrivileges(clinicalSessionContext?.user);
 }
 
 /** Rank + admin flag for LAN election (no startedAt). */

@@ -43,10 +43,10 @@ import { filterTodosRespectingDismissals } from "../../manejo-todo-dismiss.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
 import {
   guardAndSignLiveSyncMutation,
-  clinicalSessionContext,
   migrateLocalPatientsClinicalSala,
   getClinicalScopeContextForEvaluate,
 } from "../../clinical-access-runtime.mjs";
+import { clinicalSessionContext } from "../../clinical-session-context.mjs";
 import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import {
@@ -1488,7 +1488,7 @@ export function ensureLanSyncRuntimeStarted() {
 }
 
 if (typeof document !== 'undefined') {
-  ensureLanSyncRuntimeStarted();
+  queueMicrotask(() => ensureLanSyncRuntimeStarted());
 }
 
 export function registerLanSaveHooks(deps) {

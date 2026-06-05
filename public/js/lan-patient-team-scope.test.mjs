@@ -25,6 +25,35 @@ describe('lan-patient-team-scope', () => {
     );
   });
 
+  it('R1 syncs only team-assigned patients', () => {
+    const user = { user_id: 'r1', rank: 'R1', sala: 'Sala 1' };
+    const ctx = {
+      teams: [
+        {
+          team_id: 't-mine',
+          service: 'Sala',
+          sub_area_fraction: 'B',
+          sala: 'Sala 1',
+          members: [{ user_id: 'r1' }],
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-mine', effective_at: '2026-06-01T00:00:00Z' },
+        { patient_id: 'p2', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    };
+    assert.equal(
+      isPatientInLanTeamSyncScope(user, { id: 'p1', service: 'Sala', sala: 'Sala 1' }, null, ctx),
+      true
+    );
+    assert.equal(
+      isPatientInLanTeamSyncScope(user, { id: 'p2', service: 'Sala', sala: 'Sala 1' }, null, ctx),
+      false
+    );
+  });
+
   it('R4 syncs all patients', () => {
     const user = { user_id: 'r4', rank: 'R4' };
     assert.equal(

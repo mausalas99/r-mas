@@ -154,7 +154,17 @@ var RELEASE_NOTES_703 = [
   {
     title: 'Pacientes por equipo',
     body:
-      'El sync LAN respeta alcance clínico: <strong>R4/Admin</strong> ven todo; <strong>R2/R3</strong> se acotan al equipo cuando aplica; <strong>R1</strong> queda en su sala/guardia.',
+      'Lista y sync LAN respetan alcance: <strong>R4/Admin</strong> ven todo (filtro <strong>Equipo</strong> opcional); <strong>R2/R3</strong> su equipo; <strong>R1</strong> en equipo solo sus pacientes — sala amplia en entrega o guardia.',
+  },
+  {
+    title: 'Alcance R1 corregido',
+    body:
+      'Si perteneces a un equipo, ya no ves en la barra lateral pacientes de otros equipos de la misma sala. La vista amplia vuelve al activar <strong>fase entrega</strong> o <strong>modo guardia</strong>.',
+  },
+  {
+    title: 'Arranque estable',
+    body:
+      'Corrige un fallo de arranque que podía dejar la app sin lista de pacientes ni botones al sincronizar LAN.',
   },
   {
     title: 'Asignar equipo',

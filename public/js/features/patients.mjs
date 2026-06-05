@@ -47,6 +47,10 @@ import {
 import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
+  resolveElevatedTeamFilterId,
+  resolveActiveTeamFilterId,
+  writeElevatedTeamFilterPreference,
+  isTeamIdInCensusCatalog,
 } from './clinical-census-filters-ui.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
@@ -166,7 +170,7 @@ function syncClinicalCensusFiltersBar() {
       '</select></label>' +
       '<label class="clinical-census-filter"><span>Equipo</span>' +
       '<select id="clinical-filter-team" class="profile-input">' +
-      '<option value="">Todos</option>' +
+      '<option value="">Todos los equipos</option>' +
       '</select></label>' +
       '<label class="clinical-census-filter"><span>Servicio</span>' +
       '<input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar…" autocomplete="off">' +
@@ -208,6 +212,7 @@ function syncClinicalCensusFiltersBar() {
     if (teamSel) {
       teamSel.addEventListener('change', () => {
         elevatedPatientFilters.teamId = String(teamSel.value || '');
+        writeElevatedTeamFilterPreference(elevatedPatientFilters.teamId);
         renderPatientList();
       });
     }
@@ -226,9 +231,14 @@ function syncClinicalCensusFiltersBar() {
   }
   if (teamSel) {
     const teams = clinicalSessionContext.teams || [];
-    const prev = elevatedPatientFilters.teamId;
+    let teamFilterId = resolveElevatedTeamFilterId(user, teams);
+    if (teamFilterId && !isTeamIdInCensusCatalog(teamFilterId, teams)) {
+      teamFilterId = resolveActiveTeamFilterId(user, teams);
+      writeElevatedTeamFilterPreference(teamFilterId);
+    }
+    elevatedPatientFilters.teamId = teamFilterId;
     teamSel.innerHTML =
-      '<option value="">Todos</option>' +
+      '<option value="">Todos los equipos</option>' +
       teams
         .map((t) => {
           const id = String(t.team_id || '');
@@ -236,7 +246,7 @@ function syncClinicalCensusFiltersBar() {
           return `<option value="${id}">${label}</option>`;
         })
         .join('');
-    teamSel.value = prev;
+    teamSel.value = teamFilterId;
   }
   if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
     serviceInp.value = elevatedPatientFilters.service;

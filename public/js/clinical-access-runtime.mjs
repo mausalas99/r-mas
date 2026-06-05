@@ -4,7 +4,11 @@
 import { isDbMode } from './db-storage-bridge.mjs';
 import { isGuardiaMode } from './features/chrome.mjs';
 import { patients, saveState } from './app-state.mjs';
-import { evaluateClinicalScope, migratePatientsClinicalSala } from './clinico-access.mjs';
+import {
+  evaluateClinicalScope,
+  migratePatientsClinicalSala,
+  readEntregaPhaseActive,
+} from './clinico-access.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from './features/crypto-signer.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -13,18 +17,9 @@ import {
 } from './features/session-manager.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from './clinical-settings.mjs';
 import { isLegacyMachineUsername, normalizeUsername } from './clinical-username.mjs';
+import { clinicalSessionContext } from './clinical-session-context.mjs';
 
-/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], scopeContext: object|null, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
-export const clinicalSessionContext = {
-  user: null,
-  guardias: [],
-  guardiasMap: new Map(),
-  teams: [],
-  scopeContext: null,
-  guardiaMode: false,
-  decryptedPrivateKeyPem: null,
-  lastBlockHashByPatient: new Map(),
-};
+export { clinicalSessionContext };
 
 /** @type {BackgroundVitalsMonitorLoop|null} */
 let vitalsLoop = null;
@@ -445,6 +440,14 @@ export function getClinicalScopeContextForEvaluate() {
       cycle: cached.cycle ?? null,
       assignments: Array.isArray(cached.assignments) ? cached.assignments : [],
       salaGuardiaToday: Array.isArray(cached.salaGuardiaToday) ? cached.salaGuardiaToday : [],
+      guardiaMode:
+        cached.guardiaMode != null
+          ? !!cached.guardiaMode
+          : !!clinicalSessionContext.guardiaMode,
+      entregaPhaseActive:
+        cached.entregaPhaseActive != null
+          ? !!cached.entregaPhaseActive
+          : readEntregaPhaseActive(),
       now: cached.now || new Date().toISOString(),
     };
   }
@@ -454,6 +457,8 @@ export function getClinicalScopeContextForEvaluate() {
     cycle: null,
     assignments: [],
     salaGuardiaToday: [],
+    guardiaMode: !!clinicalSessionContext.guardiaMode,
+    entregaPhaseActive: readEntregaPhaseActive(),
     now: new Date().toISOString(),
   };
 }
