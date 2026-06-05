@@ -111,7 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-05** `lan-delta-sync`: delta overlay design + renderer client helpers (pathValues, echo tracker, remote-apply guard); `lan-delta-client.mjs`, `docs/superpowers/specs/2026-06-05-lan-delta-sync-design.md`.
+- **2026-06-05** `lan-delta-sync`: renderer live apply (`livesync:delta:applied`, hello `deltaSync` capability, HTTP delta outbox flush, echo suppression); `orchestrator.mjs`, `room.mjs`, `push.mjs`, `lan-delta-client.mjs`.
 - **2026-06-05** `release-7.0.1`: PIN-first LAN roam (multi-subnet, auto reconnect, «Conectar al turno»); builds on 6.7.0 directorio/PIN; `lan-shift-pin-connect.mjs`, `clinical-rotation-entry.mjs`, `panel.mjs`.
 - **2026-06-05** `release-6.7.0`: directorio LAN visible (preserve roster on null bundle), PIN del turno + beacon discovery, connect CTA sin falso éxito, push skip traces; `bundle-merge.js`, `shift-pin-store.js`, `lan-shift-pin-connect.mjs`.
 - **2026-06-05** `lan-shift-pin`: PIN del turno reutilizable (~12 h) + beacon subnet discovery + campo en registro LAN; directorio LAN deja de cerrar selects al refrescar; `shift-pin-store.js`, `auth-router.js`, `lan-shift-pin-connect.mjs`, `teams-roster-lan.mjs`.

@@ -388,6 +388,18 @@ function pushClinicalOpsPayloadToHost(roomId, payload) {
   return putClinicalOpsSnapshotToHost(rid, snap, payload.clientId || getLanClientId());
 }
 
+async function pushDeltaToHost(roomId, envelope) {
+  const rid = String(roomId || '').trim();
+  if (!rid || !envelope) return false;
+  const body = envelope.delta || envelope;
+  const resp = await lanClient.fetch('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/delta', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return resp && (resp.ok || resp.status === 409);
+}
+
 export function pushRoomSyncBundleToHost(roomId, envelope) {
   return ensureLanSyncPushBridgeWired().then(function () {
     return pushRoomSyncBundleToHostBody(roomId, envelope);
@@ -513,6 +525,9 @@ function flushLiveSyncOutboxBody(roomId) {
       }
       if (item.kind === 'bundle') {
         return pushRoomSyncBundleToHost(rid, item.payload);
+      }
+      if (item.kind === 'delta') {
+        return pushDeltaToHost(rid, item.payload);
       }
       if (item.kind === 'patch') {
         return pushLiveSyncPatchOutbox(item.payload);

@@ -162,6 +162,11 @@ export function buildLiveSyncHelloPayload(roomId) {
     generation: prev && prev.generation != null ? prev.generation : 0,
     canHost: isLanElectronDesktop(),
     isSurrogate: isSurrogateHostActive(),
+    capabilities: {
+      deltaSync: 1,
+      deltaEntities: ['historiaClinica', 'agenda', 'todo'],
+      lastDeltaSeq: Number(prev && prev.lastDeltaSeq ? prev.lastDeltaSeq : 0),
+    },
   };
   return payload;
 }
@@ -686,6 +691,10 @@ function onLiveSyncWireMessageBody(data) {
   if (data.type === 'livesync:bundle') {
     var mergedBundle = mergeLiveSyncFullBundles([data, bridge().buildLiveSyncLocalMergeSource()]);
     bridge().applyLiveSyncMerged(mergedBundle);
+    return;
+  }
+  if (data.type === 'livesync:delta:applied') {
+    bridge().applyLiveSyncDeltaApplied(data);
     return;
   }
   if (data.type === 'livesync:applied') {

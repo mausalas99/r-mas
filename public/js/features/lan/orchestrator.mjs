@@ -42,6 +42,12 @@ import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../../manejo-todo-dismiss.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
 import {
+  applyDeltaPathValues,
+  createDeltaEchoTracker,
+  deltaLabelForPath,
+  withRemoteDeltaApply,
+} from "../../lan-delta-client.mjs";
+import {
   guardAndSignLiveSyncMutation,
   migrateLocalPatientsClinicalSala,
   getClinicalScopeContextForEvaluate,
@@ -143,6 +149,8 @@ import {
 
 let _lanLastPingAt = null;
 let _lanLastPingStatus = 0;
+
+const deltaEchoTracker = createDeltaEchoTracker(getLanClientId());
 
 function scheduleTierALanServerWarm() {
   if (!isLanElectronDesktop()) return;
@@ -1241,6 +1249,42 @@ function applyLiveSyncMerged(merged) {
   if (patientsChanged) migrateLocalPatientsClinicalSala();
 }
 
+async function applyLiveSyncDeltaApplied(msg) {
+  if (!msg || isPitchPatientIsolationActive()) return;
+  if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
+  const ownEcho = deltaEchoTracker.isOwnEcho(msg);
+  const partial = Array.isArray(msg.rejectedPaths) && msg.rejectedPaths.length > 0;
+  if (ownEcho && !partial) {
+    syncHostBundleEntityFromApplied(msg);
+    return;
+  }
+
+  await withRemoteDeltaApply(async function () {
+    if (msg.entityType === 'historiaClinica' && msg.entityId) {
+      const row = patients.find(function (p) {
+        return p && String(p.id) === String(msg.entityId);
+      });
+      if (row) {
+        if (!row.historiaClinica) row.historiaClinica = { version: 0, data: {} };
+        row.historiaClinica.data = applyDeltaPathValues(
+          Object.assign({}, row.historiaClinica.data || {}),
+          msg.pathValues || {}
+        );
+        row.historiaClinica.version = Number(msg.version || row.historiaClinica.version || 0);
+        saveState({ immediate: true });
+      }
+    }
+  });
+
+  if (partial) {
+    const labels = (msg.rejectedPaths || []).map(function (path) {
+      return deltaLabelForPath(msg.entityType, path);
+    });
+    runtime.showToast('Tu cambio en "' + labels.join(', ') + '" fue reemplazado por una edición más reciente en la sala.', 'warn');
+  }
+  syncHostBundleEntityFromApplied(msg);
+}
+
 function applyLiveSyncApplied(msg) {
   if (!msg || isPitchPatientIsolationActive()) return;
   if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
@@ -1443,6 +1487,7 @@ export function wireLanSyncBridges() {
     initLanClientFromStorage,
     applyLiveSyncMerged,
     applyLiveSyncApplied,
+    applyLiveSyncDeltaApplied,
     buildLiveSyncLocalMergeSource,
     collectPatientEntriesForLanSync,
     collectPatientIdsForLiveSync,
