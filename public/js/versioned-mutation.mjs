@@ -32,6 +32,42 @@ export function wrapLiveSyncPatch(roomId, clientId, mutation) {
   return { type: 'livesync:patch', roomId, clientId, mutation };
 }
 
+function newTxId() {
+  return 'tx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+}
+
+export function createDeltaMutationBuilder(entityType, entityId) {
+  const pathValues = {};
+  const pathMeta = {};
+  return {
+    setPath(path, value, clientTimestamp) {
+      const key = String(path || '').trim();
+      if (!key) return this;
+      pathValues[key] = value;
+      pathMeta[key] = { clientTimestamp: Number(clientTimestamp || Date.now()) };
+      return this;
+    },
+    clearPath(path, clientTimestamp) {
+      return this.setPath(path, null, clientTimestamp);
+    },
+    build(extra = {}) {
+      return {
+        entityType,
+        entityId,
+        expectedVersion: Number(extra.expectedVersion || 0),
+        pathValues: { ...pathValues },
+        pathMeta: { ...pathMeta },
+        txId: extra.txId || newTxId(),
+        ...extra,
+      };
+    },
+  };
+}
+
+export function wrapLiveSyncDelta(roomId, clientId, delta) {
+  return { type: 'livesync:delta', roomId, clientId, delta };
+}
+
 /**
  * @param {object} mutation from createMutationBuilder().build()
  * @param {{ sections?: string[], safety?: object[] }} audit
