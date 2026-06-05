@@ -42,6 +42,8 @@ const RELEASE_STAGE_PATHS = [
   'scripts/lib/electron-pack-files.js',
   'scripts/fetch-argon2-darwin-x64.mjs',
   'scripts/fetch-argon2-win.mjs',
+  'scripts/fetch-sqlite-win.mjs',
+  'scripts/fetch-sqlite-win.test.mjs',
 ];
 
 function releasePathExists(root, rel) {

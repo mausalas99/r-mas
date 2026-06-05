@@ -65,7 +65,7 @@ Si esto falla con error de carga del `.node`, ejecuta `npm run rebuild:db-native
 
 El release incluye el addon en `build.files` y lo extrae del asar en `build.asarUnpack` (misma ruta). Los binarios de `@node-rs/argon2` van en el mismo `asarUnpack` (si quedan dentro del asar, macOS/Windows muestran *failed to load native binding*).
 
-Antes de `npm run build:mac` en un Mac Apple Silicon, `prebuild:mac` descarga `argon2.darwin-x64.node` para el artefacto **x64** (`scripts/fetch-argon2-darwin-x64.mjs`). En Windows desde macOS, `prebuild:win` usa `scripts/fetch-argon2-win.mjs`.
+Antes de `npm run build:mac` en un Mac Apple Silicon, `prebuild:mac` descarga `argon2.darwin-x64.node` para el artefacto **x64** (`scripts/fetch-argon2-darwin-x64.mjs`). Al empaquetar **Windows desde macOS**, `prebuild:win` usa `scripts/fetch-argon2-win.mjs` y `scripts/fetch-sqlite-win.mjs` (prebuild `better_sqlite3.node` win32-x64 para la ABI de Electron actual). Sin el segundo script, el `.exe` incluye el binario Mach-O y Windows muestra *not a valid Win32 application*.
 
 Sincronizar patrones de empaquetado con:
 
