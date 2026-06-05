@@ -474,30 +474,41 @@ export function applyRoomSyncPhaseAfterReconcile(roomId) {
   }
 }
 
-export function syncLiveSyncStatusChrome() {
-  var el = document.getElementById('lan-livesync-status');
-  if (!el) return;
-  if (!activeLiveSyncRoomId) {
-    el.style.display = 'none';
-    el.textContent = '';
-    return;
-  }
-  el.style.display = 'block';
-  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
-  var prefix = 'Sala: ' + label + ' · ';
-  var phase = getRoomSyncPhase(activeLiveSyncRoomId);
+function liveSyncStatusChromeClass(phase) {
+  if (phase === RoomSyncPhase.live) return 'live';
+  if (phase === RoomSyncPhase.catching_up || phase === RoomSyncPhase.joining) return 'syncing';
+  if (phase === RoomSyncPhase.degraded) return 'degraded';
+  if (phase === RoomSyncPhase.configured || phase === RoomSyncPhase.offline) return 'local';
+  return 'idle';
+}
+
+function liveSyncStatusChromeDetail(roomLabel, phase) {
+  var prefix = roomLabel ? 'Sala: ' + roomLabel + ' · ' : '';
   if (phase === RoomSyncPhase.live) {
-    el.textContent =
-      prefix + 'sincronizando pacientes, equipos, labs, agenda y pendientes';
-  } else if (phase === RoomSyncPhase.catching_up) {
-    el.textContent = prefix + 'sincronizando…';
-  } else if (phase === RoomSyncPhase.joining) {
-    el.textContent = prefix + 'conectando…';
-  } else if (phase === RoomSyncPhase.degraded) {
-    el.textContent = prefix + 'reconectando…';
-  } else {
-    el.textContent = prefix + 'solo local (sin sync en vivo)';
+    return prefix + 'sincronizando pacientes, equipos, labs, agenda y pendientes';
   }
+  if (phase === RoomSyncPhase.catching_up) return prefix + 'sincronizando…';
+  if (phase === RoomSyncPhase.joining) return prefix + 'conectando…';
+  if (phase === RoomSyncPhase.degraded) return prefix + 'reconectando…';
+  if (roomLabel) return prefix + 'solo local (sin sync en vivo)';
+  return 'Conexión LAN / LiveSync';
+}
+
+export function syncLiveSyncStatusChrome() {
+  var btn = document.getElementById('btn-header-team-sync');
+  if (!btn) return;
+  var roomLabel = activeLiveSyncRoomId
+    ? activeLiveSyncRoomLabel || activeLiveSyncRoomId
+    : '';
+  var phase = activeLiveSyncRoomId
+    ? getRoomSyncPhase(activeLiveSyncRoomId)
+    : RoomSyncPhase.offline;
+  var chromeClass = liveSyncStatusChromeClass(phase);
+  var detail = liveSyncStatusChromeDetail(roomLabel, phase);
+  btn.className =
+    'btn-header-icon btn-livesync-header btn-livesync-header--' + chromeClass;
+  btn.title = detail;
+  btn.setAttribute('aria-label', detail);
 }
 
 export function stopLiveSyncReconnectLoop() {

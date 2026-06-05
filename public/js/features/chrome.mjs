@@ -64,7 +64,7 @@ const I18N_ES = {
   'settings.openTitle': 'Ajustes',
   'settings.teamSyncAria': 'Abrir conexión LAN y LiveSync (salas)',
   'settings.teamSyncTitle':
-    'Conexión LAN (⇄): crear o unirse a sala en vivo, copiar invitación. Código del servidor (avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
+    'LiveSync: crear o unirse a sala en vivo, copiar invitación. Código del servidor (avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
   'theme.toggle': 'Cambiar tema claro u oscuro',
   'theme.toggleTitle': 'Cambiar tema',
   'appTab.lab': 'Laboratorio',

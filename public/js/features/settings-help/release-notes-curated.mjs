@@ -28,6 +28,34 @@ var RELEASE_NOTES_663 = [
   },
 ];
 
+var RELEASE_NOTES_668 = [
+  {
+    title: 'LiveSync en el header',
+    body:
+      'El botón <strong>⇄</strong> es ahora un icono <strong>Wi‑Fi</strong> del mismo tamaño que Perfil y Ajustes. Un toque abre el panel de conexión LAN.',
+  },
+  {
+    title: 'Estado a simple vista',
+    body:
+      '<strong>Verde</strong> = sync en vivo; <strong>ámbar</strong> = conectando o sincronizando; <strong>naranja</strong> = reconectando; <strong>acento</strong> = en sala sin sync en vivo; <strong>gris</strong> = sin sala.',
+  },
+  {
+    title: 'Sin texto en el botón',
+    body:
+      'El detalle (sala, fase) está en el <strong>tooltip</strong> y en <strong>aria-label</strong> para lectores de pantalla.',
+  },
+  {
+    title: 'Sobre 6.6.7',
+    body:
+      'Incluye <strong>iPad/móvil</strong>, <strong>onboarding local</strong> y <strong>censo</strong> alineado de la versión anterior.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.6.8 en todas</strong> las Macs, PCs e iPads el mismo día. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala LiveSync.',
+  },
+];
+
 var RELEASE_NOTES_667 = [
   {
     title: 'iPad y enlace móvil',
@@ -113,9 +141,10 @@ var RELEASE_NOTES_665 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_667;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_668;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.8': RELEASE_NOTES_668,
   '6.6.7': RELEASE_NOTES_667,
   '6.6.6': RELEASE_NOTES_666,
   '6.6.5': RELEASE_NOTES_665,

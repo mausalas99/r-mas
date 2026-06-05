@@ -52,6 +52,83 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
 .btn-header-icon:hover { background: var(--surface); color: var(--text); }
+/* LiveSync header icon (misma caja cuadrada que Perfil / Ajustes) */
+.btn-header-icon.btn-livesync-header[aria-expanded="true"] {
+  background: color-mix(in oklab, var(--action) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  color: var(--text);
+}
+.livesync-wifi-bar,
+.livesync-wifi-dot {
+  opacity: 0.18;
+  transition: opacity 0.2s var(--ease-out, ease-out);
+}
+.btn-livesync-header--idle .livesync-wifi-dot,
+.btn-livesync-header--idle .livesync-wifi-bar--1 {
+  opacity: 0.42;
+}
+.btn-livesync-header--local .livesync-wifi-dot,
+.btn-livesync-header--local .livesync-wifi-bar--1,
+.btn-livesync-header--local .livesync-wifi-bar--2 {
+  opacity: 0.9;
+}
+.btn-livesync-header--local .livesync-wifi-bar--3 {
+  opacity: 0.2;
+}
+.btn-livesync-header--live { --livesync-tone: var(--color-livesync-live); }
+.btn-livesync-header--syncing { --livesync-tone: var(--color-livesync-syncing); }
+.btn-livesync-header--degraded { --livesync-tone: var(--color-livesync-degraded); }
+.btn-livesync-header--local { --livesync-tone: var(--color-livesync-local); }
+.btn-livesync-header--idle { --livesync-tone: var(--color-livesync-idle); }
+.btn-livesync-header--live,
+.btn-livesync-header--syncing,
+.btn-livesync-header--degraded,
+.btn-livesync-header--local {
+  color: var(--livesync-tone);
+  background: color-mix(in oklab, var(--livesync-tone) 14%, transparent);
+  border-color: color-mix(in oklab, var(--livesync-tone) 22%, transparent);
+}
+.btn-header-icon.btn-livesync-header--live:hover,
+.btn-header-icon.btn-livesync-header--syncing:hover,
+.btn-header-icon.btn-livesync-header--degraded:hover,
+.btn-header-icon.btn-livesync-header--local:hover {
+  color: var(--livesync-tone);
+  background: color-mix(in oklab, var(--livesync-tone) 18%, var(--surface));
+}
+.btn-livesync-header--live .livesync-wifi-bar,
+.btn-livesync-header--live .livesync-wifi-dot {
+  opacity: 1;
+}
+.btn-livesync-header--live .livesync-wifi-bar--3 {
+  animation: livesync-wifi-live-pulse 2s ease-in-out infinite;
+}
+.btn-livesync-header--syncing .livesync-wifi-dot,
+.btn-livesync-header--syncing .livesync-wifi-bar--1,
+.btn-livesync-header--syncing .livesync-wifi-bar--2,
+.btn-livesync-header--syncing .livesync-wifi-bar--3 {
+  animation: livesync-wifi-cascade 1.35s ease-in-out infinite;
+}
+.btn-livesync-header--syncing .livesync-wifi-bar--1 { animation-delay: 0s; }
+.btn-livesync-header--syncing .livesync-wifi-bar--2 { animation-delay: 0.15s; }
+.btn-livesync-header--syncing .livesync-wifi-bar--3 { animation-delay: 0.3s; }
+.btn-livesync-header--syncing .livesync-wifi-dot { animation-delay: 0.45s; }
+.btn-livesync-header--degraded .livesync-wifi-dot,
+.btn-livesync-header--degraded .livesync-wifi-bar--1,
+.btn-livesync-header--degraded .livesync-wifi-bar--2 {
+  opacity: 0.95;
+}
+.btn-livesync-header--degraded .livesync-wifi-bar--3 {
+  opacity: 0.18;
+  animation: livesync-wifi-live-pulse 2.4s ease-in-out infinite;
+}
+@keyframes livesync-wifi-cascade {
+  0%, 18%, 100% { opacity: 0.16; }
+  35%, 55% { opacity: 1; }
+}
+@keyframes livesync-wifi-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
 .settings-dropdown {
   display: flex;
   position: fixed;

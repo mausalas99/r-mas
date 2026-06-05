@@ -20,6 +20,12 @@
   --color-success-emphasis: #047857;
   --color-success-emphasis-hover: #065f46;
   --color-on-success: #ffffff;
+  /* LiveSync header · estado de conexión */
+  --color-livesync-live: var(--color-success-emphasis);
+  --color-livesync-syncing: #b45309;
+  --color-livesync-degraded: #c2410c;
+  --color-livesync-local: var(--color-accent);
+  --color-livesync-idle: var(--text-muted);
   --color-agenda-block-bg: color-mix(in oklab, var(--color-accent) 11%, var(--color-surface));
   --color-agenda-block-border: color-mix(in oklab, var(--color-accent) 32%, var(--border));
   --color-update-banner-bg: #166534;
@@ -107,6 +113,11 @@ html.dark {
   --color-success-emphasis: #059669;
   --color-success-emphasis-hover: #10b981;
   --color-on-success: #ffffff;
+  --color-livesync-live: #34d399;
+  --color-livesync-syncing: #fbbf24;
+  --color-livesync-degraded: #fb923c;
+  --color-livesync-local: var(--color-accent-soft-text);
+  --color-livesync-idle: var(--text-muted);
   --color-agenda-block-bg: color-mix(in oklab, var(--color-accent) 16%, var(--color-surface));
   --color-agenda-block-border: color-mix(in oklab, var(--color-accent) 38%, var(--border));
   --color-update-banner-bg: #14532d;
@@ -162,6 +173,11 @@ html.high-contrast {
   --text-muted: var(--color-ink-muted);
   --error: #b00000;
   --success: #006400;
+  --color-livesync-live: #006400;
+  --color-livesync-syncing: #8a5a00;
+  --color-livesync-degraded: #b00000;
+  --color-livesync-local: var(--color-accent);
+  --color-livesync-idle: var(--text-muted);
   --lab-chip-bg: #e8e8ff;
   --lab-chip-txt: #000000;
   --input-fill: #ffffff;
@@ -197,6 +213,11 @@ html.high-contrast.dark {
   --text-muted: var(--color-ink-muted);
   --error: #ff6b6b;
   --success: #5eea7a;
+  --color-livesync-live: #5eea7a;
+  --color-livesync-syncing: #ffd54f;
+  --color-livesync-degraded: #ff9e6b;
+  --color-livesync-local: var(--color-accent);
+  --color-livesync-idle: var(--text-muted);
   --lab-chip-bg: #1e3a5f;
   --lab-chip-txt: #ffffff;
   --input-fill: #1c1c1c;

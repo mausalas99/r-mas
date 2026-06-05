@@ -183,6 +183,10 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
 @media (prefers-reduced-motion: reduce) {
   .med-output-tab-pill { transition: none; }
   .pending-jobs-pill::before { animation: none !important; box-shadow: none; }
+  .btn-livesync-header--live .livesync-wifi-bar--3,
+  .btn-livesync-header--syncing .livesync-wifi-bar,
+  .btn-livesync-header--syncing .livesync-wifi-dot,
+  .btn-livesync-header--degraded .livesync-wifi-bar--3 { animation: none !important; }
   .app-tab, .inner-tab, .patient-card, .card, .tend-card, .btn-add, .toast { transition: none !important; animation: none !important; }
   .app-tab:hover, .inner-tab:hover { transform: none; }
   .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }

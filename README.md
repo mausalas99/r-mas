@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.7](https://github.com/mausalas99/r-mas/releases/tag/v6.6.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.8](https://github.com/mausalas99/r-mas/releases/tag/v6.6.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 6.6.8 (LiveSync — icono Wi‑Fi y estados de conexión)
+
+- **Header** — El botón **⇄** pasa a un icono **Wi‑Fi** cuadrado (como Perfil/Ajustes); sin etiqueta de texto.
+- **Estados** — Color y barras: **verde** en vivo, **ámbar** sincronizando, **naranja** reconectando, **acento** solo local, **gris** sin sala.
+- **Tokens** — Paleta `--color-livesync-*` en claro, oscuro y alto contraste.
+- **Sobre 6.6.7** — iPad/móvil, onboarding local, censo y ⇄ en sala.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.8** el mismo día; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.6.8.txt`.
 
 ## R+ 6.6.7 (LAN — iPad/móvil, onboarding local y censo)
 
@@ -536,6 +545,12 @@ Notas: `docs/RELEASE_NOTES_2.3.0.txt`.
 
 ---
 
+
+## R+ 6.6.8 (LiveSync — icono Wi‑Fi y estados de conexión)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.6.8.txt`.
 ## R+ 2.2.1 (parche — onboarding y texto de Consolidar)
 
 - **Tutorial guiado** (Sala e Interconsulta) y **modal inicial**: explicación de **Sincronizar**, **Consolidar**, pestaña **Cultivos**, tendencias y revisión global en **Ajustes → Laboratorio**.

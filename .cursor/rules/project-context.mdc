@@ -111,6 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-05** `livesync-header-ux`: ⇄ → icono Wi‑Fi cuadrado (Perfil/Ajustes); barras y `--color-livesync-*` por fase; `room.mjs`, `header.html`, `tokens.css`, `settings.css`.
 - **2026-06-04** `onboarding-local-first`: sync-mode (LAN vs solo equipo) before DB session; unlock/retry CTAs + Windows session backoff; not gated on ⇄; `clinical-onboarding-main.mjs`, `clinical-panel-host.mjs`, `db-unlock.mjs`.
 - **2026-06-04** `mobile-pwa`: Safari A2HS + barebones chrome (sin censo PDF, Mi Perfil, Ajustes, pestaña Salida); `/mobile/` stub, `mobile-web.mjs`, `mobile.css`, `expediente-tabs.mjs`.
 - **2026-06-04** `lan-mobile-join`: auth exchange uses request Host; mobile auto-join sala + resume sync; 20s sync-bundle fetch + host-empty toasts; host must Unirse before copy invite; `transport.mjs`, `push.mjs`, `panel.mjs`.
