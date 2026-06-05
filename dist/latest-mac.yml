@@ -1,17 +1,17 @@
 version: 7.0.3
 files:
   - url: R+-7.0.3-arm64.zip
-    sha512: 9aEf2zTnrs6QOFtZXNqbAPml2lS5GdoGoc09z/OODzj2fMyc2d72UiysosrRWZb7w2XX15Xsh/bcbkONH5wnAg==
-    size: 128621354
+    sha512: Nn6RlqyXetpLr3X++mCX37aB2xvwaW6Kh8hZlBeCOIXm8I8P3CvxhLby+2xUnf6+uw/NqtIEYC7TyHJAJV/c0A==
+    size: 128625309
   - url: R+-7.0.3-arm64.dmg
-    sha512: OGTo529XhUKsZ14FGbD1XK5cvbMgwuz+7Yu8iQ3k50hhPQFK4zIWbdg9W85fysSxtSogyXbv5Uhf1zICsAetDQ==
-    size: 133941441
+    sha512: KmGRcxM5yHqUYNvyViZMDClwrGNfO0/4AmuKWR8lQhz4zyrwc3AwVez0qT3w6SLp29Mo/y/x0dcdX6xZOGt6jQ==
+    size: 133935467
   - url: R+-7.0.3-x64.zip
-    sha512: W7JhfAKz7vWlBt/wk9J88/deMNb/aQvPyHGPavxfOl/QBcjxn5szvXZJLHZfWc1c4s8LZt6z7Qj9nfCTiyLYmQ==
-    size: 136995450
+    sha512: b1brSicMDX7+uuGlqsPM0WW58BUoIbkT3Kzhs3umyNMPC6Igg1pHYxYhjtMrB2s+InGqGGQoEt5LpfapiGSEgg==
+    size: 136999360
   - url: R+-7.0.3-x64.dmg
-    sha512: HmNA77rsARNxtez6zQF04klJkiNCMXor7XO2crnn9Drs+dHMbwq+YgRuFV2HJwfhSwdk1wMrlezi4+uB+tAv+Q==
-    size: 142373022
+    sha512: YRm2ZLmcQvIedBOTlTIiS8TdEZptPScv9EmkeRuxyfKVvNx9eYalTywjN9Tlv39iYzURttBCsx4DEtMkTJBbXQ==
+    size: 142391915
 path: R+-7.0.3-arm64.zip
-sha512: 9aEf2zTnrs6QOFtZXNqbAPml2lS5GdoGoc09z/OODzj2fMyc2d72UiysosrRWZb7w2XX15Xsh/bcbkONH5wnAg==
-releaseDate: '2026-06-05T21:14:08.000Z'
+sha512: Nn6RlqyXetpLr3X++mCX37aB2xvwaW6Kh8hZlBeCOIXm8I8P3CvxhLby+2xUnf6+uw/NqtIEYC7TyHJAJV/c0A==
+releaseDate: '2026-06-05T21:55:17.000Z'

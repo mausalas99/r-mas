@@ -1,8 +1,8 @@
 version: 7.0.3
 files:
   - url: R+-7.0.3-x64.exe
-    sha512: 5DYSQlB1eMt1yIFrqIH/KEhV11DKrk6S3m36ZMF31wGVfuPKh0ab12tngSNEFnj5JjN/1zqXciX6qLoMnPK+8Q==
-    size: 114385546
+    sha512: oin9O12bAhGm6LEfsQpPtgfLUh+ElWFN+GN/GuGhR3+EI8xFTgqlMz5qL4SCP6JB08bkR/gSDyY0lsR8RniKsA==
+    size: 114388493
 path: R+-7.0.3-x64.exe
-sha512: 5DYSQlB1eMt1yIFrqIH/KEhV11DKrk6S3m36ZMF31wGVfuPKh0ab12tngSNEFnj5JjN/1zqXciX6qLoMnPK+8Q==
-releaseDate: '2026-06-05T21:14:08.000Z'
+sha512: oin9O12bAhGm6LEfsQpPtgfLUh+ElWFN+GN/GuGhR3+EI8xFTgqlMz5qL4SCP6JB08bkR/gSDyY0lsR8RniKsA==
+releaseDate: '2026-06-05T21:55:17.000Z'
