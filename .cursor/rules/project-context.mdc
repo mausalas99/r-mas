@@ -64,7 +64,7 @@ docs/superpowers/     Specs and implementation plans (design before big features
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
-| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-sync-{state,diagnostics,bundle-push}.mjs`; overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
+| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs` (delta path apply, echo tracker); overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
@@ -111,7 +111,11 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-05** `lan-delta-sync-design`: delta overlay design for HC/agenda/todos (pathValues + fieldMeta + replay fallback); `docs/superpowers/specs/2026-06-05-lan-delta-sync-design.md`.
+- **2026-06-05** `lan-delta-sync`: delta overlay design + renderer client helpers (pathValues, echo tracker, remote-apply guard); `lan-delta-client.mjs`, `docs/superpowers/specs/2026-06-05-lan-delta-sync-design.md`.
+- **2026-06-05** `release-7.0.1`: PIN-first LAN roam (multi-subnet, auto reconnect, «Conectar al turno»); builds on 6.7.0 directorio/PIN; `lan-shift-pin-connect.mjs`, `clinical-rotation-entry.mjs`, `panel.mjs`.
+- **2026-06-05** `release-6.7.0`: directorio LAN visible (preserve roster on null bundle), PIN del turno + beacon discovery, connect CTA sin falso éxito, push skip traces; `bundle-merge.js`, `shift-pin-store.js`, `lan-shift-pin-connect.mjs`.
+- **2026-06-05** `lan-shift-pin`: PIN del turno reutilizable (~12 h) + beacon subnet discovery + campo en registro LAN; directorio LAN deja de cerrar selects al refrescar; `shift-pin-store.js`, `auth-router.js`, `lan-shift-pin-connect.mjs`, `teams-roster-lan.mjs`.
+- **2026-06-05** `lan-directorio-visibility`: host preserves roster on null sync-bundle clinicalOps; push skip-codes + flush early trace; LAN-mode connect CTA (§6.A); `bundle-merge.js`, `host-store.js`, `push.mjs`, `clinical-profile-lan-sync.mjs`, `clinical-rotation-entry.mjs`.
 - **2026-06-05** `win-sqlcipher-pack`: `fetch-sqlite-win.mjs` en `prebuild:win` — prebuild PE win32-x64 para Electron ABI actual; evita *not a valid Win32 application* al empaquetar `.exe` desde macOS.
 - **2026-06-05** `6.6.8`: Wi‑Fi header LiveSync + directorio LAN (register→sala→assign); host union clinicalOps, gossip push, admin directory poll; `host-store.js`, `room.mjs`, `clinical-profile-lan-sync.mjs`, `teams-roster-lan.mjs`.
 - **2026-06-04** `onboarding-local-first`: sync-mode (LAN vs solo equipo) before DB session; unlock/retry CTAs + Windows session backoff; not gated on ⇄; `clinical-onboarding-main.mjs`, `clinical-panel-host.mjs`, `db-unlock.mjs`.
@@ -147,4 +151,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-06-02** `entrega-pendientes-v2`: schema v8 templates; `lib/entrega/`, `entrega-modal-ui.mjs`, `clinical-entrega.mjs`.
 - **2026-06-02** `stable-downgrade`: catálogo curado + UI Ajustes; `stable-versions-catalog.js`, `min-version.json`.
 - **2026-06-01** `lan-teams-decoupled`: persistent clinical teams decoupled from daily guardia; `clinical-teams.mjs`, `effective-team-code.js`.
-- **2026-06-01** `guardia-lan-hub`: guardia connection panel, host discovery, mobile join link, census scope by role.
