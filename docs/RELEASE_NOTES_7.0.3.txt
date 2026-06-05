@@ -9,15 +9,15 @@ Release de estabilización antes del overhaul de delta sync: reduce el ruido vis
 
 ## Nuevo / mejorado
 
-- **Censo sin parpadeo** — La lista lateral de pacientes se actualiza de forma incremental cuando llegan cambios por LAN; evita reconstruir todo el DOM si solo cambió una tarjeta, un conteo o un paciente nuevo.
-- **Pacientes por equipo** — El sync LAN filtra pacientes según rol, sala, guardia activa y equipo asignado: R4/Admin ven todo, R2/R3 se acotan a sus equipos cuando aplica y R1 queda en su sala.
+- **Censo sin parpadeo** — La lista lateral de pacientes se actualiza de forma incremental cuando llegan cambios por LAN; evita redibujar la lista completa si solo cambió una tarjeta, un conteo o un paciente nuevo.
+- **Pacientes por equipo** — El sync LAN filtra pacientes según rol, sala, guardia activa y equipo asignado: R4/Admin ven el censo completo, R2/R3 se acotan a sus equipos cuando aplica y R1 queda en su sala.
 - **Asignar equipo desde el paciente** — En Datos del paciente aparece selector de equipo para usuarios con permisos/equipos disponibles; al cambiarlo se refresca contexto clínico y se empuja clinical-ops por LAN.
 - **PIN del turno más estable** — El PIN se conserva durante el mes calendario, sobrevive reinicios del host y el PIN anterior queda en gracia cuando se regenera manualmente.
 - **Validación LAN local** — Nuevo harness de peer virtual para probar directorio, push y churn de roster contra un host efímero antes de publicar cambios más grandes de sync.
 
 ## Operación en guardia
 
-Actualiza desde **7.0.2** en todas las estaciones antes de empezar turno. El PIN y la sala siguen siendo compatibles, pero conviene que todo el equipo use **7.0.3** para que el filtro por equipo y la lista incremental se comporten igual en todas las Macs/PCs.
+Actualiza desde **7.0.2** en todas las estaciones antes de empezar turno. El PIN y la sala siguen siendo compatibles, pero conviene homogeneizar en **7.0.3** para que el filtro por equipo y la lista incremental se comporten igual en todas las Macs/PCs.
 
 ## Instalación
 
