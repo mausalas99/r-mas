@@ -19,7 +19,7 @@ Corrige el directorio LAN que en **6.6.8–6.6.9** solo mostraba al anfitrión: 
 
 1. **Anfitrión (R4+):** abre LiveSync, **Unirse** a la sala, comparte el **PIN del turno** o el enlace de invitación.
 2. **Residentes:** registran **@usuario**; si usan PIN, lo pegan en el campo de registro LAN o conectan desde el panel ⇄.
-3. **Actualiza todo el turno** a **6.7.0** el mismo día. Mezclar **6.6.6** o anterior con sala en vivo activa no es recomendable.
+3. **Actualiza todas las estaciones** a **6.7.0** el mismo día. Mezclar **6.6.6** o anterior con sala en vivo activa no es recomendable.
 4. Windows: permite R+ en el firewall (puerto **3738**) la primera vez en sala LiveSync.
 
 ## Instalación
