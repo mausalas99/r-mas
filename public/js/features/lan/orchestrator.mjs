@@ -774,6 +774,30 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
   return { ok: true, version: out.version, data: out.data, body: out };
 }
 
+export async function lanPushHistoriaClinicaDelta(patientId, delta) {
+  const pid = String(patientId || '').trim();
+  if (!pid || !delta || !activeLiveSyncRoomId) return { ok: false, error: 'invalid_args' };
+  const resp = await lanFetchAuthed(
+    '/api/lan/v1/rooms/' + encodeURIComponent(activeLiveSyncRoomId) + '/delta',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...delta,
+        entityType: 'historiaClinica',
+        entityId: pid,
+        patientId: pid,
+      }),
+    }
+  );
+  const body = await resp.json().catch(function () {
+    return {};
+  });
+  if (resp.ok) return { ok: true, version: body.version, body };
+  if (resp.status === 409) return { ok: false, stale: true, body };
+  return { ok: false, status: resp.status, body };
+}
+
 /** Sync patient.archived to LAN host (triggers historia archive when archived: true). */
 export async function lanSyncPatientArchivedFlag(patient) {
   if (!patient || !patient.id || !isLanSessionConfiguredForRest()) {

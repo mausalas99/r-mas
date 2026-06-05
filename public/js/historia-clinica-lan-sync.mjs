@@ -1,11 +1,12 @@
 import { patients, saveState } from './app-state.mjs';
-import { createMutationBuilder } from './versioned-mutation.mjs';
+import { createMutationBuilder, createDeltaMutationBuilder } from './versioned-mutation.mjs';
 import { migrateLegacyHistoriaData } from '../../lib/historia-clinica/migrate-legacy.mjs';
 import appConditions from '../../lib/historia-clinica/catalogs/app-conditions.json' with { type: 'json' };
 import ahfConditions from '../../lib/historia-clinica/catalogs/ahf-conditions.json' with { type: 'json' };
 import ipasSystems from '../../lib/historia-clinica/catalogs/ipas-systems.json' with { type: 'json' };
 import {
   lanPushHistoriaClinica,
+  lanPushHistoriaClinicaDelta,
   getActiveLiveSyncRoomId,
   isLanSessionConfiguredForRest,
 } from './features/lan-sync.mjs';
@@ -29,6 +30,50 @@ const HC_SYNC_KEYS = [
   'meta',
   'labLookbackHours',
 ];
+
+const HC_DELTA_SAFE_PATHS = new Set([
+  'labsAtAdmission.na',
+  'labsAtAdmission.k',
+  'labsAtAdmission.cr',
+  'labsAtAdmission.hb',
+  'signosVitalesIngreso.fc',
+  'signosVitalesIngreso.ta',
+  'signosVitalesIngreso.fr',
+  'signosVitalesIngreso.temp',
+  'motivoConsulta',
+  'padecimientoActual',
+  'plan',
+]);
+
+function readPathValue(root, path) {
+  return String(path || '').split('.').reduce(function (cur, part) {
+    return cur && typeof cur === 'object' ? cur[part] : undefined;
+  }, root);
+}
+
+/**
+ * @param {object} patient
+ * @param {{ changedPaths?: string[], clientId?: string, roomId?: string, nowMs?: () => number }} [opts]
+ */
+export function buildHistoriaClinicaDelta(patient, opts) {
+  opts = opts || {};
+  if (!patient || !patient.historiaClinica || !patient.historiaClinica.data) return null;
+  const changedPaths = Array.isArray(opts.changedPaths) ? opts.changedPaths : [];
+  if (!changedPaths.length) return null;
+  if (changedPaths.some((path) => !HC_DELTA_SAFE_PATHS.has(String(path)))) return null;
+  const nowMs = typeof opts.nowMs === 'function' ? opts.nowMs : Date.now;
+  const builder = createDeltaMutationBuilder('historiaClinica', patient.id);
+  changedPaths.forEach(function (path) {
+    const value = readPathValue(patient.historiaClinica.data, path);
+    builder.setPath(path, value === undefined ? null : value, nowMs());
+  });
+  return builder.build({
+    roomId: opts.roomId,
+    patientId: patient.id,
+    clientId: opts.clientId || localStorage.getItem('rpc-lan-client-id') || 'local',
+    expectedVersion: Number(patient.historiaClinica.version || 0),
+  });
+}
 
 /** @type {Map<string, Promise<unknown>>} */
 const _inFlight = new Map();
@@ -74,6 +119,22 @@ export async function flushPendingHistoriaClinicaLanSync(patient) {
     delete hc.pendingLanSync;
     delete hc.lanSyncPending;
     return { ok: true, skipped: true };
+  }
+
+  const delta = buildHistoriaClinicaDelta(patient, {
+    changedPaths: changedKeys,
+    roomId,
+    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
+  });
+  if (delta) {
+    const out = await lanPushHistoriaClinicaDelta(patient.id, delta);
+    if (out && out.ok) {
+      hc.version = out.version || hc.version;
+      delete hc.pendingLanSync;
+      delete hc.lanSyncPending;
+      saveState();
+      return { ok: true };
+    }
   }
 
   const expectedVersion =
