@@ -149,7 +149,7 @@ function wireRegistrationFormOnce() {
       isBenignLanPushSkipCode,
       notifyLanProfilePushResult,
     } = await import('../clinical-profile-lan-sync.mjs');
-    await assertLanRoomForUsernameRegister({ sala });
+    const lanRoom = await assertLanRoomForUsernameRegister({ sala });
 
     const api = dbApi();
     if (api && typeof api.dbClinicalAccessBootstrap === 'function') {
@@ -217,7 +217,7 @@ function wireRegistrationFormOnce() {
     });
 
     if (errEl) errEl.hidden = true;
-    const lanPush = await flushClinicalProfileToLan();
+    const lanPush = await flushClinicalProfileToLan({ sala, roomId: lanRoom.roomId });
     notifyLanProfilePushResult(lanPush, (msg, kind) => runtime.showToast(msg, kind));
     if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code) && !(lanPush.channels && lanPush.channels.outbox) && errEl) {
       errEl.textContent = LAN_PROFILE_PUSH_FAILED_MSG;

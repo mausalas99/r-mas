@@ -46,9 +46,15 @@ function refreshBundleClinicalOpsCacheIfStale(bundle) {
   const db = mgr.getDb();
   if (!db) return;
   const exported = exportClinicalOpsSnapshot(db);
-  if (clinicalOpsCacheStale(bundle.clinicalOps, exported)) {
+  if (!clinicalOpsCacheStale(bundle.clinicalOps, exported)) return;
+  const cached =
+    bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
+  if (!cached) {
     bundle.clinicalOps = exported;
+    return;
   }
+  // DB export can be newer yet smaller when peers merged via sync-bundle only; union, never regress.
+  bundle.clinicalOps = mergeClinicalOpsSnapshotsData(cached, exported);
 }
 
 async function mergeBundleClinicalOpsIntoHostDb(snapshot, { roomId, revision } = {}) {
@@ -454,10 +460,33 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
 
     state.roomSyncBundles[rid] = result.bundle;
     persistState();
-    return {
+    const out = {
       bundle: result.bundle,
       lwwAppliedKeys: Array.isArray(result.lwwAppliedKeys) ? result.lwwAppliedKeys : [],
     };
+    return out;
+  }
+
+  /**
+   * After sync-bundle PUT, fold room clinicalOps into host SQLCipher when unlocked
+   * (same authoritative export as PUT /clinical-ops).
+   * @param {string} roomId
+   */
+  async function persistRoomBundleClinicalOpsToHostDb(roomId) {
+    const state = ensureLoadedSync();
+    const rid = String(roomId || '');
+    if (!rid || !state.roomSyncBundles) return null;
+    const bundle = state.roomSyncBundles[rid];
+    if (!bundle || !bundle.clinicalOps || typeof bundle.clinicalOps !== 'object') return null;
+    const authoritative = await mergeBundleClinicalOpsIntoHostDb(bundle.clinicalOps, {
+      roomId: rid,
+      revision: bundle.revision,
+    });
+    if (authoritative) {
+      bundle.clinicalOps = authoritative;
+      persistState();
+    }
+    return authoritative;
   }
 
   async function putRoomClinicalOps(roomId, body) {
@@ -781,6 +810,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     deleteRoom,
     getRoomSyncBundle,
     putRoomSyncBundle,
+    persistRoomBundleClinicalOpsToHostDb,
     putRoomClinicalOps,
     getEntity,
     setEntity,

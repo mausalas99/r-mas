@@ -46,6 +46,7 @@ import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
 import {
   registerLanSyncPushBridge,
   pushRoomSyncBundleToHost,
+  pushClinicalOpsLanNow,
   reconcileLiveSyncRoom,
   flushLiveSyncOutbox,
   scheduleLiveSyncOutboxFlush,
@@ -637,6 +638,7 @@ function onLiveSyncWireMessageBody(data) {
       }
     }
     if (data.type === 'livesync:hello' && data.clientId !== myId && activeLiveSyncRoomId) {
+      scheduleClinicalOpsPullFromHost(activeLiveSyncRoomId);
       void (async function () {
         try {
           lanClient.sendLive(await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
@@ -652,6 +654,7 @@ function onLiveSyncWireMessageBody(data) {
     return;
   }
   if (data.type === 'livesync:revision' && data.clientId !== myId) {
+    scheduleClinicalOpsPullFromHost(data.roomId);
     scheduleReconcileFromRevisionHint(data.roomId);
     return;
   }
@@ -665,6 +668,30 @@ function onLiveSyncWireMessageBody(data) {
     bridge().applyLiveSyncApplied(data);
     return;
   }
+}
+
+var clinicalOpsGossipPushTimer = null;
+var clinicalOpsPullFromHostTimer = null;
+
+/** Pull host directorio (lightweight) when a peer publishes profile or clinical ops. */
+function scheduleClinicalOpsPullFromHost(roomId) {
+  var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || '').trim();
+  if (!rid || !isClinicalOpsLanAvailable()) return;
+  if (clinicalOpsPullFromHostTimer) clearTimeout(clinicalOpsPullFromHostTimer);
+  clinicalOpsPullFromHostTimer = setTimeout(function () {
+    clinicalOpsPullFromHostTimer = null;
+    void fetchAndApplyClinicalOpsFromHost(rid, { skipGossipPush: true });
+  }, 400);
+}
+
+/** Re-publish merged local roster so the host accumulates all Macs (not only pull). */
+function scheduleClinicalOpsGossipPush() {
+  if (!isClinicalOpsLanAvailable()) return;
+  if (clinicalOpsGossipPushTimer) clearTimeout(clinicalOpsGossipPushTimer);
+  clinicalOpsGossipPushTimer = setTimeout(function () {
+    clinicalOpsGossipPushTimer = null;
+    void pushClinicalOpsLanNow().catch(function () {});
+  }, 2500);
 }
 
 /** GET /clinical-ops from host and merge into local SQLCipher (directorio LAN). */
@@ -711,6 +738,9 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
     const ok = await applyClinicalOpsLanSnapshot(body.snapshot);
     if (!ok) return false;
     await refreshClinicalOpsSnapshotCache();
+    if (!options.skipGossipPush) {
+      scheduleClinicalOpsGossipPush();
+    }
     if (typeof document !== 'undefined') {
       document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
     }
@@ -762,15 +792,31 @@ export function syncLiveSyncAfterRoomJoin(roomId) {
 }
 
 function syncLiveSyncAfterRoomJoinBody(rid) {
-  return reconcileLiveSyncRoom(rid)
+  var chain = Promise.resolve();
+  if (isClinicalOpsLanAvailable()) {
+    chain = chain
+      .then(function () {
+        return prepareClinicalOpsForLanSync();
+      })
+      .then(function () {
+        return pushClinicalOpsLanNow();
+      });
+  }
+  return chain
+    .then(function () {
+      return reconcileLiveSyncRoom(rid);
+    })
     .then(function () {
       if (activeLiveSyncRoomId !== rid) return;
-      return fetchAndApplyClinicalOpsFromHost(rid);
+      return fetchAndApplyClinicalOpsFromHost(rid, { skipGossipPush: true });
     })
     .then(function () {
       if (activeLiveSyncRoomId !== rid) return;
       applyRoomSyncPhaseAfterReconcile(rid);
       scheduleLiveSyncPush();
+      if (isClinicalOpsLanAvailable()) {
+        void pushClinicalOpsLanNow().catch(function () {});
+      }
       if (lanClient.liveConnected) {
         void enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(rid)).then(function (hello) {
           if (activeLiveSyncRoomId !== rid) return;

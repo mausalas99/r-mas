@@ -195,10 +195,20 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
     }
   });
 
-  r.put('/rooms/:id/sync-bundle', express.json({ limit: '16mb' }), (req, res) => {
+  r.put('/rooms/:id/sync-bundle', express.json({ limit: '16mb' }), async (req, res) => {
     try {
       const body = req.body && req.body.bundle ? req.body.bundle : req.body;
       const out = store.putRoomSyncBundle(req.params.id, body);
+      if (
+        out &&
+        out.bundle &&
+        out.bundle.clinicalOps &&
+        typeof store.persistRoomBundleClinicalOpsToHostDb === 'function'
+      ) {
+        await store.persistRoomBundleClinicalOpsToHostDb(req.params.id);
+        const refreshed = store.getRoomSyncBundle(req.params.id);
+        if (refreshed) out.bundle = refreshed;
+      }
       if (out && out.bundle) {
         broadcastLiveRevision(
           req.params.id,

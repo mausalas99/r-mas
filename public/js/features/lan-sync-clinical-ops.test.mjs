@@ -43,6 +43,15 @@ describe('lan-sync clinical ops', () => {
 
   it('pushes clinical ops after joining a room', () => {
     assert.match(lanSyncRoomSrc, /syncLiveSyncAfterRoomJoin[\s\S]*scheduleLiveSyncPush\(\)/);
+    assert.match(
+      lanSyncRoomSrc,
+      /syncLiveSyncAfterRoomJoinBody[\s\S]*pushClinicalOpsLanNow[\s\S]*reconcileLiveSyncRoom/
+    );
+  });
+
+  it('re-publishes merged roster after pulling host clinical ops', () => {
+    assert.match(lanSyncRoomSrc, /scheduleClinicalOpsGossipPush/);
+    assert.match(lanSyncRoomSrc, /fetchAndApplyClinicalOpsFromHost[\s\S]*scheduleClinicalOpsGossipPush/);
   });
 
   it('shows toast when clinical ops merge fails', () => {

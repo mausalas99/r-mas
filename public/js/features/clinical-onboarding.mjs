@@ -253,7 +253,9 @@ async function handleUsernameStepSubmit(ev) {
     isBenignLanPushSkipCode,
     notifyLanProfilePushResult,
   } = await import('../clinical-profile-lan-sync.mjs');
-  const lanPush = await flushClinicalProfileToLan();
+  const lanPush = await flushClinicalProfileToLan({
+    sala: sala || clinicalSessionContext.user?.sala,
+  });
   notifyLanProfilePushResult(lanPush, toast);
   if (
     !lanPush.ok &&

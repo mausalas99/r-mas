@@ -247,7 +247,7 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   };
 
   if (!list.length) {
-    return `<p class="clinical-teams-empty">Aún no hay otros usuarios en esta Mac. Pide a tus compañeros que guarden <strong>Mi rotación → Guardar perfil</strong> con su @usuario y que estén en la misma sala <strong>⇄</strong> (sincronización en vivo).</p>`;
+    return `<p class="clinical-teams-empty">Aún no hay otros @usuario en esta Mac. Cada residente debe conectarse a tu LAN, abrir <strong>⇄ → Unirse</strong> en la misma sala y guardar <strong>Mi rotación → Guardar perfil</strong>. Luego los asignas al equipo desde aquí (no hace falta que ya tengan equipo).</p>`;
   }
 
   const { groups, other } = groupLanUsersByRank(list);
@@ -488,14 +488,41 @@ export async function loadLanUsersDirectoryIntoHost(host) {
   }
 }
 
+/** @type {ReturnType<typeof setInterval>|null} */
+let lanDirectoryPollTimer = null;
+
+function stopLanDirectoryPoll() {
+  if (lanDirectoryPollTimer) {
+    clearInterval(lanDirectoryPollTimer);
+    lanDirectoryPollTimer = null;
+  }
+}
+
+function startLanDirectoryPoll() {
+  stopLanDirectoryPoll();
+  lanDirectoryPollTimer = setInterval(() => {
+    const bd = lanUsersModalBackdropEl();
+    if (!bd?.classList.contains('open')) {
+      stopLanDirectoryPoll();
+      return;
+    }
+    void backgroundRefreshLanUsersDirectory();
+  }, 5000);
+}
+
+async function pullLanDirectoryFromHostBeforeDisplay() {
+  try {
+    const lanMod = await import('../lan-sync.mjs');
+    if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
+    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 }));
+  } catch (_e) {
+    return false;
+  }
+}
+
 function backgroundRefreshLanUsersDirectory() {
-  void import('../lan-sync.mjs')
-    .then((lanMod) => {
-      if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-      return lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 5000 });
-    })
-    .then((refreshed) => {
-      if (!refreshed) return;
+  void pullLanDirectoryFromHostBeforeDisplay()
+    .then(() => {
       const host = lanUsersModalBodyEl();
       const bd = lanUsersModalBackdropEl();
       if (!host || !bd?.classList.contains('open')) return;
@@ -531,6 +558,7 @@ export async function openLanUsersDirectoryModal() {
   bd.setAttribute('aria-hidden', 'false');
 
   try {
+    await pullLanDirectoryFromHostBeforeDisplay();
     await loadLanUsersDirectoryIntoHost(host);
   } catch (err) {
     console.error('[Directorio LAN]', err);
@@ -539,10 +567,11 @@ export async function openLanUsersDirectoryModal() {
     )}</p>`;
   }
 
-  backgroundRefreshLanUsersDirectory();
+  startLanDirectoryPoll();
 }
 
 export function closeLanUsersDirectoryModal() {
+  stopLanDirectoryPoll();
   const bd = lanUsersModalBackdropEl();
   if (!bd) return;
   bd.classList.remove('open');

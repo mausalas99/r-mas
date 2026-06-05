@@ -135,6 +135,152 @@ test('putRoomClinicalOps keeps JSON merge when host DB is locked', async () => {
   }
 });
 
+test('getRoomSyncBundle unions bundle clinical_users when DB export is newer but smaller', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const { ensureClinicalUser, claimUsername } = await import('../lib/db/clinical-access-db.mjs');
+  const { exportClinicalOpsSnapshot } = await import('../lib/db/clinical-ops-sync.mjs');
+
+  const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-union-'));
+  const mgr = await createUnlockedDbManager(dbDir);
+  const prevDbManager = globalThis.__rplusDbManager;
+  globalThis.__rplusDbManager = mgr;
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-union-state-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+
+  try {
+    const localUserId = await mgr.withTransaction(async (db) => {
+      const user = ensureClinicalUser(db, { clientId: 'host-only', rank: 'R2', clinicalName: 'Host' });
+      claimUsername(db, { userId: user.userId, username: 'host_only' });
+      return user.userId;
+    });
+    const dbSnap = await mgr.withTransaction((db) => exportClinicalOpsSnapshot(db));
+    assert.equal(dbSnap.clinical_users.length, 1);
+
+    const remoteUserId = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    const room = store.createRoom('Union users');
+    const state = store.getState();
+    state.roomSyncBundles[room.id] = {
+      revision: 2,
+      entityVersions: { clinicalOps: 2 },
+      committedAt: '2026-06-01T00:00:00',
+      uploadedByClientId: 'peer',
+      entities: {},
+      agenda: [],
+      todos: {},
+      entries: [],
+      manejo: null,
+      clinicalOps: {
+        exportedAt: '2026-06-01T08:00:00.000Z',
+        clinical_users: [
+          dbSnap.clinical_users[0],
+          {
+            user_id: remoteUserId,
+            username: 'peer_two',
+            rank: 'R1',
+            clinical_name: 'Peer Two',
+            sala: 'Sala 2',
+            is_program_admin: 0,
+          },
+        ],
+        teams: [],
+        team_membership: [
+          { team_id: 'team-x', user_id: localUserId, sub_area_fraction: null },
+          { team_id: 'team-x', user_id: remoteUserId, sub_area_fraction: null },
+        ],
+      },
+      audit_log: [],
+    };
+
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.ok(
+      (bundle.clinicalOps.clinical_users || []).some((u) => u.user_id === remoteUserId),
+      'peer from bundle cache must survive DB refresh'
+    );
+    assert.ok(
+      (bundle.clinicalOps.clinical_users || []).some((u) => u.user_id === localUserId),
+      'host user must remain'
+    );
+    assert.ok(
+      String(bundle.clinicalOps.exportedAt) >= String(dbSnap.exportedAt),
+      'merged snapshot should adopt newer exportedAt'
+    );
+  } finally {
+    globalThis.__rplusDbManager = prevDbManager;
+    mgr.lock();
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});
+
+test('persistRoomBundleClinicalOpsToHostDb folds sync-bundle clinicalOps into SQLCipher', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const { ensureClinicalUser, claimUsername } = await import('../lib/db/clinical-access-db.mjs');
+  const { exportClinicalOpsSnapshot } = await import('../lib/db/clinical-ops-sync.mjs');
+
+  const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-bundle-db-'));
+  const mgr = await createUnlockedDbManager(dbDir);
+  const prevDbManager = globalThis.__rplusDbManager;
+  globalThis.__rplusDbManager = mgr;
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-bundle-db-state-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+
+  try {
+    const localSnap = await mgr.withTransaction(async (db) => {
+      const user = ensureClinicalUser(db, { clientId: 'host-bundle', rank: 'R2' });
+      claimUsername(db, { userId: user.userId, username: 'host_bundle' });
+      return exportClinicalOpsSnapshot(db);
+    });
+
+    const remoteUserId = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+    const room = store.createRoom('Bundle DB');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      clinicalOps: {
+        ...localSnap,
+        exportedAt: '2099-06-01T12:00:00.000Z',
+        clinical_users: [
+          ...(localSnap.clinical_users || []),
+          {
+            user_id: remoteUserId,
+            username: 'remote_bundle',
+            rank: 'R1',
+            clinical_name: 'Remote Bundle',
+            sala: 'Sala 2',
+            is_program_admin: 0,
+          },
+        ],
+        team_membership: [
+          ...(localSnap.team_membership || []),
+          { team_id: 'team-bundle', user_id: remoteUserId, sub_area_fraction: 'A1' },
+        ],
+      },
+    });
+
+    await store.persistRoomBundleClinicalOpsToHostDb(room.id);
+    const dbSnap = await mgr.withTransaction((db) => exportClinicalOpsSnapshot(db));
+    assert.ok(
+      dbSnap.clinical_users.some((u) => u.username === 'remote_bundle'),
+      'peer user from bundle should land in host DB'
+    );
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.ok(
+      (bundle.clinicalOps.clinical_users || []).some((u) => u.username === 'remote_bundle')
+    );
+  } finally {
+    globalThis.__rplusDbManager = prevDbManager;
+    mgr.lock();
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});
+
 test('getRoomSyncBundle refreshes stale clinicalOps cache from DB export', async () => {
   const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
   const { ensureClinicalUser, createTeam } = await import('../lib/db/clinical-access-db.mjs');

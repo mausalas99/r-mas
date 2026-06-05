@@ -152,7 +152,35 @@ export async function assertLanRoomForUsernameRegister(opts = {}) {
 export async function flushClinicalProfileToLan(opts = {}) {
   const { isClinicalLocalOnlyMode } = await import('./clinical-settings.mjs');
   if (isClinicalLocalOnlyMode()) return { ok: false, code: 'NO_LAN' };
+
+  await applyPendingLanInviteFromPage();
+
+  const roomId = resolveRoomIdForUsernameRegister({
+    roomId: opts.roomId,
+    sala: opts.sala,
+  });
+  if (roomId) {
+    rememberLiveSyncRoomMembership(roomId, liveSyncRoomLabel(roomId));
+  }
+
   const lan = await import('./features/lan-sync.mjs');
+  if (!lan.isLanSessionConfiguredForRest?.()) {
+    return { ok: false, code: 'NO_LAN' };
+  }
+
+  const pushMod = await import('./features/lan/push.mjs');
+  const effectiveRoom = pushMod.ensureEffectiveLiveSyncRoomId();
+  if (!effectiveRoom) {
+    return { ok: false, code: 'NO_ROOM' };
+  }
+
+  try {
+    const { lanClient } = await import('./lan-client.mjs');
+    if (lanClient && !lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_e) {
+    /* HTTP push still works when sync channel is down */
+  }
+
   return lan.pushClinicalOpsLanNow(opts);
 }
 

@@ -40,6 +40,11 @@ var RELEASE_NOTES_668 = [
       '<strong>Verde</strong> = sync en vivo; <strong>ámbar</strong> = conectando o sincronizando; <strong>naranja</strong> = reconectando; <strong>acento</strong> = en sala sin sync en vivo; <strong>gris</strong> = sin sala.',
   },
   {
+    title: 'Directorio LAN',
+    body:
+      'Los residentes aparecen al registrar <strong>@usuario</strong> y <strong>Unirse</strong> en tu sala ⇄; tú los asignas al equipo desde el directorio (no necesitan equipo antes).',
+  },
+  {
     title: 'Sin texto en el botón',
     body:
       'El detalle (sala, fase) está en el <strong>tooltip</strong> y en <strong>aria-label</strong> para lectores de pantalla.',

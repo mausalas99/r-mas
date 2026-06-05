@@ -440,7 +440,7 @@ export async function handleProfileFormSubmit(ev) {
       : 'Perfil guardado.';
   const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG, isBenignLanPushSkipCode } =
     await import('../../clinical-profile-lan-sync.mjs');
-  const lanPush = await flushClinicalProfileToLan();
+  const lanPush = await flushClinicalProfileToLan({ sala });
   if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (usernameWillChange && lanPush.ok) {

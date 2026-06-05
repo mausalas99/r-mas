@@ -644,6 +644,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const browseSala = resolveBrowseSala(elevated, sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
   const lanUsersEntry = renderLanUsersDirectoryEntryHtml(user);
+  const lanMemberHint = await resolveLanTeamMemberHintHtml(joined);
   const directorySection = await renderDirectorySectionHtml({
     userId,
     elevated,
@@ -657,6 +658,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Mis equipos</h4>
         <p class="clinical-teams-section-desc">Equipos donde ya eres integrante.</p>
+        ${lanMemberHint}
       </div>
       <div class="clinical-teams-list">${joinedHtml}</div>
     </section>
@@ -706,6 +708,35 @@ export function renderJoinWithCodeSectionHtml() {
         </div>
       </form>
     </section>`;
+}
+
+/** Hint when ⇄ is live but roster still shows only you (not rotación nueva). */
+export async function resolveLanTeamMemberHintHtml(joinedTeams) {
+  const teams = Array.isArray(joinedTeams) ? joinedTeams : [];
+  if (!teams.length) return '';
+  const soloTeams = teams.every((team) => {
+    const members = Array.isArray(team?.members) ? team.members : [];
+    return members.length <= 1;
+  });
+  if (!soloTeams) return '';
+  try {
+    const lan = await import('../lan-sync.mjs');
+    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
+      return '';
+    }
+    const roomId =
+      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
+    if (!roomId) {
+      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Abre ⇄ y pulsa <strong>Unirse</strong> en la sala de guardia. Los residentes deben conectarse a tu LAN, unirse a la misma sala y registrar <strong>@usuario</strong> antes de que puedas asignarlos a un equipo.</p>`;
+    }
+    const canDir = canViewLanUserDirectory(clinicalSessionContext.user || {});
+    if (canDir) {
+      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Estás en sala ⇄ pero el directorio aún no lista a otros. Cada Mac debe usar tu enlace/código LAN, <strong>Unirse</strong> en la misma sala y <strong>Guardar perfil</strong> con @usuario; después aparecen aquí y tú los asignas al equipo (no al revés).</p>`;
+    }
+    return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">En <strong>Integrantes</strong> verás compañeros cuando el admin te asigne a un equipo desde el directorio LAN. Mientras tanto: ⇄ → misma sala, @usuario guardado.</p>`;
+  } catch (_e) {
+    return '';
+  }
 }
 
 export function resolveBrowseSala(elevated, homeSala) {
