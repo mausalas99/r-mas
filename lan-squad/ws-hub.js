@@ -1,12 +1,15 @@
 'use strict';
 const { WebSocketServer } = require('ws');
 const { verifyTeamCode } = require('./team-code.js');
+const { createDeltaResolver } = require('./delta-resolver.js');
 
 const AUTH_TIMEOUT_MS = 3000;
 
 function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/ws' }) {
   const wss = new WebSocketServer({ noServer: true });
   const rooms = new Map();
+  const deltaResolver =
+    resolver && resolver.store ? createDeltaResolver({ store: resolver.store }) : null;
 
   function joinRoom(ws, name) {
     if (!rooms.has(name)) rooms.set(name, new Set());
@@ -116,6 +119,36 @@ function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/w
       }
 
       if (msg.clientId && !ws.__clientId) ws.__clientId = msg.clientId;
+
+      if (msg.capabilities && typeof msg.capabilities === 'object') {
+        ws.__capabilities = msg.capabilities;
+      }
+
+      if (msg.type === 'livesync:delta' && msg.delta && deltaResolver) {
+        try {
+          const out = deltaResolver.applyDelta({
+            ...msg.delta,
+            roomId: msg.roomId,
+            clientId: msg.clientId || msg.delta.clientId,
+          });
+          const applied = {
+            type: 'livesync:delta:applied',
+            ...out,
+          };
+          broadcast(channel, applied);
+          if (out.ok) {
+            broadcast(channel, {
+              type: 'livesync:revision',
+              roomId: msg.roomId,
+              revision: out.revision || 0,
+              clientId: msg.clientId || 'host',
+            });
+          }
+        } catch (_e) {
+          ws.close();
+        }
+        return;
+      }
 
       if (msg.type === 'livesync:patch' && msg.mutation && resolver) {
         try {

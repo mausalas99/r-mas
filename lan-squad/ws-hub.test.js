@@ -204,3 +204,48 @@ test('livesync:patch disjoint merge broadcasts livesync:applied', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('livesync:delta broadcasts canonical applied delta with origin txId', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ws-delta-'));
+  const filePath = path.join(dir, 'state.json');
+  const token = 'e'.repeat(64);
+  const roomId = 'delta-room';
+  const store = createHostStore({ filePath, teamCodePlain: token });
+  store.createRoom('Sala delta');
+  const resolver = createConflictResolver({ store });
+  const httpServer = http.createServer();
+  attachWsHub(httpServer, { getState: () => store.getState(), resolver });
+  await listen(httpServer);
+  const { port } = httpServer.address();
+  const channel = `live:${roomId}`;
+  try {
+    const wsA = await connectAuthedLiveWs(port, token, channel);
+    const wsB = await connectAuthedLiveWs(port, token, channel);
+    const appliedPromise = waitForMessage(wsB, (msg) => msg.type === 'livesync:delta:applied');
+    wsA.send(JSON.stringify({
+      type: 'livesync:delta',
+      roomId,
+      clientId: 'lc_a',
+      capabilities: { deltaSync: 1 },
+      delta: {
+        entityType: 'todo',
+        entityId: 'todo_1',
+        patientId: 'pat_1',
+        txId: 'tx_ws',
+        pathValues: { text: 'Pedir laboratorios' },
+        pathMeta: { text: { clientTimestamp: 1718293049283 } },
+      },
+    }));
+
+    const applied = await appliedPromise;
+    assert.equal(applied.originClientId, 'lc_a');
+    assert.equal(applied.txId, 'tx_ws');
+    assert.equal(applied.status, 'ok');
+    assert.deepEqual(applied.acceptedPaths, ['text']);
+    wsA.close();
+    wsB.close();
+  } finally {
+    await new Promise((resolve) => httpServer.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -172,7 +172,7 @@ function createConflictResolver({ store }) {
     };
   }
 
-  return { applyMutation, ConflictError };
+  return { applyMutation, ConflictError, store };
 }
 
 module.exports = { createConflictResolver, ConflictError };
