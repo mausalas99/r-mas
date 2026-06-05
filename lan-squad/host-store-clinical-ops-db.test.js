@@ -151,7 +151,7 @@ test('getRoomSyncBundle unions bundle clinical_users when DB export is newer but
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
 
   try {
-    const localUserId = await mgr.withTransaction(async (db) => {
+    const localUserId = await mgr.withTransaction((db) => {
       const user = ensureClinicalUser(db, { clientId: 'host-only', rank: 'R2', clinicalName: 'Host' });
       claimUsername(db, { userId: user.userId, username: 'host_only' });
       return user.userId;
@@ -231,7 +231,7 @@ test('persistRoomBundleClinicalOpsToHostDb folds sync-bundle clinicalOps into SQ
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
 
   try {
-    const localSnap = await mgr.withTransaction(async (db) => {
+    const localSnap = await mgr.withTransaction((db) => {
       const user = ensureClinicalUser(db, { clientId: 'host-bundle', rank: 'R2' });
       claimUsername(db, { userId: user.userId, username: 'host_bundle' });
       return exportClinicalOpsSnapshot(db);
