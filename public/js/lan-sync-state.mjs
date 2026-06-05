@@ -46,8 +46,11 @@ export function setRoomSyncPhase(roomId, phase, meta) {
   const id = String(roomId || '').trim();
   const p = String(phase || '').trim();
   if (!id || !VALID_PHASES.has(p)) return;
-  phaseByRoom.set(id, { phase: p, meta: meta ?? null });
-  notify(id, p, meta);
+  const prev = phaseByRoom.get(id);
+  const nextMeta = meta ?? null;
+  if (prev && prev.phase === p && prev.meta === nextMeta) return;
+  phaseByRoom.set(id, { phase: p, meta: nextMeta });
+  notify(id, p, nextMeta);
 }
 
 /**

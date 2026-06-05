@@ -41,7 +41,13 @@ import { mergePatientMonitoreoFromImported } from "../estado-actual-data.mjs";
 import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../../manejo-todo-dismiss.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
-import { guardAndSignLiveSyncMutation, clinicalSessionContext, migrateLocalPatientsClinicalSala } from "../../clinical-access-runtime.mjs";
+import {
+  guardAndSignLiveSyncMutation,
+  clinicalSessionContext,
+  migrateLocalPatientsClinicalSala,
+  getClinicalScopeContextForEvaluate,
+} from "../../clinical-access-runtime.mjs";
+import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import {
   deleteDraftConflict,
@@ -162,9 +168,13 @@ function scheduleTierALanServerWarm() {
   }
 }
 
+function renderPatientListLanSilent() {
+  runtime.renderPatientList({ silent: true });
+}
+
 let runtime = {
   showToast() {},
-  renderPatientList() {},
+  renderPatientList(_opts) {},
   renderNoteForm() {},
   renderLabHistoryPanel() {},
   getActiveId() {
@@ -401,10 +411,12 @@ export function acceptServerBundleConflict(opts) {
   if (!rid || !bundle || typeof bundle !== 'object') return false;
   setHostBundleBases(rid, bundle);
   if (bundle.clinicalOps && isClinicalOpsLanAvailable()) {
-    void applyClinicalOpsLanSnapshot(bundle.clinicalOps).then(function (ok) {
-      if (ok) {
+    void applyClinicalOpsLanSnapshot(bundle.clinicalOps).then(function (result) {
+      if (result.ok) {
         void refreshClinicalOpsSnapshotCache();
-        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        if (result.changed) {
+          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        }
       }
     });
   }
@@ -424,13 +436,15 @@ export function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
     });
   }
   if (snapshot && isClinicalOpsLanAvailable()) {
-    return applyClinicalOpsLanSnapshot(snapshot).then(function (ok) {
-      if (ok) {
+    return applyClinicalOpsLanSnapshot(snapshot).then(function (result) {
+      if (result.ok) {
         void refreshClinicalOpsSnapshotCache();
-        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        if (result.changed) {
+          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        }
       }
       applyRoomSyncPhaseAfterReconcile(rid);
-      return !!ok;
+      return !!result.ok;
     });
   }
   applyRoomSyncPhaseAfterReconcile(rid);
@@ -819,7 +833,25 @@ function collectPatientEntriesForLanSync() {
     var entry = runtime.buildPatientEntry(p.id);
     if (entry) out.push(entry);
   });
-  return out;
+  var user = clinicalSessionContext.user;
+  if (!user?.user_id) return out;
+  return filterPatientEntriesForLanTeamScope(
+    out,
+    user,
+    getClinicalScopeContextForEvaluate(),
+    clinicalSessionContext.guardiasMap
+  );
+}
+
+function filterIncomingPatientEntriesForScope(entries) {
+  var user = clinicalSessionContext.user;
+  if (!user?.user_id) return entries || [];
+  return filterPatientEntriesForLanTeamScope(
+    entries || [],
+    user,
+    getClinicalScopeContextForEvaluate(),
+    clinicalSessionContext.guardiasMap
+  );
 }
 
 function buildLiveSyncLocalMergeSource() {
@@ -855,25 +887,146 @@ function touchPatientLanUpdatedAt(patientId) {
 }
 
 function saveEntryTodosOnLocalPatient(localPatientId, entry) {
-  if (!localPatientId || !entry) return;
+  if (!localPatientId || !entry) return false;
   var incoming = Array.isArray(entry.todos) ? entry.todos : [];
-  if (!incoming.length) return;
-  storage.saveTodos(
+  if (!incoming.length) return false;
+  var merged = filterTodosRespectingDismissals(
     localPatientId,
-    filterTodosRespectingDismissals(
-      localPatientId,
-      mergeTodoListsById(storage.getTodos(localPatientId), incoming)
-    )
+    mergeTodoListsById(storage.getTodos(localPatientId), incoming)
   );
+  if (lanJsonEqual(storage.getTodos(localPatientId), merged)) return false;
+  storage.saveTodos(localPatientId, merged);
+  return true;
+}
+
+function lanJsonEqual(a, b) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch (_e) {
+    return a === b;
+  }
+}
+
+function assignLanScalarIfChanged(target, key, incoming, fallback) {
+  var next = incoming != null && incoming !== '' ? incoming : fallback;
+  if (String(target[key] || '') === String(next || '')) return false;
+  target[key] = next;
+  return true;
+}
+
+/** @returns {boolean} */
+function applyLanPatientEntryToExisting(existing, entry, opts) {
+  if (!existing || !entry || !entry.patient) return false;
+  var changed = false;
+  var p = entry.patient;
+  var scalarKeys = [
+    'nombre',
+    'edad',
+    'sexo',
+    'area',
+    'servicio',
+    'cuarto',
+    'cama',
+    'peso',
+    'talla',
+    'viaAcceso',
+    'registro',
+  ];
+  for (var sk = 0; sk < scalarKeys.length; sk += 1) {
+    var key = scalarKeys[sk];
+    if (assignLanScalarIfChanged(existing, key, p[key], existing[key])) changed = true;
+  }
+  var censoBefore = JSON.stringify(existing);
+  mergeCensoPatientFields(existing, p);
+  if (JSON.stringify(existing) !== censoBefore) changed = true;
+  if (p.fromLab && !existing.fromLab) {
+    existing.fromLab = true;
+    changed = true;
+  }
+  if (p.eventualidades && typeof p.eventualidades === 'object') {
+    var mergedEv = mergeEventualidades(existing.eventualidades, p.eventualidades) || p.eventualidades;
+    if (!lanJsonEqual(existing.eventualidades, mergedEv)) {
+      existing.eventualidades = mergedEv;
+      changed = true;
+    }
+  }
+  if (p.historiaClinica && typeof p.historiaClinica === 'object') {
+    var mergedHc = mergeHistoriaClinica(existing.historiaClinica, p.historiaClinica);
+    if (mergedHc && !lanJsonEqual(existing.historiaClinica, mergedHc)) {
+      existing.historiaClinica = mergedHc;
+      changed = true;
+    }
+  }
+  var nextNote = entry.note || {};
+  if (!lanJsonEqual(notes[existing.id], nextNote)) {
+    notes[existing.id] = nextNote;
+    changed = true;
+  }
+  var nextInd = entry.indicaciones || {};
+  if (!lanJsonEqual(indicaciones[existing.id], nextInd)) {
+    indicaciones[existing.id] = nextInd;
+    changed = true;
+  }
+  var nextLabs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  if (!lanJsonEqual(labHistory[existing.id], nextLabs)) {
+    labHistory[existing.id] = nextLabs;
+    changed = true;
+  }
+  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
+    if (entry.medReceta) {
+      if (!lanJsonEqual(medRecetaByPatient[existing.id], entry.medReceta)) {
+        medRecetaByPatient[existing.id] = entry.medReceta;
+        changed = true;
+      }
+    } else if (medRecetaByPatient[existing.id]) {
+      delete medRecetaByPatient[existing.id];
+      changed = true;
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile')) {
+    if (entry.medPharmProfile) {
+      if (!lanJsonEqual(medPharmProfileByPatient[existing.id], entry.medPharmProfile)) {
+        medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
+        changed = true;
+      }
+    } else if (medPharmProfileByPatient[existing.id]) {
+      delete medPharmProfileByPatient[existing.id];
+      changed = true;
+    }
+  }
+  if (entry.vpo) {
+    if (!lanJsonEqual(vpoByPatient[existing.id], entry.vpo)) {
+      vpoByPatient[existing.id] = entry.vpo;
+      changed = true;
+    }
+  } else if (vpoByPatient[existing.id]) {
+    delete vpoByPatient[existing.id];
+    changed = true;
+  }
+  if (entry.listadoProblemas) {
+    if (!lanJsonEqual(listadoProblemas[existing.id], entry.listadoProblemas)) {
+      listadoProblemas[existing.id] = entry.listadoProblemas;
+      changed = true;
+    }
+  }
+  var monBefore = JSON.stringify(existing);
+  mergePatientMonitoreoFromImported(existing, p);
+  if (JSON.stringify(existing) !== monBefore) changed = true;
+  if (!opts.skipTodos && saveEntryTodosOnLocalPatient(existing.id, entry)) changed = true;
+  return changed;
 }
 
 function applyLanPatientEntries(entries, opts) {
   opts = opts || {};
   if (!entries || !entries.length) return { added: 0, updated: 0 };
+  var scopedEntries = opts.skipTeamScopeFilter
+    ? entries
+    : filterIncomingPatientEntriesForScope(entries);
+  if (!scopedEntries.length) return { added: 0, updated: 0 };
   var added = 0;
   var updated = 0;
-  for (var i = 0; i < entries.length; i += 1) {
-    var entry = entries[i];
+  for (var i = 0; i < scopedEntries.length; i += 1) {
+    var entry = scopedEntries[i];
     if (!entry || !entry.patient) continue;
     var reg = String(entry.patient.registro || '').trim();
     var existing = reg ? runtime.findPatientByRegistro(reg) : null;
@@ -883,49 +1036,7 @@ function applyLanPatientEntries(entries, opts) {
       });
     }
     if (existing) {
-      existing.nombre = entry.patient.nombre || existing.nombre;
-      existing.edad = entry.patient.edad || existing.edad;
-      existing.sexo = entry.patient.sexo || existing.sexo;
-      existing.area = entry.patient.area || existing.area;
-      existing.servicio = entry.patient.servicio || existing.servicio;
-      existing.cuarto = entry.patient.cuarto || existing.cuarto;
-      existing.cama = entry.patient.cama || existing.cama;
-      existing.peso = entry.patient.peso || existing.peso;
-      existing.talla = entry.patient.talla || existing.talla;
-      existing.viaAcceso = entry.patient.viaAcceso || existing.viaAcceso;
-      mergeCensoPatientFields(existing, entry.patient);
-      existing.registro = entry.patient.registro || existing.registro;
-      if (entry.patient.fromLab) existing.fromLab = true;
-      if (entry.patient.eventualidades && typeof entry.patient.eventualidades === 'object') {
-        existing.eventualidades = mergeEventualidades(
-          existing.eventualidades,
-          entry.patient.eventualidades
-        ) || entry.patient.eventualidades;
-      }
-      if (entry.patient.historiaClinica && typeof entry.patient.historiaClinica === 'object') {
-        const mergedHc = mergeHistoriaClinica(
-          existing.historiaClinica,
-          entry.patient.historiaClinica
-        );
-        if (mergedHc) existing.historiaClinica = mergedHc;
-      }
-      notes[existing.id] = entry.note || {};
-      indicaciones[existing.id] = entry.indicaciones || {};
-      labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-      if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
-        if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
-        else delete medRecetaByPatient[existing.id];
-      }
-      if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile')) {
-        if (entry.medPharmProfile) medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
-        else delete medPharmProfileByPatient[existing.id];
-      }
-      if (entry.vpo) vpoByPatient[existing.id] = entry.vpo;
-      else delete vpoByPatient[existing.id];
-      if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
-      mergePatientMonitoreoFromImported(existing, entry.patient);
-      if (!opts.skipTodos) saveEntryTodosOnLocalPatient(existing.id, entry);
-      updated += 1;
+      if (applyLanPatientEntryToExisting(existing, entry, opts)) updated += 1;
     } else {
       var remoteId = String(entry.patient.id || '').trim();
       var idTaken =
@@ -980,7 +1091,7 @@ function applyLanPatientEntries(entries, opts) {
   }
   if (added || updated) {
     saveState({ immediate: true });
-    runtime.renderPatientList();
+    renderPatientListLanSilent();
     if (runtime.getActiveId()) {
       try {
         runtime.renderNoteForm();
@@ -1072,15 +1183,19 @@ function applyLiveSyncMerged(merged) {
     var mapped = idMap[pid] || pid;
     if (mapped) saveTodoPids[mapped] = true;
   });
+  var todosChanged = false;
   Object.keys(saveTodoPids).forEach(function (pid) {
     var todoList = todosMap[pid] || [];
-    storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todoList));
+    var nextTodos = filterTodosRespectingDismissals(pid, todoList);
+    if (!lanJsonEqual(storage.getTodos(pid), nextTodos)) {
+      storage.saveTodos(pid, nextTodos);
+      todosChanged = true;
+    }
   });
-  if (entries.length) {
-    applyLanPatientEntries(entries, { skipTodos: true });
-  }
+  var patientSync = entries.length ? applyLanPatientEntries(entries, { skipTodos: true }) : null;
+  var patientsChanged = !!(patientSync && (patientSync.added || patientSync.updated));
   if (patientRemoved) {
-    runtime.renderPatientList();
+    renderPatientListLanSilent();
     if (runtime.getActiveId()) runtime.selectPatient(runtime.getActiveId());
     else {
       var pv = document.getElementById('patient-view');
@@ -1093,8 +1208,8 @@ function applyLiveSyncMerged(merged) {
   if (runtime.getActiveAppTab() === 'agenda' || runtime.isMobileWeb()) {
     runtime.renderProcedureAgendaPanel();
   }
-  runtime.refreshAllTodoUIs();
-  if (runtime.getActiveId()) {
+  if (todosChanged) runtime.refreshAllTodoUIs();
+  if (patientsChanged && runtime.getActiveId()) {
     try {
       runtime.renderNoteForm();
     } catch (_eNote) {}
@@ -1106,12 +1221,15 @@ function applyLiveSyncMerged(merged) {
     applyManejoRoomDataToLocal(merged.manejo);
   }
   if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
-    void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function (ok) {
-      if (ok) {
+    void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function (result) {
+      if (result.ok) {
         void refreshClinicalOpsSnapshotCache();
-        void refreshClinicalSessionTeams().then(function () {
-          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-        });
+        if (result.changed) {
+          void refreshClinicalSessionTeams().then(function () {
+            document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+            renderPatientListLanSilent();
+          });
+        }
       } else {
         runtime.showToast(
           'No se pudieron sincronizar equipos ni usuarios LAN. Desbloquea la sesión clínica e intenta de nuevo.',
@@ -1120,7 +1238,7 @@ function applyLiveSyncMerged(merged) {
       }
     });
   }
-  migrateLocalPatientsClinicalSala();
+  if (patientsChanged) migrateLocalPatientsClinicalSala();
 }
 
 function applyLiveSyncApplied(msg) {
@@ -1187,9 +1305,10 @@ function applyLiveSyncApplied(msg) {
       return p && p.id === entityId;
     });
     if (row && !entityData._deleted) {
+      var before = JSON.stringify(row);
       Object.assign(row, entityData, { version: version });
       saveState({ immediate: true });
-      runtime.renderPatientList();
+      if (JSON.stringify(row) !== before) renderPatientListLanSilent();
       if (runtime.getActiveId() === entityId) {
         try {
           runtime.renderNoteForm();

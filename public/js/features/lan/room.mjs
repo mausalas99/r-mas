@@ -759,14 +759,16 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
       });
     }
     if (!body || !body.snapshot || typeof body.snapshot !== 'object') return false;
-    const ok = await applyClinicalOpsLanSnapshot(body.snapshot);
-    if (!ok) return false;
+    const mergeResult = await applyClinicalOpsLanSnapshot(body.snapshot);
+    if (!mergeResult.ok) return false;
     await refreshClinicalOpsSnapshotCache();
-    if (!options.skipGossipPush) {
-      scheduleClinicalOpsGossipPush();
-    }
-    if (typeof document !== 'undefined') {
-      document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+    if (mergeResult.changed) {
+      if (!options.skipGossipPush) {
+        scheduleClinicalOpsGossipPush();
+      }
+      if (typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
     }
     return true;
   } catch (_e) {
@@ -852,7 +854,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
       syncLiveSyncStatusChrome();
       runtime().renderProcedureAgendaPanel();
       runtime().refreshAllTodoUIs();
-      runtime().renderPatientList();
+      runtime().renderPatientList({ silent: true });
       void import('../../historia-clinica-lan-sync.mjs').then(function (m) {
         return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
       });

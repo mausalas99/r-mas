@@ -73,12 +73,64 @@ test('evaluateClinicalScope default deny without team or handoff', () => {
 
 test('patientAssignedToTeam returns true when patient is in assignments', () => {
   const assignments = [
-    { patient_id: 'p1', team_id: 't1' },
-    { patient_id: 'p2', team_id: 't2' },
+    { patient_id: 'p1', team_id: 't1', effective_at: '2026-06-01T00:00:00Z' },
+    { patient_id: 'p2', team_id: 't2', effective_at: '2026-06-01T00:00:00Z' },
   ];
   const joinedTeamIds = new Set(['t1']);
-  assert.equal(patientAssignedToTeam('p1', assignments, joinedTeamIds), true);
-  assert.equal(patientAssignedToTeam('p2', assignments, joinedTeamIds), false);
+  assert.equal(
+    patientAssignedToTeam('p1', assignments, joinedTeamIds, '2026-06-02T00:00:00Z'),
+    true
+  );
+  assert.equal(
+    patientAssignedToTeam('p2', assignments, joinedTeamIds, '2026-06-02T00:00:00Z'),
+    false
+  );
+});
+
+test('R2 with joined team only sees explicitly assigned patients', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2', rank: 'R2', sala: 'Sala 1' },
+    { id: 'p-struct', service: 'Sala', sub_area: 'A' },
+    null,
+    {
+      teams: [
+        {
+          team_id: 't1',
+          service: 'Sala',
+          sub_area_fraction: 'A',
+          members: [{ user_id: 'r2' }],
+        },
+      ],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, false);
+});
+
+test('patientAssignedToTeam uses latest assignment after reassignment', () => {
+  const assignments = [
+    { patient_id: 'p1', team_id: 't1', effective_at: '2026-06-01T00:00:00Z' },
+    { patient_id: 'p1', team_id: 't2', effective_at: '2026-06-10T00:00:00Z' },
+  ];
+  assert.equal(
+    patientAssignedToTeam('p1', assignments, new Set(['t1']), '2026-06-15T00:00:00Z'),
+    false
+  );
+  assert.equal(
+    patientAssignedToTeam('p1', assignments, new Set(['t2']), '2026-06-15T00:00:00Z'),
+    true
+  );
+});
+
+test('patientAssignedToTeam ignores future effective_at', () => {
+  const assignments = [{ patient_id: 'p1', team_id: 't1', effective_at: '2026-06-10T00:00:00Z' }];
+  const joinedTeamIds = new Set(['t1']);
+  assert.equal(
+    patientAssignedToTeam('p1', assignments, joinedTeamIds, '2026-06-02T00:00:00Z'),
+    false
+  );
 });
 
 test('patientCoveredByGuardia returns true for matching patient and user', () => {
@@ -520,7 +572,7 @@ test('V3 R4: full access without program admin', () => {
   assert.equal(scope.writable, true);
 });
 
-test('V3 R2: structural team match', () => {
+test('V3 R2: joined team requires explicit assignment (no structural fallback)', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r2', rank: 'R2', sala: SALA1 },
     { id: 'p1', service: 'Sala', sub_area: 'Sala A' },
@@ -535,12 +587,34 @@ test('V3 R2: structural team match', () => {
           members: [{ user_id: 'r2', rank: 'R2' }],
         },
       ],
+      assignments: [],
+    }
+  );
+  assert.equal(scope.writable, false);
+});
+
+test('V3 R2: explicit assignment grants access when joined', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2', rank: 'R2', sala: SALA1 },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala A' },
+    null,
+    {
+      ...v3Ctx,
+      teams: [
+        {
+          team_id: 't1',
+          service: 'Sala',
+          sub_area_fraction: 'A',
+          members: [{ user_id: 'r2', rank: 'R2' }],
+        },
+      ],
+      assignments: [{ patient_id: 'p1', team_id: 't1', effective_at: '2026-06-01T00:00:00Z' }],
     }
   );
   assert.equal(scope.writable, true);
 });
 
-test('V3 R3: extended service structural', () => {
+test('V3 R3: extended service structural blocked when joined without assignment', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r3', rank: 'R3' },
     { id: 'p1', service: 'Torre HU', sub_area: 'A' },
@@ -555,7 +629,8 @@ test('V3 R3: extended service structural', () => {
           members: [{ user_id: 'r3', rank: 'R3' }],
         },
       ],
+      assignments: [],
     }
   );
-  assert.equal(scope.writable, true);
+  assert.equal(scope.writable, false);
 });

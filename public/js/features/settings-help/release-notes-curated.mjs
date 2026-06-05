@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_703 = [
+  {
+    title: 'Censo sin parpadeo',
+    body:
+      'La lista lateral de pacientes se actualiza en sitio cuando llegan cambios por LAN: menos saltos visuales durante pase, ronda o guardia.',
+  },
+  {
+    title: 'Pacientes por equipo',
+    body:
+      'El sync LAN respeta alcance clínico: <strong>R4/Admin</strong> ven todo; <strong>R2/R3</strong> se acotan al equipo cuando aplica; <strong>R1</strong> queda en su sala/guardia.',
+  },
+  {
+    title: 'Asignar equipo',
+    body:
+      'En <strong>Datos del paciente</strong> aparece el selector de equipo para cambiar la cubeta y empujar clinical-ops por LAN.',
+  },
+  {
+    title: 'PIN del turno más estable',
+    body:
+      'El PIN dura el mes calendario, sobrevive reinicios del host y conserva el PIN anterior en gracia si se regenera manualmente.',
+  },
+  {
+    title: 'Antes de delta sync',
+    body:
+      'Incluye harness de peer virtual para probar directorio, push y churn de roster antes del overhaul mayor de sincronización.',
+  },
+];
+
 var RELEASE_NOTES_702 = [
   {
     title: 'Guardar perfil en Windows',
@@ -248,9 +276,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_702;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_703;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.0.3': RELEASE_NOTES_703,
   '7.0.2': RELEASE_NOTES_702,
   '7.0.1': RELEASE_NOTES_701,
   '6.7.0': RELEASE_NOTES_670,

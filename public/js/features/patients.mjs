@@ -35,6 +35,7 @@ import {
   patientMatchesTeam,
   teamForMemberCycle,
   stampPatientClinicalSala,
+  resolvePatientTeamIdFromAssignments,
 } from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
@@ -66,6 +67,12 @@ import {
 import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
 import { filterPatientsForPitchTour } from '../tour-pitch-demo-seed.mjs';
+import {
+  buildPatientListZones,
+  buildRondaNavIds,
+  trySilentPatientListPatch,
+  updatePatientListDomIncremental,
+} from '../patient-list-incremental.mjs';
 
 import {
   adoptTourPatientOnCommit,
@@ -80,17 +87,22 @@ import {
 var elevatedPatientFilters = { sala: '__all__', teamId: '', service: '' };
 
 function tagPatientsForTeamFilter(list) {
+  const ctx = getClinicalScopeContextForEvaluate();
+  const assignments = ctx.assignments || [];
   const teams = clinicalSessionContext.teams || [];
   const userId = String(clinicalSessionContext.user?.user_id || '');
+  const now = ctx.now || new Date().toISOString();
   for (const p of list) {
     if (!p) continue;
-    const mapped = patientForScopeEvaluate(p);
-    let teamId = '';
-    for (const team of teams) {
-      const scoped = userId ? teamForMemberCycle(team, userId) : team;
-      if (patientMatchesTeam(mapped, scoped)) {
-        teamId = String(team.team_id || '');
-        break;
+    let teamId = resolvePatientTeamIdFromAssignments(String(p.id || ''), assignments, now);
+    if (!teamId) {
+      const mapped = patientForScopeEvaluate(p);
+      for (const team of teams) {
+        const scoped = userId ? teamForMemberCycle(team, userId) : team;
+        if (patientMatchesTeam(mapped, scoped)) {
+          teamId = String(team.team_id || '');
+          break;
+        }
       }
     }
     p._filterTeamId = teamId;
@@ -999,6 +1011,13 @@ function renderPatientCardHtml(p) {
 }
 
 var _patientListRenderQueued = false;
+var _patientListSilentTimer = null;
+var PATIENT_LIST_SILENT_DEBOUNCE_MS = 220;
+
+/** @param {{ silent?: boolean }|undefined} [opts] */
+function normalizePatientListRenderOpts(opts) {
+  return opts && typeof opts === 'object' ? opts : {};
+}
 
 /** Solo actualiza .active en tarjetas visibles (evita innerHTML al cambiar paciente). */
 function patchPatientListActiveHighlight(nextId) {
@@ -1015,7 +1034,21 @@ function patchPatientListActiveHighlight(nextId) {
   return true;
 }
 
-export function renderPatientList() {
+/** @param {{ silent?: boolean }|undefined} [opts] — silent: LAN/incremental (no list flash) */
+export function renderPatientList(opts) {
+  opts = normalizePatientListRenderOpts(opts);
+  if (opts.silent) {
+    if (_patientListSilentTimer) clearTimeout(_patientListSilentTimer);
+    _patientListSilentTimer = setTimeout(function () {
+      _patientListSilentTimer = null;
+      renderPatientListNow({ silent: true });
+    }, PATIENT_LIST_SILENT_DEBOUNCE_MS);
+    return;
+  }
+  if (_patientListSilentTimer) {
+    clearTimeout(_patientListSilentTimer);
+    _patientListSilentTimer = null;
+  }
   if (_patientListRenderQueued) return;
   _patientListRenderQueued = true;
   requestAnimationFrame(function () {
@@ -1024,48 +1057,109 @@ export function renderPatientList() {
   });
 }
 
-function renderPatientListNow() {
+/** @param {{ silent?: boolean }|undefined} [opts] */
+function renderPatientListNow(opts) {
+  opts = normalizePatientListRenderOpts(opts);
   ensurePatientUiState();
   ensurePatientListClickDelegation();
-  syncClinicalCensusFiltersBar();
+  if (!opts.silent) syncClinicalCensusFiltersBar();
   var list = document.getElementById('patient-list');
   if (!list) return;
-  destroyPatientListSortables();
   var isRonda = isPaseMode();
-  list.classList.toggle('patient-list--ronda', isRonda);
-
   var visiblePatients = patientsVisibleInSidebar();
   if (!visiblePatients.length) {
+    destroyPatientListSortables();
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
     _lastRondaNavIds = [];
     if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
     syncGuardiaCensusPanelVisibility(rt.getSettings());
-    renderGuardiaCensusGrid(rt.getSettings());
+    if (!opts.silent) renderGuardiaCensusGrid(rt.getSettings());
     return;
   }
   var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
+    destroyPatientListSortables();
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
     _lastRondaNavIds = [];
     if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
-    syncGuardiaCensusPanelVisibility(rt.getSettings());
-    renderGuardiaCensusGrid(rt.getSettings());
+    if (!opts.silent) {
+      syncGuardiaCensusPanelVisibility(rt.getSettings());
+      renderGuardiaCensusGrid(rt.getSettings());
+    }
     return;
   }
-  var pinned = filtered.filter(function (p) {
-    return p.pinned && !p.archived;
-  });
-  var active = filtered.filter(function (p) {
-    return !p.pinned && !p.archived;
-  });
-  var archived = filtered.filter(function (p) {
-    return !!p.archived;
-  });
+  var zones = buildPatientListZones(filtered);
+  var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
+  var archivedCollapsed = isArchivedSectionCollapsed();
+  var listCtx = {
+    activeId: rt.getActiveId(),
+    isRonda: isRonda,
+    isRoundSeen: isPatientRoundSeen,
+  };
+  var incrementalOpts = {
+    zones: zones,
+    archivedCollapsed: archivedCollapsed,
+    patientSearchFilter: patientSearchFilter,
+    renderCard: cardHtml,
+    ctx: listCtx,
+    onRondaNav: function (z) {
+      _lastRondaNavIds = buildRondaNavIds(z);
+    },
+  };
+
+  if (opts.silent) {
+    if (
+      trySilentPatientListPatch(list, incrementalOpts) ||
+      updatePatientListDomIncremental(list, {
+        zones: zones,
+        archivedCollapsed: archivedCollapsed,
+        isRonda: isRonda,
+        renderCard: cardHtml,
+        ctx: listCtx,
+        renderPinnedLabel: function () {
+          return (
+            '<div class="patient-list-section-label patient-list-section-label--pinned" role="group" aria-label="Pacientes fijados">' +
+            '<svg class="patient-list-pin-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a3 3 0 1 0-6 0v3.76z"/></svg>' +
+            '<span class="patient-list-section-count">' +
+            zones.pinned.length +
+            '</span></div>'
+          );
+        },
+        renderActiveLabel: function () {
+          return (
+            '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
+            zones.active.length +
+            '</span></div>'
+          );
+        },
+        renderArchivedToggle: function (collapsed, count) {
+          return (
+            '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
+            (!collapsed ? 'true' : 'false') +
+            '">Archivados <span>(' +
+            count +
+            ')</span> <span>' +
+            (collapsed ? '▶' : '▼') +
+            '</span></button>'
+          );
+        },
+        onRondaNav: incrementalOpts.onRondaNav,
+      })
+    ) {
+      list.classList.toggle('patient-list--ronda', isRonda);
+      return;
+    }
+  }
+
+  destroyPatientListSortables();
+  list.classList.toggle('patient-list--ronda', isRonda);
+  var pinned = zones.pinned;
+  var active = zones.active;
+  var archived = zones.archived;
   var parts = [];
   var rondaNav = [];
-  var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
 
   if (pinned.length) {
     parts.push(
@@ -1096,17 +1190,16 @@ function renderPatientListNow() {
     parts.push('</div>');
   }
   if (archived.length) {
-    var collapsed = isArchivedSectionCollapsed();
     parts.push(
       '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
-        (!collapsed ? 'true' : 'false') +
+        (!archivedCollapsed ? 'true' : 'false') +
         '">Archivados <span>(' +
         archived.length +
         ')</span> <span>' +
-        (collapsed ? '▶' : '▼') +
+        (archivedCollapsed ? '▶' : '▼') +
         '</span></button>'
     );
-    if (!collapsed) {
+    if (!archivedCollapsed) {
       parts.push('<div class="patient-sort-zone" data-patient-zone="archived">');
       archived.forEach(function (p) {
         rondaNav.push(String(p.id));
@@ -1119,8 +1212,10 @@ function renderPatientListNow() {
   list.innerHTML = parts.join('');
   mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
-  syncGuardiaCensusPanelVisibility(rt.getSettings());
-  renderGuardiaCensusGrid(rt.getSettings());
+  if (!opts.silent) {
+    syncGuardiaCensusPanelVisibility(rt.getSettings());
+    renderGuardiaCensusGrid(rt.getSettings());
+  }
 }
 
 /** @param {string} iso */
@@ -1727,24 +1822,6 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   rt.applyDefaultsToNewPatient(patient.id);
   rt.applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
-
-  (function () {
-    try {
-      var _api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
-      var _user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
-      if (_api && _user && _user.user_id && typeof _api.dbClinicalFindUserTeam === 'function') {
-        void _api.dbClinicalFindUserTeam({ userId: String(_user.user_id) }).then(function (teamRes) {
-          if (teamRes && teamRes.ok && teamRes.teamId) {
-            return _api.dbClinicalAssignPatientToTeam({
-              patientId: patient.id,
-              teamId: teamRes.teamId,
-              effectiveAt: new Date().toISOString(),
-            });
-          }
-        }).catch(function () {});
-      }
-    } catch (_e) {}
-  })();
 
   saveState();
   var onSaved = pendingAddPatientSavedCallback;

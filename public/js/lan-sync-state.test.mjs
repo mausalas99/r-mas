@@ -65,6 +65,21 @@ describe('lan-sync-state', () => {
     assert.equal(getRoomSyncPhase(ROOM), RoomSyncPhase.live);
   });
 
+  it('setRoomSyncPhase is idempotent for listeners', () => {
+    const events = [];
+    const unsub = subscribeRoomSyncPhase(function (d) {
+      events.push(d);
+    });
+    setRoomSyncPhase(ROOM, RoomSyncPhase.live);
+    setRoomSyncPhase(ROOM, RoomSyncPhase.live);
+    setRoomSyncPhase(ROOM, RoomSyncPhase.catching_up);
+    setRoomSyncPhase(ROOM, RoomSyncPhase.catching_up);
+    unsub();
+    assert.equal(events.length, 2);
+    assert.equal(events[0].phase, RoomSyncPhase.live);
+    assert.equal(events[1].phase, RoomSyncPhase.catching_up);
+  });
+
   it('tracks phases independently per room', () => {
     setRoomSyncPhase('sala-2', RoomSyncPhase.joining);
     setRoomSyncPhase(ROOM, RoomSyncPhase.live);

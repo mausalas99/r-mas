@@ -57,19 +57,33 @@ export async function collectClinicalOpsForLanSync() {
   return snap;
 }
 
-/** @param {object|null} snapshot */
+/** @param {object|null|undefined} mergeStats */
+export function clinicalOpsMergeHadChanges(mergeStats) {
+  if (!mergeStats || typeof mergeStats !== 'object') return false;
+  return Object.keys(mergeStats).some((key) => {
+    const value = mergeStats[key];
+    return typeof value === 'number' && value > 0;
+  });
+}
+
+/**
+ * @param {object|null} snapshot
+ * @returns {Promise<{ ok: boolean, changed: boolean }>}
+ */
 export async function applyClinicalOpsLanSnapshot(snapshot) {
-  if (!snapshot || typeof snapshot !== 'object') return false;
+  if (!snapshot || typeof snapshot !== 'object') return { ok: false, changed: false };
   const api = dbApi();
-  if (!api || typeof api.dbClinicalOpsMerge !== 'function') return false;
+  if (!api || typeof api.dbClinicalOpsMerge !== 'function') return { ok: false, changed: false };
   const res = await api.dbClinicalOpsMerge({ snapshot });
   const ok = !!(res && res.ok !== false);
+  const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
   recordClinicalOpsTrace('merge', {
     ok,
+    changed,
     incomingUsers: Array.isArray(snapshot.clinical_users) ? snapshot.clinical_users.length : 0,
     mergeStats: res && res.mergeStats ? res.mergeStats : null,
   });
-  return ok;
+  return { ok, changed };
 }
 
 /** @param {object[]} sources */

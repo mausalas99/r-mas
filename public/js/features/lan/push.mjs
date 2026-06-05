@@ -17,7 +17,7 @@ import {
   getCachedClinicalOpsSnapshot,
   isClinicalOpsLanAvailable,
 } from '../../clinical-ops-lan.mjs';
-import { RoomSyncPhase, setRoomSyncPhase } from '../../lan-sync-state.mjs';
+import { RoomSyncPhase, getRoomSyncPhase, setRoomSyncPhase } from '../../lan-sync-state.mjs';
 import { recordClinicalOpsTrace, recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
 import { notifyLwwOverwrite } from '../../lan-lww-toast.mjs';
 import {
@@ -786,8 +786,10 @@ export async function reconcileLiveSyncRoom(roomId) {
   try {
     b = bridge();
     if (String(activeLiveSyncRoomId || '').trim() === rid) {
-      setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
-      if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
+      if (getRoomSyncPhase(rid) !== RoomSyncPhase.live) {
+        setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
+        if (typeof b.syncLiveSyncStatusChrome === 'function') b.syncLiveSyncStatusChrome();
+      }
     }
     if (isClinicalOpsLanAvailable()) {
       await prepareClinicalOpsForLanSync();

@@ -139,7 +139,7 @@ export function migrateLocalPatientsClinicalSala() {
     void saveState({ immediate: true });
     if (typeof document !== 'undefined') {
       void import('./features/patients.mjs')
-        .then((mod) => mod.renderPatientList())
+        .then((mod) => mod.renderPatientList({ silent: true }))
         .catch(() => {});
     }
   }

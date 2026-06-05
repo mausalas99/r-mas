@@ -27,10 +27,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.0.2](https://github.com/mausalas99/r-mas/releases/tag/v7.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.0.3](https://github.com/mausalas99/r-mas/releases/tag/v7.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.0.3 (LAN antes de delta sync)
+
+- **Censo sin parpadeo** — La lista lateral de pacientes se actualiza incrementalmente al llegar cambios LAN; menos saltos visuales durante pase/guardia.
+- **Pacientes por equipo** — El sync LAN respeta alcance clínico: R4/Admin global, R2/R3 por equipo cuando aplica, R1 por sala/guardia.
+- **Asignación de equipo** — Datos del paciente permite asignar/cambiar equipo y empujar clinical-ops por LAN.
+- **PIN del turno** — PIN mensual reutilizable; sobrevive reinicios y conserva el PIN anterior en gracia al regenerar.
+- **Validación local** — Peer virtual para probar directorio/roster/churn antes del overhaul de delta sync.
+- **Sobre 7.0.2** — Incluye el hotfix de perfil Windows y recuperación de @usuario.
+
+Notas: `docs/RELEASE_NOTES_7.0.3.txt`.
 
 ## R+ 6.7.0 (LAN — directorio visible y PIN del turno)
 

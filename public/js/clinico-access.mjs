@@ -276,17 +276,81 @@ export function getJoinedTeams(teams, userId) {
   );
 }
 
+/** @param {object[]} teams @param {string} userId */
+export function userHasJoinedClinicalTeams(teams, userId) {
+  return getJoinedTeams(teams, userId).length > 0;
+}
+
 /**
- * Checks if a patient is assigned to any of the user's teams.
+ * @param {string} patientId
+ * @param {object[]} assignments
+ */
+export function patientHasExplicitTeamAssignment(patientId, assignments) {
+  const pid = String(patientId || '');
+  return (assignments || []).some((a) => String(a.patient_id) === pid);
+}
+
+/**
+ * Active team for a patient (latest assignment with effective_at <= now).
+ * @param {string} patientId
+ * @param {object[]} assignments
+ * @param {Date|string|number} [now]
+ */
+export function resolvePatientTeamIdFromAssignments(patientId, assignments, now) {
+  const pid = String(patientId || '');
+  const nowMs = toMillis(now != null ? now : new Date());
+  let best = null;
+  let bestMs = -Infinity;
+  let bestCreatedMs = -Infinity;
+  for (const row of assignments || []) {
+    if (String(row?.patient_id || '') !== pid) continue;
+    const effMs = toMillis(row.effective_at);
+    if (!Number.isFinite(effMs) || effMs > nowMs) continue;
+    const createdMs = toMillis(row.created_at, row.effective_at);
+    if (effMs > bestMs || (effMs === bestMs && createdMs >= bestCreatedMs)) {
+      bestMs = effMs;
+      bestCreatedMs = createdMs;
+      best = String(row.team_id || '');
+    }
+  }
+  return best || '';
+}
+
+/**
+ * Checks if a patient is assigned to any of the user's teams (effective now).
  * @param {string} patientId
  * @param {object[]} assignments — from patient_team_assignment
  * @param {Set<string>} joinedTeamIds
+ * @param {Date|string|number} [now]
  */
-export function patientAssignedToTeam(patientId, assignments, joinedTeamIds) {
-  const pid = String(patientId || '');
-  return (assignments || []).some(
-    (a) => String(a.patient_id) === pid && joinedTeamIds.has(String(a.team_id))
-  );
+export function patientAssignedToTeam(patientId, assignments, joinedTeamIds, now) {
+  const teamId = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
+  return !!(teamId && joinedTeamIds.has(teamId));
+}
+
+/**
+ * Team scope for census/LAN: explicit assignment wins; structural match only when unassigned.
+ * @param {object} patient
+ * @param {object[]} joinedTeams
+ * @param {object[]} assignments
+ * @param {Set<string>} joinedTeamIds
+ * @param {string} [userId]
+ * @param {Date|string|number} [now]
+ */
+export function patientInJoinedTeamScope(
+  patient,
+  joinedTeams,
+  assignments,
+  joinedTeamIds,
+  userId,
+  now,
+  opts
+) {
+  const patientId = String(patient?.id || '');
+  const strictTeamFilter = opts?.strictTeamFilter === true;
+  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds, now)) return true;
+  if (strictTeamFilter || patientHasExplicitTeamAssignment(patientId, assignments)) return false;
+  return patientMatchesAnyJoinedTeam(patient, joinedTeams, userId);
 }
 
 /**
@@ -676,6 +740,7 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
 
   const joinedTeams = getJoinedTeams(teams, userId);
   const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
+  const strictTeamFilter = userHasJoinedClinicalTeams(teams, userId);
 
   if (guardiaMode) {
     if (rank === 'R1') {
@@ -720,23 +785,47 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     if (patientCoveredByGuardia(patientId, userId, guardias)) {
       return allow('R2: paciente entregado');
     }
-    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams, userId)) {
+    if (
+      patientInJoinedTeamScope(
+        targetPatient,
+        joinedTeams,
+        assignments,
+        joinedTeamIds,
+        userId,
+        now,
+        { strictTeamFilter }
+      )
+    ) {
       return allow('R2: paciente de mi equipo');
     }
     return deny('R2: sin equipo ni entrega');
   }
 
   if (rank === 'R3') {
-    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams, userId)) {
+    if (
+      patientInJoinedTeamScope(
+        targetPatient,
+        joinedTeams,
+        assignments,
+        joinedTeamIds,
+        userId,
+        now,
+        { strictTeamFilter }
+      )
+    ) {
       return allow('R3: paciente de mi equipo');
     }
-    if (r3ExtendedStructuralAccess(currentUser, targetPatient, joinedTeams)) {
+    if (
+      !strictTeamFilter &&
+      !patientHasExplicitTeamAssignment(patientId, assignments) &&
+      r3ExtendedStructuralAccess(currentUser, targetPatient, joinedTeams)
+    ) {
       return allow('R3: servicio extendido');
     }
     return deny('R3: fuera de alcance');
   }
 
-  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds)) {
+  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds, now)) {
     return allow('Paciente del equipo (asignación)');
   }
 

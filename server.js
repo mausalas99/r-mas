@@ -152,6 +152,7 @@ appExpress.use(express.static(path.join(__dirname, 'public')));
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
+const lanShiftPinPath = path.join(userData, 'lan-shift-pin.json');
 
 let lanBoot;
 try {
@@ -177,7 +178,10 @@ const lanStore = createHostStore({
   dbManager: lanDbManager,
 });
 const ticketStore = createTicketStore({ getHostToken: () => LAN_TEAM_CODE });
-const shiftPinStore = createShiftPinStore({ getHostToken: () => LAN_TEAM_CODE });
+const shiftPinStore = createShiftPinStore({
+  getHostToken: () => LAN_TEAM_CODE,
+  filePath: lanShiftPinPath,
+});
 shiftPinStore.ensure();
 const getLanHostUrl = () =>
   pickLanCandidateBaseUrl(LAN_HTTP_PORT) || `http://localhost:${LAN_HTTP_PORT}`;

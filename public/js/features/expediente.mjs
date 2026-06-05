@@ -7,6 +7,11 @@ import {
 } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { buildPatientAccesosSectionHtml, patientDataAccesosWindowHandlers } from "../patient-data-accesos-ui.mjs";
+import {
+  buildPatientTeamAssignSectionHtml,
+  patientTeamAssignWindowHandlers,
+  wirePatientTeamAssignRefresh,
+} from "../patient-team-assign-ui.mjs";
 import { buildPatientIngresoFechasHtml } from "../patient-data-ingreso-ui.mjs";
 import { refreshRpcDateFields } from "../rpc-date-picker.mjs";
 import {
@@ -1177,6 +1182,7 @@ function generateListado() {
 function buildPatientDemographicsFieldsHtml(patient) {
   return (
     '<div style="display:flex;flex-direction:column;gap:10px;">' +
+    buildPatientTeamAssignSectionHtml(patient) +
     '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" oninput="updatePatient(\'nombre\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;">' +
     '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +
@@ -1227,8 +1233,11 @@ function renderPatientDataPane() {
   }
   wrap.dataset.patientId = String(patient.id);
   var embedded = !!wrap.closest('.exp-datos-mount');
+  var datosMount = wrap.closest('.exp-datos-mount');
+  if (datosMount) datosMount.dataset.patientId = String(patient.id);
   wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded: embedded });
   refreshRpcDateFields(wrap);
+  wirePatientTeamAssignRefresh();
 }
 
 export {
@@ -1263,5 +1272,6 @@ export const windowHandlers = Object.assign(
     updateListadoMedico,
   },
   patientDataCensoWindowHandlers,
-  patientDataAccesosWindowHandlers
+  patientDataAccesosWindowHandlers,
+  patientTeamAssignWindowHandlers
 );
