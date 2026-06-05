@@ -518,6 +518,77 @@ test('PUT /patients/:id/historia-clinica accepts nested app shape', async () => 
   }
 });
 
+async function setupLanDeltaRouterTest(prefix) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala delta');
+  store.putRoomSyncBundle(room.id, { baseRevision: 0, baseEntityVersions: {} });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  const { port } = server.address();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  return { dir, store, room, server, code, baseUrl };
+}
+
+test('POST /rooms/:id/delta applies accepted paths and broadcasts revision', async () => {
+  const { server, store, baseUrl, room, dir, code } =
+    await setupLanDeltaRouterTest('lan-delta-http-');
+  try {
+    const res = await fetch(
+      `${baseUrl}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/delta`,
+      {
+        method: 'POST',
+        headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entityType: 'historiaClinica',
+          entityId: 'pat_1',
+          patientId: 'pat_1',
+          clientId: 'lc_a',
+          txId: 'tx_http',
+          pathValues: { 'labsAtAdmission.na': 140 },
+          pathMeta: { 'labsAtAdmission.na': { clientTimestamp: 1718293049283 } },
+        }),
+      }
+    );
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.status, 'ok');
+    assert.equal(body.deltaSeq, 1);
+    const row = store.getEntity({
+      roomId: room.id,
+      entityType: 'historiaClinica',
+      entityId: 'pat_1',
+      patientId: 'pat_1',
+    });
+    assert.equal(row.data.labsAtAdmission.na, 140);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('GET /rooms/:id/deltas returns gap when replay cannot be contiguous', async () => {
+  const { server, store, baseUrl, room, dir, code } =
+    await setupLanDeltaRouterTest('lan-delta-replay-');
+  try {
+    const bundle = store.getRoomSyncBundle(room.id);
+    bundle.deltaSeq = 5;
+    bundle.deltaLog = [{ deltaSeq: 5, acceptedPaths: ['text'] }];
+    const res = await fetch(
+      `${baseUrl}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/deltas?afterSeq=3`,
+      { headers: bearerHeaders(code) }
+    );
+    assert.equal(res.status, 409);
+    const body = await res.json();
+    assert.equal(body.error, 'delta_gap');
+    assert.equal(body.fallback, 'sync_bundle');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('PUT /patients/:id overlap returns 200 with lwwApplied', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-put-conf-'));
   const statePath = path.join(dir, 'state.json');

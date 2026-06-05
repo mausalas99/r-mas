@@ -2,10 +2,12 @@
 const express = require('express');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { validateHistoriaClinicaPut } = require('./historia-clinica-validate.js');
+const { createDeltaResolver } = require('./delta-resolver.js');
 
 function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
   const r = express.Router();
   const getState = () => store.getState();
+  const deltaResolver = createDeltaResolver({ store });
 
   /** Notify all peers on the live room WS channel (6.6.1 HTTP-primary push). */
   function broadcastLiveRevision(roomId, revision, clientId) {
@@ -104,6 +106,34 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
     const bundle = store.getRoomSyncBundle(req.params.id);
     if (!bundle) return res.status(404).json({ error: 'no bundle' });
     res.json({ bundle });
+  });
+
+  r.post('/rooms/:id/delta', express.json({ limit: '1mb' }), (req, res) => {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const out = deltaResolver.applyDelta({
+      ...body,
+      roomId: req.params.id,
+    });
+    if (out.status === 'invalid_delta') return res.status(400).json(out);
+    if (out.status === 'stale_delta') return res.status(409).json(out);
+    broadcast(`live:${encodeURIComponent(req.params.id)}`, {
+      type: 'livesync:delta:applied',
+      ...out,
+    });
+    broadcastLiveRevision(req.params.id, store.getRoomSyncBundle(req.params.id)?.revision, body.clientId);
+    res.json(out);
+  });
+
+  r.get('/rooms/:id/deltas', (req, res) => {
+    const afterSeq = Number(req.query.afterSeq || 0);
+    const out = store.getRoomDeltaLog(req.params.id, afterSeq);
+    if (!out.ok) {
+      return res.status(409).json({
+        error: out.error,
+        fallback: 'sync_bundle',
+      });
+    }
+    res.json(out);
   });
 
   r.get('/rooms/:id/clinical-ops', (req, res) => {
