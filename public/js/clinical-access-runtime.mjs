@@ -176,6 +176,7 @@ export async function resumeClinicalIdentityByUsername(username, settings, clien
   if (!api) {
     return { ok: false, error: 'Sesión clínica no disponible.' };
   }
+  const stored = settings || readRpcSettings();
 
   if (typeof api.dbClinicalIdentityResume === 'function') {
     const previousUserId = String(clinicalSessionContext.user?.user_id || '');
@@ -205,7 +206,6 @@ export async function resumeClinicalIdentityByUsername(username, settings, clien
   if (typeof api.dbClinicalAccessBootstrap !== 'function') {
     return { ok: false, error: 'Sesión clínica no disponible.' };
   }
-  const stored = settings || readRpcSettings();
   const res = await api.dbClinicalAccessBootstrap({
     clientId: String(stored.clientId || ''),
     rank: resolveClinicalRank(stored, String(stored.clientId || '')),

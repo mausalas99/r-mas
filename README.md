@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.0.1](https://github.com/mausalas99/r-mas/releases/tag/v7.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.0.2](https://github.com/mausalas99/r-mas/releases/tag/v7.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -604,6 +604,14 @@ Notas: `docs/RELEASE_NOTES_2.1.2.txt`.
 
 ---
 
+
+## R+ 7.0.2 (perfil Windows y recuperar @usuario)
+
+- **Guardar perfil** — Corrige el fallo en Windows al pulsar Continuar en el registro (nombre, rango, sala).
+- **Recuperar @usuario** — Vuelve a funcionar «Recuperar mi usuario» y el flujo al reclamar un handle ocupado.
+- **Incluye 7.0.1** — PIN del turno, Wi‑Fi hospital, directorio LAN y SQLCipher en Windows.
+
+Notas: `docs/RELEASE_NOTES_7.0.2.txt`.
 ## R+ 2.1.1 (parche — cultivos polimicrobianos)
 
 - **Cultivos** — Si el informe trae varios `MICROORGANISMO` con aislamientos distintos (p. ej. Klebsiella y Enterococcus en el mismo urocultivo), el resumen incluye **cada germen** con su antibiograma compacto y cuenta asociada; el bloque MALDI no mezcla resultados posteriores.

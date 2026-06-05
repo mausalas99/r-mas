@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_702 = [
+  {
+    title: 'Guardar perfil en Windows',
+    body:
+      'Corrige el error al pulsar <strong>Continuar</strong> en el registro (nombre en guardia, rango, sala). Ya no aparece <code>Cannot access before initialization</code> en consola.',
+  },
+  {
+    title: 'Recuperar @usuario',
+    body:
+      '«Recuperar mi usuario» y el flujo al reclamar un handle ya registrado vuelven a enlazar la cuenta en este dispositivo.',
+  },
+  {
+    title: 'Incluye 7.0.1',
+    body:
+      'PIN del turno, reconexión Wi‑Fi hospital, directorio LAN y empaquetado SQLCipher en Windows.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Parche sobre <strong>7.0.1</strong>: instala en todas las estaciones; no cambia PIN ni sala.',
+  },
+];
+
 var RELEASE_NOTES_701 = [
   {
     title: 'PIN del turno',
@@ -225,9 +248,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_701;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_702;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.0.2': RELEASE_NOTES_702,
   '7.0.1': RELEASE_NOTES_701,
   '6.7.0': RELEASE_NOTES_670,
   '6.6.9': RELEASE_NOTES_669,

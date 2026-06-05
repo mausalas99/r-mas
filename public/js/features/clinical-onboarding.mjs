@@ -272,7 +272,6 @@ async function handleUsernameStepSubmit(ev) {
   });
   notifyLanProfilePushResult(lanPush, toast);
 
-  const { isClinicalLocalOnlyMode } = await import('../clinical-settings.mjs');
   const localOnly = isClinicalLocalOnlyMode();
 
   if (
