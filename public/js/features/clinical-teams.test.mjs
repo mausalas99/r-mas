@@ -135,4 +135,10 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /promptAdminAccessCode/);
     assert.equal(clinicalTeamsSrc.includes('window.prompt('), false);
   });
+
+  it('team join field redirects ⇄ sala links to Conexión guardia', () => {
+    assert.match(clinicalTeamsSrc, /isLanSalaInvitePaste/);
+    assert.match(clinicalTeamsSrc, /redirectLanInviteFromTeamJoinField/);
+    assert.match(clinicalTeamsSrc, /joinLanFromInviteUi/);
+  });
 });

@@ -11,6 +11,7 @@
  *   statusHint?: string,
  *   onBecomeHost?: () => void,
  *   showBecomeHost?: boolean,
+ *   showInvitePaste?: boolean,
  * }} opts
  */
 export function appendLanHubStatusCard(root, opts) {
@@ -48,6 +49,33 @@ export function appendLanHubStatusCard(root, opts) {
       if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
     };
     statusCard.appendChild(becomeHostBtn);
+  }
+  if (opts.showInvitePaste) {
+    const inviteHint = document.createElement('p');
+    inviteHint.className = 'lan-connect-card-hint lan-hub-invite-paste-hint';
+    inviteHint.style.marginTop = '10px';
+    inviteHint.innerHTML =
+      'Pega aquí el enlace <strong>Otra Mac del equipo</strong> del anfitrión (<code>http://…/join/req_…</code>).';
+    statusCard.appendChild(inviteHint);
+    const inputInvite = document.createElement('textarea');
+    inputInvite.className = 'profile-input';
+    inputInvite.id = 'lan-input-invite-link';
+    inputInvite.rows = 2;
+    inputInvite.autocomplete = 'off';
+    inputInvite.placeholder = 'http://10.x.x.x:3738/join/req_…';
+    inputInvite.style.marginTop = '6px';
+    statusCard.appendChild(inputInvite);
+    const row = document.createElement('div');
+    row.className = 'lan-connect-actions-row';
+    row.style.marginTop = '8px';
+    const btnJoin = document.createElement('button');
+    btnJoin.type = 'button';
+    btnJoin.className = 'btn-lan-primary';
+    btnJoin.style.flex = '1';
+    btnJoin.textContent = 'Unirse con enlace';
+    btnJoin.setAttribute('data-lan-action', 'join-invite');
+    row.appendChild(btnJoin);
+    statusCard.appendChild(row);
   }
   root.appendChild(statusCard);
 }

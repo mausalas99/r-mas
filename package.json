@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "6.6.9",
+  "version": "6.7.0",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
@@ -33,7 +33,9 @@
     "postinstall": "node scripts/rebuild-native-db.mjs || true",
     "metrics": "node scripts/metrics/run.mjs",
     "metrics:check": "node scripts/metrics/check.mjs",
-    "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline"
+    "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline",
+    "dev:lan-virtual-peer": "node scripts/lan-virtual-peer.mjs",
+    "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs"
   },
   "author": "Mauricio Salas",
   "license": "ISC",

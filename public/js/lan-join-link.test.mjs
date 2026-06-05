@@ -5,6 +5,7 @@ import {
   buildPermanentMobileJoinUrl,
   parseLanJoinQuery,
   parseLanInviteInput,
+  isLanSalaInvitePaste,
   resolveLanJoinHostUrl,
   resolveLiveSyncRoomIdFromSala,
   liveSyncRoomLabel,
@@ -105,5 +106,13 @@ describe('lan-join-link', () => {
     assert.equal(p.teamCode, '');
     assert.equal(p.roomId, 'r9');
     assert.equal(p.legacyInvite, true);
+  });
+
+  it('isLanSalaInvitePaste distingue enlace ⇄ de código de equipo', () => {
+    assert.equal(
+      isLanSalaInvitePaste('http://10.102.32.207:3738/join/req_deadbeefcafe'),
+      true
+    );
+    assert.equal(isLanSalaInvitePaste('2017936e'), false);
   });
 });

@@ -9,6 +9,7 @@ import {
 } from '../interno/host-discovery.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 
+const LAN_BEACON_PATH = '/api/lan/v1/beacon';
 const LAN_PING_PATH = '/api/lan/v1/ping';
 const PROBE_TIMEOUT_MS = 500;
 /** Chrome ~6 connections per host; ward scans must not flood the pool. */
@@ -81,6 +82,83 @@ export async function probeLanHostBase(base, teamCode, signal) {
     clearTimeout(timer);
     if (signal) signal.removeEventListener('abort', onAbort);
   }
+}
+
+/**
+ * @param {string} base
+ * @param {AbortSignal} [signal]
+ */
+export async function probeLanHostBeacon(base, signal) {
+  const normalized = normalizeLanHostBase(base);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
+  const onAbort = () => ctrl.abort();
+  if (signal) {
+    if (signal.aborted) {
+      clearTimeout(timer);
+      return null;
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+  }
+  try {
+    if (!normalized) return null;
+    const res = await fetch(`${normalized}${LAN_BEACON_PATH}`, {
+      method: 'GET',
+      cache: 'no-store',
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.lan !== true) return null;
+    return normalized;
+  } catch (_e) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', onAbort);
+  }
+}
+
+/**
+ * Discover ward hosts without bearer (beacon only). Used with shift PIN exchange.
+ * @param {string} ownBaseUrl
+ * @returns {Promise<string[]>}
+ */
+export async function discoverLanHostsOnSubnetViaBeacon(ownBaseUrl) {
+  const own = normalizeLanHostBase(ownBaseUrl);
+
+  let seedHost = hostIpv4FromBase(own);
+  if ((!seedHost || isLoopbackHostname(seedHost)) && typeof window !== 'undefined') {
+    if (window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === 'function') {
+      try {
+        const fromElectron = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
+        const h = hostIpv4FromBase(fromElectron);
+        if (h && !isLoopbackHostname(h)) seedHost = h;
+      } catch (_e) {}
+    }
+  }
+  if (!seedHost && own) seedHost = hostIpv4FromBase(own);
+
+  const prefix = subnetPrefixFromIpv4(seedHost);
+  if (!prefix || !isPrivateIpv4(seedHost)) return [];
+
+  const skip = isLoopbackHostname(seedHost) ? '' : seedHost;
+  const hosts = orderedSubnetHosts(prefix, skip);
+  /** @type {Set<string>} */
+  const found = new Set();
+
+  for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
+    const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
+    const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
+    const probes = await Promise.all(bases.map((base) => probeLanHostBeacon(base)));
+    for (const url of probes) {
+      if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
+      found.add(url);
+      if (found.size >= MAX_FOUND) break;
+    }
+  }
+
+  return [...found].sort();
 }
 
 /**

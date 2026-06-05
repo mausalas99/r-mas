@@ -5,6 +5,7 @@
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { getRoomMembership, setRoomMembership } from './live-sync-membership.mjs';
 import { liveSyncRoomLabel, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
+import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
 
 /** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
 export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
@@ -12,6 +13,20 @@ export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
 
 export const LAN_PROFILE_PUSH_FAILED_MSG =
   'Perfil guardado en esta Mac, pero no se pudo publicar a la sala. Revisa conexión ⇄ e intenta Guardar perfil de nuevo.';
+
+export const LAN_PROFILE_NEEDS_CONNECT_MSG =
+  'Perfil guardado en esta Mac. Para aparecer en la guardia, conéctate a la sala del equipo: pega el enlace de invitación o escanea el anfitrión.';
+
+/** @param {string} [code] */
+export function isLanProfileNeedsConnectCode(code) {
+  const c = String(code || '');
+  return c === 'NO_LAN' || c === 'NO_ROOM';
+}
+
+/** @param {string} code */
+function traceFlushClinicalProfilePushSkip(code) {
+  recordClinicalOpsTrace('push', { code, usersExported: 0 });
+}
 
 /** LAN push codes that are expected offline / sin sala — no toast de error. */
 export function isBenignLanPushSkipCode(code) {
@@ -151,7 +166,10 @@ export async function assertLanRoomForUsernameRegister(opts = {}) {
  */
 export async function flushClinicalProfileToLan(opts = {}) {
   const { isClinicalLocalOnlyMode } = await import('./clinical-settings.mjs');
-  if (isClinicalLocalOnlyMode()) return { ok: false, code: 'NO_LAN' };
+  if (isClinicalLocalOnlyMode()) {
+    traceFlushClinicalProfilePushSkip('NO_LAN');
+    return { ok: false, code: 'NO_LAN' };
+  }
 
   await applyPendingLanInviteFromPage();
 
@@ -165,12 +183,14 @@ export async function flushClinicalProfileToLan(opts = {}) {
 
   const lan = await import('./features/lan-sync.mjs');
   if (!lan.isLanSessionConfiguredForRest?.()) {
+    traceFlushClinicalProfilePushSkip('NO_LAN');
     return { ok: false, code: 'NO_LAN' };
   }
 
   const pushMod = await import('./features/lan/push.mjs');
   const effectiveRoom = pushMod.ensureEffectiveLiveSyncRoomId();
   if (!effectiveRoom) {
+    traceFlushClinicalProfilePushSkip('NO_ROOM');
     return { ok: false, code: 'NO_ROOM' };
   }
 

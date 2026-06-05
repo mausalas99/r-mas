@@ -27,10 +27,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.9](https://github.com/mausalas99/r-mas/releases/tag/v6.6.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.7.0](https://github.com/mausalas99/r-mas/releases/tag/v6.7.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.7.0 (LAN — directorio visible y PIN del turno)
+
+- **Directorio LAN** — El anfitrión ya no pierde el roster al sincronizar bundles vacíos; los @usuario de la guardia vuelven a verse en censo, entregas y equipos.
+- **PIN del turno** — PIN de 6 dígitos (~12 h) en el panel LiveSync; los residentes se unen escaneando la subred sin pegar enlace.
+- **Conexión honesta** — Sin falso «Perfil guardado» si aún no hay host/sala; CTA para abrir ⇄ y conectar.
+- **Diagnóstico** — Traces de push clinical-ops con código de bloqueo (`NO_LAN`, `NO_ROOM`, …).
+- **Sobre 6.6.9** — Arranque Windows SQLCipher, LiveSync Wi‑Fi, iPad/móvil y onboarding local.
+- **Turno homogéneo** — **Todas** las estaciones en **6.7.0** el mismo día; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.7.0.txt`.
 
 ## R+ 6.6.9 (Windows — arranque SQLCipher)
 
@@ -566,8 +577,6 @@ Notas: `docs/RELEASE_NOTES_6.6.8.txt`.
 - **Consolidar** — Diálogo de confirmación y tooltip del botón con redacción más clara.
 
 Notas: `docs/RELEASE_NOTES_2.2.1.txt`.
-
----
 
 ## R+ 2.2.0 (pestaña Cultivos y mejoras de historial)
 

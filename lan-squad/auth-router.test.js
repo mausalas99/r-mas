@@ -16,17 +16,20 @@ function createTestApp({ hostToken, hostUrl, requiresMigrationNotice = false }) 
   const statePath = path.join(dir, 'state.json');
   const store = createHostStore({ filePath: statePath, teamCodePlain: hostToken });
   const ticketStore = createTicketStore({ getHostToken: () => hostToken });
+  const { createShiftPinStore } = require('./shift-pin-store.js');
+  const shiftPinStore = createShiftPinStore({ getHostToken: () => hostToken });
   const app = express();
   app.use(
     '/api/lan/v1',
     createAuthRouter({
       ticketStore,
+      shiftPinStore,
       getHostToken: () => hostToken,
       getHostUrl: () => hostUrl,
       getRequiresMigrationNotice: () => requiresMigrationNotice,
     })
   );
-  return { app, dir, store, ticketStore };
+  return { app, dir, store, ticketStore, shiftPinStore };
 }
 
 async function listen(app) {
@@ -176,11 +179,14 @@ test('auth routes emit forensic audit events when dbManager is unlocked', async 
   const statePath = path.join(dir, 'state.json');
   createHostStore({ filePath: statePath, teamCodePlain: hostToken });
   const ticketStore = createTicketStore({ getHostToken: () => hostToken });
+  const { createShiftPinStore } = require('./shift-pin-store.js');
+  const shiftPinStore = createShiftPinStore({ getHostToken: () => hostToken });
   const app = express();
   app.use(
     '/api/lan/v1',
     createAuthRouter({
       ticketStore,
+      shiftPinStore,
       getHostToken: () => hostToken,
       getHostUrl: () => hostUrl,
       getRequiresMigrationNotice: () => false,
@@ -226,6 +232,56 @@ test('auth routes emit forensic audit events when dbManager is unlocked', async 
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /beacon is unauthenticated', async () => {
+  const hostToken = 'g'.repeat(64);
+  const { app, dir, shiftPinStore } = createTestApp({
+    hostToken,
+    hostUrl: 'http://127.0.0.1:3738',
+  });
+  shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    const beacon = await fetch(`${base}/beacon`);
+    assert.strictEqual(beacon.status, 200);
+    const body = await beacon.json();
+    assert.strictEqual(body.lan, true);
+    assert.strictEqual(body.shiftPinActive, true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange by shiftPin is reusable', async () => {
+  const hostToken = 'h'.repeat(64);
+  const { app, dir, shiftPinStore } = createTestApp({
+    hostToken,
+    hostUrl: 'http://10.0.0.2:3738',
+  });
+  const { pin } = shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    const ex1 = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: pin }),
+    });
+    assert.strictEqual(ex1.status, 200);
+    assert.strictEqual((await ex1.json()).token, hostToken);
+
+    const ex2 = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: pin }),
+    });
+    assert.strictEqual(ex2.status, 200);
+    assert.strictEqual((await ex2.json()).token, hostToken);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

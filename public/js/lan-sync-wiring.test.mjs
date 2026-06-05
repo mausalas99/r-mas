@@ -106,6 +106,16 @@ describe('LAN event and handler wiring', () => {
     );
   });
 
+  it('lan panel full render runs on first open while dropdown is open', () => {
+    assert.match(lanSyncPanel, /lanPanelHasBuiltChrome/);
+    assert.match(lanSyncPanel, /lanPanelNeedsFullRebuild/);
+    assert.match(
+      lanSyncPanel,
+      /isLanConnectionDropdownOpen\(\) && lanPanelHasBuiltChrome\(root\) && !lanPanelNeedsFullRebuild\(root\)/
+    );
+    assert.match(lanSyncPanel, /showInvitePaste: needsInvitePaste/);
+  });
+
   it('lan-sync imports refreshClinicalSessionTeams for clinicalOps merge', () => {
     assert.match(
       lanSyncFeature,

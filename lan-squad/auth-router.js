@@ -21,6 +21,7 @@ function auditLanSecurity(eventType, meta = {}) {
 
 function createAuthRouter({
   ticketStore,
+  shiftPinStore,
   getHostToken,
   getHostUrl,
   getRequiresMigrationNotice,
@@ -29,6 +30,46 @@ function createAuthRouter({
   const getState = () => ({ teamCodeHash: hashTeamCode(getHostToken()) });
   const bearerAuth = createBearerAuthMiddleware(getState, {
     onAuthFail: () => auditLanSecurity('lan.auth.fail', { reason: 'invalid_token' }),
+  });
+
+  /** Unauthenticated subnet discovery (no roster data). */
+  r.get('/beacon', (_req, res) => {
+    const shift = shiftPinStore && typeof shiftPinStore.getStatus === 'function'
+      ? shiftPinStore.getStatus()
+      : null;
+    res.json({
+      ok: true,
+      lan: true,
+      shiftPinActive: !!shift,
+    });
+  });
+
+  r.get('/auth/shift-pin', bearerAuth, (_req, res) => {
+    if (!shiftPinStore) {
+      return res.status(503).json({ error: 'shift_pin_unavailable' });
+    }
+    try {
+      const body = shiftPinStore.ensure();
+      auditLanSecurity('lan.shift_pin.ensure', {});
+      res.json(body);
+    } catch (e) {
+      console.error('[auth/shift-pin]', e && e.message);
+      res.status(500).json({ error: 'shift_pin_failed' });
+    }
+  });
+
+  r.post('/auth/shift-pin/regenerate', bearerAuth, (_req, res) => {
+    if (!shiftPinStore || typeof shiftPinStore.regenerate !== 'function') {
+      return res.status(503).json({ error: 'shift_pin_unavailable' });
+    }
+    try {
+      const body = shiftPinStore.regenerate();
+      auditLanSecurity('lan.shift_pin.regenerate', {});
+      res.json(body);
+    } catch (e) {
+      console.error('[auth/shift-pin/regenerate]', e && e.message);
+      res.status(500).json({ error: 'shift_pin_failed' });
+    }
   });
 
   r.post('/auth/tickets', bearerAuth, (_req, res) => {
@@ -52,28 +93,43 @@ function createAuthRouter({
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const hasTicket = body.ticket != null && String(body.ticket).trim() !== '';
     const hasPin = body.pin != null && String(body.pin).trim() !== '';
+    const hasShiftPin = body.shiftPin != null && String(body.shiftPin).trim() !== '';
+    const credCount = [hasTicket, hasPin, hasShiftPin].filter(Boolean).length;
 
-    if (hasTicket && hasPin) {
+    if (credCount > 1) {
       auditLanSecurity('lan.auth.fail', { reason: 'ambiguous_credentials' });
       return res.status(400).json({ error: 'ambiguous_credentials' });
     }
-    if (!hasTicket && !hasPin) {
+    if (credCount === 0) {
       auditLanSecurity('lan.auth.fail', { reason: 'missing_credentials' });
       return res.status(400).json({ error: 'missing_credentials' });
     }
 
     try {
-      const result = ticketStore.exchange({
-        ticket: hasTicket ? String(body.ticket).trim() : undefined,
-        pin: hasPin ? String(body.pin).trim() : undefined,
-      });
+      let result = null;
+      if (hasShiftPin) {
+        if (!shiftPinStore || typeof shiftPinStore.exchange !== 'function') {
+          return res.status(503).json({ error: 'shift_pin_unavailable' });
+        }
+        result = shiftPinStore.exchange(String(body.shiftPin).trim());
+        if (!result || !result.token) {
+          auditLanSecurity('lan.auth.fail', { reason: 'invalid_shift_pin' });
+          return res.status(401).json({ error: 'invalid_shift_pin' });
+        }
+        auditLanSecurity('lan.shift_pin.exchange', {});
+      } else {
+        result = ticketStore.exchange({
+          ticket: hasTicket ? String(body.ticket).trim() : undefined,
+          pin: hasPin ? String(body.pin).trim() : undefined,
+        });
 
-      if (!result || !result.token) {
-        auditLanSecurity('lan.auth.fail', { reason: 'invalid_ticket' });
-        return res.status(401).json({ error: 'invalid_ticket' });
+        if (!result || !result.token) {
+          auditLanSecurity('lan.auth.fail', { reason: 'invalid_ticket' });
+          return res.status(401).json({ error: 'invalid_ticket' });
+        }
+        auditLanSecurity('lan.ticket.exchange', {});
       }
 
-      auditLanSecurity('lan.ticket.exchange', {});
       res.json({
         token: result.token,
         hostUrl: resolveHostUrlForClient(req, getHostUrl),

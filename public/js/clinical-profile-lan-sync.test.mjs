@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isBenignLanPushSkipCode,
+  isLanProfileNeedsConnectCode,
   resolveRoomIdForUsernameRegister,
 } from './clinical-profile-lan-sync.mjs';
 
@@ -15,6 +16,12 @@ describe('clinical-profile-lan-sync room resolve', () => {
     assert.equal(isBenignLanPushSkipCode('NO_ROOM'), true);
     assert.equal(isBenignLanPushSkipCode('NO_LAN'), true);
     assert.equal(isBenignLanPushSkipCode('HTTP_FAIL'), false);
+  });
+
+  it('detects connect-needed push codes', () => {
+    assert.equal(isLanProfileNeedsConnectCode('NO_LAN'), true);
+    assert.equal(isLanProfileNeedsConnectCode('NO_ROOM'), true);
+    assert.equal(isLanProfileNeedsConnectCode('NO_SNAPSHOT'), false);
   });
 
   it('prefers explicit roomId over sala', () => {

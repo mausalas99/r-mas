@@ -79,7 +79,7 @@ export function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersion
 /** @param {string} roomId @param {object} envelope */
 export function hostBundlePutBodyFromEnvelope(roomId, envelope) {
   const bases = getHostBundleBases(roomId);
-  return {
+  const body = {
     baseRevision: bases.revision,
     baseEntityVersions: buildBaseEntityVersionsForEnvelope(envelope, bases.entityVersions),
     uploadedByClientId: envelope.clientId || '',
@@ -87,6 +87,9 @@ export function hostBundlePutBodyFromEnvelope(roomId, envelope) {
     todos: envelope.todos || {},
     entries: envelope.entries || [],
     manejo: envelope.manejo != null ? envelope.manejo : null,
-    clinicalOps: envelope.clinicalOps != null ? envelope.clinicalOps : null,
   };
+  if (envelope.clinicalOps != null && typeof envelope.clinicalOps === 'object') {
+    body.clinicalOps = envelope.clinicalOps;
+  }
+  return body;
 }

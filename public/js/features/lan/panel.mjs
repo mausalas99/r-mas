@@ -9,7 +9,6 @@ import { hasElevatedTeamPrivileges, canManageInternoQr } from '../../clinical-pr
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { filterJoinedTeams } from '../clinical-teams.mjs';
-import { appendLanHubGuardiaModeCard } from '../lan-hub-guardia-mode.mjs';
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
 import {
@@ -489,23 +488,38 @@ function appendLanMobileJoinSection(root) {
 function appendLanJoinOtherMacSection(root, opts) {
   opts = opts || {};
   if (!root || !isLanElectronDesktop()) return;
-  var details = document.createElement('details');
-  details.className = 'rpc-disclosure lan-connect-other-mac';
-  details.style.marginBottom = '8px';
-  if (opts.open) details.open = true;
-  var sum = document.createElement('summary');
-  sum.className = 'rpc-disclosure__summary';
-  sum.style.fontSize = '12px';
-  sum.style.color = 'var(--text-muted)';
-  sum.textContent = 'Unirme a la sala de otra computadora (enlace de invitación)';
-  details.appendChild(sum);
+
+  var prominent = !isLanSessionConfiguredForRest();
+  var container;
+  if (prominent) {
+    container = document.createElement('div');
+    container.className =
+      'lan-connect-card lan-connect-other-mac lan-connect-other-mac--prominent';
+    var title = document.createElement('div');
+    title.className = 'lan-connect-card-title';
+    title.textContent = 'Conectar al anfitrión del turno';
+    container.appendChild(title);
+  } else {
+    container = document.createElement('details');
+    container.className = 'rpc-disclosure lan-connect-other-mac';
+    container.style.marginBottom = '8px';
+    if (opts.open) container.open = true;
+    var sum = document.createElement('summary');
+    sum.className = 'rpc-disclosure__summary';
+    sum.style.fontSize = '12px';
+    sum.style.color = 'var(--text-muted)';
+    sum.textContent = 'Unirme a la sala de otra computadora (enlace de invitación)';
+    container.appendChild(sum);
+  }
+
   var inner = document.createElement('div');
-  inner.className = 'rpc-disclosure__body';
+  inner.className = prominent ? 'lan-connect-other-mac-body' : 'rpc-disclosure__body';
   var hint = document.createElement('p');
   hint.className = 'lan-connect-card-hint';
-  hint.style.marginTop = '0';
-  hint.innerHTML =
-    'Pega el enlace que te compartieron. Esta R+ dejará de usar el servidor de <strong>esta</strong> Mac y se conectará a la otra.';
+  hint.style.marginTop = prominent ? '4px' : '0';
+  hint.innerHTML = prominent
+    ? 'Pega el enlace <strong>Otra Mac del equipo</strong> que copiaste del anfitrión (<code>http://…/join/req_…</code>), luego pulsa <strong>Unirse con enlace</strong>.'
+    : 'Pega el enlace que te compartieron. Esta R+ dejará de usar el servidor de <strong>esta</strong> Mac y se conectará a la otra.';
   inner.appendChild(hint);
   var inputInvite = document.createElement('textarea');
   inputInvite.className = 'profile-input';
@@ -519,14 +533,14 @@ function appendLanJoinOtherMacSection(root, opts) {
   row.style.marginTop = '8px';
   var btnJoin = document.createElement('button');
   btnJoin.type = 'button';
-  btnJoin.className = 'btn-lan-secondary';
+  btnJoin.className = prominent ? 'btn-lan-primary' : 'btn-lan-secondary';
   btnJoin.style.flex = '1';
   btnJoin.textContent = 'Unirse con enlace';
   btnJoin.setAttribute('data-lan-action', 'join-invite');
   row.appendChild(btnJoin);
   inner.appendChild(row);
-  details.appendChild(inner);
-  root.appendChild(details);
+  container.appendChild(inner);
+  root.appendChild(container);
 }
 
 function appendLanBackToLocalHostSection(root) {
@@ -553,6 +567,14 @@ function purgeDuplicateLanRoomsPanels(root) {
   var panels = root.querySelectorAll('.lan-rooms-panel');
   for (var i = 0; i < panels.length - 1; i += 1) {
     panels[i].remove();
+  }
+}
+
+function purgeDuplicateLanShiftPinCards(root) {
+  if (!root) return;
+  var cards = root.querySelectorAll('.lan-shift-pin-card');
+  for (var i = 0; i < cards.length - 1; i += 1) {
+    cards[i].remove();
   }
 }
 
@@ -622,6 +644,22 @@ function restoreLanPanelExpandState(root, state) {
   if (mobile && state.inviteMobile) mobile.open = true;
   var sala = root.querySelector('.lan-invite-collapsible--sala');
   if (sala && state.inviteSala) sala.open = true;
+}
+
+function lanPanelHasBuiltChrome(root) {
+  return !!(root && root.querySelector('.lan-hub-status-card'));
+}
+
+function lanPanelNeedsFullRebuild(root) {
+  if (!lanPanelHasBuiltChrome(root)) return true;
+  if (
+    !runtime().isMobileWeb() &&
+    !isLanSessionConfiguredForRest() &&
+    !root.querySelector('#lan-input-invite-link')
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /** Light refresh while ⇄ is open (avoids full rebuild + scroll jump on LAN scan). */
@@ -933,7 +971,7 @@ async function renderLanPanelOnce() {
     }
   }
   if (lanPanelRenderStale(gen)) return;
-  if (isLanConnectionDropdownOpen()) {
+  if (isLanConnectionDropdownOpen() && lanPanelHasBuiltChrome(root) && !lanPanelNeedsFullRebuild(root)) {
     await refreshLanPanelChromeInPlace();
     patchLanPanelJoinButtons();
     return;
@@ -981,16 +1019,21 @@ async function renderLanPanelOnce() {
   var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
 
   var hubStatus = lanHubStatusCopy();
+  var needsInvitePaste = !runtime().isMobileWeb() && !isLanSessionConfiguredForRest();
   appendLanHubStatusCard(root, {
     connected: hubStatus.connected,
     statusLine: hubStatus.line,
     statusHint: hubStatus.hint,
     isElectronDesktop: isLanElectronDesktop(),
     showBecomeHost: canLocalMacBeLanHost(),
+    showInvitePaste: needsInvitePaste,
     onBecomeHost: function () {
       void promoteThisMacToLanHost();
     },
   });
+
+  await appendLanShiftPinSection(root, gen);
+  if (lanPanelRenderStale(gen)) return;
 
   if (runtime().isMobileWeb() && !hubStatus.connected) {
     appendLanMobileJoinSection(root);
@@ -999,13 +1042,15 @@ async function renderLanPanelOnce() {
     appendLanMobileSharerCard(root);
   }
 
-  if (isLanElectronDesktop()) {
+  if (isLanElectronDesktop() && !needsInvitePaste) {
     if (canOfferMobileLanShare()) {
       appendLanInviteShareCards(root);
     }
     appendLanJoinOtherMacSection(root, {
       open: isLanRemoteJoinMode() || !canOfferMobileLanShare(),
     });
+  } else if (isLanElectronDesktop() && canOfferMobileLanShare()) {
+    appendLanInviteShareCards(root);
   }
 
   var salaDefs = [
@@ -1049,6 +1094,8 @@ async function renderLanPanelOnce() {
     void appendConflictDrafts(root);
   }
   await appendLanSyncDiagnosticsSection(root);
+  if (lanPanelRenderStale(gen)) return;
+  purgeDuplicateLanShiftPinCards(root);
   restoreLanPanelExpandState(root, expandState);
   restoreConnectionDropdownScrollTop(dropdownScrollTop);
   maybeAppendInternoQrPanel(root);
@@ -1137,6 +1184,110 @@ function appendLanHostPinSection(root) {
     });
   }
   root.appendChild(wrap);
+}
+
+/** Shared ward PIN for registration (reusable until shift TTL). */
+async function appendLanShiftPinSection(root, gen) {
+  if (!root || !isLanElectronDesktop()) return;
+  if (lanPanelRenderStale(gen)) return;
+  var bearer = await resolveHostBearerToken();
+  if (!bearer || lanPanelRenderStale(gen)) return;
+  try {
+    var resp = await lanFetchAuthed('/api/lan/v1/auth/shift-pin');
+    if (!resp.ok || lanPanelRenderStale(gen)) return;
+    var body = await resp.json();
+    var pin = String(body.pin || '').trim();
+    if (!/^\d{6}$/.test(pin) || lanPanelRenderStale(gen)) return;
+
+    root.querySelectorAll('.lan-shift-pin-card').forEach(function (el) {
+      el.remove();
+    });
+
+    var wrap = document.createElement('div');
+    wrap.className = 'lan-connect-card lan-shift-pin-card';
+    wrap.setAttribute('data-lan-shift-pin', '1');
+
+    var title = document.createElement('p');
+    title.className = 'lan-connect-card-title';
+    title.textContent = 'PIN del turno';
+    wrap.appendChild(title);
+
+    var lead = document.createElement('p');
+    lead.className = 'lan-shift-pin-lead';
+    lead.textContent =
+      'Comparte este PIN al registrar @usuario (Configura tu rotación). Válido hasta fin de mes.';
+    wrap.appendChild(lead);
+
+    var display = document.createElement('p');
+    display.className = 'lan-shift-pin-display';
+    var code = document.createElement('code');
+    code.id = 'lan-shift-pin-code';
+    code.textContent = pin;
+    display.appendChild(code);
+    wrap.appendChild(display);
+
+    var actions = document.createElement('div');
+    actions.className = 'lan-shift-pin-actions';
+
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn-med-secondary';
+    copyBtn.id = 'lan-copy-shift-pin';
+    copyBtn.textContent = 'Copiar PIN';
+    copyBtn.addEventListener('click', function () {
+      copyToClipboardSafe(pin);
+      runtime().showToast('PIN del turno copiado.', 'success');
+    });
+    actions.appendChild(copyBtn);
+
+    var regenBtn = document.createElement('button');
+    regenBtn.type = 'button';
+    regenBtn.className = 'btn-med-secondary';
+    regenBtn.id = 'lan-regen-shift-pin';
+    regenBtn.textContent = 'Nuevo PIN';
+    regenBtn.addEventListener('click', function () {
+      void lanFetchAuthed('/api/lan/v1/auth/shift-pin/regenerate', { method: 'POST' }).then(
+        function (r) {
+          if (r && r.ok) {
+            runtime().showToast('PIN del turno renovado.', 'success');
+            renderLanPanel({ force: true });
+          } else {
+            runtime().showToast('No se pudo renovar el PIN.', 'error');
+          }
+        }
+      );
+    });
+    actions.appendChild(regenBtn);
+    wrap.appendChild(actions);
+
+    if (body.expiresAt) {
+      var exp = document.createElement('p');
+      exp.className = 'lan-shift-pin-expiry';
+      try {
+        exp.textContent =
+          'Válido hasta ' +
+          new Date(body.expiresAt).toLocaleString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: 'numeric',
+            month: 'short',
+          });
+      } catch (_eExp) {
+        exp.textContent = 'Válido hasta ' + String(body.expiresAt);
+      }
+      wrap.appendChild(exp);
+    }
+
+    if (lanPanelRenderStale(gen)) return;
+    var anchor = root.querySelector('.lan-hub-status-card');
+    if (anchor && anchor.nextSibling) {
+      root.insertBefore(wrap, anchor.nextSibling);
+    } else if (anchor) {
+      anchor.insertAdjacentElement('afterend', wrap);
+    } else {
+      root.prepend(wrap);
+    }
+  } catch (_e) {}
 }
 
 async function buildLanSyncDiagnosticsDeps() {
@@ -1314,7 +1465,6 @@ function buildR1Section(root) {
     };
   }
 
-  appendLanHubGuardiaModeCard(root);
 }
 
 function buildR2Section(root) {

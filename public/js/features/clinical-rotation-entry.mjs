@@ -11,6 +11,56 @@ import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 
 let entryControlsWired = false;
 
+async function openLanConnectPanel() {
+  try {
+    const { openConnectionDropdown } = await import('./lan-sync.mjs');
+    if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+  } catch (_e) {
+    if (typeof window.showToast === 'function') {
+      window.showToast('Abre el panel ⇄ (Wi‑Fi) en la barra superior para conectar.', 'info');
+    }
+  }
+}
+
+/** @returns {boolean} */
+function needsLanConnectCta() {
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  if (needsClinicalOnboarding()) return false;
+  return true;
+}
+
+async function isLanConnectCtaVisible() {
+  if (!needsLanConnectCta()) return false;
+  try {
+    const lan = await import('./lan-sync.mjs');
+    return !lan.isLanSessionConfiguredForRest?.();
+  } catch (_e) {
+    return true;
+  }
+}
+
+function syncLanConnectCta(show) {
+  const section = document.getElementById('clinical-rotation-section');
+  if (!section) return;
+
+  let btn = document.getElementById('btn-clinical-lan-connect');
+  if (!show) {
+    if (btn) btn.remove();
+    return;
+  }
+
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'btn-clinical-lan-connect';
+    btn.type = 'button';
+    btn.className = 'app-bar-lan-connect-cta';
+    btn.textContent = 'Conéctate a la sala';
+    btn.title = 'Pega el enlace de invitación o escanea el anfitrión para aparecer en la guardia';
+    btn.addEventListener('click', () => void openLanConnectPanel());
+    section.appendChild(btn);
+  }
+}
+
 export async function openMiRotacion() {
   if (!isDbMode()) {
     if (typeof window.showToast === 'function') {
@@ -107,6 +157,7 @@ export function syncClinicalRotationEntryChrome() {
 
   if (rotationSection) rotationSection.hidden = !show;
   if (!show) {
+    syncLanConnectCta(false);
     syncClinicalContextBarVisibility();
     return;
   }
@@ -125,6 +176,8 @@ export function syncClinicalRotationEntryChrome() {
   }
   if (entryPrimary) entryPrimary.textContent = status.primary;
   if (entrySub) entrySub.textContent = status.sub;
+
+  void isLanConnectCtaVisible().then((visible) => syncLanConnectCta(visible));
   syncClinicalContextBarVisibility();
 }
 
@@ -143,6 +196,9 @@ export function wireClinicalRotationEntryControls() {
 
   if (typeof document !== 'undefined') {
     document.addEventListener('rpc-clinical-teams-changed', () => {
+      syncClinicalRotationEntryChrome();
+    });
+    document.addEventListener('rpc-clinical-ops-synced', () => {
       syncClinicalRotationEntryChrome();
     });
   }

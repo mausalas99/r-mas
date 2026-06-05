@@ -692,7 +692,7 @@ export function renderJoinWithCodeSectionHtml() {
     <section class="clinical-teams-section clinical-teams-section--join-code">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Unirte con código de equipo</h4>
-        <p class="clinical-teams-section-desc">Pega el código que te envió tu R2 (8 caracteres). Úsalo en la app R+ del Mac, no en Safari.</p>
+        <p class="clinical-teams-section-desc">Pega el código que te envió tu R2 (8 caracteres). <strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>
       </div>
       <form id="clinical-team-join-code-form" class="clinical-teams-join-code-form">
         <div class="clinical-teams-invite-row clinical-teams-join-code-code-row">

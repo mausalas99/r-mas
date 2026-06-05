@@ -135,6 +135,92 @@ test('putRoomClinicalOps keeps JSON merge when host DB is locked', async () => {
   }
 });
 
+test('sync-bundle push with empty clinicalOps must not wipe host roster (locked DB host)', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-nowipe-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const prevDbManager = globalThis.__rplusDbManager;
+  // LAN-only host: clinical DB locked, so roster lives only in the in-memory bundle.
+  globalThis.__rplusDbManager = {
+    isUnlocked: () => false,
+    withTransaction() {
+      throw new Error('should not call DB while locked');
+    },
+    getDb: () => null,
+  };
+
+  try {
+    const room = store.createRoom('No wipe');
+    const userA = {
+      user_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      username: 'doctor_a',
+      rank: 'R2',
+      clinical_name: 'Doctor A',
+      sala: 'Sala 2',
+      is_program_admin: 0,
+    };
+    const userB = {
+      user_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      username: 'doctor_b',
+      rank: 'R3',
+      clinical_name: 'Doctor B',
+      sala: 'Sala 2',
+      is_program_admin: 0,
+    };
+
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      clinicalOps: {
+        exportedAt: '2026-06-05T10:00:00.000Z',
+        clinical_users: [userA],
+        teams: [],
+        team_membership: [],
+      },
+    });
+
+    let rev = store.getRoomSyncBundle(room.id).revision;
+    await store.putRoomClinicalOps(room.id, {
+      baseRevision: rev,
+      clientId: 'peer-b',
+      snapshot: {
+        exportedAt: '2026-06-05T10:01:00.000Z',
+        clinical_users: [userB],
+        teams: [],
+        team_membership: [],
+      },
+    });
+
+    let bundle = store.getRoomSyncBundle(room.id);
+    assert.equal(
+      (bundle.clinicalOps.clinical_users || []).length,
+      2,
+      'roster should accumulate both peers before the routine bundle push'
+    );
+
+    // Routine debounced sync-bundle push with an empty clinicalOps cache (carries null).
+    rev = store.getRoomSyncBundle(room.id).revision;
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: rev,
+      baseEntityVersions: store.getRoomSyncBundle(room.id).entityVersions || {},
+      agenda: [{ id: 'ev-1', updatedAt: '2026-06-05T10:02:00.000Z', title: 'x' }],
+      clinicalOps: null,
+    });
+
+    bundle = store.getRoomSyncBundle(room.id);
+    const handles = (bundle.clinicalOps && bundle.clinicalOps.clinical_users
+      ? bundle.clinicalOps.clinical_users
+      : []
+    ).map((u) => u.username);
+    assert.ok(handles.includes('doctor_a'), 'doctor_a must survive an empty-clinicalOps bundle push');
+    assert.ok(handles.includes('doctor_b'), 'doctor_b must survive an empty-clinicalOps bundle push');
+  } finally {
+    globalThis.__rplusDbManager = prevDbManager;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('getRoomSyncBundle unions bundle clinical_users when DB export is newer but smaller', async () => {
   const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
   const { ensureClinicalUser, claimUsername } = await import('../lib/db/clinical-access-db.mjs');

@@ -776,7 +776,21 @@ app.whenReady().then(async () => {
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
 
     const lanServer = require('./server');
-    server = await lanServer.startLanServer();
+    try {
+      server = await lanServer.startLanServer();
+    } catch (lanErr) {
+      const peerMode = process.env.R_PLUS_LAN_PEER === '1';
+      const portBusy =
+        (lanErr && lanErr.code === 'EADDRINUSE') ||
+        (lanErr && lanErr.message && String(lanErr.message).includes('3738'));
+      if (peerMode && portBusy) {
+        console.warn(
+          '[R+ LAN peer mode] Puerto 3738 en uso — esta ventana usará el servidor LAN del anfitrión ya abierto.'
+        );
+      } else {
+        throw lanErr;
+      }
+    }
     if (unlockPromise) await unlockPromise;
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);

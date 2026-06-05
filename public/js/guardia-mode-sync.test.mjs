@@ -8,7 +8,6 @@ describe('guardia-mode-sync', () => {
     if (typeof document === 'undefined') return;
     clinicalSessionContext.guardiaMode = false;
     document.body.innerHTML =
-      '<input type="checkbox" id="lan-hub-guardia-toggle" />' +
       '<button type="button" id="btn-guardia-mode-toggle">' +
       '<span class="guardia-mode-label"></span></button>';
   });
@@ -20,12 +19,13 @@ describe('guardia-mode-sync', () => {
     assert.equal(clinicalSessionContext.guardiaMode, false);
   });
 
-  it('setGuardiaMode updates session and both controls', () => {
+  it('setGuardiaMode updates guardia board toggle', () => {
     if (typeof document === 'undefined') return;
     setGuardiaMode(true);
     assert.equal(clinicalSessionContext.guardiaMode, true);
-    assert.equal(document.getElementById('lan-hub-guardia-toggle').checked, true);
-    assert.equal(document.getElementById('btn-guardia-mode-toggle').getAttribute('aria-pressed'), 'true');
+    const boardBtn = document.getElementById('btn-guardia-mode-toggle');
+    assert.equal(boardBtn.getAttribute('aria-pressed'), 'true');
+    assert.equal(boardBtn.querySelector('.guardia-mode-label').textContent, 'Solo mis entregas');
   });
 
   it('toggleGuardiaMode flips state', () => {
@@ -40,6 +40,6 @@ describe('guardia-mode-sync', () => {
     if (typeof document === 'undefined') return;
     clinicalSessionContext.guardiaMode = true;
     syncGuardiaModeUI();
-    assert.equal(document.getElementById('lan-hub-guardia-toggle').checked, true);
+    assert.equal(document.getElementById('btn-guardia-mode-toggle').getAttribute('aria-pressed'), 'true');
   });
 });

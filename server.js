@@ -15,6 +15,7 @@ const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
 const { pickLanCandidateBaseUrl } = require('./lan-squad/lan-candidate-url.js');
 const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
+const { createShiftPinStore } = require('./lan-squad/shift-pin-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
 const {
@@ -176,6 +177,8 @@ const lanStore = createHostStore({
   dbManager: lanDbManager,
 });
 const ticketStore = createTicketStore({ getHostToken: () => LAN_TEAM_CODE });
+const shiftPinStore = createShiftPinStore({ getHostToken: () => LAN_TEAM_CODE });
+shiftPinStore.ensure();
 const getLanHostUrl = () =>
   pickLanCandidateBaseUrl(LAN_HTTP_PORT) || `http://localhost:${LAN_HTTP_PORT}`;
 
@@ -289,6 +292,7 @@ const authTicketLimiter = rateLimit({
 
 const authRouter = createAuthRouter({
   ticketStore,
+  shiftPinStore,
   getHostToken: () => LAN_TEAM_CODE,
   getHostUrl: getLanHostUrl,
   getRequiresMigrationNotice: () => Boolean(appExpress.locals.lanRequiresMigrationNotice),

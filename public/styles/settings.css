@@ -249,7 +249,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .connection-dropdown-head-sub {
   font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
 }
-.lan-connection-panel-root { display: flex; flex-direction: column; gap: 6px; }
+.lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
 .lan-sync-diagnostics-pre {
   font-size: 11px;
   white-space: pre-wrap;
@@ -279,6 +279,45 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 .lan-connect-card-hint {
   font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
+}
+.lan-shift-pin-card {
+  gap: 10px;
+}
+.lan-shift-pin-lead {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.lan-shift-pin-display {
+  margin: 0;
+  padding: 14px 12px;
+  background: var(--lab-chip-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  text-align: center;
+}
+.lan-shift-pin-display code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.lan-shift-pin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lan-shift-pin-actions .btn-med-secondary {
+  flex: 1 1 120px;
+  min-height: 40px;
+}
+.lan-shift-pin-expiry {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
 }
 .lan-hub-interno-summary-hint { font-size: 11px; font-weight: 400; }
 .lan-connect-field { display: flex; flex-direction: column; gap: 4px; }
@@ -946,7 +985,6 @@ select.profile-input.profile-select {
 }
 
 .lan-hub-team-card,
-.lan-hub-modo-card,
 .lan-hub-mobile-card,
 .lan-hub-census-card,
 .lan-hub-rotation-card,
@@ -975,22 +1013,6 @@ select.profile-input.profile-select {
 
 .lan-hub-link-btn:hover {
   color: var(--action-hover);
-}
-
-.lan-hub-modo-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.lan-hub-guardia-check {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--action);
 }
 
 .lan-connect-other-mac,

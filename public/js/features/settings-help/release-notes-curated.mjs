@@ -145,6 +145,39 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_670 = [
+  {
+    title: 'Directorio LAN corregido',
+    body:
+      'El anfitrión ya no borra el roster al recibir un bundle vacío. Los <strong>@usuario</strong> de la guardia vuelven a verse en equipos, censo y entregas.',
+  },
+  {
+    title: 'PIN del turno',
+    body:
+      'En LiveSync: PIN de <strong>6 dígitos</strong> (~12 h) para que los residentes se unan escaneando la red, sin copiar enlace de invitación.',
+  },
+  {
+    title: 'Sin falso éxito',
+    body:
+      'Si aún no hay host o sala, ya no verás «Perfil guardado» como si estuvieras en la guardia: aparece un botón para <strong>conectar ⇄</strong>.',
+  },
+  {
+    title: 'Diagnóstico ⇄',
+    body:
+      'Cada push clinical-ops deja traza con <code>NO_LAN</code>, <code>NO_ROOM</code> u otro código en el JSON de diagnósticos.',
+  },
+  {
+    title: 'Sobre 6.6.9',
+    body:
+      'Incluye arranque <strong>Windows SQLCipher</strong>, icono Wi‑Fi LiveSync, iPad/móvil y onboarding local.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>6.7.0 en todas</strong> las Macs, PCs e iPads el mismo día. Firewall <strong>3738</strong> en Windows la primera vez.',
+  },
+];
+
 var RELEASE_NOTES_669 = [
   {
     title: 'Windows — arranque corregido',
@@ -164,9 +197,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_669;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_670;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.7.0': RELEASE_NOTES_670,
   '6.6.9': RELEASE_NOTES_669,
   '6.6.8': RELEASE_NOTES_668,
   '6.6.7': RELEASE_NOTES_667,

@@ -686,19 +686,33 @@ export async function pushClinicalOpsLanNow(opts) {
 async function pushClinicalOpsLanNowBody(opts) {
   await ensureLanSyncPushBridgeWired();
   if (isPitchPatientIsolationActive()) return lanPushResult(false, 'PITCH_DEMO');
-  if (!isClinicalOpsLanAvailable()) return lanPushResult(false, 'NO_CLINICAL_OPS');
+  if (!isClinicalOpsLanAvailable()) {
+    recordClinicalOpsTrace('push', { code: 'NO_CLINICAL_OPS', usersExported: 0 });
+    return lanPushResult(false, 'NO_CLINICAL_OPS');
+  }
 
   await prepareClinicalOpsForLanSync();
   var snap = getCachedClinicalOpsSnapshot();
-  if (!snap) return lanPushResult(false, 'NO_SNAPSHOT');
+  if (!snap) {
+    recordClinicalOpsTrace('push', { code: 'NO_SNAPSHOT', usersExported: 0 });
+    return lanPushResult(false, 'NO_SNAPSHOT');
+  }
 
   var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) {
-    recordClinicalOpsTrace('push', { code: 'NO_ROOM', usersExported: 0 });
+    recordClinicalOpsTrace('push', {
+      code: 'NO_ROOM',
+      usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+    });
     return lanPushResult(false, 'NO_ROOM');
   }
   var b = bridge();
   if (!b.isLanSessionConfiguredForRest()) {
+    recordClinicalOpsTrace('push', {
+      roomId,
+      code: 'NO_LAN',
+      usersExported: Array.isArray(snap.clinical_users) ? snap.clinical_users.length : 0,
+    });
     return lanPushResult(false, 'NO_LAN');
   }
 

@@ -1,64 +1,5911 @@
-import{b as Ma}from"/js/chunks/chunk-UTTXKCLM.js";import{c as Aa}from"/js/chunks/chunk-BA5SKVJK.js";import{a as Sn,b as yn}from"/js/chunks/chunk-Z4YW6GPB.js";import{$b as Ci,$c as to,$d as qo,A as Un,Ac as $i,Ad as To,B as jn,Bb as oi,Bc as Yi,Bd as _t,C as Gn,Cb as ai,Cd as Ft,Ce as da,D as Vn,Dd as Ut,E as Wn,Ea as ei,Eb as si,Ed as Co,F as qn,Fb as ci,Fd as $e,Fe as Je,G as zn,Ga as ti,Gb as li,Gd as Do,H as Kn,Hb as ye,Hd as Po,Ib as di,Id as Lo,Jb as ui,Jd as ko,Je as ua,Kb as pi,Kd as Oo,Ke as pa,Lb as Ke,Lc as Xi,Ld as Ro,Le as re,M as $n,Mb as fi,Md as No,Me as ne,Nb as mi,Nd as Mo,Ob as gi,Od as Bo,Oe as fa,Pb as hi,Pd as Ho,Qa as ri,Qb as vi,Qd as Ye,Qe as ma,Rb as bi,Rd as Y,Re as ga,Sb as Si,Sd as X,Se as ha,Tb as yi,Td as _o,Ub as Ei,Uc as Ji,Ud as Fo,Ue as va,Vb as Ai,Vc as Qi,Vd as Uo,Ve as ba,Wb as Ii,Wc as Zi,Wd as jo,We as Wt,Xb as xi,Xd as Go,Xe as Qe,Yb as wi,Yd as Xe,Zb as Ti,Zd as Vo,Ze as Sa,_c as eo,_d as Wo,_e as ya,a as En,ac as Di,ad as ro,ae as jt,b as ve,ba as Yn,bb as ni,bc as Pi,bd as no,be as zo,c as An,cc as Li,ce as Ko,d as Tt,da as kt,dc as ki,dd as io,de as $o,e as Ct,ec as Rt,ed as oo,ee as Yo,ef as Ea,f as In,fc as Nt,fd as ao,fe as Xo,g as xn,ga as Ot,gc as Oi,gd as so,ge as Jo,h as wn,hb as ii,hc as Ri,hd as co,he as Qo,i as Tn,ic as Ni,id as lo,ie as Zo,j as Cn,ja as Xn,jc as Mt,jd as uo,je as ea,k as Dn,kc as Mi,kd as po,ke as ta,l as Pn,lc as Bi,ld as fo,le as Gt,m as Ln,mc as Hi,md as mo,me as ra,n as kn,nc as _i,nd as Bt,ne as na,o as On,oc as Fi,od as go,oe as ia,p as Rn,pc as Ui,pd as ho,pe as oa,q as Nn,qc as ji,qd as vo,qe as aa,r as Mn,rc as Gi,rd as bo,re as sa,s as Dt,sc as Vi,sd as So,se as Ee,t as Pt,ta as be,tc as Wi,td as yo,te as Vt,u as Bn,ua as Se,ud as Eo,ue as ca,v as Hn,va as Jn,vd as Ao,ve as la,w as _n,wd as Io,x as Fn,xa as Qn,xc as qi,xd as xo,y as Lt,yc as zi,yd as wo,z as ze,za as Zn,zc as Ki,zd as Ht}from"/js/chunks/chunk-YRCOBZOP.js";import{d as Ia,e as Ae,g as Ze}from"/js/chunks/chunk-4TRPWTNX.js";import{c as xa,d as wa,e as Ta}from"/js/chunks/chunk-LOYXQH45.js";import"/js/chunks/chunk-EW7N47R6.js";import{b as We,c as xt}from"/js/chunks/chunk-PXUOTEWL.js";import{Ac as dn,Ad as mn,Bb as It,Bc as un,Bd as gn,Cd as hn,Fe as Pa,Ha as Yr,Hd as vn,He as La,Ia as Xr,Id as bn,Je as ka,L as zr,Td as qe,Ve as Oa,a as Br,ab as te,e as Hr,f as $,g as yt,ha as Kr,i as _r,ia as $r,j as Fr,jd as pn,l as Et,ld as wt,m as Ur,n as jr,o as At,p as Gr,pb as Jr,pc as nn,pd as fn,qb as Qr,rb as Zr,sb as L,se as Ca,tc as on,te as Da,u as Vr,uc as an,ue as et,vb as en,ve as tt,w as Wr,x as qr,xb as tn,xc as sn,yb as rn,yc as cn,zc as ln}from"/js/chunks/chunk-VYJN6OB5.js";import{f as Ra,s as Na}from"/js/chunks/chunk-4NRXWILI.js";import{Aa as bt,Ab as Lr,Db as kr,I as vt,Pb as Or,Qb as Rr,Sb as Nr,Tb as Ve,Ub as U,Vb as St,b as y,eb as Pr,wb as A,xa as Dr,xb as ge,yb as he,zb as K}from"/js/chunks/chunk-TSA2FZGY.js";import{b as ht}from"/js/chunks/chunk-KVCGO4KM.js";import{m as Mr}from"/js/chunks/chunk-VYF2YG7V.js";import"/js/chunks/chunk-ISXQNFI3.js";import"/js/chunks/chunk-CS3ZALPK.js";function Ba(e){if(!L()){Promise.resolve().then(e);return}let t=()=>{try{Promise.resolve(e())}catch(r){console.warn("[R+] mobile LAN boot:",r&&r.message)}};typeof requestAnimationFrame=="function"?requestAnimationFrame(()=>{typeof requestIdleCallback=="function"?requestIdleCallback(t,{timeout:800}):setTimeout(t,50)}):setTimeout(t,50)}function Hc(e){if(!e||typeof e!="object")return!1;let t=r=>Array.isArray(r)&&r.some(n=>n&&typeof n.descripcion=="string"&&n.descripcion.trim().length>0);return t(e.activos)||t(e.inactivos)}function Ha(e){let t=String(e&&e.format||"docx").toLowerCase();return t==="html"?{kind:"html"}:t==="txt"?{kind:"txt"}:e&&e.appMode==="sala"?Hc(e.listado)?{kind:"listado"}:{kind:"listado_empty",message:"Agrega un problema al Listado para usar Salida r\xE1pida en Sala."}:e&&e.activeInner==="indica"?{kind:"indicaciones"}:{kind:"nota"}}var I={getActiveId(){return null},getActiveInner(){return"todo"},getSettings(){return{}},showToast(){}};function _a(e){!e||typeof e!="object"||Object.assign(I,e)}function T(e){return String(e??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function Ie(e){return Array.isArray(e)?e.map(function(t){return String(t||"").trim()}).filter(Boolean):String(e||"").split(`
-`).map(function(t){return t.trim()}).filter(Boolean)}function Fa(e,t){var r=String(e||"").trim().toLowerCase(),n=r.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");return n||t}function Ua(){var e=A.find(function(t){return t.id===I.getActiveId()});return e?{patient:e,note:ge[I.getActiveId()]||{},indicacion:he[I.getActiveId()]||{}}:null}function _c(e){var t=e.patient||{},r=e.note||{},n=e.indicacion||{},i=e.mode||"both",o=[];o.push("R+ - SALIDA CLINICA"),o.push("PACIENTE: "+(t.nombre||"")),o.push("REGISTRO: "+(t.registro||"")),o.push("SERVICIO: "+(t.servicio||"")),o.push("CUARTO/CAMA: "+(t.cuarto||"")+"/"+(t.cama||"")),o.push(""),i!=="indica"&&(o.push("== NOTA DE EVOLUCION =="),o.push("FECHA/HORA: "+(r.fecha||"")+" "+(r.hora||"")),o.push("DIAGNOSTICOS:"),Ie(r.diagnosticos||[]).forEach(function(l,d){o.push(d+1+". "+l)}),Ie(r.diagnosticos||[]).length||o.push("(sin contenido)"));function a(l,d){o.push(l+":");var c=Ie(d);c.length||o.push("(sin contenido)"),c.forEach(function(u){o.push("- "+u)})}if(i!=="indica"&&(a("INTERROGATORIO",r.interrogatorio),a("EXPLORACION FISICA",r.exploracion),a("ESTUDIOS",r.estudios),a("ANALISIS",r.analisis),a("PLAN",r.plan),o.push("SIGNOS VITALES: TA "+(r.ta||"-")+" | FR "+(r.fr||"-")+" | FC "+(r.fc||"-")+" | TEMP "+(r.temp||"-")+" | PESO "+(r.peso||"-")),a("TRATAMIENTO E INDICACIONES",r.tratamiento||[]),o.push("MEDICO TRATANTE: "+(r.medico||"")),o.push("PROFESOR RESPONSABLE: "+(r.profesor||""))),i==="both"&&o.push(""),i!=="note"){o.push("== INDICACIONES =="),o.push("FECHA/HORA: "+(n.fecha||"")+" "+(n.hora||"")),a("MEDICOS",n.medicos),a("DIETA",n.dieta),a("CUIDADOS",n.cuidados),a("ESTUDIOS",n.estudios),a("MEDICAMENTOS",n.medicamentos),a("INTERCONSULTAS",n.interconsultas);var s=Array.isArray(n.otros)?n.otros:[];s.length&&(o.push("OTROS:"),s.forEach(function(l,d){!l||typeof l!="object"||(o.push(d+1+". "+(l.titulo||"Seccion sin titulo")),Ie(l.contenido||"").forEach(function(c){o.push("   - "+c)}))}))}return o.join(`
-`)}function Fc(e){var t=e.patient||{},r=e.note||{},n=e.indicacion||{},i=e.mode||"both";function o(d){var c=Ie(d);return c.length?"<ul>"+c.map(function(u){return"<li>"+T(u)+"</li>"}).join("")+"</ul>":"<p><em>Sin contenido</em></p>"}function a(){var d=Array.isArray(n.otros)?n.otros:[];return d.length?d.filter(function(c){return c&&typeof c=="object"}).map(function(c){return"<article><h4>"+T(c.titulo||"Seccion sin titulo")+"</h4>"+o(c.contenido||"")+"</article>"}).join(""):"<p><em>Sin secciones adicionales</em></p>"}var s="<section><h2>Nota de evolucion</h2><p><strong>Fecha/Hora:</strong> "+T(r.fecha||"")+" "+T(r.hora||"")+"</p><h3>Diagnosticos</h3>"+o(r.diagnosticos||[])+"<h3>Interrogatorio</h3>"+o(r.interrogatorio)+"<h3>Exploracion fisica</h3>"+o(r.exploracion)+"<h3>Estudios</h3>"+o(r.estudios)+"<h3>Analisis</h3>"+o(r.analisis)+"<h3>Plan</h3>"+o(r.plan)+"<h3>Signos vitales</h3><p>TA "+T(r.ta||"-")+" | FR "+T(r.fr||"-")+" | FC "+T(r.fc||"-")+" | TEMP "+T(r.temp||"-")+" | PESO "+T(r.peso||"-")+"</p><h3>Tratamiento e indicaciones medicas</h3>"+o(r.tratamiento||[])+"</section>",l="<section><h2>Indicaciones</h2><p><strong>Fecha/Hora:</strong> "+T(n.fecha||"")+" "+T(n.hora||"")+"</p><h3>Medicos</h3>"+o(n.medicos)+"<h3>Dieta</h3>"+o(n.dieta)+"<h3>Cuidados</h3>"+o(n.cuidados)+"<h3>Estudios</h3>"+o(n.estudios)+"<h3>Medicamentos</h3>"+o(n.medicamentos)+"<h3>Interconsultas</h3>"+o(n.interconsultas)+"<h3>Otros</h3>"+a()+"</section>";return`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;"><title>R+ salida clinica</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style></head><body><h1>R+ - Salida clinica</h1><p><strong>Paciente:</strong> `+T(t.nombre||"")+" | <strong>Registro:</strong> "+T(t.registro||"")+"</p><p><strong>Servicio:</strong> "+T(t.servicio||"")+" | <strong>Cuarto/Cama:</strong> "+T(t.cuarto||"")+"/"+T(t.cama||"")+"</p>"+(i!=="indica"?s:"")+(i!=="note"?l:"")+"</body></html>"}function Uc(){var e=Ua();if(e){e.mode=I.getActiveInner()==="indica"?"indica":"note";var t="R-plus-"+Fa(e.patient.nombre,"paciente")+"-clinico-"+kt(new Date)+".txt";be();try{Ot(_c(e),t,"text/plain"),I.showToast("Salida .txt descargada","success")}catch(r){I.showToast("No se pudo exportar: "+(r&&r.message?r.message:"error"),"error")}finally{Se()}}}function jc(){var e=Ua();if(e){e.mode=I.getActiveInner()==="indica"?"indica":"note";var t="R-plus-"+Fa(e.patient.nombre,"paciente")+"-clinico-"+kt(new Date)+".html";be();try{Ot(Fc(e),t,"text/html"),I.showToast("Salida .html descargada","success")}catch(r){I.showToast("No se pudo exportar: "+(r&&r.message?r.message:"error"),"error")}finally{Se()}}}function ja(){if(!ve()){if(!I.getActiveId()){I.showToast("Selecciona un paciente primero","error");return}var e=li(I.getSettings().quickOutputFormat),t=Ha({format:e,appMode:nn(I.getSettings())?"sala":"interconsulta",activeInner:I.getActiveInner(),listado:kr[I.getActiveId()]||null});switch(t.kind){case"html":jc();return;case"txt":Uc();return;case"listado":xi();return;case"listado_empty":I.showToast(t.message,"error");return;case"indicaciones":Cn();return;case"nota":default:wn();return}}}function J(e){if(!e||!e.isConnected)return!1;var t=window.getComputedStyle(e);if(t.display==="none"||t.visibility==="hidden")return!1;var r=parseFloat(t.opacity);return!(!Number.isNaN(r)&&r<=0)}function qt(e){if(!e||!J(e))return-1;var t=parseInt(window.getComputedStyle(e).zIndex,10);return Number.isNaN(t)?0:t}function Ga(e,t,r){if(!(!e||e.dataset.rpcBackdropDismiss==="2")){e.dataset.rpcBackdropDismiss="2";var n=r||'.modal, [role="dialog"]';e.addEventListener("click",function(i){var o=e.querySelector(n);o&&o.contains(i.target)||t()})}}function Va(){var e=[],t=!1;function r(s){e.push(s)}function n(s,l){return s.isOpen()?(s.confirmClose&&s.confirmClose()===!1||(l&&(l.preventDefault(),l.stopPropagation()),s.close()),!0):!1}function i(s){for(var l=e.length-1;l>=0;l--)if(n(e[l],s))return!0;return!1}function o(s){s.key!=="Escape"&&s.key!=="Esc"||i(s)}function a(){t||(t=!0,document.addEventListener("keydown",o,!0),e.forEach(function(s){if(s.backdropEl){var l=s.backdropEl();l&&Ga(l,function(){n(s,null)},s.panelSelector)}}))}return{register:r,init:a,closeTopmost:i,bindBackdropDismiss:Ga}}function Wa(e){let t=new Date(e.getFullYear(),e.getMonth(),e.getDate()),r=t.getDay(),n=r===0?-6:1-r;return t.setDate(t.getDate()+n),t.setHours(0,0,0,0),t}function ie(e,t){let r=new Date(e.getTime());return r.setDate(r.getDate()+t),r}function qa(e){let t=new Date(e.getFullYear(),e.getMonth(),e.getDate(),0,0,0,0),r=new Date(t.getTime());return r.setDate(r.getDate()+7),{start:t,endExclusive:r}}function za(e,t){let r=new Date(t),n=new Date(r.getFullYear(),r.getMonth(),r.getDate()+1,0,0,0,0).getTime(),i=e+72e5;if(i<=r.getTime()||e>=n)return null;let o=new Date(r.getFullYear(),r.getMonth(),r.getDate(),6,0,0,0).getTime(),a=new Date(r.getFullYear(),r.getMonth(),r.getDate(),22,0,0,0).getTime(),s=Math.max(e,r.getTime(),o),l=Math.min(i,n,a);return l<=s?null:{topMs:s,botMs:l,visStartMs:o}}function Ka(e){let t=e.slice().sort(function(i,o){return i.topMs!==o.topMs?i.topMs-o.topMs:String(i.id).localeCompare(String(o.id))}),r=[],n=new Map;return t.forEach(function(i){for(var o=-1,a=0;a<r.length;a+=1)if(r[a]<=i.topMs){o=a;break}o<0?(o=r.length,r.push(i.botMs)):r[o]=i.botMs,n.set(i.id,o)}),n}var oe={getActiveId(){return null},showToast(){},renderPaseBoard(){}};function Ya(e){!e||typeof e!="object"||Object.assign(oe,e)}var we=0;function xe(e){return String(e||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function $t(){return A.filter(function(e){return!(!e||e.isDemo||String(e.id).indexOf("demo-")===0)})}function $a(e){var t=new Date(String(e||"").trim());if(isNaN(t.getTime()))return"";var r=function(n){return String(n).padStart(2,"0")};return t.getFullYear()+"-"+r(t.getMonth()+1)+"-"+r(t.getDate())+"T"+r(t.getHours())+":"+r(t.getMinutes())}function Vc(e){var t=String(e||"").trim();if(!t)return null;var r=new Date(t);return isNaN(r.getTime())?null:r}function Wc(){var e=Wa(new Date),t=ie(e,we*7);return t.setHours(0,0,0,0),t}function qc(e){try{var t=ie(e,6),r={day:"numeric"},n={weekday:"short"},i={month:"short"},o=e.toLocaleDateString("es",n).replace(".","")+" "+e.toLocaleDateString("es",r)+" "+e.toLocaleDateString("es",i),a=t.toLocaleDateString("es",n).replace(".","")+" "+t.toLocaleDateString("es",r)+" "+t.toLocaleDateString("es",i)+" "+t.getFullYear();return o.charAt(0).toUpperCase()+o.slice(1)+" \u2014 "+a}catch{return""}}function zc(){var e=document.getElementById("procedure-agenda-prev"),t=document.getElementById("procedure-agenda-next");e&&(e.disabled=we<=-1),t&&(t.disabled=we>=1)}function Kc(e){we=Math.max(-1,Math.min(1,we+e)),Q()}function Q(){var e=document.getElementById("procedure-agenda-grid-mount"),t=document.getElementById("procedure-agenda-range");if(!(!e||!t)){zc();var r=Wc();t.textContent=qc(r);var n=qa(r),i=16,o=Ur(),a=$t(),s={};a.forEach(function(b){s[String(b.id)]=String(b.nombre||"").trim()});var l=document.getElementById("procedure-agenda-new");l&&(l.disabled=a.length===0);var d=document.createElement("div"),c=document.createElement("div");c.className="rpc-proc-agenda-board-head";var u=document.createElement("div");u.className="rpc-proc-agenda-head-spacer",c.appendChild(u);var p,f;for(p=0;p<7;p+=1){f=ie(r,p);var m=document.createElement("div");m.className="rpc-proc-agenda-head-cell";var E=String(f.toLocaleDateString("es",{weekday:"short"})).replace(/\.$/,""),S=String(f.toLocaleDateString("es",{day:"numeric",month:"short"})).replace(".","");E=E.charAt(0).toUpperCase()+E.slice(1),S=S.charAt(0).toUpperCase()+S.slice(1),m.innerHTML="<span>"+xe(E)+"</span><strong>"+xe(S)+"</strong>",c.appendChild(m)}d.appendChild(c);var w=document.createElement("div");w.className="rpc-proc-agenda-board-body";var M=document.createElement("div");M.className="rpc-proc-agenda-times-col";for(var B=6;B<22;B+=1){var z=document.createElement("div");z.className="rpc-proc-agenda-time-slot",z.style.height=o+"px",z.textContent=String(B).padStart(2,"0")+":00",M.appendChild(z)}w.appendChild(M);var ft=[[],[],[],[],[],[],[]];for(y.getScheduledProcedures().forEach(function(b){var _=Date.parse(b.start);if(Number.isFinite(_)&&!(_>=n.endExclusive.getTime())){var N=_+72e5;if(!(N<=n.start.getTime())&&String(b.patientId).indexOf("demo-")!==0){var gt=s[b.patientId]?s[b.patientId]:"Paciente desconocido";for(p=0;p<7;p+=1){f=ie(r,p),f.setHours(0,0,0,0);var Ge=za(_,f.getTime());Ge&&ft[p].push({ev:b,clip:Ge,patientLabel:gt})}}}}),p=0;p<7;p+=1){f=ie(r,p),f.setHours(0,0,0,0);var me=document.createElement("div");me.className="rpc-proc-agenda-day-col-wrap",me.style.height=i*o+"px";var Ue;for(B=6;B<22;B+=1)Ue=document.createElement("div"),Ue.className="rpc-proc-agenda-hour-line",Ue.style.height=o+"px",me.appendChild(Ue);var wr=ft[p].map(function(b){return{id:b.ev.id,topMs:b.clip.topMs,botMs:b.clip.botMs}}),mt=wr.length===0?new Map:Ka(wr.slice()),je=1;mt.size>0&&mt.forEach(function(b){je=Math.max(je,b+1)}),ft[p].forEach(function(b){var _=b.clip,N=b.ev,gt=_.visStartMs,Ge=(_.topMs-gt)/(3600*1e3)*o,Rc=Math.max((_.botMs-_.topMs)/(3600*1e3)*o,18),Nc=mt.get(N.id)||0,Tr=je<1?1:je,Cr=100/Tr,Mc=String(new Date(N.start).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})).replace(".",""),P=document.createElement("button");P.type="button",P.className="rpc-proc-agenda-block",P.style.top=Math.max(0,Ge)+"px",P.style.height=Rc+"px",Tr<=1?(P.style.left="3px",P.style.width="calc(100% - 6px)"):(P.style.left="calc("+Nc*Cr+"% + 3px)",P.style.width="calc("+Cr+"% - 10px)"),P.setAttribute("title",(N.procedure||"")+" \xB7 "+(N.location||"")+" \xB7 "+b.patientLabel),P.setAttribute("aria-label","Editar procedimiento para "+b.patientLabel),N.materialApproved&&N.anesthesiaScheduled||P.classList.add("rpc-proc-flag"),P.innerHTML='<div class="rpc-proc-name">'+xe(String(N.procedure||""))+'</div><div class="rpc-proc-sub">'+xe(Mc+" \xB7 "+(N.location||""))+'</div><div class="rpc-proc-pat">'+xe(String(b.patientLabel))+"</div>",P.addEventListener("click",function(Bc){Bc.preventDefault(),Xa(N.id)}),me.appendChild(P)}),w.appendChild(me)}d.appendChild(w),e.innerHTML="",e.appendChild(d),$()&&oe.renderPaseBoard()}}function Xa(e){var t=document.getElementById("procedure-agenda-modal");if(t){var r=document.getElementById("pa-modal-error"),n=document.getElementById("pa-btn-delete");r&&(r.style.display="none",r.textContent=""),document.getElementById("pa-edit-id").value=e||"";var i=$t(),o=document.getElementById("pa-patient");o&&(o.innerHTML="",i.forEach(function(c){var u=document.createElement("option");u.value=String(c.id),u.textContent=String(c.nombre||c.id),o.appendChild(u)})),n&&(n.style.display=e?"inline-flex":"none");var a;if(e)a=y.getScheduledProcedures().filter(function(c){return c.id===e})[0],a&&o&&(o.value=String(a.patientId),o.value!==String(a.patientId)&&o.appendChild(new Option(a.patientId,a.patientId)),o.value=String(a.patientId)),a&&(document.getElementById("pa-procedure").value=a.procedure||"",document.getElementById("pa-location").value=a.location||"",document.getElementById("pa-start").value=$a(a.start),document.getElementById("pa-material").checked=!!a.materialApproved,document.getElementById("pa-anesthesia").checked=!!a.anesthesiaScheduled);else{var s=oe.getActiveId();o&&i.length&&s&&i.some(function(c){return c.id===s})?o.value=String(s):o&&i[0]&&(o.value=i[0].id),document.getElementById("pa-procedure").value="",document.getElementById("pa-location").value="";var l=new Date;document.getElementById("pa-start").value=$a(l.toISOString()),document.getElementById("pa-material").checked=!1,document.getElementById("pa-anesthesia").checked=!1}var d=document.getElementById("pa-start");d&&(zn(d),d.dispatchEvent(new CustomEvent("rpc-datetime-sync"))),t.classList.add("open"),t.setAttribute("aria-hidden","false")}}function Te(){var e=document.getElementById("procedure-agenda-modal");e&&(e.classList.remove("open"),e.setAttribute("aria-hidden","true"))}function $c(){var e=document.getElementById("pa-modal-error");function t(f){e.style.display="block",e.textContent=f,oe.showToast(f,"error")}e&&(e.style.display="none",e.textContent="");var r=(document.getElementById("pa-edit-id").value||"").trim(),n=String(document.getElementById("pa-patient").value||"").trim(),i=String(document.getElementById("pa-procedure").value||"").trim(),o=String(document.getElementById("pa-location").value||"").trim(),a=Vc(document.getElementById("pa-start").value),s=$t();if(!s.length){t("No hay pacientes reales para agendar (agrega un paciente desde la barra lateral).");return}if(!n||!s.some(function(f){return String(f.id)===n})){t("Elige un paciente v\xE1lido de la lista.");return}if(!i){t("Indica el procedimiento.");return}if(!o){t("Indica el lugar.");return}if(!a){t("Fecha u hora de inicio inv\xE1lidas.");return}var l=new Date().toISOString(),d=y.getScheduledProcedures(),c=r?d.filter(function(f){return f.id===r})[0]:null,u={id:r||"proc-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9),patientId:n,procedure:i,location:o,materialApproved:!!document.getElementById("pa-material").checked,anesthesiaScheduled:!!document.getElementById("pa-anesthesia").checked,start:a.toISOString(),createdAt:c&&c.createdAt?c.createdAt:l,updatedAt:l},p;r?(p=d.map(function(f){return f.id===r?u:f}),p.some(function(f){return f.id===r})||p.push(u)):p=d.concat([u]),y.saveScheduledProcedures(p),mn(u),Te(),oe.showToast("Procedimiento guardado","success"),Q()}function Yc(){var e=(document.getElementById("pa-edit-id").value||"").trim();if(e&&confirm("\xBFEliminar este procedimiento de la agenda? No se puede deshacer desde aqu\xED.")){var t=new Date().toISOString(),r=y.getScheduledProcedures().filter(function(n){return n.id!==e});y.saveScheduledProcedures(r),gn(e,t),Te(),oe.showToast("Eliminado de la agenda","success"),Q()}}var Ja={navigateProcedureAgendaWeek:Kc,openProcedureAgendaModal:Xa,closeProcedureAgendaModal:Te,saveProcedureAgendaFromModal:$c,deleteProcedureAgendaFromModal:Yc};var h={getActiveId(){return null},getSettings(){return{}},selectPatient(e){},switchAppTab(e){},switchInnerTab(e){},saveState(){},renderIndicaForm(){},closeSettingsDropdown(){},openAddModal(){},addAuditEntry(){},showToast(){},advanceRondaPatient(e){}};function Za(e){!e||typeof e!="object"||Object.assign(h,e)}function Z(e){return String(e||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}var es="rpc-undo-stack",ts="rpc-focus-mode",Xc=5;function j(e){try{return JSON.parse(JSON.stringify(e))}catch{return null}}function Jc(e){return{label:e||"operaci\xF3n",at:new Date().toISOString(),theme:localStorage.getItem("theme")||"light",activeId:h.getActiveId(),data:{patients:j(A)||[],notes:j(ge)||{},indicaciones:j(he)||{},labHistory:j(K)||{},medRecetaByPatient:j(Lr)||[],scheduledProcedures:j(y.getScheduledProcedures())||[],settings:j(h.getSettings())||{},medCatalog:j(y.getMedCatalog())||y.getMedCatalog()}}}function Xt(){try{var e=JSON.parse(localStorage.getItem(es)||"[]");return Array.isArray(e)?e:[]}catch{return[]}}function rs(e){try{localStorage.setItem(es,JSON.stringify((e||[]).slice(0,Xc)))}catch{}}function ns(e){var t=Jc(e),r=Xt();r.unshift(t),rs(r),is(),h.addAuditEntry("undo-snapshot","ok",0,t.label)}function is(){var e=document.getElementById("btn-undo-op");if(e){var t=Xt();e.disabled=t.length===0,t.length>0?e.textContent="Deshacer: "+(t[0].label||"\xFAltima operaci\xF3n"):e.textContent="Deshacer \xFAltima operaci\xF3n"}}async function Qc(){var e=Xt();if(!e.length){h.showToast("No hay operaciones para deshacer.","error");return}var t=e[0];if(confirm('\xBFRevertir "'+(t.label||"\xFAltima operaci\xF3n")+'"? La aplicaci\xF3n se recargar\xE1.')){var r=e.slice(1);rs(r),Or(t.data||{});try{localStorage.setItem("rpc-scheduled-procedures",JSON.stringify(t.data.scheduledProcedures||[]))}catch{}localStorage.setItem("rpc-settings",JSON.stringify(t.data.settings||{})),t.data.medCatalog&&typeof t.data.medCatalog=="object"&&y.saveMedCatalog(t.data.medCatalog),(t.theme==="dark"||t.theme==="light")&&localStorage.setItem("theme",t.theme),await U({immediate:!0}),h.addAuditEntry("undo-restore","ok",0,t.label||""),location.reload()}}function Zc(){var e=localStorage.getItem(ts)==="1";document.body.classList.toggle("focus-mode",e);var t=document.getElementById("btn-toggle-focus-mode");t&&(t.textContent=e?"Desactivar modo enfoque":"Activar modo enfoque")}function os(){var e=document.body.classList.toggle("focus-mode");localStorage.setItem(ts,e?"1":"0");var t=document.getElementById("btn-toggle-focus-mode");t&&(t.textContent=e?"Desactivar modo enfoque":"Activar modo enfoque"),e&&h.closeSettingsDropdown(),h.showToast(e?"Modo enfoque activado \xB7 F6 para salir":"Modo enfoque desactivado","success"),h.addAuditEntry("focus-mode","ok",0,e?"on":"off")}var Yt=[];function as(){var e=document.getElementById("unified-search-backdrop");if(e){e.classList.add("open");var t=document.getElementById("unified-search-input");t&&(t.value="",setTimeout(function(){t.focus()},30)),ss()}}function De(){var e=document.getElementById("unified-search-backdrop");e&&e.classList.remove("open")}function Qa(e,t,r){var n=String(e||""),i=n.toLowerCase(),o=i.indexOf(t);if(o<0)return"";var a=Math.max(20,Math.floor((r||140)/2)),s=Math.max(0,o-a),l=Math.min(n.length,o+t.length+a),d=n.slice(s,l);return s>0&&(d="\u2026 "+d),l<n.length&&(d=d+" \u2026"),d}function el(e){return String(e||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}function tl(e,t){var r=Z(e);if(!t)return r;var n=el(t);try{return r.replace(new RegExp(n,"ig"),function(i){return"<mark>"+i+"</mark>"})}catch{return r}}function rl(e){if(!e)return"";var t=[e.interrogatorio,e.evolucion,e.estudios,e.medico,e.profesor];return Array.isArray(e.diagnosticos)&&(t=t.concat(e.diagnosticos)),Array.isArray(e.tratamiento)&&(t=t.concat(e.tratamiento)),t.filter(Boolean).join(`
-`)}function nl(e){if(!e)return"";var t=[e.dieta,e.cuidados,e.estudios,e.medicamentos,e.interconsultas,e.medicos];return Array.isArray(e.otros)&&e.otros.forEach(function(r){r&&(r.titulo||r.contenido)&&t.push((r.titulo||"")+`
-`+(r.contenido||""))}),t.filter(Boolean).join(`
-`)}function ss(){var e=document.getElementById("unified-search-results"),t=document.getElementById("unified-search-input");if(!(!e||!t)){var r=String(t.value||"").trim().toLowerCase();if(!r){e.innerHTML='<div class="unified-search-empty">Escribe para buscar pacientes, notas o indicaciones.</div>',Yt=[];return}for(var n=[],i=40,o=Xr(A),a=0;a<o.length&&n.length<i;a+=1){var s=o[a];if(!(s.isDemo&&!Yr())){var l=[s.nombre,s.registro,s.cuarto,s.cama,s.servicio,s.area].filter(Boolean).join(" \xB7 "),d=l.toLowerCase(),c="Cto. "+(s.cuarto||"-")+" \xB7 Cama "+(s.cama||"-")+(s.registro?" \xB7 "+s.registro:"");if(d.indexOf(r)!==-1&&(n.push({id:s.id,tab:"nota",inner:"notas",tag:"paciente",title:s.nombre||"Sin nombre",meta:c,snippet:""}),n.length>=i))break;var u=rl(ge[s.id]);if(u&&u.toLowerCase().indexOf(r)!==-1&&(n.push({id:s.id,tab:"nota",inner:"notas",tag:"nota",title:s.nombre||"Sin nombre",meta:c,snippet:Qa(u,r,140)}),n.length>=i))break;var p=nl(he[s.id]);if(p&&p.toLowerCase().indexOf(r)!==-1&&(n.push({id:s.id,tab:"nota",inner:"indica",tag:"indicaciones",title:s.nombre||"Sin nombre",meta:c,snippet:Qa(p,r,140)}),n.length>=i))break}}if(Yt=n,!n.length){e.innerHTML='<div class="unified-search-empty">Sin coincidencias.</div>';return}e.innerHTML=n.map(function(f,m){return'<div class="unified-search-result" onclick="selectUnifiedSearchResult('+m+')"><div class="usr-title"><span>'+Z(f.title)+'</span><span class="usr-tag">'+Z(f.tag)+'</span></div><div class="usr-meta">'+Z(f.meta)+"</div>"+(f.snippet?'<div class="usr-snippet">'+tl(f.snippet,r)+"</div>":"")+"</div>"}).join("")}}function il(e){var t=Yt[e];t&&(h.selectPatient(t.id),h.switchAppTab(t.tab),t.inner&&h.switchInnerTab(t.inner),De())}var Ce=null;function Pe(){var e=h.getSettings();return Array.isArray(e.extraTemplates)||(e.extraTemplates=[]),e.extraTemplates}function cs(){localStorage.setItem("rpc-settings",JSON.stringify(h.getSettings()))}function ol(){var e=document.getElementById("extra-templates-modal");e&&(Pe(),e.style.display="flex",Qt(),Le())}function Jt(){var e=document.getElementById("extra-templates-modal");e&&(e.style.display="none"),Le()}function Qt(){var e=document.getElementById("extra-templates-list");if(e){var t=Pe();if(!t.length){e.innerHTML='<div class="unified-search-empty">A\xFAn no tienes plantillas guardadas.</div>';return}e.innerHTML=t.map(function(r){var n=Z(r.id||"");return'<div class="extra-tmpl-row"><span class="etr-label" title="'+Z(r.label||"")+'">'+Z(r.label||"(sin nombre)")+`</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('`+n+`')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('`+n+`')">Eliminar</button></div></div>`}).join("")}}function al(){Ce="";var e=document.getElementById("extra-template-editor");e&&(e.style.display="flex");var t=document.getElementById("extra-tmpl-label"),r=document.getElementById("extra-tmpl-dieta"),n=document.getElementById("extra-tmpl-cuidados"),i=document.getElementById("extra-tmpl-meds");t&&(t.value=""),r&&(r.value=""),n&&(n.value=""),i&&(i.value=""),setTimeout(function(){t&&t.focus()},30)}function sl(e){var t=Pe(),r=t.find(function(i){return i.id===e});if(r){Ce=e;var n=document.getElementById("extra-template-editor");n&&(n.style.display="flex"),document.getElementById("extra-tmpl-label").value=r.label||"",document.getElementById("extra-tmpl-dieta").value=r.dieta||"",document.getElementById("extra-tmpl-cuidados").value=r.cuidados||"",document.getElementById("extra-tmpl-meds").value=r.medicamentos||""}}function Le(){Ce=null;var e=document.getElementById("extra-template-editor");e&&(e.style.display="none")}function cl(){var e=(document.getElementById("extra-tmpl-label").value||"").trim();if(!e){h.showToast("Ingresa un nombre para la plantilla","error");return}var t=(document.getElementById("extra-tmpl-dieta").value||"").trim(),r=(document.getElementById("extra-tmpl-cuidados").value||"").trim(),n=(document.getElementById("extra-tmpl-meds").value||"").trim(),i=Pe();if(Ce){var o=i.find(function(a){return a.id===Ce});o&&(o.label=e,o.dieta=t,o.cuidados=r,o.medicamentos=n)}else i.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:e,dieta:t,cuidados:r,medicamentos:n});cs(),h.addAuditEntry("extra-template-save","ok",i.length,e),h.showToast("Plantilla guardada","success"),Qt(),Le(),h.getActiveId()&&h.renderIndicaForm()}function ll(e){var t=Pe(),r=t.find(function(i){return i.id===e});if(r&&confirm('\xBFEliminar la plantilla "'+(r.label||"")+'"?')){var n=h.getSettings();n.extraTemplates=t.filter(function(i){return i.id!==e}),cs(),h.addAuditEntry("extra-template-delete","ok",n.extraTemplates.length,r.label||""),Qt(),Le(),h.getActiveId()&&h.renderIndicaForm()}}function dl(e){if(!e)return!1;var t=(e.tagName||"").toUpperCase();return!!(t==="INPUT"||t==="TEXTAREA"||t==="SELECT"||e.isContentEditable)}function ls(){document.addEventListener("keydown",function(e){if(e.key==="F6"){e.preventDefault(),os();return}if($()&&document.body&&!document.body.classList.contains("focus-mode")&&!dl(e.target)&&!e.metaKey&&!e.ctrlKey&&!e.altKey){var t=(e.key||"").toLowerCase();if(t==="j"||t==="k"){e.preventDefault(),h.advanceRondaPatient(t==="j"?1:-1);return}}var r=e.metaKey||e.ctrlKey;if(r&&!(e.altKey||e.shiftKey)){var n=(e.key||"").toLowerCase();if(n==="k"){e.preventDefault();var i=document.getElementById("unified-search-backdrop");i&&i.classList.contains("open")?De():as()}else if(n==="n")e.preventDefault(),h.openAddModal();else if(n==="s"){if(e.preventDefault(),!h.getActiveId()){h.showToast("Selecciona un paciente primero","error");return}h.saveState(),h.addAuditEntry("quick-save","ok",1,String(h.getActiveId())),h.showToast("Estado guardado \u2713","success")}}}),Zc(),is()}var ds={toggleFocusMode:os,openUnifiedSearch:as,closeUnifiedSearch:De,updateUnifiedSearchResults:ss,selectUnifiedSearchResult:il,undoLastOperation:Qc,openExtraTemplatesManager:ol,closeExtraTemplatesManager:Jt,startNewExtraTemplate:al,editExtraTemplate:sl,deleteExtraTemplate:ll,saveExtraTemplateFromEditor:cl,cancelExtraTemplateEdit:Le};var x={getActiveId(){return null},getActiveAppTab(){return"lab"},getActiveInner(){return"todo"},getSettings(){return{}}};function fs(e){e&&typeof e=="object"&&Object.assign(x,e),ms()}function ms(){En({showToast:O,getSettings:function(){return x.getSettings()},loadSettings:ye}),_a({getActiveId:function(){return x.getActiveId()},getActiveInner:function(){return x.getActiveInner()},getSettings:function(){return x.getSettings()},showToast:O})}function ul(){var e=document.getElementById("med-empty-guided"),t=document.getElementById("med-active-shell");if(!(!e||!t)){var r=x.getActiveAppTab()==="med"&&!x.getActiveId();e.style.display=r?"flex":"none",t.style.display=r?"none":"flex"}}function gs(e){var t=document.getElementById("apptab-med");t&&t.classList.toggle("app-tab-attention",!!e)}function ke(){di(),ul(),Fr(),tt(),La(x.getSettings()),ka(x.getSettings()),yt()&&et(x.getSettings())}function pl(){if(!window.electronAPI||!window.electronAPI.selectOutputDir){O("Funci\xF3n no disponible en este entorno","error");return}window.electronAPI.selectOutputDir().then(function(e){e&&(An(e),O("Carpeta actualizada \u2713","success"))})}function ae(e,t){if(L()){var r=document.getElementById("rpc-mobile-boot-banner");r&&(t&&(r.textContent=t),r.classList.toggle("is-visible",!!e))}}async function us(){if(qe(),!!L()){ae(!0,"Cargando R+ M\xF3vil\u2026"),Jr(location.search,location.origin),Qr(),Sn(),tn(),rn(),wt(),en();try{document.title="R+ M\xF3vil"}catch{}Ze();try{var e=await qi();window.__RPC_APP_VERSION__=zi(e),Yi()}catch{}var t=document.getElementById("onboarding-intro-backdrop");t&&(t.classList.remove("open"),t.setAttribute("aria-hidden","true"));var r=zr(location.search,location.origin),n=Zr(),i=String(r.roomId||n||"").trim();window._rpcMobileLanSettledWired||(window._rpcMobileLanSettledWired=!0,document.addEventListener("rpc-mobile-lan-sync-settled",function(){ae(!1)})),ae(!1),Ba(function(){if(ae(!0,"Sincronizando con el anfitri\xF3n\u2026"),!r.teamCode){var o=typeof y.getLanConfig=="function"?y.getLanConfig():null;o&&o.teamCode&&o.hostUrl?It(o.hostUrl,o.teamCode,i):ae(!1);return}var a=String(r.hostUrl||location.origin||"").trim().replace(/\/+$/,"");if(!a){ae(!1);return}It(a,r.teamCode,i)})}}function O(e,t){var r=document.activeElement,n=document.getElementById("toast");n.textContent=e,n.className="toast show"+(t?" "+t:""),r&&r.tagName!=="BODY"&&setTimeout(function(){r.focus()},0),setTimeout(function(){n.className="toast"},3500)}function fl(){var e=document.getElementById("settings-default-servicio");if(e){var t=(e.value||"").trim().toUpperCase();e.value=t,x.getSettings().defaultServicio=t,localStorage.setItem("rpc-settings",JSON.stringify(x.getSettings()));var r=document.getElementById("default-servicio-warning"),n=t.length>0&&t.length<=3&&/^[A-Z]+$/.test(t);r&&(r.style.display=n?"block":"none")}}function ml(){var e=["profesor","r4","r2","r1a","r1b"],t={};e.forEach(function(r){var n=document.getElementById("settings-medico-"+r);t[r]=n?(n.value||"").trim():""}),x.getSettings().medicosPlantilla=t,localStorage.setItem("rpc-settings",JSON.stringify(x.getSettings()))}var v=Va(),ps=!1;function hs(){if(ps)return;var e=["lab-dedupe-backdrop","soap-confirm-backdrop","dup-confirm-backdrop","lab-conflict-backdrop","exp-advice-backdrop","tend-gaso-ext-backdrop"];function t(r){return document.getElementById(r)}v.register({isOpen:function(){return J(t("update-modal-backdrop"))},close:Yn,backdropEl:function(){return t("update-modal-backdrop")}}),v.register({isOpen:function(){return J(t("tend-detail-backdrop"))},close:vo,backdropEl:function(){return t("tend-detail-backdrop")},panelSelector:"#tend-detail-modal"}),v.register({isOpen:function(){var r=t("tend-group-backdrop");return r&&r.getAttribute("aria-hidden")==="false"?!0:bo()},close:go,backdropEl:function(){return t("tend-group-backdrop")},panelSelector:"#tend-group-modal"}),v.register({isOpen:function(){var r=t("rpc-wipe-modal");return r&&r.getAttribute("aria-hidden")==="false"},close:ti,backdropEl:function(){return t("rpc-wipe-modal")}}),v.register({isOpen:function(){var r=t("soap-modal-backdrop");return r&&r.classList.contains("open")},close:cn,backdropEl:function(){return t("soap-modal-backdrop")}}),v.register({isOpen:function(){var r=t("procedure-agenda-modal");return r&&r.classList.contains("open")},close:Te,backdropEl:function(){return t("procedure-agenda-modal")},panelSelector:".modal"}),v.register({isOpen:function(){var r=t("modal");return r&&r.classList.contains("open")},close:ga,confirmClose:ha,backdropEl:function(){return t("modal")}}),v.register({isOpen:function(){var r=t("profile-modal");return r&&r.classList.contains("open")},close:Ke,backdropEl:function(){return t("profile-modal")}}),v.register({isOpen:function(){return J(t("templates-modal"))},close:mi,backdropEl:function(){return t("templates-modal")}}),v.register({isOpen:function(){return J(t("extra-templates-modal"))},close:Jt,backdropEl:function(){return t("extra-templates-modal")}}),v.register({isOpen:function(){var r=t("unified-search-backdrop");return r&&r.classList.contains("open")},close:De,backdropEl:function(){return t("unified-search-backdrop")}}),v.register({isOpen:function(){var r=t("help-quick-backdrop");return r&&r.classList.contains("open")},close:Ma,backdropEl:function(){return t("help-quick-backdrop")}}),v.register({isOpen:function(){var r=t("release-notes-backdrop");return r&&r.classList.contains("open")},close:$n,backdropEl:function(){return t("release-notes-backdrop")},panelSelector:".release-notes-modal"}),v.register({isOpen:function(){var r=t("tend-hidden-modal-backdrop");return r&&r.classList.contains("open")},close:mo,backdropEl:function(){return t("tend-hidden-modal-backdrop")}}),v.register({isOpen:function(){var r=t("lab-display-prefs-backdrop");return r&&r.classList.contains("open")},close:po,backdropEl:function(){return t("lab-display-prefs-backdrop")},panelSelector:".lab-display-prefs-modal"}),v.register({isOpen:function(){var r=t("lab-bulk-preview-backdrop");return r&&r.classList.contains("open")},close:Rn,backdropEl:function(){return t("lab-bulk-preview-backdrop")},panelSelector:".lab-bulk-preview-modal"}),v.register({isOpen:function(){var r=t("lab-bulk-tour-hint-backdrop");return r&&r.classList.contains("open")},close:Xi,backdropEl:function(){return t("lab-bulk-tour-hint-backdrop")},panelSelector:".lab-bulk-tour-hint-modal"}),v.register({isOpen:function(){var r=t("clinico-unlock-backdrop");return r&&r.classList.contains("open")},close:Pr,backdropEl:function(){return t("clinico-unlock-backdrop")},panelSelector:".clinico-unlock-modal"}),v.register({isOpen:function(){var r=t("lab-some-tables-backdrop");return r&&r.classList.contains("open")},close:Pn,backdropEl:function(){return t("lab-some-tables-backdrop")},panelSelector:".lab-some-tables-modal"}),v.register({isOpen:function(){var r=t("sesion-ingreso-send-backdrop");return r&&r.classList.contains("open")},close:Ln,backdropEl:function(){return t("sesion-ingreso-send-backdrop")},panelSelector:".sesion-ingreso-send-modal"}),v.register({isOpen:function(){var r=t("sesion-ingreso-trends-send-backdrop");return r&&r.classList.contains("open")},close:Wi,backdropEl:function(){return t("sesion-ingreso-trends-send-backdrop")},panelSelector:".sesion-ingreso-send-modal"}),v.register({isOpen:function(){var r=t("onboarding-intro-backdrop");return r&&r.classList.contains("open")},close:$i,backdropEl:function(){return t("onboarding-intro-backdrop")}}),v.register({isOpen:function(){var r=t("connection-dropdown");return r&&r.classList.contains("open")},close:wt,backdropEl:function(){return t("connection-dropdown-backdrop")}}),v.register({isOpen:function(){var r=t("settings-dropdown");return r&&r.classList.contains("open")},close:Ae,backdropEl:function(){return t("settings-dropdown-backdrop")}}),v.register({isOpen:function(){return e.some(function(r){var n=t(r);return J(n)})},close:function(){var r=null,n=-1;if(e.forEach(function(i){var o=t(i),a=qt(o);a>n&&(n=a,r=o)}),!!r){if(r.id==="tend-gaso-ext-backdrop"){r.style.display="none",r.setAttribute("aria-hidden","true"),document.body.classList.remove("tend-gaso-ext-open");return}r.remove()}},backdropEl:function(){var r=null,n=-1;return e.forEach(function(i){var o=t(i),a=qt(o);a>n&&(n=a,r=o)}),r},panelSelector:'.lab-conflict-modal, .tend-gaso-ext-dialog, [role="dialog"]'}),v.register({isOpen:Wn,close:qn}),v.init(),ps=!0,document.addEventListener("click",function(r){var n=r.target;!n||!n.classList||!n.classList.contains("lab-conflict-backdrop")||e.indexOf(n.id)!==-1&&n.remove()})}document.addEventListener("keydown",function(e){var t=e.metaKey||e.ctrlKey;if(t){var r=e.key.toLowerCase();if((r==="1"||r==="2"||r==="3"||r==="4"||r==="5")&&(e.preventDefault(),$()?(r==="1"&&Y("labs"),r==="2"&&Y("expediente"),r==="3"&&Y("med"),(r==="4"||r==="5")&&Y("agenda")):(r==="1"&&X("lab"),r==="2"&&X("nota"),r==="3"&&X("med"),(r==="4"||r==="5")&&X("agenda"))),r==="p"&&!e.altKey&&(e.preventDefault(),e.shiftKey?fi():yt()?Et("normal"):Et(Hr()==="normal"?"pase":"normal")),r==="g"&&e.shiftKey&&!e.altKey&&(e.preventDefault(),_r()),e.key===","&&!e.shiftKey&&!e.altKey){var n=e.target&&e.target.tagName?e.target.tagName.toUpperCase():"";if(n==="INPUT"||n==="TEXTAREA"||n==="SELECT"||e.target&&e.target.isContentEditable)return;e.preventDefault();var i=document.getElementById("settings-dropdown");i&&i.classList.contains("open")?Ae():Ia()}if(e.key===","&&e.shiftKey&&!e.altKey){var o=e.target&&e.target.tagName?e.target.tagName.toUpperCase():"";if(o==="INPUT"||o==="TEXTAREA"||o==="SELECT"||e.target&&e.target.isContentEditable)return;e.preventDefault(),window.__rpcPreferImportOverwrite=!window.__rpcPreferImportOverwrite,O(window.__rpcPreferImportOverwrite?"Importaci\xF3n: conflictos \u2192 sobrescribir (\u2318\u21E7, o Ctrl+Shift+, de nuevo para apagar).":"Importaci\xF3n: se preguntar\xE1 en cada conflicto.",window.__rpcPreferImportOverwrite?"success":"info")}}},!0);function gl(e,t){if(x.getActiveId()!=null){var r=String(x.getActiveId()),n=A.find(function(a){return String(a.id)===r});if(n){var i=e==="nombre"||e==="area"||e==="servicio"?String(t||"").toUpperCase():t;if(String(n[e]||"")!==String(i||"")){if(n[e]=i,(e==="fiuxFecha"||e==="fimiFecha")&&(i=Vr(t)||String(t||"").trim()),e==="viaAcceso"||e==="accesoFecha"){Wr(n);var o=n.accesosList.find(function(a){return String(a&&a.via||"").trim()})||n.accesosList[0];e==="viaAcceso"?o.via=String(i||"").trim():o.fecha=String(i||"").trim(),qr(n)}U(),re(),ke(),$()&&(Ye(),Je(),x.getActiveAppTab()==="agenda"&&Q())}}}}function vs(){try{return typeof window<"u"&&window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches}catch{return!1}}var bs={onDefaultServicioBlur:fl,onMedicoTemplateBlur:ml,chooseOutputDir:pl,updatePatient:gl,quickExportCurrentPatient:ja};function hl(){typeof window>"u"||(window.appShell=window.appShell||{},window.appShell.openEntregaModal=Da)}function ee(e){typeof window<"u"&&typeof window.requestIdleCallback=="function"?window.requestIdleCallback(function(){try{e()}catch(t){console.error("deferInit error:",t&&t.message)}},{timeout:1500}):setTimeout(function(){try{e()}catch(t){console.error("deferInit error:",t&&t.message)}},200)}function Ss(){ee(hl),ee(ni),ee(Ki),L()?us():ee(us),ee(Zn),ee(ei)}function ys(){ee(ls)}ms();var R={getActiveId(){return null},ensureParsedLabHistory(){return[]},showToast(){},copyToClipboardSafe(){return Promise.resolve(!1)}};function As(e){e&&typeof e=="object"&&Object.assign(R,e)}function Es(e){return String(e||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function vl(){var e=R.getActiveId();if(!e)return{pid:null,ordered:[],groups:[]};var t;return R.ensureParsedLabHistoryCached?t=bt(R.ensureParsedLabHistoryCached(e)):t=bt(R.ensureParsedLabHistory(e,{readOnly:!0})),{pid:e,ordered:t,groups:ta(t)}}function Is(e){var t=[];return e.querySelectorAll(".lab-batch-copy-cb:checked").forEach(function(r){var n=r.getAttribute("data-day-key");n&&t.push(n)}),t}function bl(e,t){var r=e.querySelector("#lab-batch-copy-preview"),n=e.querySelector("#lab-batch-copy-count"),i=e.querySelector("#lab-batch-copy-ok");if(r){var o=Is(e),a=o.length;if(n&&(n.textContent=a===0?"Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar":a+" d\xEDa"+(a===1?"":"s")+" seleccionado"+(a===1?"":"s")),i&&(i.disabled=a===0,i.setAttribute("aria-disabled",a===0?"true":"false"),i.style.opacity=a===0?"0.55":"",i.style.cursor=a===0?"not-allowed":"pointer"),!a){r.value="",r.placeholder="La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba.";return}r.placeholder="",r.value=Gt(t,{onlyDayKeys:o}).join(`
-`)}}function Zt(e){e&&e.parentNode&&e.parentNode.removeChild(e)}function Sl(){if(!R.getActiveId()){R.showToast("Selecciona un paciente primero","error");return}var e=vl();if(!e.groups.length){R.showToast("No hay laboratorios en el historial de este paciente","error");return}var t=document.createElement("div");t.className="lab-conflict-backdrop",t.id="lab-batch-copy-backdrop";var r=e.groups.map(function(i){return'<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-batch-copy-cb" data-day-key="'+Es(i.dayKey)+'" style="margin-top:3px;flex-shrink:0;" /><span>'+Es(i.label)+"</span></label></li>"}).join("");t.innerHTML='<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;"><h3 style="margin:0 0 8px;">Copiar varios d\xEDas</h3><p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca los d\xEDas que quieres copiar. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por d\xEDa).</p><div style="overflow-y:auto;flex:0 1 auto;max-height:28vh;padding-right:4px;"><ul style="margin:0;padding-left:0;list-style:none;font-size:13px;">'+r+'</ul></div><p id="lab-batch-copy-count" style="font-size:12px;color:var(--text-muted);margin:10px 0 6px;">Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar</p><textarea id="lab-batch-copy-preview" readonly rows="8" placeholder="La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba." style="width:100%;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);resize:vertical;flex:1;min-height:120px;"></textarea><div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" id="lab-batch-copy-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button><button type="button" id="lab-batch-copy-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button><button type="button" id="lab-batch-copy-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button><button type="button" id="lab-batch-copy-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Copiar al portapapeles</button></div></div>',document.body.appendChild(t);function n(){bl(t,e.ordered)}t.querySelectorAll(".lab-batch-copy-cb").forEach(function(i){i.addEventListener("change",n)}),t.querySelector("#lab-batch-copy-none").onclick=function(){t.querySelectorAll(".lab-batch-copy-cb").forEach(function(i){i.checked=!1}),n()},t.querySelector("#lab-batch-copy-all").onclick=function(){t.querySelectorAll(".lab-batch-copy-cb").forEach(function(i){i.checked=!0}),n()},t.querySelector("#lab-batch-copy-cancel").onclick=function(){Zt(t)},t.addEventListener("click",function(i){i.target===t&&Zt(t)}),t.querySelector("#lab-batch-copy-ok").onclick=async function(){var i=Is(t);if(!i.length){R.showToast("Selecciona al menos un d\xEDa","error");return}var o=Gt(e.ordered,{onlyDayKeys:i}).join(`
-`);if(!o.trim()){R.showToast("No hay texto para copiar en los d\xEDas elegidos","error");return}var a=await R.copyToClipboardSafe(o);R.showToast(a?"Copiados "+i.length+" d\xEDa"+(i.length===1?"":"s")+" al portapapeles \u2713":"Error al copiar al portapapeles",a?"success":"error"),a&&Zt(t)},n()}var xs={openLabHistoryBatchCopyModal:Sl};function Oe(e){return String(e??"").replace(/\uFEFF/g,"").replace(/\r\n/g,`
-`).replace(/\r/g,`
-`).replace(/\n{3,}/g,`
+import {
+  closeQuickHelp
+} from "/js/chunks/chunk-NJ7PXHC4.js";
+import {
+  windowHandlers as windowHandlers14
+} from "/js/chunks/chunk-A5HQEJW5.js";
+import {
+  prefillRegistrationFromUrlParams,
+  windowHandlers as windowHandlers4
+} from "/js/chunks/chunk-IF6VWOX3.js";
+import {
+  AHF_RELATIVES,
+  APP_DEDICATED_IDS,
+  HC_INTERROGADO_NEGADO,
+  addAuditEntry,
+  advanceRondaPatient,
+  applyDefaultsToNewIndicaciones,
+  applyDefaultsToNewPatient,
+  applyDriveImportEventualidades,
+  applyDriveImportHcPatch,
+  applyDriveImportLabSets,
+  applyEstadoActualParsedToForm,
+  applyImportEntry,
+  ascitisInterpretacionBody_,
+  attachProfileSettingsGetter,
+  buildBulkLabPreview,
+  buildCultivoOutputHtmlFragments,
+  buildEstudiosCopyLinesFromLabSets,
+  buildLabSetDateLine,
+  buildPatientEntry,
+  clearLabWorkbenchMinimalDom,
+  closeLabBulkPreviewModal,
+  closeLabBulkTourHintModal,
+  closeLabDisplayPrefsModal,
+  closeLabSomeTablesModal,
+  closeModal,
+  closeProfileModal,
+  closeReleaseNotes,
+  closeRpcDatePopover,
+  closeSesionIngresoSendModal,
+  closeSesionIngresoTrendsSendModal,
+  closeTemplatesModal,
+  closeTendDetail,
+  closeTendGroupModal,
+  closeTendHiddenModal,
+  closeWipeDataModal,
+  confirmCloseAddPatientModal,
+  dayKeyFromLabSet,
+  decrementPendingJobs,
+  downloadTextPayload,
+  ensureEaRegistroModalForm,
+  ensureParsedLabHistory,
+  ensureParsedLabHistoryCached,
+  ensureUniquePatientName,
+  enviarLabsANota,
+  findPatientByRegistro,
+  formatBhExtendedTabLine,
+  formatDateSlug,
+  formatLabHistoryListMeta,
+  generateIndicaciones,
+  generateListado,
+  generatePatientId,
+  generateWord,
+  getActiveLab,
+  getLabOutputPrefs,
+  getRoundOverviewMode,
+  groupLabHistoryByDay,
+  guardMobileDocExport,
+  guidedTourAdvanceAfter,
+  guidedTourAdvanceAfterIndicaGenerated,
+  guidedTourAdvanceAfterNotaGenerated,
+  handleDocumentGenerateResponse,
+  hideTourIntroModal,
+  hideUpdateModal,
+  hydrateProfileSettings,
+  incrementPendingJobs,
+  inferFechaLabSetFromId,
+  initGoalGFeatures,
+  initGuidedTourGate,
+  initIdleLockFeature,
+  initPatientModalEnterSave,
+  initRpcDatePicker,
+  initRpcServerHealthWatch,
+  initSidebarAutoHide,
+  initTabBarMotion,
+  installLabHistoryAuditHook,
+  invalidateEventualidadesPanel,
+  invalidateInnerTabRenderCache,
+  isAscitisInterpretacionResLabChunk,
+  isBhMainResLabChunk,
+  isGasoInterpretacionResLabChunk,
+  isResLabChunkPureCultivo,
+  isRpcDatePopoverOpen,
+  isRpcOffline,
+  isTendGroupModalOpen,
+  labSetIsFromSome,
+  limpiarReporte,
+  loadSettings,
+  manejoWindowHandlers,
+  markGuidedTourVersionDone,
+  medicationsWindowHandlers,
+  mergeHcPatch,
+  mountRpcDatetimeInput,
+  navigateToEstadoActualPanel,
+  normalizeQuickOutputFormat,
+  normalizeTourVersionLabel,
+  onboardingAdvanceAfterParse,
+  onboardingAdvanceAfterSend,
+  openAddModal,
+  openAddModalFromLabPatient,
+  openEstadoActualRegistroModal,
+  openPaseSectionInNormal,
+  openProfileModal,
+  primaryTipoForLabSet,
+  profileWindowHandlers,
+  rebuildEstudiosFromLabHistory,
+  recetaHuWindowHandlers,
+  recoverPresentationPatientsOnBoot,
+  refreshAllTodoUIs,
+  refreshExpedienteAfterPatientSelect,
+  refreshTendenciasOrCultivosPanel,
+  registerCensoRuntime,
+  registerDocumentExportRuntime,
+  registerEstadoActualPanelRuntime,
+  registerEstadoActualPasteModalRuntime,
+  registerEstadoActualRegistroModalRuntime,
+  registerEventualidadesRuntime,
+  registerExpedienteRuntime,
+  registerHistoriaClinicaRuntime,
+  registerLabBulkPreviewModalRuntime,
+  registerLabHistoryMaintRuntime,
+  registerLabPanelRuntime,
+  registerManejoRuntime,
+  registerMedPharmProfileRuntime,
+  registerMedicationsRuntime,
+  registerNotesIndicacionesRuntime,
+  registerPaseBoardRuntime,
+  registerPatientsRuntime,
+  registerProfileRuntime,
+  registerRecetaHuRuntime,
+  registerTendenciasRuntime,
+  registerTodosRuntime,
+  registerVpoRuntime,
+  removeAtbRisPanelsFromBody,
+  renderDiagramas,
+  renderEstadoActualPanel,
+  renderEventualidadesPanel,
+  renderIndicaForm,
+  renderInnerTabs,
+  renderLabHistoryPanel,
+  renderListadoForm,
+  renderManejo,
+  renderMedRecetaPanel,
+  renderNoteForm,
+  renderPaseBoard,
+  renderPatientDataPane,
+  renderPatientList,
+  renderRecetaHu,
+  renderRoundOverviewPanels,
+  renderTendencias,
+  renderTodoForm,
+  renderVpo,
+  requestDocumentJson,
+  rerenderParsedLabOutputAfterPrefsChange,
+  resetEaRegistroForm,
+  resolveAppVersionForTour,
+  saveOutputDirSelection,
+  scheduleLabHistoryPostSaveMaintenance,
+  scrollActiveRondaCardIntoView,
+  seedTendHiddenDefaults,
+  selectPatient,
+  setActiveLab,
+  setLabHistoryPanelCollapsed,
+  setRoundOverviewMode,
+  splitResLabsByTipo,
+  switchAppTab,
+  switchConsolidatedTab,
+  switchInnerTab,
+  syncAhfConditionsFromEntries,
+  syncCensoExportButtonVisibility,
+  syncEaRegistroGluMode,
+  syncHeaderAppModeChip,
+  syncInnerTabVisualOnly,
+  syncLabHistoryCollapseUI,
+  syncLabOutputChrome,
+  syncMainAppTabA11y,
+  syncOfflineButtonStates,
+  syncPreimportBackupUi,
+  syncProfileSectionVisibility,
+  tendenciasWindowHandlers,
+  toDatetimeLocalValue,
+  todosWindowHandlers,
+  toggleHeaderWorkMode,
+  toggleProfileSection,
+  tourAfterBulkLabParse,
+  tourOnBulkPreviewPatientSaved,
+  toxicomanias_substances_default,
+  windowHandlers as windowHandlers5,
+  windowHandlers2 as windowHandlers6,
+  windowHandlers3 as windowHandlers7,
+  windowHandlers4 as windowHandlers8,
+  windowHandlers5 as windowHandlers9,
+  windowHandlers6 as windowHandlers10,
+  windowHandlers7 as windowHandlers11,
+  windowHandlers8 as windowHandlers12,
+  windowHandlers9 as windowHandlers13,
+  wireAtbRisHoverPanels,
+  wireEaModalDismiss,
+  wireEstadoActualPasteModal
+} from "/js/chunks/chunk-WTWEIXRI.js";
+import {
+  closeSettingsDropdown,
+  syncTeamSyncHeaderButton,
+  toggleSettingsDropdown
+} from "/js/chunks/chunk-GUQWAHOV.js";
+import {
+  syncClinicalRotationEntryChrome,
+  windowHandlers as windowHandlers15,
+  wireClinicalRotationEntryControls
+} from "/js/chunks/chunk-WTNPMAS4.js";
+import "/js/chunks/chunk-67BJJSBU.js";
+import {
+  ahf_conditions_default,
+  app_conditions_default
+} from "/js/chunks/chunk-Q6EVBRGE.js";
+import {
+  applyMobileSharerContextFromUrl,
+  buildParsedBySectionFromResLabs,
+  closeConnectionDropdown,
+  closeSOAPModal,
+  configureLanFromMobileJoin,
+  copyToClipboardSafe,
+  dateInputValueToAccesoFecha,
+  emitLiveSyncAgendaDelete,
+  emitLiveSyncAgendaUpsert,
+  emitLiveSyncTodoUpsert,
+  ensurePatientAccesos,
+  extractParsedValues,
+  filterNewEventualidades,
+  filterPatientsForPitchTour,
+  getProcedureAgendaRowPx,
+  getUiDensity,
+  hydrateMobileSharerSessionFromSettings,
+  initChromeAppearance,
+  initClinicalAccessRuntime,
+  isGuardiaMode,
+  isMobileWeb,
+  isModeSala,
+  isPaseMode,
+  isPitchPatientIsolationActive,
+  launchConfetti,
+  migrateToV3,
+  openEntregaModal,
+  parseLanJoinQuery,
+  persistMobilePairingFromSearch,
+  registerChromeRuntime,
+  registerLanRuntime,
+  registerLanSaveHooks,
+  registerSoapEstadoRuntime,
+  renderEstadoActualBar,
+  renderEstadoActualButton,
+  renderGuardiaBoard,
+  renderGuardiaCensusGrid,
+  resolveStoredMobileRoomId,
+  restoreMobilePairingFromStorage,
+  resumeClinicalSession,
+  setUiDensity,
+  syncGuardiaCensusPanelVisibility,
+  syncGuardiaModeButtonVisibility,
+  syncLegacyAccesoFields,
+  syncMobileBarebonesChrome,
+  syncPaseReturnHeaderBtn,
+  syncSettingsLanHostDiskSection,
+  toggleGuardiaMode,
+  tryMountClinicalTeamInviteBrowserGate,
+  windowHandlers,
+  windowHandlers2,
+  windowHandlers3,
+  wireClinicalTeamsControls
+} from "/js/chunks/chunk-P2TATS3Q.js";
+import {
+  dbUnlockWindowHandlers,
+  ensureClinicalDbUnlocked
+} from "/js/chunks/chunk-EVUS5NDR.js";
+import {
+  bootHydrateFromDb,
+  closeClinicoUnlockModal,
+  flushSaveState,
+  getDefaultRegistroRecordedAt,
+  indicaciones,
+  initAppState,
+  labHistory,
+  listadoProblemas,
+  medRecetaByPatient,
+  normalizeFechaLabHistory,
+  notes,
+  patients,
+  replaceAppStateFromBackupData,
+  saveState,
+  setSaveStateHooks,
+  sortLabHistoryChronological,
+  storage
+} from "/js/chunks/chunk-GA7RYJH6.js";
+import {
+  isDbMode
+} from "/js/chunks/chunk-K6QXHWFW.js";
+import {
+  resolveClinicalClientId
+} from "/js/chunks/chunk-2VGC7OB3.js";
+import "/js/chunks/chunk-LX374JRN.js";
+import "/js/chunks/chunk-OPJSETWU.js";
 
-`).trim()}var yl=/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/,El=/^(N|V|HD|HI|NM)\s*:/i,Al=[{key:"eventualidades",re:/^EVENTUALIDADES(\s+EN ESTE INTERNAMIENTO)?\s*$/i},{key:"estadoActual",re:/^ESTADO ACTUAL\b/i,exclusive:!0},{key:"historiaClinica",re:/^HISTORIA\s+CL[IÍ]NICA\s*:?\s*$/i},{key:"ficha",re:/^FICHA\s+DE\s+IDENTIFICACI[ÓO]N\s*:?\s*$/i},{key:"interrogatorio",re:/^INTERROGATORIO\s*:?\s*$/i},{key:"dx",re:/^(?:DX|IDX|SUGERENCIAS\s+DIAGN[ÓO]STIC[AO]S?)\s*:?\s*$/i},{key:"motivoConsulta",re:/^MOTIVO\s+DE\s+CONSULTA\s*:?\s*$/i},{key:"signosVitales",re:/^SIGNOS\s+VITALES(\s+DE\s+TRIAGE)?\s*:?\s*$/i},{key:"fechaIngreso",re:/^FECHA\s+DE\s+INGRESO\b/i},{key:"ahf",re:/^(?:ANTECEDENTES\s+HEREDOFAMILIARES|AHF)\s*:?\s*$/i},{key:"apnp",re:/^(?:ANTECEDENTES\s+PERSONALES(?:\s+NO\s+PATOL[ÓO]GICOS)?|ANTECEDENTES\s+SEXUALES|AGO|APNP)\s*:?\s*$/i},{key:"app",re:/^(?:ANTECEDENTES\s+PERSONALES\s+PATOL[ÓO]GICOS|APP)\s*:?\s*$/i},{key:"ecd",re:/^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*:?\s*$/i},{key:"medicamentos",re:/^MEDICAMENTOS(\s+ACTUALES|\s+HABITUALES)?\s*:?\s*$/i},{key:"peea",re:/^(?:PADECIMIENTO\s+ACTUAL\s*\/\s*PEEA|PEEA|PRINCIPIO\s+EVOLUCI[ÓO]N\s+Y\s+ESTADO\s+ACTUAL)\s*:?\s*$/i},{key:"pendientes",re:/^PENDIENTES\s*:?\s*$/i},{key:"laboratorios",re:/^LABORATORIOS(?:\s+DE\s+INGRESO)?\s*:?\s*$/i},{key:"efUx",re:/^EF\s+UX\s*:?\s*$/i},{key:"ipas",re:/^IPAS\b/i},{key:"cateteres",re:/^CAT[EÉ]TERES\s+Y\s+SONDAS\s*:?\s*$/i},{key:"antibioticos",re:/^ANTIBI[ÓO]TICOS\s*:?\s*$/i},{key:"cultivos",re:/^CULTIVOS\s*:?\s*$/i},{key:"estudiosImagen",re:/^ESTUDIOS\s+DE\s+IMAGEN\s*:?\s*$/i}],Il=[{key:"motivoConsulta",re:/^MOTIVO\s+DE\s+CONSULTA\s*:\s*(.+)$/i},{key:"signosVitales",re:/^SIGNOS\s+VITALES(?:\s+DE\s+TRIAGE)?\s*:\s*(.+)$/i}];function xl(e){let t=e.trim();for(let r of Il){let n=r.re.exec(t);if(n)return{key:r.key,body:n[1].trim()}}return null}function wl(e){let t=e.trim();if(!t)return null;for(let r of Al)if(r.re.test(t))return{key:r.key,exclusive:r.exclusive};return null}function ws(e){let r=Oe(e).split(`
-`),n={},i=[],o=[],a=[],s="_preamble",l=[],d=!1,c=!1,u=[];function p(){let m=l.join(`
-`).trim();s==="_preamble"?m&&a.push(...m.split(`
-`)):s==="eventualidades"?m&&u.push(m):!d&&m&&(n[s]=n[s]?n[s]+`
+// public/js/mobile-lan-boot.mjs
+function scheduleMobileLanWork(fn) {
+  if (!isMobileWeb()) {
+    void Promise.resolve().then(fn);
+    return;
+  }
+  const run = () => {
+    try {
+      void Promise.resolve(fn());
+    } catch (e) {
+      console.warn("[R+] mobile LAN boot:", e && e.message);
+    }
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => {
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(run, { timeout: 800 });
+      } else {
+        setTimeout(run, 50);
+      }
+    });
+  } else {
+    setTimeout(run, 50);
+  }
+}
 
-`+m:m),l=[]}function f(){let m=u.filter(Boolean).join(`
+// public/js/quick-output.mjs
+function listadoHasProblems(listado) {
+  if (!listado || typeof listado !== "object") return false;
+  const has = (arr) => Array.isArray(arr) && arr.some((p) => p && typeof p.descripcion === "string" && p.descripcion.trim().length > 0);
+  return has(listado.activos) || has(listado.inactivos);
+}
+function resolveQuickOutputAction(opts) {
+  const format = String(opts && opts.format || "docx").toLowerCase();
+  if (format === "html") return { kind: "html" };
+  if (format === "txt") return { kind: "txt" };
+  const sala = opts && opts.appMode === "sala";
+  if (sala) {
+    if (listadoHasProblems(opts.listado)) return { kind: "listado" };
+    return {
+      kind: "listado_empty",
+      message: "Agrega un problema al Listado para usar Salida r\xE1pida en Sala."
+    };
+  }
+  if (opts && opts.activeInner === "indica") return { kind: "indicaciones" };
+  return { kind: "nota" };
+}
 
-`).trim();m&&i.push(m),u=[]}for(let m of r){let E=m.trim();if(d&&yl.test(E)&&!El.test(E)){d=!1,c=!0,s="eventualidades",l=[m];continue}let S=xl(m);if(S){p(),d&&(d=!1),c&&(f(),c=!1),n[S.key]=S.body,s="_inline",l=[];continue}let w=wl(m);if(w){if(p(),w.key==="estadoActual"){c&&(f(),c=!1),d=!0,s="estadoActual",o.push("ESTADO ACTUAL detectado: no se importar\xE1 en v1.");continue}if(d&&w.key!=="estadoActual"&&(d=!1),w.key==="eventualidades"){c&&f(),c=!0,d=!1,s="eventualidades";continue}c&&w.key!=="eventualidades"&&(f(),c=!1),s=w.key;continue}d||l.push(m)}return p(),(c||u.some(Boolean))&&f(),{headerLines:a,sections:n,eventualidadesBlocks:i,warnings:o}}var Tl=new RegExp("^(\\d+(?:-\\d+)?)\\s*\\|+\\s*(.+?)\\s*\\|+\\s*(\\d+)\\s*(?:A\xD1OS)?\\s*\\|+\\s*([\\d-]+)\\s*\\|+\\s*(.+)$","i"),Cl=new RegExp("^(.+?)\\s*\\|+\\s*(\\d+)\\s*(?:A\xD1OS)?\\s*\\|+\\s*([\\d-]+)\\s*\\|+\\s*(.+)$","i"),Dl=/^([A-ZÁÉÍÓÚÑ\s]+)\s*:\s*(.+)$/i;function Pl(e){let t=String(e||"").trim();if(!t.includes("|"))return null;let r=Tl.exec(t);if(r)return{cama:r[1].trim(),nombre:r[2].trim(),edad:r[3].trim(),registro:r[4].trim(),resumenDx:r[5].trim()};let n=Cl.exec(t);return n&&!/^\d+(?:-\d+)?$/.test(n[1].trim())?{cama:"",nombre:n[1].trim(),edad:n[2].trim(),registro:n[3].trim(),resumenDx:n[4].trim()}:null}function Ts(e){let t=Array.isArray(e)?e:String(e||"").split(`
-`);for(let r of t.slice(0,12)){let n=String(r||"").trim();if(!n)continue;let i=Pl(n);if(i)return i}return null}function rt(e){let t={},r="",n=String(e||"").split(`
-`),i={NOMBRE:"nombre",EDAD:"edad",SEXO:"sexo",REGISTRO:"registro",ORIGEN:"lugarNacimiento","LUGAR DE NACIMIENTO":"lugarNacimiento","FECHA DE NACIMIENTO":"fechaNacimiento",RESIDENCIA:"residencia",OCUPACI\u00D3N:"ocupacionActual",OCUPACION:"ocupacionActual","OCUPACI\xD3N ACTUAL":"ocupacionActual","OCUPACION ACTUAL":"ocupacionActual","OCUPACI\xD3N ANTERIOR":"ocupacionAnterior","OCUPACION ANTERIOR":"ocupacionAnterior",ESCOLARIDAD:"escolaridad","ESTADO CIVIL":"estadoCivil",RELIGI\u00D3N:"religion",RELIGION:"religion",RESPONSABLE:"informante","TEL\xC9FONO FAMILIAR":"telefonoFamiliar","TELEFONO FAMILIAR":"telefonoFamiliar"};for(let o of n){let a=o.trim();if(!a)continue;let s=Dl.exec(a);if(!s)continue;let l=s[1].trim().toUpperCase(),d=s[2].trim(),c=i[l];c&&(t[c]=d,c==="sexo"&&(/FEMENIN/i.test(d)?r="F":/MASCULIN/i.test(d)&&(r="M")))}return t.nombre&&!t.informante&&(t.informante=t.nombre),{identificacion:t,sexo:r}}function Cs(e,t){let r=t.identificacion||{},n=/(\d+)/.exec(String(r.edad||""));return{cama:e?.cama||"",nombre:r.nombre||e?.nombre||"",edad:n?n[1]:e?.edad||"",registro:r.registro||e?.registro||"",resumenDx:e?.resumenDx||"",sexo:t.sexo||"",identificacion:Object.assign({},r)}}var Ll=/^(?:INTERROGADO\s+Y\s+)?NEGAD/i,kl={diabetes:[/\bDIABET(?:ES|IC[OA])\b/i,/\bDM\s*[12]\b/i,/\bDM2\b/i,/\bDM1\b/i],hipertension:[/\bHIPERTENS(?:I[ÓO]N|O)\b/i,/\bHTA\b/i,/\bHAS\b/i],enfermedadRenal:[/\bENFERMEDAD\s+RENAL\b/i,/\bERC\b/i,/\bIRC\b/i,/\bINSUFICIENCIA\s+RENAL\b/i,/\bNEFROPAT/i,/\bRI[ÑN]ON\s+POLIQU/i],cardiopatia:[/\bCARDIOPAT/i,/\bINSUFICIENCIA\s+CARD[IÍ]ACA\b/i,/\bICC\b/i,/\bFEVI\b/i],enfermedadPulmonar:[/\bEPOC\b/i,/\bENFERMEDAD\s+PULMONAR\b/i],cancer:[/\bNEOPLASIA\b/i,/\bC[AÁ]NCER\b/i,/\bCA\s+DE\b/i,/\bTUMOR\b/i],vih:[/\bVIH\b/i,/\bSIDA\b/i,/\bHIV\b/i],tuberculosis:[/\bTUBERCULOSIS\b/i,/\bTBC\b/i],hepatitis:[/\bHEPATITIS\b/i],parotiditis:[/\bPAROTIDITIS\b/i],paperas:[/\bPAPERAS\b/i],sarampion:[/\bSARAMPI[ÓO]N\b/i],varicela:[/\bVARICELA\b/i],rubeola:[/\bRUB[ÉE]OLA\b/i],neoplasia:[/\bNEOPLASIA\b/i],epilepsia:[/\bEPILEPS/i,/\bCONVULS/i],psiquiatrico:[/\bPSIQUIATR/i,/\bDEPRESI[ÓO]N\b/i,/\bESQUIZOFREN/i],tiroideo:[/\bTIROIDE/i,/\bHIPOTIRO/i,/\bHIPERTIRO/i]},Ls=[{key:"ecd",re:/^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*:?\s*(.*)$/i},{key:"medicamentos",re:/^MEDICAMENTOS(?:\s+ACTUALES|\s+HABITUALES)?\s*:?\s*(.*)$/i},{key:"transfusiones",re:/^TRANSFUSIONES\s*:?\s*(.*)$/i},{key:"hospitalizaciones",re:/^HOSPITALIZACIONES\s*:?\s*(.*)$/i},{key:"cirugias",re:/^CIRUG[ÍI]AS(?:\s+PREVIAS)?\s*:?\s*(.*)$/i},{key:"traumaticos",re:/^(?:TRAUMATISMOS?|FRACTURAS?)\s*:?\s*(.*)$/i},{key:"inmunizaciones",re:/^INMUNIZACIONES\s*:?\s*(.*)$/i},{key:"alergias",re:/^ALERGIAS(?:\s+MEDICAMENTOSAS)?\s*:?\s*(.*)$/i},{key:"enfermedades",re:/^ENFERMEDADES\s*:?\s*(.*)$/i}];function C(e){let t=String(e||"").trim();return t?Ll.test(t):!0}function tr(e){let t={},r=String(e||"").split(`
-`),n="_body",i=[];function o(){let a=i.join(`
-`).trim();a&&(t[n]=t[n]?t[n]+`
-`+a:a),i=[]}for(let a of r){let s=a.trim(),l=!1;for(let d of Ls){let c=d.re.exec(s);if(c){o(),n=d.key,l=!0,c[1]&&c[1].trim()&&i.push(c[1].trim());break}}l||i.push(a)}return o(),t}function Re(e,t){let r=String(e||"");if(!r.trim()||C(r))return[];let n=[],i=new Set;return Object.keys(t||{}).forEach(function(o){if(Do.has(o)||o==="otro")return;let a=t[o],s=kl[o]||[],l=new RegExp("\\b"+String(a).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");(s.some(function(c){return c.test(r)})||l.test(r))&&!i.has(o)&&(i.add(o),n.push({id:o,label:a}))}),n}function Ds(e){let t=String(e||"").trim();return!t||C(t)?[]:t.split(/\s*,\s*(?=[A-ZÁÉÍÓÚÑ0-9])/).map(function(r){return r.trim()}).filter(Boolean).map(function(r,n){return{id:"drv_med_"+n,medication:r,route:"",dosage:"",frequency:""}})}function Ol(e){let t=String(e||"");if(!t.trim()||C(t))return[];let r=[];return Object.keys(Ft).forEach(function(n){let i=Ft[n];String(i).split(/\s*[\/(]/).map(function(s){return s.trim()}).filter(function(s){return s.length>=4}).some(function(s){return new RegExp("\\b"+s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i").test(t)})&&r.push({id:n,label:i})}),r}var er=Object.fromEntries(Ut.map(function(e){return[e.label.toUpperCase(),e.id]}).concat([["ABUELA","abuela_materna"],["ABUELO","abuelo_materno"]]));function Rl(e){let t=[];return String(e||"").split(`
-`).forEach(function(r,n){let i=r.trim(),o=/^([A-ZÁÉÍÓÚÑ\s]+)\s*[:;]\s*(.+)$/i.exec(i);if(!o)return;let a=o[1].trim().toUpperCase(),s=o[2].trim(),l=er[a];if(!l||!s||C(s))return;let d=/FINAD|FALLECID|FALLEC/i.test(s)?"fallecido":/\bVIV[OA]\b|\bSANO\b/i.test(s)?"vivo":"desconocido",c=Re(s,xt);if(c.length){c.forEach(function(u){t.push({id:"drv_ahf_"+n+"_"+l+"_"+u.id,conditionId:u.id,relativeId:l,diagnosis:s,treatment:"",vitalStatus:d})});return}t.push({id:"drv_ahf_"+n+"_"+l+"_otro",conditionId:"otro",relativeId:l,diagnosis:s,treatment:"",vitalStatus:d})}),t}function Nl(e){let t=String(e||"").trim();if(!t||C(t))return!0;let r=/^[^:]+:\s*(.+)$/i.exec(t);return r?C(r[1].trim()):!1}function Ps(e,t,r){if(!t||!String(t).trim())return!1;if(Nl(t))return!0;let n=(r||[]).filter(function(i){return i.include!==!1});return e==="medicamentos"?n.some(function(i){return i.target==="app.medicamentosActuales"}):e==="alergias"?n.some(function(i){return i.target==="app.alergiasNegado"||i.target==="app.alergiaMedicamentos"}):e==="inmunizaciones"?n.some(function(i){return i.target==="app.inmunizaciones"}):e==="transfusiones"?n.some(function(i){return i.target==="app.transfusionesEntries"}):e==="hospitalizaciones"?n.some(function(i){return i.target==="app.hospitalizaciones"}):e==="cirugias"?n.some(function(i){return i.target==="app.cirugias"}):e==="traumaticos"?n.some(function(i){return i.target==="app.traumaticosEntries"}):e==="ecd"||e==="enfermedades"?n.some(function(i){return i.target==="app.conditions"}):!1}function Ml(e,t){let r=String(e||"").split(`
-`),n=[],i="_body",o=[];function a(){let s=o.join(`
-`).trim();if(!s){o=[];return}if(i==="_body"){let l=s;if((t||[]).some(function(d){return d.include!==!1&&d.target==="app.conditions"})){let d=Re(s,We);d.length&&d.every(function(c){return(t||[]).some(function(u){return u.include!==!1&&u.target==="app.conditions"&&u.value===c.id})})&&(l="")}l&&!Ps("_body",l,t)&&n.push(l)}else Ps(i,s,t)||n.push(...o);o=[]}for(let s of r){let l=s.trim(),d=!1;for(let c of Ls){let u=c.re.exec(l);if(u){a(),i=c.key,d=!0,u[1]&&u[1].trim()&&o.push(s);break}}d||(i==="_body"||o.length===0||(a(),i="_body"),o.push(s))}return a(),n.join(`
-`).replace(/\n{3,}/g,`
+// public/js/clinical-quick-export.mjs
+var quickExportRt = {
+  getActiveId() {
+    return null;
+  },
+  getActiveInner() {
+    return "todo";
+  },
+  getSettings() {
+    return {};
+  },
+  showToast() {
+  }
+};
+function registerClinicalQuickExportRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(quickExportRt, ctx);
+}
+function escHtml(value) {
+  return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function toLines(value) {
+  if (Array.isArray(value)) {
+    return value.map(function(v) {
+      return String(v || "").trim();
+    }).filter(Boolean);
+  }
+  return String(value || "").split("\n").map(function(v) {
+    return v.trim();
+  }).filter(Boolean);
+}
+function slugFilePart(value, fallback) {
+  var base = String(value || "").trim().toLowerCase();
+  var slug = base.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return slug || fallback;
+}
+function getCurrentPatientClinicalData() {
+  var patient = patients.find(function(p) {
+    return p.id === quickExportRt.getActiveId();
+  });
+  if (!patient) return null;
+  return {
+    patient,
+    note: notes[quickExportRt.getActiveId()] || {},
+    indicacion: indicaciones[quickExportRt.getActiveId()] || {}
+  };
+}
+function buildClinicalTextExport(bundle) {
+  var patient = bundle.patient || {};
+  var note = bundle.note || {};
+  var ind = bundle.indicacion || {};
+  var mode = bundle.mode || "both";
+  var blocks = [];
+  blocks.push("R+ - SALIDA CLINICA");
+  blocks.push("PACIENTE: " + (patient.nombre || ""));
+  blocks.push("REGISTRO: " + (patient.registro || ""));
+  blocks.push("SERVICIO: " + (patient.servicio || ""));
+  blocks.push("CUARTO/CAMA: " + (patient.cuarto || "") + "/" + (patient.cama || ""));
+  blocks.push("");
+  if (mode !== "indica") {
+    blocks.push("== NOTA DE EVOLUCION ==");
+    blocks.push("FECHA/HORA: " + (note.fecha || "") + " " + (note.hora || ""));
+    blocks.push("DIAGNOSTICOS:");
+    toLines(note.diagnosticos || []).forEach(function(v, idx) {
+      blocks.push(idx + 1 + ". " + v);
+    });
+    if (!toLines(note.diagnosticos || []).length) blocks.push("(sin contenido)");
+  }
+  function pushBlock(label, value) {
+    blocks.push(label + ":");
+    var lines = toLines(value);
+    if (!lines.length) blocks.push("(sin contenido)");
+    lines.forEach(function(l) {
+      blocks.push("- " + l);
+    });
+  }
+  if (mode !== "indica") {
+    pushBlock("INTERROGATORIO", note.interrogatorio);
+    pushBlock("EXPLORACION FISICA", note.exploracion);
+    pushBlock("ESTUDIOS", note.estudios);
+    pushBlock("ANALISIS", note.analisis);
+    pushBlock("PLAN", note.plan);
+    blocks.push(
+      "SIGNOS VITALES: TA " + (note.ta || "-") + " | FR " + (note.fr || "-") + " | FC " + (note.fc || "-") + " | TEMP " + (note.temp || "-") + " | PESO " + (note.peso || "-")
+    );
+    pushBlock("TRATAMIENTO E INDICACIONES", note.tratamiento || []);
+    blocks.push("MEDICO TRATANTE: " + (note.medico || ""));
+    blocks.push("PROFESOR RESPONSABLE: " + (note.profesor || ""));
+  }
+  if (mode === "both") blocks.push("");
+  if (mode !== "note") {
+    blocks.push("== INDICACIONES ==");
+    blocks.push("FECHA/HORA: " + (ind.fecha || "") + " " + (ind.hora || ""));
+    pushBlock("MEDICOS", ind.medicos);
+    pushBlock("DIETA", ind.dieta);
+    pushBlock("CUIDADOS", ind.cuidados);
+    pushBlock("ESTUDIOS", ind.estudios);
+    pushBlock("MEDICAMENTOS", ind.medicamentos);
+    pushBlock("INTERCONSULTAS", ind.interconsultas);
+    var otros = Array.isArray(ind.otros) ? ind.otros : [];
+    if (otros.length) {
+      blocks.push("OTROS:");
+      otros.forEach(function(item, idx) {
+        if (!item || typeof item !== "object") return;
+        blocks.push(idx + 1 + ". " + (item.titulo || "Seccion sin titulo"));
+        toLines(item.contenido || "").forEach(function(line) {
+          blocks.push("   - " + line);
+        });
+      });
+    }
+  }
+  return blocks.join("\n");
+}
+function buildClinicalHtmlExport(bundle) {
+  var patient = bundle.patient || {};
+  var note = bundle.note || {};
+  var ind = bundle.indicacion || {};
+  var mode = bundle.mode || "both";
+  function renderList(values) {
+    var lines = toLines(values);
+    if (!lines.length) return "<p><em>Sin contenido</em></p>";
+    return "<ul>" + lines.map(function(line) {
+      return "<li>" + escHtml(line) + "</li>";
+    }).join("") + "</ul>";
+  }
+  function renderOtherSections() {
+    var otros = Array.isArray(ind.otros) ? ind.otros : [];
+    if (!otros.length) return "<p><em>Sin secciones adicionales</em></p>";
+    return otros.filter(function(item) {
+      return item && typeof item === "object";
+    }).map(function(item) {
+      return "<article><h4>" + escHtml(item.titulo || "Seccion sin titulo") + "</h4>" + renderList(item.contenido || "") + "</article>";
+    }).join("");
+  }
+  var noteHtml = "<section><h2>Nota de evolucion</h2><p><strong>Fecha/Hora:</strong> " + escHtml(note.fecha || "") + " " + escHtml(note.hora || "") + "</p><h3>Diagnosticos</h3>" + renderList(note.diagnosticos || []) + "<h3>Interrogatorio</h3>" + renderList(note.interrogatorio) + "<h3>Exploracion fisica</h3>" + renderList(note.exploracion) + "<h3>Estudios</h3>" + renderList(note.estudios) + "<h3>Analisis</h3>" + renderList(note.analisis) + "<h3>Plan</h3>" + renderList(note.plan) + "<h3>Signos vitales</h3><p>TA " + escHtml(note.ta || "-") + " | FR " + escHtml(note.fr || "-") + " | FC " + escHtml(note.fc || "-") + " | TEMP " + escHtml(note.temp || "-") + " | PESO " + escHtml(note.peso || "-") + "</p><h3>Tratamiento e indicaciones medicas</h3>" + renderList(note.tratamiento || []) + "</section>";
+  var indicaHtml = "<section><h2>Indicaciones</h2><p><strong>Fecha/Hora:</strong> " + escHtml(ind.fecha || "") + " " + escHtml(ind.hora || "") + "</p><h3>Medicos</h3>" + renderList(ind.medicos) + "<h3>Dieta</h3>" + renderList(ind.dieta) + "<h3>Cuidados</h3>" + renderList(ind.cuidados) + "<h3>Estudios</h3>" + renderList(ind.estudios) + "<h3>Medicamentos</h3>" + renderList(ind.medicamentos) + "<h3>Interconsultas</h3>" + renderList(ind.interconsultas) + "<h3>Otros</h3>" + renderOtherSections() + "</section>";
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;"><title>R+ salida clinica</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style></head><body><h1>R+ - Salida clinica</h1><p><strong>Paciente:</strong> ` + escHtml(patient.nombre || "") + " | <strong>Registro:</strong> " + escHtml(patient.registro || "") + "</p><p><strong>Servicio:</strong> " + escHtml(patient.servicio || "") + " | <strong>Cuarto/Cama:</strong> " + escHtml(patient.cuarto || "") + "/" + escHtml(patient.cama || "") + "</p>" + (mode !== "indica" ? noteHtml : "") + (mode !== "note" ? indicaHtml : "") + "</body></html>";
+}
+function exportCurrentPatientAsText() {
+  var bundle = getCurrentPatientClinicalData();
+  if (!bundle) return;
+  bundle.mode = quickExportRt.getActiveInner() === "indica" ? "indica" : "note";
+  var fileName = "R-plus-" + slugFilePart(bundle.patient.nombre, "paciente") + "-clinico-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".txt";
+  incrementPendingJobs();
+  try {
+    downloadTextPayload(buildClinicalTextExport(bundle), fileName, "text/plain");
+    quickExportRt.showToast("Salida .txt descargada", "success");
+  } catch (e) {
+    quickExportRt.showToast(
+      "No se pudo exportar: " + (e && e.message ? e.message : "error"),
+      "error"
+    );
+  } finally {
+    decrementPendingJobs();
+  }
+}
+function exportCurrentPatientAsHtml() {
+  var bundle = getCurrentPatientClinicalData();
+  if (!bundle) return;
+  bundle.mode = quickExportRt.getActiveInner() === "indica" ? "indica" : "note";
+  var fileName = "R-plus-" + slugFilePart(bundle.patient.nombre, "paciente") + "-clinico-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".html";
+  incrementPendingJobs();
+  try {
+    downloadTextPayload(buildClinicalHtmlExport(bundle), fileName, "text/html");
+    quickExportRt.showToast("Salida .html descargada", "success");
+  } catch (e) {
+    quickExportRt.showToast(
+      "No se pudo exportar: " + (e && e.message ? e.message : "error"),
+      "error"
+    );
+  } finally {
+    decrementPendingJobs();
+  }
+}
+function quickExportCurrentPatient() {
+  if (guardMobileDocExport()) return;
+  if (!quickExportRt.getActiveId()) {
+    quickExportRt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var format = normalizeQuickOutputFormat(quickExportRt.getSettings().quickOutputFormat);
+  var action = resolveQuickOutputAction({
+    format,
+    appMode: isModeSala(quickExportRt.getSettings()) ? "sala" : "interconsulta",
+    activeInner: quickExportRt.getActiveInner(),
+    listado: listadoProblemas[quickExportRt.getActiveId()] || null
+  });
+  switch (action.kind) {
+    case "html":
+      exportCurrentPatientAsHtml();
+      return;
+    case "txt":
+      exportCurrentPatientAsText();
+      return;
+    case "listado":
+      generateListado();
+      return;
+    case "listado_empty":
+      quickExportRt.showToast(action.message, "error");
+      return;
+    case "indicaciones":
+      generateIndicaciones();
+      return;
+    case "nota":
+    default:
+      generateWord();
+      return;
+  }
+}
 
-`).trim()}function Bl(e,t){let r=(t||[]).filter(function(n){return n.include!==!1&&n.target==="ahf.entries"});return String(e||"").split(`
-`).filter(function(n){let i=n.trim();if(!i)return!0;let o=/^([A-ZÁÉÍÓÚÑ\s]+)\s*[:;]\s*(.+)$/i.exec(i);if(!o)return!0;let a=o[1].trim().toUpperCase(),s=o[2].trim();if(!er[a])return!0;if(C(s))return!1;if(!r.length)return!0;let l=er[a];return!r.some(function(d){let c=d.value||{};return c.relativeId===l&&String(c.diagnosis||"").toUpperCase()===s.toUpperCase()})}).join(`
-`).replace(/\n{3,}/g,`
+// public/js/modal-dismiss.mjs
+function isRpcOverlayVisible(el) {
+  if (!el || !el.isConnected) return false;
+  var cs = window.getComputedStyle(el);
+  if (cs.display === "none" || cs.visibility === "hidden") return false;
+  var op = parseFloat(cs.opacity);
+  if (!Number.isNaN(op) && op <= 0) return false;
+  return true;
+}
+function getOverlayZIndex(el) {
+  if (!el || !isRpcOverlayVisible(el)) return -1;
+  var z = parseInt(window.getComputedStyle(el).zIndex, 10);
+  return Number.isNaN(z) ? 0 : z;
+}
+function bindBackdropDismiss(backdropEl, requestClose, panelSelector) {
+  if (!backdropEl || backdropEl.dataset.rpcBackdropDismiss === "2") return;
+  backdropEl.dataset.rpcBackdropDismiss = "2";
+  var selector = panelSelector || '.modal, [role="dialog"]';
+  backdropEl.addEventListener("click", function(ev) {
+    var panel = backdropEl.querySelector(selector);
+    if (panel && panel.contains(ev.target)) return;
+    requestClose();
+  });
+}
+function createModalDismissRegistry() {
+  var layers = [];
+  var globalWired = false;
+  function register(layer) {
+    layers.push(layer);
+  }
+  function tryCloseLayer(layer, ev) {
+    if (!layer.isOpen()) return false;
+    if (layer.confirmClose && layer.confirmClose() === false) return true;
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    layer.close();
+    return true;
+  }
+  function closeTopmost(ev) {
+    for (var i = layers.length - 1; i >= 0; i--) {
+      if (tryCloseLayer(layers[i], ev)) return true;
+    }
+    return false;
+  }
+  function onKeydown(ev) {
+    if (ev.key !== "Escape" && ev.key !== "Esc") return;
+    closeTopmost(ev);
+  }
+  function init() {
+    if (globalWired) return;
+    globalWired = true;
+    document.addEventListener("keydown", onKeydown, true);
+    layers.forEach(function(layer) {
+      if (!layer.backdropEl) return;
+      var el = layer.backdropEl();
+      if (!el) return;
+      bindBackdropDismiss(el, function() {
+        tryCloseLayer(layer, null);
+      }, layer.panelSelector);
+    });
+  }
+  return { register, init, closeTopmost, bindBackdropDismiss };
+}
 
-`).trim()}function rr(e,t,r){r=r||{};let n=[],i=String(e||"");if(i==="app"||i==="ecd"||i==="medicamentos"){let o=tr(t),a=[o.ecd,o.enfermedades,o._body,t].filter(Boolean).join(`
-`);Re(a,We).forEach(function(c){n.push({id:"app_cond_"+c.id,label:c.label,target:"app.conditions",include:!0,value:c.id,sourceText:c.label})});let s=o.medicamentos||(i==="medicamentos"?t:"");Ds(s).forEach(function(c,u){n.push({id:"app_med_"+u,label:"Medicamento: "+c.medication,target:"app.medicamentosActuales",include:!0,value:c,sourceText:c.medication})});let l=o.alergias||"";l&&(C(l)?n.push({id:"app_alergias_negado",label:"Sin alergias medicamentosas conocidas",target:"app.alergiasNegado",include:!0,value:!0,sourceText:l}):l.split(/\s*,\s*/).map(function(c){return c.trim()}).filter(Boolean).forEach(function(c,u){n.push({id:"app_alergia_"+u,label:"Alergia: "+c,target:"app.alergiaMedicamentos",include:!0,value:{id:"drv_al_"+u,medication:c},sourceText:c})}));let d=o.inmunizaciones||"";d&&!C(d)&&n.push({id:"app_inmunizaciones",label:"Inmunizaciones: "+d.slice(0,72)+(d.length>72?"\u2026":""),target:"app.inmunizaciones",include:!0,value:d,sourceText:d}),[{subKey:"transfusiones",target:"app.transfusionesEntries",prefix:"Transfusi\xF3n"},{subKey:"hospitalizaciones",target:"app.hospitalizaciones",prefix:"Hospitalizaci\xF3n"},{subKey:"cirugias",target:"app.cirugias",prefix:"Cirug\xEDa"},{subKey:"traumaticos",target:"app.traumaticosEntries",prefix:"Traumatismo"}].forEach(function(c){let u=o[c.subKey]||"";!u||C(u)||n.push({id:"app_"+c.subKey,label:c.prefix+": "+u.slice(0,72)+(u.length>72?"\u2026":""),target:c.target,include:!0,value:u,sourceText:u})})}return i==="apnp"&&String(t||"").split(`
-`).forEach(function(a){let s=a.trim(),l=/^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i.exec(s);if(!l)return;let d=l[1].trim().toUpperCase(),c=l[2].trim();if(d==="TABAQUISMO"&&C(c)&&n.push({id:"apnp_tabaquismo_negado",label:"Tabaquismo negado",target:"apnp.tabaquismoDetail",include:!0,value:{status:"negado"},sourceText:c}),(d==="ETILISMO"||d==="ALCOHOLISMO")&&C(c)&&n.push({id:"apnp_alcoholismo_negado",label:"Alcoholismo negado",target:"apnp.alcoholismoDetail",include:!0,value:{status:"negado"},sourceText:c}),d==="TOXICOMAN\xCDAS"||d==="TOXICOMANIAS"){if(C(c))return;Ol(c).forEach(function(u){n.push({id:"apnp_tox_"+u.id,label:"Toxicoman\xEDa: "+u.label,target:"apnp.toxicomaniasEntries",include:!0,value:{id:"drv_tox_"+u.id,substanceId:u.id,customLabel:"",frequency:"",years:""},sourceText:u.label})})}}),i==="ahf"&&(Rl(t).forEach(function(o){let a=(Ut.find(function(s){return s.id===o.relativeId})||{}).label||o.relativeId;n.push({id:o.id,label:a+": "+String(o.diagnosis||"").slice(0,64),target:"ahf.entries",include:!0,value:o,sourceText:o.diagnosis})}),Re(t,xt).forEach(function(o){n.some(function(a){return a.target==="ahf.entries"&&a.value&&a.value.conditionId===o.id})||n.push({id:"ahf_cond_"+o.id,label:"Antecedente familiar: "+o.label,target:"ahf.conditions",include:!0,value:o.id,sourceText:o.label})})),i==="ecd"&&!n.length&&Re(t,We).forEach(function(o){n.push({id:"app_cond_"+o.id,label:o.label,target:"app.conditions",include:!0,value:o.id,sourceText:o.label})}),i==="medicamentos"&&!n.some(function(o){return o.target==="app.medicamentosActuales"})&&Ds(t).forEach(function(o,a){n.push({id:"app_med_"+a,label:"Medicamento: "+o.medication,target:"app.medicamentosActuales",include:!0,value:o,sourceText:o.medication})}),n}function nr(e,t){let r=(t||[]).filter(function(i){return i.include!==!1}),n=Object.assign({},e||{});if(r.forEach(function(i){let o=String(i.target||"").split(".");if(o.length!==2)return;let a=o[0],s=o[1];(!n[a]||typeof n[a]!="object")&&(n[a]={});let l=Object.assign({},n[a]);if(s==="conditions"){let d=Array.isArray(l.conditions)?l.conditions.slice():[],c=String(i.value);c&&d.indexOf(c)<0&&d.push(c),l.conditions=d}else if(s==="medicamentosActuales"){let d=Array.isArray(l.medicamentosActuales)?l.medicamentosActuales.slice():[],c=i.value;c&&c.medication&&!d.some(function(u){return String(u.medication||"").toUpperCase()===String(c.medication).toUpperCase()})&&d.push(i.value),l.medicamentosActuales=d}else if(s==="alergiasNegado")l.alergiasNegado=!!i.value,l.alergiasNegado&&(l.alergiaMedicamentos=[]);else if(s==="alergiaMedicamentos"){l.alergiasNegado=!1;let d=Array.isArray(l.alergiaMedicamentos)?l.alergiaMedicamentos.slice():[],c=i.value;c&&c.medication&&d.push(i.value),l.alergiaMedicamentos=d}else if(s==="inmunizaciones")String(l.inmunizaciones||"").trim()||(l.inmunizaciones=String(i.value||"").trim());else if(s==="transfusionesEntries"){let d=Array.isArray(l.transfusionesEntries)?l.transfusionesEntries.slice():[];d.push({id:"drv_tf_"+d.length,units:"",adverseReactions:String(i.value||"").trim(),date:null}),l.transfusionesEntries=d}else if(s==="hospitalizaciones"){let d=Array.isArray(l.hospitalizaciones)?l.hospitalizaciones.slice():[];d.push({reason:String(i.value||"").trim(),duration:"",complications:"",date:null}),l.hospitalizaciones=d}else if(s==="cirugias"){let d=Array.isArray(l.cirugias)?l.cirugias.slice():[];d.push({procedure:String(i.value||"").trim(),complications:"",date:null}),l.cirugias=d}else if(s==="traumaticosEntries"){let d=Array.isArray(l.traumaticosEntries)?l.traumaticosEntries.slice():[];d.push({id:"drv_tr_"+d.length,description:String(i.value||"").trim(),date:null}),l.traumaticosEntries=d}else if(s==="tabaquismoDetail")l.tabaquismoDetail=Object.assign({},l.tabaquismoDetail||{},i.value||{}),l.tabaquismo=_t;else if(s==="alcoholismoDetail")l.alcoholismoDetail=Object.assign({},l.alcoholismoDetail||{},i.value||{}),l.alcoholismo=_t;else if(s==="toxicomaniasEntries"){let d=Array.isArray(l.toxicomaniasEntries)?l.toxicomaniasEntries.slice():[],c=i.value;c&&c.substanceId&&!d.some(function(u){return u&&u.substanceId===c.substanceId})&&d.push(i.value),l.toxicomaniasEntries=d}else if(s==="entries"){let d=Array.isArray(l.entries)?l.entries.slice():[],c=i.value;c&&c.relativeId&&c.conditionId&&!d.some(function(u){return u&&u.relativeId===c.relativeId&&u.conditionId===c.conditionId&&String(u.diagnosis||"").toUpperCase()===String(c.diagnosis||"").toUpperCase()})&&d.push(i.value),l.entries=d}n[a]=l}),n.app&&typeof n.app=="object"){let i=Object.assign({},n.app);typeof i.descripcionDetallada=="string"&&(i.descripcionDetallada=Ml(i.descripcionDetallada,r)),n.app=i}if(n.ahf&&typeof n.ahf=="object"){let i=Co(Object.assign({},n.ahf));typeof i.descripcionDetallada=="string"&&(i.descripcionDetallada=Bl(i.descripcionDetallada,r)),n.ahf=i}return n}var Hl=["app","apnp","ahf","ecd","medicamentos"];function _l(e){let t=[];return Hl.forEach(function(r){let n=String((e||{})[r]||"").trim();n&&rr(r,n,e).forEach(function(i){t.push(i)})}),t}function ks(e,t){let r=_l(t||{});return r.length?nr(e||{},r):e||{}}var Os=/^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i;function Rs(e){let t={},r={ORIGEN:"lugarNacimiento",RESIDENCIA:"residencia","ESTADO CIVIL":"estadoCivil",RELIGI\u00D3N:"religion",RELIGION:"religion",ESCOLARIDAD:"escolaridad",OCUPACI\u00D3N:"ocupacionActual",OCUPACION:"ocupacionActual"};for(let n of String(e||"").split(`
-`)){let i=n.trim();if(!i)continue;let o=Os.exec(i);if(!o)continue;let a=o[1].trim().toUpperCase(),s=o[2].trim(),l=r[a]||a.toLowerCase().replace(/\s+/g,"_");t[l]=s}return t}function nt(e){let t={},r={TABAQUISMO:"tabaquismo",ETILISMO:"alcoholismo",TOXICOMAN\u00CDAS:"toxicomanias",TOXICOMANIAS:"toxicomanias","TATUAJES/PERFORACIONES":"tatuajes",TATUAJES:"tatuajes",ZOONOSIS:"deportesPasatiemposMascotas",COMBE:"dieta",BIOMASA:"dieta","VIAJES RECIENTES":"dieta",HERBOLARIA:"dieta"};for(let n of String(e||"").split(`
-`)){let i=n.trim();if(!i)continue;let o=Os.exec(i);if(!o)continue;let a=o[1].trim().toUpperCase(),s=r[a];s&&(t[s]=o[2].trim())}return t}function it(e){let r=[e.ecd,e.medicamentos,e.quirurgicos,e.internamientos,e.app].filter(Boolean).join(`
+// public/js/procedure-agenda-week.mjs
+var AGENDA_DISPLAY_FIRST_HOUR = 6;
+var AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE = 22;
+var VISUAL_DURATION_MS = 2 * 60 * 60 * 1e3;
+function mondayStartLocal(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const wd = x.getDay();
+  const delta = wd === 0 ? -6 : 1 - wd;
+  x.setDate(x.getDate() + delta);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function addDaysLocal(d, n) {
+  const x = new Date(d.getTime());
+  x.setDate(x.getDate() + n);
+  return x;
+}
+function weekBoundsFromMonday(monday) {
+  const start = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0, 0);
+  const end = new Date(start.getTime());
+  end.setDate(end.getDate() + 7);
+  return { start, endExclusive: end };
+}
+function clipEventToDayColumn(evtStartMs, columnMidnightMs) {
+  const col = new Date(columnMidnightMs);
+  const dayEnd = new Date(col.getFullYear(), col.getMonth(), col.getDate() + 1, 0, 0, 0, 0).getTime();
+  const evtEndMs = evtStartMs + VISUAL_DURATION_MS;
+  if (evtEndMs <= col.getTime() || evtStartMs >= dayEnd) return null;
+  const visStartMs = new Date(
+    col.getFullYear(),
+    col.getMonth(),
+    col.getDate(),
+    AGENDA_DISPLAY_FIRST_HOUR,
+    0,
+    0,
+    0
+  ).getTime();
+  const visEndMs = new Date(
+    col.getFullYear(),
+    col.getMonth(),
+    col.getDate(),
+    AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE,
+    0,
+    0,
+    0
+  ).getTime();
+  const topMs = Math.max(evtStartMs, col.getTime(), visStartMs);
+  const botMs = Math.min(evtEndMs, dayEnd, visEndMs);
+  if (botMs <= topMs) return null;
+  return { topMs, botMs, visStartMs };
+}
+function assignLanesByInterval(items) {
+  const sorted = items.slice().sort(function(a, b) {
+    if (a.topMs !== b.topMs) return a.topMs - b.topMs;
+    return String(a.id).localeCompare(String(b.id));
+  });
+  const laneEnds = [];
+  const laneById = /* @__PURE__ */ new Map();
+  sorted.forEach(function(it) {
+    var lane = -1;
+    for (var L = 0; L < laneEnds.length; L += 1) {
+      if (laneEnds[L] <= it.topMs) {
+        lane = L;
+        break;
+      }
+    }
+    if (lane < 0) {
+      lane = laneEnds.length;
+      laneEnds.push(it.botMs);
+    } else {
+      laneEnds[lane] = it.botMs;
+    }
+    laneById.set(it.id, lane);
+  });
+  return laneById;
+}
 
-`).trim(),n=tr(r),i=n.alergias||"",o=n.inmunizaciones||"";return{conditions:[],customConditions:[],conditionDetails:{},cirugias:[],hospitalizaciones:[],alergiasNegado:i?C(i):!1,alergiaMedicamentos:[],traumaticosEntries:[],transfusionesEntries:[],descripcionDetallada:r,medicamentosActuales:[],inmunizaciones:o&&!C(o)?o:""}}var Fl=new Set(["registro","dx","diagnosticos","nombre","edad","cama","sexo"]),Ul=[/^REGISTRO\s*[:;]/i,/^(?:DX|IDX|DIAGN[ÓO]STICOS?|DIAGNOSTICOS?)\s*[:;]/i,/^NOMBRE\s*[:;]/i,/^EDAD\s*[:;]/i,/^CAMA\s*[:;]/i,/^SEXO\s*[:;]/i];function ir(e){return String(e||"").split(`
-`).filter(function(t){let r=t.trim();return r?!Ul.some(function(n){return n.test(r)}):!0}).join(`
-`).replace(/\n{3,}/g,`
+// public/js/features/agenda.mjs
+var rt = {
+  getActiveId() {
+    return null;
+  },
+  showToast() {
+  },
+  renderPaseBoard() {
+  }
+};
+function registerProcedureAgendaRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt, ctx);
+}
+var procedureAgendaWeekOffset = 0;
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function agendaEligiblePatients() {
+  return patients.filter(function(p) {
+    if (!p) return false;
+    if (p.isDemo) return false;
+    if (String(p.id).indexOf("demo-") === 0) return false;
+    return true;
+  });
+}
+function paIsoToDatetimeLocalValue(isoStr) {
+  var d = new Date(String(isoStr || "").trim());
+  if (isNaN(d.getTime())) return "";
+  var pad = function(x) {
+    return String(x).padStart(2, "0");
+  };
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+function paParseDatetimeLocalValue(s) {
+  var v = String(s || "").trim();
+  if (!v) return null;
+  var d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+function getProcedureAgendaMondayAnchor() {
+  var base = mondayStartLocal(/* @__PURE__ */ new Date());
+  var dt = addDaysLocal(base, procedureAgendaWeekOffset * 7);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+function formatProcedureAgendaRangeLabel(monday) {
+  try {
+    var sun = addDaysLocal(monday, 6);
+    var oDay = { day: "numeric" };
+    var oWd = { weekday: "short" };
+    var oMon = { month: "short" };
+    var a = monday.toLocaleDateString("es", oWd).replace(".", "") + " " + monday.toLocaleDateString("es", oDay) + " " + monday.toLocaleDateString("es", oMon);
+    var b = sun.toLocaleDateString("es", oWd).replace(".", "") + " " + sun.toLocaleDateString("es", oDay) + " " + sun.toLocaleDateString("es", oMon) + " " + sun.getFullYear();
+    return a.charAt(0).toUpperCase() + a.slice(1) + " \u2014 " + b;
+  } catch (_e) {
+    return "";
+  }
+}
+function syncProcedureAgendaNavButtons() {
+  var prevBtn = document.getElementById("procedure-agenda-prev");
+  var nextBtn = document.getElementById("procedure-agenda-next");
+  if (prevBtn) prevBtn.disabled = procedureAgendaWeekOffset <= -1;
+  if (nextBtn) nextBtn.disabled = procedureAgendaWeekOffset >= 1;
+}
+function navigateProcedureAgendaWeek(delta) {
+  procedureAgendaWeekOffset = Math.max(-1, Math.min(1, procedureAgendaWeekOffset + delta));
+  renderProcedureAgendaPanel();
+}
+function renderProcedureAgendaPanel() {
+  var mount = document.getElementById("procedure-agenda-grid-mount");
+  var rangeEl = document.getElementById("procedure-agenda-range");
+  if (!mount || !rangeEl) return;
+  syncProcedureAgendaNavButtons();
+  var monday = getProcedureAgendaMondayAnchor();
+  rangeEl.textContent = formatProcedureAgendaRangeLabel(monday);
+  var week = weekBoundsFromMonday(monday);
+  var nh = AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE - AGENDA_DISPLAY_FIRST_HOUR;
+  var agendaRowPx = getProcedureAgendaRowPx();
+  var elig = agendaEligiblePatients();
+  var pmap = {};
+  elig.forEach(function(p) {
+    pmap[String(p.id)] = String(p.nombre || "").trim();
+  });
+  var newBtn = document.getElementById("procedure-agenda-new");
+  if (newBtn) newBtn.disabled = elig.length === 0;
+  var board = document.createElement("div");
+  var head = document.createElement("div");
+  head.className = "rpc-proc-agenda-board-head";
+  var headSpacer = document.createElement("div");
+  headSpacer.className = "rpc-proc-agenda-head-spacer";
+  head.appendChild(headSpacer);
+  var iDay;
+  var colDate;
+  for (iDay = 0; iDay < 7; iDay += 1) {
+    colDate = addDaysLocal(monday, iDay);
+    var hc = document.createElement("div");
+    hc.className = "rpc-proc-agenda-head-cell";
+    var wd = String(colDate.toLocaleDateString("es", { weekday: "short" })).replace(/\.$/, "");
+    var dm = String(colDate.toLocaleDateString("es", { day: "numeric", month: "short" })).replace(
+      ".",
+      ""
+    );
+    wd = wd.charAt(0).toUpperCase() + wd.slice(1);
+    dm = dm.charAt(0).toUpperCase() + dm.slice(1);
+    hc.innerHTML = "<span>" + esc(wd) + "</span><strong>" + esc(dm) + "</strong>";
+    head.appendChild(hc);
+  }
+  board.appendChild(head);
+  var bodyRow = document.createElement("div");
+  bodyRow.className = "rpc-proc-agenda-board-body";
+  var timesCol = document.createElement("div");
+  timesCol.className = "rpc-proc-agenda-times-col";
+  for (var h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
+    var tsl = document.createElement("div");
+    tsl.className = "rpc-proc-agenda-time-slot";
+    tsl.style.height = agendaRowPx + "px";
+    tsl.textContent = String(h).padStart(2, "0") + ":00";
+    timesCol.appendChild(tsl);
+  }
+  bodyRow.appendChild(timesCol);
+  var clipsByDay = [[], [], [], [], [], [], []];
+  storage.getScheduledProcedures().forEach(function(ev) {
+    var evtMs = Date.parse(ev.start);
+    if (!Number.isFinite(evtMs)) return;
+    if (evtMs >= week.endExclusive.getTime()) return;
+    var evEndMs = evtMs + VISUAL_DURATION_MS;
+    if (evEndMs <= week.start.getTime()) return;
+    if (String(ev.patientId).indexOf("demo-") === 0) return;
+    var patientLabel = pmap[ev.patientId] ? pmap[ev.patientId] : "Paciente desconocido";
+    for (iDay = 0; iDay < 7; iDay += 1) {
+      colDate = addDaysLocal(monday, iDay);
+      colDate.setHours(0, 0, 0, 0);
+      var clip = clipEventToDayColumn(evtMs, colDate.getTime());
+      if (!clip) continue;
+      clipsByDay[iDay].push({
+        ev,
+        clip,
+        patientLabel
+      });
+    }
+  });
+  for (iDay = 0; iDay < 7; iDay += 1) {
+    colDate = addDaysLocal(monday, iDay);
+    colDate.setHours(0, 0, 0, 0);
+    var dayCol = document.createElement("div");
+    dayCol.className = "rpc-proc-agenda-day-col-wrap";
+    dayCol.style.height = nh * agendaRowPx + "px";
+    var hl;
+    for (h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
+      hl = document.createElement("div");
+      hl.className = "rpc-proc-agenda-hour-line";
+      hl.style.height = agendaRowPx + "px";
+      dayCol.appendChild(hl);
+    }
+    var intervals = clipsByDay[iDay].map(function(x) {
+      return { id: x.ev.id, topMs: x.clip.topMs, botMs: x.clip.botMs };
+    });
+    var laneById = intervals.length === 0 ? /* @__PURE__ */ new Map() : assignLanesByInterval(intervals.slice());
+    var laneCount = 1;
+    if (laneById.size > 0) {
+      laneById.forEach(function(ln) {
+        laneCount = Math.max(laneCount, ln + 1);
+      });
+    }
+    clipsByDay[iDay].forEach(function(cell) {
+      var clip = cell.clip;
+      var ev = cell.ev;
+      var visStartMs = clip.visStartMs;
+      var blockTopPx = (clip.topMs - visStartMs) / (60 * 60 * 1e3) * agendaRowPx;
+      var blockHtPx = Math.max((clip.botMs - clip.topMs) / (60 * 60 * 1e3) * agendaRowPx, 18);
+      var lane = laneById.get(ev.id) || 0;
+      var lcLane = laneCount < 1 ? 1 : laneCount;
+      var pctEach = 100 / lcLane;
+      var startClock = String(
+        new Date(ev.start).toLocaleTimeString("es", {
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      ).replace(".", "");
+      var blk = document.createElement("button");
+      blk.type = "button";
+      blk.className = "rpc-proc-agenda-block";
+      blk.style.top = Math.max(0, blockTopPx) + "px";
+      blk.style.height = blockHtPx + "px";
+      if (lcLane <= 1) {
+        blk.style.left = "3px";
+        blk.style.width = "calc(100% - 6px)";
+      } else {
+        blk.style.left = "calc(" + lane * pctEach + "% + 3px)";
+        blk.style.width = "calc(" + pctEach + "% - 10px)";
+      }
+      blk.setAttribute(
+        "title",
+        (ev.procedure || "") + " \xB7 " + (ev.location || "") + " \xB7 " + cell.patientLabel
+      );
+      blk.setAttribute("aria-label", "Editar procedimiento para " + cell.patientLabel);
+      if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add("rpc-proc-flag");
+      blk.innerHTML = '<div class="rpc-proc-name">' + esc(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc(String(cell.patientLabel)) + "</div>";
+      blk.addEventListener("click", function(e) {
+        e.preventDefault();
+        openProcedureAgendaModal(ev.id);
+      });
+      dayCol.appendChild(blk);
+    });
+    bodyRow.appendChild(dayCol);
+  }
+  board.appendChild(bodyRow);
+  mount.innerHTML = "";
+  mount.appendChild(board);
+  if (isPaseMode()) rt.renderPaseBoard();
+}
+function openProcedureAgendaModal(editEventId) {
+  var bd = document.getElementById("procedure-agenda-modal");
+  if (!bd) return;
+  var errEl = document.getElementById("pa-modal-error");
+  var delBtn = document.getElementById("pa-btn-delete");
+  if (errEl) {
+    errEl.style.display = "none";
+    errEl.textContent = "";
+  }
+  document.getElementById("pa-edit-id").value = editEventId || "";
+  var elig = agendaEligiblePatients();
+  var sel = document.getElementById("pa-patient");
+  if (sel) {
+    sel.innerHTML = "";
+    elig.forEach(function(p) {
+      var opt = document.createElement("option");
+      opt.value = String(p.id);
+      opt.textContent = String(p.nombre || p.id);
+      sel.appendChild(opt);
+    });
+  }
+  if (delBtn) delBtn.style.display = editEventId ? "inline-flex" : "none";
+  var found;
+  if (editEventId) {
+    found = storage.getScheduledProcedures().filter(function(e) {
+      return e.id === editEventId;
+    })[0];
+    if (found && sel) {
+      sel.value = String(found.patientId);
+      if (sel.value !== String(found.patientId))
+        sel.appendChild(new Option(found.patientId, found.patientId));
+      sel.value = String(found.patientId);
+    }
+    if (found) {
+      document.getElementById("pa-procedure").value = found.procedure || "";
+      document.getElementById("pa-location").value = found.location || "";
+      document.getElementById("pa-start").value = paIsoToDatetimeLocalValue(found.start);
+      document.getElementById("pa-material").checked = !!found.materialApproved;
+      document.getElementById("pa-anesthesia").checked = !!found.anesthesiaScheduled;
+    }
+  } else {
+    var aid = rt.getActiveId();
+    if (sel && elig.length && aid && elig.some(function(p) {
+      return p.id === aid;
+    })) {
+      sel.value = String(aid);
+    } else if (sel && elig[0]) sel.value = elig[0].id;
+    document.getElementById("pa-procedure").value = "";
+    document.getElementById("pa-location").value = "";
+    var now = /* @__PURE__ */ new Date();
+    document.getElementById("pa-start").value = paIsoToDatetimeLocalValue(now.toISOString());
+    document.getElementById("pa-material").checked = false;
+    document.getElementById("pa-anesthesia").checked = false;
+  }
+  var paStart = document.getElementById("pa-start");
+  if (paStart) {
+    mountRpcDatetimeInput(paStart);
+    paStart.dispatchEvent(new CustomEvent("rpc-datetime-sync"));
+  }
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+}
+function closeProcedureAgendaModal() {
+  var bd = document.getElementById("procedure-agenda-modal");
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+}
+function saveProcedureAgendaFromModal() {
+  var errEl = document.getElementById("pa-modal-error");
+  function showPaErr(msg) {
+    errEl.style.display = "block";
+    errEl.textContent = msg;
+    rt.showToast(msg, "error");
+  }
+  if (errEl) {
+    errEl.style.display = "none";
+    errEl.textContent = "";
+  }
+  var editId = (document.getElementById("pa-edit-id").value || "").trim();
+  var patientId = String(document.getElementById("pa-patient").value || "").trim();
+  var procedure = String(document.getElementById("pa-procedure").value || "").trim();
+  var location2 = String(document.getElementById("pa-location").value || "").trim();
+  var sd = paParseDatetimeLocalValue(document.getElementById("pa-start").value);
+  var elig = agendaEligiblePatients();
+  if (!elig.length) {
+    showPaErr("No hay pacientes reales para agendar (agrega un paciente desde la barra lateral).");
+    return;
+  }
+  if (!patientId || !elig.some(function(p) {
+    return String(p.id) === patientId;
+  })) {
+    showPaErr("Elige un paciente v\xE1lido de la lista.");
+    return;
+  }
+  if (!procedure) {
+    showPaErr("Indica el procedimiento.");
+    return;
+  }
+  if (!location2) {
+    showPaErr("Indica el lugar.");
+    return;
+  }
+  if (!sd) {
+    showPaErr("Fecha u hora de inicio inv\xE1lidas.");
+    return;
+  }
+  var nowIso = (/* @__PURE__ */ new Date()).toISOString();
+  var arr = storage.getScheduledProcedures();
+  var prev = editId ? arr.filter(function(e) {
+    return e.id === editId;
+  })[0] : null;
+  var eventObj = {
+    id: editId || "proc-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 9),
+    patientId,
+    procedure,
+    location: location2,
+    materialApproved: !!document.getElementById("pa-material").checked,
+    anesthesiaScheduled: !!document.getElementById("pa-anesthesia").checked,
+    start: sd.toISOString(),
+    createdAt: prev && prev.createdAt ? prev.createdAt : nowIso,
+    updatedAt: nowIso
+  };
+  var next;
+  if (editId) {
+    next = arr.map(function(e) {
+      return e.id === editId ? eventObj : e;
+    });
+    if (!next.some(function(e) {
+      return e.id === editId;
+    })) next.push(eventObj);
+  } else {
+    next = arr.concat([eventObj]);
+  }
+  storage.saveScheduledProcedures(next);
+  emitLiveSyncAgendaUpsert(eventObj);
+  closeProcedureAgendaModal();
+  rt.showToast("Procedimiento guardado", "success");
+  renderProcedureAgendaPanel();
+}
+function deleteProcedureAgendaFromModal() {
+  var editId = (document.getElementById("pa-edit-id").value || "").trim();
+  if (!editId) return;
+  if (!confirm(
+    "\xBFEliminar este procedimiento de la agenda? No se puede deshacer desde aqu\xED."
+  ))
+    return;
+  var delAt = (/* @__PURE__ */ new Date()).toISOString();
+  var arr = storage.getScheduledProcedures().filter(function(e) {
+    return e.id !== editId;
+  });
+  storage.saveScheduledProcedures(arr);
+  emitLiveSyncAgendaDelete(editId, delAt);
+  closeProcedureAgendaModal();
+  rt.showToast("Eliminado de la agenda", "success");
+  renderProcedureAgendaPanel();
+}
+var windowHandlers16 = {
+  navigateProcedureAgendaWeek,
+  openProcedureAgendaModal,
+  closeProcedureAgendaModal,
+  saveProcedureAgendaFromModal,
+  deleteProcedureAgendaFromModal
+};
 
-`).trim()}function F(e){let t={};return Object.entries(e||{}).forEach(function(r){let n=r[0],i=r[1];Fl.has(n)||i!=null&&String(i).trim()&&(t[n]=String(i).trim())}),t}function or(e){let t=e.sections||{},r=rt(t.ficha||""),n=nt(t.apnp||""),i=it(t),a=[t.peea,t.efUx,t.pendientes].filter(Boolean).join(`
+// public/js/features/productivity.mjs
+var rt2 = {
+  getActiveId() {
+    return null;
+  },
+  getSettings() {
+    return (
+      /** @type {any} */
+      {}
+    );
+  },
+  selectPatient(_id) {
+    void _id;
+  },
+  switchAppTab(_t) {
+    void _t;
+  },
+  switchInnerTab(_t) {
+    void _t;
+  },
+  saveState() {
+  },
+  renderIndicaForm() {
+  },
+  closeSettingsDropdown() {
+  },
+  openAddModal() {
+  },
+  addAuditEntry() {
+  },
+  showToast() {
+  },
+  advanceRondaPatient(_dir) {
+    void _dir;
+  }
+};
+function registerProductivityRuntime(ctx) {
+  if (!ctx || typeof ctx !== "object") return;
+  Object.assign(rt2, ctx);
+}
+function esc2(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+var UNDO_STACK_KEY = "rpc-undo-stack";
+var FOCUS_MODE_KEY = "rpc-focus-mode";
+var UNDO_STACK_MAX = 5;
+function cloneForUndo(value) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_e) {
+    return null;
+  }
+}
+function buildUndoSnapshotPayload(label) {
+  return {
+    label: label || "operaci\xF3n",
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    theme: localStorage.getItem("theme") || "light",
+    activeId: rt2.getActiveId(),
+    data: {
+      patients: cloneForUndo(patients) || [],
+      notes: cloneForUndo(notes) || {},
+      indicaciones: cloneForUndo(indicaciones) || {},
+      labHistory: cloneForUndo(labHistory) || {},
+      medRecetaByPatient: cloneForUndo(medRecetaByPatient) || [],
+      scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
+      settings: cloneForUndo(rt2.getSettings()) || {},
+      medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog()
+    }
+  };
+}
+function getUndoStack() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(UNDO_STACK_KEY) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch (_e) {
+    return [];
+  }
+}
+function saveUndoStack(stack) {
+  try {
+    localStorage.setItem(UNDO_STACK_KEY, JSON.stringify((stack || []).slice(0, UNDO_STACK_MAX)));
+  } catch (_e) {
+  }
+}
+function pushUndoSnapshot(label) {
+  var snap = buildUndoSnapshotPayload(label);
+  var stack = getUndoStack();
+  stack.unshift(snap);
+  saveUndoStack(stack);
+  refreshUndoButtonState();
+  rt2.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
+}
+function refreshUndoButtonState() {
+  var btn = document.getElementById("btn-undo-op");
+  if (!btn) return;
+  var stack = getUndoStack();
+  btn.disabled = stack.length === 0;
+  if (stack.length > 0) {
+    btn.textContent = "Deshacer: " + (stack[0].label || "\xFAltima operaci\xF3n");
+  } else {
+    btn.textContent = "Deshacer \xFAltima operaci\xF3n";
+  }
+}
+async function undoLastOperation() {
+  var stack = getUndoStack();
+  if (!stack.length) {
+    rt2.showToast("No hay operaciones para deshacer.", "error");
+    return;
+  }
+  var snap = stack[0];
+  if (!confirm('\xBFRevertir "' + (snap.label || "\xFAltima operaci\xF3n") + '"? La aplicaci\xF3n se recargar\xE1.')) return;
+  var rest = stack.slice(1);
+  saveUndoStack(rest);
+  replaceAppStateFromBackupData(snap.data || {});
+  try {
+    localStorage.setItem(
+      "rpc-scheduled-procedures",
+      JSON.stringify(snap.data.scheduledProcedures || [])
+    );
+  } catch (_e) {
+  }
+  localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
+  if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
+    storage.saveMedCatalog(snap.data.medCatalog);
+  }
+  if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
+  await saveState({ immediate: true });
+  rt2.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
+  location.reload();
+}
+function applyFocusModeFromStorage() {
+  var on = localStorage.getItem(FOCUS_MODE_KEY) === "1";
+  document.body.classList.toggle("focus-mode", on);
+  var btn = document.getElementById("btn-toggle-focus-mode");
+  if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
+}
+function toggleFocusMode() {
+  var on = document.body.classList.toggle("focus-mode");
+  localStorage.setItem(FOCUS_MODE_KEY, on ? "1" : "0");
+  var btn = document.getElementById("btn-toggle-focus-mode");
+  if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
+  if (on) rt2.closeSettingsDropdown();
+  rt2.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
+  rt2.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
+}
+var _unifiedSearchCurrent = [];
+function openUnifiedSearch() {
+  var bd = document.getElementById("unified-search-backdrop");
+  if (!bd) return;
+  bd.classList.add("open");
+  var input = document.getElementById("unified-search-input");
+  if (input) {
+    input.value = "";
+    setTimeout(function() {
+      input.focus();
+    }, 30);
+  }
+  updateUnifiedSearchResults();
+}
+function closeUnifiedSearch() {
+  var bd = document.getElementById("unified-search-backdrop");
+  if (bd) bd.classList.remove("open");
+}
+function snippetAround(text, q, maxLen) {
+  var src = String(text || "");
+  var lc = src.toLowerCase();
+  var idx = lc.indexOf(q);
+  if (idx < 0) return "";
+  var half = Math.max(20, Math.floor((maxLen || 140) / 2));
+  var start = Math.max(0, idx - half);
+  var end = Math.min(src.length, idx + q.length + half);
+  var out = src.slice(start, end);
+  if (start > 0) out = "\u2026 " + out;
+  if (end < src.length) out = out + " \u2026";
+  return out;
+}
+function escapeRegExp(s) {
+  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function highlightSnippet(snippet, q) {
+  var safe = esc2(snippet);
+  if (!q) return safe;
+  var qEsc = escapeRegExp(q);
+  try {
+    return safe.replace(new RegExp(qEsc, "ig"), function(m) {
+      return "<mark>" + m + "</mark>";
+    });
+  } catch (_e) {
+    return safe;
+  }
+}
+function collectNoteHaystack(note) {
+  if (!note) return "";
+  var parts = [note.interrogatorio, note.evolucion, note.estudios, note.medico, note.profesor];
+  if (Array.isArray(note.diagnosticos)) parts = parts.concat(note.diagnosticos);
+  if (Array.isArray(note.tratamiento)) parts = parts.concat(note.tratamiento);
+  return parts.filter(Boolean).join("\n");
+}
+function collectIndicaHaystack(ind) {
+  if (!ind) return "";
+  var parts = [ind.dieta, ind.cuidados, ind.estudios, ind.medicamentos, ind.interconsultas, ind.medicos];
+  if (Array.isArray(ind.otros)) {
+    ind.otros.forEach(function(o) {
+      if (o && (o.titulo || o.contenido)) parts.push((o.titulo || "") + "\n" + (o.contenido || ""));
+    });
+  }
+  return parts.filter(Boolean).join("\n");
+}
+function updateUnifiedSearchResults() {
+  var box = document.getElementById("unified-search-results");
+  var inp = document.getElementById("unified-search-input");
+  if (!box || !inp) return;
+  var q = String(inp.value || "").trim().toLowerCase();
+  if (!q) {
+    box.innerHTML = '<div class="unified-search-empty">Escribe para buscar pacientes, notas o indicaciones.</div>';
+    _unifiedSearchCurrent = [];
+    return;
+  }
+  var out = [];
+  var MAX = 40;
+  var searchPatients = filterPatientsForPitchTour(patients);
+  for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
+    var p = searchPatients[i];
+    if (p.isDemo && !isPitchPatientIsolationActive()) continue;
+    var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(" \xB7 ");
+    var metaLc = meta.toLowerCase();
+    var metaStr = "Cto. " + (p.cuarto || "-") + " \xB7 Cama " + (p.cama || "-") + (p.registro ? " \xB7 " + p.registro : "");
+    if (metaLc.indexOf(q) !== -1) {
+      out.push({
+        id: p.id,
+        tab: "nota",
+        inner: "notas",
+        tag: "paciente",
+        title: p.nombre || "Sin nombre",
+        meta: metaStr,
+        snippet: ""
+      });
+      if (out.length >= MAX) break;
+    }
+    var nh = collectNoteHaystack(notes[p.id]);
+    if (nh && nh.toLowerCase().indexOf(q) !== -1) {
+      out.push({
+        id: p.id,
+        tab: "nota",
+        inner: "notas",
+        tag: "nota",
+        title: p.nombre || "Sin nombre",
+        meta: metaStr,
+        snippet: snippetAround(nh, q, 140)
+      });
+      if (out.length >= MAX) break;
+    }
+    var ih = collectIndicaHaystack(indicaciones[p.id]);
+    if (ih && ih.toLowerCase().indexOf(q) !== -1) {
+      out.push({
+        id: p.id,
+        tab: "nota",
+        inner: "indica",
+        tag: "indicaciones",
+        title: p.nombre || "Sin nombre",
+        meta: metaStr,
+        snippet: snippetAround(ih, q, 140)
+      });
+      if (out.length >= MAX) break;
+    }
+  }
+  _unifiedSearchCurrent = out;
+  if (!out.length) {
+    box.innerHTML = '<div class="unified-search-empty">Sin coincidencias.</div>';
+    return;
+  }
+  box.innerHTML = out.map(function(r, idx) {
+    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc2(r.title) + '</span><span class="usr-tag">' + esc2(r.tag) + '</span></div><div class="usr-meta">' + esc2(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
+  }).join("");
+}
+function selectUnifiedSearchResult(idx) {
+  var r = _unifiedSearchCurrent[idx];
+  if (!r) return;
+  rt2.selectPatient(r.id);
+  rt2.switchAppTab(r.tab);
+  if (r.inner) rt2.switchInnerTab(r.inner);
+  closeUnifiedSearch();
+}
+var _extraTemplateEditing = null;
+function ensureExtraTemplatesArray() {
+  var settings2 = rt2.getSettings();
+  if (!Array.isArray(settings2.extraTemplates)) settings2.extraTemplates = [];
+  return settings2.extraTemplates;
+}
+function persistSettings() {
+  localStorage.setItem("rpc-settings", JSON.stringify(rt2.getSettings()));
+}
+function openExtraTemplatesManager() {
+  var m = document.getElementById("extra-templates-modal");
+  if (!m) return;
+  ensureExtraTemplatesArray();
+  m.style.display = "flex";
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+}
+function closeExtraTemplatesManager() {
+  var m = document.getElementById("extra-templates-modal");
+  if (m) m.style.display = "none";
+  cancelExtraTemplateEdit();
+}
+function renderExtraTemplatesList() {
+  var list = document.getElementById("extra-templates-list");
+  if (!list) return;
+  var arr = ensureExtraTemplatesArray();
+  if (!arr.length) {
+    list.innerHTML = '<div class="unified-search-empty">A\xFAn no tienes plantillas guardadas.</div>';
+    return;
+  }
+  list.innerHTML = arr.map(function(tmpl) {
+    var id = esc2(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc2(tmpl.label || "") + '">' + esc2(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
+  }).join("");
+}
+function startNewExtraTemplate() {
+  _extraTemplateEditing = "";
+  var ed = document.getElementById("extra-template-editor");
+  if (ed) ed.style.display = "flex";
+  var elLabel = document.getElementById("extra-tmpl-label");
+  var elDieta = document.getElementById("extra-tmpl-dieta");
+  var elCui = document.getElementById("extra-tmpl-cuidados");
+  var elMed = document.getElementById("extra-tmpl-meds");
+  if (elLabel) elLabel.value = "";
+  if (elDieta) elDieta.value = "";
+  if (elCui) elCui.value = "";
+  if (elMed) elMed.value = "";
+  setTimeout(function() {
+    if (elLabel) elLabel.focus();
+  }, 30);
+}
+function editExtraTemplate(id) {
+  var arr = ensureExtraTemplatesArray();
+  var tmpl = arr.find(function(t) {
+    return t.id === id;
+  });
+  if (!tmpl) return;
+  _extraTemplateEditing = id;
+  var ed = document.getElementById("extra-template-editor");
+  if (ed) ed.style.display = "flex";
+  document.getElementById("extra-tmpl-label").value = tmpl.label || "";
+  document.getElementById("extra-tmpl-dieta").value = tmpl.dieta || "";
+  document.getElementById("extra-tmpl-cuidados").value = tmpl.cuidados || "";
+  document.getElementById("extra-tmpl-meds").value = tmpl.medicamentos || "";
+}
+function cancelExtraTemplateEdit() {
+  _extraTemplateEditing = null;
+  var ed = document.getElementById("extra-template-editor");
+  if (ed) ed.style.display = "none";
+}
+function saveExtraTemplateFromEditor() {
+  var label = (document.getElementById("extra-tmpl-label").value || "").trim();
+  if (!label) {
+    rt2.showToast("Ingresa un nombre para la plantilla", "error");
+    return;
+  }
+  var dieta = (document.getElementById("extra-tmpl-dieta").value || "").trim();
+  var cuidados = (document.getElementById("extra-tmpl-cuidados").value || "").trim();
+  var meds = (document.getElementById("extra-tmpl-meds").value || "").trim();
+  var arr = ensureExtraTemplatesArray();
+  if (_extraTemplateEditing) {
+    var tmpl = arr.find(function(t) {
+      return t.id === _extraTemplateEditing;
+    });
+    if (tmpl) {
+      tmpl.label = label;
+      tmpl.dieta = dieta;
+      tmpl.cuidados = cuidados;
+      tmpl.medicamentos = meds;
+    }
+  } else {
+    arr.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      label,
+      dieta,
+      cuidados,
+      medicamentos: meds
+    });
+  }
+  persistSettings();
+  rt2.addAuditEntry("extra-template-save", "ok", arr.length, label);
+  rt2.showToast("Plantilla guardada", "success");
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+  if (rt2.getActiveId()) rt2.renderIndicaForm();
+}
+function deleteExtraTemplate(id) {
+  var arr = ensureExtraTemplatesArray();
+  var tmpl = arr.find(function(t) {
+    return t.id === id;
+  });
+  if (!tmpl) return;
+  if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
+  var settings2 = rt2.getSettings();
+  settings2.extraTemplates = arr.filter(function(t) {
+    return t.id !== id;
+  });
+  persistSettings();
+  rt2.addAuditEntry(
+    "extra-template-delete",
+    "ok",
+    settings2.extraTemplates.length,
+    tmpl.label || ""
+  );
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+  if (rt2.getActiveId()) rt2.renderIndicaForm();
+}
+function isTypingContext(target) {
+  if (!target) return false;
+  var tag = (target.tagName || "").toUpperCase();
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  return false;
+}
+function initProductivityKeyboardShortcuts() {
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "F6") {
+      e.preventDefault();
+      toggleFocusMode();
+      return;
+    }
+    if (isPaseMode() && document.body && !document.body.classList.contains("focus-mode")) {
+      if (!isTypingContext(e.target) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        var roundKey = (e.key || "").toLowerCase();
+        if (roundKey === "j" || roundKey === "k") {
+          e.preventDefault();
+          rt2.advanceRondaPatient(roundKey === "j" ? 1 : -1);
+          return;
+        }
+      }
+    }
+    var mod = e.metaKey || e.ctrlKey;
+    if (!mod) return;
+    if (e.altKey || e.shiftKey) return;
+    var k = (e.key || "").toLowerCase();
+    if (k === "k") {
+      e.preventDefault();
+      var bd2 = document.getElementById("unified-search-backdrop");
+      if (bd2 && bd2.classList.contains("open")) closeUnifiedSearch();
+      else openUnifiedSearch();
+    } else if (k === "n") {
+      e.preventDefault();
+      rt2.openAddModal();
+    } else if (k === "s") {
+      e.preventDefault();
+      if (!rt2.getActiveId()) {
+        rt2.showToast("Selecciona un paciente primero", "error");
+        return;
+      }
+      rt2.saveState();
+      rt2.addAuditEntry("quick-save", "ok", 1, String(rt2.getActiveId()));
+      rt2.showToast("Estado guardado \u2713", "success");
+    }
+  });
+  applyFocusModeFromStorage();
+  refreshUndoButtonState();
+}
+var productivityWindowHandlers = {
+  toggleFocusMode,
+  openUnifiedSearch,
+  closeUnifiedSearch,
+  updateUnifiedSearchResults,
+  selectUnifiedSearchResult,
+  undoLastOperation,
+  openExtraTemplatesManager,
+  closeExtraTemplatesManager,
+  startNewExtraTemplate,
+  editExtraTemplate,
+  deleteExtraTemplate,
+  saveExtraTemplateFromEditor,
+  cancelExtraTemplateEdit
+};
 
-`).trim();return{identificacion:F(r.identificacion),motivoConsulta:(t.motivoConsulta||"").trim(),signosVitalesIngreso:(t.signosVitales||"").trim(),apnp:n,ahf:{conditions:[],customConditions:[],entries:[],descripcionDetallada:(t.ahf||"").trim()},app:i,padecimientoActual:a,_sexo:r.sexo}}function ar(e){let t=e.sections||{},r=F(Rs(t.historiaClinica||"")),n=nt(t.apnp||""),i=(t.ahf||"").trim(),o=it(t);return t.ecd&&!o.descripcionDetallada.includes(t.ecd)&&(o.descripcionDetallada=[t.ecd,o.descripcionDetallada].filter(Boolean).join(`
+// public/js/app-shell.mjs
+var shellCtx = {
+  getActiveId() {
+    return null;
+  },
+  getActiveAppTab() {
+    return "lab";
+  },
+  getActiveInner() {
+    return "todo";
+  },
+  getSettings() {
+    return {};
+  }
+};
+function registerAppShellContext(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(shellCtx, ctx);
+  wireShellExportRuntimes();
+}
+function wireShellExportRuntimes() {
+  registerDocumentExportRuntime({
+    showToast,
+    getSettings: function() {
+      return shellCtx.getSettings();
+    },
+    loadSettings
+  });
+  registerClinicalQuickExportRuntime({
+    getActiveId: function() {
+      return shellCtx.getActiveId();
+    },
+    getActiveInner: function() {
+      return shellCtx.getActiveInner();
+    },
+    getSettings: function() {
+      return shellCtx.getSettings();
+    },
+    showToast
+  });
+}
+function syncActivePatientContextBar() {
+}
+function syncMedPatientGate() {
+  var empty = document.getElementById("med-empty-guided");
+  var shell = document.getElementById("med-active-shell");
+  if (!empty || !shell) return;
+  var showEmpty = shellCtx.getActiveAppTab() === "med" && !shellCtx.getActiveId();
+  empty.style.display = showEmpty ? "flex" : "none";
+  shell.style.display = showEmpty ? "none" : "flex";
+}
+function setMedTabAttention(on) {
+  var tab = document.getElementById("apptab-med");
+  if (tab) tab.classList.toggle("app-tab-attention", !!on);
+}
+function syncWorkContextChrome() {
+  syncActivePatientContextBar();
+  syncHeaderAppModeChip();
+  syncMedPatientGate();
+  syncPaseReturnHeaderBtn();
+  syncGuardiaModeButtonVisibility();
+  syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
+  renderGuardiaCensusGrid(shellCtx.getSettings());
+  if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
+}
+function chooseOutputDir() {
+  if (!window.electronAPI || !window.electronAPI.selectOutputDir) {
+    showToast("Funci\xF3n no disponible en este entorno", "error");
+    return;
+  }
+  window.electronAPI.selectOutputDir().then(function(dir) {
+    if (!dir) return;
+    saveOutputDirSelection(dir);
+    showToast("Carpeta actualizada \u2713", "success");
+  });
+}
+function setMobileBootBanner(visible, text) {
+  if (!isMobileWeb()) return;
+  var el = document.getElementById("rpc-mobile-boot-banner");
+  if (!el) return;
+  if (text) el.textContent = text;
+  el.classList.toggle("is-visible", !!visible);
+}
+async function initMobileWebBoot() {
+  tryMountClinicalTeamInviteBrowserGate();
+  if (!isMobileWeb()) return;
+  setMobileBootBanner(true, "Cargando R+ M\xF3vil\u2026");
+  persistMobilePairingFromSearch(location.search, location.origin);
+  restoreMobilePairingFromStorage();
+  prefillRegistrationFromUrlParams();
+  applyMobileSharerContextFromUrl();
+  hydrateMobileSharerSessionFromSettings();
+  closeConnectionDropdown();
+  syncMobileBarebonesChrome();
+  try {
+    document.title = "R+ M\xF3vil";
+  } catch (_e) {
+  }
+  syncTeamSyncHeaderButton();
+  try {
+    var v = await resolveAppVersionForTour();
+    window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
+    markGuidedTourVersionDone();
+  } catch (_bootVer) {
+  }
+  var intro = document.getElementById("onboarding-intro-backdrop");
+  if (intro) {
+    intro.classList.remove("open");
+    intro.setAttribute("aria-hidden", "true");
+  }
+  var parsed = parseLanJoinQuery(location.search, location.origin);
+  var storedRoomId = resolveStoredMobileRoomId();
+  var roomId = String(parsed.roomId || storedRoomId || "").trim();
+  if (!window._rpcMobileLanSettledWired) {
+    window._rpcMobileLanSettledWired = true;
+    document.addEventListener("rpc-mobile-lan-sync-settled", function() {
+      setMobileBootBanner(false);
+    });
+  }
+  setMobileBootBanner(false);
+  scheduleMobileLanWork(function() {
+    setMobileBootBanner(true, "Sincronizando con el anfitri\xF3n\u2026");
+    if (!parsed.teamCode) {
+      var savedCfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
+      if (savedCfg && savedCfg.teamCode && savedCfg.hostUrl) {
+        configureLanFromMobileJoin(savedCfg.hostUrl, savedCfg.teamCode, roomId);
+      } else {
+        setMobileBootBanner(false);
+      }
+      return;
+    }
+    var hostUrl = String(parsed.hostUrl || location.origin || "").trim().replace(/\/+$/, "");
+    if (!hostUrl) {
+      setMobileBootBanner(false);
+      return;
+    }
+    configureLanFromMobileJoin(hostUrl, parsed.teamCode, roomId);
+  });
+}
+function showToast(msg, type) {
+  var focused = document.activeElement;
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (type ? " " + type : "");
+  if (focused && focused.tagName !== "BODY") setTimeout(function() {
+    focused.focus();
+  }, 0);
+  setTimeout(function() {
+    t.className = "toast";
+  }, 3500);
+}
+function onDefaultServicioBlur() {
+  var el = document.getElementById("settings-default-servicio");
+  if (!el) return;
+  var v = (el.value || "").trim().toUpperCase();
+  el.value = v;
+  shellCtx.getSettings().defaultServicio = v;
+  localStorage.setItem("rpc-settings", JSON.stringify(shellCtx.getSettings()));
+  var w = document.getElementById("default-servicio-warning");
+  var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
+  if (w) w.style.display = looksAbbrev ? "block" : "none";
+}
+function onMedicoTemplateBlur() {
+  var keys = ["profesor", "r4", "r2", "r1a", "r1b"];
+  var tpl = {};
+  keys.forEach(function(k) {
+    var inp = document.getElementById("settings-medico-" + k);
+    tpl[k] = inp ? (inp.value || "").trim() : "";
+  });
+  shellCtx.getSettings().medicosPlantilla = tpl;
+  localStorage.setItem("rpc-settings", JSON.stringify(shellCtx.getSettings()));
+}
+var modalDismiss = createModalDismissRegistry();
+var modalDismissInited = false;
+function initModalDismiss() {
+  if (modalDismissInited) return;
+  var dynamicBackdropIds = [
+    "lab-dedupe-backdrop",
+    "soap-confirm-backdrop",
+    "dup-confirm-backdrop",
+    "lab-conflict-backdrop",
+    "exp-advice-backdrop",
+    "tend-gaso-ext-backdrop"
+  ];
+  function el(id) {
+    return document.getElementById(id);
+  }
+  modalDismiss.register({
+    isOpen: function() {
+      return isRpcOverlayVisible(el("update-modal-backdrop"));
+    },
+    close: hideUpdateModal,
+    backdropEl: function() {
+      return el("update-modal-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      return isRpcOverlayVisible(el("tend-detail-backdrop"));
+    },
+    close: closeTendDetail,
+    backdropEl: function() {
+      return el("tend-detail-backdrop");
+    },
+    panelSelector: "#tend-detail-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var bd = el("tend-group-backdrop");
+      if (bd && bd.getAttribute("aria-hidden") === "false") return true;
+      return isTendGroupModalOpen();
+    },
+    close: closeTendGroupModal,
+    backdropEl: function() {
+      return el("tend-group-backdrop");
+    },
+    panelSelector: "#tend-group-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var m = el("rpc-wipe-modal");
+      return m && m.getAttribute("aria-hidden") === "false";
+    },
+    close: closeWipeDataModal,
+    backdropEl: function() {
+      return el("rpc-wipe-modal");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("soap-modal-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeSOAPModal,
+    backdropEl: function() {
+      return el("soap-modal-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var m = el("procedure-agenda-modal");
+      return m && m.classList.contains("open");
+    },
+    close: closeProcedureAgendaModal,
+    backdropEl: function() {
+      return el("procedure-agenda-modal");
+    },
+    panelSelector: ".modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var m = el("modal");
+      return m && m.classList.contains("open");
+    },
+    close: closeModal,
+    confirmClose: confirmCloseAddPatientModal,
+    backdropEl: function() {
+      return el("modal");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var m = el("profile-modal");
+      return m && m.classList.contains("open");
+    },
+    close: closeProfileModal,
+    backdropEl: function() {
+      return el("profile-modal");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      return isRpcOverlayVisible(el("templates-modal"));
+    },
+    close: closeTemplatesModal,
+    backdropEl: function() {
+      return el("templates-modal");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      return isRpcOverlayVisible(el("extra-templates-modal"));
+    },
+    close: closeExtraTemplatesManager,
+    backdropEl: function() {
+      return el("extra-templates-modal");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("unified-search-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeUnifiedSearch,
+    backdropEl: function() {
+      return el("unified-search-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("help-quick-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeQuickHelp,
+    backdropEl: function() {
+      return el("help-quick-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("release-notes-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeReleaseNotes,
+    backdropEl: function() {
+      return el("release-notes-backdrop");
+    },
+    panelSelector: ".release-notes-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("tend-hidden-modal-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeTendHiddenModal,
+    backdropEl: function() {
+      return el("tend-hidden-modal-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("lab-display-prefs-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeLabDisplayPrefsModal,
+    backdropEl: function() {
+      return el("lab-display-prefs-backdrop");
+    },
+    panelSelector: ".lab-display-prefs-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("lab-bulk-preview-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeLabBulkPreviewModal,
+    backdropEl: function() {
+      return el("lab-bulk-preview-backdrop");
+    },
+    panelSelector: ".lab-bulk-preview-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("lab-bulk-tour-hint-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeLabBulkTourHintModal,
+    backdropEl: function() {
+      return el("lab-bulk-tour-hint-backdrop");
+    },
+    panelSelector: ".lab-bulk-tour-hint-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("clinico-unlock-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeClinicoUnlockModal,
+    backdropEl: function() {
+      return el("clinico-unlock-backdrop");
+    },
+    panelSelector: ".clinico-unlock-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("lab-some-tables-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeLabSomeTablesModal,
+    backdropEl: function() {
+      return el("lab-some-tables-backdrop");
+    },
+    panelSelector: ".lab-some-tables-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("sesion-ingreso-send-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeSesionIngresoSendModal,
+    backdropEl: function() {
+      return el("sesion-ingreso-send-backdrop");
+    },
+    panelSelector: ".sesion-ingreso-send-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("sesion-ingreso-trends-send-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeSesionIngresoTrendsSendModal,
+    backdropEl: function() {
+      return el("sesion-ingreso-trends-send-backdrop");
+    },
+    panelSelector: ".sesion-ingreso-send-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("onboarding-intro-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: hideTourIntroModal,
+    backdropEl: function() {
+      return el("onboarding-intro-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var c = el("connection-dropdown");
+      return c && c.classList.contains("open");
+    },
+    close: closeConnectionDropdown,
+    backdropEl: function() {
+      return el("connection-dropdown-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var s = el("settings-dropdown");
+      return s && s.classList.contains("open");
+    },
+    close: closeSettingsDropdown,
+    backdropEl: function() {
+      return el("settings-dropdown-backdrop");
+    }
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      return dynamicBackdropIds.some(function(id) {
+        var node = el(id);
+        return isRpcOverlayVisible(node);
+      });
+    },
+    close: function() {
+      var top = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          top = node;
+        }
+      });
+      if (!top) return;
+      if (top.id === "tend-gaso-ext-backdrop") {
+        top.style.display = "none";
+        top.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("tend-gaso-ext-open");
+        return;
+      }
+      top.remove();
+    },
+    backdropEl: function() {
+      var best = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          best = node;
+        }
+      });
+      return best;
+    },
+    panelSelector: '.lab-conflict-modal, .tend-gaso-ext-dialog, [role="dialog"]'
+  });
+  modalDismiss.register({
+    isOpen: isRpcDatePopoverOpen,
+    close: closeRpcDatePopover
+  });
+  modalDismiss.init();
+  modalDismissInited = true;
+  document.addEventListener("click", function(ev) {
+    var t = ev.target;
+    if (!t || !t.classList || !t.classList.contains("lab-conflict-backdrop")) return;
+    if (dynamicBackdropIds.indexOf(t.id) === -1) return;
+    t.remove();
+  });
+}
+document.addEventListener("keydown", function(e) {
+  var mod = e.metaKey || e.ctrlKey;
+  if (mod) {
+    var key = e.key.toLowerCase();
+    if (key === "1" || key === "2" || key === "3" || key === "4" || key === "5") {
+      e.preventDefault();
+      if (isPaseMode()) {
+        if (key === "1") openPaseSectionInNormal("labs");
+        if (key === "2") openPaseSectionInNormal("expediente");
+        if (key === "3") openPaseSectionInNormal("med");
+        if (key === "4" || key === "5") openPaseSectionInNormal("agenda");
+      } else {
+        if (key === "1") switchAppTab("lab");
+        if (key === "2") switchAppTab("nota");
+        if (key === "3") switchAppTab("med");
+        if (key === "4" || key === "5") switchAppTab("agenda");
+      }
+    }
+    if (key === "p" && !e.altKey) {
+      e.preventDefault();
+      if (e.shiftKey) toggleProfileSection();
+      else if (isGuardiaMode()) setUiDensity("normal");
+      else setUiDensity(getUiDensity() === "normal" ? "pase" : "normal");
+    }
+    if (key === "g" && e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      toggleGuardiaMode();
+    }
+    if (e.key === "," && !e.shiftKey && !e.altKey) {
+      var tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target && e.target.isContentEditable) return;
+      e.preventDefault();
+      var dd = document.getElementById("settings-dropdown");
+      if (dd && dd.classList.contains("open")) closeSettingsDropdown();
+      else toggleSettingsDropdown();
+    }
+    if (e.key === "," && e.shiftKey && !e.altKey) {
+      var tag2 = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : "";
+      if (tag2 === "INPUT" || tag2 === "TEXTAREA" || tag2 === "SELECT" || e.target && e.target.isContentEditable) return;
+      e.preventDefault();
+      window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
+      showToast(
+        window.__rpcPreferImportOverwrite ? "Importaci\xF3n: conflictos \u2192 sobrescribir (\u2318\u21E7, o Ctrl+Shift+, de nuevo para apagar)." : "Importaci\xF3n: se preguntar\xE1 en cada conflicto.",
+        window.__rpcPreferImportOverwrite ? "success" : "info"
+      );
+    }
+  }
+}, true);
+function updatePatient(field, value) {
+  if (shellCtx.getActiveId() == null) return;
+  var pid = String(shellCtx.getActiveId());
+  var p = patients.find(function(pl) {
+    return String(pl.id) === pid;
+  });
+  if (!p) return;
+  var next = field === "nombre" || field === "area" || field === "servicio" ? String(value || "").toUpperCase() : value;
+  if (String(p[field] || "") === String(next || "")) return;
+  p[field] = next;
+  if (field === "fiuxFecha" || field === "fimiFecha") {
+    next = dateInputValueToAccesoFecha(value) || String(value || "").trim();
+  }
+  if (field === "viaAcceso" || field === "accesoFecha") {
+    ensurePatientAccesos(p);
+    var accRow = p.accesosList.find(function(a) {
+      return String(a && a.via || "").trim();
+    }) || p.accesosList[0];
+    if (field === "viaAcceso") accRow.via = String(next || "").trim();
+    else accRow.fecha = String(next || "").trim();
+    syncLegacyAccesoFields(p);
+  }
+  saveState();
+  renderPatientList();
+  syncWorkContextChrome();
+  if (isPaseMode()) {
+    renderPaseBoard();
+    renderRoundOverviewPanels();
+    if (shellCtx.getActiveAppTab() === "agenda") renderProcedureAgendaPanel();
+  }
+}
+function rpcPrefersReducedMotion() {
+  try {
+    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (_e) {
+    return false;
+  }
+}
+var appShellWindowHandlers = {
+  onDefaultServicioBlur,
+  onMedicoTemplateBlur,
+  chooseOutputDir,
+  updatePatient,
+  quickExportCurrentPatient
+};
+function installClinicalAppShell() {
+  if (typeof window === "undefined") return;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
+function _rpcDeferInit(fn) {
+  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(
+      function() {
+        try {
+          fn();
+        } catch (e) {
+          console.error("deferInit error:", e && e.message);
+        }
+      },
+      { timeout: 1500 }
+    );
+  } else {
+    setTimeout(function() {
+      try {
+        fn();
+      } catch (e) {
+        console.error("deferInit error:", e && e.message);
+      }
+    }, 200);
+  }
+}
+function scheduleDeferredShellInits() {
+  _rpcDeferInit(installClinicalAppShell);
+  _rpcDeferInit(initGoalGFeatures);
+  _rpcDeferInit(initGuidedTourGate);
+  if (isMobileWeb()) {
+    void initMobileWebBoot();
+  } else {
+    _rpcDeferInit(initMobileWebBoot);
+  }
+  _rpcDeferInit(initRpcServerHealthWatch);
+  _rpcDeferInit(initIdleLockFeature);
+}
+function scheduleDeferredUiInits() {
+  _rpcDeferInit(initProductivityKeyboardShortcuts);
+}
+wireShellExportRuntimes();
 
-`)),{identificacion:r,motivoConsulta:(t.motivoConsulta||"").trim(),signosVitalesIngreso:(t.signosVitales||"").trim(),apnp:n,ahf:{conditions:[],customConditions:[],entries:[],descripcionDetallada:i},app:o,padecimientoActual:(t.peea||"").trim()}}var Vl=["ficha","historiaClinica","peea","app","apnp","ahf","motivoConsulta","signosVitales","interrogatorio","dx","medicamentos","ecd","fechaIngreso"];function cr(e){return Vl.some(function(t){return e[t]&&String(e[t]).trim()})}function sr(e){return e==null?0:typeof e=="string"?String(e).trim().length:typeof e=="object"&&!Array.isArray(e)?Object.values(e).reduce(function(t,r){return t+sr(r)},0):Array.isArray(e)?e.reduce(function(t,r){return t+sr(r)},0):0}function se(e){return Object.keys(e||{}).filter(function(t){return String(t).startsWith("_")?!1:sr(e[t])>0})}function ot(e){let t=e.sections||{};if(!cr(t))return{};let r={},n=t.ficha||t.app||t.apnp&&t.app!==void 0||t.peea&&t.ficha,i=t.historiaClinica||t.peea||t.apnp||t.ahf||t.motivoConsulta||t.signosVitales||t.ecd;return(n||t.ficha)&&(r=$e(r,or(e),"fill")),(i||!n)&&(r=$e(r,ar(e),"fill")),se(r).length||(r=$e(or(e),ar(e),"fill")),r.identificacion&&typeof r.identificacion=="object"&&(r.identificacion=F(r.identificacion)),r}function Ne(e){let t=String(e||"").trim(),r=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/.exec(t);if(r){let n=Number(r[3]);return n<100&&(n+=2e3),{day:Number(r[1]),month:Number(r[2]),year:n}}return r=/^(\d{1,2})[\/.\-](\d{1,2})$/.exec(t),r?{day:Number(r[1]),month:Number(r[2])}:null}function at(e,t){if(e.year!=null&&Number.isFinite(e.year))return e.year;if(t.referenceYear!=null)return t.referenceYear;let r=new Date,n=t.documentYear!=null?t.documentYear:r.getFullYear();return e.month>r.getMonth()+1&&(n-=1),n}function Ns(e){let t=new Date(e.year,e.month-1,e.day,12,0,0,0);return Number.isFinite(t.getTime())?t.toISOString():new Date().toISOString()}function st(e){let t=/(?:FIUX|FECHA\s+DE\s+INGRESO)[^\d]*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i.exec(e);if(t)return Number(t[3]);let r=[],n=/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g,i;for(;(i=n.exec(e))!==null;)r.push(Number(i[3]));return r.length?Math.max(...r):void 0}var Wl=/^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/,ql=/^(N|V|HD|HI|NM)\s*:/i;function Ms(e){let t=e.eventualidadesBlocks||[],r={referenceYear:e.referenceYear,documentYear:e.documentYear},n=[],i=[];for(let o of t){let d=function(){let c=l.map(u=>u.trim()).filter(Boolean).join(`
-`).trim();s&&c&&n.push({at:s,text:c}),l=[]},a=String(o||"").split(`
-`),s=null,l=[];for(let c of a){let u=c.trim();if(u&&!ql.test(u)){if(Wl.test(u)){let p=Ne(u);if(p){d();let f=at(p,r);s=Ns({day:p.day,month:p.month,year:f});continue}}l.push(u)}}d()}return{entries:n,warnings:i}}var Hs=/^(BH|QS|ES|ESC|PFH|PFHs|GV|GASES|COAG|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)[\s\t]+/i,_s=[{panel:"BH",re:/^(?:Hb|Hto|VCM|HCM|Leu|Neu|Eos|Plt|RBC|Ret)\b/i},{panel:"QS",re:/^(?:Glu|Cr|BUN|eTFG|AU|TGL|COL|PCR)\b/i},{panel:"ESC",re:/^(?:Na|Cl|K|Ca|F|Mg)\b/i},{panel:"PFHs",re:/^(?:Alb|AST|ALT|FA|BT|BD|BI|LDH|Amil)\b/i},{panel:"GASES",re:/^(?:pH|pCO2|pO2|Lactato|Bica|HCO3|BE)\b/i},{panel:"COAG",re:/^(?:TP|TTP|INR|Fib|DD)\b/i}],Fs=/^(EVENTUALIDADES|ESTADO ACTUAL|HISTORIA\s+CL[IÍ]NICA|PENDIENTES|DX\s*:|FICHA\s+DE\s+IDENTIFICACI[ÓO]N|MOTIVO\s+DE\s+CONSULTA)\b/i;function zl(e){let t=String(e||"").trim().toUpperCase();return t==="ES"||t==="ESC"?"ESC":t==="PFH"||t==="PFHS"?"PFHs":t==="GV"||t==="GASES"||t==="GASE"?"GASES":t==="BH"?"BH":t==="QS"?"QS":String(e||"").trim()}function Kl(e){return!!Ne(e)}function $l(e){let t=String(e||"").trim();return!t||Kl(t)?!1:Hs.test(t)?!0:_s.some(r=>r.re.test(t))}function Bs(e){return String(e||"").replace(/\t/g," ").replace(/\s+/g," ").trim()}function Yl(e){let t=Bs(e);if(!t)return null;let r=Hs.exec(t);if(r){let n=zl(r[1]),i=Bs(t.slice(r[0].length));return i?n+"	"+i:null}for(let n of _s)if(n.re.test(t))return n.panel+"	"+t;return null}function Xl(e,t){let r=at(e,{documentYear:t,referenceYear:t}),n=String(e.day).padStart(2,"0"),i=String(e.month).padStart(2,"0");return n+"/"+i+"/"+r}function Us(e,t){t=t||{};let r=Oe(e),n=[];if(!r.trim())return{sets:[],warnings:n};let i=t.documentYear!=null?t.documentYear:st(r),o=[],a="",s=[],l=[];function d(){let c=[];if(s.forEach(function(u){let p=Yl(u);p&&c.push(p)}),!c.length){s=[],l=[];return}if(!a){n.push("Bloque de laboratorio sin fecha reconocible; se omiti\xF3."),s=[],l=[];return}o.push({fecha:a,hora:"",resLabs:c,sourceText:l.join(`
-`).trim()}),s=[],l=[]}return r.split(`
-`).forEach(function(c){let u=c.trim();if(!u||Fs.test(u))return;let p=Ne(u);if(p){d(),a=Xl(p,i),l=[u];return}if($l(u)){if(!a){n.push("L\xEDnea de laboratorio antes de la primera fecha: "+u.slice(0,48));return}s.push(u),l.push(u)}}),d(),{sets:o,warnings:n}}function js(e,t){let r=String(t||"").trim();if(r)return r;let n=Oe(e),i=/\nLABORATORIOS(?:\s+DE\s+INGRESO)?\s*\n/i.exec(`
-`+n);if(!i)return"";let a=n.slice(i.index+i[0].length-1).split(`
-`),s=[];for(let l of a){let d=l.trim();if(Fs.test(d))break;s.push(l)}return s.join(`
-`).trim()}function lr(e){return String(e||"").trim()}function Gs({fecha:e,hora:t}){let r=lr(e);if(!r||r==="Anterior")return"";let n=r.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);if(!n)return r;let i=n[3]?parseInt(n[3],10):new Date().getFullYear();i<100&&(i+=2e3);let a=String(t||"").trim().match(/^(\d{1,2}):(\d{2})/);if(a){let l=new Date(i,parseInt(n[2],10)-1,parseInt(n[1],10)).getTime()+(parseInt(a[1],10)*3600+parseInt(a[2],10)*60)*1e3,d=new Date(l);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()}return i+"-"+parseInt(n[2],10)+"-"+parseInt(n[1],10)}function ct(e){return(Array.isArray(e)?e:[]).map(function(t){return String(t||"").trim().replace(/\s+/g," ")}).filter(Boolean)}function Jl(e,t){let r=ct(e),n=ct(t);if(!r.length)return!1;let i=new Set(n);return r.every(function(o){return i.has(o)})}function Vs(e,t){let r=ct(e),n=ct(t);if(r.length!==n.length)return!1;for(let i=0;i<r.length;i+=1)if(r[i]!==n[i])return!1;return!0}function dr(e,t){if(!e||!t)return!1;let r=e.resLabs||[],n=t.resLabs||[],i=lr(e.fecha)===lr(t.fecha),o=String(e.hora||"").trim(),a=String(t.hora||"").trim();if(i&&o===a&&Vs(r,n))return!0;let l=Gs(e),d=Gs(t);return!l||!d||l!==d?!1:!!(Vs(r,n)||Jl(n,r))}function Ws(e,t){let r=0,n=[];return(t||[]).forEach(function(i){(e||[]).some(function(a){return dr(a,i)})?r+=1:n.push(i)}),{sets:n,skipped:r}}var lt={identificacion:"Identificaci\xF3n",motivoConsulta:"Motivo de consulta",signosVitalesIngreso:"Signos vitales de ingreso",apnp:"Antecedentes no patol\xF3gicos",ahf:"Antecedentes heredofamiliares",app:"Antecedentes patol\xF3gicos",padecimientoActual:"Padecimiento actual / PEEA"},zs={lugarNacimiento:"ORIGEN",residencia:"RESIDENCIA",estadoCivil:"ESTADO CIVIL",religion:"RELIGI\xD3N",escolaridad:"ESCOLARIDAD",ocupacionActual:"OCUPACI\xD3N",informante:"INFORMANTE",registro:"REGISTRO",cama:"CAMA",dx:"DX",edad:"EDAD"},Ks={tabaquismo:"TABAQUISMO",alcoholismo:"ETILISMO",toxicomanias:"TOXICOMAN\xCDAS",tatuajes:"TATUAJES",deportesPasatiemposMascotas:"ZOONOSIS",dieta:"DIETA / COMBE"};function ur(e,t){if(t==null)return"";if(e==="motivoConsulta"||e==="padecimientoActual"||e==="signosVitalesIngreso")return String(t).trim();if(e==="identificacion"&&typeof t=="object"&&!Array.isArray(t))return Object.entries(F(t)).filter(function(r){return r[1]!=null&&String(r[1]).trim()}).map(function(r){return(zs[r[0]]||r[0].toUpperCase())+": "+String(r[1]).trim()}).join(`
-`);if(e==="ahf"&&typeof t=="object"&&t||e==="app"&&typeof t=="object"&&t)return String(t.descripcionDetallada||"").trim();if(e==="apnp"&&typeof t=="object"&&t)return Object.entries(t).filter(function(r){return r[1]!=null&&String(r[1]).trim()}).map(function(r){return(Ks[r[0]]||r[0].toUpperCase())+": "+String(r[1]).trim()}).join(`
-`);try{return JSON.stringify(t,null,2)}catch{return String(t)}}function qs(e,t){let r={},n={};Object.keys(t).forEach(function(i){n[String(t[i]).toUpperCase()]=i});for(let i of String(e||"").split(`
-`)){let o=i.trim();if(!o)continue;let a=o.indexOf(":");if(a<1)continue;let s=o.slice(0,a).trim().toUpperCase(),l=o.slice(a+1).trim(),d=n[s]||s.toLowerCase().replace(/\s+/g,"_");r[d]=l}return r}function $s(e,t,r){let n=String(t||"").trim();if(e==="motivoConsulta"||e==="padecimientoActual"||e==="signosVitalesIngreso")return n;if(e==="identificacion"){let i=r&&typeof r=="object"&&!Array.isArray(r)?Object.assign({},r):{};return F(Object.assign(i,qs(n,zs)))}if(e==="ahf"){let i=r&&typeof r=="object"&&!Array.isArray(r)?Object.assign({},r):{conditions:[],customConditions:[],entries:[]};return i.descripcionDetallada=n,i}if(e==="app"){let i=r&&typeof r=="object"&&!Array.isArray(r)?Object.assign({},r):{conditions:[],customConditions:[],entries:[]};return i.descripcionDetallada=n,i}if(e==="apnp"){let i=r&&typeof r=="object"&&!Array.isArray(r)?Object.assign({},r):{};return Object.assign(i,qs(n,Ks))}if(!n)return r;try{return JSON.parse(n)}catch{return n}}function Ql(e){if(e==null)return"vac\xEDo";if(typeof e=="string"){let t=e.trim();return t?t.length<=72?'"'+t.replace(/\s+/g," ")+'"':t.slice(0,70).replace(/\s+/g," ")+"\u2026 ("+t.length+" caracteres)":"vac\xEDo"}if(Array.isArray(e))return e.length+" elemento"+(e.length===1?"":"s");if(typeof e=="object"){let t=[],r=e.descripcionDetallada||e.descripcion;if(r&&String(r).trim()){let i=String(r).trim();t.push(i.length<=60?i:i.slice(0,58).replace(/\s+/g," ")+"\u2026 ("+i.length+" car.)")}let n=e.conditions||e.entries;return Array.isArray(n)&&n.length&&t.push(n.length+" condici\xF3n"+(n.length===1?"":"es")),(e.tabaquismo||e.alcoholismo)&&t.push("h\xE1bitos"),t.length?t.join(" \xB7 "):"bloque estructurado"}return"contenido"}function Zl(e){if(!e)return"sin fecha";let t=new Date(e);if(!Number.isFinite(t.getTime()))return"sin fecha";let r=String(t.getDate()).padStart(2,"0"),n=String(t.getMonth()+1).padStart(2,"0"),i=t.getFullYear();return r+"/"+n+"/"+i}function ed(e,t){let r=String(e||"").trim().replace(/\s+/g," ");return r?r.length<=t?r:r.slice(0,t-1)+"\u2026":"(vac\xEDa)"}function td(e){let t=[];return(e||[]).forEach(function(r){let i=String(r||"").split(`
-`)[0].trim().split(/\s+/)[0].replace(":","");i&&t.indexOf(i)===-1&&t.push(i)}),t.length?t.join(", "):"sin paneles"}function Ys(e,t){t=t||{};let r=t.applyMode||"fill",n=[];if(n.push("Vista previa de importaci\xF3n"),n.push(""),e.header&&(e.header.nombre||e.header.registro)){n.push("Paciente en documento");let p=[];e.header.nombre&&p.push(e.header.nombre),e.header.registro&&p.push("Reg. "+e.header.registro),e.header.edad&&p.push(e.header.edad),e.header.cama&&p.push("Cama "+e.header.cama),e.header.sexo&&p.push(e.header.sexo),n.push("  "+p.join(" \xB7 ")),n.push("")}let i=se(e.hcPatch||{});if(n.push("Historia cl\xEDnica"),r==="eventos")n.push("  Omitida (modo solo eventualidades)");else if(!i.length)n.push("  Sin secciones detectadas en el pegado");else{let p=r==="replace"?"Reemplazar\xE1 secciones presentes en el documento":"Completar\xE1 solo campos vac\xEDos en HC";n.push("  "+p),i.forEach(function(f){let m=lt[f]||f;n.push("  \u2022 "+m+": "+Ql(e.hcPatch[f]))})}n.push("");let o=e.eventualidades.entries||[],a=te(t.existingEventualidades||[],o),s=a.toAdd||[],l=e.eventualidades.skippedEstimate??a.skipped??0;if(n.push("Eventualidades"),!o.length)n.push("  Ninguna detectada");else{n.push("  "+s.length+" nueva"+(s.length===1?"":"s")+(l?" \xB7 "+l+" duplicada"+(l===1?"":"s")+" omitida"+(l===1?"":"s"):""));let p=s.slice(0,12);p.forEach(function(f,m){let E=Zl(f.at),S=ed(String(f.text||"").split(`
-`)[0],64);n.push("  "+(m+1)+". "+E+" \u2014 "+S)}),s.length>p.length&&n.push("  \u2026 y "+(s.length-p.length)+" m\xE1s"),l&&n.push("  ("+l+" ya en expediente, no se repetir\xE1n)")}n.push("");let d=e.laboratorios.allSets||e.laboratorios.sets||[],c=e.laboratorios.sets||[],u=e.laboratorios.skippedEstimate||0;return n.push("Laboratorios"),d.length?(n.push("  "+c.length+" fecha"+(c.length===1?"":"s")+" a agregar al historial"+(u?" \xB7 "+u+" duplicada"+(u===1?"":"s")+" omitida"+(u===1?"":"s"):"")),c.slice(0,10).forEach(function(p,f){n.push("  "+(f+1)+". "+(p.fecha||"?")+" \u2014 "+td(p.resLabs))}),c.length>10&&n.push("  \u2026 y "+(c.length-10)+" fechas m\xE1s")):n.push("  Ning\xFAn bloque con fecha detectado"),n.push(""),e.warnings&&e.warnings.length&&(n.push("Advertencias"),e.warnings.forEach(function(p){n.push("  \u2022 "+p)})),n.join(`
-`)}function Xs(e,t){t=t||{};let r=ws(e),n=Ts(r.headerLines),i=rt(r.sections.ficha||""),o=Cs(n,i),a={sections:r.sections,headerLines:r.headerLines},s=ot(a)||{},l=s._sexo;l&&delete s._sexo,l&&!o.sexo&&(o.sexo=l);let d=st(e),c=r.eventualidadesBlocks,u=cr(r.sections);if(!c.length&&!u){let z=String(e||"").trim();z&&(c=[z])}let{entries:p,warnings:f}=Ms({eventualidadesBlocks:c,referenceYear:d,documentYear:d}),{skipped:m}=te(t.existingEventualidades||[],p),E=js(e,r.sections.laboratorios||""),S=Us(E,{documentYear:d}),w=Ws(t.existingLabHistory||[],S.sets),M=r.warnings.slice();!u&&!r.eventualidadesBlocks.length&&c.length===1&&c[0]===String(e||"").trim()&&M.push("Texto interpretado como fragmento de eventualidades (sin encabezados de secci\xF3n)."),!r.eventualidadesBlocks.length&&!c.length&&M.push("No se encontr\xF3 secci\xF3n EVENTUALIDADES."),M.push(...f),M.push(...S.warnings),E&&!S.sets.length&&M.push("Secci\xF3n LABORATORIOS sin bloques de fecha reconocibles.");let B={header:o,driveSections:Object.assign({},r.sections),hcPatch:s,eventualidades:{entries:p,skippedEstimate:m},laboratorios:{sets:w.sets,allSets:S.sets,skippedEstimate:w.skipped},warnings:M};return B.previewText=Ys(B,{applyMode:t.applyMode,existingEventualidades:t.existingEventualidades}),B}async function Js(e,t){return rd(e,t)}async function rd(e,t){let r=t.mode||"fill",n=t.activePatient,i=!1;if(t.createNew){let p=e.header||{},f=va();n={id:f,nombre:Qe(p.nombre||"PACIENTE SIN NOMBRE"),edad:p.edad||"",sexo:p.sexo==="F"?"F":"M",cama:p.cama||"",registro:p.registro||"",area:"",servicio:"",cuarto:"",fromLab:!1},Ee(n),A.unshift(n),ne(f)}if(!n)return{ok:!1,error:"no-patient"};let o=!0;if(r!=="eventos"){let p=await Lo(n,e.hcPatch||{},r,{fromReview:!!t.fromReview});if(o=p.ok,p.lanDeferred&&(i=!0),!o)return{ok:!1,error:"hc-conflict"}}let a=await Li(n,e.eventualidades.entries||[]);a.lanDeferred&&(i=!0),Pi();let s=document.getElementById("exp-pane-eventualidades");s&&a.added&&Di(s);let l={added:0,skipped:0},d=e.laboratorios&&e.laboratorios.sets?e.laboratorios.sets:[];d.length&&(l=await Gn(n,d)),await U({immediate:!0});let c=Object.keys(e.hcPatch||{}).filter(function(p){return!String(p).startsWith("_")}),u=r==="eventos"||!c.length?"eventualidades":"historia";return l.added&&u==="eventualidades"&&r==="eventos"&&(u="lab"),{ok:!0,navigateTo:u,evAdded:a.added,evSkipped:a.skipped,labAdded:l.added,labSkipped:l.skipped,patientId:n.id,lanSyncDeferred:i}}var nd=[{sectionKey:"pendientes",label:"Pendientes"},{sectionKey:"historiaClinica",label:"Historia cl\xEDnica"},{sectionKey:"motivoConsulta",label:"Motivo de consulta"},{sectionKey:"signosVitales",label:"Signos vitales de ingreso"},{sectionKey:"ficha",label:"Ficha de identificaci\xF3n"},{sectionKey:"ahf",label:"Antecedentes heredofamiliares"},{sectionKey:"apnp",label:"Antecedentes personales no patol\xF3gicos"},{sectionKey:"app",label:"Antecedentes personales patol\xF3gicos"},{sectionKey:"peea",label:"Padecimiento actual / PEEA"}];function Qs(e){let t=e||{},r=[];for(let n of nd){let i=String(t[n.sectionKey]||"").trim();i&&r.push({sectionKey:n.sectionKey,label:n.label,text:i})}return r}function id(e){let t=[];return(e||[]).forEach(function(r){let i=String(r||"").split(`
-`)[0].trim().split(/\s+/)[0].replace(":","");i&&t.indexOf(i)===-1&&t.push(i)}),t.length?t.join(", "):"sin paneles"}function Zs(e,t){return rr(e,String(t||"").trim())}function pr(e,t){t=t||{};let r=t.applyMode||"fill",n=[];if(t.createNew&&e.header&&(e.header.nombre||e.header.registro)&&n.push({kind:"header",label:"Datos del paciente (nuevo)",include:!0,header:Object.assign({},e.header)}),r!=="eventos"){let d=Qs(e.driveSections||{});d.length?d.forEach(function(c){let u=c.sectionKey==="ficha"?ir(c.text):c.text;n.push({kind:"hc",driveSectionKey:c.sectionKey,label:c.label,include:!0,editText:u,structuredSuggestions:Zs(c.sectionKey,c.text)})}):Object.keys(e.hcPatch||{}).filter(function(c){return!String(c).startsWith("_")}).forEach(function(c){let u=e.hcPatch[c];u!=null&&n.push({kind:"hc",key:c,label:lt[c]||c,include:!0,editText:ur(c,u),originalValue:u,structuredSuggestions:Zs(c,ur(c,u))})})}let i=e.eventualidades.entries||[],a=te(t.existingEventualidades||[],i).toAdd||[];a.length&&n.push({kind:"eventos",label:"Eventualidades ("+a.length+" nueva"+(a.length===1?"":"s")+")",entries:a.map(function(d){return{at:d.at,text:d.text,include:!0}})});let s=(e.laboratorios.allSets&&e.laboratorios.allSets.length?e.laboratorios.allSets:e.laboratorios.sets)||[],l=t.existingLabHistory||[];if(s.length){let d=0,c=s.map(function(f){let m=l.some(function(S){return dr(S,f)});m&&(d+=1);let E=id(f.resLabs);return{fecha:f.fecha||"",hora:f.hora||"",resLabs:f.resLabs||[],sourceText:f.sourceText,bhExtras:f.bhExtras,include:!m,isDuplicate:m,summary:(f.fecha||"?")+" \u2014 "+E}}),u=c.length-d,p="Laboratorios ("+c.length+" fecha"+(c.length===1?"":"s")+")";d&&u?p+=" \xB7 "+u+" nueva"+(u===1?"":"s")+", "+d+" en historial":d&&!u&&(p+=" \xB7 todas en historial"),n.push({kind:"labs",label:p,sets:c})}return n}function Me(e,t){if(e.kind==="hc"){t.include!=null&&(e.include=!!t.include),t.editText!=null&&(e.editText=t.editText),t.structuredSuggestions&&e.structuredSuggestions&&t.structuredSuggestions.forEach(function(r,n){e.structuredSuggestions[n]&&r.include!=null&&(e.structuredSuggestions[n].include=!!r.include)});return}if(e.kind==="header"&&t.include!=null){e.include=!!t.include;return}if(e.kind==="eventos"&&t.entries){t.entries.forEach(function(r,n){e.entries[n]&&(r.include!=null&&(e.entries[n].include=!!r.include),r.text!=null&&(e.entries[n].text=r.text))});return}e.kind==="labs"&&t.sets&&t.sets.forEach(function(r,n){e.sets[n]&&r.include!=null&&(e.sets[n].include=!!r.include)})}function ec(e,t,r){r=r||{};let n=Object.assign({},e,{driveSections:Object.assign({},e.driveSections||{}),hcPatch:Object.assign({},e.hcPatch||{}),eventualidades:{entries:(e.eventualidades.entries||[]).slice(),skippedEstimate:e.eventualidades.skippedEstimate},laboratorios:Object.assign({},e.laboratorios,{sets:(e.laboratorios.sets||[]).slice()}),header:Object.assign({},e.header||{})});if(t.forEach(function(a){if(a.kind==="header"){r.createNew&&a.include&&(n.header=Object.assign({},a.header));return}if(a.kind==="hc"){if(a.driveSectionKey){if(a.include){let s=String(a.editText||"").trim();n.driveSections[a.driveSectionKey]=a.driveSectionKey==="ficha"?ir(s):s}else delete n.driveSections[a.driveSectionKey];return}if(!a.include){a.key&&delete n.hcPatch[a.key];return}a.key&&(n.hcPatch[a.key]=$s(a.key,a.editText,a.originalValue));return}if(a.kind==="eventos"){n.eventualidades.entries=a.entries.filter(function(s){return s.include&&String(s.text||"").trim()}).map(function(s){return{at:s.at,text:String(s.text).trim()}});return}a.kind==="labs"&&(n.laboratorios.sets=a.sets.filter(function(s){return s.include&&s.resLabs&&s.resLabs.length}).map(function(s){return{fecha:s.fecha,hora:s.hora,resLabs:s.resLabs,sourceText:s.sourceText,bhExtras:s.bhExtras}}))}),t.some(function(a){return a.kind==="hc"&&a.driveSectionKey})){n.hcPatch=ot({sections:n.driveSections})||{};let a=n.hcPatch._sexo;a&&delete n.hcPatch._sexo,a&&n.header&&(n.header.sexo=n.header.sexo||a)}let o=[];return t.forEach(function(a){a.kind!=="hc"||!a.include||!a.structuredSuggestions||a.structuredSuggestions.forEach(function(s){s.include&&o.push(s)})}),o.length&&(n.hcPatch=nr(n.hcPatch||{},o)),n}function tc(e){return e.kind==="hc"?e.driveSectionKey==="ficha"||e.key==="identificacion"?"Registro, diagn\xF3sticos y otros datos del expediente se omiten; ya est\xE1n en Datos del paciente. Edita el resto si hace falta.":e.structuredSuggestions&&e.structuredSuggestions.length?"Marca los campos estructurados que quieras completar (casillas, medicamentos, alergias, etc.). El texto libre se importa abajo.":"Edita el texto si hace falta. Desmarca \xABIncluir\xBB para omitir esta secci\xF3n en la importaci\xF3n.":e.kind==="header"?"Estos datos se usar\xE1n al crear el paciente nuevo.":e.kind==="eventos"?"Marca o desmarca cada nota. Puedes corregir el texto antes de importar.":e.kind==="labs"?"Marca las fechas que quieras agregar. Las que ya est\xE1n en el historial vienen desmarcadas.":""}var g={getActiveId(){return null},getActivePatient(){return null},showToast(e,t){},pushUndoSnapshot(e){},switchInnerTab(e){},switchAppTab(e){},addAuditEntry(e,t,r,n){}},V=null,W=!1,le=!1,de="paste",k=[],D=0;function nc(e){e&&typeof e=="object"&&Object.assign(g,e)}function ut(){return document.getElementById("drive-import-backdrop")}function H(){return document.getElementById("drive-import-input")}function od(){return document.getElementById("drive-import-parse-hint")}function ad(){return document.querySelector(".drive-import-modal")}function sd(){return document.getElementById("drive-import-warning")}function He(){let e=document.querySelector('input[name="drive-import-mode"]:checked'),t=e?String(e.value):"fill";return t==="replace"||t==="eventos"?t:"fill"}function _e(){let e=H(),t=g.getActivePatient(),r=t&&t.eventualidades&&Array.isArray(t.eventualidades.entries)?t.eventualidades.entries:[],n=t&&t.id&&K[t.id]?K[t.id]:[];return Xs(e?e.value:"",{existingEventualidades:r,existingLabHistory:n,applyMode:He()})}function ic(e,t){let r=se(e.hcPatch||{}),n=(e.eventualidades.entries||[]).length,i=e.eventualidades.skippedEstimate||0,o=Math.max(0,n-i),a=(e.laboratorios.sets||[]).length;return t!=="eventos"&&r.length>0||o>0||a>0}function dt(){let e=H(),t=document.getElementById("drive-import-doc-summary");if(!t||!e)return;let r=String(e.value||"");if(!r.trim()){t.textContent="";return}let n=r.split(/\r?\n/).length;t.textContent="Documento pegado \xB7 "+n+" l\xEDnea"+(n===1?"":"s")+" \xB7 "+r.length+" caracteres"}function Be(){let e=od(),t=sd(),r=document.getElementById("drive-import-confirm"),n=document.getElementById("drive-import-apply-fast"),i=H();if(!i||!String(i.value||"").trim()){e&&(e.hidden=!0,e.textContent=""),t&&(t.hidden=!0),r&&(r.disabled=!0),n&&(n.disabled=!0),dt();return}let o;try{o=_e()}catch(d){e&&(e.hidden=!1,e.textContent="Error al analizar: "+(d&&d.message?d.message:String(d))),r&&(r.disabled=!0),n&&(n.disabled=!0),dt();return}let a=He(),s=ic(o,a);e&&(s?(e.hidden=!0,e.textContent=""):(e.hidden=!1,e.textContent="No se detect\xF3 contenido importable con el modo seleccionado."));let l=g.getActivePatient();if(t&&l&&o.header&&o.header.registro){let d=String(o.header.registro).trim()&&String(l.registro||"").trim()&&String(o.header.registro).trim()!==String(l.registro).trim();t.hidden=!d,t.textContent=d?"El registro del documento ("+o.header.registro+") no coincide con el paciente activo ("+l.registro+").":""}else t&&(t.hidden=!0);r&&(r.disabled=!s),n&&(n.disabled=!s),dt()}function ce(e){le=e;let t=document.getElementById("drive-import-review-next"),r=document.getElementById("drive-import-apply-fast"),n=document.getElementById("drive-import-confirm");t&&(t.disabled=e,e?t.textContent="Importando\u2026":de==="review"&&pe()),r&&(r.disabled=e),n&&e&&(n.disabled=!0),e||Be()}function fr(e){let t=ut(),r=!!(t&&t.classList.contains("open"));t&&r&&(t.classList.remove("open"),t.setAttribute("aria-hidden","true"));let n=!1;try{n=confirm(e)}finally{t&&r&&(t.classList.add("open"),t.setAttribute("aria-hidden","false"))}return n}function cd(e){let t=se(e.hcPatch||{}),r=(e.eventualidades.entries||[]).length,n=(e.laboratorios.sets||[]).length;return t.length>0||r>0||n>0}function oc(e){let t=g.getActivePatient();return{applyMode:He(),existingEventualidades:t&&t.eventualidades&&Array.isArray(t.eventualidades.entries)?t.eventualidades.entries:[],existingLabHistory:t&&t.id&&K[t.id]?K[t.id]:[],createNew:!t}}function ac(){if(de!=="paste"||!W)return;W=!1;let e=H();if(!e||!String(e.value||"").trim())return;let t;try{t=_e()}catch{return}let r=He();if(!ic(t,r))return;let n=g.getActivePatient(),i=pr(t,oc(t));if(!i.length)return;k=i,D=0,Fe("review"),pe();let o=document.getElementById("drive-import-review-editor");o&&!o.hidden&&o.focus()}function rc(){let e=H();if(!!!(e&&String(e.value||"").trim())){W=!1,Be();return}W=!0,Be(),V&&clearTimeout(V),V=setTimeout(function(){V=null,ac()},320)}function mr(){let e=document.getElementById("drive-import-confirm"),t=document.getElementById("drive-import-mode-fieldset"),r=g.getActivePatient();t&&(t.style.display=r?"":"none"),!(!e||de!=="paste")&&(e.textContent="Revisar secciones\u2026")}function Fe(e){de=e;let t=ad(),r=document.getElementById("drive-import-step-paste"),n=document.getElementById("drive-import-step-review"),i=document.getElementById("drive-import-actions-paste"),o=document.getElementById("drive-import-actions-review"),a=document.getElementById("drive-import-review-prev"),s=document.getElementById("drive-import-title"),l=document.getElementById("drive-import-hint"),d=document.getElementById("drive-import-mode-fieldset");t&&t.setAttribute("data-drive-step",e),r&&(r.hidden=e!=="paste"),n&&(n.hidden=e!=="review"),i&&(i.hidden=e!=="paste"),o&&(o.hidden=e!=="review"),d&&(d.hidden=e==="review"),s&&(s.textContent=e==="review"?"Revisar importaci\xF3n":"Importar desde Drive"),l&&(l.textContent=e==="review"?"Confirma o edita cada secci\xF3n antes de importar.":"Pega el documento copiado desde Google Docs. Revisar\xE1s cada secci\xF3n antes de importar."),e==="review"&&dt(),mr()}function G(e){return String(e||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function ld(e){if(!e)return"sin fecha";let t=new Date(e);if(!Number.isFinite(t.getTime()))return"sin fecha";let r=String(t.getDate()).padStart(2,"0"),n=String(t.getMonth()+1).padStart(2,"0"),i=t.getFullYear();return r+"/"+n+"/"+i}function ue(){let e=k[D];if(!e)return;let t=document.getElementById("drive-import-review-include"),r=document.getElementById("drive-import-review-editor");if(e.kind==="hc"){Me(e,{include:t?t.checked:!0,editText:r?r.value:e.editText,structuredSuggestions:ud()});return}if(e.kind==="header"){Me(e,{include:t?t.checked:!0});return}if(e.kind==="eventos"){let n=document.querySelectorAll("[data-drive-ev-idx]"),i=[];n.forEach(function(o){let a=Number(o.getAttribute("data-drive-ev-idx")),s=o.querySelector('input[type="checkbox"]'),l=o.querySelector("textarea");i[a]={include:s?s.checked:!0,text:l?l.value:""}}),Me(e,{entries:i});return}if(e.kind==="labs"){let n=document.querySelectorAll("[data-drive-lab-idx]"),i=[];n.forEach(function(o){let a=Number(o.getAttribute("data-drive-lab-idx")),s=o.querySelector('input[type="checkbox"]');i[a]={include:s?s.checked:!0}}),Me(e,{sets:i})}}function dd(){let e=document.getElementById("drive-import-review-dots");e&&(e.innerHTML="",k.forEach(function(t,r){let n=document.createElement("button");n.type="button",n.className="drive-import-review-dot"+(r===D?" is-active":""),n.title=t.label,n.setAttribute("aria-label",t.label+" ("+(r+1)+" de "+k.length+")"),n.setAttribute("aria-current",r===D?"step":"false"),n.addEventListener("click",function(){ue(),D=r,pe()}),e.appendChild(n)}))}function ud(){let e=[];return document.querySelectorAll("[data-drive-struct-idx]").forEach(function(t){let r=Number(t.getAttribute("data-drive-struct-idx")),n=t.querySelector('input[type="checkbox"]');e[r]={include:n?n.checked:!0}}),e}function pd(e){let t=document.getElementById("drive-import-review-structured");if(!t)return;let r=e.structuredSuggestions||[];if(!r.length){t.hidden=!0,t.innerHTML="";return}t.hidden=!1;let n='<div class="drive-import-structured-head">Campos detectados \u2014 marcar para agregar a casillas estructuradas</div><div class="drive-import-structured-list">';r.forEach(function(i,o){n+='<label class="drive-import-structured-row" data-drive-struct-idx="'+o+'"><input type="checkbox"'+(i.include!==!1?" checked":"")+' aria-label="'+G(i.label)+'" /><span class="drive-import-structured-label">'+G(i.label)+"</span></label>"}),n+="</div>",t.innerHTML=n}function pe(){let e=k[D],t=document.getElementById("drive-import-review-progress"),r=document.getElementById("drive-import-review-title"),n=document.getElementById("drive-import-review-hint"),i=document.getElementById("drive-import-review-include-wrap"),o=document.getElementById("drive-import-review-include"),a=document.getElementById("drive-import-review-editor"),s=document.getElementById("drive-import-review-list"),l=document.getElementById("drive-import-review-next"),d=document.getElementById("drive-import-review-prev");if(!e)return;t&&(t.textContent="Secci\xF3n "+(D+1)+" de "+k.length+" \xB7 "+e.label),r&&(r.textContent=e.label),n&&(n.textContent=tc(e)),d&&(d.disabled=D<=0),l&&(l.textContent=D>=k.length-1?"Importar lo aprobado":"Siguiente secci\xF3n"),dd();let c=e.kind==="eventos"||e.kind==="labs",u=e.kind==="header";if(i&&(i.hidden=c),a&&(a.hidden=c||u,a.style.display=c||u?"none":""),s&&(s.hidden=!c&&!u),e.kind==="hc"&&o&&a){o.checked=e.include,a.value=e.editText,a.readOnly=!1,pd(e);return}if(c||u){let p=document.getElementById("drive-import-review-structured");p&&(p.hidden=!0,p.innerHTML="")}if(e.kind==="header"&&o&&s){o.checked=e.include;let p=e.header||{},f=[];p.nombre&&f.push("Nombre: "+p.nombre),p.registro&&f.push("Registro: "+p.registro),p.edad&&f.push("Edad: "+p.edad),p.cama&&f.push("Cama: "+p.cama),p.sexo&&f.push("Sexo: "+p.sexo),s.hidden=!1,s.innerHTML='<pre class="drive-import-review-header-pre">'+G(f.join(`
-`))+"</pre>";return}if(e.kind==="eventos"&&s){s.hidden=!1;let p="";e.entries.forEach(function(f,m){let E=ld(f.at);p+='<div class="drive-import-review-row" data-drive-ev-idx="'+m+'"><label class="drive-import-review-row-check"><input type="checkbox"'+(f.include?" checked":"")+' aria-label="Incluir eventualidad '+(m+1)+'" /><span class="drive-import-review-row-date">'+G(E)+'</span></label><textarea class="drive-import-review-row-text" rows="3" spellcheck="true">'+G(f.text)+"</textarea></div>"}),s.innerHTML=p;return}if(e.kind==="labs"&&s){s.hidden=!1;let p='<div class="drive-import-labs-table-wrap"><table class="drive-import-labs-table"><thead><tr><th scope="col" class="drive-import-labs-col-check">Incluir</th><th scope="col">Fecha</th><th scope="col">Paneles</th><th scope="col">Estado</th></tr></thead><tbody>';e.sets.forEach(function(f,m){let E=G(String(f.summary||"").replace(/^[^—]+—\s*/,"")),S=f.isDuplicate?"drive-import-lab-status drive-import-lab-status--dup":"drive-import-lab-status drive-import-lab-status--new",w=f.isDuplicate?"En historial":"Nueva";p+='<tr class="drive-import-labs-row'+(f.isDuplicate?" is-duplicate":"")+'" data-drive-lab-idx="'+m+'"><td class="drive-import-labs-col-check"><input type="checkbox"'+(f.include?" checked":"")+' aria-label="Incluir laboratorio '+G(f.fecha||"")+'" /></td><td class="drive-import-labs-fecha">'+G(f.fecha||"")+'</td><td class="drive-import-labs-panels">'+E+'</td><td><span class="'+S+'">'+w+"</span></td></tr>"}),p+="</tbody></table></div>",s.innerHTML=p}}function sc(){ue(),W=!1,Fe("paste");let e=H();if(e){e.focus();try{e.setSelectionRange(e.value.length,e.value.length)}catch{}}}function cc(){D<=0||(ue(),D-=1,pe())}async function lc(){if(!le)try{if(ue(),D>=k.length-1){await md();return}D+=1,pe()}catch(e){console.error("[drive-import] review next failed",e),g.showToast("No se pudo completar la revisi\xF3n","error"),ce(!1)}}function dc(){let e=H();if(!e||!String(e.value||"").trim()){g.showToast("Pega el contenido del documento","error");return}let t;try{t=_e()}catch{g.showToast("No se pudo analizar el texto","error");return}if(k=pr(t,oc(t)),!k.length){g.showToast("No hay secciones para revisar en este pegado","info");return}D=0,W=!1,Fe("review"),pe();let r=document.getElementById("drive-import-review-editor");r&&!r.hidden&&r.focus()}function fd(){let e=ut();if(!e){g.showToast("Importaci\xF3n desde Drive no disponible","error");return}let t=H();t&&(t.value=""),k=[],D=0,W=!1,le=!1,Fe("paste"),mr(),Be(),e.classList.add("open"),e.setAttribute("aria-hidden","false"),t&&t.focus()}function gr(){let e=ut();e&&(de==="review"&&ue(),e.classList.remove("open"),e.setAttribute("aria-hidden","true"),Fe("paste"),k=[],D=0,le=!1)}async function md(){if(!le){ce(!0);try{ue();let e;try{e=_e()}catch{g.showToast("No se pudo analizar el texto","error");return}if(e=ec(e,k,{createNew:!g.getActivePatient()}),!cd(e)){g.showToast("No hay secciones marcadas para importar","info");return}await Promise.race([pc(e,{fromReview:!0}),new Promise(function(t,r){setTimeout(function(){r(new Error("import-timeout"))},12e3)})])}catch(e){console.error("[drive-import] import failed",e),e&&e.message==="import-timeout"?g.showToast("La importaci\xF3n tard\xF3 demasiado. Revisa si los datos se guardaron.","error"):g.showToast("Error al importar desde Drive","error")}finally{ce(!1)}}}async function uc(){if(!le){ce(!0);try{let e=H();if(!e||!String(e.value||"").trim()){g.showToast("Pega el contenido del documento","error");return}let t;try{t=_e()}catch{g.showToast("No se pudo analizar el texto","error");return}await pc(t,{fromReview:!1})}catch(e){console.error("[drive-import] fast import failed",e),g.showToast("Error al importar desde Drive","error")}finally{ce(!1)}}}async function pc(e,t){t=t||{};let r=He(),n=g.getActivePatient(),i=!n;if(n&&e.header&&e.header.registro&&n.registro&&String(e.header.registro).trim()!==String(n.registro).trim()&&!fr("El registro del documento ("+e.header.registro+") no coincide con "+n.registro+". \xBFContinuar de todos modos?")||!t.fromReview&&r==="replace"&&!fr("Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?")||i&&(!e.header||!e.header.nombre)&&!fr("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?"))return;typeof g.pushUndoSnapshot=="function"&&g.pushUndoSnapshot("Importar desde Drive"),t.fromReview||(e=Object.assign({},e,{hcPatch:ks(e.hcPatch||{},e.driveSections||{})}));let o=await Js(e,{mode:r,activePatient:n,createNew:i,fromReview:!!t.fromReview});if(!o.ok){o.error==="hc-conflict"?g.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.","error"):g.showToast("No se pudo aplicar la importaci\xF3n","error");return}typeof g.addAuditEntry=="function"&&g.addAuditEntry("drive-import","ok",o.evAdded||0,JSON.stringify({mode:r,skipped:o.evSkipped,labAdded:o.labAdded,labSkipped:o.labSkipped,createNew:i,reviewed:!!t.fromReview})),gr();let a=[];r!=="eventos"&&a.push("HC actualizada"),a.push((o.evAdded||0)+" eventualidad"+(o.evAdded===1?"":"es")+" nueva"+(o.evAdded===1?"":"s")),o.evSkipped&&a.push(o.evSkipped+" duplicada"+(o.evSkipped===1?"":"s")+" omitida"+(o.evSkipped===1?"":"s")),o.labAdded&&a.push(o.labAdded+" fecha"+(o.labAdded===1?"":"s")+" de laboratorio nueva"+(o.labAdded===1?"":"s")),o.labSkipped&&a.push(o.labSkipped+" lab"+(o.labSkipped===1?"":"s")+" duplicado"+(o.labSkipped===1?"":"s")+" omitido"+(o.labSkipped===1?"":"s")),o.lanSyncDeferred&&a.push("sincronizaci\xF3n con la sala en segundo plano"),g.showToast(a.join(" \xB7 "),"success"),o.navigateTo==="lab"?typeof g.switchAppTab=="function"&&g.switchAppTab("lab"):(typeof g.switchAppTab=="function"&&g.switchAppTab("clinico"),typeof g.switchInnerTab=="function"&&g.switchInnerTab(o.navigateTo||"historia",{forceRender:!0}))}function gd(){[["drive-import-confirm",dc],["drive-import-apply-fast",uc],["drive-import-review-next",lc],["drive-import-review-prev",cc],["drive-import-back-paste",sc]].forEach(function(t){let r=document.getElementById(t[0]),n=t[1];!r||r.dataset.driveImportActionWired||(r.dataset.driveImportActionWired="1",r.addEventListener("click",function(i){i.preventDefault(),Promise.resolve(n()).catch(function(o){console.error("[drive-import] action failed",t[0],o),g.showToast("No se pudo completar la acci\xF3n de importaci\xF3n","error"),ce(!1)})}))})}function fc(){let e=H(),t=ut();gd(),e&&!e.dataset.driveImportWired&&(e.dataset.driveImportWired="1",e.addEventListener("input",rc),e.addEventListener("paste",function(){setTimeout(rc,0)})),document.querySelectorAll('input[name="drive-import-mode"]').forEach(function(r){r.dataset.driveImportWired||(r.dataset.driveImportWired="1",r.addEventListener("change",function(){mr(),Be(),de==="paste"&&W&&(V&&clearTimeout(V),V=setTimeout(function(){V=null,ac()},320))}))}),t&&!t.dataset.driveImportWired&&(t.dataset.driveImportWired="1",t.addEventListener("click",function(r){r.target===t&&gr()}))}var mc={openDriveImportModal:fd,closeDriveImportModal:gr,confirmDriveImport:uc,startDriveImportReview:dc,driveImportBackToPaste:sc,driveImportReviewPrev:cc,driveImportReviewNext:lc};var hr=null,vr=null,br=null,Sr=null;function vc(){return br?Promise.resolve(br):(hr||(hr=import("/js/chunks/settings-help-Q32UAWXZ.js").then(function(e){return br=e,e})),hr)}function bc(){return Sr?Promise.resolve(Sr):(vr||(vr=import("/js/chunks/platform-7AWWZWRG.js").then(function(e){return Sr=e,e})),vr)}function gc(e){try{Object.assign(window,e)}catch(t){console.error("[lazy-feature-routes] patchWindowHandlers",t)}}function hd(e,t){return function(){var n=arguments;t().then(function(i){var o=i[e];if(typeof o!="function"){console.error("[lazy-feature-routes] missing handler",e);return}o.apply(null,n)})}}function Sc(e,t){var r={};for(var n of Object.keys(e))r[n]=hd(e[n],t);return r}var yc=Sc({toggleSettingsSection:"toggleSettingsSection",toggleSettingsDropdown:"toggleSettingsDropdown",closeSettingsDropdown:"closeSettingsDropdown",expandSettingsAccordionBackupSync:"expandSettingsAccordionBackupSync",syncTeamSyncHeaderButton:"syncTeamSyncHeaderButton",openQuickHelp:"openQuickHelp",closeQuickHelp:"closeQuickHelp",onHelpSearchInput:"onHelpSearchInput",onHelpSearchKeydown:"onHelpSearchKeydown",onHelpListKeydown:"onHelpListKeydown",closeReleaseNotes:"closeReleaseNotes",startMiniTour:"startMiniTour",startHelpTourMain:"startHelpTourMain",togglePresentationModeFromHelp:"togglePresentationModeFromHelp",exportCensoPdfFromHelp:"exportCensoPdfFromHelp",guidedTourIntroChooseSala:"guidedTourIntroChooseSala",guidedTourIntroChooseInterconsulta:"guidedTourIntroChooseInterconsulta",guidedTourIntroSkip:"guidedTourIntroSkip",skipGuidedTour:"skipGuidedTour",toggleTourDockCollapsed:"toggleTourDockCollapsed",onTourDockClick:"onTourDockClick",guidedTourClickNext:"guidedTourClickNext",guidedTourClickPrev:"guidedTourClickPrev",guidedTourPause:"guidedTourPause",startTourModule:"startTourModule",startHelpTourInterconsulta:"startHelpTourInterconsulta",resetAndStartOnboarding:"resetAndStartOnboarding",insertLabTourSecondPatientExample:"insertLabTourSecondPatientExample",closeLabBulkTourHintModal:"closeLabBulkTourHintModal",resumeGuidedTourFromProgress:"resumeGuidedTourFromProgress",startNeoCompanionTour:"startNeoCompanionTour"},vc),vd={lockClinicalDatabaseNow:"lockClinicalDatabaseNow",verifyForensicAuditChain:"verifyForensicAuditChain",exportClinicalDbBackupJson:"exportClinicalDbBackupJson",exportClinicalDbBackupDb:"exportClinicalDbBackupDb",exportAuditLog:"exportAuditLog",exportMedCatalogBundle:"exportMedCatalogBundle",triggerImportMedCatalog:"triggerImportMedCatalog",onMedCatalogFileChosen:"onMedCatalogFileChosen",openUserDataFolderFromSettings:"openUserDataFolderFromSettings",onIdleLockSelectChange:"onIdleLockSelectChange",changeIdleLockPin:"changeIdleLockPin",submitIdleLockPin:"submitIdleLockPin",openWipeDataModal:"openWipeDataModal",closeWipeDataModal:"closeWipeDataModal",wipeCacheConfirmed:"wipeCacheConfirmed",wipeAllConfirmed:"wipeAllConfirmed",updateAutoBackupSettingsFromUi:"updateAutoBackupSettingsFromUi",runAutoBackupNow:"runAutoBackupNow",exportDataBackup:"exportDataBackup",exportActivePatientBackup:"exportActivePatientBackup",exportRangeBackupPrompt:"exportRangeBackupPrompt",triggerImportRangeBackup:"triggerImportRangeBackup",onRangeBackupFileChosen:"onRangeBackupFileChosen",exportSyncBundlePrompt:"exportSyncBundlePrompt",triggerImportSyncBundle:"triggerImportSyncBundle",onSyncBundleFileChosen:"onSyncBundleFileChosen",triggerImportActivePatientBackup:"triggerImportActivePatientBackup",triggerImportBackup:"triggerImportBackup",onPatientBackupFileChosen:"onPatientBackupFileChosen",importBundledDemoPerez:"importBundledDemoPerez",onBackupFileChosen:"onBackupFileChosen",restorePreimportBackupPrompt:"restorePreimportBackupPrompt",checkForAppUpdates:"checkForAppUpdates",checkForRepairUpdate:"checkForRepairUpdate",setUpdateChannel:"setUpdateChannel",setUpdateTelemetryEnabled:"setUpdateTelemetryEnabled",onHardwareAccelerationChange:"onHardwareAccelerationChange",installUpdate:"installUpdate",hideUpdateModal:"hideUpdateModal"},Ec=Sc(vd,bc);async function hc(e){let[t,r]=await Promise.all([bc(),vc()]);t.registerPlatformRuntime(e),r.registerSettingsHelpRuntime(e),gc(r.settingsHelpWindowHandlers),gc(t.platformWindowHandlers)}async function Ac(e){if(L()){hc(e);return}return hc(e)}var q={getActiveId(){return null},setActiveId(e){},getActiveAppTab(){return"lab"},setActiveAppTab(e){},getActiveInner(){return"todo"},setActiveInner(e){},getSettings(){return{}},setSettingsRef(e){}},yr=!1;function Ic(){return yr}function bd(){return q}function xc(e){e&&typeof e=="object"&&Object.assign(q,e)}function Sd(){Object.assign(q,{showToast:O,navigateToEstadoActualPanel:Mt,refreshMedPanel:function(){jt()},syncWorkContextChrome:ke,renderMedRecetaPanel:jt,renderLabHistoryPanel:ze,renderProcedureAgendaPanel:Q,setMedTabAttention:gs,ensureParsedLabHistory:na,ensureParsedLabHistoryCached:ia,splitResLabsByTipo:Xo,primaryTipoForLabSet:ea,formatLabHistoryListMeta:function(e){return Jo(e,Bt)},switchAppTab:X,renderPatientList:re,scrollActiveRondaCardIntoView:pa,renderGuardiaBoard:function(){return et(q.getSettings())},syncLabOutputChrome:Hn,setRoundOverviewMode:la,renderPaseBoard:Ye,getActiveLab:function(){return Dt()},consumeActiveLab:function(){var e=Dt();return Pt(null),e},restoreActiveLab:function(e){Pt(e)},clearLabOutputUi:_n,renderInnerTabs:Xe,invalidateInnerTabRenderCache:Bo,refreshExpedienteAfterPatientSelect:Uo,renderEstadoActualButton:dn,renderPatientDataPane:wi,renderNoteForm:xn,renderIndicaForm:Tn,renderListadoForm:Ii,refreshTendenciasOrCultivosPanel:Ai,switchInnerTab:Go,syncInnerTabVisualOnly:Fo,renderTodoForm:Ao,limpiarReporte:Un,setLabHistoryPanelCollapsed:Fn,syncLabHistoryCollapseUI:Lt,rpcPrefersReducedMotion:vs,refreshAllTodoUIs:Eo,renderManejo:Ht,renderVpo:Oo,renderRecetaHu:No,pushUndoSnapshot:ns,addAuditEntry:Xn,applyDefaultsToNewPatient:Ee,applyDefaultsToNewIndicaciones:Vt,enviarLabsANota:jn,normalizeFechaLabHistory:Dr,rerenderParsedLabOutputAfterPrefsChange:Bn,buildLabSetDateLine:Yo,getRoundOverviewMode:ca,saveState:U,emitLiveSyncTodoUpsert:hn,requestDocumentJson:Tt,handleDocumentGenerateResponse:Ct,guardMobileDocExport:ve,isRpcOffline:Qn,incrementPendingJobs:be,decrementPendingJobs:Se,syncOfflineButtonStates:Jn,syncTeamSyncHeaderButton:Ze,syncPreimportBackupUi:ri,syncSettingsLanHostDiskSection:pn,closeProfileModal:Ke,openProfileModal:pi,openAddModalFromLabPatient:ma,copyToClipboardSafe:sn,renderTendencias:ho,renderRoundOverviewPanels:Je,switchConsolidatedTab:jo,getActivePatient:function(){var e=q.getActiveId();return e&&A.find(function(t){return String(t.id)===String(e)})||null},applyParsed:function(e,t){if(t=t||{},t.fromNestedPaste){Nt(e);var r=document.getElementById("ea-recorded-at");r&&"value"in r&&(r.value=Rt(vt()));return}Mt(),Ni({onReady:function(){Gi({preserveForm:!0}),Nt(e);var n=document.getElementById("ea-recorded-at");n&&"value"in n&&(n.value=Rt(vt()))}})},ensureForm:Mi,syncGluMode:Oi,resetForm:function(){var e=q.getActiveId(),t=e&&A.find(function(r){return r.id===e});Ri(t||null)},selectPatient:ne,onboardingAdvanceAfterParse:eo,onboardingAdvanceAfterSend:to,tourAfterBulkLabParse:ro,tourOnBulkPreviewPatientSaved:no,findPatientByRegistro:Wt,openPaseSectionInNormal:Y,renderDiagramas:Ko,closeSettingsDropdown:Ae,extractParsedValues:Kr,buildParsedBySectionFromResLabs:$r,rebuildEstudiosFromLabHistory:ra,inferFechaLabSetFromId:Bt,dayKeyFromLabSet:Zo,labSetIsFromSome:Qo,removeAtbRisPanelsFromBody:Ei,wireAtbRisHoverPanels:yi,getLabOutputPrefs:oo,isGasoInterpretacionResLabChunk:ao,isAscitisInterpretacionResLabChunk:so,ascitisInterpretacionBody_:co,formatBhExtendedTabLine:uo,isBhMainResLabChunk:lo,isResLabChunkPureCultivo:bi,buildCultivoOutputHtmlFragments:Si,refreshManejoPanel:Ht,rebuildBulkLabPreviewBlocks:function(e){return kn(e,{findPatientByRegistro:Wt})},openAddModal:fa,advanceRondaPatient:ua,isMobileWeb:L,ensureUniquePatientName:Qe,applyImportEntry:ii,buildPatientEntry:ba,onMedicionRegistered:function(){Ji("estado_actual_registro")},guidedTourAdvanceAfterNotaGenerated:Qi,guidedTourAdvanceAfterIndicaGenerated:Zi,launchConfetti:At,renderEstadoActualBar:ln})}async function Er(){Sd();var e=bd();qo(e),Wo(e),si(e),Ho(e),Br(e),sa(e),yr=on(q.getSettings()),yr&&y.saveSettings(q.getSettings()),await Ac(e),$o(e),aa(),vn({scheduleLabHistoryPostSaveMaintenance:oa}),io(e),yo(e),wo(e),ko(e),Ro(e),oi(e),Po(e),Ci(e),vi(e),In(e),Ya(e),an(e),ki(e),nc(e),Hi(e),Ui(e),Mn(e),On(e),As(e),Za(e),fn(e)}function Ar(){jr(),Lt(),_i(),fc(),ji(),ai()}async function wc(e,t){for(let r of e)try{await r.run(t)}catch(n){throw console.error("[boot]",r.id,n),n}}var yd=Object.assign({},Na,Gr,bn,ya,Vn,Nn,xs,un,Bi,Fi,mc,Vi,Ja,Ti,Dn,ds,yc,Ec,So,Io,To,Mo,Vo,zo,hi,yn,Ta,Aa,bs,{resumeClinicalSession:function(){return Oa(fe,Oc())}});try{Object.assign(window,yd)}catch(e){console.error("[R+] No se pudieron registrar handlers en window:",e)}var kc=(async function(){if(ht()){let t=await Ra();t&&t.unlocked?await Nr():(console.warn("[R+] Clinical DB not ready at boot:",t&&t.reason||"locked"),Ve())}else Ve()})();Rr({onSaveResult(e){if(!e||e.ok){e&&e.level==="warn"&&O("El almacenamiento local est\xE1 casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.","error");return}e.code==="QUOTA_EXCEEDED"&&O("No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.","error")}});window.addEventListener("beforeunload",function(){St()});document.addEventListener("visibilitychange",function(){document.visibilityState==="hidden"&&St()});var Ir=null,xr="todo",pt="lab",fe=gi(y.getSettings());ci(function(){return fe});fs({getActiveId:function(){return Ir},getActiveAppTab:function(){return pt},getActiveInner:function(){return xr},getSettings:function(){return fe}});xc({getActiveId:function(){return Ir},setActiveId:function(e){Ir=e},getActiveAppTab:function(){return pt},setActiveAppTab:function(e){pt=e},getActiveInner:function(){return xr},setActiveInner:function(e){xr=e},getSettings:function(){return fe}});async function Tc(){if(L()){Er(),Ar();return}await Er(),Ar()}kc.then(async function(){try{await Tc()}catch(e){console.error("[R+] Error registrando runtimes de features:",e)}}).catch(async function(e){console.error("[R+] Error cargando estado cl\xEDnico:",e);try{Ve(),await Tc()}catch(t){console.error("[R+] Error registrando runtimes de features:",t)}});function Oc(){return Mr(fe)}function Cc(){var e=document.getElementById("today-date");if(e){var t=new Date,r=t.toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"}),n=t.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short",year:"numeric"}),i=typeof window.matchMedia=="function"&&window.matchMedia("(max-width: 920px)").matches;e.textContent=i?n:r,e.title=r}}var Ed=[{id:"clinical-access-init",async run(e){await Pa(e.settings,e.getClinicalClientId())}},{id:"onboarding-dynamic-import",async run(){ye(),await(await import("/js/chunks/clinical-onboarding-main-JYHSQVH7.js")).showMainClinicalOnboarding()}},{id:"clinical-teams-dynamic-import",async run(e){wa(),Ca(),xa(),tt(),e.teamsMod=await import("/js/chunks/clinical-teams-QLYVHVBK.js")}},{id:"consume-team-join-url",async run(e){let t=e.teamsMod;t&&typeof t.consumeClinicalTeamJoinFromUrl=="function"&&await t.consumeClinicalTeamJoinFromUrl()}}];function Dc(){kc.then(function(){Pc()}).catch(function(){Pc()})}function Pc(){try{qe(),Ea()&&O("Se restaur\xF3 tu lista de pacientes tras el modo presentaci\xF3n.","info"),hs(),Cc(),window._rpcHeaderDateResizeWired||(window._rpcHeaderDateResizeWired=!0,window.addEventListener("resize",Cc)),re(),A.length>0?ne(A[0].id):ze(),ye(),ke(),fo(),_o(pt),Xe(),xo(),Ic()&&!L()&&setTimeout(function(){try{O("R+ 3.0 \u2014 Sala activado por defecto. Cambia en Mi Perfil \u2192 Aplicaci\xF3n.")}catch{}},800),Ss(),ys(),Kn(),Lc(da),Lc(Sa),Ad(),ht()&&wc(Ed,{settings:fe,getClinicalClientId:Oc,teamsMod:null}).catch(function(e){console.warn("[R+] Clinical access runtime init:",e&&e.message)})}catch(e){console.error("[R+] Error en arranque de UI:",e)}}function Ad(){var e=document.getElementById("header-app-mode-chip");!e||e._rpcModeChipWired||(e._rpcModeChipWired=!0,e.addEventListener("click",function(t){t.preventDefault(),ui()}))}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",Dc):Dc();function Lc(e){typeof window<"u"&&typeof window.requestIdleCallback=="function"?window.requestIdleCallback(function(){try{e()}catch(t){console.error("deferInit error:",t&&t.message)}},{timeout:1500}):setTimeout(function(){try{e()}catch(t){console.error("deferInit error:",t&&t.message)}},200)}
+// public/js/features/lab-history-batch-copy-modal.mjs
+var rt3 = {
+  getActiveId() {
+    return null;
+  },
+  ensureParsedLabHistory() {
+    return [];
+  },
+  showToast() {
+  },
+  copyToClipboardSafe() {
+    return Promise.resolve(false);
+  }
+};
+function registerLabHistoryBatchCopyRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt3, ctx);
+}
+function esc3(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function loadPatientHistory() {
+  var pid = rt3.getActiveId();
+  if (!pid) return { pid: null, ordered: [], groups: [] };
+  var ordered;
+  if (rt3.ensureParsedLabHistoryCached) {
+    ordered = sortLabHistoryChronological(rt3.ensureParsedLabHistoryCached(pid));
+  } else {
+    ordered = sortLabHistoryChronological(
+      rt3.ensureParsedLabHistory(pid, { readOnly: true })
+    );
+  }
+  return { pid, ordered, groups: groupLabHistoryByDay(ordered) };
+}
+function selectedDayKeysFromBackdrop(backdrop) {
+  var keys = [];
+  backdrop.querySelectorAll(".lab-batch-copy-cb:checked").forEach(function(cb) {
+    var dk = cb.getAttribute("data-day-key");
+    if (dk) keys.push(dk);
+  });
+  return keys;
+}
+function syncBatchCopyActions(backdrop, ordered) {
+  var ta = backdrop.querySelector("#lab-batch-copy-preview");
+  var countEl = backdrop.querySelector("#lab-batch-copy-count");
+  var copyBtn = backdrop.querySelector("#lab-batch-copy-ok");
+  if (!ta) return;
+  var keys = selectedDayKeysFromBackdrop(backdrop);
+  var n = keys.length;
+  if (countEl) {
+    countEl.textContent = n === 0 ? "Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar" : n + " d\xEDa" + (n === 1 ? "" : "s") + " seleccionado" + (n === 1 ? "" : "s");
+  }
+  if (copyBtn) {
+    copyBtn.disabled = n === 0;
+    copyBtn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
+    copyBtn.style.opacity = n === 0 ? "0.55" : "";
+    copyBtn.style.cursor = n === 0 ? "not-allowed" : "pointer";
+  }
+  if (!n) {
+    ta.value = "";
+    ta.placeholder = "La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba.";
+    return;
+  }
+  ta.placeholder = "";
+  ta.value = buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys }).join("\n");
+}
+function closeBatchCopyModal(backdrop) {
+  if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+}
+function openLabHistoryBatchCopyModal() {
+  if (!rt3.getActiveId()) {
+    rt3.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var loaded = loadPatientHistory();
+  if (!loaded.groups.length) {
+    rt3.showToast("No hay laboratorios en el historial de este paciente", "error");
+    return;
+  }
+  var backdrop = document.createElement("div");
+  backdrop.className = "lab-conflict-backdrop";
+  backdrop.id = "lab-batch-copy-backdrop";
+  var listHtml = loaded.groups.map(function(group) {
+    return '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-batch-copy-cb" data-day-key="' + esc3(group.dayKey) + '" style="margin-top:3px;flex-shrink:0;" /><span>' + esc3(group.label) + "</span></label></li>";
+  }).join("");
+  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;"><h3 style="margin:0 0 8px;">Copiar varios d\xEDas</h3><p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca los d\xEDas que quieres copiar. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por d\xEDa).</p><div style="overflow-y:auto;flex:0 1 auto;max-height:28vh;padding-right:4px;"><ul style="margin:0;padding-left:0;list-style:none;font-size:13px;">' + listHtml + '</ul></div><p id="lab-batch-copy-count" style="font-size:12px;color:var(--text-muted);margin:10px 0 6px;">Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar</p><textarea id="lab-batch-copy-preview" readonly rows="8" placeholder="La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba." style="width:100%;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);resize:vertical;flex:1;min-height:120px;"></textarea><div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" id="lab-batch-copy-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button><button type="button" id="lab-batch-copy-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button><button type="button" id="lab-batch-copy-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button><button type="button" id="lab-batch-copy-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Copiar al portapapeles</button></div></div>';
+  document.body.appendChild(backdrop);
+  function refreshPreview2() {
+    syncBatchCopyActions(backdrop, loaded.ordered);
+  }
+  backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+    cb.addEventListener("change", refreshPreview2);
+  });
+  backdrop.querySelector("#lab-batch-copy-none").onclick = function() {
+    backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+      cb.checked = false;
+    });
+    refreshPreview2();
+  };
+  backdrop.querySelector("#lab-batch-copy-all").onclick = function() {
+    backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+      cb.checked = true;
+    });
+    refreshPreview2();
+  };
+  backdrop.querySelector("#lab-batch-copy-cancel").onclick = function() {
+    closeBatchCopyModal(backdrop);
+  };
+  backdrop.addEventListener("click", function(e) {
+    if (e.target === backdrop) closeBatchCopyModal(backdrop);
+  });
+  backdrop.querySelector("#lab-batch-copy-ok").onclick = async function() {
+    var keys = selectedDayKeysFromBackdrop(backdrop);
+    if (!keys.length) {
+      rt3.showToast("Selecciona al menos un d\xEDa", "error");
+      return;
+    }
+    var text = buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys }).join("\n");
+    if (!text.trim()) {
+      rt3.showToast("No hay texto para copiar en los d\xEDas elegidos", "error");
+      return;
+    }
+    var ok = await rt3.copyToClipboardSafe(text);
+    rt3.showToast(
+      ok ? "Copiados " + keys.length + " d\xEDa" + (keys.length === 1 ? "" : "s") + " al portapapeles \u2713" : "Error al copiar al portapapeles",
+      ok ? "success" : "error"
+    );
+    if (ok) closeBatchCopyModal(backdrop);
+  };
+  refreshPreview2();
+}
+var windowHandlers17 = {
+  openLabHistoryBatchCopyModal
+};
+
+// lib/drive-import/normalize.mjs
+function normalizeDrivePaste(text) {
+  return String(text == null ? "" : text).replace(/\uFEFF/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// lib/drive-import/segment.mjs
+var DATE_ONLY_RE = /^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/;
+var MONITOREO_RE = /^(N|V|HD|HI|NM)\s*:/i;
+var SECTION_MARKERS = [
+  { key: "eventualidades", re: /^EVENTUALIDADES(\s+EN ESTE INTERNAMIENTO)?\s*$/i },
+  { key: "estadoActual", re: /^ESTADO ACTUAL\b/i, exclusive: true },
+  { key: "historiaClinica", re: /^HISTORIA\s+CL[IÍ]NICA\s*:?\s*$/i },
+  { key: "ficha", re: /^FICHA\s+DE\s+IDENTIFICACI[ÓO]N\s*:?\s*$/i },
+  { key: "interrogatorio", re: /^INTERROGATORIO\s*:?\s*$/i },
+  { key: "dx", re: /^(?:DX|IDX|SUGERENCIAS\s+DIAGN[ÓO]STIC[AO]S?)\s*:?\s*$/i },
+  { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:?\s*$/i },
+  { key: "signosVitales", re: /^SIGNOS\s+VITALES(\s+DE\s+TRIAGE)?\s*:?\s*$/i },
+  { key: "fechaIngreso", re: /^FECHA\s+DE\s+INGRESO\b/i },
+  { key: "ahf", re: /^(?:ANTECEDENTES\s+HEREDOFAMILIARES|AHF)\s*:?\s*$/i },
+  {
+    key: "apnp",
+    re: /^(?:ANTECEDENTES\s+PERSONALES(?:\s+NO\s+PATOL[ÓO]GICOS)?|ANTECEDENTES\s+SEXUALES|AGO|APNP)\s*:?\s*$/i
+  },
+  { key: "app", re: /^(?:ANTECEDENTES\s+PERSONALES\s+PATOL[ÓO]GICOS|APP)\s*:?\s*$/i },
+  { key: "ecd", re: /^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*:?\s*$/i },
+  { key: "medicamentos", re: /^MEDICAMENTOS(\s+ACTUALES|\s+HABITUALES)?\s*:?\s*$/i },
+  {
+    key: "peea",
+    re: /^(?:PADECIMIENTO\s+ACTUAL\s*\/\s*PEEA|PEEA|PRINCIPIO\s+EVOLUCI[ÓO]N\s+Y\s+ESTADO\s+ACTUAL)\s*:?\s*$/i
+  },
+  { key: "pendientes", re: /^PENDIENTES\s*:?\s*$/i },
+  { key: "laboratorios", re: /^LABORATORIOS(?:\s+DE\s+INGRESO)?\s*:?\s*$/i },
+  { key: "efUx", re: /^EF\s+UX\s*:?\s*$/i },
+  { key: "ipas", re: /^IPAS\b/i },
+  { key: "cateteres", re: /^CAT[EÉ]TERES\s+Y\s+SONDAS\s*:?\s*$/i },
+  { key: "antibioticos", re: /^ANTIBI[ÓO]TICOS\s*:?\s*$/i },
+  { key: "cultivos", re: /^CULTIVOS\s*:?\s*$/i },
+  { key: "estudiosImagen", re: /^ESTUDIOS\s+DE\s+IMAGEN\s*:?\s*$/i }
+];
+var INLINE_SECTIONS = [
+  { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:\s*(.+)$/i },
+  { key: "signosVitales", re: /^SIGNOS\s+VITALES(?:\s+DE\s+TRIAGE)?\s*:\s*(.+)$/i }
+];
+function matchInlineSection(line) {
+  const t = line.trim();
+  for (const m of INLINE_SECTIONS) {
+    const hit = m.re.exec(t);
+    if (hit) return { key: m.key, body: hit[1].trim() };
+  }
+  return null;
+}
+function matchSectionHeader(line) {
+  const t = line.trim();
+  if (!t) return null;
+  for (const m of SECTION_MARKERS) {
+    if (m.re.test(t)) return { key: m.key, exclusive: m.exclusive };
+  }
+  return null;
+}
+function splitDocumentSections(rawText) {
+  const text = normalizeDrivePaste(rawText);
+  const lines = text.split("\n");
+  const sections = {};
+  const eventualidadesBlocks = [];
+  const warnings = [];
+  const headerLines = [];
+  let currentKey = "_preamble";
+  let currentLines = [];
+  let inEstadoActual = false;
+  let inEventualidades = false;
+  let evBuffer = [];
+  function flushSection() {
+    const body = currentLines.join("\n").trim();
+    if (currentKey === "_preamble") {
+      if (body) headerLines.push(...body.split("\n"));
+    } else if (currentKey === "eventualidades") {
+      if (body) evBuffer.push(body);
+    } else if (!inEstadoActual && body) {
+      sections[currentKey] = sections[currentKey] ? sections[currentKey] + "\n\n" + body : body;
+    }
+    currentLines = [];
+  }
+  function flushEventualidadesBlock() {
+    const joined = evBuffer.filter(Boolean).join("\n\n").trim();
+    if (joined) eventualidadesBlocks.push(joined);
+    evBuffer = [];
+  }
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (inEstadoActual && DATE_ONLY_RE.test(trimmed) && !MONITOREO_RE.test(trimmed)) {
+      inEstadoActual = false;
+      inEventualidades = true;
+      currentKey = "eventualidades";
+      currentLines = [line];
+      continue;
+    }
+    const inline = matchInlineSection(line);
+    if (inline) {
+      flushSection();
+      if (inEstadoActual) inEstadoActual = false;
+      if (inEventualidades) {
+        flushEventualidadesBlock();
+        inEventualidades = false;
+      }
+      sections[inline.key] = inline.body;
+      currentKey = "_inline";
+      currentLines = [];
+      continue;
+    }
+    const hit = matchSectionHeader(line);
+    if (hit) {
+      flushSection();
+      if (hit.key === "estadoActual") {
+        if (inEventualidades) {
+          flushEventualidadesBlock();
+          inEventualidades = false;
+        }
+        inEstadoActual = true;
+        currentKey = "estadoActual";
+        warnings.push("ESTADO ACTUAL detectado: no se importar\xE1 en v1.");
+        continue;
+      }
+      if (inEstadoActual && hit.key !== "estadoActual") {
+        inEstadoActual = false;
+      }
+      if (hit.key === "eventualidades") {
+        if (inEventualidades) flushEventualidadesBlock();
+        inEventualidades = true;
+        inEstadoActual = false;
+        currentKey = "eventualidades";
+        continue;
+      }
+      if (inEventualidades && hit.key !== "eventualidades") {
+        flushEventualidadesBlock();
+        inEventualidades = false;
+      }
+      currentKey = hit.key;
+      continue;
+    }
+    if (inEstadoActual) continue;
+    currentLines.push(line);
+  }
+  flushSection();
+  if (inEventualidades) flushEventualidadesBlock();
+  else if (evBuffer.some(Boolean)) flushEventualidadesBlock();
+  return { headerLines, sections, eventualidadesBlocks, warnings };
+}
+
+// lib/drive-import/parse-header.mjs
+var PIPE_SEP = "\\|+";
+var PIPE_WITH_CAMA_RE = new RegExp(
+  `^(\\d+(?:-\\d+)?)\\s*${PIPE_SEP}\\s*(.+?)\\s*${PIPE_SEP}\\s*(\\d+)\\s*(?:A\xD1OS)?\\s*${PIPE_SEP}\\s*([\\d-]+)\\s*${PIPE_SEP}\\s*(.+)$`,
+  "i"
+);
+var PIPE_NAME_FIRST_RE = new RegExp(
+  `^(.+?)\\s*${PIPE_SEP}\\s*(\\d+)\\s*(?:A\xD1OS)?\\s*${PIPE_SEP}\\s*([\\d-]+)\\s*${PIPE_SEP}\\s*(.+)$`,
+  "i"
+);
+var FICHA_KV_RE = /^([A-ZÁÉÍÓÚÑ\s]+)\s*:\s*(.+)$/i;
+function parsePipeLine(line) {
+  const t = String(line || "").trim();
+  if (!t.includes("|")) return null;
+  const withCama = PIPE_WITH_CAMA_RE.exec(t);
+  if (withCama) {
+    return {
+      cama: withCama[1].trim(),
+      nombre: withCama[2].trim(),
+      edad: withCama[3].trim(),
+      registro: withCama[4].trim(),
+      resumenDx: withCama[5].trim()
+    };
+  }
+  const nameFirst = PIPE_NAME_FIRST_RE.exec(t);
+  if (nameFirst && !/^\d+(?:-\d+)?$/.test(nameFirst[1].trim())) {
+    return {
+      cama: "",
+      nombre: nameFirst[1].trim(),
+      edad: nameFirst[2].trim(),
+      registro: nameFirst[3].trim(),
+      resumenDx: nameFirst[4].trim()
+    };
+  }
+  return null;
+}
+function parsePipeHeader(firstLines) {
+  const lines = Array.isArray(firstLines) ? firstLines : String(firstLines || "").split("\n");
+  for (const raw of lines.slice(0, 12)) {
+    const line = String(raw || "").trim();
+    if (!line) continue;
+    const parsed = parsePipeLine(line);
+    if (parsed) return parsed;
+  }
+  return null;
+}
+function parseFichaIdentificacion(block) {
+  const identificacion = {};
+  let sexo = "";
+  const lines = String(block || "").split("\n");
+  const keyMap = {
+    NOMBRE: "nombre",
+    EDAD: "edad",
+    SEXO: "sexo",
+    REGISTRO: "registro",
+    ORIGEN: "lugarNacimiento",
+    "LUGAR DE NACIMIENTO": "lugarNacimiento",
+    "FECHA DE NACIMIENTO": "fechaNacimiento",
+    RESIDENCIA: "residencia",
+    OCUPACI\u00D3N: "ocupacionActual",
+    OCUPACION: "ocupacionActual",
+    "OCUPACI\xD3N ACTUAL": "ocupacionActual",
+    "OCUPACION ACTUAL": "ocupacionActual",
+    "OCUPACI\xD3N ANTERIOR": "ocupacionAnterior",
+    "OCUPACION ANTERIOR": "ocupacionAnterior",
+    ESCOLARIDAD: "escolaridad",
+    "ESTADO CIVIL": "estadoCivil",
+    RELIGI\u00D3N: "religion",
+    RELIGION: "religion",
+    RESPONSABLE: "informante",
+    "TEL\xC9FONO FAMILIAR": "telefonoFamiliar",
+    "TELEFONO FAMILIAR": "telefonoFamiliar"
+  };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = FICHA_KV_RE.exec(line);
+    if (!m) continue;
+    const label = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    const field = keyMap[label];
+    if (field) {
+      identificacion[field] = value;
+      if (field === "sexo") {
+        if (/FEMENIN/i.test(value)) sexo = "F";
+        else if (/MASCULIN/i.test(value)) sexo = "M";
+      }
+    }
+  }
+  if (identificacion.nombre && !identificacion.informante) {
+    identificacion.informante = identificacion.nombre;
+  }
+  return { identificacion, sexo };
+}
+function mergeHeader(pipe, ficha) {
+  const id = ficha.identificacion || {};
+  const edadMatch = /(\d+)/.exec(String(id.edad || ""));
+  return {
+    cama: pipe?.cama || "",
+    nombre: id.nombre || pipe?.nombre || "",
+    edad: edadMatch ? edadMatch[1] : pipe?.edad || "",
+    registro: id.registro || pipe?.registro || "",
+    resumenDx: pipe?.resumenDx || "",
+    sexo: ficha.sexo || "",
+    identificacion: Object.assign({}, id)
+  };
+}
+
+// lib/drive-import/hc-structured-extract.mjs
+var NEGADO_RE = /^(?:INTERROGADO\s+Y\s+)?NEGAD/i;
+var CONDITION_PATTERNS = {
+  diabetes: [/\bDIABET(?:ES|IC[OA])\b/i, /\bDM\s*[12]\b/i, /\bDM2\b/i, /\bDM1\b/i],
+  hipertension: [/\bHIPERTENS(?:I[ÓO]N|O)\b/i, /\bHTA\b/i, /\bHAS\b/i],
+  enfermedadRenal: [
+    /\bENFERMEDAD\s+RENAL\b/i,
+    /\bERC\b/i,
+    /\bIRC\b/i,
+    /\bINSUFICIENCIA\s+RENAL\b/i,
+    /\bNEFROPAT/i,
+    /\bRI[ÑN]ON\s+POLIQU/i
+  ],
+  cardiopatia: [/\bCARDIOPAT/i, /\bINSUFICIENCIA\s+CARD[IÍ]ACA\b/i, /\bICC\b/i, /\bFEVI\b/i],
+  enfermedadPulmonar: [/\bEPOC\b/i, /\bENFERMEDAD\s+PULMONAR\b/i],
+  cancer: [/\bNEOPLASIA\b/i, /\bC[AÁ]NCER\b/i, /\bCA\s+DE\b/i, /\bTUMOR\b/i],
+  vih: [/\bVIH\b/i, /\bSIDA\b/i, /\bHIV\b/i],
+  tuberculosis: [/\bTUBERCULOSIS\b/i, /\bTBC\b/i],
+  hepatitis: [/\bHEPATITIS\b/i],
+  parotiditis: [/\bPAROTIDITIS\b/i],
+  paperas: [/\bPAPERAS\b/i],
+  sarampion: [/\bSARAMPI[ÓO]N\b/i],
+  varicela: [/\bVARICELA\b/i],
+  rubeola: [/\bRUB[ÉE]OLA\b/i],
+  neoplasia: [/\bNEOPLASIA\b/i],
+  epilepsia: [/\bEPILEPS/i, /\bCONVULS/i],
+  psiquiatrico: [/\bPSIQUIATR/i, /\bDEPRESI[ÓO]N\b/i, /\bESQUIZOFREN/i],
+  tiroideo: [/\bTIROIDE/i, /\bHIPOTIRO/i, /\bHIPERTIRO/i]
+};
+var APP_SUBSECTION_HEADERS = [
+  { key: "ecd", re: /^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*:?\s*(.*)$/i },
+  { key: "medicamentos", re: /^MEDICAMENTOS(?:\s+ACTUALES|\s+HABITUALES)?\s*:?\s*(.*)$/i },
+  { key: "transfusiones", re: /^TRANSFUSIONES\s*:?\s*(.*)$/i },
+  { key: "hospitalizaciones", re: /^HOSPITALIZACIONES\s*:?\s*(.*)$/i },
+  { key: "cirugias", re: /^CIRUG[ÍI]AS(?:\s+PREVIAS)?\s*:?\s*(.*)$/i },
+  { key: "traumaticos", re: /^(?:TRAUMATISMOS?|FRACTURAS?)\s*:?\s*(.*)$/i },
+  { key: "inmunizaciones", re: /^INMUNIZACIONES\s*:?\s*(.*)$/i },
+  { key: "alergias", re: /^ALERGIAS(?:\s+MEDICAMENTOSAS)?\s*:?\s*(.*)$/i },
+  { key: "enfermedades", re: /^ENFERMEDADES\s*:?\s*(.*)$/i }
+];
+function isNegatedDriveText(text) {
+  const t = String(text || "").trim();
+  if (!t) return true;
+  return NEGADO_RE.test(t);
+}
+function parseAppSubsections(text) {
+  const out = {};
+  const lines = String(text || "").split("\n");
+  let currentKey = "_body";
+  let currentLines = [];
+  function flush() {
+    const body = currentLines.join("\n").trim();
+    if (body) out[currentKey] = out[currentKey] ? out[currentKey] + "\n" + body : body;
+    currentLines = [];
+  }
+  for (const raw of lines) {
+    const line = raw.trim();
+    let matched = false;
+    for (const header of APP_SUBSECTION_HEADERS) {
+      const hit = header.re.exec(line);
+      if (hit) {
+        flush();
+        currentKey = header.key;
+        matched = true;
+        if (hit[1] && hit[1].trim()) currentLines.push(hit[1].trim());
+        break;
+      }
+    }
+    if (!matched) currentLines.push(raw);
+  }
+  flush();
+  return out;
+}
+function matchCatalogConditions(text, catalog) {
+  const hay = String(text || "");
+  if (!hay.trim() || isNegatedDriveText(hay)) return [];
+  const hits = [];
+  const seen = /* @__PURE__ */ new Set();
+  Object.keys(catalog || {}).forEach(function(id) {
+    if (APP_DEDICATED_IDS.has(id)) return;
+    if (id === "otro") return;
+    const label = catalog[id];
+    const patterns = CONDITION_PATTERNS[id] || [];
+    const labelRe = new RegExp("\\b" + String(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i");
+    const matched = patterns.some(function(re) {
+      return re.test(hay);
+    }) || labelRe.test(hay);
+    if (matched && !seen.has(id)) {
+      seen.add(id);
+      hits.push({ id, label });
+    }
+  });
+  return hits;
+}
+function parseMedicamentosList(text) {
+  const t = String(text || "").trim();
+  if (!t || isNegatedDriveText(t)) return [];
+  return t.split(/\s*,\s*(?=[A-ZÁÉÍÓÚÑ0-9])/).map(function(chunk) {
+    return chunk.trim();
+  }).filter(Boolean).map(function(med, idx) {
+    return {
+      id: "drv_med_" + idx,
+      medication: med,
+      route: "",
+      dosage: "",
+      frequency: ""
+    };
+  });
+}
+function matchToxicomaniasSubstances(text) {
+  const hay = String(text || "");
+  if (!hay.trim() || isNegatedDriveText(hay)) return [];
+  const hits = [];
+  Object.keys(toxicomanias_substances_default).forEach(function(id) {
+    const label = toxicomanias_substances_default[id];
+    const tokens = String(label).split(/\s*[\/(]/).map(function(part) {
+      return part.trim();
+    }).filter(function(part) {
+      return part.length >= 4;
+    });
+    const matched = tokens.some(function(token) {
+      return new RegExp("\\b" + token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(hay);
+    });
+    if (matched) hits.push({ id, label });
+  });
+  return hits;
+}
+var AHF_RELATIVE_LABEL_MAP = Object.fromEntries(
+  AHF_RELATIVES.map(function(rel) {
+    return [rel.label.toUpperCase(), rel.id];
+  }).concat([
+    ["ABUELA", "abuela_materna"],
+    ["ABUELO", "abuelo_materno"]
+  ])
+);
+function parseAhfRelativeLines(text) {
+  const entries = [];
+  String(text || "").split("\n").forEach(function(raw, lineIdx) {
+    const line = raw.trim();
+    const m = /^([A-ZÁÉÍÓÚÑ\s]+)\s*[:;]\s*(.+)$/i.exec(line);
+    if (!m) return;
+    const label = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    const relativeId = AHF_RELATIVE_LABEL_MAP[label];
+    if (!relativeId || !value || isNegatedDriveText(value)) return;
+    const vitalStatus = /FINAD|FALLECID|FALLEC/i.test(value) ? "fallecido" : /\bVIV[OA]\b|\bSANO\b/i.test(value) ? "vivo" : "desconocido";
+    const conditions = matchCatalogConditions(value, ahf_conditions_default);
+    if (conditions.length) {
+      conditions.forEach(function(cond) {
+        entries.push({
+          id: "drv_ahf_" + lineIdx + "_" + relativeId + "_" + cond.id,
+          conditionId: cond.id,
+          relativeId,
+          diagnosis: value,
+          treatment: "",
+          vitalStatus
+        });
+      });
+      return;
+    }
+    entries.push({
+      id: "drv_ahf_" + lineIdx + "_" + relativeId + "_otro",
+      conditionId: "otro",
+      relativeId,
+      diagnosis: value,
+      treatment: "",
+      vitalStatus
+    });
+  });
+  return entries;
+}
+function isNegatedSubsectionBody(body) {
+  const t = String(body || "").trim();
+  if (!t) return true;
+  if (isNegatedDriveText(t)) return true;
+  const inline = /^[^:]+:\s*(.+)$/i.exec(t);
+  if (inline) return isNegatedDriveText(inline[1].trim());
+  return false;
+}
+function appSubsectionShouldStrip(key, body, suggestions) {
+  if (!body || !String(body).trim()) return false;
+  if (isNegatedSubsectionBody(body)) return true;
+  const accepted = (suggestions || []).filter(function(s) {
+    return s.include !== false;
+  });
+  if (key === "medicamentos") {
+    return accepted.some(function(s) {
+      return s.target === "app.medicamentosActuales";
+    });
+  }
+  if (key === "alergias") {
+    return accepted.some(function(s) {
+      return s.target === "app.alergiasNegado" || s.target === "app.alergiaMedicamentos";
+    });
+  }
+  if (key === "inmunizaciones") {
+    return accepted.some(function(s) {
+      return s.target === "app.inmunizaciones";
+    });
+  }
+  if (key === "transfusiones") {
+    return accepted.some(function(s) {
+      return s.target === "app.transfusionesEntries";
+    });
+  }
+  if (key === "hospitalizaciones") {
+    return accepted.some(function(s) {
+      return s.target === "app.hospitalizaciones";
+    });
+  }
+  if (key === "cirugias") {
+    return accepted.some(function(s) {
+      return s.target === "app.cirugias";
+    });
+  }
+  if (key === "traumaticos") {
+    return accepted.some(function(s) {
+      return s.target === "app.traumaticosEntries";
+    });
+  }
+  if (key === "ecd" || key === "enfermedades") {
+    return accepted.some(function(s) {
+      return s.target === "app.conditions";
+    });
+  }
+  return false;
+}
+function stripIntegratedAppDescription(text, suggestions) {
+  const lines = String(text || "").split("\n");
+  const kept = [];
+  let currentKey = "_body";
+  let buffer = [];
+  function flush() {
+    const body = buffer.join("\n").trim();
+    if (!body) {
+      buffer = [];
+      return;
+    }
+    if (currentKey === "_body") {
+      let remainder = body;
+      if ((suggestions || []).some(function(s) {
+        return s.include !== false && s.target === "app.conditions";
+      })) {
+        const condHits = matchCatalogConditions(body, app_conditions_default);
+        if (condHits.length && condHits.every(function(cond) {
+          return (suggestions || []).some(function(s) {
+            return s.include !== false && s.target === "app.conditions" && s.value === cond.id;
+          });
+        })) {
+          remainder = "";
+        }
+      }
+      if (remainder && !appSubsectionShouldStrip("_body", remainder, suggestions)) {
+        kept.push(remainder);
+      }
+    } else if (!appSubsectionShouldStrip(currentKey, body, suggestions)) {
+      kept.push(...buffer);
+    }
+    buffer = [];
+  }
+  for (const raw of lines) {
+    const line = raw.trim();
+    let matched = false;
+    for (const header of APP_SUBSECTION_HEADERS) {
+      const hit = header.re.exec(line);
+      if (hit) {
+        flush();
+        currentKey = header.key;
+        matched = true;
+        if (hit[1] && hit[1].trim()) buffer.push(raw);
+        break;
+      }
+    }
+    if (!matched) {
+      if (currentKey === "_body" || buffer.length === 0) {
+        buffer.push(raw);
+      } else {
+        flush();
+        currentKey = "_body";
+        buffer.push(raw);
+      }
+    }
+  }
+  flush();
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+function stripIntegratedAhfDescription(text, suggestions) {
+  const acceptedEntries = (suggestions || []).filter(function(s) {
+    return s.include !== false && s.target === "ahf.entries";
+  });
+  return String(text || "").split("\n").filter(function(raw) {
+    const line = raw.trim();
+    if (!line) return true;
+    const m = /^([A-ZÁÉÍÓÚÑ\s]+)\s*[:;]\s*(.+)$/i.exec(line);
+    if (!m) return true;
+    const label = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    if (!AHF_RELATIVE_LABEL_MAP[label]) return true;
+    if (isNegatedDriveText(value)) return false;
+    if (!acceptedEntries.length) return true;
+    const relativeId = AHF_RELATIVE_LABEL_MAP[label];
+    return !acceptedEntries.some(function(s) {
+      const row = (
+        /** @type {{ relativeId?: string, diagnosis?: string }} */
+        s.value || {}
+      );
+      return row.relativeId === relativeId && String(row.diagnosis || "").toUpperCase() === value.toUpperCase();
+    });
+  }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+function buildHcStructuredSuggestions(sectionKey, text, sections) {
+  sections = sections || {};
+  const suggestions = [];
+  const key = String(sectionKey || "");
+  if (key === "app" || key === "ecd" || key === "medicamentos") {
+    const subs = parseAppSubsections(text);
+    const diseaseText = [subs.ecd, subs.enfermedades, subs._body, text].filter(Boolean).join("\n");
+    matchCatalogConditions(diseaseText, app_conditions_default).forEach(function(cond) {
+      suggestions.push({
+        id: "app_cond_" + cond.id,
+        label: cond.label,
+        target: "app.conditions",
+        include: true,
+        value: cond.id,
+        sourceText: cond.label
+      });
+    });
+    const medText = subs.medicamentos || (key === "medicamentos" ? text : "");
+    parseMedicamentosList(medText).forEach(function(med, idx) {
+      suggestions.push({
+        id: "app_med_" + idx,
+        label: "Medicamento: " + med.medication,
+        target: "app.medicamentosActuales",
+        include: true,
+        value: med,
+        sourceText: med.medication
+      });
+    });
+    const alergiasText = subs.alergias || "";
+    if (alergiasText) {
+      if (isNegatedDriveText(alergiasText)) {
+        suggestions.push({
+          id: "app_alergias_negado",
+          label: "Sin alergias medicamentosas conocidas",
+          target: "app.alergiasNegado",
+          include: true,
+          value: true,
+          sourceText: alergiasText
+        });
+      } else {
+        alergiasText.split(/\s*,\s*/).map(function(part) {
+          return part.trim();
+        }).filter(Boolean).forEach(function(med, idx) {
+          suggestions.push({
+            id: "app_alergia_" + idx,
+            label: "Alergia: " + med,
+            target: "app.alergiaMedicamentos",
+            include: true,
+            value: { id: "drv_al_" + idx, medication: med },
+            sourceText: med
+          });
+        });
+      }
+    }
+    const inmunText = subs.inmunizaciones || "";
+    if (inmunText && !isNegatedDriveText(inmunText)) {
+      suggestions.push({
+        id: "app_inmunizaciones",
+        label: "Inmunizaciones: " + inmunText.slice(0, 72) + (inmunText.length > 72 ? "\u2026" : ""),
+        target: "app.inmunizaciones",
+        include: true,
+        value: inmunText,
+        sourceText: inmunText
+      });
+    }
+    [
+      { subKey: "transfusiones", target: "app.transfusionesEntries", prefix: "Transfusi\xF3n" },
+      { subKey: "hospitalizaciones", target: "app.hospitalizaciones", prefix: "Hospitalizaci\xF3n" },
+      { subKey: "cirugias", target: "app.cirugias", prefix: "Cirug\xEDa" },
+      { subKey: "traumaticos", target: "app.traumaticosEntries", prefix: "Traumatismo" }
+    ].forEach(function(spec) {
+      const body = subs[spec.subKey] || "";
+      if (!body || isNegatedDriveText(body)) return;
+      suggestions.push({
+        id: "app_" + spec.subKey,
+        label: spec.prefix + ": " + body.slice(0, 72) + (body.length > 72 ? "\u2026" : ""),
+        target: spec.target,
+        include: true,
+        value: body,
+        sourceText: body
+      });
+    });
+  }
+  if (key === "apnp") {
+    const lines = String(text || "").split("\n");
+    lines.forEach(function(raw) {
+      const line = raw.trim();
+      const m = /^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i.exec(line);
+      if (!m) return;
+      const label = m[1].trim().toUpperCase();
+      const value = m[2].trim();
+      if (label === "TABAQUISMO" && isNegatedDriveText(value)) {
+        suggestions.push({
+          id: "apnp_tabaquismo_negado",
+          label: "Tabaquismo negado",
+          target: "apnp.tabaquismoDetail",
+          include: true,
+          value: { status: "negado" },
+          sourceText: value
+        });
+      }
+      if ((label === "ETILISMO" || label === "ALCOHOLISMO") && isNegatedDriveText(value)) {
+        suggestions.push({
+          id: "apnp_alcoholismo_negado",
+          label: "Alcoholismo negado",
+          target: "apnp.alcoholismoDetail",
+          include: true,
+          value: { status: "negado" },
+          sourceText: value
+        });
+      }
+      if (label === "TOXICOMAN\xCDAS" || label === "TOXICOMANIAS") {
+        if (isNegatedDriveText(value)) return;
+        matchToxicomaniasSubstances(value).forEach(function(sub) {
+          suggestions.push({
+            id: "apnp_tox_" + sub.id,
+            label: "Toxicoman\xEDa: " + sub.label,
+            target: "apnp.toxicomaniasEntries",
+            include: true,
+            value: {
+              id: "drv_tox_" + sub.id,
+              substanceId: sub.id,
+              customLabel: "",
+              frequency: "",
+              years: ""
+            },
+            sourceText: sub.label
+          });
+        });
+      }
+    });
+  }
+  if (key === "ahf") {
+    parseAhfRelativeLines(text).forEach(function(entry) {
+      const relLabel = (AHF_RELATIVES.find(function(r) {
+        return r.id === entry.relativeId;
+      }) || {}).label || entry.relativeId;
+      suggestions.push({
+        id: entry.id,
+        label: relLabel + ": " + String(entry.diagnosis || "").slice(0, 64),
+        target: "ahf.entries",
+        include: true,
+        value: entry,
+        sourceText: entry.diagnosis
+      });
+    });
+    matchCatalogConditions(text, ahf_conditions_default).forEach(function(cond) {
+      if (suggestions.some(function(s) {
+        return s.target === "ahf.entries" && s.value && s.value.conditionId === cond.id;
+      })) {
+        return;
+      }
+      suggestions.push({
+        id: "ahf_cond_" + cond.id,
+        label: "Antecedente familiar: " + cond.label,
+        target: "ahf.conditions",
+        include: true,
+        value: cond.id,
+        sourceText: cond.label
+      });
+    });
+  }
+  if (key === "ecd" && !suggestions.length) {
+    matchCatalogConditions(text, app_conditions_default).forEach(function(cond) {
+      suggestions.push({
+        id: "app_cond_" + cond.id,
+        label: cond.label,
+        target: "app.conditions",
+        include: true,
+        value: cond.id,
+        sourceText: cond.label
+      });
+    });
+  }
+  if (key === "medicamentos" && !suggestions.some(function(s) {
+    return s.target === "app.medicamentosActuales";
+  })) {
+    parseMedicamentosList(text).forEach(function(med, idx) {
+      suggestions.push({
+        id: "app_med_" + idx,
+        label: "Medicamento: " + med.medication,
+        target: "app.medicamentosActuales",
+        include: true,
+        value: med,
+        sourceText: med.medication
+      });
+    });
+  }
+  return suggestions;
+}
+function applyStructuredSuggestionsToHcPatch(hcPatch, suggestions) {
+  const accepted = (suggestions || []).filter(function(s) {
+    return s.include !== false;
+  });
+  const out = Object.assign({}, hcPatch || {});
+  accepted.forEach(function(s) {
+    const parts = String(s.target || "").split(".");
+    if (parts.length !== 2) return;
+    const section = parts[0];
+    const field = parts[1];
+    if (!out[section] || typeof out[section] !== "object") {
+      out[section] = {};
+    }
+    const block = (
+      /** @type {Record<string, unknown>} */
+      Object.assign({}, out[section])
+    );
+    if (field === "conditions") {
+      const list = Array.isArray(block.conditions) ? block.conditions.slice() : [];
+      const id = String(s.value);
+      if (id && list.indexOf(id) < 0) list.push(id);
+      block.conditions = list;
+    } else if (field === "medicamentosActuales") {
+      const list = Array.isArray(block.medicamentosActuales) ? block.medicamentosActuales.slice() : [];
+      const med = (
+        /** @type {{ medication?: string }} */
+        s.value
+      );
+      if (med && med.medication && !list.some(function(row) {
+        return String(row.medication || "").toUpperCase() === String(med.medication).toUpperCase();
+      })) {
+        list.push(s.value);
+      }
+      block.medicamentosActuales = list;
+    } else if (field === "alergiasNegado") {
+      block.alergiasNegado = !!s.value;
+      if (block.alergiasNegado) block.alergiaMedicamentos = [];
+    } else if (field === "alergiaMedicamentos") {
+      block.alergiasNegado = false;
+      const list = Array.isArray(block.alergiaMedicamentos) ? block.alergiaMedicamentos.slice() : [];
+      const row = (
+        /** @type {{ medication?: string }} */
+        s.value
+      );
+      if (row && row.medication) list.push(s.value);
+      block.alergiaMedicamentos = list;
+    } else if (field === "inmunizaciones") {
+      if (!String(block.inmunizaciones || "").trim()) block.inmunizaciones = String(s.value || "").trim();
+    } else if (field === "transfusionesEntries") {
+      const list = Array.isArray(block.transfusionesEntries) ? block.transfusionesEntries.slice() : [];
+      list.push({
+        id: "drv_tf_" + list.length,
+        units: "",
+        adverseReactions: String(s.value || "").trim(),
+        date: null
+      });
+      block.transfusionesEntries = list;
+    } else if (field === "hospitalizaciones") {
+      const list = Array.isArray(block.hospitalizaciones) ? block.hospitalizaciones.slice() : [];
+      list.push({
+        reason: String(s.value || "").trim(),
+        duration: "",
+        complications: "",
+        date: null
+      });
+      block.hospitalizaciones = list;
+    } else if (field === "cirugias") {
+      const list = Array.isArray(block.cirugias) ? block.cirugias.slice() : [];
+      list.push({
+        procedure: String(s.value || "").trim(),
+        complications: "",
+        date: null
+      });
+      block.cirugias = list;
+    } else if (field === "traumaticosEntries") {
+      const list = Array.isArray(block.traumaticosEntries) ? block.traumaticosEntries.slice() : [];
+      list.push({
+        id: "drv_tr_" + list.length,
+        description: String(s.value || "").trim(),
+        date: null
+      });
+      block.traumaticosEntries = list;
+    } else if (field === "tabaquismoDetail") {
+      block.tabaquismoDetail = Object.assign({}, block.tabaquismoDetail || {}, s.value || {});
+      block.tabaquismo = HC_INTERROGADO_NEGADO;
+    } else if (field === "alcoholismoDetail") {
+      block.alcoholismoDetail = Object.assign({}, block.alcoholismoDetail || {}, s.value || {});
+      block.alcoholismo = HC_INTERROGADO_NEGADO;
+    } else if (field === "toxicomaniasEntries") {
+      const list = Array.isArray(block.toxicomaniasEntries) ? block.toxicomaniasEntries.slice() : [];
+      const row = (
+        /** @type {{ substanceId?: string }} */
+        s.value
+      );
+      if (row && row.substanceId && !list.some(function(entry) {
+        return entry && entry.substanceId === row.substanceId;
+      })) {
+        list.push(s.value);
+      }
+      block.toxicomaniasEntries = list;
+    } else if (field === "entries") {
+      const list = Array.isArray(block.entries) ? block.entries.slice() : [];
+      const row = (
+        /** @type {{ id?: string, relativeId?: string, conditionId?: string }} */
+        s.value
+      );
+      if (row && row.relativeId && row.conditionId && !list.some(function(entry) {
+        return entry && entry.relativeId === row.relativeId && entry.conditionId === row.conditionId && String(entry.diagnosis || "").toUpperCase() === String(row.diagnosis || "").toUpperCase();
+      })) {
+        list.push(s.value);
+      }
+      block.entries = list;
+    }
+    out[section] = block;
+  });
+  if (out.app && typeof out.app === "object") {
+    const app = (
+      /** @type {Record<string, unknown>} */
+      Object.assign({}, out.app)
+    );
+    if (typeof app.descripcionDetallada === "string") {
+      app.descripcionDetallada = stripIntegratedAppDescription(app.descripcionDetallada, accepted);
+    }
+    out.app = app;
+  }
+  if (out.ahf && typeof out.ahf === "object") {
+    const ahf = (
+      /** @type {Record<string, unknown>} */
+      syncAhfConditionsFromEntries(Object.assign({}, out.ahf))
+    );
+    if (typeof ahf.descripcionDetallada === "string") {
+      ahf.descripcionDetallada = stripIntegratedAhfDescription(ahf.descripcionDetallada, accepted);
+    }
+    out.ahf = ahf;
+  }
+  return out;
+}
+var STRUCTURED_SECTION_KEYS = ["app", "apnp", "ahf", "ecd", "medicamentos"];
+function collectStructuredSuggestionsFromDriveSections(sections) {
+  const all = [];
+  STRUCTURED_SECTION_KEYS.forEach(function(key) {
+    const text = String((sections || {})[key] || "").trim();
+    if (!text) return;
+    buildHcStructuredSuggestions(key, text, sections).forEach(function(s) {
+      all.push(s);
+    });
+  });
+  return all;
+}
+function enrichHcPatchWithStructuredSuggestions(hcPatch, sections) {
+  const suggestions = collectStructuredSuggestionsFromDriveSections(sections || {});
+  if (!suggestions.length) return hcPatch || {};
+  return applyStructuredSuggestionsToHcPatch(hcPatch || {}, suggestions);
+}
+
+// lib/drive-import/hc-field-parsers.mjs
+var KV_RE = /^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i;
+function parseKeyValueBlock(block) {
+  const out = {};
+  const keyMap = {
+    ORIGEN: "lugarNacimiento",
+    RESIDENCIA: "residencia",
+    "ESTADO CIVIL": "estadoCivil",
+    RELIGI\u00D3N: "religion",
+    RELIGION: "religion",
+    ESCOLARIDAD: "escolaridad",
+    OCUPACI\u00D3N: "ocupacionActual",
+    OCUPACION: "ocupacionActual"
+  };
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = KV_RE.exec(line);
+    if (!m) continue;
+    const label = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    const field = keyMap[label] || label.toLowerCase().replace(/\s+/g, "_");
+    out[field] = value;
+  }
+  return out;
+}
+function parseApnpLines(block) {
+  const apnp = {};
+  const map = {
+    TABAQUISMO: "tabaquismo",
+    ETILISMO: "alcoholismo",
+    TOXICOMAN\u00CDAS: "toxicomanias",
+    TOXICOMANIAS: "toxicomanias",
+    "TATUAJES/PERFORACIONES": "tatuajes",
+    TATUAJES: "tatuajes",
+    ZOONOSIS: "deportesPasatiemposMascotas",
+    COMBE: "dieta",
+    BIOMASA: "dieta",
+    "VIAJES RECIENTES": "dieta",
+    HERBOLARIA: "dieta"
+  };
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = KV_RE.exec(line);
+    if (!m) continue;
+    const label = m[1].trim().toUpperCase();
+    const field = map[label];
+    if (field) apnp[field] = m[2].trim();
+  }
+  return apnp;
+}
+function buildAppFromSections(sections) {
+  const parts = [
+    sections.ecd,
+    sections.medicamentos,
+    sections.quirurgicos,
+    sections.internamientos,
+    sections.app
+  ].filter(Boolean);
+  const descripcionDetallada = parts.join("\n\n").trim();
+  const subs = parseAppSubsections(descripcionDetallada);
+  const alergiasText = subs.alergias || "";
+  const inmunText = subs.inmunizaciones || "";
+  return {
+    conditions: [],
+    customConditions: [],
+    conditionDetails: {},
+    cirugias: [],
+    hospitalizaciones: [],
+    alergiasNegado: alergiasText ? isNegatedDriveText(alergiasText) : false,
+    alergiaMedicamentos: [],
+    traumaticosEntries: [],
+    transfusionesEntries: [],
+    descripcionDetallada,
+    medicamentosActuales: [],
+    inmunizaciones: inmunText && !isNegatedDriveText(inmunText) ? inmunText : ""
+  };
+}
+
+// lib/drive-import/filter-ficha-patient-fields.mjs
+var IDENTIFICACION_PATIENT_TAB_FIELDS = /* @__PURE__ */ new Set([
+  "registro",
+  "dx",
+  "diagnosticos",
+  "nombre",
+  "edad",
+  "cama",
+  "sexo"
+]);
+var FICHA_PATIENT_LINE_RES = [
+  /^REGISTRO\s*[:;]/i,
+  /^(?:DX|IDX|DIAGN[ÓO]STICOS?|DIAGNOSTICOS?)\s*[:;]/i,
+  /^NOMBRE\s*[:;]/i,
+  /^EDAD\s*[:;]/i,
+  /^CAMA\s*[:;]/i,
+  /^SEXO\s*[:;]/i
+];
+function filterFichaDriveText(text) {
+  return String(text || "").split("\n").filter(function(line) {
+    const t = line.trim();
+    if (!t) return true;
+    return !FICHA_PATIENT_LINE_RES.some(function(re) {
+      return re.test(t);
+    });
+  }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+function filterIdentificacionForHcImport(identificacion) {
+  const out = {};
+  Object.entries(identificacion || {}).forEach(function(entry) {
+    const key = entry[0];
+    const value = entry[1];
+    if (IDENTIFICACION_PATIENT_TAB_FIELDS.has(key)) return;
+    if (value != null && String(value).trim()) out[key] = String(value).trim();
+  });
+  return out;
+}
+
+// lib/drive-import/profiles/drive-ficha-hc-v1.mjs
+function mapHc(doc) {
+  const sections = doc.sections || {};
+  const ficha = parseFichaIdentificacion(sections.ficha || "");
+  const apnp = parseApnpLines(sections.apnp || "");
+  const app = buildAppFromSections(sections);
+  const peeaParts = [sections.peea, sections.efUx, sections.pendientes].filter(Boolean);
+  const padecimientoActual = peeaParts.join("\n\n").trim();
+  return {
+    identificacion: filterIdentificacionForHcImport(ficha.identificacion),
+    motivoConsulta: (sections.motivoConsulta || "").trim(),
+    signosVitalesIngreso: (sections.signosVitales || "").trim(),
+    apnp,
+    ahf: {
+      conditions: [],
+      customConditions: [],
+      entries: [],
+      descripcionDetallada: (sections.ahf || "").trim()
+    },
+    app,
+    padecimientoActual,
+    _sexo: ficha.sexo
+  };
+}
+
+// lib/drive-import/profiles/drive-pipe-hc-v1.mjs
+function mapHc2(doc) {
+  const sections = doc.sections || {};
+  const identificacion = filterIdentificacionForHcImport(parseKeyValueBlock(sections.historiaClinica || ""));
+  const apnp = parseApnpLines(sections.apnp || "");
+  const ahfText = (sections.ahf || "").trim();
+  const app = buildAppFromSections(sections);
+  if (sections.ecd && !app.descripcionDetallada.includes(sections.ecd)) {
+    app.descripcionDetallada = [sections.ecd, app.descripcionDetallada].filter(Boolean).join("\n\n");
+  }
+  return {
+    identificacion,
+    motivoConsulta: (sections.motivoConsulta || "").trim(),
+    signosVitalesIngreso: (sections.signosVitales || "").trim(),
+    apnp,
+    ahf: {
+      conditions: [],
+      customConditions: [],
+      entries: [],
+      descripcionDetallada: ahfText
+    },
+    app,
+    padecimientoActual: (sections.peea || "").trim()
+  };
+}
+
+// lib/drive-import/map-universal-hc.mjs
+var HC_SECTION_KEYS = [
+  "ficha",
+  "historiaClinica",
+  "peea",
+  "app",
+  "apnp",
+  "ahf",
+  "motivoConsulta",
+  "signosVitales",
+  "interrogatorio",
+  "dx",
+  "medicamentos",
+  "ecd",
+  "fechaIngreso"
+];
+function hasDriveHcSections(sections) {
+  return HC_SECTION_KEYS.some(function(k) {
+    return sections[k] && String(sections[k]).trim();
+  });
+}
+function textLength(value) {
+  if (value == null) return 0;
+  if (typeof value === "string") return String(value).trim().length;
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return Object.values(value).reduce(function(sum, v) {
+      return sum + textLength(v);
+    }, 0);
+  }
+  if (Array.isArray(value)) {
+    return value.reduce(function(sum, v) {
+      return sum + textLength(v);
+    }, 0);
+  }
+  return 0;
+}
+function listHcPatchSectionKeys(patch) {
+  return Object.keys(patch || {}).filter(function(k) {
+    if (String(k).startsWith("_")) return false;
+    return textLength(patch[k]) > 0;
+  });
+}
+function mapUniversalHc(doc) {
+  const sections = doc.sections || {};
+  if (!hasDriveHcSections(sections)) return {};
+  let patch = {};
+  const useFicha = sections.ficha || sections.app || sections.apnp && sections.app !== void 0 || sections.peea && sections.ficha;
+  const usePipe = sections.historiaClinica || sections.peea || sections.apnp || sections.ahf || sections.motivoConsulta || sections.signosVitales || sections.ecd;
+  if (useFicha || sections.ficha) {
+    patch = mergeHcPatch(patch, mapHc(doc), "fill");
+  }
+  if (usePipe || !useFicha) {
+    patch = mergeHcPatch(patch, mapHc2(doc), "fill");
+  }
+  if (!listHcPatchSectionKeys(patch).length) {
+    patch = mergeHcPatch(mapHc(doc), mapHc2(doc), "fill");
+  }
+  if (patch.identificacion && typeof patch.identificacion === "object") {
+    patch.identificacion = filterIdentificacionForHcImport(
+      /** @type {Record<string, unknown>} */
+      patch.identificacion
+    );
+  }
+  return patch;
+}
+
+// lib/drive-import/eventualidad-dates.mjs
+function parseDateLine(line) {
+  const t = String(line || "").trim();
+  let m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/.exec(t);
+  if (m) {
+    let y = Number(m[3]);
+    if (y < 100) y += 2e3;
+    return { day: Number(m[1]), month: Number(m[2]), year: y };
+  }
+  m = /^(\d{1,2})[\/.\-](\d{1,2})$/.exec(t);
+  if (m) return { day: Number(m[1]), month: Number(m[2]) };
+  return null;
+}
+function resolveYear(partial, hints) {
+  if (partial.year != null && Number.isFinite(partial.year)) return partial.year;
+  if (hints.referenceYear != null) return hints.referenceYear;
+  const now = /* @__PURE__ */ new Date();
+  let y = hints.documentYear != null ? hints.documentYear : now.getFullYear();
+  if (partial.month > now.getMonth() + 1) y -= 1;
+  return y;
+}
+function toNoonIso(parts) {
+  const dt = new Date(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+}
+function inferDocumentYearFromText(text) {
+  const m = /(?:FIUX|FECHA\s+DE\s+INGRESO)[^\d]*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i.exec(text);
+  if (m) return Number(m[3]);
+  const years = [];
+  const re = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g;
+  let hit;
+  while ((hit = re.exec(text)) !== null) {
+    years.push(Number(hit[3]));
+  }
+  return years.length ? Math.max(...years) : void 0;
+}
+
+// lib/drive-import/map-to-eventualidades.mjs
+var DATE_ONLY_RE2 = /^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/;
+var MONITOREO_RE2 = /^(N|V|HD|HI|NM)\s*:/i;
+function mapSectionsToEventualidades(input) {
+  const blocks = input.eventualidadesBlocks || [];
+  const hints = {
+    referenceYear: input.referenceYear,
+    documentYear: input.documentYear
+  };
+  const entries = [];
+  const warnings = [];
+  for (const block of blocks) {
+    let flush = function() {
+      const text = buf.map((l) => l.trim()).filter(Boolean).join("\n").trim();
+      if (curDate && text) entries.push({ at: curDate, text });
+      buf = [];
+    };
+    const lines = String(block || "").split("\n");
+    let curDate = null;
+    let buf = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (MONITOREO_RE2.test(line)) continue;
+      if (DATE_ONLY_RE2.test(line)) {
+        const d = parseDateLine(line);
+        if (d) {
+          flush();
+          const year = resolveYear(d, hints);
+          curDate = toNoonIso({ day: d.day, month: d.month, year });
+          continue;
+        }
+      }
+      buf.push(line);
+    }
+    flush();
+  }
+  return { entries, warnings };
+}
+
+// lib/drive-import/parse-drive-labs.mjs
+var PANEL_PREFIX_RE = /^(BH|QS|ES|ESC|PFH|PFHs|GV|GASES|COAG|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)[\s\t]+/i;
+var INFER_PANEL_RULES = [
+  { panel: "BH", re: /^(?:Hb|Hto|VCM|HCM|Leu|Neu|Eos|Plt|RBC|Ret)\b/i },
+  { panel: "QS", re: /^(?:Glu|Cr|BUN|eTFG|AU|TGL|COL|PCR)\b/i },
+  { panel: "ESC", re: /^(?:Na|Cl|K|Ca|F|Mg)\b/i },
+  { panel: "PFHs", re: /^(?:Alb|AST|ALT|FA|BT|BD|BI|LDH|Amil)\b/i },
+  { panel: "GASES", re: /^(?:pH|pCO2|pO2|Lactato|Bica|HCO3|BE)\b/i },
+  { panel: "COAG", re: /^(?:TP|TTP|INR|Fib|DD)\b/i }
+];
+var LAB_SECTION_STOP_RE = /^(EVENTUALIDADES|ESTADO ACTUAL|HISTORIA\s+CL[IÍ]NICA|PENDIENTES|DX\s*:|FICHA\s+DE\s+IDENTIFICACI[ÓO]N|MOTIVO\s+DE\s+CONSULTA)\b/i;
+function normalizeDriveLabPanel(token) {
+  const u = String(token || "").trim().toUpperCase();
+  if (u === "ES" || u === "ESC") return "ESC";
+  if (u === "PFH" || u === "PFHS") return "PFHs";
+  if (u === "GV" || u === "GASES" || u === "GASE") return "GASES";
+  if (u === "BH") return "BH";
+  if (u === "QS") return "QS";
+  return String(token || "").trim();
+}
+function isDriveLabDateLine(line) {
+  return !!parseDateLine(line);
+}
+function isDriveLabPanelLine(line) {
+  const t = String(line || "").trim();
+  if (!t) return false;
+  if (isDriveLabDateLine(t)) return false;
+  if (PANEL_PREFIX_RE.test(t)) return true;
+  return INFER_PANEL_RULES.some((r) => r.re.test(t));
+}
+function collapseLabWhitespace(content) {
+  return String(content || "").replace(/\t/g, " ").replace(/\s+/g, " ").trim();
+}
+function driveLabPanelLineToResLab(line) {
+  const collapsed = collapseLabWhitespace(line);
+  if (!collapsed) return null;
+  const prefixHit = PANEL_PREFIX_RE.exec(collapsed);
+  if (prefixHit) {
+    const panel = normalizeDriveLabPanel(prefixHit[1]);
+    const rest = collapseLabWhitespace(collapsed.slice(prefixHit[0].length));
+    if (!rest) return null;
+    return panel + "	" + rest;
+  }
+  for (const rule of INFER_PANEL_RULES) {
+    if (rule.re.test(collapsed)) {
+      return rule.panel + "	" + collapsed;
+    }
+  }
+  return null;
+}
+function formatDriveLabFecha(partial, documentYear) {
+  const y = resolveYear(partial, { documentYear, referenceYear: documentYear });
+  const dd = String(partial.day).padStart(2, "0");
+  const mm = String(partial.month).padStart(2, "0");
+  return dd + "/" + mm + "/" + y;
+}
+function parseDriveLaboratorios(body, opts) {
+  opts = opts || {};
+  const text = normalizeDrivePaste(body);
+  const warnings = [];
+  if (!text.trim()) return { sets: [], warnings };
+  const documentYear = opts.documentYear != null ? opts.documentYear : inferDocumentYearFromText(text);
+  const sets = [];
+  let currentDate = "";
+  let currentLines = [];
+  let currentSource = [];
+  function flushDay() {
+    const resLabs = [];
+    currentLines.forEach(function(ln) {
+      const chunk = driveLabPanelLineToResLab(ln);
+      if (chunk) resLabs.push(chunk);
+    });
+    if (!resLabs.length) {
+      currentLines = [];
+      currentSource = [];
+      return;
+    }
+    if (!currentDate) {
+      warnings.push("Bloque de laboratorio sin fecha reconocible; se omiti\xF3.");
+      currentLines = [];
+      currentSource = [];
+      return;
+    }
+    sets.push({
+      fecha: currentDate,
+      hora: "",
+      resLabs,
+      sourceText: currentSource.join("\n").trim()
+    });
+    currentLines = [];
+    currentSource = [];
+  }
+  text.split("\n").forEach(function(rawLine) {
+    const line = rawLine.trim();
+    if (!line) return;
+    if (LAB_SECTION_STOP_RE.test(line)) return;
+    const dateParts = parseDateLine(line);
+    if (dateParts) {
+      flushDay();
+      currentDate = formatDriveLabFecha(dateParts, documentYear);
+      currentSource = [line];
+      return;
+    }
+    if (!isDriveLabPanelLine(line)) return;
+    if (!currentDate) {
+      warnings.push("L\xEDnea de laboratorio antes de la primera fecha: " + line.slice(0, 48));
+      return;
+    }
+    currentLines.push(line);
+    currentSource.push(line);
+  });
+  flushDay();
+  return { sets, warnings };
+}
+function extractLaboratoriosBody(rawText, sectionBody) {
+  const fromSection = String(sectionBody || "").trim();
+  if (fromSection) return fromSection;
+  const text = normalizeDrivePaste(rawText);
+  const m = /\nLABORATORIOS(?:\s+DE\s+INGRESO)?\s*\n/i.exec("\n" + text);
+  if (!m) return "";
+  const after = text.slice(m.index + m[0].length - 1);
+  const lines = after.split("\n");
+  const out = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (LAB_SECTION_STOP_RE.test(t)) break;
+    out.push(line);
+  }
+  return out.join("\n").trim();
+}
+
+// lib/drive-import/merge-drive-labs.mjs
+function normalizeFecha(fecha) {
+  return String(fecha || "").trim();
+}
+function calendarDayKeyFromLabSet({ fecha, hora }) {
+  const t = normalizeFecha(fecha);
+  if (!t || t === "Anterior") return "";
+  const m = t.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+  if (!m) return t;
+  let y = m[3] ? parseInt(m[3], 10) : (/* @__PURE__ */ new Date()).getFullYear();
+  if (y < 100) y += 2e3;
+  const h = String(hora || "").trim();
+  const hm = h.match(/^(\d{1,2}):(\d{2})/);
+  if (hm) {
+    const ms = new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10)).getTime();
+    const withH = ms + (parseInt(hm[1], 10) * 3600 + parseInt(hm[2], 10) * 60) * 1e3;
+    const d = new Date(withH);
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  return y + "-" + parseInt(m[2], 10) + "-" + parseInt(m[1], 10);
+}
+function normalizeLabLines(lines) {
+  return (Array.isArray(lines) ? lines : []).map(function(line) {
+    return String(line || "").trim().replace(/\s+/g, " ");
+  }).filter(Boolean);
+}
+function isSubsetLabLines(subset, superset) {
+  const sub = normalizeLabLines(subset);
+  const sup = normalizeLabLines(superset);
+  if (!sub.length) return false;
+  const supSet = new Set(sup);
+  return sub.every(function(line) {
+    return supSet.has(line);
+  });
+}
+function areDriveLabSetsEquivalent(a, b) {
+  const aa = normalizeLabLines(a);
+  const bb = normalizeLabLines(b);
+  if (aa.length !== bb.length) return false;
+  for (let i = 0; i < aa.length; i += 1) {
+    if (aa[i] !== bb[i]) return false;
+  }
+  return true;
+}
+function isDuplicateDriveLabSet(existing, incoming) {
+  if (!existing || !incoming) return false;
+  const exLabs = existing.resLabs || [];
+  const inLabs = incoming.resLabs || [];
+  const sameFecha = normalizeFecha(existing.fecha) === normalizeFecha(incoming.fecha);
+  const eh = String(existing.hora || "").trim();
+  const ih = String(incoming.hora || "").trim();
+  const sameHora = eh === ih;
+  if (sameFecha && sameHora && areDriveLabSetsEquivalent(exLabs, inLabs)) return true;
+  const dayEx = calendarDayKeyFromLabSet(existing);
+  const dayIn = calendarDayKeyFromLabSet(incoming);
+  if (!dayEx || !dayIn || dayEx !== dayIn) return false;
+  if (areDriveLabSetsEquivalent(exLabs, inLabs)) return true;
+  if (isSubsetLabLines(inLabs, exLabs)) return true;
+  return false;
+}
+function filterNewDriveLabSets(existingHistory, incomingSets) {
+  let skipped = 0;
+  const fresh = [];
+  (incomingSets || []).forEach(function(set) {
+    const dup = (existingHistory || []).some(function(ex) {
+      return isDuplicateDriveLabSet(ex, set);
+    });
+    if (dup) skipped += 1;
+    else fresh.push(set);
+  });
+  return { sets: fresh, skipped };
+}
+
+// lib/drive-import/drive-import-hc-edit.mjs
+var HC_SECTION_LABELS = {
+  identificacion: "Identificaci\xF3n",
+  motivoConsulta: "Motivo de consulta",
+  signosVitalesIngreso: "Signos vitales de ingreso",
+  apnp: "Antecedentes no patol\xF3gicos",
+  ahf: "Antecedentes heredofamiliares",
+  app: "Antecedentes patol\xF3gicos",
+  padecimientoActual: "Padecimiento actual / PEEA"
+};
+var IDENT_LABELS = {
+  lugarNacimiento: "ORIGEN",
+  residencia: "RESIDENCIA",
+  estadoCivil: "ESTADO CIVIL",
+  religion: "RELIGI\xD3N",
+  escolaridad: "ESCOLARIDAD",
+  ocupacionActual: "OCUPACI\xD3N",
+  informante: "INFORMANTE",
+  registro: "REGISTRO",
+  cama: "CAMA",
+  dx: "DX",
+  edad: "EDAD"
+};
+var APNP_LABELS = {
+  tabaquismo: "TABAQUISMO",
+  alcoholismo: "ETILISMO",
+  toxicomanias: "TOXICOMAN\xCDAS",
+  tatuajes: "TATUAJES",
+  deportesPasatiemposMascotas: "ZOONOSIS",
+  dieta: "DIETA / COMBE"
+};
+function hcPatchValueToEditText(key, value) {
+  if (value == null) return "";
+  if (key === "motivoConsulta" || key === "padecimientoActual" || key === "signosVitalesIngreso") {
+    return String(value).trim();
+  }
+  if (key === "identificacion" && typeof value === "object" && !Array.isArray(value)) {
+    return Object.entries(filterIdentificacionForHcImport(
+      /** @type {Record<string, string>} */
+      value
+    )).filter(function(entry) {
+      return entry[1] != null && String(entry[1]).trim();
+    }).map(function(entry) {
+      const label = IDENT_LABELS[entry[0]] || entry[0].toUpperCase();
+      return label + ": " + String(entry[1]).trim();
+    }).join("\n");
+  }
+  if (key === "ahf" && typeof value === "object" && value) {
+    return String(
+      /** @type {{ descripcionDetallada?: string }} */
+      value.descripcionDetallada || ""
+    ).trim();
+  }
+  if (key === "app" && typeof value === "object" && value) {
+    return String(
+      /** @type {{ descripcionDetallada?: string }} */
+      value.descripcionDetallada || ""
+    ).trim();
+  }
+  if (key === "apnp" && typeof value === "object" && value) {
+    return Object.entries(
+      /** @type {Record<string, string>} */
+      value
+    ).filter(function(entry) {
+      return entry[1] != null && String(entry[1]).trim();
+    }).map(function(entry) {
+      const label = APNP_LABELS[entry[0]] || entry[0].toUpperCase();
+      return label + ": " + String(entry[1]).trim();
+    }).join("\n");
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (_e) {
+    return String(value);
+  }
+}
+function parseLabeledLines(block, labelToField) {
+  const out = {};
+  const reverse = {};
+  Object.keys(labelToField).forEach(function(field) {
+    reverse[String(labelToField[field]).toUpperCase()] = field;
+  });
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const idx = line.indexOf(":");
+    if (idx < 1) continue;
+    const label = line.slice(0, idx).trim().toUpperCase();
+    const value = line.slice(idx + 1).trim();
+    const field = reverse[label] || label.toLowerCase().replace(/\s+/g, "_");
+    out[field] = value;
+  }
+  return out;
+}
+function editTextToHcPatchValue(key, text, original) {
+  const trimmed = String(text || "").trim();
+  if (key === "motivoConsulta" || key === "padecimientoActual" || key === "signosVitalesIngreso") {
+    return trimmed;
+  }
+  if (key === "identificacion") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : {};
+    return filterIdentificacionForHcImport(
+      Object.assign(base, parseLabeledLines(trimmed, IDENT_LABELS))
+    );
+  }
+  if (key === "ahf") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : { conditions: [], customConditions: [], entries: [] };
+    base.descripcionDetallada = trimmed;
+    return base;
+  }
+  if (key === "app") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : { conditions: [], customConditions: [], entries: [] };
+    base.descripcionDetallada = trimmed;
+    return base;
+  }
+  if (key === "apnp") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : {};
+    return Object.assign(base, parseLabeledLines(trimmed, APNP_LABELS));
+  }
+  if (!trimmed) return original;
+  try {
+    return JSON.parse(trimmed);
+  } catch (_e) {
+    return trimmed;
+  }
+}
+
+// lib/drive-import/format-drive-import-preview.mjs
+function summarizeHcValue(value) {
+  if (value == null) return "vac\xEDo";
+  if (typeof value === "string") {
+    const t = value.trim();
+    if (!t) return "vac\xEDo";
+    if (t.length <= 72) return '"' + t.replace(/\s+/g, " ") + '"';
+    return t.slice(0, 70).replace(/\s+/g, " ") + "\u2026 (" + t.length + " caracteres)";
+  }
+  if (Array.isArray(value)) {
+    return value.length + " elemento" + (value.length === 1 ? "" : "s");
+  }
+  if (typeof value === "object") {
+    const parts = [];
+    const desc = value.descripcionDetallada || value.descripcion;
+    if (desc && String(desc).trim()) {
+      const d = String(desc).trim();
+      parts.push(
+        d.length <= 60 ? d : d.slice(0, 58).replace(/\s+/g, " ") + "\u2026 (" + d.length + " car.)"
+      );
+    }
+    const conds = value.conditions || value.entries;
+    if (Array.isArray(conds) && conds.length) {
+      parts.push(conds.length + " condici\xF3n" + (conds.length === 1 ? "" : "es"));
+    }
+    if (value.tabaquismo || value.alcoholismo) {
+      parts.push("h\xE1bitos");
+    }
+    return parts.length ? parts.join(" \xB7 ") : "bloque estructurado";
+  }
+  return "contenido";
+}
+function formatEvDate(iso) {
+  if (!iso) return "sin fecha";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "sin fecha";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return dd + "/" + mm + "/" + yy;
+}
+function clipLine(text, max) {
+  const t = String(text || "").trim().replace(/\s+/g, " ");
+  if (!t) return "(vac\xEDa)";
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1) + "\u2026";
+}
+function summarizeLabPanels(resLabs) {
+  const panels = [];
+  (resLabs || []).forEach(function(chunk) {
+    const first = String(chunk || "").split("\n")[0].trim();
+    const tok = first.split(/\s+/)[0].replace(":", "");
+    if (tok && panels.indexOf(tok) === -1) panels.push(tok);
+  });
+  return panels.length ? panels.join(", ") : "sin paneles";
+}
+function formatDriveImportPreview(parsed, opts) {
+  opts = opts || {};
+  const mode = opts.applyMode || "fill";
+  const lines = [];
+  lines.push("Vista previa de importaci\xF3n");
+  lines.push("");
+  if (parsed.header && (parsed.header.nombre || parsed.header.registro)) {
+    lines.push("Paciente en documento");
+    const bits = [];
+    if (parsed.header.nombre) bits.push(parsed.header.nombre);
+    if (parsed.header.registro) bits.push("Reg. " + parsed.header.registro);
+    if (parsed.header.edad) bits.push(parsed.header.edad);
+    if (parsed.header.cama) bits.push("Cama " + parsed.header.cama);
+    if (parsed.header.sexo) bits.push(parsed.header.sexo);
+    lines.push("  " + bits.join(" \xB7 "));
+    lines.push("");
+  }
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  lines.push("Historia cl\xEDnica");
+  if (mode === "eventos") {
+    lines.push("  Omitida (modo solo eventualidades)");
+  } else if (!hcKeys.length) {
+    lines.push("  Sin secciones detectadas en el pegado");
+  } else {
+    const modeLabel = mode === "replace" ? "Reemplazar\xE1 secciones presentes en el documento" : "Completar\xE1 solo campos vac\xEDos en HC";
+    lines.push("  " + modeLabel);
+    hcKeys.forEach(function(key) {
+      const label = HC_SECTION_LABELS[key] || key;
+      lines.push("  \u2022 " + label + ": " + summarizeHcValue(parsed.hcPatch[key]));
+    });
+  }
+  lines.push("");
+  const allEv = parsed.eventualidades.entries || [];
+  const evFiltered = filterNewEventualidades(opts.existingEventualidades || [], allEv);
+  const evNew = evFiltered.toAdd || [];
+  const evSkipped = parsed.eventualidades.skippedEstimate ?? evFiltered.skipped ?? 0;
+  lines.push("Eventualidades");
+  if (!allEv.length) {
+    lines.push("  Ninguna detectada");
+  } else {
+    lines.push(
+      "  " + evNew.length + " nueva" + (evNew.length === 1 ? "" : "s") + (evSkipped ? " \xB7 " + evSkipped + " duplicada" + (evSkipped === 1 ? "" : "s") + " omitida" + (evSkipped === 1 ? "" : "s") : "")
+    );
+    const show = evNew.slice(0, 12);
+    show.forEach(function(entry, idx) {
+      const date = formatEvDate(entry.at);
+      const firstLine = clipLine(String(entry.text || "").split("\n")[0], 64);
+      lines.push("  " + (idx + 1) + ". " + date + " \u2014 " + firstLine);
+    });
+    if (evNew.length > show.length) {
+      lines.push("  \u2026 y " + (evNew.length - show.length) + " m\xE1s");
+    }
+    if (evSkipped) {
+      lines.push("  (" + evSkipped + " ya en expediente, no se repetir\xE1n)");
+    }
+  }
+  lines.push("");
+  const labAll = parsed.laboratorios.allSets || parsed.laboratorios.sets || [];
+  const labNew = parsed.laboratorios.sets || [];
+  const labSkipped = parsed.laboratorios.skippedEstimate || 0;
+  lines.push("Laboratorios");
+  if (!labAll.length) {
+    lines.push("  Ning\xFAn bloque con fecha detectado");
+  } else {
+    lines.push(
+      "  " + labNew.length + " fecha" + (labNew.length === 1 ? "" : "s") + " a agregar al historial" + (labSkipped ? " \xB7 " + labSkipped + " duplicada" + (labSkipped === 1 ? "" : "s") + " omitida" + (labSkipped === 1 ? "" : "s") : "")
+    );
+    labNew.slice(0, 10).forEach(function(set, idx) {
+      lines.push(
+        "  " + (idx + 1) + ". " + (set.fecha || "?") + " \u2014 " + summarizeLabPanels(set.resLabs)
+      );
+    });
+    if (labNew.length > 10) {
+      lines.push("  \u2026 y " + (labNew.length - 10) + " fechas m\xE1s");
+    }
+  }
+  lines.push("");
+  if (parsed.warnings && parsed.warnings.length) {
+    lines.push("Advertencias");
+    parsed.warnings.forEach(function(w) {
+      lines.push("  \u2022 " + w);
+    });
+  }
+  return lines.join("\n");
+}
+
+// lib/drive-import/parse-drive-document.mjs
+function parseDriveDocument(rawText, opts) {
+  opts = opts || {};
+  const split = splitDocumentSections(rawText);
+  const pipe = parsePipeHeader(split.headerLines);
+  const ficha = parseFichaIdentificacion(split.sections.ficha || "");
+  const header = mergeHeader(pipe, ficha);
+  const doc = { sections: split.sections, headerLines: split.headerLines };
+  let hcPatch = mapUniversalHc(doc) || {};
+  const sexo = hcPatch._sexo;
+  if (sexo) delete hcPatch._sexo;
+  if (sexo && !header.sexo) header.sexo = sexo;
+  const documentYear = inferDocumentYearFromText(rawText);
+  let evBlocks = split.eventualidadesBlocks;
+  const hasHc = hasDriveHcSections(split.sections);
+  if (!evBlocks.length && !hasHc) {
+    const trimmed = String(rawText || "").trim();
+    if (trimmed) evBlocks = [trimmed];
+  }
+  const { entries, warnings: evWarn } = mapSectionsToEventualidades({
+    eventualidadesBlocks: evBlocks,
+    referenceYear: documentYear,
+    documentYear
+  });
+  const { skipped: evSkipped } = filterNewEventualidades(opts.existingEventualidades || [], entries);
+  const labBody = extractLaboratoriosBody(rawText, split.sections.laboratorios || "");
+  const labParsed = parseDriveLaboratorios(labBody, { documentYear });
+  const labFiltered = filterNewDriveLabSets(opts.existingLabHistory || [], labParsed.sets);
+  const warnings = split.warnings.slice();
+  if (!hasHc && !split.eventualidadesBlocks.length && evBlocks.length === 1 && evBlocks[0] === String(rawText || "").trim()) {
+    warnings.push("Texto interpretado como fragmento de eventualidades (sin encabezados de secci\xF3n).");
+  }
+  if (!split.eventualidadesBlocks.length && !evBlocks.length) {
+    warnings.push("No se encontr\xF3 secci\xF3n EVENTUALIDADES.");
+  }
+  warnings.push(...evWarn);
+  warnings.push(...labParsed.warnings);
+  if (labBody && !labParsed.sets.length) {
+    warnings.push("Secci\xF3n LABORATORIOS sin bloques de fecha reconocibles.");
+  }
+  const result = {
+    header,
+    driveSections: Object.assign({}, split.sections),
+    hcPatch,
+    eventualidades: {
+      entries,
+      skippedEstimate: evSkipped
+    },
+    laboratorios: {
+      sets: labFiltered.sets,
+      allSets: labParsed.sets,
+      skippedEstimate: labFiltered.skipped
+    },
+    warnings
+  };
+  result.previewText = formatDriveImportPreview(result, {
+    applyMode: opts.applyMode,
+    existingEventualidades: opts.existingEventualidades
+  });
+  return result;
+}
+
+// public/js/features/drive-import-apply.mjs
+async function applyDriveImport(parsed, options) {
+  return applyDriveImportInner(parsed, options);
+}
+async function applyDriveImportInner(parsed, options) {
+  const mode = options.mode || "fill";
+  let patient = options.activePatient;
+  let lanSyncDeferred = false;
+  if (options.createNew) {
+    const h = parsed.header || {};
+    const id = generatePatientId();
+    patient = {
+      id,
+      nombre: ensureUniquePatientName(h.nombre || "PACIENTE SIN NOMBRE"),
+      edad: h.edad || "",
+      sexo: h.sexo === "F" ? "F" : "M",
+      cama: h.cama || "",
+      registro: h.registro || "",
+      area: "",
+      servicio: "",
+      cuarto: "",
+      fromLab: false
+    };
+    applyDefaultsToNewPatient(patient);
+    patients.unshift(patient);
+    selectPatient(id);
+  }
+  if (!patient) {
+    return { ok: false, error: "no-patient" };
+  }
+  let hcOk = true;
+  if (mode !== "eventos") {
+    const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
+      fromReview: !!options.fromReview
+    });
+    hcOk = hcRes.ok;
+    if (hcRes.lanDeferred) lanSyncDeferred = true;
+    if (!hcOk) return { ok: false, error: "hc-conflict" };
+  }
+  const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
+  if (evRes.lanDeferred) lanSyncDeferred = true;
+  invalidateEventualidadesPanel();
+  const evMount = document.getElementById("exp-pane-eventualidades");
+  if (evMount && evRes.added) {
+    renderEventualidadesPanel(evMount);
+  }
+  let labRes = { added: 0, skipped: 0 };
+  const labSets = parsed.laboratorios && parsed.laboratorios.sets ? parsed.laboratorios.sets : [];
+  if (labSets.length) {
+    labRes = await applyDriveImportLabSets(patient, labSets);
+  }
+  await saveState({ immediate: true });
+  const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function(k) {
+    return !String(k).startsWith("_");
+  });
+  let navigateTo = mode === "eventos" || !hcKeys.length ? "eventualidades" : "historia";
+  if (labRes.added && navigateTo === "eventualidades" && mode === "eventos") {
+    navigateTo = "lab";
+  }
+  return {
+    ok: true,
+    navigateTo,
+    evAdded: evRes.added,
+    evSkipped: evRes.skipped,
+    labAdded: labRes.added,
+    labSkipped: labRes.skipped,
+    patientId: patient.id,
+    lanSyncDeferred
+  };
+}
+
+// lib/drive-import/drive-hc-sections.mjs
+var DRIVE_HC_REVIEW_ORDER = [
+  { sectionKey: "pendientes", label: "Pendientes" },
+  { sectionKey: "historiaClinica", label: "Historia cl\xEDnica" },
+  { sectionKey: "motivoConsulta", label: "Motivo de consulta" },
+  { sectionKey: "signosVitales", label: "Signos vitales de ingreso" },
+  { sectionKey: "ficha", label: "Ficha de identificaci\xF3n" },
+  { sectionKey: "ahf", label: "Antecedentes heredofamiliares" },
+  { sectionKey: "apnp", label: "Antecedentes personales no patol\xF3gicos" },
+  { sectionKey: "app", label: "Antecedentes personales patol\xF3gicos" },
+  { sectionKey: "peea", label: "Padecimiento actual / PEEA" }
+];
+function listDriveHcReviewSections(sections) {
+  const src = sections || {};
+  const out = [];
+  for (const spec of DRIVE_HC_REVIEW_ORDER) {
+    const text = String(src[spec.sectionKey] || "").trim();
+    if (!text) continue;
+    out.push({ sectionKey: spec.sectionKey, label: spec.label, text });
+  }
+  return out;
+}
+
+// lib/drive-import/drive-import-review.mjs
+function summarizeLabPanels2(resLabs) {
+  const panels = [];
+  (resLabs || []).forEach(function(chunk) {
+    const first = String(chunk || "").split("\n")[0].trim();
+    const tok = first.split(/\s+/)[0].replace(":", "");
+    if (tok && panels.indexOf(tok) === -1) panels.push(tok);
+  });
+  return panels.length ? panels.join(", ") : "sin paneles";
+}
+function suggestionsForSection(sectionKey, text) {
+  return buildHcStructuredSuggestions(sectionKey, String(text || "").trim());
+}
+function buildDriveImportReviewSteps(parsed, opts) {
+  opts = opts || {};
+  const mode = opts.applyMode || "fill";
+  const steps = [];
+  if (opts.createNew && parsed.header && (parsed.header.nombre || parsed.header.registro)) {
+    steps.push({
+      kind: "header",
+      label: "Datos del paciente (nuevo)",
+      include: true,
+      header: Object.assign({}, parsed.header)
+    });
+  }
+  if (mode !== "eventos") {
+    const driveRows = listDriveHcReviewSections(parsed.driveSections || {});
+    if (driveRows.length) {
+      driveRows.forEach(function(row) {
+        const editText = row.sectionKey === "ficha" ? filterFichaDriveText(row.text) : row.text;
+        steps.push({
+          kind: "hc",
+          driveSectionKey: row.sectionKey,
+          label: row.label,
+          include: true,
+          editText,
+          structuredSuggestions: suggestionsForSection(row.sectionKey, row.text)
+        });
+      });
+    } else {
+      Object.keys(parsed.hcPatch || {}).filter(function(key) {
+        return !String(key).startsWith("_");
+      }).forEach(function(key) {
+        const value = parsed.hcPatch[key];
+        if (value == null) return;
+        steps.push({
+          kind: "hc",
+          key,
+          label: HC_SECTION_LABELS[key] || key,
+          include: true,
+          editText: hcPatchValueToEditText(key, value),
+          originalValue: value,
+          structuredSuggestions: suggestionsForSection(key, hcPatchValueToEditText(key, value))
+        });
+      });
+    }
+  }
+  const allEv = parsed.eventualidades.entries || [];
+  const evFiltered = filterNewEventualidades(opts.existingEventualidades || [], allEv);
+  const evNew = evFiltered.toAdd || [];
+  if (evNew.length) {
+    steps.push({
+      kind: "eventos",
+      label: "Eventualidades (" + evNew.length + " nueva" + (evNew.length === 1 ? "" : "s") + ")",
+      entries: evNew.map(function(entry) {
+        return { at: entry.at, text: entry.text, include: true };
+      })
+    });
+  }
+  const allLabSets = (parsed.laboratorios.allSets && parsed.laboratorios.allSets.length ? parsed.laboratorios.allSets : parsed.laboratorios.sets) || [];
+  const existingLabs = opts.existingLabHistory || [];
+  if (allLabSets.length) {
+    let dupCount = 0;
+    const sets = allLabSets.map(function(set) {
+      const isDuplicate = existingLabs.some(function(ex) {
+        return isDuplicateDriveLabSet(ex, set);
+      });
+      if (isDuplicate) dupCount += 1;
+      const panels = summarizeLabPanels2(set.resLabs);
+      return {
+        fecha: set.fecha || "",
+        hora: set.hora || "",
+        resLabs: set.resLabs || [],
+        sourceText: set.sourceText,
+        bhExtras: set.bhExtras,
+        include: !isDuplicate,
+        isDuplicate,
+        summary: (set.fecha || "?") + " \u2014 " + panels
+      };
+    });
+    const newCount = sets.length - dupCount;
+    let label = "Laboratorios (" + sets.length + " fecha" + (sets.length === 1 ? "" : "s") + ")";
+    if (dupCount && newCount) {
+      label += " \xB7 " + newCount + " nueva" + (newCount === 1 ? "" : "s") + ", " + dupCount + " en historial";
+    } else if (dupCount && !newCount) {
+      label += " \xB7 todas en historial";
+    }
+    steps.push({
+      kind: "labs",
+      label,
+      sets
+    });
+  }
+  return steps;
+}
+function patchReviewStep(step, patch) {
+  if (step.kind === "hc") {
+    if (patch.include != null) step.include = !!patch.include;
+    if (patch.editText != null) step.editText = patch.editText;
+    if (patch.structuredSuggestions && step.structuredSuggestions) {
+      patch.structuredSuggestions.forEach(function(row, idx) {
+        if (!step.structuredSuggestions[idx]) return;
+        if (row.include != null) step.structuredSuggestions[idx].include = !!row.include;
+      });
+    }
+    return;
+  }
+  if (step.kind === "header" && patch.include != null) {
+    step.include = !!patch.include;
+    return;
+  }
+  if (step.kind === "eventos" && patch.entries) {
+    patch.entries.forEach(function(row, idx) {
+      if (!step.entries[idx]) return;
+      if (row.include != null) step.entries[idx].include = !!row.include;
+      if (row.text != null) step.entries[idx].text = row.text;
+    });
+    return;
+  }
+  if (step.kind === "labs" && patch.sets) {
+    patch.sets.forEach(function(row, idx) {
+      if (!step.sets[idx]) return;
+      if (row.include != null) step.sets[idx].include = !!row.include;
+    });
+  }
+}
+function applyReviewStepsToParsed(parsed, steps, opts) {
+  opts = opts || {};
+  const out = Object.assign({}, parsed, {
+    driveSections: Object.assign({}, parsed.driveSections || {}),
+    hcPatch: Object.assign({}, parsed.hcPatch || {}),
+    eventualidades: {
+      entries: (parsed.eventualidades.entries || []).slice(),
+      skippedEstimate: parsed.eventualidades.skippedEstimate
+    },
+    laboratorios: Object.assign({}, parsed.laboratorios, {
+      sets: (parsed.laboratorios.sets || []).slice()
+    }),
+    header: Object.assign({}, parsed.header || {})
+  });
+  steps.forEach(function(step) {
+    if (step.kind === "header") {
+      if (opts.createNew && step.include) out.header = Object.assign({}, step.header);
+      return;
+    }
+    if (step.kind === "hc") {
+      if (step.driveSectionKey) {
+        if (step.include) {
+          const raw = String(step.editText || "").trim();
+          out.driveSections[step.driveSectionKey] = step.driveSectionKey === "ficha" ? filterFichaDriveText(raw) : raw;
+        } else {
+          delete out.driveSections[step.driveSectionKey];
+        }
+        return;
+      }
+      if (!step.include) {
+        if (step.key) delete out.hcPatch[step.key];
+        return;
+      }
+      if (step.key) {
+        out.hcPatch[step.key] = editTextToHcPatchValue(step.key, step.editText, step.originalValue);
+      }
+      return;
+    }
+    if (step.kind === "eventos") {
+      out.eventualidades.entries = step.entries.filter(function(e) {
+        return e.include && String(e.text || "").trim();
+      }).map(function(e) {
+        return { at: e.at, text: String(e.text).trim() };
+      });
+      return;
+    }
+    if (step.kind === "labs") {
+      out.laboratorios.sets = step.sets.filter(function(s) {
+        return s.include && s.resLabs && s.resLabs.length;
+      }).map(function(s) {
+        return {
+          fecha: s.fecha,
+          hora: s.hora,
+          resLabs: s.resLabs,
+          sourceText: s.sourceText,
+          bhExtras: s.bhExtras
+        };
+      });
+    }
+  });
+  const usedDriveSections = steps.some(function(step) {
+    return step.kind === "hc" && step.driveSectionKey;
+  });
+  if (usedDriveSections) {
+    out.hcPatch = mapUniversalHc({ sections: out.driveSections }) || {};
+    const sexo = out.hcPatch._sexo;
+    if (sexo) delete out.hcPatch._sexo;
+    if (sexo && out.header) out.header.sexo = out.header.sexo || sexo;
+  }
+  const acceptedSuggestions = [];
+  steps.forEach(function(step) {
+    if (step.kind !== "hc" || !step.include || !step.structuredSuggestions) return;
+    step.structuredSuggestions.forEach(function(s) {
+      if (s.include) acceptedSuggestions.push(s);
+    });
+  });
+  if (acceptedSuggestions.length) {
+    out.hcPatch = applyStructuredSuggestionsToHcPatch(out.hcPatch || {}, acceptedSuggestions);
+  }
+  return out;
+}
+function reviewStepHint(step) {
+  if (step.kind === "hc") {
+    if (step.driveSectionKey === "ficha" || step.key === "identificacion") {
+      return "Registro, diagn\xF3sticos y otros datos del expediente se omiten; ya est\xE1n en Datos del paciente. Edita el resto si hace falta.";
+    }
+    if (step.structuredSuggestions && step.structuredSuggestions.length) {
+      return "Marca los campos estructurados que quieras completar (casillas, medicamentos, alergias, etc.). El texto libre se importa abajo.";
+    }
+    return "Edita el texto si hace falta. Desmarca \xABIncluir\xBB para omitir esta secci\xF3n en la importaci\xF3n.";
+  }
+  if (step.kind === "header") {
+    return "Estos datos se usar\xE1n al crear el paciente nuevo.";
+  }
+  if (step.kind === "eventos") {
+    return "Marca o desmarca cada nota. Puedes corregir el texto antes de importar.";
+  }
+  if (step.kind === "labs") {
+    return "Marca las fechas que quieras agregar. Las que ya est\xE1n en el historial vienen desmarcadas.";
+  }
+  return "";
+}
+
+// public/js/features/drive-import-modal.mjs
+var rt4 = {
+  getActiveId() {
+    return null;
+  },
+  getActivePatient() {
+    return null;
+  },
+  showToast(_msg, _type) {
+  },
+  pushUndoSnapshot(_label) {
+  },
+  switchInnerTab(_tab) {
+  },
+  switchAppTab(_tab) {
+  },
+  addAuditEntry(_action, _result, _count, _detail) {
+  }
+};
+var _debounceId = null;
+var _autoReviewPending = false;
+var _importBusy = false;
+var _modalStep = "paste";
+var _reviewSteps = [];
+var _reviewIndex = 0;
+function registerDriveImportRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt4, ctx);
+}
+function getBackdrop() {
+  return document.getElementById("drive-import-backdrop");
+}
+function getTextarea() {
+  return (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-input")
+  );
+}
+function getParseHintEl() {
+  return document.getElementById("drive-import-parse-hint");
+}
+function getModalEl() {
+  return document.querySelector(".drive-import-modal");
+}
+function getWarningEl() {
+  return document.getElementById("drive-import-warning");
+}
+function getApplyMode() {
+  const checked = document.querySelector('input[name="drive-import-mode"]:checked');
+  const v = checked ? String(checked.value) : "fill";
+  if (v === "replace" || v === "eventos") return v;
+  return "fill";
+}
+function getParsed() {
+  const ta = getTextarea();
+  const patient = rt4.getActivePatient();
+  const existing = patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [];
+  const existingLabs = patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [];
+  return parseDriveDocument(ta ? ta.value : "", {
+    existingEventualidades: existing,
+    existingLabHistory: existingLabs,
+    applyMode: getApplyMode()
+  });
+}
+function hasImportableContent(parsed, mode) {
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  const evTotal = (parsed.eventualidades.entries || []).length;
+  const evSkipped = parsed.eventualidades.skippedEstimate || 0;
+  const evWillAdd = Math.max(0, evTotal - evSkipped);
+  const labsWillAdd = (parsed.laboratorios.sets || []).length;
+  const willTouchHc = mode !== "eventos" && hcKeys.length > 0;
+  return willTouchHc || evWillAdd > 0 || labsWillAdd > 0;
+}
+function updateDocSummary() {
+  const ta = getTextarea();
+  const el = document.getElementById("drive-import-doc-summary");
+  if (!el || !ta) return;
+  const text = String(ta.value || "");
+  if (!text.trim()) {
+    el.textContent = "";
+    return;
+  }
+  const lines = text.split(/\r?\n/).length;
+  el.textContent = "Documento pegado \xB7 " + lines + " l\xEDnea" + (lines === 1 ? "" : "s") + " \xB7 " + text.length + " caracteres";
+}
+function refreshPreview() {
+  const parseHint = getParseHintEl();
+  const warn = getWarningEl();
+  const confirmBtn = document.getElementById("drive-import-confirm");
+  const fastBtn = document.getElementById("drive-import-apply-fast");
+  const ta = getTextarea();
+  if (!ta || !String(ta.value || "").trim()) {
+    if (parseHint) {
+      parseHint.hidden = true;
+      parseHint.textContent = "";
+    }
+    if (warn) warn.hidden = true;
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (fastBtn) fastBtn.disabled = true;
+    updateDocSummary();
+    return;
+  }
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (err) {
+    if (parseHint) {
+      parseHint.hidden = false;
+      parseHint.textContent = "Error al analizar: " + (err && err.message ? err.message : String(err));
+    }
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (fastBtn) fastBtn.disabled = true;
+    updateDocSummary();
+    return;
+  }
+  const mode = getApplyMode();
+  const canImport = hasImportableContent(parsed, mode);
+  if (parseHint) {
+    if (canImport) {
+      parseHint.hidden = true;
+      parseHint.textContent = "";
+    } else {
+      parseHint.hidden = false;
+      parseHint.textContent = "No se detect\xF3 contenido importable con el modo seleccionado.";
+    }
+  }
+  const patient = rt4.getActivePatient();
+  if (warn && patient && parsed.header && parsed.header.registro) {
+    const mismatch = String(parsed.header.registro).trim() && String(patient.registro || "").trim() && String(parsed.header.registro).trim() !== String(patient.registro).trim();
+    warn.hidden = !mismatch;
+    warn.textContent = mismatch ? "El registro del documento (" + parsed.header.registro + ") no coincide con el paciente activo (" + patient.registro + ")." : "";
+  } else if (warn) {
+    warn.hidden = true;
+  }
+  if (confirmBtn) confirmBtn.disabled = !canImport;
+  if (fastBtn) fastBtn.disabled = !canImport;
+  updateDocSummary();
+}
+function setReviewImportBusy(busy) {
+  _importBusy = busy;
+  const nextBtn = document.getElementById("drive-import-review-next");
+  const fastBtn = document.getElementById("drive-import-apply-fast");
+  const confirmBtn = document.getElementById("drive-import-confirm");
+  if (nextBtn) {
+    nextBtn.disabled = busy;
+    if (busy) nextBtn.textContent = "Importando\u2026";
+    else if (_modalStep === "review") renderReviewStep();
+  }
+  if (fastBtn) fastBtn.disabled = busy;
+  if (confirmBtn && busy) confirmBtn.disabled = true;
+  if (!busy) refreshPreview();
+}
+function confirmDriveImportChoice(message) {
+  const bd = getBackdrop();
+  const wasOpen = !!(bd && bd.classList.contains("open"));
+  if (bd && wasOpen) {
+    bd.classList.remove("open");
+    bd.setAttribute("aria-hidden", "true");
+  }
+  let ok = false;
+  try {
+    ok = confirm(message);
+  } finally {
+    if (bd && wasOpen) {
+      bd.classList.add("open");
+      bd.setAttribute("aria-hidden", "false");
+    }
+  }
+  return ok;
+}
+function hasApprovedReviewContent(parsed) {
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  const evCount = (parsed.eventualidades.entries || []).length;
+  const labCount = (parsed.laboratorios.sets || []).length;
+  return hcKeys.length > 0 || evCount > 0 || labCount > 0;
+}
+function getReviewBuildOpts(parsed) {
+  const patient = rt4.getActivePatient();
+  return {
+    applyMode: getApplyMode(),
+    existingEventualidades: patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [],
+    existingLabHistory: patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [],
+    createNew: !patient
+  };
+}
+function tryAutoStartReview() {
+  if (_modalStep !== "paste" || !_autoReviewPending) return;
+  _autoReviewPending = false;
+  const ta = getTextarea();
+  if (!ta || !String(ta.value || "").trim()) return;
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (_err) {
+    return;
+  }
+  const mode = getApplyMode();
+  if (!hasImportableContent(parsed, mode)) return;
+  const patient = rt4.getActivePatient();
+  const steps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
+  if (!steps.length) return;
+  _reviewSteps = steps;
+  _reviewIndex = 0;
+  setModalStep("review");
+  renderReviewStep();
+  const editor = document.getElementById("drive-import-review-editor");
+  if (editor && !editor.hidden) editor.focus();
+}
+function onPasteInputChanged() {
+  const ta = getTextarea();
+  const hasText = !!(ta && String(ta.value || "").trim());
+  if (!hasText) {
+    _autoReviewPending = false;
+    refreshPreview();
+    return;
+  }
+  _autoReviewPending = true;
+  refreshPreview();
+  if (_debounceId) clearTimeout(_debounceId);
+  _debounceId = setTimeout(function() {
+    _debounceId = null;
+    tryAutoStartReview();
+  }, 320);
+}
+function syncConfirmLabel() {
+  const btn = document.getElementById("drive-import-confirm");
+  const modeFs = document.getElementById("drive-import-mode-fieldset");
+  const patient = rt4.getActivePatient();
+  if (modeFs) modeFs.style.display = patient ? "" : "none";
+  if (!btn || _modalStep !== "paste") return;
+  btn.textContent = "Revisar secciones\u2026";
+}
+function setModalStep(step) {
+  _modalStep = step;
+  const modal = getModalEl();
+  const pasteEl = document.getElementById("drive-import-step-paste");
+  const reviewEl = document.getElementById("drive-import-step-review");
+  const actionsPaste = document.getElementById("drive-import-actions-paste");
+  const actionsReview = document.getElementById("drive-import-actions-review");
+  const prevBtn = document.getElementById("drive-import-review-prev");
+  const title = document.getElementById("drive-import-title");
+  const hint = document.getElementById("drive-import-hint");
+  const modeFs = document.getElementById("drive-import-mode-fieldset");
+  if (modal) modal.setAttribute("data-drive-step", step);
+  if (pasteEl) pasteEl.hidden = step !== "paste";
+  if (reviewEl) reviewEl.hidden = step !== "review";
+  if (actionsPaste) actionsPaste.hidden = step !== "paste";
+  if (actionsReview) actionsReview.hidden = step !== "review";
+  if (modeFs) modeFs.hidden = step === "review";
+  if (title) {
+    title.textContent = step === "review" ? "Revisar importaci\xF3n" : "Importar desde Drive";
+  }
+  if (hint) {
+    hint.textContent = step === "review" ? "Confirma o edita cada secci\xF3n antes de importar." : "Pega el documento copiado desde Google Docs. Revisar\xE1s cada secci\xF3n antes de importar.";
+  }
+  if (step === "review") updateDocSummary();
+  syncConfirmLabel();
+}
+function escapeHtml(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function formatEvDate2(iso) {
+  if (!iso) return "sin fecha";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "sin fecha";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return dd + "/" + mm + "/" + yy;
+}
+function syncCurrentReviewStepFromUi() {
+  const step = _reviewSteps[_reviewIndex];
+  if (!step) return;
+  const includeEl = (
+    /** @type {HTMLInputElement | null} */
+    document.getElementById("drive-import-review-include")
+  );
+  const editor = (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-review-editor")
+  );
+  if (step.kind === "hc") {
+    patchReviewStep(step, {
+      include: includeEl ? includeEl.checked : true,
+      editText: editor ? editor.value : step.editText,
+      structuredSuggestions: readStructuredSuggestionsFromUi()
+    });
+    return;
+  }
+  if (step.kind === "header") {
+    patchReviewStep(step, { include: includeEl ? includeEl.checked : true });
+    return;
+  }
+  if (step.kind === "eventos") {
+    const rows = document.querySelectorAll("[data-drive-ev-idx]");
+    const entries = [];
+    rows.forEach(function(row) {
+      const idx = Number(row.getAttribute("data-drive-ev-idx"));
+      const cb = row.querySelector('input[type="checkbox"]');
+      const ta = row.querySelector("textarea");
+      entries[idx] = {
+        include: cb ? cb.checked : true,
+        text: ta ? ta.value : ""
+      };
+    });
+    patchReviewStep(step, { entries });
+    return;
+  }
+  if (step.kind === "labs") {
+    const rows = document.querySelectorAll("[data-drive-lab-idx]");
+    const sets = [];
+    rows.forEach(function(row) {
+      const idx = Number(row.getAttribute("data-drive-lab-idx"));
+      const cb = row.querySelector('input[type="checkbox"]');
+      sets[idx] = { include: cb ? cb.checked : true };
+    });
+    patchReviewStep(step, { sets });
+  }
+}
+function renderReviewDots() {
+  const dots = document.getElementById("drive-import-review-dots");
+  if (!dots) return;
+  dots.innerHTML = "";
+  _reviewSteps.forEach(function(step, idx) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "drive-import-review-dot" + (idx === _reviewIndex ? " is-active" : "");
+    btn.title = step.label;
+    btn.setAttribute("aria-label", step.label + " (" + (idx + 1) + " de " + _reviewSteps.length + ")");
+    btn.setAttribute("aria-current", idx === _reviewIndex ? "step" : "false");
+    btn.addEventListener("click", function() {
+      syncCurrentReviewStepFromUi();
+      _reviewIndex = idx;
+      renderReviewStep();
+    });
+    dots.appendChild(btn);
+  });
+}
+function readStructuredSuggestionsFromUi() {
+  const rows = [];
+  document.querySelectorAll("[data-drive-struct-idx]").forEach(function(row) {
+    const idx = Number(row.getAttribute("data-drive-struct-idx"));
+    const cb = row.querySelector('input[type="checkbox"]');
+    rows[idx] = { include: cb ? cb.checked : true };
+  });
+  return rows;
+}
+function renderStructuredSuggestions(step) {
+  const host = document.getElementById("drive-import-review-structured");
+  if (!host) return;
+  const suggestions = step.structuredSuggestions || [];
+  if (!suggestions.length) {
+    host.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+  host.hidden = false;
+  let html = '<div class="drive-import-structured-head">Campos detectados \u2014 marcar para agregar a casillas estructuradas</div><div class="drive-import-structured-list">';
+  suggestions.forEach(function(s, idx) {
+    html += '<label class="drive-import-structured-row" data-drive-struct-idx="' + idx + '"><input type="checkbox"' + (s.include !== false ? " checked" : "") + ' aria-label="' + escapeHtml(s.label) + '" /><span class="drive-import-structured-label">' + escapeHtml(s.label) + "</span></label>";
+  });
+  html += "</div>";
+  host.innerHTML = html;
+}
+function renderReviewStep() {
+  const step = _reviewSteps[_reviewIndex];
+  const progress = document.getElementById("drive-import-review-progress");
+  const titleEl = document.getElementById("drive-import-review-title");
+  const hintEl = document.getElementById("drive-import-review-hint");
+  const includeWrap = document.getElementById("drive-import-review-include-wrap");
+  const includeEl = (
+    /** @type {HTMLInputElement | null} */
+    document.getElementById("drive-import-review-include")
+  );
+  const editor = (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-review-editor")
+  );
+  const listEl = document.getElementById("drive-import-review-list");
+  const nextBtn = document.getElementById("drive-import-review-next");
+  const prevBtn = document.getElementById("drive-import-review-prev");
+  if (!step) return;
+  if (progress) {
+    progress.textContent = "Secci\xF3n " + (_reviewIndex + 1) + " de " + _reviewSteps.length + " \xB7 " + step.label;
+  }
+  if (titleEl) titleEl.textContent = step.label;
+  if (hintEl) hintEl.textContent = reviewStepHint(step);
+  if (prevBtn) prevBtn.disabled = _reviewIndex <= 0;
+  if (nextBtn) {
+    nextBtn.textContent = _reviewIndex >= _reviewSteps.length - 1 ? "Importar lo aprobado" : "Siguiente secci\xF3n";
+  }
+  renderReviewDots();
+  const isList = step.kind === "eventos" || step.kind === "labs";
+  const isHeader = step.kind === "header";
+  if (includeWrap) includeWrap.hidden = isList;
+  if (editor) {
+    editor.hidden = isList || isHeader;
+    editor.style.display = isList || isHeader ? "none" : "";
+  }
+  if (listEl) listEl.hidden = !isList && !isHeader;
+  if (step.kind === "hc" && includeEl && editor) {
+    includeEl.checked = step.include;
+    editor.value = step.editText;
+    editor.readOnly = false;
+    renderStructuredSuggestions(step);
+    return;
+  }
+  if (isList || isHeader) {
+    const structHost = document.getElementById("drive-import-review-structured");
+    if (structHost) {
+      structHost.hidden = true;
+      structHost.innerHTML = "";
+    }
+  }
+  if (step.kind === "header" && includeEl && listEl) {
+    includeEl.checked = step.include;
+    const h = step.header || {};
+    const bits = [];
+    if (h.nombre) bits.push("Nombre: " + h.nombre);
+    if (h.registro) bits.push("Registro: " + h.registro);
+    if (h.edad) bits.push("Edad: " + h.edad);
+    if (h.cama) bits.push("Cama: " + h.cama);
+    if (h.sexo) bits.push("Sexo: " + h.sexo);
+    listEl.hidden = false;
+    listEl.innerHTML = '<pre class="drive-import-review-header-pre">' + escapeHtml(bits.join("\n")) + "</pre>";
+    return;
+  }
+  if (step.kind === "eventos" && listEl) {
+    listEl.hidden = false;
+    let html = "";
+    step.entries.forEach(function(entry, idx) {
+      const date = formatEvDate2(entry.at);
+      html += '<div class="drive-import-review-row" data-drive-ev-idx="' + idx + '"><label class="drive-import-review-row-check"><input type="checkbox"' + (entry.include ? " checked" : "") + ' aria-label="Incluir eventualidad ' + (idx + 1) + '" /><span class="drive-import-review-row-date">' + escapeHtml(date) + '</span></label><textarea class="drive-import-review-row-text" rows="3" spellcheck="true">' + escapeHtml(entry.text) + "</textarea></div>";
+    });
+    listEl.innerHTML = html;
+    return;
+  }
+  if (step.kind === "labs" && listEl) {
+    listEl.hidden = false;
+    let html = '<div class="drive-import-labs-table-wrap"><table class="drive-import-labs-table"><thead><tr><th scope="col" class="drive-import-labs-col-check">Incluir</th><th scope="col">Fecha</th><th scope="col">Paneles</th><th scope="col">Estado</th></tr></thead><tbody>';
+    step.sets.forEach(function(set, idx) {
+      const panels = escapeHtml(String(set.summary || "").replace(/^[^—]+—\s*/, ""));
+      const statusClass = set.isDuplicate ? "drive-import-lab-status drive-import-lab-status--dup" : "drive-import-lab-status drive-import-lab-status--new";
+      const statusText = set.isDuplicate ? "En historial" : "Nueva";
+      html += '<tr class="drive-import-labs-row' + (set.isDuplicate ? " is-duplicate" : "") + '" data-drive-lab-idx="' + idx + '"><td class="drive-import-labs-col-check"><input type="checkbox"' + (set.include ? " checked" : "") + ' aria-label="Incluir laboratorio ' + escapeHtml(set.fecha || "") + '" /></td><td class="drive-import-labs-fecha">' + escapeHtml(set.fecha || "") + '</td><td class="drive-import-labs-panels">' + panels + '</td><td><span class="' + statusClass + '">' + statusText + "</span></td></tr>";
+    });
+    html += "</tbody></table></div>";
+    listEl.innerHTML = html;
+  }
+}
+function driveImportBackToPaste() {
+  syncCurrentReviewStepFromUi();
+  _autoReviewPending = false;
+  setModalStep("paste");
+  const ta = getTextarea();
+  if (ta) {
+    ta.focus();
+    try {
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    } catch (_e) {
+    }
+  }
+}
+function driveImportReviewPrev() {
+  if (_reviewIndex <= 0) return;
+  syncCurrentReviewStepFromUi();
+  _reviewIndex -= 1;
+  renderReviewStep();
+}
+async function driveImportReviewNext() {
+  if (_importBusy) return;
+  try {
+    syncCurrentReviewStepFromUi();
+    if (_reviewIndex >= _reviewSteps.length - 1) {
+      await finishReviewAndImport();
+      return;
+    }
+    _reviewIndex += 1;
+    renderReviewStep();
+  } catch (err) {
+    console.error("[drive-import] review next failed", err);
+    rt4.showToast("No se pudo completar la revisi\xF3n", "error");
+    setReviewImportBusy(false);
+  }
+}
+function startDriveImportReview() {
+  const ta = getTextarea();
+  if (!ta || !String(ta.value || "").trim()) {
+    rt4.showToast("Pega el contenido del documento", "error");
+    return;
+  }
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (_err) {
+    rt4.showToast("No se pudo analizar el texto", "error");
+    return;
+  }
+  _reviewSteps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
+  if (!_reviewSteps.length) {
+    rt4.showToast("No hay secciones para revisar en este pegado", "info");
+    return;
+  }
+  _reviewIndex = 0;
+  _autoReviewPending = false;
+  setModalStep("review");
+  renderReviewStep();
+  const editor = document.getElementById("drive-import-review-editor");
+  if (editor && !editor.hidden) editor.focus();
+}
+function openDriveImportModal() {
+  const bd = getBackdrop();
+  if (!bd) {
+    rt4.showToast("Importaci\xF3n desde Drive no disponible", "error");
+    return;
+  }
+  const ta = getTextarea();
+  if (ta) ta.value = "";
+  _reviewSteps = [];
+  _reviewIndex = 0;
+  _autoReviewPending = false;
+  _importBusy = false;
+  setModalStep("paste");
+  syncConfirmLabel();
+  refreshPreview();
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  if (ta) ta.focus();
+}
+function closeDriveImportModal() {
+  const bd = getBackdrop();
+  if (!bd) return;
+  if (_modalStep === "review") syncCurrentReviewStepFromUi();
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+  setModalStep("paste");
+  _reviewSteps = [];
+  _reviewIndex = 0;
+  _importBusy = false;
+}
+async function finishReviewAndImport() {
+  if (_importBusy) return;
+  setReviewImportBusy(true);
+  try {
+    syncCurrentReviewStepFromUi();
+    let parsed;
+    try {
+      parsed = getParsed();
+    } catch (_err) {
+      rt4.showToast("No se pudo analizar el texto", "error");
+      return;
+    }
+    parsed = applyReviewStepsToParsed(parsed, _reviewSteps, { createNew: !rt4.getActivePatient() });
+    if (!hasApprovedReviewContent(parsed)) {
+      rt4.showToast("No hay secciones marcadas para importar", "info");
+      return;
+    }
+    await Promise.race([
+      runDriveImport(parsed, { fromReview: true }),
+      new Promise(function(_, reject) {
+        setTimeout(function() {
+          reject(new Error("import-timeout"));
+        }, 12e3);
+      })
+    ]);
+  } catch (err) {
+    console.error("[drive-import] import failed", err);
+    if (err && err.message === "import-timeout") {
+      rt4.showToast("La importaci\xF3n tard\xF3 demasiado. Revisa si los datos se guardaron.", "error");
+    } else {
+      rt4.showToast("Error al importar desde Drive", "error");
+    }
+  } finally {
+    setReviewImportBusy(false);
+  }
+}
+async function confirmDriveImport() {
+  if (_importBusy) return;
+  setReviewImportBusy(true);
+  try {
+    const ta = getTextarea();
+    if (!ta || !String(ta.value || "").trim()) {
+      rt4.showToast("Pega el contenido del documento", "error");
+      return;
+    }
+    let parsed;
+    try {
+      parsed = getParsed();
+    } catch (_err) {
+      rt4.showToast("No se pudo analizar el texto", "error");
+      return;
+    }
+    await runDriveImport(parsed, { fromReview: false });
+  } catch (err) {
+    console.error("[drive-import] fast import failed", err);
+    rt4.showToast("Error al importar desde Drive", "error");
+  } finally {
+    setReviewImportBusy(false);
+  }
+}
+async function runDriveImport(parsed, opts) {
+  opts = opts || {};
+  const mode = getApplyMode();
+  const patient = rt4.getActivePatient();
+  const createNew = !patient;
+  if (patient && parsed.header && parsed.header.registro && patient.registro && String(parsed.header.registro).trim() !== String(patient.registro).trim()) {
+    if (!confirmDriveImportChoice(
+      "El registro del documento (" + parsed.header.registro + ") no coincide con " + patient.registro + ". \xBFContinuar de todos modos?"
+    )) {
+      return;
+    }
+  }
+  if (!opts.fromReview && mode === "replace") {
+    if (!confirmDriveImportChoice(
+      "Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?"
+    )) {
+      return;
+    }
+  }
+  if (createNew && (!parsed.header || !parsed.header.nombre)) {
+    if (!confirmDriveImportChoice("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?")) {
+      return;
+    }
+  }
+  if (typeof rt4.pushUndoSnapshot === "function") {
+    rt4.pushUndoSnapshot("Importar desde Drive");
+  }
+  if (!opts.fromReview) {
+    parsed = Object.assign({}, parsed, {
+      hcPatch: enrichHcPatchWithStructuredSuggestions(parsed.hcPatch || {}, parsed.driveSections || {})
+    });
+  }
+  const result = await applyDriveImport(parsed, {
+    mode,
+    activePatient: patient,
+    createNew,
+    fromReview: !!opts.fromReview
+  });
+  if (!result.ok) {
+    if (result.error === "hc-conflict") {
+      rt4.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.", "error");
+    } else {
+      rt4.showToast("No se pudo aplicar la importaci\xF3n", "error");
+    }
+    return;
+  }
+  if (typeof rt4.addAuditEntry === "function") {
+    rt4.addAuditEntry(
+      "drive-import",
+      "ok",
+      result.evAdded || 0,
+      JSON.stringify({
+        mode,
+        skipped: result.evSkipped,
+        labAdded: result.labAdded,
+        labSkipped: result.labSkipped,
+        createNew,
+        reviewed: !!opts.fromReview
+      })
+    );
+  }
+  closeDriveImportModal();
+  const parts = [];
+  if (mode !== "eventos") parts.push("HC actualizada");
+  parts.push(
+    (result.evAdded || 0) + " eventualidad" + (result.evAdded === 1 ? "" : "es") + " nueva" + (result.evAdded === 1 ? "" : "s")
+  );
+  if (result.evSkipped) {
+    parts.push(
+      result.evSkipped + " duplicada" + (result.evSkipped === 1 ? "" : "s") + " omitida" + (result.evSkipped === 1 ? "" : "s")
+    );
+  }
+  if (result.labAdded) {
+    parts.push(
+      result.labAdded + " fecha" + (result.labAdded === 1 ? "" : "s") + " de laboratorio nueva" + (result.labAdded === 1 ? "" : "s")
+    );
+  }
+  if (result.labSkipped) {
+    parts.push(
+      result.labSkipped + " lab" + (result.labSkipped === 1 ? "" : "s") + " duplicado" + (result.labSkipped === 1 ? "" : "s") + " omitido" + (result.labSkipped === 1 ? "" : "s")
+    );
+  }
+  if (result.lanSyncDeferred) {
+    parts.push("sincronizaci\xF3n con la sala en segundo plano");
+  }
+  rt4.showToast(parts.join(" \xB7 "), "success");
+  if (result.navigateTo === "lab") {
+    if (typeof rt4.switchAppTab === "function") rt4.switchAppTab("lab");
+  } else {
+    if (typeof rt4.switchAppTab === "function") rt4.switchAppTab("clinico");
+    if (typeof rt4.switchInnerTab === "function") {
+      rt4.switchInnerTab(result.navigateTo || "historia", { forceRender: true });
+    }
+  }
+}
+function wireDriveImportActionButtons() {
+  const actions = [
+    ["drive-import-confirm", startDriveImportReview],
+    ["drive-import-apply-fast", confirmDriveImport],
+    ["drive-import-review-next", driveImportReviewNext],
+    ["drive-import-review-prev", driveImportReviewPrev],
+    ["drive-import-back-paste", driveImportBackToPaste]
+  ];
+  actions.forEach(function(pair) {
+    const btn = document.getElementById(pair[0]);
+    const fn = pair[1];
+    if (!btn || btn.dataset.driveImportActionWired) return;
+    btn.dataset.driveImportActionWired = "1";
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      void Promise.resolve(fn()).catch(function(err) {
+        console.error("[drive-import] action failed", pair[0], err);
+        rt4.showToast("No se pudo completar la acci\xF3n de importaci\xF3n", "error");
+        setReviewImportBusy(false);
+      });
+    });
+  });
+}
+function wireDriveImportModal() {
+  const ta = getTextarea();
+  const bd = getBackdrop();
+  wireDriveImportActionButtons();
+  if (ta && !ta.dataset.driveImportWired) {
+    ta.dataset.driveImportWired = "1";
+    ta.addEventListener("input", onPasteInputChanged);
+    ta.addEventListener("paste", function() {
+      setTimeout(onPasteInputChanged, 0);
+    });
+  }
+  document.querySelectorAll('input[name="drive-import-mode"]').forEach(function(el) {
+    if (el.dataset.driveImportWired) return;
+    el.dataset.driveImportWired = "1";
+    el.addEventListener("change", function() {
+      syncConfirmLabel();
+      refreshPreview();
+      if (_modalStep === "paste" && _autoReviewPending) {
+        if (_debounceId) clearTimeout(_debounceId);
+        _debounceId = setTimeout(function() {
+          _debounceId = null;
+          tryAutoStartReview();
+        }, 320);
+      }
+    });
+  });
+  if (bd && !bd.dataset.driveImportWired) {
+    bd.dataset.driveImportWired = "1";
+    bd.addEventListener("click", function(e) {
+      if (e.target === bd) closeDriveImportModal();
+    });
+  }
+}
+var windowHandlers18 = {
+  openDriveImportModal,
+  closeDriveImportModal,
+  confirmDriveImport,
+  startDriveImportReview,
+  driveImportBackToPaste,
+  driveImportReviewPrev,
+  driveImportReviewNext
+};
+
+// public/js/lazy-feature-routes.mjs
+var settingsHelpPromise = null;
+var platformPromise = null;
+var settingsHelpModule = null;
+var platformModule = null;
+function ensureSettingsHelpLoaded() {
+  if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
+  if (!settingsHelpPromise) {
+    settingsHelpPromise = import("/js/chunks/settings-help-OFCM23F6.js").then(function(mod) {
+      settingsHelpModule = mod;
+      return mod;
+    });
+  }
+  return settingsHelpPromise;
+}
+function ensurePlatformLoaded() {
+  if (platformModule) return Promise.resolve(platformModule);
+  if (!platformPromise) {
+    platformPromise = import("/js/chunks/platform-XI3DIN3D.js").then(function(mod) {
+      platformModule = mod;
+      return mod;
+    });
+  }
+  return platformPromise;
+}
+function patchWindowHandlers(handlers) {
+  try {
+    Object.assign(window, handlers);
+  } catch (err) {
+    console.error("[lazy-feature-routes] patchWindowHandlers", err);
+  }
+}
+function lazyWindowHandler(exportName, loader) {
+  return function lazyHandler() {
+    var args = arguments;
+    void loader().then(function(mod) {
+      var fn = mod[exportName];
+      if (typeof fn !== "function") {
+        console.error("[lazy-feature-routes] missing handler", exportName);
+        return;
+      }
+      fn.apply(null, args);
+    });
+  };
+}
+function buildLazyWindowHandlers(nameToExport, loader) {
+  var out = {};
+  for (var handlerName of Object.keys(nameToExport)) {
+    out[handlerName] = lazyWindowHandler(nameToExport[handlerName], loader);
+  }
+  return out;
+}
+var settingsHelpWindowHandlersLazy = buildLazyWindowHandlers(
+  {
+    toggleSettingsSection: "toggleSettingsSection",
+    toggleSettingsDropdown: "toggleSettingsDropdown",
+    closeSettingsDropdown: "closeSettingsDropdown",
+    expandSettingsAccordionBackupSync: "expandSettingsAccordionBackupSync",
+    syncTeamSyncHeaderButton: "syncTeamSyncHeaderButton",
+    openQuickHelp: "openQuickHelp",
+    closeQuickHelp: "closeQuickHelp",
+    onHelpSearchInput: "onHelpSearchInput",
+    onHelpSearchKeydown: "onHelpSearchKeydown",
+    onHelpListKeydown: "onHelpListKeydown",
+    closeReleaseNotes: "closeReleaseNotes",
+    startMiniTour: "startMiniTour",
+    startHelpTourMain: "startHelpTourMain",
+    togglePresentationModeFromHelp: "togglePresentationModeFromHelp",
+    exportCensoPdfFromHelp: "exportCensoPdfFromHelp",
+    guidedTourIntroChooseSala: "guidedTourIntroChooseSala",
+    guidedTourIntroChooseInterconsulta: "guidedTourIntroChooseInterconsulta",
+    guidedTourIntroSkip: "guidedTourIntroSkip",
+    skipGuidedTour: "skipGuidedTour",
+    toggleTourDockCollapsed: "toggleTourDockCollapsed",
+    onTourDockClick: "onTourDockClick",
+    guidedTourClickNext: "guidedTourClickNext",
+    guidedTourClickPrev: "guidedTourClickPrev",
+    guidedTourPause: "guidedTourPause",
+    startTourModule: "startTourModule",
+    startHelpTourInterconsulta: "startHelpTourInterconsulta",
+    resetAndStartOnboarding: "resetAndStartOnboarding",
+    insertLabTourSecondPatientExample: "insertLabTourSecondPatientExample",
+    closeLabBulkTourHintModal: "closeLabBulkTourHintModal",
+    resumeGuidedTourFromProgress: "resumeGuidedTourFromProgress",
+    startNeoCompanionTour: "startNeoCompanionTour"
+  },
+  ensureSettingsHelpLoaded
+);
+var platformHandlerNames = {
+  lockClinicalDatabaseNow: "lockClinicalDatabaseNow",
+  verifyForensicAuditChain: "verifyForensicAuditChain",
+  exportClinicalDbBackupJson: "exportClinicalDbBackupJson",
+  exportClinicalDbBackupDb: "exportClinicalDbBackupDb",
+  exportAuditLog: "exportAuditLog",
+  exportMedCatalogBundle: "exportMedCatalogBundle",
+  triggerImportMedCatalog: "triggerImportMedCatalog",
+  onMedCatalogFileChosen: "onMedCatalogFileChosen",
+  openUserDataFolderFromSettings: "openUserDataFolderFromSettings",
+  onIdleLockSelectChange: "onIdleLockSelectChange",
+  changeIdleLockPin: "changeIdleLockPin",
+  submitIdleLockPin: "submitIdleLockPin",
+  openWipeDataModal: "openWipeDataModal",
+  closeWipeDataModal: "closeWipeDataModal",
+  wipeCacheConfirmed: "wipeCacheConfirmed",
+  wipeAllConfirmed: "wipeAllConfirmed",
+  updateAutoBackupSettingsFromUi: "updateAutoBackupSettingsFromUi",
+  runAutoBackupNow: "runAutoBackupNow",
+  exportDataBackup: "exportDataBackup",
+  exportActivePatientBackup: "exportActivePatientBackup",
+  exportRangeBackupPrompt: "exportRangeBackupPrompt",
+  triggerImportRangeBackup: "triggerImportRangeBackup",
+  onRangeBackupFileChosen: "onRangeBackupFileChosen",
+  exportSyncBundlePrompt: "exportSyncBundlePrompt",
+  triggerImportSyncBundle: "triggerImportSyncBundle",
+  onSyncBundleFileChosen: "onSyncBundleFileChosen",
+  triggerImportActivePatientBackup: "triggerImportActivePatientBackup",
+  triggerImportBackup: "triggerImportBackup",
+  onPatientBackupFileChosen: "onPatientBackupFileChosen",
+  importBundledDemoPerez: "importBundledDemoPerez",
+  onBackupFileChosen: "onBackupFileChosen",
+  restorePreimportBackupPrompt: "restorePreimportBackupPrompt",
+  checkForAppUpdates: "checkForAppUpdates",
+  checkForRepairUpdate: "checkForRepairUpdate",
+  setUpdateChannel: "setUpdateChannel",
+  setUpdateTelemetryEnabled: "setUpdateTelemetryEnabled",
+  onHardwareAccelerationChange: "onHardwareAccelerationChange",
+  installUpdate: "installUpdate",
+  hideUpdateModal: "hideUpdateModal"
+};
+var platformWindowHandlersLazy = buildLazyWindowHandlers(
+  platformHandlerNames,
+  ensurePlatformLoaded
+);
+async function registerLazyFeatureRuntimesBody(ctx) {
+  const [platformMod, settingsMod] = await Promise.all([
+    ensurePlatformLoaded(),
+    ensureSettingsHelpLoaded()
+  ]);
+  platformMod.registerPlatformRuntime(ctx);
+  settingsMod.registerSettingsHelpRuntime(ctx);
+  patchWindowHandlers(settingsMod.settingsHelpWindowHandlers);
+  patchWindowHandlers(platformMod.platformWindowHandlers);
+}
+async function registerLazyFeatureRuntimes(ctx) {
+  if (isMobileWeb()) {
+    void registerLazyFeatureRuntimesBody(ctx);
+    return;
+  }
+  return registerLazyFeatureRuntimesBody(ctx);
+}
+
+// public/js/app-runtimes.mjs
+var rt5 = {
+  getActiveId() {
+    return null;
+  },
+  setActiveId(_id) {
+  },
+  getActiveAppTab() {
+    return "lab";
+  },
+  setActiveAppTab(_v) {
+  },
+  getActiveInner() {
+    return "todo";
+  },
+  setActiveInner(_v) {
+  },
+  getSettings() {
+    return {};
+  },
+  setSettingsRef(_s) {
+  }
+};
+var v3MigratedThisBoot = false;
+function wasV3MigratedThisBoot() {
+  return v3MigratedThisBoot;
+}
+function getAppRuntimeContext() {
+  return rt5;
+}
+function registerAppRuntimeContext(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt5, ctx);
+}
+function installAppRuntimeContextDeps() {
+  Object.assign(rt5, {
+    showToast,
+    navigateToEstadoActualPanel,
+    refreshMedPanel: function refreshMedPanel() {
+      renderMedRecetaPanel();
+    },
+    syncWorkContextChrome,
+    renderMedRecetaPanel,
+    renderLabHistoryPanel,
+    renderProcedureAgendaPanel,
+    setMedTabAttention,
+    ensureParsedLabHistory,
+    ensureParsedLabHistoryCached,
+    splitResLabsByTipo,
+    primaryTipoForLabSet,
+    formatLabHistoryListMeta: function(set) {
+      return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+    },
+    switchAppTab,
+    renderPatientList,
+    scrollActiveRondaCardIntoView,
+    renderGuardiaBoard: function() {
+      return renderGuardiaBoard(rt5.getSettings());
+    },
+    syncLabOutputChrome,
+    setRoundOverviewMode,
+    renderPaseBoard,
+    getActiveLab: function() {
+      return getActiveLab();
+    },
+    consumeActiveLab: function() {
+      var x = getActiveLab();
+      setActiveLab(null);
+      return x;
+    },
+    restoreActiveLab: function(x) {
+      setActiveLab(x);
+    },
+    clearLabOutputUi: clearLabWorkbenchMinimalDom,
+    renderInnerTabs,
+    invalidateInnerTabRenderCache,
+    refreshExpedienteAfterPatientSelect,
+    renderEstadoActualButton,
+    renderPatientDataPane,
+    renderNoteForm,
+    renderIndicaForm,
+    renderListadoForm,
+    refreshTendenciasOrCultivosPanel,
+    switchInnerTab,
+    syncInnerTabVisualOnly,
+    renderTodoForm,
+    limpiarReporte,
+    setLabHistoryPanelCollapsed,
+    syncLabHistoryCollapseUI,
+    rpcPrefersReducedMotion,
+    refreshAllTodoUIs,
+    renderManejo,
+    renderVpo,
+    renderRecetaHu,
+    pushUndoSnapshot,
+    addAuditEntry,
+    applyDefaultsToNewPatient,
+    applyDefaultsToNewIndicaciones,
+    enviarLabsANota,
+    normalizeFechaLabHistory,
+    rerenderParsedLabOutputAfterPrefsChange,
+    buildLabSetDateLine,
+    getRoundOverviewMode,
+    saveState,
+    emitLiveSyncTodoUpsert,
+    requestDocumentJson,
+    handleDocumentGenerateResponse,
+    guardMobileDocExport,
+    isRpcOffline,
+    incrementPendingJobs,
+    decrementPendingJobs,
+    syncOfflineButtonStates,
+    syncTeamSyncHeaderButton,
+    syncPreimportBackupUi,
+    syncSettingsLanHostDiskSection,
+    closeProfileModal,
+    openProfileModal,
+    openAddModalFromLabPatient,
+    copyToClipboardSafe,
+    renderTendencias,
+    renderRoundOverviewPanels,
+    switchConsolidatedTab,
+    getActivePatient: function() {
+      var id = rt5.getActiveId();
+      if (!id) return null;
+      return patients.find(function(p) {
+        return String(p.id) === String(id);
+      }) || null;
+    },
+    applyParsed: function(parsed, opts) {
+      opts = opts || {};
+      if (opts.fromNestedPaste) {
+        applyEstadoActualParsedToForm(parsed);
+        var recorded = document.getElementById("ea-recorded-at");
+        if (recorded && "value" in recorded) {
+          recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+        }
+        return;
+      }
+      navigateToEstadoActualPanel();
+      renderEstadoActualPanel({
+        onReady: function() {
+          openEstadoActualRegistroModal({ preserveForm: true });
+          applyEstadoActualParsedToForm(parsed);
+          var recorded2 = document.getElementById("ea-recorded-at");
+          if (recorded2 && "value" in recorded2) {
+            recorded2.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+          }
+        }
+      });
+    },
+    ensureForm: ensureEaRegistroModalForm,
+    syncGluMode: syncEaRegistroGluMode,
+    resetForm: function() {
+      var activeId2 = rt5.getActiveId();
+      var patient = activeId2 && patients.find(function(p) {
+        return p.id === activeId2;
+      });
+      resetEaRegistroForm(patient || null);
+    },
+    selectPatient,
+    onboardingAdvanceAfterParse,
+    onboardingAdvanceAfterSend,
+    tourAfterBulkLabParse,
+    tourOnBulkPreviewPatientSaved,
+    findPatientByRegistro,
+    openPaseSectionInNormal,
+    renderDiagramas,
+    closeSettingsDropdown,
+    extractParsedValues,
+    buildParsedBySectionFromResLabs,
+    rebuildEstudiosFromLabHistory,
+    inferFechaLabSetFromId,
+    dayKeyFromLabSet,
+    labSetIsFromSome,
+    removeAtbRisPanelsFromBody,
+    wireAtbRisHoverPanels,
+    getLabOutputPrefs,
+    isGasoInterpretacionResLabChunk,
+    isAscitisInterpretacionResLabChunk,
+    ascitisInterpretacionBody_,
+    formatBhExtendedTabLine,
+    isBhMainResLabChunk,
+    isResLabChunkPureCultivo,
+    buildCultivoOutputHtmlFragments,
+    refreshManejoPanel: renderManejo,
+    rebuildBulkLabPreviewBlocks: function(text) {
+      return buildBulkLabPreview(text, { findPatientByRegistro });
+    },
+    openAddModal,
+    advanceRondaPatient,
+    isMobileWeb,
+    ensureUniquePatientName,
+    applyImportEntry,
+    buildPatientEntry,
+    onMedicionRegistered: function() {
+      guidedTourAdvanceAfter("estado_actual_registro");
+    },
+    guidedTourAdvanceAfterNotaGenerated,
+    guidedTourAdvanceAfterIndicaGenerated,
+    launchConfetti,
+    renderEstadoActualBar
+  });
+}
+async function registerAllFeatureRuntimes() {
+  installAppRuntimeContextDeps();
+  var ctx = getAppRuntimeContext();
+  registerMedicationsRuntime(ctx);
+  registerMedPharmProfileRuntime(ctx);
+  registerProfileRuntime(ctx);
+  registerPaseBoardRuntime(ctx);
+  registerChromeRuntime(ctx);
+  registerPatientsRuntime(ctx);
+  v3MigratedThisBoot = migrateToV3(rt5.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt5.getSettings());
+  await registerLazyFeatureRuntimes(ctx);
+  registerLabHistoryMaintRuntime(ctx);
+  installLabHistoryAuditHook();
+  registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
+  registerTendenciasRuntime(ctx);
+  registerTodosRuntime(ctx);
+  registerManejoRuntime(ctx);
+  registerVpoRuntime(ctx);
+  registerRecetaHuRuntime(ctx);
+  registerCensoRuntime(ctx);
+  registerHistoriaClinicaRuntime(ctx);
+  registerEventualidadesRuntime(ctx);
+  registerExpedienteRuntime(ctx);
+  registerNotesIndicacionesRuntime(ctx);
+  registerProcedureAgendaRuntime(ctx);
+  registerSoapEstadoRuntime(ctx);
+  registerEstadoActualPanelRuntime(ctx);
+  registerDriveImportRuntime(ctx);
+  registerEstadoActualPasteModalRuntime(ctx);
+  registerEstadoActualRegistroModalRuntime(ctx);
+  registerLabPanelRuntime(ctx);
+  registerLabBulkPreviewModalRuntime(ctx);
+  registerLabHistoryBatchCopyRuntime(ctx);
+  registerProductivityRuntime(ctx);
+  registerLanRuntime(ctx);
+}
+function runInitialFeatureBoot() {
+  initChromeAppearance();
+  syncLabHistoryCollapseUI();
+  wireEstadoActualPasteModal();
+  wireDriveImportModal();
+  wireEaModalDismiss();
+  syncCensoExportButtonVisibility();
+}
+
+// public/js/boot/boot-steps.mjs
+async function runBootSteps(steps, ctx) {
+  for (const step of steps) {
+    try {
+      await step.run(ctx);
+    } catch (err) {
+      console.error("[boot]", step.id, err);
+      throw err;
+    }
+  }
+}
+
+// public/js/app.js
+var allWindowHandlers = Object.assign(
+  {},
+  dbUnlockWindowHandlers,
+  windowHandlers,
+  windowHandlers3,
+  windowHandlers13,
+  windowHandlers7,
+  windowHandlers6,
+  windowHandlers17,
+  windowHandlers2,
+  windowHandlers9,
+  windowHandlers10,
+  windowHandlers18,
+  windowHandlers11,
+  windowHandlers16,
+  windowHandlers8,
+  windowHandlers5,
+  productivityWindowHandlers,
+  settingsHelpWindowHandlersLazy,
+  platformWindowHandlersLazy,
+  tendenciasWindowHandlers,
+  todosWindowHandlers,
+  manejoWindowHandlers,
+  recetaHuWindowHandlers,
+  windowHandlers12,
+  medicationsWindowHandlers,
+  profileWindowHandlers,
+  windowHandlers4,
+  windowHandlers15,
+  windowHandlers14,
+  appShellWindowHandlers,
+  {
+    resumeClinicalSession: function() {
+      return resumeClinicalSession(settings, getClinicalClientId());
+    }
+  }
+);
+try {
+  Object.assign(window, allWindowHandlers);
+} catch (assignErr) {
+  console.error("[R+] No se pudieron registrar handlers en window:", assignErr);
+}
+var appStateReady = (async function loadClinicalStateOnBoot() {
+  if (isDbMode()) {
+    const unlockResult = await ensureClinicalDbUnlocked();
+    if (unlockResult && unlockResult.unlocked) {
+      await bootHydrateFromDb();
+    } else {
+      console.warn(
+        "[R+] Clinical DB not ready at boot:",
+        unlockResult && unlockResult.reason || "locked"
+      );
+      initAppState();
+    }
+  } else {
+    initAppState();
+  }
+})();
+setSaveStateHooks({
+  onSaveResult(result) {
+    if (!result || result.ok) {
+      if (result && result.level === "warn") {
+        showToast(
+          "El almacenamiento local est\xE1 casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.",
+          "error"
+        );
+      }
+      return;
+    }
+    if (result.code === "QUOTA_EXCEEDED") {
+      showToast(
+        "No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.",
+        "error"
+      );
+    }
+  }
+});
+window.addEventListener("beforeunload", function() {
+  flushSaveState();
+});
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState === "hidden") flushSaveState();
+});
+var activeId = null;
+var activeInner = "todo";
+var activeAppTab = "lab";
+var settings = hydrateProfileSettings(storage.getSettings());
+attachProfileSettingsGetter(function() {
+  return settings;
+});
+registerAppShellContext({
+  getActiveId: function() {
+    return activeId;
+  },
+  getActiveAppTab: function() {
+    return activeAppTab;
+  },
+  getActiveInner: function() {
+    return activeInner;
+  },
+  getSettings: function() {
+    return settings;
+  }
+});
+registerAppRuntimeContext({
+  getActiveId: function() {
+    return activeId;
+  },
+  setActiveId: function(id) {
+    activeId = id;
+  },
+  getActiveAppTab: function() {
+    return activeAppTab;
+  },
+  setActiveAppTab: function(v) {
+    activeAppTab = v;
+  },
+  getActiveInner: function() {
+    return activeInner;
+  },
+  setActiveInner: function(v) {
+    activeInner = v;
+  },
+  getSettings: function() {
+    return settings;
+  }
+});
+async function registerFeatureRuntimesForBoot() {
+  if (isMobileWeb()) {
+    void registerAllFeatureRuntimes();
+    runInitialFeatureBoot();
+    return;
+  }
+  await registerAllFeatureRuntimes();
+  runInitialFeatureBoot();
+}
+appStateReady.then(async function() {
+  try {
+    await registerFeatureRuntimesForBoot();
+  } catch (bootErr) {
+    console.error("[R+] Error registrando runtimes de features:", bootErr);
+  }
+}).catch(async function(stateErr) {
+  console.error("[R+] Error cargando estado cl\xEDnico:", stateErr);
+  try {
+    initAppState();
+    await registerFeatureRuntimesForBoot();
+  } catch (bootErr) {
+    console.error("[R+] Error registrando runtimes de features:", bootErr);
+  }
+});
+function getClinicalClientId() {
+  return resolveClinicalClientId(settings);
+}
+function syncHeaderTodayDate() {
+  var todayEl = document.getElementById("today-date");
+  if (!todayEl) return;
+  var d = /* @__PURE__ */ new Date();
+  var long = d.toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+  var compact = d.toLocaleDateString("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+  var narrow = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 920px)").matches;
+  todayEl.textContent = narrow ? compact : long;
+  todayEl.title = long;
+}
+var CLINICAL_DB_BOOT_STEPS = [
+  {
+    id: "clinical-access-init",
+    async run(ctx) {
+      await initClinicalAccessRuntime(ctx.settings, ctx.getClinicalClientId());
+    }
+  },
+  {
+    id: "onboarding-dynamic-import",
+    async run() {
+      loadSettings();
+      const mod = await import("/js/chunks/clinical-onboarding-main-BC3QP7TI.js");
+      await mod.showMainClinicalOnboarding();
+    }
+  },
+  {
+    id: "clinical-teams-dynamic-import",
+    async run(ctx) {
+      wireClinicalRotationEntryControls();
+      wireClinicalTeamsControls();
+      syncClinicalRotationEntryChrome();
+      syncGuardiaModeButtonVisibility();
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-WMU6MOPN.js");
+    }
+  },
+  {
+    id: "consume-team-join-url",
+    async run(ctx) {
+      const teamsMod = ctx.teamsMod;
+      if (teamsMod && typeof teamsMod.consumeClinicalTeamJoinFromUrl === "function") {
+        await teamsMod.consumeClinicalTeamJoinFromUrl();
+      }
+    }
+  }
+];
+function runDomBoot() {
+  appStateReady.then(function() {
+    runDomBootAfterState();
+  }).catch(function() {
+    runDomBootAfterState();
+  });
+}
+function runDomBootAfterState() {
+  try {
+    tryMountClinicalTeamInviteBrowserGate();
+    if (recoverPresentationPatientsOnBoot()) {
+      showToast("Se restaur\xF3 tu lista de pacientes tras el modo presentaci\xF3n.", "info");
+    }
+    initModalDismiss();
+    syncHeaderTodayDate();
+    if (!window._rpcHeaderDateResizeWired) {
+      window._rpcHeaderDateResizeWired = true;
+      window.addEventListener("resize", syncHeaderTodayDate);
+    }
+    renderPatientList();
+    if (patients.length > 0) selectPatient(patients[0].id);
+    else renderLabHistoryPanel();
+    loadSettings();
+    syncWorkContextChrome();
+    seedTendHiddenDefaults();
+    syncMainAppTabA11y(activeAppTab);
+    renderInnerTabs();
+    initTabBarMotion();
+    if (wasV3MigratedThisBoot() && !isMobileWeb()) {
+      setTimeout(function() {
+        try {
+          showToast("R+ 3.0 \u2014 Sala activado por defecto. Cambia en Mi Perfil \u2192 Aplicaci\xF3n.");
+        } catch (_e) {
+        }
+      }, 800);
+    }
+    scheduleDeferredShellInits();
+    scheduleDeferredUiInits();
+    initRpcDatePicker();
+    _rpcDeferInit2(initSidebarAutoHide);
+    _rpcDeferInit2(initPatientModalEnterSave);
+    syncProfileSectionVisibility();
+    wireHeaderAppModeChip();
+    if (isDbMode()) {
+      void runBootSteps(CLINICAL_DB_BOOT_STEPS, {
+        settings,
+        getClinicalClientId,
+        teamsMod: null
+      }).catch(function(err) {
+        console.warn("[R+] Clinical access runtime init:", err && err.message);
+      });
+    }
+  } catch (domErr) {
+    console.error("[R+] Error en arranque de UI:", domErr);
+  }
+}
+function wireHeaderAppModeChip() {
+  var chip = document.getElementById("header-app-mode-chip");
+  if (!chip || chip._rpcModeChipWired) return;
+  chip._rpcModeChipWired = true;
+  chip.addEventListener("click", function(ev) {
+    ev.preventDefault();
+    toggleHeaderWorkMode();
+  });
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", runDomBoot);
+} else {
+  runDomBoot();
+}
+function _rpcDeferInit2(fn) {
+  if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(
+      function() {
+        try {
+          fn();
+        } catch (e) {
+          console.error("deferInit error:", e && e.message);
+        }
+      },
+      { timeout: 1500 }
+    );
+  } else {
+    setTimeout(function() {
+      try {
+        fn();
+      } catch (e) {
+        console.error("deferInit error:", e && e.message);
+      }
+    }, 200);
+  }
+}
 //# sourceMappingURL=/js/app.bundle.js.map

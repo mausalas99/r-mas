@@ -490,6 +490,62 @@ export async function loadLanUsersDirectoryIntoHost(host) {
 
 /** @type {ReturnType<typeof setInterval>|null} */
 let lanDirectoryPollTimer = null;
+/** @type {ReturnType<typeof setTimeout>|null} */
+let lanDirectoryOpsSyncDebounce = null;
+let lanDirectoryRefreshPending = false;
+
+function isLanDirectoryUserInteracting() {
+  const bd = lanUsersModalBackdropEl();
+  if (!bd?.classList.contains('open')) return false;
+  const active = document.activeElement;
+  if (active instanceof HTMLSelectElement && bd.contains(active)) return true;
+  if (
+    active instanceof HTMLOptionElement &&
+    active.parentElement instanceof HTMLSelectElement &&
+    bd.contains(active.parentElement)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** @param {HTMLElement} host */
+function captureLanDirectoryDraftState(host) {
+  /** @type {Map<string, { team: string, cycle: string }>} */
+  const draft = new Map();
+  host.querySelectorAll('.clinical-lan-user-row').forEach((row) => {
+    const uid = String(row.dataset.userId || '').trim();
+    if (!uid) return;
+    const teamEl = row.querySelector('.clinical-lan-assign-team');
+    const cycleEl = row.querySelector('.clinical-lan-assign-cycle');
+    draft.set(uid, {
+      team: teamEl instanceof HTMLSelectElement ? String(teamEl.value || '') : '',
+      cycle: cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '') : '',
+    });
+  });
+  return draft;
+}
+
+/** @param {HTMLElement} host @param {Map<string, { team: string, cycle: string }>} draft */
+function restoreLanDirectoryDraftState(host, draft) {
+  if (!draft || !draft.size) return;
+  host.querySelectorAll('.clinical-lan-user-row').forEach((row) => {
+    const uid = String(row.dataset.userId || '').trim();
+    const saved = draft.get(uid);
+    if (!saved) return;
+    const teamSelect = row.querySelector('.clinical-lan-assign-team');
+    if (teamSelect instanceof HTMLSelectElement && saved.team) {
+      teamSelect.value = saved.team;
+      syncLanAssignCycleSelect(teamSelect, saved.cycle);
+      if (saved.cycle) {
+        const cycleSelect = row.querySelector('.clinical-lan-assign-cycle');
+        if (cycleSelect instanceof HTMLSelectElement) {
+          cycleSelect.value = saved.cycle;
+        }
+      }
+    }
+  });
+}
 
 function stopLanDirectoryPoll() {
   if (lanDirectoryPollTimer) {
@@ -506,8 +562,17 @@ function startLanDirectoryPoll() {
       stopLanDirectoryPoll();
       return;
     }
-    void backgroundRefreshLanUsersDirectory();
-  }, 5000);
+    scheduleLanDirectoryRefresh();
+  }, 15000);
+}
+
+function scheduleLanDirectoryRefresh(force = false) {
+  if (!force && isLanDirectoryUserInteracting()) {
+    lanDirectoryRefreshPending = true;
+    return;
+  }
+  lanDirectoryRefreshPending = false;
+  void backgroundRefreshLanUsersDirectory();
 }
 
 async function pullLanDirectoryFromHostBeforeDisplay() {
@@ -526,7 +591,14 @@ function backgroundRefreshLanUsersDirectory() {
       const host = lanUsersModalBodyEl();
       const bd = lanUsersModalBackdropEl();
       if (!host || !bd?.classList.contains('open')) return;
-      return loadLanUsersDirectoryIntoHost(host);
+      if (isLanDirectoryUserInteracting()) {
+        lanDirectoryRefreshPending = true;
+        return;
+      }
+      const draft = captureLanDirectoryDraftState(host);
+      return loadLanUsersDirectoryIntoHost(host).then(() => {
+        restoreLanDirectoryDraftState(host, draft);
+      });
     })
     .catch(() => {});
 }
@@ -586,7 +658,11 @@ export function wireLanUsersDirectoryControls() {
       const bd = lanUsersModalBackdropEl();
       const host = lanUsersModalBodyEl();
       if (!bd?.classList.contains('open') || !host) return;
-      void loadLanUsersDirectoryIntoHost(host);
+      if (lanDirectoryOpsSyncDebounce) clearTimeout(lanDirectoryOpsSyncDebounce);
+      lanDirectoryOpsSyncDebounce = setTimeout(() => {
+        lanDirectoryOpsSyncDebounce = null;
+        scheduleLanDirectoryRefresh();
+      }, 1500);
     });
   }
 
@@ -634,6 +710,13 @@ export function wireLanUsersDirectoryControls() {
     host.addEventListener('change', (ev) => {
       const teamSelect = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-team') : null;
       if (teamSelect) syncLanAssignCycleSelect(teamSelect);
+    });
+    host.addEventListener('focusout', () => {
+      setTimeout(() => {
+        if (lanDirectoryRefreshPending && !isLanDirectoryUserInteracting()) {
+          scheduleLanDirectoryRefresh(true);
+        }
+      }, 120);
     });
     host.addEventListener('click', (ev) => {
       const delBtn =

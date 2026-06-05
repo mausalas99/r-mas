@@ -243,6 +243,18 @@ async function handleUsernameStepSubmit(ev) {
     isProgramAdmin: false,
   });
 
+  const shiftPin = String(document.getElementById('onboard-shift-pin')?.value || '').trim();
+  if (shiftPin && !isClinicalLocalOnlyMode()) {
+    const { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
+    const connected = await connectLanWithShiftPin(shiftPin, { sala });
+    if (!connected) {
+      toast(
+        'No se encontró anfitrión con ese PIN del turno. Revisa Wi‑Fi o pide un PIN nuevo al R4.',
+        'warning'
+      );
+    }
+  }
+
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
@@ -250,13 +262,32 @@ async function handleUsernameStepSubmit(ev) {
   const {
     flushClinicalProfileToLan,
     LAN_PROFILE_PUSH_FAILED_MSG,
+    LAN_PROFILE_NEEDS_CONNECT_MSG,
     isBenignLanPushSkipCode,
+    isLanProfileNeedsConnectCode,
     notifyLanProfilePushResult,
   } = await import('../clinical-profile-lan-sync.mjs');
   const lanPush = await flushClinicalProfileToLan({
     sala: sala || clinicalSessionContext.user?.sala,
   });
   notifyLanProfilePushResult(lanPush, toast);
+
+  const { isClinicalLocalOnlyMode } = await import('../clinical-settings.mjs');
+  const localOnly = isClinicalLocalOnlyMode();
+
+  if (
+    !localOnly &&
+    !lanPush.ok &&
+    isLanProfileNeedsConnectCode(lanPush.code)
+  ) {
+    toast(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info');
+    const rot = await import('./clinical-rotation-entry.mjs');
+    rot.syncClinicalRotationEntryChrome();
+    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+    await refreshMainClinicalOnboardingIfNeeded();
+    return;
+  }
+
   if (
     !lanPush.ok &&
     !isBenignLanPushSkipCode(lanPush.code) &&
@@ -456,6 +487,12 @@ export async function renderOnboardingPanelInto(host) {
             <option value="Sala 2" ${prefilledSala === 'Sala 2' ? 'selected' : ''}>Sala 2</option>
             <option value="Sala E" ${prefilledSala === 'Sala E' ? 'selected' : ''}>Sala E</option>
           </select>
+        </div>
+        <div class="field-group">
+          <label for="onboard-shift-pin">PIN del turno (⇄)</label>
+          <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
+            pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off">
+          <p class="clinical-teams-hint">Pide el PIN del turno a quien tenga R+ como anfitrión (⇄). R+ buscará el host en la red y te conectará automáticamente.</p>
         </div>
         <p id="onboard-error" class="clinical-registration-error" hidden></p>
         <div class="modal-actions">

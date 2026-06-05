@@ -14,6 +14,7 @@ import {
   resolveTeamIdFromInviteCode,
   tryMountClinicalTeamInviteBrowserGate,
 } from '../../clinical-team-invite.mjs';
+import { isLanSalaInvitePaste } from '../../lan-join-link.mjs';
 import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
@@ -99,6 +100,33 @@ export async function joinTeamById(teamId, subAreaFraction) {
   return true;
 }
 
+/** Mi rotación team code field received a ⇄ sala link — hand off to Conexión guardia. */
+export async function redirectLanInviteFromTeamJoinField(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return false;
+
+  const { openConnectionDropdown, joinLanFromInviteUi } = await import('../lan-sync.mjs');
+  if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+
+  const lanInput = document.getElementById('lan-input-invite-link');
+  if (lanInput instanceof HTMLTextAreaElement || lanInput instanceof HTMLInputElement) {
+    lanInput.value = text;
+  }
+  const details = document.querySelector('.lan-connect-other-mac');
+  if (details instanceof HTMLDetailsElement) details.open = true;
+
+  toast(
+    'Ese enlace es de conexión LAN (⇄), no de equipo. Conectando desde Conexión guardia…',
+    'info'
+  );
+  if (typeof joinLanFromInviteUi === 'function') joinLanFromInviteUi();
+  return true;
+}
+
 /** @param {Event} ev */
 export async function handleJoinWithCodeSubmit(ev) {
   ev.preventDefault();
@@ -107,6 +135,11 @@ export async function handleJoinWithCodeSubmit(ev) {
   const code = input instanceof HTMLInputElement ? input.value : '';
   const subAreaFraction =
     cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '').trim() : '';
+
+  if (isLanSalaInvitePaste(code)) {
+    await redirectLanInviteFromTeamJoinField(code);
+    return;
+  }
 
   const teamId = await resolveTeamIdForInviteInput(code);
   if (!teamId) {

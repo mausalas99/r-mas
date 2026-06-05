@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   discoverLanHostsOnSubnet,
+  discoverLanHostsOnSubnetViaBeacon,
   lanHostBasesSameMachine,
   normalizeLanHostBase,
 } from './lan-host-subnet-discovery.mjs';
@@ -11,6 +12,11 @@ describe('lan-host-subnet-discovery', () => {
     assert.deepEqual(await discoverLanHostsOnSubnet('', 'http://10.1.2.3:3738'), []);
     assert.deepEqual(await discoverLanHostsOnSubnet('tok', ''), []);
     assert.deepEqual(await discoverLanHostsOnSubnet('tok', 'not-a-url'), []);
+  });
+
+  it('beacon discovery returns empty without private IP', async () => {
+    assert.deepEqual(await discoverLanHostsOnSubnetViaBeacon(''), []);
+    assert.deepEqual(await discoverLanHostsOnSubnetViaBeacon('not-a-url'), []);
   });
 
   it('lanHostBasesSameMachine detects matching host IPv4', () => {

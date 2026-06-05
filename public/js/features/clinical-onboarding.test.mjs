@@ -1,5 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { isLegacyMachineUsername } from '../clinical-username.mjs';
 import {
   CLINICAL_LAN_PROFILE_GATE_VERSION,
@@ -89,5 +92,16 @@ describe('clinical-onboarding helpers', () => {
       if (prev === undefined) delete globalThis.localStorage;
       else globalThis.localStorage = prev;
     }
+  });
+
+  it('registration shows connect-needed message when LAN push returns NO_LAN', () => {
+    const onboardingSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding.mjs'),
+      'utf8'
+    );
+    assert.match(onboardingSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
+    assert.match(onboardingSrc, /isLanProfileNeedsConnectCode\(lanPush\.code\)/);
+    assert.match(onboardingSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
+    assert.match(onboardingSrc, /!localOnly[\s\S]*isLanProfileNeedsConnectCode/);
   });
 });

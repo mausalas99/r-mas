@@ -512,12 +512,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     const serverOps =
       bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
 
-    if (!incomingSnapshot) {
-      bundle.clinicalOps = incoming.snapshot === null ? null : bundle.clinicalOps;
-    } else if (!serverOps) {
-      bundle.clinicalOps = incomingSnapshot;
-    } else {
-      bundle.clinicalOps = mergeClinicalOpsSnapshotsData(serverOps, incomingSnapshot);
+    // Never delete the cumulative roster on a missing/null snapshot; only union when present.
+    if (incomingSnapshot) {
+      bundle.clinicalOps = serverOps
+        ? mergeClinicalOpsSnapshotsData(serverOps, incomingSnapshot)
+        : incomingSnapshot;
     }
 
     if (!bundle.entityVersions || typeof bundle.entityVersions !== 'object') {

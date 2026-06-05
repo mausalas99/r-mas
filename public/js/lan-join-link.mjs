@@ -176,3 +176,13 @@ export function parseLanInviteInput(raw) {
 
   return emptyInviteParse();
 }
+
+/** True when pasted text is a ⇄ sala /join link (not a clinical team invite code). */
+export function isLanSalaInvitePaste(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return false;
+  if (/https?:\/\//i.test(text) && /\/join\//i.test(text)) return true;
+  if (JOIN_TICKET_PATH_RE.test(text)) return true;
+  const parsed = parseLanInviteInput(text);
+  return !!(parsed.ticketId || (parsed.hostUrl && parsed.teamCode));
+}

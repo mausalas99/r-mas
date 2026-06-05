@@ -101,6 +101,28 @@ describe('bundle-merge', () => {
     assert.equal(r.bundle.agenda.length, 1);
   });
 
+  it('null or absent clinicalOps preserves server roster', () => {
+    const serverOps = {
+      exportedAt: '2020-01-01T00:00:00',
+      clinical_users: [{ user_id: 'u1', username: 'doctor_a' }],
+      teams: [],
+      team_membership: [],
+    };
+    for (const payload of [
+      { baseRevision: 1, baseEntityVersions: {}, clinicalOps: null },
+      { baseRevision: 1, baseEntityVersions: {}, agenda: [] },
+    ]) {
+      let bundle = emptyBundle(now());
+      bundle.revision = 1;
+      bundle.entityVersions = { clinicalOps: 1 };
+      bundle.clinicalOps = { ...serverOps };
+      const r = mergeBundlePut(bundle, payload, { nowIso: now, clientId: 'c2' });
+      assert.equal(r.ok, true);
+      assert.equal(r.bundle.clinicalOps.clinical_users.length, 1);
+      assert.equal(r.bundle.clinicalOps.clinical_users[0].username, 'doctor_a');
+    }
+  });
+
   it('clinicalOps union keeps teams from both peers', () => {
     let bundle = emptyBundle(now());
     bundle.revision = 1;

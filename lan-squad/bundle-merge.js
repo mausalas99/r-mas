@@ -194,12 +194,14 @@ function mergeBundlePut(serverBundle, incoming, opts) {
       base.clinicalOps && typeof base.clinicalOps === 'object' ? base.clinicalOps : null;
     const serverOps =
       bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
-    if (!incomingOps) {
-      bundle.clinicalOps = base.clinicalOps === null ? null : bundle.clinicalOps;
-    } else if (!serverOps) {
-      bundle.clinicalOps = incomingOps;
-    } else {
-      bundle.clinicalOps = mergeClinicalOpsSnapshotsData(serverOps, incomingOps);
+    // A routine sync-bundle push with no roster (empty clinicalOps cache → null) must
+    // never delete the cumulative host roster; only union when a roster is present.
+    // This matters for LAN-only hosts whose clinical DB is locked, where the in-memory
+    // bundle is the only copy and cannot self-heal from a DB re-export.
+    if (incomingOps) {
+      bundle.clinicalOps = serverOps
+        ? mergeClinicalOpsSnapshotsData(serverOps, incomingOps)
+        : incomingOps;
     }
   }
 

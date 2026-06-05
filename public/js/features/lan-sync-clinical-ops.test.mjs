@@ -63,6 +63,15 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncSrc, /pushClinicalOpsLanNow/);
   });
 
+  it('records push trace for each clinical ops skip code', () => {
+    for (const code of ['NO_CLINICAL_OPS', 'NO_SNAPSHOT', 'NO_LAN', 'NO_ROOM']) {
+      assert.match(
+        lanSyncPushSrc,
+        new RegExp(`recordClinicalOpsTrace\\('push', \\{[\\s\\S]*code: '${code}'`)
+      );
+    }
+  });
+
   it('always attaches fresh clinicalOps on immediate profile push', () => {
     assert.match(lanSyncPushSrc, /envelope\.clinicalOps = snap/);
     assert.doesNotMatch(
@@ -310,5 +319,16 @@ describe('clinical-profile-lan-sync', () => {
     assert.match(profileLanSrc, /ensureLiveSyncRoomForUsernameRegister/);
     assert.match(profileLanSrc, /resolveLiveSyncRoomIdFromSala\(opts\.sala\)/);
     assert.match(profileLanSrc, /isBenignLanPushSkipCode/);
+  });
+
+  it('traces push skip before flush returns early (NO_LAN / NO_ROOM)', () => {
+    assert.match(profileLanSrc, /traceFlushClinicalProfilePushSkip\('NO_LAN'\)/);
+    assert.match(profileLanSrc, /traceFlushClinicalProfilePushSkip\('NO_ROOM'\)/);
+    assert.match(profileLanSrc, /recordClinicalOpsTrace\('push'/);
+  });
+
+  it('exposes connect-needed message for LAN registration UX', () => {
+    assert.match(profileLanSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
+    assert.match(profileLanSrc, /isLanProfileNeedsConnectCode/);
   });
 });
