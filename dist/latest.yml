@@ -1,8 +1,8 @@
-version: 6.7.0
+version: 7.0.1
 files:
-  - url: R+-6.7.0-x64.exe
-    sha512: NFAqJWQPubGIm5jCLd2y3YhdIbuFNbSRe8qpu+7FbDqtMzeuEy6GTqeEyaevtMkVgWuQlrRKuMks3mrwtFVGgQ==
-    size: 114350865
-path: R+-6.7.0-x64.exe
-sha512: NFAqJWQPubGIm5jCLd2y3YhdIbuFNbSRe8qpu+7FbDqtMzeuEy6GTqeEyaevtMkVgWuQlrRKuMks3mrwtFVGgQ==
-releaseDate: '2026-06-05T17:09:00.000Z'
+  - url: R+-7.0.1-x64.exe
+    sha512: xeCVv7z14FUltx9+5Mmk+3lav0B8ORXBJzcEF5CfwDa28aWv8bwKnk6W6K3XEHjc7JtiLZX+daCmXyZT7ziT2w==
+    size: 114360263
+path: R+-7.0.1-x64.exe
+sha512: xeCVv7z14FUltx9+5Mmk+3lav0B8ORXBJzcEF5CfwDa28aWv8bwKnk6W6K3XEHjc7JtiLZX+daCmXyZT7ziT2w==
+releaseDate: '2026-06-05T17:56:57.000Z'
