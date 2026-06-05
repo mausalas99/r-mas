@@ -55,7 +55,9 @@ export function wireClinicalTeamsControls() {
   const openBtn = document.getElementById('btn-guardia-mi-rotacion');
   if (openBtn && !openBtn._rpcTeamsOpenWired) {
     openBtn._rpcTeamsOpenWired = true;
-    openBtn.addEventListener('click', () => void openClinicalTeamsPanel());
+    openBtn.addEventListener('click', () => {
+      void import('../clinical-rotation-entry.mjs').then((m) => m.openMiRotacion());
+    });
   }
 
   if (!document._rpcClinicalTeamsChangedWired) {

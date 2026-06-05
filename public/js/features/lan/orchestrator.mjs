@@ -112,6 +112,7 @@ import {
   updateLanConnectionBanner,
   startLanAutoDiscovery,
   openConnectionDropdown,
+  focusLanShiftPinInput,
   resolveAutoJoinRoomId,
   saveLanSettingsFromUi,
   joinLanFromInviteUi,
@@ -203,6 +204,11 @@ function wireLanNetworkRefresh() {
   _lanNetworkRefreshWired = true;
   window.addEventListener('online', function () {
     void initLanHostPlugAndPlay();
+    void import('../../lan-shift-pin-connect.mjs').then(function (m) {
+      if (typeof m.tryEasyLanShiftPinConnect === 'function') {
+        return m.tryEasyLanShiftPinConnect({ silent: true, force: true });
+      }
+    });
     if (typeof renderLanPanel === 'function') void renderLanPanel();
   });
 }
@@ -211,6 +217,11 @@ export function registerLanRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(runtime, ctx);
   wireLanNetworkRefresh();
+  void import('../../lan-shift-pin-connect.mjs').then(function (m) {
+    if (typeof m.tryEasyLanShiftPinConnect === 'function') {
+      return m.tryEasyLanShiftPinConnect({ silent: true });
+    }
+  });
   void initLanHostPlugAndPlay();
 }
 
@@ -1395,6 +1406,7 @@ export {
   syncLanHostTeamCodeSettingsInput,
   closeConnectionDropdown,
   openConnectionDropdown,
+  focusLanShiftPinInput,
   isLanSessionConfiguredForRest,
   joinLanRoom,
   getActiveLiveSyncRoomId,

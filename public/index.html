@@ -921,9 +921,10 @@
         <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
         <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>
         <div class="guardia-mode-toggle-row">
-          <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode" aria-pressed="false" title="Filtra el censo: todos los pacientes de tu alcance o solo tus entregas recibidas.">
-            <span class="guardia-mode-label">Censo completo</span>
-            <span class="guardia-mode-switch"></span>
+          <span id="guardia-census-filter-hint" class="guardia-census-filter-hint">Filtrar censo en la grilla (no es la fase Entrega del turno).</span>
+          <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode" aria-pressed="false" title="Filtro de la grilla: pacientes en tu alcance o solo los que te entregaron (independiente del botón Entrega).">
+            <span class="guardia-mode-label">Alcance completo</span>
+            <span class="guardia-mode-switch" aria-hidden="true"></span>
           </button>
         </div>
         <div id="guardia-census-grid" class="patient-chips-grid"></div>

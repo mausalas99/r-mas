@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.7.0](https://github.com/mausalas99/r-mas/releases/tag/v6.7.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.0.1](https://github.com/mausalas99/r-mas/releases/tag/v7.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -587,6 +587,14 @@ Notas: `docs/RELEASE_NOTES_2.2.0.txt`.
 
 ---
 
+
+## R+ 7.0.1 (PIN del turno y Wi‑Fi hospital)
+
+- **PIN del turno** — 6 dígitos como llave principal; ⇄ **Conectar** y barra **Conectar al turno**; reconexión automática al cambiar Wi‑Fi.
+- **Multi‑red** — Barrido en todas las subredes locales de la Mac (hospital con varias VLAN).
+- **Incluye 6.7.0** — Directorio LAN, roster estable, diagnóstico ⇄, Windows SQLCipher.
+
+Notas: `docs/RELEASE_NOTES_7.0.1.txt`.
 ## R+ 2.1.2 (parche — historial y expediente en laboratorio)
 
 - **Historial de labs** — Sincronizar duplicados (misma fecha, hora y bloques de resultados): botón en Laboratorio y revisión global en **Ajustes → Laboratorio**; se conserva la entrada más antigua de cada grupo.

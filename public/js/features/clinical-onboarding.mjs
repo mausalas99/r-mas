@@ -457,7 +457,7 @@ export async function renderOnboardingPanelInto(host) {
       <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
       <h4 class="clinical-teams-section-title">Usuario y nombre en guardia</h4>
       ${gateLead}
-      <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form">
+      <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
         <div class="field-group">
           <label for="onboard-username">Usuario LAN (@usuario) *</label>
           <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
@@ -492,7 +492,7 @@ export async function renderOnboardingPanelInto(host) {
           <label for="onboard-shift-pin">PIN del turno (⇄)</label>
           <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
             pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off">
-          <p class="clinical-teams-hint">Pide el PIN del turno a quien tenga R+ como anfitrión (⇄). R+ buscará el host en la red y te conectará automáticamente.</p>
+          <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
         </div>
         <p id="onboard-error" class="clinical-registration-error" hidden></p>
         <div class="modal-actions">

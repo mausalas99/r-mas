@@ -4,6 +4,7 @@ import {
   CLINICAL_LAN_PROFILE_GATE_VERSION,
   ensureLanProfileGateDeviceReset,
   needsClinicalLanProfileGate,
+  persistClinicalUserBinding,
 } from './clinical-settings.mjs';
 
 describe('clinical-settings LAN profile gate', () => {
@@ -46,6 +47,26 @@ describe('clinical-settings LAN profile gate', () => {
     assert.equal(next.clinicalUserId, 'u1');
     const stored = JSON.parse(memory.get('rpc-settings') || '{}');
     assert.equal(stored.clinicalUsername, undefined);
+  });
+
+  it('persistClinicalUserBinding records gate complete so re-render keeps @usuario', () => {
+    memory.set(
+      'rpc-settings',
+      JSON.stringify({
+        clinicalLanProfileGateVersion: '5.5.7',
+        clinicalUsername: 'lc_old',
+      })
+    );
+    persistClinicalUserBinding({
+      username: 'mgarcia',
+      displayName: 'Dr. García',
+      registered: true,
+      lanProfileGateComplete: true,
+    });
+    assert.equal(needsClinicalLanProfileGate(), false);
+    const next = ensureLanProfileGateDeviceReset();
+    assert.equal(next.clinicalUsername, 'mgarcia');
+    assert.equal(next.clinicalDisplayName, 'Dr. García');
   });
 
   it('does not clear fields when gate already complete', () => {

@@ -1812,9 +1812,20 @@ html.dark .tend-gaso-tip {
 
 .guardia-mode-toggle-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: 10px 14px;
   margin-top: 8px;
   padding: 0 4px;
+}
+.guardia-census-filter-hint {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  text-align: right;
 }
 .btn-guardia-mode {
   display: inline-flex;

@@ -647,9 +647,14 @@ ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
   }
 });
 
-const { pickLanCandidateBaseUrl } = require('./lan-squad/lan-candidate-url.js');
+const {
+  pickLanCandidateBaseUrl,
+  listPrivateIpv4SubnetPrefixes,
+} = require('./lan-squad/lan-candidate-url.js');
 
 ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
+
+ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes());
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {

@@ -5,6 +5,7 @@ import {
   discoverLanHostsOnSubnetViaBeacon,
   lanHostBasesSameMachine,
   normalizeLanHostBase,
+  resolveLocalLanSubnetPrefixes,
 } from './lan-host-subnet-discovery.mjs';
 
 describe('lan-host-subnet-discovery', () => {
@@ -32,5 +33,11 @@ describe('lan-host-subnet-discovery', () => {
 
   it('normalizeLanHostBase adds http scheme', () => {
     assert.equal(normalizeLanHostBase('10.0.0.2:3738'), 'http://10.0.0.2:3738');
+  });
+
+  it('resolveLocalLanSubnetPrefixes falls back from own URL', async () => {
+    const prefixes = await resolveLocalLanSubnetPrefixes('http://10.55.1.9:3738');
+    assert.ok(Array.isArray(prefixes));
+    if (prefixes.length) assert.equal(prefixes[0], '10.55.1');
   });
 });

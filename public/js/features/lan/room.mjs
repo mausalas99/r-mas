@@ -468,6 +468,11 @@ export function applyRoomSyncPhaseAfterReconcile(roomId) {
     setRoomSyncPhase(rid, RoomSyncPhase.live);
   } else if (getRoomMembership() && String(getRoomMembership().roomId || '').trim() === rid) {
     setRoomSyncPhase(rid, RoomSyncPhase.degraded);
+    void import('../../lan-shift-pin-connect.mjs').then(function (m) {
+      if (typeof m.tryEasyLanShiftPinConnect === 'function') {
+        return m.tryEasyLanShiftPinConnect({ roomId: rid, silent: true });
+      }
+    });
   } else if (isLanSessionConfiguredForRest()) {
     setRoomSyncPhase(rid, RoomSyncPhase.configured);
   } else {
@@ -519,6 +524,8 @@ export function stopLiveSyncReconnectLoop() {
   }
 }
 
+let _shiftPinRediscoverInFlight = false;
+
 export function startLiveSyncReconnectLoop() {
   stopLiveSyncReconnectLoop();
   var m = getRoomMembership();
@@ -557,6 +564,17 @@ export function startLiveSyncReconnectLoop() {
       } catch (_e) {}
     }
     _liveSyncReconnectAttempt += 1;
+    if (_liveSyncReconnectAttempt >= 2 && !_shiftPinRediscoverInFlight) {
+      _shiftPinRediscoverInFlight = true;
+      void import('../../lan-shift-pin-connect.mjs')
+        .then(function (mod) {
+          if (typeof mod.tryEasyLanShiftPinConnect !== 'function') return { ok: false };
+          return mod.tryEasyLanShiftPinConnect({ roomId: mem.roomId, silent: true, force: true });
+        })
+        .finally(function () {
+          _shiftPinRediscoverInFlight = false;
+        });
+    }
     if (_liveSyncReconnectAttempt >= 3) scheduleSurrogateFailoverCheck();
     syncLiveSyncStatusChrome();
     scheduleReconnect();
@@ -589,6 +607,12 @@ export function bootLanRoomMembership() {
           code: 'TIMEOUT',
           message: 'Canal live no conectó en 8s; sync HTTP sigue activo',
         });
+        try {
+          const pinMod = await import('../../lan-shift-pin-connect.mjs');
+          if (typeof pinMod.tryEasyLanShiftPinConnect === 'function') {
+            await pinMod.tryEasyLanShiftPinConnect({ roomId: rid, silent: true, force: true });
+          }
+        } catch (_ePin) {}
       }
       await syncLiveSyncAfterRoomJoin(rid);
       await flushLiveSyncOutbox(rid);

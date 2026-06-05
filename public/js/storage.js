@@ -625,6 +625,27 @@ export const storage = {
     localStorage.setItem('rpc-lan-config', JSON.stringify(cfg));
   },
 
+  /** Last ward shift PIN (6 digits) — used to re-find host after Wi‑Fi change. */
+  getLanShiftPin() {
+    try {
+      const pin = String(localStorage.getItem('rpc-lan-shift-pin') || '').trim();
+      return /^\d{6}$/.test(pin) ? pin : '';
+    } catch (_e) {
+      return '';
+    }
+  },
+
+  saveLanShiftPin(pin) {
+    const code = String(pin || '').trim();
+    try {
+      if (!/^\d{6}$/.test(code)) {
+        localStorage.removeItem('rpc-lan-shift-pin');
+        return;
+      }
+      localStorage.setItem('rpc-lan-shift-pin', code);
+    } catch (_e2) {}
+  },
+
   getHostPatientMap() {
     return readClinicalBlob('lanHostPatientMap', 'rpc-lan-host-patient-map', safeParseObject);
   },

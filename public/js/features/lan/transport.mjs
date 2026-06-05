@@ -870,6 +870,13 @@ export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop()) return;
   demoteIneligibleLanHostUiRole();
   if (!isClinicalRankConfiguredForLan()) return;
+  try {
+    const pinMod = await import('../../lan-shift-pin-connect.mjs');
+    if (typeof pinMod.tryEasyLanShiftPinConnect === 'function') {
+      const easy = await pinMod.tryEasyLanShiftPinConnect({ silent: true });
+      if (easy.ok) return;
+    }
+  } catch (_ePin) {}
   await syncLanHostClinicalMetaToDisk();
   if (getPinnedHostUrl()) {
     if (await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { boot: true })) return;

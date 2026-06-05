@@ -34,7 +34,11 @@ import {
   normalizeUsername,
 } from '../../clinical-username.mjs';
 import { syncRotationConfigButton, wireNuevaRotacionControl } from '../clinical-rotation.mjs';
-import { persistClinicalUserBinding, readRpcSettings } from '../../clinical-settings.mjs';
+import {
+  isClinicalLocalOnlyMode,
+  persistClinicalUserBinding,
+  readRpcSettings,
+} from '../../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../../clinical-access-runtime.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import {
@@ -450,6 +454,7 @@ export async function handleProfileFormSubmit(ev) {
   }
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await refreshTeamsUiAfterChange();
   void import('../lan-sync.mjs')
     .then((mod) => {
       if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
@@ -494,18 +499,20 @@ async function persistProfileFromPanel({
     toast(res?.error || 'No se guardó el perfil.', 'error');
     return false;
   }
-  let settings = {};
-  try {
-    settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch (_e) {}
-  persistClinicalUserBinding({
+  const settings = readRpcSettings();
+  const binding = {
     userId,
     username: username || settings.clinicalUsername,
     displayName: clinicalName || settings.clinicalDisplayName,
     rank: rank || settings.clinicalRank,
     sala: sala ?? settings.clinicalSala,
     isProgramAdmin,
-  });
+    registered: true,
+  };
+  if (!isClinicalLocalOnlyMode(settings)) {
+    binding.lanProfileGateComplete = true;
+  }
+  persistClinicalUserBinding(binding);
   if (clinicalSessionContext.user) {
     const savedRank = String(res.profile?.rank || rank || '');
     clinicalSessionContext.user.rank =

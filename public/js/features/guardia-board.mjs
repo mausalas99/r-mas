@@ -15,7 +15,7 @@ import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
-import { syncGuardiaIncomingStrip, syncRotationConfigButton } from './clinical-rotation.mjs';
+import { syncGuardiaIncomingStrip, syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 import {
   getEntregaPhase,
@@ -225,7 +225,7 @@ export function renderGuardiaBoard(settings) {
   wireGuardiaEntregaPhaseButton(settings);
   syncEntregaPhaseChrome();
   wireGuardiaModeToggle(settings);
-  syncRotationConfigButton();
+  syncGuardiaRotationToolbar();
 
   clinicalSessionContext.scopeContext = {
     teams: clinicalSessionContext.teams || [],

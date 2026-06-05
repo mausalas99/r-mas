@@ -120,45 +120,90 @@ export async function probeLanHostBeacon(base, signal) {
 }
 
 /**
- * Discover ward hosts without bearer (beacon only). Used with shift PIN exchange.
- * @param {string} ownBaseUrl
  * @returns {Promise<string[]>}
  */
-export async function discoverLanHostsOnSubnetViaBeacon(ownBaseUrl) {
+export async function resolveLocalLanSubnetPrefixes(ownBaseUrl) {
+  if (typeof window !== 'undefined' && window.electronAPI?.getLanSubnetPrefixes) {
+    try {
+      const fromIpc = await window.electronAPI.getLanSubnetPrefixes();
+      if (Array.isArray(fromIpc) && fromIpc.length) {
+        return fromIpc
+          .map((p) => String(p || '').trim())
+          .filter((p) => /^\d+\.\d+\.\d+$/.test(p));
+      }
+    } catch (_e) {}
+  }
   const own = normalizeLanHostBase(ownBaseUrl);
-
   let seedHost = hostIpv4FromBase(own);
   if ((!seedHost || isLoopbackHostname(seedHost)) && typeof window !== 'undefined') {
-    if (window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === 'function') {
+    if (window.electronAPI?.getLanCandidateBaseUrl) {
       try {
         const fromElectron = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
         const h = hostIpv4FromBase(fromElectron);
         if (h && !isLoopbackHostname(h)) seedHost = h;
-      } catch (_e) {}
+      } catch (_e2) {}
     }
   }
   if (!seedHost && own) seedHost = hostIpv4FromBase(own);
-
   const prefix = subnetPrefixFromIpv4(seedHost);
   if (!prefix || !isPrivateIpv4(seedHost)) return [];
+  return [prefix];
+}
 
-  const skip = isLoopbackHostname(seedHost) ? '' : seedHost;
-  const hosts = orderedSubnetHosts(prefix, skip);
+/**
+ * Discover ward hosts without bearer (beacon only). Used with shift PIN exchange.
+ * @param {string} ownBaseUrl
+ * @param {{ subnetPrefixes?: string[] }} [opts]
+ * @returns {Promise<string[]>}
+ */
+export async function discoverLanHostsOnSubnetViaBeacon(ownBaseUrl, opts = {}) {
+  const own = normalizeLanHostBase(ownBaseUrl);
+  const prefixes =
+    Array.isArray(opts.subnetPrefixes) && opts.subnetPrefixes.length
+      ? opts.subnetPrefixes
+      : await resolveLocalLanSubnetPrefixes(own);
+  if (!prefixes.length) return [];
+
+  let seedHost = hostIpv4FromBase(own);
+  if (!seedHost || isLoopbackHostname(seedHost)) {
+    for (const prefix of prefixes) {
+      const probe = `${prefix}.1`;
+      if (isPrivateIpv4(probe)) {
+        seedHost = probe;
+        break;
+      }
+    }
+  }
+  const skip = seedHost && !isLoopbackHostname(seedHost) ? seedHost : '';
   /** @type {Set<string>} */
   const found = new Set();
 
-  for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
-    const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
-    const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
-    const probes = await Promise.all(bases.map((base) => probeLanHostBeacon(base)));
-    for (const url of probes) {
-      if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
-      found.add(url);
-      if (found.size >= MAX_FOUND) break;
+  for (const prefix of prefixes) {
+    if (found.size >= MAX_FOUND) break;
+    const hosts = orderedSubnetHosts(prefix, skip);
+    for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
+      const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
+      const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
+      const probes = await Promise.all(bases.map((base) => probeLanHostBeacon(base)));
+      for (const url of probes) {
+        if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
+        found.add(url);
+        if (found.size >= MAX_FOUND) break;
+      }
     }
   }
 
   return [...found].sort();
+}
+
+/**
+ * Beacon scan on every local /24 (hospital Wi‑Fi with multiple VLANs/NICs).
+ * @param {string} ownBaseUrl
+ * @returns {Promise<string[]>}
+ */
+export async function discoverLanHostsOnAllLocalSubnetsViaBeacon(ownBaseUrl) {
+  const prefixes = await resolveLocalLanSubnetPrefixes(ownBaseUrl);
+  return discoverLanHostsOnSubnetViaBeacon(ownBaseUrl, { subnetPrefixes: prefixes });
 }
 
 /**

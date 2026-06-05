@@ -592,7 +592,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
       ${legacyBanner}
       ${profileHandleBanner}
       ${lanDirectoryNote}
-      <form id="clinical-profile-form" class="clinical-teams-create-form">
+      <form id="clinical-profile-form" class="clinical-teams-create-form" novalidate>
         <div class="field-group">
           <label for="clinical-profile-username">Usuario LAN *</label>
           <input id="clinical-profile-username" type="text" class="profile-input"

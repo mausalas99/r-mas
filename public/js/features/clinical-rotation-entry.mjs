@@ -8,18 +8,39 @@ import { filterJoinedTeams } from './clinical-teams/shared.mjs';
 import { readRpcSettings, isClinicalLocalOnlyMode } from '../clinical-settings.mjs';
 import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
+import { syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
+import { storage } from '../storage.js';
+import { subscribeRoomSyncPhase } from '../lan-sync-state.mjs';
 
 let entryControlsWired = false;
 
-async function openLanConnectPanel() {
+async function openLanConnectPanelForPin() {
   try {
-    const { openConnectionDropdown } = await import('./lan-sync.mjs');
+    const { openConnectionDropdown, focusLanShiftPinInput } = await import('./lan-sync.mjs');
     if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+    if (typeof focusLanShiftPinInput === 'function') {
+      window.setTimeout(() => focusLanShiftPinInput(), 80);
+    }
   } catch (_e) {
     if (typeof window.showToast === 'function') {
-      window.showToast('Abre el panel ⇄ (Wi‑Fi) en la barra superior para conectar.', 'info');
+      window.showToast('Abre ⇄ (Wi‑Fi) arriba e ingresa el PIN del turno.', 'info');
     }
   }
+}
+
+async function handleLanConnectCtaClick() {
+  const savedPin = typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '';
+  if (/^\d{6}$/.test(savedPin)) {
+    try {
+      const { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
+      const result = await tryEasyLanShiftPinConnect({ force: true });
+      if (result.ok) {
+        syncClinicalRotationEntryChrome();
+        return;
+      }
+    } catch (_e) {}
+  }
+  await openLanConnectPanelForPin();
 }
 
 /** @returns {boolean} */
@@ -33,7 +54,12 @@ async function isLanConnectCtaVisible() {
   if (!needsLanConnectCta()) return false;
   try {
     const lan = await import('./lan-sync.mjs');
-    return !lan.isLanSessionConfiguredForRest?.();
+    if (!lan.isLanSessionConfiguredForRest?.()) return true;
+    const { getRoomSyncPhase, RoomSyncPhase } = await import('../lan-sync-state.mjs');
+    const roomId =
+      typeof lan.getActiveLiveSyncRoomId === 'function' ? lan.getActiveLiveSyncRoomId() : '';
+    if (!roomId) return true;
+    return getRoomSyncPhase(roomId) !== RoomSyncPhase.live;
   } catch (_e) {
     return true;
   }
@@ -54,9 +80,9 @@ function syncLanConnectCta(show) {
     btn.id = 'btn-clinical-lan-connect';
     btn.type = 'button';
     btn.className = 'app-bar-lan-connect-cta';
-    btn.textContent = 'Conéctate a la sala';
-    btn.title = 'Pega el enlace de invitación o escanea el anfitrión para aparecer en la guardia';
-    btn.addEventListener('click', () => void openLanConnectPanel());
+    btn.textContent = 'Conectar al turno';
+    btn.title = 'Usa el PIN de 6 dígitos del anfitrión (⇄)';
+    btn.addEventListener('click', () => void handleLanConnectCtaClick());
     section.appendChild(btn);
   }
 }
@@ -158,6 +184,7 @@ export function syncClinicalRotationEntryChrome() {
   if (rotationSection) rotationSection.hidden = !show;
   if (!show) {
     syncLanConnectCta(false);
+    syncGuardiaRotationToolbar();
     syncClinicalContextBarVisibility();
     return;
   }
@@ -178,6 +205,7 @@ export function syncClinicalRotationEntryChrome() {
   if (entrySub) entrySub.textContent = status.sub;
 
   void isLanConnectCtaVisible().then((visible) => syncLanConnectCta(visible));
+  syncGuardiaRotationToolbar();
   syncClinicalContextBarVisibility();
 }
 
@@ -199,6 +227,9 @@ export function wireClinicalRotationEntryControls() {
       syncClinicalRotationEntryChrome();
     });
     document.addEventListener('rpc-clinical-ops-synced', () => {
+      syncClinicalRotationEntryChrome();
+    });
+    subscribeRoomSyncPhase(() => {
       syncClinicalRotationEntryChrome();
     });
   }

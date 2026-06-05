@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   isIncomingPreviewWindow,
   isChartLockedForPatient,
+  syncRotationConfigButton,
 } from './clinical-rotation.mjs';
+import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 
 describe('clinical-rotation preview window', () => {
   const cycle = {
@@ -31,6 +33,20 @@ describe('clinical-rotation preview window', () => {
   it('returns false when cycle is missing dates', () => {
     assert.equal(isIncomingPreviewWindow(null, new Date()), false);
     assert.equal(isIncomingPreviewWindow({}, new Date()), false);
+  });
+
+  it('syncRotationConfigButton hides control for non-R4 users', () => {
+    if (typeof document === 'undefined') return;
+    document.body.innerHTML =
+      '<button type="button" id="btn-guardia-rotation-config"></button>';
+    const prev = clinicalSessionContext.user;
+    clinicalSessionContext.user = { rank: 'R2' };
+    syncRotationConfigButton();
+    assert.equal(document.getElementById('btn-guardia-rotation-config').hidden, true);
+    clinicalSessionContext.user = { rank: 'R4' };
+    syncRotationConfigButton();
+    assert.equal(document.getElementById('btn-guardia-rotation-config').hidden, false);
+    clinicalSessionContext.user = prev;
   });
 
   it('unlock chart when now is at or past assignment effective_at', () => {

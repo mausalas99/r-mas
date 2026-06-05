@@ -1034,6 +1034,8 @@ async function renderLanPanelOnce() {
 
   await appendLanShiftPinSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
+  appendLanShiftPinClientConnectSection(root, gen);
+  if (lanPanelRenderStale(gen)) return;
 
   if (runtime().isMobileWeb() && !hubStatus.connected) {
     appendLanMobileJoinSection(root);
@@ -1042,15 +1044,16 @@ async function renderLanPanelOnce() {
     appendLanMobileSharerCard(root);
   }
 
-  if (isLanElectronDesktop() && !needsInvitePaste) {
-    if (canOfferMobileLanShare()) {
+  if (isLanElectronDesktop()) {
+    if (!needsInvitePaste && canOfferMobileLanShare()) {
       appendLanInviteShareCards(root);
     }
     appendLanJoinOtherMacSection(root, {
-      open: isLanRemoteJoinMode() || !canOfferMobileLanShare(),
+      open: !needsInvitePaste && (isLanRemoteJoinMode() || !canOfferMobileLanShare()),
     });
-  } else if (isLanElectronDesktop() && canOfferMobileLanShare()) {
-    appendLanInviteShareCards(root);
+    if (needsInvitePaste && canOfferMobileLanShare()) {
+      appendLanInviteShareCards(root);
+    }
   }
 
   var salaDefs = [
@@ -1186,6 +1189,82 @@ function appendLanHostPinSection(root) {
   root.appendChild(wrap);
 }
 
+/** Client: enter shift PIN to find host across hospital Wi‑Fi / VLANs. */
+function appendLanShiftPinClientConnectSection(root, gen) {
+  if (!root || !isLanElectronDesktop() || lanPanelRenderStale(gen)) return;
+  void resolveHostBearerToken().then(function (bearer) {
+    if (lanPanelRenderStale(gen) || bearer) return;
+    if (root.querySelector('[data-lan-shift-pin-client]')) return;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'lan-connect-card lan-shift-pin-client-card';
+    wrap.setAttribute('data-lan-shift-pin-client', '1');
+
+    var title = document.createElement('p');
+    title.className = 'lan-connect-card-title';
+    title.textContent = 'PIN del turno';
+    wrap.appendChild(title);
+
+    var lead = document.createElement('p');
+    lead.className = 'lan-connect-card-hint';
+    lead.textContent = 'Pide los 6 dígitos al anfitrión (R4 en ⇄). R+ encuentra la sala en la red del hospital.';
+    wrap.appendChild(lead);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'lan-input-shift-pin';
+    input.className = 'profile-input';
+    input.inputMode = 'numeric';
+    input.maxLength = 6;
+    input.autocomplete = 'off';
+    input.placeholder = '123456';
+    var saved =
+      typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '';
+    if (saved) input.value = saved;
+    wrap.appendChild(input);
+
+    var row = document.createElement('div');
+    row.className = 'lan-connect-actions-row';
+    row.style.marginTop = '8px';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-lan-primary';
+    btn.style.flex = '1';
+    btn.textContent = 'Conectar';
+    btn.addEventListener('click', function () {
+      var pin = String(input.value || '').trim();
+      if (!/^\d{6}$/.test(pin)) {
+        runtime().showToast('Ingresa los 6 dígitos del PIN.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      void import('../../lan-shift-pin-connect.mjs')
+        .then(function (m) {
+          return m.tryEasyLanShiftPinConnect({ shiftPin: pin, force: true });
+        })
+        .then(function (result) {
+          if (result && result.ok) {
+            renderLanPanel({ force: true });
+            return;
+          }
+          runtime().showToast(
+            'No encontramos el turno con ese PIN. Revisa el Wi‑Fi clínico o pide otro PIN.',
+            'error'
+          );
+        })
+        .finally(function () {
+          btn.disabled = false;
+        });
+    });
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') btn.click();
+    });
+    row.appendChild(btn);
+    wrap.appendChild(row);
+    root.insertBefore(wrap, root.firstChild);
+  });
+}
+
 /** Shared ward PIN for registration (reusable until shift TTL). */
 async function appendLanShiftPinSection(root, gen) {
   if (!root || !isLanElectronDesktop()) return;
@@ -1215,7 +1294,7 @@ async function appendLanShiftPinSection(root, gen) {
     var lead = document.createElement('p');
     lead.className = 'lan-shift-pin-lead';
     lead.textContent =
-      'Comparte este PIN al registrar @usuario (Configura tu rotación). Válido hasta fin de mes.';
+      'Dilo en voz alta al equipo (6 dígitos). Sirve al registrar @usuario o si cambian de Wi‑Fi.';
     wrap.appendChild(lead);
 
     var display = document.createElement('p');
@@ -1781,14 +1860,16 @@ export function lanHubStatusCopy() {
           : 'R1\u2013R3 esperan anfitri\u00f3n R4 o escalada. Pide enlace (\u21C4) o pégalo abajo.';
       return {
         connected: false,
-        line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
-        hint: escHint,
+        line: 'Sin conexi\u00f3n al turno',
+        hint:
+          'Pide el PIN de 6 d\u00edgitos al anfitri\u00f3n (⇄) o pulsa Conectar al turno arriba. ' +
+          escHint,
       };
     }
     return {
       connected: false,
-      line: 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026',
-      hint: 'Si otra Mac ya es anfitri\u00f3n, pide su enlace (\u21C4 \u2192 Copiar enlace de sala) o pégalo abajo.',
+      line: 'Sin conexi\u00f3n al turno',
+      hint: 'Pide el PIN de 6 d\u00edgitos al anfitri\u00f3n (⇄) o con\u00e9ctate abajo.',
     };
   }
   if (isLanRemoteJoinMode()) {
@@ -2378,6 +2459,14 @@ export function closeConnectionDropdown() {
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'false');
 }
 
+export function focusLanShiftPinInput() {
+  var input = document.getElementById('lan-input-shift-pin');
+  if (!input) return false;
+  input.focus();
+  if (typeof input.select === 'function') input.select();
+  return true;
+}
+
 export function openConnectionDropdown() {
   runtime().closeSettingsDropdown();
   var dd = document.getElementById('connection-dropdown');
@@ -2391,6 +2480,9 @@ export function openConnectionDropdown() {
   wireLanLwwToastPref();
   syncLanLwwOverwriteToastPrefUi();
   renderLanPanel({ force: true });
+  window.setTimeout(function () {
+    focusLanShiftPinInput();
+  }, 120);
 }
 
 export function toggleConnectionDropdown(ev) {

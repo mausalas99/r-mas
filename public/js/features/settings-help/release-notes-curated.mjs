@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_701 = [
+  {
+    title: 'PIN del turno',
+    body:
+      '6 dígitos del anfitrión (⇄). Pulsa <strong>Conectar</strong> o <strong>Conectar al turno</strong> en la barra — R+ encuentra la sala en la red del hospital.',
+  },
+  {
+    title: 'Cambio de Wi‑Fi',
+    body:
+      'Al cambiar de red o quedar en «reconectando…», R+ vuelve a buscar el anfitrión con el mismo PIN (sin pegar enlaces ni IPs).',
+  },
+  {
+    title: 'Más simple',
+    body:
+      'El enlace de invitación queda en opción avanzada. Mensajes claros: «Buscando anfitrión del turno…», «Listo: conectado al turno».',
+  },
+  {
+    title: 'Incluye 6.7.0',
+    body:
+      'Directorio LAN corregido, sin falso «Perfil guardado», diagnóstico ⇄ y empaquetado Windows SQLCipher.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.0.1 en todas</strong> las Macs, PCs e iPads el mismo día. Misma red clínica que el anfitrión; firewall <strong>3738</strong> en Windows.',
+  },
+];
+
 var RELEASE_NOTES_670 = [
   {
     title: 'Directorio LAN corregido',
@@ -197,9 +225,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_670;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_701;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.0.1': RELEASE_NOTES_701,
   '6.7.0': RELEASE_NOTES_670,
   '6.6.9': RELEASE_NOTES_669,
   '6.6.8': RELEASE_NOTES_668,
