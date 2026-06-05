@@ -43,13 +43,33 @@ function pathAllowed(entityType, path) {
   return rules.some((rule) => rule.test(path));
 }
 
+function hasPathMeta(meta, rawPath, path) {
+  return Object.prototype.hasOwnProperty.call(meta, rawPath) || Object.prototype.hasOwnProperty.call(meta, path);
+}
+
+function parseDeltaPayload(delta) {
+  const values = delta && delta.pathValues && typeof delta.pathValues === 'object' ? delta.pathValues : null;
+  const meta = delta && delta.pathMeta && typeof delta.pathMeta === 'object' ? delta.pathMeta : null;
+  return { values, meta };
+}
+
+function classifyDeltaPath(type, rawPath, meta) {
+  try {
+    const path = normalizeDeltaPath(rawPath);
+    if (!hasPathMeta(meta, rawPath, path)) return { outcome: 'reject', path, missingMeta: true };
+    if (!pathAllowed(type, path)) return { outcome: 'reject', path, missingMeta: false };
+    return { outcome: 'accept', path };
+  } catch {
+    return { outcome: 'reject', path: rawPath, missingMeta: false };
+  }
+}
+
 function validateDeltaPaths(entityType, delta) {
   const type = String(entityType || '');
   if (!SUPPORTED_ENTITIES.has(type)) {
     return { ok: false, error: 'unsupported_entity', rejectedPaths: [] };
   }
-  const values = delta && delta.pathValues && typeof delta.pathValues === 'object' ? delta.pathValues : null;
-  const meta = delta && delta.pathMeta && typeof delta.pathMeta === 'object' ? delta.pathMeta : null;
+  const { values, meta } = parseDeltaPayload(delta);
   if (!values || !meta) return { ok: false, error: 'invalid_delta', rejectedPaths: [] };
 
   const paths = [];
@@ -57,23 +77,13 @@ function validateDeltaPaths(entityType, delta) {
   let missingMeta = false;
 
   for (const rawPath of Object.keys(values)) {
-    let path;
-    try {
-      path = normalizeDeltaPath(rawPath);
-    } catch (_e) {
-      rejectedPaths.push(rawPath);
+    const result = classifyDeltaPath(type, rawPath, meta);
+    if (result.outcome === 'accept') {
+      paths.push(result.path);
       continue;
     }
-    if (!Object.prototype.hasOwnProperty.call(meta, rawPath) && !Object.prototype.hasOwnProperty.call(meta, path)) {
-      missingMeta = true;
-      rejectedPaths.push(path);
-      continue;
-    }
-    if (!pathAllowed(type, path)) {
-      rejectedPaths.push(path);
-      continue;
-    }
-    paths.push(path);
+    if (result.missingMeta) missingMeta = true;
+    rejectedPaths.push(result.path);
   }
 
   if (rejectedPaths.length) {
