@@ -564,6 +564,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       b = {
         revision: 0,
         entityVersions: {},
+        deltaSeq: 0,
+        deltaLog: [],
         committedAt: nowIso(),
         uploadedByClientId: '',
         entities: {},
@@ -578,6 +580,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     }
     if (!b.entities || typeof b.entities !== 'object') b.entities = {};
     if (!b.entityVersions || typeof b.entityVersions !== 'object') b.entityVersions = {};
+    if (!Array.isArray(b.deltaLog)) b.deltaLog = [];
+    if (!Number.isFinite(Number(b.deltaSeq))) b.deltaSeq = 0;
     return b;
   }
 
@@ -596,7 +600,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       const key = type === 'agenda' ? agendaEntityKey(id) : todoEntityKey(patientId, id);
       const rec = bundle.entities[key];
       if (!rec || rec.deleted) return null;
-      return { version: Number(rec.version || 1), data: rec.data };
+      return {
+        version: Number(rec.version || 1),
+        data: rec.data,
+        fieldMeta: rec.fieldMeta && typeof rec.fieldMeta === 'object' ? rec.fieldMeta : {},
+      };
     }
     if (type === 'historiaClinica') {
       const bundle = getRoomSyncBundle(roomId);
@@ -606,7 +614,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       if (bundle.entities) {
         const rec = bundle.entities[key];
         if (rec && !rec.deleted) {
-          return { version: Number(rec.version || 1), data: rec.data };
+          return {
+            version: Number(rec.version || 1),
+            data: rec.data,
+            fieldMeta: rec.fieldMeta && typeof rec.fieldMeta === 'object' ? rec.fieldMeta : {},
+          };
         }
       }
       const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
@@ -616,7 +628,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         const hc = p.historiaClinica;
         if (!hc || typeof hc !== 'object') return null;
         const data = hc.data && typeof hc.data === 'object' ? hc.data : hc;
-        return { version: Number(hc.version || 1), data };
+        return {
+          version: Number(hc.version || 1),
+          data,
+          fieldMeta: hc.fieldMeta && typeof hc.fieldMeta === 'object' ? hc.fieldMeta : {},
+        };
       }
       return null;
     }
@@ -721,6 +737,89 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     throw new Error('unsupported entity type');
   }
 
+  function ensureDeltaEntity({ roomId, entityType, entityId, patientId }) {
+    const state = ensureLoadedSync();
+    const bundle = ensureRoomBundle(state, roomId);
+    const type = String(entityType || '');
+    const id = String(entityId || '');
+    let key = '';
+    if (type === 'agenda') key = agendaEntityKey(id);
+    else if (type === 'todo') key = todoEntityKey(patientId, id);
+    else if (type === 'historiaClinica') key = historiaClinicaEntityKey(patientId || id);
+    else throw new Error('unsupported_delta_entity');
+
+    if (!bundle.entities[key] || typeof bundle.entities[key] !== 'object') {
+      bundle.entities[key] = {
+        version: 0,
+        data: {},
+        fieldMeta: {},
+        updatedAt: nowIso(),
+        deleted: false,
+      };
+    }
+    if (!bundle.entities[key].fieldMeta || typeof bundle.entities[key].fieldMeta !== 'object') {
+      bundle.entities[key].fieldMeta = {};
+    }
+    if (!bundle.entities[key].data || typeof bundle.entities[key].data !== 'object') {
+      bundle.entities[key].data = {};
+    }
+    return { bundle, key, rec: bundle.entities[key] };
+  }
+
+  function commitDeltaEntity({
+    roomId,
+    entityType,
+    entityId,
+    patientId,
+    data,
+    fieldMeta,
+    clientId,
+    txId,
+    acceptedPaths,
+    buildFieldMeta,
+  }) {
+    const { bundle, key, rec } = ensureDeltaEntity({ roomId, entityType, entityId, patientId });
+    const nextVersion = Number(rec.version || 0) + 1;
+    const nextSeq = Number(bundle.deltaSeq || 0) + 1;
+    const committedAt = nowIso();
+    const nextFieldMeta =
+      typeof buildFieldMeta === 'function'
+        ? buildFieldMeta({ deltaSeq: nextSeq, committedAt, previousFieldMeta: fieldMeta || {} })
+        : fieldMeta;
+    rec.version = nextVersion;
+    rec.data = data && typeof data === 'object' ? data : {};
+    rec.fieldMeta = nextFieldMeta && typeof nextFieldMeta === 'object' ? nextFieldMeta : {};
+    rec.updatedAt = committedAt;
+    rec.deleted = false;
+    bundle.entityVersions[key] = nextVersion;
+    bundle.revision = Number(bundle.revision || 0) + 1;
+    bundle.deltaSeq = nextSeq;
+    bundle.committedAt = committedAt;
+    if (!Array.isArray(bundle.deltaLog)) bundle.deltaLog = [];
+    return { bundle, key, rec, version: nextVersion, deltaSeq: nextSeq, committedAt };
+  }
+
+  function appendDeltaLog(roomId, entry) {
+    const state = ensureLoadedSync();
+    const bundle = ensureRoomBundle(state, roomId);
+    if (!Array.isArray(bundle.deltaLog)) bundle.deltaLog = [];
+    bundle.deltaLog.push(entry);
+    while (bundle.deltaLog.length > 200) bundle.deltaLog.shift();
+    persistState();
+  }
+
+  function getRoomDeltaLog(roomId, afterSeq) {
+    const bundle = getRoomSyncBundle(roomId);
+    if (!bundle) return { ok: false, error: 'no_bundle', deltas: [] };
+    const seq = Number(afterSeq || 0);
+    const log = Array.isArray(bundle.deltaLog) ? bundle.deltaLog : [];
+    const deltas = log.filter((entry) => Number(entry.deltaSeq || 0) > seq);
+    if (deltas.length && Number(deltas[0].deltaSeq) !== seq + 1) {
+      return { ok: false, error: 'delta_gap', deltas: [] };
+    }
+    return { ok: true, deltas, latestDeltaSeq: Number(bundle.deltaSeq || 0) };
+  }
+
   function appendRoomBundleAuditInMemory(roomId, entry) {
     const state = ensureLoadedSync();
     const bundle = ensureRoomBundle(state, roomId);
@@ -813,6 +912,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     putRoomClinicalOps,
     getEntity,
     setEntity,
+    ensureDeltaEntity,
+    commitDeltaEntity,
+    appendDeltaLog,
+    getRoomDeltaLog,
     materializeRoomViews,
     archiveHistoriaClinicaForPatient,
     appendRoomBundleAudit,
