@@ -27,6 +27,10 @@ import {
   resetEntregaModalUi,
   resolveEntregaActorRole as resolveEntregaActorRoleImpl,
 } from './entrega-modal-ui.mjs';
+import {
+  openEntregaRosterPanel,
+  closeEntregaRosterPanel,
+} from './entrega-roster-panel.mjs';
 
 export function resolveEntregaActorRole(currentUser, existingGuardia) {
   return resolveEntregaActorRoleImpl(currentUser, existingGuardia);
@@ -606,6 +610,7 @@ export function endEntregaPhase() {
 export function toggleEntregaPhase(opts = {}) {
   if (isEntregaPhaseActive()) {
     endEntregaPhase();
+    closeEntregaRosterPanel();
     toast('Fase de entrega finalizada.', 'info');
     opts.renderGuardiaBoard?.(opts.settings);
     return { active: false };
@@ -613,7 +618,6 @@ export function toggleEntregaPhase(opts = {}) {
 
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const userId = String(clinicalSessionContext.user?.user_id || '');
   const sala = resolveUserSalaForEntrega(teams, userId);
 
@@ -622,6 +626,7 @@ export function toggleEntregaPhase(opts = {}) {
     return { active: false };
   }
 
+  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const covering = resolveR1GuardiaCovering(teams, users, sala);
   if (!covering) {
     toast(`No hay R1 de guardia en ${sala} hoy. Revisa «Guardia» en Mi rotación.`, 'error');
@@ -629,11 +634,7 @@ export function toggleEntregaPhase(opts = {}) {
   }
 
   startEntregaPhase(covering);
-  toast(
-    `Entrega activa → ${covering.coveringLabel}. Toca cada paciente para entregar.`,
-    'success'
-  );
-  opts.renderGuardiaBoard?.(opts.settings);
+  openEntregaRosterPanel(opts.settings);
   return { active: true, covering };
 }
 
