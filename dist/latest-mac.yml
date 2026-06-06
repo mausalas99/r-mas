@@ -1,17 +1,17 @@
-version: 7.1.1
+version: 7.1.2
 files:
-  - url: R+-7.1.1-arm64.zip
-    sha512: XwvuBP2uPwA5clGq+fM1ss/ICfoK/CpCf+8egHiwW4BihdV6EXb0ebadQK+AfwPTpYLAhSSFVn/78/Eo9p2iHA==
-    size: 128753623
-  - url: R+-7.1.1-arm64.dmg
-    sha512: 0R94qPYdT9YLrXsZZtZ4rxKoI5nkNHSnr0GNkpZmBtTNY2V4ZKBSIxn48Z1z0glCV4w6tdCu4Ehv5gav5GL3uQ==
-    size: 134076929
-  - url: R+-7.1.1-x64.zip
-    sha512: kBcSYDBbqK6f5wwvtDrCIHmYRKrD6i35biGSSBsZ0OuSVpr1DCW9ixQDGehwohsDqhz/A/7dUb6JKqlZFLi2Mw==
-    size: 137127716
-  - url: R+-7.1.1-x64.dmg
-    sha512: HddkTFvtAu36sR9dmCcOZeoLB+EMBXgfrtmLhUXJtz+XKuFl9HAX4lG1J6ezXUm2ubqI4dZQ/sVJR5pwFXKSKg==
-    size: 142571913
-path: R+-7.1.1-arm64.zip
-sha512: XwvuBP2uPwA5clGq+fM1ss/ICfoK/CpCf+8egHiwW4BihdV6EXb0ebadQK+AfwPTpYLAhSSFVn/78/Eo9p2iHA==
-releaseDate: '2026-06-06T16:08:35.000Z'
+  - url: R+-7.1.2-arm64.zip
+    sha512: 3gJ7J4iveHbRCS/1j2h3tH/BARwa9KZlywdxLNO+lfaSsbolh7DygFLoTl4QbdXUrJy1BFafFs6fIq9KJY8Nhg==
+    size: 128388217
+  - url: R+-7.1.2-arm64.dmg
+    sha512: sJAtLvN0T8mlEyY30kIVKEq92+JpYs98P1rAbF1vqELvI0iqL2SuCIYZbieryHzGqYAY1lvzjaBn+uNV+YGFNw==
+    size: 133673020
+  - url: R+-7.1.2-x64.zip
+    sha512: 6GmFzUNIy+kXbN0B8TkqsTf6vWYnIbdI2bMFVIXUQA0ym1ynHgnLUnBhPhV3ht0oyDYgkAipOUPIe1FEE3hL5w==
+    size: 136762283
+  - url: R+-7.1.2-x64.dmg
+    sha512: qwHRdEKmDHeeWYJF6AD+FjrxVo/WUNZ2BfSD1S9woASOXi7FSOUuS4H2BH20+wwZqay1+Xwh0oZ+9t1l4eDf1Q==
+    size: 142163181
+path: R+-7.1.2-arm64.zip
+sha512: 3gJ7J4iveHbRCS/1j2h3tH/BARwa9KZlywdxLNO+lfaSsbolh7DygFLoTl4QbdXUrJy1BFafFs6fIq9KJY8Nhg==
+releaseDate: '2026-06-06T17:44:25.000Z'
