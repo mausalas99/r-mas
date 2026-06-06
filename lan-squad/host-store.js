@@ -766,6 +766,16 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     return { bundle, key, rec: bundle.entities[key] };
   }
 
+  function commandEntityKey(command) {
+    const domain = String(command && command.domain || '').trim();
+    const entityId = String(command && command.entityId || '').trim();
+    const patientId = String(command && command.patientId || '').trim();
+    if (domain === 'estadoActual') return `cmd:estadoActual:${entityId || patientId}`;
+    if (domain === 'eventualidades') return `cmd:eventualidades:${entityId || patientId}`;
+    if (domain === 'pendientes') return `cmd:pendientes:${entityId || patientId}`;
+    throw new Error('unsupported_command_domain');
+  }
+
   function commitDeltaEntity({
     roomId,
     entityType,
@@ -818,6 +828,71 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       return { ok: false, error: 'delta_gap', deltas: [] };
     }
     return { ok: true, deltas, latestDeltaSeq: Number(bundle.deltaSeq || 0) };
+  }
+
+  function ensureRoomBundleForTest(roomId) {
+    return ensureRoomBundle(ensureLoadedSync(), roomId);
+  }
+
+  function getAppliedCommand(roomId, commandId) {
+    const bundle = getRoomSyncBundle(roomId);
+    const id = String(commandId || '').trim();
+    if (!bundle || !id || !Array.isArray(bundle.deltaLog)) return null;
+    return bundle.deltaLog.find((entry) => entry && entry.type === 'command' && entry.commandId === id) || null;
+  }
+
+  function getCommandEntityState(roomId, command) {
+    const bundle = ensureRoomBundle(ensureLoadedSync(), roomId);
+    const key = commandEntityKey(command);
+    const rec = bundle.entities[key];
+    return {
+      key,
+      version: Number(rec && rec.version || 0),
+      data: rec && rec.data && typeof rec.data === 'object' ? rec.data : {},
+      meta: rec && rec.commandMeta && typeof rec.commandMeta === 'object' ? rec.commandMeta : {},
+    };
+  }
+
+  function commitCommandEntity({ roomId, command, data, meta, status, nowIsoOverride }) {
+    const state = ensureLoadedSync();
+    const bundle = ensureRoomBundle(state, roomId);
+    const key = commandEntityKey(command);
+    const rec = bundle.entities[key] && typeof bundle.entities[key] === 'object'
+      ? bundle.entities[key]
+      : { version: 0, data: {}, commandMeta: {}, deleted: false };
+    const nextSeq = Number(bundle.deltaSeq || 0) + 1;
+    const committedAt = nowIsoOverride || nowIso();
+    rec.version = Number(rec.version || 0) + 1;
+    rec.data = data && typeof data === 'object' ? data : {};
+    rec.commandMeta = meta && typeof meta === 'object' ? meta : {};
+    rec.updatedAt = committedAt;
+    rec.deleted = false;
+    bundle.entities[key] = rec;
+    bundle.entityVersions[key] = rec.version;
+    bundle.revision = Number(bundle.revision || 0) + 1;
+    bundle.deltaSeq = nextSeq;
+    bundle.committedAt = committedAt;
+    if (!Array.isArray(bundle.deltaLog)) bundle.deltaLog = [];
+    const entry = {
+      type: 'command',
+      status: status || 'accepted',
+      commandId: String(command.commandId || ''),
+      domain: String(command.domain || ''),
+      op: String(command.op || ''),
+      roomId,
+      patientId: command.patientId || null,
+      entityId: command.entityId || null,
+      originClientId: String(command.clientId || ''),
+      clientCreatedAt: Number(command.clientCreatedAt || 0),
+      deltaSeq: nextSeq,
+      revision: bundle.revision,
+      committedAt,
+      payload: command.payload || {},
+    };
+    bundle.deltaLog.push(entry);
+    while (bundle.deltaLog.length > 200) bundle.deltaLog.shift();
+    persistState();
+    return { bundle, key, rec, entry, version: rec.version, deltaSeq: nextSeq, revision: bundle.revision, committedAt };
   }
 
   function appendRoomBundleAuditInMemory(roomId, entry) {
@@ -916,6 +991,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     commitDeltaEntity,
     appendDeltaLog,
     getRoomDeltaLog,
+    ensureRoomBundleForTest,
+    getAppliedCommand,
+    getCommandEntityState,
+    commitCommandEntity,
     materializeRoomViews,
     archiveHistoriaClinicaForPatient,
     appendRoomBundleAudit,
