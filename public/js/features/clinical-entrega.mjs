@@ -297,6 +297,26 @@ function wireEntregaFormOnce() {
     });
   }
 
+  const navPrev = document.getElementById('entrega-nav-prev');
+  const navNext = document.getElementById('entrega-nav-next');
+  const navigateRosterPatient = (delta) => {
+    const entregaForm = document.getElementById('entrega-form');
+    const ids = entregaForm?._entregaRosterIds;
+    const idx = entregaForm?._entregaPatientIndex;
+    if (!ids?.length || !Number.isFinite(idx)) return;
+    const nextIdx = idx + delta;
+    if (nextIdx < 0 || nextIdx >= ids.length) return;
+    openEntregaModal({
+      patientId: String(ids[nextIdx]),
+      patientIndex: nextIdx,
+      patientTotal: ids.length,
+      rosterPatientIds: ids,
+      onConfirm: entregaForm._entregaOnConfirm,
+    });
+  };
+  navPrev?.addEventListener('click', () => navigateRosterPatient(-1));
+  navNext?.addEventListener('click', () => navigateRosterPatient(1));
+
   if (!form) return;
 
   form.addEventListener('submit', async (ev) => {
@@ -356,7 +376,14 @@ function wireEntregaFormOnce() {
 }
 
 /**
- * @param {{ patientId: string, guardiaId?: string, onConfirm?: () => void }} opts
+ * @param {{
+ *   patientId: string,
+ *   guardiaId?: string,
+ *   onConfirm?: () => void,
+ *   patientIndex?: number,
+ *   patientTotal?: number,
+ *   rosterPatientIds?: string[],
+ * }} opts
  */
 export function openEntregaModal(opts) {
   wireEntregaFormOnce();
@@ -375,6 +402,42 @@ export function openEntregaModal(opts) {
   if (guardiaId) form.dataset.guardiaId = guardiaId;
   else delete form.dataset.guardiaId;
   form._entregaOnConfirm = typeof opts?.onConfirm === 'function' ? opts.onConfirm : null;
+  form._entregaRosterIds = Array.isArray(opts?.rosterPatientIds) ? opts.rosterPatientIds.slice() : null;
+  form._entregaPatientIndex = Number.isFinite(opts?.patientIndex) ? opts.patientIndex : null;
+
+  const patient = resolveEntregaPatientRow(patientId);
+  const navName = document.getElementById('entrega-modal-nav-name');
+  const navDx = document.getElementById('entrega-modal-nav-dx');
+  const navCounter = document.getElementById('entrega-modal-nav-counter');
+  const activeBadge = document.getElementById('entrega-modal-active-badge');
+  const navPrev = document.getElementById('entrega-nav-prev');
+  const navNext = document.getElementById('entrega-nav-next');
+
+  if (navName) {
+    const bed = patient?.bed_label || patient?.bed || '—';
+    const name = String(patient?.name || '').trim();
+    navName.textContent = name ? `${name} · Cama ${bed}` : '—';
+  }
+  if (navDx) {
+    navDx.textContent = patient
+      ? String(patient.diagnosticosText || patient.service || '').toUpperCase()
+      : '';
+  }
+  if (navCounter) {
+    const idx = opts?.patientIndex;
+    const total = opts?.patientTotal;
+    navCounter.textContent =
+      Number.isFinite(idx) && Number.isFinite(total) && total > 0
+        ? `${idx + 1} de ${total}`
+        : '';
+  }
+  if (activeBadge) {
+    activeBadge.classList.toggle('hidden', !getEntregaPhase()?.active);
+  }
+  const rosterIdx = Number.isFinite(opts?.patientIndex) ? opts.patientIndex : -1;
+  const rosterTotal = Array.isArray(opts?.rosterPatientIds) ? opts.rosterPatientIds.length : 0;
+  if (navPrev) navPrev.disabled = rosterIdx <= 0;
+  if (navNext) navNext.disabled = rosterIdx < 0 || rosterIdx >= rosterTotal - 1;
 
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
@@ -475,7 +538,7 @@ export function openEntregaModal(opts) {
   const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
   const srcTeam =
     existing?.source_team_id || resolveDefaultSourceTeamId();
-  const patientRow = resolveEntregaPatientRow(patientId);
+  const patientRow = patient || resolveEntregaPatientRow(patientId);
   void mountEntregaPendientesUi({
     actor,
     pendientesJson: existing?.pendientes_json,
@@ -495,6 +558,11 @@ export function openEntregaModal(opts) {
     } else {
       title.textContent = 'Nueva entrega';
     }
+  }
+
+  const coverHint = document.getElementById('entrega-covering-hint');
+  if (coverHint) {
+    coverHint.classList.toggle('hidden', !coverHint.textContent?.trim());
   }
 
   bd.classList.add('open');

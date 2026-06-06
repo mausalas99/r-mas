@@ -221,6 +221,8 @@ export function resetEntregaModalUi() {
   draftSourceTeamId = '';
   draftVitalsPlan = defaultVitalsPlan();
   draftHandoffContext = defaultHandoffContext();
+  const statusSlot = document.getElementById('entrega-clinical-status-slot');
+  if (statusSlot) statusSlot.innerHTML = '';
   const handoffPanel = document.getElementById('entrega-handoff-panel');
   if (handoffPanel) handoffPanel.innerHTML = '';
   const handoffSummary = document.getElementById('entrega-handoff-summary');
@@ -376,10 +378,8 @@ function checkPill(name, label, checked, extraClass = '', inputId = '') {
 function updateHandoffSummaryLine() {
   const text = handoffContextSummary(draftHandoffContext);
   const summary = document.getElementById('entrega-handoff-summary');
-  const collapsed = document.getElementById('entrega-handoff-summary-collapsed');
   const display = text === 'Sin resumen clínico' ? '' : text;
   if (summary) summary.textContent = display;
-  if (collapsed) collapsed.textContent = display;
 }
 
 function syncHandoffSupportCards(host) {
@@ -506,7 +506,7 @@ function syncHandoffDraftFromDom(host) {
   updateHandoffSummaryLine();
 }
 
-function buildHandoffPanelMarkup(ctx, isCritical) {
+function buildClinicalStatusMarkup(ctx) {
   const norm = normalizeHandoffContext(ctx);
   const statusOpts = CLINICAL_STATUS_OPTIONS.map(
     (o) =>
@@ -514,6 +514,13 @@ function buildHandoffPanelMarkup(ctx, isCritical) {
         o.value === norm.clinicalStatus ? ' selected' : ''
       }>${escapeHtml(o.label)}</option>`
   ).join('');
+  return `
+    <label for="entrega-clinical-status">Estado general</label>
+    <select id="entrega-clinical-status" class="profile-input">${statusOpts}</select>`;
+}
+
+function buildHandoffPanelMarkup(ctx, isCritical) {
+  const norm = normalizeHandoffContext(ctx);
   const ventModes = VENTILATION_MODES.map(
     (m) =>
       `<option value="${escapeHtml(m.value)}"${
@@ -522,72 +529,77 @@ function buildHandoffPanelMarkup(ctx, isCritical) {
   ).join('');
 
   return `
-    <div class="entrega-handoff-context-grid">
-      <div class="field-group">
-        <label for="entrega-clinical-status">Estado general</label>
-        <select id="entrega-clinical-status" class="profile-input">${statusOpts}</select>
-      </div>
-      <div class="entrega-handoff-flags">
-        <div class="entrega-check-section">
-          <span class="entrega-check-section__label">Marcadores</span>
-          <div class="entrega-check-pills">
-            ${checkPill('entrega-critical', 'Paciente crítico', isCritical, 'entrega-check-pill--alert', 'entrega-critical')}
-            ${checkPill('entrega-signed-refusal', 'Negativas firmadas', norm.signedRefusal, 'entrega-check-pill--alert', 'entrega-signed-refusal')}
-            ${checkPill('entrega-show', 'Show', norm.show, 'entrega-check-pill--alert', 'entrega-show')}
-          </div>
-        </div>
+    <div class="entrega-markers-block">
+      <span class="entrega-field-label">Marcadores</span>
+      <div class="entrega-check-pills entrega-markers-pills">
+        ${checkPill('entrega-critical', 'Paciente crítico', isCritical, 'entrega-check-pill--alert', 'entrega-critical')}
+        ${checkPill('entrega-signed-refusal', 'Negativas firmadas', norm.signedRefusal, 'entrega-check-pill--alert', 'entrega-signed-refusal')}
+        ${checkPill('entrega-show', 'Show', norm.show, 'entrega-check-pill--alert', 'entrega-show')}
       </div>
     </div>
-    <div class="entrega-handoff-support">
-      <div class="entrega-handoff-support-card${
-        norm.vasopressor.active ? ' is-active' : ''
-      }" data-handoff-card="vasopressor">
-        <div class="entrega-handoff-support-card__head">
-          ${checkPill('entrega-vaso-active', 'Vasopresor', norm.vasopressor.active)}
+    <div class="entrega-section-divider" aria-hidden="true">Soporte · Signos vitales</div>
+    <div class="entrega-middle-row">
+      <div class="entrega-support-stack">
+        <div class="entrega-handoff-support-card${
+          norm.vasopressor.active ? ' is-active' : ''
+        }" data-handoff-card="vasopressor">
+          <div class="entrega-handoff-support-card__head">
+            ${checkPill('entrega-vaso-active', 'Vasopresor', norm.vasopressor.active)}
+          </div>
+          <div class="entrega-handoff-support-detail${
+            norm.vasopressor.active ? '' : ' is-hidden'
+          }" data-handoff-detail="vasopressor">
+            ${buildVasoDoseMarkup(norm.vasopressor)}
+          </div>
         </div>
-        <div class="entrega-handoff-support-detail${
-          norm.vasopressor.active ? '' : ' is-hidden'
-        }" data-handoff-detail="vasopressor">
-          ${buildVasoDoseMarkup(norm.vasopressor)}
+        <div class="entrega-handoff-support-card${
+          norm.ventilation.active ? ' is-active' : ''
+        }" data-handoff-card="ventilation">
+          <div class="entrega-handoff-support-card__head">
+            ${checkPill('entrega-vent-active', 'Ventilación / soporte resp.', norm.ventilation.active)}
+          </div>
+          <div class="entrega-handoff-support-detail${
+            norm.ventilation.active ? '' : ' is-hidden'
+          }" data-handoff-detail="ventilation">
+            <div class="field-group">
+              <label for="entrega-vent-mode">Modalidad</label>
+              <select id="entrega-vent-mode" class="profile-input">${ventModes}</select>
+            </div>
+            <div class="field-group">
+              <label for="entrega-vent-fio2">FiO₂ / flujo</label>
+              <input id="entrega-vent-fio2" class="profile-input" type="text" placeholder="ej. 40% · 50 L/min" value="${escapeHtml(norm.ventilation.fio2)}">
+            </div>
+            <div class="field-group">
+              <label for="entrega-vent-settings">Parámetros</label>
+              <input id="entrega-vent-settings" class="profile-input" type="text" placeholder="PEEP, VT, presiones…" value="${escapeHtml(norm.ventilation.settings)}">
+            </div>
+          </div>
         </div>
       </div>
-      <div class="entrega-handoff-support-card${
-        norm.ventilation.active ? ' is-active' : ''
-      }" data-handoff-card="ventilation">
-        <div class="entrega-handoff-support-card__head">
-          ${checkPill('entrega-vent-active', 'Ventilación / soporte resp.', norm.ventilation.active)}
-        </div>
-        <div class="entrega-handoff-support-detail${
-          norm.ventilation.active ? '' : ' is-hidden'
-        }" data-handoff-detail="ventilation">
-          <div class="field-group">
-            <label for="entrega-vent-mode">Modalidad</label>
-            <select id="entrega-vent-mode" class="profile-input">${ventModes}</select>
-          </div>
-          <div class="field-group">
-            <label for="entrega-vent-fio2">FiO₂ / flujo</label>
-            <input id="entrega-vent-fio2" class="profile-input" type="text" placeholder="ej. 40% · 50 L/min" value="${escapeHtml(norm.ventilation.fio2)}">
-          </div>
-          <div class="field-group">
-            <label for="entrega-vent-settings">Parámetros</label>
-            <input id="entrega-vent-settings" class="profile-input" type="text" placeholder="PEEP, VT, presiones…" value="${escapeHtml(norm.ventilation.settings)}">
-          </div>
-        </div>
+      <div class="entrega-vitals-col" aria-label="Signos vitales en guardia">
+        <div id="entrega-vitals-panel" class="entrega-vitals-panel"></div>
       </div>
     </div>
     <div class="field-group entrega-handoff-notes">
       <label for="entrega-handoff-notes">Notas breves de entrega</label>
-      <input id="entrega-handoff-notes" class="profile-input" type="text" maxlength="240" placeholder="Antecedentes relevantes para la guardia…" value="${escapeHtml(norm.notes)}">
+      <textarea id="entrega-handoff-notes" class="profile-input entrega-handoff-notes-input" maxlength="240" rows="2" placeholder="Antecedentes relevantes para la guardia…">${escapeHtml(norm.notes)}</textarea>
     </div>`;
+}
+
+function handoffDomRoot() {
+  return document.getElementById('entrega-form') || document.getElementById('entrega-modal');
 }
 
 function wireHandoffPanelOnce() {
   if (handoffUiWired) return;
-  const host = document.getElementById('entrega-handoff-panel');
-  if (!host) return;
+  const root = handoffDomRoot();
+  if (!root) return;
   handoffUiWired = true;
 
-  host.addEventListener('change', (ev) => {
+  root.addEventListener('change', (ev) => {
+    if (!ev.target?.closest('#entrega-handoff-panel, #entrega-clinical-status-slot')) return;
+    const host = handoffDomRoot();
+    if (!host) return;
     if (ev.target?.id === 'entrega-vaso-agent') {
       applyVasoAgentDefaults(host, { applyDefaults: true });
     }
@@ -597,11 +609,16 @@ function wireHandoffPanelOnce() {
     syncHandoffDraftFromDom(host);
   });
 
-  host.addEventListener('input', () => syncHandoffDraftFromDom(host));
+  root.addEventListener('input', (ev) => {
+    if (!ev.target?.closest('#entrega-handoff-panel, #entrega-clinical-status-slot')) return;
+    syncHandoffDraftFromDom(handoffDomRoot());
+  });
 
-  host.addEventListener('click', (ev) => {
+  root.addEventListener('click', (ev) => {
     const unitBtn = ev.target.closest('[data-vaso-unit]');
     if (!unitBtn || unitBtn.classList.contains('is-hidden')) return;
+    const host = handoffDomRoot();
+    if (!host) return;
     host.querySelectorAll('[data-vaso-unit]').forEach((btn) => {
       btn.classList.toggle('is-selected', btn === unitBtn);
     });
@@ -616,21 +633,24 @@ function wireHandoffPanelOnce() {
  */
 export function mountEntregaHandoffPanel(handoffContext, opts = {}) {
   wireHandoffPanelOnce();
-  const host = document.getElementById('entrega-handoff-panel');
-  if (!host) return;
   draftHandoffContext = normalizeHandoffContext(handoffContext, {
     signedRefusal: !!opts.signedRefusal,
   });
+  const statusSlot = document.getElementById('entrega-clinical-status-slot');
+  if (statusSlot) statusSlot.innerHTML = buildClinicalStatusMarkup(draftHandoffContext);
+  const host = document.getElementById('entrega-handoff-panel');
+  if (!host) return;
   host.innerHTML = buildHandoffPanelMarkup(draftHandoffContext, !!opts.isCritical);
-  syncHandoffSupportCards(host);
-  applyVasoAgentDefaults(host);
+  const domRoot = handoffDomRoot() || host;
+  syncHandoffSupportCards(domRoot);
+  applyVasoAgentDefaults(domRoot);
   updateHandoffSummaryLine();
 }
 
 /** @returns {ReturnType<typeof defaultHandoffContext>} */
 export function readEntregaHandoffContext() {
-  const host = document.getElementById('entrega-handoff-panel');
-  if (host?.innerHTML) syncHandoffDraftFromDom(host);
+  const host = handoffDomRoot();
+  if (host?.querySelector('#entrega-handoff-panel')?.innerHTML) syncHandoffDraftFromDom(host);
   return normalizeHandoffContext(draftHandoffContext);
 }
 
@@ -1152,7 +1172,7 @@ function renderVitalsPanel() {
     <div class="entrega-vitals-form">
       <div class="entrega-vitals-form__scroll">
         <section class="entrega-vitals-section" aria-labelledby="entrega-vitals-metrics-label">
-          <h5 class="entrega-vitals-section__title" id="entrega-vitals-metrics-label">Parámetros</h5>
+          <span class="entrega-field-label" id="entrega-vitals-metrics-label">Parámetros</span>
           <div
             class="entrega-check-pills entrega-vitals-metrics"
             role="group"
@@ -1160,7 +1180,7 @@ function renderVitalsPanel() {
           >${metricChecks}</div>
         </section>
         <section class="entrega-vitals-section" aria-labelledby="entrega-vitals-freq-label">
-          <h5 class="entrega-vitals-section__title" id="entrega-vitals-freq-label">Frecuencia</h5>
+          <span class="entrega-field-label" id="entrega-vitals-freq-label">Frecuencia</span>
           <div class="entrega-vitals-freq" role="group" aria-labelledby="entrega-vitals-freq-label">
             <div class="entrega-freq-segment entrega-check-pills entrega-freq-modes" role="radiogroup" aria-label="Modo de frecuencia">
               ${modePills}

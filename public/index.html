@@ -45,10 +45,12 @@
       var hostUrl = String(location.origin || '').replace(/\/+$/, '');
       var room = String(p.get('room') || '').trim();
       var sala = String(p.get('sala') || '').trim();
-      if (/^sala-[12e]$/i.test(sala)) room = room || sala.toLowerCase();
+      if (/^sala-[12e]|torre-hu|area-a-pensionistas$/i.test(sala)) room = room || sala.toLowerCase();
       else if (sala === 'Sala 1') room = room || 'sala-1';
       else if (sala === 'Sala 2') room = room || 'sala-2';
       else if (sala === 'Sala E') room = room || 'sala-e';
+      else if (sala === 'Torre HU') room = room || 'torre-hu';
+      else if (sala === 'Área A/Pensionistas') room = room || 'area-a-pensionistas';
       var prev = {};
       try { prev = JSON.parse(ls.getItem('rpc-lan-config') || '{}') || {}; } catch (_ePrev) {}
       var cfg = { hostUrl: hostUrl || prev.hostUrl || '', teamCode: token };
@@ -1902,84 +1904,71 @@
 </div>
 
 <div id="entrega-modal-backdrop" class="modal-backdrop entrega-modal-backdrop" aria-hidden="true">
-  <div class="modal entrega-modal" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-title" onclick="event.stopPropagation()">
-    <header class="clinical-teams-modal-head entrega-modal-head">
-      <div class="entrega-modal-head__text">
-        <h3 id="entrega-modal-title">Nueva entrega</h3>
-        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead"></p>
+  <div class="modal entrega-modal entrega-modal--wide" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-nav-name" onclick="event.stopPropagation()">
+    <div class="entrega-modal-nav" id="entrega-modal-nav">
+      <button type="button" class="entrega-nav-btn" id="entrega-nav-prev" aria-label="Paciente anterior" disabled>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="entrega-nav-patient">
+        <span class="entrega-nav-patient-name" id="entrega-modal-nav-name">—</span>
+        <span class="entrega-nav-patient-dx" id="entrega-modal-nav-dx"></span>
       </div>
-    </header>
+      <div class="entrega-nav-meta">
+        <span class="entrega-active-badge hidden" id="entrega-modal-active-badge">
+          <svg width="6" height="6" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+          Entrega activa
+        </span>
+        <span class="entrega-nav-counter" id="entrega-modal-nav-counter"></span>
+      </div>
+      <button type="button" class="entrega-nav-btn" id="entrega-nav-next" aria-label="Paciente siguiente" disabled>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <h3 id="entrega-modal-title" class="visually-hidden">Entrega de paciente</h3>
     <form id="entrega-form" class="entrega-modal-form">
       <div class="entrega-form-body">
-        <section class="entrega-handoff-grid clinical-teams-create-form" aria-label="Datos de entrega">
+        <section class="entrega-top-strip clinical-teams-create-form" aria-label="Datos de entrega">
           <div class="field-group">
-            <label for="entrega-covering-user">R1 de guardia (recibe al paciente)</label>
-            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint">
-              Residente de guardia que asumirá la cobertura nocturna de este paciente.
-            </p>
+            <label for="entrega-covering-user">R1 de guardia</label>
+            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-covering-user" class="profile-input" required></select>
           </div>
           <div class="field-group">
             <label for="entrega-source-team">Equipo de origen</label>
             <select id="entrega-source-team" class="profile-input" required></select>
           </div>
+          <div id="entrega-clinical-status-slot" class="field-group"></div>
         </section>
 
-        <details class="entrega-patient-context" id="entrega-patient-context" open>
-          <summary class="entrega-patient-context__summary">
-            <span class="entrega-patient-context__summary-main">
-              <span class="clinical-teams-section-title">Estado del paciente</span>
-              <span
-                id="entrega-handoff-summary-collapsed"
-                class="entrega-handoff-summary-inline"
-                aria-live="polite"
-              ></span>
-            </span>
-          </summary>
-          <div class="entrega-patient-context__body">
-            <p class="clinical-teams-section-desc entrega-patient-context__lead">
-              Resumen clínico para quien recibe la guardia.
-            </p>
-            <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
-            <p id="entrega-handoff-summary" class="entrega-handoff-summary entrega-handoff-summary--body" aria-live="polite"></p>
-          </div>
-        </details>
+        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead hidden"></p>
 
-        <div class="entrega-form-main">
-          <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
-            <div class="clinical-teams-section-head-row">
-              <div class="clinical-teams-section-intro">
-                <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
-              </div>
-              <div class="entrega-proc-toolbar">
-                <button type="button" id="btn-entrega-apply-template" class="btn-med-secondary">
-                  Plantillas
-                </button>
-                <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
-                  + Procedimiento
-                </button>
-              </div>
-            </div>
-            <div class="entrega-panel-body entrega-proc-block">
-              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
-              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
-            </div>
-          </section>
+        <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
 
-          <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--vitals" aria-label="Signos vitales en guardia">
+        <p id="entrega-handoff-summary" class="entrega-handoff-summary" aria-live="polite"></p>
+
+        <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
+          <div class="clinical-teams-section-head-row">
             <div class="clinical-teams-section-intro">
-              <h4 class="clinical-teams-section-title">Signos vitales en guardia</h4>
-              <p class="clinical-teams-section-desc">Elige qué parámetros pedirá el interno y cada cuánto.</p>
+              <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
             </div>
-            <div class="entrega-panel-body">
-              <div id="entrega-vitals-panel" class="entrega-vitals-panel"></div>
+            <div class="entrega-proc-toolbar">
+              <button type="button" id="btn-entrega-apply-template" class="btn-med-secondary">
+                Plantillas
+              </button>
+              <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
+                + Procedimiento
+              </button>
             </div>
-          </section>
-        </div>
+          </div>
+          <div class="entrega-panel-body entrega-proc-block">
+            <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
+            <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
+          </div>
+        </section>
       </div>
       <footer class="modal-actions entrega-modal-foot">
         <button type="button" class="btn-cancel" id="btn-entrega-cancel">Cancelar</button>
-        <button type="submit" class="btn-save">Confirmar entrega</button>
+        <button type="submit" class="btn-save" id="btn-entrega-save">Guardar paciente</button>
       </footer>
     </form>
   </div>
@@ -2053,43 +2042,47 @@
 
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
-    <h3 id="clinical-registration-title">Registro de guardia</h3>
+    <h3 id="clinical-registration-title" class="clinical-onboarding-title">Registro de guardia</h3>
     <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Tras actualizar a <strong>6.6.6</strong> debes volver a escribir usuario y nombre (son datos distintos).</p>
-    <form id="clinical-registration-form">
-      <div class="field-group">
-        <label for="clinical-reg-username">Usuario LAN (@usuario) *</label>
-        <input id="clinical-reg-username" type="text" class="profile-input" placeholder="ej. drmendoza" autocomplete="off" spellcheck="false" required pattern="[a-z][a-z0-9_]{2,31}">
-        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;"><strong>Usuario LAN</strong> — minúsculas, sin espacios: apellido + inicio del nombre (p. ej. <code>drmendoza</code>). No uses «Dr. …» ni tu nombre en guardia aquí.</p>
-      </div>
-      <div class="field-group">
-        <label for="clinical-reg-name">Nombre en guardia *</label>
-        <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
-        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
-      </div>
-      <div class="field-group">
-        <label for="clinical-reg-rank">Rango</label>
-        <select id="clinical-reg-rank" class="profile-input">
-          <option value="R1">R1</option>
-          <option value="R2">R2</option>
-          <option value="R3">R3</option>
-          <option value="R4">R4</option>
-          <option value="Admin">Admin</option>
-        </select>
-      </div>
-      <div class="field-group">
-        <label for="clinical-reg-sala">Sala</label>
-        <select id="clinical-reg-sala" class="profile-input">
-          <option value="">— Sin sala —</option>
-          <option value="Sala 1">Sala 1</option>
-          <option value="Sala 2">Sala 2</option>
-          <option value="Sala E">Sala E</option>
-        </select>
-      </div>
-      <p id="clinical-reg-error" class="clinical-registration-error" hidden></p>
-      <div class="modal-actions">
-        <button type="submit" class="btn-save">Continuar</button>
-      </div>
-    </form>
+    <div class="clinical-onboard-form-shell clinical-onboard-form-shell--in-modal">
+      <form id="clinical-registration-form" class="clinical-teams-create-form clinical-onboard-form">
+        <div class="field-group">
+          <label for="clinical-reg-username">Usuario LAN (@usuario) *</label>
+          <input id="clinical-reg-username" type="text" class="profile-input" placeholder="ej. drmendoza" autocomplete="off" spellcheck="false" required pattern="[a-z][a-z0-9_]{2,31}">
+          <p class="clinical-teams-hint"><strong>Usuario LAN</strong> — minúsculas, sin espacios: apellido + inicio del nombre (p. ej. <code>drmendoza</code>). No uses «Dr. …» ni tu nombre en guardia aquí.</p>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-name">Nombre en guardia *</label>
+          <input id="clinical-reg-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza" autocomplete="name" required>
+          <p class="clinical-teams-hint"><strong>Nombre en guardia</strong> — cómo te ven en el censo (p. ej. <code>Dr. Mendoza</code> o <code>R1 García</code>).</p>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-rank">Rango</label>
+          <select id="clinical-reg-rank" class="profile-input">
+            <option value="R1">R1</option>
+            <option value="R2">R2</option>
+            <option value="R3">R3</option>
+            <option value="R4">R4</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label for="clinical-reg-sala">Rotación</label>
+          <select id="clinical-reg-sala" class="profile-input">
+            <option value="">— Sin sala —</option>
+            <option value="Sala 1">Sala 1</option>
+            <option value="Sala 2">Sala 2</option>
+            <option value="Sala E">Sala E</option>
+            <option value="Torre HU">Torre HU</option>
+            <option value="Área A/Pensionistas">Área A/Pensionistas</option>
+          </select>
+        </div>
+        <p id="clinical-reg-error" class="clinical-registration-error" hidden></p>
+        <div class="modal-actions clinical-onboard-form-actions">
+          <button type="submit" class="btn-save">Continuar</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 

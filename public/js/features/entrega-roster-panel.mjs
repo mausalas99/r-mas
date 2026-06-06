@@ -133,13 +133,19 @@ export function openEntregaRosterPanel(settings) {
       </div>
     </div>`;
 
+  const rosterPatientIds = censusPatients.map((p) => String(p.id));
+
   host.querySelectorAll('.roster-row').forEach((row) => {
     const patientId = row.dataset.patientId;
     const open = () => {
       const g = guardiasMap.get(patientId);
+      const patientIndex = rosterPatientIds.indexOf(String(patientId));
       openEntregaModal({
         patientId,
         guardiaId: g?.guardia_id ? String(g.guardia_id) : undefined,
+        patientIndex: patientIndex >= 0 ? patientIndex : undefined,
+        patientTotal: rosterPatientIds.length,
+        rosterPatientIds,
         onConfirm: () => {
           void refreshGuardiaCensusFromDb(settings);
           openEntregaRosterPanel(settings);
