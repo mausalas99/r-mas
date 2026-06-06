@@ -10,6 +10,10 @@ const { createHostStore } = require('./host-store.js');
 const { createConflictResolver } = require('./conflict-resolver.js');
 const { attachWsHub, AUTH_TIMEOUT_MS } = require('./ws-hub.js');
 
+function rmDirSafe(dir) {
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+}
+
 function listen(httpServer) {
   return new Promise((resolve, reject) => {
     httpServer.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
@@ -70,7 +74,7 @@ test('WebSocket requires auth frame; invalid token terminates', async () => {
     assert.notStrictEqual(ws.readyState, WebSocket.OPEN);
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    rmDirSafe(dir);
   }
 });
 
@@ -105,7 +109,7 @@ test('WebSocket joins channel after valid auth frame', async () => {
     ws.close();
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    rmDirSafe(dir);
   }
 });
 
@@ -153,7 +157,7 @@ test('livesync:patch overlap broadcasts applied with lwwApplied', async () => {
     wsB.close();
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    rmDirSafe(dir);
   }
 });
 
@@ -201,7 +205,7 @@ test('livesync:patch disjoint merge broadcasts livesync:applied', async () => {
     wsB.close();
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    rmDirSafe(dir);
   }
 });
 
@@ -246,6 +250,6 @@ test('livesync:delta broadcasts canonical applied delta with origin txId', async
     wsB.close();
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    rmDirSafe(dir);
   }
 });
