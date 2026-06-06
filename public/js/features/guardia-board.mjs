@@ -30,6 +30,8 @@ import {
   normalizePendientesJson,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { normalizeHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';
+import { renderGuardiaVitalsFeed } from './guardia-vitals-feed.mjs';
+import { isTurnoActivo, deactivateTurnoActivo } from './entrega-roster-panel.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
@@ -40,6 +42,9 @@ function installGuardiaAppShell() {
   appShellInstalled = true;
   window.appShell = window.appShell || {};
   window.appShell.openEntregaModal = openEntregaModal;
+  window.addEventListener('guardia:turno-activo', () => {
+    renderGuardiaBoard(null);
+  });
 }
 
 function syncEntregaPhaseChrome() {
@@ -198,6 +203,7 @@ function wireGuardiaModeToggle(settings) {
   syncGuardiaModeUI();
 
   btn.addEventListener('click', () => {
+    deactivateTurnoActivo();
     toggleGuardiaMode({
       settings,
       renderGuardiaBoard,
@@ -256,6 +262,12 @@ export function renderGuardiaBoard(settings) {
 
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
   renderGuardiaSummaryTiles(summary);
+
+  if (isTurnoActivo()) {
+    renderGuardiaVitalsFeed(
+      patients.filter((p) => p && p.id && !p.isDemo && !p.archived)
+    );
+  }
 
   void syncGuardiaIncomingStrip(settings);
   wireClinicalTeamsControls();
