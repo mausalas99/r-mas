@@ -110,6 +110,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-06** `release-7.1.3`: vitals notify aligned to entrega plan + dedup; Learn Hub replaces Sala/IC intro modal; IC modules in Fundamentos; `session-manager.mjs`, `learn-hub.mjs`, `tour-engine.mjs`.
 - **2026-06-06** `release-7.1.2`: Learn Hub + track guardia-v7 (curriculum v9); retiro Manejo/sugerencias automáticas; `learn-hub.mjs`, `guardia-v7-gating.mjs`, `guardia-v7-upgrade-card.mjs`.
 - **2026-06-06** `release-7.1.1`: LAN command sync substrate + guardia entrega chip/críticos; `lan-squad/command-*`, `lan-command-client.mjs`, `lib/entrega/guardia-chip-critical.mjs`, `guardia-board.mjs`.
 - **2026-06-06** `lan-command-sync`: registry + host commit + SQL outbox `command` kind (schema v12) + renderer client/outbox + proof-domain builders + room `livesync:command:applied` deltaSeq ordering/gap reconcile; `command-registry.js`, `lan-command-client.mjs`, `orchestrator.mjs`, `schema.mjs`.

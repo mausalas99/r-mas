@@ -1,9 +1,14 @@
 /**
  * Background vitals monitoring and client session inactivity lock.
  */
+import { normalizePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
 import {
   frequencyDisplayLabel,
+  frequencyIntervalMs,
+  isVitalsFrequencyPaused,
   normalizeFrequencySpec,
+  normalizeVitalsPlan,
+  VITALS_METRIC_KEYS,
 } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 
 const FREQ_MS = {
@@ -22,6 +27,32 @@ export function vitalsIntervalMs(freq) {
 export function vitalsFrequencyNotifyLabel(freq) {
   if (!freq || freq === 'None') return 'signos vitales';
   return frequencyDisplayLabel(normalizeFrequencySpec(freq));
+}
+
+/**
+ * Aligns with guardia board vitals banner: only timed monitoring with active metrics.
+ * @param {{ pendientes_json?: string|null, vitals_frequency?: string, last_vitals_check?: string }} row
+ * @returns {{ level: 'overdue'|'warning', freqLabel: string }|null}
+ */
+export function vitalsMonitorAlertState(row) {
+  const doc = normalizePendientesJson(row?.pendientes_json);
+  const plan = normalizeVitalsPlan(doc.vitalsPlan);
+  const hasMetrics = VITALS_METRIC_KEYS.some((k) => plan.metrics[k]);
+  if (!hasMetrics) return null;
+
+  const freqSpec = normalizeFrequencySpec(plan.frequency ?? row?.vitals_frequency);
+  if (isVitalsFrequencyPaused(freqSpec)) return null;
+
+  const ms = frequencyIntervalMs(freqSpec);
+  if (!ms) return null;
+
+  const due = new Date(row?.last_vitals_check || Date.now()).getTime() + ms;
+  const diff = due - Date.now();
+  const freqLabel = frequencyDisplayLabel(freqSpec);
+
+  if (diff <= 0) return { level: 'overdue', freqLabel };
+  if (diff <= 15 * 60000) return { level: 'warning', freqLabel };
+  return null;
 }
 
 /**
@@ -53,6 +84,8 @@ export class BackgroundVitalsMonitorLoop {
     this.intervalMs = opts.intervalMs ?? 60000;
     /** @type {ReturnType<typeof setInterval>|null} */
     this._timer = null;
+    /** @type {Map<string, 'overdue'|'warning'>} */
+    this._lastAlertLevel = new Map();
   }
 
   start() {
@@ -69,32 +102,39 @@ export class BackgroundVitalsMonitorLoop {
 
   async scan() {
     const rows = await this.db.all(
-      "SELECT patient_id, last_vitals_check, vitals_frequency FROM active_guardias WHERE covering_user_id = ? AND status = 'Active'",
+      "SELECT patient_id, last_vitals_check, vitals_frequency, pendientes_json FROM active_guardias WHERE covering_user_id = ? AND status = 'Active'",
       [this.userId]
     );
+    const seen = new Set();
     rows.forEach((r) => {
-      const freq = r.vitals_frequency;
-      if (!freq || freq === 'None') return;
+      const patientId = String(r.patient_id || '');
+      if (!patientId) return;
+      seen.add(patientId);
 
-      const ms = vitalsIntervalMs(freq);
-      const due = new Date(r.last_vitals_check).getTime() + ms;
-      const diff = due - Date.now();
+      const alert = vitalsMonitorAlertState(r);
+      if (!alert) {
+        this._lastAlertLevel.delete(patientId);
+        return;
+      }
+      if (this._lastAlertLevel.get(patientId) === alert.level) return;
+      this._lastAlertLevel.set(patientId, alert.level);
 
       const who = resolvePatientLabelForNotify(r, this.resolvePatientLabel);
-      const freqLabel = vitalsFrequencyNotifyLabel(freq);
-
-      if (diff <= 0) {
+      if (alert.level === 'overdue') {
         this.notify(
           'CRITICAL: Overdue',
-          `${who}: control de signos (${freqLabel}) vencido.`
+          `${who}: control de signos (${alert.freqLabel}) vencido.`
         );
-      } else if (diff <= 15 * 60000) {
+      } else {
         this.notify(
           'Warning: Check Soon',
-          `${who}: ventana (${freqLabel}) cierra en 15 min.`
+          `${who}: ventana (${alert.freqLabel}) cierra en 15 min.`
         );
       }
     });
+    for (const id of this._lastAlertLevel.keys()) {
+      if (!seen.has(id)) this._lastAlertLevel.delete(id);
+    }
   }
 }
 

@@ -205,7 +205,12 @@ export async function tryShowPostRegistrationEducationIfNeeded() {
     return;
   }
   if (shouldShowFundamentosTourIntro({ curVersion: cur, storedDoneVersion: stored, needsOnboarding: false })) {
-    setTimeout(showTourIntroModal, 80);
+    markGuidedTourVersionDone();
+    setTimeout(() => {
+      void import('./learn-hub.mjs').then((hub) => {
+        if (typeof hub.openLearnHub === 'function') hub.openLearnHub({ focusTrack: 'fundamentos' });
+      });
+    }, 80);
   }
 }
 
@@ -240,16 +245,20 @@ export function showTourIntroModal() {
   el.setAttribute('aria-hidden', 'false');
 }
 
-/** Resolve app version then open Sala / Interconsulta picker (Ajustes → tutorial). */
+/** Resolve app version then open Learn Hub (Fundamentos track). */
 export function openTutorialIntroFromSettings() {
   return resolveAppVersionForTour()
     .then(function (v) {
       window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
-      showTourIntroModal();
+      return import('./learn-hub.mjs').then((hub) => {
+        if (typeof hub.openLearnHub === 'function') hub.openLearnHub({ focusTrack: 'fundamentos' });
+      });
     })
     .catch(function () {
       window.__RPC_APP_VERSION__ = 'dev';
-      showTourIntroModal();
+      return import('./learn-hub.mjs').then((hub) => {
+        if (typeof hub.openLearnHub === 'function') hub.openLearnHub({ focusTrack: 'fundamentos' });
+      });
     });
 }
 

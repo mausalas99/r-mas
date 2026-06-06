@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   vitalsIntervalMs,
   vitalsFrequencyNotifyLabel,
+  vitalsMonitorAlertState,
   resolvePatientLabelForNotify,
   BackgroundVitalsMonitorLoop,
   ClientSessionInactivityLocker,
@@ -34,7 +35,47 @@ describe('resolvePatientLabelForNotify', () => {
   });
 });
 
+describe('vitalsMonitorAlertState', () => {
+  it('ignores stale DB frequency when vitalsPlan is routine', () => {
+    const state = vitalsMonitorAlertState({
+      vitals_frequency: '2h',
+      last_vitals_check: new Date(Date.now() - 5 * 3600000).toISOString(),
+      pendientes_json: JSON.stringify({
+        version: 2,
+        vitalsPlan: { frequency: { mode: 'routine' }, metrics: { ta: true, fc: true } },
+        items: [],
+      }),
+    });
+    assert.equal(state, null);
+  });
+
+  it('requires interval vitalsPlan to alert', () => {
+    const state = vitalsMonitorAlertState({
+      vitals_frequency: 'None',
+      last_vitals_check: new Date(Date.now() - 2 * 3600000).toISOString(),
+      pendientes_json: JSON.stringify({
+        version: 2,
+        vitalsPlan: {
+          frequency: { mode: 'interval', hours: 1 },
+          metrics: { ta: true, fc: true, fr: true, temp: true, sat: true, glu: true },
+        },
+        items: [],
+      }),
+    });
+    assert.equal(state?.level, 'overdue');
+  });
+});
+
 describe('BackgroundVitalsMonitorLoop', () => {
+  const activeVitalsPlan = {
+    version: 2,
+    vitalsPlan: {
+      frequency: { mode: 'interval', hours: 1 },
+      metrics: { ta: true, fc: true, fr: true, temp: true, sat: true, glu: true },
+    },
+    items: [],
+  };
+
   it('fires overdue notification when check is breached', async () => {
     const notifications = [];
     const db = {
@@ -43,6 +84,7 @@ describe('BackgroundVitalsMonitorLoop', () => {
           patient_id: 'pat-1',
           last_vitals_check: new Date(Date.now() - 2 * 3600000).toISOString(),
           vitals_frequency: '1h',
+          pendientes_json: JSON.stringify(activeVitalsPlan),
         },
       ],
     };
@@ -57,14 +99,19 @@ describe('BackgroundVitalsMonitorLoop', () => {
     assert.doesNotMatch(notifications[0].body, /pat-1/);
   });
 
-  it('skips None frequency rows', async () => {
+  it('skips routine vitalsPlan even when DB frequency is set', async () => {
     const notifications = [];
     const db = {
       all: async () => [
         {
           patient_id: 'pat-1',
           last_vitals_check: new Date(Date.now() - 10 * 3600000).toISOString(),
-          vitals_frequency: 'None',
+          vitals_frequency: '2h',
+          pendientes_json: JSON.stringify({
+            version: 2,
+            vitalsPlan: { frequency: { mode: 'routine' }, metrics: { ta: true } },
+            items: [],
+          }),
         },
       ],
     };
@@ -83,6 +130,7 @@ describe('BackgroundVitalsMonitorLoop', () => {
           patient_id: 'pat-2',
           last_vitals_check: new Date(Date.now() - (3600000 - 10 * 60000)).toISOString(),
           vitals_frequency: '1h',
+          pendientes_json: JSON.stringify(activeVitalsPlan),
         },
       ],
     };
@@ -92,6 +140,26 @@ describe('BackgroundVitalsMonitorLoop', () => {
     await loop.scan();
     assert.equal(notifications.length, 1);
     assert.match(notifications[0].title, /Warning/);
+  });
+
+  it('does not repeat the same alert on every scan', async () => {
+    const notifications = [];
+    const db = {
+      all: async () => [
+        {
+          patient_id: 'pat-3',
+          last_vitals_check: new Date(Date.now() - 2 * 3600000).toISOString(),
+          vitals_frequency: '1h',
+          pendientes_json: JSON.stringify(activeVitalsPlan),
+        },
+      ],
+    };
+    const loop = new BackgroundVitalsMonitorLoop(db, 'user-1', {
+      notify: (title, body) => notifications.push({ title, body }),
+    });
+    await loop.scan();
+    await loop.scan();
+    assert.equal(notifications.length, 1);
   });
 });
 

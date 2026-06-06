@@ -1,9 +1,11 @@
 import {
   GUARDIA_V7_HUB_MODULES,
   QUICK_ROUTE_HUB_MODULE,
-  HUB_MODULES,
+  SALA_HUB_MODULES,
+  IC_HUB_MODULES,
   GUARDIA_V7_CHAPTERS,
   SALA_CHAPTERS,
+  IC_CHAPTERS,
   getChapterForStep,
   getChapterProgressLabel,
   NEO_COMPANION,
@@ -45,6 +47,10 @@ function stepCountForChapter(chapterId, branch) {
   }
   if (branch === 'guardia-v7') {
     const ch = GUARDIA_V7_CHAPTERS.find((c) => c.id === chapterId);
+    return ch ? ch.stepIds.length : 0;
+  }
+  if (branch === 'interconsulta') {
+    const ch = IC_CHAPTERS.find((c) => c.id === chapterId);
     return ch ? ch.stepIds.length : 0;
   }
   const ch = SALA_CHAPTERS.find((c) => c.id === chapterId);
@@ -186,17 +192,17 @@ function neoModuleState(startStepId, tourProgress) {
   };
 }
 
-function fundamentosModuleState(chapterId, progress, tourProgress) {
-  const chapterSteps = stepCountForChapter(chapterId, 'sala');
+function fundamentosModuleState(chapterId, branch, progress, tourProgress) {
+  const chapterSteps = stepCountForChapter(chapterId, branch);
   const completed = progress.completedChapters.includes(chapterId);
   let inProgress = false;
   let stepInChapter = 0;
   if (
     tourProgress &&
     tourProgress.branch !== 'guardia-v7' &&
+    tourProgress.branch === branch &&
     tourProgress.stepId
   ) {
-    const branch = tourProgress.branch === 'interconsulta' ? 'interconsulta' : 'sala';
     const ch = getChapterForStep(tourProgress.stepId, branch);
     if (ch.id === chapterId) {
       inProgress = !completed;
@@ -298,27 +304,17 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
   );
   parts.push('<div class="learn-hub-track-body">');
   parts.push(
-    '<p class="learn-hub-fundamentos-lead">Tutorial completo Sala o Interconsulta (~15 min, DEMO PÉREZ).</p>'
+    '<p class="learn-hub-fundamentos-lead">Módulos por flujo clínico (~15 min, DEMO PÉREZ). Elige Sala o Interconsulta según tu rol.</p>'
   );
+  parts.push('<p class="learn-hub-fundamentos-sub">Sala</p>');
   parts.push('<div class="learn-hub-module-list">');
-  parts.push(
-    '<div class="learn-hub-module-card learn-hub-module-card--cta">' +
-    '<button type="button" class="learn-hub-module-hit learn-hub-module-hit--cta" id="learn-hub-btn-fundamentos-intro">' +
-    '<span class="learn-hub-module-index learn-hub-module-index--cta" aria-hidden="true">★</span>' +
-    '<span class="learn-hub-module-main">' +
-    '<span class="learn-hub-module-title">Tutorial completo · Sala o Interconsulta</span>' +
-    '<span class="learn-hub-module-meta">~15 min · DEMO PÉREZ</span>' +
-    '</span>' +
-    '<span class="learn-hub-module-chevron" aria-hidden="true">›</span>' +
-    '</button></div>'
-  );
-  for (const mod of HUB_MODULES.filter((m) => m.chapterId && !m.companion)) {
-    const st = fundamentosModuleState(mod.chapterId, fundamentosProgress, tourProgress);
+  for (const mod of SALA_HUB_MODULES.filter((m) => m.chapterId && !m.companion)) {
+    const st = fundamentosModuleState(mod.chapterId, 'sala', fundamentosProgress, tourProgress);
     parts.push(
       buildModuleRow({
         chapterId: mod.chapterId,
         label: mod.label,
-        branch: mod.branch || 'sala',
+        branch: 'sala',
         completed: st.completed,
         inProgress: st.inProgress,
         stepInChapter: st.stepInChapter,
@@ -327,13 +323,13 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
       })
     );
   }
-  for (const mod of HUB_MODULES.filter((m) => m.companion === 'neo')) {
+  for (const mod of SALA_HUB_MODULES.filter((m) => m.companion === 'neo')) {
     const st = neoModuleState(mod.startStepId, tourProgress);
     parts.push(
       buildModuleRow({
         chapterId: mod.id,
         label: mod.label,
-        branch: mod.branch || 'sala',
+        branch: 'sala',
         completed: st.completed,
         inProgress: st.inProgress,
         stepInChapter: st.stepInChapter,
@@ -344,6 +340,30 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
       })
     );
   }
+  parts.push('</div>');
+  parts.push('<p class="learn-hub-fundamentos-sub">Interconsulta</p>');
+  parts.push('<div class="learn-hub-module-list">');
+  IC_HUB_MODULES.forEach((mod, idx) => {
+    const st = fundamentosModuleState(
+      mod.chapterId,
+      'interconsulta',
+      fundamentosProgress,
+      tourProgress
+    );
+    parts.push(
+      buildModuleRow({
+        chapterId: mod.chapterId,
+        label: mod.label,
+        branch: 'interconsulta',
+        completed: st.completed,
+        inProgress: st.inProgress,
+        stepInChapter: st.stepInChapter,
+        chapterSteps: st.chapterSteps,
+        active: st.active,
+        moduleIndex: idx + 1,
+      })
+    );
+  });
   parts.push('</div></div></details>');
 
   parts.push(
@@ -391,15 +411,6 @@ function wireLearnHubBodyOnce(host) {
       void import('./tour-flow.mjs').then((mod) => {
         if (typeof mod.resumeGuidedTourFromProgress === 'function') {
           mod.resumeGuidedTourFromProgress();
-        }
-      });
-      return;
-    }
-    if (ev.target.closest('#learn-hub-btn-fundamentos-intro')) {
-      closeLearnHub();
-      void import('./tour-engine.mjs').then((mod) => {
-        if (typeof mod.openTutorialIntroFromSettings === 'function') {
-          mod.openTutorialIntroFromSettings();
         }
       });
       return;

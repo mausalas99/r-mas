@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_713 = [
+  {
+    title: 'Signos vitales sin falsas alarmas',
+    body:
+      'Las notificaciones respetan el <strong>plan de entrega</strong> (intervalo o turno). Rutina / sin activar ya no dispara avisos; cada alerta se envía una vez por ventana.',
+  },
+  {
+    title: 'Aprender sin modal Sala/IC',
+    body:
+      'Tras actualizar se abre el <strong>Learn Hub</strong> directamente. Fundamentos muestra módulos de <strong>Sala</strong> e <strong>Interconsulta</strong> por separado.',
+  },
+  {
+    title: 'Interconsulta en Fundamentos',
+    body:
+      'Cuatro módulos: paciente y lab, expediente clínico, ajustes/perfil y equipo (LiveSync).',
+  },
+  {
+    title: 'Parche sobre 7.1.2',
+    body:
+      'Instala <strong>7.1.3 en todas</strong> las estaciones desde <strong>7.1.2</strong>; PIN, sala, command sync y track guardia-v7 no cambian.',
+  },
+];
+
 var RELEASE_NOTES_712 = [
   {
     title: 'Aprender R+',
@@ -360,9 +383,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_712;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_713;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.3': RELEASE_NOTES_713,
   '7.1.2': RELEASE_NOTES_712,
   '7.1.1': RELEASE_NOTES_711,
   '7.1.0': RELEASE_NOTES_710,

@@ -166,7 +166,7 @@ export const GUARDIA_V7_HUB_MODULES = GUARDIA_V7_CHAPTERS.map((ch) => ({
   stepCount: ch.stepIds.length,
 }));
 
-export const HUB_MODULES = [
+export const SALA_HUB_MODULES = [
   { id: 'mod-ch1', chapterId: 'ch-patient-lab', label: 'Laboratorio y pacientes', branch: 'sala' },
   { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Expediente · Clínico', branch: 'sala' },
   { id: 'mod-ch3', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
@@ -176,6 +176,17 @@ export const HUB_MODULES = [
   { id: 'neo-lab', companion: 'neo', label: 'Neo · Laboratorio', startStepId: 'sala_casiopea_lab', branch: 'sala' },
   { id: 'neo-trends', companion: 'neo', label: 'Neo · Tendencias', startStepId: 'sala_casiopea_trends', branch: 'sala' },
 ];
+
+export const IC_HUB_MODULES = IC_CHAPTERS.map((ch) => ({
+  id: ch.id,
+  label: ch.title,
+  chapterId: ch.id,
+  branch: 'interconsulta',
+  stepCount: ch.stepIds.length,
+}));
+
+/** @deprecated Use SALA_HUB_MODULES — kept for legacy imports */
+export const HUB_MODULES = SALA_HUB_MODULES;
 
 function chaptersForBranch(branch) {
   if (branch === 'interconsulta') return IC_CHAPTERS;

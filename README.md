@@ -27,10 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.2](https://github.com/mausalas99/r-mas/releases/tag/v7.1.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.3](https://github.com/mausalas99/r-mas/releases/tag/v7.1.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.1.3 (signos vitales + Aprender)
+
+- **Signos vitales** — Notificaciones alineadas al plan de entrega; sin alertas en rutina ni repetición cada minuto.
+- **Learn Hub** — Post-actualización abre Aprender directo; Fundamentos lista Sala e Interconsulta por módulo.
+- **Sobre 7.1.2** — Aprender R+, track guardia-v7 y retiro de Manejo automático.
+
+Notas: `docs/RELEASE_NOTES_7.1.3.txt`.
 
 ## R+ 7.1.2 (Aprender R+ + guardia v7)
 
