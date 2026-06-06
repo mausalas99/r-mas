@@ -58,6 +58,7 @@ import {
 import { clinicalSessionContext } from "../../clinical-session-context.mjs";
 import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
+import { buildLanCommand } from '../../lan-command-client.mjs';
 import {
   deleteDraftConflict,
   listDraftConflicts,
@@ -1584,6 +1585,45 @@ export function ensureLanSyncRuntimeStarted() {
 
 if (typeof document !== 'undefined') {
   queueMicrotask(() => ensureLanSyncRuntimeStarted());
+}
+
+export function buildEstadoActualCommand(opts) {
+  return buildLanCommand({
+    ...opts,
+    domain: 'estadoActual',
+    op: 'updateField',
+    entityId: `${opts.patientId}:estadoActual`,
+    payload: { path: opts.path, value: opts.value },
+  });
+}
+
+export function buildEventualidadAddCommand(opts) {
+  return buildLanCommand({
+    ...opts,
+    domain: 'eventualidades',
+    op: 'add',
+    entityId: `${opts.patientId}:eventualidades`,
+    payload: {
+      eventualidadId: opts.eventualidadId,
+      at: opts.at,
+      text: opts.text,
+    },
+  });
+}
+
+export function buildPendienteCommand(opts) {
+  const op = String(opts.op || '').trim();
+  return buildLanCommand({
+    ...opts,
+    domain: 'pendientes',
+    op,
+    entityId: `${opts.patientId}:pendientes`,
+    payload: {
+      itemId: opts.itemId,
+      text: opts.text,
+      completed: op === 'complete' ? true : opts.completed,
+    },
+  });
 }
 
 export function registerLanSaveHooks(deps) {
