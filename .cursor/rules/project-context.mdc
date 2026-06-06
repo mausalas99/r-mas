@@ -110,8 +110,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-06** `guardia-v7-onboarding`: post-registration Learn Hub + guardia track; header Aprender; upgrade card; curriculum v8; `learn-hub.mjs`, `guardia-v7-gating.mjs`, `guardia-v7-upgrade-card.mjs`.
-- **2026-06-06** `clinical-guidance-removal`: eliminado Manejo (electrolitos, ATB, infusiones, protocolos, calculadoras), motor reposiciones, reglas seguridad HC/labs, inferencia VPO y sync LAN `manejo`; VPO queda documentación manual (escalas/EKG/Rx).
+- **2026-06-06** `release-7.1.2`: Learn Hub + track guardia-v7 (curriculum v9); retiro Manejo/sugerencias automáticas; `learn-hub.mjs`, `guardia-v7-gating.mjs`, `guardia-v7-upgrade-card.mjs`.
 - **2026-06-06** `release-7.1.1`: LAN command sync substrate + guardia entrega chip/críticos; `lan-squad/command-*`, `lan-command-client.mjs`, `lib/entrega/guardia-chip-critical.mjs`, `guardia-board.mjs`.
 - **2026-06-06** `lan-command-sync`: registry + host commit + SQL outbox `command` kind (schema v12) + renderer client/outbox + proof-domain builders + room `livesync:command:applied` deltaSeq ordering/gap reconcile; `command-registry.js`, `lan-command-client.mjs`, `orchestrator.mjs`, `schema.mjs`.
 - **2026-06-06** `release-7.1.0`: guardia compact metrics + phase-bar entrega/turno (sin toolbar duplicado); rotación config en Mi rotación; LAN HC delta sync; `guardia-board.mjs`, `guardia-phase-bar.mjs`, `lan-delta-client.mjs`.

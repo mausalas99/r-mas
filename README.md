@@ -27,9 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.1](https://github.com/mausalas99/r-mas/releases/tag/v7.1.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.2](https://github.com/mausalas99/r-mas/releases/tag/v7.1.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.1.2 (Aprender R+ + guardia v7)
+
+- **Aprender R+** — Botón en header y Learn Hub con módulos, artículos y tutoriales guiados.
+- **Track guardia-v7** — Cinco capítulos post-registro para quienes actualizan a Guardia 7.x (censo, entrega, LAN, móvil).
+- **Sin Manejo automático** — Fuera sugerencias de electrolitos, ATB, protocolos y reglas inferidas; VPO queda documentación manual.
+- **Sobre 7.1.1** — LAN command sync, entrega en chip y críticos corregidos.
+
+Notas: `docs/RELEASE_NOTES_7.1.2.txt`.
 
 ## R+ 7.1.1 (LAN command sync + guardia entrega)
 

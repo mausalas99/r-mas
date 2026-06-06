@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_712 = [
+  {
+    title: 'Aprender R+',
+    body:
+      'Botón <strong>libro</strong> en el header y entrada en Ajustes. El <strong>Learn Hub</strong> reúne módulos, artículos y tutoriales con progreso guardado.',
+  },
+  {
+    title: 'Guardia 7.x paso a paso',
+    body:
+      'Track <strong>guardia-v7</strong> (5 capítulos, 19 pasos) tras el registro si vienes de &lt; 7.0. Tarjeta de actualización descartable en el área principal.',
+  },
+  {
+    title: 'Sin Manejo automático',
+    body:
+      'Fuera el módulo <strong>Manejo</strong> (electrolitos, ATB, protocolos, calculadoras) y sugerencias inferidas en labs/HC/VPO. VPO sigue como documentación manual.',
+  },
+  {
+    title: 'Parche sobre 7.1.1',
+    body:
+      'Instala <strong>7.1.2 en todas</strong> las estaciones desde <strong>7.1.1</strong>; PIN, sala y command sync no cambian.',
+  },
+];
+
 var RELEASE_NOTES_711 = [
   {
     title: 'LAN command sync',
@@ -337,9 +360,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_711;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_712;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.2': RELEASE_NOTES_712,
   '7.1.1': RELEASE_NOTES_711,
   '7.1.0': RELEASE_NOTES_710,
   '7.0.3': RELEASE_NOTES_703,
