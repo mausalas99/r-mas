@@ -42,7 +42,7 @@ import {
   listLivePeerHostUrls,
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
-import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
+import { discoverLanHostsOnSubnet, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import {
   formatEscalationCountdown,
   getHostEscalationStatus,
@@ -98,11 +98,13 @@ import {
   joinLanRoom,
   leaveLiveSyncRoom,
   syncLiveSyncStatusChrome,
+  fetchClinicalOpsFromAlternateHost,
 } from './room.mjs';
 import {
   scheduleLiveSyncPush,
   flushLiveSyncOutbox,
   pushClinicalOpsLanNow,
+  ensureEffectiveLiveSyncRoomId,
 } from './push.mjs';
 import { recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
 
@@ -115,7 +117,10 @@ var _lanPanelDelegationWired = false;
 var _lanScanTimer = null;
 var LAN_SCAN_INTERVAL_MS = 5000;
 var SUBNET_LAN_SCAN_MIN_MS = 25000;
+var LAN_PEER_OPS_PULL_MIN_MS = 30000;
 var _lastSubnetLanScanAt = 0;
+/** @type {Map<string, number>} */
+var _lanPeerOpsPullLastAt = new Map();
 var _lanLastPingAt = null;
 var _lanLastPingStatus = 0;
 var LAN_DISCONNECT_BANNER_MSG =
@@ -2021,6 +2026,24 @@ async function scanLanHosts() {
       if (joined) {
         requestRenderLanPanelAfterScan();
         return;
+      }
+    }
+
+    var roomIdForPeerOps =
+      typeof ensureEffectiveLiveSyncRoomId === 'function' ? ensureEffectiveLiveSyncRoomId() : '';
+    if (roomIdForPeerOps && peers.length && typeof fetchClinicalOpsFromAlternateHost === 'function') {
+      var ownPeerBase = normalizeLanHostBase(lanHostUrl() || (await resolveLanShareBaseUrl()) || '');
+      var nowPeerOps = Date.now();
+      for (var ppi = 0; ppi < peers.length; ppi += 1) {
+        var peerOpsUrl = normalizeLanHostBase(peers[ppi]);
+        if (!peerOpsUrl || peerOpsUrl === ownPeerBase) continue;
+        var peerOpsLast = _lanPeerOpsPullLastAt.get(peerOpsUrl) || 0;
+        if (nowPeerOps - peerOpsLast < LAN_PEER_OPS_PULL_MIN_MS) continue;
+        _lanPeerOpsPullLastAt.set(peerOpsUrl, nowPeerOps);
+        await fetchClinicalOpsFromAlternateHost(peerOpsUrl, roomIdForPeerOps, {
+          skipGossipPush: true,
+          quiet: true,
+        });
       }
     }
 

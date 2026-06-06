@@ -29,7 +29,16 @@ import {
   userOffCallFromInterconsultasRotationServices,
   userOnCallForInterconsultasTeam,
   userIsOnCallForLanHost,
+  resolveR4GuardiaSectorLabel,
 } from './clinico-access.mjs';
+
+test('resolveR4GuardiaSectorLabel maps Sala rows and Torre HU', () => {
+  assert.equal(resolveR4GuardiaSectorLabel({ servicio: 'Sala', area: 'A' }), 'Sala A');
+  assert.equal(resolveR4GuardiaSectorLabel({ service: 'Sala', sub_area: 'B' }), 'Sala B');
+  assert.equal(resolveR4GuardiaSectorLabel({ servicio: 'Sala A' }), 'Sala A');
+  assert.equal(resolveR4GuardiaSectorLabel({ servicio: 'Torre HU' }), 'Torre HU');
+  assert.equal(resolveR4GuardiaSectorLabel({ servicio: 'Eme' }), 'Eme');
+});
 
 test('matchesClinicoUnlockPhrase accepts exact phrase', () => {
   assert.equal(matchesClinicoUnlockPhrase(CLINICO_UNLOCK_PHRASE), true);

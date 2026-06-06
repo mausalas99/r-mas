@@ -752,6 +752,52 @@ function scheduleClinicalOpsGossipPush() {
   }, 2500);
 }
 
+/** GET /clinical-ops from another Mac on the subnet (split-brain directorio fallback). */
+export async function fetchClinicalOpsFromAlternateHost(hostUrl, roomId, options = {}) {
+  const url = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  const rid = String(roomId || ensureEffectiveLiveSyncRoomId() || '').trim();
+  if (!url || !rid || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+    return false;
+  }
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  const ownUrl = String(cfg.hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (ownUrl && url === ownUrl) return false;
+  const teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return false;
+
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 5000);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const resp = await fetch(
+      `${url}/api/lan/v1/rooms/${encodeURIComponent(rid)}/clinical-ops`,
+      {
+        signal: ctrl.signal,
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${teamCode}` },
+      }
+    );
+    if (!resp || !resp.ok) return false;
+    const body = await resp.json();
+    if (!body || !body.snapshot || typeof body.snapshot !== 'object') return false;
+    const mergeResult = await applyClinicalOpsLanSnapshot(body.snapshot);
+    if (!mergeResult.ok) return false;
+    await refreshClinicalOpsSnapshotCache();
+    if (mergeResult.changed && !options.skipGossipPush) {
+      scheduleClinicalOpsGossipPush();
+    }
+    return true;
+  } catch (_e) {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** GET /clinical-ops from host and merge into local SQLCipher (directorio LAN). */
 export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
   const rid = String(roomId || '').trim();

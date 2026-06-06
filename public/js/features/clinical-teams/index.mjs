@@ -34,11 +34,6 @@ import {
   openClinicalTeamsPanel,
   refreshTeamsUiAfterChange,
 } from './teams-roster.mjs';
-import {
-  lanUsersModalBackdropEl,
-  lanUsersModalBodyEl,
-  loadLanUsersDirectoryIntoHost,
-} from './teams-roster-lan.mjs';
 
 let teamsControlsWired = false;
 
@@ -67,9 +62,6 @@ export function wireClinicalTeamsControls() {
       opsSyncedTeamsRefreshTimer = setTimeout(() => {
         opsSyncedTeamsRefreshTimer = null;
         void refreshTeamsUiAfterChange();
-        const lanBd = lanUsersModalBackdropEl();
-        const host = lanUsersModalBodyEl();
-        if (lanBd?.classList.contains('open') && host) void loadLanUsersDirectoryIntoHost(host);
       }, 300);
     });
   }

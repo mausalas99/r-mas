@@ -134,29 +134,8 @@ export function syncGuardiaPhaseBar(opts) {
 
   stopTurnoClock();
 
-  if (opts.entregaActive) {
-    host.hidden = true;
-    host.innerHTML = '';
-    return;
-  }
-
-  host.hidden = false;
-  host.className = 'guardia-phase-bar guardia-phase-bar--preturno';
-  host.innerHTML = `
-    <div class="guardia-phase-bar-steps" aria-label="Pasos del turno">
-      <div class="guardia-phase-step">
-        <span class="guardia-phase-step-num">1</span>
-        <span class="guardia-phase-step-text"><strong>Entrega</strong> — documenta handoff por paciente</span>
-      </div>
-      <div class="guardia-phase-step">
-        <span class="guardia-phase-step-num">2</span>
-        <span class="guardia-phase-step-text"><strong>Turno activo</strong> — monitorea signos y censo</span>
-      </div>
-    </div>
-    <div class="guardia-phase-bar-actions">
-      <button type="button" class="btn-guardia-phase-primary" id="guardia-btn-iniciar-entrega">Iniciar entrega</button>
-      <button type="button" class="btn-guardia-phase-ghost" id="guardia-btn-iniciar-turno" title="Omite la documentación de entrega y pasa directo al monitoreo del turno">Iniciar turno sin entrega</button>
-    </div>`;
+  host.hidden = true;
+  host.innerHTML = '';
 }
 
 export function teardownGuardiaPhaseBar() {

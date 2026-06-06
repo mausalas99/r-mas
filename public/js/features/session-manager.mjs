@@ -75,6 +75,7 @@ export class BackgroundVitalsMonitorLoop {
   constructor(db, userId, opts = {}) {
     this.db = db;
     this.userId = userId;
+    this.shouldMonitorVitals = opts.shouldMonitorVitals;
     this.resolvePatientLabel = opts.resolvePatientLabel;
     this.notify = opts.notify || ((title, body) => {
       if (typeof Notification !== 'undefined') {
@@ -101,6 +102,10 @@ export class BackgroundVitalsMonitorLoop {
   }
 
   async scan() {
+    if (typeof this.shouldMonitorVitals === 'function' && !this.shouldMonitorVitals()) {
+      this._lastAlertLevel.clear();
+      return;
+    }
     const rows = await this.db.all(
       "SELECT patient_id, last_vitals_check, vitals_frequency, pendientes_json FROM active_guardias WHERE covering_user_id = ? AND status = 'Active'",
       [this.userId]

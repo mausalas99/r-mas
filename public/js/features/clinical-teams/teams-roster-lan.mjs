@@ -87,6 +87,36 @@ export function lanUsersModalBodyEl() {
 /** @type {object[]} */
 let _lanUsersModalTeams = [];
 
+/** Rank groups the user collapsed in directorio LAN (persists across background refreshes). */
+const lanDirectoryCollapsedRanks = new Set();
+
+const LAN_DIRECTORY_POLL_MS = 60_000;
+const LAN_DIRECTORY_OPS_SYNC_DEBOUNCE_MS = 800;
+const LAN_DIRECTORY_LAN_PULL_MIN_MS = 30_000;
+
+let lastLanDirectoryFingerprint = '';
+let lanDirectoryLanPullLastAt = 0;
+/** @type {ReturnType<typeof setTimeout>|null} */
+let lanDirectoryLocalRefreshTimer = null;
+
+function lanRankGroupKey(rank) {
+  return String(rank || '').trim() || 'Otros';
+}
+
+function isLanRankGroupCollapsed(rank) {
+  return lanDirectoryCollapsedRanks.has(lanRankGroupKey(rank));
+}
+
+/** @param {HTMLElement} host */
+function captureLanDirectoryCollapseState(host) {
+  host.querySelectorAll('details.clinical-lan-rank-group').forEach((el) => {
+    const key = String(el.dataset.lanRankGroup || '').trim();
+    if (!key) return;
+    if (el.open) lanDirectoryCollapsedRanks.delete(key);
+    else lanDirectoryCollapsedRanks.add(key);
+  });
+}
+
 function cycleLettersForAssign(team, userRank) {
   const service = String(team?.service || 'Sala');
   const rank = String(userRank || 'R1');
@@ -254,7 +284,8 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   const rankSections = LAN_USER_RANK_ORDER.map((rank) => {
     const usersInRank = groups.get(rank) || [];
     if (!usersInRank.length) return '';
-    return `<details class="clinical-lan-rank-group" open>
+    const openAttr = isLanRankGroupCollapsed(rank) ? '' : ' open';
+    return `<details class="clinical-lan-rank-group"${openAttr} data-lan-rank-group="${escapeAttr(rank)}">
       <summary class="clinical-lan-rank-group-summary">
         <span class="clinical-lan-rank-group-title">${escapeHtml(rank)}</span>
         <span class="clinical-lan-rank-group-count">${usersInRank.length}</span>
@@ -269,7 +300,7 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   }).join('');
 
   const otherSection = other.length
-    ? `<details class="clinical-lan-rank-group" open>
+    ? `<details class="clinical-lan-rank-group"${isLanRankGroupCollapsed('Otros') ? '' : ' open'} data-lan-rank-group="Otros">
         <summary class="clinical-lan-rank-group-summary">
           <span class="clinical-lan-rank-group-title">Otros</span>
           <span class="clinical-lan-rank-group-count">${other.length}</span>
@@ -434,8 +465,30 @@ async function handleLanAssignButtonClick(btn) {
   await openLanUsersDirectoryModal();
 }
 
-/** @param {HTMLElement} host */
-export async function loadLanUsersDirectoryIntoHost(host) {
+/** @param {object[]} users @param {object[]} teams */
+function buildLanDirectoryFingerprint(users, teams) {
+  const userPart = (users || [])
+    .map(
+      (u) =>
+        `${String(u.user_id || '')}\t${String(u.username || '')}\t${String(u.rank || '')}\t${String(u.clinical_name || '')}\t${String(u.sala || '')}`
+    )
+    .sort()
+    .join('\n');
+  const teamPart = (teams || [])
+    .map((t) => {
+      const members = (t.members || [])
+        .map((m) => `${String(m.user_id || '')}:${String(m.sub_area_fraction || '')}`)
+        .sort()
+        .join(',');
+      return `${String(t.team_id || '')}\t${members}`;
+    })
+    .sort()
+    .join('\n');
+  return `${userPart}::${teamPart}`;
+}
+
+/** @param {HTMLElement} host @param {{ forceRender?: boolean }} [options] */
+export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalUsersList !== 'function') {
     host.innerHTML =
@@ -457,15 +510,27 @@ export async function loadLanUsersDirectoryIntoHost(host) {
   _lanUsersModalTeams =
     teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [];
 
+  const users = Array.isArray(usersRes.users) ? usersRes.users : [];
+  const fingerprint = buildLanDirectoryFingerprint(users, _lanUsersModalTeams);
+  if (
+    !options.forceRender &&
+    fingerprint === lastLanDirectoryFingerprint &&
+    host.querySelector('.clinical-lan-rank-groups')
+  ) {
+    const title = document.getElementById('clinical-lan-users-title');
+    if (title) title.textContent = `Directorio de usuarios LAN (${users.length})`;
+    return;
+  }
+  lastLanDirectoryFingerprint = fingerprint;
+
   const sessionUser = clinicalSessionContext.user || {};
-  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams, {
+  host.innerHTML = renderLanUsersModalBodyHtml(users, _lanUsersModalTeams, {
     canDelete: canDeleteLanDirectoryUser(sessionUser),
     callerUserId: currentUserId(),
   });
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initLanUserRowAssignState(row));
 
   const title = document.getElementById('clinical-lan-users-title');
-  const users = Array.isArray(usersRes.users) ? usersRes.users : [];
   const pending = users.filter((u) => u && u.lanDirectoryPending).length;
   recordClinicalOpsTrace('display', {
     directoryCount: users.length,
@@ -486,6 +551,11 @@ function isLanDirectoryUserInteracting() {
   const bd = lanUsersModalBackdropEl();
   if (!bd?.classList.contains('open')) return false;
   const active = document.activeElement;
+  if (active instanceof HTMLElement && bd.contains(active)) {
+    if (active.closest('.clinical-lan-assign-team, .clinical-lan-assign-cycle, .clinical-lan-assign-btn, .clinical-lan-delete-user-btn')) {
+      return true;
+    }
+  }
   if (active instanceof HTMLSelectElement && bd.contains(active)) return true;
   if (
     active instanceof HTMLOptionElement &&
@@ -550,45 +620,60 @@ function startLanDirectoryPoll() {
       stopLanDirectoryPoll();
       return;
     }
-    scheduleLanDirectoryRefresh();
-  }, 15000);
+    scheduleLanDirectoryLocalRefresh();
+  }, LAN_DIRECTORY_POLL_MS);
 }
 
-function scheduleLanDirectoryRefresh(force = false) {
-  if (!force && isLanDirectoryUserInteracting()) {
+/** Re-read local DB only (no LAN HTTP). Preserves collapse + draft selects. */
+export async function refreshLanDirectoryUiFromLocalDb(options = {}) {
+  const host = lanUsersModalBodyEl();
+  const bd = lanUsersModalBackdropEl();
+  if (!host || !bd?.classList.contains('open')) return;
+  if (!options.force && isLanDirectoryUserInteracting()) {
     lanDirectoryRefreshPending = true;
     return;
   }
   lanDirectoryRefreshPending = false;
-  void backgroundRefreshLanUsersDirectory();
+  captureLanDirectoryCollapseState(host);
+  const draft = captureLanDirectoryDraftState(host);
+  await loadLanUsersDirectoryIntoHost(host);
+  restoreLanDirectoryDraftState(host, draft);
 }
 
-async function pullLanDirectoryFromHostBeforeDisplay() {
+/** Debounced local refresh when clinical ops already merged on this Mac. */
+export function scheduleLanDirectoryLocalRefresh(force = false) {
+  if (lanDirectoryLocalRefreshTimer) {
+    clearTimeout(lanDirectoryLocalRefreshTimer);
+    lanDirectoryLocalRefreshTimer = null;
+  }
+  if (force) {
+    void refreshLanDirectoryUiFromLocalDb({ force: true });
+    return;
+  }
+  if (isLanDirectoryUserInteracting()) {
+    lanDirectoryRefreshPending = true;
+    return;
+  }
+  lanDirectoryLocalRefreshTimer = setTimeout(() => {
+    lanDirectoryLocalRefreshTimer = null;
+    void refreshLanDirectoryUiFromLocalDb();
+  }, 120);
+}
+
+async function pullLanDirectoryFromHostIfDue(options = {}) {
+  const force = !!options.force;
+  const now = Date.now();
+  if (!force && now - lanDirectoryLanPullLastAt < LAN_DIRECTORY_LAN_PULL_MIN_MS) {
+    return false;
+  }
+  lanDirectoryLanPullLastAt = now;
   try {
     const lanMod = await import('../lan-sync.mjs');
     if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 }));
+    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 6000 }));
   } catch (_e) {
     return false;
   }
-}
-
-function backgroundRefreshLanUsersDirectory() {
-  void pullLanDirectoryFromHostBeforeDisplay()
-    .then(() => {
-      const host = lanUsersModalBodyEl();
-      const bd = lanUsersModalBackdropEl();
-      if (!host || !bd?.classList.contains('open')) return;
-      if (isLanDirectoryUserInteracting()) {
-        lanDirectoryRefreshPending = true;
-        return;
-      }
-      const draft = captureLanDirectoryDraftState(host);
-      return loadLanUsersDirectoryIntoHost(host).then(() => {
-        restoreLanDirectoryDraftState(host, draft);
-      });
-    })
-    .catch(() => {});
 }
 
 export async function openLanUsersDirectoryModal() {
@@ -617,9 +702,11 @@ export async function openLanUsersDirectoryModal() {
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
 
+  lastLanDirectoryFingerprint = '';
+
   try {
-    await pullLanDirectoryFromHostBeforeDisplay();
-    await loadLanUsersDirectoryIntoHost(host);
+    await pullLanDirectoryFromHostIfDue({ force: true });
+    await loadLanUsersDirectoryIntoHost(host, { forceRender: true });
   } catch (err) {
     console.error('[Directorio LAN]', err);
     host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(
@@ -632,6 +719,15 @@ export async function openLanUsersDirectoryModal() {
 
 export function closeLanUsersDirectoryModal() {
   stopLanDirectoryPoll();
+  if (lanDirectoryLocalRefreshTimer) {
+    clearTimeout(lanDirectoryLocalRefreshTimer);
+    lanDirectoryLocalRefreshTimer = null;
+  }
+  if (lanDirectoryOpsSyncDebounce) {
+    clearTimeout(lanDirectoryOpsSyncDebounce);
+    lanDirectoryOpsSyncDebounce = null;
+  }
+  lastLanDirectoryFingerprint = '';
   const bd = lanUsersModalBackdropEl();
   if (!bd) return;
   bd.classList.remove('open');
@@ -649,8 +745,8 @@ export function wireLanUsersDirectoryControls() {
       if (lanDirectoryOpsSyncDebounce) clearTimeout(lanDirectoryOpsSyncDebounce);
       lanDirectoryOpsSyncDebounce = setTimeout(() => {
         lanDirectoryOpsSyncDebounce = null;
-        scheduleLanDirectoryRefresh();
-      }, 1500);
+        scheduleLanDirectoryLocalRefresh();
+      }, LAN_DIRECTORY_OPS_SYNC_DEBOUNCE_MS);
     });
   }
 
@@ -695,6 +791,19 @@ export function wireLanUsersDirectoryControls() {
   const host = lanUsersModalBodyEl();
   if (host && !host._rpcLanUsersAssignWired) {
     host._rpcLanUsersAssignWired = true;
+    host.addEventListener(
+      'toggle',
+      (ev) => {
+        const details = ev.target;
+        if (!(details instanceof HTMLDetailsElement)) return;
+        if (!details.classList.contains('clinical-lan-rank-group')) return;
+        const key = String(details.dataset.lanRankGroup || '').trim();
+        if (!key) return;
+        if (details.open) lanDirectoryCollapsedRanks.delete(key);
+        else lanDirectoryCollapsedRanks.add(key);
+      },
+      true
+    );
     host.addEventListener('change', (ev) => {
       const teamSelect = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-team') : null;
       if (teamSelect) syncLanAssignCycleSelect(teamSelect);
@@ -702,7 +811,7 @@ export function wireLanUsersDirectoryControls() {
     host.addEventListener('focusout', () => {
       setTimeout(() => {
         if (lanDirectoryRefreshPending && !isLanDirectoryUserInteracting()) {
-          scheduleLanDirectoryRefresh(true);
+          scheduleLanDirectoryLocalRefresh(true);
         }
       }, 120);
     });

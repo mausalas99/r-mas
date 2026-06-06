@@ -79,12 +79,13 @@
         <section class="guardia-panel guardia-panel--metrics" id="guardia-metrics-panel" aria-label="Resumen de guardia">
           <div class="guardia-metrics-toolbar" id="guardia-census-scope">
             <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
+            <button type="button" id="btn-guardia-entrega-phase" class="btn-guardia-entrega-phase" aria-pressed="false" title="Iniciar entrega al R1 de guardia de tu sala">Entrega</button>
             <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Alternar entre alcance completo y solo pacientes que te entregaron.">
               <span class="guardia-mode-label">Alcance completo</span>
               <span class="guardia-mode-switch" aria-hidden="true"></span>
             </button>
           </div>
-          <p id="guardia-census-filter-hint" class="guardia-census-filter-hint visually-hidden" aria-live="polite">Todos los pacientes en tu alcance clínico.</p>
+          <p id="guardia-census-filter-hint" class="guardia-census-filter-hint visually-hidden" aria-live="polite"></p>
         </section>
         <section class="guardia-panel guardia-panel--vitals" id="guardia-vitals-section" hidden aria-label="Signos vitales del turno">
           <div id="guardia-vitals-feed" class="guardia-vitals-feed"></div>

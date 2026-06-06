@@ -340,6 +340,9 @@ export function applyUiDensity() {
   syncPaseReturnHeaderBtn();
   syncPaseModeHeaderChip();
   syncGuardiaModeHeaderChip();
+  if (typeof runtime.renderPatientList === 'function') {
+    runtime.renderPatientList({ silent: true });
+  }
   if (typeof runtime.renderGuardiaBoard === 'function' && isGuardiaMode()) {
     runtime.renderGuardiaBoard();
   }
@@ -367,6 +370,9 @@ export function setUiDensity(mode) {
   localStorage.setItem(UI_DENSITY_LS, m);
   applyUiDensity();
   syncUiDensityButtons();
+  void import('./clinical-rotation-entry.mjs').then((mod) => {
+    mod.syncClinicalRotationEntryChrome?.();
+  });
   runtime.renderPatientList();
   if (runtime.getActiveId()) {
     requestAnimationFrame(() => runtime.scrollActiveRondaCardIntoView());

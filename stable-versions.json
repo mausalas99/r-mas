@@ -3,11 +3,25 @@
   "updatedAt": "2026-06-06",
   "entries": [
     {
+      "version": "7.1.4",
+      "label": "7.1.4",
+      "publishedAt": "2026-06-06",
+      "summary": "Guardia censo Admin/R4 + directorio LAN",
+      "recommended": true
+    },
+    {
+      "version": "7.1.3",
+      "label": "7.1.3",
+      "publishedAt": "2026-06-06",
+      "summary": "Release estable 7.1.3",
+      "recommended": false
+    },
+    {
       "version": "7.1.2",
       "label": "7.1.2",
       "publishedAt": "2026-06-06",
       "summary": "Release estable 7.1.2",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.1.1",

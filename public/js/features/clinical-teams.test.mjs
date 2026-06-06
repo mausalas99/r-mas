@@ -141,4 +141,20 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /redirectLanInviteFromTeamJoinField/);
     assert.match(clinicalTeamsSrc, /joinLanFromInviteUi/);
   });
+
+  it('LAN directorio preserves collapsed rank groups across background refresh', () => {
+    assert.match(clinicalTeamsSrc, /lanDirectoryCollapsedRanks/);
+    assert.match(clinicalTeamsSrc, /captureLanDirectoryCollapseState/);
+    assert.match(clinicalTeamsSrc, /data-lan-rank-group/);
+    assert.match(clinicalTeamsSrc, /isLanRankGroupCollapsed/);
+    assert.doesNotMatch(clinicalTeamsSrc, /clinical-lan-rank-group" open>/);
+  });
+
+  it('LAN directorio background refresh reads local DB only (no redundant host pull)', () => {
+    assert.match(clinicalTeamsSrc, /refreshLanDirectoryUiFromLocalDb/);
+    assert.match(clinicalTeamsSrc, /buildLanDirectoryFingerprint/);
+    assert.match(clinicalTeamsSrc, /LAN_DIRECTORY_POLL_MS/);
+    assert.doesNotMatch(clinicalTeamsSrc, /backgroundRefreshLanUsersDirectory/);
+    assert.doesNotMatch(clinicalTeamsSrc, /pullLanDirectoryFromHostBeforeDisplay/);
+  });
 });

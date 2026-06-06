@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   applyElevatedPatientFilters,
   filterPatientsForClinicalSidebar,
+  filterPatientsForGuardiaCensus,
+  patientMatchesCensusTeamFilter,
 } from './patients-clinical-filter.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
@@ -49,6 +51,21 @@ test('R1 on team sidebar excludes other team in same sala', () => {
   assert.deepEqual(out.map((p) => p.id), ['p-mine']);
 });
 
+test('Admin guardia census includes all patients with Todos equipos filter', () => {
+  const census = [
+    { id: 'p1', servicio: 'Sala', area: 'Sala A', sala: 'Sala 1' },
+    { id: 'p2', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
+  ];
+  const out = filterPatientsForGuardiaCensus(
+    census,
+    { user_id: 'admin', rank: 'Admin' },
+    { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' },
+    null,
+    { sala: '__all__', teamId: '', service: '' }
+  );
+  assert.equal(out.length, 2);
+});
+
 test('R4 sidebar includes all patients', () => {
   const out = filterPatientsForClinicalSidebar(
     patients,
@@ -56,6 +73,30 @@ test('R4 sidebar includes all patients', () => {
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
   assert.equal(out.length, 2);
+});
+
+test('team filter matches structural Sala slice when unassigned', () => {
+  const melissaTeam = {
+    team_id: 't-melissa',
+    name: 'Dra. Melissa',
+    service: 'Sala',
+    sub_area_fraction: 'A',
+    sala: 'Sala 1',
+  };
+  const patient = { id: 'p1', servicio: 'Sala', area: 'A', sala: 'Sala 1' };
+  const teams = [melissaTeam];
+  assert.equal(
+    patientMatchesCensusTeamFilter(patient, 't-melissa', teams, [], '2026-06-01T12:00:00Z'),
+    true
+  );
+  const out = filterPatientsForGuardiaCensus(
+    [patient, { id: 'p2', servicio: 'Sala', area: 'B', sala: 'Sala 1' }],
+    { user_id: 'r4', rank: 'R4' },
+    { teams, guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' },
+    null,
+    { sala: '__all__', teamId: 't-melissa', service: '' }
+  );
+  assert.deepEqual(out.map((p) => p.id), ['p1']);
 });
 
 test('R4 elevated filter shows only patients without explicit team assignment', () => {

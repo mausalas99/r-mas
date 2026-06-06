@@ -32,14 +32,14 @@ describe('clinical census team filter', () => {
     { team_id: 't2', name: 'Otro equipo', sala: 'Sala 2', members: [{ user_id: 'u1' }] },
   ];
 
-  it('defaults to joined team in user sala', () => {
+  it('defaults to Todos los equipos when preference not pinned', () => {
     const mem = new Map();
     const storage = {
       getItem: (k) => mem.get(k) ?? null,
       setItem: (k, v) => mem.set(k, v),
       removeItem: (k) => mem.delete(k),
     };
-    assert.equal(resolveElevatedTeamFilterId(user, teams, storage), 't1');
+    assert.equal(resolveElevatedTeamFilterId(user, teams, storage), '');
   });
 
   it('single membership defaults to that team', () => {
@@ -51,7 +51,7 @@ describe('clinical census team filter', () => {
     };
     const oneTeam = [teams[0]];
     assert.equal(resolveActiveTeamFilterId(user, oneTeam), 't1');
-    assert.equal(resolveElevatedTeamFilterId(user, oneTeam, storage), 't1');
+    assert.equal(resolveElevatedTeamFilterId(user, oneTeam, storage), '');
   });
 
   it('pinned Todos los equipos clears team filter', () => {

@@ -9,8 +9,9 @@ import {
   migratePatientsClinicalSala,
   readEntregaPhaseActive,
   userHasJoinedClinicalTeams,
+  userIsOnGuardiaCallToday,
 } from './clinico-access.mjs';
-import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
+import { effectiveClinicalRank, hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from './features/crypto-signer.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -290,28 +291,35 @@ export async function refreshClinicalUserProfile() {
 }
 
 /** Pull host census rows for team assignments missing on this device. */
-async function ensureTeamAssignedPatientsOnDevice() {
+export async function ensureTeamAssignedPatientsOnDevice() {
   const user = clinicalSessionContext.user;
-  if (!user?.user_id || hasElevatedTeamPrivileges(user)) return;
+  if (!user?.user_id) return;
   const ctx = getClinicalScopeContextForEvaluate();
   const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
-  if (!userHasJoinedClinicalTeams(teams, user.user_id)) return;
-
-  const { filterJoinedTeams } = await import('./features/clinical-teams/shared.mjs');
-  const { resolvePatientTeamIdFromAssignments } = await import('./clinico-access.mjs');
-  const joined = filterJoinedTeams(teams, user);
-  const teamIds = new Set(joined.map((t) => String(t.team_id || '')));
-  if (!teamIds.size) return;
-
   const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
   const now = ctx.now || new Date().toISOString();
   const localIds = new Set((patients || []).map((p) => String(p?.id || '')));
+  const elevated = hasElevatedTeamPrivileges(user);
   let missing = 0;
-  for (const row of assignments) {
-    const pid = String(row?.patient_id || '');
-    if (!pid || localIds.has(pid)) continue;
-    const teamId = resolvePatientTeamIdFromAssignments(pid, assignments, now);
-    if (teamIds.has(teamId)) missing += 1;
+
+  if (elevated) {
+    for (const row of assignments) {
+      const pid = String(row?.patient_id || '');
+      if (pid && !localIds.has(pid)) missing += 1;
+    }
+  } else {
+    if (!userHasJoinedClinicalTeams(teams, user.user_id)) return;
+    const { filterJoinedTeams } = await import('./features/clinical-teams/shared.mjs');
+    const { resolvePatientTeamIdFromAssignments } = await import('./clinico-access.mjs');
+    const joined = filterJoinedTeams(teams, user);
+    const teamIds = new Set(joined.map((t) => String(t.team_id || '')));
+    if (!teamIds.size) return;
+    for (const row of assignments) {
+      const pid = String(row?.patient_id || '');
+      if (!pid || localIds.has(pid)) continue;
+      const teamId = resolvePatientTeamIdFromAssignments(pid, assignments, now);
+      if (teamIds.has(teamId)) missing += 1;
+    }
   }
   if (!missing) return;
 
@@ -393,6 +401,17 @@ export async function initClinicalAccessRuntime(settings, clientId) {
     },
     String(clinicalSessionContext.user?.user_id || clientId),
     {
+      shouldMonitorVitals: () => {
+        const uid = String(clinicalSessionContext.user?.user_id || '');
+        if (!uid) return false;
+        const rank = effectiveClinicalRank(clinicalSessionContext.user);
+        const teams = clinicalSessionContext.teams || [];
+        const salaGuardiaToday =
+          clinicalSessionContext.salaGuardiaToday ||
+          clinicalSessionContext.scopeContext?.salaGuardiaToday ||
+          [];
+        return userIsOnGuardiaCallToday(uid, rank, teams, new Date(), salaGuardiaToday);
+      },
       resolvePatientLabel: (patientId) => {
         const p = patients.find((row) => String(row.id) === String(patientId));
         if (!p) return '';

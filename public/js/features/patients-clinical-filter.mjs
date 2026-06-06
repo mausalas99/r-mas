@@ -1,5 +1,8 @@
 import {
   isPatientReadableInClinicalScope,
+  patientMatchesTeam,
+  resolvePatientTeamIdFromAssignments,
+  patientHasExplicitTeamAssignment,
 } from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
@@ -40,20 +43,114 @@ export function filterPatientsForClinicalSidebar(patients, user, scopeContext, g
  * @param {object[]} patients
  * @param {{ sala?: string, teamId?: string, service?: string }} filters
  */
-export function applyElevatedPatientFilters(patients, filters) {
+/**
+ * Team for Filtros censo: explicit assignment wins, else structural match to team slice.
+ * @param {object} patient
+ * @param {string} teamId
+ * @param {object[]} teams
+ * @param {object[]} assignments
+ * @param {Date|string|number} [now]
+ */
+export function patientMatchesCensusTeamFilter(patient, teamId, teams, assignments, now) {
+  const tid = String(teamId || '');
+  if (!tid) return true;
+  const patientId = String(patient?.id || '');
+  if (tid === CENSUS_TEAM_FILTER_UNASSIGNED) {
+    return !patientHasExplicitTeamAssignment(patientId, assignments);
+  }
+  const team = (teams || []).find((t) => String(t.team_id || '') === tid);
+  if (!team) return false;
+  const assigned = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
+  if (assigned) return assigned === tid;
+  return patientMatchesTeam(patientForScopeEvaluate(patient), team);
+}
+
+/** @param {object} patient @param {object[]} teams @param {object[]} assignments @param {Date|string|number} [now] */
+export function resolvePatientCensusTeamId(patient, teams, assignments, now) {
+  const patientId = String(patient?.id || '');
+  const assigned = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
+  if (assigned) return assigned;
+  const mapped = patientForScopeEvaluate(patient);
+  for (const team of teams || []) {
+    if (patientMatchesTeam(mapped, team)) {
+      return String(team.team_id || '');
+    }
+  }
+  return '';
+}
+
+export function applyElevatedPatientFilters(patients, filters, ctx = {}) {
   let list = patients || [];
   const sala = filters?.sala;
   if (sala && sala !== '__all__') {
     list = list.filter((p) => String(p.sala || '') === sala);
   }
+  const teams = ctx.teams || [];
+  const assignments = ctx.assignments || [];
+  const now = ctx.now || new Date().toISOString();
   if (filters?.teamId === CENSUS_TEAM_FILTER_UNASSIGNED) {
-    list = list.filter((p) => p._noExplicitTeamAssignment === true);
+    list = list.filter((p) =>
+      patientMatchesCensusTeamFilter(p, CENSUS_TEAM_FILTER_UNASSIGNED, teams, assignments, now)
+    );
   } else if (filters?.teamId) {
-    list = list.filter((p) => String(p._filterTeamId || '') === String(filters.teamId));
+    list = list.filter((p) =>
+      patientMatchesCensusTeamFilter(p, filters.teamId, teams, assignments, now)
+    );
   }
   if (filters?.service) {
     const q = String(filters.service).toLowerCase();
     list = list.filter((p) => String(p.servicio || '').toLowerCase().includes(q));
   }
   return list;
+}
+
+/**
+ * @param {object[]} list
+ * @param {{ teams?: object[], assignments?: object[], userId?: string, now?: string }} ctx
+ */
+export function tagPatientsForTeamFilter(list, ctx = {}) {
+  const assignments = ctx.assignments || [];
+  const teams = ctx.teams || [];
+  const now = ctx.now || new Date().toISOString();
+  for (const p of list) {
+    if (!p) continue;
+    p._filterTeamId = resolvePatientCensusTeamId(p, teams, assignments, now);
+    p._noExplicitTeamAssignment = !patientHasExplicitTeamAssignment(
+      String(p.id || ''),
+      assignments
+    );
+  }
+  return list;
+}
+
+/**
+ * Clinical scope + optional Filtros censo (elevated users).
+ * @param {object[]} basePatients
+ * @param {object|null|undefined} user
+ * @param {object} scopeContext
+ * @param {Map<string, object>|null|undefined} [guardiasMap]
+ * @param {{ sala?: string, teamId?: string, service?: string }} [elevatedFilters]
+ */
+export function filterPatientsForGuardiaCensus(
+  basePatients,
+  user,
+  scopeContext,
+  guardiasMap,
+  elevatedFilters = {}
+) {
+  if (!user?.user_id) return basePatients || [];
+  let visible = filterPatientsForClinicalSidebar(
+    basePatients,
+    user,
+    scopeContext,
+    guardiasMap
+  );
+  if (!hasElevatedTeamPrivileges(user)) return visible;
+  const filterCtx = {
+    teams: scopeContext.teams || [],
+    assignments: scopeContext.assignments || [],
+    now: scopeContext.now || new Date().toISOString(),
+  };
+  tagPatientsForTeamFilter(visible, filterCtx);
+  return applyElevatedPatientFilters(visible, elevatedFilters, filterCtx);
 }

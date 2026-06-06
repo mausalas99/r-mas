@@ -123,6 +123,26 @@ describe('UnifiedPatientGridBoard', () => {
     assert.equal(dividers[1].textContent, 'Eme');
   });
 
+  it('renders R4 patients with servicio Sala and area letter', () => {
+    if (typeof document === 'undefined') return;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid(
+      [
+        { id: 'p1', name: 'A', service: 'Sala', sub_area: 'A' },
+        { id: 'p2', name: 'B', service: 'Sala', sub_area: 'B' },
+        { id: 'p3', name: 'C', service: 'Torre HU' },
+      ],
+      new Map(),
+      'R4'
+    );
+    const dividers = host.querySelectorAll('.r4-section-divider');
+    assert.equal(dividers.length, 3);
+    assert.equal(dividers[0].textContent, 'Sala A');
+    assert.equal(dividers[1].textContent, 'Sala B');
+    assert.equal(dividers[2].textContent, 'Torre HU');
+    assert.equal(host.querySelectorAll('.patient-chip-card').length, 3);
+  });
+
   it('renders entrega marker symbols CR NF SH without emoji', () => {
     if (typeof document === 'undefined') return;
     const handoff = defaultHandoffContext();

@@ -9,6 +9,7 @@ import { readRpcSettings, isClinicalLocalOnlyMode } from '../clinical-settings.m
 import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
+import { isGuardiaMode } from './chrome.mjs';
 import { storage } from '../storage.js';
 import { subscribeRoomSyncPhase } from '../lan-sync-state.mjs';
 
@@ -179,7 +180,8 @@ function buildEntryStatus() {
 
 export function syncClinicalRotationEntryChrome() {
   const rotationSection = document.getElementById('clinical-rotation-section');
-  const show = isDbMode() && !isClinicalLocalOnlyMode(readRpcSettings());
+  const show =
+    isDbMode() && !isClinicalLocalOnlyMode(readRpcSettings()) && !isGuardiaMode();
 
   if (rotationSection) rotationSection.hidden = !show;
   if (!show) {

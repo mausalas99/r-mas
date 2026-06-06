@@ -1,3 +1,5 @@
+import { isGuardiaMode } from './chrome.mjs';
+
 /** @returns {HTMLElement | null} */
 export function clinicalContextBarEl() {
   return document.getElementById('clinical-context-bar');
@@ -9,7 +11,7 @@ export function syncClinicalContextBarVisibility() {
   if (!bar) return;
   const rotation = document.getElementById('clinical-rotation-section');
   const filtersMount = document.getElementById('clinical-census-filters-mount');
-  const hasRotation = rotation && !rotation.hidden;
+  const hasRotation = rotation && !rotation.hidden && !isGuardiaMode();
   const hasFilters =
     filtersMount &&
     !filtersMount.hidden &&

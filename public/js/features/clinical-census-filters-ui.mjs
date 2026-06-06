@@ -55,7 +55,8 @@ export function writeElevatedTeamFilterPreference(teamId, storage = globalThis.l
 export function resolveElevatedTeamFilterId(user, teams, storage = globalThis.localStorage) {
   const pref = readElevatedTeamFilterPreference(storage);
   if (pref.pinned) return pref.teamId;
-  return resolveActiveTeamFilterId(user, teams);
+  // R4 / Admin / program admin: full censo by default; narrow via Equipo dropdown.
+  return '';
 }
 
 /** @param {string} teamId @param {object[]} teams */

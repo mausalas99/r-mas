@@ -26,6 +26,7 @@ import {
   getDefaultCama,
 } from '../mode-features.mjs';
 import {
+  ensureTeamAssignedPatientsOnDevice,
   renderGuardiaCensusGrid,
   syncGuardiaCensusPanelVisibility,
   clinicalSessionContext,
@@ -42,10 +43,10 @@ import {
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import {
-  applyElevatedPatientFilters,
-  filterPatientsForClinicalSidebar,
+  filterPatientsForGuardiaCensus as filterPatientsForGuardiaCensusCore,
   patientForScopeEvaluate,
 } from './patients-clinical-filter.mjs';
+import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
@@ -62,7 +63,7 @@ import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
 import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
-import { t, getUiDensity, isPaseMode } from './chrome.mjs';
+import { t, getUiDensity, isGuardiaMode, isPaseMode } from './chrome.mjs';
 import {
   emitLiveSyncPatientDelete,
   removePatientLocally,
@@ -91,48 +92,24 @@ import {
   shouldTourStayOnLabAfterLabCommit,
 } from '../tour-demo-patient.mjs';
 
-/** @type {{ sala: string, teamId: string, service: string }} */
-var elevatedPatientFilters = { sala: '__all__', teamId: '', service: '' };
-
-function tagPatientsForTeamFilter(list) {
-  const ctx = getClinicalScopeContextForEvaluate();
-  const assignments = ctx.assignments || [];
-  const teams = clinicalSessionContext.teams || [];
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  const now = ctx.now || new Date().toISOString();
-  for (const p of list) {
-    if (!p) continue;
-    let teamId = resolvePatientTeamIdFromAssignments(String(p.id || ''), assignments, now);
-    if (!teamId) {
-      const mapped = patientForScopeEvaluate(p);
-      for (const team of teams) {
-        const scoped = userId ? teamForMemberCycle(team, userId) : team;
-        if (patientMatchesTeam(mapped, scoped)) {
-          teamId = String(team.team_id || '');
-          break;
-        }
-      }
-    }
-    p._filterTeamId = teamId;
-    p._noExplicitTeamAssignment = !patientHasExplicitTeamAssignment(String(p.id || ''), assignments);
-  }
-  return list;
-}
-
 function patientsVisibleInSidebar() {
   const base = filterPatientsForPitchTour(patients);
-  const user = clinicalSessionContext.user;
-  if (!user?.user_id) return base;
-  const ctx = getClinicalScopeContextForEvaluate();
-  let visible = filterPatientsForClinicalSidebar(
-    base,
-    user,
-    ctx,
-    clinicalSessionContext.guardiasMap
+  return filterPatientsForGuardiaCensus(base);
+}
+
+/** Same scope + Filtros censo rules as the sidebar, for Guardia board census. */
+export function filterPatientsForGuardiaCensus(basePatients) {
+  return filterPatientsForGuardiaCensusCore(
+    basePatients,
+    clinicalSessionContext.user,
+    getClinicalScopeContextForEvaluate(),
+    clinicalSessionContext.guardiasMap,
+    elevatedPatientFilters
   );
-  if (!hasElevatedTeamPrivileges(user)) return visible;
-  tagPatientsForTeamFilter(visible);
-  return applyElevatedPatientFilters(visible, elevatedPatientFilters);
+}
+
+export function syncClinicalCensusFiltersChrome() {
+  syncClinicalCensusFiltersBar();
 }
 
 function syncClinicalCensusFiltersBar() {
@@ -207,23 +184,29 @@ function syncClinicalCensusFiltersBar() {
     const salaSel = bar.querySelector('#clinical-filter-sala');
     const teamSel = bar.querySelector('#clinical-filter-team');
     const serviceInp = bar.querySelector('#clinical-filter-service');
+    const refreshCensusViews = () => {
+      void ensureTeamAssignedPatientsOnDevice().then(() => {
+        renderPatientList();
+        if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
+      });
+    };
     if (salaSel) {
       salaSel.addEventListener('change', () => {
         elevatedPatientFilters.sala = String(salaSel.value || '__all__');
-        renderPatientList();
+        refreshCensusViews();
       });
     }
     if (teamSel) {
       teamSel.addEventListener('change', () => {
         elevatedPatientFilters.teamId = String(teamSel.value || '');
         writeElevatedTeamFilterPreference(elevatedPatientFilters.teamId);
-        renderPatientList();
+        refreshCensusViews();
       });
     }
     if (serviceInp) {
       serviceInp.addEventListener('input', () => {
         elevatedPatientFilters.service = String(serviceInp.value || '').trim();
-        renderPatientList();
+        refreshCensusViews();
       });
     }
   }
@@ -235,10 +218,15 @@ function syncClinicalCensusFiltersBar() {
   }
   if (teamSel) {
     const teams = clinicalSessionContext.teams || [];
-    let teamFilterId = resolveElevatedTeamFilterId(user, teams);
-    if (teamFilterId && !isTeamIdInCensusCatalog(teamFilterId, teams)) {
-      teamFilterId = resolveActiveTeamFilterId(user, teams);
-      writeElevatedTeamFilterPreference(teamFilterId);
+    const priorTeamId = String(elevatedPatientFilters.teamId ?? '');
+    let teamFilterId = priorTeamId || resolveElevatedTeamFilterId(user, teams);
+    if (
+      teamFilterId &&
+      teamFilterId !== CENSUS_TEAM_FILTER_UNASSIGNED &&
+      !isTeamIdInCensusCatalog(teamFilterId, teams)
+    ) {
+      teamFilterId = '';
+      writeElevatedTeamFilterPreference('');
     }
     elevatedPatientFilters.teamId = teamFilterId;
     teamSel.innerHTML =

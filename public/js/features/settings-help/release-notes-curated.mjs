@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_714 = [
+  {
+    title: 'Censo guardia para Admin/R4',
+    body:
+      'Los <strong>Filtros censo</strong> (sala, equipo, alcance) aplican al tablero. Sectores R4 por área real; Admin puede ver pacientes del turno que faltaban en esta Mac.',
+  },
+  {
+    title: 'Filtro por equipo',
+    body:
+      'Elegir un equipo en el filtro ya no muestra <strong>0 pacientes</strong> por un bug de ciclo del viewer.',
+  },
+  {
+    title: 'Directorio LAN usable',
+    body:
+      'Menos actualizaciones pesadas; las secciones <strong>R1 / R2…</strong> se quedan colapsadas. Perfiles con nombre+sala aparecen aunque falte @usuario.',
+  },
+  {
+    title: 'Un solo anfitrión en ⇄',
+    body:
+      'Si cada Mac tiene distinto <strong>hostUrl</strong>, el roster no converge: una Mac anfitriona y las demás <strong>Unirse</strong> con su enlace. Desactiva «Fijar anfitrión» si apunta a otra IP.',
+  },
+  {
+    title: 'Parche sobre 7.1.3',
+    body:
+      'Instala <strong>7.1.4 en todas</strong> las estaciones desde <strong>7.1.3</strong>; PIN, command sync y Learn Hub sin cambios de esquema.',
+  },
+];
+
 var RELEASE_NOTES_713 = [
   {
     title: 'Signos vitales sin falsas alarmas',
@@ -386,6 +414,7 @@ var RELEASE_NOTES_669 = [
 export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_713;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.4': RELEASE_NOTES_714,
   '7.1.3': RELEASE_NOTES_713,
   '7.1.2': RELEASE_NOTES_712,
   '7.1.1': RELEASE_NOTES_711,

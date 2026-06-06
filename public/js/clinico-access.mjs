@@ -232,6 +232,40 @@ export function salaLetterForTeamOrArea(teamOrPatient) {
   return extractSalaLetter(teamOrPatient?.sub_area || teamOrPatient?.service || '');
 }
 
+/** R4 Guardia census section order (ward macro-sectors). */
+export const R4_GUARDIA_SECTOR_ORDER = ['Sala A', 'Sala B', 'Eme', 'Torre HU'];
+
+/**
+ * Map a census row to an R4 Guardia sector label (Sala A/B, Eme, Torre HU).
+ * Accepts chart rows (`servicio`/`area`) or grid rows (`service`/`sub_area`).
+ * @param {{ service?: string, servicio?: string, sub_area?: string, area?: string }|null|undefined} patient
+ */
+export function resolveR4GuardiaSectorLabel(patient) {
+  if (!patient) return '';
+  const service = String(patient.service || patient.servicio || '').trim();
+  const subArea = String(patient.sub_area || patient.area || '').trim();
+  const hay = `${service} ${subArea}`.trim();
+  const svcKey = normalizeServiceKey(service);
+  const subKey = normalizeServiceKey(subArea);
+
+  for (const sector of R4_GUARDIA_SECTOR_ORDER) {
+    if (service === sector || subArea === sector) return sector;
+  }
+
+  if (svcKey.includes('torre hu') || subKey.includes('torre hu')) return 'Torre HU';
+  if (svcKey.includes('eme') || subKey.includes('eme') || svcKey === 'urgencias') return 'Eme';
+
+  if (svcKey.includes('sala') || subKey.includes('sala')) {
+    const letter = salaLetterForTeamOrArea({ service, sub_area: subArea, name: hay });
+    if (letter === 'A') return 'Sala A';
+    if (letter === 'B') return 'Sala B';
+    if (/sala\s*a\b/i.test(hay)) return 'Sala A';
+    if (/sala\s*b\b/i.test(hay)) return 'Sala B';
+  }
+
+  return '';
+}
+
 /**
  * @param {{ id?: string, service?: string, sub_area?: string, interconsult_type?: string }|null|undefined} patient
  */

@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.3](https://github.com/mausalas99/r-mas/releases/tag/v7.1.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.4](https://github.com/mausalas99/r-mas/releases/tag/v7.1.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -678,6 +678,15 @@ Notas: `docs/RELEASE_NOTES_2.1.0.txt`.
 
 ---
 
+
+## R+ 7.1.4 (guardia censo + directorio LAN)
+
+- **Censo guardia** — Admin/R4: filtros de censo, sectores por área real y pacientes del host en esta Mac.
+- **Equipos en guardia** — Filtro por equipo (p. ej. Dra. Melissa) ya no vacía el tablero.
+- **Directorio LAN** — Menos lag, secciones colapsables estables, perfiles sin @usuario visibles; guía si hay dos servidores en la misma sala.
+- **Sobre 7.1.3** — Signos vitales, Learn Hub y guardia-v7 sin cambios de esquema.
+
+Notas: `docs/RELEASE_NOTES_7.1.4.txt`.
 ## R+ 2.0.1 (parche)
 
 - **Actualizaciones** — En el modal «Nueva versión», las notas de release se muestran como texto legible (sin etiquetas HTML crudas).

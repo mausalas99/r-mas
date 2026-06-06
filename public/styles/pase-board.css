@@ -213,6 +213,7 @@ html.ui-density-guardia #header-app-mode-chip {
 
 .btn-guardia-entrega-phase {
   margin-left: auto;
+  flex-shrink: 0;
   border: 1px solid color-mix(in oklab, var(--action) 45%, var(--border));
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--action) 10%, var(--surface));
@@ -222,6 +223,11 @@ html.ui-density-guardia #header-app-mode-chip {
   font-weight: 700;
   padding: 8px 16px;
   cursor: pointer;
+}
+
+#appcontent-guardia .btn-guardia-entrega-phase {
+  padding: 6px 12px;
+  font-size: 0.75rem;
 }
 
 .btn-guardia-entrega-phase.is-active {
@@ -2479,7 +2485,11 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   }
 }
 
-/* Guardia phase bar — pre-turno / turno activo */
+/* Guardia phase bar — turno activo (pre-turno CTAs live in metrics toolbar) */
+.guardia-phase-bar[hidden] {
+  display: none !important;
+}
+
 .guardia-phase-bar {
   display: flex;
   flex-wrap: wrap;
@@ -4932,8 +4942,10 @@ html.clinical-onboarding-active #main-area {
   max-width: none;
 }
 
-html.ui-density-guardia .clinical-context-bar .clinical-rotation-section {
-  display: none;
+/* Guardia: no Mi rotación in the top bar — only Filtros censo (equipos via Mi Perfil). */
+html.ui-density-guardia .clinical-context-bar .clinical-rotation-section,
+html.ui-density-guardia #btn-clinical-lan-connect {
+  display: none !important;
 }
 
 .app-bar-mi-rotacion {

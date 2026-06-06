@@ -14,16 +14,81 @@ function pickLastWriteRow(localRow, incomingRow, tsField) {
   return b >= a ? incomingRow : localRow;
 }
 
+function teamRowVersion(row) {
+  if (!row) return '';
+  const stamps = [row.archived_at, row.updated_at, row.created_at]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  return stamps.sort().pop() || '';
+}
+
+function pickTeamMergeWinner(localRow, incomingRow) {
+  if (!localRow) return incomingRow || null;
+  if (!incomingRow) return localRow;
+  const a = teamRowVersion(localRow);
+  const b = teamRowVersion(incomingRow);
+  return b >= a ? incomingRow : localRow;
+}
+
+function mergeTeamsArchivedData(localRows, incomingRows) {
+  const map = new Map();
+  for (const row of [...(localRows || []), ...(incomingRows || [])]) {
+    const teamId = String(row?.team_id || '').trim();
+    const archivedAt = String(row?.archived_at || '').trim();
+    if (!teamId || !archivedAt) continue;
+    const prev = map.get(teamId);
+    if (!prev || archivedAt >= String(prev.archived_at || '')) {
+      map.set(teamId, { team_id: teamId, archived_at: archivedAt });
+    }
+  }
+  return [...map.values()];
+}
+
+function applyArchivedTeamTombstonesToTeams(teams, tombstones) {
+  const byId = indexBy(tombstones, 'team_id');
+  return (teams || []).map((team) => {
+    const teamId = String(team?.team_id || '').trim();
+    const tomb = byId.get(teamId);
+    if (!tomb) return team;
+    const tombAt = String(tomb.archived_at || '');
+    const rowAt = String(team.archived_at || '');
+    if (!rowAt || tombAt >= rowAt) {
+      return { ...team, archived_at: tombAt, rotation_active: 0 };
+    }
+    return team;
+  });
+}
+
 function mergeTeamsData(localRows, incomingRows) {
   const localById = indexBy(localRows, 'team_id');
   const incomingById = indexBy(incomingRows, 'team_id');
   const allIds = new Set([...localById.keys(), ...incomingById.keys()]);
   const out = [];
   for (const teamId of allIds) {
-    const winner = pickLastWriteRow(localById.get(teamId), incomingById.get(teamId), 'created_at');
+    const winner = pickTeamMergeWinner(localById.get(teamId), incomingById.get(teamId));
     if (winner) out.push({ ...winner });
   }
   return out;
+}
+
+function archivedTeamIdSet(teams, tombstones) {
+  const ids = new Set();
+  for (const row of teams || []) {
+    if (row?.archived_at) ids.add(String(row.team_id || '').trim());
+  }
+  for (const row of tombstones || []) {
+    const teamId = String(row?.team_id || '').trim();
+    if (teamId) ids.add(teamId);
+  }
+  return ids;
+}
+
+function filterMembershipForArchivedTeams(rows, archivedTeamIds) {
+  if (!archivedTeamIds?.size) return rows || [];
+  return (rows || []).filter((row) => {
+    const teamId = String(row?.team_id || '').trim();
+    return teamId && !archivedTeamIds.has(teamId);
+  });
 }
 
 function membershipPairKey(row) {
@@ -322,7 +387,13 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
     local.team_membership_rejoins || [],
     incoming.team_membership_rejoins || []
   );
-  const mergedTeams = mergeTeamsData(local.teams || [], incoming.teams || []);
+  const teams_archived = mergeTeamsArchivedData(
+    local.teams_archived || [],
+    incoming.teams_archived || []
+  );
+  let mergedTeams = mergeTeamsData(local.teams || [], incoming.teams || []);
+  mergedTeams = applyArchivedTeamTombstonesToTeams(mergedTeams, teams_archived);
+  const archivedTeamIds = archivedTeamIdSet(mergedTeams, teams_archived);
   const mergedClinicalUsers = mergeClinicalUsersData(
     local.clinical_users || [],
     incoming.clinical_users || []
@@ -358,12 +429,16 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
       incoming.team_guardia_today || []
     ),
     teams: mergedTeams,
+    teams_archived,
     team_membership_rejoins,
     team_membership_removals,
     team_membership: filterMembershipAfterRemovals(
-      filterMembershipForDeletedUsers(
-        mergeTeamMembershipData(local.team_membership || [], incoming.team_membership || []),
-        deletedSet
+      filterMembershipForArchivedTeams(
+        filterMembershipForDeletedUsers(
+          mergeTeamMembershipData(local.team_membership || [], incoming.team_membership || []),
+          deletedSet
+        ),
+        archivedTeamIds
       ),
       team_membership_removals
     ),

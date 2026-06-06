@@ -9,6 +9,10 @@ import {
 import { normalizePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { abbreviatePatientName } from '../../../lib/interno/interno-board.mjs';
 import { calcVitalsBanner, calcVitalsBannerForSpec } from '../../../lib/interno/vitals-banner.mjs';
+import {
+  R4_GUARDIA_SECTOR_ORDER,
+  resolveR4GuardiaSectorLabel,
+} from '../clinico-access.mjs';
 
 export { calcVitalsBanner };
 
@@ -103,18 +107,24 @@ export class UnifiedPatientGridBoard {
         this.renderBatch(followUpPatients, guardiasMap);
       }
 
-      const sectors = ['Sala A', 'Sala B', 'Eme', 'Torre HU'];
-      sectors.forEach((sector) => {
-        const sectorPatients = patients.filter(
-          (p) =>
-            !followUpIds.has(p.id) &&
-            (p.service === sector || p.sub_area === sector)
-        );
+      const assignedIds = new Set(followUpIds);
+      for (const sector of R4_GUARDIA_SECTOR_ORDER) {
+        const sectorPatients = patients.filter((p) => {
+          if (!p?.id || assignedIds.has(p.id)) return false;
+          if (resolveR4GuardiaSectorLabel(p) !== sector) return false;
+          assignedIds.add(p.id);
+          return true;
+        });
         if (sectorPatients.length > 0) {
           this.appendDivider(sector);
           this.renderBatch(sectorPatients, guardiasMap);
         }
-      });
+      }
+      const otherPatients = patients.filter((p) => p?.id && !assignedIds.has(p.id));
+      if (otherPatients.length > 0) {
+        this.appendDivider('Otros');
+        this.renderBatch(otherPatients, guardiasMap);
+      }
       return;
     }
 

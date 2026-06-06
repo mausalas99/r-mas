@@ -193,7 +193,7 @@ const TARGETS = {
   },
   gv7_entrega_phase: {
     appTab: null,
-    selector: '#guardia-phase-bar',
+    selector: '#btn-guardia-entrega-phase',
     focus: false,
     openGuardiaDensity: true,
     spotlightClass: 'tour-spotlight-action',

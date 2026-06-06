@@ -142,6 +142,26 @@ describe('BackgroundVitalsMonitorLoop', () => {
     assert.match(notifications[0].title, /Warning/);
   });
 
+  it('skips notifications when shouldMonitorVitals is false', async () => {
+    const notifications = [];
+    const db = {
+      all: async () => [
+        {
+          patient_id: 'pat-off-call',
+          last_vitals_check: new Date(Date.now() - 2 * 3600000).toISOString(),
+          vitals_frequency: '1h',
+          pendientes_json: JSON.stringify(activeVitalsPlan),
+        },
+      ],
+    };
+    const loop = new BackgroundVitalsMonitorLoop(db, 'user-1', {
+      shouldMonitorVitals: () => false,
+      notify: (title, body) => notifications.push({ title, body }),
+    });
+    await loop.scan();
+    assert.equal(notifications.length, 0);
+  });
+
   it('does not repeat the same alert on every scan', async () => {
     const notifications = [];
     const db = {
