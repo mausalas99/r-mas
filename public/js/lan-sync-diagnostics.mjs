@@ -98,3 +98,24 @@ export function formatDiagnosticsReport(diag) {
   const payload = diag && typeof diag === 'object' ? diag : getLanSyncDiagnostics();
   return redactLanSecrets(JSON.stringify(payload, null, 2));
 }
+
+/**
+ * @param {Record<string, unknown>} [input]
+ */
+export function buildCommandSyncDiagnostics(input) {
+  const src = input && typeof input === 'object' ? input : {};
+  return {
+    commandQueueDepth: Number(src.commandQueueDepth || 0),
+    oldestPendingCommandAgeMs: Number(src.oldestPendingCommandAgeMs || 0),
+    lastCommandAck: src.lastCommandAck || null,
+    lastAppliedSeq: Number(src.lastAppliedSeq || 0),
+    lastAckedCommandId: String(src.lastAckedCommandId || ''),
+    schedulerPendingRooms: Array.isArray(src.schedulerPendingRooms) ? src.schedulerPendingRooms.slice() : [],
+    lastFlush: src.lastFlush || null,
+    staleBaseCount: Number(src.staleBaseCount || 0),
+    duplicateCommandCount: Number(src.duplicateCommandCount || 0),
+    clockDriftWarnings: Number(src.clockDriftWarnings || 0),
+    replayGapCount: Number(src.replayGapCount || 0),
+    fullBundleFallbackCount: Number(src.fullBundleFallbackCount || 0),
+  };
+}

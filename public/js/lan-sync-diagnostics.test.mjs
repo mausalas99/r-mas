@@ -8,6 +8,7 @@ import {
   getLanSyncDiagnostics,
   formatDiagnosticsReport,
   redactLanSecrets,
+  buildCommandSyncDiagnostics,
 } from './lan-sync-diagnostics.mjs';
 
 describe('lan-sync-diagnostics', () => {
@@ -74,5 +75,14 @@ describe('lan-sync-diagnostics', () => {
     assert.ok(!redacted.includes('super-secret'));
     assert.match(redacted, /teamCode.*\*\*\*/);
     assert.match(redacted, /Bearer \*\*\*/);
+  });
+
+  it('buildCommandSyncDiagnostics returns defaults for empty input', () => {
+    const out = buildCommandSyncDiagnostics();
+    assert.equal(out.commandQueueDepth, 0);
+    assert.equal(out.lastAppliedSeq, 0);
+    assert.deepEqual(out.schedulerPendingRooms, []);
+    assert.equal(out.lastAckedCommandId, '');
+    assert.equal(out.replayGapCount, 0);
   });
 });
