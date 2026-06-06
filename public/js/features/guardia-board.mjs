@@ -29,6 +29,7 @@ import {
   listActiveProcedimientos,
   normalizePendientesJson,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
+import { normalizeHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
@@ -127,15 +128,17 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     diagnosticosTextForCenso(dxList, { max: 2 }) ||
     String(p.diagnosticosText || p.motivo || '').trim() ||
     'Sin diagnóstico registrado';
-  const openTodos = pendingTodoCount(base.id);
   const pendingCount = g?.pendientes_json
     ? listActiveProcedimientos(normalizePendientesJson(g.pendientes_json)).length
     : 0;
   const vitalsAltered = lastMedicionHasAlterations(p);
+  const pendientesDoc = normalizePendientesJson(g?.pendientes_json);
+  const handoff = normalizeHandoffContext(pendientesDoc.handoffContext);
   const isCritical = !!(
     g?.is_critical ||
     vitalsAltered ||
-    (openTodos > 0 && storage.getTodos(base.id).some((t) => !t.completed && t.priority === 'alta'))
+    handoff.vasopressor.active ||
+    handoff.ventilation.active
   );
   const entregaMarkers = g ? entregaChipMarkerIds(g) : [];
   return {
