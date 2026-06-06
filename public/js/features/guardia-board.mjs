@@ -33,7 +33,6 @@ import { normalizeHandoffContext } from '../../../lib/entrega/entrega-handoff-co
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
-let gridModeControlsWired = false;
 let appShellInstalled = false;
 
 function installGuardiaAppShell() {
@@ -69,12 +68,11 @@ function syncEntregaPhaseChrome() {
   }
 }
 
+/** @param {Record<string, unknown>|null|undefined} settings */
 function wireGuardiaEntregaPhaseButton(settings) {
-  if (gridModeControlsWired) return;
-  gridModeControlsWired = true;
-
   const btn = document.getElementById('btn-guardia-entrega-phase');
-  if (!btn) return;
+  if (!btn || btn._guardiaEntregaWired) return;
+  btn._guardiaEntregaWired = true;
 
   syncEntregaPhaseChrome();
 
