@@ -291,7 +291,7 @@ export async function refreshClinicalUserProfile() {
 }
 
 /** Pull host census rows for team assignments missing on this device. */
-export async function ensureTeamAssignedPatientsOnDevice() {
+export async function ensureTeamAssignedPatientsOnDevice(options) {
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return;
   const ctx = getClinicalScopeContextForEvaluate();
@@ -322,6 +322,8 @@ export async function ensureTeamAssignedPatientsOnDevice() {
     }
   }
   if (!missing) return;
+  const opts = options || {};
+  if (!opts.allowLanPull) return;
 
   try {
     const lan = await import('./features/lan-sync.mjs');
@@ -332,25 +334,38 @@ export async function ensureTeamAssignedPatientsOnDevice() {
       typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
     if (!rid) return;
     const push = await import('./features/lan/push.mjs');
-    if (typeof push.reconcileLiveSyncRoom === 'function') {
-      await push.reconcileLiveSyncRoom(rid);
+    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
+      push.scheduleReconcileLiveSyncRoom(rid, {
+        reason: 'missing-patients',
+        delayMs: opts.lanPullDelayMs,
+      });
     }
   } catch (_e) {}
 }
 
+let refreshClinicalPatientListForScopeInFlight = null;
+let clinicalOpsSyncedRefreshTimer = null;
+
 /** Reload teams + scope from DB and re-filter the patient sidebar (LAN join / team roster). */
-export async function refreshClinicalPatientListForScope() {
+export async function refreshClinicalPatientListForScope(options) {
   if (!isDbMode() || !clinicalSessionContext.user?.user_id) return;
-  await fetchClinicalTeamsFromDb();
-  await fetchClinicalScopeContextFromDb();
-  await ensureTeamAssignedPatientsOnDevice();
-  if (typeof document === 'undefined') return;
-  try {
-    const mod = await import('./features/patients.mjs');
-    if (typeof mod.renderPatientList === 'function') {
-      mod.renderPatientList({ silent: true });
-    }
-  } catch (_e) {}
+  if (refreshClinicalPatientListForScopeInFlight) return refreshClinicalPatientListForScopeInFlight;
+  const opts = options || {};
+  refreshClinicalPatientListForScopeInFlight = (async function () {
+    await fetchClinicalTeamsFromDb();
+    await fetchClinicalScopeContextFromDb();
+    await ensureTeamAssignedPatientsOnDevice({ allowLanPull: !!opts.allowLanPull });
+    if (typeof document === 'undefined') return;
+    try {
+      const mod = await import('./features/patients.mjs');
+      if (typeof mod.renderPatientList === 'function') {
+        mod.renderPatientList({ silent: true });
+      }
+    } catch (_e) {}
+  })().finally(function () {
+    refreshClinicalPatientListForScopeInFlight = null;
+  });
+  return refreshClinicalPatientListForScopeInFlight;
 }
 
 /** One-shot host bundle pull when new team assignments arrive (not on every no-op merge). */
@@ -367,8 +382,10 @@ async function pullHostPatientsAfterAssignmentMerge(event) {
       typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
     if (!rid) return;
     const push = await import('./features/lan/push.mjs');
-    if (typeof push.reconcileLiveSyncRoom === 'function') {
-      await push.reconcileLiveSyncRoom(rid);
+    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
+      push.scheduleReconcileLiveSyncRoom(rid, { reason: 'assignment-merge', delayMs: 2000 });
+    } else if (typeof push.reconcileLiveSyncRoom === 'function') {
+      void push.reconcileLiveSyncRoom(rid, { force: true, reason: 'assignment-merge' });
     }
   } catch (_e) {}
 }
@@ -377,8 +394,13 @@ export function wireClinicalOpsSyncRefresh() {
   if (typeof document === 'undefined' || document._rpcClinicalOpsSyncedRefreshWired) return;
   document._rpcClinicalOpsSyncedRefreshWired = true;
   document.addEventListener('rpc-clinical-ops-synced', (event) => {
-    void refreshClinicalPatientListForScope();
-    void pullHostPatientsAfterAssignmentMerge(event);
+    if (document.body.classList.contains('clinical-lan-directory-open')) return;
+    if (clinicalOpsSyncedRefreshTimer) clearTimeout(clinicalOpsSyncedRefreshTimer);
+    clinicalOpsSyncedRefreshTimer = setTimeout(function () {
+      clinicalOpsSyncedRefreshTimer = null;
+      void refreshClinicalPatientListForScope({ allowLanPull: false });
+      void pullHostPatientsAfterAssignmentMerge(event);
+    }, 1500);
   });
 }
 

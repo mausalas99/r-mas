@@ -150,11 +150,12 @@ describe('clinical-teams', () => {
     assert.doesNotMatch(clinicalTeamsSrc, /clinical-lan-rank-group" open>/);
   });
 
-  it('LAN directorio background refresh reads local DB only (no redundant host pull)', () => {
-    assert.match(clinicalTeamsSrc, /refreshLanDirectoryUiFromLocalDb/);
+  it('LAN directorio freezes auto-refresh while open (manual Actualizar)', () => {
+    assert.match(clinicalTeamsSrc, /lanDirectoryFreezeAutoRefresh/);
+    assert.match(clinicalTeamsSrc, /refreshLanDirectoryFromHostUi/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-directory-refresh-btn/);
     assert.match(clinicalTeamsSrc, /buildLanDirectoryFingerprint/);
-    assert.match(clinicalTeamsSrc, /LAN_DIRECTORY_POLL_MS/);
-    assert.doesNotMatch(clinicalTeamsSrc, /backgroundRefreshLanUsersDirectory/);
-    assert.doesNotMatch(clinicalTeamsSrc, /pullLanDirectoryFromHostBeforeDisplay/);
+    assert.doesNotMatch(clinicalTeamsSrc, /rpc-clinical-ops-synced[\s\S]*scheduleLanDirectory/);
+    assert.doesNotMatch(clinicalTeamsSrc, /setInterval[\s\S]*scheduleLanDirectory/);
   });
 });

@@ -912,7 +912,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
   }
   return chain
     .then(function () {
-      return reconcileLiveSyncRoom(rid);
+      return reconcileLiveSyncRoom(rid, { force: true, reason: 'room-join' });
     })
     .then(function () {
       if (activeLiveSyncRoomId !== rid) return;
@@ -938,7 +938,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
       runtime().refreshAllTodoUIs();
       void import('../../clinical-access-runtime.mjs').then(function (accessMod) {
         if (typeof accessMod.refreshClinicalPatientListForScope === 'function') {
-          return accessMod.refreshClinicalPatientListForScope();
+          return accessMod.refreshClinicalPatientListForScope({ allowLanPull: false });
         }
         runtime().renderPatientList({ silent: true });
       });

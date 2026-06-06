@@ -136,6 +136,7 @@ import {
   openTeamSyncFromHeader,
   saveLanHostTeamCodeFromUi,
   resetLanSquadHostStateFromUi,
+  resetLanTurnConnectionFromUi,
   dismissLanHostFirstTimeHint,
   dismissLanDisconnectBanner,
   setLanHideDisconnectBannerFromUi,
@@ -1277,7 +1278,7 @@ async function applyLiveSyncMerged(merged) {
   }
   if (patientsChanged) migrateLocalPatientsClinicalSala();
   if (patientsChanged || patientRemoved || clinicalOpsApplied) {
-    void refreshClinicalPatientListForScope();
+    void refreshClinicalPatientListForScope({ allowLanPull: false });
   }
 }
 
@@ -1665,6 +1666,7 @@ export const windowHandlers = {
   saveLanSettingsFromUi,
   saveLanHostTeamCodeFromUi,
   resetLanSquadHostStateFromUi,
+  resetLanTurnConnectionFromUi,
   dismissLanHostFirstTimeHint,
   dismissLanDisconnectBanner,
   setLanHideDisconnectBannerFromUi,

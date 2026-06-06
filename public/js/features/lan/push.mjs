@@ -608,18 +608,41 @@ function liveSyncRoomIdIsRelevant(roomId) {
   }
 }
 
-export function scheduleReconcileFromRevisionHint(roomId) {
+var reconcileInFlight = null;
+var reconcilePendingRoomId = '';
+var reconcileLastFinishedAt = 0;
+var missingPatientsReconcileTimer = null;
+var RECONCILE_COOLDOWN_MS = 10000;
+var MISSING_PATIENTS_RECONCILE_DELAY_MS = 20000;
+
+export function scheduleReconcileLiveSyncRoom(roomId, options) {
   var rid = String(roomId || '').trim();
-  if (!rid || !liveSyncRoomIdIsRelevant(rid)) return;
-  if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
+  if (!rid) return;
+  var opts = options || {};
+  if (opts.reason === 'missing-patients') {
+    if (missingPatientsReconcileTimer) return;
+    missingPatientsReconcileTimer = setTimeout(function () {
+      missingPatientsReconcileTimer = null;
+      void reconcileLiveSyncRoom(rid, { reason: 'missing-patients' });
+    }, opts.delayMs != null ? opts.delayMs : MISSING_PATIENTS_RECONCILE_DELAY_MS);
+    return;
+  }
+  var delay = opts.delayMs != null ? opts.delayMs : 500;
   var prev = getLiveSyncRevisionReconcileTimer();
   if (prev) clearTimeout(prev);
   setLiveSyncRevisionReconcileTimer(
     setTimeout(function () {
       setLiveSyncRevisionReconcileTimer(null);
-      void reconcileLiveSyncRoom(rid);
-    }, 500)
+      void reconcileLiveSyncRoom(rid, { reason: opts.reason || 'scheduled' });
+    }, delay)
   );
+}
+
+export function scheduleReconcileFromRevisionHint(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid || !liveSyncRoomIdIsRelevant(rid)) return;
+  if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
+  scheduleReconcileLiveSyncRoom(rid, { reason: 'revision-hint', delayMs: 500 });
 }
 
 export function emitLiveSyncRevisionHint(roomId, revision) {
@@ -808,7 +831,7 @@ function finishReconcilePhase(rid, b) {
   });
 }
 
-export async function reconcileLiveSyncRoom(roomId) {
+async function reconcileLiveSyncRoomBody(roomId) {
   await ensureLanSyncPushBridgeWired();
   var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || '').trim();
   if (!rid) return false;
@@ -869,9 +892,11 @@ export async function reconcileLiveSyncRoom(roomId) {
     sources.push(b.buildLiveSyncLocalMergeSource());
     if (sources.length) {
       var merged = mergeLiveSyncFullBundles(sources);
+      var bundleHadClinicalOps = !!(merged && merged.clinicalOps);
       await b.applyLiveSyncMerged(merged);
       try {
         if (
+          !bundleHadClinicalOps &&
           isClinicalOpsLanAvailable() &&
           typeof b.fetchAndApplyClinicalOpsFromHost === 'function'
         ) {
@@ -912,4 +937,37 @@ export async function reconcileLiveSyncRoom(roomId) {
   } finally {
     finishReconcilePhase(rid, b);
   }
+}
+
+export async function reconcileLiveSyncRoom(roomId, options) {
+  var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || '').trim();
+  if (!rid) return false;
+  var opts = options || {};
+  if (reconcileInFlight) {
+    reconcilePendingRoomId = rid;
+    return reconcileInFlight;
+  }
+  var now = Date.now();
+  if (
+    !opts.force &&
+    opts.reason !== 'revision-hint' &&
+    now - reconcileLastFinishedAt < RECONCILE_COOLDOWN_MS
+  ) {
+    scheduleReconcileLiveSyncRoom(rid, {
+      reason: opts.reason || 'cooldown',
+      delayMs: RECONCILE_COOLDOWN_MS - (now - reconcileLastFinishedAt),
+    });
+    return false;
+  }
+  reconcileInFlight = reconcileLiveSyncRoomBody(rid)
+    .finally(function () {
+      reconcileLastFinishedAt = Date.now();
+      reconcileInFlight = null;
+      var pending = reconcilePendingRoomId;
+      reconcilePendingRoomId = '';
+      if (pending) {
+        scheduleReconcileLiveSyncRoom(pending, { reason: 'pending', delayMs: 1500 });
+      }
+    });
+  return reconcileInFlight;
 }

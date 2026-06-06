@@ -422,7 +422,7 @@ export function renderGuardiaBoard(settings) {
   if (!guardiaViewBootstrapped) {
     guardiaViewBootstrapped = true;
     void bootstrapGuardiaViewOnEnter(settings);
-    void ensureTeamAssignedPatientsOnDevice().then(() => {
+    void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 3000 }).then(() => {
       if (isGuardiaMode()) renderGuardiaBoard(settings);
     });
   }

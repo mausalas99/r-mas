@@ -84,20 +84,25 @@ export function lanUsersModalBodyEl() {
   return document.getElementById('clinical-lan-users-panel-body');
 }
 
+export function isLanDirectoryModalOpen() {
+  const bd = lanUsersModalBackdropEl();
+  return !!(bd && bd.classList.contains('open'));
+}
+
 /** @type {object[]} */
 let _lanUsersModalTeams = [];
 
 /** Rank groups the user collapsed in directorio LAN (persists across background refreshes). */
 const lanDirectoryCollapsedRanks = new Set();
 
-const LAN_DIRECTORY_POLL_MS = 60_000;
-const LAN_DIRECTORY_OPS_SYNC_DEBOUNCE_MS = 800;
 const LAN_DIRECTORY_LAN_PULL_MIN_MS = 30_000;
+const LAN_DIRECTORY_IPC_MIN_MS = 4_000;
 
 let lastLanDirectoryFingerprint = '';
 let lanDirectoryLanPullLastAt = 0;
-/** @type {ReturnType<typeof setTimeout>|null} */
-let lanDirectoryLocalRefreshTimer = null;
+let lanDirectoryIpcLastAt = 0;
+/** While open: no auto-refresh (avoids lag from ⇄ sync storms). User taps Actualizar. */
+let lanDirectoryFreezeAutoRefresh = false;
 
 function lanRankGroupKey(rank) {
   return String(rank || '').trim() || 'Otros';
@@ -319,7 +324,9 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
     : '<p class="clinical-teams-empty">Crea un equipo vacío en Mi rotación para poder asignar residentes.</p>';
 
   return `
-    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · <strong>todas las salas</strong> en esta Mac (no filtra por tu sala). Asigna a cualquier equipo activo.</p>
+    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · <strong>todas las salas</strong> en esta Mac (no filtra por tu sala). Asigna a cualquier equipo activo.
+      <button type="button" class="btn-med-secondary clinical-lan-directory-refresh-btn" style="margin-left:8px">Actualizar desde ⇄</button>
+    </p>
     ${teamsHint}
     <div class="clinical-lan-rank-groups">${rankSections}${otherSection}</div>`;
 }
@@ -418,7 +425,7 @@ async function handleLanDeleteDirectoryUserClick(btn) {
     );
   }
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await openLanUsersDirectoryModal();
+  await reloadLanUsersDirectoryAfterMutation();
 }
 
 async function handleLanAssignButtonClick(btn) {
@@ -462,7 +469,7 @@ async function handleLanAssignButtonClick(btn) {
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();
   await fetchClinicalTeamsFromDb();
-  await openLanUsersDirectoryModal();
+  await reloadLanUsersDirectoryAfterMutation();
 }
 
 /** @param {object[]} users @param {object[]} teams */
@@ -487,8 +494,28 @@ function buildLanDirectoryFingerprint(users, teams) {
   return `${userPart}::${teamPart}`;
 }
 
-/** @param {HTMLElement} host @param {{ forceRender?: boolean }} [options] */
+async function reloadLanUsersDirectoryAfterMutation() {
+  const host = lanUsersModalBodyEl();
+  if (!host || !isLanDirectoryModalOpen()) return;
+  lastLanDirectoryFingerprint = '';
+  captureLanDirectoryCollapseState(host);
+  const draft = captureLanDirectoryDraftState(host);
+  await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+  restoreLanDirectoryDraftState(host, draft);
+}
+
+/** @param {HTMLElement} host @param {{ forceRender?: boolean, forceIpc?: boolean }} [options] */
 export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
+  const now = Date.now();
+  if (
+    !options.forceIpc &&
+    lanDirectoryFreezeAutoRefresh &&
+    now - lanDirectoryIpcLastAt < LAN_DIRECTORY_IPC_MIN_MS &&
+    host.querySelector('.clinical-lan-rank-groups')
+  ) {
+    return;
+  }
+
   const api = dbApi();
   if (!api || typeof api.dbClinicalUsersList !== 'function') {
     host.innerHTML =
@@ -497,6 +524,7 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   }
 
   const callerUserId = currentUserId();
+  lanDirectoryIpcLastAt = now;
   const [usersRes, teamsRes] = await Promise.all([
     api.dbClinicalUsersList({ callerUserId }),
     typeof api.dbClinicalTeamsList === 'function' ? api.dbClinicalTeamsList() : Promise.resolve(null),
@@ -541,18 +569,16 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   }
 }
 
-/** @type {ReturnType<typeof setInterval>|null} */
-let lanDirectoryPollTimer = null;
-/** @type {ReturnType<typeof setTimeout>|null} */
-let lanDirectoryOpsSyncDebounce = null;
-let lanDirectoryRefreshPending = false;
-
 function isLanDirectoryUserInteracting() {
   const bd = lanUsersModalBackdropEl();
   if (!bd?.classList.contains('open')) return false;
   const active = document.activeElement;
   if (active instanceof HTMLElement && bd.contains(active)) {
-    if (active.closest('.clinical-lan-assign-team, .clinical-lan-assign-cycle, .clinical-lan-assign-btn, .clinical-lan-delete-user-btn')) {
+    if (
+      active.closest(
+        '.clinical-lan-assign-team, .clinical-lan-assign-cycle, .clinical-lan-assign-btn, .clinical-lan-delete-user-btn, .clinical-lan-rank-group-summary, .clinical-lan-directory-refresh-btn'
+      )
+    ) {
       return true;
     }
   }
@@ -605,59 +631,24 @@ function restoreLanDirectoryDraftState(host, draft) {
   });
 }
 
-function stopLanDirectoryPoll() {
-  if (lanDirectoryPollTimer) {
-    clearInterval(lanDirectoryPollTimer);
-    lanDirectoryPollTimer = null;
-  }
-}
-
-function startLanDirectoryPoll() {
-  stopLanDirectoryPoll();
-  lanDirectoryPollTimer = setInterval(() => {
-    const bd = lanUsersModalBackdropEl();
-    if (!bd?.classList.contains('open')) {
-      stopLanDirectoryPoll();
-      return;
-    }
-    scheduleLanDirectoryLocalRefresh();
-  }, LAN_DIRECTORY_POLL_MS);
-}
-
-/** Re-read local DB only (no LAN HTTP). Preserves collapse + draft selects. */
-export async function refreshLanDirectoryUiFromLocalDb(options = {}) {
+/** Manual or post-mutation reload; optional LAN pull from host. */
+export async function refreshLanDirectoryFromHostUi(options = {}) {
   const host = lanUsersModalBodyEl();
-  const bd = lanUsersModalBackdropEl();
-  if (!host || !bd?.classList.contains('open')) return;
-  if (!options.force && isLanDirectoryUserInteracting()) {
-    lanDirectoryRefreshPending = true;
-    return;
+  if (!host || !isLanDirectoryModalOpen()) return;
+  const btn = host.querySelector('.clinical-lan-directory-refresh-btn');
+  if (btn instanceof HTMLButtonElement) btn.disabled = true;
+  try {
+    if (options.pullFromHost !== false) {
+      await pullLanDirectoryFromHostIfDue({ force: !!options.forcePull });
+    }
+    lastLanDirectoryFingerprint = '';
+    captureLanDirectoryCollapseState(host);
+    const draft = captureLanDirectoryDraftState(host);
+    await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+    restoreLanDirectoryDraftState(host, draft);
+  } finally {
+    if (btn instanceof HTMLButtonElement) btn.disabled = false;
   }
-  lanDirectoryRefreshPending = false;
-  captureLanDirectoryCollapseState(host);
-  const draft = captureLanDirectoryDraftState(host);
-  await loadLanUsersDirectoryIntoHost(host);
-  restoreLanDirectoryDraftState(host, draft);
-}
-
-/** Debounced local refresh when clinical ops already merged on this Mac. */
-export function scheduleLanDirectoryLocalRefresh(force = false) {
-  if (lanDirectoryLocalRefreshTimer) {
-    clearTimeout(lanDirectoryLocalRefreshTimer);
-    lanDirectoryLocalRefreshTimer = null;
-  }
-  if (force) {
-    void refreshLanDirectoryUiFromLocalDb({ force: true });
-    return;
-  }
-  if (isLanDirectoryUserInteracting()) {
-    lanDirectoryRefreshPending = true;
-    return;
-  }
-  lanDirectoryLocalRefreshTimer = setTimeout(() => {
-    lanDirectoryLocalRefreshTimer = null;
-    void refreshLanDirectoryUiFromLocalDb();
-  }, 120);
 }
 
 async function pullLanDirectoryFromHostIfDue(options = {}) {
@@ -703,10 +694,11 @@ export async function openLanUsersDirectoryModal() {
   bd.setAttribute('aria-hidden', 'false');
 
   lastLanDirectoryFingerprint = '';
+  lanDirectoryFreezeAutoRefresh = true;
 
   try {
     await pullLanDirectoryFromHostIfDue({ force: true });
-    await loadLanUsersDirectoryIntoHost(host, { forceRender: true });
+    await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
   } catch (err) {
     console.error('[Directorio LAN]', err);
     host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(
@@ -714,19 +706,10 @@ export async function openLanUsersDirectoryModal() {
     )}</p>`;
   }
 
-  startLanDirectoryPoll();
 }
 
 export function closeLanUsersDirectoryModal() {
-  stopLanDirectoryPoll();
-  if (lanDirectoryLocalRefreshTimer) {
-    clearTimeout(lanDirectoryLocalRefreshTimer);
-    lanDirectoryLocalRefreshTimer = null;
-  }
-  if (lanDirectoryOpsSyncDebounce) {
-    clearTimeout(lanDirectoryOpsSyncDebounce);
-    lanDirectoryOpsSyncDebounce = null;
-  }
+  lanDirectoryFreezeAutoRefresh = false;
   lastLanDirectoryFingerprint = '';
   const bd = lanUsersModalBackdropEl();
   if (!bd) return;
@@ -736,20 +719,6 @@ export function closeLanUsersDirectoryModal() {
 }
 
 export function wireLanUsersDirectoryControls() {
-  if (typeof document !== 'undefined' && !document._rpcLanUsersOpsSyncedWired) {
-    document._rpcLanUsersOpsSyncedWired = true;
-    document.addEventListener('rpc-clinical-ops-synced', () => {
-      const bd = lanUsersModalBackdropEl();
-      const host = lanUsersModalBodyEl();
-      if (!bd?.classList.contains('open') || !host) return;
-      if (lanDirectoryOpsSyncDebounce) clearTimeout(lanDirectoryOpsSyncDebounce);
-      lanDirectoryOpsSyncDebounce = setTimeout(() => {
-        lanDirectoryOpsSyncDebounce = null;
-        scheduleLanDirectoryLocalRefresh();
-      }, LAN_DIRECTORY_OPS_SYNC_DEBOUNCE_MS);
-    });
-  }
-
   const panelHost = getClinicalTeamsPanelHost();
   if (panelHost && !panelHost._rpcLanDirOpenDelegated) {
     panelHost._rpcLanDirOpenDelegated = true;
@@ -808,14 +777,13 @@ export function wireLanUsersDirectoryControls() {
       const teamSelect = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-team') : null;
       if (teamSelect) syncLanAssignCycleSelect(teamSelect);
     });
-    host.addEventListener('focusout', () => {
-      setTimeout(() => {
-        if (lanDirectoryRefreshPending && !isLanDirectoryUserInteracting()) {
-          scheduleLanDirectoryLocalRefresh(true);
-        }
-      }, 120);
-    });
     host.addEventListener('click', (ev) => {
+      const refreshBtn =
+        ev.target instanceof Element ? ev.target.closest('.clinical-lan-directory-refresh-btn') : null;
+      if (refreshBtn) {
+        void refreshLanDirectoryFromHostUi({ forcePull: true });
+        return;
+      }
       const delBtn =
         ev.target instanceof Element ? ev.target.closest('.clinical-lan-delete-user-btn') : null;
       if (delBtn) {

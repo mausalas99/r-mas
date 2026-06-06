@@ -8,6 +8,7 @@ import {
   CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
   CLINICAL_LAN_PROFILE_GATE_LEAD_HTML,
   CLINICAL_LAN_USERNAME_HINT_HTML,
+  bundledWardShiftPin,
   ensureLanProfileGateDeviceReset,
   isClinicalLocalOnlyMode,
   needsClinicalLanProfileGate,
@@ -48,11 +49,13 @@ export function prefillRegistrationFromUrlParams() {
   const sala = params.get('sala') || '';
   if (!user && !name && !rank && !sala) return;
 
+  const shiftPin = params.get('pin') || params.get('shiftPin') || '';
   const pairs = [
     ['clinical-reg-username', 'onboard-username', user],
     ['clinical-reg-name', 'onboard-clinical-name', name],
     ['clinical-reg-rank', 'onboard-rank', rank],
     ['clinical-reg-sala', 'onboard-sala', sala],
+    ['clinical-reg-shift-pin', 'onboard-shift-pin', shiftPin],
   ];
   for (const [regId, onboardId, value] of pairs) {
     if (!value) continue;
@@ -88,6 +91,11 @@ export function openClinicalRegistrationModal() {
   }
   const usernameInput = document.getElementById('clinical-reg-username');
   if (usernameInput) usernameInput.focus();
+  const pinInput = document.getElementById('clinical-reg-shift-pin');
+  if (pinInput && !String(pinInput.value || '').trim()) {
+    const bundled = bundledWardShiftPin();
+    if (bundled) pinInput.value = bundled;
+  }
 }
 
 export function closeClinicalRegistrationModal() {
@@ -217,6 +225,19 @@ function wireRegistrationFormOnce() {
     });
 
     if (errEl) errEl.hidden = true;
+
+    const shiftPin = String(document.getElementById('clinical-reg-shift-pin')?.value || '').trim();
+    if (shiftPin && !isClinicalLocalOnlyMode()) {
+      const { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
+      const connected = await connectLanWithShiftPin(shiftPin, { sala });
+      if (!connected && typeof window.showToast === 'function') {
+        window.showToast(
+          'No se encontró anfitrión con ese PIN. Puedes intentarlo en ⇄ (Wi‑Fi) o Mi rotación → Conectar al turno.',
+          'warning'
+        );
+      }
+    }
+
     const lanPush = await flushClinicalProfileToLan({ sala, roomId: lanRoom.roomId });
     notifyLanProfilePushResult(lanPush, (msg, kind) => runtime.showToast(msg, kind));
     if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code) && !(lanPush.channels && lanPush.channels.outbox) && errEl) {

@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   buildGuardiasMap,
   mapPatientForGuardiaGrid,
@@ -49,4 +52,14 @@ test('assertClinicalWriteAllowed allows Admin writes', () => {
   };
   const scope = assertClinicalWriteAllowed('p1');
   assert.equal(scope.writable, true);
+});
+
+test('ops-sync refresh does not eagerly reconcile LAN on every merge', () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime.mjs'),
+    'utf8'
+  );
+  assert.match(src, /allowLanPull: false/);
+  assert.match(src, /scheduleReconcileLiveSyncRoom/);
+  assert.match(src, /clinicalOpsSyncedRefreshTimer/);
 });

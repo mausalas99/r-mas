@@ -94,8 +94,11 @@ function isClinicalTeamsPanelOpen() {
 
 /** Tras cambios de equipos: actualiza caché y panel si está abierto (sin «Cargando…»). */
 export async function refreshTeamsUiAfterChange() {
+  const { isLanDirectoryModalOpen } = await import('./teams-roster-lan.mjs');
+  if (isLanDirectoryModalOpen()) return;
+
   const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
-  await refreshClinicalPatientListForScope();
+  await refreshClinicalPatientListForScope({ allowLanPull: false });
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelOpen()) {
     await renderClinicalTeamsPanel({ silent: true, skipLanPull: true });

@@ -331,4 +331,22 @@ describe('clinical-profile-lan-sync', () => {
     assert.match(profileLanSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
     assert.match(profileLanSrc, /isLanProfileNeedsConnectCode/);
   });
+
+  it('shows shift PIN client connect when not ward-live on remote host', () => {
+    assert.match(lanSyncTransportSrc, /shouldShowLanShiftPinClientConnect/);
+    assert.match(lanSyncTransportSrc, /isLanRestHostOwnMachine/);
+    assert.match(lanSyncPanelSrc, /shouldShowLanShiftPinClientConnect/);
+    assert.doesNotMatch(
+      lanSyncPanelSrc,
+      /appendLanShiftPinClientConnectSection[\s\S]*resolveHostBearerToken[\s\S]*if \(lanPanelRenderStale\(gen\) \|\| bearer\) return/
+    );
+  });
+
+  it('coalesces reconcile to avoid sync-bundle / clinical-ops storms', () => {
+    assert.match(lanSyncPushSrc, /reconcileInFlight/);
+    assert.match(lanSyncPushSrc, /scheduleReconcileLiveSyncRoom/);
+    assert.match(lanSyncPushSrc, /RECONCILE_COOLDOWN_MS/);
+    assert.match(lanSyncPushSrc, /bundleHadClinicalOps/);
+    assert.match(lanSyncPushSrc, /reconcileLiveSyncRoomBody/);
+  });
 });

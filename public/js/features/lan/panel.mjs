@@ -83,6 +83,9 @@ import {
   exchangeLanJoinFromInvite,
   syncLanSavedTeamCodeWithEffectiveHostCode,
   isLocalLoopbackLanUrl,
+  shouldShowLanShiftPinClientConnect,
+  shouldShowLanShiftPinHostDisplay,
+  isLanRestHostOwnMachine,
   resolveLanHostUrlForShare,
   resolveLanHostUrlAuto,
   updateLanPairingDisplay,
@@ -392,6 +395,7 @@ export function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalOpsSyncedLanWired) {
     document._rpcClinicalOpsSyncedLanWired = true;
     document.addEventListener('rpc-clinical-ops-synced', function () {
+      if (document.body.classList.contains('clinical-lan-directory-open')) return;
       void refreshClinicalSessionTeams().then(function () {
         renderLanPanel();
       });
@@ -1044,6 +1048,8 @@ async function renderLanPanelOnce() {
   if (lanPanelRenderStale(gen)) return;
   appendLanShiftPinClientConnectSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
+  await appendLanTurnResetSection(root, gen);
+  if (lanPanelRenderStale(gen)) return;
 
   if (runtime().isMobileWeb() && !hubStatus.connected) {
     appendLanMobileJoinSection(root);
@@ -1194,10 +1200,85 @@ function appendLanHostPinSection(root) {
 }
 
 /** Client: enter shift PIN to find host across hospital Wi‑Fi / VLANs. */
+async function appendLanTurnResetSection(root, gen) {
+  if (!isLanElectronDesktop()) return;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+
+  var ownHost = false;
+  try {
+    ownHost = await isLanRestHostOwnMachine();
+  } catch (_own) {}
+
+  if (lanPanelRenderStale(gen)) return;
+
+  var existing = root.querySelector('.lan-turn-reset-card');
+  if (existing) existing.remove();
+
+  var card = document.createElement('div');
+  card.className = 'lan-connect-card lan-turn-reset-card';
+  if (ownHost) card.classList.add('lan-turn-reset-card--warn');
+
+  var title = document.createElement('div');
+  title.className = 'lan-connect-card-title';
+  title.textContent = ownHost ? 'Dos servidores en la misma sala' : 'Restablecer conexión ⇄';
+  card.appendChild(title);
+
+  var hint = document.createElement('p');
+  hint.className = 'lan-connect-card-hint';
+  hint.textContent = ownHost
+    ? 'Esta Mac está usando su propio servidor. Para ver el mismo directorio que el turno, restablece y conéctate al anfitrión con el PIN o el enlace ⇄.'
+    : 'Si el directorio no coincide entre Macs, sal de la sala, quita el anfitrión fijado y vuelve a conectar.';
+  card.appendChild(hint);
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = ownHost ? 'btn-lan-primary' : 'btn-lan-secondary';
+  btn.style.width = '100%';
+  btn.textContent = 'Restablecer conexión al turno';
+  btn.onclick = function () {
+    void resetLanTurnConnectionFromUi();
+  };
+  card.appendChild(btn);
+
+  if (canLocalMacBeLanHost()) {
+    var hostHint = document.createElement('p');
+    hostHint.className = 'lan-connect-card-hint';
+    hostHint.style.marginTop = '8px';
+    hostHint.innerHTML =
+      'Si <strong>tú</strong> eres el único R4 anfitrión, en Ajustes usa «LAN · servidor en esta computadora» → Restablecer estado del host.';
+    card.appendChild(hostHint);
+  }
+
+  root.appendChild(card);
+}
+
+export async function resetLanTurnConnectionFromUi() {
+  if (!isLanElectronDesktop()) {
+    runtime().showToast('Solo disponible en la app de escritorio.', 'error');
+    return;
+  }
+  var resetMod = await import('../../lan-turn-reset.mjs');
+  if (!confirm(resetMod.LAN_TURN_RESET_CLIENT_CONFIRM)) return;
+
+  await resetMod.performLanTurnClientReset({
+    leaveLiveSyncRoom: leaveLiveSyncRoom,
+    lanClient: lanClient,
+  });
+
+  runtime().showToast(
+    'Conexión restablecida. Ingresa el PIN del turno o pega el enlace del anfitrión.',
+    'success'
+  );
+  renderLanPanel({ force: true });
+  window.setTimeout(function () {
+    focusLanShiftPinInput();
+  }, 120);
+}
+
 function appendLanShiftPinClientConnectSection(root, gen) {
   if (!root || !isLanElectronDesktop() || lanPanelRenderStale(gen)) return;
-  void resolveHostBearerToken().then(function (bearer) {
-    if (lanPanelRenderStale(gen) || bearer) return;
+  void shouldShowLanShiftPinClientConnect().then(function (offer) {
+    if (lanPanelRenderStale(gen) || !offer) return;
     if (root.querySelector('[data-lan-shift-pin-client]')) return;
 
     var wrap = document.createElement('div');
@@ -1275,6 +1356,7 @@ function appendLanShiftPinClientConnectSection(root, gen) {
 async function appendLanShiftPinSection(root, gen) {
   if (!root || !isLanElectronDesktop()) return;
   if (lanPanelRenderStale(gen)) return;
+  if (!shouldShowLanShiftPinHostDisplay() || lanPanelRenderStale(gen)) return;
   var bearer = await resolveHostBearerToken();
   if (!bearer || lanPanelRenderStale(gen)) return;
   try {
@@ -2027,6 +2109,11 @@ async function scanLanHosts() {
         requestRenderLanPanelAfterScan();
         return;
       }
+    }
+
+    if (document.body.classList.contains('clinical-lan-directory-open')) {
+      void refreshLanPanelChromeInPlace();
+      return;
     }
 
     var roomIdForPeerOps =

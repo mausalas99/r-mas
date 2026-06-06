@@ -42,9 +42,12 @@ import {
 } from '../../lan-host-consolidation.mjs';
 import {
   lanClient,
+  activeLiveSyncRoomId,
   clearActiveLiveSyncRoom,
   getLanClientId,
 } from './runtime.mjs';
+import { getRoomSyncPhase, RoomSyncPhase } from '../../lan-sync-state.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { listLivePeerHostUrls } from '../../lan-surrogate-host.mjs';
 import { clearRoomMembership, getRoomMembership } from '../../live-sync-membership.mjs';
 
@@ -91,6 +94,37 @@ export function isLanSessionConfiguredForRest() {
   } catch (_e) {
     return false;
   }
+}
+
+/** True when REST hostUrl is this Mac (split-brain: live locally but not on ward host). */
+export async function isLanRestHostOwnMachine() {
+  if (!isLanSessionConfiguredForRest()) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var restHost = normalizeLanHostBase(String(cfg.hostUrl || '').trim());
+  if (!restHost) return false;
+  var own = normalizeLanHostBase((await resolveOwnLanBaseForPin()) || '');
+  if (!own) return false;
+  return lanHostBasesSameMachine(restHost, own) || restHost === own;
+}
+
+/** Client PIN entry on ⇄ (R1–R3, or not live on remote host). */
+export async function shouldShowLanShiftPinClientConnect() {
+  if (!isLanElectronDesktop()) return false;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) return false;
+
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  var phase = rid ? getRoomSyncPhase(rid) : RoomSyncPhase.offline;
+  if (!rid || phase !== RoomSyncPhase.live) return true;
+  if (isLanRemoteJoinMode()) return false;
+  return isLanRestHostOwnMachine();
+}
+
+/** Host PIN display for R4+ acting as turn anfitrión. */
+export function shouldShowLanShiftPinHostDisplay() {
+  if (!isLanElectronDesktop()) return false;
+  if (!canLocalMacBeLanHost() || isLanRemoteJoinMode()) return false;
+  return true;
 }
 
 export function trimStoredLanBearer(code) {
