@@ -77,6 +77,12 @@ import {
   trimStoredLanBearer,
 } from './transport.mjs';
 import { patients } from '../../app-state.mjs';
+import {
+  shouldApplyCommandBroadcast,
+  updateCommandSeqState,
+} from '../../lan-command-room-order.mjs';
+
+export { shouldApplyCommandBroadcast, updateCommandSeqState };
 
 /** @type {Record<string, unknown> | null} */
 let roomBridge = null;
@@ -141,6 +147,9 @@ var _liveSyncReconnectAttempt = 0;
 var _surrogateFailoverTimer = null;
 /** Once per cold start: full reconcile/push even if live WS already looks connected. */
 var _liveSyncSessionResyncDone = false;
+/** Tracks last applied command broadcast sequence for gap detection. */
+var commandSeqState = { lastAppliedSeq: 0, lastAckedCommandId: '' };
+
 export async function resolveSelfLanAdvertiseHostUrl() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return '';
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
@@ -699,6 +708,24 @@ function onLiveSyncWireMessageBody(data) {
   }
   if (data.type === 'livesync:delta:applied') {
     bridge().applyLiveSyncDeltaApplied(data);
+    return;
+  }
+  if (data.type === 'livesync:command:applied') {
+    const decision = shouldApplyCommandBroadcast(commandSeqState, data);
+    if (decision.action === 'catch_up') {
+      scheduleReconcileFromRevisionHint(data.roomId);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lan-command-gap', {
+          detail: { afterSeq: decision.afterSeq, message: data },
+        }));
+      }
+      return;
+    }
+    if (decision.action === 'ignore') return;
+    commandSeqState = updateCommandSeqState(commandSeqState, data);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('lan-command-applied', { detail: data }));
+    }
     return;
   }
   if (data.type === 'livesync:applied') {
