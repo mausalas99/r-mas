@@ -111,6 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-06** `lan-command-sync`: design for registry-driven command sync substrate (estadoActual, eventualidades, pendientes) with host `deltaSeq` sequencing + L2 materialization scheduler; `docs/superpowers/specs/2026-06-06-lan-command-sync-substrate-design.md`.
 - **2026-06-06** `release-7.1.0`: guardia compact metrics + phase-bar entrega/turno (sin toolbar duplicado); rotación config en Mi rotación; LAN HC delta sync; `guardia-board.mjs`, `guardia-phase-bar.mjs`, `lan-delta-client.mjs`.
 - **2026-06-05** `guardia-panel`: vitals feed + entrega roster HTML/CSS mount points; `app-body.html`, `pase-board.css`, `guardia-board.mjs`.
 - **2026-06-05** `interconsultas-teams`: IC/UX/Eme ABCD teams + off-call Interconsultas census; `clinico-access.mjs`, `clinical-team-composition.mjs`, `teams-roster-*`.
