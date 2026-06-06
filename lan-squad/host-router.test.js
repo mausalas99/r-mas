@@ -622,3 +622,67 @@ test('PUT /patients/:id overlap returns 200 with lwwApplied', async () => {
     await tearDownLanTest({ server, dir, store });
   }
 });
+
+test('POST /rooms/:id/commands accepts command and broadcasts canonical command', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-command-route-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const broadcasts = [];
+  const app = mountLanRouter(store, (channel, msg) => broadcasts.push({ channel, msg }));
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/sala-1/commands`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        commandId: 'cmd_route_1',
+        domain: 'estadoActual',
+        op: 'updateField',
+        roomId: 'ignored-client-room',
+        patientId: 'pat_1',
+        entityId: 'pat_1:estadoActual',
+        clientId: 'lc_a',
+        clientCreatedAt: 1718293049000,
+        baseSeq: 0,
+        payload: { path: 'signosVitales.fc', value: 110 },
+      }),
+    });
+    const body = await res.json();
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(body.status, 'accepted');
+    assert.strictEqual(body.roomId, 'sala-1');
+    assert.strictEqual(body.deltaSeq, 1);
+    assert.ok(broadcasts.some((b) => b.msg.type === 'livesync:command:applied' && b.msg.commandId === 'cmd_route_1'));
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('POST /rooms/:id/flush forces materialization for LAN-authenticated clients', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-flush-route-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  store.createRoom('Sala flush');
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/lan/v1/rooms/sala-1/flush`, {
+      method: 'POST',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'test' }),
+    });
+    const body = await res.json();
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(body.ok, true);
+    assert.strictEqual(body.reason, 'test');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});

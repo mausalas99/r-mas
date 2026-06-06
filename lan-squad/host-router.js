@@ -3,11 +3,15 @@ const express = require('express');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { validateHistoriaClinicaPut } = require('./historia-clinica-validate.js');
 const { createDeltaResolver } = require('./delta-resolver.js');
+const { createCommandResolver } = require('./command-resolver.js');
+const { createSyncScheduler } = require('./sync-scheduler.js');
 
 function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
   const r = express.Router();
   const getState = () => store.getState();
   const deltaResolver = createDeltaResolver({ store });
+  const commandResolver = createCommandResolver({ store });
+  const syncScheduler = createSyncScheduler({ hostStore: store });
 
   /** Notify all peers on the live room WS channel (6.6.1 HTTP-primary push). */
   function broadcastLiveRevision(roomId, revision, clientId) {
@@ -134,6 +138,33 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
         fallback: 'sync_bundle',
       });
     }
+    res.json(out);
+  });
+
+  r.post('/rooms/:id/commands', express.json({ limit: '1mb' }), (req, res) => {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const out = commandResolver.applyCommand({
+      ...body,
+      roomId: req.params.id,
+    });
+    if (out.code === 'STALE_BASE_SEQ_REQUIRES_SNAPSHOT') return res.status(409).json(out);
+    if (!out.ok) return res.status(400).json(out);
+    if (out.status === 'accepted') {
+      syncScheduler.scheduleMaterialize(req.params.id, { reason: 'command' });
+      broadcast(`live:${encodeURIComponent(req.params.id)}`, {
+        type: 'livesync:command:applied',
+        ...out,
+      });
+      broadcastLiveRevision(req.params.id, out.revision, body.clientId);
+    }
+    res.json(out);
+  });
+
+  r.post('/rooms/:id/flush', express.json({ limit: '32kb' }), async (req, res) => {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const reason = String(body.reason || 'sync-now').slice(0, 64);
+    const clientId = String(body.clientId || 'host').slice(0, 128);
+    const out = await syncScheduler.flush(req.params.id, { reason, clientId });
     res.json(out);
   });
 
