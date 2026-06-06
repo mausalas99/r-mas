@@ -101,6 +101,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLanEffectiveTeamCode: function() {
     return ipcRenderer.invoke('lan-get-effective-team-code');
   },
+  getLanDevPeerSeedConfig: function() {
+    return ipcRenderer.invoke('lan-dev-peer-seed-config');
+  },
+  isLanDevPeer: function() {
+    return process.env.R_PLUS_LAN_PEER === '1';
+  },
   lanGuestWriteBearer: function(payload) {
     return ipcRenderer.invoke('lan-guest-write-bearer', payload);
   },

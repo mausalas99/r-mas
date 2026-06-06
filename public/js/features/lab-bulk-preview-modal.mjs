@@ -270,6 +270,16 @@ export function openLabBulkPreviewModal(opts) {
   document.documentElement.classList.add('lab-bulk-preview-modal-open');
 }
 
+/** Texto SOME del modal de vista previa (p. ej. tour tras limpiar #lab-input). */
+export function getBulkLabPreviewSourceText() {
+  return modalSession && modalSession.sourceText ? String(modalSession.sourceText) : '';
+}
+
+export function isBulkLabPreviewModalOpen() {
+  var backdrop = document.getElementById('lab-bulk-preview-backdrop');
+  return !!(backdrop && backdrop.classList.contains('open'));
+}
+
 export function closeLabBulkPreviewModal() {
   var backdrop = document.getElementById('lab-bulk-preview-backdrop');
   var body = document.getElementById('lab-bulk-preview-body');

@@ -286,8 +286,8 @@ export function buildPitchMonitoreoHistorial(ref) {
 
   return {
     estadoClinico: {
-      four: '4 extremidades',
-      esferas: 'Sin datos nuevos',
+      four: '4',
+      esferas: '3',
       analgesia: 'Paracetamol 1 g IV c/8h',
       abx: 'Cefepime 1 g IV c/8h (día 2)',
       antihta: 'Losartán 50 mg VO',

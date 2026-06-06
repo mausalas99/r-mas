@@ -19,6 +19,7 @@ import {
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
   readRpcSettings,
+  bundledWardShiftPin,
 } from '../clinical-settings.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { safeRenderClinicalTeamsPanel } from './clinical-panel-host.mjs';
@@ -27,6 +28,7 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from '../clinical-username.mjs';
+import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 
 import { filterJoinedTeams } from './clinical-teams.mjs';
 import {
@@ -34,6 +36,7 @@ import {
   renderSyncModeChoicePanel,
   wireSyncModeOnboardingInteractions,
 } from './clinical-onboarding-sync-mode.mjs';
+import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -449,56 +452,62 @@ export async function renderOnboardingPanelInto(host) {
     const prefilledSala = String(
       settings.clinicalSala || clinicalSessionContext.user?.sala || ''
     );
+    const prefilledShiftPin = bundledWardShiftPin();
     const gateLead = profileGatePending
-      ? `<p class="clinical-teams-lead clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`
-      : '<p class="clinical-teams-lead">Confirma tu usuario LAN, nombre en guardia, rango y sala. Para equipos, abre <strong>Mi rotación</strong> después.</p>';
-    host.innerHTML = `
-      <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
-      <h4 class="clinical-teams-section-title">Usuario y nombre en guardia</h4>
-      ${gateLead}
-      <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
-        <div class="field-group">
-          <label for="onboard-username">Usuario LAN (@usuario) *</label>
-          <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
-            value="${escapeAttr(cachedUsername)}" required autocomplete="off" spellcheck="false">
-          <p class="clinical-teams-hint">${CLINICAL_LAN_USERNAME_HINT_HTML}</p>
-        </div>
-        <div class="field-group">
-          <label for="onboard-clinical-name">Nombre en guardia *</label>
-          <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
-            value="${escapeAttr(prefilledName)}" required autocomplete="name">
-          <p class="clinical-teams-hint">${CLINICAL_LAN_DISPLAY_NAME_HINT_HTML}</p>
-        </div>
-        <div class="field-group">
-          <label for="onboard-rank">Rango</label>
-          <select id="onboard-rank" class="profile-input">
-            <option value="R1" ${rank === 'R1' ? 'selected' : ''}>R1</option>
-            <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
-            <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
-            <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label for="onboard-sala">Sala *</label>
-          <select id="onboard-sala" class="profile-input" required>
-            <option value="">— Seleccionar —</option>
-            <option value="Sala 1" ${prefilledSala === 'Sala 1' ? 'selected' : ''}>Sala 1</option>
-            <option value="Sala 2" ${prefilledSala === 'Sala 2' ? 'selected' : ''}>Sala 2</option>
-            <option value="Sala E" ${prefilledSala === 'Sala E' ? 'selected' : ''}>Sala E</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label for="onboard-shift-pin">PIN del turno (⇄)</label>
-          <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
-            pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off">
-          <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
-        </div>
-        <p id="onboard-error" class="clinical-registration-error" hidden></p>
-        <div class="modal-actions">
-          <button type="submit" class="btn-save">Guardar perfil</button>
-          <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
-        </div>
-      </form>`;
+      ? `<p class="clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`
+      : '<p>Confirma tu usuario LAN, nombre en guardia, rango y rotación. Para equipos, abre <strong>Mi rotación</strong> después.</p>';
+    host.innerHTML = buildOnboardingStageHtml({
+      title: 'Configura tu rotación',
+      leadHtml: gateLead,
+      bodyHtml: `
+      <div class="clinical-onboard-form-shell">
+        <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
+          <div class="field-group">
+            <label for="onboard-username">Usuario LAN (@usuario) *</label>
+            <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
+              value="${escapeAttr(cachedUsername)}" required autocomplete="off" spellcheck="false">
+            <p class="clinical-teams-hint">${CLINICAL_LAN_USERNAME_HINT_HTML}</p>
+          </div>
+          <div class="field-group">
+            <label for="onboard-clinical-name">Nombre en guardia *</label>
+            <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
+              value="${escapeAttr(prefilledName)}" required autocomplete="name">
+            <p class="clinical-teams-hint">${CLINICAL_LAN_DISPLAY_NAME_HINT_HTML}</p>
+          </div>
+          <div class="field-group">
+            <label for="onboard-rank">Rango</label>
+            <select id="onboard-rank" class="profile-input">
+              <option value="R1" ${rank === 'R1' ? 'selected' : ''}>R1</option>
+              <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
+              <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
+              <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="onboard-sala">Rotación *</label>
+            <select id="onboard-sala" class="profile-input" required>
+              <option value="">— Seleccionar —</option>
+              ${CLINICAL_SALAS.map(
+                (s) =>
+                  `<option value="${escapeAttr(s)}" ${prefilledSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="onboard-shift-pin">PIN del turno (⇄)</label>
+            <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
+              pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off"
+              value="${escapeAttr(prefilledShiftPin)}">
+            <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
+          </div>
+          <p id="onboard-error" class="clinical-registration-error" hidden></p>
+          <div class="modal-actions clinical-onboard-form-actions">
+            <button type="submit" class="btn-save">Guardar perfil</button>
+            <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
+          </div>
+        </form>
+      </div>`,
+    });
     await wireOnboardingInteractions();
   }
 }

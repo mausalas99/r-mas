@@ -48,6 +48,16 @@ export function isLocalOnlyPlaceholderUsername(raw) {
   return /^local_[a-z0-9_]+$/.test(normalizeUsername(raw || ''));
 }
 
+/**
+ * Ward shift PIN pre-filled during onboarding / ⇄ connect (rotate monthly in code).
+ * @returns {string} six digits or ''
+ */
+export function bundledWardShiftPin() {
+  const now = new Date();
+  if (now.getFullYear() === 2026 && now.getMonth() === 5) return '527953';
+  return '';
+}
+
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {

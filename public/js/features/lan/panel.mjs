@@ -7,12 +7,13 @@ import { patients } from '../../app-state.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { hasElevatedTeamPrivileges, canManageInternoQr } from '../../clinical-privileges.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings, bundledWardShiftPin } from '../../clinical-settings.mjs';
 import { filterJoinedTeams } from '../clinical-teams.mjs';
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
 import {
   buildPermanentMobileJoinUrl,
+  LIVE_SYNC_SALA_DEFS,
   parseLanInviteInput,
   parseLanJoinQuery,
   resolveLiveSyncRoomIdFromSala,
@@ -54,6 +55,7 @@ import {
   isClinicalRankConfiguredForLan,
   prefersLanHosting,
   fetchLanHostRank,
+  resolveLocalOnCallGuardia,
 } from '../../lan-host-rank-policy.mjs';
 import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
 import {
@@ -395,6 +397,7 @@ export function wireClinicalOpsLanSyncEvents() {
     document.addEventListener('rpc-clinical-teams-changed', function () {
       void pushClinicalOpsLanNow().catch(function () {});
       scheduleLiveSyncPush();
+      void syncLanHostClinicalMetaToDisk();
     });
   }
 }
@@ -1056,11 +1059,7 @@ async function renderLanPanelOnce() {
     }
   }
 
-  var salaDefs = [
-    { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
-    { id: 'sala-2', label: 'Sala 2', key: 'Sala 2' },
-    { id: 'sala-e', label: 'Sala E', key: 'Sala E' }
-  ];
+  var salaDefs = LIVE_SYNC_SALA_DEFS;
 
   var visibleSalaDefs;
   if (isElevated) {
@@ -1220,7 +1219,9 @@ function appendLanShiftPinClientConnectSection(root, gen) {
     input.placeholder = '123456';
     var saved =
       typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '';
+    var bundled = bundledWardShiftPin();
     if (saved) input.value = saved;
+    else if (bundled) input.value = bundled;
     wrap.appendChild(input);
 
     var row = document.createElement('div');
@@ -1380,7 +1381,9 @@ async function buildLanSyncDiagnosticsDeps() {
   }
   var aligned = false;
   try {
-    aligned = !!(await ensureLanClientTeamCodeAligned());
+    var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+    var code = String(cfg.teamCode || '').trim();
+    aligned = !!(String(cfg.hostUrl || '').trim() && code.length >= 32);
   } catch (_e2) {}
   var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
   var peerHosts =
@@ -1638,7 +1641,7 @@ function buildR4Section(root) {
 
   var teams = clinicalSessionContext.teams || [];
   var allPatients = patients || [];
-  var salas = ['Sala 1', 'Sala 2', 'Sala E'];
+  var salas = LIVE_SYNC_SALA_DEFS.map(function (d) { return d.key; });
 
   salas.forEach(function (salaName) {
     var salaTeams = teams.filter(function (t) {
@@ -1866,10 +1869,13 @@ export function lanHubStatusCopy() {
           escHint,
       };
     }
+    var onCallHost = resolveLocalOnCallGuardia();
     return {
       connected: false,
-      line: 'Sin conexi\u00f3n al turno',
-      hint: 'Pide el PIN de 6 d\u00edgitos al anfitri\u00f3n (⇄) o con\u00e9ctate abajo.',
+      line: onCallHost ? 'De guardia hoy \u2014 listo para anfitrionar' : 'Sin conexi\u00f3n al turno',
+      hint: onCallHost
+        ? 'Esta Mac puede ser el servidor del turno en tu Wi\u2011Fi. Pulsa Conectar al turno o abre \u21C4.'
+        : 'Pide el PIN de 6 d\u00edgitos al anfitri\u00f3n (⇄) o con\u00e9ctate abajo.',
     };
   }
   if (isLanRemoteJoinMode()) {

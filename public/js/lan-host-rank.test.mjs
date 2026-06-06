@@ -153,4 +153,69 @@ describe('lan-host-rank', () => {
       'tie-peer'
     );
   });
+
+  it('on-call R1 beats off-call R4 in election', () => {
+    const urls = { selfUrl: 'http://10.0.0.2:3738', peerUrl: 'http://10.0.0.3:3738' };
+    assert.equal(
+      resolveHostElection(
+        { rank: 'R4', isProgramAdmin: false, isOnCallGuardia: false, startedAt: 1 },
+        { rank: 'R1', isProgramAdmin: false, isOnCallGuardia: true, startedAt: 2 },
+        urls
+      ),
+      'peer'
+    );
+  });
+
+  it('on-call higher rank wins among on-call peers', () => {
+    const urls = { selfUrl: 'http://10.0.0.2:3738', peerUrl: 'http://10.0.0.3:3738' };
+    assert.equal(
+      resolveHostElection(
+        { rank: 'R1', isProgramAdmin: false, isOnCallGuardia: true, startedAt: 1 },
+        { rank: 'R3', isProgramAdmin: false, isOnCallGuardia: true, startedAt: 2 },
+        urls
+      ),
+      'peer'
+    );
+  });
+
+  it('on-call residents can host without escalation', () => {
+    const memory = new Map();
+    const ls = {
+      getItem(k) {
+        return memory.has(k) ? memory.get(k) : null;
+      },
+      setItem(k, v) {
+        memory.set(k, String(v));
+      },
+    };
+    const prev = global.localStorage;
+    global.localStorage = ls;
+    try {
+      ls.setItem(
+        'rpc-settings',
+        JSON.stringify({
+          clinicalRank: 'R1',
+          clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
+        })
+      );
+      clearHostEscalation();
+      assert.equal(canLocalMacBeLanHost({ rank: 'R1', isOnCallGuardia: true }), true);
+      assert.equal(canLocalMacBeLanHost({ rank: 'R1', isOnCallGuardia: false }), false);
+    } finally {
+      global.localStorage = prev;
+      clearHostEscalation();
+    }
+  });
+
+  it('shouldAutoJoinPeerAsClient defers off-call self to on-call peer', () => {
+    const self = { rank: 'R4', isProgramAdmin: false, isOnCallGuardia: false };
+    const peer = { rank: 'R2', isProgramAdmin: false, isOnCallGuardia: true };
+    assert.equal(shouldAutoJoinPeerAsClient(peer, self), true);
+    assert.equal(shouldAutoJoinPeerAsClient(self, peer), false);
+  });
+
+  it('prefersLanHosting includes on-call residents', () => {
+    assert.equal(prefersLanHosting({ rank: 'R1', isOnCallGuardia: true }), true);
+    assert.equal(prefersLanHosting({ rank: 'R1', isOnCallGuardia: false }), false);
+  });
 });

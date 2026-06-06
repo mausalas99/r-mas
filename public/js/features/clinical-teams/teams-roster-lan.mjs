@@ -9,7 +9,7 @@ import {
   LAN_PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-lan-sync.mjs';
 import {
-  getCycleLettersForTeamCreate,
+  getCycleLetterOptionsForRank,
   getCycleFieldMetaForTeamCreate,
   formatMemberCycleLabel,
   inferMembershipCycleForJoin,
@@ -90,17 +90,7 @@ let _lanUsersModalTeams = [];
 function cycleLettersForAssign(team, userRank) {
   const service = String(team?.service || 'Sala');
   const rank = String(userRank || 'R1');
-  const svcKey = service.trim().toLowerCase();
-  if (svcKey.includes('sala') && rank === 'R2') {
-    return getCycleLettersForTeamCreate('Sala', 'R2');
-  }
-  if (svcKey.includes('sala') && rank === 'R1') {
-    return [
-      ...getCycleLettersForTeamCreate('Sala', 'R1', 0),
-      ...getCycleLettersForTeamCreate('Sala', 'R1', 1),
-    ];
-  }
-  return getCycleLettersForTeamCreate(service, rank);
+  return getCycleLetterOptionsForRank(service, rank);
 }
 
 function renderLanAssignTeamOptionsHtml(teams, selectedTeamId) {
@@ -388,10 +378,8 @@ async function handleLanDeleteDirectoryUserClick(btn) {
   }
 
   toast('Usuario eliminado de esta Mac.', 'success');
-  const { flushClinicalProfileToLan, isBenignLanPushSkipCode } = await import(
-    '../../clinical-profile-lan-sync.mjs'
-  );
-  const lanPush = await flushClinicalProfileToLan();
+  const { isBenignLanPushSkipCode } = await import('../../clinical-profile-lan-sync.mjs');
+  const lanPush = await publishClinicalTeamsToLan();
   if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(
       'Usuario eliminado aquí, pero no se pudo publicar el cambio a la sala ⇄. Revisa la conexión.',

@@ -850,18 +850,27 @@ export async function reconcileLiveSyncRoom(roomId) {
         }
       }
     } catch (_eBundle) {}
-    try {
-      if (
-        isClinicalOpsLanAvailable() &&
-        typeof b.fetchAndApplyClinicalOpsFromHost === 'function'
-      ) {
-        await b.fetchAndApplyClinicalOpsFromHost(rid);
-      }
-    } catch (_eOps) {}
     sources.push(b.buildLiveSyncLocalMergeSource());
     if (sources.length) {
       var merged = mergeLiveSyncFullBundles(sources);
-      b.applyLiveSyncMerged(merged);
+      await b.applyLiveSyncMerged(merged);
+      try {
+        if (
+          isClinicalOpsLanAvailable() &&
+          typeof b.fetchAndApplyClinicalOpsFromHost === 'function'
+        ) {
+          const opsApplied = await b.fetchAndApplyClinicalOpsFromHost(rid, { skipGossipPush: true });
+          if (
+            opsApplied &&
+            merged &&
+            merged.entries &&
+            merged.entries.length &&
+            typeof b.reapplyLanPatientEntries === 'function'
+          ) {
+            await b.reapplyLanPatientEntries(merged.entries);
+          }
+        }
+      } catch (_eOps) {}
       if (
         isMobileWeb() &&
         hostBundleLoaded &&

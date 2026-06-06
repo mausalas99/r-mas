@@ -6,6 +6,7 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
+import { CLINICAL_SALA_VALUES } from '../../../../lib/clinical-salas.mjs';
 
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
@@ -16,7 +17,7 @@ export const CLINICAL_TEAM_SERVICES = [
   'Área A/Pensionistas',
 ];
 
-export const CLINICAL_SALAS = ['Sala 1', 'Sala 2', 'Sala E'];
+export const CLINICAL_SALAS = CLINICAL_SALA_VALUES;
 
 export const BROWSE_SALA_LS = 'clinical.browseSala';
 

@@ -28,7 +28,11 @@ import {
   buildTourMonitoreoHistorial,
   getTourRegistroFormSample,
 } from '../../tour-demo-monitoreo.mjs';
-import { buildTourDemoDates, buildTourDemoLabPasteBoth } from '../../tour-demo-dates.mjs';
+import {
+  applyTourDemoIngresoDates,
+  buildTourDemoDates,
+  buildTourDemoLabPasteBoth,
+} from '../../tour-demo-dates.mjs';
 import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
 import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
 import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
@@ -94,8 +98,13 @@ import {
 } from './settings-dropdown.mjs';
 
 import {
+  TOUR_STEPS_USE_DEMO_PEREZ,
   ensureTourPrimaryDemoPatientActive,
+  ensureTourDemoLabInputBoth,
   findTourDemoPerezPatient,
+  getDemoTourLabPaste,
+  getTourDemoDateBundle,
+  tourDemoLabPasteHasBoth,
 } from './tour-demo-seed.mjs';
 
 import { tourState, publishTourGuardContext, GUIDED_TOUR_LS_KEY } from './tour-state.mjs';
@@ -154,25 +163,39 @@ export function normalizeTourVersionLabel(v) {
   return s || 'dev';
 }
 
+function shouldDeferGuidedTourForRegistration() {
+  try {
+    var settingsRaw = localStorage.getItem('rpc-settings');
+    var settings = settingsRaw ? JSON.parse(settingsRaw) : {};
+    if (settings && settings.clinicalRegistered !== true) return true;
+    if (settings && settings.clinicalLocalOnly !== true && settings.clinicalLocalOnly !== false) {
+      return true;
+    }
+    if (document.documentElement.classList.contains('clinical-onboarding-active')) return true;
+  } catch (_e) {}
+  return false;
+}
+
+export function tryShowGuidedTourIntroIfNeeded() {
+  if (isMobileWeb() || shouldDeferGuidedTourForRegistration()) return;
+  var cur = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
+  var stored = '';
+  try {
+    stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
+  } catch (_ls) {}
+  if (shouldShowGuidedTourIntro(cur, stored)) setTimeout(showTourIntroModal, 80);
+}
+
 function initGuidedTourGate() {
   if (isMobileWeb()) return;
   resolveAppVersionForTour()
     .then(function (v) {
       window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
-      var cur = window.__RPC_APP_VERSION__;
-      var stored = '';
-      try {
-        stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
-      } catch (_ls) {}
-      if (shouldShowGuidedTourIntro(cur, stored)) setTimeout(showTourIntroModal, 80);
+      tryShowGuidedTourIntroIfNeeded();
     })
     .catch(function () {
       window.__RPC_APP_VERSION__ = 'dev';
-      var stored = '';
-      try {
-        stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
-      } catch (_ls2) {}
-      if (shouldShowGuidedTourIntro('dev', stored)) setTimeout(showTourIntroModal, 80);
+      tryShowGuidedTourIntroIfNeeded();
     });
 }
 
@@ -218,16 +241,20 @@ function guidedTourIntroSkip() {
   hideTourIntroModal();
 }
 
-function guidedTourIntroChooseSala() {
+function launchGuidedTourBranch(branch) {
   hideTourIntroModal();
   tourState.guidedTourMode = 'base';
-  startOnboarding('sala');
+  void import('./tour-flow.mjs').then((mod) => {
+    if (typeof mod.startOnboarding === 'function') mod.startOnboarding(branch);
+  });
+}
+
+function guidedTourIntroChooseSala() {
+  launchGuidedTourBranch('sala');
 }
 
 function guidedTourIntroChooseInterconsulta() {
-  hideTourIntroModal();
-  tourState.guidedTourMode = 'base';
-  startOnboarding('interconsulta');
+  launchGuidedTourBranch('interconsulta');
 }
 
 export function syncLearnHubContinueVisibility() {
@@ -392,12 +419,6 @@ function seedDemoTrendHistory(ref) {
   } catch (e) {
     delete labHistory[DEMO_PATIENT_ID];
   }
-}
-
-function applyTourDemoIngresoDates(patient, bundle) {
-  if (!patient || !bundle) return;
-  patient.fiuxFecha = bundle.fiuxFecha;
-  patient.fimiFecha = bundle.fimiFecha;
 }
 
 function seedDemoMonitoreoOnActivePatient() {

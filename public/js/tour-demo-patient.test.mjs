@@ -58,8 +58,16 @@ test('adoptTourPatientOnCommit asigna id demo en tour activo', () => {
 
 test('getTourDemoAdmitDefaults sugiere cuarto y cama por registro demo', () => {
   registerTourDemoPatientHooks({ isTourActive: function () { return true; } });
-  assert.deepEqual(getTourDemoAdmitDefaults(DEMO_REGISTRO), { cuarto: '214', cama: '2' });
-  assert.deepEqual(getTourDemoAdmitDefaults('0007755-3'), { cuarto: '214', cama: '4' });
+  assert.deepEqual(getTourDemoAdmitDefaults(DEMO_REGISTRO), {
+    servicio: 'MEDICINA INTERNA',
+    cuarto: '214',
+    cama: '2',
+  });
+  assert.deepEqual(getTourDemoAdmitDefaults('0007755-3'), {
+    servicio: 'MEDICINA INTERNA',
+    cuarto: '214',
+    cama: '4',
+  });
   assert.equal(getTourDemoAdmitDefaults('9999999-9'), null);
   registerTourDemoPatientHooks({ isTourActive: function () { return false; } });
   assert.equal(getTourDemoAdmitDefaults(DEMO_REGISTRO), null);

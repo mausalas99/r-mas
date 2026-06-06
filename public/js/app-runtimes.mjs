@@ -44,6 +44,8 @@ import {
 } from './features/lab-panel.mjs';
 import {
   registerLabBulkPreviewModalRuntime,
+  getBulkLabPreviewSourceText,
+  isBulkLabPreviewModalOpen,
 } from './features/lab-bulk-preview-modal.mjs';
 import {
   registerLabHistoryBatchCopyRuntime,
@@ -433,6 +435,8 @@ function installAppRuntimeContextDeps() {
     rebuildBulkLabPreviewBlocks: function (text) {
       return buildBulkLabPreview(text, { findPatientByRegistro });
     },
+    getBulkLabPreviewSourceText,
+    isBulkLabPreviewModalOpen,
     openAddModal,
     advanceRondaPatient,
     isMobileWeb,

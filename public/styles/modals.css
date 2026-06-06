@@ -1842,9 +1842,9 @@ html.dark .tend-gaso-tip {
   color: var(--text);
 }
 .btn-guardia-mode.is-active {
-  background: #166534;
-  color: #bbf7d0;
-  border-color: #166534;
+  background: var(--color-success-emphasis);
+  color: var(--color-on-success);
+  border-color: var(--color-success-emphasis);
 }
 .guardia-mode-switch {
   width: 32px;
@@ -1855,6 +1855,97 @@ html.dark .tend-gaso-tip {
   transition: background 0.2s;
 }
 .btn-guardia-mode.is-active .guardia-mode-switch {
-  background: #22c55e;
+  background: color-mix(in oklab, var(--color-on-success) 75%, transparent);
+}
+
+/* lab.css .modal { width: 500px } — entrega wide debe ganar en cascada */
+#entrega-modal-backdrop .modal.entrega-modal.entrega-modal--wide {
+  width: min(98vw, 1140px);
+  max-width: none;
+  max-height: min(92dvh, calc(100vh - 28px));
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Guardia patient chip action sheet */
+.guardia-patient-action-backdrop.open {
+  z-index: 206;
+}
+
+.guardia-patient-action-modal {
+  width: min(96vw, 420px);
+  padding-bottom: 0;
+}
+
+.guardia-patient-action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.guardia-patient-action-lead {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.guardia-patient-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guardia-patient-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.guardia-patient-action-item:hover,
+.guardia-patient-action-item:focus-visible {
+  border-color: var(--accent, #2563eb);
+  background: var(--surface-elevated, var(--surface));
+  outline: none;
+}
+
+.guardia-patient-action-item__title {
+  font-size: 0.92rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.guardia-patient-action-item__hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.guardia-patient-action-textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.guardia-patient-action-actions {
+  margin-top: 4px;
+  justify-content: flex-end;
+}
+
+.guardia-patient-action-footer {
+  margin-top: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
 }
 

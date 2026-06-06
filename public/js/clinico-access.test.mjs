@@ -11,6 +11,8 @@ import {
   patientCoveredByGuardia,
   getCycleConfig,
   getCycleLettersForTeamCreate,
+  getCycleLetterOptionsForRank,
+  usesSalaR1LinePicker,
   getCycleFieldMetaForTeamCreate,
   inferMembershipCycleForJoin,
   resolveMembershipCycleForUser,
@@ -23,6 +25,10 @@ import {
   teamGuardiaOverride,
   stampPatientClinicalSala,
   migratePatientsClinicalSala,
+  isInterconsultasPatient,
+  userOffCallFromInterconsultasRotationServices,
+  userOnCallForInterconsultasTeam,
+  userIsOnCallForLanHost,
 } from './clinico-access.mjs';
 
 test('matchesClinicoUnlockPhrase accepts exact phrase', () => {
@@ -376,6 +382,41 @@ test('guardia mode R2: sees handed-off patients', () => {
   assert.equal(scope.writable, false);
 });
 
+test('guardia mode R1 on call: only handed-off patients', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1n', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', sala: 'Sala 1' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [{ patient_id: 'p1', covering_user_id: 'r1n' }],
+      guardiaMode: true,
+      onCallGuardiaReceiver: true,
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.reasoning, 'Modo Guardia R1: paciente entregado');
+});
+
+test('guardia mode R1 on call: denies sala patient without handoff', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1n', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p2', sala: 'Sala 1' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [],
+      guardiaMode: true,
+      onCallGuardiaReceiver: true,
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, false);
+});
+
 test('guardia mode R4: sees Sala and Torre', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r4', rank: 'R4' },
@@ -494,6 +535,34 @@ test('getCycleConfig returns ABCD for non-Sala any rank', () => {
   assert.equal(cfg.length, 4);
 });
 
+test('getCycleConfig Torre HU R3 and R1 share ABCD letters', () => {
+  assert.deepEqual(getCycleConfig('Torre HU', 'R3').letters, ['A', 'B', 'C', 'D']);
+  assert.deepEqual(getCycleConfig('Torre HU', 'R1').letters, ['A', 'B', 'C', 'D']);
+});
+
+test('getCycleConfig Área A R2 and R1 share ABCD letters', () => {
+  assert.deepEqual(getCycleConfig('Área A/Pensionistas', 'R2').letters, ['A', 'B', 'C', 'D']);
+  assert.deepEqual(getCycleConfig('Área A/Pensionistas', 'R1').letters, ['A', 'B', 'C', 'D']);
+});
+
+test('getCycleLetterOptionsForRank uses ABCD for Torre HU join picker', () => {
+  assert.deepEqual(getCycleLetterOptionsForRank('Torre HU', 'R1'), ['A', 'B', 'C', 'D']);
+  assert.deepEqual(getCycleLetterOptionsForRank('Torre HU', 'R3'), ['A', 'B', 'C', 'D']);
+});
+
+test('usesSalaR1LinePicker false for Torre HU and Área A', () => {
+  assert.equal(usesSalaR1LinePicker('Torre HU', 'Torre HU'), false);
+  assert.equal(usesSalaR1LinePicker('Sala', 'Torre HU'), false);
+  assert.equal(usesSalaR1LinePicker('Área A/Pensionistas', 'Área A/Pensionistas'), false);
+  assert.equal(usesSalaR1LinePicker('Sala', 'Sala 1'), true);
+});
+
+test('getCycleLetterOptionsForRank keeps Sala R1 subcycles', () => {
+  assert.deepEqual(getCycleLetterOptionsForRank('Sala', 'R1'), [
+    'A1', 'B1', 'C1', 'D1', 'A2', 'B2', 'C2', 'D2',
+  ]);
+});
+
 test('getCycleConfig normalizes service', () => {
   const cfg = getCycleConfig('Área A', 'R1');
   assert.equal(cfg.length, 4);
@@ -595,6 +664,56 @@ test('salaOnCallR1 empty when no team is on-call for that Sala', () => {
   ];
   const result = salaOnCallR1(teams, 'Sala 1', now);
   assert.equal(result.length, 0);
+});
+
+test('userIsOnCallForLanHost true for declared R1 guardia off-cycle', () => {
+  const now = new Date('2026-06-02T12:00:00Z');
+  const teams = [
+    {
+      team_id: 't-a',
+      sala: 'Sala 1',
+      service: 'Sala',
+      sub_area_fraction: 'A1',
+      members: [
+        { user_id: 'r1-a1', rank: 'R1' },
+        { user_id: 'r1-cover', rank: 'R1' },
+      ],
+    },
+  ];
+  assert.equal(
+    userIsOnCallForLanHost('r1-cover', 'R1', teams, now, [
+      { team_id: 't-a', user_id: 'r1-cover' },
+    ]),
+    true
+  );
+  assert.equal(userIsOnCallForLanHost('r1-a1', 'R1', teams, now, []), false);
+});
+
+test('userIsOnCallForLanHost true for R2 on cycle day', () => {
+  const now = new Date('2026-06-01T12:00:00Z');
+  const teams = [
+    {
+      team_id: 't-a',
+      sala: 'Sala 1',
+      service: 'Sala',
+      sub_area_fraction: 'A',
+      members: [{ user_id: 'r2-a', rank: 'R2' }],
+    },
+  ];
+  assert.equal(userIsOnCallForLanHost('r2-a', 'R2', teams, now), true);
+});
+
+test('salaOnCallR1 respects team_guardia_today override off-cycle', () => {
+  const now = new Date('2026-06-02T12:00:00Z');
+  const teams = [
+    { team_id: 't-a', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'A1', members: [
+      { user_id: 'r1-a1', rank: 'R1' },
+      { user_id: 'r1-cover', rank: 'R1' },
+    ]},
+  ];
+  const result = salaOnCallR1(teams, 'Sala 1', now, [{ team_id: 't-a', user_id: 'r1-cover' }]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].user_id, 'r1-cover');
 });
 
 test('salaOnCallR2 returns R2s with matching cycle letter today', () => {
@@ -715,6 +834,94 @@ test('V3 R3: extended service structural blocked when joined without assignment'
         },
       ],
       assignments: [],
+    }
+  );
+  assert.equal(scope.writable, false);
+});
+
+test('isInterconsultasPatient by service', () => {
+  assert.equal(isInterconsultasPatient({ service: 'Interconsultas' }), true);
+  assert.equal(isInterconsultasPatient({ service: 'UX' }), false);
+});
+
+test('off-call UX resident gets Interconsultas census rw', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1-ux', rank: 'R1', sala: 'UX' },
+    { id: 'p-ic', service: 'Interconsultas', sub_area: 'A' },
+    null,
+    {
+      teams: [{
+        team_id: 't-ux',
+        service: 'UX',
+        sub_area_fraction: 'A',
+        members: [{ user_id: 'r1-ux', rank: 'R1' }],
+      }],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, true);
+  assert.match(scope.reasoning, /Off-call/);
+});
+
+test('on-call UX resident denied unassigned Interconsultas patient', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1-ux', rank: 'R1', sala: 'UX' },
+    { id: 'p-ic', service: 'Interconsultas' },
+    null,
+    {
+      teams: [{
+        team_id: 't-ux',
+        service: 'UX',
+        sub_area_fraction: 'A',
+        members: [{ user_id: 'r1-ux', rank: 'R1' }],
+      }],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.writable, false);
+});
+
+test('on-call Interconsultas team sees all Interconsultas patients', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2-ic', rank: 'R2', sala: 'Interconsultas' },
+    { id: 'p-ic', service: 'Interconsultas', sub_area: 'C' },
+    null,
+    {
+      teams: [{
+        team_id: 't-ic',
+        service: 'Interconsultas',
+        sub_area_fraction: 'A',
+        members: [{ user_id: 'r2-ic', rank: 'R2' }],
+      }],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.writable, true);
+  assert.match(scope.reasoning, /guardia|Interconsultas de guardia/i);
+});
+
+test('off-call Interconsultas member only via assignment', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r3-ic', rank: 'R3', sala: 'Interconsultas' },
+    { id: 'p-ic', service: 'Interconsultas' },
+    null,
+    {
+      teams: [{
+        team_id: 't-ic',
+        service: 'Interconsultas',
+        sub_area_fraction: 'B',
+        members: [{ user_id: 'r3-ic', rank: 'R3' }],
+      }],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
     }
   );
   assert.equal(scope.writable, false);

@@ -219,6 +219,26 @@ describe('UnifiedPatientGridBoard', () => {
       else globalThis.selectPatient = originalSelect;
     }
   });
+
+  it('GUARDIA context with chipGuardiaPatientMenu invokes menu callback', () => {
+    let menuCalled = false;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid', 'GUARDIA');
+    board.chipGuardiaPatientMenu = true;
+    board.onChipClick = (id) => {
+      menuCalled = id === 'p2';
+    };
+    const originalSelect = globalThis.selectPatient;
+    globalThis.selectPatient = () => {
+      throw new Error('selectPatient should not run when chipGuardiaPatientMenu');
+    };
+    try {
+      board.handleChipClick('p2');
+      assert.equal(menuCalled, true);
+    } finally {
+      if (originalSelect === undefined) delete globalThis.selectPatient;
+      else globalThis.selectPatient = originalSelect;
+    }
+  });
 });
 
 describe('UnifiedPatientGridBoard vitals ticker', () => {

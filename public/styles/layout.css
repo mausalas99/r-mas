@@ -69,7 +69,8 @@ html.electron-macos-inset-bar #lab-some-tables-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #sesion-ingreso-send-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #sesion-ingreso-trends-send-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #med-pharm-modal-full.med-pharm-modal-backdrop.open,
-html.electron-macos-inset-bar #censo-preview-backdrop.censo-preview-backdrop.open {
+html.electron-macos-inset-bar #censo-preview-backdrop.censo-preview-backdrop.open,
+html.electron-macos-inset-bar #entrega-modal-backdrop.entrega-modal-backdrop.open {
   padding-top: max(
     var(--electron-macos-chrome-top),
     calc(12px * var(--density-space))

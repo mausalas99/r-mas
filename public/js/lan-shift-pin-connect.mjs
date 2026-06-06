@@ -135,6 +135,13 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
     if (quick) return true;
   }
 
+  // Same-Mac dev peer (npm run dev:lan-peer-app): subnet scan skips this machine; try loopback first.
+  const loopbackHost = normalizeLanHostBase('http://127.0.0.1:3738');
+  if (loopbackHost && loopbackHost !== staleHost) {
+    const viaLoopback = await joinHostAfterShiftPinExchange(loopbackHost, pin, opts);
+    if (viaLoopback) return true;
+  }
+
   const ownUrl = await resolveOwnLanBaseUrl();
   const hosts = await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl);
   if (!hosts.length) return false;

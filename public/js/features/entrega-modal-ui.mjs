@@ -1,5 +1,5 @@
 /**
- * Entrega modal — procedimientos list, add form, plantillas.
+ * Entrega modal — procedimientos list and add form.
  */
 import {
   canDeletePendienteItem,
@@ -43,8 +43,6 @@ const BADGE_LABELS = {
 let draftItems = [];
 /** @type {{ role: 'diurno'|'guardia', userId?: string, rank?: string }|null} */
 let draftActor = null;
-/** @type {{ user: object[], team: object[] }} */
-let templateCatalog = { user: [], team: [] };
 /** @type {string} */
 let draftSourceTeamId = '';
 /** @type {ReturnType<typeof defaultVitalsPlan>} */
@@ -54,11 +52,6 @@ let draftHandoffContext = defaultHandoffContext();
 
 let uiWired = false;
 let handoffUiWired = false;
-
-function dbApi() {
-  if (typeof window === 'undefined') return null;
-  return window.rplusDb || window.electronAPI || null;
-}
 
 function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
@@ -217,7 +210,6 @@ export function getEntregaDraftItems() {
 export function resetEntregaModalUi() {
   draftItems = [];
   draftActor = null;
-  templateCatalog = { user: [], team: [] };
   draftSourceTeamId = '';
   draftVitalsPlan = defaultVitalsPlan();
   draftHandoffContext = defaultHandoffContext();
@@ -265,9 +257,16 @@ function renderStatusChips(item) {
   return chips.join('');
 }
 
+function ensureProcDetailsOpen() {
+  const details = document.querySelector('#entrega-modal-backdrop .entrega-proc-details');
+  if (details instanceof HTMLDetailsElement && !details.open) details.open = true;
+}
+
 function renderProcList() {
   const list = document.getElementById('entrega-proc-list');
   if (!list || !draftActor) return;
+
+  if (draftItems.length) ensureProcDetailsOpen();
 
   if (!draftItems.length) {
     list.innerHTML = '<li class="entrega-proc-empty">Sin procedimientos. Usa + Agregar.</li>';
@@ -710,8 +709,7 @@ function buildAddFormMarkup(prefill = null) {
         </div>
       </div>
       <div class="entrega-inline-form__foot">
-        <button type="button" class="entrega-foot-muted" data-action="save-template">Guardar plantilla</button>
-        <div class="entrega-inline-form__foot-actions">
+        <div class="entrega-inline-form__foot-actions entrega-inline-form__foot-actions--end">
           <button type="button" class="btn-cancel" data-action="cancel-form">Cancelar</button>
           <button type="button" class="btn-save" data-action="add-item">Añadir</button>
         </div>
@@ -720,6 +718,7 @@ function buildAddFormMarkup(prefill = null) {
 }
 
 function showAddForm(prefill = null) {
+  ensureProcDetailsOpen();
   const wrap = document.getElementById('entrega-proc-form');
   if (!wrap) return;
   wrap.innerHTML = buildAddFormMarkup(prefill);
@@ -734,139 +733,6 @@ function hideAddForm() {
   wrap.innerHTML = '';
   wrap.classList.add('hidden');
   wrap.setAttribute('aria-hidden', 'true');
-}
-
-function payloadFromFormFields(fields) {
-  return {
-    kind: fields.kind,
-    label: fields.label,
-    requires: fields.requires,
-    comentado: fields.comentado,
-    autorizado: fields.autorizado,
-    agendado: fields.agendado,
-  };
-}
-
-async function saveTemplateFromForm(formEl) {
-  const fields = readFormFields(formEl);
-  if (!fields.label) {
-    toast('Indica la etiqueta del procedimiento.', 'error');
-    return;
-  }
-  const name = typeof window.prompt === 'function' ? window.prompt('Nombre de la plantilla:') : '';
-  if (!name || !String(name).trim()) return;
-
-  const scope =
-    typeof window.confirm === 'function' &&
-    window.confirm('¿Guardar como plantilla del equipo? (Cancelar = solo para ti)')
-      ? 'team'
-      : 'user';
-
-  const api = dbApi();
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  const payload = payloadFromFormFields(fields);
-
-  try {
-    if (scope === 'team') {
-      const teamId = draftSourceTeamId;
-      if (!teamId) {
-        toast('Selecciona equipo de origen para plantilla de equipo.', 'error');
-        return;
-      }
-      if (!api?.dbEntregaTemplateSaveTeam) throw new Error('Plantillas no disponibles');
-      await api.dbEntregaTemplateSaveTeam({
-        teamId,
-        createdBy: userId,
-        name: String(name).trim(),
-        payload,
-      });
-    } else {
-      if (!api?.dbEntregaTemplateSaveUser) throw new Error('Plantillas no disponibles');
-      await api.dbEntregaTemplateSaveUser({
-        userId,
-        name: String(name).trim(),
-        payload,
-      });
-    }
-    toast('Plantilla guardada.', 'success');
-    await refreshTemplateCatalog(userId);
-  } catch (err) {
-    toast(err?.message || 'No se guardó la plantilla', 'error');
-  }
-}
-
-async function refreshTemplateCatalog(userId) {
-  const api = dbApi();
-  if (!api?.dbEntregaTemplateList) {
-    templateCatalog = { user: [], team: [] };
-    return;
-  }
-  const teamIds = draftSourceTeamId ? [draftSourceTeamId] : [];
-  const res = await api.dbEntregaTemplateList({ userId, teamIds });
-  if (!res?.ok) {
-    templateCatalog = { user: [], team: [] };
-    return;
-  }
-  const pack =
-    res.templates && typeof res.templates === 'object' && !Array.isArray(res.templates)
-      ? res.templates
-      : res;
-  templateCatalog = {
-    user: Array.isArray(pack?.user) ? pack.user : [],
-    team: Array.isArray(pack?.team) ? pack.team : [],
-  };
-}
-
-function showTemplatePicker() {
-  const all = [
-    ...templateCatalog.user.map((t) => ({ ...t, scopeLabel: 'Mis plantillas' })),
-    ...templateCatalog.team.map((t) => ({ ...t, scopeLabel: 'Del equipo' })),
-  ];
-  if (!all.length) {
-    toast('No hay plantillas guardadas.', 'info');
-    return;
-  }
-
-  const wrap = document.getElementById('entrega-proc-form');
-  if (!wrap) return;
-
-  const options = all
-    .map(
-      (t, i) =>
-        `<option value="${i}">[${escapeHtml(t.scopeLabel)}] ${escapeHtml(t.name)}</option>`
-    )
-    .join('');
-
-  wrap.innerHTML = `
-    <div class="entrega-inline-form entrega-inline-form--picker" role="group" aria-label="Aplicar plantilla">
-      <div class="entrega-inline-form__head">
-        <h4 class="entrega-inline-form__title">Plantillas</h4>
-        <button type="button" class="entrega-inline-form__close" data-action="cancel-form" aria-label="Cerrar">×</button>
-      </div>
-      <div class="field-group">
-        <label for="entrega-template-pick">Elegir plantilla</label>
-        <select id="entrega-template-pick" class="profile-input">${options}</select>
-      </div>
-      <div class="entrega-inline-form__foot">
-        <div class="entrega-inline-form__foot-actions entrega-inline-form__foot-actions--end">
-          <button type="button" class="btn-cancel" data-action="cancel-form">Cancelar</button>
-          <button type="button" class="btn-save" data-action="apply-template">Continuar</button>
-        </div>
-      </div>
-    </div>`;
-  wrap.classList.remove('hidden');
-  wrap.setAttribute('aria-hidden', 'false');
-
-  wrap.querySelector('[data-action="apply-template"]')?.addEventListener('click', () => {
-    const idx = parseInt(wrap.querySelector('#entrega-template-pick')?.value || '0', 10);
-    const picked = all[idx];
-    if (!picked?.payload) return;
-    const prefill = {
-      ...picked.payload,
-      scheduledAt: null,
-    };
-    showAddForm(prefill);
-  });
 }
 
 function addItemFromForm(formEl) {
@@ -891,9 +757,13 @@ function addItemFromForm(formEl) {
   renderProcList();
 }
 
+function entregaProcEventRoot() {
+  return document.getElementById('entrega-modal') || document.getElementById('entrega-form');
+}
+
 function wireProcUiOnce() {
   if (uiWired) return;
-  const root = document.getElementById('entrega-modal-backdrop');
+  const root = entregaProcEventRoot();
   if (!root) return;
   uiWired = true;
 
@@ -901,11 +771,6 @@ function wireProcUiOnce() {
     if (ev.target.closest('#btn-entrega-add-proc')) {
       ev.preventDefault();
       showAddForm();
-      return;
-    }
-    if (ev.target.closest('#btn-entrega-apply-template')) {
-      ev.preventDefault();
-      showTemplatePicker();
     }
   });
 
@@ -939,7 +804,6 @@ function wireProcUiOnce() {
     }
     if (!inner) return;
     if (action === 'add-item') addItemFromForm(inner);
-    if (action === 'save-template') void saveTemplateFromForm(inner);
   });
 
   const teamSelect = document.getElementById('entrega-source-team');
@@ -947,8 +811,6 @@ function wireProcUiOnce() {
     teamSelect._rpcEntregaTeamWired = true;
     teamSelect.addEventListener('change', (ev) => {
       draftSourceTeamId = String(ev.target?.value || '');
-      const userId = String(clinicalSessionContext.user?.user_id || '');
-      refreshTemplateCatalog(userId).catch(() => {});
     });
   }
 }
@@ -1385,7 +1247,4 @@ export async function mountEntregaPendientesUi(opts) {
   });
   hideAddForm();
   renderProcList();
-
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  await refreshTemplateCatalog(userId);
 }

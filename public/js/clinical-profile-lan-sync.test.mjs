@@ -10,6 +10,8 @@ describe('clinical-profile-lan-sync room resolve', () => {
   it('maps clinical Sala to LiveSync room id', () => {
     assert.equal(resolveRoomIdForUsernameRegister({ sala: 'Sala 1' }), 'sala-1');
     assert.equal(resolveRoomIdForUsernameRegister({ sala: 'Sala E' }), 'sala-e');
+    assert.equal(resolveRoomIdForUsernameRegister({ sala: 'Torre HU' }), 'torre-hu');
+    assert.equal(resolveRoomIdForUsernameRegister({ sala: 'Área A/Pensionistas' }), 'area-a-pensionistas');
   });
 
   it('treats offline / no-room push as benign', () => {

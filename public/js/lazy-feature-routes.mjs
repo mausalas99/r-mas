@@ -113,6 +113,7 @@ export const settingsHelpWindowHandlersLazy = buildLazyWindowHandlers(
     guidedTourClickNext: 'guidedTourClickNext',
     guidedTourClickPrev: 'guidedTourClickPrev',
     guidedTourPause: 'guidedTourPause',
+    guidedTourFinish: 'finishGuidedTour',
     startTourModule: 'startTourModule',
     startHelpTourInterconsulta: 'startHelpTourInterconsulta',
     resetAndStartOnboarding: 'resetAndStartOnboarding',

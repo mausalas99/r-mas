@@ -1652,6 +1652,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
 
   if (!displayReport || !displayReport.result) {
     rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
+    notifyTourAfterBulkLabStore(blocks, processable.length > 0);
     return;
   }
 
@@ -1718,6 +1719,11 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   }
 
   clearLabInputAfterSuccessfulParse();
+  notifyTourAfterBulkLabStore(blocks, true);
+}
+
+function notifyTourAfterBulkLabStore(blocks, storedOrAttempted) {
+  if (!storedOrAttempted) return;
   if (typeof rt.tourAfterBulkLabParse === 'function') {
     rt.tourAfterBulkLabParse(blocks);
   }

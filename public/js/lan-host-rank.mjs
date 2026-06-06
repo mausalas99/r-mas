@@ -15,6 +15,9 @@ import {
 
 const RANK_PRIORITY = { R1: 1, R2: 2, R3: 3, R4: 4, Admin: 5 };
 
+/** On-call residents outrank any off-call peer; rank breaks ties within each tier. */
+export const LAN_ON_CALL_HOST_TIER = 1_000_000;
+
 /** Program admin from rpc-settings or active clinical session (DB profile). */
 export function resolveLocalProgramAdmin(settings = readRpcSettings()) {
   if (settings.clinicalProgramAdmin === true || settings.clinicalIsProgramAdmin === true) {
@@ -40,25 +43,34 @@ export function isClinicalRankConfiguredForLan(settings = readRpcSettings()) {
   return true;
 }
 
-/** R4/admin immediately; R3/R2/R1 after 10 min steps if no ward-tier host on the LAN. */
+/** On-call, R4/admin, or R3/R2/R1 after 10 min steps if no ward-tier/on-call host on the LAN. */
 export function canLocalMacBeLanHost(meta) {
   if (!isClinicalRankConfiguredForLan()) return false;
   const m = meta || buildLocalLanHostMeta();
+  if (m.isOnCallGuardia) return true;
   if (isWardTierHostMeta(m)) return true;
   return canRankHostAtEscalationTier(m, getHostEscalationTier());
 }
 
-/** @param {{ rank?: string, isProgramAdmin?: boolean }} meta */
-export function lanHostPriority(meta) {
+/** Clinical rank only (no on-call tier). */
+export function lanHostRankPriority(meta) {
   if (!meta) return 0;
   if (meta.isProgramAdmin) return 1000;
   const rank = String(meta.rank || 'R1').trim();
   return RANK_PRIORITY[rank] || 0;
 }
 
-/** R4 o administrador de programa — esta Mac puede ser servidor del turno. */
+/** @param {{ rank?: string, isProgramAdmin?: boolean, isOnCallGuardia?: boolean }} meta */
+export function lanHostPriority(meta) {
+  if (!meta) return 0;
+  const tier = meta.isOnCallGuardia ? LAN_ON_CALL_HOST_TIER : 0;
+  return tier + lanHostRankPriority(meta);
+}
+
+/** R4/admin, or residente de guardia hoy — puede ser servidor del turno en su subred. */
 export function prefersLanHosting(meta) {
   if (!meta) return false;
+  if (meta.isOnCallGuardia) return true;
   if (meta.isProgramAdmin) return true;
   const rank = String(meta.rank || '').trim();
   if (!rank) return false;
@@ -79,6 +91,10 @@ export function shouldDeferToPeerHost(peer, self) {
 export function shouldAutoJoinPeerAsClient(peer, self) {
   if (!peer || !self) return false;
   if (shouldDeferToPeerHost(peer, self)) return true;
+  const peerOn = !!peer.isOnCallGuardia;
+  const selfOn = !!self.isOnCallGuardia;
+  if (peerOn && !selfOn) return true;
+  if (!peerOn && selfOn) return false;
   if (!prefersLanHosting(self) && prefersLanHosting(peer)) return true;
   const tier = getHostEscalationTier();
   if (!canRankHostAtEscalationTier(peer, tier)) return false;
@@ -141,6 +157,7 @@ export async function fetchLanHostRank(hostUrl, teamCode) {
     return {
       rank: String(data?.rank || 'R1').trim() || 'R1',
       isProgramAdmin: !!(data?.isProgramAdmin || data?.is_program_admin),
+      isOnCallGuardia: !!(data?.isOnCallGuardia || data?.is_on_call_guardia),
       startedAt: Number(data?.startedAt) || 0,
     };
   } catch (_e) {

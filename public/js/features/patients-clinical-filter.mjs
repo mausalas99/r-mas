@@ -2,6 +2,7 @@ import {
   isPatientReadableInClinicalScope,
 } from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
 /** Map chart patient row to scope patient shape. */
 export function patientForScopeEvaluate(p) {
@@ -45,7 +46,9 @@ export function applyElevatedPatientFilters(patients, filters) {
   if (sala && sala !== '__all__') {
     list = list.filter((p) => String(p.sala || '') === sala);
   }
-  if (filters?.teamId) {
+  if (filters?.teamId === CENSUS_TEAM_FILTER_UNASSIGNED) {
+    list = list.filter((p) => p._noExplicitTeamAssignment === true);
+  } else if (filters?.teamId) {
     list = list.filter((p) => String(p._filterTeamId || '') === String(filters.teamId));
   }
   if (filters?.service) {

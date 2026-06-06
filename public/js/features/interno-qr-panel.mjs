@@ -2,12 +2,12 @@
  * R4 / program admin panel: QR internos por sala (colapsable, carga bajo demanda).
  */
 import { copyInternoQrImage } from '../interno-qr-render.mjs';
+import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../../lib/clinical-salas.mjs';
 
-const SALA_DEFS = [
-  { key: 'Sala 1', slug: 'sala-1' },
-  { key: 'Sala 2', slug: 'sala-2' },
-  { key: 'Sala E', slug: 'sala-e' },
-];
+const SALA_DEFS = CLINICAL_SALA_VALUES.map((key) => ({
+  key,
+  slug: clinicalSalaRoomSlug(key),
+}));
 
 function dbApi() {
   if (typeof window === 'undefined') return null;

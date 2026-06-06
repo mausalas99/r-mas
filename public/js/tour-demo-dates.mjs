@@ -129,6 +129,13 @@ export function buildTourDemoDates(ref) {
   };
 }
 
+/** FIUX / FIMI en el objeto paciente desde el bundle del tour. */
+export function applyTourDemoIngresoDates(patient, bundle) {
+  if (!patient || !bundle) return;
+  patient.fiuxFecha = bundle.fiuxFecha;
+  patient.fimiFecha = bundle.fimiFecha;
+}
+
 /** Pérez (dos días) + separador + GARCÍA para vista previa multi-paciente del tour. */
 export function buildTourDemoLabPasteBoth(ref) {
   const bundle = buildTourDemoDates(ref);

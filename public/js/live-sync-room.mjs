@@ -59,6 +59,18 @@ export function liveSyncDeletePatchesFromEntityMap(entityMap) {
         entityVersion: row.version != null ? Number(row.version) : null,
         updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
       });
+      continue;
+    }
+    if (key.startsWith('patient:')) {
+      patches.push({
+        type: 'livesync:patch',
+        entity: 'patient',
+        op: 'delete',
+        id: key.slice(8),
+        registro: String(row.registro || '').trim(),
+        entityVersion: row.version != null ? Number(row.version) : null,
+        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+      });
     }
   }
   return patches;

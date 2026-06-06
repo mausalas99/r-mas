@@ -443,7 +443,7 @@
     <form id="entrega-form" class="entrega-modal-form">
       <div class="entrega-form-body">
         <section class="entrega-top-strip clinical-teams-create-form" aria-label="Datos de entrega">
-          <div class="field-group">
+          <div class="field-group entrega-field-group--r1">
             <label for="entrega-covering-user">R1 de guardia</label>
             <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-covering-user" class="profile-input" required></select>
@@ -462,23 +462,20 @@
         <p id="entrega-handoff-summary" class="entrega-handoff-summary" aria-live="polite"></p>
 
         <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
-          <div class="clinical-teams-section-head-row">
-            <div class="clinical-teams-section-intro">
+          <details class="entrega-proc-details">
+            <summary class="entrega-proc-summary">
               <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
+            </summary>
+            <div class="entrega-panel-body entrega-proc-block">
+              <div class="entrega-proc-toolbar">
+                <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
+                  + Procedimiento
+                </button>
+              </div>
+              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
+              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
             </div>
-            <div class="entrega-proc-toolbar">
-              <button type="button" id="btn-entrega-apply-template" class="btn-med-secondary">
-                Plantillas
-              </button>
-              <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
-                + Procedimiento
-              </button>
-            </div>
-          </div>
-          <div class="entrega-panel-body entrega-proc-block">
-            <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
-            <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
-          </div>
+          </details>
         </section>
       </div>
       <footer class="modal-actions entrega-modal-foot">
@@ -486,6 +483,33 @@
         <button type="submit" class="btn-save" id="btn-entrega-save">Guardar paciente</button>
       </footer>
     </form>
+  </div>
+</div>
+
+<div id="guardia-hoy-modal-backdrop" class="modal-backdrop guardia-hoy-modal-backdrop" aria-hidden="true">
+  <div class="modal guardia-hoy-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-hoy-modal-title" onclick="event.stopPropagation()">
+    <h3 id="guardia-hoy-modal-title">Activar guardia hoy</h3>
+    <p class="clinical-registration-lead guardia-hoy-modal-lead">
+      Declara quién es el R1 de guardia en tu sala. Puedes activar guardia aunque no sea tu día de ciclo.
+    </p>
+    <form id="guardia-hoy-form">
+      <div id="guardia-hoy-modal-body" class="guardia-hoy-modal-body"></div>
+      <div class="modal-actions guardia-hoy-modal-actions">
+        <button type="button" class="btn-cancel" id="guardia-hoy-btn-cancel">Cancelar</button>
+        <button type="button" class="btn-med-secondary" id="guardia-hoy-btn-skip">Continuar sin activar</button>
+        <button type="submit" class="btn-save" id="guardia-hoy-btn-confirm">Activar guardia</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="guardia-patient-action-backdrop" class="modal-backdrop guardia-patient-action-backdrop" aria-hidden="true">
+  <div class="modal guardia-patient-action-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-patient-action-title" onclick="event.stopPropagation()">
+    <h3 id="guardia-patient-action-title">Paciente</h3>
+    <div id="guardia-patient-action-body" class="guardia-patient-action-body"></div>
+    <div class="modal-actions guardia-patient-action-footer">
+      <button type="button" class="btn-cancel" id="guardia-patient-action-cancel">Cancelar</button>
+    </div>
   </div>
 </div>
 

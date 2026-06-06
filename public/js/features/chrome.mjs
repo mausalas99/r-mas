@@ -254,11 +254,25 @@ export function syncGuardiaModeHeaderChip() {
   chip.classList.toggle('header-guardia-mode-chip--active', isGuardiaMode());
   chip.setAttribute('aria-pressed', isGuardiaMode() ? 'true' : 'false');
   var label = chip.querySelector('.header-guardia-mode-label');
-  if (label) label.textContent = 'Vista guardia';
+  if (label) label.textContent = 'Guardia';
+  chip.title = isGuardiaMode()
+    ? 'Salir de Guardia'
+    : 'Abrir Guardia — censo, entrega y turno activo';
+  chip.setAttribute(
+    'aria-label',
+    isGuardiaMode() ? 'Salir de Guardia' : 'Abrir Guardia'
+  );
 }
 
 export function toggleGuardiaMode() {
   if (isGuardiaMode()) {
+    void import('./entrega-roster-panel.mjs').then(({ deactivateTurnoActivo, closeEntregaRosterPanel }) => {
+      deactivateTurnoActivo();
+      closeEntregaRosterPanel();
+    });
+    void import('./guardia-phase-bar.mjs').then(({ teardownGuardiaPhaseBar }) => {
+      teardownGuardiaPhaseBar();
+    });
     setUiDensity('normal');
     return;
   }

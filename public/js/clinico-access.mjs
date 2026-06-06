@@ -3,6 +3,8 @@
  */
 
 import { isClinicoUnlockDisabled } from './clinical-product-policy.mjs';
+import { clinicalServiceForSala, clinicalSalaUsesAbcOnlyRotation } from '../../lib/clinical-salas.mjs';
+import { OFF_CALL_INTERCONSULTAS_SERVICES } from '../../lib/clinical-team-composition.mjs';
 
 export const CLINICO_UNLOCK_PHRASE = 'entiendo, usare mi criterio clincio';
 
@@ -120,9 +122,44 @@ const CYCLE_CONFIGS = {
   default: { letters: ['A','B','C','D'], length: 4 },
 };
 
+/** Sala ward teams only — not Torre HU / Área A (shared ABCD across ranks). */
+export function isSalaWardService(service) {
+  return normalizeServiceKey(service) === 'sala';
+}
+
+/**
+ * Sala R1 primera/segunda línea picker — only Sala 1/2/E ward teams.
+ * @param {string} [service]
+ * @param {string} [sala]
+ */
+export function usesSalaR1LinePicker(service, sala) {
+  if (clinicalSalaUsesAbcOnlyRotation(sala)) return false;
+  const mapped = clinicalServiceForSala(sala);
+  const svc = String(service || mapped || 'Sala').trim();
+  return isSalaWardService(svc);
+}
+
+/**
+ * Cycle letters for UI pickers (create / join / LAN assign).
+ * @param {string} service
+ * @param {string} rank
+ */
+export function getCycleLetterOptionsForRank(service, rank) {
+  const r = String(rank || 'R1');
+  if (isSalaWardService(service) && r === 'R2') {
+    return getCycleLettersForTeamCreate(service, 'R2');
+  }
+  if (isSalaWardService(service) && r === 'R1') {
+    return [
+      ...getCycleLettersForTeamCreate(service, 'R1', 0),
+      ...getCycleLettersForTeamCreate(service, 'R1', 1),
+    ];
+  }
+  return getCycleLettersForTeamCreate(service, r);
+}
+
 export function getCycleConfig(service, rank) {
-  const svc = normalizeServiceKey(service);
-  if (svc.includes('sala')) {
+  if (isSalaWardService(service)) {
     if (rank === 'R2') return CYCLE_CONFIGS.sala_r2;
     if (rank === 'R1') return CYCLE_CONFIGS.sala_r1;
   }
@@ -139,8 +176,7 @@ export function getCycleConfig(service, rank) {
  */
 export function getCycleLettersForTeamCreate(service, rank, r1LineIndex = 0) {
   const cfg = getCycleConfig(service, rank);
-  const svc = normalizeServiceKey(service);
-  if (rank === 'R1' && svc.includes('sala')) {
+  if (rank === 'R1' && isSalaWardService(service)) {
     const half = Math.floor(cfg.letters.length / 2);
     return r1LineIndex === 1 ? cfg.letters.slice(half) : cfg.letters.slice(0, half);
   }
@@ -153,14 +189,13 @@ export function getCycleLettersForTeamCreate(service, rank, r1LineIndex = 0) {
  * @param {0|1} [r1LineIndex]
  */
 export function getCycleFieldMetaForTeamCreate(service, rank, r1LineIndex = 0) {
-  const svc = normalizeServiceKey(service);
-  if (svc.includes('sala') && rank === 'R2') {
+  if (isSalaWardService(service) && rank === 'R2') {
     return {
       label: 'Tu letra de ciclo (R2)',
       hint: 'Cada equipo de sala tiene tres puestos: R2 (A–F), R1 primera línea (A1–D1) y R1 segunda línea (A2–D2). Como R2 eliges tu letra A–F.',
     };
   }
-  if (svc.includes('sala') && rank === 'R1') {
+  if (isSalaWardService(service) && rank === 'R1') {
     const line = r1LineIndex === 1 ? 'segunda línea (A2–D2)' : 'primera línea (A1–D1)';
     return {
       label: `Tu subciclo R1 · ${line}`,
@@ -417,21 +452,94 @@ export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, n
 
 /**
  * Returns the R1(s) on call for a given Sala today.
+ * Manual `team_guardia_today` / `guardia_today` overrides cycle for that team.
  * @param {object[]} teams — all teams (each with sala, sub_area_fraction, members)
- * @param {string} sala — "Sala 1" | "Sala 2" | "Sala E"
+ * @param {string} sala — clinical sala label (Sala 1/2/E, Torre HU, Área A/Pensionistas)
  * @param {Date|string} now
+ * @param {Array<{ team_id?: string, user_id?: string }>} [salaGuardiaToday]
  * @returns {{ team_id: string, user_id: string }[]} — on-call R1s
  */
-export function salaOnCallR1(teams, sala, now) {
+export function salaOnCallR1(teams, sala, now, salaGuardiaToday = []) {
   const d = now instanceof Date ? now : new Date(String(now));
-  return (teams || [])
-    .filter((t) => t.sala === sala)
-    .filter((t) => isOnCallToday(t, 'R1', d))
-    .flatMap((t) =>
-      (t.members || [])
-        .filter((m) => m.rank === 'R1')
-        .map((m) => ({ team_id: t.team_id, user_id: m.user_id }))
+  const result = [];
+  for (const team of (teams || []).filter((t) => t.sala === sala)) {
+    const teamId = String(team.team_id || '');
+    if (!teamId) continue;
+    const declared =
+      (salaGuardiaToday || []).find((g) => String(g.team_id) === teamId)?.user_id ||
+      team?.guardia_today?.user_id ||
+      '';
+    if (declared) {
+      result.push({ team_id: teamId, user_id: String(declared) });
+      continue;
+    }
+    if (!isOnCallToday(team, 'R1', d)) continue;
+    for (const m of team.members || []) {
+      if (m.rank === 'R1' && m.user_id) {
+        result.push({ team_id: teamId, user_id: String(m.user_id) });
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * True when the user is on call today as a guardia receiver (R1 de guardia or R2 de guardia).
+ * @param {string} userId
+ * @param {string} rank
+ * @param {object[]} teams
+ * @param {Date|string|number} now
+ * @param {Array<{ team_id?: string, user_id?: string }>} [salaGuardiaToday]
+ */
+export function userIsOnGuardiaCallToday(userId, rank, teams, now, salaGuardiaToday = []) {
+  const uid = String(userId || '');
+  if (!uid) return false;
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r = String(rank || '');
+  if (r === 'R2') {
+    return (teams || []).some((team) => {
+      if (!isOnCallToday(team, 'R2', d)) return false;
+      return (team.members || []).some(
+        (m) => m.rank === 'R2' && String(m.user_id || '') === uid
+      );
+    });
+  }
+  if (r === 'R1') {
+    const joined = getJoinedTeams(teams, uid);
+    const salas = new Set(
+      joined.map((t) => String(t.sala || '').trim()).filter(Boolean)
     );
+    for (const sala of salas) {
+      const onCall = salaOnCallR1(teams, sala, d, salaGuardiaToday);
+      if (onCall.some((row) => String(row.user_id || '') === uid)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * True when the user is on call today (guardia declarada, ciclo de rotación o interconsultas).
+ * Used for LAN host eligibility — on-call residents may host their subnet session.
+ * @param {string} userId
+ * @param {string} rank
+ * @param {object[]} teams
+ * @param {Date|string|number} [now]
+ * @param {Array<{ team_id?: string, user_id?: string }>} [salaGuardiaToday]
+ */
+export function userIsOnCallForLanHost(userId, rank, teams, now = new Date(), salaGuardiaToday = []) {
+  const uid = String(userId || '');
+  if (!uid) return false;
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r = String(rank || '').trim();
+  if (userIsOnGuardiaCallToday(uid, r, teams, d, salaGuardiaToday)) return true;
+  const joined = getJoinedTeams(teams, uid);
+  if (userOnCallForInterconsultasTeam(uid, joined, r, d)) return true;
+  return joined.some((team) => {
+    if (!isOnCallToday(team, r, d)) return false;
+    return (team.members || []).some(
+      (m) => String(m.user_id || '') === uid && String(m.rank || '').trim() === r
+    );
+  });
 }
 
 /**
@@ -477,6 +585,9 @@ export function resolvePatientSala(patient) {
   if (letter === '1') return 'Sala 1';
   if (letter === '2') return 'Sala 2';
   if (letter === 'E') return 'Sala E';
+  const svc = normalizeServiceKey(patient?.servicio || patient?.service || '');
+  if (svc.includes('torre hu')) return 'Torre HU';
+  if (svc.includes('area a') || svc.includes('pension')) return 'Área A/Pensionistas';
   return '';
 }
 
@@ -484,6 +595,35 @@ export function resolvePatientSala(patient) {
 export function patientInUserSala(patient, userSala) {
   const ps = resolvePatientSala(patient);
   return ps !== '' && ps === String(userSala || '').trim();
+}
+
+export function isInterconsultasPatient(patient) {
+  if (!patient) return false;
+  const svc = normalizeServiceKey(patient.service || patient.servicio || '');
+  const sub = normalizeServiceKey(patient.sub_area || patient.area || '');
+  if (svc.includes('interconsult') || sub.includes('interconsult')) return true;
+  const ic = String(patient.interconsult_type || 'None');
+  return ic !== 'None' && ic !== '';
+}
+
+export function userOffCallFromInterconsultasRotationServices(userId, joinedTeams, rank, now) {
+  const uid = String(userId || '');
+  return (joinedTeams || []).some((team) => {
+    const svc = normalizeServiceKey(team?.service);
+    if (!OFF_CALL_INTERCONSULTAS_SERVICES.has(svc)) return false;
+    if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
+    return !isOnCallToday(team, rank, now);
+  });
+}
+
+export function userOnCallForInterconsultasTeam(userId, joinedTeams, rank, now) {
+  const uid = String(userId || '');
+  return (joinedTeams || []).some((team) => {
+    const svc = normalizeServiceKey(team?.service);
+    if (!svc.includes('interconsult')) return false;
+    if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
+    return isOnCallToday(team, rank, now);
+  });
 }
 
 export const ENTREGA_PHASE_LS_KEY = 'guardia.entregaPhase';
@@ -564,8 +704,7 @@ export function teamForMemberCycle(team, userId) {
  */
 export function inferMembershipCycleForJoin(team, userRank) {
   const rank = String(userRank || 'R1');
-  const svc = normalizeServiceKey(team?.service);
-  if (!svc.includes('sala')) {
+  if (!isSalaWardService(team?.service)) {
     const letters = getCycleLettersForTeamCreate(team?.service, rank);
     return letters[0] || 'A';
   }
@@ -757,8 +896,23 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
   const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
   const strictTeamFilter = userHasJoinedClinicalTeams(teams, userId);
 
+  if (isInterconsultasPatient(targetPatient)) {
+    if (userOffCallFromInterconsultasRotationServices(userId, joinedTeams, rank, now)) {
+      return allow('Off-call UX/Eme: censo Interconsultas');
+    }
+    if (userOnCallForInterconsultasTeam(userId, joinedTeams, rank, now)) {
+      return allow('Interconsultas de guardia: censo del día');
+    }
+  }
+
   if (guardiaMode) {
     if (rank === 'R1') {
+      if (ctx.onCallGuardiaReceiver) {
+        if (patientCoveredByGuardia(patientId, userId, guardias)) {
+          return allow('Modo Guardia R1: paciente entregado', true, false);
+        }
+        return deny('Modo Guardia R1: sin entrega recibida');
+      }
       const patientSala = targetPatient?.sala || '';
       if (patientSala && patientSala === userSala) {
         return allow('Modo Guardia R1: visibilidad de Sala completa', true, false);

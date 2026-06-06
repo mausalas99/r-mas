@@ -8,7 +8,9 @@ import {
   evaluateClinicalScope,
   migratePatientsClinicalSala,
   readEntregaPhaseActive,
+  userHasJoinedClinicalTeams,
 } from './clinico-access.mjs';
+import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from './features/crypto-signer.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -25,6 +27,49 @@ export { clinicalSessionContext };
 let vitalsLoop = null;
 /** @type {ClientSessionInactivityLocker|null} */
 let sessionLocker = null;
+
+let clinicalAccessBootDone = false;
+/** @type {Array<() => void>} */
+let clinicalAccessBootWaiters = [];
+
+/** Unblocks LAN room boot after clinical session + scope hydrate (or timeout). */
+export function markClinicalAccessBootReady() {
+  if (clinicalAccessBootDone) return;
+  clinicalAccessBootDone = true;
+  const waiters = clinicalAccessBootWaiters;
+  clinicalAccessBootWaiters = [];
+  for (const resolve of waiters) resolve();
+  if (typeof document !== 'undefined') {
+    document.dispatchEvent(new CustomEvent('rpc-clinical-access-ready'));
+  }
+}
+
+export function waitForClinicalAccessReady() {
+  if (!isDbMode() || clinicalAccessBootDone) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 20000);
+    clinicalAccessBootWaiters.push(function () {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
+/** True when LAN may apply/filter patient bundle rows for the signed-in user. */
+export function isClinicalScopeReadyForLanPatientApply() {
+  if (!isDbMode()) return true;
+  if (!clinicalSessionContext.user?.user_id) return false;
+  if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) return true;
+  return clinicalSessionContext.scopeContext != null;
+}
+
+/**
+ * Sidebar scope is enforced in patientsVisibleInSidebar — do not delete charts from storage.
+ * @returns {number} always 0 (legacy callers kept for compatibility)
+ */
+export function prunePatientsOutsideClinicalScope() {
+  return 0;
+}
 
 function electronApi() {
   if (typeof window === 'undefined') return null;
@@ -244,23 +289,94 @@ export async function refreshClinicalUserProfile() {
   migrateLocalPatientsClinicalSala();
 }
 
-/**
- * @param {Record<string, unknown>|null|undefined} settings
- * @param {string} clientId
- */
+/** Pull host census rows for team assignments missing on this device. */
+async function ensureTeamAssignedPatientsOnDevice() {
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id || hasElevatedTeamPrivileges(user)) return;
+  const ctx = getClinicalScopeContextForEvaluate();
+  const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
+  if (!userHasJoinedClinicalTeams(teams, user.user_id)) return;
+
+  const { filterJoinedTeams } = await import('./features/clinical-teams/shared.mjs');
+  const { resolvePatientTeamIdFromAssignments } = await import('./clinico-access.mjs');
+  const joined = filterJoinedTeams(teams, user);
+  const teamIds = new Set(joined.map((t) => String(t.team_id || '')));
+  if (!teamIds.size) return;
+
+  const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
+  const now = ctx.now || new Date().toISOString();
+  const localIds = new Set((patients || []).map((p) => String(p?.id || '')));
+  let missing = 0;
+  for (const row of assignments) {
+    const pid = String(row?.patient_id || '');
+    if (!pid || localIds.has(pid)) continue;
+    const teamId = resolvePatientTeamIdFromAssignments(pid, assignments, now);
+    if (teamIds.has(teamId)) missing += 1;
+  }
+  if (!missing) return;
+
+  try {
+    const lan = await import('./features/lan-sync.mjs');
+    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
+      return;
+    }
+    const rid =
+      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
+    if (!rid) return;
+    const push = await import('./features/lan/push.mjs');
+    if (typeof push.reconcileLiveSyncRoom === 'function') {
+      await push.reconcileLiveSyncRoom(rid);
+    }
+  } catch (_e) {}
+}
+
+/** Reload teams + scope from DB and re-filter the patient sidebar (LAN join / team roster). */
+export async function refreshClinicalPatientListForScope() {
+  if (!isDbMode() || !clinicalSessionContext.user?.user_id) return;
+  await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
+  await ensureTeamAssignedPatientsOnDevice();
+  if (typeof document === 'undefined') return;
+  try {
+    const mod = await import('./features/patients.mjs');
+    if (typeof mod.renderPatientList === 'function') {
+      mod.renderPatientList({ silent: true });
+    }
+  } catch (_e) {}
+}
+
+/** One-shot host bundle pull when new team assignments arrive (not on every no-op merge). */
+async function pullHostPatientsAfterAssignmentMerge(event) {
+  const stats = event?.detail?.mergeStats;
+  if (!stats || !(Number(stats.assignmentsInserted) > 0)) return;
+  if (!isDbMode()) return;
+  try {
+    const lan = await import('./features/lan-sync.mjs');
+    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
+      return;
+    }
+    const rid =
+      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
+    if (!rid) return;
+    const push = await import('./features/lan/push.mjs');
+    if (typeof push.reconcileLiveSyncRoom === 'function') {
+      await push.reconcileLiveSyncRoom(rid);
+    }
+  } catch (_e) {}
+}
+
 export function wireClinicalOpsSyncRefresh() {
   if (typeof document === 'undefined' || document._rpcClinicalOpsSyncedRefreshWired) return;
   document._rpcClinicalOpsSyncedRefreshWired = true;
-  document.addEventListener('rpc-clinical-ops-synced', () => {
-    void (async () => {
-      await fetchClinicalTeamsFromDb();
-      await fetchClinicalScopeContextFromDb();
-    })();
+  document.addEventListener('rpc-clinical-ops-synced', (event) => {
+    void refreshClinicalPatientListForScope();
+    void pullHostPatientsAfterAssignmentMerge(event);
   });
 }
 
 export async function initClinicalAccessRuntime(settings, clientId) {
   const ok = await bootstrapClinicalAccess(settings, clientId);
+  markClinicalAccessBootReady();
   if (!ok) return;
   wireClinicalOpsSyncRefresh();
 

@@ -615,14 +615,33 @@ ipcMain.handle('lan-get-effective-team-code', () => {
 /** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
 ipcMain.handle('lan-ensure-server-ready', async () => {
   const lanServer = require('./server');
-  await lanServer.startLanServer();
+  const peerMode = process.env.R_PLUS_LAN_PEER === '1';
   try {
-    const { ensureHostStartedAt } = require('./lan-squad/host-clinical-meta.js');
-    ensureHostStartedAt(app.getPath('userData'));
-  } catch (_e) {
-    // non-fatal — renderer may sync meta later
+    await lanServer.startLanServer();
+  } catch (lanErr) {
+    const portBusy =
+      (lanErr && lanErr.code === 'EADDRINUSE') ||
+      (lanErr && lanErr.message && String(lanErr.message).includes('3738'));
+    if (!(peerMode && portBusy)) throw lanErr;
   }
-  return { ok: true };
+  if (!peerMode) {
+    try {
+      const { ensureHostStartedAt } = require('./lan-squad/host-clinical-meta.js');
+      ensureHostStartedAt(app.getPath('userData'));
+    } catch (_e) {
+      // non-fatal — renderer may sync meta later
+    }
+  }
+  return { ok: true, peer: peerMode };
+});
+
+/** Dev peer window (npm run dev:lan-peer-app): seed LAN client config toward local host. */
+ipcMain.handle('lan-dev-peer-seed-config', () => {
+  if (process.env.R_PLUS_LAN_PEER !== '1') return { ok: false };
+  const hostUrl = String(process.env.R_PLUS_LAN_DEV_PEER_HOST || 'http://127.0.0.1:3738').trim();
+  const teamCode = String(process.env.R_PLUS_LAN_DEV_PEER_CODE || '').trim();
+  if (!hostUrl || teamCode.length < 32) return { ok: false };
+  return { ok: true, hostUrl, teamCode };
 });
 
 ipcMain.handle('lan-sync-host-clinical-meta', (_e, payload) => {

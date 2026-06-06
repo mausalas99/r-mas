@@ -15,6 +15,16 @@ test('writeHostClinicalMeta round-trips rank and admin flag', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('writeHostClinicalMeta round-trips on-call guardia flag', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-meta-oncall-'));
+  writeHostClinicalMeta(dir, { rank: 'R1', isOnCallGuardia: true });
+  const meta = readHostClinicalMeta(dir);
+  assert.equal(meta.isOnCallGuardia, true);
+  const updated = writeHostClinicalMeta(dir, { rank: 'R1', isOnCallGuardia: false });
+  assert.equal(updated.isOnCallGuardia, false);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('startedAt is stamped once and stable across writes', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-meta-started-'));
   const first = writeHostClinicalMeta(dir, { rank: 'R4', isProgramAdmin: false });

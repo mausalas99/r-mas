@@ -4,6 +4,7 @@ import {
   mergeLiveSyncBundles,
   compareIso,
   buildRoomSnapshotFromStorage,
+  liveSyncDeletePatchesFromEntityMap,
 } from './live-sync-room.mjs';
 
 describe('live-sync-room merge by entity version', () => {
@@ -186,6 +187,24 @@ describe('live-sync-room merge by entity version', () => {
     ]);
     assert.strictEqual(merged.patientDeletes.length, 1);
     assert.strictEqual(merged.patientDeletes[0].registro, '12345');
+  });
+});
+
+describe('liveSyncDeletePatchesFromEntityMap', () => {
+  it('emits patient delete patch from local tombstone', () => {
+    const patches = liveSyncDeletePatchesFromEntityMap({
+      'patient:p9': {
+        version: 2,
+        registro: '12345',
+        _deleted: true,
+        updatedAt: '2026-05-16T12:00:00.000Z',
+      },
+    });
+    assert.strictEqual(patches.length, 1);
+    assert.strictEqual(patches[0].entity, 'patient');
+    assert.strictEqual(patches[0].op, 'delete');
+    assert.strictEqual(patches[0].id, 'p9');
+    assert.strictEqual(patches[0].registro, '12345');
   });
 });
 

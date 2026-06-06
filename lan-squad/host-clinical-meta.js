@@ -8,10 +8,10 @@ function metaFilePath(userDataPath) {
 
 /**
  * @param {string} userDataPath
- * @returns {{ rank: string, isProgramAdmin: boolean, startedAt: number, updatedAt: string }}
+ * @returns {{ rank: string, isProgramAdmin: boolean, isOnCallGuardia: boolean, startedAt: number, updatedAt: string }}
  */
 function readHostClinicalMeta(userDataPath) {
-  const fallback = { rank: 'R1', isProgramAdmin: false, startedAt: 0, updatedAt: '' };
+  const fallback = { rank: 'R1', isProgramAdmin: false, isOnCallGuardia: false, startedAt: 0, updatedAt: '' };
   try {
     const raw = fs.readFileSync(metaFilePath(userDataPath), 'utf8');
     const o = JSON.parse(raw);
@@ -19,6 +19,7 @@ function readHostClinicalMeta(userDataPath) {
     return {
       rank: String(o.rank || 'R1').trim() || 'R1',
       isProgramAdmin: !!(o.isProgramAdmin || o.is_program_admin),
+      isOnCallGuardia: !!(o.isOnCallGuardia || o.is_on_call_guardia),
       startedAt: Number(o.startedAt) || 0,
       updatedAt: String(o.updatedAt || ''),
     };
@@ -37,6 +38,7 @@ function writeHostClinicalMeta(userDataPath, payload) {
   const body = {
     rank: String(payload?.rank || 'R1').trim() || 'R1',
     isProgramAdmin: !!(payload?.isProgramAdmin || payload?.is_program_admin),
+    isOnCallGuardia: !!(payload?.isOnCallGuardia || payload?.is_on_call_guardia),
     startedAt: prev.startedAt > 0 ? prev.startedAt : now,
     updatedAt: new Date().toISOString(),
   };

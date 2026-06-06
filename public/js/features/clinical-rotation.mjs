@@ -8,8 +8,6 @@ import {
 } from '../clinical-access-runtime.mjs';
 
 import { canConfigureRotation as userCanConfigureRotation } from '../clinical-privileges.mjs';
-import { isDbMode } from '../db-storage-bridge.mjs';
-import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 
 /** @param {string|Date|undefined} value */
 function toMillis(value) {
@@ -233,7 +231,7 @@ export async function confirmNuevaRotacion() {
 let rotationControlsWired = false;
 
 export function syncRotationConfigButton() {
-  const configBtn = document.getElementById('btn-guardia-rotation-config');
+  const configBtn = document.getElementById('btn-rotation-config-open');
   if (!configBtn) return;
   const allowed = canConfigureRotation();
   configBtn.hidden = !allowed;
@@ -241,15 +239,19 @@ export function syncRotationConfigButton() {
   configBtn.title = allowed
     ? 'Calendario de rotación del servicio (fin de mes, vigencia, vista previa)'
     : '';
-  configBtn.classList.remove('btn-med-secondary--muted');
 }
 
-/** Mi rotación + rotación admin en la barra de Vista guardia. */
+/** @deprecated — config lives in Mi rotación; kept for entry chrome callers. */
 export function syncGuardiaRotationToolbar() {
-  const showMiRotacion = isDbMode() && !isClinicalLocalOnlyMode(readRpcSettings());
-  const miBtn = document.getElementById('btn-guardia-mi-rotacion');
-  if (miBtn) miBtn.hidden = !showMiRotacion;
   syncRotationConfigButton();
+}
+
+/** @param {ParentNode} [root] */
+export function wireRotationConfigOpenControl(root = document) {
+  const btn = root.querySelector('#btn-rotation-config-open');
+  if (!btn || btn._rpcRotationConfigOpenWired) return;
+  btn._rpcRotationConfigOpenWired = true;
+  btn.addEventListener('click', () => openRotationConfigModal());
 }
 
 export function wireGuardiaRotationControls() {
@@ -257,9 +259,7 @@ export function wireGuardiaRotationControls() {
   rotationControlsWired = true;
   wireRotationConfigFormOnce();
   syncRotationConfigButton();
-
-  const configBtn = document.getElementById('btn-guardia-rotation-config');
-  if (configBtn) configBtn.addEventListener('click', () => openRotationConfigModal());
+  wireRotationConfigOpenControl();
 
   const bd = rotationModalEl();
   if (bd) {

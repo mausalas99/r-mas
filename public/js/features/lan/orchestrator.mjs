@@ -51,6 +51,9 @@ import {
   guardAndSignLiveSyncMutation,
   migrateLocalPatientsClinicalSala,
   getClinicalScopeContextForEvaluate,
+  fetchClinicalScopeContextFromDb,
+  refreshClinicalPatientListForScope,
+  isClinicalScopeReadyForLanPatientApply,
 } from "../../clinical-access-runtime.mjs";
 import { clinicalSessionContext } from "../../clinical-session-context.mjs";
 import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
@@ -274,6 +277,20 @@ function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) 
   try {
     localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
   } catch (_e) {}
+}
+
+/** Local tombstone so LAN reconcile cannot resurrect a patient pending delete sync. */
+export function rememberPatientDeleteTombstone(patient) {
+  if (!patient || !patient.id || String(patient.id).indexOf('demo-') === 0) return;
+  var pid = String(patient.id);
+  var cached = getLiveSyncEntityBase('patient', pid, null) || {};
+  var ver = cached.version != null ? Number(cached.version) + 1 : 1;
+  rememberLiveSyncEntity('patient', pid, null, ver, {
+    id: pid,
+    registro: String(patient.registro || '').trim(),
+    _deleted: true,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function syncHostBundleEntityFromApplied(msg) {
@@ -865,8 +882,9 @@ function collectPatientEntriesForLanSync() {
     var entry = runtime.buildPatientEntry(p.id);
     if (entry) out.push(entry);
   });
+  if (!isClinicalScopeReadyForLanPatientApply()) return [];
   var user = clinicalSessionContext.user;
-  if (!user?.user_id) return out;
+  if (!user?.user_id) return [];
   return filterPatientEntriesForLanTeamScope(
     out,
     user,
@@ -876,8 +894,9 @@ function collectPatientEntriesForLanSync() {
 }
 
 function filterIncomingPatientEntriesForScope(entries) {
+  if (!isClinicalScopeReadyForLanPatientApply()) return [];
   var user = clinicalSessionContext.user;
-  if (!user?.user_id) return entries || [];
+  if (!user?.user_id) return [];
   return filterPatientEntriesForLanTeamScope(
     entries || [],
     user,
@@ -1194,9 +1213,23 @@ function applyLiveSyncPatientDeletes(deletes, idMap) {
   return changed;
 }
 
-function applyLiveSyncMerged(merged) {
+async function applyLiveSyncMerged(merged) {
   if (!merged) return;
   if (isPitchPatientIsolationActive()) return;
+  var clinicalOpsApplied = false;
+  if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
+    var opsResult = await applyClinicalOpsLanSnapshot(merged.clinicalOps);
+    if (opsResult.ok) {
+      clinicalOpsApplied = true;
+      await refreshClinicalOpsSnapshotCache();
+      await fetchClinicalScopeContextFromDb();
+    } else if (opsResult.code !== 'DB_LOCKED' && !opsResult.deferred) {
+      runtime.showToast(
+        'No se pudieron sincronizar equipos ni usuarios LAN. Reintenta desde ⇄ o reinicia R+.',
+        'warn'
+      );
+    }
+  }
   var entries = merged.entries || [];
   var idMap = buildLiveSyncPatientIdMap(entries, patients, merged.todos || {});
   var patientRemoved = applyLiveSyncPatientDeletes(merged.patientDeletes || [], idMap);
@@ -1252,25 +1285,17 @@ function applyLiveSyncMerged(merged) {
   if (merged.manejo && isLanManejoRoomSyncEnabled()) {
     applyManejoRoomDataToLocal(merged.manejo);
   }
-  if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
-    void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function (result) {
-      if (result.ok) {
-        void refreshClinicalOpsSnapshotCache();
-        if (result.changed) {
-          void refreshClinicalSessionTeams().then(function () {
-            document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-            renderPatientListLanSilent();
-          });
-        }
-      } else {
-        runtime.showToast(
-          'No se pudieron sincronizar equipos ni usuarios LAN. Desbloquea la sesión clínica e intenta de nuevo.',
-          'warn'
-        );
-      }
-    });
-  }
   if (patientsChanged) migrateLocalPatientsClinicalSala();
+  if (patientsChanged || patientRemoved || clinicalOpsApplied) {
+    void refreshClinicalPatientListForScope();
+  }
+}
+
+/** Re-apply host bundle patient rows after clinical-ops directorio catch-up. */
+async function reapplyLanPatientEntries(entries) {
+  if (!entries || !entries.length) return { added: 0, updated: 0 };
+  await fetchClinicalScopeContextFromDb();
+  return applyLanPatientEntries(entries, { skipTodos: true });
 }
 
 async function applyLiveSyncDeltaApplied(msg) {
@@ -1477,6 +1502,7 @@ export function wireLanSyncBridges() {
     saveLocalRoomSnapshot,
     buildLiveSyncLocalMergeSource,
     applyLiveSyncMerged,
+    reapplyLanPatientEntries,
     applyRoomSyncPhaseAfterReconcile,
     fetchAndApplyClinicalOpsFromHost,
     syncLiveSyncStatusChrome,

@@ -137,11 +137,13 @@ export function formatEscalationCountdown(ms) {
  */
 export function updateLanHostEscalationFromPeerMetas(peerMetas, nowMs = Date.now()) {
   let sawWard = false;
+  let sawOnCallHost = false;
   for (const meta of peerMetas || []) {
     if (!meta) continue;
+    if (meta.isOnCallGuardia) sawOnCallHost = true;
     if (isWardTierHostMeta(meta)) sawWard = true;
     if (rankPriority(meta) >= RANK_PRIORITY.R2) markR2PlusHostSeen(nowMs);
   }
-  if (sawWard) markWardTierHostSeen(nowMs);
+  if (sawWard || sawOnCallHost) markWardTierHostSeen(nowMs);
   else ensureEscalationAnchor(nowMs);
 }

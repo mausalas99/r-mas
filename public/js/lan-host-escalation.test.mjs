@@ -8,6 +8,7 @@ import {
   canRankHostAtEscalationTier,
   markWardTierHostSeen,
   minHostRankPriorityForTier,
+  updateLanHostEscalationFromPeerMetas,
 } from './lan-host-escalation.mjs';
 
 describe('lan-host-escalation', () => {
@@ -74,5 +75,23 @@ describe('lan-host-escalation', () => {
     assert.equal(minHostRankPriorityForTier(1), 3);
     assert.equal(minHostRankPriorityForTier(2), 2);
     assert.equal(minHostRankPriorityForTier(3), 1);
+  });
+
+  it('on-call peer meta resets escalation anchor like ward-tier host', () => {
+    const prev = global.localStorage;
+    global.localStorage = ls;
+    clearHostEscalation();
+    try {
+      const t0 = 1_700_000_000_000;
+      ensureEscalationAnchor(t0);
+      updateLanHostEscalationFromPeerMetas(
+        [{ rank: 'R1', isOnCallGuardia: true }],
+        t0 + LAN_HOST_ESCALATION_STEP_MS + 1
+      );
+      assert.equal(getHostEscalationTier(t0 + LAN_HOST_ESCALATION_STEP_MS + 1), 0);
+    } finally {
+      global.localStorage = prev;
+      clearHostEscalation();
+    }
   });
 });

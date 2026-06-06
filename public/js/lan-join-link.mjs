@@ -1,13 +1,15 @@
 /** URLs de unión LAN / móvil (sin DOM). */
 
+import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../lib/clinical-salas.mjs';
+
 const JOIN_TICKET_PATH_RE = /\/join\/(req_[a-f0-9]{12})\b/i;
 
 /** roomId usados en LiveSync (coinciden con ⇄ Salas de guardia). */
-export const LIVE_SYNC_SALA_DEFS = [
-  { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
-  { id: 'sala-2', label: 'Sala 2', key: 'Sala 2' },
-  { id: 'sala-e', label: 'Sala E', key: 'Sala E' },
-];
+export const LIVE_SYNC_SALA_DEFS = CLINICAL_SALA_VALUES.map((key) => ({
+  id: clinicalSalaRoomSlug(key),
+  label: key,
+  key,
+}));
 
 /**
  * @param {string} [salaOrRoom] — "Sala 1", sala-1, etc.
@@ -17,7 +19,6 @@ export function resolveLiveSyncRoomIdFromSala(salaOrRoom) {
   const raw = String(salaOrRoom || '').trim();
   if (!raw) return '';
   const lower = raw.toLowerCase();
-  if (/^sala-[12e]$/i.test(lower)) return lower;
   const hit = LIVE_SYNC_SALA_DEFS.find(
     (d) => d.id === lower || d.key === raw || d.label === raw
   );

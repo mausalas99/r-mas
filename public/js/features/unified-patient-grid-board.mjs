@@ -21,7 +21,7 @@ function escapeChipAttr(s) {
 }
 
 /** @param {{ last_vitals_check?: string, vitals_frequency?: string, pendientes_json?: string|null }} meta */
-function vitalsBannerForGuardia(meta) {
+export function vitalsBannerForGuardia(meta) {
   const doc = normalizePendientesJson(meta?.pendientes_json);
   return calcVitalsBannerForSpec(
     meta?.last_vitals_check,
@@ -48,6 +48,8 @@ export class UnifiedPatientGridBoard {
     this.context = appViewContext;
     /** When true, chip tap opens entrega (e.g. Modo Guardia) instead of the patient chart. */
     this.chipOpensEntrega = false;
+    /** When true in GUARDIA context, chip tap opens guardia patient menu (expediente / eventualidad). */
+    this.chipGuardiaPatientMenu = false;
     /** @type {(patientId: string) => void|null} */
     this.onChipClick = null;
   }
@@ -65,7 +67,11 @@ export class UnifiedPatientGridBoard {
   handleChipClick(patientId) {
     const id = String(patientId || '');
     if (!id) return;
-    if (this.context === 'HANDOFF' || this.chipOpensEntrega) {
+    if (
+      this.context === 'HANDOFF' ||
+      this.chipOpensEntrega ||
+      this.chipGuardiaPatientMenu
+    ) {
       if (typeof this.onChipClick === 'function') {
         this.onChipClick(id);
       }
@@ -119,11 +125,20 @@ export class UnifiedPatientGridBoard {
    * @param {Array<{ id: string }>} patients
    * @param {Map<string, { is_critical?: number, last_vitals_check?: string, vitals_frequency?: string }>} guardiasMap
    */
+  /** @param {{ id: string, isCritical?: boolean, guardiaMeta?: object }} p */
+  chipSortScore(p, guardiasMap) {
+    const meta = p.guardiaMeta || guardiasMap.get(p.id) || {};
+    const banner = vitalsBannerForGuardia(meta);
+    let score = 0;
+    if (p.isCritical || meta?.is_critical) score += 100;
+    if (banner.cls === 'breached') score += 80;
+    else if (banner.cls === 'warning') score += 40;
+    return score;
+  }
+
   renderBatch(patients, guardiasMap) {
     const sorted = [...patients].sort(
-      (a, b) =>
-        (guardiasMap.get(b.id)?.is_critical || b.isCritical ? 1 : 0) -
-        (guardiasMap.get(a.id)?.is_critical || a.isCritical ? 1 : 0)
+      (a, b) => this.chipSortScore(b, guardiasMap) - this.chipSortScore(a, guardiasMap)
     );
     sorted.forEach((p) => {
       if (this.container) {

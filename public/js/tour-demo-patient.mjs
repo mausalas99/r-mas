@@ -37,8 +37,8 @@ export function getDemoPatientIdForRegistro(registro) {
 export function getTourDemoAdmitDefaults(registro) {
   if (!hooks.isTourActive || !hooks.isTourActive()) return null;
   var r = String(registro || '').trim();
-  if (r === DEMO_REGISTRO) return { cuarto: '214', cama: '2' };
-  if (r === DEMO_REGISTRO_2) return { cuarto: '214', cama: '4' };
+  if (r === DEMO_REGISTRO) return { servicio: 'MEDICINA INTERNA', cuarto: '214', cama: '2' };
+  if (r === DEMO_REGISTRO_2) return { servicio: 'MEDICINA INTERNA', cuarto: '214', cama: '4' };
   return null;
 }
 
@@ -145,7 +145,6 @@ export function adoptTourPatientOnCommit(patient, registro) {
     patient: patient,
     afterCommit: function () {
       if (hooks.applyBundle) hooks.applyBundle(demoId, registro);
-      if (hooks.scheduleLabPatientRegistration) hooks.scheduleLabPatientRegistration();
       if (stayOnLab) {
         if (hooks.switchAppTab) hooks.switchAppTab('lab');
         if (hooks.showToast) {

@@ -13,12 +13,11 @@ import {
   normalizeHandoffContext,
   handoffContextSummary,
 } from '../../../lib/entrega/entrega-handoff-context.mjs';
-import { openEntregaModal } from './clinical-entrega.mjs';
 
 const PANEL_ID = 'entrega-roster-panel';
 const WARN_SVG = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
 const LUNG_SVG = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 4.5 7 13 7 13s7-8.5 7-13a7 7 0 00-7-7z"/></svg>`;
-const ACTIVE_SVG = `<svg width="7" height="7" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#6c5ce7"/></svg>`;
+const ACTIVE_SVG = `<svg width="7" height="7" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>`;
 
 const STATUS_LABELS = {
   critical: 'Crítico',
@@ -73,13 +72,30 @@ function rowIsCriticalOrUnstable(g) {
 /**
  * @param {Record<string, unknown>|null|undefined} settings
  */
-export function openEntregaRosterPanel(settings) {
+function ensureRosterHost() {
   let host = document.getElementById(PANEL_ID);
+  if (host?.closest('#profile-modal, .modal-backdrop[aria-hidden="true"]')) {
+    document.body.appendChild(host);
+  }
   if (!host) {
     host = document.createElement('div');
     host.id = PANEL_ID;
+    host.className = 'entrega-roster-panel-host';
     document.body.appendChild(host);
   }
+  return host;
+}
+
+export function isEntregaRosterOpen() {
+  const host = document.getElementById(PANEL_ID);
+  return !!(host && host.innerHTML.trim());
+}
+
+const TURNO_STARTED_KEY = 'guardia.turnoStartedAt';
+
+export function openEntregaRosterPanel(settings) {
+  const host = ensureRosterHost();
+  document.documentElement.classList.add('guardia-entrega-roster-open');
 
   const guardiasMap = clinicalSessionContext.guardiasMap;
 
@@ -88,7 +104,7 @@ export function openEntregaRosterPanel(settings) {
     .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p }));
 
   const critical = censusPatients.filter((p) => rowIsCriticalOrUnstable(guardiasMap.get(p.id)));
-  const rest = censusPatients.filter((p) => !rowIsCriticalOrUnstable(guardiasMap.get(p.id)));
+  const stable = censusPatients.filter((p) => !rowIsCriticalOrUnstable(guardiasMap.get(p.id)));
 
   function renderRow(p) {
     const g = guardiasMap.get(p.id);
@@ -124,12 +140,12 @@ export function openEntregaRosterPanel(settings) {
         <span class="roster-active-badge">${ACTIVE_SVG} Activa</span>
       </div>
       <div class="roster-list">
-        ${critical.length ? `<div class="roster-section">Críticos / inestables</div>${critical.map(renderRow).join('')}` : ''}
-        ${rest.length ? `<div class="roster-section">Resto del servicio</div>${rest.map(renderRow).join('')}` : ''}
+        ${critical.length ? `<div class="roster-section">Críticos</div>${critical.map(renderRow).join('')}` : ''}
+        ${stable.length ? `<div class="roster-section">Estables</div>${stable.map(renderRow).join('')}` : ''}
       </div>
-      <div class="roster-panel-footer">
-        <button class="btn-roster-cancel" id="roster-btn-cancel">Cancelar</button>
-        <button class="btn-roster-confirm" id="roster-btn-confirm">Confirmar entrega</button>
+      <div class="roster-panel-footer modal-actions">
+        <button type="button" class="btn-cancel roster-foot-btn" id="roster-btn-cancel">Cancelar</button>
+        <button type="button" class="btn-save roster-foot-btn" id="roster-btn-confirm">Confirmar entrega</button>
       </div>
     </div>`;
 
@@ -140,7 +156,13 @@ export function openEntregaRosterPanel(settings) {
     const open = () => {
       const g = guardiasMap.get(patientId);
       const patientIndex = rosterPatientIds.indexOf(String(patientId));
-      openEntregaModal({
+      const openModal =
+        typeof window !== 'undefined' ? window.appShell?.openEntregaModal : null;
+      if (typeof openModal !== 'function') {
+        window.showToast?.('No se pudo abrir la entrega.', 'error');
+        return;
+      }
+      openModal({
         patientId,
         guardiaId: g?.guardia_id ? String(g.guardia_id) : undefined,
         patientIndex: patientIndex >= 0 ? patientIndex : undefined,
@@ -162,13 +184,22 @@ export function openEntregaRosterPanel(settings) {
   });
 
   document.getElementById('roster-btn-cancel')?.addEventListener('click', () => {
-    closeEntregaRosterPanel();
+    void (async () => {
+      closeEntregaRosterPanel();
+      const { endEntregaPhase } = await import('./clinical-entrega.mjs');
+      endEntregaPhase();
+      window.dispatchEvent(new CustomEvent('guardia:entrega-ended'));
+    })();
   });
 
   document.getElementById('roster-btn-confirm')?.addEventListener('click', () => {
-    closeEntregaRosterPanel();
-    activateTurnoActivo();
-    window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
+    void (async () => {
+      closeEntregaRosterPanel();
+      const { endEntregaPhase } = await import('./clinical-entrega.mjs');
+      endEntregaPhase();
+      activateTurnoActivo();
+      window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
+    })();
   });
 }
 
@@ -176,12 +207,16 @@ export function closeEntregaRosterPanel() {
   const host = document.getElementById(PANEL_ID);
   if (host) host.innerHTML = '';
   host?.removeAttribute('style');
+  document.documentElement.classList.remove('guardia-entrega-roster-open');
 }
 
 /** Persist turno-activo state to localStorage. */
 export function activateTurnoActivo() {
   try {
     localStorage.setItem('guardia.turnoActive', '1');
+    if (!localStorage.getItem(TURNO_STARTED_KEY)) {
+      localStorage.setItem(TURNO_STARTED_KEY, new Date().toISOString());
+    }
   } catch {
     /* quota */
   }
@@ -190,8 +225,21 @@ export function activateTurnoActivo() {
 export function deactivateTurnoActivo() {
   try {
     localStorage.removeItem('guardia.turnoActive');
+    localStorage.removeItem(TURNO_STARTED_KEY);
   } catch {
     /* quota */
+  }
+}
+
+/** @returns {Date|null} */
+export function getTurnoStartedAt() {
+  try {
+    const raw = localStorage.getItem(TURNO_STARTED_KEY);
+    if (!raw) return null;
+    const d = new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
   }
 }
 

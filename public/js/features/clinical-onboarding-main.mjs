@@ -15,6 +15,7 @@ import {
   renderSyncModeChoicePanel,
   wireSyncModeOnboardingInteractions,
 } from './clinical-onboarding-sync-mode.mjs';
+import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
@@ -49,6 +50,11 @@ export function hideMainClinicalOnboarding() {
   const host = getClinicalOnboardingMainHost();
   if (host) host.remove();
   void import('./clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
+  void import('./settings-help/tour-engine.mjs').then((m) => {
+    if (typeof m.tryShowGuidedTourIntroIfNeeded === 'function') {
+      m.tryShowGuidedTourIntroIfNeeded();
+    }
+  });
 }
 
 /** @returns {Promise<'locked'|'unlocked'|'native_blocked'|'no_api'|'unknown'>} */
@@ -105,7 +111,11 @@ export async function buildOnboardingSessionBlockHtml() {
     gate === 'native_blocked'
       ? ''
       : `<div class="modal-actions clinical-onboard-session-actions"><button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button></div>`;
-  return `<div class="clinical-onboarding-card"><p class="clinical-teams-lead">${escapeHtml(lead)}</p>${actions}</div>`;
+  return buildOnboardingStageHtml({
+    title: 'Sesión clínica',
+    leadHtml: `<p>${escapeHtml(lead)}</p>`,
+    bodyHtml: actions,
+  });
 }
 
 function wireOnboardingSessionRecoveryOnce(host) {
@@ -158,8 +168,11 @@ export async function showMainClinicalOnboarding() {
     return;
   }
 
-  host.innerHTML =
-    '<div class="clinical-onboarding-card"><p class="clinical-teams-lead">Preparando almacenamiento local…</p></div>';
+  host.innerHTML = buildOnboardingStageHtml({
+    title: 'Preparando R+',
+    leadHtml: '<p class="clinical-onboarding-status">Preparando almacenamiento local…</p>',
+    bodyHtml: '',
+  });
 
   const dbReady = await ensureClinicalDbUnlocked();
   if (!dbReady.unlocked) {
@@ -167,6 +180,14 @@ export async function showMainClinicalOnboarding() {
     wireOnboardingSessionRecoveryOnce(host);
     return;
   }
+
+  try {
+    const { flushPendingClinicalOpsLanSnapshot } = await import('../clinical-ops-lan.mjs');
+    const flushed = await flushPendingClinicalOpsLanSnapshot();
+    if (flushed.changed) {
+      document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+    }
+  } catch (_eOps) {}
 
   let sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
@@ -179,16 +200,18 @@ export async function showMainClinicalOnboarding() {
     return;
   }
 
-  host.innerHTML =
-    '<div class="clinical-onboarding-card"><p class="clinical-teams-lead">Cargando…</p></div>';
-  const card = host.querySelector('.clinical-onboarding-card');
+  host.innerHTML = buildOnboardingStageHtml({
+    title: 'Preparando R+',
+    leadHtml: '<p class="clinical-onboarding-status">Cargando…</p>',
+    bodyHtml: '',
+  });
   try {
-    await renderOnboardingPanelInto(card || host);
+    await renderOnboardingPanelInto(host);
     prefillRegistrationFromUrlParams();
     const rot = await import('./clinical-rotation-entry.mjs');
     rot.syncClinicalRotationEntryChrome();
   } catch (err) {
-    host.innerHTML = `<div class="clinical-onboarding-card"><p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : 'Error al cargar.')}</p></div>`;
+    host.innerHTML = `<p class="clinical-registration-error">${escapeHtml(err instanceof Error ? err.message : 'Error al cargar.')}</p>`;
   }
 }
 

@@ -73,30 +73,26 @@
 
     <div id="appcontent-guardia" class="appcontent-guardia" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="guardia-board-scroll" class="guardia-board-scroll">
-        <div class="guardia-rotation-toolbar" aria-label="Rotación de guardia">
-          <button type="button" id="btn-guardia-mi-rotacion" class="btn-med-secondary">Mi rotación</button>
-          <button type="button" id="btn-guardia-rotation-config" class="btn-med-secondary btn-med-secondary--muted">Configuración rotación</button>
-          <button
-            type="button"
-            id="btn-guardia-entrega-phase"
-            class="btn-guardia-entrega-phase"
-            aria-pressed="false"
-          >
-            Entrega
-          </button>
-          <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status" hidden></p>
-        </div>
+        <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
+        <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
         <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
-        <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>
-        <div class="guardia-mode-toggle-row">
-          <span id="guardia-census-filter-hint" class="guardia-census-filter-hint">Filtrar censo en la grilla (no es la fase Entrega del turno).</span>
-          <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode" aria-pressed="false" title="Filtro de la grilla: pacientes en tu alcance o solo los que te entregaron (independiente del botón Entrega).">
-            <span class="guardia-mode-label">Alcance completo</span>
-            <span class="guardia-mode-switch" aria-hidden="true"></span>
-          </button>
-        </div>
-        <div id="guardia-vitals-feed" class="guardia-vitals-feed" hidden></div>
-        <div id="guardia-census-grid" class="patient-chips-grid"></div>
+        <section class="guardia-panel guardia-panel--metrics" id="guardia-metrics-panel" aria-label="Resumen de guardia">
+          <div class="guardia-metrics-toolbar" id="guardia-census-scope">
+            <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
+            <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Alternar entre alcance completo y solo pacientes que te entregaron.">
+              <span class="guardia-mode-label">Alcance completo</span>
+              <span class="guardia-mode-switch" aria-hidden="true"></span>
+            </button>
+          </div>
+          <p id="guardia-census-filter-hint" class="guardia-census-filter-hint visually-hidden" aria-live="polite">Todos los pacientes en tu alcance clínico.</p>
+        </section>
+        <section class="guardia-panel guardia-panel--vitals" id="guardia-vitals-section" hidden aria-label="Signos vitales del turno">
+          <div id="guardia-vitals-feed" class="guardia-vitals-feed"></div>
+        </section>
+        <section class="guardia-panel guardia-panel--census" aria-label="Censo de pacientes">
+          <div id="guardia-census-head" class="guardia-census-head"></div>
+          <div id="guardia-census-grid" class="patient-chips-grid"></div>
+        </section>
       </div>
     </div>
 
@@ -648,6 +644,6 @@
       </div>
     </div>
   </div>
-
-  <div id="entrega-roster-panel" class="entrega-roster-panel-host"></div>
 </div>
+
+<div id="entrega-roster-panel" class="entrega-roster-panel-host"></div>

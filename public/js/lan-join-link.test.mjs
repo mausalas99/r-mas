@@ -48,7 +48,10 @@ describe('lan-join-link', () => {
 
   it('resolveLiveSyncRoomIdFromSala mapea etiquetas', () => {
     assert.equal(resolveLiveSyncRoomIdFromSala('Sala E'), 'sala-e');
+    assert.equal(resolveLiveSyncRoomIdFromSala('Torre HU'), 'torre-hu');
+    assert.equal(resolveLiveSyncRoomIdFromSala('Área A/Pensionistas'), 'area-a-pensionistas');
     assert.equal(liveSyncRoomLabel('sala-1'), 'Sala 1');
+    assert.equal(liveSyncRoomLabel('torre-hu'), 'Torre HU');
   });
 
   it('resolveLanJoinHostUrl prefiere IP LAN sobre localhost', () => {

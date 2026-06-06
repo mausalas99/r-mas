@@ -601,6 +601,10 @@ export function bootLanRoomMembership() {
   void (async function () {
     var rid = m.roomId;
     try {
+      const accessMod = await import('../../clinical-access-runtime.mjs');
+      if (typeof accessMod.waitForClinicalAccessReady === 'function') {
+        await accessMod.waitForClinicalAccessReady();
+      }
       try {
         if (!lanClient.connected) lanClient.connectSyncChannel();
         lanClient.connectLiveChannel(rid);
@@ -677,7 +681,7 @@ function onLiveSyncWireMessageBody(data) {
     return;
   }
   if (data.type === 'livesync:leave' && data.bundle && data.clientId !== myId) {
-    bridge().applyLiveSyncMerged(
+    void bridge().applyLiveSyncMerged(
       mergeLiveSyncFullBundles([data.bundle, bridge().buildLiveSyncLocalMergeSource()])
     );
     return;
@@ -690,7 +694,7 @@ function onLiveSyncWireMessageBody(data) {
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
     var mergedBundle = mergeLiveSyncFullBundles([data, bridge().buildLiveSyncLocalMergeSource()]);
-    bridge().applyLiveSyncMerged(mergedBundle);
+    void bridge().applyLiveSyncMerged(mergedBundle);
     return;
   }
   if (data.type === 'livesync:delta:applied') {
@@ -771,13 +775,8 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
     const mergeResult = await applyClinicalOpsLanSnapshot(body.snapshot);
     if (!mergeResult.ok) return false;
     await refreshClinicalOpsSnapshotCache();
-    if (mergeResult.changed) {
-      if (!options.skipGossipPush) {
-        scheduleClinicalOpsGossipPush();
-      }
-      if (typeof document !== 'undefined') {
-        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-      }
+    if (mergeResult.changed && !options.skipGossipPush) {
+      scheduleClinicalOpsGossipPush();
     }
     return true;
   } catch (_e) {
@@ -829,6 +828,13 @@ export function syncLiveSyncAfterRoomJoin(roomId) {
 function syncLiveSyncAfterRoomJoinBody(rid) {
   var chain = Promise.resolve();
   if (isClinicalOpsLanAvailable()) {
+    chain = chain.then(function () {
+      return import('../../clinical-ops-lan.mjs').then(function (mod) {
+        return mod.flushPendingClinicalOpsLanSnapshot();
+      });
+    });
+  }
+  if (isClinicalOpsLanAvailable()) {
     chain = chain
       .then(function () {
         return prepareClinicalOpsForLanSync();
@@ -863,7 +869,12 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
       syncLiveSyncStatusChrome();
       runtime().renderProcedureAgendaPanel();
       runtime().refreshAllTodoUIs();
-      runtime().renderPatientList({ silent: true });
+      void import('../../clinical-access-runtime.mjs').then(function (accessMod) {
+        if (typeof accessMod.refreshClinicalPatientListForScope === 'function') {
+          return accessMod.refreshClinicalPatientListForScope();
+        }
+        runtime().renderPatientList({ silent: true });
+      });
       void import('../../historia-clinica-lan-sync.mjs').then(function (m) {
         return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
       });

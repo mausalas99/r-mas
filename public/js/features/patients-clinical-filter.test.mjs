@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { filterPatientsForClinicalSidebar } from './patients-clinical-filter.mjs';
+import {
+  applyElevatedPatientFilters,
+  filterPatientsForClinicalSidebar,
+} from './patients-clinical-filter.mjs';
+import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
 const userR1 = { user_id: 'u1', rank: 'R1', sala: 'Sala 1' };
 const patients = [
@@ -52,6 +56,17 @@ test('R4 sidebar includes all patients', () => {
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
   assert.equal(out.length, 2);
+});
+
+test('R4 elevated filter shows only patients without explicit team assignment', () => {
+  const census = [
+    { id: 'p-assigned', sala: 'Sala 1', servicio: 'Sala', _noExplicitTeamAssignment: false },
+    { id: 'p-open', sala: 'Sala 1', servicio: 'Sala', _noExplicitTeamAssignment: true },
+  ];
+  const out = applyElevatedPatientFilters(census, {
+    teamId: CENSUS_TEAM_FILTER_UNASSIGNED,
+  });
+  assert.deepEqual(out.map((p) => p.id), ['p-open']);
 });
 
 test('R2 sidebar without team excludes unassigned census', () => {

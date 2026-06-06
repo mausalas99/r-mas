@@ -191,6 +191,7 @@ function startMiniTour(kind) {
   tourState.miniTourActive = true;
   tourState.miniTourSteps = steps;
   tourState.miniTourIdx = 0;
+  publishTourGuardContext();
   showTourDock();
   renderMiniTourStep();
 }
@@ -233,6 +234,7 @@ function endMiniTour() {
   tourState.miniTourActive = false;
   tourState.miniTourSteps = null;
   tourState.miniTourIdx = 0;
+  publishTourGuardContext();
   hideTourDock();
   var skipBtn = document.querySelector('#tour-dock .btn-tour-skip');
   if (skipBtn) skipBtn.textContent = 'Omitir tutorial';

@@ -372,6 +372,23 @@ function hostPatientMutationBase(patient, hostRow) {
   return Object.assign({}, patient, { version: 0 });
 }
 
+/**
+ * Append one eventualidad and persist locally + LAN when configured.
+ * @param {object} patient
+ * @param {string} text
+ * @param {string} [atIso]
+ * @returns {Promise<{ ok: boolean, reason?: string, lanDeferred?: boolean }>}
+ */
+export async function savePatientEventualidad(patient, text, atIso) {
+  if (!patient) return { ok: false, reason: 'no-patient' };
+  const store = ensureEventualidades(patient);
+  const next = appendEventualidad(store, text, '', atIso);
+  if (next.entries.length === store.entries.length) {
+    return { ok: false, reason: 'empty' };
+  }
+  return persistEventualidades(patient, next);
+}
+
 async function persistEventualidades(patient, store) {
   patient.eventualidades = store;
   touchPatientLanUpdatedAt(patient.id);

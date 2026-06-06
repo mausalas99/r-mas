@@ -28,7 +28,11 @@ import {
   buildTourMonitoreoHistorial,
   getTourRegistroFormSample,
 } from '../../tour-demo-monitoreo.mjs';
-import { buildTourDemoDates, buildTourDemoLabPasteBoth } from '../../tour-demo-dates.mjs';
+import {
+  applyTourDemoIngresoDates,
+  buildTourDemoDates,
+  buildTourDemoLabPasteBoth,
+} from '../../tour-demo-dates.mjs';
 import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
 import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
 import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
@@ -106,26 +110,34 @@ function getTourDemoPatientId() {
 }
 
 function purgeTourDemoPatientsFromState() {
+  var removedIds = [];
   setPatients(
     patients.filter(function (p) {
-      return (
-        p.id !== DEMO_PATIENT_ID &&
-        p.id !== DEMO_PATIENT_ID_2 &&
-        !p.isDemo
-      );
+      if (!p) return false;
+      var reg = String(p.registro || '').trim();
+      var isTourDemo =
+        p.id === DEMO_PATIENT_ID ||
+        p.id === DEMO_PATIENT_ID_2 ||
+        !!p.isDemo ||
+        reg === DEMO_REGISTRO ||
+        reg === DEMO_REGISTRO_2;
+      if (isTourDemo) {
+        if (p.id) removedIds.push(p.id);
+        return false;
+      }
+      return true;
     })
   );
-  delete notes[DEMO_PATIENT_ID];
-  delete notes[DEMO_PATIENT_ID_2];
-  delete indicaciones[DEMO_PATIENT_ID];
-  delete indicaciones[DEMO_PATIENT_ID_2];
-  delete labHistory[DEMO_PATIENT_ID];
-  delete labHistory[DEMO_PATIENT_ID_2];
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  delete listadoProblemas[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) {
-    delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
-  }
+  removedIds.push(DEMO_PATIENT_ID, DEMO_PATIENT_ID_2);
+  removedIds.forEach(function (id) {
+    if (!id) return;
+    delete notes[id];
+    delete indicaciones[id];
+    delete labHistory[id];
+    delete medRecetaByPatient[id];
+    delete listadoProblemas[id];
+    if (medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
+  });
   clearTourDemoTodos();
 }
 
@@ -348,8 +360,13 @@ var LAB_INPUT_DEFAULT_REPORT =
 // actualizar a una versión mayor (semver), la bienvenida vuelve a mostrarse.
 
 export {
+  TOUR_STEPS_USE_DEMO_PEREZ,
   purgeTourDemoPatientsFromState,
   applyTourDemoPatientBundle,
   ensureTourPrimaryDemoPatientActive,
   findTourDemoPerezPatient,
+  getTourDemoDateBundle,
+  getDemoTourLabPaste,
+  tourDemoLabPasteHasBoth,
+  ensureTourDemoLabInputBoth,
 };

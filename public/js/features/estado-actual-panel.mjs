@@ -217,6 +217,14 @@ function escAttr(s) {
   return escHtml(s).replace(/'/g, '&#39;');
 }
 
+/** Number inputs reject non-numeric value attributes (e.g. legacy demo strings). */
+function escAttrNumeric(s) {
+  const raw = String(s ?? '').trim();
+  if (!raw) return '';
+  const n = Number(raw);
+  return Number.isFinite(n) ? escAttr(String(n)) : '';
+}
+
 function hasPendingMedProposals(pendienteReceta) {
   return MED_FIELD_KEYS.some(function (k) {
     return pendienteReceta && pendienteReceta[k] && String(pendienteReceta[k]).trim();
@@ -318,13 +326,13 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     '<label class="ea-field">' +
     '<span class="ea-label">FOUR (/16)</span>' +
     '<input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' +
-    escAttr(ec.four) +
+    escAttrNumeric(ec.four) +
     '">' +
     '</label>' +
     '<label class="ea-field">' +
     '<span class="ea-label">Esferas</span>' +
     '<input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' +
-    escAttr(ec.esferas) +
+    escAttrNumeric(ec.esferas) +
     '">' +
     '</label>' +
     '<label class="ea-field ea-field--full">' +

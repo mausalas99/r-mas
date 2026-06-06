@@ -22,7 +22,7 @@ export function isPatientInLanTeamSyncScope(user, patient, activeGuardia = null,
  * @param {Map<string, object>|null|undefined} guardiasMap
  */
 export function filterPatientEntriesForLanTeamScope(entries, user, context, guardiasMap) {
-  if (!user?.user_id) return entries || [];
+  if (!user?.user_id) return [];
   return (entries || []).filter((entry) => {
     const patient = entry?.patient;
     if (!patient?.id) return false;

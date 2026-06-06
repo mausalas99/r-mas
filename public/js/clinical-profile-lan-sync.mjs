@@ -113,9 +113,24 @@ export async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
   return { roomId, lanConfigured: true };
 }
 
+/** Dev peer (second window): pre-seed host URL + team code from main process env. */
+export async function seedDevPeerLanConfigIfNeeded() {
+  if (typeof window === 'undefined' || !window.electronAPI?.getLanDevPeerSeedConfig) return;
+  try {
+    const seed = await window.electronAPI.getLanDevPeerSeedConfig();
+    if (!seed?.ok || !seed.hostUrl || !seed.teamCode) return;
+    const lan = await import('./features/lan-sync.mjs');
+    if (lan.isLanSessionConfiguredForRest?.()) return;
+    lan.persistLanClientConfig(seed.hostUrl, seed.teamCode);
+  } catch (_e) {
+    /* non-fatal */
+  }
+}
+
 /** Apply host/code/room from invite URL before username registration gate. */
 export async function applyPendingLanInviteFromPage() {
   if (typeof window === 'undefined') return;
+  await seedDevPeerLanConfigIfNeeded();
   const parsed = parseLanJoinQuery(window.location.search, window.location.origin);
   const hostUrl = String(parsed.hostUrl || '').trim();
   const teamCode = String(parsed.teamCode || '').trim();

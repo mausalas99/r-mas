@@ -13,6 +13,7 @@ import {
   hasProgramAdminPrivileges,
 } from '../../clinical-privileges.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
+import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import {
   dbApi,
   toast,
@@ -27,15 +28,12 @@ import {
 import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
 import {
   syncCreateTeamCycleField,
+  syncCreateTeamServiceFromSala,
   renderClinicalTeamsPanel,
 } from './teams-roster-render.mjs';
 
 function syncSalaFieldVisibility() {
-  const salaSelect = document.getElementById('clinical-team-create-sala');
-  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
-  if (salaSelect && userSala && !String(salaSelect.value || '').trim()) {
-    salaSelect.value = userSala;
-  }
+  syncCreateTeamServiceFromSala();
 }
 
 function wireAdminCheckboxGate() {
@@ -69,17 +67,48 @@ function wireAdminCheckboxGate() {
   });
 }
 
+function wireCreateTeamPanel() {
+  const openBtn = document.getElementById('btn-clinical-team-create-open');
+  const panel = document.getElementById('clinical-team-create-panel');
+  if (!(openBtn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
+  if (openBtn._rpcCreateOpenWired) return;
+  openBtn._rpcCreateOpenWired = true;
+
+  const showPanel = () => {
+    panel.hidden = false;
+    openBtn.hidden = true;
+    syncCreateTeamServiceFromSala();
+    const firstField = panel.querySelector('input, select, textarea');
+    if (firstField instanceof HTMLElement) firstField.focus();
+  };
+  const hidePanel = () => {
+    panel.hidden = true;
+    openBtn.hidden = false;
+  };
+
+  openBtn.addEventListener('click', showPanel);
+  panel.querySelectorAll('.clinical-teams-create-cancel').forEach((btn) => {
+    if (!(btn instanceof HTMLButtonElement) || btn._rpcCreateCancelWired) return;
+    btn._rpcCreateCancelWired = true;
+    btn.addEventListener('click', hidePanel);
+  });
+}
+
 export function wireClinicalTeamsPanelInteractions() {
   syncSalaFieldVisibility();
+  wireCreateTeamPanel();
   wireAdminCheckboxGate();
+
+  const salaSelect = document.getElementById('clinical-team-create-sala');
+  if (salaSelect && !salaSelect._rpcSalaWired) {
+    salaSelect._rpcSalaWired = true;
+    salaSelect.addEventListener('change', () => syncCreateTeamServiceFromSala());
+  }
 
   const serviceSelect = document.getElementById('clinical-team-create-service');
   if (serviceSelect && !serviceSelect._rpcServiceWired) {
     serviceSelect._rpcServiceWired = true;
-    serviceSelect.addEventListener('change', () => {
-      syncCreateTeamCycleField();
-      syncSalaFieldVisibility();
-    });
+    serviceSelect.addEventListener('change', () => syncCreateTeamCycleField());
   }
 
   const r1LineSelect = document.getElementById('clinical-team-create-r1-line');
@@ -119,6 +148,14 @@ export function wireJoinButtons() {
       );
       const rank = effectiveClinicalRank(clinicalSessionContext.user);
       const cycle = inferMembershipCycleForJoin(team || {}, rank);
+      const slotWarn = validateTeamRankSlot(
+        team?.service || '',
+        rank,
+        team?.members || []
+      );
+      if (slotWarn) {
+        toast(slotWarn, 'warn');
+      }
       const res = await api.dbClinicalTeamsJoin({
         teamId,
         userId,

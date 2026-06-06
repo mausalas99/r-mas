@@ -9,6 +9,8 @@ import {
 import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
 
 let cachedSnapshot = null;
+/** @type {object|null} */
+let pendingClinicalOpsSnapshot = null;
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -66,15 +68,39 @@ export function clinicalOpsMergeHadChanges(mergeStats) {
   });
 }
 
+function deferClinicalOpsLanSnapshot(snapshot) {
+  pendingClinicalOpsSnapshot = snapshot;
+  recordClinicalOpsTrace('merge', {
+    ok: false,
+    changed: false,
+    deferred: true,
+    code: 'DB_LOCKED',
+    incomingUsers: Array.isArray(snapshot?.clinical_users) ? snapshot.clinical_users.length : 0,
+    mergeStats: null,
+  });
+  return { ok: false, changed: false, code: 'DB_LOCKED', deferred: true };
+}
+
+/** Apply clinical-ops snapshot queued while SQLCipher was still locked. */
+export async function flushPendingClinicalOpsLanSnapshot() {
+  if (!pendingClinicalOpsSnapshot) return { ok: true, changed: false };
+  const snap = pendingClinicalOpsSnapshot;
+  pendingClinicalOpsSnapshot = null;
+  return applyClinicalOpsLanSnapshot(snap);
+}
+
 /**
  * @param {object|null} snapshot
- * @returns {Promise<{ ok: boolean, changed: boolean }>}
+ * @returns {Promise<{ ok: boolean, changed: boolean, code?: string, deferred?: boolean }>}
  */
 export async function applyClinicalOpsLanSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return { ok: false, changed: false };
   const api = dbApi();
   if (!api || typeof api.dbClinicalOpsMerge !== 'function') return { ok: false, changed: false };
   const res = await api.dbClinicalOpsMerge({ snapshot });
+  if (res && res.code === 'DB_LOCKED') {
+    return deferClinicalOpsLanSnapshot(snapshot);
+  }
   const ok = !!(res && res.ok !== false);
   const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
   recordClinicalOpsTrace('merge', {
@@ -82,8 +108,15 @@ export async function applyClinicalOpsLanSnapshot(snapshot) {
     changed,
     incomingUsers: Array.isArray(snapshot.clinical_users) ? snapshot.clinical_users.length : 0,
     mergeStats: res && res.mergeStats ? res.mergeStats : null,
+    code: ok ? undefined : res?.code,
+    error: ok ? undefined : res?.error,
   });
-  return { ok, changed };
+  if (ok && changed && typeof document !== 'undefined') {
+    document.dispatchEvent(
+      new CustomEvent('rpc-clinical-ops-synced', { detail: { mergeStats: res?.mergeStats || null } })
+    );
+  }
+  return { ok, changed, code: ok ? undefined : res?.code, error: ok ? undefined : res?.error };
 }
 
 /** @param {object[]} sources */

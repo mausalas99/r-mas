@@ -9,21 +9,35 @@ import {
   buildGuardiasMap,
   clinicalSessionContext,
   mapPatientForGuardiaGrid,
-  resolveClinicalRank,
 } from '../clinical-access-runtime.mjs';
-import { evaluateClinicalScope } from '../clinico-access.mjs';
-import { syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
+import {
+  evaluateClinicalScope,
+  userIsOnGuardiaCallToday,
+} from '../clinico-access.mjs';
+import { effectiveClinicalRank } from '../clinical-privileges.mjs';
+import { setGuardiaMode, syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
-import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
+import {
+  UnifiedPatientGridBoard,
+  vitalsBannerForGuardia,
+} from './unified-patient-grid-board.mjs';
 import { syncGuardiaIncomingStrip, syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 import {
+  beginEntregaPhaseFlow,
   getEntregaPhase,
+  isEntregaPhaseActive,
   loadGuardiaGridViewContext,
   openEntregaModal,
   toggleEntregaPhase,
 } from './clinical-entrega.mjs';
+import { mergeSalaGuardiaTodayRows } from './guardia-hoy-modal.mjs';
+import {
+  isEntregaRosterOpen,
+  openEntregaRosterPanel,
+} from './entrega-roster-panel.mjs';
 import { refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
+import { syncGuardiaPhaseBar, teardownGuardiaPhaseBar } from './guardia-phase-bar.mjs';
 import { entregaChipMarkerIds } from '../../../lib/entrega/entrega-chip-markers.mjs';
 import {
   listActiveProcedimientos,
@@ -32,40 +46,124 @@ import {
 import { normalizeHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';
 import { renderGuardiaVitalsFeed } from './guardia-vitals-feed.mjs';
 import { isTurnoActivo, deactivateTurnoActivo } from './entrega-roster-panel.mjs';
+import {
+  openGuardiaPatientActionSheet,
+  shouldShowGuardiaPatientActionMenu,
+  wireGuardiaPatientActionSheetDismiss,
+} from './guardia-patient-action-sheet.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
 let appShellInstalled = false;
+let entregaControlsInstalled = false;
+let guardiaViewBootstrapped = false;
+
+/** @param {Record<string, unknown>|null|undefined} settings */
+async function bootstrapGuardiaViewOnEnter(settings) {
+  const userId = String(clinicalSessionContext.user?.user_id || '');
+  if (!userId) return;
+
+  const teams = clinicalSessionContext.teams || [];
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
+  const now = new Date();
+  const salaGuardiaToday = mergeSalaGuardiaTodayRows(
+    teams,
+    clinicalSessionContext.salaGuardiaToday || []
+  );
+  const onCallReceiver = userIsOnGuardiaCallToday(
+    userId,
+    rank,
+    teams,
+    now,
+    salaGuardiaToday
+  );
+
+  if (onCallReceiver) {
+    setGuardiaMode(true, { settings, renderGuardiaBoard, rerenderBoard: true });
+    return;
+  }
+
+  if (!isEntregaPhaseActive()) {
+    await beginEntregaPhaseFlow({ settings, renderGuardiaBoard });
+  }
+}
+
+/** @returns {Record<string, unknown>|null} */
+function guardiaBoardSettings() {
+  try {
+    if (typeof window !== 'undefined' && typeof window.loadSettings === 'function') {
+      return window.loadSettings();
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+let entregaClickBusy = false;
+
+function handleEntregaPhaseButtonClick() {
+  if (entregaClickBusy) return;
+  entregaClickBusy = true;
+  void (async () => {
+    try {
+      await toggleEntregaPhase({
+        settings: guardiaBoardSettings(),
+        renderGuardiaBoard,
+      });
+      syncEntregaPhaseChrome();
+    } finally {
+      entregaClickBusy = false;
+    }
+  })();
+}
+
+function installGuardiaEntregaControls() {
+  if (entregaControlsInstalled || typeof document === 'undefined') return;
+  entregaControlsInstalled = true;
+
+  if (typeof window !== 'undefined') {
+    window.appShell = window.appShell || {};
+    window.appShell.toggleEntregaPhase = handleEntregaPhaseButtonClick;
+  }
+
+  syncEntregaPhaseChrome();
+}
 
 function installGuardiaAppShell() {
   if (appShellInstalled || typeof window === 'undefined') return;
   appShellInstalled = true;
+  wireGuardiaPatientActionSheetDismiss();
+  installGuardiaEntregaControls();
   window.appShell = window.appShell || {};
   window.appShell.openEntregaModal = openEntregaModal;
+  window.appShell.toggleEntregaPhase = handleEntregaPhaseButtonClick;
   window.addEventListener('guardia:turno-activo', () => {
+    renderGuardiaBoard(null);
+  });
+  window.addEventListener('guardia:entrega-ended', () => {
+    syncEntregaPhaseChrome();
     renderGuardiaBoard(null);
   });
 }
 
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installGuardiaEntregaControls, { once: true });
+  } else {
+    installGuardiaEntregaControls();
+  }
+}
+
 function syncEntregaPhaseChrome() {
-  const btn = document.getElementById('btn-guardia-entrega-phase');
   const status = document.getElementById('guardia-entrega-phase-status');
   const phase = getEntregaPhase();
   const active = !!phase?.active;
 
-  if (btn) {
-    btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-pressed', String(active));
-    btn.textContent = active ? 'Salir de entrega' : 'Entrega';
-    btn.title = active
-      ? 'Terminar fase de entrega y volver al censo'
-      : 'Iniciar entrega al R1 de guardia de tu sala';
-  }
-
   if (status) {
     if (active && phase?.coveringLabel) {
       status.hidden = false;
-      status.textContent = `Entregando a ${phase.coveringLabel} · toca un paciente en el censo`;
+      status.textContent = `Entregando a ${phase.coveringLabel} · elige un paciente en el listado`;
     } else {
       status.hidden = true;
       status.textContent = '';
@@ -73,21 +171,10 @@ function syncEntregaPhaseChrome() {
   }
 }
 
-/** @param {Record<string, unknown>|null|undefined} settings */
-function wireGuardiaEntregaPhaseButton(settings) {
-  const btn = document.getElementById('btn-guardia-entrega-phase');
-  if (!btn || btn._guardiaEntregaWired) return;
-  btn._guardiaEntregaWired = true;
-
+/** @param {Record<string, unknown>|null|undefined} _settings */
+function wireGuardiaEntregaPhaseButton(_settings) {
+  installGuardiaEntregaControls();
   syncEntregaPhaseChrome();
-
-  btn.addEventListener('click', () => {
-    toggleEntregaPhase({
-      settings,
-      renderGuardiaBoard,
-    });
-    syncEntregaPhaseChrome();
-  });
 }
 
 /** @param {string} pid */
@@ -163,35 +250,97 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
 export function computeGuardiaSummary(censusPatients, guardiasMap) {
   let critical = 0;
   let pending = 0;
+  let vitalsOverdue = 0;
+  let vitalsDueSoon = 0;
   censusPatients.forEach((p) => {
-    if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
+    const meta = guardiasMap.get(p.id) || p.guardiaMeta || {};
+    if (p.isCritical || meta?.is_critical) critical += 1;
     pending += p.pendingCount || 0;
+    const banner = vitalsBannerForGuardia(meta);
+    if (banner.cls === 'breached') vitalsOverdue += 1;
+    else if (banner.cls === 'warning') vitalsDueSoon += 1;
   });
-  return { critical, pending };
+  return {
+    total: censusPatients.length,
+    critical,
+    pending,
+    vitalsOverdue,
+    vitalsDueSoon,
+  };
 }
 
-/** @param {{ critical: number, pending: number }} summary */
-function renderGuardiaSummaryTiles(summary) {
+/**
+ * @param {ReturnType<typeof computeGuardiaSummary>} summary
+ * @param {{ turnoActivo?: boolean }} opts
+ */
+function renderGuardiaSummaryTiles(summary, opts = {}) {
   const host = document.getElementById('guardia-summary');
   if (!host) return;
-  const alertIcon =
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
-  const listIcon =
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>';
+
+  const vitalsTitle =
+    summary.vitalsOverdue > 0
+      ? `${summary.vitalsOverdue} signo${summary.vitalsOverdue === 1 ? '' : 's'} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`
+      : summary.vitalsDueSoon > 0
+        ? `${summary.vitalsDueSoon} signo${summary.vitalsDueSoon === 1 ? '' : 's'} pronto`
+        : 'Signos al día';
+
+  const stats = [
+    {
+      value: summary.total,
+      label: 'censo',
+      title: opts.turnoActivo ? 'En censo — turno activo' : 'En censo — tu alcance',
+    },
+    {
+      value: summary.critical,
+      label: 'críticos',
+      hot: summary.critical > 0,
+      title: 'Críticos — revisar primero',
+    },
+    {
+      value: summary.vitalsOverdue || summary.vitalsDueSoon || 0,
+      label: 'signos',
+      hot: summary.vitalsOverdue > 0,
+      warn: !summary.vitalsOverdue && summary.vitalsDueSoon > 0,
+      title: vitalsTitle,
+    },
+    {
+      value: summary.pending,
+      label: 'estudios',
+      title: 'Estudios pendientes de entrega',
+    },
+  ];
+
+  host.innerHTML = stats
+    .map((stat, index) => {
+      const classes = ['guardia-stat'];
+      if (stat.hot) classes.push('guardia-stat--hot');
+      else if (stat.warn) classes.push('guardia-stat--warn');
+      const sep =
+        index > 0 ? '<span class="guardia-stat-sep" aria-hidden="true">·</span>' : '';
+      return `${sep}<div class="${classes.join(' ')}" title="${stat.title}"><span class="guardia-stat-value">${stat.value}</span><span class="guardia-stat-label">${stat.label}</span></div>`;
+    })
+    .join('');
+}
+
+/**
+ * @param {number} count
+ * @param {{ turnoActivo: boolean, entregaActive: boolean, vitalsOverdue: number, critical: number }} state
+ */
+function renderGuardiaCensusHead(count, state) {
+  const host = document.getElementById('guardia-census-head');
+  if (!host) return;
+
+  const parts = [];
+  if (state.critical > 0) parts.push(`${state.critical} crítico${state.critical === 1 ? '' : 's'}`);
+  if (state.vitalsOverdue > 0) {
+    parts.push(`${state.vitalsOverdue} signo${state.vitalsOverdue === 1 ? '' : 's'} vencido${state.vitalsOverdue === 1 ? '' : 's'}`);
+  }
+  const sortHint = parts.length ? `${parts.join(' · ')} arriba` : 'Sin alertas urgentes';
+
   host.innerHTML = `
-    <div class="guardia-summary-tile guardia-summary-tile--critical">
-      <div>
-        <div class="guardia-summary-label">Pacientes críticos</div>
-        <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
-      </div>
-      <span class="guardia-summary-icon">${alertIcon}</span>
-    </div>
-    <div class="guardia-summary-tile">
-      <div>
-        <div class="guardia-summary-label">Pendientes totales</div>
-        <div class="guardia-summary-value">${summary.pending}</div>
-      </div>
-      <span class="guardia-summary-icon">${listIcon}</span>
+    <div class="guardia-census-head-inner">
+      <h2 class="guardia-section-title">Pacientes <span class="guardia-census-count">${count}</span></h2>
+      <p class="guardia-section-sub">${sortHint}</p>
     </div>`;
 }
 
@@ -203,7 +352,6 @@ function wireGuardiaModeToggle(settings) {
   syncGuardiaModeUI();
 
   btn.addEventListener('click', () => {
-    deactivateTurnoActivo();
     toggleGuardiaMode({
       settings,
       renderGuardiaBoard,
@@ -212,11 +360,65 @@ function wireGuardiaModeToggle(settings) {
 }
 
 /**
+ * @param {{
+ *   turnoActivo: boolean,
+ *   entregaActive: boolean,
+ *   rosterOpen: boolean,
+ *   settings?: Record<string, unknown>|null,
+ * }} state
+ */
+function syncGuardiaBoardChrome(state) {
+  const scroll = document.getElementById('guardia-board-scroll');
+  if (scroll) {
+    scroll.classList.toggle('guardia-board-scroll--turno', state.turnoActivo);
+    scroll.classList.toggle('guardia-board-scroll--roster', state.rosterOpen);
+  }
+
+  const filterHint = document.getElementById('guardia-census-filter-hint');
+  const scopePanel = document.getElementById('guardia-census-scope');
+  const vitalsSection = document.getElementById('guardia-vitals-section');
+  const metricsPanel = document.getElementById('guardia-metrics-panel');
+
+  if (metricsPanel) metricsPanel.hidden = !!state.rosterOpen;
+  if (vitalsSection) vitalsSection.hidden = !state.turnoActivo || !!state.rosterOpen;
+
+  if (filterHint) {
+    const alcanceOn = !!clinicalSessionContext.guardiaMode;
+    filterHint.textContent = alcanceOn
+      ? 'Solo pacientes que te entregaron en este turno.'
+      : state.turnoActivo
+        ? 'Todos los pacientes en tu alcance durante el turno.'
+        : 'Todos los pacientes en tu alcance clínico.';
+  }
+  if (scopePanel) {
+    scopePanel.classList.toggle('guardia-census-scope--narrow', !!clinicalSessionContext.guardiaMode);
+  }
+
+  syncGuardiaPhaseBar({
+    ...state,
+    onBeginEntrega: handleEntregaPhaseButtonClick,
+  });
+}
+
+/**
  * @param {Record<string, unknown>|null|undefined} settings
  */
 export function renderGuardiaBoard(settings) {
-  if (!isGuardiaMode()) return;
+  if (!isGuardiaMode()) {
+    guardiaViewBootstrapped = false;
+    teardownGuardiaPhaseBar();
+    deactivateTurnoActivo();
+    document.documentElement.classList.remove('guardia-entrega-roster-open');
+    return;
+  }
   installGuardiaAppShell();
+  if (!guardiaViewBootstrapped) {
+    guardiaViewBootstrapped = true;
+    void bootstrapGuardiaViewOnEnter(settings);
+  }
+  wireGuardiaEntregaPhaseButton(settings);
+  syncEntregaPhaseChrome();
+
   const root = document.getElementById('appcontent-guardia');
   if (!root || root.getAttribute('aria-hidden') === 'true') return;
 
@@ -228,26 +430,57 @@ export function renderGuardiaBoard(settings) {
     .filter((p) => p && p.id && !p.isDemo && !p.archived)
     .map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
 
+  const entregaActive = isEntregaPhaseActive();
+  const turnoActivo = isTurnoActivo();
+  const rosterOpen = isEntregaRosterOpen();
   const gridViewContext = loadGuardiaGridViewContext();
-  wireGuardiaEntregaPhaseButton(settings);
-  syncEntregaPhaseChrome();
   wireGuardiaModeToggle(settings);
   syncGuardiaRotationToolbar();
+  syncGuardiaBoardChrome({
+    turnoActivo,
+    entregaActive,
+    rosterOpen,
+    settings,
+    renderGuardiaBoard,
+  });
+
+  if (entregaActive && !turnoActivo) {
+    const rosterHost = document.getElementById('entrega-roster-panel');
+    if (rosterHost && !rosterHost.innerHTML.trim()) {
+      openEntregaRosterPanel(settings);
+    }
+  }
+
+  const now = new Date();
+  const salaGuardiaToday = mergeSalaGuardiaTodayRows(
+    clinicalSessionContext.teams || [],
+    clinicalSessionContext.salaGuardiaToday || []
+  );
+  const userId = String(clinicalSessionContext.user?.user_id || '');
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
+  const onCallGuardiaReceiver = userIsOnGuardiaCallToday(
+    userId,
+    rank,
+    clinicalSessionContext.teams || [],
+    now,
+    salaGuardiaToday
+  );
 
   clinicalSessionContext.scopeContext = {
     teams: clinicalSessionContext.teams || [],
     guardias: clinicalSessionContext.guardias || [],
     assignments: clinicalSessionContext.assignments || [],
-    salaGuardiaToday: clinicalSessionContext.salaGuardiaToday || [],
+    salaGuardiaToday,
     guardiaMode: clinicalSessionContext.guardiaMode,
-    now: new Date(),
+    onCallGuardiaReceiver,
+    now,
     users: Array.isArray(clinicalSessionContext.scopeContext?.users)
       ? clinicalSessionContext.scopeContext.users
       : [],
     cycle: clinicalSessionContext.scopeContext?.cycle ?? null,
   };
 
-  if (!clinicalSessionContext.guardiaMode && gridViewContext === 'GUARDIA') {
+  if (gridViewContext === 'GUARDIA') {
     clinicalSessionContext.scopeContext = clinicalSessionContext.scopeContext || {};
     censusPatients = censusPatients.filter((p) => {
       const scope = evaluateClinicalScope(
@@ -261,14 +494,18 @@ export function renderGuardiaBoard(settings) {
   }
 
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
-  renderGuardiaSummaryTiles(summary);
+  renderGuardiaSummaryTiles(summary, { turnoActivo });
+  renderGuardiaCensusHead(censusPatients.length, {
+    turnoActivo,
+    entregaActive,
+    vitalsOverdue: summary.vitalsOverdue,
+    critical: summary.critical,
+  });
 
-  const vitalsHost = document.getElementById('guardia-vitals-feed');
-  const turnoActivo = isTurnoActivo();
-  if (vitalsHost) vitalsHost.hidden = !turnoActivo;
   if (turnoActivo) {
     renderGuardiaVitalsFeed(
-      patients.filter((p) => p && p.id && !p.isDemo && !p.archived)
+      patients.filter((p) => p && p.id && !p.isDemo && !p.archived),
+      censusPatients.map((p) => p.id)
     );
   }
 
@@ -280,9 +517,24 @@ export function renderGuardiaBoard(settings) {
   } else {
     gridBoard.setViewContext(gridViewContext);
   }
-  gridBoard.chipOpensEntrega = !!clinicalSessionContext.guardiaMode;
+  const showPatientActionMenu = shouldShowGuardiaPatientActionMenu({
+    turnoActivo,
+    entregaActive,
+    onCallGuardiaReceiver,
+    gridViewContext,
+  });
+  gridBoard.chipOpensEntrega = entregaActive && !turnoActivo;
+  gridBoard.chipGuardiaPatientMenu = showPatientActionMenu;
 
   gridBoard.onChipClick = (patientId) => {
+    if (showPatientActionMenu) {
+      const row = censusPatients.find((p) => String(p.id) === String(patientId));
+      openGuardiaPatientActionSheet({
+        patientId,
+        patientLabel: row?.name ? String(row.name) : undefined,
+      });
+      return;
+    }
     const guardia = guardiasMap.get(patientId);
     openEntregaModal({
       patientId,
@@ -293,7 +545,6 @@ export function renderGuardiaBoard(settings) {
     });
   };
 
-  const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings);
   gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
   gridBoard.startVitalsTicker();
 }

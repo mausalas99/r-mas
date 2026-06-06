@@ -2,6 +2,9 @@
  * Renderer policy helpers: local meta + peer pick (uses lan-host-rank.mjs).
  */
 import { readRpcSettings } from './clinical-settings.mjs';
+import { clinicalSessionContext } from './clinical-session-context.mjs';
+import { userIsOnCallForLanHost } from './clinico-access.mjs';
+import { mergeSalaGuardiaTodayRows } from './features/guardia-hoy-modal.mjs';
 import {
   pickPreferredLanPeerHost as pickPeer,
   prefersLanHosting,
@@ -23,24 +26,56 @@ export {
 /** @type {{ rank?: string, isProgramAdmin?: boolean, startedAt?: number } | null} */
 let _diskHostMeta = null;
 
-/** @returns {{ rank: string, isProgramAdmin: boolean, rankConfigured: boolean, startedAt: number }} */
+/** @returns {boolean} */
+export function resolveLocalOnCallGuardia() {
+  try {
+    const user = clinicalSessionContext?.user;
+    const uid = String(user?.user_id || '').trim();
+    if (!uid) return false;
+    const teams = clinicalSessionContext?.teams || [];
+    const salaGuardiaToday = mergeSalaGuardiaTodayRows(
+      teams,
+      clinicalSessionContext?.salaGuardiaToday || []
+    );
+    const rank = String(user?.rank || readRpcSettings()?.clinicalRank || '').trim();
+    return userIsOnCallForLanHost(uid, rank, teams, new Date(), salaGuardiaToday);
+  } catch (_e) {
+    return false;
+  }
+}
+
+/** @returns {{ rank: string, isProgramAdmin: boolean, isOnCallGuardia: boolean, rankConfigured: boolean, startedAt: number }} */
 export function getLocalLanHostMeta() {
   try {
     const settings = readRpcSettings();
     const rankConfigured = isClinicalRankConfiguredForLan(settings);
     const startedAt = Number(_diskHostMeta?.startedAt) || 0;
     if (!rankConfigured) {
-      return { rank: '', isProgramAdmin: false, rankConfigured: false, startedAt };
+      return {
+        rank: '',
+        isProgramAdmin: false,
+        isOnCallGuardia: false,
+        rankConfigured: false,
+        startedAt,
+      };
     }
     const { rank, isProgramAdmin } = buildLocalLanHostMeta(settings);
+    const isOnCallGuardia = resolveLocalOnCallGuardia();
     return {
       rank: rank || 'R1',
       isProgramAdmin: !!isProgramAdmin,
+      isOnCallGuardia,
       rankConfigured: true,
       startedAt,
     };
   } catch (_e) {
-    return { rank: '', isProgramAdmin: false, rankConfigured: false, startedAt: 0 };
+    return {
+      rank: '',
+      isProgramAdmin: false,
+      isOnCallGuardia: false,
+      rankConfigured: false,
+      startedAt: 0,
+    };
   }
 }
 
@@ -54,6 +89,7 @@ export async function syncLanHostClinicalMetaToDisk() {
     return false;
   }
   const { startedAt: _drop, rankConfigured: _rc, ...meta } = getLocalLanHostMeta();
+  meta.isOnCallGuardia = !!meta.isOnCallGuardia;
   try {
     const res = await window.electronAPI.syncLanHostClinicalMeta(meta);
     if (res?.ok && res.meta && typeof res.meta === 'object') {

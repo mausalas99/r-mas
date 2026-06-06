@@ -52,14 +52,6 @@ export function wireClinicalTeamsControls() {
     mod.syncClinicalRotationEntryChrome();
   });
 
-  const openBtn = document.getElementById('btn-guardia-mi-rotacion');
-  if (openBtn && !openBtn._rpcTeamsOpenWired) {
-    openBtn._rpcTeamsOpenWired = true;
-    openBtn.addEventListener('click', () => {
-      void import('../clinical-rotation-entry.mjs').then((m) => m.openMiRotacion());
-    });
-  }
-
   if (!document._rpcClinicalTeamsChangedWired) {
     document._rpcClinicalTeamsChangedWired = true;
     document.addEventListener('rpc-clinical-teams-changed', () => {

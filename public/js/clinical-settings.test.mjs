@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLINICAL_LAN_PROFILE_GATE_VERSION,
+  bundledWardShiftPin,
   ensureLanProfileGateDeviceReset,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
@@ -81,5 +82,16 @@ describe('clinical-settings LAN profile gate', () => {
     const next = ensureLanProfileGateDeviceReset();
     assert.equal(next.clinicalUsername, 'mgarcia');
     assert.equal(next.clinicalDisplayName, 'Dr. García');
+  });
+});
+
+describe('bundledWardShiftPin', () => {
+  it('returns June 2026 ward PIN', () => {
+    const pin = bundledWardShiftPin();
+    if (new Date().getFullYear() === 2026 && new Date().getMonth() === 5) {
+      assert.equal(pin, '527953');
+    } else {
+      assert.equal(pin, '');
+    }
   });
 });

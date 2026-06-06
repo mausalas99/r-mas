@@ -1,6 +1,7 @@
 export const CLINICAL_CENSUS_FILTERS_COLLAPSED_LS = 'rpc.clinicalCensusFiltersCollapsed';
 export const CLINICAL_CENSUS_FILTER_TEAM_LS = 'rpc.clinicalCensusFilterTeam';
 export const CENSUS_TEAM_FILTER_ALL = '__all__';
+export const CENSUS_TEAM_FILTER_UNASSIGNED = '__unassigned__';
 
 /** @param {object[]} teams @param {object|null|undefined} user */
 function joinedTeamsForUser(teams, user) {
@@ -59,7 +60,7 @@ export function resolveElevatedTeamFilterId(user, teams, storage = globalThis.lo
 
 /** @param {string} teamId @param {object[]} teams */
 export function isTeamIdInCensusCatalog(teamId, teams) {
-  if (!teamId) return true;
+  if (!teamId || teamId === CENSUS_TEAM_FILTER_UNASSIGNED) return true;
   return (teams || []).some((t) => String(t.team_id || '') === String(teamId));
 }
 

@@ -53,7 +53,11 @@ describe('LAN module boot wiring', () => {
     );
     assert.match(block, /fetchAndApplyClinicalOpsFromHost/);
     assert.match(lanSyncPush, /ensureLanSyncPushBridgeWired/);
-    assert.match(lanSyncPush, /b\.fetchAndApplyClinicalOpsFromHost\(rid\)/);
+    assert.match(
+      lanSyncPush,
+      /await b\.applyLiveSyncMerged\(merged\)[\s\S]*b\.fetchAndApplyClinicalOpsFromHost\(rid/
+    );
+    assert.match(lanSyncPush, /reapplyLanPatientEntries/);
     assert.match(lanSyncRoom, /ensureLanSyncRoomBridgeWired/);
     assert.match(lanSyncRoom, /buildLiveSyncBundleEnvelope[\s\S]*ensureLanSyncRoomBridgeWired/);
   });
@@ -116,16 +120,14 @@ describe('LAN event and handler wiring', () => {
     assert.match(lanSyncPanel, /showInvitePaste: needsInvitePaste/);
   });
 
-  it('lan-sync imports refreshClinicalSessionTeams for clinicalOps merge', () => {
-    assert.match(
-      lanSyncFeature,
-      /import\s*\{[\s\S]*?refreshClinicalSessionTeams[\s\S]*?\}\s*from "\.\/panel\.mjs"/
-    );
-    const applyBlock = lanSyncFeature.slice(
-      lanSyncFeature.indexOf('if (merged.clinicalOps && isClinicalOpsLanAvailable())'),
-      lanSyncFeature.indexOf('migrateLocalPatientsClinicalSala();', lanSyncFeature.indexOf('if (merged.clinicalOps'))
-    );
-    assert.match(applyBlock, /refreshClinicalSessionTeams\(\)/);
+  it('clinical ops merge runs before patient scope filter and emits rpc-clinical-ops-synced', () => {
+    const fnStart = lanSyncFeature.indexOf('async function applyLiveSyncMerged');
+    assert.ok(fnStart >= 0);
+    const patientSyncIdx = lanSyncFeature.indexOf('applyLanPatientEntries(entries', fnStart);
+    const opsIdx = lanSyncFeature.indexOf('await applyClinicalOpsLanSnapshot(merged.clinicalOps)', fnStart);
+    assert.ok(opsIdx >= 0 && patientSyncIdx >= 0);
+    assert.ok(opsIdx < patientSyncIdx, 'clinical ops before LAN patient apply');
+    assert.match(read('clinical-ops-lan.mjs'), /rpc-clinical-ops-synced/);
   });
 
   it('stampTodosWithEntityVersions uses liveSyncEntityStoreKey not bare todoEntityKey', () => {

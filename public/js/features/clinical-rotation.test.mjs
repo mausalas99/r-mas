@@ -38,14 +38,14 @@ describe('clinical-rotation preview window', () => {
   it('syncRotationConfigButton hides control for non-R4 users', () => {
     if (typeof document === 'undefined') return;
     document.body.innerHTML =
-      '<button type="button" id="btn-guardia-rotation-config"></button>';
+      '<button type="button" id="btn-rotation-config-open"></button>';
     const prev = clinicalSessionContext.user;
     clinicalSessionContext.user = { rank: 'R2' };
     syncRotationConfigButton();
-    assert.equal(document.getElementById('btn-guardia-rotation-config').hidden, true);
+    assert.equal(document.getElementById('btn-rotation-config-open').hidden, true);
     clinicalSessionContext.user = { rank: 'R4' };
     syncRotationConfigButton();
-    assert.equal(document.getElementById('btn-guardia-rotation-config').hidden, false);
+    assert.equal(document.getElementById('btn-rotation-config-open').hidden, false);
     clinicalSessionContext.user = prev;
   });
 

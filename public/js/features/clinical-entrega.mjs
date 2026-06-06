@@ -28,8 +28,13 @@ import {
   resolveEntregaActorRole as resolveEntregaActorRoleImpl,
 } from './entrega-modal-ui.mjs';
 import {
+  ensureGuardiaHoyBeforeEntrega,
+  mergeSalaGuardiaTodayRows,
+} from './guardia-hoy-modal.mjs';
+import {
   openEntregaRosterPanel,
   closeEntregaRosterPanel,
+  isEntregaRosterOpen,
 } from './entrega-roster-panel.mjs';
 
 export function resolveEntregaActorRole(currentUser, existingGuardia) {
@@ -168,8 +173,14 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
         break;
       }
     }
+    const salaGuardiaToday = mergeSalaGuardiaTodayRows(
+      teamList,
+      clinicalSessionContext.salaGuardiaToday || []
+    );
     const onCallIds = new Set(
-      (userSala ? salaOnCallR1(teamList, userSala, now) : []).map((r) => String(r.user_id))
+      (userSala ? salaOnCallR1(teamList, userSala, now, salaGuardiaToday) : []).map((r) =>
+        String(r.user_id)
+      )
     );
     const onCallTargets = all.filter((u) => u.rank === 'R1' && onCallIds.has(u.user_id));
 
@@ -199,10 +210,26 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
+function setEntregaToolbarStatus(msg, isError = false) {
+  const status = document.getElementById('guardia-entrega-phase-status');
+  if (!status) return;
+  if (!msg) {
+    status.hidden = true;
+    status.textContent = '';
+    status.classList.remove('guardia-entrega-phase-status--error');
+    return;
+  }
+  status.hidden = false;
+  status.textContent = msg;
+  status.classList.toggle('guardia-entrega-phase-status--error', isError);
+}
+
 function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(msg, type);
+    return;
   }
+  setEntregaToolbarStatus(msg, type === 'error');
 }
 
 /** @param {string} patientId */
@@ -459,10 +486,13 @@ export function openEntregaModal(opts) {
   const select = document.getElementById('entrega-covering-user');
   const teamSelect = document.getElementById('entrega-source-team');
   const hint = document.getElementById('entrega-flow-hint');
+  const topStrip = form.querySelector('.entrega-top-strip');
+  const phase = getEntregaPhase();
+  const phaseCovering = getEntregaPhaseCoveringUserId();
+  const hideR1Picker = !!(phase?.active && phaseCovering);
+  topStrip?.classList.toggle('entrega-top-strip--phase-covering-set', hideR1Picker);
 
   if (select) {
-    const phase = getEntregaPhase();
-    const phaseCovering = getEntregaPhaseCoveringUserId();
     let preferred = existing?.covering_user_id
       ? String(existing.covering_user_id)
       : phaseCovering || '';
@@ -491,17 +521,17 @@ export function openEntregaModal(opts) {
       .map((u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`)
       .join('');
     if (preferred) select.value = preferred;
-    if (phase?.active && phaseCovering) {
+    const coverHint = document.getElementById('entrega-covering-hint');
+    if (hideR1Picker) {
       select.disabled = true;
       select.removeAttribute('required');
-      const coverHint = document.getElementById('entrega-covering-hint');
       if (coverHint) {
-        coverHint.textContent = `Entrega activa → ${phase.coveringLabel || 'R1 de guardia'}. Este paciente se entregará a esa persona.`;
+        coverHint.textContent = '';
+        coverHint.classList.add('hidden');
       }
     } else {
       select.disabled = false;
       select.setAttribute('required', '');
-      const coverHint = document.getElementById('entrega-covering-hint');
       if (coverHint) {
         coverHint.textContent =
           'Residente de guardia que asumirá la cobertura nocturna de este paciente.';
@@ -567,7 +597,8 @@ export function openEntregaModal(opts) {
 
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
-  select?.focus();
+  if (hideR1Picker) teamSelect?.focus();
+  else select?.focus();
 }
 
 export function closeEntregaModal() {
@@ -587,10 +618,10 @@ export function closeEntregaModal() {
  * @param {string} sala
  * @param {Date|string} [now]
  */
-export function resolveR1GuardiaCovering(teams, users, sala, now = new Date()) {
+export function resolveR1GuardiaCovering(teams, users, sala, now = new Date(), salaGuardiaToday = []) {
   const salaNorm = String(sala || '').trim();
   if (!salaNorm) return null;
-  const onCall = salaOnCallR1(teams, salaNorm, now);
+  const onCall = salaOnCallR1(teams, salaNorm, now, salaGuardiaToday);
   if (!onCall.length) return null;
   const pick = onCall[0];
   const u = normalizeUsers(users).find((x) => x.user_id === String(pick.user_id));
@@ -675,35 +706,83 @@ export function endEntregaPhase() {
 /**
  * @param {{ settings?: Record<string, unknown>|null, renderGuardiaBoard?: (s: unknown) => void }} opts
  */
-export function toggleEntregaPhase(opts = {}) {
-  if (isEntregaPhaseActive()) {
-    endEntregaPhase();
-    closeEntregaRosterPanel();
-    toast('Fase de entrega finalizada.', 'info');
-    opts.renderGuardiaBoard?.(opts.settings);
-    return { active: false };
-  }
+export function endEntregaPhaseFlow(opts = {}) {
+  endEntregaPhase();
+  closeEntregaRosterPanel();
+  setEntregaToolbarStatus('');
+  toast('Fase de entrega finalizada.', 'info');
+  opts.renderGuardiaBoard?.(opts.settings);
+  return { active: false };
+}
 
+/** @param {{ settings?: Record<string, unknown>|null, renderGuardiaBoard?: (s: unknown) => void }} opts */
+export async function beginEntregaPhaseFlow(opts = {}) {
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
   const userId = String(clinicalSessionContext.user?.user_id || '');
   const sala = resolveUserSalaForEntrega(teams, userId);
 
   if (!sala) {
-    toast('Indica tu Sala en el perfil clínico o únete a un equipo de Sala.', 'error');
+    const msg = 'Indica tu Sala en el perfil clínico o únete a un equipo de Sala.';
+    setEntregaToolbarStatus(msg, true);
+    toast(msg, 'error');
     return { active: false };
   }
+
+  const salaGuardiaToday = mergeSalaGuardiaTodayRows(
+    teams,
+    ctx.salaGuardiaToday || clinicalSessionContext.salaGuardiaToday || []
+  );
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
+  const proceed = await ensureGuardiaHoyBeforeEntrega({
+    teams,
+    sala,
+    userId,
+    rank,
+    salaGuardiaToday,
+  });
+  if (!proceed) return { active: false };
 
   const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
-  const covering = resolveR1GuardiaCovering(teams, users, sala);
-  if (!covering) {
-    toast(`No hay R1 de guardia en ${sala} hoy. Revisa «Guardia» en Mi rotación.`, 'error');
-    return { active: false };
+  const covering = resolveR1GuardiaCovering(teams, users, sala, new Date(), salaGuardiaToday);
+
+  startEntregaPhase(
+    covering || {
+      coveringUserId: '',
+      teamId: '',
+      sala,
+      coveringLabel: '',
+    }
+  );
+
+  setEntregaToolbarStatus('');
+
+  openEntregaRosterPanel(opts.settings);
+  opts.renderGuardiaBoard?.(opts.settings);
+  return { active: true, covering: covering || null };
+}
+
+/**
+ * @param {{ settings?: Record<string, unknown>|null, renderGuardiaBoard?: (s: unknown) => void, exit?: boolean }} opts
+ */
+export function toggleEntregaPhase(opts = {}) {
+  const wantsExit = opts.exit === true;
+
+  if (isEntregaPhaseActive()) {
+    if (wantsExit && isEntregaRosterOpen()) {
+      return endEntregaPhaseFlow(opts);
+    }
+    if (!isEntregaRosterOpen()) {
+      openEntregaRosterPanel(opts.settings);
+      opts.renderGuardiaBoard?.(opts.settings);
+      return { active: true, resumed: true };
+    }
+    if (wantsExit) {
+      return endEntregaPhaseFlow(opts);
+    }
   }
 
-  startEntregaPhase(covering);
-  openEntregaRosterPanel(opts.settings);
-  return { active: true, covering };
+  return beginEntregaPhaseFlow(opts);
 }
 
 /** @returns {'GUARDIA'|'HANDOFF'} */

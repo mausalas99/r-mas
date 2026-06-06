@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.0.3](https://github.com/mausalas99/r-mas/releases/tag/v7.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.0](https://github.com/mausalas99/r-mas/releases/tag/v7.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -630,6 +630,17 @@ Notas: `docs/RELEASE_NOTES_7.0.2.txt`.
 Notas: `docs/RELEASE_NOTES_2.1.1.txt`.
 
 ---
+
+
+## R+ 7.1.0 (guardia workbench + LAN delta sync)
+
+- **Guardia compacta** — Métricas en una barra fina; sin botones duplicados de Mi rotación / Entrega en la vista Guardia.
+- **Entrega y turno** — Barra de fases con **Iniciar entrega** e **Iniciar turno sin entrega**; roster de handoff a pantalla completa y modal de entrega más ancho.
+- **Turno activo** — Feed de signos, reloj de turno y cuenta regresiva de signos en las tarjetas del censo.
+- **LAN delta sync** — Deltas de historia clínica por WebSocket y outbox `delta` (menos bundle completo en cada cambio).
+- **Rotación admin** — Configuración del ciclo en Mi rotación → Zona avanzada (R4/Admin).
+
+Notas: `docs/RELEASE_NOTES_7.1.0.txt`.
 
 ## R+ 2.1.0 (laboratorio y barra lateral)
 

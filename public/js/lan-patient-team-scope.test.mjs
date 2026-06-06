@@ -62,6 +62,11 @@ describe('lan-patient-team-scope', () => {
     );
   });
 
+  it('filterPatientEntriesForLanTeamScope returns empty without signed-in user', () => {
+    const entries = [{ patient: { id: 'p1', servicio: 'Sala' } }];
+    assert.equal(filterPatientEntriesForLanTeamScope(entries, null, baseContext, null).length, 0);
+  });
+
   it('filterPatientEntriesForLanTeamScope drops out-of-scope entries', () => {
     const user = { user_id: 'r2', rank: 'R2', sala: 'Sala 1' };
     const entries = [

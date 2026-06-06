@@ -68,6 +68,7 @@ test('LAN GET /host-rank returns synced host clinical meta', async () => {
   const app = mountLanRouter(store, () => {}, () => ({
     rank: 'R4',
     isProgramAdmin: true,
+    isOnCallGuardia: true,
     startedAt: 1717500000123,
   }));
   const server = http.createServer(app);
@@ -80,6 +81,7 @@ test('LAN GET /host-rank returns synced host clinical meta', async () => {
     const body = await res.json();
     assert.strictEqual(body.rank, 'R4');
     assert.strictEqual(body.isProgramAdmin, true);
+    assert.strictEqual(body.isOnCallGuardia, true);
     assert.strictEqual(body.startedAt, 1717500000123);
   } finally {
     await tearDownLanTest({ server, dir, store });

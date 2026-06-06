@@ -87,6 +87,12 @@ import {
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import {
+  isClinicalSyncModeChosen,
+  readRpcSettings,
+  setClinicalSyncModeLocalOnly,
+} from '../../clinical-settings.mjs';
+import { hideMainClinicalOnboarding } from '../clinical-onboarding-main.mjs';
+import {
   closeSettingsDropdown,
   toggleSettingsDropdown,
   ensureSettingsDropdownOpen,
@@ -110,6 +116,8 @@ import {
   closeLabBulkTourHintModal,
   openLabBulkTourHintModal,
   openTutorialIntroFromSettings,
+  clearTourSoapButtonHighlight,
+  syncLearnHubContinueVisibility,
 } from './tour-engine.mjs';
 import {
   purgeTourDemoPatientsFromState,
@@ -145,6 +153,7 @@ function renderTourStep() {
     '<p style="margin:0 0 8px;font-size:13px;color:var(--text-muted);">R+ funciona sin Neo; módulo opcional.</p>';
   nextBtn.style.display = '';
   nextBtn.disabled = false;
+  nextBtn.setAttribute('onclick', 'guidedTourClickNext()');
 
   switch (tourState.tourStepId) {
     case 'map_sidebar':
@@ -355,6 +364,7 @@ function renderTourStep() {
         (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
         '+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>';
       nextBtn.textContent = 'Finalizar';
+      nextBtn.setAttribute('onclick', 'guidedTourFinish()');
       break;
     default:
       hideTourDock();
@@ -423,13 +433,13 @@ export function startNeoCompanionTour(startStepId) {
 function guidedTourClickNext() {
   if (tourState.miniTourActive) { tourBridge.miniTourNext(); return; }
   if (!tourState.guidedTourActive) return;
+  if (tourState.tourStepId === 'wrap') {
+    finishGuidedTour();
+    return;
+  }
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourState.tourStepId);
   if (i < 0) return;
-  if (tourState.tourStepId === 'wrap') {
-    completeGuidedTourWithCelebration();
-    return;
-  }
   if (tourState.tourStepId === 'servicio_default' && tourState.guidedTourMode === 'base' && tourState.guidedTourBranch !== 'interconsulta') {
     rt.showToast('Listo: pacientes demo con laboratorio en R+.', 'success');
   }
@@ -446,7 +456,7 @@ function guidedTourClickNext() {
     closeSOAPModal();
   }
   if (i + 1 >= steps.length) {
-    if (tourState.guidedTourMode === 'neo') completeGuidedTourWithCelebration();
+    finishGuidedTour();
     return;
   }
   clearAllTourSpotlights();
@@ -484,20 +494,120 @@ function guidedTourAdvanceAfterIndicaGenerated() {
   guidedTourAdvanceAfter('ic_indica');
 }
 
+/** Set when guided tour ends; consumed by handlePostGuidedTourOnboardingResume. */
+let postTourResumeBranch = null;
+
+/** Sala tour implies LAN; dismiss sync-mode overlay before guided-tour-running is cleared. */
+function prepareSalaGuidedTourExitSync() {
+  if (!isClinicalSyncModeChosen(readRpcSettings())) {
+    setClinicalSyncModeLocalOnly(false);
+  }
+  hideMainClinicalOnboarding();
+}
+
+export async function handlePostGuidedTourOnboardingResume() {
+  const branch = postTourResumeBranch;
+  postTourResumeBranch = null;
+
+  if (branch === 'sala') {
+    prepareSalaGuidedTourExitSync();
+    await promptMiRotacionAfterSalaTourIfNeeded('sala');
+    return;
+  }
+
+  const main = await import('../clinical-onboarding-main.mjs');
+  if (main && typeof main.refreshMainClinicalOnboardingIfNeeded === 'function') {
+    await main.refreshMainClinicalOnboardingIfNeeded();
+  }
+}
+
+async function promptMiRotacionAfterSalaTourIfNeeded(branch) {
+  if (branch !== 'sala') return;
+  const { isClinicalLocalOnlyMode, readRpcSettings } = await import('../../clinical-settings.mjs');
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+  const { needsTeamOnboarding } = await import('../clinical-onboarding.mjs');
+  if (!needsTeamOnboarding()) return;
+
+  rt.showToast(
+    'Únete a un equipo en Mi rotación. El nombre del equipo es el nombre completo de tu R2 (ej. Dr. Gutiérrez).',
+    'info'
+  );
+
+  const { ensureClinicalPanelSession } = await import('../clinical-panel-host.mjs');
+  const sessionOk = await ensureClinicalPanelSession();
+  if (!sessionOk) {
+    rt.showToast('Cuando la sesión esté lista, abre Mi rotación en la barra superior.', 'warning');
+    return;
+  }
+
+  try {
+    const { wireClinicalTeamsModalChrome } = await import(
+      '../clinical-teams/teams-roster-modal-chrome.mjs'
+    );
+    wireClinicalTeamsModalChrome();
+    const { openClinicalTeamsPanel } = await import('../clinical-teams/teams-roster.mjs');
+    await openClinicalTeamsPanel({ skipProfileGate: true });
+  } catch (err) {
+    console.warn('[R+] Mi rotación tras tutorial Sala:', err && err.message);
+    const { openMiRotacion } = await import('../clinical-rotation-entry.mjs');
+    await openMiRotacion();
+  }
+}
+
 function completeGuidedTourWithCelebration() {
+  const completedBranch = tourState.guidedTourBranch;
   clearTourSoapButtonHighlight();
   clearTourProgress();
   markGuidedTourVersionDone();
   tourState.guidedTourActive = false;
   tourState.tourStepId = null;
+  postTourResumeBranch = completedBranch;
   tourState.guidedTourBranch = null;
   tourState.guidedTourMode = 'base';
+  if (completedBranch === 'sala') prepareSalaGuidedTourExitSync();
   publishTourGuardContext();
   hideTourDock();
   rt.launchConfetti();
-  destroyDemoAndClose();
+  safeDestroyDemoAndClose();
   rt.showToast('Tutorial completado', 'success');
   syncLearnHubContinueVisibility();
+}
+
+function safeDestroyDemoAndClose() {
+  try {
+    destroyDemoAndClose();
+  } catch (err) {
+    console.error('[R+] destroyDemoAndClose:', err && err.message);
+    tourState.guidedTourActive = false;
+    tourState.tourStepId = null;
+    tourState.guidedTourBranch = null;
+    publishTourGuardContext();
+    hideTourDock();
+  }
+}
+
+export function finishGuidedTour() {
+  if (tourState.miniTourActive) {
+    tourBridge.endMiniTour();
+    return;
+  }
+  if (!tourState.guidedTourActive) return;
+  try {
+    completeGuidedTourWithCelebration();
+  } catch (err) {
+    console.error('[R+] finishGuidedTour:', err && err.message);
+    clearTourProgress();
+    markGuidedTourVersionDone();
+    tourState.guidedTourActive = false;
+    tourState.tourStepId = null;
+    tourState.guidedTourBranch = null;
+    tourState.guidedTourMode = 'base';
+    publishTourGuardContext();
+    hideTourDock();
+    safeDestroyDemoAndClose();
+    rt.showToast('Tutorial finalizado', 'success');
+    syncLearnHubContinueVisibility();
+  }
 }
 
 function skipGuidedTour() {
@@ -511,7 +621,7 @@ function skipGuidedTour() {
   tourState.guidedTourMode = 'base';
   publishTourGuardContext();
   hideTourDock();
-  destroyDemoAndClose();
+  safeDestroyDemoAndClose();
   syncLearnHubContinueVisibility();
 }
 
@@ -555,7 +665,7 @@ function startOnboarding(branch, opts) {
     }
   }
   function finishTourStart() {
-    applyTourNavigationForStep(tourState.tourStepId);
+    applyTourTargetForStep(tourState.tourStepId);
     showTourDock();
     renderTourStep();
     publishTourGuardContext();
@@ -571,23 +681,44 @@ function startOnboarding(branch, opts) {
 function findTourDemoBlockForRegistro(blocks, registro) {
   var reg = String(registro || '').trim();
   if (!reg || !blocks) return null;
+  if (findTourDemoPatientByRegistro(patients, reg)) return null;
   return (
     blocks.find(function (b) {
-      if (!b || b.status !== 'no-patient' || !b.okReportCount) return false;
-      return String(b.primaryExpediente || '').trim() === reg;
+      if (!b || !b.okReportCount) return false;
+      if (String(b.primaryExpediente || '').trim() !== reg) return false;
+      return b.status === 'no-patient' || !b.patient;
     }) || null
   );
 }
 
-function scheduleTourDemoPatientRegistrationFromLab() {
+var tourLabRegistrationTimer = null;
+
+function getTourLabPasteTextForRegistration() {
+  var ta = document.getElementById('lab-input');
+  var text = ta ? String(ta.value || '').trim() : '';
+  if (text) return text;
+  if (typeof rt.getBulkLabPreviewSourceText === 'function') {
+    return String(rt.getBulkLabPreviewSourceText() || '').trim();
+  }
+  return '';
+}
+
+function runTourDemoPatientRegistrationFromLab() {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
   if (tourDemoPatientsBothInCensus(patients)) return;
-  var ta = document.getElementById('lab-input');
-  if (!ta || typeof rt.openAddModalFromLabPatient !== 'function') return;
-  var text = String(ta.value || '').trim();
+  if (typeof rt.openAddModalFromLabPatient !== 'function') return;
+  var text = getTourLabPasteTextForRegistration();
   if (!text) return;
   var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
   openNextTourDemoPatientFromBlocks(blocks);
+}
+
+function scheduleTourDemoPatientRegistrationFromLab() {
+  if (tourLabRegistrationTimer) clearTimeout(tourLabRegistrationTimer);
+  tourLabRegistrationTimer = setTimeout(function () {
+    tourLabRegistrationTimer = null;
+    runTourDemoPatientRegistrationFromLab();
+  }, 280);
 }
 
 function openNextTourDemoPatientFromBlocks(blocks) {
@@ -601,7 +732,7 @@ function openNextTourDemoPatientFromBlocks(blocks) {
     if (!labPatient) continue;
     rt.openAddModalFromLabPatient(labPatient, {
       onSaved: function () {
-        setTimeout(scheduleTourDemoPatientRegistrationFromLab, 220);
+        scheduleTourDemoPatientRegistrationFromLab();
       },
     });
     return;
@@ -610,7 +741,10 @@ function openNextTourDemoPatientFromBlocks(blocks) {
 
 function onboardingAdvanceAfterParse() {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (!tourDemoLabCompleteForTour(patients, labHistory)) return;
+  if (!tourDemoLabCompleteForTour(patients, labHistory)) {
+    syncTourActionNextButton();
+    return;
+  }
   tourState.tourDemoLabSessionProcessed = true;
   ensureTourPrimaryDemoPatientActive();
   clearAllTourSpotlights();
@@ -635,12 +769,24 @@ function onboardingAdvanceAfterSend() {
 
 export function tourAfterBulkLabParse(blocks) {
   if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
-  if (tourDemoPatientsBothInCensus(patients)) return;
-  openNextTourDemoPatientFromBlocks(blocks || []);
+  if (!tourDemoPatientsBothInCensus(patients)) {
+    if (typeof rt.isBulkLabPreviewModalOpen === 'function' && rt.isBulkLabPreviewModalOpen()) {
+      return;
+    }
+    scheduleTourDemoPatientRegistrationFromLab();
+    return;
+  }
+  onboardingAdvanceAfterParse();
+  syncTourActionNextButton();
 }
 
 export function tourOnBulkPreviewPatientSaved() {
-  scheduleTourDemoPatientRegistrationFromLab();
+  if (!tourState.guidedTourActive || tourState.tourStepId !== 'lab_parse') return;
+  if (tourDemoPatientsBothInCensus(patients)) {
+    rt.showToast('Pacientes demo listos. Pulsa Procesar todo en la vista previa.', 'success');
+    return;
+  }
+  rt.showToast('Registra al otro paciente con Agregar paciente en la tabla.', 'info');
 }
 
 function destroyDemoAndClose() {
@@ -659,7 +805,12 @@ function destroyDemoAndClose() {
   saveState();
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
-  else { document.getElementById('patient-view').style.display = 'none'; document.getElementById('empty-state').style.display = 'flex'; }
+  else {
+    var pv = document.getElementById('patient-view');
+    var es = document.getElementById('empty-state');
+    if (pv) pv.style.display = 'none';
+    if (es) es.style.display = 'flex';
+  }
 }
 
 function resetAndStartOnboarding() {

@@ -26,6 +26,116 @@ function mergeTeamsData(localRows, incomingRows) {
   return out;
 }
 
+function membershipPairKey(row) {
+  const teamId = String(row?.team_id || '').trim();
+  const userId = String(row?.user_id || '').trim();
+  if (!teamId || !userId) return '';
+  return `${teamId}\0${userId}`;
+}
+
+function buildMembershipPairKeySet(rows) {
+  const keys = new Set();
+  for (const row of rows || []) {
+    const key = membershipPairKey(row);
+    if (key) keys.add(key);
+  }
+  return keys;
+}
+
+function mergeMembershipRemovalsData(localRows, incomingRows) {
+  const map = new Map();
+  for (const row of [...(localRows || []), ...(incomingRows || [])]) {
+    if (!row?.team_id || !row?.user_id) continue;
+    const teamId = String(row.team_id);
+    const userId = String(row.user_id);
+    const removedAt = String(row.removed_at || '').trim() || new Date(0).toISOString();
+    const key = `${teamId}\0${userId}`;
+    const prev = map.get(key);
+    if (!prev || removedAt >= String(prev.removed_at || '')) {
+      map.set(key, { team_id: teamId, user_id: userId, removed_at: removedAt });
+    }
+  }
+  return [...map.values()];
+}
+
+function mergeMembershipRejoinsData(localRows, incomingRows) {
+  const map = new Map();
+  for (const row of [...(localRows || []), ...(incomingRows || [])]) {
+    if (!row?.team_id || !row?.user_id) continue;
+    const teamId = String(row.team_id);
+    const userId = String(row.user_id);
+    const joinedAt = String(row.joined_at || '').trim() || new Date(0).toISOString();
+    const key = `${teamId}\0${userId}`;
+    const prev = map.get(key);
+    if (!prev || joinedAt >= String(prev.joined_at || '')) {
+      map.set(key, { team_id: teamId, user_id: userId, joined_at: joinedAt });
+    }
+  }
+  return [...map.values()];
+}
+
+function reconcileMembershipRemovalsData(local, removals, rejoins) {
+  const localMembershipKeys = buildMembershipPairKeySet(local?.team_membership);
+  const localRemovalKeys = buildMembershipPairKeySet(local?.team_membership_removals);
+  const rejoinByKey = new Map();
+  for (const row of rejoins || []) {
+    const key = membershipPairKey(row);
+    if (!key) continue;
+    const joinedAt = String(row.joined_at || '');
+    const prev = rejoinByKey.get(key);
+    if (!prev || joinedAt >= String(prev.joined_at || '')) {
+      rejoinByKey.set(key, row);
+    }
+  }
+  return (removals || []).filter((row) => {
+    const key = membershipPairKey(row);
+    if (!key) return false;
+    if (localMembershipKeys.has(key) && !localRemovalKeys.has(key)) return false;
+    const rejoin = rejoinByKey.get(key);
+    const removedAt = String(row.removed_at || '');
+    const joinedAt = String(rejoin?.joined_at || '');
+    if (rejoin && joinedAt && removedAt && joinedAt >= removedAt) return false;
+    return true;
+  });
+}
+
+function pruneStaleMembershipRemovalsData(removals, deletedSet, clinicalUsers, teams) {
+  const userIds = new Set(
+    (clinicalUsers || [])
+      .map((row) => String(row?.user_id || '').trim())
+      .filter(Boolean)
+  );
+  const teamIds = new Set(
+    (teams || []).map((row) => String(row?.team_id || '').trim()).filter(Boolean)
+  );
+  return (removals || []).filter((row) => {
+    const userId = String(row?.user_id || '').trim();
+    const teamId = String(row?.team_id || '').trim();
+    if (!userId || !teamId) return false;
+    if (deletedSet.has(userId)) return false;
+    if (!userIds.has(userId)) return false;
+    if (!teamIds.has(teamId)) return false;
+    return true;
+  });
+}
+
+function filterMembershipForDeletedUsers(rows, deletedSet) {
+  if (!deletedSet?.size) return rows || [];
+  return (rows || []).filter((row) => {
+    const userId = String(row?.user_id || '').trim();
+    return userId && !deletedSet.has(userId);
+  });
+}
+
+function filterMembershipAfterRemovals(rows, removals) {
+  if (!removals?.length) return rows || [];
+  const keys = new Set(removals.map((row) => `${row.team_id}\0${row.user_id}`));
+  return (rows || []).filter((row) => {
+    if (!row?.team_id || !row?.user_id) return false;
+    return !keys.has(`${row.team_id}\0${row.user_id}`);
+  });
+}
+
 function mergeTeamMembershipData(localRows, incomingRows) {
   const map = new Map();
   for (const row of localRows || []) {
@@ -208,6 +318,28 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
     incoming.clinical_users_deleted || []
   );
   const deletedSet = new Set(clinical_users_deleted);
+  const team_membership_rejoins = mergeMembershipRejoinsData(
+    local.team_membership_rejoins || [],
+    incoming.team_membership_rejoins || []
+  );
+  const mergedTeams = mergeTeamsData(local.teams || [], incoming.teams || []);
+  const mergedClinicalUsers = mergeClinicalUsersData(
+    local.clinical_users || [],
+    incoming.clinical_users || []
+  ).filter((row) => !deletedSet.has(String(row?.user_id || '')));
+  const team_membership_removals = pruneStaleMembershipRemovalsData(
+    reconcileMembershipRemovalsData(
+      local,
+      mergeMembershipRemovalsData(
+        local.team_membership_removals || [],
+        incoming.team_membership_removals || []
+      ),
+      team_membership_rejoins
+    ),
+    deletedSet,
+    mergedClinicalUsers,
+    mergedTeams
+  );
 
   return {
     version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
@@ -225,19 +357,21 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
       local.team_guardia_today || [],
       incoming.team_guardia_today || []
     ),
-    teams: mergeTeamsData(local.teams || [], incoming.teams || []),
-    team_membership: mergeTeamMembershipData(
-      local.team_membership || [],
-      incoming.team_membership || []
+    teams: mergedTeams,
+    team_membership_rejoins,
+    team_membership_removals,
+    team_membership: filterMembershipAfterRemovals(
+      filterMembershipForDeletedUsers(
+        mergeTeamMembershipData(local.team_membership || [], incoming.team_membership || []),
+        deletedSet
+      ),
+      team_membership_removals
     ),
     active_guardias: mergeActiveGuardiasData(
       local.active_guardias || [],
       incoming.active_guardias || []
     ),
-    clinical_users: mergeClinicalUsersData(
-      local.clinical_users || [],
-      incoming.clinical_users || []
-    ).filter((row) => !deletedSet.has(String(row?.user_id || ''))),
+    clinical_users: mergedClinicalUsers,
     clinical_users_deleted,
   };
 }

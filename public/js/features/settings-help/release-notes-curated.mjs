@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_710 = [
+  {
+    title: 'Guardia más espacio',
+    body:
+      'Resumen del turno en una barra compacta; quitamos botones duplicados para dejar más censo y signos vitales.',
+  },
+  {
+    title: 'Entrega clara',
+    body:
+      'Barra de fases: <strong>Iniciar entrega</strong> o <strong>Iniciar turno sin entrega</strong>. Roster de handoff a pantalla completa.',
+  },
+  {
+    title: 'Turno activo',
+    body:
+      'Feed de signos del turno, reloj y cuenta regresiva en las tarjetas del censo.',
+  },
+  {
+    title: 'LAN delta sync',
+    body:
+      'Cambios de historia clínica via delta por WebSocket; menos reenvío del bundle completo.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.1.0 en todas</strong> las estaciones desde <strong>7.0.3</strong>; PIN y sala siguen igual.',
+  },
+];
+
 var RELEASE_NOTES_703 = [
   {
     title: 'Censo sin parpadeo',
@@ -286,9 +314,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_703;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_710;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.0': RELEASE_NOTES_710,
   '7.0.3': RELEASE_NOTES_703,
   '7.0.2': RELEASE_NOTES_702,
   '7.0.1': RELEASE_NOTES_701,

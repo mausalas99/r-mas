@@ -20,6 +20,7 @@ import {
   teamInviteCode,
 } from '../../clinical-team-invite.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
+import { clinicalServiceForSala } from '../../../../lib/clinical-salas.mjs';
 import {
   effectiveClinicalRank,
   hasElevatedTeamPrivileges,
@@ -93,14 +94,19 @@ function isClinicalTeamsPanelOpen() {
 
 /** Tras cambios de equipos: actualiza caché y panel si está abierto (sin «Cargando…»). */
 export async function refreshTeamsUiAfterChange() {
-  await fetchClinicalTeamsFromDb();
+  const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
+  await refreshClinicalPatientListForScope();
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelOpen()) {
     await renderClinicalTeamsPanel({ silent: true, skipLanPull: true });
   }
 }
 
-export async function openClinicalTeamsPanel() {
+/**
+ * @param {{ skipProfileGate?: boolean }} [opts]
+ *   skipProfileGate — post–Sala tutorial: open join-team UI even if profile onboarding pending.
+ */
+export async function openClinicalTeamsPanel(opts = {}) {
   const bd = teamsModalEl();
   if (!bd) return;
 
@@ -111,17 +117,21 @@ export async function openClinicalTeamsPanel() {
     if (typeof window.showToast === 'function') {
       window.showToast(msg, 'error');
     }
-    if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
+    if (!opts.skipProfileGate && !mainMod.focusMainClinicalOnboarding()) {
+      await mainMod.showMainClinicalOnboarding();
+    }
     return;
   }
 
   try {
-    const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
-    if (needsClinicalOnboarding()) {
-      closeClinicalTeamsPanel();
-      const { openMiRotacion } = await import('../clinical-rotation-entry.mjs');
-      await openMiRotacion();
-      return;
+    if (!opts.skipProfileGate) {
+      const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
+      if (needsClinicalOnboarding()) {
+        closeClinicalTeamsPanel();
+        const { openMiRotacion } = await import('../clinical-rotation-entry.mjs');
+        await openMiRotacion();
+        return;
+      }
     }
   } catch (err) {
     console.error('[Mi rotación]', err);
@@ -142,8 +152,8 @@ export async function openClinicalTeamsPanel() {
 
   try {
     await renderClinicalTeamsPanel();
-    const nameInput = document.getElementById('clinical-team-create-name');
-    if (nameInput) nameInput.focus();
+    const panelBody = getClinicalTeamsPanelHost();
+    if (panelBody) panelBody.scrollTop = 0;
   } catch (err) {
     console.error('[Mi rotación]', err);
     setClinicalTeamsPanelError(
@@ -562,7 +572,7 @@ export async function handleCreateTeamSubmit(ev) {
   if (elevated) {
     const res = await api.dbClinicalTeamsCreate({
       name,
-      service: 'Sala',
+      service: clinicalServiceForSala(sala) || 'Sala',
       onCallDayIndex: 0,
       sala,
       teamLeaderName: name,
@@ -581,7 +591,11 @@ export async function handleCreateTeamSubmit(ev) {
     return;
   }
 
-  const service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
+  let service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
+  const mappedService = clinicalServiceForSala(sala);
+  if (mappedService && mappedService !== 'Sala') {
+    service = mappedService;
+  }
   const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
 
   if (!service) {

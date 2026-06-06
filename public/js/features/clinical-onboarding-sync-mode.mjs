@@ -9,6 +9,10 @@ import {
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
+import {
+  buildOnboardingStageHtml,
+  buildSyncModeChoiceBodyHtml,
+} from './clinical-onboarding-shell.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -43,19 +47,12 @@ export function localOnlyUsernameForUserId(userId) {
 }
 
 export function renderSyncModeChoicePanel(host) {
-  host.innerHTML = `
-      <h3 class="clinical-onboarding-title">¿Cómo usarás R+?</h3>
-      <p class="clinical-teams-lead">Elige antes de configurar tu perfil. La elección queda guardada en este equipo.</p>
-      <div class="clinical-onboard-mode-grid" role="group" aria-label="Modo de uso">
-        <button type="button" class="clinical-onboard-mode-card" data-sync-mode="lan">
-          <span class="clinical-onboard-mode-card-title">Guardia en red (LAN)</span>
-          <span class="clinical-onboard-mode-card-desc">Usuario @usuario, sala, sincronización en vivo con el equipo y <strong>Mi rotación</strong>.</span>
-        </button>
-        <button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--muted" data-sync-mode="local">
-          <span class="clinical-onboard-mode-card-title">Solo este equipo</span>
-          <span class="clinical-onboard-mode-card-desc">Sin LAN ni LiveSync: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
-        </button>
-      </div>`;
+  host.innerHTML = buildOnboardingStageHtml({
+    title: '¿Cómo usarás R+?',
+    leadHtml:
+      '<p>Elige antes de configurar tu perfil. La elección queda guardada en este equipo.</p>',
+    bodyHtml: buildSyncModeChoiceBodyHtml(),
+  });
 }
 
 /** @param {Record<string, unknown>} settings */
@@ -64,30 +61,35 @@ export function renderLocalOnlyProfilePanel(host, settings) {
   const prefilledName = String(
     settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
   );
-  host.innerHTML = `
-      <h3 class="clinical-onboarding-title">Perfil local</h3>
-      <p class="clinical-teams-lead">R+ no usará red de guardia. Solo necesitamos cómo firmar notas y documentos en esta Mac.</p>
-      <form id="clinical-onboard-local-form" class="clinical-teams-create-form clinical-onboard-form clinical-onboard-form--local">
-        <div class="field-group">
-          <label for="onboard-local-name">Tu nombre en notas *</label>
-          <input id="onboard-local-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
-            value="${escapeAttr(prefilledName)}" required autocomplete="name">
-        </div>
-        <div class="field-group">
-          <label for="onboard-local-rank">Rango (opcional)</label>
-          <select id="onboard-local-rank" class="profile-input">
-            <option value="R1" ${rank === 'R1' ? 'selected' : ''}>R1</option>
-            <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
-            <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
-            <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
-          </select>
-        </div>
-        <p id="onboard-error" class="clinical-registration-error" hidden></p>
-        <div class="modal-actions">
-          <button type="submit" class="btn-save">Continuar sin LAN</button>
-          <button type="button" id="clinical-onboard-back-mode" class="btn-med-secondary">Cambiar modo</button>
-        </div>
-      </form>`;
+  host.innerHTML = buildOnboardingStageHtml({
+    title: 'Perfil local',
+    leadHtml:
+      '<p>R+ no usará red de guardia. Solo necesitamos cómo firmar notas y documentos en esta Mac.</p>',
+    bodyHtml: `
+      <div class="clinical-onboard-form-shell clinical-onboard-form-shell--narrow">
+        <form id="clinical-onboard-local-form" class="clinical-teams-create-form clinical-onboard-form clinical-onboard-form--local">
+          <div class="field-group">
+            <label for="onboard-local-name">Tu nombre en notas *</label>
+            <input id="onboard-local-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
+              value="${escapeAttr(prefilledName)}" required autocomplete="name">
+          </div>
+          <div class="field-group">
+            <label for="onboard-local-rank">Rango (opcional)</label>
+            <select id="onboard-local-rank" class="profile-input">
+              <option value="R1" ${rank === 'R1' ? 'selected' : ''}>R1</option>
+              <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
+              <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
+              <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
+            </select>
+          </div>
+          <p id="onboard-error" class="clinical-registration-error" hidden></p>
+          <div class="modal-actions clinical-onboard-form-actions">
+            <button type="submit" class="btn-save">Continuar sin LAN</button>
+            <button type="button" id="clinical-onboard-back-mode" class="btn-med-secondary">Cambiar modo</button>
+          </div>
+        </form>
+      </div>`,
+  });
 }
 
 async function refreshOnboardingHost() {

@@ -2,8 +2,11 @@
 import {
   clinicalSessionContext,
   fetchClinicalTeamsFromDb,
+  getClinicalScopeContextForEvaluate,
   refreshClinicalUserProfile,
 } from '../../clinical-access-runtime.mjs';
+import { patients } from '../../app-state.mjs';
+import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
 import {
   isBenignLanPushSkipCode,
   LAN_PROFILE_PUSH_FAILED_MSG,
@@ -11,10 +14,18 @@ import {
 import {
   getCycleLettersForTeamCreate,
   getCycleFieldMetaForTeamCreate,
+  getCycleLetterOptionsForRank,
+  isSalaWardService,
+  usesSalaR1LinePicker,
   formatMemberCycleLabel,
   inferMembershipCycleForJoin,
   resolveMembershipCycleForUser,
 } from '../../clinico-access.mjs';
+import { clinicalServiceForSala } from '../../../../lib/clinical-salas.mjs';
+import {
+  getTeamCompositionLimits,
+  serviceUsesStructuredComposition,
+} from '../../../../lib/clinical-team-composition.mjs';
 import {
   buildClinicalTeamInviteMessage,
   teamInviteCode,
@@ -33,7 +44,11 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from '../../clinical-username.mjs';
-import { syncRotationConfigButton, wireNuevaRotacionControl } from '../clinical-rotation.mjs';
+import {
+  syncRotationConfigButton,
+  wireNuevaRotacionControl,
+  wireRotationConfigOpenControl,
+} from '../clinical-rotation.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from '../../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../../clinical-access-runtime.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
@@ -67,23 +82,66 @@ import {
   renderLanUsersDirectoryEntryHtml,
   wireLanUsersDirectoryControls,
 } from './teams-roster-lan.mjs';
+export function syncCreateTeamServiceFromSala() {
+  const salaSelect = document.getElementById('clinical-team-create-sala');
+  const serviceSelect = document.getElementById('clinical-team-create-service');
+  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
+  if (salaSelect && userSala && !String(salaSelect.value || '').trim()) {
+    salaSelect.value = userSala;
+  }
+  const sala = String(salaSelect?.value || userSala || '').trim();
+  const mapped = clinicalServiceForSala(sala);
+  if (serviceSelect && mapped) {
+    serviceSelect.value = mapped;
+  }
+  syncCreateTeamCycleField();
+}
+
+function compositionHintForService(service) {
+  if (!serviceUsesStructuredComposition(service)) return '';
+  const limits = getTeamCompositionLimits(service);
+  if (!limits) return '';
+  const parts = [];
+  if (limits.r1) parts.push(`${limits.r1} R1`);
+  if (limits.r2) parts.push(`${limits.r2} R2`);
+  if (limits.r3) parts.push(`${limits.r3} R3`);
+  return parts.length
+    ? `<p class="clinical-teams-hint clinical-teams-composition-hint">Composición: ${parts.join(', ')}.</p>`
+    : '';
+}
+
+function setR1LineGroupVisible(visible) {
+  const r1LineGroup = document.getElementById('clinical-team-r1-line-group');
+  if (!r1LineGroup) return;
+  r1LineGroup.hidden = !visible;
+  r1LineGroup.style.display = visible ? '' : 'none';
+}
+
 export function syncCreateTeamCycleField() {
+  const sala = String(
+    document.getElementById('clinical-team-create-sala')?.value ||
+      clinicalSessionContext.user?.sala ||
+      ''
+  ).trim();
   const service = String(document.getElementById('clinical-team-create-service')?.value || 'Sala');
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
   const r1Line = Number(document.getElementById('clinical-team-create-r1-line')?.value || 0);
-  const meta = getCycleFieldMetaForTeamCreate(service, rank, r1Line === 1 ? 1 : 0);
+  const showR1Line = rank === 'R1' && usesSalaR1LinePicker(service, sala);
+  const meta = getCycleFieldMetaForTeamCreate(service, rank, showR1Line && r1Line === 1 ? 1 : 0);
   const label = document.getElementById('clinical-team-create-day-label');
   const hint = document.getElementById('clinical-team-create-day-hint');
   const daySelect = document.getElementById('clinical-team-create-day');
-  const r1LineGroup = document.getElementById('clinical-team-r1-line-group');
-  const svcKey = service.trim().toLowerCase();
-  const showR1Line = rank === 'R1' && svcKey.includes('sala');
-  if (r1LineGroup) r1LineGroup.hidden = !showR1Line;
+  setR1LineGroupVisible(showR1Line);
   if (label) label.textContent = meta.label;
   if (hint) hint.textContent = meta.hint;
+  const compositionHint = document.getElementById('clinical-team-composition-hint');
+  if (compositionHint) compositionHint.innerHTML = compositionHintForService(service);
   if (!daySelect) return;
   const prev = String(daySelect.value || '');
-  const letters = getCycleLettersForTeamCreate(service, rank, r1Line === 1 ? 1 : 0);
+  const letters =
+    showR1Line && rank === 'R1'
+      ? getCycleLettersForTeamCreate(service, rank, r1Line === 1 ? 1 : 0)
+      : getCycleLetterOptionsForRank(service, rank);
   daySelect.innerHTML = letters
     .map((letter) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`)
     .join('');
@@ -101,86 +159,85 @@ export function renderCreateTeamForm() {
 export function renderCreateTeamFormElevated(user) {
   const homeSala = String(user?.sala || '').trim();
   return `
-    <details class="clinical-teams-details" open>
-      <summary>Crear equipo vacío</summary>
-      <div class="clinical-teams-details-body">
-        <form id="clinical-team-create-form" class="clinical-teams-create-form clinical-teams-create-form--elevated">
-          <div class="field-group">
-            <label for="clinical-team-create-name">Nombre del equipo</label>
-            <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Equipo A · Dr. Gutiérrez" required>
-            ${hintHtml('Solo el nombre; sin integrantes todavía.')}
-          </div>
-          <div class="field-group">
-            <label for="clinical-team-create-sala">Sala</label>
-            <select id="clinical-team-create-sala" class="profile-input" required>
-              <option value="">— Seleccionar sala —</option>
-              ${CLINICAL_SALAS.map(
-                (s) =>
-                  `<option value="${escapeAttr(s)}" ${homeSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
-              ).join('')}
-            </select>
-          </div>
-          <p class="clinical-teams-hint clinical-teams-create-elevated-hint">Asigna residentes después desde <strong>Directorio de usuarios LAN</strong>.</p>
-          <div class="modal-actions clinical-teams-create-submit-wrap">
-            <button type="submit" class="btn-save">Crear equipo vacío</button>
-          </div>
-        </form>
+    <form id="clinical-team-create-form" class="clinical-teams-create-form clinical-teams-create-form--elevated">
+      <div class="field-group">
+        <label for="clinical-team-create-name">Nombre del equipo</label>
+        <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Equipo A · Dr. Gutiérrez" required>
+        ${hintHtml('Solo el nombre; sin integrantes todavía.')}
       </div>
-    </details>`;
+      <div class="field-group">
+        <label for="clinical-team-create-sala">Sala</label>
+        <select id="clinical-team-create-sala" class="profile-input" required>
+          <option value="">— Seleccionar sala —</option>
+          ${CLINICAL_SALAS.map(
+            (s) =>
+              `<option value="${escapeAttr(s)}" ${homeSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
+          ).join('')}
+        </select>
+      </div>
+      <p class="clinical-teams-hint clinical-teams-create-elevated-hint">Asigna residentes después desde <strong>Directorio de usuarios LAN</strong>.</p>
+      <div class="modal-actions clinical-teams-create-submit-wrap">
+        <button type="submit" class="btn-save">Crear equipo vacío</button>
+        <button type="button" class="btn-med-secondary clinical-teams-create-cancel">Cancelar</button>
+      </div>
+    </form>`;
 }
 
 export function renderCreateTeamFormStandard() {
+  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
+  const defaultService = clinicalServiceForSala(userSala) || CLINICAL_TEAM_SERVICES[0];
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
-    (svc) => `<option value="${escapeAttr(svc)}">${escapeHtml(svc)}</option>`
+    (svc) =>
+      `<option value="${escapeAttr(svc)}" ${svc === defaultService ? 'selected' : ''}>${escapeHtml(svc)}</option>`
   ).join('');
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
-  const defaultService = CLINICAL_TEAM_SERVICES[0];
-  const defaultLetters = getCycleLettersForTeamCreate(defaultService, rank, 0);
+  const defaultLetters = getCycleLetterOptionsForRank(defaultService, rank);
   const defaultMeta = getCycleFieldMetaForTeamCreate(defaultService, rank, 0);
   const letterOptions = defaultLetters
     .map((letter) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`)
     .join('');
-  const svcKey = defaultService.trim().toLowerCase();
-  const showR1Line = rank === 'R1' && svcKey.includes('sala');
+  const showR1Line = rank === 'R1' && usesSalaR1LinePicker(defaultService, userSala);
 
   return `
-    <details class="clinical-teams-details">
-      <summary>Crear nuevo equipo</summary>
-      <div class="clinical-teams-details-body">
-        <form id="clinical-team-create-form" class="clinical-teams-create-form">
-          <div class="field-group" id="clinical-team-sala-group">
-            <label for="clinical-team-create-sala">Sala</label>
-            <select id="clinical-team-create-sala" class="profile-input">
-              <option value="">— Seleccionar sala —</option>
-              ${CLINICAL_SALAS.map((s) => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="field-group">
-            <label for="clinical-team-create-name">Nombre del equipo (residente líder)</label>
-            <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Gutiérrez" required>
-          </div>
-          <div class="field-group">
-            <label for="clinical-team-create-service">Servicio</label>
-            <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-          </div>
-          <div class="field-group" id="clinical-team-r1-line-group" ${showR1Line ? '' : 'hidden'}>
-            <label for="clinical-team-create-r1-line">Línea R1 en el equipo</label>
-            <select id="clinical-team-create-r1-line" class="profile-input">
-              <option value="0">Primera línea · A1–D1</option>
-              <option value="1">Segunda línea · A2–D2</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label id="clinical-team-create-day-label" for="clinical-team-create-day">${escapeHtml(defaultMeta.label)}</label>
-            <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
-            <p id="clinical-team-create-day-hint" class="clinical-teams-hint">${escapeHtml(defaultMeta.hint)}</p>
-          </div>
-          <div class="modal-actions" style="margin-top: 8px;">
-            <button type="submit" class="btn-save">Crear equipo</button>
-          </div>
-        </form>
+    <form id="clinical-team-create-form" class="clinical-teams-create-form">
+      <div class="field-group" id="clinical-team-sala-group">
+        <label for="clinical-team-create-sala">Sala</label>
+        <select id="clinical-team-create-sala" class="profile-input">
+          <option value="">— Seleccionar sala —</option>
+          ${CLINICAL_SALAS.map(
+            (s) =>
+              `<option value="${escapeAttr(s)}" ${s === userSala ? 'selected' : ''}>${escapeHtml(s)}</option>`
+          ).join('')}
+        </select>
       </div>
-    </details>`;
+      <div class="field-group">
+        <label for="clinical-team-create-name">Nombre del equipo (residente líder)</label>
+        <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Gutiérrez" required>
+      </div>
+      <div class="field-group" id="clinical-team-r1-line-group" ${showR1Line ? '' : 'hidden style="display:none"'}>
+        <label for="clinical-team-create-r1-line">Línea R1 en el equipo</label>
+        <select id="clinical-team-create-r1-line" class="profile-input">
+          <option value="0">Primera línea · A1–D1</option>
+          <option value="1">Segunda línea · A2–D2</option>
+        </select>
+      </div>
+      <div class="clinical-teams-create-service-row">
+        <div class="field-group">
+          <label for="clinical-team-create-service">Servicio</label>
+          <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
+        </div>
+        <div class="field-group">
+          <label id="clinical-team-create-day-label" for="clinical-team-create-day">${escapeHtml(defaultMeta.label)}</label>
+          <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
+        </div>
+      </div>
+      <p id="clinical-team-create-day-hint" class="clinical-teams-hint clinical-teams-create-cycle-hint">${escapeHtml(defaultMeta.hint)}</p>
+      <div id="clinical-team-composition-hint">${compositionHintForService(defaultService)}</div>
+      <div class="modal-actions clinical-teams-create-submit-wrap">
+        <button type="submit" class="btn-save">Crear equipo</button>
+        <button type="button" class="btn-med-secondary clinical-teams-create-cancel">Cancelar</button>
+      </div>
+    </form>`;
 }
 
 /** Una línea de contexto sin repetir sala/servicio. @param {object} team */
@@ -194,6 +251,55 @@ export function renderTeamMetaLine(team) {
   return `<p class="clinical-teams-card-meta">${parts.map((p) => escapeHtml(p)).join(' · ')}</p>`;
 }
 
+/** @param {string} teamId @param {object[]} assignments @param {string|Date} now */
+export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
+  const tid = String(teamId || '');
+  if (!tid) return 0;
+  let count = 0;
+  for (const p of patients || []) {
+    if (!p?.id) continue;
+    if (resolvePatientTeamIdFromAssignments(String(p.id), assignments, now) === tid) count += 1;
+  }
+  return count;
+}
+
+/** @param {object} team */
+export function renderTeamPatientCountLine(team) {
+  const teamId = String(team?.team_id || '');
+  const ctx = getClinicalScopeContextForEvaluate();
+  const assignments = Array.isArray(ctx?.assignments) ? ctx.assignments : [];
+  const now = ctx?.now || new Date().toISOString();
+  const onDevice = countLocalCensusPatientsForTeam(teamId, assignments, now);
+  const assignedLan = Math.max(
+    Number(team?.lanAssignmentCount) || 0,
+    Number(team?.patientCount) || 0
+  );
+
+  if (onDevice <= 0 && assignedLan <= 0) return '';
+
+  if (onDevice <= 0 && assignedLan > 0) {
+    const waiting =
+      assignedLan === 1
+        ? '1 asignado en la red — sincronizando expediente…'
+        : `${assignedLan} asignados en la red — sincronizando expedientes…`;
+    return `<p class="clinical-teams-card-meta clinical-teams-card-patients">${escapeHtml(waiting)}</p>`;
+  }
+
+  if (assignedLan > onDevice && assignedLan > 0) {
+    const pending = assignedLan - onDevice;
+    const visible =
+      onDevice === 1 ? '1 paciente en censo' : `${onDevice} pacientes en censo`;
+    const waiting =
+      pending === 1
+        ? '1 asignado en la red sin expediente aquí'
+        : `${pending} asignados en la red sin expediente aquí`;
+    return `<p class="clinical-teams-card-meta clinical-teams-card-patients">${escapeHtml(visible)} · ${escapeHtml(waiting)}</p>`;
+  }
+
+  const label = onDevice === 1 ? '1 paciente en censo' : `${onDevice} pacientes en censo`;
+  return `<p class="clinical-teams-card-meta clinical-teams-card-patients">${escapeHtml(label)}</p>`;
+}
+
 /**
  * @param {object} team
  * @param {string} rank
@@ -202,20 +308,9 @@ export function renderTeamMetaLine(team) {
  */
 export function renderCycleSelectForRank(team, rank, current, selectId) {
   const service = String(team.service || 'Sala');
-  const isSala = service.toLowerCase().includes('sala');
   const id = selectId || 'clinical-cycle-select';
   const cur = String(current || '').trim();
-  let letters = [];
-  if (isSala && rank === 'R2') {
-    letters = getCycleLettersForTeamCreate('Sala', 'R2');
-  } else if (isSala && rank === 'R1') {
-    letters = [
-      ...getCycleLettersForTeamCreate('Sala', 'R1', 0),
-      ...getCycleLettersForTeamCreate('Sala', 'R1', 1),
-    ];
-  } else {
-    letters = getCycleLettersForTeamCreate(service, rank);
-  }
+  const letters = getCycleLetterOptionsForRank(service, rank);
   const opts = letters
     .map(
       (l) =>
@@ -229,10 +324,9 @@ export function renderCycleSelectForRank(team, rank, current, selectId) {
 export function renderAddMemberCycleSelect(team) {
   const teamId = String(team.team_id || '');
   const service = String(team.service || 'Sala');
-  const isSala = service.toLowerCase().includes('sala');
   const id = `clinical-add-cycle-${teamId}`;
-  if (!isSala) {
-    const letters = getCycleLettersForTeamCreate(service, 'R2');
+  if (!isSalaWardService(service)) {
+    const letters = getCycleLetterOptionsForRank(service, 'R2');
     return `<select id="${escapeAttr(id)}" class="profile-input clinical-teams-add-member-cycle" required>
       ${letters.map((l) => `<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('')}
     </select>`;
@@ -298,12 +392,14 @@ export function renderMyCycleEditBlock(team, user) {
   const rank = effectiveClinicalRank({ rank: me.rank });
   const current = String(me.sub_area_fraction || '').trim();
   const selectId = `clinical-my-cycle-${teamId}`;
-  const hint =
-    rank === 'R2'
+  const service = String(team.service || 'Sala');
+  const hint = isSalaWardService(service)
+    ? rank === 'R2'
       ? 'Tu letra A–F en el ciclo de sala.'
       : rank === 'R1'
         ? 'Tu subciclo (A1–D1 o A2–D2), independiente del resto del equipo.'
-        : 'Letra de rotación para este servicio.';
+        : 'Letra de rotación para este servicio.'
+    : 'Letra de rotación A–D (misma para todos los rangos en este servicio).';
 
   return `
     <div class="clinical-teams-my-cycle-box">
@@ -397,6 +493,7 @@ export function renderJoinedTeamCard(team) {
           <p class="clinical-teams-card-eyebrow">Residente líder</p>
           <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
           ${renderTeamMetaLine(team)}
+          ${renderTeamPatientCountLine(team)}
         </div>
         ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
       </div>
@@ -431,15 +528,16 @@ export function renderJoinedTeamCard(team) {
 
 /**
  * @param {object} team
- * @param {{ actionHtml?: string, manageHtml?: string, editPanelHtml?: string }} [opts]
+ * @param {{ joinBtnHtml?: string, joinHintHtml?: string, manageHtml?: string, editPanelHtml?: string }} [opts]
  */
 export function renderDirectoryTeamCard(team, opts = {}) {
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
-  const action = opts.actionHtml || '';
+  const joinBtn = opts.joinBtnHtml || '';
+  const joinHint = opts.joinHintHtml || '';
   const manage = opts.manageHtml || '';
   const editPanel = opts.editPanelHtml || '';
-  const sideActions = [action, manage].filter(Boolean).join('');
+  const actionButtons = [joinBtn, manage].filter(Boolean).join('');
 
   return `
     <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
@@ -448,9 +546,11 @@ export function renderDirectoryTeamCard(team, opts = {}) {
           <p class="clinical-teams-card-eyebrow">Equipo en sala</p>
           <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
           ${renderTeamMetaLine(team)}
+          ${renderTeamPatientCountLine(team)}
         </div>
-        ${sideActions ? `<div class="clinical-teams-card-actions">${sideActions}</div>` : ''}
+        ${actionButtons ? `<div class="clinical-teams-card-actions">${actionButtons}</div>` : ''}
       </div>
+      ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
       ${editPanel}
       ${renderMembersBlock(members, { compact: true })}
     </article>`;
@@ -654,6 +754,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   host.innerHTML = `
     ${handleHint}
+    ${renderCreateTeamSectionHtml()}
     <section class="clinical-teams-section clinical-teams-section--joined">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Mis equipos</h4>
@@ -668,23 +769,40 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     <section class="clinical-teams-section clinical-teams-section--more">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Configuración</h4>
-        <p class="clinical-teams-section-desc">Perfil clínico y equipos nuevos.</p>
+        <p class="clinical-teams-section-desc">Perfil clínico y rango.</p>
       </div>
       ${profileSection}
-      ${renderCreateTeamForm()}
       <details class="clinical-teams-advanced-rotation">
         <summary class="clinical-teams-advanced-rotation-summary">Zona avanzada · rotación del programa</summary>
         <div class="clinical-teams-advanced-rotation-body">
-          <p class="clinical-teams-advanced-rotation-hint">Solo al cerrar un ciclo de rotación en el hospital. Archiva equipos, memberships y guardias del día; los residentes deben volver a crear equipos.</p>
-          <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
+          <p class="clinical-teams-advanced-rotation-hint">Solo R4/Admin. Configura el calendario del ciclo o inicia una rotación nueva (archiva equipos y guardias del día).</p>
+          <div class="clinical-teams-advanced-rotation-actions">
+            <button type="button" id="btn-rotation-config-open" class="btn-med-secondary" hidden>Configuración rotación…</button>
+            <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
+          </div>
         </div>
       </details>
     </section>`;
 
   wireLanUsersDirectoryControls();
+  syncRotationConfigButton();
+  wireRotationConfigOpenControl(host);
   wireNuevaRotacionControl(host);
   const { wireRenderedClinicalTeamsPanel } = await import('./teams-roster-interactions.mjs');
   wireRenderedClinicalTeamsPanel(elevated);
+}
+
+export function renderCreateTeamSectionHtml() {
+  const user = clinicalSessionContext.user || {};
+  const elevatedCreate = canManageTeamRoster(user);
+  const openLabel = elevatedCreate ? 'Crear equipo vacío' : 'Crear nuevo equipo';
+  return `
+    <section class="clinical-teams-section clinical-teams-section--create">
+      <button type="button" id="btn-clinical-team-create-open" class="btn-save clinical-teams-create-open-btn">${escapeHtml(openLabel)}</button>
+      <div id="clinical-team-create-panel" class="clinical-teams-create-panel" hidden>
+        ${renderCreateTeamForm()}
+      </div>
+    </section>`;
 }
 
 export function renderJoinWithCodeSectionHtml() {
@@ -701,7 +819,16 @@ export function renderJoinWithCodeSectionHtml() {
         </div>
         <div class="field-group clinical-teams-add-cycle-group">
           <label for="clinical-team-join-code-cycle">Tu ciclo al unirte</label>
-          ${renderCycleSelectForRank({ service: 'Sala', team_id: 'join' }, effectiveClinicalRank(clinicalSessionContext.user), '', 'clinical-team-join-code-cycle')}
+          ${renderCycleSelectForRank(
+            {
+              service:
+                clinicalServiceForSala(clinicalSessionContext.user?.sala) || 'Sala',
+              team_id: 'join',
+            },
+            effectiveClinicalRank(clinicalSessionContext.user),
+            '',
+            'clinical-team-join-code-cycle'
+          )}
         </div>
         <div class="clinical-teams-join-submit-wrap">
           <button type="submit" class="btn-save">Unirme</button>
@@ -817,15 +944,17 @@ export async function renderDirectorySectionHtml(opts) {
   const cards = directory
     .map((team) => {
       const teamId = String(team.team_id || '');
-      let action = '';
+      let joinBtn = '';
+      let joinHint = '';
       if (team.joinEligible) {
-        action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
+        joinBtn = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
       } else if (team.joinReason) {
-        action = `<span class="clinical-teams-join-hint">${escapeHtml(team.joinReason)}</span>`;
+        joinHint = String(team.joinReason);
       }
       const manage = elevated ? renderTeamManageBlock(team) : { actionsHtml: '', editPanelHtml: '' };
       return renderDirectoryTeamCard(team, {
-        actionHtml: action,
+        joinBtnHtml: joinBtn,
+        joinHintHtml: joinHint,
         manageHtml: manage.actionsHtml,
         editPanelHtml: manage.editPanelHtml,
       });

@@ -35,6 +35,7 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
     res.json({
       rank: String(meta.rank || 'R1').trim() || 'R1',
       isProgramAdmin: !!meta.isProgramAdmin,
+      isOnCallGuardia: !!meta.isOnCallGuardia,
       startedAt: Number(meta.startedAt) || 0,
     });
   });

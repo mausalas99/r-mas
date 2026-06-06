@@ -107,6 +107,8 @@ const allWindowHandlers = Object.assign(
   clinicalSyncModeSettingsHandlers,
   appShellWindowHandlers,
   {
+    showToast,
+    loadSettings,
     resumeClinicalSession: function () {
       return resumeClinicalSession(settings, getClinicalClientId());
     },
@@ -124,6 +126,13 @@ const appStateReady = (async function loadClinicalStateOnBoot() {
     const unlockResult = await ensureClinicalDbUnlocked();
     if (unlockResult && unlockResult.unlocked) {
       await bootHydrateFromDb();
+      try {
+        const { flushPendingClinicalOpsLanSnapshot } = await import('./clinical-ops-lan.mjs');
+        const flushed = await flushPendingClinicalOpsLanSnapshot();
+        if (flushed.changed && typeof document !== 'undefined') {
+          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        }
+      } catch (_eOps) {}
     } else {
       console.warn(
         '[R+] Clinical DB not ready at boot:',
@@ -320,16 +329,17 @@ function runDomBootAfterState() {
       window._rpcHeaderDateResizeWired = true;
       window.addEventListener('resize', syncHeaderTodayDate);
     }
-    renderPatientList();
-    if (patients.length > 0) selectPatient(patients[0].id);
-    else renderLabHistoryPanel();
     loadSettings();
     syncWorkContextChrome();
     seedTendHiddenDefaults();
     syncMainAppTabA11y(activeAppTab);
     renderInnerTabs();
     initTabBarMotion();
-    if (wasV3MigratedThisBoot() && !isMobileWeb()) {
+    if (
+      wasV3MigratedThisBoot() &&
+      !isMobileWeb() &&
+      !(window.electronAPI && typeof window.electronAPI.isLanDevPeer === 'function' && window.electronAPI.isLanDevPeer())
+    ) {
       setTimeout(function () {
         try {
           showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.');
@@ -343,14 +353,35 @@ function runDomBootAfterState() {
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
     wireHeaderAppModeChip();
+    function finishPatientListBoot() {
+      void import('./clinical-access-runtime.mjs')
+        .then(function (mod) {
+          if (typeof mod.refreshClinicalPatientListForScope === 'function') {
+            return mod.refreshClinicalPatientListForScope();
+          }
+          renderPatientList();
+        })
+        .catch(function () {
+          renderPatientList();
+        })
+        .then(function () {
+          if (patients.length > 0) selectPatient(patients[0].id);
+          else renderLabHistoryPanel();
+        });
+    }
     if (isDbMode()) {
       void runBootSteps(CLINICAL_DB_BOOT_STEPS, {
         settings,
         getClinicalClientId,
         teamsMod: null,
-      }).catch(function (err) {
-        console.warn('[R+] Clinical access runtime init:', err && err.message);
-      });
+      })
+        .then(finishPatientListBoot)
+        .catch(function (err) {
+          console.warn('[R+] Clinical access runtime init:', err && err.message);
+          finishPatientListBoot();
+        });
+    } else {
+      finishPatientListBoot();
     }
   } catch (domErr) {
     console.error('[R+] Error en arranque de UI:', domErr);

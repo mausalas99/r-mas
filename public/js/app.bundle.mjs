@@ -1,6 +1,6 @@
 import {
-  windowHandlers as windowHandlers8
-} from "/js/chunks/chunk-VAR73PPW.js";
+  windowHandlers as windowHandlers6
+} from "/js/chunks/chunk-73VNWDSB.js";
 import {
   appShellWindowHandlers,
   initModalDismiss,
@@ -16,9 +16,9 @@ import {
   setMedTabAttention,
   showToast,
   syncWorkContextChrome,
-  windowHandlers as windowHandlers12
-} from "/js/chunks/chunk-5D4ZE3NI.js";
-import "/js/chunks/chunk-CM3TIMLW.js";
+  windowHandlers as windowHandlers10
+} from "/js/chunks/chunk-BCZ67BZH.js";
+import "/js/chunks/chunk-ONZCK3OE.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -27,7 +27,6 @@ import {
   advanceRondaPatient,
   applyDefaultsToNewIndicaciones,
   applyDefaultsToNewPatient,
-  applyDriveImportEventualidades,
   applyDriveImportHcPatch,
   applyDriveImportLabSets,
   applyEstadoActualParsedToForm,
@@ -66,11 +65,9 @@ import {
   incrementPendingJobs,
   inferFechaLabSetFromId,
   initPatientModalEnterSave,
-  initRpcDatePicker,
   initSidebarAutoHide,
   initTabBarMotion,
   installLabHistoryAuditHook,
-  invalidateEventualidadesPanel,
   invalidateInnerTabRenderCache,
   isAscitisInterpretacionResLabChunk,
   isBhMainResLabChunk,
@@ -104,7 +101,6 @@ import {
   registerEstadoActualPanelRuntime,
   registerEstadoActualPasteModalRuntime,
   registerEstadoActualRegistroModalRuntime,
-  registerEventualidadesRuntime,
   registerExpedienteRuntime,
   registerHistoriaClinicaRuntime,
   registerLabBulkPreviewModalRuntime,
@@ -124,7 +120,6 @@ import {
   removeAtbRisPanelsFromBody,
   renderDiagramas,
   renderEstadoActualPanel,
-  renderEventualidadesPanel,
   renderIndicaForm,
   renderInnerTabs,
   renderLabHistoryPanel,
@@ -171,37 +166,38 @@ import {
   tourAfterBulkLabParse,
   tourOnBulkPreviewPatientSaved,
   toxicomanias_substances_default,
-  windowHandlers as windowHandlers5,
-  windowHandlers2 as windowHandlers6,
-  windowHandlers3 as windowHandlers7,
-  windowHandlers4 as windowHandlers9,
-  windowHandlers5 as windowHandlers10,
-  windowHandlers6 as windowHandlers11,
-  windowHandlers7 as windowHandlers13,
-  windowHandlers8 as windowHandlers14,
-  windowHandlers9 as windowHandlers15,
+  windowHandlers as windowHandlers3,
+  windowHandlers2 as windowHandlers4,
+  windowHandlers3 as windowHandlers5,
+  windowHandlers4 as windowHandlers7,
+  windowHandlers5 as windowHandlers8,
+  windowHandlers6 as windowHandlers9,
+  windowHandlers7 as windowHandlers11,
+  windowHandlers8 as windowHandlers12,
+  windowHandlers9 as windowHandlers13,
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-BMWS6IQF.js";
+} from "/js/chunks/chunk-XS5RRMMR.js";
 import {
-  windowHandlers as windowHandlers4
-} from "/js/chunks/chunk-4SHOOYKA.js";
+  windowHandlers as windowHandlers2
+} from "/js/chunks/chunk-FCZMPNQP.js";
 import {
   syncClinicalRotationEntryChrome,
-  windowHandlers as windowHandlers16,
+  windowHandlers as windowHandlers14,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-YJCUO72W.js";
-import "/js/chunks/chunk-4AZA4IPM.js";
+} from "/js/chunks/chunk-U7GGXSIJ.js";
+import "/js/chunks/chunk-CVPB2UNF.js";
 import {
   closeSettingsDropdown,
   syncTeamSyncHeaderButton
-} from "/js/chunks/chunk-7NKNIAJV.js";
+} from "/js/chunks/chunk-W6FZOWRU.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-7KH7KICD.js";
+} from "/js/chunks/chunk-XPVZIGHA.js";
 import {
+  applyDriveImportEventualidades,
   buildParsedBySectionFromResLabs,
   copyToClipboardSafe,
   emitLiveSyncTodoUpsert,
@@ -209,30 +205,34 @@ import {
   filterNewEventualidades,
   initChromeAppearance,
   initClinicalAccessRuntime,
+  initRpcDatePicker,
+  invalidateEventualidadesPanel,
   isMobileWeb,
   launchConfetti,
   migrateToV3,
   registerChromeRuntime,
+  registerEventualidadesRuntime,
   registerLanRuntime,
   registerLanSaveHooks,
   registerSoapEstadoRuntime,
   renderEstadoActualBar,
   renderEstadoActualButton,
+  renderEventualidadesPanel,
   renderGuardiaBoard,
   resumeClinicalSession,
   syncGuardiaModeButtonVisibility,
   syncSettingsLanHostDiskSection,
   tryMountClinicalTeamInviteBrowserGate,
   windowHandlers,
-  windowHandlers2,
-  windowHandlers3,
+  windowHandlers2 as windowHandlers15,
+  windowHandlers3 as windowHandlers16,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-YG4BETDC.js";
+} from "/js/chunks/chunk-C74WO5DE.js";
 import {
   dbUnlockWindowHandlers,
   ensureClinicalDbUnlocked
-} from "/js/chunks/chunk-JFOJWVXU.js";
-import "/js/chunks/chunk-OPJSETWU.js";
+} from "/js/chunks/chunk-Z27FXI6S.js";
+import "/js/chunks/chunk-BCNABZWJ.js";
 import {
   bootHydrateFromDb,
   flushSaveState,
@@ -245,16 +245,16 @@ import {
   setSaveStateHooks,
   sortLabHistoryChronological,
   storage
-} from "/js/chunks/chunk-AQA3RUI4.js";
+} from "/js/chunks/chunk-ZEVMTFYK.js";
 import {
   isDbMode
 } from "/js/chunks/chunk-K6QXHWFW.js";
-import "/js/chunks/chunk-YUPUKFLS.js";
+import "/js/chunks/chunk-42J77B3V.js";
 import {
   resolveClinicalClientId
 } from "/js/chunks/chunk-2VRIL4MF.js";
 import "/js/chunks/chunk-LX374JRN.js";
-import "/js/chunks/chunk-PHHXUOUN.js";
+import "/js/chunks/chunk-EV5GBRQX.js";
 import "/js/chunks/chunk-FWKRNT2R.js";
 
 // public/js/features/lab-history-batch-copy-modal.mjs
@@ -3266,7 +3266,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-AY5URDXI.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-C26DHFFS.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -3276,7 +3276,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-33FNL3HO.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-I3JK3KMM.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -3677,20 +3677,20 @@ async function runBootSteps(steps, ctx) {
 var allWindowHandlers = Object.assign(
   {},
   dbUnlockWindowHandlers,
-  windowHandlers,
-  windowHandlers3,
+  windowHandlers16,
   windowHandlers15,
-  windowHandlers7,
-  windowHandlers6,
-  windowHandlers17,
-  windowHandlers2,
-  windowHandlers9,
-  windowHandlers10,
-  windowHandlers18,
-  windowHandlers11,
-  windowHandlers12,
   windowHandlers13,
   windowHandlers5,
+  windowHandlers4,
+  windowHandlers17,
+  windowHandlers,
+  windowHandlers7,
+  windowHandlers8,
+  windowHandlers18,
+  windowHandlers9,
+  windowHandlers10,
+  windowHandlers11,
+  windowHandlers3,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
@@ -3698,14 +3698,16 @@ var allWindowHandlers = Object.assign(
   todosWindowHandlers,
   manejoWindowHandlers,
   recetaHuWindowHandlers,
-  windowHandlers14,
+  windowHandlers12,
   medicationsWindowHandlers,
   profileWindowHandlers,
-  windowHandlers4,
-  windowHandlers16,
-  windowHandlers8,
+  windowHandlers2,
+  windowHandlers14,
+  windowHandlers6,
   appShellWindowHandlers,
   {
+    showToast,
+    loadSettings,
     resumeClinicalSession: function() {
       return resumeClinicalSession(settings, getClinicalClientId());
     }
@@ -3722,7 +3724,7 @@ var appStateReady = (async function loadClinicalStateOnBoot() {
     if (unlockResult && unlockResult.unlocked) {
       await bootHydrateFromDb();
       try {
-        const { flushPendingClinicalOpsLanSnapshot } = await import("/js/chunks/clinical-ops-lan-YNZBIPC2.js");
+        const { flushPendingClinicalOpsLanSnapshot } = await import("/js/chunks/clinical-ops-lan-U5KWX3UE.js");
         const flushed = await flushPendingClinicalOpsLanSnapshot();
         if (flushed.changed && typeof document !== "undefined") {
           document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
@@ -3867,7 +3869,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-HDOIVFAU.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-PZO75OV7.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -3878,7 +3880,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-KWYW4BS2.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-HJS5DMQW.js");
     }
   },
   {
@@ -3901,7 +3903,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/js/chunks/clinical-access-runtime-3TILEVDG.js").then(function(mod) {
+      void import("/js/chunks/clinical-access-runtime-RUBSFMGD.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }
