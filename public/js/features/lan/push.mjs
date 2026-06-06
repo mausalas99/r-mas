@@ -33,6 +33,7 @@ import { isMobileWeb } from '../../mobile-web.mjs';
 import { patients } from '../../app-state.mjs';
 import { guardAndSignLiveSyncMutation } from '../../clinical-access-runtime.mjs';
 import { wrapLiveSyncPatch } from '../../versioned-mutation.mjs';
+import { normalizeCommandPushResponse } from '../../lan-command-client.mjs';
 import {
   lanClient,
   activeLiveSyncRoomId,
@@ -400,6 +401,21 @@ async function pushDeltaToHost(roomId, envelope) {
   return resp && (resp.ok || resp.status === 409);
 }
 
+async function pushCommandToHost(roomId, envelope) {
+  const rid = String(roomId || '').trim();
+  const command = envelope && (envelope.command || envelope.payload || envelope);
+  if (!rid || !command) return false;
+  const resp = await lanClient.fetch('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/commands', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(command),
+  });
+  const body = await resp.json().catch(function () {
+    return {};
+  });
+  return normalizeCommandPushResponse({ ok: !!(resp && resp.ok), status: resp && resp.status, body });
+}
+
 export function pushRoomSyncBundleToHost(roomId, envelope) {
   return ensureLanSyncPushBridgeWired().then(function () {
     return pushRoomSyncBundleToHostBody(roomId, envelope);
@@ -529,6 +545,9 @@ function flushLiveSyncOutboxBody(roomId) {
       if (item.kind === 'delta') {
         return pushDeltaToHost(rid, item.payload);
       }
+      if (item.kind === 'command') {
+        return pushCommandToHost(rid, item.payload);
+      }
       if (item.kind === 'patch') {
         return pushLiveSyncPatchOutbox(item.payload);
       }
@@ -537,7 +556,10 @@ function flushLiveSyncOutboxBody(roomId) {
 
     function outboxItemSucceeded(result) {
       return (
-        result === true || result === BUNDLE_PUSH_HANDLED || result === CLINICAL_OPS_HANDLED
+        result === true ||
+        result === BUNDLE_PUSH_HANDLED ||
+        result === CLINICAL_OPS_HANDLED ||
+        !!(result && result.removeOutbox)
       );
     }
 
