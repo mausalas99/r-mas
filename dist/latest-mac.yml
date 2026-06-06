@@ -1,17 +1,17 @@
-version: 7.1.3
+version: 7.1.4
 files:
-  - url: R+-7.1.3-arm64.zip
-    sha512: EBAz7yAKfzrEeMzxD2A4nU8jDiqlBnIGnd2toSU6FJZyv68eTfhd8BdQD8gV03viOJAOixZ/zIGwJTcgvj6dgA==
-    size: 128392934
-  - url: R+-7.1.3-arm64.dmg
-    sha512: M3Fd0xQnFQCVl/NT5ZmDsFjDolkHXOY2ugYSPrD7VGzeb4cZ321RRp0r8whqht1UKQeB9R5J7UMtHx1oyabeVA==
-    size: 133673169
-  - url: R+-7.1.3-x64.zip
-    sha512: 5XPTLh7bwGUhA4UFu5ofWMSyhihMNOTjuqcy9nFoaBhHxyvzDnV0J+EAEqPiuLn4RB93WLqOz/AqY9Vow9TxHw==
-    size: 136767030
-  - url: R+-7.1.3-x64.dmg
-    sha512: K+SDnZApO/sNXkUAJul7t0iZlj/lc8mX6MSSJfpxPoEejv1SI6PjDeGNX+QULZJBwt9mlkby4k9c1pPJ2x/dkw==
-    size: 142137728
-path: R+-7.1.3-arm64.zip
-sha512: EBAz7yAKfzrEeMzxD2A4nU8jDiqlBnIGnd2toSU6FJZyv68eTfhd8BdQD8gV03viOJAOixZ/zIGwJTcgvj6dgA==
-releaseDate: '2026-06-06T18:25:47.000Z'
+  - url: R+-7.1.4-arm64.zip
+    sha512: eXB51Yrqdu/Qb52oJNh71/jP/2Gbg9Lt89v9792tuq5likNyoAHYboTlMchHHTGLRQ5oPyRDqRNJyoJgDVqClA==
+    size: 128419815
+  - url: R+-7.1.4-arm64.dmg
+    sha512: 1pHiq1QJLakb5/EVUStF2WYnZFyqbvRF5Zmpj0PYSewsMKEgemz9Re027p/zhBUtMq1EzKO7X1ahkIBSP/E3yg==
+    size: 133743881
+  - url: R+-7.1.4-x64.zip
+    sha512: m5VhJDbd3w9oH7qBBG9xPNKkdeOm9JciqA/WbWqwplselGc6Ui7thY2GzR2KTPHgsqj4MhDqP747vQ0Ab0WGNA==
+    size: 136793865
+  - url: R+-7.1.4-x64.dmg
+    sha512: /5UyXcc0Alc7QtBGH/ckhxDmU4nBt5meE+71VikFPy8zn4eVMV31HxSqdzq+GdWWKRUjhxt0r4NivKElevRUPQ==
+    size: 142173739
+path: R+-7.1.4-arm64.zip
+sha512: eXB51Yrqdu/Qb52oJNh71/jP/2Gbg9Lt89v9792tuq5likNyoAHYboTlMchHHTGLRQ5oPyRDqRNJyoJgDVqClA==
+releaseDate: '2026-06-06T19:36:05.000Z'
