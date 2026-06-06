@@ -141,6 +141,37 @@ export class UnifiedPatientGridBoard {
     this.container.appendChild(div);
   }
 
+  startVitalsTicker() {
+    this.stopVitalsTicker();
+    if (!this.container) return;
+    this._vitalsTickerId = setInterval(() => {
+      if (!this.container) return;
+      this.container.querySelectorAll('[data-vitals-spec]').forEach((card) => {
+        const specRaw = card.dataset.vitalsSpec;
+        const last = card.dataset.vitalsLast || '';
+        let spec = null;
+        try {
+          spec = specRaw ? JSON.parse(specRaw) : null;
+        } catch {
+          /* ignore */
+        }
+        const banner = calcVitalsBannerForSpec(last || null, spec);
+        const el = card.querySelector('.patient-chip-vitals');
+        if (!el) return;
+        const textEl = el.querySelector('.patient-chip-vitals__text');
+        if (textEl) textEl.textContent = banner.str;
+        el.className = `patient-chip-vitals vitals-banner ${banner.cls}`;
+      });
+    }, 60_000);
+  }
+
+  stopVitalsTicker() {
+    if (this._vitalsTickerId != null) {
+      clearInterval(this._vitalsTickerId);
+      this._vitalsTickerId = null;
+    }
+  }
+
   /**
    * @param {{ id: string, bed_label?: string, name?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: { last_vitals_check?: string, vitals_frequency?: string, is_critical?: number } }} p
    * @param {{ is_critical?: number, last_vitals_check?: string, vitals_frequency?: string }|undefined} g
@@ -151,6 +182,11 @@ export class UnifiedPatientGridBoard {
     const critical = !!(p.isCritical || meta?.is_critical);
     card.className = `patient-chip-card ${critical ? 'priority-critical' : ''}`;
     card.setAttribute('data-patient-id', p.id);
+    const vitalsSpec = meta?.pendientes_json
+      ? (normalizePendientesJson(meta.pendientes_json).vitalsPlan?.frequency ?? meta?.vitals_frequency ?? null)
+      : (meta?.vitals_frequency ?? null);
+    card.dataset.vitalsSpec = JSON.stringify(vitalsSpec ?? null);
+    card.dataset.vitalsLast = String(meta?.last_vitals_check ?? '');
     card.setAttribute('role', 'button');
     card.tabIndex = 0;
 

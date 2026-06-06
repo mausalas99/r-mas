@@ -280,6 +280,7 @@ export function renderGuardiaBoard(settings) {
 
   const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings);
   gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
+  gridBoard.startVitalsTicker();
 }
 
 /**

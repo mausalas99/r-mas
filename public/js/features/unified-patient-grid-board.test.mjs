@@ -220,3 +220,11 @@ describe('UnifiedPatientGridBoard', () => {
     }
   });
 });
+
+describe('UnifiedPatientGridBoard vitals ticker', () => {
+  it('startVitalsTicker and stopVitalsTicker do not throw outside DOM', () => {
+    const board = new UnifiedPatientGridBoard('nonexistent-id');
+    assert.doesNotThrow(() => board.startVitalsTicker());
+    assert.doesNotThrow(() => board.stopVitalsTicker());
+  });
+});
