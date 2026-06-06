@@ -46,7 +46,10 @@ const isCritical = !!(
 
 **New logic — remove high-priority todo condition, add vasopressor/ventilation from handoff context:**
 ```js
-const handoff = g?.handoff_context ? normalizeHandoffContext(g.handoff_context) : null;
+const pendientes = normalizePendientesJson(g?.pendientes_json);
+const handoff = pendientes.handoffContext
+  ? normalizeHandoffContext(pendientes.handoffContext)
+  : null;
 const isCritical = !!(
   g?.is_critical ||
   vitalsAltered ||
@@ -54,6 +57,8 @@ const isCritical = !!(
   handoff?.ventilation?.active
 );
 ```
+
+The handoff context (including vasopressor/ventilation state) is stored inside `pendientes_json` on the guardia record. `normalizePendientesJson` already parses this; the implementation should verify the exact field name (`handoffContext`) against the current schema and adjust if needed.
 
 Critical is now driven by: explicit toggle set in the entrega form **OR** altered vitals from interno **OR** active vasopressor **OR** active ventilation. High-priority todos are not a critical signal.
 
@@ -142,15 +147,17 @@ Replaces the current tall "Pendientes de guardia" modal with a wide (≈780 px) 
    - **Right — Signos vitales en guardia:** parameter pills (TA, FC, FR, Temp, Sat O₂, Glucometría), frequency tab selector (Rutina / Intervalo / Por turno), interval chips (1h–8h) or per-turno options, and a live summary line.
 6. **Notas breves** — single compact textarea.
 7. **Summary line** — auto-generated one-liner from all fields (existing `handoffContextSummary`).
-8. **Footer** — Cancelar | Confirmar entrega.
+8. **Footer** — Cancelar | **Guardar paciente** (saves this patient's context and returns to the roster).
 
-**Navigation:** The modal reads the entrega roster order. Prev/next arrows update the modal in-place (no close/reopen). Unsaved changes on the current patient are auto-saved to the draft when navigating away.
+> Note: "Guardar paciente" saves the individual patient record. The final "Confirmar entrega" button lives only on the roster panel footer and commits the entire entrega phase at once.
+
+**Navigation:** The modal reads the entrega roster order. Prev/next arrows auto-save the current patient's draft and move to the adjacent patient without closing. Navigating away without saving explicitly also auto-saves.
 
 ---
 
 ### Mode 2 · Turno Activo
 
-Activated automatically when "Confirmar entrega" is pressed, or manually via "Iniciar turno" if the user skips entrega. Persisted in `localStorage` as `guardia.turnoActive`.
+Activated automatically when the roster "Confirmar entrega" is pressed, or manually via "Iniciar turno" if the user skips entrega entirely. Persisted in `localStorage` as `guardia.turnoActive`. The key is cleared when the user presses "Finalizar turno" or when a new guardia mode session starts (existing `toggleGuardiaMode` already handles session reset).
 
 **Layout:**
 
