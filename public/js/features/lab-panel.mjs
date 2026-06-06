@@ -44,13 +44,6 @@ import {
   normalizeFechaLabHistory,
   normalizeHoraLabHistory,
 } from "../tend-core.mjs";
-import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical-suggestions.mjs";
-import { evaluateElectrolyteManejo } from "../electrolyte-manejo.mjs";
-import {
-  areElectrolyteReplacementSuggestionsHidden,
-  areLabClinicalSuggestionsHidden,
-} from "../clinical-product-policy.mjs";
-import { shouldClearManejoPendingForDismissals } from "../manejo-todo-dismiss.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
 import { bumpLabHistoryRevision } from "../lab-history-cache.mjs";
@@ -92,7 +85,6 @@ let rt = {
   primaryTipoForLabSet() {},
   refreshAllTodoUIs() {},
   emitLiveSyncTodoUpsert() {},
-  renderManejo() {},
   refreshManejoPanel() {},
   removeAtbRisPanelsFromBody() {},
   wireAtbRisHoverPanels() {},
@@ -542,7 +534,6 @@ function reprocessLabHistorySet(setId) {
     set.parsedBySection = rt.buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
     delete set._parseFingerprint;
     bumpLabHistoryRevision(rt.getActiveId());
-    applyLabClinicalSuggestions(rt.getActiveId(), set.resLabs, set.fecha, set.bhExtras);
     rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
     saveState({ immediate: true });
     renderLabHistoryPanel();
@@ -1217,35 +1208,6 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
   bumpLabHistoryRevision(patientId);
 }
 
-/** Tras nuevo set en historial: marca manejo electrolitos pendiente si hay alteraciones. */
-function applyManejoPending(patientId, parsed, parsedBySection, labSetId, fecha) {
-  if (areElectrolyteReplacementSuggestionsHidden()) return;
-  if (!patientId || !labSetId) return;
-  var patient = patients.find(function (p) {
-    return p && String(p.id) === String(patientId);
-  });
-  if (!patient) return;
-  var evalOut = evaluateElectrolyteManejo({
-    parsedBySection: parsedBySection || {},
-    parsed: parsed || {},
-    patient: patient,
-    labSetId: labSetId,
-    labFecha: fecha,
-  });
-  if (!evalOut || !evalOut.hasAlterations) return;
-  var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || "").trim();
-  if (shouldClearManejoPendingForDismissals(patient, null, evalOut, fechaNorm)) {
-    patient.manejoPending = null;
-    return;
-  }
-  patient.manejoPending = {
-    labSetId: labSetId,
-    detectedAt: new Date().toISOString(),
-  };
-  if (typeof rt.renderManejo === 'function') rt.renderManejo();
-  if (typeof rt.refreshManejoPanel === 'function') rt.refreshManejoPanel();
-}
-
 function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
   if (!payload || !payload.resLabs || !payload.resLabs.length) return;
   pushLabHistory(
@@ -1311,18 +1273,6 @@ export async function applyDriveImportLabSets(patient, labSets) {
 
   rt.rebuildEstudiosFromLabHistory(patientId);
   rt.ensureParsedLabHistory(patientId);
-  var hist = labHistory[patientId] || [];
-  var lastSet = hist.length ? hist[hist.length - 1] : null;
-  if (lastSet) {
-    applyManejoPending(
-      patientId,
-      lastSet.parsed,
-      lastSet.parsedBySection,
-      lastSet.id,
-      lastSet.fecha
-    );
-    applyLabClinicalSuggestions(patientId, lastSet.resLabs, lastSet.fecha, lastSet.bhExtras);
-  }
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   return { added: added, skipped: skipped };
@@ -1351,15 +1301,9 @@ function storeBulkLabBlocks(blocks, processable) {
         return;
       }
       pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
-      applyLabClinicalSuggestions(patientId, payload.resLabs, payload.fecha, payload.bhExtras);
       storedSets += 1;
     });
     rt.rebuildEstudiosFromLabHistory(patientId);
-    var hist = labHistory[patientId] || [];
-    var lastSet = hist.length ? hist[hist.length - 1] : null;
-    if (lastSet) {
-      applyManejoPending(patientId, lastSet.parsed, lastSet.parsedBySection, lastSet.id, lastSet.fecha);
-    }
   });
   if (storedSets || skippedDupes) {
     saveState({ immediate: true });
@@ -1467,61 +1411,9 @@ function autoStoreProcessedLabResult(result) {
     result.bhExtras,
     result.refsBySection
   );
-  var pid = rt.getActiveId();
-  var hist = labHistory[pid];
-  var lastSet = hist && hist.length ? hist[hist.length - 1] : null;
-  if (lastSet) {
-    applyManejoPending(
-      pid,
-      lastSet.parsed,
-      lastSet.parsedBySection,
-      lastSet.id,
-      lastSet.fecha
-    );
-  }
-  applyLabClinicalSuggestions(rt.getActiveId(), result.resLabs, fecha, result.bhExtras);
   saveState({ immediate: true });
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
-}
-
-function applyLabClinicalSuggestions(patientId, resLabs, fecha, bhExtras) {
-  if (areLabClinicalSuggestionsHidden()) return;
-  if (!patientId || !resLabs || !resLabs.length) return;
-  var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
-  if (!fechaNorm) return;
-  var parsed = rt.extractParsedValues(resLabs);
-  var parsedBySection = rt.buildParsedBySectionFromResLabs(resLabs, bhExtras);
-  var suggestions = evaluateLabSuggestions(parsed, parsedBySection, fechaNorm);
-  if (!suggestions.length) return;
-  var todos = storage.getTodos(patientId);
-  var toAdd = filterNewLabSuggestions(suggestions, todos);
-  if (!toAdd.length) return;
-  var nowIso = new Date().toISOString();
-  var added = 0;
-  toAdd.forEach(function (s) {
-    var row = {
-      id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
-      text: s.text,
-      completed: false,
-      priority: 'media',
-      createdAt: nowIso,
-      updatedAt: nowIso,
-      labRuleId: s.ruleId,
-      labFecha: s.fechaEstudio,
-    };
-    todos.push(row);
-    rt.emitLiveSyncTodoUpsert(patientId, row);
-    added += 1;
-  });
-  if (added > 0) {
-    storage.saveTodos(patientId, todos);
-    rt.refreshAllTodoUIs();
-    rt.showToast(
-      added === 1 ? '1 sugerencia agregada a pendientes' : added + ' sugerencias agregadas a pendientes',
-      'success'
-    );
-  }
 }
 
 function insertLabsAsRecent(lines) {

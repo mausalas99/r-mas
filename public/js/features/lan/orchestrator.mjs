@@ -33,13 +33,8 @@ import {
   isClinicalOpsLanAvailable,
   refreshClinicalOpsSnapshotCache,
 } from "../../clinical-ops-lan.mjs";
-import {
-  applyManejoRoomDataToLocal,
-  isLanManejoRoomSyncEnabled,
-} from "../../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "../estado-actual-data.mjs";
 import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
-import { filterTodosRespectingDismissals } from "../../manejo-todo-dismiss.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
 import {
   applyDeltaPathValues,
@@ -942,10 +937,7 @@ function saveEntryTodosOnLocalPatient(localPatientId, entry) {
   if (!localPatientId || !entry) return false;
   var incoming = Array.isArray(entry.todos) ? entry.todos : [];
   if (!incoming.length) return false;
-  var merged = filterTodosRespectingDismissals(
-    localPatientId,
-    mergeTodoListsById(storage.getTodos(localPatientId), incoming)
-  );
+  var merged = mergeTodoListsById(storage.getTodos(localPatientId), incoming);
   if (lanJsonEqual(storage.getTodos(localPatientId), merged)) return false;
   storage.saveTodos(localPatientId, merged);
   return true;
@@ -1252,7 +1244,7 @@ async function applyLiveSyncMerged(merged) {
   var todosChanged = false;
   Object.keys(saveTodoPids).forEach(function (pid) {
     var todoList = todosMap[pid] || [];
-    var nextTodos = filterTodosRespectingDismissals(pid, todoList);
+    var nextTodos = todoList;
     if (!lanJsonEqual(storage.getTodos(pid), nextTodos)) {
       storage.saveTodos(pid, nextTodos);
       todosChanged = true;
@@ -1282,9 +1274,6 @@ async function applyLiveSyncMerged(merged) {
     try {
       runtime.renderLabHistoryPanel();
     } catch (_eLab) {}
-  }
-  if (merged.manejo && isLanManejoRoomSyncEnabled()) {
-    applyManejoRoomDataToLocal(merged.manejo);
   }
   if (patientsChanged) migrateLocalPatientsClinicalSala();
   if (patientsChanged || patientRemoved || clinicalOpsApplied) {
@@ -1391,7 +1380,7 @@ function applyLiveSyncApplied(msg) {
           todos.push(Object.assign({}, entityData, { id: entityId, version: version }));
         }
       }
-      storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todos));
+      storage.saveTodos(pid, todos);
     }
     runtime.refreshAllTodoUIs();
   } else if (entityType === 'patient') {

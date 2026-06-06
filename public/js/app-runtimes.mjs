@@ -193,10 +193,6 @@ import {
   renderTodoForm,
 } from './features/todos.mjs';
 import {
-  registerManejoRuntime,
-  renderManejo,
-} from './features/manejo.mjs';
-import {
   registerVpoRuntime,
   renderVpo,
 } from './features/vpo.mjs';
@@ -333,7 +329,6 @@ function installAppRuntimeContextDeps() {
     syncLabHistoryCollapseUI,
     rpcPrefersReducedMotion,
     refreshAllTodoUIs,
-    renderManejo,
     renderVpo,
     renderRecetaHu,
     pushUndoSnapshot,
@@ -431,7 +426,6 @@ function installAppRuntimeContextDeps() {
     isBhMainResLabChunk,
     isResLabChunkPureCultivo,
     buildCultivoOutputHtmlFragments,
-    refreshManejoPanel: renderManejo,
     rebuildBulkLabPreviewBlocks: function (text) {
       return buildBulkLabPreview(text, { findPatientByRegistro });
     },
@@ -475,7 +469,6 @@ export async function registerAllFeatureRuntimes() {
 
   registerTendenciasRuntime(ctx);
   registerTodosRuntime(ctx);
-  registerManejoRuntime(ctx);
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
   registerCensoRuntime(ctx);

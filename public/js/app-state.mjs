@@ -3,7 +3,6 @@ import { applyMedCatalogOverlay } from './med-receta-core.mjs';
 import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
-import { syncManejoTodoDismissalsOnBoot } from './manejo-todo-dismiss.mjs';
 import { migratePatientsClinicalSala } from './clinico-access.mjs';
 
 export let patients = [];
@@ -154,9 +153,7 @@ export function initAppState() {
       salaMigrated = migratePatientsClinicalSala(patients, { sala: clinicalSala });
     }
   } catch (_e) {}
-  if (syncManejoTodoDismissalsOnBoot(patients, labHistory, storage)) {
-    saveState({ immediate: true });
-  } else if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
+  if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
     saveState({ immediate: true });
   }
 }

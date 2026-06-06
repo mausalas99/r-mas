@@ -155,20 +155,36 @@ function estadoActualTextForCopy() {
   return buildSOAPText().replace(/^\s*\n+/, "");
 }
 
-export async function estadoActualOnlyCopy() {
+export async function estadoActualOnlyGuardar() {
   if (!rt.getActiveId()) return;
   if (isModeSala(rt.getSettings())) {
     /** @type {any} */
-    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
-    if (typeof gCopy.estadoActualCopiar === "function") {
-      await gCopy.estadoActualCopiar();
+    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gSave.estadoActualGuardar === "function") {
+      gSave.estadoActualGuardar();
       closeSOAPModal();
       return;
     }
   }
+  var activeId = rt.getActiveId();
+  var patient = patients.find(function (p) {
+    return p.id === activeId;
+  });
+  if (!patient) return;
   var text = estadoActualTextForCopy();
-  var ok = await copyToClipboardSafe(text);
-  rt.showToast(ok ? "Estado Actual copiado al portapapeles ✓" : "No se pudo copiar", ok ? "success" : "error");
+  if (!text.trim()) {
+    rt.showToast("No hay texto para guardar", "error");
+    return;
+  }
+  migratePatientMonitoreo(patient);
+  ensureMonitoreo(patient);
+  patient.monitoreo.textoGuardado = {
+    text: text,
+    savedAt: new Date().toISOString(),
+  };
+  saveState();
+  renderEstadoActualBar();
+  rt.showToast("Estado Actual guardado ✓", "success");
   closeSOAPModal();
 }
 
@@ -379,6 +395,6 @@ export const windowHandlers = {
   updateSOAPBalance,
   openSOAPModal,
   openEstadoActualModal,
-  estadoActualOnlyCopy,
+  estadoActualOnlyGuardar,
   estadoActualSaveAndCopy,
 };

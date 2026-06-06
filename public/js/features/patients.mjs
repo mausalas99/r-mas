@@ -1345,19 +1345,6 @@ function selectPatientCore(id) {
         rt.switchInnerTab('todo');
       }
     }
-    if (!isPaseMode() && getUiDensity() === 'normal') {
-      var pmanejo = patients.find(function (p) {
-        return p && String(p.id) === String(id);
-      });
-      if (
-        pmanejo &&
-        pmanejo.manejoPending &&
-        pmanejo.manejoPending.labSetId &&
-        !isManejoSectionHidden(settings)
-      ) {
-        rt.switchInnerTab('manejo');
-      }
-    }
     if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
       if (inner === 'todo' || !inner) {
         _roundOverviewMode = true;

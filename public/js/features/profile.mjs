@@ -33,7 +33,6 @@ import { isModeSala } from "../mode-features.mjs";
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
 import { isMobileWeb } from "../mobile-web.mjs";
-import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
 import {
   isClinicoUnlocked,
   openClinicoUnlockModal,
@@ -253,6 +252,9 @@ export function loadSettings() {
           verEl.textContent = v || "—";
           var LAST_SEEN_VERSION_KEY = "rplus-last-seen-app-version";
           var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
+          if (prev) {
+            window.__RPC_PREV_APP_VERSION__ = prev;
+          }
           if (RELEASE_NOTES_DEV_FORCE_SHOW) {
             initReleaseNotesDevPreviewIfEnabled(v);
           } else if (prev && v && prev !== v) {
@@ -375,7 +377,7 @@ function reconcileActiveInnerForAppMode(nowSala) {
     return;
   }
   if (nowSala && (current === "notas" || current === "indica")) {
-    switchInnerTab(isManejoTabGloballyHidden() ? "historia" : "manejo", { forceRender: true });
+    switchInnerTab("historia", { forceRender: true });
   } else if (!nowSala && current === "listado") {
     switchInnerTab("recetaHu", { forceRender: true });
   }
@@ -598,10 +600,7 @@ export function syncHideManejoSectionUI() {
   var row =
     document.getElementById("settings-hide-manejo-section")?.closest("label") ||
     document.getElementById("settings-hide-clinico-tab")?.closest("label");
-  if (row) row.style.display = isManejoTabGloballyHidden() ? "none" : "";
-  var cb = document.getElementById("settings-hide-manejo-section");
-  if (!cb) cb = document.getElementById("settings-hide-clinico-tab");
-  if (cb) cb.checked = isHideManejoSectionEnabled();
+  if (row) row.style.display = "none";
 }
 
 /** @deprecated alias */
@@ -628,39 +627,8 @@ export function applyHideClinicoTabEffects() {
   applyHideManejoSectionEffects();
 }
 
-export function setHideManejoSection(enabled) {
-  if (isManejoTabGloballyHidden()) {
-    syncHideManejoSectionUI();
-    rt.showToast("Manejo no está disponible en esta versión de R+.", "info");
-    return;
-  }
-  var st = settingsRef();
-  if (!enabled && !isClinicoUnlocked(st)) {
-    syncHideManejoSectionUI();
-    openClinicoUnlockModal(function () {
-      var next = settingsRef();
-      next.clinicoUnlocked = true;
-      next.hideManejoSection = false;
-      delete next.hideClinicoTab;
-      localStorage.setItem("rpc-settings", JSON.stringify(next));
-      syncHideManejoSectionUI();
-      applyHideManejoSectionEffects();
-      rt.showToast("Guía clínica disponible en el expediente.", "success");
-    });
-    return;
-  }
-  st.hideManejoSection = !!enabled;
-  if (enabled) st.hideClinicoTab = true;
-  else delete st.hideClinicoTab;
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+export function setHideManejoSection(_enabled) {
   syncHideManejoSectionUI();
-  applyHideManejoSectionEffects();
-  rt.showToast(
-    enabled
-      ? "Manejo oculto en Clínico (Nota e Indicaciones siguen disponibles)."
-      : "Manejo visible en el expediente.",
-    "success"
-  );
 }
 
 /** @deprecated alias — mismo control, solo oculta Manejo en interconsulta */

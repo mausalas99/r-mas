@@ -9,13 +9,29 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;');
 }
 
+/** @param {1|2|3} activeIndex */
+export function buildClinicalOnboardingStepperHtml(activeIndex) {
+  const labels = ['Modo', 'Perfil', 'Equipo'];
+  const dots = labels
+    .map((label, i) => {
+      const n = i + 1;
+      const cls = n === activeIndex ? ' is-active' : '';
+      return `<span class="${cls.trim()}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${n}</span>`;
+    })
+    .join('');
+  return `<div class="clinical-onboarding-progress" aria-label="Progreso del registro">${dots}</div>`;
+}
+
 /**
- * @param {{ title: string, leadHtml: string, bodyHtml: string }} parts
+ * @param {{ title: string, leadHtml: string, bodyHtml: string, stepperIndex?: number|null }} parts
  */
-export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml }) {
+export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml, stepperIndex = null }) {
+  const stepper =
+    stepperIndex != null ? buildClinicalOnboardingStepperHtml(/** @type {1|2|3} */ (stepperIndex)) : '';
   return `
     <div class="clinical-onboarding-stage">
       <div class="clinical-onboarding-stage-inner">
+        ${stepper}
         <h3 class="clinical-onboarding-title">${escapeHtml(title)}</h3>
         <div class="clinical-onboarding-lead">${leadHtml}</div>
         ${bodyHtml}

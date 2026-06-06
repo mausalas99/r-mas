@@ -8,10 +8,6 @@ import {
   filterEntriesByPatientDeletes,
 } from './lan-patient-merge.mjs';
 import { attachTodosMapToPatientEntries } from './livesync-patient-ids.mjs';
-import {
-  mergeManejoFromSources,
-  isLanManejoRoomSyncEnabled,
-} from './manejo-room-data.mjs';
 import { mergeClinicalOpsFromSources } from './clinical-ops-lan.mjs';
 
 /** @type {Record<string, (sources: object[]) => unknown>} */
@@ -25,13 +21,10 @@ const domainMergers = {
   clinicalOps(sources) {
     return mergeClinicalOpsFromSources(sources);
   },
-  manejo(sources) {
-    return mergeManejoFromSources(sources);
-  },
 };
 
 /**
- * Merge LAN room bundle sources (agenda/todos, patients, manejo, clinicalOps).
+ * Merge LAN room bundle sources (agenda/todos, patients, clinicalOps).
  * @param {object[]} sources
  */
 export function mergeLiveSyncFullBundles(sources) {
@@ -40,9 +33,6 @@ export function mergeLiveSyncFullBundles(sources) {
   let entries = domainMergers.patientEntries(list);
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos, base.todoTouchedPatientIds);
-  if (isLanManejoRoomSyncEnabled()) {
-    base.manejo = domainMergers.manejo(list);
-  }
   base.clinicalOps = domainMergers.clinicalOps(list);
   return base;
 }

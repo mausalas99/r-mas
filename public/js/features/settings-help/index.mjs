@@ -19,6 +19,13 @@ import {
   onHelpListKeydown,
 } from './help-content.mjs';
 import {
+  openLearnHub,
+  closeLearnHub,
+  syncLearnAprenderChrome,
+  renderLearnHubBody,
+} from './learn-hub.mjs';
+import { dismissGuardiaV7UpgradeCard } from './guardia-v7-upgrade-card.mjs';
+import {
   closeReleaseNotes,
   RELEASE_NOTES_DEV_FORCE_SHOW,
   formatCuratedReleaseNotesPlain,
@@ -67,6 +74,7 @@ import {
 
 settingsHelpBridge.closeReleaseNotes = closeReleaseNotes;
 settingsHelpBridge.closeQuickHelp = closeQuickHelp;
+settingsHelpBridge.openQuickHelp = openQuickHelp;
 settingsHelpBridge.syncLearnHubContinueVisibility = syncLearnHubContinueVisibility;
 
 export {
@@ -81,6 +89,10 @@ export {
   tourAfterBulkLabParse,
   tourOnBulkPreviewPatientSaved,
   closeQuickHelp,
+  openLearnHub,
+  closeLearnHub,
+  syncLearnAprenderChrome,
+  renderLearnHubBody,
   RELEASE_NOTES_DEV_FORCE_SHOW,
   formatCuratedReleaseNotesPlain,
   initReleaseNotesDevPreviewIfEnabled,
@@ -135,4 +147,7 @@ export const settingsHelpWindowHandlers = {
   resetAndStartOnboarding,
   closeLabBulkTourHintModal,
   insertLabTourSecondPatientExample,
+  openLearnHub,
+  closeLearnHub,
+  dismissGuardiaV7UpgradeCard,
 };

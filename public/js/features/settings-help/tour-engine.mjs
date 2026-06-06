@@ -9,6 +9,7 @@ import {
   getChapterForStep,
   getFirstStepIdForChapter,
   getNeoCompanionSteps,
+  getTourStepsForChapter,
 } from '../../onboarding-curriculum.mjs';
 import {
   loadTourProgress,
@@ -59,7 +60,8 @@ import {
   openEstadoActualRegistroModal,
 } from '../estado-actual-registro-modal.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
-import { getUiDensity, setUiDensity } from '../chrome.mjs';
+import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
+import { getUiDensity, setUiDensity, isGuardiaMode } from '../chrome.mjs';
 import {
   openConnectionDropdown,
   closeConnectionDropdown,
@@ -176,26 +178,54 @@ function shouldDeferGuidedTourForRegistration() {
   return false;
 }
 
-export function tryShowGuidedTourIntroIfNeeded() {
+export async function tryShowPostRegistrationEducationIfNeeded() {
   if (isMobileWeb() || shouldDeferGuidedTourForRegistration()) return;
-  var cur = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
-  var stored = '';
+  const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
+  if (needsClinicalOnboarding()) return;
+
+  const cur = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
+  const prev = normalizeTourVersionLabel(window.__RPC_PREV_APP_VERSION__ || '');
+  let stored = '';
   try {
-    stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
+    stored = localStorage.getItem(GUIDED_TOUR_LS_KEY) || '';
   } catch (_ls) {}
-  if (shouldShowGuidedTourIntro(cur, stored)) setTimeout(showTourIntroModal, 80);
+  const { isGuardiaV7TrackComplete } = await import('../../guardia-v7-progress.mjs');
+  const { shouldOfferGuardiaV7Education, shouldShowFundamentosTourIntro } = await import(
+    '../../guardia-v7-gating.mjs'
+  );
+
+  if (shouldOfferGuardiaV7Education({
+    prevVersion: prev,
+    curVersion: cur,
+    needsOnboarding: false,
+    trackComplete: isGuardiaV7TrackComplete(),
+  })) {
+    const { maybeShowGuardiaV7UpgradeCard } = await import('./guardia-v7-upgrade-card.mjs');
+    maybeShowGuardiaV7UpgradeCard({ delayMs: 2000 });
+    return;
+  }
+  if (shouldShowFundamentosTourIntro({ curVersion: cur, storedDoneVersion: stored, needsOnboarding: false })) {
+    setTimeout(showTourIntroModal, 80);
+  }
+}
+
+export function tryShowGuidedTourIntroIfNeeded() {
+  void tryShowPostRegistrationEducationIfNeeded();
 }
 
 function initGuidedTourGate() {
   if (isMobileWeb()) return;
+  void import('./learn-hub.mjs').then(function (hub) {
+    if (typeof hub.syncLearnAprenderChrome === 'function') hub.syncLearnAprenderChrome();
+  });
   resolveAppVersionForTour()
     .then(function (v) {
       window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
-      tryShowGuidedTourIntroIfNeeded();
+      void tryShowPostRegistrationEducationIfNeeded();
     })
     .catch(function () {
       window.__RPC_APP_VERSION__ = 'dev';
-      tryShowGuidedTourIntroIfNeeded();
+      void tryShowPostRegistrationEducationIfNeeded();
     });
 }
 
@@ -259,9 +289,23 @@ function guidedTourIntroChooseInterconsulta() {
 
 export function syncLearnHubContinueVisibility() {
   var btn = document.getElementById('btn-learn-continue');
-  if (!btn) return;
-  var p = loadTourProgress();
-  btn.style.display = p && !tourState.guidedTourActive ? '' : 'none';
+  if (btn) {
+    var p = loadTourProgress();
+    btn.style.display = p && !tourState.guidedTourActive ? '' : 'none';
+  }
+  var hubBd = document.getElementById('learn-hub-backdrop');
+  if (hubBd && hubBd.classList.contains('open')) {
+    void import('./learn-hub.mjs').then(function (hub) {
+      if (typeof hub.renderLearnHubBody === 'function') hub.renderLearnHubBody('guardia-v7');
+    });
+  }
+}
+
+function resolveTourBranch() {
+  if (tourState.guidedTourBranch === 'interconsulta') return 'interconsulta';
+  if (tourState.guidedTourBranch === 'guardia-v7') return 'guardia-v7';
+  if (tourState.guidedTourBranch === 'quick-route') return 'quick-route';
+  return 'sala';
 }
 
 function persistTourProgressDebounced() {
@@ -269,10 +313,11 @@ function persistTourProgressDebounced() {
   if (tourState.persistTourProgressTimer) clearTimeout(tourState.persistTourProgressTimer);
   tourState.persistTourProgressTimer = setTimeout(function () {
     tourState.persistTourProgressTimer = null;
-    var branch = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+    var branch = resolveTourBranch();
     var ch = getChapterForStep(tourState.tourStepId, branch);
     saveTourProgress({
       branch: branch,
+      track: branch,
       stepId: tourState.tourStepId,
       chapterId: ch.id,
       mode: tourState.guidedTourMode,
@@ -301,11 +346,15 @@ function showTourDock() {
 }
 
 function hideTourDock() {
+  clearTourActionPoll();
   var d = document.getElementById('tour-dock');
   if (!d) return;
   d.classList.remove('tour-dock-visible');
   d.classList.remove('tour-dock-collapsed');
   d.classList.remove('tour-dock-pos-left');
+  d.classList.remove('tour-dock--guardia');
+  d.classList.remove('tour-dock--fundamentos');
+  d.classList.remove('tour-dock--quick-route');
   var btn = document.getElementById('btn-tour-collapse');
   if (btn) { btn.textContent = '–'; btn.setAttribute('aria-label', 'Minimizar tutorial'); }
 }
@@ -481,7 +530,12 @@ function syncTourSoapButtonHighlight() {
 
 function getGuidedTourSteps() {
   if (tourState.guidedTourMode === 'neo') return getNeoCompanionSteps();
-  return getTourSteps(tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
+  const branch = resolveTourBranch();
+  if (tourState.guidedTourModuleOnly && tourState.guidedTourChapterScope) {
+    const scoped = getTourStepsForChapter(tourState.guidedTourChapterScope, branch);
+    if (scoped.length) return scoped;
+  }
+  return getTourSteps(branch);
 }
 
 function demoLabAlreadyProcessedForTour() {
@@ -506,11 +560,7 @@ function openTourEstadoActualRegistroDemo() {
 }
 
 function isEstadoActualPostRegistroTourStep(id) {
-  return (
-    id === 'estado_actual_snapshot' ||
-    id === 'estado_actual_charts' ||
-    id === 'estado_actual_historial'
-  );
+  return id === 'estado_actual_review';
 }
 
 function prepareEstadoActualPanelForTour(onPanelReady) {
@@ -529,6 +579,52 @@ function prepareEstadoActualPanelForTour(onPanelReady) {
   }
 }
 
+function isConnectionDropdownOpenForTour() {
+  var dd = document.getElementById('connection-dropdown');
+  if (dd && dd.classList.contains('open')) return true;
+  var syncBtn = document.getElementById('btn-header-team-sync');
+  return !!(syncBtn && syncBtn.getAttribute('aria-expanded') === 'true');
+}
+
+function isMobileInviteExpandedForTour() {
+  var details = document.querySelector('details.lan-invite-collapsible--mobile');
+  if (details && details.open) return true;
+  var pairing = document.getElementById('lan-pairing-display-mobile');
+  return !!(pairing && !pairing.hidden);
+}
+
+function isGuardiaEntregasFilterActiveForTour() {
+  if (clinicalSessionContext && clinicalSessionContext.guardiaMode) return true;
+  var boardBtn = document.getElementById('btn-guardia-mode-toggle');
+  return !!(
+    boardBtn &&
+    (boardBtn.getAttribute('aria-pressed') === 'true' || boardBtn.classList.contains('is-active'))
+  );
+}
+
+function clearTourActionPoll() {
+  if (tourState.tourActionPollTimer) {
+    clearInterval(tourState.tourActionPollTimer);
+    tourState.tourActionPollTimer = null;
+  }
+  if (tourState.tourActionClickHandler) {
+    document.removeEventListener('click', tourState.tourActionClickHandler, true);
+    document.removeEventListener('toggle', tourState.tourActionClickHandler, true);
+    tourState.tourActionClickHandler = null;
+  }
+}
+
+function armTourActionPoll() {
+  clearTourActionPoll();
+  if (!tourState.guidedTourActive || !stepRequiresUserAction(tourState.tourStepId)) return;
+  tourState.tourActionPollTimer = setInterval(syncTourActionNextButton, 300);
+  tourState.tourActionClickHandler = function () {
+    syncTourActionNextButton();
+  };
+  document.addEventListener('click', tourState.tourActionClickHandler, true);
+  document.addEventListener('toggle', tourState.tourActionClickHandler, true);
+}
+
 function syncTourActionNextButton() {
   var nextBtn = document.getElementById('tour-btn-next');
   if (!nextBtn || !tourState.guidedTourActive) return;
@@ -543,6 +639,24 @@ function syncTourActionNextButton() {
       nextBtn.style.display = '';
       nextBtn.textContent = 'Siguiente';
     }
+  }
+  if (
+    (tourState.tourStepId === 'gv7_lan_wifi' || tourState.tourStepId === 'livesync_desktop') &&
+    isConnectionDropdownOpenForTour()
+  ) {
+    nextBtn.style.display = '';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Siguiente';
+  }
+  if (tourState.tourStepId === 'gv7_mobile_link' && isMobileInviteExpandedForTour()) {
+    nextBtn.style.display = '';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Siguiente';
+  }
+  if (tourState.tourStepId === 'gv7_guardia_toggle' && isGuardiaEntregasFilterActiveForTour()) {
+    nextBtn.style.display = '';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Siguiente';
   }
 }
 
@@ -566,6 +680,15 @@ var TOUR_DOCK_LEFT_STEPS = {
   ic_indica: 1,
   estado_actual_registro: 1,
   listado_problemas: 1,
+  sala_casiopea_lab: 1,
+  sala_casiopea_trends: 1,
+  livesync_desktop: 1,
+  livesync_mobile: 1,
+  gv7_lan_wifi: 1,
+  gv7_lan_pin: 1,
+  gv7_mobile_link: 1,
+  gv7_mobile_scope: 1,
+  gv7_mobile_vs_sala: 1,
 };
 
 function syncTourDockPlacement() {
@@ -600,12 +723,62 @@ function tourApplySpotlightForStep(id, t, scrollDelayMs) {
 // Lleva al usuario al elemento del paso actual: cambia tab/tab interno,
 // abre Mi Perfil/Ajustes si aplica, hace scroll y aplica spotlight para
 // que la zona de avance sea inequívoca.
+function applyGuardiaTourLayoutForStep(stepId) {
+  void import('../../tour-guards.mjs').then((guards) => {
+    if (!guards.isGuidedTourRunning()) return;
+    if (guards.shouldShowGuardiaBoardWithoutEntrega(stepId)) {
+      void Promise.all([
+        import('../clinical-entrega.mjs'),
+        import('../entrega-roster-panel.mjs'),
+      ]).then(([entrega, roster]) => {
+        entrega.endEntregaPhase();
+        roster.closeEntregaRosterPanel();
+        roster.deactivateTurnoActivo();
+        document.documentElement.classList.remove('guardia-entrega-roster-open');
+        if (typeof rt.renderGuardiaBoard === 'function') {
+          rt.renderGuardiaBoard(rt.getSettings());
+        }
+      });
+      return;
+    }
+    if (guards.shouldOpenEntregaRosterForTour(stepId)) {
+      void import('../clinical-entrega.mjs').then((entrega) => {
+        if (!entrega.isEntregaPhaseActive()) {
+          void entrega.beginEntregaPhaseFlow({
+            settings: rt.getSettings(),
+            renderGuardiaBoard: rt.renderGuardiaBoard,
+          });
+          return;
+        }
+        void import('../entrega-roster-panel.mjs').then((roster) => {
+          if (!roster.isEntregaRosterOpen()) {
+            roster.openEntregaRosterPanel(rt.getSettings());
+            rt.renderGuardiaBoard?.(rt.getSettings());
+          }
+        });
+      });
+    }
+  });
+}
+
 function applyTourTargetForStep(id) {
-  if (tourState.guidedTourActive) {
+  var tourBranch = resolveTourBranch();
+  var t = getTourTarget(id, tourBranch);
+  if (tourState.guidedTourActive && !t?.openGuardiaDensity) {
     setUiDensity('normal');
   }
-  var t = getTourTarget(id, tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
   if (!t) return;
+
+  if (t.openGuardiaDensity) {
+    if (!isGuardiaMode()) {
+      setUiDensity('guardia');
+      if (typeof rt.renderGuardiaBoard === 'function') rt.renderGuardiaBoard(rt.getSettings());
+    }
+    applyGuardiaTourLayoutForStep(id);
+  }
+  if (t.exitGuardiaDensity && isGuardiaMode()) {
+    setUiDensity('normal');
+  }
 
   if (TOUR_STEPS_USE_DEMO_PEREZ[id]) {
     ensureTourPrimaryDemoPatientActive();
@@ -668,7 +841,7 @@ function applyTourTargetForStep(id) {
     clearAllTourSpotlights();
     if (!t.selector) return;
     var postRegStepId = id;
-    var spotlightDelay = postRegStepId === 'estado_actual_charts' ? 520 : 340;
+    var spotlightDelay = 400;
     setTimeout(function () {
       if (!tourState.guidedTourActive || tourState.tourStepId !== postRegStepId) return;
       prepareEstadoActualPanelForTour(function () {
@@ -705,6 +878,7 @@ function applyTourNavigationForStep(id) { applyTourTargetForStep(id); }
 export {
   parseSemverCoreParts,
   compareSemverNumericArrays,
+  resolveTourBranch,
   resolveAppVersionForTour,
   initGuidedTourGate,
   markGuidedTourVersionDone,
@@ -734,6 +908,8 @@ export {
   isEstadoActualPostRegistroTourStep,
   prepareEstadoActualPanelForTour,
   syncTourActionNextButton,
+  armTourActionPoll,
+  clearTourActionPoll,
   guidedTourStepIndex,
   clearAllTourSpotlights,
   syncTourDockPlacement,

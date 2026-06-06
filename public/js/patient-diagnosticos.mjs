@@ -1,8 +1,37 @@
-import {
-  parseDiagnosticosText,
-  formatDiagnosticosCopy,
-} from './vpo-dx-inference.mjs';
 import { mergeAccesosPatientFields } from './patient-accesos.mjs';
+
+function normalizePlusSeparators(text) {
+  return String(text || '')
+    .replace(/[\uFF0B\u2795]/g, '+')
+    .replace(/\s+\+\s+/g, ' + ');
+}
+
+/** @param {string} text @returns {string[]} */
+export function parseDiagnosticosText(text) {
+  var raw = normalizePlusSeparators(String(text || '').trim());
+  if (!raw) return [];
+  var parts = /\+/.test(raw) ? raw.split(/\s*\+\s*/) : raw.split(/\r?\n/);
+  return parts
+    .map(function (p) {
+      return String(p || '')
+        .trim()
+        .replace(/^\d+\.\s*/, '')
+        .toUpperCase();
+    })
+    .filter(Boolean);
+}
+
+/** @param {string[]} list @returns {string} */
+export function formatDiagnosticosCopy(list) {
+  return (list || [])
+    .map(function (d, i) {
+      return i + 1 + '. ' + String(d || '').trim();
+    })
+    .filter(function (line) {
+      return line.length > 2;
+    })
+    .join('\n');
+}
 
 /** @param {Record<string, unknown>|null|undefined} patient */
 export function ensurePatientDiagnosticos(patient) {
@@ -85,7 +114,6 @@ export function preloadNoteDxFromPatient(note, patient) {
   return true;
 }
 
-/** @param {Record<string, unknown>} patient @param {string[]} list */
 /** @param {Record<string, unknown>} target @param {Record<string, unknown>|undefined} source */
 export function mergeCensoPatientFields(target, source) {
   if (!target || !source) return;

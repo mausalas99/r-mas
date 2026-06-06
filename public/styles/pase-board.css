@@ -4677,6 +4677,35 @@ html.clinical-onboarding-active #main-area {
   box-sizing: border-box;
 }
 
+.guardia-v7-upgrade-card {
+  margin: 12px auto 16px;
+  max-width: min(720px, calc(100% - 24px));
+  pointer-events: auto;
+}
+
+.guardia-v7-upgrade-bullets {
+  margin: 0 0 16px;
+  padding-left: 1.2rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.guardia-v7-upgrade-bullets li {
+  margin-bottom: 6px;
+}
+
+.guardia-v7-upgrade-bullets strong {
+  color: var(--text);
+}
+
+.guardia-v7-upgrade-actions {
+  margin-top: 4px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .clinical-onboarding-status {
   margin: 0;
   color: var(--text-muted);

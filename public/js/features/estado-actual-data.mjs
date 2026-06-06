@@ -444,7 +444,7 @@ function resolveMonitoreoContainer(patientOrMonitoreo) {
  * @param {MedicionHistorial | unknown} medicion
  */
 export function appendMedicion(patientOrMonitoreo, medicion) {
-  if (!medicionHasCoreData(medicion)) return { ok: false, error: 'empty' };
+  if (!medicion || typeof medicion !== 'object') return { ok: false, error: 'empty' };
   /** @type {any} */
   var mon = resolveMonitoreoContainer(patientOrMonitoreo);
   if (!mon) return { ok: false, error: 'empty' };

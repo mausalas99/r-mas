@@ -51,6 +51,7 @@ import {
   shouldShowGuardiaPatientActionMenu,
   wireGuardiaPatientActionSheetDismiss,
 } from './guardia-patient-action-sheet.mjs';
+import { shouldSuppressGuardiaEntregaBootstrap } from '../tour-guards.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
@@ -83,7 +84,7 @@ async function bootstrapGuardiaViewOnEnter(settings) {
     return;
   }
 
-  if (!isEntregaPhaseActive()) {
+  if (!isEntregaPhaseActive() && !shouldSuppressGuardiaEntregaBootstrap()) {
     await beginEntregaPhaseFlow({ settings, renderGuardiaBoard });
   }
 }

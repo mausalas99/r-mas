@@ -2,8 +2,6 @@
  * Consolidated expediente tabs (Sala + Interconsulta; granular fallback unused).
  */
 import { isModeSala } from './mode-features.mjs';
-import { isClinicoAccessHidden } from './clinico-access.mjs';
-import { isManejoTabGloballyHidden } from './clinical-product-policy.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 
 export const GRANULAR_TABS = [
@@ -15,7 +13,6 @@ export const GRANULAR_TABS = [
   'cult',
   'listado',
   'todo',
-  'manejo',
   'vpo',
   'recetaHu',
 ];
@@ -33,19 +30,17 @@ const CLINICO_GRANULAR_TABS = [
   'estadoActual',
   'eventualidades',
   'vpo',
-  'manejo',
 ];
 export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'resultados', 'salida'];
 
-/** @deprecated use isManejoSectionHidden — hideClinicoTab ahora solo oculta Manejo (compat). */
+/** @deprecated Manejo eliminado — siempre oculto. */
 export function isClinicoTabHidden(settings) {
-  return isManejoSectionHidden(settings) && isModeSala(settings);
+  return isModeSala(settings);
 }
 
-/** Interconsulta: oculta segmento Manejo; mantiene Nota + Indicaciones en Clínico. */
-export function isManejoSectionHidden(settings) {
-  if (isManejoTabGloballyHidden()) return true;
-  return isClinicoAccessHidden(settings);
+/** @deprecated Manejo eliminado — siempre oculto. */
+export function isManejoSectionHidden(_settings) {
+  return true;
 }
 
 export function isClinicoCompositeVisible(settings) {
@@ -69,8 +64,8 @@ export function getConsolidatedTabs(settings) {
   return tabs;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'historia', 'vpo', 'manejo'];
-export const CLINICO_SECTIONS_SALA = ['historia', 'estadoActual', 'eventualidades', 'manejo'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'historia', 'vpo'];
+export const CLINICO_SECTIONS_SALA = ['historia', 'estadoActual', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -88,7 +83,6 @@ const GRANULAR_PANE_ORDER = [
   'cult',
   'listado',
   'todo',
-  'manejo',
   'vpo',
   'estadoActual',
   'eventualidades',
@@ -105,7 +99,6 @@ function granularToConsolidatedMap(settings) {
     notas: { tab: 'clinico', section: 'notas' },
     indica: { tab: 'clinico', section: 'indica' },
     historia: { tab: 'clinico', section: 'historia' },
-    manejo: { tab: 'clinico', section: 'manejo' },
     tend: { tab: 'resultados', section: 'tend' },
     cult: { tab: 'resultados', section: 'cult' },
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
@@ -132,7 +125,6 @@ function paneMountSpec(granularTab, settings) {
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     historia: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
-    manejo: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     tend: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
@@ -149,14 +141,9 @@ function paneMountSpec(granularTab, settings) {
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    var salaSections = ['historia', 'estadoActual', 'eventualidades'];
-    if (!isManejoSectionHidden(settings)) salaSections.push('manejo');
-    return salaSections;
+    return ['historia', 'estadoActual', 'eventualidades'];
   }
-  if (isManejoSectionHidden(settings)) {
-    return ['notas', 'indica', 'vpo'];
-  }
-  return ['notas', 'indica', 'vpo', 'manejo'];
+  return ['notas', 'indica', 'vpo'];
 }
 
 export function getSalidaSections(settings) {
@@ -169,7 +156,7 @@ export function useConsolidatedExpedienteTabs(_settings) {
 }
 
 export function resolveConsolidatedTarget(granularTab, settings) {
-  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+  if (granularTab === 'manejo') {
     return isModeSala(settings)
       ? { tab: 'paciente', section: null }
       : { tab: 'clinico', section: 'notas' };
@@ -188,7 +175,7 @@ export function resolveConsolidatedTarget(granularTab, settings) {
 }
 
 export function consolidatedTabForGranular(granularTab, settings) {
-  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+  if (granularTab === 'manejo') {
     return isModeSala(settings) ? 'paciente' : 'clinico';
   }
   return resolveConsolidatedTarget(granularTab, settings).tab;
@@ -197,7 +184,7 @@ export function consolidatedTabForGranular(granularTab, settings) {
 export function migrateGranularInner(granularTab, settings) {
   if (!granularTab) return 'todo';
   if (granularTab === 'estadoActual' && !isModeSala(settings)) return 'todo';
-  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+  if (granularTab === 'manejo') {
     return isModeSala(settings) ? 'todo' : 'notas';
   }
   var map = granularToConsolidatedMap(settings || {});
@@ -339,11 +326,10 @@ function mountConsolidatedNested(settings) {
 
 export function syncConsolidatedSegmentBarVisibility(settings) {
   var sala = isModeSala(settings);
-  var hideManejo = isManejoSectionHidden(settings);
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'historia', 'estadoActual', 'eventualidades', 'vpo', 'manejo'].forEach(
+    ['notas', 'indica', 'historia', 'estadoActual', 'eventualidades', 'vpo'].forEach(
       function (section) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
@@ -353,8 +339,6 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'vpo') {
           btn.style.display = sala ? 'none' : '';
-        } else if (section === 'manejo') {
-          btn.style.display = hideManejo ? 'none' : sala ? '' : '';
         } else {
           btn.style.display = sala ? 'none' : '';
         }

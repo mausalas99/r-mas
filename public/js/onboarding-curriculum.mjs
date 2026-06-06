@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 7;
+export const CURRICULUM_VERSION = 9;
 
 export const SALA_CHAPTERS = [
   {
@@ -21,9 +21,7 @@ export const SALA_CHAPTERS = [
       'historia_clinica',
       'estado_actual',
       'estado_actual_registro',
-      'estado_actual_snapshot',
-      'estado_actual_charts',
-      'estado_actual_historial',
+      'estado_actual_review',
       'eventualidades',
     ],
   },
@@ -93,6 +91,81 @@ export const NEO_COMPANION = {
   stepIds: ['sala_casiopea_lab', 'sala_casiopea_trends'],
 };
 
+export const GUARDIA_V7_CHAPTERS = [
+  {
+    id: 'ch-guardia-modo',
+    title: 'Modo Guardia',
+    stepIds: [
+      'gv7_guardia_chip',
+      'gv7_guardia_tab',
+      'gv7_guardia_scope',
+      'gv7_guardia_toggle',
+      'gv7_guardia_exit',
+    ],
+  },
+  {
+    id: 'ch-guardia-censo',
+    title: 'Censo y alcance',
+    stepIds: ['gv7_censo_r1', 'gv7_censo_r4', 'gv7_censo_sync'],
+  },
+  {
+    id: 'ch-guardia-entrega',
+    title: 'Modo Entrega',
+    stepIds: [
+      'gv7_entrega_phase',
+      'gv7_entrega_patient',
+      'gv7_entrega_roster',
+      'gv7_entrega_pendientes',
+    ],
+  },
+  {
+    id: 'ch-guardia-lan',
+    title: 'LAN y equipos',
+    stepIds: [
+      'gv7_lan_wifi',
+      'gv7_lan_pin',
+      'gv7_lan_directorio',
+      'gv7_lan_rotacion',
+    ],
+  },
+  {
+    id: 'ch-guardia-movil',
+    title: 'iPad y móvil',
+    stepIds: ['gv7_mobile_link', 'gv7_mobile_scope', 'gv7_mobile_vs_sala'],
+  },
+];
+
+export const QUICK_ROUTE_CHAPTERS = [
+  {
+    id: 'ch-quick-route',
+    title: 'Ruta rápida',
+    stepIds: [
+      'map_lab_teaser',
+      'lab_parse',
+      'gv7_guardia_chip',
+      'gv7_lan_wifi',
+      'gv7_entrega_phase',
+      'quick_wrap',
+    ],
+  },
+];
+
+export const QUICK_ROUTE_HUB_MODULE = {
+  id: 'ch-quick-route',
+  label: 'Ruta rápida · turno en 5 min',
+  chapterId: 'ch-quick-route',
+  branch: 'quick-route',
+  stepCount: QUICK_ROUTE_CHAPTERS[0].stepIds.length,
+};
+
+export const GUARDIA_V7_HUB_MODULES = GUARDIA_V7_CHAPTERS.map((ch) => ({
+  id: ch.id,
+  label: ch.title,
+  chapterId: ch.id,
+  branch: 'guardia-v7',
+  stepCount: ch.stepIds.length,
+}));
+
 export const HUB_MODULES = [
   { id: 'mod-ch1', chapterId: 'ch-patient-lab', label: 'Laboratorio y pacientes', branch: 'sala' },
   { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Expediente · Clínico', branch: 'sala' },
@@ -105,7 +178,10 @@ export const HUB_MODULES = [
 ];
 
 function chaptersForBranch(branch) {
-  return branch === 'interconsulta' ? IC_CHAPTERS : SALA_CHAPTERS;
+  if (branch === 'interconsulta') return IC_CHAPTERS;
+  if (branch === 'guardia-v7') return GUARDIA_V7_CHAPTERS;
+  if (branch === 'quick-route') return QUICK_ROUTE_CHAPTERS;
+  return SALA_CHAPTERS;
 }
 
 export function getSalaTourSteps() {
@@ -114,6 +190,14 @@ export function getSalaTourSteps() {
 
 export function getInterconsultaTourSteps() {
   return IC_CHAPTERS.flatMap((c) => c.stepIds.slice());
+}
+
+export function getGuardiaV7TourSteps() {
+  return GUARDIA_V7_CHAPTERS.flatMap((c) => c.stepIds.slice());
+}
+
+export function getQuickRouteTourSteps() {
+  return QUICK_ROUTE_CHAPTERS.flatMap((c) => c.stepIds.slice());
 }
 
 export function getNeoCompanionSteps() {
@@ -130,18 +214,49 @@ export function getChapterForStep(stepId, branch) {
 }
 
 export function getChapterProgressLabel(stepId, branch) {
+  if (branch === 'quick-route') {
+    const steps = getQuickRouteTourSteps();
+    const idx = steps.indexOf(stepId);
+    const ch = QUICK_ROUTE_CHAPTERS[0];
+    return {
+      chapterTitle: ch?.title || 'Ruta rápida',
+      stepInChapter: idx >= 0 ? idx + 1 : 1,
+      chapterSteps: steps.length,
+      chapterIndex: 1,
+      chapterCount: 1,
+      isCompanion: false,
+    };
+  }
+
   const ch = getChapterForStep(stepId, branch);
   const chapters = chaptersForBranch(branch);
   const chapter = chapters.find((c) => c.id === ch.id);
   if (!chapter) {
     const neoIdx = NEO_COMPANION.stepIds.indexOf(stepId);
+    if (neoIdx >= 0) {
+      return {
+        chapterTitle: NEO_COMPANION.title,
+        stepInChapter: neoIdx + 1,
+        chapterSteps: NEO_COMPANION.stepIds.length,
+        chapterIndex: 0,
+        chapterCount: 1,
+        isCompanion: true,
+      };
+    }
+    const linear =
+      branch === 'guardia-v7'
+        ? getGuardiaV7TourSteps()
+        : branch === 'interconsulta'
+          ? getInterconsultaTourSteps()
+          : getSalaTourSteps();
+    const linearIdx = linear.indexOf(stepId);
     return {
-      chapterTitle: NEO_COMPANION.title,
-      stepInChapter: neoIdx + 1,
-      chapterSteps: NEO_COMPANION.stepIds.length,
-      chapterIndex: 0,
-      chapterCount: 1,
-      isCompanion: true,
+      chapterTitle: ch.title || '',
+      stepInChapter: linearIdx >= 0 ? linearIdx + 1 : 1,
+      chapterSteps: linear.length,
+      chapterIndex: 1,
+      chapterCount: chapters.length,
+      isCompanion: false,
     };
   }
   const stepInChapter = chapter.stepIds.indexOf(stepId) + 1;
@@ -156,12 +271,35 @@ export function getChapterProgressLabel(stepId, branch) {
 }
 
 export function getFirstStepIdForChapter(chapterId, branch) {
-  const ch = chaptersForBranch(branch).find((c) => c.id === chapterId);
+  const ch = getChapterById(chapterId, branch);
   return ch && ch.stepIds.length ? ch.stepIds[0] : null;
+}
+
+export function getChapterById(chapterId, branch) {
+  return chaptersForBranch(branch).find((c) => c.id === chapterId) || null;
+}
+
+export function getTourStepsForChapter(chapterId, branch) {
+  const ch = getChapterById(chapterId, branch);
+  return ch ? ch.stepIds.slice() : [];
 }
 
 export function isValidStepForBranch(stepId, branch, mode) {
   if (mode === 'neo') return NEO_COMPANION.stepIds.includes(stepId);
+  if (branch === 'guardia-v7') return getGuardiaV7TourSteps().includes(stepId);
+  if (branch === 'quick-route') return getQuickRouteTourSteps().includes(stepId);
   const steps = branch === 'interconsulta' ? getInterconsultaTourSteps() : getSalaTourSteps();
   return steps.includes(stepId);
+}
+
+/** Maps legacy tour step ids after curriculum merges. */
+export function migrateTourStepId(stepId, branch) {
+  if (
+    stepId === 'estado_actual_snapshot' ||
+    stepId === 'estado_actual_charts' ||
+    stepId === 'estado_actual_historial'
+  ) {
+    return 'estado_actual_review';
+  }
+  return stepId;
 }

@@ -2,7 +2,6 @@
  * Acceso a la guía clínica (Manejo): oculta por defecto hasta desbloqueo explícito.
  */
 
-import { isClinicoUnlockDisabled } from './clinical-product-policy.mjs';
 import { clinicalServiceForSala, clinicalSalaUsesAbcOnlyRotation } from '../../lib/clinical-salas.mjs';
 import { OFF_CALL_INTERCONSULTAS_SERVICES } from '../../lib/clinical-team-composition.mjs';
 
@@ -51,25 +50,7 @@ export function isClinicoAccessHidden(settings) {
 var _unlockSuccessCb = null;
 
 export function openClinicoUnlockModal(onSuccess) {
-  if (isClinicoUnlockDisabled()) return;
-  var backdrop = document.getElementById('clinico-unlock-backdrop');
-  var input = document.getElementById('clinico-unlock-input');
-  var err = document.getElementById('clinico-unlock-error');
-  if (!backdrop || !input) {
-    if (typeof onSuccess === 'function') onSuccess();
-    return;
-  }
-  _unlockSuccessCb = typeof onSuccess === 'function' ? onSuccess : null;
-  input.value = '';
-  if (err) {
-    err.textContent = '';
-    err.hidden = true;
-  }
-  backdrop.classList.add('open');
-  backdrop.setAttribute('aria-hidden', 'false');
-  window.setTimeout(function () {
-    input.focus();
-  }, 40);
+  if (typeof onSuccess === 'function') onSuccess();
 }
 
 export function closeClinicoUnlockModal() {
@@ -81,20 +62,6 @@ export function closeClinicoUnlockModal() {
 }
 
 export function confirmClinicoUnlock() {
-  if (isClinicoUnlockDisabled()) return;
-  var input = document.getElementById('clinico-unlock-input');
-  var err = document.getElementById('clinico-unlock-error');
-  if (!input) return;
-  if (!matchesClinicoUnlockPhrase(input.value)) {
-    if (err) {
-      err.textContent =
-        'Escribe exactamente: «' + CLINICO_UNLOCK_PHRASE + '» (sin comillas).';
-      err.hidden = false;
-    }
-    input.focus();
-    input.select();
-    return;
-  }
   var cb = _unlockSuccessCb;
   closeClinicoUnlockModal();
   if (cb) cb();

@@ -52,6 +52,7 @@ export function renderSyncModeChoicePanel(host) {
     leadHtml:
       '<p>Elige antes de configurar tu perfil. La elección queda guardada en este equipo.</p>',
     bodyHtml: buildSyncModeChoiceBodyHtml(),
+    stepperIndex: 1,
   });
 }
 
@@ -65,6 +66,7 @@ export function renderLocalOnlyProfilePanel(host, settings) {
     title: 'Perfil local',
     leadHtml:
       '<p>R+ no usará red de guardia. Solo necesitamos cómo firmar notas y documentos en esta Mac.</p>',
+    stepperIndex: 2,
     bodyHtml: `
       <div class="clinical-onboard-form-shell clinical-onboard-form-shell--narrow">
         <form id="clinical-onboard-local-form" class="clinical-teams-create-form clinical-onboard-form clinical-onboard-form--local">

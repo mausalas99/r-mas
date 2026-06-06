@@ -251,7 +251,15 @@ function startHelpTourMain() {
 }
 
 function startTourModule(chapterId) {
-  var branch = String(chapterId || '').indexOf('ch-ic') === 0 ? 'interconsulta' : 'sala';
+  var cid = String(chapterId || '');
+  if (cid === 'ch-quick-route') {
+    startQuickRouteTour();
+    return;
+  }
+  var branch =
+    cid.indexOf('ch-guardia-') === 0 ? 'guardia-v7'
+      : cid.indexOf('ch-ic') === 0 ? 'interconsulta'
+        : 'sala';
   var stepId = getFirstStepIdForChapter(chapterId, branch);
   if (!stepId) return;
   if (tourState.guidedTourActive) {
@@ -264,8 +272,27 @@ function startTourModule(chapterId) {
     return;
   }
   tourState.guidedTourMode = 'base';
+  tourState.guidedTourChapterScope = cid;
+  tourState.guidedTourModuleOnly = true;
   resetTourUiBeforeResume();
   startOnboarding(branch, { resumeStepId: stepId, skipIntro: true });
+}
+
+function startQuickRouteTour() {
+  if (tourState.guidedTourActive) {
+    rt.showToast('Finaliza o pausa el tutorial actual primero.', 'error');
+    return;
+  }
+  if (tourState.miniTourActive) endMiniTour();
+  if (isPresentationModeActive()) {
+    rt.showToast('Finaliza el modo presentación antes de iniciar la ruta rápida.', 'error');
+    return;
+  }
+  tourState.guidedTourMode = 'base';
+  tourState.guidedTourChapterScope = 'ch-quick-route';
+  tourState.guidedTourModuleOnly = true;
+  resetTourUiBeforeResume();
+  startOnboarding('quick-route', { skipIntro: true });
 }
 
 function startHelpTourInterconsulta() {
@@ -301,6 +328,7 @@ export {
   startMiniTour,
   startHelpTourMain,
   startTourModule,
+  startQuickRouteTour,
   startHelpTourInterconsulta,
   togglePresentationModeFromHelp,
   miniTourNext,

@@ -28,7 +28,6 @@ import {
 import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
-import { invalidateManejoShell, renderManejo } from "./manejo.mjs";
 import {
   renderHistoriaClinicaPanel,
   invalidateHistoriaClinicaPanel,
@@ -67,7 +66,6 @@ import {
   syncPacienteDatosLayoutMode,
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
-import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
 import { isMobileWeb } from "../mobile-web.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
@@ -752,9 +750,6 @@ export function openPaseSectionInNormal(which) {
     switchInnerTab("tend");
   } else if (w === "med" || w === "medicamentos") {
     switchAppTab("med");
-  } else if (w === "manejo") {
-    switchAppTab("nota");
-    switchInnerTab(isManejoTabGloballyHidden() ? (isModeSala(rt.getSettings()) ? "historia" : "notas") : "manejo");
   } else if (w === "recetahu" || w === "receta-hu" || w === "receta_hu") {
     switchAppTab("nota");
     switchInnerTab("recetaHu");
@@ -1041,12 +1036,6 @@ function renderGranularInnerTab(tab, opts) {
     }, opts);
     return;
   }
-  if (tab === 'manejo') {
-    renderHeavyInnerTab(tab, function (done) {
-      renderManejo({ onReady: done, syncHeavy: !!opts.force });
-    }, opts);
-    return;
-  }
   if (tab === 'vpo') {
     renderVpo();
     markInnerTabRendered(tab);
@@ -1098,7 +1087,6 @@ export function refreshExpedienteForAppModeChange() {
   cancelDeferredIdleWork();
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
-  invalidateManejoShell();
   invalidateHistoriaClinicaPanel();
   invalidateEventualidadesPanel();
   invalidateInnerTabRenderCache();
@@ -1117,7 +1105,6 @@ export function refreshExpedienteAfterPatientSelect(opts) {
   cancelDeferredIdleWork();
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
-  invalidateManejoShell();
   invalidateHistoriaClinicaPanel();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
@@ -1165,7 +1152,6 @@ export function switchInnerTab(tab, opts) {
     cult: 1,
     listado: 1,
     todo: 1,
-    manejo: 1,
     historia: 1,
     estadoActual: 1,
     eventualidades: 1,
@@ -1174,10 +1160,6 @@ export function switchInnerTab(tab, opts) {
   if (expedienteTabs[tab] && isPaseMode() && getUiDensity() !== "normal") {
     if (tab === "recetaHu") {
       openPaseSectionInNormal("recetaHu");
-      return;
-    }
-    if (tab === "manejo") {
-      openPaseSectionInNormal("manejo");
       return;
     }
   }
@@ -1288,14 +1270,12 @@ export function renderInnerTabs() {
     show("itab-cult", true);
     show("itab-listado", true);
     show("itab-todo", true);
-    show("itab-manejo", !isManejoTabGloballyHidden());
     show("itab-receta-hu", false);
     setOrder("itab-datos", 1);
     setOrder("itab-todo", 2);
-    setOrder("itab-manejo", 3);
-    setOrder("itab-tend", 4);
-    setOrder("itab-cult", 5);
-    setOrder("itab-listado", 6);
+    setOrder("itab-tend", 3);
+    setOrder("itab-cult", 4);
+    setOrder("itab-listado", 5);
     setOrder("itab-notas", 99);
     setOrder("itab-indica", 99);
     setOrder("itab-receta-hu", 99);
@@ -1307,7 +1287,6 @@ export function renderInnerTabs() {
     show("itab-cult", true);
     show("itab-listado", false);
     show("itab-todo", true);
-    show("itab-manejo", !isManejoTabGloballyHidden());
     show("itab-receta-hu", true);
     setOrder("itab-datos", 1);
     setOrder("itab-todo", 2);
@@ -1315,8 +1294,7 @@ export function renderInnerTabs() {
     setOrder("itab-indica", 4);
     setOrder("itab-tend", 5);
     setOrder("itab-cult", 6);
-    setOrder("itab-manejo", 7);
-    setOrder("itab-receta-hu", 8);
+    setOrder("itab-receta-hu", 7);
     setOrder("itab-listado", 99);
   }
 

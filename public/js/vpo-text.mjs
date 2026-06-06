@@ -41,50 +41,11 @@ export function renderEkgWithFc(ekgText, fcLpm) {
 }
 
 /**
- * @param {object|null} scores — salida de computeVpoScores
+ * Líneas de valoración documentada (escalas ingresadas manualmente).
  * @param {object} state
- * @param {{ noCalculatedRisk?: boolean }} [opts]
  */
-export function formatRiskLines(scores, state, opts) {
-  if (opts && opts.noCalculatedRisk) return formatVpoDocumentationLines(state);
-  var lines = [];
-  var ahaC = state.ahaClinico || '';
-  var ahaQ = state.ahaQuirurgico || (scores.procedure && scores.procedure.ahaQuirurgico) || '';
-  if (ahaC) lines.push('AHA CLÍNICO: RIESGO ' + String(ahaC).toUpperCase());
-  if (ahaQ) lines.push('AHA QUIRÚRGICO: RIESGO ' + String(ahaQ).toUpperCase());
-  if (scores.rcri) {
-    lines.push(
-      'LEE: ' + scores.rcri.points + ' PUNTOS, CLASE ' + (scores.rcri.pctClass || scores.rcri.riskLabel)
-    );
-  }
-  if (scores.caprini) {
-    lines.push(
-      'CAPRINI: ' +
-        scores.caprini.points +
-        ' PUNTOS, RIESGO ' +
-        String(scores.caprini.riskLabel || '').toUpperCase()
-    );
-  }
-  if (scores.gupta) {
-    var pct = (scores.gupta.micaPercent * 100).toFixed(1);
-    lines.push(
-      'GUPTA: ' +
-        pct +
-        '% RIESGO DE INFARTO AGUDO A MIOCARDIO INTRAOPERATORIO O <30 DÍAS POST OPERACIÓN'
-    );
-  }
-  if (scores.ariscat) {
-    lines.push(
-      'ARISCAT: ' +
-        scores.ariscat.points +
-        ' PUNTOS, RIESGO ' +
-        String(scores.ariscat.riskLabel || '').toUpperCase() +
-        ', ' +
-        (scores.ariscat.detailPct || '') +
-        ' RIESGO.'
-    );
-  }
-  return lines;
+export function formatRiskLines(_scores, state) {
+  return formatVpoDocumentationLines(state);
 }
 
 /** @param {object} parts */

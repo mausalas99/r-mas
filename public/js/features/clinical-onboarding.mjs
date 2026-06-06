@@ -459,6 +459,7 @@ export async function renderOnboardingPanelInto(host) {
     host.innerHTML = buildOnboardingStageHtml({
       title: 'Configura tu rotación',
       leadHtml: gateLead,
+      stepperIndex: 2,
       bodyHtml: `
       <div class="clinical-onboard-form-shell">
         <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>

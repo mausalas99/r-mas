@@ -42,6 +42,7 @@ import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
 import {
   getDefaultRegistroRecordedAt,
   collectGlucometriasForRegistroWindow,
+  STANDARD_GLUCOMETRIA_TIMES,
 } from './estado-actual-registro-defaults.mjs';
 import { getVitalExtraStorageKey, getBaseVitalKey } from './estado-actual-vital-extras.mjs';
 import {
@@ -593,6 +594,13 @@ function wireFormInteractions(form) {
         syncIoBalance();
       }
     });
+
+    form.addEventListener('keydown', function (ev) {
+      if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+        ev.preventDefault();
+        registrarEstadoActualMedicion();
+      }
+    });
   }
 
   syncAlteredFields();
@@ -602,68 +610,125 @@ function wireFormInteractions(form) {
 /**
  * @returns {HTMLDivElement}
  */
+function focusNextGluValueOrIo(row) {
+  var list = row.parentElement;
+  if (!list) return;
+  if (row.classList.contains('ea-glu-row--standard')) {
+    var standardRows = list.querySelectorAll('.ea-glu-row--standard');
+    for (var si = 0; si < standardRows.length; si++) {
+      if (standardRows[si] !== row) continue;
+      if (si < standardRows.length - 1) {
+        var nextStd = standardRows[si + 1].querySelector('[data-ea-glu-value]');
+        if (nextStd && 'focus' in nextStd) {
+          nextStd.focus();
+          return;
+        }
+      }
+      break;
+    }
+  } else {
+    var next = row.nextElementSibling;
+    var nextFocus = next && next.querySelector('[data-ea-glu-value]');
+    if (nextFocus && 'focus' in nextFocus) {
+      nextFocus.focus();
+      return;
+    }
+  }
+  var ioIng = document.getElementById('ea-io-ing');
+  if (ioIng && 'focus' in ioIng) ioIng.focus();
+}
+
 function wireGluRowKeyboard(row) {
-  row.querySelectorAll('[data-ea-glu-value], [data-ea-glu-time]').forEach(function (el) {
-    el.addEventListener('keydown', function (ev) {
-      if (ev.key !== 'Enter') return;
-      ev.preventDefault();
+  var valueEl = row.querySelector('[data-ea-glu-value]');
+  if (!valueEl) return;
+  valueEl.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter') return;
+    ev.preventDefault();
+    if (row.classList.contains('ea-glu-row--extra')) {
       var list = row.parentElement;
-      if (!list) return;
-      var rows = list.querySelectorAll('.ea-glu-row');
-      if (row === rows[rows.length - 1]) {
+      var extraRows = list ? list.querySelectorAll('.ea-glu-row--extra') : [];
+      if (row === extraRows[extraRows.length - 1]) {
         var newRow = buildGluRow();
-        list.appendChild(newRow);
+        if (list) list.appendChild(newRow);
         var focusEl = newRow.querySelector('[data-ea-glu-value]');
         if (focusEl && 'focus' in focusEl) focusEl.focus();
-      } else {
-        var next = row.nextElementSibling;
-        var nextFocus = next && next.querySelector('[data-ea-glu-value]');
-        if (nextFocus && 'focus' in nextFocus) nextFocus.focus();
+        return;
       }
-    });
+    }
+    focusNextGluValueOrIo(row);
   });
+  var timeEl = row.querySelector('[data-ea-glu-time]:not([type="hidden"])');
+  if (timeEl) {
+    timeEl.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      if (valueEl && 'focus' in valueEl) valueEl.focus();
+    });
+  }
 }
 
 /**
  * @param {{ value?: number, time?: string } | null | undefined} [data]
+ * @param {{ standardTime?: string } | null | undefined} [opts]
  * @returns {HTMLDivElement}
  */
-function buildGluRow(data) {
+function buildGluRow(data, opts) {
+  opts = opts || {};
+  var standardTime = opts.standardTime ? String(opts.standardTime) : '';
+  var isStandard = !!standardTime;
   var row = document.createElement('div');
-  row.className = 'ea-glu-row';
-  row.innerHTML =
-    '<label class="ea-field ea-field--inline">' +
-    '<span class="ea-label">Glu</span>' +
-    '<input type="number" class="ea-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL">' +
-    '</label>' +
-    '<label class="ea-field ea-field--inline">' +
-    '<span class="ea-label">Hora</span>' +
-    '<input type="time" class="ea-input ea-input--time" data-ea-glu-time>' +
-    '</label>' +
-    '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>';
+  row.className = 'ea-glu-row' + (isStandard ? ' ea-glu-row--standard' : ' ea-glu-row--extra');
+  if (isStandard) row.setAttribute('data-ea-glu-standard', standardTime);
+  if (isStandard) {
+    row.innerHTML =
+      '<span class="ea-glu-time-badge">' +
+      standardTime +
+      '</span>' +
+      '<input type="number" class="ea-input ea-glu-value-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL" inputmode="numeric" aria-label="Glucometría ' +
+      standardTime +
+      '">' +
+      '<input type="hidden" data-ea-glu-time value="' +
+      standardTime +
+      '">';
+  } else {
+    row.innerHTML =
+      '<input type="time" class="ea-input ea-input--time ea-glu-time-input" data-ea-glu-time aria-label="Hora de glucometría">' +
+      '<input type="number" class="ea-input ea-glu-value-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL" inputmode="numeric" aria-label="Glucometría">' +
+      '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon ea-glu-remove-btn" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>';
+  }
+  var val = row.querySelector('[data-ea-glu-value]');
+  var time = row.querySelector('[data-ea-glu-time]');
   if (data) {
-    var val = row.querySelector('[data-ea-glu-value]');
-    var time = row.querySelector('[data-ea-glu-time]');
     if (val && data.value != null && 'value' in val) val.value = String(data.value);
-    if (time && data.time && 'value' in time) time.value = String(data.time);
+    if (!isStandard && time && data.time && 'value' in time) time.value = String(data.time);
   }
   var removeBtn = row.querySelector('[data-ea-glu-remove]');
   if (removeBtn) {
     removeBtn.addEventListener('click', function () {
-      var list = row.parentElement;
-      if (!list) return;
-      if (list.querySelectorAll('.ea-glu-row').length <= 1) {
-        var valEl = row.querySelector('[data-ea-glu-value]');
-        var timeEl = row.querySelector('[data-ea-glu-time]');
-        if (valEl) valEl.value = '';
-        if (timeEl) timeEl.value = '';
-        return;
-      }
       row.remove();
     });
   }
   wireGluRowKeyboard(row);
   return row;
+}
+
+/**
+ * @param {HTMLElement | null} gluList
+ * @param {Array<{ value?: number, time?: string }>} [prefill]
+ */
+function fillStandardGluList(gluList, prefill) {
+  if (!gluList) return;
+  /** @type {Map<string, { value?: number, time?: string }>} */
+  var byTime = new Map();
+  (prefill || []).forEach(function (g) {
+    var t = g.time != null ? String(g.time) : '';
+    if (t) byTime.set(t, g);
+  });
+  gluList.innerHTML = '';
+  gluList.classList.add('ea-glu-list--slots');
+  STANDARD_GLUCOMETRIA_TIMES.forEach(function (slotTime) {
+    gluList.appendChild(buildGluRow(byTime.get(slotTime), { standardTime: slotTime }));
+  });
 }
 
 /**
@@ -693,7 +758,7 @@ function syncEaGluMode(form) {
   } else {
     var gluList = form.querySelector('#ea-glu-list');
     if (gluList && !gluList.querySelector('.ea-glu-row')) {
-      gluList.appendChild(buildGluRow());
+      fillStandardGluList(gluList);
     }
   }
 }
@@ -793,8 +858,16 @@ export function applyEstadoActualParsedToForm(parsed) {
 
   var gluList = form.querySelector('#ea-glu-list');
   if (gluList && parsed.glucometrias.length) {
-    gluList.innerHTML = '';
+    var standardSet = new Set(STANDARD_GLUCOMETRIA_TIMES);
+    var standardGlus = [];
+    var extraGlus = [];
     parsed.glucometrias.forEach(function (g) {
+      var t = g.time != null ? String(g.time) : '';
+      if (t && standardSet.has(t)) standardGlus.push(g);
+      else extraGlus.push(g);
+    });
+    fillStandardGluList(gluList, standardGlus);
+    extraGlus.forEach(function (g) {
       gluList.appendChild(buildGluRow(g));
     });
   }
@@ -1448,20 +1521,19 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
 
   var gluList = form.querySelector('#ea-glu-list');
   if (gluList) {
-    gluList.innerHTML = '';
     if (!bombaToggle || !bombaToggle.checked) {
       var glus = collectGlucometriasForRegistroWindow(
         Array.isArray(monitoreo.historial) ? monitoreo.historial : []
       );
-      if (glus.length) {
-        glus.forEach(function (g) {
-          gluList.appendChild(buildGluRow(g));
-        });
-      } else {
-        gluList.appendChild(buildGluRow());
-      }
+      fillStandardGluList(gluList, glus);
+      var standardSet = new Set(STANDARD_GLUCOMETRIA_TIMES);
+      glus.forEach(function (g) {
+        var t = g.time != null ? String(g.time) : '';
+        if (t && !standardSet.has(t)) gluList.appendChild(buildGluRow(g));
+      });
     } else {
-      gluList.appendChild(buildGluRow());
+      gluList.innerHTML = '';
+      fillStandardGluList(gluList);
     }
   }
 
@@ -1478,7 +1550,7 @@ export function buildRegistroFormMarkup() {
     '<div class="ea-registro-shell">' +
     '<div class="ea-registro-form-scroll">' +
     '<form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;">' +
-    '<p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometrías desde ayer 08:00.</p>' +
+    '<p class="ea-registro-hint ea-muted">Cierre <strong>00:00</strong>. Ningún campo es obligatorio; basta un dato para registrar. Glu estándar: 08:00 y 16:00 ayer, 00:00 hoy. <span class="ea-registro-kbd-hint">⌘↵ registrar</span></p>' +
     '<label class="ea-field ea-field--datetime">' +
     '<span class="ea-label">Fecha y hora del registro</span>' +
     '<input type="datetime-local" class="ea-input rpc-datetime-input" id="ea-recorded-at" value="' +
@@ -1548,7 +1620,7 @@ export function wireEaRegistroForm() {
   wireFormInteractions(form);
   var gluList = document.getElementById('ea-glu-list');
   if (gluList && !gluList.querySelector('.ea-glu-row')) {
-    gluList.appendChild(buildGluRow());
+    fillStandardGluList(gluList);
   }
   var bombaList = document.getElementById('ea-bomba-list');
   if (bombaList && !bombaList.querySelector('.ea-bomba-row')) {
@@ -1563,10 +1635,12 @@ export function syncEaRegistroGluMode() {
 }
 
 /**
- * Limpia y prellena el formulario de registro (cierre 00:00 + turno previo).
- * @param {{ monitoreo?: ReturnType<typeof emptyMonitoreo> } | null | undefined} [patient]
+ * Limpia el formulario de registro (cierre 00:00, glu estándar vacías).
+ * @param {{ monitoreo?: ReturnType<typeof emptyMonitoreo> } | null | undefined} [_patient]
+ * @param {{ prefill?: boolean } | null | undefined} [opts]
  */
-export function resetEaRegistroForm(patient) {
+export function resetEaRegistroForm(_patient, opts) {
+  opts = opts || {};
   var form = document.getElementById('ea-form');
   if (!form) return;
   form.querySelectorAll('[data-ea-vital]').forEach(function (el) {
@@ -1594,10 +1668,7 @@ export function resetEaRegistroForm(patient) {
   if (egr && 'value' in egr) egr.value = '';
   if (evac && 'value' in evac) evac.value = '';
   var gluList = document.getElementById('ea-glu-list');
-  if (gluList) {
-    gluList.innerHTML = '';
-    gluList.appendChild(buildGluRow());
-  }
+  if (gluList) fillStandardGluList(gluList);
   var bombaToggle = document.getElementById('ea-bomba-enabled');
   var bombaBlock = document.getElementById('ea-bomba-block');
   var bombaList = document.getElementById('ea-bomba-list');
@@ -1607,8 +1678,8 @@ export function resetEaRegistroForm(patient) {
     bombaList.appendChild(buildBombaRow());
   }
 
-  if (patient && patient.monitoreo) {
-    prefillRegistroFormFromMonitoreo(form, patient.monitoreo);
+  if (opts.prefill && _patient && _patient.monitoreo) {
+    prefillRegistroFormFromMonitoreo(form, _patient.monitoreo);
   }
 
   syncEaGluMode(form);
@@ -1762,7 +1833,7 @@ export function renderEstadoActualPanel(opts) {
     '<div class="estado-actual-panel">' +
     '<header class="ea-panel-header">' +
     '<div class="ea-action-bar">' +
-    '<button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button>' +
+    '<button type="button" class="ea-btn" onclick="estadoActualGuardar()">Guardar</button>' +
     '<button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
     savedLabel +
@@ -1838,8 +1909,10 @@ function parseFormMedicion() {
       var timeEl = row.querySelector('[data-ea-glu-time]');
       var value = parseNumOrNull(valEl && 'value' in valEl ? valEl.value : '');
       if (value == null) return;
+      var slotTime = row.getAttribute('data-ea-glu-standard');
       var time =
-        timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
+        slotTime ||
+        (timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime);
       glucometrias.push({ value: value, time: time });
     });
   }
@@ -1901,7 +1974,7 @@ export function registrarEstadoActualMedicion() {
   }
   var result = appendMedicion(patient.monitoreo, medicion);
   if (!result.ok) {
-    rt.showToast('Agrega al menos un signo vital, glucometría o I/O', 'error');
+    rt.showToast('No se pudo registrar la medición', 'error');
     return;
   }
   syncDietKcalFromWeight(
@@ -1912,6 +1985,7 @@ export function registrarEstadoActualMedicion() {
     })
   );
   saveState();
+  resetEaRegistroForm(null);
   if (rt.invalidateInnerTabRenderCache) rt.invalidateInnerTabRenderCache('estadoActual');
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();
   renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
@@ -1945,16 +2019,36 @@ export function eliminarEstadoActualMedicion(id) {
   rt.showToast('Medición eliminada', 'success');
 }
 
-export async function estadoActualCopiar() {
-  if (!rt.getActiveId()) return;
+/**
+ * @param {ReturnType<typeof findActivePatient>} patient
+ * @param {string} text
+ */
+function persistEstadoActualTexto(patient, text) {
+  if (!patient || !patient.monitoreo) return;
+  patient.monitoreo.textoGuardado = {
+    text: text,
+    savedAt: new Date().toISOString(),
+  };
+  saveState();
+  renderEstadoActualBar();
+  var meta = document.getElementById('ea-meta-guardado');
+  if (meta && patient.monitoreo.textoGuardado.savedAt) {
+    meta.textContent = formatEaSavedLabel(patient.monitoreo.textoGuardado.savedAt);
+  }
+}
+
+export function estadoActualGuardar() {
+  var patient = findActivePatient();
+  if (!patient) return;
+  ensureMonitoreo(patient);
   var ta = document.getElementById('ea-texto');
   var text = ta && 'value' in ta ? String(ta.value) : '';
   if (!text.trim()) {
-    rt.showToast('No hay texto para copiar', 'error');
+    rt.showToast('No hay texto para guardar', 'error');
     return;
   }
-  var ok = await rt.copyToClipboardSafe(text);
-  rt.showToast(ok ? 'Estado Actual copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
+  persistEstadoActualTexto(patient, text);
+  rt.showToast('Estado Actual guardado ✓', 'success');
 }
 
 export async function estadoActualGuardarCopiar() {
@@ -1967,14 +2061,7 @@ export async function estadoActualGuardarCopiar() {
     rt.showToast('No hay texto para guardar', 'error');
     return;
   }
-  patient.monitoreo.textoGuardado = {
-    text: text,
-    savedAt: new Date().toISOString(),
-  };
-  saveState();
-  renderEstadoActualBar();
-  var meta = document.getElementById('ea-meta-guardado');
-  if (meta) meta.textContent = formatEaSavedLabel(patient.monitoreo.textoGuardado.savedAt);
+  persistEstadoActualTexto(patient, text);
   var ok = await rt.copyToClipboardSafe(text);
   rt.showToast(
     ok ? 'Estado Actual guardado y copiado ✓' : 'Guardado, pero no se pudo copiar',
@@ -2028,7 +2115,7 @@ export function toggleEaEstadoClinico() {
 export const windowHandlers = {
   registrarEstadoActualMedicion,
   eliminarEstadoActualMedicion,
-  estadoActualCopiar,
+  estadoActualGuardar,
   estadoActualGuardarCopiar,
   regenerarEstadoActualTexto,
   confirmEaMedField,

@@ -1,6 +1,5 @@
 // labs.js — lab parsing and rendering helpers (no app state)
 
-import { isAbgAnalysisHidden } from './clinical-product-policy.mjs';
 
 // ════════════════════════════════════════════════════════════════════
 // LAB PARSER — ported from ~/Laboratoriazo App/index.html
@@ -832,7 +831,7 @@ function toNum_(v) {
 }
 
 export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
-  if (isAbgAnalysisHidden()) return '';
+  if (true) return '';
   if (!bloqueGaso) return '';
   var bloqueX = gasoBlockForExtract_(bloqueGaso);
   var phData   = extraerConRango(['PH '], bloqueX);
@@ -1037,7 +1036,7 @@ function rebuildGasesFromResults_(rows) {
   if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
 
   var interp = '';
-  if (!isAbgAnalysisHidden()) {
+  if (false) {
     var phV = toNum_(values.pH);
     var pco2V = toNum_(values.pCO2);
     var hco3V = toNum_(values.Bica);
@@ -3066,7 +3065,7 @@ export function procesarLabs(textoBruto) {
     if (pltCit) resLabs.push(pltCit);
   }
   var gaso=parseGaso_(bloqueGaso, textoQS);if(gaso)resLabs.push(gaso);
-  var gasoInterp = isAbgAnalysisHidden() ? '' : buildGasoInterpretacion_(bloqueGaso, textoQS);
+  var gasoInterp = '';
   if (gasoInterp) resLabs.push(gasoInterp);
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);

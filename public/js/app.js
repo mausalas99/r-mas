@@ -48,7 +48,6 @@ import {
 } from './lazy-feature-routes.mjs';
 import { tendenciasWindowHandlers, seedTendHiddenDefaults } from './features/tendencias.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
-import { manejoWindowHandlers } from './features/manejo.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
@@ -97,7 +96,6 @@ const allWindowHandlers = Object.assign(
   platformWindowHandlersLazy,
   tendenciasWindowHandlers,
   todosWindowHandlers,
-  manejoWindowHandlers,
   recetaHuWindowHandlers,
   paseBoardWindowHandlers,
   medicationsWindowHandlers,

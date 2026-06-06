@@ -2,11 +2,6 @@ import { patients, labHistory, saveState } from '../app-state.mjs';
 import { sortLabHistoryChronological, parseFechaLabToMs } from '../tend-core.mjs';
 import { createMutationBuilder } from '../versioned-mutation.mjs';
 import {
-  scanHistoriaClinicaSafety,
-  pendingSafetyAcknowledgements,
-  buildSafetyAuditEntries,
-} from '../clinical-history-safety.mjs';
-import {
   lanPushHistoriaClinica,
   lanFetchHistoriaClinica,
   getActiveLiveSyncRoomId,
@@ -269,15 +264,6 @@ function trimHc(s) {
   return String(s || '').trim();
 }
 
-function scanSafety(patient) {
-  return scanHistoriaClinicaSafety({
-    data: _data,
-    catalogs: CATALOGS,
-    patient,
-    latestLabSet: latestLabSet(patient.id),
-  });
-}
-
 function labSetsInLookback(patientId) {
   var sets = labHistory[patientId];
   if (!Array.isArray(sets)) return [];
@@ -300,14 +286,12 @@ function latestLabSet(patientId) {
 
 function buildLabAnchorFromSet(set) {
   if (!set) return null;
-  var patient = activePatient();
-  var renalCtx = scanHistoriaClinicaSafety({ patient, latestLabSet: set }).labContext;
   return {
     setId: String(set.id || set.fecha || ''),
     fecha: String(set.fecha || ''),
-    egfr: renalCtx && renalCtx.egfr != null ? renalCtx.egfr : null,
-    creatinineMgDl: renalCtx && renalCtx.creatinineMgDl != null ? renalCtx.creatinineMgDl : null,
-    source: renalCtx && renalCtx.source ? renalCtx.source : 'lab',
+    egfr: null,
+    creatinineMgDl: null,
+    source: 'lab',
     capturedAt: new Date().toISOString(),
   };
 }
@@ -368,19 +352,6 @@ function stepComplete(n) {
   }
   if (n === 3) return !!(_data.meta && _data.meta.admissionConfirmedLabs);
   return false;
-}
-
-function renderSafetyBanner(rules) {
-  if (!rules.length) return '';
-  return (
-    '<div class="hc-safety-banner" role="alert">' +
-    rules
-      .map(function (r) {
-        return '<p><strong>' + esc(r.title) + ':</strong> ' + esc(r.message) + '</p>';
-      })
-      .join('') +
-    '</div>'
-  );
 }
 
 function renderStepperHeader() {
@@ -690,8 +661,6 @@ function renderPanel(root) {
     return;
   }
   var mobile = window.matchMedia('(max-width: 768px)').matches;
-  var safety = scanSafety(patient);
-  var pending = pendingSafetyAcknowledgements(safety.rules, _pendingAck);
 
   var toolbar =
     '<div class="hc-toolbar">' +
@@ -711,7 +680,6 @@ function renderPanel(root) {
     );
     root.innerHTML =
       toolbar +
-      renderSafetyBanner(pending) +
       '<div class="hc-summary"><pre class="hc-mobile-teaser">' +
       esc(teaser.slice(0, 600)) +
       '</pre><p class="profile-hint">Abre en escritorio para editar la historia completa.</p></div>';
@@ -720,7 +688,7 @@ function renderPanel(root) {
   }
 
   if (!_editMode) {
-    root.innerHTML = toolbar + renderSafetyBanner(pending);
+    root.innerHTML = toolbar;
     var lecturaMount = document.createElement('div');
     root.appendChild(lecturaMount);
     renderLecturaView(lecturaMount, patient);
@@ -732,7 +700,6 @@ function renderPanel(root) {
     _step === 1 ? renderStep1() : _step === 2 ? renderStep2(patient) : renderLabsStep(patient);
   root.innerHTML =
     toolbar +
-    renderSafetyBanner(pending) +
     renderStepperHeader() +
     stepBody +
     '<div class="hc-step-footer">' +
@@ -877,23 +844,9 @@ function applyLabSet(set, markConfirmed) {
   _dirtyKeys.add('meta');
 }
 
-async function saveHistoria(root, patient, skipAckCheck) {
+async function saveHistoria(root, patient, _skipAckCheck) {
   if (_data) applyClinicalHistoryUppercase(_data);
   syncSignosVitalesIngresoFromEstadoActual(patient);
-  var safety = scanSafety(patient);
-  var pending = pendingSafetyAcknowledgements(safety.rules, _pendingAck);
-  if (!skipAckCheck && pending.length) {
-    var msg = pending
-      .map(function (r) {
-        return r.title + ': ' + r.message;
-      })
-      .join('\n\n');
-    var ok = confirm(
-      'Alertas de seguridad clínica:\n\n' + msg + '\n\n¿Continuar con riesgo documentado?'
-    );
-    if (!ok) return;
-    _pendingAck = buildSafetyAuditEntries(pending, safety.labContext, true);
-  }
 
   var dirty = Array.from(_dirtyKeys);
   if (!dirty.length && _version > 0) {

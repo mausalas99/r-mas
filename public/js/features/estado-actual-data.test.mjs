@@ -118,17 +118,19 @@ test('medicionHasCoreData rechaza entrada vacía', () => {
   assert.equal(medicionHasCoreData(onlyMeta), false);
 });
 
-test('appendMedicion rechaza medición sin núcleo', () => {
+test('appendMedicion acepta medición sin datos clínicos (solo cierre de turno)', () => {
   const m = emptyMonitoreo();
-  const bad = appendMedicion(m, {
+  const row = {
     id: 'n',
     recordedAt: '2026-05-01T12:00:00.000Z',
     vitals: {},
     glucometrias: [],
     io: {},
-  });
-  assert.deepEqual(bad, { ok: false, error: 'empty' });
-  assert.equal(m.historial.length, 0);
+  };
+  const out = appendMedicion(m, row);
+  assert.deepEqual(out, { ok: true });
+  assert.equal(m.historial.length, 1);
+  assert.equal(m.historial[0].id, 'n');
 });
 
 test('resolveDietWeightKg usa datos del paciente (no signos vitales)', () => {

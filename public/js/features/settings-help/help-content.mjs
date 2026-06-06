@@ -6,6 +6,47 @@ import { closeSettingsDropdown } from './settings-dropdown.mjs';
 
 var HELP_ARTICLES = [
   {
+    id: 'modo-guardia',
+    title: 'Modo Guardia (7.x)',
+    keywords: 'guardia modo chip tablero turno censo alcance rango solo mis entregas toggle',
+    html:
+      '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong> en la barra superior.</p>' +
+      '<ul>' +
+      '<li><strong>Chip Guardia</strong> — entra y sale sin bloquear Laboratorio ni Expediente.</li>' +
+      '<li><strong>Alcance</strong> — R1 ve su equipo; R4 puede ver toda la sala. La barra de contexto resume sala y turno.</li>' +
+      '<li><strong>Solo mis entregas</strong> — filtra la grilla a pacientes que te entregaron en este turno (independiente del flujo Entrega).</li>' +
+      '<li>Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'modo-entrega',
+    title: 'Modo Entrega y pendientes',
+    keywords: 'entrega handoff roster pendientes v2 fase turno documentar paciente',
+    html:
+      '<p><strong>Modo Entrega</strong> documenta el handoff entre turnos antes del monitoreo activo.</p>' +
+      '<ul>' +
+      '<li><strong>Barra de fase</strong> — guía entrega (~16:00), turno activo y cierre.</li>' +
+      '<li><strong>Por paciente</strong> — modal de entrega con equipo entrante, handoff y pendientes.</li>' +
+      '<li><strong>Roster</strong> — lista quién falta por documentar antes de pasar al turno.</li>' +
+      '<li><strong>Pendientes v2</strong> — plantillas por servicio y seguimiento estructurado entre turnos.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'lan-pin-turno',
+    title: 'LAN, PIN del turno y móvil',
+    keywords: 'lan livesync pin turno directorio mi rotacion ipad mobile token invitacion',
+    html:
+      '<p>La red del turno en R+ 7.x combina LiveSync, directorio y acceso móvil.</p>' +
+      '<ul>' +
+      '<li><strong>⇄ LiveSync</strong> — estado de red, sala y sincronización en la Wi‑Fi del hospital.</li>' +
+      '<li><strong>PIN del turno</strong> (~12 h) — reconecta otras Mac en otra subred sin reconfigurar la sala.</li>' +
+      '<li><strong>Directorio LAN</strong> — quién está en la sala; el anfitrión conserva el roster.</li>' +
+      '<li><strong>Mi rotación</strong> — @usuario, equipos persistentes y sala (distinto del censo lateral).</li>' +
+      '<li><strong>iPad/móvil</strong> — enlace permanente para Safari desde ⇄; invitación distinta a otra Mac/sala.</li>' +
+      '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores colapsables; sync LAN más silenciosa en 7.x.</li>' +
+      '</ul>'
+  },
+  {
     id: 'primer-paciente',
     title: 'Tu primer paciente',
     keywords: 'agregar paciente nuevo registro edad sexo cuarto cama duplicado',
@@ -89,7 +130,7 @@ var HELP_ARTICLES = [
       '<li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio útil.</li>' +
       '<li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li>' +
       '</ul>' +
-      '<p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Copiar</strong> lleva el texto al portapapeles; <strong>Guardar y copiar</strong> conserva snapshot por paciente. El botón verde del encabezado abre también la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Guardar</strong> conserva el texto por paciente; <strong>Guardar y copiar</strong> además lo lleva al portapapeles. El botón verde del encabezado abre también la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
   },
   {
     id: 'indicaciones',

@@ -101,11 +101,13 @@ import {
 
 import {
   getGuidedTourSteps,
+  resolveTourBranch,
   applyTourTargetForStep,
   clearAllTourSpotlights,
   syncTourDockPlacement,
   syncTourSoapButtonHighlight,
   syncTourActionNextButton,
+  armTourActionPoll,
   guidedTourStepIndex,
   persistTourProgressDebounced,
   showTourDock,
@@ -130,8 +132,268 @@ import { tourBridge } from './tour-bridge.mjs';
 
 const rt = getSettingsHelpRuntime();
 
+const MOBILE_SCOPE_COPY =
+  'La app móvil (iPad/Safari) muestra tablero de guardia y expediente esencial; no incluye Ajustes, exportaciones Word ni todas las pestañas de escritorio.';
+
+const LIVESYNC_BTN_COPY =
+  '<strong>LiveSync</strong> (icono <strong>Wi‑Fi</strong> junto a Ajustes)';
+
+function getClinicalRankForTour() {
+  try {
+    const st = rt.getSettings();
+    return String(st?.clinicalRank || 'R1').trim().toUpperCase();
+  } catch (_e) {
+    return 'R1';
+  }
+}
+
+const GV7_HELP_ARTICLE = {
+  gv7_guardia_chip: 'modo-guardia',
+  gv7_guardia_tab: 'modo-guardia',
+  gv7_guardia_scope: 'modo-guardia',
+  gv7_guardia_toggle: 'modo-guardia',
+  gv7_guardia_exit: 'modo-guardia',
+  gv7_censo_r1: 'modo-guardia',
+  gv7_censo_r4: 'modo-guardia',
+  gv7_censo_sync: 'modo-guardia',
+  gv7_entrega_phase: 'modo-entrega',
+  gv7_entrega_patient: 'modo-entrega',
+  gv7_entrega_roster: 'modo-entrega',
+  gv7_entrega_pendientes: 'modo-entrega',
+  gv7_lan_wifi: 'lan-pin-turno',
+  gv7_lan_pin: 'lan-pin-turno',
+  gv7_lan_directorio: 'lan-pin-turno',
+  gv7_lan_rotacion: 'lan-pin-turno',
+  gv7_mobile_link: 'lan-pin-turno',
+  gv7_mobile_scope: 'lan-pin-turno',
+  gv7_mobile_vs_sala: 'lan-pin-turno',
+};
+
+const GV7_ACTION_HINT = {
+  gv7_guardia_toggle:
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el botón resaltado; aparece <strong>Siguiente</strong> al activar el filtro.</p>',
+  gv7_lan_wifi:
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono <strong>Wi‑Fi</strong> de LiveSync para continuar.</p>',
+  gv7_mobile_link:
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Despliega <strong>iPad / R+ Móvil</strong> en el panel LiveSync.</p>',
+};
+
+function buildGv7CensoR1Copy(rank) {
+  if (rank === 'R4') {
+    return (
+      '<p style="margin:0;line-height:1.5;">Como <strong>R4</strong>, el censo lateral puede mostrar toda la sala. ' +
+      'En el siguiente paso verás la grilla agrupada por equipo.</p>'
+    );
+  }
+  if (rank === 'R1') {
+    return (
+      '<p style="margin:0;line-height:1.5;">Como <strong>R1</strong>, el censo lateral lista pacientes de <strong>tu equipo</strong>. ' +
+      'En guardia, <strong>Solo mis entregas</strong> puede acotar aún más.</p>'
+    );
+  }
+  return (
+    '<p style="margin:0;line-height:1.5;">Según tu rango (<strong>' +
+    escapeTourHtml(rank) +
+    '</strong>), el censo lateral muestra tu equipo o un subconjunto de la sala.</p>'
+  );
+}
+
+function buildGv7CensoR4Copy(rank) {
+  if (rank === 'R4') {
+    return (
+      '<p style="margin:0;line-height:1.5;">En la grilla de guardia, los <strong>divisores por equipo</strong> (colapsables) permiten ver toda la sala sin ruido.</p>'
+    );
+  }
+  return (
+    '<p style="margin:0;line-height:1.5;">En rangos <strong>R1–R3</strong> la grilla se acota a tu equipo. ' +
+    'Los divisores colapsables por equipo son propios de <strong>R4</strong>.</p>'
+  );
+}
+
+function getGuardiaV7StepBody(stepId) {
+  const rank = getClinicalRankForTour();
+  const bodies = {
+    gv7_guardia_chip:
+      '<p style="margin:0;line-height:1.5;">El botón <strong>Guardia</strong> en la barra superior abre el tablero de turno: censo, entrega y monitoreo. No bloquea el resto de R+.</p>',
+    gv7_guardia_tab:
+      '<p style="margin:0;line-height:1.5;">En <strong>Modo Guardia</strong> el centro muestra el panel de guardia: fases del turno, métricas y grilla de pacientes.</p>',
+    gv7_guardia_scope:
+      '<p style="margin:0;line-height:1.5;">La <strong>barra de contexto</strong> resume sala y fase del turno. Quién ves en el censo depende de tu rango — lo revisamos en el módulo <strong>Censo y alcance</strong>.</p>',
+    gv7_guardia_toggle:
+      '<p style="margin:0;line-height:1.5;"><strong>Solo mis entregas</strong> filtra la grilla a pacientes que te entregaron en este turno, sin cambiar el modo Entrega.</p>',
+    gv7_guardia_exit:
+      '<p style="margin:0;line-height:1.5;">Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal (Laboratorio, Expediente, etc.).</p>',
+    gv7_entrega_phase:
+      '<p style="margin:0;line-height:1.5;">La <strong>barra de fase</strong> guía el turno: documentar entrega, turno activo y cierre. <strong>Iniciar entrega</strong> abre el flujo por paciente.</p>',
+    gv7_entrega_patient:
+      '<p style="margin:0;line-height:1.5;">En cada paciente, <strong>Entrega</strong> documenta handoff, equipo entrante y pendientes. La grilla resalta críticos y entrantes.</p>',
+    gv7_entrega_roster:
+      '<p style="margin:0;line-height:1.5;">El <strong>roster de entrega</strong> lista pacientes pendientes de documentar antes de pasar al turno activo.</p>',
+    gv7_entrega_pendientes:
+      '<p style="margin:0;line-height:1.5;"><strong>Pendientes de entrega</strong>: plantillas por servicio, handoff estructurado y seguimiento entre turnos.</p>',
+    gv7_lan_wifi:
+      '<p style="margin:0;line-height:1.5;">' +
+      LIVESYNC_BTN_COPY +
+      ': estado de red local, sala y sincronización del turno en la Wi‑Fi del hospital.</p>',
+    gv7_lan_pin:
+      '<p style="margin:0;line-height:1.5;">El <strong>PIN del turno</strong> (válido ~12 h) permite reconectar otras Mac en otra red del hospital sin reconfigurar la sala.</p>',
+    gv7_lan_directorio:
+      '<p style="margin:0;line-height:1.5;">El <strong>directorio LAN</strong> muestra quién está en la sala. El anfitrión conserva el roster aunque un cliente aún no haya sincronizado.</p>',
+    gv7_lan_rotacion:
+      '<p style="margin:0;line-height:1.5;"><strong>Mi rotación</strong> (barra superior): @usuario, equipos persistentes, sala y entregas. Distinto del censo del sidebar.</p>',
+    gv7_mobile_link:
+      '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace permanente para iPad/móvil</strong> desde el panel LiveSync. Sirve para guardar en Safari; no caduca como el ticket de otra Mac.</p>',
+    gv7_mobile_scope:
+      '<p style="margin:0;line-height:1.5;">' + MOBILE_SCOPE_COPY + '</p>',
+    gv7_mobile_vs_sala:
+      '<p style="margin:0;line-height:1.5;">En LiveSync, <strong>iPad/móvil</strong> (identidad) vs <strong>otra Mac/sala</strong> (ticket de un solo uso) son invitaciones distintas.</p>',
+    gv7_censo_r1: buildGv7CensoR1Copy(rank),
+    gv7_censo_r4: buildGv7CensoR4Copy(rank),
+    gv7_censo_sync:
+      '<p style="margin:0;line-height:1.5;">La sincronización LAN es más silenciosa en 7.x: avisos discretos en el encabezado; el directorio se actualiza en segundo plano.</p>',
+  };
+  return bodies[stepId] || '<p style="margin:0;line-height:1.5;">Sigue el resaltado en pantalla.</p>';
+}
+
+function getGuardiaV7StepHtml(stepId) {
+  let base = getGuardiaV7StepBody(stepId);
+  if (GV7_ACTION_HINT[stepId] && stepRequiresUserAction(stepId)) {
+    base += GV7_ACTION_HINT[stepId];
+  }
+  const articleId = GV7_HELP_ARTICLE[stepId];
+  if (!articleId) return base;
+  return (
+    base +
+    '<p style="margin:10px 0 0;">' +
+    '<button type="button" class="help-tour-btn" onclick="openQuickHelp(\'' +
+    articleId +
+    "')\">Más en ayuda</button></p>"
+  );
+}
+
+function escapeTourHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function syncTourDockBranchClass(branch) {
+  var d = document.getElementById('tour-dock');
+  if (!d) return;
+  d.classList.toggle('tour-dock--guardia', branch === 'guardia-v7');
+  d.classList.toggle('tour-dock--fundamentos', branch === 'sala' || branch === 'interconsulta');
+  d.classList.toggle('tour-dock--quick-route', branch === 'quick-route');
+}
+
+function renderQuickRouteStepCopy(bodyEl, nextBtn) {
+  var id = tourState.tourStepId;
+  if (id === 'map_lab_teaser') {
+    bodyEl.innerHTML =
+      '<p style="margin:0;line-height:1.5;">Ruta rápida: primero <strong>laboratorio</strong>. El cuadro trae <strong>DEMO PÉREZ</strong> y <strong>DEMO GARCÍA</strong>. En el siguiente paso pulsa <strong>Procesar</strong> y agrega ambos al censo.</p>';
+    nextBtn.textContent = 'Siguiente';
+    return true;
+  }
+  if (id === 'lab_parse') {
+    bodyEl.innerHTML =
+      '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> y agrega ambos pacientes demo al censo.</p>' +
+      '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Sin <strong>Siguiente</strong> hasta que ambos tengan laboratorio en historial.</p>';
+    nextBtn.style.display = 'none';
+    return true;
+  }
+  if (id.indexOf('gv7_') === 0) {
+    bodyEl.innerHTML = getGuardiaV7StepHtml(id);
+    nextBtn.textContent = 'Siguiente';
+    return true;
+  }
+  return false;
+}
+
+function renderTourDockBadge(tourBranch, prog, idx, total) {
+  var badge = document.getElementById('tour-step-badge');
+  if (!badge) return;
+  if (tourBranch === 'quick-route') {
+    badge.innerHTML =
+      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Ruta rápida</span>' +
+      '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
+      prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
+    return;
+  }
+  if (tourBranch === 'guardia-v7') {
+    badge.innerHTML =
+      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Guardia 7.x</span>' +
+      '<span class="tour-dock-badge-line tour-dock-badge-module">Módulo ' +
+      prog.chapterIndex + '/5 · ' + escapeTourHtml(prog.chapterTitle) + '</span>' +
+      '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
+      prog.stepInChapter + ' de ' + prog.chapterSteps + '</span>';
+    return;
+  }
+  var branchLabel = tourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
+  var sub = prog.isCompanion
+    ? 'Extensión Neo · paso ' + prog.stepInChapter + ' de ' + prog.chapterSteps
+    : 'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle +
+      ' · paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
+  badge.innerHTML =
+    '<span class="tour-dock-badge-line tour-dock-badge-module">Paso ' + idx + ' de ' + total +
+    ' · ' + escapeTourHtml(branchLabel) + '</span>' +
+    '<span class="tour-dock-badge-line tour-dock-badge-step">' + escapeTourHtml(sub) + '</span>';
+}
+
+function clearGuidedTourModuleScope() {
+  tourState.guidedTourChapterScope = null;
+  tourState.guidedTourModuleOnly = false;
+}
+
+function maybeMarkFundamentosChapterComplete(stepId) {
+  const branch = tourState.guidedTourBranch;
+  if (branch !== 'sala' && branch !== 'interconsulta') return;
+  const tourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
+  const chapter = getChapterForStep(stepId, tourBranch);
+  if (!chapter?.id || chapter.id === 'unknown' || chapter.id === 'ch-neo') return;
+  const stepsInChapter = getChapterProgressLabel(stepId, tourBranch);
+  if (stepsInChapter.stepInChapter !== stepsInChapter.chapterSteps) return;
+  void import('../../fundamentos-progress.mjs').then((m) => {
+    if (!m.isFundamentosChapterId(chapter.id)) return;
+    const result = m.markFundamentosChapterComplete(chapter.id);
+    if (!result.wasNew) return;
+    if (chapter.id === 'ch-patient-lab') {
+      rt.showToast('Listo: DEMO PÉREZ ya tiene laboratorio en R+.', 'success');
+    } else {
+      rt.showToast(`Módulo completado: ${chapter.title}`, 'success');
+    }
+  });
+}
+
+function maybeMarkGuardiaV7ChapterComplete(stepId) {
+  if (tourState.guidedTourBranch !== 'guardia-v7') return;
+  const branch = 'guardia-v7';
+  const chapter = getChapterForStep(stepId, branch);
+  if (!chapter || !chapter.id || chapter.id === 'unknown') return;
+  const stepsInChapter = getChapterProgressLabel(stepId, branch);
+  if (stepsInChapter.stepInChapter !== stepsInChapter.chapterSteps) return;
+  void import('../../guardia-v7-progress.mjs').then((m) => {
+    const result = m.markGuardiaV7ChapterComplete(chapter.id);
+    if (!result.wasNew) return;
+    rt.launchConfetti();
+    rt.showToast(`Módulo completado: ${chapter.title}`, 'success');
+    syncLearnHubContinueVisibility();
+    if (m.isGuardiaV7TrackComplete()) {
+      window.setTimeout(() => {
+        rt.showToast('¡Guía de guardia 7.x completada!', 'success');
+      }, 500);
+    }
+  });
+}
 
 /** Tour step render and onboarding flow */
+function finalizeTourStepRender(prevBtn) {
+  syncTourDockPlacement();
+  syncTourSoapButtonHighlight();
+  syncTourActionNextButton();
+  armTourActionPoll();
+  if (prevBtn) prevBtn.disabled = guidedTourStepIndex() <= 0;
+}
+
 function renderTourStep() {
   if (!tourState.guidedTourActive) return;
   var badge = document.getElementById('tour-step-badge');
@@ -141,19 +403,47 @@ function renderTourStep() {
   var steps = getGuidedTourSteps();
   var total = steps.length;
   var idx = guidedTourStepIndex() + 1;
-  var branchLabel = tourState.guidedTourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
-  var tourBranch = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+  var tourBranch = resolveTourBranch();
+  syncTourDockBranchClass(tourBranch);
   var prog = getChapterProgressLabel(tourState.tourStepId, tourBranch);
-  var sub = prog.isCompanion
-    ? 'Extensión · Neo · Paso ' + prog.stepInChapter + ' de ' + prog.chapterSteps
-    : 'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle
-      + ' · Paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
-  badge.textContent = 'Paso ' + idx + ' de ' + total + ' · ' + branchLabel + (sub ? ' · ' + sub : '');
+  renderTourDockBadge(tourBranch, prog, idx, total);
   var neoOptionalLine =
     '<p style="margin:0 0 8px;font-size:13px;color:var(--text-muted);">R+ funciona sin Neo; módulo opcional.</p>';
   nextBtn.style.display = '';
   nextBtn.disabled = false;
   nextBtn.setAttribute('onclick', 'guidedTourClickNext()');
+
+  if (tourBranch === 'guardia-v7' || tourBranch === 'quick-route') {
+    if (tourBranch === 'quick-route' && tourState.tourStepId === 'quick_wrap') {
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Aprender R+</strong>: módulos de guardia 7.x o el tutorial completo en <strong>Fundamentos</strong>.</p>';
+      nextBtn.textContent = 'Finalizar';
+      nextBtn.style.display = '';
+      nextBtn.setAttribute('onclick', 'guidedTourFinish()');
+      finalizeTourStepRender(prevBtn);
+      return;
+    }
+    if (tourBranch === 'quick-route') {
+      var quickHandled = renderQuickRouteStepCopy(bodyEl, nextBtn);
+      if (quickHandled) {
+        if (stepRequiresUserAction(tourState.tourStepId)) {
+          nextBtn.style.display = 'none';
+        }
+        finalizeTourStepRender(prevBtn);
+        return;
+      }
+    }
+    bodyEl.innerHTML = getGuardiaV7StepHtml(tourState.tourStepId);
+    var gv7Steps = getGuidedTourSteps();
+    var gv7Idx = gv7Steps.indexOf(tourState.tourStepId);
+    nextBtn.textContent =
+      gv7Idx >= 0 && gv7Idx >= gv7Steps.length - 1 ? 'Finalizar módulo' : 'Siguiente';
+    if (stepRequiresUserAction(tourState.tourStepId)) {
+      nextBtn.style.display = 'none';
+    }
+    finalizeTourStepRender(prevBtn);
+    return;
+  }
 
   switch (tourState.tourStepId) {
     case 'map_sidebar':
@@ -164,10 +454,10 @@ function renderTourStep() {
     case 'map_tabs':
       bodyEl.innerHTML =
         getUiDensity() !== 'normal'
-          ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
+          ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente. Pulsa un bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
           : tourState.guidedTourBranch === 'interconsulta'
-            ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>'
-            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Clínico</strong> (Historia → Estado actual → Eventualidades), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
+            ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Las pestañas internas del expediente vienen en el siguiente paso.</p>'
+            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. El mapa del expediente lo verás al entrar en esa pestaña.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_lab_teaser':
@@ -192,17 +482,8 @@ function renderTourStep() {
     case 'sala_casiopea_lab':
       bodyEl.innerHTML =
         neoOptionalLine +
-        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Neo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte en este equipo).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Neo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
-      nextBtn.textContent = 'Siguiente';
-      break;
-    case 'sala_manejo':
-      bodyEl.innerHTML =
-        (tourState.guidedTourBranch === 'interconsulta'
-          ? '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Clínico → Manejo</strong> (pestaña resaltada) hay cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>'
-          : '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Expediente → Clínico → Manejo</strong> (segmento resaltado) con las cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>') +
-        '<p style="margin:10px 0 0;line-height:1.5;">Tras procesar laboratorios, <strong>Electrolitos</strong> sugiere correcciones con dosis, dilución y vía; <strong>Infusiones</strong> y <strong>ATB</strong> ofrecen catálogos con texto <strong>SOME</strong> copiable; <strong>CAD/EHH</strong> lee BH/QS/gasometría para el checklist ADA.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía se toman del bloque colapsable <strong>Datos del paciente</strong> en la pestaña <strong>Paciente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado arriba a la derecha del laboratorio). Dentro verás <strong>Enviar a Neo</strong> para el paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El recuadro del tutorial se movió a la izquierda para no tapar el botón. Pulsa <strong>Siguiente</strong> cuando lo hayas visto.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_expediente_tabs':
@@ -294,24 +575,10 @@ function renderTourStep() {
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Sin <strong>Siguiente</strong> hasta registrar.</p>';
       nextBtn.style.display = 'none';
       break;
-    case 'estado_actual_snapshot':
+    case 'estado_actual_review':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Tras registrar, el <strong>snapshot</strong> (arriba) resume el turno actual: signos vitales, glucometrías, balance hídrico, medicamentos y alertas.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Compara con lo que acabas de capturar. <strong>Siguiente</strong>: gráficas de tendencia.</p>';
-      nextBtn.textContent = 'Siguiente';
-      nextBtn.style.display = '';
-      break;
-    case 'estado_actual_charts':
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Las <strong>gráficas</strong> agrupan series por familia (hemodinámico, respiratorio, metabólico, etc.). Los puntos fuera de rango se resaltan para lectura rápida en guardia.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Desplázate si hace falta. <strong>Siguiente</strong>: historial y texto para la nota.</p>';
-      nextBtn.textContent = 'Siguiente';
-      nextBtn.style.display = '';
-      break;
-    case 'estado_actual_historial':
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">El <strong>historial</strong> lista cada medición con fecha y turno; abajo, el <strong>texto compilado</strong> se puede copiar a la evolución o exportar.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Siguiente</strong>: <strong>Eventualidades</strong> (línea de tiempo del ingreso).</p>';
+        '<p style="margin:0;line-height:1.5;">Tras registrar, revisa tres zonas en esta pestaña: el <strong>snapshot</strong> (resumen del turno), las <strong>gráficas</strong> por familia con alertas, y el <strong>historial</strong> con texto compilado copiable a la nota.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Desplázate si hace falta. <strong>Siguiente</strong>: <strong>Eventualidades</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       nextBtn.style.display = '';
       break;
@@ -347,19 +614,23 @@ function renderTourStep() {
       break;
     case 'livesync_desktop':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitación. Ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
-      nextBtn.textContent = 'Siguiente';
+        '<p style="margin:0;line-height:1.5;">' +
+        LIVESYNC_BTN_COPY +
+        ' abre la sala en vivo: activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad u otra Mac pegas el enlace de invitación.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono Wi‑Fi para abrir el panel; aparece <strong>Siguiente</strong> cuando esté visible.</p>';
+      if (stepRequiresUserAction('livesync_desktop')) nextBtn.style.display = 'none';
       break;
     case 'livesync_mobile':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En ⇄ usa <strong>Copiar enlace móvil</strong>. En iPad o teléfono (misma Wi‑Fi) abre ese enlace en Safari: verás <strong>la misma interfaz R+</strong> (pacientes, laboratorio, expediente, medicamentos, agenda), sin botones de Word.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto. En móvil elige la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
+        '<p style="margin:0;line-height:1.5;">En LiveSync usa <strong>Copiar enlace móvil</strong> y ábrelo en Safari (misma Wi‑Fi). ' +
+        MOBILE_SCOPE_COPY +
+        '</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto y la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'wrap':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p>' +
+        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>LiveSync</strong> y, si hace falta, el enlace móvil.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' +
         (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
         '+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>';
@@ -374,10 +645,7 @@ function renderTourStep() {
   if (stepRequiresUserAction(tourState.tourStepId) && tourState.tourStepId !== 'servicio_default') {
     nextBtn.style.display = 'none';
   }
-  syncTourDockPlacement();
-  syncTourSoapButtonHighlight();
-  syncTourActionNextButton();
-  if (prevBtn) prevBtn.disabled = guidedTourStepIndex() <= 0;
+  finalizeTourStepRender(prevBtn);
 }
 
 function guidedTourClickPrev() {
@@ -395,12 +663,14 @@ function guidedTourClickPrev() {
 
 function guidedTourPause() {
   if (!tourState.guidedTourActive) return;
-  var branch = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+  var branch = resolveTourBranch();
   var ch = getChapterForStep(tourState.tourStepId, branch);
   saveTourProgress({
     branch: branch,
+    track: branch,
     stepId: tourState.tourStepId,
     chapterId: ch.id,
+    moduleOnly: tourState.guidedTourModuleOnly,
     mode: tourState.guidedTourMode,
   });
   tourState.guidedTourActive = false;
@@ -413,8 +683,14 @@ function guidedTourPause() {
 export function resumeGuidedTourFromProgress() {
   var p = loadTourProgress();
   if (!p) return false;
-  tourState.guidedTourBranch = p.branch === 'interconsulta' ? 'interconsulta' : 'sala';
+  tourState.guidedTourBranch =
+    p.branch === 'interconsulta' ? 'interconsulta'
+      : p.branch === 'guardia-v7' ? 'guardia-v7'
+        : p.branch === 'quick-route' ? 'quick-route'
+          : 'sala';
   tourState.guidedTourMode = p.mode === 'neo' ? 'neo' : 'base';
+  tourState.guidedTourModuleOnly = !!p.moduleOnly;
+  tourState.guidedTourChapterScope = p.moduleOnly ? p.chapterId || null : null;
   resetTourUiBeforeResume();
   startOnboarding(tourState.guidedTourBranch, { resumeStepId: p.stepId, skipIntro: true });
   return true;
@@ -433,16 +709,13 @@ export function startNeoCompanionTour(startStepId) {
 function guidedTourClickNext() {
   if (tourState.miniTourActive) { tourBridge.miniTourNext(); return; }
   if (!tourState.guidedTourActive) return;
-  if (tourState.tourStepId === 'wrap') {
+  if (tourState.tourStepId === 'wrap' || tourState.tourStepId === 'quick_wrap') {
     finishGuidedTour();
     return;
   }
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourState.tourStepId);
   if (i < 0) return;
-  if (tourState.tourStepId === 'servicio_default' && tourState.guidedTourMode === 'base' && tourState.guidedTourBranch !== 'interconsulta') {
-    rt.showToast('Listo: pacientes demo con laboratorio en R+.', 'success');
-  }
   if (tourState.tourStepId === 'sala_casiopea_lab') {
     closeLabSomeTablesModal();
   }
@@ -454,6 +727,16 @@ function guidedTourClickNext() {
   }
   if (tourState.tourStepId === 'estado_actual' || tourState.tourStepId === 'estado_actual_registro') {
     closeSOAPModal();
+  }
+  maybeMarkFundamentosChapterComplete(tourState.tourStepId);
+  maybeMarkGuardiaV7ChapterComplete(tourState.tourStepId);
+  if (tourState.guidedTourMode === 'neo') {
+    void import('../../neo-companion-progress.mjs').then((m) => {
+      if (m.isNeoCompanionStepId(tourState.tourStepId)) {
+        const result = m.markNeoCompanionStepComplete(tourState.tourStepId);
+        if (result.wasNew) syncLearnHubContinueVisibility();
+      }
+    });
   }
   if (i + 1 >= steps.length) {
     finishGuidedTour();
@@ -556,6 +839,12 @@ async function promptMiRotacionAfterSalaTourIfNeeded(branch) {
 
 function completeGuidedTourWithCelebration() {
   const completedBranch = tourState.guidedTourBranch;
+  if (tourState.tourStepId) {
+    if (completedBranch === 'guardia-v7') maybeMarkGuardiaV7ChapterComplete(tourState.tourStepId);
+    if (completedBranch === 'sala' || completedBranch === 'interconsulta') {
+      maybeMarkFundamentosChapterComplete(tourState.tourStepId);
+    }
+  }
   clearTourSoapButtonHighlight();
   clearTourProgress();
   markGuidedTourVersionDone();
@@ -564,12 +853,15 @@ function completeGuidedTourWithCelebration() {
   postTourResumeBranch = completedBranch;
   tourState.guidedTourBranch = null;
   tourState.guidedTourMode = 'base';
+  clearGuidedTourModuleScope();
   if (completedBranch === 'sala') prepareSalaGuidedTourExitSync();
   publishTourGuardContext();
   hideTourDock();
-  rt.launchConfetti();
-  safeDestroyDemoAndClose();
-  rt.showToast('Tutorial completado', 'success');
+  if (completedBranch !== 'guardia-v7') {
+    rt.launchConfetti();
+    rt.showToast('Tutorial completado', 'success');
+  }
+  if (completedBranch !== 'guardia-v7') safeDestroyDemoAndClose();
   syncLearnHubContinueVisibility();
 }
 
@@ -602,6 +894,7 @@ export function finishGuidedTour() {
     tourState.tourStepId = null;
     tourState.guidedTourBranch = null;
     tourState.guidedTourMode = 'base';
+    clearGuidedTourModuleScope();
     publishTourGuardContext();
     hideTourDock();
     safeDestroyDemoAndClose();
@@ -619,6 +912,7 @@ function skipGuidedTour() {
   tourState.tourStepId = null;
   tourState.guidedTourBranch = null;
   tourState.guidedTourMode = 'base';
+  clearGuidedTourModuleScope();
   publishTourGuardContext();
   hideTourDock();
   safeDestroyDemoAndClose();
@@ -628,23 +922,34 @@ function skipGuidedTour() {
 function startOnboarding(branch, opts) {
   opts = opts || {};
   if (opts.resumeStepId) resetTourUiBeforeResume();
-  tourState.guidedTourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
-  setUiDensity('normal');
-  // Alinear el modo de la app con la rama del tutorial. Si el usuario
-  // elige "Interconsulta" pero la app está en Sala, los pasos de
-  // ic_nota / ic_indica apuntarían a una pestaña oculta. Cambiamos el
-  // modo y refrescamos la UI; el usuario puede volver a Sala desde Mi
-  // Perfil cuando termine.
-  var st = rt.getSettings();
-  var prevMode = st.appMode;
-  st.appMode = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
-  if (st.appMode !== prevMode) {
-    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (e) {}
-    applyAppModeSwitchEffects();
-    rt.renderEstadoActualBar();
+  tourState.guidedTourBranch =
+    branch === 'interconsulta' ? 'interconsulta'
+      : branch === 'guardia-v7' ? 'guardia-v7'
+        : branch === 'quick-route' ? 'quick-route'
+          : 'sala';
+  var isGuardiaV7 = tourState.guidedTourBranch === 'guardia-v7';
+  if (!opts.resumeStepId) {
+    tourState.guidedTourChapterScope = null;
+    tourState.guidedTourModuleOnly = false;
   }
-  tourState.tourDemoLabSessionProcessed = false;
-  purgeTourDemoPatientsFromState();
+  if (!isGuardiaV7) {
+    setUiDensity('normal');
+    // Alinear el modo de la app con la rama del tutorial. Si el usuario
+    // elige "Interconsulta" pero la app está en Sala, los pasos de
+    // ic_nota / ic_indica apuntarían a una pestaña oculta. Cambiamos el
+    // modo y refrescamos la UI; el usuario puede volver a Sala desde Mi
+    // Perfil cuando termine.
+    var st = rt.getSettings();
+    var prevMode = st.appMode;
+    st.appMode = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+    if (st.appMode !== prevMode) {
+      try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (e) {}
+      applyAppModeSwitchEffects();
+      rt.renderEstadoActualBar();
+    }
+    tourState.tourDemoLabSessionProcessed = false;
+    purgeTourDemoPatientsFromState();
+  }
   tourState.guidedTourActive = true;
   var steps = getGuidedTourSteps();
   var resumeId = opts.resumeStepId;

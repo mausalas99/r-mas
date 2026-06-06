@@ -17,10 +17,6 @@ import {
 } from '../../live-sync-membership.mjs';
 import { mergeLiveSyncFullBundles } from '../../lan-merge-registry.mjs';
 import {
-  collectManejoRoomPayload,
-  isLanManejoRoomSyncEnabled,
-} from '../../manejo-room-data.mjs';
-import {
   prepareClinicalOpsForLanSync,
   getCachedClinicalOpsSnapshot,
   isClinicalOpsLanAvailable,
@@ -398,7 +394,6 @@ function saveLocalRoomSnapshotBody(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
-    ...(isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {}),
     clinicalOps: getCachedClinicalOpsSnapshot(),
   });
 }
@@ -421,7 +416,6 @@ export async function buildLiveSyncBundleEnvelope(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
-    ...(isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {}),
     clinicalOps: getCachedClinicalOpsSnapshot(),
   };
 }

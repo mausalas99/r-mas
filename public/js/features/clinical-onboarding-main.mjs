@@ -51,9 +51,12 @@ export function hideMainClinicalOnboarding() {
   if (host) host.remove();
   void import('./clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   void import('./settings-help/tour-engine.mjs').then((m) => {
-    if (typeof m.tryShowGuidedTourIntroIfNeeded === 'function') {
-      m.tryShowGuidedTourIntroIfNeeded();
+    if (typeof m.tryShowPostRegistrationEducationIfNeeded === 'function') {
+      void m.tryShowPostRegistrationEducationIfNeeded();
     }
+  });
+  void import('./settings-help/learn-hub.mjs').then((m) => {
+    if (typeof m.syncLearnAprenderChrome === 'function') m.syncLearnAprenderChrome();
   });
 }
 
@@ -161,6 +164,9 @@ export async function showMainClinicalOnboarding() {
   }
 
   document.documentElement.classList.add(CLINICAL_ONBOARDING_ACTIVE_CLASS);
+  void import('./settings-help/learn-hub.mjs').then((m) => {
+    if (typeof m.syncLearnAprenderChrome === 'function') m.syncLearnAprenderChrome();
+  });
 
   if (needsClinicalSyncModeChoice()) {
     renderSyncModeChoicePanel(host);

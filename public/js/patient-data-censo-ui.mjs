@@ -1,4 +1,4 @@
-import { parseDiagnosticosText } from './vpo-dx-inference.mjs';
+import { parseDiagnosticosText } from './patient-diagnosticos.mjs';
 import {
   ensurePatientDiagnosticos,
   applyPatientDiagnosticosList,

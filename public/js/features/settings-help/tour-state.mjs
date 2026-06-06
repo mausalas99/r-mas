@@ -18,7 +18,13 @@ export const tourState = {
   guidedTourMode: 'base',
   /** @type {string|null} */
   tourStepId: null,
+  /** @type {string|null} single chapter from Learn Hub (module-only replay) */
+  guidedTourChapterScope: null,
+  /** when true, tour ends after the scoped chapter */
+  guidedTourModuleOnly: false,
   persistTourProgressTimer: null,
+  tourActionPollTimer: null,
+  tourActionClickHandler: null,
   tourDemoLabSessionProcessed: false,
   miniTourActive: false,
   miniTourSteps: null,

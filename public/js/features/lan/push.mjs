@@ -11,7 +11,6 @@ import {
   getHostBundleBases,
   setHostBundleBases,
 } from '../../host-bundle-bases.mjs';
-import { isLanManejoRoomSyncEnabled } from '../../manejo-room-data.mjs';
 import {
   prepareClinicalOpsForLanSync,
   getCachedClinicalOpsSnapshot,
@@ -126,16 +125,11 @@ export function liveSyncBundleHasPayload(bundle) {
   if (Array.isArray(bundle.entries) && bundle.entries.length > 0) return true;
   if (Array.isArray(bundle.agenda) && bundle.agenda.length > 0) return true;
   var todos = bundle.todos;
-  if (!todos || typeof todos !== 'object') return false;
-  var keys = Object.keys(todos);
-  for (var i = 0; i < keys.length; i += 1) {
-    if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
-  }
-  var manejo = bundle.manejo;
-  if (isLanManejoRoomSyncEnabled() && manejo && typeof manejo === 'object') {
-    if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
-    if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
-    if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
+  if (todos && typeof todos === 'object') {
+    var keys = Object.keys(todos);
+    for (var i = 0; i < keys.length; i += 1) {
+      if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
+    }
   }
   var clinicalOps = bundle.clinicalOps;
   if (clinicalOps && typeof clinicalOps === 'object') {

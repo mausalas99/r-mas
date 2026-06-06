@@ -4,9 +4,14 @@ import {
   getDefaultRegistroRecordedAt,
   getGlucometriaRegistroWindow,
   collectGlucometriasForRegistroWindow,
+  STANDARD_GLUCOMETRIA_TIMES,
 } from './estado-actual-registro-defaults.mjs';
 
 describe('estado-actual-registro-defaults', () => {
+  it('STANDARD_GLUCOMETRIA_TIMES are 08:00, 16:00 (prev day) and 00:00 (current day)', () => {
+    assert.deepEqual(STANDARD_GLUCOMETRIA_TIMES, ['08:00', '16:00', '00:00']);
+  });
+
   it('getDefaultRegistroRecordedAt is today at 00:00 local', () => {
     var now = new Date(2026, 4, 27, 14, 30, 0);
     var d = getDefaultRegistroRecordedAt(now);

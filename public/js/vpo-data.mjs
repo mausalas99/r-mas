@@ -1,4 +1,3 @@
-import { isClinicalDecisionGuidanceHidden } from './clinical-product-policy.mjs';
 import {
   getProcedureById,
   suggestAhaClinicoFromAsa,
@@ -6,16 +5,14 @@ import {
 import {
   parseDiagnosticosText,
   formatDiagnosticosCopy,
-  applyDiagnosticosInference,
-} from './vpo-dx-inference.mjs';
+} from './patient-diagnosticos.mjs';
+import { sortLabHistoryChronological } from './tend-core.mjs';
 
 export const DURACION_OPCIONES = [
   { key: 'le2', label: '≤ 2 horas', hours: 2 },
   { key: '2to3', label: '2–3 horas', hours: 2.5 },
   { key: 'gt3', label: '> 3 horas', hours: 4 },
 ];
-import { sortLabHistoryChronological } from './tend-core.mjs';
-import { getRenalLabContext } from './manejo-atb-renal.mjs';
 
 export const DEFAULT_EKG_TEXT =
   'ELECTROCARDIOGRAMA DE 12 DERIVACIONES, RITMO SINUSAL, EJE ELÉCTRICO NORMAL (ENTRE 0 Y 90 GRADOS), FC ___ LPM, ONDA P PRESENTE Y DE MORFOLOGÍA NORMAL, INTERVALO PR CONSERVADO (120-200 MS), COMPLEJO QRS DE DURACIÓN NORMAL (<120 MS), SIN SUPRA O INFRA DESNIVELES DEL SEGMENTO ST, ONDAS T SIMÉTRICAS SIN INVERSIONES, INTERVALO QTC DENTRO DE PARÁMETROS NORMALES. SIN DATOS DE BLOQUEO, HIPERTROFIA, ISQUEMIA O NECROSIS.';
@@ -34,29 +31,6 @@ export function emptyVpoState() {
     asaKey: '',
     functionalKey: 'independent',
     procedureId: '',
-    rcri: {
-      cardiopatiaIsquemica: false,
-      insuficienciaCardiaca: false,
-      evc: false,
-      dmInsulina: false,
-      cirugiaAltoRiesgo: false,
-      urgente: false,
-    },
-    ariscat: {
-      infeccionRespiratoriaUltimoMes: false,
-      incisionKey: 'peripheral',
-      cirugiaMayor45Min: false,
-      urgente: false,
-    },
-    caprini: {
-      imcMayor25: false,
-      insuficienciaVenosa: false,
-      reposoMovilidadReducida: false,
-      antecedenteEvc: false,
-      trombofilia: false,
-      esteroideCronico: false,
-      artritisInflamatoria: false,
-    },
     ahaClinico: '',
     ahaQuirurgico: '',
     ekgText: DEFAULT_EKG_TEXT,
@@ -64,7 +38,6 @@ export function emptyVpoState() {
     diagnosticosText: '',
     diagnosticosList: /** @type {string[]} */ ([]),
     diagnosticosTouched: false,
-    asaFromDiagnosticos: false,
     valoracionIntro: 'SE REALIZA VALORACIÓN PREOPERATORIA. SE OTORGA RIESGO QUIRÚRGICO:',
     scaleResults: {
       asa: '',
@@ -80,7 +53,6 @@ export function emptyVpoState() {
   };
 }
 
-/** @param {Record<string, object>} map @param {string} patientId */
 /** @param {object} state */
 export function ensureScaleResults(state) {
   if (!state) return;
@@ -117,10 +89,7 @@ export function ensureDiagnosticosList(state) {
   );
 }
 
-/**
- * @param {object} state
- * @param {string[]} list
- */
+/** @param {object} state @param {string[]} list */
 export function setDiagnosticosList(state, list) {
   var cleaned = (list || [])
     .map(function (d) {
@@ -128,7 +97,7 @@ export function setDiagnosticosList(state, list) {
     })
     .filter(Boolean);
   state.diagnosticosList = cleaned.length ? cleaned.concat(['']) : [''];
-  applyDiagnosticosInference(state);
+  state.diagnosticosText = formatDiagnosticosCopy(cleaned);
   syncAhaFields(state);
 }
 
@@ -138,9 +107,6 @@ export function applyProcedureSelection(state, procedureId) {
   state.procedureId = procedureId || '';
   if (!proc) return;
   state.ahaQuirurgico = proc.ahaQuirurgico;
-  if (isClinicalDecisionGuidanceHidden()) return;
-  state.rcri.cirugiaAltoRiesgo = !!proc.rcriHighRisk;
-  state.ariscat.incisionKey = proc.ariscatIncisionKey;
 }
 
 /** @param {object} state @param {string} asaKey */
@@ -149,9 +115,9 @@ export function applyAsaSuggestion(state, asaKey) {
   syncAhaFields(state);
 }
 
-/** Recalcula AHA clínico (ASA) y quirúrgico (procedimiento). @param {object} state */
+/** @param {object} state */
 export function syncAhaFields(state) {
-  if (!isClinicalDecisionGuidanceHidden() && state.asaKey) {
+  if (state.asaKey) {
     state.ahaClinico = suggestAhaClinicoFromAsa(state.asaKey);
   }
   var proc = getProcedureById(state.procedureId);
@@ -194,11 +160,7 @@ export function applyDuracionKey(state, key) {
   state.duracionCirugiaHoras = h != null ? String(h) : '';
 }
 
-/**
- * FC y SpO₂ del monitoreo: último turno con valor; si falta en el turno actual, turno anterior.
- * @param {unknown} monitoreoLike
- * @returns {{ fc: string, sat: string }}
- */
+/** @param {unknown} monitoreoLike */
 export function getVitalsFromMonitoreo(monitoreoLike) {
   /** @type {any} */
   var m = monitoreoLike || {};
@@ -243,46 +205,25 @@ export function applyVitalsFromMonitoreo(state, patient) {
   return ok;
 }
 
-/** Horas efectivas para calculadora ARISCAT. @param {object} state */
-export function effectiveDuracionHoras(state) {
-  ensureDuracionKey(state);
-  var fromKey = duracionKeyToHours(state.duracionCirugiaKey);
-  if (fromKey != null) return fromKey;
-  var h = parseFloat(String(state.duracionCirugiaHoras || '').replace(',', '.'));
-  return Number.isFinite(h) ? h : null;
-}
-
 /**
  * @param {object} state
  * @param {Array<{ id: string, nombreRaw: string, suspendido?: boolean }>} medItems
- * @param {(nombre: string) => { sugerencia: string, notaEditable: string }} suggestFn
  */
-export function mergeFarmacosFromMedReceta(state, medItems, suggestFn) {
+export function mergeFarmacosFromMedReceta(state, medItems) {
   if (!state.farmacos) state.farmacos = [];
   var existing = new Set(state.farmacos.map((f) => f.sourceMedId).filter(Boolean));
   (medItems || []).forEach(function (it) {
     if (!it || it.suspendido) return;
     if (existing.has(it.id)) return;
-    var sug = suggestFn(it.nombreRaw || '');
     state.farmacos.push({
       sourceMedId: it.id,
       nombreDisplay: it.nombreRaw || '',
-      sugerencia: sug.sugerencia,
-      notaEditable: sug.notaEditable,
+      sugerencia: '',
+      notaEditable: '',
       addedAt: new Date().toISOString(),
     });
     existing.add(it.id);
   });
-}
-
-/** @param {string[]} diagnosticos */
-export function buildDiagnosticosFromNota(diagnosticos) {
-  var lines = (diagnosticos || [])
-    .map(function (d) {
-      return String(d || '').trim().toUpperCase();
-    })
-    .filter(Boolean);
-  return formatDiagnosticosCopy(lines);
 }
 
 /** @param {object} state @param {string[]} notaDx */
@@ -307,15 +248,11 @@ export function importDiagnosticosFromPaste(state, pasteText) {
   return true;
 }
 
-/**
- * @param {Array<object>|undefined} labHistoryPatient
- * @param {object|null} patient
- */
-export function getLatestLabValues(labHistoryPatient, patient) {
+/** @param {Array<object>|undefined} labHistoryPatient @param {object|null} _patient */
+export function getLatestLabValues(labHistoryPatient, _patient) {
   var hist = Array.isArray(labHistoryPatient) ? labHistoryPatient : [];
   var latest = sortLabHistoryChronological(hist)[0] || null;
   if (!latest) return null;
-  var renal = getRenalLabContext(latest, patient);
   var pb = latest.parsedBySection || {};
   var flat = latest.parsed || {};
   function pick(key) {
@@ -326,7 +263,7 @@ export function getLatestLabValues(labHistoryPatient, patient) {
   var hb = pick('Hb') != null ? pick('Hb') : pick('Hemoglobina');
   return {
     fecha: latest.fecha || '',
-    creatinina: renal && renal.creatinineMgDl != null ? renal.creatinineMgDl : pick('Cr'),
+    creatinina: pick('Cr'),
     hemoglobina: hb,
   };
 }
@@ -338,14 +275,7 @@ export function applyLabValues(state, vals) {
   state.lastLabApplied = { fecha: vals.fecha || '', creatinina: state.creatinina, hemoglobina: state.hemoglobina };
 }
 
-export function applyFcFromNote(state, fc) {
-  var v = String(fc || '').trim();
-  if (!v) return;
-  state.fcLpm = v;
-  state.lastFcApplied = v;
-}
-
-/** Rellena SpO₂/FC vacíos desde monitoreo sin sobrescribir edición manual. @param {object} state @param {object|null} patient */
+/** @param {object} state @param {object|null} patient */
 export function autofillVitalsFromMonitoreoIfEmpty(state, patient) {
   if (!patient || !patient.monitoreo) return;
   var v = getVitalsFromMonitoreo(patient.monitoreo);

@@ -37,7 +37,10 @@ import {
   openSesionIngresoTrendsSendModal,
   registerSesionIngresoTrendsSendRuntime,
 } from './sesion-ingreso-trends-send-modal.mjs';
-import { isAbgAnalysisHidden } from '../clinical-product-policy.mjs';
+
+function isAbgAnalysisHidden() {
+  return true;
+}
 
 /** @type {{ getActiveId(): string|null, ensureParsedLabHistory(pid: string): any[], ensureParsedLabHistoryCached?(pid: string): any[], rerenderParsedLabOutputAfterPrefsChange(): void, rpcPrefersReducedMotion(): boolean, showToast(msg: string, type?: string): void, buildLabSetDateLine(set: any): string }} */
 var rt = {

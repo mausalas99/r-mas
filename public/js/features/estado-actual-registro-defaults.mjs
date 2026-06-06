@@ -3,6 +3,9 @@
  * glucometrías del turno previo (ayer 08:00 → hoy 00:00).
  */
 
+/** Horarios estándar: 08:00 y 16:00 del día previo, 00:00 (medianoche) del día actual. */
+export const STANDARD_GLUCOMETRIA_TIMES = ['08:00', '16:00', '00:00'];
+
 /**
  * @param {Date} d
  * @returns {Date}

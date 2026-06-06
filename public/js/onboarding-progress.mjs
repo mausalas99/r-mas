@@ -1,4 +1,8 @@
-import { CURRICULUM_VERSION, isValidStepForBranch } from './onboarding-curriculum.mjs';
+import {
+  CURRICULUM_VERSION,
+  isValidStepForBranch,
+  migrateTourStepId,
+} from './onboarding-curriculum.mjs';
 
 export const GUIDED_TOUR_PROGRESS_LS_KEY = 'rpc-guided-tour-progress';
 
@@ -8,19 +12,32 @@ export function loadTourProgress(storage = localStorage) {
     if (!raw) return null;
     const p = JSON.parse(raw);
     if (!p || !p.stepId || !p.branch) return null;
+    const branch =
+      p.branch === 'guardia-v7' ? 'guardia-v7'
+        : p.branch === 'quick-route' ? 'quick-route'
+          : p.branch === 'interconsulta' ? 'interconsulta'
+            : 'sala';
     const mode = p.mode === 'neo' ? 'neo' : 'base';
-    if (!isValidStepForBranch(p.stepId, p.branch, mode)) return null;
-    return p;
+    const stepId = migrateTourStepId(p.stepId, branch);
+    if (!isValidStepForBranch(stepId, branch, mode)) return null;
+    return { ...p, branch, stepId };
   } catch (_e) {
     return null;
   }
 }
 
 export function saveTourProgress(payload, storage = localStorage) {
+  const branch =
+    payload.branch === 'guardia-v7' ? 'guardia-v7'
+      : payload.branch === 'quick-route' ? 'quick-route'
+        : payload.branch === 'interconsulta' ? 'interconsulta'
+          : 'sala';
   const body = {
-    branch: payload.branch,
+    branch,
+    track: payload.track || branch,
     stepId: payload.stepId,
     chapterId: payload.chapterId || null,
+    moduleOnly: !!payload.moduleOnly,
     mode: payload.mode === 'neo' ? 'neo' : 'base',
     curriculumVersion: CURRICULUM_VERSION,
     updatedAt: Date.now(),

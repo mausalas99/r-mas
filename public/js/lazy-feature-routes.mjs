@@ -121,6 +121,9 @@ export const settingsHelpWindowHandlersLazy = buildLazyWindowHandlers(
     closeLabBulkTourHintModal: 'closeLabBulkTourHintModal',
     resumeGuidedTourFromProgress: 'resumeGuidedTourFromProgress',
     startNeoCompanionTour: 'startNeoCompanionTour',
+    openLearnHub: 'openLearnHub',
+    closeLearnHub: 'closeLearnHub',
+    dismissGuardiaV7UpgradeCard: 'dismissGuardiaV7UpgradeCard',
   },
   ensureSettingsHelpLoaded
 );

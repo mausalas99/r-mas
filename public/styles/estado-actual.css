@@ -1191,27 +1191,98 @@
   padding-top: 2px;
 }
 
-.ea-registro-modal .ea-glu-list {
+.ea-registro-modal .ea-glu-list.ea-glu-list--slots {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
-.ea-registro-modal .ea-glu-row {
-  padding: 5px 6px;
+.ea-registro-modal .ea-glu-row--standard {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
-  grid-template-columns: minmax(0, 1fr) minmax(72px, 88px) auto;
-  align-items: center;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
 }
 
-.ea-registro-modal .ea-glu-row .ea-label {
-  font-size: calc(10px * var(--density-font, 1));
+.ea-registro-modal .ea-glu-time-badge {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  line-height: 1.2;
 }
 
-.ea-registro-modal .ea-glu-row .ea-input {
-  padding: 4px 6px;
-  min-height: 0;
+.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  min-height: 32px;
   font-size: calc(13px * var(--density-font, 1));
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--input-fill);
+  color: var(--text);
+}
+
+.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--surface);
+}
+
+.ea-registro-modal .ea-glu-row--extra {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+.ea-registro-modal .ea-glu-row--extra .ea-glu-time-input,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-value-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  min-height: 32px;
+  font-size: calc(13px * var(--density-font, 1));
+}
+
+.ea-registro-modal .ea-glu-row--extra .ea-glu-remove-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.ea-registro-kbd-hint {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(10px * var(--density-font, 1));
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .ea-registro-modal .ea-glu-list.ea-glu-list--slots {
+    grid-template-columns: 1fr;
+  }
+
+  .ea-registro-modal .ea-glu-row--extra {
+    grid-template-columns: minmax(72px, 88px) minmax(0, 1fr) 36px;
+  }
 }
 
 .ea-registro-modal .ea-io-grid {

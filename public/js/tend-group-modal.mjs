@@ -34,7 +34,10 @@ import {
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 import { evaluateGasoExtended } from './gaso-extended.mjs';
-import { isAbgAnalysisHidden } from './clinical-product-policy.mjs';
+function isAbgAnalysisHidden() {
+  return true;
+}
+
 
 const GENERIC_FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
 
