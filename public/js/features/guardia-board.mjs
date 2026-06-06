@@ -263,7 +263,10 @@ export function renderGuardiaBoard(settings) {
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
   renderGuardiaSummaryTiles(summary);
 
-  if (isTurnoActivo()) {
+  const vitalsHost = document.getElementById('guardia-vitals-feed');
+  const turnoActivo = isTurnoActivo();
+  if (vitalsHost) vitalsHost.hidden = !turnoActivo;
+  if (turnoActivo) {
     renderGuardiaVitalsFeed(
       patients.filter((p) => p && p.id && !p.isDemo && !p.archived)
     );

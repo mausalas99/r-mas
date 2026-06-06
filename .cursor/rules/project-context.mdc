@@ -111,6 +111,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-05** `guardia-panel`: vitals feed + entrega roster HTML/CSS mount points; `app-body.html`, `pase-board.css`, `guardia-board.mjs`.
+- **2026-06-05** `interconsultas-teams`: IC/UX/Eme ABCD teams + off-call Interconsultas census; `clinico-access.mjs`, `clinical-team-composition.mjs`, `teams-roster-*`.
 - **2026-06-05** `lan-delta-outbox`: outbox `delta` kind (localStorage + SQLCipher schema v10 CHECK); `live-sync-outbox.mjs`, `lan-sync-outbox.mjs`, `schema.mjs`.
 - **2026-06-05** `lan-delta-sync`: renderer live apply + HC delta emission (`buildHistoriaClinicaDelta`, `lanPushHistoriaClinicaDelta`, delta-first pending flush); `orchestrator.mjs`, `room.mjs`, `push.mjs`, `lan-delta-client.mjs`, `historia-clinica-lan-sync.mjs`.
 - **2026-06-05** `release-7.0.1`: PIN-first LAN roam (multi-subnet, auto reconnect, «Conectar al turno»); builds on 6.7.0 directorio/PIN; `lan-shift-pin-connect.mjs`, `clinical-rotation-entry.mjs`, `panel.mjs`.

@@ -2252,6 +2252,315 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   }
 }
 
+/* Guardia vitals feed (turno activo) */
+.guardia-vitals-feed {
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--color-border-subtle, #1e3050);
+  background: var(--color-surface-raised, #0c1420);
+}
+
+.vfeed-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.vfeed-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-accent, #64b5f6);
+}
+
+.vfeed-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4caf50;
+  display: inline-block;
+  animation: vfeed-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes vfeed-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.vfeed-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.vfeed-card {
+  background: var(--color-surface, #111e2e);
+  border: 1px solid #1e3050;
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.vfeed-card--alert {
+  border-color: #ff980066;
+  background: #1e160066;
+}
+
+.vfeed-card-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.vfeed-bed {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4a7aaa;
+}
+
+.vfeed-alert-icon {
+  color: #ff9800;
+}
+
+.vfeed-time {
+  font-size: 10px;
+  color: #3a5070;
+  margin-left: auto;
+}
+
+.vfeed-name {
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vfeed-vals {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e0eeff;
+  line-height: 1.5;
+}
+
+.vfeed-altered {
+  color: #ff9800;
+}
+
+.vfeed-empty {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #444;
+  padding: 6px 0;
+}
+
+/* Entrega roster panel */
+.entrega-roster-panel-host:empty {
+  display: none;
+}
+
+.roster-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0f0f1c;
+  display: flex;
+  flex-direction: column;
+}
+
+.roster-panel-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid #2a2a42;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #111120;
+  flex-shrink: 0;
+}
+
+.roster-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.roster-panel-sub {
+  font-size: 11px;
+  color: #555;
+}
+
+.roster-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #1e1430;
+  border: 1px solid #6c5ce7;
+  color: #a78bfa;
+  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+.roster-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.roster-section {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #444;
+  padding: 8px 16px 3px;
+}
+
+.roster-row {
+  padding: 10px 16px;
+  border-bottom: 1px solid #1a1a2a;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.roster-row:hover,
+.roster-row:focus-visible {
+  background: #1a1a2a;
+  outline: none;
+}
+
+.roster-row--ctx {
+  border-left: 2px solid #6c5ce740;
+}
+
+.roster-row-bed {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9d8bff;
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.roster-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.roster-row-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-row-dx {
+  font-size: 10px;
+  color: #555;
+  margin-top: 1px;
+}
+
+.roster-row-ctx {
+  font-size: 11px;
+  color: #9d8bff;
+  margin-top: 3px;
+}
+
+.roster-row-empty {
+  font-size: 10px;
+  color: #383852;
+  margin-top: 3px;
+}
+
+.roster-row-right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.roster-sbadge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.roster-sbadge--critical {
+  background: #3a1010;
+  color: #e74c3c;
+}
+
+.roster-sbadge--unstable {
+  background: #2e1e00;
+  color: #ff9800;
+}
+
+.roster-sbadge--stable {
+  background: #0e2a18;
+  color: #4caf50;
+}
+
+.roster-sbadge--none {
+  background: #1e1e28;
+  color: #444;
+}
+
+.roster-icon-flags {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.roster-icon-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  color: #9d8bff;
+  background: #1e1830;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.roster-panel-footer {
+  padding: 10px 16px;
+  border-top: 1px solid #2a2a42;
+  display: flex;
+  gap: 10px;
+  background: #111120;
+  flex-shrink: 0;
+}
+
+.btn-roster-cancel {
+  flex: 1;
+  padding: 9px;
+  border-radius: 7px;
+  background: transparent;
+  border: 1px solid #2a2a42;
+  color: #888;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-roster-confirm {
+  flex: 1;
+  padding: 9px;
+  border-radius: 7px;
+  background: #6c5ce7;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .clinical-registration-modal {
   width: min(96vw, 32rem);
   max-width: none;
