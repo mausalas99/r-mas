@@ -207,9 +207,6 @@ export class UnifiedPatientGridBoard {
 
     const dnr = p.negativa_maniobras_firmada ? '<span class="dnr-badge">DNR</span>' : '';
     const vitals = vitalsBannerForGuardia(meta);
-    const alteredBadge = p.vitalsAltered
-      ? '<span class="vitals-altered-badge" title="Signos alterados (interno)">Alterado</span>'
-      : '';
     const bed = p.bed_label ? p.bed_label : '—';
     const nameRaw = String(p.name || '').trim();
     const nameDisplay = nameRaw ? abbreviatePatientName(nameRaw) : '—';
@@ -238,7 +235,7 @@ export class UnifiedPatientGridBoard {
       <p class="patient-chip-name"${nameTitle ? ` title="${nameTitle}"` : ''}>${nameDisplay}</p>
       <p class="patient-chip-dx">${dx}</p>
       <div class="patient-chip-vitals vitals-banner ${vitals.cls}" title="${vitalsTitle}">
-        <span class="patient-chip-vitals__text">${vitals.str}</span>${alteredBadge}
+        <span class="patient-chip-vitals__text">${vitals.str}</span>
       </div>
       <div class="patient-chip-footer">
         ${pendingLabel}

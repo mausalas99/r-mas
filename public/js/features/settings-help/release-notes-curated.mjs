@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_711 = [
+  {
+    title: 'LAN command sync',
+    body:
+      'Estado actual, eventualidades y pendientes via comandos tipados con outbox persistente; ACK ordenado por <code>deltaSeq</code>. Bundle completo sigue como fallback.',
+  },
+  {
+    title: 'Entrega en Guardia',
+    body:
+      'Tap en el chip del paciente abre el modal de entrega <strong>antes</strong> de iniciar turno activo.',
+  },
+  {
+    title: 'Críticos corregidos',
+    body:
+      'Borde rojo del censo solo por toggle clínico + vasoactivo/VMI; sin marcar por signos alterados ni badge «Alterado».',
+  },
+  {
+    title: 'Parche sobre 7.1.0',
+    body:
+      'Instala <strong>7.1.1 en todas</strong> las estaciones desde <strong>7.1.0</strong>; PIN, sala y barra de fases no cambian.',
+  },
+];
+
 var RELEASE_NOTES_710 = [
   {
     title: 'Guardia más espacio',
@@ -314,9 +337,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_710;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_711;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.1': RELEASE_NOTES_711,
   '7.1.0': RELEASE_NOTES_710,
   '7.0.3': RELEASE_NOTES_703,
   '7.0.2': RELEASE_NOTES_702,

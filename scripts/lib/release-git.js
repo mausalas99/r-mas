@@ -24,6 +24,7 @@ const RELEASE_STAGE_PATHS = [
   'generate-censo.layout.test.js',
   'generate-censo.test.js',
   'lib/db/',
+  'lib/entrega/',
   'lib/drive-import/',
   'lib/doc-generators/',
   'lib/doc-export-audit.js',

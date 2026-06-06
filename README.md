@@ -27,10 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.0](https://github.com/mausalas99/r-mas/releases/tag/v7.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.1](https://github.com/mausalas99/r-mas/releases/tag/v7.1.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.1.1 (LAN command sync + guardia entrega)
+
+- **LAN command sync** — Comandos tipados (estado actual, eventualidades, pendientes) con outbox persistente y ACK por `deltaSeq`; bundle completo como fallback.
+- **Entrega en Guardia** — Tap en chip abre modal de entrega antes de turno activo.
+- **Críticos** — Borde rojo solo por toggle + vaso/VMI; sin heurística de signos alterados.
+- **Sobre 7.1.0** — Guardia compacta, delta sync de HC, barra de fases entrega/turno.
+
+Notas: `docs/RELEASE_NOTES_7.1.1.txt`.
 
 ## R+ 7.0.3 (LAN antes de delta sync)
 

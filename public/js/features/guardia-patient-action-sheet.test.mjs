@@ -41,7 +41,7 @@ describe('shouldShowGuardiaPatientActionMenu', () => {
     );
   });
 
-  it('shows menu for on-call receiver in guardia census pre-turno', () => {
+  it('hides menu pre-turno so census chips open entrega modal', () => {
     assert.equal(
       shouldShowGuardiaPatientActionMenu({
         turnoActivo: false,
@@ -49,7 +49,7 @@ describe('shouldShowGuardiaPatientActionMenu', () => {
         onCallGuardiaReceiver: true,
         gridViewContext: 'GUARDIA',
       }),
-      true
+      false
     );
   });
 

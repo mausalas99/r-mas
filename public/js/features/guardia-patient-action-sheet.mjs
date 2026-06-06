@@ -54,11 +54,8 @@ function findPatient(patientId) {
 export function shouldShowGuardiaPatientActionMenu(ctx) {
   const turnoActivo = !!ctx?.turnoActivo;
   const entregaActive = !!ctx?.entregaActive;
-  const onCall = !!ctx?.onCallGuardiaReceiver;
-  const gridViewContext = ctx?.gridViewContext === 'HANDOFF' ? 'HANDOFF' : 'GUARDIA';
   if (entregaActive && !turnoActivo) return false;
-  if (turnoActivo) return true;
-  return onCall && gridViewContext === 'GUARDIA';
+  return turnoActivo;
 }
 
 function closeGuardiaPatientActionSheet() {

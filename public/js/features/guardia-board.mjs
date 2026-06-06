@@ -43,7 +43,7 @@ import {
   listActiveProcedimientos,
   normalizePendientesJson,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
-import { normalizeHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';
+import { isGuardiaChipCritical } from '../../../lib/entrega/guardia-chip-critical.mjs';
 import { renderGuardiaVitalsFeed } from './guardia-vitals-feed.mjs';
 import { isTurnoActivo, deactivateTurnoActivo } from './entrega-roster-panel.mjs';
 import {
@@ -198,18 +198,6 @@ function labsSnippetForPatient(pid) {
  * @param {Record<string, unknown>} p
  * @param {Map<string, object>} guardiasMap
  */
-function lastMedicionHasAlterations(p) {
-  const hist = p?.monitoreo?.historial;
-  if (!Array.isArray(hist) || !hist.length) return false;
-  const last = hist[hist.length - 1];
-  const alt = last && typeof last === 'object' ? /** @type {any} */ (last).alteredAt : null;
-  return !!(alt && typeof alt === 'object' && Object.keys(alt).length > 0);
-}
-
-/**
- * @param {Record<string, unknown>} p
- * @param {Map<string, object>} guardiasMap
- */
 function enrichPatientForGuardiaCard(p, guardiasMap) {
   const base = mapPatientForGuardiaGrid(p);
   const g = guardiasMap.get(base.id);
@@ -221,15 +209,7 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
   const pendingCount = g?.pendientes_json
     ? listActiveProcedimientos(normalizePendientesJson(g.pendientes_json)).length
     : 0;
-  const vitalsAltered = lastMedicionHasAlterations(p);
-  const pendientesDoc = normalizePendientesJson(g?.pendientes_json);
-  const handoff = normalizeHandoffContext(pendientesDoc.handoffContext);
-  const isCritical = !!(
-    g?.is_critical ||
-    vitalsAltered ||
-    handoff.vasopressor.active ||
-    handoff.ventilation.active
-  );
+  const isCritical = isGuardiaChipCritical(g);
   const entregaMarkers = g ? entregaChipMarkerIds(g) : [];
   return {
     ...base,
@@ -237,7 +217,6 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     pendingCount,
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
-    vitalsAltered,
     entregaMarkers,
     guardiaMeta: g,
   };
@@ -254,7 +233,7 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
   let vitalsDueSoon = 0;
   censusPatients.forEach((p) => {
     const meta = guardiasMap.get(p.id) || p.guardiaMeta || {};
-    if (p.isCritical || meta?.is_critical) critical += 1;
+    if (p.isCritical) critical += 1;
     pending += p.pendingCount || 0;
     const banner = vitalsBannerForGuardia(meta);
     if (banner.cls === 'breached') vitalsOverdue += 1;
@@ -523,26 +502,28 @@ export function renderGuardiaBoard(settings) {
     onCallGuardiaReceiver,
     gridViewContext,
   });
-  gridBoard.chipOpensEntrega = entregaActive && !turnoActivo;
+  gridBoard.chipOpensEntrega = !turnoActivo;
   gridBoard.chipGuardiaPatientMenu = showPatientActionMenu;
 
   gridBoard.onChipClick = (patientId) => {
+    if (!turnoActivo) {
+      const guardia = guardiasMap.get(patientId);
+      openEntregaModal({
+        patientId,
+        guardiaId: guardia?.guardia_id,
+        onConfirm: () => {
+          void refreshGuardiaCensusFromDb(settings);
+        },
+      });
+      return;
+    }
     if (showPatientActionMenu) {
       const row = censusPatients.find((p) => String(p.id) === String(patientId));
       openGuardiaPatientActionSheet({
         patientId,
         patientLabel: row?.name ? String(row.name) : undefined,
       });
-      return;
     }
-    const guardia = guardiasMap.get(patientId);
-    openEntregaModal({
-      patientId,
-      guardiaId: guardia?.guardia_id,
-      onConfirm: () => {
-        void refreshGuardiaCensusFromDb(settings);
-      },
-    });
   };
 
   gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
