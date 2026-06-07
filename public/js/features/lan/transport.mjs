@@ -22,7 +22,7 @@ import {
   isPinnedHostLocal,
 } from '../../lan-host-pin.mjs';
 import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
-import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
+import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import {
   recordAutoHostDetectSuccess,
   resumeAutoHostDetect,
@@ -805,7 +805,7 @@ export async function promoteThisMacToLanHost(opts) {
     const teamCode = getLanTeamCodeFromConfig();
     const ownUrl = (await resolveLanShareBaseUrl()) || '';
     if (teamCode && ownUrl) {
-      const scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+      const scanned = await discoverLanHostsConcurrent(teamCode, ownUrl);
       const peers = [];
       for (const url of scanned) {
         const peerMeta = await fetchLanHostRank(url, teamCode);
@@ -912,7 +912,7 @@ export async function tryAutoJoinPreferredLanHost(opts) {
   const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
 
   let peers = listLivePeerHostUrls(getLanClientId());
-  const subnetPeers = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+  const subnetPeers = await discoverLanHostsConcurrent(teamCode, ownUrl);
   const seen = new Set();
   peers = [...peers, ...subnetPeers].filter((u) => {
     const n = normalizeLanHostBase(u);

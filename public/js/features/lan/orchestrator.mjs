@@ -18,6 +18,8 @@ import {
   scheduleUntypedSafetyBundle,
 } from "./push.mjs";
 import { lanMutationRegistry } from '../../lan-mutation-registry.mjs';
+import { upsertHost, evictStale } from '../../lan-host-registry.mjs';
+import { RoomSyncPhase, getRoomSyncPhase } from '../../lan-sync-state.mjs';
 import { enqueueOutbox } from '../../live-sync-outbox.mjs';
 import { mergeLiveSyncFullBundles } from "../../lan-merge-registry.mjs";
 import { liveSyncDeletePatchesFromEntityMap } from "../../live-sync-room.mjs";
@@ -116,6 +118,7 @@ import {
   refreshLanClinicalDirectoryFromRoom,
   fetchAndApplyClinicalOpsFromHost,
   waitForLiveChannelOpen,
+  resumeAutoHostDetectAndReconnect,
 } from "./room.mjs";
 import { registerLanSyncTransportDeps } from "./transport.mjs";
 import { getSurrogateHostState } from "../../lan-surrogate-host.mjs";
@@ -1719,7 +1722,33 @@ export function wireLanSyncBridges() {
     }
     void handleSyncConflict(payload);
   });
-  lanClient.addEventListener('lan-patch', function () {
+  lanClient.addEventListener('lan-patch', function (ev) {
+    const data = ev.detail;
+    if (data?.type === 'livesync:hello') {
+      const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+      const hostUrl = String(lanClient.baseUrl() || cfg.hostUrl || '')
+        .trim()
+        .replace(/\/+$/, '');
+      if (hostUrl && data.clientId && data.startedAt) {
+        upsertHost({
+          fingerprint: `${data.clientId}:${data.startedAt}`,
+          clientId: data.clientId,
+          startedAt: data.startedAt,
+          currentUrl: hostUrl,
+          rank: data.rank || '',
+          dbUnlocked: !!data.dbUnlocked,
+          shiftPinActive: !!data.shiftPinActive,
+          rttMs: 0,
+          lastSeenAt: Date.now(),
+          source: 'heartbeat',
+        });
+      }
+      const roomId = String(activeLiveSyncRoomId || '').trim();
+      if (roomId && getRoomSyncPhase(roomId) === RoomSyncPhase.offline) {
+        resumeAutoHostDetectAndReconnect();
+      }
+      return;
+    }
     syncLiveSyncStatusChrome();
   });
 }
@@ -1727,6 +1756,35 @@ export function wireLanSyncBridges() {
 wireLanSyncBridges();
 
 let _lanRuntimeStarted = false;
+let _lanRegistryEvictionStarted = false;
+
+function wireLanHostRegistryDiscovery() {
+  if (typeof window === 'undefined') return;
+  if (window.electronAPI?.onLanMdnsPeers) {
+    window.electronAPI.onLanMdnsPeers((peers) => {
+      if (!Array.isArray(peers)) return;
+      peers.forEach((peer) => {
+        if (!peer?.clientId || !peer?.startedAt) return;
+        upsertHost({
+          fingerprint: `${peer.clientId}:${peer.startedAt}`,
+          clientId: peer.clientId,
+          startedAt: peer.startedAt,
+          currentUrl: peer.url,
+          rank: peer.rank || '',
+          dbUnlocked: false,
+          shiftPinActive: false,
+          rttMs: 0,
+          lastSeenAt: Date.now(),
+          source: 'mdns',
+        });
+      });
+    });
+  }
+  if (!_lanRegistryEvictionStarted) {
+    _lanRegistryEvictionStarted = true;
+    setInterval(() => evictStale(90_000), 30_000);
+  }
+}
 
 /** Start LAN client + discovery when not in solo-equipo mode (boot or after Ajustes switch). */
 export function ensureLanSyncRuntimeStarted() {
@@ -1738,6 +1796,7 @@ export function ensureLanSyncRuntimeStarted() {
   initLanClientFromStorage();
   wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();
+  wireLanHostRegistryDiscovery();
   if (isLanElectronDesktop()) {
     scheduleTierALanServerWarm();
     startLanAutoDiscovery();

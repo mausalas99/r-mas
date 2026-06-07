@@ -42,7 +42,8 @@ import {
   listLivePeerHostUrls,
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
-import { discoverLanHostsOnSubnet, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
+import { normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
+import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import {
   canAttemptAutoHostDetect,
   isAutoHostDetectPaused,
@@ -2122,7 +2123,7 @@ async function scanLanHosts() {
     if (now - _lastSubnetLanScanAt >= SUBNET_LAN_SCAN_MIN_MS) {
       _lastSubnetLanScanAt = now;
       var ownUrl = lanHostUrl() || (await resolveLanShareBaseUrl());
-      var scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+      var scanned = await discoverLanHostsConcurrent(teamCode, ownUrl);
       var wardHosts = [];
       for (var hi = 0; hi < scanned.length; hi += 1) {
         var peerMeta = await fetchLanHostRank(scanned[hi], teamCode);
