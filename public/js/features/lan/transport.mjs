@@ -178,6 +178,34 @@ export function trimStoredLanBearer(code) {
   return String(code || '').trim();
 }
 
+async function _fetchAndRegisterHealthAfterJoin(hostUrl, teamCode) {
+  try {
+    const base = normalizeLanHostBase(hostUrl);
+    if (!base) return;
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(`${base}/api/lan/v1/health`, { signal: ctrl.signal });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data?.clientId || !data?.startedAt) return;
+    const fp = `${data.clientId}:${data.startedAt}`;
+    const { upsertHost, setPinnedFingerprint } = await import('../../lan-host-registry.mjs');
+    upsertHost({
+      fingerprint: fp,
+      clientId: data.clientId,
+      startedAt: data.startedAt,
+      currentUrl: base,
+      rank: data.hostRank || '',
+      dbUnlocked: !!data.dbUnlocked,
+      shiftPinActive: !!data.shiftPinActive,
+      rttMs: 0,
+      lastSeenAt: Date.now(),
+      source: 'health_poll',
+    });
+    setPinnedFingerprint(fp);
+  } catch (_e) {}
+}
+
 export function persistLanClientConfig(hostUrl, teamCode) {
   var url = String(hostUrl || '').trim().replace(/\/+$/, '');
   var code = trimStoredLanBearer(teamCode);
@@ -194,6 +222,7 @@ export function persistLanClientConfig(hostUrl, teamCode) {
       lanClient.disconnect();
       lanClient.connectSyncChannel();
     } catch (_e) {}
+    void _fetchAndRegisterHealthAfterJoin(url, code);
   }
   return changed;
 }

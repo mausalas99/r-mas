@@ -1,5 +1,7 @@
 /** Failover de anfitrión LAN: suplente en escritorio y reconexión entre pares. */
 
+import { upsertHost } from './lan-host-registry.mjs';
+
 const PEERS_KEY = 'rpc-lan-live-peers';
 const SURROGATE_KEY = 'rpc-lan-surrogate-host';
 const PRIMARY_HOST_KEY = 'rpc-lan-primary-host-url';
@@ -72,6 +74,20 @@ export function recordLivePeer(clientId, meta) {
     clientId: id,
   };
   writePeersRaw(map);
+  if (meta && Number(meta.startedAt) > 0) {
+    upsertHost({
+      fingerprint: `${id}:${meta.startedAt}`,
+      clientId: id,
+      startedAt: Number(meta.startedAt),
+      currentUrl: hostUrl,
+      rank: String(meta.rank || ''),
+      dbUnlocked: false,
+      shiftPinActive: false,
+      rttMs: 0,
+      lastSeenAt: Date.now(),
+      source: 'heartbeat',
+    });
+  }
 }
 
 export function listLivePeerHostUrls(excludeClientId) {
