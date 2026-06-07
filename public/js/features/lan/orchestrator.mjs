@@ -14,6 +14,8 @@ import {
   pushRoomSyncBundleToHost,
   emitLiveSyncRevisionHint,
   scheduleReconcileFromRevisionHint,
+  markUntypedDirty,
+  scheduleUntypedSafetyBundle,
 } from "./push.mjs";
 import { lanMutationRegistry } from '../../lan-mutation-registry.mjs';
 import { enqueueOutbox } from '../../live-sync-outbox.mjs';
@@ -1685,6 +1687,8 @@ export function wireLanSyncBridges() {
     isActive: () => !!getActiveLiveSyncRoomId() && isLanSessionConfiguredForRest(),
     getActiveRoomId: getActiveLiveSyncRoomId,
     enqueueOutbox: (roomId, item) => enqueueOutbox(roomId, item),
+    markUntypedDirty,
+    scheduleUntypedSafetyBundle,
   });
 
   lanClient.addEventListener('lan-applied', function (ev) {

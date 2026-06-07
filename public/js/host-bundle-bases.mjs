@@ -79,6 +79,15 @@ export function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersion
 /** @param {string} roomId @param {object} envelope */
 export function hostBundlePutBodyFromEnvelope(roomId, envelope) {
   const bases = getHostBundleBases(roomId);
+  if (envelope.entriesPartial === true) {
+    return {
+      baseRevision: bases.revision,
+      baseEntityVersions: {},
+      uploadedByClientId: envelope.clientId || '',
+      entries: envelope.entries || [],
+      entriesPartial: true,
+    };
+  }
   const body = {
     baseRevision: bases.revision,
     baseEntityVersions: buildBaseEntityVersionsForEnvelope(envelope, bases.entityVersions),
