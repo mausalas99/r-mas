@@ -97,10 +97,6 @@ import {
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
 } from './features/estado-actual-registro-modal.mjs';
-import {
-  registerEstadoActualChartsModalRuntime,
-  wireEaChartsModalDismiss,
-} from './features/estado-actual-charts-modal.mjs';
 import { getDefaultRegistroRecordedAt } from './features/estado-actual-registro-defaults.mjs';
 import {
   registerProcedureAgendaRuntime,
@@ -486,18 +482,6 @@ export async function registerAllFeatureRuntimes() {
   registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
-  registerEstadoActualChartsModalRuntime({
-    getPatient: function () {
-      var id = rt.getActiveId();
-      if (!id) return null;
-      return (
-        patients.find(function (p) {
-          return p.id === id;
-        }) || null
-      );
-    },
-    showToast: showToast,
-  });
   registerLabPanelRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
@@ -511,6 +495,5 @@ export function runInitialFeatureBoot() {
   wireEstadoActualPasteModal();
   wireDriveImportModal();
   wireEaModalDismiss();
-  wireEaChartsModalDismiss();
   syncCensoExportButtonVisibility();
 }

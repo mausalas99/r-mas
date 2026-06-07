@@ -437,6 +437,28 @@ var RELEASE_NOTES_669 = [
 export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_713;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.6': [
+    {
+      title: 'LiveSync más liviano en la red',
+      body:
+        'Al unirse un colega, cada Mac envía una <strong>pista de revisión</strong> en lugar de un bundle WS grande. Las respuestas HTTP del turno van <strong>comprimidas</strong> cuando pesan más de 2 KB.',
+    },
+    {
+      title: 'Guardados por dominio',
+      body:
+        '<strong>Nota, indicaciones, laboratorios y campos</strong> se sincronizan por mutación tipada. El bundle completo de la sala queda para unirse, reconectar o un respaldo de <strong>30 s</strong> en dominios sin tipar.',
+    },
+    {
+      title: 'OFFLINE y Reconectar',
+      body:
+        'Si el anfitrión no responde, ⇄ entra en <strong>OFFLINE</strong>: sin escaneo en segundo plano. Toca <strong>Reconectar</strong> para un ping, vaciar la cola y volver a sincronizar.',
+    },
+    {
+      title: 'Parche sobre 7.1.5',
+      body:
+        'Instala <strong>7.1.6 en todas</strong> las estaciones del turno. La base clínica sube a esquema <strong>v14</strong> (outbox LAN ampliado). Macs en 7.1.5 siguen compatibles.',
+    },
+  ],
   '7.1.5': RELEASE_NOTES_715,
   '7.1.4': RELEASE_NOTES_714,
   '7.1.3': RELEASE_NOTES_713,

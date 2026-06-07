@@ -27,10 +27,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.5](https://github.com/mausalas99/r-mas/releases/tag/v7.1.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.6](https://github.com/mausalas99/r-mas/releases/tag/v7.1.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.1.6 (LiveSync ligero en red local)
+
+- **⇄ Unión liviana** — Pistas de revisión en lugar de bundles WS al entrar un colega; gzip en respuestas grandes del API LAN.
+- **Guardados tipados** — Nota, indicaciones, labs y campos van por mutación HTTP; bundle completo solo al unirse, reconectar o respaldo 30 s (untyped).
+- **Delta primero** — Las pistas de revisión intentan el log de deltas antes de pedir el bundle entero.
+- **OFFLINE** — Sin escaneo en segundo plano; banner **Reconectar** con flush → bundle → WS.
+- **Sobre 7.1.5** — Esquema SQLCipher v14 (outbox LAN); instalar en todas las Macs del turno.
+
+Notas: `docs/RELEASE_NOTES_7.1.6.txt`.
 ## R+ 7.1.5 (LAN reconexión + entregas huérfanas guardia)
 
 - **⇄ Reconexión** — Tras 5 intentos sin anfitrión, pausa la búsqueda automática; reanuda al abrir ⇄, PIN o Restablecer conexión.

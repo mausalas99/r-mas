@@ -213,16 +213,6 @@
   </div>
 </div>
 
-<div id="ea-charts-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal ea-charts-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" onclick="event.stopPropagation()">
-    <header class="ea-charts-modal-head">
-      <h3 id="ea-charts-title">Gráficas de monitoreo</h3>
-      <button type="button" class="ea-charts-modal-close" onclick="closeEstadoActualChartsModal()" aria-label="Cerrar gráficas">×</button>
-    </header>
-    <div id="ea-charts-modal-mount" class="ea-charts-modal-body"></div>
-  </div>
-</div>
-
 <div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" onclick="event.stopPropagation()">
     <header class="ea-registro-modal-head">
@@ -766,6 +756,9 @@
       <button type="button" class="help-tour-btn" onclick="startTourModule('ch-salida')">Medicamentos y salida</button>
       <button type="button" class="help-tour-btn" onclick="startTourModule('ch-agenda')">Agenda del turno</button>
       <button type="button" class="help-tour-btn" onclick="startTourModule('ch-team')">Equipo (LiveSync)</button>
+      <p class="help-learn-sub">Extensiones</p>
+      <button type="button" class="help-tour-btn" onclick="startNeoCompanionTour('sala_casiopea_lab')">Neo · Laboratorio</button>
+      <button type="button" class="help-tour-btn" onclick="startNeoCompanionTour('sala_casiopea_trends')">Neo · Tendencias</button>
       <details class="help-learn-advanced">
         <summary>Avanzado</summary>
         <div class="help-learn-advanced-body">
@@ -1308,8 +1301,8 @@
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
               <button type="button" class="btn-med-secondary drive-import-trigger" id="btn-drive-import" onclick="openDriveImportModal()" style="display:none;" aria-label="Importar desde Drive">Importar desde Drive</button>
