@@ -10,8 +10,40 @@ const { createHostStore } = require('./host-store.js');
 const { createConflictResolver } = require('./conflict-resolver.js');
 const { attachWsHub, AUTH_TIMEOUT_MS } = require('./ws-hub.js');
 
-function rmDirSafe(dir) {
-  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+function closeWs(ws) {
+  return new Promise((resolve) => {
+    if (!ws || ws.readyState === WebSocket.CLOSED) {
+      resolve();
+      return;
+    }
+    ws.once('close', resolve);
+    try {
+      ws.close();
+    } catch (_e) {
+      resolve();
+      return;
+    }
+    setTimeout(resolve, 500);
+  });
+}
+
+async function rmDirSafe(dir) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      const retryable = err && (err.code === 'ENOTEMPTY' || err.code === 'EBUSY' || err.code === 'EPERM');
+      if (!retryable || attempt === 9) throw err;
+      await new Promise((r) => setTimeout(r, 25 * (attempt + 1)));
+    }
+  }
+}
+
+async function shutdownWsTest(httpServer, sockets, dir) {
+  await Promise.all((sockets || []).map((ws) => closeWs(ws)));
+  await new Promise((resolve) => httpServer.close(resolve));
+  await rmDirSafe(dir);
 }
 
 function listen(httpServer) {
@@ -73,8 +105,7 @@ test('WebSocket requires auth frame; invalid token terminates', async () => {
     });
     assert.notStrictEqual(ws.readyState, WebSocket.OPEN);
   } finally {
-    await new Promise((resolve) => httpServer.close(resolve));
-    rmDirSafe(dir);
+    await shutdownWsTest(httpServer, [], dir);
   }
 });
 
@@ -87,8 +118,9 @@ test('WebSocket joins channel after valid auth frame', async () => {
   attachWsHub(httpServer, { getState: () => store.getState() });
   await listen(httpServer);
   const { port } = httpServer.address();
+  let ws;
   try {
-    const ws = new WebSocket(`ws://127.0.0.1:${port}/api/lan/v1/ws?channel=live:room1`);
+    ws = new WebSocket(`ws://127.0.0.1:${port}/api/lan/v1/ws?channel=live:room1`);
     await new Promise((resolve, reject) => {
       ws.on('open', resolve);
       ws.on('error', reject);
@@ -106,10 +138,8 @@ test('WebSocket joins channel after valid auth frame', async () => {
     });
     assert.strictEqual(got.type, 'ping');
     assert.strictEqual(got.n, 1);
-    ws.close();
   } finally {
-    await new Promise((resolve) => httpServer.close(resolve));
-    rmDirSafe(dir);
+    await shutdownWsTest(httpServer, [ws], dir);
   }
 });
 
@@ -126,9 +156,11 @@ test('livesync:patch overlap broadcasts applied with lwwApplied', async () => {
   await listen(httpServer);
   const { port } = httpServer.address();
   const channel = 'live:conflict-room';
+  let wsA;
+  let wsB;
   try {
-    const wsA = await connectAuthedLiveWs(port, token, channel);
-    const wsB = await connectAuthedLiveWs(port, token, channel);
+    wsA = await connectAuthedLiveWs(port, token, channel);
+    wsB = await connectAuthedLiveWs(port, token, channel);
 
     const appliedPromise = waitForMessage(wsA, (m) => m.type === 'livesync:applied');
     const appliedBPromise = waitForMessage(wsB, (m) => m.type === 'livesync:applied');
@@ -153,11 +185,8 @@ test('livesync:patch overlap broadcasts applied with lwwApplied', async () => {
     assert.strictEqual(applied.data.cuarto, '102');
     assert.strictEqual(appliedB.lwwApplied, true);
     assert.strictEqual(appliedB.data.cuarto, '102');
-    wsA.close();
-    wsB.close();
   } finally {
-    await new Promise((resolve) => httpServer.close(resolve));
-    rmDirSafe(dir);
+    await shutdownWsTest(httpServer, [wsA, wsB], dir);
   }
 });
 
@@ -174,9 +203,11 @@ test('livesync:patch disjoint merge broadcasts livesync:applied', async () => {
   await listen(httpServer);
   const { port } = httpServer.address();
   const channel = 'live:applied-room';
+  let wsA;
+  let wsB;
   try {
-    const wsA = await connectAuthedLiveWs(port, token, channel);
-    const wsB = await connectAuthedLiveWs(port, token, channel);
+    wsA = await connectAuthedLiveWs(port, token, channel);
+    wsB = await connectAuthedLiveWs(port, token, channel);
     const appliedA = waitForMessage(wsA, (m) => m.type === 'livesync:applied');
     const appliedB = waitForMessage(wsB, (m) => m.type === 'livesync:applied');
     wsA.send(
@@ -201,11 +232,8 @@ test('livesync:patch disjoint merge broadcasts livesync:applied', async () => {
     assert.strictEqual(msgB.autoMerged, true);
     assert.strictEqual(msgA.data.cuarto, '201');
     assert.strictEqual(msgA.data.cama, 'B');
-    wsA.close();
-    wsB.close();
   } finally {
-    await new Promise((resolve) => httpServer.close(resolve));
-    rmDirSafe(dir);
+    await shutdownWsTest(httpServer, [wsA, wsB], dir);
   }
 });
 
@@ -222,9 +250,11 @@ test('livesync:delta broadcasts canonical applied delta with origin txId', async
   await listen(httpServer);
   const { port } = httpServer.address();
   const channel = `live:${roomId}`;
+  let wsA;
+  let wsB;
   try {
-    const wsA = await connectAuthedLiveWs(port, token, channel);
-    const wsB = await connectAuthedLiveWs(port, token, channel);
+    wsA = await connectAuthedLiveWs(port, token, channel);
+    wsB = await connectAuthedLiveWs(port, token, channel);
     const appliedPromise = waitForMessage(wsB, (msg) => msg.type === 'livesync:delta:applied');
     wsA.send(JSON.stringify({
       type: 'livesync:delta',
@@ -246,10 +276,7 @@ test('livesync:delta broadcasts canonical applied delta with origin txId', async
     assert.equal(applied.txId, 'tx_ws');
     assert.equal(applied.status, 'ok');
     assert.deepEqual(applied.acceptedPaths, ['text']);
-    wsA.close();
-    wsB.close();
   } finally {
-    await new Promise((resolve) => httpServer.close(resolve));
-    rmDirSafe(dir);
+    await shutdownWsTest(httpServer, [wsA, wsB], dir);
   }
 });
