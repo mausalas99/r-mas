@@ -101,6 +101,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLanMdnsPeers: function(cb) {
     ipcRenderer.on('lan:mdns-peers', function(_e, peers) { cb(peers); });
   },
+  lanUdpDiscover: function() {
+    return ipcRenderer.invoke('lan-udp-discover');
+  },
   resetLanSquadHostState: function() {
     return ipcRenderer.invoke('lan-reset-squad-host-state');
   },

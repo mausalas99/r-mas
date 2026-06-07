@@ -613,9 +613,11 @@ ipcMain.handle('lan-get-effective-team-code', () => {
 });
 
 const { createLanMdnsService, buildTeamHashSync } = require('./lan-squad/lan-mdns-service.js');
+const { createUdpBeacon } = require('./lan-squad/lan-udp-beacon.js');
 const crypto = require('node:crypto');
 
 let _lanMdnsService = null;
+let _udpBeacon = null;
 
 function ensureLanMdnsClientId(userDataPath) {
   const idPath = path.join(String(userDataPath || ''), 'lan-mdns-client-id.txt');
@@ -652,6 +654,26 @@ function startLanMdnsIfHosting() {
   }
 }
 
+function startUdpBeaconIfHosting() {
+  try {
+    const userData = app.getPath('userData');
+    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
+    const teamResult = readLanTeamCodeFile({ userDataPath: userData });
+    if (!teamResult?.ok || !teamResult.code) return;
+    const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
+    const meta = readHostClinicalMeta(userData) || {};
+    const clientId = ensureLanMdnsClientId(userData);
+    const startedAt = meta.startedAt || Date.now();
+    const rank = meta.rank || 'R1';
+    const teamHash = buildTeamHashSync(teamResult.code);
+    if (_udpBeacon) _udpBeacon.stop();
+    _udpBeacon = createUdpBeacon({ clientId, startedAt, rank, teamHash, port: 3739 });
+    _udpBeacon.startListening().catch(() => {});
+  } catch (_e) {
+    // Non-critical — UDP beacon unavailable
+  }
+}
+
 /** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
 ipcMain.handle('lan-ensure-server-ready', async () => {
   const lanServer = require('./server');
@@ -672,8 +694,14 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
       // non-fatal — renderer may sync meta later
     }
     startLanMdnsIfHosting();
+    startUdpBeaconIfHosting();
   }
   return { ok: true, peer: peerMode };
+});
+
+ipcMain.handle('lan-udp-discover', async () => {
+  if (!_udpBeacon) return [];
+  return _udpBeacon.discover(500);
 });
 
 /** Dev peer window (npm run dev:lan-peer-app): seed LAN client config toward local host. */
