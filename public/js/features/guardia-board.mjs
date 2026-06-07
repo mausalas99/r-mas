@@ -8,6 +8,7 @@ import { isGuardiaMode } from './chrome.mjs';
 import {
   buildGuardiasMap,
   clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
   mapPatientForGuardiaGrid,
 } from '../clinical-access-runtime.mjs';
 import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
@@ -33,7 +34,7 @@ import {
   openEntregaRosterPanel,
 } from './entrega-roster-panel.mjs';
 import {
-  ensureTeamAssignedPatientsOnDevice,
+  ensureElevatedWardCensusOnDevice,
   refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
 import { syncGuardiaPhaseBar, teardownGuardiaPhaseBar } from './guardia-phase-bar.mjs';
@@ -66,6 +67,7 @@ let gridBoard = null;
 let appShellInstalled = false;
 let entregaControlsInstalled = false;
 let guardiaViewBootstrapped = false;
+let elevatedFullWardPullScheduled = false;
 
 /** @param {Record<string, unknown>|null|undefined} settings */
 async function bootstrapGuardiaViewOnEnter(settings) {
@@ -474,18 +476,28 @@ export function renderGuardiaBoard(settings) {
     salaGuardiaToday
   );
 
+  if (
+    hasElevatedTeamPrivileges(clinicalSessionContext.user) &&
+    !elevatedPatientFilters.teamId &&
+    !elevatedFullWardPullScheduled
+  ) {
+    elevatedFullWardPullScheduled = true;
+    void ensureElevatedWardCensusOnDevice({
+      allowLanPull: true,
+      lanPullDelayMs: 3000,
+      teamFilterId: '',
+    });
+  }
+
+  const baseScope = getClinicalScopeContextForEvaluate();
   clinicalSessionContext.scopeContext = {
-    teams: clinicalSessionContext.teams || [],
-    guardias: clinicalSessionContext.guardias || [],
-    assignments: clinicalSessionContext.assignments || [],
+    ...baseScope,
+    teams: clinicalSessionContext.teams || baseScope.teams,
+    guardias: clinicalSessionContext.guardias || baseScope.guardias,
     salaGuardiaToday,
     guardiaMode: clinicalSessionContext.guardiaMode,
     onCallGuardiaReceiver,
     now,
-    users: Array.isArray(clinicalSessionContext.scopeContext?.users)
-      ? clinicalSessionContext.scopeContext.users
-      : [],
-    cycle: clinicalSessionContext.scopeContext?.cycle ?? null,
   };
 
   let scopedPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived);

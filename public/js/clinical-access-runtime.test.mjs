@@ -54,6 +54,15 @@ test('assertClinicalWriteAllowed allows Admin writes', () => {
   assert.equal(scope.writable, true);
 });
 
+test('elevated ward census schedules full host reconcile', () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime.mjs'),
+    'utf8'
+  );
+  assert.match(src, /ensureElevatedWardCensusOnDevice/);
+  assert.match(src, /full-ward-census/);
+});
+
 test('ops-sync refresh does not eagerly reconcile LAN on every merge', () => {
   const src = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime.mjs'),

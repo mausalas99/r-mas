@@ -65,7 +65,7 @@ export function getConsolidatedTabs(settings) {
 }
 
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'historia', 'vpo'];
-export const CLINICO_SECTIONS_SALA = ['historia', 'estadoActual', 'eventualidades'];
+export const CLINICO_SECTIONS_SALA = ['estadoActual', 'historia', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -141,7 +141,7 @@ function paneMountSpec(granularTab, settings) {
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    return ['historia', 'estadoActual', 'eventualidades'];
+    return ['estadoActual', 'historia', 'eventualidades'];
   }
   return ['notas', 'indica', 'vpo'];
 }
@@ -205,7 +205,7 @@ export function migrateGranularInner(granularTab, settings) {
 export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var sala = isModeSala(settings);
   var clinicoDefault = 'notas';
-  if (sala) clinicoDefault = 'historia';
+  if (sala) clinicoDefault = 'estadoActual';
   var defaults = {
     paciente: 'todo',
     clinico: clinicoDefault,

@@ -1121,6 +1121,9 @@ export function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
       applyMobileSharerContextFromUrl();
       void syncMobileWithSharedInvite(roomId);
       deps().renderLanPanel?.();
+      if (isLanElectronDesktop()) {
+        runtime().showToast('Conectado al anfitrión del turno.', 'success');
+      }
     })
     .catch(function () {
       clearTimeout(pingTimer);

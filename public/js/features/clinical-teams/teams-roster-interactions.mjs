@@ -17,6 +17,7 @@ import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.
 import {
   dbApi,
   toast,
+  toastTeamWarnings,
   currentUserId,
   BROWSE_SALA_LS,
   promptAdminAccessCode,
@@ -155,6 +156,8 @@ export function wireJoinButtons() {
       );
       if (slotWarn) {
         toast(slotWarn, 'warn');
+      } else if (team?.joinWarning) {
+        toast(String(team.joinWarning), 'warn');
       }
       const res = await api.dbClinicalTeamsJoin({
         teamId,
@@ -165,6 +168,7 @@ export function wireJoinButtons() {
         toast(res?.error || 'No se pudo unir al equipo.', 'error');
         return;
       }
+      toastTeamWarnings(res.warnings);
       toast('Te uniste al equipo.', 'success');
       document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
       void publishClinicalTeamsToLan();

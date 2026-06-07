@@ -387,6 +387,9 @@ async function handleLanAssignUserToTeam(userId, teamId, subAreaFraction) {
     toast(res?.error || 'No se asignó al equipo.', 'error');
     return false;
   }
+  if (Array.isArray(res.warnings) && res.warnings[0]) {
+    toast(String(res.warnings[0]), 'warn');
+  }
   return true;
 }
 

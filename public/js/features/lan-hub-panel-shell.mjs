@@ -59,6 +59,7 @@ export function appendLanHubStatusCard(root, opts) {
     statusCard.appendChild(inviteHint);
     const inputInvite = document.createElement('textarea');
     inputInvite.className = 'profile-input';
+    inputInvite.setAttribute('data-lan-invite-input', '1');
     inputInvite.id = 'lan-input-invite-link';
     inputInvite.rows = 2;
     inputInvite.autocomplete = 'off';

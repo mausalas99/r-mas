@@ -149,6 +149,12 @@ export function toast(msg, type = 'info') {
   }
 }
 
+/** @param {string[]|undefined|null} warnings */
+export function toastTeamWarnings(warnings) {
+  const first = Array.isArray(warnings) ? String(warnings[0] || '').trim() : '';
+  if (first) toast(first, 'warn');
+}
+
 export function escapeHtml(s) {
   return String(s || '')
     .replace(/&/g, '&amp;')

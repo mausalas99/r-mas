@@ -14,8 +14,8 @@ import {
   showToast,
   syncWorkContextChrome,
   windowHandlers as windowHandlers10
-} from "/js/chunks/chunk-MJGIYB4Y.js";
-import "/js/chunks/chunk-TUTTU3BE.js";
+} from "/js/chunks/chunk-LD7ZVTOT.js";
+import "/js/chunks/chunk-IQBKKVFS.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -175,32 +175,32 @@ import {
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-EXYG5WBR.js";
+} from "/js/chunks/chunk-6ZZR2NWA.js";
 import {
   windowHandlers as windowHandlers2
-} from "/js/chunks/chunk-BO4Y2WZ4.js";
+} from "/js/chunks/chunk-4FB6OIJK.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers14,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-DOEVW2NR.js";
+} from "/js/chunks/chunk-2OEAX53I.js";
 import {
   closeSettingsDropdown,
   syncTeamSyncHeaderButton
-} from "/js/chunks/chunk-PEFI6F2E.js";
+} from "/js/chunks/chunk-5XXLX3JP.js";
 import "/js/chunks/chunk-POBHJ4SL.js";
-import "/js/chunks/chunk-MS7DBMIV.js";
+import "/js/chunks/chunk-3WJUR555.js";
 import "/js/chunks/chunk-6IT4VYWH.js";
-import "/js/chunks/chunk-WCERPFJF.js";
+import "/js/chunks/chunk-SA3MLOE2.js";
 import "/js/chunks/chunk-MLXZVY56.js";
 import "/js/chunks/chunk-QZXLPUPG.js";
 import {
   windowHandlers as windowHandlers9
-} from "/js/chunks/chunk-LIQQLLSU.js";
+} from "/js/chunks/chunk-6RJOACAY.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-4L2QNYSF.js";
+} from "/js/chunks/chunk-EGNLVTO2.js";
 import {
   applyDriveImportEventualidades,
   buildParsedBySectionFromResLabs,
@@ -234,11 +234,11 @@ import {
   windowHandlers2 as windowHandlers15,
   windowHandlers3 as windowHandlers16,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-JNK22B43.js";
+} from "/js/chunks/chunk-5G4LRDX6.js";
 import {
   dbUnlockWindowHandlers,
   ensureClinicalDbUnlocked
-} from "/js/chunks/chunk-DMFNUQGW.js";
+} from "/js/chunks/chunk-JU4SVNPG.js";
 import "/js/chunks/chunk-GDIYO6HE.js";
 import "/js/chunks/chunk-TNTHAQJD.js";
 import {
@@ -3354,7 +3354,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-LB2G3JPL.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-A7Q2UE6X.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -3364,7 +3364,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-MALGTYVY.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-IWAGO3F3.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -3968,7 +3968,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-EZAFV3IP.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-MVWUHTSN.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -3979,7 +3979,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-4DU5HHA3.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-VHZ3MQPK.js");
     }
   },
   {
@@ -4002,7 +4002,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/js/chunks/clinical-access-runtime-F3SV6TWV.js").then(function(mod) {
+      void import("/js/chunks/clinical-access-runtime-ENZJSMZ4.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }

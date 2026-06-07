@@ -37,6 +37,7 @@ import {
   invalidateEventualidadesPanel,
 } from "./eventualidades-panel.mjs";
 import { renderVpo } from "./vpo.mjs";
+import { buildEaMonitoreoRevision } from "./estado-actual-data.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
@@ -113,11 +114,7 @@ function estadoActualCacheSuffix(patientId) {
     return String(x.id) === String(patientId);
   });
   if (!p || !p.monitoreo) return "0";
-  var m = p.monitoreo;
-  var h = Array.isArray(m.historial) ? m.historial.length : 0;
-  var s =
-    m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : "";
-  return String(h) + ":" + s;
+  return buildEaMonitoreoRevision(p.monitoreo, patientId, medRecetaByPatient);
 }
 
 function innerTabRenderCacheKey(tab) {
@@ -1121,7 +1118,12 @@ export function switchConsolidatedTab(compositeTab) {
   }
   var current = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   var currentComposite = consolidatedInnerTabButtonId(current, settings).replace(/^itab-/, "");
+  var targetGranular = defaultGranularForConsolidatedTab(compositeTab, settings);
   if (currentComposite === compositeTab) {
+    if (compositeTab === "clinico" && current !== targetGranular) {
+      switchInnerTab(targetGranular);
+      return;
+    }
     syncConsolidatedInnerTabButtons(current, settings);
     syncConsolidatedPaneVisibility(current, settings);
     syncConsolidatedSegmentBars(current, settings);
@@ -1131,7 +1133,7 @@ export function switchConsolidatedTab(compositeTab) {
     }
     return;
   }
-  switchInnerTab(defaultGranularForConsolidatedTab(compositeTab, settings));
+  switchInnerTab(targetGranular);
 }
 
 export function switchInnerTab(tab, opts) {

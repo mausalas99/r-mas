@@ -1,13 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-06",
+  "updatedAt": "2026-06-07",
   "entries": [
+    {
+      "version": "7.1.6",
+      "label": "7.1.6",
+      "publishedAt": "2026-06-07",
+      "summary": "LiveSync ligero en red local + estado actual monitoreo",
+      "recommended": true
+    },
+    {
+      "version": "7.1.5",
+      "label": "7.1.5",
+      "publishedAt": "2026-06-07",
+      "summary": "Release estable 7.1.5",
+      "recommended": false
+    },
     {
       "version": "7.1.4",
       "label": "7.1.4",
       "publishedAt": "2026-06-06",
       "summary": "Guardia censo Admin/R4 + directorio LAN",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.1.3",

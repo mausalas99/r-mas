@@ -159,6 +159,13 @@ async function applyBootstrapResult(res) {
   await refreshClinicalUserProfile();
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
+  if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
+    void ensureElevatedWardCensusOnDevice({
+      allowLanPull: true,
+      lanPullDelayMs: 8000,
+      teamFilterId: '',
+    });
+  }
   if (typeof document !== 'undefined') {
     void import('./clinical-profile-lan-sync.mjs')
       .then((mod) => mod.flushClinicalProfileToLan())
@@ -291,6 +298,25 @@ export async function refreshClinicalUserProfile() {
   migrateLocalPatientsClinicalSala();
 }
 
+/** @param {string} reason @param {number} [delayMs] */
+async function scheduleLanPatientReconcile(reason, delayMs) {
+  try {
+    const lan = await import('./features/lan-sync.mjs');
+    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
+      return;
+    }
+    const rid =
+      typeof lan.getActiveLiveSyncRoomId === 'function'
+        ? String(lan.getActiveLiveSyncRoomId() || '').trim()
+        : '';
+    if (!rid) return;
+    const push = await import('./features/lan/push.mjs');
+    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
+      push.scheduleReconcileLiveSyncRoom(rid, { reason, delayMs });
+    }
+  } catch (_e) {}
+}
+
 /** Pull host census rows for team assignments missing on this device. */
 export async function ensureTeamAssignedPatientsOnDevice(options) {
   const user = clinicalSessionContext.user;
@@ -325,23 +351,27 @@ export async function ensureTeamAssignedPatientsOnDevice(options) {
   if (!missing) return;
   const opts = options || {};
   if (!opts.allowLanPull) return;
+  await scheduleLanPatientReconcile('missing-patients', opts.lanPullDelayMs);
+}
 
-  try {
-    const lan = await import('./features/lan-sync.mjs');
-    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
-      return;
-    }
-    const rid =
-      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
-    if (!rid) return;
-    const push = await import('./features/lan/push.mjs');
-    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
-      push.scheduleReconcileLiveSyncRoom(rid, {
-        reason: 'missing-patients',
-        delayMs: opts.lanPullDelayMs,
-      });
-    }
-  } catch (_e) {}
+/**
+ * Elevated census: reconcile full ward from LAN host when viewing all teams.
+ * @param {{ allowLanPull?: boolean, teamFilterId?: string, lanPullDelayMs?: number }} [options]
+ */
+export async function ensureElevatedWardCensusOnDevice(options = {}) {
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id || !hasElevatedTeamPrivileges(user)) return;
+
+  const teamFilterId = options.teamFilterId != null ? String(options.teamFilterId) : '';
+  const viewingAllTeams = !teamFilterId;
+
+  await ensureTeamAssignedPatientsOnDevice(options);
+
+  if (!viewingAllTeams || !options.allowLanPull) return;
+  await scheduleLanPatientReconcile(
+    'full-ward-census',
+    options.lanPullDelayMs != null ? options.lanPullDelayMs : 2000
+  );
 }
 
 let refreshClinicalPatientListForScopeInFlight = null;

@@ -75,6 +75,38 @@ test('R4 sidebar includes all patients', () => {
   assert.equal(out.length, 2);
 });
 
+test('team filter matches explicit patient_team_assignment', () => {
+  const team = {
+    team_id: 't1',
+    name: 'Equipo A',
+    service: 'Sala',
+    sub_area_fraction: 'Z',
+    sala: 'Sala 1',
+  };
+  const patient = { id: 'p1', servicio: 'Cardiología', area: '', sala: 'Sala 1' };
+  const assignments = [
+    { patient_id: 'p1', team_id: 't1', effective_at: '2026-06-01T00:00:00Z' },
+  ];
+  assert.equal(
+    patientMatchesCensusTeamFilter(patient, 't1', [team], assignments, '2026-06-02T12:00:00Z'),
+    true
+  );
+  const out = filterPatientsForGuardiaCensus(
+    [patient, { id: 'p2', servicio: 'Sala', area: 'B', sala: 'Sala 1' }],
+    { user_id: 'admin', rank: 'R1', is_program_admin: 1 },
+    {
+      teams: [team],
+      guardias: [],
+      assignments,
+      cycle: null,
+      now: '2026-06-02T12:00:00Z',
+    },
+    null,
+    { sala: '__all__', teamId: 't1', service: '' }
+  );
+  assert.deepEqual(out.map((p) => p.id), ['p1']);
+});
+
 test('team filter matches structural Sala slice when unassigned', () => {
   const melissaTeam = {
     team_id: 't-melissa',

@@ -948,6 +948,9 @@ export async function renderDirectorySectionHtml(opts) {
       let joinHint = '';
       if (team.joinEligible) {
         joinBtn = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
+        if (team.joinWarning) {
+          joinHint = String(team.joinWarning);
+        }
       } else if (team.joinReason) {
         joinHint = String(team.joinReason);
       }
