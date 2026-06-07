@@ -149,3 +149,96 @@ describe('bundle-merge', () => {
     assert.equal(r.bundle.clinicalOps.teams.length, 2);
   });
 });
+
+describe('entriesPartial — partial merge', () => {
+  const TYPED = ['note', 'indicaciones', 'labHistory', 'todos'];
+
+  function mkServerEntry(id, overrides = {}) {
+    return {
+      id,
+      name: 'Server Name',
+      note: { texto: 'server note' },
+      indicaciones: { items: ['server drug'] },
+      labHistory: [{ id: 'ls_s', date: '2026-06-01', values: {} }],
+      todos: [{ id: 't_s', text: 'server todo' }],
+      medReceta: { meds: [] },
+      vpo: { text: 'server vpo' },
+      ...overrides,
+    };
+  }
+
+  function mkIncomingEntry(id, overrides = {}) {
+    return {
+      id,
+      name: 'Client Name',
+      note: { texto: 'client note' },
+      indicaciones: { items: ['client drug'] },
+      labHistory: [{ id: 'ls_c', date: '2026-06-07', values: {} }],
+      todos: [{ id: 't_c', text: 'client todo' }],
+      medReceta: { meds: [{ name: 'amox' }] },
+      vpo: { text: 'client vpo' },
+      ...overrides,
+    };
+  }
+
+  it('preserves typed fields from server when entriesPartial is true', () => {
+    const serverBundle = {
+      revision: 1,
+      entityVersions: {},
+      agenda: [], todos: {}, entries: [mkServerEntry('p1')],
+      manejo: null, clinicalOps: null, committedAt: new Date().toISOString(),
+    };
+    const incoming = {
+      baseRevision: 1,
+      baseEntityVersions: {},
+      entries: [mkIncomingEntry('p1')],
+      entriesPartial: true,
+      clientId: 'lc_a',
+    };
+    const result = mergeBundlePut(serverBundle, incoming, { nowIso: () => new Date().toISOString() });
+    const merged = result.bundle.entries.find((e) => e.id === 'p1');
+    assert.ok(merged, 'merged entry must exist');
+    // typed fields: server wins
+    assert.deepStrictEqual(merged.note, { texto: 'server note' }, 'note must come from server');
+    assert.deepStrictEqual(merged.indicaciones, { items: ['server drug'] }, 'indicaciones from server');
+    assert.deepStrictEqual(merged.labHistory, [{ id: 'ls_s', date: '2026-06-01', values: {} }], 'labHistory from server');
+    // untyped fields: client wins
+    assert.equal(merged.name, 'Client Name', 'name must come from client');
+    assert.deepStrictEqual(merged.medReceta, { meds: [{ name: 'amox' }] }, 'medReceta from client');
+  });
+
+  it('appends new entries not found on server when entriesPartial is true', () => {
+    const serverBundle = {
+      revision: 1, entityVersions: {}, agenda: [], todos: {},
+      entries: [mkServerEntry('p1')],
+      manejo: null, clinicalOps: null, committedAt: new Date().toISOString(),
+    };
+    const incoming = {
+      baseRevision: 1, baseEntityVersions: {},
+      entries: [mkIncomingEntry('p_new')],
+      entriesPartial: true,
+      clientId: 'lc_a',
+    };
+    const result = mergeBundlePut(serverBundle, incoming, { nowIso: () => new Date().toISOString() });
+    const newEntry = result.bundle.entries.find((e) => e.id === 'p_new');
+    assert.ok(newEntry, 'new entry must be appended');
+    assert.equal(result.bundle.entries.length, 2, 'original server entry plus new entry');
+  });
+
+  it('replaces entries wholesale when entriesPartial is NOT set (V0 behavior)', () => {
+    const serverBundle = {
+      revision: 1, entityVersions: {}, agenda: [], todos: {},
+      entries: [mkServerEntry('p1')],
+      manejo: null, clinicalOps: null, committedAt: new Date().toISOString(),
+    };
+    const incoming = {
+      baseRevision: 1, baseEntityVersions: {},
+      entries: [mkIncomingEntry('p1')],
+      clientId: 'lc_a',
+    };
+    const result = mergeBundlePut(serverBundle, incoming, { nowIso: () => new Date().toISOString() });
+    const merged = result.bundle.entries.find((e) => e.id === 'p1');
+    // Without entriesPartial, client's typed fields should overwrite server's
+    assert.deepStrictEqual(merged.note, { texto: 'client note' }, 'without entriesPartial, note from client');
+  });
+});

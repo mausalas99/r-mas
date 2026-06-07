@@ -52,6 +52,28 @@ function materializeTodos(map) {
   return todos;
 }
 
+/** Fields whose values are maintained by typed endpoints — never overwritten by safety bundle. */
+const TYPED_ENTRY_FIELDS = new Set(['note', 'indicaciones', 'labHistory', 'todos']);
+
+/**
+ * Merges a safety-bundle (partial) entry into the server's version.
+ * Typed fields are preserved from serverEntry; all other fields come from incomingEntry.
+ * New entries (no server match) are not handled here — they are appended directly.
+ *
+ * @param {object} serverEntry - Current server entry for this patient.
+ * @param {object} incomingEntry - Entry from the partial safety bundle.
+ * @returns {object} Merged entry.
+ */
+function mergePartialEntry(serverEntry, incomingEntry) {
+  const merged = { ...serverEntry };
+  for (const [key, val] of Object.entries(incomingEntry)) {
+    if (!TYPED_ENTRY_FIELDS.has(key)) {
+      merged[key] = val;
+    }
+  }
+  return merged;
+}
+
 function mergeEntityLww(serverRec, incomingRec) {
   const cmp = compareUpdatedAt(recordTimestamp(serverRec), recordTimestamp(incomingRec));
   if (cmp < 0) return { winner: incomingRec, overwritten: true };
@@ -177,7 +199,25 @@ function mergeBundlePut(serverBundle, incoming, opts) {
   }
 
   if ('entries' in base) {
-    bundle.entries = Array.isArray(base.entries) ? base.entries : [];
+    const incomingEntries = Array.isArray(base.entries) ? base.entries : [];
+    if (base.entriesPartial === true) {
+      // Partial merge: preserve typed fields from server; apply untyped from client.
+      const serverById = new Map((bundle.entries || []).map((e) => [e && e.id, e]));
+      const result = [...(bundle.entries || [])]; // start from server entries
+      const serverIdSet = new Set(serverById.keys());
+      for (const incoming of incomingEntries) {
+        if (!incoming || !incoming.id) continue;
+        if (serverIdSet.has(incoming.id)) {
+          const idx = result.findIndex((e) => e && e.id === incoming.id);
+          if (idx >= 0) result[idx] = mergePartialEntry(result[idx], incoming);
+        } else {
+          result.push(incoming); // new entry not on server — append
+        }
+      }
+      bundle.entries = result;
+    } else {
+      bundle.entries = incomingEntries;
+    }
   }
 
   if ('manejo' in base) {
