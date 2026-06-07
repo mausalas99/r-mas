@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_715 = [
+  {
+    title: '⇄ sin bucle de reconexión',
+    body:
+      'Si no hay anfitrión tras <strong>5 intentos</strong>, R+ deja de buscar solo. El estado pasa a <strong>desconectado</strong> (no «reconectando…»). Vuelve a intentar al abrir ⇄, usar PIN o <strong>Restablecer conexión al turno</strong>.',
+  },
+  {
+    title: 'Entregas huérfanas en guardia',
+    body:
+      'Entregas activas cuyo paciente ya no está en el censo local aparecen en una franja: puedes abrir el expediente, borrar en el host o quitar la entrega local.',
+  },
+  {
+    title: 'Guardias resueltas en la red',
+    body:
+      'Las entregas cerradas se recuerdan en <strong>clinical_ops</strong> para que otra Mac del turno no las vuelva a mostrar como pendientes.',
+  },
+  {
+    title: 'Parche sobre 7.1.4',
+    body:
+      'Instala <strong>7.1.5 en todas</strong> las estaciones desde <strong>7.1.4</strong>; sin cambios de esquema SQLCipher.',
+  },
+];
+
 var RELEASE_NOTES_714 = [
   {
     title: 'Censo guardia para Admin/R4',
@@ -414,6 +437,7 @@ var RELEASE_NOTES_669 = [
 export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_713;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.5': RELEASE_NOTES_715,
   '7.1.4': RELEASE_NOTES_714,
   '7.1.3': RELEASE_NOTES_713,
   '7.1.2': RELEASE_NOTES_712,

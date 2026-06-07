@@ -27,10 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.4](https://github.com/mausalas99/r-mas/releases/tag/v7.1.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.5](https://github.com/mausalas99/r-mas/releases/tag/v7.1.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.1.5 (LAN reconexión + entregas huérfanas guardia)
+
+- **⇄ Reconexión** — Tras 5 intentos sin anfitrión, pausa la búsqueda automática; reanuda al abrir ⇄, PIN o Restablecer conexión.
+- **Entregas huérfanas** — Franja en guardia para entregas activas sin paciente en el censo local.
+- **LAN clinical_ops** — Sincroniza guardias resueltas entre Macs del turno.
+- **Sobre 7.1.4** — Censo Admin/R4, directorio LAN y split-brain reset sin cambios de esquema.
+
+Notas: `docs/RELEASE_NOTES_7.1.5.txt`.
 
 ## R+ 7.1.3 (signos vitales + Aprender)
 
@@ -694,6 +702,7 @@ Notas: `docs/RELEASE_NOTES_7.1.4.txt`.
 Notas: `docs/RELEASE_NOTES_2.0.1.txt`.
 
 ---
+
 
 ## R+ 2.0.0 (resumen)
 
