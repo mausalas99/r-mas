@@ -1,17 +1,23 @@
-version: 7.1.7
+version: 7.1.8
 files:
-  - url: R+-7.1.7-arm64.zip
-    sha512: sz/JqMfvRZUw0Z6vnEDyvgw4oEiIVhvgQVgK2UzXSugYZg4eHsy+n7M7//puZoBHAr7NRjVDnRbiu2Myqzc73Q==
-    size: 128507500
-  - url: R+-7.1.7-arm64.dmg
-    sha512: h/fSUqc99kLXvA1hj1CNczdLlVcNdNysMOJ04TXqrLG4C6XPaaW2qjN9ap2urwSHADnrA96F14VrP/2nOy1jEg==
-    size: 133832459
-  - url: R+-7.1.7-x64.zip
-    sha512: wvQIrxG6PTCXtdPEBoOKK8797BepldA9mD3fORQtjmOwcPNJ8/eVELhAaIWXgZ9AJMWadOVCYtkPlUx9jjijyQ==
-    size: 136881590
-  - url: R+-7.1.7-x64.dmg
-    sha512: z42JpH+P2IKYCaH5mKuUM520v6EFXnWoUN6bzWT1RKyONgZNblQYZlGSw36xZS6NK9Ru7hruGV2Ne5pZW7aZOg==
-    size: 142298411
-path: R+-7.1.7-arm64.zip
-sha512: sz/JqMfvRZUw0Z6vnEDyvgw4oEiIVhvgQVgK2UzXSugYZg4eHsy+n7M7//puZoBHAr7NRjVDnRbiu2Myqzc73Q==
-releaseDate: '2026-06-07T20:00:05.000Z'
+  - url: R+-7.1.8-arm64.zip
+    sha512: +TChO7hGzEil4DlDbwjtgQZw53xZTwFWO90eFhVTQDhJRnhKrnuFqx5sQX8ma/2x+rgAK9NCuwhSc1qiv2ThXg==
+    size: 128508922
+  - url: R+-7.1.8-arm64.dmg
+    sha512: HYcHAQeOSyr7W/21J/cMsqxJRR4SBD+T6ZQbMU11s9HthvaBfQmaWtAgwMEs/qU4tt0DK00AzYmXQASSojBcaQ==
+    size: 133860427
+  - url: R+-7.1.8-x64.zip
+    sha512: gcxXZYcjVg0kiS2VnSU3rTdgyDzebVCweUNFzpJtiitHIO6cqxoum7FzYjRSObNcftMumuzIakgnhmlMRjMUvw==
+    size: 136882988
+  - url: R+-7.1.8-x64.dmg
+    sha512: FNhvIq2eZLZ1pcdeyINT7h12wgnd2UPwLXIYkvfCzckCVzAxsQJB4F7usu4Jh+2wW6/YjAaUvi+sjngXO2Z0HQ==
+    size: 142295711
+path: R+-7.1.8-arm64.zip
+sha512: +TChO7hGzEil4DlDbwjtgQZw53xZTwFWO90eFhVTQDhJRnhKrnuFqx5sQX8ma/2x+rgAK9NCuwhSc1qiv2ThXg==
+releaseDate: '2026-06-07T20:21:04.000Z'
+releaseNotes: |
+  Corrige el fallo en que «Conectar al anfitrión» / «Combinar servidores» no hacía nada tras confirmar: el módulo LAN transport quedaba sin cablear cuando esbuild duplicaba el chunk.
+  
+  Cableado LAN transport — registerLanSyncTransportDeps comparte estado vía globalThis (mismo patrón que push/room); initLanClientFromStorage espera el cableado antes de auto-unirse.
+  
+  Combinar sin sala — Si confirmas unirte al anfitrión de mayor rango sin estar en una sala ⇄, R+ avisa en lugar de fallar en silencio.

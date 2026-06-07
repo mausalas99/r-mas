@@ -1,8 +1,14 @@
-version: 7.1.7
+version: 7.1.8
 files:
-  - url: R+-7.1.7-x64.exe
-    sha512: r0DkJdPUEqtSAEyTdE5zJWp4UoFcvdoDy0TYXY6wpkg+VpiGNGzQLUYOxoYmr5CPAhhVhWRy3EKvwFcgb3BRSg==
-    size: 114259280
-path: R+-7.1.7-x64.exe
-sha512: r0DkJdPUEqtSAEyTdE5zJWp4UoFcvdoDy0TYXY6wpkg+VpiGNGzQLUYOxoYmr5CPAhhVhWRy3EKvwFcgb3BRSg==
-releaseDate: '2026-06-07T20:00:06.000Z'
+  - url: R+-7.1.8-x64.exe
+    sha512: /6nIOsc3GWqTkKRSIrqEZ+3re1dg77U1CH8doZOGGS35yQ5muDoSmDLxS+5bUIsT8fUizPxyARlLMzd5hUXmDw==
+    size: 114254833
+path: R+-7.1.8-x64.exe
+sha512: /6nIOsc3GWqTkKRSIrqEZ+3re1dg77U1CH8doZOGGS35yQ5muDoSmDLxS+5bUIsT8fUizPxyARlLMzd5hUXmDw==
+releaseDate: '2026-06-07T20:21:05.000Z'
+releaseNotes: |
+  Corrige el fallo en que «Conectar al anfitrión» / «Combinar servidores» no hacía nada tras confirmar: el módulo LAN transport quedaba sin cablear cuando esbuild duplicaba el chunk.
+  
+  Cableado LAN transport — registerLanSyncTransportDeps comparte estado vía globalThis (mismo patrón que push/room); initLanClientFromStorage espera el cableado antes de auto-unirse.
+  
+  Combinar sin sala — Si confirmas unirte al anfitrión de mayor rango sin estar en una sala ⇄, R+ avisa en lugar de fallar en silencio.
