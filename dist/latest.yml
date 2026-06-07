@@ -1,8 +1,8 @@
-version: 7.1.6
+version: 7.1.7
 files:
-  - url: R+-7.1.6-x64.exe
-    sha512: yyzskbsEyVpxUeTqyHwhJhpg8z9R6LTl2Ttp7NbWwV2LtSR6XMYjgGgpEUl8KCYNJG/WdCHDTvkZlJ53umsPVA==
-    size: 114270160
-path: R+-7.1.6-x64.exe
-sha512: yyzskbsEyVpxUeTqyHwhJhpg8z9R6LTl2Ttp7NbWwV2LtSR6XMYjgGgpEUl8KCYNJG/WdCHDTvkZlJ53umsPVA==
-releaseDate: '2026-06-07T18:04:20.000Z'
+  - url: R+-7.1.7-x64.exe
+    sha512: r0DkJdPUEqtSAEyTdE5zJWp4UoFcvdoDy0TYXY6wpkg+VpiGNGzQLUYOxoYmr5CPAhhVhWRy3EKvwFcgb3BRSg==
+    size: 114259280
+path: R+-7.1.7-x64.exe
+sha512: r0DkJdPUEqtSAEyTdE5zJWp4UoFcvdoDy0TYXY6wpkg+VpiGNGzQLUYOxoYmr5CPAhhVhWRy3EKvwFcgb3BRSg==
+releaseDate: '2026-06-07T20:00:06.000Z'
