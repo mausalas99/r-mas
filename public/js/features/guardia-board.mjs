@@ -45,6 +45,7 @@ import {
 import { isGuardiaChipCritical } from '../../../lib/entrega/guardia-chip-critical.mjs';
 import { renderGuardiaVitalsFeed } from './guardia-vitals-feed.mjs';
 import { isTurnoActivo, deactivateTurnoActivo } from './entrega-roster-panel.mjs';
+import { syncOrphanEntregasStrip } from '../guardia-orphan-entregas.mjs';
 import {
   openGuardiaPatientActionSheet,
   shouldShowGuardiaPatientActionMenu,
@@ -516,6 +517,7 @@ export function renderGuardiaBoard(settings) {
   }
 
   void syncGuardiaIncomingStrip(settings);
+  syncOrphanEntregasStrip(settings);
   wireClinicalTeamsControls();
 
   if (!gridBoard) {

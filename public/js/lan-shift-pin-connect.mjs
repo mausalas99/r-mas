@@ -13,6 +13,12 @@ import {
   resolveLanShareBaseUrl,
 } from './features/lan/transport.mjs';
 import { storage } from './storage.js';
+import {
+  canAttemptAutoHostDetect,
+  recordAutoHostDetectMiss,
+  recordAutoHostDetectSuccess,
+  resumeAutoHostDetect,
+} from './lan-host-detect-guard.mjs';
 
 const EXCHANGE_TIMEOUT_MS = 8000;
 const EASY_RETRY_COOLDOWN_MS = 12000;
@@ -160,8 +166,14 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
  * @returns {Promise<{ ok: boolean, reason: string }>}
  */
 export async function tryEasyLanShiftPinConnect(opts = {}) {
+  if (opts.force) {
+    resumeAutoHostDetect();
+  }
+  if (!opts.force && !canAttemptAutoHostDetect()) {
+    return { ok: false, reason: 'paused' };
+  }
   const now = Date.now();
-  if (!opts.force && now - _lastEasyConnectAttemptMs < EASY_RETRY_COOLDOWN_MS) {
+  if (!opts.force && !opts.skipCooldown && now - _lastEasyConnectAttemptMs < EASY_RETRY_COOLDOWN_MS) {
     return { ok: false, reason: 'cooldown' };
   }
   _lastEasyConnectAttemptMs = now;
@@ -182,10 +194,17 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
   }
 
   const ok = await connectLanWithShiftPin(pin, { ...opts, forceRediscover: true });
-  if (ok && !opts.silent) {
-    showEasyToast('Listo: conectado al turno.', 'success');
+  if (ok) {
+    recordAutoHostDetectSuccess();
+    if (!opts.silent) {
+      showEasyToast('Listo: conectado al turno.', 'success');
+    }
+    return { ok: true, reason: 'connected' };
   }
-  return { ok, reason: ok ? 'connected' : 'not_found' };
+  if (!opts.force && (opts.silent || opts.skipCooldown)) {
+    recordAutoHostDetectMiss();
+  }
+  return { ok: false, reason: 'not_found' };
 }
 
 /**

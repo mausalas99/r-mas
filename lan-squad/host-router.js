@@ -45,7 +45,8 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
   });
 
   r.get('/patients', (_req, res) => {
-    res.json({ patients: store.getState().patients });
+    const patients = store.getState().patients.filter((p) => p && !p._deleted);
+    res.json({ patients });
   });
 
   r.put('/patients/:id', express.json({ limit: '2mb' }), (req, res) => {

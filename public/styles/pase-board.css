@@ -1916,6 +1916,111 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   display: none !important;
 }
 
+.guardia-orphan-entregas-strip {
+  margin: 0 0 1rem;
+}
+
+.guardia-orphan-entregas-strip[hidden] {
+  display: none !important;
+}
+
+.guardia-orphan-details {
+  background: color-mix(in srgb, var(--danger, #c0392b) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger, #c0392b) 28%, var(--border));
+  border-radius: var(--radius-md);
+  padding: 8px 10px 10px;
+}
+
+.guardia-orphan-summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  list-style: none;
+}
+
+.guardia-orphan-summary::-webkit-details-marker {
+  display: none;
+}
+
+.guardia-orphan-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--danger, #c0392b) 18%, transparent);
+  color: var(--danger, #c0392b);
+}
+
+.guardia-orphan-hint {
+  margin: 6px 0 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted, var(--text-secondary));
+  line-height: 1.35;
+}
+
+.guardia-orphan-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guardia-orphan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.guardia-orphan-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guardia-orphan-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.guardia-orphan-vitals {
+  font-size: 0.75rem;
+  color: var(--danger, #c0392b);
+}
+
+.guardia-orphan-row-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.guardia-orphan-open-btn,
+.guardia-orphan-delete-btn {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.55rem;
+  white-space: nowrap;
+}
+
+.guardia-orphan-delete-btn {
+  color: var(--danger, #c0392b);
+  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, var(--border));
+}
+
 .guardia-incoming-details {
   background: var(--surface);
   border: 1px solid var(--border);

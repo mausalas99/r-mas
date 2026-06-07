@@ -268,7 +268,7 @@ test('entrega phase: R1 sees other team patient in same sala', () => {
   assert.match(scope.reasoning, /entrega/i);
 });
 
-test('normal mode: R2 without team denies same-sala patient', () => {
+test('normal mode: R2 without team sees patient in same sala', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r2', rank: 'R2', sala: 'Sala 2' },
     { id: 'p1', service: 'Sala', sala: 'Sala 2' },
@@ -280,7 +280,9 @@ test('normal mode: R2 without team denies same-sala patient', () => {
       now: '2026-06-01T12:00:00Z',
     }
   );
-  assert.equal(scope.readable, false);
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, true);
+  assert.match(scope.reasoning, /sala/i);
 });
 
 test('stampPatientClinicalSala uses creator profile sala', () => {

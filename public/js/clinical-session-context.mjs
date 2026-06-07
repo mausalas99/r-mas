@@ -8,6 +8,7 @@ export const clinicalSessionContext = {
   user: null,
   guardias: [],
   guardiasMap: new Map(),
+  orphanGuardias: [],
   teams: [],
   scopeContext: null,
   guardiaMode: false,

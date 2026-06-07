@@ -591,7 +591,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     if (type === 'patient') {
       const state = ensureLoadedSync();
       const row = state.patients.find((p) => p.id === id);
-      if (!row) return null;
+      if (!row || row._deleted) return null;
       return { version: Number(row.version || 1), data: row };
     }
     if (type === 'agenda' || type === 'todo') {
@@ -637,6 +637,36 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       return null;
     }
     return null;
+  }
+
+  function purgePatientFromAllRoomBundles(state, patientId, registro, opts) {
+    const pid = String(patientId || '').trim();
+    const reg = String(registro || '').trim();
+    if (!pid && !reg) return false;
+    const deferPersist = !!(opts && opts.deferPersist);
+    if (!state.roomSyncBundles || typeof state.roomSyncBundles !== 'object') return false;
+    let changed = false;
+    for (const rid of Object.keys(state.roomSyncBundles)) {
+      const bundle = state.roomSyncBundles[rid];
+      if (!bundle || !Array.isArray(bundle.entries)) continue;
+      const before = bundle.entries.length;
+      bundle.entries = bundle.entries.filter((ent) => {
+        const p = ent && ent.patient;
+        if (!p) return false;
+        const id = String(p.id || '').trim();
+        const r = String(p.registro || '').trim();
+        if (pid && id === pid) return false;
+        if (reg && r === reg) return false;
+        return true;
+      });
+      if (bundle.entries.length !== before) {
+        bundle.revision = Number(bundle.revision || 0) + 1;
+        bundle.committedAt = nowIso();
+        changed = true;
+      }
+    }
+    if (changed && !deferPersist) persistState();
+    return changed;
   }
 
   function materializeRoomViews(roomId, opts) {
@@ -692,6 +722,9 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       const row = { ...state.patients[idx], ...nextData, version: nextVersion, updatedAt: t };
       if (deleted) row._deleted = true;
       state.patients[idx] = row;
+      if (deleted) {
+        purgePatientFromAllRoomBundles(state, id, row.registro, opts);
+      }
       if (!deferPersist) persistState();
       return row;
     }

@@ -995,6 +995,9 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     ) {
       return allow('R2: paciente de mi equipo');
     }
+    if (!strictTeamFilter && patientInUserSala(targetPatient, userSala)) {
+      return allow('R2: paciente en mi sala');
+    }
     return deny('R2: sin equipo ni entrega');
   }
 

@@ -274,6 +274,39 @@ function mergeActiveGuardiasData(localRows, incomingRows) {
   return out;
 }
 
+function mergeResolvedGuardiasData(localRows, incomingRows) {
+  const byPatient = new Map();
+  for (const list of [localRows, incomingRows]) {
+    for (const row of list || []) {
+      const pid = String(row?.patient_id || '').trim();
+      const at = String(row?.assigned_at || '').trim();
+      if (!pid || !at) continue;
+      const prev = byPatient.get(pid);
+      if (!prev || at >= String(prev.assigned_at || '')) {
+        byPatient.set(pid, {
+          patient_id: pid,
+          guardia_id: row?.guardia_id ? String(row.guardia_id) : undefined,
+          assigned_at: at,
+        });
+      }
+    }
+  }
+  return [...byPatient.values()]
+    .sort((a, b) => String(a.assigned_at).localeCompare(String(b.assigned_at)))
+    .slice(-200);
+}
+
+function filterActiveGuardiasByResolved(activeRows, resolvedRows) {
+  const resolvedByPatient = indexBy(resolvedRows, 'patient_id');
+  return (activeRows || []).filter((row) => {
+    const pid = String(row?.patient_id || '').trim();
+    if (!pid) return false;
+    const tomb = resolvedByPatient.get(pid);
+    if (!tomb) return true;
+    return String(row?.assigned_at || '') > String(tomb.assigned_at || '');
+  });
+}
+
 function normalizeUsername(raw) {
   return String(raw || '')
     .trim()
@@ -411,6 +444,10 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
     mergedClinicalUsers,
     mergedTeams
   );
+  const active_guardias_resolved = mergeResolvedGuardiasData(
+    local.active_guardias_resolved || [],
+    incoming.active_guardias_resolved || []
+  );
 
   return {
     version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
@@ -442,10 +479,11 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
       ),
       team_membership_removals
     ),
-    active_guardias: mergeActiveGuardiasData(
-      local.active_guardias || [],
-      incoming.active_guardias || []
+    active_guardias: filterActiveGuardiasByResolved(
+      mergeActiveGuardiasData(local.active_guardias || [], incoming.active_guardias || []),
+      active_guardias_resolved
     ),
+    active_guardias_resolved,
     clinical_users: mergedClinicalUsers,
     clinical_users_deleted,
   };

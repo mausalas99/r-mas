@@ -10,6 +10,8 @@ import {
   registerLanSyncPushBridge,
   pushClinicalOpsLanNow,
   scheduleLiveSyncPush,
+  flushLiveSyncOutbox,
+  pushRoomSyncBundleToHost,
   emitLiveSyncRevisionHint,
   scheduleReconcileFromRevisionHint,
 } from "./push.mjs";
@@ -221,12 +223,12 @@ function wireLanNetworkRefresh() {
   if (_lanNetworkRefreshWired || typeof window === 'undefined') return;
   _lanNetworkRefreshWired = true;
   window.addEventListener('online', function () {
-    void initLanHostPlugAndPlay();
-    void import('../../lan-shift-pin-connect.mjs').then(function (m) {
-      if (typeof m.tryEasyLanShiftPinConnect === 'function') {
-        return m.tryEasyLanShiftPinConnect({ silent: true, force: true });
+    void import('./room.mjs').then(function (m) {
+      if (typeof m.resumeAutoHostDetectAndReconnect === 'function') {
+        m.resumeAutoHostDetectAndReconnect();
       }
     });
+    void initLanHostPlugAndPlay();
     if (typeof renderLanPanel === 'function') void renderLanPanel();
   });
 }
@@ -720,7 +722,7 @@ export async function lanFetchHostPatientRow(patientId) {
   var list = Array.isArray(body.patients) ? body.patients : [];
   return (
     list.find(function (row) {
-      return row && String(row.id) === pid;
+      return row && String(row.id) === pid && !row._deleted;
     }) || null
   );
 }
@@ -758,6 +760,64 @@ export async function lanPushPatientVersioned(patientId, mutation) {
     });
   }
   return { ok: true, body: out, version: out.version, data: out.data };
+}
+
+/** Pull one patient row from the host sync-bundle into the local census (orphan entregas). */
+export async function restoreLanPatientFromHost(patientId) {
+  var pid = String(patientId || '').trim();
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  if (!pid || !rid || !isLanSessionConfiguredForRest()) {
+    return { ok: false, error: 'not_configured' };
+  }
+  try {
+    var resp = await lanClient.fetch(
+      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle',
+      { cache: 'no-store' }
+    );
+    if (!resp || !resp.ok) {
+      return { ok: false, error: 'bundle_fetch_failed', status: resp && resp.status };
+    }
+    var j = await resp.json();
+    var bundle = j && j.bundle;
+    var entries = bundle && Array.isArray(bundle.entries) ? bundle.entries : [];
+    var entry = entries.find(function (e) {
+      return e && e.patient && String(e.patient.id) === pid;
+    });
+    if (!entry) return { ok: false, error: 'patient_not_on_host' };
+    await fetchClinicalScopeContextFromDb();
+    var result = applyLanPatientEntries([entry], { skipTeamScopeFilter: true });
+    if (result.added || result.updated) {
+      await refreshClinicalPatientListForScope({ allowLanPull: false });
+    }
+    return { ok: true, added: result.added, updated: result.updated };
+  } catch (err) {
+    return { ok: false, error: err && err.message ? err.message : 'restore_failed' };
+  }
+}
+
+/** Tombstone + live-sync delete patch so the LAN host drops the patient chart. */
+export async function purgeLanPatientFromHost(patientId) {
+  var pid = String(patientId || '').trim();
+  if (!pid || pid.indexOf('demo-') === 0) return { ok: false, error: 'invalid_id' };
+  if (!activeLiveSyncRoomId || !isLanSessionConfiguredForRest()) {
+    return { ok: false, error: 'not_configured' };
+  }
+  var hostRow = await lanFetchHostPatientRow(pid);
+  var snap = {
+    id: pid,
+    registro: hostRow && hostRow.registro ? String(hostRow.registro) : '',
+  };
+  rememberPatientDeleteTombstone(snap);
+  emitLiveSyncPatientDelete(snap);
+  scheduleLiveSyncPush();
+  await flushLiveSyncOutbox(activeLiveSyncRoomId);
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  if (rid) {
+    var envelope = await buildLiveSyncBundleEnvelope(rid);
+    saveLocalRoomSnapshot(rid);
+    await pushRoomSyncBundleToHost(rid, envelope);
+  }
+  return { ok: true, hadHostRow: !!hostRow };
 }
 
 export async function lanPushHistoriaClinica(patientId, mutation) {

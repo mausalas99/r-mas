@@ -145,6 +145,7 @@ async function applyBootstrapResult(res) {
   clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  clinicalSessionContext.orphanGuardias = Array.isArray(res.orphans) ? res.orphans : [];
   const settings = readRpcSettings();
   const clientId = String(settings.clientId || '');
   const patch = {
@@ -466,6 +467,7 @@ export function stopClinicalAccessRuntime() {
   clinicalSessionContext.user = null;
   clinicalSessionContext.guardias = [];
   clinicalSessionContext.guardiasMap = new Map();
+  clinicalSessionContext.orphanGuardias = [];
   clinicalSessionContext.teams = [];
   clinicalSessionContext.scopeContext = null;
   clinicalSessionContext.decryptedPrivateKeyPem = null;
@@ -490,6 +492,7 @@ export async function refreshGuardiaCensusFromDb(settings) {
   if (!res || res.ok === false) return;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  clinicalSessionContext.orphanGuardias = Array.isArray(res.orphans) ? res.orphans : [];
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
   await renderGuardiaCensusGrid(settings);

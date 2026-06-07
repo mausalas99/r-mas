@@ -23,6 +23,10 @@ import {
 } from '../../lan-host-pin.mjs';
 import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import { discoverLanHostsOnSubnet } from '../../lan-host-subnet-discovery.mjs';
+import {
+  recordAutoHostDetectSuccess,
+  resumeAutoHostDetect,
+} from '../../lan-host-detect-guard.mjs';
 import { isWardTierHostMeta, markWardTierHostSeen } from '../../lan-host-escalation.mjs';
 import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
 import {
@@ -754,6 +758,10 @@ export async function promoteThisMacToLanHost(opts) {
     clearRoomMembership();
   }
   var ok = await ensureLanElectronHostReady({ forceLocal: true });
+  if (ok) {
+    resumeAutoHostDetect();
+    recordAutoHostDetectSuccess();
+  }
   deps().renderLanPanel();
   if (ok && !opts.skipToast) {
     runtime().showToast('Esta Mac ahora es el servidor del turno.', 'success');
@@ -890,6 +898,7 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
       await room.tryReconnectLanToHostUrl(url, teamCode);
     }
   } catch (_e) {}
+  recordAutoHostDetectSuccess();
   const label = String(opts.toastLabel || '').trim();
   runtime().showToast(
     label

@@ -44,6 +44,10 @@ import {
 } from '../../lan-surrogate-host.mjs';
 import { discoverLanHostsOnSubnet, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import {
+  canAttemptAutoHostDetect,
+  isAutoHostDetectPaused,
+} from '../../lan-host-detect-guard.mjs';
+import {
   formatEscalationCountdown,
   getHostEscalationStatus,
   isWardTierHostMeta,
@@ -100,6 +104,7 @@ import {
 import {
   joinLanRoom,
   leaveLiveSyncRoom,
+  resumeAutoHostDetectAndReconnect,
   syncLiveSyncStatusChrome,
   fetchClinicalOpsFromAlternateHost,
 } from './room.mjs';
@@ -1264,6 +1269,7 @@ export async function resetLanTurnConnectionFromUi() {
     leaveLiveSyncRoom: leaveLiveSyncRoom,
     lanClient: lanClient,
   });
+  resumeAutoHostDetectAndReconnect();
 
   runtime().showToast(
     'Conexión restablecida. Ingresa el PIN del turno o pega el enlace del anfitrión.',
@@ -1928,8 +1934,20 @@ export function resolveAutoJoinRoomId(explicitRoomId) {
   }
 }
 
+function lanHubPausedCopy() {
+  return {
+    connected: false,
+    line: 'Sin anfitri\u00f3n detectado',
+    hint:
+      'B\u00fasqueda autom\u00e1tica en pausa (5 intentos). Usa PIN, Restablecer conexi\u00f3n \u21C4 o vuelve a abrir este panel.',
+  };
+}
+
 export function lanHubStatusCopy() {
   if (!lanClient.connected) {
+    if (isAutoHostDetectPaused()) {
+      return lanHubPausedCopy();
+    }
     if (!isClinicalRankConfiguredForLan()) {
       return {
         connected: false,
@@ -2020,6 +2038,7 @@ export function stopLanAutoDiscovery() {
 async function scanLanHosts() {
   if (!isLanElectronDesktop()) return;
   if (!isClinicalRankConfiguredForLan()) return;
+  if (!canAttemptAutoHostDetect()) return;
 
   var teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return;
@@ -2200,6 +2219,7 @@ export async function resetLanSquadHostStateFromUi() {
   }
   if (res && res.ok) {
     var synced = await syncLanSavedTeamCodeWithEffectiveHostCode();
+    resumeAutoHostDetectAndReconnect();
     runtime().showToast(
       synced
         ? 'Estado LAN del host borrado. El «Código del equipo» guardado en esta R+ quedó alineado con archivo / variable de entorno / valor por defecto del servidor.'
@@ -2595,6 +2615,7 @@ export function openConnectionDropdown() {
   wireLanPanelDelegation();
   wireLanLwwToastPref();
   syncLanLwwOverwriteToastPrefUi();
+  resumeAutoHostDetectAndReconnect();
   renderLanPanel({ force: true });
   window.setTimeout(function () {
     focusLanShiftPinInput();

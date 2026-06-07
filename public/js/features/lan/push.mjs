@@ -28,7 +28,10 @@ import {
 var BUNDLE_PUSH_HANDLED = 'handled';
 var CLINICAL_OPS_HANDLED = 'handled';
 import { mergeLiveSyncFullBundles } from '../../lan-merge-registry.mjs';
+import { filterEntriesByPatientDeletes } from '../../lan-patient-merge.mjs';
+import { mergeLiveSyncBundles } from '../../live-sync-room.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
+import { isLanRestHostOwnMachine } from './transport.mjs';
 import { patients } from '../../app-state.mjs';
 import { guardAndSignLiveSyncMutation } from '../../clinical-access-runtime.mjs';
 import { wrapLiveSyncPatch } from '../../versioned-mutation.mjs';

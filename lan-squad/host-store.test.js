@@ -41,6 +41,42 @@ describe('host-store', () => {
     assert.strictEqual(store.getState().patients[0].nombre, 'Uno x');
   });
 
+  it('patient delete removes chart from all room sync-bundle entries', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'del' });
+    const room = store.createRoom('Sala 2');
+    store.upsertPatient({ id: 'p-del', nombre: 'BORRAR', registro: 'R99', edad: '40', sexo: 'M' }, null);
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [
+        {
+          patient: { id: 'p-del', registro: 'R99', nombre: 'BORRAR' },
+          note: { texto: 'x' },
+        },
+        {
+          patient: { id: 'p-keep', registro: 'R1', nombre: 'QUEDA' },
+          note: { texto: 'y' },
+        },
+      ],
+    });
+    store.setEntity({
+      entityType: 'patient',
+      entityId: 'p-del',
+      version: 2,
+      data: { id: 'p-del', registro: 'R99', _deleted: true },
+      deleted: true,
+    });
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.strictEqual(bundle.entries.length, 1);
+    assert.strictEqual(bundle.entries[0].patient.id, 'p-keep');
+    const row = store.getState().patients.find((p) => p.id === 'p-del');
+    assert.ok(row && row._deleted);
+    const got = store.getEntity({ entityType: 'patient', entityId: 'p-del' });
+    assert.strictEqual(got, null);
+  });
+
   it('createRoom y listRooms', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'z' });
     assert.strictEqual(store.listRooms().length, 0);

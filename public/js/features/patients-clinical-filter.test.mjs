@@ -110,11 +110,11 @@ test('R4 elevated filter shows only patients without explicit team assignment', 
   assert.deepEqual(out.map((p) => p.id), ['p-open']);
 });
 
-test('R2 sidebar without team excludes unassigned census', () => {
+test('R2 sidebar without team includes same-sala census', () => {
   const out = filterPatientsForClinicalSidebar(
     patients,
     { user_id: 'r2', rank: 'R2', sala: 'Sala 1', is_program_admin: 0 },
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
-  assert.deepEqual(out.map((p) => p.id), []);
+  assert.deepEqual(out.map((p) => p.id), ['p1']);
 });

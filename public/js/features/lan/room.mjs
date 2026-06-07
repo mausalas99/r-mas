@@ -38,6 +38,13 @@ import {
   isSurrogateHostActive,
   surrogateElectionDelayMs,
 } from '../../lan-surrogate-host.mjs';
+import {
+  canAttemptAutoHostDetect,
+  isAutoHostDetectPaused,
+  recordAutoHostDetectMiss,
+  recordAutoHostDetectSuccess,
+  resumeAutoHostDetect,
+} from '../../lan-host-detect-guard.mjs';
 import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
 import {
   registerLanSyncPushBridge,
@@ -192,6 +199,7 @@ export function stopSurrogateFailoverTimer() {
 
 export function scheduleSurrogateFailoverCheck() {
   if (!activeLiveSyncRoomId || !getRoomMembership()) return;
+  if (!canAttemptAutoHostDetect()) return;
   stopSurrogateFailoverTimer();
   _surrogateFailoverTimer = setTimeout(function () {
     _surrogateFailoverTimer = null;
@@ -242,6 +250,7 @@ export async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
     await syncLiveSyncAfterRoomJoin(rid);
     startLiveSyncReconnectLoop();
   }
+  recordAutoHostDetectSuccess();
   syncLiveSyncStatusChrome();
   bridge().patchLanPanelJoinButtons();
   return true;
@@ -325,6 +334,7 @@ export async function maybeRevertSurrogateToPrimary() {
 
 export async function runSurrogateFailoverCheck() {
   if (!activeLiveSyncRoomId || !getRoomMembership()) return;
+  if (!canAttemptAutoHostDetect()) return;
   if (lanClient.connected && lanClient.liveConnected) return;
   var teamCode = getLanTeamCodeFromConfig();
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
@@ -373,6 +383,9 @@ export async function runSurrogateFailoverCheck() {
       return;
     }
   }
+  if (!canAttemptAutoHostDetect()) return;
+  recordAutoHostDetectMiss();
+  if (!canAttemptAutoHostDetect()) return;
   await promoteSelfToSurrogateHost();
 }
 
@@ -476,11 +489,13 @@ export function applyRoomSyncPhaseAfterReconcile(roomId) {
     setRoomSyncPhase(rid, RoomSyncPhase.live);
   } else if (getRoomMembership() && String(getRoomMembership().roomId || '').trim() === rid) {
     setRoomSyncPhase(rid, RoomSyncPhase.degraded);
-    void import('../../lan-shift-pin-connect.mjs').then(function (m) {
-      if (typeof m.tryEasyLanShiftPinConnect === 'function') {
-        return m.tryEasyLanShiftPinConnect({ roomId: rid, silent: true });
-      }
-    });
+    if (canAttemptAutoHostDetect()) {
+      void import('../../lan-shift-pin-connect.mjs').then(function (m) {
+        if (typeof m.tryEasyLanShiftPinConnect === 'function') {
+          return m.tryEasyLanShiftPinConnect({ roomId: rid, silent: true });
+        }
+      });
+    }
   } else if (isLanSessionConfiguredForRest()) {
     setRoomSyncPhase(rid, RoomSyncPhase.configured);
   } else {
@@ -503,7 +518,9 @@ function liveSyncStatusChromeDetail(roomLabel, phase) {
   }
   if (phase === RoomSyncPhase.catching_up) return prefix + 'sincronizando…';
   if (phase === RoomSyncPhase.joining) return prefix + 'conectando…';
-  if (phase === RoomSyncPhase.degraded) return prefix + 'reconectando…';
+  if (phase === RoomSyncPhase.degraded) {
+    return prefix + (isAutoHostDetectPaused() ? 'desconectado' : 'reconectando…');
+  }
   if (roomLabel) return prefix + 'solo local (sin sync en vivo)';
   return 'Conexión LAN / LiveSync';
 }
@@ -532,6 +549,14 @@ export function stopLiveSyncReconnectLoop() {
   }
 }
 
+export function resumeAutoHostDetectAndReconnect() {
+  resumeAutoHostDetect();
+  _liveSyncReconnectAttempt = 0;
+  if (getRoomMembership()?.roomId) {
+    startLiveSyncReconnectLoop();
+  }
+}
+
 let _shiftPinRediscoverInFlight = false;
 
 export function startLiveSyncReconnectLoop() {
@@ -549,6 +574,7 @@ export function startLiveSyncReconnectLoop() {
     }
     if (lanClient.liveConnected && String(lanClient.liveRoomId || '') === mem.roomId) {
       _liveSyncReconnectAttempt = 0;
+      recordAutoHostDetectSuccess();
       if (!_liveSyncSessionResyncDone) {
         _liveSyncSessionResyncDone = true;
         void syncLiveSyncAfterRoomJoin(mem.roomId).then(function () {
@@ -557,6 +583,11 @@ export function startLiveSyncReconnectLoop() {
       }
       syncLiveSyncStatusChrome();
       scheduleReconnect();
+      return;
+    }
+    if (!canAttemptAutoHostDetect()) {
+      syncLiveSyncStatusChrome();
+      stopLiveSyncReconnectLoop();
       return;
     }
     if (typeof lanClient.isLiveChannelBusy === 'function' && lanClient.isLiveChannelBusy(mem.roomId)) {
@@ -572,19 +603,29 @@ export function startLiveSyncReconnectLoop() {
       } catch (_e) {}
     }
     _liveSyncReconnectAttempt += 1;
-    if (_liveSyncReconnectAttempt >= 2 && !_shiftPinRediscoverInFlight) {
+    if (_liveSyncReconnectAttempt >= 2 && !_shiftPinRediscoverInFlight && canAttemptAutoHostDetect()) {
       _shiftPinRediscoverInFlight = true;
       void import('../../lan-shift-pin-connect.mjs')
         .then(function (mod) {
           if (typeof mod.tryEasyLanShiftPinConnect !== 'function') return { ok: false };
-          return mod.tryEasyLanShiftPinConnect({ roomId: mem.roomId, silent: true, force: true });
+          return mod.tryEasyLanShiftPinConnect({
+            roomId: mem.roomId,
+            silent: true,
+            skipCooldown: true,
+          });
         })
         .finally(function () {
           _shiftPinRediscoverInFlight = false;
         });
     }
-    if (_liveSyncReconnectAttempt >= 3) scheduleSurrogateFailoverCheck();
+    if (_liveSyncReconnectAttempt >= 3 && canAttemptAutoHostDetect()) {
+      scheduleSurrogateFailoverCheck();
+    }
     syncLiveSyncStatusChrome();
+    if (!canAttemptAutoHostDetect()) {
+      stopLiveSyncReconnectLoop();
+      return;
+    }
     scheduleReconnect();
   }
   function scheduleReconnect() {

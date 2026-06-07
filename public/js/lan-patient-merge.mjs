@@ -446,6 +446,8 @@ export function filterEntriesByPatientDeletes(entries, patientDeletes) {
     if (!entry || !entry.patient) return false;
     const del = delMap.get(entryMatchKey(entry));
     if (!del) return true;
+    // Explicit patient deletes always win — prevents host bundle entries from resurrecting charts.
+    if (del.deleted) return false;
     return compareIso(entryUpdatedAt(entry), del.updatedAt || '') > 0;
   });
 }
