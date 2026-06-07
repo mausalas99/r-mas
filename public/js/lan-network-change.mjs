@@ -3,6 +3,7 @@
  */
 import { lanNetworkProfile } from './lan-network-profile.mjs';
 import { resumeAutoHostDetect } from './lan-host-detect-guard.mjs';
+import { resetShiftPinBackoff } from './lan-shift-pin-connect.mjs';
 import { applyLanNetworkRoaming } from './lan-network-roam.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode } from './features/lan/transport.mjs';
 
@@ -42,6 +43,7 @@ async function restartLanDiscoveryAfterNetworkChange() {
 /** @param {{ prefixes?: string[], candidateBaseUrl?: string }} payload */
 export async function handleLanNetworkChanged(payload) {
   if (!isLanElectronDesktop()) return;
+  resetShiftPinBackoff();
   applyLanNetworkRoaming(payload || {});
   await restartLanDiscoveryAfterNetworkChange();
 }
