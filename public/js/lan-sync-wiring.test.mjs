@@ -182,6 +182,14 @@ describe('LAN event and handler wiring', () => {
       'historia-clinica-panel must not call scheduleLiveSyncPush'
     );
   });
+
+  it('scheduleReconcileFromRevisionHint references tryDeltaReplayFromHint', () => {
+    assert.match(
+      lanSyncPush,
+      /tryDeltaReplayFromHint|\/deltas\?afterSeq/,
+      'push.mjs must reference delta replay in the revision-hint reconcile path'
+    );
+  });
 });
 
 describe('clinical teams LAN publish wiring', () => {

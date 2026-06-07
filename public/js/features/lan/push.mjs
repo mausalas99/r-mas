@@ -50,6 +50,9 @@ import {
   setLiveSyncOutboxFlushTimer,
   LIVE_SYNC_PUSH_DEBOUNCE_MS,
   LIVE_SYNC_OUTBOX_FLUSH_MS,
+  getLastDeltaSeq,
+  setLastDeltaSeq,
+  resetLastDeltaSeq,
 } from './runtime.mjs';
 
 /** @type {Record<string, unknown> | null} */
@@ -666,11 +669,55 @@ export function scheduleReconcileLiveSyncRoom(roomId, options) {
   );
 }
 
+/**
+ * Flow B: Attempt to catch up using the delta log instead of a full bundle.
+ * Returns true if deltas were applied successfully; false if the caller should
+ * fall back to a full reconcile.
+ *
+ * @param {string} roomId
+ * @returns {Promise<boolean>}
+ */
+async function tryDeltaReplayFromHint(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid) return false;
+  var afterSeq = getLastDeltaSeq(rid);
+  try {
+    var res = await lanClient.fetch(
+      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/deltas?afterSeq=' + afterSeq,
+      { cache: 'no-store' }
+    );
+    if (!res || !res.ok) return false;
+    var j = await res.json();
+    if (!j) return false;
+    if (j.fallback === 'sync_bundle') return false;
+    if (!Array.isArray(j.deltas) || j.deltas.length === 0) return true;
+    await ensureLanSyncPushBridgeWired();
+    var b = bridge();
+    if (typeof b.applyLiveSyncDeltas !== 'function') return false;
+    await b.applyLiveSyncDeltas(rid, j.deltas);
+    var maxSeq = j.deltas.reduce(function (m, d) {
+      return Math.max(m, Number(d.deltaSeq || d.seq || 0));
+    }, afterSeq);
+    setLastDeltaSeq(rid, maxSeq);
+    return true;
+  } catch (_eDelta) {
+    return false;
+  }
+}
+
 export function scheduleReconcileFromRevisionHint(roomId) {
   var rid = String(roomId || '').trim();
   if (!rid || !liveSyncRoomIdIsRelevant(rid)) return;
   if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
-  scheduleReconcileLiveSyncRoom(rid, { reason: 'revision-hint', delayMs: 500 });
+  setTimeout(function () {
+    tryDeltaReplayFromHint(rid).then(function (applied) {
+      if (!applied) {
+        scheduleReconcileLiveSyncRoom(rid, { reason: 'revision-hint-fallback', delayMs: 0 });
+      }
+    }).catch(function () {
+      scheduleReconcileLiveSyncRoom(rid, { reason: 'revision-hint-error', delayMs: 0 });
+    });
+  }, 500);
 }
 
 export function emitLiveSyncRevisionHint(roomId, revision) {
@@ -913,6 +960,7 @@ async function reconcileLiveSyncRoomBody(roomId) {
           setHostBundleBases(rid, j.bundle);
           sources.push(j.bundle);
           hostBundleLoaded = true;
+          resetLastDeltaSeq(rid);
           if (isMobileWeb()) window.__RPC_MOBILE_SYNC_BUNDLE_DONE__ = true;
         }
       }

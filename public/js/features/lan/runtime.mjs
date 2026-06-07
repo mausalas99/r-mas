@@ -17,6 +17,24 @@ export let liveSyncOutboxFlushTimer = null;
 export const LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
 export const LIVE_SYNC_OUTBOX_FLUSH_MS = 60000;
 
+/** Per-room last applied delta sequence number. Used by Flow B delta catch-up. */
+const _lastDeltaSeqByRoom = new Map();
+
+/** @param {string} roomId @returns {number} */
+export function getLastDeltaSeq(roomId) {
+  return _lastDeltaSeqByRoom.get(String(roomId)) ?? 0;
+}
+
+/** @param {string} roomId @param {number} seq */
+export function setLastDeltaSeq(roomId, seq) {
+  _lastDeltaSeqByRoom.set(String(roomId), Number(seq));
+}
+
+/** @param {string} roomId — called after a full bundle reconcile to reset delta tracking */
+export function resetLastDeltaSeq(roomId) {
+  _lastDeltaSeqByRoom.delete(String(roomId));
+}
+
 /**
  * @param {{ lanClient?: import('../../lan-client.mjs').LanClient }} [deps]
  */

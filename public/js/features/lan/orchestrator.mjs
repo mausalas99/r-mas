@@ -1387,6 +1387,29 @@ async function applyLiveSyncDeltaApplied(msg) {
   syncHostBundleEntityFromApplied(msg);
 }
 
+/**
+ * Apply a batch of delta-log entries from GET /deltas (Flow B catch-up).
+ * @param {string} roomId
+ * @param {object[]} deltas
+ */
+async function applyLiveSyncDeltas(roomId, deltas) {
+  if (!Array.isArray(deltas) || !deltas.length) return;
+  var rid = String(roomId || '').trim();
+  var sorted = deltas.slice().sort(function (a, b) {
+    return Number(a.deltaSeq || a.seq || 0) - Number(b.deltaSeq || b.seq || 0);
+  });
+  for (var i = 0; i < sorted.length; i++) {
+    var entry = sorted[i];
+    if (entry && entry.type === 'command') {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('lan-command-applied', { detail: entry }));
+      }
+      continue;
+    }
+    await applyLiveSyncDeltaApplied(Object.assign({ roomId: rid }, entry));
+  }
+}
+
 function applyLiveSyncApplied(msg) {
   if (!msg || isPitchPatientIsolationActive()) return;
   if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
@@ -1555,6 +1578,7 @@ export function wireLanSyncBridges() {
     saveLocalRoomSnapshot,
     buildLiveSyncLocalMergeSource,
     applyLiveSyncMerged,
+    applyLiveSyncDeltas,
     reapplyLanPatientEntries,
     applyRoomSyncPhaseAfterReconcile,
     fetchAndApplyClinicalOpsFromHost,
