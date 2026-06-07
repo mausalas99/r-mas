@@ -397,6 +397,135 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     state.rooms = rooms;
   }
 
+  function findRoomForPatient(state, patientId) {
+    if (!state.roomSyncBundles) return null;
+    const pid = String(patientId || '').trim();
+    if (!pid) return null;
+    for (const [roomId, bundle] of Object.entries(state.roomSyncBundles)) {
+      if (!bundle || !Array.isArray(bundle.entries)) continue;
+      const found = bundle.entries.some((e) => {
+        if (!e) return false;
+        if (e.id === pid) return true;
+        if (e.patient && e.patient.id === pid) return true;
+        return false;
+      });
+      if (found) return roomId;
+    }
+    return null;
+  }
+
+  function findBundleEntry(bundle, patientId) {
+    const pid = String(patientId || '').trim();
+    return (bundle?.entries || []).find((e) => {
+      if (!e) return false;
+      if (e.id === pid) return true;
+      if (e.patient && e.patient.id === pid) return true;
+      return false;
+    });
+  }
+
+  function upsertPatientLabHistorySet(patientId, set, clientTimestamp) {
+    const state = ensureLoadedSync();
+    const roomId = findRoomForPatient(state, patientId);
+    if (!roomId) return { ok: false, error: 'patient not found' };
+    const bundle = state.roomSyncBundles[roomId];
+    if (!bundle) return { ok: false, error: 'no bundle' };
+    const entry = findBundleEntry(bundle, patientId);
+    if (!entry) return { ok: false, error: 'entry not found' };
+    if (!Array.isArray(entry.labHistory)) entry.labHistory = [];
+    const existing = entry.labHistory.findIndex((s) => s && s.id === set.id);
+    if (existing >= 0) {
+      const prev = entry.labHistory[existing];
+      const prevTs = Number(prev._clientTimestamp || 0);
+      if (clientTimestamp >= prevTs) {
+        entry.labHistory[existing] = { ...set, _clientTimestamp: clientTimestamp };
+      }
+    } else {
+      entry.labHistory.push({ ...set, _clientTimestamp: clientTimestamp });
+    }
+    bundle.revision = Number(bundle.revision || 0) + 1;
+    persistState();
+    return { ok: true, revision: bundle.revision, roomId };
+  }
+
+  function replacePatientNota(patientId, data, expectedVersion, clientTimestamp) {
+    const state = ensureLoadedSync();
+    const roomId = findRoomForPatient(state, patientId);
+    if (!roomId) return { ok: false, error: 'patient not found' };
+    const bundle = state.roomSyncBundles[roomId];
+    const entry = findBundleEntry(bundle, patientId);
+    if (!entry) return { ok: false, error: 'entry not found' };
+    const currentVersion = Number(entry._notaVersion || 0);
+    let lwwApplied = false;
+    if (expectedVersion !== currentVersion) {
+      const storedTs = Number(entry._notaClientTimestamp || 0);
+      if (clientTimestamp > storedTs) {
+        lwwApplied = true;
+      } else {
+        return {
+          ok: true,
+          lwwApplied: false,
+          version: currentVersion,
+          revision: Number(bundle.revision || 0),
+          roomId,
+          data: entry.note,
+        };
+      }
+    }
+    entry.note = data;
+    entry._notaVersion = currentVersion + 1;
+    entry._notaClientTimestamp = clientTimestamp;
+    bundle.revision = Number(bundle.revision || 0) + 1;
+    persistState();
+    return {
+      ok: true,
+      lwwApplied,
+      version: entry._notaVersion,
+      revision: bundle.revision,
+      roomId,
+      data: entry.note,
+    };
+  }
+
+  function replacePatientIndicaciones(patientId, data, expectedVersion, clientTimestamp) {
+    const state = ensureLoadedSync();
+    const roomId = findRoomForPatient(state, patientId);
+    if (!roomId) return { ok: false, error: 'patient not found' };
+    const bundle = state.roomSyncBundles[roomId];
+    const entry = findBundleEntry(bundle, patientId);
+    if (!entry) return { ok: false, error: 'entry not found' };
+    const currentVersion = Number(entry._indicacionesVersion || 0);
+    let lwwApplied = false;
+    if (expectedVersion !== currentVersion) {
+      const storedTs = Number(entry._indicacionesClientTimestamp || 0);
+      if (clientTimestamp > storedTs) {
+        lwwApplied = true;
+      } else {
+        return {
+          ok: true,
+          lwwApplied: false,
+          version: currentVersion,
+          revision: Number(bundle.revision || 0),
+          roomId,
+          data: entry.indicaciones,
+        };
+      }
+    }
+    entry.indicaciones = data;
+    entry._indicacionesVersion = currentVersion + 1;
+    entry._indicacionesClientTimestamp = clientTimestamp;
+    bundle.revision = Number(bundle.revision || 0) + 1;
+    persistState();
+    return {
+      ok: true,
+      lwwApplied,
+      version: entry._indicacionesVersion,
+      revision: bundle.revision,
+      roomId,
+      data: entry.indicaciones,
+    };
+  }
+
   function putRoomSyncBundle(roomId, bundle) {
     const state = ensureLoadedSync();
     const rid = String(roomId || '');
@@ -1016,6 +1145,9 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     deleteRoom,
     getRoomSyncBundle,
     putRoomSyncBundle,
+    upsertPatientLabHistorySet,
+    replacePatientNota,
+    replacePatientIndicaciones,
     persistRoomBundleClinicalOpsToHostDb,
     putRoomClinicalOps,
     getEntity,

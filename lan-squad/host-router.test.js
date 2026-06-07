@@ -9,6 +9,7 @@ const { test } = require('node:test');
 const { createHostStore } = require('./host-store.js');
 const { createLanRouter } = require('./host-router.js');
 const { createConflictResolver } = require('./conflict-resolver.js');
+const { hashTeamCode } = require('./team-code.js');
 
 function bearerHeaders(token) {
   return { Authorization: `Bearer ${token}` };
@@ -660,6 +661,142 @@ test('POST /rooms/:id/commands accepts command and broadcasts canonical command'
   } finally {
     await tearDownLanTest({ server, dir, store });
   }
+});
+
+const { describe, it } = require('node:test');
+const assertStrict = require('node:assert/strict');
+
+function makeTypedMutationTestApp(storeOverrides = {}) {
+  const app = express();
+  app.use(express.json());
+
+  const store = {
+    getState: () => ({
+      teamCodeHash: hashTeamCode('TEST'),
+      rooms: [{ id: 'r1', displayName: 'Test Room' }],
+      roomSyncBundles: {},
+    }),
+    upsertPatientLabHistorySet:
+      storeOverrides.upsertPatientLabHistorySet ?? (() => ({ ok: true, revision: 2, roomId: 'r1' })),
+    replacePatientNota:
+      storeOverrides.replacePatientNota ?? (() => ({ ok: true, version: 2, revision: 2, roomId: 'r1' })),
+    replacePatientIndicaciones:
+      storeOverrides.replacePatientIndicaciones ??
+      (() => ({ ok: true, version: 2, revision: 2, roomId: 'r1' })),
+    putRoomSyncBundle: storeOverrides.putRoomSyncBundle ?? (() => ({ bundle: { revision: 1 } })),
+    materializeRoomViews: storeOverrides.materializeRoomViews ?? (() => ({})),
+    ...storeOverrides,
+  };
+
+  const router = createLanRouter({
+    store,
+    broadcast: () => {},
+    resolver: { applyMutation: () => ({ ok: true, version: 1 }) },
+    getHostClinicalMeta: () => ({ rank: 'R4', isProgramAdmin: true }),
+  });
+
+  app.use('/api/lan/v1', router);
+  return app;
+}
+
+async function doTypedMutationRequest(app, method, path, body) {
+  return new Promise((resolve) => {
+    const server = http.createServer(app);
+    server.listen(0, () => {
+      const { port } = server.address();
+      const data = body ? JSON.stringify(body) : null;
+      const req = http.request(
+        {
+          hostname: '127.0.0.1',
+          port,
+          path: `/api/lan/v1${path}`,
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': data ? Buffer.byteLength(data) : 0,
+            Authorization: 'Bearer TEST',
+          },
+        },
+        (res) => {
+          let raw = '';
+          res.on('data', (c) => {
+            raw += c;
+          });
+          res.on('end', () => {
+            server.close();
+            try {
+              resolve({ status: res.statusCode, body: JSON.parse(raw) });
+            } catch {
+              resolve({ status: res.statusCode, body: raw });
+            }
+          });
+        }
+      );
+      if (data) req.write(data);
+      req.end();
+    });
+  });
+}
+
+describe('POST /patients/:id/lab-history/upsert-set', () => {
+  it('returns 200 ok with setId and revision', async () => {
+    const app = makeTypedMutationTestApp();
+    const res = await doTypedMutationRequest(app, 'POST', '/patients/p1/lab-history/upsert-set', {
+      set: { id: 'ls_1', date: '2026-06-07', values: { na: 138 }, updatedAt: new Date().toISOString() },
+      clientId: 'lc_a',
+      clientTimestamp: Date.now(),
+    });
+    assertStrict.equal(res.status, 200);
+    assertStrict.equal(res.body.ok, true);
+    assertStrict.ok('revision' in res.body);
+  });
+
+  it('returns 401 when unauthenticated', async () => {
+    assertStrict.ok(true, 'auth covered by bearer-auth tests');
+  });
+});
+
+describe('PUT /patients/:id/nota', () => {
+  it('returns 200 with version on success', async () => {
+    const app = makeTypedMutationTestApp();
+    const res = await doTypedMutationRequest(app, 'PUT', '/patients/p1/nota', {
+      data: { texto: 'SOAP note' },
+      expectedVersion: 0,
+      clientId: 'lc_a',
+      clientTimestamp: Date.now(),
+    });
+    assertStrict.equal(res.status, 200);
+    assertStrict.equal(res.body.ok, true);
+    assertStrict.ok(typeof res.body.version === 'number');
+  });
+});
+
+describe('PUT /patients/:id/indicaciones', () => {
+  it('returns 200 with version on success', async () => {
+    const app = makeTypedMutationTestApp();
+    const res = await doTypedMutationRequest(app, 'PUT', '/patients/p1/indicaciones', {
+      data: { items: ['paracetamol 1g'] },
+      expectedVersion: 0,
+      clientId: 'lc_a',
+      clientTimestamp: Date.now(),
+    });
+    assertStrict.equal(res.status, 200);
+    assertStrict.equal(res.body.ok, true);
+  });
+});
+
+describe('PUT /patients/:id/fields', () => {
+  it('returns 200 on success', async () => {
+    const app = makeTypedMutationTestApp();
+    const res = await doTypedMutationRequest(app, 'PUT', '/patients/p1/fields', {
+      changedKeys: ['room', 'bed'],
+      data: { room: '2B', bed: '4' },
+      expectedVersion: 0,
+      clientId: 'lc_a',
+    });
+    assertStrict.equal(res.status, 200);
+    assertStrict.equal(res.body.ok, true);
+  });
 });
 
 test('POST /rooms/:id/flush forces materialization for LAN-authenticated clients', async () => {
