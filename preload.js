@@ -98,6 +98,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLanNetworkChanged: function(cb) {
     ipcRenderer.on('lan-network-changed', function(_e, payload) { cb(payload); });
   },
+  onLanMdnsPeers: function(cb) {
+    ipcRenderer.on('lan:mdns-peers', function(_e, peers) { cb(peers); });
+  },
   resetLanSquadHostState: function() {
     return ipcRenderer.invoke('lan-reset-squad-host-state');
   },

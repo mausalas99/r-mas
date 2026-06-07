@@ -612,6 +612,46 @@ ipcMain.handle('lan-get-effective-team-code', () => {
   }
 });
 
+const { createLanMdnsService, buildTeamHashSync } = require('./lan-squad/lan-mdns-service.js');
+const crypto = require('node:crypto');
+
+let _lanMdnsService = null;
+
+function ensureLanMdnsClientId(userDataPath) {
+  const idPath = path.join(String(userDataPath || ''), 'lan-mdns-client-id.txt');
+  try {
+    const existing = fs.readFileSync(idPath, 'utf8').trim();
+    if (existing) return existing;
+  } catch (_e) {}
+  const id = `lc_main_${crypto.randomBytes(6).toString('hex')}`;
+  try {
+    fs.writeFileSync(idPath, id + '\n', 'utf8');
+  } catch (_e) {}
+  return id;
+}
+
+function startLanMdnsIfHosting() {
+  try {
+    const userData = app.getPath('userData');
+    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
+    const teamResult = readLanTeamCodeFile({ userDataPath: userData });
+    if (!teamResult?.ok || !teamResult.code) return;
+    const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
+    const meta = readHostClinicalMeta(userData) || {};
+    const clientId = ensureLanMdnsClientId(userData);
+    const startedAt = meta.startedAt || Date.now();
+    const rank = meta.rank || 'R1';
+    const teamHash = buildTeamHashSync(teamResult.code);
+    if (_lanMdnsService) _lanMdnsService.stop();
+    _lanMdnsService = createLanMdnsService({ clientId, startedAt, rank, teamHash }, (peers) => {
+      safeSendToRenderer('lan:mdns-peers', peers);
+    });
+    _lanMdnsService.start();
+  } catch (_e) {
+    // Non-critical — mDNS unavailable (e.g. firewall, no network)
+  }
+}
+
 /** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
 ipcMain.handle('lan-ensure-server-ready', async () => {
   const lanServer = require('./server');
@@ -631,6 +671,7 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
     } catch (_e) {
       // non-fatal — renderer may sync meta later
     }
+    startLanMdnsIfHosting();
   }
   return { ok: true, peer: peerMode };
 });
@@ -678,6 +719,9 @@ ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes())
 
 const lanNetworkWatch = createLanNetworkWatch((payload) => {
   safeSendToRenderer('lan-network-changed', payload);
+  if (_lanMdnsService) {
+    _lanMdnsService.restart(payload.candidateBaseUrl);
+  }
 });
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
