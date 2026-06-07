@@ -15,10 +15,27 @@ function bearerHeaders(token) {
   return { Authorization: `Bearer ${token}` };
 }
 
-function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta) {
+function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta, getHealthExtras) {
   const resolver = createConflictResolver({ store });
   const app = express();
-  app.use('/api/lan/v1', createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }));
+  app.use(
+    '/api/lan/v1',
+    createLanRouter({
+      store,
+      broadcast,
+      resolver,
+      getHostClinicalMeta:
+        getHostClinicalMeta ||
+        (() => ({
+          rank: 'R1',
+          isProgramAdmin: false,
+          isOnCallGuardia: false,
+          startedAt: 0,
+          updatedAt: '',
+        })),
+      getHealthExtras: getHealthExtras || null,
+    })
+  );
   return app;
 }
 
@@ -35,6 +52,62 @@ async function tearDownLanTest({ server, dir, store }) {
   }
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 });
 }
+
+test('GET /health returns aggregated status (unauthenticated)', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-health-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const app = mountLanRouter(
+    store,
+    () => {},
+    () => ({
+      rank: 'R4',
+      isProgramAdmin: true,
+      isOnCallGuardia: false,
+      startedAt: 999_000,
+      updatedAt: '',
+    }),
+    () => ({ dbUnlocked: true, shiftPinActive: false, clientId: 'lc_test', revision: 7 })
+  );
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/lan/v1/health`);
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.lan, true);
+    assert.strictEqual(body.dbUnlocked, true);
+    assert.strictEqual(body.shiftPinActive, false);
+    assert.strictEqual(body.hostRank, 'R4');
+    assert.strictEqual(body.clientId, 'lc_test');
+    assert.strictEqual(body.startedAt, 999_000);
+    assert.strictEqual(body.revision, 7);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('GET /health returns safe defaults when getHealthExtras not provided', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-health-def-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const res = await fetch(`http://127.0.0.1:${port}/api/lan/v1/health`);
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.lan, true);
+    assert.strictEqual(typeof body.dbUnlocked, 'boolean');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
 
 test('LAN /ping requiere Authorization Bearer válido', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ping-'));

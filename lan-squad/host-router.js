@@ -6,7 +6,30 @@ const { createDeltaResolver } = require('./delta-resolver.js');
 const { createCommandResolver } = require('./command-resolver.js');
 const { createSyncScheduler } = require('./sync-scheduler.js');
 
-function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
+const HEARTBEAT_INTERVAL_MS = 30_000;
+let _heartbeatTimer = null;
+
+function startHeartbeat(broadcastFn, getMetaFn, getExtrasFn) {
+  if (_heartbeatTimer) return;
+  _heartbeatTimer = setInterval(() => {
+    const meta = typeof getMetaFn === 'function' ? getMetaFn() : {};
+    const extras = typeof getExtrasFn === 'function' ? getExtrasFn() : {};
+    if (typeof broadcastFn === 'function') {
+      broadcastFn('sync', {
+        type: 'livesync:hello',
+        clientId: String(extras.clientId || ''),
+        startedAt: Number(meta.startedAt) || 0,
+        revision: Number(extras.revision) || 0,
+        rank: String(meta.rank || 'R1'),
+        dbUnlocked: !!extras.dbUnlocked,
+        shiftPinActive: !!extras.shiftPinActive,
+      });
+    }
+  }, HEARTBEAT_INTERVAL_MS);
+  if (typeof _heartbeatTimer.unref === 'function') _heartbeatTimer.unref();
+}
+
+function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta, getHealthExtras }) {
   const r = express.Router();
   const getState = () => store.getState();
   const deltaResolver = createDeltaResolver({ store });
@@ -24,6 +47,23 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
       clientId: String(clientId || 'host'),
     });
   }
+
+  r.get('/health', (_req, res) => {
+    const meta =
+      typeof getHostClinicalMeta === 'function'
+        ? getHostClinicalMeta()
+        : { rank: 'R1', isProgramAdmin: false, isOnCallGuardia: false, startedAt: 0, updatedAt: '' };
+    const extras = typeof getHealthExtras === 'function' ? getHealthExtras() : {};
+    res.json({
+      lan: true,
+      dbUnlocked: extras.dbUnlocked != null ? !!extras.dbUnlocked : false,
+      shiftPinActive: extras.shiftPinActive != null ? !!extras.shiftPinActive : false,
+      hostRank: String(meta.rank || 'R1').trim() || 'R1',
+      clientId: String(extras.clientId || '').trim(),
+      startedAt: Number(meta.startedAt) || 0,
+      revision: Number(extras.revision) || 0,
+    });
+  });
 
   r.use(createBearerAuthMiddleware(getState));
 
@@ -385,6 +425,8 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
       res.status(400).json({ error: e.message });
     }
   });
+
+  startHeartbeat(broadcast, getHostClinicalMeta, getHealthExtras);
 
   return r;
 }

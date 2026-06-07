@@ -328,6 +328,12 @@ appExpress.use(
     broadcast,
     resolver: lanResolver,
     getHostClinicalMeta: () => readHostClinicalMeta(userData),
+    getHealthExtras: () => ({
+      dbUnlocked: !!(lanDbManager?.isUnlocked?.()),
+      shiftPinActive: !!(shiftPinStore.getStatus()?.active),
+      clientId: (readHostClinicalMeta(userData) || {}).clientId || '',
+      revision: Number(lanStore.getState()?.bundle?.revision) || 0,
+    }),
   })
 );
 
