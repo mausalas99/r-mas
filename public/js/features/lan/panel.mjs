@@ -42,7 +42,14 @@ import {
   listLivePeerHostUrls,
   pingLanHostUrl,
 } from '../../lan-surrogate-host.mjs';
-import { normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
+import {
+  normalizeLanHostBase,
+  isHostOnCurrentSubnets,
+  resolveLocalLanSubnetPrefixes,
+} from '../../lan-host-subnet-discovery.mjs';
+import { findByFingerprint, getPinnedFingerprint } from '../../lan-host-registry.mjs';
+import { LanSseClient } from '../../lan-sse-client.mjs';
+import { createLanConnectionManager } from '../../lan-connection-manager.mjs';
 import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import {
   canAttemptAutoHostDetect,
@@ -136,6 +143,21 @@ var _lastSubnetLanScanAt = 0;
 var _lanPeerOpsPullLastAt = new Map();
 var _lanLastPingAt = null;
 var _lanLastPingStatus = 0;
+var _lanLastPingRttMs = 0;
+/** @type {ReturnType<typeof createLanConnectionManager> | null} */
+var connectionManager = null;
+
+function getConnectionManager() {
+  if (!connectionManager) {
+    connectionManager = createLanConnectionManager({
+      lanClient,
+      sseClientFactory: function () {
+        return new LanSseClient();
+      },
+    });
+  }
+  return connectionManager;
+}
 var LAN_DISCONNECT_BANNER_MSG =
   'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
 var _lanLastConnected = true;
@@ -731,6 +753,7 @@ async function refreshLanPanelChromeInPlace() {
     } else if (hints.length) hints[0].remove();
   }
   await refreshLanSyncDiagnosticsInPlace();
+  await renderLanPreflightUx(root);
   restoreConnectionDropdownScrollTop(scrollTop);
 }
 
@@ -1071,6 +1094,12 @@ async function renderLanPanelOnce() {
 
   var hubStatus = lanHubStatusCopy();
   var needsInvitePaste = !runtime().isMobileWeb() && !isLanSessionConfiguredForRest();
+  var lanDiagDeps = await buildLanSyncDiagnosticsDeps();
+  if (lanPanelRenderStale(gen)) return;
+  var lanDiag = getLanSyncDiagnostics(lanDiagDeps);
+  var lanPreflight = await buildLanPreflightFromDeps(lanDiagDeps, lanDiag);
+  if (lanPanelRenderStale(gen)) return;
+  renderLanPreflightRow(root, lanPreflight);
   appendLanHubStatusCard(root, {
     connected: hubStatus.connected,
     statusLine: hubStatus.line,
@@ -1082,6 +1111,8 @@ async function renderLanPanelOnce() {
       void promoteThisMacToLanHost();
     },
   });
+  var statusLineEl = root.querySelector('.lan-hub-status-line');
+  if (statusLineEl) updateLanOutboxBadge(statusLineEl, lanDiag);
 
   await appendLanShiftPinSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
@@ -1495,6 +1526,125 @@ async function appendLanShiftPinSection(root, gen) {
       root.prepend(wrap);
     }
   } catch (_e) {}
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {{ phase: string, rttMs: number, bearerValid: boolean, subnetMatch: boolean, dbUnlocked: boolean|null, transport: string }} preflight
+ */
+function renderLanPreflightRow(root, preflight) {
+  if (!root) return;
+  var p = preflight || {};
+  var row = root.querySelector('.lan-preflight-row');
+  if (!row) {
+    row = document.createElement('div');
+    row.className = 'lan-preflight-row';
+    row.style.cssText =
+      'display:flex;gap:8px;align-items:center;font-size:11px;opacity:.8;margin-bottom:6px;cursor:default;';
+    row.addEventListener('click', function (e) {
+      if (!e.shiftKey) return;
+      var fp = getPinnedFingerprint();
+      var rec = fp ? findByFingerprint(fp) : null;
+      void copyToClipboardSafe(JSON.stringify(rec, null, 2)).then(function (ok) {
+        if (ok) runtime().showToast('Diagnóstico copiado', 'info');
+      });
+    });
+    var anchor = root.querySelector('.lan-hub-status-card');
+    if (anchor) root.insertBefore(row, anchor);
+    else if (root.firstChild) root.insertBefore(row, root.firstChild);
+    else root.appendChild(row);
+  }
+
+  if (p.phase === 'live') {
+    row.innerHTML =
+      '<span title="RTT">⚡ ' + (p.rttMs ? p.rttMs + ' ms' : '—') + '</span>' +
+      (p.transport && p.transport !== 'ws'
+        ? '<span style="color:orange">' + String(p.transport).toUpperCase() + '</span>'
+        : '');
+    return;
+  }
+
+  function dot(ok, label, title) {
+    return (
+      '<span title="' +
+      esc(title) +
+      '" style="color:' +
+      (ok ? '#22c55e' : '#ef4444') +
+      '">' +
+      (ok ? '✓' : '✗') +
+      ' ' +
+      esc(label) +
+      '</span>'
+    );
+  }
+
+  row.innerHTML = [
+    dot(p.rttMs > 0, p.rttMs ? p.rttMs + ' ms' : 'sin ping', 'Latencia al anfitrión'),
+    dot(p.bearerValid, 'token', 'Bearer válido'),
+    dot(p.subnetMatch, 'red', 'Mismo subnet'),
+    dot(
+      p.dbUnlocked !== false,
+      p.dbUnlocked === false ? 'BD bloqueada' : 'BD',
+      'Estado de la BD del anfitrión'
+    ),
+    dot(canLocalMacBeLanHost(), 'anfitrión', 'Este Mac puede ser anfitrión'),
+  ].join(' ');
+
+  if (p.transport && p.transport !== 'ws') {
+    row.innerHTML +=
+      ' <span style="color:orange;font-weight:600">' + String(p.transport).toUpperCase() + '</span>';
+  }
+}
+
+function updateLanOutboxBadge(statusEl, diag) {
+  if (!statusEl || !diag) return;
+  if ((diag.phase === 'offline' || diag.phase === 'queued') && Number(diag.outboxCount || 0) > 0) {
+    var badge = statusEl.querySelector('.lan-outbox-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'lan-outbox-badge';
+      badge.style.cssText =
+        'margin-left:6px;font-size:11px;background:#f59e0b;color:#fff;padding:1px 5px;border-radius:10px;';
+      statusEl.appendChild(badge);
+    }
+    var n = Number(diag.outboxCount || 0);
+    badge.textContent = n + ' pendiente' + (n !== 1 ? 's' : '');
+  } else {
+    var existing = statusEl.querySelector('.lan-outbox-badge');
+    if (existing) existing.remove();
+  }
+}
+
+async function buildLanPreflightFromDeps(deps, diag) {
+  var pinnedFp = getPinnedFingerprint();
+  var hostRecord = pinnedFp ? findByFingerprint(pinnedFp) : null;
+  var hostUrl = String(deps.hostUrl || '').trim();
+  var subnetMatch = false;
+  if (hostUrl) {
+    try {
+      var prefixes = await resolveLocalLanSubnetPrefixes(hostUrl);
+      subnetMatch = isHostOnCurrentSubnets(hostUrl, prefixes);
+    } catch (_subnetErr) {}
+  }
+  return {
+    phase: diag.phase,
+    rttMs: hostRecord ? hostRecord.rttMs : _lanLastPingRttMs || 0,
+    bearerValid: !!deps.teamCodeAligned,
+    subnetMatch: subnetMatch,
+    dbUnlocked: hostRecord ? hostRecord.dbUnlocked : null,
+    transport: getConnectionManager().getTransport(),
+  };
+}
+
+async function renderLanPreflightUx(root) {
+  if (!root) return null;
+  var deps = await buildLanSyncDiagnosticsDeps();
+  var diag = getLanSyncDiagnostics(deps);
+  var preflight = await buildLanPreflightFromDeps(deps, diag);
+  renderLanPreflightRow(root, preflight);
+  var statusEl = root.querySelector('.lan-hub-status-line');
+  if (statusEl) updateLanOutboxBadge(statusEl, diag);
+  return diag;
 }
 
 async function buildLanSyncDiagnosticsDeps() {
@@ -2484,7 +2634,7 @@ export async function saveLanSettingsFromUi(opts) {
   lanClient.configure(cfg);
   lanClient.disconnect();
   try {
-    lanClient.connectSyncChannel();
+    getConnectionManager().connect(cfg.hostUrl, cfg.teamCode);
   } catch (_e) {}
   var pingOk = false;
   var pingStatus = 0;
@@ -2495,6 +2645,7 @@ export async function saveLanSettingsFromUi(opts) {
     pingStatus = r && r.status ? r.status : 0;
     pingOk = !!(r && r.ok);
     if (pingOk) {
+      _lanLastPingRttMs = _pingRtt;
       lanNetworkProfile.recordPingSuccess(_pingRtt);
     } else {
       lanNetworkProfile.recordPingFailure();
@@ -2505,6 +2656,7 @@ export async function saveLanSettingsFromUi(opts) {
     lanNetworkProfile.recordPingFailure();
     _lanLastPingAt = new Date().toISOString();
     _lanLastPingStatus = 0;
+    _lanLastPingRttMs = 0;
     recordLanSyncError({
       op: 'ping',
       code: 'NETWORK',
