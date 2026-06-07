@@ -670,10 +670,15 @@ const {
   pickLanCandidateBaseUrl,
   listPrivateIpv4SubnetPrefixes,
 } = require('./lan-squad/lan-candidate-url.js');
+const { createLanNetworkWatch } = require('./lan-squad/lan-network-watch.js');
 
 ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
 
 ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes());
+
+const lanNetworkWatch = createLanNetworkWatch((payload) => {
+  safeSendToRenderer('lan-network-changed', payload);
+});
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {
@@ -827,6 +832,7 @@ app.whenReady().then(async () => {
   }
   buildMenu();
   createWindow();
+  lanNetworkWatch.start();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -838,6 +844,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  lanNetworkWatch.stop();
   const lanServer = require('./server');
   void lanServer.stopLanServer();
 });

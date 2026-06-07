@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-07",
   "entries": [
     {
+      "version": "7.1.7",
+      "label": "7.1.7",
+      "publishedAt": "2026-06-07",
+      "summary": "LAN roam entre redes — detección de cambio Wi‑Fi y escaneo multi-subred",
+      "recommended": true
+    },
+    {
       "version": "7.1.6",
       "label": "7.1.6",
       "publishedAt": "2026-06-07",
-      "summary": "LiveSync ligero en red local + estado actual monitoreo",
-      "recommended": true
+      "summary": "Release estable 7.1.6",
+      "recommended": false
     },
     {
       "version": "7.1.5",

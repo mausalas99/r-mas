@@ -227,14 +227,31 @@ function wireLanNetworkRefresh() {
   if (_lanNetworkRefreshWired || typeof window === 'undefined') return;
   _lanNetworkRefreshWired = true;
   window.addEventListener('online', function () {
-    void import('./room.mjs').then(function (m) {
-      if (typeof m.resumeAutoHostDetectAndReconnect === 'function') {
-        m.resumeAutoHostDetectAndReconnect();
+    void (async function () {
+      /** @type {{ prefixes?: string[], candidateBaseUrl?: string }} */
+      var payload = {};
+      if (window.electronAPI?.getLanSubnetPrefixes && window.electronAPI?.getLanCandidateBaseUrl) {
+        try {
+          var prefixes = await window.electronAPI.getLanSubnetPrefixes();
+          var candidateBaseUrl = await window.electronAPI.getLanCandidateBaseUrl();
+          payload = { prefixes: prefixes || [], candidateBaseUrl: candidateBaseUrl || '' };
+        } catch (_eOnline) {}
       }
-    });
-    void initLanHostPlugAndPlay();
-    if (typeof renderLanPanel === 'function') void renderLanPanel();
+      var m = await import('../../lan-network-change.mjs');
+      if (typeof m.handleLanNetworkChanged === 'function') {
+        await m.handleLanNetworkChanged(payload);
+      }
+    })();
   });
+  if (window.electronAPI && typeof window.electronAPI.onLanNetworkChanged === 'function') {
+    window.electronAPI.onLanNetworkChanged(function (payload) {
+      void import('../../lan-network-change.mjs').then(function (m) {
+        if (typeof m.handleLanNetworkChanged === 'function') {
+          return m.handleLanNetworkChanged(payload || {});
+        }
+      });
+    });
+  }
 }
 
 export function registerLanRuntime(ctx) {

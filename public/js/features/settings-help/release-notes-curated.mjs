@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_717 = [
+  {
+    title: 'Cambio de red Wi‑Fi',
+    body:
+      'Al cambiar de red o VLAN, R+ detecta la nueva subred en unos <strong>3 segundos</strong>, descarta un anfitrión que ya no aplica y vuelve a buscar el turno sin esperar al escaneo lento.',
+  },
+  {
+    title: 'Escaneo en todas las subredes',
+    body:
+      'El descubrimiento automático ⇄ recorre <strong>todas las /24</strong> del Mac (como el PIN del turno), útil en Wi‑Fi hospitalaria con varias VLAN.',
+  },
+  {
+    title: 'Reconexión inmediata',
+    body:
+      'Tras el roam: reanuda la búsqueda (aunque hubiera pausa por 5 fallos), reinicia ⇄ y prueba <strong>PIN del turno</strong> en silencio si eres cliente.',
+  },
+  {
+    title: 'Parche sobre 7.1.6',
+    body:
+      'Instala <strong>7.1.7 en todas</strong> las estaciones del turno. Sin cambio de esquema SQLCipher (sigue <strong>v14</strong>).',
+  },
+];
+
 var RELEASE_NOTES_715 = [
   {
     title: '⇄ sin bucle de reconexión',
@@ -434,9 +457,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_713;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_717;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.7': RELEASE_NOTES_717,
   '7.1.6': [
     {
       title: 'LiveSync más liviano en la red',

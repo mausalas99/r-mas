@@ -95,6 +95,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLanSubnetPrefixes: function() {
     return ipcRenderer.invoke('get-lan-subnet-prefixes');
   },
+  onLanNetworkChanged: function(cb) {
+    ipcRenderer.on('lan-network-changed', function(_e, payload) { cb(payload); });
+  },
   resetLanSquadHostState: function() {
     return ipcRenderer.invoke('lan-reset-squad-host-state');
   },

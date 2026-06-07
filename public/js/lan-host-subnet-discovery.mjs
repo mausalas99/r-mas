@@ -25,6 +25,14 @@ export function normalizeLanHostBase(raw) {
   return `http://${s}`;
 }
 
+/** @param {string} hostUrl @param {string[]} prefixes */
+export function isHostOnCurrentSubnets(hostUrl, prefixes) {
+  const host = hostIpv4FromBase(hostUrl);
+  if (!host || !Array.isArray(prefixes) || !prefixes.length) return false;
+  const prefix = subnetPrefixFromIpv4(host);
+  return !!prefix && prefixes.includes(prefix);
+}
+
 /** @param {string} base */
 export function hostIpv4FromBase(base) {
   try {
@@ -207,14 +215,22 @@ export async function discoverLanHostsOnAllLocalSubnetsViaBeacon(ownBaseUrl) {
 }
 
 /**
+ * Bearer-authenticated ward scan on every local /24 (multi-VLAN hospital Wi‑Fi).
  * @param {string} teamCode
  * @param {string} ownBaseUrl
+ * @param {{ subnetPrefixes?: string[] }} [opts]
  * @returns {Promise<string[]>}
  */
-export async function discoverLanHostsOnSubnet(teamCode, ownBaseUrl) {
+export async function discoverLanHostsOnSubnet(teamCode, ownBaseUrl, opts = {}) {
   const own = normalizeLanHostBase(ownBaseUrl);
   const code = String(teamCode || '').trim();
   if (!code) return [];
+
+  const prefixes =
+    Array.isArray(opts.subnetPrefixes) && opts.subnetPrefixes.length
+      ? opts.subnetPrefixes
+      : await resolveLocalLanSubnetPrefixes(own);
+  if (!prefixes.length) return [];
 
   let seedHost = hostIpv4FromBase(own);
   if ((!seedHost || isLoopbackHostname(seedHost)) && typeof window !== 'undefined') {
@@ -228,24 +244,33 @@ export async function discoverLanHostsOnSubnet(teamCode, ownBaseUrl) {
   }
   if (!seedHost && own) seedHost = hostIpv4FromBase(own);
 
-  const prefix = subnetPrefixFromIpv4(seedHost);
-  if (!prefix || !isPrivateIpv4(seedHost)) return [];
-
-  const skip = isLoopbackHostname(seedHost) ? '' : seedHost;
-  const hosts = orderedSubnetHosts(prefix, skip);
+  const skip = seedHost && !isLoopbackHostname(seedHost) ? seedHost : '';
   /** @type {Set<string>} */
   const found = new Set();
 
-  for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
-    const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
-    const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
-    const probes = await Promise.all(bases.map((base) => probeLanHostBase(base, code)));
-    for (const url of probes) {
-      if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
-      found.add(url);
-      if (found.size >= MAX_FOUND) break;
+  for (const prefix of prefixes) {
+    if (found.size >= MAX_FOUND) break;
+    const hosts = orderedSubnetHosts(prefix, skip);
+    for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
+      const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
+      const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
+      const probes = await Promise.all(bases.map((base) => probeLanHostBase(base, code)));
+      for (const url of probes) {
+        if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
+        found.add(url);
+        if (found.size >= MAX_FOUND) break;
+      }
     }
   }
 
   return [...found].sort();
+}
+
+/**
+ * @param {string} teamCode
+ * @param {string} ownBaseUrl
+ * @returns {Promise<string[]>}
+ */
+export async function discoverLanHostsOnAllLocalSubnets(teamCode, ownBaseUrl) {
+  return discoverLanHostsOnSubnet(teamCode, ownBaseUrl);
 }

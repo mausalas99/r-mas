@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.6](https://github.com/mausalas99/r-mas/releases/tag/v7.1.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.7](https://github.com/mausalas99/r-mas/releases/tag/v7.1.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.1.7 (LAN roam entre redes)
+
+- **Cambio de Wi‑Fi** — Electron detecta subred nueva en ~3 s; limpia anfitrión obsoleto y relanza búsqueda del turno.
+- **Multi-subred** — El escaneo automático ⇄ recorre todas las /24 locales (como el PIN del turno), no solo la IP principal.
+- **Reconexión al vuelo** — Reanuda discovery, PIN silencioso (cliente) o auto-unión (anfitrión) sin esperar 25 s.
+- **Sobre 7.1.6** — Sin cambio de esquema; parche de red sobre LiveSync ligero v14.
+
+Notas: `docs/RELEASE_NOTES_7.1.7.txt`.
 
 ## R+ 7.1.6 (LiveSync ligero en red local)
 

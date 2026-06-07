@@ -40,4 +40,11 @@ describe('lan-host-subnet-discovery', () => {
     assert.ok(Array.isArray(prefixes));
     if (prefixes.length) assert.equal(prefixes[0], '10.55.1');
   });
+
+  it('discoverLanHostsOnSubnet skips scan when explicit prefixes are empty', async () => {
+    assert.deepEqual(
+      await discoverLanHostsOnSubnet('tok', 'http://10.1.2.3:3738', { subnetPrefixes: [] }),
+      []
+    );
+  });
 });
