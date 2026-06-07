@@ -29,18 +29,30 @@ function startHeartbeat(broadcastFn, getMetaFn, getExtrasFn) {
   if (typeof _heartbeatTimer.unref === 'function') _heartbeatTimer.unref();
 }
 
-function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta, getHealthExtras }) {
+function createLanRouter({
+  store,
+  broadcast,
+  resolver,
+  getHostClinicalMeta,
+  getHealthExtras,
+  sseBroadcast,
+}) {
   const r = express.Router();
   const getState = () => store.getState();
   const deltaResolver = createDeltaResolver({ store });
   const commandResolver = createCommandResolver({ store });
   const syncScheduler = createSyncScheduler({ hostStore: store });
 
+  function broadcastAll(channel, obj) {
+    if (typeof broadcast === 'function') broadcast(channel, obj);
+    if (typeof sseBroadcast === 'function') sseBroadcast(channel, obj);
+  }
+
   /** Notify all peers on the live room WS channel (6.6.1 HTTP-primary push). */
   function broadcastLiveRevision(roomId, revision, clientId) {
     const rid = String(roomId || '').trim();
-    if (!rid || typeof broadcast !== 'function') return;
-    broadcast(`live:${encodeURIComponent(rid)}`, {
+    if (!rid) return;
+    broadcastAll(`live:${encodeURIComponent(rid)}`, {
       type: 'livesync:revision',
       roomId: rid,
       revision: Number(revision || 0),
@@ -426,7 +438,7 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta, getH
     }
   });
 
-  startHeartbeat(broadcast, getHostClinicalMeta, getHealthExtras);
+  startHeartbeat(broadcastAll, getHostClinicalMeta, getHealthExtras);
 
   return r;
 }

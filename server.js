@@ -17,6 +17,7 @@ const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createShiftPinStore } = require('./lan-squad/shift-pin-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
+const { createSseHub } = require('./lan-squad/lan-sse-hub.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
 const {
   createDocumentExportAuthMiddleware,
@@ -321,6 +322,10 @@ appExpress.use('/api/lan/v1', (req, res, next) => {
   next();
 });
 appExpress.use('/api/lan/v1', authRouter);
+const sseHub = createSseHub();
+const sseRouter = express.Router();
+sseHub.attachSseRouter(sseRouter, { getState: () => lanStore.getState() });
+appExpress.use('/api/lan/v1', sseRouter);
 appExpress.use(
   '/api/lan/v1',
   createLanRouter({
@@ -334,6 +339,7 @@ appExpress.use(
       clientId: (readHostClinicalMeta(userData) || {}).clientId || '',
       revision: Number(lanStore.getState()?.bundle?.revision) || 0,
     }),
+    sseBroadcast: (channel, obj) => sseHub.broadcast(channel, obj),
   })
 );
 

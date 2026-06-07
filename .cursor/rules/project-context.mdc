@@ -110,6 +110,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-07** `lan-sse`: `GET /api/lan/v1/sse` bearer-auth event stream — heartbeat + `livesync:revision` fan-out to WS + SSE; `lan-sse-hub.js`, `host-router.js`, `server.js`.
 - **2026-06-07** `lan-mdns`: Bonjour `_rplus._tcp` advertise+browse on 3738, `lan:mdns-peers` IPC, NIC restart; `lan-mdns-service.js`, `main.js`, `preload.js`.
 - **2026-06-07** `lan-host-registry`: fingerprint-keyed in-memory host registry (SOURCE_WEIGHT upsert, legacy `rpc-lan-pinned-host-url` migration); `lan-host-registry.mjs`.
 - **2026-06-07** `release-7.1.8`: fix LAN transport deps across esbuild chunks (`__LAN_SYNC_TRANSPORT_DEPS__`); conectar/combinar anfitrión + toast sin sala; `transport.mjs`, `orchestrator.mjs`, `lan-host-consolidation.mjs`.
