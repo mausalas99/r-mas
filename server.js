@@ -24,6 +24,7 @@ const {
 } = require('./lib/server-http-security.js');
 const { createInternoRouter } = require('./lib/interno/interno-router.js');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
@@ -309,6 +310,7 @@ const { broadcast } = attachWsHub(httpServer, {
   resolver: lanResolver,
 });
 
+appExpress.use('/api/lan/v1', compression({ threshold: 2048 }));
 appExpress.use('/api/lan/v1', (req, res, next) => {
   if (req.method === 'POST' && req.path === '/auth/exchange') {
     return authExchangeLimiter(req, res, next);
