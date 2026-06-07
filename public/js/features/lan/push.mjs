@@ -531,6 +531,19 @@ function flushLiveSyncOutboxBody(roomId) {
       });
     }
 
+    function pushTypedMutationToHost(path, body, method) {
+      var m = method || 'PUT';
+      return lanClient.fetch('/api/lan/v1' + path, {
+        method: m,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(function (res) {
+        return !!(res && res.ok);
+      }).catch(function () {
+        return false;
+      });
+    }
+
     function pushOutboxItem(item) {
       if (!item || !item.payload) return Promise.resolve(true);
       if (item.kind === 'clinical_ops') {
@@ -547,6 +560,18 @@ function flushLiveSyncOutboxBody(roomId) {
       }
       if (item.kind === 'patch') {
         return pushLiveSyncPatchOutbox(item.payload);
+      }
+      if (item.kind === 'nota_replace') {
+        return pushTypedMutationToHost('/patients/' + encodeURIComponent(item.payload.patientId) + '/nota', item.payload.data !== undefined ? item.payload : { data: item.payload });
+      }
+      if (item.kind === 'indicaciones_replace') {
+        return pushTypedMutationToHost('/patients/' + encodeURIComponent(item.payload.patientId) + '/indicaciones', item.payload.data !== undefined ? item.payload : { data: item.payload });
+      }
+      if (item.kind === 'lab_history_upsert') {
+        return pushTypedMutationToHost('/patients/' + encodeURIComponent(item.payload.patientId) + '/lab-history/upsert-set', item.payload, 'POST');
+      }
+      if (item.kind === 'patient_fields') {
+        return pushTypedMutationToHost('/patients/' + encodeURIComponent(item.payload.patientId) + '/fields', item.payload);
       }
       return Promise.resolve(true);
     }

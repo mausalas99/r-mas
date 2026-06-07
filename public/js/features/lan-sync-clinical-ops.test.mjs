@@ -298,6 +298,28 @@ describe('lan-sync clinical ops', () => {
   });
 });
 
+describe('flushLiveSyncOutboxBody — typed mutation drain', () => {
+  it('nota_replace outbox item is drained by calling PUT /patients/:id/nota', () => {
+    assert.match(
+      lanSyncPushSrc,
+      /nota_replace/,
+      'push.mjs must handle nota_replace outbox kind'
+    );
+  });
+
+  it('indicaciones_replace outbox item is handled', () => {
+    assert.match(lanSyncPushSrc, /indicaciones_replace/);
+  });
+
+  it('lab_history_upsert outbox item is handled', () => {
+    assert.match(lanSyncPushSrc, /lab_history_upsert/);
+  });
+
+  it('patient_fields outbox item is handled', () => {
+    assert.match(lanSyncPushSrc, /patient_fields/);
+  });
+});
+
 describe('clinical-profile-lan-sync', () => {
   const profileLanSrc = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), '../clinical-profile-lan-sync.mjs'),
