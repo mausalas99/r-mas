@@ -3,7 +3,12 @@
  */
 
 import { storage } from '../../storage.js';
-import { buildLanJoinUrls, resolveLanJoinHostUrl, liveSyncRoomLabel } from '../../lan-join-link.mjs';
+import {
+  buildLanJoinUrls,
+  buildTeamHash,
+  resolveLanJoinHostUrl,
+  liveSyncRoomLabel,
+} from '../../lan-join-link.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { restoreMobilePairingFromStorage } from '../../mobile-lan-query-persist.mjs';
 import {
@@ -284,10 +289,14 @@ export async function mintLanPairingTicket() {
   var body = await resp.json();
   var ticketId = String(body.ticketId || '');
   var shareHost = await resolveLanShareBaseUrl();
+  var teamCode = await resolveLanTeamCodeForShare();
   _lastLanPairing = {
     ticketId: ticketId,
     pin: String(body.pin || ''),
-    joinUrl: shareHost && ticketId ? buildShareJoinUrl(shareHost, ticketId) : String(body.joinUrl || ''),
+    joinUrl:
+      shareHost && ticketId
+        ? await buildShareJoinUrl(shareHost, ticketId, teamCode)
+        : String(body.joinUrl || ''),
     expiresAt: body.expiresAt,
   };
   return _lastLanPairing;
@@ -370,11 +379,30 @@ function fixMobileLanHostUrl(hostUrl) {
   return raw;
 }
 
-export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
+async function verifyTeamHashFromUrl(joinUrl, ownTeamCode) {
+  try {
+    const urlTh = new URL(joinUrl).searchParams.get('th');
+    if (!urlTh) return true;
+    const expectedTh = await buildTeamHash(ownTeamCode);
+    return !expectedTh || urlTh === expectedTh;
+  } catch (_e) {
+    return true;
+  }
+}
+
+export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId, joinUrl) {
   var base = fixMobileLanHostUrl(hostUrl);
   var tid = String(ticketId || '').trim();
   if (!base || !tid) {
     runtime().showToast('Falta la dirección del servidor o el ticket de invitación.', 'error');
+    return;
+  }
+  var verifyUrl =
+    String(joinUrl || '').trim() ||
+    `${base}/join/${encodeURIComponent(tid)}`;
+  var hashOk = await verifyTeamHashFromUrl(verifyUrl, getLanTeamCodeFromConfig());
+  if (!hashOk) {
+    runtime().showToast('Este enlace es de otra sala o servicio. Verifica con el anfitrión.', 'warn');
     return;
   }
   var ctrl = new AbortController();
@@ -501,8 +529,9 @@ export async function resolveLanShareBaseUrl() {
   return '';
 }
 
-export function buildShareJoinUrl(hostUrl, ticketId) {
-  return buildLanJoinUrls(hostUrl, ticketId).joinUrl;
+export async function buildShareJoinUrl(hostUrl, ticketId, teamCode) {
+  const urls = await buildLanJoinUrls(hostUrl, ticketId, teamCode);
+  return urls.joinUrl;
 }
 
 export async function resolveLanHostUrlAuto() {

@@ -1,7 +1,7 @@
 /**
  * Connect to ward LAN host via shared shift PIN (registration / onboarding / Wi‑Fi roam).
  */
-import { liveSyncRoomLabel, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
+import { buildTeamHash, liveSyncRoomLabel, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
 import {
   discoverLanHostsOnAllLocalSubnetsViaBeacon,
   normalizeLanHostBase,
@@ -40,6 +40,22 @@ function showEasyToast(message, kind) {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(message, kind);
   }
+}
+
+async function verifyTeamHashFromUrl(joinUrl, ownTeamCode) {
+  try {
+    const urlTh = new URL(joinUrl).searchParams.get('th');
+    if (!urlTh) return true;
+    const expectedTh = await buildTeamHash(ownTeamCode);
+    return !expectedTh || urlTh === expectedTh;
+  } catch (_e) {
+    return true;
+  }
+}
+
+function getOwnTeamCode() {
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  return String(cfg.teamCode || '').trim();
 }
 
 /** @param {string} hostUrl @param {string} shiftPin */
@@ -141,6 +157,15 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   if (!transport.isLanElectronDesktop()) return false;
   const pin = String(shiftPin || '').trim();
   if (!/^\d{6}$/.test(pin)) return false;
+
+  const joinUrl = String(opts.joinUrl || '').trim();
+  if (joinUrl) {
+    const hashOk = await verifyTeamHashFromUrl(joinUrl, getOwnTeamCode());
+    if (!hashOk) {
+      showEasyToast('Este enlace es de otra sala o servicio. Verifica con el anfitrión.', 'warn');
+      return false;
+    }
+  }
 
   if (typeof storage.saveLanShiftPin === 'function') storage.saveLanShiftPin(pin);
 

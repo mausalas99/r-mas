@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildLanJoinUrls,
   buildPermanentMobileJoinUrl,
+  buildTeamHash,
   parseLanJoinQuery,
   parseLanInviteInput,
   isLanSalaInvitePaste,
@@ -12,18 +13,45 @@ import {
 } from './lan-join-link.mjs';
 
 describe('lan-join-link', () => {
-  it('buildPermanentMobileJoinUrl usa /mobile/?token= sin ticket', () => {
-    const u = buildPermanentMobileJoinUrl('http://192.168.1.5:3738/', 'ward-token-abc');
-    assert.equal(u, 'http://192.168.1.5:3738/mobile/?token=ward-token-abc');
+  it('buildPermanentMobileJoinUrl usa /mobile/?token= sin ticket', async () => {
+    const u = await buildPermanentMobileJoinUrl('http://192.168.1.5:3738/', 'ward-token-abc');
+    const parsed = new URL(u);
+    assert.equal(parsed.pathname, '/mobile/');
+    assert.equal(parsed.searchParams.get('token'), 'ward-token-abc');
     assert.ok(!u.includes('/join/req_'));
   });
 
-  it('buildLanJoinUrls usa ruta /join/req_ sin code en query', () => {
+  it('buildPermanentMobileJoinUrl includes th= when teamCode provided', async () => {
+    const teamCode = 'ward-token-abc';
+    const u = await buildPermanentMobileJoinUrl('http://192.168.1.5:3738/', teamCode);
+    const th = await buildTeamHash(teamCode);
+    assert.ok(th);
+    assert.match(u, new RegExp(`[?&]th=${th}(?:&|$)`));
+  });
+
+  it('buildLanJoinUrls usa ruta /join/req_ sin code en query', async () => {
     const ticketId = 'req_a1b2c3d4e5f6';
-    const u = buildLanJoinUrls('http://192.168.1.5:3738/', ticketId);
+    const u = await buildLanJoinUrls('http://192.168.1.5:3738/', ticketId);
     assert.equal(u.joinUrl, 'http://192.168.1.5:3738/join/req_a1b2c3d4e5f6');
     assert.equal(u.mobileUrl, 'http://192.168.1.5:3738/join/req_a1b2c3d4e5f6');
     assert.ok(!u.joinUrl.includes('code='));
+  });
+
+  it('buildTeamHash produces 8-char hex from teamCode', async () => {
+    const h = await buildTeamHash('my-secret-team-code');
+    assert.match(h, /^[0-9a-f]{8}$/);
+  });
+
+  it('buildTeamHash is consistent', async () => {
+    const h1 = await buildTeamHash('abc');
+    const h2 = await buildTeamHash('abc');
+    assert.equal(h1, h2);
+  });
+
+  it('buildTeamHash differs for different team codes', async () => {
+    const h1 = await buildTeamHash('ward-a');
+    const h2 = await buildTeamHash('ward-b');
+    assert.notEqual(h1, h2);
   });
 
   it('parseLanJoinQuery lee code y room (legacy query helper)', () => {

@@ -57,17 +57,48 @@ export function resolveLanJoinHostUrl(fromServer, pageOrigin) {
 }
 
 /**
+ * SHA-256 truncated to 8 hex chars — ward identity token for QR/mDNS/UDP.
+ * @param {string} teamCode
+ * @returns {Promise<string>}
+ */
+export async function buildTeamHash(teamCode) {
+  const code = String(teamCode || '');
+  if (!code) return '';
+  try {
+    const buf = new TextEncoder().encode(code);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    const hex = Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return hex.slice(0, 8);
+  } catch (_e) {
+    return '';
+  }
+}
+
+/** @param {string} url @param {string} th */
+function appendTeamHashToUrl(url, th) {
+  if (!th) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}th=${encodeURIComponent(th)}`;
+}
+
+/**
  * @param {string} hostUrl
  * @param {string} ticketId — p. ej. req_a1b2c3d4e5f6
+ * @param {string} [teamCode]
  */
-export function buildLanJoinUrls(hostUrl, ticketId) {
+export async function buildLanJoinUrls(hostUrl, ticketId, teamCode) {
   const base = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
   const id = encodeURIComponent(String(ticketId || '').trim());
+  const th = teamCode ? await buildTeamHash(String(teamCode).trim()) : '';
+  const path = `${base}/join/${id}`;
+  const withTh = appendTeamHashToUrl(path, th);
   return {
-    joinUrl: `${base}/join/${id}`,
-    mobileUrl: `${base}/join/${id}`,
+    joinUrl: withTh,
+    mobileUrl: withTh,
   };
 }
 
@@ -76,7 +107,7 @@ export function buildLanJoinUrls(hostUrl, ticketId) {
  * @param {string} hostUrl
  * @param {string} teamCode — LAN bearer / código del equipo
  */
-export function buildPermanentMobileJoinUrl(hostUrl, teamCode) {
+export async function buildPermanentMobileJoinUrl(hostUrl, teamCode) {
   const base = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
@@ -84,6 +115,8 @@ export function buildPermanentMobileJoinUrl(hostUrl, teamCode) {
   if (!base || !code) return '';
   const u = new URL(`${base}/mobile/`);
   u.searchParams.set('token', code);
+  const th = await buildTeamHash(code);
+  if (th) u.searchParams.set('th', th);
   return u.toString();
 }
 

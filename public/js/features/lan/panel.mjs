@@ -917,7 +917,7 @@ async function resolvePermanentMobileShareUrl() {
   var teamCode = String(await resolveLanTeamCodeForShare()).trim();
   if (!hostUrl || !teamCode) return '';
   return appendMobileSharerParamsToJoinUrl(
-    buildPermanentMobileJoinUrl(hostUrl, teamCode),
+    await buildPermanentMobileJoinUrl(hostUrl, teamCode),
     activeLiveSyncRoomId
   );
 }
@@ -2317,7 +2317,8 @@ export async function copyLanInviteLinkFromUi(opts) {
     }
     return false;
   }
-  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
+  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  var link = await buildShareJoinUrl(share.hostUrl, share.pairing.ticketId, teamCode);
   var copied = await copyToClipboardSafe(link);
   if (copied) {
     if (!silent) {
@@ -2433,7 +2434,7 @@ export function joinLanFromInviteUi(fromBtn) {
       fromBtn.disabled = true;
       fromBtn.textContent = 'Conectando…';
     }
-    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId).finally(function () {
+    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId, raw).finally(function () {
       if (fromBtn instanceof HTMLButtonElement) {
         fromBtn.disabled = false;
         fromBtn.textContent = 'Unirse con enlace';
