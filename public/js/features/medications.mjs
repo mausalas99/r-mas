@@ -16,10 +16,15 @@ import { isModeSala } from "../mode-features.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
 import { ensureMonitoreo } from "./estado-actual-data.mjs";
-import { applyRecetaProposal, bucketsFromRecetaItems } from "./estado-actual-meds.mjs";
+import {
+  applyRecetaProposal,
+  bucketsFromRecetaItems,
+  medInstructionFragmentForSoap,
+} from "./estado-actual-meds.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
-import { openPaseSectionInNormal, renderPaseBoard } from "./pase-board.mjs";
+import { openPaseSectionInNormal, renderPaseBoard, invalidateInnerTabRenderCache } from "./pase-board.mjs";
+import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import {
   getMedSubview,
   registerMedPharmProfileRuntime,
@@ -225,6 +230,8 @@ export function toggleMedRecetaSuspendido(itemId, suspended) {
   if (!it) return;
   it.suspendido = !!suspended;
   saveState();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
 }
 
@@ -304,7 +311,7 @@ export function mediLlevarASOAP() {
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
-  var hasBuckets = ["analgesia", "abx", "antihta", "vasop"].some(function (k) {
+  var hasBuckets = ["analgesia", "abx", "antihta", "diureticos", "vasop", "nm"].some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
@@ -322,14 +329,17 @@ export function mediLlevarASOAP() {
     ensureMonitoreo(patient);
     applyRecetaProposal(patient.monitoreo, buckets);
     saveState();
+    invalidateEaPanelCache();
+    invalidateInnerTabRenderCache("estadoActual");
     if (typeof rt.navigateToEstadoActualPanel === "function") {
       rt.navigateToEstadoActualPanel();
     }
+    renderEstadoActualPanel({ force: true, refreshClinico: true, syncHeavy: true });
     rt.showToast("Propuesta en Estado Actual — confirma en Estado clínico general", "success");
     renderMedRecetaPanel();
     return;
   }
-  ["analgesia", "abx", "antihta", "vasop"].forEach(function (cat) {
+  ["analgesia", "abx", "antihta", "diureticos", "vasop", "nm"].forEach(function (cat) {
     var parts = String(buckets[cat] || "")
       .split(" | ")
       .filter(Boolean);
@@ -340,7 +350,11 @@ export function mediLlevarASOAP() {
           ? "soap-abx"
           : cat === "antihta"
             ? "soap-antihta"
-            : "soap-vasop";
+            : cat === "diureticos"
+              ? "soap-antihta"
+              : cat === "nm"
+                ? "soap-dieta"
+                : "soap-vasop";
     parts.forEach(function (t) {
       mergeSoapMedField(fieldId, t);
     });
@@ -389,6 +403,8 @@ export function procesarRecetaMed() {
   medNotaSelectionByPatient[activeId] = {};
   saveState();
   onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
   var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
   if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " líneas.";
@@ -459,13 +475,6 @@ export function setMedOutputTab(tab) {
   renderMedRecetaPanel();
 }
 
-function medInstructionFragmentForSoap(it) {
-  var full = formatMedicationEgresoLine(it);
-  var parts = full.split("||");
-  if (parts.length < 2) return full.replace(/\.\s*$/, "").trim();
-  return parts[1].replace(/^\s+/, "").replace(/\.\s*$/, "").trim();
-}
-
 function renderMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
   if (!foot) return;
@@ -481,7 +490,15 @@ function renderMedNotaFooter() {
         })
       : [];
 
-  var groups = { analgesia: [], antihta: [], abx: [], vasop: [], otros: [] };
+  var groups = {
+    analgesia: [],
+    antihta: [],
+    diuretico: [],
+    abx: [],
+    vasop: [],
+    nm: [],
+    otros: [],
+  };
   soapItems.forEach(function (it) {
     var cat = classifyMedicationSoapCategory(it.nombreRaw);
     if (groups[cat]) groups[cat].push(it);
@@ -521,9 +538,11 @@ function renderMedNotaFooter() {
   var previewHtml = soapItems.length
     ? '<div class="med-soap-preview">' +
       section("analgesia", "Analgésicos / antieméticos") +
-      section("antihta", "AntiHTA / diuréticos") +
+      section("antihta", "Antihipertensivos") +
+      section("diuretico", "Diuréticos") +
       section("abx", "Antibióticos / antifúngicos") +
       section("vasop", "Vasopresores / inotrópicos") +
+      section("nm", "NM (insulina, tiroides, etc.)") +
       section("otros", "Otros (se copian en Antibióticos — revisar)") +
       "</div>"
     : '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';

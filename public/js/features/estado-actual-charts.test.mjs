@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildEaChartsLayoutKey,
   buildEaChartsSignature,
+  buildEaChartsSummary,
   buildGluSeries,
   buildIoChartData,
   buildVitalsSeries,
@@ -33,6 +34,33 @@ test('buildGluSeries only plots glucometrias from yesterday 08:00 through today 
   ];
   var s = buildGluSeries(hist, now);
   assert.deepEqual(s.values, [190, 280, 221, 136, 159]);
+});
+
+test('buildGluSeries includes glucometrias even when bombaInsulina is present', () => {
+  var now = new Date(2026, 4, 28, 8, 39, 0);
+  var hist = [
+    {
+      recordedAt: new Date(2026, 4, 27, 17, 20, 0).toISOString(),
+      glucometrias: [
+        { value: 190, time: '08:00' },
+        { value: 136, time: '20:00' },
+      ],
+      bombaInsulina: [{ value: 175, time: '14:00', units: 2 }],
+    },
+  ];
+  var s = buildGluSeries(hist, now);
+  assert.deepEqual(s.values, [190, 175, 136]);
+});
+
+test('buildEaChartsSummary flags ready series with enough points', () => {
+  const hist = [
+    { recordedAt: '2026-05-26T06:00:00.000Z', vitals: { fc: 70, tas: 110 }, io: { ing: 500, egr: 300 } },
+    { recordedAt: '2026-05-26T12:00:00.000Z', vitals: { fc: 88, tas: 118 }, io: { ing: 600, egr: 450 } },
+  ];
+  const summary = buildEaChartsSummary({ historial: hist });
+  assert.equal(summary.measurementCount, 2);
+  assert.equal(summary.vitalsReady, true);
+  assert.equal(summary.ioReady, true);
 });
 
 test('buildIoChartData produces turn balance and global line', () => {

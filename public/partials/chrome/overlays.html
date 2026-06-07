@@ -112,6 +112,16 @@
   </div>
 </div>
 
+<div id="ea-charts-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal ea-charts-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" onclick="event.stopPropagation()">
+    <header class="ea-charts-modal-head">
+      <h3 id="ea-charts-title">Gráficas de monitoreo</h3>
+      <button type="button" class="ea-charts-modal-close" onclick="closeEstadoActualChartsModal()" aria-label="Cerrar gráficas">×</button>
+    </header>
+    <div id="ea-charts-modal-mount" class="ea-charts-modal-body"></div>
+  </div>
+</div>
+
 <div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" onclick="event.stopPropagation()">
     <header class="ea-registro-modal-head">

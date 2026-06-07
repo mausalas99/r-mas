@@ -11,7 +11,56 @@ import {
 import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 
-export const MED_FIELD_KEYS = /** @type {const} */ (['analgesia', 'abx', 'antihta', 'vasop']);
+export const MED_FIELD_KEYS = /** @type {const} */ ([
+  'analgesia',
+  'abx',
+  'antihta',
+  'diureticos',
+  'vasop',
+  'nm',
+]);
+
+/**
+ * Revision string for panel/tab cache invalidation (historial + estado clínico + receta).
+ * @param {unknown} monitoreoLike
+ * @param {string | null | undefined} activeId
+ * @param {Record<string, { items?: Array<{ id?: string, suspendido?: boolean }> }>} [medRecetaByPatient]
+ * @returns {string}
+ */
+export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPatient) {
+  /** @type {any} */
+  var m = monitoreoLike || {};
+  var h = Array.isArray(m.historial) ? m.historial.length : 0;
+  var parts = ['h' + h];
+  for (var i = 0; i < Math.min(4, h); i += 1) {
+    var row = m.historial[i];
+    parts.push(String(row && row.id ? row.id : '') + '@' + String(row && row.recordedAt ? row.recordedAt : ''));
+  }
+  var tg = m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : '';
+  parts.push('t' + tg);
+  var ec = m.estadoClinico && typeof m.estadoClinico === 'object' ? m.estadoClinico : {};
+  var pend = m.pendienteReceta && typeof m.pendienteReceta === 'object' ? m.pendienteReceta : {};
+  var conf = m.confirmado && typeof m.confirmado === 'object' ? m.confirmado : {};
+  parts.push(
+    String(ec.four || ''),
+    String(ec.esferas || ''),
+    String(ec.soporte || ''),
+    String(ec.dieta || ''),
+    String(ec.kcalKg || ''),
+    String(ec.kcal || '')
+  );
+  for (var k of MED_FIELD_KEYS) {
+    parts.push(String(ec[k] || ''), String(pend[k] || ''), conf[k] ? '1' : '0');
+  }
+  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  parts.push('r' + items.length);
+  for (var j = 0; j < Math.min(4, items.length); j += 1) {
+    var it = items[j];
+    parts.push(String(it && it.id ? it.id : '') + (it && it.suspendido ? 's' : 'a'));
+  }
+  return parts.join(':');
+}
 
 /** @returns {typeof emptyEstadoClinico extends (...a: infer R) => infer V ? V : never} */
 export function emptyEstadoClinico() {
@@ -21,7 +70,9 @@ export function emptyEstadoClinico() {
     analgesia: '',
     abx: '',
     antihta: '',
+    diureticos: '',
     vasop: '',
+    nm: '',
     soporte: '',
     tempContext: '',
     dieta: '',

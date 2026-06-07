@@ -546,6 +546,80 @@ export function buildMedRecetaCopyText(items) {
   return lines.join('\n\n');
 }
 
+function soapViaShort(viaNorm) {
+  if (viaNorm === 'VÍA INTRAVENOSA') return 'IV';
+  if (viaNorm === 'VÍA ORAL') return 'VO';
+  if (viaNorm === 'VÍA SUBCUTÁNEA') return 'SC';
+  return trimStr(viaNorm).toUpperCase();
+}
+
+function soapFreqShort(freqNorm) {
+  var t = trimStr(freqNorm).toUpperCase();
+  var m = t.match(/^CADA\s+(\d+)\s+H(?:ORA|ORAS)?$/);
+  if (m) return 'C/' + m[1] + 'H';
+  return t;
+}
+
+function compactSoapDrugName(nombreExpandido) {
+  var n = trimStr(nombreExpandido).toUpperCase();
+  n = n
+    .replace(/\s+TABLETA\b.*$/i, '')
+    .replace(/\s+CÁPSULAS?\b.*$/i, '')
+    .replace(/\s+CAPSULAS?\b.*$/i, '')
+    .replace(/\s+POLVO\b.*$/i, '');
+  var trimmed = trimStr(n.replace(/\s+\d+(?:[.,]\d+)?\s*(?:MG|G|ML|MCG|UI|U)\b.*$/i, ''));
+  return trimmed || n;
+}
+
+/**
+ * Indicación compacta para SOAP / Estado Actual (p. ej. NIFEDIPINO 60MG VO C/12H, MEROPENEM 1G IV C/8H DIA 13).
+ * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} item
+ * @returns {string}
+ */
+export function formatMedicationSoapShort(item) {
+  if (!item) return '';
+  var nombre = compactSoapDrugName(applyNombreAccents(expandNombrePresentacion(item.nombreRaw)));
+  var via = normalizeVia(item.viaRaw);
+  var freqNorm = normalizeFrecuencia(item.frecuenciaRaw);
+  var dosisCompact = extractRecetaNameOnlyDose(item.dosisRaw);
+  var prn = isPrnItem(item);
+
+  if (prn) {
+    var critRaw = extractPrnTail(item.dosisRaw) || freqNorm;
+    if (/HIPOGLUCEMIA/i.test(critRaw)) {
+      var hypoParts = [nombre];
+      if (dosisCompact) hypoParts.push(dosisCompact);
+      if (via) hypoParts.push(soapViaShort(via));
+      hypoParts.push(polishHypoPrnCriterion(critRaw).toUpperCase());
+      return hypoParts.join(' ');
+    }
+    if (/(NAUSEA|NÁUSEA|VÓMITO|VOMITO)/i.test(critRaw)) {
+      var nauseaParts = [nombre];
+      if (dosisCompact) nauseaParts.push(dosisCompact);
+      if (via) nauseaParts.push(soapViaShort(via));
+      var cadaN = extractCadaHorasFromCrit(critRaw) || 'CADA 8 HORAS';
+      nauseaParts.push(soapFreqShort(cadaN));
+      nauseaParts.push('EN CASO DE NÁUSEA O VÓMITO');
+      return nauseaParts.join(' ');
+    }
+    if (/(DOLOR|FIEBRE)/i.test(critRaw)) {
+      var painParts = [nombre];
+      if (dosisCompact) painParts.push(dosisCompact);
+      var cadaPain = extractCadaHorasFromCrit(critRaw) || freqNorm;
+      if (cadaPain) painParts.push(soapFreqShort(cadaPain));
+      painParts.push('EN CASO DE DOLOR LEVE O FIEBRE');
+      return painParts.join(' ');
+    }
+  }
+
+  var parts = [nombre];
+  if (dosisCompact) parts.push(dosisCompact);
+  if (via) parts.push(soapViaShort(via));
+  if (freqNorm) parts.push(soapFreqShort(freqNorm));
+  if (item.diaTratamiento != null) parts.push('DIA ' + item.diaTratamiento);
+  return parts.join(' ');
+}
+
 /**
  * Versión resumida para copia rápida:
  * - Medicamento.
@@ -557,42 +631,15 @@ export function buildMedRecetaNameOnlyText(items) {
   var list = (items || []).filter(function (it) {
     return it && !it.suspendido;
   });
-  function viaShort(viaNorm) {
-    if (viaNorm === 'VÍA INTRAVENOSA') return 'IV';
-    if (viaNorm === 'VÍA ORAL') return 'VO';
-    if (viaNorm === 'VÍA SUBCUTÁNEA') return 'SC';
-    return trimStr(viaNorm).toUpperCase();
-  }
-  function freqShort(freqNorm) {
-    var t = trimStr(freqNorm).toUpperCase();
-    var m = t.match(/^CADA\s+(\d+)\s+H(?:ORA|ORAS)$/);
-    if (m) return 'C/' + m[1] + 'H';
-    return t;
-  }
-  function compactName(nombreExpandido) {
-    var n = trimStr(nombreExpandido).toUpperCase();
-    var trimmed = trimStr(n.replace(/\s+\d.*$/, ''));
-    return trimmed || n;
-  }
   var lines = list.map(function (it) {
-    var nombre = compactName(applyNombreAccents(expandNombrePresentacion(it.nombreRaw)));
-    var via = normalizeVia(it.viaRaw);
-    var freq = normalizeFrecuencia(it.frecuenciaRaw);
-    var parts = [nombre];
-    var dosisCompact = extractRecetaNameOnlyDose(it.dosisRaw);
-    if (dosisCompact) parts.push(dosisCompact);
-    if (via) parts.push(viaShort(via));
-    if (freq) parts.push(freqShort(freq));
-    if (it.diaTratamiento != null) parts.push('DIA ' + it.diaTratamiento);
-    var line = parts.join(' ');
-    return line;
+    return formatMedicationSoapShort(it);
   });
   return lines.join('\n');
 }
 
 /**
- * Clasificación para campos de la plantilla SOAP (Analgesia / ABX / AntiHTA / Vasopresores).
- * "otros" no tiene campo dedicado: al volcar se añade a Antibióticos para revisión manual.
+ * Clasificación para campos SOAP / Estado Actual.
+ * "otros" sin campo dedicado: al volcar se añade a Antibióticos para revisión manual.
  */
 export function classifyMedicationSoapCategory(nombreRaw) {
   var n = normalizeNombreForSoapClassify(nombreRaw);
@@ -623,14 +670,28 @@ export function classifyMedicationSoapCategory(nombreRaw) {
     return 'analgesia';
   }
   if (
-    /\b(LOSARTAN|IRBESARTAN|VALSARTAN|TELMISARTAN|OLMESARTAN|CANDESARTAN|ENALAPRIL|LISINOPRIL|RAMIPRIL|CAPTOPRIL|AMLODIPINO|NIFEDIPINO|FELODIPINO|LERCANIDIPINO|CARVEDILOL|METOPROLOL|BISOPROLOL|NEBIVOLOL|PROPRANOLOL|ATENOLOL|LABETALOL|ESMOLOL|SOTALOL|HIDROCLOROTIAZ|CLORTALIDONA|INDAPAMIDA|FUROSEMIDA|TORASEMIDA|BUMETANIDA|ESPIRONOLACTONA|EPLERENONA|CLONIDINA|HIDRALAZINA|MINOXIDIL|NICARDIPINO|CLEVUDIPINO|DILTIAZEM|VERAPAMILO)\b/.test(
+    /\b(HIDROCLOROTIAZ|CLORTALIDONA|INDAPAMIDA|FUROSEMIDA|TORASEMIDA|BUMETANIDA|ESPIRONOLACTONA|EPLERENONA)\b/.test(
+      n
+    )
+  ) {
+    return 'diuretico';
+  }
+  if (
+    /\b(INSULINA|GLARGINA|DEGLUDEC|DETEMIR|ASPARTA|LISPRO|GLULISINA|NPH|LEVOTIROXINA|LIOTIRONINA)\b/.test(
+      n
+    )
+  ) {
+    return 'nm';
+  }
+  if (
+    /\b(LOSARTAN|IRBESARTAN|VALSARTAN|TELMISARTAN|OLMESARTAN|CANDESARTAN|ENALAPRIL|LISINOPRIL|RAMIPRIL|CAPTOPRIL|AMLODIPINO|NIFEDIPINO|FELODIPINO|LERCANIDIPINO|CARVEDILOL|METOPROLOL|BISOPROLOL|NEBIVOLOL|PROPRANOLOL|ATENOLOL|LABETALOL|ESMOLOL|SOTALOL|CLONIDINA|HIDRALAZINA|MINOXIDIL|NICARDIPINO|CLEVUDIPINO|DILTIAZEM|VERAPAMILO|NITROGLICERINA|ISOSORBIDE|DINITRATO|SACUBITRIL)\b/.test(
       n
     )
   ) {
     return 'antihta';
   }
   if (
-    /\b(INSULINA|GLARGINA|DEGLUDEC|DETEMIR|ASPARTA|LISPRO|GLULISINA|NPH|METFORMINA|REPAGLINIDA|GLIBENCLAMINA|GLIMEPIRIDA|PIOGLITAZON|EMPAGLIFLOZINA|DAPAGLIFLOZINA|SITAGLIPTINA|OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL|DEXAMETASONA|BETAMETASONA|HIDROCORTISONA|METILPREDNISOLONA|PREDNISON|PREDNISOLONA|ENOXAPARINA|HEPARINA|DALTEPARINA|TINZAPARINA|APIXABAN|RIVAROXABAN|EDOXABAN|DABIGATRAN|WARFARINA|ACENOCUMAROL|LEVOTIROXINA|LIOTIRONINA|ATORVASTATINA|ROSUVASTATINA|PRAVASTATINA|SINVASTATINA|SALBUTAMOL|LEVOSALBUTAMOL|TERBUTALINA|BUDESONIDA|BECLOMETASONA|FLUTICASONA|TIOTROPIO|IPRATROPIO|FOLICO|CIANOCOBALAMINA|FERROSO|CLORURO\s+DE\s+POTASIO|SULFATO\s+DE\s+MAGNESIO|LACTULOSA|BISACODILO|SENOSIDOS|PROPOFOL|MIDAZOLAM|LORAZEPAM|DIAZEPAM|CLONAZEPAM|HALOPERIDOL|QUETIAPINA|OLANZAPINA|LEVETIRACETAM|FENITOINA|CARBAMAZEPINA|VALPROATO|GABAPENTINA|PREGABALINA|DONEPECILO|MEMANTINA|BROMOCRIPTINA|FINASTERIDA|TAMSULOSINA|SOLIFENACINA|OXYBUTININA|NITROGLICERINA|ISOSORBIDE)\b/.test(
+    /\b(METFORMINA|REPAGLINIDA|GLIBENCLAMINA|GLIMEPIRIDA|PIOGLITAZON|EMPAGLIFLOZINA|DAPAGLIFLOZINA|SITAGLIPTINA|OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL|DEXAMETASONA|BETAMETASONA|HIDROCORTISONA|METILPREDNISOLONA|PREDNISON|PREDNISOLONA|ENOXAPARINA|HEPARINA|DALTEPARINA|TINZAPARINA|APIXABAN|RIVAROXABAN|EDOXABAN|DABIGATRAN|WARFARINA|ACENOCUMAROL|ATORVASTATINA|ROSUVASTATINA|PRAVASTATINA|SINVASTATINA|SALBUTAMOL|LEVOSALBUTAMOL|TERBUTALINA|BUDESONIDA|BECLOMETASONA|FLUTICASONA|TIOTROPIO|IPRATROPIO|FOLICO|CIANOCOBALAMINA|FERROSO|CLORURO\s+DE\s+POTASIO|SULFATO\s+DE\s+MAGNESIO|LACTULOSA|BISACODILO|SENOSIDOS|PROPOFOL|MIDAZOLAM|LORAZEPAM|DIAZEPAM|CLONAZEPAM|HALOPERIDOL|QUETIAPINA|OLANZAPINA|LEVETIRACETAM|FENITOINA|CARBAMAZEPINA|VALPROATO|GABAPENTINA|PREGABALINA|DONEPECILO|MEMANTINA|BROMOCRIPTINA|FINASTERIDA|TAMSULOSINA|SOLIFENACINA|OXYBUTININA)\b/.test(
       n
     )
   ) {

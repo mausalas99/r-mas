@@ -14,8 +14,8 @@ import {
   showToast,
   syncWorkContextChrome,
   windowHandlers as windowHandlers10
-} from "/js/chunks/chunk-567HZJP2.js";
-import "/js/chunks/chunk-BNJTF5J6.js";
+} from "/js/chunks/chunk-MJGIYB4Y.js";
+import "/js/chunks/chunk-TUTTU3BE.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -39,6 +39,7 @@ import {
   closeProfileModal,
   dayKeyFromLabSet,
   decrementPendingJobs,
+  destroyEstadoActualCharts,
   ensureEaRegistroModalForm,
   ensureParsedLabHistory,
   ensureParsedLabHistoryCached,
@@ -74,6 +75,7 @@ import {
   isRpcOffline,
   labSetIsFromSome,
   limpiarReporte,
+  loadChartJs,
   loadSettings,
   medicationsWindowHandlers,
   mergeHcPatch,
@@ -114,6 +116,7 @@ import {
   registerVpoRuntime,
   removeAtbRisPanelsFromBody,
   renderDiagramas,
+  renderEstadoActualCharts,
   renderEstadoActualPanel,
   renderIndicaForm,
   renderInnerTabs,
@@ -172,32 +175,32 @@ import {
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-LCYH7Q3Y.js";
+} from "/js/chunks/chunk-EXYG5WBR.js";
 import {
   windowHandlers as windowHandlers2
-} from "/js/chunks/chunk-ZVRMS2MX.js";
+} from "/js/chunks/chunk-BO4Y2WZ4.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers14,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-I5TQVUIW.js";
+} from "/js/chunks/chunk-DOEVW2NR.js";
 import {
   closeSettingsDropdown,
   syncTeamSyncHeaderButton
-} from "/js/chunks/chunk-WUHKTKTF.js";
-import "/js/chunks/chunk-ZN2W2FIJ.js";
-import "/js/chunks/chunk-JR7S3GH2.js";
+} from "/js/chunks/chunk-PEFI6F2E.js";
+import "/js/chunks/chunk-POBHJ4SL.js";
+import "/js/chunks/chunk-MS7DBMIV.js";
 import "/js/chunks/chunk-6IT4VYWH.js";
-import "/js/chunks/chunk-YKOLA3OE.js";
+import "/js/chunks/chunk-WCERPFJF.js";
 import "/js/chunks/chunk-MLXZVY56.js";
-import "/js/chunks/chunk-POM2RBQV.js";
+import "/js/chunks/chunk-QZXLPUPG.js";
 import {
   windowHandlers as windowHandlers9
-} from "/js/chunks/chunk-OU2JVI2Q.js";
+} from "/js/chunks/chunk-LIQQLLSU.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-ADME6FAD.js";
+} from "/js/chunks/chunk-4L2QNYSF.js";
 import {
   applyDriveImportEventualidades,
   buildParsedBySectionFromResLabs,
@@ -231,11 +234,11 @@ import {
   windowHandlers2 as windowHandlers15,
   windowHandlers3 as windowHandlers16,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-5PLYAE4D.js";
+} from "/js/chunks/chunk-JNK22B43.js";
 import {
   dbUnlockWindowHandlers,
   ensureClinicalDbUnlocked
-} from "/js/chunks/chunk-GB75I3YC.js";
+} from "/js/chunks/chunk-DMFNUQGW.js";
 import "/js/chunks/chunk-GDIYO6HE.js";
 import "/js/chunks/chunk-TNTHAQJD.js";
 import {
@@ -247,7 +250,7 @@ import {
   patients,
   saveState,
   setSaveStateHooks
-} from "/js/chunks/chunk-P6ZNDBV7.js";
+} from "/js/chunks/chunk-QN7Q4ZRJ.js";
 import {
   storage
 } from "/js/chunks/chunk-2TZHN5MF.js";
@@ -3264,6 +3267,85 @@ var windowHandlers18 = {
   driveImportReviewNext
 };
 
+// public/js/features/estado-actual-charts-modal.mjs
+var rt3 = {
+  getPatient() {
+    return null;
+  },
+  showToast() {
+  }
+};
+var dismissWired = false;
+function registerEstadoActualChartsModalRuntime(ctx) {
+  if (ctx && typeof ctx === "object") Object.assign(rt3, ctx);
+}
+function getBackdrop2() {
+  return document.getElementById("ea-charts-backdrop");
+}
+function getMount() {
+  return document.getElementById("ea-charts-modal-mount");
+}
+function closeEstadoActualChartsModal() {
+  var backdrop = getBackdrop2();
+  var mount = getMount();
+  if (mount) destroyEstadoActualCharts(mount);
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("ea-charts-modal-open");
+}
+function openEstadoActualChartsModal() {
+  var backdrop = getBackdrop2();
+  if (!backdrop) {
+    rt3.showToast("Gr\xE1ficas de monitoreo no disponibles", "error");
+    return;
+  }
+  var patient = rt3.getPatient();
+  if (!patient || !patient.monitoreo) {
+    rt3.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var mount = getMount();
+  if (mount) {
+    mount.innerHTML = '<p class="ea-muted ea-charts-loading">Cargando gr\xE1ficas\u2026</p>';
+  }
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("ea-charts-modal-open");
+  void loadChartJs().then(function(Chart) {
+    if (!mount) return;
+    renderEstadoActualCharts(mount, patient.monitoreo, Chart, { showTitle: false });
+  }).catch(function() {
+    if (!mount) return;
+    renderEstadoActualCharts(mount, patient.monitoreo, void 0, { showTitle: false });
+  });
+}
+function handleEaChartsEscape(ev) {
+  if (ev.key !== "Escape" && ev.key !== "Esc") return;
+  var backdrop = getBackdrop2();
+  if (!backdrop || !backdrop.classList.contains("open")) return;
+  closeEstadoActualChartsModal();
+  ev.preventDefault();
+  ev.stopPropagation();
+}
+function wireEaChartsModalDismiss() {
+  if (dismissWired) return;
+  dismissWired = true;
+  document.addEventListener("keydown", handleEaChartsEscape, true);
+  var backdrop = getBackdrop2();
+  if (backdrop) {
+    backdrop.addEventListener("click", function(ev) {
+      if (!backdrop.classList.contains("open")) return;
+      if (ev.target !== backdrop) return;
+      closeEstadoActualChartsModal();
+    });
+  }
+}
+var windowHandlers19 = {
+  openEstadoActualChartsModal,
+  closeEstadoActualChartsModal
+};
+
 // public/js/lazy-feature-routes.mjs
 var settingsHelpPromise = null;
 var platformPromise = null;
@@ -3272,7 +3354,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-H32T3ZYW.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-LB2G3JPL.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -3282,7 +3364,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-AQD5OJIL.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-MALGTYVY.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -3420,7 +3502,7 @@ async function registerLazyFeatureRuntimes(ctx) {
 }
 
 // public/js/app-runtimes.mjs
-var rt3 = {
+var rt4 = {
   getActiveId() {
     return null;
   },
@@ -3447,13 +3529,13 @@ function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 function getAppRuntimeContext() {
-  return rt3;
+  return rt4;
 }
 function registerAppRuntimeContext(ctx) {
-  if (ctx && typeof ctx === "object") Object.assign(rt3, ctx);
+  if (ctx && typeof ctx === "object") Object.assign(rt4, ctx);
 }
 function installAppRuntimeContextDeps() {
-  Object.assign(rt3, {
+  Object.assign(rt4, {
     showToast,
     navigateToEstadoActualPanel,
     refreshMedPanel: function refreshMedPanel() {
@@ -3475,7 +3557,7 @@ function installAppRuntimeContextDeps() {
     renderPatientList,
     scrollActiveRondaCardIntoView,
     renderGuardiaBoard: function() {
-      return renderGuardiaBoard(rt3.getSettings());
+      return renderGuardiaBoard(rt4.getSettings());
     },
     syncLabOutputChrome,
     setRoundOverviewMode,
@@ -3540,7 +3622,7 @@ function installAppRuntimeContextDeps() {
     renderRoundOverviewPanels,
     switchConsolidatedTab,
     getActivePatient: function() {
-      var id = rt3.getActiveId();
+      var id = rt4.getActiveId();
       if (!id) return null;
       return patients.find(function(p) {
         return String(p.id) === String(id);
@@ -3571,7 +3653,7 @@ function installAppRuntimeContextDeps() {
     ensureForm: ensureEaRegistroModalForm,
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
-      var activeId2 = rt3.getActiveId();
+      var activeId2 = rt4.getActiveId();
       var patient = activeId2 && patients.find(function(p) {
         return p.id === activeId2;
       });
@@ -3631,8 +3713,8 @@ async function registerAllFeatureRuntimes() {
   registerPaseBoardRuntime(ctx);
   registerChromeRuntime(ctx);
   registerPatientsRuntime(ctx);
-  v3MigratedThisBoot = migrateToV3(rt3.getSettings());
-  if (v3MigratedThisBoot) storage.saveSettings(rt3.getSettings());
+  v3MigratedThisBoot = migrateToV3(rt4.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt4.getSettings());
   await registerLazyFeatureRuntimes(ctx);
   registerLabHistoryMaintRuntime(ctx);
   installLabHistoryAuditHook();
@@ -3652,6 +3734,16 @@ async function registerAllFeatureRuntimes() {
   registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
+  registerEstadoActualChartsModalRuntime({
+    getPatient: function() {
+      var id = rt4.getActiveId();
+      if (!id) return null;
+      return patients.find(function(p) {
+        return p.id === id;
+      }) || null;
+    },
+    showToast
+  });
   registerLabPanelRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
@@ -3664,6 +3756,7 @@ function runInitialFeatureBoot() {
   wireEstadoActualPasteModal();
   wireDriveImportModal();
   wireEaModalDismiss();
+  wireEaChartsModalDismiss();
   syncCensoExportButtonVisibility();
 }
 
@@ -3694,6 +3787,7 @@ var allWindowHandlers = Object.assign(
   windowHandlers7,
   windowHandlers18,
   windowHandlers8,
+  windowHandlers19,
   windowHandlers10,
   windowHandlers11,
   windowHandlers3,
@@ -3874,7 +3968,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-YRH6LE7V.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-EZAFV3IP.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -3885,7 +3979,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-ZGXSHRIX.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-4DU5HHA3.js");
     }
   },
   {
@@ -3908,7 +4002,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/js/chunks/clinical-access-runtime-WUM2P63U.js").then(function(mod) {
+      void import("/js/chunks/clinical-access-runtime-F3SV6TWV.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }

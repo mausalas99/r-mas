@@ -58,14 +58,14 @@ test('getTourTarget para estado_actual apunta al segmento Estado actual (Sala)',
   const t = getTourTarget('estado_actual', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'estadoActual');
-  assert.match(t.selector, /ea-snapshot|ea-charts-mount/);
+  assert.match(t.selector, /ea-snapshot|ea-charts-summary/);
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
 });
 
 test('getTourTarget para estado_actual_review combina snapshot, gráficas e historial', () => {
   const review = getTourTarget('estado_actual_review', 'sala');
   assert.match(review.selector, /ea-snapshot/);
-  assert.match(review.selector, /ea-charts-mount/);
+  assert.match(review.selector, /ea-charts-summary/);
   assert.match(review.selector, /ea-historial/);
 });
 

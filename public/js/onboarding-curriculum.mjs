@@ -173,8 +173,6 @@ export const SALA_HUB_MODULES = [
   { id: 'mod-ch4', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
   { id: 'mod-ch5', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },
   { id: 'mod-ch6', chapterId: 'ch-team', label: 'Equipo (LiveSync + móvil)', branch: 'sala' },
-  { id: 'neo-lab', companion: 'neo', label: 'Neo · Laboratorio', startStepId: 'sala_casiopea_lab', branch: 'sala' },
-  { id: 'neo-trends', companion: 'neo', label: 'Neo · Tendencias', startStepId: 'sala_casiopea_trends', branch: 'sala' },
 ];
 
 export const IC_HUB_MODULES = IC_CHAPTERS.map((ch) => ({

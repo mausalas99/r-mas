@@ -4,6 +4,7 @@ import {
   parseMedicationPaste,
   resolveFechaActualizacion,
   formatMedicationEgresoLine,
+  formatMedicationSoapShort,
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
   extractDiaTratamiento,
@@ -330,11 +331,38 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('PARACETAMOL 1 G'), 'analgesia');
   assert.equal(classifyMedicationSoapCategory('LOSARTAN 50 MG'), 'antihta');
   assert.equal(classifyMedicationSoapCategory('NORADRENALINA 4 MG'), 'vasop');
+  assert.equal(classifyMedicationSoapCategory('FUROSEMIDA 40 MG'), 'diuretico');
+  assert.equal(classifyMedicationSoapCategory('INSULINA GLARGINA'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('DINITRATO DE ISOSORBIDE 40 MG'), 'antihta');
   assert.equal(classifyMedicationSoapCategory('ENOXAPARINA 40 MG'), 'otros');
   assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'otros');
   assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
   assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
   assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'analgesia');
+});
+
+test('formatMedicationSoapShort — indicación compacta', () => {
+  assert.equal(
+    formatMedicationSoapShort({
+      nombreRaw: 'NIFEDIPINO 60 MG TABLETA',
+      viaRaw: 'VIA ORAL',
+      dosisRaw: '60 MG',
+      frecuenciaRaw: 'CADA 12 HORAS',
+      suspendido: false,
+    }),
+    'NIFEDIPINO 60MG VO C/12H'
+  );
+  assert.equal(
+    formatMedicationSoapShort({
+      nombreRaw: 'MEROPENEM 1 G',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1 G',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      diaTratamiento: 13,
+      suspendido: false,
+    }),
+    'MEROPENEM 1 G IV C/8H DIA 13'
+  );
 });
 
 test('parseMedicationPaste incluye medicamento fuera de catálogo', () => {

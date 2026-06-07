@@ -1,5 +1,5 @@
 // Panel Estado Actual (Sala) — formulario, historial, snapshot, texto
-import { patients, medRecetaByPatient, saveState } from '../app-state.mjs';
+import { patients, medRecetaByPatient, medNotaSelectionByPatient, saveState } from '../app-state.mjs';
 import {
   ensureMonitoreo,
   migratePatientMonitoreo,
@@ -9,6 +9,7 @@ import {
   appendMedicion,
   removeMedicion,
   MED_FIELD_KEYS,
+  buildEaMonitoreoRevision,
   resolveDietWeightKg,
   syncDietKcalFromWeight,
   computeDietKcalKgFromTotal,
@@ -29,16 +30,16 @@ import {
 import { isVitalAltered, buildAlteredAtDefaults } from './estado-actual-ranges.mjs';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
 import {
-  buildMedDropdownOptions,
   confirmMedField,
   discardMedProposal,
   confirmAllMedProposals,
+  estadoClinicoForText,
+  syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
+import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
 import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
-import { renderEstadoActualCharts } from './estado-actual-charts.mjs';
-import { loadChartJs } from '../vendor-loader.mjs';
-import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
+import { renderEaChartsSummarySection } from './estado-actual-charts.mjs';
 import {
   getDefaultRegistroRecordedAt,
   collectGlucometriasForRegistroWindow,
@@ -86,14 +87,6 @@ const VITAL_UNITS = {
 
 /** @type {readonly string[]} */
 const SOPORTE_OPTIONS = ['Aire ambiente', 'Puntillas nasales', 'Alto flujo', 'VM no invasiva'];
-
-/** @type {Record<string, string>} */
-const MED_FIELD_LABELS = {
-  analgesia: 'Analgesia',
-  abx: 'Antibióticos',
-  antihta: 'AntiHTA / diuréticos',
-  vasop: 'Vasopresores',
-};
 
 let rt = {
   getActiveId() {
@@ -251,66 +244,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var pend = monitoreo.pendienteReceta || {};
   var anyPending = hasPendingMedProposals(pend);
 
-  var medFieldsHtml = MED_FIELD_KEYS.map(function (key) {
-    var options = buildMedDropdownOptions(
-      activeId,
-      key,
-      medRecetaByPatient,
-      classifyMedicationSoapCategory
-    );
-    var currentVal = ec[key] != null ? String(ec[key]) : '';
-    var pendingVal = pend[key] != null ? String(pend[key]).trim() : '';
-    var badge = pendingVal
-      ? '<span class="ea-pendiente-badge">Propuesta receta</span>'
-      : monitoreo.confirmado && monitoreo.confirmado[key]
-        ? '<span class="ea-confirmed-badge">Confirmado</span>'
-        : '';
-
-    var selectOpts =
-      '<option value="">— Seleccionar de receta —</option>' +
-      options
-        .map(function (opt) {
-          var sel = opt === currentVal ? ' selected' : '';
-          return '<option value="' + escAttr(opt) + '"' + sel + '>' + escHtml(opt) + '</option>';
-        })
-        .join('');
-
-    return (
-      '<div class="ea-clinico-med-field" data-ea-med-key="' +
-      key +
-      '">' +
-      '<div class="ea-clinico-med-head">' +
-      '<span class="ea-label">' +
-      MED_FIELD_LABELS[key] +
-      '</span>' +
-      badge +
-      '</div>' +
-      '<select class="ea-input" data-ea-med-select="' +
-      key +
-      '">' +
-      selectOpts +
-      '</select>' +
-      '<input type="text" class="ea-input" data-ea-med-input="' +
-      key +
-      '" value="' +
-      escAttr(currentVal) +
-      '" placeholder="Texto manual">' +
-      (pendingVal
-        ? '<div class="ea-pendiente-preview" title="Propuesta pendiente">' +
-          escHtml(pendingVal) +
-          '</div>' +
-          '<div class="ea-clinico-med-actions">' +
-          '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField(\'' +
-          key +
-          '\')">Confirmar</button>' +
-          '<button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal(\'' +
-          key +
-          '\')">Descartar</button>' +
-          '</div>'
-        : '') +
-      '</div>'
-    );
-  }).join('');
+  var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient);
 
   var soporteOpts = SOPORTE_OPTIONS.map(function (opt) {
     var sel = ec.soporte === opt ? ' selected' : '';
@@ -367,6 +301,9 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     '<div class="ea-clinico-med-grid">' +
     medFieldsHtml +
     '</div>' +
+    '<div class="ea-clinico-text-actions">' +
+    '<button type="button" class="ea-btn" onclick="copiarEstadoActualTexto()">Copiar texto Estado Actual</button>' +
+    '</div>' +
     (anyPending
       ? '<div class="ea-clinico-actions">' +
         '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button>' +
@@ -377,41 +314,52 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   );
 }
 
-function syncEstadoActualTextarea(monitoreo, patient) {
-  var texto = generateEstadoActualText(monitoreo, patient);
-  var ta = document.getElementById('ea-texto');
-  if (ta && 'value' in ta) ta.value = texto;
+/**
+ * @param {{ monitoreo?: unknown } | null | undefined} patient
+ * @returns {string}
+ */
+function getEstadoActualTextForPatient(patient) {
+  if (!patient || !patient.monitoreo) return '';
+  return generateEstadoActualText(patient.monitoreo, patient);
 }
 
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   saveState();
-  syncEstadoActualTextarea(monitoreo, patient);
-  renderEstadoActualPanel({ syncHeavy: true, dataOnly: true, refreshClinico: true });
+  renderEstadoActualPanel({ dataOnly: true, refreshClinico: true });
   if (toastMsg) rt.showToast(toastMsg, 'success');
 }
 
 function persistEstadoClinicoLight(monitoreo, patient) {
   saveState();
-  syncEstadoActualTextarea(monitoreo, patient);
 }
 
 /**
  * @param {HTMLElement | null} mount
  */
 function captureEaPanelUiState(mount) {
-  if (!mount) return { clinicoOpen: false };
+  if (!mount) return { clinicoOpen: false, historialOpen: false };
   var det = mount.querySelector('.ea-estado-clinico');
-  return { clinicoOpen: !!(det && det.open) };
+  var hist = mount.querySelector('.ea-historial');
+  return {
+    clinicoOpen: !!(det && det.open),
+    historialOpen: !!(hist && hist.open),
+  };
 }
 
 /**
  * @param {HTMLElement | null} mount
- * @param {{ clinicoOpen?: boolean }} state
+ * @param {{ clinicoOpen?: boolean, historialOpen?: boolean }} state
  */
 function restoreEaPanelUiState(mount, state) {
-  if (!mount || !state || !state.clinicoOpen) return;
-  var det = mount.querySelector('.ea-estado-clinico');
-  if (det) det.open = true;
+  if (!mount || !state) return;
+  if (state.clinicoOpen) {
+    var det = mount.querySelector('.ea-estado-clinico');
+    if (det) det.open = true;
+  }
+  if (state.historialOpen) {
+    var hist = mount.querySelector('.ea-historial');
+    if (hist) hist.open = true;
+  }
 }
 
 function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
@@ -455,32 +403,15 @@ function wireEstadoClinicoInteractions(mount, patient) {
     });
   });
 
-  mount.querySelectorAll('[data-ea-med-select]').forEach(function (el) {
-    el.addEventListener('change', function () {
-      var key = el.getAttribute('data-ea-med-select');
-      if (!key || !('value' in el) || !el.value) return;
-      if (!monitoreo.estadoClinico) monitoreo.estadoClinico = {};
-      monitoreo.estadoClinico[key] = String(el.value);
-      if (!monitoreo.confirmado) monitoreo.confirmado = {};
-      monitoreo.confirmado[key] = true;
-      if (monitoreo.pendienteReceta) monitoreo.pendienteReceta[key] = '';
-      var input = mount.querySelector('[data-ea-med-input="' + key + '"]');
-      if (input && 'value' in input) input.value = String(el.value);
-      persistEstadoClinicoAndRefresh(monitoreo, 'Campo actualizado', patient);
-    });
-  });
-
-  mount.querySelectorAll('[data-ea-med-input]').forEach(function (el) {
-    el.addEventListener('change', function () {
-      var key = el.getAttribute('data-ea-med-input');
-      if (!key || !('value' in el)) return;
-      if (!monitoreo.estadoClinico) monitoreo.estadoClinico = {};
-      monitoreo.estadoClinico[key] = String(el.value);
-      if (!monitoreo.confirmado) monitoreo.confirmado = {};
-      monitoreo.confirmado[key] = true;
-      if (monitoreo.pendienteReceta) monitoreo.pendienteReceta[key] = '';
-      persistEstadoClinicoAndRefresh(monitoreo, 'Campo actualizado', patient);
-    });
+  wireMedCategoryGrid(mount, {
+    monitoreo: monitoreo,
+    patient: patient,
+    medRecetaByPatient: medRecetaByPatient,
+    getActiveId: function () {
+      return rt.getActiveId();
+    },
+    saveState: saveState,
+    syncTextarea: function () {},
   });
 }
 
@@ -506,7 +437,7 @@ function generateEstadoActualText(monitoreo, patient) {
   });
   if (monitoreo.estadoClinico) syncDietKcalFromWeight(monitoreo.estadoClinico, weightKg);
   return buildEstadoActualText(
-    monitoreo.estadoClinico,
+    estadoClinicoForText(monitoreo),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
     { patientPeso: patient && patient.peso }
@@ -1008,16 +939,6 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
 
   return (
     '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot">' +
-    '<div class="ea-snapshot-strip-head">' +
-    '<div class="ea-snapshot-strip-head-text">' +
-    '<h3 class="ea-section-title">Snapshot actual</h3>' +
-    '<p class="ea-muted ea-snapshot-hint">Resumen del monitoreo · las tendencias están debajo</p>' +
-    '</div>' +
-    '<div class="ea-snapshot-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button>' +
-    '</div>' +
-    '</div>' +
     '<div class="ea-snapshot-strip-body">' +
     '<div class="ea-snapshot-zone">' +
     '<h4 class="ea-snapshot-zone-title">Signos vitales</h4>' +
@@ -1070,10 +991,10 @@ function renderHistorialSection(historial) {
   var recent = sorted.slice(0, 8);
   if (!recent.length) {
     return (
-      '<section class="ea-section ea-card" id="ea-historial">' +
-      '<h3 class="ea-section-title">Historial reciente</h3>' +
-      '<p class="ea-muted">Sin mediciones registradas.</p>' +
-      '</section>'
+      '<details class="ea-section ea-card ea-historial" id="ea-historial">' +
+      '<summary class="ea-historial-summary">Historial reciente</summary>' +
+      '<p class="ea-muted ea-historial-empty">Sin mediciones registradas.</p>' +
+      '</details>'
     );
   }
 
@@ -1152,12 +1073,15 @@ function renderHistorialSection(historial) {
     .join('');
 
   return (
-    '<section class="ea-section ea-card" id="ea-historial">' +
-    '<h3 class="ea-section-title">Historial reciente</h3>' +
+    '<details class="ea-section ea-card ea-historial" id="ea-historial">' +
+    '<summary class="ea-historial-summary">Historial reciente' +
+    '<span class="ea-historial-count">' +
+    recent.length +
+    '</span></summary>' +
     '<ul class="ea-historial-list">' +
     rows +
     '</ul>' +
-    '</section>'
+    '</details>'
   );
 }
 
@@ -1605,8 +1529,11 @@ export function buildRegistroFormMarkup() {
     '</form>' +
     '</div>' +
     '<footer class="ea-registro-modal-foot">' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-registro-paste-btn" onclick="openEstadoActualPasteModal({ skipRegistro: true })">Pegar monitoreo</button>' +
+    '<div class="ea-registro-modal-actions">' +
     '<button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button>' +
     '<button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button>' +
+    '</div>' +
     '</footer>' +
     '</div>'
   );
@@ -1688,30 +1615,11 @@ export function resetEaRegistroForm(_patient, opts) {
 }
 
 function buildEaShellKey(activeId, monitoreo) {
-  var ec = (monitoreo && monitoreo.estadoClinico) || {};
-  return [
-    String(activeId || ''),
-    String(ec.soporte || ''),
-    String(ec.dieta || ''),
-    String(ec.pesoRef || ''),
-    String(ec.kcalKg || ''),
-    String(ec.kcal || ''),
-  ].join('|');
+  return String(activeId || '') + '|' + buildEaMonitoreoRevision(monitoreo, activeId, medRecetaByPatient);
 }
 
-function buildEaDataKey(monitoreo) {
-  var h = Array.isArray(monitoreo.historial) ? monitoreo.historial : [];
-  var parts = ['h' + h.length];
-  for (var i = 0; i < Math.min(4, h.length); i += 1) {
-    var row = h[i];
-    parts.push(String(row.id || '') + '@' + String(row.recordedAt || ''));
-  }
-  var tg =
-    monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt
-      ? String(monitoreo.textoGuardado.savedAt)
-      : '';
-  parts.push('t' + tg);
-  return parts.join('|');
+function buildEaDataKey(monitoreo, activeId) {
+  return buildEaMonitoreoRevision(monitoreo, activeId, medRecetaByPatient);
 }
 
 function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
@@ -1735,36 +1643,19 @@ function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
   }
   var histEl = mount.querySelector('#ea-historial');
   if (histEl) {
+    var histWasOpen = histEl.open;
     histEl.outerHTML = renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []);
+    if (histWasOpen) {
+      var newHist = mount.querySelector('#ea-historial');
+      if (newHist) newHist.open = true;
+    }
   }
   var meta = mount.querySelector('#ea-meta-guardado');
   if (meta) meta.textContent = savedLabel;
-
-  syncEstadoActualTextarea(monitoreo, patient);
-}
-
-function finishEaChartsAndReady(mount, monitoreo, patient, onReady, syncHeavy) {
-  var chartsMount = mount.querySelector('#ea-charts-mount');
-  var finishDeferred = function () {
-    syncEstadoActualTextarea(monitoreo, patient);
-    if (chartsMount) {
-      void loadChartJs()
-        .then(function (Chart) {
-          renderEstadoActualCharts(/** @type {HTMLElement} */ (chartsMount), monitoreo, Chart);
-        })
-        .catch(function () {
-          renderEstadoActualCharts(/** @type {HTMLElement} */ (chartsMount), monitoreo, undefined);
-        });
-    }
-    if (onReady) onReady();
-  };
-  if (syncHeavy) {
-    finishDeferred();
-    return;
+  var chartsSummary = mount.querySelector('#ea-charts-summary');
+  if (chartsSummary) {
+    chartsSummary.outerHTML = renderEaChartsSummarySection(monitoreo);
   }
-  scheduleAfterPaint(function () {
-    scheduleIdle(finishDeferred);
-  });
 }
 
 export function renderEstadoActualPanel(opts) {
@@ -1790,13 +1681,20 @@ export function renderEstadoActualPanel(opts) {
   migratePatientMonitoreo(patient);
   ensureMonitoreo(patient);
   var monitoreo = patient.monitoreo;
+  var activeId = rt.getActiveId();
+  syncRecetaProposalsFromSoapSelection(
+    activeId,
+    monitoreo,
+    medRecetaByPatient,
+    medNotaSelectionByPatient,
+    classifyMedicationSoapCategory
+  );
   var snapshot = deriveSnapshot(monitoreo);
   var balTurno = balanceTurno(monitoreo);
   var balGlobal = balanceGlobalHistorico(monitoreo);
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
-  var activeId = rt.getActiveId();
   var shellKey = buildEaShellKey(activeId, monitoreo);
-  var dataKey = buildEaDataKey(monitoreo);
+  var dataKey = buildEaDataKey(monitoreo, activeId);
 
   if (
     mount.querySelector('.estado-actual-panel') &&
@@ -1804,7 +1702,6 @@ export function renderEstadoActualPanel(opts) {
     (opts.dataOnly || _eaPanelCache.dataKey !== dataKey)
   ) {
     if (_eaPanelCache.dataKey === dataKey && !opts.dataOnly) {
-      syncEstadoActualTextarea(monitoreo, patient);
       if (onReady) onReady();
       return;
     }
@@ -1812,7 +1709,7 @@ export function renderEstadoActualPanel(opts) {
       refreshClinico: !!opts.refreshClinico,
     });
     _eaPanelCache.dataKey = dataKey;
-    finishEaChartsAndReady(mount, monitoreo, patient, onReady, !!opts.syncHeavy);
+    if (onReady) onReady();
     return;
   }
 
@@ -1822,7 +1719,6 @@ export function renderEstadoActualPanel(opts) {
     _eaPanelCache.dataKey === dataKey &&
     !opts.force
   ) {
-    syncEstadoActualTextarea(monitoreo, patient);
     if (onReady) onReady();
     return;
   }
@@ -1831,28 +1727,19 @@ export function renderEstadoActualPanel(opts) {
 
   mount.innerHTML =
     '<div class="estado-actual-panel">' +
-    '<header class="ea-panel-header">' +
     '<div class="ea-action-bar">' +
-    '<button type="button" class="ea-btn" onclick="estadoActualGuardar()">Guardar</button>' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button>' +
+    '<div class="ea-action-bar__cluster" role="group" aria-label="Acciones de monitoreo">' +
+    '<button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" onclick="estadoActualGuardar()">Guardar</button>' +
+    '</div>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
     savedLabel +
     '</span>' +
-    '</div></header>' +
+    '</div>' +
     renderSnapshotSection(snapshot, balTurno, balGlobal) +
-    '<section class="ea-section ea-card ea-charts-section">' +
-    '<h3 class="ea-section-title">Tendencias</h3>' +
-    '<div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias…</p></div>' +
-    '</section>' +
     renderEstadoClinicoSection(monitoreo, activeId, patient) +
     renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) +
-    '<section class="ea-section ea-card">' +
-    '<div class="ea-texto-head">' +
-    '<h3 class="ea-section-title">Texto Estado Actual</h3>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" onclick="regenerarEstadoActualTexto()">Regenerar</button>' +
-    '</div>' +
-    '<textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto…"></textarea>' +
-    '</section>' +
+    renderEaChartsSummarySection(monitoreo) +
     '</div>';
 
   restoreEaPanelUiState(mount, eaUiState);
@@ -1861,11 +1748,15 @@ export function renderEstadoActualPanel(opts) {
 
   _eaPanelCache.shellKey = shellKey;
   _eaPanelCache.dataKey = dataKey;
-  finishEaChartsAndReady(mount, monitoreo, patient, onReady, !!opts.syncHeavy);
+  if (onReady) onReady();
 }
 
 export function navigateToEstadoActualPanel() {
-  rt.switchConsolidatedTab('estadoActual');
+  if (typeof rt.switchInnerTab === 'function') {
+    rt.switchInnerTab('estadoActual');
+    return;
+  }
+  rt.switchConsolidatedTab('clinico');
 }
 
 function parseFormMedicion() {
@@ -2041,8 +1932,7 @@ export function estadoActualGuardar() {
   var patient = findActivePatient();
   if (!patient) return;
   ensureMonitoreo(patient);
-  var ta = document.getElementById('ea-texto');
-  var text = ta && 'value' in ta ? String(ta.value) : '';
+  var text = getEstadoActualTextForPatient(patient);
   if (!text.trim()) {
     rt.showToast('No hay texto para guardar', 'error');
     return;
@@ -2055,8 +1945,7 @@ export async function estadoActualGuardarCopiar() {
   var patient = findActivePatient();
   if (!patient) return;
   ensureMonitoreo(patient);
-  var ta = document.getElementById('ea-texto');
-  var text = ta && 'value' in ta ? String(ta.value) : '';
+  var text = getEstadoActualTextForPatient(patient);
   if (!text.trim()) {
     rt.showToast('No hay texto para guardar', 'error');
     return;
@@ -2069,12 +1958,20 @@ export async function estadoActualGuardarCopiar() {
   );
 }
 
-export function regenerarEstadoActualTexto() {
+export async function copiarEstadoActualTexto() {
   var patient = findActivePatient();
-  if (!patient) return;
+  if (!patient) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
   ensureMonitoreo(patient);
-  syncEstadoActualTextarea(patient.monitoreo, patient);
-  rt.showToast('Texto regenerado desde datos actuales', 'success');
+  var text = getEstadoActualTextForPatient(patient);
+  if (!text.trim()) {
+    rt.showToast('No hay texto para copiar', 'error');
+    return;
+  }
+  var ok = await rt.copyToClipboardSafe(text);
+  rt.showToast(ok ? 'Texto copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
 }
 
 /**
@@ -2117,7 +2014,7 @@ export const windowHandlers = {
   eliminarEstadoActualMedicion,
   estadoActualGuardar,
   estadoActualGuardarCopiar,
-  regenerarEstadoActualTexto,
+  copiarEstadoActualTexto,
   confirmEaMedField,
   discardEaMedProposal,
   confirmAllEaMedProposals,

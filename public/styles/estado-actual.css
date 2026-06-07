@@ -1,4 +1,22 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · estado-actual refactor 2026-06-07
+ * charts: modal + summary strip · texto: copy from estado clínico
+ */
+
 /* Estado Actual panel — aligned with app tokens (Sala expediente tab) */
+
+:root {
+  --ea-chart-vital-1: var(--color-accent);
+  --ea-chart-vital-2: var(--error);
+  --ea-chart-vital-3: var(--color-success-emphasis);
+  --ea-chart-vital-4: var(--todo-prio-media);
+  --ea-chart-vital-5: #0891b2;
+  --ea-chart-vital-6: #7c3aed;
+  --ea-chart-glu: var(--color-success-emphasis);
+  --ea-chart-io-ing: #60a5fa;
+  --ea-chart-io-egr: #f87171;
+  --ea-chart-io-balance: var(--color-accent);
+  --ea-chart-altered: var(--todo-prio-media);
+}
 
 #itab-content-estadoActual.exp-composite-pane.active {
   flex-direction: column;
@@ -16,14 +34,6 @@
   flex-direction: column;
   gap: calc(14px * var(--density-space, 1));
   padding: calc(4px * var(--density-space, 1)) calc(2px * var(--density-space, 1)) calc(18px * var(--density-space, 1));
-}
-
-.ea-panel-header {
-  padding: calc(10px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
-  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--shadow-sm);
 }
 
 .ea-empty {
@@ -47,34 +57,50 @@
 
 .ea-section-title {
   margin: 0;
-  font-size: calc(11px * var(--density-font, 1));
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
   color: var(--text-muted);
 }
 
-/* Action bar */
+/* Action bar — floats above snapshot, aligned with card edges */
 .ea-action-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  gap: 8px 12px;
+  min-height: 36px;
+  padding: 0;
+  margin: 0;
+}
+
+.ea-action-bar__cluster {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.ea-action-bar .ea-btn {
+.ea-action-bar__cluster .ea-btn {
   flex: 0 0 auto;
-}
-
-.ea-panel-header .ea-action-bar {
-  padding-bottom: 0;
-  border-bottom: none;
+  min-width: 0;
+  box-shadow: none;
 }
 
 .ea-meta-guardado {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-height: 36px;
+  padding: 0 2px;
   margin-left: auto;
   font-size: calc(11px * var(--density-font, 1));
+  font-weight: 500;
+  line-height: 1.3;
   color: var(--text-muted);
   white-space: nowrap;
+  text-align: right;
 }
 
 .ea-btn {
@@ -84,19 +110,30 @@
   justify-content: center;
   gap: 6px;
   box-sizing: border-box;
+  margin: 0;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm, calc(var(--radius-md) - 2px));
   background: var(--surface);
   color: var(--text);
-  font: inherit;
+  font-family: var(--font-ui, inherit);
   font-size: calc(12px * var(--density-font, 1));
   font-weight: 600;
   line-height: 1.2;
+  letter-spacing: 0.01em;
   padding: 0 14px;
-  min-height: 40px;
+  height: 36px;
+  min-height: 36px;
+  white-space: nowrap;
+  text-align: center;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink) 4%, transparent);
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s;
+  box-shadow: none;
+}
+
+.ea-btn > span,
+.ea-btn > svg {
+  flex: 0 0 auto;
+  display: block;
 }
 
 .ea-btn:hover {
@@ -113,6 +150,7 @@
   background: var(--action, var(--color-success-emphasis, #065f46));
   border-color: var(--action, var(--color-success-emphasis, #065f46));
   color: var(--color-on-action, #fff);
+  box-shadow: none;
 }
 
 .ea-btn--primary:hover {
@@ -122,6 +160,13 @@
 
 .ea-btn--ghost {
   background: transparent;
+  border-color: color-mix(in oklab, var(--border) 92%, transparent);
+  box-shadow: none;
+}
+
+.ea-btn--ghost:hover {
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  border-color: color-mix(in oklab, var(--action) 22%, var(--border));
 }
 
 .ea-btn--danger {
@@ -130,8 +175,9 @@
 }
 
 .ea-btn--icon {
-  min-width: 28px;
-  padding: 4px 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 10px;
   line-height: 1;
 }
 
@@ -166,29 +212,152 @@
 }
 
 .ea-clinico-med-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-}
-
-.ea-clinico-med-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
 }
 
-.ea-clinico-med-head {
+.ea-med-cat {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  overflow: hidden;
+}
+
+.ea-med-cat-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+}
+
+.ea-med-cat-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ea-med-cat-title {
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+.ea-med-cat-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  font-size: calc(11px * var(--density-font, 1));
+}
+
+.ea-med-cat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px;
+  border-top: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+}
+
+.ea-med-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ea-med-item {
+  border: 1px solid color-mix(in oklab, var(--divider) 80%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.ea-med-item-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.35;
+}
+
+.ea-med-item-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ea-med-item-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ea-med-item-remove {
+  flex: 0 0 auto;
+  opacity: 0.65;
+}
+
+.ea-med-item-remove:hover {
+  opacity: 1;
+}
+
+.ea-med-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.ea-med-add-row .ea-med-add-select {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.ea-med-manual-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.ea-med-manual-panel[hidden] {
+  display: none !important;
+}
+
+.ea-med-manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ea-med-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .ea-clinico-med-actions,
+.ea-clinico-text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+
+.ea-clinico-text-actions .ea-btn {
+  min-width: 12rem;
+}
+
 .ea-clinico-actions {
   display: flex;
   flex-wrap: wrap;
@@ -260,10 +429,6 @@
   margin-left: auto;
 }
 
-.ea-charts-section .ea-section-title {
-  margin-bottom: 8px;
-}
-
 .ea-snapshot-strip-head .ea-section-title {
   margin: 0;
 }
@@ -296,9 +461,8 @@
 
 .ea-snapshot-zone-title {
   margin: 0 0 8px;
-  font-size: calc(10px * var(--density-font, 1));
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
   color: var(--text-muted);
 }
 
@@ -729,6 +893,39 @@
 }
 
 /* Historial */
+.ea-historial summary {
+  cursor: pointer;
+  font-size: calc(13px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ea-historial summary::-webkit-details-marker {
+  display: none;
+}
+
+.ea-historial-count {
+  margin-left: auto;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+}
+
+.ea-historial-empty {
+  margin-top: 8px;
+}
+
+.ea-historial .ea-historial-list {
+  margin-top: 10px;
+}
+
 .ea-historial-list {
   list-style: none;
   margin: 0;
@@ -805,14 +1002,137 @@
   color: var(--text-muted);
 }
 
-/* Charts */
-.ea-charts-mount {
-  display: flex;
-  flex-direction: column;
+/* Charts summary + modal */
+.ea-charts-summary {
   gap: 10px;
 }
 
-#ea-charts .ea-charts-empty {
+.ea-charts-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+
+.ea-charts-summary-head .ea-charts-open-btn {
+  margin-left: auto;
+}
+
+.ea-charts-summary-empty {
+  font-size: calc(11px * var(--density-font, 1));
+}
+
+.ea-charts-open-btn {
+  min-width: 0;
+}
+
+.ea-charts-open-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.ea-charts-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .ea-charts-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ea-charts-summary-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  min-width: 0;
+}
+
+.ea-charts-summary-tile-label {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-charts-summary-tile-value {
+  font-size: calc(14px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ea-charts-summary-tile-hint {
+  font-size: calc(10px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+html.ea-charts-modal-open {
+  overflow: hidden;
+}
+
+.ea-charts-modal {
+  position: relative;
+  max-width: min(98vw, 1180px);
+  width: min(98vw, 1180px);
+  max-height: min(94vh, 880px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.ea-charts-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.ea-charts-modal-head h3 {
+  margin: 0;
+  font-size: calc(15px * var(--density-font, 1));
+}
+
+.ea-charts-modal-close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.ea-charts-modal-close:hover {
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  color: var(--text);
+}
+
+.ea-charts-modal-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.ea-charts-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 16px;
+}
+
+.ea-charts-empty {
   margin: 0;
 }
 
@@ -835,14 +1155,13 @@
 .ea-chart-block-title {
   margin: 0;
   font-size: calc(11px * var(--density-font, 1));
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
 }
 
 .ea-chart-family-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
 }
 
@@ -1382,17 +1701,30 @@
 .ea-registro-modal-foot {
   display: flex;
   flex-shrink: 0;
-  justify-content: flex-end;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 16px 12px;
   border-top: 1px solid var(--divider);
   background: var(--surface);
 }
 
 .ea-registro-modal-actions {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  padding-top: 4px;
+  margin-left: auto;
+}
+
+.ea-registro-modal-actions .ea-btn {
+  flex: 0 0 auto;
+  min-width: 0;
+  box-shadow: none;
+}
+
+.ea-registro-paste-btn {
+  flex: 0 0 auto;
+  min-width: 9.5rem;
 }
 
 .ea-paste-modal {

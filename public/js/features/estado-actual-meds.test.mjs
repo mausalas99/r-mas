@@ -7,6 +7,8 @@ import {
   confirmAllMedProposals,
   buildMedDropdownOptions,
   bucketsFromRecetaItems,
+  estadoClinicoForText,
+  syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
 import { emptyMonitoreo } from './estado-actual-data.mjs';
 import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
@@ -77,10 +79,46 @@ test('bucketsFromRecetaItems classifies SOAP selections', () => {
   ];
   const sel = { a: true, b: true };
   const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
-  assert.match(buckets.analgesia, /TOMAR 1 TABLETA/i);
-  assert.match(buckets.abx, /ADMINISTRAR 1 G/i);
+  assert.match(buckets.analgesia, /PARACETAMOL.*C\/8H/i);
+  assert.match(buckets.abx, /CEFTRIAXONA.*IV.*C\/24H/i);
   assert.equal(buckets.antihta, '');
   assert.equal(buckets.vasop, '');
+});
+
+test('estadoClinicoForText merges unconfirmed pendienteReceta into empty fields', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.analgesia = 'PARACETAMOL 1G VO';
+  m.confirmado.analgesia = false;
+  const ec = estadoClinicoForText(m);
+  assert.equal(ec.analgesia, 'PARACETAMOL 1G VO');
+});
+
+test('syncRecetaProposalsFromSoapSelection applies SOAP-marked receta', () => {
+  const m = emptyMonitoreo();
+  const medRecetaByPatient = {
+    p1: {
+      items: [
+        {
+          id: 'a',
+          nombreRaw: 'PARACETAMOL 1G TABLETA',
+          viaRaw: 'VIA ORAL',
+          dosisRaw: '1 G',
+          frecuenciaRaw: 'CADA 8 HORAS',
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const sel = { a: true };
+  const ok = syncRecetaProposalsFromSoapSelection(
+    'p1',
+    m,
+    medRecetaByPatient,
+    { p1: sel },
+    classifyMedicationSoapCategory
+  );
+  assert.equal(ok, true);
+  assert.match(String(m.pendienteReceta.analgesia), /PARACETAMOL/i);
 });
 
 test('buildMedDropdownOptions lists active receta items for category', () => {
@@ -108,5 +146,5 @@ test('buildMedDropdownOptions lists active receta items for category', () => {
   };
   const abxOpts = buildMedDropdownOptions('p1', 'abx', medRecetaByPatient, classifyMedicationSoapCategory);
   assert.equal(abxOpts.length, 1);
-  assert.match(abxOpts[0], /ADMINISTRAR 1 G/i);
+  assert.match(abxOpts[0], /MEROPENEM.*IV/i);
 });

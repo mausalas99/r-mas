@@ -14,6 +14,35 @@ function val(v) {
   return v ? String(v).toUpperCase() : '___';
 }
 
+/**
+ * @param {unknown} fieldVal
+ * @param {string} joiner
+ * @returns {string}
+ */
+function medsListForSoap(fieldVal, joiner) {
+  if (fieldVal == null || !String(fieldVal).trim()) return '';
+  return String(fieldVal)
+    .split(' | ')
+    .map(function (part) {
+      return String(part).trim();
+    })
+    .filter(Boolean)
+    .map(function (part) {
+      return part.toUpperCase();
+    })
+    .join(joiner);
+}
+
+/**
+ * @param {unknown} fieldVal
+ * @param {string} fallback
+ * @returns {string}
+ */
+function medsClauseOrFallback(fieldVal, fallback) {
+  var list = medsListForSoap(fieldVal, ', ');
+  return list || fallback;
+}
+
 import { resolveDietWeightKg, computeDietKcalTotal } from './estado-actual-data.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
 
@@ -106,13 +135,35 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
         ? ec.kcal
         : '';
 
+  var vasopList = medsListForSoap(ec.vasop, ', ');
+  var vasopClause = vasopList ? 'VASOPRESORES: ' + vasopList : 'SIN VASOPRESORES';
+  var nmMedsClause = medsListForSoap(ec.nm, ' || ');
+  var nmDiet =
+    'DIETA ' +
+    val(ec.dieta) +
+    ' CALCULADA A ' +
+    num(ec.kcalKg) +
+    ' KCAL/KG (' +
+    num(kcalDisplay) +
+    ' KCAL) PARA PESO DE ' +
+    num(weightKg != null ? weightKg : '') +
+    ' KG';
+  var nmParts = [nmDiet];
+  if (nmMedsClause) nmParts.push(nmMedsClause);
+  nmParts.push(ioClause);
+  nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
+  if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
+  if (options.includeInsulinRescates) {
+    nmParts.push('RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE');
+  }
+
   const lines = [
     'N: FOUR ' +
       num(ec.four) +
       '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
       num(ec.esferas) +
       ' ESFERAS, ALERTA || ANALGESIA CON ' +
-      val(ec.analgesia),
+      medsClauseOrFallback(ec.analgesia, '___'),
     'V: FR ' +
       num(v.fr) +
       ' RPM, SATO2 ' +
@@ -127,30 +178,16 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
       ' MMHG, FC ' +
       num(v.fc) +
       ' LPM || ANTIHIPERTENSIVOS: ' +
-      val(ec.antihta || 'NINGUNO') +
-      ' || VASOPRESORES: ' +
-      val(ec.vasop || 'NINGUNO'),
+      medsClauseOrFallback(ec.antihta, 'NINGUNO') +
+      ' || DIURÉTICOS: ' +
+      medsClauseOrFallback(ec.diureticos, 'NINGUNO') +
+      ' || ' +
+      vasopClause,
     'HI: AFEBRIL, ' +
       hiTemp +
       ' || ANTIBIÓTICOS: ' +
-      val(ec.abx || 'NINGUNO'),
-    'NM: DIETA ' +
-      val(ec.dieta) +
-      ' CALCULADA A ' +
-      num(ec.kcalKg) +
-      ' KCAL/KG (' +
-      num(kcalDisplay) +
-      ' KCAL) PARA PESO DE ' +
-      num(weightKg != null ? weightKg : '') +
-      ' KG || ' +
-      ioClause +
-      ' || GLUCOMETRÍAS CAPILARES (' +
-      gluParts.join(', ') +
-      ' MG/DL)' +
-      bombaClause +
-      (options.includeInsulinRescates
-        ? ' || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE'
-        : ''),
+      medsClauseOrFallback(ec.abx, 'NINGUNO'),
+    'NM: ' + nmParts.join(' || '),
   ];
   return lines.join('\n');
 }

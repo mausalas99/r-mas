@@ -96,7 +96,7 @@ const TARGETS = {
   estado_actual: {
     appTab: 'nota',
     innerTab: 'estadoActual',
-    selector: '#ea-snapshot, #ea-charts-mount, #ea-historial',
+    selector: '#ea-snapshot, #ea-charts-summary, #ea-historial',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
@@ -112,7 +112,7 @@ const TARGETS = {
   estado_actual_review: {
     appTab: 'nota',
     innerTab: 'estadoActual',
-    selector: '#ea-snapshot, #ea-charts-mount, #ea-historial, .ea-charts-section, .ea-texto-head',
+    selector: '#ea-snapshot, #ea-charts-summary, #ea-historial, .ea-estado-clinico',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },

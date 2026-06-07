@@ -21,7 +21,48 @@ const VITAL_FAMILIES = [
   { id: 'metab', title: 'Metabólico', keys: ['temp'] },
 ];
 
-const FAMILY_COLORS = ['#2563eb', '#dc2626', '#059669', '#7c3aed', '#b45309', '#0891b2'];
+const VITAL_COLOR_TOKENS = [
+  '--ea-chart-vital-1',
+  '--ea-chart-vital-2',
+  '--ea-chart-vital-3',
+  '--ea-chart-vital-4',
+  '--ea-chart-vital-5',
+  '--ea-chart-vital-6',
+];
+
+const CHART_TOKEN_FALLBACKS = {
+  '--ea-chart-vital-1': '#4a52e8',
+  '--ea-chart-vital-2': '#c62828',
+  '--ea-chart-vital-3': '#047857',
+  '--ea-chart-vital-4': '#b45309',
+  '--ea-chart-vital-5': '#0891b2',
+  '--ea-chart-vital-6': '#7c3aed',
+  '--ea-chart-glu': '#047857',
+  '--ea-chart-io-ing': '#60a5fa',
+  '--ea-chart-io-egr': '#f87171',
+  '--ea-chart-io-balance': '#4a52e8',
+  '--ea-chart-altered': '#b45309',
+};
+
+/**
+ * @param {string} token
+ * @returns {string}
+ */
+function chartColor(token) {
+  var fallback = CHART_TOKEN_FALLBACKS[token] || '#4a52e8';
+  if (typeof document === 'undefined') return fallback;
+  var value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return value || fallback;
+}
+
+/**
+ * @param {number} index
+ * @returns {string}
+ */
+function vitalSeriesColor(index) {
+  var token = VITAL_COLOR_TOKENS[index % VITAL_COLOR_TOKENS.length];
+  return chartColor(token);
+}
 
 function pad2(n) {
   return String(n).padStart(2, '0');
@@ -210,7 +251,7 @@ function buildVitalsFamilyData(histAsc, keys) {
       alteredFlags.push(isVitalAltered(key, raw2) || !!(rowAlt && rowAlt[key]));
     }
     if (count < 2) continue;
-    var color = FAMILY_COLORS[k % FAMILY_COLORS.length];
+    var color = vitalSeriesColor(k);
     var ds = lineDataset(labels, values, alteredFlags, color);
     ds.label = VITAL_LABELS[key] || key;
     datasets.push(ds);
@@ -224,6 +265,30 @@ function buildVitalsFamilyData(histAsc, keys) {
  * @param {unknown[]} histAsc
  * @param {Date} [now]
  */
+/**
+ * @param {Array<{ ms: number, label: string, value: number }>} points
+ * @param {string} recordedAt
+ * @param {unknown[]} readings
+ * @param {Date} [now]
+ */
+function pushGluReadingPoints(points, recordedAt, readings, now) {
+  for (var g = 0; g < readings.length; g++) {
+    var glu = readings[g];
+    if (!glu || typeof glu !== 'object') continue;
+    var val = Number(/** @type {any} */ (glu).value);
+    if (!Number.isFinite(val)) continue;
+    var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
+    var ms = gluPointMs(recordedAt, timeHm);
+    if (!isGluPointInRegistroWindow(ms, now)) continue;
+    var whenLabel = timeHm || formatChartLabel(recordedAt);
+    points.push({
+      ms: ms,
+      label: whenLabel + ' · ' + formatChartLabel(recordedAt),
+      value: val,
+    });
+  }
+}
+
 export function buildGluSeries(histAsc, now) {
   /** @type {Array<{ ms: number, label: string, value: number }>} */
   var points = [];
@@ -232,45 +297,14 @@ export function buildGluSeries(histAsc, now) {
     var row = histAsc[i];
     if (!row || typeof row !== 'object') continue;
     var recordedAt = String(/** @type {any} */ (row).recordedAt || '');
+    var glus = Array.isArray(/** @type {any} */ (row).glucometrias)
+      ? /** @type {any} */ (/** @type {any} */ (row).glucometrias)
+      : [];
+    pushGluReadingPoints(points, recordedAt, glus, now);
     var bombas = Array.isArray(/** @type {any} */ (row).bombaInsulina)
       ? /** @type {any} */ (/** @type {any} */ (row).bombaInsulina)
       : [];
-    if (bombas.length) {
-      for (var b = 0; b < bombas.length; b++) {
-        var bomba = bombas[b];
-        if (!bomba || typeof bomba !== 'object') continue;
-        var bval = Number(/** @type {any} */ (bomba).value);
-        if (!Number.isFinite(bval)) continue;
-        var btimeHm = /** @type {any} */ (bomba).time ? String(/** @type {any} */ (bomba).time) : '';
-        var bms = gluPointMs(recordedAt, btimeHm);
-        if (!isGluPointInRegistroWindow(bms, now)) continue;
-        var bwhenLabel = btimeHm || formatChartLabel(recordedAt);
-        points.push({
-          ms: bms,
-          label: bwhenLabel + ' · ' + formatChartLabel(recordedAt),
-          value: bval,
-        });
-      }
-    } else {
-      var glus = Array.isArray(/** @type {any} */ (row).glucometrias)
-        ? /** @type {any} */ (/** @type {any} */ (row).glucometrias)
-        : [];
-      for (var g = 0; g < glus.length; g++) {
-        var glu = glus[g];
-        if (!glu || typeof glu !== 'object') continue;
-        var val = Number(/** @type {any} */ (glu).value);
-        if (!Number.isFinite(val)) continue;
-        var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
-        var ms = gluPointMs(recordedAt, timeHm);
-        if (!isGluPointInRegistroWindow(ms, now)) continue;
-        var whenLabel = timeHm || formatChartLabel(recordedAt);
-        points.push({
-          ms: ms,
-          label: whenLabel + ' · ' + formatChartLabel(recordedAt),
-          value: val,
-        });
-      }
-    }
+    pushGluReadingPoints(points, recordedAt, bombas, now);
   }
 
   points.sort(function (a, b) {
@@ -349,8 +383,8 @@ function buildEaChartSlotData(histAsc) {
         {
           label: 'Glu (mg/dL)',
           data: gluSeries.values,
-          borderColor: '#047857',
-          backgroundColor: '#047857',
+          borderColor: chartColor('--ea-chart-glu'),
+          backgroundColor: chartColor('--ea-chart-glu'),
         },
       ],
     };
@@ -467,8 +501,9 @@ function lineDataset(labels, values, alteredFlags, color) {
   var pointRadius = values.map(function (_v, i) {
     return alteredFlags[i] ? 6 : 3;
   });
+  var alteredColor = chartColor('--ea-chart-altered');
   var pointBackgroundColor = values.map(function (_v, i) {
-    return alteredFlags[i] ? '#f59e0b' : color;
+    return alteredFlags[i] ? alteredColor : color;
   });
   var pointBorderColor = pointBackgroundColor;
   return {
@@ -511,14 +546,114 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore, slotId)
 }
 
 /**
+ * @param {unknown} monitoreo
+ */
+export function buildEaChartsSummary(monitoreo) {
+  /** @type {any} */
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc(hist);
+  var vitalsReady = false;
+  VITAL_FAMILIES.forEach(function (fam) {
+    if (buildVitalsFamilyData(histAsc, fam.keys)) vitalsReady = true;
+  });
+  var gluSeries = buildGluSeries(histAsc);
+  var gluReady = gluSeries.values.length >= 2;
+  var gluLatest = gluSeries.values.length ? gluSeries.values[gluSeries.values.length - 1] : null;
+  var ioData = buildIoChartData(histAsc);
+  var ioReady = ioData.labels.length >= 2;
+  var ioTurn =
+    ioReady && ioData.turnBalance.length
+      ? ioData.turnBalance[ioData.turnBalance.length - 1]
+      : null;
+  return {
+    measurementCount: histAsc.length,
+    vitalsReady: vitalsReady,
+    gluReady: gluReady,
+    gluLatest: gluLatest,
+    gluPointCount: gluSeries.values.length,
+    ioReady: ioReady,
+    ioPointCount: ioData.labels.length,
+    ioTurn: ioTurn,
+  };
+}
+
+function eaChartsSummaryTile(label, value, hint) {
+  return (
+    '<div class="ea-charts-summary-tile">' +
+    '<span class="ea-charts-summary-tile-label">' +
+    label +
+    '</span>' +
+    '<span class="ea-charts-summary-tile-value">' +
+    value +
+    '</span>' +
+    (hint ? '<span class="ea-charts-summary-tile-hint">' + hint + '</span>' : '') +
+    '</div>'
+  );
+}
+
+/**
+ * @param {unknown} monitoreo
+ * @returns {string}
+ */
+export function renderEaChartsSummarySection(monitoreo) {
+  var summary = buildEaChartsSummary(monitoreo);
+  var vitalsValue = summary.vitalsReady ? 'Listo' : '—';
+  var vitalsHint = summary.vitalsReady
+    ? summary.measurementCount + ' mediciones'
+    : 'Mín. 2 mediciones con signos';
+  var gluValue = summary.gluReady
+    ? String(summary.gluLatest) + ' mg/dL'
+    : summary.gluPointCount === 1
+      ? '1 punto'
+      : '—';
+  var gluHint = summary.gluReady
+    ? summary.gluPointCount + ' puntos'
+    : 'Mín. 2 glucometrías';
+  var ioValue =
+    summary.ioReady && summary.ioTurn != null
+      ? (summary.ioTurn >= 0 ? '+' : '') + summary.ioTurn + ' cc'
+      : '—';
+  var ioHint = summary.ioReady
+    ? summary.ioPointCount + ' registros I/O'
+    : 'Mín. 2 pares ingreso/egreso';
+  var canOpen =
+    summary.measurementCount >= 2 &&
+    (summary.vitalsReady || summary.gluReady || summary.ioReady);
+  return (
+    '<section class="ea-section ea-charts-summary" id="ea-charts-summary">' +
+    '<div class="ea-charts-summary-head">' +
+    '<h3 class="ea-section-title">Gráficas de monitoreo</h3>' +
+    (canOpen
+      ? '<button type="button" class="ea-btn ea-btn--ghost ea-charts-open-btn" onclick="openEstadoActualChartsModal()">' +
+        '<svg class="ea-charts-open-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M3 17l6-6 4 4 8-10"/>' +
+        '<path d="M3 12l5-4 4 3 9-7"/>' +
+        '</svg>' +
+        '<span>Ver gráficas</span></button>'
+      : '<span class="ea-muted ea-charts-summary-empty">Registra al menos 2 mediciones para ver gráficas.</span>') +
+    '</div>' +
+    '<div class="ea-charts-summary-grid">' +
+    eaChartsSummaryTile('Signos vitales', vitalsValue, vitalsHint) +
+    eaChartsSummaryTile('Glucometrías', gluValue, gluHint) +
+    eaChartsSummaryTile('Balance hídrico', ioValue, ioHint) +
+    '</div>' +
+    '</section>'
+  );
+}
+
+/**
  * @param {HTMLElement | null} mountEl
  * @param {unknown} monitoreo
  * @param {unknown} [ChartCtor]
+ * @param {{ showTitle?: boolean } | undefined} [opts]
  */
-export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
+export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
+  opts = opts || {};
+  var showTitle = opts.showTitle === true;
   if (!mountEl) return;
   var sig = buildEaChartsSignature(monitoreo);
-  if (mountEl._eaChartsSig === sig && mountEl.querySelector('#ea-charts')) return;
+  if (mountEl._eaChartsSig === sig && mountEl.querySelector('.ea-charts-grid')) return;
   var layoutKey = buildEaChartsLayoutKey(monitoreo);
   if (
     mountEl._eaChartsLayoutKey === layoutKey &&
@@ -536,31 +671,23 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
   var hist = Array.isArray(m.historial) ? m.historial : [];
   var histAsc = historialSortedAsc(hist);
 
-  var section = document.createElement('section');
-  section.className = 'ea-section';
-  section.id = 'ea-charts';
-
   var hasEnough = histAsc.length >= 2;
   if (!hasEnough) {
-    section.innerHTML =
-      '<h3 class="ea-section-title">Tendencias</h3>' +
-      '<p class="ea-muted ea-charts-empty">Registra al menos 2 mediciones para ver tendencias.</p>';
-    mountEl.replaceChildren(section);
+    mountEl.innerHTML =
+      '<p class="ea-muted ea-charts-empty">Registra al menos 2 mediciones para ver gráficas.</p>';
     return;
   }
 
   if (!Chart) {
-    section.innerHTML =
-      '<h3 class="ea-section-title">Tendencias</h3>' +
+    mountEl.innerHTML =
       '<p class="ea-muted ea-charts-empty">Chart.js no está disponible. Recarga la aplicación.</p>';
-    mountEl.replaceChildren(section);
     return;
   }
 
-  section.innerHTML = '<h3 class="ea-section-title">Tendencias</h3><div class="ea-charts-grid"></div>';
-  var grid = section.querySelector('.ea-charts-grid');
+  var titleHtml = showTitle ? '<h3 class="ea-section-title">Gráficas de monitoreo</h3>' : '';
+  mountEl.innerHTML = titleHtml + '<div class="ea-charts-grid"></div>';
+  var grid = mountEl.querySelector('.ea-charts-grid');
   if (!grid) {
-    mountEl.replaceChildren(section);
     return;
   }
 
@@ -632,8 +759,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
             {
               label: 'Glu (mg/dL)',
               data: gluSeries.values,
-              borderColor: '#047857',
-              backgroundColor: '#047857',
+              borderColor: chartColor('--ea-chart-glu'),
+              backgroundColor: chartColor('--ea-chart-glu'),
               pointRadius: 4,
               tension: 0.25,
             },
@@ -681,14 +808,14 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
             {
               label: 'Ingresos',
               data: ioData.ing,
-              backgroundColor: '#60a5fa',
+              backgroundColor: chartColor('--ea-chart-io-ing'),
               borderRadius: 4,
               order: 2,
             },
             {
               label: 'Egresos',
               data: ioData.egr,
-              backgroundColor: '#f87171',
+              backgroundColor: chartColor('--ea-chart-io-egr'),
               borderRadius: 4,
               order: 2,
             },
@@ -696,8 +823,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
               type: 'line',
               label: 'Balance global',
               data: ioData.globalBalance,
-              borderColor: '#4a52e8',
-              backgroundColor: '#4a52e8',
+              borderColor: chartColor('--ea-chart-io-balance'),
+              backgroundColor: chartColor('--ea-chart-io-balance'),
               borderDash: [6, 4],
               borderWidth: 2,
               pointRadius: 3,
@@ -739,7 +866,6 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
   }
   grid.appendChild(ioBlock);
 
-  mountEl.replaceChildren(section);
   mountEl._eaCharts = chartStore;
   mountEl._eaChartSlotIds = chartStore
     .map(function (ch) {

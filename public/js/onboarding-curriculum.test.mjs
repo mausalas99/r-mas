@@ -93,10 +93,9 @@ test('getChapterProgressLabel for step in chapter 2', () => {
   assert.ok(label.chapterSteps >= 1);
 });
 
-test('HUB_MODULES includes neo extension and agenda module', () => {
-  const neo = HUB_MODULES.find((m) => m.id === 'neo-lab');
-  assert.ok(neo);
-  assert.equal(neo.companion, 'neo');
+test('HUB_MODULES includes agenda module without neo companion cards', () => {
+  assert.ok(!HUB_MODULES.some((m) => m.id === 'neo-lab'));
+  assert.ok(!HUB_MODULES.some((m) => m.id === 'neo-trends'));
   assert.ok(HUB_MODULES.some((m) => m.chapterId === 'ch-agenda'));
 });
 

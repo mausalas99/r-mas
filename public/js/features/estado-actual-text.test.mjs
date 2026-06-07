@@ -33,7 +33,22 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
   // Formato igual a soap-estado: "ANALGESIA CON ___" (no hay subjetivo S:)
   assert.match(text, /ANALGESIA CON ___/);
+  assert.match(text, /DIURÉTICOS: NINGUNO/);
+  assert.match(text, /SIN VASOPRESORES/);
   assert.doesNotMatch(text, /RESCATES DE INSULINA/);
+});
+
+test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato corto', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.antihta = 'NIFEDIPINO 60MG VO C/12H | SACUBITRILO/VALSARTÁN 200MG VO C/12H';
+  m.estadoClinico.diureticos = 'FUROSEMIDA 80MG IV C/8H';
+  m.estadoClinico.nm = 'INSULINA GLARGINA 10UI SC C/24H | LEVOTIROXINA 50MCG VO C/24H';
+  m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 13';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  assert.match(text, /ANTIHIPERTENSIVOS: NIFEDIPINO 60MG VO C\/12H, SACUBITRILO\/VALSARTÁN 200MG VO C\/12H/);
+  assert.match(text, /DIURÉTICOS: FUROSEMIDA 80MG IV C\/8H/);
+  assert.match(text, /ANTIBIÓTICOS: MEROPENEM 1G IV C\/8H DIA 13/);
+  assert.match(text, /INSULINA GLARGINA 10UI SC C\/24H \|\| LEVOTIROXINA 50MCG VO C\/24H/);
 });
 
 test('buildEstadoActualText calcula kcal total con peso del paciente', () => {
