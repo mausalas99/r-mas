@@ -104,7 +104,7 @@ if (!macOnly) {
   const winAbs = need(winName);
   const winSha = sha512b64(winAbs);
   const winSize = fs.statSync(winAbs).size;
-  const winYml = [
+  const winLines = [
     `version: ${ver}`,
     'files:',
     `  - url: ${winName}`,
@@ -113,8 +113,15 @@ if (!macOnly) {
     `path: ${winName}`,
     `sha512: ${winSha}`,
     `releaseDate: '${isoDate()}'`,
-    '',
-  ].join('\n');
-  fs.writeFileSync(path.join(dist, 'latest.yml'), winYml, 'utf8');
+  ];
+  const releaseNotes = releaseNotesPlainFromDoc(root, ver);
+  if (releaseNotes) {
+    winLines.push('releaseNotes: |');
+    for (const line of releaseNotes.split('\n')) {
+      winLines.push(`  ${line}`);
+    }
+  }
+  winLines.push('');
+  fs.writeFileSync(path.join(dist, 'latest.yml'), winLines.join('\n'), 'utf8');
   console.log('Escrito dist/latest.yml');
 }

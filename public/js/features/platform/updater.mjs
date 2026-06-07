@@ -6,7 +6,7 @@ import {
 } from '../../stable-downgrade-ui.mjs';
 import { fetchMinVersionPayload } from '../../min-version-fetch.mjs';
 import { setAsyncButtonLoading } from '../../ui-motion.mjs';
-import { formatCuratedReleaseNotesPlain } from '../settings-help/release-notes.mjs';
+import { formatUpdaterReleaseNotesPlain } from '../settings-help/release-notes.mjs';
 import { getPlatformRuntime } from './runtime.mjs';
 
 const rt = getPlatformRuntime();
@@ -585,8 +585,8 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       resetUpdateCheckButtons();
       var version = (payload && payload.version) ? payload.version : String(payload || '');
       var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
-      var releaseNotes = formatCuratedReleaseNotesPlain(version);
-      if (!releaseNotes) releaseNotes = stripHtmlToPlainText(rawNotes);
+      var releaseNotes =
+        formatUpdaterReleaseNotesPlain(version, rawNotes) || stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
       pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
       var isDowngrade = updateModalMode === 'downgrade';

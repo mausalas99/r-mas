@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCuratedReleaseNotesPlain } from './release-notes.mjs';
+import {
+  formatCuratedReleaseNotesPlain,
+  formatUpdaterReleaseNotesPlain,
+} from './release-notes.mjs';
 
 describe('release-notes', () => {
   it('resolves curated highlights for v-prefixed version', () => {
@@ -16,5 +19,17 @@ describe('release-notes', () => {
   it('uses default when version omitted', () => {
     const text = formatCuratedReleaseNotesPlain('');
     assert.ok(text.includes('Conectar al anfitrión') || text.includes('transport'));
+  });
+
+  it('updater prefers curated target version over stale feed notes', () => {
+    const text = formatUpdaterReleaseNotesPlain('7.1.8', 'Signos vitales sin falsas alarmas');
+    assert.ok(text.includes('Conectar al anfitrión'));
+    assert.ok(!text.includes('Signos vitales'));
+  });
+
+  it('updater uses feed notes when no curated entry exists', () => {
+    const feed = 'Cableado LAN transport — fix esbuild chunks.';
+    const text = formatUpdaterReleaseNotesPlain('99.0.0', feed);
+    assert.equal(text, feed);
   });
 });

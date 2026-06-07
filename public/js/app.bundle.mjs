@@ -1,6 +1,6 @@
 import {
   windowHandlers as windowHandlers9
-} from "/js/chunks/chunk-7IIN5HDT.js";
+} from "/js/chunks/chunk-AJ33NTYB.js";
 import {
   appShellWindowHandlers,
   initModalDismiss,
@@ -17,7 +17,7 @@ import {
   showToast,
   syncWorkContextChrome,
   windowHandlers as windowHandlers10
-} from "/js/chunks/chunk-BTZ5HERW.js";
+} from "/js/chunks/chunk-4NLCPBH3.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -177,30 +177,30 @@ import {
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-D4JQUN4J.js";
+} from "/js/chunks/chunk-RATDFQDJ.js";
 import {
   windowHandlers as windowHandlers2
-} from "/js/chunks/chunk-7QKFSOEQ.js";
+} from "/js/chunks/chunk-YVT2QYQC.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers14,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-TDLD4C3Z.js";
-import "/js/chunks/chunk-A35Y5P3X.js";
+} from "/js/chunks/chunk-MXVRQ4U2.js";
+import "/js/chunks/chunk-6SRC2CPR.js";
 import {
   closeSettingsDropdown,
   syncTeamSyncHeaderButton
-} from "/js/chunks/chunk-R3I7OW2C.js";
+} from "/js/chunks/chunk-HWBMBUWH.js";
 import "/js/chunks/chunk-POBHJ4SL.js";
-import "/js/chunks/chunk-7V673IEZ.js";
+import "/js/chunks/chunk-AMN7F4XV.js";
 import "/js/chunks/chunk-6IT4VYWH.js";
-import "/js/chunks/chunk-L3YP7XLW.js";
+import "/js/chunks/chunk-KWKFCKSF.js";
 import "/js/chunks/chunk-MLXZVY56.js";
 import "/js/chunks/chunk-QZXLPUPG.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-5HKJHRHR.js";
+} from "/js/chunks/chunk-JWJZLRUU.js";
 import {
   applyDriveImportEventualidades,
   buildParsedBySectionFromResLabs,
@@ -234,11 +234,11 @@ import {
   windowHandlers2 as windowHandlers15,
   windowHandlers3 as windowHandlers16,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-Q33X722Y.js";
+} from "/js/chunks/chunk-INNDSZUX.js";
 import {
   dbUnlockWindowHandlers,
   ensureClinicalDbUnlocked
-} from "/js/chunks/chunk-KZCXUBUQ.js";
+} from "/js/chunks/chunk-BBTYH4NH.js";
 import "/js/chunks/chunk-WD7VCIKP.js";
 import "/js/chunks/chunk-TNTHAQJD.js";
 import {
@@ -3354,7 +3354,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-MW6VFHSL.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-XCHNVGNM.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -3364,7 +3364,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-WUAQSM7E.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-56QGRUXL.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -3968,7 +3968,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-DGFEBTWX.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-FDFCLHPQ.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -3979,7 +3979,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-CZ66A55V.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-DTE66OAL.js");
     }
   },
   {
@@ -4002,7 +4002,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/js/chunks/clinical-access-runtime-O4PMIIAC.js").then(function(mod) {
+      void import("/js/chunks/clinical-access-runtime-LDG3LE6E.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }

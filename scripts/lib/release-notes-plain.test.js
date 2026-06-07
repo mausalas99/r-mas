@@ -14,4 +14,11 @@ describe('release-notes-plain', () => {
     assert.ok(plain.includes('multi-subred') || plain.includes('subred'));
     assert.ok(!plain.includes('Signos vitales'));
   });
+
+  it('includes Resumen plus bullets for 7.1.8 updater feed', () => {
+    const plain = releaseNotesPlainFromDoc(ROOT, '7.1.8');
+    assert.ok(plain.includes('Conectar al anfitrión') || plain.includes('Combinar servidores'));
+    assert.ok(plain.includes('Cableado LAN transport'));
+    assert.ok(!plain.includes('Signos vitales'));
+  });
 });

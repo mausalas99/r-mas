@@ -39,9 +39,7 @@ function releaseNoteBodyHtml(raw) {
   return raw == null ? '' : String(raw);
 }
 
-/** Texto breve para el modal de actualización (no el changelog completo de GitHub). */
-export function formatCuratedReleaseNotesPlain(version) {
-  var notes = getCuratedReleaseNotes(version);
+function formatHighlightsPlain(notes) {
   if (!notes || !notes.length) return '';
   return notes
     .map(function (n) {
@@ -52,6 +50,24 @@ export function formatCuratedReleaseNotesPlain(version) {
     })
     .filter(Boolean)
     .join('\n\n');
+}
+
+/** Texto breve para el modal de actualización (no el changelog completo de GitHub). */
+export function formatCuratedReleaseNotesPlain(version) {
+  return formatHighlightsPlain(getCuratedReleaseNotes(version));
+}
+
+/**
+ * Modal auto-updater: curated por versión → notas del feed (latest-mac.yml) → default curado.
+ * @param {string} targetVersion
+ * @param {string} [rawNotesFallback]
+ */
+export function formatUpdaterReleaseNotesPlain(targetVersion, rawNotesFallback) {
+  var curated = formatCuratedReleaseNotesPlain(targetVersion);
+  if (curated) return curated;
+  var fallback = stripHtmlFromReleaseBody(rawNotesFallback || '');
+  if (fallback) return fallback;
+  return formatCuratedReleaseNotesPlain('');
 }
 
 export function maybeShowReleaseNotesFor(version, prevVersion) {
