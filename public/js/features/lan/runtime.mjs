@@ -3,6 +3,7 @@
  */
 
 import { LanClient } from '../../lan-client.mjs';
+import { lanNetworkProfile } from '../../lan-network-profile.mjs';
 
 /** @type {import('../../lan-client.mjs').LanClient} */
 export let lanClient = new LanClient();
@@ -16,6 +17,21 @@ export let liveSyncOutboxFlushTimer = null;
 
 export const LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
 export const LIVE_SYNC_OUTBOX_FLUSH_MS = 60000;
+
+/** @returns {number} Debounce for typed mutation HTTP calls (ms) */
+export function getLiveSyncPushDebounceMs() {
+  return lanNetworkProfile.getNetworkProfile() === 'slow' ? 4000 : 900;
+}
+
+/** @returns {number} Cooldown between full reconciles (ms) */
+export function getReconcileCooldownMs() {
+  return lanNetworkProfile.getNetworkProfile() === 'slow' ? 30000 : 10000;
+}
+
+/** @returns {number} LAN host scan interval (ms) */
+export function getLanScanIntervalMs() {
+  return lanNetworkProfile.getNetworkProfile() === 'slow' ? 60000 : 5000;
+}
 
 /** Per-room last applied delta sequence number. Used by Flow B delta catch-up. */
 const _lastDeltaSeqByRoom = new Map();

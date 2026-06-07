@@ -49,8 +49,9 @@ import {
   setLiveSyncRevisionReconcileTimer,
   getLiveSyncOutboxFlushTimer,
   setLiveSyncOutboxFlushTimer,
-  LIVE_SYNC_PUSH_DEBOUNCE_MS,
   LIVE_SYNC_OUTBOX_FLUSH_MS,
+  getLiveSyncPushDebounceMs,
+  getReconcileCooldownMs,
   getLastDeltaSeq,
   setLastDeltaSeq,
   resetLastDeltaSeq,
@@ -644,7 +645,6 @@ var reconcileInFlight = null;
 var reconcilePendingRoomId = '';
 var reconcileLastFinishedAt = 0;
 var missingPatientsReconcileTimer = null;
-var RECONCILE_COOLDOWN_MS = 10000;
 var MISSING_PATIENTS_RECONCILE_DELAY_MS = 20000;
 
 export function scheduleReconcileLiveSyncRoom(roomId, options) {
@@ -855,7 +855,7 @@ export function scheduleLiveSyncPush() {
           void enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
         }
       })();
-    }, LIVE_SYNC_PUSH_DEBOUNCE_MS)
+    }, getLiveSyncPushDebounceMs())
   );
 }
 
@@ -1115,11 +1115,11 @@ export async function reconcileLiveSyncRoom(roomId, options) {
   if (
     !opts.force &&
     opts.reason !== 'revision-hint' &&
-    now - reconcileLastFinishedAt < RECONCILE_COOLDOWN_MS
+    now - reconcileLastFinishedAt < getReconcileCooldownMs()
   ) {
     scheduleReconcileLiveSyncRoom(rid, {
       reason: opts.reason || 'cooldown',
-      delayMs: RECONCILE_COOLDOWN_MS - (now - reconcileLastFinishedAt),
+      delayMs: getReconcileCooldownMs() - (now - reconcileLastFinishedAt),
     });
     return false;
   }

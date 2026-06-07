@@ -367,7 +367,7 @@ describe('clinical-profile-lan-sync', () => {
   it('coalesces reconcile to avoid sync-bundle / clinical-ops storms', () => {
     assert.match(lanSyncPushSrc, /reconcileInFlight/);
     assert.match(lanSyncPushSrc, /scheduleReconcileLiveSyncRoom/);
-    assert.match(lanSyncPushSrc, /RECONCILE_COOLDOWN_MS/);
+    assert.match(lanSyncPushSrc, /getReconcileCooldownMs/);
     assert.match(lanSyncPushSrc, /bundleHadClinicalOps/);
     assert.match(lanSyncPushSrc, /reconcileLiveSyncRoomBody/);
   });

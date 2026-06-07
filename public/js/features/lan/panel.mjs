@@ -65,7 +65,9 @@ import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
 import {
   lanClient,
   activeLiveSyncRoomId,
+  getLanScanIntervalMs,
 } from './runtime.mjs';
+import { lanNetworkProfile } from '../../lan-network-profile.mjs';
 import { getRoomSyncPhase } from '../../lan-sync-state.mjs';
 import {
   isLanSessionConfiguredForRest,
@@ -123,7 +125,7 @@ var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
 var _lanPanelDelegationWired = false;
 var _lanScanTimer = null;
-var LAN_SCAN_INTERVAL_MS = 5000;
+// Scan interval adapts to network profile — call getLanScanIntervalMs() where set.
 var SUBNET_LAN_SCAN_MIN_MS = 25000;
 var LAN_PEER_OPS_PULL_MIN_MS = 30000;
 var _lastSubnetLanScanAt = 0;
@@ -137,6 +139,13 @@ var _lanLastConnected = true;
 const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
 const LAN_INVITE_MOBILE_OPEN_KEY = 'rpc-lan-invite-mobile-open';
 const LAN_INVITE_SALA_OPEN_KEY = 'rpc-lan-invite-sala-open';
+
+// Stop auto-discovery when network goes OFFLINE; restart via user reconnect flow.
+lanNetworkProfile.subscribeNetworkProfile(function (newProfile) {
+  if (newProfile === 'offline') {
+    stopLanAutoDiscovery();
+  }
+});
 
 /** @type {{ runtime?: object } | null} */
 let panelRuntime = null;
@@ -2024,7 +2033,7 @@ export function startLanAutoDiscovery() {
   if (_lanScanTimer) return;
   _lanScanTimer = setInterval(function () {
     void scanLanHosts();
-  }, LAN_SCAN_INTERVAL_MS);
+  }, getLanScanIntervalMs());
   void scanLanHosts();
 }
 
@@ -2395,12 +2404,20 @@ export async function saveLanSettingsFromUi(opts) {
   var pingOk = false;
   var pingStatus = 0;
   try {
+    var _pingStart = Date.now();
     var r = await lanClient.fetch('/api/lan/v1/ping');
+    var _pingRtt = Date.now() - _pingStart;
     pingStatus = r && r.status ? r.status : 0;
     pingOk = !!(r && r.ok);
+    if (pingOk) {
+      lanNetworkProfile.recordPingSuccess(_pingRtt);
+    } else {
+      lanNetworkProfile.recordPingFailure();
+    }
     _lanLastPingAt = new Date().toISOString();
     _lanLastPingStatus = pingStatus;
   } catch (pingErr) {
+    lanNetworkProfile.recordPingFailure();
     _lanLastPingAt = new Date().toISOString();
     _lanLastPingStatus = 0;
     recordLanSyncError({
