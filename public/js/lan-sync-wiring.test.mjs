@@ -62,6 +62,25 @@ describe('LAN module boot wiring', () => {
     assert.match(lanSyncRoom, /buildLiveSyncBundleEnvelope[\s\S]*ensureLanSyncRoomBridgeWired/);
   });
 
+  it('livesync:hello handler sends revision hint, NOT a full WS bundle', () => {
+    // Verify the hello handler calls emitLiveSyncRevisionHint
+    assert.match(
+      lanSyncRoom,
+      /livesync:hello[\s\S]{0,300}emitLiveSyncRevisionHint/,
+      'hello handler must call emitLiveSyncRevisionHint'
+    );
+    // Verify it does NOT call buildLiveSyncBundleEnvelope inside the hello block
+    const helloBlock = lanSyncRoom.slice(
+      lanSyncRoom.indexOf("data.type === 'livesync:hello' && data.clientId !== myId"),
+      lanSyncRoom.indexOf("data.type === 'livesync:hello' && data.clientId !== myId") + 400
+    );
+    assert.doesNotMatch(
+      helloBlock,
+      /buildLiveSyncBundleEnvelope/,
+      'hello handler must not call buildLiveSyncBundleEnvelope'
+    );
+  });
+
   it('panel runtime registers conflict drafts append', () => {
     assert.match(lanSyncFeature, /registerLanSyncPanelRuntime/);
     assert.match(lanSyncFeature, /appendLanConflictDraftsSection/);

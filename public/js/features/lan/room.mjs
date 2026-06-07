@@ -55,6 +55,7 @@ import {
   scheduleLiveSyncOutboxFlush,
   scheduleLiveSyncPush,
   scheduleReconcileFromRevisionHint,
+  emitLiveSyncRevisionHint,
   liveSyncBundleHasPayload,
   ensureEffectiveLiveSyncRoomId,
 } from './push.mjs';
@@ -716,11 +717,8 @@ function onLiveSyncWireMessageBody(data) {
     }
     if (data.type === 'livesync:hello' && data.clientId !== myId && activeLiveSyncRoomId) {
       scheduleClinicalOpsPullFromHost(activeLiveSyncRoomId);
-      void (async function () {
-        try {
-          lanClient.sendLive(await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
-        } catch (_eHelloBundle) {}
-      })();
+      const bases = getHostBundleBases(activeLiveSyncRoomId);
+      emitLiveSyncRevisionHint(activeLiveSyncRoomId, bases ? bases.revision : 0);
     }
     return;
   }
