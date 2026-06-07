@@ -190,6 +190,18 @@ describe('LAN event and handler wiring', () => {
       'push.mjs must reference delta replay in the revision-hint reconcile path'
     );
   });
+
+  it('panel.mjs references reconnectFromOfflineUi or similar offline reconnect handler', () => {
+    assert.match(
+      lanSyncPanel,
+      /reconnectFromOffline|userInitiatedReconnect|Sin conexi/,
+      'panel.mjs must reference the offline reconnect flow'
+    );
+  });
+
+  it('panel.mjs references lanNetworkProfile', () => {
+    assert.match(lanSyncPanel, /lanNetworkProfile/);
+  });
 });
 
 describe('clinical teams LAN publish wiring', () => {
