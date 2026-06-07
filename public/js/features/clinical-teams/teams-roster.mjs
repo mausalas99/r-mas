@@ -21,7 +21,6 @@ import {
 } from '../../clinical-team-invite.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { clinicalServiceForSala } from '../../../../lib/clinical-salas.mjs';
-import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import {
   effectiveClinicalRank,
   hasElevatedTeamPrivileges,
@@ -52,7 +51,6 @@ import {
 import {
   dbApi,
   toast,
-  toastTeamWarnings,
   escapeHtml,
   escapeAttr,
   hintHtml,
@@ -339,7 +337,6 @@ export async function handleEditTeamSubmit(ev, form) {
     return;
   }
 
-  toastTeamWarnings(res.warnings);
   toast('Equipo actualizado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();
@@ -588,7 +585,6 @@ export async function handleCreateTeamSubmit(ev) {
       toast(res?.error || 'No se creó el equipo.', 'error');
       return;
     }
-    toastTeamWarnings(res.warnings);
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
     const lanPush = await publishClinicalTeamsToLan();
     toastTeamLanPublishResult(
@@ -624,8 +620,6 @@ export async function handleCreateTeamSubmit(ev) {
     toast(res?.error || 'No se creó el equipo.', 'error');
     return;
   }
-  toastTeamWarnings(res.warnings);
-
   const teamId = String(res.team?.team_id || '');
   if (teamId && typeof api.dbClinicalTeamsMemberAdd === 'function') {
     const addRes = await api.dbClinicalTeamsMemberAdd({
@@ -635,8 +629,6 @@ export async function handleCreateTeamSubmit(ev) {
     });
     if (!addRes || addRes.ok === false) {
       toast(addRes?.error || 'Equipo creado pero no se pudo unir automáticamente.', 'error');
-    } else {
-      toastTeamWarnings(addRes.warnings);
     }
   }
 
@@ -696,21 +688,6 @@ export async function handleAddMemberSubmit(ev, form) {
     return;
   }
 
-  const team = (clinicalSessionContext.teams || []).find(
-    (row) => String(row.team_id) === teamId
-  );
-  let partnerRank = '';
-  if (typeof api.dbClinicalUserLookup === 'function') {
-    const lookup = await api.dbClinicalUserLookup({ username: handle });
-    partnerRank = String(lookup?.user?.rank || '');
-  }
-  const slotWarn = validateTeamRankSlot(
-    team?.service || '',
-    partnerRank,
-    team?.members || []
-  );
-  if (slotWarn) toast(slotWarn, 'warn');
-
   const res = await api.dbClinicalTeamsMemberAdd({
     teamId,
     userId: partnerUserId,
@@ -721,7 +698,6 @@ export async function handleAddMemberSubmit(ev, form) {
     return;
   }
 
-  toastTeamWarnings(res.warnings);
   toast('Miembro agregado.', 'success');
   if (usernameInput instanceof HTMLInputElement) usernameInput.value = '';
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
@@ -769,7 +745,6 @@ export async function handleMyCycleSubmit(ev, form) {
     return;
   }
 
-  toastTeamWarnings(res.warnings);
   toast('Ciclo actualizado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();

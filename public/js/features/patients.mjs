@@ -26,7 +26,7 @@ import {
   getDefaultCama,
 } from '../mode-features.mjs';
 import {
-  ensureElevatedWardCensusOnDevice,
+  ensureTeamAssignedPatientsOnDevice,
   renderGuardiaCensusGrid,
   syncGuardiaCensusPanelVisibility,
   clinicalSessionContext,
@@ -184,11 +184,7 @@ function syncClinicalCensusFiltersBar() {
     const teamSel = bar.querySelector('#clinical-filter-team');
     const serviceInp = bar.querySelector('#clinical-filter-service');
     const refreshCensusViews = () => {
-      void ensureElevatedWardCensusOnDevice({
-        allowLanPull: true,
-        lanPullDelayMs: 2000,
-        teamFilterId: elevatedPatientFilters.teamId,
-      }).then(() => {
+      void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
         renderPatientList();
         if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
       });
