@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_718 = [
+  {
+    title: 'Conectar al anfitrión',
+    body:
+      'Corrige el caso en que al pulsar <strong>OK</strong> en «Combinar servidores» o al reconectar no pasaba nada: el cableado LAN transport fallaba con chunks duplicados de esbuild.',
+  },
+  {
+    title: 'Auto-unión al arrancar',
+    body:
+      'Al reabrir R+ con anfitrión guardado, la unión silenciosa a la sala ⇄ ya no lanza <code>registerLanSyncTransportDeps() not called</code> en consola.',
+  },
+  {
+    title: 'Combinar sin sala',
+    body:
+      'Si confirmas unirte al anfitrión de mayor rango sin estar en una sala ⇄, verás un aviso claro en lugar de un fallo silencioso.',
+  },
+  {
+    title: 'Parche sobre 7.1.7',
+    body:
+      'Instala <strong>7.1.8 en todas</strong> las estaciones del turno. Sin cambio de esquema SQLCipher (sigue <strong>v14</strong>).',
+  },
+];
+
 var RELEASE_NOTES_717 = [
   {
     title: 'Cambio de red Wi‑Fi',
@@ -457,9 +480,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_717;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_718;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.8': RELEASE_NOTES_718,
   '7.1.7': RELEASE_NOTES_717,
   '7.1.6': [
     {

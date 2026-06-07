@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.7](https://github.com/mausalas99/r-mas/releases/tag/v7.1.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.8](https://github.com/mausalas99/r-mas/releases/tag/v7.1.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.1.8 (LAN conectar anfitrión)
+
+- **Conectar al anfitrión** — Corrige el fallo en que «Combinar servidores» o reconectar no hacía nada tras OK (transport LAN sin cablear entre chunks esbuild).
+- **Auto-unión** — Al arrancar con anfitrión guardado ya no falla `registerLanSyncTransportDeps() not called`.
+- **Combinar sin sala** — Aviso claro si confirmas unirte al anfitrión sin estar en una sala ⇄.
+- **Sobre 7.1.7** — Sin cambio de esquema; parche de cableado LAN sobre roam multi-subred v14.
+
+Notas: `docs/RELEASE_NOTES_7.1.8.txt`.
 
 ## R+ 7.1.7 (LAN roam entre redes)
 

@@ -31,6 +31,13 @@ describe('LAN module boot wiring', () => {
     assert.match(appJs, /lanWindowHandlers|windowHandlers as lanWindowHandlers/);
   });
 
+  it('transport deps use globalThis bridge (esbuild duplicate chunk guard)', () => {
+    const transport = read('features/lan/transport.mjs');
+    assert.match(transport, /__LAN_SYNC_TRANSPORT_DEPS__/);
+    assert.match(transport, /ensureLanSyncTransportDepsWired/);
+    assert.match(transport, /ensureLanSyncTransportDepsWired\(\)\.then/);
+  });
+
   it('lan-sync wires push bridge before transport and document init', () => {
     const wireFnIdx = lanSyncFeature.indexOf('function wireLanSyncBridges');
     const pushIdx = lanSyncFeature.indexOf('registerLanSyncPushBridge({');

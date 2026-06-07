@@ -1734,6 +1734,7 @@ export function ensureLanSyncRuntimeStarted() {
   if (isClinicalLocalOnlyMode(readRpcSettings())) return;
   if (_lanRuntimeStarted) return;
   _lanRuntimeStarted = true;
+  wireLanSyncBridges();
   initLanClientFromStorage();
   wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();

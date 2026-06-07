@@ -9,9 +9,17 @@ import {
 export var RELEASE_NOTES_DEV_FORCE_SHOW = false;
 var RELEASE_NOTES_SEEN_PREFIX = 'rpc-release-notes-seen-';
 
+function normalizeReleaseVersion(v) {
+  return String(v || '')
+    .trim()
+    .replace(/^v/i, '');
+}
+
 function getCuratedReleaseNotes(v) {
-  if (v && RELEASE_NOTES_HIGHLIGHTS[v]) return RELEASE_NOTES_HIGHLIGHTS[v];
-  return RELEASE_NOTES_HIGHLIGHTS_DEFAULT;
+  var key = normalizeReleaseVersion(v);
+  if (key && RELEASE_NOTES_HIGHLIGHTS[key]) return RELEASE_NOTES_HIGHLIGHTS[key];
+  if (!key) return RELEASE_NOTES_HIGHLIGHTS_DEFAULT;
+  return null;
 }
 
 function stripHtmlFromReleaseBody(html) {

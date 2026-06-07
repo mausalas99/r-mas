@@ -57,7 +57,10 @@ export async function runConsolidateIntoHost(opts, deps) {
     if (!(await deps.confirmYield())) return false;
   }
   const roomId = typeof deps.getRoomId === 'function' ? deps.getRoomId() : '';
-  if (!roomId) return false;
+  if (!roomId) {
+    deps.showToast?.('Únete primero a una sala ⇄ para combinar con el anfitrión.', 'warn');
+    return false;
+  }
 
   _consolidating = true;
   try {

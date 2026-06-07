@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { macArtifactNames, winArtifactName, getArtifactPattern } = require('./lib/artifact-names');
+const { releaseNotesPlainFromDoc } = require('./lib/release-notes-plain');
 
 const argv = process.argv.slice(2);
 const auto = argv.includes('--auto');
@@ -85,6 +86,13 @@ if (!winOnly) {
   lines.push(`path: ${zipPrimary}`);
   lines.push(`sha512: ${sha512b64(zipAbs)}`);
   lines.push(`releaseDate: '${isoDate()}'`);
+  const releaseNotes = releaseNotesPlainFromDoc(root, ver);
+  if (releaseNotes) {
+    lines.push('releaseNotes: |');
+    for (const line of releaseNotes.split('\n')) {
+      lines.push(`  ${line}`);
+    }
+  }
   lines.push('');
 
   fs.writeFileSync(path.join(dist, 'latest-mac.yml'), lines.join('\n'), 'utf8');

@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-07",
   "entries": [
     {
+      "version": "7.1.8",
+      "label": "7.1.8",
+      "publishedAt": "2026-06-07",
+      "summary": "LAN conectar anfitrión — fix transport deps entre chunks esbuild",
+      "recommended": true
+    },
+    {
       "version": "7.1.7",
       "label": "7.1.7",
       "publishedAt": "2026-06-07",
-      "summary": "LAN roam entre redes — detección de cambio Wi‑Fi y escaneo multi-subred",
-      "recommended": true
+      "summary": "LAN roam entre redes — detección Wi‑Fi y escaneo multi-subred",
+      "recommended": false
     },
     {
       "version": "7.1.6",
