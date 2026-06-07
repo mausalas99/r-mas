@@ -17,7 +17,6 @@ import {
 import { effectiveClinicalRank } from '../clinical-privileges.mjs';
 import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { vitalsFrequencyForDb } from '../../../lib/entrega/entrega-vitals-plan.mjs';
-import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   getEntregaDraftItems,
   readEntregaHandoffContext,
@@ -394,7 +393,9 @@ function wireEntregaFormOnce() {
       const onConfirm = form._entregaOnConfirm;
       closeEntregaModal();
       await refreshGuardiaCensusFromDb(null);
-      scheduleLiveSyncPush();
+      import('../lan-mutation-registry.mjs').then(function (m) {
+        m.lanMutationRegistry.dispatchLanMutation('entrega', patientId);
+      });
       if (typeof onConfirm === 'function') onConfirm();
     } catch (err) {
       toast(err?.message || 'Error al registrar entrega', 'error');

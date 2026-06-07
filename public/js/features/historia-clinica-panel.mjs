@@ -6,7 +6,6 @@ import {
   lanFetchHistoriaClinica,
   getActiveLiveSyncRoomId,
   isLanSessionConfiguredForRest,
-  scheduleLiveSyncPush,
   touchPatientLanUpdatedAt,
 } from './lan-sync.mjs';
 import {
@@ -884,7 +883,6 @@ async function saveHistoria(root, patient, _skipAckCheck) {
       patient.historiaClinica = { version: _version, data: Object.assign({}, _data) };
       saveState();
       touchPatientLanUpdatedAt(patient.id);
-      scheduleLiveSyncPush();
       _editMode = false;
       _pendingAck = [];
       _dirtyKeys = new Set();
@@ -901,7 +899,6 @@ async function saveHistoria(root, patient, _skipAckCheck) {
   _dirtyKeys = new Set();
   saveState();
   touchPatientLanUpdatedAt(patient.id);
-  scheduleLiveSyncPush();
   renderPanel(root);
   rt.showToast('Historia clínica guardada.', 'success');
 }

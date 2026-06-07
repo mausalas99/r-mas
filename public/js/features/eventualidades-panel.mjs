@@ -5,7 +5,6 @@ import {
   isLanSessionConfiguredForRest,
   lanPushPatientVersioned,
   lanFetchHostPatientRow,
-  scheduleLiveSyncPush,
   touchPatientLanUpdatedAt,
 } from './lan-sync.mjs';
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
@@ -393,7 +392,9 @@ async function persistEventualidades(patient, store) {
   patient.eventualidades = store;
   touchPatientLanUpdatedAt(patient.id);
   saveState({ immediate: true });
-  scheduleLiveSyncPush();
+  import('../lan-mutation-registry.mjs').then(function (m) {
+    m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
+  });
   if (!isLanSessionConfiguredForRest()) {
     return { ok: true };
   }

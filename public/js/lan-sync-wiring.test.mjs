@@ -162,6 +162,26 @@ describe('LAN event and handler wiring', () => {
     assert.match(lanSyncFeature, /clearAllDraftConflicts/);
     assert.match(lanSyncFeature, /Conflictos antiguos[\s\S]*Descartar todos/);
   });
+
+  it('saveState after hook does NOT call scheduleLiveSyncPush', () => {
+    const hookStart = lanSyncFeature.indexOf('setSaveStateHooks({');
+    assert.ok(hookStart >= 0, 'setSaveStateHooks call must exist');
+    const hookBlock = lanSyncFeature.slice(hookStart, hookStart + 300);
+    assert.doesNotMatch(
+      hookBlock,
+      /scheduleLiveSyncPush\(\)/,
+      'saveState after() must not call scheduleLiveSyncPush()'
+    );
+  });
+
+  it('history-clinica-panel does not call scheduleLiveSyncPush after lanPushHistoriaClinica', () => {
+    const hcPanel = read('features/historia-clinica-panel.mjs');
+    assert.doesNotMatch(
+      hcPanel,
+      /scheduleLiveSyncPush\(\)/,
+      'historia-clinica-panel must not call scheduleLiveSyncPush'
+    );
+  });
 });
 
 describe('clinical teams LAN publish wiring', () => {

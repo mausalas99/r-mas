@@ -15,6 +15,8 @@ import {
   emitLiveSyncRevisionHint,
   scheduleReconcileFromRevisionHint,
 } from "./push.mjs";
+import { lanMutationRegistry } from '../../lan-mutation-registry.mjs';
+import { enqueueOutbox } from '../../live-sync-outbox.mjs';
 import { mergeLiveSyncFullBundles } from "../../lan-merge-registry.mjs";
 import { liveSyncDeletePatchesFromEntityMap } from "../../live-sync-room.mjs";
 import {
@@ -1598,6 +1600,69 @@ export function wireLanSyncBridges() {
 
   registerLanSyncRoomWireHandlers();
 
+  lanMutationRegistry.registerMutationHandler('nota', async (pid, payload) => {
+    const rid = getActiveLiveSyncRoomId();
+    if (!rid) return;
+    const res = await lanClient.fetch('/api/lan/v1/patients/' + encodeURIComponent(pid) + '/nota', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: payload,
+        expectedVersion: 0,
+        clientId: getLanClientId(),
+        clientTimestamp: Date.now(),
+      }),
+    });
+    if (!res || !res.ok) throw new Error('nota push failed');
+  });
+  lanMutationRegistry.setDomainOutboxKind('nota', 'nota_replace');
+
+  lanMutationRegistry.registerMutationHandler('indicaciones', async (pid, payload) => {
+    const rid = getActiveLiveSyncRoomId();
+    if (!rid) return;
+    const res = await lanClient.fetch('/api/lan/v1/patients/' + encodeURIComponent(pid) + '/indicaciones', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: payload,
+        expectedVersion: 0,
+        clientId: getLanClientId(),
+        clientTimestamp: Date.now(),
+      }),
+    });
+    if (!res || !res.ok) throw new Error('indicaciones push failed');
+  });
+  lanMutationRegistry.setDomainOutboxKind('indicaciones', 'indicaciones_replace');
+
+  lanMutationRegistry.registerMutationHandler('lab-history', async (pid, payload) => {
+    const rid = getActiveLiveSyncRoomId();
+    if (!rid) return;
+    const set = payload;
+    const res = await lanClient.fetch('/api/lan/v1/patients/' + encodeURIComponent(pid) + '/lab-history/upsert-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        set,
+        clientId: getLanClientId(),
+        clientTimestamp: Date.now(),
+      }),
+    });
+    if (!res || !res.ok) throw new Error('lab-history push failed');
+  });
+  lanMutationRegistry.setDomainOutboxKind('lab-history', 'lab_history_upsert');
+
+  lanMutationRegistry.registerMutationHandler('patient-fields', async (pid, payload) => {
+    void pid;
+    void payload;
+  });
+  lanMutationRegistry.setDomainOutboxKind('patient-fields', 'patient_fields');
+
+  lanMutationRegistry.configure({
+    isActive: () => !!getActiveLiveSyncRoomId() && isLanSessionConfiguredForRest(),
+    getActiveRoomId: getActiveLiveSyncRoomId,
+    enqueueOutbox: (roomId, item) => enqueueOutbox(roomId, item),
+  });
+
   lanClient.addEventListener('lan-applied', function (ev) {
     applyLiveSyncApplied(ev.detail);
   });
@@ -1688,7 +1753,6 @@ export function registerLanSaveHooks(deps) {
     },
     after() {
       post();
-      scheduleLiveSyncPush();
     },
   });
 }

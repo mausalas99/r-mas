@@ -69,7 +69,6 @@ export async function assignPatientToTeamClinical(patientId, teamId) {
     const lan = await import('./features/lan-sync.mjs').catch(() => null);
     if (lan) {
       if (typeof lan.pushClinicalOpsLanNow === 'function') await lan.pushClinicalOpsLanNow();
-      else if (typeof lan.scheduleLiveSyncPush === 'function') lan.scheduleLiveSyncPush();
     }
     if (typeof document !== 'undefined') {
       document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));

@@ -14,7 +14,6 @@ export async function publishClinicalTeamsToLan() {
     if (typeof mod.pushClinicalOpsLanNow === 'function') {
       return mod.pushClinicalOpsLanNow();
     }
-    if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
   } catch (_e) {
     /* LAN optional */
   }

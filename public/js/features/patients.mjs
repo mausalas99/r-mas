@@ -26,7 +26,7 @@ import {
   getDefaultCama,
 } from '../mode-features.mjs';
 import {
-  ensureTeamAssignedPatientsOnDevice,
+  ensureElevatedWardCensusOnDevice,
   renderGuardiaCensusGrid,
   syncGuardiaCensusPanelVisibility,
   clinicalSessionContext,
@@ -69,7 +69,6 @@ import {
   removePatientLocally,
   rememberPatientDeleteTombstone,
   getActiveLiveSyncRoomId,
-  scheduleLiveSyncPush,
   lanSyncPatientArchivedFlag,
   isLanSessionConfiguredForRest,
 } from './lan-sync.mjs';
@@ -185,7 +184,11 @@ function syncClinicalCensusFiltersBar() {
     const teamSel = bar.querySelector('#clinical-filter-team');
     const serviceInp = bar.querySelector('#clinical-filter-service');
     const refreshCensusViews = () => {
-      void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
+      void ensureElevatedWardCensusOnDevice({
+        allowLanPull: true,
+        lanPullDelayMs: 2000,
+        teamFilterId: elevatedPatientFilters.teamId,
+      }).then(() => {
         renderPatientList();
         if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
       });
@@ -1411,7 +1414,9 @@ export function deletePatient(e, id) {
     rememberPatientDeleteTombstone(snap);
     stagePatientDelete(id, snap, function (p) {
       emitLiveSyncPatientDelete(p);
-      scheduleLiveSyncPush();
+      import('../lan-mutation-registry.mjs').then(function (m) {
+        m.lanMutationRegistry.dispatchLanMutation('patient-fields', id);
+      });
     });
   } else {
     emitLiveSyncPatientDelete(snap);

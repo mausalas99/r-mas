@@ -14,11 +14,21 @@ export function createMutationRegistry(deps = {}) {
   const handlers = new Map();
   const domainKinds = new Map();
 
-  const isActive = deps.isActive ?? (() => false);
-  const markUntypedDirty = deps.markUntypedDirty ?? (() => {});
-  const scheduleUntypedSafetyBundle = deps.scheduleUntypedSafetyBundle ?? (() => {});
-  const enqueueOutbox = deps.enqueueOutbox ?? (() => {});
-  const getActiveRoomId = deps.getActiveRoomId ?? (() => '');
+  let isActiveRef = deps.isActive ?? (() => false);
+  let markUntypedDirtyRef = deps.markUntypedDirty ?? (() => {});
+  let scheduleUntypedSafety = deps.scheduleUntypedSafetyBundle ?? (() => {});
+  let enqueueOutboxRef = deps.enqueueOutbox ?? (() => {});
+  let getActiveRoomIdRef = deps.getActiveRoomId ?? (() => '');
+
+  function configure(liveDeps) {
+    if (typeof liveDeps.isActive === 'function') isActiveRef = liveDeps.isActive;
+    if (typeof liveDeps.markUntypedDirty === 'function') markUntypedDirtyRef = liveDeps.markUntypedDirty;
+    if (typeof liveDeps.scheduleUntypedSafetyBundle === 'function') {
+      scheduleUntypedSafety = liveDeps.scheduleUntypedSafetyBundle;
+    }
+    if (typeof liveDeps.enqueueOutbox === 'function') enqueueOutboxRef = liveDeps.enqueueOutbox;
+    if (typeof liveDeps.getActiveRoomId === 'function') getActiveRoomIdRef = liveDeps.getActiveRoomId;
+  }
 
   function registerMutationHandler(domain, handler) {
     handlers.set(String(domain), handler);
@@ -33,7 +43,7 @@ export function createMutationRegistry(deps = {}) {
   }
 
   async function dispatchLanMutation(domain, patientId, payload) {
-    if (!isActive()) return;
+    if (!isActiveRef()) return;
     const handler = handlers.get(String(domain));
     if (handler) {
       try {
@@ -41,13 +51,13 @@ export function createMutationRegistry(deps = {}) {
       } catch (_err) {
         const kind = domainKinds.get(String(domain));
         if (kind) {
-          const roomId = getActiveRoomId();
-          if (roomId) enqueueOutbox(roomId, { kind, payload: { patientId, data: payload } });
+          const roomId = getActiveRoomIdRef();
+          if (roomId) enqueueOutboxRef(roomId, { kind, payload: { patientId, data: payload } });
         }
       }
     } else {
-      markUntypedDirty(domain, patientId);
-      scheduleUntypedSafetyBundle();
+      markUntypedDirtyRef(domain, patientId);
+      scheduleUntypedSafety();
     }
   }
 
@@ -56,6 +66,7 @@ export function createMutationRegistry(deps = {}) {
     setDomainOutboxKind,
     isTypedDomain,
     dispatchLanMutation,
+    configure,
   };
 }
 
