@@ -1148,6 +1148,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     upsertPatientLabHistorySet,
     replacePatientNota,
     replacePatientIndicaciones,
+    findRoomForPatient: (patientId) => findRoomForPatient(ensureLoadedSync(), patientId),
     persistRoomBundleClinicalOpsToHostDb,
     putRoomClinicalOps,
     getEntity,

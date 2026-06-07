@@ -338,7 +338,10 @@ function createLanRouter({ store, broadcast, resolver, getHostClinicalMeta }) {
         clientId: String(clientId || ''),
       });
       if (!result.ok) return res.status(409).json({ error: 'conflict', version: result.version });
-      broadcastLiveRevision(req.params.id, result.version ?? 0, clientId || 'host');
+      const roomId =
+        (typeof store.findRoomForPatient === 'function' && store.findRoomForPatient(req.params.id)) ||
+        req.params.id;
+      broadcastLiveRevision(roomId, result.version ?? 0, clientId || 'host');
       res.json({ ok: true, version: result.version });
     } catch (e) {
       res.status(400).json({ error: e.message });
