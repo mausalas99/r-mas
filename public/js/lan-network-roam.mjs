@@ -4,6 +4,8 @@
 import { storage } from './storage.js';
 import { lanClient } from './features/lan/runtime.mjs';
 import { clearPinnedHostUrl, getPinnedHostUrl, isPinnedHostLocal } from './lan-host-pin.mjs';
+import { findByFingerprint, getPinnedFingerprint } from './lan-host-registry.mjs';
+import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 import {
   isHostOnCurrentSubnets,
   normalizeLanHostBase,
@@ -49,4 +51,29 @@ export function applyLanNetworkRoaming(payload = {}) {
   }
 
   return { role: uiRole, clearedStaleHost: false };
+}
+
+/**
+ * @param {{ prefixes?: string[], candidateBaseUrl?: string }} payload
+ * @param {{ savedHostUrl?: string, teamCode?: string, pingFn?: (url: string) => Promise<boolean> }} [opts]
+ */
+export async function applyLanNetworkRoamingWithFingerprint(payload, opts = {}) {
+  const pinnedFp = getPinnedFingerprint();
+  if (!pinnedFp) return { shortcut: false };
+
+  const record = findByFingerprint(pinnedFp);
+  if (!record) return { shortcut: false };
+
+  const savedHost = normalizeLanHostBase(String(opts.savedHostUrl || ''));
+  const registryUrl = normalizeLanHostBase(record.currentUrl);
+  if (!registryUrl || registryUrl === savedHost) return { shortcut: false };
+
+  const pingFn = typeof opts.pingFn === 'function'
+    ? opts.pingFn
+    : (url) => pingLanHostUrl(url, String(opts.teamCode || ''));
+
+  const ok = await pingFn(registryUrl);
+  if (!ok) return { shortcut: false };
+
+  return { shortcut: true, newUrl: registryUrl };
 }

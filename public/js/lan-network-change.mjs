@@ -4,7 +4,8 @@
 import { lanNetworkProfile } from './lan-network-profile.mjs';
 import { resumeAutoHostDetect } from './lan-host-detect-guard.mjs';
 import { resetShiftPinBackoff } from './lan-shift-pin-connect.mjs';
-import { applyLanNetworkRoaming } from './lan-network-roam.mjs';
+import { storage } from './storage.js';
+import { applyLanNetworkRoaming, applyLanNetworkRoamingWithFingerprint } from './lan-network-roam.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode } from './features/lan/transport.mjs';
 
 async function restartLanDiscoveryAfterNetworkChange() {
@@ -44,6 +45,21 @@ async function restartLanDiscoveryAfterNetworkChange() {
 export async function handleLanNetworkChanged(payload) {
   if (!isLanElectronDesktop()) return;
   resetShiftPinBackoff();
+
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  const roamResult = await applyLanNetworkRoamingWithFingerprint(payload || {}, {
+    savedHostUrl: cfg.hostUrl,
+    teamCode: cfg.teamCode,
+  });
+
+  if (roamResult.shortcut) {
+    const transport = await import('./features/lan/transport.mjs');
+    if (typeof transport.persistLanClientConfig === 'function') {
+      transport.persistLanClientConfig(roamResult.newUrl, cfg.teamCode);
+    }
+    return;
+  }
+
   applyLanNetworkRoaming(payload || {});
   await restartLanDiscoveryAfterNetworkChange();
 }
