@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-08",
   "entries": [
     {
+      "version": "7.2.1",
+      "label": "7.2.1",
+      "publishedAt": "2026-06-08",
+      "summary": "Release estable 7.2.1",
+      "recommended": true
+    },
+    {
       "version": "7.1.10",
       "label": "7.1.10",
       "publishedAt": "2026-06-08",
       "summary": "LAN mDNS resiliente y diagnóstico ⇄ ampliado",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.1.9",
