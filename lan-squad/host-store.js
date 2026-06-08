@@ -150,13 +150,16 @@ function persistAlignedTeamCodeHash({
   persistCacheToDb,
   filePath,
   queue,
-  writeJsonAtomic,
 }) {
   if (!aligned) return;
   if (useDb()) {
     queue.enqueue(() => persistCacheToDb()).catch(() => {});
     return;
   }
+  // Sync write so a prior store instance's queued snapshot cannot clobber the new hash.
+  try {
+    atomicWriteJson(filePath, migrated);
+  } catch (_e) {}
   queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
 }
 
@@ -249,7 +252,6 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         persistCacheToDb,
         filePath,
         queue,
-        writeJsonAtomic,
       });
     } else if (Number(migrated.version) === 2 && prevVersion !== 2) {
       if (useDb()) {

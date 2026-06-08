@@ -93,6 +93,7 @@ describe('host-store', () => {
     const storeA = createHostStore({ filePath, teamCodePlain: 'old-code' });
     storeA.createRoom('Sala previa');
     assert.strictEqual(storeA.listRooms().length, 1);
+    await storeA.flush();
     const storeB = createHostStore({ filePath, teamCodePlain: 'new-code' });
     const st = storeB.getState();
     assert.strictEqual(st.rooms.length, 1);
