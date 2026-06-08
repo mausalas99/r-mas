@@ -137,14 +137,27 @@ function normalizeLoadedState(s) {
   return state;
 }
 
-function assertTeamCodeHash(s, teamCodeHash) {
-  if (s.teamCodeHash !== teamCodeHash) {
-    const err = new Error(
-      'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
-    );
-    err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
-    throw err;
+function alignTeamCodeHash(s, teamCodeHash) {
+  if (s.teamCodeHash === teamCodeHash) return false;
+  s.teamCodeHash = teamCodeHash;
+  return true;
+}
+
+function persistAlignedTeamCodeHash({
+  aligned,
+  migrated,
+  useDb,
+  persistCacheToDb,
+  filePath,
+  queue,
+  writeJsonAtomic,
+}) {
+  if (!aligned) return;
+  if (useDb()) {
+    queue.enqueue(() => persistCacheToDb()).catch(() => {});
+    return;
   }
+  queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
 }
 
 function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientId = () => 'host' }) {
@@ -189,13 +202,15 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       cache.replace(s);
       return s;
     }
-    assertTeamCodeHash(s, teamCodeHash);
+    const aligned = alignTeamCodeHash(s, teamCodeHash);
     const prevVersion = Number(s.version);
     s = normalizeLoadedState(s);
     if (Number(s.version) !== 2) {
       s.version = 2;
       await persistSnapshot(s);
-    } else if (prevVersion !== 2 && useDb()) {
+    } else if ((aligned || prevVersion !== 2) && useDb()) {
+      await persistSnapshot(s);
+    } else if (aligned) {
       await persistSnapshot(s);
     }
     cache.replace(s);
@@ -222,11 +237,21 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       cache.replace(fresh);
       return fresh;
     }
-    assertTeamCodeHash(s, teamCodeHash);
+    const aligned = alignTeamCodeHash(s, teamCodeHash);
     const prevVersion = Number(s.version);
     const migrated = normalizeLoadedState(s);
     cache.replace(migrated);
-    if (Number(migrated.version) === 2 && prevVersion !== 2) {
+    if (aligned) {
+      persistAlignedTeamCodeHash({
+        aligned,
+        migrated,
+        useDb,
+        persistCacheToDb,
+        filePath,
+        queue,
+        writeJsonAtomic,
+      });
+    } else if (Number(migrated.version) === 2 && prevVersion !== 2) {
       if (useDb()) {
         queue.enqueue(() => persistCacheToDb()).catch(() => {});
       } else {

@@ -582,8 +582,21 @@ ipcMain.handle('select-output-dir', async () => {
 
 ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
   try {
-    const filePath = path.join(app.getPath('userData'), 'lan-team-code.txt');
-    fs.writeFileSync(filePath, String(plain || '').trim(), 'utf8');
+    const userData = app.getPath('userData');
+    const token = String(plain || '').trim();
+    const filePath = path.join(userData, 'lan-team-code.txt');
+    fs.writeFileSync(filePath, token, 'utf8');
+    const { reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
+    const dbManager = globalThis.__rplusDbManager;
+    const db =
+      dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
+        ? dbManager.getDb()
+        : null;
+    reconcileLanHostTeamCode({
+      hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
+      plainToken: token,
+      db,
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e && e.message ? e.message : String(e) };
@@ -727,8 +740,20 @@ ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
   const token = String(payload?.token || '').trim();
   if (!token || token.length < 32) return { ok: false, error: 'invalid_token' };
   try {
-    const filePath = path.join(app.getPath('userData'), 'lan-team-code.txt');
+    const userData = app.getPath('userData');
+    const filePath = path.join(userData, 'lan-team-code.txt');
     fs.writeFileSync(filePath, token + '\n', 'utf8');
+    const { reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
+    const dbManager = globalThis.__rplusDbManager;
+    const db =
+      dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
+        ? dbManager.getDb()
+        : null;
+    reconcileLanHostTeamCode({
+      hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
+      plainToken: token,
+      db,
+    });
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e && e.message ? e.message : String(e) };
@@ -897,6 +922,20 @@ app.whenReady().then(async () => {
       }
     }
     if (unlockPromise) await unlockPromise;
+    try {
+      const userData = app.getPath('userData');
+      const { readLanTeamCodeFile, reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
+      const team = readLanTeamCodeFile({ userDataPath: userData });
+      if (team.ok && team.code) {
+        reconcileLanHostTeamCode({
+          hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
+          plainToken: team.code,
+          db: dbManager.isUnlocked() ? dbManager.getDb() : null,
+        });
+      }
+    } catch (reconcileErr) {
+      console.error('[lan]', reconcileErr && reconcileErr.message ? reconcileErr.message : reconcileErr);
+    }
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
     dialog.showErrorBox(

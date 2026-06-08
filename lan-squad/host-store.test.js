@@ -88,20 +88,25 @@ describe('host-store', () => {
     assert.strictEqual(list[0].id, r.id);
   });
 
-  it('no borra host-state si cambió el código del equipo (hash mismatch)', () => {
+  it('reconciles teamCodeHash when lan-team-code changed without wiping host data', async () => {
     const { hashTeamCode } = require('./team-code.js');
     const storeA = createHostStore({ filePath, teamCodePlain: 'old-code' });
     storeA.createRoom('Sala previa');
     assert.strictEqual(storeA.listRooms().length, 1);
     const storeB = createHostStore({ filePath, teamCodePlain: 'new-code' });
-    assert.throws(() => storeB.getState(), (e) => e.code === 'LAN_HOST_STATE_HASH_MISMATCH');
+    const st = storeB.getState();
+    assert.strictEqual(st.rooms.length, 1);
+    assert.strictEqual(st.rooms[0].displayName, 'Sala previa');
+    assert.strictEqual(st.teamCodeHash, hashTeamCode('new-code'));
+    await storeB.flush();
     const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     assert.strictEqual(preserved.rooms.length, 1);
-    assert.strictEqual(preserved.teamCodeHash, hashTeamCode('old-code'));
+    assert.strictEqual(preserved.teamCodeHash, hashTeamCode('new-code'));
   });
 
-  it('load throws LAN_HOST_STATE_HASH_MISMATCH instead of wiping patients', () => {
+  it('reconciles teamCodeHash on load instead of wiping patients', async () => {
     const { hashTeamCode } = require('./team-code.js');
+    const newCode = 'new-code-64-hexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
     fs.writeFileSync(
       filePath,
       JSON.stringify({
@@ -115,11 +120,15 @@ describe('host-store', () => {
     );
     const store = createHostStore({
       filePath,
-      teamCodePlain: 'new-code-64-hexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      teamCodePlain: newCode,
     });
-    assert.throws(() => store.getState(), (e) => e.code === 'LAN_HOST_STATE_HASH_MISMATCH');
+    const st = store.getState();
+    assert.strictEqual(st.patients.length, 1);
+    assert.strictEqual(st.teamCodeHash, hashTeamCode(newCode));
+    await store.flush();
     const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     assert.strictEqual(preserved.patients.length, 1);
+    assert.strictEqual(preserved.teamCodeHash, hashTeamCode(newCode));
   });
 
   it('putRoomSyncBundle applies LWW on stale entity version', () => {

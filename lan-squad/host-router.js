@@ -12,18 +12,22 @@ let _heartbeatTimer = null;
 function startHeartbeat(broadcastFn, getMetaFn, getExtrasFn) {
   if (_heartbeatTimer) return;
   _heartbeatTimer = setInterval(() => {
-    const meta = typeof getMetaFn === 'function' ? getMetaFn() : {};
-    const extras = typeof getExtrasFn === 'function' ? getExtrasFn() : {};
-    if (typeof broadcastFn === 'function') {
-      broadcastFn('sync', {
-        type: 'livesync:hello',
-        clientId: String(extras.clientId || ''),
-        startedAt: Number(meta.startedAt) || 0,
-        revision: Number(extras.revision) || 0,
-        rank: String(meta.rank || 'R1'),
-        dbUnlocked: !!extras.dbUnlocked,
-        shiftPinActive: !!extras.shiftPinActive,
-      });
+    try {
+      const meta = typeof getMetaFn === 'function' ? getMetaFn() : {};
+      const extras = typeof getExtrasFn === 'function' ? getExtrasFn() : {};
+      if (typeof broadcastFn === 'function') {
+        broadcastFn('sync', {
+          type: 'livesync:hello',
+          clientId: String(extras.clientId || ''),
+          startedAt: Number(meta.startedAt) || 0,
+          revision: Number(extras.revision) || 0,
+          rank: String(meta.rank || 'R1'),
+          dbUnlocked: !!extras.dbUnlocked,
+          shiftPinActive: !!extras.shiftPinActive,
+        });
+      }
+    } catch (e) {
+      console.error('[lan-heartbeat]', e && e.message ? e.message : e);
     }
   }, HEARTBEAT_INTERVAL_MS);
   if (typeof _heartbeatTimer.unref === 'function') _heartbeatTimer.unref();

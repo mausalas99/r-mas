@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_720 = [
+  {
+    title: 'Anfitrión visible de nuevo',
+    body:
+      'Si el <strong>código del equipo</strong> y el estado LAN quedaban desalineados, el servidor crasheaba y nadie encontraba al anfitrión. <strong>7.2.0</strong> re-alinea el hash al arrancar y al desbloquear la base, sin borrar censo ni salas.',
+  },
+  {
+    title: 'LAN consolidado (7.1.9–7.1.10)',
+    body:
+      'Huella de anfitrión, <strong>mDNS</strong> y beacon <strong>UDP</strong>, roam Wi‑Fi, transporte <strong>WS → SSE → HTTP</strong> y diagnóstico ⇄ con perfil de red y RTT.',
+  },
+  {
+    title: 'mDNS resiliente',
+    body:
+      'Bonjour deja de crashear al perder la interfaz Wi‑Fi; R+ reinicia el anuncio cuando vuelve una IP privada.',
+  },
+  {
+    title: 'Reconectar clientes',
+    body:
+      'Tras actualizar el anfitrión, usa <strong>Conectar al turno</strong> o el enlace de invitación ⇄ para alinear el token en cada Mac.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.0 en todas</strong> las estaciones el mismo día. Sin cambio de esquema SQLCipher (sigue <strong>v14</strong>).',
+  },
+];
+
 var RELEASE_NOTES_719 = [
   {
     title: 'Descubrimiento mDNS y UDP',
@@ -513,9 +541,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_719;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_720;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.0': RELEASE_NOTES_720,
   '7.1.9': RELEASE_NOTES_719,
   '7.1.8': RELEASE_NOTES_718,
   '7.1.7': RELEASE_NOTES_717,

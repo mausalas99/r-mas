@@ -8,6 +8,8 @@ const { hashTeamCode } = require('./team-code.js');
 const {
   bootstrapLanTeamCode,
   rehashLanHostState,
+  reconcileLanHostStateTeamCodeFile,
+  reconcileLanHostTeamCode,
   isWeakLanToken,
   generateSecureLanToken,
 } = require('./effective-team-code.js');
@@ -159,4 +161,96 @@ test('rehashLanHostState returns updated false when file missing', () => {
   const out = rehashLanHostState(path.join(dir, 'missing.json'), generateSecureLanToken());
   assert.strictEqual(out.updated, false);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('bootstrapLanTeamCode reconciles stale host-state hash for strong existing token', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-reconcile-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  const strong = 'x'.repeat(64);
+  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), strong + '\n', 'utf8');
+  fs.writeFileSync(
+    hostPath,
+    JSON.stringify({
+      version: 2,
+      teamCodeHash: hashTeamCode('stale-token-64-chars-xxxxxxxxxxxxxxxxxxxxxxxxxxxx'),
+      patients: [{ id: 'p1', nombre: 'Ana', version: 1 }],
+      rooms: [],
+      roomSyncBundles: {},
+    }),
+    'utf8'
+  );
+  delete process.env.R_PLUS_LAN_TEAM_CODE;
+  const boot = bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: hostPath });
+  assert.strictEqual(boot.token, strong);
+  const st = JSON.parse(fs.readFileSync(hostPath, 'utf8'));
+  assert.strictEqual(st.teamCodeHash, hashTeamCode(strong));
+  assert.strictEqual(st.patients.length, 1);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('reconcileLanHostStateTeamCodeFile is no-op when hash already matches', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-reconcile-noop-'));
+  const hostPath = path.join(dir, 'host.json');
+  const token = generateSecureLanToken();
+  fs.writeFileSync(
+    hostPath,
+    JSON.stringify({
+      version: 2,
+      teamCodeHash: hashTeamCode(token),
+      patients: [],
+      rooms: [],
+      roomSyncBundles: {},
+    }),
+    'utf8'
+  );
+  const out = reconcileLanHostStateTeamCodeFile(hostPath, token);
+  assert.strictEqual(out.updated, false);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('reconcileLanHostTeamCode updates file and db without data loss', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-reconcile-db-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  const oldToken = 'old-token-64-chars-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+  const newToken = generateSecureLanToken();
+  fs.writeFileSync(
+    hostPath,
+    JSON.stringify({
+      version: 2,
+      teamCodeHash: hashTeamCode(oldToken),
+      patients: [{ id: 'p1', nombre: 'Ana', version: 1 }],
+      rooms: [{ id: 'r1', displayName: 'UCI' }],
+      roomSyncBundles: {},
+    }),
+    'utf8'
+  );
+  const mgr = await createUnlockedDbManager(dir, () => 'reconcile-db-test');
+  const { writeHostState } = await import('../lib/db/lan-host-persistence.mjs');
+  writeHostState(mgr.getDb(), {
+    version: 2,
+    teamCodeHash: hashTeamCode(oldToken),
+    patients: [{ id: 'p1', nombre: 'Ana', version: 1 }],
+    rooms: [{ id: 'r1', displayName: 'UCI' }],
+    roomSyncBundles: {},
+  });
+  try {
+    const out = reconcileLanHostTeamCode({
+      hostStatePath: hostPath,
+      plainToken: newToken,
+      db: mgr.getDb(),
+    });
+    assert.strictEqual(out.file.updated, true);
+    assert.strictEqual(out.db.updated, true);
+    const fileState = JSON.parse(fs.readFileSync(hostPath, 'utf8'));
+    assert.strictEqual(fileState.teamCodeHash, hashTeamCode(newToken));
+    assert.strictEqual(fileState.patients.length, 1);
+    const { readHostState } = await import('../lib/db/lan-host-persistence.mjs');
+    const dbState = readHostState(mgr.getDb());
+    assert.strictEqual(dbState.teamCodeHash, hashTeamCode(newToken));
+    assert.strictEqual(dbState.patients.length, 1);
+  } finally {
+    mgr.lock();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

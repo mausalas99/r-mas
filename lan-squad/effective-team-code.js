@@ -2,7 +2,11 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { createRequire } = require('node:module');
 const { hashTeamCode } = require('./team-code.js');
+const { readHostState, writeHostState } = createRequire(__filename)(
+  '../lib/db/lan-host-persistence.mjs'
+);
 
 const WEAK_EXACT = new Set(['1234']);
 const LEGACY_RANDOM_TEAM_CODE_RE = /^[a-f0-9]{32}$/i;
@@ -39,6 +43,44 @@ function rehashLanHostState(hostStatePath, plainToken) {
   fs.writeFileSync(tmp, JSON.stringify(state), 'utf8');
   fs.renameSync(tmp, hostStatePath);
   return { updated: true };
+}
+
+function reconcileLanHostStateTeamCodeFile(hostStatePath, plainToken) {
+  if (!hostStatePath || !fs.existsSync(hostStatePath)) return { updated: false };
+  const expected = hashTeamCode(plainToken);
+  let state;
+  try {
+    state = JSON.parse(fs.readFileSync(hostStatePath, 'utf8'));
+  } catch {
+    return { updated: false };
+  }
+  if (!state || state.teamCodeHash === expected) return { updated: false };
+  return rehashLanHostState(hostStatePath, plainToken);
+}
+
+function reconcileLanHostStateTeamCodeDb(db, plainToken) {
+  if (!db) return { updated: false };
+  let state;
+  try {
+    state = readHostState(db);
+  } catch {
+    return { updated: false };
+  }
+  if (!state) return { updated: false };
+  const expected = hashTeamCode(plainToken);
+  if (state.teamCodeHash === expected) return { updated: false };
+  state.teamCodeHash = expected;
+  writeHostState(db, state);
+  return { updated: true };
+}
+
+function reconcileLanHostTeamCode({ hostStatePath, plainToken, db } = {}) {
+  const token = String(plainToken || '').trim();
+  if (!token) return { file: { updated: false }, db: { updated: false } };
+  return {
+    file: reconcileLanHostStateTeamCodeFile(hostStatePath, token),
+    db: reconcileLanHostStateTeamCodeDb(db, token),
+  };
 }
 
 function bootstrapLanTeamCode({ userDataPath, hostStatePath }) {
@@ -78,9 +120,9 @@ function bootstrapLanTeamCode({ userDataPath, hostStatePath }) {
     throw err;
   }
 
-  if (rotated) rehashLanHostState(hostStatePath, token);
+  reconcileLanHostStateTeamCodeFile(hostStatePath, token);
 
-  return { token, source, requiresMigrationNotice };
+  return { token, source, requiresMigrationNotice, rotated };
 }
 
 /** Read token from disk only (IPC); never returns weak or default fallbacks. */
@@ -99,6 +141,9 @@ function readLanTeamCodeFile({ userDataPath }) {
 module.exports = {
   bootstrapLanTeamCode,
   rehashLanHostState,
+  reconcileLanHostStateTeamCodeFile,
+  reconcileLanHostStateTeamCodeDb,
+  reconcileLanHostTeamCode,
   isWeakLanToken,
   generateSecureLanToken,
   readLanTeamCodeFile,

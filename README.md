@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.9](https://github.com/mausalas99/r-mas/releases/tag/v7.1.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.0](https://github.com/mausalas99/r-mas/releases/tag/v7.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.2.0 (Estabilización LAN en guardia)
+
+- **Anfitrión visible de nuevo** — Reconcilia `lan-team-code.txt` con el estado LAN (JSON/SQLCipher) sin borrar datos; evita crash del servidor y `auth/exchange` 401.
+- **LAN consolidado** — Huella de anfitrión, mDNS/UDP, WS→SSE→HTTP, roam Wi‑Fi y diagnóstico ⇄ (línea 7.1.9–7.1.10).
+- **mDNS resiliente** — Sin crash al perder interfaz; reinicio al volver la red.
+- **Operación** — Instalar en **todas** las estaciones del turno; clientes reconectan con PIN o enlace de invitación tras actualizar el host.
+- **Sobre 7.1.10** — Sin cambio de esquema SQLCipher (sigue v14).
+
+Notas: `docs/RELEASE_NOTES_7.2.0.txt`.
 
 ## R+ 7.1.9 (LAN descubrimiento y reconexión)
 
@@ -590,7 +599,10 @@ Notas: `docs/RELEASE_NOTES_3.0.0.txt`.
 
 ## R+ 6.6.2 (LAN ward-ready — correcciones ⇄ y host)
 
-- **TODO:** completar bullets en README.
+- **Clinical-ops** — `pushClinicalOpsLanNow` ya no cae al bundle completo; cola `clinical_ops` con drenado secuencial y toasts **QUEUED** en outbox.
+- **Host** — `GET …/historia-clinica` lee HC embebida en `bundle.entries` si no existe entidad `hc:` (evita 404 al abrir expediente).
+- **⇄** — Imports restaurados tras modularizar LAN; panel de borradores de conflicto; revisión en cada PUT al anfitrión.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.2**; no mezclar con 6.6.0/6.6.1 en la misma guardia.
 
 Notas: `docs/RELEASE_NOTES_6.6.2.txt`.
 ## R+ 2.4.1 (parche — medicamentos compactos y tooltip de tendencias)
@@ -651,7 +663,10 @@ Notas: `docs/RELEASE_NOTES_2.3.0.txt`.
 
 ## R+ 6.6.8 (LiveSync — icono Wi‑Fi y estados de conexión)
 
-- **TODO:** completar bullets en README.
+- **LiveSync en el header** — Icono **Wi‑Fi** (sin texto ⇄); mismo panel de conexión LAN; estado en tooltip y lectores de pantalla.
+- **Estados visuales** — **Verde** = sync en vivo; **ámbar** = conectando; **naranja** = reconectando; **acento** = en sala sin sync; **gris** = sin sala.
+- **Directorio LAN** — Tras @usuario y **Unirse** en la sala, residentes visibles para asignar equipo desde el directorio.
+- **Turno homogéneo** — **6.6.8 en todas** las Macs, PCs e iPads el mismo día (incluye línea **6.6.7** móvil/onboarding).
 
 Notas: `docs/RELEASE_NOTES_6.6.8.txt`.
 ## R+ 2.2.1 (parche — onboarding y texto de Consolidar)

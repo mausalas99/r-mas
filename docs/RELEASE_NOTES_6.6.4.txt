@@ -5,12 +5,12 @@ Fecha: 2026-06-04
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Parche sobre **6.6.3**: enlaces móviles `/join/req_…` para iPad e invitación de sala, con parámetros opcionales de perfil en la URL; continúa la línea cold-start con chunks de esbuild.
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- **⇄** — Enlace `/join/req_…` para iPad y invitación; parámetros opcionales de perfil en la URL.
+- **Renderer** — Chunks de esbuild; carga diferida de módulos pesados (continúa línea 6.6.3 cold-start).
 
 ## Instalación
 
