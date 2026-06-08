@@ -754,20 +754,37 @@ ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
   if (!token || token.length < 32) return { ok: false, error: 'invalid_token' };
   try {
     const userData = app.getPath('userData');
-    const filePath = path.join(userData, 'lan-team-code.txt');
-    fs.writeFileSync(filePath, token + '\n', 'utf8');
-    const { reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
+    const {
+      writeLanGuestBearerFile,
+      recoverLocalHostTeamCodeIfGuestOverwrite,
+      lanTeamCodePath,
+    } = require('./lan-squad/effective-team-code.js');
+    const hostStatePath = path.join(userData, 'lan-squad-host-state.json');
     const dbManager = globalThis.__rplusDbManager;
     const db =
       dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
         ? dbManager.getDb()
         : null;
-    reconcileLanHostTeamCode({
-      hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
-      plainToken: token,
-      db,
-    });
+    const written = writeLanGuestBearerFile({ userDataPath: userData, token });
+    if (!written.ok) return written;
+    // Heal 7.2.0 bug: guest bearer had overwritten lan-team-code.txt.
+    let hostToken = '';
+    try {
+      hostToken = fs.readFileSync(lanTeamCodePath(userData), 'utf8').split(/\r?\n/, 1)[0].trim();
+    } catch (_e) {}
+    if (hostToken && hostToken === token) {
+      recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath: userData, hostStatePath, db });
+    }
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+ipcMain.handle('lan-get-guest-bearer', () => {
+  try {
+    const { readLanGuestBearerFile } = require('./lan-squad/effective-team-code.js');
+    return readLanGuestBearerFile({ userDataPath: app.getPath('userData') });
   } catch (e) {
     return { ok: false, error: e && e.message ? e.message : String(e) };
   }

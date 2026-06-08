@@ -595,7 +595,7 @@ function appendLanJoinOtherMacSection(root, opts) {
   inputInvite.id = 'lan-input-invite-link';
   inputInvite.rows = 2;
   inputInvite.autocomplete = 'off';
-  inputInvite.placeholder = 'http://…/join/req_… o PIN del turno (6 dígitos)';
+  inputInvite.placeholder = 'http://…/join/req_…, PIN (6 dígitos), o dirección http://…:3738';
   inner.appendChild(inputInvite);
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';
@@ -1510,7 +1510,7 @@ function appendLanHostAddressCopyButton(root, gen) {
       }
       copyToClipboardSafe(shareUrl);
       runtime().showToast(
-        'Dirección copiada — compártela si el equipo no te encuentra en la red.',
+        'Dirección copiada — en la otra Mac pégala en ⇄ (Unirse) junto con el PIN del turno.',
         'success'
       );
     });
@@ -2662,33 +2662,26 @@ export function joinLanFromInviteUi(fromBtn) {
     return;
   }
   if (/^\d{6}$/.test(raw)) {
-    if (fromBtn instanceof HTMLButtonElement) {
-      fromBtn.disabled = true;
-      fromBtn.textContent = 'Conectando…';
-    }
-    void import('../../lan-shift-pin-connect.mjs')
-      .then(function (m) {
-        return m.tryEasyLanShiftPinConnect({ shiftPin: raw, force: true });
-      })
-      .then(function (result) {
-        if (result && result.ok) {
-          renderLanPanel({ force: true });
-          return;
-        }
-        runtime().showToast(
-          'No encontramos el turno con ese PIN. Revisa el Wi‑Fi clínico o pide otro PIN.',
-          'error'
-        );
-      })
-      .finally(function () {
-        if (fromBtn instanceof HTMLButtonElement) {
-          fromBtn.disabled = false;
-          fromBtn.textContent = 'Unirse con enlace';
-        }
-      });
+    runShiftPinConnectFromUi(fromBtn, { shiftPin: raw });
     return;
   }
   var parsed = parseLanInviteInput(raw);
+  if (parsed.bareHost && parsed.hostUrl) {
+    prefillLanShiftPinHostUrl(parsed.hostUrl);
+    var wardPin =
+      String(parsed.shiftPin || '').trim() ||
+      (typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '');
+    if (!/^\d{6}$/.test(wardPin)) {
+      runtime().showToast(
+        'Dirección del anfitrión reconocida. Ingresa el PIN del turno (6 dígitos) y pulsa Conectar.',
+        'info'
+      );
+      focusLanShiftPinInput();
+      return;
+    }
+    runShiftPinConnectFromUi(fromBtn, { shiftPin: wardPin, hostUrl: parsed.hostUrl });
+    return;
+  }
   if (parsed.legacyInvite) {
     runtime().showToast(
       'Este enlace ya no es válido. Pide al anfitrión un nuevo enlace o PIN.',
@@ -3064,6 +3057,50 @@ export function focusLanShiftPinInput() {
     return false;
   }
   return tryFocus(0);
+}
+
+/** Prefill ward host URL field after pasting «Copiar dirección» into invite box. */
+export function prefillLanShiftPinHostUrl(hostUrl) {
+  var url = normalizeLanHostBase(String(hostUrl || '').trim());
+  if (!url) return false;
+  var input = document.getElementById('lan-input-host-url-ward');
+  if (input) {
+    input.value = url;
+    return true;
+  }
+  return false;
+}
+
+function runShiftPinConnectFromUi(fromBtn, opts) {
+  if (fromBtn instanceof HTMLButtonElement) {
+    fromBtn.disabled = true;
+    fromBtn.textContent = 'Conectando…';
+  }
+  void import('../../lan-shift-pin-connect.mjs')
+    .then(function (m) {
+      return m.tryEasyLanShiftPinConnect(
+        Object.assign({ force: true }, opts || {})
+      );
+    })
+    .then(function (result) {
+      if (result && result.ok) {
+        renderLanPanel({ force: true });
+        return;
+      }
+      var msg =
+        result && result.reason === 'invalid_pin'
+          ? 'PIN incorrecto para esa dirección. Pide el PIN actual al anfitrión.'
+          : result && result.reason === 'host_unreachable'
+            ? 'No hay R+ en esa dirección. Verifica la URL y que el anfitrión tenga R+ abierto.'
+            : 'No encontramos el turno con ese PIN. Revisa el Wi‑Fi clínico o pide otro PIN.';
+      runtime().showToast(msg, 'error');
+    })
+    .finally(function () {
+      if (fromBtn instanceof HTMLButtonElement) {
+        fromBtn.disabled = false;
+        fromBtn.textContent = 'Unirse con enlace';
+      }
+    });
 }
 
 export function openConnectionDropdown() {

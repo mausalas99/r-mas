@@ -219,26 +219,9 @@ export async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
     .replace(/\/+$/, '');
   var pinned = getPinnedHostUrl();
   var switchOpts = { skipRememberPrimary: true };
-  if (targetUrl && targetUrl !== currentUrl) {
-    if (pinned) {
-      if (targetUrl !== pinned) {
-        var pinMsg =
-          'Se detectó otro anfitrión (' +
-          targetUrl +
-          '). Tienes fijado ' +
-          pinned +
-          '. ¿Cambiar de todos modos?';
-        if (typeof confirm !== 'function' || !confirm(pinMsg)) return false;
-      }
-    } else if (typeof confirm === 'function') {
-      if (
-        !confirm(
-          '¿Reconectar al anfitrión ' + targetUrl + '?'
-        )
-      ) {
-        return false;
-      }
-    }
+  if (targetUrl && targetUrl !== currentUrl && pinned && targetUrl !== pinned) {
+    runtime().showToast('Anfitrión fijado: ' + pinned + '.', 'info');
+    return false;
   }
   if (!applyLanHostUrlSwitch(hostUrl, teamCode, switchOpts)) return false;
   var ok = await pingLanHostUrl(hostUrl, teamCode);

@@ -12,6 +12,9 @@ const {
   reconcileLanHostTeamCode,
   isWeakLanToken,
   generateSecureLanToken,
+  readLanGuestBearerFile,
+  writeLanGuestBearerFile,
+  recoverLocalHostTeamCodeIfGuestOverwrite,
 } = require('./effective-team-code.js');
 
 test('isWeakLanToken flags 1234 and 32-hex legacy', () => {
@@ -253,4 +256,33 @@ test('reconcileLanHostTeamCode updates file and db without data loss', async () 
     mgr.lock();
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('guest bearer uses separate file and does not overwrite host team code', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-guest-'));
+  const hostPath = path.join(dir, 'lan-team-code.txt');
+  const guestPath = path.join(dir, 'lan-guest-bearer.txt');
+  const localToken = 'a'.repeat(64);
+  fs.writeFileSync(hostPath, localToken + '\n', 'utf8');
+  const guestToken = 'b'.repeat(64);
+  const written = writeLanGuestBearerFile({ userDataPath: dir, token: guestToken });
+  assert.strictEqual(written.ok, true);
+  assert.strictEqual(fs.readFileSync(guestPath, 'utf8').trim(), guestToken);
+  assert.strictEqual(fs.readFileSync(hostPath, 'utf8').trim(), localToken);
+  const read = readLanGuestBearerFile({ userDataPath: dir });
+  assert.strictEqual(read.ok, true);
+  assert.strictEqual(read.code, guestToken);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('recoverLocalHostTeamCodeIfGuestOverwrite regenerates host token when files match', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-guest-recover-'));
+  const token = 'c'.repeat(64);
+  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), token + '\n', 'utf8');
+  fs.writeFileSync(path.join(dir, 'lan-guest-bearer.txt'), token + '\n', 'utf8');
+  const out = recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath: dir });
+  assert.strictEqual(out.recovered, true);
+  assert.ok(out.token && out.token.length >= 32);
+  assert.notStrictEqual(fs.readFileSync(path.join(dir, 'lan-team-code.txt'), 'utf8').trim(), token);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

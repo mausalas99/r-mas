@@ -32,6 +32,52 @@ function atomicWriteTeamCode(filePath, token) {
   fs.renameSync(tmp, filePath);
 }
 
+function lanGuestBearerPath(userDataPath) {
+  return path.join(String(userDataPath || ''), 'lan-guest-bearer.txt');
+}
+
+function lanTeamCodePath(userDataPath) {
+  return path.join(String(userDataPath || ''), 'lan-team-code.txt');
+}
+
+/** Guest-only bearer (remote host token); never overwrites lan-team-code.txt. */
+function readLanGuestBearerFile({ userDataPath }) {
+  const filePath = lanGuestBearerPath(userDataPath);
+  try {
+    if (!fs.existsSync(filePath)) return { ok: false, error: 'no_guest_file' };
+    const code = fs.readFileSync(filePath, 'utf8').split(/\r?\n/, 1)[0].trim();
+    if (!code || isWeakLanToken(code)) return { ok: false, error: 'weak_or_missing_token' };
+    return { ok: true, code, source: 'guest_file' };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : 'read_failed' };
+  }
+}
+
+function writeLanGuestBearerFile({ userDataPath, token }) {
+  const code = String(token || '').trim();
+  if (!code || isWeakLanToken(code)) return { ok: false, error: 'invalid_token' };
+  atomicWriteTeamCode(lanGuestBearerPath(userDataPath), code);
+  return { ok: true };
+}
+
+/**
+ * 7.2.0 wrote guest bearer into lan-team-code.txt — regenerate local host token when detected.
+ * @returns {{ recovered: boolean, token?: string }}
+ */
+function recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath, hostStatePath, db } = {}) {
+  const hostPath = lanTeamCodePath(userDataPath);
+  const guestPath = lanGuestBearerPath(userDataPath);
+  if (!fs.existsSync(hostPath) || !fs.existsSync(guestPath)) return { recovered: false };
+  const host = fs.readFileSync(hostPath, 'utf8').split(/\r?\n/, 1)[0].trim();
+  const guest = fs.readFileSync(guestPath, 'utf8').split(/\r?\n/, 1)[0].trim();
+  if (!host || !guest || host !== guest) return { recovered: false };
+  const token = generateSecureLanToken();
+  atomicWriteTeamCode(hostPath, token);
+  reconcileLanHostStateTeamCodeFile(hostStatePath, token);
+  reconcileLanHostStateTeamCodeDb(db, token);
+  return { recovered: true, token };
+}
+
 function rehashLanHostState(hostStatePath, plainToken) {
   if (!hostStatePath || !fs.existsSync(hostStatePath)) return { updated: false };
   const raw = fs.readFileSync(hostStatePath, 'utf8');
@@ -83,8 +129,9 @@ function reconcileLanHostTeamCode({ hostStatePath, plainToken, db } = {}) {
   };
 }
 
-function bootstrapLanTeamCode({ userDataPath, hostStatePath }) {
-  const filePath = path.join(userDataPath, 'lan-team-code.txt');
+function bootstrapLanTeamCode({ userDataPath, hostStatePath, db } = {}) {
+  recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath, hostStatePath, db });
+  const filePath = lanTeamCodePath(userDataPath);
   let token = '';
   let source = 'file';
   let requiresMigrationNotice = false;
@@ -147,5 +194,10 @@ module.exports = {
   isWeakLanToken,
   generateSecureLanToken,
   readLanTeamCodeFile,
+  readLanGuestBearerFile,
+  writeLanGuestBearerFile,
+  recoverLocalHostTeamCodeIfGuestOverwrite,
+  lanGuestBearerPath,
+  lanTeamCodePath,
   LEGACY_RANDOM_TEAM_CODE_RE,
 };

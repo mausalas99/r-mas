@@ -119,6 +119,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   lanGuestWriteBearer: function(payload) {
     return ipcRenderer.invoke('lan-guest-write-bearer', payload);
   },
+  getLanGuestBearer: function() {
+    return ipcRenderer.invoke('lan-get-guest-bearer');
+  },
   lanWardHostRecord: function(payload) {
     return ipcRenderer.invoke('lan-ward-host-record', payload);
   },

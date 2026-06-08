@@ -53,10 +53,16 @@ describe('lan-shift-pin-connect probe order', () => {
     assert.ok(fnStart > 0);
     const fnBody = shiftPinSrc.slice(fnStart);
     const probeIdx = fnBody.indexOf('collectShiftPinProbeUrls');
+    const fastIdx = fnBody.indexOf('collectShiftPinFastDiscoveryUrls');
     const beaconIdx = fnBody.indexOf('discoverLanHostsOnAllLocalSubnetsViaBeacon');
     const wardPrefixIdx = fnBody.indexOf('listWardSubnetPrefixesForProbe');
-    assert.ok(probeIdx > 0 && beaconIdx > probeIdx);
+    assert.ok(probeIdx > 0 && fastIdx > probeIdx && beaconIdx > fastIdx);
     assert.ok(wardPrefixIdx > beaconIdx);
+  });
+
+  it('connectLanWithShiftPin skips loopback for remote join clients', () => {
+    assert.ok(shiftPinSrc.includes('shouldTryLoopbackShiftPin'));
+    assert.ok(shiftPinSrc.includes('isLanRemoteJoinMode'));
   });
 });
 

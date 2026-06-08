@@ -255,12 +255,58 @@ export async function ensureLanClientTeamCodeAligned() {
   return persistLanClientConfig(hostUrl, cfg.teamCode);
 }
 
+/** One-time: persist rpc-lan-config bearer to lan-guest-bearer.txt (7.2.0 migration). */
+export async function ensureLanGuestBearerFileFromConfig() {
+  if (!isLanRemoteJoinMode()) return false;
+  if (!window.electronAPI?.getLanGuestBearer || !window.electronAPI?.lanGuestWriteBearer) {
+    return false;
+  }
+  var existing;
+  try {
+    existing = await window.electronAPI.getLanGuestBearer();
+  } catch (_e) {
+    return false;
+  }
+  if (existing && existing.ok) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var code = trimStoredLanBearer(cfg.teamCode);
+  if (code.length < 32 || !String(cfg.hostUrl || '').trim()) return false;
+  try {
+    await window.electronAPI.lanGuestWriteBearer({ token: code });
+  } catch (_eWrite) {
+    return false;
+  }
+  return true;
+}
+
+/** Guest client: reload remote host bearer from lan-guest-bearer.txt into rpc-lan-config. */
+export async function syncLanGuestBearerFromDisk() {
+  if (!window.electronAPI || typeof window.electronAPI.getLanGuestBearer !== 'function') {
+    return false;
+  }
+  var info;
+  try {
+    info = await window.electronAPI.getLanGuestBearer();
+  } catch (_e) {
+    return false;
+  }
+  if (!info || !info.ok || !info.code) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
+  if (!hostUrl) return false;
+  persistLanClientConfig(hostUrl, info.code);
+  return true;
+}
+
 export async function lanFetchAuthed(path, opts) {
   await ensureLanClientTeamCodeAligned();
   var resp = await lanClient.fetch(path, opts);
   if (resp.status !== 401) return resp;
-  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  if (uiRole === 'host' && window.electronAPI?.getLanEffectiveTeamCode) {
     await syncLanSavedTeamCodeWithEffectiveHostCode();
+  } else if (uiRole !== 'host' && window.electronAPI?.getLanGuestBearer) {
+    await syncLanGuestBearerFromDisk();
   }
   return lanClient.fetch(path, opts);
 }
@@ -268,8 +314,16 @@ export async function lanFetchAuthed(path, opts) {
 /** Bearer del anfitrión: config guardada o lan-team-code.txt vía IPC. */
 export async function resolveHostBearerToken() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
   var fromCfg = trimStoredLanBearer(cfg.teamCode);
   if (fromCfg.length >= 32) return fromCfg;
+  if (uiRole !== 'host' && window.electronAPI?.getLanGuestBearer) {
+    try {
+      var guest = await window.electronAPI.getLanGuestBearer();
+      if (guest && guest.ok && guest.code) return String(guest.code).trim();
+    } catch (_eGuest) {}
+    return '';
+  }
   if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
     try {
       var info = await window.electronAPI.getLanEffectiveTeamCode();
@@ -1034,6 +1088,9 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
 
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop()) return;
+  if (isLanRemoteJoinMode()) {
+    await ensureLanGuestBearerFileFromConfig();
+  }
   demoteIneligibleLanHostUiRole();
   if (!isClinicalRankConfiguredForLan()) return;
   try {

@@ -27,10 +27,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.1](https://github.com/mausalas99/r-mas/releases/tag/v7.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.2](https://github.com/mausalas99/r-mas/releases/tag/v7.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.2 (LAN cliente y reconexión)
+
+- **Bearer de invitado** — Token remoto en `lan-guest-bearer.txt`; no pisa el código del servidor local (fix 7.2.0).
+- **Pegar dirección** — ⇄ acepta `http://…:3738` + PIN opcional en «Unirse con enlace».
+- **PIN más rápido** — mDNS/UDP/registro ward antes del barrido; sin loopback en clientes.
+- **Reconexión silenciosa** — Sin diálogo de confirmación al volver al anfitrión.
+- **Sobre 7.2.1** — Sin cambio de esquema SQLCipher (sigue v14).
+
+Notas: `docs/RELEASE_NOTES_7.2.2.txt`.
 
 ## R+ 7.2.1 (LAN cross-VLAN y estabilidad)
 

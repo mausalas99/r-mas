@@ -132,6 +132,32 @@ describe('lan-join-link', () => {
     assert.equal(p.legacyInvite, false);
   });
 
+  it('parseLanInviteInput reconoce dirección base del anfitrión (Copiar dirección)', () => {
+    const p = parseLanInviteInput('http://192.168.0.10:3738');
+    assert.equal(p.hostUrl, 'http://192.168.0.10:3738');
+    assert.equal(p.bareHost, true);
+    assert.equal(p.ticketId, '');
+  });
+
+  it('parseLanInviteInput reconoce IP:3738 sin esquema', () => {
+    const p = parseLanInviteInput('10.0.57.52:3738');
+    assert.equal(p.hostUrl, 'http://10.0.57.52:3738');
+    assert.equal(p.bareHost, true);
+  });
+
+  it('parseLanInviteInput extrae PIN junto a dirección', () => {
+    const p = parseLanInviteInput('http://10.0.57.52:3738 482910');
+    assert.equal(p.hostUrl, 'http://10.0.57.52:3738');
+    assert.equal(p.shiftPin, '482910');
+    assert.equal(p.bareHost, true);
+  });
+
+  it('parseLanInviteInput lee PIN suelto de 6 dígitos', () => {
+    const p = parseLanInviteInput('482910');
+    assert.equal(p.shiftPin, '482910');
+    assert.equal(p.bareHost, false);
+  });
+
   it('parseLanInviteInput marca query suelta legacy', () => {
     const p = parseLanInviteInput('code=only&room=r9');
     assert.equal(p.teamCode, '');

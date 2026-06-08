@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_722 = [
+  {
+    title: 'Clientes LAN corregidos',
+    body:
+      'El token del anfitrión remoto ya no sobrescribe el código del servidor en esta Mac (<strong>lan-guest-bearer.txt</strong>). Repara instalaciones afectadas por <strong>7.2.0</strong>.',
+  },
+  {
+    title: 'Pegar dirección + PIN',
+    body:
+      'En ⇄, <strong>Unirse con enlace</strong> reconoce <code>http://…:3738</code> copiado del R4. Opcional: PIN de 6 dígitos en la misma línea.',
+  },
+  {
+    title: 'Reconexión sin diálogo',
+    body:
+      'Al volver al anfitrión (Wi‑Fi, handoff o failover) ya no aparece «¿Reconectar…?». Solo un toast si tienes anfitrión fijado distinto.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.2 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.1</strong>; esquema SQLCipher sigue en <strong>v14</strong>.',
+  },
+];
+
 var RELEASE_NOTES_721 = [
   {
     title: 'Cross-VLAN en el hospital',
@@ -569,9 +592,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_721;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_722;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.2': RELEASE_NOTES_722,
   '7.2.1': RELEASE_NOTES_721,
   '7.2.0': RELEASE_NOTES_720,
   '7.1.9': RELEASE_NOTES_719,

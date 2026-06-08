@@ -144,18 +144,74 @@ function hostFromUrl(u) {
 }
 
 function emptyInviteParse() {
-  return { hostUrl: '', teamCode: '', roomId: '', ticketId: '', legacyInvite: false };
+  return {
+    hostUrl: '',
+    teamCode: '',
+    roomId: '',
+    ticketId: '',
+    legacyInvite: false,
+    shiftPin: '',
+    bareHost: false,
+  };
+}
+
+/** True when URL is a LAN server base (Copiar dirección), not a /join ticket link. */
+export function isBareLanHostBaseUrl(url) {
+  try {
+    const u = typeof url === 'string' ? new URL(url) : url;
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    if (path !== '/' && !/^\/api\/lan\/v1\/?$/i.test(path)) return false;
+    const port = u.port || (u.protocol === 'https:' ? '443' : '80');
+    return port === '3738' || port === '' || port === '80';
+  } catch (_e) {
+    return false;
+  }
+}
+
+/** 6-digit shift PIN in pasted text (ignores digits inside URLs). */
+export function extractShiftPinFromPaste(raw) {
+  const text = String(raw || '');
+  const withoutUrls = text.replace(/https?:\/\/[^\s<>"']+/gi, ' ');
+  const m = withoutUrls.match(/\b(\d{6})\b/);
+  return m ? m[1] : '';
+}
+
+function parseBareHostFromText(text) {
+  const urlMatch = text.match(/https?:\/\/[^\s<>"']+/i);
+  if (urlMatch) {
+    try {
+      const u = new URL(urlMatch[0]);
+      if (isBareLanHostBaseUrl(u)) {
+        return { hostUrl: hostFromUrl(u), shiftPin: extractShiftPinFromPaste(text) };
+      }
+    } catch (_e) {}
+  }
+  const ipMatch = text.match(
+    /^(?:https?:\/\/)?(\d{1,3}(?:\.\d{1,3}){3})(?::3738)?\/?(?:\s+(\d{6}))?\s*$/
+  );
+  if (ipMatch) {
+    return {
+      hostUrl: `http://${ipMatch[1]}:3738`,
+      shiftPin: ipMatch[2] || extractShiftPinFromPaste(text),
+    };
+  }
+  return null;
 }
 
 /**
- * Parsea texto pegado: URL de ticket /join/req_…, URL legacy con ?code=, query suelta.
+ * Parsea texto pegado: URL de ticket /join/req_…, URL legacy con ?code=, query suelta,
+ * dirección base del anfitrión (http://…:3738), o PIN suelto.
  * @param {string} raw
- * @returns {{ hostUrl: string, teamCode: string, roomId: string, ticketId: string, legacyInvite: boolean }}
+ * @returns {{ hostUrl: string, teamCode: string, roomId: string, ticketId: string, legacyInvite: boolean, shiftPin: string, bareHost: boolean }}
  */
 export function parseLanInviteInput(raw) {
   const text = String(raw || '').trim();
   if (!text) {
     return emptyInviteParse();
+  }
+
+  if (/^\d{6}$/.test(text)) {
+    return { ...emptyInviteParse(), shiftPin: text };
   }
 
   const urlMatch = text.match(/https?:\/\/[^\s<>"']+/i);
@@ -165,7 +221,15 @@ export function parseLanInviteInput(raw) {
       const hostUrl = hostFromUrl(u);
       const ticketM = u.pathname.match(JOIN_TICKET_PATH_RE);
       if (ticketM) {
-        return { hostUrl, teamCode: '', roomId: '', ticketId: ticketM[1], legacyInvite: false };
+        return {
+          hostUrl,
+          teamCode: '',
+          roomId: '',
+          ticketId: ticketM[1],
+          legacyInvite: false,
+          shiftPin: extractShiftPinFromPaste(text),
+          bareHost: false,
+        };
       }
       const search = u.search || '';
       if (/\/mobile\/?$/i.test(u.pathname)) {
@@ -177,21 +241,63 @@ export function parseLanInviteInput(raw) {
             roomId: mobileParsed.roomId,
             ticketId: '',
             legacyInvite: false,
+            shiftPin: '',
+            bareHost: false,
           };
         }
       }
       if (search.includes('code=') || search.includes('token=')) {
         const room = String(new URLSearchParams(search).get('room') || '').trim();
-        return { hostUrl, teamCode: '', roomId: room, ticketId: '', legacyInvite: true };
+        return {
+          hostUrl,
+          teamCode: '',
+          roomId: room,
+          ticketId: '',
+          legacyInvite: true,
+          shiftPin: '',
+          bareHost: false,
+        };
+      }
+      if (isBareLanHostBaseUrl(u)) {
+        return {
+          hostUrl,
+          teamCode: '',
+          roomId: '',
+          ticketId: '',
+          legacyInvite: false,
+          shiftPin: extractShiftPinFromPaste(text),
+          bareHost: true,
+        };
       }
     } catch (_e) {
       /* fall through */
     }
   }
 
+  const bare = parseBareHostFromText(text);
+  if (bare) {
+    return {
+      hostUrl: bare.hostUrl,
+      teamCode: '',
+      roomId: '',
+      ticketId: '',
+      legacyInvite: false,
+      shiftPin: bare.shiftPin || '',
+      bareHost: true,
+    };
+  }
+
   const pathTicket = text.match(JOIN_TICKET_PATH_RE);
   if (pathTicket) {
-    return { hostUrl: '', teamCode: '', roomId: '', ticketId: pathTicket[1], legacyInvite: false };
+    return {
+      hostUrl: '',
+      teamCode: '',
+      roomId: '',
+      ticketId: pathTicket[1],
+      legacyInvite: false,
+      shiftPin: extractShiftPinFromPaste(text),
+      bareHost: false,
+    };
   }
 
   if (text.includes('code=') || text.includes('token=') || text.includes('room=')) {
@@ -204,6 +310,8 @@ export function parseLanInviteInput(raw) {
         roomId: parsed.roomId,
         ticketId: '',
         legacyInvite: true,
+        shiftPin: '',
+        bareHost: false,
       };
     }
   }

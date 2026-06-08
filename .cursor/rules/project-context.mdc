@@ -63,7 +63,7 @@ docs/superpowers/     Specs and implementation plans (design before big features
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
-| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs` (fingerprint-keyed host registry), `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs` (delta path apply, echo tracker); overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
+| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs` (fingerprint-keyed host registry), `lan-ward-host-registry.mjs` (persistent cross-VLAN URLs/prefixes), `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs` (delta path apply, echo tracker); overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
@@ -110,6 +110,9 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-08** `release-7.2.2`: LAN client reconnect — `lan-guest-bearer.txt` (fix 7.2.0 guest overwrite), bare host URL paste in ⇄, mDNS/UDP shift-PIN discovery, silent auto-reconnect; `effective-team-code.js`, `lan-shift-pin-connect.mjs`, `room.mjs`, `lan-join-link.mjs`.
+- **2026-06-08** `lan-ward-registry`: cross-VLAN ward host URL/subnet registry — renderer `localStorage` + host `userData/lan-ward-host-registry.json`; `wardHostHints` on `/auth/exchange` + bearer `GET /auth/ward-host-hints`; IPC `lan-ward-host-*`; `lan-squad/ward-host-registry.js`, `lan-ward-host-registry.mjs`, `auth-router.js`, `main.js`.
+- **2026-06-08** `release-7.2.0`: LAN teamCodeHash reconcile (file + SQLCipher) on boot/DB unlock/team-code IPC; heartbeat tolerant; consolidates 7.1.9–7.1.10 LAN stack; `effective-team-code.js`, `host-store.js`, `main.js`, `server.js`.
 - **2026-06-07** `lan-sse`: `GET /api/lan/v1/sse` bearer-auth event stream — heartbeat + `livesync:revision` fan-out to WS + SSE; `lan-sse-hub.js`, `host-router.js`, `server.js`.
 - **2026-06-07** `lan-mdns`: Bonjour `_rplus._tcp` advertise+browse on 3738, `lan:mdns-peers` IPC, NIC restart; `lan-mdns-service.js`, `main.js`, `preload.js`.
 - **2026-06-07** `lan-host-registry`: fingerprint-keyed in-memory host registry (SOURCE_WEIGHT upsert, legacy `rpc-lan-pinned-host-url` migration); `lan-host-registry.mjs`.
