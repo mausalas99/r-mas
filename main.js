@@ -748,7 +748,11 @@ ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes())
 const lanNetworkWatch = createLanNetworkWatch((payload) => {
   safeSendToRenderer('lan-network-changed', payload);
   if (_lanMdnsService) {
-    _lanMdnsService.restart(payload.candidateBaseUrl);
+    if (payload.candidateBaseUrl) {
+      _lanMdnsService.restart(payload.candidateBaseUrl);
+    } else {
+      _lanMdnsService.stop();
+    }
   }
 });
 

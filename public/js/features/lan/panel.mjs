@@ -47,7 +47,7 @@ import {
   isHostOnCurrentSubnets,
   resolveLocalLanSubnetPrefixes,
 } from '../../lan-host-subnet-discovery.mjs';
-import { findByFingerprint, getPinnedFingerprint } from '../../lan-host-registry.mjs';
+import { findByFingerprint, getPinnedFingerprint, listHosts } from '../../lan-host-registry.mjs';
 import { LanSseClient } from '../../lan-sse-client.mjs';
 import { createLanConnectionManager } from '../../lan-connection-manager.mjs';
 import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
@@ -1574,17 +1574,13 @@ function renderLanPreflightRow(root, preflight) {
   }
 
   if (p.phase === 'live') {
-    row.innerHTML =
-      '<span class="lan-preflight-item" title="Latencia al anfitrión">' +
-      '<span class="lan-hub-status-dot lan-hub-status-dot--online" aria-hidden="true"></span>' +
-      (p.rttMs > 0 ? '<span>' + esc(p.rttMs + ' ms') + '</span>' : '') +
-      '</span>' +
-      (p.transport && p.transport !== 'ws'
-        ? '<span class="lan-preflight-transport">' + esc(String(p.transport).toUpperCase()) + '</span>'
-        : '');
+    // Single status dot lives in .lan-hub-status-line — avoid a second green indicator here.
+    row.hidden = true;
+    row.innerHTML = '';
     return;
   }
 
+  row.hidden = false;
   row.innerHTML = [
     preflightItem(p.rttMs > 0, p.rttMs ? p.rttMs + ' ms' : 'sin ping', 'Latencia al anfitrión'),
     preflightItem(p.bearerValid, 'token', 'Bearer válido'),
@@ -1672,6 +1668,10 @@ async function buildLanSyncDiagnosticsDeps() {
   var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
   var peerHosts =
     typeof listLivePeerHostUrls === 'function' ? listLivePeerHostUrls(clientId) : [];
+  var profileRtt = 0;
+  try {
+    profileRtt = Number(lanNetworkProfile.getLastRttMs()) || 0;
+  } catch (_rtt) {}
   return {
     hostUrl: lanHostUrl(),
     pingAt: _lanLastPingAt,
@@ -1686,6 +1686,11 @@ async function buildLanSyncDiagnosticsDeps() {
     pinnedHost: getPinnedHostUrl(),
     teamCodeAligned: aligned,
     peerHostCount: peerHosts.length,
+    networkProfile: lanNetworkProfile.getNetworkProfile(),
+    transport: getConnectionManager().getTransport(),
+    rttMs: _lanLastPingRttMs || profileRtt || 0,
+    registryHostCount: listHosts().length,
+    role: isLanRemoteJoinMode() ? 'client' : 'host',
   };
 }
 

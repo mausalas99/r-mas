@@ -1,0 +1,50 @@
+R+ 7.2.0 (Exportar censo + estabilización LAN)
+================================================
+
+Fecha: 2026-06-08 (borrador)
+
+## Resumen
+
+Combina el parche LAN de **7.1.10** con **exportación de censo** a Excel (plantilla institucional) y PDF opcional. Sin cambio de esquema SQLCipher (sigue v14).
+
+## Nuevo / mejorado
+
+### Exportar censo
+
+- **Botón en censo** — «Exportar censo (Excel)» genera un libro `.xlsx` con la plantilla del hospital (bloques por paciente, cultivos, labs, signos vitales, accesos).
+- **PDF opcional** — Casilla «Incluir PDF» convierte el Excel vía LibreOffice si está instalado en la Mac anfitriona.
+- **Campos de paciente** — Diagnósticos de censo, ingreso UX/MI, accesos y bloques de signos vitales alineados al formato de plantilla.
+- **Servidor local** — `POST /generate-censo` en el puerto 3738 arma el workbook; no requiere internet.
+
+### LAN (heredado de 7.1.9–7.1.10)
+
+- **Huella de anfitrión** — Registro unificado; roam por `clientId:startedAt` al cambiar Wi‑Fi.
+- **Descubrimiento** — mDNS `_rplus._tcp`, beacon UDP, escaneo de subred.
+- **Transporte** — WS → SSE → polling HTTP en redes restrictivas.
+- **mDNS resiliente (7.1.10)** — Sin crash al perder interfaz; reinicio limpio al volver la red.
+- **Diagnóstico ⇄** — Perfil de red, transporte, RTT, registro de hosts y rol en el informe.
+
+## Operación en guardia
+
+- Instala **7.2.0 en todas** las estaciones del turno el mismo día.
+- Sin migración SQLCipher (esquema **v14**).
+- **Firewall / red:** TCP **3738**, mDNS **5353**, UDP multicast **3739**.
+- **Censo PDF:** requiere LibreOffice en la Mac que genera el archivo (opcional; Excel siempre disponible).
+- **Versiones mixtas:** no mezclar 7.1.x con estaciones antiguas en el mismo turno; el directorio y las mutaciones tipadas dependen de versión homogénea.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.0
+
+- Mac: `R+-7.2.0-arm64.dmg`, `R+-7.2.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.2.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Checklist pre-publicación
+
+- [ ] Merge `feature/censo-pacientes` (resolver 6 archivos en conflicto: `package.json`, `package-lock.json`, `public/index.html`, `public/js/app.js`, `public/js/storage.test.mjs`, `server.js`)
+- [ ] `npm test` + `npm run build:ui`
+- [ ] Prueba manual: exportar censo con 3+ pacientes, con y sin PDF
+- [ ] Prueba LAN: roam Wi‑Fi, sleep/wake, 2 Macs + iPad en mismo turno
+- [ ] Actualizar `stable-versions.json` y highlights en `release-notes-curated.mjs`

@@ -72,6 +72,11 @@ export function getLanSyncDiagnostics(deps) {
     pinnedHost: String(d.pinnedHost || ''),
     teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
     peerHostCount: Number(d.peerHostCount || 0),
+    networkProfile: String(d.networkProfile || ''),
+    transport: String(d.transport || ''),
+    rttMs: Number(d.rttMs || 0),
+    registryHostCount: Number(d.registryHostCount || 0),
+    role: String(d.role || ''),
     clinicalOpsTrace: trace,
     lastErrors: lastErrors.map(function (e) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };

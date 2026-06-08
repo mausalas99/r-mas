@@ -30,6 +30,19 @@ describe('lan-sync-diagnostics', () => {
     assert.equal(diag.phase, 'live');
     assert.equal(diag.outboxCount, 2);
     assert.ok(Array.isArray(diag.lastErrors));
+    const withNet = getLanSyncDiagnostics({
+      phase: 'live',
+      networkProfile: 'fast',
+      transport: 'ws',
+      rttMs: 42,
+      registryHostCount: 2,
+      role: 'host',
+    });
+    assert.equal(withNet.networkProfile, 'fast');
+    assert.equal(withNet.transport, 'ws');
+    assert.equal(withNet.rttMs, 42);
+    assert.equal(withNet.registryHostCount, 2);
+    assert.equal(withNet.role, 'host');
   });
 
   it('recordLanSyncError keeps at most 5 entries', () => {
