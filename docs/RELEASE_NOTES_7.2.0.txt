@@ -43,7 +43,7 @@ Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-re
 
 ## Checklist pre-publicación
 
-- [ ] Merge `feature/censo-pacientes` (resolver 6 archivos en conflicto: `package.json`, `package-lock.json`, `public/index.html`, `public/js/app.js`, `public/js/storage.test.mjs`, `server.js`)
+- [ ] Portar censo desde `feature/censo-pacientes` (rama diverge en **3.1.2** — no hacer merge directo; cherry-pick o copiar módulos nuevos + ruta `POST /generate-censo` en `server.js` actual)
 - [ ] `npm test` + `npm run build:ui`
 - [ ] Prueba manual: exportar censo con 3+ pacientes, con y sin PDF
 - [ ] Prueba LAN: roam Wi‑Fi, sleep/wake, 2 Macs + iPad en mismo turno
