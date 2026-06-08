@@ -1,20 +1,20 @@
-version: 7.2.1
+version: 7.2.2
 files:
-  - url: R+-7.2.1-x64.exe
-    sha512: fsf7h9bSJHHzzVVfBcxokl+56PKrnXL3aHoC3awfrVn7vmAnNARrUJguUSbw4k7bGQFmAKVt5i2FmZLWvfvpUw==
-    size: 114645120
-path: R+-7.2.1-x64.exe
-sha512: fsf7h9bSJHHzzVVfBcxokl+56PKrnXL3aHoC3awfrVn7vmAnNARrUJguUSbw4k7bGQFmAKVt5i2FmZLWvfvpUw==
-releaseDate: '2026-06-08T16:35:49.000Z'
+  - url: R+-7.2.2-x64.exe
+    sha512: qsbMYn396rBz9DgFoApTFVxfE1gZUIffLo+rYImFASDlAOruaWTPadhlzXkxQR1w0WISwGmUo2bLqgSrFsczsw==
+    size: 114661614
+path: R+-7.2.2-x64.exe
+sha512: qsbMYn396rBz9DgFoApTFVxfE1gZUIffLo+rYImFASDlAOruaWTPadhlzXkxQR1w0WISwGmUo2bLqgSrFsczsw==
+releaseDate: '2026-06-08T17:18:09.000Z'
 releaseNotes: |
-  Parche sobre 7.2.0: registro persistente de anfitriones y subredes del hospital (cross-VLAN), conexión por PIN con dirección opcional, menos ruido en escaneo ⇄ y correcciones de estabilidad en menú y arranque. Sin cambio de esquema SQLCipher (sigue v14).
+  Parche sobre 7.2.1: corrige conexión de clientes LAN (bearer de invitado separado del código del host local), reconoce la dirección copiada del anfitrión al pegar en ⇄, mejora el descubrimiento por PIN y elimina el diálogo de confirmación al reconectar. Sin cambio de esquema SQLCipher (sigue v14).
   
-  Registro ward (cross-VLAN) — R+ recuerda URLs de anfitrión y prefijos /24 vistos en el turno (localStorage + userData/lan-ward-host-registry.json). Se comparten en auth/exchange como wardHostHints y vía GET /auth/ward-host-hints.
+  Bearer de invitado separado — El token del anfitrión remoto se guarda en lan-guest-bearer.txt; ya no sobrescribe lan-team-code.txt del servidor local (regresión 7.2.0). Auto-reparación si ambos archivos coincidían.
   
-  PIN con dirección opcional — Tarjeta PIN del turno en ⇄ (visible tras Restablecer conexión); acepta IP del anfitrión (p. ej. http://10.0.57.52:3738) antes del barrido; prueba URLs ward guardadas y hasta 3 subredes extra.
+  Pegar dirección del anfitrión — ⇄ reconoce http://…:3738 (o IP:3738) en «Unirse con enlace»; opcionalmente PIN en la misma línea. Sin PIN, rellena la tarjeta PIN del turno y pide los 6 dígitos.
   
-  Copiar dirección del anfitrión — Botón en ⇄ para compartir la URL del host con colegas en otra VLAN.
+  PIN más rápido — Antes del barrido /24: URLs ward, registro mDNS/UDP/heartbeat; clientes en rol remoto ya no prueban loopback (menos 401 en consola).
   
-  ⇄ más liviano — Menos re-renders del panel cerrado, escaneo /24 cada 45 s, debounce al cambiar de Wi‑Fi y sin auto-PIN en modo «solo mi equipo».
+  Reconexión silenciosa — Sin diálogo «¿Reconectar al anfitrión…?»; toast si hay anfitrión fijado distinto.
   
-  Estabilidad — Menú Editar/Ver sin crash si aún no hay ventana; mDNS peers con debounce; vigilancia de red cada 10 s.
+  Errores claros — Distingue PIN incorrecto vs dirección inalcanzable al conectar con URL manual.

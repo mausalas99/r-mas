@@ -1,29 +1,29 @@
-version: 7.2.1
+version: 7.2.2
 files:
-  - url: R+-7.2.1-arm64.zip
-    sha512: PDfGMALJXohT6+4dTkn9or5I0oRNYyFL7rRIn7tlrQuQ0nIwuQUAn9Ab4POmm8bE6c1+BY2vbtaxAtg1hZ2a+w==
-    size: 128942994
-  - url: R+-7.2.1-arm64.dmg
-    sha512: J3u0+Eh6B91CaFxHFHnIcNIxKKf9xert9gvSgQq0pf2AY1g1TqfNoxv/UP1qc9Hr5WJNP9w0Ri9Zka31aKg+AA==
-    size: 134263156
-  - url: R+-7.2.1-x64.zip
-    sha512: ChTBDc8bYm1wl2+y34Mlzy+4m9ZX2eGoGkCVMC7mDVVkB0iNb2rrbIa+76lookOYoB53gAOHPY69JyOabDlY3Q==
-    size: 137317078
-  - url: R+-7.2.1-x64.dmg
-    sha512: 5hDsv3auYZHFye339BjdtPnnkI5pqpZh7KPjLkDSB1CuqtYs4bHvS+DtdhQJr3ppSLZsnLXqZSllhNnFcz2NhQ==
-    size: 142710151
-path: R+-7.2.1-arm64.zip
-sha512: PDfGMALJXohT6+4dTkn9or5I0oRNYyFL7rRIn7tlrQuQ0nIwuQUAn9Ab4POmm8bE6c1+BY2vbtaxAtg1hZ2a+w==
-releaseDate: '2026-06-08T16:35:49.000Z'
+  - url: R+-7.2.2-arm64.zip
+    sha512: BClDZjLGdXPgsWAf7rimmqN0W4L5tyMMv9OyX/ydpLazdsYUQXpQUrOkdeDQXPAZLDLojpWZBCdMUhIi1WHoOA==
+    size: 128950105
+  - url: R+-7.2.2-arm64.dmg
+    sha512: IlZp1NYBCDorOe/HNznP416A8Zp9XL1YXwDlsOHSQ0xgP4R+YIuAx1XbtXJHKBKs7+ScjTrb/jwEBYH1lVR2cA==
+    size: 134281392
+  - url: R+-7.2.2-x64.zip
+    sha512: LDbEo2sYnlWU9S2tBMoGZz6kez74vJhskGOELeTroZ22wPAMzyJWSfvGw2n0lZrCVRG12RYWEQ7G4jq87hZC5A==
+    size: 137324182
+  - url: R+-7.2.2-x64.dmg
+    sha512: nqeRX4a5ZNGHY/ISxfMphkQ+i2AIdfMdTCMm+QMHkHENq8q7uEeo60TQFcxWMp1kPpPRL15hrgmYD9FGQxI1qQ==
+    size: 142718263
+path: R+-7.2.2-arm64.zip
+sha512: BClDZjLGdXPgsWAf7rimmqN0W4L5tyMMv9OyX/ydpLazdsYUQXpQUrOkdeDQXPAZLDLojpWZBCdMUhIi1WHoOA==
+releaseDate: '2026-06-08T17:18:09.000Z'
 releaseNotes: |
-  Parche sobre 7.2.0: registro persistente de anfitriones y subredes del hospital (cross-VLAN), conexión por PIN con dirección opcional, menos ruido en escaneo ⇄ y correcciones de estabilidad en menú y arranque. Sin cambio de esquema SQLCipher (sigue v14).
+  Parche sobre 7.2.1: corrige conexión de clientes LAN (bearer de invitado separado del código del host local), reconoce la dirección copiada del anfitrión al pegar en ⇄, mejora el descubrimiento por PIN y elimina el diálogo de confirmación al reconectar. Sin cambio de esquema SQLCipher (sigue v14).
   
-  Registro ward (cross-VLAN) — R+ recuerda URLs de anfitrión y prefijos /24 vistos en el turno (localStorage + userData/lan-ward-host-registry.json). Se comparten en auth/exchange como wardHostHints y vía GET /auth/ward-host-hints.
+  Bearer de invitado separado — El token del anfitrión remoto se guarda en lan-guest-bearer.txt; ya no sobrescribe lan-team-code.txt del servidor local (regresión 7.2.0). Auto-reparación si ambos archivos coincidían.
   
-  PIN con dirección opcional — Tarjeta PIN del turno en ⇄ (visible tras Restablecer conexión); acepta IP del anfitrión (p. ej. http://10.0.57.52:3738) antes del barrido; prueba URLs ward guardadas y hasta 3 subredes extra.
+  Pegar dirección del anfitrión — ⇄ reconoce http://…:3738 (o IP:3738) en «Unirse con enlace»; opcionalmente PIN en la misma línea. Sin PIN, rellena la tarjeta PIN del turno y pide los 6 dígitos.
   
-  Copiar dirección del anfitrión — Botón en ⇄ para compartir la URL del host con colegas en otra VLAN.
+  PIN más rápido — Antes del barrido /24: URLs ward, registro mDNS/UDP/heartbeat; clientes en rol remoto ya no prueban loopback (menos 401 en consola).
   
-  ⇄ más liviano — Menos re-renders del panel cerrado, escaneo /24 cada 45 s, debounce al cambiar de Wi‑Fi y sin auto-PIN en modo «solo mi equipo».
+  Reconexión silenciosa — Sin diálogo «¿Reconectar al anfitrión…?»; toast si hay anfitrión fijado distinto.
   
-  Estabilidad — Menú Editar/Ver sin crash si aún no hay ventana; mDNS peers con debounce; vigilancia de red cada 10 s.
+  Errores claros — Distingue PIN incorrecto vs dirección inalcanzable al conectar con URL manual.
