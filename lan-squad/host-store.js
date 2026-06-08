@@ -13,6 +13,38 @@ const {
   resolveStorageRoot,
 } = require('../lib/historia-clinica/storage.js');
 const { createWriteQueue } = require('./write-queue.js');
+const { createCommitBarrier } = require('./persistence/commit-barrier.js');
+const {
+  isShardedLayout,
+  loadShardedState,
+  loadShardedStateSync,
+  initEmptyShardedState,
+  initEmptyShardedStateSync,
+  migrateMonolithToShards,
+  commitDirtyShards,
+  repairShardsOnBoot,
+  migrateLabSidecarsOnBoot,
+  repairLabSidecarsOnBoot,
+  entryPatientId,
+} = require('./persistence/sharded-host-persistence.js');
+const {
+  emptySidecar,
+  upsertLabSidecar,
+  assembleLabHistory,
+  readLabSidecarSync,
+  labMetaFromSidecar,
+  sidecarFromLabHistory,
+} = require('./persistence/lab-sidecar.js');
+const {
+  dbHasLanHostV15,
+  sqlMetaNeedsImport,
+  loadCacheFromSql,
+  loadLabSidecarsIntoCache,
+  importFromJsonShards,
+  backupJsonShardsForSqlImport,
+  commitDirtyShardsSql,
+  persistFullCacheSql,
+} = require('./persistence/sqlite-host-repositories.js');
 const { createHostStateCache } = require('./host-state-cache.js');
 const { readJson, writeJsonAtomic } = require('./atomic-json.js');
 const { migrateHostStateIfNeeded } = require('./migrate-host-state.js');
@@ -148,12 +180,36 @@ function persistAlignedTeamCodeHash({
   migrated,
   useDb,
   persistCacheToDb,
+  flushCacheToDiskFn,
+  resolvePersistModeFn,
   filePath,
+  stateDir,
   queue,
+  markDirtyFn,
 }) {
   if (!aligned) return;
   if (useDb()) {
+    if (resolvePersistModeFn && resolvePersistModeFn() === 'sql-v3') {
+      markDirtyFn(null);
+      queue.enqueue(() => flushCacheToDiskFn()).catch(() => {});
+      return;
+    }
     queue.enqueue(() => persistCacheToDb()).catch(() => {});
+    return;
+  }
+  if (isShardedLayout(stateDir)) {
+    markDirtyFn(null);
+    const existing = readStateSync(path.join(stateDir, 'meta.json')) || {};
+    queue.enqueue(() =>
+      writeJsonAtomic(path.join(stateDir, 'meta.json'), {
+        ...existing,
+        version: 2,
+        teamCodeHash: migrated.teamCodeHash,
+        patients: migrated.patients,
+        rooms: migrated.rooms,
+        roomRevisions: existing.roomRevisions || {},
+      })
+    ).catch(() => {});
     return;
   }
   // Sync write so a prior store instance's queued snapshot cannot clobber the new hash.
@@ -163,41 +219,344 @@ function persistAlignedTeamCodeHash({
   queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
 }
 
-function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientId = () => 'host' }) {
+/** Env rollback: legacy | json | sql | sql-monolith (ward IT / support). */
+function readPersistModeOverride() {
+  const raw = String(process.env.R_PLUS_LAN_PERSIST_MODE || '').trim().toLowerCase();
+  if (!raw || raw === 'auto') return null;
+  const map = {
+    legacy: 'json-monolith',
+    monolith: 'json-monolith',
+    json: 'json-sharded',
+    sharded: 'json-sharded',
+    sql: 'sql-v3',
+    'sql-v3': 'sql-v3',
+    'sql-monolith': 'sql-monolith',
+  };
+  return map[raw] || null;
+}
+
+function createHostStore({
+  filePath,
+  hostStateDir = null,
+  teamCodePlain,
+  dbManager = null,
+  getClientId = () => 'host',
+}) {
   const teamCodeHash = hashTeamCode(teamCodePlain);
+  const stateDir = hostStateDir || path.join(path.dirname(filePath), 'lan-host');
   const cache = createHostStateCache();
   const queue = createWriteQueue();
+  const commitBarrier = createCommitBarrier({ coalesceMs: 150 });
+  let lastCommitAudit = null;
   let initPromise = null;
+  let dirtyMeta = false;
+  const dirtyRooms = new Set();
+  const dirtyLabSidecars = new Set();
+  const labSidecarCache = new Map();
+  let repairedRoomCount = 0;
   const useDb = () => dbManager != null;
+
+  function resolvePersistMode() {
+    const override = readPersistModeOverride();
+    if (override) return override;
+    if (useDb() && dbManager.isUnlocked()) {
+      const db = dbManager.getDb();
+      if (db && dbHasLanHostV15(db)) return 'sql-v3';
+      return 'sql-monolith';
+    }
+    if (isShardedLayout(stateDir)) return 'json-sharded';
+    return 'json-monolith';
+  }
+
+  function markDirty(roomId) {
+    if (roomId) dirtyRooms.add(String(roomId));
+    else dirtyMeta = true;
+  }
+
+  function labSidecarKey(roomId, patientId) {
+    return `${String(roomId)}:${String(patientId)}`;
+  }
+
+  function markDirtyLab(roomId, patientId) {
+    dirtyLabSidecars.add(labSidecarKey(roomId, patientId));
+  }
+
+  function getLabSidecar(roomId, patientId) {
+    const key = labSidecarKey(roomId, patientId);
+    if (labSidecarCache.has(key)) return labSidecarCache.get(key);
+    const sc = readLabSidecarSync(stateDir, roomId, patientId) || emptySidecar();
+    labSidecarCache.set(key, sc);
+    return sc;
+  }
+
+  function setLabSidecar(roomId, patientId, sidecar) {
+    const key = labSidecarKey(roomId, patientId);
+    labSidecarCache.set(key, sidecar);
+    markDirtyLab(roomId, patientId);
+    return sidecar;
+  }
+
+  function stripEntryLabsToSidecar(roomId, entry) {
+    const patientId = entryPatientId(entry);
+    if (!patientId) return false;
+    const labHistory = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+    if (!labHistory.length) return false;
+    const sidecar = sidecarFromLabHistory(labHistory);
+    setLabSidecar(roomId, patientId, sidecar);
+    entry.labMeta = labMetaFromSidecar(
+      sidecar,
+      entry.labMeta && entry.labMeta.labHistoryVersion
+    );
+    delete entry.labHistory;
+    return true;
+  }
+
+  function stripRoomBundleLabsToSidecars(roomId, bundle) {
+    if (!bundle || !Array.isArray(bundle.entries)) return false;
+    let changed = false;
+    for (const entry of bundle.entries) {
+      if (stripEntryLabsToSidecar(roomId, entry)) changed = true;
+    }
+    return changed;
+  }
 
   async function persistCacheToDb() {
     assertDbUnlocked(dbManager);
     const snapshot = cache.get();
+    const mode = resolvePersistMode();
     await dbManager.withTransaction((db, { audit }) => {
-      writeHostState(db, snapshot);
+      const t0 = Date.now();
+      if (mode === 'sql-v3') {
+        persistFullCacheSql(db, snapshot, labSidecarCache);
+      } else {
+        writeHostState(db, snapshot);
+      }
+      const commitMs = Date.now() - t0;
       audit(getClientId(), 'lan.host.commit', {
         action: 'host.commit',
         byteLength: JSON.stringify(snapshot).length,
+        commitMs,
+        persistGeneration: mode,
       });
     });
+  }
+
+  async function flushCacheToDisk() {
+    if (!cache.isLoaded()) return;
+    const t0 = Date.now();
+    const snapshot = cache.get();
+    const mode = resolvePersistMode();
+    if (mode === 'sql-v3') {
+      const metaDirty = dirtyMeta;
+      const roomsDirty = new Set(dirtyRooms);
+      const labsDirty = new Set(dirtyLabSidecars);
+      const result = await dbManager.withTransaction((db, { audit }) => {
+        const innerT0 = Date.now();
+        const out = commitDirtyShardsSql(db, {
+          cache,
+          dirtyMeta: metaDirty,
+          dirtyRooms: roomsDirty,
+          dirtyLabSidecars: labsDirty,
+          labSidecarPayloads: labSidecarCache,
+        });
+        const commitMs = Date.now() - innerT0;
+        audit(getClientId(), 'lan.host.commit', {
+          action: 'host.commit',
+          byteLength: out.byteLength,
+          commitMs,
+          shards: out.shards,
+          persistGeneration: 'sql-v3',
+        });
+        return out;
+      });
+      dirtyMeta = false;
+      dirtyRooms.clear();
+      dirtyLabSidecars.clear();
+      lastCommitAudit = {
+        commitMs: Date.now() - t0,
+        byteLength: result.byteLength,
+        shards: result.shards,
+        coalesced: true,
+        persistGeneration: 'sql-v3',
+      };
+      return;
+    }
+    if (mode === 'sql-monolith') {
+      await persistCacheToDb();
+      lastCommitAudit = {
+        commitMs: Date.now() - t0,
+        byteLength: JSON.stringify(snapshot).length,
+        shards: ['monolith'],
+        coalesced: true,
+        persistGeneration: 'sql-monolith',
+      };
+      return;
+    }
+    if (isShardedLayout(stateDir)) {
+      const { shards, byteLength } = await commitDirtyShards({
+        hostStateDir: stateDir,
+        cache,
+        dirtyMeta,
+        dirtyRooms,
+        dirtyLabSidecars,
+        labSidecarPayloads: labSidecarCache,
+      });
+      dirtyMeta = false;
+      dirtyRooms.clear();
+      dirtyLabSidecars.clear();
+      lastCommitAudit = {
+        commitMs: Date.now() - t0,
+        byteLength,
+        shards,
+        coalesced: true,
+        persistGeneration: 'json-sharded',
+      };
+      return;
+    }
+    await writeJsonAtomic(filePath, snapshot);
+    lastCommitAudit = {
+      commitMs: Date.now() - t0,
+      byteLength: JSON.stringify(snapshot).length,
+      shards: ['monolith'],
+      coalesced: true,
+      persistGeneration: 'json-monolith',
+    };
+  }
+
+  function schedulePersist() {
+    return commitBarrier.scheduleFlush(() => queue.enqueue(() => flushCacheToDisk()));
+  }
+
+  async function awaitDurableCommit() {
+    await schedulePersist();
+  }
+
+  async function flushCacheNow({ serialized } = {}) {
+    const run = serialized
+      ? () => flushCacheToDisk()
+      : () => queue.enqueue(() => flushCacheToDisk());
+    await commitBarrier.flushNow(run);
+  }
+
+  function getLastCommitAudit() {
+    return lastCommitAudit;
   }
 
   async function persistSnapshot(snapshot) {
     if (useDb()) {
       cache.replace(snapshot);
+      const mode = resolvePersistMode();
+      if (mode === 'sql-v3') {
+        markDirty(null);
+        for (const rid of Object.keys(snapshot.roomSyncBundles || {})) markDirty(rid);
+        await flushCacheToDisk();
+        return;
+      }
       await persistCacheToDb();
       return;
     }
+    if (isShardedLayout(stateDir)) {
+      cache.replace(snapshot);
+      markDirty(null);
+      for (const rid of Object.keys(snapshot.roomSyncBundles || {})) markDirty(rid);
+      await commitDirtyShards({
+        hostStateDir: stateDir,
+        cache,
+        dirtyMeta: true,
+        dirtyRooms: new Set(Object.keys(snapshot.roomSyncBundles || {})),
+        dirtyLabSidecars,
+        labSidecarPayloads: labSidecarCache,
+      });
+      dirtyMeta = false;
+      dirtyRooms.clear();
+      dirtyLabSidecars.clear();
+      return;
+    }
     await writeJsonAtomic(filePath, snapshot);
+  }
+
+  async function loadJsonHostState() {
+    if (isShardedLayout(stateDir)) {
+      let s = await loadShardedState(stateDir, teamCodeHash);
+      if (!s) {
+        s = await initEmptyShardedState(stateDir, teamCodeHash);
+      }
+      cache.replace(s);
+      const { repairedRooms } = await repairShardsOnBoot(stateDir, cache);
+      repairedRoomCount = repairedRooms.length;
+      if (repairedRooms.length) {
+        s = await loadShardedState(stateDir, teamCodeHash);
+        cache.replace(s);
+      }
+      await migrateLabSidecarsOnBoot(stateDir, cache);
+      const { repaired: labRepairs } = await repairLabSidecarsOnBoot(stateDir, cache, labSidecarCache);
+      repairedRoomCount += labRepairs.length;
+      if (labRepairs.length) {
+        s = await loadShardedState(stateDir, teamCodeHash);
+        cache.replace(s);
+      }
+      return s;
+    }
+    if (fs.existsSync(filePath)) {
+      await migrateMonolithToShards({
+        monolithPath: filePath,
+        hostStateDir: stateDir,
+        teamCodeHash,
+      });
+      const s = await loadShardedState(stateDir, teamCodeHash);
+      cache.replace(s);
+      return s;
+    }
+    const s = await initEmptyShardedState(stateDir, teamCodeHash);
+    cache.replace(s);
+    return s;
+  }
+
+  async function loadSqlV3HostState() {
+    assertDbUnlocked(dbManager);
+    if (isShardedLayout(stateDir) && sqlMetaNeedsImport(dbManager.getDb())) {
+      await backupJsonShardsForSqlImport(stateDir);
+      await dbManager.withTransaction((db) =>
+        importFromJsonShards(db, stateDir, teamCodeHash)
+      );
+    }
+    let s = await dbManager.withTransaction((db) => loadCacheFromSql(db, teamCodeHash));
+    if (!s) {
+      s = defaultState(teamCodeHash);
+      await persistSnapshot(s);
+      cache.replace(s);
+      return s;
+    }
+    await dbManager.withTransaction((db) => {
+      loadLabSidecarsIntoCache(db, labSidecarCache);
+    });
+    return s;
   }
 
   async function loadFromDisk() {
     let s;
     if (useDb()) {
       assertDbUnlocked(dbManager);
+      if (resolvePersistMode() === 'sql-v3') {
+        s = await loadSqlV3HostState();
+        const aligned = alignTeamCodeHash(s, teamCodeHash);
+        s = normalizeLoadedState(s);
+        if (aligned) {
+          markDirty(null);
+          await flushCacheNow({ serialized: true });
+        }
+        cache.replace(s);
+        return s;
+      }
       s = await dbManager.withTransaction((db) => readHostState(db));
     } else {
-      s = await readJson(filePath);
+      s = await loadJsonHostState();
+      const aligned = alignTeamCodeHash(s, teamCodeHash);
+      if (aligned) {
+        markDirty(null);
+        await flushCacheNow({ serialized: true });
+      }
+      return s;
     }
     if (!s) {
       s = defaultState(teamCodeHash);
@@ -225,9 +584,29 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     let s;
     if (useDb()) {
       assertDbUnlocked(dbManager);
-      s = readHostState(dbManager.getDb());
-    } else {
+      if (resolvePersistMode() === 'sql-v3') {
+        if (isShardedLayout(stateDir) && sqlMetaNeedsImport(dbManager.getDb())) {
+          void loadFromDisk();
+          if (cache.isLoaded()) return cache.get();
+        }
+        s = loadCacheFromSql(dbManager.getDb(), teamCodeHash);
+        if (!s) {
+          const fresh = defaultState(teamCodeHash);
+          cache.replace(fresh);
+          markDirty(null);
+          queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+          return fresh;
+        }
+        loadLabSidecarsIntoCache(dbManager.getDb(), labSidecarCache);
+      } else {
+        s = readHostState(dbManager.getDb());
+      }
+    } else if (isShardedLayout(stateDir)) {
+      s = loadShardedStateSync(stateDir, teamCodeHash);
+    } else if (fs.existsSync(filePath)) {
       s = readStateSync(filePath);
+    } else {
+      s = null;
     }
     if (!s) {
       const fresh = defaultState(teamCodeHash);
@@ -236,7 +615,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         queue.enqueue(() => persistCacheToDb()).catch(() => {});
         return fresh;
       }
-      atomicWriteJson(filePath, fresh);
+      if (isShardedLayout(stateDir) || !fs.existsSync(filePath)) {
+        initEmptyShardedStateSync(stateDir, teamCodeHash);
+      } else {
+        atomicWriteJson(filePath, fresh);
+      }
       cache.replace(fresh);
       return fresh;
     }
@@ -245,17 +628,31 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     const migrated = normalizeLoadedState(s);
     cache.replace(migrated);
     if (aligned) {
-      persistAlignedTeamCodeHash({
-        aligned,
-        migrated,
-        useDb,
-        persistCacheToDb,
-        filePath,
-        queue,
-      });
+      if (!useDb() && isShardedLayout(stateDir)) {
+        markDirty(null);
+        queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+      } else {
+        persistAlignedTeamCodeHash({
+          aligned,
+          migrated,
+          useDb,
+          persistCacheToDb,
+          flushCacheToDiskFn: flushCacheToDisk,
+          resolvePersistModeFn: resolvePersistMode,
+          filePath,
+          stateDir,
+          queue,
+          markDirtyFn: markDirty,
+        });
+      }
     } else if (Number(migrated.version) === 2 && prevVersion !== 2) {
       if (useDb()) {
-        queue.enqueue(() => persistCacheToDb()).catch(() => {});
+        if (resolvePersistMode() === 'sql-v3') {
+          markDirty(null);
+          queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+        } else {
+          queue.enqueue(() => persistCacheToDb()).catch(() => {});
+        }
       } else {
         queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
       }
@@ -271,43 +668,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     return initPromise;
   }
 
-  async function writeCacheSnapshotToDisk(snapshot) {
-    try {
-      await writeJsonAtomic(filePath, snapshot);
-    } catch (_e) {
-      await loadFromDisk();
-    }
-  }
-
-  function persistState() {
-    if (useDb()) {
-      return queue.enqueue(() => persistCacheToDb());
-    }
-    const snapshot = cache.get();
-    try {
-      atomicWriteJson(filePath, snapshot);
-    } catch (e) {
-      throw e;
-    }
-    return queue.enqueue(() => writeCacheSnapshotToDisk(snapshot));
-  }
-
-  /** Single serialized commit after in-memory mutation + audit (avoids stale queue snapshots). */
-  function commitCacheNow() {
-    if (useDb()) {
-      return persistCacheToDb();
-    }
-    const snapshot = cache.get();
-    try {
-      atomicWriteJson(filePath, snapshot);
-    } catch (e) {
-      throw e;
-    }
-    return writeCacheSnapshotToDisk(snapshot);
-  }
-
   function flush() {
-    return queue.enqueue(async () => {});
+    return flushCacheNow();
   }
 
   function getState() {
@@ -325,7 +687,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         p.audit_log
       );
       state.patients.push(p);
-      persistState();
+      markDirty(null);
+      void schedulePersist();
       return p;
     }
     const cur = state.patients[idx];
@@ -348,7 +711,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       next.audit_log
     );
     state.patients[idx] = next;
-    persistState();
+    markDirty(null);
+    void schedulePersist();
     return next;
   }
 
@@ -371,7 +735,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       r.audit_log
     );
     state.rooms.push(r);
-    persistState();
+    markDirty(null);
+    void schedulePersist();
     return r;
   }
 
@@ -386,7 +751,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       { at: nowIso(), clientId: 'host', action: 'room.rename', detail: { id: r.id } },
       r.audit_log
     );
-    persistState();
+    markDirty(null);
+    void schedulePersist();
     return r;
   }
 
@@ -396,8 +762,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     state.rooms = state.rooms.filter((x) => x.id !== rid);
     if (state.roomSyncBundles && state.roomSyncBundles[rid]) {
       delete state.roomSyncBundles[rid];
+      markDirty(rid);
     }
-    persistState();
+    markDirty(null);
+    void schedulePersist();
   }
 
   function getRoomSyncBundle(roomId) {
@@ -407,6 +775,32 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     if (!b || typeof b !== 'object') return null;
     refreshBundleClinicalOpsCacheIfStale(b);
     return b;
+  }
+
+  function assembleBundleLabsForApi(bundle, roomId) {
+    if (!bundle || typeof bundle !== 'object') return bundle;
+    const rid = String(roomId || '');
+    const out = { ...bundle, entries: (bundle.entries || []).map((entry) => {
+      if (!entry) return entry;
+      const patientId = entryPatientId(entry);
+      const cloned = { ...entry };
+      if (patientId) {
+        const sidecar = getLabSidecar(rid, patientId);
+        if (cloned.labMeta || (sidecar.orderedIds && sidecar.orderedIds.length)) {
+          cloned.labHistory = assembleLabHistory(sidecar);
+        } else if (!Array.isArray(cloned.labHistory)) {
+          cloned.labHistory = [];
+        }
+      }
+      return cloned;
+    }) };
+    return out;
+  }
+
+  function getRoomSyncBundleForApi(roomId) {
+    const bundle = getRoomSyncBundle(roomId);
+    if (!bundle) return null;
+    return assembleBundleLabsForApi(bundle, roomId);
   }
 
   function ensureRoomRecord(state, roomId, displayName) {
@@ -451,7 +845,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     });
   }
 
-  function upsertPatientLabHistorySet(patientId, set, clientTimestamp) {
+  function upsertPatientLabHistorySet(patientId, set, clientTimestamp, clientId) {
     const state = ensureLoadedSync();
     const roomId = findRoomForPatient(state, patientId);
     if (!roomId) return { ok: false, error: 'patient not found' };
@@ -459,20 +853,57 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     if (!bundle) return { ok: false, error: 'no bundle' };
     const entry = findBundleEntry(bundle, patientId);
     if (!entry) return { ok: false, error: 'entry not found' };
-    if (!Array.isArray(entry.labHistory)) entry.labHistory = [];
-    const existing = entry.labHistory.findIndex((s) => s && s.id === set.id);
-    if (existing >= 0) {
-      const prev = entry.labHistory[existing];
-      const prevTs = Number(prev._clientTimestamp || 0);
-      if (clientTimestamp >= prevTs) {
-        entry.labHistory[existing] = { ...set, _clientTimestamp: clientTimestamp };
+
+    const pid = String(patientId || '').trim();
+    const sidecar = getLabSidecar(roomId, pid);
+    const existing = sidecar.setsById && set && set.id ? sidecar.setsById[set.id] : null;
+    if (existing) {
+      const prevTs = Number(existing._clientTimestamp || 0);
+      if (clientTimestamp < prevTs) {
+        return {
+          ok: true,
+          revision: Number(bundle.revision || 0),
+          roomId,
+          deltaSeq: Number(bundle.deltaSeq || 0),
+        };
       }
-    } else {
-      entry.labHistory.push({ ...set, _clientTimestamp: clientTimestamp });
     }
+
+    const nextSidecar = upsertLabSidecar(sidecar, set, clientTimestamp);
+    setLabSidecar(roomId, pid, nextSidecar);
+    entry.labMeta = labMetaFromSidecar(
+      nextSidecar,
+      entry.labMeta && entry.labMeta.labHistoryVersion
+    );
+    delete entry.labHistory;
+
+    const nextSeq = Number(bundle.deltaSeq || 0) + 1;
+    const committedAt = nowIso();
     bundle.revision = Number(bundle.revision || 0) + 1;
-    persistState();
-    return { ok: true, revision: bundle.revision, roomId };
+    bundle.deltaSeq = nextSeq;
+    bundle.committedAt = committedAt;
+    if (!Array.isArray(bundle.deltaLog)) bundle.deltaLog = [];
+    bundle.deltaLog.push({
+      type: 'lab_upsert',
+      roomId,
+      patientId: pid,
+      setId: String(set && set.id || ''),
+      set,
+      labHistoryVersion:
+        entry.labMeta && entry.labMeta.labHistoryVersion != null
+          ? entry.labMeta.labHistoryVersion
+          : null,
+      originClientId: String(clientId || ''),
+      clientTimestamp: Number(clientTimestamp || 0),
+      deltaSeq: nextSeq,
+      revision: bundle.revision,
+      committedAt,
+    });
+    while (bundle.deltaLog.length > 200) bundle.deltaLog.shift();
+
+    markDirty(roomId);
+    void schedulePersist();
+    return { ok: true, revision: bundle.revision, roomId, deltaSeq: nextSeq };
   }
 
   function replacePatientNota(patientId, data, expectedVersion, clientTimestamp) {
@@ -503,7 +934,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     entry._notaVersion = currentVersion + 1;
     entry._notaClientTimestamp = clientTimestamp;
     bundle.revision = Number(bundle.revision || 0) + 1;
-    persistState();
+    markDirty(roomId);
+    void schedulePersist();
     return {
       ok: true,
       lwwApplied,
@@ -542,7 +974,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     entry._indicacionesVersion = currentVersion + 1;
     entry._indicacionesClientTimestamp = clientTimestamp;
     bundle.revision = Number(bundle.revision || 0) + 1;
-    persistState();
+    markDirty(roomId);
+    void schedulePersist();
     return {
       ok: true,
       lwwApplied,
@@ -615,7 +1048,11 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     }
 
     state.roomSyncBundles[rid] = result.bundle;
-    persistState();
+    if (stripRoomBundleLabsToSidecars(rid, result.bundle)) {
+      markDirty(rid);
+    }
+    markDirty(rid);
+    void schedulePersist();
     const out = {
       bundle: result.bundle,
       lwwAppliedKeys: Array.isArray(result.lwwAppliedKeys) ? result.lwwAppliedKeys : [],
@@ -640,7 +1077,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     });
     if (authoritative) {
       bundle.clinicalOps = authoritative;
-      persistState();
+      markDirty(rid);
+      void schedulePersist();
     }
     return authoritative;
   }
@@ -702,7 +1140,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     }
 
     state.roomSyncBundles[rid] = bundle;
-    persistState();
+    markDirty(rid);
+    void schedulePersist();
     const out = {
       snapshot: bundle.clinicalOps,
       revision: bundle.revision,
@@ -818,10 +1257,14 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       if (bundle.entries.length !== before) {
         bundle.revision = Number(bundle.revision || 0) + 1;
         bundle.committedAt = nowIso();
+        markDirty(rid);
         changed = true;
       }
     }
-    if (changed && !deferPersist) persistState();
+    if (changed && !deferPersist) {
+      markDirty(null);
+      void schedulePersist();
+    }
     return changed;
   }
 
@@ -854,7 +1297,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     bundle.agenda = agenda;
     bundle.todos = todos;
     bundle.committedAt = nowIso();
-    if (!deferPersist) persistState();
+    if (!deferPersist) {
+      markDirty(roomId);
+      void schedulePersist();
+    }
     return bundle;
   }
 
@@ -872,7 +1318,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       if (idx === -1) {
         const row = { ...nextData, version: nextVersion, updatedAt: t, audit_log: [] };
         state.patients.push(row);
-        if (!deferPersist) persistState();
+        if (!deferPersist) {
+          markDirty(null);
+          void schedulePersist();
+        }
         return row;
       }
       const row = { ...state.patients[idx], ...nextData, version: nextVersion, updatedAt: t };
@@ -881,7 +1330,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       if (deleted) {
         purgePatientFromAllRoomBundles(state, id, row.registro, opts);
       }
-      if (!deferPersist) persistState();
+      if (!deferPersist) {
+        markDirty(null);
+        void schedulePersist();
+      }
       return row;
     }
 
@@ -897,7 +1349,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       };
       bundle.entityVersions[key] = Number(version || 1);
       bundle.revision = Number(bundle.revision || 0) + 1;
-      if (!deferPersist) persistState();
+      if (!deferPersist) {
+        markDirty(roomId);
+        void schedulePersist();
+      }
       materializeRoomViews(roomId, opts);
       return bundle.entities[key];
     }
@@ -919,7 +1374,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       bundle.entityVersions[key] = Number(version || 1);
       bundle.revision = Number(bundle.revision || 0) + 1;
       if (!Array.isArray(bundle.audit_log)) bundle.audit_log = [];
-      if (!deferPersist) persistState();
+      if (!deferPersist) {
+        markDirty(roomId);
+        void schedulePersist();
+      }
       return bundle.entities[key];
     }
 
@@ -1004,7 +1462,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     if (!Array.isArray(bundle.deltaLog)) bundle.deltaLog = [];
     bundle.deltaLog.push(entry);
     while (bundle.deltaLog.length > 200) bundle.deltaLog.shift();
-    persistState();
+    markDirty(roomId);
+    void schedulePersist();
   }
 
   function getRoomDeltaLog(roomId, afterSeq) {
@@ -1080,7 +1539,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     };
     bundle.deltaLog.push(entry);
     while (bundle.deltaLog.length > 200) bundle.deltaLog.shift();
-    persistState();
+    markDirty(roomId);
+    void schedulePersist();
     return { bundle, key, rec, entry, version: rec.version, deltaSeq: nextSeq, revision: bundle.revision, committedAt };
   }
 
@@ -1094,7 +1554,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
 
   function appendRoomBundleAudit(roomId, entry) {
     appendRoomBundleAuditInMemory(roomId, entry);
-    persistState();
+    markDirty(roomId);
+    void schedulePersist();
     return ensureRoomBundle(ensureLoadedSync(), roomId).audit_log;
   }
 
@@ -1121,7 +1582,8 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         };
         appendRoomBundleAuditInMemory(mutation.roomId, entry);
       }
-      await commitCacheNow();
+      markDirty(mutation.roomId);
+      await flushCacheNow({ serialized: true });
       return out;
     });
   }
@@ -1151,19 +1613,31 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
         delete bundle.entityVersions[key];
       }
       bundle.revision = Number(bundle.revision || 0) + 1;
+      markDirty(rid);
       found = true;
     }
-    if (found) persistState();
+    if (found) {
+      markDirty(null);
+      void schedulePersist();
+    }
     return { archived: found, patientId: pid };
   }
 
-  if (!useDb() && !fs.existsSync(filePath)) {
-    atomicWriteJson(filePath, defaultState(teamCodeHash));
+  function getRepairedRoomCount() {
+    return repairedRoomCount;
+  }
+
+  if (!useDb() && !isShardedLayout(stateDir) && !fs.existsSync(filePath)) {
+    initEmptyShardedStateSync(stateDir, teamCodeHash);
   }
 
   return {
     ready,
     flush,
+    awaitDurableCommit,
+    getLastCommitAudit,
+    getRepairedRoomCount,
+    getHostStateDir: () => stateDir,
     getState,
     upsertPatient,
     listRooms,
@@ -1171,6 +1645,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     renameRoom,
     deleteRoom,
     getRoomSyncBundle,
+    getRoomSyncBundleForApi,
     putRoomSyncBundle,
     upsertPatientLabHistorySet,
     replacePatientNota,
@@ -1196,4 +1671,4 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
   };
 }
 
-module.exports = { createHostStore, atomicWriteJson };
+module.exports = { createHostStore, atomicWriteJson, readPersistModeOverride };

@@ -5,9 +5,13 @@ alwaysApply: true
 
 # R+ Project Context
 
-**Read this first.** Use this map instead of broad codebase exploration. Only search or read files when this map lacks the detail you need for the task.
+**Read this first** for code paths. Use this map instead of broad codebase exploration. Only search or read files when this map lacks the detail you need for the task.
 
-Design tokens and UI conventions: `design.md`, `public/tokens.css`.
+**Strategy & docs hub (product trade-offs):** `docs/core/00-system-index.md` → `docs/core/01-vision-north-star.md`  
+**Feature / logic / DB indices:** `docs/features/features-index.md`, `docs/logic/logic-index.md`, `docs/database/database-index.md`  
+**Large feature designs:** `docs/superpowers/specs/`, `docs/superpowers/plans/`
+
+Design tokens and UI conventions: `design.md`, `public/tokens.css` (see also `docs/core/06-design-system.md`).
 
 ---
 
@@ -42,7 +46,8 @@ lib/                  Node-side shared logic (importable from main/server)
   drive-import/       Google Drive HC/labs import parsers
 
 lan-squad/            LAN sync host: WS hub, host-store, conflict resolver,
-                      auth-router, ticket-store, write-queue, team-code
+          auth-router, ticket-store, write-queue, team-code
+  persistence/        Host durability: CommitBarrier, JSON shards, lab sidecars, SQL v15 repos
 
 public/js/            Renderer modules (pre-bundle)
   features/           UI feature modules (*.mjs) — primary place for new UI work
@@ -52,7 +57,13 @@ public/js/            Renderer modules (pre-bundle)
 
 public/interno/       Mobile web client (guardia/interno board)
 scripts/              build-ui, bundle-renderer, release, native rebuild
-docs/superpowers/     Specs and implementation plans (design before big features)
+docs/
+  core/               Agent hub: 00-system-index, 01-vision-north-star, architecture
+  features/           features-index.md → feature domains
+  logic/              logic-index.md → parsers, sync engines
+  database/           database-index.md → SQLCipher schema map
+  logs/               agent-changelog.md
+  superpowers/        Specs and implementation plans (design before big features)
 ```
 
 ---
@@ -110,6 +121,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-08** `release-7.2.5`: LAN host persistence P0–P3 — coalesced commits, JSON shards, lab sidecars, SQL v15 tables + `R_PLUS_LAN_PERSIST_MODE` rollback; `lan-squad/persistence/`, `host-store.js`, `schema.mjs` v15.
+- **2026-06-08** `docs-hub`: agent-first docs library — `docs/core/00-system-index.md`, `01-vision-north-star.md`, feature/logic/DB indices; rules `product-north-star.mdc`, `documentation-sync.mdc`.
 - **2026-06-08** `release-7.2.4`: R4 client-first LAN (no auto-host on register, subnet scan, pinned host before promote) + R4/Admin skip team onboarding; `lan-host-rank.mjs`, `transport.mjs`, `panel.mjs`, `clinical-onboarding.mjs`.
 - **2026-06-08** `release-7.2.3`: bundled ward host `http://10.0.57.52:3738` — `bundledWardHostUrl()` in `clinical-settings.mjs`, probe/discovery via `lan-ward-host-registry.mjs`, ⇄ PIN card prefill; `panel.mjs`.
 - **2026-06-08** `release-7.2.2`: LAN client reconnect — `lan-guest-bearer.txt` (fix 7.2.0 guest overwrite), bare host URL paste in ⇄, mDNS/UDP shift-PIN discovery, silent auto-reconnect; `effective-team-code.js`, `lan-shift-pin-connect.mjs`, `room.mjs`, `lan-join-link.mjs`.

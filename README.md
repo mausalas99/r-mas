@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.4](https://github.com/mausalas99/r-mas/releases/tag/v7.2.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.5](https://github.com/mausalas99/r-mas/releases/tag/v7.2.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.5 (persistencia LAN anfitrión)
+
+- **Commits coalescidos** — El anfitrión agrupa escrituras a disco; las rutas LAN tipadas esperan commit durable.
+- **Shards por sala** — Estado del turno en `meta.json` + bundles por sala; migración automática desde el monolito.
+- **Labs en sidecar** — Historial de laboratorio fuera del bundle; menos CPU al guardar en turno lleno.
+- **SQL v15** — Tablas normalizadas de host cuando SQLCipher está desbloqueado; esquema **v15**.
+
+Notas: `docs/RELEASE_NOTES_7.2.5.txt`.
 
 ## R+ 7.2.4 (R4 cliente primero y sin equipo obligatorio)
 

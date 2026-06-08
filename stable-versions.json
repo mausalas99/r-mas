@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-08",
   "entries": [
     {
+      "version": "7.2.5",
+      "label": "7.2.5",
+      "publishedAt": "2026-06-08",
+      "summary": "Persistencia LAN anfitrión — shards, sidecars, SQL v15",
+      "recommended": true
+    },
+    {
       "version": "7.2.4",
       "label": "7.2.4",
       "publishedAt": "2026-06-08",
       "summary": "Release estable 7.2.4",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.2.3",

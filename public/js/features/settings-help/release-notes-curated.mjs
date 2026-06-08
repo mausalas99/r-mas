@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_725 = [
+  {
+    title: 'Anfitrión más liviano',
+    body:
+      'El servidor LAN ya no reescribe un JSON gigante en cada guardado: commits <strong>coalescidos</strong> y escritura por <strong>sala</strong>.',
+  },
+  {
+    title: 'Labs fuera del bundle',
+    body:
+      'El historial de laboratorio vive en <strong>sidecars</strong> por paciente; pegar o sincronizar labs deja de inflar todo el turno.',
+  },
+  {
+    title: 'SQL v15 en anfitrión',
+    body:
+      'Con SQLCipher desbloqueado, el host usa tablas normalizadas (<strong>v15</strong>) en lugar de un solo blob JSON en la DB.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.5 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.4</strong>; anfitrión primero. Esquema SQLCipher <strong>v15</strong>.',
+  },
+];
+
 var RELEASE_NOTES_724 = [
   {
     title: 'R4 conecta primero',
@@ -638,9 +661,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_724;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_725;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.5': RELEASE_NOTES_725,
   '7.2.4': RELEASE_NOTES_724,
   '7.2.3': RELEASE_NOTES_723,
   '7.2.2': RELEASE_NOTES_722,

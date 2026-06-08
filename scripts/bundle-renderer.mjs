@@ -83,7 +83,10 @@ export async function bundleRenderer(opts = {}) {
   if (check) {
     const result = await esbuild.build(buildOptions({ prod, write: false }));
     const jsOut = result.outputFiles.find(
-      (f) => f.path === OUTFILE || f.path.endsWith('app.bundle.mjs')
+      (f) =>
+        f.path === OUTFILE ||
+        f.path.endsWith('app.bundle.mjs') ||
+        f.path.endsWith('app.bundle.js')
     );
     if (!jsOut) throw new Error('bundle build produced no JS output');
     const onDisk = fs.existsSync(OUTFILE) ? fs.readFileSync(OUTFILE, 'utf8') : '';

@@ -165,7 +165,10 @@ function createLanRouter({
   });
 
   r.get('/rooms/:id/sync-bundle', (req, res) => {
-    const bundle = store.getRoomSyncBundle(req.params.id);
+    const bundle =
+      typeof store.getRoomSyncBundleForApi === 'function'
+        ? store.getRoomSyncBundleForApi(req.params.id)
+        : store.getRoomSyncBundle(req.params.id);
     if (!bundle) return res.status(404).json({ error: 'no bundle' });
     res.json({ bundle });
   });
@@ -316,24 +319,31 @@ function createLanRouter({
 
   // ── Typed mutation endpoints (V1 clients) ──────────────────────────
 
-  r.post('/patients/:id/lab-history/upsert-set', express.json({ limit: '512kb' }), (req, res) => {
+  r.post('/patients/:id/lab-history/upsert-set', express.json({ limit: '512kb' }), async (req, res) => {
     try {
       const { set, clientId, clientTimestamp } = req.body || {};
       if (!set || !set.id) return res.status(400).json({ error: 'set.id required' });
       const result = store.upsertPatientLabHistorySet(
         req.params.id,
         set,
-        Number(clientTimestamp || 0)
+        Number(clientTimestamp || 0),
+        clientId
       );
       if (!result.ok) return res.status(404).json({ error: result.error });
+      await store.awaitDurableCommit();
       broadcastLiveRevision(result.roomId || req.params.id, result.revision, clientId || 'host');
-      res.json({ ok: true, setId: set.id, revision: result.revision });
+      res.json({
+        ok: true,
+        setId: set.id,
+        revision: result.revision,
+        deltaSeq: result.deltaSeq,
+      });
     } catch (e) {
       res.status(400).json({ error: e.message });
     }
   });
 
-  r.put('/patients/:id/nota', express.json({ limit: '256kb' }), (req, res) => {
+  r.put('/patients/:id/nota', express.json({ limit: '256kb' }), async (req, res) => {
     try {
       const { data, expectedVersion, clientId, clientTimestamp } = req.body || {};
       if (data == null) return res.status(400).json({ error: 'data required' });
@@ -344,6 +354,7 @@ function createLanRouter({
         Number(clientTimestamp || 0)
       );
       if (!result.ok) return res.status(404).json({ error: result.error });
+      await store.awaitDurableCommit();
       broadcastLiveRevision(result.roomId || req.params.id, result.revision ?? 0, clientId || 'host');
       res.json({
         ok: true,
@@ -356,7 +367,7 @@ function createLanRouter({
     }
   });
 
-  r.put('/patients/:id/indicaciones', express.json({ limit: '256kb' }), (req, res) => {
+  r.put('/patients/:id/indicaciones', express.json({ limit: '256kb' }), async (req, res) => {
     try {
       const { data, expectedVersion, clientId, clientTimestamp } = req.body || {};
       if (data == null) return res.status(400).json({ error: 'data required' });
@@ -367,6 +378,7 @@ function createLanRouter({
         Number(clientTimestamp || 0)
       );
       if (!result.ok) return res.status(404).json({ error: result.error });
+      await store.awaitDurableCommit();
       broadcastLiveRevision(result.roomId || req.params.id, result.revision ?? 0, clientId || 'host');
       res.json({
         ok: true,
@@ -379,7 +391,7 @@ function createLanRouter({
     }
   });
 
-  r.put('/patients/:id/fields', express.json({ limit: '128kb' }), (req, res) => {
+  r.put('/patients/:id/fields', express.json({ limit: '128kb' }), async (req, res) => {
     try {
       const { changedKeys, data, expectedVersion, clientId } = req.body || {};
       if (!Array.isArray(changedKeys) || !data) {
@@ -394,6 +406,7 @@ function createLanRouter({
         clientId: String(clientId || ''),
       });
       if (!result.ok) return res.status(409).json({ error: 'conflict', version: result.version });
+      await store.awaitDurableCommit();
       const roomId =
         (typeof store.findRoomForPatient === 'function' && store.findRoomForPatient(req.params.id)) ||
         req.params.id;
@@ -415,7 +428,10 @@ function createLanRouter({
         typeof store.persistRoomBundleClinicalOpsToHostDb === 'function'
       ) {
         await store.persistRoomBundleClinicalOpsToHostDb(req.params.id);
-        const refreshed = store.getRoomSyncBundle(req.params.id);
+        const refreshed =
+          typeof store.getRoomSyncBundleForApi === 'function'
+            ? store.getRoomSyncBundleForApi(req.params.id)
+            : store.getRoomSyncBundle(req.params.id);
         if (refreshed) out.bundle = refreshed;
       }
       if (out && out.bundle) {
