@@ -984,6 +984,38 @@ select.profile-input.profile-select {
   box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.15);
 }
 
+.lan-hub-status-dot--pass {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.lan-hub-status-dot--fail {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.lan-preflight-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  cursor: default;
+}
+
+.lan-preflight-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lan-preflight-transport {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
 .lan-hub-team-card,
 .lan-hub-mobile-card,
 .lan-hub-census-card,

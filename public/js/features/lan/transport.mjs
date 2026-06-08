@@ -834,7 +834,9 @@ export async function promoteThisMacToLanHost(opts) {
     const teamCode = getLanTeamCodeFromConfig();
     const ownUrl = (await resolveLanShareBaseUrl()) || '';
     if (teamCode && ownUrl) {
-      const scanned = await discoverLanHostsConcurrent(teamCode, ownUrl);
+      const scanned = await discoverLanHostsConcurrent(teamCode, ownUrl, {
+        subnetScanMode: 'beacon',
+      });
       const peers = [];
       for (const url of scanned) {
         const peerMeta = await fetchLanHostRank(url, teamCode);
@@ -941,7 +943,9 @@ export async function tryAutoJoinPreferredLanHost(opts) {
   const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
 
   let peers = listLivePeerHostUrls(getLanClientId());
-  const subnetPeers = await discoverLanHostsConcurrent(teamCode, ownUrl);
+  const subnetPeers = await discoverLanHostsConcurrent(teamCode, ownUrl, {
+    skipSubnetScan: canLocalMacBeLanHost(),
+  });
   const seen = new Set();
   peers = [...peers, ...subnetPeers].filter((u) => {
     const n = normalizeLanHostBase(u);

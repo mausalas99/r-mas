@@ -27,10 +27,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.1.8](https://github.com/mausalas99/r-mas/releases/tag/v7.1.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.1.9](https://github.com/mausalas99/r-mas/releases/tag/v7.1.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.1.9 (LAN descubrimiento y reconexión)
+
+- **Registro por huella** — Anfitrión identificado por `clientId:startedAt`, no solo IP; roam Wi‑Fi sin barrido completo si sigue vivo.
+- **mDNS + UDP** — Bonjour `_rplus._tcp` y beacon multicast 3739 además del escaneo /24.
+- **WS→SSE→HTTP** — Si el proxy bloquea WebSocket, reconexión transparente vía SSE o polling.
+- **Panel ⇄** — Pre-vuelo, badges de outbox y transporte visibles sin abrir diagnóstico.
+- **QR guardia** — Huella del turno en el código; aviso al unirte a otra guardia por error.
+- **Sobre 7.1.8** — Sin cambio de esquema v14; instalar en todas las estaciones del turno.
+
+Notas: `docs/RELEASE_NOTES_7.1.9.txt`.
 
 ## R+ 7.1.8 (LAN conectar anfitrión)
 

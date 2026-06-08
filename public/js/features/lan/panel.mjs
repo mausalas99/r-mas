@@ -1539,8 +1539,6 @@ function renderLanPreflightRow(root, preflight) {
   if (!row) {
     row = document.createElement('div');
     row.className = 'lan-preflight-row';
-    row.style.cssText =
-      'display:flex;gap:8px;align-items:center;font-size:11px;opacity:.8;margin-bottom:6px;cursor:default;';
     row.addEventListener('click', function (e) {
       if (!e.shiftKey) return;
       var fp = getPinnedFingerprint();
@@ -1555,44 +1553,53 @@ function renderLanPreflightRow(root, preflight) {
     else root.appendChild(row);
   }
 
+  function preflightDot(ok) {
+    return (
+      '<span class="lan-hub-status-dot ' +
+      (ok ? 'lan-hub-status-dot--pass' : 'lan-hub-status-dot--fail') +
+      '" aria-hidden="true"></span>'
+    );
+  }
+
+  function preflightItem(ok, label, title) {
+    return (
+      '<span class="lan-preflight-item" title="' +
+      esc(title) +
+      '">' +
+      preflightDot(ok) +
+      '<span>' +
+      esc(label) +
+      '</span></span>'
+    );
+  }
+
   if (p.phase === 'live') {
     row.innerHTML =
-      '<span title="RTT">⚡ ' + (p.rttMs ? p.rttMs + ' ms' : '—') + '</span>' +
+      '<span class="lan-preflight-item" title="Latencia al anfitrión">' +
+      '<span class="lan-hub-status-dot lan-hub-status-dot--online" aria-hidden="true"></span>' +
+      (p.rttMs > 0 ? '<span>' + esc(p.rttMs + ' ms') + '</span>' : '') +
+      '</span>' +
       (p.transport && p.transport !== 'ws'
-        ? '<span style="color:orange">' + String(p.transport).toUpperCase() + '</span>'
+        ? '<span class="lan-preflight-transport">' + esc(String(p.transport).toUpperCase()) + '</span>'
         : '');
     return;
   }
 
-  function dot(ok, label, title) {
-    return (
-      '<span title="' +
-      esc(title) +
-      '" style="color:' +
-      (ok ? '#22c55e' : '#ef4444') +
-      '">' +
-      (ok ? '✓' : '✗') +
-      ' ' +
-      esc(label) +
-      '</span>'
-    );
-  }
-
   row.innerHTML = [
-    dot(p.rttMs > 0, p.rttMs ? p.rttMs + ' ms' : 'sin ping', 'Latencia al anfitrión'),
-    dot(p.bearerValid, 'token', 'Bearer válido'),
-    dot(p.subnetMatch, 'red', 'Mismo subnet'),
-    dot(
+    preflightItem(p.rttMs > 0, p.rttMs ? p.rttMs + ' ms' : 'sin ping', 'Latencia al anfitrión'),
+    preflightItem(p.bearerValid, 'token', 'Bearer válido'),
+    preflightItem(p.subnetMatch, 'red', 'Mismo subnet'),
+    preflightItem(
       p.dbUnlocked !== false,
       p.dbUnlocked === false ? 'BD bloqueada' : 'BD',
       'Estado de la BD del anfitrión'
     ),
-    dot(canLocalMacBeLanHost(), 'anfitrión', 'Este Mac puede ser anfitrión'),
-  ].join(' ');
+    preflightItem(canLocalMacBeLanHost(), 'anfitrión', 'Este Mac puede ser anfitrión'),
+  ].join('');
 
   if (p.transport && p.transport !== 'ws') {
     row.innerHTML +=
-      ' <span style="color:orange;font-weight:600">' + String(p.transport).toUpperCase() + '</span>';
+      '<span class="lan-preflight-transport">' + esc(String(p.transport).toUpperCase()) + '</span>';
   }
 }
 
@@ -2273,7 +2280,11 @@ async function scanLanHosts() {
     if (now - _lastSubnetLanScanAt >= SUBNET_LAN_SCAN_MIN_MS) {
       _lastSubnetLanScanAt = now;
       var ownUrl = lanHostUrl() || (await resolveLanShareBaseUrl());
-      var scanned = await discoverLanHostsConcurrent(teamCode, ownUrl);
+      var scanOpts =
+        canLocalMacBeLanHost() && !isLanRemoteJoinMode()
+          ? { skipSubnetScan: true }
+          : { subnetScanMode: 'beacon' };
+      var scanned = await discoverLanHostsConcurrent(teamCode, ownUrl, scanOpts);
       var wardHosts = [];
       for (var hi = 0; hi < scanned.length; hi += 1) {
         var peerMeta = await fetchLanHostRank(scanned[hi], teamCode);

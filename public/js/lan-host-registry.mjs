@@ -80,6 +80,26 @@ export function listHosts() {
   return [..._registry.values()];
 }
 
+const FAST_DISCOVERY_SOURCES = new Set(['heartbeat', 'mdns', 'health_poll', 'udp']);
+
+/**
+ * URLs from recent high-fidelity discovery (mDNS, UDP, heartbeat, health poll).
+ * @param {number} [maxAgeMs=90000]
+ * @returns {string[]}
+ */
+export function listRegistryDiscoveryUrls(maxAgeMs = 90_000) {
+  const cutoff = Date.now() - maxAgeMs;
+  return listHosts()
+    .filter(
+      (r) =>
+        r.currentUrl &&
+        FAST_DISCOVERY_SOURCES.has(r.source) &&
+        Number(r.lastSeenAt) >= cutoff
+    )
+    .sort((a, b) => (SOURCE_WEIGHT[b.source] || 0) - (SOURCE_WEIGHT[a.source] || 0))
+    .map((r) => String(r.currentUrl).replace(/\/+$/, ''));
+}
+
 /**
  * Remove entries older than maxAgeMs.
  * @param {number} [maxAgeMs=90000]

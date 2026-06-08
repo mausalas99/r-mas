@@ -1,27 +1,70 @@
 /**
- * Concurrent LAN host discovery: UDP broadcast + subnet scan, with registry upsert.
+ * Concurrent LAN host discovery: registry + UDP fast path, optional subnet scan.
  */
 
-import { discoverLanHostsOnSubnet } from './lan-host-subnet-discovery.mjs';
-import { upsertHost } from './lan-host-registry.mjs';
+import {
+  discoverLanHostsOnSubnet,
+  discoverLanHostsOnSubnetViaBeacon,
+} from './lan-host-subnet-discovery.mjs';
+import { upsertHost, listRegistryDiscoveryUrls } from './lan-host-registry.mjs';
+import { pingLanHostUrl } from './lan-surrogate-host.mjs';
+
+const DEFAULT_REGISTRY_AGE_MS = 90_000;
 
 function normalizeHostUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '');
 }
 
+function dedupeUrls(urls) {
+  const seen = new Set();
+  const merged = [];
+  for (const url of urls) {
+    const n = normalizeHostUrl(url);
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    merged.push(n);
+  }
+  return merged;
+}
+
 /**
- * Run UDP and subnet scan in parallel; upsert UDP hits into the host registry.
+ * Verify beacon hits with a single bearer ping (avoids double-fetch probeLanHostBase).
+ * @param {string[]} urls
+ * @param {string} teamCode
+ * @returns {Promise<string[]>}
+ */
+async function verifyLanHostsWithBearer(urls, teamCode) {
+  const code = String(teamCode || '').trim();
+  if (!code) return [];
+  const verified = [];
+  for (const url of urls) {
+    if (await pingLanHostUrl(url, code)) verified.push(normalizeHostUrl(url));
+  }
+  return verified;
+}
+
+/**
+ * Run UDP (+ optional subnet scan); upsert UDP hits into the host registry.
  * @param {string} teamCode
  * @param {string} ownUrl
- * @returns {Promise<string[]>} deduped host base URLs (UDP + scan)
+ * @param {{
+ *   skipSubnetScan?: boolean,
+ *   forceSubnetScan?: boolean,
+ *   subnetScanMode?: 'beacon' | 'bearer',
+ *   registryMaxAgeMs?: number,
+ * }} [opts]
+ * @returns {Promise<string[]>} deduped host base URLs
  */
-export async function discoverLanHostsConcurrent(teamCode, ownUrl) {
-  const [udpHosts, scanned] = await Promise.all([
+export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
+  const own = normalizeHostUrl(ownUrl);
+  const registryUrls = listRegistryDiscoveryUrls(
+    opts.registryMaxAgeMs ?? DEFAULT_REGISTRY_AGE_MS
+  ).filter((url) => url !== own);
+
+  const udpHosts =
     typeof window !== 'undefined' && window.electronAPI?.lanUdpDiscover
-      ? window.electronAPI.lanUdpDiscover().catch(() => [])
-      : Promise.resolve([]),
-    discoverLanHostsOnSubnet(teamCode, ownUrl),
-  ]);
+      ? await window.electronAPI.lanUdpDiscover().catch(() => [])
+      : [];
 
   const udpUrls = [];
   if (Array.isArray(udpHosts)) {
@@ -40,17 +83,23 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl) {
         source: 'udp',
       });
       const url = normalizeHostUrl(h.url);
-      if (url) udpUrls.push(url);
+      if (url && url !== own) udpUrls.push(url);
     }
   }
 
-  const seen = new Set();
-  const merged = [];
-  for (const url of [...udpUrls, ...(Array.isArray(scanned) ? scanned : [])]) {
-    const n = normalizeHostUrl(url);
-    if (!n || seen.has(n)) continue;
-    seen.add(n);
-    merged.push(n);
+  const fastUrls = dedupeUrls([...registryUrls, ...udpUrls]);
+  if (opts.skipSubnetScan || (fastUrls.length > 0 && !opts.forceSubnetScan)) {
+    return fastUrls;
   }
-  return merged;
+
+  const scanMode = opts.subnetScanMode || 'beacon';
+  let scanned = [];
+  if (scanMode === 'bearer') {
+    scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
+  } else {
+    const beaconHits = await discoverLanHostsOnSubnetViaBeacon(ownUrl);
+    scanned = await verifyLanHostsWithBearer(beaconHits, teamCode);
+  }
+
+  return dedupeUrls([...fastUrls, ...scanned]);
 }

@@ -240,7 +240,26 @@ export function setPinnedFingerprint(fp) {
 export function clearPinnedFingerprint() {
   try { localStorage.removeItem(PINNED_FP_KEY); } catch (_e) {}
 }
+
+/** One-time migration: seed registry from legacy rpc-lan-pinned-host-url if no fingerprint yet. */
+function _migrateFromLegacyPinnedUrl() {
+  try {
+    if (getPinnedFingerprint()) return;
+    const legacyUrl = String(localStorage.getItem('rpc-lan-pinned-host-url') || '').trim().replace(/\/+$/, '');
+    if (!legacyUrl) return;
+    const provisionalFp = `legacy:${legacyUrl}`;
+    upsertHost({
+      fingerprint: provisionalFp, clientId: 'legacy', startedAt: 0,
+      currentUrl: legacyUrl, rank: '', dbUnlocked: false,
+      shiftPinActive: false, rttMs: 0, lastSeenAt: Date.now(), source: 'scan',
+    });
+    setPinnedFingerprint(provisionalFp);
+  } catch (_e) {}
+}
+_migrateFromLegacyPinnedUrl();
 ```
+
+Call `_migrateFromLegacyPinnedUrl()` at module load (after all exports are defined). After first successful `/health` post-join (Task 3), the real `clientId:startedAt` fingerprint replaces the provisional `legacy:url` entry.
 
 **Note on localStorage in tests:** The test uses `clearPinnedFingerprint()` in `beforeEach`. Since `node --test` doesn't have `localStorage`, the test environment will hit the `catch (_e)` branches — the pinnedFingerprint tests will see empty strings, which is the correct fallback. No mock needed for the core logic tests.
 

@@ -145,6 +145,39 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_719 = [
+  {
+    title: 'Descubrimiento mDNS y UDP',
+    body:
+      'R+ anuncia y busca <strong>_rplus._tcp</strong> en el puerto <strong>3738</strong> y envía un <strong>beacon UDP</strong> en multicast, además del escaneo /24. Encuentra el turno más rápido en Wi‑Fi hospitalaria.',
+  },
+  {
+    title: 'Roam por huella digital',
+    body:
+      'El anfitrión se identifica por <strong>clientId:startedAt</strong>, no solo por IP. Al cambiar de red, si la huella sigue viva, R+ reconecta sin un barrido completo.',
+  },
+  {
+    title: 'WS → SSE → HTTP',
+    body:
+      'Si un proxy bloquea WebSocket, <strong>LanConnectionManager</strong> cae a <strong>SSE</strong> o polling HTTP sin que tengas que reconfigurar nada.',
+  },
+  {
+    title: 'Panel ⇄ más claro',
+    body:
+      'Fila de <strong>pre-vuelo</strong> con huella, transporte y outbox; badges visibles sin abrir el bloque de diagnóstico.',
+  },
+  {
+    title: 'QR con huella de guardia',
+    body:
+      'El código QR incluye una huella del turno; R+ avisa si intentas unirte a otra guardia por error (rangos IP solapados).',
+  },
+  {
+    title: 'Parche sobre 7.1.8',
+    body:
+      'Instala <strong>7.1.9 en todas</strong> las estaciones del turno. Sin cambio de esquema SQLCipher (sigue <strong>v14</strong>).',
+  },
+];
+
 var RELEASE_NOTES_718 = [
   {
     title: 'Conectar al anfitrión',
@@ -480,9 +513,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_718;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_719;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.1.9': RELEASE_NOTES_719,
   '7.1.8': RELEASE_NOTES_718,
   '7.1.7': RELEASE_NOTES_717,
   '7.1.6': [

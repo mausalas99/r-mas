@@ -6,6 +6,7 @@ import {
   findByFingerprint,
   findByUrl,
   listHosts,
+  listRegistryDiscoveryUrls,
   evictStale,
   getPinnedFingerprint,
   setPinnedFingerprint,
@@ -184,5 +185,34 @@ describe('lan-host-registry', () => {
     assert.equal(getPinnedFingerprint(), 'lc_x:9999');
     clearPinnedFingerprint();
     assert.equal(getPinnedFingerprint(), '');
+  });
+
+  it('listRegistryDiscoveryUrls returns recent mdns/udp/heartbeat only', () => {
+    const now = Date.now();
+    upsertHost({
+      fingerprint: 'mdns:1',
+      clientId: 'a',
+      startedAt: 1,
+      currentUrl: 'http://10.0.0.2:3738',
+      source: 'mdns',
+      lastSeenAt: now,
+    });
+    upsertHost({
+      fingerprint: 'scan:1',
+      clientId: 'b',
+      startedAt: 2,
+      currentUrl: 'http://10.0.0.3:3738',
+      source: 'scan',
+      lastSeenAt: now,
+    });
+    upsertHost({
+      fingerprint: 'stale:1',
+      clientId: 'c',
+      startedAt: 3,
+      currentUrl: 'http://10.0.0.4:3738',
+      source: 'udp',
+      lastSeenAt: now - 120_000,
+    });
+    assert.deepEqual(listRegistryDiscoveryUrls(90_000), ['http://10.0.0.2:3738']);
   });
 });
