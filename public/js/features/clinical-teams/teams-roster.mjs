@@ -33,6 +33,7 @@ import {
   isLegacyMachineUsername,
   isValidUsernameFormat,
   normalizeUsername,
+  shouldClaimClinicalUsername,
 } from '../../clinical-username.mjs';
 import { syncRotationConfigButton, wireNuevaRotacionControl } from '../clinical-rotation.mjs';
 import {
@@ -392,7 +393,11 @@ export async function handleProfileFormSubmit(ev) {
   }
 
   const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
-  const usernameWillChange = username !== currentUsername;
+  const usernameWillChange = shouldClaimClinicalUsername(
+    currentUsername,
+    username,
+    clientIdFromSettings()
+  );
   if (usernameWillChange) {
     const { assertLanRoomForUsernameRegister } = await import('../../clinical-profile-lan-sync.mjs');
     await assertLanRoomForUsernameRegister({ sala });

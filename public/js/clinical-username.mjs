@@ -20,3 +20,19 @@ export function isLegacyMachineUsername(username, clientId) {
   if (c && u === c) return true;
   return /^lc_[a-z0-9_]+$/i.test(u);
 }
+
+/**
+ * Whether @usuario must be claimed on the current session row before profile save.
+ * @param {string} currentHandle
+ * @param {string} desiredHandle
+ * @param {string} [clientId]
+ */
+export function shouldClaimClinicalUsername(currentHandle, desiredHandle, clientId) {
+  const current = normalizeUsername(currentHandle);
+  const desired = normalizeUsername(desiredHandle);
+  if (current !== desired) return true;
+  if (!isValidUsernameFormat(current)) return true;
+  if (isLegacyMachineUsername(current, String(clientId || ''))) return true;
+  if (/^local_[a-z0-9_]+$/.test(current)) return true;
+  return false;
+}

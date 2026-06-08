@@ -122,4 +122,17 @@ describe('clinical-onboarding helpers', () => {
     assert.match(onboardingSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
     assert.match(onboardingSrc, /!localOnly[\s\S]*isLanProfileNeedsConnectCode/);
   });
+
+  it('resume requires an existing DB user and claim runs for legacy handles', () => {
+    const onboardingSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding.mjs'),
+      'utf8'
+    );
+    assert.match(onboardingSrc, /lookupClinicalUserByUsername/);
+    assert.match(onboardingSrc, /shouldClaimClinicalUsername/);
+    assert.match(
+      onboardingSrc,
+      /No encontramos @\$\{username\} en esta base de datos/
+    );
+  });
 });
