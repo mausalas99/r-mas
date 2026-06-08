@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_724 = [
+  {
+    title: 'R4 conecta primero',
+    body:
+      'Al registrarse como <strong>R4</strong>, R+ ya no se vuelve anfitrión del turno de inmediato. Usa <strong>PIN</strong>, anfitrión fijado o barrido LAN como cualquier estación.',
+  },
+  {
+    title: 'Encuentra el host del turno',
+    body:
+      'R4 participa en el <strong>escaneo de subred</strong> (beacon) y prueba el host ward empaquetado (<code>10.0.57.52:3738</code>) aunque esta Mac nunca haya sido servidor.',
+  },
+  {
+    title: 'Sin equipo obligatorio',
+    body:
+      '<strong>R4</strong> y <strong>Admin</strong> supervisan todas las rotaciones: Mi rotación ya no muestra «sin equipo» ni exige unirse a uno.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.4 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.3</strong>; esquema SQLCipher sigue en <strong>v14</strong>.',
+  },
+];
+
 var RELEASE_NOTES_723 = [
   {
     title: 'Anfitrión ward empaquetado',
@@ -615,9 +638,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_723;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_724;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.4': RELEASE_NOTES_724,
   '7.2.3': RELEASE_NOTES_723,
   '7.2.2': RELEASE_NOTES_722,
   '7.2.1': RELEASE_NOTES_721,

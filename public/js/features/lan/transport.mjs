@@ -38,7 +38,7 @@ import {
   resumeAutoHostDetect,
 } from '../../lan-host-detect-guard.mjs';
 import { isWardTierHostMeta, markWardTierHostSeen } from '../../lan-host-escalation.mjs';
-import { buildLocalLanHostMeta } from '../../lan-host-rank.mjs';
+import { buildLocalLanHostMeta, prefersLanClientDiscoveryFirst } from '../../lan-host-rank.mjs';
 import {
   canLocalMacBeLanHost,
   evaluatePeerHostAction,
@@ -681,9 +681,17 @@ export async function applyPinnedHostOverride(teamCode, opts) {
 function migrateLanElectronStaleClientRole() {
   if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
   if (!canLocalMacBeLanHost()) return;
+  if (prefersLanClientDiscoveryFirst()) return;
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (cfg && String(cfg.hostUrl || '').trim()) return;
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
+}
+
+/** Subnet scan only when this Mac already acts as turn host (not while discovering peers). */
+function shouldSkipSubnetScanForDiscovery() {
+  if (isLanRemoteJoinMode()) return false;
+  if (typeof storage.getLanUiRole === 'function' && storage.getLanUiRole() !== 'host') return false;
+  return canLocalMacBeLanHost();
 }
 
 /** Escritorio: detecta IP, alinea código y deja lista la URL del servidor embebido. */
@@ -1015,7 +1023,7 @@ export async function tryAutoJoinPreferredLanHost(opts) {
 
   let peers = listLivePeerHostUrls(getLanClientId());
   const subnetPeers = await discoverLanHostsConcurrent(teamCode, ownUrl, {
-    skipSubnetScan: canLocalMacBeLanHost(),
+    skipSubnetScan: shouldSkipSubnetScanForDiscovery(),
   });
   const seen = new Set();
   peers = [...peers, ...subnetPeers].filter((u) => {

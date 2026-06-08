@@ -110,6 +110,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-08** `release-7.2.4`: R4 client-first LAN (no auto-host on register, subnet scan, pinned host before promote) + R4/Admin skip team onboarding; `lan-host-rank.mjs`, `transport.mjs`, `panel.mjs`, `clinical-onboarding.mjs`.
+- **2026-06-08** `release-7.2.3`: bundled ward host `http://10.0.57.52:3738` — `bundledWardHostUrl()` in `clinical-settings.mjs`, probe/discovery via `lan-ward-host-registry.mjs`, ⇄ PIN card prefill; `panel.mjs`.
 - **2026-06-08** `release-7.2.2`: LAN client reconnect — `lan-guest-bearer.txt` (fix 7.2.0 guest overwrite), bare host URL paste in ⇄, mDNS/UDP shift-PIN discovery, silent auto-reconnect; `effective-team-code.js`, `lan-shift-pin-connect.mjs`, `room.mjs`, `lan-join-link.mjs`.
 - **2026-06-08** `lan-ward-registry`: cross-VLAN ward host URL/subnet registry — renderer `localStorage` + host `userData/lan-ward-host-registry.json`; `wardHostHints` on `/auth/exchange` + bearer `GET /auth/ward-host-hints`; IPC `lan-ward-host-*`; `lan-squad/ward-host-registry.js`, `lan-ward-host-registry.mjs`, `auth-router.js`, `main.js`.
 - **2026-06-08** `release-7.2.0`: LAN teamCodeHash reconcile (file + SQLCipher) on boot/DB unlock/team-code IPC; heartbeat tolerant; consolidates 7.1.9–7.1.10 LAN stack; `effective-team-code.js`, `host-store.js`, `main.js`, `server.js`.

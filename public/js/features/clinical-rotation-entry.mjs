@@ -5,6 +5,7 @@ import { isDbMode } from '../db-storage-bridge.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
+import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { readRpcSettings, isClinicalLocalOnlyMode } from '../clinical-settings.mjs';
 import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
@@ -172,7 +173,9 @@ function buildEntryStatus() {
   if (sala) parts.push(sala);
   const primary = parts.length ? parts.join(' · ') : 'Mi rotación';
   let sub = name || 'Equipos, entregas y perfil clínico';
-  if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || '—')}`;
+  if (hasElevatedTeamPrivileges(user)) {
+    sub = name || 'Supervisión de rotaciones — sin equipo requerido';
+  } else if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || '—')}`;
   else if (teams.length > 1) sub = `${teams.length} equipos`;
   else if (needsTeamOnboarding()) sub = 'Sin equipo — abre para buscar en tu sala o unirte';
   return { primary, sub, pending: false };

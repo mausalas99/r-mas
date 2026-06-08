@@ -12,7 +12,8 @@ import {
   needsClinicalLanProfileGate,
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
-import { needsClinicalSyncModeChoice } from './clinical-onboarding.mjs';
+import { needsClinicalSyncModeChoice, needsTeamOnboarding } from './clinical-onboarding.mjs';
+import { clinicalSessionContext } from '../clinical-session-context.mjs';
 
 describe('clinical-onboarding helpers', () => {
   it('detects legacy username for onboarding gate', () => {
@@ -91,6 +92,23 @@ describe('clinical-onboarding helpers', () => {
     } finally {
       if (prev === undefined) delete globalThis.localStorage;
       else globalThis.localStorage = prev;
+    }
+  });
+
+  it('needsTeamOnboarding is false for R4 and Admin without a team', () => {
+    const prevUser = clinicalSessionContext.user;
+    const prevTeams = clinicalSessionContext.teams;
+    try {
+      clinicalSessionContext.user = { user_id: 'r4-1', rank: 'R4' };
+      clinicalSessionContext.teams = [];
+      assert.equal(needsTeamOnboarding(), false);
+      clinicalSessionContext.user = { user_id: 'adm-1', rank: 'Admin' };
+      assert.equal(needsTeamOnboarding(), false);
+      clinicalSessionContext.user = { user_id: 'r2-1', rank: 'R2' };
+      assert.equal(needsTeamOnboarding(), true);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+      clinicalSessionContext.teams = prevTeams;
     }
   });
 

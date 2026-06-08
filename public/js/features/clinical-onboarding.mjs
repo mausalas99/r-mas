@@ -30,6 +30,7 @@ import {
 } from '../clinical-username.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 
+import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { filterJoinedTeams } from './clinical-teams.mjs';
 import {
   renderLocalOnlyProfilePanel,
@@ -72,9 +73,10 @@ export function needsUsernameClaim() {
   return !isValidUsernameFormat(handle);
 }
 
-/** Sin equipo asignado (informativo; no bloquea la app). */
+/** Sin equipo asignado (informativo; no bloquea la app). R4/Admin supervisan sin unirse. */
 export function needsTeamOnboarding() {
   if (!clinicalSessionContext.user?.user_id) return true;
+  if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) return false;
   const teams = clinicalSessionContext.teams || [];
   return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
 }

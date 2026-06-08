@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.3](https://github.com/mausalas99/r-mas/releases/tag/v7.2.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.4](https://github.com/mausalas99/r-mas/releases/tag/v7.2.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.4 (R4 cliente primero y sin equipo obligatorio)
+
+- **R4 como cliente** — Al registrarse, busca el anfitrión activo (fijado, PIN o barrido) antes de activar servidor en esta Mac.
+- **Barrido LAN** — R4 participa en descubrimiento de subred igual que R1–R3; encuentra el host ward empaquetado.
+- **Mi rotación** — R4 y Admin no requieren unirse a un equipo para supervisar el turno.
+- **Sobre 7.2.3** — Sin cambio de esquema SQLCipher (sigue v14).
+
+Notas: `docs/RELEASE_NOTES_7.2.4.txt`.
 
 ## R+ 7.2.3 (LAN anfitrión ward empaquetado)
 

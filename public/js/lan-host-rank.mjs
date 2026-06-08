@@ -77,6 +77,15 @@ export function prefersLanHosting(meta) {
   return (RANK_PRIORITY[rank] || 0) >= RANK_PRIORITY.R4;
 }
 
+/**
+ * R4/admin should scan and join an existing host before auto-promoting this Mac.
+ * On-call residents still prefer client discovery when ward-tier.
+ */
+export function prefersLanClientDiscoveryFirst(meta) {
+  const m = meta || buildLocalLanHostMeta();
+  return isWardTierHostMeta(m);
+}
+
 /** @param {{ rank?: string, isProgramAdmin?: boolean }} peer */
 /** @param {{ rank?: string, isProgramAdmin?: boolean }} self */
 export function shouldDeferToPeerHost(peer, self) {

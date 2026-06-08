@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   lanHostPriority,
   prefersLanHosting,
+  prefersLanClientDiscoveryFirst,
   resolveHostElection,
   shouldAutoJoinPeerAsClient,
   shouldDeferToPeerHost,
@@ -67,6 +68,13 @@ describe('lan-host-rank', () => {
       global.localStorage = prev;
       clearHostEscalation();
     }
+  });
+
+  it('R4/admin prefer client discovery before auto-hosting', () => {
+    assert.equal(prefersLanClientDiscoveryFirst({ rank: 'R4', isProgramAdmin: false }), true);
+    assert.equal(prefersLanClientDiscoveryFirst({ rank: 'R1', isProgramAdmin: true }), true);
+    assert.equal(prefersLanClientDiscoveryFirst({ rank: 'R2', isProgramAdmin: false }), false);
+    assert.equal(prefersLanClientDiscoveryFirst({ rank: 'R1', isOnCallGuardia: true }), false);
   });
 
   it('prefers R4 and program admin for hosting', () => {

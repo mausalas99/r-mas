@@ -1032,17 +1032,17 @@ async function renderLanPanelOnce() {
   if (rankConfigured) {
     try {
       await syncLanHostClinicalMetaToDisk();
-      if (canLocalMacBeLanHost()) {
-        if (isWardTierHostMeta(buildLocalLanHostMeta())) {
-          markWardTierHostSeen();
-        }
+      if (getPinnedHostUrl() && !isLanConnectionDropdownOpen()) {
+        await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
+      } else if (
+        typeof storage.getLanUiRole === 'function' &&
+        storage.getLanUiRole() === 'host' &&
+        canLocalMacBeLanHost()
+      ) {
         await ensureLanElectronHostReady();
       }
     } catch (_hostReadyErr) {
       // Non-fatal — still render panel so ⇄ stays usable offline.
-    }
-    if (getPinnedHostUrl() && !isLanConnectionDropdownOpen()) {
-      void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
     }
   }
   if (lanPanelRenderStale(gen)) return;
@@ -2417,7 +2417,10 @@ async function scanLanHosts() {
       _lastSubnetLanScanAt = now;
       var ownUrl = lanHostUrl() || (await resolveLanShareBaseUrl());
       var scanOpts =
-        canLocalMacBeLanHost() && !isLanRemoteJoinMode()
+        !isLanRemoteJoinMode() &&
+        typeof storage.getLanUiRole === 'function' &&
+        storage.getLanUiRole() === 'host' &&
+        canLocalMacBeLanHost()
           ? { skipSubnetScan: true }
           : { subnetScanMode: 'beacon' };
       var scanned = await discoverLanHostsConcurrent(teamCode, ownUrl, scanOpts);
