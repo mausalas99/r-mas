@@ -1,14 +1,28 @@
-version: 7.1.8
+version: 7.1.9
 files:
-  - url: R+-7.1.8-x64.exe
-    sha512: /6nIOsc3GWqTkKRSIrqEZ+3re1dg77U1CH8doZOGGS35yQ5muDoSmDLxS+5bUIsT8fUizPxyARlLMzd5hUXmDw==
-    size: 114254833
-path: R+-7.1.8-x64.exe
-sha512: /6nIOsc3GWqTkKRSIrqEZ+3re1dg77U1CH8doZOGGS35yQ5muDoSmDLxS+5bUIsT8fUizPxyARlLMzd5hUXmDw==
-releaseDate: '2026-06-07T20:21:05.000Z'
+  - url: R+-7.1.9-x64.exe
+    sha512: deRXhyOywgdVfgVTOABVTLpy/Bheyw5Sb2WLcrjVFVC6N4VWjrqfApuvHld7PBK2LrlwHaAjxeDHXxpktT9m7g==
+    size: 114624640
+path: R+-7.1.9-x64.exe
+sha512: deRXhyOywgdVfgVTOABVTLpy/Bheyw5Sb2WLcrjVFVC6N4VWjrqfApuvHld7PBK2LrlwHaAjxeDHXxpktT9m7g==
+releaseDate: '2026-06-08T13:10:13.000Z'
 releaseNotes: |
-  Corrige el fallo en que «Conectar al anfitrión» / «Combinar servidores» no hacía nada tras confirmar: el módulo LAN transport quedaba sin cablear cuando esbuild duplicaba el chunk.
+  Re-arquitectura de la capa LAN: el anfitrión se identifica por huella digital (no solo por IP), hay descubrimiento mDNS y beacon UDP, reconexión WS→SSE→HTTP y diagnóstico visible en el panel ⇄.
   
-  Cableado LAN transport — registerLanSyncTransportDeps comparte estado vía globalThis (mismo patrón que push/room); initLanClientFromStorage espera el cableado antes de auto-unirse.
+  Registro de anfitriones — lan-host-registry.mjs unifica escaneo, mDNS, UDP, /health y heartbeats; la huella clientId:startedAt sobrevive cambios de IP.
   
-  Combinar sin sala — Si confirmas unirte al anfitrión de mayor rango sin estar en una sala ⇄, R+ avisa en lugar de fallar en silencio.
+  mDNS Bonjour — Anuncia y busca _rplus._tcp en el puerto 3738; IPC lan:mdns-peers y reinicio al cambiar de NIC.
+  
+  Beacon UDP — Multicast 239.255.42.1:3739 como pista adicional en subred.
+  
+  Roam por huella — Al cambiar Wi‑Fi, si el anfitrión fijado sigue vivo con la misma huella, salta el barrido completo y reconecta a la URL nueva.
+  
+  PIN del turno — Escaneo con backoff exponencial (12→30→60→120 s) para no saturar la red.
+  
+  SSE + fallback — GET /api/lan/v1/sse con heartbeat; LanConnectionManager cae de WS a SSE a polling HTTP si el proxy bloquea upgrades.
+  
+  /health — Endpoint agregado + livesync:hello cada 30 s para estado del host y del turno.
+  
+  Panel ⇄ — Fila de pre-vuelo (huella, transporte, outbox), badges de outbox y transporte sin abrir diagnóstico.
+  
+  QR con huella de guardia — El código incluye sha256[:8] del turno; aviso si intentas unirte a otra guardia.
