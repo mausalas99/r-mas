@@ -1,20 +1,20 @@
-version: 7.2.2
+version: 7.2.4
 files:
-  - url: R+-7.2.2-x64.exe
-    sha512: qsbMYn396rBz9DgFoApTFVxfE1gZUIffLo+rYImFASDlAOruaWTPadhlzXkxQR1w0WISwGmUo2bLqgSrFsczsw==
-    size: 114661614
-path: R+-7.2.2-x64.exe
-sha512: qsbMYn396rBz9DgFoApTFVxfE1gZUIffLo+rYImFASDlAOruaWTPadhlzXkxQR1w0WISwGmUo2bLqgSrFsczsw==
-releaseDate: '2026-06-08T17:18:09.000Z'
+  - url: R+-7.2.4-x64.exe
+    sha512: fvZYWiLrpxUd7FL2Ru4WpqoLBGskvQynZoclZjUJh6NXlZPQXRvfZEUpZ5jZUkzOHEQyHoClmESWvffOqtIVPA==
+    size: 114680338
+path: R+-7.2.4-x64.exe
+sha512: fvZYWiLrpxUd7FL2Ru4WpqoLBGskvQynZoclZjUJh6NXlZPQXRvfZEUpZ5jZUkzOHEQyHoClmESWvffOqtIVPA==
+releaseDate: '2026-06-08T18:24:13.000Z'
 releaseNotes: |
-  Parche sobre 7.2.1: corrige conexión de clientes LAN (bearer de invitado separado del código del host local), reconoce la dirección copiada del anfitrión al pegar en ⇄, mejora el descubrimiento por PIN y elimina el diálogo de confirmación al reconectar. Sin cambio de esquema SQLCipher (sigue v14).
+  Parche sobre 7.2.3: al registrarse como R4, R+ ya no se convierte en anfitrión del turno antes de buscar la red — conecta al host activo (fijado, PIN o barrido) como cualquier estación. R4 y Admin dejan de requerir unirse a un equipo en Mi rotación. Sin cambio de esquema SQLCipher (sigue v14).
   
-  Bearer de invitado separado — El token del anfitrión remoto se guarda en lan-guest-bearer.txt; ya no sobrescribe lan-team-code.txt del servidor local (regresión 7.2.0). Auto-reparación si ambos archivos coincidían.
+  R4 como cliente primero — Tras el registro, R4 permanece en modo cliente: usa PIN del turno, anfitrión fijado o descubrimiento LAN antes de activar el servidor embebido de esta Mac.
   
-  Pegar dirección del anfitrión — ⇄ reconoce http://…:3738 (o IP:3738) en «Unirse con enlace»; opcionalmente PIN en la misma línea. Sin PIN, rellena la tarjeta PIN del turno y pide los 6 dígitos.
+  Barrido de red para R4 — Deja de omitir el escaneo de subred solo por ser elegible como anfitrión; encuentra el host fijado (10.0.57.52:3738) aunque nunca haya sido servidor local.
   
-  PIN más rápido — Antes del barrido /24: URLs ward, registro mDNS/UDP/heartbeat; clientes en rol remoto ya no prueban loopback (menos 401 en consola).
+  ⇄ sin auto-promoción — El panel Wi‑Fi intenta el anfitrión fijado primero y solo prepara servidor local si el rol ya es «host» (acción explícita o Mac designada).
   
-  Reconexión silenciosa — Sin diálogo «¿Reconectar al anfitrión…?»; toast si hay anfitrión fijado distinto.
+  Mi rotación sin equipo — R4 y Admin supervisan todas las rotaciones; no aparecen como «sin equipo» ni bloquean el uso de la app por falta de membresía.
   
-  Errores claros — Distingue PIN incorrecto vs dirección inalcanzable al conectar con URL manual.
+  Migración legacy — Se elimina la promoción automática de R4 de «cliente» a «host» cuando no hay URL guardada (UI antigua de pestañas).
