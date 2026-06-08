@@ -19,7 +19,11 @@ import {
   ClientSessionInactivityLocker,
 } from './features/session-manager.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from './clinical-settings.mjs';
-import { isLegacyMachineUsername, normalizeUsername } from './clinical-username.mjs';
+import {
+  isLegacyMachineUsername,
+  isValidUsernameFormat,
+  normalizeUsername,
+} from './clinical-username.mjs';
 import { clinicalSessionContext } from './clinical-session-context.mjs';
 
 export { clinicalSessionContext };
@@ -211,6 +215,26 @@ export async function bootstrapClinicalAccess(settings, clientId) {
 
   await applyBootstrapResult(res);
   return true;
+}
+
+/**
+ * Resolve a LAN @usuario row in the local DB (exact handle; no device bootstrap).
+ * @returns {Promise<{ user_id: string, username?: string }|null>}
+ */
+export async function lookupClinicalUserByUsername(username) {
+  if (!isDbMode()) return null;
+  const api = electronApi();
+  const handle = normalizeUsername(username);
+  if (!api || typeof api.dbClinicalUserLookup !== 'function' || !isValidUsernameFormat(handle)) {
+    return null;
+  }
+  try {
+    const res = await api.dbClinicalUserLookup({ username: handle });
+    if (!res?.ok || !res.user?.user_id) return null;
+    return res.user;
+  } catch (_e) {
+    return null;
+  }
 }
 
 /**
