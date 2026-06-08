@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-08",
   "entries": [
     {
+      "version": "7.2.4",
+      "label": "7.2.4",
+      "publishedAt": "2026-06-08",
+      "summary": "Release estable 7.2.4",
+      "recommended": true
+    },
+    {
       "version": "7.2.3",
       "label": "7.2.3",
       "publishedAt": "2026-06-08",
       "summary": "Anfitrión ward empaquetado (10.0.57.52:3738)",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.2.2",
