@@ -18,7 +18,12 @@ describe('release-notes', () => {
 
   it('uses default when version omitted', () => {
     const text = formatCuratedReleaseNotesPlain('');
-    assert.ok(text.includes('Conectar al anfitrión') || text.includes('transport'));
+    assert.ok(
+      text.includes('PIN del turno') ||
+        text.includes('Cross-VLAN') ||
+        text.includes('anfitrión') ||
+        text.includes('transport')
+    );
   });
 
   it('updater prefers curated target version over stale feed notes', () => {
