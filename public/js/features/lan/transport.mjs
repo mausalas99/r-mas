@@ -29,6 +29,11 @@ import {
 import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import {
+  mergeWardHostRegistry,
+  recordWardHostUrl,
+  syncWardHostUrlToMainFile,
+} from '../../lan-ward-host-registry.mjs';
+import {
   recordAutoHostDetectSuccess,
   resumeAutoHostDetect,
 } from '../../lan-host-detect-guard.mjs';
@@ -163,6 +168,8 @@ export async function isLanRestHostOwnMachine() {
 export async function shouldShowLanShiftPinClientConnect() {
   if (!isLanElectronDesktop()) return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  // After reset / no bearer — R4 also reconnects via PIN or host URL.
+  if (!isLanSessionConfiguredForRest()) return true;
   if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) return false;
 
   var rid = String(activeLiveSyncRoomId || '').trim();
@@ -438,7 +445,10 @@ export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId, joinU
     return;
   }
   await persistGuestBearerFromExchange(data);
-  configureLanFromMobileJoin(String(data.hostUrl || base), data.token, roomId);
+  const joinedUrl = String(data.hostUrl || base);
+  configureLanFromMobileJoin(joinedUrl, data.token, roomId);
+  recordWardHostUrl(joinedUrl, { source: 'client' });
+  if (data.wardHostHints) mergeWardHostRegistry(data.wardHostHints);
 }
 
 /** En anfitrión Electron: alinea rpc-lan-config con el código efectivo del servidor. */
@@ -674,6 +684,8 @@ export async function ensureLanElectronHostReady(opts) {
     if (retried) url = retried;
   }
   persistLanClientConfig(url, bearer);
+  recordWardHostUrl(url, { source: 'host' });
+  syncWardHostUrlToMainFile(url, { source: 'host' });
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
@@ -864,6 +876,11 @@ export async function promoteThisMacToLanHost(opts) {
   if (ok) {
     resumeAutoHostDetect();
     recordAutoHostDetectSuccess();
+    const shareUrl = await resolveLanShareBaseUrl();
+    if (shareUrl) {
+      recordWardHostUrl(shareUrl, { source: 'host' });
+      syncWardHostUrlToMainFile(shareUrl, { source: 'host' });
+    }
   }
   deps().renderLanPanel();
   if (ok && !opts.skipToast) {
@@ -1004,6 +1021,7 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
     }
   } catch (_e) {}
   recordAutoHostDetectSuccess();
+  recordWardHostUrl(url, { source: 'client' });
   const label = String(opts.toastLabel || '').trim();
   runtime().showToast(
     label

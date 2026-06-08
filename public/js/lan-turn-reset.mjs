@@ -4,6 +4,7 @@
  */
 import { storage } from './storage.js';
 import { clearPinnedHostUrl } from './lan-host-pin.mjs';
+import { clearWardHostRegistry as clearLocalWardHostRegistry } from './lan-ward-host-registry.mjs';
 
 export const LAN_TURN_RESET_CLIENT_CONFIRM =
   'Saldrás de la sala ⇄, se quitará el anfitrión fijado y esta Mac dejará de actuar como servidor del turno. Tu base clínica y equipos no se borran. Después ingresa el PIN del R4 o pega el enlace de invitación. ¿Restablecer?';
@@ -18,6 +19,7 @@ export async function performLanTurnClientReset(deps) {
     deps.leaveLiveSyncRoom({ silentLeave: true });
   }
   clearPinnedHostUrl();
+  clearLocalWardHostRegistry();
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
   if (typeof storage.saveLanConfig === 'function') storage.saveLanConfig(null);
   try {

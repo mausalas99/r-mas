@@ -17,6 +17,7 @@ const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createShiftPinStore } = require('./lan-squad/shift-pin-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
+const { createWardHostRegistry } = require('./lan-squad/ward-host-registry.js');
 const { createSseHub } = require('./lan-squad/lan-sse-hub.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
 const {
@@ -155,6 +156,7 @@ const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
 const lanShiftPinPath = path.join(userData, 'lan-shift-pin.json');
+const lanWardHostRegistryPath = path.join(userData, 'lan-ward-host-registry.json');
 
 let lanBoot;
 try {
@@ -185,8 +187,12 @@ const shiftPinStore = createShiftPinStore({
   filePath: lanShiftPinPath,
 });
 shiftPinStore.ensure();
+const wardHostRegistry = createWardHostRegistry({ filePath: lanWardHostRegistryPath });
 const getLanHostUrl = () =>
   pickLanCandidateBaseUrl(LAN_HTTP_PORT) || `http://localhost:${LAN_HTTP_PORT}`;
+try {
+  wardHostRegistry.seedFromCandidateBaseUrl(getLanHostUrl());
+} catch (_wardSeed) {}
 
 const documentExportAuth = createDocumentExportAuthMiddleware(() => lanStore.getState());
 
@@ -299,6 +305,7 @@ const authTicketLimiter = rateLimit({
 const authRouter = createAuthRouter({
   ticketStore,
   shiftPinStore,
+  wardHostRegistry,
   getHostToken: () => LAN_TEAM_CODE,
   getHostUrl: getLanHostUrl,
   getRequiresMigrationNotice: () => Boolean(appExpress.locals.lanRequiresMigrationNotice),
@@ -425,4 +432,8 @@ function stopLanServer() {
   });
 }
 
-module.exports = { startLanServer, stopLanServer };
+function getLanWardHostRegistry() {
+  return wardHostRegistry;
+}
+
+module.exports = { startLanServer, stopLanServer, getLanWardHostRegistry };

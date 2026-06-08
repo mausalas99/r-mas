@@ -7,6 +7,13 @@ import { resetShiftPinBackoff } from './lan-shift-pin-connect.mjs';
 import { storage } from './storage.js';
 import { applyLanNetworkRoaming, applyLanNetworkRoamingWithFingerprint } from './lan-network-roam.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode } from './features/lan/transport.mjs';
+import { recordWardHostUrl, syncWardHostUrlToMainFile } from './lan-ward-host-registry.mjs';
+import { isClinicalLocalOnlyMode, readRpcSettings } from './clinical-settings.mjs';
+
+/** @type {ReturnType<typeof setTimeout> | null} */
+let _networkChangeDebounceTimer = null;
+/** @type {{ prefixes?: string[], candidateBaseUrl?: string } | null} */
+let _networkChangePending = null;
 
 async function restartLanDiscoveryAfterNetworkChange() {
   resumeAutoHostDetect();
@@ -20,7 +27,6 @@ async function restartLanDiscoveryAfterNetworkChange() {
   const panel = await import('./features/lan/panel.mjs');
   if (typeof panel.stopLanAutoDiscovery === 'function') panel.stopLanAutoDiscovery();
   if (typeof panel.startLanAutoDiscovery === 'function') panel.startLanAutoDiscovery();
-  if (typeof panel.renderLanPanel === 'function') panel.renderLanPanel();
 
   const transport = await import('./features/lan/transport.mjs');
   if (typeof transport.initLanHostPlugAndPlay === 'function') {
@@ -42,8 +48,9 @@ async function restartLanDiscoveryAfterNetworkChange() {
 }
 
 /** @param {{ prefixes?: string[], candidateBaseUrl?: string }} payload */
-export async function handleLanNetworkChanged(payload) {
+async function handleLanNetworkChangedNow(payload) {
   if (!isLanElectronDesktop()) return;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
   resetShiftPinBackoff();
 
   const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
@@ -61,5 +68,26 @@ export async function handleLanNetworkChanged(payload) {
   }
 
   applyLanNetworkRoaming(payload || {});
+  if (!isLanRemoteJoinMode()) {
+    const candidate = String(payload?.candidateBaseUrl || '').trim();
+    if (candidate) {
+      recordWardHostUrl(candidate, { source: 'host' });
+      syncWardHostUrlToMainFile(candidate, { source: 'host' });
+    }
+  }
   await restartLanDiscoveryAfterNetworkChange();
+}
+
+/** @param {{ prefixes?: string[], candidateBaseUrl?: string }} payload */
+export function handleLanNetworkChanged(payload) {
+  if (!isLanElectronDesktop()) return;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+  _networkChangePending = payload || {};
+  if (_networkChangeDebounceTimer) return;
+  _networkChangeDebounceTimer = setTimeout(function () {
+    _networkChangeDebounceTimer = null;
+    const pending = _networkChangePending;
+    _networkChangePending = null;
+    void handleLanNetworkChangedNow(pending || {});
+  }, 3000);
 }

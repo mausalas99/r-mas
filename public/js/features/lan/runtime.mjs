@@ -30,7 +30,7 @@ export function getReconcileCooldownMs() {
 
 /** @returns {number} LAN host scan interval (ms) */
 export function getLanScanIntervalMs() {
-  return lanNetworkProfile.getNetworkProfile() === 'slow' ? 60000 : 5000;
+  return lanNetworkProfile.getNetworkProfile() === 'slow' ? 60000 : 15000;
 }
 
 /** Per-room last applied delta sequence number. Used by Flow B delta catch-up. */

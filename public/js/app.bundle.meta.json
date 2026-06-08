@@ -251,7 +251,7 @@
       "format": "esm"
     },
     "public/js/lan-sync-diagnostics.mjs": {
-      "bytes": 4518,
+      "bytes": 4659,
       "imports": [],
       "format": "esm"
     },
@@ -400,7 +400,7 @@
       "format": "esm"
     },
     "public/js/features/lan/runtime.mjs": {
-      "bytes": 3610,
+      "bytes": 3611,
       "imports": [
         {
           "path": "public/js/lan-client.mjs",
@@ -693,8 +693,29 @@
       ],
       "format": "esm"
     },
+    "public/js/lan-ward-host-registry.mjs": {
+      "bytes": 7912,
+      "imports": [
+        {
+          "path": "public/interno/host-discovery.mjs",
+          "kind": "import-statement",
+          "original": "../interno/host-discovery.mjs"
+        },
+        {
+          "path": "public/js/lan-host-subnet-discovery.mjs",
+          "kind": "import-statement",
+          "original": "./lan-host-subnet-discovery.mjs"
+        },
+        {
+          "path": "public/js/lan-host-subnet-discovery.mjs",
+          "kind": "dynamic-import",
+          "original": "./lan-host-subnet-discovery.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/lan-discovery.mjs": {
-      "bytes": 3081,
+      "bytes": 3531,
       "imports": [
         {
           "path": "public/js/lan-host-subnet-discovery.mjs",
@@ -705,6 +726,11 @@
           "path": "public/js/lan-host-registry.mjs",
           "kind": "import-statement",
           "original": "./lan-host-registry.mjs"
+        },
+        {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "./lan-ward-host-registry.mjs"
         },
         {
           "path": "public/js/lan-surrogate-host.mjs",
@@ -808,7 +834,7 @@
       "format": "esm"
     },
     "public/js/lan-shift-pin-connect.mjs": {
-      "bytes": 8693,
+      "bytes": 10413,
       "imports": [
         {
           "path": "public/js/lan-join-link.mjs",
@@ -819,6 +845,11 @@
           "path": "public/js/lan-host-subnet-discovery.mjs",
           "kind": "import-statement",
           "original": "./lan-host-subnet-discovery.mjs"
+        },
+        {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "./lan-ward-host-registry.mjs"
         },
         {
           "path": "public/js/lan-surrogate-host.mjs",
@@ -1074,7 +1105,7 @@
       "format": "esm"
     },
     "public/js/features/lan/transport.mjs": {
-      "bytes": 48340,
+      "bytes": 49092,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1120,6 +1151,11 @@
           "path": "public/js/lan-discovery.mjs",
           "kind": "import-statement",
           "original": "../../lan-discovery.mjs"
+        },
+        {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "../../lan-ward-host-registry.mjs"
         },
         {
           "path": "public/js/lan-host-detect-guard.mjs",
@@ -2653,7 +2689,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help/release-notes-curated.mjs": {
-      "bytes": 61071,
+      "bytes": 62318,
       "imports": [],
       "format": "esm"
     },
@@ -7238,7 +7274,7 @@
       "format": "esm"
     },
     "public/js/lan-turn-reset.mjs": {
-      "bytes": 1326,
+      "bytes": 1458,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -7249,12 +7285,17 @@
           "path": "public/js/lan-host-pin.mjs",
           "kind": "import-statement",
           "original": "./lan-host-pin.mjs"
+        },
+        {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "./lan-ward-host-registry.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/features/lan/panel.mjs": {
-      "bytes": 105031,
+      "bytes": 110098,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -7367,6 +7408,11 @@
           "original": "../../lan-discovery.mjs"
         },
         {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "../../lan-ward-host-registry.mjs"
+        },
+        {
           "path": "public/js/lan-host-detect-guard.mjs",
           "kind": "import-statement",
           "original": "../../lan-host-detect-guard.mjs"
@@ -7425,6 +7471,11 @@
           "path": "public/js/lan-turn-reset.mjs",
           "kind": "dynamic-import",
           "original": "../../lan-turn-reset.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../../clinical-profile-lan-sync.mjs"
         },
         {
           "path": "public/js/lan-shift-pin-connect.mjs",
@@ -7486,7 +7537,7 @@
       "format": "esm"
     },
     "public/js/lan-network-change.mjs": {
-      "bytes": 2638,
+      "bytes": 3796,
       "imports": [
         {
           "path": "public/js/lan-network-profile.mjs",
@@ -7519,6 +7570,16 @@
           "original": "./features/lan/transport.mjs"
         },
         {
+          "path": "public/js/lan-ward-host-registry.mjs",
+          "kind": "import-statement",
+          "original": "./lan-ward-host-registry.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-settings.mjs"
+        },
+        {
           "path": "public/js/features/lan/room.mjs",
           "kind": "dynamic-import",
           "original": "./features/lan/room.mjs"
@@ -7547,7 +7608,7 @@
       "format": "esm"
     },
     "public/js/features/lan/orchestrator.mjs": {
-      "bytes": 64632,
+      "bytes": 64826,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -7728,6 +7789,11 @@
           "path": "public/js/lan-network-change.mjs",
           "kind": "dynamic-import",
           "original": "../../lan-network-change.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "dynamic-import",
+          "original": "../../clinical-settings.mjs"
         },
         {
           "path": "public/js/lan-shift-pin-connect.mjs",
@@ -9238,24 +9304,24 @@
     }
   },
   "outputs": {
-    "public/js/chunks/clinical-entrega-TZ7BNNAW.js.map": {
+    "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-entrega-TZ7BNNAW.js": {
+    "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -9267,7 +9333,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -9303,7 +9373,107 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-FWKRNT2R.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-VQ3KZLKM.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "LAN_PROFILE_NEEDS_CONNECT_MSG",
+        "LAN_PROFILE_PUSH_FAILED_MSG",
+        "LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG",
+        "applyPendingLanInviteFromPage",
+        "assertLanRoomForUsernameRegister",
+        "ensureLiveSyncRoomForUsernameRegister",
+        "flushClinicalProfileToLan",
+        "isBenignLanPushSkipCode",
+        "isLanProfileNeedsConnectCode",
+        "notifyLanProfilePushResult",
+        "rememberLiveSyncRoomMembership",
+        "resolveRoomIdForUsernameRegister",
+        "seedDevPeerLanConfigIfNeeded"
+      ],
+      "entryPoint": "public/js/clinical-profile-lan-sync.mjs",
+      "inputs": {},
+      "bytes": 1669
+    },
+    "public/js/chunks/clinical-entrega-VP2V4SDO.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 93
+    },
+    "public/js/chunks/clinical-entrega-VP2V4SDO.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-BCNABZWJ.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-QSBWAKTB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TNTHAQJD.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PVRUBDE5.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2TZHN5MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-K6QXHWFW.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-WM442OFV.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-CRJYUJ23.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2VRIL4MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-LX374JRN.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -9340,26 +9510,26 @@
       ],
       "entryPoint": "public/js/features/clinical-entrega.mjs",
       "inputs": {},
-      "bytes": 1775
+      "bytes": 1814
     },
-    "public/js/chunks/entrega-roster-panel-LCHSGAOP.js.map": {
+    "public/js/chunks/entrega-roster-panel-5PBUPBLH.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/entrega-roster-panel-LCHSGAOP.js": {
+    "public/js/chunks/entrega-roster-panel-5PBUPBLH.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -9371,7 +9541,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -9407,7 +9581,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -9430,26 +9604,26 @@
       ],
       "entryPoint": "public/js/features/entrega-roster-panel.mjs",
       "inputs": {},
-      "bytes": 1075
+      "bytes": 1114
     },
-    "public/js/chunks/clinical-access-runtime-X26WIZWM.js.map": {
+    "public/js/chunks/clinical-access-runtime-DONAIM3C.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-access-runtime-X26WIZWM.js": {
+    "public/js/chunks/clinical-access-runtime-DONAIM3C.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -9461,7 +9635,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -9497,7 +9675,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -9546,18 +9724,18 @@
       ],
       "entryPoint": "public/js/clinical-access-runtime.mjs",
       "inputs": {},
-      "bytes": 2814
+      "bytes": 2853
     },
-    "public/js/chunks/db-unlock-MH64CH5C.js.map": {
+    "public/js/chunks/db-unlock-YR4ZYE2Z.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/db-unlock-MH64CH5C.js": {
+    "public/js/chunks/db-unlock-YR4ZYE2Z.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
@@ -9591,32 +9769,20 @@
       "inputs": {},
       "bytes": 1243
     },
-    "public/js/chunks/settings-help-YWYXI5BJ.js.map": {
+    "public/js/chunks/settings-help-N4D35JS6.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4949
+      "bytes": 4950
     },
-    "public/js/chunks/settings-help-YWYXI5BJ.js": {
+    "public/js/chunks/settings-help-N4D35JS6.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QR4GTSXM.js",
+          "path": "public/js/chunks/chunk-VIHXUJVE.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-YQYWEQZI.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-YMSNCPLZ.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-L2VI5EO5.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TVNIPUSB.js",
+          "path": "public/js/chunks/chunk-BO6ZJ67C.js",
           "kind": "import-statement"
         },
         {
@@ -9624,23 +9790,23 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-L2VI5EO5.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
+          "path": "public/js/chunks/chunk-7RINESFL.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
+          "path": "public/js/chunks/chunk-TVNIPUSB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-JER3XL5R.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -9648,7 +9814,15 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TY6UJC5H.js",
           "kind": "import-statement"
         },
         {
@@ -9656,7 +9830,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -9668,19 +9846,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -9692,7 +9870,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -9728,7 +9910,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -9783,30 +9965,22 @@
           "bytesInOutput": 1181
         }
       },
-      "bytes": 5247
+      "bytes": 5286
     },
-    "public/js/chunks/platform-6OBQB7TN.js.map": {
+    "public/js/chunks/platform-T4Y5MCND.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5647
+      "bytes": 5648
     },
-    "public/js/chunks/platform-6OBQB7TN.js": {
+    "public/js/chunks/platform-T4Y5MCND.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -9814,7 +9988,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -9822,7 +10000,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -9834,19 +10016,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -9858,7 +10040,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -9894,7 +10080,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10007,26 +10193,34 @@
           "bytesInOutput": 1050
         }
       },
-      "bytes": 6746
+      "bytes": 6785
     },
-    "public/js/chunks/teams-roster-VXETFZ6F.js.map": {
+    "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/teams-roster-VXETFZ6F.js": {
+    "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10038,7 +10232,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10074,7 +10272,98 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-FWKRNT2R.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-VQ3KZLKM.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "openMiRotacion",
+        "syncClinicalRotationEntryChrome",
+        "windowHandlers",
+        "wireClinicalRotationEntryControls"
+      ],
+      "entryPoint": "public/js/features/clinical-rotation-entry.mjs",
+      "inputs": {},
+      "bytes": 1087
+    },
+    "public/js/chunks/teams-roster-D7UTK4OR.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 93
+    },
+    "public/js/chunks/teams-roster-D7UTK4OR.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-BCNABZWJ.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-QSBWAKTB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TNTHAQJD.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PVRUBDE5.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2TZHN5MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-K6QXHWFW.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-WM442OFV.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-CRJYUJ23.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2VRIL4MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-LX374JRN.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10105,26 +10394,26 @@
       ],
       "entryPoint": "public/js/features/clinical-teams/teams-roster.mjs",
       "inputs": {},
-      "bytes": 1537
+      "bytes": 1576
     },
-    "public/js/chunks/clinical-teams-VBC36FRN.js.map": {
+    "public/js/chunks/clinical-teams-TRPAXUBX.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-teams-VBC36FRN.js": {
+    "public/js/chunks/clinical-teams-TRPAXUBX.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10136,7 +10425,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10172,7 +10465,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10202,22 +10495,26 @@
       ],
       "entryPoint": "public/js/features/clinical-teams.mjs",
       "inputs": {},
-      "bytes": 1513
+      "bytes": 1552
     },
-    "public/js/chunks/lan-turn-reset-TVKQZEDI.js.map": {
+    "public/js/chunks/lan-turn-reset-ZANUSMDP.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 1983
+      "bytes": 2133
     },
-    "public/js/chunks/lan-turn-reset-TVKQZEDI.js": {
+    "public/js/chunks/lan-turn-reset-ZANUSMDP.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10240,29 +10537,29 @@
       "entryPoint": "public/js/lan-turn-reset.mjs",
       "inputs": {
         "public/js/lan-turn-reset.mjs": {
-          "bytesInOutput": 961
+          "bytesInOutput": 988
         }
       },
-      "bytes": 1374
+      "bytes": 1473
     },
-    "public/js/chunks/panel-JZAYSSKV.js.map": {
+    "public/js/chunks/panel-3TGI5BQK.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/panel-JZAYSSKV.js": {
+    "public/js/chunks/panel-3TGI5BQK.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10274,7 +10571,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10310,7 +10611,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10371,30 +10672,30 @@
       ],
       "entryPoint": "public/js/features/lan/panel.mjs",
       "inputs": {},
-      "bytes": 3236
+      "bytes": 3275
     },
-    "public/js/chunks/lan-network-change-F7UMV3G3.js.map": {
+    "public/js/chunks/lan-network-change-36AJDFST.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 8757
+      "bytes": 10414
     },
-    "public/js/chunks/lan-network-change-F7UMV3G3.js": {
+    "public/js/chunks/lan-network-change-36AJDFST.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-6PJW64ZF.js",
+          "path": "public/js/chunks/chunk-GP7HQCGG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10406,7 +10707,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10442,7 +10747,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10454,23 +10759,23 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/panel-JZAYSSKV.js",
+          "path": "public/js/chunks/panel-3TGI5BQK.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/transport-LQ4BLFC5.js",
+          "path": "public/js/chunks/transport-PVUW7N4U.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/transport-LQ4BLFC5.js",
+          "path": "public/js/chunks/transport-PVUW7N4U.js",
           "kind": "dynamic-import"
         }
       ],
@@ -10483,29 +10788,29 @@
           "bytesInOutput": 2208
         },
         "public/js/lan-network-change.mjs": {
-          "bytesInOutput": 2062
+          "bytesInOutput": 2839
         }
       },
-      "bytes": 5521
+      "bytes": 6449
     },
-    "public/js/chunks/orchestrator-2OIDINT7.js.map": {
+    "public/js/chunks/orchestrator-QNCXDTWL.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/orchestrator-2OIDINT7.js": {
+    "public/js/chunks/orchestrator-QNCXDTWL.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10517,7 +10822,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10553,7 +10862,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10611,26 +10920,26 @@
       ],
       "entryPoint": "public/js/features/lan/orchestrator.mjs",
       "inputs": {},
-      "bytes": 3096
+      "bytes": 3135
     },
-    "public/js/chunks/lan-sync-FSSLUVSR.js.map": {
+    "public/js/chunks/lan-sync-7AJDUYFL.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/lan-sync-FSSLUVSR.js": {
+    "public/js/chunks/lan-sync-7AJDUYFL.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10642,7 +10951,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10678,7 +10991,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10736,26 +11049,62 @@
       ],
       "entryPoint": "public/js/features/lan-sync.mjs",
       "inputs": {},
-      "bytes": 3092
+      "bytes": 3131
     },
-    "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js.map": {
+    "public/js/chunks/learn-hub-W3NB3J2L.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js": {
+    "public/js/chunks/learn-hub-W3NB3J2L.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-VIHXUJVE.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-V5MWVLLV.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-L2VI5EO5.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TVNIPUSB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-POBHJ4SL.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-6IT4VYWH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10767,7 +11116,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10803,7 +11156,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10816,54 +11169,33 @@
         }
       ],
       "exports": [
-        "LAN_PROFILE_NEEDS_CONNECT_MSG",
-        "LAN_PROFILE_PUSH_FAILED_MSG",
-        "LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG",
-        "applyPendingLanInviteFromPage",
-        "assertLanRoomForUsernameRegister",
-        "ensureLiveSyncRoomForUsernameRegister",
-        "flushClinicalProfileToLan",
-        "isBenignLanPushSkipCode",
-        "isLanProfileNeedsConnectCode",
-        "notifyLanProfilePushResult",
-        "rememberLiveSyncRoomMembership",
-        "resolveRoomIdForUsernameRegister",
-        "seedDevPeerLanConfigIfNeeded"
+        "closeLearnHub",
+        "openLearnHub",
+        "renderLearnHubBody",
+        "syncLearnAprenderChrome"
       ],
-      "entryPoint": "public/js/clinical-profile-lan-sync.mjs",
+      "entryPoint": "public/js/features/settings-help/learn-hub.mjs",
       "inputs": {},
-      "bytes": 1630
+      "bytes": 1294
     },
-    "public/js/chunks/app-shell-Y5OSICO2.js.map": {
+    "public/js/chunks/chunk-VIHXUJVE.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 93
+      "bytes": 25274
     },
-    "public/js/chunks/app-shell-Y5OSICO2.js": {
+    "public/js/chunks/chunk-VIHXUJVE.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-E4HDMVDH.js",
+          "path": "public/js/chunks/chunk-V5MWVLLV.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-L2VI5EO5.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-JER3XL5R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-TVNIPUSB.js",
           "kind": "import-statement"
         },
         {
@@ -10871,7 +11203,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -10879,7 +11211,93 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/tour-runtime-RMZY2ZPJ.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/tour-runtime-RMZY2ZPJ.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/tour-flow-QIW2LYST.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/help-content-DESGF5KR.js",
+          "kind": "dynamic-import"
+        }
+      ],
+      "exports": [
+        "closeLearnHub",
+        "openLearnHub",
+        "renderLearnHubBody",
+        "syncLearnAprenderChrome"
+      ],
+      "inputs": {
+        "public/js/features/settings-help/learn-hub.mjs": {
+          "bytesInOutput": 14986
+        }
+      },
+      "bytes": 16087
+    },
+    "public/js/chunks/app-shell-XQUJHV22.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 93
+    },
+    "public/js/chunks/app-shell-XQUJHV22.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-B34F6JEY.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-POBHJ4SL.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TY6UJC5H.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-6IT4VYWH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -10891,19 +11309,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -10915,7 +11333,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -10951,7 +11373,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -10983,30 +11405,22 @@
       ],
       "entryPoint": "public/js/app-shell.mjs",
       "inputs": {},
-      "bytes": 2075
+      "bytes": 2114
     },
-    "public/js/chunks/patients-UNZNAQCC.js.map": {
+    "public/js/chunks/patients-CIM7JNJD.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/patients-UNZNAQCC.js": {
+    "public/js/chunks/patients-CIM7JNJD.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -11014,7 +11428,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -11022,7 +11440,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -11034,19 +11456,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11058,7 +11480,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11094,7 +11520,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11148,30 +11574,22 @@
       ],
       "entryPoint": "public/js/features/patients.mjs",
       "inputs": {},
-      "bytes": 3087
+      "bytes": 3126
     },
-    "public/js/chunks/presentation-mode-UNIPJLGN.js.map": {
+    "public/js/chunks/presentation-mode-RLN454VZ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/presentation-mode-UNIPJLGN.js": {
+    "public/js/chunks/presentation-mode-RLN454VZ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -11179,7 +11597,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -11187,7 +11609,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -11199,19 +11625,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11223,7 +11649,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11259,7 +11689,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11283,18 +11713,18 @@
       ],
       "entryPoint": "public/js/presentation-mode.mjs",
       "inputs": {},
-      "bytes": 1627
+      "bytes": 1666
     },
-    "public/js/chunks/guardia-v7-upgrade-card-RC433IGI.js.map": {
+    "public/js/chunks/guardia-v7-upgrade-card-PYYEX7IK.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/guardia-v7-upgrade-card-RC433IGI.js": {
+    "public/js/chunks/guardia-v7-upgrade-card-PYYEX7IK.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QR4GTSXM.js",
+          "path": "public/js/chunks/chunk-BO6ZJ67C.js",
           "kind": "import-statement"
         },
         {
@@ -11302,7 +11732,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -11310,15 +11740,15 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11330,7 +11760,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11366,7 +11800,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11384,26 +11818,26 @@
       ],
       "entryPoint": "public/js/features/settings-help/guardia-v7-upgrade-card.mjs",
       "inputs": {},
-      "bytes": 1038
+      "bytes": 1077
     },
-    "public/js/chunks/chunk-QR4GTSXM.js.map": {
+    "public/js/chunks/chunk-BO6ZJ67C.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 3758
     },
-    "public/js/chunks/chunk-QR4GTSXM.js": {
+    "public/js/chunks/chunk-BO6ZJ67C.js": {
       "imports": [
         {
           "path": "public/js/chunks/chunk-TVNIPUSB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/tour-runtime-W5P7F66X.js",
+          "path": "public/js/chunks/tour-runtime-RMZY2ZPJ.js",
           "kind": "dynamic-import"
         }
       ],
@@ -11418,28 +11852,20 @@
       },
       "bytes": 2645
     },
-    "public/js/chunks/tour-engine-FXIEZX6Q.js.map": {
+    "public/js/chunks/tour-engine-ZAPQXR3W.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/tour-engine-FXIEZX6Q.js": {
+    "public/js/chunks/tour-engine-ZAPQXR3W.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -11447,7 +11873,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -11455,7 +11885,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -11467,19 +11901,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11491,7 +11925,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11527,7 +11965,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11592,34 +12030,34 @@
       ],
       "entryPoint": "public/js/features/settings-help/tour-engine.mjs",
       "inputs": {},
-      "bytes": 3989
+      "bytes": 4028
     },
-    "public/js/chunks/clinical-onboarding-main-FURUJ37H.js.map": {
+    "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-onboarding-main-FURUJ37H.js": {
+    "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11631,7 +12069,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11667,7 +12109,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11694,30 +12136,30 @@
       ],
       "entryPoint": "public/js/features/clinical-onboarding-main.mjs",
       "inputs": {},
-      "bytes": 1555
+      "bytes": 1594
     },
-    "public/js/chunks/clinical-onboarding-VIUOYLHF.js.map": {
+    "public/js/chunks/clinical-onboarding-JBIVZWMW.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-onboarding-VIUOYLHF.js": {
+    "public/js/chunks/clinical-onboarding-JBIVZWMW.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11729,7 +12171,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -11765,7 +12211,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -11788,102 +12234,64 @@
       ],
       "entryPoint": "public/js/features/clinical-onboarding.mjs",
       "inputs": {},
-      "bytes": 1155
+      "bytes": 1194
     },
-    "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js.map": {
+    "public/js/chunks/fundamentos-progress-H6GVR3O4.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js": {
+    "public/js/chunks/fundamentos-progress-H6GVR3O4.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
+          "path": "public/js/chunks/chunk-V5MWVLLV.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-BCNABZWJ.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QSBWAKTB.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TNTHAQJD.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-PVRUBDE5.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2TZHN5MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-K6QXHWFW.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-WM442OFV.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-CRJYUJ23.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2VRIL4MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-LX374JRN.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FWKRNT2R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-VQ3KZLKM.js",
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
           "kind": "import-statement"
         }
       ],
       "exports": [
-        "openMiRotacion",
-        "syncClinicalRotationEntryChrome",
-        "windowHandlers",
-        "wireClinicalRotationEntryControls"
+        "FUNDAMENTOS_PROGRESS_LS_KEY",
+        "fundamentosModuleCount",
+        "isFundamentosChapterId",
+        "loadFundamentosProgress",
+        "markFundamentosChapterComplete",
+        "saveFundamentosProgress"
       ],
-      "entryPoint": "public/js/features/clinical-rotation-entry.mjs",
+      "entryPoint": "public/js/fundamentos-progress.mjs",
       "inputs": {},
-      "bytes": 1048
+      "bytes": 508
+    },
+    "public/js/chunks/chunk-V5MWVLLV.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 2774
+    },
+    "public/js/chunks/chunk-V5MWVLLV.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "FUNDAMENTOS_PROGRESS_LS_KEY",
+        "fundamentosModuleCount",
+        "isFundamentosChapterId",
+        "loadFundamentosProgress",
+        "markFundamentosChapterComplete",
+        "saveFundamentosProgress"
+      ],
+      "inputs": {
+        "public/js/fundamentos-progress.mjs": {
+          "bytesInOutput": 1409
+        }
+      },
+      "bytes": 1749
     },
     "public/js/chunks/neo-companion-progress-2WKPTEVJ.js.map": {
       "imports": [],
@@ -11913,16 +12321,43 @@
       "inputs": {},
       "bytes": 462
     },
-    "public/js/chunks/clinical-sync-mode-settings-TK4BCLFO.js.map": {
+    "public/js/chunks/chunk-L2VI5EO5.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 2386
+    },
+    "public/js/chunks/chunk-L2VI5EO5.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "NEO_COMPANION_PROGRESS_LS_KEY",
+        "isNeoCompanionStepComplete",
+        "isNeoCompanionStepId",
+        "loadNeoCompanionProgress",
+        "markNeoCompanionStepComplete"
+      ],
+      "inputs": {
+        "public/js/neo-companion-progress.mjs": {
+          "bytesInOutput": 1220
+        }
+      },
+      "bytes": 1538
+    },
+    "public/js/chunks/clinical-sync-mode-settings-5OMLZ2S5.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-sync-mode-settings-TK4BCLFO.js": {
+    "public/js/chunks/clinical-sync-mode-settings-5OMLZ2S5.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-U75H6ZA6.js",
+          "path": "public/js/chunks/chunk-3YJ22XH2.js",
           "kind": "import-statement"
         },
         {
@@ -11943,32 +12378,32 @@
       "inputs": {},
       "bytes": 382
     },
-    "public/js/chunks/settings-dropdown-VJKNXXGD.js.map": {
+    "public/js/chunks/settings-dropdown-3CM6V56H.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/settings-dropdown-VJKNXXGD.js": {
+    "public/js/chunks/settings-dropdown-3CM6V56H.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -11980,7 +12415,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12016,7 +12455,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12038,26 +12477,26 @@
       ],
       "entryPoint": "public/js/features/settings-help/settings-dropdown.mjs",
       "inputs": {},
-      "bytes": 1168
+      "bytes": 1207
     },
-    "public/js/chunks/teams-roster-modal-chrome-DFVNQSCQ.js.map": {
+    "public/js/chunks/teams-roster-modal-chrome-5EK3M6JV.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/teams-roster-modal-chrome-DFVNQSCQ.js": {
+    "public/js/chunks/teams-roster-modal-chrome-5EK3M6JV.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12069,7 +12508,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12105,7 +12548,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12122,30 +12565,22 @@
       ],
       "entryPoint": "public/js/features/clinical-teams/teams-roster-modal-chrome.mjs",
       "inputs": {},
-      "bytes": 820
+      "bytes": 859
     },
-    "public/js/chunks/tour-flow-PLE3QJOI.js.map": {
+    "public/js/chunks/tour-flow-QIW2LYST.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/tour-flow-PLE3QJOI.js": {
+    "public/js/chunks/tour-flow-QIW2LYST.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -12153,7 +12588,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -12161,7 +12600,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -12173,19 +12616,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12197,7 +12640,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12233,7 +12680,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12269,34 +12716,26 @@
       ],
       "entryPoint": "public/js/features/settings-help/tour-flow.mjs",
       "inputs": {},
-      "bytes": 2297
+      "bytes": 2336
     },
-    "public/js/chunks/tour-runtime-W5P7F66X.js.map": {
+    "public/js/chunks/tour-runtime-RMZY2ZPJ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/tour-runtime-W5P7F66X.js": {
+    "public/js/chunks/tour-runtime-RMZY2ZPJ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-YQYWEQZI.js",
+          "path": "public/js/chunks/chunk-7RINESFL.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -12304,7 +12743,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
@@ -12312,7 +12755,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -12324,19 +12771,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12348,7 +12795,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12384,7 +12835,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12480,22 +12931,18 @@
       ],
       "entryPoint": "public/js/features/settings-help/tour-runtime.mjs",
       "inputs": {},
-      "bytes": 5643
+      "bytes": 5682
     },
-    "public/js/chunks/chunk-YQYWEQZI.js.map": {
+    "public/js/chunks/chunk-7RINESFL.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 18801
     },
-    "public/js/chunks/chunk-YQYWEQZI.js": {
+    "public/js/chunks/chunk-7RINESFL.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
@@ -12503,7 +12950,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -12531,20 +12982,16 @@
       },
       "bytes": 10313
     },
-    "public/js/chunks/help-content-XJA3Q6YV.js.map": {
+    "public/js/chunks/help-content-DESGF5KR.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/help-content-XJA3Q6YV.js": {
+    "public/js/chunks/help-content-DESGF5KR.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-JER3XL5R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-TY6UJC5H.js",
           "kind": "import-statement"
         },
         {
@@ -12552,19 +12999,23 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12576,7 +13027,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12612,7 +13067,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12633,62 +13088,26 @@
       ],
       "entryPoint": "public/js/features/settings-help/help-content.mjs",
       "inputs": {},
-      "bytes": 1099
+      "bytes": 1138
     },
-    "public/js/chunks/learn-hub-Y2DZG73U.js.map": {
+    "public/js/chunks/shared-CVUVA6MO.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/learn-hub-Y2DZG73U.js": {
+    "public/js/chunks/shared-CVUVA6MO.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-YMSNCPLZ.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-L2VI5EO5.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TVNIPUSB.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-V5MWVLLV.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-POBHJ4SL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-6IT4VYWH.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12700,7 +13119,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12736,7 +13159,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12749,134 +13172,50 @@
         }
       ],
       "exports": [
-        "closeLearnHub",
-        "openLearnHub",
-        "renderLearnHubBody",
-        "syncLearnAprenderChrome"
+        "BROWSE_SALA_LS",
+        "CLINICAL_SALAS",
+        "CLINICAL_TEAM_SERVICES",
+        "adminCodeModalBackdropEl",
+        "cancelAdminCodeModal",
+        "clearAdminAccessGrant",
+        "currentUserId",
+        "dbApi",
+        "escapeAttr",
+        "escapeHtml",
+        "filterJoinedTeams",
+        "getVerifiedAdminAccessCode",
+        "hintHtml",
+        "isAdminAccessGrantedThisSession",
+        "isUserTeamMember",
+        "markAdminAccessGrantedThisSession",
+        "promptAdminAccessCode",
+        "rememberAdminAccessCode",
+        "toast",
+        "toastTeamWarnings",
+        "wireAdminCodeModalControls"
       ],
-      "entryPoint": "public/js/features/settings-help/learn-hub.mjs",
+      "entryPoint": "public/js/features/clinical-teams/shared.mjs",
       "inputs": {},
-      "bytes": 1255
+      "bytes": 1696
     },
-    "public/js/chunks/chunk-YMSNCPLZ.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 25274
-    },
-    "public/js/chunks/chunk-YMSNCPLZ.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-L2VI5EO5.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TVNIPUSB.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-V5MWVLLV.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-POBHJ4SL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-6IT4VYWH.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/tour-runtime-W5P7F66X.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/tour-runtime-W5P7F66X.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/tour-flow-PLE3QJOI.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/help-content-XJA3Q6YV.js",
-          "kind": "dynamic-import"
-        }
-      ],
-      "exports": [
-        "closeLearnHub",
-        "openLearnHub",
-        "renderLearnHubBody",
-        "syncLearnAprenderChrome"
-      ],
-      "inputs": {
-        "public/js/features/settings-help/learn-hub.mjs": {
-          "bytesInOutput": 14986
-        }
-      },
-      "bytes": 16087
-    },
-    "public/js/chunks/chunk-L2VI5EO5.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 2386
-    },
-    "public/js/chunks/chunk-L2VI5EO5.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
-          "kind": "import-statement"
-        }
-      ],
-      "exports": [
-        "NEO_COMPANION_PROGRESS_LS_KEY",
-        "isNeoCompanionStepComplete",
-        "isNeoCompanionStepId",
-        "loadNeoCompanionProgress",
-        "markNeoCompanionStepComplete"
-      ],
-      "inputs": {
-        "public/js/neo-companion-progress.mjs": {
-          "bytesInOutput": 1220
-        }
-      },
-      "bytes": 1538
-    },
-    "public/js/chunks/clinical-panel-host-GRPGFCFQ.js.map": {
+    "public/js/chunks/clinical-panel-host-MVZ6CZ43.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-panel-host-GRPGFCFQ.js": {
+    "public/js/chunks/clinical-panel-host-MVZ6CZ43.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12888,7 +13227,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -12924,7 +13267,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -12945,26 +13288,26 @@
       ],
       "entryPoint": "public/js/features/clinical-panel-host.mjs",
       "inputs": {},
-      "bytes": 1056
+      "bytes": 1095
     },
-    "public/js/chunks/teams-roster-lan-ZSUGSDAQ.js.map": {
+    "public/js/chunks/teams-roster-lan-WASKUYNJ.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/teams-roster-lan-ZSUGSDAQ.js": {
+    "public/js/chunks/teams-roster-lan-WASKUYNJ.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -12976,7 +13319,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13012,7 +13359,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13037,26 +13384,26 @@
       ],
       "entryPoint": "public/js/features/clinical-teams/teams-roster-lan.mjs",
       "inputs": {},
-      "bytes": 1293
+      "bytes": 1332
     },
-    "public/js/chunks/teams-roster-interactions-JKQGLDLT.js.map": {
+    "public/js/chunks/teams-roster-interactions-3TQY3QD7.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/teams-roster-interactions-JKQGLDLT.js": {
+    "public/js/chunks/teams-roster-interactions-3TQY3QD7.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13068,7 +13415,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13104,7 +13455,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13125,7 +13476,7 @@
       ],
       "entryPoint": "public/js/features/clinical-teams/teams-roster-interactions.mjs",
       "inputs": {},
-      "bytes": 1038
+      "bytes": 1077
     },
     "public/js/chunks/tour-guards-KR2RSHRG.js.map": {
       "imports": [],
@@ -13153,24 +13504,24 @@
       "inputs": {},
       "bytes": 548
     },
-    "public/js/chunks/guardia-phase-bar-FXHIKWTA.js.map": {
+    "public/js/chunks/guardia-phase-bar-ID7WIEVO.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/guardia-phase-bar-FXHIKWTA.js": {
+    "public/js/chunks/guardia-phase-bar-ID7WIEVO.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13182,7 +13533,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13218,7 +13573,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13236,7 +13591,7 @@
       ],
       "entryPoint": "public/js/features/guardia-phase-bar.mjs",
       "inputs": {},
-      "bytes": 848
+      "bytes": 887
     },
     "public/js/chunks/guardia-v7-gating-YLVHRTBI.js.map": {
       "imports": [],
@@ -13317,62 +13672,39 @@
       },
       "bytes": 1995
     },
-    "public/js/chunks/fundamentos-progress-H6GVR3O4.js.map": {
+    "public/js/chunks/lan-host-subnet-discovery-4DTH3RSB.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/fundamentos-progress-H6GVR3O4.js": {
+    "public/js/chunks/lan-host-subnet-discovery-4DTH3RSB.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-V5MWVLLV.js",
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "path": "public/js/chunks/chunk-VQ3KZLKM.js",
           "kind": "import-statement"
         }
       ],
       "exports": [
-        "FUNDAMENTOS_PROGRESS_LS_KEY",
-        "fundamentosModuleCount",
-        "isFundamentosChapterId",
-        "loadFundamentosProgress",
-        "markFundamentosChapterComplete",
-        "saveFundamentosProgress"
+        "discoverLanHostsOnAllLocalSubnets",
+        "discoverLanHostsOnAllLocalSubnetsViaBeacon",
+        "discoverLanHostsOnSubnet",
+        "discoverLanHostsOnSubnetViaBeacon",
+        "hostIpv4FromBase",
+        "isHostOnCurrentSubnets",
+        "lanHostBasesSameMachine",
+        "normalizeLanHostBase",
+        "probeLanHostBase",
+        "probeLanHostBeacon",
+        "resolveLocalLanSubnetPrefixes"
       ],
-      "entryPoint": "public/js/fundamentos-progress.mjs",
+      "entryPoint": "public/js/lan-host-subnet-discovery.mjs",
       "inputs": {},
-      "bytes": 508
-    },
-    "public/js/chunks/chunk-V5MWVLLV.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 2774
-    },
-    "public/js/chunks/chunk-V5MWVLLV.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
-          "kind": "import-statement"
-        }
-      ],
-      "exports": [
-        "FUNDAMENTOS_PROGRESS_LS_KEY",
-        "fundamentosModuleCount",
-        "isFundamentosChapterId",
-        "loadFundamentosProgress",
-        "markFundamentosChapterComplete",
-        "saveFundamentosProgress"
-      ],
-      "inputs": {
-        "public/js/fundamentos-progress.mjs": {
-          "bytesInOutput": 1409
-        }
-      },
-      "bytes": 1749
+      "bytes": 811
     },
     "public/js/chunks/lan-host-escalation-3AFJQV4S.js.map": {
       "imports": [],
@@ -13406,16 +13738,16 @@
       "inputs": {},
       "bytes": 818
     },
-    "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js.map": {
+    "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js": {
+    "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-6PJW64ZF.js",
+          "path": "public/js/chunks/chunk-GP7HQCGG.js",
           "kind": "import-statement"
         },
         {
@@ -13423,7 +13755,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13444,6 +13780,7 @@
         }
       ],
       "exports": [
+        "collectShiftPinProbeUrls",
         "connectLanWithShiftPin",
         "getShiftPinCooldownMs",
         "recordShiftPinFailure",
@@ -13453,22 +13790,26 @@
       ],
       "entryPoint": "public/js/lan-shift-pin-connect.mjs",
       "inputs": {},
-      "bytes": 686
+      "bytes": 781
     },
-    "public/js/chunks/chunk-6PJW64ZF.js.map": {
+    "public/js/chunks/chunk-GP7HQCGG.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 14005
+      "bytes": 16782
     },
-    "public/js/chunks/chunk-6PJW64ZF.js": {
+    "public/js/chunks/chunk-GP7HQCGG.js": {
       "imports": [
         {
           "path": "public/js/chunks/chunk-QSBWAKTB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13476,15 +13817,16 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/transport-LQ4BLFC5.js",
+          "path": "public/js/chunks/transport-PVUW7N4U.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         }
       ],
       "exports": [
+        "collectShiftPinProbeUrls",
         "connectLanWithShiftPin",
         "getShiftPinCooldownMs",
         "recordShiftPinFailure",
@@ -13494,33 +13836,33 @@
       ],
       "inputs": {
         "public/js/lan-shift-pin-connect.mjs": {
-          "bytesInOutput": 6951
+          "bytesInOutput": 8256
         }
       },
-      "bytes": 7662
+      "bytes": 9220
     },
-    "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js.map": {
+    "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js": {
+    "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13532,7 +13874,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13568,7 +13914,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13591,26 +13937,26 @@
       ],
       "entryPoint": "public/js/historia-clinica-lan-sync.mjs",
       "inputs": {},
-      "bytes": 1329
+      "bytes": 1368
     },
-    "public/js/chunks/room-M7C67HSW.js.map": {
+    "public/js/chunks/room-AC4E25LT.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/room-M7C67HSW.js": {
+    "public/js/chunks/room-AC4E25LT.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13622,7 +13968,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13658,7 +14008,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13705,26 +14055,26 @@
       ],
       "entryPoint": "public/js/features/lan/room.mjs",
       "inputs": {},
-      "bytes": 2583
+      "bytes": 2622
     },
-    "public/js/chunks/transport-LQ4BLFC5.js.map": {
+    "public/js/chunks/transport-PVUW7N4U.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/transport-LQ4BLFC5.js": {
+    "public/js/chunks/transport-PVUW7N4U.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13736,7 +14086,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13772,7 +14126,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13836,26 +14190,26 @@
       ],
       "entryPoint": "public/js/features/lan/transport.mjs",
       "inputs": {},
-      "bytes": 3422
+      "bytes": 3461
     },
-    "public/js/chunks/push-EOI6D7II.js.map": {
+    "public/js/chunks/push-XEHMDIOW.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/push-EOI6D7II.js": {
+    "public/js/chunks/push-XEHMDIOW.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -13867,7 +14221,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -13903,7 +14261,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -13937,7 +14295,7 @@
       ],
       "entryPoint": "public/js/features/lan/push.mjs",
       "inputs": {},
-      "bytes": 1731
+      "bytes": 1770
     },
     "public/js/chunks/lan-mutation-registry-GQE3VYCW.js.map": {
       "imports": [],
@@ -13960,144 +14318,28 @@
       "inputs": {},
       "bytes": 226
     },
-    "public/js/chunks/shared-WV3OSE7L.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 93
-    },
-    "public/js/chunks/shared-WV3OSE7L.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-BCNABZWJ.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-QSBWAKTB.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-TNTHAQJD.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-PVRUBDE5.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2TZHN5MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-K6QXHWFW.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-WM442OFV.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-CRJYUJ23.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2VRIL4MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-LX374JRN.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FWKRNT2R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-VQ3KZLKM.js",
-          "kind": "import-statement"
-        }
-      ],
-      "exports": [
-        "BROWSE_SALA_LS",
-        "CLINICAL_SALAS",
-        "CLINICAL_TEAM_SERVICES",
-        "adminCodeModalBackdropEl",
-        "cancelAdminCodeModal",
-        "clearAdminAccessGrant",
-        "currentUserId",
-        "dbApi",
-        "escapeAttr",
-        "escapeHtml",
-        "filterJoinedTeams",
-        "getVerifiedAdminAccessCode",
-        "hintHtml",
-        "isAdminAccessGrantedThisSession",
-        "isUserTeamMember",
-        "markAdminAccessGrantedThisSession",
-        "promptAdminAccessCode",
-        "rememberAdminAccessCode",
-        "toast",
-        "toastTeamWarnings",
-        "wireAdminCodeModalControls"
-      ],
-      "entryPoint": "public/js/features/clinical-teams/shared.mjs",
-      "inputs": {},
-      "bytes": 1657
-    },
     "public/js/app.bundle.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 263430
+      "bytes": 263431
     },
     "public/js/app.bundle.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-E4HDMVDH.js",
+          "path": "public/js/chunks/chunk-B34F6JEY.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-U75H6ZA6.js",
+          "path": "public/js/chunks/chunk-3YJ22XH2.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-JER3XL5R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -14105,7 +14347,15 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-TY6UJC5H.js",
           "kind": "import-statement"
         },
         {
@@ -14113,7 +14363,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -14125,19 +14379,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -14149,7 +14403,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -14185,7 +14443,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -14197,27 +14455,27 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/settings-help-YWYXI5BJ.js",
+          "path": "public/js/chunks/settings-help-N4D35JS6.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/platform-6OBQB7TN.js",
+          "path": "public/js/chunks/platform-T4Y5MCND.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-ops-lan-HRKFCRKL.js",
+          "path": "public/js/chunks/clinical-ops-lan-GGCTGMFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-VBC36FRN.js",
+          "path": "public/js/chunks/clinical-teams-TRPAXUBX.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-access-runtime-X26WIZWM.js",
+          "path": "public/js/chunks/clinical-access-runtime-DONAIM3C.js",
           "kind": "dynamic-import"
         }
       ],
@@ -14303,34 +14561,34 @@
           "bytesInOutput": 9107
         }
       },
-      "bytes": 141783
+      "bytes": 141822
     },
-    "public/js/chunks/chunk-E4HDMVDH.js.map": {
+    "public/js/chunks/chunk-B34F6JEY.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 125427
     },
-    "public/js/chunks/chunk-E4HDMVDH.js": {
+    "public/js/chunks/chunk-B34F6JEY.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-WNU4JQFF.js",
+          "path": "public/js/chunks/chunk-7MAO7CDX.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-JER3XL5R.js",
+          "path": "public/js/chunks/chunk-TY6UJC5H.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
@@ -14396,13 +14654,13 @@
       },
       "bytes": 68388
     },
-    "public/js/chunks/chunk-U75H6ZA6.js.map": {
+    "public/js/chunks/chunk-3YJ22XH2.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 3627
     },
-    "public/js/chunks/chunk-U75H6ZA6.js": {
+    "public/js/chunks/chunk-3YJ22XH2.js": {
       "imports": [
         {
           "path": "public/js/chunks/chunk-K6QXHWFW.js",
@@ -14413,19 +14671,19 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/settings-dropdown-VJKNXXGD.js",
+          "path": "public/js/chunks/settings-dropdown-3CM6V56H.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
           "kind": "dynamic-import"
         }
       ],
@@ -14441,24 +14699,16 @@
       },
       "bytes": 2432
     },
-    "public/js/chunks/chunk-WNU4JQFF.js.map": {
+    "public/js/chunks/chunk-7MAO7CDX.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2325494
+      "bytes": 2327121
     },
-    "public/js/chunks/chunk-WNU4JQFF.js": {
+    "public/js/chunks/chunk-7MAO7CDX.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-IQ2O3L56.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FZTRZYUX.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
+          "path": "public/js/chunks/chunk-RGO3SJJC.js",
           "kind": "import-statement"
         },
         {
@@ -14466,11 +14716,19 @@
           "kind": "import-statement"
         },
         {
+          "path": "public/js/chunks/chunk-UJIBAODH.js",
+          "kind": "import-statement"
+        },
+        {
           "path": "public/js/chunks/chunk-6IT4VYWH.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
           "kind": "import-statement"
         },
         {
@@ -14482,15 +14740,15 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-NOLXJLJO.js",
+          "path": "public/js/chunks/chunk-FN3FVT3Y.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
@@ -14518,15 +14776,15 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/patients-UNZNAQCC.js",
+          "path": "public/js/chunks/patients-CIM7JNJD.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/app-shell-Y5OSICO2.js",
+          "path": "public/js/chunks/app-shell-XQUJHV22.js",
           "kind": "dynamic-import"
         },
         {
@@ -14538,15 +14796,15 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/tour-flow-PLE3QJOI.js",
+          "path": "public/js/chunks/tour-flow-QIW2LYST.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
@@ -14554,7 +14812,7 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-VIUOYLHF.js",
+          "path": "public/js/chunks/clinical-onboarding-JBIVZWMW.js",
           "kind": "dynamic-import"
         },
         {
@@ -14566,31 +14824,31 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/guardia-v7-upgrade-card-RC433IGI.js",
+          "path": "public/js/chunks/guardia-v7-upgrade-card-PYYEX7IK.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/tour-flow-PLE3QJOI.js",
+          "path": "public/js/chunks/tour-flow-QIW2LYST.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
           "kind": "dynamic-import"
         },
         {
@@ -14598,19 +14856,19 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-entrega-TZ7BNNAW.js",
+          "path": "public/js/chunks/clinical-entrega-VP2V4SDO.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/entrega-roster-panel-LCHSGAOP.js",
+          "path": "public/js/chunks/entrega-roster-panel-5PBUPBLH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-entrega-TZ7BNNAW.js",
+          "path": "public/js/chunks/clinical-entrega-VP2V4SDO.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/entrega-roster-panel-LCHSGAOP.js",
+          "path": "public/js/chunks/entrega-roster-panel-5PBUPBLH.js",
           "kind": "dynamic-import"
         },
         {
@@ -14626,7 +14884,7 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
@@ -14634,23 +14892,23 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-VIUOYLHF.js",
+          "path": "public/js/chunks/clinical-onboarding-JBIVZWMW.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-panel-host-GRPGFCFQ.js",
+          "path": "public/js/chunks/clinical-panel-host-MVZ6CZ43.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/teams-roster-modal-chrome-DFVNQSCQ.js",
+          "path": "public/js/chunks/teams-roster-modal-chrome-5EK3M6JV.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
           "kind": "dynamic-import"
         }
       ],
@@ -15107,7 +15365,7 @@
           "bytesInOutput": 8698
         },
         "public/js/features/settings-help/release-notes-curated.mjs": {
-          "bytesInOutput": 60193
+          "bytesInOutput": 61442
         },
         "public/js/features/settings-help/release-notes.mjs": {
           "bytesInOutput": 6058
@@ -15380,26 +15638,26 @@
           "bytesInOutput": 46865
         }
       },
-      "bytes": 1315168
+      "bytes": 1316417
     },
-    "public/js/chunks/chunk-IQ2O3L56.js.map": {
+    "public/js/chunks/chunk-RGO3SJJC.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 24985
+      "bytes": 14207
     },
-    "public/js/chunks/chunk-IQ2O3L56.js": {
+    "public/js/chunks/chunk-RGO3SJJC.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-2TZHN5MF.js",
           "kind": "import-statement"
         },
         {
@@ -15411,35 +15669,146 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/chunk-FWKRNT2R.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/tour-engine-FXIEZX6Q.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/learn-hub-Y2DZG73U.js",
+          "path": "public/js/chunks/lan-sync-state-CMD3CFJ3.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-ops-lan-HRKFCRKL.js",
+          "path": "public/js/chunks/clinical-panel-host-MVZ6CZ43.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/settings-dropdown-VJKNXXGD.js",
+          "path": "public/js/chunks/teams-roster-modal-chrome-5EK3M6JV.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
+          "kind": "dynamic-import"
+        }
+      ],
+      "exports": [
+        "openMiRotacion",
+        "syncClinicalContextBarVisibility",
+        "syncClinicalRotationEntryChrome",
+        "windowHandlers",
+        "wireClinicalRotationEntryControls"
+      ],
+      "inputs": {
+        "public/js/features/clinical-context-bar.mjs": {
+          "bytesInOutput": 586
+        },
+        "public/js/features/clinical-rotation-entry.mjs": {
+          "bytesInOutput": 7422
+        }
+      },
+      "bytes": 8859
+    },
+    "public/js/chunks/chunk-POBHJ4SL.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 2818
+    },
+    "public/js/chunks/chunk-POBHJ4SL.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-QZXLPUPG.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "clearTourProgress",
+        "loadTourProgress",
+        "saveTourProgress"
+      ],
+      "inputs": {
+        "public/js/onboarding-progress.mjs": {
+          "bytesInOutput": 1456
+        }
+      },
+      "bytes": 1735
+    },
+    "public/js/chunks/chunk-UJIBAODH.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 24985
+    },
+    "public/js/chunks/chunk-UJIBAODH.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-DLPHN5AB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-K6QXHWFW.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2VRIL4MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/tour-engine-ZAPQXR3W.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/learn-hub-W3NB3J2L.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-ops-lan-GGCTGMFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/settings-dropdown-3CM6V56H.js",
           "kind": "dynamic-import"
         }
       ],
@@ -15468,194 +15837,16 @@
       },
       "bytes": 11246
     },
-    "public/js/chunks/chunk-FZTRZYUX.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 14207
-    },
-    "public/js/chunks/chunk-FZTRZYUX.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-QAJZ2ACL.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2TZHN5MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-K6QXHWFW.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2VRIL4MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-FWKRNT2R.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-state-CMD3CFJ3.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-panel-host-GRPGFCFQ.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-modal-chrome-DFVNQSCQ.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
-          "kind": "dynamic-import"
-        }
-      ],
-      "exports": [
-        "openMiRotacion",
-        "syncClinicalContextBarVisibility",
-        "syncClinicalRotationEntryChrome",
-        "windowHandlers",
-        "wireClinicalRotationEntryControls"
-      ],
-      "inputs": {
-        "public/js/features/clinical-context-bar.mjs": {
-          "bytesInOutput": 586
-        },
-        "public/js/features/clinical-rotation-entry.mjs": {
-          "bytesInOutput": 7422
-        }
-      },
-      "bytes": 8859
-    },
-    "public/js/chunks/chunk-JER3XL5R.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 27142
-    },
-    "public/js/chunks/chunk-JER3XL5R.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-FPSQST5K.js",
-          "kind": "import-statement"
-        }
-      ],
-      "exports": [
-        "closeQuickHelp",
-        "onHelpListKeydown",
-        "onHelpSearchInput",
-        "onHelpSearchKeydown",
-        "openQuickHelp"
-      ],
-      "inputs": {
-        "public/js/features/settings-help/help-content.mjs": {
-          "bytesInOutput": 20119
-        }
-      },
-      "bytes": 20411
-    },
-    "public/js/chunks/chunk-FPSQST5K.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 5220
-    },
-    "public/js/chunks/chunk-FPSQST5K.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-TGE55PBS.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/chunk-2VRIL4MF.js",
-          "kind": "import-statement"
-        },
-        {
-          "path": "public/js/chunks/clinical-sync-mode-settings-TK4BCLFO.js",
-          "kind": "dynamic-import"
-        }
-      ],
-      "exports": [
-        "closeSettingsDropdown",
-        "ensureSettingsDropdownOpen",
-        "expandSettingsAccordionBackupSync",
-        "syncTeamSyncHeaderButton",
-        "toggleSettingsDropdown",
-        "toggleSettingsSection"
-      ],
-      "inputs": {
-        "public/js/features/settings-help/settings-dropdown.mjs": {
-          "bytesInOutput": 2787
-        }
-      },
-      "bytes": 3338
-    },
-    "public/js/chunks/chunk-POBHJ4SL.js.map": {
-      "imports": [],
-      "exports": [],
-      "inputs": {},
-      "bytes": 2818
-    },
-    "public/js/chunks/chunk-POBHJ4SL.js": {
-      "imports": [
-        {
-          "path": "public/js/chunks/chunk-QZXLPUPG.js",
-          "kind": "import-statement"
-        }
-      ],
-      "exports": [
-        "clearTourProgress",
-        "loadTourProgress",
-        "saveTourProgress"
-      ],
-      "inputs": {
-        "public/js/onboarding-progress.mjs": {
-          "bytesInOutput": 1456
-        }
-      },
-      "bytes": 1735
-    },
-    "public/js/chunks/chunk-QAJZ2ACL.js.map": {
+    "public/js/chunks/chunk-DLPHN5AB.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 43923
     },
-    "public/js/chunks/chunk-QAJZ2ACL.js": {
+    "public/js/chunks/chunk-DLPHN5AB.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
@@ -15667,51 +15858,51 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-teams-VBC36FRN.js",
+          "path": "public/js/chunks/clinical-teams-TRPAXUBX.js",
           "kind": "dynamic-import"
         }
       ],
@@ -15740,6 +15931,33 @@
       },
       "bytes": 28148
     },
+    "public/js/chunks/chunk-TY6UJC5H.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 27142
+    },
+    "public/js/chunks/chunk-TY6UJC5H.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-APPLEYBA.js",
+          "kind": "import-statement"
+        }
+      ],
+      "exports": [
+        "closeQuickHelp",
+        "onHelpListKeydown",
+        "onHelpSearchInput",
+        "onHelpSearchKeydown",
+        "openQuickHelp"
+      ],
+      "inputs": {
+        "public/js/features/settings-help/help-content.mjs": {
+          "bytesInOutput": 20119
+        }
+      },
+      "bytes": 20411
+    },
     "public/js/chunks/chunk-6IT4VYWH.js.map": {
       "imports": [],
       "exports": [],
@@ -15758,16 +15976,56 @@
       },
       "bytes": 262
     },
-    "public/js/chunks/chunk-TGE55PBS.js.map": {
+    "public/js/chunks/chunk-APPLEYBA.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 5220
+    },
+    "public/js/chunks/chunk-APPLEYBA.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-GI7SS7KX.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-2VRIL4MF.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/clinical-sync-mode-settings-5OMLZ2S5.js",
+          "kind": "dynamic-import"
+        }
+      ],
+      "exports": [
+        "closeSettingsDropdown",
+        "ensureSettingsDropdownOpen",
+        "expandSettingsAccordionBackupSync",
+        "syncTeamSyncHeaderButton",
+        "toggleSettingsDropdown",
+        "toggleSettingsSection"
+      ],
+      "inputs": {
+        "public/js/features/settings-help/settings-dropdown.mjs": {
+          "bytesInOutput": 2787
+        }
+      },
+      "bytes": 3338
+    },
+    "public/js/chunks/chunk-GI7SS7KX.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 2421
     },
-    "public/js/chunks/chunk-TGE55PBS.js": {
+    "public/js/chunks/chunk-GI7SS7KX.js": {
       "imports": [
         {
-          "path": "public/js/chunks/presentation-mode-UNIPJLGN.js",
+          "path": "public/js/chunks/presentation-mode-RLN454VZ.js",
           "kind": "dynamic-import"
         }
       ],
@@ -15843,16 +16101,16 @@
       },
       "bytes": 8359
     },
-    "public/js/chunks/chunk-NOLXJLJO.js.map": {
+    "public/js/chunks/chunk-FN3FVT3Y.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 19900
     },
-    "public/js/chunks/chunk-NOLXJLJO.js": {
+    "public/js/chunks/chunk-FN3FVT3Y.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-GCWVEMNA.js",
+          "path": "public/js/chunks/chunk-PM4FDK42.js",
           "kind": "import-statement"
         },
         {
@@ -15892,20 +16150,20 @@
       },
       "bytes": 11220
     },
-    "public/js/chunks/chunk-GCWVEMNA.js.map": {
+    "public/js/chunks/chunk-PM4FDK42.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 1833311
+      "bytes": 1843348
     },
-    "public/js/chunks/chunk-GCWVEMNA.js": {
+    "public/js/chunks/chunk-PM4FDK42.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-QDX3LSP6.js",
+          "path": "public/js/chunks/chunk-OV6VARYG.js",
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-QOWDHS6Z.js",
+          "path": "public/js/chunks/chunk-GMVJRWWR.js",
           "kind": "import-statement"
         },
         {
@@ -15917,7 +16175,11 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-ALS6IKNB.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         },
         {
@@ -15953,7 +16215,7 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         },
         {
@@ -15965,31 +16227,31 @@
           "kind": "import-statement"
         },
         {
-          "path": "public/js/chunks/entrega-roster-panel-LCHSGAOP.js",
+          "path": "public/js/chunks/entrega-roster-panel-5PBUPBLH.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/guardia-phase-bar-FXHIKWTA.js",
+          "path": "public/js/chunks/guardia-phase-bar-ID7WIEVO.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
@@ -15997,11 +16259,11 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/push-EOI6D7II.js",
+          "path": "public/js/chunks/push-XEHMDIOW.js",
           "kind": "dynamic-import"
         },
         {
@@ -16009,195 +16271,23 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/db-unlock-MH64CH5C.js",
+          "path": "public/js/chunks/db-unlock-YR4ZYE2Z.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-settings-CMYQ2OQU.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-interactions-JKQGLDLT.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-lan-ZSUGSDAQ.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-access-runtime-X26WIZWM.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-onboarding-VIUOYLHF.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/panel-JZAYSSKV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/panel-JZAYSSKV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/patients-UNZNAQCC.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-VXETFZ6F.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/teams-roster-modal-chrome-DFVNQSCQ.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-entrega-TZ7BNNAW.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-entrega-TZ7BNNAW.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-mutation-registry-GQE3VYCW.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-entrega-TZ7BNNAW.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-turn-reset-TVKQZEDI.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-teams-VBC36FRN.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-network-change-F7UMV3G3.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-network-change-F7UMV3G3.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/lan-mutation-registry-GQE3VYCW.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-rotation-entry-PAGHBEVP.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/clinical-profile-lan-sync-HKNF6HBT.js",
-          "kind": "dynamic-import"
-        },
-        {
-          "path": "public/js/chunks/patients-UNZNAQCC.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
@@ -16205,15 +16295,195 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/teams-roster-interactions-3TQY3QD7.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/push-EOI6D7II.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/shared-WV3OSE7L.js",
+          "path": "public/js/chunks/teams-roster-lan-WASKUYNJ.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-access-runtime-DONAIM3C.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-onboarding-JBIVZWMW.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/panel-3TGI5BQK.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/panel-3TGI5BQK.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/patients-CIM7JNJD.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-D7UTK4OR.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/teams-roster-modal-chrome-5EK3M6JV.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-entrega-VP2V4SDO.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-entrega-VP2V4SDO.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-mutation-registry-GQE3VYCW.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-entrega-VP2V4SDO.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-turn-reset-ZANUSMDP.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-teams-TRPAXUBX.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-network-change-36AJDFST.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-network-change-36AJDFST.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-settings-CMYQ2OQU.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-mutation-registry-GQE3VYCW.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-rotation-entry-NNQEPTHF.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-profile-lan-sync-74EYYT62.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/patients-CIM7JNJD.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/clinical-settings-CMYQ2OQU.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/push-XEHMDIOW.js",
+          "kind": "dynamic-import"
+        },
+        {
+          "path": "public/js/chunks/shared-CVUVA6MO.js",
           "kind": "dynamic-import"
         },
         {
@@ -16221,19 +16491,19 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/patients-UNZNAQCC.js",
+          "path": "public/js/chunks/patients-CIM7JNJD.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-sync-FSSLUVSR.js",
+          "path": "public/js/chunks/lan-sync-7AJDUYFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/push-EOI6D7II.js",
+          "path": "public/js/chunks/push-XEHMDIOW.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/orchestrator-2OIDINT7.js",
+          "path": "public/js/chunks/orchestrator-QNCXDTWL.js",
           "kind": "dynamic-import"
         },
         {
@@ -16241,7 +16511,7 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         },
         {
@@ -16249,59 +16519,59 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/orchestrator-2OIDINT7.js",
+          "path": "public/js/chunks/orchestrator-QNCXDTWL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/room-M7C67HSW.js",
+          "path": "public/js/chunks/room-AC4E25LT.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/orchestrator-2OIDINT7.js",
+          "path": "public/js/chunks/orchestrator-QNCXDTWL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-access-runtime-X26WIZWM.js",
+          "path": "public/js/chunks/clinical-access-runtime-DONAIM3C.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/lan-shift-pin-connect-QILK4VUV.js",
+          "path": "public/js/chunks/lan-shift-pin-connect-L3TATIM2.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-ops-lan-HRKFCRKL.js",
+          "path": "public/js/chunks/clinical-ops-lan-GGCTGMFL.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-access-runtime-X26WIZWM.js",
+          "path": "public/js/chunks/clinical-access-runtime-DONAIM3C.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/historia-clinica-lan-sync-LPSKP67V.js",
+          "path": "public/js/chunks/historia-clinica-lan-sync-XN3KBT3N.js",
           "kind": "dynamic-import"
         }
       ],
@@ -16987,7 +17257,7 @@
           "bytesInOutput": 11163
         },
         "public/js/features/lan/runtime.mjs": {
-          "bytesInOutput": 2105
+          "bytesInOutput": 2106
         },
         "public/js/lan-delta-client.mjs": {
           "bytesInOutput": 1944
@@ -17029,13 +17299,13 @@
           "bytesInOutput": 3539
         },
         "public/js/lan-discovery.mjs": {
-          "bytesInOutput": 2169
+          "bytesInOutput": 2491
         },
         "public/js/features/lan/panel.mjs": {
-          "bytesInOutput": 97049
+          "bytesInOutput": 101734
         },
         "public/js/features/lan/orchestrator.mjs": {
-          "bytesInOutput": 56744
+          "bytesInOutput": 56997
         },
         "public/js/features/lan-sync.mjs": {
           "bytesInOutput": 0
@@ -17062,7 +17332,7 @@
           "bytesInOutput": 2139
         },
         "public/js/features/lan/transport.mjs": {
-          "bytesInOutput": 42544
+          "bytesInOutput": 43096
         },
         "public/js/lan-safety-bundle-builder.mjs": {
           "bytesInOutput": 583
@@ -17077,15 +17347,15 @@
           "bytesInOutput": 35297
         }
       },
-      "bytes": 1005008
+      "bytes": 1011000
     },
-    "public/js/chunks/chunk-QDX3LSP6.js.map": {
+    "public/js/chunks/chunk-OV6VARYG.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 47278
     },
-    "public/js/chunks/chunk-QDX3LSP6.js": {
+    "public/js/chunks/chunk-OV6VARYG.js": {
       "imports": [
         {
           "path": "public/js/chunks/chunk-K6QXHWFW.js",
@@ -17100,11 +17370,11 @@
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-access-runtime-X26WIZWM.js",
+          "path": "public/js/chunks/clinical-access-runtime-DONAIM3C.js",
           "kind": "dynamic-import"
         },
         {
-          "path": "public/js/chunks/clinical-onboarding-main-FURUJ37H.js",
+          "path": "public/js/chunks/clinical-onboarding-main-MMFJQAUH.js",
           "kind": "dynamic-import"
         }
       ],
@@ -17137,16 +17407,16 @@
       },
       "bytes": 28976
     },
-    "public/js/chunks/chunk-QOWDHS6Z.js.map": {
+    "public/js/chunks/chunk-GMVJRWWR.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 2375
     },
-    "public/js/chunks/chunk-QOWDHS6Z.js": {
+    "public/js/chunks/chunk-GMVJRWWR.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-FII6Y5F2.js",
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
           "kind": "import-statement"
         }
       ],
@@ -17238,13 +17508,46 @@
       },
       "bytes": 10115
     },
-    "public/js/chunks/chunk-FII6Y5F2.js.map": {
+    "public/js/chunks/chunk-ALS6IKNB.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 31731
+      "bytes": 12884
     },
-    "public/js/chunks/chunk-FII6Y5F2.js": {
+    "public/js/chunks/chunk-ALS6IKNB.js": {
+      "imports": [
+        {
+          "path": "public/js/chunks/chunk-EXMEBP6A.js",
+          "kind": "import-statement"
+        },
+        {
+          "path": "public/js/chunks/lan-host-subnet-discovery-4DTH3RSB.js",
+          "kind": "dynamic-import"
+        }
+      ],
+      "exports": [
+        "clearWardHostRegistry",
+        "listWardHostUrlsForProbe",
+        "listWardSubnetPrefixesForProbe",
+        "mergeWardHostRegistry",
+        "recordWardHostUrl",
+        "summarizeWardHostRegistry",
+        "syncWardHostUrlToMainFile"
+      ],
+      "inputs": {
+        "public/js/lan-ward-host-registry.mjs": {
+          "bytesInOutput": 5964
+        }
+      },
+      "bytes": 6377
+    },
+    "public/js/chunks/chunk-EXMEBP6A.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 31793
+    },
+    "public/js/chunks/chunk-EXMEBP6A.js": {
       "imports": [
         {
           "path": "public/js/chunks/chunk-VQ3KZLKM.js",
@@ -17253,35 +17556,40 @@
       ],
       "exports": [
         "clearSurrogateHostState",
+        "discoverLanHostsOnAllLocalSubnets",
         "discoverLanHostsOnAllLocalSubnetsViaBeacon",
         "discoverLanHostsOnSubnet",
         "discoverLanHostsOnSubnetViaBeacon",
         "getPrimaryHostUrl",
         "getSurrogateHostState",
+        "hostIpv4FromBase",
         "isHostOnCurrentSubnets",
         "isSurrogateHostActive",
         "lanHostBasesSameMachine",
         "listLivePeerHostUrls",
         "normalizeLanHostBase",
         "pingLanHostUrl",
+        "probeLanHostBase",
+        "probeLanHostBeacon",
         "recordLivePeer",
         "rememberPrimaryHostUrl",
         "resolveLocalLanSubnetPrefixes",
         "setSurrogateHostState",
+        "subnetPrefixFromIpv4",
         "surrogateElectionDelayMs"
       ],
       "inputs": {
-        "public/js/lan-surrogate-host.mjs": {
-          "bytesInOutput": 4681
-        },
         "public/interno/host-discovery.mjs": {
           "bytesInOutput": 1187
         },
+        "public/js/lan-surrogate-host.mjs": {
+          "bytesInOutput": 4681
+        },
         "public/js/lan-host-subnet-discovery.mjs": {
-          "bytesInOutput": 7332
+          "bytesInOutput": 7464
         }
       },
-      "bytes": 13904
+      "bytes": 14159
     },
     "public/js/chunks/chunk-TNTHAQJD.js.map": {
       "imports": [],
@@ -17849,16 +18157,16 @@
       },
       "bytes": 6515
     },
-    "public/js/chunks/clinical-ops-lan-HRKFCRKL.js.map": {
+    "public/js/chunks/clinical-ops-lan-GGCTGMFL.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
       "bytes": 93
     },
-    "public/js/chunks/clinical-ops-lan-HRKFCRKL.js": {
+    "public/js/chunks/clinical-ops-lan-GGCTGMFL.js": {
       "imports": [
         {
-          "path": "public/js/chunks/chunk-O4LBB2N7.js",
+          "path": "public/js/chunks/chunk-7JSEAPOX.js",
           "kind": "import-statement"
         }
       ],
@@ -17878,13 +18186,13 @@
       "inputs": {},
       "bytes": 769
     },
-    "public/js/chunks/chunk-O4LBB2N7.js.map": {
+    "public/js/chunks/chunk-7JSEAPOX.js.map": {
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 44600
+      "bytes": 44824
     },
-    "public/js/chunks/chunk-O4LBB2N7.js": {
+    "public/js/chunks/chunk-7JSEAPOX.js": {
       "imports": [],
       "exports": [
         "applyClinicalOpsLanSnapshot",
@@ -17907,13 +18215,13 @@
           "bytesInOutput": 17365
         },
         "public/js/lan-sync-diagnostics.mjs": {
-          "bytesInOutput": 2696
+          "bytesInOutput": 2815
         },
         "public/js/clinical-ops-lan.mjs": {
           "bytesInOutput": 3435
         }
       },
-      "bytes": 24102
+      "bytes": 24221
     },
     "public/js/chunks/lan-sync-state-CMD3CFJ3.js.map": {
       "imports": [],

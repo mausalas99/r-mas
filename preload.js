@@ -119,6 +119,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   lanGuestWriteBearer: function(payload) {
     return ipcRenderer.invoke('lan-guest-write-bearer', payload);
   },
+  lanWardHostRecord: function(payload) {
+    return ipcRenderer.invoke('lan-ward-host-record', payload);
+  },
+  lanWardHostMerge: function(hints) {
+    return ipcRenderer.invoke('lan-ward-host-merge', hints);
+  },
+  lanWardHostClear: function() {
+    return ipcRenderer.invoke('lan-ward-host-clear');
+  },
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);
   },

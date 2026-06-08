@@ -261,12 +261,15 @@ export function registerLanRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(runtime, ctx);
   wireLanNetworkRefresh();
-  void import('../../lan-shift-pin-connect.mjs').then(function (m) {
-    if (typeof m.tryEasyLanShiftPinConnect === 'function') {
-      return m.tryEasyLanShiftPinConnect({ silent: true });
+  void (async function () {
+    const { isClinicalLocalOnlyMode, readRpcSettings } = await import('../../clinical-settings.mjs');
+    if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+    const pin = await import('../../lan-shift-pin-connect.mjs');
+    if (typeof pin.tryEasyLanShiftPinConnect === 'function') {
+      await pin.tryEasyLanShiftPinConnect({ silent: true });
     }
-  });
-  void initLanHostPlugAndPlay();
+    await initLanHostPlugAndPlay();
+  })();
 }
 
 const LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';

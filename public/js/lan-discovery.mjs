@@ -7,6 +7,7 @@ import {
   discoverLanHostsOnSubnetViaBeacon,
 } from './lan-host-subnet-discovery.mjs';
 import { upsertHost, listRegistryDiscoveryUrls } from './lan-host-registry.mjs';
+import { listWardHostUrlsForProbe } from './lan-ward-host-registry.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 
 const DEFAULT_REGISTRY_AGE_MS = 90_000;
@@ -49,6 +50,7 @@ async function verifyLanHostsWithBearer(urls, teamCode) {
  * @param {string} ownUrl
  * @param {{
  *   skipSubnetScan?: boolean,
+ *   skipUdpDiscover?: boolean,
  *   forceSubnetScan?: boolean,
  *   subnetScanMode?: 'beacon' | 'bearer',
  *   registryMaxAgeMs?: number,
@@ -62,9 +64,11 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
   ).filter((url) => url !== own);
 
   const udpHosts =
-    typeof window !== 'undefined' && window.electronAPI?.lanUdpDiscover
-      ? await window.electronAPI.lanUdpDiscover().catch(() => [])
-      : [];
+    opts.skipUdpDiscover || registryUrls.length > 0
+      ? []
+      : typeof window !== 'undefined' && window.electronAPI?.lanUdpDiscover
+        ? await window.electronAPI.lanUdpDiscover().catch(() => [])
+        : [];
 
   const udpUrls = [];
   if (Array.isArray(udpHosts)) {
@@ -87,9 +91,17 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
     }
   }
 
-  const fastUrls = dedupeUrls([...registryUrls, ...udpUrls]);
-  if (opts.skipSubnetScan || (fastUrls.length > 0 && !opts.forceSubnetScan)) {
-    return fastUrls;
+  const wardUrls = listWardHostUrlsForProbe().filter((url) => url !== own);
+  const fastUrls = dedupeUrls([...registryUrls, ...udpUrls, ...wardUrls]);
+  const verifiedFast = fastUrls.length
+    ? await verifyLanHostsWithBearer(fastUrls, teamCode)
+    : [];
+
+  if (opts.skipSubnetScan) {
+    return verifiedFast.length ? verifiedFast : fastUrls;
+  }
+  if (verifiedFast.length > 0 && !opts.forceSubnetScan) {
+    return verifiedFast;
   }
 
   const scanMode = opts.subnetScanMode || 'beacon';
@@ -101,5 +113,5 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
     scanned = await verifyLanHostsWithBearer(beaconHits, teamCode);
   }
 
-  return dedupeUrls([...fastUrls, ...scanned]);
+  return dedupeUrls([...verifiedFast, ...scanned]);
 }

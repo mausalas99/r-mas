@@ -659,6 +659,11 @@ function startLanMdnsIfHosting() {
     const teamHash = buildTeamHashSync(teamResult.code);
     if (_lanMdnsService) _lanMdnsService.stop();
     _lanMdnsService = createLanMdnsService({ clientId, startedAt, rank, teamHash }, (peers) => {
+      const json = JSON.stringify(peers || []);
+      const now = Date.now();
+      if (json === _lastMdnsPeersJson && now - _lastMdnsPeersSentAt < 2000) return;
+      _lastMdnsPeersJson = json;
+      _lastMdnsPeersSentAt = now;
       safeSendToRenderer('lan:mdns-peers', peers);
     });
     _lanMdnsService.start();
@@ -708,6 +713,14 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
     }
     startLanMdnsIfHosting();
     startUdpBeaconIfHosting();
+    try {
+      const lanServer = require('./server');
+      const reg =
+        typeof lanServer.getLanWardHostRegistry === 'function'
+          ? lanServer.getLanWardHostRegistry()
+          : getWardHostRegistryForIpc();
+      reg.seedFromCandidateBaseUrl(pickLanCandidateBaseUrl());
+    } catch (_wardSeed) {}
   }
   return { ok: true, peer: peerMode };
 });
@@ -765,12 +778,66 @@ const {
   listPrivateIpv4SubnetPrefixes,
 } = require('./lan-squad/lan-candidate-url.js');
 const { createLanNetworkWatch } = require('./lan-squad/lan-network-watch.js');
+const { createWardHostRegistry } = require('./lan-squad/ward-host-registry.js');
+
+let _wardHostRegistryIpc = null;
+function getWardHostRegistryForIpc() {
+  if (!_wardHostRegistryIpc) {
+    _wardHostRegistryIpc = createWardHostRegistry({
+      filePath: path.join(app.getPath('userData'), 'lan-ward-host-registry.json'),
+    });
+  }
+  return _wardHostRegistryIpc;
+}
 
 ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
 
 ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes());
 
+ipcMain.handle('lan-ward-host-record', (_e, payload) => {
+  try {
+    const url = String(payload && payload.url ? payload.url : '').trim();
+    if (!url) return { ok: false, error: 'missing_url' };
+    getWardHostRegistryForIpc().recordUrl(url, {
+      source: payload && payload.source === 'client' ? 'client' : 'host',
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+ipcMain.handle('lan-ward-host-merge', (_e, hints) => {
+  try {
+    getWardHostRegistryForIpc().merge(hints && typeof hints === 'object' ? hints : {});
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+ipcMain.handle('lan-ward-host-clear', () => {
+  try {
+    getWardHostRegistryForIpc().clear();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+let _lastMdnsPeersJson = '';
+let _lastMdnsPeersSentAt = 0;
+
 const lanNetworkWatch = createLanNetworkWatch((payload) => {
+  try {
+    const reg = getWardHostRegistryForIpc();
+    if (payload.candidateBaseUrl) {
+      reg.recordUrl(payload.candidateBaseUrl, { source: 'host' });
+    }
+    if (Array.isArray(payload.prefixes)) {
+      for (const p of payload.prefixes) reg.recordPrefix(p);
+    }
+  } catch (_wardNet) {}
   safeSendToRenderer('lan-network-changed', payload);
   if (_lanMdnsService) {
     if (payload.candidateBaseUrl) {
@@ -779,7 +846,7 @@ const lanNetworkWatch = createLanNetworkWatch((payload) => {
       _lanMdnsService.stop();
     }
   }
-});
+}, { intervalMs: 10000 });
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {
@@ -789,6 +856,27 @@ ipcMain.handle('clipboard-write-text', (_e, text) => {
     return false;
   }
 });
+function getTargetWebContents() {
+  const focused = BrowserWindow.getFocusedWindow();
+  if (focused && !focused.isDestroyed()) return focused.webContents;
+  const wins = BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed());
+  return wins.length ? wins[0].webContents : null;
+}
+
+/** Avoid menu `role:` handlers — they call webContents.getFocusedWebContents() and can crash if no window yet. */
+function webContentsMenuAction(method) {
+  return () => {
+    try {
+      const wc = getTargetWebContents();
+      if (!wc || wc.isDestroyed()) return;
+      const fn = wc[method];
+      if (typeof fn === 'function') fn.call(wc);
+    } catch (err) {
+      console.warn('[menu]', method, err && err.message ? err.message : err);
+    }
+  };
+}
+
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';
@@ -808,21 +896,21 @@ function buildMenu() {
     {
       label: 'Editar',
       submenu: [
-        { role: 'undo', label: 'Deshacer' },
-        { role: 'redo', label: 'Rehacer' },
+        { label: 'Deshacer', accelerator: 'CmdOrCtrl+Z', click: webContentsMenuAction('undo') },
+        { label: 'Rehacer', accelerator: 'Shift+CmdOrCtrl+Z', click: webContentsMenuAction('redo') },
         { type: 'separator' },
-        { role: 'cut', label: 'Cortar' },
-        { role: 'copy', label: 'Copiar' },
-        { role: 'paste', label: 'Pegar' },
-        { role: 'selectAll', label: 'Seleccionar todo' },
+        { label: 'Cortar', accelerator: 'CmdOrCtrl+X', click: webContentsMenuAction('cut') },
+        { label: 'Copiar', accelerator: 'CmdOrCtrl+C', click: webContentsMenuAction('copy') },
+        { label: 'Pegar', accelerator: 'CmdOrCtrl+V', click: webContentsMenuAction('paste') },
+        { label: 'Seleccionar todo', accelerator: 'CmdOrCtrl+A', click: webContentsMenuAction('selectAll') },
       ],
     },
     {
       label: 'Ver',
       submenu: [
-        { role: 'toggleDevTools', label: 'Herramientas de desarrollador' },
-        { role: 'reload', label: 'Recargar' },
-        { role: 'forceReload', label: 'Forzar recarga' },
+        { label: 'Herramientas de desarrollador', accelerator: 'Alt+CmdOrCtrl+I', click: webContentsMenuAction('toggleDevTools') },
+        { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: webContentsMenuAction('reload') },
+        { label: 'Forzar recarga', accelerator: 'Shift+CmdOrCtrl+R', click: webContentsMenuAction('reloadIgnoringCache') },
       ],
     },
     {
@@ -945,8 +1033,8 @@ app.whenReady().then(async () => {
     app.quit();
     return;
   }
-  buildMenu();
   createWindow();
+  buildMenu();
   lanNetworkWatch.start();
 
   app.on('activate', () => {

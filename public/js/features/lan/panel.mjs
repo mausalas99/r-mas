@@ -52,6 +52,10 @@ import { LanSseClient } from '../../lan-sse-client.mjs';
 import { createLanConnectionManager } from '../../lan-connection-manager.mjs';
 import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import {
+  listWardHostUrlsForProbe,
+  summarizeWardHostRegistry,
+} from '../../lan-ward-host-registry.mjs';
+import {
   canAttemptAutoHostDetect,
   isAutoHostDetectPaused,
   resumeAutoHostDetect,
@@ -135,8 +139,13 @@ var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
 var _lanPanelDelegationWired = false;
 var _lanScanTimer = null;
+var _lanScanInFlight = false;
+var _lastWsPeerPingAt = 0;
 // Scan interval adapts to network profile — call getLanScanIntervalMs() where set.
-var SUBNET_LAN_SCAN_MIN_MS = 25000;
+var SUBNET_LAN_SCAN_MIN_MS = 45000;
+var WS_PEER_PING_MIN_MS = 15000;
+var PLUG_AND_PLAY_MIN_MS = 60000;
+var _lastPlugAndPlayAt = 0;
 var LAN_PEER_OPS_PULL_MIN_MS = 30000;
 var _lastSubnetLanScanAt = 0;
 /** @type {Map<string, number>} */
@@ -165,10 +174,15 @@ const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
 const LAN_INVITE_MOBILE_OPEN_KEY = 'rpc-lan-invite-mobile-open';
 const LAN_INVITE_SALA_OPEN_KEY = 'rpc-lan-invite-sala-open';
 
-// Stop auto-discovery when network goes OFFLINE; restart via user reconnect flow.
+// Stop auto-discovery when network goes OFFLINE; restart timer when profile changes.
 lanNetworkProfile.subscribeNetworkProfile(function (newProfile) {
   if (newProfile === 'offline') {
     stopLanAutoDiscovery();
+    return;
+  }
+  if (_lanScanTimer) {
+    stopLanAutoDiscovery();
+    startLanAutoDiscovery();
   }
 });
 
@@ -707,13 +721,9 @@ function lanPanelHasBuiltChrome(root) {
 
 function lanPanelNeedsFullRebuild(root) {
   if (!lanPanelHasBuiltChrome(root)) return true;
-  if (
-    !runtime().isMobileWeb() &&
-    !isLanSessionConfiguredForRest() &&
-    !root.querySelector('#lan-input-invite-link')
-  ) {
-    return true;
-  }
+  if (runtime().isMobileWeb() || isLanSessionConfiguredForRest()) return false;
+  if (!root.querySelector('#lan-input-invite-link')) return true;
+  if (!root.querySelector('[data-lan-shift-pin-client]')) return true;
   return false;
 }
 
@@ -758,7 +768,8 @@ async function refreshLanPanelChromeInPlace() {
 }
 
 function requestRenderLanPanelAfterScan() {
-  renderLanPanel();
+  if (!isLanConnectionDropdownOpen()) return;
+  void refreshLanPanelChromeInPlace();
 }
 
 /** Update diagnostics block without rebuilding the whole ⇄ panel (keeps &lt;details&gt; open). */
@@ -776,6 +787,9 @@ async function refreshLanSyncDiagnosticsInPlace() {
  */
 export function renderLanPanel(opts) {
   var o = normalizeLanPanelRenderOpts(opts);
+  if (!o.force && !isLanConnectionDropdownOpen()) {
+    return _lanPanelRenderChain;
+  }
   if (!o.force && isLanConnectionDropdownOpen()) {
     void refreshLanPanelChromeInPlace();
     patchLanPanelJoinButtons();
@@ -1116,7 +1130,9 @@ async function renderLanPanelOnce() {
 
   await appendLanShiftPinSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
-  appendLanShiftPinClientConnectSection(root, gen);
+  appendLanHostAddressCopyButton(root, gen);
+  if (lanPanelRenderStale(gen)) return;
+  await appendLanShiftPinClientConnectSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
   await appendLanTurnResetSection(root, gen);
   if (lanPanelRenderStale(gen)) return;
@@ -1133,7 +1149,7 @@ async function renderLanPanelOnce() {
       appendLanInviteShareCards(root);
     }
     appendLanJoinOtherMacSection(root, {
-      open: !needsInvitePaste && (isLanRemoteJoinMode() || !canOfferMobileLanShare()),
+      open: needsInvitePaste || isLanRemoteJoinMode() || !canOfferMobileLanShare(),
     });
     if (needsInvitePaste && canOfferMobileLanShare()) {
       appendLanInviteShareCards(root);
@@ -1334,6 +1350,12 @@ export async function resetLanTurnConnectionFromUi() {
     leaveLiveSyncRoom: leaveLiveSyncRoom,
     lanClient: lanClient,
   });
+  try {
+    const profileLan = await import('../../clinical-profile-lan-sync.mjs');
+    if (typeof profileLan.seedDevPeerLanConfigIfNeeded === 'function') {
+      await profileLan.seedDevPeerLanConfigIfNeeded();
+    }
+  } catch (_seed) {}
   resumeAutoHostDetectAndReconnect();
 
   runtime().showToast(
@@ -1346,11 +1368,11 @@ export async function resetLanTurnConnectionFromUi() {
   }, 120);
 }
 
-function appendLanShiftPinClientConnectSection(root, gen) {
+async function appendLanShiftPinClientConnectSection(root, gen) {
   if (!root || !isLanElectronDesktop() || lanPanelRenderStale(gen)) return;
-  void shouldShowLanShiftPinClientConnect().then(function (offer) {
-    if (lanPanelRenderStale(gen) || !offer) return;
-    if (root.querySelector('[data-lan-shift-pin-client]')) return;
+  var offer = await shouldShowLanShiftPinClientConnect();
+  if (lanPanelRenderStale(gen) || !offer) return;
+  if (root.querySelector('[data-lan-shift-pin-client]')) return;
 
     var wrap = document.createElement('div');
     wrap.className = 'lan-connect-card lan-shift-pin-client-card';
@@ -1363,7 +1385,7 @@ function appendLanShiftPinClientConnectSection(root, gen) {
 
     var lead = document.createElement('p');
     lead.className = 'lan-connect-card-hint';
-    lead.textContent = 'Pide los 6 dígitos al anfitrión (R4 en ⇄). R+ encuentra la sala en la red del hospital.';
+    lead.textContent = 'Pide los 6 dígitos al anfitrión (R4 en ⇄).';
     wrap.appendChild(lead);
 
     var input = document.createElement('input');
@@ -1381,6 +1403,45 @@ function appendLanShiftPinClientConnectSection(root, gen) {
     else if (bundled) input.value = bundled;
     wrap.appendChild(input);
 
+    var hostUrlLabel = document.createElement('label');
+    hostUrlLabel.className = 'lan-connect-card-hint';
+    hostUrlLabel.style.display = 'block';
+    hostUrlLabel.style.marginTop = '8px';
+    hostUrlLabel.style.marginBottom = '4px';
+    hostUrlLabel.setAttribute('for', 'lan-input-host-url-ward');
+    hostUrlLabel.textContent = 'Dirección del anfitrión (opcional)';
+    wrap.appendChild(hostUrlLabel);
+
+    var hostUrlInput = document.createElement('input');
+    hostUrlInput.type = 'text';
+    hostUrlInput.id = 'lan-input-host-url-ward';
+    hostUrlInput.className = 'profile-input lan-shift-pin-host-url';
+    hostUrlInput.autocomplete = 'off';
+    hostUrlInput.placeholder = 'http://127.0.0.1:3738 o IP del anfitrión';
+    var cfg =
+      typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+    var devHost =
+      typeof window !== 'undefined' &&
+      window.electronAPI &&
+      typeof window.electronAPI.isLanDevPeer === 'function' &&
+      window.electronAPI.isLanDevPeer()
+        ? 'http://127.0.0.1:3738'
+        : '';
+    var wardPrefill =
+      normalizeLanHostBase(cfg.hostUrl) ||
+      normalizeLanHostBase(devHost) ||
+      listWardHostUrlsForProbe()[0] ||
+      '';
+    if (wardPrefill) hostUrlInput.value = wardPrefill;
+    wrap.appendChild(hostUrlInput);
+
+    var hostUrlHint = document.createElement('p');
+    hostUrlHint.className = 'lan-connect-card-hint';
+    hostUrlHint.style.marginTop = '4px';
+    hostUrlHint.textContent =
+      'Si el Wi‑Fi del hospital cambia de red, pide la dirección al R4 o pégala aquí.';
+    wrap.appendChild(hostUrlHint);
+
     var row = document.createElement('div');
     row.className = 'lan-connect-actions-row';
     row.style.marginTop = '8px';
@@ -1396,9 +1457,14 @@ function appendLanShiftPinClientConnectSection(root, gen) {
         return;
       }
       btn.disabled = true;
+      var manualHost = String(hostUrlInput.value || '').trim();
       void import('../../lan-shift-pin-connect.mjs')
         .then(function (m) {
-          return m.tryEasyLanShiftPinConnect({ shiftPin: pin, force: true });
+          return m.tryEasyLanShiftPinConnect({
+            shiftPin: pin,
+            hostUrl: manualHost,
+            force: true,
+          });
         })
         .then(function (result) {
           if (result && result.ok) {
@@ -1420,7 +1486,43 @@ function appendLanShiftPinClientConnectSection(root, gen) {
     row.appendChild(btn);
     wrap.appendChild(row);
     root.insertBefore(wrap, root.firstChild);
+}
+
+/** Host: copy base URL for cross-VLAN clients (no new card). */
+function appendLanHostAddressCopyButton(root, gen) {
+  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  if (lanPanelRenderStale(gen)) return;
+  if (!isLanSessionConfiguredForRest() && !lanClient.connected) return;
+  if (root.querySelector('[data-lan-host-address-copy]')) return;
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-lan-secondary';
+  btn.setAttribute('data-lan-host-address-copy', '1');
+  btn.style.width = '100%';
+  btn.style.marginTop = '6px';
+  btn.textContent = 'Copiar dirección';
+  btn.addEventListener('click', function () {
+    void resolveLanShareBaseUrl().then(function (shareUrl) {
+      if (!shareUrl) {
+        runtime().showToast('No hay dirección del anfitrión disponible.', 'error');
+        return;
+      }
+      copyToClipboardSafe(shareUrl);
+      runtime().showToast(
+        'Dirección copiada — compártela si el equipo no te encuentra en la red.',
+        'success'
+      );
+    });
   });
+
+  var anchor =
+    root.querySelector('.lan-shift-pin-card') || root.querySelector('.lan-hub-status-card');
+  if (anchor) {
+    anchor.appendChild(btn);
+  } else {
+    root.appendChild(btn);
+  }
 }
 
 /** Shared ward PIN for registration (reusable until shift TTL). */
@@ -1690,6 +1792,7 @@ async function buildLanSyncDiagnosticsDeps() {
     transport: getConnectionManager().getTransport(),
     rttMs: _lanLastPingRttMs || profileRtt || 0,
     registryHostCount: listHosts().length,
+    wardHostRegistry: summarizeWardHostRegistry(),
     role: isLanRemoteJoinMode() ? 'client' : 'host',
   };
 }
@@ -2232,6 +2335,7 @@ export function stopLanAutoDiscovery() {
 }
 
 async function scanLanHosts() {
+  if (_lanScanInFlight) return;
   if (!isLanElectronDesktop()) return;
   if (!isClinicalRankConfiguredForLan()) return;
   if (!canAttemptAutoHostDetect()) return;
@@ -2239,6 +2343,8 @@ async function scanLanHosts() {
   var teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return;
 
+  _lanScanInFlight = true;
+  try {
   if (getPinnedHostUrl()) {
     if (await applyPinnedHostOverride(teamCode, { quiet: true })) {
       await refreshLanPanelChromeInPlace();
@@ -2248,7 +2354,6 @@ async function scanLanHosts() {
 
   if (isLanRemoteJoinMode()) return;
 
-  try {
     var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
     var wsPeers =
       typeof listLivePeerHostUrls === 'function' ? listLivePeerHostUrls(clientId) : [];
@@ -2265,7 +2370,11 @@ async function scanLanHosts() {
       peers.push(u);
     }
 
-    for (var wi = 0; wi < wsPeers.length; wi += 1) {
+    var now = Date.now();
+    var runWsPeerPing = now - _lastWsPeerPingAt >= WS_PEER_PING_MIN_MS;
+    if (runWsPeerPing) _lastWsPeerPingAt = now;
+
+    for (var wi = 0; runWsPeerPing && wi < wsPeers.length; wi += 1) {
       var wsUrl = wsPeers[wi];
       if (!wsUrl) continue;
       var alive = await pingLanHostUrl(wsUrl, teamCode);
@@ -2281,7 +2390,23 @@ async function scanLanHosts() {
       }
     }
 
-    var now = Date.now();
+    var wardProbeUrls = listWardHostUrlsForProbe();
+    for (var wpi = 0; wpi < wardProbeUrls.length; wpi += 1) {
+      var wardUrl = wardProbeUrls[wpi];
+      if (!wardUrl) continue;
+      var wardAlive = await pingLanHostUrl(wardUrl, teamCode);
+      if (!wardAlive) continue;
+      var wardMeta = await fetchLanHostRank(wardUrl, teamCode);
+      if (wardMeta) peerMetasForEscalation.push(wardMeta);
+      addPeer(wardUrl);
+      if (typeof reactToDiscoveredLanHost === 'function') {
+        if (await reactToDiscoveredLanHost(wardUrl, teamCode)) {
+          requestRenderLanPanelAfterScan();
+          return;
+        }
+      }
+    }
+
     if (now - _lastSubnetLanScanAt >= SUBNET_LAN_SCAN_MIN_MS) {
       _lastSubnetLanScanAt = now;
       var ownUrl = lanHostUrl() || (await resolveLanShareBaseUrl());
@@ -2353,12 +2478,15 @@ async function scanLanHosts() {
       }
     }
 
-    if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) {
+    if (canLocalMacBeLanHost() && !isLanRemoteJoinMode() && now - _lastPlugAndPlayAt >= PLUG_AND_PLAY_MIN_MS) {
+      _lastPlugAndPlayAt = now;
       void initLanHostPlugAndPlay();
     }
     void refreshLanPanelChromeInPlace();
   } catch (_scanErr) {
     // scan errors are non-fatal
+  } finally {
+    _lanScanInFlight = false;
   }
 }
 
@@ -2921,11 +3049,21 @@ export function closeConnectionDropdown() {
 }
 
 export function focusLanShiftPinInput() {
-  var input = document.getElementById('lan-input-shift-pin');
-  if (!input) return false;
-  input.focus();
-  if (typeof input.select === 'function') input.select();
-  return true;
+  function tryFocus(attempt) {
+    var input = document.getElementById('lan-input-shift-pin');
+    if (input) {
+      input.focus();
+      if (typeof input.select === 'function') input.select();
+      return true;
+    }
+    if (attempt < 10) {
+      window.setTimeout(function () {
+        tryFocus(attempt + 1);
+      }, 80);
+    }
+    return false;
+  }
+  return tryFocus(0);
 }
 
 export function openConnectionDropdown() {

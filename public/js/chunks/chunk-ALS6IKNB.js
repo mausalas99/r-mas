@@ -1,0 +1,194 @@
+import {
+  hostIpv4FromBase,
+  normalizeLanHostBase,
+  subnetPrefixFromIpv4
+} from "/js/chunks/chunk-EXMEBP6A.js";
+
+// public/js/lan-ward-host-registry.mjs
+var WARD_HOST_REGISTRY_KEY = "rpc-lan-ward-host-registry";
+var VERSION = 1;
+var MAX_URLS = 20;
+var MAX_PREFIXES = 12;
+var MAX_PROBE_URLS = 8;
+var DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1e3;
+function tsNow() {
+  return Date.now();
+}
+function emptyRegistry() {
+  return { version: VERSION, updatedAt: tsNow(), hostUrls: [], prefixes: [] };
+}
+function readStorage() {
+  if (typeof localStorage === "undefined") return emptyRegistry();
+  try {
+    const raw = localStorage.getItem(WARD_HOST_REGISTRY_KEY);
+    if (!raw) return emptyRegistry();
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.version !== VERSION) return emptyRegistry();
+    return {
+      version: VERSION,
+      updatedAt: Number(parsed.updatedAt) || tsNow(),
+      hostUrls: Array.isArray(parsed.hostUrls) ? parsed.hostUrls : [],
+      prefixes: Array.isArray(parsed.prefixes) ? parsed.prefixes.map((p) => String(p || "").trim()).filter(Boolean) : []
+    };
+  } catch (_e) {
+    return emptyRegistry();
+  }
+}
+function writeStorage(reg) {
+  const payload = {
+    version: VERSION,
+    updatedAt: tsNow(),
+    hostUrls: Array.isArray(reg.hostUrls) ? reg.hostUrls.slice(0, MAX_URLS) : [],
+    prefixes: Array.isArray(reg.prefixes) ? reg.prefixes.slice(0, MAX_PREFIXES) : []
+  };
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(WARD_HOST_REGISTRY_KEY, JSON.stringify(payload));
+    } catch (_e) {
+    }
+  }
+  return payload;
+}
+function loadWardHostRegistry() {
+  return readStorage();
+}
+function saveWardHostRegistry(reg) {
+  return writeStorage(reg && typeof reg === "object" ? reg : emptyRegistry());
+}
+function prefixFromUrl(url) {
+  return subnetPrefixFromIpv4(hostIpv4FromBase(url));
+}
+function recordWardHostUrl(url, meta = {}) {
+  const normalized = normalizeLanHostBase(url);
+  if (!normalized) return loadWardHostRegistry();
+  const reg = loadWardHostRegistry();
+  const prefix = prefixFromUrl(normalized);
+  const source = meta.source === "manual" || meta.source === "client" || meta.source === "host" ? meta.source : "host";
+  const ts = tsNow();
+  const idx = reg.hostUrls.findIndex(
+    (e) => normalizeLanHostBase(e.url) === normalized
+  );
+  const entry = {
+    url: normalized,
+    prefix,
+    lastSeenAt: ts,
+    lastOkAt: ts,
+    source
+  };
+  if (idx >= 0) {
+    const prev = reg.hostUrls[idx];
+    entry.source = meta.source || prev.source || source;
+    reg.hostUrls.splice(idx, 1);
+  }
+  reg.hostUrls.unshift(entry);
+  if (prefix) {
+    const pIdx = reg.prefixes.indexOf(prefix);
+    if (pIdx >= 0) reg.prefixes.splice(pIdx, 1);
+    reg.prefixes.unshift(prefix);
+    reg.prefixes = reg.prefixes.slice(0, MAX_PREFIXES);
+  }
+  return saveWardHostRegistry(reg);
+}
+function recordWardHostPrefix(prefix, _meta = {}, regIn) {
+  const p = String(prefix || "").trim();
+  if (!/^\d+\.\d+\.\d+$/.test(p)) return regIn || loadWardHostRegistry();
+  const reg = regIn || loadWardHostRegistry();
+  const idx = reg.prefixes.indexOf(p);
+  if (idx >= 0) reg.prefixes.splice(idx, 1);
+  reg.prefixes.unshift(p);
+  reg.prefixes = reg.prefixes.slice(0, MAX_PREFIXES);
+  return regIn ? reg : saveWardHostRegistry(reg);
+}
+function mergeWardHostRegistry(other) {
+  if (!other || typeof other !== "object") return loadWardHostRegistry();
+  if (Array.isArray(other.hostUrls)) {
+    for (const item of other.hostUrls) {
+      const url = typeof item === "string" ? item : item?.url;
+      if (!url) continue;
+      const src = typeof item === "object" && item.source === "host" ? "host" : "client";
+      recordWardHostUrl(url, { source: src });
+    }
+  }
+  if (Array.isArray(other.prefixes)) {
+    for (const p of other.prefixes) recordWardHostPrefix(p);
+  }
+  return loadWardHostRegistry();
+}
+function listWardHostUrlsForProbe(maxAgeMs = DEFAULT_MAX_AGE_MS) {
+  const cutoff = tsNow() - maxAgeMs;
+  const reg = loadWardHostRegistry();
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  const sorted = [...reg.hostUrls].sort(
+    (a, b) => Number(b.lastOkAt || b.lastSeenAt || 0) - Number(a.lastOkAt || a.lastSeenAt || 0)
+  );
+  for (const e of sorted) {
+    const url = normalizeLanHostBase(e.url);
+    if (!url || seen.has(url)) continue;
+    if (Number(e.lastOkAt || e.lastSeenAt || 0) < cutoff) continue;
+    seen.add(url);
+    out.push(url);
+    if (out.length >= MAX_PROBE_URLS) break;
+  }
+  return out;
+}
+async function listWardSubnetPrefixesForProbe(ownBaseUrl) {
+  const { resolveLocalLanSubnetPrefixes } = await import("/js/chunks/lan-host-subnet-discovery-4DTH3RSB.js");
+  const local = await resolveLocalLanSubnetPrefixes(ownBaseUrl || "");
+  const saved = loadWardHostRegistry().prefixes || [];
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const p of [...local, ...saved]) {
+    const s = String(p || "").trim();
+    if (!/^\d+\.\d+\.\d+$/.test(s) || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+}
+function wardHostMainIpc() {
+  if (typeof window === "undefined") return null;
+  return window.electronAPI || null;
+}
+function syncWardHostUrlToMainFile(url, meta = {}) {
+  const api = wardHostMainIpc();
+  if (!api || typeof api.lanWardHostRecord !== "function") return;
+  const normalized = normalizeLanHostBase(url);
+  if (!normalized) return;
+  void api.lanWardHostRecord({ url: normalized, source: meta.source || "host" }).catch(() => {
+  });
+}
+function clearWardHostRegistry() {
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.removeItem(WARD_HOST_REGISTRY_KEY);
+    } catch (_e) {
+    }
+  }
+  const api = wardHostMainIpc();
+  if (api && typeof api.lanWardHostClear === "function") {
+    void api.lanWardHostClear().catch(() => {
+    });
+  }
+  return emptyRegistry();
+}
+function summarizeWardHostRegistry() {
+  const reg = loadWardHostRegistry();
+  return {
+    urlCount: reg.hostUrls.length,
+    prefixCount: reg.prefixes.length,
+    urls: reg.hostUrls.map((e) => normalizeLanHostBase(e.url)).filter(Boolean),
+    prefixes: reg.prefixes.slice()
+  };
+}
+
+export {
+  recordWardHostUrl,
+  mergeWardHostRegistry,
+  listWardHostUrlsForProbe,
+  listWardSubnetPrefixesForProbe,
+  syncWardHostUrlToMainFile,
+  clearWardHostRegistry,
+  summarizeWardHostRegistry
+};
+//# sourceMappingURL=/js/chunks/chunk-ALS6IKNB.js.map

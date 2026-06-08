@@ -1,10 +1,64 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
+  collectShiftPinProbeUrls,
   getShiftPinCooldownMs,
   recordShiftPinFailure,
   resetShiftPinBackoff,
 } from './lan-shift-pin-connect.mjs';
+import { clearWardHostRegistry, recordWardHostUrl } from './lan-ward-host-registry.mjs';
+
+const shiftPinSrc = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'lan-shift-pin-connect.mjs'),
+  'utf8'
+);
+
+function mockLocalStorage() {
+  const data = {};
+  return {
+    getItem(k) {
+      return data[k] ?? null;
+    },
+    setItem(k, v) {
+      data[k] = String(v);
+    },
+    removeItem(k) {
+      delete data[k];
+    },
+  };
+}
+
+describe('lan-shift-pin-connect probe order', () => {
+  beforeEach(() => {
+    globalThis.localStorage = mockLocalStorage();
+    clearWardHostRegistry();
+  });
+
+  it('collectShiftPinProbeUrls prefers explicit hostUrl, then cfg, then registry', () => {
+    recordWardHostUrl('http://10.0.99.1:3738', { source: 'host' });
+    const urls = collectShiftPinProbeUrls(
+      { hostUrl: 'http://10.0.57.52:3738' },
+      { hostUrl: 'http://10.0.166.59:3738' }
+    );
+    assert.equal(urls[0], 'http://10.0.57.52:3738');
+    assert.equal(urls[1], 'http://10.0.166.59:3738');
+    assert.ok(urls.includes('http://10.0.99.1:3738'));
+  });
+
+  it('connectLanWithShiftPin probes registry before local beacon scan', () => {
+    const fnStart = shiftPinSrc.indexOf('export async function connectLanWithShiftPin');
+    assert.ok(fnStart > 0);
+    const fnBody = shiftPinSrc.slice(fnStart);
+    const probeIdx = fnBody.indexOf('collectShiftPinProbeUrls');
+    const beaconIdx = fnBody.indexOf('discoverLanHostsOnAllLocalSubnetsViaBeacon');
+    const wardPrefixIdx = fnBody.indexOf('listWardSubnetPrefixesForProbe');
+    assert.ok(probeIdx > 0 && beaconIdx > probeIdx);
+    assert.ok(wardPrefixIdx > beaconIdx);
+  });
+});
 
 describe('lan-shift-pin-connect backoff', () => {
   beforeEach(() => {

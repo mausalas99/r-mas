@@ -145,6 +145,34 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_721 = [
+  {
+    title: 'Cross-VLAN en el hospital',
+    body:
+      'R+ recuerda <strong>URLs de anfitrión</strong> y <strong>subredes /24</strong> del turno. Al conectar con PIN, prueba direcciones guardadas y hasta <strong>3 VLANs</strong> extra sin depender solo del Wi‑Fi local.',
+  },
+  {
+    title: 'PIN con dirección opcional',
+    body:
+      'Tras <strong>Restablecer conexión</strong>, la tarjeta <strong>PIN del turno</strong> vuelve en ⇄ con IP opcional del anfitrión (p. ej. <code>http://10.0.57.52:3738</code>). Útil entre VLANs del hospital.',
+  },
+  {
+    title: 'Copiar dirección del anfitrión',
+    body:
+      'El R4 puede <strong>copiar la URL del host</strong> desde ⇄ para que colegas en otra VLAN peguen la dirección y el PIN de 6 dígitos.',
+  },
+  {
+    title: '⇄ más liviano',
+    body:
+      'Menos barrido en segundo plano, debounce al cambiar de Wi‑Fi y sin auto-conexión PIN en modo <strong>solo mi equipo</strong>.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.1 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.0</strong>; esquema SQLCipher sigue en <strong>v14</strong>.',
+  },
+];
+
 var RELEASE_NOTES_720 = [
   {
     title: 'Anfitrión visible de nuevo',
@@ -541,9 +569,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_720;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_721;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.1': RELEASE_NOTES_721,
   '7.2.0': RELEASE_NOTES_720,
   '7.1.9': RELEASE_NOTES_719,
   '7.1.8': RELEASE_NOTES_718,

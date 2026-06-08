@@ -4,8 +4,16 @@
 import { buildTeamHash, liveSyncRoomLabel, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
 import {
   discoverLanHostsOnAllLocalSubnetsViaBeacon,
+  discoverLanHostsOnSubnetViaBeacon,
   normalizeLanHostBase,
+  resolveLocalLanSubnetPrefixes,
 } from './lan-host-subnet-discovery.mjs';
+import {
+  listWardHostUrlsForProbe,
+  listWardSubnetPrefixesForProbe,
+  mergeWardHostRegistry,
+  recordWardHostUrl,
+} from './lan-ward-host-registry.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 import { storage } from './storage.js';
 import {
@@ -18,6 +26,7 @@ import { lanNetworkProfile } from './lan-network-profile.mjs';
 
 const EXCHANGE_TIMEOUT_MS = 8000;
 const BACKOFF_STEPS_MS = [12_000, 30_000, 60_000, 120_000];
+const MAX_EXTRA_WARD_PREFIXES = 3;
 let _easyConnectFailCount = 0;
 let _lastEasyConnectAttemptMs = 0;
 
@@ -133,6 +142,14 @@ async function joinHostAfterShiftPinExchange(hostUrl, shiftPin, opts) {
   );
   if (!joined) return false;
 
+  const resolvedUrl = normalizeLanHostBase(String(data.hostUrl || hostUrl));
+  if (resolvedUrl) {
+    recordWardHostUrl(resolvedUrl, { source: 'client' });
+  }
+  if (data.wardHostHints) {
+    mergeWardHostRegistry(data.wardHostHints);
+  }
+
   const roomId =
     String(opts.roomId || '').trim() || resolveLiveSyncRoomIdFromSala(opts.sala) || '';
   if (roomId) {
@@ -147,9 +164,30 @@ async function joinHostAfterShiftPinExchange(hostUrl, shiftPin, opts) {
 }
 
 /**
+ * Ordered host URLs to probe before subnet beacon scan.
+ * @param {{ hostUrl?: string }} opts
+ * @param {{ hostUrl?: string }} cfg
+ * @returns {string[]}
+ */
+export function collectShiftPinProbeUrls(opts = {}, cfg = {}) {
+  const seen = new Set();
+  const out = [];
+  const add = (raw) => {
+    const u = normalizeLanHostBase(raw);
+    if (!u || seen.has(u)) return;
+    seen.add(u);
+    out.push(u);
+  };
+  add(opts.hostUrl);
+  add(cfg.hostUrl);
+  for (const u of listWardHostUrlsForProbe()) add(u);
+  return out;
+}
+
+/**
  * Scan local subnets, exchange shift PIN, connect as client, join sala from profile.
  * @param {string} shiftPin
- * @param {{ sala?: string, roomId?: string, forceRediscover?: boolean }} [opts]
+ * @param {{ sala?: string, roomId?: string, forceRediscover?: boolean, hostUrl?: string }} [opts]
  * @returns {Promise<boolean>}
  */
 export async function connectLanWithShiftPin(shiftPin, opts = {}) {
@@ -174,34 +212,52 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   }
 
   const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
-  const staleHost = normalizeLanHostBase(cfg.hostUrl);
-  if (staleHost) {
-    const quick = await joinHostAfterShiftPinExchange(staleHost, pin, opts);
-    if (quick) return true;
+  const tried = new Set();
+  for (const hostUrl of collectShiftPinProbeUrls(opts, cfg)) {
+    tried.add(hostUrl);
+    const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
+    if (ok) return true;
   }
 
   // Same-Mac dev peer (npm run dev:lan-peer-app): subnet scan skips this machine; try loopback first.
   const loopbackHost = normalizeLanHostBase('http://127.0.0.1:3738');
-  if (loopbackHost && loopbackHost !== staleHost) {
+  if (loopbackHost && !tried.has(loopbackHost)) {
+    tried.add(loopbackHost);
     const viaLoopback = await joinHostAfterShiftPinExchange(loopbackHost, pin, opts);
     if (viaLoopback) return true;
   }
 
   const ownUrl = await resolveOwnLanBaseUrl();
+  const localPrefixes = await resolveLocalLanSubnetPrefixes(ownUrl);
   const hosts = await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl);
-  if (!hosts.length) return false;
-
   for (const hostUrl of hosts) {
-    if (staleHost && hostUrl === staleHost) continue;
+    if (tried.has(hostUrl)) continue;
+    tried.add(hostUrl);
     const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
     if (ok) return true;
+  }
+
+  const allPrefixes = await listWardSubnetPrefixesForProbe(ownUrl);
+  const extraPrefixes = allPrefixes
+    .filter((p) => !localPrefixes.includes(p))
+    .slice(0, MAX_EXTRA_WARD_PREFIXES);
+  for (const prefix of extraPrefixes) {
+    const wardHosts = await discoverLanHostsOnSubnetViaBeacon(ownUrl, {
+      subnetPrefixes: [prefix],
+    });
+    for (const hostUrl of wardHosts) {
+      if (tried.has(hostUrl)) continue;
+      tried.add(hostUrl);
+      const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
+      if (ok) return true;
+    }
   }
   return false;
 }
 
 /**
  * One-tap / automatic connect: saved PIN, plain language, no technical steps.
- * @param {{ shiftPin?: string, sala?: string, roomId?: string, silent?: boolean, force?: boolean }} [opts]
+ * @param {{ shiftPin?: string, sala?: string, roomId?: string, silent?: boolean, force?: boolean, hostUrl?: string }} [opts]
  * @returns {Promise<{ ok: boolean, reason: string }>}
  */
 export async function tryEasyLanShiftPinConnect(opts = {}) {

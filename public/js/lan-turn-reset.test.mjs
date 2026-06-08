@@ -7,6 +7,11 @@ import {
   LAN_TURN_RESET_CLIENT_CONFIRM,
   performLanTurnClientReset,
 } from './lan-turn-reset.mjs';
+import {
+  WARD_HOST_REGISTRY_KEY,
+  recordWardHostUrl,
+  loadWardHostRegistry,
+} from './lan-ward-host-registry.mjs';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
 const panelSrc = readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8');
@@ -36,6 +41,8 @@ describe('lan-turn-reset', () => {
     const origLs = globalThis.localStorage;
     const origSs = globalThis.sessionStorage;
     globalThis.localStorage = store;
+    recordWardHostUrl('http://10.0.57.52:3738', { source: 'host' });
+    assert.ok(loadWardHostRegistry().hostUrls.length > 0);
     globalThis.sessionStorage = { removeItem() {} };
     try {
       const res = await performLanTurnClientReset({
@@ -48,6 +55,7 @@ describe('lan-turn-reset', () => {
       assert.equal(disconnect.mock.callCount(), 1);
       assert.equal(store.getItem('rpc-lan-ui-role'), 'client');
       assert.equal(store.getItem('rpc-lan-config'), null);
+      assert.equal(store.getItem(WARD_HOST_REGISTRY_KEY), null);
     } finally {
       globalThis.localStorage = origLs;
       globalThis.sessionStorage = origSs;

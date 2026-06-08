@@ -10,26 +10,32 @@ const { test } = require('node:test');
 const { createHostStore } = require('./host-store.js');
 const { createTicketStore } = require('./ticket-store.js');
 const { createAuthRouter } = require('./auth-router.js');
+const { createWardHostRegistry } = require('./ward-host-registry.js');
 
 function createTestApp({ hostToken, hostUrl, requiresMigrationNotice = false }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-'));
   const statePath = path.join(dir, 'state.json');
+  const wardPath = path.join(dir, 'lan-ward-host-registry.json');
   const store = createHostStore({ filePath: statePath, teamCodePlain: hostToken });
   const ticketStore = createTicketStore({ getHostToken: () => hostToken });
   const { createShiftPinStore } = require('./shift-pin-store.js');
   const shiftPinStore = createShiftPinStore({ getHostToken: () => hostToken });
+  const wardHostRegistry = createWardHostRegistry({ filePath: wardPath });
+  wardHostRegistry.recordUrl(hostUrl, { source: 'host' });
+  wardHostRegistry.recordPrefix('10.0.57');
   const app = express();
   app.use(
     '/api/lan/v1',
     createAuthRouter({
       ticketStore,
       shiftPinStore,
+      wardHostRegistry,
       getHostToken: () => hostToken,
       getHostUrl: () => hostUrl,
       getRequiresMigrationNotice: () => requiresMigrationNotice,
     })
   );
-  return { app, dir, store, ticketStore, shiftPinStore };
+  return { app, dir, store, ticketStore, shiftPinStore, wardHostRegistry };
 }
 
 async function listen(app) {
@@ -279,6 +285,50 @@ test('POST /auth/exchange by shiftPin is reusable', async () => {
     });
     assert.strictEqual(ex2.status, 200);
     assert.strictEqual((await ex2.json()).token, hostToken);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange by shiftPin returns wardHostHints', async () => {
+  const hostToken = 'w'.repeat(64);
+  const hostUrl = 'http://10.0.57.52:3738';
+  const { app, dir, shiftPinStore } = createTestApp({ hostToken, hostUrl });
+  const { pin } = shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: pin }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.token, hostToken);
+    assert.ok(body.wardHostHints);
+    assert.ok(Array.isArray(body.wardHostHints.hostUrls));
+    assert.ok(body.wardHostHints.hostUrls.some((row) => row.url === hostUrl));
+    assert.ok(body.wardHostHints.prefixes.includes('10.0.57'));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('GET /auth/ward-host-hints returns registry with Bearer', async () => {
+  const hostToken = 'x'.repeat(64);
+  const hostUrl = 'http://10.0.166.59:3738';
+  const { app, dir } = createTestApp({ hostToken, hostUrl });
+  const { server, base } = await listen(app);
+  try {
+    const res = await fetch(`${base}/auth/ward-host-hints`, {
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.ok(Array.isArray(body.hostUrls));
+    assert.ok(body.prefixes.includes('10.0.57'));
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

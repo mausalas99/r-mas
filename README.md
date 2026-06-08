@@ -27,10 +27,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.0](https://github.com/mausalas99/r-mas/releases/tag/v7.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.1](https://github.com/mausalas99/r-mas/releases/tag/v7.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.1 (LAN cross-VLAN y estabilidad)
+
+- **Registro ward** — URLs y subredes de anfitrión persistentes (cross-VLAN); hints en `auth/exchange` y `GET /auth/ward-host-hints`.
+- **PIN + dirección** — Tarjeta **PIN del turno** en ⇄ (también tras restablecer conexión); IP opcional del anfitrión antes del barrido.
+- **Copiar dirección** — Botón en ⇄ para compartir la URL del host entre VLANs.
+- **⇄ más liviano** — Menos escaneo y re-renders; debounce al cambiar Wi‑Fi; sin auto-PIN en modo solo equipo.
+- **Estabilidad** — Menú sin crash al arrancar; mDNS y red con debounce.
+- **Sobre 7.2.0** — Sin cambio de esquema SQLCipher (sigue v14).
+
+Notas: `docs/RELEASE_NOTES_7.2.1.txt`.
 ## R+ 7.2.0 (Estabilización LAN en guardia)
 
 - **Anfitrión visible de nuevo** — Reconcilia `lan-team-code.txt` con el estado LAN (JSON/SQLCipher) sin borrar datos; evita crash del servidor y `auth/exchange` 401.

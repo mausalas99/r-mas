@@ -76,6 +76,10 @@ export function getLanSyncDiagnostics(deps) {
     transport: String(d.transport || ''),
     rttMs: Number(d.rttMs || 0),
     registryHostCount: Number(d.registryHostCount || 0),
+    wardHostRegistry:
+      d.wardHostRegistry && typeof d.wardHostRegistry === 'object'
+        ? { ...d.wardHostRegistry }
+        : null,
     role: String(d.role || ''),
     clinicalOpsTrace: trace,
     lastErrors: lastErrors.map(function (e) {

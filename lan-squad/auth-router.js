@@ -22,6 +22,7 @@ function auditLanSecurity(eventType, meta = {}) {
 function createAuthRouter({
   ticketStore,
   shiftPinStore,
+  wardHostRegistry,
   getHostToken,
   getHostUrl,
   getRequiresMigrationNotice,
@@ -42,6 +43,18 @@ function createAuthRouter({
       lan: true,
       shiftPinActive: !!shift,
     });
+  });
+
+  r.get('/auth/ward-host-hints', bearerAuth, (_req, res) => {
+    if (!wardHostRegistry || typeof wardHostRegistry.getHintsForExchange !== 'function') {
+      return res.json({ hostUrls: [], prefixes: [] });
+    }
+    try {
+      res.json(wardHostRegistry.getHintsForExchange());
+    } catch (e) {
+      console.error('[auth/ward-host-hints]', e && e.message);
+      res.status(500).json({ error: 'ward_host_hints_failed' });
+    }
   });
 
   r.get('/auth/shift-pin', bearerAuth, (_req, res) => {
@@ -130,11 +143,22 @@ function createAuthRouter({
         auditLanSecurity('lan.ticket.exchange', {});
       }
 
+      const hostUrl = resolveHostUrlForClient(req, getHostUrl);
+      if (wardHostRegistry && typeof wardHostRegistry.recordUrl === 'function' && hostUrl) {
+        try {
+          wardHostRegistry.recordUrl(hostUrl, { source: 'host' });
+        } catch (_rec) {}
+      }
+      const wardHostHints =
+        wardHostRegistry && typeof wardHostRegistry.getHintsForExchange === 'function'
+          ? wardHostRegistry.getHintsForExchange()
+          : null;
       res.json({
         token: result.token,
-        hostUrl: resolveHostUrlForClient(req, getHostUrl),
+        hostUrl,
         persist: true,
         storageTarget: 'userData',
+        ...(wardHostHints ? { wardHostHints } : {}),
       });
     } catch (e) {
       console.error('[auth/exchange]', redactAuthBody(body), e && e.message);
