@@ -1,20 +1,20 @@
-version: 7.2.4
+version: 7.2.5
 files:
-  - url: R+-7.2.4-x64.exe
-    sha512: fvZYWiLrpxUd7FL2Ru4WpqoLBGskvQynZoclZjUJh6NXlZPQXRvfZEUpZ5jZUkzOHEQyHoClmESWvffOqtIVPA==
-    size: 114680338
-path: R+-7.2.4-x64.exe
-sha512: fvZYWiLrpxUd7FL2Ru4WpqoLBGskvQynZoclZjUJh6NXlZPQXRvfZEUpZ5jZUkzOHEQyHoClmESWvffOqtIVPA==
-releaseDate: '2026-06-08T18:24:13.000Z'
+  - url: R+-7.2.5-x64.exe
+    sha512: xniPNebwa5yGhxireXeEKEnCR2jCY3EvV9UURHbHyVcuBb1Z9GtSiTuescq+VEBjJInckSSLMx6SO4+H7d+nPg==
+    size: 114680397
+path: R+-7.2.5-x64.exe
+sha512: xniPNebwa5yGhxireXeEKEnCR2jCY3EvV9UURHbHyVcuBb1Z9GtSiTuescq+VEBjJInckSSLMx6SO4+H7d+nPg==
+releaseDate: '2026-06-08T20:15:21.000Z'
 releaseNotes: |
-  Parche sobre 7.2.3: al registrarse como R4, R+ ya no se convierte en anfitrión del turno antes de buscar la red — conecta al host activo (fijado, PIN o barrido) como cualquier estación. R4 y Admin dejan de requerir unirse a un equipo en Mi rotación. Sin cambio de esquema SQLCipher (sigue v14).
+  Parche sobre 7.2.4: el anfitrión LAN deja de reescribir un JSON monolítico en cada guardado. Los commits son asíncronos y coalescidos, los bundles van por sala, los labs viven en sidecars y —con SQLCipher desbloqueado— las tablas normalizadas v15 sustituyen el blob único. Esquema SQLCipher v15 (migración automática al desbloquear).
   
-  R4 como cliente primero — Tras el registro, R4 permanece en modo cliente: usa PIN del turno, anfitrión fijado o descubrimiento LAN antes de activar el servidor embebido de esta Mac.
+  Commits coalescidos — CommitBarrier agrupa escrituras (~150 ms); las rutas HTTP tipadas esperan awaitDurableCommit antes de responder.
   
-  Barrido de red para R4 — Deja de omitir el escaneo de subred solo por ser elegible como anfitrión; encuentra el host fijado (10.0.57.52:3738) aunque nunca haya sido servidor local.
+  Shards JSON por sala — meta.json + rooms/<id>/bundle.json; migración automática desde lan-squad-host-state.json.
   
-  ⇄ sin auto-promoción — El panel Wi‑Fi intenta el anfitrión fijado primero y solo prepara servidor local si el rol ya es «host» (acción explícita o Mac designada).
+  Sidecars de laboratorio — labHistory fuera del bundle; upserts de labs ya no re-serializan el turno completo.
   
-  Mi rotación sin equipo — R4 y Admin supervisan todas las rotaciones; no aparecen como «sin equipo» ni bloquean el uso de la app por falta de membresía.
+  SQL v15 en anfitrión — Tablas lan_host_meta, lan_room_bundles, lan_bundle_entries, lan_lab_sets cuando la DB clínica está desbloqueada; fallback JSON si está bloqueada.
   
-  Migración legacy — Se elimina la promoción automática de R4 de «cliente» a «host» cuando no hay URL guardada (UI antigua de pestañas).
+  Rollback de soporte — Variable de entorno R_PLUS_LAN_PERSIST_MODE (legacy | json | sql | sql-monolith) para forzar generación anterior sin recompilar.

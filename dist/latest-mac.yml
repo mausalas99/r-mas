@@ -1,29 +1,29 @@
-version: 7.2.4
+version: 7.2.5
 files:
-  - url: R+-7.2.4-arm64.zip
-    sha512: J4fLwShi2OfF15E1Q2OzldST9RVFtn3zYVdloJPMeDFT4XCgOVRZNoiM5uQKcyR6x7Ep3wfWJRGPxvru8N0pdw==
-    size: 128951980
-  - url: R+-7.2.4-arm64.dmg
-    sha512: NEPfzkqbuQ7xaOv/CzyvRrKQP6eJpga2504Uw6tdjBWb9sPL6y50lhQTTEy5gWC2Qlzbp8fiKgquGVcgAWSjzw==
-    size: 134278665
-  - url: R+-7.2.4-x64.zip
-    sha512: kbqTEBGSiQOTjlw9TptlzdXT2j9NNRGgWr5cYE52Adw0Fb1dNsC7Fk+ImTbIxlXIcc4uUdQq1Er0HQstEPdYdw==
-    size: 137326081
-  - url: R+-7.2.4-x64.dmg
-    sha512: 65xj8lC7pUOTYiZ6mBiFLc9lmosuCHvCBOniJvO3OweSDqiuLYgjegO2dROb/qYBExN06tpscNUDtEOI1NBRrQ==
-    size: 142717768
-path: R+-7.2.4-arm64.zip
-sha512: J4fLwShi2OfF15E1Q2OzldST9RVFtn3zYVdloJPMeDFT4XCgOVRZNoiM5uQKcyR6x7Ep3wfWJRGPxvru8N0pdw==
-releaseDate: '2026-06-08T18:24:13.000Z'
+  - url: R+-7.2.5-arm64.zip
+    sha512: 8BWUhcxIt4uufU5BM5/xeGTBS+DAwkmeDVHx8SyStExLebb9M/PTqeH3omiDGlkh+Ugx+g3fhwjF6/tGdqdJhg==
+    size: 128974249
+  - url: R+-7.2.5-arm64.dmg
+    sha512: gZqlKHHfNY6MmkxkaLTClLafFNVqOUC98XsQ9TXfSfsaMPp8cksL4uT6xQJdShOCSWPQDktXLSgBvwmfJa+nVg==
+    size: 134310763
+  - url: R+-7.2.5-x64.zip
+    sha512: DMmVguF5uoL8E47o/rkvVZflOmC+NDUz7AMVndAWqebe9NeqwY2Lc4TIWtR5d4pmIUsSyhBbzzSbo04jcYN7Uw==
+    size: 137348360
+  - url: R+-7.2.5-x64.dmg
+    sha512: UW9r7+VhL/kIepzQfD+XkC4ITLtoKio53wJJgrgdAGmaF1veO0r/5FZs7sbIpdCbqbQPsOmo5cA6Ux/YjiC/vQ==
+    size: 142742919
+path: R+-7.2.5-arm64.zip
+sha512: 8BWUhcxIt4uufU5BM5/xeGTBS+DAwkmeDVHx8SyStExLebb9M/PTqeH3omiDGlkh+Ugx+g3fhwjF6/tGdqdJhg==
+releaseDate: '2026-06-08T20:15:21.000Z'
 releaseNotes: |
-  Parche sobre 7.2.3: al registrarse como R4, R+ ya no se convierte en anfitrión del turno antes de buscar la red — conecta al host activo (fijado, PIN o barrido) como cualquier estación. R4 y Admin dejan de requerir unirse a un equipo en Mi rotación. Sin cambio de esquema SQLCipher (sigue v14).
+  Parche sobre 7.2.4: el anfitrión LAN deja de reescribir un JSON monolítico en cada guardado. Los commits son asíncronos y coalescidos, los bundles van por sala, los labs viven en sidecars y —con SQLCipher desbloqueado— las tablas normalizadas v15 sustituyen el blob único. Esquema SQLCipher v15 (migración automática al desbloquear).
   
-  R4 como cliente primero — Tras el registro, R4 permanece en modo cliente: usa PIN del turno, anfitrión fijado o descubrimiento LAN antes de activar el servidor embebido de esta Mac.
+  Commits coalescidos — CommitBarrier agrupa escrituras (~150 ms); las rutas HTTP tipadas esperan awaitDurableCommit antes de responder.
   
-  Barrido de red para R4 — Deja de omitir el escaneo de subred solo por ser elegible como anfitrión; encuentra el host fijado (10.0.57.52:3738) aunque nunca haya sido servidor local.
+  Shards JSON por sala — meta.json + rooms/<id>/bundle.json; migración automática desde lan-squad-host-state.json.
   
-  ⇄ sin auto-promoción — El panel Wi‑Fi intenta el anfitrión fijado primero y solo prepara servidor local si el rol ya es «host» (acción explícita o Mac designada).
+  Sidecars de laboratorio — labHistory fuera del bundle; upserts de labs ya no re-serializan el turno completo.
   
-  Mi rotación sin equipo — R4 y Admin supervisan todas las rotaciones; no aparecen como «sin equipo» ni bloquean el uso de la app por falta de membresía.
+  SQL v15 en anfitrión — Tablas lan_host_meta, lan_room_bundles, lan_bundle_entries, lan_lab_sets cuando la DB clínica está desbloqueada; fallback JSON si está bloqueada.
   
-  Migración legacy — Se elimina la promoción automática de R4 de «cliente» a «host» cuando no hay URL guardada (UI antigua de pestañas).
+  Rollback de soporte — Variable de entorno R_PLUS_LAN_PERSIST_MODE (legacy | json | sql | sql-monolith) para forzar generación anterior sin recompilar.
