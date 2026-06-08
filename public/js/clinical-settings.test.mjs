@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   CLINICAL_LAN_PROFILE_GATE_VERSION,
   bundledWardShiftPin,
+  bundledWardHostUrl,
   ensureLanProfileGateDeviceReset,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
@@ -93,5 +94,11 @@ describe('bundledWardShiftPin', () => {
     } else {
       assert.equal(pin, '');
     }
+  });
+});
+
+describe('bundledWardHostUrl', () => {
+  it('returns ward LAN host base URL', () => {
+    assert.equal(bundledWardHostUrl(), 'http://10.0.57.52:3738');
   });
 });

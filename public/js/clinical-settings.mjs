@@ -58,6 +58,14 @@ export function bundledWardShiftPin() {
   return '';
 }
 
+/**
+ * Ward LAN host base URL pre-filled for client connect / discovery.
+ * @returns {string} http://host:3738 or ''
+ */
+export function bundledWardHostUrl() {
+  return 'http://10.0.57.52:3738';
+}
+
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {

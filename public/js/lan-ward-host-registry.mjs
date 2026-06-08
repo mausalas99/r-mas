@@ -3,6 +3,7 @@
  * Separate from lan-host-registry.mjs (in-memory fingerprint discovery).
  */
 import { subnetPrefixFromIpv4 } from '../interno/host-discovery.mjs';
+import { bundledWardHostUrl } from './clinical-settings.mjs';
 import { normalizeLanHostBase, hostIpv4FromBase } from './lan-host-subnet-discovery.mjs';
 
 export const WARD_HOST_REGISTRY_KEY = 'rpc-lan-ward-host-registry';
@@ -153,6 +154,11 @@ export function listWardHostUrlsForProbe(maxAgeMs = DEFAULT_MAX_AGE_MS) {
   const reg = loadWardHostRegistry();
   const seen = new Set();
   const out = [];
+  const bundled = normalizeLanHostBase(bundledWardHostUrl());
+  if (bundled) {
+    seen.add(bundled);
+    out.push(bundled);
+  }
   const sorted = [...reg.hostUrls].sort(
     (a, b) =>
       Number(b.lastOkAt || b.lastSeenAt || 0) - Number(a.lastOkAt || a.lastSeenAt || 0)
@@ -177,9 +183,10 @@ export async function listWardSubnetPrefixesForProbe(ownBaseUrl) {
   const { resolveLocalLanSubnetPrefixes } = await import('./lan-host-subnet-discovery.mjs');
   const local = await resolveLocalLanSubnetPrefixes(ownBaseUrl || '');
   const saved = loadWardHostRegistry().prefixes || [];
+  const bundledPrefix = prefixFromUrl(bundledWardHostUrl());
   const seen = new Set();
   const out = [];
-  for (const p of [...local, ...saved]) {
+  for (const p of [...local, ...saved, bundledPrefix]) {
     const s = String(p || '').trim();
     if (!/^\d+\.\d+\.\d+$/.test(s) || seen.has(s)) continue;
     seen.add(s);

@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.2](https://github.com/mausalas99/r-mas/releases/tag/v7.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.3](https://github.com/mausalas99/r-mas/releases/tag/v7.2.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.3 (LAN anfitrión ward empaquetado)
+
+- **Anfitrión empaquetado** — Clientes traen `http://10.0.57.52:3738` preconfigurado (PIN del turno en ⇄).
+- **Descubrimiento** — URL ward empaquetada en shift-PIN, escaneo ⇄ y reconexión sin registro previo.
+- **Subred 10.0.57** — Prefijo ward incluido en barridos beacon cross-VLAN.
+- **Sobre 7.2.2** — Sin cambio de esquema SQLCipher (sigue v14).
+
+Notas: `docs/RELEASE_NOTES_7.2.3.txt`.
 
 ## R+ 7.2.2 (LAN cliente y reconexión)
 

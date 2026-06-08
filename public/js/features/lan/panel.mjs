@@ -7,7 +7,12 @@ import { patients } from '../../app-state.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import { hasElevatedTeamPrivileges, canManageInternoQr } from '../../clinical-privileges.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { isClinicalLocalOnlyMode, readRpcSettings, bundledWardShiftPin } from '../../clinical-settings.mjs';
+import {
+  isClinicalLocalOnlyMode,
+  readRpcSettings,
+  bundledWardShiftPin,
+  bundledWardHostUrl,
+} from '../../clinical-settings.mjs';
 import { filterJoinedTeams } from '../clinical-teams.mjs';
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
@@ -1417,7 +1422,8 @@ async function appendLanShiftPinClientConnectSection(root, gen) {
     hostUrlInput.id = 'lan-input-host-url-ward';
     hostUrlInput.className = 'profile-input lan-shift-pin-host-url';
     hostUrlInput.autocomplete = 'off';
-    hostUrlInput.placeholder = 'http://127.0.0.1:3738 o IP del anfitrión';
+    hostUrlInput.placeholder =
+      bundledWardHostUrl() || 'http://127.0.0.1:3738 o IP del anfitrión';
     var cfg =
       typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
     var devHost =

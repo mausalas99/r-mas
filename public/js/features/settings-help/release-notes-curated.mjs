@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_723 = [
+  {
+    title: 'Anfitrión ward empaquetado',
+    body:
+      'Los clientes nuevos traen <code>http://10.0.57.52:3738</code> preconfigurado. En ⇄, <strong>PIN del turno</strong> ya muestra la dirección del anfitrión del hospital.',
+  },
+  {
+    title: 'Conectar sin configurar',
+    body:
+      'La URL empaquetada se prueba primero en descubrimiento por PIN, escaneo ⇄ y reconexión — aunque nunca hayas conectado en esa Mac.',
+  },
+  {
+    title: 'Subred del hospital',
+    body:
+      'Incluye el prefijo <strong>10.0.57</strong> en barridos beacon cross-VLAN junto a tu Wi‑Fi local y direcciones guardadas.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.3 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.2</strong>; esquema SQLCipher sigue en <strong>v14</strong>.',
+  },
+];
+
 var RELEASE_NOTES_722 = [
   {
     title: 'Clientes LAN corregidos',
@@ -592,9 +615,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_722;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_723;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.3': RELEASE_NOTES_723,
   '7.2.2': RELEASE_NOTES_722,
   '7.2.1': RELEASE_NOTES_721,
   '7.2.0': RELEASE_NOTES_720,

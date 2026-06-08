@@ -37,6 +37,10 @@ describe('lan-ward-host-registry', () => {
     clearWardHostRegistry();
   });
 
+  it('listWardHostUrlsForProbe always includes bundled ward host', () => {
+    assert.deepEqual(listWardHostUrlsForProbe(), ['http://10.0.57.52:3738']);
+  });
+
   it('record + merge dedupes URLs and prefixes', () => {
     recordWardHostUrl('http://10.0.57.52:3738', { source: 'host' });
     recordWardHostUrl('http://10.0.57.52:3738', { source: 'client' });
@@ -79,7 +83,10 @@ describe('lan-ward-host-registry', () => {
     const after = loadWardHostRegistry();
     assert.equal(after.hostUrls.length, 1);
     assert.equal(after.hostUrls[0].url, 'http://10.0.2.2:3738');
-    assert.equal(listWardHostUrlsForProbe().length, 1);
+    const probeUrls = listWardHostUrlsForProbe();
+    assert.equal(probeUrls.length, 2);
+    assert.ok(probeUrls.includes('http://10.0.57.52:3738'));
+    assert.ok(probeUrls.includes('http://10.0.2.2:3738'));
   });
 
   it('listWardSubnetPrefixesForProbe unions local and saved', async () => {
