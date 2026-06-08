@@ -4,19 +4,167 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { createHostStore } = require('./host-store.js');
+const { createHostStore, readPersistModeOverride } = require('./host-store.js');
+
+const hostStoreSrc = fs.readFileSync(path.join(__dirname, 'host-store.js'), 'utf8');
 
 describe('host-store', () => {
   let dir;
   let filePath;
+  let hostStateDir;
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-host-'));
     filePath = path.join(dir, 'state.json');
+    hostStateDir = path.join(dir, 'lan-host');
+  });
+
+  function createStore(teamCodePlain) {
+    return createHostStore({ filePath, hostStateDir, teamCodePlain });
+  }
+
+  it('readPersistModeOverride maps env rollback tokens', () => {
+    const prev = process.env.R_PLUS_LAN_PERSIST_MODE;
+    try {
+      delete process.env.R_PLUS_LAN_PERSIST_MODE;
+      assert.strictEqual(readPersistModeOverride(), null);
+      process.env.R_PLUS_LAN_PERSIST_MODE = 'legacy';
+      assert.strictEqual(readPersistModeOverride(), 'json-monolith');
+      process.env.R_PLUS_LAN_PERSIST_MODE = 'sql';
+      assert.strictEqual(readPersistModeOverride(), 'sql-v3');
+    } finally {
+      if (prev !== undefined) process.env.R_PLUS_LAN_PERSIST_MODE = prev;
+      else delete process.env.R_PLUS_LAN_PERSIST_MODE;
+    }
+  });
+
+  it('schedulePersist does not call atomicWriteJson synchronously on mutation path', () => {
+    const start = hostStoreSrc.indexOf('function schedulePersist()');
+    const end = hostStoreSrc.indexOf('async function awaitDurableCommit()', start);
+    const fnBody = hostStoreSrc.slice(start, end);
+    assert.doesNotMatch(fnBody, /atomicWriteJson\(/);
+  });
+
+  it('10 rapid lab upserts within coalesce window produce at most two disk writes', async () => {
+    const atomicJson = require('./atomic-json.js');
+    const writes = [];
+    const orig = atomicJson.writeJsonAtomic;
+    atomicJson.writeJsonAtomic = async (fp, obj) => {
+      writes.push(fp);
+      return orig(fp, obj);
+    };
+    try {
+      const store = createStore('cap');
+      const room = store.createRoom('Sala 1');
+      store.putRoomSyncBundle(room.id, {
+        baseRevision: 0,
+        baseEntityVersions: {},
+        agenda: [],
+        todos: {},
+        entries: [{ patient: { id: 'p1' }, note: {} }],
+      });
+      await store.flush();
+      writes.length = 0;
+      for (let i = 0; i < 10; i += 1) {
+        store.upsertPatientLabHistorySet('p1', { id: 's' + i, date: '2026-06-08' }, Date.now());
+      }
+      await store.flush();
+      assert.ok(writes.length <= 2, 'expected coalesced writes, got ' + writes.length);
+    } finally {
+      atomicJson.writeJsonAtomic = orig;
+    }
+  });
+
+  it('shard-only write: lab upsert touches one bundle path', async () => {
+    const store = createStore('shard-lab');
+    await store.ready();
+    const room = store.createRoom('Sala 1');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [{ patient: { id: 'p1' }, note: {} }],
+    });
+    await store.flush();
+    const bundlePath = path.join(hostStateDir, 'bundles', `${room.id}.json`);
+    const metaPath = path.join(hostStateDir, 'meta.json');
+    const bundleMtimeBefore = fs.statSync(bundlePath).mtimeMs;
+    const metaMtimeBefore = fs.statSync(metaPath).mtimeMs;
+    store.upsertPatientLabHistorySet('p1', { id: 's1', date: '2026-06-08' }, Date.now());
+    await store.flush();
+    assert.ok(fs.statSync(bundlePath).mtimeMs >= bundleMtimeBefore);
+    assert.ok(fs.statSync(metaPath).mtimeMs >= metaMtimeBefore);
+    const onDisk = JSON.parse(fs.readFileSync(bundlePath, 'utf8'));
+    assert.ok(!onDisk.entries[0].labHistory);
+    assert.ok(onDisk.entries[0].labMeta);
+    assert.strictEqual(onDisk.entries[0].labMeta.labSetCount, 1);
+    const sidecarPath = path.join(hostStateDir, 'labs', room.id, 'p1.json');
+    assert.ok(fs.existsSync(sidecarPath));
+    const sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
+    assert.strictEqual(sidecar.orderedIds[0], 's1');
+    const apiBundle = store.getRoomSyncBundleForApi(room.id);
+    assert.strictEqual(apiBundle.entries[0].labHistory[0].id, 's1');
+    const audit = store.getLastCommitAudit();
+    assert.ok(audit.shards.includes(`labs:${room.id}:p1`));
+    assert.ok(audit.shards.includes(`bundle:${room.id}`));
+    assert.ok(audit.shards.includes('meta'));
+    assert.strictEqual(audit.persistGeneration, 'json-sharded');
+  });
+
+  it('lab upsert appends lab_upsert delta log entry for Flow B replay', () => {
+    const store = createStore('lab-delta');
+    const room = store.createRoom('Sala 1');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [{ patient: { id: 'p1' }, note: {} }],
+    });
+    const set = { id: 'ls_1', date: '2026-06-08', values: { na: 140 } };
+    const ts = Date.now();
+    const out = store.upsertPatientLabHistorySet('p1', set, ts, 'lc_a');
+    assert.strictEqual(out.ok, true);
+    assert.strictEqual(out.deltaSeq, 1);
+    const replay = store.getRoomDeltaLog(room.id, 0);
+    assert.strictEqual(replay.ok, true);
+    assert.strictEqual(replay.deltas.length, 1);
+    assert.strictEqual(replay.deltas[0].type, 'lab_upsert');
+    assert.strictEqual(replay.deltas[0].setId, 'ls_1');
+    assert.strictEqual(replay.deltas[0].patientId, 'p1');
+    assert.strictEqual(replay.deltas[0].originClientId, 'lc_a');
+    assert.strictEqual(replay.deltas[0].clientTimestamp, ts);
+    assert.deepStrictEqual(replay.deltas[0].set, set);
+    assert.strictEqual(replay.latestDeltaSeq, 1);
+  });
+
+  it('stale lab upsert does not append another delta log entry', () => {
+    const store = createStore('lab-delta-stale');
+    const room = store.createRoom('Sala 1');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [{ patient: { id: 'p1' }, note: {} }],
+    });
+    const set = { id: 'ls_1', date: '2026-06-08', values: { na: 140 } };
+    store.upsertPatientLabHistorySet('p1', set, 200, 'lc_a');
+    store.upsertPatientLabHistorySet(
+      'p1',
+      { id: 'ls_1', date: '2026-06-08', values: { na: 120 } },
+      100,
+      'lc_b'
+    );
+    const replay = store.getRoomDeltaLog(room.id, 0);
+    assert.strictEqual(replay.ok, true);
+    assert.strictEqual(replay.deltas.length, 1);
+    assert.strictEqual(replay.deltas[0].set.values.na, 140);
   });
 
   it('createHostStore inicializa teamCodeHash y listas vacías', () => {
     const { hashTeamCode } = require('./team-code.js');
-    const store = createHostStore({ filePath, teamCodePlain: 'abc' });
+    const store = createStore('abc');
     const st = store.getState();
     assert.strictEqual(st.patients.length, 0);
     assert.strictEqual(st.rooms.length, 0);
@@ -25,7 +173,7 @@ describe('host-store', () => {
   });
 
   it('upsertPatient crea y actualiza con versión', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'x' });
+    const store = createStore('x');
     const p1 = store.upsertPatient(
       { id: 'p1', nombre: 'Uno', registro: 'R1', edad: '30', sexo: 'F' },
       null
@@ -42,7 +190,7 @@ describe('host-store', () => {
   });
 
   it('patient delete removes chart from all room sync-bundle entries', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'del' });
+    const store = createStore('del');
     const room = store.createRoom('Sala 2');
     store.upsertPatient({ id: 'p-del', nombre: 'BORRAR', registro: 'R99', edad: '40', sexo: 'M' }, null);
     store.putRoomSyncBundle(room.id, {
@@ -78,7 +226,7 @@ describe('host-store', () => {
   });
 
   it('createRoom y listRooms', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'z' });
+    const store = createStore('z');
     assert.strictEqual(store.listRooms().length, 0);
     const r = store.createRoom('Sala E');
     assert.ok(r.id);
@@ -90,17 +238,18 @@ describe('host-store', () => {
 
   it('reconciles teamCodeHash when lan-team-code changed without wiping host data', async () => {
     const { hashTeamCode } = require('./team-code.js');
-    const storeA = createHostStore({ filePath, teamCodePlain: 'old-code' });
+    const storeA = createStore('old-code');
     storeA.createRoom('Sala previa');
     assert.strictEqual(storeA.listRooms().length, 1);
     await storeA.flush();
-    const storeB = createHostStore({ filePath, teamCodePlain: 'new-code' });
+    const storeB = createStore('new-code');
+    await storeB.ready();
     const st = storeB.getState();
     assert.strictEqual(st.rooms.length, 1);
     assert.strictEqual(st.rooms[0].displayName, 'Sala previa');
     assert.strictEqual(st.teamCodeHash, hashTeamCode('new-code'));
     await storeB.flush();
-    const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const preserved = JSON.parse(fs.readFileSync(path.join(hostStateDir, 'meta.json'), 'utf8'));
     assert.strictEqual(preserved.rooms.length, 1);
     assert.strictEqual(preserved.teamCodeHash, hashTeamCode('new-code'));
   });
@@ -119,21 +268,19 @@ describe('host-store', () => {
       }),
       'utf8'
     );
-    const store = createHostStore({
-      filePath,
-      teamCodePlain: newCode,
-    });
+    const store = createHostStore({ filePath, hostStateDir, teamCodePlain: newCode });
+    await store.ready();
     const st = store.getState();
     assert.strictEqual(st.patients.length, 1);
     assert.strictEqual(st.teamCodeHash, hashTeamCode(newCode));
     await store.flush();
-    const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const preserved = JSON.parse(fs.readFileSync(path.join(hostStateDir, 'meta.json'), 'utf8'));
     assert.strictEqual(preserved.patients.length, 1);
     assert.strictEqual(preserved.teamCodeHash, hashTeamCode(newCode));
   });
 
   it('putRoomSyncBundle applies LWW on stale entity version', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const store = createStore('b');
     const r = store.createRoom('Sala sync');
     store.putRoomSyncBundle(r.id, {
       baseRevision: 0,
@@ -171,7 +318,7 @@ describe('host-store', () => {
   });
 
   it('putRoomSyncBundle merges disjoint todo keys', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const store = createStore('b');
     const r = store.createRoom('Sala');
     store.putRoomSyncBundle(r.id, {
       baseRevision: 0,
@@ -191,7 +338,7 @@ describe('host-store', () => {
   });
 
   it('getEntity / setEntity round-trip for room todo', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'test' });
+    const store = createStore('test');
     const room = store.createRoom('UCI');
     store.setEntity({
       roomId: room.id,
@@ -210,7 +357,7 @@ describe('host-store', () => {
   });
 
   it('historiaClinica entity get/set and archive', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'hc' });
+    const store = createStore('hc');
     const r = store.createRoom('Sala');
     store.setEntity({
       roomId: r.id,
@@ -243,7 +390,7 @@ describe('host-store', () => {
   });
 
   it('getEntity historiaClinica falls back to bundle.entries patient snapshot', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'hc-entries' });
+    const store = createStore('hc-entries');
     const r = store.createRoom('Sala');
     store.putRoomSyncBundle(r.id, {
       baseRevision: 0,
@@ -274,7 +421,7 @@ describe('host-store', () => {
   });
 
   it('putRoomSyncBundle persiste manejo', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const store = createStore('b');
     const r = store.createRoom('Sala');
     store.putRoomSyncBundle(r.id, {
       baseRevision: 0,
@@ -296,12 +443,13 @@ describe('host-store', () => {
 
   it('round-trips host state through SQLCipher when dbManager is unlocked', async () => {
     const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
-    const { readHostState } = await import('../lib/db/lan-host-persistence.mjs');
+    const { loadCacheFromSql } = require('./persistence/sqlite-host-repositories.js');
     const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-host-db-'));
     const mgr = await createUnlockedDbManager(dbDir, () => 'lan-host-db-test');
     try {
       const store = createHostStore({
         filePath,
+        hostStateDir,
         teamCodePlain: 'db-roundtrip',
         dbManager: mgr,
         getClientId: () => 'lan-host-db-test',
@@ -309,19 +457,22 @@ describe('host-store', () => {
       await store.ready();
       const room = store.createRoom('Sala DB');
       await store.flush();
-      const row = readHostState(mgr.getDb());
+      const { hashTeamCode } = require('./team-code.js');
+      const row = loadCacheFromSql(mgr.getDb(), hashTeamCode('db-roundtrip'));
       assert.ok(row);
       assert.strictEqual(row.rooms.length, 1);
       assert.strictEqual(row.rooms[0].displayName, 'Sala DB');
-      const audit = mgr
+      const commitAudit = store.getLastCommitAudit();
+      assert.strictEqual(commitAudit.persistGeneration, 'sql-v3');
+      const forensicRow = mgr
         .getDb()
         .prepare(
           `SELECT event_type, client_id FROM forensic_audit_chain
            WHERE event_type = 'lan.host.commit' ORDER BY id DESC LIMIT 1`
         )
         .get();
-      assert.ok(audit);
-      assert.strictEqual(audit.client_id, 'lan-host-db-test');
+      assert.ok(forensicRow);
+      assert.strictEqual(forensicRow.client_id, 'lan-host-db-test');
       mgr.lock();
       const lockedStore = createHostStore({
         filePath,

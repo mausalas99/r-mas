@@ -155,6 +155,7 @@ appExpress.use(express.static(path.join(__dirname, 'public')));
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
+const lanHostStateDir = path.join(userData, 'lan-host');
 const lanShiftPinPath = path.join(userData, 'lan-shift-pin.json');
 const lanWardHostRegistryPath = path.join(userData, 'lan-ward-host-registry.json');
 
@@ -178,6 +179,7 @@ if (lanBoot.rotated && lanDbManager && typeof lanDbManager.schedulePendingAudit 
 }
 const lanStore = createHostStore({
   filePath: lanStatePath,
+  hostStateDir: lanHostStateDir,
   teamCodePlain: LAN_TEAM_CODE,
   dbManager: lanDbManager,
 });
@@ -252,15 +254,17 @@ appExpress.post('/generate-censo', generateLimiter, documentExportAuth, async (r
 });
 
 appExpress.post('/generate-receta-hu', generateLimiter, documentExportAuth, async (req, res) => {
-  const { patient, receta, doctorName, cedulaProfesional, outputDir } = req.body;
+  const { patient, receta, doctorName, cedulaProfesional } = req.body;
   try {
-    const result = await docExport.exportRecetaHuPdf(
-      { patient, receta, doctorName, cedulaProfesional, outputDir },
-      exportPaths()
-    );
-    res.json(result);
+    const { buffer, fileName } = await docExport.exportRecetaHuPdf({
+      patient,
+      receta,
+      doctorName,
+      cedulaProfesional,
+    });
+    sendPdfBuffer(res, { buf: buffer, fileName, type: 'receta-hu', patient });
   } catch (e) {
-    docExportHttpError(res, e);
+    docExportHttpError(res, e, { type: 'receta-hu', patient });
   }
 });
 
@@ -352,6 +356,7 @@ appExpress.use(
         shiftPinActive: !!(shiftPinStore.getStatus()?.active),
         clientId: (readHostClinicalMeta(userData) || {}).clientId || '',
         revision,
+        repairedRoomCount: lanStore.getRepairedRoomCount?.() ?? 0,
       };
     },
     sseBroadcast: (channel, obj) => sseHub.broadcast(channel, obj),

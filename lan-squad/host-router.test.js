@@ -758,6 +758,7 @@ function makeTypedMutationTestApp(storeOverrides = {}) {
       (() => ({ ok: true, version: 2, revision: 2, roomId: 'r1' })),
     putRoomSyncBundle: storeOverrides.putRoomSyncBundle ?? (() => ({ bundle: { revision: 1 } })),
     materializeRoomViews: storeOverrides.materializeRoomViews ?? (() => ({})),
+    awaitDurableCommit: storeOverrides.awaitDurableCommit ?? (async () => {}),
     ...storeOverrides,
   };
 
@@ -841,6 +842,50 @@ describe('PUT /patients/:id/nota', () => {
     assertStrict.equal(res.status, 200);
     assertStrict.equal(res.body.ok, true);
     assertStrict.ok(typeof res.body.version === 'number');
+  });
+
+  it('returns 200 only after durable commit (reload from disk)', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-nota-durable-'));
+    const statePath = path.join(dir, 'state.json');
+    const code = 'test-team-' + Date.now() + '-'.repeat(20);
+    const hostStateDir = path.join(dir, 'lan-host');
+    const store = createHostStore({ filePath: statePath, hostStateDir, teamCodePlain: code });
+    await store.ready();
+    const room = store.createRoom('sala-1');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [{ patient: { id: 'p1' }, note: { texto: 'a' } }],
+    });
+    await store.flush();
+    const app = mountLanRouter(store);
+    const server = http.createServer(app);
+    await listenServer(server);
+    try {
+      const { port } = server.address();
+      const res = await fetch(`http://127.0.0.1:${port}/api/lan/v1/patients/p1/nota`, {
+        method: 'PUT',
+        headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: { texto: 'b' },
+          expectedVersion: 0,
+          clientId: 'c1',
+          clientTimestamp: Date.now(),
+        }),
+      });
+      const body = await res.json();
+      assertStrict.equal(res.status, 200);
+      assertStrict.equal(body.ok, true);
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(hostStateDir, 'bundles', `${room.id}.json`), 'utf8')
+      );
+      const entry = raw.entries.find((e) => e.patient.id === 'p1');
+      assertStrict.equal(entry.note.texto, 'b');
+    } finally {
+      await tearDownLanTest({ server, dir, store });
+    }
   });
 });
 

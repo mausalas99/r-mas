@@ -14,6 +14,7 @@ import { migratePatientDiagnosticosFromVpo } from './patient-diagnosticos.mjs';
 import { setAsyncButtonLoading } from './ui-motion.mjs';
 import {
   exportWithOutputDirFallback,
+  guardDocExportBlocked,
   saveOutputDirSelection,
 } from './document-export-client.mjs';
 
@@ -155,10 +156,7 @@ function closeCensoModal() {
 export function exportCensoPdf(includeArchived) {
   if (!isModeSala(rt.getSettings())) return;
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline && rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
-    rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
-    return;
-  }
+  if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   preparePatientsForCensus();
   var payload = buildCensusPayload({
     settings: rt.getSettings(),

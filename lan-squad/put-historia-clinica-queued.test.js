@@ -11,7 +11,9 @@ describe('putHistoriaClinicaQueued', () => {
   it('mutation and audit commit in one queue transaction', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hc-queue-'));
     const filePath = path.join(dir, 'state.json');
-    const store = createHostStore({ filePath, teamCodePlain: 'tok' });
+    const hostStateDir = path.join(dir, 'lan-host');
+    const store = createHostStore({ filePath, hostStateDir, teamCodePlain: 'tok' });
+    await store.ready();
     const room = store.createRoom('Sala');
     const resolver = createConflictResolver({ store });
     await store.flush();
@@ -39,10 +41,10 @@ describe('putHistoriaClinicaQueued', () => {
     assert.strictEqual(entry.detail.entityVersion, 1);
     assert.strictEqual(entry.detail.safety[0].ruleId, 'x');
 
-    const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    assert.strictEqual(onDisk.roomSyncBundles[room.id].entities['hc:p1'].data.app, 'metformina');
-    assert.ok(
-      onDisk.roomSyncBundles[room.id].audit_log.some((e) => e.action === 'historia_clinica.save')
+    const onDisk = JSON.parse(
+      fs.readFileSync(path.join(hostStateDir, 'bundles', `${room.id}.json`), 'utf8')
     );
+    assert.strictEqual(onDisk.entities['hc:p1'].data.app, 'metformina');
+    assert.ok(onDisk.audit_log.some((e) => e.action === 'historia_clinica.save'));
   });
 });

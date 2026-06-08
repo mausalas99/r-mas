@@ -1,0 +1,23 @@
+---
+type: "core"
+name: "Logic Index"
+status: "stable"
+description: "Parsers, sync engines, and algorithm modules."
+---
+
+# Logic Index
+
+| Module | Path | Input → output |
+|--------|------|----------------|
+| SOME lab parser | `public/js/labs.js`, `labs-*.mjs` | Raw SOME text → structured lab lines |
+| Lab historial | `lab-history-auto-store-core.mjs` | Parsed labs → per-patient history |
+| BH trends | `public/js/tend-core.mjs`, `labs-bh-trend-parse.mjs` | History → chart series |
+| Cultivos | `public/js/labs-cultivo.mjs` | SOME micro sections → isolate rows |
+| Doc generators | `lib/doc-generators/note.js`, etc. | Form state → `.docx` bytes |
+| LAN bundle merge | `lan-squad/bundle-merge.js` | Peer bundles → merged turn state |
+| Conflict LWW | `lan-squad/lww-utils.js`, `lan-conflict-*` | Overlapping edits → winner |
+| HC compile | `lib/historia-clinica/compile-narrative.mjs` | HC sections → narrative text |
+| Clinical safety | `lib/clinical-safety-rules/evaluate.mjs` | Calc input → pass / block |
+| Drive import | `lib/drive-import/*.mjs` | Google Doc → HC/eventualidades patch |
+
+**Hub:** [docs/core/08-core-architecture.md](../core/08-core-architecture.md)

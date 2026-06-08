@@ -430,3 +430,137 @@ test('getRoomSyncBundle refreshes stale clinicalOps cache from DB export', async
     fs.rmSync(dbDir, { recursive: true, force: true });
   }
 });
+
+test('sql-v3 path does not write monolithic lan_host_state row on commit', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-sql-v3-'));
+  const mgr = await createUnlockedDbManager(dbDir);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-sql-v3-state-'));
+  const statePath = path.join(dir, 'state.json');
+  const hostStateDir = path.join(dir, 'lan-host');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({
+    filePath: statePath,
+    hostStateDir,
+    teamCodePlain: code,
+    dbManager: mgr,
+  });
+
+  try {
+    await store.ready();
+    const room = store.createRoom('SQL v3');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      entries: [{ patient: { id: 'p1' }, note: {} }],
+    });
+    await store.flush();
+    const row = mgr.getDb().prepare('SELECT json FROM lan_host_state WHERE id = 1').get();
+    assert.equal(row, undefined);
+    const meta = mgr.getDb().prepare('SELECT migration_generation FROM lan_host_meta WHERE id = 1').get();
+    assert.equal(meta.migration_generation, 3);
+    const audit = store.getLastCommitAudit();
+    assert.strictEqual(audit.persistGeneration, 'sql-v3');
+  } finally {
+    mgr.lock();
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});
+
+test('locked DB host keeps json-sharded persistence (no SQL v3 regression)', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-locked-shard-'));
+  const statePath = path.join(dir, 'state.json');
+  const hostStateDir = path.join(dir, 'lan-host');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, hostStateDir, teamCodePlain: code });
+
+  try {
+    await store.ready();
+    const room = store.createRoom('Shard locked');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      entries: [{ patient: { id: 'p1' }, note: {} }],
+    });
+    store.upsertPatientLabHistorySet('p1', { id: 'lab-1', date: '2026-06-08' }, Date.now());
+    await store.flush();
+    assert.ok(fs.existsSync(path.join(hostStateDir, 'meta.json')));
+    assert.ok(fs.existsSync(path.join(hostStateDir, 'bundles', `${room.id}.json`)));
+    const audit = store.getLastCommitAudit();
+    assert.strictEqual(audit.persistGeneration, 'json-sharded');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('sql-v3 import from JSON shards preserves GET sync-bundle assembly', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const { writeMeta } = require('./persistence/json-meta-repository.js');
+  const { writeRoomBundle } = require('./persistence/json-room-bundle-repository.js');
+  const { writeLabSidecarSync } = require('./persistence/lab-sidecar.js');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-sql-import-'));
+  const hostStateDir = path.join(dir, 'lan-host');
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const { hashTeamCode } = require('./team-code.js');
+  const teamCodeHash = hashTeamCode(code);
+
+  await writeMeta(hostStateDir, {
+    version: 2,
+    teamCodeHash,
+    patients: [{ id: 'p1', nombre: 'Uno' }],
+    rooms: [{ id: 'sala-1', displayName: 'Sala 1', version: 1 }],
+    roomRevisions: { 'sala-1': 1 },
+    labSidecarVersion: 1,
+  });
+  await writeRoomBundle(hostStateDir, 'sala-1', {
+    revision: 1,
+    entityVersions: {},
+    agenda: [],
+    todos: {},
+    entries: [
+      {
+        patient: { id: 'p1' },
+        note: {},
+        labMeta: { labHistoryVersion: 1, labSetCount: 1 },
+      },
+    ],
+    audit_log: [],
+    entities: {},
+  });
+  writeLabSidecarSync(hostStateDir, 'sala-1', 'p1', {
+    setsById: { s1: { id: 's1', date: '2026-06-08' } },
+    orderedIds: ['s1'],
+    updatedAt: '2026-06-08T00:00:00.000Z',
+  });
+
+  const jsonStore = createHostStore({ filePath: statePath, hostStateDir, teamCodePlain: code });
+  await jsonStore.ready();
+  const jsonBundle = jsonStore.getRoomSyncBundleForApi('sala-1');
+
+  const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-sql-import-db-'));
+  const mgr = await createUnlockedDbManager(dbDir);
+  const sqlStore = createHostStore({
+    filePath: statePath,
+    hostStateDir,
+    teamCodePlain: code,
+    dbManager: mgr,
+  });
+
+  try {
+    await sqlStore.ready();
+    assert.ok(fs.existsSync(path.join(hostStateDir, '.p3-sqlite-backup', 'meta.json')));
+    const sqlBundle = sqlStore.getRoomSyncBundleForApi('sala-1');
+    assert.deepStrictEqual(
+      JSON.stringify(sqlBundle.entries[0].labHistory),
+      JSON.stringify(jsonBundle.entries[0].labHistory)
+    );
+    assert.strictEqual(sqlBundle.revision, jsonBundle.revision);
+  } finally {
+    mgr.lock();
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});

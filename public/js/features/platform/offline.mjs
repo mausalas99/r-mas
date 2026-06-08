@@ -1,4 +1,5 @@
 /** Pending jobs, RPC offline/health, idle lock, privacy wipe. */
+import { canGenerateDocumentsOffline } from '../../document-export-client.mjs';
 import { closeSettingsDropdown } from '../settings-help/settings-dropdown.mjs';
 import { AUDIT_LOG_KEY, IDLE_LOCK_DEBOUNCE_MS, IDLE_LOCK_HASH_LS_KEY, IDLE_LOCK_LS_KEY, IDLE_LOCK_VALID_MINUTES } from './shared.mjs';
 import { addAuditEntry } from './audit.mjs';
@@ -45,32 +46,27 @@ function decrementPendingJobs() {
 
 // ── Modo offline explícito ────────────────────────────────────────
 var rpcOffline = false;
+function syncDocExportButtonOfflineState(btn) {
+  if (!btn) return;
+  if (rpcOffline && !canGenerateDocumentsOffline()) {
+    btn.disabled = true;
+    btn.setAttribute('aria-disabled', 'true');
+    btn.dataset.rpcOffline = '1';
+    return;
+  }
+  if (btn.dataset.rpcOffline) delete btn.dataset.rpcOffline;
+  if (!btn.classList.contains('loading')) {
+    btn.disabled = false;
+    btn.removeAttribute('aria-disabled');
+  }
+}
+
 function syncOfflineButtonStates() {
   try {
-    var desktopDocIpc = !!(window.electronAPI && window.electronAPI.generateDocument);
-    ['btn-gen', 'btn-gen-ind'].forEach(function(id) {
-      var b = document.getElementById(id);
-      if (!b) return;
-      if (rpcOffline && !desktopDocIpc) {
-        b.disabled = true;
-        b.setAttribute('aria-disabled', 'true');
-        b.dataset.rpcOffline = '1';
-      } else {
-        if (b.dataset.rpcOffline) delete b.dataset.rpcOffline;
-        if (!b.classList.contains('loading')) {
-          b.disabled = false;
-          b.removeAttribute('aria-disabled');
-        }
-      }
+    var exportButtons = document.querySelectorAll('.rpc-doc-export, #censo-export-confirm');
+    exportButtons.forEach(function (b) {
+      syncDocExportButtonOfflineState(b);
     });
-    var recetaBtn = document.getElementById('btn-receta-hu-export');
-    if (recetaBtn) {
-      delete recetaBtn.dataset.rpcOffline;
-      if (!recetaBtn.classList.contains('loading')) {
-        recetaBtn.disabled = false;
-        recetaBtn.removeAttribute('aria-disabled');
-      }
-    }
   } catch (e) {
     console.error('syncOfflineButtonStates error:', e && e.message);
   }
@@ -81,8 +77,7 @@ function setRpcOffline(offline) {
   setRpcOfflineVisible(rpcOffline);
   syncOfflineButtonStates();
   if (!prev && rpcOffline) {
-    var desktopDocIpc = !!(window.electronAPI && window.electronAPI.generateDocument);
-    if (!desktopDocIpc) {
+    if (!canGenerateDocumentsOffline()) {
       try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) {}
     }
   } else if (prev && !rpcOffline) {

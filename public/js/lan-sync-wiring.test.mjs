@@ -53,6 +53,13 @@ describe('LAN module boot wiring', () => {
     assert.ok(wireHandlersIdx < initIdx, 'room wire handlers before init');
   });
 
+  it('applyLiveSyncDeltas handles lab_upsert delta log entries (P2b)', () => {
+    assert.match(lanSyncFeature, /entry\.type === 'lab_upsert'/);
+    assert.match(lanSyncFeature, /applyLabUpsertDelta/);
+    assert.match(lanSyncFeature, /mergeLabHistorySets/);
+    assert.match(lanSyncPush, /applyLiveSyncDeltas/);
+  });
+
   it('push bridge includes fetchAndApplyClinicalOpsFromHost for reconcile', () => {
     const block = lanSyncFeature.slice(
       lanSyncFeature.indexOf('registerLanSyncPushBridge({'),

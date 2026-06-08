@@ -19,6 +19,7 @@ import {
 import { preloadNoteDxFromPatient } from "../patient-diagnosticos.mjs";
 import {
   exportWithOutputDirFallback,
+  guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
 
@@ -150,10 +151,7 @@ function removeTx(i) { if (!notes[aid()]||notes[aid()].tratamiento.length<=1) re
 // ── Word nota ───────────────────────────────────────────────────────────
 function generateWord() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
-    rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
-    return;
-  }
+  if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
   var note = notes[aid()]; if (!note) return;
   var btn = document.getElementById('btn-gen');
@@ -318,10 +316,7 @@ function applyExtraTemplateFromIndica() {
 // ── Word indicaciones ────────────────────────────────────────────────
 function generateIndicaciones() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
-    rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
-    return;
-  }
+  if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
   var ind = indicaciones[aid()]; if (!ind) return;
   var btn = document.getElementById('btn-gen-ind');

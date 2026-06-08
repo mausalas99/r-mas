@@ -26,7 +26,9 @@ import { liveSyncDeletePatchesFromEntityMap } from "../../live-sync-room.mjs";
 import {
   mergeEventualidades,
   mergeHistoriaClinica,
+  mergeLabHistorySets,
 } from "../../lan-patient-merge.mjs";
+import { bumpLabHistoryRevision } from "../../lab-history-cache.mjs";
 import {
   buildLiveSyncPatientIdMap,
   remapTodosPatientIds,
@@ -1412,6 +1414,35 @@ async function applyLiveSyncDeltaApplied(msg) {
   syncHostBundleEntityFromApplied(msg);
 }
 
+async function applyLabUpsertDelta(entry) {
+  if (!entry || isPitchPatientIsolationActive()) return;
+  if (entry.roomId && activeLiveSyncRoomId && entry.roomId !== activeLiveSyncRoomId) return;
+  var pid = String(entry.patientId || '').trim();
+  var set = entry.set;
+  if (!pid || !set || !set.id) return;
+  if (String(entry.originClientId || '') === String(getLanClientId())) {
+    var setId = String(entry.setId || set.id);
+    var existing = (labHistory[pid] || []).find(function (s) {
+      return s && String(s.id) === setId;
+    });
+    if (existing && Number(existing._clientTimestamp || 0) >= Number(entry.clientTimestamp || 0)) {
+      return;
+    }
+  }
+  await withRemoteDeltaApply(async function () {
+    var merged = mergeLabHistorySets(labHistory[pid] || [], [set]);
+    if (lanJsonEqual(labHistory[pid], merged)) return;
+    labHistory[pid] = merged;
+    bumpLabHistoryRevision(pid);
+    saveState({ immediate: true });
+    if (runtime.getActiveId() === pid) {
+      try {
+        runtime.renderLabHistoryPanel();
+      } catch (_eLab) {}
+    }
+  });
+}
+
 /**
  * Apply a batch of delta-log entries from GET /deltas (Flow B catch-up).
  * @param {string} roomId
@@ -1429,6 +1460,10 @@ async function applyLiveSyncDeltas(roomId, deltas) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('lan-command-applied', { detail: entry }));
       }
+      continue;
+    }
+    if (entry && entry.type === 'lab_upsert') {
+      await applyLabUpsertDelta(Object.assign({ roomId: rid }, entry));
       continue;
     }
     await applyLiveSyncDeltaApplied(Object.assign({ roomId: rid }, entry));

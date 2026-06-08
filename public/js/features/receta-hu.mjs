@@ -10,6 +10,11 @@ import {
   normalizeRecetaHuConsultServices,
   normalizeRecetaHuDraft,
 } from '../receta-hu-core.mjs';
+import {
+  exportWithOutputDirFallback,
+  guardDocExportBlocked,
+  saveOutputDirSelection,
+} from '../document-export-client.mjs';
 
 /** @type {{
  *   getActiveId(): string|null,
@@ -654,10 +659,7 @@ function exportRecetaHuPdf() {
     if (!recetaHuPanelVisible()) {
       ensureRecetaHuPanelVisible();
     }
-    if (rt.isRpcOffline && rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
-      rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
-      return;
-    }
+    if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
     var pid = aid();
     if (!pid) {
       rt.showToast('Selecciona un paciente', 'error');
@@ -691,7 +693,7 @@ function exportRecetaHuPdf() {
     setAsyncButtonLoading(btn, true, { loadingText: 'Exportando…' });
     rt.incrementPendingJobs();
 
-    function buildPayload(outputDir) {
+    function buildPayload() {
       return {
         patient: body.patient,
         receta: {
@@ -704,30 +706,43 @@ function exportRecetaHuPdf() {
         },
         doctorName: body.doctorName,
         cedulaProfesional: body.cedulaProfesional,
-        outputDir: outputDir || '',
       };
     }
 
-    rt.requestDocumentJson('/generate-receta-hu', buildPayload((st.outputDir || '').trim()))
-      .then(function (response) {
-        return rt.handleDocumentGenerateResponse({
-          response: response,
-          url: '/generate-receta-hu',
-          buildPayload: buildPayload,
-          onSuccess: function (data) {
-            rt.showToast('Receta HU guardada: ' + (data && data.fileName ? data.fileName : 'PDF'), 'success');
-          },
-          onError: function (message) {
-            rt.showToast('Error: ' + message, 'error');
-          },
-          onPrompt: function () {
-            rt.showToast('Selecciona una carpeta para guardar el PDF.', 'error');
-          },
-          onCancel: function () {
-            rt.showToast('No se guardó el PDF: no se eligió carpeta.', 'error');
-          },
+    function selectOutputDir() {
+      if (!window.electronAPI || !window.electronAPI.selectOutputDir) {
+        return Promise.resolve(undefined);
+      }
+      return window.electronAPI.selectOutputDir();
+    }
+
+    exportWithOutputDirFallback({
+      url: '/generate-receta-hu',
+      buildPayload: buildPayload,
+      defaultFileName: 'receta-hu.pdf',
+      selectOutputDir: selectOutputDir,
+      saveOutputDir: function (dir) {
+        saveOutputDirSelection(dir, {
+          getSettings: rt.getSettings,
         });
-      })
+      },
+      onSuccess: function (data) {
+        var name =
+          data && (data.fileName || data.path)
+            ? data.fileName || String(data.path).split(/[/\\]/).pop()
+            : 'PDF';
+        rt.showToast('Receta HU guardada: ' + name, 'success');
+      },
+      onPrompt: function () {
+        rt.showToast('Selecciona una carpeta para guardar el PDF.', 'error');
+      },
+      onCancel: function () {
+        rt.showToast('No se guardó el PDF: no se eligió carpeta.', 'error');
+      },
+      onError: function (message) {
+        rt.showToast('Error: ' + message, 'error');
+      },
+    })
       .catch(function () {
         rt.showToast('Error de conexión al generar el PDF', 'error');
       })

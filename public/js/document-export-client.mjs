@@ -205,6 +205,26 @@ export function canGenerateDocumentsOffline() {
   return canUseDesktopDocumentIpc();
 }
 
+/** @returns {boolean} true when export must be blocked (no IPC and local server offline). */
+export function isDocExportBlockedByLocalServer(isRpcOffline) {
+  return !!isRpcOffline && !canGenerateDocumentsOffline();
+}
+
+/**
+ * @param {{ isRpcOffline?: () => boolean, showToast?: (msg: string, type?: string) => void }} deps
+ * @returns {boolean} true when the action was blocked
+ */
+export function guardDocExportBlocked(deps) {
+  const offlineFn = deps && deps.isRpcOffline;
+  const isOffline = typeof offlineFn === 'function' ? offlineFn() : false;
+  if (!isDocExportBlockedByLocalServer(isOffline)) return false;
+  const toast = (deps && deps.showToast) || docExportRt.showToast;
+  if (typeof toast === 'function') {
+    toast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
+  }
+  return true;
+}
+
 export function syncApprovedOutputDir(dir) {
   if (window.electronAPI?.setApprovedOutputDir) {
     return window.electronAPI.setApprovedOutputDir(dir || '');

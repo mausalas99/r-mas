@@ -549,8 +549,11 @@ ipcMain.handle('generate-document', async (_e, { kind, payload }) => {
         logDocExport({ type: 'censo', status: 200, bytes: buffer.length });
         return { ok: true, fileName, buffer };
       }
-      case 'receta-hu':
-        return await docExport.exportRecetaHuPdf(payload || {}, paths);
+      case 'receta-hu': {
+        const { buffer, fileName } = await docExport.exportRecetaHuPdf(payload || {});
+        logDocExport({ type: 'receta-hu', patient: payload && payload.patient, status: 200, bytes: buffer.length });
+        return { ok: true, fileName, buffer };
+      }
       default:
         return { ok: false, error: 'Tipo de documento no soportado.' };
     }
@@ -606,9 +609,17 @@ ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
 /** Borra el estado del host LAN (salas/pacientes en ese JSON). Útil tras error HTTP 500 por cambio de código. */
 ipcMain.handle('lan-reset-squad-host-state', () => {
   try {
-    const filePath = path.join(app.getPath('userData'), 'lan-squad-host-state.json');
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    const userData = app.getPath('userData');
+    const filePath = path.join(userData, 'lan-squad-host-state.json');
+    const hostStateDir = path.join(userData, 'lan-host');
+    if (fs.existsSync(hostStateDir)) {
+      fs.rmSync(hostStateDir, { recursive: true, force: true });
+    }
+    for (const suffix of ['', '.pre-shard-backup', '.migrated']) {
+      const p = suffix ? `${filePath}${suffix}` : filePath;
+      if (fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
     }
     return { ok: true };
   } catch (e) {

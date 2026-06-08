@@ -27,6 +27,7 @@ import { LISTADO_PROBLEMAS_AI_PROMPT } from "../listado-problemas-ai-prompt.mjs"
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
   exportWithOutputDirFallback,
+  guardDocExportBlocked,
   syncApprovedOutputDir,
 } from "../document-export-client.mjs";
 import {
@@ -1125,10 +1126,7 @@ async function copyListadoProblemasAiPrompt() {
 }
 function generateListado() {
   if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline() && !(window.electronAPI && window.electronAPI.generateDocument)) {
-    rt.showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
-    return;
-  }
+  if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   if (!aid()) { rt.showToast('Selecciona un paciente primero', 'error'); return; }
   var patient = patients.find(function(p){ return p.id === aid(); });
   if (!patient) return;
