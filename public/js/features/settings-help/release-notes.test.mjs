@@ -4,6 +4,10 @@ import {
   formatCuratedReleaseNotesPlain,
   formatUpdaterReleaseNotesPlain,
 } from './release-notes.mjs';
+import {
+  RELEASE_NOTES_HIGHLIGHTS,
+  RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
+} from './release-notes-curated.mjs';
 
 describe('release-notes', () => {
   it('resolves curated highlights for v-prefixed version', () => {
@@ -17,13 +21,22 @@ describe('release-notes', () => {
   });
 
   it('uses default when version omitted', () => {
-    const text = formatCuratedReleaseNotesPlain('');
+    const versionKey = Object.entries(RELEASE_NOTES_HIGHLIGHTS).find(
+      ([, notes]) => notes === RELEASE_NOTES_HIGHLIGHTS_DEFAULT
+    )?.[0];
     assert.ok(
-      text.includes('entrega') ||
-        text.includes('censo') ||
-        text.includes('Expediente') ||
-        text.includes('equipo')
+      versionKey,
+      'RELEASE_NOTES_HIGHLIGHTS_DEFAULT must be registered in RELEASE_NOTES_HIGHLIGHTS'
     );
+
+    const text = formatCuratedReleaseNotesPlain('');
+    assert.ok(text.length > 0, 'default release notes must not be empty');
+    assert.ok(!text.includes('Completar antes de publicar'));
+    assert.ok(
+      !RELEASE_NOTES_HIGHLIGHTS_DEFAULT.some((n) => String(n.title || '').trim() === 'TODO'),
+      'default highlights must not use TODO placeholders'
+    );
+    assert.equal(text, formatCuratedReleaseNotesPlain(versionKey));
   });
 
   it('updater prefers curated target version over stale feed notes', () => {
