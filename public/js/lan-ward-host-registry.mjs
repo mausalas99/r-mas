@@ -4,7 +4,11 @@
  */
 import { subnetPrefixFromIpv4 } from '../interno/host-discovery.mjs';
 import { bundledWardHostUrl } from './clinical-settings.mjs';
-import { normalizeLanHostBase, hostIpv4FromBase } from './lan-host-subnet-discovery.mjs';
+import {
+  normalizeLanHostBase,
+  hostIpv4FromBase,
+  isHostOnCurrentSubnets,
+} from './lan-host-subnet-discovery.mjs';
 
 export const WARD_HOST_REGISTRY_KEY = 'rpc-lan-ward-host-registry';
 const VERSION = 1;
@@ -147,13 +151,17 @@ export function mergeWardHostRegistry(other) {
 
 /**
  * @param {number} [maxAgeMs]
+ * @param {{ localSubnetPrefixes?: string[] }} [opts]
  * @returns {string[]}
  */
-export function listWardHostUrlsForProbe(maxAgeMs = DEFAULT_MAX_AGE_MS) {
+export function listWardHostUrlsForProbe(maxAgeMs = DEFAULT_MAX_AGE_MS, opts = {}) {
   const cutoff = tsNow() - maxAgeMs;
   const reg = loadWardHostRegistry();
   const seen = new Set();
   const out = [];
+  const localPrefixes = Array.isArray(opts.localSubnetPrefixes)
+    ? opts.localSubnetPrefixes
+    : null;
   const bundled = normalizeLanHostBase(bundledWardHostUrl());
   if (bundled) {
     seen.add(bundled);
@@ -167,6 +175,13 @@ export function listWardHostUrlsForProbe(maxAgeMs = DEFAULT_MAX_AGE_MS) {
     const url = normalizeLanHostBase(e.url);
     if (!url || seen.has(url)) continue;
     if (Number(e.lastOkAt || e.lastSeenAt || 0) < cutoff) continue;
+    if (
+      localPrefixes &&
+      url !== bundled &&
+      !isHostOnCurrentSubnets(url, localPrefixes)
+    ) {
+      continue;
+    }
     seen.add(url);
     out.push(url);
     if (out.length >= MAX_PROBE_URLS) break;

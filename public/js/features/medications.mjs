@@ -102,15 +102,48 @@ function getMedNotaSelMap(patientId) {
 }
 
 var lastMedPanelPatientId = null;
+var _medPanelCacheKey = "";
+
+function medPanelCacheKey(activeId) {
+  if (!activeId) return "";
+  var block = medRecetaByPatient[activeId];
+  if (!block || !block.items || !block.items.length) {
+    return String(activeId) + "|empty|" + medOutputTab;
+  }
+  var selMap = getMedNotaSelMap(activeId);
+  var suspendHash = 0;
+  var selHash = 0;
+  block.items.forEach(function (it, idx) {
+    if (it.suspendido) suspendHash += 1 << (idx % 24);
+    if (selMap[it.id]) selHash += 1 << (idx % 24);
+  });
+  return (
+    String(activeId) +
+    "|N" +
+    block.items.length +
+    "|F" +
+    (block.fechaActualizacion || "") +
+    "|S" +
+    suspendHash +
+    "|P" +
+    selHash +
+    "|T" +
+    medOutputTab +
+    "|V" +
+    getMedSubview()
+  );
+}
 
 export function renderMedRecetaPanel() {
   initMedPharmSubviewUi();
   var activeId = rt.getActiveId();
   if (activeId !== lastMedPanelPatientId) {
     lastMedPanelPatientId = activeId;
+    _medPanelCacheKey = "";
     closeMedPharmModals();
   }
   if (getMedSubview() === "perfil") {
+    _medPanelCacheKey = "";
     renderMedPharmProfilePanel();
     return;
   }
@@ -120,7 +153,16 @@ export function renderMedRecetaPanel() {
   var outPre = document.getElementById("med-output");
   var outCard = document.getElementById("med-output-section");
   if (!hintEl || !listEl || !outPre) return;
+  var cacheKey = medPanelCacheKey(activeId);
+  if (activeId && _medPanelCacheKey === cacheKey) {
+    if (listEl.querySelector(".med-receta-wrap")) return;
+    var cachedBlock = medRecetaByPatient[activeId];
+    if ((!cachedBlock || !cachedBlock.items || !cachedBlock.items.length) && hintEl.style.display === "block") {
+      return;
+    }
+  }
   if (!activeId) {
+    _medPanelCacheKey = "";
     hintEl.style.display = "block";
     hintEl.textContent = "Selecciona un paciente en la columna izquierda para procesar su receta.";
     if (fechaEl) fechaEl.style.display = "none";
@@ -134,6 +176,7 @@ export function renderMedRecetaPanel() {
   restoreMedInputForPatient(activeId);
   var block = medRecetaByPatient[activeId];
   if (!block || !block.items || !block.items.length) {
+    _medPanelCacheKey = cacheKey;
     hintEl.style.display = "block";
     hintEl.textContent =
       "Pega el listado del hospital arriba y pulsa Receta. Cada día puedes volver a pegar; se guarda la fecha del recorte.";
@@ -145,6 +188,10 @@ export function renderMedRecetaPanel() {
     if (isPaseMode()) renderPaseBoard();
     return;
   }
+  if (_medPanelCacheKey === cacheKey && listEl.querySelector(".med-receta-wrap")) {
+    return;
+  }
+  _medPanelCacheKey = cacheKey;
   hintEl.style.display = "none";
   if (fechaEl) {
     fechaEl.style.display = "block";

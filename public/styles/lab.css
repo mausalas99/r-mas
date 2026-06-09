@@ -201,7 +201,7 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
   min-width: 0;
   width: 100%;
   word-break: break-word;
-  border: 1px solid transparent; border-radius: var(--radius-md);
+  border: 1px solid transparent; border-radius: var(--radius-control);
   padding: 6px 8px; font-size: 14px; font-family: inherit; line-height: 1.5;
   font-weight: 400; color: var(--text); background: transparent;
   cursor: text;
@@ -249,19 +249,19 @@ html.dark .todo-text-input:focus {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
   font-size: 14px;
 }
 
-.todo-add-row > button {
+.todo-add-row > button:not(.todo-prio-chip) {
   justify-self: stretch;
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--action);
   color: white;
   cursor: pointer;
@@ -1242,7 +1242,7 @@ html.dark .rpc-switch-thumb {
   min-height: 0;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: var(--surface);
 }
 .rpc-proc-agenda-scroll { flex: 1; min-height: 0; overflow: auto; }

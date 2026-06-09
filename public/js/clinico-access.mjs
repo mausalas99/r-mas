@@ -300,7 +300,9 @@ export function patientMatchesTeam(patient, team) {
   const patientLetter = salaLetterForTeamOrArea(patient);
   if (patientLetter && patientLetter === letter) return true;
   const hay = `${patient.service || ''} ${patient.sub_area || ''}`;
-  return hay.toUpperCase().includes(letter);
+  const upperHay = hay.toUpperCase();
+  if (new RegExp('(?:^|\\s)' + letter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=\\s|$)', 'i').test(hay)) return true;
+  return false;
 }
 
 /** @param {object[]} teams @param {string} userId */

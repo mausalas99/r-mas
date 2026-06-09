@@ -229,6 +229,7 @@ function handlePreviewBodyClick(event) {
     return;
   }
   rt.openAddModalFromLabPatient(labPatient, {
+    fromBulkPreview: true,
     onSaved: function () {
       refreshModalPreview();
       if (typeof rt.tourOnBulkPreviewPatientSaved === 'function') {
@@ -278,6 +279,34 @@ export function getBulkLabPreviewSourceText() {
 export function isBulkLabPreviewModalOpen() {
   var backdrop = document.getElementById('lab-bulk-preview-backdrop');
   return !!(backdrop && backdrop.classList.contains('open'));
+}
+
+export function hasPendingBulkLabPreviewSession() {
+  return !!(modalSession && pendingConfirm);
+}
+
+/** Hide preview while reviewing expediente; session stays for Procesar todo. */
+export function suspendLabBulkPreviewModal() {
+  var backdrop = document.getElementById('lab-bulk-preview-backdrop');
+  if (!backdrop || !modalSession) return;
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('lab-bulk-preview-modal-open');
+}
+
+export function resumeLabBulkPreviewModalIfSuspended() {
+  if (!modalSession || !pendingConfirm) return false;
+  if (isBulkLabPreviewModalOpen()) return true;
+  var backdrop = document.getElementById('lab-bulk-preview-backdrop');
+  var body = document.getElementById('lab-bulk-preview-body');
+  if (!backdrop || !body) return false;
+  modalSession.blocks = rebuildSessionBlocks();
+  paintModalContent(modalSession.blocks);
+  wirePreviewBody(body);
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('lab-bulk-preview-modal-open');
+  return true;
 }
 
 export function closeLabBulkPreviewModal() {

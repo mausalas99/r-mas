@@ -4,6 +4,7 @@
 import { patients } from '../app-state.mjs';
 import {
   clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
   refreshGuardiaCensusFromDb,
   signOutgoingLiveSyncMutation,
 } from '../clinical-access-runtime.mjs';
@@ -13,6 +14,7 @@ import {
   isOnCallToday,
   salaOnCallR1,
   salaOnCallR2,
+  userIsOnGuardiaCallToday,
 } from '../clinico-access.mjs';
 import { effectiveClinicalRank } from '../clinical-privileges.mjs';
 import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
@@ -30,6 +32,10 @@ import {
   ensureGuardiaHoyBeforeEntrega,
   mergeSalaGuardiaTodayRows,
 } from './guardia-hoy-modal.mjs';
+import {
+  patientForScopeEvaluate,
+  resolvePatientCensusTeamId,
+} from './patients-clinical-filter.mjs';
 import {
   openEntregaRosterPanel,
   closeEntregaRosterPanel,
@@ -248,14 +254,59 @@ function entregaModalEl() {
   return document.getElementById('entrega-modal-backdrop');
 }
 
-/** @returns {string} */
-function resolveDefaultSourceTeamId() {
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  const teams = clinicalSessionContext.teams || [];
-  const joined = getJoinedTeams(teams, userId);
+/**
+ * Team that owns the patient for handoff (census assignment), not the receiving guardia team.
+ * @param {string} patientId
+ * @param {object|null|undefined} patientRow
+ * @param {object[]} teams
+ * @param {object[]} assignments
+ * @param {object|null|undefined} existingGuardia
+ * @param {string} [fallbackUserId]
+ */
+export function resolveEntregaSourceTeamId(
+  patientId,
+  patientRow,
+  teams,
+  assignments,
+  existingGuardia,
+  fallbackUserId = ''
+) {
+  if (existingGuardia?.source_team_id) {
+    return String(existingGuardia.source_team_id);
+  }
+  const pid = String(patientId || '');
+  if (pid) {
+    const mapped = patientForScopeEvaluate(patientRow || { id: pid });
+    const teamId = resolvePatientCensusTeamId(mapped, teams, assignments || [], new Date());
+    if (teamId) return teamId;
+  }
+  return resolveDefaultSourceTeamIdForUser(teams, fallbackUserId);
+}
+
+/** @param {object[]} teams @param {string} userId */
+function resolveDefaultSourceTeamIdForUser(teams, userId) {
+  const joined = getJoinedTeams(teams, String(userId || ''));
   if (joined[0]?.team_id) return String(joined[0].team_id);
   if (teams[0]?.team_id) return String(teams[0].team_id);
   return '';
+}
+
+/** @param {object|null|undefined} team */
+function entregaTeamOptionLabel(team) {
+  if (!team?.team_id) return '';
+  const name = String(team.name || '').trim() || 'Equipo';
+  const service = String(team.service || '').trim();
+  return service ? `${name} · ${service}` : name;
+}
+
+/**
+ * @param {string} teamId
+ * @param {object[]} teams
+ */
+function findEntregaTeamById(teamId, teams) {
+  const tid = String(teamId || '');
+  if (!tid) return null;
+  return (teams || []).find((t) => String(t?.team_id) === tid) || null;
 }
 
 /**
@@ -359,16 +410,26 @@ function wireEntregaFormOnce() {
         existingGuardia?.covering_user_id ||
         ''
     );
+    const scopeCtx = getClinicalScopeContextForEvaluate();
+    const teamsForSubmit = clinicalSessionContext.teams || scopeCtx.teams || [];
+    const assignmentsForSubmit = scopeCtx.assignments || [];
     const sourceTeamId =
       String(document.getElementById('entrega-source-team')?.value || '') ||
-      resolveDefaultSourceTeamId();
+      resolveEntregaSourceTeamId(
+        patientId,
+        resolveEntregaPatientRow(patientId),
+        teamsForSubmit,
+        assignmentsForSubmit,
+        existingGuardia,
+        String(clinicalSessionContext.user?.user_id || '')
+      );
     const isCritical = readEntregaCriticalFromHandoff();
     const vitalsPlan = readEntregaVitalsPlan();
     const vitalsFrequency = vitalsFrequencyForDb(vitalsPlan.frequency);
     const handoffContext = readEntregaHandoffContext();
 
     if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast('Selecciona R1 de guardia y equipo de origen.', 'error');
+      toast('Selecciona R1 de guardia y equipo del paciente.', 'error');
       return;
     }
 
@@ -497,15 +558,25 @@ export function openEntregaModal(opts) {
     let preferred = existing?.covering_user_id
       ? String(existing.covering_user_id)
       : phaseCovering || '';
-    if (
-      !existing &&
-      clinicalSessionContext.guardiaMode &&
-      !phase?.active
-    ) {
-      const sala = resolveUserSalaForEntrega(teams, userId);
-      const selfCovering = sala ? resolveR1GuardiaCovering(teams, users, sala) : null;
-      if (selfCovering?.coveringUserId === userId) {
+    if (!preferred && !existing) {
+      const salaForCover = resolveUserSalaForEntrega(teams, userId);
+      const mergedGuardia = mergeSalaGuardiaTodayRows(teams, salaGuardiaToday);
+      const phaseCoveringResolved =
+        salaForCover &&
+        resolveEntregaPhaseCovering({
+          userId,
+          rank,
+          users,
+          teams,
+          sala: salaForCover,
+          salaGuardiaToday: mergedGuardia,
+          guardiaActivated: false,
+          guardiaMode: !!clinicalSessionContext.guardiaMode,
+        });
+      if (phaseCoveringResolved?.coveringUserId === userId) {
         preferred = userId;
+      } else if (!preferred && phaseCoveringResolved?.coveringUserId) {
+        preferred = phaseCoveringResolved.coveringUserId;
       }
     }
     let targetList = [...targets];
@@ -527,8 +598,11 @@ export function openEntregaModal(opts) {
       select.disabled = true;
       select.removeAttribute('required');
       if (coverHint) {
-        coverHint.textContent = '';
-        coverHint.classList.add('hidden');
+        const label = phase?.coveringLabel || select.selectedOptions?.[0]?.textContent || '';
+        coverHint.textContent = label
+          ? `R1 de guardia de este turno: ${label}`
+          : 'R1 de guardia fijado al activar el turno.';
+        coverHint.classList.remove('hidden');
       }
     } else {
       select.disabled = false;
@@ -540,14 +614,57 @@ export function openEntregaModal(opts) {
     }
   }
 
+  const scopeCtx = getClinicalScopeContextForEvaluate();
+  const assignments = scopeCtx.assignments || ctx.assignments || [];
+  const patientRow = patient || resolveEntregaPatientRow(patientId);
+  const srcTeamId = resolveEntregaSourceTeamId(
+    patientId,
+    patientRow,
+    teams,
+    assignments,
+    existing,
+    userId
+  );
+  const patientTeamLocked = !!(
+    srcTeamId &&
+    !existing?.source_team_id &&
+    resolvePatientCensusTeamId(
+      patientForScopeEvaluate(patientRow || { id: patientId }),
+      teams,
+      assignments,
+      new Date()
+    )
+  );
+  const srcTeamHint = document.getElementById('entrega-source-team-hint');
+
   if (teamSelect) {
-    const joined = getJoinedTeams(teams, userId);
-    const teamOptions = (joined.length ? joined : teams).filter((t) => t?.team_id);
-    teamSelect.innerHTML = teamOptions
-      .map((t) => `<option value="${t.team_id}">${t.name} · ${t.service}</option>`)
-      .join('');
-    const src = existing?.source_team_id || resolveDefaultSourceTeamId();
-    if (src) teamSelect.value = src;
+    const srcTeam = findEntregaTeamById(srcTeamId, teams);
+    if (patientTeamLocked && srcTeam) {
+      teamSelect.innerHTML = `<option value="${srcTeam.team_id}">${entregaTeamOptionLabel(srcTeam)}</option>`;
+      teamSelect.value = String(srcTeam.team_id);
+      teamSelect.disabled = true;
+      teamSelect.removeAttribute('required');
+      if (srcTeamHint) {
+        srcTeamHint.textContent =
+          'Equipo al que está asignado este paciente en el censo (no el R1 de guardia).';
+        srcTeamHint.classList.remove('hidden');
+      }
+    } else {
+      const joined = getJoinedTeams(teams, userId);
+      const teamOptions = (joined.length ? joined : teams).filter((t) => t?.team_id);
+      teamSelect.innerHTML = teamOptions
+        .map((t) => `<option value="${t.team_id}">${entregaTeamOptionLabel(t)}</option>`)
+        .join('');
+      teamSelect.disabled = false;
+      teamSelect.setAttribute('required', '');
+      if (srcTeamId) teamSelect.value = srcTeamId;
+      if (srcTeamHint) {
+        srcTeamHint.textContent = patientTeamLocked
+          ? 'Equipo al que está asignado este paciente en el censo (no el R1 de guardia).'
+          : 'Sin asignación en censo — confirma el equipo del paciente antes de entregar.';
+        srcTeamHint.classList.toggle('hidden', !srcTeamHint.textContent?.trim());
+      }
+    }
   }
 
   if (hint) {
@@ -567,13 +684,10 @@ export function openEntregaModal(opts) {
   }
 
   const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
-  const srcTeam =
-    existing?.source_team_id || resolveDefaultSourceTeamId();
-  const patientRow = patient || resolveEntregaPatientRow(patientId);
   void mountEntregaPendientesUi({
     actor,
     pendientesJson: existing?.pendientes_json,
-    sourceTeamId: srcTeam,
+    sourceTeamId: srcTeamId,
     vitalsFrequency: existing?.vitals_frequency,
     isCritical: !!(existing?.is_critical),
     signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada),
@@ -613,18 +727,28 @@ export function closeEntregaModal() {
 }
 
 /**
- * R1 de guardia on-call for a sala (first match).
+ * R1 de guardia on-call for a sala. Prefers `preferredUserId` when listed for the sala.
  * @param {object[]} teams
  * @param {object[]} users
  * @param {string} sala
  * @param {Date|string} [now]
+ * @param {object[]} [salaGuardiaToday]
+ * @param {string} [preferredUserId]
  */
-export function resolveR1GuardiaCovering(teams, users, sala, now = new Date(), salaGuardiaToday = []) {
+export function resolveR1GuardiaCovering(
+  teams,
+  users,
+  sala,
+  now = new Date(),
+  salaGuardiaToday = [],
+  preferredUserId = ''
+) {
   const salaNorm = String(sala || '').trim();
   if (!salaNorm) return null;
   const onCall = salaOnCallR1(teams, salaNorm, now, salaGuardiaToday);
   if (!onCall.length) return null;
-  const pick = onCall[0];
+  const pref = String(preferredUserId || '');
+  const pick = (pref && onCall.find((r) => String(r.user_id) === pref)) || onCall[0];
   const u = normalizeUsers(users).find((x) => x.user_id === String(pick.user_id));
   return {
     coveringUserId: String(pick.user_id),
@@ -632,6 +756,52 @@ export function resolveR1GuardiaCovering(teams, users, sala, now = new Date(), s
     sala: salaNorm,
     coveringLabel: u ? userOptionLabel(u) : String(pick.user_id),
   };
+}
+
+/**
+ * Covering R1 when entrega phase starts — activator when they declared / are on guardia.
+ * @param {{
+ *   userId: string,
+ *   rank?: string,
+ *   users: object[],
+ *   teams: object[],
+ *   sala: string,
+ *   salaGuardiaToday?: object[],
+ *   guardiaActivated?: boolean,
+ *   guardiaMode?: boolean,
+ *   now?: Date|string,
+ * }} opts
+ */
+export function resolveEntregaPhaseCovering(opts) {
+  const userId = String(opts.userId || '');
+  const teams = opts.teams || [];
+  const users = opts.users || [];
+  const sala = String(opts.sala || '').trim();
+  const salaGuardiaToday = opts.salaGuardiaToday || [];
+  const rank = String(opts.rank || effectiveClinicalRank(clinicalSessionContext.user) || 'R1');
+  const now = opts.now ? new Date(opts.now) : new Date();
+
+  const activatorIsShiftReceiver =
+    !!userId &&
+    (opts.guardiaActivated ||
+      opts.guardiaMode ||
+      userIsOnGuardiaCallToday(userId, rank, teams, now, salaGuardiaToday));
+
+  if (activatorIsShiftReceiver) {
+    const onCall = salaOnCallR1(teams, sala, now, salaGuardiaToday);
+    const teamRow = onCall.find((r) => String(r.user_id) === userId);
+    const joined = getJoinedTeams(teams, userId);
+    const teamInSala = joined.find((t) => String(t.sala || '') === sala) || joined[0];
+    const u = normalizeUsers(users).find((x) => x.user_id === userId);
+    return {
+      coveringUserId: userId,
+      teamId: String(teamRow?.team_id || teamInSala?.team_id || ''),
+      sala,
+      coveringLabel: u ? userOptionLabel(u) : userId,
+    };
+  }
+
+  return resolveR1GuardiaCovering(teams, users, sala, now, salaGuardiaToday, userId);
 }
 
 /** @param {object[]} teams @param {string} userId */
@@ -735,17 +905,31 @@ export async function beginEntregaPhaseFlow(opts = {}) {
     ctx.salaGuardiaToday || clinicalSessionContext.salaGuardiaToday || []
   );
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
-  const proceed = await ensureGuardiaHoyBeforeEntrega({
+  const guardiaProceed = await ensureGuardiaHoyBeforeEntrega({
     teams,
     sala,
     userId,
     rank,
     salaGuardiaToday,
   });
-  if (!proceed) return { active: false };
+  if (!guardiaProceed?.proceed) return { active: false };
 
   const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
-  const covering = resolveR1GuardiaCovering(teams, users, sala, new Date(), salaGuardiaToday);
+  const freshTeams = clinicalSessionContext.teams || teams;
+  const freshSalaGuardia = mergeSalaGuardiaTodayRows(
+    freshTeams,
+    clinicalSessionContext.salaGuardiaToday || ctx.salaGuardiaToday || []
+  );
+  const covering = resolveEntregaPhaseCovering({
+    userId,
+    rank,
+    users,
+    teams: freshTeams,
+    sala,
+    salaGuardiaToday: freshSalaGuardia,
+    guardiaActivated: !!guardiaProceed.activated,
+    guardiaMode: !!clinicalSessionContext.guardiaMode,
+  });
 
   startEntregaPhase(
     covering || {

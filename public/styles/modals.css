@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* Templates modal */
 .templates-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9990;
@@ -259,7 +260,7 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
   animation: modal-in var(--dur-normal) var(--ease-out);
 }
 .soap-modal-header {
-  background: #065F46; color: white; padding: 11px 18px; flex-shrink: 0;
+  background: #065F46; color: var(--color-on-accent); padding: 11px 18px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
   font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
 }
@@ -427,7 +428,7 @@ html.dark .intro-option-card-accent { border-color: var(--color-accent); }
 .btn-intro-pick {
   margin-top: auto; width: 100%; border: none; border-radius: 10px; padding: 12px 14px;
   font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
-  background: var(--action); color: white; transition: filter 0.15s, transform 0.1s;
+  background: var(--action); color: var(--color-on-accent); transition: filter 0.15s, transform 0.1s;
 }
 .btn-intro-pick:hover { filter: brightness(1.06); }
 .btn-intro-pick:active { transform: scale(0.99); }
@@ -660,9 +661,9 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   cursor: pointer; transition: background 0.12s, color 0.12s;
 }
 .help-article-item:hover { background: var(--lab-chip-bg); color: var(--lab-chip-txt); }
-.help-article-item.active { background: var(--action); color: #fff; font-weight: 600; }
+.help-article-item.active { background: var(--action); color: var(--color-on-accent); font-weight: 600; }
 .help-article-item:focus-visible {
-  outline: 2px solid var(--action); outline-offset: 2px;
+  outline: 2px solid var(--action); outline-offset: 1px;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.22);
 }
 .help-article-content {
@@ -789,12 +790,12 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 .learn-hub-close:hover { color: var(--text); background: var(--bg); }
 .learn-hub-close:focus-visible {
   outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 .learn-hub-body {
   flex: 1;
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   scrollbar-gutter: stable;
   padding: 12px 16px 20px;
@@ -1111,7 +1112,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 .learn-hub-help-link:hover { background: var(--color-accent-soft); }
 .learn-hub-help-link:focus-visible {
   outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 /* ── Novedades (release notes) ─────────────────────────────── */
 #release-notes-backdrop.modal-backdrop.open { z-index: 200010; }
@@ -1129,7 +1130,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 .release-notes-dismiss-btn {
   min-width: 120px;
   background: var(--action);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-md);
   padding: 10px 18px;
@@ -1235,7 +1236,7 @@ body.rpc-db-unlock-active { overflow: hidden; }
 }
 .rpc-db-unlock-actions .btn-cancel:hover { color: var(--text); border-color: var(--text-muted); }
 .rpc-db-unlock-actions .btn-unlock {
-  background: var(--action); color: white; border: none;
+  background: var(--action); color: var(--color-on-accent); border: none;
   border-radius: 8px; padding: 9px 18px; font-size: 14px;
   font-weight: 700; font-family: inherit; cursor: pointer;
 }
@@ -1274,7 +1275,7 @@ html.dark #rpc-idle-lock-overlay { background: rgba(0,0,0,0.82); }
 }
 .rpc-idle-lock-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .rpc-idle-lock-actions .btn-unlock {
-  background: var(--action); color: white; border: none;
+  background: var(--action); color: var(--color-on-accent); border: none;
   border-radius: 8px; padding: 9px 18px; font-size: 14px;
   font-weight: 700; font-family: inherit; cursor: pointer;
 }
@@ -1326,7 +1327,7 @@ html.dark #rpc-clinical-session-lock { background: rgba(0, 0, 0, 0.82); }
 }
 .clinical-session-lock-actions .btn-unlock {
   background: var(--action);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: 8px;
   padding: 9px 18px;
@@ -1450,7 +1451,7 @@ html.dark .tend-section-chart-btn {
   background: color-mix(in oklab, var(--primary) 14%, var(--surface));
 }
 html.dark .tend-section-chart-btn:hover { border-color: rgba(96, 165, 250, 0.5); }
-.tend-section-chart-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tend-section-chart-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 body.tend-group-modal-open { overflow: hidden; }
 .tend-group-backdrop {
   display: none;
@@ -1603,7 +1604,7 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer;
 }
 .tend-group-table-actions .btn-primary {
-  background: var(--action, var(--primary)); color: #fff; border: none;
+  background: var(--action, var(--primary)); color: var(--color-on-accent); border: none;
 }
 .tend-group-table-actions .btn-primary:hover { filter: brightness(1.05); }
 .tend-group-table-actions .btn-secondary {
@@ -2110,7 +2111,7 @@ html.dark .tend-gaso-ext-backdrop {
 
 .tend-gaso-badge--tip:focus-visible {
   outline: 2px solid var(--primary, #2563eb);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .tend-gaso-tip {

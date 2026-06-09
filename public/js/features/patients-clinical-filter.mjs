@@ -56,10 +56,12 @@ export function patientMatchesCensusTeamFilter(patient, teamId, teams, assignmen
   if (!tid) return true;
   const patientId = String(patient?.id || '');
   if (tid === CENSUS_TEAM_FILTER_UNASSIGNED) {
+    if (patient._noExplicitTeamAssignment != null) return patient._noExplicitTeamAssignment;
     return !patientHasExplicitTeamAssignment(patientId, assignments);
   }
   const team = (teams || []).find((t) => String(t.team_id || '') === tid);
   if (!team) return false;
+  if (patient._filterTeamId != null) return patient._filterTeamId === tid;
   const assigned = resolvePatientTeamIdFromAssignments(patientId, assignments, now);
   if (assigned) return assigned === tid;
   return patientMatchesTeam(patientForScopeEvaluate(patient), team);

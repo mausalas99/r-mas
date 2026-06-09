@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* ── Expediente: pestaña Cultivos (tabla) ───────────────────── */
 .cultivos-neg-strip {
   font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-bottom: 12px; padding: 10px 12px;
@@ -210,6 +211,10 @@
   bottom: 10px;
   width: 12px;
 }
+.tend-detail-vbar .tend-range-vbar-norm,
+.tend-detail-vbar .tend-range-vbar-marker {
+  transition-duration: 0.18s;
+}
 .tend-range-vbar {
   position: absolute;
   left: 3px;
@@ -240,7 +245,7 @@ html.dark .tend-range-vbar-track {
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--surface) 15%, transparent);
   transform: scaleY(0);
   transform-origin: center bottom;
-  transition: transform 0.55s cubic-bezier(0.34, 1.18, 0.64, 1);
+  transition: transform 0.55s var(--ease-out);
   transition-delay: var(--tend-vbar-delay, 0ms);
 }
 .tend-range-vbar.tend-vbar-ready .tend-range-vbar-norm {
@@ -258,7 +263,7 @@ html.dark .tend-range-vbar-track {
   box-shadow: var(--shadow-sm);
   bottom: 0;
   z-index: 2;
-  transition: bottom 0.65s cubic-bezier(0.34, 1.22, 0.64, 1);
+  transition: bottom 0.65s var(--ease-out);
   transition-delay: var(--tend-vbar-delay, 0ms);
 }
 .tend-range-vbar.is-abnormal .tend-range-vbar-marker { background: var(--error); }
@@ -419,7 +424,7 @@ html.rpc-mobile-web header {
   padding: 10px 14px;
   border-radius: 12px;
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
-  color: #fff;
+  color: var(--color-paper);
   font-size: 13px;
   font-weight: 600;
   text-align: center;
@@ -497,6 +502,7 @@ html.rpc-mobile-web #appcontent-med > .med-active-shell,
 html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
 html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
+html.rpc-mobile-web .patient-expediente-classic,
 html.rpc-mobile-web .patient-expediente-classic .tab-content {
   margin-top: 0;
   border: none;

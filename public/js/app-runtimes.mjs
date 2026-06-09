@@ -38,6 +38,7 @@ import {
 } from './features/lan-sync.mjs';
 import {
   registerPatientsRuntime,
+  filterPatientsForGuardiaCensus,
 } from './features/patients.mjs';
 import {
   registerLabPanelRuntime,
@@ -46,6 +47,7 @@ import {
   registerLabBulkPreviewModalRuntime,
   getBulkLabPreviewSourceText,
   isBulkLabPreviewModalOpen,
+  suspendLabBulkPreviewModal,
 } from './features/lab-bulk-preview-modal.mjs';
 import {
   registerLabHistoryBatchCopyRuntime,
@@ -435,6 +437,7 @@ function installAppRuntimeContextDeps() {
     },
     getBulkLabPreviewSourceText,
     isBulkLabPreviewModalOpen,
+    suspendLabBulkPreviewModal,
     openAddModal,
     advanceRondaPatient,
     isMobileWeb,
@@ -475,7 +478,13 @@ export async function registerAllFeatureRuntimes() {
   registerTodosRuntime(ctx);
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
-  registerCensoRuntime(ctx);
+  registerCensoRuntime(
+    Object.assign({}, ctx, {
+      getCensusPatients: function () {
+        return filterPatientsForGuardiaCensus(patients);
+      },
+    })
+  );
   registerHistoriaClinicaRuntime(ctx);
   registerEventualidadesRuntime(ctx);
   registerExpedienteRuntime(ctx);

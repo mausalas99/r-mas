@@ -1,4 +1,5 @@
-/* Arc-soft — overrides for hardcoded small radii (loads last) */
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
+/* Arc-soft — radial default: pill controls, large container radii (loads last) */
 
 /* Contenedores grandes */
 .listado-section,
@@ -9,12 +10,14 @@
 .otros-item,
 .tend-card,
 .pase-section,
-.pase-mini-card {
-  border-radius: var(--radius-lg) !important;
+.pase-mini-card,
+.exp-datos-collapse,
+.card,
+.rpc-disclosure {
+  border-radius: var(--radius-xl) !important;
 }
 
-/* Controles medianos */
-.listado-row,
+/* Controles e inputs — pill */
 .listado-row input[type="date"],
 .listado-row textarea,
 .listado-add-row,
@@ -25,7 +28,6 @@
 .lab-history-more-menu,
 .med-soap-preview-chip,
 .med-output-tabs,
-.todo-row,
 .todo-add-row input[type="text"],
 .todo-add-row button,
 .btn-remove,
@@ -36,21 +38,22 @@
 .btn-edit-templates,
 .btn-lab-history-del,
 .lab-history-toggle,
-.rpc-proc-agenda-block {
-  border-radius: var(--radius-md) !important;
-}
-
-.listado-drag-hovercard.listado-row {
-  border-radius: var(--radius-md) !important;
-}
-
+.rpc-proc-agenda-block,
+.rpc-proc-agenda-actions button,
 .indica-section-body textarea,
 .otros-item input,
-.otros-item textarea {
-  border-radius: var(--radius-md) !important;
+.otros-item textarea,
+#update-modal button,
+#min-version-modal button,
+.clinical-census-filters--toolbar .clinical-census-filters-toggle,
+.clinical-census-filter .profile-input,
+.app-bar-mi-rotacion {
+  border-radius: var(--radius-control) !important;
 }
 
-#update-modal button,
-#min-version-modal button {
-  border-radius: var(--radius-md) !important;
+/* Filas con borde lateral — esquinas suaves sin pastilla completa */
+.listado-row,
+.todo-row,
+.listado-drag-hovercard.listado-row {
+  border-radius: var(--radius-lg) !important;
 }

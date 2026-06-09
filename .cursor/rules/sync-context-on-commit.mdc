@@ -18,8 +18,9 @@ Skip only when the diff is trivial (typo, comment, pure test assertion, CSS one-
 3. If yes, edit `project-context.mdc`:
    - **Changelog**: prepend one bullet under `## Changelog`.
    - **Directory map / Domain index / Entry points**: update if a new area was added or paths moved.
-4. Stage the rule file with the code changes.
-5. Commit message may mention `docs(context): …` when the rule update is substantial.
+4. If a **new user-facing feature domain** was added, also update `docs/features/features-index.md` (and `docs/logic/` or `docs/database/` indices if applicable). See `documentation-sync.mdc`.
+5. Stage the rule file (and doc indices) with the code changes.
+6. Commit message may mention `docs(context): …` when the rule or docs hub update is substantial.
 
 ---
 

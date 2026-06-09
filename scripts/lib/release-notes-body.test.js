@@ -152,21 +152,29 @@ test('RELEASE_NOTES_7.2.5 has no TODO placeholders', () => {
   assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.5.txt still has TODO');
 });
 
-test('curated 7.2.5 highlights are current default', async () => {
+test('RELEASE_NOTES_7.2.6 has no TODO placeholders', () => {
+  const notes = fs.readFileSync(
+    path.join(ROOT, 'docs/RELEASE_NOTES_7.2.6.txt'),
+    'utf8'
+  );
+  assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.6.txt still has TODO');
+});
+
+test('curated 7.2.6 highlights are current default', async () => {
   const mod = await import(
     path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
   );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.5'];
+  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.6'];
   assert.ok(Array.isArray(highlights) && highlights.length >= 3);
   const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
   assert.ok(!/title: 'TODO'/.test(joined));
   assert.ok(!joined.includes('Completar antes de publicar'));
   assert.ok(
-    joined.includes('anfitrión') ||
-      joined.includes('sidecar') ||
-      joined.includes('v15')
+    joined.includes('entrega') ||
+      joined.includes('censo') ||
+      joined.includes('Expediente')
   );
-  assert.equal(mod.RELEASE_NOTES_HIGHLIGHTS_DEFAULT, mod.RELEASE_NOTES_HIGHLIGHTS['7.2.5']);
+  assert.equal(mod.RELEASE_NOTES_HIGHLIGHTS_DEFAULT, mod.RELEASE_NOTES_HIGHLIGHTS['7.2.6']);
 });
 
 test('RELEASE_NOTES_7.2.3 has no TODO placeholders', () => {

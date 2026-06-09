@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* ── Mi Perfil / Ajustes (barra lateral) ───────────────── */
 .profile-section, .settings-section { border-top: 1px solid var(--divider); flex-shrink: 0; }
 .profile-toggle, .settings-toggle {
@@ -28,9 +29,9 @@
 }
 .settings-theme-btn:hover { opacity: 0.9; }
 .settings-theme-btn.active {
-  background: var(--action); color: white; border-color: var(--action-hover);
+  background: var(--action); color: var(--color-on-accent); border-color: var(--action-hover);
 }
-html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
+html.dark .settings-theme-btn.active { background: var(--action); color: var(--color-on-accent); }
 /* ── Header settings dropdown ──────────────────────────── */
 .header-right {
   display: flex;
@@ -43,7 +44,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 .btn-header-icon {
   background: color-mix(in oklab, var(--surface) 88%, transparent);
-  border: 1px solid var(--divider); border-radius: 12px;
+  border: 1px solid var(--divider); border-radius: var(--radius-pill);
   min-width: 44px; min-height: 44px; width: 44px; height: 44px;
   padding: 0;
   cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
@@ -139,7 +140,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   border: none; border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: min(320px, calc(100vw - 32px));
   max-height: min(85vh, calc(100vh - 56px));
-  overflow-x: hidden;
+  overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -190,7 +191,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
   width: min(400px, calc(100vw - 24px));
   max-height: min(85vh, calc(100vh - 56px));
-  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  overflow-x: clip; overflow-y: auto; overscroll-behavior: contain;
   overflow-anchor: none;
   padding: 14px; flex-direction: column; gap: 10px;
   visibility: hidden;
@@ -280,6 +281,35 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .lan-connect-card-hint {
   font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
 }
+.lan-host-patients-list {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px;
+  max-height: 240px; overflow-y: auto;
+}
+.lan-host-patients-row {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+}
+.lan-host-patients-row-main {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1;
+}
+.lan-host-patients-name {
+  font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.3;
+}
+.lan-host-patients-meta {
+  font-size: 10px; color: var(--text-muted);
+}
+.lan-host-patients-badge {
+  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; padding: 1px 5px; border-radius: 4px; margin-right: 4px;
+  background: var(--lab-chip-bg); color: var(--text-muted);
+}
+.lan-host-patients-badge--ghost {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.lan-host-patients-delete {
+  flex-shrink: 0; font-size: 10px; padding: 4px 8px;
+}
 .lan-shift-pin-card {
   gap: 10px;
 }
@@ -332,7 +362,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 .lan-connect-actions-row .btn-lan-primary { flex: 1; min-width: 140px; }
 .btn-lan-primary {
-  background: var(--action); color: #fff; border: none; border-radius: 8px;
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: 8px;
   padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
   cursor: pointer; box-shadow: var(--shadow);
 }
@@ -361,7 +391,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 .lan-role-tab:hover { color: var(--text); background: var(--surface); }
 .lan-role-tab.active {
-  background: var(--action); color: #fff; box-shadow: var(--shadow);
+  background: var(--action); color: var(--color-on-accent); box-shadow: var(--shadow);
 }
 .settings-help-cta {
   background: color-mix(in oklab, var(--lab-chip-bg) 55%, var(--surface));
@@ -380,7 +410,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   font-family: inherit;
   cursor: pointer;
   background: var(--action);
-  color: #fff;
+  color: var(--color-on-accent);
   box-shadow: var(--shadow);
 }
 .btn-settings-help-primary:hover { background: var(--action-hover); }
@@ -561,7 +591,7 @@ html.high-contrast .settings-accordion[open] > summary { border-bottom: 2px soli
   width: 100%;
   box-sizing: border-box;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   padding: 10px 12px;
   color: var(--text);
   font-size: 12px;
@@ -618,7 +648,7 @@ select.profile-input.profile-select {
   box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
 }
 .btn-save-profile {
-  width: 100%; background: var(--action); color: white; border: none;
+  width: 100%; background: var(--action); color: var(--color-on-accent); border: none;
   border-radius: var(--radius-pill); padding: 6px; font-size: 11px; font-family: inherit;
   cursor: pointer; font-weight: 700; margin-top: 4px;
   box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
@@ -635,7 +665,7 @@ select.profile-input.profile-select {
 .profile-templates-preview-scroll {
   max-height: min(42vh, 380px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
   margin: 8px 0 10px;
   padding: 8px;
   border: 1px solid var(--border);
@@ -921,7 +951,7 @@ select.profile-input.profile-select {
 .tmpl-preview-stack--indica { gap: 8px; }
 .tmpl-preview-card { margin: 0; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06)); }
 .tmpl-preview-card .card-header { padding: 8px 12px; min-height: 0; }
-.tmpl-preview-card-title { font-size: 12px; font-weight: 600; color: #fff; }
+.tmpl-preview-card-title { font-size: 12px; font-weight: 600; color: var(--color-on-accent); }
 .tmpl-preview-card .card-body { padding: 10px 12px; }
 .tmpl-preview-indica { margin: 0; }
 .tmpl-preview-readonly {

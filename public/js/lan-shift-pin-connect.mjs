@@ -191,7 +191,12 @@ export function collectShiftPinProbeUrls(opts = {}, cfg = {}) {
   };
   add(opts.hostUrl);
   add(cfg.hostUrl);
-  for (const u of listWardHostUrlsForProbe()) add(u);
+  const localPrefixes = Array.isArray(opts.localSubnetPrefixes)
+    ? opts.localSubnetPrefixes
+    : null;
+  for (const u of listWardHostUrlsForProbe(undefined, { localSubnetPrefixes: localPrefixes })) {
+    add(u);
+  }
   return out;
 }
 
@@ -289,15 +294,19 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   }
 
   const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  const ownUrl = await resolveOwnLanBaseUrl();
+  const localPrefixes = await resolveLocalLanSubnetPrefixes(ownUrl);
   const tried = new Set();
   _lastShiftPinFailReason = '';
-  for (const hostUrl of collectShiftPinProbeUrls(opts, cfg)) {
+  for (const hostUrl of collectShiftPinProbeUrls(
+    { ...opts, localSubnetPrefixes: localPrefixes },
+    cfg
+  )) {
     tried.add(hostUrl);
     const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
     if (ok) return true;
   }
 
-  const ownUrl = await resolveOwnLanBaseUrl();
   for (const hostUrl of await collectShiftPinFastDiscoveryUrls(ownUrl)) {
     if (tried.has(hostUrl)) continue;
     tried.add(hostUrl);
@@ -314,7 +323,6 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
       if (viaLoopback) return true;
     }
   }
-  const localPrefixes = await resolveLocalLanSubnetPrefixes(ownUrl);
   const hosts = await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl);
   for (const hostUrl of hosts) {
     if (tried.has(hostUrl)) continue;

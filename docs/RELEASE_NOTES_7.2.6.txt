@@ -1,0 +1,31 @@
+R+ 7.2.6 (entrega en censo y expediente más fluido)
+=======================================================
+
+Fecha: 2026-06-08
+
+## Resumen
+
+Parche sobre 7.2.5: la **entrega** usa el equipo del paciente según el **censo** (no el R1 de guardia ni solo tu equipo), puedes **asignar equipo al registrar**, y el cambio entre **Lab / Med / Expediente** es más fluido sin re-render innecesario.
+
+## Nuevo / mejorado
+
+- **Entrega — equipo del paciente** — El modal toma `patient_team_assignment` del censo; hint claro entre equipo del paciente y R1 de guardia. Al editar una entrega existente se conserva el `source_team_id`.
+- **Asignar al registrar** — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
+- **Bulk preview → expediente** — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a **Lab** y seguir procesando.
+- **Tabs más fluidos** — Paneles principales en stack (`visibility` en lugar de `display:none`); renders diferidos al cambiar tab; caché en panel de recetas.
+- **Tendencias** — Mini-gráficas marcan valores fuera de rango en rojo y actualizan sin parpadeo al refrescar.
+- **Censo PDF/HTML** — Exportación y vista previa respetan el filtro de censo activo (equipo/sala).
+- **UI** — Tokens Hallmark, bordes del shell y motion más suaves en el workbench clínico.
+
+## Operación en guardia
+
+Parche sobre **7.2.5**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v15**).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.6
+
+- Mac: `R+-7.2.6-arm64.dmg`, `R+-7.2.6-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.2.6-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

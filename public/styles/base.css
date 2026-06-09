@@ -1,4 +1,5 @@
 /* Design tokens: public/tokens.css */
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
   opacity: 0.88;
@@ -256,7 +257,7 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   border: none;
   border-radius: var(--radius-pill);
   background: var(--action);
-  color: #fff;
+  color: var(--color-on-accent);
   font: inherit;
   font-size: calc(13px * var(--density-font));
   font-weight: 700;
@@ -287,7 +288,7 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
 /* Compact <details> disclosure (LAN ⇄, settings-adjacent panels, etc.) */
 .rpc-disclosure {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   overflow: hidden;
   padding: 0;
@@ -479,8 +480,8 @@ html.dark .otros-item textarea { background: var(--bg); }
 html.dark .lab-item { background: var(--lab-chip-bg); }
 html.dark .lab-value-altered { color: #f87171; }
 html.dark .lab-value-normal { color: #4ade80; }
-#theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
-html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
+#theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
+html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
 /* ── Alto contraste (accesibilidad) — tokens en tokens.css ─ */
 html.high-contrast body { font-weight: 500; line-height: 1.55; }
 html.high-contrast .btn-header-icon { background: transparent; border: 2px solid var(--text); color: var(--text); box-shadow: none; }
@@ -649,7 +650,7 @@ html.high-contrast.dark .rpc-wipe-panel h3 { color: var(--text); }
 .btn-tour-skip:focus-visible,
 .app-tabs-keys-btn:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.25);
 }
 html.dark .btn-header-icon:focus-visible,
@@ -683,7 +684,7 @@ html.high-contrast .field-group textarea:focus-visible,
 html.high-contrast .profile-input:focus-visible,
 html.high-contrast .patient-search-input:focus-visible {
   outline: 3px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
   box-shadow: none;
 }
 .visually-hidden {
@@ -719,7 +720,7 @@ html.high-contrast .patient-search-input:focus-visible {
   left: 12px;
   top: 12px;
   outline: 3px solid color-mix(in oklab, var(--action) 50%, var(--surface));
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 html.dark .dcard { background: var(--surface); }
 html.dark .dcard-title { color: var(--text-muted); }
@@ -844,7 +845,7 @@ html.dark .rpc-offline-banner {
   font-size: 13px;
   font-weight: 600;
   background: #7c2d12;
-  color: #fff;
+  color: var(--color-on-accent);
   border-bottom: 1px solid #9a3412;
   text-align: center;
 }
@@ -946,7 +947,7 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 #min-version-modal .min-version-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 #min-version-modal .min-version-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 #min-version-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 9px 16px; border: none; font-weight: 700; }
-#min-version-modal .btn-primary { background: var(--action); color: white; }
+#min-version-modal .btn-primary { background: var(--action); color: var(--color-on-accent); }
 #min-version-modal .btn-primary:hover { background: var(--action-hover); }
 #min-version-modal .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); font-weight: 600; }
 #update-modal .release-notes {
@@ -960,7 +961,7 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 #update-modal .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 #update-modal .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 #update-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 8px 14px; }
-#update-modal .btn-primary { background: var(--action); color: white; border: none; font-weight: 600; }
+#update-modal .btn-primary { background: var(--action); color: var(--color-on-accent); border: none; font-weight: 600; }
 #update-modal .btn-primary:hover { background: var(--action-hover); }
 #update-modal .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 #update-modal .btn-link { background: none; border: none; color: var(--action); text-decoration: underline; padding: 8px 6px; font-size: 12px; }
@@ -995,9 +996,13 @@ body {
 .profile-input,
 .patient-search-input,
 .list-row input {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
 }
-.card { border-radius: var(--radius-lg); }
+.card { border-radius: var(--radius-xl); }
+.btn-header-icon,
+.app-tabs-keys-btn {
+  border-radius: var(--radius-pill);
+}
 .modal,
 .soap-modal,
 .templates-modal,
@@ -1048,6 +1053,6 @@ body {
 .todo-text-input:focus-visible,
 .vital-box input:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }

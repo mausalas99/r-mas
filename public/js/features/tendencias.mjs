@@ -169,6 +169,43 @@ function destroySparkChartEntry(ck) {
   delete sparkCharts[ck];
 }
 
+function sparkLineColorForJob(job, history) {
+  var sk2 = job.sk2;
+  var fk2 = job.fk2;
+  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
+  var latestSpark = latestSetSpark
+    ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
+    : null;
+  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
+  var isAbSpark =
+    refSpark &&
+    latestSpark != null &&
+    (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+  return isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+}
+
+function sparkChartAnim(duration) {
+  return rt.rpcPrefersReducedMotion() ? false : { duration: duration, easing: 'easeOutQuart' };
+}
+
+function updateSparkChartsFromJobs(sparkJobs, history) {
+  for (var i = 0; i < sparkJobs.length; i += 1) {
+    var job = sparkJobs[i];
+    var ck = trendSparkChartKey(job.sk2, job.fk2);
+    var chart = sparkCharts[ck];
+    if (chart && chart.data && chart.data.datasets && chart.data.datasets[0]) {
+      chart.data.labels = job.labels2;
+      chart.data.datasets[0].data = job.values2;
+      var lineColor = sparkLineColorForJob(job, history);
+      chart.data.datasets[0].borderColor = lineColor;
+      chart.data.datasets[0].pointBackgroundColor = lineColor;
+      chart.update('none');
+    } else {
+      mountOneTrendSparkChartAsync(job, history, sparkChartAnim(400));
+    }
+  }
+}
+
 function mountOneTrendSparkChartAsync(job, history, chartAnim) {
   void loadChartJs()
     .then(function (Chart) {
@@ -179,22 +216,7 @@ function mountOneTrendSparkChartAsync(job, history, chartAnim) {
     });
 }
 
-function updateSparkChartsFromJobs(sparkJobs, chartAnim) {
-  for (var i = 0; i < sparkJobs.length; i += 1) {
-    var job = sparkJobs[i];
-    var ck = trendSparkChartKey(job.sk2, job.fk2);
-    var chart = sparkCharts[ck];
-    if (chart) {
-      chart.data.labels = job.labels2;
-      chart.data.datasets[0].data = job.values2;
-      chart.update(chartAnim === false ? 'none' : undefined);
-    } else {
-      mountOneTrendSparkChartAsync(job, null, chartAnim);
-    }
-  }
-}
-
-function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
+function buildSparkJobsFromIndex(seriesAvail, seriesIndex, history, chartAnim) {
   var sparkJobs = [];
   for (var cj = 0; cj < seriesAvail.length; cj += 1) {
     var spec2 = seriesAvail[cj];
@@ -217,11 +239,11 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
   }
   function runSparkBatches(Chart) {
     var jobIndex = 0;
-    var SPARK_BATCH = 6;
+    var SPARK_BATCH = 8;
     function runSparkBatch() {
       var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
       for (; jobIndex < end; jobIndex += 1) {
-        mountOneTrendSparkChart(sparkJobs[jobIndex], null, chartAnim, Chart);
+        mountOneTrendSparkChart(sparkJobs[jobIndex], history, chartAnim, Chart);
       }
       if (jobIndex < sparkJobs.length) {
         requestAnimationFrame(runSparkBatch);
@@ -556,7 +578,7 @@ function destroySparkChartsForSection(sectionKey) {
   });
 }
 
-function mountSectionSparkCharts(sectionKey, chartAnim) {
+function mountSectionSparkCharts(sectionKey, history, chartAnim) {
   var seriesIndex = _tendRenderState.seriesIndex;
   var seriesAvail = _tendRenderState.seriesAvail;
   if (!seriesIndex || !seriesAvail) return;
@@ -587,7 +609,7 @@ function mountSectionSparkCharts(sectionKey, chartAnim) {
     function runBatch() {
       var end = Math.min(jobIndex + SPARK_BATCH, jobs.length);
       for (; jobIndex < end; jobIndex += 1) {
-        mountOneTrendSparkChart(jobs[jobIndex], null, chartAnim, Chart);
+        mountOneTrendSparkChart(jobs[jobIndex], history, chartAnim, Chart);
       }
       if (jobIndex < jobs.length) scheduleIdle(runBatch, 24);
     }
@@ -625,8 +647,7 @@ function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
     cell.innerHTML = '<canvas id="' + trendSparkDomId(sk, fk) + '"></canvas>';
   });
 
-  var chartAnim = rt.rpcPrefersReducedMotion() ? false : { duration: 400, easing: 'easeOutQuart' };
-  mountSectionSparkCharts(sectionKey, chartAnim);
+  mountSectionSparkCharts(sectionKey, null, sparkChartAnim(400));
 }
 
 function toggleTendSection(ev, sectionKey) {
@@ -1137,9 +1158,9 @@ function inferAnteriorLabDateFromNote(patientId) {
   return '';
 }
 
-function tendFinishRangeVbars(container) {
+function tendFinishRangeVbars(container, instant) {
   if (!container) return;
-  var reduced = rt.rpcPrefersReducedMotion();
+  var reduced = instant || rt.rpcPrefersReducedMotion();
   var apply = function () {
     var vbars = container.querySelectorAll('.tend-range-vbar');
     for (var i = 0; i < vbars.length; i++) {
@@ -1238,6 +1259,52 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass, yBounds) {
   );
 }
 
+function tendDetailChartOptions(title, unit) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    transitions: {
+      active: { animation: { duration: 0 } },
+    },
+    layout: { padding: { right: 12, left: 4, top: 8, bottom: 4 } },
+    interaction: { mode: 'index', intersect: false, axis: 'x' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        mode: 'index',
+        intersect: false,
+        position: 'nearest',
+        callbacks: {
+          label: function (ctx) {
+            return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { ticks: { font: { size: 12 } }, offset: true },
+      y: {
+        ticks: { font: { size: 12 } },
+        title: { display: !!unit, text: unit, font: { size: 11 } },
+        grace: '5%',
+      },
+    },
+  };
+}
+
+function updateTendDetailChartInPlace(labels, values, title, ref, latest, unit) {
+  if (!detailChart || !detailChart.data || !detailChart.data.datasets[0]) return false;
+  detailChart.data.labels = labels;
+  detailChart.data.datasets[0].label = title;
+  detailChart.data.datasets[0].data = values;
+  detailChart.options = tendDetailChartOptions(title, unit);
+  detailChart.update('none');
+  syncTendDetailVbar(ref, latest);
+  return true;
+}
+
 function tendDetailChartYBounds(chart) {
   if (!chart || !chart.scales || !chart.scales.y) return null;
   var y = chart.scales.y;
@@ -1251,7 +1318,7 @@ function syncTendDetailVbar(ref, latest) {
   var yBounds = tendDetailChartYBounds(detailChart);
   vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar', yBounds);
   vbarSlot.setAttribute('aria-hidden', vbarSlot.innerHTML ? 'false' : 'true');
-  tendFinishRangeVbars(vbarSlot);
+  tendFinishRangeVbars(vbarSlot, true);
 }
 
 var tendGroupModal = null;
@@ -1833,9 +1900,7 @@ function renderTendenciasBody(container) {
     if (sectionsOrdered.indexOf(sec) === -1) sectionsOrdered.push(sec);
   });
 
-  var chartAnim = rt.rpcPrefersReducedMotion()
-    ? false
-    : { duration: 600, easing: 'easeOutQuart' };
+  var chartAnim = sparkChartAnim(600);
 
   var renderKey = buildTendRenderKey(
     aid(),
@@ -1875,7 +1940,7 @@ function renderTendenciasBody(container) {
         }),
       });
     }
-    updateSparkChartsFromJobs(patchJobs, chartAnim);
+    updateSparkChartsFromJobs(patchJobs, historyDesc);
     syncTendHiddenModalIfOpen();
     return;
   }
@@ -1974,7 +2039,7 @@ function renderTendenciasBody(container) {
   }
   container.innerHTML = htmlParts.join('');
 
-  buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim);
+  buildSparkJobsFromIndex(seriesAvail, seriesIndex, historyDesc, chartAnim);
 }
 
 function downsampleTrendChartSeries(labels, values, maxPoints) {
@@ -1999,16 +2064,7 @@ function mountOneTrendSparkChart(job, history, chartAnim, Chart) {
   var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
   if (!canvas2 || !Chart) return;
   var ck = trendSparkChartKey(sk2, fk2);
-  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
-  var latestSpark = latestSetSpark
-    ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
-    : null;
-  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
-  var isAbSpark =
-    refSpark &&
-    latestSpark != null &&
-    (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-  var lineColor = isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+  var lineColor = sparkLineColorForJob(job, history);
   sparkCharts[ck] = new Chart(canvas2, {
     type: 'line',
     data: {
@@ -2097,12 +2153,19 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   }
   return loadChartJs()
     .then(function (Chart) {
-      if (detailChart) {
-        detailChart.destroy();
-        detailChart = null;
-      }
       try {
-        mountTendDetailChart(Chart, canvas, backdrop, labels, values, title, ref, latest, unit);
+        if (
+          detailChart &&
+          detailChart.canvas === canvas &&
+          updateTendDetailChartInPlace(labels, values, title, ref, latest, unit)
+        ) {
+          return;
+        }
+        if (detailChart) {
+          detailChart.destroy();
+          detailChart = null;
+        }
+        mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit);
       } catch (mountErr) {
         console.error('[R+ Tendencias] detail chart mount', mountErr);
         rt.showToast('Gráfica no disponible (error al dibujar). Recarga la app.', 'error');
@@ -2116,7 +2179,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
     });
 }
 
-function mountTendDetailChart(Chart, canvas, backdrop, labels, values, title, ref, latest, unit) {
+function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit) {
   var datasets = [
     {
       label: title,
@@ -2127,39 +2190,13 @@ function mountTendDetailChart(Chart, canvas, backdrop, labels, values, title, re
       pointRadius: 5,
       pointBackgroundColor: '#10b981',
       tension: 0.3,
-      fill: false
-    }
+      fill: false,
+    },
   ];
   detailChart = new Chart(canvas, {
     type: 'line',
     data: { labels: labels, datasets: datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { right: 12, left: 4, top: 8, bottom: 4 } },
-      interaction: { mode: 'index', intersect: false, axis: 'x' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          mode: 'index',
-          intersect: false,
-          position: 'nearest',
-          callbacks: {
-            label: function (ctx) {
-              return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { ticks: { font: { size: 12 } }, offset: true },
-        y: {
-          ticks: { font: { size: 12 } },
-          title: { display: !!unit, text: unit, font: { size: 11 } }
-        }
-      }
-    }
+    options: tendDetailChartOptions(title, unit),
   });
   syncTendDetailVbar(ref, latest);
 }

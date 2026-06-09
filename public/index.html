@@ -876,6 +876,7 @@
       <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
     </div>
     <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
+    <div class="workbench-chrome">
     <div class="clinical-context-bar" id="clinical-context-bar" hidden>
       <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
         <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="Usuario LAN, equipos de sala y entregas" onclick="void openMiRotacion()">
@@ -908,13 +909,14 @@
       </div>
       <button type="button" class="app-tabs-keys-btn" onclick="openQuickHelp('atajos')" title="Atajos de teclado" aria-label="Ver atajos de teclado"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg></button>
     </div>
+    </div>
     <main id="main-area">
 
-    <div id="appcontent-pase" class="appcontent-pase" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+    <div id="appcontent-pase" class="appcontent-pase app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="pase-board-scroll" class="pase-board-scroll"></div>
     </div>
 
-    <div id="appcontent-guardia" class="appcontent-guardia" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+    <div id="appcontent-guardia" class="appcontent-guardia app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="guardia-board-scroll" class="guardia-board-scroll">
         <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
         <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
@@ -1044,7 +1046,7 @@
       </button>
     </div>
 
-    <div id="appcontent-med" role="tabpanel" aria-labelledby="apptab-med" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="appcontent-med" role="tabpanel" aria-labelledby="apptab-med" aria-hidden="true" class="app-tab-panel-hidden" style="flex-direction:column;flex:1;overflow:hidden;">
       <div id="med-empty-guided" class="empty-state" style="display:none;" role="region" aria-label="Sin paciente para medicamentos">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
         <h3 class="empty-state-title">Selecciona un paciente para Medicamentos</h3>
@@ -1172,7 +1174,7 @@
       </div>
     </div>
 
-    <div id="appcontent-agenda" role="tabpanel" aria-labelledby="apptab-agenda" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="appcontent-agenda" role="tabpanel" aria-labelledby="apptab-agenda" aria-hidden="true" class="app-tab-panel-hidden" style="flex-direction:column;flex:1;overflow:hidden;">
       <div class="rpc-proc-agenda-root" id="procedure-agenda-root">
         <div class="rpc-proc-agenda-header">
           <div class="rpc-proc-agenda-titlewrap">
@@ -1191,7 +1193,7 @@
       </div>
     </div>
 
-    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="true" class="app-tab-panel-hidden" style="flex-direction:column;flex:1;overflow:hidden;">
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
         <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
@@ -1538,6 +1540,13 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
+      </div>
+      <div class="field-group" id="m-team-group" style="display:none;margin-top:10px;">
+        <label for="m-team">Equipo</label>
+        <select id="m-team" class="profile-input" style="font-size:13px;width:100%;">
+          <option value="">— Sin asignar —</option>
+        </select>
+        <p class="profile-hint profile-hint--field" id="m-team-hint" style="margin-top:6px;">Asigna al equipo que cubrirá el caso en ⇄.</p>
       </div>
     </div>
 
@@ -1937,8 +1946,9 @@
             <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-covering-user" class="profile-input" required></select>
           </div>
-          <div class="field-group">
-            <label for="entrega-source-team">Equipo de origen</label>
+          <div class="field-group entrega-field-group--patient-team">
+            <label for="entrega-source-team">Equipo del paciente</label>
+            <p id="entrega-source-team-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-source-team" class="profile-input" required></select>
           </div>
           <div id="entrega-clinical-status-slot" class="field-group"></div>

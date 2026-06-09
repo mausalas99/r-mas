@@ -46,7 +46,7 @@ flowchart LR
 | 17 | [docs-blueprint](./17-docs-blueprint.md) | stable | Documentation standard |
 | 18 | [knowledge-capture](./18-knowledge-capture.md) | stable | Decision log |
 
-*Slots 05, 07, 09–14: fill incrementally as needed.*
+*Slots 05, 07, 09–14: placeholders created (see directory).*
 
 ## Category indices (spokes)
 
@@ -57,6 +57,7 @@ flowchart LR
 | Database | [database/database-index.md](../database/database-index.md) | SQLCipher schema & migrations |
 | Plans & specs | `docs/superpowers/` | Design before large features (user-managed) |
 | Agent changelog | [logs/agent-changelog.md](../logs/agent-changelog.md) | Doc/integration audit trail |
+| API Reference | [api/README.md](../api/README.md) | HTTP + IPC endpoints |
 
 ## Read order for new agents
 
@@ -67,5 +68,7 @@ flowchart LR
 
 ## User-facing docs
 
-- [README.md](../../README.md) — install, releases, features list
+- [README.md](../../README.md) — install, releases, features list (with ToC)
+- [CHANGELOG.md](../../CHANGELOG.md) — full release history
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) — contribution guide
 - [design.md](../../design.md) — Hallmark design system (source of truth for UI)

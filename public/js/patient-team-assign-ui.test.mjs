@@ -4,6 +4,7 @@ import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import {
   activePatientTeamId,
   buildPatientTeamAssignSectionHtml,
+  defaultPatientRegistrationTeamId,
 } from './patient-team-assign-ui.mjs';
 
 describe('patient-team-assign-ui', () => {
@@ -18,6 +19,20 @@ describe('patient-team-assign-ui', () => {
       guardias: [],
       now: '2026-06-02T12:00:00Z',
     };
+  });
+
+  it('defaultPatientRegistrationTeamId picks sole joined team', () => {
+    const user = { user_id: 'u1', sala: 'Sala 1' };
+    assert.equal(defaultPatientRegistrationTeamId(user), 't1');
+  });
+
+  it('defaultPatientRegistrationTeamId prefers team in user sala', () => {
+    clinicalSessionContext.teams = [
+      { team_id: 't1', name: 'A', sala: 'Sala 2', members: [{ user_id: 'u1' }] },
+      { team_id: 't2', name: 'B', sala: 'Sala 1', members: [{ user_id: 'u1' }] },
+    ];
+    const user = { user_id: 'u1', sala: 'Sala 1' };
+    assert.equal(defaultPatientRegistrationTeamId(user), 't2');
   });
 
   it('shows team select with current team when patient is assigned', () => {

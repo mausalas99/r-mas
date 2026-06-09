@@ -38,6 +38,7 @@ import {
 } from "./eventualidades-panel.mjs";
 import { renderVpo } from "./vpo.mjs";
 import { buildEaMonitoreoRevision } from "./estado-actual-data.mjs";
+import { resumeLabBulkPreviewModalIfSuspended } from "./lab-bulk-preview-modal.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
@@ -764,6 +765,18 @@ export function openPaseSectionInNormal(which) {
   }
 }
 
+function refreshExpedienteOnNotaAppTabEnter() {
+  scheduleAfterPaint(function () {
+    if (rt.getActiveAppTab() !== "nota") return;
+    var settings = rt.getSettings();
+    var inner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+    syncInnerTabVisualOnly();
+    if (granularMountIsEmpty(inner) || !isInnerTabContentFresh(inner, settings)) {
+      renderGranularInnerTab(inner, granularMountIsEmpty(inner) ? { force: true } : undefined);
+    }
+  });
+}
+
 export function switchAppTab(tab) {
   if (tab === "lan") tab = "lab";
   cancelExpedienteWarm();
@@ -774,7 +787,7 @@ export function switchAppTab(tab) {
     setRoundOverviewMode(true);
   }
   if (tab === "nota" && prevAppTab !== "nota" && !isPaseMode()) {
-    switchInnerTab("todo");
+    refreshExpedienteOnNotaAppTabEnter();
   }
   var apptabLab = document.getElementById("apptab-lab");
   var apptabNota = document.getElementById("apptab-nota");
@@ -824,36 +837,59 @@ export function switchAppTab(tab) {
   } else {
     if (paseRoot) hideAppTabPanel(paseRoot);
     if (guardiaRoot) hideAppTabPanel(guardiaRoot);
-    var animatePanels = prevAppTab !== tab;
     if (appcontentLab) {
-      if (tab === "lab") showAppTabPanel(appcontentLab, animatePanels);
+      if (tab === "lab") showAppTabPanel(appcontentLab, false);
       else hideAppTabPanel(appcontentLab);
     }
     if (appcontentMed) {
-      if (tab === "med") showAppTabPanel(appcontentMed, animatePanels);
+      if (tab === "med") showAppTabPanel(appcontentMed, false);
       else hideAppTabPanel(appcontentMed);
     }
     if (appcontentNota) {
-      if (tab === "nota") showAppTabPanel(appcontentNota, animatePanels);
+      if (tab === "nota") showAppTabPanel(appcontentNota, false);
       else hideAppTabPanel(appcontentNota);
     }
     if (appcontentAgenda) {
-      if (tab === "agenda") showAppTabPanel(appcontentAgenda, animatePanels);
+      if (tab === "agenda") showAppTabPanel(appcontentAgenda, false);
       else hideAppTabPanel(appcontentAgenda);
     }
-    if (tab === "lab") rt.renderLabHistoryPanel();
-    if (tab === "med") rt.renderMedRecetaPanel();
-    if (tab === "agenda") rt.renderProcedureAgendaPanel();
-    if (tab === "nota" && rt.getActiveInner() === "tend") renderTendencias();
+    if (tab === "lab") {
+      scheduleAfterPaint(function () {
+        if (rt.getActiveAppTab() === "lab") rt.renderLabHistoryPanel();
+      });
+    }
+    if (tab === "med") {
+      scheduleAfterPaint(function () {
+        if (rt.getActiveAppTab() === "med") rt.renderMedRecetaPanel();
+      });
+    }
+    if (tab === "agenda") {
+      scheduleAfterPaint(function () {
+        if (rt.getActiveAppTab() === "agenda") rt.renderProcedureAgendaPanel();
+      });
+    }
+    if (tab === "nota" && rt.getActiveInner() === "tend") {
+      scheduleAfterPaint(function () {
+        if (rt.getActiveAppTab() === "nota" && rt.getActiveInner() === "tend") renderTendencias();
+      });
+    }
   }
 
   syncMainAppTabA11y(tab);
 
   if (tab === "med") rt.setMedTabAttention(false);
 
-  syncAppTabIndicator(tab);
-  rt.syncWorkContextChrome();
-  if (rt.getActiveAppTab() === "nota") syncRoundExpedienteLayout();
+  var deferredTab = tab;
+  if (tab === "med" || prevAppTab === "med") {
+    rt.syncWorkContextChrome();
+  }
+  scheduleAfterPaint(function () {
+    if (rt.getActiveAppTab() !== deferredTab) return;
+    syncAppTabIndicator(deferredTab);
+    if (deferredTab === "nota") syncRoundExpedienteLayout();
+    else if (deferredTab !== "med" && prevAppTab !== "med") rt.syncWorkContextChrome();
+    if (deferredTab === "lab") resumeLabBulkPreviewModalIfSuspended();
+  });
 }
 
 export function syncMainAppTabA11y(tab) {
@@ -1221,7 +1257,6 @@ export function switchInnerTab(tab, opts) {
     warmExpedienteHeavyTabs();
   }
   syncRoundExpedienteLayout();
-  rt.syncWorkContextChrome();
   syncInnerTabIndicator(tab, consolidated ? { consolidated: true, settings: settings } : undefined);
 }
 

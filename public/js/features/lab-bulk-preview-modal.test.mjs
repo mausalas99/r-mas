@@ -1,9 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-const { resolveBulkPreviewConfirmState, shouldOfferBulkPreviewAddPatient } = await import(
-  './lab-bulk-preview-modal.mjs'
-);
+const {
+  resolveBulkPreviewConfirmState,
+  shouldOfferBulkPreviewAddPatient,
+  hasPendingBulkLabPreviewSession,
+} = await import('./lab-bulk-preview-modal.mjs');
 
 describe('resolveBulkPreviewConfirmState', () => {
   it('permite confirmar cuando hay reportes válidos sin paciente en lista', () => {
@@ -65,5 +67,11 @@ describe('shouldOfferBulkPreviewAddPatient', () => {
       shouldOfferBulkPreviewAddPatient({ status: 'no-patient', okReportCount: 0 }),
       false
     );
+  });
+});
+
+describe('hasPendingBulkLabPreviewSession', () => {
+  it('is false without an open modal session', () => {
+    assert.equal(hasPendingBulkLabPreviewSession(), false);
   });
 });

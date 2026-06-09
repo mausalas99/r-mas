@@ -41,6 +41,17 @@ describe('lan-ward-host-registry', () => {
     assert.deepEqual(listWardHostUrlsForProbe(), ['http://10.0.57.52:3738']);
   });
 
+  it('listWardHostUrlsForProbe skips registry URLs off current subnet', () => {
+    recordWardHostUrl('http://172.20.10.2:3738', { source: 'client' });
+    recordWardHostUrl('http://10.0.166.59:3738', { source: 'host' });
+    const filtered = listWardHostUrlsForProbe(undefined, {
+      localSubnetPrefixes: ['10.0.166'],
+    });
+    assert.ok(filtered.includes('http://10.0.57.52:3738'));
+    assert.ok(filtered.includes('http://10.0.166.59:3738'));
+    assert.ok(!filtered.includes('http://172.20.10.2:3738'));
+  });
+
   it('record + merge dedupes URLs and prefixes', () => {
     recordWardHostUrl('http://10.0.57.52:3738', { source: 'host' });
     recordWardHostUrl('http://10.0.57.52:3738', { source: 'client' });

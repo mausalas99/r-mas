@@ -65,12 +65,12 @@ import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, getUiDensity, isGuardiaMode, isPaseMode } from './chrome.mjs';
 import {
-  emitLiveSyncPatientDelete,
   removePatientLocally,
   rememberPatientDeleteTombstone,
   getActiveLiveSyncRoomId,
   lanSyncPatientArchivedFlag,
   isLanSessionConfiguredForRest,
+  purgeLanPatientFromHost,
 } from './lan-sync.mjs';
 import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
@@ -90,6 +90,11 @@ import {
   shouldSelectTourPrimaryAfterLabCommit,
   shouldTourStayOnLabAfterLabCommit,
 } from '../tour-demo-patient.mjs';
+import {
+  assignPatientToTeamClinical,
+  readPatientRegistrationTeamId,
+  syncPatientRegistrationTeamSelect,
+} from '../patient-team-assign-ui.mjs';
 
 function patientsVisibleInSidebar() {
   const base = filterPatientsForPitchTour(patients);
@@ -790,7 +795,6 @@ export function syncRoundExpedienteLayout() {
     !!rt.getActiveId() && rt.getActiveAppTab() === 'nota' && _roundOverviewMode;
   overview.style.display = showOverview ? 'flex' : 'none';
   classic.style.display = showOverview ? 'none' : 'flex';
-  rt.syncWorkContextChrome();
   if (fullbar) {
     var showBar = !!(rt.getActiveId() && rt.getActiveAppTab() === 'nota' && !showOverview);
     fullbar.classList.toggle('is-visible', showBar);
@@ -1408,14 +1412,12 @@ export function deletePatient(e, id) {
   var snap = target || { id: id, registro: '' };
   if (getActiveLiveSyncRoomId()) {
     rememberPatientDeleteTombstone(snap);
-    stagePatientDelete(id, snap, function (p) {
-      emitLiveSyncPatientDelete(p);
+    void purgeLanPatientFromHost(id);
+    stagePatientDelete(id, snap, function () {
       import('../lan-mutation-registry.mjs').then(function (m) {
         m.lanMutationRegistry.dispatchLanMutation('patient-fields', id);
       });
     });
-  } else {
-    emitLiveSyncPatientDelete(snap);
   }
   saveState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', 1, target ? target.registro || target.nombre || '' : '');
@@ -1527,6 +1529,7 @@ export function openAddModal() {
   _syncPatientModalModeFields();
   _prefillServicioForSala();
   _prefillCuartoCamaForSala();
+  syncPatientRegistrationTeamSelect();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(false);
@@ -1534,6 +1537,7 @@ export function openAddModal() {
 }
 
 var pendingAddPatientSavedCallback = null;
+var pendingAddPatientFromBulkPreview = false;
 
 function isAddPatientModalOpenForRegistro(registro) {
   var modal = document.getElementById('modal');
@@ -1554,10 +1558,12 @@ function openAddModalFromLabPatientData(p, opts) {
     if (opts && typeof opts.onSaved === 'function') {
       pendingAddPatientSavedCallback = opts.onSaved;
     }
+    if (opts && opts.fromBulkPreview) pendingAddPatientFromBulkPreview = true;
     return;
   }
   pendingAddPatientSavedCallback =
     opts && typeof opts.onSaved === 'function' ? opts.onSaved : null;
+  pendingAddPatientFromBulkPreview = !!(opts && opts.fromBulkPreview);
   document.getElementById('modal-title').textContent = 'Agregar Paciente del Lab';
   document.getElementById('modal-prefilled').style.display = 'block';
   document.getElementById('modal-manual-full').style.display = 'none';
@@ -1583,6 +1589,7 @@ function openAddModalFromLabPatientData(p, opts) {
     _prefillServicioForSala();
   }
   _prefillCuartoCamaForSala(p.expediente || p.registro || '');
+  syncPatientRegistrationTeamSelect();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(true);
@@ -1605,6 +1612,7 @@ export function openAddModalFromLabPatient(patient, opts) {
 
 export function closeModal() {
   pendingAddPatientSavedCallback = null;
+  pendingAddPatientFromBulkPreview = false;
   document.getElementById('modal').classList.remove('open');
 }
 
@@ -1789,6 +1797,27 @@ function showExpedienteAdvice(onConfirm) {
   };
 }
 
+async function assignTeamFromRegistrationModal(patientId) {
+  var teamId = readPatientRegistrationTeamId();
+  if (!teamId) return;
+  var res = await assignPatientToTeamClinical(patientId, teamId);
+  if (!res.ok) {
+    rt.showToast('Paciente guardado, pero no se pudo asignar al equipo', 'warn');
+  }
+}
+
+function openExpedienteAfterBulkPreviewRegistration(patientId) {
+  if (typeof rt.suspendLabBulkPreviewModal === 'function') {
+    rt.suspendLabBulkPreviewModal();
+  }
+  rt.switchAppTab('nota');
+  rt.switchInnerTab('datos');
+  rt.showToast(
+    'Paciente registrado. Revisa el expediente; vuelve a Lab para Procesar todo.',
+    'success'
+  );
+}
+
 function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
   var today = new Date();
   var fecha =
@@ -1867,10 +1896,13 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   saveState();
   var onSaved = pendingAddPatientSavedCallback;
   pendingAddPatientSavedCallback = null;
+  var fromBulkPreview = pendingAddPatientFromBulkPreview;
+  pendingAddPatientFromBulkPreview = false;
   closeModal();
+  void assignTeamFromRegistrationModal(patient.id);
   var pendingLab = null;
   var stayOnLabForTour = isFromLab && shouldTourStayOnLabAfterLabCommit();
-  if (isFromLab && !stayOnLabForTour) {
+  if (isFromLab && !stayOnLabForTour && !fromBulkPreview) {
     pendingLab = rt.consumeActiveLab ? rt.consumeActiveLab() : null;
     if (rt.clearLabOutputUi) rt.clearLabOutputUi();
     rt.switchAppTab('nota');
@@ -1884,7 +1916,11 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     if (perez) activeId = perez.id;
   }
   selectPatient(activeId);
-  rt.showToast('Paciente agregado', 'success');
+  if (fromBulkPreview) {
+    openExpedienteAfterBulkPreviewRegistration(activeId);
+  } else {
+    rt.showToast('Paciente agregado', 'success');
+  }
   if (adoptResult.afterCommit) {
     try {
       adoptResult.afterCommit(patient);

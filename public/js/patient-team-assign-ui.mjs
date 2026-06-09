@@ -6,6 +6,7 @@ import {
 import { resolvePatientTeamIdFromAssignments } from './clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
+import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
 
 function esc(s) {
   return String(s || '')
@@ -79,6 +80,16 @@ export async function assignPatientToTeamClinical(patientId, teamId) {
   }
 }
 
+/** Default team preselect for new patient registration. */
+export function defaultPatientRegistrationTeamId(user) {
+  const teams = assignableTeamsForUser(user);
+  if (!teams.length) return '';
+  if (teams.length === 1) return String(teams[0].team_id || '');
+  const preferred = resolveActiveTeamFilterId(user, clinicalSessionContext.teams || []);
+  if (preferred && teams.some((t) => String(t.team_id) === preferred)) return preferred;
+  return '';
+}
+
 function buildTeamSelectOptions(teams, selectedTeamId) {
   const selected = String(selectedTeamId || '');
   return teams
@@ -92,6 +103,35 @@ function buildTeamSelectOptions(teams, selectedTeamId) {
 }
 
 /** @param {Record<string, unknown>} patient */
+/** Populate #m-team in the patient registration modal (hidden when user has no teams). */
+export function syncPatientRegistrationTeamSelect(selectedTeamId) {
+  if (typeof document === 'undefined') return;
+  const group = document.getElementById('m-team-group');
+  const select = document.getElementById('m-team');
+  if (!group || !select) return;
+  const user = clinicalSessionContext.user;
+  const teams = assignableTeamsForUser(user);
+  if (!teams.length) {
+    group.style.display = 'none';
+    select.innerHTML = '<option value="">— Sin asignar —</option>';
+    select.value = '';
+    return;
+  }
+  group.style.display = '';
+  const selected = String(selectedTeamId || defaultPatientRegistrationTeamId(user) || '');
+  select.innerHTML =
+    '<option value="">— Sin asignar —</option>' + buildTeamSelectOptions(teams, selected);
+  select.value = selected;
+}
+
+export function readPatientRegistrationTeamId() {
+  if (typeof document === 'undefined') return '';
+  const group = document.getElementById('m-team-group');
+  const select = document.getElementById('m-team');
+  if (!group || group.style.display === 'none' || !(select instanceof HTMLSelectElement)) return '';
+  return String(select.value || '').trim();
+}
+
 export function buildPatientTeamAssignSectionHtml(patient) {
   const user = clinicalSessionContext.user;
   if (!user?.user_id || !patient?.id) return '';

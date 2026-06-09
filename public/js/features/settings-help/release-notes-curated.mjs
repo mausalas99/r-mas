@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_726 = [
+  {
+    title: 'Entrega con equipo del censo',
+    body:
+      'Al entregar un paciente, R+ propone el <strong>equipo del censo</strong> (<code>patient_team_assignment</code>), no solo el equipo al que te uniste ni el R1 de guardia.',
+  },
+  {
+    title: 'Asignar al registrar',
+    body:
+      'Al agregar paciente puedes elegir <strong>equipo</strong>; se guarda en SQLCipher y sincroniza por LAN.',
+  },
+  {
+    title: 'Expediente más fluido',
+    body:
+      'Cambiar entre <strong>Lab</strong>, <strong>Med</strong> y <strong>Expediente</strong> evita re-render completo; las mini-gráficas de tendencias marcan fuera de rango en <strong>rojo</strong>.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.6 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.5</strong>; esquema SQLCipher sigue en <strong>v15</strong>.',
+  },
+];
+
 var RELEASE_NOTES_725 = [
   {
     title: 'Anfitrión más liviano',
@@ -661,9 +684,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_725;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_726;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.6': RELEASE_NOTES_726,
   '7.2.5': RELEASE_NOTES_725,
   '7.2.4': RELEASE_NOTES_724,
   '7.2.3': RELEASE_NOTES_723,

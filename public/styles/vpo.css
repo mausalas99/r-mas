@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* VPO — alineado con Estado Actual y expediente */
 
 #exp-pane-vpo,
@@ -178,7 +179,7 @@
 
 .vpo-chip input:focus-visible + span {
   outline: 2px solid color-mix(in oklab, var(--accent) 70%, transparent);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .vpo-dx-list {

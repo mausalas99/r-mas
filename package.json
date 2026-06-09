@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "7.2.5",
+  "version": "7.2.6",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
@@ -22,6 +22,7 @@
     "prebuild:mac": "node scripts/ensure-argon2-pack-natives.mjs && npm run rebuild:db-native && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
     "prebuild:win": "node scripts/fetch-argon2-win.mjs && node scripts/fetch-sqlite-win.mjs && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
     "build:win": "npm run prebuild:win && electron-builder --win",
+    "build:changelog": "node scripts/build-changelog.js",
     "release:write-yml": "node scripts/write-release-yml.js",
     "release:write-yml:mac": "node scripts/write-release-yml.js --mac-only",
     "release:sync-pack": "node scripts/lib/electron-pack-files.js --write",

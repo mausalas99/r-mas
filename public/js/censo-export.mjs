@@ -98,6 +98,13 @@ function preparePatientsForCensus() {
   saveState();
 }
 
+function patientsForCensoExport() {
+  if (typeof rt.getCensusPatients === 'function') {
+    return rt.getCensusPatients();
+  }
+  return patients;
+}
+
 function ensureCensoModal() {
   var existing = document.getElementById('censo-export-modal');
   if (existing) return existing;
@@ -158,9 +165,10 @@ export function exportCensoPdf(includeArchived) {
   if (rt.guardMobileDocExport()) return;
   if (guardDocExportBlocked({ isRpcOffline: rt.isRpcOffline, showToast: rt.showToast })) return;
   preparePatientsForCensus();
+  var censusPatients = patientsForCensoExport();
   var payload = buildCensusPayload({
     settings: rt.getSettings(),
-    patients: patients,
+    patients: censusPatients,
     includeArchived: !!includeArchived,
     labHistoryByPatient: labHistory,
     medRecetaByPatient: medRecetaByPatient,
@@ -238,9 +246,10 @@ export function exportCensoPdfFromHelp() {
 function previewCenso(includeArchived) {
   if (!isModeSala(rt.getSettings())) return;
   preparePatientsForCensus();
+  var censusPatients = patientsForCensoExport();
   var payload = buildCensusPayload({
     settings: rt.getSettings(),
-    patients: patients,
+    patients: censusPatients,
     includeArchived: !!includeArchived,
     labHistoryByPatient: labHistory,
     medRecetaByPatient: medRecetaByPatient,

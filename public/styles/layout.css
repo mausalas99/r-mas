@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 .main-work-scroll {
   flex: 1;
   overflow-y: auto;
@@ -35,8 +36,8 @@ header {
   z-index: 10;
   margin-left: var(--shell-inset);
   margin-right: var(--shell-inset);
-  border-bottom-left-radius: var(--radius-md);
-  border-bottom-right-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
   /* Menús ⇄ / ⚙ cuelgan bajo .header-right; overflow:hidden los recortaba por completo */
   overflow: visible;
 }
@@ -137,7 +138,7 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   max-width: 100%;
 }
 #app-brand:hover { background: rgba(15, 23, 42, 0.05); }
-#app-brand:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+#app-brand:focus-visible { outline: 2px solid var(--action); outline-offset: 1px; }
 header span { font-size: 12px; color: var(--text-muted); }
 html.dark #app-brand:hover { background: rgba(255, 255, 255, 0.06); }
 html.dark header {
@@ -171,44 +172,84 @@ html:not(.ui-density-normal) #main-area {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: 0;
 }
+/* Main tabs: stack panels — avoid display:none reflow on Expediente ↔ Med */
+#main-area > [id^="appcontent-"] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+#main-area > [id^="appcontent-"].app-tab-panel-hidden {
+  visibility: hidden;
+  pointer-events: none;
+  content-visibility: hidden;
+  contain-intrinsic-size: auto 480px;
+  z-index: 0;
+}
+#main-area > [id^="appcontent-"]:not(.app-tab-panel-hidden) {
+  visibility: visible;
+  z-index: 1;
+}
 /* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
 .shell-content-frame {
   border-radius: var(--radius-lg);
   background: var(--bg);
-  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  border: var(--shell-frame-border);
   box-shadow: var(--shadow-sm);
   min-height: 0;
 }
 #appcontent-lab > .main-work-scroll,
-#appcontent-med > .med-active-shell {
+#appcontent-med > .med-active-shell,
+#patient-view > .patient-expediente-classic {
   flex: 1;
   margin-top: var(--shell-frame-inset);
   min-height: 0;
 }
+html.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.ui-density-normal #appcontent-med > .med-active-shell,
+html.ui-density-normal #patient-view > .patient-expediente-classic,
+html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root {
+  margin-top: 0;
+}
+html.ui-density-normal #main-area {
+  flex: 1;
+  min-height: 0;
+}
+#appcontent-med > .med-active-shell {
+  border-radius: var(--radius-lg);
+  border: var(--shell-frame-border);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
 #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll {
   overflow-y: auto;
   margin-top: 0;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  border-top: none;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: var(--bg);
 }
 #appcontent-med > .med-active-shell > #med-subview-tabs-bar {
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
-  border-bottom: none;
-  box-shadow: var(--shadow-sm);
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  box-shadow: none;
 }
 #appcontent-lab > .main-work-scroll,
-#appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
-#appcontent-agenda > .rpc-proc-agenda-root,
-.patient-expediente-classic .tab-content {
+#appcontent-agenda > .rpc-proc-agenda-root {
   border-radius: var(--radius-lg);
   background: var(--bg);
-  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  border: var(--shell-frame-border);
   box-shadow: var(--shadow-sm);
   min-height: 0;
 }
@@ -219,8 +260,36 @@ html:not(.ui-density-normal) #main-area {
   display: flex;
   flex-direction: column;
 }
+/* Expediente: un marco único (chrome blanco + cuerpo gris), sin cajas anidadas */
+.patient-expediente-classic {
+  border-radius: var(--radius-lg);
+  border: var(--shell-frame-border);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.patient-expediente-classic > .inner-tab-bar {
+  margin-bottom: 0;
+  background: var(--surface);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+}
+.patient-expediente-classic > .expediente-panes-host {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
 .patient-expediente-classic .tab-content {
   flex: 1;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.patient-expediente-classic .tab-content:not(.exp-composite-pane) {
+  padding: calc(18px * var(--density-space)) calc(20px * var(--density-space)) calc(24px * var(--density-space));
 }
 .header-work-cluster {
   display: flex;
@@ -320,7 +389,7 @@ html:not(.ui-density-normal) #main-area {
 }
 .header-pase-mode-chip:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 .header-return-pase-btn {
   flex-shrink: 0;
@@ -377,7 +446,7 @@ html:not(.ui-density-normal) #main-area {
   gap: 6px;
   flex-shrink: 0;
   background: color-mix(in oklab, #4f46e5 92%, #1e1b4b);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-pill);
   padding: 7px 12px;
@@ -478,7 +547,7 @@ html.censo-preview-open {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: #fff;
+  background: var(--color-surface);
 }
 .censo-preview-modal .modal-actions {
   flex-shrink: 0;
@@ -495,6 +564,35 @@ html.censo-preview-open {
 html.dark .header-app-mode-chip {
   background: rgba(255, 255, 255, 0.04);
 }
+html.ui-density-normal .main-col {
+  border-radius: var(--radius-frame-outer);
+  overflow: hidden;
+  gap: var(--shell-frame-inset);
+  background: var(--shell-gap);
+}
+html.ui-density-normal .workbench-chrome {
+  flex-shrink: 0;
+  margin-left: calc(-1 * var(--shell-frame-inset));
+  margin-right: calc(-1 * var(--shell-frame-inset));
+  background: var(--surface);
+  border-radius: var(--radius-frame-outer);
+  overflow: hidden;
+}
+html.ui-density-normal .workbench-chrome .clinical-context-bar,
+html.ui-density-normal .workbench-chrome .app-tabs-row {
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
+}
+html.ui-density-normal .workbench-chrome .clinical-context-bar {
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+}
+html.ui-density-normal .workbench-chrome .app-tabs-row {
+  border-bottom: none;
+}
+html:not(.ui-density-normal) .workbench-chrome {
+  display: contents;
+}
 .app-tabs-row {
   display: flex;
   align-items: center;
@@ -507,20 +605,10 @@ html.dark .header-app-mode-chip {
   border-bottom: none;
   margin-left: calc(-1 * var(--shell-frame-inset));
   margin-right: calc(-1 * var(--shell-frame-inset));
-  border-top-left-radius: var(--radius-md);
-  border-top-right-radius: var(--radius-md);
-  overflow: hidden;
-  transition: border-top-left-radius 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
-/* Sidebar auto-oculto: sin canal lateral; esquina superior izquierda sigue la cáscara */
+/* Sidebar auto-oculto: sin gap entre rail y workbench */
 html.sidebar-auto-hide:not(.sidebar-reveal) .app {
   gap: 0;
-}
-html.sidebar-auto-hide:not(.sidebar-reveal) .app-tabs-row {
-  border-top-left-radius: var(--radius-shell);
-}
-html.sidebar-auto-hide.sidebar-reveal .app-tabs-row {
-  border-top-left-radius: var(--radius-md);
 }
 .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
 /* Guardia + Pase: hide main tabs, full-height board */
@@ -565,7 +653,7 @@ html:not(.ui-density-normal) .pase-board-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
   padding: calc(16px * var(--density-space)) calc(18px * var(--density-space)) calc(24px * var(--density-space));
   display: flex;
   flex-direction: column;
@@ -664,7 +752,7 @@ html:not(.ui-density-normal) .pase-section-title:hover {
 }
 html:not(.ui-density-normal) .pase-section-title:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
   border-radius: 4px;
 }
 html:not(.ui-density-normal) .pase-card-grid {
@@ -746,7 +834,7 @@ html:not(.ui-density-normal) .pase-todo-hit {
 }
 html:not(.ui-density-normal) .pase-todo-hit:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: 2px;
+  outline-offset: 1px;
   border-radius: 4px;
 }
 html:not(.ui-density-normal) .pase-todo-card.todo-prio-alta {
@@ -1038,7 +1126,7 @@ html:not(.ui-density-normal) .pase-empty-screen {
 }
 .guided-empty-actions button.primary {
   background: var(--action);
-  color: #fff;
+  color: var(--color-on-accent);
   border: none;
   box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
 }

@@ -53,14 +53,18 @@
   --section-header-bg: var(--color-section-header-bg);
   --section-accent: var(--color-section-accent);
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 22px;
-  --radius-xl: 28px;
-  --radius-shell: 22px;
+  --radius-sm: 16px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --radius-shell: 28px;
   --radius-pill: 999px;
+  /* Controls + inner workbench frame (Arc-style radial default) */
+  --radius-control: var(--radius-pill);
+  --radius-frame-outer: var(--radius-shell);
   --shell-inset: 6px;
   --shell-frame-inset: 4px;
+  --shell-frame-border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
   --shell-gap: color-mix(in oklab, var(--color-ink) 5.5%, var(--color-paper));
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
   --shadow: 0 6px 22px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);

@@ -95,18 +95,25 @@ export function animateTabPanelEnter(panelEl) {
   panelEl.addEventListener('animationend', onEnd);
 }
 
+/** Hide a main tab panel without display:none (avoids full layout on Expediente ↔ Med). */
+export const APP_TAB_PANEL_HIDDEN_CLASS = 'app-tab-panel-hidden';
+
 export function showAppTabPanel(panelEl, animate) {
   if (!panelEl) return;
+  panelEl.classList.remove(APP_TAB_PANEL_HIDDEN_CLASS);
   panelEl.style.display = 'flex';
   panelEl.style.flex = '1';
   panelEl.style.overflow = 'hidden';
   panelEl.style.minHeight = '0';
-  if (animate) animateTabPanelEnter(panelEl);
+  // Main app panels (Expediente, Med, Lab) are too large for enter animation.
+  if (animate && panelEl.id && !String(panelEl.id).startsWith('appcontent-')) {
+    animateTabPanelEnter(panelEl);
+  }
 }
 
 export function hideAppTabPanel(panelEl) {
   if (!panelEl) return;
-  panelEl.style.display = 'none';
+  panelEl.classList.add(APP_TAB_PANEL_HIDDEN_CLASS);
   panelEl.classList.remove('tab-panel-enter');
 }
 

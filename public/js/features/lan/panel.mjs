@@ -136,6 +136,7 @@ import {
   reconcileLiveSyncRoom,
 } from './push.mjs';
 import { recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
+import { appendLanHostPatientsSection } from './host-patients-panel.mjs';
 
 const LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
 const LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
@@ -1198,6 +1199,14 @@ async function renderLanPanelOnce() {
     void appendConflictDrafts(root);
   }
   await appendLanSyncDiagnosticsSection(root);
+  await appendLanHostPatientsSection(root, {
+    showToast: function (msg, kind) {
+      runtime().showToast(msg, kind);
+    },
+    onChanged: function () {
+      if (typeof runtime().renderPatientList === 'function') runtime().renderPatientList();
+    },
+  });
   if (lanPanelRenderStale(gen)) return;
   purgeDuplicateLanShiftPinCards(root);
   restoreLanPanelExpandState(root, expandState);
@@ -2396,7 +2405,11 @@ async function scanLanHosts() {
       }
     }
 
-    var wardProbeUrls = listWardHostUrlsForProbe();
+    var ownUrlForWard = lanHostUrl() || (await resolveLanShareBaseUrl());
+    var localWardPrefixes = await resolveLocalLanSubnetPrefixes(ownUrlForWard);
+    var wardProbeUrls = listWardHostUrlsForProbe(undefined, {
+      localSubnetPrefixes: localWardPrefixes,
+    });
     for (var wpi = 0; wpi < wardProbeUrls.length; wpi += 1) {
       var wardUrl = wardProbeUrls[wpi];
       if (!wardUrl) continue;

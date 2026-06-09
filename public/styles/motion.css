@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* R+ micro-interactions (transitions.dev-inspired, vanilla CSS) */
 
 @keyframes fade-in {
@@ -130,7 +131,7 @@ textarea.field-shake {
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   padding: 5px 10px 5px 8px;
-  background: var(--input-fill);
+  background: color-mix(in oklab, var(--surface) 85%, var(--bg));
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -151,9 +152,27 @@ textarea.field-shake {
   color: var(--text);
 }
 
+.todo-prio-chip.prio-alta:hover {
+  border-color: color-mix(in oklab, var(--todo-prio-alta) 55%, var(--border));
+  background: color-mix(in oklab, var(--todo-prio-alta) 22%, var(--surface));
+  color: color-mix(in oklab, var(--todo-prio-alta) 88%, var(--color-ink));
+}
+
+.todo-prio-chip.prio-media:hover {
+  border-color: color-mix(in oklab, var(--todo-prio-media) 52%, var(--border));
+  background: color-mix(in oklab, var(--todo-prio-media) 24%, var(--surface));
+  color: color-mix(in oklab, var(--todo-prio-media) 90%, var(--color-ink));
+}
+
+.todo-prio-chip.prio-baja:hover {
+  border-color: color-mix(in oklab, var(--todo-prio-baja) 52%, var(--border));
+  background: color-mix(in oklab, var(--todo-prio-baja) 22%, var(--surface));
+  color: color-mix(in oklab, var(--todo-prio-baja) 88%, var(--color-ink));
+}
+
 .todo-prio-chip:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .todo-prio-chip:active {
@@ -166,17 +185,20 @@ textarea.field-shake {
 
 .todo-prio-chip.prio-alta {
   border-color: color-mix(in oklab, var(--todo-prio-alta) 42%, var(--border));
-  color: var(--todo-prio-alta);
+  color: color-mix(in oklab, var(--todo-prio-alta) 82%, var(--color-ink));
+  background: color-mix(in oklab, var(--todo-prio-alta) 14%, var(--surface));
 }
 
 .todo-prio-chip.prio-media {
-  border-color: color-mix(in oklab, var(--todo-prio-media) 38%, var(--border));
-  color: var(--todo-prio-media);
+  border-color: color-mix(in oklab, var(--todo-prio-media) 40%, var(--border));
+  color: color-mix(in oklab, var(--todo-prio-media) 85%, var(--color-ink));
+  background: color-mix(in oklab, var(--todo-prio-media) 16%, var(--surface));
 }
 
 .todo-prio-chip.prio-baja {
   border-color: color-mix(in oklab, var(--todo-prio-baja) 38%, var(--border));
-  color: var(--todo-prio-baja);
+  color: color-mix(in oklab, var(--todo-prio-baja) 82%, var(--color-ink));
+  background: color-mix(in oklab, var(--todo-prio-baja) 14%, var(--surface));
 }
 
 .todo-prio-dot {
@@ -214,11 +236,11 @@ textarea.field-shake {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: 3px;
   width: 0;
   opacity: 0;
   background: var(--action);
-  border-radius: 2px 2px 0 0;
+  border-radius: var(--radius-pill);
   pointer-events: none;
   z-index: 2;
   transition:

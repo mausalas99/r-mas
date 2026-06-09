@@ -1,3 +1,4 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 .hc-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -469,7 +470,7 @@
   font-size: calc(12px * var(--density-font));
   color: var(--text-muted);
   line-height: 1.45;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--input-fill) 80%, transparent);
   border: 1px dashed color-mix(in oklab, var(--border) 70%, transparent);
 }

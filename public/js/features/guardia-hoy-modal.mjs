@@ -98,8 +98,13 @@ export function shouldPromptGuardiaHoy(ctx) {
  * @returns {Promise<boolean>}
  */
 export function ensureGuardiaHoyBeforeEntrega(ctx) {
-  if (!shouldPromptGuardiaHoy(ctx)) return Promise.resolve(true);
-  return openGuardiaHoyModal(ctx).then((res) => !!res?.proceed);
+  if (!shouldPromptGuardiaHoy(ctx)) {
+    return Promise.resolve({ proceed: true, activated: false });
+  }
+  return openGuardiaHoyModal(ctx).then((res) => ({
+    proceed: !!res?.proceed,
+    activated: !!res?.activated,
+  }));
 }
 
 /**

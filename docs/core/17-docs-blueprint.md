@@ -17,14 +17,35 @@ R+ follows the **vibe-app-wiki Documentation Architecture Bootstrap** standard.
 | `docs/features/` | Feature workflows → code paths |
 | `docs/logic/` | Parsers, sync engines, generators |
 | `docs/database/` | SQLCipher schema |
+| `docs/api/` | HTTP + IPC API reference |
 | `docs/logs/` | `agent-changelog.md` |
 | `docs/superpowers/` | **User-managed** specs & plans (do not auto-index) |
+
+## Root-level docs
+
+| File | Role |
+|------|------|
+| `CHANGELOG.md` | Consolidated release history (auto-generated) |
+| `CONTRIBUTING.md` | Contribution guide |
+| `design.md` | Hallmark design system |
 
 ## Naming
 
 - Core: `0x-name.md` (e.g. `01-vision-north-star.md`)
 - Features: `feat-<name>.md`
 - Logic: `util-<name>.md`
+
+## Agent config directories
+
+| Tool | Config location |
+|------|----------------|
+| **DeepSeek GUI (Kun)** | `.deepseek/rules.md` → `.cursor/rules/` (canonical) |
+| Cursor | `.cursor/rules/` (canonical) |
+| Claude Code | `.claude/` |
+| OpenCode | `.opencode/` |
+| Repowise | `.repowise/` |
+
+`.cursor/rules/` is the **canonical home** for always-on agent rules.
 
 ## Agent maintenance rules
 

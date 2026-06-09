@@ -5,6 +5,7 @@
 import {
   discoverLanHostsOnSubnet,
   discoverLanHostsOnSubnetViaBeacon,
+  resolveLocalLanSubnetPrefixes,
 } from './lan-host-subnet-discovery.mjs';
 import { upsertHost, listRegistryDiscoveryUrls } from './lan-host-registry.mjs';
 import { listWardHostUrlsForProbe } from './lan-ward-host-registry.mjs';
@@ -91,7 +92,10 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
     }
   }
 
-  const wardUrls = listWardHostUrlsForProbe().filter((url) => url !== own);
+  const localPrefixes = await resolveLocalLanSubnetPrefixes(own);
+  const wardUrls = listWardHostUrlsForProbe(undefined, {
+    localSubnetPrefixes: localPrefixes,
+  }).filter((url) => url !== own);
   const fastUrls = dedupeUrls([...registryUrls, ...udpUrls, ...wardUrls]);
   const verifiedFast = fastUrls.length
     ? await verifyLanHostsWithBearer(fastUrls, teamCode)

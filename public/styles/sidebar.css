@@ -1,8 +1,9 @@
+/* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 aside.patient-sidebar {
   width: var(--sidebar-width);
   background: var(--surface);
   border: none;
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   display: flex; flex-direction: column; flex-shrink: 0;
   min-height: 0;
   overflow: hidden;
@@ -31,7 +32,7 @@ html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
   top: var(--shell-inset);
   bottom: var(--shell-inset);
   width: var(--sidebar-rail-width, 5px);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   background: var(--sidebar-rail-color);
   opacity: 1;
   pointer-events: none;
@@ -105,7 +106,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 }
 .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; }
 .btn-add {
-  background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
+  background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-pill);
   padding: calc(6px * var(--density-space)) calc(14px * var(--density-space));
   font-size: calc(13px * var(--density-font));
   font-weight: 600; font-family: inherit;
@@ -116,11 +117,12 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 }
 .btn-add:hover { background: var(--action-hover); box-shadow: 0 3px 14px color-mix(in oklab, var(--action) 28%, transparent); }
 .btn-add:active { transform: scale(0.96); }
+.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
 .patient-list {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;

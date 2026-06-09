@@ -50,6 +50,13 @@
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
       </div>
+      <div class="field-group" id="m-team-group" style="display:none;margin-top:10px;">
+        <label for="m-team">Equipo</label>
+        <select id="m-team" class="profile-input" style="font-size:13px;width:100%;">
+          <option value="">— Sin asignar —</option>
+        </select>
+        <p class="profile-hint profile-hint--field" id="m-team-hint" style="margin-top:6px;">Asigna al equipo que cubrirá el caso en ⇄.</p>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -448,8 +455,9 @@
             <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-covering-user" class="profile-input" required></select>
           </div>
-          <div class="field-group">
-            <label for="entrega-source-team">Equipo de origen</label>
+          <div class="field-group entrega-field-group--patient-team">
+            <label for="entrega-source-team">Equipo del paciente</label>
+            <p id="entrega-source-team-hint" class="clinical-teams-section-desc entrega-field-hint hidden"></p>
             <select id="entrega-source-team" class="profile-input" required></select>
           </div>
           <div id="entrega-clinical-status-slot" class="field-group"></div>

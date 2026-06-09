@@ -46,7 +46,7 @@ import {
 } from "../tend-core.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
-import { bumpLabHistoryRevision } from "../lab-history-cache.mjs";
+import { bumpLabHistoryRevision, getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { isPaseMode } from "./chrome.mjs";
 
 let rt = {
@@ -384,6 +384,7 @@ function dedupeConsolidatedRowsBySection(rows, tipo) {
 
 var LAB_HISTORY_LIST_CAP = 50;
 var _labHistoryListExpanded = {};
+var _labHistoryPanelCacheKey = "";
 
 export function expandLabHistoryList() {
   var pid = rt.getActiveId();
@@ -398,6 +399,7 @@ export function renderLabHistoryPanel() {
   var hintEl = document.getElementById('lab-history-hint');
   if (!card || !listEl || !hintEl) return;
   if (!rt.getActiveId()) {
+    _labHistoryPanelCacheKey = "";
     hintEl.style.display = 'block';
     hintEl.textContent = 'Selecciona un paciente en la columna izquierda para ver los estudios que hayas enviado a su nota.';
     listEl.innerHTML = '';
@@ -407,12 +409,20 @@ export function renderLabHistoryPanel() {
     return;
   }
   var pid = rt.getActiveId();
+  var showAll = !!_labHistoryListExpanded[pid];
   var hist = sortLabHistoryChronological(
     rt.ensureParsedLabHistoryCached
       ? rt.ensureParsedLabHistoryCached(pid)
       : rt.ensureParsedLabHistory(pid, { readOnly: true })
   );
+  var panelCacheKey =
+    String(pid) + "|L" + getLabHistoryRevision(pid) + "|E" + (showAll ? 1 : 0) + "|N" + hist.length;
+  if (_labHistoryPanelCacheKey === panelCacheKey && listEl.childElementCount > 0) {
+    syncLabHistoryCollapseUI();
+    return;
+  }
   if (!hist.length) {
+    _labHistoryPanelCacheKey = panelCacheKey;
     hintEl.style.display = 'block';
     hintEl.textContent = 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
     listEl.innerHTML = '';
@@ -422,7 +432,6 @@ export function renderLabHistoryPanel() {
     return;
   }
   hintEl.style.display = 'none';
-  var showAll = !!_labHistoryListExpanded[pid];
   var visible = hist;
   var hiddenCount = 0;
   if (!showAll && hist.length > LAB_HISTORY_LIST_CAP) {
@@ -454,6 +463,7 @@ export function renderLabHistoryPanel() {
       ' anteriores</button></div>';
   }
   listEl.innerHTML = rowsHtml;
+  _labHistoryPanelCacheKey = panelCacheKey;
   syncLabHistoryCollapseUI();
   rt.renderRoundOverviewPanels();
   if (isPaseMode()) rt.renderPaseBoard();

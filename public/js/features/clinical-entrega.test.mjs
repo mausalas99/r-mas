@@ -4,6 +4,8 @@ import {
   listEntregaTargets,
   resolveR1GuardiaCovering,
   resolveEntregaActorRole,
+  resolveEntregaSourceTeamId,
+  resolveEntregaPhaseCovering,
   loadGuardiaGridViewContext,
   startEntregaPhase,
   endEntregaPhase,
@@ -217,6 +219,130 @@ describe('ensureEntregaTargetUser', () => {
   });
 });
 
+describe('resolveEntregaSourceTeamId', () => {
+  const teams = [
+    {
+      team_id: 't-melissa',
+      name: 'Dra. Melissa',
+      service: 'Sala',
+      sala: 'Sala 1',
+      sub_area_fraction: 'A1',
+      members: [{ user_id: 'r2m', rank: 'R2' }],
+    },
+    {
+      team_id: 't-mauricio',
+      name: 'Dr. Mauricio',
+      service: 'Sala',
+      sala: 'Sala 1',
+      sub_area_fraction: 'B1',
+      members: [{ user_id: 'r1m', rank: 'R1' }],
+    },
+  ];
+
+  it('uses explicit patient_team_assignment over actor joined team', () => {
+    const teamId = resolveEntregaSourceTeamId(
+      'p1',
+      { id: 'p1', servicio: 'Sala', area: 'B1' },
+      teams,
+      [{ patient_id: 'p1', team_id: 't-melissa', effective_at: '2026-06-01T00:00:00Z' }],
+      null,
+      'r1m'
+    );
+    assert.equal(teamId, 't-melissa');
+  });
+
+  it('preserves existing guardia source team when editing', () => {
+    const teamId = resolveEntregaSourceTeamId(
+      'p1',
+      { id: 'p1' },
+      teams,
+      [{ patient_id: 'p1', team_id: 't-melissa', effective_at: '2026-06-01T00:00:00Z' }],
+      { source_team_id: 't-mauricio' },
+      'r1m'
+    );
+    assert.equal(teamId, 't-mauricio');
+  });
+
+  it('falls back to actor joined team only when patient has no assignment', () => {
+    const teamId = resolveEntregaSourceTeamId(
+      'p2',
+      { id: 'p2', servicio: 'Sala', area: 'Z9' },
+      teams,
+      [],
+      null,
+      'r1m'
+    );
+    assert.equal(teamId, 't-mauricio');
+  });
+});
+
+describe('resolveEntregaPhaseCovering', () => {
+  const teams = [
+    {
+      team_id: 't-melissa',
+      service: 'Sala',
+      sala: 'Sala 1',
+      sub_area_fraction: 'A1',
+      members: [{ user_id: 'r1a', rank: 'R1', username: 'melissa' }],
+      guardia_today: { user_id: 'r1a' },
+    },
+    {
+      team_id: 't-mauricio',
+      service: 'Sala',
+      sala: 'Sala 1',
+      sub_area_fraction: 'B1',
+      members: [{ user_id: 'r1b', rank: 'R1', username: 'mauricio' }],
+    },
+  ];
+  const users = [
+    { user_id: 'r1a', username: 'melissa', rank: 'R1' },
+    { user_id: 'r1b', username: 'mauricio', rank: 'R1' },
+  ];
+
+  it('uses activator when they just activated guardia hoy', () => {
+    const covering = resolveEntregaPhaseCovering({
+      userId: 'r1b',
+      rank: 'R1',
+      users,
+      teams,
+      sala: 'Sala 1',
+      salaGuardiaToday: [],
+      guardiaActivated: true,
+      guardiaMode: false,
+    });
+    assert.equal(covering?.coveringUserId, 'r1b');
+  });
+
+  it('uses activator in guardia mode even when another team is first in sala scan', () => {
+    const covering = resolveEntregaPhaseCovering({
+      userId: 'r1b',
+      rank: 'R1',
+      users,
+      teams,
+      sala: 'Sala 1',
+      salaGuardiaToday: [],
+      guardiaActivated: false,
+      guardiaMode: true,
+    });
+    assert.equal(covering?.coveringUserId, 'r1b');
+  });
+
+  it('falls back to sala on-call R1 when diurno activates entrega', () => {
+    const covering = resolveEntregaPhaseCovering({
+      userId: 'r1b',
+      rank: 'R1',
+      users,
+      teams,
+      sala: 'Sala 1',
+      salaGuardiaToday: [{ team_id: 't-melissa', user_id: 'r1a' }],
+      guardiaActivated: false,
+      guardiaMode: false,
+      now: '2026-06-01T12:00:00Z',
+    });
+    assert.equal(covering?.coveringUserId, 'r1a');
+  });
+});
+
 describe('resolveR1GuardiaCovering', () => {
   it('returns R1 on call for the sala', () => {
     const now = '2026-06-01T12:00:00Z';
@@ -233,6 +359,30 @@ describe('resolveR1GuardiaCovering', () => {
     assert.ok(covering);
     assert.equal(covering.coveringUserId, 'r1a');
     assert.equal(covering.sala, 'Sala 1');
+  });
+
+  it('prefers declared guardia user over first team in sala order', () => {
+    const now = '2026-06-01T12:00:00Z';
+    const salaTeams = [
+      {
+        team_id: 't1',
+        service: 'Sala',
+        sala: 'Sala 1',
+        sub_area_fraction: 'A1',
+        members: [{ user_id: 'r1a', rank: 'R1' }],
+        guardia_today: { user_id: 'r1a' },
+      },
+      {
+        team_id: 't2',
+        service: 'Sala',
+        sala: 'Sala 1',
+        sub_area_fraction: 'B1',
+        members: [{ user_id: 'r1b', rank: 'R1' }],
+        guardia_today: { user_id: 'r1b' },
+      },
+    ];
+    const covering = resolveR1GuardiaCovering(salaTeams, users, 'Sala 1', now, [], 'r1b');
+    assert.equal(covering?.coveringUserId, 'r1b');
   });
 });
 

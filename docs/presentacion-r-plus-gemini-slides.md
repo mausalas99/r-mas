@@ -4,6 +4,30 @@
 
 ---
 
+## Índice
+
+- [PROMPT MAESTRO](#prompt-maestro-copiar-desde-aqui)
+- [DIAPOSITIVAS](#diapositivas-contenido-fuente)
+  - [Diapositiva 1 — Portada](#diapositiva-1-—-portada)
+  - [Diapositiva 2 — El problema](#diapositiva-2-—-el-problema-que-resolvemos)
+  - [Diapositiva 3 — Qué es (y qué NO es)](#diapositiva-3-—-que-es-y-que-no-es)
+  - [Diapositiva 4 — Arquitectura](#diapositiva-4-—-arquitectura-en-30-segundos)
+  - [Diapositiva 5 — Flujo clínico](#diapositiva-5-—-flujo-clinico-principal)
+  - [Diapositiva 6 — Seguridad paciente](#diapositiva-6-—-seguridad-del-paciente-ingenieria-clinica)
+  - [Diapositiva 7 — Integridad del dato](#diapositiva-7-—-integridad-del-dato-varios-residentes)
+  - [Diapositiva 8 — Seguridad de red](#diapositiva-8-—-seguridad-de-red-lan)
+  - [Diapositiva 9 — Auditoría](#diapositiva-9-—-auditoria-y-trazabilidad-alcance-actual)
+  - [Diapositiva 10 — Limitaciones](#diapositiva-10-—-limitaciones-y-riesgos-slide-obligatorio)
+  - [Diapositiva 11 — Roadmap](#diapositiva-11-—-roadmap:-planes-frente-a-cada-limitacion)
+  - [Diapositiva 12 — Propuesta de piloto](#diapositiva-12-—-propuesta-de-piloto)
+  - [Diapositiva 13 — Cierre](#diapositiva-13-—-cierre)
+- [APÉNDICE — Roadmap detallado](#apendice-—-roadmap-detallado-referencia-para-el-presentador)
+- [APÉNDICE — FAQs](#apendice-—-preguntas-frecuentes-slide-opcional-14)
+- [APÉNDICE — Instrucciones Gemini](#apendice-—-instrucciones-extra-para-gemini)
+- [Checklist](#checklist-antes-de-presentar)
+
+---
+
 ## PROMPT MAESTRO (copiar desde aquí)
 
 ```
