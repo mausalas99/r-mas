@@ -1022,6 +1022,11 @@ app.whenReady().then(async () => {
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
 
     const lanServer = require('./server');
+    if (typeof lanServer.setOnInternoHostSync === 'function') {
+      lanServer.setOnInternoHostSync((payload) => {
+        safeSendToRenderer('rpc-interno-host-sync', payload);
+      });
+    }
     try {
       server = await lanServer.startLanServer();
     } catch (lanErr) {

@@ -125,7 +125,6 @@ export function syncGuardiaPhaseBar(opts) {
         <span class="guardia-turno-clock" id="guardia-turno-clock" title="Tiempo de turno">${CLOCK_SVG}<span class="guardia-turno-clock-value">—</span></span>
       </div>
       <div class="guardia-phase-bar-actions">
-        <button type="button" class="btn-guardia-phase-ghost" id="guardia-btn-iniciar-entrega">Iniciar entrega</button>
         <button type="button" class="btn-guardia-phase-end" id="guardia-btn-finalizar-turno">Finalizar turno</button>
       </div>`;
     startTurnoClock(host.querySelector('#guardia-turno-clock .guardia-turno-clock-value'));

@@ -121,7 +121,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-08** `release-7.2.6`: entrega source team from census assignment, patient team on register, stacked expediente tabs + med cache, tendencias spark abnormal color; `clinical-entrega.mjs`, `patient-team-assign-ui.mjs`, `pase-board.mjs`, `tendencias.mjs`.
+- **2026-06-08** `release-7.2.6`: entrega census team + Sin signos + admin team select; guardia/interno sort by bed with critical/unstable first; interno census filter + host vitals IPC; expediente tabs cache; `clinical-entrega.mjs`, `patient-priority-sort.mjs`, `interno-board.mjs`, `orchestrator.mjs`.
 - **2026-06-08** `release-7.2.5`: LAN host persistence P0–P3 — coalesced commits, JSON shards, lab sidecars, SQL v15 tables + `R_PLUS_LAN_PERSIST_MODE` rollback; `lan-squad/persistence/`, `host-store.js`, `schema.mjs` v15.
 - **2026-06-08** `docs-hub`: agent-first docs library — `docs/core/00-system-index.md`, `01-vision-north-star.md`, feature/logic/DB indices; rules `product-north-star.mdc`, `documentation-sync.mdc`.
 - **2026-06-08** `release-7.2.4`: R4 client-first LAN (no auto-host on register, subnet scan, pinned host before promote) + R4/Admin skip team onboarding; `lan-host-rank.mjs`, `transport.mjs`, `panel.mjs`, `clinical-onboarding.mjs`.

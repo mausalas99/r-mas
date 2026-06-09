@@ -144,12 +144,52 @@
   color: #e5534b;
 }
 
-.interno-pending {
-  font-size: 0.7rem;
-  font-weight: 700;
-  min-width: 1.5rem;
-  text-align: center;
+.interno-pending-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 2.25rem;
+  justify-content: flex-end;
+}
+
+.interno-pending-tags--empty {
   color: var(--text-muted, #9aa5b1);
+  font-size: 0.7rem;
+}
+
+.interno-pending-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.interno-pending-tag--signos {
+  background: rgba(56, 132, 255, 0.22);
+  color: #6eb0ff;
+}
+
+.interno-pending-tag--estudios {
+  background: rgba(160, 120, 255, 0.2);
+  color: #c4a8ff;
+}
+
+.interno-vitals-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.interno-vitals-metric {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(56, 132, 255, 0.12);
+  color: #9ec5ff;
 }
 
 .interno-detail {

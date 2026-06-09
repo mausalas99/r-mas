@@ -5,6 +5,9 @@ import {
   resolveR1GuardiaCovering,
   resolveEntregaActorRole,
   resolveEntregaSourceTeamId,
+  entregaSourceTeamSelectOptions,
+  resolveEntregaCensusTeamId,
+  entregaSourceTeamHint,
   resolveEntregaPhaseCovering,
   loadGuardiaGridViewContext,
   startEntregaPhase,
@@ -219,6 +222,82 @@ describe('ensureEntregaTargetUser', () => {
   });
 });
 
+describe('entregaSourceTeamHint', () => {
+  it('prefers census assignment message when present', () => {
+    assert.match(
+      entregaSourceTeamHint({ hasCensusAssignment: true, hasExistingSourceTeam: true }),
+      /censo/
+    );
+  });
+
+  it('mentions prior entrega when only source_team exists', () => {
+    assert.match(
+      entregaSourceTeamHint({ hasCensusAssignment: false, hasExistingSourceTeam: true }),
+      /entrega anterior/
+    );
+  });
+});
+
+describe('resolveEntregaCensusTeamId', () => {
+  const teams = [
+    {
+      team_id: 't1',
+      service: 'Sala',
+      sub_area_fraction: 'A1',
+      members: [],
+    },
+  ];
+
+  it('uses _filterTeamId tag when assignments are empty', () => {
+    assert.equal(
+      resolveEntregaCensusTeamId(
+        'p1',
+        { id: 'p1', servicio: 'Sala', area: 'Z9', _filterTeamId: 't1' },
+        teams,
+        [],
+        new Date()
+      ),
+      't1'
+    );
+  });
+});
+
+describe('entregaSourceTeamSelectOptions', () => {
+  const teams = [
+    {
+      team_id: 't-adrian',
+      name: 'Dr. Adrian Montemayor',
+      service: 'Sala',
+      sala: 'Sala 2',
+      members: [{ user_id: 'r2a', rank: 'R2' }],
+    },
+    {
+      team_id: 't-mauricio',
+      name: 'Dr. Mauricio',
+      service: 'Sala',
+      sala: 'Sala 2',
+      members: [{ user_id: 'r1m', rank: 'R1' }],
+    },
+  ];
+
+  it('includes census team outside actor joined teams', () => {
+    const opts = entregaSourceTeamSelectOptions('t-adrian', teams, 'r1m');
+    assert.equal(opts.length, 2);
+    assert.equal(opts[0].team_id, 't-adrian');
+    assert.equal(opts[1].team_id, 't-mauricio');
+  });
+
+  it('lists all teams for admin without requiring membership', () => {
+    const opts = entregaSourceTeamSelectOptions('t-adrian', teams, 'admin1', {
+      rank: 'Admin',
+      is_program_admin: true,
+    });
+    assert.equal(opts.length, 2);
+    assert.ok(opts.some((t) => t.team_id === 't-adrian'));
+    assert.ok(opts.some((t) => t.team_id === 't-mauricio'));
+  });
+});
+
 describe('resolveEntregaSourceTeamId', () => {
   const teams = [
     {
@@ -251,7 +330,7 @@ describe('resolveEntregaSourceTeamId', () => {
     assert.equal(teamId, 't-melissa');
   });
 
-  it('preserves existing guardia source team when editing', () => {
+  it('prefers census assignment over stale guardia source team', () => {
     const teamId = resolveEntregaSourceTeamId(
       'p1',
       { id: 'p1' },
@@ -260,7 +339,7 @@ describe('resolveEntregaSourceTeamId', () => {
       { source_team_id: 't-mauricio' },
       'r1m'
     );
-    assert.equal(teamId, 't-mauricio');
+    assert.equal(teamId, 't-melissa');
   });
 
   it('falls back to actor joined team only when patient has no assignment', () => {

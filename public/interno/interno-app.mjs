@@ -256,23 +256,26 @@ function render() {
     return;
   }
 
-  const summary = board.summary || { total: 0, vitalsOverdue: 0 };
+  const summary = board.summary || { total: 0, vitalsOverdue: 0, signosMonitored: 0 };
   const overdue = summary.vitalsOverdue || 0;
+  const signosMonitored = summary.signosMonitored || 0;
 
   let html = `<header class="interno-header">
     <h1>${escapeHtml(board.sala || salaKey)} · Internos</h1>
-    <span class="interno-summary">${summary.total} pac · ${overdue} vencidos</span>
+    <span class="interno-summary">${summary.total} pac · ${signosMonitored} SV · ${overdue} vencidos</span>
     <button type="button" class="interno-btn-icon" id="interno-refresh" aria-label="Actualizar">↻</button>
   </header>`;
 
   const patients = Array.isArray(board.patients) ? board.patients : [];
   if (!patients.length) {
-    html += '<div class="interno-empty"><p>Sin pacientes entregados al R1 de guardia.</p></div>';
+    html += `<div class="interno-empty"><p>Sin pacientes entregados al R1 de guardia.</p>
+      <p class="interno-summary">En la Mac: abre cada paciente en <strong>Entrega</strong>, configura signos vitales y guarda. El MIP solo ve pacientes con entrega registrada al R1 de turno.</p></div>`;
   } else {
     html += '<ul class="interno-list">';
     for (const p of patients) {
       const crit = p.isCritical ? ' is-critical' : '';
       const markers = renderPatientMarkers(p);
+      const pendingTags = renderPendingTags(p);
       html += `<li class="interno-row${crit}" data-id="${escapeAttr(p.id)}">
         <span class="interno-bed">${escapeHtml(p.bedLabel)}</span>
         <span class="interno-row-main">
@@ -280,7 +283,7 @@ function render() {
           ${markers}
         </span>
         <span class="interno-chip ${escapeAttr(p.vitals?.cls || 'nominal')}">${escapeHtml(p.vitals?.banner || '')}</span>
-        <span class="interno-pending">${p.pendingCount || 0}</span>
+        ${pendingTags}
       </li>`;
       if (expandedId === p.id) {
         html += `<li class="interno-detail-wrap"><div class="interno-detail">${renderDetail(p)}</div></li>`;
@@ -321,6 +324,27 @@ function render() {
       if (patientId && itemId) void markPendienteComplete(patientId, itemId);
     });
   });
+}
+
+/** @param {{ signosPending?: boolean, estudiosPending?: number, pendingCount?: number }} p */
+function renderPendingTags(p) {
+  const estudios = Number(p.estudiosPending ?? p.pendingCount ?? 0);
+  const signos = !!p.signosPending;
+  if (!signos && estudios <= 0) {
+    return '<span class="interno-pending-tags interno-pending-tags--empty" aria-hidden="true">—</span>';
+  }
+  const tags = [];
+  if (signos) {
+    tags.push(
+      '<span class="interno-pending-tag interno-pending-tag--signos" title="Signos vitales en entrega">SV</span>'
+    );
+  }
+  if (estudios > 0) {
+    tags.push(
+      `<span class="interno-pending-tag interno-pending-tag--estudios" title="Estudios / procedimientos">${estudios}</span>`
+    );
+  }
+  return `<span class="interno-pending-tags">${tags.join('')}</span>`;
 }
 
 /** @param {string[]} badges */
@@ -369,14 +393,23 @@ function renderDetail(p) {
     : '<p class="interno-summary interno-estudios-empty">Sin estudios ni procedimientos.</p>';
 
   const handoffMarkers = renderPatientMarkers(p);
+  const metrics = Array.isArray(p.vitals?.metrics) ? p.vitals.metrics : [];
+  const summary = String(p.vitals?.summary || '').trim();
+  const metricsHtml = metrics.length
+    ? `<p class="interno-vitals-metrics">${metrics.map((m) => `<span class="interno-vitals-metric">${escapeHtml(m)}</span>`).join('')}</p>`
+    : summary && summary !== 'Sin signos solicitados'
+      ? `<p class="interno-vitals-metrics interno-vitals-metrics--summary">${escapeHtml(summary)}</p>`
+      : '<p class="interno-summary">Sin métricas de signos en la entrega.</p>';
 
   return `<h2>${escapeHtml(p.bedLabel)} · ${escapeHtml(p.nameShort)}</h2>
     ${handoffMarkers ? `<div class="interno-detail-markers">${handoffMarkers}</div>` : ''}
+    <h3 class="interno-section-title">Signos vitales</h3>
     <button type="button" class="interno-vitals-banner interno-chip ${vitalsCls}" data-vitals-banner="${escapeAttr(p.id)}" aria-label="Registrar signos vitales">
-      <span class="interno-vitals-banner__label">Signos</span>
+      <span class="interno-vitals-banner__label">Registrar</span>
       <span class="interno-vitals-banner__text">${escapeHtml(p.vitals?.banner || '')}</span>
       <span class="interno-vitals-banner__freq">${escapeHtml(p.vitals?.frequency || '')}</span>
     </button>
+    ${metricsHtml}
     <h3 class="interno-section-title">Estudios y procedimientos</h3>
     ${estudiosHtml}`;
 }
@@ -511,35 +544,80 @@ function applyPendienteCompleted(patientId, itemId) {
   render();
 }
 
+/** @type {Record<string, Array<{ key: string, label: string }>>} */
+const INTERN_VITAL_INPUTS = {
+  ta: [
+    { key: 'tas', label: 'TAS' },
+    { key: 'tad', label: 'TAD' },
+  ],
+  fc: [{ key: 'fc', label: 'FC' }],
+  fr: [{ key: 'fr', label: 'FR' }],
+  temp: [{ key: 'temp', label: 'TEMP' }],
+  sat: [{ key: 'sat', label: 'SAT %' }],
+};
+
+/** @param {string[]} metricKeys */
+function internVitalFieldsHtml(metricKeys) {
+  const fields = [];
+  for (const mk of metricKeys) {
+    if (mk === 'glu') continue;
+    const defs = INTERN_VITAL_INPUTS[mk];
+    if (defs) fields.push(...defs);
+  }
+  if (!fields.length) return '';
+  return `<div class="interno-field-grid">${fields
+    .map((f) => vitalField(f.key, f.label))
+    .join('')}</div>`;
+}
+
 /** @param {string} patientId */
 function openVitalsModal(patientId) {
   const p = (board?.patients || []).find((x) => x.id === patientId);
   if (!p) return;
 
+  let metricKeys = Array.isArray(p.vitals?.metricKeys) ? p.vitals.metricKeys : [];
+  if (!metricKeys.length && p.signosPending) {
+    metricKeys = ['ta', 'fc', 'fr', 'temp', 'sat', 'glu'];
+  }
+  const hasGlu = metricKeys.includes('glu');
+  const fieldsHtml = internVitalFieldsHtml(metricKeys);
+  const metricsHint = Array.isArray(p.vitals?.metrics) && p.vitals.metrics.length
+    ? p.vitals.metrics.join(' · ')
+    : String(p.vitals?.summary || '').trim();
+  const freqHint = String(p.vitals?.frequency || '').trim();
+  const planHint = [metricsHint, freqHint].filter(Boolean).join(' · ');
+  const noMetrics = !p.signosPending && metricKeys.length === 0;
+
   const bd = document.createElement('div');
   bd.className = 'interno-modal-backdrop';
   bd.innerHTML = `<div class="interno-modal" role="dialog" aria-modal="true">
     <h3>${escapeHtml(p.bedLabel)} · Signos vitales</h3>
-    <div class="interno-field-grid">
-      ${vitalField('tas', 'TAS')}
-      ${vitalField('tad', 'TAD')}
-      ${vitalField('fc', 'FC')}
-      ${vitalField('fr', 'FR')}
-      ${vitalField('temp', 'TEMP')}
-      ${vitalField('sat', 'SAT %')}
-    </div>
-    <div class="interno-glu-block">
+    ${
+      planHint
+        ? `<p class="interno-summary interno-vitals-plan-hint">${escapeHtml(planHint)}</p>`
+        : ''
+    }
+    ${
+      noMetrics
+        ? '<p class="interno-summary">Sin signos solicitados en la entrega.</p>'
+        : fieldsHtml
+    }
+    ${
+      hasGlu
+        ? `<div class="interno-glu-block">
       <label class="interno-summary">Glucometrías</label>
       <div id="interno-glu-rows"></div>
       <button type="button" class="interno-link-btn" id="interno-add-glu">+ Agregar glucometría</button>
-    </div>
+    </div>`
+        : ''
+    }
     <div class="interno-field" style="margin-top:0.75rem">
       <label for="interno-reporter">Tu nombre (opcional)</label>
-      <input id="interno-reporter" type="text" autocomplete="name" placeholder="Interno" />
+      <input id="interno-reporter" type="text" autocomplete="name" placeholder="Interno" value="${escapeAttr(sessionStorage.getItem(REPORTER_KEY) || '')}" />
     </div>
     <div class="interno-modal-actions">
       <button type="button" class="interno-btn-secondary" id="interno-cancel">Cancelar</button>
-      <button type="button" class="interno-btn-primary" id="interno-save">Guardar</button>
+      <button type="button" class="interno-btn-primary" id="interno-save"${noMetrics ? ' disabled' : ''}>Guardar</button>
     </div>
   </div>`;
 
@@ -547,8 +625,10 @@ function openVitalsModal(patientId) {
   requestAnimationFrame(() => bd.classList.add('open'));
 
   const gluHost = bd.querySelector('#interno-glu-rows');
-  addGluRow(gluHost);
-  bd.querySelector('#interno-add-glu')?.addEventListener('click', () => addGluRow(gluHost));
+  if (hasGlu && gluHost) {
+    addGluRow(gluHost);
+    bd.querySelector('#interno-add-glu')?.addEventListener('click', () => addGluRow(gluHost));
+  }
 
   function close() {
     bd.classList.remove('open');

@@ -298,12 +298,31 @@ html.ui-density-guardia #header-app-mode-chip {
   gap: 8px;
 }
 
+.guardia-hoy-cycle-today {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
 .guardia-hoy-cycle-badge {
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
+}
+
+.guardia-hoy-cycle-badge.is-on-cycle {
+  color: var(--accent);
+}
+
+.guardia-hoy-on-cycle-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--accent);
 }
 
 .guardia-hoy-select-label {
@@ -1069,6 +1088,13 @@ html.ui-density-guardia #header-app-mode-chip {
 
 #entrega-modal-backdrop .entrega-vitals-freq-detail-slot[aria-hidden='true'] {
   display: none;
+}
+
+#entrega-modal-backdrop .entrega-freq-routine-hint {
+  margin: 0.5rem 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
 }
 
 #entrega-modal-backdrop .entrega-vitals-freq-detail-slot .entrega-freq-panel {

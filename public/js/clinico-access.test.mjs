@@ -19,6 +19,9 @@ import {
   formatMemberCycleLabel,
   letterIndexForTeam,
   isOnCallToday,
+  activeCycleLetterForDate,
+  isMemberOnCallToday,
+  isTeamRankOnCallToday,
   salaLetterForTeamOrArea,
   salaOnCallR1,
   salaOnCallR2,
@@ -629,6 +632,49 @@ test('isOnCallToday handles R1 A2 on day 5', () => {
   const team = { service: 'Sala', sub_area_fraction: 'A2' };
   const now = new Date('2026-06-05T12:00:00Z');
   assert.equal(isOnCallToday(team, 'R1', now), true);
+});
+
+test('activeCycleLetterForDate returns D2 on June 8 for Sala R1', () => {
+  const now = new Date('2026-06-08T12:00:00Z');
+  assert.equal(activeCycleLetterForDate('Sala', 'R1', now), 'D2');
+});
+
+test('isMemberOnCallToday uses membership subcycle not team letter', () => {
+  const now = new Date('2026-06-08T12:00:00Z');
+  const team = {
+    team_id: 't-melissa',
+    service: 'Sala',
+    sub_area_fraction: 'A',
+    members: [{ user_id: 'r1-mauri', rank: 'R1', sub_area_fraction: 'D2' }],
+  };
+  const member = team.members[0];
+  assert.equal(isMemberOnCallToday(member, team, 'R1', now), true);
+  assert.equal(isOnCallToday(team, 'R1', now), false);
+  assert.equal(isTeamRankOnCallToday(team, 'R1', now), true);
+});
+
+test('salaOnCallR1 picks R1 by membership subcycle when team letter differs', () => {
+  const now = new Date('2026-06-08T12:00:00Z');
+  const teams = [
+    {
+      team_id: 't-melissa',
+      sala: 'Sala 2',
+      service: 'Sala',
+      sub_area_fraction: 'A',
+      members: [{ user_id: 'r1-mauri', rank: 'R1', sub_area_fraction: 'D2' }],
+    },
+    {
+      team_id: 't-victor',
+      sala: 'Sala 2',
+      service: 'Sala',
+      sub_area_fraction: 'B',
+      members: [{ user_id: 'r1-esdras', rank: 'R1', sub_area_fraction: 'B1' }],
+    },
+  ];
+  const result = salaOnCallR1(teams, 'Sala 2', now);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].team_id, 't-melissa');
+  assert.equal(result[0].user_id, 'r1-mauri');
 });
 
 test('salaLetterForTeamOrArea extracts A from A1', () => {

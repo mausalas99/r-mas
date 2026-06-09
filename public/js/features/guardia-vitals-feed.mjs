@@ -56,8 +56,25 @@ function fmtVal(key, value, alteredAt = {}) {
  * @param {{ values?: Record<string, unknown>, alteredAt?: Record<string, unknown> }} entry
  * @returns {string}
  */
+function medicionRecordedAt(entry) {
+  return String(entry?.recordedAt || entry?.registeredAt || entry?.createdAt || '');
+}
+
+function medicionVitals(entry) {
+  return entry?.vitals && typeof entry.vitals === 'object'
+    ? entry.vitals
+    : entry?.values && typeof entry.values === 'object'
+      ? entry.values
+      : {};
+}
+
+function patientBedLabel(p) {
+  const joined = [p?.cuarto, p?.cama].filter(Boolean).join('-');
+  return joined || String(p?.bed_label || '—');
+}
+
 function buildVitalsLine(entry) {
-  const v = entry?.values || {};
+  const v = medicionVitals(entry);
   const alt = entry?.alteredAt || {};
   const parts = [];
   if (v.ta != null) parts.push(`TA ${fmtVal('ta', v.ta, alt)}`);
@@ -79,12 +96,12 @@ function collectRecentVitals(patients, turnoStart) {
       const hist = Array.isArray(p.monitoreo?.historial) ? p.monitoreo.historial : [];
       if (!hist.length) return null;
       const last = hist[hist.length - 1];
-      const registeredAt = String(last?.registeredAt || last?.createdAt || '');
+      const registeredAt = medicionRecordedAt(last);
       if (!isInTurnoSession(registeredAt, turnoStart)) return null;
       return {
         id: p.id,
-        bed: String(p.bed_label || '—'),
-        name: abbreviatePatientName(String(p.name || '')),
+        bed: patientBedLabel(p),
+        name: abbreviatePatientName(String(p.nombre || p.name || '')),
         line: buildVitalsLine(last),
         hasAlerts: entryHasAlerts(last),
         registeredAt,

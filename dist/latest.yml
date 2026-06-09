@@ -1,20 +1,24 @@
-version: 7.2.5
+version: 7.2.6
 files:
-  - url: R+-7.2.5-x64.exe
-    sha512: xniPNebwa5yGhxireXeEKEnCR2jCY3EvV9UURHbHyVcuBb1Z9GtSiTuescq+VEBjJInckSSLMx6SO4+H7d+nPg==
-    size: 114680397
-path: R+-7.2.5-x64.exe
-sha512: xniPNebwa5yGhxireXeEKEnCR2jCY3EvV9UURHbHyVcuBb1Z9GtSiTuescq+VEBjJInckSSLMx6SO4+H7d+nPg==
-releaseDate: '2026-06-08T20:15:21.000Z'
+  - url: R+-7.2.6-x64.exe
+    sha512: rGWwVuX0A0xl7E+U5mmN5W4BBnRL/BapmXNq4CnN+F2c7u3mnnq71fKN5YxRR39Ggb9sXBbXW6p4iw8O7XTsTg==
+    size: 114702612
+path: R+-7.2.6-x64.exe
+sha512: rGWwVuX0A0xl7E+U5mmN5W4BBnRL/BapmXNq4CnN+F2c7u3mnnq71fKN5YxRR39Ggb9sXBbXW6p4iw8O7XTsTg==
+releaseDate: '2026-06-09T01:14:17.000Z'
 releaseNotes: |
-  Parche sobre 7.2.4: el anfitrión LAN deja de reescribir un JSON monolítico en cada guardado. Los commits son asíncronos y coalescidos, los bundles van por sala, los labs viven en sidecars y —con SQLCipher desbloqueado— las tablas normalizadas v15 sustituyen el blob único. Esquema SQLCipher v15 (migración automática al desbloquear).
+  Parche sobre 7.2.5: la entrega usa el equipo del paciente según el censo (no el R1 de guardia ni solo tu equipo), puedes asignar equipo al registrar, y el cambio entre Lab / Med / Expediente es más fluido sin re-render innecesario.
   
-  Commits coalescidos — CommitBarrier agrupa escrituras (~150 ms); las rutas HTTP tipadas esperan awaitDurableCommit antes de responder.
+  Entrega — equipo del paciente — El modal toma patient_team_assignment del censo; hint claro entre equipo del paciente y R1 de guardia. Al editar una entrega existente se conserva el source_team_id.
   
-  Shards JSON por sala — meta.json + rooms/<id>/bundle.json; migración automática desde lan-squad-host-state.json.
+  Asignar al registrar — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
   
-  Sidecars de laboratorio — labHistory fuera del bundle; upserts de labs ya no re-serializan el turno completo.
+  Bulk preview → expediente — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a Lab y seguir procesando.
   
-  SQL v15 en anfitrión — Tablas lan_host_meta, lan_room_bundles, lan_bundle_entries, lan_lab_sets cuando la DB clínica está desbloqueada; fallback JSON si está bloqueada.
+  Tabs más fluidos — Paneles principales en stack (visibility en lugar de display:none); renders diferidos al cambiar tab; caché en panel de recetas.
   
-  Rollback de soporte — Variable de entorno R_PLUS_LAN_PERSIST_MODE (legacy | json | sql | sql-monolith) para forzar generación anterior sin recompilar.
+  Tendencias — Mini-gráficas marcan valores fuera de rango en rojo y actualizan sin parpadeo al refrescar.
+  
+  Censo PDF/HTML — Exportación y vista previa respetan el filtro de censo activo (equipo/sala).
+  
+  UI — Tokens Hallmark, bordes del shell y motion más suaves en el workbench clínico.

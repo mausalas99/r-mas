@@ -8,11 +8,19 @@ import {
   refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
 import { patients } from '../app-state.mjs';
-import { normalizePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
+import {
+  listActiveProcedimientos,
+  normalizePendientesJson,
+} from '../../../lib/entrega/entrega-pendientes.mjs';
+import { vitalsStructuredMonitoringEnabled } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import {
   normalizeHandoffContext,
   handoffContextSummary,
 } from '../../../lib/entrega/entrega-handoff-context.mjs';
+import {
+  patientClinicalPriorityRank,
+  sortPatientsByPriorityThenBed,
+} from '../../../lib/patient-priority-sort.mjs';
 
 const PANEL_ID = 'entrega-roster-panel';
 const WARN_SVG = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
@@ -41,7 +49,13 @@ function rowContextSummary(g) {
   const doc = normalizePendientesJson(g.pendientes_json);
   const ctx = normalizeHandoffContext(doc.handoffContext);
   const summary = handoffContextSummary(ctx);
-  return summary === 'Sin resumen clínico' ? null : summary;
+  if (summary !== 'Sin resumen clínico') return summary;
+  if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) {
+    const n = listActiveProcedimientos(doc).length;
+    return n > 0 ? `Signos vitales · ${n} estudio(s)` : 'Signos vitales configurados';
+  }
+  const n = listActiveProcedimientos(doc).length;
+  return n > 0 ? `${n} estudio(s) pendiente(s)` : null;
 }
 
 /** @param {object} g */
@@ -93,18 +107,26 @@ export function isEntregaRosterOpen() {
 
 const TURNO_STARTED_KEY = 'guardia.turnoStartedAt';
 
-export function openEntregaRosterPanel(settings) {
+export async function openEntregaRosterPanel(settings) {
+  await refreshGuardiaCensusFromDb(settings);
   const host = ensureRosterHost();
   document.documentElement.classList.add('guardia-entrega-roster-open');
 
   const guardiasMap = clinicalSessionContext.guardiasMap;
 
-  const censusPatients = patients
-    .filter((p) => p && p.id && !p.isDemo && !p.archived)
-    .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p }));
+  const censusPatients = sortPatientsByPriorityThenBed(
+    patients
+      .filter((p) => p && p.id && !p.isDemo && !p.archived)
+      .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p })),
+    guardiasMap
+  );
 
-  const critical = censusPatients.filter((p) => rowIsCriticalOrUnstable(guardiasMap.get(p.id)));
-  const stable = censusPatients.filter((p) => !rowIsCriticalOrUnstable(guardiasMap.get(p.id)));
+  const critical = censusPatients.filter(
+    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) < 2
+  );
+  const stable = censusPatients.filter(
+    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) >= 2
+  );
 
   function renderRow(p) {
     const g = guardiasMap.get(p.id);
@@ -194,6 +216,23 @@ export function openEntregaRosterPanel(settings) {
 
   document.getElementById('roster-btn-confirm')?.addEventListener('click', () => {
     void (async () => {
+      let totalEstudios = 0;
+      let patientsWithSignos = 0;
+      for (const g of guardiasMap.values()) {
+        if (!g?.pendientes_json) continue;
+        const doc = normalizePendientesJson(g.pendientes_json);
+        totalEstudios += listActiveProcedimientos(doc).length;
+        if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) patientsWithSignos += 1;
+      }
+      if (totalEstudios === 0 && patientsWithSignos === 0) {
+        const proceed = window.confirm(
+          'No hay entregas guardadas con signos vitales ni estudios.\n\n' +
+            'Los internos (MIP) solo ven pacientes entregados al R1 de guardia. Abre cada paciente, configura signos (y procedimientos si aplica) y pulsa Guardar entrega.\n\n' +
+            '¿Iniciar turno activo de todos modos?'
+        );
+        if (!proceed) return;
+      }
+
       closeEntregaRosterPanel();
       const { endEntregaPhase } = await import('./clinical-entrega.mjs');
       endEntregaPhase();

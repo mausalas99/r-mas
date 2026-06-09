@@ -172,7 +172,8 @@ test('curated 7.2.6 highlights are current default', async () => {
   assert.ok(
     joined.includes('entrega') ||
       joined.includes('censo') ||
-      joined.includes('Expediente')
+      joined.includes('cama') ||
+      joined.includes('interno')
   );
   assert.equal(mod.RELEASE_NOTES_HIGHLIGHTS_DEFAULT, mod.RELEASE_NOTES_HIGHLIGHTS['7.2.6']);
 });

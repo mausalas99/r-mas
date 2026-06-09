@@ -2426,19 +2426,23 @@ Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-re
 
 ## [7.2.6](docs/RELEASE_NOTES_7.2.6.txt)
 
-R+ 7.2.6 (entrega en censo y expediente más fluido)
+R+ 7.2.6 (entrega en censo, guardia e interno)
 =======================================================
 
 Fecha: 2026-06-08
 
 ## Resumen
 
-Parche sobre 7.2.5: la **entrega** usa el equipo del paciente según el **censo** (no el R1 de guardia ni solo tu equipo), puedes **asignar equipo al registrar**, y el cambio entre **Lab / Med / Expediente** es más fluido sin re-render innecesario.
+Parche sobre 7.2.5: la **entrega** usa el equipo del paciente según el **censo**, el **listado de guardia** ordena por **cama** con críticos e inestables arriba, el **interno móvil** alinea al censo y sincroniza signos al host, y el cambio entre **Lab / Med / Expediente** es más fluido.
 
 ## Nuevo / mejorado
 
-- **Entrega — equipo del paciente** — El modal toma `patient_team_assignment` del censo; hint claro entre equipo del paciente y R1 de guardia. Al editar una entrega existente se conserva el `source_team_id`.
+- **Entrega — equipo del paciente** — El modal toma `patient_team_assignment` del censo; el selector incluye el equipo del censo aunque no seas miembro (Admin ve todos). Hint claro entre equipo del paciente y R1 de guardia.
 - **Asignar al registrar** — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
+- **Entrega — Sin signos** — Tercera opción en plan de signos: el paciente no aparece en interno salvo estudios/pendientes activos.
+- **Orden en guardia** — Grid, panel Entrega e interno: **críticos e inestables** primero; dentro de cada grupo, **por cama** (cuarto/cama).
+- **Interno móvil** — Lista solo pacientes del censo de la sala; signos capturados en iPad llegan al host/desktop vía IPC (no solo WS).
+- **Guardia hoy** — R2/R3/R4 ven el modal de guardia al iniciar entrega (pueden omitir).
 - **Bulk preview → expediente** — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a **Lab** y seguir procesando.
 - **Tabs más fluidos** — Paneles principales en stack (`visibility` en lugar de `display:none`); renders diferidos al cambiar tab; caché en panel de recetas.
 - **Tendencias** — Mini-gráficas marcan valores fuera de rango en rojo y actualizan sin parpadeo al refrescar.

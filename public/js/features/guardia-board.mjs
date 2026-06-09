@@ -43,9 +43,10 @@ import {
   listActiveProcedimientos,
   normalizePendientesJson,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
+import { vitalsStructuredMonitoringEnabled } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import { isGuardiaChipCritical } from '../../../lib/entrega/guardia-chip-critical.mjs';
 import { renderGuardiaVitalsFeed } from './guardia-vitals-feed.mjs';
-import { isTurnoActivo, deactivateTurnoActivo } from './entrega-roster-panel.mjs';
+import { isTurnoActivo } from './entrega-roster-panel.mjs';
 import { syncOrphanEntregasStrip } from '../guardia-orphan-entregas.mjs';
 import {
   openGuardiaPatientActionSheet,
@@ -175,7 +176,9 @@ function syncEntregaPhaseChrome(opts = {}) {
     btn.textContent = 'Entrega';
     btn.title = active
       ? 'Continuar entrega — listado de pacientes'
-      : 'Iniciar entrega al R1 de guardia de tu sala';
+      : opts.turnoActivo
+        ? 'Documentar entrega — abre el listado por paciente'
+        : 'Iniciar entrega al R1 de guardia de tu sala';
   }
 
   if (status) {
@@ -251,12 +254,15 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
 export function computeGuardiaSummary(censusPatients, guardiasMap) {
   let critical = 0;
   let pending = 0;
+  let vitalsMonitored = 0;
   let vitalsOverdue = 0;
   let vitalsDueSoon = 0;
   censusPatients.forEach((p) => {
     const meta = guardiasMap.get(p.id) || p.guardiaMeta || {};
     if (p.isCritical) critical += 1;
     pending += p.pendingCount || 0;
+    const doc = normalizePendientesJson(meta?.pendientes_json);
+    if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) vitalsMonitored += 1;
     const banner = vitalsBannerForGuardia(meta);
     if (banner.cls === 'breached') vitalsOverdue += 1;
     else if (banner.cls === 'warning') vitalsDueSoon += 1;
@@ -265,6 +271,7 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
     total: censusPatients.length,
     critical,
     pending,
+    vitalsMonitored,
     vitalsOverdue,
     vitalsDueSoon,
   };
@@ -279,11 +286,14 @@ function renderGuardiaSummaryTiles(summary, opts = {}) {
   if (!host) return;
 
   const vitalsTitle =
-    summary.vitalsOverdue > 0
-      ? `${summary.vitalsOverdue} signo${summary.vitalsOverdue === 1 ? '' : 's'} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`
-      : summary.vitalsDueSoon > 0
-        ? `${summary.vitalsDueSoon} signo${summary.vitalsDueSoon === 1 ? '' : 's'} pronto`
-        : 'Signos al día';
+    summary.vitalsMonitored > 0
+      ? `${summary.vitalsMonitored} con monitoreo de signos` +
+        (summary.vitalsOverdue > 0
+          ? ` · ${summary.vitalsOverdue} vencido${summary.vitalsOverdue === 1 ? '' : 's'}`
+          : summary.vitalsDueSoon > 0
+            ? ` · ${summary.vitalsDueSoon} pronto`
+            : '')
+      : 'Sin plan de signos en entregas guardadas';
 
   const stats = [
     {
@@ -298,7 +308,7 @@ function renderGuardiaSummaryTiles(summary, opts = {}) {
       title: 'Críticos — revisar primero',
     },
     {
-      value: summary.vitalsOverdue || summary.vitalsDueSoon || 0,
+      value: summary.vitalsMonitored || 0,
       label: 'signos',
       hot: summary.vitalsOverdue > 0,
       warn: !summary.vitalsOverdue && summary.vitalsDueSoon > 0,
@@ -336,7 +346,9 @@ function renderGuardiaCensusHead(count, state) {
   if (state.vitalsOverdue > 0) {
     parts.push(`${state.vitalsOverdue} signo${state.vitalsOverdue === 1 ? '' : 's'} vencido${state.vitalsOverdue === 1 ? '' : 's'}`);
   }
-  const sortHint = parts.length ? `${parts.join(' · ')} arriba` : 'Sin alertas urgentes';
+  const sortHint = parts.length
+    ? `${parts.join(' · ')} arriba · por cama`
+    : 'Orden por cama · críticos e inestables arriba';
 
   host.innerHTML = `
     <div class="guardia-census-head-inner">
@@ -399,7 +411,7 @@ function syncGuardiaBoardChrome(state) {
     scopePanel.classList.toggle('guardia-census-scope--narrow', !!clinicalSessionContext.guardiaMode);
   }
 
-  syncEntregaPhaseChrome({ rosterOpen: state.rosterOpen });
+  syncEntregaPhaseChrome({ rosterOpen: state.rosterOpen, turnoActivo: state.turnoActivo });
 
   syncGuardiaPhaseBar({
     ...state,
@@ -414,7 +426,6 @@ export function renderGuardiaBoard(settings) {
   if (!isGuardiaMode()) {
     guardiaViewBootstrapped = false;
     teardownGuardiaPhaseBar();
-    deactivateTurnoActivo();
     document.documentElement.classList.remove('guardia-entrega-roster-open');
     return;
   }
@@ -587,4 +598,12 @@ export function syncGuardiaModeButtonVisibility() {
   const show = isDbMode();
   const btn = document.getElementById('header-guardia-mode-chip');
   if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+}
+
+if (typeof document !== 'undefined' && !document._rpcInternoVitalsSyncedWired) {
+  document._rpcInternoVitalsSyncedWired = true;
+  document.addEventListener('rpc-interno-vitals-synced', () => {
+    if (!isGuardiaMode()) return;
+    void refreshGuardiaCensusFromDb().then(() => renderGuardiaBoard(null));
+  });
 }

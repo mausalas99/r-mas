@@ -13,6 +13,7 @@ import {
   R4_GUARDIA_SECTOR_ORDER,
   resolveR4GuardiaSectorLabel,
 } from '../clinico-access.mjs';
+import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
 
 export { calcVitalsBanner };
 
@@ -135,21 +136,8 @@ export class UnifiedPatientGridBoard {
    * @param {Array<{ id: string }>} patients
    * @param {Map<string, { is_critical?: number, last_vitals_check?: string, vitals_frequency?: string }>} guardiasMap
    */
-  /** @param {{ id: string, isCritical?: boolean, guardiaMeta?: object }} p */
-  chipSortScore(p, guardiasMap) {
-    const meta = p.guardiaMeta || guardiasMap.get(p.id) || {};
-    const banner = vitalsBannerForGuardia(meta);
-    let score = 0;
-    if (p.isCritical || meta?.is_critical) score += 100;
-    if (banner.cls === 'breached') score += 80;
-    else if (banner.cls === 'warning') score += 40;
-    return score;
-  }
-
   renderBatch(patients, guardiasMap) {
-    const sorted = [...patients].sort(
-      (a, b) => this.chipSortScore(b, guardiasMap) - this.chipSortScore(a, guardiasMap)
-    );
+    const sorted = sortPatientsByPriorityThenBed(patients, guardiasMap);
     sorted.forEach((p) => {
       if (this.container) {
         this.container.appendChild(this.compileChip(p, guardiasMap.get(p.id)));

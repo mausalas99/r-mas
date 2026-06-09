@@ -1,29 +1,33 @@
-version: 7.2.5
+version: 7.2.6
 files:
-  - url: R+-7.2.5-arm64.zip
-    sha512: 8BWUhcxIt4uufU5BM5/xeGTBS+DAwkmeDVHx8SyStExLebb9M/PTqeH3omiDGlkh+Ugx+g3fhwjF6/tGdqdJhg==
-    size: 128974249
-  - url: R+-7.2.5-arm64.dmg
-    sha512: gZqlKHHfNY6MmkxkaLTClLafFNVqOUC98XsQ9TXfSfsaMPp8cksL4uT6xQJdShOCSWPQDktXLSgBvwmfJa+nVg==
-    size: 134310763
-  - url: R+-7.2.5-x64.zip
-    sha512: DMmVguF5uoL8E47o/rkvVZflOmC+NDUz7AMVndAWqebe9NeqwY2Lc4TIWtR5d4pmIUsSyhBbzzSbo04jcYN7Uw==
-    size: 137348360
-  - url: R+-7.2.5-x64.dmg
-    sha512: UW9r7+VhL/kIepzQfD+XkC4ITLtoKio53wJJgrgdAGmaF1veO0r/5FZs7sbIpdCbqbQPsOmo5cA6Ux/YjiC/vQ==
-    size: 142742919
-path: R+-7.2.5-arm64.zip
-sha512: 8BWUhcxIt4uufU5BM5/xeGTBS+DAwkmeDVHx8SyStExLebb9M/PTqeH3omiDGlkh+Ugx+g3fhwjF6/tGdqdJhg==
-releaseDate: '2026-06-08T20:15:21.000Z'
+  - url: R+-7.2.6-arm64.zip
+    sha512: mAwWKkdJe6+B/ldWc++gKeg2gJ4qoOKWCIajS9rNEvic5o1iD8sjZGt5/NCyKSFuI2j28/5LOIVslBRInCWpFw==
+    size: 128997652
+  - url: R+-7.2.6-arm64.dmg
+    sha512: wM0y4kC2aEeO+/9yOa6P/gB6hsLpK1O6ZxCcNmxArGugZE428OKElKx6sq6J8OJN/8Vn1rqYqkeodnQUpRGKcw==
+    size: 134360906
+  - url: R+-7.2.6-x64.zip
+    sha512: dgEPtHOqbkh2Mtq0Dn+lUJbAX9pcqQRujCIrbUkwQYjTAJlA1TzKXjVodQ3JSnUP6GaBqFIJiNTWjfeBH31A6w==
+    size: 137371726
+  - url: R+-7.2.6-x64.dmg
+    sha512: PKvXSSsgJFFT1XhooaTIgmJ/b+sfZoWal1txa9vodQCvCWLHVwjJKXO3ORxeiNaQtgbtsDSi2Hqyf78Xrfx3ag==
+    size: 142783442
+path: R+-7.2.6-arm64.zip
+sha512: mAwWKkdJe6+B/ldWc++gKeg2gJ4qoOKWCIajS9rNEvic5o1iD8sjZGt5/NCyKSFuI2j28/5LOIVslBRInCWpFw==
+releaseDate: '2026-06-09T01:14:17.000Z'
 releaseNotes: |
-  Parche sobre 7.2.4: el anfitrión LAN deja de reescribir un JSON monolítico en cada guardado. Los commits son asíncronos y coalescidos, los bundles van por sala, los labs viven en sidecars y —con SQLCipher desbloqueado— las tablas normalizadas v15 sustituyen el blob único. Esquema SQLCipher v15 (migración automática al desbloquear).
+  Parche sobre 7.2.5: la entrega usa el equipo del paciente según el censo (no el R1 de guardia ni solo tu equipo), puedes asignar equipo al registrar, y el cambio entre Lab / Med / Expediente es más fluido sin re-render innecesario.
   
-  Commits coalescidos — CommitBarrier agrupa escrituras (~150 ms); las rutas HTTP tipadas esperan awaitDurableCommit antes de responder.
+  Entrega — equipo del paciente — El modal toma patient_team_assignment del censo; hint claro entre equipo del paciente y R1 de guardia. Al editar una entrega existente se conserva el source_team_id.
   
-  Shards JSON por sala — meta.json + rooms/<id>/bundle.json; migración automática desde lan-squad-host-state.json.
+  Asignar al registrar — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
   
-  Sidecars de laboratorio — labHistory fuera del bundle; upserts de labs ya no re-serializan el turno completo.
+  Bulk preview → expediente — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a Lab y seguir procesando.
   
-  SQL v15 en anfitrión — Tablas lan_host_meta, lan_room_bundles, lan_bundle_entries, lan_lab_sets cuando la DB clínica está desbloqueada; fallback JSON si está bloqueada.
+  Tabs más fluidos — Paneles principales en stack (visibility en lugar de display:none); renders diferidos al cambiar tab; caché en panel de recetas.
   
-  Rollback de soporte — Variable de entorno R_PLUS_LAN_PERSIST_MODE (legacy | json | sql | sql-monolith) para forzar generación anterior sin recompilar.
+  Tendencias — Mini-gráficas marcan valores fuera de rango en rojo y actualizan sin parpadeo al refrescar.
+  
+  Censo PDF/HTML — Exportación y vista previa respetan el filtro de censo activo (equipo/sala).
+  
+  UI — Tokens Hallmark, bordes del shell y motion más suaves en el workbench clínico.

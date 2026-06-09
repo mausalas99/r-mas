@@ -1,13 +1,20 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-08",
+  "updatedAt": "2026-06-09",
   "entries": [
+    {
+      "version": "7.2.6",
+      "label": "7.2.6",
+      "publishedAt": "2026-06-08",
+      "summary": "Entrega en censo, orden por cama, interno alineado",
+      "recommended": true
+    },
     {
       "version": "7.2.5",
       "label": "7.2.5",
       "publishedAt": "2026-06-08",
       "summary": "Release estable 7.2.5",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.2.4",

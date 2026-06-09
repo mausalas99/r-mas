@@ -11,6 +11,7 @@ import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
 import { formatAccesosForCenso } from './patient-accesos.mjs';
 import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
 import { formatCensoSignosIoFromPatient } from './censo-signos-format.mjs';
+import { patientBedSortKey, comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
 
 /** @param {Date} [date] */
 export function formatCensusMonthLabel(date) {
@@ -39,24 +40,12 @@ export function truncateCensusCell(text, maxLen) {
   return s.slice(0, Math.max(1, maxLen - 1)) + '…';
 }
 
-function bedSortKey(patient) {
-  var cuarto = parseInt(String(patient.cuarto || '').replace(/\D/g, ''), 10);
-  var cama = parseInt(String(patient.cama || '').replace(/\D/g, ''), 10);
-  if (Number.isFinite(cuarto)) {
-    return cuarto * 1000 + (Number.isFinite(cama) ? cama : 0);
-  }
-  return 999999;
-}
-
 /** @param {Array<Record<string, unknown>>} patients */
 export function sortPatientsForCensus(patients) {
-  return (patients || []).slice().sort(function (a, b) {
-    var ka = bedSortKey(a);
-    var kb = bedSortKey(b);
-    if (ka !== kb) return ka - kb;
-    return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es');
-  });
+  return (patients || []).slice().sort(comparePatientsByBed);
 }
+
+export { patientBedSortKey };
 
 function splitLines(text) {
   return String(text || '')

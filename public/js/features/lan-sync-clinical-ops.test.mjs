@@ -154,6 +154,15 @@ describe('lan-sync clinical ops', () => {
     );
   });
 
+  it('entrega assign pushes clinical ops so interno board receives pendientes', () => {
+    const entregaSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-entrega.mjs'),
+      'utf8'
+    );
+    assert.match(entregaSrc, /submitEntregaAssignment[\s\S]*pushClinicalOpsLanNow/);
+    assert.match(lanSyncSrc, /registerMutationHandler\('entrega'[\s\S]*pushClinicalOpsLanNow/);
+  });
+
   it('Mi rotación pulls clinical ops from host before listing teams', () => {
     assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanelInto[\s\S]*pullClinicalOpsFromLanRoom/);
   });

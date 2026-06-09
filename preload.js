@@ -101,6 +101,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLanMdnsPeers: function(cb) {
     ipcRenderer.on('lan:mdns-peers', function(_e, peers) { cb(peers); });
   },
+  onInternoHostSync: function(cb) {
+    ipcRenderer.on('rpc-interno-host-sync', function(_e, payload) { cb(payload); });
+  },
   lanUdpDiscover: function() {
     return ipcRenderer.invoke('lan-udp-discover');
   },
@@ -187,6 +190,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalScopeContext: function(opts) {
     return ipcRenderer.invoke('db:clinical-scope-context', opts);
+  },
+  dbPatientActiveTeamId: function(opts) {
+    return ipcRenderer.invoke('db:patient-active-team-id', opts);
   },
   dbGuardiaCensus: function(opts) {
     return ipcRenderer.invoke('db:guardia-census', opts);

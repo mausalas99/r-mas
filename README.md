@@ -43,10 +43,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-## R+ 7.2.6 (entrega en censo y expediente más fluido)
+## R+ 7.2.6 (entrega en censo, guardia e interno)
 
-- **Entrega** — equipo del paciente según censo, no solo tu equipo ni el R1 de guardia.
-- **Registro** — asignar equipo al agregar paciente; bulk preview abre expediente sin perder Lab.
+- **Entrega** — equipo del paciente según censo; Admin ve todos los equipos; opción **Sin signos**.
+- **Guardia** — orden por cama; críticos e inestables arriba (grid, Entrega, interno).
+- **Interno** — lista alineada al censo; signos del iPad sincronizan al host/desktop.
 - **Expediente** — tabs Lab/Med/Nota más fluidos; tendencias con sparklines fuera de rango en rojo.
 
 Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
@@ -64,7 +65,7 @@ Las release notes detalladas de cada versión están en:
 
 | Versión | Destacado |
 |---------|----------|
-| **7.2.6** | Entrega en censo, asignar equipo al registrar, expediente más fluido |
+| **7.2.6** | Entrega en censo, orden por cama, interno alineado, expediente fluido |
 | **7.2.5** | Persistencia LAN anfitrión: commits coalescidos, shards por sala, labs en sidecar, SQL v15 |
 | **7.2.4** | R4 como cliente primero, sin equipo obligatorio, barrido LAN para R4 |
 | **7.2.3** | LAN anfitrión ward empaquetado, URL ward en shift-PIN, subred 10.0.57 |

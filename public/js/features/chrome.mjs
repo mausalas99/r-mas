@@ -266,8 +266,7 @@ export function syncGuardiaModeHeaderChip() {
 
 export function toggleGuardiaMode() {
   if (isGuardiaMode()) {
-    void import('./entrega-roster-panel.mjs').then(({ deactivateTurnoActivo, closeEntregaRosterPanel }) => {
-      deactivateTurnoActivo();
+    void import('./entrega-roster-panel.mjs').then(({ closeEntregaRosterPanel }) => {
       closeEntregaRosterPanel();
     });
     void import('./guardia-phase-bar.mjs').then(({ teardownGuardiaPhaseBar }) => {

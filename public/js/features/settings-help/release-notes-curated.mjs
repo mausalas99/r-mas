@@ -149,17 +149,17 @@ var RELEASE_NOTES_726 = [
   {
     title: 'Entrega con equipo del censo',
     body:
-      'Al entregar un paciente, R+ propone el <strong>equipo del censo</strong> (<code>patient_team_assignment</code>), no solo el equipo al que te uniste ni el R1 de guardia.',
+      'El modal toma el <strong>equipo del censo</strong>; Admin ve todos los equipos. Opción <strong>Sin signos</strong> para excluir del interno salvo estudios activos.',
   },
   {
-    title: 'Asignar al registrar',
+    title: 'Orden por cama en guardia',
     body:
-      'Al agregar paciente puedes elegir <strong>equipo</strong>; se guarda en SQLCipher y sincroniza por LAN.',
+      'Grid, listado de <strong>Entrega</strong> e <strong>interno</strong>: <strong>críticos e inestables</strong> arriba; el resto por <strong>cama</strong> (cuarto/cama).',
   },
   {
-    title: 'Expediente más fluido',
+    title: 'Interno alinea al censo',
     body:
-      'Cambiar entre <strong>Lab</strong>, <strong>Med</strong> y <strong>Expediente</strong> evita re-render completo; las mini-gráficas de tendencias marcan fuera de rango en <strong>rojo</strong>.',
+      'El MIP lista solo pacientes del censo de la sala; los signos capturados en iPad llegan al <strong>host/desktop</strong> sin depender solo del WebSocket.',
   },
   {
     title: 'Actualiza todo el turno',

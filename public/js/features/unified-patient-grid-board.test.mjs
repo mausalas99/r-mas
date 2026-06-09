@@ -10,9 +10,9 @@ import {
 } from './unified-patient-grid-board.mjs';
 
 describe('calcVitalsBanner', () => {
-  it('returns Rutina for None frequency', () => {
+  it('returns Sin signos for None frequency', () => {
     const r = calcVitalsBanner(new Date().toISOString(), 'None');
-    assert.match(r.str, /Rutina/);
+    assert.match(r.str, /Sin signos/);
     assert.equal(r.cls, 'nominal-gray');
   });
 
@@ -63,6 +63,24 @@ describe('UnifiedPatientGridBoard', () => {
     const chips = host.querySelectorAll('.patient-chip-card');
     assert.equal(chips.length, 2);
     assert.equal(chips[0].getAttribute('data-patient-id'), 'p2');
+  });
+
+  it('sorts by bed within the same priority tier', () => {
+    if (typeof document === 'undefined') return;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid(
+      [
+        { id: 'p3', name: 'C', cuarto: '12', cama: '1' },
+        { id: 'p1', name: 'A', cuarto: '3', cama: '1' },
+        { id: 'p2', name: 'B', cuarto: '8', cama: '1' },
+      ],
+      new Map()
+    );
+    const chips = host.querySelectorAll('.patient-chip-card');
+    assert.deepEqual(
+      [...chips].map((c) => c.getAttribute('data-patient-id')),
+      ['p1', 'p2', 'p3']
+    );
   });
 
   it('filterR4FollowUpPinPatients keeps active Follow-up rows only', () => {

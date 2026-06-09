@@ -4,6 +4,7 @@
 import { patients } from '../app-state.mjs';
 import {
   clinicalSessionContext,
+  fetchClinicalScopeContextFromDb,
   getClinicalScopeContextForEvaluate,
   refreshGuardiaCensusFromDb,
   signOutgoingLiveSyncMutation,
@@ -16,8 +17,11 @@ import {
   salaOnCallR2,
   userIsOnGuardiaCallToday,
 } from '../clinico-access.mjs';
-import { effectiveClinicalRank } from '../clinical-privileges.mjs';
-import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
+import { effectiveClinicalRank, hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import {
+  buildEntregaPatientCensus,
+  serializePendientesJson,
+} from '../../../lib/entrega/entrega-pendientes.mjs';
 import { vitalsFrequencyForDb } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import {
   getEntregaDraftItems,
@@ -35,12 +39,14 @@ import {
 import {
   patientForScopeEvaluate,
   resolvePatientCensusTeamId,
+  tagPatientsForTeamFilter,
 } from './patients-clinical-filter.mjs';
 import {
   openEntregaRosterPanel,
   closeEntregaRosterPanel,
   isEntregaRosterOpen,
 } from './entrega-roster-panel.mjs';
+import { teamLabelById } from '../patient-team-assign-ui.mjs';
 
 export function resolveEntregaActorRole(currentUser, existingGuardia) {
   return resolveEntregaActorRoleImpl(currentUser, existingGuardia);
@@ -241,13 +247,63 @@ function toast(msg, type = 'info') {
 function resolveEntregaPatientRow(patientId) {
   const id = String(patientId || '');
   if (!id) return null;
-  return (
+  const row =
     (patients || []).find((p) => String(p.id) === id) ||
     (clinicalSessionContext.scopeContext?.patients || []).find(
       (p) => String(p.id || p.patient_id) === id
     ) ||
-    null
-  );
+    null;
+  if (!row) return null;
+  return {
+    ...row,
+    id: String(row.id || row.patient_id || id),
+    name: row.name || row.nombre,
+    nombre: row.nombre || row.name,
+    servicio: row.servicio || row.service,
+    service: row.service || row.servicio,
+    area: row.area || row.sub_area,
+    sub_area: row.sub_area || row.area,
+  };
+}
+
+/** @returns {ReturnType<typeof window.electronAPI>|null} */
+function clinicalDbApi() {
+  if (typeof window === 'undefined') return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+
+/**
+ * @param {string} patientId
+ * @param {object|null|undefined} patientRow
+ * @param {object[]} teams
+ * @param {object[]} assignments
+ * @param {string|Date} now
+ */
+async function lookupEntregaCensusTeamId(patientId, patientRow, teams, assignments, now) {
+  let row = patientRow;
+  if (row) {
+    tagPatientsForTeamFilter([row], {
+      teams,
+      assignments,
+      now: typeof now === 'string' ? now : now.toISOString(),
+    });
+  }
+  const fromScope = resolveEntregaCensusTeamId(patientId, row, teams, assignments, now);
+  if (fromScope) return fromScope;
+
+  const api = clinicalDbApi();
+  if (api && typeof api.dbPatientActiveTeamId === 'function') {
+    try {
+      const res = await api.dbPatientActiveTeamId({
+        patientId: String(patientId || ''),
+        nowIso: typeof now === 'string' ? now : now.toISOString(),
+      });
+      if (res?.ok && res.teamId) return String(res.teamId);
+    } catch (_e) {
+      /* optional IPC */
+    }
+  }
+  return '';
 }
 
 function entregaModalEl() {
@@ -271,16 +327,54 @@ export function resolveEntregaSourceTeamId(
   existingGuardia,
   fallbackUserId = ''
 ) {
+  const censusTeamId = resolveEntregaCensusTeamId(
+    patientId,
+    patientRow,
+    teams,
+    assignments,
+    new Date()
+  );
+  if (censusTeamId) return censusTeamId;
   if (existingGuardia?.source_team_id) {
     return String(existingGuardia.source_team_id);
   }
-  const pid = String(patientId || '');
-  if (pid) {
-    const mapped = patientForScopeEvaluate(patientRow || { id: pid });
-    const teamId = resolvePatientCensusTeamId(mapped, teams, assignments || [], new Date());
-    if (teamId) return teamId;
-  }
   return resolveDefaultSourceTeamIdForUser(teams, fallbackUserId);
+}
+
+/**
+ * Census team for entrega (explicit assignment, structural match, or list tag).
+ * @param {string} patientId
+ * @param {object|null|undefined} patientRow
+ * @param {object[]} teams
+ * @param {object[]} assignments
+ * @param {Date|string|number} [now]
+ */
+export function resolveEntregaCensusTeamId(
+  patientId,
+  patientRow,
+  teams,
+  assignments,
+  now = new Date()
+) {
+  const pid = String(patientId || '');
+  if (!pid) return '';
+  const mapped = patientForScopeEvaluate(patientRow || { id: pid });
+  const fromCensus = resolvePatientCensusTeamId(mapped, teams, assignments || [], now);
+  if (fromCensus) return fromCensus;
+  return String(patientRow?._filterTeamId || '').trim();
+}
+
+/**
+ * @param {{ hasCensusAssignment?: boolean, hasExistingSourceTeam?: boolean }} opts
+ */
+export function entregaSourceTeamHint(opts = {}) {
+  if (opts.hasCensusAssignment) {
+    return 'Equipo al que está asignado este paciente en el censo (no el R1 de guardia).';
+  }
+  if (opts.hasExistingSourceTeam) {
+    return 'Equipo de la entrega anterior — confirma si sigue siendo el correcto.';
+  }
+  return 'Sin asignación en censo — confirma el equipo del paciente antes de entregar.';
 }
 
 /** @param {object[]} teams @param {string} userId */
@@ -307,6 +401,29 @@ function findEntregaTeamById(teamId, teams) {
   const tid = String(teamId || '');
   if (!tid) return null;
   return (teams || []).find((t) => String(t?.team_id) === tid) || null;
+}
+
+/**
+ * Census team may belong to another cubeta — always include it in the entrega select.
+ * @param {string} srcTeamId
+ * @param {object[]} teams
+ * @param {string} userId
+ * @param {object|null|undefined} [user]
+ */
+export function entregaSourceTeamSelectOptions(srcTeamId, teams, userId, user = null) {
+  const tid = String(srcTeamId || '').trim();
+  const allTeams = (teams || []).filter((t) => t?.team_id);
+  const joined = getJoinedTeams(allTeams, userId);
+  const base = hasElevatedTeamPrivileges(user || clinicalSessionContext.user)
+    ? allTeams
+    : joined.length
+      ? joined
+      : allTeams;
+  if (!tid) return base;
+  if (base.some((t) => String(t.team_id) === tid)) return base;
+  const found = findEntregaTeamById(tid, teams);
+  if (found) return [found, ...base];
+  return [{ team_id: tid, name: teamLabelById(tid) }, ...base];
 }
 
 /**
@@ -352,6 +469,22 @@ export async function submitEntregaAssignment(payload) {
 
   if (!res || res.ok === false) {
     throw new Error(res?.error || 'No se guardó la entrega');
+  }
+
+  try {
+    const lan = await import('./lan-sync.mjs');
+    if (typeof lan.pushClinicalOpsLanNow === 'function') {
+      await lan.pushClinicalOpsLanNow();
+    }
+    const push = await import('./lan/push.mjs');
+    if (typeof push.markUntypedDirty === 'function') {
+      push.markUntypedDirty('entrega', patientId);
+    }
+    if (typeof push.scheduleUntypedSafetyBundle === 'function') {
+      push.scheduleUntypedSafetyBundle();
+    }
+  } catch (_err) {
+    /* LAN optional — local entrega still saved */
   }
 
   return res.guardia;
@@ -433,10 +566,12 @@ function wireEntregaFormOnce() {
       return;
     }
 
+    const patientCensus = buildEntregaPatientCensus(resolveEntregaPatientRow(patientId));
     const pendientesJson = serializePendientesJson({
       version: 2,
       vitalsPlan,
       handoffContext,
+      ...(patientCensus ? { patientCensus } : {}),
       items: getEntregaDraftItems(),
     });
 
@@ -475,7 +610,13 @@ function wireEntregaFormOnce() {
  * }} opts
  */
 export function openEntregaModal(opts) {
+  void openEntregaModalAsync(opts);
+}
+
+async function openEntregaModalAsync(opts) {
   wireEntregaFormOnce();
+  await refreshGuardiaCensusFromDb(null);
+  await fetchClinicalScopeContextFromDb();
 
   const bd = entregaModalEl();
   const form = document.getElementById('entrega-form');
@@ -617,6 +758,15 @@ export function openEntregaModal(opts) {
   const scopeCtx = getClinicalScopeContextForEvaluate();
   const assignments = scopeCtx.assignments || ctx.assignments || [];
   const patientRow = patient || resolveEntregaPatientRow(patientId);
+  const censusTeamId = await lookupEntregaCensusTeamId(
+    patientId,
+    patientRow,
+    teams,
+    assignments,
+    scopeCtx.now || new Date()
+  );
+  const hasCensusAssignment = !!censusTeamId;
+  const hasExistingSourceTeam = !!existing?.source_team_id;
   const srcTeamId = resolveEntregaSourceTeamId(
     patientId,
     patientRow,
@@ -625,33 +775,36 @@ export function openEntregaModal(opts) {
     existing,
     userId
   );
-  const patientTeamLocked = !!(
-    srcTeamId &&
-    !existing?.source_team_id &&
-    resolvePatientCensusTeamId(
-      patientForScopeEvaluate(patientRow || { id: patientId }),
-      teams,
-      assignments,
-      new Date()
-    )
-  );
+  const patientTeamLocked = hasCensusAssignment;
+  const teamHintText = entregaSourceTeamHint({
+    hasCensusAssignment,
+    hasExistingSourceTeam,
+  });
   const srcTeamHint = document.getElementById('entrega-source-team-hint');
 
   if (teamSelect) {
     const srcTeam = findEntregaTeamById(srcTeamId, teams);
-    if (patientTeamLocked && srcTeam) {
-      teamSelect.innerHTML = `<option value="${srcTeam.team_id}">${entregaTeamOptionLabel(srcTeam)}</option>`;
-      teamSelect.value = String(srcTeam.team_id);
+    const censusLabel = srcTeam
+      ? entregaTeamOptionLabel(srcTeam)
+      : srcTeamId
+        ? teamLabelById(srcTeamId)
+        : '';
+    if (patientTeamLocked && srcTeamId && censusLabel) {
+      teamSelect.innerHTML = `<option value="${srcTeamId}">${censusLabel}</option>`;
+      teamSelect.value = String(srcTeamId);
       teamSelect.disabled = true;
       teamSelect.removeAttribute('required');
       if (srcTeamHint) {
-        srcTeamHint.textContent =
-          'Equipo al que está asignado este paciente en el censo (no el R1 de guardia).';
+        srcTeamHint.textContent = teamHintText;
         srcTeamHint.classList.remove('hidden');
       }
     } else {
-      const joined = getJoinedTeams(teams, userId);
-      const teamOptions = (joined.length ? joined : teams).filter((t) => t?.team_id);
+      const teamOptions = entregaSourceTeamSelectOptions(
+        srcTeamId,
+        teams,
+        userId,
+        clinicalSessionContext.user
+      );
       teamSelect.innerHTML = teamOptions
         .map((t) => `<option value="${t.team_id}">${entregaTeamOptionLabel(t)}</option>`)
         .join('');
@@ -659,10 +812,8 @@ export function openEntregaModal(opts) {
       teamSelect.setAttribute('required', '');
       if (srcTeamId) teamSelect.value = srcTeamId;
       if (srcTeamHint) {
-        srcTeamHint.textContent = patientTeamLocked
-          ? 'Equipo al que está asignado este paciente en el censo (no el R1 de guardia).'
-          : 'Sin asignación en censo — confirma el equipo del paciente antes de entregar.';
-        srcTeamHint.classList.toggle('hidden', !srcTeamHint.textContent?.trim());
+        srcTeamHint.textContent = teamHintText;
+        srcTeamHint.classList.remove('hidden');
       }
     }
   }
@@ -684,7 +835,7 @@ export function openEntregaModal(opts) {
   }
 
   const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
-  void mountEntregaPendientesUi({
+  await mountEntregaPendientesUi({
     actor,
     pendientesJson: existing?.pendientes_json,
     sourceTeamId: srcTeamId,

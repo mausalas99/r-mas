@@ -40,6 +40,7 @@ function createLanRouter({
   getHostClinicalMeta,
   getHealthExtras,
   sseBroadcast,
+  onClinicalOpsMerged,
 }) {
   const r = express.Router();
   const getState = () => store.getState();
@@ -245,6 +246,13 @@ function createLanRouter({
         out && out.revision,
         body.clientId || body.uploadedByClientId
       );
+      if (typeof onClinicalOpsMerged === 'function') {
+        try {
+          onClinicalOpsMerged(req.params.id, out);
+        } catch (e) {
+          console.error('[lan-clinical-ops]', e && e.message ? e.message : e);
+        }
+      }
       res.json(out);
     } catch (e) {
       if (e.code === 'CONFLICT') {

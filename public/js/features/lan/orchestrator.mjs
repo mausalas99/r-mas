@@ -739,6 +739,45 @@ function wsConflictDetailToPayload(detail) {
 }
 
 /** @param {string} patientId */
+/** Pull host monitoreo (interno vitals) into local patient row. */
+export async function hydrateLocalPatientMonitoreoFromHost(patientId) {
+  const pid = String(patientId || '').trim();
+  if (!pid || !isLanSessionConfiguredForRest()) return { ok: false, error: 'not_configured' };
+  const hostRow = await lanFetchHostPatientRow(pid);
+  if (!hostRow) return { ok: false, error: 'not_found' };
+  const local = patients.find((p) => p && String(p.id) === pid);
+  if (!local) return { ok: false, error: 'local_missing' };
+  const before = JSON.stringify(local.monitoreo || null);
+  mergePatientMonitoreoFromImported(local, hostRow);
+  if (hostRow.nombre && String(hostRow.nombre).trim()) local.nombre = hostRow.nombre;
+  if (hostRow.cuarto) local.cuarto = hostRow.cuarto;
+  if (hostRow.cama) local.cama = hostRow.cama;
+  mergeCensoPatientFields(local, hostRow);
+  const changed = before !== JSON.stringify(local.monitoreo || null);
+  if (changed) await saveState({ immediate: true });
+  return { ok: true, changed };
+}
+
+async function handleInternoHostSyncBroadcast(detail) {
+  const pid = String(detail?.patientId || '').trim();
+  if (detail?.type === 'patients-updated' && pid) {
+    const local = patients.find((p) => p && String(p.id) === pid);
+    if (local && detail.monitoreo && typeof detail.monitoreo === 'object') {
+      mergePatientMonitoreoFromImported(local, { monitoreo: detail.monitoreo });
+      await saveState({ immediate: true });
+    } else {
+      await hydrateLocalPatientMonitoreoFromHost(pid);
+    }
+  }
+  if (detail?.type === 'patients-updated' || detail?.type === 'guardias-updated') {
+    await refreshGuardiaCensusFromDb();
+    if (typeof runtime.renderPatientList === 'function') runtime.renderPatientList();
+    document.dispatchEvent(
+      new CustomEvent('rpc-interno-vitals-synced', { detail: { patientId: pid } })
+    );
+  }
+}
+
 export async function lanFetchHostPatientRow(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || !isLanSessionConfiguredForRest()) return null;
@@ -1741,6 +1780,10 @@ export function wireLanSyncBridges() {
   });
   lanMutationRegistry.setDomainOutboxKind('patient-fields', 'patient_fields');
 
+  lanMutationRegistry.registerMutationHandler('entrega', async () => {
+    await pushClinicalOpsLanNow();
+  });
+
   lanMutationRegistry.configure({
     isActive: () => !!getActiveLiveSyncRoomId() && isLanSessionConfiguredForRest(),
     getActiveRoomId: getActiveLiveSyncRoomId,
@@ -1760,8 +1803,24 @@ export function wireLanSyncBridges() {
     }
     void handleSyncConflict(payload);
   });
+  if (
+    typeof window !== 'undefined' &&
+    window.electronAPI &&
+    typeof window.electronAPI.onInternoHostSync === 'function' &&
+    !window.__rpcInternoHostSyncWired
+  ) {
+    window.__rpcInternoHostSyncWired = true;
+    window.electronAPI.onInternoHostSync((payload) => {
+      void handleInternoHostSyncBroadcast(payload);
+    });
+  }
+
   lanClient.addEventListener('lan-patch', function (ev) {
     const data = ev.detail;
+    if (data?.type === 'patients-updated' || data?.type === 'guardias-updated') {
+      void handleInternoHostSyncBroadcast(data);
+      return;
+    }
     if (data?.type === 'livesync:hello') {
       const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
       const hostUrl = String(lanClient.baseUrl() || cfg.hostUrl || '')

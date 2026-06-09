@@ -24,7 +24,7 @@ const {
   createDocumentExportAuthMiddleware,
   shouldSkipGlobalRateLimit,
 } = require('./lib/server-http-security.js');
-const { createInternoRouter } = require('./lib/interno/interno-router.js');
+const { createInternoRouter, broadcastInterno } = require('./lib/interno/interno-router.js');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 
@@ -360,6 +360,22 @@ appExpress.use(
       };
     },
     sseBroadcast: (channel, obj) => sseHub.broadcast(channel, obj),
+    onClinicalOpsMerged: () => {
+      const db = getClinicalDbForInterno();
+      if (!db) return;
+      try {
+        const rows = db
+          .prepare('SELECT sala FROM sala_interno_access WHERE is_active = 1')
+          .all();
+        for (const row of rows) {
+          if (row?.sala) {
+            broadcastInterno(row.sala, { type: 'board-changed', source: 'clinical-ops' });
+          }
+        }
+      } catch (e) {
+        console.error('[interno-board]', e && e.message ? e.message : e);
+      }
+    },
   })
 );
 
@@ -369,12 +385,22 @@ function getClinicalDbForInterno() {
   return typeof lanDbManager.getDb === 'function' ? lanDbManager.getDb() : null;
 }
 
+/** @type {(obj: object) => void} */
+let onInternoHostSync = null;
+
+function setOnInternoHostSync(fn) {
+  onInternoHostSync = typeof fn === 'function' ? fn : null;
+}
+
 appExpress.use(
   '/api/interno/v1',
   createInternoRouter({
     store: lanStore,
     getDb: getClinicalDbForInterno,
     broadcastSync: broadcast,
+    onHostSync: (obj) => {
+      if (typeof onInternoHostSync === 'function') onInternoHostSync(obj);
+    },
     httpServer: httpServer,
   })
 );
@@ -441,4 +467,9 @@ function getLanWardHostRegistry() {
   return wardHostRegistry;
 }
 
-module.exports = { startLanServer, stopLanServer, getLanWardHostRegistry };
+module.exports = {
+  startLanServer,
+  stopLanServer,
+  getLanWardHostRegistry,
+  setOnInternoHostSync,
+};

@@ -25,6 +25,7 @@ import {
   VITALS_FREQ_SHIFT_OPTIONS,
   VITALS_METRIC_KEYS,
   VITALS_METRIC_LABELS,
+  defaultFrequencySpec,
   defaultVitalsPlan,
   normalizeFrequencySpec,
   normalizeUntilTime,
@@ -907,17 +908,10 @@ function wireVitalsUntilPanel(host, panel) {
 /** @param {HTMLElement} host */
 function readFrequencyFromDom(host) {
   const mode = String(
-    host.querySelector('input[name="entrega-freq-mode"]:checked')?.value || 'routine'
+    host.querySelector('input[name="entrega-freq-mode"]:checked')?.value || 'interval'
   );
+  if (mode === 'routine') return defaultFrequencySpec();
   const untilTime = readVitalsUntilTimeFromHost(host);
-  if (mode === 'interval') {
-    const hours = Number(host.querySelector('#entrega-vitals-hours')?.value || 2);
-    return normalizeFrequencySpec({
-      mode: 'interval',
-      hours,
-      untilTime,
-    });
-  }
   if (mode === 'shift') {
     const chip = host.querySelector('[data-freq-shift].is-selected');
     const times = Number(chip?.getAttribute('data-freq-shift') || 1);
@@ -927,7 +921,12 @@ function readFrequencyFromDom(host) {
       untilTime,
     });
   }
-  return { mode: 'routine' };
+  const hours = Number(host.querySelector('#entrega-vitals-hours')?.value || 2);
+  return normalizeFrequencySpec({
+    mode: 'interval',
+    hours,
+    untilTime,
+  });
 }
 
 /** @param {HTMLElement} host */
@@ -950,9 +949,10 @@ function syncVitalsFreqUi(host) {
 
   host.querySelector('#entrega-freq-interval-panel')?.classList.toggle('is-hidden', mode !== 'interval');
   host.querySelector('#entrega-freq-shift-panel')?.classList.toggle('is-hidden', mode !== 'shift');
+  host.querySelector('#entrega-freq-routine-hint')?.classList.toggle('is-hidden', mode !== 'routine');
 
   const slot = host.querySelector('.entrega-vitals-freq-detail-slot');
-  slot?.setAttribute('aria-hidden', mode === 'routine' ? 'true' : 'false');
+  slot?.setAttribute('aria-hidden', 'false');
 
   if (mode === 'interval') {
     const hours = freq.mode === 'interval' ? freq.hours ?? 2 : 2;
@@ -993,13 +993,19 @@ function renderVitalsPanel() {
       }><span>${escapeHtml(VITALS_METRIC_LABELS[key])}</span></label>`
   ).join('');
 
-  const modeLabels = { routine: 'Rutina', interval: 'Intervalo', shift: 'Por turno' };
-  const modePills = (['routine', 'interval', 'shift'])
+  const uiMode =
+    freq.mode === 'shift' ? 'shift' : freq.mode === 'routine' ? 'routine' : 'interval';
+  const modeLabels = {
+    interval: 'Intervalo',
+    shift: 'Por turno',
+    routine: 'Sin signos',
+  };
+  const modePills = (['interval', 'shift', 'routine'])
     .map(
       (mode) =>
         `<label class="entrega-check-pill entrega-freq-mode-pill">
           <input type="radio" name="entrega-freq-mode" value="${mode}" ${
-            freq.mode === mode ? 'checked' : ''
+            uiMode === mode ? 'checked' : ''
           }>
           <span>${modeLabels[mode]}</span>
         </label>`
@@ -1047,9 +1053,9 @@ function renderVitalsPanel() {
             <div class="entrega-freq-segment entrega-check-pills entrega-freq-modes" role="radiogroup" aria-label="Modo de frecuencia">
               ${modePills}
             </div>
-            <div class="entrega-vitals-freq-detail-slot" aria-hidden="${freq.mode === 'routine'}">
+            <div class="entrega-vitals-freq-detail-slot" aria-hidden="false">
               <div class="entrega-freq-panel${
-                freq.mode === 'interval' ? '' : ' is-hidden'
+                uiMode === 'interval' ? '' : ' is-hidden'
               }" id="entrega-freq-interval-panel">
                 <div class="entrega-freq-detail-card">
                   <div class="entrega-freq-detail__row">
@@ -1083,7 +1089,7 @@ function renderVitalsPanel() {
                 </div>
               </div>
               <div class="entrega-freq-panel${
-                freq.mode === 'shift' ? '' : ' is-hidden'
+                uiMode === 'shift' ? '' : ' is-hidden'
               }" id="entrega-freq-shift-panel">
                 <div class="entrega-freq-detail-card">
                   <div class="entrega-freq-detail__row">
@@ -1098,6 +1104,9 @@ function renderVitalsPanel() {
                   </div>
                 </div>
               </div>
+              <p class="entrega-freq-routine-hint is-hidden" id="entrega-freq-routine-hint">
+                No aparece en internos para signos vitales. Si agregas un estudio pendiente, sí se listará ahí.
+              </p>
             </div>
           </div>
         </section>
@@ -1122,11 +1131,11 @@ function renderVitalsPanel() {
 
   host.querySelectorAll('input[name="entrega-freq-mode"]').forEach((input) => {
     input.addEventListener('change', () => {
-      const mode = String(input.value || 'routine');
-      if (mode === 'interval') {
+      const mode = String(input.value || 'interval');
+      if (mode === 'routine') {
         draftVitalsPlan = normalizeVitalsPlan({
           ...draftVitalsPlan,
-          frequency: mergeIntervalFrequency({ hours: 2 }),
+          frequency: defaultFrequencySpec(),
         });
       } else if (mode === 'shift') {
         const cur = normalizeFrequencySpec(draftVitalsPlan.frequency);
@@ -1141,7 +1150,7 @@ function renderVitalsPanel() {
       } else {
         draftVitalsPlan = normalizeVitalsPlan({
           ...draftVitalsPlan,
-          frequency: { mode: 'routine' },
+          frequency: mergeIntervalFrequency({ hours: 2 }),
         });
       }
       syncVitalsFreqUi(host);
@@ -1226,7 +1235,10 @@ export function mountEntregaVitalsPanel(opts = {}) {
       frequency: normalizeFrequencySpec(opts.vitalsFrequency),
     });
   } else {
-    draftVitalsPlan = defaultVitalsPlan();
+    draftVitalsPlan = normalizeVitalsPlan({
+      ...defaultVitalsPlan(),
+      frequency: { mode: 'interval', hours: 2 },
+    });
   }
   renderVitalsPanel();
 }

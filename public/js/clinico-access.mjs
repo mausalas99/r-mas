@@ -191,6 +191,46 @@ export function isOnCallToday(team, rank, now) {
   return (dayOfMonth - 1) % cfg.length === idx;
 }
 
+/** Active cycle letter for a service/rank on a calendar day (day-of-month anchor). */
+export function activeCycleLetterForDate(service, rank, now) {
+  const cfg = getCycleConfig(service, rank);
+  const d = now instanceof Date ? now : new Date(String(now));
+  const idx = (d.getDate() - 1) % cfg.length;
+  return cfg.letters[idx] || '';
+}
+
+/**
+ * R1 Sala: each member carries sub_area_fraction (A1–D2); R2/other ranks use team letter.
+ *
+ * @param {object} member
+ * @param {object} team
+ * @param {string} rank
+ * @param {Date|string|number} now
+ */
+export function isMemberOnCallToday(member, team, rank, now) {
+  if (!member || !team) return false;
+  const r = String(rank || member.rank || '').trim();
+  if (!r) return false;
+  const uid = String(member.user_id || '');
+  const scoped =
+    isSalaWardService(team.service) && r === 'R1' && uid
+      ? teamForMemberCycle(team, uid)
+      : team;
+  return isOnCallToday(scoped, r, now);
+}
+
+/** True when any member at rank is on cycle today (R1 Sala checks per-member subcycles). */
+export function isTeamRankOnCallToday(team, rank, now) {
+  if (!team) return false;
+  const r = String(rank || '').trim();
+  if (isSalaWardService(team.service) && r === 'R1') {
+    return (team.members || []).some(
+      (m) => String(m.rank) === 'R1' && isMemberOnCallToday(m, team, 'R1', now)
+    );
+  }
+  return isOnCallToday(team, r, now);
+}
+
 /** @param {Date|string|undefined} value @param {string|undefined} [fallbackIso] */
 function toMillis(value, fallbackIso) {
   if (value instanceof Date) return value.getTime();
@@ -476,11 +516,10 @@ export function salaOnCallR1(teams, sala, now, salaGuardiaToday = []) {
       result.push({ team_id: teamId, user_id: String(declared) });
       continue;
     }
-    if (!isOnCallToday(team, 'R1', d)) continue;
     for (const m of team.members || []) {
-      if (m.rank === 'R1' && m.user_id) {
-        result.push({ team_id: teamId, user_id: String(m.user_id) });
-      }
+      if (m.rank !== 'R1' || !m.user_id) continue;
+      if (!isMemberOnCallToday(m, team, 'R1', d)) continue;
+      result.push({ team_id: teamId, user_id: String(m.user_id) });
     }
   }
   return result;
@@ -538,10 +577,11 @@ export function userIsOnCallForLanHost(userId, rank, teams, now = new Date(), sa
   const joined = getJoinedTeams(teams, uid);
   if (userOnCallForInterconsultasTeam(uid, joined, r, d)) return true;
   return joined.some((team) => {
-    if (!isOnCallToday(team, r, d)) return false;
-    return (team.members || []).some(
+    const member = (team.members || []).find(
       (m) => String(m.user_id || '') === uid && String(m.rank || '').trim() === r
     );
+    if (!member) return false;
+    return isMemberOnCallToday(member, team, r, d);
   });
 }
 
