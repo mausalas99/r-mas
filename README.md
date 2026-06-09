@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.6](https://github.com/mausalas99/r-mas/releases/tag/v7.2.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.7](https://github.com/mausalas99/r-mas/releases/tag/v7.2.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.2.7 (interno — frecuencia y UI signos)
+
+- **Interno** — orden por frecuencia de signos (q1h arriba); vencidos antes en la misma frecuencia.
+- **Interno** — glucometrías con fondo oscuro en el modal de captura (iPad).
+
+Notas: `docs/RELEASE_NOTES_7.2.7.txt`.
 ## R+ 7.2.6 (entrega en censo, guardia e interno)
 
 - **Entrega** — equipo del paciente según censo; Admin ve todos los equipos; opción **Sin signos**.
@@ -58,13 +65,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.6)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.7)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.2.7** | Interno: orden por frecuencia SV, UI glucometrías oscura |
 | **7.2.6** | Entrega en censo, orden por cama, interno alineado, expediente fluido |
 | **7.2.5** | Persistencia LAN anfitrión: commits coalescidos, shards por sala, labs en sidecar, SQL v15 |
 | **7.2.4** | R4 como cliente primero, sin equipo obligatorio, barrido LAN para R4 |
