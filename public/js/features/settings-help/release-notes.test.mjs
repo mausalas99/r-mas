@@ -19,10 +19,10 @@ describe('release-notes', () => {
   it('uses default when version omitted', () => {
     const text = formatCuratedReleaseNotesPlain('');
     assert.ok(
-      text.includes('PIN del turno') ||
-        text.includes('Cross-VLAN') ||
-        text.includes('anfitrión') ||
-        text.includes('transport')
+      text.includes('entrega') ||
+        text.includes('censo') ||
+        text.includes('Expediente') ||
+        text.includes('equipo')
     );
   });
 
