@@ -1,32 +1,14 @@
-version: 7.2.6
+version: 7.2.7
 files:
-  - url: R+-7.2.6-x64.exe
-    sha512: 4yFAg/1YQ+cTGgYcLu63f+lZRJPH7NUI3SB6r0p55Z1CbYEByv9JKX7IR68yRVz1EpCuJAEQWZjXzQ7LOW9ZgA==
-    size: 114723753
-path: R+-7.2.6-x64.exe
-sha512: 4yFAg/1YQ+cTGgYcLu63f+lZRJPH7NUI3SB6r0p55Z1CbYEByv9JKX7IR68yRVz1EpCuJAEQWZjXzQ7LOW9ZgA==
-releaseDate: '2026-06-09T04:14:07.000Z'
+  - url: R+-7.2.7-x64.exe
+    sha512: ec2J0gZ7IvWKus7zN9QxpzEFOEMxUq20YRzT51QVRtvP7Rtdj508ZpFgA17gaiVHG0jhMrcUurB4L9uHAIq+gA==
+    size: 114733296
+path: R+-7.2.7-x64.exe
+sha512: ec2J0gZ7IvWKus7zN9QxpzEFOEMxUq20YRzT51QVRtvP7Rtdj508ZpFgA17gaiVHG0jhMrcUurB4L9uHAIq+gA==
+releaseDate: '2026-06-09T07:27:36.000Z'
 releaseNotes: |
-  Parche sobre 7.2.5: la entrega usa el equipo del paciente según el censo, el listado de guardia ordena por cama con críticos e inestables arriba, el interno móvil alinea al censo y sincroniza signos al host, y el cambio entre Lab / Med / Expediente es más fluido.
+  Parche sobre 7.2.6: el interno móvil ordena pacientes por frecuencia de signos vitales (más frecuente primero) y el modal de captura usa tema oscuro también en glucometrías.
   
-  Entrega — equipo del paciente — El modal toma patient_team_assignment del censo; el selector incluye el equipo del censo aunque no seas miembro (Admin ve todos). Hint claro entre equipo del paciente y R1 de guardia.
+  Interno — orden por frecuencia — La lista MIP prioriza pacientes con SV programados: q1h → q2h → q4h → por turno; dentro de la misma frecuencia, vencidos antes que al día; empate por cama. Pacientes solo con estudios al final.
   
-  Asignar al registrar — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
-  
-  Entrega — Sin signos — Tercera opción en plan de signos: el paciente no aparece en interno salvo estudios/pendientes activos.
-  
-  Orden en guardia — Grid, panel Entrega e interno: críticos e inestables primero; dentro de cada grupo, por cama (cuarto/cama).
-  
-  Interno móvil — Lista solo pacientes del censo de la sala; signos capturados en iPad llegan al host/desktop vía IPC (no solo WS).
-  
-  Guardia hoy — R2/R3/R4 ven el modal de guardia al iniciar entrega (pueden omitir).
-  
-  Bulk preview → expediente — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a Lab y seguir procesando.
-  
-  Tabs más fluidos — Paneles principales en stack (visibility en lugar de display:none); renders diferidos al cambiar tab; caché en panel de recetas.
-  
-  Tendencias — Mini-gráficas marcan valores fuera de rango en rojo y actualizan sin parpadeo al refrescar.
-  
-  Censo PDF/HTML — Exportación y vista previa respetan el filtro de censo activo (equipo/sala).
-  
-  UI — Tokens Hallmark, bordes del shell y motion más suaves en el workbench clínico.
+  Interno — glucometrías — Los campos mg/dL y HH:MM en el modal de signos usan el mismo fondo oscuro que TAS, FC, etc. (ya no aparecen en blanco en iPad).
