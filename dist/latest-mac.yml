@@ -1,26 +1,34 @@
 version: 7.2.6
 files:
   - url: R+-7.2.6-arm64.zip
-    sha512: mAwWKkdJe6+B/ldWc++gKeg2gJ4qoOKWCIajS9rNEvic5o1iD8sjZGt5/NCyKSFuI2j28/5LOIVslBRInCWpFw==
-    size: 128997652
+    sha512: 2S5wVxzIMJahSkxqKpfcdhEO4ohsZQP4NxIAQYmvxGhTs+XM9RYCm8ELCyNrlCYIENlmmBSObBZgu9HAeDqXqg==
+    size: 129019267
   - url: R+-7.2.6-arm64.dmg
-    sha512: wM0y4kC2aEeO+/9yOa6P/gB6hsLpK1O6ZxCcNmxArGugZE428OKElKx6sq6J8OJN/8Vn1rqYqkeodnQUpRGKcw==
-    size: 134360906
+    sha512: R+lNoXIH/rOMzOt9i+qDmTFZYQb3UXKNltfufiq2NGhPQce1SSnYnTl1TEBvQOFc12dU0cDYp8rA1cSBu5jDgw==
+    size: 134339889
   - url: R+-7.2.6-x64.zip
-    sha512: dgEPtHOqbkh2Mtq0Dn+lUJbAX9pcqQRujCIrbUkwQYjTAJlA1TzKXjVodQ3JSnUP6GaBqFIJiNTWjfeBH31A6w==
-    size: 137371726
+    sha512: L9nP/OQnE4rEI7DIL7Tfg4owDIj1yRNgYYcZWix2EKrRkPGCbIeO+deLsnmF6HVq5NlnvA9isQfkZLARJPHIbw==
+    size: 137393318
   - url: R+-7.2.6-x64.dmg
-    sha512: PKvXSSsgJFFT1XhooaTIgmJ/b+sfZoWal1txa9vodQCvCWLHVwjJKXO3ORxeiNaQtgbtsDSi2Hqyf78Xrfx3ag==
-    size: 142783442
+    sha512: ukPau4/rEd/ow6ZhTKrCpZDzwFXQzoCrF1EXr0WH9B0yf5NG/gp0VkKMO+tDrYiFzMPZ4hicAGtuJ4oSDaPWMw==
+    size: 142784458
 path: R+-7.2.6-arm64.zip
-sha512: mAwWKkdJe6+B/ldWc++gKeg2gJ4qoOKWCIajS9rNEvic5o1iD8sjZGt5/NCyKSFuI2j28/5LOIVslBRInCWpFw==
-releaseDate: '2026-06-09T01:14:17.000Z'
+sha512: 2S5wVxzIMJahSkxqKpfcdhEO4ohsZQP4NxIAQYmvxGhTs+XM9RYCm8ELCyNrlCYIENlmmBSObBZgu9HAeDqXqg==
+releaseDate: '2026-06-09T04:14:07.000Z'
 releaseNotes: |
-  Parche sobre 7.2.5: la entrega usa el equipo del paciente según el censo (no el R1 de guardia ni solo tu equipo), puedes asignar equipo al registrar, y el cambio entre Lab / Med / Expediente es más fluido sin re-render innecesario.
+  Parche sobre 7.2.5: la entrega usa el equipo del paciente según el censo, el listado de guardia ordena por cama con críticos e inestables arriba, el interno móvil alinea al censo y sincroniza signos al host, y el cambio entre Lab / Med / Expediente es más fluido.
   
-  Entrega — equipo del paciente — El modal toma patient_team_assignment del censo; hint claro entre equipo del paciente y R1 de guardia. Al editar una entrega existente se conserva el source_team_id.
+  Entrega — equipo del paciente — El modal toma patient_team_assignment del censo; el selector incluye el equipo del censo aunque no seas miembro (Admin ve todos). Hint claro entre equipo del paciente y R1 de guardia.
   
   Asignar al registrar — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
+  
+  Entrega — Sin signos — Tercera opción en plan de signos: el paciente no aparece en interno salvo estudios/pendientes activos.
+  
+  Orden en guardia — Grid, panel Entrega e interno: críticos e inestables primero; dentro de cada grupo, por cama (cuarto/cama).
+  
+  Interno móvil — Lista solo pacientes del censo de la sala; signos capturados en iPad llegan al host/desktop vía IPC (no solo WS).
+  
+  Guardia hoy — R2/R3/R4 ven el modal de guardia al iniciar entrega (pueden omitir).
   
   Bulk preview → expediente — Tras registrar desde vista previa masiva de labs, R+ abre el expediente y suspende el modal para volver a Lab y seguir procesando.
   
