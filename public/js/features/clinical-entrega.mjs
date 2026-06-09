@@ -490,7 +490,97 @@ export async function submitEntregaAssignment(payload) {
   return res.guardia;
 }
 
+/**
+ * @param {HTMLFormElement|null|undefined} form
+ * @returns {{ ok: true, payload: object } | { ok: false, error: string }}
+ */
+export function collectEntregaFormPayload(form) {
+  if (!form) return { ok: false, error: 'Formulario de entrega no disponible' };
+  const patientId = String(form.dataset.patientId || '');
+  if (!patientId) return { ok: false, error: 'Paciente no seleccionado' };
+
+  const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : undefined;
+  const phaseCovering = getEntregaPhaseCoveringUserId();
+  const existingGuardia = guardiaId
+    ? clinicalSessionContext.guardias.find((g) => String(g.guardia_id) === guardiaId)
+    : clinicalSessionContext.guardiasMap.get(patientId);
+  const coveringUserId = String(
+    document.getElementById('entrega-covering-user')?.value ||
+      phaseCovering ||
+      existingGuardia?.covering_user_id ||
+      ''
+  );
+  const scopeCtx = getClinicalScopeContextForEvaluate();
+  const teamsForSubmit = clinicalSessionContext.teams || scopeCtx.teams || [];
+  const assignmentsForSubmit = scopeCtx.assignments || [];
+  const sourceTeamId =
+    String(document.getElementById('entrega-source-team')?.value || '') ||
+    resolveEntregaSourceTeamId(
+      patientId,
+      resolveEntregaPatientRow(patientId),
+      teamsForSubmit,
+      assignmentsForSubmit,
+      existingGuardia,
+      String(clinicalSessionContext.user?.user_id || '')
+    );
+
+  if (!coveringUserId || !sourceTeamId) {
+    return { ok: false, error: 'Selecciona R1 de guardia y equipo del paciente.' };
+  }
+
+  const patientCensus = buildEntregaPatientCensus(resolveEntregaPatientRow(patientId));
+  const vitalsPlan = readEntregaVitalsPlan();
+  const handoffContext = readEntregaHandoffContext();
+  const pendientesJson = serializePendientesJson({
+    version: 2,
+    vitalsPlan,
+    handoffContext,
+    ...(patientCensus ? { patientCensus } : {}),
+    items: getEntregaDraftItems(),
+  });
+
+  return {
+    ok: true,
+    payload: {
+      patientId,
+      guardiaId,
+      coveringUserId,
+      sourceTeamId,
+      isCritical: readEntregaCriticalFromHandoff(),
+      pendientesJson,
+      vitalsFrequency: vitalsFrequencyForDb(vitalsPlan.frequency),
+    },
+  };
+}
+
+/**
+ * @param {HTMLFormElement|null|undefined} form
+ * @param {{ silent?: boolean }} [opts]
+ */
+export async function persistEntregaFormState(form, opts = {}) {
+  const collected = collectEntregaFormPayload(form);
+  if (!collected.ok) return collected;
+
+  try {
+    const guardia = await submitEntregaAssignment(collected.payload);
+    if (guardia?.guardia_id && form) {
+      form.dataset.guardiaId = String(guardia.guardia_id);
+    }
+    await refreshGuardiaCensusFromDb(null);
+    import('../lan-mutation-registry.mjs').then(function (m) {
+      m.lanMutationRegistry.dispatchLanMutation('entrega', collected.payload.patientId);
+    });
+    if (!opts.silent) toast('Entrega registrada.', 'success');
+    return { ok: true, guardia };
+  } catch (err) {
+    const error = err?.message || 'Error al registrar entrega';
+    if (!opts.silent) toast(error, 'error');
+    return { ok: false, error };
+  }
+}
+
 let entregaFormWired = false;
+let entregaNavBusy = false;
 
 function wireEntregaFormOnce() {
   if (entregaFormWired) return;
@@ -509,93 +599,52 @@ function wireEntregaFormOnce() {
 
   const navPrev = document.getElementById('entrega-nav-prev');
   const navNext = document.getElementById('entrega-nav-next');
-  const navigateRosterPatient = (delta) => {
+  const navigateRosterPatient = async (delta) => {
+    if (entregaNavBusy) return;
     const entregaForm = document.getElementById('entrega-form');
     const ids = entregaForm?._entregaRosterIds;
     const idx = entregaForm?._entregaPatientIndex;
     if (!ids?.length || !Number.isFinite(idx)) return;
     const nextIdx = idx + delta;
     if (nextIdx < 0 || nextIdx >= ids.length) return;
-    openEntregaModal({
-      patientId: String(ids[nextIdx]),
-      patientIndex: nextIdx,
-      patientTotal: ids.length,
-      rosterPatientIds: ids,
-      onConfirm: entregaForm._entregaOnConfirm,
-    });
+
+    entregaNavBusy = true;
+    try {
+      const saved = await persistEntregaFormState(entregaForm, { silent: true });
+      if (!saved.ok) {
+        toast(saved.error || 'Completa R1 y equipo antes de cambiar de paciente.', 'error');
+        return;
+      }
+      openEntregaModal({
+        patientId: String(ids[nextIdx]),
+        patientIndex: nextIdx,
+        patientTotal: ids.length,
+        rosterPatientIds: ids,
+        onConfirm: entregaForm._entregaOnConfirm,
+      });
+    } finally {
+      entregaNavBusy = false;
+    }
   };
-  navPrev?.addEventListener('click', () => navigateRosterPatient(-1));
-  navNext?.addEventListener('click', () => navigateRosterPatient(1));
+  navPrev?.addEventListener('click', () => void navigateRosterPatient(-1));
+  navNext?.addEventListener('click', () => void navigateRosterPatient(1));
 
   if (!form) return;
 
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const patientId = String(form.dataset.patientId || '');
-    const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : undefined;
-    const phaseCovering = getEntregaPhaseCoveringUserId();
-    const existingGuardia = guardiaId
-      ? clinicalSessionContext.guardias.find((g) => String(g.guardia_id) === guardiaId)
-      : clinicalSessionContext.guardiasMap.get(patientId);
-    const coveringUserId = String(
-      document.getElementById('entrega-covering-user')?.value ||
-        phaseCovering ||
-        existingGuardia?.covering_user_id ||
-        ''
-    );
-    const scopeCtx = getClinicalScopeContextForEvaluate();
-    const teamsForSubmit = clinicalSessionContext.teams || scopeCtx.teams || [];
-    const assignmentsForSubmit = scopeCtx.assignments || [];
-    const sourceTeamId =
-      String(document.getElementById('entrega-source-team')?.value || '') ||
-      resolveEntregaSourceTeamId(
-        patientId,
-        resolveEntregaPatientRow(patientId),
-        teamsForSubmit,
-        assignmentsForSubmit,
-        existingGuardia,
-        String(clinicalSessionContext.user?.user_id || '')
-      );
-    const isCritical = readEntregaCriticalFromHandoff();
-    const vitalsPlan = readEntregaVitalsPlan();
-    const vitalsFrequency = vitalsFrequencyForDb(vitalsPlan.frequency);
-    const handoffContext = readEntregaHandoffContext();
+    const rosterMode = Array.isArray(form._entregaRosterIds) && form._entregaRosterIds.length > 0;
+    const saved = await persistEntregaFormState(form, { silent: rosterMode });
+    if (!saved.ok) return;
 
-    if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast('Selecciona R1 de guardia y equipo del paciente.', 'error');
+    if (rosterMode) {
+      toast('Paciente guardado.', 'success');
       return;
     }
 
-    const patientCensus = buildEntregaPatientCensus(resolveEntregaPatientRow(patientId));
-    const pendientesJson = serializePendientesJson({
-      version: 2,
-      vitalsPlan,
-      handoffContext,
-      ...(patientCensus ? { patientCensus } : {}),
-      items: getEntregaDraftItems(),
-    });
-
-    try {
-      await submitEntregaAssignment({
-        patientId,
-        guardiaId,
-        coveringUserId,
-        sourceTeamId,
-        isCritical,
-        pendientesJson,
-        vitalsFrequency,
-      });
-      toast('Entrega registrada.', 'success');
-      const onConfirm = form._entregaOnConfirm;
-      closeEntregaModal();
-      await refreshGuardiaCensusFromDb(null);
-      import('../lan-mutation-registry.mjs').then(function (m) {
-        m.lanMutationRegistry.dispatchLanMutation('entrega', patientId);
-      });
-      if (typeof onConfirm === 'function') onConfirm();
-    } catch (err) {
-      toast(err?.message || 'Error al registrar entrega', 'error');
-    }
+    const onConfirm = form._entregaOnConfirm;
+    closeEntregaModal();
+    if (typeof onConfirm === 'function') onConfirm();
   });
 }
 
@@ -615,14 +664,30 @@ export function openEntregaModal(opts) {
 
 async function openEntregaModalAsync(opts) {
   wireEntregaFormOnce();
-  await refreshGuardiaCensusFromDb(null);
-  await fetchClinicalScopeContextFromDb();
 
   const bd = entregaModalEl();
   const form = document.getElementById('entrega-form');
   if (!bd || !form) return;
 
   const patientId = String(opts?.patientId || '');
+  const priorPatientId = String(form.dataset.patientId || '');
+  const switchingPatient =
+    bd.classList.contains('open') &&
+    priorPatientId &&
+    patientId &&
+    priorPatientId !== patientId &&
+    Array.isArray(form._entregaRosterIds) &&
+    form._entregaRosterIds.length > 0;
+  if (switchingPatient) {
+    const saved = await persistEntregaFormState(form, { silent: true });
+    if (!saved.ok) {
+      toast(saved.error || 'Completa R1 y equipo antes de cambiar de paciente.', 'error');
+      return;
+    }
+  }
+
+  await refreshGuardiaCensusFromDb(null);
+  await fetchClinicalScopeContextFromDb();
   const guardiaId = opts?.guardiaId ? String(opts.guardiaId) : '';
   const existing = guardiaId
     ? clinicalSessionContext.guardias.find((g) => String(g.guardia_id) === guardiaId)

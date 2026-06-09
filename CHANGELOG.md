@@ -2438,6 +2438,7 @@ Parche sobre 7.2.5: la **entrega** usa el equipo del paciente según el **censo*
 ## Nuevo / mejorado
 
 - **Entrega — equipo del paciente** — El modal toma `patient_team_assignment` del censo; el selector incluye el equipo del censo aunque no seas miembro (Admin ve todos). Hint claro entre equipo del paciente y R1 de guardia.
+- **Entrega — guardado al avanzar** — Al usar las flechas entre pacientes, cada entrega se guarda automáticamente; **Confirmar entrega** cierra el turno para todos.
 - **Asignar al registrar** — Selector de equipo al agregar paciente; persiste en SQLCipher y sincroniza por LAN.
 - **Entrega — Sin signos** — Tercera opción en plan de signos: el paciente no aparece en interno salvo estudios/pendientes activos.
 - **Orden en guardia** — Grid, panel Entrega e interno: **críticos e inestables** primero; dentro de cada grupo, **por cama** (cuarto/cama).
