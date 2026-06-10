@@ -428,7 +428,7 @@
       </nav>
       <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
       <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" onclick="exportCensoPdfFromHelp()" title="PDF de guardia con todos los pacientes activos">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
       </button>
       <button type="button" id="header-guardia-mode-chip" class="header-guardia-mode-chip" style="display:none;" onclick="toggleGuardiaMode()" title="Abrir Guardia — censo, entrega y turno activo" aria-label="Guardia" aria-pressed="false"><svg class="header-guardia-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="header-guardia-mode-label">Guardia</span></button>
@@ -991,41 +991,35 @@
           </div>
         </div>
 
-        <div id="lab-history-card" class="card" style="flex-shrink:0;">
-          <div class="card-header lab-history-card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <button type="button" id="btn-lab-history-toggle" class="lab-history-toggle" aria-expanded="true" aria-controls="lab-history-body" title="Ocultar o mostrar historial" onclick="toggleLabHistoryPanel(event)">
-              <svg class="lab-history-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
-            <span class="lab-history-card-actions">
-              <details class="lab-history-more">
-                <summary class="lab-history-more-btn" aria-label="Más acciones del historial">⋯</summary>
-                <div class="lab-history-more-menu" role="menu">
-                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryBatchCopyModal();" title="Marca los días del historial que quieras y copia el texto de estudios al portapapeles">Copiar varios días…</button>
-                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une en una sola entrada los envíos del mismo día (aunque la hora difiera) si todos son solo laboratorio o todos solo cultivos; ante el mismo panel se prioriza SOME; los conjuntos mixtos no se tocan.">Consolidar</button>
-                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryDedupeReview('active');" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
-                </div>
-              </details>
-            </span>
-          </div>
-          <div id="lab-history-body" class="card-body" style="padding:12px 16px;">
-            <p id="lab-history-hint" class="lab-history-hint" style="display:none;"></p>
-            <div id="lab-history-list" class="lab-history-list" role="list"></div>
-          </div>
-        </div>
-
         <div id="lab-output-section" class="card" style="display:none;flex-shrink:0;">
           <div class="card-header card-header-row lab-output-card-header">
             <span class="lab-output-card-title" style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               Resultados
             </span>
-            <button type="button" id="lab-some-tables-btn" class="lab-icon-square-btn" hidden onclick="openLabSomeTablesModal()" title="Tablas del reporte SOME" aria-label="Abrir tablas del reporte">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            </button>
+            <div class="lab-output-header-tools">
+              <div class="lab-history-date-picker">
+                <label class="lab-history-date-picker-label" for="lab-history-date-select">Estudio</label>
+                <select id="lab-history-date-select" class="lab-history-date-select" hidden onchange="onLabHistoryDateChange(this.value)" aria-label="Fecha y tipo de estudio"></select>
+              </div>
+              <details class="lab-output-more">
+                <summary class="lab-output-more-btn" aria-label="Más acciones del historial">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </summary>
+                <div class="lab-output-more-menu" role="menu">
+                  <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryBatchCopyModal();" title="Marca los días del historial que quieras y copia el texto de estudios al portapapeles">Copiar varios días…</button>
+                  <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une envíos del mismo día si son solo laboratorio o solo cultivos">Consolidar</button>
+                  <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); reprocessSelectedLabHistorySet();" title="Regenera resultados desde el texto SOME guardado">Reprocesar</button>
+                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" onclick="closeLabHistoryMoreMenu(); deleteSelectedLabHistorySet();" title="Quita este conjunto del historial del paciente">Eliminar</button>
+                </div>
+              </details>
+              <button type="button" id="lab-some-tables-btn" class="lab-icon-square-btn" hidden onclick="openLabSomeTablesModal()" title="Tablas del reporte SOME" aria-label="Abrir tablas del reporte">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </button>
+            </div>
           </div>
           <div class="card-body">
+            <p id="lab-output-history-hint" class="lab-history-hint" style="display:none;"></p>
             <div id="lab-output-box" style="line-height:2;"></div>
           </div>
         </div>
@@ -1140,28 +1134,35 @@
         <div id="med-subview-perfil" style="display:none;">
           <div class="card med-pharm-profile-card" style="flex-shrink:0;">
             <div class="med-pharm-toolbar">
-              <div class="med-pharm-toolbar-field">
-                <label for="med-pharm-filtro">Filtrar</label>
-                <select id="med-pharm-filtro">
-                  <option value="TODOS">TODOS</option>
-                </select>
+              <div class="med-pharm-toolbar-start">
+                <div class="med-pharm-toolbar-field">
+                  <label for="med-pharm-filtro">Filtrar</label>
+                  <select id="med-pharm-filtro">
+                    <option value="TODOS">TODOS</option>
+                  </select>
+                </div>
+                <label id="med-pharm-show-hidden-wrap" class="med-pharm-show-hidden-wrap" hidden>
+                  <input type="checkbox" id="med-pharm-show-hidden" />
+                  <span>Mostrar ocultos (<span id="med-pharm-hidden-count">0</span>)</span>
+                </label>
+                <span id="med-pharm-last-paste" class="med-pharm-last-paste" hidden></span>
               </div>
-              <label id="med-pharm-show-hidden-wrap" class="med-pharm-show-hidden-wrap" hidden>
-                <input type="checkbox" id="med-pharm-show-hidden" />
-                <span>Mostrar ocultos (<span id="med-pharm-hidden-count">0</span>)</span>
-              </label>
-              <span id="med-pharm-last-paste" class="med-pharm-last-paste" hidden></span>
-              <button type="button" class="btn-med-secondary" id="med-pharm-paste-open-btn">Importar mes SOME</button>
-              <button type="button" class="btn-generate med-pharm-btn-full" id="med-pharm-full-btn">Vista SOME (pantalla completa)</button>
-              <div class="med-pharm-month-nav">
-                <button type="button" class="btn-med-secondary" id="med-pharm-month-prev" title="Mes anterior" aria-label="Mes anterior">‹</button>
-                <span id="med-pharm-month-label">—</span>
-                <button type="button" class="btn-med-secondary" id="med-pharm-month-next" title="Mes siguiente" aria-label="Mes siguiente">›</button>
+              <div class="med-pharm-toolbar-actions">
+                <button type="button" class="btn-med-secondary" id="med-pharm-paste-open-btn">Importar mes SOME</button>
+                <button type="button" class="btn-generate med-pharm-btn-full" id="med-pharm-full-btn" title="Calendario SOME en pantalla completa">Vista SOME</button>
+              </div>
+              <div class="med-pharm-toolbar-end">
+                <div class="med-pharm-month-nav">
+                  <button type="button" class="btn-med-secondary med-pharm-month-btn" id="med-pharm-month-prev" title="Mes anterior" aria-label="Mes anterior">‹</button>
+                  <span id="med-pharm-month-label">—</span>
+                  <button type="button" class="btn-med-secondary med-pharm-month-btn" id="med-pharm-month-next" title="Mes siguiente" aria-label="Mes siguiente">›</button>
+                </div>
               </div>
             </div>
             <p id="med-pharm-hint" class="lab-history-hint med-pharm-hint" style="display:none;"></p>
             <div class="med-pharm-list-head">
-              <span>Medicamento · Días</span>
+              <span>Medicamento</span>
+              <span>Acciones</span>
               <span>Freq</span>
               <span>Vía</span>
             </div>

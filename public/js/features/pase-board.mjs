@@ -40,10 +40,12 @@ import { renderVpo } from "./vpo.mjs";
 import { buildEaMonitoreoRevision } from "./estado-actual-data.mjs";
 import { resumeLabBulkPreviewModalIfSuspended } from "./lab-bulk-preview-modal.mjs";
 import {
+  eaHasCopyableContent,
   invalidateEaPanelCache,
   renderEstadoActualPanel,
   syncEaCopyFab,
 } from "./estado-actual-panel.mjs";
+import { labOutputHasCopyableContent, syncLabCopyFab } from "./lab-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
@@ -804,6 +806,8 @@ export function switchAppTab(tab) {
   var guardia = isGuardiaMode();
   var unified = isPaseMode();
 
+  syncMainAppTabA11y(tab);
+
   if (apptabLab) apptabLab.classList.toggle("active", tab === "lab");
   if (apptabNota) apptabNota.classList.toggle("active", tab === "nota");
   if (apptabMed) apptabMed.classList.toggle("active", tab === "med");
@@ -879,7 +883,10 @@ export function switchAppTab(tab) {
     }
   }
 
-  syncMainAppTabA11y(tab);
+  var settings = rt.getSettings();
+  var inner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  syncLabCopyFab(tab === "lab" && labOutputHasCopyableContent());
+  syncEaCopyFab(tab === "nota" && inner === "estadoActual" && eaHasCopyableContent());
 
   if (tab === "med") rt.setMedTabAttention(false);
 

@@ -181,6 +181,17 @@ export function syncLabCopyFab(show) {
   document.documentElement.classList.toggle("lab-copy-fab-active", visible);
 }
 
+export function labOutputHasCopyableContent() {
+  var sec = document.getElementById("lab-output-section");
+  return !!(
+    sec &&
+    sec.style.display !== "none" &&
+    activeLab &&
+    activeLab.resLabs &&
+    activeLab.resLabs.length
+  );
+}
+
 registerLabSomeTablesModalRuntime({
   showToast: function (msg, kind) {
     rt.showToast(msg, kind);
@@ -251,7 +262,7 @@ export function syncLabOutputChrome() {
 export { openLabSomeTablesModal, closeLabSomeTablesModal };
 
 export function closeLabHistoryMoreMenu() {
-  document.querySelectorAll(".lab-history-more[open]").forEach(function (d) {
+  document.querySelectorAll(".lab-history-more[open], .lab-output-more[open]").forEach(function (d) {
     d.removeAttribute("open");
   });
 }
@@ -279,33 +290,15 @@ function esc(s) {
 
 
 
-var LAB_HISTORY_COLLAPSED_LS = 'rpc-ui-labHistoryCollapsed';
+export function setLabHistoryPanelCollapsed() {}
+
+export function syncLabHistoryCollapseUI() {}
 
 function labHistoryPanelIsCollapsed() {
-  try { return localStorage.getItem(LAB_HISTORY_COLLAPSED_LS) === '1'; } catch (_e) { return false; }
+  return false;
 }
 
-export function setLabHistoryPanelCollapsed(collapsed) {
-  try {
-    if (collapsed) localStorage.setItem(LAB_HISTORY_COLLAPSED_LS, '1');
-    else localStorage.removeItem(LAB_HISTORY_COLLAPSED_LS);
-  } catch (_e) {}
-}
-
-export function syncLabHistoryCollapseUI() {
-  var card = document.getElementById('lab-history-card');
-  var btn = document.getElementById('btn-lab-history-toggle');
-  if (!card) return;
-  var collapsed = labHistoryPanelIsCollapsed();
-  card.classList.toggle('is-collapsed', collapsed);
-  if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-}
-
-function toggleLabHistoryPanel(ev) {
-  if (ev && ev.stopPropagation) ev.stopPropagation();
-  setLabHistoryPanelCollapsed(!labHistoryPanelIsCollapsed());
-  syncLabHistoryCollapseUI();
-}
+function toggleLabHistoryPanel() {}
 
 function clearLabInputAfterSuccessfulParse() {
   var ta = document.getElementById('lab-input');
@@ -382,91 +375,190 @@ function dedupeConsolidatedRowsBySection(rows, tipo) {
   });
 }
 
-var LAB_HISTORY_LIST_CAP = 50;
-var _labHistoryListExpanded = {};
-var _labHistoryPanelCacheKey = "";
+var _labHistorySelectedSetId = Object.create(null);
+var _labHistoryDateSelectCacheKey = "";
 
-export function expandLabHistoryList() {
-  var pid = rt.getActiveId();
-  if (!pid) return;
-  _labHistoryListExpanded[pid] = true;
-  renderLabHistoryPanel();
+export function expandLabHistoryList() {}
+
+function labSetIdForHistory(set, idx) {
+  return set.id != null && String(set.id).trim() !== '' ? String(set.id) : '__idx_' + idx;
 }
 
-export function renderLabHistoryPanel() {
-  var card = document.getElementById('lab-history-card');
-  var listEl = document.getElementById('lab-history-list');
-  var hintEl = document.getElementById('lab-history-hint');
-  if (!card || !listEl || !hintEl) return;
-  if (!rt.getActiveId()) {
-    _labHistoryPanelCacheKey = "";
-    hintEl.style.display = 'block';
-    hintEl.textContent = 'Selecciona un paciente en la columna izquierda para ver los estudios que hayas enviado a su nota.';
-    listEl.innerHTML = '';
-    syncLabHistoryCollapseUI();
-    rt.renderRoundOverviewPanels();
-    if (isPaseMode()) rt.renderPaseBoard();
-    return;
-  }
+function getActivePatientLabHistory() {
   var pid = rt.getActiveId();
-  var showAll = !!_labHistoryListExpanded[pid];
-  var hist = sortLabHistoryChronological(
+  if (!pid) return [];
+  return sortLabHistoryChronological(
     rt.ensureParsedLabHistoryCached
       ? rt.ensureParsedLabHistoryCached(pid)
       : rt.ensureParsedLabHistory(pid, { readOnly: true })
   );
-  var panelCacheKey =
-    String(pid) + "|L" + getLabHistoryRevision(pid) + "|E" + (showAll ? 1 : 0) + "|N" + hist.length;
-  if (_labHistoryPanelCacheKey === panelCacheKey && listEl.childElementCount > 0) {
-    syncLabHistoryCollapseUI();
-    return;
+}
+
+function getLabHistorySelectedSetId(pid, hist) {
+  if (!pid || !hist.length) return '';
+  var sel = _labHistorySelectedSetId[pid];
+  if (sel && hist.some(function (s, i) { return labSetIdForHistory(s, i) === sel; })) return sel;
+  return labSetIdForHistory(hist[hist.length - 1], hist.length - 1);
+}
+
+function syncLabHistoryDateSelect(opts) {
+  var selectEl = document.getElementById('lab-history-date-select');
+  var hintEl = document.getElementById('lab-output-history-hint');
+  var moreMenu = document.querySelector('.lab-output-more');
+  if (!selectEl) return '';
+  var pid = rt.getActiveId();
+  if (!pid) {
+    _labHistoryDateSelectCacheKey = '';
+    selectEl.hidden = true;
+    selectEl.innerHTML = '';
+    if (hintEl) {
+      hintEl.style.display = 'block';
+      hintEl.textContent =
+        'Selecciona un paciente en la columna izquierda para ver los estudios guardados.';
+    }
+    if (moreMenu) moreMenu.hidden = true;
+    return '';
   }
+  var hist = getActivePatientLabHistory();
+  var cacheKey = String(pid) + '|L' + getLabHistoryRevision(pid) + '|N' + hist.length;
   if (!hist.length) {
-    _labHistoryPanelCacheKey = panelCacheKey;
-    hintEl.style.display = 'block';
-    hintEl.textContent = 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
-    listEl.innerHTML = '';
-    syncLabHistoryCollapseUI();
-    rt.renderRoundOverviewPanels();
-    if (isPaseMode()) rt.renderPaseBoard();
+    _labHistoryDateSelectCacheKey = cacheKey;
+    selectEl.hidden = true;
+    selectEl.innerHTML = '';
+    if (hintEl) {
+      hintEl.style.display = 'block';
+      hintEl.textContent =
+        'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).';
+    }
+    if (moreMenu) moreMenu.hidden = true;
+    return '';
+  }
+  if (hintEl) hintEl.style.display = 'none';
+  if (moreMenu) moreMenu.hidden = false;
+  var selectedId = getLabHistorySelectedSetId(pid, hist);
+  if (opts && opts.preferSetId) selectedId = opts.preferSetId;
+  _labHistorySelectedSetId[pid] = selectedId;
+  if (_labHistoryDateSelectCacheKey !== cacheKey) {
+    var labelCounts = Object.create(null);
+    hist.forEach(function (set) {
+      var lb = rt.formatLabHistoryDateSelectLabel(set);
+      labelCounts[lb] = (labelCounts[lb] || 0) + 1;
+    });
+    var labelSeen = Object.create(null);
+    var options = hist
+      .map(function (set, idx) {
+        var sid = labSetIdForHistory(set, idx);
+        var label = rt.formatLabHistoryDateSelectLabel(set);
+        if (labelCounts[label] > 1) {
+          labelSeen[label] = (labelSeen[label] || 0) + 1;
+          label += ' (' + labelSeen[label] + ')';
+        }
+        return { sid: sid, label: label, idx: idx };
+      })
+      .reverse();
+    selectEl.innerHTML = options
+      .map(function (row) {
+        return (
+          '<option value="' +
+          esc(row.sid) +
+          '"' +
+          (row.sid === selectedId ? ' selected' : '') +
+          '>' +
+          esc(row.label) +
+          '</option>'
+        );
+      })
+      .join('');
+    _labHistoryDateSelectCacheKey = cacheKey;
+  } else if (selectEl.value !== selectedId) {
+    selectEl.value = selectedId;
+  }
+  selectEl.hidden = false;
+  return selectedId;
+}
+
+function loadLabHistorySetIntoOutput(setId, opts) {
+  if (!rt.getActiveId()) return false;
+  var hist = getActivePatientLabHistory();
+  var set = findLabHistorySetByRef(hist, setId);
+  if (!set || !set.resLabs || !set.resLabs.length) return false;
+  var patient = patients.find(function (p) { return p.id === rt.getActiveId(); });
+  var name = patient ? patient.nombre || '' : '';
+  var reg = patient ? patient.registro || '' : '';
+  var result = {
+    patient: { name: name, expediente: reg, sexo: '', edad: '', fecha: set.fecha || '' },
+    resLabs: set.resLabs,
+    sourceText: set.sourceText || '',
+  };
+  activeLab = result;
+  renderOutput(result, { fromHistory: true, silent: !!(opts && opts.silent) });
+  rt.renderDiagramas(result.resLabs);
+  if (!(opts && opts.silent)) {
+    rt.addAuditEntry('lab-history-replay', 'ok', 1, String(setId));
+    rt.showToast('Estudio cargado en Laboratorio', 'success');
+    var outSec = document.getElementById('lab-output-section');
+    if (outSec && outSec.style.display !== 'none') {
+      try {
+        outSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (_e) {
+        outSec.scrollIntoView(true);
+      }
+    }
+  }
+  return true;
+}
+
+function maybeShowLabHistoryForActivePatient(opts) {
+  var pid = rt.getActiveId();
+  if (!pid) return;
+  var selectedId = syncLabHistoryDateSelect(opts);
+  if (!selectedId) {
+    if (!activeLab) {
+      var sec = document.getElementById('lab-output-section');
+      if (sec) sec.style.display = 'none';
+      syncLabOutputChrome();
+    }
     return;
   }
-  hintEl.style.display = 'none';
-  var visible = hist;
-  var hiddenCount = 0;
-  if (!showAll && hist.length > LAB_HISTORY_LIST_CAP) {
-    visible = hist.slice(0, LAB_HISTORY_LIST_CAP);
-    hiddenCount = hist.length - LAB_HISTORY_LIST_CAP;
+  if (activeLab && !(opts && opts.forceReload)) return;
+  loadLabHistorySetIntoOutput(selectedId, { silent: true });
+}
+
+export function renderLabHistoryPanel() {
+  var selectedId = syncLabHistoryDateSelect();
+  if (selectedId && !activeLab) {
+    loadLabHistorySetIntoOutput(selectedId, { silent: true });
+  } else if (!selectedId && !activeLab) {
+    var sec = document.getElementById('lab-output-section');
+    if (sec) sec.style.display = 'none';
+    syncLabOutputChrome();
   }
-  var rowsHtml = visible.map(function(set, idx) {
-    var meta = rt.formatLabHistoryListMeta(set);
-    var sid = safeAttrJsString(
-      set.id != null && String(set.id).trim() !== '' ? set.id : '__idx_' + idx
-    );
-    return (
-      '<div class="lab-history-row" role="listitem">' +
-      '<div class="lab-history-meta">' + esc(meta) + '</div>' +
-      '<div class="lab-history-actions">' +
-      '<button type="button" class="btn-lab-history" onclick="replayLabHistorySet(\'' + sid + '\')">Ver en Laboratorio</button>' +
-      '<button type="button" class="btn-lab-history" onclick="reprocessLabHistorySet(\'' + sid + '\')">Reprocesar</button>' +
-      '<button type="button" class="btn-lab-history btn-lab-history-del" onclick="deleteLabHistorySet(\'' + sid + '\')">Eliminar</button>' +
-      '</div></div>'
-    );
-  }).join('');
-  if (hiddenCount > 0) {
-    rowsHtml +=
-      '<div class="lab-history-more-wrap">' +
-      '<button type="button" class="btn-lab-history btn-lab-history-expand" onclick="expandLabHistoryList()">Mostrar ' +
-      hiddenCount +
-      ' entrada' +
-      (hiddenCount === 1 ? '' : 's') +
-      ' anteriores</button></div>';
-  }
-  listEl.innerHTML = rowsHtml;
-  _labHistoryPanelCacheKey = panelCacheKey;
-  syncLabHistoryCollapseUI();
   rt.renderRoundOverviewPanels();
   if (isPaseMode()) rt.renderPaseBoard();
+}
+
+function onLabHistoryDateChange(setId) {
+  var pid = rt.getActiveId();
+  if (pid && setId) _labHistorySelectedSetId[pid] = setId;
+  loadLabHistorySetIntoOutput(setId, { silent: true });
+}
+
+function reprocessSelectedLabHistorySet() {
+  var selectEl = document.getElementById('lab-history-date-select');
+  if (!selectEl || selectEl.hidden || !selectEl.value) {
+    rt.showToast('No hay estudio seleccionado', 'error');
+    return;
+  }
+  reprocessLabHistorySet(selectEl.value);
+}
+
+function deleteSelectedLabHistorySet() {
+  var selectEl = document.getElementById('lab-history-date-select');
+  if (!selectEl || selectEl.hidden || !selectEl.value) {
+    rt.showToast('No hay estudio seleccionado', 'error');
+    return;
+  }
+  deleteLabHistorySet(selectEl.value);
 }
 
 function replayLabHistorySet(setId) {
@@ -474,30 +566,14 @@ function replayLabHistorySet(setId) {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
   }
-  var sets = normalizeLabHistoryPatientSets(labHistory[rt.getActiveId()]);
-  var set = findLabHistorySetByRef(sets, setId);
-  if (!set || !set.resLabs || !set.resLabs.length) {
+  _labHistorySelectedSetId[rt.getActiveId()] = String(setId || '');
+  var selectEl = document.getElementById('lab-history-date-select');
+  if (selectEl && !selectEl.hidden) selectEl.value = String(setId || '');
+  if (!loadLabHistorySetIntoOutput(setId)) {
     rt.showToast('No se encontró ese estudio', 'error');
     return;
   }
-  var patient = patients.find(function(p) { return p.id === rt.getActiveId(); });
-  var name = patient ? (patient.nombre || '') : '';
-  var reg = patient ? (patient.registro || '') : '';
-  var result = {
-    patient: { name: name, expediente: reg, sexo: '', edad: '', fecha: set.fecha || '' },
-    resLabs: set.resLabs,
-    sourceText: set.sourceText || ''
-  };
-  activeLab = result;
-  renderOutput(result);
-  rt.renderDiagramas(result.resLabs);
-  rt.addAuditEntry('lab-history-replay', 'ok', 1, String(setId));
-  rt.showToast('Estudio cargado en Laboratorio', 'success');
   rt.openPaseSectionInNormal('labs');
-  var outSec = document.getElementById('lab-output-section');
-  if (outSec && outSec.style.display !== 'none') {
-    try { outSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { outSec.scrollIntoView(true); }
-  }
 }
 
 function reprocessLabHistorySet(setId) {
@@ -574,6 +650,7 @@ function deleteLabHistorySet(setId) {
   bumpLabHistoryRevision(pid);
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
+  activeLab = null;
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   rt.showToast('Eliminado del historial', 'success');
@@ -998,11 +1075,10 @@ export function limpiarReporte() {
   document.getElementById('lab-banner').style.display = 'none';
   document.getElementById('lab-diagrams-section').style.display = 'none';
   document.getElementById('diagrams-grid').innerHTML = '';
-  document.getElementById('lab-output-section').style.display = 'none';
   document.getElementById('lab-output-box').innerHTML = '';
   activeLab = null;
   closeLabSomeTablesModal();
-  syncLabOutputChrome();
+  maybeShowLabHistoryForActivePatient({ forceReload: true });
 }
 
 function openLabPatientPicker() {
@@ -1689,22 +1765,35 @@ function toastAscitisAlertsFromResult(result) {
   });
 }
 
-function renderOutput(result) {
+function renderOutput(result, opts) {
   var patient = result.patient, resLabs = result.resLabs;
   activeLab = result;
-  rt.onboardingAdvanceAfterParse();
+  if (!(opts && opts.fromHistory)) rt.onboardingAdvanceAfterParse();
   var fechaBanner = '';
   if (patient.fecha) {
     fechaBanner = normalizeFechaLabHistory(patient.fecha) || String(patient.fecha).trim();
     if (fechaBanner === 'Anterior') fechaBanner = '';
   }
-  if (patient.name) {
-    document.getElementById('lab-patient-name').textContent = patient.name;
-    document.getElementById('lab-patient-meta').textContent = [
-      patient.expediente ? 'Exp: '+patient.expediente : '',
-      patient.sexo, patient.edad || '', fechaBanner || patient.fecha
-    ].filter(Boolean).join('  |  ');
-    document.getElementById('lab-banner').style.display = 'block';
+  var banner = document.getElementById('lab-banner');
+  if (patient.name && banner) {
+    var reg = String(patient.expediente || '').trim();
+    var inCensus = reg && rt.findPatientByRegistro(reg);
+    if (!inCensus) {
+      document.getElementById('lab-patient-name').textContent = patient.name;
+      document.getElementById('lab-patient-meta').textContent = [
+        patient.expediente ? 'Exp: ' + patient.expediente : '',
+        patient.sexo,
+        patient.edad || '',
+        fechaBanner || patient.fecha,
+      ]
+        .filter(Boolean)
+        .join('  |  ');
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  } else if (banner) {
+    banner.style.display = 'none';
   }
   var box = document.getElementById('lab-output-box');
   rt.removeAtbRisPanelsFromBody();
@@ -1761,6 +1850,16 @@ function renderOutput(result) {
     }
   });
   document.getElementById('lab-output-section').style.display = 'block';
+  if (!(opts && opts.fromHistory)) {
+    var pid = rt.getActiveId();
+    if (pid) {
+      var hist = getActivePatientLabHistory();
+      var latest = hist.length ? hist[hist.length - 1] : null;
+      var preferId = latest ? labSetIdForHistory(latest, hist.length - 1) : '';
+      syncLabHistoryDateSelect({ preferSetId: preferId });
+      if (preferId) _labHistorySelectedSetId[pid] = preferId;
+    }
+  }
   syncLabOutputChrome();
   rt.wireAtbRisHoverPanels(box);
 }
@@ -1787,4 +1886,7 @@ export const windowHandlers = {
   expandLabHistoryList,
   consolidateLabHistoryByDayAndTipo,
   insertLabPatientSeparator,
+  onLabHistoryDateChange,
+  reprocessSelectedLabHistorySet,
+  deleteSelectedLabHistorySet,
 };

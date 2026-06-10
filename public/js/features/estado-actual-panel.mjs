@@ -37,6 +37,7 @@ import {
   discardDietProposal,
   hasPendingEaProposals,
   DIET_PENDING_KEYS,
+  estadoClinicoForDisplay,
   estadoClinicoForText,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
@@ -234,20 +235,22 @@ function hasDietProposal(pendienteReceta) {
  * @param {string | null} activeId
  */
 function renderEstadoClinicoSection(monitoreo, activeId, patient) {
-  var ec = monitoreo.estadoClinico || {};
+  var pend = monitoreo.pendienteReceta || {};
+  var dietPending = hasDietProposal(pend);
+  var ec = estadoClinicoForDisplay(monitoreo);
   var snapshot = deriveSnapshot(monitoreo);
   var dietWeight = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
     pesoRef: ec.pesoRef,
   });
-  syncDietKcalFromWeight(ec, dietWeight);
+  if (!dietPending || !String(pend.kcal || '').trim()) {
+    syncDietKcalFromWeight(ec, dietWeight);
+  }
   var dietWeightHint =
     dietWeight != null
       ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
       : 'Peso para cálculo: — (captura peso en Datos del paciente)';
-  var pend = monitoreo.pendienteReceta || {};
   var anyPending = hasPendingEaProposals(pend);
-  var dietPending = hasDietProposal(pend);
 
   var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient);
 
@@ -2150,6 +2153,13 @@ export function syncEaCopyFab(show) {
     }
   }
   document.documentElement.classList.toggle('ea-copy-fab-active', visible);
+}
+
+export function eaHasCopyableContent() {
+  var patient = findActivePatient();
+  if (!patient) return false;
+  var text = getEstadoActualTextForPatient(patient);
+  return !!String(text || '').trim();
 }
 
 export async function copiarEstadoActualTexto() {

@@ -891,7 +891,7 @@ function labRowText_(row) {
 function dedupeSingletonSections_(rows) {
   var singleton = {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
-    HECES: 1, FROTIS: 1, EGO: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
+    HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
     'INTERPRETACIÓN ASCITIS:': 1,
   };
   var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
@@ -1895,6 +1895,105 @@ export function parsePlaquetasCitrato_(textoBruto, tNorm) {
   if (pltData.valor === '---') return '';
   var Plt = fmt(marcarSegunRango(pltData.valor, pltData.min, pltData.max));
   return 'PltCit\tPlt ' + Plt;
+}
+
+function formatSerolSco_(raw) {
+  var n = parseFloat(String(raw || '').replace(',', '.'));
+  if (!isFinite(n)) return String(raw || '').trim();
+  var s = n.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  return s;
+}
+
+function qualSerolShort_(qual) {
+  var q = String(qual || '').toUpperCase();
+  if (q === 'NEGATIVO') return 'neg';
+  if (q === 'POSITIVO') return 'pos*';
+  if (q === 'INDETERMINADO') return 'indet*';
+  return '';
+}
+
+function extraerSerolEstudio_(lineas, iStart, patterns) {
+  for (var i = iStart; i < lineas.length; i++) {
+    var line = String(lineas[i] || '').replace(/\t.*$/, '').trim();
+    if (!line) continue;
+    var matched = false;
+    for (var p = 0; p < patterns.length; p++) {
+      if (patterns[p].test(line)) {
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) continue;
+    var sco = null;
+    var qual = '';
+    for (var j = i + 1; j < Math.min(i + 12, lineas.length); j++) {
+      var t = String(lineas[j] || '').replace(/\*/g, '').trim();
+      if (!t || t === ':') continue;
+      if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(t)) continue;
+      if (/^S\/CO$/i.test(t)) continue;
+      if (/^(Positivo|Indeterminado|Negativo)\s*[<>=]/i.test(t)) continue;
+      if (/^(Anticuerpos|Ant[ií]geno)\b/i.test(t)) break;
+      var mNum = t.match(/^(\d+\.\d+|\d+)$/);
+      if (mNum && sco === null) {
+        sco = mNum[1];
+        continue;
+      }
+      var mQ = t.match(/^(NEGATIVO|POSITIVO|INDETERMINADO)$/i);
+      if (mQ) {
+        qual = mQ[1].toUpperCase();
+        break;
+      }
+    }
+    if (!qual) return null;
+    return { sco: sco, qual: qual };
+  }
+  return null;
+}
+
+/**
+ * Serología de banco de sangre (VIH/VHC/HBsAg) — bloque BANCO DE SANGRE / Serología SOME.
+ */
+export function parseSerologiaBancoSangre_(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return '';
+  var tUp = textoBruto.toUpperCase();
+  var hasBanco = tUp.indexOf('BANCO DE SANGRE') !== -1;
+  var hasSerolMarkers =
+    /HIV\s*1\s*\/\s*HIV\s*2/i.test(textoBruto) ||
+    /ANTI\s+VIRUS\s+DE\s+LA\s+HEPATITIS\s+C/i.test(textoBruto) ||
+    /ANTIGENO\s+DE\s+SUPERFICIE.*HEPATITIS\s+B/i.test(textoBruto);
+  if (!hasBanco && !hasSerolMarkers) return '';
+
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return String(l || '').trim();
+  });
+  var iBanco = -1;
+  for (var i = 0; i < lineas.length; i++) {
+    if (/^BANCO\s+DE\s+SANGRE$/i.test(lineas[i])) {
+      iBanco = i;
+      break;
+    }
+  }
+  var startSearch = iBanco >= 0 ? iBanco : 0;
+
+  var estudios = [
+    { key: 'VIH', patterns: [/HIV\s*1\s*\/\s*HIV\s*2/i, /\bANTI\s+HIV/i] },
+    { key: 'VHC', patterns: [/ANTI\s+VIRUS\s+DE\s+LA\s+HEPATITIS\s+C/i, /HEPATITIS\s+C/i] },
+    { key: 'HBsAg', patterns: [/ANTIGENO\s+DE\s+SUPERFICIE.*HEPATITIS\s+B/i, /\bHBSAG\b/i] },
+  ];
+
+  var parts = [];
+  for (var e = 0; e < estudios.length; e++) {
+    var est = estudios[e];
+    var res = extraerSerolEstudio_(lineas, startSearch, est.patterns);
+    if (!res || !res.qual) continue;
+    var qShort = qualSerolShort_(res.qual);
+    if (!qShort) continue;
+    var token = est.key + ' ' + qShort;
+    if (res.sco != null) token += ' (' + formatSerolSco_(res.sco) + ')';
+    parts.push(token);
+  }
+  if (!parts.length) return '';
+  return 'SEROL\t' + parts.join(' ');
 }
 
 /** Na/K/Cl/Cr de QUIMICA CLINICA (orina); Cl suele venir en COMENTARIO DE MUESTRA. */
@@ -3078,6 +3177,7 @@ export function procesarLabs(textoBruto) {
   var ego=parseEGO_(textoBruto); if(ego)resLabs.push(ego);
   var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
+  var serol=parseSerologiaBancoSangre_(textoBruto);if(serol)resLabs.push(serol);
 
   resLabs = dedupeSingletonSections_(resLabs);
   var refsBySection = buildRefsBySectionFromReport(textoBruto);

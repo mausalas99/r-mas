@@ -20,6 +20,45 @@ export const CLINICAL_TEAM_SERVICES = [
 export const CLINICAL_SALAS = CLINICAL_SALA_VALUES;
 
 export const BROWSE_SALA_LS = 'clinical.browseSala';
+export const CLINICAL_TEAMS_COLLAPSE_LS_PREFIX = 'rpc.clinicalTeamsCollapse.';
+
+/** @param {string} key @param {boolean} [defaultOpen] */
+export function readClinicalTeamsCollapseOpen(key, defaultOpen = true) {
+  try {
+    const v = localStorage.getItem(CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key);
+    if (v === '0') return false;
+    if (v === '1') return true;
+  } catch (_e) {}
+  return defaultOpen;
+}
+
+/** @param {string} key @param {boolean} open */
+export function writeClinicalTeamsCollapseOpen(key, open) {
+  try {
+    localStorage.setItem(CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key, open ? '1' : '0');
+  } catch (_e) {}
+}
+
+/**
+ * Collapsible block with persisted open state (Mi rotación sections and team cards).
+ * @param {{ collapseKey: string, defaultOpen?: boolean, summaryHtml: string, bodyHtml: string, className?: string }} opts
+ */
+export function renderClinicalTeamsCollapsible(opts) {
+  const {
+    collapseKey,
+    defaultOpen = true,
+    summaryHtml,
+    bodyHtml,
+    className = '',
+  } = opts;
+  const open = readClinicalTeamsCollapseOpen(collapseKey, defaultOpen);
+  const extraClass = className ? ` ${className}` : '';
+  return `
+    <details class="clinical-teams-collapse${extraClass}" data-collapse-key="${escapeAttr(collapseKey)}"${open ? ' open' : ''}>
+      <summary class="clinical-teams-collapse-summary">${summaryHtml}</summary>
+      <div class="clinical-teams-collapse-body">${bodyHtml}</div>
+    </details>`;
+}
 
 /** @type {boolean} */
 let adminAccessGrantedThisSession = false;

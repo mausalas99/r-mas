@@ -15,3 +15,16 @@ export const clinicalSessionContext = {
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: new Map(),
 };
+
+/** Active clinical user id (session bag, then rpc-settings fallback). */
+export function resolveClinicalSessionUserId() {
+  const fromCtx = String(clinicalSessionContext.user?.user_id || '').trim();
+  if (fromCtx) return fromCtx;
+  if (typeof localStorage === 'undefined') return '';
+  try {
+    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return String(settings.clinicalUserId || '').trim();
+  } catch {
+    return '';
+  }
+}

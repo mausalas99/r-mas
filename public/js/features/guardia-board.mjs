@@ -35,6 +35,7 @@ import {
 } from './entrega-roster-panel.mjs';
 import {
   ensureElevatedWardCensusOnDevice,
+  ensureTeamAssignedPatientsOnDevice,
   refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
 import { syncGuardiaPhaseBar, teardownGuardiaPhaseBar } from './guardia-phase-bar.mjs';
@@ -93,6 +94,13 @@ async function bootstrapGuardiaViewOnEnter(settings) {
   if (onCallReceiver) {
     setGuardiaMode(true, { settings, renderGuardiaBoard, rerenderBoard: true });
   }
+}
+
+/** Pull guardia census + missing ward patients when entering modo guardia. */
+async function bootstrapGuardiaCensusData(settings) {
+  await refreshGuardiaCensusFromDb(settings);
+  await ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 3000 });
+  if (isGuardiaMode()) renderGuardiaBoard(settings);
 }
 
 /** @returns {Record<string, unknown>|null} */
@@ -436,9 +444,7 @@ export function renderGuardiaBoard(settings) {
   if (!guardiaViewBootstrapped) {
     guardiaViewBootstrapped = true;
     void bootstrapGuardiaViewOnEnter(settings);
-    void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 3000 }).then(() => {
-      if (isGuardiaMode()) renderGuardiaBoard(settings);
-    });
+    void bootstrapGuardiaCensusData(settings);
   }
   wireGuardiaEntregaPhaseButton(settings);
   syncEntregaPhaseChrome();

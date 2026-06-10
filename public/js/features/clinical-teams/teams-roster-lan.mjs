@@ -3,6 +3,7 @@ import {
   clinicalSessionContext,
   fetchClinicalTeamsFromDb,
   refreshClinicalUserProfile,
+  touchClinicalSessionActivity,
 } from '../../clinical-access-runtime.mjs';
 import {
   isBenignLanPushSkipCode,
@@ -39,6 +40,11 @@ import { persistClinicalUserBinding, readRpcSettings } from '../../clinical-sett
 import { resumeClinicalIdentityByUsername } from '../../clinical-access-runtime.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import {
+  clinicalUserActivityTier,
+  clinicalUserActivityLabel,
+  formatClinicalUserLastActivity,
+} from '../../../../lib/clinical-user-activity.mjs';
+import {
   ensureClinicalPanelSession,
   getClinicalTeamsPanelHost,
   safeRenderClinicalTeamsPanel,
@@ -63,17 +69,18 @@ import {
   pullClinicalOpsFromLanRoom,
   resolveLocalUserIdByLanHandle,
 } from './teams-guardia-bridge.mjs';
+import { lanDirectoryUserMatchesFilters } from './lan-directory-filters.mjs';
 
 
-export function renderLanUsersDirectoryEntryHtml(user) {
+/** Top-bar CTA beside «Crear equipo» (opens separate modal). */
+export function renderLanUsersDirectoryTopButtonHtml(user) {
   if (!canViewLanUserDirectory(user)) return '';
-  return `
-    <div class="clinical-teams-lan-users-entry">
-      <button type="button" class="btn-med-secondary clinical-teams-open-lan-users-btn" id="btn-open-lan-users-directory">
-        Abrir directorio de usuarios LAN
-      </button>
-      <p class="clinical-teams-section-desc">Crea equipos vacíos y asigna integrantes desde aquí (ventana aparte).</p>
-    </div>`;
+  return `<button type="button" class="btn-med-secondary clinical-teams-open-lan-users-btn" id="btn-open-lan-users-directory">Directorio LAN</button>`;
+}
+
+/** @deprecated — use renderLanUsersDirectoryTopButtonHtml in create top bar */
+export function renderLanUsersDirectoryEntryHtml(user) {
+  return renderLanUsersDirectoryTopButtonHtml(user);
 }
 
 export function lanUsersModalBackdropEl() {
@@ -94,7 +101,10 @@ let _lanUsersModalTeams = [];
 
 /** Rank groups the user collapsed in directorio LAN (persists across background refreshes). */
 const lanDirectoryCollapsedRanks = new Set();
+/** Large rank groups the user explicitly expanded (default: collapsed when >4 users). */
+const lanDirectoryExpandedRanks = new Set();
 
+const LAN_DIRECTORY_RANK_AUTO_COLLAPSE_THRESHOLD = 4;
 const LAN_DIRECTORY_LAN_PULL_MIN_MS = 30_000;
 const LAN_DIRECTORY_IPC_MIN_MS = 4_000;
 
@@ -103,13 +113,21 @@ let lanDirectoryLanPullLastAt = 0;
 let lanDirectoryIpcLastAt = 0;
 /** While open: no auto-refresh (avoids lag from ⇄ sync storms). User taps Actualizar. */
 let lanDirectoryFreezeAutoRefresh = false;
+let lanDirectoryFilterQuery = '';
+let lanDirectoryFilterStatus = 'all';
+let lanDirectoryFilterSala = '';
+let lanDirectoryFilterActivity = 'all';
 
 function lanRankGroupKey(rank) {
   return String(rank || '').trim() || 'Otros';
 }
 
-function isLanRankGroupCollapsed(rank) {
-  return lanDirectoryCollapsedRanks.has(lanRankGroupKey(rank));
+/** @param {string} rank @param {number} userCount */
+function shouldLanRankGroupOpen(rank, userCount) {
+  const key = lanRankGroupKey(rank);
+  if (lanDirectoryCollapsedRanks.has(key)) return false;
+  if (lanDirectoryExpandedRanks.has(key)) return true;
+  return userCount <= LAN_DIRECTORY_RANK_AUTO_COLLAPSE_THRESHOLD;
 }
 
 /** @param {HTMLElement} host */
@@ -117,8 +135,195 @@ function captureLanDirectoryCollapseState(host) {
   host.querySelectorAll('details.clinical-lan-rank-group').forEach((el) => {
     const key = String(el.dataset.lanRankGroup || '').trim();
     if (!key) return;
-    if (el.open) lanDirectoryCollapsedRanks.delete(key);
-    else lanDirectoryCollapsedRanks.add(key);
+    const count = Number(el.dataset.lanRankCount) || 0;
+    if (el.open) {
+      lanDirectoryCollapsedRanks.delete(key);
+      if (count > LAN_DIRECTORY_RANK_AUTO_COLLAPSE_THRESHOLD) {
+        lanDirectoryExpandedRanks.add(key);
+      }
+    } else {
+      lanDirectoryCollapsedRanks.add(key);
+      lanDirectoryExpandedRanks.delete(key);
+    }
+  });
+}
+
+/** @param {object} u @param {ReturnType<typeof resolveLanUserPlacement>} placement */
+function lanUserSearchHaystack(u, placement) {
+  return [
+    u?.username,
+    u?.clinical_name,
+    u?.sala,
+    u?.rank,
+    placement?.teamName,
+    placement?.teamSala,
+    placement?.cycle,
+  ]
+    .map((part) => String(part || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+/** @param {object[]} users */
+function uniqueSalasFromLanUsers(users) {
+  const salas = new Set();
+  for (const u of users || []) {
+    const sala = String(u?.sala || '').trim();
+    if (sala) salas.add(sala);
+  }
+  return [...salas].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+function renderLanDirectoryToolbarHtml(users) {
+  const salas = uniqueSalasFromLanUsers(users);
+  const salaOptions = salas
+    .map(
+      (s) =>
+        `<option value="${escapeAttr(s)}"${lanDirectoryFilterSala === s ? ' selected' : ''}>${escapeHtml(s)}</option>`
+    )
+    .join('');
+  const statusSelected = (value) => (lanDirectoryFilterStatus === value ? ' selected' : '');
+  const activitySelected = (value) => (lanDirectoryFilterActivity === value ? ' selected' : '');
+  return `
+    <div class="clinical-lan-directory-toolbar">
+      <label class="clinical-lan-directory-search-wrap">
+        <span class="visually-hidden">Buscar usuario</span>
+        <input type="search" id="clinical-lan-directory-search" class="profile-input clinical-lan-directory-search" placeholder="Buscar @usuario o nombre…" value="${escapeAttr(lanDirectoryFilterQuery)}" autocomplete="off">
+      </label>
+      <label class="clinical-lan-directory-filter">
+        <span class="clinical-lan-directory-filter-label">Actividad</span>
+        <select id="clinical-lan-directory-activity-filter" class="profile-input">
+          <option value="all"${activitySelected('all')}>Todas</option>
+          <option value="active"${activitySelected('active')}>Activos (24 h)</option>
+          <option value="inactive"${activitySelected('inactive')}>Inactivos</option>
+        </select>
+      </label>
+      <label class="clinical-lan-directory-filter">
+        <span class="clinical-lan-directory-filter-label">Equipo</span>
+        <select id="clinical-lan-directory-status-filter" class="profile-input">
+          <option value="all"${statusSelected('all')}>Todos</option>
+          <option value="unassigned"${statusSelected('unassigned')}>Sin equipo</option>
+          <option value="assigned"${statusSelected('assigned')}>Con equipo</option>
+        </select>
+      </label>
+      <label class="clinical-lan-directory-filter">
+        <span class="clinical-lan-directory-filter-label">Sala</span>
+        <select id="clinical-lan-directory-sala-filter" class="profile-input">
+          <option value=""${lanDirectoryFilterSala ? '' : ' selected'}>Todas</option>
+          ${salaOptions}
+        </select>
+      </label>
+      <span class="clinical-lan-directory-match-count" aria-live="polite"></span>
+    </div>`;
+}
+
+/** @param {HTMLElement} host */
+function applyLanDirectoryFilters(host) {
+  const searchEl = host.querySelector('#clinical-lan-directory-search');
+  const statusEl = host.querySelector('#clinical-lan-directory-status-filter');
+  const salaEl = host.querySelector('#clinical-lan-directory-sala-filter');
+  const activityEl = host.querySelector('#clinical-lan-directory-activity-filter');
+  const countEl = host.querySelector('.clinical-lan-directory-match-count');
+
+  if (searchEl instanceof HTMLInputElement) lanDirectoryFilterQuery = searchEl.value;
+  if (statusEl instanceof HTMLSelectElement) lanDirectoryFilterStatus = statusEl.value;
+  if (salaEl instanceof HTMLSelectElement) lanDirectoryFilterSala = salaEl.value;
+  if (activityEl instanceof HTMLSelectElement) lanDirectoryFilterActivity = activityEl.value;
+
+  const filters = {
+    query: lanDirectoryFilterQuery,
+    status: lanDirectoryFilterStatus,
+    sala: lanDirectoryFilterSala,
+    activity: lanDirectoryFilterActivity,
+  };
+
+  let visible = 0;
+  let total = 0;
+  host.querySelectorAll('.clinical-lan-user-card').forEach((card) => {
+    total += 1;
+    const show = lanDirectoryUserMatchesFilters(
+      {
+        search: card.dataset.search || '',
+        hasTeam: card.dataset.hasTeam === '1',
+        sala: card.dataset.sala || '',
+        activityTier: card.dataset.activityTier || 'unknown',
+      },
+      filters
+    );
+    card.hidden = !show;
+    card.classList.toggle('clinical-lan-user-card--filtered-out', !show);
+    if (show) visible += 1;
+  });
+
+  host.querySelectorAll('.clinical-lan-rank-group').forEach((group) => {
+    const cards = group.querySelectorAll('.clinical-lan-user-card');
+    let visibleInGroup = 0;
+    for (const card of cards) {
+      if (!card.hidden) visibleInGroup += 1;
+    }
+    const groupCountEl = group.querySelector('.clinical-lan-rank-group-count');
+    const totalInGroup = cards.length;
+    if (groupCountEl) {
+      groupCountEl.textContent =
+        visibleInGroup === totalInGroup ? String(totalInGroup) : `${visibleInGroup}/${totalInGroup}`;
+    }
+    const anyVisible = visibleInGroup > 0;
+    group.hidden = !anyVisible;
+    group.classList.toggle('clinical-lan-rank-group--filtered-out', !anyVisible);
+  });
+
+  if (countEl) {
+    countEl.textContent =
+      visible === total ? `${total} usuarios` : `Mostrando ${visible} de ${total}`;
+  }
+}
+
+const LAN_DIRECTORY_FILTER_SELECT_IDS = new Set([
+  'clinical-lan-directory-status-filter',
+  'clinical-lan-directory-sala-filter',
+  'clinical-lan-directory-activity-filter',
+]);
+
+function runLanDirectoryFiltersFromUi() {
+  const host = lanUsersModalBodyEl();
+  if (host?.querySelector('.clinical-lan-rank-groups')) applyLanDirectoryFilters(host);
+}
+
+/** Re-bind filter controls after each directory render (innerHTML replaces nodes). */
+function bindLanDirectoryFilterControls(host) {
+  if (!host) return;
+  if (host._lanDirFilterAbort) host._lanDirFilterAbort.abort();
+  const ac = new AbortController();
+  host._lanDirFilterAbort = ac;
+  const { signal } = ac;
+  const apply = () => applyLanDirectoryFilters(host);
+
+  const searchEl = host.querySelector('#clinical-lan-directory-search');
+  if (searchEl instanceof HTMLInputElement) {
+    searchEl.addEventListener('input', apply, { signal });
+    searchEl.addEventListener('search', apply, { signal });
+  }
+  for (const id of LAN_DIRECTORY_FILTER_SELECT_IDS) {
+    const el = host.querySelector(`#${id}`);
+    if (el instanceof HTMLSelectElement) el.addEventListener('change', apply, { signal });
+  }
+}
+
+/** One-time delegation on modal backdrop (survives panel-body innerHTML swaps). */
+function ensureLanDirectoryFilterDelegation() {
+  const bd = lanUsersModalBackdropEl();
+  if (!bd || bd._rpcLanDirFilterDelegated) return;
+  bd._rpcLanDirFilterDelegated = true;
+  bd.addEventListener('input', (ev) => {
+    if (!(ev.target instanceof HTMLInputElement)) return;
+    if (ev.target.id !== 'clinical-lan-directory-search') return;
+    runLanDirectoryFiltersFromUi();
+  });
+  bd.addEventListener('change', (ev) => {
+    if (!(ev.target instanceof HTMLSelectElement)) return;
+    if (!LAN_DIRECTORY_FILTER_SELECT_IDS.has(ev.target.id)) return;
+    runLanDirectoryFiltersFromUi();
   });
 }
 
@@ -228,38 +433,49 @@ function renderLanUserRowHtml(u, teamList, opts = {}) {
     ? `<option value="${escapeAttr(placement.cycle)}" selected>${escapeHtml(formatLanCycleOptionLabel(placement.cycle, String(u.rank || 'R1')))}</option>`
     : '<option value="">— Ciclo —</option>';
 
-  return `<tr class="clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-preferred-cycle="${escapeAttr(placement?.cycle || '')}">
-    <td class="clinical-lan-users-col-handle">
-      ${handleCell}
-    </td>
-    <td class="clinical-lan-users-col-name">
-      <span class="clinical-lan-users-name" title="${name}">${name}</span>
-    </td>
-    <td class="clinical-lan-users-col-placement">
-      <span class="clinical-lan-users-placement" title="${placementLabel}">${placementLabel}</span>
-    </td>
-    <td class="clinical-lan-users-col-sala">${salaLabel}</td>
-    <td class="clinical-lan-users-col-team">
+  const hasTeam = Boolean(placement?.teamId);
+  const placementShort = hasTeam
+    ? escapeHtml(
+        [placement.teamName, placement.cycle ? formatLanCycleOptionLabel(placement.cycle, String(u.rank || 'R1')) : '']
+          .filter(Boolean)
+          .join(' · ')
+      )
+    : '<span class="clinical-lan-users-placement clinical-lan-users-placement--none">Sin equipo asignado</span>';
+  const activityIso = String(u.last_activity_at || '').trim();
+  const activityTier = clinicalUserActivityTier(activityIso);
+  const activityLabel = escapeHtml(clinicalUserActivityLabel(activityTier));
+  const activityDetail = escapeHtml(formatClinicalUserLastActivity(activityIso));
+  const searchHaystack = escapeAttr(
+    `${lanUserSearchHaystack(u, placement)} ${formatClinicalUserLastActivity(activityIso)}`.toLowerCase()
+  );
+  const salaAttr = escapeAttr(String(u.sala || '').trim());
+
+  return `<article class="clinical-lan-user-card clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-preferred-cycle="${escapeAttr(placement?.cycle || '')}" data-sala="${salaAttr}" data-has-team="${hasTeam ? '1' : '0'}" data-activity-tier="${escapeAttr(activityTier)}" data-search="${searchHaystack}">
+    <div class="clinical-lan-user-card-main">
+      <div class="clinical-lan-user-card-identity">
+        ${handleCell}
+        <span class="clinical-lan-users-name" title="${name}">${name}</span>
+        <span class="clinical-lan-user-sala-chip">${salaLabel}</span>
+        <span class="clinical-lan-user-activity-chip clinical-lan-user-activity-chip--${escapeAttr(activityTier)}" title="${activityDetail}">${activityLabel}</span>
+      </div>
+      <p class="clinical-lan-user-card-placement" title="${placementLabel}">${placementShort}</p>
+      <p class="clinical-lan-user-card-activity">${activityDetail}</p>
+    </div>
+    <div class="clinical-lan-user-card-assign">
       <label class="visually-hidden" for="clinical-lan-team-${userId}">Equipo</label>
-      <select id="clinical-lan-team-${userId}" class="profile-input clinical-lan-assign-team">${teamOptions}</select>
-    </td>
-    <td class="clinical-lan-users-col-cycle">
+      <select id="clinical-lan-team-${userId}" class="profile-input clinical-lan-assign-team" title="Asignar equipo">${teamOptions}</select>
       <label class="visually-hidden" for="clinical-lan-cycle-${userId}">Ciclo</label>
-      <select id="clinical-lan-cycle-${userId}" class="profile-input clinical-lan-assign-cycle" ${placement?.teamId ? '' : 'disabled'}>
+      <select id="clinical-lan-cycle-${userId}" class="profile-input clinical-lan-assign-cycle" title="Ciclo del integrante" ${placement?.teamId ? '' : 'disabled'}>
         ${cycleOptions}
       </select>
-    </td>
-    <td class="clinical-lan-users-col-action">
-      <div class="clinical-lan-users-action-row">
-        <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
-        ${
-          canDelete
-            ? `<button type="button" class="btn-med-secondary clinical-lan-delete-user-btn" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base clínica en esta Mac y sincronizar en ⇄">Eliminar</button>`
-            : ''
-        }
-      </div>
-    </td>
-  </tr>`;
+      <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+      ${
+        canDelete
+          ? `<button type="button" class="btn-med-secondary clinical-lan-delete-user-btn" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base clínica en esta Mac">Quitar</button>`
+          : ''
+      }
+    </div>
+  </article>`;
 }
 
 /** @param {object[]} users @param {object[]} teams @param {{ canDelete?: boolean, callerUserId?: string }} [opts] */
@@ -276,45 +492,30 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   }
 
   const { groups, other } = groupLanUsersByRank(list);
-  const tableHead = `<thead><tr>
-    <th scope="col">@usuario</th>
-    <th scope="col">Nombre</th>
-    <th scope="col">Ubicación actual</th>
-    <th scope="col">Sala</th>
-    <th scope="col">Asignar equipo</th>
-    <th scope="col">Ciclo</th>
-    <th scope="col"><span class="visually-hidden">Acción</span></th>
-  </tr></thead>`;
 
   const rankSections = LAN_USER_RANK_ORDER.map((rank) => {
     const usersInRank = groups.get(rank) || [];
     if (!usersInRank.length) return '';
-    const openAttr = isLanRankGroupCollapsed(rank) ? '' : ' open';
-    return `<details class="clinical-lan-rank-group"${openAttr} data-lan-rank-group="${escapeAttr(rank)}">
+    const openAttr = shouldLanRankGroupOpen(rank, usersInRank.length) ? ' open' : '';
+    return `<details class="clinical-lan-rank-group"${openAttr} data-lan-rank-group="${escapeAttr(rank)}" data-lan-rank-count="${usersInRank.length}">
       <summary class="clinical-lan-rank-group-summary">
         <span class="clinical-lan-rank-group-title">${escapeHtml(rank)}</span>
         <span class="clinical-lan-rank-group-count">${usersInRank.length}</span>
       </summary>
-      <div class="clinical-lan-users-table-wrap">
-        <table class="clinical-lan-users-table clinical-lan-users-table--assign">
-          ${tableHead}
-          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}</tbody>
-        </table>
+      <div class="clinical-lan-user-cards">
+        ${usersInRank.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}
       </div>
     </details>`;
   }).join('');
 
   const otherSection = other.length
-    ? `<details class="clinical-lan-rank-group"${isLanRankGroupCollapsed('Otros') ? '' : ' open'} data-lan-rank-group="Otros">
+    ? `<details class="clinical-lan-rank-group"${shouldLanRankGroupOpen('Otros', other.length) ? ' open' : ''} data-lan-rank-group="Otros" data-lan-rank-count="${other.length}">
         <summary class="clinical-lan-rank-group-summary">
           <span class="clinical-lan-rank-group-title">Otros</span>
           <span class="clinical-lan-rank-group-count">${other.length}</span>
         </summary>
-        <div class="clinical-lan-users-table-wrap">
-          <table class="clinical-lan-users-table clinical-lan-users-table--assign">
-            ${tableHead}
-            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}</tbody>
-          </table>
+        <div class="clinical-lan-user-cards">
+          ${other.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}
         </div>
       </details>`
     : '';
@@ -324,9 +525,12 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
     : '<p class="clinical-teams-empty">Crea un equipo vacío en Mi rotación para poder asignar residentes.</p>';
 
   return `
-    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · <strong>todas las salas</strong> en esta Mac (no filtra por tu sala). Asigna a cualquier equipo activo.
-      <button type="button" class="btn-med-secondary clinical-lan-directory-refresh-btn" style="margin-left:8px">Actualizar desde ⇄</button>
-    </p>
+    <div class="clinical-lan-directory-head">
+      <p class="clinical-lan-users-modal-lead">Asigna residentes a equipos activos en esta Mac (todas las salas).
+        <button type="button" class="btn-med-secondary clinical-lan-directory-refresh-btn">Actualizar desde ⇄</button>
+      </p>
+      ${renderLanDirectoryToolbarHtml(list)}
+    </div>
     ${teamsHint}
     <div class="clinical-lan-rank-groups">${rankSections}${otherSection}</div>`;
 }
@@ -480,7 +684,7 @@ function buildLanDirectoryFingerprint(users, teams) {
   const userPart = (users || [])
     .map(
       (u) =>
-        `${String(u.user_id || '')}\t${String(u.username || '')}\t${String(u.rank || '')}\t${String(u.clinical_name || '')}\t${String(u.sala || '')}`
+        `${String(u.user_id || '')}\t${String(u.username || '')}\t${String(u.rank || '')}\t${String(u.clinical_name || '')}\t${String(u.sala || '')}\t${String(u.last_activity_at || '')}`
     )
     .sort()
     .join('\n');
@@ -550,6 +754,7 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   ) {
     const title = document.getElementById('clinical-lan-users-title');
     if (title) title.textContent = `Directorio de usuarios LAN (${users.length})`;
+    applyLanDirectoryFilters(host);
     return;
   }
   lastLanDirectoryFingerprint = fingerprint;
@@ -560,6 +765,8 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
     callerUserId: currentUserId(),
   });
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initLanUserRowAssignState(row));
+  bindLanDirectoryFilterControls(host);
+  applyLanDirectoryFilters(host);
 
   const title = document.getElementById('clinical-lan-users-title');
   const pending = users.filter((u) => u && u.lanDirectoryPending).length;
@@ -579,7 +786,7 @@ function isLanDirectoryUserInteracting() {
   if (active instanceof HTMLElement && bd.contains(active)) {
     if (
       active.closest(
-        '.clinical-lan-assign-team, .clinical-lan-assign-cycle, .clinical-lan-assign-btn, .clinical-lan-delete-user-btn, .clinical-lan-rank-group-summary, .clinical-lan-directory-refresh-btn'
+        '.clinical-lan-assign-team, .clinical-lan-assign-cycle, .clinical-lan-assign-btn, .clinical-lan-delete-user-btn, .clinical-lan-rank-group-summary, .clinical-lan-directory-refresh-btn, .clinical-lan-directory-search, #clinical-lan-directory-status-filter, #clinical-lan-directory-sala-filter, #clinical-lan-directory-activity-filter'
       )
     ) {
       return true;
@@ -698,6 +905,8 @@ export async function openLanUsersDirectoryModal() {
 
   lastLanDirectoryFingerprint = '';
   lanDirectoryFreezeAutoRefresh = true;
+  ensureLanDirectoryFilterDelegation();
+  touchClinicalSessionActivity({ force: true });
 
   try {
     await pullLanDirectoryFromHostIfDue({ force: true });
@@ -721,7 +930,20 @@ export function closeLanUsersDirectoryModal() {
   document.body.classList.remove('clinical-lan-directory-open');
 }
 
+function wireLanDirectoryActivityRefresh() {
+  if (typeof document === 'undefined' || document._rpcLanDirActivityRefreshWired) return;
+  document._rpcLanDirActivityRefreshWired = true;
+  document.addEventListener('rpc-clinical-user-activity-touched', () => {
+    if (!isLanDirectoryModalOpen()) return;
+    const host = lanUsersModalBodyEl();
+    if (!host?.querySelector('.clinical-lan-rank-groups')) return;
+    lastLanDirectoryFingerprint = '';
+    void loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+  });
+}
+
 export function wireLanUsersDirectoryControls() {
+  wireLanDirectoryActivityRefresh();
   const panelHost = getClinicalTeamsPanelHost();
   if (panelHost && !panelHost._rpcLanDirOpenDelegated) {
     panelHost._rpcLanDirOpenDelegated = true;
@@ -760,7 +982,9 @@ export function wireLanUsersDirectoryControls() {
     closeBtn.addEventListener('click', () => closeLanUsersDirectoryModal());
   }
 
+  ensureLanDirectoryFilterDelegation();
   const host = lanUsersModalBodyEl();
+  if (host) bindLanDirectoryFilterControls(host);
   if (host && !host._rpcLanUsersAssignWired) {
     host._rpcLanUsersAssignWired = true;
     host.addEventListener(
@@ -771,8 +995,16 @@ export function wireLanUsersDirectoryControls() {
         if (!details.classList.contains('clinical-lan-rank-group')) return;
         const key = String(details.dataset.lanRankGroup || '').trim();
         if (!key) return;
-        if (details.open) lanDirectoryCollapsedRanks.delete(key);
-        else lanDirectoryCollapsedRanks.add(key);
+        const count = Number(details.dataset.lanRankCount) || 0;
+        if (details.open) {
+          lanDirectoryCollapsedRanks.delete(key);
+          if (count > LAN_DIRECTORY_RANK_AUTO_COLLAPSE_THRESHOLD) {
+            lanDirectoryExpandedRanks.add(key);
+          }
+        } else {
+          lanDirectoryCollapsedRanks.add(key);
+          lanDirectoryExpandedRanks.delete(key);
+        }
       },
       true
     );

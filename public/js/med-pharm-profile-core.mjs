@@ -27,6 +27,31 @@ export function buildMedPharmRowKey(fields) {
   return [normKeyPart(med), normDosisForRowKey(dosis), normKeyPart(freq), normKeyPart(via)].join('|');
 }
 
+/** Principio activo / nombre base SOME (sin concentración ni forma farmacéutica). */
+export function extractMedBaseName(med) {
+  let t = trimStr(med);
+  if (!t) return '';
+  t = t
+    .replace(/\(\s*\+\s*\*\s*\)/gi, ' ')
+    .replace(/\(\s*\*\s*\)/gi, ' ')
+    .replace(/\*+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+  const doseStart =
+    /\s+(?=\d+(?:[.,]\d+)?\s*(?:%|MG|G|MCG|µG|UG|UI|IU|ML|MEQ|MMOL|UNIDADES?|U\/|MCG\/|MG\/|MCG\/ML|MG\/ML))/i;
+  const cut = t.search(doseStart);
+  if (cut > 0) return t.slice(0, cut).trim();
+  const slash = t.indexOf(' / ');
+  if (slash > 0) return t.slice(0, slash).trim();
+  return t;
+}
+
+/** Clave de agrupación en lista: mismo fármaco, distintas presentaciones/dosis. */
+export function buildMedPharmMedGroupKey(med) {
+  return extractMedBaseName(med);
+}
+
 export function monthKeyFromParts(year, monthIndex) {
   return String(year) + '-' + String(monthIndex + 1).padStart(2, '0');
 }

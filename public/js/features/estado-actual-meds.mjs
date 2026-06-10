@@ -1,4 +1,4 @@
-import { formatMedicationSoapShort } from '../med-receta-core.mjs';
+import { effectiveSoapCategory, formatMedicationSoapShort } from '../med-receta-core.mjs';
 import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
 
 export const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
@@ -26,12 +26,40 @@ export function hasPendingEaProposals(pendienteReceta) {
  * @param {Record<string, unknown> | null | undefined} monitoreo
  * @returns {Record<string, unknown>}
  */
-export function estadoClinicoForText(monitoreo) {
+function mergePendingDietProposal(ec, pend, conf) {
+  if (!ec || typeof ec !== 'object') return ec;
+  if (conf && conf.dieta) return ec;
+  var hasPend = DIET_PENDING_KEYS.some(function (k) {
+    return pend[k] && String(pend[k]).trim();
+  });
+  if (!hasPend) return ec;
+  DIET_PENDING_KEYS.forEach(function (k) {
+    var pending = pend[k];
+    if (pending != null && String(pending).trim()) ec[k] = String(pending).trim();
+  });
+  return ec;
+}
+
+/** Estado clínico para inputs del panel EA (incluye propuesta de dieta pendiente). */
+export function estadoClinicoForDisplay(monitoreo) {
   if (!monitoreo || typeof monitoreo !== 'object') return {};
   var ec =
     monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object'
       ? Object.assign({}, monitoreo.estadoClinico)
       : {};
+  var pend =
+    monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object'
+      ? monitoreo.pendienteReceta
+      : {};
+  var conf =
+    monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
+  mergePendingDietProposal(ec, pend, conf);
+  return ec;
+}
+
+export function estadoClinicoForText(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return {};
+  var ec = estadoClinicoForDisplay(monitoreo);
   var pend =
     monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object'
       ? monitoreo.pendienteReceta
@@ -103,12 +131,10 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
   var list = Array.isArray(items) ? items : [];
   list.forEach(function (it) {
     if (!it || !selMap[it.id] || it.suspendido) return;
-    var cat = classifyFn(it.nombreRaw);
+    var cat = effectiveSoapCategory(it, classifyFn);
+    if (cat === 'otros') return;
     if (arrays[cat]) arrays[cat].push(medInstructionFragmentForSoap(it));
     else arrays.otros.push(medInstructionFragmentForSoap(it));
-  });
-  arrays.otros.forEach(function (t) {
-    arrays.abx.push(t);
   });
   /** @type {Record<string, string>} */
   var buckets = {};
@@ -242,11 +268,11 @@ export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, 
 
   items.forEach(function (it) {
     if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
-    var cat = classifyFn(/** @type {{ nombreRaw?: string }} */ (it).nombreRaw);
-    var matchCat =
-      cat === category ||
-      (category === 'diureticos' && cat === 'diuretico') ||
-      (category === 'abx' && cat === 'otros');
+    var cat = effectiveSoapCategory(
+      /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
+      classifyFn
+    );
+    var matchCat = cat === category || (category === 'diureticos' && cat === 'diuretico');
     if (!matchCat) return;
     var frag = medInstructionFragmentForSoap(/** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it));
     if (!frag || seen[frag]) return;

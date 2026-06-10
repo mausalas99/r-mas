@@ -118,13 +118,7 @@
 
 /* —— Modo Guardia (full dashboard) —— */
 .header-guardia-mode-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
   border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   border: 1px solid color-mix(in oklab, var(--action) 30%, var(--border));
@@ -3369,8 +3363,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-handle-hint,
 #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--create,
 #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--more,
-#clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--join-code,
-#clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-lan-users-entry {
+#clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--join-code {
   grid-column: 1 / -1;
 }
 
@@ -3390,12 +3383,12 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   align-items: start;
 }
 
-#clinical-teams-backdrop .clinical-teams-section--more > .clinical-teams-section-intro,
-#clinical-teams-backdrop .clinical-teams-section--more > .clinical-teams-advanced-rotation {
+#clinical-teams-backdrop .clinical-teams-section--more > .clinical-teams-collapse,
+#clinical-teams-backdrop .clinical-teams-section--more .clinical-teams-advanced-rotation {
   grid-column: 1 / -1;
 }
 
-#clinical-teams-backdrop .clinical-teams-section--more > .clinical-teams-profile-panel {
+#clinical-teams-backdrop .clinical-teams-section--more .clinical-teams-profile-panel {
   grid-column: 1 / -1;
   min-width: 0;
 }
@@ -3414,7 +3407,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
     grid-template-columns: 1fr;
   }
 
-  #clinical-teams-backdrop .clinical-teams-section--more > .clinical-teams-profile-panel {
+  #clinical-teams-backdrop .clinical-teams-section--more .clinical-teams-profile-panel {
     grid-column: 1 / -1;
   }
 }
@@ -3533,19 +3526,23 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
 }
 
-.clinical-teams-lan-users-entry {
+.clinical-teams-top-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 12px 14px;
-  border-radius: var(--radius-lg);
-  border: 1px dashed color-mix(in oklab, var(--action) 24%, var(--border));
-  background: color-mix(in oklab, var(--action) 4%, var(--surface));
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.clinical-teams-top-actions--split .clinical-teams-create-open-btn,
+.clinical-teams-top-actions--split .clinical-teams-open-lan-users-btn {
+  flex: 1 1 12rem;
+  width: auto;
+  min-height: 40px;
+  justify-content: center;
 }
 
 .clinical-teams-open-lan-users-btn {
-  min-height: 38px;
+  min-height: 40px;
 }
 
 .clinical-teams-section--joined {
@@ -3596,6 +3593,122 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--text-muted);
+}
+
+.clinical-teams-collapse {
+  display: block;
+}
+
+.clinical-teams-collapse--section {
+  margin: 0;
+}
+
+.clinical-teams-collapse-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.clinical-teams-collapse-summary::-webkit-details-marker {
+  display: none;
+}
+
+.clinical-teams-collapse-summary::marker {
+  content: '';
+  font-size: 0;
+}
+
+.clinical-teams-collapse--section > .clinical-teams-collapse-summary {
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+.clinical-teams-collapse--section > .clinical-teams-collapse-summary::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.clinical-teams-collapse--section[open] > .clinical-teams-collapse-summary::before {
+  transform: rotate(90deg);
+}
+
+.clinical-teams-collapse-summary-head {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.clinical-teams-collapse-summary-head .clinical-teams-section-intro {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.clinical-teams-collapse-summary-actions {
+  flex-shrink: 0;
+}
+
+.clinical-teams-collapse-body {
+  margin-top: 12px;
+}
+
+.clinical-teams-collapse--card-block {
+  border-top: 1px solid var(--divider);
+}
+
+.clinical-teams-collapse--card-block > .clinical-teams-collapse-summary {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin: 0;
+}
+
+.clinical-teams-collapse--card-block > .clinical-teams-collapse-summary::before {
+  content: '▸';
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.clinical-teams-collapse--card-block[open] > .clinical-teams-collapse-summary::before {
+  transform: rotate(90deg);
+}
+
+.clinical-teams-collapse--card-block > .clinical-teams-collapse-body {
+  margin-top: 0;
+  padding: 0 16px 14px;
+}
+
+.clinical-teams-collapse--card-block.clinical-teams-card-members > .clinical-teams-collapse-body {
+  padding-top: 0;
+}
+
+.clinical-teams-collapse--card-block.clinical-teams-my-cycle-box > .clinical-teams-collapse-body {
+  padding-bottom: 12px;
+}
+
+.clinical-teams-collapse--card-block .clinical-teams-members-heading,
+.clinical-teams-collapse--card-block .clinical-teams-my-cycle-title,
+.clinical-teams-collapse--card-block .clinical-teams-invite-summary {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.clinical-teams-invite-summary {
+  display: block;
 }
 
 .clinical-lan-users-table-wrap {
@@ -3702,9 +3815,77 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 }
 
 .clinical-lan-users-modal-lead {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--text-muted);
+}
+
+.clinical-lan-directory-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.clinical-lan-directory-head .clinical-lan-directory-refresh-btn {
+  margin-left: 8px;
+  vertical-align: baseline;
+}
+
+.clinical-lan-directory-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 0.72fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.clinical-lan-directory-search-wrap {
+  min-width: 0;
+}
+
+.clinical-lan-directory-search {
+  width: 100%;
+  min-height: 36px;
+}
+
+.clinical-lan-directory-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.clinical-lan-directory-filter-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.clinical-lan-directory-match-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-bottom: 8px;
+  justify-self: end;
+}
+
+@media (max-width: 900px) {
+  .clinical-lan-directory-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .clinical-lan-directory-search-wrap {
+    grid-column: 1 / -1;
+  }
+
+  .clinical-lan-directory-match-count {
+    grid-column: 1 / -1;
+    justify-self: start;
+    padding-bottom: 0;
+  }
 }
 
 .clinical-lan-rank-groups {
@@ -3718,6 +3899,13 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   border-radius: var(--radius-lg);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
   overflow: hidden;
+}
+
+.clinical-lan-user-card[hidden],
+.clinical-lan-user-card--filtered-out,
+.clinical-lan-rank-group[hidden],
+.clinical-lan-rank-group--filtered-out {
+  display: none !important;
 }
 
 .clinical-lan-rank-group-summary {
@@ -3773,6 +3961,142 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   color: var(--text-muted);
   background: color-mix(in oklab, var(--surface) 90%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+}
+
+.clinical-lan-user-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.clinical-lan-user-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 12px 16px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+
+.clinical-lan-user-card-main {
+  min-width: 0;
+}
+
+.clinical-lan-user-card-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+
+.clinical-lan-user-sala-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+}
+
+.clinical-lan-user-activity-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.clinical-lan-user-activity-chip--active {
+  color: color-mix(in oklab, #16a34a 88%, var(--text));
+  background: color-mix(in oklab, #16a34a 12%, var(--surface));
+  border-color: color-mix(in oklab, #16a34a 28%, var(--border));
+}
+
+.clinical-lan-user-activity-chip--recent {
+  color: color-mix(in oklab, #ca8a04 90%, var(--text));
+  background: color-mix(in oklab, #ca8a04 12%, var(--surface));
+  border-color: color-mix(in oklab, #ca8a04 28%, var(--border));
+}
+
+.clinical-lan-user-activity-chip--stale {
+  color: color-mix(in oklab, var(--error, #dc2626) 82%, var(--text));
+  background: color-mix(in oklab, var(--error, #dc2626) 8%, var(--surface));
+  border-color: color-mix(in oklab, var(--error, #dc2626) 24%, var(--border));
+}
+
+.clinical-lan-user-activity-chip--unknown {
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  border-color: color-mix(in oklab, var(--border) 80%, transparent);
+  font-style: italic;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.clinical-lan-user-card-activity {
+  margin: 4px 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.clinical-lan-user-card-placement {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clinical-lan-users-placement--none {
+  font-style: italic;
+}
+
+.clinical-lan-user-card-assign {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.clinical-lan-user-card-assign .clinical-lan-assign-team,
+.clinical-lan-user-card-assign .clinical-lan-assign-cycle {
+  width: 100%;
+  min-height: 34px;
+  font-size: 0.8125rem;
+}
+
+.clinical-lan-user-card-assign .clinical-lan-assign-btn,
+.clinical-lan-user-card-assign .clinical-lan-delete-user-btn {
+  min-height: 34px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1040px) {
+  .clinical-lan-user-card {
+    grid-template-columns: 1fr;
+  }
+
+  .clinical-lan-user-card-assign {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .clinical-lan-user-card-assign .clinical-lan-assign-btn,
+  .clinical-lan-user-card-assign .clinical-lan-delete-user-btn {
+    grid-column: span 1;
+  }
 }
 
 .clinical-lan-rank-group .clinical-lan-users-table-wrap {
@@ -4128,6 +4452,11 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   border-top: 1px solid var(--divider);
 }
 
+.clinical-teams-card-members.clinical-teams-collapse--card-block {
+  padding: 0;
+  border-top: none;
+}
+
 .clinical-teams-card-members--compact {
   padding-bottom: 12px;
 }
@@ -4211,7 +4540,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   background: color-mix(in oklab, var(--action) 6%, var(--surface));
 }
 
-.clinical-teams-create-open-btn {
+.clinical-teams-top-actions:not(.clinical-teams-top-actions--split) .clinical-teams-create-open-btn {
   width: 100%;
   justify-content: center;
 }

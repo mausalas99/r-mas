@@ -44,6 +44,8 @@ const CENTER_COLS = { num: true, paciente: true, dx: true, meds: true };
 const SHRINK_FIT_COLS = { num: true, meds: true };
 /** Sin partir líneas (solo saltos explícitos \\n). */
 const NO_WRAP_COLS = { paciente: true, num: true, meds: true };
+/** Envolver ancho completo; nunca elipsis por columna estrecha. */
+const FULL_WRAP_COLS = { labs: true, pend: true };
 /** Cama en negrita. */
 const BOLD_COLS = { cama: true };
 
@@ -301,6 +303,9 @@ function maxLinesInRow(rowH) {
  * @returns {string[]}
  */
 function cellLines(font, fontBold, text, innerW, rowH, colKey) {
+  if (FULL_WRAP_COLS[colKey]) {
+    return wrapCensusCellLines(font, fontBold, text, innerW, maxLinesInRow(rowH), colKey);
+  }
   if (SHRINK_FIT_COLS[colKey] || NO_WRAP_COLS[colKey]) {
     var lines = splitCellLinesNoWrap(text);
     var max = maxLinesInRow(rowH);
@@ -314,6 +319,9 @@ function cellLines(font, fontBold, text, innerW, rowH, colKey) {
 }
 
 function cellLinesUnbounded(font, fontBold, text, innerW, colKey) {
+  if (FULL_WRAP_COLS[colKey]) {
+    return wrapCensusCellLines(font, fontBold, text, innerW, 0, colKey);
+  }
   if (SHRINK_FIT_COLS[colKey] || NO_WRAP_COLS[colKey]) {
     return splitCellLinesNoWrap(text);
   }
@@ -335,6 +343,90 @@ function splitCellLinesNoWrap(text) {
     })
     .filter(Boolean);
   return raw.length ? raw : ['—'];
+}
+
+/**
+ * Labs: envolver con la misma fuente que drawCellText (bold en paneles/fecha).
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {import('pdf-lib').PDFFont} fontBold
+ * @param {string} text
+ * @param {number} innerW
+ * @param {number} [maxLines] — ≤ 0 sin límite
+ * @returns {string[]}
+ */
+function wrapLabsCellLines(font, fontBold, text, innerW, maxLines) {
+  var raw = String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
+  if (!raw.length) return ['—'];
+  var fs = colFontSize('labs');
+  var lines = [];
+  raw.forEach(function (block, idx) {
+    var role = classifyCensoTableLine(block, 'labs', idx);
+    var useBold = role === 'lab-date' || role === 'lab-panel';
+    var measureFont = useBold ? fontBold : font;
+    wrapText(measureFont, pdfSafeLine(block), innerW, fs).forEach(function (ln) {
+      lines.push(pdfSafeLine(ln));
+    });
+  });
+  if (!lines.length) return ['—'];
+  if (maxLines > 0 && lines.length > maxLines) {
+    return lines.slice(0, maxLines);
+  }
+  return lines;
+}
+
+/**
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {string} text
+ * @param {number} innerW
+ * @param {number} maxLines
+ * @param {number} fontSize
+ * @returns {string[]}
+ */
+function wrapPlainCellLines(font, text, innerW, maxLines, fontSize) {
+  var raw = String(text || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
+  if (!raw.length) return ['—'];
+  var lines = [];
+  raw.forEach(function (block) {
+    wrapText(font, pdfSafeLine(block), innerW, fontSize).forEach(function (ln) {
+      lines.push(pdfSafeLine(ln));
+    });
+  });
+  if (!lines.length) return ['—'];
+  if (maxLines > 0 && lines.length > maxLines) {
+    return lines.slice(0, maxLines);
+  }
+  return lines;
+}
+
+/**
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {import('pdf-lib').PDFFont} fontBold
+ * @param {string} text
+ * @param {number} innerW
+ * @param {number} maxLines
+ * @param {string} colKey
+ * @returns {string[]}
+ */
+function wrapCensusCellLines(font, fontBold, text, innerW, maxLines, colKey) {
+  if (colKey === 'labs') {
+    return wrapLabsCellLines(font, fontBold, text, innerW, maxLines);
+  }
+  if (colKey === 'pend') {
+    return wrapPlainCellLines(font, text, innerW, maxLines, colFontSize(colKey));
+  }
+  return wrapPlainCellLines(font, text, innerW, maxLines, colFontSize(colKey));
 }
 
 /**
@@ -538,6 +630,13 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
     var fit;
     if (useShrink) {
       fit = fitLineShrinkToWidth(style.font, ln, innerW, style.size, colKey === 'num' ? 7 : 6);
+    } else if (FULL_WRAP_COLS[colKey]) {
+      var plain = pdfSafeLine(ln) || '—';
+      fit = {
+        text: plain,
+        size: style.size,
+        textW: style.font.widthOfTextAtSize(plain, style.size),
+      };
     } else {
       var fitted = fitLineToWidth(style.font, ln, innerW, style.size);
       fit = {
@@ -811,4 +910,11 @@ export async function renderCensusPdf(payload) {
   return pdfDoc.save();
 }
 
-export { layoutRows, measureRowLineCount, rowHeightForLineCount, pageTableMetrics };
+export {
+  layoutRows,
+  measureRowLineCount,
+  rowHeightForLineCount,
+  pageTableMetrics,
+  wrapLabsCellLines,
+  wrapPlainCellLines,
+};

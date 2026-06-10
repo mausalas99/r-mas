@@ -17,6 +17,8 @@ import {
   setDiaTratamientoInDosis,
   incrementMedItemsDiaTratamiento,
   classifyMedicationSoapCategory,
+  effectiveSoapCategory,
+  unassignedOtrosSoapItems,
   applyMedCatalogOverlay,
   dosisBeforeSlash,
   extractRecetaNameOnlyDose,
@@ -339,6 +341,36 @@ test('bloque dorado — 12 medicamentos del spec', () => {
   }
 });
 
+test('effectiveSoapCategory — otros requiere override manual', () => {
+  const item = { nombreRaw: 'OMEPRAZOL 40 MG' };
+  assert.equal(classifyMedicationSoapCategory(item.nombreRaw), 'otros');
+  assert.equal(effectiveSoapCategory(item, classifyMedicationSoapCategory), 'otros');
+  assert.equal(
+    effectiveSoapCategory({ ...item, soapCatOverride: 'nm' }, classifyMedicationSoapCategory),
+    'nm'
+  );
+  assert.equal(
+    effectiveSoapCategory({ ...item, soapCatOverride: 'invalid' }, classifyMedicationSoapCategory),
+    'otros'
+  );
+  assert.equal(
+    effectiveSoapCategory({ nombreRaw: 'PARACETAMOL 1 G' }, classifyMedicationSoapCategory),
+    'analgesia'
+  );
+});
+
+test('unassignedOtrosSoapItems — solo SOAP sin destino', () => {
+  const items = [
+    { id: 'a', nombreRaw: 'OMEPRAZOL 40 MG', suspendido: false },
+    { id: 'b', nombreRaw: 'OMEPRAZOL 40 MG', soapCatOverride: 'nm', suspendido: false },
+    { id: 'c', nombreRaw: 'PARACETAMOL 1 G', suspendido: false },
+  ];
+  const sel = { a: true, b: true, c: true };
+  const pending = unassignedOtrosSoapItems(items, sel, classifyMedicationSoapCategory);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].id, 'a');
+});
+
 test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('ERTAPENEM 1 G'), 'abx');
   assert.equal(classifyMedicationSoapCategory('PARACETAMOL 1 G'), 'analgesia');
@@ -396,6 +428,29 @@ test('extractDietNutrients acepta 70 G DE PROTEINA', () => {
   var n = extractDietNutrients('1500 KCAL + 70 G DE PROTEINA');
   assert.equal(n.kcal, 1500);
   assert.equal(n.proteinG, 70);
+});
+
+test('extractDietNutrients — variaciones de proteína SOME', () => {
+  assert.equal(extractDietNutrients('2000 KCAL+ 80 GR DE PROTEINA').proteinG, 80);
+  assert.equal(extractDietNutrients('2000 KCAL + 80 GR DE PROTEINAS').proteinG, 80);
+  assert.equal(extractDietNutrients('2000 KCAL + 80 GRAMOS DE PROTEINA').proteinG, 80);
+  assert.equal(extractDietNutrients('2000 KCAL + 80 GRS DE PROTEINA').proteinG, 80);
+  assert.equal(extractDietNutrients('PROTEINA 80 GR').proteinG, 80);
+  assert.equal(extractDietNutrients('80 GR DE PROT').proteinG, 80);
+});
+
+test('parseIndicacionesPaste — dieta con macros en descripción o frecuencia', () => {
+  var enDesc =
+    '10/06/2026 06:39:48 a.m.\tDIETAS\tNORMAL ALTA EN FIBRA 2000 KCAL+ 80 GR DE PROTEINA\t\t\tNW';
+  var rDesc = parseIndicacionesPaste(enDesc);
+  assert.equal(rDesc.dietas.length, 1);
+  assert.equal(rDesc.dietas[0].proteinG, 80);
+  assert.equal(rDesc.dietas[0].kcal, 2000);
+
+  var enFreq =
+    '10/06/2026 06:39:48 a.m.\tDIETAS\tNORMAL ALTA EN FIBRA\t\t\t2000 KCAL+ 80 GR DE PROTEINAS\tNW';
+  var rFreq = parseIndicacionesPaste(enFreq);
+  assert.equal(rFreq.dietas[0].proteinG, 80);
 });
 
 test('mergeDietaItems concatena descripciones y toma kcal/prot de última fila con patrón', () => {

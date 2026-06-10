@@ -12,6 +12,8 @@ import {
   readElevatedTeamFilterPreference,
   writeElevatedTeamFilterPreference,
   isTeamIdInCensusCatalog,
+  filterTeamsForCensusSala,
+  reconcileCensusTeamFilterForSala,
 } from './clinical-census-filters-ui.mjs';
 
 describe('clinical census filters visibility', () => {
@@ -82,6 +84,19 @@ describe('clinical census team filter', () => {
     assert.equal(isTeamIdInCensusCatalog('', teams), true);
     assert.equal(isTeamIdInCensusCatalog('t1', teams), true);
     assert.equal(isTeamIdInCensusCatalog('missing', teams), false);
+  });
+
+  it('filterTeamsForCensusSala keeps only teams in selected sala', () => {
+    assert.equal(filterTeamsForCensusSala(teams, '__all__').length, 2);
+    assert.equal(filterTeamsForCensusSala(teams, 'Sala 1').length, 1);
+    assert.equal(filterTeamsForCensusSala(teams, 'Sala 1')[0].team_id, 't1');
+    assert.equal(filterTeamsForCensusSala(teams, 'Sala 3').length, 0);
+  });
+
+  it('reconcileCensusTeamFilterForSala clears team outside sala scope', () => {
+    assert.equal(reconcileCensusTeamFilterForSala('t2', filterTeamsForCensusSala(teams, 'Sala 1')), '');
+    assert.equal(reconcileCensusTeamFilterForSala('t1', filterTeamsForCensusSala(teams, 'Sala 1')), 't1');
+    assert.equal(reconcileCensusTeamFilterForSala('__unassigned__', filterTeamsForCensusSala(teams, 'Sala 1')), '__unassigned__');
   });
 });
 

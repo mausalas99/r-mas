@@ -10,6 +10,7 @@ import {
   confirmAllMedProposals,
   buildMedDropdownOptions,
   bucketsFromRecetaItems,
+  estadoClinicoForDisplay,
   estadoClinicoForText,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
@@ -102,7 +103,7 @@ test('bucketsFromRecetaItems classifies SOAP selections', () => {
     },
     {
       id: 'b',
-      nombreRaw: 'CEFTRIAXONA 1G',
+      nombreRaw: 'MEROPENEM 1G',
       viaRaw: 'VIA INTRAVENOSA',
       dosisRaw: '1 G',
       frecuenciaRaw: 'CADA 24 HORAS',
@@ -112,9 +113,48 @@ test('bucketsFromRecetaItems classifies SOAP selections', () => {
   const sel = { a: true, b: true };
   const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
   assert.match(buckets.analgesia, /PARACETAMOL.*C\/8H/i);
-  assert.match(buckets.abx, /CEFTRIAXONA.*IV.*C\/24H/i);
+  assert.match(buckets.abx, /MEROPENEM.*IV.*C\/24H/i);
   assert.equal(buckets.antihta, '');
   assert.equal(buckets.vasop, '');
+});
+
+test('bucketsFromRecetaItems — otros sin destino no van a abx', () => {
+  const items = [
+    {
+      id: 'o',
+      nombreRaw: 'OMEPRAZOL 40 MG',
+      viaRaw: 'VIA ORAL',
+      dosisRaw: '40 MG',
+      frecuenciaRaw: 'CADA 24 HORAS',
+      suspendido: false,
+    },
+    {
+      id: 'a',
+      nombreRaw: 'OMEPRAZOL 40 MG',
+      viaRaw: 'VIA ORAL',
+      dosisRaw: '40 MG',
+      frecuenciaRaw: 'CADA 24 HORAS',
+      soapCatOverride: 'nm',
+      suspendido: false,
+    },
+  ];
+  const sel = { o: true, a: true };
+  const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  assert.equal(buckets.abx, '');
+  assert.match(buckets.nm, /OMEPRAZOL/i);
+});
+
+test('estadoClinicoForDisplay muestra propuesta de dieta pendiente', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'BLANDA';
+  m.estadoClinico.proteinG = '';
+  m.pendienteReceta.dieta = 'NORMAL ALTA EN FIBRA';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '80';
+  const ec = estadoClinicoForDisplay(m);
+  assert.equal(ec.dieta, 'NORMAL ALTA EN FIBRA');
+  assert.equal(ec.kcal, '2000');
+  assert.equal(ec.proteinG, '80');
 });
 
 test('estadoClinicoForText merges unconfirmed pendienteReceta into empty fields', () => {
@@ -123,6 +163,15 @@ test('estadoClinicoForText merges unconfirmed pendienteReceta into empty fields'
   m.confirmado.analgesia = false;
   const ec = estadoClinicoForText(m);
   assert.equal(ec.analgesia, 'PARACETAMOL 1G VO');
+});
+
+test('estadoClinicoForText incluye proteinG pendiente en dieta', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL ALTA EN FIBRA';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '80';
+  const ec = estadoClinicoForText(m);
+  assert.equal(ec.proteinG, '80');
 });
 
 test('syncRecetaProposalsFromSoapSelection applies SOAP-marked receta', () => {

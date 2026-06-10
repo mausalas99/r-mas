@@ -12,6 +12,10 @@ import {
   buildMedRecetaNameOnlyText,
   formatMedicationEgresoLine,
   classifyMedicationSoapCategory,
+  effectiveSoapCategory,
+  SOAP_DESTINATION_KEYS,
+  SOAP_DESTINATION_LABELS,
+  unassignedOtrosSoapItems,
   incrementMedItemsDiaTratamiento,
 } from "../med-receta-core.mjs";
 import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveState } from "../app-state.mjs";
@@ -233,12 +237,40 @@ export function renderMedRecetaPanel() {
     var label = esc((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId, sid) ? " checked" : "";
+    var autoCat = classifyMedicationSoapCategory(it.nombreRaw);
+    var destCell = "";
+    if (autoCat === "otros") {
+      var opts =
+        '<option value="">Elegir destino…</option>' +
+        SOAP_DESTINATION_KEYS.map(function (k) {
+          var sel = it.soapCatOverride === k ? " selected" : "";
+          return (
+            '<option value="' +
+            esc(k) +
+            '"' +
+            sel +
+            ">" +
+            esc(SOAP_DESTINATION_LABELS[k] || k) +
+            "</option>"
+          );
+        }).join("");
+      destCell =
+        '<select class="med-receta-dest" title="Destino en Estado Actual / SOAP"' +
+        " onchange=\"setMedRecetaSoapCategory('" +
+        safeAttrJsString(sid) +
+        "', this.value)\"" +
+        ">" +
+        opts +
+        "</select>";
+    }
     var diaCell =
       it.diaTratamiento != null
         ? '<span class="med-receta-dia">Día ' + esc(String(it.diaTratamiento)) + "</span>"
         : "";
     return (
-      '<div class="med-receta-row">' +
+      '<div class="med-receta-row' +
+      (autoCat === "otros" && paraNota && !it.soapCatOverride ? " med-receta-row--needs-dest" : "") +
+      '">' +
       '<div class="med-receta-checkcell">' +
       '<input type="checkbox"' +
       chk +
@@ -260,6 +292,9 @@ export function renderMedRecetaPanel() {
       '<div class="med-receta-name">' +
       label +
       "</div>" +
+      '<div class="med-receta-destcell">' +
+      destCell +
+      "</div>" +
       diaCell +
       "</div>"
     );
@@ -272,6 +307,7 @@ export function renderMedRecetaPanel() {
         "<span>Excl.</span>" +
         "<span>SOAP</span>" +
         "<span>Medicamento</span>" +
+        "<span>Destino</span>" +
         "<span>Día</span>" +
         "</div>" +
         rows.join("") +
@@ -322,6 +358,22 @@ export function toggleMedRecetaParaNota(itemId, selected) {
   var m = getMedNotaSelMap(activeId);
   if (selected) m[itemId] = true;
   else delete m[itemId];
+  renderMedRecetaPanel();
+}
+
+export function setMedRecetaSoapCategory(itemId, category) {
+  var activeId = rt.getActiveId();
+  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
+  var it = medRecetaByPatient[activeId].items.find(function (x) {
+    return String(x.id) === String(itemId);
+  });
+  if (!it) return;
+  var cat = String(category || "").trim();
+  if (!cat || SOAP_DESTINATION_KEYS.indexOf(cat) < 0) delete it.soapCatOverride;
+  else it.soapCatOverride = cat;
+  saveState();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
 }
 
@@ -389,6 +441,16 @@ export function mediLlevarASOAP() {
     });
   if (!hasReceta) {
     rt.showToast("Marca «SOAP» en al menos un medicamento de la receta", "error");
+    return;
+  }
+  var pendingOtros = unassignedOtrosSoapItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
+  if (pendingOtros.length) {
+    rt.showToast(
+      "Elegí destino para " +
+        pendingOtros.length +
+        " medicamento(s) «Otros» antes de enviar a Estado Actual",
+      "error"
+    );
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
@@ -499,7 +561,8 @@ export function procesarRecetaMed() {
       if (!mon.pendienteReceta || typeof mon.pendienteReceta !== "object") {
         mon.pendienteReceta = {};
       }
-      mon.pendienteReceta.dieta = buildDietProposalText(merged);
+      mon.pendienteReceta.dieta =
+        String(merged.descripcion || "").trim() || buildDietProposalText(merged);
       if (merged.kcal != null) mon.pendienteReceta.kcal = String(merged.kcal);
       if (merged.proteinG != null) mon.pendienteReceta.proteinG = String(merged.proteinG);
     }
@@ -614,8 +677,9 @@ function renderMedNotaFooter() {
     otros: [],
   };
   soapItems.forEach(function (it) {
-    var cat = classifyMedicationSoapCategory(it.nombreRaw);
-    if (groups[cat]) groups[cat].push(it);
+    var cat = effectiveSoapCategory(it, classifyMedicationSoapCategory);
+    if (cat === "otros") groups.otros.push(it);
+    else if (groups[cat]) groups[cat].push(it);
     else groups.otros.push(it);
   });
 
@@ -657,7 +721,7 @@ function renderMedNotaFooter() {
       section("abx", "Antibióticos / antifúngicos") +
       section("vasop", "Vasopresores / inotrópicos") +
       section("nm", "NM (insulina, tiroides, etc.)") +
-      section("otros", "Otros (se copian en Antibióticos — revisar)") +
+      section("otros", "Otros — elegí destino en el listado") +
       "</div>"
     : '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
 
@@ -667,7 +731,7 @@ function renderMedNotaFooter() {
 
   foot.innerHTML =
     '<div class="med-nota-toolbar">' +
-    '<p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados según el nombre del fármaco en la receta.</p>' +
+    '<p class="med-nota-hint">Los medicamentos con <strong>SOAP</strong> activo se clasifican por nombre; los marcados como <strong>Otros</strong> requieren elegir destino en la columna <strong>Destino</strong>.</p>' +
     previewHtml +
     '<div class="med-nota-actions">' +
     '<button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button>' +
@@ -694,6 +758,7 @@ export const medicationsWindowHandlers = {
   setMedOutputTab,
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
+  setMedRecetaSoapCategory,
   limpiarSeleccionMedNota,
   mediAnadirATratamiento,
   mediLlevarASOAP,

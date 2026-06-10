@@ -25,7 +25,9 @@ import {
   markAdminAccessGrantedThisSession,
   rememberAdminAccessCode,
   clearAdminAccessGrant,
+  writeClinicalTeamsCollapseOpen,
 } from './shared.mjs';
+import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
 import {
   syncCreateTeamCycleField,
@@ -200,10 +202,31 @@ export function wireCopyInviteButtons() {
   });
 }
 
+function wireClinicalTeamsCollapsePersistence() {
+  const host = getClinicalTeamsPanelHost();
+  if (!host) return;
+  host.querySelectorAll('details.clinical-teams-collapse[data-collapse-key]').forEach((el) => {
+    if (!(el instanceof HTMLDetailsElement) || el._rpcCollapseWired) return;
+    el._rpcCollapseWired = true;
+    el.addEventListener('toggle', () => {
+      const key = String(el.dataset.collapseKey || '').trim();
+      if (!key) return;
+      writeClinicalTeamsCollapseOpen(key, el.open);
+    });
+  });
+  host.querySelectorAll('.clinical-teams-collapse-summary-actions').forEach((wrap) => {
+    if (!(wrap instanceof HTMLElement) || wrap._rpcCollapseActionsWired) return;
+    wrap._rpcCollapseActionsWired = true;
+    wrap.addEventListener('click', (ev) => ev.stopPropagation());
+    wrap.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  });
+}
+
 /** Called from render after panel HTML is injected (dynamic import avoids render↔roster cycle). */
 export function wireRenderedClinicalTeamsPanel(elevated) {
   wireClinicalTeamsPanelInteractions();
   wireJoinButtons();
   wireCopyInviteButtons();
   wireBrowseSalaControl(elevated);
+  wireClinicalTeamsCollapsePersistence();
 }

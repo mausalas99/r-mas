@@ -65,6 +65,30 @@ export function isTeamIdInCensusCatalog(teamId, teams) {
   return (teams || []).some((t) => String(t.team_id || '') === String(teamId));
 }
 
+/**
+ * Equipo dropdown options for Filtros censo — scoped to selected sala.
+ * @param {object[]} teams
+ * @param {string} [salaFilter] — `__all__` or a sala name
+ */
+export function filterTeamsForCensusSala(teams, salaFilter) {
+  const list = Array.isArray(teams) ? teams : [];
+  const sala = String(salaFilter || '').trim();
+  if (!sala || sala === '__all__') return list;
+  return list.filter((t) => String(t.sala || '').trim() === sala);
+}
+
+/**
+ * Clear team filter when it no longer exists in the sala-scoped catalog.
+ * @param {string} teamId
+ * @param {object[]} teamsForSala
+ */
+export function reconcileCensusTeamFilterForSala(teamId, teamsForSala) {
+  const tid = String(teamId || '');
+  if (!tid || tid === CENSUS_TEAM_FILTER_UNASSIGNED) return tid;
+  if (isTeamIdInCensusCatalog(tid, teamsForSala)) return tid;
+  return '';
+}
+
 /** @param {Storage|undefined} storage */
 export function readCensusFiltersCollapsed(storage = globalThis.localStorage) {
   try {

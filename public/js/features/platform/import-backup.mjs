@@ -19,6 +19,7 @@ import {
 } from '../../app-state.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
 import { mergeCensoPatientFields } from '../../patient-diagnosticos.mjs';
+import { mergePatientRegistrationMeta } from '../../patient-registration-meta.mjs';
 import {
   describePatientImportRejection,
   parsePatientImportJsonText,
@@ -363,6 +364,7 @@ function applyImportEntry(entry, action, existing) {
     existing.cama = entry.patient.cama || existing.cama;
     if (entry.patient.viaAcceso) existing.viaAcceso = entry.patient.viaAcceso;
     mergeCensoPatientFields(existing, entry.patient);
+    mergePatientRegistrationMeta(existing, entry.patient);
     existing.registro = entry.patient.registro || existing.registro;
     notes[existing.id] = entry.note || {};
     indicaciones[existing.id] = entry.indicaciones || {};
@@ -389,6 +391,7 @@ function applyImportEntry(entry, action, existing) {
   };
   mergePatientMonitoreoFromImported(newPatient, entry.patient);
   mergeCensoPatientFields(newPatient, entry.patient);
+  mergePatientRegistrationMeta(newPatient, entry.patient);
   patients.unshift(newPatient);
   notes[newId] = entry.note || {};
   indicaciones[newId] = entry.indicaciones || {};

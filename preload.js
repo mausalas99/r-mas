@@ -299,6 +299,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalProfileUpsert: function(opts) {
     return ipcRenderer.invoke('db:clinical-profile-upsert', opts);
   },
+  dbClinicalUserTouch: function(opts) {
+    return ipcRenderer.invoke('db:clinical-user-touch', opts);
+  },
   dbClinicalUsernameClaim: function(opts) {
     return ipcRenderer.invoke('db:clinical-username-claim', opts);
   },

@@ -2,6 +2,7 @@
  * Renderer bridge for SQLCipher clinical blobs (Electron IPC).
  * Blob keys align with lib/db/clinical-blob-keys.mjs.
  */
+import { resolveClinicalSessionUserId } from './clinical-session-context.mjs';
 
 /** @type {Record<string, string>} app-state / saveAll field → clinical_blob.blob_key */
 /** Keep in sync with lib/db/clinical-blob-keys.mjs LS_KEY_TO_BLOB */
@@ -128,5 +129,12 @@ export async function persistSaveAll(fields, auditMeta) {
   if (!payload.auditMeta.eventType) {
     payload.auditMeta.eventType = 'clinical.save_all';
   }
-  return window.electronAPI.dbClinicalSaveAll(payload);
+  const userId = resolveClinicalSessionUserId();
+  if (userId) payload.userId = userId;
+  const res = await window.electronAPI.dbClinicalSaveAll(payload);
+  if (res?.ok !== false && userId) {
+    const { touchClinicalSessionActivity } = await import('./clinical-access-runtime.mjs');
+    touchClinicalSessionActivity({ force: true });
+  }
+  return res;
 }

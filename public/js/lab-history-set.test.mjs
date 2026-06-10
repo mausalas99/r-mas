@@ -29,6 +29,8 @@ const {
   labSetIsFromSome,
   groupLabHistoryByDay,
   buildEstudiosCopyLinesFromLabSets,
+  formatLabHistoryDateSelectLabel,
+  primaryTipoForLabSet,
 } = await import('./lab-history-set.mjs');
 
 const PATIENT_ID = 'lab-loop-patient';
@@ -100,6 +102,29 @@ describe('lab-history-set', () => {
     assert.equal(
       labSetIsFromSome({ sourceText: '02/06\nBH Hb 8.95*', resLabs: [] }),
       false,
+    );
+  });
+
+  it('formatLabHistoryDateSelectLabel resume fecha y tipo', () => {
+    assert.equal(
+      formatLabHistoryDateSelectLabel(
+        { fecha: '07/06/2026', hora: '08:15', resLabs: ['BH\tHb 12'] },
+        function () {
+          return '';
+        },
+        primaryTipoForLabSet,
+      ),
+      '07/06/2026 08:15 · Labs',
+    );
+    assert.equal(
+      formatLabHistoryDateSelectLabel(
+        { fecha: '07/06/2026', resLabs: ['CULTIVO\tUrocultivo negativo'] },
+        function () {
+          return '';
+        },
+        primaryTipoForLabSet,
+      ),
+      '07/06/2026 · Cultivo',
     );
   });
 

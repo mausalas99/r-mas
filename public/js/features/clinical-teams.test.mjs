@@ -96,11 +96,14 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /canViewLanUserDirectory/);
     assert.match(clinicalTeamsSrc, /openLanUsersDirectoryModal/);
     assert.match(clinicalTeamsSrc, /clinical-lan-users-backdrop/);
-    assert.match(clinicalTeamsSrc, /Abrir directorio de usuarios LAN/);
+    assert.match(clinicalTeamsSrc, /renderLanUsersDirectoryTopButtonHtml/);
+    assert.match(clinicalTeamsSrc, /clinical-teams-top-actions/);
+    assert.match(clinicalTeamsSrc, /Directorio LAN/);
     assert.match(clinicalTeamsSrc, /getClinicalTeamsPanelHost\(\)[\s\S]*_rpcLanDirOpenDelegated/);
     assert.match(clinicalTeamsSrc, /clinical-lan-directory-open/);
     assert.match(clinicalTeamsSrc, /clinical-lan-rank-group/);
-    assert.equal(clinicalTeamsSrc.includes('clinical-teams-section--lan-users'), false);
+    assert.equal(clinicalTeamsSrc.includes('clinical-teams-lan-users-entry'), false);
+    assert.equal(clinicalTeamsSrc.includes('section.lanUsers'), false);
   });
 
   it('elevated roster managers get empty team create flow', () => {
@@ -142,12 +145,36 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /joinLanFromInviteUi/);
   });
 
+  it('Mi rotación sections and team cards use persisted collapsible blocks', () => {
+    assert.match(clinicalTeamsSrc, /renderClinicalTeamsCollapsible/);
+    assert.match(clinicalTeamsSrc, /clinical-teams-collapse/);
+    assert.match(clinicalTeamsSrc, /data-collapse-key/);
+    assert.match(clinicalTeamsSrc, /writeClinicalTeamsCollapseOpen/);
+    assert.match(clinicalTeamsSrc, /wireClinicalTeamsCollapsePersistence/);
+    assert.match(clinicalTeamsSrc, /section\.joined/);
+    assert.match(clinicalTeamsSrc, /section\.directory/);
+    assert.match(clinicalTeamsSrc, /card\.\$\{tid\}\.members/);
+  });
+
   it('LAN directorio preserves collapsed rank groups across background refresh', () => {
     assert.match(clinicalTeamsSrc, /lanDirectoryCollapsedRanks/);
+    assert.match(clinicalTeamsSrc, /lanDirectoryExpandedRanks/);
+    assert.match(clinicalTeamsSrc, /shouldLanRankGroupOpen/);
     assert.match(clinicalTeamsSrc, /captureLanDirectoryCollapseState/);
     assert.match(clinicalTeamsSrc, /data-lan-rank-group/);
-    assert.match(clinicalTeamsSrc, /isLanRankGroupCollapsed/);
     assert.doesNotMatch(clinicalTeamsSrc, /clinical-lan-rank-group" open>/);
+  });
+
+  it('LAN directorio uses compact cards with search and filters', () => {
+    assert.match(clinicalTeamsSrc, /clinical-lan-user-card/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-directory-toolbar/);
+    assert.match(clinicalTeamsSrc, /applyLanDirectoryFilters/);
+    assert.match(clinicalTeamsSrc, /bindLanDirectoryFilterControls/);
+    assert.match(clinicalTeamsSrc, /ensureLanDirectoryFilterDelegation/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-directory-search/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-directory-activity-filter/);
+    assert.match(clinicalTeamsSrc, /last_activity_at/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-user-activity-chip/);
   });
 
   it('LAN directorio freezes auto-refresh while open (manual Actualizar)', () => {

@@ -30,11 +30,20 @@ console.log(
   `[ensure-native-db-for-node] Native DB module mismatch for Node ${process.version} (modules ${process.versions.modules}); rebuilding…`
 );
 
+/** Apple Silicon + CLT sin slice x86_64: npm bajo Rosetta rompe xcrun/libtool. */
+function nativeRebuildShell() {
+  if (process.platform === 'darwin' && process.arch === 'arm64') {
+    return 'arch -arm64 npm rebuild better-sqlite3-multiple-ciphers';
+  }
+  return 'npm rebuild better-sqlite3-multiple-ciphers';
+}
+
 try {
-  execSync('npm rebuild better-sqlite3-multiple-ciphers', {
+  execSync(nativeRebuildShell(), {
     cwd: root,
     stdio: 'inherit',
     env: process.env,
+    shell: true,
   });
 } catch (e) {
   console.error('[ensure-native-db-for-node] npm rebuild failed:', e.message);

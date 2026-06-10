@@ -7,7 +7,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 
 # Database Index
 
-**Canonical schema:** `lib/db/schema.mjs` (currently **v15**).
+**Canonical schema:** `lib/db/schema.mjs` (currently **v17**).
 
 ## When to read which file
 
@@ -28,7 +28,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 | Patients & clinical | Encrypted patient store, HC, estado |
 | LAN outbox | `lan_sync_outbox` — delta, command, bundle kinds |
 | LAN host (v15) | `lan_host_meta`, `lan_room_bundles`, `lan_bundle_entries`, `lan_lab_sets` — normalized ward state when DB unlocked |
-| Clinical ops | Users, teams, guardia metadata |
+| Clinical ops | Users (`last_activity_at` v16, backfill v17), teams, guardia metadata |
 | Audit | Chained integrity log (expand in LATER horizon) |
 
 ## Rules

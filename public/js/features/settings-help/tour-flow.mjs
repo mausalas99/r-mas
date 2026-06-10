@@ -475,7 +475,7 @@ function renderTourStep() {
       break;
     case 'lab_view':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p>' +
+        '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En <strong>Resultados</strong>, el menú <strong>⋯</strong> incluye <strong>Consolidar</strong> para juntar envíos del mismo día (mismo tipo de dato).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
       nextBtn.textContent = 'Siguiente';
       break;

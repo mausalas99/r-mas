@@ -6,6 +6,7 @@ import { mergeMonitoreo } from './features/estado-actual-data.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
+import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -293,6 +294,8 @@ function pickPatientFields(older, newer) {
   if (compareIso(bt, at) >= 0 && newer.lanUpdatedAt) out.lanUpdatedAt = newer.lanUpdatedAt;
   else if (older.lanUpdatedAt) out.lanUpdatedAt = older.lanUpdatedAt;
   out.id = older.id || newer.id;
+  mergePatientRegistrationMeta(out, older);
+  mergePatientRegistrationMeta(out, newer);
   return out;
 }
 

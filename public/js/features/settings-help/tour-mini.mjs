@@ -167,7 +167,7 @@ var LAB_MINI_TOUR_STEPS = [
   },
   {
     badge: 'Laboratorio · historial',
-    body: 'En la tarjeta <strong>Historial de laboratorio</strong>, <strong>Sincronizar</strong> abre el checklist para eliminar duplicados (misma fecha/hora y mismos valores). <strong>Consolidar</strong> fusiona conjuntos del mismo día si son homogéneos (solo labs o solo cultivos). Así las tendencias y la nota no arrastran repeticiones.',
+    body: 'En <strong>Resultados</strong>, el selector de fechas cambia entre envíos guardados del paciente activo. El menú <strong>⋯</strong> permite copiar varios días, consolidar envíos del mismo día, reprocesar o eliminar una entrada.',
     before: function(){ rt.switchAppTab('lab'); }
   },
   {

@@ -70,6 +70,7 @@ import {
   CLINICAL_SALAS,
   BROWSE_SALA_LS,
   promptAdminAccessCode,
+  renderClinicalTeamsCollapsible,
 } from './shared.mjs';
 import {
   publishClinicalTeamsToLan,
@@ -79,7 +80,7 @@ import {
 } from './teams-guardia-bridge.mjs';
 
 import {
-  renderLanUsersDirectoryEntryHtml,
+  renderLanUsersDirectoryTopButtonHtml,
   wireLanUsersDirectoryControls,
 } from './teams-roster-lan.mjs';
 export function syncCreateTeamServiceFromSala() {
@@ -359,18 +360,29 @@ export function renderMemberRow(m) {
 }
 
 /** @param {object[]} members */
-export function renderMembersBlock(members, { compact = false } = {}) {
+export function renderMembersBlock(members, { compact = false, teamId = '' } = {}) {
   const list = Array.isArray(members) ? members : [];
   const count = list.length;
   const rows = count
     ? list.map((m) => renderMemberRow(m)).join('')
     : '<li class="clinical-teams-empty clinical-teams-empty--inline">Sin integrantes</li>';
   const heading = count === 1 ? 'Integrantes (1)' : `Integrantes (${count})`;
-  return `
+  const listHtml = `<ul class="clinical-teams-member-rows">${rows}</ul>`;
+  const tid = String(teamId || '').trim();
+  if (!tid) {
+    return `
     <div class="clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}">
       <h6 class="clinical-teams-members-heading">${heading}</h6>
-      <ul class="clinical-teams-member-rows">${rows}</ul>
+      ${listHtml}
     </div>`;
+  }
+  return renderClinicalTeamsCollapsible({
+    collapseKey: `card.${tid}.members`,
+    defaultOpen: true,
+    className: `clinical-teams-collapse--card-block clinical-teams-card-members${compact ? ' clinical-teams-card-members--compact' : ''}`,
+    summaryHtml: `<span class="clinical-teams-members-heading">${heading}</span>`,
+    bodyHtml: listHtml,
+  });
 }
 
 /**
@@ -401,18 +413,22 @@ export function renderMyCycleEditBlock(team, user) {
         : 'Letra de rotación para este servicio.'
     : 'Letra de rotación A–D (misma para todos los rangos en este servicio).';
 
-  return `
-    <div class="clinical-teams-my-cycle-box">
+  const formHtml = `
       <form class="clinical-teams-my-cycle-form" data-team-id="${escapeAttr(teamId)}">
-        <h6 class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</h6>
         <p class="clinical-teams-hint">${escapeHtml(hint)}</p>
         <div class="clinical-teams-my-cycle-row">
           <label class="visually-hidden" for="${escapeAttr(selectId)}">Mi ciclo</label>
           ${renderCycleSelectForRank(team, rank, current, selectId)}
           <button type="submit" class="btn-save">Guardar</button>
         </div>
-      </form>
-    </div>`;
+      </form>`;
+  return renderClinicalTeamsCollapsible({
+    collapseKey: `card.${teamId}.cycle`,
+    defaultOpen: true,
+    className: 'clinical-teams-collapse--card-block clinical-teams-my-cycle-box',
+    summaryHtml: '<span class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</span>',
+    bodyHtml: formHtml,
+  });
 }
 
 /** @param {object} team */
@@ -477,6 +493,39 @@ export function renderTeamManageBlock(team) {
   };
 }
 
+/** @param {object} team @param {string} teamId */
+export function renderTeamInviteCollapsible(team, teamId) {
+  const tid = String(teamId || team?.team_id || '').trim();
+  const inviteBody = `
+        <p class="clinical-teams-invite-code-line">Código para invitar: <code class="clinical-teams-invite-code">${escapeHtml(teamInviteCode(tid))}</code></p>
+        <div class="clinical-teams-invite-link-row">
+          <button type="button" class="btn-med-secondary clinical-teams-copy-invite-btn" data-team-id="${escapeAttr(tid)}">Copiar invitación</button>
+          <p class="clinical-teams-invite-hint">Incluye el código e instrucciones para <strong>Mi rotación</strong> en la app R+ del Mac (no Safari).</p>
+        </div>
+        <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr(tid)}" data-team-service="${escapeAttr(team.service || '')}">
+          <p class="clinical-teams-add-member-label">Agregar integrante</p>
+          <div class="clinical-teams-add-member-fields">
+            <div class="field-group clinical-teams-add-member-user">
+              <label for="clinical-add-member-${escapeAttr(tid)}">Usuario LAN</label>
+              <input id="clinical-add-member-${escapeAttr(tid)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(tid)}">
+            </div>
+            <div class="field-group clinical-teams-add-cycle-group">
+              <label for="clinical-add-cycle-${escapeAttr(tid)}">Ciclo del integrante</label>
+              ${renderAddMemberCycleSelect(team)}
+            </div>
+            <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
+          </div>
+          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (usuario LAN, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
+        </form>`;
+  return renderClinicalTeamsCollapsible({
+    collapseKey: `card.${tid}.invite`,
+    defaultOpen: false,
+    className: 'clinical-teams-collapse--card-block clinical-teams-invite-box',
+    summaryHtml: '<span class="clinical-teams-invite-summary">Invitar y agregar integrantes</span>',
+    bodyHtml: inviteBody,
+  });
+}
+
 /**
  * @param {object} team
  */
@@ -498,31 +547,10 @@ export function renderJoinedTeamCard(team) {
         ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
       </div>
       ${manage.editPanelHtml}
-      ${renderMembersBlock(members)}
+      ${renderMembersBlock(members, { teamId })}
       ${renderMyCycleEditBlock(team, user)}
       ${renderLeaveTeamBox(team)}
-      <div class="clinical-teams-invite-box">
-        <p class="clinical-teams-invite-code-line">Código para invitar: <code class="clinical-teams-invite-code">${escapeHtml(teamInviteCode(teamId))}</code></p>
-        <div class="clinical-teams-invite-link-row">
-          <button type="button" class="btn-med-secondary clinical-teams-copy-invite-btn" data-team-id="${escapeAttr(teamId)}">Copiar invitación</button>
-          <p class="clinical-teams-invite-hint">Incluye el código e instrucciones para <strong>Mi rotación</strong> en la app R+ del Mac (no Safari).</p>
-        </div>
-        <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr(teamId)}" data-team-service="${escapeAttr(team.service || '')}">
-          <p class="clinical-teams-add-member-label">Agregar integrante</p>
-          <div class="clinical-teams-add-member-fields">
-            <div class="field-group clinical-teams-add-member-user">
-              <label for="clinical-add-member-${escapeAttr(teamId)}">Usuario LAN</label>
-              <input id="clinical-add-member-${escapeAttr(teamId)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(teamId)}">
-            </div>
-            <div class="field-group clinical-teams-add-cycle-group">
-              <label for="clinical-add-cycle-${escapeAttr(teamId)}">Ciclo del integrante</label>
-              ${renderAddMemberCycleSelect(team)}
-            </div>
-            <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
-          </div>
-          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(teamId)}">Debe existir en Mi rotación (usuario LAN, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
-        </form>
-      </div>
+      ${renderTeamInviteCollapsible(team, teamId)}
     </article>`;
 }
 
@@ -552,7 +580,7 @@ export function renderDirectoryTeamCard(team, opts = {}) {
       </div>
       ${joinHint ? `<p class="clinical-teams-card-join-reason">${escapeHtml(joinHint)}</p>` : ''}
       ${editPanel}
-      ${renderMembersBlock(members, { compact: true })}
+      ${renderMembersBlock(members, { compact: true, teamId })}
     </article>`;
 }
 
@@ -743,7 +771,6 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const browseSala = resolveBrowseSala(elevated, sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
-  const lanUsersEntry = renderLanUsersDirectoryEntryHtml(user);
   const lanMemberHint = await resolveLanTeamMemberHintHtml(joined);
   const directorySection = await renderDirectorySectionHtml({
     userId,
@@ -756,22 +783,27 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     ${handleHint}
     ${renderCreateTeamSectionHtml()}
     <section class="clinical-teams-section clinical-teams-section--joined">
-      <div class="clinical-teams-section-intro">
-        <h4 class="clinical-teams-section-title">Mis equipos</h4>
-        <p class="clinical-teams-section-desc">Equipos donde ya eres integrante.</p>
-        ${lanMemberHint}
-      </div>
-      <div class="clinical-teams-list">${joinedHtml}</div>
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.joined',
+        defaultOpen: true,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: `
+          <h4 class="clinical-teams-section-title">Mis equipos</h4>
+          <p class="clinical-teams-section-desc">Equipos donde ya eres integrante.</p>`,
+        bodyHtml: `${lanMemberHint}<div class="clinical-teams-list">${joinedHtml}</div>`,
+      })}
     </section>
     ${directorySection}
-    ${lanUsersEntry}
     ${joinCodeSection}
     <section class="clinical-teams-section clinical-teams-section--more">
-      <div class="clinical-teams-section-intro">
-        <h4 class="clinical-teams-section-title">Configuración</h4>
-        <p class="clinical-teams-section-desc">Perfil clínico y rango.</p>
-      </div>
-      ${profileSection}
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.config',
+        defaultOpen: false,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: `
+          <h4 class="clinical-teams-section-title">Configuración</h4>
+          <p class="clinical-teams-section-desc">Perfil clínico y rango.</p>`,
+        bodyHtml: `${profileSection}
       <details class="clinical-teams-advanced-rotation">
         <summary class="clinical-teams-advanced-rotation-summary">Zona avanzada · rotación del programa</summary>
         <div class="clinical-teams-advanced-rotation-body">
@@ -781,7 +813,8 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
             <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
           </div>
         </div>
-      </details>
+      </details>`,
+      })}
     </section>`;
 
   wireLanUsersDirectoryControls();
@@ -796,9 +829,16 @@ export function renderCreateTeamSectionHtml() {
   const user = clinicalSessionContext.user || {};
   const elevatedCreate = canManageTeamRoster(user);
   const openLabel = elevatedCreate ? 'Crear equipo vacío' : 'Crear nuevo equipo';
+  const lanDirBtn = renderLanUsersDirectoryTopButtonHtml(user);
+  const actionsClass = lanDirBtn
+    ? 'clinical-teams-top-actions clinical-teams-top-actions--split'
+    : 'clinical-teams-top-actions';
   return `
     <section class="clinical-teams-section clinical-teams-section--create">
-      <button type="button" id="btn-clinical-team-create-open" class="btn-save clinical-teams-create-open-btn">${escapeHtml(openLabel)}</button>
+      <div class="${actionsClass}">
+        <button type="button" id="btn-clinical-team-create-open" class="btn-save clinical-teams-create-open-btn">${escapeHtml(openLabel)}</button>
+        ${lanDirBtn}
+      </div>
       <div id="clinical-team-create-panel" class="clinical-teams-create-panel" hidden>
         ${renderCreateTeamForm()}
       </div>
@@ -806,12 +846,7 @@ export function renderCreateTeamSectionHtml() {
 }
 
 export function renderJoinWithCodeSectionHtml() {
-  return `
-    <section class="clinical-teams-section clinical-teams-section--join-code">
-      <div class="clinical-teams-section-intro">
-        <h4 class="clinical-teams-section-title">Unirte con código de equipo</h4>
-        <p class="clinical-teams-section-desc">Pega el código que te envió tu R2 (8 caracteres). <strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>
-      </div>
+  const joinForm = `
       <form id="clinical-team-join-code-form" class="clinical-teams-join-code-form">
         <div class="clinical-teams-invite-row clinical-teams-join-code-code-row">
           <label class="visually-hidden" for="clinical-team-join-code-input">Código de equipo</label>
@@ -833,7 +868,18 @@ export function renderJoinWithCodeSectionHtml() {
         <div class="clinical-teams-join-submit-wrap">
           <button type="submit" class="btn-save">Unirme</button>
         </div>
-      </form>
+      </form>`;
+  return `
+    <section class="clinical-teams-section clinical-teams-section--join-code">
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.joinCode',
+        defaultOpen: false,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: `
+          <h4 class="clinical-teams-section-title">Unirte con código de equipo</h4>
+          <p class="clinical-teams-section-desc">Pega el código que te envió tu R2 (8 caracteres). <strong>No</strong> pegues aquí el enlace ⇄ de sala (<code>http://…/join/req_…</code>) — ese va en <strong>Wi‑Fi → Conexión guardia</strong>.</p>`,
+        bodyHtml: joinForm,
+      })}
     </section>`;
 }
 
@@ -916,18 +962,15 @@ export async function renderDirectorySectionHtml(opts) {
       : `Explorar · ${escapeHtml(browseSala)}`
     : `Otros equipos · ${escapeHtml(browseSala || homeSala)}`;
 
-  const headRow = browseControl
-    ? `<div class="clinical-teams-section-head-row">
-        <div class="clinical-teams-section-intro">
-          <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
-          <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
-        </div>
-        ${browseControl}
-      </div>`
-    : `<div class="clinical-teams-section-intro">
+  const sectionIntro = `
         <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
-        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
-      </div>`;
+        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>`;
+  const headRow = browseControl
+    ? `<div class="clinical-teams-section-head-row clinical-teams-collapse-summary-head">
+        <div class="clinical-teams-section-intro">${sectionIntro}</div>
+        <div class="clinical-teams-collapse-summary-actions">${browseControl}</div>
+      </div>`
+    : `<div class="clinical-teams-section-intro">${sectionIntro}</div>`;
 
   if (!directory.length) {
     const label =
@@ -936,8 +979,13 @@ export async function renderDirectorySectionHtml(opts) {
       ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`
       : `No hay otros equipos disponibles en ${label}.`;
     return `<section class="clinical-teams-section clinical-teams-section--directory">
-      ${headRow}
-      <p class="clinical-teams-empty">${emptyMsg}</p>
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.directory',
+        defaultOpen: true,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: headRow,
+        bodyHtml: `<p class="clinical-teams-empty">${emptyMsg}</p>`,
+      })}
     </section>`;
   }
 
@@ -966,7 +1014,12 @@ export async function renderDirectorySectionHtml(opts) {
 
   return `
     <section class="clinical-teams-section clinical-teams-section--directory">
-      ${headRow}
-      <div class="clinical-teams-list">${cards}</div>
+      ${renderClinicalTeamsCollapsible({
+        collapseKey: 'section.directory',
+        defaultOpen: true,
+        className: 'clinical-teams-collapse--section',
+        summaryHtml: headRow,
+        bodyHtml: `<div class="clinical-teams-list">${cards}</div>`,
+      })}
     </section>`;
 }

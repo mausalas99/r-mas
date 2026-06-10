@@ -302,6 +302,21 @@ html.ui-density-normal #main-area {
   justify-content: flex-end;
 }
 
+/* Píldoras del cluster: Guardia, censo PDF, modo Sala/Pase — misma caja tipográfica */
+.header-work-cluster .header-guardia-mode-chip,
+.header-work-cluster .header-pase-mode-chip,
+.header-work-cluster .header-app-mode-chip,
+.header-work-cluster .btn-export-censo-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  min-height: 0;
+}
+
 @media (max-width: 920px) {
   .header-guardia-mode-label {
     position: absolute;
@@ -314,12 +329,11 @@ html.ui-density-normal #main-area {
     white-space: nowrap;
     border: 0;
   }
-  .header-guardia-mode-chip {
+  .header-work-cluster .header-guardia-mode-chip,
+  .header-work-cluster .header-pase-mode-chip,
+  .header-work-cluster .header-app-mode-chip,
+  .header-work-cluster .btn-export-censo-header {
     padding: 6px 10px;
-  }
-  .btn-export-censo-header {
-    padding: 7px 10px;
-    font-size: 11px;
   }
   #header-app-mode-chip {
     max-width: 9.5rem;
@@ -368,15 +382,11 @@ html.ui-density-normal #main-area {
 }
 .header-pase-mode-chip {
   display: none;
-  align-items: center;
   flex-shrink: 0;
-  padding: 6px 11px;
   border-radius: var(--radius-pill);
   border: 1px solid color-mix(in oklab, var(--action) 30%, var(--border));
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
   color: var(--action);
-  font-size: 11px;
-  font-weight: 700;
   font-family: inherit;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -414,10 +424,7 @@ html.ui-density-normal #main-area {
   border: 1px solid var(--border);
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
   color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
   font-family: inherit;
-  padding: 8px 14px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -425,10 +432,6 @@ html.ui-density-normal #main-area {
 .header-app-mode-chip:hover {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-.header-work-cluster .header-app-mode-chip {
-  padding: 6px 12px;
-  font-size: 11px;
 }
 .estado-actual-meta {
   font-size: 11px;
@@ -442,19 +445,13 @@ html.ui-density-normal #main-area {
 }
 .btn-export-censo-header {
   display: none;
-  align-items: center;
-  gap: 6px;
   flex-shrink: 0;
   background: color-mix(in oklab, #4f46e5 92%, #1e1b4b);
   color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius-pill);
-  padding: 7px 12px;
-  font-size: 12px;
-  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  min-height: 36px;
   transition: filter 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
@@ -462,8 +459,8 @@ html.ui-density-normal #main-area {
   filter: brightness(1.06);
 }
 .btn-export-censo-header svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
 }
 html.dark .btn-export-censo-header {

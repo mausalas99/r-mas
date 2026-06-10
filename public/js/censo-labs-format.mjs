@@ -34,8 +34,7 @@ function linesFromParsedSection(section, keys) {
 function linesFromRawChunk(chunk) {
   var s = String(chunk || '').replace(/\s+/g, ' ').trim();
   if (!s) return [];
-  if (s.length <= 100) return [s];
-  return [s.slice(0, 98) + '…'];
+  return [s];
 }
 
 /**

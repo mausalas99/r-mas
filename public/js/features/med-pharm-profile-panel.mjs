@@ -1,7 +1,7 @@
 /**
  * UI Perfil farmacoterapéutico (subvista Medicamentos). Funciones cortas, CCN bajo.
  */
-import { medPharmProfileByPatient, saveState } from '../app-state.mjs';
+import { medPharmProfileByPatient, saveState, patients } from '../app-state.mjs';
 import {
   listSomePharmFilterLabels,
   isSomePharmCategoryLabel,
@@ -16,15 +16,21 @@ import {
   applySomePasteToProfile,
   getMonthFromProfile,
   ensureMonthOnProfile,
-  adherenceStats,
-  toggleNotAdmin,
   isMedPharmRowHidden,
   formatFreqShort,
   formatViaShort,
-  splitMonthAt,
-  dayValueInMap,
   monthKeyFromParts,
 } from '../med-pharm-profile-core.mjs';
+import {
+  buildPharmViewWindow,
+  unifyRowsForWindow,
+  groupUnifiedRowsByMed,
+  rowsForMedGroup,
+  adherenceStatsForRowKeys,
+  cellValueAtColumn,
+  toggleNotAdminAtColumn,
+  makeColumn,
+} from '../med-pharm-view-window.mjs';
 import { syncTabBarIndicator } from '../ui-tab-motion.mjs';
 
 const MONTH_NAMES = [
@@ -42,6 +48,21 @@ const MONTH_NAMES = [
   'Diciembre',
 ];
 
+const MONTH_ABBR = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
+
 let rt = {
   getActiveId() {
     return null;
@@ -55,7 +76,7 @@ let viewYear = new Date().getFullYear();
 let viewMonthIndex = new Date().getMonth();
 let listFilter = 'TODOS';
 let showHiddenMedRows = false;
-let openRowKey = null;
+let openMedGroupKey = null;
 let uiWired = false;
 let dismissWired = false;
 let lastPharmPanelPatientId = null;
@@ -168,6 +189,48 @@ function getViewMonth(pid) {
   return getMonthFromProfile(profile, viewYear, viewMonthIndex);
 }
 
+function getFimiFechaForPatient(patientId) {
+  var patient = patients.find(function (p) {
+    return p.id === patientId;
+  });
+  return patient ? patient.fimiFecha : '';
+}
+
+function getViewWindow(pid) {
+  var profile = getProfile(pid);
+  return buildPharmViewWindow({
+    profile: profile || { months: {} },
+    viewYear: viewYear,
+    viewMonthIndex: viewMonthIndex,
+    today: todayParts(),
+    fimiFecha: getFimiFechaForPatient(pid),
+  });
+}
+
+function monthRowForColumn(profile, rowKey, column) {
+  var month = profile && profile.months ? profile.months[column.monthKey] : null;
+  if (!month || !month.rows) return null;
+  for (var i = 0; i < month.rows.length; i += 1) {
+    if (month.rows[i].rowKey === rowKey) return month.rows[i];
+  }
+  return null;
+}
+
+function notAdminAtColumn(profile, rowKey, column) {
+  var row = monthRowForColumn(profile, rowKey, column);
+  if (!row || !row.notAdmin) return false;
+  return !!(row.notAdmin[column.day] || row.notAdmin[String(column.day)]);
+}
+
+function windowHasMultipleMonths(columns) {
+  if (!columns || columns.length < 2) return false;
+  var mk = columns[0].monthKey;
+  for (var i = 1; i < columns.length; i += 1) {
+    if (columns[i].monthKey !== mk) return true;
+  }
+  return false;
+}
+
 function needsSomePharmReclassify(row) {
   if (!row || row.catOverride) return false;
   var c = String(row.cat || '').toUpperCase();
@@ -190,47 +253,112 @@ function reclassifyMonthIfLegacy(pid, month) {
   return month;
 }
 
-function formatAdhDayList(days) {
-  if (!days.length) return '—';
-  return days
-    .map(function (d) {
-      return String(d).padStart(2, '0');
+function formatViaListAbbrev(raw) {
+  var v = formatViaShort(raw).toUpperCase();
+  if (!v || v === '—') return '—';
+  if (v.indexOf('INTRAVEN') >= 0) return 'IV';
+  if (v === 'IV') return 'IV';
+  if (v.indexOf('ORAL') >= 0) return 'VO';
+  if (v.indexOf('SUBCUT') >= 0) return 'SC';
+  if (v.indexOf('INTRAMUS') >= 0) return 'IM';
+  if (v.indexOf('INHAL') >= 0) return 'INH';
+  if (v.indexOf('TOPIC') >= 0) return 'TOP';
+  if (v.length > 5) return v.slice(0, 4);
+  return v;
+}
+
+function medGroupListTooltip(group) {
+  var lines = [];
+  group.variants.forEach(function (v) {
+    var head = v.med || group.med || '';
+    var part = [v.dosis, formatFreqShort(v.freq), formatViaShort(v.via)].filter(Boolean).join(' · ');
+    lines.push(part ? head + ' — ' + part : head);
+  });
+  return lines.join('\n');
+}
+
+function formatAdhDayList(columns, multiMonth) {
+  if (!columns.length) return '—';
+  return columns
+    .map(function (col) {
+      var dd = String(col.day).padStart(2, '0');
+      return multiMonth ? dd + ' ' + MONTH_ABBR[col.monthIndex] : dd;
     })
     .join(', ');
 }
 
-function adherenceDayDetail(row, daysInMonth) {
+function adherenceDayDetail(row, columns, profile) {
+  return adherenceDayDetailForRowKeys(profile, [row.rowKey], columns);
+}
+
+function adherenceDayDetailForRowKeys(profile, rowKeys, columns) {
   var indicated = [];
   var missed = [];
-  var limit = daysInMonth || 31;
-  for (var d = 1; d <= limit; d += 1) {
-    if (!(dayValueInMap(row.days, d) > 0)) continue;
-    indicated.push(d);
-    if (row.notAdmin && (row.notAdmin[d] || row.notAdmin[String(d)])) missed.push(d);
+  for (var i = 0; i < columns.length; i += 1) {
+    var col = columns[i];
+    var dayIndicated = false;
+    var dayMissed = false;
+    for (var k = 0; k < rowKeys.length; k += 1) {
+      if (!(cellValueAtColumn(profile, rowKeys[k], col) > 0)) continue;
+      dayIndicated = true;
+      if (notAdminAtColumn(profile, rowKeys[k], col)) dayMissed = true;
+    }
+    if (!dayIndicated) continue;
+    indicated.push(col);
+    if (dayMissed) missed.push(col);
   }
-  var administered = indicated.filter(function (x) {
-    return missed.indexOf(x) < 0;
+  var administered = indicated.filter(function (col) {
+    return missed.indexOf(col) < 0;
   });
   return { indicated: indicated, missed: missed, administered: administered };
 }
 
-function buildAdhPanelHtml(row, daysInMonth) {
-  var detail = adherenceDayDetail(row, daysInMonth);
-  var monthTitle = monthLabel(viewYear, viewMonthIndex);
+function adherenceStatsForWindow(profile, rowKey, columns) {
+  var indicated = 0;
+  var missed = 0;
+  var missedDays = [];
+  for (var i = 0; i < columns.length; i += 1) {
+    var col = columns[i];
+    if (!(cellValueAtColumn(profile, rowKey, col) > 0)) continue;
+    indicated += 1;
+    if (notAdminAtColumn(profile, rowKey, col)) {
+      missed += 1;
+      missedDays.push(col.day);
+    }
+  }
+  return {
+    indicated: indicated,
+    effective: indicated - missed,
+    missed: missed,
+    missedDays: missedDays,
+  };
+}
+
+function buildAdhPanelHtmlForGroup(group, columns, profile, windowLabel) {
+  var detail = adherenceDayDetailForRowKeys(profile, group.rowKeys, columns);
+  var multiMonth = windowHasMultipleMonths(columns);
+  var monthTitle = windowLabel || monthLabel(viewYear, viewMonthIndex);
+  var regimenNote =
+    group.variants.length > 1
+      ? '<p class="med-pharm-adh-panel-regimens">' +
+        esc(String(group.variants.length)) +
+        ' regímenes (dosis distintas) en esta ventana</p>'
+      : '';
   return (
+    regimenNote +
     '<p class="med-pharm-adh-panel-head">' +
     esc(monthTitle) +
     '</p>' +
     '<div class="med-pharm-adh-panel-section">' +
     '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--ok">Administrados (por defecto)</span>' +
     '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.administered)) +
+    esc(formatAdhDayList(detail.administered, multiMonth)) +
     '</p>' +
     '</div>' +
     '<div class="med-pharm-adh-panel-section">' +
     '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--miss">No administrados</span>' +
     '<p class="med-pharm-adh-panel-days">' +
-    esc(formatAdhDayList(detail.missed)) +
+    esc(formatAdhDayList(detail.missed, multiMonth)) +
     '</p>' +
     '</div>' +
     '<p class="med-pharm-adh-panel-foot">' +
@@ -243,7 +371,37 @@ function buildAdhPanelHtml(row, daysInMonth) {
   );
 }
 
-function buildAdhTriggerHtml(row, stats, daysInMonth) {
+function buildAdhPanelHtml(row, columns, profile, windowLabel) {
+  var detail = adherenceDayDetail(row, columns, profile);
+  var multiMonth = windowHasMultipleMonths(columns);
+  var monthTitle = windowLabel || monthLabel(viewYear, viewMonthIndex);
+  return (
+    '<p class="med-pharm-adh-panel-head">' +
+    esc(monthTitle) +
+    '</p>' +
+    '<div class="med-pharm-adh-panel-section">' +
+    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--ok">Administrados (por defecto)</span>' +
+    '<p class="med-pharm-adh-panel-days">' +
+    esc(formatAdhDayList(detail.administered, multiMonth)) +
+    '</p>' +
+    '</div>' +
+    '<div class="med-pharm-adh-panel-section">' +
+    '<span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--miss">No administrados</span>' +
+    '<p class="med-pharm-adh-panel-days">' +
+    esc(formatAdhDayList(detail.missed, multiMonth)) +
+    '</p>' +
+    '</div>' +
+    '<p class="med-pharm-adh-panel-foot">' +
+    esc(String(detail.administered.length)) +
+    ' administrados · ' +
+    esc(String(detail.missed.length)) +
+    ' no · ' +
+    esc(String(detail.indicated.length)) +
+    ' indicados</p>'
+  );
+}
+
+function buildAdhTriggerHtml(row, stats, columns, profile, windowLabel) {
   if (!stats.indicated) {
     return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">—</span>';
   }
@@ -261,18 +419,41 @@ function buildAdhTriggerHtml(row, stats, daysInMonth) {
     esc(label) +
     '</button>' +
     '<div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' +
-    buildAdhPanelHtml(row, daysInMonth) +
+    buildAdhPanelHtml(row, columns, profile, windowLabel) +
     '</div></span>'
   );
 }
 
-function buildMedCellInner(row, stats, daysInMonth) {
+function buildAdhTriggerHtmlForGroup(group, stats, columns, profile, windowLabel) {
+  if (!stats.indicated) {
+    return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">—</span>';
+  }
+  var label =
+    stats.missed > 0
+      ? stats.effective + ' efect. · ' + stats.missed + ' no'
+      : stats.effective + ' d efectivos';
+  return (
+    '<span class="med-pharm-adh-wrap">' +
+    '<button type="button" class="med-pharm-adh-trigger' +
+    (stats.missed > 0 ? ' med-pharm-adh-trigger--miss' : '') +
+    '" data-med-group-key="' +
+    esc(group.medGroupKey) +
+    '" aria-haspopup="dialog">' +
+    esc(label) +
+    '</button>' +
+    '<div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' +
+    buildAdhPanelHtmlForGroup(group, columns, profile, windowLabel) +
+    '</div></span>'
+  );
+}
+
+function buildMedCellInner(row, stats, columns, profile, windowLabel) {
   return (
     '<div class="med-cell-name">' +
     esc(row.med) +
     '</div>' +
     '<div class="med-cell-adh">' +
-    buildAdhTriggerHtml(row, stats, daysInMonth) +
+    buildAdhTriggerHtml(row, stats, columns, profile, windowLabel) +
     '</div>'
   );
 }
@@ -417,35 +598,79 @@ function wireMedPharmAdhHoverOnce() {
   );
 }
 
-function rowsMatchingCategoryFilter(month) {
-  if (!month || !month.rows) return [];
-  if (listFilter === 'TODOS') return month.rows;
-  return month.rows.filter(function (r) {
+function rowsMatchingCategoryFilter(rows) {
+  if (!rows || !rows.length) return [];
+  if (listFilter === 'TODOS') return rows;
+  return rows.filter(function (r) {
     return rowSomePharmCategory(r) === listFilter;
   });
 }
 
-function countHiddenInCategoryFilter(month) {
-  return rowsMatchingCategoryFilter(month).filter(isMedPharmRowHidden).length;
+function countHiddenInCategoryFilter(rows) {
+  return rowsMatchingCategoryFilter(rows).filter(isMedPharmRowHidden).length;
 }
 
-function displayRows(month) {
-  var rows = rowsMatchingCategoryFilter(month);
+function isMedPharmGroupHidden(group) {
+  if (!group || !group.variants || !group.variants.length) return false;
+  for (var i = 0; i < group.variants.length; i += 1) {
+    if (!isMedPharmRowHidden(group.variants[i])) return false;
+  }
+  return true;
+}
+
+function groupMatchesCategoryFilter(group) {
+  if (listFilter === 'TODOS') return true;
+  for (var i = 0; i < group.variants.length; i += 1) {
+    if (rowSomePharmCategory(group.variants[i]) === listFilter) return true;
+  }
+  return false;
+}
+
+function displayRowsForWindow(profile, window) {
+  var unified = unifyRowsForWindow(profile || { months: {} }, window.columns);
+  var rows = rowsMatchingCategoryFilter(unified);
   if (showHiddenMedRows) return rows;
   return rows.filter(function (r) {
     return !isMedPharmRowHidden(r);
   });
 }
 
-function setMedPharmRowHidden(pid, rowKey, hidden) {
-  var month = getViewMonth(pid);
-  if (!month) return;
-  var row = month.rows.find(function (r) {
-    return r.rowKey === rowKey;
+function displayGroupsForWindow(profile, window) {
+  var unified = unifyRowsForWindow(profile || { months: {} }, window.columns);
+  var groups = groupUnifiedRowsByMed(unified, profile, window.columns);
+  groups = groups.filter(groupMatchesCategoryFilter);
+  if (!showHiddenMedRows) {
+    groups = groups.filter(function (g) {
+      return !isMedPharmGroupHidden(g);
+    });
+  }
+  return groups;
+}
+
+function countHiddenGroups(groups) {
+  var n = 0;
+  for (var i = 0; i < groups.length; i += 1) {
+    if (isMedPharmGroupHidden(groups[i])) n += 1;
+  }
+  return n;
+}
+
+function setMedPharmMedGroupHidden(pid, rowKeys, hidden) {
+  var profile = getProfile(pid);
+  if (!profile || !profile.months || !rowKeys || !rowKeys.length) return;
+  var keySet = Object.create(null);
+  rowKeys.forEach(function (rk) {
+    keySet[rk] = true;
   });
-  if (!row) return;
-  if (hidden) row.hidden = true;
-  else delete row.hidden;
+  Object.keys(profile.months).forEach(function (mk) {
+    var month = profile.months[mk];
+    if (!month || !month.rows) return;
+    month.rows.forEach(function (row) {
+      if (!keySet[row.rowKey]) return;
+      if (hidden) row.hidden = true;
+      else delete row.hidden;
+    });
+  });
   saveState();
   renderMedPharmProfilePanel();
   var fullEl = document.getElementById('med-pharm-modal-full');
@@ -492,25 +717,37 @@ function padDayCells(tr, count, target, tag, padClass) {
   }
 }
 
-function appendDayHeader(tr, from, to, year, monthIndex) {
-  for (var d = from; d <= to; d += 1) {
+function appendDayHeader(tr, columns, from, to) {
+  var prevMonthKey = from > 0 ? columns[from - 1].monthKey : '';
+  for (var i = from; i < to; i += 1) {
+    var col = columns[i];
     var th = document.createElement('th');
-    th.className = 'day-hdr' + (isToday(year, monthIndex, d) ? ' today-col' : '');
-    th.textContent = String(d).padStart(2, '0');
+    th.className = 'day-hdr' + (isToday(col.year, col.monthIndex, col.day) ? ' today-col' : '');
+    if (col.monthKey !== prevMonthKey) {
+      th.classList.add('day-hdr-month');
+      if (i > 0) th.classList.add('day-hdr-month-boundary');
+      var abbr = document.createElement('span');
+      abbr.className = 'day-hdr-month-label';
+      abbr.textContent = MONTH_ABBR[col.monthIndex];
+      th.appendChild(abbr);
+      prevMonthKey = col.monthKey;
+    }
+    th.appendChild(document.createTextNode(String(col.day).padStart(2, '0')));
     tr.appendChild(th);
   }
 }
 
-function appendDayCell(tr, row, d, year, monthIndex) {
+function appendDayCell(tr, profile, row, column, monthBoundary) {
   var td = document.createElement('td');
-  td.className = 'day-pad' + (isToday(year, monthIndex, d) ? ' today-col' : '');
-  var v = dayValueInMap(row.days, d);
+  td.className = 'day-pad' + (isToday(column.year, column.monthIndex, column.day) ? ' today-col' : '');
+  if (monthBoundary) td.classList.add('day-pad-month-boundary');
+  var v = cellValueAtColumn(profile, row.rowKey, column);
   if (!(v > 0)) {
     tr.appendChild(td);
     return;
   }
   td.classList.add('indicated');
-  if (row.notAdmin && (row.notAdmin[d] || row.notAdmin[String(d)])) {
+  if (notAdminAtColumn(profile, row.rowKey, column)) {
     td.classList.add('not-admin');
   }
   if (v > 1) {
@@ -520,8 +757,15 @@ function appendDayCell(tr, row, d, year, monthIndex) {
     td.appendChild(span);
   }
   td.dataset.rowKey = row.rowKey;
-  td.dataset.day = String(d);
-  td.title = 'Día ' + d + ' — clic para marcar no administrado';
+  td.dataset.year = String(column.year);
+  td.dataset.month = String(column.monthIndex);
+  td.dataset.day = String(column.day);
+  td.title =
+    'Día ' +
+    column.day +
+    ' ' +
+    MONTH_ABBR[column.monthIndex] +
+    ' — clic para marcar no administrado';
   tr.appendChild(td);
 }
 
@@ -533,55 +777,66 @@ function wireGridDayClicks(root) {
     if (!dayCell || !root.contains(dayCell)) return;
     e.preventDefault();
     e.stopPropagation();
-    onGridDayClick(dayCell.dataset.rowKey, parseInt(dayCell.dataset.day, 10));
+    onGridDayClick(
+      dayCell.dataset.rowKey,
+      parseInt(dayCell.dataset.year, 10),
+      parseInt(dayCell.dataset.month, 10),
+      parseInt(dayCell.dataset.day, 10)
+    );
   });
 }
 
 function refreshOpenMedPharmGrids() {
   var pid = rt.getActiveId();
   if (!pid) return;
-  var month = getViewMonth(pid);
-  if (!month) return;
+  var profile = getProfile(pid) || { months: {} };
+  var window = getViewWindow(pid);
+  if (!window.columns.length) return;
   var fullEl = document.getElementById('med-pharm-modal-full');
   if (fullEl && fullEl.classList.contains('open')) {
     var fullBody = document.getElementById('med-pharm-modal-full-body');
-    mountSomeGrid(month, displayRows(month), fullBody);
+    mountSomeGrid(window, displayRowsForWindow(profile, window), profile, fullBody);
   }
   var oneEl = document.getElementById('med-pharm-modal-one');
-  if (oneEl && oneEl.classList.contains('open') && openRowKey) {
-    var row = month.rows.find(function (r) {
-      return r.rowKey === openRowKey;
-    });
-    if (row) {
+  if (oneEl && oneEl.classList.contains('open') && openMedGroupKey) {
+    var unified = unifyRowsForWindow(profile, window.columns);
+    var variantRows = rowsForMedGroup(unified, openMedGroupKey);
+    if (variantRows.length) {
       var oneBody = document.getElementById('med-pharm-modal-one-body');
       var sub = document.getElementById('med-pharm-modal-one-sub');
-      mountSomeGrid(month, [row], oneBody);
+      mountSomeGrid(window, variantRows, profile, oneBody);
       if (sub) {
-        var stats = adherenceStats(row.days, row.notAdmin);
-        var parts = [monthLabel(viewYear, viewMonthIndex)];
-        if (row.dosis) parts.push(row.dosis);
-        parts.push(formatFreqShort(row.freq) + ' · ' + formatViaShort(row.via));
-        parts.push(stats.effective + ' d efectivos');
-        sub.textContent = parts.join(' · ');
+        sub.textContent = buildMedGroupModalSubtitle(profile, window, variantRows);
       }
     }
   }
 }
 
-function mountSomeGrid(month, rows, container) {
+function mountSomeGrid(window, rows, profile, container) {
   if (!container) return;
   container.innerHTML = '';
   var wrap = document.createElement('div');
   wrap.className = 'med-pharm-grid-scope some-grid-wrap med-pharm-scroll';
-  wrap.appendChild(buildSomeGridTable(month, rows));
+  wrap.appendChild(buildSomeGridTable(window, rows, profile));
   container.appendChild(wrap);
   wireGridDayClicks(wrap);
   wireMedPharmAdhHoverPanels(wrap);
 }
 
-function buildSomeGridTable(month, rows) {
-  var total = month.daysInMonth;
-  var splitAt = splitMonthAt(total);
+function appendDayCellsForSlice(tr, profile, row, columns, from, to) {
+  var prevMonthKey = from > 0 ? columns[from - 1].monthKey : '';
+  for (var i = from; i < to; i += 1) {
+    var col = columns[i];
+    var boundary = col.monthKey !== prevMonthKey && i > 0;
+    appendDayCell(tr, profile, row, col, boundary);
+    prevMonthKey = col.monthKey;
+  }
+}
+
+function buildSomeGridTable(window, rows, profile) {
+  var columns = window.columns;
+  var total = columns.length;
+  var splitAt = window.splitAt;
   var table = document.createElement('table');
   table.className = 'some-grid-unified';
 
@@ -608,14 +863,14 @@ function buildSomeGridTable(month, rows) {
     th.textContent = label;
     hdr1.appendChild(th);
   });
-  appendDayHeader(hdr1, 1, Math.min(splitAt, total), month.year, month.monthIndex);
+  appendDayHeader(hdr1, columns, 0, Math.min(splitAt, total));
   padDayCells(hdr1, hdr1.querySelectorAll('th.day-hdr').length, splitAt, 'th', 'day-hdr day-hdr-empty');
   thead.appendChild(hdr1);
 
   var hdr2 = document.createElement('tr');
   hdr2.className = 'hdr-row-2';
   if (total > splitAt) {
-    appendDayHeader(hdr2, splitAt + 1, total, month.year, month.monthIndex);
+    appendDayHeader(hdr2, columns, splitAt, total);
   }
   padDayCells(hdr2, hdr2.querySelectorAll('th.day-hdr').length, splitAt, 'th', 'day-hdr day-hdr-empty');
   thead.appendChild(hdr2);
@@ -623,7 +878,7 @@ function buildSomeGridTable(month, rows) {
 
   var tbody = document.createElement('tbody');
   rows.forEach(function (row, rowIndex) {
-    var stats = adherenceStats(row.days, row.notAdmin);
+    var stats = adherenceStatsForWindow(profile, row.rowKey, columns);
     var missCls = stats.missed > 0 ? ' has-misses' : '';
     var blockStartCls = rowIndex > 0 ? ' med-row-block-start' : '';
     var blockToneCls = rowIndex % 2 === 1 ? ' med-block-b' : ' med-block-a';
@@ -633,7 +888,7 @@ function buildSomeGridTable(month, rows) {
     var medTd = document.createElement('td');
     medTd.rowSpan = 2;
     medTd.className = 'col-med';
-    medTd.innerHTML = buildMedCellInner(row, stats, total);
+    medTd.innerHTML = buildMedCellInner(row, stats, columns, profile, window.label);
     tr1.appendChild(medTd);
 
     var dosisTd = document.createElement('td');
@@ -654,20 +909,14 @@ function buildSomeGridTable(month, rows) {
     viaTd.textContent = formatViaShort(row.via);
     tr1.appendChild(viaTd);
 
-    appendDayCell(tr1, row, 1, month.year, month.monthIndex);
-    for (var d = 2; d <= Math.min(splitAt, total); d += 1) {
-      appendDayCell(tr1, row, d, month.year, month.monthIndex);
-    }
+    appendDayCellsForSlice(tr1, profile, row, columns, 0, Math.min(splitAt, total));
     padDayCells(tr1, tr1.querySelectorAll('td.day-pad').length, splitAt, 'td', 'day-pad day-pad-empty');
     tbody.appendChild(tr1);
 
     var tr2 = document.createElement('tr');
     tr2.className = 'day-band med-row-block-end' + missCls + blockToneCls;
     if (total > splitAt) {
-      appendDayCell(tr2, row, splitAt + 1, month.year, month.monthIndex);
-      for (var d2 = splitAt + 2; d2 <= total; d2 += 1) {
-        appendDayCell(tr2, row, d2, month.year, month.monthIndex);
-      }
+      appendDayCellsForSlice(tr2, profile, row, columns, splitAt, total);
     }
     padDayCells(tr2, tr2.querySelectorAll('td.day-pad').length, splitAt, 'td', 'day-pad day-pad-empty');
     tbody.appendChild(tr2);
@@ -688,7 +937,7 @@ function closeModals() {
     }
   });
   document.body.classList.remove('rpc-med-pharm-modal-open');
-  openRowKey = null;
+  openMedGroupKey = null;
 }
 
 function openMedPharmModal(id) {
@@ -757,16 +1006,13 @@ export function openMedPharmPasteModal() {
   }
 }
 
-function onGridDayClick(rowKey, day) {
+function onGridDayClick(rowKey, year, monthIndex, day) {
   var pid = rt.getActiveId();
   if (!pid) return;
-  var month = getViewMonth(pid);
-  if (!month) return;
-  var row = month.rows.find(function (r) {
-    return r.rowKey === rowKey;
-  });
-  if (!row) return;
-  row.notAdmin = toggleNotAdmin(row.days, row.notAdmin, day);
+  var col = makeColumn(year, monthIndex, day);
+  var profile = getProfile(pid) || { months: {} };
+  profile = toggleNotAdminAtColumn(profile, rowKey, col);
+  medPharmProfileByPatient[pid] = profile;
   saveState();
   refreshOpenMedPharmGrids();
   renderMedPharmProfilePanel();
@@ -811,16 +1057,20 @@ function wireUiOnce() {
   }
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-med-pharm-close]')) return;
-    var hideBtn = e.target.closest('[data-med-pharm-hide]');
-    if (hideBtn && hideBtn.dataset.medPharmHide) {
+    var hideBtn = e.target.closest('[data-med-pharm-hide-group]');
+    if (hideBtn && hideBtn.dataset.medPharmHideGroup) {
       var pidHide = rt.getActiveId();
-      if (pidHide) setMedPharmRowHidden(pidHide, hideBtn.dataset.medPharmHide, true);
+      if (pidHide) {
+        setMedPharmMedGroupHidden(pidHide, hideBtn.dataset.medPharmHideGroup.split('\t'), true);
+      }
       return;
     }
-    var unhideBtn = e.target.closest('[data-med-pharm-unhide]');
-    if (unhideBtn && unhideBtn.dataset.medPharmUnhide) {
+    var unhideBtn = e.target.closest('[data-med-pharm-unhide-group]');
+    if (unhideBtn && unhideBtn.dataset.medPharmUnhideGroup) {
       var pidShow = rt.getActiveId();
-      if (pidShow) setMedPharmRowHidden(pidShow, unhideBtn.dataset.medPharmUnhide, false);
+      if (pidShow) {
+        setMedPharmMedGroupHidden(pidShow, unhideBtn.dataset.medPharmUnhideGroup.split('\t'), false);
+      }
       return;
     }
   });
@@ -857,7 +1107,9 @@ export function renderMedPharmProfilePanel() {
     return;
   }
   if (hint) hint.style.display = 'none';
-  if (label) label.textContent = monthLabel(viewYear, viewMonthIndex);
+  var profile = getProfile(pid) || { months: {} };
+  var window = getViewWindow(pid);
+  if (label) label.textContent = window.label;
   var lastPasteEl = document.getElementById('med-pharm-last-paste');
   var month = reclassifyMonthIfLegacy(pid, getViewMonth(pid));
   if (lastPasteEl) {
@@ -876,21 +1128,23 @@ export function renderMedPharmProfilePanel() {
       lastPasteEl.hidden = true;
     }
   }
-  var rows = displayRows(month);
-  var hiddenCount = countHiddenInCategoryFilter(month);
+  var unifiedRows = unifyRowsForWindow(profile, window.columns);
+  var allGroups = groupUnifiedRowsByMed(unifiedRows, profile, window.columns);
+  var groups = displayGroupsForWindow(profile, window);
+  var hiddenCount = countHiddenGroups(allGroups.filter(groupMatchesCategoryFilter));
   var filtro = document.getElementById('med-pharm-filtro');
   renderFilterSelect(filtro);
   updateMedPharmHiddenToolbar(hiddenCount);
   var card = document.querySelector('.med-pharm-profile-card');
   var listHead = document.querySelector('.med-pharm-list-head');
-  if (!month || !month.rows.length) {
+  if (!window.columns.length) {
     if (card) card.classList.remove('med-pharm-has-grid');
     if (listHead) listHead.style.display = '';
     list.className = 'med-pharm-list-body';
     list.innerHTML =
       '<div class="med-pharm-empty">' +
       '<p class="med-pharm-empty-title">Sin datos para ' +
-      esc(monthLabel(viewYear, viewMonthIndex)) +
+      esc(window.label) +
       '</p>' +
       '<p class="med-pharm-empty-lead">Importa la matriz SOME del hospital o procesa <strong>Receta</strong> en la pestaña Manejo actual.</p>' +
       '<button type="button" class="btn-generate" data-med-pharm-open-paste>Importar mes SOME</button>' +
@@ -898,7 +1152,7 @@ export function renderMedPharmProfilePanel() {
     list.querySelector('[data-med-pharm-open-paste]').addEventListener('click', openMedPharmPasteModal);
     return;
   }
-  if (!rows.length) {
+  if (!groups.length) {
     if (card) card.classList.remove('med-pharm-has-grid');
     if (listHead) listHead.style.display = hiddenCount > 0 && showHiddenMedRows ? '' : 'none';
     list.className = 'med-pharm-list-body';
@@ -916,7 +1170,24 @@ export function renderMedPharmProfilePanel() {
   if (card) card.classList.remove('med-pharm-has-grid');
   if (listHead) listHead.style.display = '';
   list.className = 'med-pharm-list-body';
-  renderMedPharmSummaryList(list, rows, month);
+  renderMedPharmSummaryList(list, groups, window, profile);
+}
+
+function buildMedGroupModalSubtitle(profile, window, variantRows) {
+  var rowKeys = variantRows.map(function (r) {
+    return r.rowKey;
+  });
+  var stats = adherenceStatsForRowKeys(profile, rowKeys, window.columns);
+  var parts = [window.label];
+  if (variantRows.length > 1) {
+    parts.push(variantRows.length + ' regímenes (dosis distintas)');
+  } else {
+    var row = variantRows[0];
+    if (row.dosis) parts.push(row.dosis);
+    parts.push(formatFreqShort(row.freq) + ' · ' + formatViaShort(row.via));
+  }
+  parts.push(stats.effective + ' d efectivos');
+  return parts.join(' · ');
 }
 
 function updateMedPharmHiddenToolbar(hiddenCount) {
@@ -931,77 +1202,92 @@ function updateMedPharmHiddenToolbar(hiddenCount) {
   }
 }
 
-function renderMedPharmSummaryList(listEl, rows, month) {
-  var daysInMonth =
-    month && month.daysInMonth
-      ? month.daysInMonth
-      : new Date(viewYear, viewMonthIndex + 1, 0).getDate();
+function renderMedPharmSummaryList(listEl, groups, window, profile) {
+  var columns = window.columns;
+  var rowKeysAttr = function (group) {
+    return group.rowKeys.join('\t');
+  };
   listEl.innerHTML = '';
-  rows.forEach(function (row) {
-    var stats = adherenceStats(row.days, row.notAdmin);
+  groups.forEach(function (group) {
+    var current = group.currentVariant;
+    var stats = adherenceStatsForRowKeys(profile, group.rowKeys, columns);
     var missCls = stats.missed > 0 ? ' has-misses' : '';
-    var isHidden = isMedPharmRowHidden(row);
+    var isHidden = isMedPharmGroupHidden(group);
+    var multiRegimen = group.variants.length > 1;
     var wrap = document.createElement('div');
     wrap.className = 'med-pharm-row' + (isHidden ? ' med-pharm-row--hidden' : '');
     var summary = document.createElement('div');
     summary.className = 'med-pharm-row-summary' + missCls;
 
+    summary.title = medGroupListTooltip(group);
+
     var main = document.createElement('div');
-    main.className = 'med-pharm-main';
-    var text = document.createElement('div');
-    text.className = 'med-pharm-text';
+    main.className = 'med-pharm-main med-pharm-main--compact';
+    var nameRow = document.createElement('div');
+    nameRow.className = 'med-pharm-name-row';
     var nameEl = document.createElement('div');
     nameEl.className = 'med-pharm-name';
-    nameEl.textContent = row.med || '';
-    text.appendChild(nameEl);
-    var adhEl = document.createElement('div');
-    adhEl.className = 'med-cell-adh';
-    adhEl.innerHTML = buildAdhTriggerHtml(row, stats, daysInMonth);
-    text.appendChild(adhEl);
-    var dosisEl = document.createElement('div');
-    dosisEl.className = 'med-pharm-dosis-line';
-    dosisEl.textContent = row.dosis || '';
-    text.appendChild(dosisEl);
+    nameEl.textContent = group.med || '';
+    nameRow.appendChild(nameEl);
     var catEl = document.createElement('span');
     catEl.className = 'med-pharm-cat-badge';
-    catEl.textContent = rowSomePharmCategory(row);
-    text.appendChild(catEl);
-    main.appendChild(text);
+    catEl.textContent = rowSomePharmCategory(current);
+    nameRow.appendChild(catEl);
+    if (multiRegimen) {
+      var regEl = document.createElement('span');
+      regEl.className = 'med-pharm-regimen-badge';
+      regEl.textContent = '×' + group.variants.length;
+      regEl.title = group.variants.length + ' regímenes — ver en Días';
+      nameRow.appendChild(regEl);
+    }
+    var adhEl = document.createElement('div');
+    adhEl.className = 'med-cell-adh';
+    adhEl.innerHTML = buildAdhTriggerHtmlForGroup(group, stats, columns, profile, window.label);
+    nameRow.appendChild(adhEl);
+    main.appendChild(nameRow);
+    summary.appendChild(main);
+
     var actions = document.createElement('div');
     actions.className = 'med-pharm-row-actions';
     var btnDays = document.createElement('button');
     btnDays.type = 'button';
     btnDays.className = 'med-pharm-btn-dias';
     btnDays.textContent = 'Días';
+    btnDays.title = multiRegimen
+      ? 'Ver calendario con todas las dosis de este medicamento'
+      : 'Ver calendario del medicamento';
     btnDays.addEventListener('click', function (e) {
       e.stopPropagation();
-      openMedPharmRowModal(row.rowKey);
+      openMedPharmMedGroupModal(group.medGroupKey);
     });
     actions.appendChild(btnDays);
     var btnVis = document.createElement('button');
     btnVis.type = 'button';
     btnVis.className = 'med-pharm-btn-visibility';
     if (isHidden) {
-      btnVis.textContent = 'Mostrar';
+      btnVis.textContent = '↩';
+      btnVis.setAttribute('aria-label', 'Mostrar en la lista');
       btnVis.title = 'Volver a mostrar en la lista y calendario';
-      btnVis.dataset.medPharmUnhide = row.rowKey;
+      btnVis.dataset.medPharmUnhideGroup = rowKeysAttr(group);
     } else {
-      btnVis.textContent = 'Ocultar';
+      btnVis.textContent = '×';
+      btnVis.setAttribute('aria-label', 'Ocultar de la lista');
       btnVis.title = 'Ocultar de la vista (se conserva en el mes importado)';
-      btnVis.dataset.medPharmHide = row.rowKey;
+      btnVis.dataset.medPharmHideGroup = rowKeysAttr(group);
+      btnVis.classList.add('med-pharm-btn-visibility--icon');
     }
     actions.appendChild(btnVis);
-    main.appendChild(actions);
-    summary.appendChild(main);
+    summary.appendChild(actions);
 
     var freqEl = document.createElement('span');
     freqEl.className = 'med-pharm-freq-cell';
-    freqEl.textContent = formatFreqShort(row.freq);
+    freqEl.textContent = formatFreqShort(current.freq);
     summary.appendChild(freqEl);
 
     var viaEl = document.createElement('span');
     viaEl.className = 'med-pharm-via-cell';
-    viaEl.textContent = formatViaShort(row.via);
+    viaEl.textContent = formatViaListAbbrev(current.via);
+    viaEl.title = formatViaShort(current.via);
     summary.appendChild(viaEl);
 
     wrap.appendChild(summary);
@@ -1010,42 +1296,42 @@ function renderMedPharmSummaryList(listEl, rows, month) {
   wireMedPharmAdhHoverPanels(listEl);
 }
 
-export function openMedPharmRowModal(rowKey) {
+export function openMedPharmMedGroupModal(medGroupKey) {
   var pid = rt.getActiveId();
-  var month = pid ? getViewMonth(pid) : null;
-  if (!month) return;
-  var row = month.rows.find(function (r) {
-    return r.rowKey === rowKey;
-  });
-  if (!row) return;
+  if (!pid) return;
+  var profile = getProfile(pid) || { months: {} };
+  var window = getViewWindow(pid);
+  if (!window.columns.length) return;
+  var unified = unifyRowsForWindow(profile, window.columns);
+  var variantRows = rowsForMedGroup(unified, medGroupKey);
+  if (!variantRows.length) return;
   var body = document.getElementById('med-pharm-modal-one-body');
   var title = document.getElementById('med-pharm-modal-one-title');
   var sub = document.getElementById('med-pharm-modal-one-sub');
   if (!body) return;
-  if (title) title.textContent = row.med || 'Medicamento';
-  if (sub) {
-    var stats = adherenceStats(row.days, row.notAdmin);
-    var parts = [monthLabel(viewYear, viewMonthIndex)];
-    if (row.dosis) parts.push(row.dosis);
-    parts.push(formatFreqShort(row.freq) + ' · ' + formatViaShort(row.via));
-    parts.push(stats.effective + ' d efectivos');
-    sub.textContent = parts.join(' · ');
-  }
-  mountSomeGrid(month, [row], body);
+  if (title) title.textContent = variantRows[0].med || 'Medicamento';
+  if (sub) sub.textContent = buildMedGroupModalSubtitle(profile, window, variantRows);
+  mountSomeGrid(window, variantRows, profile, body);
   openMedPharmModal('med-pharm-modal-one');
-  openRowKey = rowKey;
+  openMedGroupKey = medGroupKey;
 }
 
 export function openMedPharmFullModal() {
   var pid = rt.getActiveId();
-  var month = pid ? getViewMonth(pid) : null;
-  if (!month) {
+  if (!pid) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var profile = getProfile(pid) || { months: {} };
+  var window = getViewWindow(pid);
+  if (!window.columns.length) {
     rt.showToast('No hay datos del mes para mostrar', 'error');
     return;
   }
-  var rows = displayRows(month);
+  var unified = unifyRowsForWindow(profile, window.columns);
+  var rows = displayRowsForWindow(profile, window);
   if (!rows.length) {
-    var hiddenN = countHiddenInCategoryFilter(month);
+    var hiddenN = countHiddenInCategoryFilter(unified);
     rt.showToast(
       hiddenN > 0
         ? 'Solo hay medicamentos ocultos. Activa «Mostrar ocultos» para ver el calendario.'
@@ -1059,7 +1345,7 @@ export function openMedPharmFullModal() {
   var sub = document.getElementById('med-pharm-modal-full-sub');
   if (!body) return;
   if (title) {
-    title.textContent = 'Calendario farmacoterapéutico — ' + monthLabel(viewYear, viewMonthIndex);
+    title.textContent = 'Calendario farmacoterapéutico — ' + window.label;
   }
   if (sub) {
     var filtLabel = listFilter === 'TODOS' ? 'Todos los medicamentos' : 'Filtro: ' + listFilter;
@@ -1067,7 +1353,7 @@ export function openMedPharmFullModal() {
     sub.hidden = false;
   }
   openMedPharmModal('med-pharm-modal-full');
-  mountSomeGrid(month, rows, body);
+  mountSomeGrid(window, rows, profile, body);
 }
 
 export function importMedPharmMonthPaste() {

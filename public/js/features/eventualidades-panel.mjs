@@ -1,4 +1,5 @@
 import { patients, saveState } from '../app-state.mjs';
+import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { createMutationBuilder } from '../versioned-mutation.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import {
@@ -391,7 +392,8 @@ export async function savePatientEventualidad(patient, text, atIso) {
 async function persistEventualidades(patient, store) {
   patient.eventualidades = store;
   touchPatientLanUpdatedAt(patient.id);
-  saveState({ immediate: true });
+  await saveState({ immediate: true });
+  touchClinicalSessionActivity({ force: true });
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
   });
@@ -595,7 +597,8 @@ export async function applyDriveImportEventualidades(patient, incoming) {
   }
   if (!toAdd.length) return { ok: true, added: 0, skipped };
   patient.eventualidades = store;
-  saveState({ immediate: true });
+  await saveState({ immediate: true });
+  touchClinicalSessionActivity({ force: true });
 
   if (!isLanSessionConfiguredForRest()) {
     return { ok: true, added: toAdd.length, skipped };

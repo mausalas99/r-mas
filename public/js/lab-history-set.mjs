@@ -77,7 +77,7 @@ export function isLikelyLabDataLine(line) {
   if (!t) return false;
   if (/^\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?$/.test(t)) return false;
   if (t.indexOf('\t') !== -1) return true;
-  if (/^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|CULTIVO)\b/i.test(t)) return true;
+  if (/^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|CULTIVO|SEROL|HECES)\b/i.test(t)) return true;
   return /\d/.test(t) && /[A-Za-z]/.test(t);
 }
 
@@ -103,7 +103,7 @@ export function buildLabSetDateLineForNota(set) {
 }
 
 export function isLabSectionHeaderLine(s) {
-  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i.test(String(s).trim());
+  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES)\b/i.test(String(s).trim());
 }
 
 export function isCultivoBlockStartLine(s) {
@@ -181,6 +181,50 @@ export function formatLabHistoryListMeta(set, inferFechaLabSetFromId) {
   }
   var n = set.resLabs && set.resLabs.length ? set.resLabs.length : 0;
   return fe + ' · ' + n + ' bloque' + (n === 1 ? '' : 's');
+}
+
+function labHistoryTipoLabel(resLabs, primaryTipoFn) {
+  var tipoFn =
+    typeof primaryTipoFn === 'function'
+      ? primaryTipoFn
+      : function () {
+          return 'labs';
+        };
+  var tipo = tipoFn(resLabs || []);
+  if (tipo === 'cultivo') return 'Cultivo';
+  if (tipo === 'mixed') return 'Mixto';
+  return 'Labs';
+}
+
+/** Etiqueta compacta para el selector de fechas en Laboratorio → Resultados. */
+export function formatLabHistoryDateSelectLabel(set, inferFechaLabSetFromId, primaryTipoFn) {
+  if (!set) return '—';
+  var infer =
+    typeof inferFechaLabSetFromId === 'function'
+      ? inferFechaLabSetFromId
+      : function () {
+          return '';
+        };
+  var rawFe =
+    set.fecha === 'Anterior'
+      ? ''
+      : normalizeFechaLabHistory(set.fecha) ||
+        String(set.fecha || '').trim() ||
+        infer(set) ||
+        '';
+  var fe;
+  if (set.id === 'migrated-anterior') {
+    fe = rawFe ? 'Anterior · ' + rawFe : 'Anterior';
+  } else {
+    fe = rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
+  }
+  var tipoLabel = labHistoryTipoLabel(set.resLabs, primaryTipoFn);
+  var hora = normalizeHoraLabHistory(set.hora);
+  var horaDisp = hora ? String(hora).trim().slice(0, 5) : '';
+  if (horaDisp && fe !== '—' && fe.indexOf('Anterior') !== 0) {
+    return fe + ' ' + horaDisp + ' · ' + tipoLabel;
+  }
+  return fe + ' · ' + tipoLabel;
 }
 
 export function labSetIsFromSome(set) {

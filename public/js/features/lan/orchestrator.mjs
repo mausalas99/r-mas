@@ -45,6 +45,7 @@ import {
 } from "../../clinical-ops-lan.mjs";
 import { mergePatientMonitoreoFromImported } from "../estado-actual-data.mjs";
 import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
+import { mergePatientRegistrationMeta } from "../../patient-registration-meta.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
 import {
   applyDeltaPathValues,
@@ -753,9 +754,21 @@ export async function hydrateLocalPatientMonitoreoFromHost(patientId) {
   if (hostRow.cuarto) local.cuarto = hostRow.cuarto;
   if (hostRow.cama) local.cama = hostRow.cama;
   mergeCensoPatientFields(local, hostRow);
+  mergePatientRegistrationMeta(local, hostRow);
   const changed = before !== JSON.stringify(local.monitoreo || null);
   if (changed) await saveState({ immediate: true });
   return { ok: true, changed };
+}
+
+/** Host Mac: interno vitals POST → IPC → refresh guardia census (LAN mode not required). */
+export function wireInternoHostSyncBridge() {
+  if (typeof window === 'undefined' || !window.electronAPI) return;
+  if (typeof window.electronAPI.onInternoHostSync !== 'function') return;
+  if (window.__rpcInternoHostSyncWired) return;
+  window.__rpcInternoHostSyncWired = true;
+  window.electronAPI.onInternoHostSync((payload) => {
+    void handleInternoHostSyncBroadcast(payload);
+  });
 }
 
 async function handleInternoHostSyncBroadcast(detail) {
@@ -1112,6 +1125,9 @@ function applyLanPatientEntryToExisting(existing, entry, opts) {
   var censoBefore = JSON.stringify(existing);
   mergeCensoPatientFields(existing, p);
   if (JSON.stringify(existing) !== censoBefore) changed = true;
+  const regBefore = existing.registeredByUserId;
+  mergePatientRegistrationMeta(existing, p);
+  if (existing.registeredByUserId !== regBefore) changed = true;
   if (p.fromLab && !existing.fromLab) {
     existing.fromLab = true;
     changed = true;
@@ -1236,6 +1252,7 @@ function applyLanPatientEntries(entries, opts) {
         };
         mergePatientMonitoreoFromImported(newPat, entry.patient);
         mergeCensoPatientFields(newPat, entry.patient);
+        mergePatientRegistrationMeta(newPat, entry.patient);
         if (entry.patient.eventualidades && typeof entry.patient.eventualidades === 'object') {
           newPat.eventualidades = entry.patient.eventualidades;
         }
@@ -1803,17 +1820,7 @@ export function wireLanSyncBridges() {
     }
     void handleSyncConflict(payload);
   });
-  if (
-    typeof window !== 'undefined' &&
-    window.electronAPI &&
-    typeof window.electronAPI.onInternoHostSync === 'function' &&
-    !window.__rpcInternoHostSyncWired
-  ) {
-    window.__rpcInternoHostSyncWired = true;
-    window.electronAPI.onInternoHostSync((payload) => {
-      void handleInternoHostSyncBroadcast(payload);
-    });
-  }
+  wireInternoHostSyncBridge();
 
   lanClient.addEventListener('lan-patch', function (ev) {
     const data = ev.detail;
@@ -1901,7 +1908,10 @@ export function ensureLanSyncRuntimeStarted() {
 }
 
 if (typeof document !== 'undefined') {
-  queueMicrotask(() => ensureLanSyncRuntimeStarted());
+  queueMicrotask(() => {
+    wireInternoHostSyncBridge();
+    ensureLanSyncRuntimeStarted();
+  });
 }
 
 export function buildEstadoActualCommand(opts) {
@@ -1955,6 +1965,11 @@ export function registerLanSaveHooks(deps) {
     },
     after() {
       post();
+      void import('../../clinical-access-runtime.mjs').then((mod) => {
+        if (typeof mod.touchClinicalSessionActivity === 'function') {
+          mod.touchClinicalSessionActivity({ force: true });
+        }
+      });
     },
   });
 }

@@ -196,3 +196,44 @@ test('buildCensusPayload labs con resultados completos del último set', () => {
   assert.match(joined, /Glu 145/);
   assert.match(payload.rows[0].labs, /Hto 18/);
 });
+
+test('buildCensusPayload pendientes — max 3 alta, sin mezclar media', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [{ id: '1', nombre: 'T', archived: false, diagnosticosList: ['X'] }],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {},
+    todosByPatient: {
+      1: [
+        { text: 'Alta A', completed: false, priority: 'alta' },
+        { text: 'Alta B', completed: false, priority: 'alta' },
+        { text: 'Alta C', completed: false, priority: 'alta' },
+        { text: 'Alta D', completed: false, priority: 'alta' },
+        { text: 'Media X', completed: false, priority: 'media' },
+      ],
+    },
+  });
+  var pend = (payload.rows[0].sections || []).find((s) => s.label === 'Pendientes');
+  assert.ok(pend);
+  assert.equal(pend.lines.length, 3);
+  assert.deepEqual(pend.lines, ['Alta A', 'Alta B', 'Alta C']);
+});
+
+test('buildCensusPayload pendientes — sin alta usa media', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [{ id: '1', nombre: 'T', archived: false, diagnosticosList: ['X'] }],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {},
+    todosByPatient: {
+      1: [
+        { text: 'Media 1', completed: false, priority: 'media' },
+        { text: 'Baja 1', completed: false, priority: 'baja' },
+      ],
+    },
+  });
+  var pend = (payload.rows[0].sections || []).find((s) => s.label === 'Pendientes');
+  assert.deepEqual(pend.lines, ['Media 1']);
+});

@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildMedPharmRowKey,
+  buildMedPharmMedGroupKey,
+  extractMedBaseName,
   adherenceStats,
   toggleNotAdmin,
   splitMonthAt,
@@ -39,6 +41,28 @@ describe('buildMedPharmRowKey', () => {
       via: 'VIA INTRAVENOSA',
     });
     assert.equal(a, b);
+  });
+});
+
+describe('extractMedBaseName', () => {
+  it('agrupa presentaciones del mismo fármaco', () => {
+    const a = extractMedBaseName('PARACETAMOL 1 G SOL INY 100 ML (*)');
+    const b = extractMedBaseName('PARACETAMOL 500 MG SOL INY 50 ML (*)');
+    assert.equal(a, 'PARACETAMOL');
+    assert.equal(b, 'PARACETAMOL');
+    assert.equal(buildMedPharmMedGroupKey(a), buildMedPharmMedGroupKey(b));
+  });
+
+  it('separa forma inyectable vs tableta del mismo principio', () => {
+    const a = extractMedBaseName('VORICONAZOL 200 MG SOL INY 20 ML');
+    const b = extractMedBaseName('VORICONAZOL 200 MG TABLETA');
+    assert.equal(a, 'VORICONAZOL');
+    assert.equal(b, 'VORICONAZOL');
+  });
+
+  it('conserva nombre compuesto antes de la dosis', () => {
+    assert.equal(extractMedBaseName('ACIDO ACETILSALICILICO 100 MG TABLETA'), 'ACIDO ACETILSALICILICO');
+    assert.equal(extractMedBaseName('LIDOCAINA 10 % SPRAY 115 ML'), 'LIDOCAINA');
   });
 });
 

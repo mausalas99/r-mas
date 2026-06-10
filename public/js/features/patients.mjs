@@ -18,6 +18,7 @@ import { stashMedPharmPasteForPatient } from './med-pharm-profile-panel.mjs';
 import { stashVpoForPatient } from './vpo.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
+import { stampPatientRegistrationMeta } from '../patient-registration-meta.mjs';
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
 import {
   isModeSala,
@@ -55,6 +56,8 @@ import {
   writeElevatedTeamFilterPreference,
   isTeamIdInCensusCatalog,
   CENSUS_TEAM_FILTER_UNASSIGNED,
+  filterTeamsForCensusSala,
+  reconcileCensusTeamFilterForSala,
 } from './clinical-census-filters-ui.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
@@ -266,21 +269,19 @@ function syncClinicalCensusFiltersBar() {
   }
   if (teamSel) {
     const teams = clinicalSessionContext.teams || [];
+    const salaFilter = String(elevatedPatientFilters.sala || '__all__');
+    const teamsForSala = filterTeamsForCensusSala(teams, salaFilter);
     const priorTeamId = String(elevatedPatientFilters.teamId ?? '');
-    let teamFilterId = priorTeamId || resolveElevatedTeamFilterId(user, teams);
-    if (
-      teamFilterId &&
-      teamFilterId !== CENSUS_TEAM_FILTER_UNASSIGNED &&
-      !isTeamIdInCensusCatalog(teamFilterId, teams)
-    ) {
-      teamFilterId = '';
-      writeElevatedTeamFilterPreference('');
+    let teamFilterId = priorTeamId || resolveElevatedTeamFilterId(user, teamsForSala);
+    teamFilterId = reconcileCensusTeamFilterForSala(teamFilterId, teamsForSala);
+    if (teamFilterId !== priorTeamId) {
+      writeElevatedTeamFilterPreference(teamFilterId);
     }
     elevatedPatientFilters.teamId = teamFilterId;
     teamSel.innerHTML =
       '<option value="">Todos los equipos</option>' +
       `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>` +
-      teams
+      teamsForSala
         .map((t) => {
           const id = String(t.team_id || '');
           const label = String(t.name || id).slice(0, 40);
@@ -1395,20 +1396,18 @@ function selectPatientCore(id) {
   if (appTab === 'med') rt.renderMedRecetaPanel();
   if (wasOnLab && patientChanged) {
     rt.limpiarReporte();
-    rt.setLabHistoryPanelCollapsed(false);
-    rt.syncLabHistoryCollapseUI();
     rt.renderLabHistoryPanel();
     if (isPaseMode()) {
       rt.syncWorkContextChrome();
     } else {
       rt.switchAppTab('lab');
-      var labHistCard = document.getElementById('lab-history-card');
-      if (labHistCard) {
+      var labOutput = document.getElementById('lab-output-section');
+      if (labOutput && labOutput.style.display !== 'none') {
         window.setTimeout(function () {
           try {
-            labHistCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            labOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           } catch (_e) {
-            labHistCard.scrollIntoView(true);
+            labOutput.scrollIntoView(true);
           }
         }, 0);
       }
@@ -1907,6 +1906,7 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     }
   }
   stampPatientClinicalSala(patient, clinicalSessionContext.user);
+  stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   notes[patient.id] = {
     fecha: fecha,
     hora: hora,

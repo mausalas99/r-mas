@@ -1,18 +1,46 @@
 /** Pure helpers for LAN host patient census rows (no transport/orchestrator imports). */
 
+/**
+ * Host row without local copy, archived, or bundle-only orphan.
+ * @param {object} row
+ * @param {object|null} local
+ * @param {string} status
+ */
+export function isInactiveHostPatientRow(row, local, status) {
+  if (status === 'ghost') return true;
+  if (row?.archived === true) return true;
+  if (local?.archived === true) return true;
+  if (row?._bundleOnly === true) return true;
+  return false;
+}
+
 /** @param {object[]} rows @param {object[]} [localPatients] */
 export function annotateLanHostPatientRows(rows, localPatients) {
   const localById = new Map();
+  const localByRegistro = new Map();
   for (const p of localPatients || []) {
-    if (p?.id) localById.set(String(p.id), p);
+    if (!p?.id) continue;
+    localById.set(String(p.id), p);
+    const reg = String(p.registro || '').trim();
+    if (reg) localByRegistro.set(reg, p);
   }
   return (rows || [])
     .map(function (row) {
-      const local = localById.get(String(row.id));
+      const id = String(row.id || '');
+      let local = localById.get(id) || null;
+      const reg = String(row.registro || '').trim();
+      if (!local && reg) {
+        const byReg = localByRegistro.get(reg);
+        if (byReg && String(byReg.id) === id) {
+          local = byReg;
+        }
+      }
+      const status = local ? 'local' : 'ghost';
       return {
         row: row,
-        local: local || null,
-        status: local ? 'local' : 'ghost',
+        local: local,
+        status: status,
+        inactive: isInactiveHostPatientRow(row, local, status),
       };
     })
     .sort(function (a, b) {

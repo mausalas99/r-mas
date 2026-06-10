@@ -24,7 +24,10 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from './clinical-username.mjs';
-import { clinicalSessionContext } from './clinical-session-context.mjs';
+import {
+  clinicalSessionContext,
+  resolveClinicalSessionUserId,
+} from './clinical-session-context.mjs';
 
 export { clinicalSessionContext };
 
@@ -36,6 +39,10 @@ let sessionLocker = null;
 let clinicalAccessBootDone = false;
 /** @type {Array<() => void>} */
 let clinicalAccessBootWaiters = [];
+let lastClinicalActivityTouchAt = 0;
+/** Throttle DB writes; clinical saves also touch via IPC save_all. */
+const CLINICAL_ACTIVITY_TOUCH_MIN_MS = 60 * 1000;
+let clinicalActivityLanPushTimer = null;
 
 /** Unblocks LAN room boot after clinical session + scope hydrate (or timeout). */
 export function markClinicalAccessBootReady() {
@@ -298,6 +305,58 @@ export async function resumeClinicalIdentityByUsername(username, settings, clien
   return { ok: true, userId: res.user.userId };
 }
 
+/**
+ * @param {string} [userId]
+ * @param {{ force?: boolean }} [opts] — force skips throttle (clinical saves)
+ */
+async function touchClinicalUserActivityRemote(userId, opts = {}) {
+  const api = electronApi();
+  const uid = String(userId || resolveClinicalSessionUserId() || '').trim();
+  if (!api || !uid || typeof api.dbClinicalUserTouch !== 'function') return false;
+  const now = Date.now();
+  if (!opts.force && now - lastClinicalActivityTouchAt < CLINICAL_ACTIVITY_TOUCH_MIN_MS) {
+    return false;
+  }
+  lastClinicalActivityTouchAt = now;
+  try {
+    const res = await api.dbClinicalUserTouch({ userId: uid });
+    if (res?.ok === false) return false;
+    scheduleClinicalActivityLanPush();
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(
+        new CustomEvent('rpc-clinical-user-activity-touched', { detail: { userId: uid } })
+      );
+    }
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
+function scheduleClinicalActivityLanPush() {
+  if (clinicalActivityLanPushTimer) return;
+  clinicalActivityLanPushTimer = setTimeout(() => {
+    clinicalActivityLanPushTimer = null;
+    void import('./features/lan-sync.mjs')
+      .then((mod) => {
+        if (typeof mod.pushClinicalOpsLanNow === 'function') {
+          return mod.pushClinicalOpsLanNow();
+        }
+      })
+      .catch(() => {});
+  }, 4000);
+}
+
+/**
+ * Record session activity after clinical edits.
+ * @param {{ force?: boolean }} [opts]
+ */
+export function touchClinicalSessionActivity(opts = {}) {
+  const userId = resolveClinicalSessionUserId();
+  if (!userId) return;
+  void touchClinicalUserActivityRemote(userId, opts);
+}
+
 /** Reload username, rank, sala, admin flag from DB into session. */
 export async function refreshClinicalUserProfile() {
   const { ensureLanProfileGateDeviceReset } = await import('./clinical-settings.mjs');
@@ -318,6 +377,7 @@ export async function refreshClinicalUserProfile() {
     persistClinicalUserBinding({
       isProgramAdmin: clinicalSessionContext.user.is_program_admin === 1,
     });
+    void touchClinicalUserActivityRemote(userId);
   } catch (_e) {}
   migrateLocalPatientsClinicalSala();
 }

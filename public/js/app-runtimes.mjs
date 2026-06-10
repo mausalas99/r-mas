@@ -11,6 +11,7 @@ import {
   dayKeyFromLabSet,
   labSetIsFromSome,
   formatLabHistoryListMeta,
+  formatLabHistoryDateSelectLabel,
   rebuildEstudiosFromLabHistory,
   ensureParsedLabHistory,
   ensureParsedLabHistoryCached,
@@ -296,6 +297,9 @@ function installAppRuntimeContextDeps() {
     primaryTipoForLabSet,
     formatLabHistoryListMeta: function (set) {
       return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+    },
+    formatLabHistoryDateSelectLabel: function (set) {
+      return formatLabHistoryDateSelectLabel(set, inferFechaLabSetFromId, primaryTipoForLabSet);
     },
     switchAppTab,
     renderPatientList,

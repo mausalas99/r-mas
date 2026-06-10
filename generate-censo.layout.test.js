@@ -6,6 +6,8 @@ const {
   layoutRows,
   measureRowLineCount,
   pageTableMetrics,
+  wrapLabsCellLines,
+  wrapPlainCellLines,
 } = require('./generate-censo.js');
 
 function makeRow(n) {
@@ -67,4 +69,33 @@ test('labs largos aumentan altura de fila sin truncar líneas', async () => {
     return s + h;
   }, 0);
   assert.ok(used <= availH + 1);
+});
+
+test('labs anchos se envuelven sin elipsis', async () => {
+  var pdfDoc = await PDFDocument.create();
+  var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  var fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  var innerW = 90;
+  var longPanel =
+    'BH · Hb 5.8* Hto 18* Leu 4200 Neu 85% Linf 10% Plt 180000 Glu 145 Cr 1.2 BUN 45 Na 138 K 4.2 Cl 102 Ca 8.5';
+  var lines = wrapLabsCellLines(font, fontBold, longPanel, innerW, 0);
+  assert.ok(lines.length > 1);
+  lines.forEach(function (ln) {
+    assert.doesNotMatch(ln, /…$/);
+    assert.ok(fontBold.widthOfTextAtSize(ln, 7.25) <= innerW + 0.5);
+  });
+});
+
+test('pendientes largos se envuelven sin elipsis', async () => {
+  var pdfDoc = await PDFDocument.create();
+  var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  var innerW = 70;
+  var longPend =
+    'Solicitar resonancia magnética de abdomen con contraste y valoración por gastroenterología';
+  var lines = wrapPlainCellLines(font, longPend, innerW, 0, 8.25);
+  assert.ok(lines.length > 1);
+  lines.forEach(function (ln) {
+    assert.doesNotMatch(ln, /…$/);
+    assert.ok(font.widthOfTextAtSize(ln, 8.25) <= innerW + 0.5);
+  });
 });

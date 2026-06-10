@@ -65,14 +65,32 @@ function normalizeNutrientText(s) {
     .toUpperCase();
 }
 
+function parseProteinGrams(t) {
+  var unit = '(?:GRS?|GRAMOS?|G)';
+  var patterns = [
+    new RegExp('(\\d+)\\s*' + unit + '\\s*(?:DE\\s+)?PROTEINAS?\\b'),
+    new RegExp('PROTEINAS?\\s*(?:DE\\s+)?(\\d+)\\s*' + unit + '\\b'),
+    new RegExp('(\\d+)\\s*' + unit + '\\s*(?:DE\\s+)?PROT\\b'),
+  ];
+  for (var i = 0; i < patterns.length; i += 1) {
+    var m = t.match(patterns[i]);
+    if (m) return parseInt(m[1], 10);
+  }
+  return null;
+}
+
 export function extractDietNutrients(detalleRaw) {
   var t = normalizeNutrientText(trimStr(detalleRaw));
   var kcalM = t.match(/(\d+)\s*KCAL\b/);
-  var protM = t.match(/(\d+)\s*G(?:R)?\s*(?:DE\s+)?PROTEINA\b/);
   return {
     kcal: kcalM ? parseInt(kcalM[1], 10) : null,
-    proteinG: protM ? parseInt(protM[1], 10) : null,
+    proteinG: parseProteinGrams(t),
   };
+}
+
+/** Texto combinado de columnas SOME donde suelen ir kcal/proteína en filas DIETAS. */
+export function dietNutrientBlobFromCols(cols) {
+  return [cols[2], cols[4], cols[5]].map(trimStr).filter(Boolean).join(' ');
 }
 
 export function mergeDietaItems(dietas) {
@@ -118,8 +136,8 @@ function parseMedRow(cols, lineIndex, lineText) {
 }
 
 function parseDietaRow(cols, lineIndex) {
-  var detalleRaw = trimStr(cols[4]);
-  var nutrients = extractDietNutrients(detalleRaw);
+  var detalleRaw = trimStr(cols[4]) || trimStr(cols[5]);
+  var nutrients = extractDietNutrients(dietNutrientBlobFromCols(cols));
   return {
     id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
     descripcionRaw: trimStr(cols[2]),
@@ -142,10 +160,15 @@ export function parseIndicacionesPaste(text) {
   var skippedSummary = { cuidados: 0, estudios: 0, other: 0 };
   for (var i = 0; i < lines.length; i += 1) {
     var cols = lines[i].split('\t');
+    var tipoEarly = cols.length >= 2 ? trimStr(cols[1]).toUpperCase() : '';
     if (cols.length < 7) {
-      skipped += 1;
-      skippedSummary.other += 1;
-      continue;
+      if (cols.length >= 6 && (tipoEarly === 'DIETAS' || INDICACIONES_MED_CLASSES[tipoEarly])) {
+        while (cols.length < 7) cols.push('');
+      } else {
+        skipped += 1;
+        skippedSummary.other += 1;
+        continue;
+      }
     }
     var tipo = trimStr(cols[1]).toUpperCase();
     var fd = parseFechaDMYFromTimestampCell(cols[0]);
@@ -740,9 +763,57 @@ export function buildMedRecetaNameOnlyText(items) {
   return lines.join('\n');
 }
 
+/** Destinos SOAP asignables manualmente cuando la clasificación automática es «otros». */
+export const SOAP_DESTINATION_KEYS = [
+  'analgesia',
+  'antihta',
+  'diuretico',
+  'abx',
+  'vasop',
+  'nm',
+];
+
+export const SOAP_DESTINATION_LABELS = {
+  analgesia: 'Analgésicos / antieméticos',
+  antihta: 'Antihipertensivos',
+  diuretico: 'Diuréticos',
+  abx: 'Antibióticos / antifúngicos',
+  vasop: 'Vasopresores / inotrópicos',
+  nm: 'NM (insulina, tiroides, etc.)',
+};
+
 /**
- * Clasificación para campos SOAP / Estado Actual.
- * "otros" sin campo dedicado: al volcar se añade a Antibióticos para revisión manual.
+ * Categoría efectiva para volcar a SOAP: auto-clasificación o override manual en «otros».
+ * @param {{ nombreRaw?: string, soapCatOverride?: string }} item
+ * @param {(nombreRaw: string) => string} classifyFn
+ */
+export function effectiveSoapCategory(item, classifyFn) {
+  if (!item) return 'otros';
+  var auto = classifyFn(item.nombreRaw);
+  if (auto !== 'otros') return auto;
+  var ov = trimStr(item.soapCatOverride);
+  if (ov && SOAP_DESTINATION_KEYS.indexOf(ov) >= 0) return ov;
+  return 'otros';
+}
+
+/**
+ * Medicamentos «otros» marcados SOAP sin destino asignado.
+ * @param {unknown[]} items
+ * @param {Record<string, boolean>} selMap
+ * @param {(nombreRaw: string) => string} classifyFn
+ */
+export function unassignedOtrosSoapItems(items, selMap, classifyFn) {
+  var out = [];
+  var list = Array.isArray(items) ? items : [];
+  list.forEach(function (it) {
+    if (!it || !selMap[it.id] || it.suspendido) return;
+    if (effectiveSoapCategory(it, classifyFn) === 'otros') out.push(it);
+  });
+  return out;
+}
+
+/**
+ * Clasificación automática para campos SOAP / Estado Actual (sin override manual).
  */
 export function classifyMedicationSoapCategory(nombreRaw) {
   var n = normalizeNombreForSoapClassify(nombreRaw);

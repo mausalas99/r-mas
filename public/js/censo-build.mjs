@@ -9,6 +9,7 @@ import {
 } from './patient-diagnosticos.mjs';
 import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
 import { formatAccesosForCenso } from './patient-accesos.mjs';
+import { formatPendientesForCenso } from './censo-pendientes-format.mjs';
 import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
 import { formatCensoSignosIoFromPatient } from './censo-signos-format.mjs';
 import { patientBedSortKey, comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
@@ -97,13 +98,11 @@ function buildPatientSections(patient, ctx) {
     sections.push({ label: 'Cultivos', lines: cult.split(/\n\n+/).filter(Boolean) });
   }
 
-  var pend = formatPendientesCell(ctx.todosByPatient[pid] || []);
-  if (pend && pend !== '—') {
+  var pendLines = formatPendientesForCenso(ctx.todosByPatient[pid] || []);
+  if (pendLines.length) {
     sections.push({
       label: 'Pendientes',
-      lines: pend.split(/\n/).map(function (p) {
-        return p.trim();
-      }),
+      lines: pendLines,
     });
   }
 
@@ -133,19 +132,6 @@ function flattenRowForCompactPdf(sections) {
 
 function formatAccesosCell(patient) {
   return formatAccesosForCenso(patient);
-}
-
-function formatPendientesCell(todos) {
-  var open = (todos || []).filter(function (t) {
-    return t && !t.completed && String(t.text || '').trim();
-  });
-  if (!open.length) return '';
-  return open
-    .slice(0, 6)
-    .map(function (t) {
-      return String(t.text).trim();
-    })
-    .join('\n');
 }
 
 /** Quita ceros a la izquierda; cama 0 no existe (vacío). */

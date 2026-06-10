@@ -747,10 +747,39 @@ var RELEASE_NOTES_729 = [
   },
 ];
 
+var RELEASE_NOTES_730 = [
+  {
+    title: 'Perfil histórico cross-mes',
+    body:
+      'Grilla dinámica: solape automático cerca de fin de mes, filas continuas por medicamento y mes pasado acotado por <strong>fecha de ingreso</strong>.',
+  },
+  {
+    title: 'Directorio LAN con actividad',
+    body:
+      'Última actividad por usuario, filtros por sala/equipo/actividad y rangos colapsables. Botón <strong>Directorio LAN</strong> en la barra de equipos.',
+  },
+  {
+    title: 'Laboratorio — historial por fecha',
+    body:
+      'Selector <strong>Estudio</strong> (fecha + tipo) para re-procesar, re-enviar a nota o borrar. FAB <strong>Copiar</strong> solo en Lab/EA con contenido.',
+  },
+  {
+    title: 'Censo y anfitrión',
+    body:
+      'PDF: labs y pendientes con texto completo. Anfitrión: <strong>dashboard modal</strong> del censo host (fantasmas, archivados, purga).',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.3.0 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sube a <strong>v17</strong> (<code>last_activity_at</code>).',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_729;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_730;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.0': RELEASE_NOTES_730,
   '7.2.9': RELEASE_NOTES_729,
   '7.2.8': RELEASE_NOTES_728,
   '7.2.7': RELEASE_NOTES_727,
