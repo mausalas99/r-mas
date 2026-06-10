@@ -1,29 +1,33 @@
-version: 7.2.8
+version: 7.2.9
 files:
-  - url: R+-7.2.8-arm64.zip
-    sha512: u32lhOqc+HixYuew3tjxkshnFyPlCka1VlhxyBsVmZKNDt2CkGcHmP/n3i3heNsbion1I2pprRX3oKCVnLhRoQ==
-    size: 125910674
-  - url: R+-7.2.8-arm64.dmg
-    sha512: naHTlF88u4wWHiOQ7eLTi3MoNnMq3gD2a7gcHr2o9e9eAD0EZOxO0yp0s78xNKcNVkVim6JJ2l51hzWHt9m86Q==
-    size: 131102400
-  - url: R+-7.2.8-x64.zip
-    sha512: ZBicZqZDWuT6nGjS37gFiouccxarWJIyeZj4Gt9b84gAWHAXNWT6ZG0i5H9TdHh38Js4DkjWUpIyYjD4Yynmqw==
-    size: 134284777
-  - url: R+-7.2.8-x64.dmg
-    sha512: z+nGjcLe+hMbK1Mdyj84eJal+1iTYQ+a3jh+iXNB5umFjgo+dw97GeQ2LrXr/3K4MY89y9/5eloWa9LFu7ThAg==
-    size: 139533687
-path: R+-7.2.8-arm64.zip
-sha512: u32lhOqc+HixYuew3tjxkshnFyPlCka1VlhxyBsVmZKNDt2CkGcHmP/n3i3heNsbion1I2pprRX3oKCVnLhRoQ==
-releaseDate: '2026-06-10T13:58:31.000Z'
+  - url: R+-7.2.9-arm64.zip
+    sha512: oaXXuVFofPrhX0J3d8DVSO8on4eiO7V9P1qA+LzShM/0QMc0wizhZSZEtVdrwPEDMeKkCI8WvfQ1Q+Imx895PQ==
+    size: 129036024
+  - url: R+-7.2.9-arm64.dmg
+    sha512: f5SW9KOH0Nk+sjl+5AecWyNz8Ochu7fQCumawz/LO7jG7EWymDheOUDQuswmom8/gdqtJnG6OimO/SlEsN/dRg==
+    size: 134363763
+  - url: R+-7.2.9-x64.zip
+    sha512: JgyzKNSv4Kx2aqT2ErPMNys0tv9GNMlBIQIk8CV85/Xc6sj5Ut4GYd56gbpGpgFXbFey+VEgMLpWp0/jpI32Ig==
+    size: 137410092
+  - url: R+-7.2.9-x64.dmg
+    sha512: qq6XNVUwlJoostT2VTa30YMWDShZ5rNEYTqAhj2r3vFke30Ozf7uk+/pc5i4fv6O12sVY80wU+s0xrLkCuxugw==
+    size: 142801795
+path: R+-7.2.9-arm64.zip
+sha512: oaXXuVFofPrhX0J3d8DVSO8on4eiO7V9P1qA+LzShM/0QMc0wizhZSZEtVdrwPEDMeKkCI8WvfQ1Q+Imx895PQ==
+releaseDate: '2026-06-10T15:27:02.000Z'
 releaseNotes: |
-  Parche sobre 7.2.7: el interno móvil ordena por frecuencia de signos y mejora la captura de glucometrías; Estado actual registra rescates de insulina por glucometría; las Mac cliente del turno pueden copiar el enlace iPad sin ser anfitrión.
+  Parche sobre 7.2.8: la pestaña Medicamentos pasa a Manejo con parser SOME ampliado (medicamentos P2 y dietas); Estado actual recibe propuestas de dieta y un botón flotante para copiar; el censo re-selecciona paciente si el filtro lo oculta.
   
-  Interno — orden por frecuencia — La lista MIP prioriza pacientes con SV programados: q1h → q2h → q4h → por turno; dentro de la misma frecuencia, vencidos antes que al día; empate por cama. Pacientes solo con estudios al final.
+  Manejo — parser SOME ampliado — Al pegar el bloque del hospital se procesan filas MEDICAMENTOS, MEDICAMENTOS P2 y DIETAS (tabuladores). CUIDADOS y ESTUDIOS se omiten con conteo en el toast.
   
-  Interno — glucometrías — Los campos mg/dL y HH:MM en el modal de signos usan el mismo fondo oscuro que TAS, FC, etc. (ya no aparecen en blanco en iPad).
+  Manejo — dieta detectada — Las dietas parseadas se muestran en tarjeta con kcal y gramos de proteína extraídos del detalle.
   
-  Estado actual — rescate de insulina — Cada glucometría puede marcarse Alterada y capturar unidades de rescate + DXT post-rescate; la nota SOME refleja rescates aplicados o disponibles.
+  Manejo — SOAP pre-marcado — Antibióticos, antiHTA, insulinas, D50 y rescates PRN por glucometría se marcan automáticamente en la grilla SOAP.
   
-  Estado actual — gráfica de glu — Puntos fuera de rango o marcados alterados se resaltan en la serie temporal.
+  Estado actual — propuesta de dieta — En sala, al procesar Manejo la dieta va a propuesta pendiente (dieta, kcal, proteinG); confirmar o descartar en EA como los medicamentos.
   
-  LAN — enlace iPad en cliente — Una Mac unida al turno (no solo el anfitrión) puede copiar el enlace permanente para iPad; usa la URL del host remoto del ⇄.
+  Estado actual — proteína (g/día) — Nuevo campo en la sección dieta del monitoreo clínico.
+  
+  Estado actual — copiar FAB — Botón flotante (como Laboratorio) para copiar el texto de Estado actual sin bajar al pie del panel.
+  
+  Censo — paciente activo — Si el filtro de equipo/censo oculta al paciente seleccionado, R+ elige el primero visible o vacía la vista.
