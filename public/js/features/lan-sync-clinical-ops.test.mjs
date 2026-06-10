@@ -102,6 +102,13 @@ describe('lan-sync clinical ops', () => {
     assert.doesNotMatch(salaCopyBlock[0], /appendMobileSharerParamsToJoinUrl/);
   });
 
+  it('offers iPad link to LAN clients connected to the ward host', () => {
+    const canOfferBlock = lanSyncPanelSrc.match(/function canOfferMobileLanShare\(\) \{[\s\S]{0,220}\}/);
+    assert.ok(canOfferBlock);
+    assert.doesNotMatch(canOfferBlock[0], /isLanRemoteJoinMode\(\)\) return false/);
+    assert.match(lanSyncTransportSrc, /if \(isLanRemoteJoinMode\(\)\) \{[\s\S]*remoteCfg\.hostUrl/);
+  });
+
   it('does not reconnect live WS inside pushClinicalOpsLanNow', () => {
     assert.match(lanSyncPushSrc, /export function sendLiveBundleIfOpen/);
     assert.match(lanSyncPushSrc, /pushedLive = sendLiveBundleIfOpen\(roomId, envelope\)/);

@@ -145,6 +145,29 @@ var RELEASE_NOTES_665 = [
   },
 ];
 
+var RELEASE_NOTES_728 = [
+  {
+    title: 'Interno por frecuencia de signos',
+    body:
+      'La lista MIP ordena pacientes con SV programados de <strong>más frecuente a menos</strong> (q1h → q2h → q4h → por turno). Vencidos primero dentro de la misma frecuencia; empate por cama; solo estudios al final.',
+  },
+  {
+    title: 'Glu rescate en Estado actual',
+    body:
+      'Cada <strong>glucometría</strong> puede marcarse alterada y registrar <strong>unidades de rescate</strong> + <strong>DXT post-rescate</strong>; la nota SOME refleja rescates aplicados o disponibles.',
+  },
+  {
+    title: 'Enlace iPad desde cliente LAN',
+    body:
+      'Una Mac <strong>unida al turno</strong> (no solo el anfitrión) puede copiar el enlace permanente para iPad desde ⇄.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.8 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.7</strong>; esquema SQLCipher sigue en <strong>v15</strong>. El iPad solo recarga internos.',
+  },
+];
+
 var RELEASE_NOTES_727 = [
   {
     title: 'Interno por frecuencia de signos',
@@ -702,9 +725,10 @@ var RELEASE_NOTES_669 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_727;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_728;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.8': RELEASE_NOTES_728,
   '7.2.7': RELEASE_NOTES_727,
   '7.2.6': RELEASE_NOTES_726,
   '7.2.5': RELEASE_NOTES_725,

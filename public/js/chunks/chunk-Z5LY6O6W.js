@@ -1,2 +1,0 @@
-import{l as r,o as i}from"/js/chunks/chunk-JSYFCWJX.js";var o="rpc-lan-pinned-host-url";function c(){try{return String(localStorage.getItem(o)||"").trim().replace(/\/+$/,"")}catch{return""}}function l(t){let e=String(t||"").trim().replace(/\/+$/,"");if(!e){a();return}try{localStorage.setItem(o,e)}catch{}}function a(){try{localStorage.removeItem(o)}catch{}}function u(t){let e=c();if(!e)return!1;let n=r(t||"");return n?i(e,n)||r(e)===n:!1}function f(){return!!c()}export{c as a,l as b,a as c,u as d,f as e};
-//# sourceMappingURL=/js/chunks/chunk-Z5LY6O6W.js.map
