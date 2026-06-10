@@ -1,47 +1,31 @@
-version: 7.3.0
+version: 7.3.1
 files:
-  - url: R+-7.3.0-arm64.zip
-    sha512: rDUAXffte8oTez6Y6YHpCUR7RN2y74tTpHagzkdRozu7f5g6QUoKcsGVIgar7Rmz/D5+oVo70/xl53Q+RekEBw==
-    size: 129109839
-  - url: R+-7.3.0-arm64.dmg
-    sha512: Cp6autcgoZwQjyuAhn1l3YzSuhAL47bvycMA2M8yLyN2Ijeq+cPRZ/JEzInJZ72TKbmx/9Zy6B5/JJJPM9dPMA==
-    size: 134424933
-  - url: R+-7.3.0-x64.zip
-    sha512: 1pbAu0ft8AYgIJ6OPSh3JEp03A2mxyuLsEREwIDWnDBm/wvXERnxOkm7vTsFDat6tfhwxF0Jn7+EuXn9IFfo1w==
-    size: 137483946
-  - url: R+-7.3.0-x64.dmg
-    sha512: 48oCoVeKQygm/Rn5Ux8VsXjmx3UYJHrwil+GPrX4J6BK9kolHPR/66mcDUBcCNNUK8LewTry4GGBx73FJGyVrg==
-    size: 142893411
-path: R+-7.3.0-arm64.zip
-sha512: rDUAXffte8oTez6Y6YHpCUR7RN2y74tTpHagzkdRozu7f5g6QUoKcsGVIgar7Rmz/D5+oVo70/xl53Q+RekEBw==
-releaseDate: '2026-06-10T19:56:23.000Z'
+  - url: R+-7.3.1-arm64.zip
+    sha512: YXZH4Fup3tRJwzHRT6XeJ5AU/VFf8YlV0Cc8OCA/aol6ksKHEEesYR/4FicmrrfYVKnHY/SSeSqjpHcDJn1DBQ==
+    size: 129117134
+  - url: R+-7.3.1-arm64.dmg
+    sha512: bL8fQVmH9Hb6oEIK39rE/fBHevIjHEtkagdUK+N5Cu0tM0+k1aQVRAqOdsjIL+kPuSfPgfF6GEBTPiEBUcSIig==
+    size: 134444163
+  - url: R+-7.3.1-x64.zip
+    sha512: Fe3uwyWIX0zbLJb9amn4Zc8T+D/VpSJL31k3e+OE75eCv2fDaUBNCWR67NE6CNiskxKx6j83Sjy5wekU3n3+vQ==
+    size: 137491224
+  - url: R+-7.3.1-x64.dmg
+    sha512: 1pLQnfrjeZN3lBTJa8WjGeO+Sp4yY3RGUqbrgNnaA6dI9YcvRskGV/kH/w3R7TPayLB3We/kMO4EC071knAqzQ==
+    size: 142903126
+path: R+-7.3.1-arm64.zip
+sha512: YXZH4Fup3tRJwzHRT6XeJ5AU/VFf8YlV0Cc8OCA/aol6ksKHEEesYR/4FicmrrfYVKnHY/SSeSqjpHcDJn1DBQ==
+releaseDate: '2026-06-10T20:34:04.000Z'
 releaseNotes: |
-  Sobre 7.2.9: el perfil farmacoterapéutico muestra una grilla dinámica que cruza meses con filas continuas por medicamento; el directorio LAN registra actividad reciente y admite filtros; Laboratorio renueva el historial por fecha; el censo PDF envuelve labs y pendientes; el anfitrión abre un dashboard modal del censo host.
+  Parche sobre 7.3.0: Manejo mueve el pegado SOME a un modal Importar SOME con grilla más legible; la clasificación SOAP distingue AAS 100 mg (otros) de dosis analgésicas; el perfil farmacoterapéutico permite borrar mes o perfil completo; Estado actual reorganiza la dieta pendiente y quita «PARA PESO DE X KG» del texto copiado.
   
-  Perfil histórico — ventana dinámica — Columnas ancladas al mes en navegación: solape automático cerca de fin/inicio de mes (< día 14), mes actual sin días futuros (1…hoy), mes pasado acotado por fimiFecha y primer/último día con indicación.
+  Manejo — modal Importar SOME — El pegado del hospital abre en modal (como perfil SOME); la grilla queda en la tarjeta «Medicamentos del turno» con fecha y +1 día.
   
-  Perfil histórico — filas continuas — Medicamentos con el mismo rowKey en dos meses se unifican en una sola fila al cruzar el calendario (persistencia sigue por mes).
+  Manejo — etiquetas compactas — Filas con indicación corta; dosis de dosisRaw para combos como piperacilina/tazobactam.
   
-  Perfil histórico — grupos por medicamento — Filas colapsables por nombre de fármaco; adherencia calculada sobre el conjunto de rowKey del grupo.
+  SOAP — AAS por dosis — Ácido acetilsalicílico ≤160 mg va a Otros (antiplaquetario); >160 mg a Analgesia. La clasificación usa dosisRaw.
   
-  FAB Copiar — contexto — Los botones flotantes de Laboratorio y Estado actual solo aparecen en la pestaña activa y cuando hay contenido copiable.
+  SOAP / EA — texto dieta — Cláusula de dieta sin «PARA PESO DE X KG» (kcal/kg y total se mantienen).
   
-  Directorio LAN — actividad — last_activity_at en usuarios clínicos (SQLCipher v16–v17); etiquetas «Activo ahora», «hace X min», «Inactivo».
+  Perfil farmacoterapéutico — borrar — Menú ⋯: eliminar mes visible o borrar perfil completo del paciente (con confirmación).
   
-  Directorio LAN — filtros — Búsqueda, estado (asignado/sin equipo), sala y actividad; rangos de rango colapsables cuando hay más de 4 usuarios.
-  
-  Directorio LAN — CTA — Botón Directorio LAN en la barra superior de equipos (modal aparte).
-  
-  Laboratorio — historial por fecha — Selector Estudio (fecha + tipo) en lugar de lista larga; re-procesar, re-enviar a nota o borrar el set seleccionado.
-  
-  Manejo — destino SOAP — Medicamentos clasificados como «otros» muestran selector de destino en Estado actual / SOAP.
-  
-  Estado actual — dieta pendiente en panel — La propuesta de dieta se refleja en los campos del panel antes de confirmar.
-  
-  Censo PDF — labs y pendientes — Columnas con envoltura completa (sin elipsis por ancho estrecho).
-  
-  Censo — columna pendientes — Hasta 3 pendientes abiertos por prioridad (alta → media → baja).
-  
-  Filtros censo — equipo por sala — El dropdown de equipo se acota a la sala seleccionada; limpia filtro inválido al cambiar sala.
-  
-  LAN anfitrión — censo dashboard — Modal a pantalla completa con snapshot host vs local, fantasmas, archivados y purga.
+  Estado actual — dieta pendiente — Barra de confirmación bajo nutrición; rejilla FOUR/Glasgow/Soporte y dieta/kcal/proteína en filas dedicadas.
