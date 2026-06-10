@@ -241,6 +241,27 @@
   </div>
 </div>
 
+<div id="med-receta-paste-modal" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-receta-paste-title" hidden>
+  <div class="med-pharm-modal med-pharm-paste-dialog" role="document" onclick="event.stopPropagation()">
+    <div class="card-header card-header-row">
+      <h2 id="med-receta-paste-title" style="margin:0;font-size:14px;font-weight:700;flex:1;">Importar desde SOME</h2>
+      <button type="button" class="btn-med-secondary" onclick="closeMedRecetaPasteModal()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="med-pharm-paste-body">
+      <p class="med-pharm-paste-hint">Pega el bloque de <strong>medicamentos</strong> y <strong>dietas</strong> copiado del hospital (columnas con <strong>tabulador</strong>). Cuidados y estudios se omiten.</p>
+      <label class="med-pharm-paste-field" for="med-input">
+        <span class="med-pharm-paste-field-label">Texto del hospital</span>
+        <textarea id="med-input" class="med-pharm-paste-input" rows="12" spellcheck="false" autocomplete="off" autocorrect="off" placeholder="MEDICAMENTOS, MEDICAMENTOS P2, DIETAS…" aria-label="Listado SOME del hospital"></textarea>
+      </label>
+    </div>
+    <div class="med-pharm-paste-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarRecetaInput()">Limpiar</button>
+      <button type="button" class="btn-med-secondary" onclick="closeMedRecetaPasteModal()">Cancelar</button>
+      <button type="button" class="btn-generate" onclick="procesarRecetaMed()">Procesar receta</button>
+    </div>
+  </div>
+</div>
+
 <div id="med-pharm-paste-modal" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-pharm-paste-title" hidden>
   <div class="med-pharm-modal med-pharm-paste-dialog" role="document" onclick="event.stopPropagation()">
     <div class="card-header card-header-row">

@@ -116,7 +116,7 @@ const TARGETS = {
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
-  sala_med:          { appTab: 'med',  selector: '#med-input',                               focus: false },
+  sala_med:          { appTab: 'med',  selector: '#med-import-open-btn',                      focus: false },
   listado_problemas: {
     appTab: 'nota',
     innerTab: 'listado',

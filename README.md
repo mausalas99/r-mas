@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.0](https://github.com/mausalas99/r-mas/releases/tag/v7.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.1](https://github.com/mausalas99/r-mas/releases/tag/v7.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.3.1 (Manejo modal SOME, AAS SOAP y perfil borrar)
+
+- **Manejo** — modal **Importar SOME**; grilla «Medicamentos del turno» con etiquetas compactas y **+1 día**.
+- **SOAP** — AAS ≤160 mg → Otros; >160 mg → Analgesia; texto dieta sin «PARA PESO DE X KG».
+- **Perfil farmacoterapéutico** — menú **⋯** para eliminar mes visible o borrar perfil completo.
+- **Estado actual** — barra de confirmación de dieta pendiente; rejilla clínica reorganizada.
+
+Notas: `docs/RELEASE_NOTES_7.3.1.txt`.
 
 ## R+ 7.3.0 (Perfil histórico, directorio LAN y laboratorio)
 
@@ -91,13 +100,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.3.0)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.3.1)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.3.1** | Manejo modal SOME, AAS SOAP por dosis, borrar perfil farmacoterapéutico |
 | **7.3.0** | Perfil histórico cross-mes, directorio LAN actividad, lab historial por fecha |
 | **7.2.9** | Manejo parser dietas/P2, propuesta dieta EA, FAB copiar EA |
 | **7.2.8** | Interno SV por frecuencia, glu rescate en EA, enlace iPad en cliente LAN |

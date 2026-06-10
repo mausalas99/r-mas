@@ -384,6 +384,15 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
   assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
   assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'analgesia');
+  assert.equal(
+    classifyMedicationSoapCategory('ACIDO ACETIL SALICILICO 100 MG TABLETA', '100 MG'),
+    'otros'
+  );
+  assert.equal(
+    classifyMedicationSoapCategory('ACETILSALICILICO 100 MG TABLETA', '100 MG'),
+    'otros'
+  );
+  assert.equal(classifyMedicationSoapCategory('ASPIRINA 500 MG TABLETA', '500 MG'), 'analgesia');
 });
 
 test('formatMedicationSoapShort — indicación compacta', () => {
@@ -407,6 +416,17 @@ test('formatMedicationSoapShort — indicación compacta', () => {
       suspendido: false,
     }),
     'MEROPENEM 1 G IV C/8H DIA 13'
+  );
+  assert.equal(
+    formatMedicationSoapShort({
+      nombreRaw: 'PIPERACILINA/TAZOBACTAM 4/500 G/MG SOLUCIÓN INYECTABLE',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '4.5 G // *DIA# 4*',
+      frecuenciaRaw: 'CADA 6 HORAS',
+      diaTratamiento: 4,
+      suspendido: false,
+    }),
+    'PIPERACILINA/TAZOBACTAM 4.5 G IV C/6H DIA 4'
   );
 });
 

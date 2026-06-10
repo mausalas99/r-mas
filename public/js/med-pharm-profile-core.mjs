@@ -406,6 +406,32 @@ export function getMonthFromProfile(profile, year, monthIndex) {
   return profile.months[monthKeyFromParts(year, monthIndex)] || null;
 }
 
+export function profileHasMonthData(profile) {
+  if (!profile || !profile.months || typeof profile.months !== 'object') return false;
+  return Object.keys(profile.months).some(function (k) {
+    const m = profile.months[k];
+    return m && Array.isArray(m.rows) && m.rows.length > 0;
+  });
+}
+
+export function monthHasData(profile, year, monthIndex) {
+  const month = getMonthFromProfile(profile, year, monthIndex);
+  return !!(month && Array.isArray(month.rows) && month.rows.length);
+}
+
+/** Quita un mes del perfil; devuelve null si no queda nada (ni draftPaste). */
+export function deleteMonthFromProfile(profile, year, monthIndex) {
+  if (!profile || !profile.months) return null;
+  const key = monthKeyFromParts(year, monthIndex);
+  if (!profile.months[key]) return profile;
+  const months = Object.assign({}, profile.months);
+  delete months[key];
+  const next = Object.assign({}, profile, { months });
+  if (!profileHasMonthData(next) && !trimStr(next.draftPaste)) return null;
+  if (!Object.keys(months).length) delete next.months;
+  return next;
+}
+
 export function ensureMonthOnProfile(profile, year, monthIndex) {
   const base = profile && profile.months ? profile : { months: {} };
   const key = monthKeyFromParts(year, monthIndex);

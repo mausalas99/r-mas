@@ -348,9 +348,7 @@ export function buildSOAPText() {
       num(g("soap-kcalkg")) +
       " KCAL/KG (" +
       num(g("soap-kcal")) +
-      " KCAL) PARA PESO DE " +
-      num(g("soap-peso")) +
-      " KG || INGRESOS " +
+      " KCAL) || INGRESOS " +
       num(ing) +
       " CC, EGRESOS " +
       num(egr) +

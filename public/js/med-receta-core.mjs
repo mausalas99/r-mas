@@ -221,7 +221,7 @@ export function looksLikeSomeMedicationPaste(text) {
 export function shouldAutoSelectSoap(item) {
   if (!item || item.suspendido) return false;
   var nombre = trimStr(item.nombreRaw);
-  if (classifyMedicationSoapCategory(nombre) !== 'otros') return true;
+  if (classifyMedicationSoapCategory(nombre, item.dosisRaw) !== 'otros') return true;
   var blob = normalizeNombreForSoapClassify(
     [nombre, item.dosisRaw, item.frecuenciaRaw].join(' ')
   );
@@ -686,8 +686,21 @@ function soapFreqShort(freqNorm) {
   return t;
 }
 
+function formulationTailStartIndex(nombre) {
+  var n = trimStr(nombre);
+  if (!n) return -1;
+  var re =
+    /\s+(?=\d+\s*%|\d+\/\d+(?:\s*G\/MG|\s*MG\/\d+(?:[.,]\d+)?\s*MG)?|\d+(?:[.,]\d+)?\s*(?:MG|G|ML|MCG|UI|U)\b|\bSOLUCIÓN INYECTABLE\b|\bSOL\s+INY\b|\bTABLETAS?\b|\bCÁPSULAS?\b|\bCAPSULAS?\b|\bCOMPRIMIDOS?\b|\bPOLVO\b|\bJARABE\b|\bGEL\b)/i;
+  var m = n.match(re);
+  return m && m.index != null ? m.index : -1;
+}
+
 function compactSoapDrugName(nombreExpandido) {
-  var n = trimStr(nombreExpandido).toUpperCase();
+  var n = trimStr(nombreExpandido);
+  if (!n) return '';
+  var cutAt = formulationTailStartIndex(n);
+  if (cutAt > 0) n = trimStr(n.slice(0, cutAt));
+  n = n.toUpperCase();
   n = n
     .replace(/\s+TABLETA\b.*$/i, '')
     .replace(/\s+CÁPSULAS?\b.*$/i, '')
@@ -789,7 +802,7 @@ export const SOAP_DESTINATION_LABELS = {
  */
 export function effectiveSoapCategory(item, classifyFn) {
   if (!item) return 'otros';
-  var auto = classifyFn(item.nombreRaw);
+  var auto = classifyFn(item.nombreRaw, item.dosisRaw);
   if (auto !== 'otros') return auto;
   var ov = trimStr(item.soapCatOverride);
   if (ov && SOAP_DESTINATION_KEYS.indexOf(ov) >= 0) return ov;
@@ -812,11 +825,33 @@ export function unassignedOtrosSoapItems(items, selMap, classifyFn) {
   return out;
 }
 
+function extractMgDoseFromMedBlob(blob) {
+  var m = String(blob || '').match(/\b(\d+(?:[.,]\d+)?)\s*MG\b/);
+  if (!m) return null;
+  var v = parseFloat(String(m[1]).replace(',', '.'));
+  return Number.isFinite(v) ? v : null;
+}
+
+function isAspirinNombre(n) {
+  return /\b(ACETILSALICILICO|ACIDO\s+ACETILSALICILICO|ACIDO\s+ACETIL\s+SALICILICO|ASPIRINA)\b/.test(
+    n
+  );
+}
+
 /**
  * Clasificación automática para campos SOAP / Estado Actual (sin override manual).
+ * @param {string} [dosisRaw] — opcional; desambigua dosis (p. ej. AAS 100 mg antiplaquetario vs 500 mg analgésico).
  */
-export function classifyMedicationSoapCategory(nombreRaw) {
+export function classifyMedicationSoapCategory(nombreRaw, dosisRaw) {
   var n = normalizeNombreForSoapClassify(nombreRaw);
+  var doseBlob = normalizeNombreForSoapClassify(
+    [nombreRaw, dosisRaw].filter(Boolean).join(' ')
+  );
+  if (isAspirinNombre(n)) {
+    var mg = extractMgDoseFromMedBlob(doseBlob);
+    if (mg == null || mg <= 160) return 'otros';
+    return 'analgesia';
+  }
   var o = _catalogOverlay.soapTokens;
   if (overlayTokensMatch(n, o.vasop)) return 'vasop';
   if (overlayTokensMatch(n, o.abx)) return 'abx';
@@ -837,7 +872,7 @@ export function classifyMedicationSoapCategory(nombreRaw) {
     return 'abx';
   }
   if (
-    /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|MORFINA|TRAMADOL|IBUPROFENO|NAPROXENO|DICLOFENACO|ACETILSALICILICO|ONDANSETRON|GRANISETRON|PALONOSETRON|METOCLOPRAMIDA|DROPERIDOL|DIMENHIDRINATO|BUTILHIOSCINA|BROMURO\s+DE\s+BUTILHIOSCINA|BUSCAPINA|BUPRENORFINA|FENTANILO|REMIFENTANILO|SUFENTANILO|HIDROMORFONA|OXICODONA|NALBUFINA|PENTAZOCINA|TAPENTADOL)\b/.test(
+    /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|MORFINA|TRAMADOL|IBUPROFENO|NAPROXENO|DICLOFENACO|ONDANSETRON|GRANISETRON|PALONOSETRON|METOCLOPRAMIDA|DROPERIDOL|DIMENHIDRINATO|BUTILHIOSCINA|BROMURO\s+DE\s+BUTILHIOSCINA|BUSCAPINA|BUPRENORFINA|FENTANILO|REMIFENTANILO|SUFENTANILO|HIDROMORFONA|OXICODONA|NALBUFINA|PENTAZOCINA|TAPENTADOL)\b/.test(
       n
     )
   ) {

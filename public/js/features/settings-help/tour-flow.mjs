@@ -548,7 +548,7 @@ function renderTourStep() {
       break;
     case 'sala_med':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Pega el bloque TSV del hospital y pulsa <strong>Receta</strong>. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Importar SOME</strong>, pega el bloque TSV del hospital y procesa la receta. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'profile':

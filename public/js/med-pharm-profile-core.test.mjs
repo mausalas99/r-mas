@@ -14,6 +14,9 @@ import {
   applySomePasteToProfile,
   medPharmProfileUpdatedAt,
   formatFreqShort,
+  profileHasMonthData,
+  monthHasData,
+  deleteMonthFromProfile,
 } from './med-pharm-profile-core.mjs';
 
 describe('buildMedPharmRowKey', () => {
@@ -255,6 +258,43 @@ describe('applySomePasteToProfile', () => {
       return r.rowKey === key;
     });
     assert.equal(row.hidden, true);
+  });
+});
+
+describe('deleteMonthFromProfile', () => {
+  it('elimina un mes y conserva otros', () => {
+    const profile = {
+      months: {
+        '2026-04': { rows: [{ rowKey: 'a', days: { 1: 1 } }] },
+        '2026-05': { rows: [{ rowKey: 'b', days: { 2: 1 } }] },
+      },
+    };
+    const next = deleteMonthFromProfile(profile, 2026, 3);
+    assert.equal(profileHasMonthData(next), true);
+    assert.equal(monthHasData(next, 2026, 3), false);
+    assert.equal(monthHasData(next, 2026, 4), true);
+  });
+
+  it('devuelve null si no quedan meses ni borrador', () => {
+    const profile = {
+      months: {
+        '2026-05': { rows: [{ rowKey: 'b', days: { 2: 1 } }] },
+      },
+    };
+    assert.equal(deleteMonthFromProfile(profile, 2026, 3), profile);
+    assert.equal(deleteMonthFromProfile(profile, 2026, 4), null);
+  });
+
+  it('conserva draftPaste si solo queda el borrador', () => {
+    const profile = {
+      draftPaste: 'pegado',
+      months: {
+        '2026-05': { rows: [{ rowKey: 'b', days: { 2: 1 } }] },
+      },
+    };
+    const next = deleteMonthFromProfile(profile, 2026, 4);
+    assert.equal(next.draftPaste, 'pegado');
+    assert.equal(profileHasMonthData(next), false);
   });
 });
 

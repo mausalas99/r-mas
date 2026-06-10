@@ -204,7 +204,7 @@
       <div id="med-empty-guided" class="empty-state" style="display:none;" role="region" aria-label="Sin paciente para manejo">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
         <h3 class="empty-state-title">Selecciona un paciente para Manejo</h3>
-        <p class="empty-state-lead">Elige uno en la lista de la izquierda o agrega un paciente con <strong>+ Agregar</strong>. Después podrás pegar la receta del hospital y usar <strong>Receta</strong>.</p>
+        <p class="empty-state-lead">Elige uno en la lista de la izquierda o agrega un paciente con <strong>+ Agregar</strong>. Después podrás importar el listado SOME y procesar la receta.</p>
         <div class="guided-empty-actions">
           <button type="button" class="primary" onclick="focusPatientSearchInput()">Buscar en la lista</button>
           <button type="button" onclick="openAddModal()">Agregar paciente</button>
@@ -222,45 +222,32 @@
           </button>
         </div>
         <div id="med-work-area" class="main-work-scroll med-pharm-root">
-        <div id="med-subview-receta">
-        <div class="card" style="flex-shrink:0;">
-          <div class="card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
-            Listado del hospital
-          </div>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
-            <div class="field-group">
-              <label>Pega aquí el texto copiado del sistema</label>
-              <textarea id="med-input" rows="10" placeholder="Pega el bloque del hospital (medicamentos, dietas…; columnas con tabulador)…"></textarea>
-            </div>
-            <div class="med-toolbar-actions">
-              <button type="button" class="btn-generate" onclick="procesarRecetaMed()" style="min-width:140px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                Receta
+        <div id="med-subview-receta" class="med-receta-subview">
+        <div class="card med-active-card">
+          <div class="card-header card-header-row med-active-card-header">
+            <span class="med-active-card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+              Medicamentos del turno
+            </span>
+            <span class="med-active-header-actions">
+              <button type="button" class="btn-med-secondary" id="med-import-open-btn" onclick="openMedRecetaPasteModal()" title="Pegar listado SOME del hospital">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Importar SOME
               </button>
-              <button type="button" class="btn-med-secondary btn-med-secondary--dia" onclick="incrementMedDiaTratamiento()" title="Incrementa DIA# en medicamentos con día de tratamiento (sin volver a pegar)">
+              <span id="med-fecha-actualizacion" class="med-active-fecha" hidden></span>
+              <button type="button" class="btn-med-secondary btn-med-secondary--dia" id="med-dia-btn" hidden onclick="incrementMedDiaTratamiento()" title="Suma 1 al DIA# de cada medicamento con día de tratamiento (sin volver a pegar)">
                 <span class="btn-med-secondary-icon" aria-hidden="true">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
                 </span>
                 +1 día
               </button>
-              <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarRecetaInput()">
-                Limpiar
-              </button>
-            </div>
+            </span>
           </div>
-        </div>
-
-        <div class="card" style="flex-shrink:0;">
-          <div class="card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-            Manejo (paciente activo)
-          </div>
-          <div class="card-body" style="padding:12px 16px;">
-            <p id="med-hint" class="lab-history-hint" style="display:none;margin:0 0 8px 0;"></p>
-            <p id="med-fecha-actualizacion" class="lab-history-hint" style="display:none;margin:0 0 10px 0;"></p>
-            <div id="med-items-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-            <div id="med-nota-footer" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"></div>
+          <div class="card-body med-active-card-body">
+            <p class="med-section-lead med-active-lead" id="med-active-lead">Marca <strong>SOAP</strong> para enviar a Estado Actual; <strong>Excl.</strong> quita del texto de egreso. Los «Otros» requieren elegir <strong>Destino</strong>.</p>
+            <p id="med-hint" class="med-empty-hint" hidden></p>
+            <div id="med-items-list"></div>
+            <div id="med-nota-footer" hidden></div>
           </div>
         </div>
 
@@ -307,6 +294,15 @@
               <div class="med-pharm-toolbar-actions">
                 <button type="button" class="btn-med-secondary" id="med-pharm-paste-open-btn">Importar mes SOME</button>
                 <button type="button" class="btn-generate med-pharm-btn-full" id="med-pharm-full-btn" title="Calendario SOME en pantalla completa">Vista SOME</button>
+                <details class="lab-output-more med-pharm-output-more" id="med-pharm-output-more" hidden>
+                  <summary class="lab-output-more-btn" aria-label="Más acciones del perfil farmacoterapéutico">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                  </summary>
+                  <div class="lab-output-more-menu" role="menu">
+                    <button type="button" class="lab-output-more-item lab-output-more-item--danger" id="med-pharm-delete-month-btn" role="menuitem" onclick="closeMedPharmMoreMenu(); deleteMedPharmViewMonth();" title="Quita el mes visible en el navegador">Eliminar mes visible</button>
+                    <button type="button" class="lab-output-more-item lab-output-more-item--danger" id="med-pharm-delete-all-btn" role="menuitem" onclick="closeMedPharmMoreMenu(); deleteMedPharmProfileAll();" title="Borra todos los meses y el borrador de pegado">Borrar perfil completo</button>
+                  </div>
+                </details>
               </div>
               <div class="med-pharm-toolbar-end">
                 <div class="med-pharm-month-nav">

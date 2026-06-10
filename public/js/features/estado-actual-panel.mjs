@@ -266,6 +266,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     '<summary>Estado clínico general</summary>' +
     '<div class="ea-clinico-body">' +
     '<div class="ea-clinico-grid">' +
+    '<div class="ea-clinico-vitals-row">' +
     '<label class="ea-field">' +
     '<span class="ea-label">FOUR (/16)</span>' +
     '<input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' +
@@ -278,25 +279,21 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     escAttrNumeric(ec.esferas) +
     '">' +
     '</label>' +
-    '<label class="ea-field ea-field--full">' +
+    '<label class="ea-field">' +
     '<span class="ea-label">Soporte respiratorio</span>' +
     '<select class="ea-input" data-ea-ec="soporte">' +
     soporteOpts +
     '</select>' +
     '</label>' +
-    '<label class="ea-field ea-field--full">' +
+    '</div>' +
+    '<div class="ea-clinico-nutrition-row">' +
+    '<label class="ea-field ea-field--dieta">' +
     '<span class="ea-label">Dieta' +
     (dietPending ? ' <span class="ea-pendiente-badge">Propuesta</span>' : '') +
     '</span>' +
     '<input type="text" class="ea-input" data-ea-ec="dieta" value="' +
     escAttr(ec.dieta) +
     '">' +
-    (dietPending
-      ? '<div class="ea-diet-proposal-actions">' +
-        '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaDietProposal()">Confirmar dieta</button>' +
-        '<button type="button" class="ea-btn" onclick="discardEaDietProposal()">Descartar</button>' +
-        '</div>'
-      : '') +
     '</label>' +
     '<label class="ea-field">' +
     '<span class="ea-label">Kcal/kg</span>' +
@@ -316,6 +313,15 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     escAttr(ec.proteinG) +
     '" placeholder="Gramos">' +
     '</label>' +
+    '</div>' +
+    (dietPending
+      ? '<div class="ea-diet-proposal-bar">' +
+        '<span class="ea-diet-proposal-lead">Dieta importada desde SOME — revisa los valores y confirma o descarta.</span>' +
+        '<div class="ea-diet-proposal-actions">' +
+        '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaDietProposal()">Confirmar dieta</button>' +
+        '<button type="button" class="ea-btn" onclick="discardEaDietProposal()">Descartar</button>' +
+        '</div></div>'
+      : '') +
     '</div>' +
     '<p class="ea-diet-weight-hint">' +
     escHtml(dietWeightHint) +

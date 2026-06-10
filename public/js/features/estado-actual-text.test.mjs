@@ -85,5 +85,6 @@ test('buildEstadoActualText calcula kcal total con peso del paciente', () => {
   const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {
     patientPeso: 70,
   });
-  assert.match(text, /25 KCAL\/KG \(1750 KCAL\) PARA PESO DE 70 KG/);
+  assert.match(text, /25 KCAL\/KG \(1750 KCAL\)/);
+  assert.doesNotMatch(text, /PARA PESO DE/i);
 });

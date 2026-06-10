@@ -20,6 +20,9 @@ import {
   formatFreqShort,
   formatViaShort,
   monthKeyFromParts,
+  profileHasMonthData,
+  monthHasData,
+  deleteMonthFromProfile,
 } from '../med-pharm-profile-core.mjs';
 import {
   buildPharmViewWindow,
@@ -152,14 +155,6 @@ function getProfile(pid) {
 
 function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
-}
-
-function profileHasMonthData(profile) {
-  if (!profile || !profile.months || typeof profile.months !== 'object') return false;
-  return Object.keys(profile.months).some(function (k) {
-    var m = profile.months[k];
-    return m && Array.isArray(m.rows) && m.rows.length > 0;
-  });
 }
 
 /** Guarda el pegado SOME del modal antes de cambiar de paciente. */
@@ -1018,6 +1013,85 @@ function onGridDayClick(rowKey, year, monthIndex, day) {
   renderMedPharmProfilePanel();
 }
 
+function closeMedPharmMoreMenu() {
+  var d = document.querySelector('.med-pharm-output-more[open]');
+  if (d) d.removeAttribute('open');
+}
+
+function persistMedPharmProfile(pid, profile) {
+  if (!profile || (!profileHasMonthData(profile) && !profile.draftPaste)) {
+    delete medPharmProfileByPatient[pid];
+  } else {
+    medPharmProfileByPatient[pid] = profile;
+  }
+}
+
+export function deleteMedPharmViewMonth() {
+  closeMedPharmMoreMenu();
+  var pid = rt.getActiveId();
+  if (!pid) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var profile = getProfile(pid);
+  if (!monthHasData(profile, viewYear, viewMonthIndex)) {
+    rt.showToast('No hay datos de este mes para eliminar', 'error');
+    return;
+  }
+  var label = monthLabel(viewYear, viewMonthIndex);
+  if (
+    !confirm(
+      '¿Eliminar el perfil farmacoterapéutico de ' +
+        label +
+        '? Las marcas de no administrado y el pegado SOME de ese mes se perderán.'
+    )
+  ) {
+    return;
+  }
+  var next = deleteMonthFromProfile(profile, viewYear, viewMonthIndex);
+  persistMedPharmProfile(pid, next);
+  closeModals();
+  saveState();
+  renderMedPharmProfilePanel();
+  rt.showToast('Mes eliminado del perfil', 'success');
+}
+
+export function deleteMedPharmProfileAll() {
+  closeMedPharmMoreMenu();
+  var pid = rt.getActiveId();
+  if (!pid) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var profile = getProfile(pid);
+  if (!profile || (!profileHasMonthData(profile) && !profile.draftPaste)) {
+    rt.showToast('No hay perfil farmacoterapéutico para borrar', 'error');
+    return;
+  }
+  if (
+    !confirm(
+      '¿Borrar todo el perfil farmacoterapéutico de este paciente? Se eliminarán todos los meses importados y el borrador de pegado.'
+    )
+  ) {
+    return;
+  }
+  delete medPharmProfileByPatient[pid];
+  closeModals();
+  saveState();
+  renderMedPharmProfilePanel();
+  rt.showToast('Perfil farmacoterapéutico borrado', 'success');
+}
+
+function updateMedPharmDeleteToolbar(profile) {
+  var more = document.getElementById('med-pharm-output-more');
+  var btnMonth = document.getElementById('med-pharm-delete-month-btn');
+  var btnAll = document.getElementById('med-pharm-delete-all-btn');
+  var hasProfile = !!(profile && (profileHasMonthData(profile) || profile.draftPaste));
+  if (more) more.hidden = !hasProfile;
+  if (btnMonth) btnMonth.disabled = !monthHasData(profile, viewYear, viewMonthIndex);
+  if (btnAll) btnAll.disabled = !hasProfile;
+}
+
 function wireUiOnce() {
   wireMedPharmModalDismiss();
   wireMedPharmAdhHoverOnce();
@@ -1104,6 +1178,7 @@ export function renderMedPharmProfilePanel() {
       hint.textContent = 'Selecciona un paciente para ver el perfil farmacoterapéutico.';
     }
     list.innerHTML = '';
+    updateMedPharmDeleteToolbar(null);
     return;
   }
   if (hint) hint.style.display = 'none';
@@ -1135,6 +1210,7 @@ export function renderMedPharmProfilePanel() {
   var filtro = document.getElementById('med-pharm-filtro');
   renderFilterSelect(filtro);
   updateMedPharmHiddenToolbar(hiddenCount);
+  updateMedPharmDeleteToolbar(profile);
   var card = document.querySelector('.med-pharm-profile-card');
   var listHead = document.querySelector('.med-pharm-list-head');
   if (!window.columns.length) {
@@ -1413,4 +1489,7 @@ export const medPharmProfileWindowHandlers = {
   openMedPharmPasteModal,
   openMedPharmFullModal,
   closeMedPharmModals,
+  closeMedPharmMoreMenu,
+  deleteMedPharmViewMonth,
+  deleteMedPharmProfileAll,
 };

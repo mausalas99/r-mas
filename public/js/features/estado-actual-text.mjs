@@ -159,10 +159,7 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     ' KCAL/KG (' +
     num(kcalDisplay) +
     ' KCAL)' +
-    proteinClause +
-    ' PARA PESO DE ' +
-    num(weightKg != null ? weightKg : '') +
-    ' KG';
+    proteinClause;
   var nmParts = [nmDiet];
   if (nmMedsClause) nmParts.push(nmMedsClause);
   nmParts.push(ioClause);

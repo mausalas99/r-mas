@@ -210,9 +210,68 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-clinico-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.ea-clinico-vitals-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.65fr) minmax(72px, 0.65fr) minmax(0, 2fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.ea-clinico-nutrition-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(88px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.ea-field--dieta .ea-input {
+  min-width: 0;
+}
+
+.ea-diet-proposal-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px dashed color-mix(in oklab, var(--todo-prio-media) 45%, var(--border));
+  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
+}
+
+.ea-diet-proposal-lead {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.ea-diet-proposal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .ea-clinico-vitals-row,
+  .ea-clinico-nutrition-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ea-clinico-vitals-row .ea-field:last-child,
+  .ea-clinico-nutrition-row .ea-field--dieta {
+    grid-column: 1 / -1;
+  }
 }
 
 .ea-clinico-med-grid {

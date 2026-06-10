@@ -89,14 +89,92 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg);
 }
+/* Manejo actual — importación colapsable + tarjetas con más aire */
+.med-receta-subview {
+  display: flex;
+  flex-direction: column;
+  gap: calc(28px * var(--density-space));
+}
+#med-work-area.med-pharm-root {
+  gap: calc(28px * var(--density-space));
+  padding: calc(28px * var(--density-space));
+}
+.med-section-lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.med-active-card-title {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.med-active-card-header {
+  gap: 12px;
+}
+.med-active-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.med-active-fecha {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.med-active-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--density-space));
+  padding: calc(16px * var(--density-space)) calc(20px * var(--density-space));
+}
+.med-active-lead { padding-bottom: 2px; }
+.med-empty-hint {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed color-mix(in oklab, var(--border) 80%, var(--action));
+  background: color-mix(in oklab, var(--lab-chip-bg) 55%, var(--surface));
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-align: center;
+}
+#med-nota-footer {
+  margin-top: 4px;
+  padding-top: calc(16px * var(--density-space));
+  border-top: 1px solid var(--border);
+}
+#med-dia-btn[hidden],
+#med-import-open-btn[hidden] { display: none !important; }
+
+.med-active-header-actions .btn-med-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+body.rpc-med-receta-paste-open {
+  overflow: hidden;
+}
+
 /* Medicamentos: lista alineada y pie SOAP compacto */
 .med-receta-wrap {
   border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg);
 }
 .med-receta-head {
-  display: grid; grid-template-columns: 40px 40px 1fr auto; gap: 8px 10px; align-items: center;
-  padding: 8px 12px; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.02em; color: var(--text-muted); background: var(--surface);
+  display: grid; grid-template-columns: 40px 40px 1fr minmax(140px, 1.1fr) auto; gap: 8px 10px; align-items: center;
+  padding: 10px 14px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
+  background: color-mix(in oklab, var(--surface) 88%, var(--lab-chip-bg));
   border-bottom: 1px solid var(--border);
 }
 .med-receta-head span:nth-child(1), .med-receta-head span:nth-child(2) { text-align: center; }
@@ -104,7 +182,7 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .med-receta-head span:last-child { text-align: right; }
 .med-receta-row {
   display: grid; grid-template-columns: 40px 40px 1fr minmax(140px, 1.1fr) auto; gap: 8px 10px; align-items: center;
-  padding: 10px 12px; border-bottom: 1px solid var(--border); background: transparent;
+  padding: 12px 14px; border-bottom: 1px solid var(--border); background: transparent;
   transition: background 0.18s ease;
 }
 .med-receta-row:hover { background: var(--lab-chip-bg); }

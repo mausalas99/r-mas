@@ -11,6 +11,7 @@ import {
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
   formatMedicationEgresoLine,
+  formatMedicationSoapShort,
   classifyMedicationSoapCategory,
   effectiveSoapCategory,
   SOAP_DESTINATION_KEYS,
@@ -63,6 +64,7 @@ export function registerMedicationsRuntime(ctx) {
 }
 
 var medOutputTab = "full";
+var _medRecetaPasteModalWired = false;
 
 function isDemoPatientId(patientId) {
   return String(patientId || "").indexOf("demo-") === 0;
@@ -93,6 +95,76 @@ function restoreMedInputForPatient(patientId) {
   if (!ta) return;
   var block = patientId ? medRecetaByPatient[patientId] : null;
   ta.value = block && block.pasteRaw ? block.pasteRaw : "";
+}
+
+function isMedRecetaPasteModalOpen() {
+  var el = document.getElementById("med-receta-paste-modal");
+  return !!(el && el.classList.contains("open"));
+}
+
+function wireMedRecetaPasteModalOnce() {
+  if (_medRecetaPasteModalWired) return;
+  var bd = document.getElementById("med-receta-paste-modal");
+  if (!bd) return;
+  _medRecetaPasteModalWired = true;
+  bd.addEventListener("click", function (ev) {
+    if (!bd.classList.contains("open")) return;
+    if (ev.target === bd) closeMedRecetaPasteModal();
+  });
+  document.addEventListener(
+    "keydown",
+    function (ev) {
+      if (ev.key !== "Escape" || !isMedRecetaPasteModalOpen()) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeMedRecetaPasteModal();
+    },
+    true
+  );
+}
+
+export function openMedRecetaPasteModal() {
+  var activeId = rt.getActiveId();
+  if (!activeId) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  wireMedRecetaPasteModalOnce();
+  closeMedPharmModals();
+  restoreMedInputForPatient(activeId);
+  var bd = document.getElementById("med-receta-paste-modal");
+  if (!bd) return;
+  bd.removeAttribute("hidden");
+  bd.setAttribute("aria-hidden", "false");
+  bd.classList.add("open");
+  document.body.classList.add("rpc-med-receta-paste-open");
+  var ta = document.getElementById("med-input");
+  if (ta) {
+    requestAnimationFrame(function () {
+      ta.focus();
+    });
+  }
+}
+
+export function closeMedRecetaPasteModal() {
+  var activeId = rt.getActiveId();
+  if (activeId) stashMedInputForPatient(activeId);
+  var bd = document.getElementById("med-receta-paste-modal");
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("hidden", "");
+  bd.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("rpc-med-receta-paste-open");
+}
+
+function setMedActiveLeadVisible(visible) {
+  var lead = document.getElementById("med-active-lead");
+  if (lead) lead.hidden = !visible;
+}
+
+function setMedDiaBtnVisible(visible) {
+  var btn = document.getElementById("med-dia-btn");
+  if (btn) btn.hidden = !visible;
 }
 
 function esc(s) {
@@ -146,11 +218,13 @@ function medPanelCacheKey(activeId) {
 
 export function renderMedRecetaPanel() {
   initMedPharmSubviewUi();
+  wireMedRecetaPasteModalOnce();
   var activeId = rt.getActiveId();
   if (activeId !== lastMedPanelPatientId) {
     lastMedPanelPatientId = activeId;
     _medPanelCacheKey = "";
     closeMedPharmModals();
+    closeMedRecetaPasteModal();
   }
   if (getMedSubview() === "perfil") {
     _medPanelCacheKey = "";
@@ -167,15 +241,17 @@ export function renderMedRecetaPanel() {
   if (activeId && _medPanelCacheKey === cacheKey) {
     if (listEl.querySelector(".med-receta-wrap")) return;
     var cachedBlock = medRecetaByPatient[activeId];
-    if ((!cachedBlock || !cachedBlock.items || !cachedBlock.items.length) && hintEl.style.display === "block") {
+    if ((!cachedBlock || !cachedBlock.items || !cachedBlock.items.length) && !hintEl.hidden) {
       return;
     }
   }
   if (!activeId) {
     _medPanelCacheKey = "";
-    hintEl.style.display = "block";
-    hintEl.textContent = "Selecciona un paciente en la columna izquierda para procesar su receta.";
-    if (fechaEl) fechaEl.style.display = "none";
+    hintEl.hidden = false;
+    hintEl.textContent = "Selecciona un paciente en la columna izquierda para ver su manejo.";
+    setMedActiveLeadVisible(false);
+    setMedDiaBtnVisible(false);
+    if (fechaEl) fechaEl.hidden = true;
     listEl.innerHTML = "";
     outPre.textContent = "";
     if (outCard) outCard.style.display = "none";
@@ -190,10 +266,12 @@ export function renderMedRecetaPanel() {
     ((block.items && block.items.length) || (block.dietas && block.dietas.length));
   if (!hasRecetaContent) {
     _medPanelCacheKey = cacheKey;
-    hintEl.style.display = "block";
+    hintEl.hidden = false;
     hintEl.textContent =
-      "Pega el listado del hospital arriba y pulsa Receta. Cada día puedes volver a pegar; se guarda la fecha del recorte.";
-    if (fechaEl) fechaEl.style.display = "none";
+      "Aún no hay medicamentos. Pulsa Importar SOME, pega el bloque del hospital y procesa la receta.";
+    setMedActiveLeadVisible(false);
+    setMedDiaBtnVisible(false);
+    if (fechaEl) fechaEl.hidden = true;
     listEl.innerHTML = "";
     outPre.textContent = "";
     if (outCard) outCard.style.display = "none";
@@ -205,10 +283,12 @@ export function renderMedRecetaPanel() {
     return;
   }
   _medPanelCacheKey = cacheKey;
-  hintEl.style.display = "none";
+  hintEl.hidden = true;
+  setMedActiveLeadVisible(true);
+  setMedDiaBtnVisible(true);
   if (fechaEl) {
-    fechaEl.style.display = "block";
-    fechaEl.textContent = "Actualizado: " + (block.fechaActualizacion || "—");
+    fechaEl.hidden = false;
+    fechaEl.textContent = "Actualizado " + (block.fechaActualizacion || "—");
   }
   var dietHtml = "";
   if (block.dietas && block.dietas.length) {
@@ -234,10 +314,12 @@ export function renderMedRecetaPanel() {
   var items = block.items || [];
   var rows = items.map(function (it) {
     var sid = String(it.id || "");
-    var label = esc((it.nombreRaw || "").slice(0, 120));
+    var listLabel = formatMedicationSoapShort(it);
+    if (it.diaTratamiento != null) listLabel = listLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
+    var label = esc(listLabel.slice(0, 160));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId, sid) ? " checked" : "";
-    var autoCat = classifyMedicationSoapCategory(it.nombreRaw);
+    var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
     var destCell = "";
     if (autoCat === "otros") {
       var opts =
@@ -304,11 +386,11 @@ export function renderMedRecetaPanel() {
     (rows.length
       ? '<div class="med-receta-wrap">' +
         '<div class="med-receta-head">' +
-        "<span>Excl.</span>" +
-        "<span>SOAP</span>" +
+        '<span title="Excluir del texto de egreso">Excl.</span>' +
+        '<span title="Incluir en Estado Actual / SOAP">SOAP</span>' +
         "<span>Medicamento</span>" +
-        "<span>Destino</span>" +
-        "<span>Día</span>" +
+        '<span title="Destino manual para «Otros»">Destino</span>' +
+        '<span title="Día de tratamiento (DIA#)">Día</span>' +
         "</div>" +
         rows.join("") +
         "</div>"
@@ -586,6 +668,7 @@ export function procesarRecetaMed() {
     msg += ". Omitidas " + parsed.skipped + " líneas" + (omit.length ? " (" + omit.join(", ") + ")" : "");
   }
   rt.showToast(msg, "success");
+  closeMedRecetaPasteModal();
 }
 
 export function limpiarRecetaInput() {
@@ -655,7 +738,7 @@ export function setMedOutputTab(tab) {
 function renderMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
   if (!foot) return;
-  foot.style.display = "block";
+  foot.hidden = false;
 
   var activeId = rt.getActiveId();
   var block = activeId ? medRecetaByPatient[activeId] : null;
@@ -746,13 +829,15 @@ function renderMedNotaFooter() {
 function hideMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
   if (foot) {
-    foot.style.display = "none";
+    foot.hidden = true;
     foot.innerHTML = "";
   }
 }
 
 export const medicationsWindowHandlers = {
   procesarRecetaMed,
+  openMedRecetaPasteModal,
+  closeMedRecetaPasteModal,
   limpiarRecetaInput,
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,

@@ -747,6 +747,34 @@ var RELEASE_NOTES_729 = [
   },
 ];
 
+var RELEASE_NOTES_731 = [
+  {
+    title: 'Manejo — Importar SOME',
+    body:
+      'El pegado del hospital abre en <strong>modal</strong> (como perfil SOME). La grilla «Medicamentos del turno» muestra etiquetas compactas, fecha y <strong>+1 día</strong>.',
+  },
+  {
+    title: 'SOAP — AAS por dosis',
+    body:
+      'Ácido acetilsalicílico <strong>≤160 mg</strong> va a <strong>Otros</strong> (antiplaquetario); dosis mayores a <strong>Analgesia</strong>. Usa <code>dosisRaw</code> del SOME.',
+  },
+  {
+    title: 'Perfil — borrar mes o todo',
+    body:
+      'Menú <strong>⋯</strong> en perfil farmacoterapéutico: elimina el <strong>mes visible</strong> o borra el <strong>perfil completo</strong> del paciente.',
+  },
+  {
+    title: 'Estado actual — dieta',
+    body:
+      'Barra de confirmación de dieta pendiente; rejilla FOUR/Glasgow/Soporte y nutrición en filas dedicadas. Texto copiado sin «PARA PESO DE X KG».',
+  },
+  {
+    title: 'Parche sobre 7.3.0',
+    body:
+      'Instala <strong>7.3.1 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; iPad sin cambios.',
+  },
+];
+
 var RELEASE_NOTES_730 = [
   {
     title: 'Perfil histórico cross-mes',
@@ -776,9 +804,10 @@ var RELEASE_NOTES_730 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_730;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_731;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.1': RELEASE_NOTES_731,
   '7.3.0': RELEASE_NOTES_730,
   '7.2.9': RELEASE_NOTES_729,
   '7.2.8': RELEASE_NOTES_728,
