@@ -59,11 +59,16 @@ test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato c
   const m = emptyMonitoreo();
   m.estadoClinico.antihta = 'NIFEDIPINO 60MG VO C/12H | SACUBITRILO/VALSARTÁN 200MG VO C/12H';
   m.estadoClinico.diureticos = 'FUROSEMIDA 80MG IV C/8H';
+  m.estadoClinico.antitromboticos = 'ENOXAPARINA 40MG SC C/24H | ACIDO ACETILSALICILICO 100MG VO C/24H';
   m.estadoClinico.nm = 'INSULINA GLARGINA 10UI SC C/24H | LEVOTIROXINA 50MCG VO C/24H';
   m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 13';
   const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
   assert.match(text, /ANTIHIPERTENSIVOS: NIFEDIPINO 60MG VO C\/12H, SACUBITRILO\/VALSARTÁN 200MG VO C\/12H/);
   assert.match(text, /DIURÉTICOS: FUROSEMIDA 80MG IV C\/8H/);
+  assert.match(
+    text,
+    /ANTITROMBOTICOS: ENOXAPARINA 40MG SC C\/24H, ACIDO ACETILSALICILICO 100MG VO C\/24H/
+  );
   assert.match(text, /ANTIBIÓTICOS: MEROPENEM 1G IV C\/8H DIA 13/);
   assert.match(text, /INSULINA GLARGINA 10UI SC C\/24H \|\| LEVOTIROXINA 50MCG VO C\/24H/);
 });

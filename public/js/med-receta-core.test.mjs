@@ -379,18 +379,18 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('FUROSEMIDA 40 MG'), 'diuretico');
   assert.equal(classifyMedicationSoapCategory('INSULINA GLARGINA'), 'nm');
   assert.equal(classifyMedicationSoapCategory('DINITRATO DE ISOSORBIDE 40 MG'), 'antihta');
-  assert.equal(classifyMedicationSoapCategory('ENOXAPARINA 40 MG'), 'otros');
+  assert.equal(classifyMedicationSoapCategory('ENOXAPARINA 40 MG'), 'antitromboticos');
   assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'otros');
   assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
   assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
   assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'analgesia');
   assert.equal(
     classifyMedicationSoapCategory('ACIDO ACETIL SALICILICO 100 MG TABLETA', '100 MG'),
-    'otros'
+    'antitromboticos'
   );
   assert.equal(
     classifyMedicationSoapCategory('ACETILSALICILICO 100 MG TABLETA', '100 MG'),
-    'otros'
+    'antitromboticos'
   );
   assert.equal(classifyMedicationSoapCategory('ASPIRINA 500 MG TABLETA', '500 MG'), 'analgesia');
 });

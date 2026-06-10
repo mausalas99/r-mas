@@ -536,7 +536,7 @@ export function mediLlevarASOAP() {
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
-  var hasBuckets = ["analgesia", "abx", "antihta", "diureticos", "vasop", "nm"].some(function (k) {
+  var hasBuckets = ["analgesia", "abx", "antihta", "diureticos", "antitromboticos", "vasop", "nm"].some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
@@ -564,7 +564,7 @@ export function mediLlevarASOAP() {
     renderMedRecetaPanel();
     return;
   }
-  ["analgesia", "abx", "antihta", "diureticos", "vasop", "nm"].forEach(function (cat) {
+  ["analgesia", "abx", "antihta", "diureticos", "antitromboticos", "vasop", "nm"].forEach(function (cat) {
     var parts = String(buckets[cat] || "")
       .split(" | ")
       .filter(Boolean);
@@ -577,9 +577,11 @@ export function mediLlevarASOAP() {
             ? "soap-antihta"
             : cat === "diureticos"
               ? "soap-antihta"
-              : cat === "nm"
-                ? "soap-dieta"
-                : "soap-vasop";
+              : cat === "antitromboticos"
+                ? "soap-antitromboticos"
+                : cat === "nm"
+                  ? "soap-dieta"
+                  : "soap-vasop";
     parts.forEach(function (t) {
       mergeSoapMedField(fieldId, t);
     });
@@ -754,6 +756,7 @@ function renderMedNotaFooter() {
     analgesia: [],
     antihta: [],
     diuretico: [],
+    antitromboticos: [],
     abx: [],
     vasop: [],
     nm: [],
@@ -801,6 +804,7 @@ function renderMedNotaFooter() {
       section("analgesia", "Analgésicos / antieméticos") +
       section("antihta", "Antihipertensivos") +
       section("diuretico", "Diuréticos") +
+      section("antitromboticos", "Antitrombóticos") +
       section("abx", "Antibióticos / antifúngicos") +
       section("vasop", "Vasopresores / inotrópicos") +
       section("nm", "NM (insulina, tiroides, etc.)") +

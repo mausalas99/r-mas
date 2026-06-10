@@ -194,6 +194,8 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
       medsClauseOrFallback(ec.antihta, 'NINGUNO') +
       ' || DIURÉTICOS: ' +
       medsClauseOrFallback(ec.diureticos, 'NINGUNO') +
+      ' || ANTITROMBOTICOS: ' +
+      medsClauseOrFallback(ec.antitromboticos, 'NINGUNO') +
       ' || ' +
       vasopClause,
     'HI: AFEBRIL, ' +

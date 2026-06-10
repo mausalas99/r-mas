@@ -105,6 +105,7 @@ export function closeSOAPModal() {
     "soap-tad",
     "soap-fc",
     "soap-antihta",
+    "soap-antitromboticos",
     "soap-vasop",
     "soap-temp",
     "soap-abx",
@@ -332,6 +333,8 @@ export function buildSOAPText() {
       num(g("soap-fc")) +
       " LPM || ANTIHIPERTENSIVOS: " +
       val(g("soap-antihta") || "NINGUNO") +
+      " || ANTITROMBOTICOS: " +
+      val(g("soap-antitromboticos") || "NINGUNO") +
       " || VASOPRESORES: " +
       val(g("soap-vasop") || "NINGUNO")
   );

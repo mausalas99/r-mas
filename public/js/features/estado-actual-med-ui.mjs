@@ -8,6 +8,7 @@ export const EA_MED_FIELD_LABELS = {
   abx: 'Antibióticos',
   antihta: 'Antihipertensivos',
   diureticos: 'Diuréticos',
+  antitromboticos: 'Antitrombóticos',
   vasop: 'Vasopresores',
   nm: 'NM (insulina, tiroides, etc.)',
 };

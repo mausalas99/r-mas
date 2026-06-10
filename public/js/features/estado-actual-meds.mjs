@@ -124,6 +124,7 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
     abx: [],
     antihta: [],
     diuretico: [],
+    antitromboticos: [],
     vasop: [],
     nm: [],
     otros: [],

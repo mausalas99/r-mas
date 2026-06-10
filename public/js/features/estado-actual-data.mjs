@@ -16,6 +16,7 @@ export const MED_FIELD_KEYS = /** @type {const} */ ([
   'abx',
   'antihta',
   'diureticos',
+  'antitromboticos',
   'vasop',
   'nm',
 ]);
@@ -72,6 +73,7 @@ export function emptyEstadoClinico() {
     abx: '',
     antihta: '',
     diureticos: '',
+    antitromboticos: '',
     vasop: '',
     nm: '',
     soporte: '',
