@@ -121,6 +121,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-10** `release-7.2.9`: Medicamentos→Manejo tab; `parseIndicacionesPaste` (MED P2 + DIETAS); diet proposals + proteinG in EA + copy FAB; SOAP auto-select; census active-patient reselect; `med-receta-core.mjs`, `medications.mjs`, `estado-actual-*`, `patients.mjs`.
 - **2026-06-10** `release-7.2.8`: interno sort by vitals frequency + glu dark inputs; EA insulin rescue per glucometría + chart altered flags; LAN client can copy iPad link via remote host URL; `interno-board.mjs`, `estado-actual-panel.mjs`, `lan/panel.mjs`, `lan/transport.mjs`.
 - **2026-06-08** `release-7.2.6`: entrega census team + Sin signos + admin team select; guardia/interno sort by bed with critical/unstable first; interno census filter + host vitals IPC; expediente tabs cache; `clinical-entrega.mjs`, `patient-priority-sort.mjs`, `interno-board.mjs`, `orchestrator.mjs`.
 - **2026-06-08** `release-7.2.5`: LAN host persistence P0–P3 — coalesced commits, JSON shards, lab sidecars, SQL v15 tables + `R_PLUS_LAN_PERSIST_MODE` rollback; `lan-squad/persistence/`, `host-store.js`, `schema.mjs` v15.

@@ -1,6 +1,26 @@
 import { formatMedicationSoapShort } from '../med-receta-core.mjs';
 import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
 
+export const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
+
+/**
+ * @param {Record<string, unknown> | null | undefined} pendienteReceta
+ * @returns {boolean}
+ */
+export function hasPendingEaProposals(pendienteReceta) {
+  var pend = pendienteReceta && typeof pendienteReceta === 'object' ? pendienteReceta : {};
+  if (
+    DIET_PENDING_KEYS.some(function (k) {
+      return pend[k] && String(pend[k]).trim();
+    })
+  ) {
+    return true;
+  }
+  return MED_FIELD_KEYS.some(function (k) {
+    return pend[k] && String(pend[k]).trim();
+  });
+}
+
 /**
  * Estado clínico efectivo para texto SOAP: incluye propuestas pendientes no confirmadas.
  * @param {Record<string, unknown> | null | undefined} monitoreo
@@ -156,7 +176,45 @@ export function discardMedProposal(monitoreo, key) {
 /**
  * @param {Record<string, unknown>} monitoreo
  */
+export function confirmDietProposal(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
+    monitoreo.estadoClinico = {};
+  }
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
+  DIET_PENDING_KEYS.forEach(function (k) {
+    var pending = monitoreo.pendienteReceta[k];
+    if (pending != null && String(pending).trim()) {
+      /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[k] = String(pending).trim();
+      monitoreo.pendienteReceta[k] = '';
+    }
+  });
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
+}
+
+export function discardDietProposal(monitoreo) {
+  if (!monitoreo || !monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
+  DIET_PENDING_KEYS.forEach(function (k) {
+    monitoreo.pendienteReceta[k] = '';
+  });
+}
+
 export function confirmAllMedProposals(monitoreo) {
+  if (
+    DIET_PENDING_KEYS.some(function (k) {
+      return (
+        monitoreo.pendienteReceta &&
+        typeof monitoreo.pendienteReceta === 'object' &&
+        monitoreo.pendienteReceta[k] &&
+        String(monitoreo.pendienteReceta[k]).trim()
+      );
+    })
+  ) {
+    confirmDietProposal(monitoreo);
+  }
   for (var k of MED_FIELD_KEYS) {
     if (
       monitoreo.pendienteReceta &&

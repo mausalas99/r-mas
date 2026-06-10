@@ -56,56 +56,159 @@ function stripDiaMarkersFromDosis(dosisPart) {
   );
 }
 
-/** Bloque TSV de medicamentos copiado desde SOME (expediente). */
-export function looksLikeSomeMedicationPaste(text) {
-  var raw = String(text || '');
-  if (!raw.trim()) return false;
-  if (!/\t/.test(raw)) return false;
-  var lines = raw.split(/\r?\n/).map(trimStr).filter(Boolean);
-  for (var i = 0; i < lines.length; i += 1) {
-    var cols = lines[i].split('\t');
-    if (cols.length >= 7 && trimStr(cols[1]).toUpperCase() === 'MEDICAMENTOS') return true;
-  }
-  return false;
+var INDICACIONES_MED_CLASSES = { MEDICAMENTOS: 1, 'MEDICAMENTOS P2': 1 };
+
+function normalizeNutrientText(s) {
+  return String(s == null ? '' : s)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
 }
 
-export function parseMedicationPaste(text) {
+export function extractDietNutrients(detalleRaw) {
+  var t = normalizeNutrientText(trimStr(detalleRaw));
+  var kcalM = t.match(/(\d+)\s*KCAL\b/);
+  var protM = t.match(/(\d+)\s*G(?:R)?\s*(?:DE\s+)?PROTEINA\b/);
+  return {
+    kcal: kcalM ? parseInt(kcalM[1], 10) : null,
+    proteinG: protM ? parseInt(protM[1], 10) : null,
+  };
+}
+
+export function mergeDietaItems(dietas) {
+  var list = Array.isArray(dietas) ? dietas : [];
+  var parts = [];
+  var kcal = null;
+  var proteinG = null;
+  for (var i = 0; i < list.length; i += 1) {
+    var d = list[i];
+    if (!d) continue;
+    var desc = trimStr(d.descripcionRaw);
+    if (desc) parts.push(desc);
+    if (d.kcal != null) kcal = d.kcal;
+    if (d.proteinG != null) proteinG = d.proteinG;
+  }
+  return { descripcion: parts.join(' · '), kcal: kcal, proteinG: proteinG };
+}
+
+export function buildDietProposalText(merged) {
+  var base = trimStr(merged && merged.descripcion);
+  var bits = [];
+  if (merged && merged.kcal != null) bits.push(String(merged.kcal) + ' kcal');
+  if (merged && merged.proteinG != null) bits.push(String(merged.proteinG) + ' g prot');
+  if (!bits.length) return base;
+  if (!base) return bits.join(', ');
+  return base + ' (' + bits.join(', ') + ')';
+}
+
+function parseMedRow(cols, lineIndex, lineText) {
+  var dosisRaw = trimStr(cols[4]);
+  var dia = extractDiaTratamiento(dosisRaw);
+  if (dia == null) dia = extractDiaTratamiento(lineText);
+  return {
+    id: 'med-' + Date.now().toString(36) + '-' + lineIndex + '-' + Math.random().toString(36).slice(2, 5),
+    tipoRaw: trimStr(cols[1]).toUpperCase(),
+    nombreRaw: trimStr(cols[2]),
+    viaRaw: trimStr(cols[3]),
+    dosisRaw: dosisRaw,
+    frecuenciaRaw: trimStr(cols[5]),
+    suspendido: false,
+    diaTratamiento: dia,
+  };
+}
+
+function parseDietaRow(cols, lineIndex) {
+  var detalleRaw = trimStr(cols[4]);
+  var nutrients = extractDietNutrients(detalleRaw);
+  return {
+    id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
+    descripcionRaw: trimStr(cols[2]),
+    detalleRaw: detalleRaw,
+    kcal: nutrients.kcal,
+    proteinG: nutrients.proteinG,
+    suspendido: false,
+  };
+}
+
+export function parseIndicacionesPaste(text) {
   var lines = String(text || '')
     .split(/\r?\n/)
     .map(trimStr)
     .filter(Boolean);
   var items = [];
+  var dietas = [];
   var fechas = [];
   var skipped = 0;
+  var skippedSummary = { cuidados: 0, estudios: 0, other: 0 };
   for (var i = 0; i < lines.length; i += 1) {
     var cols = lines[i].split('\t');
     if (cols.length < 7) {
       skipped += 1;
+      skippedSummary.other += 1;
       continue;
     }
     var tipo = trimStr(cols[1]).toUpperCase();
-    if (tipo !== 'MEDICAMENTOS') {
-      skipped += 1;
-      continue;
-    }
     var fd = parseFechaDMYFromTimestampCell(cols[0]);
     if (fd) fechas.push(fd);
-    var dosisRaw = trimStr(cols[4]);
-    var dia = extractDiaTratamiento(dosisRaw);
-    if (dia == null) {
-      dia = extractDiaTratamiento(lines[i]);
+    if (INDICACIONES_MED_CLASSES[tipo]) {
+      items.push(parseMedRow(cols, i, lines[i]));
+      continue;
     }
-    items.push({
-      id: 'med-' + Date.now().toString(36) + '-' + i + '-' + Math.random().toString(36).slice(2, 5),
-      nombreRaw: trimStr(cols[2]),
-      viaRaw: trimStr(cols[3]),
-      dosisRaw: dosisRaw,
-      frecuenciaRaw: trimStr(cols[5]),
-      suspendido: false,
-      diaTratamiento: dia,
-    });
+    if (tipo === 'DIETAS') {
+      dietas.push(parseDietaRow(cols, i));
+      continue;
+    }
+    skipped += 1;
+    if (tipo === 'CUIDADOS') skippedSummary.cuidados += 1;
+    else if (tipo === 'ESTUDIOS') skippedSummary.estudios += 1;
+    else skippedSummary.other += 1;
   }
-  return { items: items, fechas: fechas, skipped: skipped };
+  return {
+    items: items,
+    dietas: dietas,
+    fechas: fechas,
+    skipped: skipped,
+    skippedSummary: skippedSummary,
+  };
+}
+
+export function parseMedicationPaste(text) {
+  var r = parseIndicacionesPaste(text);
+  return { items: r.items, fechas: r.fechas, skipped: r.skipped };
+}
+
+/** Bloque TSV SOME (medicamentos, dietas, etc.). */
+export function looksLikeSomeIndicacionesPaste(text) {
+  var raw = String(text || '');
+  if (!raw.trim() || !/\t/.test(raw)) return false;
+  var lines = raw.split(/\r?\n/).map(trimStr).filter(Boolean);
+  for (var i = 0; i < lines.length; i += 1) {
+    var cols = lines[i].split('\t');
+    if (cols.length < 7) continue;
+    var tipo = trimStr(cols[1]).toUpperCase();
+    if (tipo === 'MEDICAMENTOS' || tipo === 'MEDICAMENTOS P2' || tipo === 'DIETAS') return true;
+  }
+  return false;
+}
+
+export function looksLikeSomeMedicationPaste(text) {
+  return looksLikeSomeIndicacionesPaste(text);
+}
+
+export function shouldAutoSelectSoap(item) {
+  if (!item || item.suspendido) return false;
+  var nombre = trimStr(item.nombreRaw);
+  if (classifyMedicationSoapCategory(nombre) !== 'otros') return true;
+  var blob = normalizeNombreForSoapClassify(
+    [nombre, item.dosisRaw, item.frecuenciaRaw].join(' ')
+  );
+  if (/\bINSULINA\b/.test(blob)) return true;
+  if (/\b(GLARGINA|DEGLUDEC|DETEMIR|HUMANA\s+RAPIDA|NPH)\b/.test(blob)) return true;
+  if (/\bDEXTROSA\s*50\b/.test(blob)) return true;
+  if (/\bPRN\b/.test(String(item.frecuenciaRaw || '').toUpperCase())) {
+    if (/\b(DESTROXTIS|GLUCOSA|GLUC\s*<|MG\/DL)\b/.test(blob)) return true;
+  }
+  return false;
 }
 
 export function resolveFechaActualizacion(fechas, fallbackDMY) {

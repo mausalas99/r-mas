@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-10",
   "entries": [
     {
+      "version": "7.2.9",
+      "label": "7.2.9",
+      "publishedAt": "2026-06-10",
+      "summary": "Manejo parser dietas/P2, propuesta dieta EA",
+      "recommended": true
+    },
+    {
       "version": "7.2.8",
       "label": "7.2.8",
       "publishedAt": "2026-06-10",
       "summary": "Release estable 7.2.8",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.2.7",

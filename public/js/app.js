@@ -27,6 +27,7 @@ import {
   windowHandlers as patientsWindowHandlers,
   renderPatientList,
   selectPatient,
+  ensureActivePatientInSidebarScope,
   initSidebarAutoHide,
   initPatientModalEnterSave,
 } from './features/patients.mjs';
@@ -365,8 +366,8 @@ function runDomBootAfterState() {
           renderPatientList();
         })
         .then(function () {
-          if (patients.length > 0) selectPatient(patients[0].id);
-          else renderLabHistoryPanel();
+          if (ensureActivePatientInSidebarScope()) return;
+          renderLabHistoryPanel();
         });
     }
     if (isDbMode()) {

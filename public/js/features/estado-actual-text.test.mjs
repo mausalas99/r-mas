@@ -68,6 +68,17 @@ test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato c
   assert.match(text, /INSULINA GLARGINA 10UI SC C\/24H \|\| LEVOTIROXINA 50MCG VO C\/24H/);
 });
 
+test('buildEstadoActualText incluye GR PROTEINA cuando proteinG está definido', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'NORMAL PICADA';
+  m.estadoClinico.kcal = '2000';
+  m.estadoClinico.proteinG = '70';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {
+    patientPeso: 60,
+  });
+  assert.match(text, /\+ 70 GR PROTEINA/);
+});
+
 test('buildEstadoActualText calcula kcal total con peso del paciente', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.kcalKg = '25';

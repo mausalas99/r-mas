@@ -101,6 +101,50 @@ function patientsVisibleInSidebar() {
   return filterPatientsForGuardiaCensus(base);
 }
 
+/** First sidebar-visible patient, or keep current selection when still visible. */
+export function pickDefaultVisiblePatientId() {
+  const visible = patientsVisibleInSidebar();
+  if (!visible.length) return null;
+  const activeId = rt.getActiveId();
+  if (
+    activeId != null &&
+    visible.some(function (p) {
+      return String(p.id) === String(activeId);
+    })
+  ) {
+    return activeId;
+  }
+  return visible[0].id;
+}
+
+/** Boot / filter changes: active chart must belong to the visible equipo/censo list. */
+export function ensureActivePatientInSidebarScope() {
+  const nextId = pickDefaultVisiblePatientId();
+  if (nextId != null) {
+    selectPatient(nextId);
+    return true;
+  }
+  if (rt.getActiveId() == null) return false;
+  rt.setActiveId(null);
+  const pv = document.getElementById('patient-view');
+  const es = document.getElementById('empty-state');
+  if (pv) pv.style.display = 'none';
+  if (es) es.style.display = 'flex';
+  rt.syncWorkContextChrome();
+  return false;
+}
+
+function reselectIfActivePatientHidden(visiblePatients) {
+  const activeId = rt.getActiveId();
+  if (activeId == null) return false;
+  const stillVisible = visiblePatients.some(function (p) {
+    return String(p.id) === String(activeId);
+  });
+  if (stillVisible) return false;
+  ensureActivePatientInSidebarScope();
+  return true;
+}
+
 /** Same scope + Filtros censo rules as the sidebar, for Guardia board census. */
 export function filterPatientsForGuardiaCensus(basePatients) {
   return filterPatientsForGuardiaCensusCore(
@@ -1073,6 +1117,7 @@ function renderPatientListNow(opts) {
   if (!list) return;
   var isRonda = isPaseMode();
   var visiblePatients = patientsVisibleInSidebar();
+  if (reselectIfActivePatientHidden(visiblePatients)) return;
   if (!visiblePatients.length) {
     destroyPatientListSortables();
     var emptyScrollTop = opts.silent ? list.scrollTop : 0;

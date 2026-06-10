@@ -33,6 +33,10 @@ import {
   confirmMedField,
   discardMedProposal,
   confirmAllMedProposals,
+  confirmDietProposal,
+  discardDietProposal,
+  hasPendingEaProposals,
+  DIET_PENDING_KEYS,
   estadoClinicoForText,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
@@ -219,8 +223,8 @@ function escAttrNumeric(s) {
   return Number.isFinite(n) ? escAttr(String(n)) : '';
 }
 
-function hasPendingMedProposals(pendienteReceta) {
-  return MED_FIELD_KEYS.some(function (k) {
+function hasDietProposal(pendienteReceta) {
+  return DIET_PENDING_KEYS.some(function (k) {
     return pendienteReceta && pendienteReceta[k] && String(pendienteReceta[k]).trim();
   });
 }
@@ -242,7 +246,8 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
       ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
       : 'Peso para cálculo: — (captura peso en Datos del paciente)';
   var pend = monitoreo.pendienteReceta || {};
-  var anyPending = hasPendingMedProposals(pend);
+  var anyPending = hasPendingEaProposals(pend);
+  var dietPending = hasDietProposal(pend);
 
   var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient);
 
@@ -276,11 +281,19 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     soporteOpts +
     '</select>' +
     '</label>' +
-    '<label class="ea-field">' +
-    '<span class="ea-label">Dieta</span>' +
+    '<label class="ea-field ea-field--full">' +
+    '<span class="ea-label">Dieta' +
+    (dietPending ? ' <span class="ea-pendiente-badge">Propuesta</span>' : '') +
+    '</span>' +
     '<input type="text" class="ea-input" data-ea-ec="dieta" value="' +
     escAttr(ec.dieta) +
     '">' +
+    (dietPending
+      ? '<div class="ea-diet-proposal-actions">' +
+        '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaDietProposal()">Confirmar dieta</button>' +
+        '<button type="button" class="ea-btn" onclick="discardEaDietProposal()">Descartar</button>' +
+        '</div>'
+      : '') +
     '</label>' +
     '<label class="ea-field">' +
     '<span class="ea-label">Kcal/kg</span>' +
@@ -294,15 +307,18 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     escAttr(ec.kcal) +
     '" placeholder="Total">' +
     '</label>' +
+    '<label class="ea-field">' +
+    '<span class="ea-label">Proteína (g/día)</span>' +
+    '<input type="number" class="ea-input" data-ea-ec="proteinG" step="any" min="0" value="' +
+    escAttr(ec.proteinG) +
+    '" placeholder="Gramos">' +
+    '</label>' +
     '</div>' +
     '<p class="ea-diet-weight-hint">' +
     escHtml(dietWeightHint) +
     '</p>' +
     '<div class="ea-clinico-med-grid">' +
     medFieldsHtml +
-    '</div>' +
-    '<div class="ea-clinico-text-actions">' +
-    '<button type="button" class="ea-btn" onclick="copiarEstadoActualTexto()">Copiar texto Estado Actual</button>' +
     '</div>' +
     (anyPending
       ? '<div class="ea-clinico-actions">' +
@@ -1786,6 +1802,7 @@ export function renderEstadoActualPanel(opts) {
 
   var patient = findActivePatient();
   if (!patient) {
+    syncEaCopyFab(false);
     invalidateEaPanelCache();
     mount.innerHTML =
       '<div class="estado-actual-panel ea-empty">' +
@@ -1819,6 +1836,7 @@ export function renderEstadoActualPanel(opts) {
     (opts.dataOnly || _eaPanelCache.dataKey !== dataKey)
   ) {
     if (_eaPanelCache.dataKey === dataKey && !opts.dataOnly) {
+      syncEaCopyFab(true);
       if (onReady) onReady();
       return;
     }
@@ -1826,6 +1844,7 @@ export function renderEstadoActualPanel(opts) {
       refreshClinico: !!opts.refreshClinico,
     });
     _eaPanelCache.dataKey = dataKey;
+    syncEaCopyFab(true);
     if (onReady) onReady();
     return;
   }
@@ -1836,6 +1855,7 @@ export function renderEstadoActualPanel(opts) {
     _eaPanelCache.dataKey === dataKey &&
     !opts.force
   ) {
+    syncEaCopyFab(true);
     if (onReady) onReady();
     return;
   }
@@ -1865,6 +1885,7 @@ export function renderEstadoActualPanel(opts) {
 
   _eaPanelCache.shellKey = shellKey;
   _eaPanelCache.dataKey = dataKey;
+  syncEaCopyFab(true);
   if (onReady) onReady();
 }
 
@@ -2089,6 +2110,48 @@ export async function estadoActualGuardarCopiar() {
   );
 }
 
+var eaCopyFabBound = false;
+
+function ensureEaCopyFabController() {
+  var fab = document.getElementById('ea-copy-fab');
+  if (!fab || eaCopyFabBound) return;
+  eaCopyFabBound = true;
+  if (fab.parentElement !== document.body) document.body.appendChild(fab);
+  fab.removeAttribute('onclick');
+  fab.addEventListener(
+    'mousedown',
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
+  fab.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (fab.hidden) return;
+    void copiarEstadoActualTexto();
+  });
+}
+
+export function syncEaCopyFab(show) {
+  ensureEaCopyFabController();
+  var visible = !!show;
+  var fab = document.getElementById('ea-copy-fab');
+  if (fab) {
+    if (visible) {
+      fab.removeAttribute('hidden');
+      fab.style.display = 'flex';
+      fab.setAttribute('aria-hidden', 'false');
+    } else {
+      fab.setAttribute('hidden', '');
+      fab.style.display = 'none';
+      fab.setAttribute('aria-hidden', 'true');
+    }
+  }
+  document.documentElement.classList.toggle('ea-copy-fab-active', visible);
+}
+
 export async function copiarEstadoActualTexto() {
   var patient = findActivePatient();
   if (!patient) {
@@ -2127,6 +2190,22 @@ export function discardEaMedProposal(key) {
   persistEstadoClinicoAndRefresh(patient.monitoreo, 'Propuesta descartada', patient);
 }
 
+export function confirmEaDietProposal() {
+  var patient = findActivePatient();
+  if (!patient) return;
+  ensureMonitoreo(patient);
+  confirmDietProposal(patient.monitoreo);
+  persistEstadoClinicoAndRefresh(patient.monitoreo, 'Dieta confirmada', patient);
+}
+
+export function discardEaDietProposal() {
+  var patient = findActivePatient();
+  if (!patient) return;
+  ensureMonitoreo(patient);
+  discardDietProposal(patient.monitoreo);
+  persistEstadoClinicoAndRefresh(patient.monitoreo, 'Propuesta de dieta descartada', patient);
+}
+
 export function confirmAllEaMedProposals() {
   var patient = findActivePatient();
   if (!patient) return;
@@ -2148,6 +2227,8 @@ export const windowHandlers = {
   copiarEstadoActualTexto,
   confirmEaMedField,
   discardEaMedProposal,
+  confirmEaDietProposal,
+  discardEaDietProposal,
   confirmAllEaMedProposals,
   toggleEaEstadoClinico,
   applyEstadoActualParsedToForm,

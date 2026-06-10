@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
   applyRecetaProposal,
   confirmMedField,
+  confirmDietProposal,
+  discardDietProposal,
+  hasPendingEaProposals,
   discardMedProposal,
   confirmAllMedProposals,
   buildMedDropdownOptions,
@@ -45,6 +48,35 @@ test('discardMedProposal clears pendiente without touching estadoClinico', () =>
   discardMedProposal(m, 'vasop');
   assert.equal(m.pendienteReceta.vasop, '');
   assert.equal(m.estadoClinico.vasop, 'NORADRENALINA');
+});
+
+test('confirmDietProposal copia dieta, kcal y proteinG', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL PICADA (2000 kcal, 70 g prot)';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '70';
+  confirmDietProposal(m);
+  assert.equal(m.estadoClinico.dieta, 'NORMAL PICADA (2000 kcal, 70 g prot)');
+  assert.equal(m.estadoClinico.kcal, '2000');
+  assert.equal(m.estadoClinico.proteinG, '70');
+  assert.equal(m.pendienteReceta.dieta, '');
+  assert.equal(m.confirmado.dieta, true);
+});
+
+test('hasPendingEaProposals detecta dieta pendiente', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.proteinG = '70';
+  assert.equal(hasPendingEaProposals(m.pendienteReceta), true);
+});
+
+test('discardDietProposal limpia paquete nutricional pendiente', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'X';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '70';
+  discardDietProposal(m);
+  assert.equal(m.pendienteReceta.dieta, '');
+  assert.equal(m.pendienteReceta.proteinG, '');
 });
 
 test('confirmAllMedProposals confirms every pending field', () => {

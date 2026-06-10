@@ -29,6 +29,10 @@
   overflow: auto;
 }
 
+html.ea-copy-fab-active #exp-pane-estado-actual {
+  padding-bottom: calc(80px + 24px * var(--density-space, 1));
+}
+
 .estado-actual-panel {
   display: flex;
   flex-direction: column;

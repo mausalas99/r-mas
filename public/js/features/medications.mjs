@@ -2,8 +2,11 @@
  * Panel Receta MED (procesamiento, SOAP, copia).
  */
 import {
-  parseMedicationPaste,
-  looksLikeSomeMedicationPaste,
+  parseIndicacionesPaste,
+  looksLikeSomeIndicacionesPaste,
+  shouldAutoSelectSoap,
+  mergeDietaItems,
+  buildDietProposalText,
   resolveFechaActualizacion,
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
@@ -107,20 +110,21 @@ var _medPanelCacheKey = "";
 function medPanelCacheKey(activeId) {
   if (!activeId) return "";
   var block = medRecetaByPatient[activeId];
-  if (!block || !block.items || !block.items.length) {
+  if (!block || ((!block.items || !block.items.length) && (!block.dietas || !block.dietas.length))) {
     return String(activeId) + "|empty|" + medOutputTab;
   }
   var selMap = getMedNotaSelMap(activeId);
   var suspendHash = 0;
   var selHash = 0;
-  block.items.forEach(function (it, idx) {
+  var medItems = block.items || [];
+  medItems.forEach(function (it, idx) {
     if (it.suspendido) suspendHash += 1 << (idx % 24);
     if (selMap[it.id]) selHash += 1 << (idx % 24);
   });
   return (
     String(activeId) +
     "|N" +
-    block.items.length +
+    medItems.length +
     "|F" +
     (block.fechaActualizacion || "") +
     "|S" +
@@ -129,6 +133,8 @@ function medPanelCacheKey(activeId) {
     selHash +
     "|T" +
     medOutputTab +
+    "|D" +
+    (block.dietas ? block.dietas.length : 0) +
     "|V" +
     getMedSubview()
   );
@@ -175,7 +181,10 @@ export function renderMedRecetaPanel() {
   }
   restoreMedInputForPatient(activeId);
   var block = medRecetaByPatient[activeId];
-  if (!block || !block.items || !block.items.length) {
+  var hasRecetaContent =
+    block &&
+    ((block.items && block.items.length) || (block.dietas && block.dietas.length));
+  if (!hasRecetaContent) {
     _medPanelCacheKey = cacheKey;
     hintEl.style.display = "block";
     hintEl.textContent =
@@ -197,7 +206,29 @@ export function renderMedRecetaPanel() {
     fechaEl.style.display = "block";
     fechaEl.textContent = "Actualizado: " + (block.fechaActualizacion || "—");
   }
-  var rows = block.items.map(function (it) {
+  var dietHtml = "";
+  if (block.dietas && block.dietas.length) {
+    var mergedDiet = mergeDietaItems(block.dietas);
+    dietHtml =
+      '<div class="med-receta-diet-card" style="margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2, rgba(0,0,0,.02));">' +
+      '<div style="font-weight:600;font-size:12px;margin-bottom:6px;">Dieta detectada</div>' +
+      '<div>' +
+      esc(mergedDiet.descripcion || "—") +
+      "</div>" +
+      (mergedDiet.kcal != null
+        ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' +
+          esc(String(mergedDiet.kcal)) +
+          " kcal</div>"
+        : "") +
+      (mergedDiet.proteinG != null
+        ? '<div style="font-size:12px;color:var(--text-muted);">' +
+          esc(String(mergedDiet.proteinG)) +
+          " g proteína</div>"
+        : "") +
+      "</div>";
+  }
+  var items = block.items || [];
+  var rows = items.map(function (it) {
     var sid = String(it.id || "");
     var label = esc((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
@@ -234,15 +265,18 @@ export function renderMedRecetaPanel() {
     );
   });
   listEl.innerHTML =
-    '<div class="med-receta-wrap">' +
-    '<div class="med-receta-head">' +
-    "<span>Excl.</span>" +
-    "<span>SOAP</span>" +
-    "<span>Medicamento</span>" +
-    "<span>Día</span>" +
-    "</div>" +
-    rows.join("") +
-    "</div>";
+    dietHtml +
+    (rows.length
+      ? '<div class="med-receta-wrap">' +
+        '<div class="med-receta-head">' +
+        "<span>Excl.</span>" +
+        "<span>SOAP</span>" +
+        "<span>Medicamento</span>" +
+        "<span>Día</span>" +
+        "</div>" +
+        rows.join("") +
+        "</div>"
+      : "");
   renderMedNotaFooter();
   var tabFull = document.getElementById("med-tab-full");
   var tabSimple = document.getElementById("med-tab-simple");
@@ -256,8 +290,8 @@ export function renderMedRecetaPanel() {
     tabSimple.classList.toggle("active", medOutputTab === "simple");
     tabSimple.setAttribute("aria-selected", medOutputTab === "simple" ? "true" : "false");
   }
-  var txtFull = buildMedRecetaCopyText(block.items);
-  var txtSimple = buildMedRecetaNameOnlyText(block.items);
+  var txtFull = buildMedRecetaCopyText(items);
+  var txtSimple = buildMedRecetaNameOnlyText(items);
   var txt = medOutputTab === "simple" ? txtSimple : txtFull;
   outPre.textContent = txt;
   if (outCard) outCard.style.display = txt.trim() ? "block" : "none";
@@ -422,15 +456,15 @@ export function procesarRecetaMed() {
   }
   var ta = document.getElementById("med-input");
   var raw = ta ? ta.value : "";
-  var parsed = parseMedicationPaste(raw || "");
-  if (!parsed.items.length) {
-    if (!looksLikeSomeMedicationPaste(raw || "")) {
+  var parsed = parseIndicacionesPaste(raw || "");
+  if (!parsed.items.length && !parsed.dietas.length) {
+    if (!looksLikeSomeIndicacionesPaste(raw || "")) {
       rt.showToast(
-        "No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y pégalo aquí.",
+        "No parece el bloque de SOME. Copia desde Fecha/hora con tabuladores (medicamentos, dietas…) y pégalo aquí.",
         "error"
       );
     } else {
-      rt.showToast("No se encontraron filas MEDICAMENTOS válidas en el pegado", "error");
+      rt.showToast("No se encontraron filas MEDICAMENTOS ni DIETAS válidas", "error");
     }
     return;
   }
@@ -445,16 +479,49 @@ export function procesarRecetaMed() {
   medRecetaByPatient[activeId] = {
     fechaActualizacion: fecha,
     items: parsed.items,
+    dietas: parsed.dietas,
     pasteRaw: raw,
   };
-  medNotaSelectionByPatient[activeId] = {};
+  var sel = {};
+  parsed.items.forEach(function (it) {
+    if (shouldAutoSelectSoap(it)) sel[it.id] = true;
+  });
+  medNotaSelectionByPatient[activeId] = sel;
+
+  if (isModeSala(rt.getSettings()) && parsed.dietas.length) {
+    var patient = patients.find(function (p) {
+      return p.id === activeId;
+    });
+    if (patient) {
+      ensureMonitoreo(patient);
+      var merged = mergeDietaItems(parsed.dietas);
+      var mon = patient.monitoreo;
+      if (!mon.pendienteReceta || typeof mon.pendienteReceta !== "object") {
+        mon.pendienteReceta = {};
+      }
+      mon.pendienteReceta.dieta = buildDietProposalText(merged);
+      if (merged.kcal != null) mon.pendienteReceta.kcal = String(merged.kcal);
+      if (merged.proteinG != null) mon.pendienteReceta.proteinG = String(merged.proteinG);
+    }
+  }
+
   saveState();
   onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
   renderMedRecetaPanel();
-  var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
-  if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " líneas.";
+  var parts = [];
+  if (parsed.items.length) parts.push(parsed.items.length + " medicamento(s)");
+  if (parsed.dietas.length) parts.push(parsed.dietas.length + " dieta(s)");
+  var msg = "Manejo actualizado (" + parts.join(" · ") + ")";
+  if (parsed.skipped > 0) {
+    var sum = parsed.skippedSummary || {};
+    var omit = [];
+    if (sum.cuidados) omit.push(sum.cuidados + " cuidados");
+    if (sum.estudios) omit.push(sum.estudios + " estudios");
+    if (sum.other) omit.push(sum.other + " otras");
+    msg += ". Omitidas " + parsed.skipped + " líneas" + (omit.length ? " (" + omit.join(", ") + ")" : "");
+  }
   rt.showToast(msg, "success");
 }
 

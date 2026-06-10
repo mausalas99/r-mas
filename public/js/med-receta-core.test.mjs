@@ -2,6 +2,12 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseMedicationPaste,
+  parseIndicacionesPaste,
+  looksLikeSomeIndicacionesPaste,
+  shouldAutoSelectSoap,
+  extractDietNutrients,
+  mergeDietaItems,
+  buildDietProposalText,
   resolveFechaActualizacion,
   formatMedicationEgresoLine,
   formatMedicationSoapShort,
@@ -15,6 +21,13 @@ import {
   dosisBeforeSlash,
   extractRecetaNameOnlyDose,
 } from './med-receta-core.mjs';
+
+var SAMPLE_MIXED =
+  '10/06/2026 06:25:37 a.m.\tCUIDADOS\tCUANTIFICAR BALANCE\t\tPOR TURNO\t\tNW\n' +
+  '10/06/2026 06:27:36 a.m.\tDIETAS\tNORMAL PICADA ALTA EN FIBRA\t\t2000 KCAL + 70 GR PROTEINA\t\tNW\n' +
+  '10/06/2026 06:27:48 a.m.\tESTUDIOS\tBIOMETRÍA HEMÁTICA\t\tEN AM\tUNICA VEZ\tNW\n' +
+  '10/06/2026 06:26:12 a.m.\tMEDICAMENTOS\tACICLOVIR 200 MG TABLETA (*)\tVIA ORAL\t400 MG //\tCADA 12 HORAS\tNW\n' +
+  '10/06/2026 06:26:39 a.m.\tMEDICAMENTOS P2\tDEXTROSA 50 % SOL INY 50 ML\tVIA INTRAVENOSA\t50 ML / VEL.INF: GLUCOSA <70\tPRN\tNW';
 
 beforeEach(() => {
   applyMedCatalogOverlay({ accents: {}, soapTokens: { vasop: [], abx: [], analgesia: [], antihta: [] } });
@@ -371,6 +384,87 @@ test('parseMedicationPaste incluye medicamento fuera de catálogo', () => {
   var r = parseMedicationPaste(line);
   assert.equal(r.items.length, 1);
   assert.equal(r.items[0].nombreRaw, 'FARMACO NUEVO XYZ 100 MG SOL INY');
+});
+
+test('extractDietNutrients lee 2000 KCAL + 70 GR PROTEINA', () => {
+  var n = extractDietNutrients('2000 KCAL + 70 GR PROTEINA');
+  assert.equal(n.kcal, 2000);
+  assert.equal(n.proteinG, 70);
+});
+
+test('extractDietNutrients acepta 70 G DE PROTEINA', () => {
+  var n = extractDietNutrients('1500 KCAL + 70 G DE PROTEINA');
+  assert.equal(n.kcal, 1500);
+  assert.equal(n.proteinG, 70);
+});
+
+test('mergeDietaItems concatena descripciones y toma kcal/prot de última fila con patrón', () => {
+  var merged = mergeDietaItems([
+    { descripcionRaw: 'BLANDA', detalleRaw: '1200 KCAL', kcal: 1200, proteinG: null },
+    { descripcionRaw: 'NORMAL PICADA', detalleRaw: '2000 KCAL + 70 GR PROTEINA', kcal: 2000, proteinG: 70 },
+  ]);
+  assert.equal(merged.descripcion, 'BLANDA · NORMAL PICADA');
+  assert.equal(merged.kcal, 2000);
+  assert.equal(merged.proteinG, 70);
+});
+
+test('buildDietProposalText resume dieta con macros', () => {
+  var t = buildDietProposalText({
+    descripcion: 'NORMAL PICADA ALTA EN FIBRA',
+    kcal: 2000,
+    proteinG: 70,
+  });
+  assert.match(t, /NORMAL PICADA/i);
+  assert.match(t, /2000/i);
+  assert.match(t, /70/i);
+});
+
+test('parseIndicacionesPaste separa meds, dieta y skipped', () => {
+  var r = parseIndicacionesPaste(SAMPLE_MIXED);
+  assert.equal(r.items.length, 2);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].proteinG, 70);
+  assert.equal(r.skippedSummary.cuidados, 1);
+  assert.equal(r.skippedSummary.estudios, 1);
+});
+
+test('looksLikeSomeIndicacionesPaste true con solo DIETAS', () => {
+  var line = '10/06/2026 06:27:36 a.m.\tDIETAS\tNORMAL\t\t2000 KCAL\t\tNW';
+  assert.equal(looksLikeSomeIndicacionesPaste(line), true);
+});
+
+test('shouldAutoSelectSoap pre-marca MEROPENEM y DEXTROSA PRN', () => {
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'MEROPENEM 1 G SOL INY',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1 G //',
+      frecuenciaRaw: 'CADA 8 HORAS',
+    }),
+    true
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'DEXTROSA 50 % SOL INY 50 ML',
+      dosisRaw: '50 ML / VEL.INF: EN CASO DE GLUCOSA <70 MG/DL',
+      frecuenciaRaw: 'PRN',
+    }),
+    true
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'SULFATO DE MAGNESIO 1 G SOL INY 10 ML',
+      dosisRaw: '4 G DILUIR',
+      frecuenciaRaw: 'UNICA VEZ',
+    }),
+    false
+  );
+});
+
+test('parseMedicationPaste sigue devolviendo solo meds', () => {
+  var r = parseMedicationPaste(SAMPLE_MIXED);
+  assert.equal(r.items.length, 2);
+  assert.equal(r.dietas, undefined);
 });
 
 test('applyMedCatalogOverlay clasifica tokens personalizados antes que listas internas', () => {

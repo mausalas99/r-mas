@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   emptyMonitoreo,
+  emptyEstadoClinico,
+  ensureMonitoreo,
   migratePatientMonitoreo,
   deriveSnapshot,
   balanceTurno,
@@ -15,6 +17,26 @@ import {
   parseIoEgresoField,
   isIoNumericValue,
 } from './estado-actual-data.mjs';
+
+test('emptyEstadoClinico incluye proteinG', () => {
+  const ec = emptyEstadoClinico();
+  assert.equal(ec.proteinG, '');
+});
+
+test('ensureMonitoreo backfill proteinG en pacientes legacy', () => {
+  /** @type {any} */
+  const patient = {
+    monitoreo: {
+      estadoClinico: { dieta: 'BLANDA', kcal: '1500' },
+      pendienteReceta: {},
+      confirmado: {},
+      historial: [],
+      textoGuardado: { text: '', savedAt: null },
+    },
+  };
+  ensureMonitoreo(patient);
+  assert.equal(patient.monitoreo.estadoClinico.proteinG, '');
+});
 
 test('emptyMonitoreo — stable canonical shape', () => {
   const a = emptyMonitoreo();

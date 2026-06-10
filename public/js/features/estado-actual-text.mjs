@@ -147,6 +147,10 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   var vasopList = medsListForSoap(ec.vasop, ', ');
   var vasopClause = vasopList ? 'VASOPRESORES: ' + vasopList : 'SIN VASOPRESORES';
   var nmMedsClause = medsListForSoap(ec.nm, ' || ');
+  var proteinClause =
+    ec.proteinG != null && String(ec.proteinG).trim() !== ''
+      ? ' + ' + num(ec.proteinG) + ' GR PROTEINA'
+      : '';
   var nmDiet =
     'DIETA ' +
     val(ec.dieta) +
@@ -154,7 +158,9 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     num(ec.kcalKg) +
     ' KCAL/KG (' +
     num(kcalDisplay) +
-    ' KCAL) PARA PESO DE ' +
+    ' KCAL)' +
+    proteinClause +
+    ' PARA PESO DE ' +
     num(weightKg != null ? weightKg : '') +
     ' KG';
   var nmParts = [nmDiet];

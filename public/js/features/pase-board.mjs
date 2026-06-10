@@ -39,7 +39,11 @@ import {
 import { renderVpo } from "./vpo.mjs";
 import { buildEaMonitoreoRevision } from "./estado-actual-data.mjs";
 import { resumeLabBulkPreviewModalIfSuspended } from "./lab-bulk-preview-modal.mjs";
-import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
+import {
+  invalidateEaPanelCache,
+  renderEstadoActualPanel,
+  syncEaCopyFab,
+} from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
@@ -660,10 +664,10 @@ export function renderPaseBoard() {
           return !it.suspendido;
         })
       : [];
-  parts.push('<section class="pase-section" aria-label="Medicamentos">');
+  parts.push('<section class="pase-section" aria-label="Manejo">');
   parts.push('<div class="pase-section-head">');
   parts.push(
-    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'med\')">Medicamentos</button>'
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'med\')">Manejo</button>'
   );
   parts.push('</div><div class="pase-card-grid">');
   if (!medItems.length) {
@@ -1179,6 +1183,7 @@ export function switchInnerTab(tab, opts) {
   var settings = rt.getSettings();
   tab = migrateGranularInner(tab, settings);
   var prevInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  if (prevInner === "estadoActual" && tab !== "estadoActual") syncEaCopyFab(false);
   var consolidated = useConsolidatedExpedienteTabs(settings);
   var prevComposite = expedienteCompositeTab(prevInner, settings);
   var nextComposite = expedienteCompositeTab(tab, settings);

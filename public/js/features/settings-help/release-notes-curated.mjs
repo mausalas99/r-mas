@@ -724,10 +724,34 @@ var RELEASE_NOTES_669 = [
   },
 ];
 
+var RELEASE_NOTES_729 = [
+  {
+    title: 'Manejo — parser SOME ampliado',
+    body:
+      'Pega el bloque del hospital con tabuladores: <strong>MEDICAMENTOS</strong>, <strong>MEDICAMENTOS P2</strong> y <strong>DIETAS</strong>. Cuidados y estudios se omiten con conteo.',
+  },
+  {
+    title: 'Dieta → Estado actual',
+    body:
+      'En sala, la dieta detectada va como <strong>propuesta pendiente</strong> en EA (confirmar o descartar). Nuevo campo <strong>proteína (g/día)</strong>.',
+  },
+  {
+    title: 'SOAP pre-marcado',
+    body:
+      'ATB, antiHTA, insulinas, D50 y rescates PRN por glucometría se marcan solos en la grilla SOAP al procesar Manejo.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.2.9 en todas</strong> las estaciones el mismo día. Parche sobre <strong>7.2.8</strong>; esquema SQLCipher sigue en <strong>v15</strong>.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_728;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_729;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.2.9': RELEASE_NOTES_729,
   '7.2.8': RELEASE_NOTES_728,
   '7.2.7': RELEASE_NOTES_727,
   '7.2.6': RELEASE_NOTES_726,

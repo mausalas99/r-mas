@@ -45,7 +45,7 @@ const I18N_ES = {
   'settings.fontXLarge': 'Más grande',
   'settings.uiDensity': 'Modo de vista',
   'settings.uiDensityHint':
-    'Normal: Laboratorio, Expediente, Medicamentos y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.',
+    'Normal: Laboratorio, Expediente, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.',
   'settings.densityNormal': 'Normal',
   'settings.densityPase': 'Pase',
   'settings.highContrast': 'Alto contraste',
@@ -69,7 +69,7 @@ const I18N_ES = {
   'theme.toggleTitle': 'Cambiar tema',
   'appTab.lab': 'Laboratorio',
   'appTab.nota': 'Expediente',
-  'appTab.med': 'Medicamentos',
+  'appTab.med': 'Manejo',
   'appTab.agenda': 'Agenda',
   'roundMode.hint': 'Ronda: paciente siguiente / anterior',
   'roundMode.seenTitle': 'Visto en ronda (se reinicia cada día)',
@@ -224,7 +224,7 @@ export function clearPaseDetailEscape() {
 function paseSectionLabelFromContext() {
   var tab = runtime.getActiveAppTab();
   if (tab === 'lab') return 'Laboratorio';
-  if (tab === 'med') return 'Medicamentos';
+  if (tab === 'med') return 'Manejo';
   if (tab === 'agenda') return 'Agenda';
   if (tab === 'nota') {
     var inner = runtime.getActiveInner() || 'todo';

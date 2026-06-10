@@ -892,7 +892,7 @@ export function renderMedPharmProfilePanel() {
       '<p class="med-pharm-empty-title">Sin datos para ' +
       esc(monthLabel(viewYear, viewMonthIndex)) +
       '</p>' +
-      '<p class="med-pharm-empty-lead">Importa la matriz SOME del hospital o procesa <strong>Receta</strong> en la pestaña Receta actual.</p>' +
+      '<p class="med-pharm-empty-lead">Importa la matriz SOME del hospital o procesa <strong>Receta</strong> en la pestaña Manejo actual.</p>' +
       '<button type="button" class="btn-generate" data-med-pharm-open-paste>Importar mes SOME</button>' +
       '</div>';
     list.querySelector('[data-med-pharm-open-paste]').addEventListener('click', openMedPharmPasteModal);

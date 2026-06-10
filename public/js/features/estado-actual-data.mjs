@@ -47,7 +47,8 @@ export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPat
     String(ec.soporte || ''),
     String(ec.dieta || ''),
     String(ec.kcalKg || ''),
-    String(ec.kcal || '')
+    String(ec.kcal || ''),
+    String(ec.proteinG || '')
   );
   for (var k of MED_FIELD_KEYS) {
     parts.push(String(ec[k] || ''), String(pend[k] || ''), conf[k] ? '1' : '0');
@@ -78,8 +79,29 @@ export function emptyEstadoClinico() {
     dieta: '',
     kcalKg: '',
     kcal: '',
+    proteinG: '',
     pesoRef: '',
   };
+}
+
+function backfillEstadoClinico(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  var template = emptyEstadoClinico();
+  var ec = monitoreo.estadoClinico;
+  if (!ec || typeof ec !== 'object') {
+    monitoreo.estadoClinico = Object.assign({}, template);
+  } else {
+    Object.keys(template).forEach(function (k) {
+      if (ec[k] == null) ec[k] = template[k];
+    });
+  }
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
+    monitoreo.pendienteReceta = emptyPendienteReceta();
+  } else {
+    Object.keys(template).forEach(function (k) {
+      if (monitoreo.pendienteReceta[k] == null) monitoreo.pendienteReceta[k] = '';
+    });
+  }
 }
 
 /** @returns {Record<string, string>} */
@@ -160,6 +182,7 @@ export function ensureMonitoreo(patient) {
   if (!/** @type {any} */ (patient).monitoreo) {
     /** @type {any} */ (patient).monitoreo = emptyMonitoreo();
   }
+  backfillEstadoClinico(/** @type {any} */ (patient).monitoreo);
   return patient;
 }
 

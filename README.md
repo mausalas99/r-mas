@@ -39,9 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.8](https://github.com/mausalas99/r-mas/releases/tag/v7.2.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.9](https://github.com/mausalas99/r-mas/releases/tag/v7.2.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.2.9 (Manejo, dietas SOME y EA)
+
+- **Manejo** — parser SOME con medicamentos P2 y dietas; SOAP pre-marcado (ATB, insulina, D50, PRN glu).
+- **Estado actual** — propuesta de dieta con confirmar/descartar; campo proteína g/día; FAB copiar.
+- **Censo** — re-selección automática si el filtro oculta al paciente activo.
+
+Notas: `docs/RELEASE_NOTES_7.2.9.txt`.
 
 ## R+ 7.2.8 (interno, glu rescate y LAN iPad)
 
@@ -73,13 +82,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.8)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.9)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.2.9** | Manejo parser dietas/P2, propuesta dieta EA, FAB copiar EA |
 | **7.2.8** | Interno SV por frecuencia, glu rescate en EA, enlace iPad en cliente LAN |
 | **7.2.7** | Interno: orden por frecuencia SV, UI glucometrías oscura |
 | **7.2.6** | Entrega en censo, orden por cama, interno alineado, expediente fluido |
