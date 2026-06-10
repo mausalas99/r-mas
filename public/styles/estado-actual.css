@@ -1555,6 +1555,156 @@ html.ea-charts-modal-open {
   background: var(--surface);
 }
 
+.ea-glu-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ea-glu-altered-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(12px * var(--density-font, 1));
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.ea-glu-altered-input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--warning, #b45309);
+}
+
+.ea-glu-rescue-wrap--hidden {
+  display: none !important;
+}
+
+.ea-glu-rescue-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--warning, #b45309) 35%, var(--divider));
+  background: color-mix(in oklab, var(--warning, #b45309) 5%, var(--surface));
+}
+
+.ea-glu-rescue-box-title {
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--warning, #b45309);
+  letter-spacing: 0.02em;
+}
+
+.ea-glu-rescue-box-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .ea-glu-rescue-box-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ea-glu-rescue-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ea-glu-rescue-field .ea-label {
+  font-size: calc(11px * var(--density-font, 1));
+}
+
+.ea-input-affix {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: var(--input-fill);
+  overflow: hidden;
+}
+
+.ea-input-affix:focus-within {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--surface);
+}
+
+.ea-input-affix .ea-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
+.ea-input-affix .ea-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.ea-input-affix-suffix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  border-left: 1px solid var(--divider);
+  white-space: nowrap;
+}
+
+.ea-glu-rescue-input,
+.ea-glu-post-rescue-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ea-glu-row--altered {
+  border-color: color-mix(in oklab, var(--warning, #b45309) 45%, var(--divider));
+  background: color-mix(in oklab, var(--warning, #b45309) 6%, var(--surface));
+}
+
+.ea-registro-modal .ea-glu-row--standard .ea-glu-row-meta,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-row-meta {
+  width: 100%;
+}
+
+.ea-registro-modal .ea-glu-row--extra .ea-glu-row-meta {
+  grid-column: 1 / -1;
+}
+
+.ea-snapshot-glu-chip--altered {
+  border-color: color-mix(in oklab, var(--warning, #b45309) 55%, var(--divider));
+  color: var(--warning, #b45309);
+}
+
+.ea-snapshot-glu-rescue {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--warning, #b45309);
+}
+
+.ea-snapshot-glu-post {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--success, #15803d);
+}
+
+
 .ea-registro-modal .ea-glu-row--extra {
   grid-column: 1 / -1;
   display: grid;

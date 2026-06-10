@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isVitalAltered, buildAlteredAtDefaults } from './estado-actual-ranges.mjs';
+import {
+  isVitalAltered,
+  buildAlteredAtDefaults,
+  isGluAltered,
+  isGlucometriaMarkedAltered,
+} from './estado-actual-ranges.mjs';
 
 test('isVitalAltered flags out-of-range FR', () => {
   assert.equal(isVitalAltered('fr', 28), true);
@@ -22,4 +27,15 @@ test('buildAlteredAtDefaults only includes altered keys', () => {
   const altered = buildAlteredAtDefaults({ fr: 28, fc: 80 }, '11:40');
   assert.equal(altered.fr, '11:40');
   assert.equal(altered.fc, undefined);
+});
+
+test('isGluAltered flags hypo and hyper', () => {
+  assert.equal(isGluAltered(65), true);
+  assert.equal(isGluAltered(200), true);
+  assert.equal(isGluAltered(110), false);
+});
+
+test('isGlucometriaMarkedAltered respects manual flag', () => {
+  assert.equal(isGlucometriaMarkedAltered({ value: 110, altered: true }), true);
+  assert.equal(isGlucometriaMarkedAltered({ value: 110 }), false);
 });

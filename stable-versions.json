@@ -1,13 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-09",
+  "updatedAt": "2026-06-10",
   "entries": [
+    {
+      "version": "7.2.8",
+      "label": "7.2.8",
+      "publishedAt": "2026-06-10",
+      "summary": "Release estable 7.2.8",
+      "recommended": true
+    },
+    {
+      "version": "7.2.7",
+      "label": "7.2.7",
+      "publishedAt": "2026-06-09",
+      "summary": "Release estable 7.2.7",
+      "recommended": false
+    },
     {
       "version": "7.2.6",
       "label": "7.2.6",
       "publishedAt": "2026-06-09",
       "summary": "Release estable 7.2.6",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.2.5",

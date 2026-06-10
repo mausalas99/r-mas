@@ -11,6 +11,11 @@ function readPackageVersion() {
   return String(pkg.version || '').trim();
 }
 
+/** @param {string} version semver X.Y.Z */
+function curatedConstName(version) {
+  return `RELEASE_NOTES_${String(version).trim().replace(/\./g, '')}`;
+}
+
 /**
  * @param {string} version
  * @returns {Promise<string>}
@@ -39,5 +44,6 @@ async function formatCuratedReleaseNotesPlain(version) {
 
 module.exports = {
   readPackageVersion,
+  curatedConstName,
   formatCuratedReleaseNotesPlain,
 };

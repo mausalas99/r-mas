@@ -836,9 +836,9 @@ function isLanHostActive() {
   return !!lanClient.connected;
 }
 
-/** Host Mac can mint /join tickets once LAN REST config exists (WS may still be connecting). */
+/** Desktop on the turn can share permanent iPad link once LAN REST config exists (host or client). */
 function canOfferMobileLanShare() {
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
+  if (!isLanElectronDesktop()) return false;
   if (lanClient.connected) return true;
   return isLanSessionConfiguredForRest();
 }
@@ -1155,7 +1155,7 @@ async function renderLanPanelOnce() {
       appendLanInviteShareCards(root);
     }
     appendLanJoinOtherMacSection(root, {
-      open: needsInvitePaste || isLanRemoteJoinMode() || !canOfferMobileLanShare(),
+      open: needsInvitePaste || !canOfferMobileLanShare(),
     });
     if (needsInvitePaste && canOfferMobileLanShare()) {
       appendLanInviteShareCards(root);
@@ -2589,7 +2589,7 @@ export async function copyMobileLanLinkFromUi(opts) {
   if (!link) {
     if (!silent) {
       runtime().showToast(
-        'Falta la dirección del anfitrión o el código del equipo. Revisa ⇄ y que esta Mac sea anfitriona.',
+        'Falta la dirección del anfitrión o el código del equipo. Conéctate al turno en ⇄ primero.',
         'error'
       );
     }

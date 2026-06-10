@@ -44,6 +44,7 @@ function medsClauseOrFallback(fieldVal, fallback) {
 }
 
 import { resolveDietWeightKg, computeDietKcalTotal } from './estado-actual-data.mjs';
+import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
 
 /**
@@ -51,7 +52,7 @@ import { formatIoClauseForSoap } from './estado-actual-io.mjs';
  * @param {Record<string, unknown> | null | undefined} estadoClinico
  * @param {{ vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown }>, io?: { ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown } } | null | undefined} snapshot
  * @param {{ balanceTurno?: unknown } | null | undefined} balances
- * @param {{ patientPeso?: unknown, includeInsulinRescates?: boolean } | null | undefined} [options]
+ * @param {{ patientPeso?: unknown } | null | undefined} [options]
  * @returns {string}
  */
 export function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
@@ -101,7 +102,15 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     snapshot && typeof snapshot === 'object' && Array.isArray(snapshot.glucometrias) ? snapshot.glucometrias : [];
   for (var gi = 0; gi < glSrc.length; gi++) {
     var gg = glSrc[gi];
-    var gv = gg && typeof gg === 'object' ? /** @type {{ value?: unknown }} */ (gg).value : undefined;
+    if (!gg || typeof gg !== 'object') {
+      gluParts.push('___');
+      continue;
+    }
+    var postGv = /** @type {{ postRescueValue?: unknown, value?: unknown }} */ (gg).postRescueValue;
+    var gv =
+      postGv != null && postGv !== ''
+        ? postGv
+        : /** @type {{ value?: unknown }} */ (gg).value;
     gluParts.push(num(gv));
   }
   while (gluParts.length < 3) gluParts.push('___');
@@ -153,8 +162,9 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   nmParts.push(ioClause);
   nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
   if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
-  if (options.includeInsulinRescates) {
-    nmParts.push('RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE');
+  else {
+    var rescatesClause = formatInsulinRescatesClause(glSrc);
+    if (rescatesClause) nmParts.push(rescatesClause);
   }
 
   const lines = [

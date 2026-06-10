@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
+const { readPackageVersion } = require('./release-notes-body');
 
 test('RELEASE_NOTES_6.6.8 has no TODO placeholders', () => {
   const notes = fs.readFileSync(
@@ -160,22 +161,32 @@ test('RELEASE_NOTES_7.2.6 has no TODO placeholders', () => {
   assert.ok(!/\bTODO\b/i.test(notes), 'docs/RELEASE_NOTES_7.2.6.txt still has TODO');
 });
 
-test('curated 7.2.6 highlights are current default', async () => {
+test('current package version RELEASE_NOTES has no TODO placeholders', () => {
+  const version = readPackageVersion();
+  const file = path.join(ROOT, 'docs', `RELEASE_NOTES_${version}.txt`);
+  assert.ok(fs.existsSync(file), `missing ${path.relative(ROOT, file)}`);
+  const notes = fs.readFileSync(file, 'utf8');
+  assert.ok(!/\bTODO\b/i.test(notes), `docs/RELEASE_NOTES_${version}.txt still has TODO`);
+});
+
+test('curated highlights for package.json version are current default', async () => {
+  const version = readPackageVersion();
   const mod = await import(
     path.join(ROOT, 'public/js/features/settings-help/release-notes-curated.mjs')
   );
-  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS['7.2.6'];
-  assert.ok(Array.isArray(highlights) && highlights.length >= 3);
+  const highlights = mod.RELEASE_NOTES_HIGHLIGHTS[version];
+  assert.ok(
+    Array.isArray(highlights) && highlights.length >= 2,
+    `missing curated highlights for package.json version ${version}`
+  );
   const joined = highlights.map((n) => `${n.title} ${n.body}`).join(' ');
   assert.ok(!/title: 'TODO'/.test(joined));
   assert.ok(!joined.includes('Completar antes de publicar'));
-  assert.ok(
-    joined.includes('entrega') ||
-      joined.includes('censo') ||
-      joined.includes('cama') ||
-      joined.includes('interno')
+  assert.equal(
+    mod.RELEASE_NOTES_HIGHLIGHTS_DEFAULT,
+    highlights,
+    `RELEASE_NOTES_HIGHLIGHTS_DEFAULT must match RELEASE_NOTES_HIGHLIGHTS['${version}']`
   );
-  assert.equal(mod.RELEASE_NOTES_HIGHLIGHTS_DEFAULT, mod.RELEASE_NOTES_HIGHLIGHTS['7.2.6']);
 });
 
 test('RELEASE_NOTES_7.2.3 has no TODO placeholders', () => {

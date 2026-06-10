@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.2.7](https://github.com/mausalas99/r-mas/releases/tag/v7.2.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.2.8](https://github.com/mausalas99/r-mas/releases/tag/v7.2.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.2.8 (interno, glu rescate y LAN iPad)
+
+- **Interno** — orden por frecuencia de signos (q1h arriba); glucometrías con fondo oscuro en iPad.
+- **Estado actual** — rescate de insulina por glucometría (unidades + DXT post-rescate) en la nota SOME.
+- **LAN** — Mac cliente del turno puede copiar enlace iPad sin ser anfitrión.
+
+Notas: `docs/RELEASE_NOTES_7.2.8.txt`.
 
 ## R+ 7.2.7 (interno — frecuencia y UI signos)
 
@@ -50,6 +57,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 - **Interno** — glucometrías con fondo oscuro en el modal de captura (iPad).
 
 Notas: `docs/RELEASE_NOTES_7.2.7.txt`.
+
 ## R+ 7.2.6 (entrega en censo, guardia e interno)
 
 - **Entrega** — equipo del paciente según censo; Admin ve todos los equipos; opción **Sin signos**.
@@ -65,13 +73,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.7)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.2.8)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.2.8** | Interno SV por frecuencia, glu rescate en EA, enlace iPad en cliente LAN |
 | **7.2.7** | Interno: orden por frecuencia SV, UI glucometrías oscura |
 | **7.2.6** | Entrega en censo, orden por cama, interno alineado, expediente fluido |
 | **7.2.5** | Persistencia LAN anfitrión: commits coalescidos, shards por sala, labs en sidecar, SQL v15 |

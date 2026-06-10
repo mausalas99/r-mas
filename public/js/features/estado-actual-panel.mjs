@@ -27,7 +27,7 @@ import {
   formatBalanceLive,
   toEaSalidaText,
 } from './estado-actual-io.mjs';
-import { isVitalAltered, buildAlteredAtDefaults } from './estado-actual-ranges.mjs';
+import { isVitalAltered, buildAlteredAtDefaults, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
 import {
   confirmMedField,
@@ -509,8 +509,15 @@ function wireFormInteractions(form) {
 
     form.addEventListener('change', function (ev) {
       var target = /** @type {HTMLElement | null} */ (ev.target);
-      if (!target || target.id !== 'ea-bomba-enabled') return;
-      syncEaGluMode(form);
+      if (!target) return;
+      if (target.id === 'ea-bomba-enabled') {
+        syncEaGluMode(form);
+        return;
+      }
+      if (target.matches('[data-ea-glu-altered]')) {
+        var gluRow = target.closest('.ea-glu-row');
+        if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
+      }
     });
 
     form.addEventListener('input', function (ev) {
@@ -518,6 +525,11 @@ function wireFormInteractions(form) {
       if (!target) return;
       if (target.matches('[data-ea-vital][data-ea-layer-idx]')) syncAlteredFields();
       else if (
+        target.matches('[data-ea-glu-value], [data-ea-glu-rescue-units], [data-ea-glu-post-rescue-value]')
+      ) {
+        var gluRow = target.closest('.ea-glu-row');
+        if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));
+      } else if (
         target.id === 'ea-io-ing' ||
         target.id === 'ea-io-egr' ||
         target.id === 'ea-io-evac'
@@ -569,6 +581,65 @@ function focusNextGluValueOrIo(row) {
   if (ioIng && 'focus' in ioIng) ioIng.focus();
 }
 
+function gluRescueFieldsHtml() {
+  return (
+    '<label class="ea-glu-altered-toggle">' +
+    '<input type="checkbox" class="ea-glu-altered-input" data-ea-glu-altered aria-label="Glucometría alterada">' +
+    '<span>Alterada</span>' +
+    '</label>' +
+    '<div class="ea-glu-rescue-wrap ea-glu-rescue-wrap--hidden" data-ea-glu-rescue-wrap hidden>' +
+    '<div class="ea-glu-rescue-box">' +
+    '<span class="ea-glu-rescue-box-title">Rescate</span>' +
+    '<div class="ea-glu-rescue-box-fields">' +
+    '<label class="ea-glu-rescue-field">' +
+    '<span class="ea-label">Unidades</span>' +
+    '<span class="ea-input-affix">' +
+    '<input type="number" class="ea-input ea-glu-rescue-input" data-ea-glu-rescue-units min="0" step="0.5" placeholder="0" inputmode="decimal" aria-label="Unidades de rescate">' +
+    '<span class="ea-input-affix-suffix" aria-hidden="true">U</span>' +
+    '</span>' +
+    '</label>' +
+    '<label class="ea-glu-rescue-field">' +
+    '<span class="ea-label">DXT post-rescate</span>' +
+    '<span class="ea-input-affix">' +
+    '<input type="number" class="ea-input ea-glu-post-rescue-input" data-ea-glu-post-rescue-value min="0" step="1" placeholder="0" inputmode="numeric" aria-label="Destroxía post-rescate">' +
+    '<span class="ea-input-affix-suffix" aria-hidden="true">mg/dL</span>' +
+    '</span>' +
+    '</label>' +
+    '</div>' +
+    '</div>' +
+    '</div>'
+  );
+}
+
+function syncGluRowAltered(row) {
+  var alteredEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-altered]'));
+  var wrap = row.querySelector('[data-ea-glu-rescue-wrap]');
+  var valueEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-value]'));
+  if (!alteredEl || !wrap) return;
+  var altered = !!alteredEl.checked;
+  var hasValue = !!(valueEl && String(valueEl.value).trim() !== '');
+  var showRescue = altered && hasValue;
+  wrap.classList.toggle('ea-glu-rescue-wrap--hidden', !showRescue);
+  wrap.hidden = !showRescue;
+  row.classList.toggle('ea-glu-row--altered', showRescue);
+}
+
+function wireGluRowAltered(row) {
+  var alteredEl = row.querySelector('[data-ea-glu-altered]');
+  var valueEl = row.querySelector('[data-ea-glu-value]');
+  if (alteredEl) {
+    alteredEl.addEventListener('change', function () {
+      syncGluRowAltered(row);
+    });
+  }
+  if (valueEl) {
+    valueEl.addEventListener('input', function () {
+      syncGluRowAltered(row);
+    });
+  }
+  syncGluRowAltered(row);
+}
+
 function wireGluRowKeyboard(row) {
   var valueEl = row.querySelector('[data-ea-glu-value]');
   if (!valueEl) return;
@@ -599,7 +670,7 @@ function wireGluRowKeyboard(row) {
 }
 
 /**
- * @param {{ value?: number, time?: string } | null | undefined} [data]
+ * @param {{ value?: number, time?: string, altered?: boolean, rescueUnits?: number, postRescueValue?: number } | null | undefined} [data]
  * @param {{ standardTime?: string } | null | undefined} [opts]
  * @returns {HTMLDivElement}
  */
@@ -620,18 +691,36 @@ function buildGluRow(data, opts) {
       '">' +
       '<input type="hidden" data-ea-glu-time value="' +
       standardTime +
-      '">';
+      '">' +
+      '<div class="ea-glu-row-meta">' +
+      gluRescueFieldsHtml() +
+      '</div>';
   } else {
     row.innerHTML =
       '<input type="time" class="ea-input ea-input--time ea-glu-time-input" data-ea-glu-time aria-label="Hora de glucometría">' +
       '<input type="number" class="ea-input ea-glu-value-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL" inputmode="numeric" aria-label="Glucometría">' +
-      '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon ea-glu-remove-btn" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>';
+      '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon ea-glu-remove-btn" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>' +
+      '<div class="ea-glu-row-meta">' +
+      gluRescueFieldsHtml() +
+      '</div>';
   }
   var val = row.querySelector('[data-ea-glu-value]');
   var time = row.querySelector('[data-ea-glu-time]');
+  var alteredEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-altered]'));
+  var rescueEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-rescue-units]'));
+  var postRescueEl = /** @type {HTMLInputElement | null} */ (
+    row.querySelector('[data-ea-glu-post-rescue-value]')
+  );
   if (data) {
     if (val && data.value != null && 'value' in val) val.value = String(data.value);
     if (!isStandard && time && data.time && 'value' in time) time.value = String(data.time);
+    if (alteredEl && data.altered) alteredEl.checked = true;
+    if (rescueEl && data.rescueUnits != null && data.rescueUnits !== '') {
+      rescueEl.value = String(data.rescueUnits);
+    }
+    if (postRescueEl && data.postRescueValue != null && data.postRescueValue !== '') {
+      postRescueEl.value = String(data.postRescueValue);
+    }
   }
   var removeBtn = row.querySelector('[data-ea-glu-remove]');
   if (removeBtn) {
@@ -639,13 +728,14 @@ function buildGluRow(data, opts) {
       row.remove();
     });
   }
+  wireGluRowAltered(row);
   wireGluRowKeyboard(row);
   return row;
 }
 
 /**
  * @param {HTMLElement | null} gluList
- * @param {Array<{ value?: number, time?: string }>} [prefill]
+ * @param {Array<{ value?: number, time?: string, altered?: boolean, rescueUnits?: number, postRescueValue?: number }>} [prefill]
  */
 function fillStandardGluList(gluList, prefill) {
   if (!gluList) return;
@@ -932,7 +1022,26 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     gluHtml = snapshot.glucometrias
       .map(function (g) {
         var t = g.time ? ' <span class="ea-snapshot-glu-time">' + g.time + '</span>' : '';
-        return '<span class="ea-snapshot-glu-chip">' + displayValue(g.value) + ' MG/DL' + t + '</span>';
+        var rescue =
+          g.rescueUnits != null && g.rescueUnits !== '' && Number(g.rescueUnits) !== 0
+            ? ' <span class="ea-snapshot-glu-rescue">(' + displayValue(g.rescueUnits) + ' U rescate)</span>'
+            : '';
+        var postRescue =
+          g.postRescueValue != null && g.postRescueValue !== ''
+            ? ' <span class="ea-snapshot-glu-post">→ ' + displayValue(g.postRescueValue) + ' MG/DL</span>'
+            : '';
+        var alteredCls = isGlucometriaMarkedAltered(g) ? ' ea-snapshot-glu-chip--altered' : '';
+        return (
+          '<span class="ea-snapshot-glu-chip' +
+          alteredCls +
+          '">' +
+          displayValue(g.value) +
+          ' MG/DL' +
+          rescue +
+          postRescue +
+          t +
+          '</span>'
+        );
       })
       .join('');
   }
@@ -1035,7 +1144,15 @@ function renderHistorialSection(historial) {
         var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
         glus.forEach(function (g) {
           if (g && g.value != null && g.value !== '') {
-            parts.push('Glu ' + g.value + (g.time ? ' @ ' + g.time : ''));
+            var gp = 'Glu ' + g.value;
+            if (g.altered) gp += ' alterada';
+            if (g.rescueUnits != null && g.rescueUnits !== '' && Number(g.rescueUnits) !== 0) {
+              gp += ' (' + g.rescueUnits + ' U rescate)';
+            }
+            if (g.postRescueValue != null && g.postRescueValue !== '') {
+              gp += ' → DXT ' + g.postRescueValue;
+            }
+            parts.push(gp + (g.time ? ' @ ' + g.time : ''));
           }
         });
       }
@@ -1792,19 +1909,33 @@ function parseFormMedicion() {
   var bombaToggle = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-bomba-enabled'));
   var bombaOn = !!(bombaToggle && bombaToggle.checked);
 
-  /** @type {Array<{ value: number | null, time: string }>} */
+  /** @type {Array<{ value: number, time: string, altered?: boolean, rescueUnits?: number, postRescueValue?: number }>} */
   var glucometrias = [];
   if (!bombaOn) {
     form.querySelectorAll('.ea-glu-row').forEach(function (row) {
       var valEl = row.querySelector('[data-ea-glu-value]');
       var timeEl = row.querySelector('[data-ea-glu-time]');
+      var alteredEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-altered]'));
+      var rescueEl = row.querySelector('[data-ea-glu-rescue-units]');
+      var postRescueEl = row.querySelector('[data-ea-glu-post-rescue-value]');
       var value = parseNumOrNull(valEl && 'value' in valEl ? valEl.value : '');
       if (value == null) return;
       var slotTime = row.getAttribute('data-ea-glu-standard');
       var time =
         slotTime ||
         (timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime);
-      glucometrias.push({ value: value, time: time });
+      /** @type {{ value: number, time: string, altered?: boolean, rescueUnits?: number, postRescueValue?: number }} */
+      var entry = { value: value, time: time };
+      if (alteredEl && alteredEl.checked) {
+        entry.altered = true;
+        var rescueUnits = parseNumOrNull(rescueEl && 'value' in rescueEl ? rescueEl.value : '');
+        if (rescueUnits != null && rescueUnits > 0) entry.rescueUnits = rescueUnits;
+        var postRescueValue = parseNumOrNull(
+          postRescueEl && 'value' in postRescueEl ? postRescueEl.value : ''
+        );
+        if (postRescueValue != null) entry.postRescueValue = postRescueValue;
+      }
+      glucometrias.push(entry);
     });
   }
 

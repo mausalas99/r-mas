@@ -550,6 +550,18 @@
   margin-bottom: 0.35rem;
 }
 
+.interno-glu-row input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #2a3544);
+  background: var(--bg, #0f1419);
+  color: inherit;
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+
 .interno-link-btn {
   border: none;
   background: none;

@@ -580,6 +580,13 @@ async function refreshElectronLanCandidateUrl(opts) {
 
 /** IP LAN para compartir con iPad / otras R+ (nunca localhost si hay interfaz). */
 export async function resolveLanShareBaseUrl() {
+  if (isLanRemoteJoinMode()) {
+    var remoteCfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+    var remoteHost = String(remoteCfg.hostUrl || '')
+      .trim()
+      .replace(/\/+$/, '');
+    if (remoteHost && !isLocalLoopbackLanUrl(remoteHost)) return remoteHost;
+  }
   var fromElectron = await refreshElectronLanCandidateUrl({ ensureServer: true });
   if (fromElectron) return fromElectron;
   var el = document.getElementById('lan-input-host-url');

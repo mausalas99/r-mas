@@ -1,6 +1,6 @@
 /** @typedef {{ text: string, savedAt: string | null }} TextoGuardado */
 /** @typedef {{ kind: 'diuresis' | 'drain' | 'gastrostomy' | 'nephro', label: string, value: number | string }} IoEgresoPart */
-/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, Array<{ value?: number, time?: string }>>, glucometrias?: Array<{ value?: unknown, time?: string }>, bombaInsulina?: Array<{ value?: unknown, units?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown, egrParts?: IoEgresoPart[], evac?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
+/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, Array<{ value?: number, time?: string }>>, glucometrias?: Array<{ value?: unknown, time?: string, altered?: boolean, rescueUnits?: number, postRescueValue?: number }>, bombaInsulina?: Array<{ value?: unknown, units?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown, egrParts?: IoEgresoPart[], evac?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
 
 import {
   isIoNumericValue as isIoNumericValueIo,

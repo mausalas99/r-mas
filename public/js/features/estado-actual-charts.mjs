@@ -1,4 +1,4 @@
-import { isVitalAltered } from './estado-actual-ranges.mjs';
+import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 
 /** @type {readonly string[]} */
@@ -266,7 +266,7 @@ function buildVitalsFamilyData(histAsc, keys) {
  * @param {Date} [now]
  */
 /**
- * @param {Array<{ ms: number, label: string, value: number }>} points
+ * @param {Array<{ ms: number, label: string, value: number, altered: boolean }>} points
  * @param {string} recordedAt
  * @param {unknown[]} readings
  * @param {Date} [now]
@@ -285,12 +285,13 @@ function pushGluReadingPoints(points, recordedAt, readings, now) {
       ms: ms,
       label: whenLabel + ' · ' + formatChartLabel(recordedAt),
       value: val,
+      altered: isGlucometriaMarkedAltered(/** @type {{ altered?: boolean, value?: unknown }} */ (glu)),
     });
   }
 }
 
 export function buildGluSeries(histAsc, now) {
-  /** @type {Array<{ ms: number, label: string, value: number }>} */
+  /** @type {Array<{ ms: number, label: string, value: number, altered: boolean }>} */
   var points = [];
 
   for (var i = 0; i < histAsc.length; i++) {
@@ -317,6 +318,9 @@ export function buildGluSeries(histAsc, now) {
     }),
     values: points.map(function (p) {
       return p.value;
+    }),
+    alteredFlags: points.map(function (p) {
+      return p.altered;
     }),
   };
 }
@@ -377,16 +381,12 @@ function buildEaChartSlotData(histAsc) {
   });
   var gluSeries = buildGluSeries(histAsc);
   if (gluSeries.values.length >= 2) {
+    var gluColor = chartColor('--ea-chart-glu');
+    var gluDs = lineDataset(gluSeries.labels, gluSeries.values, gluSeries.alteredFlags || [], gluColor);
+    gluDs.label = 'Glu (mg/dL)';
     out.glu = {
       labels: gluSeries.labels,
-      datasets: [
-        {
-          label: 'Glu (mg/dL)',
-          data: gluSeries.values,
-          borderColor: chartColor('--ea-chart-glu'),
-          backgroundColor: chartColor('--ea-chart-glu'),
-        },
-      ],
+      datasets: [gluDs],
     };
   }
   var ioData = buildIoChartData(histAsc);
@@ -747,6 +747,15 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
   if (gluSeries.values.length >= 2) {
     var gluWrap = document.createElement('div');
     gluWrap.className = 'ea-chart-wrap';
+    var gluColor = chartColor('--ea-chart-glu');
+    var gluDs = lineDataset(
+      gluSeries.labels,
+      gluSeries.values,
+      gluSeries.alteredFlags || [],
+      gluColor
+    );
+    gluDs.label = 'Glu (mg/dL)';
+    gluDs.tension = 0.25;
     mountChart(
       gluWrap,
       'Serie temporal',
@@ -755,16 +764,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
         type: 'line',
         data: {
           labels: gluSeries.labels,
-          datasets: [
-            {
-              label: 'Glu (mg/dL)',
-              data: gluSeries.values,
-              borderColor: chartColor('--ea-chart-glu'),
-              backgroundColor: chartColor('--ea-chart-glu'),
-              pointRadius: 4,
-              tension: 0.25,
-            },
-          ],
+          datasets: [gluDs],
         },
         options: {
           responsive: true,
