@@ -1,6 +1,9 @@
 /* Glass treatment for overlay surfaces (design system phase 1).
  * Content panes stay opaque; only floating chrome gets glass.
- * html.no-blur is the performance escape hatch (see spec risk #2). */
+ * html.no-blur is the performance escape hatch (see spec risk #2).
+ * .toast.success and .toast.error intentionally stay opaque — their higher-
+ * specificity semantic color rules (in lab.css) win. Clinical urgency toasts
+ * must remain unambiguous and are excluded from glass by design. */
 
 .settings-dropdown,
 .connection-dropdown,
@@ -29,4 +32,5 @@ html.no-blur .toast {
   background: var(--surface);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  border: none;
 }
