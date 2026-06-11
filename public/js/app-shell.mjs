@@ -2,6 +2,7 @@
  * Shell de aplicación: chrome de contexto, toast, modales, export clínico, atajos y arranque diferido.
  */
 import { storage } from './storage.js';
+import { syncHeaderContext } from './features/header-context.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
@@ -180,6 +181,7 @@ function syncWorkContextChrome() {
   syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
   renderGuardiaCensusGrid(shellCtx.getSettings());
   if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
+  syncHeaderContext(shellCtx);
 }
 
 

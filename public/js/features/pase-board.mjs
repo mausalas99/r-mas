@@ -76,6 +76,7 @@ import {
   renderExpedienteGroupRow,
   wireGroupRowBreakpointResync,
 } from "./expediente-group-row-ui.mjs";
+import { syncHeaderContext } from "./header-context.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
@@ -889,6 +890,7 @@ export function switchAppTab(tab) {
   syncEaCopyFab(tab === "nota" && inner === "estadoActual" && eaHasCopyableContent());
 
   if (tab === "med") rt.setMedTabAttention(false);
+  syncHeaderContext(rt);
 
   var deferredTab = tab;
   if (tab === "med" || prevAppTab === "med") {
@@ -1214,6 +1216,7 @@ export function switchInnerTab(tab, opts) {
   syncConsolidatedPaneVisibility(tab, settings);
   syncConsolidatedSegmentBars(tab, settings);
   renderExpedienteGroupRow(tab, settings);
+  syncHeaderContext(rt);
   if (granularMountIsEmpty(tab)) {
     opts.forceRender = true;
     invalidateInnerTabRenderCache(tab);

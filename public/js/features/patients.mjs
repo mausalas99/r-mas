@@ -1,5 +1,6 @@
 // Patient list, ronda navigation, pin/archive, add/save modal, delete — extracted from app.js
 import { CLINICAL_SALA_VALUES } from '../../../lib/clinical-salas.mjs';
+import { syncHeaderContext } from './header-context.mjs';
 import { storage } from '../storage.js';
 import {
   patients,
@@ -1358,6 +1359,7 @@ function selectPatientCore(id) {
   if (emptyState) emptyState.style.display = 'none';
   if (patientView) patientView.style.display = 'flex';
   rt.renderEstadoActualButton();
+  syncHeaderContext(rt);
   var settings = rt.getSettings();
   var inner = rt.getActiveInner();
   if (patientChanged) {
