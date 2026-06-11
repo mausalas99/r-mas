@@ -492,10 +492,8 @@ html.dark .btn-intro-skip:hover {
   #tour-dock.tour-dock-visible { animation: none; }
 }
 .tour-dock-inner {
-  background: var(--surface); color: var(--text);
-  border: 1px solid color-mix(in oklab, var(--border) 75%, var(--action) 25%);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md, 0 14px 40px rgba(15, 23, 42, 0.22));
+  color: var(--text);
+  border-radius: var(--radius-lg);
   padding: 14px 14px 12px;
 }
 #tour-dock.tour-dock--guardia .tour-dock-inner {
@@ -742,9 +740,6 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   min-width: min(420px, 100vw);
   height: 100dvh;
   max-height: 100vh;
-  background: var(--color-surface);
-  border-left: 1px solid var(--border);
-  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
   transform: translateX(100%);
   transition: transform var(--dur-normal) ease-out;
   display: flex;
@@ -827,16 +822,9 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--color-surface);
-  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-}
-.learn-hub-module-card:hover { border-color: color-mix(in oklab, var(--action) 40%, var(--border)); }
-.learn-hub-module-card.is-active {
-  border-color: var(--action);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--action) 35%, transparent);
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
 .learn-hub-module-card.is-complete {
   border-color: color-mix(in oklab, var(--action) 28%, var(--border));

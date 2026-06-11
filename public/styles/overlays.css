@@ -9,7 +9,9 @@
 .connection-dropdown,
 .modal,
 .toast,
-.cmdk {
+.cmdk,
+.learn-hub-sheet,
+#tour-dock .tour-dock-inner {
   background: var(--overlay-bg);
   -webkit-backdrop-filter: blur(var(--overlay-blur));
   backdrop-filter: blur(var(--overlay-blur));
@@ -22,7 +24,9 @@
   .connection-dropdown,
   .modal,
   .toast,
-  .cmdk {
+  .cmdk,
+  .learn-hub-sheet,
+  #tour-dock .tour-dock-inner {
     background: var(--surface);
   }
 }
@@ -31,7 +35,9 @@ html.no-blur .settings-dropdown,
 html.no-blur .connection-dropdown,
 html.no-blur .modal,
 html.no-blur .toast,
-html.no-blur .cmdk {
+html.no-blur .cmdk,
+html.no-blur .learn-hub-sheet,
+html.no-blur #tour-dock .tour-dock-inner {
   background: var(--surface);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

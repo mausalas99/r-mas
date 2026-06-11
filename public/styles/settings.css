@@ -136,9 +136,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
   right: var(--shell-inset, 24px);
   z-index: 10200;
-  background: var(--surface);
-  border: none; border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: min(320px, calc(100vw - 32px));
+  border-radius: var(--radius-lg);
+  width: min(320px, calc(100vw - 32px));
   max-height: min(85vh, calc(100vh - 56px));
   overflow-x: clip;
   overflow-y: auto;
