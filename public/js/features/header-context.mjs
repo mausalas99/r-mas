@@ -14,9 +14,17 @@ export function buildHeaderPath(appTab, inner, settings) {
   var granular = inner || 'todo';
   var target = resolveConsolidatedTarget(granular, settings || {});
   var path = GROUP_LABELS[target.tab] || 'Expediente';
-  var section = target.section || (target.tab === 'paciente' ? granular : null);
+  if (target.tab === 'paciente') return path;
+  var section = target.section;
   if (section && SECTION_LABELS[section]) path += ' › ' + SECTION_LABELS[section];
   return path;
+}
+
+
+function sidebarShowsActivePatient() {
+  if (typeof document === 'undefined') return true;
+  var root = document.documentElement;
+  return !root.classList.contains('sidebar-auto-hide') || root.classList.contains('sidebar-reveal');
 }
 
 export function buildHeaderPatientLine(p) {
@@ -46,8 +54,9 @@ export function syncHeaderContext(ctx) {
       : patients.find(function (x) {
           return String(x.id) === String(id);
         }) || null;
-  patientEl.textContent = buildHeaderPatientLine(p);
-  patientEl.style.display = p ? '' : 'none';
+  var showPatient = !!(p && !sidebarShowsActivePatient());
+  patientEl.textContent = showPatient ? buildHeaderPatientLine(p) : '';
+  patientEl.style.display = showPatient ? '' : 'none';
   pathEl.textContent = buildHeaderPath(
     typeof ctx.getActiveAppTab === 'function' ? ctx.getActiveAppTab() : 'nota',
     typeof ctx.getActiveInner === 'function' ? ctx.getActiveInner() : 'todo',

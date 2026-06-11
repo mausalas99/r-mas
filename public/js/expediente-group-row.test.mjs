@@ -10,9 +10,9 @@ import {
 const SALA = { appMode: 'sala' };
 const INTER = { appMode: 'interconsulta' };
 
-test('groupSections: paciente is always Datos + Pendientes', () => {
-  assert.deepEqual(groupSections('paciente', SALA), ['datos', 'todo']);
-  assert.deepEqual(groupSections('paciente', INTER), ['datos', 'todo']);
+test('groupSections: paciente is a leaf (datos collapse is in-pane, not nav)', () => {
+  assert.deepEqual(groupSections('paciente', SALA), []);
+  assert.deepEqual(groupSections('paciente', INTER), []);
 });
 
 test('groupSections: clinico follows mode', () => {
@@ -37,12 +37,17 @@ test('buildGroupRowModel: active group and section reflect the granular target',
   assert.equal(model.find((g) => g.id === 'paciente').active, false);
 });
 
-test('buildGroupRowModel: paciente sections use the granular tab itself', () => {
-  const model = buildGroupRowModel('todo', SALA);
-  const pac = model.find((g) => g.id === 'paciente');
-  assert.equal(pac.active, true);
-  assert.equal(pac.sections.find((s) => s.id === 'todo').active, true);
-  assert.equal(pac.sections.find((s) => s.id === 'datos').active, false);
+test('buildGroupRowModel: paciente is active for datos or todo without sub-pills', () => {
+  const todoModel = buildGroupRowModel('todo', SALA);
+  const pacTodo = todoModel.find((g) => g.id === 'paciente');
+  assert.equal(pacTodo.active, true);
+  assert.equal(pacTodo.leaf, true);
+  assert.deepEqual(pacTodo.sections, []);
+
+  const datosModel = buildGroupRowModel('datos', SALA);
+  const pacDatos = datosModel.find((g) => g.id === 'paciente');
+  assert.equal(pacDatos.active, true);
+  assert.equal(pacDatos.leaf, true);
 });
 
 test('labels exist for every section that can appear', () => {

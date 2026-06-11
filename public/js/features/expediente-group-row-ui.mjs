@@ -37,14 +37,15 @@ export function renderExpedienteGroupRow(activeGranular, settings) {
   row.textContent = '';
   model.forEach(function (group) {
     var pill = document.createElement('div');
-    pill.className = 'exp-group-pill' + (group.active ? ' is-active' : '');
+    pill.className = 'exp-group-pill' + (group.active ? ' is-active' : '') + (group.leaf ? ' exp-group-pill--leaf' : '');
     if (!group.active && touchExpandedGroup === group.id) pill.classList.add('is-touch-expanded');
     pill.dataset.group = group.id;
+    if (group.active && !group.leaf) pill.setAttribute('aria-label', group.label);
 
     var name = document.createElement('button');
     name.type = 'button';
     name.className = 'exp-group-name';
-    name.setAttribute('aria-expanded', group.active || touchExpandedGroup === group.id ? 'true' : 'false');
+    name.setAttribute('aria-expanded', group.leaf ? 'false' : (group.active || touchExpandedGroup === group.id ? 'true' : 'false'));
     name.setAttribute('aria-current', group.active ? 'true' : 'false');
     name.textContent = group.label;
     name.addEventListener('click', function () {

@@ -199,7 +199,7 @@ var HELP_ARTICLES = [
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
       '<li><strong>Ctrl/⌘ + S</strong> — Guardar estado del paciente activo</li>' +
-      '<li><strong>Ctrl/⌘ + K</strong> — Búsqueda unificada (pacientes, notas, indicaciones)</li>' +
+      '<li><strong>Ctrl/⌘ + K</strong> — Ir a sección o paciente</li>' +
       '<li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li>' +
       '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
       '<li><strong>Ctrl/⌘ + Shift + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
