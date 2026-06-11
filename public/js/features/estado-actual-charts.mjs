@@ -1,6 +1,5 @@
-// Estado Actual charts — public façade. Series math lives in -series.mjs,
-// downsampling/display in -display.mjs, Chart.js wiring in -chartjs.mjs,
-// tab shell DOM in -tabs.mjs.
+// Estado Actual charts — public façade. Series math in -series.mjs,
+// downsampling in -display.mjs, Chart.js paint in -chartjs.mjs, tabs in -tabs.mjs.
 import {
   historialChartRevision,
   scanEaChartsSummary,
@@ -10,42 +9,16 @@ import {
   getCachedEaChartBundle,
   getCachedEaChartsSummary,
 } from './estado-actual-charts-display.mjs';
-import { resolveChartCtor } from './estado-actual-charts-chartjs.mjs';
+import { destroyEaChartInstance, resolveChartCtor } from './estado-actual-charts-chartjs.mjs';
 import {
   activateEaChartTab,
-  buildEaChartsTabShell,
   defaultEaChartTab,
   destroyAllEaTabCharts,
   eaChartTabHasData,
+  mountEaChartsChrome,
   syncActiveEaChartsRef,
   wireEaChartsTabs,
 } from './estado-actual-charts-tabs.mjs';
-
-/**
- * @param {HTMLElement} mountEl
- */
-function resizeActiveEaChartsOnReveal(mountEl) {
-  var tab = mountEl._eaActiveChartTab;
-  if (!tab) return;
-  var stores = mountEl._eaTabChartStores;
-  if (!stores || typeof stores !== 'object') return;
-  var entry = stores[tab];
-  if (!entry || !Array.isArray(entry.charts) || !entry.charts.length) return;
-  var panel = mountEl.querySelector('[data-ea-chart-panel="' + tab + '"]');
-  var panelWidth = panel && panel.clientWidth > 0 ? panel.clientWidth : 0;
-  if (panelWidth > 0 && panelWidth !== entry.panelWidth) {
-    entry.panelWidth = panelWidth;
-    requestAnimationFrame(function () {
-      entry.charts.forEach(function (ch) {
-        try {
-          if (ch && typeof ch.resize === 'function') ch.resize();
-        } catch (_e) {
-          /* ignore */
-        }
-      });
-    });
-  }
-}
 
 export {
   buildGluSeries,
@@ -59,8 +32,10 @@ export { downsampleEaChartSeries } from './estado-actual-charts-display.mjs';
 export function destroyEstadoActualCharts(mountEl) {
   if (!mountEl) return;
   destroyAllEaTabCharts(mountEl);
+  destroyEaChartInstance();
   mountEl._eaCharts = [];
   mountEl._eaChartSlotIds = [];
+  mountEl._eaChartInstance = null;
   mountEl._eaChartsSig = '';
   mountEl._eaChartsLayoutKey = '';
   mountEl._eaActiveChartTab = '';
@@ -85,60 +60,24 @@ function patchEaChartFromSlot(chart, slotId, slotData) {
   /** @type {any} */
   var ch = chart;
   var next = displaySlotForChart(slotData, slotId);
-  if (!ch || !ch.data || !next) return false;
+  if (!ch || !next || !ch.data) return false;
   ch.data.labels = next.labels;
-  var dsIn = next.datasets || [];
-  for (var d = 0; d < dsIn.length; d += 1) {
-    if (!ch.data.datasets[d]) {
-      ch.data.datasets[d] = dsIn[d];
-    } else {
-      var target = ch.data.datasets[d];
-      var patch = dsIn[d];
-      target.data = patch.data;
-      if (patch.label != null) target.label = patch.label;
-      if (patch.borderColor != null) target.borderColor = patch.borderColor;
-      if (patch.backgroundColor != null) target.backgroundColor = patch.backgroundColor;
-      if (patch.type != null) target.type = patch.type;
-      if (patch.borderDash != null) target.borderDash = patch.borderDash;
-      if (patch.yAxisID != null) target.yAxisID = patch.yAxisID;
-      if (patch.pointRadius != null) target.pointRadius = patch.pointRadius;
-      if (patch.pointBackgroundColor != null) target.pointBackgroundColor = patch.pointBackgroundColor;
-      if (patch.pointBorderColor != null) target.pointBorderColor = patch.pointBorderColor;
-      if (patch.tension != null) target.tension = patch.tension;
-    }
-  }
+  ch.data.datasets = next.datasets;
   if (typeof ch.update === 'function') ch.update('none');
   return true;
 }
 
 export function updateEstadoActualChartsInPlace(mountEl, monitoreo, slotDataIn) {
   var slotData = slotDataIn || getCachedEaChartBundle(monitoreo).slotData;
-  var stores = mountEl._eaTabChartStores;
-  if (stores && typeof stores === 'object') {
-    var storeKeys = Object.keys(stores);
-    if (storeKeys.length) {
-      for (var sk = 0; sk < storeKeys.length; sk += 1) {
-        var entry = stores[storeKeys[sk]];
-        if (!entry || !Array.isArray(entry.charts) || !Array.isArray(entry.slotIds)) return false;
-        if (entry.charts.length !== entry.slotIds.length) return false;
-        for (var i = 0; i < entry.charts.length; i += 1) {
-          if (!patchEaChartFromSlot(entry.charts[i], entry.slotIds[i], slotData)) return false;
-        }
-      }
+  var chart = mountEl._eaChartInstance;
+  var slotIds = mountEl._eaChartSlotIds;
+  if (chart && Array.isArray(slotIds) && slotIds.length === 1) {
+    if (patchEaChartFromSlot(chart, slotIds[0], slotData)) {
       syncActiveEaChartsRef(mountEl, mountEl._eaActiveChartTab || '');
       return true;
     }
   }
-
-  var charts = mountEl._eaCharts;
-  var slotIds = mountEl._eaChartSlotIds;
-  if (!Array.isArray(charts) || !Array.isArray(slotIds) || charts.length !== slotIds.length) {
-    return false;
-  }
-  for (var j = 0; j < charts.length; j += 1) {
-    if (!patchEaChartFromSlot(charts[j], slotIds[j], slotData)) return false;
-  }
-  return true;
+  return false;
 }
 
 /**
@@ -157,7 +96,6 @@ export function buildEaChartsSummary(monitoreo) {
 }
 
 /**
- * Revision for historial-only chart summary invalidation (panel patches).
  * @param {unknown} monitoreo
  * @returns {string}
  */
@@ -236,26 +174,18 @@ export function renderEaChartsSummarySection(monitoreo) {
  */
 export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
   opts = opts || {};
-  var showTitle = opts.showTitle === true;
   if (!mountEl) return;
   var bundle = getCachedEaChartBundle(monitoreo);
   var sig = bundle.signature;
   var slotData = bundle.slotData;
-  if (mountEl._eaChartsSig === sig && mountEl.querySelector('.ea-charts-tabs')) {
+  var layoutKey = bundle.layoutKey;
+  var Chart = resolveChartCtor(ChartCtor);
+
+  if (mountEl._eaChartsSig === sig && mountEl._eaChartInstance) {
     mountEl._eaChartBundle = bundle;
-    var activeTab = mountEl._eaActiveChartTab || defaultEaChartTab(slotData);
-    var activePanel = mountEl.querySelector('[data-ea-chart-panel="' + activeTab + '"]');
-    if (activePanel && !activePanel.querySelector('canvas') && eaChartTabHasData(slotData, activeTab)) {
-      var ChartRemount = resolveChartCtor(ChartCtor);
-      if (ChartRemount) {
-        activateEaChartTab(mountEl, activeTab, bundle, ChartRemount, bundle.layoutKey);
-      }
-    } else {
-      resizeActiveEaChartsOnReveal(mountEl);
-    }
     return;
   }
-  var layoutKey = bundle.layoutKey;
+
   if (
     mountEl._eaChartsLayoutKey === layoutKey &&
     mountEl._eaChartsSig !== sig &&
@@ -264,28 +194,21 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
     mountEl._eaChartsSig = sig;
     return;
   }
-  destroyEstadoActualCharts(mountEl);
 
-  var Chart = resolveChartCtor(ChartCtor);
   var histAsc = bundle.histAsc;
-
-  var hasEnough = histAsc.length >= 2;
-  if (!hasEnough) {
-    mountEl.innerHTML =
-      '<p class="ea-muted ea-charts-empty">Registra al menos 2 mediciones para ver gráficas.</p>';
+  if (histAsc.length < 2) {
+    var empty = document.getElementById('ea-charts-empty');
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent = 'Registra al menos 2 mediciones para ver gráficas.';
+    }
     return;
   }
 
-  if (!Chart) {
-    mountEl.innerHTML =
-      '<p class="ea-muted ea-charts-empty">Chart.js no está disponible. Recarga la aplicación.</p>';
-    return;
-  }
+  if (!Chart) return;
 
-  var titleHtml = showTitle ? '<h3 class="ea-section-title">Gráficas de monitoreo</h3>' : '';
-  mountEl.innerHTML = titleHtml + '<div class="ea-charts-shell">' + buildEaChartsTabShell(slotData) + '</div>';
+  mountEaChartsChrome(mountEl, slotData);
   mountEl._eaChartBundle = bundle;
-
   wireEaChartsTabs(mountEl, bundle, Chart, layoutKey);
   activateEaChartTab(mountEl, defaultEaChartTab(slotData), bundle, Chart, layoutKey);
 }

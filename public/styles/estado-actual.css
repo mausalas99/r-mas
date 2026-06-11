@@ -1135,25 +1135,36 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   color: var(--text-muted);
 }
 
-html.ea-charts-modal-open {
-  overflow: hidden;
+/*
+ * EA charts modal — size is CSS-only (reload app, no bundle).
+ * Perf contract: one #ea-charts-canvas, one Chart.js instance, no modal-backdrop class.
+ * Wider/taller dialog is fine; lag came from multi-canvas + innerHTML churn, not width.
+ */
+.ea-charts-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.6);
+  align-items: center;
+  justify-content: center;
 }
 
-/* Skip backdrop fade while Chart.js mounts — opacity animation + canvas init = severe jank */
-#ea-charts-backdrop.modal-backdrop.open {
-  animation: none;
+.ea-charts-backdrop.open {
+  display: flex;
 }
 
 .ea-charts-modal {
   position: relative;
-  max-width: min(98vw, 1180px);
-  width: min(98vw, 1180px);
-  height: min(94vh, 880px);
-  max-height: min(94vh, 880px);
+  width: min(96vw, 1080px);
+  max-height: min(92vh, 820px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
 .ea-charts-modal-head {
@@ -1197,22 +1208,29 @@ html.ea-charts-modal-open {
 .ea-charts-modal-body {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.ea-charts-canvas-cell {
+  position: relative;
+  width: 100%;
+  /* ~40% viewport height, capped — scales up on large screens without fixed 880px shell */
+  height: clamp(320px, 42vh, 440px);
+  flex-shrink: 0;
+}
+
+.ea-charts-canvas-cell canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .ea-charts-empty {
   margin: 0;
-}
-
-.ea-charts-shell {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1 1 auto;
-  min-height: 0;
 }
 
 .ea-charts-tabs {
@@ -1248,31 +1266,6 @@ html.ea-charts-modal-open {
 .ea-charts-tab:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-.ea-charts-tabpanels {
-  flex: 1 1 auto;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.ea-charts-tabpanel {
-  display: none;
-  position: absolute;
-  inset: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-bottom: 24px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.ea-charts-tabpanel--active {
-  display: block;
-}
-
-.ea-charts-tabpanel[hidden] {
-  display: none !important;
 }
 
 .ea-charts-grid {
@@ -1373,6 +1366,109 @@ html.ea-charts-modal-open {
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.ea-svg-chart-wrap {
+  position: relative;
+}
+
+.ea-svg-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ea-svg-grid {
+  stroke: color-mix(in oklab, var(--divider) 80%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.ea-svg-axis {
+  stroke: var(--divider);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.ea-svg-line {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.ea-svg-point {
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  cursor: default;
+}
+
+.ea-svg-tick {
+  fill: var(--text-muted);
+  font-size: 10px;
+}
+
+.ea-svg-bar-ing {
+  fill: var(--ea-chart-io-ing, #60a5fa);
+}
+
+.ea-svg-bar-egr {
+  fill: var(--ea-chart-io-egr, #f87171);
+}
+
+.ea-svg-point-balance {
+  fill: var(--ea-chart-io-balance, #4a52e8);
+  stroke: var(--ea-chart-io-balance, #4a52e8);
+}
+
+.ea-svg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: calc(11px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.ea-svg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ea-svg-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.ea-svg-legend-swatch-ing {
+  background: var(--ea-chart-io-ing, #60a5fa);
+}
+
+.ea-svg-legend-swatch-egr {
+  background: var(--ea-chart-io-egr, #f87171);
+}
+
+.ea-svg-legend-swatch-bal {
+  background: var(--ea-chart-io-balance, #4a52e8);
+}
+
+.ea-svg-tooltip {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  max-width: 220px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  border: 1px solid var(--divider);
+  color: var(--text);
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.35;
+  white-space: pre-line;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .ea-chart-wrap--io .ea-chart-canvas-wrap {

@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Release 7.3.2 prepare | `docs/RELEASE_NOTES_7.3.2.txt`, `release-notes-curated.mjs`, `README.md` | Bump 7.3.2 (Premium UI + EA charts + hardening); npm test 1519 pass ~35s (explicit 199-file list); README bump regex fix in `release.js`. |
 | 2026-06-11 | Premium UI closeout — plan bookkeeping | `docs/superpowers/plans/` (phase 2/3/4/5 plans) | Phase 2 marked SHIPPED with J/K hint DROPPED (shortcut never existed); Phase 4 triage closed (CI green on all main pushes); CSP manual pass closed via static scan (`'unsafe-inline'` shipped — inline styles cannot violate); iPad LAN smoke flagged as the sole remaining device-QA item. |
 | 2026-06-11 | Premium UI Phase 6 — procesarLabs decomposition (audit M2.2) | `public/js/labs.js`, `public/js/labs-procesar-*.{mjs,json}`, `scripts/capture-procesar-labs-goldens.mjs` | Characterization goldens (4 fixtures) lock output; parser split into header/segmentation/pipeline helpers, all ≤ complexity 15; zero output diffs; labs.js complexity flags 40 → 38, debt score 14195 → 14193. |
 | 2026-06-11 | Premium UI Phase 5 — hardening (audit M1+M2) | `window-open-policy.cjs`, `lan-db-bridge.cjs`, `session-clinical-wipe.mjs`, CSP meta, `.gitignore` bundles | window.open allowlist, DB injection bridge, dead storage writers removed, mobile PHI wipe, bundles untracked, CI `build:ui`. |

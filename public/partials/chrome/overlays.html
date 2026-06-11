@@ -112,13 +112,21 @@
   </div>
 </div>
 
-<div id="ea-charts-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal ea-charts-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" onclick="event.stopPropagation()">
+<div id="ea-charts-backdrop" class="ea-charts-backdrop" aria-hidden="true">
+  <div class="ea-charts-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" onclick="event.stopPropagation()">
     <header class="ea-charts-modal-head">
       <h3 id="ea-charts-title">Gráficas de monitoreo</h3>
       <button type="button" class="ea-charts-modal-close" onclick="closeEstadoActualChartsModal()" aria-label="Cerrar gráficas">×</button>
     </header>
-    <div id="ea-charts-modal-mount" class="ea-charts-modal-body"></div>
+    <div id="ea-charts-modal-mount" class="ea-charts-modal-body">
+      <nav id="ea-charts-tab-nav" class="ea-charts-tabs" role="tablist" aria-label="Gráficas de monitoreo"></nav>
+      <nav id="ea-charts-vitals-nav" class="ea-vitals-family-nav" role="tablist" aria-label="Familia de signos vitales" hidden></nav>
+      <h4 id="ea-charts-chart-title" class="ea-chart-subtitle"></h4>
+      <div class="ea-charts-canvas-cell">
+        <canvas id="ea-charts-canvas"></canvas>
+      </div>
+      <p id="ea-charts-empty" class="ea-muted ea-charts-empty" hidden>Sin datos para graficar.</p>
+    </div>
   </div>
 </div>
 

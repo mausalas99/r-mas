@@ -206,9 +206,12 @@ function updateReadme(version, title) {
       `Notas: \`docs/RELEASE_NOTES_${version}.txt\`.`,
       '',
     ].join('\n');
-    const insertRe = /(---\n\n)(## R\+ [\d.]+)/;
+    const insertRe =
+      /(\*\*Versión estable actual:\*\*[^\n]*\n\n---\n\n)(## R\+ [\d.]+)/;
     if (!insertRe.test(text)) {
-      throw new Error('README.md: no se encontró el bloque de versiones (--- / ## R+).');
+      throw new Error(
+        'README.md: no se encontró el bloque de versiones (Versión estable / --- / ## R+).'
+      );
     }
     text = text.replace(insertRe, `$1${block}$2`);
   }

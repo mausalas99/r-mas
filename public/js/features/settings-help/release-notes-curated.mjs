@@ -747,6 +747,34 @@ var RELEASE_NOTES_729 = [
   },
 ];
 
+var RELEASE_NOTES_732 = [
+  {
+    title: 'Workbench Refinado',
+    body:
+      'Tokens de elevación y tipografía clínica en <strong>escritorio, móvil e interno</strong>. Overlays de vidrio en modales, menús y <strong>⌘K</strong>; presets de movimiento en Ajustes.',
+  },
+  {
+    title: 'Navegación agrupada',
+    body:
+      'Expediente ancho: grupos <strong>Paciente · Clínico · Resultados · Salida</strong> con expansión al hover. Contexto de paciente + selector de modo siempre visibles.',
+  },
+  {
+    title: 'Gráficas en Estado actual',
+    body:
+      'Modal con <strong>pestañas</strong> (signos, balance, labs), downsampling con tooltip de serie completa y curvas alineadas a <strong>Tendencias</strong>.',
+  },
+  {
+    title: 'LAN y seguridad',
+    body:
+      'Purga en anfitrión solo para huérfanos/admin con guard de propiedad. <strong>CSP</strong>, allowlist de ventanas externas y borrado de claves clínicas al cerrar sesión web.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.3.2 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; iPad sin cambio obligatorio.',
+  },
+];
+
 var RELEASE_NOTES_731 = [
   {
     title: 'Manejo — Importar SOME',
@@ -804,9 +832,10 @@ var RELEASE_NOTES_730 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_731;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_732;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.2': RELEASE_NOTES_732,
   '7.3.1': RELEASE_NOTES_731,
   '7.3.0': RELEASE_NOTES_730,
   '7.2.9': RELEASE_NOTES_729,

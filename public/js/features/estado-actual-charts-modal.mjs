@@ -1,5 +1,5 @@
 import { getChartJsIfLoaded, loadChartJs } from '../vendor-loader.mjs';
-import { destroyAllEaTabCharts } from './estado-actual-charts-tabs.mjs';
+import { destroyEaChartInstance } from './estado-actual-charts-chartjs.mjs';
 import { destroyEstadoActualCharts, renderEstadoActualCharts } from './estado-actual-charts.mjs';
 
 /** @type {{ getPatient(): { monitoreo?: unknown } | null, getActiveId(): string | null, showToast(msg: string, type?: string): void }} */
@@ -30,11 +30,9 @@ function getMount() {
 export function closeEstadoActualChartsModal() {
   var backdrop = getBackdrop();
   if (!backdrop) return;
-  var mount = getMount();
-  if (mount) destroyAllEaTabCharts(mount);
+  destroyEaChartInstance();
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
-  document.documentElement.classList.remove('ea-charts-modal-open');
 }
 
 function paintEaChartsModal(mount, monitoreo, ChartCtor) {
@@ -60,31 +58,32 @@ export function openEstadoActualChartsModal() {
   }
   if (mount) mount._eaChartsPatientId = activeId;
 
-  var hasShell = mount && mount.querySelector('.ea-charts-tabs');
-  if (mount && !hasShell) {
-    mount.innerHTML = '<p class="ea-muted ea-charts-loading">Cargando gráficas…</p>';
-  }
-
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
-  document.documentElement.classList.add('ea-charts-modal-open');
 
-  function paintAfterLayout(ChartCtor) {
-    if (mount) void mount.offsetWidth;
+  function paint(ChartCtor) {
+    if (!ChartCtor) {
+      if (mount) {
+        var empty = document.getElementById('ea-charts-empty');
+        if (empty) {
+          empty.hidden = false;
+          empty.textContent = 'Chart.js no está disponible. Recarga la aplicación.';
+        }
+      }
+      return;
+    }
     paintEaChartsModal(mount, patient.monitoreo, ChartCtor);
   }
 
   var Chart = getChartJsIfLoaded();
   if (Chart) {
-    paintAfterLayout(Chart);
+    paint(Chart);
     return;
   }
   void loadChartJs()
-    .then(function (loaded) {
-      paintAfterLayout(loaded);
-    })
+    .then(paint)
     .catch(function () {
-      schedulePaint(undefined);
+      paint(undefined);
     });
 }
 

@@ -119,8 +119,9 @@ test('updateEstadoActualChartsInPlace patches datasets without remount', () => {
     },
   };
   const mountEl = {
-    _eaCharts: [chart],
+    _eaChartInstance: chart,
     _eaChartSlotIds: ['vital:hemo'],
+    _eaActiveChartTab: 'vitals',
     _eaChartsLayoutKey: layoutKey,
     _eaChartsSig: 'stale',
   };

@@ -39,10 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.1](https://github.com/mausalas99/r-mas/releases/tag/v7.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.2](https://github.com/mausalas99/r-mas/releases/tag/v7.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.3.2 (Premium UI, gráficas EA y endurecimiento)
+
+- **Diseño** — tokens, elevación, motion presets (Sobrio/Mixto/Expresivo) y overlays de vidrio en modales/menús.
+- **Navegación** — fila agrupada en expediente, contexto de paciente, selector de modo y paleta **⌘K**.
+- **Superficies** — escritorio, móvil e interno con Workbench Refinado; Learn Hub y onboarding alineados.
+- **Estado actual** — modal de gráficas con pestañas, downsampling y curvas como Tendencias.
+- **LAN + seguridad** — purga host con guard de propiedad; CSP, allowlist de ventanas y borrado PHI en web móvil.
+
+Notas: `docs/RELEASE_NOTES_7.3.2.txt`.
 
 ## R+ 7.3.1 (Manejo modal SOME, AAS SOAP y perfil borrar)
 
@@ -100,13 +110,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.3.1)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.3.2)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.3.2** | Premium UI (nav + tokens), gráficas EA con pestañas, endurecimiento + LAN purge |
 | **7.3.1** | Manejo modal SOME, AAS SOAP por dosis, borrar perfil farmacoterapéutico |
 | **7.3.0** | Perfil histórico cross-mes, directorio LAN actividad, lab historial por fecha |
 | **7.2.9** | Manejo parser dietas/P2, propuesta dieta EA, FAB copiar EA |

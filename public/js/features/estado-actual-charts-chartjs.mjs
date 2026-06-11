@@ -1,6 +1,7 @@
-export const EA_CHART_CANVAS_HEIGHT = 200;
-export const EA_CHART_IO_CANVAS_HEIGHT = 260;
-export const EA_CHART_VITALS_CANVAS_HEIGHT = 300;
+/** Chart height is set in CSS (.ea-charts-canvas-cell); Chart.js fills that box. */
+
+/** @type {any} */
+var eaChartInstance = null;
 
 /**
  * @param {unknown} ChartCtor
@@ -15,6 +16,17 @@ export function resolveChartCtor(ChartCtor) {
     return /** @type {any} */ (window).Chart;
   }
   return null;
+}
+
+export function destroyEaChartInstance() {
+  if (eaChartInstance) {
+    try {
+      eaChartInstance.destroy();
+    } catch (_e) {
+      /* ignore */
+    }
+    eaChartInstance = null;
+  }
 }
 
 export function eaChartTooltipPlugin() {
@@ -49,7 +61,7 @@ export function eaChartTooltipPlugin() {
   };
 }
 
-/** Mirrors tendDetailChartOptions — proven smooth in Tendencias detail modal. */
+/** Same shape as tendDetailChartOptions (Tendencias detail modal). */
 export function eaLineChartOptions(extra) {
   return Object.assign(
     {
@@ -59,7 +71,7 @@ export function eaLineChartOptions(extra) {
       transitions: {
         active: { animation: { duration: 0 } },
       },
-      layout: { padding: { right: 8, left: 4, top: 4, bottom: 2 } },
+      layout: { padding: { right: 12, left: 4, top: 8, bottom: 4 } },
       interaction: { mode: 'index', intersect: false, axis: 'x' },
       plugins: Object.assign(
         {
@@ -71,7 +83,7 @@ export function eaLineChartOptions(extra) {
         eaChartTooltipPlugin()
       ),
       elements: {
-        point: { radius: 2, hoverRadius: 4 },
+        point: { radius: 3, hoverRadius: 5 },
         line: { borderWidth: 2, tension: 0.25 },
       },
       scales: {
@@ -86,73 +98,59 @@ export function eaLineChartOptions(extra) {
   );
 }
 
-/** @param {object} [extra] */
-export function eaIoChartOptions(extra) {
-  return Object.assign(
-    eaLineChartOptions({
-      plugins: Object.assign(
-        { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
-        eaChartTooltipPlugin()
-      ),
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: 'cc', font: { size: 11 } },
-          ticks: { font: { size: 11 }, maxTicksLimit: 6 },
-        },
-        y1: {
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          title: { display: true, text: 'Balance acum.', font: { size: 11 } },
-          ticks: { font: { size: 11 }, maxTicksLimit: 6 },
-        },
-        x: { ticks: { maxRotation: 0, font: { size: 10 }, autoSkip: true, maxTicksLimit: 10 } },
+export function eaIoChartOptions() {
+  return eaLineChartOptions({
+    plugins: Object.assign(
+      { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      eaChartTooltipPlugin()
+    ),
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'cc', font: { size: 11 } },
+        ticks: { font: { size: 11 }, maxTicksLimit: 6 },
       },
-    }),
-    extra || {}
-  );
+      y1: {
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        title: { display: true, text: 'Balance acum.', font: { size: 11 } },
+        ticks: { font: { size: 11 }, maxTicksLimit: 6 },
+      },
+      x: { ticks: { maxRotation: 0, font: { size: 10 }, autoSkip: true, maxTicksLimit: 10 } },
+    },
+  });
 }
 
 /**
- * @param {HTMLElement} wrap
- * @param {string} title
  * @param {unknown} ChartCtor
- * @param {object} config
- * @param {HTMLElement} mountEl
- * @param {unknown[]} chartStore
+ * @param {HTMLCanvasElement} canvas
+ * @param {{ type: string, data: object, options: object, slotId?: string }} spec
  */
-export function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore, slotId, canvasHeight) {
-  wrap.innerHTML =
-    '<h4 class="ea-chart-subtitle">' +
-    title +
-    '</h4>' +
-    '<div class="ea-chart-canvas-wrap"><canvas></canvas></div>';
-  var box = wrap.querySelector('.ea-chart-canvas-wrap');
-  if (box) box.style.height = (canvasHeight || EA_CHART_CANVAS_HEIGHT) + 'px';
-  var canvas = /** @type {HTMLCanvasElement | null} */ (wrap.querySelector('canvas'));
-  if (!canvas) return;
-  try {
-    var chart = new /** @type {any} */ (ChartCtor)(canvas, config);
-    chart._eaSlotId = slotId;
-    chartStore.push(chart);
-    mountEl._eaCharts = chartStore;
-  } catch (_e) {
-    wrap.innerHTML = '<p class="ea-muted">No se pudo dibujar la gráfica.</p>';
+export function paintEaChart(ChartCtor, canvas, spec) {
+  var Chart = resolveChartCtor(ChartCtor);
+  if (!Chart || !canvas) return null;
+  var sameCanvas = eaChartInstance && eaChartInstance.canvas === canvas;
+  var sameType = sameCanvas && eaChartInstance.config && eaChartInstance.config.type === spec.type;
+
+  if (sameCanvas && sameType) {
+    eaChartInstance.data.labels = spec.data.labels;
+    eaChartInstance.data.datasets = spec.data.datasets;
+    eaChartInstance.options = spec.options;
+    eaChartInstance._eaSlotId = spec.slotId || '';
+    eaChartInstance.update('none');
+    return eaChartInstance;
   }
+
+  destroyEaChartInstance();
+  eaChartInstance = new /** @type {any} */ (Chart)(canvas, {
+    type: spec.type,
+    data: spec.data,
+    options: spec.options,
+  });
+  eaChartInstance._eaSlotId = spec.slotId || '';
+  return eaChartInstance;
 }
 
-/**
- * @param {unknown} chart
- * @param {{ labels: string[], datasets: object[] }} famData
- * @param {string} slotId
- */
-export function patchEaLineChartData(chart, famData, slotId) {
-  /** @type {any} */
-  var ch = chart;
-  if (!ch || !ch.data || !famData) return false;
-  ch.data.labels = famData.labels;
-  ch.data.datasets = famData.datasets;
-  ch._eaSlotId = slotId;
-  if (typeof ch.update === 'function') ch.update('none');
-  return true;
+export function getEaChartInstance() {
+  return eaChartInstance;
 }
