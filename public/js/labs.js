@@ -3098,39 +3098,62 @@ export function buildRefsBySectionFromReport(textoBruto) {
   return refs;
 }
 
-export function procesarLabs(textoBruto) {
-  var tNorm = textoBruto.replace(/\s+/g,' ');
+/** Normaliza Sexo: a 'M' / 'F' (o '' si no se reconoce). */
+function parseLabSexoNorm_(mSexo) {
+  if (!mSexo) return '';
+  var sm = mSexo[1].match(/^(MASCULINO|FEMENINO|HOMBRE|MUJER|MALE|FEMALE|M\b|F\b)/i);
+  if (!sm) return '';
+  var sv = sm[1].toUpperCase();
+  return (sv==='MASCULINO'||sv==='HOMBRE'||sv==='MALE'||sv==='M') ? 'M' : 'F';
+}
+
+/** Edad: primer número + unidad normalizada (días con acento). */
+function parseLabEdadParts_(mEdad) {
+  var edadRaw = mEdad ? (mEdad[1].match(/^\d+/)||[''])[0] : '';
+  var edadUnidad = mEdad ? (mEdad[1].match(/\b(años|meses|dias|días|semanas)\b/i)||['años'])[0].toLowerCase() : 'años';
+  if (edadUnidad==='dias'||edadUnidad==='días') edadUnidad='días';
+  return { edadRaw: edadRaw, edadUnidad: edadUnidad };
+}
+
+function parseLabUbicacion_(textoBruto) {
+  var mUbic = textoBruto.match(/Ubicaci[oó]n:\s*([^\n\r]+)/i);
+  if (!mUbic) return '';
+  var uRaw = mUbic[1].trim();
+  var uTok = uRaw.split(/\t+/).map(function (x) {
+    return x.trim();
+  }).filter(Boolean);
+  return (uTok[0] || uRaw.split(/\s+(?:Medico|Médico|Edad)\s*:/i)[0] || uRaw).trim();
+}
+
+/** Encabezado del reporte: paciente + partes demográficas crudas para parseQS_. */
+function parseLabPatientHeader_(textoBruto) {
   var mNombre=textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
   var mExp   =textoBruto.match(/Expediente:\s*([^\n\r]+)/i);
   var mSexo  =textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
   var mEdad  =textoBruto.match(/Edad:\s*([^\n\r]+)/i);
-  var fechaDm = extractLabReportFechaDMY(textoBruto);
-  var horaLab = extractLabReportHora(textoBruto);
   // Clean expediente: stop before Solicitud/Medico/Fecha/Sexo/Edad keywords
   var expRaw = mExp ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim() : '';
-  // Clean edad: only first number
-  var edadRaw = mEdad ? (mEdad[1].match(/^\d+/)||[''])[0] : '';
-  var edadUnidad = mEdad ? (mEdad[1].match(/\b(años|meses|dias|días|semanas)\b/i)||['años'])[0].toLowerCase() : 'años';
-  if (edadUnidad==='dias'||edadUnidad==='días') edadUnidad='días';
-  // Clean sexo: extract only first recognized word, normalize to M/F
-  var sexoRaw = '';
-  if (mSexo) {
-    var sm = mSexo[1].match(/^(MASCULINO|FEMENINO|HOMBRE|MUJER|MALE|FEMALE|M\b|F\b)/i);
-    if (sm) {
-      var sv = sm[1].toUpperCase();
-      sexoRaw = (sv==='MASCULINO'||sv==='HOMBRE'||sv==='MALE'||sv==='M') ? 'M' : 'F';
-    }
-  }
-  var mUbic = textoBruto.match(/Ubicaci[oó]n:\s*([^\n\r]+)/i);
-  var ubicacion = '';
-  if (mUbic) {
-    var uRaw = mUbic[1].trim();
-    var uTok = uRaw.split(/\t+/).map(function (x) {
-      return x.trim();
-    }).filter(Boolean);
-    ubicacion = (uTok[0] || uRaw.split(/\s+(?:Medico|Médico|Edad)\s*:/i)[0] || uRaw).trim();
-  }
-  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:fechaDm, hora: horaLab, ubicacion: ubicacion };
+  var edadParts = parseLabEdadParts_(mEdad);
+  var sexoRaw = parseLabSexoNorm_(mSexo);
+  var patient = {
+    name: mNombre ? mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim() : '',
+    expediente: expRaw,
+    sexo: sexoRaw,
+    edad: edadParts.edadRaw ? (edadParts.edadRaw + ' ' + edadParts.edadUnidad) : '',
+    fecha: extractLabReportFechaDMY(textoBruto),
+    hora: extractLabReportHora(textoBruto),
+    ubicacion: parseLabUbicacion_(textoBruto),
+  };
+  return { patient: patient, edadRaw: edadParts.edadRaw, edadUnidad: edadParts.edadUnidad, sexoRaw: sexoRaw };
+}
+
+export function procesarLabs(textoBruto) {
+  var tNorm = textoBruto.replace(/\s+/g,' ');
+  var hdr = parseLabPatientHeader_(textoBruto);
+  var patient = hdr.patient;
+  var edadRaw = hdr.edadRaw;
+  var edadUnidad = hdr.edadUnidad;
+  var sexoRaw = hdr.sexoRaw;
 
   var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
   var bloqueGaso=mGaso?mGaso[0]:'';
