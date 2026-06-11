@@ -1761,7 +1761,7 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
 
 /* Aligned digits for clinical values (design system phase 1) */
 #lab-output-box,
+#lab-history-body,
 .tend-card {
   font-variant-numeric: tabular-nums;
-}
 }
