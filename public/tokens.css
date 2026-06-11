@@ -78,6 +78,10 @@
   /* Interaction-state fills, layered over any surface */
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 4%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 7%, transparent);
+  /* Glass overlay surfaces (modals, dropdowns, palette, toasts) */
+  --overlay-bg: color-mix(in oklab, var(--surface) 78%, transparent);
+  --overlay-blur: 14px;
+  --overlay-border: 1px solid color-mix(in oklab, #ffffff 65%, transparent);
   --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --input-fill: color-mix(in oklab, var(--color-paper) 65%, var(--surface));
   --card-body-bg: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -169,6 +173,8 @@ html.dark {
   --border-hairline: 1px solid rgba(148, 163, 184, 0.16);
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 10%, transparent);
+  --overlay-bg: color-mix(in oklab, var(--surface) 84%, transparent);
+  --overlay-border: 1px solid rgba(148, 163, 184, 0.18);
   --input-fill: color-mix(in oklab, var(--surface) 88%, var(--bg));
   --card-body-bg: color-mix(in oklab, var(--surface) 97%, var(--bg));
   --diagram-line: #cbd5e1;
@@ -223,6 +229,9 @@ html.high-contrast {
   --border-hairline: 1px solid var(--border);
   --state-hover-bg: color-mix(in oklab, var(--color-accent) 12%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-accent) 20%, transparent);
+  --overlay-bg: var(--surface);
+  --overlay-blur: 0px;
+  --overlay-border: 1px solid var(--border);
   --color-focus-ring: var(--color-accent);
   --diagram-line: #000000;
   --diagram-label: #000000;
