@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Premium UI Phase 6 — procesarLabs decomposition (audit M2.2) | `public/js/labs.js`, `public/js/labs-procesar-*.{mjs,json}`, `scripts/capture-procesar-labs-goldens.mjs` | Characterization goldens (4 fixtures) lock output; parser split into header/segmentation/pipeline helpers, all ≤ complexity 15; zero output diffs; labs.js complexity flags 40 → 38, debt score 14195 → 14193. |
 | 2026-06-11 | Premium UI Phase 5 — hardening (audit M1+M2) | `window-open-policy.cjs`, `lan-db-bridge.cjs`, `session-clinical-wipe.mjs`, CSP meta, `.gitignore` bundles | window.open allowlist, DB injection bridge, dead storage writers removed, mobile PHI wipe, bundles untracked, CI `build:ui`. |
 | 2026-06-11 | Premium UI Phase 4 — safety net (audit M0) | `.github/workflows/ci.yml`, `package.json`, `.gitignore` | GitHub Actions CI + gitlink cleanup. Glob runner (`scripts/run-tests.mjs`) reverted — 323 files in one `node --test` is too slow for local/agent use; targeted `node --test <file>` locally, full `npm test` on CI/release only. |
 
