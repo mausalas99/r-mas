@@ -6,7 +6,7 @@
   padding: calc(10px * var(--density-space)) calc(14px * var(--density-space));
   background: none; border: none; cursor: pointer;
   font-family: inherit; color: var(--text-muted); font-size: calc(12px * var(--density-font)); font-weight: 500;
-  transition: background 0.15s;
+  transition: background var(--dur-fast);
 }
 .profile-toggle:hover, .settings-toggle:hover { background: var(--border); }
 .profile-toggle-left, .settings-toggle-left { display: flex; align-items: center; gap: 6px; }
@@ -48,7 +48,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   min-width: 44px; min-height: 44px; width: 44px; height: 44px;
   padding: 0;
   cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s, color 0.15s; flex-shrink: 0; color: var(--text-muted);
+  transition: background var(--dur-fast), color var(--dur-fast); flex-shrink: 0; color: var(--text-muted);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
@@ -62,7 +62,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 .livesync-wifi-bar,
 .livesync-wifi-dot {
   opacity: 0.18;
-  transition: opacity 0.2s var(--ease-out, ease-out);
+  transition: opacity var(--dur-normal) var(--ease-out, ease-out);
 }
 .btn-livesync-header--idle .livesync-wifi-dot,
 .btn-livesync-header--idle .livesync-wifi-bar--1 {
@@ -555,7 +555,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   content: '▾';
   font-size: 11px;
   opacity: 0.55;
-  transition: transform 0.15s ease;
+  transition: transform var(--dur-fast) ease;
 }
 .settings-accordion[open] > summary::after { transform: rotate(-180deg); }
 .settings-accordion[open] > summary {
@@ -689,7 +689,7 @@ html.high-contrast .settings-accordion[open] > summary { border-bottom: 2px soli
   line-height: 1.5;
   background: var(--input-fill);
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
 }
 .profile-input:focus {
   outline: none;
@@ -742,7 +742,7 @@ select.profile-input.profile-select {
   border-radius: var(--radius-pill); padding: 6px; font-size: 11px; font-family: inherit;
   cursor: pointer; font-weight: 700; margin-top: 4px;
   box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .btn-save-profile:hover { background: var(--action-hover); box-shadow: 0 3px 12px color-mix(in oklab, var(--action) 28%, transparent); }
 
