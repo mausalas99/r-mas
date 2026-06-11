@@ -7,10 +7,11 @@ import {
 import {
   EA_CHART_IO_CANVAS_HEIGHT,
   EA_CHART_VITALS_CANVAS_HEIGHT,
-  eaChartDevicePixelRatio,
   eaChartTooltipPlugin,
+  eaIoChartOptions,
   eaLineChartOptions,
   mountChart,
+  patchEaLineChartData,
   resolveChartCtor,
 } from './estado-actual-charts-chartjs.mjs';
 
@@ -43,6 +44,48 @@ function eaTabLayoutKey(tab, slotData) {
     return 'i' + (slotData.io ? String(slotData.io.labels.length) : '0');
   }
   return '';
+}
+
+/**
+ * @param {Record<string, { labels: string[], datasets: object[] }>} slotData
+ * @returns {string}
+ */
+function defaultEaVitalFamilyId(slotData) {
+  for (var i = 0; i < VITAL_FAMILIES.length; i += 1) {
+    if (slotData['vital:' + VITAL_FAMILIES[i].id]) return VITAL_FAMILIES[i].id;
+  }
+  return '';
+}
+
+/**
+ * @param {HTMLElement} panel
+ * @param {string} famId
+ */
+function markEaVitalFamilyActive(panel, famId) {
+  panel.querySelectorAll('[data-ea-vital-family]').forEach(function (btn) {
+    var active = btn.getAttribute('data-ea-vital-family') === famId;
+    btn.classList.toggle('ea-vitals-family-btn--active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+}
+
+/**
+ * @param {Record<string, { labels: string[], datasets: object[] }>} slotData
+ */
+function buildEaVitalsFamilyNav(slotData) {
+  return VITAL_FAMILIES.filter(function (fam) {
+    return !!slotData['vital:' + fam.id];
+  })
+    .map(function (fam) {
+      return (
+        '<button type="button" role="tab" class="ea-vitals-family-btn" data-ea-vital-family="' +
+        fam.id +
+        '" aria-selected="false">' +
+        fam.title +
+        '</button>'
+      );
+    })
+    .join('');
 }
 
 /**
@@ -120,10 +163,12 @@ function saveEaTabChartStore(mountEl, tab, tabLayoutKey, chartStore) {
       return ch && /** @type {any} */ (ch)._eaSlotId ? String(/** @type {any} */ (ch)._eaSlotId) : '';
     })
     .filter(Boolean);
+  var panel = mountEl.querySelector('[data-ea-chart-panel="' + tab + '"]');
   ensureEaTabChartStores(mountEl)[tab] = {
     layoutKey: tabLayoutKey,
     charts: chartStore,
     slotIds: slotIds,
+    panelWidth: panel && panel.clientWidth > 0 ? panel.clientWidth : 0,
   };
   syncActiveEaChartsRef(mountEl, tab);
 }
@@ -196,6 +241,60 @@ export function buildEaChartsTabShell(slotData) {
 }
 
 /**
+ * One Chart.js instance per vitals tab (Tendencias detail parity). Family pills swap data in place.
+ */
+function switchEaVitalsFamily(mountEl, famId, bundle, ChartCtor) {
+  var slotData = bundle.slotData;
+  var raw = slotData['vital:' + famId];
+  if (!raw) return;
+  var fam = VITAL_FAMILIES.find(function (f) {
+    return f.id === famId;
+  });
+  if (!fam) return;
+  var panel = mountEl.querySelector('[data-ea-chart-panel="vitals"]');
+  if (!panel) return;
+  var famData = displayVitalsFamilyData(raw);
+  var slotId = 'vital:' + famId;
+  mountEl._eaActiveVitalFamily = famId;
+  markEaVitalFamilyActive(panel, famId);
+
+  var stores = ensureEaTabChartStores(mountEl).vitals;
+  if (stores && stores.charts[0] && patchEaLineChartData(stores.charts[0], famData, slotId)) {
+    stores.slotIds = [slotId];
+    syncActiveEaChartsRef(mountEl, 'vitals');
+    var subtitle = panel.querySelector('.ea-chart-subtitle');
+    if (subtitle) subtitle.textContent = fam.title;
+    return;
+  }
+
+  destroyEaTabCharts(mountEl, 'vitals');
+  panel.innerHTML =
+    '<nav class="ea-vitals-family-nav" role="tablist" aria-label="Familia de signos vitales">' +
+    buildEaVitalsFamilyNav(slotData) +
+    '</nav><div class="ea-chart-wrap ea-chart-wrap--vitals"></div>';
+  markEaVitalFamilyActive(panel, famId);
+  var wrap = panel.querySelector('.ea-chart-wrap');
+  if (!wrap) return;
+  /** @type {unknown[]} */
+  var chartStore = [];
+  mountChart(
+    wrap,
+    fam.title,
+    ChartCtor,
+    {
+      type: 'line',
+      data: { labels: famData.labels, datasets: famData.datasets },
+      options: eaLineChartOptions(),
+    },
+    mountEl,
+    chartStore,
+    slotId,
+    EA_CHART_VITALS_CANVAS_HEIGHT
+  );
+  saveEaTabChartStore(mountEl, 'vitals', eaTabLayoutKey('vitals', slotData), chartStore);
+}
+
+/**
  * @param {HTMLElement} mountEl
  * @param {string} tab
  * @param {{ slotData: Record<string, { labels: string[], datasets: object[] }>, signature: string }} bundle
@@ -214,11 +313,11 @@ export function activateEaChartTab(mountEl, tab, bundle, ChartCtor, layoutKey) {
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
 
-  mountEl.querySelectorAll('.ea-charts-tabpanel').forEach(function (panel) {
-    var id = panel.getAttribute('data-ea-chart-panel');
+  mountEl.querySelectorAll('.ea-charts-tabpanel').forEach(function (panelEl) {
+    var id = panelEl.getAttribute('data-ea-chart-panel');
     var active = id === tab;
-    panel.hidden = !active;
-    panel.classList.toggle('ea-charts-tabpanel--active', active);
+    panelEl.hidden = !active;
+    panelEl.classList.toggle('ea-charts-tabpanel--active', active);
   });
 
   var panel = mountEl.querySelector('[data-ea-chart-panel="' + tab + '"]');
@@ -227,13 +326,41 @@ export function activateEaChartTab(mountEl, tab, bundle, ChartCtor, layoutKey) {
   var slotData = bundle.slotData;
   var tabLayout = eaTabLayoutKey(tab, slotData);
   var cached = ensureEaTabChartStores(mountEl)[tab];
+
+  if (tab === 'vitals') {
+    var famId = mountEl._eaActiveVitalFamily || defaultEaVitalFamilyId(slotData);
+    if (!slotData['vital:' + famId]) famId = defaultEaVitalFamilyId(slotData);
+    if (cached && cached.layoutKey === tabLayout && panel.querySelector('canvas')) {
+      syncActiveEaChartsRef(mountEl, tab);
+      mountEl._eaChartsLayoutKey = layoutKey;
+      mountEl._eaChartsSig = bundle.signature;
+      markEaVitalFamilyActive(panel, famId);
+      var panelWidth = panel.clientWidth;
+      if (panelWidth > 0 && panelWidth !== cached.panelWidth) {
+        cached.panelWidth = panelWidth;
+        requestAnimationFrame(function () {
+          resizeEaCharts(cached.charts);
+        });
+      }
+      return;
+    }
+    switchEaVitalsFamily(mountEl, famId, bundle, ChartCtor);
+    mountEl._eaChartsLayoutKey = layoutKey;
+    mountEl._eaChartsSig = bundle.signature;
+    return;
+  }
+
   if (cached && cached.layoutKey === tabLayout && panel.querySelector('canvas')) {
     syncActiveEaChartsRef(mountEl, tab);
     mountEl._eaChartsLayoutKey = layoutKey;
     mountEl._eaChartsSig = bundle.signature;
-    requestAnimationFrame(function () {
-      resizeEaCharts(cached.charts);
-    });
+    var cachedWidth = panel.clientWidth;
+    if (cachedWidth > 0 && cachedWidth !== cached.panelWidth) {
+      cached.panelWidth = cachedWidth;
+      requestAnimationFrame(function () {
+        resizeEaCharts(cached.charts);
+      });
+    }
     return;
   }
 
@@ -244,33 +371,7 @@ export function activateEaChartTab(mountEl, tab, bundle, ChartCtor, layoutKey) {
   /** @type {Array<{ wrap: HTMLElement, title: string, config: object, slotId: string, height: number }>} */
   var queue = [];
 
-  if (tab === 'vitals') {
-    panel.innerHTML = '<div class="ea-chart-family-grid"></div>';
-    var svGrid = panel.querySelector('.ea-chart-family-grid');
-    VITAL_FAMILIES.forEach(function (fam) {
-      var raw = slotData['vital:' + fam.id];
-      if (!raw || !svGrid) return;
-      var famData = displayVitalsFamilyData(raw);
-      var famWrap = document.createElement('div');
-      famWrap.className = 'ea-chart-wrap';
-      svGrid.appendChild(famWrap);
-      queue.push({
-        wrap: famWrap,
-        title: fam.title,
-        slotId: 'vital:' + fam.id,
-        height: EA_CHART_VITALS_CANVAS_HEIGHT,
-        config: {
-          type: 'line',
-          data: { labels: famData.labels, datasets: famData.datasets },
-          options: eaLineChartOptions(),
-        },
-      });
-    });
-    if (!queue.length && svGrid) {
-      svGrid.innerHTML =
-        '<p class="ea-muted">Sin suficientes puntos de signos vitales (mín. 2 por parámetro).</p>';
-    }
-  } else if (tab === 'glu') {
+  if (tab === 'glu') {
     var gluRaw = slotData.glu;
     if (gluRaw) {
       var gluDisplay = displayGluChartData(gluRaw);
@@ -344,31 +445,7 @@ export function activateEaChartTab(mountEl, tab, bundle, ChartCtor, layoutKey) {
                 },
               ],
             },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: false,
-              devicePixelRatio: eaChartDevicePixelRatio(),
-              interaction: { mode: 'index', axis: 'x', intersect: false },
-              plugins: Object.assign(
-                { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
-                eaChartTooltipPlugin()
-              ),
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  title: { display: true, text: 'cc', font: { size: 11 } },
-                  ticks: { font: { size: 11 }, maxTicksLimit: 6 },
-                },
-                y1: {
-                  position: 'right',
-                  grid: { drawOnChartArea: false },
-                  title: { display: true, text: 'Balance acum.', font: { size: 11 } },
-                  ticks: { font: { size: 11 }, maxTicksLimit: 6 },
-                },
-                x: { ticks: { maxRotation: 0, font: { size: 10 }, autoSkip: true, maxTicksLimit: 10 } },
-              },
-            },
+            options: eaIoChartOptions(),
           },
         });
       }
@@ -389,32 +466,11 @@ export function activateEaChartTab(mountEl, tab, bundle, ChartCtor, layoutKey) {
     return;
   }
 
-  var mountBatch = tab === 'vitals' ? 1 : 2;
-  var jobIndex = 0;
-
-  function runMountBatch() {
-    var end = Math.min(jobIndex + mountBatch, queue.length);
-    for (; jobIndex < end; jobIndex += 1) {
-      var job = queue[jobIndex];
-      mountChart(
-        job.wrap,
-        job.title,
-        ChartCtor,
-        job.config,
-        mountEl,
-        chartStore,
-        job.slotId,
-        job.height
-      );
-    }
-    if (jobIndex < queue.length) requestAnimationFrame(runMountBatch);
-    else finalize();
+  for (var qi = 0; qi < queue.length; qi += 1) {
+    var job = queue[qi];
+    mountChart(job.wrap, job.title, ChartCtor, job.config, mountEl, chartStore, job.slotId, job.height);
   }
-
-  // Wait until the tab panel is visible and laid out (avoids 0×0 canvas on tab switch).
-  requestAnimationFrame(function () {
-    requestAnimationFrame(runMountBatch);
-  });
+  finalize();
 }
 
 /**
@@ -431,10 +487,20 @@ export function wireEaChartsTabs(mountEl, bundle, ChartCtor, layoutKey) {
   mountEl._eaChartsTabsWired = true;
   mountEl.addEventListener('click', function (ev) {
     var target = /** @type {HTMLElement | null} */ (ev.target);
-    var btn =
-      target && typeof target.closest === 'function'
-        ? /** @type {HTMLElement | null} */ (target.closest('[data-ea-chart-tab]'))
-        : null;
+    if (!target || typeof target.closest !== 'function') return;
+
+    var famBtn = /** @type {HTMLElement | null} */ (target.closest('[data-ea-vital-family]'));
+    if (famBtn && mountEl.contains(famBtn) && !famBtn.disabled) {
+      var famId = famBtn.getAttribute('data-ea-vital-family');
+      if (famId && famId !== mountEl._eaActiveVitalFamily) {
+        var liveBundleFam = mountEl._eaChartBundle || bundle;
+        var liveChartFam = mountEl._eaChartCtor || resolveChartCtor(null);
+        switchEaVitalsFamily(mountEl, famId, liveBundleFam, liveChartFam);
+      }
+      return;
+    }
+
+    var btn = /** @type {HTMLElement | null} */ (target.closest('[data-ea-chart-tab]'));
     if (!btn || !mountEl.contains(btn) || btn.disabled) return;
     var tab = btn.getAttribute('data-ea-chart-tab');
     if (!tab || tab === mountEl._eaActiveChartTab) return;

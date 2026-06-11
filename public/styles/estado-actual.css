@@ -1139,10 +1139,16 @@ html.ea-charts-modal-open {
   overflow: hidden;
 }
 
+/* Skip backdrop fade while Chart.js mounts — opacity animation + canvas init = severe jank */
+#ea-charts-backdrop.modal-backdrop.open {
+  animation: none;
+}
+
 .ea-charts-modal {
   position: relative;
   max-width: min(98vw, 1180px);
   width: min(98vw, 1180px);
+  height: min(94vh, 880px);
   max-height: min(94vh, 880px);
   display: flex;
   flex-direction: column;
@@ -1297,6 +1303,41 @@ html.ea-charts-modal-open {
   flex-direction: column;
   gap: 12px;
   padding-bottom: 4px;
+}
+
+.ea-vitals-family-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.ea-vitals-family-btn {
+  appearance: none;
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ea-vitals-family-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--color-accent) 35%, var(--divider));
+}
+
+.ea-vitals-family-btn--active {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--divider));
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--surface));
+}
+
+.ea-chart-wrap--vitals .ea-chart-canvas-wrap {
+  height: 300px;
 }
 
 .ea-chart-family-grid .ea-chart-canvas-wrap {

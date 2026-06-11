@@ -1,4 +1,5 @@
 import { getChartJsIfLoaded, loadChartJs } from '../vendor-loader.mjs';
+import { destroyAllEaTabCharts } from './estado-actual-charts-tabs.mjs';
 import { destroyEstadoActualCharts, renderEstadoActualCharts } from './estado-actual-charts.mjs';
 
 /** @type {{ getPatient(): { monitoreo?: unknown } | null, getActiveId(): string | null, showToast(msg: string, type?: string): void }} */
@@ -29,6 +30,8 @@ function getMount() {
 export function closeEstadoActualChartsModal() {
   var backdrop = getBackdrop();
   if (!backdrop) return;
+  var mount = getMount();
+  if (mount) destroyAllEaTabCharts(mount);
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('ea-charts-modal-open');
@@ -66,22 +69,19 @@ export function openEstadoActualChartsModal() {
   backdrop.setAttribute('aria-hidden', 'false');
   document.documentElement.classList.add('ea-charts-modal-open');
 
-  function schedulePaint(ChartCtor) {
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        paintEaChartsModal(mount, patient.monitoreo, ChartCtor);
-      });
-    });
+  function paintAfterLayout(ChartCtor) {
+    if (mount) void mount.offsetWidth;
+    paintEaChartsModal(mount, patient.monitoreo, ChartCtor);
   }
 
   var Chart = getChartJsIfLoaded();
   if (Chart) {
-    schedulePaint(Chart);
+    paintAfterLayout(Chart);
     return;
   }
   void loadChartJs()
     .then(function (loaded) {
-      schedulePaint(loaded);
+      paintAfterLayout(loaded);
     })
     .catch(function () {
       schedulePaint(undefined);

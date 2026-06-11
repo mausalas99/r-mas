@@ -222,8 +222,8 @@ export function lineDataset(labels, values, alteredFlags, color) {
       data: values,
       borderColor: color,
       backgroundColor: color,
-      pointRadius: 3,
-      tension: 0.25,
+      pointRadius: 2,
+      tension: 0,
       spanGaps: true,
     };
   }
@@ -242,7 +242,7 @@ export function lineDataset(labels, values, alteredFlags, color) {
     pointRadius: pointRadius,
     pointBackgroundColor: pointBackgroundColor,
     pointBorderColor: pointBackgroundColor,
-    tension: 0.25,
+    tension: 0,
     spanGaps: true,
   };
 }

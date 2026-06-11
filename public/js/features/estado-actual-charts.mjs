@@ -21,6 +21,32 @@ import {
   wireEaChartsTabs,
 } from './estado-actual-charts-tabs.mjs';
 
+/**
+ * @param {HTMLElement} mountEl
+ */
+function resizeActiveEaChartsOnReveal(mountEl) {
+  var tab = mountEl._eaActiveChartTab;
+  if (!tab) return;
+  var stores = mountEl._eaTabChartStores;
+  if (!stores || typeof stores !== 'object') return;
+  var entry = stores[tab];
+  if (!entry || !Array.isArray(entry.charts) || !entry.charts.length) return;
+  var panel = mountEl.querySelector('[data-ea-chart-panel="' + tab + '"]');
+  var panelWidth = panel && panel.clientWidth > 0 ? panel.clientWidth : 0;
+  if (panelWidth > 0 && panelWidth !== entry.panelWidth) {
+    entry.panelWidth = panelWidth;
+    requestAnimationFrame(function () {
+      entry.charts.forEach(function (ch) {
+        try {
+          if (ch && typeof ch.resize === 'function') ch.resize();
+        } catch (_e) {
+          /* ignore */
+        }
+      });
+    });
+  }
+}
+
 export {
   buildGluSeries,
   buildIoChartData,
@@ -224,6 +250,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
       if (ChartRemount) {
         activateEaChartTab(mountEl, activeTab, bundle, ChartRemount, bundle.layoutKey);
       }
+    } else {
+      resizeActiveEaChartsOnReveal(mountEl);
     }
     return;
   }
