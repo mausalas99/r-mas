@@ -482,7 +482,7 @@ html.dark .btn-intro-skip:hover {
 #tour-dock.tour-dock-visible {
   display: block;
   pointer-events: auto;
-  animation: tour-dock-enter 200ms ease-out;
+  animation: tour-dock-enter var(--dur-normal) ease-out;
 }
 @keyframes tour-dock-enter {
   from { opacity: 0; transform: translateY(10px); }
