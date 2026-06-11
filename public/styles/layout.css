@@ -302,10 +302,7 @@ html.ui-density-normal #main-area {
   justify-content: flex-end;
 }
 
-/* Píldoras del cluster: Guardia, censo PDF, modo Sala/Pase — misma caja tipográfica */
-.header-work-cluster .header-guardia-mode-chip,
-.header-work-cluster .header-pase-mode-chip,
-.header-work-cluster .header-app-mode-chip,
+/* Píldoras del cluster: censo PDF — misma caja tipográfica */
 .header-work-cluster .btn-export-censo-header {
   display: inline-flex;
   align-items: center;
@@ -318,28 +315,8 @@ html.ui-density-normal #main-area {
 }
 
 @media (max-width: 920px) {
-  .header-guardia-mode-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-  .header-work-cluster .header-guardia-mode-chip,
-  .header-work-cluster .header-pase-mode-chip,
-  .header-work-cluster .header-app-mode-chip,
   .header-work-cluster .btn-export-censo-header {
     padding: 6px 10px;
-  }
-  #header-app-mode-chip {
-    max-width: 9.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 .header-pase-breadcrumb {
@@ -380,27 +357,6 @@ html.ui-density-normal #main-area {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.header-pase-mode-chip {
-  display: none;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in oklab, var(--action) 30%, var(--border));
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  color: var(--action);
-  font-family: inherit;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-}
-.header-pase-mode-chip:hover {
-  background: color-mix(in oklab, var(--action) 14%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-}
-.header-pase-mode-chip:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 1px;
-}
 .header-return-pase-btn {
   flex-shrink: 0;
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
@@ -419,20 +375,6 @@ html.ui-density-normal #main-area {
   background: color-mix(in oklab, var(--action) 16%, var(--surface));
   border-color: color-mix(in oklab, var(--action) 50%, var(--border));
 }
-.header-app-mode-chip {
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-  color: var(--text);
-  font-family: inherit;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-}
-.header-app-mode-chip:hover {
-  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
 .estado-actual-meta {
   font-size: 11px;
   font-weight: 600;
@@ -446,25 +388,28 @@ html.ui-density-normal #main-area {
 .btn-export-censo-header {
   display: none;
   flex-shrink: 0;
-  background: color-mix(in oklab, #4f46e5 92%, #1e1b4b);
-  color: var(--color-on-accent);
-  border: none;
-  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
   font-family: inherit;
   cursor: pointer;
-  transition: filter var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+  box-shadow: none;
 }
 .btn-export-censo-header:hover {
-  filter: brightness(1.06);
+  background: var(--state-hover-bg);
+  color: var(--text);
 }
 .btn-export-censo-header svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+  opacity: 0.75;
 }
 html.dark .btn-export-censo-header {
-  background: color-mix(in oklab, #6366f1 88%, #312e81);
+  background: transparent;
+  color: var(--text-muted);
 }
 .sidebar-censo-export-wrap {
   display: none;
@@ -552,15 +497,6 @@ html.censo-preview-open {
   gap: 10px;
 }
 
-.header-app-mode-chip.mode-sala {
-  border-color: color-mix(in oklab, #059669 28%, var(--border));
-}
-.header-app-mode-chip.mode-inter {
-  border-color: color-mix(in oklab, #6366f1 30%, var(--border));
-}
-html.dark .header-app-mode-chip {
-  background: rgba(255, 255, 255, 0.04);
-}
 html.ui-density-normal .main-col {
   border-radius: var(--radius-frame-outer);
   overflow: hidden;
@@ -1142,28 +1078,28 @@ html:not(.ui-density-normal) .pase-empty-screen {
   line-height: 1.5;
 }
 .app-tabs {
-  background: color-mix(in oklab, var(--surface) 97%, var(--bg));
+  background: transparent;
   border-bottom: 1px solid var(--divider);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   flex-shrink: 0;
-  gap: 2px;
+  gap: 0;
   box-shadow: none;
   padding: 0 calc(8px * var(--density-space));
   position: relative;
 }
 .app-tab {
-  padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)) calc(8px * var(--density-space));
+  padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)) calc(9px * var(--density-space));
   font-size: calc(14px * var(--density-font));
   font-weight: 600;
   color: var(--text-muted);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  margin-bottom: -1px;
+  border-radius: 0;
+  margin-bottom: 0;
   cursor: pointer;
-  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
   display: flex;
   align-items: center;
   gap: calc(7px * var(--density-space));
@@ -1173,14 +1109,14 @@ html:not(.ui-density-normal) .pase-empty-screen {
   z-index: 1;
 }
 .app-tab:hover {
-  color: var(--action);
-  background: color-mix(in oklab, var(--action) 6%, transparent);
+  color: var(--text);
+  background: transparent;
   box-shadow: none;
 }
 .app-tab.active {
   color: var(--action);
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  border-bottom-color: var(--action);
+  background: transparent;
+  border-bottom-color: transparent;
   box-shadow: none;
 }
 html.tab-bar-indicators-ready .app-tab.active {
@@ -1188,12 +1124,13 @@ html.tab-bar-indicators-ready .app-tab.active {
   border-bottom-color: transparent;
 }
 html.dark .app-tab:hover {
-  background: color-mix(in oklab, var(--action) 10%, transparent);
+  background: transparent;
+  color: var(--text);
   box-shadow: none;
 }
 html.dark .app-tab.active {
-  background: color-mix(in oklab, var(--action) 14%, transparent);
-  border-bottom-color: var(--action);
+  background: transparent;
+  border-bottom-color: transparent;
   box-shadow: none;
 }
 html.tab-bar-indicators-ready html.dark .app-tab.active {
@@ -1224,21 +1161,108 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 .header-context-patient {
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-muted);
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 32vw;
+  max-width: 28vw;
 }
 
 .header-context-path {
   color: var(--text-muted);
   font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
+  opacity: 0.88;
+}
+
+.header-context-patient:not(:empty) + .header-context-path:not(:empty)::before {
+  content: '·';
+  margin: 0 6px;
+  opacity: 0.45;
 }
 
 @media (max-width: 980px) {
   .header-context-path {
     display: none;
   }
+}
+
+/* Selector de modo segmentado (premium UI phase 2) — colapsa al activo */
+.header-mode-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.header-mode-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  max-width: 9rem;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    max-width var(--dur-slow) var(--ease-out),
+    opacity var(--dur-normal) var(--ease-out),
+    padding var(--dur-slow) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.header-mode-seg-btn:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.header-mode-seg-btn.is-active {
+  background: transparent;
+  color: var(--text);
+}
+
+.header-mode-seg-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Colapsado: solo el modo activo; expande al hover o al pulsar el activo */
+.header-mode-seg-btn:not(.is-active) {
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.header-mode-seg:hover .header-mode-seg-btn:not([hidden]),
+.header-mode-seg.is-expanded .header-mode-seg-btn:not([hidden]) {
+  max-width: 9rem;
+  padding-left: 8px;
+  padding-right: 8px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.header-mode-seg:hover .header-mode-seg-btn:not(.is-active):not([hidden]),
+.header-mode-seg.is-expanded .header-mode-seg-btn:not(.is-active):not([hidden]) {
+  transition-delay: 35ms;
+}
+
+.header-mode-seg-btn[hidden] {
+  display: none !important;
 }

@@ -117,33 +117,6 @@
 }
 
 /* —— Modo Guardia (full dashboard) —— */
-.header-guardia-mode-chip {
-  border-radius: var(--radius-pill);
-  font-family: inherit;
-  cursor: pointer;
-  border: 1px solid color-mix(in oklab, var(--action) 30%, var(--border));
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  color: var(--action);
-}
-
-.header-guardia-mode-icon {
-  display: block;
-  flex-shrink: 0;
-  opacity: 0.9;
-}
-
-.header-guardia-mode-chip--active,
-.header-guardia-mode-chip:hover {
-  background: color-mix(in oklab, var(--action) 14%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  color: var(--action);
-  box-shadow: var(--shadow-sm);
-}
-
-.header-guardia-mode-chip:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 1px;
-}
 
 html.ui-density-guardia aside.patient-sidebar,
 html.ui-density-guardia #sidebar-hover-strip {
@@ -182,10 +155,6 @@ html.ui-density-guardia .guardia-board-scroll {
 }
 
 html.ui-density-guardia #lan-connection-banner {
-  display: none !important;
-}
-
-html.ui-density-guardia #header-app-mode-chip {
   display: none !important;
 }
 

@@ -159,7 +159,7 @@ const TARGETS = {
   livesync_mobile:   { appTab: null,   selector: '#connection-dropdown', focus: false, openConnection: true },
   gv7_guardia_chip: {
     appTab: null,
-    selector: '#header-guardia-mode-chip',
+    selector: '#header-mode-seg',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
@@ -186,7 +186,7 @@ const TARGETS = {
   },
   gv7_guardia_exit: {
     appTab: null,
-    selector: '#header-guardia-mode-chip',
+    selector: '#header-mode-seg',
     focus: false,
     exitGuardiaDensity: true,
     spotlightClass: 'tour-spotlight-action',

@@ -10,6 +10,10 @@
   </div>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" onclick="openCommandPalette()" title="Ir a sección o paciente (⌘K)" aria-label="Ir a sección o paciente">
+        <svg class="header-cmdk-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+
       <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
         <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
         <span class="header-pase-breadcrumb-sep" aria-hidden="true">›</span>
@@ -20,11 +24,12 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
       </button>
-      <button type="button" id="header-guardia-mode-chip" class="header-guardia-mode-chip" style="display:none;" onclick="toggleGuardiaMode()" title="Abrir Guardia — censo, entrega y turno activo" aria-label="Guardia" aria-pressed="false"><svg class="header-guardia-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><span class="header-guardia-mode-label">Guardia</span></button>
-      <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
-      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" title="">
-        Modo: Sala
-      </button>
+      <div id="header-mode-seg" class="header-mode-seg" role="group" aria-label="Modo de trabajo" aria-expanded="false">
+        <button type="button" class="header-mode-seg-btn" data-mode="sala" onclick="setWorkModeFromHeader('sala')" aria-pressed="false" title="Modo Sala — Estado actual, Historia, Listado de problemas">Sala</button>
+        <button type="button" class="header-mode-seg-btn" data-mode="interconsulta" onclick="setWorkModeFromHeader('interconsulta')" aria-pressed="false" title="Modo Interconsulta — Nota de evolución, Indicaciones">Interconsulta</button>
+        <button type="button" class="header-mode-seg-btn" data-mode="guardia" onclick="setWorkModeFromHeader('guardia')" aria-pressed="false" title="Guardia — censo, entrega y turno activo">Guardia</button>
+        <button type="button" class="header-mode-seg-btn" data-mode="pase" onclick="setWorkModeFromHeader('pase')" aria-pressed="false" title="Modo Pase — vista compacta de ronda">Pase</button>
+      </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
     <button type="button" class="btn-header-icon" id="profile-toggle-btn" onclick="openProfileModal()" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
@@ -234,7 +239,7 @@
           <button type="button" class="btn-edit-templates" onclick="openExtraTemplatesManager()">Administrar plantillas…</button>
           <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Búsqueda unificada</div>
-          <p class="settings-acc-hint">Pacientes, notas e indicaciones. Atajo: Ctrl/⌘ + K.</p>
+          <p class="settings-acc-hint">Pacientes, notas e indicaciones.</p>
           <button type="button" class="btn-edit-templates" onclick="openUnifiedSearch()">Abrir búsqueda…</button>
           <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Modo enfoque</div>

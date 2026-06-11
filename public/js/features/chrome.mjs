@@ -1,4 +1,5 @@
 import { normalizeMotionMode, motionClassFor, ALL_MOTION_CLASSES } from '../motion-mode.mjs';
+import { isModeSala } from '../mode-features.mjs';
 
 /** Runtime hooks supplied by app.js once shell functions exist. */
 let runtime = {
@@ -244,16 +245,82 @@ export function isGuardiaMode() {
   return getUiDensity() === 'guardia';
 }
 
+export function getWorkMode() {
+  if (isGuardiaMode()) return 'guardia';
+  if (isPaseMode()) return 'pase';
+  var st = null;
+  try {
+    st = JSON.parse(localStorage.getItem('rpc-settings') || 'null');
+  } catch (_e) {
+    st = null;
+  }
+  return isModeSala(st) ? 'sala' : 'interconsulta';
+}
+
+
+export function collapseHeaderModeSeg() {
+  var seg = document.getElementById('header-mode-seg');
+  if (!seg) return;
+  seg.classList.remove('is-expanded');
+  seg.setAttribute('aria-expanded', 'false');
+}
+
+export function toggleHeaderModeSegExpand() {
+  var seg = document.getElementById('header-mode-seg');
+  if (!seg) return false;
+  var next = !seg.classList.contains('is-expanded');
+  seg.classList.toggle('is-expanded', next);
+  seg.setAttribute('aria-expanded', next ? 'true' : 'false');
+  return next;
+}
+
+function initHeaderModeSegInteractions() {
+  if (typeof document === 'undefined' || document._rpcHeaderModeSegWired) return;
+  document._rpcHeaderModeSegWired = true;
+  var seg = document.getElementById('header-mode-seg');
+  if (!seg) return;
+  seg.setAttribute('aria-expanded', 'false');
+  document.addEventListener('click', function (ev) {
+    if (!seg.classList.contains('is-expanded')) return;
+    if (seg.contains(ev.target)) return;
+    collapseHeaderModeSeg();
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && seg.classList.contains('is-expanded')) {
+      collapseHeaderModeSeg();
+    }
+  });
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeaderModeSegInteractions);
+  } else {
+    initHeaderModeSegInteractions();
+  }
+}
+
+export function syncHeaderModeSeg() {
+  var seg = document.getElementById('header-mode-seg');
+  if (!seg) return;
+  var mode = getWorkMode();
+  seg.querySelectorAll('.header-mode-seg-btn').forEach(function (btn) {
+    var on = btn.dataset.mode === mode;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
 export function markOpenedDetailFromPaseBoard() {
   _openedDetailFromPase = true;
   syncPaseReturnHeaderBtn();
-  syncPaseModeHeaderChip();
+  syncHeaderModeSeg();
 }
 
 export function clearPaseDetailEscape() {
   _openedDetailFromPase = false;
   syncPaseReturnHeaderBtn();
-  syncPaseModeHeaderChip();
+  syncHeaderModeSeg();
 }
 
 function paseSectionLabelFromContext() {
@@ -274,29 +341,6 @@ function paseSectionLabelFromContext() {
     if (inner === 'recetaHu') return 'Receta HU';
   }
   return 'Expediente';
-}
-
-export function syncPaseModeHeaderChip() {
-  var chip = document.getElementById('header-pase-mode-chip');
-  if (!chip) return;
-  chip.style.display = isPaseMode() ? 'inline-flex' : 'none';
-}
-
-export function syncGuardiaModeHeaderChip() {
-  var chip = document.getElementById('header-guardia-mode-chip');
-  if (!chip) return;
-  chip.style.display = 'inline-flex';
-  chip.classList.toggle('header-guardia-mode-chip--active', isGuardiaMode());
-  chip.setAttribute('aria-pressed', isGuardiaMode() ? 'true' : 'false');
-  var label = chip.querySelector('.header-guardia-mode-label');
-  if (label) label.textContent = 'Guardia';
-  chip.title = isGuardiaMode()
-    ? 'Salir de Guardia'
-    : 'Abrir Guardia — censo, entrega y turno activo';
-  chip.setAttribute(
-    'aria-label',
-    isGuardiaMode() ? 'Salir de Guardia' : 'Abrir Guardia'
-  );
 }
 
 export function toggleGuardiaMode() {
@@ -332,7 +376,7 @@ export function syncPaseReturnHeaderBtn() {
   if (crumb) crumb.style.display = show ? 'inline-flex' : 'none';
   if (section && show) section.textContent = paseSectionLabelFromContext();
   if (btn) btn.style.display = 'none';
-  syncPaseModeHeaderChip();
+  syncHeaderModeSeg();
 }
 
 export function returnToPaseBoardFromDetail() {
@@ -372,8 +416,7 @@ export function applyUiDensity() {
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
   syncPaseReturnHeaderBtn();
-  syncPaseModeHeaderChip();
-  syncGuardiaModeHeaderChip();
+  syncHeaderModeSeg();
   if (typeof runtime.renderPatientList === 'function') {
     runtime.renderPatientList({ silent: true });
   }
@@ -434,6 +477,7 @@ export function initChromeAppearance() {
   applyHighContrast();
   applyMotionMode();
   applyUiDensity();
+  syncHeaderModeSeg();
   applyI18n();
   applyFontZoom();
   syncThemeSettingsButtons();

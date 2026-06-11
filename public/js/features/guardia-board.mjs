@@ -602,8 +602,11 @@ export function isGuardiaBoardAvailable() {
 
 export function syncGuardiaModeButtonVisibility() {
   const show = isDbMode();
-  const btn = document.getElementById('header-guardia-mode-chip');
-  if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+  const btn = document.querySelector('#header-mode-seg .header-mode-seg-btn[data-mode="guardia"]');
+  if (btn) {
+    if (show) btn.removeAttribute('hidden');
+    else btn.setAttribute('hidden', '');
+  }
 }
 
 if (typeof document !== 'undefined' && !document._rpcInternoVitalsSyncedWired) {

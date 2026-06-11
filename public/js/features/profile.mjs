@@ -5,6 +5,12 @@ import {
   syncHighContrastButtons,
   syncUiDensityButtons,
   isPaseMode,
+  isGuardiaMode,
+  setUiDensity,
+  toggleGuardiaMode,
+  syncHeaderModeSeg,
+  toggleHeaderModeSegExpand,
+  collapseHeaderModeSeg,
 } from "./chrome.mjs";
 import { syncSettingsLanHostDiskSection } from "./lan-sync.mjs";
 import {
@@ -356,18 +362,6 @@ export function saveSettings() {
   rt.showToast("Perfil guardado ✓", "success");
 }
 
-export function syncHeaderAppModeChip() {
-  var chip = document.getElementById("header-app-mode-chip");
-  if (!chip) return;
-  var sala = isModeSala(settingsRef());
-  chip.textContent = sala ? "Modo: Sala" : "Modo: Interconsulta";
-  chip.title = sala
-    ? "Pulsa para cambiar a Interconsulta (Nota de evolución, Indicaciones…). Ajustes finos en Mi Perfil."
-    : "Pulsa para cambiar a Sala (Estado actual, Listado de problemas…). Ajustes finos en Mi Perfil.";
-  chip.classList.toggle("mode-sala", sala);
-  chip.classList.toggle("mode-inter", !sala);
-}
-
 function reconcileActiveInnerForAppMode(nowSala) {
   var settings = settingsRef();
   var current = getActiveInnerTab() || "todo";
@@ -391,7 +385,7 @@ export function applyAppModeSwitchEffects() {
     refreshExpedienteForAppModeChange();
     renderEstadoActualButton();
     syncCensoExportButtonVisibility();
-    syncHeaderAppModeChip();
+    syncHeaderModeSeg();
     if (rt.getActiveId()) {
       if (!nowSala) renderNoteForm();
       var inner = getActiveInnerTab();
@@ -423,6 +417,48 @@ export function toggleHeaderWorkMode() {
   syncAppModeRadioControls();
   applyAppModeSwitchEffects();
   persistSettingsToLocalStorage();
+}
+
+export function setWorkModeFromHeader(mode) {
+  var st = settingsRef();
+  var current = isGuardiaMode()
+    ? "guardia"
+    : isPaseMode()
+      ? "pase"
+      : isModeSala(st)
+        ? "sala"
+        : "interconsulta";
+  if (mode === current) {
+    toggleHeaderModeSegExpand();
+    syncHeaderModeSeg();
+    return;
+  }
+  if (mode === "guardia") {
+    toggleGuardiaMode();
+    collapseHeaderModeSeg();
+    syncHeaderModeSeg();
+    return;
+  }
+  if (mode === "pase") {
+    if (isGuardiaMode()) toggleGuardiaMode();
+    setUiDensity("pase");
+    collapseHeaderModeSeg();
+    syncHeaderModeSeg();
+    return;
+  }
+  // sala / interconsulta: leave any overlay view mode first
+  if (isGuardiaMode()) toggleGuardiaMode();
+  else if (isPaseMode()) setUiDensity("normal");
+  var wantSala = mode === "sala";
+  if (wantSala !== isModeSala(st)) {
+    st.appMode = wantSala ? "sala" : "interconsulta";
+    invalidateLoadSettingsSnapshot();
+    syncAppModeRadioControls();
+    applyAppModeSwitchEffects();
+    persistSettingsToLocalStorage();
+  }
+  collapseHeaderModeSeg();
+  syncHeaderModeSeg();
 }
 
 export function openProfileModal() {
@@ -471,7 +507,7 @@ function ensureInterconsultaModeForFormats() {
   if (modeInterEl) modeInterEl.checked = true;
   if (modeSalaEl) modeSalaEl.checked = false;
   renderInnerTabs();
-  syncHeaderAppModeChip();
+  syncHeaderModeSeg();
   rt.syncWorkContextChrome();
 }
 
@@ -668,6 +704,7 @@ export const profileWindowHandlers = {
   closeProfileModal,
   onAppModeChange,
   toggleHeaderWorkMode,
+  setWorkModeFromHeader,
   saveQuickOutputFormat,
   setHideManejoSection,
   setHideClinicoTab,
