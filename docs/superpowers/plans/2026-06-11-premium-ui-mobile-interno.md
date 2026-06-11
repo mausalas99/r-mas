@@ -22,5 +22,5 @@
 ### Task 3: Verification
 
 - [x] `npm test` (1509 pass)
-- [ ] iPad LAN smoke per merge
+- [ ] iPad LAN smoke per merge — **open user-QA item (2026-06-11 closeout):** needs a real iPad over LAN (mobile grouped row, interno board, glass fallbacks). Everything else in Phases 1–6 is closed; this is the remaining device check.
 - [x] Changelog

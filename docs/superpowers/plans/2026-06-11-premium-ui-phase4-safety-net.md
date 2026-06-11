@@ -11,7 +11,7 @@
 - [x] `package.json` — `"test": "node scripts/run-tests.mjs"`
 - [x] `.github/workflows/ci.yml` — macos-latest: `npm ci` → `build:ui:check` → `metrics:check` → `npm test`
 - [x] Remove gitlinks (`hallmark`, `micode`, `plugins`, `superpowers`, `ui-ux-pro-max-skill`, `.tmp/Vibe-App-Wiki`) + `.gitignore`
-- [ ] Triage failures from newly activated tests (Task 0.2 — may surface in CI)
+- [x] Triage failures from newly activated tests (Task 0.2 — may surface in CI) — closed 2026-06-11: CI green on every `main` push through `99117d0`/`b8764fc`; no failures surfaced to triage. (Note: glob runner later reverted in `3e2af44`; explicit list in `package.json` is the CI entry point.)
 
 ## Verification
 

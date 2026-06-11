@@ -1,5 +1,7 @@
 # Premium UI Phase 2 — Navigation Rework Implementation Plan
 
+> **STATUS (2026-06-11): SHIPPED** — all tasks landed on `main` (commits `bbda99b…b69d4ed`); step checkboxes below were not ticked during execution and are retained as-is for reference. Closeout decision: the **J/K keyboard hint is DROPPED** — no J/K shortcut was ever implemented (verified by code search 2026-06-11), so a hint would advertise a nonexistent feature. Revisit only if the shortcut itself is built.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace Expediente's two-level tab navigation with a single grouped-pill row, add an always-visible context header with a segmented mode selector (Sala · Interconsulta · Guardia · Pase), and add a ⌘K fuzzy command palette for sections and patients.
