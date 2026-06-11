@@ -98,8 +98,10 @@
   --sidebar-rail-color: color-mix(in oklab, #5c4a52 18%, var(--color-paper));
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-fast: 150ms;
   --dur-normal: 220ms;
+  --dur-slow: 320ms;
   --font-ui: "IBM Plex Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -180,7 +182,7 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Alto contraste — legibilidad primero (WCAG), sin “marco” blanco en cada caja */
+/* Alto contraste — legibilidad primero (WCAG), sin "marco" blanco en cada caja */
 html.high-contrast {
   --color-paper: #ffffff;
   --color-surface: #ffffff;
@@ -268,4 +270,29 @@ html.high-contrast.dark {
   --shell-gap: var(--color-paper);
   --sidebar-rail-color: var(--border);
   --color-focus-ring: var(--color-accent);
+}
+
+/* ── Motion presets (Ajustes → Animaciones). Mixto = :root defaults ── */
+html.motion-sobrio {
+  --dur-fast: 100ms;
+  --dur-normal: 160ms;
+  --dur-slow: 200ms;
+  --ease-spring: var(--ease-out);
+}
+
+html.motion-expresivo {
+  --dur-fast: 170ms;
+  --dur-normal: 260ms;
+  --dur-slow: 380ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html.motion-sobrio,
+  html.motion-expresivo {
+    --dur-fast: 1ms;
+    --dur-normal: 1ms;
+    --dur-slow: 1ms;
+    --ease-spring: linear;
+  }
 }

@@ -265,3 +265,10 @@ textarea.field-shake {
   }
 }
 
+/* Sobrio: spring-flavored animations degrade to simple fades */
+html.motion-sobrio .field-shake {
+  animation-duration: 0.2s;
+}
+html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
+  animation: none;
+}
