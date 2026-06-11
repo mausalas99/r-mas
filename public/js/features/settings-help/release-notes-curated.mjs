@@ -747,6 +747,34 @@ var RELEASE_NOTES_729 = [
   },
 ];
 
+var RELEASE_NOTES_733 = [
+  {
+    title: 'Balance I/O en la nota',
+    body:
+      'Si falta el balance del turno pero hay egresos numéricos parciales, la cláusula SOAP lo calcula (p. ej. diuresis <strong>NC</strong> + gastrostomía → balance con signo).',
+  },
+  {
+    title: 'Evacuaciones — conteo, no CC',
+    body:
+      'Evacuaciones numéricas en <strong>Estado actual</strong>, historial y <strong>censo</strong> sin sufijo <strong>CC</strong>; <strong>NC</strong> y variantes normalizadas.',
+  },
+  {
+    title: 'Censo — balance mixto',
+    body:
+      'Columna I/O del censo: balance con diuresis no cuantificada y drenajes numéricos; evacuaciones como conteo en PDF y listados.',
+  },
+  {
+    title: 'Dieta — kcal total visible',
+    body:
+      'El campo <strong>Kcal total</strong> muestra kcal/kg × peso sin sobrescribir el valor guardado hasta que edites kcal/kg o el total.',
+  },
+  {
+    title: 'Parche sobre 7.3.2',
+    body:
+      'Instala <strong>7.3.3 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; iPad sin cambios.',
+  },
+];
+
 var RELEASE_NOTES_732 = [
   {
     title: 'Republicación — arranque',
@@ -837,9 +865,10 @@ var RELEASE_NOTES_730 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_732;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_733;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.3': RELEASE_NOTES_733,
   '7.3.2': RELEASE_NOTES_732,
   '7.3.1': RELEASE_NOTES_731,
   '7.3.0': RELEASE_NOTES_730,

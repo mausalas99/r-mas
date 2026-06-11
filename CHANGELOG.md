@@ -2494,36 +2494,70 @@ Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.7
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
 
-## [7.3.1](docs/RELEASE_NOTES_7.3.1.txt)
+## [7.2.8](docs/RELEASE_NOTES_7.2.8.txt)
 
-R+ 7.3.1 (Manejo modal SOME, AAS SOAP y perfil borrar)
-==========================================================
+R+ 7.2.8 (interno, glu rescate y LAN iPad)
+=============================================
 
 Fecha: 2026-06-10
 
 ## Resumen
 
-Parche sobre **7.3.0**: **Manejo** mueve el pegado SOME a un modal **Importar SOME** con grilla más legible; la clasificación SOAP distingue **AAS 100 mg** (otros) de dosis analgésicas; el **perfil farmacoterapéutico** permite borrar mes o perfil completo; **Estado actual** reorganiza la dieta pendiente y quita «PARA PESO DE X KG» del texto copiado.
+Parche sobre 7.2.7: el **interno móvil** ordena por **frecuencia de signos** y mejora la captura de **glucometrías**; **Estado actual** registra **rescates de insulina** por glucometría; las **Mac cliente** del turno pueden **copiar el enlace iPad** sin ser anfitrión.
 
 ## Nuevo / mejorado
 
-- **Manejo — modal Importar SOME** — El pegado del hospital abre en modal (como perfil SOME); la grilla queda en la tarjeta «Medicamentos del turno» con fecha y **+1 día**.
-- **Manejo — etiquetas compactas** — Filas con indicación corta; dosis de `dosisRaw` para combos como piperacilina/tazobactam.
-- **SOAP — AAS por dosis** — Ácido acetilsalicílico ≤160 mg va a **Otros** (antiplaquetario); >160 mg a **Analgesia**. La clasificación usa `dosisRaw`.
-- **SOAP / EA — texto dieta** — Cláusula de dieta sin «PARA PESO DE X KG» (kcal/kg y total se mantienen).
-- **Perfil farmacoterapéutico — borrar** — Menú **⋯**: eliminar mes visible o borrar perfil completo del paciente (con confirmación).
-- **Estado actual — dieta pendiente** — Barra de confirmación bajo nutrición; rejilla FOUR/Glasgow/Soporte y dieta/kcal/proteína en filas dedicadas.
+- **Interno — orden por frecuencia** — La lista MIP prioriza pacientes con SV programados: q1h → q2h → q4h → por turno; dentro de la misma frecuencia, vencidos antes que al día; empate por cama. Pacientes solo con estudios al final.
+- **Interno — glucometrías** — Los campos mg/dL y HH:MM en el modal de signos usan el mismo fondo oscuro que TAS, FC, etc. (ya no aparecen en blanco en iPad).
+- **Estado actual — rescate de insulina** — Cada glucometría puede marcarse **Alterada** y capturar **unidades de rescate** + **DXT post-rescate**; la nota SOME refleja rescates aplicados o disponibles.
+- **Estado actual — gráfica de glu** — Puntos fuera de rango o marcados alterados se resaltan en la serie temporal.
+- **LAN — enlace iPad en cliente** — Una Mac unida al turno (no solo el anfitrión) puede copiar el enlace permanente para iPad; usa la URL del host remoto del ⇄.
 
 ## Operación en guardia
 
-Parche sobre **7.3.0**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). El iPad no requiere actualización.
+Parche sobre **7.2.7**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v15**). El iPad solo necesita recargar la página de internos (CSS `?v=4`).
 
 ## Instalación
 
-Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.1
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.8
 
-- Mac: `R+-7.3.1-arm64.dmg`, `R+-7.3.1-x64.dmg` (y zip para auto-update).
-- Windows: `R+-7.3.1-x64.exe`.
+- Mac: `R+-7.2.8-arm64.dmg`, `R+-7.2.8-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.2.8-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.2.9](docs/RELEASE_NOTES_7.2.9.txt)
+
+R+ 7.2.9 (Manejo, dietas SOME y EA)
+=======================================
+
+Fecha: 2026-06-10
+
+## Resumen
+
+Parche sobre 7.2.8: la pestaña **Medicamentos** pasa a **Manejo** con parser SOME ampliado (**medicamentos P2** y **dietas**); **Estado actual** recibe propuestas de dieta y un botón flotante para copiar; el censo re-selecciona paciente si el filtro lo oculta.
+
+## Nuevo / mejorado
+
+- **Manejo — parser SOME ampliado** — Al pegar el bloque del hospital se procesan filas `MEDICAMENTOS`, `MEDICAMENTOS P2` y `DIETAS` (tabuladores). `CUIDADOS` y `ESTUDIOS` se omiten con conteo en el toast.
+- **Manejo — dieta detectada** — Las dietas parseadas se muestran en tarjeta con kcal y gramos de proteína extraídos del detalle.
+- **Manejo — SOAP pre-marcado** — Antibióticos, antiHTA, insulinas, D50 y rescates PRN por glucometría se marcan automáticamente en la grilla SOAP.
+- **Estado actual — propuesta de dieta** — En sala, al procesar Manejo la dieta va a **propuesta pendiente** (`dieta`, `kcal`, `proteinG`); confirmar o descartar en EA como los medicamentos.
+- **Estado actual — proteína (g/día)** — Nuevo campo en la sección dieta del monitoreo clínico.
+- **Estado actual — copiar FAB** — Botón flotante (como Laboratorio) para copiar el texto de Estado actual sin bajar al pie del panel.
+- **Censo — paciente activo** — Si el filtro de equipo/censo oculta al paciente seleccionado, R+ elige el primero visible o vacía la vista.
+
+## Operación en guardia
+
+Parche sobre **7.2.8**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v15**). El iPad no requiere actualización.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.9
+
+- Mac: `R+-7.2.9-arm64.dmg`, `R+-7.2.9-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.2.9-x64.exe`.
 
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
@@ -2570,70 +2604,110 @@ Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.0
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
 
-## [7.2.9](docs/RELEASE_NOTES_7.2.9.txt)
+## [7.3.1](docs/RELEASE_NOTES_7.3.1.txt)
 
-R+ 7.2.9 (Manejo, dietas SOME y EA)
-=======================================
+R+ 7.3.1 (Manejo modal SOME, AAS SOAP y perfil borrar)
+==========================================================
 
 Fecha: 2026-06-10
 
 ## Resumen
 
-Parche sobre 7.2.8: la pestaña **Medicamentos** pasa a **Manejo** con parser SOME ampliado (**medicamentos P2** y **dietas**); **Estado actual** recibe propuestas de dieta y un botón flotante para copiar; el censo re-selecciona paciente si el filtro lo oculta.
+Parche sobre **7.3.0**: **Manejo** mueve el pegado SOME a un modal **Importar SOME** con grilla más legible; la clasificación SOAP distingue **AAS 100 mg** (otros) de dosis analgésicas; el **perfil farmacoterapéutico** permite borrar mes o perfil completo; **Estado actual** reorganiza la dieta pendiente y quita «PARA PESO DE X KG» del texto copiado.
 
 ## Nuevo / mejorado
 
-- **Manejo — parser SOME ampliado** — Al pegar el bloque del hospital se procesan filas `MEDICAMENTOS`, `MEDICAMENTOS P2` y `DIETAS` (tabuladores). `CUIDADOS` y `ESTUDIOS` se omiten con conteo en el toast.
-- **Manejo — dieta detectada** — Las dietas parseadas se muestran en tarjeta con kcal y gramos de proteína extraídos del detalle.
-- **Manejo — SOAP pre-marcado** — Antibióticos, antiHTA, insulinas, D50 y rescates PRN por glucometría se marcan automáticamente en la grilla SOAP.
-- **Estado actual — propuesta de dieta** — En sala, al procesar Manejo la dieta va a **propuesta pendiente** (`dieta`, `kcal`, `proteinG`); confirmar o descartar en EA como los medicamentos.
-- **Estado actual — proteína (g/día)** — Nuevo campo en la sección dieta del monitoreo clínico.
-- **Estado actual — copiar FAB** — Botón flotante (como Laboratorio) para copiar el texto de Estado actual sin bajar al pie del panel.
-- **Censo — paciente activo** — Si el filtro de equipo/censo oculta al paciente seleccionado, R+ elige el primero visible o vacía la vista.
+- **Manejo — modal Importar SOME** — El pegado del hospital abre en modal (como perfil SOME); la grilla queda en la tarjeta «Medicamentos del turno» con fecha y **+1 día**.
+- **Manejo — etiquetas compactas** — Filas con indicación corta; dosis de `dosisRaw` para combos como piperacilina/tazobactam.
+- **SOAP — AAS por dosis** — Ácido acetilsalicílico ≤160 mg va a **Otros** (antiplaquetario); >160 mg a **Analgesia**. La clasificación usa `dosisRaw`.
+- **SOAP / EA — texto dieta** — Cláusula de dieta sin «PARA PESO DE X KG» (kcal/kg y total se mantienen).
+- **Perfil farmacoterapéutico — borrar** — Menú **⋯**: eliminar mes visible o borrar perfil completo del paciente (con confirmación).
+- **Estado actual — dieta pendiente** — Barra de confirmación bajo nutrición; rejilla FOUR/Glasgow/Soporte y dieta/kcal/proteína en filas dedicadas.
 
 ## Operación en guardia
 
-Parche sobre **7.2.8**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v15**). El iPad no requiere actualización.
+Parche sobre **7.3.0**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). El iPad no requiere actualización.
 
 ## Instalación
 
-Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.9
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.1
 
-- Mac: `R+-7.2.9-arm64.dmg`, `R+-7.2.9-x64.dmg` (y zip para auto-update).
-- Windows: `R+-7.2.9-x64.exe`.
+- Mac: `R+-7.3.1-arm64.dmg`, `R+-7.3.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.1-x64.exe`.
 
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
 
-## [7.2.8](docs/RELEASE_NOTES_7.2.8.txt)
+## [7.3.2](docs/RELEASE_NOTES_7.3.2.txt)
 
-R+ 7.2.8 (interno, glu rescate y LAN iPad)
-=============================================
+R+ 7.3.2 (Premium UI, gráficas EA y endurecimiento)
+=======================================================
 
-Fecha: 2026-06-10
+Fecha: 2026-06-11
 
 ## Resumen
 
-Parche sobre 7.2.7: el **interno móvil** ordena por **frecuencia de signos** y mejora la captura de **glucometrías**; **Estado actual** registra **rescates de insulina** por glucometría; las **Mac cliente** del turno pueden **copiar el enlace iPad** sin ser anfitrión.
+Sobre **7.3.1**: renovación visual **Workbench Refinado** en escritorio, móvil e interno (tokens, vidrio en overlays, navegación agrupada y **⌘K**); modal de **gráficas en Estado actual** con pestañas y tooltips completos; endurecimiento de seguridad (CSP, `window.open`, borrado PHI en web móvil); purga LAN más segura en el anfitrión.
+
+## Corrección (republicación 2026-06-11)
+
+- **Arranque en Mac/Windows** — El empaquetado omitía `lib/**/*.cjs` (`window-open-policy.cjs`, `lan-db-bridge.cjs`); la app fallaba al abrir con *Cannot find module*. Reinstala el instalador de esta republicación (mismo **7.3.2**).
 
 ## Nuevo / mejorado
 
-- **Interno — orden por frecuencia** — La lista MIP prioriza pacientes con SV programados: q1h → q2h → q4h → por turno; dentro de la misma frecuencia, vencidos antes que al día; empate por cama. Pacientes solo con estudios al final.
-- **Interno — glucometrías** — Los campos mg/dL y HH:MM en el modal de signos usan el mismo fondo oscuro que TAS, FC, etc. (ya no aparecen en blanco en iPad).
-- **Estado actual — rescate de insulina** — Cada glucometría puede marcarse **Alterada** y capturar **unidades de rescate** + **DXT post-rescate**; la nota SOME refleja rescates aplicados o disponibles.
-- **Estado actual — gráfica de glu** — Puntos fuera de rango o marcados alterados se resaltan en la serie temporal.
-- **LAN — enlace iPad en cliente** — Una Mac unida al turno (no solo el anfitrión) puede copiar el enlace permanente para iPad; usa la URL del host remoto del ⇄.
+- **Diseño — tokens y elevación** — Escala tipográfica clínica, sombras unificadas, números tabulares en labs/tendencias y presets de movimiento (**Sobrio / Mixto / Expresivo**) en Ajustes.
+- **Diseño — overlays de vidrio** — Modales, menús, ⌘K y toasts con tratamiento translúcido; fallback sólido si el blur no es viable (Electron sin GPU).
+- **Navegación — fila agrupada** — En expediente ancho: grupos Paciente · Clínico · Resultados · Salida con expansión al hover/foco; fallback automático a tabs en ventana estrecha.
+- **Navegación — contexto y modo** — Paciente + cama + diagnóstico siempre visibles; selector segmentado Sala · Interconsulta · Guardia · Pase.
+- **Navegación — ⌘K** — Paleta con búsqueda difusa de secciones y pacientes.
+- **Superficies premium** — Expediente, laboratorio, sidebar, pase/guardia, manejo, onboarding y Learn Hub alineados al nuevo sistema.
+- **Móvil e interno** — Filas agrupadas táctiles, targets ≥44px y tokens compartidos en `/mobile/` e interno iPad.
+- **Estado actual — gráficas** — Modal con pestañas (signos, balance, labs); downsampling a 100 puntos con tooltip de serie completa; curvas y canvas de vitals alineados a Tendencias.
+- **LAN — purga anfitrión** — Elimina entradas bundle-only huérfanas con guard de propiedad (`audit_log`); el borrado local ya no purga pacientes ajenos en el host.
+- **Seguridad** — Allowlist `http(s)://` en ventanas externas; CSP meta en entradas HTML; borrado de claves clínicas en localStorage al cerrar sesión web; puente DB LAN sin `globalThis`.
 
 ## Operación en guardia
 
-Parche sobre **7.2.7**: instala en **todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v15**). El iPad solo necesita recargar la página de internos (CSS `?v=4`).
+Instala **7.3.2 en todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). El iPad no requiere actualización obligatoria, pero interno/móvil se benefician del restyle.
 
 ## Instalación
 
-Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.2.8
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.2
 
-- Mac: `R+-7.2.8-arm64.dmg`, `R+-7.2.8-x64.dmg` (y zip para auto-update).
-- Windows: `R+-7.2.8-x64.exe`.
+- Mac: `R+-7.3.2-arm64.dmg`, `R+-7.3.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.3.3](docs/RELEASE_NOTES_7.3.3.txt)
+
+R+ 7.3.3 (EA balance, evacuaciones y dieta)
+===============================================
+
+Fecha: 2026-06-11
+
+## Resumen
+
+Parche sobre **7.3.2**: corrige el texto copiado de **balance e I/O** en Estado actual y censo cuando hay egresos parcialmente cuantificados; las **evacuaciones** numéricas dejan de llevar «CC» (son conteo, no volumen); la rejilla de dieta muestra **kcal total** calculadas desde kcal/kg y peso sin pisar valores guardados.
+
+## Nuevo / mejorado
+
+- **Estado actual — balance SOAP** — Si falta el balance del turno pero ingresos y egresos numéricos lo permiten, la cláusula I/O calcula el balance (p. ej. diuresis NC + gastrostomía 120 → **+48 CC**).
+- **Estado actual — evacuaciones** — Valores numéricos en nota e historial sin sufijo **CC**; **NC** y variantes siguen normalizadas.
+- **Censo — columna I/O** — Balance corto con egresos mixtos (diuresis NC + drenaje numérico); evacuaciones numéricas sin **CC** en PDF y listados.
+- **Estado actual — dieta** — Campo **Kcal total** refleja kcal/kg × peso en pantalla; solo persiste al editar kcal/kg o el total manualmente.
+
+## Operación en guardia
+
+Instala **7.3.3 en todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). El iPad no requiere actualización.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.3
+
+- Mac: `R+-7.3.3-arm64.dmg`, `R+-7.3.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.3-x64.exe`.
 
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
