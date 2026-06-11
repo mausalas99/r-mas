@@ -86,6 +86,13 @@
             <button type="button" class="settings-theme-btn" id="settings-hc-off" onclick="setHighContrast(false)" data-i18n="settings.hcOff">Desactivado</button>
             <button type="button" class="settings-theme-btn" id="settings-hc-on" onclick="setHighContrast(true)" data-i18n="settings.hcOn">Activado</button>
           </div>
+          <div class="profile-field-label settings-acc-label-spaced" data-i18n="settings.motion">Animaciones</div>
+          <p id="settings-motion-hint" class="overview-hint settings-acc-hint" data-i18n="settings.motionHint">Sobrio: mínimas · Mixto: equilibrado (recomendado) · Expresivo: completas.</p>
+          <div class="settings-theme-row" role="group" aria-label="Animaciones" aria-describedby="settings-motion-hint" data-i18n-aria-label="settings.motion">
+            <button type="button" class="settings-theme-btn" id="settings-motion-sobrio" onclick="setMotionMode('sobrio')" data-i18n="settings.motionSobrio">Sobrio</button>
+            <button type="button" class="settings-theme-btn" id="settings-motion-mixto" onclick="setMotionMode('mixto')" data-i18n="settings.motionMixto">Mixto</button>
+            <button type="button" class="settings-theme-btn" id="settings-motion-expresivo" onclick="setMotionMode('expresivo')" data-i18n="settings.motionExpresivo">Expresivo</button>
+          </div>
         </div>
       </details>
 

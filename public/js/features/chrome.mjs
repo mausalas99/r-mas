@@ -1,3 +1,5 @@
+import { normalizeMotionMode, motionClassFor, ALL_MOTION_CLASSES } from '../motion-mode.mjs';
+
 /** Runtime hooks supplied by app.js once shell functions exist. */
 let runtime = {
   switchAppTab() {},
@@ -32,6 +34,7 @@ const THEME_ICON_MOON =
 const FONT_ZOOM_LS = 'rpc-font-zoom';
 const HIGH_CONTRAST_LS = 'rpc-high-contrast';
 const UI_DENSITY_LS = 'rpc-ui-density';
+const MOTION_MODE_LS = 'rpc-motion-mode';
 
 const I18N_ES = {
   'settings.appearance': 'Apariencia',
@@ -52,6 +55,11 @@ const I18N_ES = {
   'settings.highContrastHint': 'Aumenta el contraste de texto y bordes para mejor legibilidad.',
   'settings.hcOff': 'Desactivado',
   'settings.hcOn': 'Activado',
+  'settings.motion': 'Animaciones',
+  'settings.motionHint': 'Sobrio: mínimas · Mixto: equilibrado (recomendado) · Expresivo: completas.',
+  'settings.motionSobrio': 'Sobrio',
+  'settings.motionMixto': 'Mixto',
+  'settings.motionExpresivo': 'Expresivo',
   'settings.docsFolder': 'Carpeta de documentos',
   'settings.docsFolderHint': 'Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).',
   'settings.backup': 'Respaldo local',
@@ -191,6 +199,33 @@ export function setHighContrast(on) {
 
 export function toggleHighContrast() {
   setHighContrast(!isHighContrast());
+}
+
+export function getMotionMode() {
+  return normalizeMotionMode(localStorage.getItem(MOTION_MODE_LS));
+}
+
+export function applyMotionMode() {
+  const cls = motionClassFor(getMotionMode());
+  ALL_MOTION_CLASSES.forEach((c) => document.documentElement.classList.remove(c));
+  if (cls) document.documentElement.classList.add(cls);
+}
+
+export function syncMotionButtons() {
+  const mode = getMotionMode();
+  ['sobrio', 'mixto', 'expresivo'].forEach((m) => {
+    const btn = document.getElementById('settings-motion-' + m);
+    if (btn) {
+      btn.classList.toggle('active', m === mode);
+      btn.setAttribute('aria-pressed', m === mode ? 'true' : 'false');
+    }
+  });
+}
+
+export function setMotionMode(mode) {
+  localStorage.setItem(MOTION_MODE_LS, normalizeMotionMode(mode));
+  applyMotionMode();
+  syncMotionButtons();
 }
 
 export function getUiDensity() {
@@ -392,12 +427,14 @@ export function initChromeAppearance() {
   }
   syncThemeToggleIcon();
   applyHighContrast();
+  applyMotionMode();
   applyUiDensity();
   applyI18n();
   applyFontZoom();
   syncThemeSettingsButtons();
   syncFontZoomButtons();
   syncHighContrastButtons();
+  syncMotionButtons();
   syncUiDensityButtons();
 }
 
@@ -429,6 +466,7 @@ export const windowHandlers = {
   setUiDensity,
   setHighContrast,
   toggleHighContrast,
+  setMotionMode,
   returnToPaseBoardFromDetail,
   exitPaseModeFromHeader,
   toggleGuardiaMode,
