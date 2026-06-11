@@ -1056,3 +1056,11 @@ body {
   outline-offset: 1px;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
+
+/* ── Type scale utilities (design system phase 1) ────────── */
+.type-display { font: var(--type-display); }
+.type-title { font: var(--type-title); }
+.type-section { font: var(--type-section); letter-spacing: var(--tracking-section); text-transform: uppercase; }
+.type-body { font: var(--type-body); }
+.type-caption { font: var(--type-caption); color: var(--text-muted); }
+.num-tabular { font-variant-numeric: tabular-nums; }

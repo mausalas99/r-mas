@@ -1758,3 +1758,10 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open * {
   -webkit-app-region: no-drag;
 }
+
+/* Aligned digits for clinical values (design system phase 1) */
+#lab-output-box,
+.tend-card {
+  font-variant-numeric: tabular-nums;
+}
+}
