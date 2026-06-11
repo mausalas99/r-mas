@@ -425,6 +425,11 @@ export function initChromeAppearance() {
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.classList.add('dark');
   }
+  // Electron disables GPU acceleration; backdrop-filter falls back to slow
+  // software rendering. Force no-blur so glass overlays degrade gracefully.
+  if (typeof window.rpcAPI !== 'undefined') {
+    document.documentElement.classList.add('no-blur');
+  }
   syncThemeToggleIcon();
   applyHighContrast();
   applyMotionMode();
