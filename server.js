@@ -170,10 +170,8 @@ try {
 appExpress.locals.lanRequiresMigrationNotice = lanBoot.requiresMigrationNotice;
 const LAN_TEAM_CODE = lanBoot.token;
 
-const lanDbManager =
-  typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
-    ? globalThis.__rplusDbManager
-    : null;
+const { getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
+const lanDbManager = getLanDbManager();
 if (lanBoot.rotated && lanDbManager && typeof lanDbManager.schedulePendingAudit === 'function') {
   lanDbManager.schedulePendingAudit('lan.token.rotate', { reason: 'weak_token_rotation' });
 }

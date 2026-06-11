@@ -16,6 +16,8 @@ const {
   pickMacArch,
 } = require('./lib/update-downgrade.js');
 const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
+const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
+const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
 // Llamar ANTES de app.whenReady()
@@ -205,7 +207,7 @@ function createWindow() {
   mainWindow.loadURL('http://localhost:3738');
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (isAllowedExternalUrl(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
 
@@ -426,7 +428,7 @@ ipcMain.on('set-update-channel', (_e, channel) => {
 ipcMain.handle('get-platform', () => process.platform);
 
 ipcMain.handle('open-external', async (_e, url) => {
-  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return false;
+  if (!isAllowedExternalUrl(url)) return false;
   await shell.openExternal(url);
   return true;
 });
@@ -488,7 +490,7 @@ ipcMain.handle('set-approved-output-dir', async (_e, dir) => {
   try {
     approvedOutputDir = await validateOutputDir(dir);
     writeApprovedOutputDir(app.getPath('userData'), approvedOutputDir);
-    const dbManager = globalThis.__rplusDbManager;
+    const dbManager = getLanDbManager();
     if (dbManager && dbManager.isUnlocked()) {
       await dbManager.auditOnly('system.output_dir.register', {
         basename: path.basename(approvedOutputDir),
@@ -590,7 +592,7 @@ ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
     const filePath = path.join(userData, 'lan-team-code.txt');
     fs.writeFileSync(filePath, token, 'utf8');
     const { reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
-    const dbManager = globalThis.__rplusDbManager;
+    const dbManager = getLanDbManager();
     const db =
       dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
         ? dbManager.getDb()
@@ -771,7 +773,7 @@ ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
       lanTeamCodePath,
     } = require('./lan-squad/effective-team-code.js');
     const hostStatePath = path.join(userData, 'lan-squad-host-state.json');
-    const dbManager = globalThis.__rplusDbManager;
+    const dbManager = getLanDbManager();
     const db =
       dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
         ? dbManager.getDb()
@@ -1007,7 +1009,7 @@ app.whenReady().then(async () => {
       safeStorage,
       getClientId: () => 'desktop-host',
     });
-    globalThis.__rplusDbManager = dbManager;
+    setLanDbManager(dbManager);
 
     const { registerDbIpcHandlers } = await import('./lib/db/ipc-handlers.mjs');
     registerDbIpcHandlers({

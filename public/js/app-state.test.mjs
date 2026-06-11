@@ -25,7 +25,7 @@ describe('app-state', () => {
   });
 
   it('initAppState loads patients from storage', () => {
-    storage.savePatients([{ id: 'p1', name: 'Ana' }]);
+    store['rpc-patients'] = JSON.stringify([{ id: 'p1', name: 'Ana' }]);
     appState.initAppState();
     assert.strictEqual(appState.patients.length, 1);
     assert.strictEqual(appState.patients[0].id, 'p1');
@@ -63,7 +63,7 @@ describe('app-state', () => {
   });
 
   it('localStorage-only import is wiped by flushSaveState when memory is empty', async () => {
-    storage.savePatients([{ id: 'imported', nombre: 'X' }]);
+    store['rpc-patients'] = JSON.stringify([{ id: 'imported', nombre: 'X' }]);
     assert.strictEqual(appState.patients.length, 0);
     await appState.flushSaveState();
     assert.strictEqual(storage.getPatients().length, 0);

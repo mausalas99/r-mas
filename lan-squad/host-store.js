@@ -55,12 +55,10 @@ const {
   exportClinicalOpsSnapshot,
 } = createRequire(__filename)('../lib/db/clinical-ops-sync.mjs');
 const { appendAudit } = require('./audit-log.js');
+const { getLanDbManager } = require('../lib/db/lan-db-bridge.cjs');
 
 function getGlobalClinicalDbManager() {
-  const mgr =
-    typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
-      ? globalThis.__rplusDbManager
-      : null;
+  const mgr = getLanDbManager();
   return mgr && typeof mgr.isUnlocked === 'function' && mgr.isUnlocked() ? mgr : null;
 }
 
@@ -1316,6 +1314,14 @@ function createHostStore({
       const nextData = data && typeof data === 'object' ? { ...data, id } : { id };
       const nextVersion = Number(version || 1);
       if (idx === -1) {
+        if (deleted) {
+          purgePatientFromAllRoomBundles(state, id, String(nextData.registro || '').trim(), opts);
+          if (!deferPersist) {
+            markDirty(null);
+            void schedulePersist();
+          }
+          return null;
+        }
         const row = { ...nextData, version: nextVersion, updatedAt: t, audit_log: [] };
         state.patients.push(row);
         if (!deferPersist) {

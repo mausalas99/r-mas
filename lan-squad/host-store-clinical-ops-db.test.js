@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { test } = require('node:test');
 const { createHostStore } = require('./host-store.js');
+const { setLanDbManager, resetLanDbManagerForTests } = require('../lib/db/lan-db-bridge.cjs');
 
 test('putRoomClinicalOps writes authoritative snapshot from SQLCipher when DB unlocked', async () => {
   const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
@@ -13,8 +14,8 @@ test('putRoomClinicalOps writes authoritative snapshot from SQLCipher when DB un
 
   const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-db-'));
   const mgr = await createUnlockedDbManager(dbDir);
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = mgr;
+  resetLanDbManagerForTests();
+  setLanDbManager(mgr);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-state-'));
   const statePath = path.join(dir, 'state.json');
@@ -84,7 +85,7 @@ test('putRoomClinicalOps writes authoritative snapshot from SQLCipher when DB un
       (bundle.clinicalOps.teams || []).some((t) => String(t.team_id) === 'lan-peer-team')
     );
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     mgr.lock();
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(dbDir, { recursive: true, force: true });
@@ -96,14 +97,14 @@ test('putRoomClinicalOps keeps JSON merge when host DB is locked', async () => {
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = {
+  resetLanDbManagerForTests();
+  setLanDbManager({
     isUnlocked: () => false,
     withTransaction() {
       throw new Error('should not call DB while locked');
     },
     getDb: () => null,
-  };
+  });
 
   try {
     const room = store.createRoom('Ops locked');
@@ -130,7 +131,7 @@ test('putRoomClinicalOps keeps JSON merge when host DB is locked', async () => {
     assert.ok(out.snapshot.teams.some((t) => t.team_id === 'team-a'));
     assert.ok(out.snapshot.teams.some((t) => t.team_id === 'team-b'));
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -140,15 +141,15 @@ test('sync-bundle push with empty clinicalOps must not wipe host roster (locked 
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
-  const prevDbManager = globalThis.__rplusDbManager;
+  resetLanDbManagerForTests();
   // LAN-only host: clinical DB locked, so roster lives only in the in-memory bundle.
-  globalThis.__rplusDbManager = {
+  setLanDbManager({
     isUnlocked: () => false,
     withTransaction() {
       throw new Error('should not call DB while locked');
     },
     getDb: () => null,
-  };
+  });
 
   try {
     const room = store.createRoom('No wipe');
@@ -216,7 +217,7 @@ test('sync-bundle push with empty clinicalOps must not wipe host roster (locked 
     assert.ok(handles.includes('doctor_a'), 'doctor_a must survive an empty-clinicalOps bundle push');
     assert.ok(handles.includes('doctor_b'), 'doctor_b must survive an empty-clinicalOps bundle push');
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -228,8 +229,8 @@ test('getRoomSyncBundle unions bundle clinical_users when DB export is newer but
 
   const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-union-'));
   const mgr = await createUnlockedDbManager(dbDir);
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = mgr;
+  resetLanDbManagerForTests();
+  setLanDbManager(mgr);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-union-state-'));
   const statePath = path.join(dir, 'state.json');
@@ -294,7 +295,7 @@ test('getRoomSyncBundle unions bundle clinical_users when DB export is newer but
       'merged snapshot should adopt newer exportedAt'
     );
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     mgr.lock();
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(dbDir, { recursive: true, force: true });
@@ -308,8 +309,8 @@ test('persistRoomBundleClinicalOpsToHostDb folds sync-bundle clinicalOps into SQ
 
   const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-bundle-db-'));
   const mgr = await createUnlockedDbManager(dbDir);
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = mgr;
+  resetLanDbManagerForTests();
+  setLanDbManager(mgr);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-bundle-db-state-'));
   const statePath = path.join(dir, 'state.json');
@@ -360,7 +361,7 @@ test('persistRoomBundleClinicalOpsToHostDb folds sync-bundle clinicalOps into SQ
       (bundle.clinicalOps.clinical_users || []).some((u) => u.username === 'remote_bundle')
     );
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     mgr.lock();
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(dbDir, { recursive: true, force: true });
@@ -374,8 +375,8 @@ test('getRoomSyncBundle refreshes stale clinicalOps cache from DB export', async
 
   const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-stale-'));
   const mgr = await createUnlockedDbManager(dbDir);
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = mgr;
+  resetLanDbManagerForTests();
+  setLanDbManager(mgr);
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'host-ops-stale-state-'));
   const statePath = path.join(dir, 'state.json');
@@ -424,7 +425,7 @@ test('getRoomSyncBundle refreshes stale clinicalOps cache from DB export', async
       )
     );
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     mgr.lock();
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(dbDir, { recursive: true, force: true });

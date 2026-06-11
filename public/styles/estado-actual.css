@@ -1263,6 +1263,11 @@ html.ea-charts-modal-open {
   font-size: calc(12px * var(--density-font, 1));
 }
 
+.ea-charts-window-note {
+  margin: 0 0 4px;
+  font-size: calc(11px * var(--density-font, 1));
+}
+
 .ea-registro-hint {
   margin: 0 0 6px;
   font-size: calc(11px * var(--density-font, 1));

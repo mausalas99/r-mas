@@ -121,6 +121,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-11** `phase5-hardening`: window.open allowlist, lan-db-bridge injection, CSP meta, session clinical wipe, untrack bundles; `window-open-policy.cjs`, `lan-db-bridge.cjs`, `session-clinical-wipe.mjs`, `.gitignore`.
 - **2026-06-11** `ci-safety-net`: glob test discovery + GitHub Actions + gitlink cleanup; `scripts/run-tests.mjs`, `.github/workflows/ci.yml`.
 - **2026-06-10** `release-7.3.1`: Manejo modal Importar SOME + AAS SOAP por dosis + borrar perfil farmacoterapéutico + EA dieta barra/rejilla; `medications.mjs`, `med-receta-core.mjs`, `med-pharm-profile-panel.mjs`, `estado-actual-panel.mjs`.
 - **2026-06-10** `release-7.3.0`: perfil histórico cross-mes + directorio LAN actividad (SQL v17) + lab historial por fecha + censo PDF wrap + host census dashboard; `med-pharm-view-window.mjs`, `clinical-user-activity.mjs`, `teams-roster-lan.mjs`, `lab-panel.mjs`, `host-patients-dashboard.mjs`.

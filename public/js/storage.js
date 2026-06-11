@@ -245,32 +245,11 @@ export const storage = {
   },
 
   /**
-   * Save patients to localStorage (filters out demo patients)
-   * @param {Array} patients - Array of patient objects
-   */
-  savePatients(patients) {
-    const filtered = patients.filter(p => !p.isDemo);
-    localStorage.setItem('rpc-patients', JSON.stringify(filtered));
-  },
-
-  /**
    * Get all notes from localStorage
    * @returns {Object} Object mapping patient IDs to note text
    */
   getNotes() {
     return readClinicalBlob('notes', 'rpc-notes', safeParseObject);
-  },
-
-  /**
-   * Save notes to localStorage (filters out demo patient notes)
-   * @param {Object} notes - Object mapping patient IDs to note text
-   */
-  saveNotes(notes) {
-    const notesPersist = {};
-    Object.keys(notes).forEach(k => {
-      if (notes[k] && !k.startsWith('demo-')) notesPersist[k] = notes[k];
-    });
-    localStorage.setItem('rpc-notes', JSON.stringify(notesPersist));
   },
 
   /**
@@ -282,35 +261,11 @@ export const storage = {
   },
 
   /**
-   * Save indicaciones to localStorage (filters out demo patient indicaciones)
-   * @param {Object} indicaciones - Object mapping patient IDs to indicaciones text
-   */
-  saveIndicaciones(indicaciones) {
-    const indPersist = {};
-    Object.keys(indicaciones).forEach(k => {
-      if (indicaciones[k] && !k.startsWith('demo-')) indPersist[k] = indicaciones[k];
-    });
-    localStorage.setItem('rpc-indicaciones', JSON.stringify(indPersist));
-  },
-
-  /**
    * Get listado de problemas (v3.0) from localStorage
    * @returns {Object} Object mapping patient IDs to listado objects
    */
   getListadoProblemas() {
     return readClinicalBlob('listadoProblemas', 'rpc-listado-problemas', safeParseObject);
-  },
-
-  /**
-   * Save listado de problemas (v3.0) to localStorage (filters out demo)
-   * @param {Object} listadoProblemas
-   */
-  saveListadoProblemas(listadoProblemas) {
-    const persist = {};
-    Object.keys(listadoProblemas || {}).forEach(k => {
-      if (listadoProblemas[k] && !k.startsWith('demo-')) persist[k] = listadoProblemas[k];
-    });
-    localStorage.setItem('rpc-listado-problemas', JSON.stringify(persist));
   },
 
   /**
@@ -326,68 +281,20 @@ export const storage = {
     return out;
   },
 
-  /**
-   * Save lab history to localStorage (filters out demo patient history)
-   * @param {Object} labHistory - Object mapping patient IDs to arrays of lab entries
-   */
-  saveLabHistory(labHistory) {
-    const lhPersist = {};
-    Object.keys(labHistory).forEach(k => {
-      if (k.startsWith('demo-')) return;
-      var sets = normalizeLabHistoryPatientSets(labHistory[k]);
-      if (sets.length) lhPersist[k] = sets;
-    });
-    localStorage.setItem('rpc-labHistory', JSON.stringify(lhPersist));
-  },
-
   getMedRecetaByPatient() {
     return readClinicalBlob('medRecetaByPatient', 'rpc-medRecetaByPatient', safeParseObject);
-  },
-
-  saveMedRecetaByPatient(medRecetaByPatient) {
-    const persist = {};
-    Object.keys(medRecetaByPatient || {}).forEach(k => {
-      if (medRecetaByPatient[k] && !k.startsWith('demo-')) persist[k] = medRecetaByPatient[k];
-    });
-    localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(persist));
   },
 
   getMedPharmProfileByPatient() {
     return readClinicalBlob('medPharmProfileByPatient', 'rpc-medPharmProfileByPatient', safeParseObject);
   },
 
-  saveMedPharmProfileByPatient(medPharmProfileByPatient) {
-    const persist = {};
-    Object.keys(medPharmProfileByPatient || {}).forEach((k) => {
-      if (medPharmProfileByPatient[k] && !k.startsWith('demo-')) {
-        persist[k] = medPharmProfileByPatient[k];
-      }
-    });
-    localStorage.setItem('rpc-medPharmProfileByPatient', JSON.stringify(persist));
-  },
-
   getVpoByPatient() {
     return readClinicalBlob('vpoByPatient', 'rpc-vpoByPatient', safeParseObject);
   },
 
-  saveVpoByPatient(vpoByPatient) {
-    const persist = {};
-    Object.keys(vpoByPatient || {}).forEach((k) => {
-      if (vpoByPatient[k] && !k.startsWith('demo-')) persist[k] = vpoByPatient[k];
-    });
-    localStorage.setItem('rpc-vpoByPatient', JSON.stringify(persist));
-  },
-
   getRecetaHuByPatient() {
     return readClinicalBlob('recetaHuByPatient', 'rpc-recetaHuByPatient', safeParseObject);
-  },
-
-  saveRecetaHuByPatient(recetaHuByPatient) {
-    const persist = {};
-    Object.keys(recetaHuByPatient || {}).forEach(k => {
-      if (recetaHuByPatient[k] && !k.startsWith('demo-')) persist[k] = recetaHuByPatient[k];
-    });
-    localStorage.setItem('rpc-recetaHuByPatient', JSON.stringify(persist));
   },
 
   /**
@@ -544,18 +451,6 @@ export const storage = {
     const cur = this.getScheduledProcedures();
     const next = cur.filter(ev => ev.patientId !== patientId);
     if (next.length !== cur.length) this.saveScheduledProcedures(next);
-  },
-
-  /**
-   * Add a lab entry to a patient's lab history
-   * @param {string} patientId - Patient ID
-   * @param {Object} labEntry - Lab entry object with test results
-   */
-  pushLabHistory(patientId, labEntry) {
-    const labHistory = this.getLabHistory();
-    if (!labHistory[patientId]) labHistory[patientId] = [];
-    labHistory[patientId].push(labEntry);
-    this.saveLabHistory(labHistory);
   },
 
   /**

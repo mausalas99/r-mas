@@ -5,12 +5,10 @@ const { hashTeamCode } = require('./team-code.js');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { redactAuthBody } = require('./redact-secrets.js');
 const { resolveHostUrlForClient } = require('./lan-request-host.js');
+const { getLanDbManager } = require('../lib/db/lan-db-bridge.cjs');
 
 function auditLanSecurity(eventType, meta = {}) {
-  const dbManager =
-    typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
-      ? globalThis.__rplusDbManager
-      : null;
+  const dbManager = getLanDbManager();
   if (!dbManager || !dbManager.isUnlocked()) return;
   dbManager
     .withTransaction((_db, { audit }) => {

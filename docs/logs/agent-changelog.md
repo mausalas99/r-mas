@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Premium UI Phase 5 — hardening (audit M1+M2) | `window-open-policy.cjs`, `lan-db-bridge.cjs`, `session-clinical-wipe.mjs`, CSP meta, `.gitignore` bundles | window.open allowlist, DB injection bridge, dead storage writers removed, mobile PHI wipe, bundles untracked, CI `build:ui`. |
 | 2026-06-11 | Premium UI Phase 4 — safety net (audit M0) | `scripts/run-tests.mjs`, `.github/workflows/ci.yml`, `.gitignore` | Glob test discovery (320 files), GitHub Actions CI, remove broken gitlinks. Triage of newly-running tests deferred to CI. |
 
 | 2026-06-11 | Premium UI Phase 3 — mobile + interno | `mobile-surfaces.css`, `group-row.css`, `expediente-group-row-ui.mjs`, `interno/interno.css`, `interno/index.html` | Mobile: grouped row + tap-to-expand at all widths, ≥44px targets, token surfaces. Interno: shared tokens + glass sheets. 1509 tests pass. |

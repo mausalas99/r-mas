@@ -52,3 +52,11 @@ test('main boot: lan-ensure-server-ready IPC registered', () => {
     'lan-ensure-server-ready handler'
   );
 });
+
+test('main window.open uses http(s) allowlist', () => {
+  assert.ok(MAIN_SRC.includes('isAllowedExternalUrl'), 'window-open policy helper');
+  assert.ok(MAIN_SRC.includes('setWindowOpenHandler'), 'setWindowOpenHandler present');
+  const handlerStart = MAIN_SRC.indexOf('setWindowOpenHandler');
+  const handlerSlice = MAIN_SRC.slice(handlerStart, handlerStart + 280);
+  assert.ok(handlerSlice.includes('isAllowedExternalUrl(url)'), 'handler gates on allowlist');
+});

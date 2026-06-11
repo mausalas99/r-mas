@@ -189,6 +189,36 @@ describe('host-store', () => {
     assert.strictEqual(store.getState().patients[0].nombre, 'Uno x');
   });
 
+  it('patient delete without host row still purges bundle-only charts', () => {
+    const store = createStore('del-bundle-only');
+    const room = store.createRoom('Sala bundle');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [
+        {
+          patient: { id: 'p-orphan', registro: 'R77', nombre: 'SOLO BUNDLE' },
+          note: { texto: 'x' },
+        },
+      ],
+    });
+    store.setEntity({
+      entityType: 'patient',
+      entityId: 'p-orphan',
+      version: 1,
+      data: { id: 'p-orphan', registro: 'R77', _deleted: true },
+      deleted: true,
+    });
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.strictEqual(bundle.entries.length, 0);
+    assert.strictEqual(
+      store.getState().patients.find((p) => p.id === 'p-orphan'),
+      undefined
+    );
+  });
+
   it('patient delete removes chart from all room sync-bundle entries', () => {
     const store = createStore('del');
     const room = store.createRoom('Sala 2');

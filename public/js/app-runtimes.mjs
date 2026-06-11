@@ -499,6 +499,9 @@ export async function registerAllFeatureRuntimes() {
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
   registerEstadoActualChartsModalRuntime({
+    getActiveId: function () {
+      return rt.getActiveId();
+    },
     getPatient: function () {
       var id = rt.getActiveId();
       if (!id) return null;

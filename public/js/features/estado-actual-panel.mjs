@@ -44,7 +44,10 @@ import {
 import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
 import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
-import { renderEaChartsSummarySection } from './estado-actual-charts.mjs';
+import {
+  buildEaHistorialChartsRevision,
+  renderEaChartsSummarySection,
+} from './estado-actual-charts.mjs';
 import {
   getDefaultRegistroRecordedAt,
   collectGlucometriasForRegistroWindow,
@@ -350,7 +353,7 @@ function getEstadoActualTextForPatient(patient) {
 
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   saveState();
-  renderEstadoActualPanel({ dataOnly: true, refreshClinico: true });
+  renderEstadoActualPanel({ dataOnly: true, refreshClinico: true, skipChartsSummary: true });
   if (toastMsg) rt.showToast(toastMsg, 'success');
 }
 
@@ -1794,9 +1797,15 @@ function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
   }
   var meta = mount.querySelector('#ea-meta-guardado');
   if (meta) meta.textContent = savedLabel;
-  var chartsSummary = mount.querySelector('#ea-charts-summary');
-  if (chartsSummary) {
-    chartsSummary.outerHTML = renderEaChartsSummarySection(monitoreo);
+  if (!patchOpts.skipChartsSummary) {
+    var chartsSummary = mount.querySelector('#ea-charts-summary');
+    if (chartsSummary) {
+      var chartsRev = buildEaHistorialChartsRevision(monitoreo);
+      if (mount._eaChartsSummaryRev !== chartsRev) {
+        mount._eaChartsSummaryRev = chartsRev;
+        chartsSummary.outerHTML = renderEaChartsSummarySection(monitoreo);
+      }
+    }
   }
 }
 
@@ -1851,6 +1860,7 @@ export function renderEstadoActualPanel(opts) {
     }
     patchEaPanelDynamicSections(mount, patient, monitoreo, {
       refreshClinico: !!opts.refreshClinico,
+      skipChartsSummary: !!opts.skipChartsSummary,
     });
     _eaPanelCache.dataKey = dataKey;
     syncEaCopyFab(true);

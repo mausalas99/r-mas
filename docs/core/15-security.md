@@ -23,11 +23,28 @@ R+ is **local-first** with optional **hospital LAN** sync. It is not a certified
 - Human confirmation before persisting flagged actions
 - Forensic audit hooks on DB (`lib/db/audit-hooks.mjs`, `forensic-audit.mjs`)
 
+## LAN plaintext (formal risk acceptance)
+
+R+ sync and document export on the hospital LAN use **HTTP + WebSocket without TLS**. This is an explicit product trade-off for local-first ward workflows (no cert management on every Mac/iPad).
+
+| Condition | Requirement |
+|-----------|-------------|
+| Network | Hospital VLAN or isolated Wi‑Fi only — not guest or public Internet |
+| Exposure | Port **3738** must not be port-forwarded or reachable from outside the ward |
+| Token hygiene | Team bearer + shift PIN; logs redacted (`lan-squad/redact-secrets.js`) |
+| PHI at rest (web) | iPad/Safari clients wipe clinical `localStorage` on session end (`session-clinical-wipe.mjs`) |
+
+**Revisit trigger:** IT offers managed TLS (WSS) on the VLAN, or an audit finds LAN exposure beyond the ward perimeter. See [remediation spec](../superpowers/specs/2026-05-30-r-plus-security-architecture-remediation-design.md).
+
+## Legacy recovery passphrase
+
+The `'r+123'` recovery path remains for field support. Sunset when `legacy: true` unlock events stop appearing in forensic audit exports.
+
 ## Known boundaries (honest)
 
 | Gap | Mitigation today | Roadmap |
 |-----|------------------|---------|
-| HTTP without TLS on LAN | Hospital VLAN trust | WSS + IT certs ([remediation spec](../superpowers/specs/2026-05-30-r-plus-security-architecture-remediation-design.md)) |
+| HTTP without TLS on LAN | Accepted risk (table above) | WSS + IT certs ([remediation spec](../superpowers/specs/2026-05-30-r-plus-security-architecture-remediation-design.md)) |
 | Shared turn token | Shift-level access | RBAC per user (LATER) |
 | Adjunct not EMR | Product positioning | Institutional agreement |
 

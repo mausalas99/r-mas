@@ -166,8 +166,9 @@ test('auth routes emit forensic audit events when dbManager is unlocked', async 
   const hostUrl = 'http://127.0.0.1:3738';
   const auditEvents = [];
   const mgr = await createUnlockedDbManager(dbDir, () => 'lan-auth-audit');
-  const prevDbManager = globalThis.__rplusDbManager;
-  globalThis.__rplusDbManager = {
+  const { setLanDbManager, resetLanDbManagerForTests } = require('../lib/db/lan-db-bridge.cjs');
+  resetLanDbManagerForTests();
+  setLanDbManager({
     isUnlocked: () => true,
     withTransaction(fn) {
       return mgr.withTransaction((db, helpers) => {
@@ -180,7 +181,7 @@ test('auth routes emit forensic audit events when dbManager is unlocked', async 
         return fn(db, wrapped);
       });
     },
-  };
+  });
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-audit-app-'));
   const statePath = path.join(dir, 'state.json');
   createHostStore({ filePath: statePath, teamCodePlain: hostToken });
@@ -233,7 +234,7 @@ test('auth routes emit forensic audit events when dbManager is unlocked', async 
       auditEvents.some((e) => e.eventType === 'lan.auth.fail' && e.meta.reason === 'invalid_ticket')
     );
   } finally {
-    globalThis.__rplusDbManager = prevDbManager;
+    resetLanDbManagerForTests();
     mgr.lock();
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

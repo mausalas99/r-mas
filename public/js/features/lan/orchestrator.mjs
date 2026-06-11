@@ -876,7 +876,50 @@ export async function restoreLanPatientFromHost(patientId) {
   }
 }
 
-/** Tombstone + live-sync delete patch so the LAN host drops the patient chart. */
+function buildPatientDeleteMutation(patientId, hostRow, registroFallback) {
+  var pid = String(patientId || '').trim();
+  var base =
+    hostRow && typeof hostRow === 'object'
+      ? Object.assign({}, hostRow, {
+          id: pid,
+          version: Number(hostRow.version || 1),
+        })
+      : {
+          id: pid,
+          registro: String(registroFallback || '').trim(),
+          version: 0,
+        };
+  return createMutationBuilder('patient', pid).captureBase(base).build({
+    roomId: activeLiveSyncRoomId,
+    op: 'delete',
+  });
+}
+
+/** HTTP-first delete; WS/outbox only as fallback when REST fails. */
+async function pushPatientDeleteToHost(patientId, hostRow, registroFallback) {
+  var pid = String(patientId || '').trim();
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  if (!rid) return { ok: false, error: 'not_configured' };
+  var mutation = buildPatientDeleteMutation(pid, hostRow, registroFallback);
+  var httpResult = await lanPushPatientVersioned(pid, mutation);
+  if (httpResult?.ok) return httpResult;
+  await enqueueOutbox(rid, {
+    kind: 'patch',
+    payload: wrapLiveSyncPatch(rid, getLanClientId(), mutation),
+  });
+  await flushLiveSyncOutbox(rid);
+  var stillThere = await lanFetchHostPatientRow(pid);
+  if (stillThere) {
+    return {
+      ok: false,
+      error: httpResult?.status ? 'host_reject_' + httpResult.status : 'purge_failed',
+      status: httpResult?.status,
+    };
+  }
+  return { ok: true, via: 'outbox' };
+}
+
+/** Tombstone + host delete so the LAN anfitrión drops the patient chart. */
 export async function purgeLanPatientFromHost(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return { ok: false, error: 'invalid_id' };
@@ -889,6 +932,8 @@ export async function purgeLanPatientFromHost(patientId) {
     registro: hostRow && hostRow.registro ? String(hostRow.registro) : '',
   };
   rememberPatientDeleteTombstone(snap);
+  var deleteResult = await pushPatientDeleteToHost(pid, hostRow, snap.registro);
+  if (!deleteResult?.ok) return deleteResult;
   emitLiveSyncPatientDelete(snap);
   scheduleLiveSyncPush();
   await flushLiveSyncOutbox(activeLiveSyncRoomId);

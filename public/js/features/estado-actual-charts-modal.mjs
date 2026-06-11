@@ -1,9 +1,12 @@
-import { loadChartJs } from '../vendor-loader.mjs';
+import { getChartJsIfLoaded, loadChartJs } from '../vendor-loader.mjs';
 import { destroyEstadoActualCharts, renderEstadoActualCharts } from './estado-actual-charts.mjs';
 
-/** @type {{ getPatient(): { monitoreo?: unknown } | null, showToast(msg: string, type?: string): void }} */
+/** @type {{ getPatient(): { monitoreo?: unknown } | null, getActiveId(): string | null, showToast(msg: string, type?: string): void }} */
 let rt = {
   getPatient() {
+    return null;
+  },
+  getActiveId() {
     return null;
   },
   showToast() {},
@@ -25,12 +28,15 @@ function getMount() {
 
 export function closeEstadoActualChartsModal() {
   var backdrop = getBackdrop();
-  var mount = getMount();
-  if (mount) destroyEstadoActualCharts(mount);
   if (!backdrop) return;
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   document.documentElement.classList.remove('ea-charts-modal-open');
+}
+
+function paintEaChartsModal(mount, monitoreo, ChartCtor) {
+  if (!mount) return;
+  renderEstadoActualCharts(mount, monitoreo, ChartCtor, { showTitle: false });
 }
 
 export function openEstadoActualChartsModal() {
@@ -45,21 +51,40 @@ export function openEstadoActualChartsModal() {
     return;
   }
   var mount = getMount();
-  if (mount) {
+  var activeId = rt.getActiveId ? rt.getActiveId() : null;
+  if (mount && mount._eaChartsPatientId != null && mount._eaChartsPatientId !== activeId) {
+    destroyEstadoActualCharts(mount);
+  }
+  if (mount) mount._eaChartsPatientId = activeId;
+
+  var hasGrid = mount && mount.querySelector('.ea-charts-grid');
+  if (mount && !hasGrid) {
     mount.innerHTML = '<p class="ea-muted ea-charts-loading">Cargando gráficas…</p>';
   }
+
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
   document.documentElement.classList.add('ea-charts-modal-open');
 
+  function schedulePaint(ChartCtor) {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        paintEaChartsModal(mount, patient.monitoreo, ChartCtor);
+      });
+    });
+  }
+
+  var Chart = getChartJsIfLoaded();
+  if (Chart) {
+    schedulePaint(Chart);
+    return;
+  }
   void loadChartJs()
-    .then(function (Chart) {
-      if (!mount) return;
-      renderEstadoActualCharts(mount, patient.monitoreo, Chart, { showTitle: false });
+    .then(function (loaded) {
+      schedulePaint(loaded);
     })
     .catch(function () {
-      if (!mount) return;
-      renderEstadoActualCharts(mount, patient.monitoreo, undefined, { showTitle: false });
+      schedulePaint(undefined);
     });
 }
 

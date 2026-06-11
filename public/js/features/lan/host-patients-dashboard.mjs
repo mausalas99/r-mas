@@ -12,6 +12,15 @@ import { fetchLanHostCensusSnapshot } from './host-patients-snapshot.mjs';
 
 const MODAL_ID = 'lan-host-census-modal';
 
+function resolveDashboardToast(opts) {
+  if (typeof opts?.showToast === 'function') return opts.showToast;
+  return function (msg, kind) {
+    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+      window.showToast(msg, kind);
+    }
+  };
+}
+
 function esc(s) {
   return String(s || '')
     .replace(/&/g, '&amp;')
@@ -47,6 +56,18 @@ function statusBadge(item) {
     return '<span class="lan-host-census-badge">solo bundle</span>';
   }
   return '<span class="lan-host-census-badge lan-host-census-badge--local">activo</span>';
+}
+
+/** @param {HTMLElement} backdrop */
+function wireLanHostCensusActions(backdrop) {
+  if (backdrop._lanHostCensusActionsWired) return;
+  backdrop.querySelector('.lan-host-census-refresh')?.addEventListener('click', function () {
+    void refreshLanHostCensusDashboard(backdrop._lanHostCensusOpts || {});
+  });
+  backdrop.querySelector('.lan-host-census-purge-ghosts')?.addEventListener('click', function () {
+    void purgeGhostsFromDashboard(backdrop);
+  });
+  backdrop._lanHostCensusActionsWired = true;
 }
 
 /** @param {HTMLElement} backdrop */
@@ -135,12 +156,7 @@ function ensureModal() {
   backdrop.querySelector('.lan-host-census-close-top')?.addEventListener('click', closeLanHostCensusDashboard);
   backdrop.querySelector('.lan-host-census-close')?.addEventListener('click', closeLanHostCensusDashboard);
   wireLanHostCensusToolbar(backdrop);
-  backdrop.querySelector('.lan-host-census-refresh')?.addEventListener('click', function () {
-    void refreshLanHostCensusDashboard(backdrop._lanHostCensusOpts || {});
-  });
-  backdrop.querySelector('.lan-host-census-purge-ghosts')?.addEventListener('click', function () {
-    void purgeGhostsFromDashboard(backdrop);
-  });
+  wireLanHostCensusActions(backdrop);
 
   return backdrop;
 }
@@ -255,10 +271,7 @@ async function deletePatientFromDashboard(backdrop, btn) {
   });
   const label = item ? patientLabel(item.row) : pid;
   const opts = backdrop._lanHostCensusOpts || {};
-  const showToast =
-    typeof opts.showToast === 'function'
-      ? opts.showToast
-      : function () {};
+  const showToast = resolveDashboardToast(opts);
   if (
     !confirm('¿Eliminar «' + label + '» del anfitrión LAN?\n\nSe quitará de la red local para todos los equipos.')
   ) {
@@ -279,10 +292,7 @@ async function deletePatientFromDashboard(backdrop, btn) {
 /** @param {HTMLElement} backdrop */
 async function purgeGhostsFromDashboard(backdrop) {
   const opts = backdrop._lanHostCensusOpts || {};
-  const showToast =
-    typeof opts.showToast === 'function'
-      ? opts.showToast
-      : function () {};
+  const showToast = resolveDashboardToast(opts);
   const ghosts = (backdrop._lanHostCensusRows || []).filter(function (x) {
     return x.status === 'ghost';
   });
@@ -291,7 +301,7 @@ async function purgeGhostsFromDashboard(backdrop) {
     return;
   }
   if (
-    !confirm(
+    !window.confirm(
       '¿Eliminar ' +
         ghosts.length +
         ' paciente(s) fantasma del anfitrión LAN?\n\nEsta acción no se puede deshacer.'
@@ -307,8 +317,14 @@ async function purgeGhostsFromDashboard(backdrop) {
     if (res?.ok) ok += 1;
   }
   if (btn) btn.disabled = false;
-  showToast(ok + ' de ' + ghosts.length + ' fantasmas eliminados del anfitrión.', ok ? 'success' : 'warn');
-  if (typeof opts.onChanged === 'function') opts.onChanged();
+  if (!ok) {
+    showToast('No se pudieron eliminar los fantasmas del anfitrión.', 'error');
+  } else if (ok < ghosts.length) {
+    showToast(ok + ' de ' + ghosts.length + ' fantasmas eliminados del anfitrión.', 'warn');
+  } else {
+    showToast(ok + ' de ' + ghosts.length + ' fantasmas eliminados del anfitrión.', 'success');
+  }
+  if (ok && typeof opts.onChanged === 'function') opts.onChanged();
   await refreshLanHostCensusDashboard(opts);
 }
 
@@ -347,21 +363,33 @@ export async function refreshLanHostCensusDashboard(opts) {
 
 /** @param {HTMLElement} backdrop */
 function upgradeLanHostCensusModalIfNeeded(backdrop) {
-  if (backdrop.querySelector('.lan-host-census-filter-team')) return;
   const toolbar = backdrop.querySelector('.lan-host-census-toolbar');
-  if (!toolbar) return;
-  toolbar.innerHTML =
-    '<input type="search" class="lan-host-census-search" placeholder="Buscar nombre, registro, equipo…" autocomplete="off" />' +
-    '<select class="lan-host-census-filter-team" aria-label="Filtrar por equipo"></select>' +
-    '<label class="lan-host-census-filter">' +
-    '<input type="checkbox" class="lan-host-census-filter-inactive" checked /> Solo no activos' +
-    '</label>';
-  wireLanHostCensusToolbar(backdrop);
-  const sub = backdrop.querySelector('.lan-host-census-subtitle');
-  if (sub) {
-    sub.textContent =
-      'Fantasmas, archivados y huérfanos del anfitrión — por defecto solo no activos. Filtra por equipo.';
+  if (toolbar && !backdrop.querySelector('.lan-host-census-filter-team')) {
+    toolbar.innerHTML =
+      '<input type="search" class="lan-host-census-search" placeholder="Buscar nombre, registro, equipo…" autocomplete="off" />' +
+      '<select class="lan-host-census-filter-team" aria-label="Filtrar por equipo"></select>' +
+      '<label class="lan-host-census-filter">' +
+      '<input type="checkbox" class="lan-host-census-filter-inactive" checked /> Solo no activos' +
+      '</label>';
+    wireLanHostCensusToolbar(backdrop);
+    const sub = backdrop.querySelector('.lan-host-census-subtitle');
+    if (sub) {
+      sub.textContent =
+        'Fantasmas, archivados y huérfanos del anfitrión — por defecto solo no activos. Filtra por equipo.';
+    }
   }
+  const actions = backdrop.querySelector('.lan-host-census-actions');
+  if (actions && !actions.querySelector('.lan-host-census-purge-ghosts')) {
+    const refreshBtn = actions.querySelector('.lan-host-census-refresh');
+    const purgeBtn = document.createElement('button');
+    purgeBtn.type = 'button';
+    purgeBtn.className = 'btn-lan-secondary lan-host-census-purge-ghosts';
+    purgeBtn.textContent = 'Eliminar fantasmas';
+    if (refreshBtn) actions.insertBefore(purgeBtn, refreshBtn);
+    else actions.prepend(purgeBtn);
+    backdrop._lanHostCensusActionsWired = false;
+  }
+  wireLanHostCensusActions(backdrop);
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   wasV3MigratedThisBoot,
 } from './app-runtimes.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
+import { installSessionClinicalWipeOnExit } from './session-clinical-wipe.mjs';
 import {
   registerAppShellContext,
   appShellWindowHandlers,
@@ -167,6 +168,8 @@ setSaveStateHooks({
     }
   },
 });
+
+installSessionClinicalWipeOnExit();
 
 window.addEventListener('beforeunload', function () {
   flushSaveState();

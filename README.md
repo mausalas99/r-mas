@@ -153,10 +153,8 @@ Las release notes detalladas de cada versión están en:
 
 ## Requisitos
 
-- **Instalación desde el instalador oficial** (`.dmg` / `.exe`; instrucciones arriba en **Instalación**): no necesitas instalar Python; la app incluye un runtime empaquetado para generar los `.docx`.
-- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): la generación de **Nota**, **Indicaciones** y **Listado** usa el servidor Node (`lib/doc-generators/`). Python 3 solo hace falta si mantienes scripts legacy fuera del flujo principal (o el runtime en `python-runtime/` en builds antiguos).
-  - Mac: `brew install python3` (en Apple Silicon, Homebrew nativo vive en `/opt/homebrew`). Ejecuta **Terminal** y la app **sin** “Abrir con Rosetta”. Si macOS avisa de *Support Ending for Intel-based Apps* al usar Python, casi siempre es un `python3` x86_64 (p. ej. antiguo `/usr/local` bajo Rosetta): instala o prioriza el Python de `/opt/homebrew/bin/python3`, o deja que el build use el runtime empaquetado en `python-runtime/mac-arm64`.
-  - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
+- **Instalación desde el instalador oficial** (`.dmg` / `.exe`; instrucciones arriba en **Instalación**): no necesitas Python ni Node; los `.docx` se generan con módulos nativos en `lib/doc-generators/`.
+- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): **Node.js 22+** y `npm install`. La generación de **Nota**, **Indicaciones** y **Listado** usa el servidor Node (`lib/doc-generators/`). Python no forma parte del flujo de build ni de release.
 
 Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida en **Ajustes** (icono ⚙ arriba a la derecha) → sección **Documentos y salida** → **Cambiar**. Allí también defines **Salida rápida** (`docx`, `html` o `txt`). **Respaldos**, **catálogo medicamentos (SOAP)**, **privacidad** y **actualizaciones** están en las demás secciones del mismo panel. En la barra lateral, **Mi Perfil** concentra médico tratante, plantillas por defecto y tutorial.
 
@@ -205,7 +203,7 @@ Y en `package.json`, dentro de `build.mac`, añade `"notarize": true` (sin eso, 
 
 Firmar y notarizar **no acelera** el build: suele tardar más que un build sin notarizar. Para iterar más rápido en tu Mac Apple Silicon, `npm run build:mac:arm64-only` evita empaquetar la segunda arquitectura.
 
-**Stack:** Electron 41 · Express 5 · electron-builder 26 · electron-updater 6 · Python 3 (python-docx)
+**Stack:** Electron 41 · Express 5 · electron-builder 26 · electron-updater 6 · Node doc generators (`lib/doc-generators/`)
 
 ---
 
