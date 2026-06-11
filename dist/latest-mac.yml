@@ -1,20 +1,20 @@
 version: 7.3.2
 files:
   - url: R+-7.3.2-arm64.zip
-    sha512: ZaS7piIRiz/Dma7QhKc4/lfzxLiKKI69VKRy9Nq+sEtWh5aIYhrGsXB8aumF6VZdpFqEU+eNA3JC5lOdOCltFA==
-    size: 129171346
+    sha512: aoNfskaWV1QQpGMPzncNn4ogSvJhSon5EuUJ4+1xTrx2k00T/gMEoT5cGK0nwsHDh8c/9+cqhubj7BME7ugjTA==
+    size: 129175134
   - url: R+-7.3.2-arm64.dmg
-    sha512: I8Ev7YJ4NTgtoVy95foWv8aOFxbQucbJa6ErY5r+TAOFFwq6dwlLMdPmZMluo1+XjxGW8osrdEkMJ9gv9ldR5A==
-    size: 134516763
+    sha512: DKF3UuEl3EE3TmevhiEkN/45FXsP9JI+Mawy3ep3El/Me8mXxWfZrgSL0TzZZ1CqFZ8Xjgs2ClAwpr40yQJKGA==
+    size: 134534938
   - url: R+-7.3.2-x64.zip
-    sha512: 6yAEB62ds4u5idwWGNu98dUuNPJemBqPPZ85j5YgUD9clbuvpkhaWX+4j0+5Pw+zrWQNAJoiq+TcKE+jTK1SvQ==
-    size: 137545412
+    sha512: bwR/QDWo7J8Ppu/yRVvB43ciikMCFwBAPq0/JsMuoVaoQ5Lh4bi90k4EHYuuZlklopmm8AVcl3HR+7z00HeX+g==
+    size: 137549232
   - url: R+-7.3.2-x64.dmg
-    sha512: CNpS7Y1ja9aAKWJwUcYK+OzxMtaj/epYdWJyKop+jt8G4Ddm3F0xB1cf3GMJl4Mzs+3Q/PPbqdTk0FEFUl3Kog==
-    size: 142963137
+    sha512: UjNJ3R6I1eTb/+0e6e6Or7fSUlg8eMdued//fIXE+gqlBwTj3XI7ZHrj5JT4ykkGyuMenkie/ksChEHqLHdwnA==
+    size: 142967352
 path: R+-7.3.2-arm64.zip
-sha512: ZaS7piIRiz/Dma7QhKc4/lfzxLiKKI69VKRy9Nq+sEtWh5aIYhrGsXB8aumF6VZdpFqEU+eNA3JC5lOdOCltFA==
-releaseDate: '2026-06-11T17:32:14.000Z'
+sha512: aoNfskaWV1QQpGMPzncNn4ogSvJhSon5EuUJ4+1xTrx2k00T/gMEoT5cGK0nwsHDh8c/9+cqhubj7BME7ugjTA==
+releaseDate: '2026-06-11T17:50:15.000Z'
 releaseNotes: |
   Sobre 7.3.1: renovación visual Workbench Refinado en escritorio, móvil e interno (tokens, vidrio en overlays, navegación agrupada y ⌘K); modal de gráficas en Estado actual con pestañas y tooltips completos; endurecimiento de seguridad (CSP, window.open, borrado PHI en web móvil); purga LAN más segura en el anfitrión.
   

@@ -5,7 +5,7 @@ files:
     size: 114862622
 path: R+-7.3.2-x64.exe
 sha512: 13yrika4zP8NibfRce0HIaqXCtoyZvT+BUxoW6+8/GwN+1OZL/IzWoO++XeKTk5K4bVsnraEfpA/tSG/m7OtTg==
-releaseDate: '2026-06-11T17:32:14.000Z'
+releaseDate: '2026-06-11T17:50:15.000Z'
 releaseNotes: |
   Sobre 7.3.1: renovación visual Workbench Refinado en escritorio, móvil e interno (tokens, vidrio en overlays, navegación agrupada y ⌘K); modal de gráficas en Estado actual con pestañas y tooltips completos; endurecimiento de seguridad (CSP, window.open, borrado PHI en web móvil); purga LAN más segura en el anfitrión.
   
