@@ -6,6 +6,8 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Premium UI Phase 3 — mobile + interno | `mobile-surfaces.css`, `group-row.css`, `expediente-group-row-ui.mjs`, `interno/interno.css`, `interno/index.html` | Mobile: grouped row + tap-to-expand at all widths, ≥44px targets, token surfaces. Interno: shared tokens + glass sheets. 1509 tests pass. |
+
 | 2026-06-11 | Premium UI desktop surface rollout (T1–T7) | `workbench-surfaces.css`, `expediente.css`, `lab.css`, `pase-board.css`, `overlays.css`, `settings.css`, `modals.css` | Workbench Refinado: expediente/lab/sidebar/pase/guardia/manejo/agenda overlays; glass parity on settings dropdown, tour dock, learn hub. CSS-only. 1509 tests pass. |
 
 | 2026-06-11 | Premium UI Phase 2 — navigation rework | `expediente-group-row*.mjs`, `header-context.mjs`, `command-palette*.mjs`, `fuzzy-match.mjs`, `group-row.css`, `cmdk.css`, `chrome.mjs`, `profile.mjs`, `layout.css` | Grouped expediente pill row (≥1100px) + narrow fallback; context header; segmented mode selector; ⌘K fuzzy palette; header search icon-only (magnifying glass); granular tab path removed. 1509 tests pass. |

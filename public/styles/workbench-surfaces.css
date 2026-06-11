@@ -104,6 +104,63 @@ html.ui-density-normal .patient-expediente-classic {
   box-shadow: var(--elev-raised);
 }
 
+/* Pendientes: sin ventana contenedora — filas flotantes */
+.patient-expediente-classic .exp-pendientes-mount > .exp-segment-panel,
+.exp-pendientes-mount > .exp-segment-panel.active {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.exp-pendientes-mount {
+  padding: calc(2px * var(--density-space, 1)) 0 calc(12px * var(--density-space, 1));
+}
+
+.exp-pendientes-mount #todo-form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+}
+
+.exp-pendientes-mount .todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+}
+
+.exp-pendientes-mount .todo-add-row,
+.exp-pendientes-mount .todo-row {
+  border: var(--border-hairline);
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-flat);
+  margin: 0;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.exp-pendientes-mount .todo-add-row {
+  margin-bottom: 0;
+  border-left-color: transparent;
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+}
+
+.exp-pendientes-mount .todo-row:hover {
+  border-color: color-mix(in oklab, var(--action) 14%, var(--border));
+  box-shadow: var(--elev-raised);
+}
+
+.exp-pendientes-mount .todo-empty {
+  margin: 0;
+  padding: calc(10px * var(--density-space, 1)) calc(4px * var(--density-space, 1));
+  color: var(--text-muted);
+}
+
 /* Estado actual (mounted under Clínico) */
 #patient-expediente .ea-card,
 .patient-expediente-classic .ea-card {

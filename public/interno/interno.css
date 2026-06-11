@@ -690,3 +690,113 @@
     display: none !important;
   }
 }
+
+/* ── Premium UI phase 3 (design tokens via tokens.css) ───────── */
+
+.interno-header {
+  border-bottom: var(--border-hairline);
+  box-shadow: var(--elev-flat);
+}
+
+.interno-header h1 {
+  font: var(--type-section);
+  letter-spacing: var(--tracking-section);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.interno-row {
+  border-bottom: var(--border-hairline);
+  min-height: max(var(--interno-row-h), 44px);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.interno-row:active {
+  background: var(--state-hover-bg);
+}
+
+.interno-btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--radius-control);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.interno-btn-icon:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.interno-chip {
+  border: var(--border-hairline);
+}
+
+.interno-sheet,
+.interno-modal {
+  border: var(--overlay-border, var(--border-hairline));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--elev-overlay);
+  background: var(--overlay-bg, var(--surface));
+  -webkit-backdrop-filter: blur(var(--overlay-blur, 12px));
+  backdrop-filter: blur(var(--overlay-blur, 12px));
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .interno-sheet,
+  .interno-modal {
+    background: var(--surface);
+  }
+}
+
+.interno-btn-primary,
+.interno-sheet-close,
+.interno-modal-actions button {
+  border-radius: var(--radius-control);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.interno-btn-primary {
+  background: var(--action);
+  color: var(--color-on-accent, #fff);
+}
+
+.interno-btn-primary:focus-visible,
+.interno-sheet-close:focus-visible,
+.interno-modal-actions button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.interno-host-manual {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-flat);
+}
+
+.interno-host-manual input {
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--input-fill, var(--bg));
+}
+
+.interno-host-manual input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.interno-detail {
+  border-bottom: var(--border-hairline);
+  background: color-mix(in oklab, var(--bg) 92%, var(--surface));
+}
+
+html.high-contrast .interno-sheet,
+html.high-contrast .interno-modal {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+

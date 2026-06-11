@@ -11,6 +11,16 @@ var lastPointerType = 'mouse';
 var touchExpandedGroup = null;
 var resyncWired = false;
 
+export function usesGroupedExpedienteRow() {
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('rpc-mobile-web')) {
+    return true;
+  }
+  if (typeof window.matchMedia === 'function') {
+    return window.matchMedia('(min-width: 1100px)').matches;
+  }
+  return false;
+}
+
 function rowEl() {
   return document.getElementById('exp-group-row');
 }
@@ -93,4 +103,7 @@ export function wireGroupRowBreakpointResync(syncFn) {
   };
   if (typeof mq.addEventListener === 'function') mq.addEventListener('change', handler);
   else if (typeof mq.addListener === 'function') mq.addListener(handler);
+  if (typeof document !== 'undefined' && document.documentElement.classList.contains('rpc-mobile-web')) {
+    handler();
+  }
 }
