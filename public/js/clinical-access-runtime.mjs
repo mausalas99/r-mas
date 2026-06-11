@@ -524,6 +524,10 @@ export async function initClinicalAccessRuntime(settings, clientId) {
   markClinicalAccessBootReady();
   if (!ok) return;
   wireClinicalOpsSyncRefresh();
+  try {
+    const { wireTeamlessPatientCleanup } = await import('./patient-teamless-policy.mjs');
+    wireTeamlessPatientCleanup();
+  } catch (_e) {}
 
   if (vitalsLoop) vitalsLoop.stop();
   vitalsLoop = new BackgroundVitalsMonitorLoop(

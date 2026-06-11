@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Teamless patient policy | `lib/patient-teamless-policy.mjs`, `patient-teamless-policy.mjs`, `patients.mjs` | 24 h purge + registration prompts for patients/users without team |
 | 2026-06-10 | Release 7.3.1 prepare | `medications.mjs`, `med-receta-core.mjs`, `med-pharm-profile-panel.mjs`, `docs/RELEASE_NOTES_7.3.1.txt` | Manejo modal SOME, AAS SOAP, borrar perfil, EA dieta; bump 7.3.1 |
 | 2026-06-10 | Release 7.3.0 prepare | `med-pharm-view-window.mjs`, `teams-roster-lan.mjs`, `lab-panel.mjs`, `docs/RELEASE_NOTES_7.3.0.txt` | Perfil cross-mes, directorio LAN v17, lab historial, censo PDF; bump pendiente usuario |
 | 2026-06-10 | Perfil histórico ventana dinámica | `med-pharm-view-window.mjs`, `med-pharm-profile-panel.mjs`, `pase-board.mjs` | Cross-mes grilla + FAB Copiar context-aware; spec/plan 2026-06-10 |

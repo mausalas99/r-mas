@@ -98,6 +98,12 @@ import {
   readPatientRegistrationTeamId,
   syncPatientRegistrationTeamSelect,
 } from '../patient-team-assign-ui.mjs';
+import {
+  confirmTeamlessPatientSave,
+  maybePromptTeamOnboardingForRegistration,
+  shouldWarnTeamlessPatientSave,
+  syncPatientRegistrationTeamPolicyUi,
+} from '../patient-teamless-policy.mjs';
 
 function patientsVisibleInSidebar() {
   const base = filterPatientsForPitchTour(patients);
@@ -1574,6 +1580,8 @@ export function openAddModal() {
   _prefillServicioForSala();
   _prefillCuartoCamaForSala();
   syncPatientRegistrationTeamSelect();
+  syncPatientRegistrationTeamPolicyUi();
+  maybePromptTeamOnboardingForRegistration();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(false);
@@ -1634,6 +1642,8 @@ function openAddModalFromLabPatientData(p, opts) {
   }
   _prefillCuartoCamaForSala(p.expediente || p.registro || '');
   syncPatientRegistrationTeamSelect();
+  syncPatientRegistrationTeamPolicyUi();
+  maybePromptTeamOnboardingForRegistration();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(true);
@@ -1782,11 +1792,19 @@ export function savePatient() {
     commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
   };
 
+  var finalize = function () {
+    if (shouldWarnTeamlessPatientSave()) {
+      confirmTeamlessPatientSave(commit);
+      return;
+    }
+    commit();
+  };
+
   if (v.warning === 'missing_expediente' && !isFromLab) {
-    showExpedienteAdvice(commit);
+    showExpedienteAdvice(finalize);
     return;
   }
-  commit();
+  finalize();
 }
 
 function escTxtSafe(s) {
