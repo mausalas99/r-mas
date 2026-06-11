@@ -1,5 +1,5 @@
 /* ── Listado de Problemas (v3.0 Sala) ────────────────────── */
-.listado-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+.listado-section { border: var(--border-hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
 .listado-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .listado-section-header.activos { background: #ecfdf5; color: #065f46; }
 .listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
@@ -34,7 +34,7 @@ html.dark .listado-drag-hovercard.listado-row {
   border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
 }
-.listado-row { display: grid; grid-template-columns: 22px 140px 1fr 32px; gap: 8px; align-items: start; padding: 6px; border-radius: var(--radius-md); border: 1px solid transparent; transition: background 0.1s, border-color 0.1s; }
+.listado-row { display: grid; grid-template-columns: 22px 140px 1fr 32px; gap: 8px; align-items: start; padding: 6px; border-radius: var(--radius-md); border: 1px solid transparent; transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
 .listado-row:hover { background: var(--bg); }
 .listado-row .listado-num,
 .listado-row .listado-drag-handle { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; touch-action: none; }
@@ -47,7 +47,7 @@ html.dark .listado-drag-hovercard.listado-row {
 .listado-row textarea:focus-visible { border-color: var(--action); outline: 2px solid var(--action); outline-offset: 1px; box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; min-width: 28px; min-height: 28px; }
 .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
-.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all var(--dur-fast) var(--ease-out); }
 .listado-add-row:hover { border-color: var(--action); color: var(--action); background: var(--section-header-bg); }
 .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
 html.dark .listado-section { background: var(--surface); }
@@ -476,7 +476,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   content: '▸';
   display: inline-block;
   margin-right: 8px;
-  transition: transform 0.15s ease;
+  transition: transform var(--dur-fast) var(--ease-out);
   color: var(--text-muted);
 }
 
@@ -580,7 +580,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 .manejo-subtabs {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end;
+  align-items: center;
   gap: 2px;
   padding: 0;
   margin: 0 0 calc(8px * var(--density-space, 1));
@@ -614,8 +614,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  margin-bottom: -1px;
+  border-radius: 0;
+  margin-bottom: 0;
   cursor: pointer;
   white-space: nowrap;
   appearance: none;
@@ -635,8 +635,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-segment-btn:hover,
 .manejo-subtab:hover {
-  color: var(--action);
-  background: color-mix(in oklab, var(--action) 6%, transparent);
+  color: var(--text);
+  background: transparent;
 }
 
 .exp-segment-btn.active,
@@ -645,8 +645,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 .exp-segment-btn[aria-selected='true'],
 .manejo-subtab[aria-selected='true'] {
   color: var(--action);
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  border-bottom-color: var(--action);
+  background: transparent;
+  border-bottom-color: transparent;
 }
 
 html.tab-bar-indicators-ready .exp-segment-btn.active,
@@ -668,7 +668,8 @@ html.dark .manejo-subtab.manejo-subtab--active,
 html.dark .manejo-subtab.active,
 html.dark .exp-segment-btn[aria-selected='true'],
 html.dark .manejo-subtab[aria-selected='true'] {
-  background: color-mix(in oklab, var(--action) 12%, transparent);
+  background: transparent;
+  border-bottom-color: transparent;
 }
 
 html.tab-bar-indicators-ready html.dark .exp-segment-btn.active,

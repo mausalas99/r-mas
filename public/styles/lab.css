@@ -72,7 +72,7 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   border-bottom: none;
   box-shadow: none;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   padding: calc(4px * var(--density-space)) calc(16px * var(--density-space)) 0;
   margin-bottom: var(--shell-frame-inset);
   flex-shrink: 0;
@@ -104,11 +104,11 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  margin-bottom: -1px;
+  border-radius: 0;
+  margin-bottom: 0;
   cursor: pointer;
   font-family: inherit;
-  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
   display: flex;
   align-items: center;
   gap: calc(5px * var(--density-space));
@@ -117,14 +117,14 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   z-index: 1;
 }
 .inner-tab:hover {
-  color: var(--action);
-  background: color-mix(in oklab, var(--action) 6%, transparent);
+  color: var(--text);
+  background: transparent;
   box-shadow: none;
 }
 .inner-tab.active {
   color: var(--action);
-  background: color-mix(in oklab, var(--action) 8%, var(--surface));
-  border-bottom-color: var(--action);
+  background: transparent;
+  border-bottom-color: transparent;
   box-shadow: none;
 }
 html.tab-bar-indicators-ready .inner-tab.active {
@@ -132,12 +132,13 @@ html.tab-bar-indicators-ready .inner-tab.active {
   border-bottom-color: transparent;
 }
 html.dark .inner-tab:hover {
-  background: color-mix(in oklab, var(--action) 10%, transparent);
+  background: transparent;
+  color: var(--text);
   box-shadow: none;
 }
 html.dark .inner-tab.active {
-  background: color-mix(in oklab, var(--action) 14%, transparent);
-  border-bottom-color: var(--action);
+  background: transparent;
+  border-bottom-color: transparent;
   box-shadow: none;
 }
 html.tab-bar-indicators-ready html.dark .inner-tab.active {
@@ -696,6 +697,26 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-output-more {
   position: relative;
 }
+#appcontent-lab #lab-output-section.card,
+#appcontent-lab #lab-input-section.card,
+#appcontent-lab #lab-diagrams-section.card,
+#appcontent-lab #lab-banner.card {
+  overflow: visible;
+}
+.lab-output-card-header {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+.lab-output-more[open] {
+  z-index: 3;
+}
+.lab-output-more-menu.lab-output-more-menu--fixed {
+  position: fixed;
+  top: auto;
+  right: auto;
+  z-index: 1200;
+}
 .lab-output-more-btn {
   cursor: pointer;
   font-family: inherit;
@@ -726,7 +747,7 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  z-index: 40;
+  z-index: 120;
   width: max-content;
   min-width: 168px;
   max-width: min(72vw, 240px);
