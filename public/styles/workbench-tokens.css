@@ -1,0 +1,13 @@
+/* Shared premium workbench tokens — group-row nav + workbench-surfaces panes */
+
+:root {
+  --wb-pill-border: var(--border-hairline);
+  --wb-pill-radius: var(--radius-pill);
+  --wb-pill-bg: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  --wb-pill-active-border: color-mix(in oklab, var(--action) 35%, transparent);
+  --wb-pill-active-bg: color-mix(in oklab, var(--action) 7%, var(--surface));
+  --wb-pill-shadow: var(--elev-raised);
+  --wb-frame-border: var(--border-hairline);
+  --wb-frame-shadow: var(--elev-raised);
+  --wb-card-radius: var(--radius-lg);
+}
