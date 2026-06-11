@@ -72,6 +72,10 @@ import {
   syncPacienteDatosLayoutMode,
 } from "../expediente-tabs.mjs";
 import { isMobileWeb } from "../mobile-web.mjs";
+import {
+  renderExpedienteGroupRow,
+  wireGroupRowBreakpointResync,
+} from "./expediente-group-row-ui.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
@@ -1041,6 +1045,7 @@ export function syncInnerTabVisualOnly() {
   syncConsolidatedInnerTabButtons(tab, settings);
   syncConsolidatedPaneVisibility(tab, settings);
   syncConsolidatedSegmentBars(tab, settings);
+  renderExpedienteGroupRow(tab, settings);
   syncInnerTabIndicator(tab, { consolidated: true, settings: settings });
 }
 
@@ -1159,6 +1164,7 @@ export function switchConsolidatedTab(compositeTab) {
     syncConsolidatedInnerTabButtons(current, settings);
     syncConsolidatedPaneVisibility(current, settings);
     syncConsolidatedSegmentBars(current, settings);
+    renderExpedienteGroupRow(current, settings);
     syncInnerTabIndicator(current, { consolidated: true, settings: settings });
     if (granularMountIsEmpty(current)) {
       renderGranularInnerTab(current, { force: true });
@@ -1207,6 +1213,7 @@ export function switchInnerTab(tab, opts) {
   syncConsolidatedInnerTabButtons(tab, settings);
   syncConsolidatedPaneVisibility(tab, settings);
   syncConsolidatedSegmentBars(tab, settings);
+  renderExpedienteGroupRow(tab, settings);
   if (granularMountIsEmpty(tab)) {
     opts.forceRender = true;
     invalidateInnerTabRenderCache(tab);
@@ -1274,6 +1281,7 @@ export function renderInnerTabs() {
   if (sala && !isMobileWeb()) setOrder("itab-salida", order++);
   show("itab-salida", sala && !isMobileWeb());
   wireExpedienteDatosCollapseRender();
+  wireGroupRowBreakpointResync(syncInnerTabVisualOnly);
   var activeInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   if (activeInner !== rt.getActiveInner()) rt.setActiveInner(activeInner);
   syncInnerTabVisualOnly();

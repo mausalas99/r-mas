@@ -1,0 +1,144 @@
+/* Grouped expediente navigation (premium UI phase 2).
+ * Wide windows only; <1100px keeps the classic tabs + segment bars.
+ * Expansion animates grid-template-columns 0fr -> 1fr (motion tokens). */
+
+#exp-group-row {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  #patient-expediente-classic > .inner-tab-bar {
+    display: none;
+  }
+  #patient-expediente-classic .exp-segment-bar {
+    display: none !important; /* beats the inline display set by sync code */
+  }
+  #exp-group-row {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--density-space, 1));
+    padding: calc(6px * var(--density-space, 1)) calc(16px * var(--density-space, 1));
+    background: var(--surface);
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+}
+
+.exp-group-pill {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.exp-group-pill.is-active {
+  border-color: color-mix(in oklab, var(--action) 35%, transparent);
+  background: color-mix(in oklab, var(--action) 7%, var(--surface));
+  box-shadow: var(--elev-raised);
+}
+
+.exp-group-name {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: calc(12.5px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-muted);
+  padding: calc(5px * var(--density-space, 1)) calc(10px * var(--density-space, 1));
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.exp-group-pill.is-active > .exp-group-name {
+  color: var(--action);
+}
+
+.exp-group-name:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.exp-group-name:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.exp-group-sections {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns var(--dur-normal) var(--ease-out);
+}
+
+.exp-group-sections-inner {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.exp-group-pill.is-active > .exp-group-sections,
+.exp-group-pill.is-touch-expanded > .exp-group-sections,
+.exp-group-pill:hover > .exp-group-sections,
+.exp-group-pill:focus-within > .exp-group-sections {
+  grid-template-columns: 1fr;
+}
+
+.exp-group-section {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-muted);
+  padding: calc(4px * var(--density-space, 1)) calc(9px * var(--density-space, 1));
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.exp-group-section:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.exp-group-section.is-active {
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
+  color: var(--action);
+}
+
+.exp-group-section:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.dark .exp-group-pill {
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+}
+
+html.high-contrast .exp-group-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+html.high-contrast .exp-group-pill.is-active {
+  border-color: var(--color-accent);
+}
+
+html.motion-sobrio .exp-group-sections {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exp-group-sections {
+    transition: none !important;
+  }
+}
