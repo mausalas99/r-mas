@@ -163,9 +163,16 @@ test('resolveDietWeightKg usa datos del paciente (no signos vitales)', () => {
 
 test('computeDietKcalTotal y syncDietKcalFromWeight', () => {
   assert.equal(computeDietKcalTotal(25, 70), 1750);
+  assert.equal(computeDietKcalTotal(25, null), null);
   const ec = { kcalKg: '25', kcal: '' };
   assert.equal(syncDietKcalFromWeight(ec, 70), true);
   assert.equal(ec.kcal, '1750');
+});
+
+test('syncDietKcalFromWeight no sobrescribe kcal total sin peso', () => {
+  const ec = { kcalKg: '25', kcal: '1800' };
+  assert.equal(syncDietKcalFromWeight(ec, null), false);
+  assert.equal(ec.kcal, '1800');
 });
 
 test('computeDietKcalKgFromTotal — inverso de kcal total', () => {

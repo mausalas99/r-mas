@@ -334,7 +334,7 @@ export function formatEvacForText(evac) {
   if (evac == null || evac === '') return '___';
   var norm = normalizeEvacAbbrev(evac);
   if (norm === 'NC' || String(norm).toUpperCase() === 'NC') return 'NC';
-  if (isIoNumericValue(evac)) return String(evac) + ' CC';
+  if (isIoNumericValue(evac)) return String(evac);
   return String(evac).toUpperCase();
 }
 
@@ -369,10 +369,14 @@ export function formatIoClauseForSoap(io, balanceTurno) {
     clauses.push('EVACUACIONES ' + formatEvacForText(io.evac));
   }
 
-  var balance =
-    balanceTurno != null && balanceTurno !== '' && Number.isFinite(Number(balanceTurno))
-      ? (Number(balanceTurno) > 0 ? '+' : '') + balanceTurno
-      : '___';
+  var balNum = NaN;
+  if (balanceTurno != null && balanceTurno !== '' && Number.isFinite(Number(balanceTurno))) {
+    balNum = Number(balanceTurno);
+  } else {
+    var fromIo = computeIoBalanceFromIngEgr(io.ing, io);
+    if (Number.isFinite(fromIo)) balNum = fromIo;
+  }
+  var balance = Number.isFinite(balNum) ? (balNum > 0 ? '+' : '') + balNum : '___';
   clauses.push('BALANCE ' + balance + ' CC');
 
   return clauses.join(', ');

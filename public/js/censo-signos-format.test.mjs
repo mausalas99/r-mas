@@ -49,6 +49,21 @@ test('formatCensoIoColumn — evac numérico sin CC', () => {
   assert.doesNotMatch(evacLine || '', /CC\b/);
 });
 
+test('formatCensoIoColumn — balance con diuresis NC y drenaje numérico', () => {
+  var lines = formatCensoIoColumn(
+    {
+      ing: 645,
+      egr: 'NC',
+      egrParts: [
+        { kind: 'diuresis', label: 'DIURESIS', value: 'NC' },
+        { kind: 'drain', label: 'DRENAJE', value: 50 },
+      ],
+    },
+    NaN
+  );
+  assert.equal(lines[2], 'B: +595 CC');
+});
+
 test('formatCensoSignosIoFromPatient — parsea textoGuardado', () => {
   var out = formatCensoSignosIoFromPatient({
     monitoreo: {

@@ -5,6 +5,7 @@ import {
   parseIoEvacField,
   computeIoBalanceFromIngEgr,
   formatIoClauseForSoap,
+  formatEvacForText,
   diuresisValueFromParts,
   normalizeEvacAbbrev,
 } from './estado-actual-io.mjs';
@@ -52,12 +53,22 @@ test('formatIoClauseForSoap — egresos divididos y evacuaciones', () => {
   assert.doesNotMatch(clauseNc, /NO CUANTIFICADA/);
   assert.match(clauseNc, /EVACUACIONES NC/);
   assert.match(clauseNc, /BALANCE ___ CC/);
+  const clauseFromIo = formatIoClauseForSoap(
+    { ing: 168, egrParts: parts, evac: 'NC' },
+    NaN
+  );
+  assert.match(clauseFromIo, /BALANCE \+48 CC/);
 });
 
 test('parseIoEvacField — NC y variantes sin evacuación', () => {
   assert.equal(parseIoEvacField('NC'), 'NC');
   assert.equal(parseIoEvacField('NO REPORTADAS'), 'NC');
   assert.equal(parseIoEvacField('SIN EVACUACIONES REPORTADAS DURANTE TURNO'), 'NC');
+});
+
+test('formatEvacForText — numérico sin CC (conteo, no volumen)', () => {
+  assert.equal(formatEvacForText(2), '2');
+  assert.doesNotMatch(formatEvacForText(2), /CC/);
 });
 
 test('diuresisValueFromParts — primer bloque diuresis', () => {

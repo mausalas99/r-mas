@@ -84,9 +84,8 @@ function formatBalanceShort(io, balTurno) {
   if (Number.isFinite(computed)) {
     return (computed > 0 ? '+' : '') + computed.toLocaleString('es-MX') + ' CC';
   }
-  var egrLabel = formatEgresoShort(io.egr, io.egrParts);
-  if (egrLabel === 'NO CUANTIFICADA' || normalizeIoNcAbbrev(io.egr) === 'NC') return 'NC';
-  return 'NC';
+  if (ioNumericEgressTotal(io) == null) return 'NC';
+  return '';
 }
 
 /**

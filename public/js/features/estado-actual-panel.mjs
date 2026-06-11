@@ -12,6 +12,7 @@ import {
   buildEaMonitoreoRevision,
   resolveDietWeightKg,
   syncDietKcalFromWeight,
+  computeDietKcalTotal,
   computeDietKcalKgFromTotal,
   parseWeightKg,
   isIoNumericValue,
@@ -246,8 +247,10 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     patientPeso: patient && patient.peso,
     pesoRef: ec.pesoRef,
   });
-  if (!dietPending || !String(pend.kcal || '').trim()) {
-    syncDietKcalFromWeight(ec, dietWeight);
+  var kcalDisplay = ec.kcal;
+  if ((!dietPending || !String(pend.kcal || '').trim()) && dietWeight != null) {
+    var kcalComputed = computeDietKcalTotal(ec.kcalKg, dietWeight);
+    if (kcalComputed != null) kcalDisplay = String(kcalComputed);
   }
   var dietWeightHint =
     dietWeight != null
@@ -307,7 +310,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
     '<label class="ea-field">' +
     '<span class="ea-label">Kcal total</span>' +
     '<input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' +
-    escAttr(ec.kcal) +
+    escAttr(kcalDisplay) +
     '" placeholder="Total">' +
     '</label>' +
     '<label class="ea-field">' +
@@ -400,9 +403,10 @@ function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
   });
   var panel = document.getElementById('exp-pane-estado-actual');
   if (key === 'kcalKg') {
-    syncDietKcalFromWeight(monitoreo.estadoClinico, w);
-    var kcalInput = panel && panel.querySelector('[data-ea-ec="kcal"]');
-    if (kcalInput && 'value' in kcalInput) kcalInput.value = String(monitoreo.estadoClinico.kcal || '');
+    if (syncDietKcalFromWeight(monitoreo.estadoClinico, w)) {
+      var kcalInput = panel && panel.querySelector('[data-ea-ec="kcal"]');
+      if (kcalInput && 'value' in kcalInput) kcalInput.value = String(monitoreo.estadoClinico.kcal || '');
+    }
   } else if (key === 'kcal') {
     var kg = computeDietKcalKgFromTotal(monitoreo.estadoClinico.kcal, w);
     if (kg != null) {
@@ -1197,7 +1201,7 @@ function renderHistorialSection(historial) {
       } else if (io.egr != null && io.egr !== '') {
         parts.push('Egr ' + io.egr);
       }
-      if (io.evac != null && io.evac !== '') parts.push('Evac ' + io.evac);
+      if (io.evac != null && io.evac !== '') parts.push('Evac ' + formatEvacForText(io.evac));
       var summary = parts.length ? parts.join(' · ') : 'Registro vacío';
       return (
         '<li class="ea-historial-row">' +
