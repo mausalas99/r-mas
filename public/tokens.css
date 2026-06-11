@@ -277,17 +277,18 @@ html.motion-sobrio {
   --dur-fast: 100ms;
   --dur-normal: 160ms;
   --dur-slow: 200ms;
-  --ease-spring: var(--ease-out);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* = --ease-out; no springs in Sobrio */
 }
 
 html.motion-expresivo {
-  --dur-fast: 170ms;
-  --dur-normal: 260ms;
-  --dur-slow: 380ms;
+  --dur-fast: 190ms;
+  --dur-normal: 300ms;
+  --dur-slow: 420ms;
+  --ease-spring: cubic-bezier(0.34, 1.72, 0.64, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html,
+  :root,
   html.motion-sobrio,
   html.motion-expresivo {
     --dur-fast: 1ms;
