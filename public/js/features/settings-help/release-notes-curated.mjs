@@ -749,6 +749,11 @@ var RELEASE_NOTES_729 = [
 
 var RELEASE_NOTES_732 = [
   {
+    title: 'Republicación — arranque',
+    body:
+      'Corrige fallo al abrir la app (<em>Cannot find module … window-open-policy</em>). Reinstala el instalador <strong>7.3.2</strong> de esta fecha si la versión anterior no arrancaba.',
+  },
+  {
     title: 'Workbench Refinado',
     body:
       'Tokens de elevación y tipografía clínica en <strong>escritorio, móvil e interno</strong>. Overlays de vidrio en modales, menús y <strong>⌘K</strong>; presets de movimiento en Ajustes.',

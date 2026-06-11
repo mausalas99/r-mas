@@ -1,6 +1,6 @@
 /**
  * Lista canónica de electron-builder `build.files` y comprobación del grafo
- * de require desde server.js (arranque del backend embebido).
+ * de require desde main.js y server.js (arranque Electron + backend embebido).
  *
  *   node scripts/lib/electron-pack-files.js          # validar
  *   node scripts/lib/electron-pack-files.js --write  # actualizar package.json
@@ -17,6 +17,7 @@ const PACK_FILES_BASELINE = [
   'lan-squad/**/*',
   'lib/**/*.js',
   'lib/**/*.mjs',
+  'lib/**/*.cjs',
   'generate-receta-hu.js',
   'generate-censo.js',
   'template.docx',
@@ -124,12 +125,15 @@ function extraPatternForUncoveredFile(rel) {
  */
 function canonicalBuildFiles(root) {
   const patterns = [...PACK_FILES_BASELINE];
-  const serverEntry = path.join(root, 'server.js');
-  if (!fs.existsSync(serverEntry)) {
-    throw new Error(`No existe ${path.relative(root, serverEntry)}`);
+  const entryPoints = ['main.js', 'server.js'];
+  const runtime = [];
+  for (const entry of entryPoints) {
+    const entryAbs = path.join(root, entry);
+    if (!fs.existsSync(entryAbs)) {
+      throw new Error(`No existe ${path.relative(root, entryAbs)}`);
+    }
+    runtime.push(...collectRuntimeRequires(entryAbs, root));
   }
-
-  const runtime = collectRuntimeRequires(serverEntry, root);
   for (const rel of runtime) {
     if (filePatternCovers(rel, patterns)) continue;
     const extra = extraPatternForUncoveredFile(rel);
@@ -229,8 +233,10 @@ function ensureElectronPackFiles(root, opts = {}) {
  */
 function assertRuntimeCoveredByPatterns(root) {
   const patterns = canonicalBuildFiles(root);
-  const serverEntry = path.join(root, 'server.js');
-  const runtime = collectRuntimeRequires(serverEntry, root);
+  const runtime = [];
+  for (const entry of ['main.js', 'server.js']) {
+    runtime.push(...collectRuntimeRequires(path.join(root, entry), root));
+  }
   const uncovered = runtime.filter((rel) => !filePatternCovers(rel, patterns));
   if (uncovered.length) {
     throw new Error(
@@ -305,7 +311,7 @@ if (require.main === module) {
       ensureElectronPackFiles(root, { write: false });
       assertRuntimeCoveredByPatterns(root);
       assertNativeModulesPacked(root);
-      console.log('build.files cubre el grafo de server.js y módulos nativos.');
+      console.log('build.files cubre el grafo de main.js + server.js y módulos nativos.');
     }
   } catch (err) {
     console.error(err.message || err);

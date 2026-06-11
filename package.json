@@ -131,6 +131,7 @@
       "lan-squad/**/*",
       "lib/**/*.js",
       "lib/**/*.mjs",
+      "lib/**/*.cjs",
       "generate-receta-hu.js",
       "generate-censo.js",
       "template.docx",
@@ -140,7 +141,6 @@
       "public/**/*",
       "build/AppIcon.icns",
       "build/icon.ico",
-      "lib/db/**/*",
       "node_modules/better-sqlite3-multiple-ciphers/**/*",
       "node_modules/@node-rs/argon2*/**/*.node"
     ],

@@ -41,6 +41,7 @@ const RELEASE_STAGE_PATHS = [
   'scripts/lib/release-git.js',
   'scripts/lib/release-progress.js',
   'scripts/lib/electron-pack-files.js',
+  'scripts/lib/electron-pack-files.test.js',
   'scripts/fetch-argon2-darwin-x64.mjs',
   'scripts/fetch-argon2-win.mjs',
   'scripts/fetch-sqlite-win.mjs',

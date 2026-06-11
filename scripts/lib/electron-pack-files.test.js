@@ -20,9 +20,10 @@ const {
 const ROOT = path.join(__dirname, '../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
-test('lista canónica incluye lan-squad y lib/**/*.js', () => {
+test('lista canónica incluye lan-squad y lib/**/*.js / lib/**/*.cjs', () => {
   assert.ok(PACK_FILES_BASELINE.includes('lan-squad/**/*'));
   assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.js'));
+  assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.cjs'));
 });
 
 test('server.js y dependencias LAN están cubiertos por la lista canónica', () => {
@@ -62,6 +63,26 @@ test('server.js require("./…") directo está en build.files', () => {
     assert.ok(
       filePatternCovers(rel, patterns),
       `Falta "${rel}" en package.json → build.files (server.js lo requiere al iniciar)`
+    );
+  }
+});
+
+test('main.js require("./…") directo está en build.files', () => {
+  const patterns = pkg.build.files || [];
+  const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
+  const relRequires = [...mainSrc.matchAll(/require\('\.\/([^']+)'\)/g)].map((m) => m[1]);
+  for (const rel of relRequires) {
+    const abs = path.join(ROOT, rel);
+    const resolved = fs.existsSync(abs)
+      ? rel
+      : fs.existsSync(`${abs}.js`)
+        ? `${rel}.js`
+        : fs.existsSync(`${abs}.cjs`)
+          ? `${rel}.cjs`
+          : rel;
+    assert.ok(
+      filePatternCovers(resolved, patterns),
+      `Falta "${resolved}" en package.json → build.files (main.js lo requiere al iniciar)`
     );
   }
 });

@@ -7,6 +7,10 @@ Fecha: 2026-06-11
 
 Sobre **7.3.1**: renovación visual **Workbench Refinado** en escritorio, móvil e interno (tokens, vidrio en overlays, navegación agrupada y **⌘K**); modal de **gráficas en Estado actual** con pestañas y tooltips completos; endurecimiento de seguridad (CSP, `window.open`, borrado PHI en web móvil); purga LAN más segura en el anfitrión.
 
+## Corrección (republicación 2026-06-11)
+
+- **Arranque en Mac/Windows** — El empaquetado omitía `lib/**/*.cjs` (`window-open-policy.cjs`, `lan-db-bridge.cjs`); la app fallaba al abrir con *Cannot find module*. Reinstala el instalador de esta republicación (mismo **7.3.2**).
+
 ## Nuevo / mejorado
 
 - **Diseño — tokens y elevación** — Escala tipográfica clínica, sombras unificadas, números tabulares en labs/tendencias y presets de movimiento (**Sobrio / Mixto / Expresivo**) en Ajustes.
