@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CONSOLIDATED_TABS_SALA,
-  useConsolidatedExpedienteTabs,
   resolveConsolidatedTarget,
   consolidatedTabForGranular,
   migrateGranularInner,
@@ -21,12 +20,6 @@ const INTER = { appMode: 'interconsulta', hideManejoSection: false };
 const SALA = { appMode: 'sala', hideManejoSection: false };
 const HIDE_MANEJO_INTER = { appMode: 'interconsulta', hideManejoSection: true, clinicoUnlocked: true };
 const HIDE_MANEJO_LEGACY = { appMode: 'interconsulta', hideClinicoTab: true, clinicoUnlocked: true };
-
-test('useConsolidatedExpedienteTabs is always true', () => {
-  assert.equal(useConsolidatedExpedienteTabs(SALA), true);
-  assert.equal(useConsolidatedExpedienteTabs(INTER), true);
-  assert.equal(useConsolidatedExpedienteTabs(null), true);
-});
 
 test('resolveConsolidatedTarget maps granular tabs to composite groups (interconsulta)', () => {
   assert.deepEqual(resolveConsolidatedTarget('todo', INTER), { tab: 'paciente', section: null });

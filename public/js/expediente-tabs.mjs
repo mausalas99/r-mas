@@ -4,19 +4,6 @@
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 
-export const GRANULAR_TABS = [
-  'datos',
-  'notas',
-  'indica',
-  'historia',
-  'tend',
-  'cult',
-  'listado',
-  'todo',
-  'vpo',
-  'recetaHu',
-];
-
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
 
@@ -151,10 +138,6 @@ export function getSalidaSections(settings) {
   return isModeSala(settings) ? SALIDA_SECTIONS_SALA : [];
 }
 
-export function useConsolidatedExpedienteTabs(_settings) {
-  return true;
-}
-
 export function resolveConsolidatedTarget(granularTab, settings) {
   if (granularTab === 'manejo') {
     return isModeSala(settings)
@@ -278,10 +261,6 @@ function paneEl(granularTab) {
   return document.getElementById('itab-content-' + granularTab);
 }
 
-function hostEl() {
-  return document.getElementById('expediente-panes-host');
-}
-
 function compositeEl(name) {
   return document.getElementById('itab-content-' + name);
 }
@@ -296,22 +275,6 @@ function mountPaneInComposite(granularTab, settings) {
   if (mount && pane.parentElement !== mount) mount.appendChild(pane);
   pane.classList.remove('tab-content');
   pane.classList.add('exp-segment-panel');
-}
-
-function mountGranularFlat() {
-  var host = hostEl();
-  if (!host) return;
-  GRANULAR_PANE_ORDER.forEach(function (tab) {
-    var pane = paneEl(tab);
-    if (!pane) return;
-    pane.classList.add('tab-content');
-    pane.classList.remove('exp-segment-panel', 'active');
-    if (pane.parentElement !== host) host.appendChild(pane);
-  });
-  CONSOLIDATED_TABS_SALA.forEach(function (tab) {
-    var composite = compositeEl(tab);
-    if (composite) composite.classList.remove('active');
-  });
 }
 
 function mountConsolidatedNested(settings) {
@@ -355,22 +318,16 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   if (estadoActualTab) estadoActualTab.style.display = 'none';
 }
 
-export function applyExpedientePaneLayout(consolidated, settings) {
+export function applyExpedientePaneLayout(settings) {
   var sala = isModeSala(settings);
-  if (consolidated) {
-    syncConsolidatedSegmentBarVisibility(settings || {});
-  }
-  var next = consolidated ? (sala ? 'consolidated-sala' : 'consolidated-inter') : 'granular';
+  syncConsolidatedSegmentBarVisibility(settings || {});
+  var next = sala ? 'consolidated-sala' : 'consolidated-inter';
   if (layoutMode === next) return;
   layoutMode = next;
-  if (consolidated) {
-    mountConsolidatedNested(settings || {});
-    restoreDatosCollapsePreference();
-    wireDatosCollapsePersistence();
-    syncConsolidatedSegmentBarVisibility(settings || {});
-  } else {
-    mountGranularFlat();
-  }
+  mountConsolidatedNested(settings || {});
+  restoreDatosCollapsePreference();
+  wireDatosCollapsePersistence();
+  syncConsolidatedSegmentBarVisibility(settings || {});
 }
 
 export function resetExpedientePaneLayoutCache() {
