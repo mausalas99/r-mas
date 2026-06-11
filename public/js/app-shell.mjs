@@ -3,6 +3,7 @@
  */
 import { storage } from './storage.js';
 import { syncHeaderContext } from './features/header-context.mjs';
+import { openCommandPalette, setCommandPaletteContext } from './features/command-palette.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
@@ -40,6 +41,7 @@ import {
   isGuardiaMode,
   setUiDensity,
   syncPaseReturnHeaderBtn,
+  syncHeaderModeSeg,
   toggleGuardiaMode,
 } from './features/chrome.mjs';
 import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
@@ -50,7 +52,6 @@ import {
   openConnectionDropdown,
 } from './features/lan-sync.mjs';
 import {
-  syncHeaderAppModeChip,
   loadSettings,
   closeProfileModal,
   openProfileModal,
@@ -129,6 +130,7 @@ const shellCtx = {
 
 export function registerAppShellContext(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(shellCtx, ctx);
+  setCommandPaletteContext(shellCtx);
   wireShellExportRuntimes();
 }
 
@@ -174,7 +176,7 @@ function setMedTabAttention(on) {
 
 function syncWorkContextChrome() {
   syncActivePatientContextBar();
-  syncHeaderAppModeChip();
+  syncHeaderModeSeg();
   syncMedPatientGate();
   syncPaseReturnHeaderBtn();
   syncGuardiaModeButtonVisibility();
@@ -668,6 +670,10 @@ document.addEventListener('keydown', function(e) {
         if (key === '3') switchAppTab('med');
         if (key === '4' || key === '5') switchAppTab('agenda');
       }
+    }
+    if (key === 'k' && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      openCommandPalette();
     }
     if (key === 'p' && !e.altKey) {
       e.preventDefault();

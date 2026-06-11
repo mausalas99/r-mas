@@ -70,7 +70,6 @@ import {
 import {
   registerProfileRuntime,
   loadSettings,
-  syncHeaderAppModeChip,
   openProfileModal,
   closeProfileModal,
 } from './features/profile.mjs';

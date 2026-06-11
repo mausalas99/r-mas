@@ -22,6 +22,7 @@ import {
 } from './app-shell.mjs';
 import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
 import { windowHandlers as chromeWindowHandlers } from './features/chrome.mjs';
+import { windowHandlers as commandPaletteWindowHandlers } from './features/command-palette.mjs';
 import { windowHandlers as lanWindowHandlers } from './features/lan-sync.mjs';
 import {
   windowHandlers as patientsWindowHandlers,
@@ -101,6 +102,7 @@ const allWindowHandlers = Object.assign(
   todosWindowHandlers,
   recetaHuWindowHandlers,
   paseBoardWindowHandlers,
+  commandPaletteWindowHandlers,
   medicationsWindowHandlers,
   profileWindowHandlers,
   clinicalRegistrationWindowHandlers,
@@ -353,7 +355,6 @@ function runDomBootAfterState() {
     _rpcDeferInit(initSidebarAutoHide);
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
-    wireHeaderAppModeChip();
     function finishPatientListBoot() {
       void import('./clinical-access-runtime.mjs')
         .then(function (mod) {
@@ -389,15 +390,6 @@ function runDomBootAfterState() {
   }
 }
 
-function wireHeaderAppModeChip() {
-  var chip = document.getElementById('header-app-mode-chip');
-  if (!chip || chip._rpcModeChipWired) return;
-  chip._rpcModeChipWired = true;
-  chip.addEventListener('click', function (ev) {
-    ev.preventDefault();
-    toggleHeaderWorkMode();
-  });
-}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', runDomBoot);

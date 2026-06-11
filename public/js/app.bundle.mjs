@@ -13,11 +13,12 @@ import {
   setMedTabAttention,
   showToast,
   syncWorkContextChrome,
-  windowHandlers as windowHandlers11
-} from "/js/chunks/chunk-75QPT2CX.js";
+  windowHandlers as windowHandlers7,
+  windowHandlers2 as windowHandlers12
+} from "/js/chunks/chunk-BLUOOIAE.js";
 import {
-  windowHandlers as windowHandlers10
-} from "/js/chunks/chunk-2VPEDX7E.js";
+  windowHandlers as windowHandlers11
+} from "/js/chunks/chunk-P76IUVGA.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -165,46 +166,45 @@ import {
   tendenciasWindowHandlers,
   toDatetimeLocalValue,
   todosWindowHandlers,
-  toggleHeaderWorkMode,
   tourAfterBulkLabParse,
   tourOnBulkPreviewPatientSaved,
   toxicomanias_substances_default,
   windowHandlers as windowHandlers4,
   windowHandlers2 as windowHandlers5,
   windowHandlers3 as windowHandlers6,
-  windowHandlers4 as windowHandlers7,
-  windowHandlers5 as windowHandlers8,
-  windowHandlers6 as windowHandlers9,
-  windowHandlers7 as windowHandlers12,
-  windowHandlers8 as windowHandlers13,
-  windowHandlers9 as windowHandlers14,
+  windowHandlers4 as windowHandlers8,
+  windowHandlers5 as windowHandlers9,
+  windowHandlers6 as windowHandlers10,
+  windowHandlers7 as windowHandlers13,
+  windowHandlers8 as windowHandlers14,
+  windowHandlers9 as windowHandlers15,
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/js/chunks/chunk-WISFRM6E.js";
+} from "/js/chunks/chunk-GGXV2LD6.js";
 import "/js/chunks/chunk-POBHJ4SL.js";
 import {
   windowHandlers as windowHandlers3
-} from "/js/chunks/chunk-UPFOQE2C.js";
+} from "/js/chunks/chunk-MQC23P6N.js";
 import "/js/chunks/chunk-QZXLPUPG.js";
-import "/js/chunks/chunk-ZAVACNLW.js";
+import "/js/chunks/chunk-A36HPF57.js";
 import "/js/chunks/chunk-6IT4VYWH.js";
 import {
   closeSettingsDropdown,
   syncTeamSyncHeaderButton
-} from "/js/chunks/chunk-JBOEZR5K.js";
-import "/js/chunks/chunk-ETSKDGTD.js";
+} from "/js/chunks/chunk-IIW43MFH.js";
+import "/js/chunks/chunk-BEP7SSVU.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers2,
   wireClinicalRotationEntryControls
-} from "/js/chunks/chunk-VGVMBN4F.js";
-import "/js/chunks/chunk-HS7I4VKW.js";
+} from "/js/chunks/chunk-6GO22H5L.js";
+import "/js/chunks/chunk-BKWEMMDM.js";
 import "/js/chunks/chunk-MLXZVY56.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/js/chunks/chunk-JDJP4QUU.js";
+} from "/js/chunks/chunk-SDRQYKHZ.js";
 import {
   applyDriveImportEventualidades,
   buildParsedBySectionFromResLabs,
@@ -235,15 +235,15 @@ import {
   syncSettingsLanHostDiskSection,
   tryMountClinicalTeamInviteBrowserGate,
   windowHandlers,
-  windowHandlers2 as windowHandlers15,
-  windowHandlers3 as windowHandlers16,
+  windowHandlers2 as windowHandlers16,
+  windowHandlers3 as windowHandlers17,
   wireClinicalTeamsControls
-} from "/js/chunks/chunk-ED6PNZTW.js";
+} from "/js/chunks/chunk-DOBMWNUA.js";
 import "/js/chunks/chunk-GMVJRWWR.js";
 import {
   dbUnlockWindowHandlers,
   ensureClinicalDbUnlocked
-} from "/js/chunks/chunk-GWP7SFLC.js";
+} from "/js/chunks/chunk-CONI646K.js";
 import "/js/chunks/chunk-BCNABZWJ.js";
 import "/js/chunks/chunk-GPPD4VPS.js";
 import "/js/chunks/chunk-AOR2DWAW.js";
@@ -258,13 +258,13 @@ import {
   patients,
   saveState,
   setSaveStateHooks
-} from "/js/chunks/chunk-CC2XNT6Q.js";
+} from "/js/chunks/chunk-Y5RUO4L2.js";
 import {
   storage
-} from "/js/chunks/chunk-P3SPGPEP.js";
+} from "/js/chunks/chunk-TU6XUENR.js";
 import {
   isDbMode
-} from "/js/chunks/chunk-CDEKFL7E.js";
+} from "/js/chunks/chunk-WDCKEIDB.js";
 import "/js/chunks/chunk-IYRQG3WP.js";
 import "/js/chunks/chunk-CRJYUJ23.js";
 import "/js/chunks/chunk-LX374JRN.js";
@@ -405,7 +405,7 @@ function openLabHistoryBatchCopyModal() {
   };
   refreshPreview2();
 }
-var windowHandlers17 = {
+var windowHandlers18 = {
   openLabHistoryBatchCopyModal
 };
 
@@ -3266,7 +3266,7 @@ function wireDriveImportModal() {
     });
   }
 }
-var windowHandlers18 = {
+var windowHandlers19 = {
   openDriveImportModal,
   closeDriveImportModal,
   confirmDriveImport,
@@ -3350,7 +3350,7 @@ function wireEaChartsModalDismiss() {
     });
   }
 }
-var windowHandlers19 = {
+var windowHandlers20 = {
   openEstadoActualChartsModal,
   closeEstadoActualChartsModal
 };
@@ -3363,7 +3363,7 @@ var platformModule = null;
 function ensureSettingsHelpLoaded() {
   if (settingsHelpModule) return Promise.resolve(settingsHelpModule);
   if (!settingsHelpPromise) {
-    settingsHelpPromise = import("/js/chunks/settings-help-QKND63ZL.js").then(function(mod) {
+    settingsHelpPromise = import("/js/chunks/settings-help-L3FJMVJA.js").then(function(mod) {
       settingsHelpModule = mod;
       return mod;
     });
@@ -3373,7 +3373,7 @@ function ensureSettingsHelpLoaded() {
 function ensurePlatformLoaded() {
   if (platformModule) return Promise.resolve(platformModule);
   if (!platformPromise) {
-    platformPromise = import("/js/chunks/platform-HR5OJ5FM.js").then(function(mod) {
+    platformPromise = import("/js/chunks/platform-CL7QDNN4.js").then(function(mod) {
       platformModule = mod;
       return mod;
     });
@@ -3795,20 +3795,20 @@ async function runBootSteps(steps, ctx) {
 var allWindowHandlers = Object.assign(
   {},
   dbUnlockWindowHandlers,
+  windowHandlers17,
   windowHandlers16,
   windowHandlers15,
-  windowHandlers14,
   windowHandlers6,
   windowHandlers5,
-  windowHandlers17,
-  windowHandlers,
-  windowHandlers7,
-  windowHandlers8,
   windowHandlers18,
+  windowHandlers,
+  windowHandlers8,
   windowHandlers9,
   windowHandlers19,
-  windowHandlers11,
+  windowHandlers10,
+  windowHandlers20,
   windowHandlers12,
+  windowHandlers13,
   windowHandlers4,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
@@ -3816,12 +3816,13 @@ var allWindowHandlers = Object.assign(
   tendenciasWindowHandlers,
   todosWindowHandlers,
   recetaHuWindowHandlers,
-  windowHandlers13,
+  windowHandlers14,
+  windowHandlers7,
   medicationsWindowHandlers,
   profileWindowHandlers,
   windowHandlers3,
   windowHandlers2,
-  windowHandlers10,
+  windowHandlers11,
   appShellWindowHandlers,
   {
     showToast,
@@ -3987,7 +3988,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/js/chunks/clinical-onboarding-main-2QKKJMK5.js");
+      const mod = await import("/js/chunks/clinical-onboarding-main-JE3A4B53.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -3998,7 +3999,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/js/chunks/clinical-teams-WBDOCW7U.js");
+      ctx.teamsMod = await import("/js/chunks/clinical-teams-JMNMA2WQ.js");
     }
   },
   {
@@ -4021,7 +4022,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/js/chunks/clinical-access-runtime-SPIL5GQY.js").then(function(mod) {
+      void import("/js/chunks/clinical-access-runtime-G2FEPQM2.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }
@@ -4063,7 +4064,6 @@ function runDomBootAfterState() {
     _rpcDeferInit(initSidebarAutoHide);
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
-    wireHeaderAppModeChip();
     if (isDbMode()) {
       void runBootSteps(CLINICAL_DB_BOOT_STEPS, {
         settings,
@@ -4079,15 +4079,6 @@ function runDomBootAfterState() {
   } catch (domErr) {
     console.error("[R+] Error en arranque de UI:", domErr);
   }
-}
-function wireHeaderAppModeChip() {
-  var chip = document.getElementById("header-app-mode-chip");
-  if (!chip || chip._rpcModeChipWired) return;
-  chip._rpcModeChipWired = true;
-  chip.addEventListener("click", function(ev) {
-    ev.preventDefault();
-    toggleHeaderWorkMode();
-  });
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", runDomBoot);

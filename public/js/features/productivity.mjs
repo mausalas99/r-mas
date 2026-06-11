@@ -517,12 +517,7 @@ export function initProductivityKeyboardShortcuts() {
     if (!mod) return;
     if (e.altKey || e.shiftKey) return;
     var k = (e.key || "").toLowerCase();
-    if (k === "k") {
-      e.preventDefault();
-      var bd2 = document.getElementById("unified-search-backdrop");
-      if (bd2 && bd2.classList.contains("open")) closeUnifiedSearch();
-      else openUnifiedSearch();
-    } else if (k === "n") {
+    if (k === "n") {
       e.preventDefault();
       rt.openAddModal();
     } else if (k === "s") {

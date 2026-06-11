@@ -8,7 +8,8 @@
 .settings-dropdown,
 .connection-dropdown,
 .modal,
-.toast {
+.toast,
+.cmdk {
   background: var(--overlay-bg);
   -webkit-backdrop-filter: blur(var(--overlay-blur));
   backdrop-filter: blur(var(--overlay-blur));
@@ -20,7 +21,8 @@
   .settings-dropdown,
   .connection-dropdown,
   .modal,
-  .toast {
+  .toast,
+  .cmdk {
     background: var(--surface);
   }
 }
@@ -28,7 +30,8 @@
 html.no-blur .settings-dropdown,
 html.no-blur .connection-dropdown,
 html.no-blur .modal,
-html.no-blur .toast {
+html.no-blur .toast,
+html.no-blur .cmdk {
   background: var(--surface);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
