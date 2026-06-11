@@ -1058,9 +1058,9 @@ body {
 }
 
 /* ── Type scale utilities (design system phase 1) ────────── */
-.type-display { font: var(--type-display); }
-.type-title { font: var(--type-title); }
-.type-section { font: var(--type-section); letter-spacing: var(--tracking-section); text-transform: uppercase; }
-.type-body { font: var(--type-body); }
-.type-caption { font: var(--type-caption); color: var(--text-muted); }
+.type-display { font-family: var(--font-ui); font-weight: 600; font-size: calc(22px * var(--density-font, 1)); line-height: 1.25; }
+.type-title { font-family: var(--font-ui); font-weight: 600; font-size: calc(17px * var(--density-font, 1)); line-height: 1.3; }
+.type-section { font-family: var(--font-ui); font-weight: 700; font-size: calc(12.5px * var(--density-font, 1)); line-height: 1.35; letter-spacing: var(--tracking-section); text-transform: uppercase; }
+.type-body { font-family: var(--font-ui); font-weight: 400; font-size: calc(13.5px * var(--density-font, 1)); line-height: 1.5; }
+.type-caption { font-family: var(--font-ui); font-weight: 500; font-size: calc(11.5px * var(--density-font, 1)); line-height: 1.4; color: var(--text-muted); }
 .num-tabular { font-variant-numeric: tabular-nums; }
