@@ -1,0 +1,100 @@
+/* Premium UI · Mobile web (rpc-mobile-web) · phase 3 rollout
+ * Same tokens as desktop; touch targets ≥44px; flat shell frames stay edge-to-edge.
+ */
+
+html.rpc-mobile-web .header-cmdk-hint {
+  width: 44px;
+  height: 44px;
+}
+
+html.rpc-mobile-web .header-mode-seg-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+}
+
+html.rpc-mobile-web aside.patient-sidebar .patient-card {
+  border: var(--border-hairline);
+  box-shadow: var(--elev-flat);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+html.rpc-mobile-web aside.patient-sidebar .patient-card:hover,
+html.rpc-mobile-web aside.patient-sidebar .patient-card:active {
+  background: var(--state-hover-bg);
+  box-shadow: var(--elev-raised);
+}
+
+html.rpc-mobile-web aside.patient-sidebar .patient-card.active {
+  border-color: color-mix(in oklab, var(--action) 32%, transparent);
+  box-shadow: var(--elev-raised);
+}
+
+html.rpc-mobile-web aside.patient-sidebar #patient-search {
+  border: var(--border-hairline);
+  background: var(--input-fill);
+  border-radius: var(--radius-control);
+  min-height: 44px;
+}
+
+html.rpc-mobile-web aside.patient-sidebar #patient-search:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+html.rpc-mobile-web #appcontent-lab .lab-item {
+  border: var(--border-hairline);
+  box-shadow: var(--elev-flat);
+}
+
+html.rpc-mobile-web #appcontent-lab .lab-history-row {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-flat);
+}
+
+html.rpc-mobile-web #appcontent-lab .lab-title {
+  font: var(--type-section);
+  letter-spacing: var(--tracking-section);
+  border-bottom: var(--border-hairline);
+}
+
+html.rpc-mobile-web .patient-expediente-classic .card,
+html.rpc-mobile-web .patient-expediente-classic .listado-section {
+  border: var(--border-hairline);
+  box-shadow: var(--elev-flat);
+}
+
+html.rpc-mobile-web .patient-expediente-classic .card-header,
+html.rpc-mobile-web .patient-expediente-classic .listado-section-header {
+  font: var(--type-section);
+  letter-spacing: var(--tracking-section);
+  border-bottom: var(--border-hairline);
+}
+
+html.rpc-mobile-web #rpc-mobile-boot-banner {
+  border: var(--border-hairline);
+  box-shadow: var(--elev-overlay);
+  background: color-mix(in oklab, var(--color-ink) 88%, transparent);
+  -webkit-backdrop-filter: blur(var(--overlay-blur, 12px));
+  backdrop-filter: blur(var(--overlay-blur, 12px));
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  html.rpc-mobile-web #rpc-mobile-boot-banner {
+    background: color-mix(in oklab, var(--color-ink) 92%, var(--surface));
+  }
+}
+
+html.high-contrast html.rpc-mobile-web aside.patient-sidebar .patient-card,
+html.high-contrast.rpc-mobile-web aside.patient-sidebar .patient-card {
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+html.motion-sobrio.rpc-mobile-web aside.patient-sidebar .patient-card {
+  transition: none;
+}
