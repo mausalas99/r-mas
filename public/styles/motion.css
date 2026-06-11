@@ -243,10 +243,8 @@ textarea.field-shake {
   border-radius: 0;
   pointer-events: none;
   z-index: 2;
-  transition:
-    transform var(--dur-normal) var(--ease-out),
-    width var(--dur-normal) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
+  /* Snap to the active tab — animated underline felt laggy vs instant .active color. */
+  transition: opacity var(--dur-fast) var(--ease-out);
   will-change: transform, width;
 }
 

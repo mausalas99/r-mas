@@ -7,6 +7,7 @@ import {
   buildGluSeries,
   buildIoChartData,
   buildVitalsSeries,
+  downsampleEaChartSeries,
   updateEstadoActualChartsInPlace,
 } from './estado-actual-charts.mjs';
 
@@ -83,6 +84,21 @@ test('buildVitalsSeries collects numeric points with altered flags', () => {
   assert.equal(s.values[1], 120);
   assert.equal(s.alteredFlags[0], false);
   assert.equal(s.alteredFlags[1], true);
+});
+
+test('downsampleEaChartSeries keeps endpoints and full series metadata', () => {
+  const labels = [];
+  const values = [];
+  for (let i = 0; i < 150; i += 1) {
+    labels.push('t' + i);
+    values.push(i);
+  }
+  const sampled = downsampleEaChartSeries(labels, values, [], 100);
+  assert.equal(sampled.labels.length, 100);
+  assert.equal(sampled.values[0], 0);
+  assert.equal(sampled.values[99], 149);
+  assert.equal(sampled.fullLabels.length, 150);
+  assert.equal(sampled.fullValues[149], 149);
 });
 
 test('updateEstadoActualChartsInPlace patches datasets without remount', () => {

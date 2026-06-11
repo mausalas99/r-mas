@@ -813,6 +813,7 @@ export function switchAppTab(tab) {
   if (apptabNota) apptabNota.classList.toggle("active", tab === "nota");
   if (apptabMed) apptabMed.classList.toggle("active", tab === "med");
   if (apptabAgenda) apptabAgenda.classList.toggle("active", tab === "agenda");
+  syncAppTabIndicator(tab);
 
   var paseRoot = document.getElementById("appcontent-pase");
   var guardiaRoot = document.getElementById("appcontent-guardia");
@@ -1233,10 +1234,14 @@ export function switchInnerTab(tab, opts) {
       );
       animateTabPanelEnter(panelEl);
     }
+    if (prevInner !== tab) {
+      syncExpedienteSegmentIndicators(settings, tab);
+    }
     scheduleAfterPaint(function () {
       if (migrateGranularInner(rt.getActiveInner() || "todo", settings) !== targetTab) return;
       renderGranularInnerTab(targetTab, forceRender ? { force: true } : undefined);
       syncExpedienteSegmentIndicators(settings, targetTab);
+      syncInnerTabIndicator(targetTab, { consolidated: true, settings: settings });
     });
   } else if (prevInner !== tab) {
     syncExpedienteSegmentIndicators(settings, tab);

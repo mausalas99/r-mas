@@ -57,8 +57,8 @@ export function openEstadoActualChartsModal() {
   }
   if (mount) mount._eaChartsPatientId = activeId;
 
-  var hasGrid = mount && mount.querySelector('.ea-charts-grid');
-  if (mount && !hasGrid) {
+  var hasShell = mount && mount.querySelector('.ea-charts-tabs');
+  if (mount && !hasShell) {
     mount.innerHTML = '<p class="ea-muted ea-charts-loading">Cargando gráficas…</p>';
   }
 
