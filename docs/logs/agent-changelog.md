@@ -6,6 +6,8 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-11 | Premium UI Phase 4 — safety net (audit M0) | `scripts/run-tests.mjs`, `.github/workflows/ci.yml`, `.gitignore` | Glob test discovery (320 files), GitHub Actions CI, remove broken gitlinks. Triage of newly-running tests deferred to CI. |
+
 | 2026-06-11 | Premium UI Phase 3 — mobile + interno | `mobile-surfaces.css`, `group-row.css`, `expediente-group-row-ui.mjs`, `interno/interno.css`, `interno/index.html` | Mobile: grouped row + tap-to-expand at all widths, ≥44px targets, token surfaces. Interno: shared tokens + glass sheets. 1509 tests pass. |
 
 | 2026-06-11 | Premium UI desktop surface rollout (T1–T7) | `workbench-surfaces.css`, `expediente.css`, `lab.css`, `pase-board.css`, `overlays.css`, `settings.css`, `modals.css` | Workbench Refinado: expediente/lab/sidebar/pase/guardia/manejo/agenda overlays; glass parity on settings dropdown, tour dock, learn hub. CSS-only. 1509 tests pass. |
