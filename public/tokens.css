@@ -69,6 +69,16 @@
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
   --shadow: 0 6px 22px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 12px 36px rgba(15, 23, 42, 0.08), 0 3px 10px rgba(15, 23, 42, 0.04);
+  /* Elevation scale (premium UI phase 1) — flat / raised / floating / overlay */
+  --elev-flat: none;
+  --elev-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --elev-floating: 0 6px 22px rgba(15, 23, 42, 0.07), 0 2px 6px rgba(15, 23, 42, 0.05);
+  --elev-overlay: 0 18px 48px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+  --border-hairline: 1px solid color-mix(in oklab, var(--color-ink) 9%, transparent);
+  /* Interaction-state fills, layered over any surface */
+  --state-hover-bg: color-mix(in oklab, var(--color-ink) 4%, transparent);
+  --state-active-bg: color-mix(in oklab, var(--color-ink) 7%, transparent);
+  --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --input-fill: color-mix(in oklab, var(--color-paper) 65%, var(--surface));
   --card-body-bg: color-mix(in oklab, var(--surface) 94%, var(--bg));
   --diagram-line: #64748b;
@@ -143,6 +153,12 @@ html.dark {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow: 0 8px 26px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.24);
   --shadow-md: 0 14px 38px rgba(0, 0, 0, 0.48), 0 4px 12px rgba(0, 0, 0, 0.32);
+  --elev-raised: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --elev-floating: 0 8px 26px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.24);
+  --elev-overlay: 0 18px 52px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --border-hairline: 1px solid rgba(148, 163, 184, 0.16);
+  --state-hover-bg: color-mix(in oklab, var(--color-ink) 6%, transparent);
+  --state-active-bg: color-mix(in oklab, var(--color-ink) 10%, transparent);
   --input-fill: color-mix(in oklab, var(--surface) 88%, var(--bg));
   --card-body-bg: color-mix(in oklab, var(--surface) 97%, var(--bg));
   --diagram-line: #cbd5e1;
@@ -190,6 +206,13 @@ html.high-contrast {
   --shadow: none;
   --shadow-md: none;
   --shadow-sm: none;
+  --elev-flat: none;
+  --elev-raised: none;
+  --elev-floating: none;
+  --elev-overlay: none;
+  --border-hairline: 1px solid var(--border);
+  --state-hover-bg: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  --state-active-bg: color-mix(in oklab, var(--color-accent) 20%, transparent);
   --diagram-line: #000000;
   --diagram-label: #000000;
   --diagram-value: #000000;
