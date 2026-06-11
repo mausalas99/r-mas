@@ -1054,7 +1054,7 @@ body {
 .vital-box input:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 1px;
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  box-shadow: var(--focus-ring);
 }
 
 /* ── Type scale utilities (design system phase 1) ────────── */
