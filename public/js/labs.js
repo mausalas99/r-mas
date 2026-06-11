@@ -3125,6 +3125,29 @@ function parseLabUbicacion_(textoBruto) {
   return (uTok[0] || uRaw.split(/\s+(?:Medico|Médico|Edad)\s*:/i)[0] || uRaw).trim();
 }
 
+/** Segmenta el reporte en bloques (gaso / LCR / líquidos / EGO) y textos derivados. */
+function segmentLabReportBlocks_(textoBruto, tNorm) {
+  var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
+  var bloqueGaso=mGaso?mGaso[0]:'';
+  var mLCR=textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
+  var bloqueLCR=mLCR?mLCR[0]:'';
+  var bloqueCitoLC=bloqueCitoquimicoLiquidosFull(textoBruto);
+  var mEGO=tNorm.match(/(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i);
+  var bloqueEGO=mEGO?mEGO[0]:'';
+  var tSinLiqCorp=tNorm;
+  if (bloqueCitoLC) tSinLiqCorp=tNorm.replace(bloqueCitoLC.replace(/\r/g,'').replace(/\s+/g,' '),' ');
+  var textoQS=tSinLiqCorp.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
+  var textoParaBh = tSinLiqCorp;
+  if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
+  var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
+  return {
+    bloqueGaso: bloqueGaso,
+    textoQS: textoQS,
+    textoParaBh: textoParaBh,
+    esSoloGaso: esSoloGaso,
+  };
+}
+
 /** Encabezado del reporte: paciente + partes demográficas crudas para parseQS_. */
 function parseLabPatientHeader_(textoBruto) {
   var mNombre=textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
@@ -3155,19 +3178,11 @@ export function procesarLabs(textoBruto) {
   var edadUnidad = hdr.edadUnidad;
   var sexoRaw = hdr.sexoRaw;
 
-  var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
-  var bloqueGaso=mGaso?mGaso[0]:'';
-  var mLCR=textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
-  var bloqueLCR=mLCR?mLCR[0]:'';
-  var bloqueCitoLC=bloqueCitoquimicoLiquidosFull(textoBruto);
-  var mEGO=tNorm.match(/(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i);
-  var bloqueEGO=mEGO?mEGO[0]:'';
-  var tSinLiqCorp=tNorm;
-  if (bloqueCitoLC) tSinLiqCorp=tNorm.replace(bloqueCitoLC.replace(/\r/g,'').replace(/\s+/g,' '),' ');
-  var textoQS=tSinLiqCorp.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
-  var textoParaBh = tSinLiqCorp;
-  if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
-  var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
+  var blocks = segmentLabReportBlocks_(textoBruto, tNorm);
+  var bloqueGaso = blocks.bloqueGaso;
+  var textoQS = blocks.textoQS;
+  var textoParaBh = blocks.textoParaBh;
+  var esSoloGaso = blocks.esSoloGaso;
 
   var resLabs=[];
   var bhExtras = {};
