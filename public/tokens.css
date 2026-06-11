@@ -213,6 +213,7 @@ html.high-contrast {
   --border-hairline: 1px solid var(--border);
   --state-hover-bg: color-mix(in oklab, var(--color-accent) 12%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-accent) 20%, transparent);
+  --color-focus-ring: var(--color-accent);
   --diagram-line: #000000;
   --diagram-label: #000000;
   --diagram-value: #000000;
@@ -258,4 +259,5 @@ html.high-contrast.dark {
   --diagram-value: #ffffff;
   --shell-gap: var(--color-paper);
   --sidebar-rail-color: var(--border);
+  --color-focus-ring: var(--color-accent);
 }
