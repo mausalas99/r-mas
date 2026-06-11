@@ -390,7 +390,7 @@ html.ui-density-normal #main-area {
   font-family: inherit;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .header-pase-mode-chip:hover {
   background: color-mix(in oklab, var(--action) 14%, var(--surface));
@@ -413,7 +413,7 @@ html.ui-density-normal #main-area {
   border-radius: var(--radius-pill);
   cursor: pointer;
   min-height: 36px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .header-return-pase-btn:hover {
   background: color-mix(in oklab, var(--action) 16%, var(--surface));
@@ -427,7 +427,7 @@ html.ui-density-normal #main-area {
   font-family: inherit;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .header-app-mode-chip:hover {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
@@ -452,7 +452,7 @@ html.ui-density-normal #main-area {
   border-radius: var(--radius-pill);
   font-family: inherit;
   cursor: pointer;
-  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  transition: filter var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 .btn-export-censo-header:hover {
@@ -485,7 +485,7 @@ html.dark .btn-export-censo-header {
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .btn-export-censo-sidebar:hover {
   background: color-mix(in oklab, #4f46e5 16%, var(--surface));
@@ -632,7 +632,7 @@ html:not(.ui-density-normal) #main-area {
   background: var(--bg);
   border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
   box-shadow: var(--shadow-sm);
-  transition: border-top-left-radius 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: border-top-left-radius var(--dur-normal) cubic-bezier(0.25, 1, 0.5, 1);
 }
 html.sidebar-auto-hide:not(.sidebar-reveal):not(.ui-density-normal) #main-area {
   border-top-left-radius: var(--radius-shell);
@@ -1051,7 +1051,7 @@ html:not(.ui-density-normal) .pase-empty-screen {
   font-family: inherit;
   line-height: 1;
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .app-tabs-keys-btn .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
 .app-tabs-keys-btn:hover {
@@ -1211,5 +1211,5 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
   box-shadow: var(--shadow);
   background: var(--shell-gap);
-  transition: gap 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+  transition: gap var(--dur-normal) cubic-bezier(0.25, 1, 0.5, 1);
 }
