@@ -2592,9 +2592,10 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   gap: 10px 14px;
   margin: 0 0 12px;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  border: var(--border-hairline);
   background: var(--surface);
+  box-shadow: var(--elev-raised);
 }
 
 .guardia-phase-bar--turno {
@@ -2660,7 +2661,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .btn-guardia-phase-ghost {
-  border: 1px solid var(--border);
+  border: var(--border-hairline);
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
@@ -2673,12 +2674,12 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 .btn-guardia-phase-ghost:hover {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
-  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  background: var(--state-hover-bg);
 }
 
 .btn-guardia-phase-ghost:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .btn-guardia-phase-primary {
@@ -2699,8 +2700,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .btn-guardia-phase-primary:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .btn-guardia-phase-end {
@@ -2716,8 +2717,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .btn-guardia-phase-end:focus-visible {
-  outline: 2px solid var(--error);
-  outline-offset: 1px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .guardia-phase-bar-steps {
