@@ -240,6 +240,34 @@ test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
   }
 });
 
+test('DELETE /patients/:id purges bundle-only chart', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-bundle-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala del');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    agenda: [],
+    todos: {},
+    entries: [{ id: 'p-flat', registro: 'R55', nombre: 'Solo bundle', note: { texto: 'x' } }],
+  });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-flat?registro=R55`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.strictEqual(bundle.entries.length, 0);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('PUT /rooms/:id/clinical-ops merges snapshot', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-merge-'));
   const statePath = path.join(dir, 'state.json');

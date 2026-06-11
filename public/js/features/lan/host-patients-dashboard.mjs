@@ -6,7 +6,10 @@ import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { patients } from '../../app-state.mjs';
 import { getLanClientId } from './runtime.mjs';
 import { purgeLanPatientFromHost } from './orchestrator.mjs';
-import { annotateLanHostPatientRows } from './host-patients-annotate.mjs';
+import {
+  annotateLanHostPatientRows,
+  isHostPatientOwnedByOtherClient,
+} from './host-patients-annotate.mjs';
 import { enrichLanHostPatientRows, formatLanHostTimestamp } from './host-patients-enrich.mjs';
 import { fetchLanHostCensusSnapshot } from './host-patients-snapshot.mjs';
 
@@ -73,7 +76,11 @@ function wireLanHostCensusActions(backdrop) {
 /** @param {HTMLElement} backdrop */
 function wireLanHostCensusToolbar(backdrop) {
   backdrop.querySelector('.lan-host-census-search')?.addEventListener('input', function () {
-    renderLanHostCensusTable(backdrop);
+    if (backdrop._lanHostCensusSearchTimer) clearTimeout(backdrop._lanHostCensusSearchTimer);
+    backdrop._lanHostCensusSearchTimer = setTimeout(function () {
+      backdrop._lanHostCensusSearchTimer = null;
+      renderLanHostCensusTable(backdrop);
+    }, 120);
   });
   backdrop.querySelector('.lan-host-census-filter-inactive')?.addEventListener('change', function () {
     renderLanHostCensusTable(backdrop);
@@ -161,6 +168,21 @@ function ensureModal() {
   return backdrop;
 }
 
+/** @param {object} item */
+function isPurgeableHostCensusRow(item) {
+  if (!item) return false;
+  if (isHostPatientOwnedByOtherClient(item.row, getLanClientId())) return false;
+  if (item.status === 'ghost') return true;
+  return item.row?._bundleOnly === true;
+}
+
+function purgeOptsForCensusItem(item) {
+  return {
+    registro: String(item?.row?.registro || '').trim(),
+    bundleOnly: item?.row?._bundleOnly === true,
+  };
+}
+
 /** @param {HTMLElement} backdrop */
 function getFilteredRows(backdrop) {
   const rows = backdrop._lanHostCensusRows || [];
@@ -200,11 +222,15 @@ function renderLanHostCensusTable(backdrop) {
   const ghostCount = all.filter(function (x) {
     return x.status === 'ghost';
   }).length;
+  const purgeableGhostCount = all.filter(isPurgeableHostCensusRow).length;
   if (summary) {
     summary.textContent =
       inactiveCount +
       ' no activo(s)' +
       (ghostCount ? ' · ' + ghostCount + ' fantasma(s)' : '') +
+      (purgeableGhostCount < ghostCount
+        ? ' · ' + (ghostCount - purgeableGhostCount) + ' de otro equipo'
+        : '') +
       ' · ' +
       all.length +
       ' en anfitrión' +
@@ -272,13 +298,21 @@ async function deletePatientFromDashboard(backdrop, btn) {
   const label = item ? patientLabel(item.row) : pid;
   const opts = backdrop._lanHostCensusOpts || {};
   const showToast = resolveDashboardToast(opts);
+  if (item && isHostPatientOwnedByOtherClient(item.row, getLanClientId())) {
+    showToast('Este paciente pertenece a otro equipo LAN y no se puede borrar del anfitrión.', 'info');
+    return;
+  }
   if (
-    !confirm('¿Eliminar «' + label + '» del anfitrión LAN?\n\nSe quitará de la red local para todos los equipos.')
+    !window.confirm(
+      '¿Eliminar «' +
+        label +
+        '» del anfitrión LAN?\n\nSolo se quita del servidor local si ningún otro equipo lo conserva.'
+    )
   ) {
     return;
   }
   btn.disabled = true;
-  const res = await purgeLanPatientFromHost(pid);
+  const res = await purgeLanPatientFromHost(pid, purgeOptsForCensusItem(item));
   if (res?.ok) {
     showToast('Paciente eliminado del anfitrión LAN.', 'success');
     if (typeof opts.onChanged === 'function') opts.onChanged();
@@ -293,18 +327,24 @@ async function deletePatientFromDashboard(backdrop, btn) {
 async function purgeGhostsFromDashboard(backdrop) {
   const opts = backdrop._lanHostCensusOpts || {};
   const showToast = resolveDashboardToast(opts);
-  const ghosts = (backdrop._lanHostCensusRows || []).filter(function (x) {
-    return x.status === 'ghost';
-  });
+  const ghosts = (backdrop._lanHostCensusRows || []).filter(isPurgeableHostCensusRow);
+  const foreignGhostCount = (backdrop._lanHostCensusRows || []).filter(function (x) {
+    return x.status === 'ghost' && isHostPatientOwnedByOtherClient(x.row, getLanClientId());
+  }).length;
   if (!ghosts.length) {
-    showToast('No hay pacientes fantasma en el anfitrión.', 'info');
+    showToast(
+      foreignGhostCount
+        ? 'No hay fantasmas propios para eliminar (' + foreignGhostCount + ' pertenecen a otro equipo).'
+        : 'No hay pacientes fantasma en el anfitrión.',
+      'info'
+    );
     return;
   }
   if (
     !window.confirm(
       '¿Eliminar ' +
         ghosts.length +
-        ' paciente(s) fantasma del anfitrión LAN?\n\nEsta acción no se puede deshacer.'
+        ' fantasma(s) huérfano(s) del anfitrión LAN?\n\nLos pacientes de otro equipo no se tocan.'
     )
   ) {
     return;
@@ -313,16 +353,16 @@ async function purgeGhostsFromDashboard(backdrop) {
   if (btn) btn.disabled = true;
   let ok = 0;
   for (const g of ghosts) {
-    const res = await purgeLanPatientFromHost(String(g.row.id));
+    const res = await purgeLanPatientFromHost(String(g.row.id), purgeOptsForCensusItem(g));
     if (res?.ok) ok += 1;
   }
   if (btn) btn.disabled = false;
   if (!ok) {
     showToast('No se pudieron eliminar los fantasmas del anfitrión.', 'error');
-  } else if (ok < ghosts.length) {
-    showToast(ok + ' de ' + ghosts.length + ' fantasmas eliminados del anfitrión.', 'warn');
   } else {
-    showToast(ok + ' de ' + ghosts.length + ' fantasmas eliminados del anfitrión.', 'success');
+    var msg = ok + ' fantasma(s) eliminado(s) del anfitrión.';
+    if (foreignGhostCount) msg += ' ' + foreignGhostCount + ' de otro equipo sin cambios.';
+    showToast(msg, ok < ghosts.length ? 'warn' : 'success');
   }
   if (ok && typeof opts.onChanged === 'function') opts.onChanged();
   await refreshLanHostCensusDashboard(opts);

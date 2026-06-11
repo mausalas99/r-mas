@@ -8,8 +8,46 @@ import {
   mergeBundleEntriesIntoCensus,
   upsertHostCensusPatient,
 } from './host-patients-snapshot-merge.mjs';
+import { extractPatientFromBundleEntry } from './host-patients-bundle-entry.mjs';
 
 export { mergeBundleEntriesIntoCensus, upsertHostCensusPatient } from './host-patients-snapshot-merge.mjs';
+
+const HOST_PATIENTS_CACHE_MS = 1500;
+/** @type {{ at: number, list: object[]|null }} */
+let hostPatientsCache = { at: 0, list: null };
+
+export function invalidateHostPatientsCache() {
+  hostPatientsCache = { at: 0, list: null };
+}
+
+/** @param {{ bypassCache?: boolean }} [opts] */
+export async function fetchHostPatientsList(opts) {
+  if (
+    !opts?.bypassCache &&
+    hostPatientsCache.list &&
+    Date.now() - hostPatientsCache.at < HOST_PATIENTS_CACHE_MS
+  ) {
+    return hostPatientsCache.list;
+  }
+  const resp = await lanFetchAuthed('/api/lan/v1/patients');
+  if (!resp.ok) return null;
+  const body = await resp.json().catch(function () {
+    return {};
+  });
+  const list = Array.isArray(body.patients) ? body.patients : [];
+  hostPatientsCache = { at: Date.now(), list: list };
+  return list;
+}
+
+function bundleEntryMatchesPatient(entry, patientId, registro) {
+  const row = extractPatientFromBundleEntry(entry);
+  if (!row?.id) return false;
+  const pid = String(patientId || '').trim();
+  const reg = String(registro || '').trim();
+  if (pid && String(row.id) === pid) return true;
+  if (reg && String(row.registro || '').trim() === reg) return true;
+  return false;
+}
 
 /** @param {string} [preferredRoomId] */
 async function listLanHostRoomIds(preferredRoomId) {
@@ -78,12 +116,8 @@ export async function fetchLanHostCensusSnapshot(roomId) {
   }
   const byId = new Map();
   try {
-    const resp = await lanFetchAuthed('/api/lan/v1/patients');
-    if (!resp.ok) return { ok: false, error: 'patients_fetch_failed', status: resp.status };
-    const body = await resp.json().catch(function () {
-      return {};
-    });
-    const hostRows = Array.isArray(body.patients) ? body.patients : [];
+    const hostRows = await fetchHostPatientsList();
+    if (!hostRows) return { ok: false, error: 'patients_fetch_failed' };
     for (const row of hostRows) {
       if (!row?.id || row._deleted) continue;
       upsertHostCensusPatient(byId, row, { bundleOnly: false });
@@ -94,15 +128,55 @@ export async function fetchLanHostCensusSnapshot(roomId) {
 
   const preferredRoomId = String(roomId || activeLiveSyncRoomId || '').trim();
   const roomIds = await listLanHostRoomIds(preferredRoomId);
-  let clinicalOps = preferredRoomId ? await fetchRoomClinicalOps(preferredRoomId) : null;
-
-  for (const rid of roomIds) {
-    const entries = await fetchRoomBundleEntries(rid);
+  const bundleEntryLists = await Promise.all(
+    roomIds.map(function (rid) {
+      return fetchRoomBundleEntries(rid);
+    })
+  );
+  for (const entries of bundleEntryLists) {
     mergeBundleEntriesIntoCensus(byId, entries);
-    if (!clinicalOps) {
+  }
+
+  let clinicalOps = preferredRoomId ? await fetchRoomClinicalOps(preferredRoomId) : null;
+  if (!clinicalOps) {
+    for (const rid of roomIds) {
       clinicalOps = await fetchRoomClinicalOps(rid);
+      if (clinicalOps) break;
     }
   }
 
   return { ok: true, patients: Array.from(byId.values()), clinicalOps };
+}
+
+/**
+ * Lightweight presence check (active room bundle + host patients list).
+ * @param {string} patientId
+ * @param {string} [registro]
+ * @param {string} [roomId]
+ */
+export async function isPatientPresentOnHost(patientId, registro, roomId) {
+  const pid = String(patientId || '').trim();
+  const reg = String(registro || '').trim();
+  if (!pid && !reg) return false;
+  const list = await fetchHostPatientsList();
+  if (list) {
+    const onHost = list.some(function (row) {
+      if (!row?.id || row._deleted) return false;
+      if (pid && String(row.id) === pid) return true;
+      if (reg && String(row.registro || '').trim() === reg) return true;
+      return false;
+    });
+    if (onHost) return true;
+  }
+  const rid = String(roomId || activeLiveSyncRoomId || '').trim();
+  if (!rid) return false;
+  const entries = await fetchRoomBundleEntries(rid);
+  return entries.some(function (ent) {
+    return bundleEntryMatchesPatient(ent, pid, reg);
+  });
+}
+
+/** @param {string} patientId @param {string} [registro] */
+export async function isPatientInHostCensus(patientId, registro) {
+  return isPatientPresentOnHost(patientId, registro);
 }

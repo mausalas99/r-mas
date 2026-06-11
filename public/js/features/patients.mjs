@@ -74,7 +74,7 @@ import {
   getActiveLiveSyncRoomId,
   lanSyncPatientArchivedFlag,
   isLanSessionConfiguredForRest,
-  purgeLanPatientFromHost,
+  scheduleLiveSyncPush,
 } from './lan-sync.mjs';
 import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
@@ -1458,7 +1458,7 @@ export function deletePatient(e, id) {
   var snap = target || { id: id, registro: '' };
   if (getActiveLiveSyncRoomId()) {
     rememberPatientDeleteTombstone(snap);
-    void purgeLanPatientFromHost(id);
+    scheduleLiveSyncPush();
     stagePatientDelete(id, snap, function () {
       import('../lan-mutation-registry.mjs').then(function (m) {
         m.lanMutationRegistry.dispatchLanMutation('patient-fields', id);

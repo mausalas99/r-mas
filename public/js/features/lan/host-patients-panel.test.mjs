@@ -1,6 +1,17 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { annotateLanHostPatientRows, isInactiveHostPatientRow } from './host-patients-annotate.mjs';
+import {
+  annotateLanHostPatientRows,
+  isHostPatientOwnedByOtherClient,
+  isInactiveHostPatientRow,
+} from './host-patients-annotate.mjs';
+
+function isPurgeableHostCensusRow(item, localClientId) {
+  if (!item) return false;
+  if (isHostPatientOwnedByOtherClient(item.row, localClientId)) return false;
+  if (item.status === 'ghost') return true;
+  return item.row?._bundleOnly === true;
+}
 
 describe('annotateLanHostPatientRows', () => {
   it('marks host-only rows as ghost and inactive', () => {
@@ -24,5 +35,37 @@ describe('annotateLanHostPatientRows', () => {
 
   it('marks archived local rows inactive', () => {
     assert.equal(isInactiveHostPatientRow({ id: 'p1' }, { id: 'p1', archived: true }, 'local'), true);
+  });
+});
+
+describe('isPurgeableHostCensusRow', () => {
+  it('includes bundle-only rows even when present locally', () => {
+    const rows = annotateLanHostPatientRows(
+      [{ id: 'p1', nombre: 'Local bundle stub', registro: 'R1', _bundleOnly: true }],
+      [{ id: 'p1', nombre: 'Local bundle stub', registro: 'R1' }]
+    );
+    assert.equal(isPurgeableHostCensusRow(rows[0], 'dev-a'), true);
+  });
+});
+
+describe('isHostPatientOwnedByOtherClient', () => {
+  it('returns false when this client created the chart', () => {
+    assert.equal(
+      isHostPatientOwnedByOtherClient(
+        { id: 'p1', audit_log: [{ action: 'patient.create', clientId: 'dev-a' }] },
+        'dev-a'
+      ),
+      false
+    );
+  });
+
+  it('returns true when another client created the chart', () => {
+    assert.equal(
+      isHostPatientOwnedByOtherClient(
+        { id: 'p1', audit_log: [{ action: 'patient.create', clientId: 'dev-b' }] },
+        'dev-a'
+      ),
+      true
+    );
   });
 });

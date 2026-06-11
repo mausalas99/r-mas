@@ -1232,6 +1232,50 @@ function createHostStore({
     return null;
   }
 
+  function bundleEntryMatchesPatient(ent, patientId, registro) {
+    const pid = String(patientId || '').trim();
+    const reg = String(registro || '').trim();
+    const entryId = entryPatientId(ent);
+    if (pid && entryId && entryId === pid) return true;
+    if (reg) {
+      const p = ent && ent.patient;
+      const entryReg = String((p && p.registro) || ent.registro || '').trim();
+      if (entryReg && entryReg === reg) return true;
+    }
+    return false;
+  }
+
+  /** Drop host census row and/or sync-bundle entries (bundle-only orphans). */
+  function purgePatientFromHostCensus(patientId, registro, opts) {
+    const deferPersist = !!(opts && opts.deferPersist);
+    const state = ensureLoadedSync();
+    const pid = String(patientId || '').trim();
+    const reg = String(registro || '').trim();
+    if (!pid && !reg) return false;
+    const idx = state.patients.findIndex((p) => p && p.id === pid && !p._deleted);
+    if (idx >= 0) {
+      const row = state.patients[idx];
+      setEntity(
+        {
+          entityType: 'patient',
+          entityId: pid,
+          version: Number(row.version || 1) + 1,
+          data: { ...row, _deleted: true },
+          deleted: true,
+        },
+        opts
+      );
+      return true;
+    }
+    const changed = purgePatientFromAllRoomBundles(state, pid, reg, opts);
+    if (!changed) return false;
+    if (!deferPersist) {
+      markDirty(null);
+      void schedulePersist();
+    }
+    return true;
+  }
+
   function purgePatientFromAllRoomBundles(state, patientId, registro, opts) {
     const pid = String(patientId || '').trim();
     const reg = String(registro || '').trim();
@@ -1243,15 +1287,9 @@ function createHostStore({
       const bundle = state.roomSyncBundles[rid];
       if (!bundle || !Array.isArray(bundle.entries)) continue;
       const before = bundle.entries.length;
-      bundle.entries = bundle.entries.filter((ent) => {
-        const p = ent && ent.patient;
-        if (!p) return false;
-        const id = String(p.id || '').trim();
-        const r = String(p.registro || '').trim();
-        if (pid && id === pid) return false;
-        if (reg && r === reg) return false;
-        return true;
-      });
+      bundle.entries = bundle.entries.filter(
+        (ent) => !bundleEntryMatchesPatient(ent, pid, reg)
+      );
       if (bundle.entries.length !== before) {
         bundle.revision = Number(bundle.revision || 0) + 1;
         bundle.committedAt = nowIso();
@@ -1671,6 +1709,7 @@ function createHostStore({
     commitCommandEntity,
     materializeRoomViews,
     archiveHistoriaClinicaForPatient,
+    purgePatientFromHostCensus,
     appendRoomBundleAudit,
     appendRoomBundleAuditInMemory,
     putHistoriaClinicaQueued,

@@ -1,5 +1,27 @@
 /** Pure helpers for LAN host patient census rows (no transport/orchestrator imports). */
 
+/** @param {object|null|undefined} row */
+export function resolveHostPatientOwnerClientId(row) {
+  const audit = Array.isArray(row?.audit_log) ? row.audit_log : [];
+  const createEntry =
+    audit.find(function (e) {
+      return e && e.action === 'patient.create';
+    }) || null;
+  return String(createEntry?.clientId || '').trim();
+}
+
+/**
+ * True when another LAN device registered the chart (this client should not purge it).
+ * @param {object|null|undefined} row
+ * @param {string} [localClientId]
+ */
+export function isHostPatientOwnedByOtherClient(row, localClientId) {
+  const local = String(localClientId || '').trim();
+  const ownerClientId = resolveHostPatientOwnerClientId(row);
+  if (!local || !ownerClientId || ownerClientId === 'host') return false;
+  return ownerClientId !== local;
+}
+
 /**
  * Host row without local copy, archived, or bundle-only orphan.
  * @param {object} row

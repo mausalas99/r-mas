@@ -191,6 +191,8 @@ async function deleteOrphanFromServer(btn, settings) {
         if (!purge.hadHostRow) {
           toast('No había expediente en el anfitrión; se liberará solo la entrega.', 'info');
         }
+      } else if (purge?.error === 'owned_by_other_client') {
+        toast('El expediente pertenece a otro equipo LAN; solo se liberará la entrega local.', 'info');
       } else if (purge?.error === 'not_configured') {
         toast('Sin conexión ⇄ activa; solo se liberará la entrega local.', 'warn');
       } else {

@@ -63,6 +63,11 @@ import {
 } from "../../clinical-access-runtime.mjs";
 import { clinicalSessionContext } from "../../clinical-session-context.mjs";
 import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
+import { isHostPatientOwnedByOtherClient } from './host-patients-annotate.mjs';
+import {
+  fetchHostPatientsList,
+  invalidateHostPatientsCache,
+} from './host-patients-snapshot.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { buildLanCommand } from '../../lan-command-client.mjs';
 import {
@@ -794,13 +799,8 @@ async function handleInternoHostSyncBroadcast(detail) {
 export async function lanFetchHostPatientRow(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || !isLanSessionConfiguredForRest()) return null;
-  var resp = await lanFetchAuthed('/api/lan/v1/patients');
-  if (!resp.ok) return null;
-  var body = {};
-  try {
-    body = await resp.json();
-  } catch (_e) {}
-  var list = Array.isArray(body.patients) ? body.patients : [];
+  var list = await fetchHostPatientsList();
+  if (!list) return null;
   return (
     list.find(function (row) {
       return row && String(row.id) === pid && !row._deleted;
@@ -895,55 +895,92 @@ function buildPatientDeleteMutation(patientId, hostRow, registroFallback) {
   });
 }
 
-/** HTTP-first delete; WS/outbox only as fallback when REST fails. */
+async function lanDeleteHostPatientCensus(patientId, registro) {
+  var pid = String(patientId || '').trim();
+  if (!pid) return { ok: false, error: 'invalid_id' };
+  var reg = String(registro || '').trim();
+  var qs = reg ? '?registro=' + encodeURIComponent(reg) : '';
+  var resp = await lanFetchAuthed('/api/lan/v1/patients/' + encodeURIComponent(pid) + qs, {
+    method: 'DELETE',
+  });
+  if (resp.ok || resp.status === 404) return { ok: true, status: resp.status };
+  return { ok: false, status: resp.status };
+}
+
+/** HTTP-first delete; bundle-only charts use DELETE /patients/:id. */
 async function pushPatientDeleteToHost(patientId, hostRow, registroFallback) {
   var pid = String(patientId || '').trim();
+  var reg = String(registroFallback || (hostRow && hostRow.registro) || '').trim();
   var rid = String(activeLiveSyncRoomId || '').trim();
   if (!rid) return { ok: false, error: 'not_configured' };
-  var mutation = buildPatientDeleteMutation(pid, hostRow, registroFallback);
-  var httpResult = await lanPushPatientVersioned(pid, mutation);
+
+  if (!hostRow) {
+    var bundleDelete = await lanDeleteHostPatientCensus(pid, reg);
+    if (bundleDelete?.ok) return { ok: true, via: 'delete_bundle' };
+  }
+
+  var mutation = buildPatientDeleteMutation(pid, hostRow, reg);
+  var httpResult = hostRow ? await lanPushPatientVersioned(pid, mutation) : null;
   if (httpResult?.ok) return httpResult;
+
+  var censusDelete = await lanDeleteHostPatientCensus(pid, reg);
+  if (censusDelete?.ok) return { ok: true, via: 'delete_census' };
+
+  if (!hostRow) {
+    return {
+      ok: false,
+      error: censusDelete?.status ? 'host_reject_' + censusDelete.status : 'purge_failed',
+      status: censusDelete?.status,
+    };
+  }
+
   await enqueueOutbox(rid, {
     kind: 'patch',
     payload: wrapLiveSyncPatch(rid, getLanClientId(), mutation),
   });
   await flushLiveSyncOutbox(rid);
-  var stillThere = await lanFetchHostPatientRow(pid);
-  if (stillThere) {
-    return {
-      ok: false,
-      error: httpResult?.status ? 'host_reject_' + httpResult.status : 'purge_failed',
-      status: httpResult?.status,
-    };
-  }
-  return { ok: true, via: 'outbox' };
+  return {
+    ok: false,
+    error: httpResult?.status ? 'host_reject_' + httpResult.status : 'purge_failed',
+    status: httpResult?.status,
+  };
 }
 
-/** Tombstone + host delete so the LAN anfitrión drops the patient chart. */
-export async function purgeLanPatientFromHost(patientId) {
+/**
+ * Remove a patient chart from the LAN host (admin/orphan cleanup only).
+ * Skips charts registered by another device — those stay on the host for peers.
+ * @param {string} patientId
+ * @param {{ force?: boolean }} [opts]
+ */
+export async function purgeLanPatientFromHost(patientId, opts) {
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return { ok: false, error: 'invalid_id' };
   if (!activeLiveSyncRoomId || !isLanSessionConfiguredForRest()) {
     return { ok: false, error: 'not_configured' };
   }
-  var hostRow = await lanFetchHostPatientRow(pid);
+  var registroHint = String(opts?.registro || '').trim();
+  var hostRow = opts?.bundleOnly ? null : await lanFetchHostPatientRow(pid);
+  var censusRow = hostRow;
+  if (!censusRow && registroHint) {
+    censusRow = { id: pid, registro: registroHint };
+  }
+  if (!opts?.force && censusRow && isHostPatientOwnedByOtherClient(censusRow, getLanClientId())) {
+    return { ok: false, error: 'owned_by_other_client', skipped: true };
+  }
   var snap = {
     id: pid,
-    registro: hostRow && hostRow.registro ? String(hostRow.registro) : '',
+    registro: String((hostRow && hostRow.registro) || registroHint || '').trim(),
   };
   rememberPatientDeleteTombstone(snap);
   var deleteResult = await pushPatientDeleteToHost(pid, hostRow, snap.registro);
   if (!deleteResult?.ok) return deleteResult;
-  emitLiveSyncPatientDelete(snap);
-  scheduleLiveSyncPush();
-  await flushLiveSyncOutbox(activeLiveSyncRoomId);
-  var rid = String(activeLiveSyncRoomId || '').trim();
-  if (rid) {
-    var envelope = await buildLiveSyncBundleEnvelope(rid);
-    saveLocalRoomSnapshot(rid);
-    await pushRoomSyncBundleToHost(rid, envelope);
+  invalidateHostPatientsCache();
+  if (hostRow) {
+    emitLiveSyncPatientDelete(snap);
+    scheduleLiveSyncPush();
+    await flushLiveSyncOutbox(activeLiveSyncRoomId);
   }
-  return { ok: true, hadHostRow: !!hostRow };
+  return { ok: true, hadHostRow: !!hostRow, bundleOnly: !hostRow };
 }
 
 export async function lanPushHistoriaClinica(patientId, mutation) {

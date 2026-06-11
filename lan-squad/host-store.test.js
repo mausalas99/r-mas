@@ -189,6 +189,21 @@ describe('host-store', () => {
     assert.strictEqual(store.getState().patients[0].nombre, 'Uno x');
   });
 
+  it('purgePatientFromHostCensus removes flat sync-bundle entries', () => {
+    const store = createStore('del-flat-bundle');
+    const room = store.createRoom('Sala flat');
+    store.putRoomSyncBundle(room.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [{ id: 'p-flat', registro: 'R88', nombre: 'FLAT', note: { texto: 'n' } }],
+    });
+    assert.strictEqual(store.purgePatientFromHostCensus('p-flat', 'R88'), true);
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.strictEqual(bundle.entries.length, 0);
+  });
+
   it('patient delete without host row still purges bundle-only charts', () => {
     const store = createStore('del-bundle-only');
     const room = store.createRoom('Sala bundle');

@@ -106,6 +106,20 @@ function createLanRouter({
     res.json({ patients });
   });
 
+  r.delete('/patients/:id', (req, res) => {
+    try {
+      const id = String(req.params.id || '').trim();
+      const registro = String(req.query.registro || '').trim();
+      if (!id) return res.status(400).json({ error: 'patient_id_required' });
+      const purged = store.purgePatientFromHostCensus(id, registro);
+      if (!purged) return res.status(404).json({ error: 'patient_not_found' });
+      broadcast('sync', { type: 'patients-updated' });
+      res.json({ ok: true, patientId: id });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   r.put('/patients/:id', express.json({ limit: '2mb' }), (req, res) => {
     try {
       const mutation = {
