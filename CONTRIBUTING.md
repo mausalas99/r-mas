@@ -39,7 +39,7 @@ Este repositorio tiene reglas preconfiguradas para múltiples asistentes AI:
 |-------------|-----------|
 | **DeepSeek GUI (Kun)** | `.cursor/rules/` (formato MDC) |
 | Cursor | `.cursor/rules/` |
-| Claude Code | `.claude/` |
+| Claude Code | [`CLAUDE.md`](CLAUDE.md) → `.claude/` + `.cursor/rules/` |
 | OpenCode | `.opencode/` |
 
 **Convención:** El directorio canónico para reglas es `.cursor/rules/`. Los demás directorios contienen configuraciones específicas de cada herramienta y deben mantenerse mínimas.
