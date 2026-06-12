@@ -3,7 +3,16 @@ import globals from 'globals';
 import sonarjs from 'eslint-plugin-sonarjs';
 
 const tier1 = {
-  files: ['public/js/**/*.mjs', 'public/js/**/*.js', 'lib/**/*.mjs', 'lib/**/*.js', 'lan-squad/**/*.js'],
+  files: [
+    'public/js/**/*.mjs',
+    'public/js/**/*.js',
+    'public/js/**/*.cjs',
+    'lib/**/*.mjs',
+    'lib/**/*.js',
+    'lib/**/*.cjs',
+    'lan-squad/**/*.js',
+    'lan-squad/**/*.cjs',
+  ],
   languageOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
@@ -17,6 +26,24 @@ const tier1 = {
     'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
     'sonarjs/cognitive-complexity': ['error', 20],
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+  },
+};
+
+const tier1Commonjs = {
+  files: ['lib/**/*.cjs', 'lan-squad/**/*.cjs', 'public/js/**/*.cjs'],
+  languageOptions: {
+    sourceType: 'commonjs',
+    globals: { ...globals.node, module: 'readonly', require: 'readonly', exports: 'writable' },
+  },
+};
+
+// Tier-2 legacy: TODO decompose — see plans/README.md follow-ups
+const tier2LegacyCjs = {
+  files: ['lib/db/clinical-ops-bundle-merge.cjs'],
+  rules: {
+    complexity: 'warn',
+    'max-lines-per-function': 'warn',
+    'sonarjs/cognitive-complexity': 'warn',
   },
 };
 
@@ -36,4 +63,4 @@ const generatedIgnores = {
   ],
 };
 
-export default [generatedIgnores, js.configs.recommended, tier1, bootHubs];
+export default [generatedIgnores, js.configs.recommended, tier1, tier1Commonjs, tier2LegacyCjs, bootHubs];

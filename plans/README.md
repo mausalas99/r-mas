@@ -16,7 +16,7 @@ the plan fully before starting, honor its STOP conditions, and update your row w
 | 006 | Decompose evaluateClinicalScope (complexity 80 → ≤15) | P2 | M | 001 | TODO |
 | 007 | Consolidate the 3 drifted cultivo parser copies | P2 | M | 001 | TODO |
 | 008 | Characterization tests for LAN sync core (orchestrator/transport/push/room) | P3 | L | 001, 002, 003 | TODO |
-| 009 | DX hygiene: CLAUDE.md, .env.example, .cjs lint coverage | P3 | S | — | TODO |
+| 009 | DX hygiene: CLAUDE.md, .env.example, .cjs lint coverage | P3 | S | — | DONE (`advisor/009-dx-hygiene`) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
