@@ -5,7 +5,11 @@
  * share one disk flush; all waiters resolve when completedGeneration reaches
  * their targetGeneration.
  */
-function createCommitBarrier({ coalesceMs = 150 } = {}) {
+function notifyFlushError(onError, err) {
+  if (onError) onError(err);
+}
+
+function createCommitBarrier({ coalesceMs = 150, onError } = {}) {
   let timer = null;
   let flushing = false;
   /** @type {Array<{ target: number, resolve: () => void, reject: (e: Error) => void }>} */
@@ -70,7 +74,7 @@ function createCommitBarrier({ coalesceMs = 150 } = {}) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
-      void executeFlush().catch(() => {});
+      void executeFlush().catch((e) => notifyFlushError(onError, e));
     }, coalesceMs);
   }
 
@@ -97,7 +101,7 @@ function createCommitBarrier({ coalesceMs = 150 } = {}) {
       followUpQueued = true;
       return waiter;
     }
-    await executeFlush().catch(() => {});
+    await executeFlush().catch((e) => notifyFlushError(onError, e));
     return waiter;
   }
 

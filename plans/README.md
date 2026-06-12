@@ -10,7 +10,7 @@ the plan fully before starting, honor its STOP conditions, and update your row w
 |------|-------|----------|--------|------------|--------|
 | 001 | CI test-list integrity — run all 337 test files, add drift guard | P1 | S | — | DONE (merged `a53f174`) |
 | 002 | Server-side patient-purge ownership guard | P1 | M | 001 | DONE (`advisor/002-server-purge-guard`) |
-| 003 | Host-store durability: visible persist failures + flush on quit | P1 | M | 001; after 002 | TODO |
+| 003 | Host-store durability: visible persist failures + flush on quit | P1 | M | 001; after 002 | DONE (`advisor/003-host-store-durability`) |
 | 004 | Failure-count lockout on LAN PIN exchange | P2 | S | 001 | TODO |
 | 005 | Parsed-blob cache in storage.js | P2 | S | 001 | TODO |
 | 006 | Decompose evaluateClinicalScope (complexity 80 → ≤15) | P2 | M | 001 | TODO |

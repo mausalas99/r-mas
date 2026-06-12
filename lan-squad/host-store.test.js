@@ -486,6 +486,97 @@ describe('host-store', () => {
     assert.strictEqual(got.manejo.customProtocols[0].id, 'p1');
   });
 
+  it('records last persist error when flush throws instead of swallowing', async () => {
+    const atomicJsonPath = require.resolve('./atomic-json.js');
+    const hostStorePath = require.resolve('./host-store.js');
+    const reloadPaths = [
+      hostStorePath,
+      require.resolve('./persistence/sharded-host-persistence.js'),
+      require.resolve('./persistence/json-room-bundle-repository.js'),
+      require.resolve('./persistence/json-meta-repository.js'),
+      require.resolve('./persistence/lab-sidecar.js'),
+    ];
+    const atomicJson = require('./atomic-json.js');
+    const orig = atomicJson.writeJsonAtomic;
+    atomicJson.writeJsonAtomic = async () => {
+      throw new Error('disk-full');
+    };
+    for (const p of reloadPaths) delete require.cache[p];
+    const { createHostStore: createStoreWithFailingFlush } = require('./host-store.js');
+    try {
+      const store = createStoreWithFailingFlush({ filePath, hostStateDir, teamCodePlain: 'persist-err' });
+      const room = store.createRoom('Sala');
+      store.putRoomSyncBundle(room.id, {
+        baseRevision: 0,
+        baseEntityVersions: {},
+        agenda: [],
+        todos: {},
+        entries: [{ patient: { id: 'p1' }, note: {} }],
+      });
+      await new Promise((r) => setTimeout(r, 250));
+      const err = store.getLastPersistError();
+      assert.ok(err, 'expected persist failure to be recorded');
+      assert.match(err.tag, /commit-barrier|schedule-persist/);
+      assert.strictEqual(err.message, 'disk-full');
+      assert.ok(err.at);
+    } finally {
+      atomicJson.writeJsonAtomic = orig;
+      for (const p of reloadPaths) delete require.cache[p];
+      require('./host-store.js');
+    }
+  });
+
+  it('putRoomClinicalOps leaves bundle unchanged when DB merge throws', async () => {
+    const { setLanDbManager, resetLanDbManagerForTests } = require('../lib/db/lan-db-bridge.cjs');
+    resetLanDbManagerForTests();
+    try {
+      const store = createStore('ops-reject');
+      const room = store.createRoom('Ops');
+      const initialOps = {
+        exportedAt: '2020-01-01T00:00:00',
+        teams: [{ team_id: 'team-a', name: 'A', created_at: '2020-01-01T00:00:00' }],
+        team_membership: [],
+      };
+      store.putRoomSyncBundle(room.id, {
+        baseRevision: 0,
+        baseEntityVersions: {},
+        clinicalOps: initialOps,
+      });
+      const beforeBundle = store.getState().roomSyncBundles[room.id];
+      const beforeRevision = beforeBundle.revision;
+      const beforeOps = JSON.parse(JSON.stringify(beforeBundle.clinicalOps));
+      const baseRevision = beforeRevision;
+      const incoming = {
+        ...initialOps,
+        exportedAt: '2099-06-01T12:00:00.000Z',
+        teams: [
+          ...initialOps.teams,
+          { team_id: 'team-b', name: 'B', created_at: '2099-06-01T12:00:00.000Z' },
+        ],
+      };
+      setLanDbManager({
+        isUnlocked: () => true,
+        withTransaction() {
+          throw new Error('db-merge-fail');
+        },
+        getDb: () => null,
+      });
+      await assert.rejects(
+        store.putRoomClinicalOps(room.id, {
+          baseRevision,
+          clientId: 'peer',
+          snapshot: incoming,
+        }),
+        /db-merge-fail/
+      );
+      const afterBundle = store.getState().roomSyncBundles[room.id];
+      assert.strictEqual(afterBundle.revision, beforeRevision);
+      assert.deepStrictEqual(afterBundle.clinicalOps, beforeOps);
+    } finally {
+      resetLanDbManagerForTests();
+    }
+  });
+
   it('round-trips host state through SQLCipher when dbManager is unlocked', async () => {
     const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
     const { loadCacheFromSql } = require('./persistence/sqlite-host-repositories.js');

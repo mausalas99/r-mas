@@ -1104,8 +1104,15 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => {
+let quitting = false;
+app.on('before-quit', (event) => {
+  if (quitting) return;
+  quitting = true;
   lanNetworkWatch.stop();
   const lanServer = require('./server');
-  void lanServer.stopLanServer();
+  event.preventDefault();
+  const timeout = new Promise((r) => setTimeout(r, 3000));
+  Promise.race([lanServer.flushHostStoreNow().catch(() => {}), timeout])
+    .then(() => lanServer.stopLanServer())
+    .finally(() => app.exit(0));
 });
