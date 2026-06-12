@@ -4,6 +4,7 @@
 
 import { clinicalServiceForSala, clinicalSalaUsesAbcOnlyRotation } from '../../lib/clinical-salas.mjs';
 import { OFF_CALL_INTERCONSULTAS_SERVICES } from '../../lib/clinical-team-composition.mjs';
+import { runEvaluateClinicalScope } from './clinico-access-scope/evaluate-clinical-scope.mjs';
 
 export const CLINICO_UNLOCK_PHRASE = 'entiendo, usare mi criterio clincio';
 
@@ -74,7 +75,7 @@ export const clinicoAccessWindowHandlers = {
 };
 
 /** @param {unknown} value */
-function normalizeServiceKey(value) {
+export function normalizeServiceKey(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
@@ -280,6 +281,16 @@ export const R4_GUARDIA_SECTOR_ORDER = ['Sala A', 'Sala B', 'Eme', 'Torre HU'];
  * Accepts chart rows (`servicio`/`area`) or grid rows (`service`/`sub_area`).
  * @param {{ service?: string, servicio?: string, sub_area?: string, area?: string }|null|undefined} patient
  */
+function resolveR4SalaSectorLabel(svcKey, subKey, service, subArea, hay) {
+  if (!svcKey.includes('sala') && !subKey.includes('sala')) return '';
+  const letter = salaLetterForTeamOrArea({ service, sub_area: subArea, name: hay });
+  if (letter === 'A') return 'Sala A';
+  if (letter === 'B') return 'Sala B';
+  if (/sala\s*a\b/i.test(hay)) return 'Sala A';
+  if (/sala\s*b\b/i.test(hay)) return 'Sala B';
+  return '';
+}
+
 export function resolveR4GuardiaSectorLabel(patient) {
   if (!patient) return '';
   const service = String(patient.service || patient.servicio || '').trim();
@@ -295,15 +306,7 @@ export function resolveR4GuardiaSectorLabel(patient) {
   if (svcKey.includes('torre hu') || subKey.includes('torre hu')) return 'Torre HU';
   if (svcKey.includes('eme') || subKey.includes('eme') || svcKey === 'urgencias') return 'Eme';
 
-  if (svcKey.includes('sala') || subKey.includes('sala')) {
-    const letter = salaLetterForTeamOrArea({ service, sub_area: subArea, name: hay });
-    if (letter === 'A') return 'Sala A';
-    if (letter === 'B') return 'Sala B';
-    if (/sala\s*a\b/i.test(hay)) return 'Sala A';
-    if (/sala\s*b\b/i.test(hay)) return 'Sala B';
-  }
-
-  return '';
+  return resolveR4SalaSectorLabel(svcKey, subKey, service, subArea, hay);
 }
 
 /**
@@ -323,24 +326,26 @@ export function isR4MacroPatient(patient) {
  * @param {{ id?: string, service?: string, sub_area?: string }|null|undefined} patient
  * @param {{ service?: string, sub_area_fraction?: string, name?: string }} team
  */
+function patientServiceMatchesTeam(patientSvc, teamSvc, patient) {
+  if (patientSvc === teamSvc) return true;
+  if (patientSvc.includes('sala') && teamSvc.includes('sala')) return true;
+  if (teamSvc.includes('sala') && (patientSvc.includes('sala') || extractSalaLetter(patient.service))) {
+    return true;
+  }
+  return false;
+}
+
 export function patientMatchesTeam(patient, team) {
   if (!patient || !team) return false;
   const patientSvc = normalizeServiceKey(patient.service);
   const teamSvc = normalizeServiceKey(team.service);
-  if (patientSvc !== teamSvc && !(patientSvc.includes('sala') && teamSvc.includes('sala'))) {
-    if (teamSvc.includes('sala') && (patientSvc.includes('sala') || extractSalaLetter(patient.service))) {
-      // allow Sala patient vs Sala team
-    } else if (patientSvc !== teamSvc) {
-      return false;
-    }
-  }
+  if (!patientServiceMatchesTeam(patientSvc, teamSvc, patient)) return false;
   const frac = String(team.sub_area_fraction || '').trim();
   if (!frac) return true;
   const letter = frac.toUpperCase();
   const patientLetter = salaLetterForTeamOrArea(patient);
   if (patientLetter && patientLetter === letter) return true;
   const hay = `${patient.service || ''} ${patient.sub_area || ''}`;
-  const upperHay = hay.toUpperCase();
   if (new RegExp('(?:^|\\s)' + letter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=\\s|$)', 'i').test(hay)) return true;
   return false;
 }
@@ -502,25 +507,28 @@ export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, n
  * @param {Array<{ team_id?: string, user_id?: string }>} [salaGuardiaToday]
  * @returns {{ team_id: string, user_id: string }[]} — on-call R1s
  */
+function collectSalaOnCallR1ForTeam(team, d, salaGuardiaToday) {
+  const teamId = String(team.team_id || '');
+  if (!teamId) return [];
+  const declared =
+    (salaGuardiaToday || []).find((g) => String(g.team_id) === teamId)?.user_id ||
+    team?.guardia_today?.user_id ||
+    '';
+  if (declared) return [{ team_id: teamId, user_id: String(declared) }];
+  const result = [];
+  for (const m of team.members || []) {
+    if (m.rank !== 'R1' || !m.user_id) continue;
+    if (!isMemberOnCallToday(m, team, 'R1', d)) continue;
+    result.push({ team_id: teamId, user_id: String(m.user_id) });
+  }
+  return result;
+}
+
 export function salaOnCallR1(teams, sala, now, salaGuardiaToday = []) {
   const d = now instanceof Date ? now : new Date(String(now));
   const result = [];
   for (const team of (teams || []).filter((t) => t.sala === sala)) {
-    const teamId = String(team.team_id || '');
-    if (!teamId) continue;
-    const declared =
-      (salaGuardiaToday || []).find((g) => String(g.team_id) === teamId)?.user_id ||
-      team?.guardia_today?.user_id ||
-      '';
-    if (declared) {
-      result.push({ team_id: teamId, user_id: String(declared) });
-      continue;
-    }
-    for (const m of team.members || []) {
-      if (m.rank !== 'R1' || !m.user_id) continue;
-      if (!isMemberOnCallToday(m, team, 'R1', d)) continue;
-      result.push({ team_id: teamId, user_id: String(m.user_id) });
-    }
+    result.push(...collectSalaOnCallR1ForTeam(team, d, salaGuardiaToday));
   }
   return result;
 }
@@ -619,19 +627,29 @@ export function teamGuardiaOverride(team) {
  * @param {Date} now
  */
 /** @param {{ sala?: string, servicio?: string, service?: string, area?: string, sub_area?: string }} patient */
-export function resolvePatientSala(patient) {
-  const explicit = String(patient?.sala || '').trim();
-  if (explicit) return explicit;
-  const letter = extractSalaLetter(
-    patient?.servicio || patient?.service || patient?.area || patient?.sub_area || ''
-  );
+function salaLabelFromLetter(letter) {
   if (letter === '1') return 'Sala 1';
   if (letter === '2') return 'Sala 2';
   if (letter === 'E') return 'Sala E';
-  const svc = normalizeServiceKey(patient?.servicio || patient?.service || '');
+  return '';
+}
+
+function salaLabelFromServiceKey(svc) {
   if (svc.includes('torre hu')) return 'Torre HU';
   if (svc.includes('area a') || svc.includes('pension')) return 'Área A/Pensionistas';
   return '';
+}
+
+function inferPatientSala(patient) {
+  const source = patient?.servicio || patient?.service || patient?.area || patient?.sub_area || '';
+  const fromLetter = salaLabelFromLetter(extractSalaLetter(source));
+  if (fromLetter) return fromLetter;
+  return salaLabelFromServiceKey(normalizeServiceKey(patient?.servicio || patient?.service || ''));
+}
+
+export function resolvePatientSala(patient) {
+  const explicit = String(patient?.sala || '').trim();
+  return explicit || inferPatientSala(patient);
 }
 
 /** @param {object} patient @param {string} userSala */
@@ -678,7 +696,7 @@ export function readEntregaPhaseActive(storage = globalThis.localStorage) {
     if (!raw) return false;
     const o = JSON.parse(raw);
     return !!(o && o.active);
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -870,250 +888,5 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
  * }|null|undefined} [context]
  */
 export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null, context = null) {
-  const ctx = context && typeof context === 'object' ? context : {};
-  const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
-  const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
-  const guardias = Array.isArray(ctx.guardias) ? ctx.guardias : [];
-  const cycle = ctx.cycle ?? null;
-  const guardiaMode = !!ctx.guardiaMode;
-  const now =
-    ctx.now != null
-      ? ctx.now instanceof Date
-        ? ctx.now
-        : new Date(String(ctx.now))
-      : new Date();
-  const userId = String(currentUser?.user_id || '');
-  const rank = String(currentUser?.rank || '');
-  const patientId = String(targetPatient?.id || '');
-  const userSala = String(currentUser?.sala || '');
-
-  const deny = (reasoning, extra = {}) => ({
-    readable: false,
-    writable: false,
-    reasoning,
-    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
-    ...extra,
-  });
-
-  const allow = (reasoning, readable = true, writable = true, extra = {}) => ({
-    readable,
-    writable,
-    reasoning,
-    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
-    ...extra,
-  });
-
-  if (!currentUser?.user_id || !targetPatient?.id) {
-    return deny('Usuario o paciente no identificado');
-  }
-
-  const enforceTeamPatientScope = !!ctx.enforceTeamPatientScope;
-
-  if (
-    !enforceTeamPatientScope &&
-    (currentUser.is_program_admin === 1 ||
-      currentUser.is_program_admin === true ||
-      rank === 'Admin')
-  ) {
-    return allow('Privilegios admin: acceso completo');
-  }
-
-  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
-    return allow('Guardia activa: cobertura asignada');
-  }
-
-  if (isIncomingPreviewWindow(cycle, now)) {
-    const incoming = assignments.find((a) => String(a.patient_id) === patientId);
-    if (incoming) {
-      const effectiveMs = toMillis(incoming.effective_at);
-      const nowMs = toMillis(now);
-      if (Number.isFinite(effectiveMs) && Number.isFinite(nowMs) && nowMs < effectiveMs) {
-        return allow(
-          'Vista previa Incoming: lectura permitida hasta vigencia',
-          true,
-          false,
-          { incomingPreview: true }
-        );
-      }
-    }
-  }
-
-  const joinedTeams = getJoinedTeams(teams, userId);
-  const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
-  const strictTeamFilter = enforceTeamPatientScope
-    ? true
-    : userHasJoinedClinicalTeams(teams, userId);
-
-  if (isInterconsultasPatient(targetPatient)) {
-    if (userOffCallFromInterconsultasRotationServices(userId, joinedTeams, rank, now)) {
-      return allow('Off-call UX/Eme: censo Interconsultas');
-    }
-    if (userOnCallForInterconsultasTeam(userId, joinedTeams, rank, now)) {
-      return allow('Interconsultas de guardia: censo del día');
-    }
-  }
-
-  if (guardiaMode) {
-    if (rank === 'R1') {
-      if (ctx.onCallGuardiaReceiver) {
-        if (patientCoveredByGuardia(patientId, userId, guardias)) {
-          return allow('Modo Guardia R1: paciente entregado', true, false);
-        }
-        return deny('Modo Guardia R1: sin entrega recibida');
-      }
-      if (enforceTeamPatientScope) {
-        if (
-          patientInJoinedTeamScope(
-            targetPatient,
-            joinedTeams,
-            assignments,
-            joinedTeamIds,
-            userId,
-            now,
-            { strictTeamFilter: true }
-          )
-        ) {
-          return allow('Modo Guardia R1: paciente de mi equipo', true, false);
-        }
-        if (patientCoveredByGuardia(patientId, userId, guardias)) {
-          return allow('Modo Guardia R1: paciente entregado', true, false);
-        }
-        return deny('Modo Guardia R1: fuera de mi equipo');
-      }
-      const patientSala = targetPatient?.sala || '';
-      if (patientSala && patientSala === userSala) {
-        return allow('Modo Guardia R1: visibilidad de Sala completa', true, false);
-      }
-      return deny('Modo Guardia R1: fuera de mi Sala');
-    }
-
-    if (rank === 'R2') {
-      if (patientCoveredByGuardia(patientId, userId, guardias)) {
-        return allow('Modo Guardia R2: paciente entregado', true, false);
-      }
-      return deny('Modo Guardia R2: sin entrega recibida');
-    }
-
-    if (rank === 'R4') {
-      const svc = normalizeServiceKey(targetPatient?.service);
-      if (svc.includes('sala') || svc.includes('torre')) {
-        return allow('Modo Guardia R4: cobertura Sala + Torre', true, false);
-      }
-      return deny('Modo Guardia R4: fuera de dominio');
-    }
-
-    return deny('Modo Guardia: rango sin cobertura');
-  }
-
-  if (!enforceTeamPatientScope && rank === 'R4') {
-    return allow('R4: acceso global');
-  }
-
-  const entregaPhaseActive = !!ctx.entregaPhaseActive;
-
-  if (entregaPhaseActive && rank === 'R1') {
-    if (enforceTeamPatientScope) {
-      if (
-        patientInJoinedTeamScope(
-          targetPatient,
-          joinedTeams,
-          assignments,
-          joinedTeamIds,
-          userId,
-          now,
-          { strictTeamFilter: true }
-        )
-      ) {
-        return allow('Fase entrega R1: paciente de mi equipo', true, false);
-      }
-      return deny('Fase entrega R1: fuera de mi equipo');
-    }
-    if (patientInUserSala(targetPatient, userSala)) {
-      return allow('Fase entrega R1: censo de sala', true, false);
-    }
-    return deny('Fase entrega R1: fuera de mi sala');
-  }
-
-  if (rank === 'R1') {
-    if (strictTeamFilter) {
-      if (
-        patientInJoinedTeamScope(
-          targetPatient,
-          joinedTeams,
-          assignments,
-          joinedTeamIds,
-          userId,
-          now,
-          { strictTeamFilter: true }
-        )
-      ) {
-        return allow('R1: paciente de mi equipo');
-      }
-      if (patientCoveredByGuardia(patientId, userId, guardias)) {
-        return allow('R1: paciente entregado');
-      }
-      return deny('R1: fuera de mi equipo');
-    }
-    if (!enforceTeamPatientScope && patientInUserSala(targetPatient, userSala)) {
-      return allow('R1: paciente en mi sala');
-    }
-    return deny('R1: fuera de mi sala');
-  }
-
-  if (rank === 'R2') {
-    if (patientCoveredByGuardia(patientId, userId, guardias)) {
-      return allow('R2: paciente entregado');
-    }
-    if (
-      patientInJoinedTeamScope(
-        targetPatient,
-        joinedTeams,
-        assignments,
-        joinedTeamIds,
-        userId,
-        now,
-        { strictTeamFilter }
-      )
-    ) {
-      return allow('R2: paciente de mi equipo');
-    }
-    if (!strictTeamFilter && !enforceTeamPatientScope && patientInUserSala(targetPatient, userSala)) {
-      return allow('R2: paciente en mi sala');
-    }
-    return deny('R2: sin equipo ni entrega');
-  }
-
-  if (rank === 'R3') {
-    if (
-      patientInJoinedTeamScope(
-        targetPatient,
-        joinedTeams,
-        assignments,
-        joinedTeamIds,
-        userId,
-        now,
-        { strictTeamFilter }
-      )
-    ) {
-      return allow('R3: paciente de mi equipo');
-    }
-    if (
-      !strictTeamFilter &&
-      !patientHasExplicitTeamAssignment(patientId, assignments) &&
-      r3ExtendedStructuralAccess(currentUser, targetPatient, joinedTeams)
-    ) {
-      return allow('R3: servicio extendido');
-    }
-    return deny('R3: fuera de alcance');
-  }
-
-  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds, now)) {
-    return allow('Paciente del equipo (asignación)');
-  }
-
-  if (patientCoveredByGuardia(patientId, userId, guardias)) {
-    return allow('Paciente entregado (handoff)');
-  }
-
-  return deny('Fuera de alcance');
+  return runEvaluateClinicalScope(currentUser, targetPatient, activeGuardia, context);
 }

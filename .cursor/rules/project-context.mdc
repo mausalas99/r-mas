@@ -73,7 +73,7 @@ docs/
 | Topic | Primary locations |
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
-| Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
+| Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` (`evaluateClinicalScope` orchestrator + per-rank evaluators) |
 | LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs` (fingerprint-keyed host registry), `lan-ward-host-registry.mjs` (persistent cross-VLAN URLs/prefixes), `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs` (delta path apply, echo tracker); overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
@@ -125,6 +125,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-12** `clinico-access-scope`: `evaluateClinicalScope` (complexity 80) decomposed to `clinico-access-scope/` orchestrator + guardia/team evaluators ≤15; 40 characterization goldens in `clinico-access.test.mjs`; export frozen.
 - **2026-06-12** `host-store-durability`: persist failures logged via `reportPersistFailure` + `getLastPersistError`; commit-barrier `onError`; `flushHostStoreNow` on quit (3s cap); `putRoomClinicalOps` DB-first; `host-store.js`, `commit-barrier.js`, `server.js`, `main.js`.
 - **2026-06-12** `cultivo-block-core`: unified cultivo block parser (`cultivo-block-core.mjs`) — censo/bulk-paste/lab-history-set import core with per-context flags; `censo-cultivo-format.mjs`, `lab-bulk-paste.mjs`, `lab-history-set.mjs`.
 - **2026-06-12** `lan-pin-lockout`: global in-memory failure lockout on `POST /auth/exchange` (8 fails → 5 min 429); `auth-failure-lockout.js`, `auth-router.js`.

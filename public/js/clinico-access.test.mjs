@@ -29,8 +29,6 @@ import {
   stampPatientClinicalSala,
   migratePatientsClinicalSala,
   isInterconsultasPatient,
-  userOffCallFromInterconsultasRotationServices,
-  userOnCallForInterconsultasTeam,
   userIsOnCallForLanHost,
   resolveR4GuardiaSectorLabel,
 } from './clinico-access.mjs';
@@ -982,4 +980,1591 @@ test('off-call Interconsultas member only via assignment', () => {
     }
   );
   assert.equal(scope.writable, false);
+});
+
+
+// --- evaluateClinicalScope characterization goldens (plan 006) ---
+
+const EVALUATE_CLINICAL_SCOPE_SCENARIOS = {
+  "missingUser": {
+    "user": {
+      "rank": "R1"
+    },
+    "patient": {
+      "id": "p1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "missingPatient": {
+    "user": {
+      "user_id": "u1",
+      "rank": "R1"
+    },
+    "patient": {},
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "adminFull": {
+    "user": {
+      "user_id": "admin",
+      "rank": "Admin"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "adminEnforceTeamScope": {
+    "user": {
+      "user_id": "admin",
+      "rank": "Admin",
+      "is_program_admin": true
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z",
+      "enforceTeamPatientScope": true
+    }
+  },
+  "activeGuardiaCovering": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1"
+    },
+    "patient": {
+      "id": "p1"
+    },
+    "activeGuardia": {
+      "covering_user_id": "r1"
+    },
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "incomingPreview": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala A"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t1",
+          "service": "Sala",
+          "sub_area_fraction": "A",
+          "members": []
+        }
+      ],
+      "guardias": [],
+      "cycle": {
+        "preview_start_at": "2026-05-30T00:00:00Z",
+        "effective_at": "2026-06-01T00:00:00Z"
+      },
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t1",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "salaGuardiaToday": [],
+      "now": "2026-05-31T12:00:00Z"
+    }
+  },
+  "interconsultasOffCallUx": {
+    "user": {
+      "user_id": "r1-ux",
+      "rank": "R1",
+      "sala": "UX"
+    },
+    "patient": {
+      "id": "p-ic",
+      "service": "Interconsultas",
+      "sub_area": "A"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-ux",
+          "service": "UX",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r1-ux",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "interconsultasOnCallTeam": {
+    "user": {
+      "user_id": "r2-ic",
+      "rank": "R2",
+      "sala": "Interconsultas"
+    },
+    "patient": {
+      "id": "p-ic",
+      "service": "Interconsultas",
+      "sub_area": "C"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-ic",
+          "service": "Interconsultas",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r2-ic",
+              "rank": "R2"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR1OnCallHandoff": {
+    "user": {
+      "user_id": "r1n",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p1",
+          "covering_user_id": "r1n"
+        }
+      ],
+      "guardiaMode": true,
+      "onCallGuardiaReceiver": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR1OnCallNoHandoff": {
+    "user": {
+      "user_id": "r1n",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p2",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "onCallGuardiaReceiver": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR1EnforceTeamMatch": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala B",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-mine",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "guardiaMode": true,
+      "enforceTeamPatientScope": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "guardiaR1EnforceTeamDeny": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala A",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-other",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "guardiaMode": true,
+      "enforceTeamPatientScope": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "guardiaR1EnforceTeamHandoff": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p9",
+      "service": "Sala",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p9",
+          "covering_user_id": "r1"
+        }
+      ],
+      "guardiaMode": true,
+      "enforceTeamPatientScope": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "guardiaR1SalaMatch": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR1SalaMismatch": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR2Handoff": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2"
+    },
+    "patient": {
+      "id": "p1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p1",
+          "covering_user_id": "r2"
+        }
+      ],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR2NoHandoff": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2"
+    },
+    "patient": {
+      "id": "p1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR4SalaTorre": {
+    "user": {
+      "user_id": "r4",
+      "rank": "R4"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR4TorreHu": {
+    "user": {
+      "user_id": "r4",
+      "rank": "R4"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaR4OutOfDomain": {
+    "user": {
+      "user_id": "r4",
+      "rank": "R4"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "UX"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "guardiaRankNoCoverage": {
+    "user": {
+      "user_id": "r3",
+      "rank": "R3"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "guardiaMode": true,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "r4GlobalAccess": {
+    "user": {
+      "user_id": "r4",
+      "rank": "R4",
+      "sala": "Sala 1",
+      "is_program_admin": 0
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "entregaR1TeamMatch": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala B",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-mine",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "entregaPhaseActive": true,
+      "enforceTeamPatientScope": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "entregaR1TeamDeny": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala A",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-other",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "entregaPhaseActive": true,
+      "enforceTeamPatientScope": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "entregaR1SalaCensus": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala A",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-other",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "entregaPhaseActive": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "entregaR1SalaDeny": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "entregaPhaseActive": true,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR1TeamPatient": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala B",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-mine",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR1TeamHandoff": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p9",
+      "service": "Sala",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p9",
+          "covering_user_id": "r1"
+        }
+      ],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR1TeamDeny": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala A",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-mine",
+          "service": "Sala",
+          "sub_area_fraction": "B",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "r1",
+              "rank": "R1"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-other",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR1SalaPatient": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala B",
+      "sala": "Sala 1"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-other",
+          "service": "Sala",
+          "sub_area_fraction": "A",
+          "sala": "Sala 1",
+          "members": [
+            {
+              "user_id": "other"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "normalR1SalaDeny": {
+    "user": {
+      "user_id": "r1",
+      "rank": "R1",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p2",
+      "service": "Sala",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "normalR2Handoff": {
+    "user": {
+      "user_id": "r2x",
+      "rank": "R2",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p1",
+          "covering_user_id": "r2x"
+        }
+      ],
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "normalR2TeamPatient": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sub_area": "Sala A"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t1",
+          "service": "Sala",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r2",
+              "rank": "R2"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t1",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR2SalaPatient": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2",
+      "sala": "Sala 2"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala",
+      "sala": "Sala 2"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-01T12:00:00Z"
+    }
+  },
+  "normalR2Deny": {
+    "user": {
+      "user_id": "r2",
+      "rank": "R2",
+      "sala": "Sala 1"
+    },
+    "patient": {
+      "id": "p-struct",
+      "service": "Sala",
+      "sub_area": "A"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t1",
+          "service": "Sala",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r2"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR3TeamPatient": {
+    "user": {
+      "user_id": "r3",
+      "rank": "R3"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU",
+      "sub_area": "A"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-torre",
+          "service": "Torre HU",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r3",
+              "rank": "R3"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t-torre",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "normalR3Deny": {
+    "user": {
+      "user_id": "r3",
+      "rank": "R3"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU",
+      "sub_area": "B"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t-torre",
+          "service": "Torre HU",
+          "sub_area_fraction": "A",
+          "members": [
+            {
+              "user_id": "r3",
+              "rank": "R3"
+            }
+          ]
+        }
+      ],
+      "assignments": [],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "genericTeamAssignment": {
+    "user": {
+      "user_id": "r5",
+      "rank": "R5"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [
+        {
+          "team_id": "t1",
+          "members": [
+            {
+              "user_id": "r5"
+            }
+          ]
+        }
+      ],
+      "assignments": [
+        {
+          "patient_id": "p1",
+          "team_id": "t1",
+          "effective_at": "2026-06-01T00:00:00Z"
+        }
+      ],
+      "guardias": [],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "genericHandoff": {
+    "user": {
+      "user_id": "r5",
+      "rank": "R5"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Sala"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "assignments": [],
+      "guardias": [
+        {
+          "patient_id": "p1",
+          "covering_user_id": "r5"
+        }
+      ],
+      "now": "2026-06-02T12:00:00Z"
+    }
+  },
+  "genericOutOfScope": {
+    "user": {
+      "user_id": "r5",
+      "rank": "R5"
+    },
+    "patient": {
+      "id": "p1",
+      "service": "Torre HU"
+    },
+    "activeGuardia": null,
+    "context": {
+      "teams": [],
+      "guardias": [],
+      "cycle": null,
+      "assignments": [],
+      "salaGuardiaToday": [],
+      "guardiaMode": false,
+      "now": "2026-06-02T12:00:00Z"
+    }
+  }
+};
+
+const EVALUATE_CLINICAL_SCOPE_GOLDENS = {
+  "missingUser": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Usuario o paciente no identificado",
+    "audit": {
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "missingPatient": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Usuario o paciente no identificado",
+    "audit": {
+      "userId": "u1",
+      "rank": "R1"
+    }
+  },
+  "adminFull": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Privilegios admin: acceso completo",
+    "audit": {
+      "userId": "admin",
+      "rank": "Admin",
+      "patientId": "p1"
+    }
+  },
+  "adminEnforceTeamScope": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Fuera de alcance",
+    "audit": {
+      "userId": "admin",
+      "rank": "Admin",
+      "patientId": "p1"
+    }
+  },
+  "activeGuardiaCovering": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Guardia activa: cobertura asignada",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "incomingPreview": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Vista previa Incoming: lectura permitida hasta vigencia",
+    "incomingPreview": true,
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "interconsultasOffCallUx": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Off-call UX/Eme: censo Interconsultas",
+    "audit": {
+      "userId": "r1-ux",
+      "rank": "R1",
+      "patientId": "p-ic"
+    }
+  },
+  "interconsultasOnCallTeam": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Interconsultas de guardia: censo del día",
+    "audit": {
+      "userId": "r2-ic",
+      "rank": "R2",
+      "patientId": "p-ic"
+    }
+  },
+  "guardiaR1OnCallHandoff": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: paciente entregado",
+    "audit": {
+      "userId": "r1n",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR1OnCallNoHandoff": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: sin entrega recibida",
+    "audit": {
+      "userId": "r1n",
+      "rank": "R1",
+      "patientId": "p2"
+    }
+  },
+  "guardiaR1EnforceTeamMatch": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: paciente de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR1EnforceTeamDeny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: fuera de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR1EnforceTeamHandoff": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: paciente entregado",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p9"
+    }
+  },
+  "guardiaR1SalaMatch": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: visibilidad de Sala completa",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR1SalaMismatch": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia R1: fuera de mi Sala",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR2Handoff": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R2: paciente entregado",
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR2NoHandoff": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia R2: sin entrega recibida",
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR4SalaTorre": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R4: cobertura Sala + Torre",
+    "audit": {
+      "userId": "r4",
+      "rank": "R4",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR4TorreHu": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Modo Guardia R4: cobertura Sala + Torre",
+    "audit": {
+      "userId": "r4",
+      "rank": "R4",
+      "patientId": "p1"
+    }
+  },
+  "guardiaR4OutOfDomain": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia R4: fuera de dominio",
+    "audit": {
+      "userId": "r4",
+      "rank": "R4",
+      "patientId": "p1"
+    }
+  },
+  "guardiaRankNoCoverage": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Modo Guardia: rango sin cobertura",
+    "audit": {
+      "userId": "r3",
+      "rank": "R3",
+      "patientId": "p1"
+    }
+  },
+  "r4GlobalAccess": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R4: acceso global",
+    "audit": {
+      "userId": "r4",
+      "rank": "R4",
+      "patientId": "p1"
+    }
+  },
+  "entregaR1TeamMatch": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Fase entrega R1: paciente de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "entregaR1TeamDeny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Fase entrega R1: fuera de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "entregaR1SalaCensus": {
+    "readable": true,
+    "writable": false,
+    "reasoning": "Fase entrega R1: censo de sala",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "entregaR1SalaDeny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Fase entrega R1: fuera de mi sala",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "normalR1TeamPatient": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R1: paciente de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "normalR1TeamHandoff": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R1: paciente entregado",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p9"
+    }
+  },
+  "normalR1TeamDeny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "R1: fuera de mi equipo",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "normalR1SalaPatient": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R1: paciente en mi sala",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p1"
+    }
+  },
+  "normalR1SalaDeny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "R1: fuera de mi sala",
+    "audit": {
+      "userId": "r1",
+      "rank": "R1",
+      "patientId": "p2"
+    }
+  },
+  "normalR2Handoff": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R2: paciente entregado",
+    "audit": {
+      "userId": "r2x",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "normalR2TeamPatient": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R2: paciente de mi equipo",
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "normalR2SalaPatient": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R2: paciente en mi sala",
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p1"
+    }
+  },
+  "normalR2Deny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "R2: sin equipo ni entrega",
+    "audit": {
+      "userId": "r2",
+      "rank": "R2",
+      "patientId": "p-struct"
+    }
+  },
+  "normalR3TeamPatient": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "R3: paciente de mi equipo",
+    "audit": {
+      "userId": "r3",
+      "rank": "R3",
+      "patientId": "p1"
+    }
+  },
+  "normalR3Deny": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "R3: fuera de alcance",
+    "audit": {
+      "userId": "r3",
+      "rank": "R3",
+      "patientId": "p1"
+    }
+  },
+  "genericTeamAssignment": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Paciente del equipo (asignación)",
+    "audit": {
+      "userId": "r5",
+      "rank": "R5",
+      "patientId": "p1"
+    }
+  },
+  "genericHandoff": {
+    "readable": true,
+    "writable": true,
+    "reasoning": "Paciente entregado (handoff)",
+    "audit": {
+      "userId": "r5",
+      "rank": "R5",
+      "patientId": "p1"
+    }
+  },
+  "genericOutOfScope": {
+    "readable": false,
+    "writable": false,
+    "reasoning": "Fuera de alcance",
+    "audit": {
+      "userId": "r5",
+      "rank": "R5",
+      "patientId": "p1"
+    }
+  }
+};
+
+/** @param {ReturnType<typeof evaluateClinicalScope>} scope */
+function scopeWithoutTimestamp(scope) {
+  const { audit, ...rest } = scope;
+  const auditRest = { ...(audit || {}) };
+  delete auditRest.timestamp;
+  const auditClean = Object.fromEntries(
+    Object.entries(auditRest).filter(([, value]) => value !== undefined)
+  );
+  return { ...rest, audit: auditClean };
+}
+
+test('evaluateClinicalScope characterization: goldens cover every scenario key', () => {
+  assert.deepEqual(
+    Object.keys(EVALUATE_CLINICAL_SCOPE_GOLDENS).sort(),
+    Object.keys(EVALUATE_CLINICAL_SCOPE_SCENARIOS).sort()
+  );
+  assert.ok(Object.keys(EVALUATE_CLINICAL_SCOPE_SCENARIOS).length >= 25);
+});
+
+for (const [name, scenario] of Object.entries(EVALUATE_CLINICAL_SCOPE_SCENARIOS)) {
+  test('evaluateClinicalScope characterization: ' + name, () => {
+    const result = evaluateClinicalScope(
+      scenario.user,
+      scenario.patient,
+      scenario.activeGuardia,
+      scenario.context
+    );
+    assert.deepEqual(scopeWithoutTimestamp(result), EVALUATE_CLINICAL_SCOPE_GOLDENS[name]);
+  });
+}
+
+test('evaluateClinicalScope characterization: every reachable reasoning string is pinned', () => {
+  const pinned = new Set(Object.values(EVALUATE_CLINICAL_SCOPE_GOLDENS).map((g) => g.reasoning));
+  const expectedReachable = [
+    'Usuario o paciente no identificado',
+    'Privilegios admin: acceso completo',
+    'Guardia activa: cobertura asignada',
+    'Vista previa Incoming: lectura permitida hasta vigencia',
+    'Off-call UX/Eme: censo Interconsultas',
+    'Interconsultas de guardia: censo del día',
+    'Modo Guardia R1: paciente entregado',
+    'Modo Guardia R1: sin entrega recibida',
+    'Modo Guardia R1: paciente de mi equipo',
+    'Modo Guardia R1: fuera de mi equipo',
+    'Modo Guardia R1: visibilidad de Sala completa',
+    'Modo Guardia R1: fuera de mi Sala',
+    'Modo Guardia R2: paciente entregado',
+    'Modo Guardia R2: sin entrega recibida',
+    'Modo Guardia R4: cobertura Sala + Torre',
+    'Modo Guardia R4: fuera de dominio',
+    'Modo Guardia: rango sin cobertura',
+    'R4: acceso global',
+    'Fase entrega R1: paciente de mi equipo',
+    'Fase entrega R1: fuera de mi equipo',
+    'Fase entrega R1: censo de sala',
+    'Fase entrega R1: fuera de mi sala',
+    'R1: paciente de mi equipo',
+    'R1: paciente entregado',
+    'R1: fuera de mi equipo',
+    'R1: paciente en mi sala',
+    'R1: fuera de mi sala',
+    'R2: paciente entregado',
+    'R2: paciente de mi equipo',
+    'R2: paciente en mi sala',
+    'R2: sin equipo ni entrega',
+    'R3: paciente de mi equipo',
+    'R3: fuera de alcance',
+    'Paciente del equipo (asignación)',
+    'Paciente entregado (handoff)',
+    'Fuera de alcance',
+  ];
+  for (const reasoning of expectedReachable) {
+    assert.ok(pinned.has(reasoning), 'missing golden for reasoning: ' + reasoning);
+  }
 });
