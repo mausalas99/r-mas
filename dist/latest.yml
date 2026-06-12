@@ -1,28 +1,28 @@
-version: 7.3.4
+version: 7.3.5
 files:
-  - url: R+-7.3.4-x64.exe
-    sha512: LOU4f2NKTgyxZCmduTk2WwFx0WXbVwLLVBt7i3Pm2GRMtTvqu0RFMsQNUoBNghX5ySDz51OQ2gYwohEhOiHmHA==
-    size: 114922004
-path: R+-7.3.4-x64.exe
-sha512: LOU4f2NKTgyxZCmduTk2WwFx0WXbVwLLVBt7i3Pm2GRMtTvqu0RFMsQNUoBNghX5ySDz51OQ2gYwohEhOiHmHA==
-releaseDate: '2026-06-12T16:36:55.000Z'
+  - url: R+-7.3.5-x64.exe
+    sha512: VCi33t+v75r145a0ubIRvMgd9m3FMDQqZWpUFlm/HQYjL6fDw7rwV0Y0CPM3dedV3UEwHpyetWMfnHOQdVOo0w==
+    size: 114961233
+path: R+-7.3.5-x64.exe
+sha512: VCi33t+v75r145a0ubIRvMgd9m3FMDQqZWpUFlm/HQYjL6fDw7rwV0Y0CPM3dedV3UEwHpyetWMfnHOQdVOo0w==
+releaseDate: '2026-06-12T20:27:46.000Z'
 releaseNotes: |
-  Sobre 7.3.3: arranque y censo más fluidos (chunks perezosos de labs/gráficas, scroll virtual en lista activa >30), pendientes con fecha de vencimiento, recordatorios del sistema y filtro Entrega; iPad/PWA refleja solo pacientes de equipos unidos (+ guardia activa); pulido visual en laboratorio y motion.
+  Sobre 7.3.4: endurecimiento LAN (purga con guard de propiedad en servidor, bloqueo tras PIN fallidos), persistencia del anfitrión más fiable al cerrar, caché de blobs parseados, parser unificado de cultivos y pulido clínico/UI (modal Datos del paciente, ATB por día de manejo, presets de vencimiento editables).
   
-  Rendimiento — arranque — Labs, gráficas de Estado actual y Tendencias cargan con import() y chunks de esbuild; menos código en el boot inicial.
+  LAN — purga segura — DELETE /api/lan/v1/patients/:id valida propiedad en servidor; solo admin o pacientes huérfanos; el cliente envía identidad y mapea 403.
   
-  Rendimiento — censo virtual — Lista activa con scroll virtual cuando hay más de 30 pacientes; repintado incremental conservado en listas cortas.
+  LAN — bloqueo PIN — Tras 8 intentos fallidos en POST /auth/exchange, bloqueo global en memoria 5 min (HTTP 429).
   
-  Rendimiento — LiveSync — Marcas de perfilado en reconcile; refresco acotado de pendientes tras merge LAN (sin repintar toda la UI del turno).
+  Anfitrión — durabilidad — Fallos de persistencia registrados y consultables; barrera de commit con onError; flushHostStoreNow al salir (tope 3 s); putRoomClinicalOps DB-first.
   
-  Pendientes — vencimiento — Fecha/hora opcional por tarea, orden por vencidos primero, modal de fecha y recordatorio nativo de Electron cuando corresponde.
+  Rendimiento — caché parseada — Blobs parseados en caché con invalidación al escribir; menos re-parse en labs y flujos repetidos.
   
-  Pendientes — entrega — Filtro Entrega para tareas dejadas por otro residente; chip «De @usuario» y acuse al completar.
+  Laboratorio — cultivos — Parser único cultivo-block-core para censo, pegado masivo e historial (flags por contexto).
   
-  Guardia v7 — Barra de progreso del currículo y aviso en tablero cuando hay módulos pendientes.
+  Expediente — Datos del paciente — Pestaña Paciente abre en modal dedicado con la misma tarjeta demográfica.
   
-  Laboratorio — Estilos premium alineados al Workbench; extracción de labs-display para listados más ligeros.
+  Estado actual — ATB por día — Texto de antibióticos avanza según fecha de actualización del bloque Manejo (panel y copia).
   
-  iPad / PWA — alcance por equipo — El espejo móvil muestra solo pacientes asignados a equipos a los que te uniste, más cobertura de guardia activa; sin censo completo de sala por rango.
+  Pendientes — presets de vencimiento — Atajos Hoy 18:00, Mañana 8:00, En 3 h / 24 h; horas editables y persistidas en el dispositivo.
   
-  Motion y skeleton — Presets de movimiento refinados; placeholders skeleton en cargas largas.
+  UI — Laboratorio y superficies Workbench refinadas; motion y modales alineados al sistema premium.
