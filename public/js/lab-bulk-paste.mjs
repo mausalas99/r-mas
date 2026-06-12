@@ -2,59 +2,13 @@
  * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
  * vista previa y consolidación por día + tipo antes de guardar en historial.
  */
-import { procesarLabs, looksLikeSomeLabReport, isParsedCultivoHeaderLine } from './labs.js';
+import { procesarLabs, looksLikeSomeLabReport } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
+import { splitResLabsByTipo } from './cultivo-block-core.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
-function isLabSectionHeaderLine(s) {
-  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i.test(String(s).trim());
-}
-
-function isCultivoBlockStartLine(s) {
-  var t = String(s).trim();
-  if (!t) return false;
-  if (/^CULTIVO\b/i.test(t)) return true;
-  if (isParsedCultivoHeaderLine(t)) return true;
-  if (/^BACTERIOLOGIA\b/i.test(t)) return true;
-  if (/^UROCULTIVO\b/i.test(t)) return true;
-  if (/^HEMOCULTIVO\b/i.test(t)) return true;
-  if (/^FUNGICULTIVO\b/i.test(t)) return true;
-  if (/^TINCION\s+DE\s+GRAM/i.test(t)) return true;
-  if (/^CATETER\b/i.test(t)) return true;
-  if (/^ATB\b/i.test(t)) return true;
-  if (/^Cuenta:/i.test(t)) return true;
-  if (/^[•\u2022\u00B7]\s*/.test(t)) return true;
-  if (/^Cultivos$/i.test(t)) return true;
-  return false;
-}
-
-function splitResLabsByTipo(rows) {
-  var labs = [];
-  var cultivo = [];
-  var inCultivo = false;
-  (rows || []).forEach(function (row) {
-    var raw = row == null ? '' : row;
-    var s = String(raw).trim();
-    if (isLabSectionHeaderLine(s)) {
-      inCultivo = false;
-      labs.push(raw);
-      return;
-    }
-    if (inCultivo) {
-      cultivo.push(raw);
-      return;
-    }
-    if (isCultivoBlockStartLine(s)) {
-      inCultivo = true;
-      cultivo.push(raw);
-      return;
-    }
-    labs.push(raw);
-  });
-  return { labs: labs, cultivo: cultivo };
-}
 
 function primaryTipoForResLabs(resLabs) {
   var sp = splitResLabsByTipo(resLabs || []);

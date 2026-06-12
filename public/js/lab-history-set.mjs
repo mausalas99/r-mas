@@ -6,10 +6,14 @@ import {
   buildRefsBySectionFromReport,
   extractLabReportHora,
   reprocessLabResultLines_,
-  isParsedCultivoHeaderLine,
   isAscitisInterpretacionResLabChunk,
   looksLikeSomeLabReport,
 } from './labs.js';
+import {
+  isCultivoBlockStartLine as isCultivoBlockStartLineCore,
+  isLabSectionHeaderLine as isLabSectionHeaderLineCore,
+  splitResLabsByTipo as splitResLabsByTipoCore,
+} from './cultivo-block-core.mjs';
 import {
   findExactDuplicateLabGroups,
   findNormalizedSourceDuplicateGroups,
@@ -102,62 +106,13 @@ export function buildLabSetDateLineForNota(set) {
   return rawDate;
 }
 
-export function isLabSectionHeaderLine(s) {
-  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES)\b/i.test(String(s).trim());
-}
+var LAB_HISTORY_CULTIVO_OPTS = { extendedLabHeaders: true, allCapsSiteHeaders: true };
 
-export function isCultivoBlockStartLine(s) {
-  var t = String(s).trim();
-  if (!t) return false;
-  if (/^CULTIVO\b/i.test(t)) return true;
-  if (isParsedCultivoHeaderLine(t)) return true;
-  if (/^BACTERIOLOGIA\b/i.test(t)) return true;
-  if (/^UROCULTIVO\b/i.test(t)) return true;
-  if (/^HEMOCULTIVO\b/i.test(t)) return true;
-  if (/^FUNGICULTIVO\b/i.test(t)) return true;
-  if (/^TINCION\s+DE\s+GRAM/i.test(t)) return true;
-  if (/^BACILOSCOPIA\b/i.test(t)) return true;
-  if (/^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(t)) return true;
-  if (/^CATETER\b/i.test(t)) return true;
-  if (/^ATB\b/i.test(t)) return true;
-  if (/^Cuenta:/i.test(t)) return true;
-  if (/^[•\u2022\u00B7]\s*/.test(t)) return true;
-  if (/^Cultivos$/i.test(t)) return true;
-  if (t.indexOf('\t') === -1 && /^[A-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑ]+){1,4}$/.test(t)) {
-    var ws = t.split(/\s+/).filter(Boolean);
-    if (ws.length < 2 || ws[0].length < 5 || ws[1].length < 3) return false;
-    if (/^(INTERCONSULTA|SALA|SERVICIO|UNIDAD|PACIENTE|HOSPITAL|AREA|CONTROL|DEPARTAMENTO)/i.test(ws[0])) return false;
-    if (/^(CARDIOLOGIA|CIRUGIA|URGENCIAS|INTERNA|MEDICINA|PEDIATRIA|NEFROLOGIA|HEMATOLOGIA)$/i.test(ws[1])) return false;
-    return true;
-  }
-  return false;
-}
+export const isLabSectionHeaderLine = (s) => isLabSectionHeaderLineCore(s, LAB_HISTORY_CULTIVO_OPTS);
 
-export function splitResLabsByTipo(rows) {
-  var labs = [];
-  var cultivo = [];
-  var inCultivo = false;
-  (rows || []).forEach(function (row) {
-    var raw = row == null ? '' : row;
-    var s = String(raw).trim();
-    if (isLabSectionHeaderLine(s)) {
-      inCultivo = false;
-      labs.push(raw);
-      return;
-    }
-    if (inCultivo) {
-      cultivo.push(raw);
-      return;
-    }
-    if (isCultivoBlockStartLine(s)) {
-      inCultivo = true;
-      cultivo.push(raw);
-      return;
-    }
-    labs.push(raw);
-  });
-  return { labs: labs, cultivo: cultivo };
-}
+export const isCultivoBlockStartLine = (s) => isCultivoBlockStartLineCore(s, LAB_HISTORY_CULTIVO_OPTS);
+
+export const splitResLabsByTipo = (rows) => splitResLabsByTipoCore(rows, LAB_HISTORY_CULTIVO_OPTS);
 
 /** Conjunto guardado desde informe SOME (pegado o reprocesado), no panel compacto de Drive. */
 /** Etiqueta del historial: fecha y número de bloques (sin hora). */
