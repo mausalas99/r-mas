@@ -118,19 +118,52 @@ html.ui-density-normal .patient-expediente-classic {
   padding: calc(2px * var(--density-space, 1)) 0 calc(12px * var(--density-space, 1));
 }
 
-.exp-pendientes-mount #todo-form {
+.exp-pendientes-mount #todo-form.todo-shell,
+.exp-pendientes-mount .todo-shell {
   display: flex;
   flex-direction: column;
-  gap: calc(8px * var(--density-space, 1));
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.exp-pendientes-mount .todo-composer {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  box-shadow: var(--elev-flat);
+  overflow: hidden;
+}
+
+.exp-pendientes-mount .todo-composer .todo-add-row {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
+  border-left-color: transparent;
+  padding: 12px 12px 10px;
+}
+
+.exp-pendientes-mount .todo-composer .todo-due-section {
+  grid-column: unset;
+  margin: 0;
+  padding: 0 12px 12px calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
+  border-top: none;
+}
+
+.exp-pendientes-mount .todo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 2rem;
 }
 
 .exp-pendientes-mount .todo-list {
   display: flex;
   flex-direction: column;
-  gap: calc(8px * var(--density-space, 1));
+  gap: calc(6px * var(--density-space, 1));
 }
 
-.exp-pendientes-mount .todo-add-row,
 .exp-pendientes-mount .todo-row {
   border: var(--border-hairline);
   border-left-width: 3px;
@@ -138,16 +171,22 @@ html.ui-density-normal .patient-expediente-classic {
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-flat);
   margin: 0;
+  background: var(--surface);
+  border-bottom: none;
   transition:
     background var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.exp-pendientes-mount .todo-add-row {
-  margin-bottom: 0;
-  border-left-color: transparent;
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+.exp-pendientes-mount .todo-row.prio-alta,
+.exp-pendientes-mount .todo-row.prio-media,
+.exp-pendientes-mount .todo-row.prio-baja {
+  background: var(--surface);
+}
+
+.exp-pendientes-mount .todo-row--handoff {
+  background: color-mix(in oklab, var(--action) 5%, var(--surface));
 }
 
 .exp-pendientes-mount .todo-row:hover {
@@ -157,8 +196,12 @@ html.ui-density-normal .patient-expediente-classic {
 
 .exp-pendientes-mount .todo-empty {
   margin: 0;
-  padding: calc(10px * var(--density-space, 1)) calc(4px * var(--density-space, 1));
+  padding: calc(14px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
   color: var(--text-muted);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--surface) 70%, var(--bg));
+  text-align: center;
 }
 
 /* Estado actual (mounted under Clínico) */
@@ -219,28 +262,40 @@ html.ui-density-normal .patient-expediente-classic {
   background: color-mix(in oklab, var(--bg) 94%, var(--surface));
 }
 
+/* Lab cards: one radius tier (lg) — overrides soft-ui xl blanket + base .card xl */
+#appcontent-lab .main-work-scroll > .card,
 #appcontent-lab #lab-input-section,
 #appcontent-lab #lab-output-section,
 #appcontent-lab #lab-history-card,
-#appcontent-lab #lab-diagrams-section {
+#appcontent-lab #lab-diagrams-section,
+#appcontent-lab #lab-banner {
   border: var(--border-hairline);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) !important;
   box-shadow: var(--elev-raised);
   background: var(--surface);
-  overflow: visible;
+  isolation: isolate;
 }
 
-#appcontent-lab #lab-input-section > .card-body,
-#appcontent-lab #lab-output-section > .card-body,
-#appcontent-lab #lab-history-card > .card-body,
-#appcontent-lab #lab-diagrams-section > .card-body {
+#appcontent-lab .card > .card-header:first-child {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+
+#appcontent-lab .card > .card-body:last-child {
   overflow: hidden;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+#appcontent-lab #lab-banner > .card-body:only-child {
+  border-radius: var(--radius-lg);
 }
 
 #appcontent-lab #lab-output-section > .card-header,
 #appcontent-lab #lab-history-card > .card-header,
 #appcontent-lab #lab-input-section > .card-header,
+#appcontent-lab .main-work-scroll > .card > .card-header,
 #appcontent-lab #lab-diagrams-section > .card-header {
   font: var(--type-section);
   letter-spacing: var(--tracking-section);

@@ -3,17 +3,31 @@
  */
 
 import { isMobileWeb } from './mobile-web.mjs';
+import { buildLabPanelSkeletonHtml } from './ui-skeleton.mjs';
 
 let settingsHelpPromise = null;
 let platformPromise = null;
+let labsPromise = null;
 let settingsHelpModule = null;
 let platformModule = null;
+let labsModule = null;
+/** @type {Record<string, unknown>|null} */
+let labsRuntimeCtx = null;
+
+let chartsPromise = null;
+/** @type {{ tendencias: typeof import('./features/tendencias.mjs'), eaChartsModal: typeof import('./features/estado-actual-charts-modal.mjs') } | null} */
+let chartsModules = null;
+/** @type {Record<string, unknown>|null} */
+let chartsRuntimeCtx = null;
 
 export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/settings-help/index.mjs',
   'features/platform/index.mjs',
   'features/settings-help.mjs',
   'features/platform.mjs',
+  'features/lab-panel.mjs',
+  'features/tendencias.mjs',
+  'features/estado-actual-charts-modal.mjs',
 ];
 
 /**
@@ -43,6 +57,386 @@ export function ensurePlatformLoaded() {
   }
   return platformPromise;
 }
+
+/**
+ * @returns {Promise<typeof import('./features/lab-panel.mjs')>}
+ */
+export function ensureLabsLoaded() {
+  if (labsModule) return Promise.resolve(labsModule);
+  if (!labsPromise) {
+    labsPromise = import('./features/lab-panel.mjs').then(function (mod) {
+      labsModule = mod;
+      registerLazyLabsRuntimes(mod);
+      return mod;
+    });
+  }
+  return labsPromise;
+}
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazyLabsRuntimeCtx(ctx) {
+  labsRuntimeCtx = ctx;
+}
+
+/**
+ * @param {typeof import('./features/lab-panel.mjs')} mod
+ */
+function wireLabsRuntimeExports(mod) {
+  if (!labsRuntimeCtx) return;
+  Object.assign(labsRuntimeCtx, {
+    renderLabHistoryPanel: mod.renderLabHistoryPanel,
+    syncLabOutputChrome: mod.syncLabOutputChrome,
+    setLabHistoryPanelCollapsed: mod.setLabHistoryPanelCollapsed,
+    syncLabHistoryCollapseUI: mod.syncLabHistoryCollapseUI,
+    limpiarReporte: mod.limpiarReporte,
+    enviarLabsANota: mod.enviarLabsANota,
+    rerenderParsedLabOutputAfterPrefsChange: mod.rerenderParsedLabOutputAfterPrefsChange,
+    clearLabOutputUi: mod.clearLabWorkbenchMinimalDom,
+    getActiveLab: function () {
+      return mod.getActiveLab();
+    },
+    consumeActiveLab: function () {
+      var x = mod.getActiveLab();
+      mod.setActiveLab(null);
+      return x;
+    },
+    restoreActiveLab: function (x) {
+      mod.setActiveLab(x);
+    },
+  });
+}
+
+/**
+ * @param {typeof import('./features/lab-panel.mjs')} mod
+ */
+function registerLazyLabsRuntimes(mod) {
+  if (labsRuntimeCtx) {
+    mod.registerLabPanelRuntime(labsRuntimeCtx);
+    wireLabsRuntimeExports(mod);
+  }
+  patchWindowHandlers(mod.windowHandlers);
+}
+
+export function showLabPanelLoadingSkeleton() {
+  if (labsModule || typeof document === 'undefined') return;
+  var root = document.getElementById('appcontent-lab');
+  if (!root || root.classList.contains('is-lab-chunk-loading')) return;
+  root.classList.add('is-lab-chunk-loading');
+  root.setAttribute('aria-busy', 'true');
+  var scroll = root.querySelector('.lab-work-scroll');
+  var el = document.getElementById('lab-panel-loading');
+  if (!el) {
+    var wrap = document.createElement('div');
+    wrap.innerHTML = buildLabPanelSkeletonHtml();
+    el = wrap.firstElementChild;
+    if (el && scroll) scroll.prepend(el);
+    else if (el) root.prepend(el);
+  }
+  if (el) el.hidden = false;
+}
+
+export function hideLabPanelLoadingSkeleton() {
+  if (typeof document === 'undefined') return;
+  var root = document.getElementById('appcontent-lab');
+  if (root) {
+    root.classList.remove('is-lab-chunk-loading');
+    root.removeAttribute('aria-busy');
+  }
+  var el = document.getElementById('lab-panel-loading');
+  if (el) el.remove();
+}
+
+/**
+ * @param {string} exportName
+ */
+function labsAsyncFn(exportName) {
+  return function labsAsyncProxy() {
+    var args = arguments;
+    if (labsModule) {
+      var fn = labsModule[exportName];
+      if (typeof fn === 'function') return fn.apply(null, args);
+      return;
+    }
+    void ensureLabsLoaded().then(function (mod) {
+      var loadedFn = mod[exportName];
+      if (typeof loadedFn === 'function') loadedFn.apply(null, args);
+    });
+  };
+}
+
+/** Proxies until ensureLabsLoaded wires real exports onto runtime ctx. */
+export const labsRuntimeProxies = {
+  renderLabHistoryPanel: labsAsyncFn('renderLabHistoryPanel'),
+  syncLabOutputChrome: labsAsyncFn('syncLabOutputChrome'),
+  setLabHistoryPanelCollapsed: labsAsyncFn('setLabHistoryPanelCollapsed'),
+  syncLabHistoryCollapseUI: labsAsyncFn('syncLabHistoryCollapseUI'),
+  limpiarReporte: labsAsyncFn('limpiarReporte'),
+  enviarLabsANota: labsAsyncFn('enviarLabsANota'),
+  rerenderParsedLabOutputAfterPrefsChange: labsAsyncFn('rerenderParsedLabOutputAfterPrefsChange'),
+  clearLabOutputUi: labsAsyncFn('clearLabWorkbenchMinimalDom'),
+  getActiveLab: function () {
+    if (labsModule) return labsModule.getActiveLab();
+    return null;
+  },
+  consumeActiveLab: function () {
+    if (!labsModule) return null;
+    var x = labsModule.getActiveLab();
+    labsModule.setActiveLab(null);
+    return x;
+  },
+  restoreActiveLab: function (x) {
+    if (labsModule) labsModule.setActiveLab(x);
+  },
+};
+
+export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
+  {
+    procesarReporte: 'procesarReporte',
+    clearLabInputAfterSuccessfulParse: 'clearLabInputAfterSuccessfulParse',
+    limpiarReporte: 'limpiarReporte',
+    replayLabHistorySet: 'replayLabHistorySet',
+    reprocessLabHistorySet: 'reprocessLabHistorySet',
+    deleteLabHistorySet: 'deleteLabHistorySet',
+    toggleLabHistoryPanel: 'toggleLabHistoryPanel',
+    syncLabHistoryCollapseUI: 'syncLabHistoryCollapseUI',
+    setLabHistoryPanelCollapsed: 'setLabHistoryPanelCollapsed',
+    labHistoryPanelIsCollapsed: 'labHistoryPanelIsCollapsed',
+    copiarLabsAlPortapapeles: 'copiarLabsAlPortapapeles',
+    openLabSomeTablesModal: 'openLabSomeTablesModal',
+    closeLabSomeTablesModal: 'closeLabSomeTablesModal',
+    openSesionIngresoSendModal: 'openSesionIngresoSendModal',
+    closeSesionIngresoSendModal: 'closeSesionIngresoSendModal',
+    closeLabHistoryMoreMenu: 'closeLabHistoryMoreMenu',
+    openLabPatientPicker: 'openLabPatientPicker',
+    openLabHistoryDedupeReview: 'openLabHistoryDedupeReview',
+    expandLabHistoryList: 'expandLabHistoryList',
+    consolidateLabHistoryByDayAndTipo: 'consolidateLabHistoryByDayAndTipo',
+    insertLabPatientSeparator: 'insertLabPatientSeparator',
+    onLabHistoryDateChange: 'onLabHistoryDateChange',
+    reprocessSelectedLabHistorySet: 'reprocessSelectedLabHistorySet',
+    deleteSelectedLabHistorySet: 'deleteSelectedLabHistorySet',
+  },
+  ensureLabsLoaded
+);
+
+/**
+ * @returns {Promise<{ tendencias: typeof import('./features/tendencias.mjs'), eaChartsModal: typeof import('./features/estado-actual-charts-modal.mjs') }>}
+ */
+export function ensureChartsLoaded() {
+  if (chartsModules) return Promise.resolve(chartsModules);
+  if (!chartsPromise) {
+    chartsPromise = Promise.all([
+      import('./features/tendencias.mjs'),
+      import('./features/estado-actual-charts-modal.mjs'),
+    ]).then(function (pair) {
+      chartsModules = { tendencias: pair[0], eaChartsModal: pair[1] };
+      registerLazyChartsRuntimes(chartsModules);
+      return chartsModules;
+    });
+  }
+  return chartsPromise;
+}
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazyChartsRuntimeCtx(ctx) {
+  chartsRuntimeCtx = ctx;
+}
+
+function inferFechaLabSetFromIdFallback(set) {
+  if (!set || set.fecha === 'Anterior') return '';
+  var id = String(set.id || '');
+  if (!/^\d{10,}$/.test(id)) return '';
+  var ms = parseInt(id, 10);
+  if (id.length === 10) ms *= 1000;
+  var d = new Date(ms);
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  return dd + '/' + mm + '/' + yyyy;
+}
+
+function getLabOutputPrefsFallback() {
+  return {
+    showBhExtendedLine: false,
+    hideGasoAdvInterp: true,
+    quickLabOutput: false,
+  };
+}
+
+/**
+ * @param {typeof import('./features/tendencias.mjs')} tendMod
+ */
+function wireChartsRuntimeExports(tendMod) {
+  if (!chartsRuntimeCtx) return;
+  Object.assign(chartsRuntimeCtx, {
+    renderTendencias: tendMod.renderTendencias,
+    inferFechaLabSetFromId: tendMod.inferFechaLabSetFromId,
+    getLabOutputPrefs: tendMod.getLabOutputPrefs,
+    isGasoInterpretacionResLabChunk: tendMod.isGasoInterpretacionResLabChunk,
+    isAscitisInterpretacionResLabChunk: tendMod.isAscitisInterpretacionResLabChunk,
+    ascitisInterpretacionBody_: tendMod.ascitisInterpretacionBody_,
+    formatBhExtendedTabLine: tendMod.formatBhExtendedTabLine,
+    isBhMainResLabChunk: tendMod.isBhMainResLabChunk,
+  });
+}
+
+/**
+ * @param {{ tendencias: typeof import('./features/tendencias.mjs'), eaChartsModal: typeof import('./features/estado-actual-charts-modal.mjs') }} mods
+ */
+function registerLazyChartsRuntimes(mods) {
+  var tendMod = mods.tendencias;
+  var eaMod = mods.eaChartsModal;
+  if (chartsRuntimeCtx) {
+    tendMod.registerTendenciasRuntime(chartsRuntimeCtx);
+    eaMod.registerEstadoActualChartsModalRuntime({
+      getActiveId: function () {
+        return typeof chartsRuntimeCtx.getActiveId === 'function' ? chartsRuntimeCtx.getActiveId() : null;
+      },
+      getPatient: function () {
+        if (typeof chartsRuntimeCtx.getActivePatient === 'function') {
+          return chartsRuntimeCtx.getActivePatient();
+        }
+        return null;
+      },
+      showToast: function (msg, type) {
+        if (typeof chartsRuntimeCtx.showToast === 'function') {
+          chartsRuntimeCtx.showToast(msg, type);
+        }
+      },
+    });
+    wireChartsRuntimeExports(tendMod);
+  }
+  tendMod.seedTendHiddenDefaults();
+  eaMod.wireEaChartsModalDismiss();
+  patchWindowHandlers(tendMod.tendenciasWindowHandlers);
+  patchWindowHandlers(eaMod.windowHandlers);
+}
+
+/**
+ * @param {string} exportName
+ * @param {Function} [fallback]
+ */
+function chartsAsyncFn(exportName, fallback) {
+  return function chartsAsyncProxy() {
+    var args = arguments;
+    if (chartsModules) {
+      var fn = chartsModules.tendencias[exportName];
+      if (typeof fn === 'function') return fn.apply(null, args);
+      return;
+    }
+    void ensureChartsLoaded().then(function (mods) {
+      var loadedFn = mods.tendencias[exportName];
+      if (typeof loadedFn === 'function') loadedFn.apply(null, args);
+      else if (typeof fallback === 'function') fallback.apply(null, args);
+    });
+  };
+}
+
+/**
+ * @param {string} exportName
+ * @param {Function} fallback
+ */
+function chartsSyncFn(exportName, fallback) {
+  return function chartsSyncProxy() {
+    var args = arguments;
+    if (chartsModules) {
+      var fn = chartsModules.tendencias[exportName];
+      if (typeof fn === 'function') return fn.apply(null, args);
+    }
+    return fallback.apply(null, args);
+  };
+}
+
+/** Proxies until ensureChartsLoaded wires real exports onto runtime ctx. */
+export const chartsRuntimeProxies = {
+  renderTendencias: chartsAsyncFn('renderTendencias'),
+  inferFechaLabSetFromId: chartsSyncFn('inferFechaLabSetFromId', inferFechaLabSetFromIdFallback),
+  getLabOutputPrefs: chartsSyncFn('getLabOutputPrefs', getLabOutputPrefsFallback),
+  isGasoInterpretacionResLabChunk: chartsSyncFn('isGasoInterpretacionResLabChunk', function () {
+    return false;
+  }),
+  isAscitisInterpretacionResLabChunk: chartsSyncFn('isAscitisInterpretacionResLabChunk', function () {
+    return false;
+  }),
+  ascitisInterpretacionBody_: chartsSyncFn('ascitisInterpretacionBody_', function () {
+    return '';
+  }),
+  formatBhExtendedTabLine: chartsSyncFn('formatBhExtendedTabLine', function () {
+    return '';
+  }),
+  isBhMainResLabChunk: chartsSyncFn('isBhMainResLabChunk', function () {
+    return false;
+  }),
+};
+
+/**
+ * @param {string} exportName
+ */
+function lazyChartsClose(exportName) {
+  return function lazyClose() {
+    void ensureChartsLoaded().then(function (mods) {
+      var fn = mods.tendencias[exportName];
+      if (typeof fn === 'function') fn();
+    });
+  };
+}
+
+/** Modal dismiss hooks in app-shell until charts bundle loads. */
+export const chartsShellCloseProxies = {
+  closeTendDetail: lazyChartsClose('closeTendDetail'),
+  closeTendGroupModal: lazyChartsClose('closeTendGroupModal'),
+  closeTendHiddenModal: lazyChartsClose('closeTendHiddenModal'),
+  closeLabDisplayPrefsModal: lazyChartsClose('closeLabDisplayPrefsModal'),
+  isTendGroupModalOpen: function () {
+    if (chartsModules) return chartsModules.tendencias.isTendGroupModalOpen();
+    return false;
+  },
+};
+
+/** @type {Record<string, string>} */
+var tendenciasHandlerNames = {
+  openSesionIngresoTrendsSendModal: 'openSesionIngresoTrendsSendModal',
+  closeSesionIngresoTrendsSendModal: 'closeSesionIngresoTrendsSendModal',
+  closeTendDetail: 'closeTendDetail',
+  openTendGroupModal: 'openTendGroupModal',
+  openTendGasoExtendedModal: 'openTendGasoExtendedModal',
+  closeTendGroupModal: 'closeTendGroupModal',
+  setTendGroupTab: 'setTendGroupTab',
+  copyTendGroupTablePng: 'copyTendGroupTablePng',
+  copyTendGroupTableText: 'copyTendGroupTableText',
+  toggleTendSection: 'toggleTendSection',
+  toggleTendAbnormalOnlyFilter: 'toggleTendAbnormalOnlyFilter',
+  tendHideSeriesFromCard: 'tendHideSeriesFromCard',
+  tendUnhideSeries: 'tendUnhideSeries',
+  tendResetAllHiddenSeries: 'tendResetAllHiddenSeries',
+  openTendHiddenModal: 'openTendHiddenModal',
+  closeTendHiddenModal: 'closeTendHiddenModal',
+  openTendDetail: 'openTendDetail',
+  tendCardActivate: 'tendCardActivate',
+  openLabDisplayPrefsModal: 'openLabDisplayPrefsModal',
+  closeLabDisplayPrefsModal: 'closeLabDisplayPrefsModal',
+  onLabDisplayPrefsChanged: 'onLabDisplayPrefsChanged',
+};
+
+/** @type {Record<string, string>} */
+var eaChartsModalHandlerNames = {
+  openEstadoActualChartsModal: 'openEstadoActualChartsModal',
+  closeEstadoActualChartsModal: 'closeEstadoActualChartsModal',
+};
+
+export const chartsWindowHandlersLazy = Object.assign(
+  {},
+  buildLazyWindowHandlers(tendenciasHandlerNames, function () {
+    return ensureChartsLoaded().then(function (mods) {
+      return mods.tendencias;
+    });
+  }),
+  buildLazyWindowHandlers(eaChartsModalHandlerNames, function () {
+    return ensureChartsLoaded().then(function (mods) {
+      return mods.eaChartsModal;
+    });
+  })
+);
 
 /**
  * @param {Record<string, Function>} handlers

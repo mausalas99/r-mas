@@ -907,10 +907,13 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return deny('Usuario o paciente no identificado');
   }
 
+  const enforceTeamPatientScope = !!ctx.enforceTeamPatientScope;
+
   if (
-    currentUser.is_program_admin === 1 ||
-    currentUser.is_program_admin === true ||
-    rank === 'Admin'
+    !enforceTeamPatientScope &&
+    (currentUser.is_program_admin === 1 ||
+      currentUser.is_program_admin === true ||
+      rank === 'Admin')
   ) {
     return allow('Privilegios admin: acceso completo');
   }
@@ -937,7 +940,9 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
 
   const joinedTeams = getJoinedTeams(teams, userId);
   const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
-  const strictTeamFilter = userHasJoinedClinicalTeams(teams, userId);
+  const strictTeamFilter = enforceTeamPatientScope
+    ? true
+    : userHasJoinedClinicalTeams(teams, userId);
 
   if (isInterconsultasPatient(targetPatient)) {
     if (userOffCallFromInterconsultasRotationServices(userId, joinedTeams, rank, now)) {
@@ -955,6 +960,25 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
           return allow('Modo Guardia R1: paciente entregado', true, false);
         }
         return deny('Modo Guardia R1: sin entrega recibida');
+      }
+      if (enforceTeamPatientScope) {
+        if (
+          patientInJoinedTeamScope(
+            targetPatient,
+            joinedTeams,
+            assignments,
+            joinedTeamIds,
+            userId,
+            now,
+            { strictTeamFilter: true }
+          )
+        ) {
+          return allow('Modo Guardia R1: paciente de mi equipo', true, false);
+        }
+        if (patientCoveredByGuardia(patientId, userId, guardias)) {
+          return allow('Modo Guardia R1: paciente entregado', true, false);
+        }
+        return deny('Modo Guardia R1: fuera de mi equipo');
       }
       const patientSala = targetPatient?.sala || '';
       if (patientSala && patientSala === userSala) {
@@ -981,13 +1005,29 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return deny('Modo Guardia: rango sin cobertura');
   }
 
-  if (rank === 'R4') {
+  if (!enforceTeamPatientScope && rank === 'R4') {
     return allow('R4: acceso global');
   }
 
   const entregaPhaseActive = !!ctx.entregaPhaseActive;
 
   if (entregaPhaseActive && rank === 'R1') {
+    if (enforceTeamPatientScope) {
+      if (
+        patientInJoinedTeamScope(
+          targetPatient,
+          joinedTeams,
+          assignments,
+          joinedTeamIds,
+          userId,
+          now,
+          { strictTeamFilter: true }
+        )
+      ) {
+        return allow('Fase entrega R1: paciente de mi equipo', true, false);
+      }
+      return deny('Fase entrega R1: fuera de mi equipo');
+    }
     if (patientInUserSala(targetPatient, userSala)) {
       return allow('Fase entrega R1: censo de sala', true, false);
     }
@@ -1014,7 +1054,7 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
       }
       return deny('R1: fuera de mi equipo');
     }
-    if (patientInUserSala(targetPatient, userSala)) {
+    if (!enforceTeamPatientScope && patientInUserSala(targetPatient, userSala)) {
       return allow('R1: paciente en mi sala');
     }
     return deny('R1: fuera de mi sala');
@@ -1037,7 +1077,7 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     ) {
       return allow('R2: paciente de mi equipo');
     }
-    if (!strictTeamFilter && patientInUserSala(targetPatient, userSala)) {
+    if (!strictTeamFilter && !enforceTeamPatientScope && patientInUserSala(targetPatient, userSala)) {
       return allow('R2: paciente en mi sala');
     }
     return deny('R2: sin equipo ni entrega');

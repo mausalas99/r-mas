@@ -42,9 +42,6 @@ import {
   filterPatientsForGuardiaCensus,
 } from './features/patients.mjs';
 import {
-  registerLabPanelRuntime,
-} from './features/lab-panel.mjs';
-import {
   registerLabBulkPreviewModalRuntime,
   getBulkLabPreviewSourceText,
   isBulkLabPreviewModalOpen,
@@ -55,11 +52,12 @@ import {
 } from './features/lab-history-batch-copy-modal.mjs';
 import { buildBulkLabPreview } from './lab-bulk-paste.mjs';
 import {
-  registerTendenciasRuntime,
-} from './features/tendencias.mjs';
-import {
   registerTodosRuntime,
 } from './features/todos.mjs';
+import {
+  configureTodoReminderScheduler,
+  rescheduleAllTodos,
+} from './todos-reminder-scheduler.mjs';
 import {
   registerPaseBoardRuntime,
 } from './features/pase-board.mjs';
@@ -99,10 +97,6 @@ import {
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
 } from './features/estado-actual-registro-modal.mjs';
-import {
-  registerEstadoActualChartsModalRuntime,
-  wireEaChartsModalDismiss,
-} from './features/estado-actual-charts-modal.mjs';
 import { getDefaultRegistroRecordedAt } from './features/estado-actual-registro-defaults.mjs';
 import {
   registerProcedureAgendaRuntime,
@@ -145,7 +139,13 @@ import {
   tourAfterBulkLabParse,
   tourOnBulkPreviewPatientSaved,
 } from './features/settings-help/tour-flow.mjs';
-import { registerLazyFeatureRuntimes } from './lazy-feature-routes.mjs';
+import {
+  bindLazyLabsRuntimeCtx,
+  bindLazyChartsRuntimeCtx,
+  chartsRuntimeProxies,
+  labsRuntimeProxies,
+  registerLazyFeatureRuntimes,
+} from './lazy-feature-routes.mjs';
 import {
   registerNotesIndicacionesRuntime,
   applyProfileToNoteIfEmpty,
@@ -172,30 +172,9 @@ import {
 } from './features/patients.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 import {
-  renderLabHistoryPanel,
-  syncLabHistoryCollapseUI,
-  setLabHistoryPanelCollapsed,
-  getActiveLab as labPanelGetActiveLab,
-  setActiveLab as labPanelSetActiveLab,
-  rerenderParsedLabOutputAfterPrefsChange,
-  clearLabWorkbenchMinimalDom,
-  limpiarReporte,
-  enviarLabsANota,
-  syncLabOutputChrome,
-} from './features/lab-panel.mjs';
-import {
-  seedTendHiddenDefaults,
-  inferFechaLabSetFromId,
-  getLabOutputPrefs,
-  isGasoInterpretacionResLabChunk,
-  isAscitisInterpretacionResLabChunk,
-  ascitisInterpretacionBody_,
-  isBhMainResLabChunk,
-  formatBhExtendedTabLine,
-  renderTendencias,
-} from './features/tendencias.mjs';
-import {
   refreshAllTodoUIs,
+  refreshTodoUIsForPatient,
+  refreshTodoUIsForPatients,
   renderTodoForm,
 } from './features/todos.mjs';
 import {
@@ -287,7 +266,6 @@ function installAppRuntimeContextDeps() {
     },
     syncWorkContextChrome,
     renderMedRecetaPanel,
-    renderLabHistoryPanel,
     renderProcedureAgendaPanel,
     setMedTabAttention,
     ensureParsedLabHistory,
@@ -295,10 +273,14 @@ function installAppRuntimeContextDeps() {
     splitResLabsByTipo,
     primaryTipoForLabSet,
     formatLabHistoryListMeta: function (set) {
-      return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+      return formatLabHistoryListMeta(set, chartsRuntimeProxies.inferFechaLabSetFromId);
     },
     formatLabHistoryDateSelectLabel: function (set) {
-      return formatLabHistoryDateSelectLabel(set, inferFechaLabSetFromId, primaryTipoForLabSet);
+      return formatLabHistoryDateSelectLabel(
+        set,
+        chartsRuntimeProxies.inferFechaLabSetFromId,
+        primaryTipoForLabSet
+      );
     },
     switchAppTab,
     renderPatientList,
@@ -306,21 +288,8 @@ function installAppRuntimeContextDeps() {
     renderGuardiaBoard: function () {
       return renderGuardiaBoard(rt.getSettings());
     },
-    syncLabOutputChrome,
     setRoundOverviewMode,
     renderPaseBoard,
-    getActiveLab: function () {
-      return labPanelGetActiveLab();
-    },
-    consumeActiveLab: function () {
-      var x = labPanelGetActiveLab();
-      labPanelSetActiveLab(null);
-      return x;
-    },
-    restoreActiveLab: function (x) {
-      labPanelSetActiveLab(x);
-    },
-    clearLabOutputUi: clearLabWorkbenchMinimalDom,
     renderInnerTabs,
     invalidateInnerTabRenderCache,
     refreshExpedienteAfterPatientSelect,
@@ -333,20 +302,17 @@ function installAppRuntimeContextDeps() {
     switchInnerTab,
     syncInnerTabVisualOnly,
     renderTodoForm,
-    limpiarReporte,
-    setLabHistoryPanelCollapsed,
-    syncLabHistoryCollapseUI,
     rpcPrefersReducedMotion,
     refreshAllTodoUIs,
+    refreshTodoUIsForPatient,
+    refreshTodoUIsForPatients,
     renderVpo,
     renderRecetaHu,
     pushUndoSnapshot,
     addAuditEntry,
     applyDefaultsToNewPatient,
     applyDefaultsToNewIndicaciones,
-    enviarLabsANota,
     normalizeFechaLabHistory,
-    rerenderParsedLabOutputAfterPrefsChange,
     buildLabSetDateLine,
     getRoundOverviewMode,
     saveState,
@@ -365,7 +331,7 @@ function installAppRuntimeContextDeps() {
     openProfileModal,
     openAddModalFromLabPatient,
     copyToClipboardSafe,
-    renderTendencias,
+    ...chartsRuntimeProxies,
     renderRoundOverviewPanels,
     switchConsolidatedTab,
     getActivePatient: function () {
@@ -420,19 +386,13 @@ function installAppRuntimeContextDeps() {
     renderDiagramas,
     closeSettingsDropdown,
     extractParsedValues,
+    ...labsRuntimeProxies,
     buildParsedBySectionFromResLabs,
     rebuildEstudiosFromLabHistory,
-    inferFechaLabSetFromId,
     dayKeyFromLabSet,
     labSetIsFromSome,
     removeAtbRisPanelsFromBody,
     wireAtbRisHoverPanels,
-    getLabOutputPrefs,
-    isGasoInterpretacionResLabChunk,
-    isAscitisInterpretacionResLabChunk,
-    ascitisInterpretacionBody_,
-    formatBhExtendedTabLine,
-    isBhMainResLabChunk,
     isResLabChunkPureCultivo,
     buildCultivoOutputHtmlFragments,
     rebuildBulkLabPreviewBlocks: function (text) {
@@ -467,6 +427,8 @@ export async function registerAllFeatureRuntimes() {
   registerPaseBoardRuntime(ctx);
   registerChromeRuntime(ctx);
   registerPatientsRuntime(ctx);
+  bindLazyLabsRuntimeCtx(ctx);
+  bindLazyChartsRuntimeCtx(ctx);
 
   v3MigratedThisBoot = migrateToV3(rt.getSettings());
   if (v3MigratedThisBoot) storage.saveSettings(rt.getSettings());
@@ -477,8 +439,17 @@ export async function registerAllFeatureRuntimes() {
   installLabHistoryAuditHook();
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
 
-  registerTendenciasRuntime(ctx);
   registerTodosRuntime(ctx);
+  configureTodoReminderScheduler({
+    getPatientLabel: function (pid) {
+      var p = patients.find(function (row) {
+        return row.id === pid;
+      });
+      return p && p.name ? String(p.name) : String(pid || '');
+    },
+    showToast: showToast,
+  });
+  rescheduleAllTodos();
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
   registerCensoRuntime(
@@ -498,22 +469,6 @@ export async function registerAllFeatureRuntimes() {
   registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
-  registerEstadoActualChartsModalRuntime({
-    getActiveId: function () {
-      return rt.getActiveId();
-    },
-    getPatient: function () {
-      var id = rt.getActiveId();
-      if (!id) return null;
-      return (
-        patients.find(function (p) {
-          return p.id === id;
-        }) || null
-      );
-    },
-    showToast: showToast,
-  });
-  registerLabPanelRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
@@ -522,10 +477,8 @@ export async function registerAllFeatureRuntimes() {
 
 export function runInitialFeatureBoot() {
   initChromeAppearance();
-  syncLabHistoryCollapseUI();
   wireEstadoActualPasteModal();
   wireDriveImportModal();
   wireEaModalDismiss();
-  wireEaChartsModalDismiss();
   syncCensoExportButtonVisibility();
 }

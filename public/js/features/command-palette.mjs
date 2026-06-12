@@ -5,6 +5,7 @@
 import { patients } from '../app-state.mjs';
 import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
 import { selectPatient } from './patients.mjs';
+import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 
 var ctx = null;
 var dom = null;
@@ -140,6 +141,7 @@ function executeItem(item) {
 
 export function openCommandPalette() {
   var d = ensureDom();
+  cancelOverlayClose(d.backdrop, { panelEl: d.panel });
   d.backdrop.hidden = false;
   d.panel.hidden = false;
   d.input.value = '';
@@ -149,8 +151,16 @@ export function openCommandPalette() {
 
 export function closeCommandPalette() {
   if (!dom) return;
-  dom.backdrop.hidden = true;
-  dom.panel.hidden = true;
+  var d = dom;
+  d.input.blur();
+  closeOverlayAnimated(
+    d.backdrop,
+    function () {
+      d.backdrop.hidden = true;
+      d.panel.hidden = true;
+    },
+    { panelEl: d.panel }
+  );
 }
 
 export var windowHandlers = {

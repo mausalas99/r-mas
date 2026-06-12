@@ -34,6 +34,7 @@ import {
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 import { evaluateGasoExtended } from './gaso-extended.mjs';
+import { cancelOverlayClose, closeOverlayAnimated } from './ui-motion.mjs';
 function isAbgAnalysisHidden() {
   return true;
 }
@@ -319,19 +320,19 @@ export function createTendGroupModal(deps) {
   }
 
   function closeModal() {
-    destroyCharts();
     destroyPanelSortable();
     state.sectionKey = null;
     document.body.classList.remove('tend-group-modal-open');
     var bd = backdropEl();
-    if (bd) {
-      bd.style.display = 'none';
-      bd.setAttribute('aria-hidden', 'true');
-    }
-    var chartsPanel = document.getElementById('tend-group-panel-charts');
-    if (chartsPanel) chartsPanel.innerHTML = '';
-    var wrap = document.getElementById('tend-group-table-wrap');
-    if (wrap) wrap.innerHTML = '';
+    // Charts y DOM se limpian al terminar la salida para que no se vean vaciarse.
+    closeOverlayAnimated(bd, function () {
+      if (bd) bd.style.display = 'none';
+      destroyCharts();
+      var chartsPanel = document.getElementById('tend-group-panel-charts');
+      if (chartsPanel) chartsPanel.innerHTML = '';
+      var wrap = document.getElementById('tend-group-table-wrap');
+      if (wrap) wrap.innerHTML = '';
+    });
   }
 
   function requestCloseFromUi() {
@@ -718,9 +719,10 @@ export function createTendGroupModal(deps) {
   function closeGasoExtended() {
     var bd = document.getElementById('tend-gaso-ext-backdrop');
     if (!bd) return;
-    bd.style.display = 'none';
-    bd.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('tend-gaso-ext-open');
+    closeOverlayAnimated(bd, function () {
+      bd.style.display = 'none';
+    });
   }
 
   function parseFio2Input(raw) {
@@ -1024,6 +1026,7 @@ export function createTendGroupModal(deps) {
     wireGasoExtendedDialog(bd);
     refillGasoExtendedSlot(bd.querySelector('.tend-gaso-extended-inner'), latest);
 
+    cancelOverlayClose(bd);
     bd.style.display = 'flex';
     bd.setAttribute('aria-hidden', 'false');
     document.body.classList.add('tend-gaso-ext-open');
@@ -1411,6 +1414,7 @@ export function createTendGroupModal(deps) {
 
       var bd = backdropEl();
       if (bd) {
+        cancelOverlayClose(bd);
         bd.style.display = 'flex';
         bd.setAttribute('aria-hidden', 'false');
         document.body.classList.add('tend-group-modal-open');

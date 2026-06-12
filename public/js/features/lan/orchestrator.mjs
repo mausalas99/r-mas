@@ -60,7 +60,11 @@ import {
   fetchClinicalScopeContextFromDb,
   refreshClinicalPatientListForScope,
   isClinicalScopeReadyForLanPatientApply,
+  applyClinicalScopeFromLanOpsSnapshot,
+  finalizeMobileLanPatientCensus,
+  pruneMobilePatientsOutsideTeamScope,
 } from "../../clinical-access-runtime.mjs";
+import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { clinicalSessionContext } from "../../clinical-session-context.mjs";
 import { filterPatientEntriesForLanTeamScope } from "../../lan-patient-team-scope.mjs";
 import { isHostPatientOwnedByOtherClient } from './host-patients-annotate.mjs';
@@ -78,6 +82,7 @@ import {
 } from "../../draft-conflict-store.mjs";
 import { conflictSnapshotsMatchForAutoResolve } from "../../lan-conflict-silent-match.mjs";
 import { notifyLwwOverwrite } from "../../lan-lww-toast.mjs";
+import { perfMark, perfMeasure } from "../../perf-markers.mjs";
 import {
   agendaEntityKey,
   todoEntityKey,
@@ -215,6 +220,8 @@ let runtime = {
   },
   renderProcedureAgendaPanel() {},
   refreshAllTodoUIs() {},
+  refreshTodoUIsForPatient() {},
+  refreshTodoUIsForPatients() {},
   syncWorkContextChrome() {},
   findPatientByRegistro() {
     return null;
@@ -231,6 +238,33 @@ let runtime = {
   },
   closeSettingsDropdown() {},
 };
+
+/** Dev-only: profiled bundle merge (Phase 0 LAN sync gate). */
+export function profiledMergeLiveSyncFullBundles(sources) {
+  perfMark('lan-sync-merge-start');
+  var merged = mergeLiveSyncFullBundles(sources);
+  perfMark('lan-sync-merge-end');
+  perfMeasure('lan-sync-merge', 'lan-sync-merge-start', 'lan-sync-merge-end');
+  return merged;
+}
+
+function profiledRefreshTodoUIsAfterReconcile(touchedTodoPatientIds) {
+  perfMark('lan-sync-todos-refresh-start');
+  try {
+    if (typeof runtime.refreshTodoUIsForPatients === 'function') {
+      runtime.refreshTodoUIsForPatients(touchedTodoPatientIds);
+    } else if (typeof runtime.refreshTodoUIsForPatient === 'function') {
+      touchedTodoPatientIds.forEach(function (pid) {
+        runtime.refreshTodoUIsForPatient(pid);
+      });
+    } else {
+      runtime.refreshAllTodoUIs();
+    }
+  } finally {
+    perfMark('lan-sync-todos-refresh-end');
+    perfMeasure('lan-sync-todos-refresh', 'lan-sync-todos-refresh-start', 'lan-sync-todos-refresh-end');
+  }
+}
 
 let _lanNetworkRefreshWired = false;
 
@@ -677,41 +711,47 @@ async function appendLanConflictDraftsSection(root) {
 
 async function applyLwwConflictLocally(payload) {
   if (!payload) return;
-  if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
+  perfMark('lan-sync-lww-apply-start');
+  try {
+    if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
+      await discardDraftsForConflictEntity(payload);
+      clearHistoriaPendingAfterConflict(payload);
+      var localDelete = payload.localSnapshot && payload.localSnapshot.op === 'delete';
+      if (!localDelete) {
+        runtime.showToast('Pendiente alineado con la sala', 'info');
+      }
+      return;
+    }
+    var viewerData = conflictDataForViewer(payload);
+    var silentMatch = conflictSnapshotsMatchForAutoResolve({
+      conflictingKeys: payload.conflictingKeys,
+      localData: viewerData.localData,
+      serverData: viewerData.serverData,
+    });
+    await applyConflictUseServer(payload);
     await discardDraftsForConflictEntity(payload);
     clearHistoriaPendingAfterConflict(payload);
-    var localDelete = payload.localSnapshot && payload.localSnapshot.op === 'delete';
-    if (!localDelete) {
-      runtime.showToast('Pendiente alineado con la sala', 'info');
+    var server = payload.serverSnapshot;
+    if (server && server.version != null) {
+      syncHostBundleEntityFromApplied({
+        roomId: payload.roomId || activeLiveSyncRoomId,
+        entityType: payload.entityType,
+        entityId: payload.entityId,
+        patientId: payload.patientId,
+        version: server.version,
+        data: server.data,
+      });
     }
-    return;
-  }
-  var viewerData = conflictDataForViewer(payload);
-  var silentMatch = conflictSnapshotsMatchForAutoResolve({
-    conflictingKeys: payload.conflictingKeys,
-    localData: viewerData.localData,
-    serverData: viewerData.serverData,
-  });
-  await applyConflictUseServer(payload);
-  await discardDraftsForConflictEntity(payload);
-  clearHistoriaPendingAfterConflict(payload);
-  var server = payload.serverSnapshot;
-  if (server && server.version != null) {
-    syncHostBundleEntityFromApplied({
-      roomId: payload.roomId || activeLiveSyncRoomId,
-      entityType: payload.entityType,
-      entityId: payload.entityId,
-      patientId: payload.patientId,
-      version: server.version,
-      data: server.data,
-    });
-  }
-  if (!silentMatch && payload.lwwApplied) {
-    notifyLwwOverwrite(runtime, {
-      entityType: payload.entityType,
-      entityId: payload.entityId,
-      overwrittenKeys: payload.overwrittenKeys || payload.conflictingKeys || [],
-    });
+    if (!silentMatch && payload.lwwApplied) {
+      notifyLwwOverwrite(runtime, {
+        entityType: payload.entityType,
+        entityId: payload.entityId,
+        overwrittenKeys: payload.overwrittenKeys || payload.conflictingKeys || [],
+      });
+    }
+  } finally {
+    perfMark('lan-sync-lww-apply-end');
+    perfMeasure('lan-sync-lww-apply', 'lan-sync-lww-apply-start', 'lan-sync-lww-apply-end');
   }
 }
 
@@ -1363,14 +1403,16 @@ function applyLanPatientEntries(entries, opts) {
   }
   if (added || updated) {
     saveState({ immediate: true });
-    renderPatientListLanSilent();
-    if (runtime.getActiveId()) {
-      try {
-        runtime.renderNoteForm();
-      } catch (_e) {}
-      try {
-        runtime.renderLabHistoryPanel();
-      } catch (_e2) {}
+    if (!shouldEnforceTeamPatientMirror()) {
+      renderPatientListLanSilent();
+      if (runtime.getActiveId()) {
+        try {
+          runtime.renderNoteForm();
+        } catch (_e) {}
+        try {
+          runtime.renderLabHistoryPanel();
+        } catch (_e2) {}
+      }
     }
   }
   return { added: added, updated: updated };
@@ -1437,18 +1479,24 @@ function applyLiveSyncPatientDeletes(deletes, idMap) {
 async function applyLiveSyncMerged(merged) {
   if (!merged) return;
   if (isPitchPatientIsolationActive()) return;
+  perfMark('lan-sync-bundle-apply-start');
+  try {
   var clinicalOpsApplied = false;
-  if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
-    var opsResult = await applyClinicalOpsLanSnapshot(merged.clinicalOps);
-    if (opsResult.ok) {
+  if (merged.clinicalOps) {
+    if (isClinicalOpsLanAvailable()) {
+      var opsResult = await applyClinicalOpsLanSnapshot(merged.clinicalOps);
+      if (opsResult.ok) {
+        clinicalOpsApplied = true;
+        await refreshClinicalOpsSnapshotCache();
+        await fetchClinicalScopeContextFromDb();
+      } else if (opsResult.code !== 'DB_LOCKED' && !opsResult.deferred) {
+        runtime.showToast(
+          'No se pudieron sincronizar equipos ni usuarios LAN. Reintenta desde ⇄ o reinicia R+.',
+          'warn'
+        );
+      }
+    } else if (applyClinicalScopeFromLanOpsSnapshot(merged.clinicalOps)) {
       clinicalOpsApplied = true;
-      await refreshClinicalOpsSnapshotCache();
-      await fetchClinicalScopeContextFromDb();
-    } else if (opsResult.code !== 'DB_LOCKED' && !opsResult.deferred) {
-      runtime.showToast(
-        'No se pudieron sincronizar equipos ni usuarios LAN. Reintenta desde ⇄ o reinicia R+.',
-        'warn'
-      );
     }
   }
   var entries = merged.entries || [];
@@ -1470,17 +1518,22 @@ async function applyLiveSyncMerged(merged) {
     if (mapped) saveTodoPids[mapped] = true;
   });
   var todosChanged = false;
+  var changedTodoPids = [];
   Object.keys(saveTodoPids).forEach(function (pid) {
     var todoList = todosMap[pid] || [];
     var nextTodos = todoList;
     if (!lanJsonEqual(storage.getTodos(pid), nextTodos)) {
       storage.saveTodos(pid, nextTodos);
       todosChanged = true;
+      changedTodoPids.push(pid);
     }
   });
+  if (shouldEnforceTeamPatientMirror() && clinicalOpsApplied) {
+    pruneMobilePatientsOutsideTeamScope();
+  }
   var patientSync = entries.length ? applyLanPatientEntries(entries, { skipTodos: true }) : null;
   var patientsChanged = !!(patientSync && (patientSync.added || patientSync.updated));
-  if (patientRemoved) {
+  if (patientRemoved && !shouldEnforceTeamPatientMirror()) {
     renderPatientListLanSilent();
     if (runtime.getActiveId()) runtime.selectPatient(runtime.getActiveId());
     else {
@@ -1494,7 +1547,19 @@ async function applyLiveSyncMerged(merged) {
   if (runtime.getActiveAppTab() === 'agenda' || runtime.isMobileWeb()) {
     runtime.renderProcedureAgendaPanel();
   }
-  if (todosChanged) runtime.refreshAllTodoUIs();
+  if (todosChanged) {
+    var refreshTodoPids = changedTodoPids;
+    if ((merged.todoTouchedPatientIds || []).length) {
+      refreshTodoPids = merged.todoTouchedPatientIds
+        .map(function (pid) {
+          return String(idMap[pid] || pid || '').trim();
+        })
+        .filter(function (pid) {
+          return !!pid;
+        });
+    }
+    profiledRefreshTodoUIsAfterReconcile(refreshTodoPids);
+  }
   if (patientsChanged && runtime.getActiveId()) {
     try {
       runtime.renderNoteForm();
@@ -1504,8 +1569,14 @@ async function applyLiveSyncMerged(merged) {
     } catch (_eLab) {}
   }
   if (patientsChanged) migrateLocalPatientsClinicalSala();
-  if (patientsChanged || patientRemoved || clinicalOpsApplied) {
+  if (shouldEnforceTeamPatientMirror() && (clinicalOpsApplied || patientsChanged || patientRemoved)) {
+    await finalizeMobileLanPatientCensus();
+  } else if (patientsChanged || patientRemoved || clinicalOpsApplied) {
     void refreshClinicalPatientListForScope({ allowLanPull: false });
+  }
+  } finally {
+    perfMark('lan-sync-bundle-apply-end');
+    perfMeasure('lan-sync-bundle-apply', 'lan-sync-bundle-apply-start', 'lan-sync-bundle-apply-end');
   }
 }
 
@@ -1666,7 +1737,17 @@ function applyLiveSyncApplied(msg) {
       }
       storage.saveTodos(pid, todos);
     }
-    runtime.refreshAllTodoUIs();
+    perfMark('lan-sync-todos-refresh-start');
+    try {
+      if (typeof runtime.refreshTodoUIsForPatient === 'function') {
+        runtime.refreshTodoUIsForPatient(pid);
+      } else {
+        runtime.refreshAllTodoUIs();
+      }
+    } finally {
+      perfMark('lan-sync-todos-refresh-end');
+      perfMeasure('lan-sync-todos-refresh', 'lan-sync-todos-refresh-start', 'lan-sync-todos-refresh-end');
+    }
   } else if (entityType === 'patient') {
     var row = patients.find(function (p) {
       return p && p.id === entityId;
@@ -1775,6 +1856,7 @@ export function wireLanSyncBridges() {
     buildLiveSyncBundleEnvelope,
     saveLocalRoomSnapshot,
     buildLiveSyncLocalMergeSource,
+    mergeLiveSyncFullBundles: profiledMergeLiveSyncFullBundles,
     applyLiveSyncMerged,
     applyLiveSyncDeltas,
     reapplyLanPatientEntries,
@@ -1810,6 +1892,7 @@ export function wireLanSyncBridges() {
     patchLanPanelJoinButtons,
     rememberLanRoomJoined,
     initLanClientFromStorage,
+    mergeLiveSyncFullBundles: profiledMergeLiveSyncFullBundles,
     applyLiveSyncMerged,
     applyLiveSyncApplied,
     applyLiveSyncDeltaApplied,

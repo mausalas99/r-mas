@@ -30,6 +30,20 @@ export function isGuardiaV7TrackComplete(storage = localStorage) {
   return GUARDIA_V7_CHAPTERS.every((ch) => completedChapters.includes(ch.id));
 }
 
+/** @returns {{ completed: number, total: number, percent: number }} */
+export function guardiaV7ProgressSummary(storage = localStorage) {
+  const total = GUARDIA_V7_CHAPTERS.length;
+  const { completedChapters } = loadGuardiaV7Progress(storage);
+  const completed = GUARDIA_V7_CHAPTERS.filter((ch) =>
+    completedChapters.includes(ch.id)
+  ).length;
+  return {
+    completed,
+    total,
+    percent: total ? Math.round((completed / total) * 100) : 0,
+  };
+}
+
 export function markGuardiaV7ChapterComplete(chapterId, storage = localStorage) {
   const prev = loadGuardiaV7Progress(storage);
   const set = new Set(prev.completedChapters);

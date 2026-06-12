@@ -12,6 +12,7 @@ import {
 } from "../procedure-agenda-week.mjs";
 import { patients } from "../app-state.mjs";
 import { getProcedureAgendaRowPx, isPaseMode } from "./chrome.mjs";
+import { closeModalAnimated } from "../ui-motion.mjs";
 import { emitLiveSyncAgendaUpsert, emitLiveSyncAgendaDelete } from "./lan-sync.mjs";
 import { mountRpcDatetimeInput } from "../rpc-date-picker.mjs";
 
@@ -363,8 +364,7 @@ export function openProcedureAgendaModal(editEventId) {
 export function closeProcedureAgendaModal() {
   var bd = document.getElementById("procedure-agenda-modal");
   if (!bd) return;
-  bd.classList.remove("open");
-  bd.setAttribute("aria-hidden", "true");
+  closeModalAnimated(bd);
 }
 
 export function saveProcedureAgendaFromModal() {

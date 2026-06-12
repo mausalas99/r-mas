@@ -25,7 +25,6 @@ import {
   renderCultivosTable,
   renderListadoForm,
 } from "./expediente.mjs";
-import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
 import {
@@ -45,7 +44,12 @@ import {
   renderEstadoActualPanel,
   syncEaCopyFab,
 } from "./estado-actual-panel.mjs";
-import { labOutputHasCopyableContent, syncLabCopyFab } from "./lab-panel.mjs";
+import {
+  ensureChartsLoaded,
+  ensureLabsLoaded,
+  hideLabPanelLoadingSkeleton,
+  showLabPanelLoadingSkeleton,
+} from "../lazy-feature-routes.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
@@ -848,25 +852,37 @@ export function switchAppTab(tab) {
     if (paseRoot) hideAppTabPanel(paseRoot);
     if (guardiaRoot) hideAppTabPanel(guardiaRoot);
     if (appcontentLab) {
-      if (tab === "lab") showAppTabPanel(appcontentLab, false);
+      if (tab === "lab") showAppTabPanel(appcontentLab, true);
       else hideAppTabPanel(appcontentLab);
     }
     if (appcontentMed) {
-      if (tab === "med") showAppTabPanel(appcontentMed, false);
+      if (tab === "med") showAppTabPanel(appcontentMed, true);
       else hideAppTabPanel(appcontentMed);
     }
     if (appcontentNota) {
-      if (tab === "nota") showAppTabPanel(appcontentNota, false);
+      if (tab === "nota") showAppTabPanel(appcontentNota, true);
       else hideAppTabPanel(appcontentNota);
     }
     if (appcontentAgenda) {
-      if (tab === "agenda") showAppTabPanel(appcontentAgenda, false);
+      if (tab === "agenda") showAppTabPanel(appcontentAgenda, true);
       else hideAppTabPanel(appcontentAgenda);
     }
     if (tab === "lab") {
-      scheduleAfterPaint(function () {
-        if (rt.getActiveAppTab() === "lab") rt.renderLabHistoryPanel();
-      });
+      showLabPanelLoadingSkeleton();
+      void ensureLabsLoaded()
+        .then(function (mod) {
+          hideLabPanelLoadingSkeleton();
+          if (rt.getActiveAppTab() !== "lab") return;
+          scheduleAfterPaint(function () {
+            if (rt.getActiveAppTab() === "lab") rt.renderLabHistoryPanel();
+          });
+          mod.syncLabCopyFab(mod.labOutputHasCopyableContent());
+        })
+        .catch(function (err) {
+          hideLabPanelLoadingSkeleton();
+          console.error('ensureLabsLoaded failed:', err && err.message);
+          rt.showToast('No se pudo cargar Laboratorio. Reintenta o reinicia la app.', 'error');
+        });
     }
     if (tab === "med") {
       scheduleAfterPaint(function () {
@@ -880,14 +896,31 @@ export function switchAppTab(tab) {
     }
     if (tab === "nota" && rt.getActiveInner() === "tend") {
       scheduleAfterPaint(function () {
-        if (rt.getActiveAppTab() === "nota" && rt.getActiveInner() === "tend") renderTendencias();
+        if (rt.getActiveAppTab() === "nota" && rt.getActiveInner() === "tend") {
+          void ensureChartsLoaded().then(function (mods) {
+            mods.tendencias.renderTendencias();
+          });
+        }
       });
     }
   }
 
   var settings = rt.getSettings();
   var inner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
-  syncLabCopyFab(tab === "lab" && labOutputHasCopyableContent());
+  if (tab === "lab") {
+    void ensureLabsLoaded().then(function (mod) {
+      if (rt.getActiveAppTab() !== "lab") return;
+      mod.syncLabCopyFab(mod.labOutputHasCopyableContent());
+    });
+  } else {
+    var labCopyFab = document.getElementById("lab-copy-fab");
+    if (labCopyFab) {
+      labCopyFab.setAttribute("hidden", "");
+      labCopyFab.style.display = "none";
+      labCopyFab.setAttribute("aria-hidden", "true");
+    }
+    document.documentElement.classList.remove("lab-copy-fab-active");
+  }
   syncEaCopyFab(tab === "nota" && inner === "estadoActual" && eaHasCopyableContent());
 
   if (tab === "med") rt.setMedTabAttention(false);
@@ -1080,7 +1113,9 @@ function renderGranularInnerTab(tab, opts) {
   }
   if (tab === 'tend') {
     renderHeavyInnerTab(tab, function (done) {
-      renderTendencias({ onReady: done, syncHeavy: !!opts.force });
+      void ensureChartsLoaded().then(function (mods) {
+        mods.tendencias.renderTendencias({ onReady: done, syncHeavy: !!opts.force });
+      });
     }, opts);
     return;
   }

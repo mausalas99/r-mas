@@ -84,6 +84,21 @@ function captureButtonLabel(btn, label) {
   return String(btn.getAttribute('aria-label') || btn.title || '').trim();
 }
 
+function ensureButtonSpinner(btn) {
+  var spin = btn.querySelector(':scope > .btn-spinner');
+  if (spin) return spin;
+  spin = document.createElement('span');
+  spin.className = 'btn-spinner';
+  spin.setAttribute('aria-hidden', 'true');
+  btn.insertBefore(spin, btn.firstChild);
+  return spin;
+}
+
+function removeButtonSpinner(btn) {
+  var spin = btn.querySelector(':scope > .btn-spinner');
+  if (spin) spin.remove();
+}
+
 function ensureButtonLabel(btn) {
   var existing = btn.querySelector(':scope > .btn-label');
   if (existing) return existing;
@@ -145,6 +160,116 @@ function swapLabelText(label, nextText, options) {
   label.addEventListener('transitionend', onDone);
 }
 
+/**
+ * Close a modal: state + callback first, then canvas-style exit motion (non-blocking).
+ * @param {HTMLElement|null|undefined} backdropEl
+ * @param {() => void} [done]
+ */
+export function closeModalAnimated(backdropEl, done) {
+  if (!backdropEl || !(backdropEl instanceof HTMLElement)) {
+    if (typeof done === 'function') done();
+    return;
+  }
+  backdropEl.setAttribute('aria-hidden', 'true');
+  if (typeof done === 'function') done();
+
+  if (!backdropEl.classList.contains('open')) {
+    backdropEl.classList.remove('closing');
+    return;
+  }
+  backdropEl.classList.remove('open');
+
+  if (prefersReducedMotion()) {
+    backdropEl.classList.remove('closing');
+    return;
+  }
+
+  backdropEl.classList.add('closing');
+  var settled = false;
+  function settle() {
+    if (settled) return;
+    settled = true;
+    backdropEl.removeEventListener('animationend', onEnd);
+    backdropEl.classList.remove('closing');
+  }
+  function onEnd(ev) {
+    if (ev.target !== backdropEl) return;
+    if (ev.animationName !== 'fade-out') return;
+    settle();
+  }
+  backdropEl.addEventListener('animationend', onEnd);
+  setTimeout(settle, 220);
+}
+
+var OVERLAY_OUT_CLASS = 'overlay-anim-out';
+
+function overlayMotionEls(backdropEl, opts) {
+  var els = [backdropEl];
+  if (opts && opts.panelEl instanceof HTMLElement) els.push(opts.panelEl);
+  return els;
+}
+
+/** Cancela un cierre animado pendiente; llamar antes de re-mostrar el overlay. */
+export function cancelOverlayClose(backdropEl, opts) {
+  if (!backdropEl || !(backdropEl instanceof HTMLElement)) return;
+  backdropEl._uiOverlayCloseId = (backdropEl._uiOverlayCloseId || 0) + 1;
+  overlayMotionEls(backdropEl, opts).forEach(function (el) {
+    el.classList.remove(OVERLAY_OUT_CLASS);
+  });
+  backdropEl.removeAttribute('aria-hidden');
+}
+
+/**
+ * Cierre con motion para overlays de display/hidden directo (Tendencias, ⌘K).
+ * aria-hidden inmediato; fade-out + modal-out (CSS .overlay-anim-out); hideFn al
+ * terminar — ahí van display:none y la limpieza de DOM/charts, para que el
+ * contenido no se vea vaciarse durante la salida.
+ * @param {HTMLElement|null|undefined} backdropEl
+ * @param {() => void} hideFn
+ * @param {{ panelEl?: HTMLElement }} [opts] panel hermano (no hijo) del backdrop
+ */
+export function closeOverlayAnimated(backdropEl, hideFn, opts) {
+  var hide = typeof hideFn === 'function' ? hideFn : function () {};
+  if (!backdropEl || !(backdropEl instanceof HTMLElement)) {
+    hide();
+    return;
+  }
+  if (backdropEl.classList.contains(OVERLAY_OUT_CLASS)) return; // ya cerrando
+  backdropEl.setAttribute('aria-hidden', 'true');
+  var els = overlayMotionEls(backdropEl, opts);
+  var notVisible = backdropEl.hidden || backdropEl.style.display === 'none';
+  if (notVisible || prefersReducedMotion()) {
+    els.forEach(function (el) {
+      el.classList.remove(OVERLAY_OUT_CLASS);
+    });
+    hide();
+    return;
+  }
+  var closeId = (backdropEl._uiOverlayCloseId || 0) + 1;
+  backdropEl._uiOverlayCloseId = closeId;
+  els.forEach(function (el) {
+    el.classList.add(OVERLAY_OUT_CLASS);
+  });
+  var settled = false;
+  function settle() {
+    if (settled) return;
+    settled = true;
+    backdropEl.removeEventListener('animationend', onEnd);
+    if (backdropEl._uiOverlayCloseId !== closeId) return; // reabierto durante el cierre
+    els.forEach(function (el) {
+      el.classList.remove(OVERLAY_OUT_CLASS);
+    });
+    hide();
+  }
+  function onEnd(ev) {
+    if (ev.target !== backdropEl) return;
+    if (ev.animationName !== 'fade-out') return;
+    settle();
+  }
+  backdropEl.addEventListener('animationend', onEnd);
+  setTimeout(settle, 220);
+}
+
 export function setAsyncButtonLoading(btn, loading, opts) {
   if (!btn) return;
   opts = opts || {};
@@ -156,10 +281,14 @@ export function setAsyncButtonLoading(btn, loading, opts) {
     }
     btn.classList.add('loading');
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    if (!prefersReducedMotion()) ensureButtonSpinner(btn);
     swapLabelText(label, loadingText);
     return;
   }
   btn.classList.remove('loading');
+  btn.removeAttribute('aria-busy');
+  removeButtonSpinner(btn);
   if (!btn.dataset.rpcOffline) {
     btn.disabled = false;
     btn.removeAttribute('aria-disabled');

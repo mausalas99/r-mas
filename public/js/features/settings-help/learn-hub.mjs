@@ -22,6 +22,7 @@ import {
 } from '../../fundamentos-progress.mjs';
 import { isNeoCompanionStepComplete } from '../../neo-companion-progress.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
+import { closeModalAnimated } from '../../ui-motion.mjs';
 import { needsClinicalOnboarding } from '../clinical-onboarding.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
@@ -482,13 +483,13 @@ export function openLearnHub(opts = {}) {
 export function closeLearnHub() {
   const bd = document.getElementById('learn-hub-backdrop');
   if (!bd) return;
-  bd.classList.remove('open');
-  bd.setAttribute('aria-hidden', 'true');
   const prev = learnHubLastFocus;
-  learnHubLastFocus = null;
-  if (prev && typeof prev.focus === 'function') {
-    try {
-      prev.focus();
-    } catch (_e) {}
-  }
+  closeModalAnimated(bd, function () {
+    learnHubLastFocus = null;
+    if (prev && typeof prev.focus === 'function') {
+      try {
+        prev.focus();
+      } catch (_e) {}
+    }
+  });
 }

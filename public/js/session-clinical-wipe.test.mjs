@@ -4,6 +4,7 @@ import {
   SESSION_WEB_LS_KEYS,
   wipeSessionClinicalStorage,
   shouldInstallSessionClinicalWipe,
+  isSessionScopedWebClient,
 } from './session-clinical-wipe.mjs';
 
 let store = {};
@@ -58,6 +59,16 @@ test('shouldInstallSessionClinicalWipe is false for desktop db mode', () => {
     electronAPI: { dbClinicalLoadAll: async () => ({ ok: true, blobs: {} }) },
   };
   assert.equal(shouldInstallSessionClinicalWipe(), false);
+});
+
+test('isSessionScopedWebClient is false without mobile/web clinical runtime flags', () => {
+  assert.equal(isSessionScopedWebClient(), false);
+});
+
+test('isSessionScopedWebClient is true with __RPC_WEB_CLINICAL__', () => {
+  globalThis.__RPC_WEB_CLINICAL__ = true;
+  assert.equal(isSessionScopedWebClient(), true);
+  delete globalThis.__RPC_WEB_CLINICAL__;
 });
 
 test('SESSION_WEB_LS_KEYS includes bearer', () => {

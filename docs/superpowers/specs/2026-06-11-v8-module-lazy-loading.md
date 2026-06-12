@@ -43,7 +43,7 @@ Currently, all features load at startup:
 1. **Lab Module** (`labs.js` + parsers + lab-history) - load on Laboratorio tab
 2. **Charts Module** (Chart.js + tendencias + estado-actual-charts) - load on first chart render
 3. **Manejo Module** (electrolitos, infusiones, ATB, CAD calculators) - load on Manejo open
-4. **LAN Module** (discovery, host, client, P2P sync) - load when joining/hosting LAN
+4. **LAN panel** (`features/lan/panel.mjs` + transport) — load when opening ⇄ or joining turn
 5. **VPO Module** (calculators, templates) - load on VPO open
 
 ### Implementation Approach
@@ -84,9 +84,9 @@ Dependencies: Chart.js library (161KB), `storage.js`
 Exports: `calculateElectrolitos`, `calculateInfusionRate`, `calculateATBDose`, `calculateCADScore`
 Dependencies: `storage.js`, clinical constants
 
-#### LAN Module (`public/js/lan.mjs` export)
-Exports: `joinLanRoom`, `hostLanRoom`, `getLanPeers`, `sendLanMessage`
-Dependencies: WebRTC (for P2P), existing sync logic
+#### LAN panel (lazy via `lazy-feature-routes.mjs` pattern)
+Load: `features/lan/panel.mjs`, `transport.mjs` on ⇄ open — not at boot.
+Dependencies: existing host/client sync (no WebRTC in v8).
 
 #### VPO Module (`public/js/vpo.mjs` export)
 Exports: `calculateVpo`, `renderVpoTemplate`, `getVpoHistory`
@@ -193,8 +193,6 @@ Track via performance markers:
 
 None — design is complete.
 
-## Next Steps
+## Implementation
 
-1. User reviews and approves this spec
-2. Create implementation plan
-3. Implement and test
+See [`../plans/2026-06-11-v8-performance-overhaul.md`](../plans/2026-06-11-v8-performance-overhaul.md) Tasks B3–B4.

@@ -20,7 +20,7 @@ import { stashVpoForPatient } from './vpo.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import { stampPatientRegistrationMeta } from '../patient-registration-meta.mjs';
-import { shakePatientFieldsForError } from '../ui-motion.mjs';
+import { shakePatientFieldsForError, closeModalAnimated } from '../ui-motion.mjs';
 import {
   isModeSala,
   getDefaultServicio,
@@ -33,6 +33,7 @@ import {
   syncGuardiaCensusPanelVisibility,
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
+  isClinicalScopeReadyForLanPatientApply,
 } from '../clinical-access-runtime.mjs';
 import {
   evaluateClinicalScope,
@@ -42,7 +43,12 @@ import {
   resolvePatientTeamIdFromAssignments,
   patientHasExplicitTeamAssignment,
 } from '../clinico-access.mjs';
-import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import {
+  hasElevatedTeamPrivileges,
+  shouldEnforceTeamPatientMirror,
+  shouldShowClinicalCensusFilters,
+  shouldUseElevatedPatientCensus,
+} from '../clinical-privileges.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import {
   filterPatientsForGuardiaCensus as filterPatientsForGuardiaCensusCore,
@@ -52,13 +58,13 @@ import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
-  resolveElevatedTeamFilterId,
-  resolveActiveTeamFilterId,
+  resolveCensusTeamFilterId,
   writeElevatedTeamFilterPreference,
   isTeamIdInCensusCatalog,
   CENSUS_TEAM_FILTER_UNASSIGNED,
-  filterTeamsForCensusSala,
   reconcileCensusTeamFilterForSala,
+  censusTeamCatalogForFilters,
+  censusFiltersUseFullTeamCatalog,
 } from './clinical-census-filters-ui.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
@@ -85,6 +91,12 @@ import {
   trySilentPatientListPatch,
   updatePatientListDomIncremental,
 } from '../patient-list-incremental.mjs';
+import {
+  shouldVirtualizeActiveZone,
+  mountPatientActiveZoneVirtual,
+  destroyPatientActiveZoneVirtual,
+  trySilentVirtualPatientListPatch,
+} from '../patient-list-virtual.mjs';
 
 import {
   adoptTourPatientOnCommit,
@@ -100,8 +112,15 @@ import {
   syncPatientRegistrationTeamSelect,
 } from '../patient-team-assign-ui.mjs';
 
+export function invalidateMobileSidebarPatientCache() {
+  /* no-op — kept for LAN scope refresh hooks */
+}
+
 function patientsVisibleInSidebar() {
   const base = filterPatientsForPitchTour(patients);
+  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply()) {
+    return [];
+  }
   return filterPatientsForGuardiaCensus(base);
 }
 
@@ -164,17 +183,33 @@ export function syncClinicalCensusFiltersChrome() {
   syncClinicalCensusFiltersBar();
 }
 
+function censusFiltersMountEl() {
+  if (isMobileWeb()) {
+    return document.getElementById('clinical-census-filters-sidebar-mount');
+  }
+  return document.getElementById('clinical-census-filters-mount');
+}
+
+function hideCensusFiltersMounts() {
+  ['clinical-census-filters-mount', 'clinical-census-filters-sidebar-mount'].forEach(function (id) {
+    const mount = document.getElementById(id);
+    if (!mount) return;
+    mount.hidden = true;
+    mount.setAttribute('aria-hidden', 'true');
+  });
+}
+
 function syncClinicalCensusFiltersBar() {
   const user = clinicalSessionContext.user;
-  const elevated = user && hasElevatedTeamPrivileges(user);
-  const filtersMount = document.getElementById('clinical-census-filters-mount');
+  const showFilters = user && shouldShowClinicalCensusFilters(user);
+  const filtersMount = censusFiltersMountEl();
   let bar = document.getElementById('clinical-census-filters');
-  if (!elevated) {
+  if (
+    !showFilters ||
+    (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply())
+  ) {
     if (bar) bar.remove();
-    if (filtersMount) {
-      filtersMount.hidden = true;
-      filtersMount.setAttribute('aria-hidden', 'true');
-    }
+    hideCensusFiltersMounts();
     syncClinicalContextBarVisibility();
     return;
   }
@@ -186,20 +221,27 @@ function syncClinicalCensusFiltersBar() {
       localStorage.removeItem('clinical.censusFilterSala');
     }
   } catch (_e) {}
+  const mobileSidebar = isMobileWeb();
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'clinical-census-filters';
-    bar.className = 'clinical-census-filters clinical-census-filters--toolbar';
+    bar.className =
+      'clinical-census-filters clinical-census-filters--toolbar' +
+      (mobileSidebar ? ' clinical-census-filters--mobile-sidebar' : '');
+    const showSalaFilter = !mobileSidebar || censusFiltersUseFullTeamCatalog(user);
+    const salaBlock = showSalaFilter
+      ? '<label class="clinical-census-filter"><span>Sala</span>' +
+        '<select id="clinical-filter-sala" class="profile-input">' +
+        '<option value="__all__">Todas</option>' +
+        CLINICAL_SALA_VALUES.map((s) => `<option value="${s}">${s}</option>`).join('') +
+        '</select></label>'
+      : '';
     bar.innerHTML =
       '<button type="button" id="btn-clinical-census-filters-toggle" class="clinical-census-filters-toggle" aria-expanded="true" aria-controls="clinical-census-filters-body">' +
       '<span class="clinical-census-filters-toggle-label">Filtros censo</span>' +
       '<span class="clinical-census-filters-chevron" aria-hidden="true"></span></button>' +
       '<div id="clinical-census-filters-body" class="clinical-census-filters-body">' +
-      '<label class="clinical-census-filter"><span>Sala</span>' +
-      '<select id="clinical-filter-sala" class="profile-input">' +
-      '<option value="__all__">Todas</option>' +
-      CLINICAL_SALA_VALUES.map((s) => `<option value="${s}">${s}</option>`).join('') +
-      '</select></label>' +
+      salaBlock +
       '<label class="clinical-census-filter"><span>Equipo</span>' +
       '<select id="clinical-filter-team" class="profile-input">' +
       '<option value="">Todos los equipos</option>' +
@@ -208,6 +250,9 @@ function syncClinicalCensusFiltersBar() {
       '<label class="clinical-census-filter"><span>Servicio</span>' +
       '<input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar…" autocomplete="off">' +
       '</label></div>';
+    if (bar.parentElement && bar.parentElement !== filtersMount) {
+      bar.remove();
+    }
     filtersMount.appendChild(bar);
     filtersMount.hidden = false;
     filtersMount.setAttribute('aria-hidden', 'false');
@@ -227,7 +272,7 @@ function syncClinicalCensusFiltersBar() {
     if (toggleBtn && !toggleBtn._rpcCensusToggleWired) {
       toggleBtn._rpcCensusToggleWired = true;
       toggleBtn.addEventListener('click', () => {
-        const next = !readCensusFiltersCollapsed();
+        const next = !bar.classList.contains('is-collapsed');
         writeCensusFiltersCollapsed(next);
         applyCensusFiltersCollapsedUi(next);
       });
@@ -237,6 +282,11 @@ function syncClinicalCensusFiltersBar() {
     const teamSel = bar.querySelector('#clinical-filter-team');
     const serviceInp = bar.querySelector('#clinical-filter-service');
     const refreshCensusViews = () => {
+      if (shouldEnforceTeamPatientMirror()) {
+        renderPatientList();
+        if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
+        return;
+      }
       void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
         renderPatientList();
         if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
@@ -271,18 +321,21 @@ function syncClinicalCensusFiltersBar() {
   if (teamSel) {
     const teams = clinicalSessionContext.teams || [];
     const salaFilter = String(elevatedPatientFilters.sala || '__all__');
-    const teamsForSala = filterTeamsForCensusSala(teams, salaFilter);
+    const teamsForCatalog = censusTeamCatalogForFilters(user, teams, salaFilter);
     const priorTeamId = String(elevatedPatientFilters.teamId ?? '');
-    let teamFilterId = priorTeamId || resolveElevatedTeamFilterId(user, teamsForSala);
-    teamFilterId = reconcileCensusTeamFilterForSala(teamFilterId, teamsForSala);
+    let teamFilterId = resolveCensusTeamFilterId(user, teamsForCatalog, priorTeamId);
+    teamFilterId = reconcileCensusTeamFilterForSala(teamFilterId, teamsForCatalog);
     if (teamFilterId !== priorTeamId) {
       writeElevatedTeamFilterPreference(teamFilterId);
     }
     elevatedPatientFilters.teamId = teamFilterId;
+    const unassignedOpt = censusFiltersUseFullTeamCatalog(user)
+      ? `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>`
+      : '';
     teamSel.innerHTML =
       '<option value="">Todos los equipos</option>' +
-      `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>` +
-      teamsForSala
+      unassignedOpt +
+      teamsForCatalog
         .map((t) => {
           const id = String(t.team_id || '');
           const label = String(t.name || id).slice(0, 40);
@@ -642,6 +695,7 @@ function mountPatientListSortables() {
   var listRoot = document.getElementById('patient-list');
   if (!listRoot || patientSearchFilter) return;
   listRoot.querySelectorAll('.patient-sort-zone').forEach(function (zone) {
+    if (zone.classList.contains('patient-sort-zone--virtual-active')) return;
     var sortable = SortableCtor.create(zone, {
       animation: 200,
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
@@ -1062,6 +1116,53 @@ function renderPatientCardHtml(p) {
   );
 }
 
+function renderPinnedSectionLabelHtml(count) {
+  return (
+    '<div class="patient-list-section-label patient-list-section-label--pinned" role="group" aria-label="Pacientes fijados">' +
+    '<svg class="patient-list-pin-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a3 3 0 1 0-6 0v3.76z"/></svg>' +
+    '<span class="patient-list-section-count">' +
+    count +
+    '</span></div>'
+  );
+}
+
+function renderActiveSectionLabelHtml(count) {
+  return (
+    '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
+    count +
+    '</span></div>'
+  );
+}
+
+function renderArchivedToggleHtml(collapsed, count) {
+  return (
+    '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
+    (!collapsed ? 'true' : 'false') +
+    '">Archivados <span>(' +
+    count +
+    ')</span> <span>' +
+    (collapsed ? '▶' : '▼') +
+    '</span></button>'
+  );
+}
+
+function mountActiveZoneVirtualIfNeeded(list, active, cardHtml, listCtx) {
+  if (!shouldVirtualizeActiveZone(active.length)) {
+    destroyPatientActiveZoneVirtual();
+    list.removeAttribute('data-patient-list-virtual');
+    return;
+  }
+  var activeZone = list.querySelector('.patient-sort-zone[data-patient-zone="active"]');
+  if (!activeZone) return;
+  mountPatientActiveZoneVirtual({
+    zoneEl: activeZone,
+    listEl: list,
+    items: active,
+    renderCardHtml: cardHtml,
+    ctx: listCtx,
+  });
+}
+
 var _patientListRenderQueued = false;
 var _patientListSilentTimer = null;
 var PATIENT_LIST_SILENT_DEBOUNCE_MS = 220;
@@ -1077,6 +1178,13 @@ function patchPatientListActiveHighlight(nextId) {
   if (!list) return false;
   var cards = list.querySelectorAll('.patient-card[data-patient-id]');
   if (!cards.length) return false;
+  if (list.querySelector('.patient-sort-zone--virtual-active[data-patient-zone="active"]')) {
+    cards.forEach(function (el) {
+      var pid = el.getAttribute('data-patient-id');
+      el.classList.toggle('active', String(pid) === String(nextId));
+    });
+    return true;
+  }
   var filtered = patients.filter(patientMatchesSearch);
   if (filtered.length !== cards.length) return false;
   cards.forEach(function (el) {
@@ -1112,6 +1220,15 @@ export function renderPatientList(opts) {
 /** @param {{ silent?: boolean }|undefined} [opts] */
 function renderPatientListNow(opts) {
   opts = normalizePatientListRenderOpts(opts);
+  if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply()) {
+    if (opts.silent) return;
+    var listBoot = document.getElementById('patient-list');
+    if (listBoot) {
+      listBoot.innerHTML =
+        '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sincronizando equipo…</div>';
+    }
+    return;
+  }
   ensurePatientUiState();
   ensurePatientListClickDelegation();
   if (!opts.silent) syncClinicalCensusFiltersBar();
@@ -1122,6 +1239,7 @@ function renderPatientListNow(opts) {
   if (reselectIfActivePatientHidden(visiblePatients)) return;
   if (!visiblePatients.length) {
     destroyPatientListSortables();
+    destroyPatientActiveZoneVirtual();
     var emptyScrollTop = opts.silent ? list.scrollTop : 0;
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
@@ -1135,6 +1253,7 @@ function renderPatientListNow(opts) {
   var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
     destroyPatientListSortables();
+    destroyPatientActiveZoneVirtual();
     var searchScrollTop = opts.silent ? list.scrollTop : 0;
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
@@ -1166,46 +1285,42 @@ function renderPatientListNow(opts) {
     },
   };
 
+  var virtualizeActive = shouldVirtualizeActiveZone(zones.active.length);
+  var incrementalDomOpts = {
+    zones: zones,
+    archivedCollapsed: archivedCollapsed,
+    isRonda: isRonda,
+    virtualizeActive: virtualizeActive,
+    renderCard: cardHtml,
+    ctx: listCtx,
+    renderPinnedLabel: function () {
+      return renderPinnedSectionLabelHtml(zones.pinned.length);
+    },
+    renderActiveLabel: function () {
+      return renderActiveSectionLabelHtml(zones.active.length);
+    },
+    renderArchivedToggle: function (collapsed, count) {
+      return renderArchivedToggleHtml(collapsed, count);
+    },
+    onRondaNav: incrementalOpts.onRondaNav,
+  };
+
   if (opts.silent) {
     var silentScrollTop = list.scrollTop;
-    if (
-      trySilentPatientListPatch(list, incrementalOpts) ||
-      updatePatientListDomIncremental(list, {
-        zones: zones,
-        archivedCollapsed: archivedCollapsed,
-        isRonda: isRonda,
-        renderCard: cardHtml,
-        ctx: listCtx,
-        renderPinnedLabel: function () {
-          return (
-            '<div class="patient-list-section-label patient-list-section-label--pinned" role="group" aria-label="Pacientes fijados">' +
-            '<svg class="patient-list-pin-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a3 3 0 1 0-6 0v3.76z"/></svg>' +
-            '<span class="patient-list-section-count">' +
-            zones.pinned.length +
-            '</span></div>'
-          );
-        },
-        renderActiveLabel: function () {
-          return (
-            '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
-            zones.active.length +
-            '</span></div>'
-          );
-        },
-        renderArchivedToggle: function (collapsed, count) {
-          return (
-            '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
-            (!collapsed ? 'true' : 'false') +
-            '">Archivados <span>(' +
-            count +
-            ')</span> <span>' +
-            (collapsed ? '▶' : '▼') +
-            '</span></button>'
-          );
-        },
-        onRondaNav: incrementalOpts.onRondaNav,
-      })
-    ) {
+    var silentOk =
+      (virtualizeActive &&
+        trySilentVirtualPatientListPatch(list, {
+          zones: zones,
+          archivedCollapsed: archivedCollapsed,
+          patientSearchFilter: patientSearchFilter,
+          renderCard: cardHtml,
+          ctx: listCtx,
+          onRondaNav: incrementalOpts.onRondaNav,
+        })) ||
+      (!virtualizeActive && trySilentPatientListPatch(list, incrementalOpts)) ||
+      updatePatientListDomIncremental(list, incrementalDomOpts);
+    if (silentOk) {
+      if (virtualizeActive) mountActiveZoneVirtualIfNeeded(list, zones.active, cardHtml, listCtx);
       list.classList.toggle('patient-list--ronda', isRonda);
       if (silentScrollTop > 0) list.scrollTop = silentScrollTop;
       return;
@@ -1236,16 +1351,16 @@ function renderPatientListNow(opts) {
     parts.push('</div>');
   }
   if (active.length) {
+    parts.push(renderActiveSectionLabelHtml(active.length));
     parts.push(
-      '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
-        active.length +
-        '</span></div>'
+      '<div class="' +
+        (virtualizeActive ? 'patient-sort-zone patient-sort-zone--virtual-active' : 'patient-sort-zone') +
+        '" data-patient-zone="active">'
     );
-    parts.push('<div class="patient-sort-zone" data-patient-zone="active">');
     active.forEach(function (p) {
       rondaNav.push(String(p.id));
     });
-    parts.push(active.map(cardHtml).join(''));
+    if (!virtualizeActive) parts.push(active.map(cardHtml).join(''));
     parts.push('</div>');
   }
   if (archived.length) {
@@ -1270,6 +1385,7 @@ function renderPatientListNow(opts) {
   _lastRondaNavIds = rondaNav;
   var savedScrollTop = opts.silent ? list.scrollTop : 0;
   list.innerHTML = parts.join('');
+  mountActiveZoneVirtualIfNeeded(list, active, cardHtml, listCtx);
   if (opts.silent && savedScrollTop > 0) list.scrollTop = savedScrollTop;
   mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
@@ -1659,7 +1775,7 @@ export function openAddModalFromLabPatient(patient, opts) {
 export function closeModal() {
   pendingAddPatientSavedCallback = null;
   pendingAddPatientFromBulkPreview = false;
-  document.getElementById('modal').classList.remove('open');
+  closeModalAnimated(document.getElementById('modal'));
 }
 
 export function confirmCloseAddPatientModal() {
@@ -1845,11 +1961,12 @@ function showExpedienteAdvice(onConfirm) {
 
 async function assignTeamFromRegistrationModal(patientId) {
   var teamId = readPatientRegistrationTeamId();
-  if (!teamId) return;
+  if (!teamId) return { ok: false, error: 'no_team' };
   var res = await assignPatientToTeamClinical(patientId, teamId);
   if (!res.ok) {
     rt.showToast('Paciente guardado, pero no se pudo asignar al equipo', 'warn');
   }
+  return res;
 }
 
 function openExpedienteAfterBulkPreviewRegistration(patientId) {
@@ -1946,7 +2063,6 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   var fromBulkPreview = pendingAddPatientFromBulkPreview;
   pendingAddPatientFromBulkPreview = false;
   closeModal();
-  void assignTeamFromRegistrationModal(patient.id);
   var pendingLab = null;
   var stayOnLabForTour = isFromLab && shouldTourStayOnLabAfterLabCommit();
   if (isFromLab && !stayOnLabForTour && !fromBulkPreview) {
@@ -1956,17 +2072,51 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   } else if (isFromLab && stayOnLabForTour) {
     pendingLab = null;
   }
-  renderPatientList();
-  var activeId = patient.id;
-  if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
-    var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
-    if (perez) activeId = perez.id;
-  }
-  selectPatient(activeId);
-  if (fromBulkPreview) {
-    openExpedienteAfterBulkPreviewRegistration(activeId);
+  if (isMobileWeb()) {
+    void (async function () {
+      var assignRes = await assignTeamFromRegistrationModal(patient.id);
+      if (!assignRes?.ok) {
+        var dropIdx = patients.findIndex(function (p) {
+          return p && String(p.id) === String(patient.id);
+        });
+        if (dropIdx >= 0) patients.splice(dropIdx, 1);
+        rt.showToast(
+          'En R+ Móvil solo ves pacientes asignados a tu equipo (p. ej. Dra. Melissa). Regístralos en la Mac o asígnalos allí.',
+          'warn'
+        );
+      } else {
+        rt.showToast('Paciente agregado', 'success');
+      }
+      try {
+        var access = await import('../clinical-access-runtime.mjs');
+        if (typeof access.finalizeMobileLanPatientCensus === 'function') {
+          await access.finalizeMobileLanPatientCensus();
+        }
+      } catch (_eMobileAssign) {}
+      if (assignRes?.ok) {
+        var activeId = patient.id;
+        if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
+          var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+          if (perez) activeId = perez.id;
+        }
+        selectPatient(activeId);
+        if (fromBulkPreview) openExpedienteAfterBulkPreviewRegistration(activeId);
+      }
+    })();
   } else {
-    rt.showToast('Paciente agregado', 'success');
+    void assignTeamFromRegistrationModal(patient.id);
+    renderPatientList();
+    var activeId = patient.id;
+    if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
+      var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+      if (perez) activeId = perez.id;
+    }
+    selectPatient(activeId);
+    if (fromBulkPreview) {
+      openExpedienteAfterBulkPreviewRegistration(activeId);
+    } else {
+      rt.showToast('Paciente agregado', 'success');
+    }
   }
   if (adoptResult.afterCommit) {
     try {

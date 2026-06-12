@@ -4,7 +4,11 @@ import {
   resolvePatientTeamIdFromAssignments,
   patientHasExplicitTeamAssignment,
 } from '../clinico-access.mjs';
-import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import {
+  shouldEnforceTeamPatientMirror,
+  shouldUseElevatedPatientCensus,
+} from '../clinical-privileges.mjs';
+import { filterPatientsForMobileTeamMirror } from '../mobile-team-patient-scope.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
 /** Map chart patient row to scope patient shape. */
@@ -25,8 +29,11 @@ export function patientForScopeEvaluate(p) {
  * @param {Map<string, object>|null|undefined} [guardiasMap]
  */
 export function filterPatientsForClinicalSidebar(patients, user, scopeContext, guardiasMap) {
-  if (!user?.user_id) return patients || [];
-  if (hasElevatedTeamPrivileges(user)) return patients || [];
+  if (!user?.user_id) return shouldEnforceTeamPatientMirror() ? [] : patients || [];
+  if (shouldEnforceTeamPatientMirror()) {
+    return filterPatientsForMobileTeamMirror(patients, user, scopeContext, guardiasMap);
+  }
+  if (shouldUseElevatedPatientCensus(user)) return patients || [];
   return (patients || []).filter((p) => {
     if (!p) return false;
     const mapped = patientForScopeEvaluate(p);
@@ -147,7 +154,9 @@ export function filterPatientsForGuardiaCensus(
     scopeContext,
     guardiasMap
   );
-  if (!hasElevatedTeamPrivileges(user)) return visible;
+  const applyCensusToolbarFilters =
+    shouldUseElevatedPatientCensus(user) || shouldEnforceTeamPatientMirror();
+  if (!applyCensusToolbarFilters) return visible;
   const filterCtx = {
     teams: scopeContext.teams || [],
     assignments: scopeContext.assignments || [],

@@ -10,6 +10,8 @@ import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import { isMobileWeb, syncMobileBarebonesChrome } from './mobile-web.mjs';
+import { clearWebSessionClinicalMemory } from './app-state.mjs';
+import { wipeSessionClinicalStorage } from './session-clinical-wipe.mjs';
 import {
   persistMobilePairingFromSearch,
   restoreMobilePairingFromStorage,
@@ -66,12 +68,8 @@ import {
   closeProcedureAgendaModal,
 } from './features/agenda.mjs';
 import {
-  closeTendDetail,
-  closeTendGroupModal,
-  closeTendHiddenModal,
-  closeLabDisplayPrefsModal,
-  isTendGroupModalOpen,
-} from './features/tendencias.mjs';
+  chartsShellCloseProxies,
+} from './lazy-feature-routes.mjs';
 import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
 import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
 import {
@@ -120,6 +118,7 @@ import {
 } from './features/pase-board.mjs';
 import { renderProcedureAgendaPanel } from './features/agenda.mjs';
 import { patients, saveState } from './app-state.mjs';
+import { showToast } from './ui-toast.mjs';
 
 const shellCtx = {
   getActiveId() { return null; },
@@ -213,6 +212,10 @@ function setMobileBootBanner(visible, text) {
 async function initMobileWebBoot() {
   tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
+  try {
+    wipeSessionClinicalStorage({ includeLanSession: false });
+    clearWebSessionClinicalMemory();
+  } catch (_wipeBoot) {}
   setMobileBootBanner(true, 'Cargando R+ Móvil…');
   persistMobilePairingFromSearch(location.search, location.origin);
   restoreMobilePairingFromStorage();
@@ -242,6 +245,14 @@ async function initMobileWebBoot() {
     window._rpcMobileLanSettledWired = true;
     document.addEventListener('rpc-mobile-lan-sync-settled', function () {
       setMobileBootBanner(false);
+      void (async function () {
+        try {
+          const access = await import('./clinical-access-runtime.mjs');
+          if (typeof access.finalizeMobileLanPatientCensus === 'function') {
+            await access.finalizeMobileLanPatientCensus();
+          }
+        } catch (_ePrune) {}
+      })();
     });
   }
   setMobileBootBanner(false);
@@ -268,14 +279,6 @@ async function initMobileWebBoot() {
 }
 
 
-
-function showToast(msg, type) {
-  var focused = document.activeElement;
-  var t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
-  if (focused && focused.tagName !== 'BODY') setTimeout(function(){ focused.focus(); }, 0);
-  setTimeout(function(){ t.className = 'toast'; }, 3500);
-}
 
 function onDefaultServicioBlur() {
   var el = document.getElementById('settings-default-servicio');
@@ -332,7 +335,7 @@ function initModalDismiss() {
     isOpen: function () {
       return isRpcOverlayVisible(el('tend-detail-backdrop'));
     },
-    close: closeTendDetail,
+    close: chartsShellCloseProxies.closeTendDetail,
     backdropEl: function () {
       return el('tend-detail-backdrop');
     },
@@ -343,9 +346,9 @@ function initModalDismiss() {
     isOpen: function () {
       var bd = el('tend-group-backdrop');
       if (bd && bd.getAttribute('aria-hidden') === 'false') return true;
-      return isTendGroupModalOpen();
+      return chartsShellCloseProxies.isTendGroupModalOpen();
     },
-    close: closeTendGroupModal,
+    close: chartsShellCloseProxies.closeTendGroupModal,
     backdropEl: function () {
       return el('tend-group-backdrop');
     },
@@ -468,7 +471,7 @@ function initModalDismiss() {
       var b = el('tend-hidden-modal-backdrop');
       return b && b.classList.contains('open');
     },
-    close: closeTendHiddenModal,
+    close: chartsShellCloseProxies.closeTendHiddenModal,
     backdropEl: function () {
       return el('tend-hidden-modal-backdrop');
     }
@@ -479,7 +482,7 @@ function initModalDismiss() {
       var b = el('lab-display-prefs-backdrop');
       return b && b.classList.contains('open');
     },
-    close: closeLabDisplayPrefsModal,
+    close: chartsShellCloseProxies.closeLabDisplayPrefsModal,
     backdropEl: function () {
       return el('lab-display-prefs-backdrop');
     },

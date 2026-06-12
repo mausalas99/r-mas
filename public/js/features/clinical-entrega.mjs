@@ -23,6 +23,7 @@ import {
   serializePendientesJson,
 } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { vitalsFrequencyForDb } from '../../../lib/entrega/entrega-vitals-plan.mjs';
+import { closeModalAnimated } from '../ui-motion.mjs';
 import {
   getEntregaDraftItems,
   readEntregaHandoffContext,
@@ -935,11 +936,11 @@ async function openEntregaModalAsync(opts) {
 export function closeEntregaModal() {
   const bd = entregaModalEl();
   if (!bd) return;
-  bd.classList.remove('open');
-  bd.setAttribute('aria-hidden', 'true');
-  resetEntregaModalUi();
-  const form = document.getElementById('entrega-form');
-  if (form) form._entregaOnConfirm = null;
+  closeModalAnimated(bd, function () {
+    resetEntregaModalUi();
+    const form = document.getElementById('entrega-form');
+    if (form) form._entregaOnConfirm = null;
+  });
 }
 
 /**

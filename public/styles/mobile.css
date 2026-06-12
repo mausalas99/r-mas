@@ -518,6 +518,80 @@ html.rpc-mobile-web .app-tabs-row {
 }
 html.rpc-mobile-web .main-col,
 html.rpc-mobile-web aside.patient-sidebar { border-radius: 0; }
+
+/* Filtros censo — sidebar above patient list (must not flex-grow like desktop toolbar mount) */
+html.rpc-mobile-web .clinical-census-filters-mount--sidebar {
+  margin: 0 10px 6px;
+  flex: 0 0 auto;
+  min-height: 0;
+  width: auto;
+}
+
+html.rpc-mobile-web aside.patient-sidebar .patient-list {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar {
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--color-ink) 12%, transparent);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  padding: 0;
+  gap: 0;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed {
+  border-color: color-mix(in oklab, var(--color-ink) 8%, transparent);
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filters-toggle {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 10px;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed .clinical-census-filters-toggle {
+  min-height: 34px;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar:not(.is-collapsed) .clinical-census-filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar.is-collapsed .clinical-census-filters-body,
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filters-body[hidden] {
+  display: none !important;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filters-body {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filter {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+html.rpc-mobile-web .clinical-census-filters--mobile-sidebar .clinical-census-filter .profile-input {
+  width: 100%;
+  min-height: 40px;
+  font-size: 14px;
+}
 @media (max-width: 900px) {
   html.rpc-mobile-web aside {
     width: min(280px, 42vw) !important;

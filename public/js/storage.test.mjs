@@ -59,6 +59,67 @@ describe('storage todos', () => {
       store['rpc-todos'] = JSON.stringify({ p1: [{ id: 'a', text: 't', completed: 1, priority: 'baja' }] });
       assert.strictEqual(storage.getTodos('p1')[0].completed, true);
     });
+
+    it('preserves new optional fields when present', () => {
+      store['rpc-todos'] = JSON.stringify({
+        p1: [{
+          id: 'a',
+          text: 't',
+          completed: false,
+          priority: 'alta',
+          createdAt: '2026-05-13T10:00:00.000Z',
+          dueDate: '2026-05-14T08:00:00.000Z',
+          reminderAt: '2026-05-14T07:30:00.000Z',
+          createdBy: '@dr1',
+          completedAt: '2026-05-15T12:00:00.000Z',
+          completedBy: '@dr2',
+          handoffAcknowledgedAt: '2026-05-16T08:00:00.000Z',
+          handoffAcknowledgedBy: '@dr3',
+        }],
+      });
+      const todo = storage.getTodos('p1')[0];
+      assert.strictEqual(todo.dueDate, '2026-05-14T08:00:00.000Z');
+      assert.strictEqual(todo.reminderAt, '2026-05-14T07:30:00.000Z');
+      assert.strictEqual(todo.createdBy, '@dr1');
+      assert.strictEqual(todo.completedAt, '2026-05-15T12:00:00.000Z');
+      assert.strictEqual(todo.completedBy, '@dr2');
+      assert.strictEqual(todo.handoffAcknowledgedAt, '2026-05-16T08:00:00.000Z');
+      assert.strictEqual(todo.handoffAcknowledgedBy, '@dr3');
+    });
+
+    it('returns null for missing optional fields on legacy rows', () => {
+      store['rpc-todos'] = JSON.stringify({ p1: [{ id: 'a', text: 't', completed: false }] });
+      const todo = storage.getTodos('p1')[0];
+      assert.strictEqual(todo.dueDate, null);
+      assert.strictEqual(todo.reminderAt, null);
+      assert.strictEqual(todo.createdBy, null);
+      assert.strictEqual(todo.completedAt, null);
+      assert.strictEqual(todo.completedBy, null);
+      assert.strictEqual(todo.handoffAcknowledgedAt, null);
+      assert.strictEqual(todo.handoffAcknowledgedBy, null);
+      assert.strictEqual('dueDate' in todo, true);
+    });
+
+    it('coerces invalid optional field values to null', () => {
+      store['rpc-todos'] = JSON.stringify({
+        p1: [{
+          id: 'a',
+          text: 't',
+          completed: false,
+          dueDate: 123,
+          reminderAt: '',
+          createdBy: '  ',
+          completedAt: false,
+          completedBy: { user: 'x' },
+        }],
+      });
+      const todo = storage.getTodos('p1')[0];
+      assert.strictEqual(todo.dueDate, null);
+      assert.strictEqual(todo.reminderAt, null);
+      assert.strictEqual(todo.createdBy, null);
+      assert.strictEqual(todo.completedAt, null);
+      assert.strictEqual(todo.completedBy, null);
+    });
   });
 
   describe('saveTodos', () => {
@@ -82,6 +143,67 @@ describe('storage todos', () => {
     it('does NOT write for demo- patients', () => {
       storage.saveTodos('demo-foo', [{ id: '1', text: 'a', completed: false, priority: 'media', createdAt: '' }]);
       assert.strictEqual(store['rpc-todos'], undefined);
+    });
+
+    it('round-trips new optional fields', () => {
+      const todos = [{
+        id: '1',
+        text: 'x',
+        completed: true,
+        priority: 'alta',
+        createdAt: '2026-05-13T10:00:00.000Z',
+        updatedAt: '2026-05-13T11:00:00.000Z',
+        dueDate: '2026-05-14T08:00:00.000Z',
+        reminderAt: '2026-05-14T07:30:00.000Z',
+        createdBy: '@dr1',
+        completedAt: '2026-05-15T12:00:00.000Z',
+        completedBy: '@dr2',
+      }];
+      storage.saveTodos('p1', todos);
+      const saved = JSON.parse(store['rpc-todos']).p1[0];
+      assert.strictEqual(saved.dueDate, '2026-05-14T08:00:00.000Z');
+      assert.strictEqual(saved.reminderAt, '2026-05-14T07:30:00.000Z');
+      assert.strictEqual(saved.createdBy, '@dr1');
+      assert.strictEqual(saved.completedAt, '2026-05-15T12:00:00.000Z');
+      assert.strictEqual(saved.completedBy, '@dr2');
+      const got = storage.getTodos('p1')[0];
+      assert.strictEqual(got.dueDate, '2026-05-14T08:00:00.000Z');
+      assert.strictEqual(got.reminderAt, '2026-05-14T07:30:00.000Z');
+      assert.strictEqual(got.createdBy, '@dr1');
+      assert.strictEqual(got.completedAt, '2026-05-15T12:00:00.000Z');
+      assert.strictEqual(got.completedBy, '@dr2');
+    });
+
+    it('persists null for empty or invalid optional fields', () => {
+      storage.saveTodos('p1', [{
+        id: '1',
+        text: 'x',
+        completed: false,
+        priority: 'media',
+        createdAt: '2026-05-13T10:00:00.000Z',
+        dueDate: '',
+        reminderAt: '   ',
+        createdBy: 42,
+        completedAt: null,
+        completedBy: undefined,
+      }]);
+      const saved = JSON.parse(store['rpc-todos']).p1[0];
+      assert.strictEqual(saved.dueDate, null);
+      assert.strictEqual(saved.reminderAt, null);
+      assert.strictEqual(saved.createdBy, null);
+      assert.strictEqual(saved.completedAt, null);
+      assert.strictEqual(saved.completedBy, null);
+    });
+
+    it('still normalizes priority on legacy rows when saving', () => {
+      storage.saveTodos('p1', [{ id: '1', text: 'x', completed: false, createdAt: '2026-05-13T10:00:00.000Z' }]);
+      const saved = JSON.parse(store['rpc-todos']).p1[0];
+      assert.strictEqual(saved.priority, 'media');
+      assert.strictEqual(saved.dueDate, null);
+      assert.strictEqual(saved.reminderAt, null);
+      assert.strictEqual(saved.createdBy, null);
+      assert.strictEqual(saved.completedAt, null);
+      assert.strictEqual(saved.completedBy, null);
     });
   });
 });
@@ -219,6 +341,44 @@ describe('getLabHistory', () => {
     assert.equal(lh.p1.length, 1);
     assert.ok(Array.isArray(lh.p2));
     assert.equal(lh.p2.length, 1);
+  });
+});
+
+describe('storage session-scoped mobile web', () => {
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
+    globalThis.__RPC_MOBILE_WEB__ = true;
+    global.window = { localStorage: mock };
+  });
+
+  afterEach(() => {
+    delete globalThis.__RPC_MOBILE_WEB__;
+    global.window = { localStorage: mock };
+  });
+
+  it('saveAll skips localStorage on iPad/PWA (in-memory session)', async () => {
+    const big = 'x'.repeat(6 * 1024 * 1024);
+    const result = await storage.saveAll(
+      [{ id: 'p1', nombre: 'Test' }],
+      { p1: { estudios: big } },
+      {},
+      {},
+      {}
+    );
+    assert.strictEqual(result.ok, true);
+    assert.strictEqual(store['rpc-patients'], undefined);
+    assert.strictEqual(store['rpc-notes'], undefined);
+  });
+
+  it('saveTodos skips localStorage on iPad/PWA', () => {
+    storage.saveTodos('p1', [{ id: 't1', text: 'x', completed: false, priority: 'media', createdAt: '' }]);
+    assert.strictEqual(store['rpc-todos'], undefined);
+  });
+
+  it('getPatients ignores stale localStorage census on iPad/PWA', () => {
+    store['rpc-patients'] = JSON.stringify([{ id: 'stale', nombre: 'OLD' }]);
+    assert.deepEqual(storage.getPatients(), []);
   });
 });
 

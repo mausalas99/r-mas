@@ -468,9 +468,10 @@ export function initChromeAppearance() {
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.classList.add('dark');
   }
-  // Electron disables GPU acceleration; backdrop-filter falls back to slow
-  // software rendering. Force no-blur so glass overlays degrade gracefully.
-  if (typeof window.rpcAPI !== 'undefined') {
+  // Solo cuando main.js desactivó la aceleración por hardware (performance.json):
+  // backdrop-filter caería a render por software, así que el glass degrada a no-blur.
+  // (Antes comprobaba window.rpcAPI, global que no existe — nunca se aplicaba.)
+  if (window.electronAPI && window.electronAPI.isSoftwareRender) {
     document.documentElement.classList.add('no-blur');
   }
   syncThemeToggleIcon();

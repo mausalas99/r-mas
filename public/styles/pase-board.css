@@ -3220,6 +3220,7 @@ body:has(#entrega-modal-backdrop.entrega-modal-backdrop.open) .roster-panel-foot
     max(12px, env(safe-area-inset-bottom, 0px));
   overflow: hidden;
   overscroll-behavior: none;
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 body.clinical-teams-modal-open {
@@ -5117,6 +5118,20 @@ html.clinical-onboarding-active #main-area {
   box-sizing: border-box;
 }
 
+.guardia-census-head-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.guardia-learn-nudge-btn {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
 .guardia-v7-upgrade-card {
   margin: 12px auto 16px;
   max-width: min(720px, calc(100% - 24px));
@@ -5137,6 +5152,28 @@ html.clinical-onboarding-active #main-area {
 
 .guardia-v7-upgrade-bullets strong {
   color: var(--text);
+}
+
+.guardia-v7-upgrade-progress {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.guardia-v7-upgrade-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--border) 70%, transparent);
+  overflow: hidden;
+  margin: 0 0 14px;
+}
+
+.guardia-v7-upgrade-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--action);
+  transition: width 0.25s ease;
 }
 
 .guardia-v7-upgrade-actions {

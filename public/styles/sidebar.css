@@ -135,6 +135,13 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   flex-direction: column;
   gap: calc(10px * var(--density-space));
 }
+.patient-sort-zone--virtual-active {
+  flex: 0 1 auto;
+  -webkit-overflow-scrolling: touch;
+}
+.patient-sort-zone--virtual-active .virtual-scroll-inner .patient-card {
+  margin-bottom: 0;
+}
 .patient-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
   box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
 }

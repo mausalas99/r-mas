@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildLiveSyncPatientIdMap,
+  mergeTodoListsById,
   remapTodosPatientIds,
   remapAgendaPatientIds,
   attachTodosMapToPatientEntries,
@@ -73,5 +74,75 @@ describe('livesync-patient-ids', () => {
     const agenda = [{ id: 'e1', patientId: 'remote_x', procedure: 'Cirugía' }];
     const out = remapAgendaPatientIds(agenda, idMap);
     assert.equal(out[0].patientId, 'local_x');
+  });
+
+  it('mergeTodoListsById — newer updatedAt wins and keeps due fields from winner', () => {
+    const existing = [
+      {
+        id: '1',
+        text: 'Lab',
+        updatedAt: '2026-06-10T10:00:00.000Z',
+        dueDate: '2026-06-11T08:00:00.000Z',
+        reminderAt: '2026-06-11T07:30:00.000Z',
+        createdBy: '@local',
+        completedAt: null,
+        completedBy: null,
+      },
+    ];
+    const incoming = [
+      {
+        id: '1',
+        text: 'Lab',
+        updatedAt: '2026-06-11T09:00:00.000Z',
+        dueDate: '2026-06-11T10:00:00.000Z',
+        reminderAt: '2026-06-11T09:30:00.000Z',
+        createdBy: '@peer',
+        completedAt: '2026-06-11T08:00:00.000Z',
+        completedBy: '@peer',
+      },
+    ];
+    const merged = mergeTodoListsById(existing, incoming);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].updatedAt, '2026-06-11T09:00:00.000Z');
+    assert.equal(merged[0].dueDate, '2026-06-11T10:00:00.000Z');
+    assert.equal(merged[0].reminderAt, '2026-06-11T09:30:00.000Z');
+    assert.equal(merged[0].createdBy, '@peer');
+    assert.equal(merged[0].completedAt, '2026-06-11T08:00:00.000Z');
+    assert.equal(merged[0].completedBy, '@peer');
+  });
+
+  it('mergeTodoListsById — older row does not overwrite newer due fields', () => {
+    const newer = [
+      {
+        id: '1',
+        text: 'Lab',
+        updatedAt: '2026-06-11T09:00:00.000Z',
+        dueDate: '2026-06-11T10:00:00.000Z',
+        reminderAt: '2026-06-11T09:30:00.000Z',
+        createdBy: '@newer',
+        completedAt: null,
+        completedBy: null,
+      },
+    ];
+    const older = [
+      {
+        id: '1',
+        text: 'Lab viejo',
+        updatedAt: '2026-06-10T10:00:00.000Z',
+        dueDate: '2026-06-09T08:00:00.000Z',
+        reminderAt: '2026-06-09T07:30:00.000Z',
+        createdBy: '@older',
+        completedAt: '2026-06-10T08:00:00.000Z',
+        completedBy: '@older',
+      },
+    ];
+    const merged = mergeTodoListsById(newer, older);
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].updatedAt, '2026-06-11T09:00:00.000Z');
+    assert.equal(merged[0].dueDate, '2026-06-11T10:00:00.000Z');
+    assert.equal(merged[0].reminderAt, '2026-06-11T09:30:00.000Z');
+    assert.equal(merged[0].createdBy, '@newer');
+    assert.equal(merged[0].completedAt, null);
+    assert.equal(merged[0].completedBy, null);
   });
 });

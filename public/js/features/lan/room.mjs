@@ -15,7 +15,6 @@ import {
   clearRoomMembership,
   migrateLastRoomToMembership,
 } from '../../live-sync-membership.mjs';
-import { mergeLiveSyncFullBundles } from '../../lan-merge-registry.mjs';
 import {
   prepareClinicalOpsForLanSync,
   getCachedClinicalOpsSnapshot,
@@ -707,7 +706,7 @@ function onLiveSyncWireMessageBody(data) {
   }
   if (data.type === 'livesync:leave' && data.bundle && data.clientId !== myId) {
     void bridge().applyLiveSyncMerged(
-      mergeLiveSyncFullBundles([data.bundle, bridge().buildLiveSyncLocalMergeSource()])
+      bridge().mergeLiveSyncFullBundles([data.bundle, bridge().buildLiveSyncLocalMergeSource()])
     );
     return;
   }
@@ -718,7 +717,7 @@ function onLiveSyncWireMessageBody(data) {
   }
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
-    var mergedBundle = mergeLiveSyncFullBundles([data, bridge().buildLiveSyncLocalMergeSource()]);
+    var mergedBundle = bridge().mergeLiveSyncFullBundles([data, bridge().buildLiveSyncLocalMergeSource()]);
     void bridge().applyLiveSyncMerged(mergedBundle);
     return;
   }
@@ -957,7 +956,6 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
       }
       syncLiveSyncStatusChrome();
       runtime().renderProcedureAgendaPanel();
-      runtime().refreshAllTodoUIs();
       void import('../../clinical-access-runtime.mjs').then(function (accessMod) {
         if (typeof accessMod.refreshClinicalPatientListForScope === 'function') {
           return accessMod.refreshClinicalPatientListForScope({ allowLanPull: false });

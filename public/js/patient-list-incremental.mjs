@@ -53,6 +53,29 @@ function zoneIds(rows) {
   return rows.map((p) => String(p.id || '')).join(',');
 }
 
+/** @param {HTMLElement} zoneEl */
+function cardIds(zoneEl) {
+  return Array.from(zoneEl.querySelectorAll('.patient-card[data-patient-id]')).map((el) =>
+    String(el.getAttribute('data-patient-id') || '')
+  );
+}
+
+/** @param {HTMLElement} list @param {boolean} archivedCollapsed */
+export function readVirtualPatientListStructure(list, archivedCollapsed) {
+  const parts = [];
+  const pinned = list.querySelector('.patient-sort-zone[data-patient-zone="pinned"]');
+  if (pinned) parts.push(`p:${cardIds(pinned).join(',')}`);
+  const active = list.querySelector('.patient-sort-zone--virtual-active[data-patient-zone="active"]');
+  if (active) parts.push(`a:${active.getAttribute('data-active-ids') || ''}`);
+  const archived = list.querySelector('.patient-sort-zone[data-patient-zone="archived"]');
+  const toggle = list.querySelector('.patient-list-section-toggle');
+  if (toggle || archived) {
+    const collapsed = toggle && !archived ? 1 : 0;
+    parts.push(`at:${collapsed}:${archived ? cardIds(archived).join(',') : ''}`);
+  }
+  return parts.join('|');
+}
+
 /** @param {HTMLElement} list */
 function readStructureSignature(list) {
   const parts = [];
@@ -69,21 +92,19 @@ function readStructureSignature(list) {
   return parts.join('|');
 }
 
-/** @param {HTMLElement} zoneEl */
-function cardIds(zoneEl) {
-  return Array.from(zoneEl.querySelectorAll('.patient-card[data-patient-id]')).map((el) =>
-    String(el.getAttribute('data-patient-id') || '')
-  );
-}
-
 function htmlToElement(html) {
   const wrap = document.createElement('div');
   wrap.innerHTML = html;
   return wrap.firstElementChild;
 }
 
+/** @param {{ pinned: object[], active: object[], archived: object[] }} zones @param {boolean} archivedCollapsed */
+export function virtualPatientListStructureSignature(zones, archivedCollapsed) {
+  return structureSignature(zones, archivedCollapsed);
+}
+
 /** @param {HTMLElement} zoneEl @param {object[]} rows @param {(p: object) => string} renderCard @param {object} ctx */
-function syncZoneCards(zoneEl, rows, renderCard, ctx) {
+export function syncZoneCards(zoneEl, rows, renderCard, ctx) {
   const existing = new Map();
   zoneEl.querySelectorAll('.patient-card[data-patient-id]').forEach((el) => {
     existing.set(String(el.getAttribute('data-patient-id') || ''), el);
@@ -108,7 +129,7 @@ function syncZoneCards(zoneEl, rows, renderCard, ctx) {
 }
 
 /** @param {HTMLElement} list @param {{ pinned: object[], active: object[], archived: object[] }} zones */
-function syncSectionCounts(list, zones) {
+export function syncSectionCounts(list, zones) {
   const pinnedCount = list.querySelector(
     '.patient-list-section-label--pinned .patient-list-section-count'
   );
@@ -152,7 +173,7 @@ export function trySilentPatientListPatch(list, options) {
 /**
  * Incremental DOM sync when structure changed (add/remove/reorder) without wiping the whole list.
  * @param {HTMLElement} list
- * @param {{ zones: object, archivedCollapsed: boolean, isRonda: boolean, renderCard: (p: object) => string, renderPinnedLabel: () => string, renderActiveLabel: () => string, renderArchivedToggle: (collapsed: boolean, count: number) => string, ctx: object, onRondaNav?: (zones: object) => void }} options
+ * @param {{ zones: object, archivedCollapsed: boolean, isRonda: boolean, virtualizeActive?: boolean, renderCard: (p: object) => string, renderPinnedLabel: () => string, renderActiveLabel: () => string, renderArchivedToggle: (collapsed: boolean, count: number) => string, ctx: object, onRondaNav?: (zones: object) => void }} options
  * @returns {boolean}
  */
 export function updatePatientListDomIncremental(list, options) {
@@ -186,7 +207,9 @@ export function updatePatientListDomIncremental(list, options) {
   if (zones.active.length) {
     frag.appendChild(htmlToElement(options.renderActiveLabel()));
     const zone = document.createElement('div');
-    zone.className = 'patient-sort-zone';
+    zone.className = options.virtualizeActive
+      ? 'patient-sort-zone patient-sort-zone--virtual-active'
+      : 'patient-sort-zone';
     zone.setAttribute('data-patient-zone', 'active');
     frag.appendChild(zone);
   }
@@ -213,6 +236,7 @@ export function updatePatientListDomIncremental(list, options) {
   for (const zoneName of ['pinned', 'active', 'archived']) {
     const zoneEl = list.querySelector(`.patient-sort-zone[data-patient-zone="${zoneName}"]`);
     if (!zoneEl || !zones[zoneName].length) continue;
+    if (zoneName === 'active' && options.virtualizeActive) continue;
     syncZoneCards(zoneEl, zones[zoneName], options.renderCard, ctx);
   }
 

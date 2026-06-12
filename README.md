@@ -39,10 +39,27 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.2](https://github.com/mausalas99/r-mas/releases/tag/v7.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.4](https://github.com/mausalas99/r-mas/releases/tag/v7.3.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.3.4 (perf, pendientes con vencimiento y censo virtual)
+
+- **Rendimiento** — chunks perezosos (labs/gráficas), censo virtual >30 activos, reconcile LAN con refresco acotado de pendientes.
+- **Pendientes** — vencimiento opcional, recordatorios, orden por vencidos, filtro **Entrega** con acuse.
+- **Guardia v7** — barra de progreso del currículo y nudge en tablero.
+- **iPad/PWA** — espejo limitado a pacientes de equipos unidos + guardia activa.
+- **UI** — laboratorio premium, motion/skeleton refinados.
+
+Notas: `docs/RELEASE_NOTES_7.3.4.txt`.
+
+## R+ 7.3.3 (EA balance, evacuaciones y dieta)
+
+- **Balance I/O** — cláusula SOAP calcula balance con egresos mixtos (diuresis NC + drenaje numérico).
+- **Evacuaciones** — conteo sin sufijo CC en EA, historial y censo.
+- **Dieta** — kcal total visible desde kcal/kg × peso sin pisar valor guardado.
+
+Notas: `docs/RELEASE_NOTES_7.3.3.txt`.
 
 ## R+ 7.3.2 (Premium UI, gráficas EA y endurecimiento)
 

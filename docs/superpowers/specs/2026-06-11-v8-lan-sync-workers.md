@@ -41,7 +41,7 @@ Network I/O (`fetch`, WebSocket) is already async; moving only fetch to a worker
 - **Optimistic updates** show results immediately
 - **Rollback on conflict** (rare) with non-blocking toast
 - **No functionality loss** — all existing sync behavior preserved
-- **Works with existing host/client and P2P modes**
+- **Works with existing host/client LAN modes** (WebRTC/P2P out of scope for v8)
 
 ## Architecture
 
@@ -198,8 +198,6 @@ isSyncWorkerHealthy()
 
 None — design is complete.
 
-## Next Steps
+## Implementation
 
-1. User reviews and approves this spec
-2. Create implementation plan
-3. Implement and test
+See [`../plans/2026-06-11-v8-performance-overhaul.md`](../plans/2026-06-11-v8-performance-overhaul.md) Tasks B1–B2a/b.

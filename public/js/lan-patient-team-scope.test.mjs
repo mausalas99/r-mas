@@ -1,9 +1,27 @@
-import { describe, it } from 'node:test';
+import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   filterPatientEntriesForLanTeamScope,
   isPatientInLanTeamSyncScope,
 } from './lan-patient-team-scope.mjs';
+
+function mockDesktopElectron() {
+  globalThis.window = {
+    electronAPI: { dbClinicalLoadAll: async () => ({ ok: true, blobs: {} }) },
+  };
+}
+
+function mockWebClinicalClient() {
+  globalThis.window = {};
+}
+
+beforeEach(() => {
+  mockDesktopElectron();
+});
+
+afterEach(() => {
+  delete globalThis.window;
+});
 
 const baseContext = {
   teams: [{ team_id: 't1', members: [{ user_id: 'r2' }], service: 'Sala', sub_area_fraction: 'A' }],
@@ -54,11 +72,39 @@ describe('lan-patient-team-scope', () => {
     );
   });
 
-  it('R4 syncs all patients', () => {
+  it('R4 on desktop syncs all patients', () => {
     const user = { user_id: 'r4', rank: 'R4' };
     assert.equal(
       isPatientInLanTeamSyncScope(user, { id: 'p9', service: 'Torre HU' }, null, baseContext),
       true
+    );
+  });
+
+  it('Admin on Safari LAN syncs only team-assigned patients', () => {
+    mockWebClinicalClient();
+    const user = { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1 };
+    const ctx = {
+      teams: [
+        {
+          team_id: 't-mine',
+          members: [{ user_id: 'u-admin' }],
+          service: 'Sala',
+          sub_area_fraction: 'B',
+        },
+      ],
+      assignments: [
+        { patient_id: 'p1', team_id: 't-mine', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      guardias: [],
+      now: '2026-06-02T12:00:00Z',
+    };
+    assert.equal(
+      isPatientInLanTeamSyncScope(user, { id: 'p1', service: 'Sala' }, null, ctx),
+      true
+    );
+    assert.equal(
+      isPatientInLanTeamSyncScope(user, { id: 'p9', service: 'Torre HU' }, null, ctx),
+      false
     );
   });
 

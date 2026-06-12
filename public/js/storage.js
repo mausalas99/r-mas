@@ -13,6 +13,7 @@ import {
   persistSaveAll,
   appStateFieldsToBlobs,
 } from './db-storage-bridge.mjs';
+import { isSessionScopedWebClient } from './session-clinical-wipe.mjs';
 
 /** @type {Record<string, string> | null} blob_key → JSON string when SQLCipher desktop mode */
 let _blobCache = null;
@@ -39,6 +40,11 @@ function safeLocalStorageSet(key, value) {
     if (isQuotaExceededError(err)) return false;
     throw err;
   }
+}
+
+/** iPad/PWA: ward census lives in memory; persisting clinical blobs fills Safari localStorage. */
+function skipClinicalLocalPersist() {
+  return isSessionScopedWebClient();
 }
 
 function safeParse(raw, fallback) {
@@ -68,7 +74,24 @@ function blobCacheRaw(blobKey) {
   return typeof raw === 'string' ? raw : JSON.stringify(raw);
 }
 
+const WEB_SESSION_EMPTY_CLINICAL_BLOBS = new Set([
+  'patients',
+  'notes',
+  'indicaciones',
+  'labHistory',
+  'medRecetaByPatient',
+  'listadoProblemas',
+  'recetaHuByPatient',
+  'vpoByPatient',
+  'medPharmProfileByPatient',
+  'lanRoomSnapshots',
+  'lanHostPatientMap',
+]);
+
 function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
+  if (skipClinicalLocalPersist() && WEB_SESSION_EMPTY_CLINICAL_BLOBS.has(blobKey)) {
+    return blobKey === 'patients' ? [] : parseFromRaw('{}');
+  }
   if (_blobCache) {
     return parseFromRaw(blobCacheRaw(blobKey));
   }
@@ -81,6 +104,7 @@ function readTodosMap() {
 
 /** @param {Record<string, unknown>} map */
 function writeTodosMap(map) {
+  if (skipClinicalLocalPersist()) return;
   const json = JSON.stringify(map);
   if (_blobCache) {
     _blobCache.todos = json;
@@ -203,6 +227,13 @@ function coerceBool(v, defaultVal) {
   return defaultVal;
 }
 
+/** @param {unknown} v @returns {string | null} */
+function normalizeOptionalTodoString(v) {
+  if (typeof v !== 'string') return null;
+  var s = v.trim();
+  return s === '' ? null : s;
+}
+
 /** Normaliza evento persistente desde JSON crudo (omite inválidos / demo paciente). */
 function normalizeScheduledProcedureStored(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -300,7 +331,7 @@ export const storage = {
   /**
    * Get to-do list for a patient. Normaliza forma de cada todo.
    * @param {string} patientId
-   * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string,updatedAt:string}>}
+   * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string,updatedAt:string,dueDate:string|null,reminderAt:string|null,createdBy:string|null,completedAt:string|null,completedBy:string|null,handoffAcknowledgedAt:string|null,handoffAcknowledgedBy:string|null}>}
    */
   getTodos(patientId) {
     const map = readClinicalBlob('todos', 'rpc-todos', safeParseObject);
@@ -318,7 +349,14 @@ export const storage = {
         completed: !!(t && t.completed),
         priority: p,
         createdAt: createdAt,
-        updatedAt: updatedAt
+        updatedAt: updatedAt,
+        dueDate: normalizeOptionalTodoString(t && t.dueDate),
+        reminderAt: normalizeOptionalTodoString(t && t.reminderAt),
+        createdBy: normalizeOptionalTodoString(t && t.createdBy),
+        completedAt: normalizeOptionalTodoString(t && t.completedAt),
+        completedBy: normalizeOptionalTodoString(t && t.completedBy),
+        handoffAcknowledgedAt: normalizeOptionalTodoString(t && t.handoffAcknowledgedAt),
+        handoffAcknowledgedBy: normalizeOptionalTodoString(t && t.handoffAcknowledgedBy),
       };
     });
   },
@@ -344,10 +382,23 @@ export const storage = {
             ? t.priority
             : 'media',
         createdAt: createdAt,
-        updatedAt: String(t && t.updatedAt != null ? t.updatedAt : createdAt || now)
+        updatedAt: String(t && t.updatedAt != null ? t.updatedAt : createdAt || now),
+        dueDate: normalizeOptionalTodoString(t && t.dueDate),
+        reminderAt: normalizeOptionalTodoString(t && t.reminderAt),
+        createdBy: normalizeOptionalTodoString(t && t.createdBy),
+        completedAt: normalizeOptionalTodoString(t && t.completedAt),
+        completedBy: normalizeOptionalTodoString(t && t.completedBy),
+        handoffAcknowledgedAt: normalizeOptionalTodoString(t && t.handoffAcknowledgedAt),
+        handoffAcknowledgedBy: normalizeOptionalTodoString(t && t.handoffAcknowledgedBy),
       };
     });
     writeTodosMap(map);
+  },
+
+  /** Patient ids with at least one stored todo row (rpc-todos map keys). */
+  listTodoPatientIds() {
+    const map = readTodosMap();
+    return Object.keys(map);
   },
 
   getLanRoomSnapshots() {
@@ -361,6 +412,7 @@ export const storage = {
   },
 
   saveLanRoomSnapshot(roomId, snapshot) {
+    if (skipClinicalLocalPersist()) return;
     const rid = String(roomId || '');
     if (!rid) return;
     const all = this.getLanRoomSnapshots();
@@ -396,6 +448,7 @@ export const storage = {
    * @param {{ accents?: Object, soapTokens?: Object }} catalog
    */
   saveMedCatalog(catalog) {
+    if (skipClinicalLocalPersist()) return;
     const c = catalog && typeof catalog === 'object' ? catalog : {};
     const st = c.soapTokens && typeof c.soapTokens === 'object' ? c.soapTokens : {};
     const sp = c.somePharm && typeof c.somePharm === 'object' ? c.somePharm : {};
@@ -440,6 +493,7 @@ export const storage = {
    * @param {Array<Object>} events
    */
   saveScheduledProcedures(events) {
+    if (skipClinicalLocalPersist()) return;
     const list = Array.isArray(events) ? events.map(normalizeScheduledProcedureStored).filter(Boolean) : [];
     const filtered = list.filter(ev => ev.patientId.indexOf('demo-') !== 0);
     localStorage.setItem('rpc-scheduled-procedures', JSON.stringify(filtered));
@@ -546,6 +600,7 @@ export const storage = {
   },
 
   saveHostPatientMap(map) {
+    if (skipClinicalLocalPersist()) return;
     localStorage.setItem('rpc-lan-host-patient-map', JSON.stringify(map || {}));
   },
 
@@ -617,6 +672,9 @@ export const storage = {
     vpoByPatient,
     medPharmProfileByPatient
   ) {
+    if (skipClinicalLocalPersist()) {
+      return { ok: true, level: 'ok' };
+    }
     var payload = {
       patients: patients,
       notes: notes,

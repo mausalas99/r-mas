@@ -12,6 +12,7 @@ import {
   ensureClinicalDbUnlocked,
   getClinicalBootDelays,
 } from './db-unlock.mjs';
+import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 
 function escapeHtml(s) {
   return String(s || '')
@@ -33,8 +34,19 @@ export function getClinicalTeamsPanelHost() {
 export function setClinicalTeamsPanelLoading() {
   const host = getClinicalTeamsPanelHost();
   if (host) {
-    host.innerHTML = '<p class="clinical-teams-lead clinical-teams-loading">Cargando…</p>';
+    host.innerHTML = buildTextSkeletonPanel('clinical-teams-skeleton skel-panel', 3);
   }
+}
+
+/** Open Mi rotación shell immediately; content loads additively. */
+export function showClinicalTeamsPanelShell() {
+  const bd = document.getElementById('clinical-teams-backdrop');
+  if (!bd) return false;
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('clinical-teams-modal-open');
+  setClinicalTeamsPanelLoading();
+  return true;
 }
 
 /** @param {string} message */
@@ -98,13 +110,15 @@ async function attemptClinicalPanelSessionWithDelays(settings, clientId, delaysM
   return false;
 }
 
+const INTERACTIVE_SESSION_DELAYS_MS = [0, 50, 150, 400];
+
 /** Ensure DB clinical session exists before rendering the panel. */
-export async function ensureClinicalPanelSession() {
+export async function ensureClinicalPanelSession(opts = {}) {
   if (clinicalSessionContext.user?.user_id) return true;
   if (!isDbMode()) return false;
   const settings = readRpcSettings();
   const clientId = resolveClinicalClientId(settings);
-  const bootDelays = getClinicalBootDelays();
+  const bootDelays = opts.interactive ? INTERACTIVE_SESSION_DELAYS_MS : getClinicalBootDelays();
 
   const dbReady = await ensureClinicalDbUnlocked();
   if (!dbReady.unlocked) return false;

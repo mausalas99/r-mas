@@ -208,7 +208,13 @@
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
   z-index: 9995; align-items: center; justify-content: center;
 }
-.soap-modal-backdrop.open { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
+.soap-modal-backdrop.open {
+  display: flex;
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+.soap-modal-backdrop.open .soap-modal {
+  animation: modal-in var(--dur-normal) var(--ease-out);
+}
 /* Estado Actual mode (Sala v3.0) — oculta Subjetivo y cambia botones del footer */
 body[data-estado-actual-mode="true"] #soap-modal-backdrop .soap-section-s { display: none; }
 body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-insert { display: none; }
@@ -257,7 +263,6 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
   flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  animation: modal-in var(--dur-normal) var(--ease-out);
 }
 .soap-modal-header {
   background: #065F46; color: var(--color-on-accent); padding: 11px 18px; flex-shrink: 0;
@@ -313,6 +318,19 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   background: var(--surface);
   box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.soap-modal input[type="text"]:focus-visible,
+.soap-modal input[type="number"]:focus-visible,
+.soap-modal select:focus-visible,
+.soap-modal textarea:focus-visible,
+.templates-modal textarea:focus-visible,
+.help-search-input:focus-visible,
+.tend-search-input:focus-visible,
+.rpc-wipe-panel input:focus-visible,
+.rpc-wipe-panel textarea:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 .soap-modal select { text-transform: none; }
 .soap-modal textarea { text-transform: none; resize: vertical; min-height: 58px; }

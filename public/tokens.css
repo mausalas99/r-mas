@@ -47,6 +47,8 @@
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --error: #c62828;
+  --danger: var(--error);
+  --warn: var(--color-livesync-syncing);
   --success: #15803d;
   --lab-chip-bg: var(--color-accent-soft);
   --lab-chip-txt: var(--color-accent-soft-text);
@@ -161,6 +163,8 @@ html.dark {
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --error: #f87171;
+  --danger: var(--error);
+  --warn: var(--color-livesync-syncing);
   --success: #6ee7a8;
   --lab-chip-bg: var(--color-accent-soft);
   --lab-chip-txt: var(--color-accent-soft-text);

@@ -1,5 +1,8 @@
 export const CLINICAL_CENSUS_FILTERS_COLLAPSED_LS = 'rpc.clinicalCensusFiltersCollapsed';
 export const CLINICAL_CENSUS_FILTER_TEAM_LS = 'rpc.clinicalCensusFilterTeam';
+import { hasElevatedTeamPrivileges, shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
+import { filterJoinedTeams } from './clinical-teams/shared.mjs';
+
 export const CENSUS_TEAM_FILTER_ALL = '__all__';
 export const CENSUS_TEAM_FILTER_UNASSIGNED = '__unassigned__';
 
@@ -57,6 +60,41 @@ export function resolveElevatedTeamFilterId(user, teams, storage = globalThis.lo
   if (pref.pinned) return pref.teamId;
   // R4 / Admin / program admin: full censo by default; narrow via Equipo dropdown.
   return '';
+}
+
+/** Admin/R4 on iPad: full ward team catalog; residents see only joined teams. */
+export function censusFiltersUseFullTeamCatalog(user) {
+  if (!shouldEnforceTeamPatientMirror()) return true;
+  return hasElevatedTeamPrivileges(user);
+}
+
+/**
+ * Equipo options for Filtros censo — joined teams on iPad for R1–R3; full sala list for Admin/R4.
+ * @param {object|null|undefined} user
+ * @param {object[]} teams
+ * @param {string} [salaFilter]
+ */
+export function censusTeamCatalogForFilters(user, teams, salaFilter) {
+  const salaScoped = filterTeamsForCensusSala(teams, salaFilter);
+  if (censusFiltersUseFullTeamCatalog(user)) return salaScoped;
+  return filterJoinedTeams(salaScoped, user);
+}
+
+/**
+ * @param {object|null|undefined} user
+ * @param {object[]} teamsForCatalog
+ * @param {string} [priorTeamId]
+ * @param {Storage|undefined} storage
+ */
+export function resolveCensusTeamFilterId(user, teamsForCatalog, priorTeamId = '', storage = globalThis.localStorage) {
+  const prior = String(priorTeamId ?? '');
+  const pref = readElevatedTeamFilterPreference(storage);
+  if (pref.pinned) return pref.teamId;
+  if (prior) return prior;
+  if (shouldEnforceTeamPatientMirror() && !censusFiltersUseFullTeamCatalog(user)) {
+    return resolveActiveTeamFilterId(user, teamsForCatalog);
+  }
+  return resolveElevatedTeamFilterId(user, teamsForCatalog, storage);
 }
 
 /** @param {string} teamId @param {object[]} teams */

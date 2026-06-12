@@ -1,7 +1,24 @@
+import { perfMark, perfMeasure } from './perf-markers.mjs';
 import { storage } from './storage.js';
-import { isDbMode } from './db-storage-bridge.mjs';
+
+perfMark('app-boot-start');
+if (typeof requestAnimationFrame === 'function') {
+  requestAnimationFrame(function () {
+    perfMark('app-first-paint');
+    perfMeasure('boot-to-first-paint', 'app-boot-start', 'app-first-paint');
+  });
+}
+import { isDbMode, isWebClinicalClient } from './db-storage-bridge.mjs';
+import { wipeSessionClinicalStorage } from './session-clinical-wipe.mjs';
 import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers } from './features/db-unlock.mjs';
-import { bootHydrateFromDb, initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
+import {
+  bootHydrateFromDb,
+  initAppState,
+  patients,
+  setSaveStateHooks,
+  flushSaveState,
+  clearWebSessionClinicalMemory,
+} from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import './censo-export.mjs';
 import {
@@ -33,7 +50,6 @@ import {
   initSidebarAutoHide,
   initPatientModalEnterSave,
 } from './features/patients.mjs';
-import { windowHandlers as labPanelWindowHandlers, renderLabHistoryPanel } from './features/lab-panel.mjs';
 import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
 import { windowHandlers as labHistoryBatchCopyWindowHandlers } from './features/lab-history-batch-copy-modal.mjs';
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
@@ -41,16 +57,18 @@ import { windowHandlers as estadoActualPanelWindowHandlers } from './features/es
 import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
 import { windowHandlers as driveImportWindowHandlers } from './features/drive-import-modal.mjs';
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
-import { windowHandlers as estadoActualChartsModalWindowHandlers } from './features/estado-actual-charts-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
 import { productivityWindowHandlers } from './features/productivity.mjs';
 import {
+  ensureLabsLoaded,
+  ensureChartsLoaded,
+  labPanelWindowHandlersLazy,
+  chartsWindowHandlersLazy,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
 } from './lazy-feature-routes.mjs';
-import { tendenciasWindowHandlers, seedTendHiddenDefaults } from './features/tendencias.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
@@ -84,7 +102,7 @@ const allWindowHandlers = Object.assign(
   chromeWindowHandlers,
   lanWindowHandlers,
   patientsWindowHandlers,
-  labPanelWindowHandlers,
+  labPanelWindowHandlersLazy,
   labBulkPreviewWindowHandlers,
   labHistoryBatchCopyWindowHandlers,
   soapEstadoWindowHandlers,
@@ -92,14 +110,13 @@ const allWindowHandlers = Object.assign(
   estadoActualPasteWindowHandlers,
   driveImportWindowHandlers,
   estadoActualRegistroWindowHandlers,
-  estadoActualChartsModalWindowHandlers,
+  chartsWindowHandlersLazy,
   agendaWindowHandlers,
   expedienteWindowHandlers,
   notesIndicacionesWindowHandlers,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
-  tendenciasWindowHandlers,
   todosWindowHandlers,
   recetaHuWindowHandlers,
   paseBoardWindowHandlers,
@@ -145,6 +162,12 @@ const appStateReady = (async function loadClinicalStateOnBoot() {
       initAppState();
     }
   } else {
+    if (isWebClinicalClient()) {
+      try {
+        wipeSessionClinicalStorage({ includeLanSession: false });
+      } catch (_wipeBoot) {}
+      clearWebSessionClinicalMemory();
+    }
     initAppState();
   }
 })();
@@ -152,7 +175,7 @@ const appStateReady = (async function loadClinicalStateOnBoot() {
 setSaveStateHooks({
   onSaveResult(result) {
     if (!result || result.ok) {
-      if (result && result.level === 'warn') {
+      if (result && result.level === 'warn' && !isMobileWeb()) {
         showToast(
           'El almacenamiento local está casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.',
           'error'
@@ -162,7 +185,9 @@ setSaveStateHooks({
     }
     if (result.code === 'QUOTA_EXCEEDED') {
       showToast(
-        'No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.',
+        isMobileWeb()
+          ? 'Safari no tiene espacio para ajustes locales. Cierra otras pestañas de R+ y vuelve a abrir el enlace del turno; los pacientes se resincronizan del anfitrión.'
+          : 'No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.',
         'error'
       );
     }
@@ -337,7 +362,6 @@ function runDomBootAfterState() {
     }
     loadSettings();
     syncWorkContextChrome();
-    seedTendHiddenDefaults();
     syncMainAppTabA11y(activeAppTab);
     renderInnerTabs();
     initTabBarMotion();
@@ -371,7 +395,9 @@ function runDomBootAfterState() {
         })
         .then(function () {
           if (ensureActivePatientInSidebarScope()) return;
-          renderLabHistoryPanel();
+          void ensureLabsLoaded().then(function (mod) {
+            mod.renderLabHistoryPanel();
+          });
         });
     }
     if (isDbMode()) {

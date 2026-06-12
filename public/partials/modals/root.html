@@ -107,7 +107,29 @@
   </div>
 </div>
 
-<div class="toast" id="toast" tabindex="-1" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
+  <div class="modal todo-due-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" onclick="event.stopPropagation()">
+    <h3 id="todo-due-modal-title">Fecha límite</h3>
+    <p class="todo-due-modal-lead">Elige fecha y hora. Opcional: recordatorio al vencer.</p>
+    <div class="field-group todo-due-modal-when">
+      <span class="profile-field-label">Fecha y hora</span>
+      <input id="todo-due-modal-datetime" type="datetime-local" class="rpc-datetime-input todo-due-modal-datetime" aria-label="Fecha y hora del pendiente">
+    </div>
+    <label class="todo-due-modal-remind" for="todo-due-modal-remind">
+      <input type="checkbox" id="todo-due-modal-remind">
+      Recordarme
+    </label>
+    <div class="modal-actions todo-due-modal-actions">
+      <div class="todo-due-modal-actions__secondary">
+        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="todo-due-modal-cancel">Cancelar</button>
+        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="todo-due-modal-clear">Quitar fecha</button>
+      </div>
+      <button type="button" class="btn-save" id="todo-due-modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
 
 <!-- Templates modal -->
 <div class="templates-modal-backdrop" id="templates-modal" style="display:none;" aria-hidden="true">

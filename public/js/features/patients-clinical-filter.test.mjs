@@ -51,7 +51,7 @@ test('R1 on team sidebar excludes other team in same sala', () => {
   assert.deepEqual(out.map((p) => p.id), ['p-mine']);
 });
 
-test('Admin guardia census includes all patients with Todos equipos filter', () => {
+test('Admin guardia census includes all patients with Todos equipos filter on desktop', () => {
   const census = [
     { id: 'p1', servicio: 'Sala', area: 'Sala A', sala: 'Sala 1' },
     { id: 'p2', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
@@ -140,6 +140,51 @@ test('R4 elevated filter shows only patients without explicit team assignment', 
     teamId: CENSUS_TEAM_FILTER_UNASSIGNED,
   });
   assert.deepEqual(out.map((p) => p.id), ['p-open']);
+});
+
+test('iPad Filtros censo narrows team-mirror sidebar by equipo', () => {
+  globalThis.__RPC_MOBILE_WEB__ = true;
+  globalThis.window = {};
+  try {
+    const team = {
+      team_id: 't-melissa',
+      name: 'Dra. Melissa',
+      service: 'Sala',
+      sub_area_fraction: 'A',
+      sala: 'Sala 2',
+      members: [{ user_id: 'u-admin' }],
+    };
+    const census = [
+      { id: 'p-melissa', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
+      { id: 'p-other', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
+    ];
+    const scope = {
+      teams: [team],
+      guardias: [],
+      assignments: [
+        { patient_id: 'p-melissa', team_id: 't-melissa', effective_at: '2026-06-01T00:00:00Z' },
+        { patient_id: 'p-other', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+      cycle: null,
+      now: '2026-06-02T12:00:00Z',
+    };
+    const user = { user_id: 'u-admin', rank: 'Admin', sala: 'Sala 2' };
+    const mirrored = filterPatientsForGuardiaCensus(census, user, scope, null, {
+      sala: '__all__',
+      teamId: '',
+      service: '',
+    });
+    assert.deepEqual(mirrored.map((p) => p.id), ['p-melissa']);
+    const narrowed = filterPatientsForGuardiaCensus(census, user, scope, null, {
+      sala: '__all__',
+      teamId: 't-melissa',
+      service: '',
+    });
+    assert.deepEqual(narrowed.map((p) => p.id), ['p-melissa']);
+  } finally {
+    delete globalThis.__RPC_MOBILE_WEB__;
+    delete globalThis.window;
+  }
 });
 
 test('R2 sidebar without team includes same-sala census', () => {

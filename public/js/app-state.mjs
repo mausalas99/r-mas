@@ -1,4 +1,6 @@
 import { storage, normalizeLabHistoryPatientSets, ensureStorageHydrated } from './storage.js';
+import { isWebClinicalClient } from './db-storage-bridge.mjs';
+import { isSessionScopedWebClient } from './session-clinical-wipe.mjs';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
 import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
@@ -50,6 +52,21 @@ function patientsForPersistence() {
 
 export function setPatients(next) {
   patients = next;
+}
+
+/** Safari/iPad: drop ward census from memory (PHI is session-only until LAN sync). */
+export function clearWebSessionClinicalMemory() {
+  if (!isWebClinicalClient()) return;
+  setPatients([]);
+  setNotes({});
+  setIndicaciones({});
+  setLabHistory({});
+  setMedRecetaByPatient({});
+  setMedPharmProfileByPatient({});
+  setRecetaHuByPatient({});
+  listadoProblemas = {};
+  vpoByPatient = {};
+  medNotaSelectionByPatient = {};
 }
 
 export function setNotes(next) {
@@ -128,15 +145,19 @@ export async function bootHydrateFromDb() {
 }
 
 export function initAppState() {
-  setPatients(storage.getPatients());
-  setNotes(storage.getNotes());
-  setIndicaciones(storage.getIndicaciones());
-  setLabHistory(storage.getLabHistory());
-  setMedRecetaByPatient(storage.getMedRecetaByPatient());
-  setMedPharmProfileByPatient(storage.getMedPharmProfileByPatient());
-  setRecetaHuByPatient(storage.getRecetaHuByPatient());
-  listadoProblemas = storage.getListadoProblemas();
-  vpoByPatient = storage.getVpoByPatient();
+  if (isSessionScopedWebClient()) {
+    clearWebSessionClinicalMemory();
+  } else {
+    setPatients(storage.getPatients());
+    setNotes(storage.getNotes());
+    setIndicaciones(storage.getIndicaciones());
+    setLabHistory(storage.getLabHistory());
+    setMedRecetaByPatient(storage.getMedRecetaByPatient());
+    setMedPharmProfileByPatient(storage.getMedPharmProfileByPatient());
+    setRecetaHuByPatient(storage.getRecetaHuByPatient());
+    listadoProblemas = storage.getListadoProblemas();
+    vpoByPatient = storage.getVpoByPatient();
+  }
   var medCatalog = storage.getMedCatalog();
   applyMedCatalogOverlay(medCatalog);
   applySomePharmCatalogOverlay(medCatalog);

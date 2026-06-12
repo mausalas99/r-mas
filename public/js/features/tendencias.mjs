@@ -12,6 +12,8 @@ import {
 } from '../tend-core.mjs';
 import { createTendGroupModal } from '../tend-group-modal.mjs';
 import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
+import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
+import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 import {
   buildTrendSeriesIndexCached,
   getLabHistoryRevision,
@@ -1782,7 +1784,7 @@ function renderTendencias(opts) {
   }
 
   if (!container.querySelector('.tend-grid, .tend-toolbar, .tend-empty')) {
-    container.innerHTML = '<p class="tend-empty tend-loading">Cargando tendencias…</p>';
+    container.innerHTML = buildTextSkeletonPanel('tend-skeleton skel-panel', 4);
   }
   scheduleAfterPaint(paint);
 }
@@ -2145,6 +2147,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   }
   var backdrop = document.getElementById('tend-detail-backdrop');
   if (!backdrop) return;
+  cancelOverlayClose(backdrop);
   backdrop.style.display = 'flex';
   var canvas = document.getElementById('tend-detail-canvas');
   if (!canvas) {
@@ -2202,13 +2205,16 @@ function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest,
 }
 
 export function closeTendDetail() {
-  document.getElementById('tend-detail-backdrop').style.display = 'none';
-  var vbarSlot = document.getElementById('tend-detail-vbar-slot');
-  if (vbarSlot) {
-    vbarSlot.innerHTML = '';
-    vbarSlot.setAttribute('aria-hidden', 'true');
-  }
-  if (detailChart) { detailChart.destroy(); detailChart = null; }
+  var backdrop = document.getElementById('tend-detail-backdrop');
+  closeOverlayAnimated(backdrop, function () {
+    if (backdrop) backdrop.style.display = 'none';
+    var vbarSlot = document.getElementById('tend-detail-vbar-slot');
+    if (vbarSlot) {
+      vbarSlot.innerHTML = '';
+      vbarSlot.setAttribute('aria-hidden', 'true');
+    }
+    if (detailChart) { detailChart.destroy(); detailChart = null; }
+  });
 }
 
 export function isTendGroupModalOpen() {

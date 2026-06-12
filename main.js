@@ -17,11 +17,21 @@ const {
 } = require('./lib/update-downgrade.js');
 const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
+const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
 
-// Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
-// Llamar ANTES de app.whenReady()
-app.disableHardwareAcceleration();
+// Aceleración por hardware ACTIVADA por defecto: las animaciones del premium UI
+// (transform/opacity/backdrop-filter) componen en GPU; en software se ven
+// entrecortadas. Opt-out para equipos con muy poca RAM (~50-100 MB del proceso GPU):
+//   userData/performance.json → {"hardwareAcceleration": false}
+// Decidir ANTES de app.whenReady().
+let perfConfig = normalizePerfConfig(null);
+try {
+  perfConfig = readPerfConfig(fs, path.join(app.getPath('userData'), PERF_CONFIG_FILE));
+} catch (_e) {}
+if (!perfConfig.hardwareAcceleration) {
+  app.disableHardwareAcceleration();
+}
 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -195,6 +205,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: true, // throttle renderer cuando window no está en foco
       spellcheck: false,          // deshabilitar corrector ortográfico (innecesario)
+      // El renderer decide no-blur según el modo de render real (ver preload isSoftwareRender)
+      additionalArguments: perfConfig.hardwareAcceleration ? [] : ['--rplus-sw-render'],
     },
   };
   // Barra de título integrada con el HTML (macOS); semáforos en el área de cliente
@@ -417,6 +429,17 @@ ipcMain.on('relaunch-app', () => {
     // ignore — fallback to exit
   }
   app.exit(0);
+});
+
+function perfConfigFilePath() {
+  return path.join(app.getPath('userData'), PERF_CONFIG_FILE);
+}
+
+ipcMain.handle('get-performance-prefs', () => readPerfConfig(fs, perfConfigFilePath()));
+
+ipcMain.handle('set-hardware-acceleration', (_e, enabled) => {
+  perfConfig = writePerfConfig(fs, perfConfigFilePath(), { hardwareAcceleration: !!enabled });
+  return perfConfig;
 });
 
 // Canal de actualización (pre-releases "beta" | estable). Persistido en userData y en localStorage del renderer.

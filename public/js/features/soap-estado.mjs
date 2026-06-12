@@ -1,6 +1,7 @@
 // Built from app.js refactor — Plantilla SOAP (modal) + Estado Actual (Sala)
 import { patients, notes, saveState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 
 let rt = {
@@ -93,7 +94,7 @@ export function openSOAPModal() {
 }
 
 export function closeSOAPModal() {
-  document.getElementById("soap-modal-backdrop").classList.remove("open");
+  closeModalAnimated(document.getElementById("soap-modal-backdrop"));
   [
     "soap-s",
     "soap-four",

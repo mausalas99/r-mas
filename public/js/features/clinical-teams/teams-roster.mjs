@@ -48,7 +48,9 @@ import {
   getClinicalTeamsPanelHost,
   safeRenderClinicalTeamsPanel,
   setClinicalTeamsPanelError,
+  showClinicalTeamsPanelShell,
 } from '../clinical-panel-host.mjs';
+import { closeModalAnimated } from '../../ui-motion.mjs';
 import {
   dbApi,
   toast,
@@ -114,8 +116,22 @@ export async function openClinicalTeamsPanel(opts = {}) {
   const bd = teamsModalEl();
   if (!bd) return;
 
-  const sessionOk = await ensureClinicalPanelSession();
+  showClinicalTeamsPanelShell();
+
+  try {
+    const { wireClinicalTeamsModalChrome } = await import('./teams-roster-modal-chrome.mjs');
+    wireClinicalTeamsModalChrome();
+  } catch (_chrome) {}
+
+  void import('../lan/panel.mjs')
+    .then((m) => {
+      if (typeof m.stopLanAutoDiscovery === 'function') m.stopLanAutoDiscovery();
+    })
+    .catch(() => {});
+
+  const sessionOk = await ensureClinicalPanelSession({ interactive: true });
   if (!sessionOk) {
+    closeClinicalTeamsPanel();
     const mainMod = await import('../clinical-onboarding-main.mjs');
     const msg = await mainMod.describeOnboardingSessionBlock();
     if (typeof window.showToast === 'function') {
@@ -132,8 +148,9 @@ export async function openClinicalTeamsPanel(opts = {}) {
       const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
       if (needsClinicalOnboarding()) {
         closeClinicalTeamsPanel();
-        const { openMiRotacion } = await import('../clinical-rotation-entry.mjs');
-        await openMiRotacion();
+        const mainMod = await import('../clinical-onboarding-main.mjs');
+        await mainMod.showMainClinicalOnboarding();
+        mainMod.focusMainClinicalOnboarding();
         return;
       }
     }
@@ -144,15 +161,6 @@ export async function openClinicalTeamsPanel(opts = {}) {
     );
     return;
   }
-
-  bd.classList.add('open');
-  bd.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('clinical-teams-modal-open');
-
-  try {
-    const { stopLanAutoDiscovery } = await import('../lan/panel.mjs');
-    stopLanAutoDiscovery();
-  } catch (_disc) {}
 
   try {
     await renderClinicalTeamsPanel();
@@ -169,14 +177,14 @@ export async function openClinicalTeamsPanel(opts = {}) {
 export function closeClinicalTeamsPanel() {
   const bd = teamsModalEl();
   if (!bd) return;
-  bd.classList.remove('open');
-  bd.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('clinical-teams-modal-open');
-  import('../lan/panel.mjs')
-    .then((m) => {
-      if (typeof m.startLanAutoDiscovery === 'function') m.startLanAutoDiscovery();
-    })
-    .catch(() => {});
+  closeModalAnimated(bd, function () {
+    document.body.classList.remove('clinical-teams-modal-open');
+    void import('../lan/panel.mjs')
+      .then((m) => {
+        if (typeof m.startLanAutoDiscovery === 'function') m.startLanAutoDiscovery();
+      })
+      .catch(() => {});
+  });
 }
 
 function closeTeamEditPanels(exceptPanel) {

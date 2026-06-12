@@ -27,7 +27,6 @@ import {
 /** Bundle / clinical-ops 409 resolved locally — do not re-enqueue the same payload. */
 var BUNDLE_PUSH_HANDLED = 'handled';
 var CLINICAL_OPS_HANDLED = 'handled';
-import { mergeLiveSyncFullBundles } from '../../lan-merge-registry.mjs';
 import { filterEntriesByPatientDeletes } from '../../lan-patient-merge.mjs';
 import { mergeLiveSyncBundles } from '../../live-sync-room.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
@@ -1055,7 +1054,7 @@ async function reconcileLiveSyncRoomBody(roomId) {
     } catch (_eBundle) {}
     sources.push(b.buildLiveSyncLocalMergeSource());
     if (sources.length) {
-      var merged = mergeLiveSyncFullBundles(sources);
+      var merged = b.mergeLiveSyncFullBundles(sources);
       var bundleHadClinicalOps = !!(merged && merged.clinicalOps);
       await b.applyLiveSyncMerged(merged);
       try {

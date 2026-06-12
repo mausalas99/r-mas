@@ -747,6 +747,39 @@ var RELEASE_NOTES_729 = [
   },
 ];
 
+var RELEASE_NOTES_734 = [
+  {
+    title: 'Arranque más liviano',
+    body:
+      '<strong>Labs</strong>, gráficas de <strong>Estado actual</strong> y <strong>Tendencias</strong> entran con <strong>import()</strong> y chunks — menos código en el primer paint.',
+  },
+  {
+    title: 'Censo virtual',
+    body:
+      'Lista activa con <strong>scroll virtual</strong> cuando hay más de 30 pacientes; listas cortas siguen con repintado incremental.',
+  },
+  {
+    title: 'Pendientes con vencimiento',
+    body:
+      'Fecha/hora opcional, orden por <strong>vencidos</strong>, modal de fecha y <strong>recordatorio</strong> nativo en Electron cuando lo activas.',
+  },
+  {
+    title: 'Filtro Entrega',
+    body:
+      'Tareas dejadas por otro residente: chip <strong>De @usuario</strong>, filtro <strong>Entrega</strong> y acuse al completar.',
+  },
+  {
+    title: 'iPad — solo tu equipo',
+    body:
+      'El espejo móvil muestra pacientes de <strong>equipos a los que te uniste</strong> más cobertura de guardia activa — no el censo completo de sala.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.3.4 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; actualiza iPads con enlace móvil.',
+  },
+];
+
 var RELEASE_NOTES_733 = [
   {
     title: 'Balance I/O en la nota',
@@ -865,9 +898,10 @@ var RELEASE_NOTES_730 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_733;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_734;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.4': RELEASE_NOTES_734,
   '7.3.3': RELEASE_NOTES_733,
   '7.3.2': RELEASE_NOTES_732,
   '7.3.1': RELEASE_NOTES_731,

@@ -47,7 +47,7 @@ html.dark .listado-drag-hovercard.listado-row {
 .listado-row textarea:focus-visible { border-color: var(--action); outline: 2px solid var(--action); outline-offset: 1px; box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; min-width: 28px; min-height: 28px; }
 .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
-.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all var(--dur-fast) var(--ease-out); }
+.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .listado-add-row:hover { border-color: var(--action); color: var(--action); background: var(--section-header-bg); }
 .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
 html.dark .listado-section { background: var(--surface); }
@@ -274,7 +274,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   .btn-livesync-header--syncing .livesync-wifi-bar,
   .btn-livesync-header--syncing .livesync-wifi-dot,
   .btn-livesync-header--degraded .livesync-wifi-bar--3 { animation: none !important; }
-  .app-tab, .inner-tab, .patient-card, .card, .tend-card, .btn-add, .toast { transition: none !important; animation: none !important; }
+  .app-tab, .inner-tab, .patient-card, .card, .tend-card, .btn-add, .toast, .toast-stack .toast { transition: none !important; animation: none !important; }
   .app-tab:hover, .inner-tab:hover { transform: none; }
   .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
   .tab-content.active { animation: none; }
@@ -419,7 +419,7 @@ html.dark .dcard {
 }
 html.dark .dcard svg [stroke] { stroke: var(--diagram-line); }
 html.dark .dcard svg text { fill: var(--diagram-label); }
-.dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); white-space:nowrap; }
 .dcard-copy:hover { border-color:var(--action); color:var(--action); background:var(--section-header-bg); }
 .dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
 @media (max-width: 700px) {

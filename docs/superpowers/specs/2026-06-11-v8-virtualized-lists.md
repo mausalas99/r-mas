@@ -222,8 +222,6 @@ function CensoList({ pacientes }) {
 
 None — design is complete.
 
-## Next Steps
+## Implementation
 
-1. User reviews and approves this spec
-2. Create implementation plan
-3. Implement and test
+See [`../plans/2026-06-11-v8-performance-overhaul.md`](../plans/2026-06-11-v8-performance-overhaul.md) Tasks B5–B6. Use **vanilla DOM** (`document.createElement`), not JSX.

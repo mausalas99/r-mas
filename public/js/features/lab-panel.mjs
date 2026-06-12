@@ -398,7 +398,7 @@ function getLabHistorySelectedSetId(pid, hist) {
   if (!pid || !hist.length) return '';
   var sel = _labHistorySelectedSetId[pid];
   if (sel && hist.some(function (s, i) { return labSetIdForHistory(s, i) === sel; })) return sel;
-  return labSetIdForHistory(hist[hist.length - 1], hist.length - 1);
+  return labSetIdForHistory(hist[0], 0);
 }
 
 function syncLabHistoryDateSelect(opts) {
@@ -1854,8 +1854,8 @@ function renderOutput(result, opts) {
     var pid = rt.getActiveId();
     if (pid) {
       var hist = getActivePatientLabHistory();
-      var latest = hist.length ? hist[hist.length - 1] : null;
-      var preferId = latest ? labSetIdForHistory(latest, hist.length - 1) : '';
+      var latest = hist.length ? hist[0] : null;
+      var preferId = latest ? labSetIdForHistory(latest, 0) : '';
       syncLabHistoryDateSelect({ preferSetId: preferId });
       if (preferId) _labHistorySelectedSetId[pid] = preferId;
     }

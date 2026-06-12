@@ -49,23 +49,14 @@ Current pendientes:
   priority: 'low' | 'medium' | 'high' | 'urgent',
   completed: boolean,
   createdAt: timestamp,
-  createdBy: string,              // NEW: user/team member
-  
+  createdBy: string | null,       // NEW: @usuario (optional, for LAN attribution)
+
   // NEW: Optional time-awareness
-  dueDate: timestamp | null,      // when pendiente is due
-  reminder: {
-    enabled: boolean,
-    time: timestamp               // when to notify (defaults to dueDate)
-  } | null,
-  
-  // NEW: Source tracking
-  source: {
-    type: 'manual' | 'auto-detected' | 'event-triggered' | 'handoff',
-    context: string               // where it came from
-  },
-  
+  dueDate: string | null,         // ISO — when pendiente is due
+  reminderAt: string | null,      // ISO — when to notify (defaults to dueDate if set)
+
   // NEW: Completion tracking
-  completedAt: timestamp | null,
+  completedAt: string | null,
   completedBy: string | null
 }
 ```
@@ -120,7 +111,7 @@ Simple text input + priority dropdown
 
 **Behavior:**
 - Due date section collapsed by default (saves vertical space)
-- Expand on click or when auto-detected pendiente has suggested time
+- Expand on click when user sets a due date
 - Enter key saves, Esc cancels
 
 ### B. Pendientes List UI
@@ -129,15 +120,14 @@ Simple text input + priority dropdown
 ```
 ┌───────────────────────────────────────────┐
 │ Pendientes                                │
-│ [All ▼] [Priority ▼] [Handoff]           │ ← NEW: Handoff filter
+│ [Todos ▼] [Prioridad ▼]                  │
 ├───────────────────────────────────────────┤
 │ □ Review abnormal K+ (6.2)           🔴  │ ← Urgent
 │   Due today at 6:00 PM 🔔                 │ ← NEW: due time + reminder
-│   Auto-detected from labs                 │ ← NEW: source
 │                                           │
-│ □ Follow up renal consult              🟡 │ ← High
-│   Due tomorrow at 8:00 AM 🔔              │
-│   Created by Dr. Salas                    │ ← NEW: handoff tracking
+│ □ Follow up renal consult              🟡 │ ← alta
+│   Vence mañana 8:00 🔔                    │
+│   Creado por @msalas                      │ ← optional createdBy
 │                                           │
 │ ☑ Check vitals                         🟢 │ ← Completed
 │   Completed 10 min ago                    │
@@ -193,7 +183,7 @@ Simple text input + priority dropdown
 - Host/client mode unaffected
 
 ### Enhanced Fields Sync
-- All new pendiente fields (`dueDate`, `reminder`, `source`, etc.) sync
+- All new pendiente fields (`dueDate`, `reminderAt`, `createdBy`, etc.) sync
 - Completion status syncs immediately
 - `completedAt` and `completedBy` track who finished what
 - Notifications fire **locally** (not broadcast) — each device reminds its user
@@ -212,7 +202,6 @@ Simple text input + priority dropdown
   - `createdBy`: current user from auth context
   - `dueDate`: `null`
   - `reminder`: `null`
-  - `source`: `{type: 'manual', context: 'ui'}`
   - `completedAt`: `null`
   - `completedBy`: `null`
 
@@ -266,8 +255,6 @@ Rejected because:
 
 None — design is complete.
 
-## Next Steps
+## Implementation
 
-1. User reviews and approves this spec
-2. Create implementation plan
-3. Implement and test
+See [`../plans/2026-06-11-v8-performance-overhaul.md`](../plans/2026-06-11-v8-performance-overhaul.md) Track A (Tasks A1–A6).

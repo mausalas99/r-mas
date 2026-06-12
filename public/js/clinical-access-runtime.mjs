@@ -2,8 +2,11 @@
  * Wires clinical access modules into the running app (Guardia grid, session, signing).
  */
 import { isDbMode } from './db-storage-bridge.mjs';
+import { shouldEnforceTeamPatientMirror } from './clinical-privileges.mjs';
+import { isMobileWeb } from './mobile-web.mjs';
+import { filterPatientsForClinicalSidebar } from './features/patients-clinical-filter.mjs';
 import { isGuardiaMode } from './features/chrome.mjs';
-import { patients, saveState } from './app-state.mjs';
+import { patients, notes, indicaciones, labHistory, setPatients, saveState } from './app-state.mjs';
 import {
   evaluateClinicalScope,
   migratePatientsClinicalSala,
@@ -11,7 +14,11 @@ import {
   userHasJoinedClinicalTeams,
   userIsOnGuardiaCallToday,
 } from './clinico-access.mjs';
-import { effectiveClinicalRank, hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
+import {
+  effectiveClinicalRank,
+  hasElevatedTeamPrivileges,
+  shouldUseElevatedPatientCensus,
+} from './clinical-privileges.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from './features/crypto-signer.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -28,6 +35,11 @@ import {
   clinicalSessionContext,
   resolveClinicalSessionUserId,
 } from './clinical-session-context.mjs';
+import {
+  buildClinicalScopeContextFromOpsSnapshot,
+  resolveClinicalUserRowFromOpsSnapshot,
+} from './clinical-scope-from-ops.mjs';
+import { joinedTeamIdsForUser } from './mobile-team-patient-scope.mjs';
 
 export { clinicalSessionContext };
 
@@ -69,10 +81,70 @@ export function waitForClinicalAccessReady() {
 
 /** True when LAN may apply/filter patient bundle rows for the signed-in user. */
 export function isClinicalScopeReadyForLanPatientApply() {
-  if (!isDbMode()) return true;
-  if (!clinicalSessionContext.user?.user_id) return false;
-  if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) return true;
-  return clinicalSessionContext.scopeContext != null;
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return false;
+  if (shouldUseElevatedPatientCensus(user)) return true;
+  const ctx = clinicalSessionContext.scopeContext;
+  if (!ctx) return false;
+  if (!shouldEnforceTeamPatientMirror()) return true;
+  return joinedTeamIdsForUser(ctx.teams, user.user_id).size > 0;
+}
+
+/**
+ * iPad/PWA: hydrate teams/assignments from LAN clinicalOps (no SQLCipher merge).
+ * @param {object|null|undefined} snapshot
+ * @returns {boolean}
+ */
+export function applyClinicalScopeFromLanOpsSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || isDbMode()) return false;
+  const sessionUser = clinicalSessionContext.user;
+  const settings = readRpcSettings();
+  const resolved = resolveClinicalUserRowFromOpsSnapshot(snapshot, {
+    userId: sessionUser?.user_id || settings.clinicalUserId,
+    username: sessionUser?.username || settings.clinicalUsername,
+  });
+  if (resolved) {
+    const rank = String(resolved.rank || sessionUser?.rank || 'R1').trim() || 'R1';
+    const nextUser = {
+      user_id: String(resolved.user_id),
+      username: resolved.username ?? sessionUser?.username ?? null,
+      rank: rank === 'Admin' ? 'R1' : rank,
+      sala: resolved.sala ?? sessionUser?.sala ?? null,
+      clinical_name: resolved.clinical_name ?? sessionUser?.clinical_name ?? null,
+      is_program_admin:
+        resolved.is_program_admin === 1 || resolved.is_program_admin === true ? 1 : 0,
+    };
+    clinicalSessionContext.user = nextUser;
+    persistClinicalUserBinding({
+      userId: nextUser.user_id,
+      username: nextUser.username || undefined,
+      rank: nextUser.rank,
+      sala: nextUser.sala,
+      displayName: nextUser.clinical_name || undefined,
+      isProgramAdmin: nextUser.is_program_admin === 1,
+      registered: true,
+    });
+  }
+  const ctx = buildClinicalScopeContextFromOpsSnapshot(snapshot, {
+    guardiaMode: clinicalSessionContext.guardiaMode,
+    entregaPhaseActive: readEntregaPhaseActive(),
+    enforceTeamPatientScope: true,
+  });
+  if (!ctx) return false;
+  clinicalSessionContext.scopeContext = ctx;
+  clinicalSessionContext.teams = ctx.teams;
+  clinicalSessionContext.guardias = ctx.guardias;
+  clinicalSessionContext.guardiasMap = buildGuardiasMap(ctx.guardias);
+  if (typeof document !== 'undefined') {
+    void import('./features/patients.mjs')
+      .then((mod) => {
+        if (typeof mod.invalidateMobileSidebarPatientCache === 'function') {
+          mod.invalidateMobileSidebarPatientCache();
+        }
+      })
+      .catch(() => {});
+  }
+  return true;
 }
 
 /**
@@ -463,13 +535,15 @@ let clinicalOpsSyncedRefreshTimer = null;
 
 /** Reload teams + scope from DB and re-filter the patient sidebar (LAN join / team roster). */
 export async function refreshClinicalPatientListForScope(options) {
-  if (!isDbMode() || !clinicalSessionContext.user?.user_id) return;
+  if (!clinicalSessionContext.user?.user_id) return;
   if (refreshClinicalPatientListForScopeInFlight) return refreshClinicalPatientListForScopeInFlight;
   const opts = options || {};
   refreshClinicalPatientListForScopeInFlight = (async function () {
-    await fetchClinicalTeamsFromDb();
-    await fetchClinicalScopeContextFromDb();
-    await ensureTeamAssignedPatientsOnDevice({ allowLanPull: !!opts.allowLanPull });
+    if (isDbMode()) {
+      await fetchClinicalTeamsFromDb();
+      await fetchClinicalScopeContextFromDb();
+      await ensureTeamAssignedPatientsOnDevice({ allowLanPull: !!opts.allowLanPull });
+    }
     if (typeof document === 'undefined') return;
     try {
       const mod = await import('./features/patients.mjs');
@@ -702,11 +776,29 @@ export function getClinicalUser() {
   return clinicalSessionContext.user;
 }
 
+function scopeContextForEvaluateFromParts(parts) {
+  const enforceTeamPatientScope =
+    parts.enforceTeamPatientScope != null
+      ? !!parts.enforceTeamPatientScope
+      : shouldEnforceTeamPatientMirror();
+  return {
+    teams: parts.teams,
+    guardias: parts.guardias,
+    cycle: parts.cycle,
+    assignments: parts.assignments,
+    salaGuardiaToday: parts.salaGuardiaToday,
+    guardiaMode: parts.guardiaMode,
+    entregaPhaseActive: parts.entregaPhaseActive,
+    enforceTeamPatientScope,
+    now: parts.now,
+  };
+}
+
 /** @returns {object} */
 export function getClinicalScopeContextForEvaluate() {
   const cached = clinicalSessionContext.scopeContext;
   if (cached && typeof cached === 'object') {
-    return {
+    return scopeContextForEvaluateFromParts({
       teams: Array.isArray(cached.teams) ? cached.teams : clinicalSessionContext.teams,
       guardias: Array.isArray(cached.guardias)
         ? cached.guardias
@@ -722,19 +814,87 @@ export function getClinicalScopeContextForEvaluate() {
         cached.entregaPhaseActive != null
           ? !!cached.entregaPhaseActive
           : readEntregaPhaseActive(),
+      enforceTeamPatientScope: shouldEnforceTeamPatientMirror()
+        ? true
+        : cached.enforceTeamPatientScope,
       now: cached.now || new Date().toISOString(),
-    };
+    });
   }
-  return {
+  const fallbackAssignments = Array.isArray(clinicalSessionContext.scopeContext?.assignments)
+    ? clinicalSessionContext.scopeContext.assignments
+    : [];
+  return scopeContextForEvaluateFromParts({
     teams: clinicalSessionContext.teams,
     guardias: clinicalSessionContext.guardias,
     cycle: null,
-    assignments: [],
+    assignments: fallbackAssignments,
     salaGuardiaToday: [],
     guardiaMode: !!clinicalSessionContext.guardiaMode,
     entregaPhaseActive: readEntregaPhaseActive(),
+    enforceTeamPatientScope: shouldEnforceTeamPatientMirror(),
     now: new Date().toISOString(),
-  };
+  });
+}
+
+function dropPatientSidecars(pid) {
+  const id = String(pid || '');
+  if (!id) return;
+  if (notes[id]) delete notes[id];
+  if (indicaciones[id]) delete indicaciones[id];
+  if (labHistory[id]) delete labHistory[id];
+}
+
+/** Replace in-memory census with team-scoped rows only (web/iPad). */
+export function pruneMobilePatientsOutsideTeamScope() {
+  if (!shouldEnforceTeamPatientMirror()) return 0;
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return 0;
+  if (!isClinicalScopeReadyForLanPatientApply()) {
+    const stale = patients.length;
+    if (stale > 0) {
+      setPatients([]);
+      for (const pid of Object.keys(notes)) dropPatientSidecars(pid);
+    }
+    return stale;
+  }
+  const ctx = getClinicalScopeContextForEvaluate();
+  const visible = filterPatientsForClinicalSidebar(
+    patients,
+    user,
+    ctx,
+    clinicalSessionContext.guardiasMap
+  );
+  const visibleIds = new Set(visible.map((p) => String(p?.id || '')).filter(Boolean));
+  const removed = Math.max(0, patients.length - visible.length);
+  for (const pid of Object.keys(notes)) {
+    if (!visibleIds.has(pid)) dropPatientSidecars(pid);
+  }
+  for (const p of patients) {
+    const pid = String(p?.id || '');
+    if (pid && !visibleIds.has(pid)) dropPatientSidecars(pid);
+  }
+  setPatients(visible);
+  return removed;
+}
+
+/** Prune + one sidebar refresh after LAN scope/patients settle (avoids 3↔11 flash). */
+export async function finalizeMobileLanPatientCensus() {
+  if (!shouldEnforceTeamPatientMirror()) return { pruned: 0 };
+  const pruned = pruneMobilePatientsOutsideTeamScope();
+  if (typeof document === 'undefined') return { pruned };
+  try {
+    const mod = await import('./features/patients.mjs');
+    if (typeof mod.invalidateMobileSidebarPatientCache === 'function') {
+      mod.invalidateMobileSidebarPatientCache();
+    }
+    if (typeof mod.ensureActivePatientInSidebarScope === 'function') {
+      mod.ensureActivePatientInSidebarScope();
+    }
+    if (typeof mod.renderPatientList === 'function') {
+      mod.renderPatientList({ silent: true });
+    }
+  } catch (_e) {}
+  return { pruned };
 }
 
 /** @returns {Promise<object|null>} */

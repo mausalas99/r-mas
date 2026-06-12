@@ -22,6 +22,17 @@ function ensureTabBarIndicator(barEl) {
   return pill;
 }
 
+/** Ancho base CSS del indicador; el ancho real se logra con scaleX. */
+export var TAB_INDICATOR_BASE_PX = 80;
+
+/** Transform compuesto (translateX+scaleX): anima en GPU, sin layout por frame. */
+export function tabIndicatorTransform(offsetPx, widthPx, basePx) {
+  var base = basePx > 0 ? basePx : TAB_INDICATOR_BASE_PX;
+  var x = Math.max(0, Number(offsetPx) || 0);
+  var w = Math.max(0, Number(widthPx) || 0);
+  return 'translateX(' + x + 'px) scaleX(' + w / base + ')';
+}
+
 export function syncTabBarIndicator(barEl, tabEl) {
   if (!barEl || !tabEl || !isTabVisible(tabEl)) {
     var pillHide = barEl && barEl.querySelector(':scope > .tab-bar-indicator');
@@ -32,8 +43,7 @@ export function syncTabBarIndicator(barEl, tabEl) {
   if (!pill) return;
   var barRect = barEl.getBoundingClientRect();
   var tabRect = tabEl.getBoundingClientRect();
-  pill.style.width = Math.max(0, tabRect.width) + 'px';
-  pill.style.transform = 'translateX(' + Math.max(0, tabRect.left - barRect.left) + 'px)';
+  pill.style.transform = tabIndicatorTransform(tabRect.left - barRect.left, tabRect.width);
   pill.style.opacity = '1';
 }
 
@@ -84,11 +94,10 @@ export function syncInnerTabIndicator(tab, opts) {
 
 export function animateTabPanelEnter(panelEl) {
   if (!panelEl || prefersReducedMotion()) return;
-  panelEl.classList.remove('tab-panel-enter');
-  void panelEl.offsetWidth;
+  if (document.documentElement.classList.contains('motion-sobrio')) return;
+  panelEl.classList.remove('tab-panel-enter', 'app-tab-panel-enter');
   panelEl.classList.add('tab-panel-enter');
-  function onEnd(ev) {
-    if (ev.animationName !== 'rpc-tab-panel-in') return;
+  function onEnd() {
     panelEl.removeEventListener('animationend', onEnd);
     panelEl.classList.remove('tab-panel-enter');
   }
@@ -98,6 +107,11 @@ export function animateTabPanelEnter(panelEl) {
 /** Hide a main tab panel without display:none (avoids full layout on Expediente ↔ Med). */
 export const APP_TAB_PANEL_HIDDEN_CLASS = 'app-tab-panel-hidden';
 
+function shouldAnimateAppTabPanel() {
+  if (prefersReducedMotion()) return false;
+  return !document.documentElement.classList.contains('motion-sobrio');
+}
+
 export function showAppTabPanel(panelEl, animate) {
   if (!panelEl) return;
   panelEl.classList.remove(APP_TAB_PANEL_HIDDEN_CLASS);
@@ -105,16 +119,22 @@ export function showAppTabPanel(panelEl, animate) {
   panelEl.style.flex = '1';
   panelEl.style.overflow = 'hidden';
   panelEl.style.minHeight = '0';
-  // Main app panels (Expediente, Med, Lab) are too large for enter animation.
-  if (animate && panelEl.id && !String(panelEl.id).startsWith('appcontent-')) {
-    animateTabPanelEnter(panelEl);
+  if (!animate || !shouldAnimateAppTabPanel()) return;
+  var id = panelEl.id ? String(panelEl.id) : '';
+  var enterClass = id.startsWith('appcontent-') ? 'app-tab-panel-enter' : 'tab-panel-enter';
+  panelEl.classList.remove('app-tab-panel-enter', 'tab-panel-enter');
+  panelEl.classList.add(enterClass);
+  function onEnd() {
+    panelEl.removeEventListener('animationend', onEnd);
+    panelEl.classList.remove(enterClass);
   }
+  panelEl.addEventListener('animationend', onEnd);
 }
 
 export function hideAppTabPanel(panelEl) {
   if (!panelEl) return;
   panelEl.classList.add(APP_TAB_PANEL_HIDDEN_CLASS);
-  panelEl.classList.remove('tab-panel-enter');
+  panelEl.classList.remove('tab-panel-enter', 'app-tab-panel-enter');
 }
 
 export function syncSubTabBarIndicator(barEl) {

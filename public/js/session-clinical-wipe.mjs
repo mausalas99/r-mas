@@ -3,7 +3,6 @@
  * Desktop Electron persists in SQLCipher; mobile/interno web must not leave clinical blobs at rest.
  */
 import { CLINICAL_LS_KEYS } from './db-storage-bridge.mjs';
-import { isMobileWeb } from './mobile-web.mjs';
 
 /** LAN/session keys that may hold ward credentials on web clients. */
 export const SESSION_WEB_LS_KEYS = [
@@ -45,11 +44,30 @@ export function wipeSessionClinicalStorage(opts) {
 }
 
 export function shouldInstallSessionClinicalWipe() {
+  return isSessionScopedWebClient();
+}
+
+function hasSessionScopedWebRuntimeFlag() {
+  const g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : null;
+  if (!g) return false;
+  if (g.__RPC_MOBILE_WEB__ || g.__RPC_WEB_CLINICAL__) return true;
+  if (
+    typeof document !== 'undefined' &&
+    document.documentElement &&
+    document.documentElement.classList.contains('rpc-mobile-web')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** iPad/PWA: clinical PHI stays in memory for the session; no SQLCipher on web. */
+export function isSessionScopedWebClient() {
   if (typeof window === 'undefined') return false;
   if (window.electronAPI && typeof window.electronAPI.dbClinicalLoadAll === 'function') {
     return false;
   }
-  return isMobileWeb();
+  return hasSessionScopedWebRuntimeFlag();
 }
 
 /** Wipe clinical localStorage when the browser session ends (mobile web / PWA). */

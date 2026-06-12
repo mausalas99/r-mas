@@ -106,32 +106,9 @@ export async function openMiRotacion() {
     return;
   }
 
-  const { ensureClinicalPanelSession } = await import('./clinical-panel-host.mjs');
-  const sessionOk = await ensureClinicalPanelSession();
-  if (!sessionOk) {
-    const mainMod = await import('./clinical-onboarding-main.mjs');
-    const msg = await mainMod.describeOnboardingSessionBlock();
-    if (typeof window.showToast === 'function') {
-      window.showToast(msg, 'error');
-    }
-    if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
-    syncClinicalRotationEntryChrome();
-    return;
-  }
-
-  if (needsClinicalOnboarding()) {
-    const mainMod = await import('./clinical-onboarding-main.mjs');
-    await mainMod.showMainClinicalOnboarding();
-    mainMod.focusMainClinicalOnboarding();
-    return;
-  }
-
-  const { wireClinicalTeamsModalChrome } = await import(
-    './clinical-teams/teams-roster-modal-chrome.mjs'
-  );
-  wireClinicalTeamsModalChrome();
   const { openClinicalTeamsPanel } = await import('./clinical-teams/teams-roster.mjs');
   await openClinicalTeamsPanel();
+  syncClinicalRotationEntryChrome();
 }
 
 /**

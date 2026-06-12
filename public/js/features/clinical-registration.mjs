@@ -2,6 +2,7 @@
  * First-run clinical identity registration (username, rank, display name, sala) after DB unlock.
  */
 import { persistLanClientConfig } from './lan-sync.mjs';
+import { closeModalAnimated } from '../ui-motion.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../clinical-username.mjs';
 import {
@@ -101,8 +102,7 @@ export function openClinicalRegistrationModal() {
 export function closeClinicalRegistrationModal() {
   const bd = backdropEl();
   if (!bd) return;
-  bd.classList.remove('open');
-  bd.setAttribute('aria-hidden', 'true');
+  closeModalAnimated(bd);
 }
 
 function wireRegistrationFormOnce() {

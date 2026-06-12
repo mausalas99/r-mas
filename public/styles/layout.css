@@ -188,16 +188,18 @@ html:not(.ui-density-normal) #main-area {
   overflow: hidden;
   min-height: 0;
 }
+/* Instant tab switch — interactivity never waits on motion (see .app-tab-panel-enter). */
 #main-area > [id^="appcontent-"].app-tab-panel-hidden {
   visibility: hidden;
   pointer-events: none;
-  content-visibility: hidden;
-  contain-intrinsic-size: auto 480px;
   z-index: 0;
+  opacity: 0;
 }
 #main-area > [id^="appcontent-"]:not(.app-tab-panel-hidden) {
   visibility: visible;
+  pointer-events: auto;
   z-index: 1;
+  opacity: 1;
 }
 /* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
 .shell-content-frame {

@@ -48,6 +48,11 @@ export function isDbMode() {
   );
 }
 
+/** Safari/iPad/PWA LAN client — no SQLCipher; team mirror scope always applies. */
+export function isWebClinicalClient() {
+  return typeof window !== 'undefined' && !isDbMode();
+}
+
 /**
  * @returns {Promise<Record<string, string>>} blob_key → JSON string
  */

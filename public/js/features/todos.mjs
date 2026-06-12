@@ -7,6 +7,24 @@ import {
   normalizeTodoPriority,
   todoPriorityLabel,
 } from '../todos-priority.mjs';
+import {
+  formatTodoDueLabel,
+  isTodoOverdue,
+  todoCompareForDueSort,
+} from '../todos-due.mjs';
+import { openTodoDueModal } from '../todo-due-modal.mjs';
+import { rescheduleAllTodos } from '../todos-reminder-scheduler.mjs';
+import {
+  TODO_FILTER_ALL,
+  TODO_FILTER_HANDOFF,
+  isHandoffTodo,
+  filterTodosByView,
+  countHandoffTodos,
+  formatTodoCreatorLabel,
+  buildHandoffAckPatch,
+} from '../todos-handoff.mjs';
+
+var listFilter = TODO_FILTER_ALL;
 
 var rt = {
   getActiveId() {
@@ -18,6 +36,9 @@ var rt = {
   getRoundOverviewMode() {
     return false;
   },
+  getSettings() {
+    return {};
+  },
   renderPaseBoard() {},
 };
 
@@ -27,6 +48,12 @@ export function registerTodosRuntime(ctx) {
 
 function aid() {
   return rt.getActiveId();
+}
+
+function getClinicalUsername() {
+  var st = rt.getSettings() || {};
+  var u = st.clinicalUsername;
+  return u ? String(u) : null;
 }
 
 function pulseTodoPrioChip(chip) {
@@ -104,7 +131,8 @@ function getTodoFormDraftState(container, idPrefix) {
 
 function clearTodoListSection(container) {
   Array.from(container.children).forEach(function (child) {
-    if (!child.classList.contains('todo-add-row')) container.removeChild(child);
+    if (child.classList.contains('todo-composer')) return;
+    container.removeChild(child);
   });
 }
 
@@ -117,10 +145,45 @@ function findPreservedTodoRow(container, todoId) {
   return null;
 }
 
+function appendTodoHandoffMeta(cell, todo) {
+  if (!isHandoffTodo(todo, getClinicalUsername())) return;
+  var meta = document.createElement('div');
+  meta.className = 'todo-handoff-meta';
+  var creator = document.createElement('span');
+  creator.className = 'todo-handoff-creator';
+  creator.textContent = 'De ' + formatTodoCreatorLabel(todo.createdBy);
+  meta.appendChild(creator);
+  cell.appendChild(meta);
+}
+
+function appendTodoMainCell(row, todo, txtInput) {
+  var cell = document.createElement('div');
+  cell.className = 'todo-cell-main';
+  cell.appendChild(txtInput);
+  appendTodoHandoffMeta(cell, todo);
+  if (todo.dueDate) {
+    var dueLabel = document.createElement('span');
+    dueLabel.className = 'todo-due-label';
+    dueLabel.textContent = formatTodoDueLabel(todo.dueDate);
+    if (todo.reminderAt) {
+      dueLabel.appendChild(document.createTextNode(' '));
+      var bell = document.createElement('span');
+      bell.className = 'todo-remind-bell';
+      bell.setAttribute('aria-hidden', 'true');
+      bell.textContent = '\uD83D\uDD14';
+      dueLabel.appendChild(bell);
+    }
+    cell.appendChild(dueLabel);
+  }
+  row.appendChild(cell);
+}
+
 function buildTodoRow(t) {
   var prio = t.priority === 'alta' || t.priority === 'baja' ? t.priority : 'media';
   var row = document.createElement('div');
   row.className = 'todo-row prio-' + prio + (t.completed ? ' completed' : '');
+  if (isTodoOverdue(t)) row.classList.add('todo-row--overdue');
+  if (isHandoffTodo(t, getClinicalUsername())) row.classList.add('todo-row--handoff');
   row.dataset.todoId = t.id;
 
   var prioChip = createTodoPrioChip(prio, function (next) {
@@ -156,20 +219,143 @@ function buildTodoRow(t) {
     }
     if (v !== String(t.text || '')) updateTodoText(t.id, v);
   });
-  row.appendChild(txtInput);
+  appendTodoMainCell(row, t, txtInput);
 
+  var actions = document.createElement('div');
+  actions.className = 'todo-row-actions';
+  if (isHandoffTodo(t, getClinicalUsername())) {
+    var ack = document.createElement('button');
+    ack.type = 'button';
+    ack.className = 'todo-handoff-ack';
+    ack.textContent = 'Recibido';
+    ack.title = 'Marcar como recibido del turno anterior';
+    ack.addEventListener('click', function () { acknowledgeHandoffTodo(t.id); });
+    actions.appendChild(ack);
+  }
   var del = document.createElement('button');
   del.type = 'button';
   del.className = 'todo-del';
   del.textContent = '×';
   del.title = 'Eliminar';
   del.addEventListener('click', function () { deleteTodo(t.id); });
-  row.appendChild(del);
+  actions.appendChild(del);
+  row.appendChild(actions);
 
   return row;
 }
 
+function appendTodoFilterBar(container) {
+  var existingToolbar = container.querySelector('.todo-toolbar');
+  if (existingToolbar) existingToolbar.remove();
+
+  var toolbar = document.createElement('div');
+  toolbar.className = 'todo-toolbar';
+
+  var bar = document.createElement('div');
+  bar.className = 'todo-filter-bar todo-segmented';
+  bar.setAttribute('role', 'tablist');
+  bar.setAttribute('aria-label', 'Filtrar pendientes');
+
+  var allTodos = storage.getTodos(aid());
+  var handoffCount = countHandoffTodos(allTodos, getClinicalUsername());
+  var filters = [
+    { id: TODO_FILTER_ALL, label: 'Todos' },
+    {
+      id: TODO_FILTER_HANDOFF,
+      label: handoffCount ? 'Entrega (' + handoffCount + ')' : 'Entrega',
+    },
+  ];
+
+  filters.forEach(function (f) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'todo-filter-chip' + (listFilter === f.id ? ' is-active' : '');
+    btn.dataset.filter = f.id;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', listFilter === f.id ? 'true' : 'false');
+    btn.textContent = f.label;
+    btn.addEventListener('click', function () {
+      listFilter = f.id;
+      renderTodoListSection(container, null);
+    });
+    bar.appendChild(btn);
+  });
+
+  toolbar.appendChild(bar);
+  container.appendChild(toolbar);
+}
+
+function syncDueAddSelection(state, toggleEl, selectionEl) {
+  state.reminderAt = state.remindEnabled && state.dueDate ? state.dueDate : null;
+  if (toggleEl) {
+    toggleEl.textContent = 'Fecha límite';
+    toggleEl.setAttribute(
+      'aria-label',
+      state.dueDate
+        ? 'Cambiar fecha límite: ' + formatTodoDueLabel(state.dueDate)
+        : 'Elegir fecha límite'
+    );
+  }
+  if (selectionEl) {
+    var label = state.dueDate ? formatTodoDueLabel(state.dueDate) : '';
+    if (state.dueDate && state.remindEnabled) label += ' 🔔';
+    selectionEl.textContent = label;
+    selectionEl.hidden = !state.dueDate;
+  }
+}
+
+function createTodoDueAddSection(idPrefix) {
+  idPrefix = idPrefix == null ? '' : String(idPrefix);
+  var state = { dueDate: null, reminderAt: null, remindEnabled: false };
+  var section = document.createElement('div');
+  section.className = 'todo-due-section';
+
+  var toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'todo-due-toggle';
+  toggle.textContent = 'Fecha límite';
+  toggle.setAttribute('aria-haspopup', 'dialog');
+
+  var selection = document.createElement('span');
+  selection.className = 'todo-due-selection';
+  selection.hidden = true;
+
+  syncDueAddSelection(state, toggle, selection);
+
+  toggle.addEventListener('click', function () {
+    openTodoDueModal({
+      dueDate: state.dueDate,
+      remindEnabled: state.remindEnabled,
+      onSave: function (fields) {
+        state.dueDate = fields.dueDate;
+        state.reminderAt = fields.reminderAt;
+        state.remindEnabled = !!fields.remindEnabled;
+        syncDueAddSelection(state, toggle, selection);
+      },
+    });
+  });
+
+  section.appendChild(toggle);
+  section.appendChild(selection);
+
+  return {
+    element: section,
+    getFields: function () {
+      return { dueDate: state.dueDate, reminderAt: state.reminderAt };
+    },
+    reset: function () {
+      state.dueDate = null;
+      state.reminderAt = null;
+      state.remindEnabled = false;
+      syncDueAddSelection(state, toggle, selection);
+    },
+  };
+}
+
 function appendTodoAddRow(container, idPrefix) {
+  var composer = document.createElement('div');
+  composer.className = 'todo-composer';
+
   var addRow = document.createElement('div');
   addRow.className = 'todo-add-row';
   var input = document.createElement('input');
@@ -181,12 +367,18 @@ function appendTodoAddRow(container, idPrefix) {
     addPrio = next;
   });
   prioChip.id = idPrefix + 'todo-priority-chip';
+  var dueControls = createTodoDueAddSection(idPrefix);
   var addBtn = document.createElement('button');
   addBtn.type = 'button';
+  addBtn.className = 'todo-add-btn';
   addBtn.textContent = 'Agregar';
-  addBtn.addEventListener('click', function () { addTodo(idPrefix, addPrio); });
+  function submitAdd() {
+    addTodo(idPrefix, addPrio, dueControls.getFields());
+    dueControls.reset();
+  }
+  addBtn.addEventListener('click', submitAdd);
   input.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') addTodo(idPrefix, addPrio);
+    if (e.key === 'Enter') submitAdd();
   });
   var chkSpacer = document.createElement('span');
   chkSpacer.className = 'todo-check-spacer';
@@ -195,14 +387,19 @@ function appendTodoAddRow(container, idPrefix) {
   addRow.appendChild(chkSpacer);
   addRow.appendChild(input);
   addRow.appendChild(addBtn);
-  container.appendChild(addRow);
+  composer.appendChild(addRow);
+  composer.appendChild(dueControls.element);
+  container.appendChild(composer);
 }
 
 function renderTodoListSection(container, preserveTodoId) {
   var preservedRow = preserveTodoId ? findPreservedTodoRow(container, preserveTodoId) : null;
   clearTodoListSection(container);
+  appendTodoFilterBar(container);
 
-  var todos = storage.getTodos(aid()).slice().sort(todoCompareForSort);
+  var todos = filterTodosByView(storage.getTodos(aid()), listFilter, getClinicalUsername())
+    .slice()
+    .sort(todoCompareForDueSort);
   if (preservedRow) {
     var stillExists = todos.some(function (t) {
       return t.id === preserveTodoId;
@@ -213,7 +410,10 @@ function renderTodoListSection(container, preserveTodoId) {
   if (!todos.length && !preservedRow) {
     var none = document.createElement('p');
     none.className = 'todo-empty';
-    none.textContent = 'Sin pendientes. Agrega el primero arriba.';
+    none.textContent =
+      listFilter === TODO_FILTER_HANDOFF
+        ? 'Sin pendientes del turno anterior para este paciente.'
+        : 'Sin pendientes. Agrega el primero arriba.';
     container.appendChild(none);
     return;
   }
@@ -240,9 +440,7 @@ export function todoCompareForSort(a, b) {
   return 0;
 }
 
-export function refreshAllTodoUIs() {
-  var todoForm = document.getElementById('todo-form');
-  if (todoForm) renderTodoFormIn(todoForm, '');
+function refreshRondaTodoMount() {
   var overview = document.getElementById('patient-ronda-overview');
   var ronda = document.getElementById('patient-ronda-todos-mount');
   if (!ronda) return;
@@ -258,6 +456,47 @@ export function refreshAllTodoUIs() {
   } else {
     while (ronda.firstChild) ronda.removeChild(ronda.firstChild);
   }
+}
+
+/** LAN-scoped repaint: active patient todo form + pase board when sync touched one patient. */
+export function refreshTodoUIsForPatient(patientId, opts) {
+  opts = opts || {};
+  var pid = String(patientId || '').trim();
+  if (!pid) return;
+
+  if (aid() === pid) {
+    var todoForm = document.getElementById('todo-form');
+    if (todoForm) renderTodoFormIn(todoForm, '');
+    refreshRondaTodoMount();
+  }
+
+  if (isPaseMode() && !opts.skipPaseBoard) {
+    rt.renderPaseBoard();
+  }
+}
+
+/** Batch LAN refresh — one pase-board repaint for many touched patients. */
+export function refreshTodoUIsForPatients(patientIds) {
+  var seen = Object.create(null);
+  var unique = [];
+  (patientIds || []).forEach(function (pid) {
+    var id = String(pid || '').trim();
+    if (!id || seen[id]) return;
+    seen[id] = true;
+    unique.push(id);
+  });
+  unique.forEach(function (pid) {
+    refreshTodoUIsForPatient(pid, { skipPaseBoard: true });
+  });
+  if (unique.length && isPaseMode()) {
+    rt.renderPaseBoard();
+  }
+}
+
+export function refreshAllTodoUIs() {
+  var todoForm = document.getElementById('todo-form');
+  if (todoForm) renderTodoFormIn(todoForm, '');
+  refreshRondaTodoMount();
   if (isPaseMode()) rt.renderPaseBoard();
 }
 
@@ -278,8 +517,10 @@ export function renderTodoFormIn(container, idPrefix) {
     return;
   }
 
+  container.classList.add('todo-shell');
+
   var draft = getTodoFormDraftState(container, idPrefix);
-  var hasAddRow = !!container.querySelector('.todo-add-row');
+  var hasAddRow = !!container.querySelector('.todo-composer, .todo-add-row');
   if (draft && hasAddRow) {
     if (draft.kind === 'new') {
       renderTodoListSection(container, null);
@@ -296,7 +537,7 @@ export function renderTodoFormIn(container, idPrefix) {
   renderTodoListSection(container, null);
 }
 
-export function addTodo(idPrefix, priorityOverride) {
+export function addTodo(idPrefix, priorityOverride, dueFields) {
   if (idPrefix === undefined || idPrefix === null) idPrefix = '';
   if (typeof idPrefix !== 'string') idPrefix = '';
   if (!aid()) return;
@@ -318,9 +559,16 @@ export function addTodo(idPrefix, priorityOverride) {
     createdAt: nowIso,
     updatedAt: nowIso,
   };
+  var username = getClinicalUsername();
+  if (username) row.createdBy = username;
+  if (dueFields && dueFields.dueDate) {
+    row.dueDate = dueFields.dueDate;
+    if (dueFields.reminderAt) row.reminderAt = dueFields.reminderAt;
+  }
   todos.push(row);
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), row);
+  rescheduleAllTodos(aid());
   input.value = '';
   refreshAllTodoUIs();
 }
@@ -330,10 +578,20 @@ export function toggleTodo(id) {
   var todos = storage.getTodos(aid());
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
+  var nowIso = new Date().toISOString();
+  var username = getClinicalUsername();
   found.completed = !found.completed;
-  found.updatedAt = new Date().toISOString();
+  if (found.completed) {
+    found.completedAt = nowIso;
+    if (username) found.completedBy = username;
+  } else {
+    found.completedAt = null;
+    found.completedBy = null;
+  }
+  found.updatedAt = nowIso;
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
+  rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
 
@@ -350,6 +608,7 @@ export function deleteTodo(id) {
   storage.saveTodos(aid(), todos);
   if (victim) emitLiveSyncTodoDelete(aid(), victim);
   else emitLiveSyncTodoDelete(aid(), { id: id, updatedAt: delAt });
+  rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
 
@@ -364,10 +623,25 @@ export function setTodoPriority(id, priority, opts) {
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
+  rescheduleAllTodos(aid());
   if (opts.deferResortMs) {
     setTimeout(refreshAllTodoUIs, opts.deferResortMs);
     return;
   }
+  refreshAllTodoUIs();
+}
+
+export function acknowledgeHandoffTodo(id) {
+  if (!aid()) return;
+  var todos = storage.getTodos(aid());
+  var found = todos.find(function (t) {
+    return t.id === id;
+  });
+  if (!found || !isHandoffTodo(found, getClinicalUsername())) return;
+  Object.assign(found, buildHandoffAckPatch(getClinicalUsername()));
+  storage.saveTodos(aid(), todos);
+  emitLiveSyncTodoUpsert(aid(), found);
+  rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
 
@@ -382,6 +656,7 @@ export function updateTodoText(id, text) {
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
+  rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
 

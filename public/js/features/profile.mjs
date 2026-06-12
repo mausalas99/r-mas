@@ -58,6 +58,7 @@ import {
   resetProfileTemplatesToBlank,
 } from "../profile-templates.mjs";
 import { syncClinicalRotationEntryChrome } from "./clinical-rotation-entry.mjs";
+import { closeModalAnimated } from "../ui-motion.mjs";
 import { isDbMode } from "../db-storage-bridge.mjs";
 import {
   setFormatsEditMode,
@@ -465,20 +466,23 @@ export function openProfileModal() {
   if (isMobileWeb()) return;
   var modal = document.getElementById("profile-modal");
   if (!modal) return;
-  loadSettings();
-  syncProfileModalLayout();
   modal.classList.add("open");
-  setTimeout(function () {
+  modal.setAttribute("aria-hidden", "false");
+  queueMicrotask(function () {
+    loadSettings();
     var first =
       document.getElementById("app-mode-sala") ||
       document.getElementById("profile-doctor");
-    if (first) first.focus();
-  }, 80);
+    if (first) {
+      try {
+        first.focus({ preventScroll: true });
+      } catch (_e) {}
+    }
+  });
 }
 
 export function closeProfileModal() {
-  var modal = document.getElementById("profile-modal");
-  if (modal) modal.classList.remove("open");
+  closeModalAnimated(document.getElementById("profile-modal"));
 }
 
 export function toggleProfileSection() {

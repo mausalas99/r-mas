@@ -363,6 +363,32 @@ function renderGuardiaCensusHead(count, state) {
       <h2 class="guardia-section-title">Pacientes <span class="guardia-census-count">${count}</span></h2>
       <p class="guardia-section-sub">${sortHint}</p>
     </div>`;
+  appendGuardiaLearnNudge(host);
+}
+
+function appendGuardiaLearnNudge(host) {
+  void Promise.all([
+    import('../guardia-v7-progress.mjs'),
+    import('./settings-help/learn-hub.mjs'),
+  ]).then(function (mods) {
+    const progressMod = mods[0];
+    const hubMod = mods[1];
+    if (progressMod.isGuardiaV7TrackComplete()) return;
+    const inner = host.querySelector('.guardia-census-head-inner');
+    if (!inner || inner.querySelector('.guardia-learn-nudge-btn')) return;
+    const summary = progressMod.guardiaV7ProgressSummary();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-med-secondary guardia-learn-nudge-btn';
+    btn.textContent = `Guía guardia ${summary.completed}/${summary.total}`;
+    btn.title = 'Abrir capítulos de guardia en el Centro de aprendizaje';
+    btn.addEventListener('click', function () {
+      if (typeof hubMod.openLearnHub === 'function') {
+        hubMod.openLearnHub({ focusTrack: 'guardia-v7' });
+      }
+    });
+    inner.appendChild(btn);
+  });
 }
 
 function wireGuardiaModeToggle(settings) {

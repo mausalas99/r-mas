@@ -229,6 +229,94 @@ export function openRpcDatePicker(anchor, opts) {
   if (anchor && anchor.setAttribute) anchor.setAttribute('aria-expanded', 'true');
 }
 
+function parseTimeParts(hhmm) {
+  var t = String(hhmm || '').trim();
+  if (!t || !/^\d{1,2}:\d{1,2}$/.test(t)) return { hour: '', minute: '' };
+  var parts = t.split(':');
+  return {
+    hour: String(parts[0]).padStart(2, '0'),
+    minute: String(parts[1]).padStart(2, '0'),
+  };
+}
+
+function fillHourSelect(select, selected) {
+  select.innerHTML = '';
+  for (var h = 0; h < 24; h += 1) {
+    var v = String(h).padStart(2, '0');
+    var opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    if (v === selected) opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
+function fillMinuteSelect(select, selected) {
+  select.innerHTML = '';
+  var stepSet = Object.create(null);
+  for (var m = 0; m < 60; m += 5) {
+    var v = String(m).padStart(2, '0');
+    stepSet[v] = true;
+    var opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    if (v === selected) opt.selected = true;
+    select.appendChild(opt);
+  }
+  if (selected && !stepSet[selected]) {
+    var exact = document.createElement('option');
+    exact.value = selected;
+    exact.textContent = selected;
+    exact.selected = true;
+    select.appendChild(exact);
+  }
+}
+
+/**
+ * @param {string} [selectedHhmm]
+ * @returns {{ wrap: HTMLDivElement, hourSelect: HTMLSelectElement, minuteSelect: HTMLSelectElement, getValue: () => string, setValue: (hhmm: string) => void }}
+ */
+function createRpcTimePicker(selectedHhmm) {
+  var parts = parseTimeParts(selectedHhmm || '09:00');
+  var wrap = document.createElement('div');
+  wrap.className = 'rpc-time-picker';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Hora');
+
+  var hourSelect = document.createElement('select');
+  hourSelect.className = 'rpc-time-picker__select';
+  hourSelect.setAttribute('aria-label', 'Hora');
+  fillHourSelect(hourSelect, parts.hour || '09');
+
+  var sep = document.createElement('span');
+  sep.className = 'rpc-time-picker__sep';
+  sep.setAttribute('aria-hidden', 'true');
+  sep.textContent = ':';
+
+  var minuteSelect = document.createElement('select');
+  minuteSelect.className = 'rpc-time-picker__select';
+  minuteSelect.setAttribute('aria-label', 'Minutos');
+  fillMinuteSelect(minuteSelect, parts.minute || '00');
+
+  wrap.appendChild(hourSelect);
+  wrap.appendChild(sep);
+  wrap.appendChild(minuteSelect);
+
+  return {
+    wrap: wrap,
+    hourSelect: hourSelect,
+    minuteSelect: minuteSelect,
+    getValue: function () {
+      return hourSelect.value + ':' + minuteSelect.value;
+    },
+    setValue: function (hhmm) {
+      var p = parseTimeParts(hhmm);
+      fillHourSelect(hourSelect, p.hour || '09');
+      fillMinuteSelect(minuteSelect, p.minute || '00');
+    },
+  };
+}
+
 /** @param {HTMLInputElement} input */
 export function mountRpcDateInput(input) {
   if (!input || input.dataset.rpcDateMounted === '1') return;
@@ -301,11 +389,8 @@ export function mountRpcDatetimeInput(input) {
   dateHidden.className = 'rpc-date-field__value';
   dateWrap.appendChild(dateHidden);
 
-  var timeInput = document.createElement('input');
-  timeInput.type = 'time';
-  timeInput.className = 'rpc-datetime-field__time profile-input';
-  timeInput.setAttribute('aria-label', 'Hora');
-  wrap.appendChild(timeInput);
+  var timePicker = createRpcTimePicker('09:00');
+  wrap.appendChild(timePicker.wrap);
 
   function syncLabelFromHidden() {
     dateHidden.dispatchEvent(new Event('rpc-date-refresh'));
@@ -315,13 +400,13 @@ export function mountRpcDatetimeInput(input) {
     var raw = String(input.value || '');
     var parts = raw.split('T');
     dateHidden.value = parts[0] || '';
-    timeInput.value = (parts[1] || '').slice(0, 5);
+    timePicker.setValue((parts[1] || '').slice(0, 5) || '09:00');
     syncLabelFromHidden();
   }
 
   function syncToNative() {
     var d = String(dateHidden.value || '').trim();
-    var t = String(timeInput.value || '').trim() || '09:00';
+    var t = String(timePicker.getValue() || '').trim() || '09:00';
     if (!d) {
       input.value = '';
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -336,7 +421,8 @@ export function mountRpcDatetimeInput(input) {
   syncFromNative();
   mountRpcDateInput(dateHidden);
   dateHidden.addEventListener('input', syncToNative);
-  timeInput.addEventListener('input', syncToNative);
+  timePicker.hourSelect.addEventListener('change', syncToNative);
+  timePicker.minuteSelect.addEventListener('change', syncToNative);
 
   input.addEventListener('rpc-datetime-sync', syncFromNative);
 }

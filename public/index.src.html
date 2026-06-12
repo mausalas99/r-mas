@@ -11,13 +11,18 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="R+">
-<meta name="theme-color" content="#065f46">
+<meta name="theme-color" content="#4a52e8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="/tokens.css">
 <script>
+(function () {
+  try {
+    if (!window.electronAPI) window.__RPC_WEB_CLINICAL__ = true;
+  } catch (_eWeb) {}
+})();
 (function () {
   try {
     if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
@@ -35,7 +40,8 @@
     var queryMobile = p.get('rpc-mobile') === '1';
     var sticky = ls.getItem('rpc-mobile-mode') === '1';
     var inviteToken = !!(p.get('token') || p.get('code'));
-    if (!queryMobile && !pathMobile && !sticky && !inviteToken) return;
+    var touchUa = /iPad|iPhone|iPod|Android|Mobile/i.test(navigator.userAgent || '');
+    if (!queryMobile && !pathMobile && !sticky && !inviteToken && !touchUa) return;
     window.__RPC_MOBILE_WEB__ = true;
     document.documentElement.classList.add('rpc-mobile-web', 'ui-density-normal');
     ls.setItem('rpc-mobile-mode', '1');
@@ -75,6 +81,20 @@
     document.documentElement.classList.toggle('ui-density-normal', isNormal);
   } catch (_e) {}
 })();
+(function () {
+  try {
+    var ls = localStorage;
+    var root = document.documentElement;
+    var isDark = ls.getItem('theme') === 'dark';
+    if (isDark) root.classList.add('dark');
+    if (ls.getItem('rpc-high-contrast') === '1') root.classList.add('high-contrast');
+    var motion = ls.getItem('rpc-motion-mode');
+    if (motion === 'sobrio') root.classList.add('motion-sobrio');
+    else if (motion === 'expresivo') root.classList.add('motion-expresivo');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', isDark ? '#161922' : '#4a52e8');
+  } catch (_e) {}
+})();
 </script>
 <link rel="stylesheet" href="/styles/base.css">
 <link rel="stylesheet" href="/styles/layout.css">
@@ -92,6 +112,9 @@
 <link rel="stylesheet" href="/styles/settings.css">
 <link rel="stylesheet" href="/styles/modals.css">
 <link rel="stylesheet" href="/styles/motion.css">
+<link rel="stylesheet" href="/styles/skeleton.css">
+<link rel="stylesheet" href="/styles/components.css">
+<link rel="stylesheet" href="/styles/workbench-tokens.css">
 <link rel="stylesheet" href="/styles/soft-ui.css">
 <link rel="stylesheet" href="/styles/workbench-surfaces.css">
 <link rel="stylesheet" href="/styles/mobile.css">

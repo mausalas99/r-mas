@@ -1,6 +1,6 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import { hasElevatedTeamPrivileges, shouldShowClinicalCensusFilters } from '../clinical-privileges.mjs';
 import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
@@ -14,9 +14,27 @@ import {
   isTeamIdInCensusCatalog,
   filterTeamsForCensusSala,
   reconcileCensusTeamFilterForSala,
+  censusTeamCatalogForFilters,
+  resolveCensusTeamFilterId,
 } from './clinical-census-filters-ui.mjs';
 
+beforeEach(() => {
+  globalThis.__RPC_MOBILE_WEB__ = true;
+  globalThis.window = {};
+});
+
+afterEach(() => {
+  delete globalThis.__RPC_MOBILE_WEB__;
+  delete globalThis.window;
+});
+
 describe('clinical census filters visibility', () => {
+  it('shouldShowClinicalCensusFilters on iPad for any signed-in user', () => {
+    assert.equal(shouldShowClinicalCensusFilters({ user_id: 'u1', rank: 'R1' }), true);
+    assert.equal(shouldShowClinicalCensusFilters({ user_id: 'u1', rank: 'Admin' }), true);
+    assert.equal(shouldShowClinicalCensusFilters(null), false);
+  });
+
   it('elevated only for R4 Admin program admin', () => {
     assert.equal(hasElevatedTeamPrivileges({ rank: 'R4' }), true);
     assert.equal(hasElevatedTeamPrivileges({ rank: 'Admin' }), true);
@@ -97,6 +115,48 @@ describe('clinical census team filter', () => {
     assert.equal(reconcileCensusTeamFilterForSala('t2', filterTeamsForCensusSala(teams, 'Sala 1')), '');
     assert.equal(reconcileCensusTeamFilterForSala('t1', filterTeamsForCensusSala(teams, 'Sala 1')), 't1');
     assert.equal(reconcileCensusTeamFilterForSala('__unassigned__', filterTeamsForCensusSala(teams, 'Sala 1')), '__unassigned__');
+  });
+
+  it('censusTeamCatalogForFilters on iPad shows all teams for Admin/R4', () => {
+    const catalog = censusTeamCatalogForFilters(user, teams, '__all__');
+    assert.equal(catalog.length, 2);
+  });
+
+  it('censusTeamCatalogForFilters on iPad limits residents to joined teams', () => {
+    const r1 = {
+      user_id: 'u9',
+      rank: 'R1',
+      sala: 'Sala 1',
+    };
+    const teamsWithMembership = [
+      { ...teams[0], members: [{ user_id: 'u9' }] },
+      teams[1],
+    ];
+    const r1Catalog = censusTeamCatalogForFilters(r1, teamsWithMembership, '__all__');
+    assert.equal(r1Catalog.length, 1);
+    assert.equal(r1Catalog[0].team_id, 't1');
+  });
+
+  it('resolveCensusTeamFilterId defaults to Todos equipos for Admin on iPad', () => {
+    const mem = new Map();
+    const storage = {
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => mem.set(k, v),
+      removeItem: (k) => mem.delete(k),
+    };
+    assert.equal(resolveCensusTeamFilterId(user, teams, '', storage), '');
+  });
+
+  it('resolveCensusTeamFilterId defaults to joined team for R1 on iPad', () => {
+    const mem = new Map();
+    const storage = {
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => mem.set(k, v),
+      removeItem: (k) => mem.delete(k),
+    };
+    const r1 = { user_id: 'u9', rank: 'R1', sala: 'Sala 1' };
+    const oneTeam = [{ ...teams[0], members: [{ user_id: 'u9' }] }];
+    assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
   });
 });
 

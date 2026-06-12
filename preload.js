@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // true cuando main.js desactivó la aceleración por hardware (performance.json):
+  // el renderer degrada efectos caros en software (glass blur → no-blur).
+  isSoftwareRender: process.argv.includes('--rplus-sw-render'),
   onUpdateAvailable: function(cb) {
     ipcRenderer.on('update-available', function(_e, payload) { cb(payload); });
   },

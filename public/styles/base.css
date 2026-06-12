@@ -1,5 +1,21 @@
 /* Design tokens: public/tokens.css */
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
+
+::selection {
+  background: color-mix(in oklab, var(--action) 24%, transparent);
+  color: var(--text);
+}
+
+::-moz-selection {
+  background: color-mix(in oklab, var(--action) 24%, transparent);
+  color: var(--text);
+}
+
+html.high-contrast ::selection,
+html.high-contrast ::-moz-selection {
+  background: color-mix(in oklab, var(--action) 35%, transparent);
+  color: var(--text);
+}
 html.ui-density-normal .patient-list-section-label {
   font-size: calc(10px * var(--density-font));
   opacity: 0.88;
@@ -478,7 +494,7 @@ html.dark .indica-section-body textarea:focus { background: var(--bg); box-shado
 html.dark .otros-item input,
 html.dark .otros-item textarea { background: var(--bg); }
 html.dark .lab-item { background: var(--lab-chip-bg); }
-html.dark .lab-value-altered { color: #f87171; }
+html.dark .lab-value-altered { color: var(--error); }
 html.dark .lab-value-normal { color: #4ade80; }
 #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
 html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
