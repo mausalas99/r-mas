@@ -18,6 +18,13 @@ import { isSessionScopedWebClient } from './session-clinical-wipe.mjs';
 /** @type {Record<string, string> | null} blob_key → JSON string when SQLCipher desktop mode */
 let _blobCache = null;
 
+/** @type {Map<string, { raw: string | null, parsed: unknown }>} blobKey → parsed value keyed by last raw JSON (invalidate on write/hydrate). Callers must not mutate returned blobs in place; treat reads as immutable. */
+var _parsedCache = new Map();
+function invalidateParsed(blobKey) {
+  if (blobKey == null) _parsedCache.clear();
+  else _parsedCache.delete(blobKey);
+}
+
 let _cachedQuotaEstimate = null;
 let _quotaEstimateTs = 0;
 const QUOTA_CACHE_MS = 15000;
@@ -92,10 +99,19 @@ function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
   if (skipClinicalLocalPersist() && WEB_SESSION_EMPTY_CLINICAL_BLOBS.has(blobKey)) {
     return blobKey === 'patients' ? [] : parseFromRaw('{}');
   }
+  var raw;
   if (_blobCache) {
-    return parseFromRaw(blobCacheRaw(blobKey));
+    raw = blobCacheRaw(blobKey);
+  } else {
+    raw = localStorage.getItem(lsKey);
   }
-  return parseFromRaw(localStorage.getItem(lsKey));
+  var cached = _parsedCache.get(blobKey);
+  if (cached && cached.raw === raw) {
+    return cached.parsed;
+  }
+  var parsed = parseFromRaw(raw);
+  _parsedCache.set(blobKey, { raw: raw, parsed: parsed });
+  return parsed;
 }
 
 function readTodosMap() {
@@ -113,10 +129,12 @@ function writeTodosMap(map) {
         { todos: map },
         { eventType: 'clinical.todos_save', meta: { source: 'storage.saveTodos' } }
       );
+      invalidateParsed('todos');
       return;
     }
   }
   localStorage.setItem('rpc-todos', json);
+  invalidateParsed('todos');
 }
 
 /**
@@ -140,14 +158,17 @@ export async function ensureStorageHydrated() {
   }
   try {
     _blobCache = await hydrateStorageCache();
+    invalidateParsed();
   } catch (_e) {
     _blobCache = null;
+    invalidateParsed();
   }
 }
 
 /** @internal tests */
 export function clearBlobCacheForTests() {
   _blobCache = null;
+  invalidateParsed();
 }
 
 export function isMeaningfulLabHistorySet(set) {
@@ -418,6 +439,7 @@ export const storage = {
     const all = this.getLanRoomSnapshots();
     all[rid] = snapshot && typeof snapshot === 'object' ? snapshot : {};
     localStorage.setItem('rpc-lan-room-snapshots', JSON.stringify(all));
+    invalidateParsed('lanRoomSnapshots');
   },
 
   /**
@@ -465,6 +487,7 @@ export const storage = {
       somePharm: { tokens: spt },
     };
     localStorage.setItem('rpc-medCatalog', JSON.stringify(payload));
+    invalidateParsed('medCatalog');
   },
 
   /**
@@ -497,6 +520,7 @@ export const storage = {
     const list = Array.isArray(events) ? events.map(normalizeScheduledProcedureStored).filter(Boolean) : [];
     const filtered = list.filter(ev => ev.patientId.indexOf('demo-') !== 0);
     localStorage.setItem('rpc-scheduled-procedures', JSON.stringify(filtered));
+    invalidateParsed('scheduledProcedures');
   },
 
   /** Elimina en cascada eventos ligados al paciente. */
@@ -602,6 +626,7 @@ export const storage = {
   saveHostPatientMap(map) {
     if (skipClinicalLocalPersist()) return;
     localStorage.setItem('rpc-lan-host-patient-map', JSON.stringify(map || {}));
+    invalidateParsed('lanHostPatientMap');
   },
 
   /** 'host' = esta R+ abre el servidor; 'client' = solo se une. */
@@ -769,6 +794,7 @@ export const storage = {
       }
       var writtenBlobs = appStateFieldsToBlobs(dbFields);
       _blobCache = Object.assign({}, _blobCache || {}, writtenBlobs);
+      invalidateParsed();
       return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
     }
 
@@ -797,6 +823,7 @@ export const storage = {
         return { ok: false, code: 'QUOTA_EXCEEDED', level: level };
       }
     }
+    invalidateParsed();
     return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
   },
 };

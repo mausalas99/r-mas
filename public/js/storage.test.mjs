@@ -1,8 +1,8 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-// storage.js reads localStorage lazily inside its methods, so reasignar
-// global.localStorage en beforeEach es suficiente; no requiere reimport.
+// storage.js reads localStorage lazily inside its methods; reasignar
+// global.localStorage en beforeEach + clearBlobCacheForTests invalida el parsed cache.
 let store = {};
 const mock = {
   getItem: (k) => (k in store ? store[k] : null),
@@ -23,6 +23,7 @@ const {
 describe('storage todos', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
   });
 
   describe('getTodos', () => {
@@ -211,6 +212,7 @@ describe('storage todos', () => {
 describe('lan config', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
   });
 
   it('persists and reads LAN config', () => {
@@ -245,6 +247,7 @@ describe('lan config', () => {
 describe('scheduled procedures (agenda v1)', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
   });
 
   const sample = () => ({
@@ -329,6 +332,7 @@ describe('normalizeLabHistoryPatientSets', () => {
 describe('getLabHistory', () => {
   beforeEach(() => {
     for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
   });
 
   it('normalizes corrupt per-patient entries on read', () => {
@@ -379,6 +383,65 @@ describe('storage session-scoped mobile web', () => {
   it('getPatients ignores stale localStorage census on iPad/PWA', () => {
     store['rpc-patients'] = JSON.stringify([{ id: 'stale', nombre: 'OLD' }]);
     assert.deepEqual(storage.getPatients(), []);
+  });
+});
+
+describe('parsed blob cache', () => {
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+    clearBlobCacheForTests();
+    global.window = { localStorage: mock };
+  });
+
+  afterEach(() => {
+    clearBlobCacheForTests();
+    global.window = { localStorage: mock };
+  });
+
+  it('returns the same object reference on consecutive getPatients reads', () => {
+    store['rpc-patients'] = JSON.stringify([{ id: 'p1', nombre: 'Uno' }]);
+    const first = storage.getPatients();
+    const second = storage.getPatients();
+    assert.strictEqual(first, second);
+  });
+
+  it('invalidates cache after saveAll so getPatients sees new data', async () => {
+    store['rpc-patients'] = JSON.stringify([{ id: 'p1', nombre: 'Antes' }]);
+    const before = storage.getPatients();
+    const result = await storage.saveAll(
+      [{ id: 'p2', nombre: 'Después' }],
+      {},
+      {},
+      {},
+      {}
+    );
+    assert.strictEqual(result.ok, true);
+    const after = storage.getPatients();
+    assert.notStrictEqual(before, after);
+    assert.strictEqual(after[0].id, 'p2');
+    assert.strictEqual(after[0].nombre, 'Después');
+  });
+
+  it('clears parsed cache when blob cache is reset', () => {
+    store['rpc-patients'] = JSON.stringify([{ id: 'p1', nombre: 'Viejo' }]);
+    const cached = storage.getPatients();
+    clearBlobCacheForTests();
+    store['rpc-patients'] = JSON.stringify([{ id: 'p2', nombre: 'Nuevo' }]);
+    const fresh = storage.getPatients();
+    assert.notStrictEqual(cached, fresh);
+    assert.strictEqual(fresh[0].id, 'p2');
+  });
+
+  it('session-scoped web empty blobs do not poison the parsed cache', () => {
+    store['rpc-patients'] = JSON.stringify([{ id: 'stale', nombre: 'OLD' }]);
+    globalThis.__RPC_MOBILE_WEB__ = true;
+    assert.deepEqual(storage.getPatients(), []);
+    delete globalThis.__RPC_MOBILE_WEB__;
+    const patients = storage.getPatients();
+    assert.strictEqual(patients.length, 1);
+    assert.strictEqual(patients[0].id, 'stale');
+    const again = storage.getPatients();
+    assert.strictEqual(patients, again);
   });
 });
 
