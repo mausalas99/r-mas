@@ -11,8 +11,14 @@ const { createHostStore } = require('./host-store.js');
 const { createTicketStore } = require('./ticket-store.js');
 const { createAuthRouter } = require('./auth-router.js');
 const { createWardHostRegistry } = require('./ward-host-registry.js');
+const { createAuthFailureLockout } = require('./auth-failure-lockout.js');
 
-function createTestApp({ hostToken, hostUrl, requiresMigrationNotice = false }) {
+function createTestApp({
+  hostToken,
+  hostUrl,
+  requiresMigrationNotice = false,
+  authFailureLockout,
+}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-'));
   const statePath = path.join(dir, 'state.json');
   const wardPath = path.join(dir, 'lan-ward-host-registry.json');
@@ -33,9 +39,10 @@ function createTestApp({ hostToken, hostUrl, requiresMigrationNotice = false }) 
       getHostToken: () => hostToken,
       getHostUrl: () => hostUrl,
       getRequiresMigrationNotice: () => requiresMigrationNotice,
+      ...(authFailureLockout ? { authFailureLockout } : {}),
     })
   );
-  return { app, dir, store, ticketStore, shiftPinStore, wardHostRegistry };
+  return { app, dir, store, ticketStore, shiftPinStore, wardHostRegistry, authFailureLockout };
 }
 
 async function listen(app) {
@@ -330,6 +337,124 @@ test('GET /auth/ward-host-hints returns registry with Bearer', async () => {
     const body = await res.json();
     assert.ok(Array.isArray(body.hostUrls));
     assert.ok(body.prefixes.includes('10.0.57'));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange locks out after 8 wrong shift PINs', async () => {
+  const hostToken = 'l'.repeat(64);
+  let now = 10_000_000;
+  const authFailureLockout = createAuthFailureLockout({
+    maxFailures: 8,
+    lockoutMs: 300_000,
+    now: () => now,
+  });
+  const { app, dir, shiftPinStore } = createTestApp({
+    hostToken,
+    hostUrl: 'http://127.0.0.1:3738',
+    authFailureLockout,
+  });
+  const { pin: correctPin } = shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    for (let i = 0; i < 8; i += 1) {
+      const wrong = await fetch(`${base}/auth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shiftPin: String(100000 + i).padStart(6, '0') }),
+      });
+      assert.strictEqual(wrong.status, 401);
+      assert.strictEqual((await wrong.json()).error, 'invalid_shift_pin');
+    }
+
+    const locked = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: correctPin }),
+    });
+    assert.strictEqual(locked.status, 429);
+    assert.strictEqual((await locked.json()).error, 'too_many_attempts');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange lockout expires after lockoutMs', async () => {
+  const hostToken = 'm'.repeat(64);
+  let now = 20_000_000;
+  const authFailureLockout = createAuthFailureLockout({
+    maxFailures: 8,
+    lockoutMs: 60_000,
+    now: () => now,
+  });
+  const { app, dir, shiftPinStore } = createTestApp({
+    hostToken,
+    hostUrl: 'http://127.0.0.1:3738',
+    authFailureLockout,
+  });
+  const { pin: correctPin } = shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    for (let i = 0; i < 8; i += 1) {
+      await fetch(`${base}/auth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shiftPin: '999999' }),
+      });
+    }
+
+    const locked = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: correctPin }),
+    });
+    assert.strictEqual(locked.status, 429);
+
+    now += 60_001;
+
+    const ok = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shiftPin: correctPin }),
+    });
+    assert.strictEqual(ok.status, 200);
+    assert.strictEqual((await ok.json()).token, hostToken);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange success resets failure counter', async () => {
+  const hostToken = 'n'.repeat(64);
+  const authFailureLockout = createAuthFailureLockout({ maxFailures: 8 });
+  const { app, dir, shiftPinStore } = createTestApp({
+    hostToken,
+    hostUrl: 'http://127.0.0.1:3738',
+    authFailureLockout,
+  });
+  const { pin: correctPin } = shiftPinStore.ensure();
+  const { server, base } = await listen(app);
+  try {
+    for (let round = 0; round < 2; round += 1) {
+      for (let i = 0; i < 7; i += 1) {
+        const wrong = await fetch(`${base}/auth/exchange`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shiftPin: '888888' }),
+        });
+        assert.strictEqual(wrong.status, 401);
+      }
+      const ok = await fetch(`${base}/auth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shiftPin: correctPin }),
+      });
+      assert.strictEqual(ok.status, 200);
+    }
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

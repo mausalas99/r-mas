@@ -6,6 +6,7 @@ const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { redactAuthBody } = require('./redact-secrets.js');
 const { resolveHostUrlForClient } = require('./lan-request-host.js');
 const { getLanDbManager } = require('../lib/db/lan-db-bridge.cjs');
+const { createAuthFailureLockout } = require('./auth-failure-lockout.js');
 
 function auditLanSecurity(eventType, meta = {}) {
   const dbManager = getLanDbManager();
@@ -24,6 +25,7 @@ function createAuthRouter({
   getHostToken,
   getHostUrl,
   getRequiresMigrationNotice,
+  authFailureLockout = createAuthFailureLockout(),
 }) {
   const r = express.Router();
   const getState = () => ({ teamCodeHash: hashTeamCode(getHostToken()) });
@@ -101,6 +103,11 @@ function createAuthRouter({
   });
 
   r.post('/auth/exchange', express.json(), (req, res) => {
+    if (authFailureLockout.isLockedOut()) {
+      auditLanSecurity('lan.auth.lockout', {});
+      return res.status(429).json({ error: 'too_many_attempts' });
+    }
+
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const hasTicket = body.ticket != null && String(body.ticket).trim() !== '';
     const hasPin = body.pin != null && String(body.pin).trim() !== '';
@@ -124,9 +131,12 @@ function createAuthRouter({
         }
         result = shiftPinStore.exchange(String(body.shiftPin).trim());
         if (!result || !result.token) {
+          authFailureLockout.recordFailure();
+          auditLanSecurity('lan.auth.exchange_fail', {});
           auditLanSecurity('lan.auth.fail', { reason: 'invalid_shift_pin' });
           return res.status(401).json({ error: 'invalid_shift_pin' });
         }
+        authFailureLockout.recordSuccess();
         auditLanSecurity('lan.shift_pin.exchange', {});
       } else {
         result = ticketStore.exchange({
@@ -135,9 +145,12 @@ function createAuthRouter({
         });
 
         if (!result || !result.token) {
+          authFailureLockout.recordFailure();
+          auditLanSecurity('lan.auth.exchange_fail', {});
           auditLanSecurity('lan.auth.fail', { reason: 'invalid_ticket' });
           return res.status(401).json({ error: 'invalid_ticket' });
         }
+        authFailureLockout.recordSuccess();
         auditLanSecurity('lan.ticket.exchange', {});
       }
 
