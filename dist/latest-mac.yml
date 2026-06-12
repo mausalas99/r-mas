@@ -1,27 +1,37 @@
-version: 7.3.3
+version: 7.3.4
 files:
-  - url: R+-7.3.3-arm64.zip
-    sha512: Ld4oVcBfwbY4JbkbEKPhPmNmQnHfDx2i2cF7sGgEoMpgW8PuN4aCgsyZfpWZGtGucVGKAjk5tTShVG3GaFZ7Bw==
-    size: 129176315
-  - url: R+-7.3.3-arm64.dmg
-    sha512: e7tR+oQBi+Ic7ssKBsEhukz0Ut/4X85LFPJmLTEDRxko8miYC4KCjKJRM4Y4ZSU+ANCv1GhMTCI6XJ5IkHHUsg==
-    size: 134541298
-  - url: R+-7.3.3-x64.zip
-    sha512: faMmfnT9hSx3mlR1MPvlUudGlLS/2nRkcvUKF5GWK6MiZt3AZUaXQ9heuWa+i3K17yYJGYXIVgnBp6NPPd2hKw==
-    size: 137550385
-  - url: R+-7.3.3-x64.dmg
-    sha512: 1MzhjHW5qHqaXilGBrDs7kuidztiXtou4GaWHy5Y5T6xpFOXw4DB8zAFcqXPbU98BGVh5jWAncN4PSAirPVPFg==
-    size: 142964169
-path: R+-7.3.3-arm64.zip
-sha512: Ld4oVcBfwbY4JbkbEKPhPmNmQnHfDx2i2cF7sGgEoMpgW8PuN4aCgsyZfpWZGtGucVGKAjk5tTShVG3GaFZ7Bw==
-releaseDate: '2026-06-11T20:09:41.000Z'
+  - url: R+-7.3.4-arm64.zip
+    sha512: I1/d3xltsE7MJe57VWdsN35sd1eFhYqKdOo9ii7WChPhqHBJ2Q1RittNYn+TjKxSnnk3Io5e8NjsHPC+ji00jA==
+    size: 129278342
+  - url: R+-7.3.4-arm64.dmg
+    sha512: wGg8kLEceXn3IXctf8EFdclrpLLDzIzQlkfAFYJCjAv1UQ4WwXdDsPAb3wf3ieGydVx6ordnMv+zhmJtYkJkqA==
+    size: 134622949
+  - url: R+-7.3.4-x64.zip
+    sha512: jigrMWn40nprBwczDhxyPQHk6npd8tXqBl8FMi9ApTJQTX1T7oQUS6WQ2DHR51CASATpermis0P96BHqMSMPSA==
+    size: 137652392
+  - url: R+-7.3.4-x64.dmg
+    sha512: +1Cwuo9IHhNMbp7fNMU5aklrkrEy9xTGF3dq99M92xbDNpqQm0HjiJozTyEw+/wJt/GTBh4VgPJQN22XwjQUww==
+    size: 143030591
+path: R+-7.3.4-arm64.zip
+sha512: I1/d3xltsE7MJe57VWdsN35sd1eFhYqKdOo9ii7WChPhqHBJ2Q1RittNYn+TjKxSnnk3Io5e8NjsHPC+ji00jA==
+releaseDate: '2026-06-12T16:36:55.000Z'
 releaseNotes: |
-  Parche sobre 7.3.2: corrige el texto copiado de balance e I/O en Estado actual y censo cuando hay egresos parcialmente cuantificados; las evacuaciones numéricas dejan de llevar «CC» (son conteo, no volumen); la rejilla de dieta muestra kcal total calculadas desde kcal/kg y peso sin pisar valores guardados.
+  Sobre 7.3.3: arranque y censo más fluidos (chunks perezosos de labs/gráficas, scroll virtual en lista activa >30), pendientes con fecha de vencimiento, recordatorios del sistema y filtro Entrega; iPad/PWA refleja solo pacientes de equipos unidos (+ guardia activa); pulido visual en laboratorio y motion.
   
-  Estado actual — balance SOAP — Si falta el balance del turno pero ingresos y egresos numéricos lo permiten, la cláusula I/O calcula el balance (p. ej. diuresis NC + gastrostomía 120 → +48 CC).
+  Rendimiento — arranque — Labs, gráficas de Estado actual y Tendencias cargan con import() y chunks de esbuild; menos código en el boot inicial.
   
-  Estado actual — evacuaciones — Valores numéricos en nota e historial sin sufijo CC; NC y variantes siguen normalizadas.
+  Rendimiento — censo virtual — Lista activa con scroll virtual cuando hay más de 30 pacientes; repintado incremental conservado en listas cortas.
   
-  Censo — columna I/O — Balance corto con egresos mixtos (diuresis NC + drenaje numérico); evacuaciones numéricas sin CC en PDF y listados.
+  Rendimiento — LiveSync — Marcas de perfilado en reconcile; refresco acotado de pendientes tras merge LAN (sin repintar toda la UI del turno).
   
-  Estado actual — dieta — Campo Kcal total refleja kcal/kg × peso en pantalla; solo persiste al editar kcal/kg o el total manualmente.
+  Pendientes — vencimiento — Fecha/hora opcional por tarea, orden por vencidos primero, modal de fecha y recordatorio nativo de Electron cuando corresponde.
+  
+  Pendientes — entrega — Filtro Entrega para tareas dejadas por otro residente; chip «De @usuario» y acuse al completar.
+  
+  Guardia v7 — Barra de progreso del currículo y aviso en tablero cuando hay módulos pendientes.
+  
+  Laboratorio — Estilos premium alineados al Workbench; extracción de labs-display para listados más ligeros.
+  
+  iPad / PWA — alcance por equipo — El espejo móvil muestra solo pacientes asignados a equipos a los que te uniste, más cobertura de guardia activa; sin censo completo de sala por rango.
+  
+  Motion y skeleton — Presets de movimiento refinados; placeholders skeleton en cargas largas.
