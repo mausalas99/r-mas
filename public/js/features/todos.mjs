@@ -9,7 +9,9 @@ import {
 } from '../todos-priority.mjs';
 import {
   formatTodoDueLabel,
+  getTodoDuePresets,
   isTodoOverdue,
+  parseDuePreset,
   todoCompareForDueSort,
 } from '../todos-due.mjs';
 import { openTodoDueModal } from '../todo-due-modal.mjs';
@@ -285,7 +287,7 @@ function appendTodoFilterBar(container) {
   container.appendChild(toolbar);
 }
 
-function syncDueAddSelection(state, toggleEl, selectionEl) {
+function syncDueAddSelection(state, toggleEl, selectionEl, presetBtns) {
   state.reminderAt = state.remindEnabled && state.dueDate ? state.dueDate : null;
   if (toggleEl) {
     toggleEl.textContent = 'Fecha límite';
@@ -302,6 +304,21 @@ function syncDueAddSelection(state, toggleEl, selectionEl) {
     selectionEl.textContent = label;
     selectionEl.hidden = !state.dueDate;
   }
+  (presetBtns || []).forEach(function (btn) {
+    var presetId = String(btn.dataset.preset || '');
+    var fields = parseDuePreset(presetId);
+    var active = !!(state.dueDate && fields.dueDate && state.dueDate === fields.dueDate);
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function applyDuePresetToAddState(state, presetId, toggleEl, selectionEl, presetBtns) {
+  var fields = parseDuePreset(presetId);
+  state.dueDate = fields.dueDate;
+  state.reminderAt = null;
+  state.remindEnabled = false;
+  syncDueAddSelection(state, toggleEl, selectionEl, presetBtns);
 }
 
 function createTodoDueAddSection(idPrefix) {
@@ -320,7 +337,55 @@ function createTodoDueAddSection(idPrefix) {
   selection.className = 'todo-due-selection';
   selection.hidden = true;
 
-  syncDueAddSelection(state, toggle, selection);
+  var primary = document.createElement('div');
+  primary.className = 'todo-due-section-primary';
+
+  var presetsWrap = document.createElement('div');
+  presetsWrap.className = 'todo-due-presets';
+  presetsWrap.setAttribute('role', 'group');
+  presetsWrap.setAttribute('aria-label', 'Fechas rápidas');
+
+  var presetBtns = [];
+  function wirePresetButton(btn, preset) {
+    btn.type = 'button';
+    btn.className = 'todo-due-preset-chip';
+    btn.dataset.preset = preset.id;
+    btn.textContent = preset.label;
+    btn.setAttribute('aria-pressed', 'false');
+    btn.addEventListener('click', function () {
+      if (state.dueDate) {
+        var current = parseDuePreset(preset.id);
+        if (current.dueDate && state.dueDate === current.dueDate) {
+          state.dueDate = null;
+          state.reminderAt = null;
+          state.remindEnabled = false;
+          syncDueAddSelection(state, toggle, selection, presetBtns);
+          return;
+        }
+      }
+      applyDuePresetToAddState(state, preset.id, toggle, selection, presetBtns);
+    });
+  }
+  function rebuildPresetButtons() {
+    presetsWrap.textContent = '';
+    presetBtns.length = 0;
+    getTodoDuePresets().forEach(function (preset) {
+      var btn = document.createElement('button');
+      wirePresetButton(btn, preset);
+      presetsWrap.appendChild(btn);
+      presetBtns.push(btn);
+    });
+    syncDueAddSelection(state, toggle, selection, presetBtns);
+  }
+  rebuildPresetButtons();
+  if (typeof document !== 'undefined' && !document._todoDuePresetsComposerWired) {
+    document._todoDuePresetsComposerWired = true;
+    document.addEventListener('rpc-todo-due-presets-changed', function () {
+      rebuildPresetButtons();
+    });
+  }
+
+  syncDueAddSelection(state, toggle, selection, presetBtns);
 
   toggle.addEventListener('click', function () {
     openTodoDueModal({
@@ -330,13 +395,15 @@ function createTodoDueAddSection(idPrefix) {
         state.dueDate = fields.dueDate;
         state.reminderAt = fields.reminderAt;
         state.remindEnabled = !!fields.remindEnabled;
-        syncDueAddSelection(state, toggle, selection);
+        syncDueAddSelection(state, toggle, selection, presetBtns);
       },
     });
   });
 
-  section.appendChild(toggle);
-  section.appendChild(selection);
+  primary.appendChild(toggle);
+  primary.appendChild(selection);
+  section.appendChild(primary);
+  section.appendChild(presetsWrap);
 
   return {
     element: section,
@@ -347,7 +414,7 @@ function createTodoDueAddSection(idPrefix) {
       state.dueDate = null;
       state.reminderAt = null;
       state.remindEnabled = false;
-      syncDueAddSelection(state, toggle, selection);
+      syncDueAddSelection(state, toggle, selection, presetBtns);
     },
   };
 }

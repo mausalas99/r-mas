@@ -202,6 +202,22 @@ test('syncRecetaProposalsFromSoapSelection applies SOAP-marked receta', () => {
   assert.match(String(m.pendienteReceta.analgesia), /PARACETAMOL/i);
 });
 
+test('estadoClinicoForText avanza DIA de abx según fecha de Manejo', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 10';
+  const ref = new Date(2026, 5, 12);
+  const ec = estadoClinicoForText(m, { fechaActualizacion: '10/06/2026', refDate: ref });
+  assert.match(ec.abx, /DIA 12/);
+});
+
+test('estadoClinicoForText avanza abx pendiente no confirmado', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.abx = 'CEFTRIAXONA 1G IV DIA 5';
+  const ref = new Date(2026, 5, 14);
+  const ec = estadoClinicoForText(m, { fechaActualizacion: '10/06/2026', refDate: ref });
+  assert.match(ec.abx, /DIA 9/);
+});
+
 test('buildMedDropdownOptions lists active receta items for category', () => {
   const medRecetaByPatient = {
     p1: {
@@ -227,5 +243,42 @@ test('buildMedDropdownOptions lists active receta items for category', () => {
   };
   const abxOpts = buildMedDropdownOptions('p1', 'abx', medRecetaByPatient, classifyMedicationSoapCategory);
   assert.equal(abxOpts.length, 1);
-  assert.match(abxOpts[0], /MEROPENEM.*IV/i);
+  assert.match(abxOpts[0].value, /MEROPENEM.*IV/i);
+  assert.match(abxOpts[0].label, /MEROPENEM.*IV/i);
+});
+
+test('buildMedDropdownOptions abx label avanza DIA, value conserva base', () => {
+  const medRecetaByPatient = {
+    p1: {
+      fechaActualizacion: '10/06/2026',
+      items: [
+        {
+          id: '1',
+          nombreRaw: 'MEROPENEM 1 G',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '1 G // *DIA# 10*',
+          frecuenciaRaw: 'CADA 8 HORAS',
+          diaTratamiento: 10,
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const ref = new Date(2026, 5, 12);
+  const opts = buildMedDropdownOptions('p1', 'abx', medRecetaByPatient, classifyMedicationSoapCategory);
+  assert.match(opts[0].value, /DIA 10/);
+  const ec = estadoClinicoForText(
+    (() => {
+      const m = emptyMonitoreo();
+      m.estadoClinico.abx = opts[0].value;
+      return m;
+    })(),
+    { fechaActualizacion: '10/06/2026', refDate: ref }
+  );
+  assert.match(ec.abx, /DIA 12/);
+  assert.match(
+    opts[0].label,
+    /DIA 12/,
+    'label muestra día efectivo para lectura en UI'
+  );
 });

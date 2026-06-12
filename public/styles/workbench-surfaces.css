@@ -25,22 +25,10 @@ html.ui-density-normal .patient-expediente-classic {
   gap: calc(12px * var(--density-space, 1));
 }
 
-.patient-expediente-classic .exp-datos-collapse {
-  border: var(--border-hairline);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--elev-flat);
-}
-
-.patient-expediente-classic .exp-datos-collapse-summary {
-  font: var(--type-section);
-  letter-spacing: var(--tracking-section);
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.patient-expediente-classic .exp-datos-collapse-summary::before {
-  transition: transform var(--dur-fast) var(--ease-out);
+.patient-expediente-classic .exp-datos-tab-action {
+  font: var(--type-body);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .patient-expediente-classic .tab-content:not(.exp-composite-pane) {
@@ -102,6 +90,9 @@ html.ui-density-normal .patient-expediente-classic {
   border-radius: var(--radius-lg);
   background: var(--card-body-bg);
   box-shadow: var(--elev-raised);
+  padding: calc(16px * var(--density-space, 1)) calc(18px * var(--density-space, 1))
+    calc(20px * var(--density-space, 1));
+  gap: calc(12px * var(--density-space, 1));
 }
 
 /* Pendientes: sin ventana contenedora — filas flotantes */
@@ -112,6 +103,49 @@ html.ui-density-normal .patient-expediente-classic {
   background: transparent;
   box-shadow: none;
   overflow: visible;
+  padding: 0;
+  gap: 0;
+}
+
+/* Hojas autocontenidas: un solo marco (evita ventana-dentro-de-ventana) */
+.patient-expediente-classic .exp-segment-panel .receta-hu-sheet,
+.patient-expediente-classic .exp-segment-panel .ev-panel,
+.patient-expediente-classic .exp-segment-panel .vpo-panel {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.patient-expediente-classic .exp-segment-panel #vpo-container {
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.patient-expediente-classic .exp-segment-panel .vpo-panel {
+  padding: 0;
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.patient-expediente-classic .exp-segment-panel .vpo-section.ea-card {
+  border: var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  background: color-mix(in oklab, var(--surface) 72%, var(--bg));
+}
+
+.patient-expediente-classic .exp-segment-panel #receta-hu-container {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
+.patient-expediente-classic .exp-segment-panel .hc-read-view {
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.patient-expediente-classic .exp-segment-panel .card-body,
+.patient-expediente-classic .exp-segment-panel .hc-read-body {
+  padding: calc(14px * var(--density-space, 1)) calc(18px * var(--density-space, 1));
 }
 
 .exp-pendientes-mount {
@@ -122,33 +156,113 @@ html.ui-density-normal .patient-expediente-classic {
 .exp-pendientes-mount .todo-shell {
   display: flex;
   flex-direction: column;
-  gap: calc(10px * var(--density-space, 1));
+  gap: calc(8px * var(--density-space, 1));
+  flex: 1;
+  min-height: 0;
+}
+
+.exp-pendientes-mount .todo-toolbar {
+  order: 1;
+  flex-shrink: 0;
+}
+
+.exp-pendientes-mount .todo-list,
+.exp-pendientes-mount .todo-empty {
+  order: 2;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .exp-pendientes-mount .todo-composer {
-  border: var(--border-hairline);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  box-shadow: var(--elev-flat);
-  overflow: hidden;
-}
-
-.exp-pendientes-mount .todo-composer .todo-add-row {
-  margin: 0;
+  order: 3;
+  flex-shrink: 0;
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 10px 12px;
   border: none;
-  border-radius: 0;
-  border-bottom: none;
+  border-bottom: 1px solid var(--divider);
+  border-radius: var(--radius-md);
   background: transparent;
   box-shadow: none;
-  border-left-color: transparent;
-  padding: 12px 12px 10px;
+}
+
+.exp-pendientes-mount .todo-composer > .todo-add-row {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.exp-pendientes-mount .todo-composer .todo-prio-chip {
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.exp-pendientes-mount .todo-composer input[type='text'] {
+  min-width: 0;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.exp-pendientes-mount .todo-composer input[type='text']:hover:not(:focus) {
+  border-color: color-mix(in oklab, var(--border) 70%, transparent);
+  background: color-mix(in oklab, var(--surface) 35%, transparent);
+}
+
+.exp-pendientes-mount .todo-composer input[type='text']:focus {
+  outline: none;
+  border-color: var(--action);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action) 18%, transparent);
+}
+
+.exp-pendientes-mount .todo-composer .todo-add-btn {
+  justify-self: stretch;
+  width: 100%;
+  min-height: 0;
+  padding: 8px 10px;
+  font-size: 13px;
 }
 
 .exp-pendientes-mount .todo-composer .todo-due-section {
-  grid-column: unset;
+  grid-column: 3 / 4;
   margin: 0;
-  padding: 0 12px 12px calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
+  padding: 0 8px;
   border-top: none;
+  align-self: start;
+  gap: 4px;
+}
+
+.exp-pendientes-mount .todo-composer .todo-due-section-primary {
+  width: 100%;
+}
+
+.exp-pendientes-mount .todo-composer .todo-due-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+}
+
+.exp-pendientes-mount .todo-composer .todo-due-preset-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  line-height: 1.2;
 }
 
 .exp-pendientes-mount .todo-toolbar {
@@ -165,33 +279,28 @@ html.ui-density-normal .patient-expediente-classic {
 }
 
 .exp-pendientes-mount .todo-row {
-  border: var(--border-hairline);
-  border-left-width: 3px;
-  border-left-style: solid;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--elev-flat);
+  border: none;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  box-shadow: none;
   margin: 0;
-  background: var(--surface);
-  border-bottom: none;
-  transition:
-    background var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 .exp-pendientes-mount .todo-row.prio-alta,
 .exp-pendientes-mount .todo-row.prio-media,
 .exp-pendientes-mount .todo-row.prio-baja {
-  background: var(--surface);
+  background: transparent;
 }
 
 .exp-pendientes-mount .todo-row--handoff {
-  background: color-mix(in oklab, var(--action) 5%, var(--surface));
+  background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
 .exp-pendientes-mount .todo-row:hover {
-  border-color: color-mix(in oklab, var(--action) 14%, var(--border));
-  box-shadow: var(--elev-raised);
+  background: color-mix(in oklab, var(--action) 4%, transparent);
 }
 
 .exp-pendientes-mount .todo-empty {
@@ -234,13 +343,19 @@ html.ui-density-normal .patient-expediente-classic {
   box-shadow: var(--focus-ring);
 }
 
-/* Historia / eventualidades / VPO / receta mounts */
+/* Historia / eventualidades / VPO mounts (fuera de segment-panel o modal) */
 #patient-expediente .hc-step-body,
 .patient-expediente-classic .hc-step-body,
-#patient-expediente .ev-panel,
-.patient-expediente-classic .ev-panel,
 #patient-expediente .vpo-panel,
 .patient-expediente-classic .vpo-panel {
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-raised);
+  background: var(--surface);
+}
+
+#patient-expediente .ev-panel,
+.patient-expediente-classic .ev-panel {
   border: var(--border-hairline);
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-raised);

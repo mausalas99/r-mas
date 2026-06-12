@@ -3884,7 +3884,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 10px 14px;
   cursor: pointer;
   list-style: none;
   font-weight: 700;
@@ -3938,15 +3938,15 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px;
+  padding: 12px 14px 14px;
 }
 
 .clinical-lan-user-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 12px 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 38%);
+  gap: 12px 18px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
@@ -4035,7 +4035,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-lan-user-card-assign {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) auto auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 156px;
   gap: 8px;
   align-items: center;
   min-width: 0;
@@ -4048,11 +4048,34 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   font-size: 0.8125rem;
 }
 
-.clinical-lan-user-card-assign .clinical-lan-assign-btn,
-.clinical-lan-user-card-assign .clinical-lan-delete-user-btn {
-  min-height: 34px;
+.clinical-lan-assign-actions {
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 156px;
+  padding: 2px;
+  border: var(--border-hairline, 1px solid var(--border));
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in oklab, var(--surface) 65%, var(--bg));
+}
+
+.clinical-lan-assign-actions .clinical-lan-assign-btn,
+.clinical-lan-assign-actions .clinical-lan-delete-user-btn {
+  min-height: 32px;
   padding-inline: 12px;
   white-space: nowrap;
+  border: none;
+  box-shadow: none;
+}
+
+.clinical-lan-assign-actions .clinical-lan-assign-btn + .clinical-lan-delete-user-btn {
+  border-left: 1px solid color-mix(in oklab, var(--border) 80%, var(--action));
+}
+
+.clinical-lan-delete-user-btn--placeholder {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (max-width: 1040px) {
@@ -4064,9 +4087,15 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
     grid-template-columns: 1fr 1fr;
   }
 
-  .clinical-lan-user-card-assign .clinical-lan-assign-btn,
-  .clinical-lan-user-card-assign .clinical-lan-delete-user-btn {
-    grid-column: span 1;
+  .clinical-lan-assign-actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    min-width: 0;
+  }
+
+  .clinical-lan-assign-actions .clinical-lan-assign-btn,
+  .clinical-lan-assign-actions .clinical-lan-delete-user-btn {
+    flex: 1 1 0;
   }
 }
 

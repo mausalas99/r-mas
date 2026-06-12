@@ -4,7 +4,7 @@
 import { renderEntry } from "../labs.js";
 import { storage } from "../storage.js";
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from "../tend-core.mjs";
-import { dosisBeforeSlash } from "../med-receta-core.mjs";
+import { dosisBeforeSlash, effectiveDiaTratamiento } from "../med-receta-core.mjs";
 import { patients, medRecetaByPatient } from "../app-state.mjs";
 import {
   isPaseMode,
@@ -73,8 +73,8 @@ import {
   resetExpedientePaneLayoutCache,
   syncConsolidatedPaneVisibility,
   syncConsolidatedSegmentBars,
-  syncPacienteDatosLayoutMode,
 } from "../expediente-tabs.mjs";
+import { wirePatientDatosModalOnce } from "../patient-datos-modal.mjs";
 import { isMobileWeb } from "../mobile-web.mjs";
 import {
   renderExpedienteGroupRow,
@@ -688,10 +688,14 @@ export function renderPaseBoard() {
       var freq = String(it.frecuenciaRaw || "").trim();
       var dosis = cleanPaseMedDosisForCard(it.dosisRaw || "");
       var dosisSplit = dosis ? splitPaseMedDosisForDisplay(dosis) : { core: "", extra: "", splitOk: false };
-      var diaBadge =
+      var diaDisplay =
         it.diaTratamiento != null
+          ? effectiveDiaTratamiento(it.diaTratamiento, block && block.fechaActualizacion)
+          : null;
+      var diaBadge =
+        diaDisplay != null
           ? '<div class="pase-med-dia-badge" title="Día de tratamiento">Día ' +
-            esc(String(it.diaTratamiento)) +
+            esc(String(diaDisplay)) +
             "</div>"
           : "";
       var metaParts = [];
@@ -1065,16 +1069,6 @@ if (typeof document !== "undefined") {
 })();
 }
 
-function wireExpedienteDatosCollapseRender() {
-  var el = document.getElementById("exp-datos-collapse");
-  if (!el || el._expDatosRenderWired) return;
-  el._expDatosRenderWired = true;
-  el.addEventListener("toggle", function () {
-    syncPacienteDatosLayoutMode();
-    if (el.open) renderPatientDataPane();
-  });
-}
-
 export function syncInnerTabVisualOnly() {
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
@@ -1323,7 +1317,7 @@ export function renderInnerTabs() {
   setOrder("itab-resultados", order++);
   if (sala && !isMobileWeb()) setOrder("itab-salida", order++);
   show("itab-salida", sala && !isMobileWeb());
-  wireExpedienteDatosCollapseRender();
+  wirePatientDatosModalOnce();
   wireGroupRowBreakpointResync(syncInnerTabVisualOnly);
   var activeInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   if (activeInner !== rt.getActiveInner()) rt.setActiveInner(activeInner);

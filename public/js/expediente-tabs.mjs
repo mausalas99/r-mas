@@ -3,6 +3,7 @@
  */
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
+import { openPatientDatosModal } from './patient-datos-modal.mjs';
 
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
@@ -59,8 +60,6 @@ export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 /** @deprecated use getClinicoSections(settings) */
 export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
 
-const DATOS_COLLAPSE_LS = 'rpc-exp-datos-open';
-
 const GRANULAR_PANE_ORDER = [
   'datos',
   'notas',
@@ -107,7 +106,7 @@ function paneMountSpec(granularTab, settings) {
       : { composite: 'clinico', selector: '.exp-segment-body--clinico' };
   }
   var map = {
-    datos: { composite: 'paciente', selector: '.exp-datos-mount' },
+    datos: { composite: null, selector: null },
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
@@ -210,53 +209,6 @@ export function consolidatedInnerTabButtonId(tab, settings) {
   return 'itab-' + consolidatedTabForGranular(tab, settings);
 }
 
-export function isDatosCollapseOpen() {
-  var el = document.getElementById('exp-datos-collapse');
-  return !!(el && el.open);
-}
-
-/** Scroll del formulario en el panel Paciente (details no acota bien con flex). */
-export function syncPacienteDatosLayoutMode() {
-  var pane = document.getElementById('itab-content-paciente');
-  var el = document.getElementById('exp-datos-collapse');
-  if (!pane) return;
-  pane.classList.toggle('exp-paciente-datos-open', !!(el && el.open));
-}
-
-export function setDatosCollapseOpen(open, persist) {
-  var el = document.getElementById('exp-datos-collapse');
-  if (!el) return;
-  el.open = !!open;
-  syncPacienteDatosLayoutMode();
-  if (persist !== false) {
-    try {
-      localStorage.setItem(DATOS_COLLAPSE_LS, open ? '1' : '0');
-    } catch (_e) {
-      /* ignore */
-    }
-  }
-}
-
-export function restoreDatosCollapsePreference() {
-  var el = document.getElementById('exp-datos-collapse');
-  if (!el) return;
-  try {
-    el.open = localStorage.getItem(DATOS_COLLAPSE_LS) === '1';
-  } catch (_e) {
-    el.open = false;
-  }
-  syncPacienteDatosLayoutMode();
-}
-
-export function wireDatosCollapsePersistence() {
-  var el = document.getElementById('exp-datos-collapse');
-  if (!el || el._expDatosWired) return;
-  el._expDatosWired = true;
-  el.addEventListener('toggle', function () {
-    setDatosCollapseOpen(el.open, true);
-  });
-}
-
 function paneEl(granularTab) {
   return document.getElementById('itab-content-' + granularTab);
 }
@@ -325,8 +277,6 @@ export function applyExpedientePaneLayout(settings) {
   if (layoutMode === next) return;
   layoutMode = next;
   mountConsolidatedNested(settings || {});
-  restoreDatosCollapsePreference();
-  wireDatosCollapsePersistence();
   syncConsolidatedSegmentBarVisibility(settings || {});
 }
 
@@ -382,6 +332,10 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
     composite.hidden = !pane.visible;
     composite.classList.toggle('active', pane.active);
   });
+  var datosActions = document.getElementById('exp-paciente-datos-actions');
+  if (datosActions) {
+    datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
+  }
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;
@@ -408,7 +362,11 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
     var recetaPane = paneEl('recetaHu');
     if (recetaPane) recetaPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'recetaHu');
   }
-  if (datosPane) datosPane.classList.toggle('active', target.tab === 'paciente');
+  if (datosPane) {
+    var datosInModal = !!datosPane.closest('#exp-datos-modal-mount');
+    datosPane.classList.toggle('active', datosInModal);
+    datosPane.hidden = !datosInModal;
+  }
   if (todoPane) todoPane.classList.toggle('active', target.tab === 'paciente');
-  if (granularTab === 'datos') setDatosCollapseOpen(true, true);
+  if (granularTab === 'datos') openPatientDatosModal();
 }

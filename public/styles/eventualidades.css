@@ -20,7 +20,7 @@
 
 .ev-panel__head {
   flex-shrink: 0;
-  padding: 0 4px 2px;
+  padding: 0 6px 4px;
 }
 
 .ev-panel__hint {
@@ -36,7 +36,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: clip;
-  padding: 4px 2px calc(10px * var(--density-space, 1));
+  padding: 4px 4px calc(10px * var(--density-space, 1));
 }
 
 .ev-timeline--empty {
@@ -267,7 +267,7 @@
 /* ── Composición ──────────────────────────────────────────── */
 .ev-compose {
   flex-shrink: 0;
-  padding: 0 2px 2px;
+  padding: 0 4px 2px;
 }
 
 .ev-compose__card {

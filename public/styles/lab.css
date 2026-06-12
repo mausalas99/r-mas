@@ -316,9 +316,20 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-composer {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: grid;
+  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  padding: 10px 12px 12px;
+}
+
+.todo-composer > .todo-add-row {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .todo-toolbar {
@@ -414,11 +425,58 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-section {
+  grid-column: 3 / -2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+}
+
+.todo-due-section-primary {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 0 12px 10px;
+}
+
+.todo-due-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.todo-due-preset-chip {
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  color: var(--text-muted);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease,
+    color var(--dur-fast, 0.15s) ease;
+}
+
+.todo-due-preset-chip:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.todo-due-preset-chip.is-active {
+  color: var(--action);
+  border-color: color-mix(in oklab, var(--action) 42%, var(--border));
+  background: color-mix(in oklab, var(--action) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--action) 18%, transparent);
 }
 
 .todo-due-toggle {
@@ -455,6 +513,267 @@ html.dark .todo-text-input:focus {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.todo-due-modal-presets-zone {
+  margin: 0 0 14px;
+}
+
+.todo-due-modal-presets-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+
+.todo-due-modal-presets-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.todo-due-modal-section-label {
+  display: block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.todo-due-edit-presets-btn {
+  border: none;
+  background: transparent;
+  color: var(--action);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.todo-due-edit-presets-btn:hover {
+  color: color-mix(in oklab, var(--action) 82%, var(--text));
+}
+
+.todo-due-reset-presets-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.todo-due-reset-presets-btn:hover {
+  color: var(--text);
+}
+
+.todo-due-modal-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.todo-due-modal-presets[hidden],
+.todo-due-modal-preset-edit[hidden] {
+  display: none;
+}
+
+.todo-due-modal-preset-edit-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  overflow: hidden;
+}
+
+.todo-due-preset-edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.75rem 32px;
+  align-items: stretch;
+  min-height: 36px;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+  background: transparent;
+}
+
+.todo-due-preset-edit-row:last-child {
+  border-bottom: none;
+}
+
+.todo-due-preset-edit-row--custom {
+  grid-template-columns: minmax(0, 1fr) auto 32px;
+}
+
+.todo-due-preset-label-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+}
+
+.todo-due-preset-label-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.todo-due-preset-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.75rem;
+  padding: 0 6px;
+  border-left: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+  box-sizing: border-box;
+}
+
+.todo-due-preset-value--custom {
+  width: auto;
+  min-width: 7.25rem;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.todo-due-preset-mode-select {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  max-width: 4.25rem;
+}
+
+.todo-due-preset-time-input,
+.todo-due-preset-hours-input {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  outline: none;
+  padding: 0;
+  min-height: 0;
+  box-shadow: none;
+  text-align: center;
+}
+
+.todo-due-preset-time-input {
+  width: 100%;
+  color-scheme: dark light;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.todo-due-preset-time-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.todo-due-preset-hours-input {
+  width: 2ch;
+  min-width: 1.5ch;
+  -moz-appearance: textfield;
+}
+
+.todo-due-preset-hours-input::-webkit-outer-spin-button,
+.todo-due-preset-hours-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.todo-due-preset-hours-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.todo-due-preset-hours-suffix {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.todo-due-preset-delete {
+  border: none;
+  border-left: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  width: 32px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.todo-due-preset-delete:hover {
+  color: var(--error);
+  background: color-mix(in oklab, var(--error) 8%, transparent);
+}
+
+.todo-due-preset-edit-empty {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  border: 1px dashed color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.todo-due-add-preset-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.todo-due-add-preset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px dashed color-mix(in oklab, var(--border) 82%, transparent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--action);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.todo-due-add-preset-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.todo-due-modal-presets-zone.is-editing + .todo-due-modal-when {
+  margin-top: 2px;
 }
 
 .todo-due-modal-when {

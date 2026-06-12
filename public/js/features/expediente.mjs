@@ -12,6 +12,7 @@ import {
   patientTeamAssignWindowHandlers,
   wirePatientTeamAssignRefresh,
 } from "../patient-team-assign-ui.mjs";
+import { patientDatosModalWindowHandlers } from "../patient-datos-modal.mjs";
 import { buildPatientIngresoFechasHtml } from "../patient-data-ingreso-ui.mjs";
 import { refreshRpcDateFields } from "../rpc-date-picker.mjs";
 import {
@@ -1230,10 +1231,9 @@ function renderPatientDataPane() {
     return;
   }
   wrap.dataset.patientId = String(patient.id);
-  var embedded = !!wrap.closest('.exp-datos-mount');
-  var datosMount = wrap.closest('.exp-datos-mount');
+  var datosMount = wrap.closest('.exp-datos-modal-body') || wrap.closest('#exp-datos-modal-mount');
   if (datosMount) datosMount.dataset.patientId = String(patient.id);
-  wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded: embedded });
+  wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded: true });
   refreshRpcDateFields(wrap);
   wirePatientTeamAssignRefresh();
 }
@@ -1271,5 +1271,6 @@ export const windowHandlers = Object.assign(
   },
   patientDataCensoWindowHandlers,
   patientDataAccesosWindowHandlers,
-  patientTeamAssignWindowHandlers
+  patientTeamAssignWindowHandlers,
+  patientDatosModalWindowHandlers
 );

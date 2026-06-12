@@ -40,6 +40,7 @@ import {
   DIET_PENDING_KEYS,
   estadoClinicoForDisplay,
   estadoClinicoForText,
+  resolveManejoFechaActualizacion,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
 import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
@@ -238,10 +239,15 @@ function hasDietProposal(pendienteReceta) {
  * @param {ReturnType<typeof emptyMonitoreo>} monitoreo
  * @param {string | null} activeId
  */
+function eaManejoFechaOpts(activeId) {
+  var fechaActualizacion = resolveManejoFechaActualizacion(activeId, medRecetaByPatient);
+  return fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : {};
+}
+
 function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var pend = monitoreo.pendienteReceta || {};
   var dietPending = hasDietProposal(pend);
-  var ec = estadoClinicoForDisplay(monitoreo);
+  var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId));
   var snapshot = deriveSnapshot(monitoreo);
   var dietWeight = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
@@ -468,8 +474,9 @@ function generateEstadoActualText(monitoreo, patient) {
     pesoRef: monitoreo.estadoClinico && monitoreo.estadoClinico.pesoRef,
   });
   if (monitoreo.estadoClinico) syncDietKcalFromWeight(monitoreo.estadoClinico, weightKg);
+  var activeId = rt.getActiveId();
   return buildEstadoActualText(
-    estadoClinicoForText(monitoreo),
+    estadoClinicoForText(monitoreo, eaManejoFechaOpts(activeId)),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
     { patientPeso: patient && patient.peso }

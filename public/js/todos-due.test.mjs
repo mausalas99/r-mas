@@ -5,10 +5,20 @@ import {
   todoCompareForDueSort,
   computeReminderAt,
   formatTodoDueLabel,
+  formatTodoDuePresetAutoLabel,
+  addTodoDuePreset,
+  getTodoDuePresets,
+  mergeTodoDuePreset,
   parseDuePreset,
+  dueDateFromPresetDef,
   isoToDatetimeLocalValue,
   parseDatetimeLocalToIso,
+  TODO_DUE_PRESET_DEFAULTS,
 } from './todos-due.mjs';
+
+function presetsWithoutDeleted(overrides) {
+  return getTodoDuePresets(overrides).map((p) => p.id);
+}
 
 const NOW = new Date('2026-06-11T12:00:00.000Z');
 
@@ -224,6 +234,64 @@ test('parseDuePreset — unknown preset returns nulls', () => {
     dueDate: null,
     reminderAt: null,
   });
+});
+
+test('getTodoDuePresets — merges saved hour override', () => {
+  const presets = getTodoDuePresets({ 'hoy-18': { hour: 20, minute: 30 } });
+  const hoy = presets.find((p) => p.id === 'hoy-18');
+  assert.equal(hoy.hour, 20);
+  assert.equal(hoy.minute, 30);
+  assert.equal(hoy.label, 'Hoy 20:30');
+});
+
+test('formatTodoDuePresetAutoLabel — offset hours', () => {
+  const preset = mergeTodoDuePreset(TODO_DUE_PRESET_DEFAULTS[2], { hours: 5 });
+  assert.equal(formatTodoDuePresetAutoLabel(preset), 'En 5 h');
+});
+
+test('getTodoDuePresets — includes custom shortcuts from storage map', () => {
+  const presets = getTodoDuePresets({
+    'custom-abc': { custom: true, kind: 'offsetHours', hours: 6 },
+    'custom-def': {
+      custom: true,
+      kind: 'dayTime',
+      dayOffset: 1,
+      hour: 9,
+      minute: 30,
+    },
+  });
+  const offset = presets.find((p) => p.id === 'custom-abc');
+  const fixed = presets.find((p) => p.id === 'custom-def');
+  assert.ok(offset);
+  assert.equal(offset.hours, 6);
+  assert.equal(offset.label, 'En 6 h');
+  assert.ok(fixed);
+  assert.equal(fixed.label, 'Mañana 09:30');
+});
+
+test('getTodoDuePresets — hides deleted shortcuts', () => {
+  const ids = presetsWithoutDeleted({
+    'hoy-18': { deleted: true },
+    'en-3h': { deleted: true },
+  });
+  assert.deepEqual(ids, ['manana-8', 'en-24h']);
+});
+
+test('getTodoDuePresets — all builtins deleted returns empty', () => {
+  const ids = presetsWithoutDeleted({
+    'hoy-18': { deleted: true },
+    'manana-8': { deleted: true },
+    'en-3h': { deleted: true },
+    'en-24h': { deleted: true },
+  });
+  assert.deepEqual(ids, []);
+});
+
+test('dueDateFromPresetDef — offset hours uses configured value', () => {
+  const preset = mergeTodoDuePreset(TODO_DUE_PRESET_DEFAULTS[2], { hours: 4 });
+  const ref = new Date('2026-06-11T12:00:00.000Z');
+  const due = dueDateFromPresetDef(preset, ref);
+  assert.equal(due.toISOString(), new Date(ref.getTime() + 4 * 60 * 60 * 1000).toISOString());
 });
 
 test('isoToDatetimeLocalValue and parseDatetimeLocalToIso round-trip local fields', () => {

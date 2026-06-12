@@ -11,9 +11,10 @@
   position: fixed;
   z-index: 1301;
   top: 14vh;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   width: min(560px, calc(100vw - 32px));
+  margin-inline: auto;
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;

@@ -1542,7 +1542,19 @@ html.dark .tend-group-tab.active { color: var(--text); }
   color: var(--text-muted);
   cursor: grab;
   user-select: none;
+  touch-action: none;
   line-height: 1;
+  padding: 4px 8px;
+  margin: -4px -4px -4px 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.tend-group-panel-drag-hint:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--action) 8%, transparent);
+}
+.tend-group-panel-drag-hint:active {
+  cursor: grabbing;
 }
 .tend-group-drag-hovercard.tend-group-panel-card {
   box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));

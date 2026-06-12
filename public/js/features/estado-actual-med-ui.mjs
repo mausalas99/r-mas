@@ -1,6 +1,6 @@
 import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
-import { buildMedDropdownOptions } from './estado-actual-meds.mjs';
-import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
+import { buildMedDropdownOptions, resolveManejoFechaActualizacion } from './estado-actual-meds.mjs';
+import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 
 /** @type {Record<string, string>} */
 export const EA_MED_FIELD_LABELS = {
@@ -107,11 +107,23 @@ function medCatPreviewText(items) {
  * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
  * @returns {string}
  */
+function displayAbxLine(text, activeId, medRecetaByPatient) {
+  var fecha = resolveManejoFechaActualizacion(activeId, medRecetaByPatient);
+  if (!fecha || !text) return text;
+  return advanceAbxMedTextForManejoDate(String(text), fecha);
+}
+
 export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient) {
   var ec = monitoreo.estadoClinico || {};
   var pend = monitoreo.pendienteReceta || {};
   var items = parseMedFieldItems(ec[key]);
   var pendingVal = pend[key] != null ? String(pend[key]).trim() : '';
+  if (key === 'abx') {
+    items = items.map(function (line) {
+      return displayAbxLine(line, activeId, medRecetaByPatient);
+    });
+    if (pendingVal) pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient);
+  }
   var label = EA_MED_FIELD_LABELS[key] || key;
   var options = buildMedDropdownOptions(
     activeId,
@@ -130,7 +142,13 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
     '<option value="">+ Desde receta…</option>' +
     options
       .map(function (opt) {
-        return '<option value="' + escAttr(opt) + '">' + escHtml(opt) + '</option>';
+        return (
+          '<option value="' +
+          escAttr(opt.value) +
+          '">' +
+          escHtml(opt.label) +
+          '</option>'
+        );
       })
       .join('');
 

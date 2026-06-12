@@ -39,9 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.4](https://github.com/mausalas99/r-mas/releases/tag/v7.3.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.5](https://github.com/mausalas99/r-mas/releases/tag/v7.3.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.3.5 (LAN hardening, host durability y pulido UI)
+
+- **LAN** — purga con guard de propiedad en servidor; bloqueo 5 min tras 8 PIN fallidos.
+- **Anfitrión** — persistencia más fiable al cerrar; errores de disco visibles en diagnóstico.
+- **Rendimiento** — caché de blobs parseados; parser unificado de cultivos.
+- **Clínico** — modal **Datos del paciente**; ATB por día según fecha de Manejo; presets de vencimiento editables.
+
+Notas: `docs/RELEASE_NOTES_7.3.5.txt`.
 
 ## R+ 7.3.4 (perf, pendientes con vencimiento y censo virtual)
 

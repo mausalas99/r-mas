@@ -270,10 +270,9 @@ html.ui-density-normal #main-area {
   background: var(--surface);
   overflow: hidden;
 }
-.patient-expediente-classic > .inner-tab-bar {
+.patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
   margin-bottom: 0;
-  background: var(--surface);
-  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  background: transparent;
 }
 .patient-expediente-classic > .expediente-panes-host {
   flex: 1;

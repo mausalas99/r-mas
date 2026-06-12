@@ -468,12 +468,14 @@ function renderLanUserRowHtml(u, teamList, opts = {}) {
       <select id="clinical-lan-cycle-${userId}" class="profile-input clinical-lan-assign-cycle" title="Ciclo del integrante" ${placement?.teamId ? '' : 'disabled'}>
         ${cycleOptions}
       </select>
-      <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
-      ${
-        canDelete
-          ? `<button type="button" class="btn-med-secondary clinical-lan-delete-user-btn" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base clínica en esta Mac">Quitar</button>`
-          : ''
-      }
+      <span class="clinical-lan-assign-actions" role="group" aria-label="Acciones">
+        <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+        <button type="button" class="btn-med-secondary clinical-lan-delete-user-btn${
+          canDelete ? '' : ' clinical-lan-delete-user-btn--placeholder'
+        }" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base clínica en esta Mac"${
+          canDelete ? '' : ' disabled tabindex="-1" aria-hidden="true"'
+        }>Quitar</button>
+      </span>
     </div>
   </article>`;
 }

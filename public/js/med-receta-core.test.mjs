@@ -14,6 +14,11 @@ import {
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
   extractDiaTratamiento,
+  parseFechaDMYToLocalDate,
+  calendarDaysSinceFechaDMY,
+  advanceDiaInMedSoapText,
+  advanceAbxMedTextForManejoDate,
+  effectiveDiaTratamiento,
   setDiaTratamientoInDosis,
   incrementMedItemsDiaTratamiento,
   classifyMedicationSoapCategory,
@@ -73,6 +78,78 @@ test('parseMedicationPaste lee DIA# en ertapenem (1 G // *DIA# 3*)', () => {
   assert.equal(r.items.length, 1);
   assert.equal(r.items[0].diaTratamiento, 3);
   assert.equal(r.items[0].dosisRaw, '1 G // *DIA# 3*');
+});
+
+test('calendarDaysSinceFechaDMY cuenta días calendario hasta refDate', () => {
+  var ref = new Date(2026, 5, 12);
+  assert.equal(calendarDaysSinceFechaDMY('10/06/2026', ref), 2);
+  assert.equal(calendarDaysSinceFechaDMY('12/06/2026', ref), 0);
+  assert.equal(calendarDaysSinceFechaDMY('13/06/2026', ref), 0);
+});
+
+test('advanceAbxMedTextForManejoDate avanza DIA según fecha de Manejo', () => {
+  var ref = new Date(2026, 5, 12);
+  assert.equal(
+    advanceAbxMedTextForManejoDate('MEROPENEM 1G IV C/8H DIA 10', '10/06/2026', ref),
+    'MEROPENEM 1G IV C/8H DIA 12'
+  );
+  assert.equal(
+    advanceAbxMedTextForManejoDate(
+      'MEROPENEM 1G IV C/8H DIA 10 | VANCOMICINA 1.5G IV C/12H DIA 4',
+      '10/06/2026',
+      ref
+    ),
+    'MEROPENEM 1G IV C/8H DIA 12 | VANCOMICINA 1.5G IV C/12H DIA 6'
+  );
+});
+
+test('parseFechaDMYToLocalDate rechaza fechas inválidas', () => {
+  assert.equal(parseFechaDMYToLocalDate('31/02/2026'), null);
+  assert.deepEqual(parseFechaDMYToLocalDate('10/06/2026'), new Date(2026, 5, 10));
+});
+
+test('advanceDiaInMedSoapText sin offset devuelve texto igual', () => {
+  assert.equal(advanceDiaInMedSoapText('CEFTRIAXONA DIA 3', 0), 'CEFTRIAXONA DIA 3');
+});
+
+test('effectiveDiaTratamiento avanza desde fecha de Manejo', () => {
+  var ref = new Date(2026, 5, 12);
+  assert.equal(effectiveDiaTratamiento(10, '10/06/2026', ref), 12);
+  assert.equal(effectiveDiaTratamiento(10, '', ref), 10);
+});
+
+test('formatMedicationSoapShort con fechaActualizacion muestra DIA efectivo', () => {
+  var ref = new Date(2026, 5, 12);
+  assert.equal(
+    formatMedicationSoapShort(
+      {
+        nombreRaw: 'MEROPENEM 1 G',
+        viaRaw: 'VIA INTRAVENOSA',
+        dosisRaw: '1 G',
+        frecuenciaRaw: 'CADA 8 HORAS',
+        diaTratamiento: 10,
+        suspendido: false,
+      },
+      { fechaActualizacion: '10/06/2026', refDate: ref }
+    ),
+    'MEROPENEM 1 G IV C/8H DIA 12'
+  );
+});
+
+test('formatMedicationEgresoLine con fechaActualizacion muestra DÍA efectivo', () => {
+  var ref = new Date(2026, 5, 12);
+  var line = formatMedicationEgresoLine(
+    {
+      nombreRaw: 'METRONIDAZOL 500 MG',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '500 MG',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      diaTratamiento: 3,
+      suspendido: false,
+    },
+    { fechaActualizacion: '10/06/2026', refDate: ref }
+  );
+  assert.match(line, /DÍA 5 DE TRATAMIENTO/);
 });
 
 test('extractDiaTratamiento acepta DIA # con espacio y sin asteriscos', () => {

@@ -163,7 +163,7 @@ export function buildPatientTeamAssignSectionHtml(patient) {
   return (
     '<div class="field-group patient-team-assign-block">' +
     '<label for="patient-team-assign-select">Equipo</label>' +
-    '<select id="patient-team-assign-select" class="profile-input" style="font-size:13px;width:100%;" onchange="onPatientTeamAssignChange(this.value)">' +
+    '<select id="patient-team-assign-select" class="profile-input patient-team-assign-select" onchange="onPatientTeamAssignChange(this.value)">' +
     '<option value="">' +
     esc(placeholder) +
     '</option>' +
@@ -184,7 +184,8 @@ export function buildPatientTeamAssignSectionHtml(patient) {
 function activePatientIdFromDom() {
   const wrap = document.getElementById('patient-data-form');
   if (wrap && wrap.dataset.patientId) return String(wrap.dataset.patientId);
-  const mount = document.querySelector('.exp-datos-mount');
+  const mount =
+    document.getElementById('exp-datos-modal-mount') || document.querySelector('.exp-datos-mount');
   if (mount && mount.dataset.patientId) return String(mount.dataset.patientId);
   return '';
 }

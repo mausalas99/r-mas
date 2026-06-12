@@ -122,13 +122,45 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  justify-content: flex-end;
   margin-left: auto;
 }
+.med-active-btn-group {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  border: var(--border-hairline, 1px solid var(--border));
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in oklab, var(--surface) 65%, var(--bg));
+}
+.med-active-btn-group .btn-med-secondary {
+  border: none;
+  box-shadow: none;
+  min-height: 38px;
+  padding: 7px 14px;
+}
+.med-active-btn-group .btn-med-secondary:hover {
+  box-shadow: none;
+}
+.med-active-btn-group .btn-med-secondary + .btn-med-secondary {
+  border-left: 1px solid color-mix(in oklab, var(--border) 80%, var(--action));
+  padding-left: 12px;
+}
 .med-active-fecha {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   white-space: nowrap;
+  padding: 4px 0;
+}
+.med-active-fecha:not([hidden])::before {
+  content: "·";
+  margin-right: 8px;
+  color: color-mix(in oklab, var(--text-muted) 55%, transparent);
+  font-weight: 400;
 }
 .med-active-card-body {
   display: flex;
@@ -451,69 +483,81 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   display: flex;
 }
 
-.exp-datos-collapse {
-  flex-shrink: 0;
-  border: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+/* Datos del paciente solo en modal — nunca inline en el host del expediente */
+.expediente-panes-host > #itab-content-datos {
+  display: none !important;
 }
 
-.exp-datos-collapse-summary {
-  cursor: pointer;
-  font-size: 13px;
+.exp-expediente-nav {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 0;
+  background: var(--surface);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+}
+
+.exp-expediente-nav > .inner-tab-bar {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.exp-expediente-nav > #exp-group-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.exp-expediente-nav-actions {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  padding: calc(6px * var(--density-space, 1)) calc(16px * var(--density-space, 1)) calc(6px * var(--density-space, 1))
+    calc(8px * var(--density-space, 1));
+}
+
+.exp-expediente-nav-actions[hidden] {
+  display: none !important;
+}
+
+.exp-expediente-nav .exp-datos-tab-action.btn-med-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: calc(5px * var(--density-space, 1)) calc(11px * var(--density-space, 1)) calc(5px * var(--density-space, 1))
+    calc(9px * var(--density-space, 1));
+  font-size: calc(12.5px * var(--density-font, 1));
   font-weight: 600;
-  padding: 10px 12px;
-  list-style: none;
-  user-select: none;
-  flex-shrink: 0;
-}
-
-.exp-datos-collapse-summary::-webkit-details-marker {
-  display: none;
-}
-
-.exp-datos-collapse-summary::before {
-  content: '▸';
-  display: inline-block;
-  margin-right: 8px;
-  transition: transform var(--dur-fast) var(--ease-out);
+  line-height: 1.25;
+  white-space: nowrap;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
   color: var(--text-muted);
+  box-shadow: none;
 }
 
-.exp-datos-collapse[open] .exp-datos-collapse-summary::before {
-  transform: rotate(90deg);
+.exp-expediente-nav .exp-datos-tab-action.btn-med-secondary:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--action) 7%, var(--surface));
+  color: var(--action);
+  box-shadow: none;
 }
 
-/* Datos abiertos: ocultar Pendientes; scroll en #itab-content-paciente (details+flex no acotan). */
-.exp-datos-collapse[open] ~ .exp-pendientes-mount {
-  display: none;
+.exp-expediente-nav .exp-datos-tab-action.btn-med-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
-#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open {
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+.exp-expediente-nav .exp-datos-tab-action svg {
+  flex-shrink: 0;
+  opacity: 0.9;
 }
 
-#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-collapse[open] {
-  display: block;
-  overflow: visible;
-}
-
-#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount {
-  overflow: visible;
-  flex: none;
-  min-height: auto;
-}
-
-#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount > .exp-segment-panel,
-#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount > .exp-segment-panel.active {
-  overflow: visible;
-  flex: 0 0 auto;
-  min-height: auto;
-}
-
-.exp-datos-mount,
 .exp-pendientes-mount,
 .exp-salida-mount {
   min-width: 0;
@@ -532,14 +576,67 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   min-height: 0;
 }
 
-.exp-datos-mount {
-  padding: 0 12px 12px;
-}
-
 .exp-datos-fields {
   display: flex;
   flex-direction: column;
   gap: calc(10px * var(--density-space, 1));
+}
+
+.patient-team-assign-block {
+  max-width: min(100%, 280px);
+}
+
+.patient-team-assign-select {
+  font-size: 13px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.exp-datos-modal {
+  width: min(94vw, 720px);
+  max-height: min(90vh, 840px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.exp-datos-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(16px * var(--density-space, 1)) calc(18px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.exp-datos-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.exp-datos-modal-body {
+  overflow: auto;
+  padding: calc(14px * var(--density-space, 1)) calc(18px * var(--density-space, 1)) calc(18px * var(--density-space, 1));
+  min-height: 0;
+}
+
+#exp-datos-modal-mount > #itab-content-datos {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.exp-datos-modal-body > .exp-segment-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  min-height: auto;
+  padding: 0;
+  flex: 1;
 }
 
 .patient-accesos-block {
@@ -744,10 +841,6 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 .exp-segment-panel:not(.active) {
   content-visibility: hidden;
   contain-intrinsic-size: auto 360px;
-}
-
-html.dark .exp-datos-collapse {
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
 }
 
 .drive-import-trigger {

@@ -18,6 +18,7 @@ import {
   SOAP_DESTINATION_LABELS,
   unassignedOtrosSoapItems,
   incrementMedItemsDiaTratamiento,
+  effectiveDiaTratamiento,
 } from "../med-receta-core.mjs";
 import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
@@ -212,8 +213,18 @@ function medPanelCacheKey(activeId) {
     "|D" +
     (block.dietas ? block.dietas.length : 0) +
     "|V" +
-    getMedSubview()
+    getMedSubview() +
+    "|cal" +
+    (function () {
+      var n = new Date();
+      return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+    })()
   );
+}
+
+function manejoDiaOpts(fechaActualizacion) {
+  var fecha = String(fechaActualizacion || "").trim();
+  return fecha ? { fechaActualizacion: fecha } : undefined;
 }
 
 export function renderMedRecetaPanel() {
@@ -288,7 +299,9 @@ export function renderMedRecetaPanel() {
   setMedDiaBtnVisible(true);
   if (fechaEl) {
     fechaEl.hidden = false;
-    fechaEl.textContent = "Actualizado " + (block.fechaActualizacion || "—");
+    var fechaTxt = block.fechaActualizacion || "—";
+    fechaEl.textContent = fechaTxt;
+    fechaEl.title = "Última importación SOME: " + fechaTxt;
   }
   var dietHtml = "";
   if (block.dietas && block.dietas.length) {
@@ -312,9 +325,10 @@ export function renderMedRecetaPanel() {
       "</div>";
   }
   var items = block.items || [];
+  var diaOpts = manejoDiaOpts(block.fechaActualizacion);
   var rows = items.map(function (it) {
     var sid = String(it.id || "");
-    var listLabel = formatMedicationSoapShort(it);
+    var listLabel = formatMedicationSoapShort(it, diaOpts);
     if (it.diaTratamiento != null) listLabel = listLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
     var label = esc(listLabel.slice(0, 160));
     var chk = it.suspendido ? " checked" : "";
@@ -345,9 +359,13 @@ export function renderMedRecetaPanel() {
         opts +
         "</select>";
     }
-    var diaCell =
+    var diaDisplay =
       it.diaTratamiento != null
-        ? '<span class="med-receta-dia">Día ' + esc(String(it.diaTratamiento)) + "</span>"
+        ? effectiveDiaTratamiento(it.diaTratamiento, block.fechaActualizacion)
+        : null;
+    var diaCell =
+      diaDisplay != null
+        ? '<span class="med-receta-dia">Día ' + esc(String(diaDisplay)) + "</span>"
         : "";
     return (
       '<div class="med-receta-row' +
@@ -408,8 +426,8 @@ export function renderMedRecetaPanel() {
     tabSimple.classList.toggle("active", medOutputTab === "simple");
     tabSimple.setAttribute("aria-selected", medOutputTab === "simple" ? "true" : "false");
   }
-  var txtFull = buildMedRecetaCopyText(items);
-  var txtSimple = buildMedRecetaNameOnlyText(items);
+  var txtFull = buildMedRecetaCopyText(items, diaOpts);
+  var txtSimple = buildMedRecetaNameOnlyText(items, diaOpts);
   var txt = medOutputTab === "simple" ? txtSimple : txtFull;
   outPre.textContent = txt;
   if (outCard) outCard.style.display = txt.trim() ? "block" : "none";
@@ -483,7 +501,8 @@ export function mediAnadirATratamiento() {
       return sel[it.id] && !it.suspendido;
     })
     .map(function (it) {
-      return formatMedicationEgresoLine(it);
+      var block = medRecetaByPatient[activeId];
+      return formatMedicationEgresoLine(it, manejoDiaOpts(block && block.fechaActualizacion));
     });
   if (!lines.length) {
     rt.showToast('Marca «SOAP» en al menos un medicamento activo', "error");
@@ -711,9 +730,11 @@ export function copiarMedicamentosAlPortapapeles() {
     rt.showToast("No hay medicamentos procesados", "error");
     return;
   }
-  var items = medRecetaByPatient[activeId].items || [];
-  var text = buildMedRecetaCopyText(items);
-  var simple = buildMedRecetaNameOnlyText(items);
+  var block = medRecetaByPatient[activeId];
+  var items = block.items || [];
+  var diaOpts = manejoDiaOpts(block.fechaActualizacion);
+  var text = buildMedRecetaCopyText(items, diaOpts);
+  var simple = buildMedRecetaNameOnlyText(items, diaOpts);
   if (medOutputTab === "simple") {
     text = simple;
   }

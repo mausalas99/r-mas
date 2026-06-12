@@ -897,10 +897,39 @@ var RELEASE_NOTES_730 = [
   },
 ];
 
+var RELEASE_NOTES_735 = [
+  {
+    title: 'LAN más seguro',
+    body:
+      'La <strong>purga de pacientes</strong> en el anfitrión valida propiedad en servidor (403 si no eres dueño). Tras <strong>8 PIN fallidos</strong> en el intercambio, bloqueo de <strong>5 minutos</strong>.',
+  },
+  {
+    title: 'Anfitrión confiable',
+    body:
+      'Al cerrar R+, el host hace <strong>flush</strong> del almacén LAN (tope 3 s). Los fallos de persistencia quedan registrados para diagnóstico en guardia.',
+  },
+  {
+    title: 'Datos del paciente en modal',
+    body:
+      'En el expediente, la pestaña <strong>Paciente</strong> abre en modal dedicado con la misma tarjeta demográfica y asignación de equipo.',
+  },
+  {
+    title: 'ATB y vencimientos',
+    body:
+      'En <strong>Estado actual</strong>, el texto de antibióticos avanza según la <strong>fecha de actualización</strong> de Manejo. Pendientes: presets <strong>Hoy 18:00</strong>, <strong>Mañana 8:00</strong>, <strong>En 3 h / 24 h</strong> editables.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.3.5 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; anfitrión y clientes deben coincidir para purga y PIN.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_734;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_735;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.5': RELEASE_NOTES_735,
   '7.3.4': RELEASE_NOTES_734,
   '7.3.3': RELEASE_NOTES_733,
   '7.3.2': RELEASE_NOTES_732,

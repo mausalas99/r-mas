@@ -22,6 +22,72 @@ export function extractDiaTratamiento(dosisRaw) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+/** @param {string} fechaDMY dd/mm/yyyy */
+export function parseFechaDMYToLocalDate(fechaDMY) {
+  var m = trimStr(fechaDMY).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  var day = parseInt(m[1], 10);
+  var mon = parseInt(m[2], 10) - 1;
+  var y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  var d = new Date(y, mon, day);
+  if (d.getFullYear() !== y || d.getMonth() !== mon || d.getDate() !== day) return null;
+  return d;
+}
+
+function startOfLocalDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Días calendario desde fechaDMY (inclusive) hasta refDate (por defecto hoy).
+ * @param {string} fechaDMY
+ * @param {Date} [refDate]
+ */
+export function calendarDaysSinceFechaDMY(fechaDMY, refDate) {
+  var start = parseFechaDMYToLocalDate(fechaDMY);
+  if (!start) return 0;
+  var ref = refDate ? startOfLocalDay(refDate) : startOfLocalDay(new Date());
+  var diff = Math.round((ref.getTime() - start.getTime()) / 86400000);
+  return diff > 0 ? diff : 0;
+}
+
+/** Suma dayOffset a cada marcador DIA n en texto SOAP (p. ej. MEROPENEM … DIA 10 → DIA 12). */
+export function advanceDiaInMedSoapText(text, dayOffset) {
+  var off = parseInt(dayOffset, 10);
+  if (!Number.isFinite(off) || off <= 0 || text == null || !String(text).trim()) {
+    return trimStr(text);
+  }
+  return String(text).replace(/\bDIA\s+(\d+)\b/gi, function (_m, n) {
+    return 'DIA ' + (parseInt(n, 10) + off);
+  });
+}
+
+/**
+ * Antibióticos en EA: el DIA guardado es relativo a fechaActualizacion de Manejo;
+ * en pantalla se avanza por días calendario transcurridos.
+ * @param {string} text
+ * @param {string} fechaActualizacion dd/mm/yyyy
+ * @param {Date} [refDate]
+ */
+export function advanceAbxMedTextForManejoDate(text, fechaActualizacion, refDate) {
+  var offset = calendarDaysSinceFechaDMY(fechaActualizacion, refDate);
+  return advanceDiaInMedSoapText(text, offset);
+}
+
+/**
+ * Día de tratamiento efectivo hoy (o refDate) respecto a fechaActualizacion de Manejo.
+ * @param {number | null | undefined} baseDia
+ * @param {string | null | undefined} fechaActualizacion
+ * @param {Date} [refDate]
+ */
+export function effectiveDiaTratamiento(baseDia, fechaActualizacion, refDate) {
+  if (baseDia == null || !Number.isFinite(baseDia)) return null;
+  var fecha = trimStr(fechaActualizacion);
+  if (!fecha) return baseDia;
+  return baseDia + calendarDaysSinceFechaDMY(fecha, refDate);
+}
+
 /** Reemplaza el primer marcador DIA# en dosisRaw conservando formato (*DIA# n*). */
 export function setDiaTratamientoInDosis(dosisRaw, dia) {
   var t = normalizeDiaMarkerText(trimStr(dosisRaw));
@@ -605,7 +671,11 @@ function instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido)
   return verb + ' ' + dosisPrincipal;
 }
 
-export function formatMedicationEgresoLine(item) {
+/**
+ * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} item
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
+ */
+export function formatMedicationEgresoLine(item, opts) {
   var viaNorm = normalizeVia(item.viaRaw);
   var nombreExpandido = applyNombreAccents(expandNombrePresentacion(item.nombreRaw));
   var dosisPrincipal = dosisBeforeSlash(item.dosisRaw);
@@ -648,13 +718,17 @@ export function formatMedicationEgresoLine(item) {
   var instr = instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido);
   var mid = instr + ' ' + viaNorm + ' ' + freqNorm;
 
-  if (item.diaTratamiento != null) {
+  var dia =
+    item.diaTratamiento != null
+      ? effectiveDiaTratamiento(item.diaTratamiento, opts && opts.fechaActualizacion, opts && opts.refDate)
+      : null;
+  if (dia != null) {
     return (
       nombreExpandido +
       ' || ' +
       mid +
       ' (DÍA ' +
-      item.diaTratamiento +
+      dia +
       ' DE TRATAMIENTO).'
     );
   }
@@ -662,12 +736,16 @@ export function formatMedicationEgresoLine(item) {
   return nombreExpandido + ' || ' + mid + ', SIN SUSPENDER HASTA NUEVO AVISO.';
 }
 
-export function buildMedRecetaCopyText(items) {
+/**
+ * @param {unknown[]} items
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
+ */
+export function buildMedRecetaCopyText(items, opts) {
   var list = (items || []).filter(function (it) {
     return it && !it.suspendido;
   });
   var lines = list.map(function (it) {
-    return formatMedicationEgresoLine(it);
+    return formatMedicationEgresoLine(it, opts);
   });
   return lines.join('\n\n');
 }
@@ -713,9 +791,10 @@ function compactSoapDrugName(nombreExpandido) {
 /**
  * Indicación compacta para SOAP / Estado Actual (p. ej. NIFEDIPINO 60MG VO C/12H, MEROPENEM 1G IV C/8H DIA 13).
  * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} item
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  * @returns {string}
  */
-export function formatMedicationSoapShort(item) {
+export function formatMedicationSoapShort(item, opts) {
   if (!item) return '';
   var nombre = compactSoapDrugName(applyNombreAccents(expandNombrePresentacion(item.nombreRaw)));
   var via = normalizeVia(item.viaRaw);
@@ -755,7 +834,11 @@ export function formatMedicationSoapShort(item) {
   if (dosisCompact) parts.push(dosisCompact);
   if (via) parts.push(soapViaShort(via));
   if (freqNorm) parts.push(soapFreqShort(freqNorm));
-  if (item.diaTratamiento != null) parts.push('DIA ' + item.diaTratamiento);
+  var dia =
+    item.diaTratamiento != null
+      ? effectiveDiaTratamiento(item.diaTratamiento, opts && opts.fechaActualizacion, opts && opts.refDate)
+      : null;
+  if (dia != null) parts.push('DIA ' + dia);
   return parts.join(' ');
 }
 
@@ -766,12 +849,16 @@ export function formatMedicationSoapShort(item) {
  * - Frecuencia.
  * - Día de uso cuando exista.
  */
-export function buildMedRecetaNameOnlyText(items) {
+/**
+ * @param {unknown[]} items
+ * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
+ */
+export function buildMedRecetaNameOnlyText(items, opts) {
   var list = (items || []).filter(function (it) {
     return it && !it.suspendido;
   });
   var lines = list.map(function (it) {
-    return formatMedicationSoapShort(it);
+    return formatMedicationSoapShort(it, opts);
   });
   return lines.join('\n');
 }

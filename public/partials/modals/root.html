@@ -107,10 +107,39 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="exp-datos-modal-backdrop" aria-hidden="true">
+  <div class="modal exp-datos-modal" role="dialog" aria-modal="true" aria-labelledby="exp-datos-modal-title" onclick="event.stopPropagation()">
+    <div class="exp-datos-modal-header">
+      <h3 id="exp-datos-modal-title">Datos del paciente</h3>
+      <button type="button" class="btn-icon-only exp-datos-modal-close" onclick="closePatientDatosModal()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="exp-datos-modal-mount" class="exp-datos-modal-body"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
   <div class="modal todo-due-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" onclick="event.stopPropagation()">
     <h3 id="todo-due-modal-title">Fecha límite</h3>
-    <p class="todo-due-modal-lead">Elige fecha y hora. Opcional: recordatorio al vencer.</p>
+    <p class="todo-due-modal-lead">Usa un atajo (editable) u otra fecha y hora. Opcional: recordatorio al vencer.</p>
+    <div class="todo-due-modal-presets-zone" id="todo-due-modal-presets-zone">
+      <div class="todo-due-modal-presets-head">
+        <span class="profile-field-label todo-due-modal-section-label">Atajos</span>
+        <div class="todo-due-modal-presets-head-actions">
+          <button type="button" class="todo-due-reset-presets-btn" id="todo-due-reset-presets-btn" hidden>Restablecer</button>
+          <button type="button" class="todo-due-edit-presets-btn" id="todo-due-edit-presets-btn" aria-expanded="false">Editar</button>
+        </div>
+      </div>
+      <div class="todo-due-modal-presets" id="todo-due-modal-presets" role="group" aria-label="Atajos de fecha límite"></div>
+      <div class="todo-due-modal-preset-edit" id="todo-due-modal-preset-edit" hidden>
+        <div class="todo-due-modal-preset-edit-rows" id="todo-due-modal-preset-edit-rows"></div>
+        <div class="todo-due-add-preset-actions">
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-offset-btn">+ Relativo</button>
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-time-btn">+ Hora fija</button>
+        </div>
+      </div>
+    </div>
     <div class="field-group todo-due-modal-when">
       <span class="profile-field-label">Fecha y hora</span>
       <input id="todo-due-modal-datetime" type="datetime-local" class="rpc-datetime-input todo-due-modal-datetime" aria-label="Fecha y hora del pendiente">

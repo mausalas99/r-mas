@@ -56,6 +56,11 @@ export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPat
   }
   var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
   var items = block && Array.isArray(block.items) ? block.items : [];
+  parts.push('f' + String(block && block.fechaActualizacion ? block.fechaActualizacion : ''));
+  var now = new Date();
+  parts.push(
+    'cal' + now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
+  );
   parts.push('r' + items.length);
   for (var j = 0; j < Math.min(4, items.length); j += 1) {
     var it = items[j];

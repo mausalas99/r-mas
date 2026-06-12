@@ -1148,17 +1148,19 @@
               Medicamentos del turno
             </span>
             <span class="med-active-header-actions">
-              <button type="button" class="btn-med-secondary" id="med-import-open-btn" onclick="openMedRecetaPasteModal()" title="Pegar listado SOME del hospital">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Importar SOME
-              </button>
+              <span class="med-active-btn-group" role="group" aria-label="Acciones de receta">
+                <button type="button" class="btn-med-secondary" id="med-import-open-btn" onclick="openMedRecetaPasteModal()" title="Pegar listado SOME del hospital">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Importar SOME
+                </button>
+                <button type="button" class="btn-med-secondary btn-med-secondary--dia" id="med-dia-btn" hidden onclick="incrementMedDiaTratamiento()" title="Suma 1 al DIA# de cada medicamento con día de tratamiento (sin volver a pegar)">
+                  <span class="btn-med-secondary-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
+                  </span>
+                  +1 día
+                </button>
+              </span>
               <span id="med-fecha-actualizacion" class="med-active-fecha" hidden></span>
-              <button type="button" class="btn-med-secondary btn-med-secondary--dia" id="med-dia-btn" hidden onclick="incrementMedDiaTratamiento()" title="Suma 1 al DIA# de cada medicamento con día de tratamiento (sin volver a pegar)">
-                <span class="btn-med-secondary-icon" aria-hidden="true">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
-                </span>
-                +1 día
-              </button>
             </span>
           </div>
           <div class="card-body med-active-card-body">
@@ -1323,31 +1325,35 @@
         <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
           <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
         </div>
-        <nav id="exp-group-row" class="exp-group-row" aria-label="Secciones del expediente"></nav>
-        <div class="inner-tab-bar">
-          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-paciente" onclick="switchConsolidatedTab('paciente')" style="display:none;" aria-label="Paciente">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Paciente
-          </button>
-          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-clinico" onclick="switchConsolidatedTab('clinico')" style="display:none;" aria-label="Clínico">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-            Clínico
-          </button>
-          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-resultados" onclick="switchConsolidatedTab('resultados')" style="display:none;" aria-label="Resultados">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.5L4.5 20a1 1 0 001 1h13a1 1 0 001-1L14 8.5V2"/><path d="M8 2h8"/></svg>
-            Resultados
-          </button>
-          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-salida" onclick="switchConsolidatedTab('salida')" style="display:none;" aria-label="Salida">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
-            Salida
-          </button>
+        <div class="exp-expediente-nav">
+          <nav id="exp-group-row" class="exp-group-row" aria-label="Secciones del expediente"></nav>
+          <div class="inner-tab-bar">
+            <button type="button" class="inner-tab exp-consolidated-tab" id="itab-paciente" onclick="switchConsolidatedTab('paciente')" style="display:none;" aria-label="Paciente">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Paciente
+            </button>
+            <button type="button" class="inner-tab exp-consolidated-tab" id="itab-clinico" onclick="switchConsolidatedTab('clinico')" style="display:none;" aria-label="Clínico">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+              Clínico
+            </button>
+            <button type="button" class="inner-tab exp-consolidated-tab" id="itab-resultados" onclick="switchConsolidatedTab('resultados')" style="display:none;" aria-label="Resultados">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.5L4.5 20a1 1 0 001 1h13a1 1 0 001-1L14 8.5V2"/><path d="M8 2h8"/></svg>
+              Resultados
+            </button>
+            <button type="button" class="inner-tab exp-consolidated-tab" id="itab-salida" onclick="switchConsolidatedTab('salida')" style="display:none;" aria-label="Salida">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+              Salida
+            </button>
+          </div>
+          <div class="exp-expediente-nav-actions" id="exp-paciente-datos-actions" hidden>
+            <button type="button" class="btn-med-secondary exp-datos-tab-action" id="btn-exp-datos-open" onclick="openPatientDatosModal()" aria-haspopup="dialog" title="Datos del paciente">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Datos
+            </button>
+          </div>
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
-            <details class="exp-datos-collapse" id="exp-datos-collapse">
-              <summary class="exp-datos-collapse-summary">Datos del paciente</summary>
-              <div class="exp-datos-mount"></div>
-            </details>
             <div class="exp-pendientes-mount"></div>
           </div>
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
@@ -1383,7 +1389,7 @@
             </div>
             <div class="exp-segment-body exp-segment-body--salida exp-salida-mount"></div>
           </div>
-          <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" class="rpc-form-stack"></div></div>
+          <div id="itab-content-datos" class="tab-content" hidden><div id="patient-data-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-historia" class="tab-content"><div id="historia-clinica-mount" class="rpc-form-stack"></div></div>
           <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
@@ -1642,10 +1648,39 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="exp-datos-modal-backdrop" aria-hidden="true">
+  <div class="modal exp-datos-modal" role="dialog" aria-modal="true" aria-labelledby="exp-datos-modal-title" onclick="event.stopPropagation()">
+    <div class="exp-datos-modal-header">
+      <h3 id="exp-datos-modal-title">Datos del paciente</h3>
+      <button type="button" class="btn-icon-only exp-datos-modal-close" onclick="closePatientDatosModal()" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="exp-datos-modal-mount" class="exp-datos-modal-body"></div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="todo-due-modal-backdrop" aria-hidden="true">
   <div class="modal todo-due-modal" role="dialog" aria-modal="true" aria-labelledby="todo-due-modal-title" onclick="event.stopPropagation()">
     <h3 id="todo-due-modal-title">Fecha límite</h3>
-    <p class="todo-due-modal-lead">Elige fecha y hora. Opcional: recordatorio al vencer.</p>
+    <p class="todo-due-modal-lead">Usa un atajo (editable) u otra fecha y hora. Opcional: recordatorio al vencer.</p>
+    <div class="todo-due-modal-presets-zone" id="todo-due-modal-presets-zone">
+      <div class="todo-due-modal-presets-head">
+        <span class="profile-field-label todo-due-modal-section-label">Atajos</span>
+        <div class="todo-due-modal-presets-head-actions">
+          <button type="button" class="todo-due-reset-presets-btn" id="todo-due-reset-presets-btn" hidden>Restablecer</button>
+          <button type="button" class="todo-due-edit-presets-btn" id="todo-due-edit-presets-btn" aria-expanded="false">Editar</button>
+        </div>
+      </div>
+      <div class="todo-due-modal-presets" id="todo-due-modal-presets" role="group" aria-label="Atajos de fecha límite"></div>
+      <div class="todo-due-modal-preset-edit" id="todo-due-modal-preset-edit" hidden>
+        <div class="todo-due-modal-preset-edit-rows" id="todo-due-modal-preset-edit-rows"></div>
+        <div class="todo-due-add-preset-actions">
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-offset-btn">+ Relativo</button>
+          <button type="button" class="todo-due-add-preset-btn" id="todo-due-add-preset-time-btn">+ Hora fija</button>
+        </div>
+      </div>
+    </div>
     <div class="field-group todo-due-modal-when">
       <span class="profile-field-label">Fecha y hora</span>
       <input id="todo-due-modal-datetime" type="datetime-local" class="rpc-datetime-input todo-due-modal-datetime" aria-label="Fecha y hora del pendiente">

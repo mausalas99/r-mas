@@ -7,19 +7,18 @@
 }
 
 @media (min-width: 1100px) {
-  #patient-expediente-classic > .inner-tab-bar {
+  #patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
     display: none;
   }
   #patient-expediente-classic .exp-segment-bar {
     display: none !important; /* beats the inline display set by sync code */
   }
-  #exp-group-row {
+  #patient-expediente-classic > .exp-expediente-nav > #exp-group-row {
     display: flex;
     align-items: center;
     gap: calc(8px * var(--density-space, 1));
-    padding: calc(6px * var(--density-space, 1)) calc(16px * var(--density-space, 1));
-    background: var(--surface);
-    flex-shrink: 0;
+    padding: calc(6px * var(--density-space, 1)) calc(8px * var(--density-space, 1)) calc(6px * var(--density-space, 1))
+      calc(16px * var(--density-space, 1));
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: thin;
@@ -201,7 +200,7 @@ html.motion-sobrio .exp-group-pill {
 }
 
 /* Mobile web (iPad PWA / LAN): grouped row at all widths; tap-to-expand only */
-html.rpc-mobile-web #patient-expediente-classic > .inner-tab-bar {
+html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > .inner-tab-bar {
   display: none;
 }
 
@@ -209,13 +208,12 @@ html.rpc-mobile-web #patient-expediente-classic .exp-segment-bar {
   display: none !important;
 }
 
-html.rpc-mobile-web #exp-group-row {
+html.rpc-mobile-web #patient-expediente-classic > .exp-expediente-nav > #exp-group-row {
   display: flex;
   align-items: center;
   gap: calc(8px * var(--density-space, 1));
-  padding: calc(8px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
-  background: var(--surface);
-  flex-shrink: 0;
+  padding: calc(8px * var(--density-space, 1)) calc(8px * var(--density-space, 1)) calc(8px * var(--density-space, 1))
+    calc(12px * var(--density-space, 1));
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
