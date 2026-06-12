@@ -184,15 +184,16 @@ function persistAlignedTeamCodeHash({
   stateDir,
   queue,
   markDirtyFn,
+  reportPersistFailure,
 }) {
   if (!aligned) return;
   if (useDb()) {
     if (resolvePersistModeFn && resolvePersistModeFn() === 'sql-v3') {
       markDirtyFn(null);
-      queue.enqueue(() => flushCacheToDiskFn()).catch(() => {});
+      queue.enqueue(() => flushCacheToDiskFn()).catch((e) => reportPersistFailure('team-code-hash-flush', e));
       return;
     }
-    queue.enqueue(() => persistCacheToDb()).catch(() => {});
+    queue.enqueue(() => persistCacheToDb()).catch((e) => reportPersistFailure('team-code-hash-db', e));
     return;
   }
   if (isShardedLayout(stateDir)) {
@@ -207,14 +208,14 @@ function persistAlignedTeamCodeHash({
         rooms: migrated.rooms,
         roomRevisions: existing.roomRevisions || {},
       })
-    ).catch(() => {});
+    ).catch((e) => reportPersistFailure('team-code-hash-sharded-meta', e));
     return;
   }
   // Sync write so a prior store instance's queued snapshot cannot clobber the new hash.
   try {
     atomicWriteJson(filePath, migrated);
   } catch (_e) {}
-  queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
+  queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch((e) => reportPersistFailure('team-code-hash-json', e));
 }
 
 /** Env rollback: legacy | json | sql | sql-monolith (ward IT / support). */
@@ -244,7 +245,15 @@ function createHostStore({
   const stateDir = hostStateDir || path.join(path.dirname(filePath), 'lan-host');
   const cache = createHostStateCache();
   const queue = createWriteQueue();
-  const commitBarrier = createCommitBarrier({ coalesceMs: 150 });
+  let lastPersistError = null;
+  function reportPersistFailure(tag, err) {
+    lastPersistError = { tag, message: err && err.message, at: new Date().toISOString() };
+    console.error(`[lan-host-store] persist failed (${tag}):`, err && err.message);
+  }
+  const commitBarrier = createCommitBarrier({
+    coalesceMs: 150,
+    onError: (e) => reportPersistFailure('commit-barrier', e),
+  });
   let lastCommitAudit = null;
   let initPromise = null;
   let dirtyMeta = false;
@@ -422,7 +431,13 @@ function createHostStore({
   }
 
   function schedulePersist() {
-    return commitBarrier.scheduleFlush(() => queue.enqueue(() => flushCacheToDisk()));
+    const p = commitBarrier.scheduleFlush(() => queue.enqueue(() => flushCacheToDisk()));
+    p.catch((e) => reportPersistFailure('schedule-persist', e));
+    return p;
+  }
+
+  function getLastPersistError() {
+    return lastPersistError;
   }
 
   async function awaitDurableCommit() {
@@ -592,7 +607,7 @@ function createHostStore({
           const fresh = defaultState(teamCodeHash);
           cache.replace(fresh);
           markDirty(null);
-          queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+          queue.enqueue(() => flushCacheToDisk()).catch((e) => reportPersistFailure('ensure-loaded-fresh-flush', e));
           return fresh;
         }
         loadLabSidecarsIntoCache(dbManager.getDb(), labSidecarCache);
@@ -610,7 +625,7 @@ function createHostStore({
       const fresh = defaultState(teamCodeHash);
       if (useDb()) {
         cache.replace(fresh);
-        queue.enqueue(() => persistCacheToDb()).catch(() => {});
+        queue.enqueue(() => persistCacheToDb()).catch((e) => reportPersistFailure('ensure-loaded-fresh-db', e));
         return fresh;
       }
       if (isShardedLayout(stateDir) || !fs.existsSync(filePath)) {
@@ -628,7 +643,7 @@ function createHostStore({
     if (aligned) {
       if (!useDb() && isShardedLayout(stateDir)) {
         markDirty(null);
-        queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+        queue.enqueue(() => flushCacheToDisk()).catch((e) => reportPersistFailure('ensure-loaded-aligned-flush', e));
       } else {
         persistAlignedTeamCodeHash({
           aligned,
@@ -641,18 +656,19 @@ function createHostStore({
           stateDir,
           queue,
           markDirtyFn: markDirty,
+          reportPersistFailure,
         });
       }
     } else if (Number(migrated.version) === 2 && prevVersion !== 2) {
       if (useDb()) {
         if (resolvePersistMode() === 'sql-v3') {
           markDirty(null);
-          queue.enqueue(() => flushCacheToDisk()).catch(() => {});
+          queue.enqueue(() => flushCacheToDisk()).catch((e) => reportPersistFailure('ensure-loaded-v2-flush', e));
         } else {
-          queue.enqueue(() => persistCacheToDb()).catch(() => {});
+          queue.enqueue(() => persistCacheToDb()).catch((e) => reportPersistFailure('ensure-loaded-v2-db', e));
         }
       } else {
-        queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
+        queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch((e) => reportPersistFailure('ensure-loaded-v2-json', e));
       }
     }
     return migrated;
@@ -1103,19 +1119,27 @@ function createHostStore({
       incoming.snapshot && typeof incoming.snapshot === 'object' ? incoming.snapshot : null;
     const serverOps =
       bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
-
-    // Never delete the cumulative roster on a missing/null snapshot; only union when present.
+    const nextRevision = serverRevision + 1;
+    let mergedOps = serverOps;
     if (incomingSnapshot) {
-      bundle.clinicalOps = serverOps
+      mergedOps = serverOps
         ? mergeClinicalOpsSnapshotsData(serverOps, incomingSnapshot)
         : incomingSnapshot;
+    }
+
+    if (mergedOps && typeof mergedOps === 'object') {
+      const authoritative = await mergeBundleClinicalOpsIntoHostDb(mergedOps, {
+        roomId: rid,
+        revision: nextRevision,
+      });
+      bundle.clinicalOps = authoritative || mergedOps;
     }
 
     if (!bundle.entityVersions || typeof bundle.entityVersions !== 'object') {
       bundle.entityVersions = {};
     }
     bundle.entityVersions.clinicalOps = Number(bundle.entityVersions.clinicalOps || 0) + 1;
-    bundle.revision = serverRevision + 1;
+    bundle.revision = nextRevision;
     bundle.committedAt = nowIso();
     bundle.uploadedByClientId = clientId;
     if (!Array.isArray(bundle.audit_log)) bundle.audit_log = [];
@@ -1128,14 +1152,6 @@ function createHostStore({
       },
       bundle.audit_log
     );
-
-    if (bundle.clinicalOps && typeof bundle.clinicalOps === 'object') {
-      const authoritative = await mergeBundleClinicalOpsIntoHostDb(bundle.clinicalOps, {
-        roomId: rid,
-        revision: bundle.revision,
-      });
-      if (authoritative) bundle.clinicalOps = authoritative;
-    }
 
     state.roomSyncBundles[rid] = bundle;
     markDirty(rid);
@@ -1678,8 +1694,10 @@ function createHostStore({
   return {
     ready,
     flush,
+    flushCacheNow,
     awaitDurableCommit,
     getLastCommitAudit,
+    getLastPersistError,
     getRepairedRoomCount,
     getHostStateDir: () => stateDir,
     getState,

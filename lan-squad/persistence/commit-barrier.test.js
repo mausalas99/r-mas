@@ -42,6 +42,27 @@ describe('commit-barrier', () => {
     await assert.rejects(p, /disk/);
   });
 
+  it('timer-driven flush rejection calls onError and later flushes still work', async () => {
+    const errors = [];
+    const barrier = createCommitBarrier({
+      coalesceMs: 20,
+      onError: (e) => errors.push(e),
+    });
+    const fail = barrier.scheduleFlush(async () => {
+      throw new Error('timer-disk');
+    });
+    await assert.rejects(fail, /timer-disk/);
+    assert.strictEqual(errors.length, 1);
+    assert.match(errors[0].message, /timer-disk/);
+
+    let flushes = 0;
+    const ok = barrier.scheduleFlush(async () => {
+      flushes += 1;
+    });
+    await ok;
+    assert.strictEqual(flushes, 1);
+  });
+
   it('runs follow-up flush after in-flight flush completes', async () => {
     let flushes = 0;
     const barrier = createCommitBarrier({ coalesceMs: 60_000 });

@@ -446,6 +446,15 @@ function startLanServer() {
   return listenPromise;
 }
 
+async function flushHostStoreNow() {
+  if (!lanStore || typeof lanStore.flushCacheNow !== 'function') return;
+  try {
+    await lanStore.flushCacheNow({ serialized: true });
+  } catch (e) {
+    console.error('[lan-server] final flush failed:', e && e.message);
+  }
+}
+
 function stopLanServer() {
   return new Promise((resolve) => {
     if (!serverInstance) {
@@ -468,6 +477,7 @@ function getLanWardHostRegistry() {
 module.exports = {
   startLanServer,
   stopLanServer,
+  flushHostStoreNow,
   getLanWardHostRegistry,
   setOnInternoHostSync,
 };
