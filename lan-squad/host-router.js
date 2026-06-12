@@ -5,6 +5,7 @@ const { validateHistoriaClinicaPut } = require('./historia-clinica-validate.js')
 const { createDeltaResolver } = require('./delta-resolver.js');
 const { createCommandResolver } = require('./command-resolver.js');
 const { createSyncScheduler } = require('./sync-scheduler.js');
+const { evaluateHostPatientPurgeGuard } = require('./host-patient-ownership.js');
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 let _heartbeatTimer = null;
@@ -110,7 +111,14 @@ function createLanRouter({
     try {
       const id = String(req.params.id || '').trim();
       const registro = String(req.query.registro || '').trim();
+      const clientId = String(req.query.clientId || '').trim();
+      const isProgramAdmin = req.query.isProgramAdmin === '1';
       if (!id) return res.status(400).json({ error: 'patient_id_required' });
+      const guard = evaluateHostPatientPurgeGuard(store, id, clientId, isProgramAdmin);
+      if (guard.blocked) {
+        console.warn('[lan] purge blocked', guard);
+        return res.status(403).json({ error: 'owned_by_other_client' });
+      }
       const purged = store.purgePatientFromHostCensus(id, registro);
       if (!purged) return res.status(404).json({ error: 'patient_not_found' });
       broadcast('sync', { type: 'patients-updated' });

@@ -240,6 +240,136 @@ test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
   }
 });
 
+function seedOwnedHostPatient(store, id, ownerClientId) {
+  store.upsertPatient({ id, nombre: 'Paciente', registro: 'R-' + id }, null);
+  const row = store.getState().patients.find((p) => p.id === id);
+  row.audit_log = [
+    {
+      at: '2025-01-01T00:00:00.000Z',
+      clientId: ownerClientId,
+      action: 'patient.create',
+      detail: { id },
+    },
+  ];
+  return row;
+}
+
+test('DELETE /patients/:id blocks purge when owned by another client', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-block-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  seedOwnedHostPatient(store, 'p-owned', 'client-A');
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-owned?clientId=client-B`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 403);
+    const body = await res.json();
+    assert.strictEqual(body.error, 'owned_by_other_client');
+    const list = await fetch(`http://127.0.0.1:${port}/api/lan/v1/patients`, {
+      headers: bearerHeaders(code),
+    });
+    const patients = await list.json();
+    assert.ok(patients.patients.some((p) => p.id === 'p-owned'));
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id allows owner purge', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-owner-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  seedOwnedHostPatient(store, 'p-mine', 'client-A');
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-mine?clientId=client-A`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+    const list = await fetch(`http://127.0.0.1:${port}/api/lan/v1/patients`, {
+      headers: bearerHeaders(code),
+    });
+    const patients = await list.json();
+    assert.ok(!patients.patients.some((p) => p.id === 'p-mine'));
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id allows admin purge of another client chart', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-admin-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  seedOwnedHostPatient(store, 'p-admin', 'client-A');
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url =
+      `http://127.0.0.1:${port}/api/lan/v1/patients/p-admin` +
+      '?clientId=client-B&isProgramAdmin=1';
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+    const list = await fetch(`http://127.0.0.1:${port}/api/lan/v1/patients`, {
+      headers: bearerHeaders(code),
+    });
+    const patients = await list.json();
+    assert.ok(!patients.patients.some((p) => p.id === 'p-admin'));
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id allows orphan purge without clientId', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-orphan-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  store.upsertPatient({ id: 'p-orphan', nombre: 'Huérfano' }, null);
+  const row = store.getState().patients.find((p) => p.id === 'p-orphan');
+  row.audit_log = [];
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-orphan`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id blocks owned row when clientId missing', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-noid-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  seedOwnedHostPatient(store, 'p-noid', 'client-A');
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-noid`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 403);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('DELETE /patients/:id purges bundle-only chart', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-bundle-'));
   const statePath = path.join(dir, 'state.json');

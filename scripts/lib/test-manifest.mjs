@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 /** Directories (by name) that are never walked for test files. */
 const EXCLUDED_DIRS = new Set([
   'node_modules',
+  '.claude',
   '.worktrees',
   'dist',
   'build',

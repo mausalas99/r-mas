@@ -939,10 +939,27 @@ async function lanDeleteHostPatientCensus(patientId, registro) {
   var pid = String(patientId || '').trim();
   if (!pid) return { ok: false, error: 'invalid_id' };
   var reg = String(registro || '').trim();
-  var qs = reg ? '?registro=' + encodeURIComponent(reg) : '';
-  var resp = await lanFetchAuthed('/api/lan/v1/patients/' + encodeURIComponent(pid) + qs, {
-    method: 'DELETE',
-  });
+  var params = new URLSearchParams();
+  if (reg) params.set('registro', reg);
+  var cid = String(getLanClientId() || '').trim();
+  if (cid) params.set('clientId', cid);
+  if (clinicalSessionContext.user && clinicalSessionContext.user.is_program_admin === 1) {
+    params.set('isProgramAdmin', '1');
+  }
+  var qs = params.toString();
+  var resp = await lanFetchAuthed(
+    '/api/lan/v1/patients/' + encodeURIComponent(pid) + (qs ? '?' + qs : ''),
+    { method: 'DELETE' }
+  );
+  if (resp.status === 403) {
+    var body = null;
+    try {
+      body = await resp.json();
+    } catch (_e) {}
+    if (body && body.error === 'owned_by_other_client') {
+      return { ok: false, error: 'owned_by_other_client', skipped: true, status: 403 };
+    }
+  }
   if (resp.ok || resp.status === 404) return { ok: true, status: resp.status };
   return { ok: false, status: resp.status };
 }
