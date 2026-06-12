@@ -16,7 +16,7 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 
 ## Instalación (Mac y Windows)
 
-Todo se descarga desde **[Releases — última versión](https://github.com/mausalas99/r-mas/releases/latest)**. No hace falta instalar Python por separado: los instaladores ya traen el runtime para generar los `.docx`.
+Todo se descarga desde **[Releases — última versión](https://github.com/mausalas99/r-mas/releases/latest)**. No hace falta instalar Python ni Node: los instaladores ya incluyen todo lo necesario para generar los `.docx` (módulos nativos en `lib/doc-generators/`).
 
 ### Mac
 
