@@ -1010,18 +1010,21 @@ async function pushPatientDeleteToHost(patientId, hostRow, registroFallback) {
  * @param {{ force?: boolean }} [opts]
  */
 export async function purgeLanPatientFromHost(patientId, opts) {
+  opts = opts || {};
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return { ok: false, error: 'invalid_id' };
   if (!activeLiveSyncRoomId || !isLanSessionConfiguredForRest()) {
     return { ok: false, error: 'not_configured' };
   }
-  var registroHint = String(opts?.registro || '').trim();
-  var hostRow = opts?.bundleOnly ? null : await lanFetchHostPatientRow(pid);
+  var registroHint = String(opts.registro || '').trim();
+  var fetchHostRow =
+    typeof opts.fetchHostRow === 'function' ? opts.fetchHostRow : lanFetchHostPatientRow;
+  var hostRow = opts.bundleOnly ? null : await fetchHostRow(pid);
   var censusRow = hostRow;
   if (!censusRow && registroHint) {
     censusRow = { id: pid, registro: registroHint };
   }
-  if (!opts?.force && censusRow && isHostPatientOwnedByOtherClient(censusRow, getLanClientId())) {
+  if (!opts.force && censusRow && isHostPatientOwnedByOtherClient(censusRow, getLanClientId())) {
     return { ok: false, error: 'owned_by_other_client', skipped: true };
   }
   var snap = {
@@ -1029,7 +1032,9 @@ export async function purgeLanPatientFromHost(patientId, opts) {
     registro: String((hostRow && hostRow.registro) || registroHint || '').trim(),
   };
   rememberPatientDeleteTombstone(snap);
-  var deleteResult = await pushPatientDeleteToHost(pid, hostRow, snap.registro);
+  var pushDelete =
+    typeof opts.pushDelete === 'function' ? opts.pushDelete : pushPatientDeleteToHost;
+  var deleteResult = await pushDelete(pid, hostRow, snap.registro);
   if (!deleteResult?.ok) return deleteResult;
   invalidateHostPatientsCache();
   if (hostRow) {
