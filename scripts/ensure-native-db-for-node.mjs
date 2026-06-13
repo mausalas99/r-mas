@@ -3,22 +3,35 @@
  * postinstall targets Electron; npm test uses system Node — they cannot share one .node binary.
  */
 import { execSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
-const require = createRequire(import.meta.url);
 
+const NATIVE_PROBE = [
+  "const D = require('better-sqlite3-multiple-ciphers');",
+  "const db = new D(':memory:');",
+  'db.close();',
+].join('');
+
+/** Probe in a child process so a bad .node cannot SIGKILL this script mid-recovery. */
 function nativeLoadError() {
   try {
-    const Database = require('better-sqlite3-multiple-ciphers');
-    const db = new Database(':memory:');
-    db.close();
+    execSync(`node -e ${JSON.stringify(NATIVE_PROBE)}`, {
+      cwd: root,
+      stdio: 'pipe',
+      encoding: 'utf8',
+      timeout: 15_000,
+      env: process.env,
+    });
     return null;
   } catch (e) {
-    return e && e.message ? String(e.message) : String(e);
+    if (e.status === 137 || e.signal === 'SIGKILL') {
+      return 'Native module load aborted (SIGKILL) — binary likely wrong ABI or corrupt';
+    }
+    const stderr = e.stderr ? String(e.stderr).trim() : '';
+    return stderr || (e.message ? String(e.message) : String(e));
   }
 }
 
@@ -31,21 +44,13 @@ console.log(
   `[ensure-native-db-for-node] Native DB module mismatch for Node ${process.version} (modules ${process.versions.modules}); rebuilding…`
 );
 
-function darwinArm64Env(extra = {}) {
-  if (process.platform !== 'darwin' || process.arch !== 'arm64') {
-    return { ...process.env, ...extra };
-  }
-  return {
-    ...process.env,
-    npm_config_arch: 'arm64',
-    npm_config_target_arch: 'arm64',
-    ...extra,
-  };
+/** Rosetta Node on Apple Silicon — compile paths need native arm64. */
+function needsDarwinArm64Wrap() {
+  return process.platform === 'darwin' && process.arch === 'x64';
 }
 
-/** Force native arm64 on Apple Silicon — npm under Rosetta breaks xcrun/libtool. */
 function wrapDarwinArm64(cmd) {
-  if (process.platform === 'darwin' && process.arch === 'arm64') {
+  if (needsDarwinArm64Wrap()) {
     return `arch -arm64 ${cmd}`;
   }
   return cmd;
@@ -55,14 +60,9 @@ function runShell(cmd, opts = {}) {
   execSync(wrapDarwinArm64(cmd), {
     cwd: opts.cwd || root,
     stdio: 'inherit',
-    env: darwinArm64Env(opts.env),
+    env: { ...process.env, ...opts.env },
     shell: true,
   });
-}
-
-function tryPrebuildInstall() {
-  console.log('[ensure-native-db-for-node] Trying prebuild-install…');
-  runShell('npx prebuild-install', { cwd: pkgDir });
 }
 
 function tryFetchNodePrebuild() {
@@ -70,16 +70,40 @@ function tryFetchNodePrebuild() {
   runShell('node scripts/fetch-sqlite-node.mjs');
 }
 
-function tryNpmRebuild() {
-  console.log('[ensure-native-db-for-node] Trying npm rebuild (may compile from source)…');
-  runShell('npm rebuild better-sqlite3-multiple-ciphers');
+function tryPrebuildInstall() {
+  console.log('[ensure-native-db-for-node] Trying prebuild-install…');
+  runShell('npx --yes prebuild-install', { cwd: pkgDir });
 }
 
-const steps = [tryPrebuildInstall, tryFetchNodePrebuild, tryNpmRebuild];
-let lastError = null;
+function tryNpmRebuild() {
+  console.log('[ensure-native-db-for-node] Trying npm rebuild (may compile from source)…');
+  const rebuildCmd = needsDarwinArm64Wrap()
+    ? 'arch -arm64 npm rebuild better-sqlite3-multiple-ciphers'
+    : 'npm rebuild better-sqlite3-multiple-ciphers';
+  runShell(rebuildCmd);
+}
 
-for (const step of steps) {
-  if (!nativeLoadError()) break;
+let lastError = null;
+let fetchSucceeded = false;
+
+try {
+  tryFetchNodePrebuild();
+  fetchSucceeded = true;
+} catch (e) {
+  lastError = e;
+  const msg = e && e.message ? String(e.message) : String(e);
+  console.warn('[ensure-native-db-for-node] tryFetchNodePrebuild failed:', msg);
+}
+
+if (!nativeLoadError()) {
+  console.log('[ensure-native-db-for-node] OK for Node', process.version);
+  process.exit(0);
+}
+
+// npm rebuild deletes build/ — never run it after a successful fetch left a binary on disk.
+const destructiveSteps = fetchSucceeded ? [tryPrebuildInstall] : [tryPrebuildInstall, tryNpmRebuild];
+
+for (const step of destructiveSteps) {
   try {
     step();
   } catch (e) {
@@ -94,6 +118,7 @@ for (const step of steps) {
       console.warn(`[ensure-native-db-for-node] ${step.name} failed:`, msg);
     }
   }
+  if (!nativeLoadError()) break;
 }
 
 const after = nativeLoadError();

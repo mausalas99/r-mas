@@ -20,8 +20,13 @@ const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers'
 const destFile = path.join(pkgDir, NODE_REL);
 
 function resolveNodeAbi() {
-  const abi = require('node-abi');
-  return abi.getAbi(process.version, 'node');
+  // process.versions.modules === NODE_MODULE_VERSION for system Node.
+  try {
+    const abi = require('node-abi');
+    return abi.getAbi(process.version, 'node');
+  } catch {
+    return process.versions.modules;
+  }
 }
 
 function prebuildAssetName(version, abiVersion) {
