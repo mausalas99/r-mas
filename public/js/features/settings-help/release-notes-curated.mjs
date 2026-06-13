@@ -897,6 +897,34 @@ var RELEASE_NOTES_730 = [
   },
 ];
 
+var RELEASE_NOTES_736 = [
+  {
+    title: 'Identidad LAN verificable',
+    body:
+      'Al conectar con PIN, el anfitrión emite <strong>identidad por cliente</strong>. La <strong>purga de pacientes</strong> usa identidad resuelta en servidor — ya no basta con falsificar parámetros en la URL.',
+  },
+  {
+    title: 'LiveSync más mantenible',
+    body:
+      'El <strong>orchestrator</strong> se dividió en módulos (<strong>conflicts</strong>, <strong>patient-delete</strong>, <strong>historia-sync</strong>, …) sin cambiar el comportamiento visible en guardia.',
+  },
+  {
+    title: 'Cultivos y arranque',
+    body:
+      'Detección <strong>superset</strong> de cultivos alineada en censo, pegado e historial. <strong>npm start</strong> deja de forzar rebuild SQLCipher cuando el nativo ya coincide con Electron.',
+  },
+  {
+    title: 'Pruebas y seguridad',
+    body:
+      'Trece pruebas de integración <strong>IPC clínico</strong>; cinco suites reactivadas en CI. <strong>window.open</strong> limitado a GitHub y LAN privada.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.3.6 en todas</strong> las estaciones el mismo día. Esquema SQLCipher sigue en <strong>v17</strong>; identidad LAN requiere versión homogénea en el turno.',
+  },
+];
+
 var RELEASE_NOTES_735 = [
   {
     title: 'LAN más seguro',
@@ -926,9 +954,10 @@ var RELEASE_NOTES_735 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_735;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_736;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.6': RELEASE_NOTES_736,
   '7.3.5': RELEASE_NOTES_735,
   '7.3.4': RELEASE_NOTES_734,
   '7.3.3': RELEASE_NOTES_733,

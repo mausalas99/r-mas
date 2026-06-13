@@ -127,6 +127,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-13** `release-7.3.6`: LAN client identity (`client-identity-store.js`), orchestrator modular split, cultivo superset, app-shell modals, IPC handler tests, quarantine drain, native rebuild skip; plans 010–020.
 - **2026-06-12** `lan-orchestrator-split`: `orchestrator.mjs` 2,207→1,185 — extracted `conflicts`, `entity-versions`, `patient-delete`, `patient-entries`, `historia-sync`, `host-patient-http`, `live-sync-emit`; façade re-exports + `configure*` DI in `wireLanSyncBridges`.
 - **2026-06-12** `ipc-handler-tests`: `lib/db/ipc-handlers.test.mjs` — 13 integration tests (bootstrap, teams, assign, guardia, rotation, audit) via fake `ipcMain`; manifest + `npm test`.
 - **2026-06-12** `clinico-access-scope`: `evaluateClinicalScope` (complexity 80) decomposed to `clinico-access-scope/` orchestrator + guardia/team evaluators ≤15; 40 characterization goldens in `clinico-access.test.mjs`; export frozen.
