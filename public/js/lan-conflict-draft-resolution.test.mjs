@@ -12,6 +12,7 @@ import {
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
 const lanSyncSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'), 'utf8');
+const lanConflictsSrc = readFileSync(join(jsDir, 'features/lan/conflicts.mjs'), 'utf8');
 const lanSyncPushSrc = readFileSync(join(jsDir, 'features/lan/push.mjs'), 'utf8');
 
 beforeEach(() => {
@@ -52,5 +53,5 @@ test('sync hot path does not save new bundle drafts on overlap', () => {
     lanSyncPushSrc,
     /saveDraftConflict\([\s\S]{0,200}entityType:\s*'roomBundle'/
   );
-  assert.match(lanSyncSrc, /applyLwwConflictLocally/);
+  assert.match(lanConflictsSrc, /applyLwwConflictLocally/);
 });

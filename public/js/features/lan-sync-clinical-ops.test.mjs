@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 const jsDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lanDir = join(jsDir, 'features/lan');
 const lanSyncSrc = readFileSync(join(lanDir, 'orchestrator.mjs'), 'utf8');
+const lanConflictsSrc = readFileSync(join(lanDir, 'conflicts.mjs'), 'utf8');
+const lanHostPatientHttpSrc = readFileSync(join(lanDir, 'host-patient-http.mjs'), 'utf8');
 const lanSyncRoomSrc = readFileSync(join(lanDir, 'room.mjs'), 'utf8');
 const lanSyncTransportSrc = readFileSync(join(lanDir, 'transport.mjs'), 'utf8');
 const lanSyncPanelSrc = readFileSync(join(lanDir, 'panel.mjs'), 'utf8');
@@ -265,25 +267,25 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('handleSyncConflict applies LWW without conflict modal', () => {
-    assert.match(lanSyncSrc, /applyLwwConflictLocally/);
-    assert.match(lanSyncSrc, /notifyLwwOverwrite/);
+    assert.match(lanConflictsSrc, /applyLwwConflictLocally/);
+    assert.match(lanConflictsSrc, /notifyLwwOverwrite/);
     assert.doesNotMatch(
-      lanSyncSrc,
+      lanConflictsSrc,
       /async function handleSyncConflict[\s\S]{0,800}saveDraftConflict/
     );
     assert.doesNotMatch(
-      lanSyncSrc,
+      lanConflictsSrc,
       /async function handleSyncConflict[\s\S]{0,800}openClinicalConflictViewer/
     );
   });
 
   it('lanPushPatientVersioned toasts on lwwApplied without 409 modal', () => {
     assert.match(
-      lanSyncSrc,
+      lanHostPatientHttpSrc,
       /export async function lanPushPatientVersioned[\s\S]{0,1200}notifyLwwOverwrite/
     );
     assert.doesNotMatch(
-      lanSyncSrc,
+      lanHostPatientHttpSrc,
       /export async function lanPushPatientVersioned[\s\S]{0,1200}resp\.status === 409/
     );
   });
