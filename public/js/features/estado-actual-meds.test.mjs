@@ -265,7 +265,7 @@ test('buildMedDropdownOptions abx label avanza DIA, value conserva base', () => 
     },
   };
   const ref = new Date(2026, 5, 12);
-  const opts = buildMedDropdownOptions('p1', 'abx', medRecetaByPatient, classifyMedicationSoapCategory);
+  const opts = buildMedDropdownOptions('p1', 'abx', medRecetaByPatient, classifyMedicationSoapCategory, ref);
   assert.match(opts[0].value, /DIA 10/);
   const ec = estadoClinicoForText(
     (() => {

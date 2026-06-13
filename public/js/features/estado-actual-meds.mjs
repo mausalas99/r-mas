@@ -308,9 +308,10 @@ export function confirmAllMedProposals(monitoreo) {
  * @param {string} category
  * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
  * @param {(nombreRaw: string) => string} classifyFn
+ * @param {Date} [refDate] — día efectivo para ABX en label (default: hoy)
  * @returns {Array<{ value: string, label: string }>}
  */
-export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, classifyFn) {
+export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, classifyFn, refDate) {
   /** @type {Array<{ value: string, label: string }>} */
   var options = [];
   var seen = Object.create(null);
@@ -333,7 +334,7 @@ export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, 
       category === 'abx' && fecha
         ? formatMedicationSoapShort(
             /** @type {Parameters<typeof formatMedicationSoapShort>[0]} */ (it),
-            { fechaActualizacion: fecha }
+            { fechaActualizacion: fecha, refDate: refDate }
           )
         : value;
     options.push({ value: value, label: label });
