@@ -300,6 +300,14 @@ export async function syncLanGuestBearerFromDisk() {
 
 export async function lanFetchAuthed(path, opts) {
   await ensureLanClientTeamCodeAligned();
+  var ct = '';
+  try {
+    ct = localStorage.getItem('rpc-lan-client-token') || '';
+  } catch (_eCt) {}
+  if (ct) {
+    opts = opts || {};
+    opts.headers = Object.assign({}, opts.headers, { 'X-Client-Token': ct });
+  }
   var resp = await lanClient.fetch(path, opts);
   if (resp.status !== 401) return resp;
   var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
@@ -423,6 +431,11 @@ async function persistGuestBearerFromExchange(data) {
   try {
     await window.electronAPI.lanGuestWriteBearer({ token: token });
   } catch (_e) {}
+  if (data.clientToken) {
+    try {
+      localStorage.setItem('rpc-lan-client-token', String(data.clientToken));
+    } catch (_eCt) {}
+  }
 }
 
 function fixMobileLanHostUrl(hostUrl) {
@@ -475,7 +488,7 @@ export async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId, joinU
     res = await fetch(base + '/api/lan/v1/auth/exchange', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket: tid }),
+      body: JSON.stringify({ ticket: tid, clientId: getLanClientId() }),
       signal: ctrl.signal,
     });
   } catch (_e) {

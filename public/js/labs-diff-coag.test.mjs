@@ -49,4 +49,23 @@ describe('diferencial manual + coagulación SOME', () => {
     const frotis = resLabs.filter((l) => l.startsWith('FROTIS\t')).join('\n');
     assert.ok(frotis.includes('HIPOCROMIA') || frotis.includes('PLAQUETAS DISMINUIDAS'));
   });
+
+  it('consolidación mismo día conserva DD cuando biometría y dímero vienen en solicitudes distintas', async () => {
+    const { mergeBulkParseResults } = await import('./lab-bulk-paste.mjs');
+    const bh = `Expediente:\t1\tFecha Registro:\tJun 12 2026 5:08AM
+BIOMETRIA HEMATICA COMPLETA
+WBC\t A 14.40 K/uL 4.10 - 11.10
+HGB\t * 16.80 g/dL 13.60 - 17.80`;
+    const dd = `Expediente:\t1\tFecha Registro:\tJun 12 2026 12:22AM
+HEMATOLOGIA
+DIMERO D
+DIMERO D\t A 2276 ng/mL 0.0 - 500.0`;
+    const items = [bh, dd].map((text) => ({ result: procesarLabs(text), reportText: text }));
+    const merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 1);
+    const bhLine = merged[0].resLabs.find((l) => /^BH\b/i.test(l));
+    assert.ok(bhLine, 'fila BH');
+    assert.match(bhLine, /DD\s+2276/);
+    assert.match(bhLine, /Leu\s+14\.4/);
+  });
 });

@@ -2,6 +2,22 @@ import js from '@eslint/js';
 import globals from 'globals';
 import sonarjs from 'eslint-plugin-sonarjs';
 
+const vendoredIgnores = {
+  ignores: [
+    'hallmark/**',
+    'micode/**',
+    'superpowers/**',
+    'ui-ux-pro-max-skill/**',
+    'plugins/**',
+    'python-runtime/**',
+    'dist/**',
+    'build/**',
+    '.worktrees/**',
+    '.claude/**',
+    '.agents/**',
+  ],
+};
+
 const tier1 = {
   files: [
     'public/js/**/*.mjs',
@@ -63,4 +79,67 @@ const generatedIgnores = {
   ],
 };
 
-export default [generatedIgnores, js.configs.recommended, tier1, tier1Commonjs, tier2LegacyCjs, bootHubs];
+const rootProcessCommonjs = {
+  files: ['main.js', 'server.js', 'preload.js'],
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'commonjs',
+    globals: { ...globals.node },
+  },
+  rules: {
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+  },
+};
+
+const rootProcessEsm = {
+  files: ['generate-censo.js', 'generate-receta-hu.js'],
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+    globals: { ...globals.node },
+  },
+  rules: {
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+  },
+};
+
+const scriptsBlock = {
+  files: ['scripts/**/*.mjs', 'scripts/**/*.js', 'scripts/**/*.cjs'],
+  languageOptions: {
+    ecmaVersion: 2022,
+    globals: { ...globals.node },
+  },
+  rules: {
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+  },
+};
+
+const scriptsEsm = {
+  files: ['scripts/**/*.mjs'],
+  languageOptions: {
+    sourceType: 'module',
+  },
+};
+
+const scriptsCommonjs = {
+  files: ['scripts/**/*.js', 'scripts/**/*.cjs'],
+  languageOptions: {
+    sourceType: 'commonjs',
+    globals: { ...globals.node, module: 'readonly', require: 'readonly', exports: 'writable' },
+  },
+};
+
+export default [
+  vendoredIgnores,
+  generatedIgnores,
+  js.configs.recommended,
+  tier1,
+  tier1Commonjs,
+  tier2LegacyCjs,
+  bootHubs,
+  rootProcessCommonjs,
+  rootProcessEsm,
+  scriptsBlock,
+  scriptsEsm,
+  scriptsCommonjs,
+];

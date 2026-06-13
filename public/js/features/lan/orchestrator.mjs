@@ -74,13 +74,6 @@ import {
 } from './host-patients-snapshot.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { buildLanCommand } from '../../lan-command-client.mjs';
-import {
-  deleteDraftConflict,
-  listDraftConflicts,
-  clearAllDraftConflicts,
-  countDraftConflicts,
-} from "../../draft-conflict-store.mjs";
-import { conflictSnapshotsMatchForAutoResolve } from "../../lan-conflict-silent-match.mjs";
 import { notifyLwwOverwrite } from "../../lan-lww-toast.mjs";
 import { perfMark, perfMeasure } from "../../perf-markers.mjs";
 import {
@@ -167,6 +160,63 @@ import {
   registerLanSyncPanelRuntime,
   refreshClinicalSessionTeams,
 } from "./panel.mjs";
+
+import {
+  configureLanConflicts,
+  acceptServerBundleConflict,
+  acceptServerClinicalOpsConflict,
+  appendLanConflictDraftsSection,
+  handleSyncConflict,
+  wsConflictDetailToPayload,
+} from './conflicts.mjs';
+import {
+  configureLanEntityVersions,
+  readLiveSyncEntityMap,
+  getLiveSyncEntityBase,
+  rememberLiveSyncEntity,
+  rememberPatientDeleteTombstone,
+  syncHostBundleEntityFromApplied,
+  stampTodosWithEntityVersions,
+  rememberTodosFromMap,
+  buildLiveSyncMutationFromDesired,
+  sendLiveSyncMutation,
+} from './entity-versions.mjs';
+import {
+  configureLanPatientDelete,
+  purgeLanPatientFromHost,
+  removePatientLocally,
+} from './patient-delete.mjs';
+
+import {
+  configureLanHistoriaSync,
+  lanPushHistoriaClinica,
+  lanPushHistoriaClinicaDelta,
+  lanSyncPatientArchivedFlag,
+  lanFetchHistoriaClinica,
+} from './historia-sync.mjs';
+
+import {
+  configureLanPatientEntries,
+  applyLanPatientEntries,
+  lanJsonEqual,
+  touchPatientLanUpdatedAt,
+} from './patient-entries.mjs';
+
+import {
+  configureLanHostPatientHttp,
+  lanFetchHostPatientRow,
+  lanPushPatientVersioned,
+  restoreLanPatientFromHost,
+} from './host-patient-http.mjs';
+
+import {
+  emitLiveSyncAgendaUpsert,
+  emitLiveSyncAgendaDelete,
+  emitLiveSyncTodoUpsert,
+  emitLiveSyncTodoDelete,
+  emitLiveSyncPatientDelete,
+} from './live-sync-emit.mjs';
+
 
 
 let _lanLastPingAt = null;
@@ -314,476 +364,6 @@ export function registerLanRuntime(ctx) {
   })();
 }
 
-const LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';
-
-function readLiveSyncEntityMap() {
-  try {
-    var raw = localStorage.getItem(LIVE_SYNC_ENTITIES_LS);
-    var parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (_e) {
-    return {};
-  }
-}
-
-function liveSyncEntityStoreKey(entityType, entityId, patientId) {
-  if (entityType === 'todo') return 'todo:' + String(patientId || '') + ':' + String(entityId || '');
-  if (entityType === 'agenda') return 'agenda:' + String(entityId || '');
-  if (entityType === 'patient') return 'patient:' + String(entityId || '');
-  return String(entityType || '') + ':' + String(entityId || '');
-}
-
-function getLiveSyncEntityBase(entityType, entityId, patientId) {
-  var map = readLiveSyncEntityMap();
-  return map[liveSyncEntityStoreKey(entityType, entityId, patientId)] || null;
-}
-
-function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) {
-  var map = readLiveSyncEntityMap();
-  var row = Object.assign({}, data || {}, { version: Number(version || 1) });
-  map[liveSyncEntityStoreKey(entityType, entityId, patientId)] = row;
-  try {
-    localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
-  } catch (_e) {}
-}
-
-/** Local tombstone so LAN reconcile cannot resurrect a patient pending delete sync. */
-export function rememberPatientDeleteTombstone(patient) {
-  if (!patient || !patient.id || String(patient.id).indexOf('demo-') === 0) return;
-  var pid = String(patient.id);
-  var cached = getLiveSyncEntityBase('patient', pid, null) || {};
-  var ver = cached.version != null ? Number(cached.version) + 1 : 1;
-  rememberLiveSyncEntity('patient', pid, null, ver, {
-    id: pid,
-    registro: String(patient.registro || '').trim(),
-    _deleted: true,
-    updatedAt: new Date().toISOString(),
-  });
-}
-
-function syncHostBundleEntityFromApplied(msg) {
-  var rid = String((msg && msg.roomId) || activeLiveSyncRoomId || '').trim();
-  if (!rid || !msg || msg.version == null) return;
-  var bases = getHostBundleBases(rid);
-  var key = null;
-  if (msg.entityType === 'agenda') key = agendaEntityKey(msg.entityId);
-  else if (msg.entityType === 'todo' && msg.patientId) {
-    key = todoEntityKey(msg.patientId, msg.entityId);
-  } else if (msg.entityType === 'patient') {
-    var reg = msg.data && msg.data.registro;
-    key = patientEntityKey(msg.entityId, reg);
-  }
-  if (!key) return;
-  var entityVersions = Object.assign({}, bases.entityVersions || {});
-  entityVersions[key] = Number(msg.version);
-  setHostBundleBases(rid, {
-    revision: bases.revision,
-    entityVersions: entityVersions,
-  });
-}
-
-function stampTodosWithEntityVersions(todosMap, entityVersions) {
-  var versions = entityVersions && typeof entityVersions === 'object' ? entityVersions : {};
-  var out = {};
-  Object.keys(todosMap || {}).forEach(function (pid) {
-    out[pid] = (todosMap[pid] || []).map(function (t) {
-      if (!t || !t.id) return t;
-      var key = liveSyncEntityStoreKey('todo', t.id, pid);
-      if (versions[key] == null) return t;
-      return Object.assign({}, t, { version: Number(versions[key]) });
-    });
-  });
-  return out;
-}
-
-function rememberTodosFromMap(todosMap) {
-  Object.keys(todosMap || {}).forEach(function (pid) {
-    (todosMap[pid] || []).forEach(function (t) {
-      if (!t || !t.id) return;
-      var ver = Number(t.version || 0);
-      if (!ver) return;
-      rememberLiveSyncEntity('todo', t.id, pid, ver, t);
-    });
-  });
-}
-
-function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) {
-  extra = extra || {};
-  var patientId = extra.patientId;
-  var cached = getLiveSyncEntityBase(entityType, entityId, patientId);
-  var base = cached
-    ? Object.assign({}, cached)
-    : { id: entityId, version: Number(desired && desired.version != null ? desired.version : 0) };
-  if (entityType === 'todo' && patientId && !base.patientId) base.patientId = patientId;
-  var builder = createMutationBuilder(entityType, entityId).captureBase(base);
-  var hasChange = false;
-  Object.keys(desired || {}).forEach(function (key) {
-    if (key === 'version') return;
-    if (desired[key] !== base[key]) {
-      builder.set(key, desired[key]);
-      hasChange = true;
-    }
-  });
-  if (!hasChange && desired) {
-    Object.keys(desired).forEach(function (key) {
-      if (key === 'version') return;
-      builder.set(key, desired[key]);
-    });
-  }
-  return builder.build(extra);
-}
-
-function sendLiveSyncMutation(mutation) {
-  if (!activeLiveSyncRoomId || !mutation) return;
-  var rid = String(activeLiveSyncRoomId || '').trim();
-  var envelope = wrapLiveSyncPatch(rid, getLanClientId(), mutation);
-
-  function transmit() {
-    if (!lanClient.liveConnected) return false;
-    void guardAndSignLiveSyncMutation(mutation, envelope)
-      .then(function () {
-        lanClient.sendLive(envelope);
-      })
-      .catch(function (err) {
-        if (err && err.code === 'CLINICAL_ACCESS_DENIED') {
-          runtime.showToast(String(err.message || 'Acceso clínico denegado'), 'error');
-        }
-      });
-    return true;
-  }
-
-  if (transmit()) return;
-  try {
-    lanClient.connectLiveChannel(rid);
-  } catch (_eConn) {}
-  void waitForLiveChannelOpen(rid, 4500).then(function () {
-    transmit();
-  });
-}
-
-function isRoomBundleConflictDraft(draft) {
-  return !!(draft && (draft.scope || draft.localBundle || draft.entityType === 'roomBundle'));
-}
-
-async function clearConflictDraft(draftId) {
-  if (!draftId) return;
-  try {
-    await deleteDraftConflict(draftId);
-  } catch (_e) {}
-  void renderLanPanel();
-}
-
-async function discardDraftsForConflictEntity(payload) {
-  if (!payload || !payload.entityType || !payload.entityId) return;
-  var drafts = [];
-  try {
-    drafts = await listDraftConflicts();
-  } catch (_eList) {
-    return;
-  }
-  var roomId = payload.roomId || null;
-  for (var i = 0; i < drafts.length; i += 1) {
-    var d = drafts[i];
-    if (!d || !d.id || isRoomBundleConflictDraft(d)) continue;
-    if (d.entityType !== payload.entityType || String(d.entityId) !== String(payload.entityId)) continue;
-    if (roomId != null && d.roomId != null && String(d.roomId) !== String(roomId)) continue;
-    try {
-      await deleteDraftConflict(d.id);
-    } catch (_eDel) {}
-  }
-}
-
-/**
- * Align revision + clinicalOps from host without merging full census (fast, non-blocking).
- * @returns {boolean}
- */
-export function acceptServerBundleConflict(opts) {
-  opts = opts || {};
-  var rid = String(opts.roomId || '').trim();
-  var bundle = opts.serverBundle;
-  if (!rid || !bundle || typeof bundle !== 'object') return false;
-  setHostBundleBases(rid, bundle);
-  if (bundle.clinicalOps && isClinicalOpsLanAvailable()) {
-    void applyClinicalOpsLanSnapshot(bundle.clinicalOps).then(function (result) {
-      if (result.ok) {
-        void refreshClinicalOpsSnapshotCache();
-        if (result.changed) {
-          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-        }
-      }
-    });
-  }
-  applyRoomSyncPhaseAfterReconcile(rid);
-  return true;
-}
-
-/** @returns {Promise<boolean>} */
-export function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
-  var rid = String(roomId || '').trim();
-  if (!rid) return Promise.resolve(false);
-  if (revision != null) {
-    var bases = getHostBundleBases(rid) || { entityVersions: {} };
-    setHostBundleBases(rid, {
-      revision: Number(revision),
-      entityVersions: bases.entityVersions || {},
-    });
-  }
-  if (snapshot && isClinicalOpsLanAvailable()) {
-    return applyClinicalOpsLanSnapshot(snapshot).then(function (result) {
-      if (result.ok) {
-        void refreshClinicalOpsSnapshotCache();
-        if (result.changed) {
-          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-        }
-      }
-      applyRoomSyncPhaseAfterReconcile(rid);
-      return !!result.ok;
-    });
-  }
-  applyRoomSyncPhaseAfterReconcile(rid);
-  return Promise.resolve(revision != null);
-}
-
-async function applyConflictUseServer(payload) {
-  var server = payload && payload.serverSnapshot;
-  if (server && server.data) {
-    if (payload.entityType === 'historiaClinica' && payload.patientId) {
-      var hcRow = patients.find(function (p) {
-        return p && String(p.id) === String(payload.patientId);
-      });
-      if (hcRow) {
-        var mod = await import('../../historia-clinica-lan-sync.mjs');
-        mod.applyServerHistoriaClinicaToPatient(hcRow, server.version, server.data);
-      }
-    } else {
-      applyLiveSyncApplied({
-        roomId: payload.roomId || activeLiveSyncRoomId,
-        entityType: payload.entityType,
-        entityId: payload.entityId,
-        patientId: payload.patientId,
-        version: server.version,
-        data: server.data,
-      });
-    }
-  }
-  if (payload.draftId) {
-    await clearConflictDraft(payload.draftId);
-  }
-}
-
-function clearHistoriaPendingAfterConflict(payload) {
-  if (!payload || payload.entityType !== 'historiaClinica' || !payload.patientId) return;
-  var row = patients.find(function (p) {
-    return p && String(p.id) === String(payload.patientId);
-  });
-  if (!row || !row.historiaClinica) return;
-  delete row.historiaClinica.pendingLanSync;
-  delete row.historiaClinica.lanSyncPending;
-  saveState();
-}
-
-function mergeConflictSnapshotData(snap) {
-  if (!snap) return {};
-  var base = snap.baseData && typeof snap.baseData === 'object' ? snap.baseData : {};
-  var patch = snap.data && typeof snap.data === 'object' ? snap.data : {};
-  return Object.assign({}, base, patch);
-}
-
-function conflictDataForViewer(payload) {
-  var local = mergeConflictSnapshotData(payload && payload.localSnapshot);
-  var server =
-    payload && payload.serverSnapshot && payload.serverSnapshot.data
-      ? Object.assign({}, payload.serverSnapshot.data)
-      : {};
-  if (payload && payload.entityType === 'todo' && (!server.text || server.completed == null)) {
-    var cached = getLiveSyncEntityBase('todo', payload.entityId, payload.patientId);
-    if (cached) server = Object.assign({}, cached, server);
-  }
-  return { localData: local, serverData: server };
-}
-
-function shouldAutoResolveTodoConflict(payload) {
-  if (!payload || payload.entityType !== 'todo') return false;
-  if (payload.localSnapshot && payload.localSnapshot.op === 'delete') return true;
-  var local = mergeConflictSnapshotData(payload.localSnapshot);
-  var server = payload.serverSnapshot && payload.serverSnapshot.data;
-  return !!(local.completed || (server && server.completed));
-}
-
-function tryAutoResolveTodoConflict(payload) {
-  var server = payload.serverSnapshot;
-  if (!server || server.version == null || !payload.patientId) return false;
-  var local = mergeConflictSnapshotData(payload.localSnapshot);
-  var merged = Object.assign({}, server.data || {}, local, {
-    id: payload.entityId,
-    version: server.version,
-  });
-  if (payload.localSnapshot && payload.localSnapshot.op === 'delete') {
-    rememberLiveSyncEntity(
-      'todo',
-      payload.entityId,
-      payload.patientId,
-      server.version,
-      Object.assign({}, server.data || {}, { id: payload.entityId })
-    );
-    emitLiveSyncTodoDelete(payload.patientId, {
-      id: payload.entityId,
-      version: server.version,
-    });
-    return true;
-  }
-  if (local.completed) {
-    merged.completed = true;
-    emitLiveSyncTodoUpsert(payload.patientId, merged);
-    return true;
-  }
-  return false;
-}
-
-async function appendLanConflictDraftsSection(root) {
-  if (!root) return;
-  var draftCount = 0;
-  try {
-    draftCount = await countDraftConflicts();
-  } catch (_eList) {
-    draftCount = 0;
-  }
-  if (!draftCount) return;
-
-  var prev = root.querySelector('#lan-conflict-drafts-card');
-  if (prev) prev.remove();
-
-  var card = document.createElement('div');
-  card.id = 'lan-conflict-drafts-card';
-  card.className = 'lan-connect-card';
-
-  var title = document.createElement('div');
-  title.className = 'lan-connect-card-title';
-  title.textContent = 'Conflictos antiguos';
-  card.appendChild(title);
-
-  var hint = document.createElement('p');
-  hint.className = 'lan-connect-card-hint';
-  hint.textContent =
-    draftCount +
-    ' borrador(es) de conflictos anteriores. La sala ya resuelve cambios concurrentes automáticamente.';
-  card.appendChild(hint);
-
-  var bulkRow = document.createElement('div');
-  bulkRow.className = 'lan-connect-actions-row';
-  bulkRow.style.marginTop = '4px';
-  var bulkBtn = document.createElement('button');
-  bulkBtn.type = 'button';
-  bulkBtn.className = 'btn-lan-primary';
-  bulkBtn.style.flex = '1';
-  bulkBtn.textContent = 'Descartar todos';
-  bulkBtn.onclick = function () {
-    if (
-      typeof confirm === 'function' &&
-      !confirm('¿Descartar los ' + draftCount + ' borradores de conflicto antiguos?')
-    ) {
-      return;
-    }
-    bulkBtn.disabled = true;
-    bulkBtn.textContent = 'Descartando…';
-    void clearAllDraftConflicts()
-      .then(function (cleared) {
-        runtime.showToast(
-          cleared
-            ? 'Se descartaron ' + cleared + ' conflictos antiguos.'
-            : 'No había borradores que descartar.',
-          cleared ? 'success' : 'info'
-        );
-      })
-      .catch(function () {
-        runtime.showToast('No se pudieron descartar los borradores.', 'error');
-      })
-      .finally(function () {
-        bulkBtn.disabled = false;
-        bulkBtn.textContent = 'Descartar todos';
-        void renderLanPanel();
-      });
-  };
-  bulkRow.appendChild(bulkBtn);
-  card.appendChild(bulkRow);
-  root.appendChild(card);
-}
-
-async function applyLwwConflictLocally(payload) {
-  if (!payload) return;
-  perfMark('lan-sync-lww-apply-start');
-  try {
-    if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
-      await discardDraftsForConflictEntity(payload);
-      clearHistoriaPendingAfterConflict(payload);
-      var localDelete = payload.localSnapshot && payload.localSnapshot.op === 'delete';
-      if (!localDelete) {
-        runtime.showToast('Pendiente alineado con la sala', 'info');
-      }
-      return;
-    }
-    var viewerData = conflictDataForViewer(payload);
-    var silentMatch = conflictSnapshotsMatchForAutoResolve({
-      conflictingKeys: payload.conflictingKeys,
-      localData: viewerData.localData,
-      serverData: viewerData.serverData,
-    });
-    await applyConflictUseServer(payload);
-    await discardDraftsForConflictEntity(payload);
-    clearHistoriaPendingAfterConflict(payload);
-    var server = payload.serverSnapshot;
-    if (server && server.version != null) {
-      syncHostBundleEntityFromApplied({
-        roomId: payload.roomId || activeLiveSyncRoomId,
-        entityType: payload.entityType,
-        entityId: payload.entityId,
-        patientId: payload.patientId,
-        version: server.version,
-        data: server.data,
-      });
-    }
-    if (!silentMatch && payload.lwwApplied) {
-      notifyLwwOverwrite(runtime, {
-        entityType: payload.entityType,
-        entityId: payload.entityId,
-        overwrittenKeys: payload.overwrittenKeys || payload.conflictingKeys || [],
-      });
-    }
-  } finally {
-    perfMark('lan-sync-lww-apply-end');
-    perfMeasure('lan-sync-lww-apply', 'lan-sync-lww-apply-start', 'lan-sync-lww-apply-end');
-  }
-}
-
-async function handleSyncConflict(payload, options) {
-  options = options || {};
-  await applyLwwConflictLocally(payload);
-  void renderLanPanel();
-}
-
-function wsConflictDetailToPayload(detail) {
-  return {
-    transport: 'ws',
-    entityType: detail.entityType,
-    entityId: detail.entityId,
-    roomId: detail.roomId,
-    patientId: detail.patientId,
-    lwwApplied: detail.lwwApplied === true,
-    overwrittenKeys: detail.overwrittenKeys || detail.conflictingKeys || [],
-    conflictingKeys: detail.conflictingKeys || [],
-    localSnapshot: {
-      expectedVersion: detail.client && detail.client.version != null ? detail.client.version : detail.expectedVersion,
-      data: detail.client && detail.client.data,
-      baseData: getLiveSyncEntityBase(detail.entityType, detail.entityId, detail.patientId) || undefined,
-      op: detail.client && detail.client.op,
-    },
-    serverSnapshot: {
-      version: detail.server && detail.server.version,
-      data: detail.server && detail.server.data,
-    },
-  };
-}
-
 /** @param {string} patientId */
 /** Pull host monitoreo (interno vitals) into local patient row. */
 export async function hydrateLocalPatientMonitoreoFromHost(patientId) {
@@ -836,310 +416,6 @@ async function handleInternoHostSyncBroadcast(detail) {
   }
 }
 
-export async function lanFetchHostPatientRow(patientId) {
-  var pid = String(patientId || '').trim();
-  if (!pid || !isLanSessionConfiguredForRest()) return null;
-  var list = await fetchHostPatientsList();
-  if (!list) return null;
-  return (
-    list.find(function (row) {
-      return row && String(row.id) === pid && !row._deleted;
-    }) || null
-  );
-}
-
-export async function lanPushPatientVersioned(patientId, mutation) {
-  var pid = String(patientId || '').trim();
-  if (!pid || !mutation) return { ok: false, error: 'invalid_args' };
-  var resp = await lanFetchAuthed('/api/lan/v1/patients/' + encodeURIComponent(pid), {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(mutation),
-  });
-  if (!resp.ok) {
-    return { ok: false, status: resp.status };
-  }
-  var out = {};
-  try {
-    out = await resp.json();
-  } catch (_eOut) {}
-  if (out && out.version != null && out.data) {
-    rememberLiveSyncEntity('patient', pid, null, out.version, out.data);
-    syncHostBundleEntityFromApplied({
-      roomId: activeLiveSyncRoomId,
-      entityType: 'patient',
-      entityId: pid,
-      version: out.version,
-      data: out.data,
-    });
-  }
-  if (out && out.lwwApplied) {
-    notifyLwwOverwrite(runtime, {
-      entityType: 'patient',
-      entityId: pid,
-      overwrittenKeys: out.overwrittenKeys || [],
-    });
-  }
-  return { ok: true, body: out, version: out.version, data: out.data };
-}
-
-/** Pull one patient row from the host sync-bundle into the local census (orphan entregas). */
-export async function restoreLanPatientFromHost(patientId) {
-  var pid = String(patientId || '').trim();
-  var rid = String(activeLiveSyncRoomId || '').trim();
-  if (!pid || !rid || !isLanSessionConfiguredForRest()) {
-    return { ok: false, error: 'not_configured' };
-  }
-  try {
-    var resp = await lanClient.fetch(
-      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle',
-      { cache: 'no-store' }
-    );
-    if (!resp || !resp.ok) {
-      return { ok: false, error: 'bundle_fetch_failed', status: resp && resp.status };
-    }
-    var j = await resp.json();
-    var bundle = j && j.bundle;
-    var entries = bundle && Array.isArray(bundle.entries) ? bundle.entries : [];
-    var entry = entries.find(function (e) {
-      return e && e.patient && String(e.patient.id) === pid;
-    });
-    if (!entry) return { ok: false, error: 'patient_not_on_host' };
-    await fetchClinicalScopeContextFromDb();
-    var result = applyLanPatientEntries([entry], { skipTeamScopeFilter: true });
-    if (result.added || result.updated) {
-      await refreshClinicalPatientListForScope({ allowLanPull: false });
-    }
-    return { ok: true, added: result.added, updated: result.updated };
-  } catch (err) {
-    return { ok: false, error: err && err.message ? err.message : 'restore_failed' };
-  }
-}
-
-function buildPatientDeleteMutation(patientId, hostRow, registroFallback) {
-  var pid = String(patientId || '').trim();
-  var base =
-    hostRow && typeof hostRow === 'object'
-      ? Object.assign({}, hostRow, {
-          id: pid,
-          version: Number(hostRow.version || 1),
-        })
-      : {
-          id: pid,
-          registro: String(registroFallback || '').trim(),
-          version: 0,
-        };
-  return createMutationBuilder('patient', pid).captureBase(base).build({
-    roomId: activeLiveSyncRoomId,
-    op: 'delete',
-  });
-}
-
-async function lanDeleteHostPatientCensus(patientId, registro) {
-  var pid = String(patientId || '').trim();
-  if (!pid) return { ok: false, error: 'invalid_id' };
-  var reg = String(registro || '').trim();
-  var params = new URLSearchParams();
-  if (reg) params.set('registro', reg);
-  var cid = String(getLanClientId() || '').trim();
-  if (cid) params.set('clientId', cid);
-  if (clinicalSessionContext.user && clinicalSessionContext.user.is_program_admin === 1) {
-    params.set('isProgramAdmin', '1');
-  }
-  var qs = params.toString();
-  var resp = await lanFetchAuthed(
-    '/api/lan/v1/patients/' + encodeURIComponent(pid) + (qs ? '?' + qs : ''),
-    { method: 'DELETE' }
-  );
-  if (resp.status === 403) {
-    var body = null;
-    try {
-      body = await resp.json();
-    } catch (_e) {}
-    if (body && body.error === 'owned_by_other_client') {
-      return { ok: false, error: 'owned_by_other_client', skipped: true, status: 403 };
-    }
-  }
-  if (resp.ok || resp.status === 404) return { ok: true, status: resp.status };
-  return { ok: false, status: resp.status };
-}
-
-/** HTTP-first delete; bundle-only charts use DELETE /patients/:id. */
-async function pushPatientDeleteToHost(patientId, hostRow, registroFallback) {
-  var pid = String(patientId || '').trim();
-  var reg = String(registroFallback || (hostRow && hostRow.registro) || '').trim();
-  var rid = String(activeLiveSyncRoomId || '').trim();
-  if (!rid) return { ok: false, error: 'not_configured' };
-
-  if (!hostRow) {
-    var bundleDelete = await lanDeleteHostPatientCensus(pid, reg);
-    if (bundleDelete?.ok) return { ok: true, via: 'delete_bundle' };
-  }
-
-  var mutation = buildPatientDeleteMutation(pid, hostRow, reg);
-  var httpResult = hostRow ? await lanPushPatientVersioned(pid, mutation) : null;
-  if (httpResult?.ok) return httpResult;
-
-  var censusDelete = await lanDeleteHostPatientCensus(pid, reg);
-  if (censusDelete?.ok) return { ok: true, via: 'delete_census' };
-
-  if (!hostRow) {
-    return {
-      ok: false,
-      error: censusDelete?.status ? 'host_reject_' + censusDelete.status : 'purge_failed',
-      status: censusDelete?.status,
-    };
-  }
-
-  await enqueueOutbox(rid, {
-    kind: 'patch',
-    payload: wrapLiveSyncPatch(rid, getLanClientId(), mutation),
-  });
-  await flushLiveSyncOutbox(rid);
-  return {
-    ok: false,
-    error: httpResult?.status ? 'host_reject_' + httpResult.status : 'purge_failed',
-    status: httpResult?.status,
-  };
-}
-
-/**
- * Remove a patient chart from the LAN host (admin/orphan cleanup only).
- * Skips charts registered by another device — those stay on the host for peers.
- * @param {string} patientId
- * @param {{ force?: boolean }} [opts]
- */
-export async function purgeLanPatientFromHost(patientId, opts) {
-  opts = opts || {};
-  var pid = String(patientId || '').trim();
-  if (!pid || pid.indexOf('demo-') === 0) return { ok: false, error: 'invalid_id' };
-  if (!activeLiveSyncRoomId || !isLanSessionConfiguredForRest()) {
-    return { ok: false, error: 'not_configured' };
-  }
-  var registroHint = String(opts.registro || '').trim();
-  var fetchHostRow =
-    typeof opts.fetchHostRow === 'function' ? opts.fetchHostRow : lanFetchHostPatientRow;
-  var hostRow = opts.bundleOnly ? null : await fetchHostRow(pid);
-  var censusRow = hostRow;
-  if (!censusRow && registroHint) {
-    censusRow = { id: pid, registro: registroHint };
-  }
-  if (!opts.force && censusRow && isHostPatientOwnedByOtherClient(censusRow, getLanClientId())) {
-    return { ok: false, error: 'owned_by_other_client', skipped: true };
-  }
-  var snap = {
-    id: pid,
-    registro: String((hostRow && hostRow.registro) || registroHint || '').trim(),
-  };
-  rememberPatientDeleteTombstone(snap);
-  var pushDelete =
-    typeof opts.pushDelete === 'function' ? opts.pushDelete : pushPatientDeleteToHost;
-  var deleteResult = await pushDelete(pid, hostRow, snap.registro);
-  if (!deleteResult?.ok) return deleteResult;
-  invalidateHostPatientsCache();
-  if (hostRow) {
-    emitLiveSyncPatientDelete(snap);
-    scheduleLiveSyncPush();
-    await flushLiveSyncOutbox(activeLiveSyncRoomId);
-  }
-  return { ok: true, hadHostRow: !!hostRow, bundleOnly: !hostRow };
-}
-
-export async function lanPushHistoriaClinica(patientId, mutation) {
-  var pid = String(patientId || '').trim();
-  if (!pid || !mutation) return { ok: false, error: 'invalid_args' };
-  var resp = await lanFetchAuthed(
-    '/api/lan/v1/patients/' + encodeURIComponent(pid) + '/historia-clinica',
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mutation),
-    }
-  );
-  if (!resp.ok) {
-    return { ok: false, status: resp.status };
-  }
-  var out = {};
-  try {
-    out = await resp.json();
-  } catch (_eOut) {}
-  if (out && out.lwwApplied) {
-    notifyLwwOverwrite(runtime, {
-      entityType: 'historiaClinica',
-      entityId: pid,
-      overwrittenKeys: out.overwrittenKeys || [],
-    });
-  }
-  return { ok: true, version: out.version, data: out.data, body: out };
-}
-
-export async function lanPushHistoriaClinicaDelta(patientId, delta) {
-  const pid = String(patientId || '').trim();
-  if (!pid || !delta || !activeLiveSyncRoomId) return { ok: false, error: 'invalid_args' };
-  const resp = await lanFetchAuthed(
-    '/api/lan/v1/rooms/' + encodeURIComponent(activeLiveSyncRoomId) + '/delta',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...delta,
-        entityType: 'historiaClinica',
-        entityId: pid,
-        patientId: pid,
-      }),
-    }
-  );
-  const body = await resp.json().catch(function () {
-    return {};
-  });
-  if (resp.ok) return { ok: true, version: body.version, body };
-  if (resp.status === 409) return { ok: false, stale: true, body };
-  return { ok: false, status: resp.status, body };
-}
-
-/** Sync patient.archived to LAN host (triggers historia archive when archived: true). */
-export async function lanSyncPatientArchivedFlag(patient) {
-  if (!patient || !patient.id || !isLanSessionConfiguredForRest()) {
-    return { ok: false, error: 'not_configured' };
-  }
-  var resp = await lanFetchAuthed('/api/lan/v1/patients');
-  if (!resp.ok) return { ok: false, status: resp.status };
-  var body = {};
-  try {
-    body = await resp.json();
-  } catch (_e) {}
-  var list = Array.isArray(body.patients) ? body.patients : [];
-  var hostRow = list.find(function (row) {
-    return row && String(row.id) === String(patient.id);
-  });
-  if (!hostRow) return { ok: false, error: 'patient_not_on_host' };
-  var mutation = {
-    expectedVersion: Number(hostRow.version || 1),
-    changedKeys: ['archived'],
-    baseData: hostRow,
-    data: Object.assign({}, hostRow, { archived: !!patient.archived }),
-  };
-  return lanPushPatientVersioned(patient.id, mutation);
-}
-
-export async function lanFetchHistoriaClinica(patientId, roomId) {
-  var pid = String(patientId || '').trim();
-  var rid = String(roomId || '').trim();
-  if (!pid || !rid || !isLanSessionConfiguredForRest()) {
-    return { ok: false, error: 'not_configured' };
-  }
-  var resp = await lanFetchAuthed(
-    '/api/lan/v1/patients/' +
-      encodeURIComponent(pid) +
-      '/historia-clinica?roomId=' +
-      encodeURIComponent(rid)
-  );
-  if (resp.status === 404) return { ok: true, missing: true };
-  if (!resp.ok) return { ok: false, status: resp.status };
-  var body = await resp.json();
-  return { ok: true, version: body.version, data: body.data };
-}
-
 function collectPatientIdsForLiveSync() {
   return patients
     .filter(function (p) {
@@ -1175,18 +451,6 @@ function collectPatientEntriesForLanSync() {
   );
 }
 
-function filterIncomingPatientEntriesForScope(entries) {
-  if (!isClinicalScopeReadyForLanPatientApply()) return [];
-  var user = clinicalSessionContext.user;
-  if (!user?.user_id) return [];
-  return filterPatientEntriesForLanTeamScope(
-    entries || [],
-    user,
-    getClinicalScopeContextForEvaluate(),
-    clinicalSessionContext.guardiasMap
-  );
-}
-
 function buildLiveSyncLocalMergeSource() {
   return {
     agenda: storage.getScheduledProcedures(),
@@ -1211,271 +475,6 @@ function buildLiveSyncLocalMergeSource() {
  * Host sync-bundle and WS livesync:bundle carry `clinicalOps` snapshot; renderer
  * applies via db:clinical-ops-merge. db:clinical-save-all also accepts clinicalOps blob.
  */
-
-function touchPatientLanUpdatedAt(patientId) {
-  var p = patients.find(function (x) {
-    return x && x.id === patientId;
-  });
-  if (p) p.lanUpdatedAt = new Date().toISOString();
-}
-
-function saveEntryTodosOnLocalPatient(localPatientId, entry) {
-  if (!localPatientId || !entry) return false;
-  var incoming = Array.isArray(entry.todos) ? entry.todos : [];
-  if (!incoming.length) return false;
-  var merged = mergeTodoListsById(storage.getTodos(localPatientId), incoming);
-  if (lanJsonEqual(storage.getTodos(localPatientId), merged)) return false;
-  storage.saveTodos(localPatientId, merged);
-  return true;
-}
-
-function lanJsonEqual(a, b) {
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch (_e) {
-    return a === b;
-  }
-}
-
-function assignLanScalarIfChanged(target, key, incoming, fallback) {
-  var next = incoming != null && incoming !== '' ? incoming : fallback;
-  if (String(target[key] || '') === String(next || '')) return false;
-  target[key] = next;
-  return true;
-}
-
-/** @returns {boolean} */
-function applyLanPatientEntryToExisting(existing, entry, opts) {
-  if (!existing || !entry || !entry.patient) return false;
-  var changed = false;
-  var p = entry.patient;
-  var scalarKeys = [
-    'nombre',
-    'edad',
-    'sexo',
-    'area',
-    'servicio',
-    'cuarto',
-    'cama',
-    'peso',
-    'talla',
-    'viaAcceso',
-    'registro',
-  ];
-  for (var sk = 0; sk < scalarKeys.length; sk += 1) {
-    var key = scalarKeys[sk];
-    if (assignLanScalarIfChanged(existing, key, p[key], existing[key])) changed = true;
-  }
-  var censoBefore = JSON.stringify(existing);
-  mergeCensoPatientFields(existing, p);
-  if (JSON.stringify(existing) !== censoBefore) changed = true;
-  const regBefore = existing.registeredByUserId;
-  mergePatientRegistrationMeta(existing, p);
-  if (existing.registeredByUserId !== regBefore) changed = true;
-  if (p.fromLab && !existing.fromLab) {
-    existing.fromLab = true;
-    changed = true;
-  }
-  if (p.eventualidades && typeof p.eventualidades === 'object') {
-    var mergedEv = mergeEventualidades(existing.eventualidades, p.eventualidades) || p.eventualidades;
-    if (!lanJsonEqual(existing.eventualidades, mergedEv)) {
-      existing.eventualidades = mergedEv;
-      changed = true;
-    }
-  }
-  if (p.historiaClinica && typeof p.historiaClinica === 'object') {
-    var mergedHc = mergeHistoriaClinica(existing.historiaClinica, p.historiaClinica);
-    if (mergedHc && !lanJsonEqual(existing.historiaClinica, mergedHc)) {
-      existing.historiaClinica = mergedHc;
-      changed = true;
-    }
-  }
-  var nextNote = entry.note || {};
-  if (!lanJsonEqual(notes[existing.id], nextNote)) {
-    notes[existing.id] = nextNote;
-    changed = true;
-  }
-  var nextInd = entry.indicaciones || {};
-  if (!lanJsonEqual(indicaciones[existing.id], nextInd)) {
-    indicaciones[existing.id] = nextInd;
-    changed = true;
-  }
-  var nextLabs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  if (!lanJsonEqual(labHistory[existing.id], nextLabs)) {
-    labHistory[existing.id] = nextLabs;
-    changed = true;
-  }
-  if (Object.prototype.hasOwnProperty.call(entry, 'medReceta')) {
-    if (entry.medReceta) {
-      if (!lanJsonEqual(medRecetaByPatient[existing.id], entry.medReceta)) {
-        medRecetaByPatient[existing.id] = entry.medReceta;
-        changed = true;
-      }
-    } else if (medRecetaByPatient[existing.id]) {
-      delete medRecetaByPatient[existing.id];
-      changed = true;
-    }
-  }
-  if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile')) {
-    if (entry.medPharmProfile) {
-      if (!lanJsonEqual(medPharmProfileByPatient[existing.id], entry.medPharmProfile)) {
-        medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
-        changed = true;
-      }
-    } else if (medPharmProfileByPatient[existing.id]) {
-      delete medPharmProfileByPatient[existing.id];
-      changed = true;
-    }
-  }
-  if (entry.vpo) {
-    if (!lanJsonEqual(vpoByPatient[existing.id], entry.vpo)) {
-      vpoByPatient[existing.id] = entry.vpo;
-      changed = true;
-    }
-  } else if (vpoByPatient[existing.id]) {
-    delete vpoByPatient[existing.id];
-    changed = true;
-  }
-  if (entry.listadoProblemas) {
-    if (!lanJsonEqual(listadoProblemas[existing.id], entry.listadoProblemas)) {
-      listadoProblemas[existing.id] = entry.listadoProblemas;
-      changed = true;
-    }
-  }
-  var monBefore = JSON.stringify(existing);
-  mergePatientMonitoreoFromImported(existing, p);
-  if (JSON.stringify(existing) !== monBefore) changed = true;
-  if (!opts.skipTodos && saveEntryTodosOnLocalPatient(existing.id, entry)) changed = true;
-  return changed;
-}
-
-function applyLanPatientEntries(entries, opts) {
-  opts = opts || {};
-  if (!entries || !entries.length) return { added: 0, updated: 0 };
-  var scopedEntries = opts.skipTeamScopeFilter
-    ? entries
-    : filterIncomingPatientEntriesForScope(entries);
-  if (!scopedEntries.length) return { added: 0, updated: 0 };
-  var added = 0;
-  var updated = 0;
-  for (var i = 0; i < scopedEntries.length; i += 1) {
-    var entry = scopedEntries[i];
-    if (!entry || !entry.patient) continue;
-    var reg = String(entry.patient.registro || '').trim();
-    var existing = reg ? runtime.findPatientByRegistro(reg) : null;
-    if (!existing && entry.patient.id) {
-      existing = patients.find(function (p) {
-        return p && p.id === entry.patient.id;
-      });
-    }
-    if (existing) {
-      if (applyLanPatientEntryToExisting(existing, entry, opts)) updated += 1;
-    } else {
-      var remoteId = String(entry.patient.id || '').trim();
-      var idTaken =
-        remoteId &&
-        patients.some(function (p) {
-          return p && p.id === remoteId;
-        });
-      var newId;
-      if (remoteId && !idTaken) {
-        var newPat = {
-          id: remoteId,
-          nombre: runtime.ensureUniquePatientName(entry.patient.nombre || 'PACIENTE SIN NOMBRE'),
-          area: entry.patient.area || '',
-          servicio: entry.patient.servicio || '',
-          cuarto: entry.patient.cuarto || '',
-          cama: entry.patient.cama || '',
-          peso: entry.patient.peso || '',
-          talla: entry.patient.talla || '',
-          viaAcceso: entry.patient.viaAcceso || '',
-          edad: entry.patient.edad || '',
-          sexo: entry.patient.sexo || 'F',
-          registro: entry.patient.registro || '',
-          fromLab: !!entry.patient.fromLab,
-        };
-        mergePatientMonitoreoFromImported(newPat, entry.patient);
-        mergeCensoPatientFields(newPat, entry.patient);
-        mergePatientRegistrationMeta(newPat, entry.patient);
-        if (entry.patient.eventualidades && typeof entry.patient.eventualidades === 'object') {
-          newPat.eventualidades = entry.patient.eventualidades;
-        }
-        if (entry.patient.historiaClinica && typeof entry.patient.historiaClinica === 'object') {
-          newPat.historiaClinica = structuredClone(entry.patient.historiaClinica);
-        }
-        patients.unshift(newPat);
-        notes[remoteId] = entry.note || {};
-        indicaciones[remoteId] = entry.indicaciones || {};
-        labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-        if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && entry.medReceta) {
-          medRecetaByPatient[remoteId] = entry.medReceta;
-        }
-        if (Object.prototype.hasOwnProperty.call(entry, 'medPharmProfile') && entry.medPharmProfile) {
-          medPharmProfileByPatient[remoteId] = entry.medPharmProfile;
-        }
-        if (entry.vpo) vpoByPatient[remoteId] = entry.vpo;
-        newId = remoteId;
-      } else {
-        newId = runtime.applyImportEntry(entry, 'duplicate', null);
-      }
-      if (entry.listadoProblemas && newId) listadoProblemas[newId] = entry.listadoProblemas;
-      if (!opts.skipTodos) saveEntryTodosOnLocalPatient(newId, entry);
-      added += 1;
-    }
-  }
-  if (added || updated) {
-    saveState({ immediate: true });
-    if (!shouldEnforceTeamPatientMirror()) {
-      renderPatientListLanSilent();
-      if (runtime.getActiveId()) {
-        try {
-          runtime.renderNoteForm();
-        } catch (_e) {}
-        try {
-          runtime.renderLabHistoryPanel();
-        } catch (_e2) {}
-      }
-    }
-  }
-  return { added: added, updated: updated };
-}
-
-export function removePatientLocally(patientId) {
-  var pid = String(patientId || '').trim();
-  if (!pid || pid.indexOf('demo-') === 0) return false;
-  if (!patients.some(function (p) {
-    return p && p.id === pid;
-  })) {
-    return false;
-  }
-  setPatients(patients.filter(function (p) {
-    return p.id !== pid;
-  }));
-  delete notes[pid];
-  delete indicaciones[pid];
-  if (labHistory && labHistory[pid]) delete labHistory[pid];
-  if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
-  if (medPharmProfileByPatient && medPharmProfileByPatient[pid]) delete medPharmProfileByPatient[pid];
-  if (typeof vpoByPatient !== 'undefined' && vpoByPatient && vpoByPatient[pid]) delete vpoByPatient[pid];
-  if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
-  if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
-  if (listadoProblemas && listadoProblemas[pid]) delete listadoProblemas[pid];
-  try {
-    var rawTodosMap = localStorage.getItem('rpc-todos');
-    if (rawTodosMap) {
-      var todosMap = JSON.parse(rawTodosMap);
-      if (todosMap && typeof todosMap === 'object' && todosMap[pid]) {
-        delete todosMap[pid];
-        localStorage.setItem('rpc-todos', JSON.stringify(todosMap));
-      }
-    }
-  } catch (_e) {}
-  try {
-    if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(pid);
-  } catch (_eAg) {}
-  if (runtime.getActiveId() === pid) runtime.setActiveId(patients.length ? patients[0].id : null);
-  return true;
-}
 
 function applyLiveSyncPatientDeletes(deletes, idMap) {
   if (!deletes || !deletes.length) return false;
@@ -1803,75 +802,45 @@ function applyLiveSyncApplied(msg) {
   }
 }
 
-function emitLiveSyncAgendaUpsert(eventObj) {
-  if (!eventObj || !eventObj.id) return;
-  var mutation = buildLiveSyncMutationFromDesired('agenda', eventObj.id, eventObj, {
-    roomId: activeLiveSyncRoomId,
-    op: 'upsert',
-  });
-  sendLiveSyncMutation(mutation);
-}
-function emitLiveSyncAgendaDelete(id, updatedAt) {
-  var eid = String(id || '').trim();
-  if (!eid) return;
-  var base = getLiveSyncEntityBase('agenda', eid, null) || { id: eid, version: 0, updatedAt: updatedAt };
-  var mutation = createMutationBuilder('agenda', eid)
-    .captureBase(base)
-    .build({ roomId: activeLiveSyncRoomId, op: 'delete' });
-  sendLiveSyncMutation(mutation);
-}
-function emitLiveSyncTodoUpsert(patientId, todo) {
-  if (!todo) return;
-  if (String(patientId || '').indexOf('demo-') === 0) return;
-  var mutation = buildLiveSyncMutationFromDesired('todo', todo.id, todo, {
-    roomId: activeLiveSyncRoomId,
-    patientId: patientId,
-    op: 'upsert',
-  });
-  sendLiveSyncMutation(mutation);
-}
-function emitLiveSyncTodoDelete(patientId, todoRef, updatedAt) {
-  var todo = todoRef && typeof todoRef === 'object' ? todoRef : null;
-  var eid = todo ? String(todo.id || '').trim() : String(todoRef || '').trim();
-  if (!eid) return;
-  var cached = getLiveSyncEntityBase('todo', eid, patientId);
-  var base = cached
-    ? Object.assign({}, cached)
-    : Object.assign({}, todo || { id: eid, updatedAt: updatedAt }, { id: eid, patientId: patientId });
-  if (todo && todo.version != null && (cached == null || cached.version == null)) {
-    base.version = Number(todo.version);
-  }
-  if (base.version == null) base.version = Number(todo && todo.version != null ? todo.version : 0);
-  var mutation = createMutationBuilder('todo', eid)
-    .captureBase(base)
-    .build({ roomId: activeLiveSyncRoomId, patientId: patientId, op: 'delete' });
-  var tombVer = Number(base.version || 0) + 1;
-  rememberLiveSyncEntity('todo', eid, patientId, tombVer, {
-    id: eid,
-    patientId: patientId,
-    _deleted: true,
-    updatedAt: String((todo && todo.updatedAt) || updatedAt || new Date().toISOString()),
-  });
-  sendLiveSyncMutation(mutation);
-}
-function emitLiveSyncPatientDelete(patient) {
-  if (!patient) return;
-  if (String(patient.id || '').indexOf('demo-') === 0) return;
-  var mutation = buildLiveSyncMutationFromDesired(
-    'patient',
-    patient.id,
-    { id: patient.id, registro: patient.registro || '' },
-    { roomId: activeLiveSyncRoomId, op: 'delete' }
-  );
-  sendLiveSyncMutation(mutation);
-}
-
 var lanSyncBridgesWired = false;
 
 /** Idempotent LAN bridge registration (safe when esbuild loads room/push before this module). */
 export function wireLanSyncBridges() {
   if (lanSyncBridgesWired) return;
   lanSyncBridgesWired = true;
+
+  configureLanPatientEntries({
+    runtime: runtime,
+    renderPatientListLanSilent: renderPatientListLanSilent,
+  });
+  configureLanHostPatientHttp({ runtime: runtime });
+  configureLanEntityVersions({
+    showToast: function (msg, type) {
+      runtime.showToast(msg, type);
+    },
+  });
+  configureLanConflicts({
+    applyLiveSyncApplied: applyLiveSyncApplied,
+    getLiveSyncEntityBase: getLiveSyncEntityBase,
+    rememberLiveSyncEntity: rememberLiveSyncEntity,
+    syncHostBundleEntityFromApplied: syncHostBundleEntityFromApplied,
+    emitLiveSyncTodoDelete: emitLiveSyncTodoDelete,
+    emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
+    showToast: function (msg, type) {
+      runtime.showToast(msg, type);
+    },
+  });
+  configureLanHistoriaSync({
+    runtime: runtime,
+    lanPushPatientVersioned: lanPushPatientVersioned,
+  });
+  configureLanPatientDelete({
+    lanFetchHostPatientRow: lanFetchHostPatientRow,
+    lanPushPatientVersioned: lanPushPatientVersioned,
+    emitLiveSyncPatientDelete: emitLiveSyncPatientDelete,
+    scheduleLiveSyncPush: scheduleLiveSyncPush,
+    runtime: runtime,
+  });
 
   registerLanSyncPushBridge({
     isLanSessionConfiguredForRest,
@@ -1978,11 +947,9 @@ export function wireLanSyncBridges() {
   });
   lanMutationRegistry.setDomainOutboxKind('lab-history', 'lab_history_upsert');
 
-  lanMutationRegistry.registerMutationHandler('patient-fields', async (pid, payload) => {
-    void pid;
-    void payload;
-  });
-  lanMutationRegistry.setDomainOutboxKind('patient-fields', 'patient_fields');
+  // 'patient-fields' has no typed handler on purpose: deletes propagate via
+  // tombstone + bundle push; dispatch falls back to the untyped safety bundle.
+  // The host PUT /patients/:id/fields endpoint remains for legacy outbox items.
 
   lanMutationRegistry.registerMutationHandler('entrega', async () => {
     await pushClinicalOpsLanNow();
@@ -2160,6 +1127,17 @@ export function registerLanSaveHooks(deps) {
     },
   });
 }
+
+
+export { lanPushHistoriaClinica, lanPushHistoriaClinicaDelta, lanSyncPatientArchivedFlag, lanFetchHistoriaClinica } from './historia-sync.mjs';
+export { acceptServerBundleConflict, acceptServerClinicalOpsConflict } from './conflicts.mjs';
+export { rememberPatientDeleteTombstone } from './entity-versions.mjs';
+export { purgeLanPatientFromHost, removePatientLocally } from './patient-delete.mjs';
+export {
+  lanFetchHostPatientRow,
+  lanPushPatientVersioned,
+  restoreLanPatientFromHost,
+} from './host-patient-http.mjs';
 
 export {
   appendLanConflictDraftsSection,

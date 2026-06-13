@@ -34,6 +34,14 @@ let _easyConnectFailCount = 0;
 let _lastEasyConnectAttemptMs = 0;
 let _lastShiftPinFailReason = '';
 
+function readShiftPinClientId() {
+  try {
+    const id = localStorage.getItem('rpc-lan-client-id');
+    if (id && String(id).trim()) return String(id).trim();
+  } catch (_e) {}
+  return '';
+}
+
 export function getShiftPinCooldownMs() {
   return BACKOFF_STEPS_MS[Math.min(_easyConnectFailCount, BACKOFF_STEPS_MS.length - 1)];
 }
@@ -83,7 +91,7 @@ async function exchangeShiftPinOnHost(hostUrl, shiftPin) {
     const res = await fetch(`${base}/api/lan/v1/auth/exchange`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shiftPin: pin }),
+      body: JSON.stringify({ shiftPin: pin, clientId: readShiftPinClientId() }),
       signal: ctrl.signal,
     });
     if (res.status === 401) return { ok: false, reason: 'invalid_pin' };
@@ -103,6 +111,11 @@ async function persistShiftPinBearer(data) {
     try {
       await window.electronAPI.lanGuestWriteBearer({ token: String(data.token).trim() });
     } catch (_e) {}
+  }
+  if (data.clientToken) {
+    try {
+      localStorage.setItem('rpc-lan-client-token', String(data.clientToken));
+    } catch (_eCt) {}
   }
 }
 

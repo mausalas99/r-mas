@@ -69,6 +69,7 @@ function colLineHeight(colKey) {
  */
 function pdfSafeLine(text) {
   return String(text || '')
+    // eslint-disable-next-line no-control-regex -- strip C0 controls before PDF embedding
     .replace(/[\r\n\f\v\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

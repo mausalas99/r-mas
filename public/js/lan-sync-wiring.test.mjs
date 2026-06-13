@@ -11,6 +11,8 @@ const jsRoot = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(join(jsRoot, rel), 'utf8');
 
 const lanSyncFeature = read('features/lan/orchestrator.mjs');
+const lanEntityVersions = read('features/lan/entity-versions.mjs');
+const lanConflicts = read('features/lan/conflicts.mjs');
 const lanSyncPush = read('features/lan/push.mjs');
 const lanSyncRoom = read('features/lan/room.mjs');
 const lanSyncPanel = read('features/lan/panel.mjs');
@@ -164,17 +166,17 @@ describe('LAN event and handler wiring', () => {
   });
 
   it('stampTodosWithEntityVersions uses liveSyncEntityStoreKey not bare todoEntityKey', () => {
-    const fnStart = lanSyncFeature.indexOf('function stampTodosWithEntityVersions');
+    const fnStart = lanEntityVersions.indexOf('function stampTodosWithEntityVersions');
     assert.ok(fnStart >= 0);
-    const fnEnd = lanSyncFeature.indexOf('function rememberTodosFromMap', fnStart);
-    const body = lanSyncFeature.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 400);
+    const fnEnd = lanEntityVersions.indexOf('function rememberTodosFromMap', fnStart);
+    const body = lanEntityVersions.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 400);
     assert.match(body, /liveSyncEntityStoreKey\('todo'/);
     assert.doesNotMatch(body, /todoEntityKey\(/);
   });
 
   it('legacy conflict drafts section offers discard all', () => {
-    assert.match(lanSyncFeature, /clearAllDraftConflicts/);
-    assert.match(lanSyncFeature, /Conflictos antiguos[\s\S]*Descartar todos/);
+    assert.match(lanConflicts, /clearAllDraftConflicts/);
+    assert.match(lanConflicts, /Conflictos antiguos[\s\S]*Descartar todos/);
   });
 
   it('saveState after hook does NOT call scheduleLiveSyncPush', () => {

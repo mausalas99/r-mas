@@ -69,5 +69,25 @@ describe('dispatchLanMutation', () => {
     registry.registerMutationHandler('nota', async () => {});
     assert.equal(registry.isTypedDomain('nota'), true);
     assert.equal(registry.isTypedDomain('vpo'), false);
+    assert.equal(registry.isTypedDomain('patient-fields'), false);
+  });
+
+  it('patient-fields uses untyped fallback when no handler registered', async () => {
+    const { createMutationRegistry } = await import('./lan-mutation-registry.mjs');
+    let dirtyArgs = null;
+    let scheduleCalled = false;
+    const registry = createMutationRegistry({
+      isActive: () => true,
+      markUntypedDirty: (domain, pid) => {
+        dirtyArgs = { domain, pid };
+      },
+      scheduleUntypedSafetyBundle: () => {
+        scheduleCalled = true;
+      },
+    });
+    await registry.dispatchLanMutation('patient-fields', 'p-del');
+    assert.deepEqual(dirtyArgs, { domain: 'patient-fields', pid: 'p-del' });
+    assert.equal(scheduleCalled, true);
+    assert.equal(registry.isTypedDomain('patient-fields'), false);
   });
 });

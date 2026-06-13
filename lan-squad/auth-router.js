@@ -26,6 +26,7 @@ function createAuthRouter({
   getHostUrl,
   getRequiresMigrationNotice,
   authFailureLockout = createAuthFailureLockout(),
+  clientIdentityStore = null,
 }) {
   const r = express.Router();
   const getState = () => ({ teamCodeHash: hashTeamCode(getHostToken()) });
@@ -164,12 +165,17 @@ function createAuthRouter({
         wardHostRegistry && typeof wardHostRegistry.getHintsForExchange === 'function'
           ? wardHostRegistry.getHintsForExchange()
           : null;
+      const clientToken =
+        body.clientId != null && clientIdentityStore && typeof clientIdentityStore.issue === 'function'
+          ? clientIdentityStore.issue(body.clientId)
+          : null;
       res.json({
         token: result.token,
         hostUrl,
         persist: true,
         storageTarget: 'userData',
         ...(wardHostHints ? { wardHostHints } : {}),
+        ...(clientToken ? { clientToken } : {}),
       });
     } catch (e) {
       console.error('[auth/exchange]', redactAuthBody(body), e && e.message);

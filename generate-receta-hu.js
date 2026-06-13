@@ -19,7 +19,7 @@ function resolveTemplatePath(baseDir) {
     const p = path.join(root, 'templates', TEMPLATE_NAME);
     try {
       if (fs.statSync(p).isFile()) return p;
-    } catch (_e) {}
+    } catch (_e) { /* ignored */ }
   }
   throw new Error('No se encontró la plantilla PDF de receta HU.');
 }

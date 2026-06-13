@@ -25,11 +25,26 @@ const {
   splitSomeReportsInBlock,
   buildBulkLabPreview,
   mergeBulkParseResults,
+  pickLatestDayMergedLabDisplay,
   shouldShowBulkLabPreview,
   extractLabPatientFromBulkBlock,
 } = await import('./lab-bulk-paste.mjs');
 const { procesarLabs } = await import('./labs.js');
+const { splitResLabsByTipo } = await import('./cultivo-block-core.mjs');
 const { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } = await import('./tour-demo-some-lab.mjs');
+
+function primaryTipoForResLabs(resLabs) {
+  var sp = splitResLabsByTipo(resLabs || []);
+  var hasL = sp.labs.some(function (r) {
+    return String(r || '').trim();
+  });
+  var hasC = sp.cultivo.some(function (r) {
+    return String(r || '').trim();
+  });
+  if (hasC && hasL) return 'mixed';
+  if (hasC) return 'cultivo';
+  return 'labs';
+}
 
 describe('lab-bulk-paste', () => {
   beforeEach(() => {
@@ -61,6 +76,36 @@ describe('lab-bulk-paste', () => {
     assert.equal(reports.length, 2);
     assert.match(reports[0], /Apr 11 2026/);
     assert.match(reports[1], /Mar 05 2026/);
+  });
+
+  it('splitSomeReportsInBlock tolera espacio antes de Expediente:', () => {
+    var glued =
+      'LIPASA SERICA\t1244 U/L 8 - 57\n Expediente:\t1111111-1\tSolicitud:\t1\nNombre:\tDemo';
+    var reports = splitSomeReportsInBlock(glued);
+    assert.equal(reports.length, 2);
+    assert.match(reports[1], /1111111-1/);
+  });
+
+  it('pickLatestDayMergedLabDisplay consolida solo el día más reciente', () => {
+    var block = DEMO_SOME_LAB_REPORT + '\n\n' + OLDER_DEMO_SOME_LAB_REPORT;
+    var items = splitSomeReportsInBlock(block)
+      .map(function (text) {
+        return { result: procesarLabs(text), reportText: text };
+      })
+      .filter(function (item) {
+        return item.result.resLabs && item.result.resLabs.length;
+      });
+    var display = pickLatestDayMergedLabDisplay(items);
+    assert.ok(display);
+    assert.match(display.fecha || display.patient.fecha, /04\/11\/2026|11\/04\/2026/);
+    assert.ok(
+      display.resLabs.some(function (row) {
+        return /^QS\b/i.test(String(row));
+      }),
+      'debe incluir química del día reciente'
+    );
+    var perDaySets = mergeBulkParseResults(items);
+    assert.equal(perDaySets.length, 2, 'varios días en historial: un conjunto por día, sin fusionar');
   });
 
   it('mergeBulkParseResults consolida mismo día en un conjunto', () => {
@@ -118,6 +163,25 @@ describe('lab-bulk-paste', () => {
     assert.ok(patient);
     assert.match(String(patient.name || ''), /PÉREZ|PEREZ/i);
     assert.equal(patient.expediente, '0008421-7');
+  });
+
+  it('primaryTipoForResLabs clasifica cultivo con encabezado de sitio en mayúsculas', () => {
+    var resLabs = [
+      'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA',
+      'ATB R: CAZ',
+      'Cuenta: +100 UFC',
+    ];
+    assert.equal(primaryTipoForResLabs(resLabs), 'cultivo');
+  });
+
+  it('primaryTipoForResLabs clasifica mixed cuando hay labs y cultivo con SEROL', () => {
+    var resLabs = [
+      'BH 12.5 4.1',
+      'UROCULTIVO: E. COLI',
+      'ATB S: CIPRO',
+      'SEROL VIH negativo',
+    ];
+    assert.equal(primaryTipoForResLabs(resLabs), 'mixed');
   });
 
   it('shouldShowBulkLabPreview abre modal con varios reportes o avisos', () => {

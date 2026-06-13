@@ -32,6 +32,8 @@ import {
 import {
   buildBulkLabPreview,
   mergeBulkParseResults,
+  pickLatestDayMergedLabDisplay,
+  dedupeConsolidatedLabRows,
   LAB_BULK_PATIENT_SEPARATOR,
   shouldShowBulkLabPreview,
 } from "../lab-bulk-paste.mjs";
@@ -323,56 +325,8 @@ function findLabHistorySetByRef(sets, setId) {
   return sets.find(function (s) { return String(s.id) === sid; }) || null;
 }
 
-function labRowSectionKey(row) {
-  var s = String(row == null ? '' : row).trim();
-  if (!s) return '';
-  var tabIdx = s.indexOf('\t');
-  if (tabIdx >= 0) return s.substring(0, tabIdx).trim().toUpperCase();
-  var colonIdx = s.indexOf(':');
-  if (colonIdx > 0) return s.substring(0, colonIdx + 1).trim().toUpperCase();
-  var m = s.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\b/);
-  return m ? m[1].toUpperCase() : s.toUpperCase();
-}
-
-function labRowRichnessScore(row) {
-  var s = normalizeLabLine(String(row == null ? '' : row));
-  if (!s) return 0;
-  var score = s.length;
-  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score += (s.match(/\d/g) || []).length;
-  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
-  return score;
-}
-
 function dedupeConsolidatedRowsBySection(rows, tipo) {
-  var normalized = [];
-  var seenExact = Object.create(null);
-  (rows || []).forEach(function (row) {
-    var norm = normalizeLabLine(String(row == null ? '' : row));
-    if (!norm) return;
-    if (seenExact[norm]) return;
-    seenExact[norm] = true;
-    normalized.push(String(row));
-  });
-  if (tipo !== 'labs') return normalized;
-
-  var bestBySection = Object.create(null);
-  normalized.forEach(function (row, idx) {
-    var key = labRowSectionKey(row);
-    if (!key) return;
-    var cand = { row: row, idx: idx, score: labRowRichnessScore(row) };
-    var prev = bestBySection[key];
-    if (!prev || cand.score > prev.score || (cand.score === prev.score && cand.idx > prev.idx)) {
-      bestBySection[key] = cand;
-    }
-  });
-  var has = Object.create(null);
-  Object.keys(bestBySection).forEach(function (k) {
-    has[bestBySection[k].idx] = true;
-  });
-  return normalized.filter(function (_row, idx) {
-    return !!has[idx];
-  });
+  return dedupeConsolidatedLabRows(rows, tipo);
 }
 
 var _labHistorySelectedSetId = Object.create(null);
@@ -489,6 +443,8 @@ function loadLabHistorySetIntoOutput(setId, opts) {
     patient: { name: name, expediente: reg, sexo: '', edad: '', fecha: set.fecha || '' },
     resLabs: set.resLabs,
     sourceText: set.sourceText || '',
+    bhExtras: set.bhExtras,
+    refsBySection: set.refsBySection,
   };
   activeLab = result;
   renderOutput(result, { fromHistory: true, silent: !!(opts && opts.silent) });
@@ -969,6 +925,124 @@ function runLabDedupeReviewAllPatients() {
 }
 
 /**
+ * Fusiona entradas del mismo día calendario y tipo homogéneo (labs o cultivo).
+ * @returns {{ merged: number, removedIds: string[], keeperIds: string[] }}
+ */
+function runLabHistoryDayTipoConsolidation(patientId) {
+  var out = { merged: 0, removedIds: [], keeperIds: [] };
+  if (!patientId || !labHistory[patientId] || labHistory[patientId].length < 2) return out;
+
+  rt.ensureParsedLabHistory(patientId);
+  var sets = labHistory[patientId].slice();
+  var groups = Object.create(null);
+  sets.forEach(function (set) {
+    if (!set || set.fecha === 'Anterior') return;
+    var dk = rt.dayKeyFromLabSet(set);
+    if (dk === 'unknown') return;
+    var tipo = rt.primaryTipoForLabSet(set.resLabs);
+    if (tipo === 'mixed') return;
+    var gk = dk + '\x01' + tipo;
+    if (!groups[gk]) groups[gk] = [];
+    groups[gk].push(set);
+  });
+
+  var todo = [];
+  Object.keys(groups).forEach(function (gk) {
+    var arr = groups[gk];
+    if (arr.length < 2) return;
+    var tipoGrupo = gk.split('\x01')[1] || 'labs';
+    arr.sort(compareLabSetIdForDedupe);
+    var keeper = arr[0];
+    var mergeOrder = arr.slice().sort(function (a, b) {
+      var sa = rt.labSetIsFromSome(a) ? 1 : 0;
+      var sb = rt.labSetIsFromSome(b) ? 1 : 0;
+      if (sa !== sb) return sa - sb;
+      return compareLabSetIdForDedupe(a, b);
+    });
+    var merged = [];
+    var sourceParts = [];
+    mergeOrder.forEach(function (set) {
+      var other = set.resLabs || [];
+      if (merged.length && other.length) merged.push('');
+      merged = merged.concat(other);
+      if (set.sourceText && String(set.sourceText).trim()) sourceParts.push(String(set.sourceText).trim());
+    });
+    var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
+    keeper.resLabs = deduped;
+    keeper.parsed = rt.extractParsedValues(deduped);
+    var mergedBhExtras = {};
+    mergeOrder.forEach(function (sMerge) {
+      if (sMerge && sMerge.bhExtras && typeof sMerge.bhExtras === 'object') {
+        Object.keys(sMerge.bhExtras).forEach(function (bk) {
+          mergedBhExtras[bk] = sMerge.bhExtras[bk];
+        });
+      }
+    });
+    keeper.bhExtras = mergedBhExtras;
+    keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
+    if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
+    refreshSameDayAscitisForPatient(patientId, keeper.id);
+    keeper.hora = '';
+    out.keeperIds.push(String(keeper.id));
+    for (var j = 1; j < arr.length; j++) {
+      todo.push(String(arr[j].id));
+    }
+  });
+
+  if (!todo.length) return out;
+
+  var idRemove = new Set(todo);
+  labHistory[patientId] = labHistory[patientId].filter(function (s) {
+    return !idRemove.has(String(s.id));
+  });
+  if (!labHistory[patientId].length) delete labHistory[patientId];
+  bumpLabHistoryRevision(patientId);
+  _labHistoryDateSelectCacheKey = '';
+  out.merged = todo.length;
+  out.removedIds = todo;
+  return out;
+}
+
+function autoConsolidateLabHistoryForPatient(patientId) {
+  return runLabHistoryDayTipoConsolidation(patientId);
+}
+
+function findDisplayLabHistorySetId(patientId, displayResult) {
+  if (!patientId || !displayResult) return '';
+  var hist = sortLabHistoryChronological(
+    rt.ensureParsedLabHistoryCached
+      ? rt.ensureParsedLabHistoryCached(patientId)
+      : rt.ensureParsedLabHistory(patientId, { readOnly: true })
+  );
+  if (!hist.length) return '';
+
+  var targetDay = rt.dayKeyFromLabSet({
+    fecha: displayResult.patient && displayResult.patient.fecha,
+    hora: displayResult.patient && displayResult.patient.hora,
+  });
+  var candidates = hist.filter(function (set) {
+    return rt.dayKeyFromLabSet(set) === targetDay;
+  });
+  if (!candidates.length) candidates = [hist[0]];
+
+  candidates.sort(function (a, b) {
+    var la = (a.resLabs && a.resLabs.length) || 0;
+    var lb = (b.resLabs && b.resLabs.length) || 0;
+    if (lb !== la) return lb - la;
+    var ta = parseFechaLabToMs(a.fecha, a.hora);
+    var tb = parseFechaLabToMs(b.fecha, b.hora);
+    if (typeof ta === 'number' && typeof tb === 'number' && isFinite(ta) && isFinite(tb) && tb !== ta) {
+      return tb - ta;
+    }
+    return 0;
+  });
+
+  var pick = candidates[0];
+  var idx = hist.indexOf(pick);
+  return labSetIdForHistory(pick, idx >= 0 ? idx : 0);
+}
+
+/**
  * Fusiona entradas de labHistory del mismo día calendario y mismo tipo homogéneo (solo labs o solo cultivo).
  * Los conjuntos mixtos (laboratorio + cultivo en un mismo set) no se fusionan ni se agrupan con otros.
  */
@@ -995,78 +1069,22 @@ function consolidateLabHistoryByDayAndTipo() {
   ) {
     return;
   }
-  rt.ensureParsedLabHistory(rt.getActiveId());
-  var sets = labHistory[rt.getActiveId()].slice();
-  var groups = Object.create(null);
-  sets.forEach(function (set) {
-    if (!set || set.fecha === 'Anterior') return;
-    var dk = rt.dayKeyFromLabSet(set);
-    if (dk === 'unknown') return;
-    var tipo = rt.primaryTipoForLabSet(set.resLabs);
-    if (tipo === 'mixed') return;
-    var gk = dk + '\x01' + tipo;
-    if (!groups[gk]) groups[gk] = [];
-    groups[gk].push(set);
-  });
-  var todo = [];
-  Object.keys(groups).forEach(function (gk) {
-    var arr = groups[gk];
-    if (arr.length < 2) return;
-    var tipoGrupo = gk.split('\x01')[1] || 'labs';
-    arr.sort(compareLabSetIdForDedupe);
-    var keeper = arr[0];
-    var mergeOrder = arr.slice().sort(function (a, b) {
-      var sa = rt.labSetIsFromSome(a) ? 1 : 0;
-      var sb = rt.labSetIsFromSome(b) ? 1 : 0;
-      if (sa !== sb) return sa - sb;
-      return compareLabSetIdForDedupe(a, b);
-    });
-    var merged = [];
-    var sourceParts = [];
-    mergeOrder.forEach(function (set, idx) {
-      var other = set.resLabs || [];
-      if (merged.length && other.length) merged.push('');
-      merged = merged.concat(other);
-      if (set.sourceText && String(set.sourceText).trim()) sourceParts.push(String(set.sourceText).trim());
-    });
-    var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
-    keeper.resLabs = deduped;
-    keeper.parsed = rt.extractParsedValues(deduped);
-    var mergedBhExtras = {};
-    mergeOrder.forEach(function (sMerge) {
-      if (sMerge && sMerge.bhExtras && typeof sMerge.bhExtras === 'object') {
-        Object.keys(sMerge.bhExtras).forEach(function (bk) {
-          mergedBhExtras[bk] = sMerge.bhExtras[bk];
-        });
-      }
-    });
-    keeper.bhExtras = mergedBhExtras;
-    keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
-    if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
-    refreshSameDayAscitisForPatient(rt.getActiveId(), keeper.id);
-    keeper.hora = '';
-    for (var j = 1; j < arr.length; j++) {
-      todo.push(String(arr[j].id));
-    }
-  });
-  if (!todo.length) {
+  if (typeof rt.pushUndoSnapshot === 'function') {
+    rt.pushUndoSnapshot('Consolidar historial de labs por día y tipo');
+  }
+  var result = runLabHistoryDayTipoConsolidation(rt.getActiveId());
+  if (!result.merged) {
     rt.showToast('No hay grupos del mismo día y tipo homogéneo para fusionar', 'success');
     return;
   }
-  if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Consolidar historial de labs por día y tipo');
-  var idRemove = new Set(todo);
-  labHistory[rt.getActiveId()] = labHistory[rt.getActiveId()].filter(function (s) {
-    return !idRemove.has(String(s.id));
-  });
-  if (!labHistory[rt.getActiveId()].length) delete labHistory[rt.getActiveId()];
   rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
   saveState({ immediate: true });
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el && notes[rt.getActiveId()]) el.value = notes[rt.getActiveId()].estudios || '';
-  rt.addAuditEntry('lab-history-consolidate', 'ok', todo.length, String(rt.getActiveId()));
-  rt.showToast('Fusionados ' + todo.length + ' conjunto(s) ✓', 'success');
+  rt.addAuditEntry('lab-history-consolidate', 'ok', result.merged, String(rt.getActiveId()));
+  rt.showToast('Fusionados ' + result.merged + ' conjunto(s) ✓', 'success');
 }
 
 // ── Lab ───────────────────────────────────────────────────────────
@@ -1389,6 +1407,10 @@ function storeBulkLabBlocks(blocks, processable) {
       pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
       storedSets += 1;
     });
+    var consolidation = autoConsolidateLabHistoryForPatient(patientId);
+    if (consolidation.merged > 0 && typeof rt.addAuditEntry === 'function') {
+      rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
+    }
     rt.rebuildEstudiosFromLabHistory(patientId);
   });
   if (storedSets || skippedDupes) {
@@ -1399,7 +1421,7 @@ function storeBulkLabBlocks(blocks, processable) {
   return { storedSets: storedSets, skippedDupes: skippedDupes, skippedBlocks: blocks.length - processable.length };
 }
 
-function pickDisplayLabReport(blocks, processable, activeId) {
+function pickDisplayLabResult(blocks, processable, activeId) {
   var activeBlock = null;
   if (activeId) {
     activeBlock = processable.find(function (b) {
@@ -1410,11 +1432,29 @@ function pickDisplayLabReport(blocks, processable, activeId) {
     return b.okReportCount > 0;
   });
   if (!block) return null;
-  var okReports = block.reports.filter(function (r) {
-    return r.ok && r.result;
-  });
-  if (!okReports.length) return null;
-  return okReports[okReports.length - 1];
+
+  var patientReg = block.patient ? String(block.patient.registro || '').trim() : '';
+  var okItems = block.reports
+    .filter(function (r) {
+      return r.ok && r.result && (!patientReg || r.expediente === patientReg);
+    })
+    .map(function (r) {
+      return { result: r.result, reportText: r.reportText };
+    });
+  if (!okItems.length) return null;
+
+  var display = pickLatestDayMergedLabDisplay(okItems);
+  if (!display) return null;
+  return {
+    result: {
+      patient: display.patient,
+      resLabs: display.resLabs,
+      bhExtras: display.bhExtras,
+      refsBySection: display.refsBySection,
+    },
+    reportText: display.sourceText,
+    expediente: display.expediente || (display.patient && display.patient.expediente),
+  };
 }
 
 export function insertLabPatientSeparator() {
@@ -1620,34 +1660,46 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
     }
   }
 
-  var displayReport = pickDisplayLabReport(blocks, processable, rt.getActiveId());
-  if (!displayReport) {
-    displayReport = blocks.reduce(function (found, b) {
+  var displayPick = pickDisplayLabResult(blocks, processable, rt.getActiveId());
+  if (!displayPick) {
+    displayPick = blocks.reduce(function (found, b) {
       if (found) return found;
-      return b.reports.find(function (r) { return r.ok && r.result; }) || null;
+      var ok = b.reports.find(function (r) { return r.ok && r.result; });
+      if (!ok) return null;
+      return { result: ok.result, reportText: ok.reportText, expediente: ok.expediente };
     }, null);
   }
 
-  if (!displayReport || !displayReport.result) {
+  if (!displayPick || !displayPick.result) {
     rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
     notifyTourAfterBulkLabStore(blocks, processable.length > 0);
     return;
   }
 
-  var displayResult = displayReport.result;
-  displayResult.sourceText = displayReport.reportText || text;
+  var displayResult = displayPick.result;
+  displayResult.sourceText = displayPick.reportText || text;
   if (processable.length === 1 && processable[0].okReportCount === 1) {
     applyLabPastePatientResolution(displayResult);
-  } else if (displayReport.expediente) {
-    var match = rt.findPatientByRegistro(displayReport.expediente);
+  } else if (displayPick.expediente) {
+    var match = rt.findPatientByRegistro(displayPick.expediente);
     if (match && match.id !== rt.getActiveId()) {
       rt.selectPatient(match.id);
+      rt.showToast('Paciente: ' + (match.nombre || 'Sin nombre') + ' · Exp ' + displayPick.expediente, 'success');
     }
   }
 
   renderOutput(displayResult);
   toastAscitisAlertsFromResult(displayResult);
   rt.renderDiagramas(displayResult.resLabs);
+
+  var activeId = rt.getActiveId();
+  if (activeId && processable.length) {
+    var historySetId = findDisplayLabHistorySetId(activeId, displayResult);
+    if (historySetId) {
+      _labHistorySelectedSetId[activeId] = historySetId;
+      loadLabHistorySetIntoOutput(historySetId, { silent: true });
+    }
+  }
 
   var multi = blocks.length > 1 || totalOkReports > 1 || processable.length > 1;
   if (multi) {
@@ -1853,9 +1905,14 @@ function renderOutput(result, opts) {
   if (!(opts && opts.fromHistory)) {
     var pid = rt.getActiveId();
     if (pid) {
-      var hist = getActivePatientLabHistory();
-      var latest = hist.length ? hist[0] : null;
-      var preferId = latest ? labSetIdForHistory(latest, 0) : '';
+      var preferId =
+        (opts && opts.preferHistorySetId) ||
+        findDisplayLabHistorySetId(pid, result) ||
+        '';
+      if (!preferId) {
+        var hist = getActivePatientLabHistory();
+        preferId = hist.length ? labSetIdForHistory(hist[0], 0) : '';
+      }
       syncLabHistoryDateSelect({ preferSetId: preferId });
       if (preferId) _labHistorySelectedSetId[pid] = preferId;
     }

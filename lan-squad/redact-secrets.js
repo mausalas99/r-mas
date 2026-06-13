@@ -1,6 +1,6 @@
 'use strict';
 
-const SENSITIVE_BODY_KEYS = new Set(['pin', 'ticket', 'token', 'code']);
+const SENSITIVE_BODY_KEYS = new Set(['pin', 'ticket', 'token', 'code', 'clientToken']);
 const BEARER_RE = /^Bearer\s+\S+/i;
 
 function redactBearerHeader(value) {

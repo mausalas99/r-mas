@@ -9,11 +9,8 @@ import {
   isAscitisInterpretacionResLabChunk,
   looksLikeSomeLabReport,
 } from './labs.js';
-import {
-  isCultivoBlockStartLine as isCultivoBlockStartLineCore,
-  isLabSectionHeaderLine as isLabSectionHeaderLineCore,
-  splitResLabsByTipo as splitResLabsByTipoCore,
-} from './cultivo-block-core.mjs';
+import { splitResLabsByTipo } from './cultivo-block-core.mjs';
+export { isLabSectionHeaderLine, isCultivoBlockStartLine, splitResLabsByTipo } from './cultivo-block-core.mjs';
 import {
   findExactDuplicateLabGroups,
   findNormalizedSourceDuplicateGroups,
@@ -106,15 +103,6 @@ export function buildLabSetDateLineForNota(set) {
   return rawDate;
 }
 
-var LAB_HISTORY_CULTIVO_OPTS = { extendedLabHeaders: true, allCapsSiteHeaders: true };
-
-export const isLabSectionHeaderLine = (s) => isLabSectionHeaderLineCore(s, LAB_HISTORY_CULTIVO_OPTS);
-
-export const isCultivoBlockStartLine = (s) => isCultivoBlockStartLineCore(s, LAB_HISTORY_CULTIVO_OPTS);
-
-export const splitResLabsByTipo = (rows) => splitResLabsByTipoCore(rows, LAB_HISTORY_CULTIVO_OPTS);
-
-/** Conjunto guardado desde informe SOME (pegado o reprocesado), no panel compacto de Drive. */
 /** Etiqueta del historial: fecha y número de bloques (sin hora). */
 export function formatLabHistoryListMeta(set, inferFechaLabSetFromId) {
   if (!set) return '—';

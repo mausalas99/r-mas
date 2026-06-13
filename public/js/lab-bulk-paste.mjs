@@ -2,7 +2,7 @@
  * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
  * vista previa y consolidación por día + tipo antes de guardar en historial.
  */
-import { procesarLabs, looksLikeSomeLabReport } from './labs.js';
+import { procesarLabs, looksLikeSomeLabReport, mergeBhResLabRows_ } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
@@ -23,7 +23,7 @@ function primaryTipoForResLabs(resLabs) {
   return 'labs';
 }
 
-function dayKeyFromResult(result) {
+export function dayKeyFromResult(result) {
   var fecha = normalizeFechaLabHistory(result.patient && result.patient.fecha) || '';
   var hora = normalizeHoraLabHistory(result.patient && result.patient.hora);
   if (fecha === 'Anterior') return 'Anterior';
@@ -69,7 +69,7 @@ export function splitSomeReportsInBlock(blockText) {
   var raw = String(blockText || '').trim();
   if (!raw) return [];
   return raw
-    .split(/(?=^Expediente\s*:)/im)
+    .split(/(?=^\s*Expediente\s*:)/im)
     .map(function (s) {
       return s.trim();
     })
@@ -92,6 +92,11 @@ function labRowRichnessScore(row) {
   return score;
 }
 
+function isBhResLabRow(row) {
+  var key = labRowSectionKey(row);
+  return key === 'BH' || /^BH:/i.test(String(row || '').trim());
+}
+
 /** Dedupe de renglones al consolidar mismo día (misma lógica que lab-panel). */
 export function dedupeConsolidatedLabRows(rows, tipo) {
   var normalized = [];
@@ -105,8 +110,15 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   });
   if (tipo !== 'labs') return normalized;
 
+  var bhRows = [];
+  var otherRows = [];
+  normalized.forEach(function (row) {
+    if (isBhResLabRow(row)) bhRows.push(row);
+    else otherRows.push(row);
+  });
+
   var bestBySection = Object.create(null);
-  normalized.forEach(function (row, idx) {
+  otherRows.forEach(function (row, idx) {
     var key = labRowSectionKey(row);
     if (!key) return;
     var cand = { row: row, idx: idx, score: labRowRichnessScore(row) };
@@ -115,13 +127,14 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
       bestBySection[key] = cand;
     }
   });
-  var has = Object.create(null);
-  Object.keys(bestBySection).forEach(function (k) {
-    has[bestBySection[k].idx] = true;
+
+  var out = Object.keys(bestBySection).map(function (k) {
+    return bestBySection[k].row;
   });
-  return normalized.filter(function (_row, idx) {
-    return !!has[idx];
-  });
+  if (bhRows.length) {
+    out.unshift(mergeBhResLabRows_(bhRows));
+  }
+  return out;
 }
 
 function sortDaysDesc(days) {
@@ -322,6 +335,71 @@ export function mergeBulkParseResults(parsedItems) {
     out.push(buildMergedPayloadFromGroup(arr, tipo));
   });
   return out;
+}
+
+function latestDayKeyFromParsedItems(parsedItems) {
+  var latestMs = -Infinity;
+  (parsedItems || []).forEach(function (item) {
+    if (!item || !item.result) return;
+    var fecha = normalizeFechaLabHistory(item.result.patient && item.result.patient.fecha) || '';
+    var hora = normalizeHoraLabHistory(item.result.patient && item.result.patient.hora);
+    var ms = parseFechaLabToMs(fecha, hora);
+    if (typeof ms === 'number' && isFinite(ms) && ms > latestMs) latestMs = ms;
+  });
+  if (!(latestMs > -Infinity)) return '';
+  var d = new Date(latestMs);
+  return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function wrapSingleParsedLabDisplay(item) {
+  if (!item || !item.result) return null;
+  return {
+    patient: item.result.patient,
+    resLabs: item.result.resLabs,
+    bhExtras: item.result.bhExtras,
+    refsBySection: item.result.refsBySection,
+    sourceText: item.reportText,
+    expediente: item.result.patient && item.result.patient.expediente,
+  };
+}
+
+/**
+ * Resultados tras pegado: si el texto trae varios días, no mezclarlos en un solo bloque.
+ * Muestra solo el día más reciente, consolidando solicitudes SOME distintas de ese día
+ * (p. ej. lipasa + química + gaso del 12/06).
+ * @param {{ result: object, reportText: string }[]} parsedItems
+ */
+export function pickLatestDayMergedLabDisplay(parsedItems) {
+  var items = (parsedItems || []).filter(function (item) {
+    return item && item.result && item.result.resLabs && item.result.resLabs.length;
+  });
+  if (!items.length) return null;
+  if (items.length === 1) return wrapSingleParsedLabDisplay(items[0]);
+
+  var latestDayKey = latestDayKeyFromParsedItems(items);
+  var dayItems = latestDayKey
+    ? items.filter(function (item) {
+        return dayKeyFromResult(item.result) === latestDayKey;
+      })
+    : items.slice();
+  if (!dayItems.length) dayItems = items.slice();
+  if (dayItems.length === 1) return wrapSingleParsedLabDisplay(dayItems[0]);
+
+  var mergedSets = mergeBulkParseResults(dayItems);
+  if (!mergedSets.length) return null;
+  if (mergedSets.length === 1) return mergedSets[0];
+
+  var best = mergedSets[0];
+  mergedSets.forEach(function (payload) {
+    var msBest = parseFechaLabToMs(best.fecha, best.hora);
+    var msCand = parseFechaLabToMs(payload.fecha, payload.hora);
+    if (typeof msCand === 'number' && isFinite(msCand)) {
+      if (typeof msBest !== 'number' || !isFinite(msBest) || msCand > msBest) {
+        best = payload;
+      }
+    }
+  });
+  return best;
 }
 
 function bulkBlocksHaveProcessablePatient(blocks) {

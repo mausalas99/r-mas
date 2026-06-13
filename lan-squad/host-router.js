@@ -10,6 +10,25 @@ const { evaluateHostPatientPurgeGuard } = require('./host-patient-ownership.js')
 const HEARTBEAT_INTERVAL_MS = 30_000;
 let _heartbeatTimer = null;
 
+function resolvePurgeClientIdentity(req, clientIdentityStore) {
+  const headerToken = String(req.get('x-client-token') || '').trim();
+  const boundClientId =
+    headerToken && clientIdentityStore && typeof clientIdentityStore.resolve === 'function'
+      ? clientIdentityStore.resolve(headerToken)
+      : '';
+  const queryClientId = String(req.query.clientId || '').trim();
+  if (boundClientId && queryClientId && boundClientId !== queryClientId) {
+    console.warn('[lan] purge identity mismatch', { boundClientId, queryClientId });
+  }
+  if (!boundClientId) {
+    console.warn('[lan] purge using legacy client-asserted identity', { queryClientId });
+  }
+  return {
+    clientId: boundClientId || queryClientId,
+    isProgramAdmin: req.query.isProgramAdmin === '1',
+  };
+}
+
 function startHeartbeat(broadcastFn, getMetaFn, getExtrasFn) {
   if (_heartbeatTimer) return;
   _heartbeatTimer = setInterval(() => {
@@ -42,6 +61,7 @@ function createLanRouter({
   getHealthExtras,
   sseBroadcast,
   onClinicalOpsMerged,
+  clientIdentityStore = null,
 }) {
   const r = express.Router();
   const getState = () => store.getState();
@@ -111,8 +131,7 @@ function createLanRouter({
     try {
       const id = String(req.params.id || '').trim();
       const registro = String(req.query.registro || '').trim();
-      const clientId = String(req.query.clientId || '').trim();
-      const isProgramAdmin = req.query.isProgramAdmin === '1';
+      const { clientId, isProgramAdmin } = resolvePurgeClientIdentity(req, clientIdentityStore);
       if (!id) return res.status(400).json({ error: 'patient_id_required' });
       const guard = evaluateHostPatientPurgeGuard(store, id, clientId, isProgramAdmin);
       if (guard.blocked) {
@@ -459,10 +478,17 @@ function createLanRouter({
       ) {
         await store.persistRoomBundleClinicalOpsToHostDb(req.params.id);
         const refreshed =
-          typeof store.getRoomSyncBundleForApi === 'function'
-            ? store.getRoomSyncBundleForApi(req.params.id)
-            : store.getRoomSyncBundle(req.params.id);
-        if (refreshed) out.bundle = refreshed;
+          typeof store.getRoomClinicalOpsForApi === 'function'
+            ? store.getRoomClinicalOpsForApi(req.params.id)
+            : null;
+        if (refreshed) {
+          out.bundle = {
+            ...out.bundle,
+            clinicalOps: refreshed.clinicalOps,
+            entityVersions: refreshed.entityVersions,
+            revision: refreshed.revision,
+          };
+        }
       }
       if (out && out.bundle) {
         broadcastLiveRevision(

@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
 const require = createRequire(import.meta.url);
 
 function nativeLoadError() {
@@ -30,29 +31,77 @@ console.log(
   `[ensure-native-db-for-node] Native DB module mismatch for Node ${process.version} (modules ${process.versions.modules}); rebuilding…`
 );
 
-/** Apple Silicon + CLT sin slice x86_64: npm bajo Rosetta rompe xcrun/libtool. */
-function nativeRebuildShell() {
-  if (process.platform === 'darwin' && process.arch === 'arm64') {
-    return 'arch -arm64 npm rebuild better-sqlite3-multiple-ciphers';
+function darwinArm64Env(extra = {}) {
+  if (process.platform !== 'darwin' || process.arch !== 'arm64') {
+    return { ...process.env, ...extra };
   }
-  return 'npm rebuild better-sqlite3-multiple-ciphers';
+  return {
+    ...process.env,
+    npm_config_arch: 'arm64',
+    npm_config_target_arch: 'arm64',
+    ...extra,
+  };
 }
 
-try {
-  execSync(nativeRebuildShell(), {
-    cwd: root,
+/** Force native arm64 on Apple Silicon — npm under Rosetta breaks xcrun/libtool. */
+function wrapDarwinArm64(cmd) {
+  if (process.platform === 'darwin' && process.arch === 'arm64') {
+    return `arch -arm64 ${cmd}`;
+  }
+  return cmd;
+}
+
+function runShell(cmd, opts = {}) {
+  execSync(wrapDarwinArm64(cmd), {
+    cwd: opts.cwd || root,
     stdio: 'inherit',
-    env: process.env,
+    env: darwinArm64Env(opts.env),
     shell: true,
   });
-} catch (e) {
-  console.error('[ensure-native-db-for-node] npm rebuild failed:', e.message);
-  process.exit(1);
+}
+
+function tryPrebuildInstall() {
+  console.log('[ensure-native-db-for-node] Trying prebuild-install…');
+  runShell('npx prebuild-install', { cwd: pkgDir });
+}
+
+function tryFetchNodePrebuild() {
+  console.log('[ensure-native-db-for-node] Trying GitHub Node prebuild fetch…');
+  runShell('node scripts/fetch-sqlite-node.mjs');
+}
+
+function tryNpmRebuild() {
+  console.log('[ensure-native-db-for-node] Trying npm rebuild (may compile from source)…');
+  runShell('npm rebuild better-sqlite3-multiple-ciphers');
+}
+
+const steps = [tryPrebuildInstall, tryFetchNodePrebuild, tryNpmRebuild];
+let lastError = null;
+
+for (const step of steps) {
+  if (!nativeLoadError()) break;
+  try {
+    step();
+  } catch (e) {
+    lastError = e;
+    const msg = e && e.message ? String(e.message) : String(e);
+    if (/libxcrun|need 'x86_64'|Rosetta/i.test(msg)) {
+      console.warn(
+        '[ensure-native-db-for-node] Compile failed (arch mismatch). ' +
+          'Use a native arm64 Terminal (not Rosetta) or rely on prebuild fetch.'
+      );
+    } else {
+      console.warn(`[ensure-native-db-for-node] ${step.name} failed:`, msg);
+    }
+  }
 }
 
 const after = nativeLoadError();
 if (after) {
   console.error('[ensure-native-db-for-node] Still cannot load native module after rebuild:\n', after);
+  if (lastError) {
+    console.error('[ensure-native-db-for-node] Last error:', lastError.message || lastError);
+  }
   process.exit(1);
 }
 

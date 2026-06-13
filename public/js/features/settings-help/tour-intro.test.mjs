@@ -58,8 +58,13 @@ describe('tour intro launch', () => {
     assert.match(flow, /guidedTourFinish\(\)/);
     const click = flow.match(/function guidedTourClickNext\(\) \{[\s\S]*?\n\}/);
     assert.ok(click);
-    assert.match(click[0], /if \(tourState\.tourStepId === 'wrap'\)/);
-    const wrapIdx = click[0].indexOf("if (tourState.tourStepId === 'wrap')");
+    assert.match(
+      click[0],
+      /if \(tourState\.tourStepId === 'wrap' \|\| tourState\.tourStepId === 'quick_wrap'\)/
+    );
+    const wrapIdx = click[0].indexOf(
+      "if (tourState.tourStepId === 'wrap' || tourState.tourStepId === 'quick_wrap')"
+    );
     const idxCheck = click[0].indexOf('if (i < 0) return');
     assert.ok(wrapIdx < idxCheck, 'wrap finish runs before i < 0 bail');
     assert.match(click[0], /if \(i \+ 1 >= steps\.length\) \{\s*finishGuidedTour/);

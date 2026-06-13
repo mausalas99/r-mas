@@ -12,12 +12,14 @@ const { createTicketStore } = require('./ticket-store.js');
 const { createAuthRouter } = require('./auth-router.js');
 const { createWardHostRegistry } = require('./ward-host-registry.js');
 const { createAuthFailureLockout } = require('./auth-failure-lockout.js');
+const { createClientIdentityStore } = require('./client-identity-store.js');
 
 function createTestApp({
   hostToken,
   hostUrl,
   requiresMigrationNotice = false,
   authFailureLockout,
+  clientIdentityStore = createClientIdentityStore(),
 }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-'));
   const statePath = path.join(dir, 'state.json');
@@ -40,9 +42,10 @@ function createTestApp({
       getHostUrl: () => hostUrl,
       getRequiresMigrationNotice: () => requiresMigrationNotice,
       ...(authFailureLockout ? { authFailureLockout } : {}),
+      clientIdentityStore,
     })
   );
-  return { app, dir, store, ticketStore, shiftPinStore, wardHostRegistry, authFailureLockout };
+  return { app, dir, store, ticketStore, shiftPinStore, wardHostRegistry, authFailureLockout, clientIdentityStore };
 }
 
 async function listen(app) {
@@ -481,6 +484,83 @@ test('GET /host-status returns migration flag with Bearer', async () => {
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.requiresMigrationNotice, true);
     assert.strictEqual(body.lan, true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange returns clientToken when clientId is provided', async () => {
+  const hostToken = 'a'.repeat(64);
+  const hostUrl = 'http://192.168.1.5:3738';
+  const { app, dir } = createTestApp({ hostToken, hostUrl });
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    const mintBody = await mintRes.json();
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId, clientId: 'lc_test_client' }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.match(body.clientToken, /^cit_[a-f0-9]{32}$/);
+    assert.strictEqual(body.token, hostToken);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange omits clientToken without clientId', async () => {
+  const hostToken = 'a'.repeat(64);
+  const hostUrl = 'http://192.168.1.5:3738';
+  const { app, dir } = createTestApp({ hostToken, hostUrl });
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    const mintBody = await mintRes.json();
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.clientToken, undefined);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange succeeds without clientToken for malformed clientId', async () => {
+  const hostToken = 'a'.repeat(64);
+  const hostUrl = 'http://192.168.1.5:3738';
+  const { app, dir } = createTestApp({ hostToken, hostUrl });
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    const mintBody = await mintRes.json();
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId, clientId: 'x'.repeat(200) }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.clientToken, undefined);
+    assert.strictEqual(body.token, hostToken);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

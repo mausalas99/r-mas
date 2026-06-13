@@ -64,6 +64,11 @@ describe('lan-shift-pin-connect probe order', () => {
     assert.ok(shiftPinSrc.includes('shouldTryLoopbackShiftPin'));
     assert.ok(shiftPinSrc.includes('isLanRemoteJoinMode'));
   });
+
+  it('shift-pin exchange sends clientId from localStorage', () => {
+    assert.ok(shiftPinSrc.includes("clientId: readShiftPinClientId()"));
+    assert.ok(shiftPinSrc.includes("localStorage.setItem('rpc-lan-client-token'"));
+  });
 });
 
 describe('lan-shift-pin-connect backoff', () => {

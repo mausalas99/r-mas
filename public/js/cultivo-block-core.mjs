@@ -1,21 +1,17 @@
 /**
  * Single implementation for cultivo block detection/parsing in lab historial.
  *
- * Consolidates three copies; differences found and their resolution (HEAD @ 3ae052c):
+ * Superset everywhere; decided by maintainer 2026-06-12 (plan 011); was deferred from plan 007.
  *
- * isCultivoBlockStartLine:
- * - censo + lab-history-set listed BACILOSCOPIA / MICOBACTERIAS explicitly; lab-bulk-paste did not,
- *   but all three already matched those via isParsedCultivoHeaderLine — no per-file flag needed.
- * - All three: ATB, Cuenta:, bullet lines, "Cultivos" section header
- * - lab-history-set only: ALL-CAPS site header heuristic (2–5 words, no tabs) → allCapsSiteHeaders: true
+ * isCultivoBlockStartLine: CULTIVO-family headers, ATB/Cuenta/bullet lines, "Cultivos" section,
+ * isParsedCultivoHeaderLine (BACILOSCOPIA, MICOBACTERIAS, LIQUIDO, …), and ALL-CAPS site headers
+ * (2–5 words, no tabs) via matchesAllCapsSiteHeader exclusion guards.
  *
- * isLabSectionHeaderLine:
- * - lab-history-set adds SEROL|HECES → extendedLabHeaders: true
+ * isLabSectionHeaderLine: BH|QS|…|FROTIS|SEROL|HECES lab section boundaries.
  *
- * splitResLabsByTipo: identical loop in all three; delegates to the two predicates above.
+ * splitResLabsByTipo / findCultivoChunkInSet: shared loop and chunk lookup for all call sites.
  *
- * parseCultureBlockFromLineArray / findCultivoChunkInSet: only duplicated in censo-cultivo-format
- * (expediente.mjs keeps its extended copy with studyDate/resistencias — out of scope).
+ * parseCultureBlockFromLineArray: censo table rows (expediente.mjs extended copy — out of scope).
  */
 import { isParsedCultivoHeaderLine, parseCuentaFromCultivoChunkLines } from './labs.js';
 import { parseFechaLabToMs, normalizeFechaLabHistory } from './tend-core.mjs';
@@ -36,8 +32,6 @@ var CULTIVO_BASE_START_PATTERNS = [
 ];
 
 var LAB_SECTION_BASE =
-  /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i;
-var LAB_SECTION_EXTENDED =
   /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES)\b/i;
 
 function matchesAnyPattern(t, patterns) {
@@ -68,39 +62,33 @@ function matchesAllCapsSiteHeader(t) {
 
 /**
  * @param {string} s
- * @param {{ allCapsSiteHeaders?: boolean }} [options]
  */
-export function isCultivoBlockStartLine(s, options) {
+export function isCultivoBlockStartLine(s) {
   var t = String(s).trim();
   if (!t) return false;
-  var opts = options || {};
   if (matchesAnyPattern(t, CULTIVO_BASE_START_PATTERNS)) return true;
-  if (opts.allCapsSiteHeaders && matchesAllCapsSiteHeader(t)) return true;
+  if (matchesAllCapsSiteHeader(t)) return true;
   return false;
 }
 
 /**
  * @param {string} s
- * @param {{ extendedLabHeaders?: boolean }} [options]
  */
-export function isLabSectionHeaderLine(s, options) {
-  var opts = options || {};
-  var re = opts.extendedLabHeaders ? LAB_SECTION_EXTENDED : LAB_SECTION_BASE;
-  return re.test(String(s).trim());
+export function isLabSectionHeaderLine(s) {
+  return LAB_SECTION_BASE.test(String(s).trim());
 }
 
 /**
  * @param {unknown[]} rows
- * @param {object} [options] - forwarded to isCultivoBlockStartLine / isLabSectionHeaderLine
  */
-export function splitResLabsByTipo(rows, options) {
+export function splitResLabsByTipo(rows) {
   var labs = [];
   var cultivo = [];
   var inCultivo = false;
   (rows || []).forEach(function (row) {
     var raw = row == null ? '' : row;
     var s = String(raw).trim();
-    if (isLabSectionHeaderLine(s, options)) {
+    if (isLabSectionHeaderLine(s)) {
       inCultivo = false;
       labs.push(raw);
       return;
@@ -109,7 +97,7 @@ export function splitResLabsByTipo(rows, options) {
       cultivo.push(raw);
       return;
     }
-    if (isCultivoBlockStartLine(s, options)) {
+    if (isCultivoBlockStartLine(s)) {
       inCultivo = true;
       cultivo.push(raw);
       return;
@@ -285,13 +273,12 @@ function splitCultivoEntryChunks(entry) {
 /**
  * @param {object} set
  * @param {string} organismoQuery
- * @param {object} [splitOptions]
  */
-export function findCultivoChunkInSet(set, organismoQuery, splitOptions) {
+export function findCultivoChunkInSet(set, organismoQuery) {
   if (!set || !set.resLabs) return null;
   var q = normalizeCultivoOrganismoQuery(organismoQuery);
   if (!q || q === '—') return null;
-  var cult = splitResLabsByTipo(set.resLabs, splitOptions).cultivo;
+  var cult = splitResLabsByTipo(set.resLabs).cultivo;
   for (var ei = 0; ei < cult.length; ei++) {
     var chunks = splitCultivoEntryChunks(cult[ei]);
     for (var ci = 0; ci < chunks.length; ci++) {

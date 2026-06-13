@@ -9,6 +9,7 @@ const { sendDocxBuffer, sendPdfBuffer } = require('./lib/doc-export-http.js');
 const { logDocExport } = require('./lib/doc-export-audit.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
+const { createClientIdentityStore } = require('./lan-squad/client-identity-store.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
 const { createConflictResolver } = require('./lan-squad/conflict-resolver.js');
 const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
@@ -187,12 +188,13 @@ const shiftPinStore = createShiftPinStore({
   filePath: lanShiftPinPath,
 });
 shiftPinStore.ensure();
+const clientIdentityStore = createClientIdentityStore();
 const wardHostRegistry = createWardHostRegistry({ filePath: lanWardHostRegistryPath });
 const getLanHostUrl = () =>
   pickLanCandidateBaseUrl(LAN_HTTP_PORT) || `http://localhost:${LAN_HTTP_PORT}`;
 try {
   wardHostRegistry.seedFromCandidateBaseUrl(getLanHostUrl());
-} catch (_wardSeed) {}
+} catch (_wardSeed) { /* ignored */ }
 
 const documentExportAuth = createDocumentExportAuthMiddleware(() => lanStore.getState());
 
@@ -311,6 +313,7 @@ const authRouter = createAuthRouter({
   getHostToken: () => LAN_TEAM_CODE,
   getHostUrl: getLanHostUrl,
   getRequiresMigrationNotice: () => Boolean(appExpress.locals.lanRequiresMigrationNotice),
+  clientIdentityStore,
 });
 
 const httpServer = http.createServer(appExpress);
@@ -374,6 +377,7 @@ appExpress.use(
         console.error('[interno-board]', e && e.message ? e.message : e);
       }
     },
+    clientIdentityStore,
   })
 );
 

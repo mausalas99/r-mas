@@ -247,36 +247,20 @@ Firmar y notarizar **no acelera** el build: suele tardar más que un build sin n
 
 ## Architecture
 
-R+ is organized into modular components for maintainability and performance:
+R+ is an Electron desktop app with a LAN HTTP/WS server, SQLCipher clinical store, and an esbuild-bundled renderer. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
 
-### Module Structure
+### Entry points
 
-```
-public/
-├── index.html (UI shell: layout, styles, markup)
-├── js/
-│   ├── app.js (main application: state, UI handlers, Chart.js tendencias, tours, medicamentos)
-│   ├── update-helpers.mjs (formato MB/velocidad para el modal de actualización)
-│   ├── storage.js (localStorage: pacientes, notas, labs, recetas, catálogo SOAP, ajustes)
-│   ├── labs.js (lab text parsing and line rendering helpers)
-│   ├── med-receta-core.mjs (parse/format receta TSV, clasificación SOAP)
-│   └── lab-history-auto-store-core.mjs (deduplicación / utilidades historial labs)
-└── vendor/
-    └── chart.umd.min.js (Chart.js library)
-```
+| Layer | File | Role |
+|-------|------|------|
+| Electron main | `main.js` | Window, auto-updater, IPC, spawns LAN server |
+| Preload bridge | `preload.js` | `window.electronAPI` IPC surface |
+| LAN server | `server.js` | Express routes, doc export, interno mobile, WS hub (port **3738**) |
+| Renderer boot | `public/js/app.js` → `app-runtimes.mjs` | Feature registration via `windowHandlers` |
+| Node shared logic | `lib/` | SQLCipher store (`lib/db/`), doc generators, interno, entrega |
+| LAN host | `lan-squad/` | Auth, host-store, persistence, conflict resolver |
 
-### Module Responsibilities
-
-- **app.js**: Single ES module entry; loads data via `storage`, labs desde `labs`, medicamentos desde `med-receta-core.mjs`; expone handlers en `window` para `index.html`
-- **storage.js**: localStorage para pacientes, notas, indicaciones, historial de labs, receta por paciente, catálogo SOAP opcional, ajustes
-- **labs.js**: Parsing de reportes de laboratorio; sin estado de aplicación
-- **med-receta-core.mjs**: Pegado TSV hospitalario, formato de líneas y clasificación para plantilla SOAP
-
-### Performance Notes
-
-- Chart.js is loaded from `vendor/` in the document head; tendencias sparklines destroy/recreate charts when the tab refreshes
-- `storage.saveAll` centralizes persisted writes from the main save path
-- `server.js` expone `GET /health` para que el front compruebe si el servidor local sigue respondiendo
+Mapa completo: `.cursor/rules/project-context.mdc` y `docs/core/04-directory-structure.md`.
 
 ---
 

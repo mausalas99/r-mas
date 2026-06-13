@@ -28,7 +28,7 @@ const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs
 let perfConfig = normalizePerfConfig(null);
 try {
   perfConfig = readPerfConfig(fs, path.join(app.getPath('userData'), PERF_CONFIG_FILE));
-} catch (_e) {}
+} catch (_e) { /* ignored */ }
 if (!perfConfig.hardwareAcceleration) {
   app.disableHardwareAcceleration();
 }
@@ -60,7 +60,7 @@ function writeUpdateChannelToDisk(channel) {
   const normalized = normalizeUpdateChannel(channel);
   try {
     fs.writeFileSync(updateChannelFilePath(), JSON.stringify({ channel: normalized }), 'utf8');
-  } catch (_e) {}
+  } catch (_e) { /* ignored */ }
   return normalized;
 }
 
@@ -418,6 +418,7 @@ ipcMain.handle('open-downgrade-installer', async (_e, version) => {
     process.platform,
     process.platform === 'darwin' ? pickMacArch(process.arch) : 'x64'
   );
+  if (!isAllowedExternalUrl(url)) return { ok: false, url };
   await shell.openExternal(url);
   return { ok: true, url };
 });
@@ -673,11 +674,11 @@ function ensureLanMdnsClientId(userDataPath) {
   try {
     const existing = fs.readFileSync(idPath, 'utf8').trim();
     if (existing) return existing;
-  } catch (_e) {}
+  } catch (_e) { /* ignored */ }
   const id = `lc_main_${crypto.randomBytes(6).toString('hex')}`;
   try {
     fs.writeFileSync(idPath, id + '\n', 'utf8');
-  } catch (_e) {}
+  } catch (_e) { /* ignored */ }
   return id;
 }
 
@@ -756,7 +757,7 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
           ? lanServer.getLanWardHostRegistry()
           : getWardHostRegistryForIpc();
       reg.seedFromCandidateBaseUrl(pickLanCandidateBaseUrl());
-    } catch (_wardSeed) {}
+    } catch (_wardSeed) { /* ignored */ }
   }
   return { ok: true, peer: peerMode };
 });
@@ -807,7 +808,7 @@ ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
     let hostToken = '';
     try {
       hostToken = fs.readFileSync(lanTeamCodePath(userData), 'utf8').split(/\r?\n/, 1)[0].trim();
-    } catch (_e) {}
+    } catch (_e) { /* ignored */ }
     if (hostToken && hostToken === token) {
       recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath: userData, hostStatePath, db });
     }
@@ -890,7 +891,7 @@ const lanNetworkWatch = createLanNetworkWatch((payload) => {
     if (Array.isArray(payload.prefixes)) {
       for (const p of payload.prefixes) reg.recordPrefix(p);
     }
-  } catch (_wardNet) {}
+  } catch (_wardNet) { /* ignored */ }
   safeSendToRenderer('lan-network-changed', payload);
   if (_lanMdnsService) {
     if (payload.candidateBaseUrl) {

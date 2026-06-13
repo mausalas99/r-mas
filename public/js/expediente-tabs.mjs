@@ -3,7 +3,7 @@
  */
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { openPatientDatosModal } from './patient-datos-modal.mjs';
+import { openPatientDatosModal, openPatientDatosModalForPatient } from './patient-datos-modal.mjs';
 
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
@@ -322,7 +322,8 @@ export function getConsolidatedCompositeState(granularTab, settings) {
   return state;
 }
 
-export function syncConsolidatedPaneVisibility(granularTab, settings) {
+export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
+  opts = opts || {};
   var target = resolveConsolidatedTarget(granularTab, settings);
   var compositeState = getConsolidatedCompositeState(granularTab, settings);
   COMPOSITE_PANE_IDS.forEach(function (tab) {
@@ -368,5 +369,11 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
     datosPane.hidden = !datosInModal;
   }
   if (todoPane) todoPane.classList.toggle('active', target.tab === 'paciente');
-  if (granularTab === 'datos') openPatientDatosModal();
+  if (granularTab === 'datos') {
+    if (opts.datosPatientId != null && opts.datosPatientId !== '') {
+      openPatientDatosModalForPatient(opts.datosPatientId);
+    } else {
+      openPatientDatosModal();
+    }
+  }
 }

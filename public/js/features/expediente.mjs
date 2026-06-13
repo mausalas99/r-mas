@@ -1216,15 +1216,17 @@ function buildPatientDemographicsCardHtml(patient, opts) {
 }
 
 /** Demographics editable en pestaña Datos (#patient-data-form). */
-function renderPatientDataPane() {
+function renderPatientDataPane(patientIdOverride) {
   var wrap = document.getElementById('patient-data-form');
   if (!wrap) return;
-  if (!aid()) {
+  var targetId =
+    patientIdOverride != null && patientIdOverride !== '' ? patientIdOverride : aid();
+  if (!targetId) {
     wrap.innerHTML = '';
     return;
   }
   var patient = patients.find(function (p) {
-    return String(p.id) === String(aid());
+    return String(p.id) === String(targetId);
   });
   if (!patient) {
     wrap.innerHTML = '';

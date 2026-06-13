@@ -74,7 +74,7 @@ import {
   syncConsolidatedPaneVisibility,
   syncConsolidatedSegmentBars,
 } from "../expediente-tabs.mjs";
-import { wirePatientDatosModalOnce } from "../patient-datos-modal.mjs";
+import { closePatientDatosModal, wirePatientDatosModalOnce } from "../patient-datos-modal.mjs";
 import { isMobileWeb } from "../mobile-web.mjs";
 import {
   renderExpedienteGroupRow,
@@ -872,6 +872,7 @@ export function switchAppTab(tab) {
       else hideAppTabPanel(appcontentAgenda);
     }
     if (tab === "lab") {
+      closePatientDatosModal();
       showLabPanelLoadingSkeleton();
       void ensureLabsLoaded()
         .then(function (mod) {
@@ -1243,7 +1244,7 @@ export function switchInnerTab(tab, opts) {
   }
   rt.setActiveInner(tab);
   syncConsolidatedInnerTabButtons(tab, settings);
-  syncConsolidatedPaneVisibility(tab, settings);
+  syncConsolidatedPaneVisibility(tab, settings, opts);
   syncConsolidatedSegmentBars(tab, settings);
   renderExpedienteGroupRow(tab, settings);
   syncHeaderContext(rt);

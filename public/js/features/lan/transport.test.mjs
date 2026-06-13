@@ -20,6 +20,7 @@ import {
   ensureLanSyncTransportDepsWired,
   mintLanPairingTicket,
   ensureLanPairingForShare,
+  lanFetchAuthed,
 } from './transport.mjs';
 
 const LAN_DEPS_KEY = '__LAN_SYNC_TRANSPORT_DEPS__';
@@ -213,5 +214,32 @@ describe('transport.mjs characterization', () => {
     globalThis.window.electronAPI.getLanCandidateBaseUrl = async () => '';
     storage.saveLanConfig({ hostUrl: '', teamCode: TEST_BEARER });
     await assert.rejects(ensureLanPairingForShare, (err) => err.code === 'no_host_url');
+  });
+
+  it('lanFetchAuthed attaches X-Client-Token when stored', async () => {
+    seedLanConfig();
+    globalThis.localStorage.setItem('rpc-lan-client-token', 'cit_testtoken');
+    const calls = [];
+    initLanSyncRuntime({
+      lanClient: fakeLanClient(async (path, opts) => {
+        calls.push({ path, headers: opts && opts.headers });
+        return { ok: true, status: 200, json: async () => ({}) };
+      }),
+    });
+    await lanFetchAuthed('/api/lan/v1/host-status');
+    assert.equal(calls[0].headers['X-Client-Token'], 'cit_testtoken');
+  });
+
+  it('lanFetchAuthed omits X-Client-Token when not stored', async () => {
+    seedLanConfig();
+    const calls = [];
+    initLanSyncRuntime({
+      lanClient: fakeLanClient(async (path, opts) => {
+        calls.push({ path, headers: opts && opts.headers });
+        return { ok: true, status: 200, json: async () => ({}) };
+      }),
+    });
+    await lanFetchAuthed('/api/lan/v1/host-status');
+    assert.equal(calls[0].headers && calls[0].headers['X-Client-Token'], undefined);
   });
 });

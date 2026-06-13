@@ -11,30 +11,29 @@ import {
 
 describe('isCultivoBlockStartLine', () => {
   var positives = [
-  ['CULTIVO DE ORINA', {}],
-  ['UROCULTIVO 01/05: E. COLI', {}],
-  ['HEMOCULTIVO: negativo', {}],
-  ['BACILOSCOPIA: negativa', {}],
-  ['CULTIVO DE MICOBACTERIAS 03/04: negativo', {}],
-  ['ATB R: CAZ', {}],
-  ['Cuenta: +100 UFC', {}],
-  ['• Pseudomonas', {}],
-  ['Cultivos', {}],
-  ['LIQUIDO PERITONEAL 07/05: PSEUDOMONAS', { allCapsSiteHeaders: true }],
+    'CULTIVO DE ORINA',
+    'UROCULTIVO 01/05: E. COLI',
+    'HEMOCULTIVO: negativo',
+    'BACILOSCOPIA: negativa',
+    'CULTIVO DE MICOBACTERIAS 03/04: negativo',
+    'ATB R: CAZ',
+    'Cuenta: +100 UFC',
+    '• Pseudomonas',
+    'Cultivos',
+    'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS',
+    'ESPONJA RECTAL',
   ];
 
-  positives.forEach(function (pair) {
-    var line = pair[0];
-    var opts = pair[1];
+  positives.forEach(function (line) {
     it('recognizes start line: ' + line.slice(0, 40), function () {
-      assert.equal(isCultivoBlockStartLine(line, opts), true);
+      assert.equal(isCultivoBlockStartLine(line), true);
     });
   });
 
   it('rejects non-cultivo lines', function () {
-    assert.equal(isCultivoBlockStartLine('', {}), false);
-    assert.equal(isCultivoBlockStartLine('BH 12.5 4.1', {}), false);
-    assert.equal(isCultivoBlockStartLine('SALA MEDICINA INTERNA', { allCapsSiteHeaders: false }), false);
+    assert.equal(isCultivoBlockStartLine(''), false);
+    assert.equal(isCultivoBlockStartLine('BH 12.5 4.1'), false);
+    assert.equal(isCultivoBlockStartLine('SALA MEDICINA INTERNA'), false);
   });
 });
 
@@ -44,10 +43,9 @@ describe('isLabSectionHeaderLine', () => {
     assert.equal(isLabSectionHeaderLine('FROTIS nasal'), true);
   });
 
-  it('extended mode adds SEROL and HECES', function () {
-    assert.equal(isLabSectionHeaderLine('SEROL VIH', { extendedLabHeaders: true }), true);
-    assert.equal(isLabSectionHeaderLine('HECES copro', { extendedLabHeaders: true }), true);
-    assert.equal(isLabSectionHeaderLine('SEROL VIH', {}), false);
+  it('recognizes SEROL and HECES section headers', function () {
+    assert.equal(isLabSectionHeaderLine('SEROL VIH'), true);
+    assert.equal(isLabSectionHeaderLine('HECES copro'), true);
   });
 });
 
@@ -66,6 +64,14 @@ describe('splitResLabsByTipo', () => {
     var sp = splitResLabsByTipo(rows);
     assert.equal(sp.cultivo.length, 1);
     assert.equal(sp.labs.length, 1);
+  });
+
+  it('SEROL section header ends cultivo block', function () {
+    var rows = ['UROCULTIVO: E. COLI', 'ATB S: CIPRO', 'SEROL VIH'];
+    var sp = splitResLabsByTipo(rows);
+    assert.equal(sp.cultivo.length, 2);
+    assert.equal(sp.labs.length, 1);
+    assert.match(String(sp.labs[0]), /SEROL/);
   });
 });
 

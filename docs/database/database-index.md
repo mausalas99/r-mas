@@ -19,7 +19,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 | LAN SQL outbox | `lib/db/lan-sync-outbox.mjs` |
 | Clinical ops sync | `lib/db/clinical-ops-sync.mjs` |
 | Forensic audit | `lib/db/forensic-audit.mjs`, `audit-hooks.mjs` |
-| IPC from renderer | `lib/db/ipc-handlers.mjs` |
+| IPC from renderer | `lib/db/ipc-handlers.mjs` — integration tests: `lib/db/ipc-handlers.test.mjs` (fake `ipcMain`, `createUnlockedDbManager`) |
 
 ## Key tables (conceptual)
 

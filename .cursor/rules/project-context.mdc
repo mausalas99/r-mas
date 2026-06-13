@@ -72,9 +72,9 @@ docs/
 
 | Topic | Primary locations |
 |-------|-------------------|
-| Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
+| Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs`, `lib/db/ipc-handlers.test.mjs` (fake `ipcMain` harness) |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` (`evaluateClinicalScope` orchestrator + per-rank evaluators) |
-| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/*` (`orchestrator`, `push`, `room`, `transport`, `panel`, `runtime`), thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs` (fingerprint-keyed host registry), `lan-ward-host-registry.mjs` (persistent cross-VLAN URLs/prefixes), `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs` (delta path apply, echo tracker); overlap policy → LWW (`docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md`) |
+| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` (~1.2k lines) + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
@@ -98,9 +98,11 @@ npm start                 # electron (prestart rebuilds natives + bundle)
 npm run release:publish   # release pipeline (see README § Desarrollo)
 ```
 
-**Testing policy (agents):** Do **not** run `npm test` during normal dev — it still launches ~323 files in a single `node --test` (~35s+, poor feedback loop). That monolithic full-suite run is **not** the target workflow; we are moving toward **targeted** runs and CI sharding instead.
+**Testing policy (agents):** Do **not** run `npm test` during normal dev — it still launches ~348 files in a single `node --test` (~35s+, poor feedback loop). That monolithic full-suite run is **not** the target workflow; we are moving toward **targeted** runs and CI sharding instead.
 
 - **Local / agent:** `node --test path/to/changed.test.mjs` (or a small explicit list of related files). `pretest` only needed when tests touch SQLCipher natives.
+- **LAN kernel refactors:** gate with `orchestrator.test.mjs` + `push`/`room`/`transport` + `lan-sync-wiring.test.mjs` (see `docs/core/07-testing-strategy.md`).
+- **DB IPC channels:** `lib/db/ipc-handlers.test.mjs` — fake `ipcMain` + `createUnlockedDbManager` teardown pattern.
 - **CI / release:** `npm test` in `.github/workflows/ci.yml` and `scripts/release.js` — full suite gate only there.
 
 New renderer code: edit `public/js/**/*.mjs`, then `npm run build:ui` (or `npm start` which bundles). Do not edit `app.bundle.mjs` by hand.
@@ -125,6 +127,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-12** `lan-orchestrator-split`: `orchestrator.mjs` 2,207→1,185 — extracted `conflicts`, `entity-versions`, `patient-delete`, `patient-entries`, `historia-sync`, `host-patient-http`, `live-sync-emit`; façade re-exports + `configure*` DI in `wireLanSyncBridges`.
+- **2026-06-12** `ipc-handler-tests`: `lib/db/ipc-handlers.test.mjs` — 13 integration tests (bootstrap, teams, assign, guardia, rotation, audit) via fake `ipcMain`; manifest + `npm test`.
 - **2026-06-12** `clinico-access-scope`: `evaluateClinicalScope` (complexity 80) decomposed to `clinico-access-scope/` orchestrator + guardia/team evaluators ≤15; 40 characterization goldens in `clinico-access.test.mjs`; export frozen.
 - **2026-06-12** `host-store-durability`: persist failures logged via `reportPersistFailure` + `getLastPersistError`; commit-barrier `onError`; `flushHostStoreNow` on quit (3s cap); `putRoomClinicalOps` DB-first; `host-store.js`, `commit-barrier.js`, `server.js`, `main.js`.
 - **2026-06-12** `cultivo-block-core`: unified cultivo block parser (`cultivo-block-core.mjs`) — censo/bulk-paste/lab-history-set import core with per-context flags; `censo-cultivo-format.mjs`, `lab-bulk-paste.mjs`, `lab-history-set.mjs`.
@@ -209,7 +213,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-06-03** `release-6.6.1`: LAN sync Phases 0–3 (HTTP-primary push, SQL outbox v9, clinical-ops API, modular lan-sync, host DB clinicalOps); `docs/LAN_SYNC_6.6.1_RISK_ANALYSIS.md`.
 - **2026-06-03** `release-6.6.0`: @usuario sin ⇄ obligatorio; merges cloud (directorio LAN, iPad ticket, labs batch-copy); `clinical-profile-lan-sync.mjs`, `lab-history-batch-copy-modal.mjs`.
 - **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, entrega/equipos; `pushClinicalOpsLanNow`.
-- **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.
-- **2026-06-02** `interno-guardia-mobile`: mobile board, host discovery, QR panel (`interno-qr-panel.mjs`), vitals, interno routes in `server.js`.
-- **2026-06-02** `entrega-pendientes-v2`: schema v8 templates; `lib/entrega/`, `entrega-modal-ui.mjs`, `clinical-entrega.mjs`.
-- **2026-06-02** `stable-downgrade`: catálogo curado + UI Ajustes; `stable-versions-catalog.js`, `min-version.json`.

@@ -2,6 +2,7 @@ import {
   bulkPreviewStatusLabel,
   extractLabPatientFromBulkBlock,
 } from '../lab-bulk-paste.mjs';
+import { closePatientDatosModal } from '../patient-datos-modal.mjs';
 
 /** @type {{
  *   showToast(msg: string, type?: string): void,
@@ -296,6 +297,7 @@ export function suspendLabBulkPreviewModal() {
 
 export function resumeLabBulkPreviewModalIfSuspended() {
   if (!modalSession || !pendingConfirm) return false;
+  closePatientDatosModal();
   if (isBulkLabPreviewModalOpen()) return true;
   var backdrop = document.getElementById('lab-bulk-preview-backdrop');
   var body = document.getElementById('lab-bulk-preview-body');

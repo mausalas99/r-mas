@@ -10,12 +10,13 @@ const { createHostStore } = require('./host-store.js');
 const { createLanRouter } = require('./host-router.js');
 const { createConflictResolver } = require('./conflict-resolver.js');
 const { hashTeamCode } = require('./team-code.js');
+const { createClientIdentityStore } = require('./client-identity-store.js');
 
 function bearerHeaders(token) {
   return { Authorization: `Bearer ${token}` };
 }
 
-function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta, getHealthExtras) {
+function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta, getHealthExtras, clientIdentityStore) {
   const resolver = createConflictResolver({ store });
   const app = express();
   app.use(
@@ -24,6 +25,7 @@ function mountLanRouter(store, broadcast = () => {}, getHostClinicalMeta, getHea
       store,
       broadcast,
       resolver,
+      clientIdentityStore: clientIdentityStore || null,
       getHostClinicalMeta:
         getHostClinicalMeta ||
         (() => ({
@@ -370,6 +372,99 @@ test('DELETE /patients/:id blocks owned row when clientId missing', async () => 
   }
 });
 
+test('DELETE /patients/:id blocks spoof when X-Client-Token binds another client', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-token-spoof-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const identityStore = createClientIdentityStore();
+  const tokenB = identityStore.issue('client-B');
+  seedOwnedHostPatient(store, 'p-token', 'client-A');
+  const app = mountLanRouter(store, () => {}, null, null, identityStore);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url =
+      `http://127.0.0.1:${port}/api/lan/v1/patients/p-token?clientId=client-A`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { ...bearerHeaders(code), 'X-Client-Token': tokenB },
+    });
+    assert.strictEqual(res.status, 403);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id allows owner purge with bound X-Client-Token', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-token-owner-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const identityStore = createClientIdentityStore();
+  const tokenA = identityStore.issue('client-A');
+  seedOwnedHostPatient(store, 'p-token-own', 'client-A');
+  const app = mountLanRouter(store, () => {}, null, null, identityStore);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url =
+      `http://127.0.0.1:${port}/api/lan/v1/patients/p-token-own?clientId=client-A`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { ...bearerHeaders(code), 'X-Client-Token': tokenA },
+    });
+    assert.strictEqual(res.status, 200);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id legacy query clientId still works without header', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-legacy-query-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const identityStore = createClientIdentityStore();
+  seedOwnedHostPatient(store, 'p-legacy', 'client-A');
+  const app = mountLanRouter(store, () => {}, null, null, identityStore);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-legacy?clientId=client-A`;
+    const res = await fetch(url, { method: 'DELETE', headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('DELETE /patients/:id unknown X-Client-Token falls back to query clientId', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-bad-token-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const identityStore = createClientIdentityStore();
+  seedOwnedHostPatient(store, 'p-badtok', 'client-A');
+  const app = mountLanRouter(store, () => {}, null, null, identityStore);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p-badtok?clientId=client-A`;
+    const res = await fetch(url, {
+      method: 'DELETE',
+      headers: { ...bearerHeaders(code), 'X-Client-Token': 'cit_deadbeef' },
+    });
+    assert.strictEqual(res.status, 200);
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('DELETE /patients/:id purges bundle-only chart', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-del-bundle-'));
   const statePath = path.join(dir, 'state.json');
@@ -628,6 +723,64 @@ test('PUT /rooms/:id/sync-bundle stale entity version applies LWW', async () => 
     assert.ok(Array.isArray(body.lwwAppliedKeys));
     assert.ok(body.lwwAppliedKeys.includes('a:e1'));
     assert.strictEqual(store.getRoomSyncBundle(room.id).agenda[0].procedure, 'STALE');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('PUT /rooms/:id/sync-bundle with clinicalOps returns stripped labs not assembled history', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-bundle-clinical-ops-strip-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala clinical ops strip');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    agenda: [],
+    todos: {},
+    entries: [
+      {
+        id: 'p-labs',
+        nombre: 'Con labs',
+        labHistory: [{ id: 'set-1', fecha: '01/01/2026', resLabs: ['BH 12'] }],
+      },
+    ],
+  });
+  const cur = store.getRoomSyncBundle(room.id);
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/sync-bundle`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bundle: {
+          baseRevision: cur.revision,
+          baseEntityVersions: {},
+          agenda: [],
+          todos: {},
+          entries: cur.entries,
+          clinicalOps: {
+            exportedAt: '2026-06-12T00:00:00.000Z',
+            teams: [{ team_id: 'team-a', name: 'A', created_at: '2026-06-12T00:00:00.000Z' }],
+            team_membership: [],
+          },
+        },
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.bundle);
+    assert.ok(body.bundle.clinicalOps);
+    assert.ok(Array.isArray(body.bundle.entries));
+    const entry = body.bundle.entries.find((e) => e && e.id === 'p-labs');
+    assert.ok(entry);
+    assert.equal(entry.labHistory, undefined);
+    assert.ok(entry.labMeta);
   } finally {
     await tearDownLanTest({ server, dir, store });
   }

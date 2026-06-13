@@ -581,6 +581,68 @@ export function parseBH_(tNorm) {
   return { visible: visible, extras: extras };
 }
 
+/** Une varias filas BH del mismo día (p. ej. biometría + dímero D en solicitudes distintas). */
+export function mergeBhResLabRows_(rows) {
+  var list = (rows || [])
+    .map(function (r) {
+      return String(r == null ? '' : r);
+    })
+    .filter(function (s) {
+      return /^BH\b/i.test(s.trim());
+    });
+  if (!list.length) return '';
+  if (list.length === 1) return list[0];
+
+  var best = list[0];
+  var bestScore = lineRichnessScore_(best);
+  for (var i = 1; i < list.length; i++) {
+    var sc = lineRichnessScore_(list[i]);
+    if (sc > bestScore) {
+      bestScore = sc;
+      best = list[i];
+    }
+  }
+
+  var coagByKey = Object.create(null);
+  list.forEach(function (row) {
+    String(row)
+      .split(/\r?\n/)
+      .forEach(function (line) {
+        var m = line.match(/Coag\.\t(.+)/i);
+        if (!m) return;
+        m[1]
+          .trim()
+          .split(/\s{2,}/)
+          .forEach(function (tok) {
+            var t = tok.trim();
+            if (!t) return;
+            var key = t.split(/\s+/)[0];
+            var score = lineRichnessScore_(t);
+            var prev = coagByKey[key];
+            if (!prev || score > prev.score) coagByKey[key] = { tok: t, score: score };
+          });
+      });
+  });
+  var coagTokens = Object.keys(coagByKey).map(function (k) {
+    return coagByKey[k].tok;
+  });
+  if (!coagTokens.length) return best;
+
+  var lines = best.split(/\r?\n/).filter(function (line) {
+    return !/Coag\./i.test(line);
+  });
+  var coagLine = '  Coag.\t' + coagTokens.join('  ');
+  if (/^BH:/.test(String(lines[0] || '').trim())) {
+    lines.push(coagLine);
+    return lines.join('\n');
+  }
+  if (lines.length === 1 && /^BH\t/.test(lines[0].trim())) {
+    return lines[0] + '\n' + coagLine;
+  }
+  lines.push(coagLine);
+  return lines.join('\n');
+}
+
 // Procalcitonina viene en bloque "ESTUDIOS ESPECIALES" con un rango de
 // referencia que mezcla intervalos pediátricos por horas (e.g. "0 - 5
 // HORAS"); el extractor genérico tomaría esos números como rango. Aquí
@@ -759,6 +821,13 @@ export function parsePFH_(tNorm) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
+export function parseLipasa_(texto) {
+  var lipData = extraerConRango(['LIPASA SERICA', 'LIPASA'], texto);
+  var Lip = fmt(marcarSegunRango(lipData.valor, lipData.min, lipData.max));
+  if (Lip === '---') return '';
+  return 'LIPASA\tLip ' + Lip;
+}
+
 /** SOME copia pH/PCO2/HCO3 con flags A/B en líneas aparte; colapsar espacios para extraerConRango. */
 function gasoBlockForExtract_(bloqueGaso) {
   return String(bloqueGaso || '').replace(/\r/g, '').replace(/\s+/g, ' ');
@@ -892,7 +961,7 @@ function labRowText_(row) {
 
 function dedupeSingletonSections_(rows) {
   var singleton = {
-    BH: 1, QS: 1, ESC: 1, PFHS: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
+    BH: 1, QS: 1, ESC: 1, PFHS: 1, LIPASA: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
     HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
     'INTERPRETACIÓN ASCITIS:': 1,
   };
@@ -3077,6 +3146,7 @@ export function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, 'PFHs', 'BI', extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm));
     putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH '], tNorm));
     putTrendRef_(refs, 'PFHs', 'Amil', extraerConRango(['AMILASA SERICA', 'AMILASA'], tNorm));
+    putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
   }
 
   if (bloqueGaso) {
@@ -3163,6 +3233,7 @@ function collectCoreLabSections_(resLabs, blocks, demograf, textoBruto, tNorm) {
   pushLabSection_(resLabs, parseQS_(blocks.textoQS, demograf));
   pushLabSection_(resLabs, parseESC_(blocks.textoQS));
   pushLabSection_(resLabs, parsePFH_(blocks.textoParaBh));
+  pushLabSection_(resLabs, parseLipasa_(blocks.textoQS));
   pushLabSection_(resLabs, parsePlaquetasCitrato_(textoBruto, tNorm));
   return bhExtras;
 }

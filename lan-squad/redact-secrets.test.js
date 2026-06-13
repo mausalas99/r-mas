@@ -20,6 +20,12 @@ test('redactAuthBody masks pin and ticket', () => {
   assert.strictEqual(out.ok, true);
 });
 
+test('redactAuthBody masks clientToken', () => {
+  const out = redactAuthBody({ clientToken: 'cit_abc123', clientId: 'lc_test' });
+  assert.strictEqual(out.clientToken, '[REDACTED]');
+  assert.strictEqual(out.clientId, 'lc_test');
+});
+
 test('redactUrlSecrets masks code and token query params', () => {
   const u = redactUrlSecrets('/api/lan/v1/ws?code=secret&channel=sync');
   assert.ok(!u.includes('secret'));

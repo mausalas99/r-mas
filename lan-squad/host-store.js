@@ -327,10 +327,12 @@ function createHostStore({
     return changed;
   }
 
-  async function persistCacheToDb() {
+  async function persistCacheToDb(opts = {}) {
     assertDbUnlocked(dbManager);
     const snapshot = cache.get();
     const mode = resolvePersistMode();
+    const byteLength =
+      opts.byteLength != null ? opts.byteLength : JSON.stringify(snapshot).length;
     await dbManager.withTransaction((db, { audit }) => {
       const t0 = Date.now();
       if (mode === 'sql-v3') {
@@ -341,7 +343,7 @@ function createHostStore({
       const commitMs = Date.now() - t0;
       audit(getClientId(), 'lan.host.commit', {
         action: 'host.commit',
-        byteLength: JSON.stringify(snapshot).length,
+        byteLength,
         commitMs,
         persistGeneration: mode,
       });
@@ -388,11 +390,12 @@ function createHostStore({
       };
       return;
     }
+    const byteLength = JSON.stringify(snapshot).length;
     if (mode === 'sql-monolith') {
-      await persistCacheToDb();
+      await persistCacheToDb({ byteLength });
       lastCommitAudit = {
         commitMs: Date.now() - t0,
-        byteLength: JSON.stringify(snapshot).length,
+        byteLength,
         shards: ['monolith'],
         coalesced: true,
         persistGeneration: 'sql-monolith',
@@ -423,7 +426,7 @@ function createHostStore({
     await writeJsonAtomic(filePath, snapshot);
     lastCommitAudit = {
       commitMs: Date.now() - t0,
-      byteLength: JSON.stringify(snapshot).length,
+      byteLength,
       shards: ['monolith'],
       coalesced: true,
       persistGeneration: 'json-monolith',
@@ -815,6 +818,17 @@ function createHostStore({
     const bundle = getRoomSyncBundle(roomId);
     if (!bundle) return null;
     return assembleBundleLabsForApi(bundle, roomId);
+  }
+
+  /** Post-persist clinicalOps view for API responses; no lab assembly. */
+  function getRoomClinicalOpsForApi(roomId) {
+    const bundle = getRoomSyncBundle(roomId);
+    if (!bundle) return null;
+    return {
+      clinicalOps: bundle.clinicalOps || null,
+      entityVersions: bundle.entityVersions || {},
+      revision: bundle.revision,
+    };
   }
 
   function ensureRoomRecord(state, roomId, displayName) {
@@ -1708,6 +1722,7 @@ function createHostStore({
     deleteRoom,
     getRoomSyncBundle,
     getRoomSyncBundleForApi,
+    getRoomClinicalOpsForApi,
     putRoomSyncBundle,
     upsertPatientLabHistorySet,
     replacePatientNota,

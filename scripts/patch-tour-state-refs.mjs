@@ -22,7 +22,6 @@ const vars = [
 
 const map = {
   TEND_SECTION_EXPANDED_LS: 'tendSectionExpandedLs',
-  TEND_HIDDEN_SERIES_LS: 'tendSectionExpandedLs',
   TEND_HIDDEN_SERIES_LS: 'tendHiddenSeriesLs',
   TEND_ABNORMAL_ONLY_LS: 'tendAbnormalOnlyLs',
 };

@@ -46,17 +46,25 @@ export function closePatientDatosModal() {
   returnDatosPaneToHost();
 }
 
-export function openPatientDatosModal() {
+/**
+ * @param {string|number|null|undefined} [patientId] When set, render that patient (not only activeId).
+ */
+export function openPatientDatosModal(patientId) {
   var backdrop = getBackdrop();
   if (!backdrop) return;
   ensureDatosPaneInModal();
   if (typeof window !== 'undefined' && typeof window.renderPatientDataPane === 'function') {
-    window.renderPatientDataPane();
+    window.renderPatientDataPane(patientId);
   }
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
   var closeBtn = backdrop.querySelector('.exp-datos-modal-close');
   if (closeBtn instanceof HTMLElement) closeBtn.focus();
+}
+
+/** Open datos modal for a specific patient (caller should selectPatient first). */
+export function openPatientDatosModalForPatient(patientId) {
+  openPatientDatosModal(patientId);
 }
 
 function wirePatientDatosModal() {
@@ -91,5 +99,6 @@ export function wirePatientDatosModalOnce() {
 
 export const patientDatosModalWindowHandlers = {
   openPatientDatosModal,
+  openPatientDatosModalForPatient,
   closePatientDatosModal,
 };

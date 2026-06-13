@@ -23,6 +23,26 @@ function collectExportedNames(filePath) {
 
 function stubDomForShellImport() {
   globalThis.document = {
+    documentElement: {
+      classList: {
+        toggle() {},
+        add() {},
+        remove() {},
+        contains() {
+          return false;
+        },
+      },
+    },
+    body: {
+      classList: {
+        toggle() {},
+        add() {},
+        remove() {},
+        contains() {
+          return false;
+        },
+      },
+    },
     addEventListener() {},
     getElementById() {
       return null;
@@ -30,9 +50,15 @@ function stubDomForShellImport() {
     activeElement: null,
   };
   globalThis.window = globalThis.window || {};
+  globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
+    return { matches: false, addEventListener() {}, removeEventListener() {} };
+  };
   if (!globalThis.localStorage) {
     globalThis.localStorage = {
-      getItem() {
+      getItem(key) {
+        if (key === 'rpc-settings') {
+          return JSON.stringify({ clinicalLocalOnly: true });
+        }
         return null;
       },
       setItem() {},

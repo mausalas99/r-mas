@@ -111,6 +111,8 @@ import {
   readPatientRegistrationTeamId,
   syncPatientRegistrationTeamSelect,
 } from '../patient-team-assign-ui.mjs';
+import { closePatientDatosModal } from '../patient-datos-modal.mjs';
+import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 
 export function invalidateMobileSidebarPatientCache() {
   /* no-op — kept for LAN scope refresh hooks */
@@ -1443,10 +1445,15 @@ function blockIncomingPreviewChartOpen(id) {
   return false;
 }
 
-export function selectPatient(id) {
+/**
+ * @param {string|number} id
+ * @param {{ bypassIncomingBlock?: boolean }} [opts]
+ */
+export function selectPatient(id, opts) {
   if (id == null || id === '') return;
+  opts = opts || {};
   try {
-    if (blockIncomingPreviewChartOpen(id)) return;
+    if (!opts.bypassIncomingBlock && blockIncomingPreviewChartOpen(id)) return;
     selectPatientCore(id);
   } catch (err) {
     console.error('[R+] selectPatient:', err && err.message ? err.message : err);
@@ -1969,16 +1976,15 @@ async function assignTeamFromRegistrationModal(patientId) {
   return res;
 }
 
-function openExpedienteAfterBulkPreviewRegistration(patientId) {
-  if (typeof rt.suspendLabBulkPreviewModal === 'function') {
-    rt.suspendLabBulkPreviewModal();
+/** Tras alta desde vista previa multipaciente: quedarse en Lab con la preview abierta. */
+function completeBulkPreviewPatientRegistration(patientId) {
+  selectPatient(patientId, { bypassIncomingBlock: true });
+  closePatientDatosModal();
+  if (rt.getActiveAppTab() !== 'lab') {
+    rt.switchAppTab('lab');
   }
-  rt.switchAppTab('nota');
-  rt.switchInnerTab('datos');
-  rt.showToast(
-    'Paciente registrado. Revisa el expediente; vuelve a Lab para Procesar todo.',
-    'success'
-  );
+  resumeLabBulkPreviewModalIfSuspended();
+  rt.showToast('Paciente registrado. Pulsa Procesar todo en la vista previa.', 'success');
 }
 
 function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
@@ -2099,24 +2105,29 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
           var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
           if (perez) activeId = perez.id;
         }
-        selectPatient(activeId);
-        if (fromBulkPreview) openExpedienteAfterBulkPreviewRegistration(activeId);
+        if (fromBulkPreview) {
+          completeBulkPreviewPatientRegistration(activeId);
+        } else {
+          selectPatient(activeId, { bypassIncomingBlock: true });
+        }
       }
     })();
   } else {
-    void assignTeamFromRegistrationModal(patient.id);
-    renderPatientList();
-    var activeId = patient.id;
-    if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
-      var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
-      if (perez) activeId = perez.id;
-    }
-    selectPatient(activeId);
-    if (fromBulkPreview) {
-      openExpedienteAfterBulkPreviewRegistration(activeId);
-    } else {
-      rt.showToast('Paciente agregado', 'success');
-    }
+    void (async function () {
+      await assignTeamFromRegistrationModal(patient.id);
+      renderPatientList();
+      var activeId = patient.id;
+      if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
+        var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+        if (perez) activeId = perez.id;
+      }
+      if (fromBulkPreview) {
+        completeBulkPreviewPatientRegistration(activeId);
+      } else {
+        selectPatient(activeId, { bypassIncomingBlock: true });
+        rt.showToast('Paciente agregado', 'success');
+      }
+    })();
   }
   if (adoptResult.afterCommit) {
     try {

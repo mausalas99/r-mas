@@ -1,4 +1,8 @@
-/** Pure helpers for LAN host patient census rows (no transport/orchestrator imports). */
+/** Pure helpers for LAN host patient census rows (no transport/orchestrator imports).
+ * Mirror of lan-squad/host-patient-ownership.js — keep both in sync.
+ * clientId is bound via X-Client-Token when available (plan 010); query fallback is
+ * audited; isProgramAdmin remains a client assertion pending RBAC.
+ */
 
 /** @param {object|null|undefined} row */
 export function resolveHostPatientOwnerClientId(row) {

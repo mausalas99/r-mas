@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * Mirror of public/js/features/lan/host-patients-annotate.mjs — keep both in sync;
- * clientId is client-asserted (no per-client auth on LAN yet).
+ * Mirror of public/js/features/lan/host-patients-annotate.mjs — keep both in sync.
+ * clientId is bound via X-Client-Token when available (plan 010); query fallback is
+ * audited; isProgramAdmin remains a client assertion pending RBAC.
  */
 
 /** @param {object|null|undefined} row */

@@ -24,6 +24,9 @@ jobs:
       - name: UI build
         run: npm run build:ui
 
+      - name: Lint (root + scripts)
+        run: npm run lint
+
       - name: Debt metrics
         run: npm run metrics:check
 

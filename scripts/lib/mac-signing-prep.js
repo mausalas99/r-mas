@@ -33,10 +33,10 @@ function unlockMacKeychainFromEnv(env) {
       `security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k ${shellQuote(pw)} ${shellQuote(kc)}`,
       { stdio: 'pipe' }
     );
-  } catch (_e) {}
+  } catch (_e) { /* ignored */ }
   try {
     execSync(`security set-keychain-settings -t 3600 -l ${shellQuote(kc)}`, { stdio: 'pipe' });
-  } catch (_e) {}
+  } catch (_e) { /* ignored */ }
   return true;
 }
 
