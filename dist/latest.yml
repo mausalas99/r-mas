@@ -1,28 +1,26 @@
-version: 7.3.5
+version: 7.3.6
 files:
-  - url: R+-7.3.5-x64.exe
-    sha512: VCi33t+v75r145a0ubIRvMgd9m3FMDQqZWpUFlm/HQYjL6fDw7rwV0Y0CPM3dedV3UEwHpyetWMfnHOQdVOo0w==
-    size: 114961233
-path: R+-7.3.5-x64.exe
-sha512: VCi33t+v75r145a0ubIRvMgd9m3FMDQqZWpUFlm/HQYjL6fDw7rwV0Y0CPM3dedV3UEwHpyetWMfnHOQdVOo0w==
-releaseDate: '2026-06-12T20:27:46.000Z'
+  - url: R+-7.3.6-x64.exe
+    sha512: cEzs9xvUi6zVgBgR3q9cjRtal9g375Bu3pisjQHk+5khF+oHw8VtvEU5kc0eKEbVJ2qnyyf3S40Obv6mCq7Qdg==
+    size: 115007566
+path: R+-7.3.6-x64.exe
+sha512: cEzs9xvUi6zVgBgR3q9cjRtal9g375Bu3pisjQHk+5khF+oHw8VtvEU5kc0eKEbVJ2qnyyf3S40Obv6mCq7Qdg==
+releaseDate: '2026-06-13T07:01:10.000Z'
 releaseNotes: |
-  Sobre 7.3.4: endurecimiento LAN (purga con guard de propiedad en servidor, bloqueo tras PIN fallidos), persistencia del anfitrión más fiable al cerrar, caché de blobs parseados, parser unificado de cultivos y pulido clínico/UI (modal Datos del paciente, ATB por día de manejo, presets de vencimiento editables).
+  Sobre 7.3.5: identidad LAN emitida por el anfitrión (la purga ya no confía en parámetros del cliente), orchestrator.mjs dividido en módulos enfocados, detección unificada de cultivos, arranque más rápido sin rebuild nativo forzado, y más cobertura de pruebas (IPC clínico + suites antes en cuarentena).
   
-  LAN — purga segura — DELETE /api/lan/v1/patients/:id valida propiedad en servidor; solo admin o pacientes huérfanos; el cliente envía identidad y mapea 403.
+  LAN — identidad por cliente — En POST /auth/exchange el host emite token de identidad ligado al clientId; la purga y auditoría prefieren identidad resuelta en servidor (fallback legacy para turnos mixtos).
   
-  LAN — bloqueo PIN — Tras 8 intentos fallidos en POST /auth/exchange, bloqueo global en memoria 5 min (HTTP 429).
+  LAN — orchestrator modular — Façade ~1,185 líneas; extraídos conflicts, entity-versions, patient-delete, patient-entries, historia-sync, host-patient-http, live-sync-emit.
   
-  Anfitrión — durabilidad — Fallos de persistencia registrados y consultables; barrera de commit con onError; flushHostStoreNow al salir (tope 3 s); putRoomClinicalOps DB-first.
+  Laboratorio — cultivos — Detección superset alineada en censo, pegado masivo, historial y panel; parser lipasa con golden.
   
-  Rendimiento — caché parseada — Blobs parseados en caché con invalidación al escribir; menos re-parse en labs y flujos repetidos.
+  Shell — modales — app-shell-modals.mjs extrae modales del shell; presupuesto de líneas restaurado.
   
-  Laboratorio — cultivos — Parser único cultivo-block-core para censo, pegado masivo e historial (flags por contexto).
+  Anfitrión — hot path — Menos reensamblado en clinicalOps PUT; un solo byteLength por flush.
   
-  Expediente — Datos del paciente — Pestaña Paciente abre en modal dedicado con la misma tarjeta demográfica.
+  Seguridad — window.open — Allowlist GitHub + LAN privada en lugar de solo esquema.
   
-  Estado actual — ATB por día — Texto de antibióticos avanza según fecha de actualización del bloque Manejo (panel y copia).
+  DX / CI — ESLint en raíz y scripts/; cinco suites reactivadas; 13 pruebas de integración IPC (ipc-handlers.test.mjs).
   
-  Pendientes — presets de vencimiento — Atajos Hoy 18:00, Mañana 8:00, En 3 h / 24 h; horas editables y persistidas en el dispositivo.
-  
-  UI — Laboratorio y superficies Workbench refinadas; motion y modales alineados al sistema premium.
+  Arranque — npm start ya no fuerza rebuild SQLCipher si el binario nativo coincide con Electron.
