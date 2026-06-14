@@ -1,26 +1,18 @@
-version: 7.3.6
+version: 7.3.7
 files:
-  - url: R+-7.3.6-x64.exe
-    sha512: cEzs9xvUi6zVgBgR3q9cjRtal9g375Bu3pisjQHk+5khF+oHw8VtvEU5kc0eKEbVJ2qnyyf3S40Obv6mCq7Qdg==
-    size: 115007566
-path: R+-7.3.6-x64.exe
-sha512: cEzs9xvUi6zVgBgR3q9cjRtal9g375Bu3pisjQHk+5khF+oHw8VtvEU5kc0eKEbVJ2qnyyf3S40Obv6mCq7Qdg==
-releaseDate: '2026-06-13T07:01:10.000Z'
+  - url: R+-7.3.7-x64.exe
+    sha512: 8GokufrPJA1ZvJ09BgyFeNfCFXc3jQ7qTyGqkadzoL1o+x+C+qT3EMasjKBWxMH6++HrOIuZhWKgdmRE2vUFRA==
+    size: 114986300
+path: R+-7.3.7-x64.exe
+sha512: 8GokufrPJA1ZvJ09BgyFeNfCFXc3jQ7qTyGqkadzoL1o+x+C+qT3EMasjKBWxMH6++HrOIuZhWKgdmRE2vUFRA==
+releaseDate: '2026-06-14T15:29:26.000Z'
 releaseNotes: |
-  Sobre 7.3.5: identidad LAN emitida por el anfitrión (la purga ya no confía en parámetros del cliente), orchestrator.mjs dividido en módulos enfocados, detección unificada de cultivos, arranque más rápido sin rebuild nativo forzado, y más cobertura de pruebas (IPC clínico + suites antes en cuarentena).
+  Sobre 7.3.6: corrige pacientes que desaparecían del censo tras ⇄ LiveSync cuando se reutilizaba el mismo registro hospitalario (readmisión o alta/baja en otro equipo). También reubica Importar desde Drive en la barra del expediente clínico con estilo alineado al resto de la UI.
   
-  LAN — identidad por cliente — En POST /auth/exchange el host emite token de identidad ligado al clientId; la purga y auditoría prefieren identidad resuelta en servidor (fallback legacy para turnos mixtos).
+  LAN — censo estable — Los deletes de paciente en LiveSync aplican solo por id del expediente; una readmisión con el mismo registro ya no hereda tombstones ni se borra por coincidencia de registro en otro Mac.
   
-  LAN — orchestrator modular — Façade ~1,185 líneas; extraídos conflicts, entity-versions, patient-delete, patient-entries, historia-sync, host-patient-http, live-sync-emit.
+  LAN — tombstones — Al registrar un paciente nuevo se limpian tombstones LAN obsoletos del mismo registro (clearPatientDeleteTombstoneForAdmit).
   
-  Laboratorio — cultivos — Detección superset alineada en censo, pegado masivo, historial y panel; parser lipasa con golden.
+  LAN — bundle merge — Entradas del anfitrión con id distinto al delete remoto se conservan (mismo registro, chart nuevo).
   
-  Shell — modales — app-shell-modals.mjs extrae modales del shell; presupuesto de líneas restaurado.
-  
-  Anfitrión — hot path — Menos reensamblado en clinicalOps PUT; un solo byteLength por flush.
-  
-  Seguridad — window.open — Allowlist GitHub + LAN privada en lugar de solo esquema.
-  
-  DX / CI — ESLint en raíz y scripts/; cinco suites reactivadas; 13 pruebas de integración IPC (ipc-handlers.test.mjs).
-  
-  Arranque — npm start ya no fuerza rebuild SQLCipher si el binario nativo coincide con Electron.
+  Expediente — Drive — Botón Importar desde Drive en la barra de acciones del bloque Clínico (modo sala), visible solo en esa pestaña; estilos pill en expediente.css.
