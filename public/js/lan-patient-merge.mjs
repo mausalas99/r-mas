@@ -449,8 +449,13 @@ export function filterEntriesByPatientDeletes(entries, patientDeletes) {
     if (!entry || !entry.patient) return false;
     const del = delMap.get(entryMatchKey(entry));
     if (!del) return true;
-    // Explicit patient deletes always win — prevents host bundle entries from resurrecting charts.
-    if (del.deleted) return false;
+    if (del.deleted) {
+      const entryId = String(entry.patient.id || '').trim();
+      const delId = String(del.id || '').trim();
+      // New admission reusing hospital registro — keep the fresh chart.
+      if (entryId && delId && entryId !== delId) return true;
+      return false;
+    }
     return compareIso(entryUpdatedAt(entry), del.updatedAt || '') > 0;
   });
 }

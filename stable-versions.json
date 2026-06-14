@@ -1,13 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-12",
+  "updatedAt": "2026-06-14",
   "entries": [
+    {
+      "version": "7.3.7",
+      "label": "7.3.7",
+      "publishedAt": "2026-06-14",
+      "summary": "Censo LAN estable (readmisión registro) + Importar Drive en expediente",
+      "recommended": true
+    },
+    {
+      "version": "7.3.6",
+      "label": "7.3.6",
+      "publishedAt": "2026-06-13",
+      "summary": "Release estable 7.3.6",
+      "recommended": false
+    },
     {
       "version": "7.3.5",
       "label": "7.3.5",
       "publishedAt": "2026-06-12",
       "summary": "Release estable 7.3.5",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.3.4",

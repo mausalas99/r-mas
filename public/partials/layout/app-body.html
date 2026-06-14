@@ -434,6 +434,9 @@
               Datos
             </button>
           </div>
+          <div class="exp-expediente-nav-actions" id="exp-clinico-drive-actions" hidden>
+            <button type="button" class="btn-med-secondary drive-import-trigger exp-drive-tab-action" id="btn-drive-import" onclick="openDriveImportModal()" aria-label="Importar desde Drive">Importar desde Drive</button>
+          </div>
         </div>
         <div id="expediente-panes-host" class="expediente-panes-host">
           <div id="itab-content-paciente" class="tab-content exp-composite-pane">
@@ -447,7 +450,6 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
-              <button type="button" class="btn-med-secondary drive-import-trigger" id="btn-drive-import" onclick="openDriveImportModal()" style="display:none;" aria-label="Importar desde Drive">Importar desde Drive</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
           </div>

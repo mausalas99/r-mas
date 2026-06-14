@@ -953,10 +953,34 @@ var RELEASE_NOTES_735 = [
   },
 ];
 
+var RELEASE_NOTES_737 = [
+  {
+    title: 'Censo que no pierde readmisiones',
+    body:
+      'Corregido: pacientes que <strong>desaparecían del censo</strong> tras ⇄ cuando otro Mac había borrado un expediente con el <strong>mismo registro</strong>. Los deletes LAN aplican solo por <strong>id</strong> del chart.',
+  },
+  {
+    title: 'Tombstones y merge',
+    body:
+      'Al dar de alta un paciente se limpian tombstones LAN viejos del registro. El bundle del anfitrión ya no suprime entradas con <strong>id nuevo</strong> y registro reutilizado.',
+  },
+  {
+    title: 'Importar desde Drive',
+    body:
+      'En modo sala, el botón <strong>Importar desde Drive</strong> vive en la barra del bloque <strong>Clínico</strong> del expediente (solo visible ahí), con estilo pill alineado al resto de la UI.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.3.7 en todas</strong> las estaciones si usáis ⇄ compartido. Esquema SQLCipher sigue en <strong>v17</strong>.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_736;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_737;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.7': RELEASE_NOTES_737,
   '7.3.6': RELEASE_NOTES_736,
   '7.3.5': RELEASE_NOTES_735,
   '7.3.4': RELEASE_NOTES_734,

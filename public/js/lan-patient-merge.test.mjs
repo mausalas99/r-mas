@@ -263,6 +263,26 @@ test('filterEntriesByPatientDeletes quita entrada si delete es más reciente', (
   assert.equal(filtered.length, 0);
 });
 
+test('filterEntriesByPatientDeletes conserva readmisión con mismo registro e id distinto', () => {
+  const entries = [
+    {
+      patient: { id: 'p-new', registro: 'R1', nombre: 'READMIT', lanUpdatedAt: '2026-06-10T08:00:00.000Z' },
+      note: { fecha: '10/06/2026' },
+      labHistory: [],
+    },
+  ];
+  const filtered = filterEntriesByPatientDeletes(entries, [
+    {
+      id: 'p-old',
+      registro: 'R1',
+      updatedAt: '2026-06-01T12:00:00.000Z',
+      deleted: true,
+    },
+  ]);
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].patient.id, 'p-new');
+});
+
 test('mergeEventualidades une entradas de ambos lados por id', () => {
   const merged = mergeEventualidades(
     { entries: [{ id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' }] },

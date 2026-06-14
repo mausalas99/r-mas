@@ -77,6 +77,7 @@ import { t, getUiDensity, isGuardiaMode, isPaseMode } from './chrome.mjs';
 import {
   removePatientLocally,
   rememberPatientDeleteTombstone,
+  clearPatientDeleteTombstoneForAdmit,
   getActiveLiveSyncRoomId,
   lanSyncPatientArchivedFlag,
   isLanSessionConfiguredForRest,
@@ -2032,6 +2033,7 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   }
   stampPatientClinicalSala(patient, clinicalSessionContext.user);
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
+  clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   notes[patient.id] = {
     fecha: fecha,
     hora: hora,

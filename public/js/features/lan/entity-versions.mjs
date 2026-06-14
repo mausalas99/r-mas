@@ -67,6 +67,35 @@ export function rememberPatientDeleteTombstone(patient) {
   });
 }
 
+/** New admission with same hospital registro must not inherit stale LAN delete tombstones. */
+export function clearPatientDeleteTombstoneForAdmit(patientId, registro) {
+  var pid = String(patientId || '').trim();
+  var reg = String(registro || '').trim();
+  if (!pid) return;
+  var map = readLiveSyncEntityMap();
+  var changed = false;
+  var selfKey = liveSyncEntityStoreKey('patient', pid, null);
+  if (map[selfKey] && map[selfKey]._deleted === true) {
+    delete map[selfKey];
+    changed = true;
+  }
+  if (reg) {
+    for (var key of Object.keys(map)) {
+      if (!key.startsWith('patient:')) continue;
+      var row = map[key];
+      if (!row || row._deleted !== true) continue;
+      if (String(row.registro || '').trim() !== reg) continue;
+      if (key === selfKey) continue;
+      delete map[key];
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  try {
+    localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
+  } catch (_e) { /* ignored */ }
+}
+
 export function syncHostBundleEntityFromApplied(msg) {
   var rid = String((msg && msg.roomId) || activeLiveSyncRoomId || '').trim();
   if (!rid || !msg || msg.version == null) return;

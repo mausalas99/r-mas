@@ -844,11 +844,38 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 }
 
 .drive-import-trigger {
-  margin-left: auto;
   flex-shrink: 0;
   align-self: center;
   font-size: calc(11px * var(--density-font, 1));
   white-space: nowrap;
+}
+
+.exp-expediente-nav .exp-drive-tab-action.btn-med-secondary {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: calc(5px * var(--density-space, 1)) calc(11px * var(--density-space, 1));
+  font-size: calc(12.5px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.25;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.exp-expediente-nav .exp-drive-tab-action.btn-med-secondary:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--action) 7%, var(--surface));
+  color: var(--action);
+  box-shadow: none;
+}
+
+.exp-expediente-nav .exp-drive-tab-action.btn-med-secondary:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 .drive-import-modal.modal {

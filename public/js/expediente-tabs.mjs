@@ -303,11 +303,6 @@ export function syncConsolidatedSegmentBars(granularTab, settings) {
   syncBar(document.getElementById('exp-segment-clinico'), sections, 'clinico');
   syncBar(document.getElementById('exp-segment-resultados'), RESULTADOS_SECTIONS, 'resultados');
   syncBar(document.getElementById('exp-segment-salida'), getSalidaSections(settings), 'salida');
-
-  var driveBtn = document.getElementById('btn-drive-import');
-  if (driveBtn) {
-    driveBtn.style.display = isModeSala(settings) ? '' : 'none';
-  }
 }
 
 export function getConsolidatedCompositeState(granularTab, settings) {
@@ -336,6 +331,14 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
   var datosActions = document.getElementById('exp-paciente-datos-actions');
   if (datosActions) {
     datosActions.hidden = !(compositeState.paciente && compositeState.paciente.active);
+  }
+  var driveActions = document.getElementById('exp-clinico-drive-actions');
+  if (driveActions) {
+    driveActions.hidden = !(
+      isModeSala(settings) &&
+      compositeState.clinico &&
+      compositeState.clinico.active
+    );
   }
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);

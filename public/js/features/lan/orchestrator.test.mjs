@@ -10,6 +10,7 @@ import {
 import {
   purgeLanPatientFromHost,
   rememberPatientDeleteTombstone,
+  clearPatientDeleteTombstoneForAdmit,
   acceptServerBundleConflict,
   profiledMergeLiveSyncFullBundles,
   buildEstadoActualCommand,
@@ -152,6 +153,14 @@ describe('orchestrator.mjs characterization', () => {
   it('rememberPatientDeleteTombstone ignores demo patients', () => {
     rememberPatientDeleteTombstone({ id: 'demo-x', registro: 'X' });
     assert.equal(localStorage.getItem(LIVE_SYNC_ENTITIES_LS), null);
+  });
+
+  it('clearPatientDeleteTombstoneForAdmit removes stale registro tombstones', () => {
+    rememberPatientDeleteTombstone({ id: 'p-old', registro: 'REG-REUSE' });
+    clearPatientDeleteTombstoneForAdmit('p-new', 'REG-REUSE');
+    const map = JSON.parse(localStorage.getItem(LIVE_SYNC_ENTITIES_LS));
+    assert.equal(map['patient:p-old'], undefined);
+    assert.equal(map['patient:p-new'], undefined);
   });
 
   it('acceptServerBundleConflict updates host bundle bases', () => {

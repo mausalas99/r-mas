@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.6](https://github.com/mausalas99/r-mas/releases/tag/v7.3.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.7](https://github.com/mausalas99/r-mas/releases/tag/v7.3.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.3.7 (censo LAN estable y expediente Drive)
+
+- **LAN** — Pacientes ya no desaparecen del censo por readmisión con el mismo registro; deletes LiveSync solo por id del expediente.
+- **LAN** — Limpieza de tombstones obsoletos al registrar paciente nuevo; bundle merge conserva charts con id distinto.
+- **Expediente** — **Importar desde Drive** en la barra del bloque Clínico (modo sala), con estilo pill unificado.
+
+Notas: `docs/RELEASE_NOTES_7.3.7.txt`.
 ## R+ 7.3.6 (LAN identity, sync modular y calidad)
 
 - **LAN** — identidad por cliente emitida en el intercambio; purga usa identidad de servidor, no query params.

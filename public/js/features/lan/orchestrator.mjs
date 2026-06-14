@@ -483,16 +483,14 @@ function applyLiveSyncPatientDeletes(deletes, idMap) {
     var d = deletes[i];
     if (!d || !d.deleted) continue;
     var remoteId = String(d.id || '').trim();
-    var localId = remoteId && idMap && idMap[remoteId] ? idMap[remoteId] : remoteId;
-    if (localId && removePatientLocally(localId)) {
-      changed = true;
-      continue;
-    }
-    var reg = String(d.registro || '').trim();
-    if (reg) {
-      var existing = runtime.findPatientByRegistro(reg);
-      if (existing && removePatientLocally(existing.id)) changed = true;
-    }
+    if (!remoteId) continue;
+    var localId = idMap && idMap[remoteId] ? idMap[remoteId] : remoteId;
+    var existing = patients.find(function (p) {
+      return p && String(p.id) === String(localId);
+    });
+    // Registro reuse: a new local chart must not be removed by an older remote delete id.
+    if (existing && String(existing.id) !== remoteId) continue;
+    if (localId && removePatientLocally(localId)) changed = true;
   }
   return changed;
 }
@@ -1131,7 +1129,7 @@ export function registerLanSaveHooks(deps) {
 
 export { lanPushHistoriaClinica, lanPushHistoriaClinicaDelta, lanSyncPatientArchivedFlag, lanFetchHistoriaClinica } from './historia-sync.mjs';
 export { acceptServerBundleConflict, acceptServerClinicalOpsConflict } from './conflicts.mjs';
-export { rememberPatientDeleteTombstone } from './entity-versions.mjs';
+export { rememberPatientDeleteTombstone, clearPatientDeleteTombstoneForAdmit } from './entity-versions.mjs';
 export { purgeLanPatientFromHost, removePatientLocally } from './patient-delete.mjs';
 export {
   lanFetchHostPatientRow,
