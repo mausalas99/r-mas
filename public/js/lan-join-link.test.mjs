@@ -10,6 +10,8 @@ import {
   resolveLanJoinHostUrl,
   resolveLiveSyncRoomIdFromSala,
   liveSyncRoomLabel,
+  lanClinicalDirectoryPullRoomIds,
+  LIVE_SYNC_SALA_DEFS,
 } from './lan-join-link.mjs';
 
 describe('lan-join-link', () => {
@@ -165,11 +167,26 @@ describe('lan-join-link', () => {
     assert.equal(p.legacyInvite, true);
   });
 
-  it('isLanSalaInvitePaste distingue enlace ⇄ de código de equipo', () => {
-    assert.equal(
-      isLanSalaInvitePaste('http://10.102.32.207:3738/join/req_deadbeefcafe'),
-      true
-    );
-    assert.equal(isLanSalaInvitePaste('2017936e'), false);
+  it('lanClinicalDirectoryPullRoomIds lists every sala when allRooms', () => {
+    const ids = lanClinicalDirectoryPullRoomIds({ allRooms: true });
+    assert.equal(ids.length, LIVE_SYNC_SALA_DEFS.length);
+    assert.ok(ids.includes('sala-1'));
+    assert.ok(ids.includes('interconsultas'));
+    assert.ok(ids.includes('ux'));
+    assert.ok(ids.includes('eme'));
+  });
+
+  it('lanClinicalDirectoryPullRoomIds single room uses active only', () => {
+    assert.deepEqual(lanClinicalDirectoryPullRoomIds({ activeRoomId: 'sala-2' }), ['sala-2']);
+    assert.deepEqual(lanClinicalDirectoryPullRoomIds({ allRooms: true, activeRoomId: 'sala-2' }), [
+      'sala-1',
+      'sala-2',
+      'sala-e',
+      'torre-hu',
+      'area-a-pensionistas',
+      'interconsultas',
+      'ux',
+      'eme',
+    ]);
   });
 });

@@ -721,11 +721,12 @@ select.profile-input.profile-select {
   font-family: inherit; cursor: pointer; margin-top: 4px; font-weight: 600;
 }
 .btn-edit-templates:hover { opacity: 0.85; }
-.patient-search-wrap { padding: 0 calc(10px * var(--density-space)) calc(8px * var(--density-space)); flex-shrink: 0; }
+.patient-search-wrap { padding: 0 calc(10px * var(--density-space)) calc(4px * var(--density-space)); flex-shrink: 0; }
 .patient-search-input {
   width: 100%; box-sizing: border-box;
-  padding: calc(9px * var(--density-space)) calc(12px * var(--density-space));
-  font-size: calc(12px * var(--density-font));
+  padding: calc(6px * var(--density-space)) calc(10px * var(--density-space));
+  font-size: calc(11px * var(--density-font));
+  min-height: 30px;
   border: 1px solid var(--border); border-radius: var(--radius-pill);
   background: color-mix(in oklab, var(--surface) 82%, var(--bg));
   color: var(--text); font-family: inherit;

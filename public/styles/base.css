@@ -68,12 +68,6 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   top: calc(8px * var(--density-space));
   bottom: calc(8px * var(--density-space));
 }
-.patient-card--roundrow .patient-card-toolbar {
-  margin-bottom: calc(2px * var(--density-space));
-  opacity: 0.72;
-}
-.patient-card--roundrow:hover .patient-card-toolbar,
-.patient-card--roundrow.active .patient-card-toolbar { opacity: 1; }
 .roundrow-main {
   display: flex;
   align-items: center;
@@ -82,6 +76,10 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   min-width: 0;
 }
 .roundrow-text {
+  flex: 1;
+  min-width: 0;
+}
+.patient-card-body--round {
   flex: 1;
   min-width: 0;
 }

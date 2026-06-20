@@ -288,6 +288,17 @@ function findRowInMonth(profile, monthKey, rowKey) {
   return null;
 }
 
+function findRowWithDayInMonth(profile, monthKey, rowKey, day) {
+  const month = profile && profile.months ? profile.months[monthKey] : null;
+  if (!month || !month.rows) return null;
+  for (let i = 0; i < month.rows.length; i += 1) {
+    const row = month.rows[i];
+    if (row.rowKey !== rowKey) continue;
+    if (dayValueInMap(row.days, day) > 0) return row;
+  }
+  return findRowInMonth(profile, monthKey, rowKey);
+}
+
 function primaryMonthKeyFromColumns(columns) {
   if (!columns.length) return '';
   return columns[columns.length - 1].monthKey;
@@ -353,9 +364,16 @@ export function unifyRowsForWindow(profile, columns) {
 }
 
 export function cellValueAtColumn(profile, rowKey, column) {
-  const row = findRowInMonth(profile, column.monthKey, rowKey);
-  if (!row) return 0;
-  return dayValueInMap(row.days, column.day);
+  const month = profile && profile.months ? profile.months[column.monthKey] : null;
+  if (!month || !month.rows) return 0;
+  let best = 0;
+  for (let i = 0; i < month.rows.length; i += 1) {
+    const row = month.rows[i];
+    if (row.rowKey !== rowKey) continue;
+    const v = dayValueInMap(row.days, column.day);
+    if (v > best) best = v;
+  }
+  return best;
 }
 
 export function toggleNotAdminAtColumn(profile, rowKey, column) {
@@ -364,7 +382,7 @@ export function toggleNotAdminAtColumn(profile, rowKey, column) {
   const month = base.months[monthKey];
   if (!month) return base;
 
-  const row = findRowInMonth(base, monthKey, rowKey);
+  const row = findRowWithDayInMonth(base, monthKey, rowKey, column.day);
   if (!row) return base;
 
   const nextNotAdmin = toggleNotAdmin(row.days, row.notAdmin, column.day);
@@ -379,9 +397,16 @@ export function toggleNotAdminAtColumn(profile, rowKey, column) {
 }
 
 function notAdminAtColumn(profile, rowKey, column) {
-  const row = findRowInMonth(profile, column.monthKey, rowKey);
-  if (!row || !row.notAdmin) return false;
-  return !!(row.notAdmin[column.day] || row.notAdmin[String(column.day)]);
+  const month = profile && profile.months ? profile.months[column.monthKey] : null;
+  if (!month || !month.rows) return false;
+  for (let i = 0; i < month.rows.length; i += 1) {
+    const row = month.rows[i];
+    if (row.rowKey !== rowKey) continue;
+    if (!(dayValueInMap(row.days, column.day) > 0)) continue;
+    const na = row.notAdmin || {};
+    if (na[column.day] || na[String(column.day)]) return true;
+  }
+  return false;
 }
 
 /** Variante con indicación más reciente en la ventana (columnas de derecha a izquierda). */

@@ -87,6 +87,15 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncRoomSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
   });
 
+  it('directory refresh can pull clinical ops from all sala rooms', () => {
+    assert.match(lanSyncRoomSrc, /lanClinicalDirectoryPullRoomIds/);
+    assert.match(lanSyncRoomSrc, /allRooms[\s\S]*fetchAndApplyClinicalOpsFromHost/);
+    assert.match(
+      readFileSync(join(clinicalTeamsDir, 'teams-roster-lan.mjs'), 'utf8'),
+      /refreshLanClinicalDirectoryFromRoom[\s\S]*allRooms:\s*true/
+    );
+  });
+
   it('mints a fresh LAN ticket when copying sala invite; mobile uses permanent URL', () => {
     assert.match(lanSyncPanelSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
     assert.match(lanSyncPanelSrc, /copyMobileLanLinkFromUi/);

@@ -51,12 +51,27 @@ export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPat
     String(ec.kcal || ''),
     String(ec.proteinG || '')
   );
+  for (var dk of ['dieta', 'kcal', 'proteinG']) {
+    parts.push(String(pend[dk] || ''), conf[dk] ? '1' : '0');
+  }
   for (var k of MED_FIELD_KEYS) {
     parts.push(String(ec[k] || ''), String(pend[k] || ''), conf[k] ? '1' : '0');
   }
   var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
   var items = block && Array.isArray(block.items) ? block.items : [];
+  var dietas = block && Array.isArray(block.dietas) ? block.dietas : [];
   parts.push('f' + String(block && block.fechaActualizacion ? block.fechaActualizacion : ''));
+  parts.push('d' + dietas.length);
+  for (var d = 0; d < Math.min(2, dietas.length); d += 1) {
+    var di = dietas[d];
+    parts.push(
+      String(di && di.descripcionRaw ? di.descripcionRaw : '') +
+        '@' +
+        String(di && di.kcal != null ? di.kcal : '') +
+        '@' +
+        String(di && di.proteinG != null ? di.proteinG : '')
+    );
+  }
   var now = new Date();
   parts.push(
     'cal' + now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
@@ -109,6 +124,14 @@ function backfillEstadoClinico(monitoreo) {
       if (monitoreo.pendienteReceta[k] == null) monitoreo.pendienteReceta[k] = '';
     });
   }
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = { dieta: false };
+  } else if (monitoreo.confirmado.dieta == null) {
+    monitoreo.confirmado.dieta = false;
+  }
+  for (var mk of MED_FIELD_KEYS) {
+    if (monitoreo.confirmado[mk] == null) monitoreo.confirmado[mk] = false;
+  }
 }
 
 /** @returns {Record<string, string>} */
@@ -124,7 +147,7 @@ function emptyPendienteReceta() {
 /** @returns {typeof emptyMonitoreo extends (...a: infer R) => infer V ? V : never} */
 export function emptyMonitoreo() {
   /** @type {Record<string, boolean>} */
-  var confirmado = {};
+  var confirmado = { dieta: false };
   for (var mk of MED_FIELD_KEYS) {
     confirmado[mk] = false;
   }
@@ -238,7 +261,12 @@ export function mergePatientMonitoreoFromImported(target, source) {
   var t = target;
   try {
     if ('monitoreo' in s && s.monitoreo != null && typeof s.monitoreo === 'object') {
-      t.monitoreo = JSON.parse(JSON.stringify(s.monitoreo));
+      var incoming = JSON.parse(JSON.stringify(s.monitoreo));
+      if (t.monitoreo != null && typeof t.monitoreo === 'object') {
+        t.monitoreo = mergeMonitoreo(t.monitoreo, incoming);
+      } else {
+        t.monitoreo = incoming;
+      }
     }
     if ('estadoActual' in s && s.estadoActual != null && typeof s.estadoActual === 'object') {
       t.estadoActual = JSON.parse(JSON.stringify(s.estadoActual));
@@ -583,6 +611,37 @@ export function mergeMonitoreo(localIn, remoteIn) {
       resCf[mk] = true;
     }
   }
+
+  var locPend = local.pendienteReceta && typeof local.pendienteReceta === 'object' ? local.pendienteReceta : {};
+  var remPend = remote.pendienteReceta && typeof remote.pendienteReceta === 'object' ? remote.pendienteReceta : {};
+  if (!result.pendienteReceta || typeof result.pendienteReceta !== 'object') {
+    result.pendienteReceta = emptyPendienteReceta();
+  }
+  if (resCf.dieta || String(resEco.dieta || '').trim()) {
+    for (var dk of ['dieta', 'kcal', 'proteinG']) {
+      result.pendienteReceta[dk] = '';
+    }
+  } else if (remCf.dieta && String(remEco.dieta || '').trim()) {
+    for (var dk2 of ['dieta', 'kcal', 'proteinG']) {
+      resEco[dk2] = remEco[dk2];
+      result.pendienteReceta[dk2] = '';
+    }
+    resCf.dieta = true;
+  } else {
+    for (var dk3 of ['dieta', 'kcal', 'proteinG']) {
+      var localPending = locPend[dk3];
+      var remotePending = remPend[dk3];
+      if (localPending != null && String(localPending).trim()) {
+        result.pendienteReceta[dk3] = String(localPending).trim();
+      } else if (remotePending != null && String(remotePending).trim()) {
+        result.pendienteReceta[dk3] = String(remotePending).trim();
+      } else {
+        result.pendienteReceta[dk3] = '';
+      }
+    }
+    if (resCf.dieta == null) resCf.dieta = !!remCf.dieta;
+  }
+
   result.estadoClinico = resEco;
   result.confirmado = resCf;
 

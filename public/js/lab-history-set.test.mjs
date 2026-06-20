@@ -29,6 +29,8 @@ const {
   labSetIsFromSome,
   groupLabHistoryByDay,
   buildEstudiosCopyLinesFromLabSets,
+  resolveEstudiosCopyOptions,
+  registerLabHistoryMaintRuntime,
   formatLabHistoryDateSelectLabel,
   primaryTipoForLabSet,
 } = await import('./lab-history-set.mjs');
@@ -126,6 +128,55 @@ describe('lab-history-set', () => {
       ),
       '07/06/2026 · Cultivo',
     );
+  });
+
+  it('resolveEstudiosCopyOptions en interconsulta limita al día más reciente', () => {
+    const sets = [
+      { id: '1', fecha: '01/06/2026', hora: '08:00', resLabs: ['BH\tHb 10'] },
+      { id: '2', fecha: '02/06/2026', hora: '09:00', resLabs: ['BH\tHb 12'] },
+    ];
+    const interOpts = resolveEstudiosCopyOptions(sets, { appMode: 'interconsulta' });
+    const interText = buildEstudiosCopyLinesFromLabSets(sets, interOpts).join('\n');
+    assert.match(interText, /Hb 12/);
+    assert.doesNotMatch(interText, /Hb 10/);
+
+    const salaOpts = resolveEstudiosCopyOptions(sets, { appMode: 'sala' });
+    const salaText = buildEstudiosCopyLinesFromLabSets(sets, salaOpts).join('\n');
+    assert.match(salaText, /Hb 10/);
+    assert.match(salaText, /Hb 12/);
+  });
+
+  it('rebuildEstudiosFromLabHistory en interconsulta deja solo labs recientes', () => {
+    registerLabHistoryMaintRuntime({
+      getSettings() {
+        return { appMode: 'interconsulta' };
+      },
+    });
+    appState.setLabHistory({
+      [PATIENT_ID]: [
+        {
+          id: '1',
+          fecha: '20/05/2026',
+          hora: '08:00',
+          resLabs: ['BH\tHb 10 g/dL'],
+          parsed: { Hb: 10 },
+          bhExtras: {},
+        },
+        {
+          id: '2',
+          fecha: '24/05/2026',
+          hora: '02:40',
+          resLabs: ['BH\tHb 12.1 g/dL\t11-15'],
+          sourceText: SOURCE_TEXT,
+          parsed: { Hb: 12.1 },
+          bhExtras: {},
+        },
+      ],
+    });
+    rebuildEstudiosFromLabHistory(PATIENT_ID);
+    const text = String(appState.notes[PATIENT_ID].estudios || '');
+    assert.match(text, /12\.1/);
+    assert.doesNotMatch(text, /Hb 10/);
   });
 
   it('groupLabHistoryByDay y buildEstudiosCopyLinesFromLabSets filtran días', () => {

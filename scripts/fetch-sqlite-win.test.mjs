@@ -11,10 +11,26 @@ const nodeFile = path.join(
   'node_modules/better-sqlite3-multiple-ciphers/build/Release/better_sqlite3.node'
 );
 
-test('fetch-sqlite-win leaves a Windows PE better_sqlite3.node when run on macOS', () => {
+test('fetch-sqlite-win leaves a Windows PE better_sqlite3.node when run on macOS', (t) => {
   if (process.platform === 'win32') {
     return;
   }
+
+  let backup = null;
+  if (fs.existsSync(nodeFile)) {
+    backup = fs.readFileSync(nodeFile);
+  }
+  t.after(() => {
+    if (backup) {
+      fs.mkdirSync(path.dirname(nodeFile), { recursive: true });
+      fs.writeFileSync(nodeFile, backup);
+    }
+    spawnSync(process.execPath, [path.join(root, 'scripts/rebuild-native-db.mjs')], {
+      cwd: root,
+      stdio: 'pipe',
+    });
+  });
+
   const script = path.join(root, 'scripts/fetch-sqlite-win.mjs');
   const r = spawnSync(process.execPath, [script], { cwd: root, stdio: 'pipe', encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr || r.stdout || 'fetch-sqlite-win failed');

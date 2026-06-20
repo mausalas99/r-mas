@@ -486,7 +486,9 @@ aside.patient-sidebar #patient-search {
   border: var(--border-hairline);
   background: var(--input-fill);
   border-radius: var(--radius-control);
-  font: var(--type-body);
+  font: var(--type-caption);
+  padding: calc(6px * var(--density-space)) calc(10px * var(--density-space));
+  min-height: 30px;
   transition:
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);

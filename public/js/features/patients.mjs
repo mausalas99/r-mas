@@ -98,6 +98,7 @@ import {
   destroyPatientActiveZoneVirtual,
   trySilentVirtualPatientListPatch,
 } from '../patient-list-virtual.mjs';
+import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
 
 import {
   adoptTourPatientOnCommit,
@@ -1000,24 +1001,13 @@ export function scrollActiveRondaCardIntoView() {
   }
 }
 
-function renderPatientRoundRowHtml(p) {
-  var pinOn = !!p.pinned;
-  var archOn = !!p.archived;
-  var seen = isPatientRoundSeen(p.id);
-  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
+function renderPatientCardToolbarHtml(p, pinOn, archOn) {
+  var pinTitle = pinOn ? 'Quitar de fijados' : 'Fijar paciente';
   var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
   var archiveIcon = archOn
     ? '↩'
     : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
-  var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
-  var aid = rt.getActiveId();
   return (
-    '<div class="patient-card patient-card--roundrow ' +
-    (p.id === aid ? 'active' : '') +
-    (seen ? ' patient-card--roundrow-seen' : '') +
-    '" data-patient-id="' +
-    p.id +
-    '" role="button" tabindex="0">' +
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
@@ -1029,30 +1019,53 @@ function renderPatientRoundRowHtml(p) {
     '\')">' +
     archiveIcon +
     '</button>' +
-    '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' +
+    '<button type="button" class="patient-toolbar-chip btn-pinned-text' +
+    (pinOn ? ' patient-toolbar-chip--on' : '') +
+    '" title="' +
     pinTitle +
     '" aria-label="' +
     pinTitle +
     '" onclick="togglePatientPinned(event,\'' +
     p.id +
-    '\')">Pinned</button>' +
+    '\')">' +
+    (pinOn ? 'Fijado' : 'Fijar') +
+    '</button>' +
     '</div>' +
     '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
     p.id +
     '\')" aria-label="Eliminar">×</button>' +
-    '</div>' +
+    '</div>'
+  );
+}
+
+function patientSidebarCardOpts(extra) {
+  var opts = { showServicio: !isModeSala(rt.getSettings()) };
+  if (extra) {
+    for (var k in extra) {
+      if (Object.prototype.hasOwnProperty.call(extra, k)) opts[k] = extra[k];
+    }
+  }
+  return opts;
+}
+
+function renderPatientRoundRowHtml(p) {
+  var pinOn = !!p.pinned;
+  var archOn = !!p.archived;
+  var seen = isPatientRoundSeen(p.id);
+  var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
+  var aid = rt.getActiveId();
+  return (
+    '<div class="patient-card patient-card--roundrow ' +
+    (p.id === aid ? 'active' : '') +
+    (seen ? ' patient-card--roundrow-seen' : '') +
+    '" data-patient-id="' +
+    p.id +
+    '" role="button" tabindex="0">' +
+    renderPatientCardToolbarHtml(p, pinOn, archOn) +
     '<div class="roundrow-main">' +
     '<div class="roundrow-text">' +
-    '<div class="p-name">' +
-    esc(p.nombre || 'Sin nombre') +
+    renderPatientSidebarBodyHtml(p, patientSidebarCardOpts({ roundRow: true })) +
     '</div>' +
-    '<div class="p-meta"><span>Cto. ' +
-    esc(p.cuarto || '-') +
-    '</span><span>Cama ' +
-    esc(p.cama || '-') +
-    '</span><span>' +
-    esc(p.servicio || '-') +
-    '</span></div></div>' +
     '<button type="button" class="btn-round-seen" title="' +
     esc(seenTitle) +
     '" aria-label="' +
@@ -1071,51 +1084,18 @@ function renderPatientRoundRowHtml(p) {
 function renderPatientCardHtml(p) {
   var pinOn = !!p.pinned;
   var archOn = !!p.archived;
-  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
-  var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
-  var archiveIcon = archOn
-    ? '↩'
-    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var aid = rt.getActiveId();
   return (
     '<div class="patient-card ' +
       (p.id === aid ? 'active' : '') +
+      (pinOn ? ' patient-card--pinned' : '') +
+      (archOn ? ' patient-card--archived' : '') +
       '" data-patient-id="' +
       p.id +
       '" role="button" tabindex="0">' +
-      '<div class="patient-card-toolbar">' +
-      '<div class="patient-card-toolbar-left">' +
-      '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
-      archTitle +
-      '" aria-label="' +
-      archTitle +
-      '" onclick="togglePatientArchived(event,\'' +
-      p.id +
-      '\')">' +
-      archiveIcon +
-      '</button>' +
-      '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' +
-      pinTitle +
-      '" aria-label="' +
-      pinTitle +
-      '" onclick="togglePatientPinned(event,\'' +
-      p.id +
-      '\')">Pinned</button>' +
-      '</div>' +
-      '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
-      p.id +
-      '\')" aria-label="Eliminar">×</button>' +
-      '</div>' +
-      '<div class="p-name">' +
-      esc(p.nombre || 'Sin nombre') +
-      '</div>' +
-      '<div class="p-meta"><span>Cto. ' +
-      esc(p.cuarto || '-') +
-      '</span><span>Cama ' +
-      esc(p.cama || '-') +
-      '</span><span>' +
-      esc(p.servicio || '-') +
-      '</span></div></div>'
+      renderPatientCardToolbarHtml(p, pinOn, archOn) +
+      renderPatientSidebarBodyHtml(p, patientSidebarCardOpts()) +
+      '</div>'
   );
 }
 

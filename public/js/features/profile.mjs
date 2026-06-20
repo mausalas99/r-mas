@@ -388,6 +388,9 @@ export function applyAppModeSwitchEffects() {
     syncCensoExportButtonVisibility();
     syncHeaderModeSeg();
     if (rt.getActiveId()) {
+      if (typeof rt.rebuildEstudiosFromLabHistory === "function") {
+        rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
+      }
       if (!nowSala) renderNoteForm();
       var inner = getActiveInnerTab();
       if (inner === "datos" || inner === "todo") renderPatientDataPane();

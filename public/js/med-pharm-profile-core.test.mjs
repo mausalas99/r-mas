@@ -114,6 +114,32 @@ describe('parseSomePharmMonthPaste', () => {
     assert.equal(row.days[1], 1);
     assert.equal(row.days[5], 1);
   });
+
+  it('fusiona filas SOME con mismo régimen y distinto DIA#', () => {
+    const header =
+      'Med\tDosis\tFreq\tVia\t' +
+      Array.from({ length: 31 }, function (_, i) {
+        return String(i + 1).padStart(2, '0');
+      }).join('\t');
+    const mkRow = function (dia, day) {
+      const days = Array(31).fill('');
+      days[day - 1] = '1';
+      return (
+        'VANCOMICINA 500 MG SOL INY 10 ML (*)\t1250 MG DILUIR EN 250 CC // *DIA# ' +
+        dia +
+        '*\tQ12H\tVIA INTRAVENOSA\t' +
+        days.join('\t')
+      );
+    };
+    const raw = [header, mkRow(8, 8), mkRow(9, 9), mkRow(10, 10), mkRow(11, 11), mkRow(12, 12), mkRow(13, 13)].join(
+      '\n'
+    );
+    const res = parseSomePharmMonthPaste(raw, { year: 2026, monthIndex: 5 });
+    assert.equal(res.rows.length, 1);
+    assert.equal(res.rows[0].days[8], 1);
+    assert.equal(res.rows[0].days[13], 1);
+    assert.match(res.rows[0].dosis, /DIA#\s*13/i);
+  });
 });
 
 describe('looksLikeSomePharmMonthPaste', () => {

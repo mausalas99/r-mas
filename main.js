@@ -1105,6 +1105,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+function destroyAllBrowserWindows() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.destroy();
+  }
+}
+
 let quitting = false;
 app.on('before-quit', (event) => {
   if (quitting) return;
@@ -1112,8 +1118,20 @@ app.on('before-quit', (event) => {
   lanNetworkWatch.stop();
   const lanServer = require('./server');
   event.preventDefault();
-  const timeout = new Promise((r) => setTimeout(r, 3000));
-  Promise.race([lanServer.flushHostStoreNow().catch(() => {}), timeout])
-    .then(() => lanServer.stopLanServer())
-    .finally(() => app.exit(0));
+
+  const QUIT_DEADLINE_MS = 4000;
+  const forceExitTimer = setTimeout(() => app.exit(0), QUIT_DEADLINE_MS);
+  if (typeof forceExitTimer.unref === 'function') forceExitTimer.unref();
+
+  const flushCap = new Promise((r) => setTimeout(r, 3000));
+  Promise.race([lanServer.flushHostStoreNow().catch(() => {}), flushCap])
+    .then(() => {
+      // Renderer loads from localhost:3738 — drop windows before httpServer.close().
+      destroyAllBrowserWindows();
+      return lanServer.stopLanServer();
+    })
+    .finally(() => {
+      clearTimeout(forceExitTimer);
+      app.exit(0);
+    });
 });

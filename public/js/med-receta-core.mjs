@@ -154,9 +154,33 @@ export function extractDietNutrients(detalleRaw) {
   };
 }
 
+function isDietNutrientCell(s) {
+  var t = normalizeNutrientText(trimStr(s));
+  if (!t) return false;
+  return /\d+\s*KCAL\b/.test(t) || /\bPROTEIN/.test(t) || /\d+\s*(?:GRS?|GRAMOS?|G)\s*(?:DE\s+)?PROT\b/.test(t);
+}
+
+/** SOME a veces colapsa la columna VIA vacía: kcal/prot quedan en cols[3]. */
+function normalizeDietaCols(cols) {
+  var c = cols.slice();
+  while (c.length < 7) c.push('');
+  var via = trimStr(c[3]);
+  var next = trimStr(c[4]);
+  if (isDietNutrientCell(via) && !isDietNutrientCell(next)) {
+    var tail = next;
+    var freq = '';
+    var nw = trimStr(c[5]);
+    if (/^NW$/i.test(tail)) nw = tail;
+    else if (tail) freq = tail;
+    return [c[0], c[1], c[2], '', via, freq, nw];
+  }
+  return c;
+}
+
 /** Texto combinado de columnas SOME donde suelen ir kcal/proteína en filas DIETAS. */
 export function dietNutrientBlobFromCols(cols) {
-  return [cols[2], cols[4], cols[5]].map(trimStr).filter(Boolean).join(' ');
+  var norm = normalizeDietaCols(cols);
+  return [norm[2], norm[4], norm[5]].map(trimStr).filter(Boolean).join(' ');
 }
 
 export function mergeDietaItems(dietas) {
@@ -202,8 +226,9 @@ function parseMedRow(cols, lineIndex, lineText) {
 }
 
 function parseDietaRow(cols, lineIndex) {
-  var detalleRaw = trimStr(cols[4]) || trimStr(cols[5]);
-  var nutrients = extractDietNutrients(dietNutrientBlobFromCols(cols));
+  var norm = normalizeDietaCols(cols);
+  var detalleRaw = trimStr(norm[4]) || trimStr(norm[5]);
+  var nutrients = extractDietNutrients(dietNutrientBlobFromCols(norm));
   return {
     id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
     descripcionRaw: trimStr(cols[2]),
@@ -227,8 +252,9 @@ export function parseIndicacionesPaste(text) {
   for (var i = 0; i < lines.length; i += 1) {
     var cols = lines[i].split('\t');
     var tipoEarly = cols.length >= 2 ? trimStr(cols[1]).toUpperCase() : '';
+    var minCols = tipoEarly === 'DIETAS' ? 5 : 6;
     if (cols.length < 7) {
-      if (cols.length >= 6 && (tipoEarly === 'DIETAS' || INDICACIONES_MED_CLASSES[tipoEarly])) {
+      if (cols.length >= minCols && (tipoEarly === 'DIETAS' || INDICACIONES_MED_CLASSES[tipoEarly])) {
         while (cols.length < 7) cols.push('');
       } else {
         skipped += 1;
@@ -273,8 +299,10 @@ export function looksLikeSomeIndicacionesPaste(text) {
   var lines = raw.split(/\r?\n/).map(trimStr).filter(Boolean);
   for (var i = 0; i < lines.length; i += 1) {
     var cols = lines[i].split('\t');
-    if (cols.length < 7) continue;
+    if (cols.length < 2) continue;
     var tipo = trimStr(cols[1]).toUpperCase();
+    var minCols = tipo === 'DIETAS' ? 5 : 6;
+    if (cols.length < minCols) continue;
     if (tipo === 'MEDICAMENTOS' || tipo === 'MEDICAMENTOS P2' || tipo === 'DIETAS') return true;
   }
   return false;

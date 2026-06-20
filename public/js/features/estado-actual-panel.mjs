@@ -39,6 +39,7 @@ import {
   discardDietProposal,
   hasPendingEaProposals,
   DIET_PENDING_KEYS,
+  applyDietProposalFromRecetaBlock,
   estadoClinicoForDisplay,
   estadoClinicoForText,
   resolveManejoFechaActualizacion,
@@ -1847,6 +1848,14 @@ export function renderEstadoActualPanel(opts) {
   ensureMonitoreo(patient);
   var monitoreo = patient.monitoreo;
   var activeId = rt.getActiveId();
+  if (
+    applyDietProposalFromRecetaBlock(
+      monitoreo,
+      activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null
+    )
+  ) {
+    saveState();
+  }
   syncRecetaProposalsFromSoapSelection(
     activeId,
     monitoreo,

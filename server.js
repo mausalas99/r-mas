@@ -318,7 +318,7 @@ const authRouter = createAuthRouter({
 
 const httpServer = http.createServer(appExpress);
 const lanResolver = createConflictResolver({ store: lanStore });
-const { broadcast } = attachWsHub(httpServer, {
+const { broadcast, close: closeWsHub } = attachWsHub(httpServer, {
   getState: () => lanStore.getState(),
   resolver: lanResolver,
 });
@@ -460,17 +460,39 @@ async function flushHostStoreNow() {
 }
 
 function stopLanServer() {
+  const STOP_DEADLINE_MS = 2000;
+
   return new Promise((resolve) => {
-    if (!serverInstance) {
-      listenPromise = null;
-      resolve();
-      return;
-    }
-    httpServer.close(() => {
+    const finish = () => {
       serverInstance = null;
       listenPromise = null;
       resolve();
-    });
+    };
+    if (!serverInstance) {
+      finish();
+      return;
+    }
+    const timer = setTimeout(finish, STOP_DEADLINE_MS);
+    if (typeof timer.unref === 'function') timer.unref();
+
+    Promise.resolve()
+      .then(() => (typeof closeWsHub === 'function' ? closeWsHub() : undefined))
+      .then(() => {
+        if (typeof httpServer.closeAllConnections === 'function') {
+          httpServer.closeAllConnections();
+        }
+      })
+      .then(
+        () =>
+          new Promise((resolveClose) => {
+            httpServer.close(() => resolveClose());
+          })
+      )
+      .catch(() => {})
+      .finally(() => {
+        clearTimeout(timer);
+        finish();
+      });
   });
 }
 

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   applyRecetaProposal,
+  applyDietProposalFromRecetaBlock,
   confirmMedField,
   confirmDietProposal,
   discardDietProposal,
@@ -142,6 +143,62 @@ test('bucketsFromRecetaItems — otros sin destino no van a abx', () => {
   const buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
   assert.equal(buckets.abx, '');
   assert.match(buckets.nm, /OMEPRAZOL/i);
+});
+
+test('applyDietProposalFromRecetaBlock copia dieta desde block.dietas', () => {
+  const m = emptyMonitoreo();
+  const block = {
+    dietas: [
+      {
+        descripcionRaw: 'BLANDA PICADA ALTA EN FIBRA',
+        kcal: 1500,
+        proteinG: 60,
+      },
+    ],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.pendienteReceta.dieta, 'BLANDA PICADA ALTA EN FIBRA');
+  assert.equal(m.pendienteReceta.kcal, '1500');
+  assert.equal(m.pendienteReceta.proteinG, '60');
+  assert.equal(m.confirmado.dieta, false);
+  const ec = estadoClinicoForDisplay(m);
+  assert.equal(ec.dieta, 'BLANDA PICADA ALTA EN FIBRA');
+  assert.equal(ec.kcal, '1500');
+  assert.equal(ec.proteinG, '60');
+});
+
+test('applyDietProposalFromRecetaBlock no pisa propuesta pendiente sin force', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'YA PENDIENTE';
+  const block = { dietas: [{ descripcionRaw: 'NUEVA', kcal: 1200, proteinG: 50 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, 'YA PENDIENTE');
+});
+
+test('applyDietProposalFromRecetaBlock force actualiza propuesta en reimport', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'VIEJA';
+  const block = { dietas: [{ descripcionRaw: 'NUEVA', kcal: 1200, proteinG: 50 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block, { force: true }), true);
+  assert.equal(m.pendienteReceta.dieta, 'NUEVA');
+});
+
+test('applyDietProposalFromRecetaBlock no repropone dieta ya confirmada', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'BLANDA PICADA ALTA EN FIBRA';
+  m.estadoClinico.kcal = '1500';
+  m.estadoClinico.proteinG = '60';
+  m.confirmado.dieta = true;
+  const block = { dietas: [{ descripcionRaw: 'BLANDA PICADA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock no repropone si estado clínico ya tiene dieta', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'DIETA MANUAL';
+  const block = { dietas: [{ descripcionRaw: 'DESDE SOME', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
 });
 
 test('estadoClinicoForDisplay muestra propuesta de dieta pendiente', () => {

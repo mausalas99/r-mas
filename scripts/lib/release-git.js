@@ -46,6 +46,12 @@ const RELEASE_STAGE_PATHS = [
   'scripts/fetch-argon2-win.mjs',
   'scripts/fetch-sqlite-win.mjs',
   'scripts/fetch-sqlite-win.test.mjs',
+  'scripts/fetch-sqlite-electron.mjs',
+  'scripts/ensure-sqlcipher-electron-native.mjs',
+  'scripts/ensure-native-db-for-node.mjs',
+  'scripts/rebuild-native-db.mjs',
+  'scripts/verify-release-natives.mjs',
+  'scripts/lib/native-binary-format.mjs',
 ];
 
 function releasePathExists(root, rel) {

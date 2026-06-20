@@ -29,6 +29,7 @@ import { extractParsedValues, buildParsedBySectionFromResLabs } from './features
 import { inferFechaLabSetFromId } from './features/tendencias.mjs';
 import { normalizeLabHistoryPatientSets } from './storage.js';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
+import { isModeSala } from './mode-features.mjs';
 import {
   patients,
   notes,
@@ -326,6 +327,19 @@ export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
   return lines;
 }
 
+/**
+ * En interconsulta la nota solo lleva el día más reciente; en sala, historial completo.
+ * @param {unknown[]} orderedSets
+ * @param {Record<string, unknown>|null|undefined} [settings]
+ * @returns {{ onlyDayKeys?: string[] }}
+ */
+export function resolveEstudiosCopyOptions(orderedSets, settings) {
+  if (isModeSala(settings)) return {};
+  var groups = groupLabHistoryByDay(orderedSets);
+  if (!groups.length) return {};
+  return { onlyDayKeys: [groups[0].dayKey] };
+}
+
 export function rebuildEstudiosFromLabHistory(patientId) {
   if (!patientId) return;
   if (!notes[patientId]) notes[patientId] = {};
@@ -336,7 +350,12 @@ export function rebuildEstudiosFromLabHistory(patientId) {
     notes[patientId].estudios = '';
     return;
   }
-  notes[patientId].estudios = buildEstudiosCopyLinesFromLabSets(ordered).join('\n');
+  var settings =
+    typeof maintRt.getSettings === 'function' ? maintRt.getSettings() : null;
+  notes[patientId].estudios = buildEstudiosCopyLinesFromLabSets(
+    ordered,
+    resolveEstudiosCopyOptions(ordered, settings)
+  ).join('\n');
 }
 
 export function ensureParsedLabHistory(patientId, options) {

@@ -5,6 +5,8 @@ import {
   emptyEstadoClinico,
   ensureMonitoreo,
   migratePatientMonitoreo,
+  mergePatientMonitoreoFromImported,
+  mergeMonitoreo,
   deriveSnapshot,
   balanceTurno,
   balanceGlobalHistorico,
@@ -36,6 +38,36 @@ test('ensureMonitoreo backfill proteinG en pacientes legacy', () => {
   };
   ensureMonitoreo(patient);
   assert.equal(patient.monitoreo.estadoClinico.proteinG, '');
+  assert.equal(patient.monitoreo.confirmado.dieta, false);
+});
+
+test('mergePatientMonitoreoFromImported preserva dieta confirmada local', () => {
+  /** @type {any} */
+  const local = {
+    monitoreo: emptyMonitoreo(),
+  };
+  local.monitoreo.estadoClinico.dieta = 'BLANDA PICADA';
+  local.monitoreo.estadoClinico.kcal = '1500';
+  local.monitoreo.confirmado.dieta = true;
+  /** @type {any} */
+  const incoming = {
+    monitoreo: emptyMonitoreo(),
+  };
+  incoming.monitoreo.pendienteReceta.dieta = 'DESDE LAN';
+  mergePatientMonitoreoFromImported(local, incoming);
+  assert.equal(local.monitoreo.estadoClinico.dieta, 'BLANDA PICADA');
+  assert.equal(local.monitoreo.confirmado.dieta, true);
+  assert.equal(local.monitoreo.pendienteReceta.dieta, '');
+});
+
+test('mergeMonitoreo toma dieta confirmada remota si local no tiene', () => {
+  const local = emptyMonitoreo();
+  const remote = emptyMonitoreo();
+  remote.estadoClinico.dieta = 'NORMAL';
+  remote.confirmado.dieta = true;
+  const merged = mergeMonitoreo(local, remote);
+  assert.equal(merged.estadoClinico.dieta, 'NORMAL');
+  assert.equal(merged.confirmado.dieta, true);
 });
 
 test('emptyMonitoreo — stable canonical shape', () => {

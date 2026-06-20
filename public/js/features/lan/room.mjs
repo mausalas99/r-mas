@@ -84,6 +84,7 @@ import {
   shouldApplyCommandBroadcast,
   updateCommandSeqState,
 } from '../../lan-command-room-order.mjs';
+import { lanClinicalDirectoryPullRoomIds } from '../../lan-join-link.mjs';
 
 export { shouldApplyCommandBroadcast, updateCommandSeqState };
 
@@ -875,17 +876,29 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
 }
 
 export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
-  const roomId = ensureEffectiveLiveSyncRoomId();
-  if (!roomId || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+  const allRooms = options.allRooms === true;
+  const activeRoomId = ensureEffectiveLiveSyncRoomId();
+  const roomIds = lanClinicalDirectoryPullRoomIds({ allRooms, activeRoomId });
+  if (!roomIds.length || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
     return false;
   }
-  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 5000);
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || (allRooms ? 12_000 : 5000));
   try {
     if (!lanClient.connected) {
       try {
         lanClient.connectSyncChannel();
       } catch (_e) {}
     }
+    if (allRooms) {
+      const perRoomMs = Math.max(2000, Math.ceil(timeoutMs / roomIds.length));
+      const results = await Promise.all(
+        roomIds.map((rid) =>
+          fetchAndApplyClinicalOpsFromHost(rid, { timeoutMs: perRoomMs, skipGossipPush: true })
+        )
+      );
+      return results.some(Boolean);
+    }
+    const roomId = roomIds[0];
     const applied = await Promise.race([
       fetchAndApplyClinicalOpsFromHost(roomId, { timeoutMs }),
       new Promise((resolve) => {

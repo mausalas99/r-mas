@@ -32,6 +32,22 @@ export function liveSyncRoomLabel(roomId) {
   return hit ? hit.label : id;
 }
 
+/**
+ * Room ids to pull for Directorio LAN.
+ * @param {{ allRooms?: boolean, activeRoomId?: string }} [opts]
+ * @returns {string[]}
+ */
+export function lanClinicalDirectoryPullRoomIds(opts = {}) {
+  if (!opts.allRooms) {
+    const rid = String(opts.activeRoomId || '').trim();
+    return rid ? [rid] : [];
+  }
+  const ids = LIVE_SYNC_SALA_DEFS.map((d) => String(d.id || '').trim()).filter(Boolean);
+  const active = String(opts.activeRoomId || '').trim();
+  if (active && !ids.includes(active)) return [active, ...ids];
+  return ids;
+}
+
 /** Prefer page origin when server/config points at localhost (iPad cannot reach loopback). */
 export function resolveLanJoinHostUrl(fromServer, pageOrigin) {
   try {

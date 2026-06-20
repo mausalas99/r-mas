@@ -126,14 +126,14 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: calc(10px * var(--density-space));
-  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(16px * var(--density-space));
+  gap: calc(8px * var(--density-space));
+  padding: calc(6px * var(--density-space)) calc(12px * var(--density-space)) calc(14px * var(--density-space));
 }
 /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
 .patient-sort-zone {
   display: flex;
   flex-direction: column;
-  gap: calc(10px * var(--density-space));
+  gap: calc(7px * var(--density-space));
 }
 .patient-sort-zone--virtual-active {
   flex: 0 1 auto;
@@ -152,7 +152,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
 }
 .patient-card {
-  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(9px * var(--density-space));
+  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space)) calc(7px * var(--density-space));
   cursor: grab;
   position: relative;
   border-radius: var(--radius-md);
@@ -209,23 +209,73 @@ html.dark .patient-card.active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: calc(4px * var(--density-space));
-  opacity: 0.9;
+  gap: 6px;
+  margin-bottom: calc(3px * var(--density-space));
+  min-height: 22px;
 }
-.patient-card:hover .patient-card-toolbar,
-.patient-card.active .patient-card-toolbar { opacity: 1; }
 .patient-card-toolbar-left {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  min-width: 0;
+}
+.patient-toolbar-chip--on {
+  background: color-mix(in oklab, var(--action) 24%, var(--surface));
+  border-color: color-mix(in oklab, var(--action) 48%, var(--border));
+  color: var(--action);
+}
+aside.patient-sidebar .patient-toolbar-chip {
+  min-height: 22px;
+  min-width: 22px;
+  padding: 2px 5px;
+  font-size: calc(10px * var(--density-font));
+}
+aside.patient-sidebar .btn-delete-card {
+  font-size: 15px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 1px 4px;
 }
 .patient-card .p-name {
   font-size: calc(12px * var(--density-font));
-  font-weight: 700; color: var(--text);
-  margin-bottom: calc(3px * var(--density-space));
-  line-height: 1.24;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: calc(2px * var(--density-space));
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.patient-card .p-meta { font-size: calc(10.5px * var(--density-font)); color: var(--text-muted); display: flex; align-items: center; gap: calc(5px * var(--density-space)); flex-wrap: wrap; line-height: 1.22; }
+.patient-card-body {
+  min-width: 0;
+}
+.patient-card-body--round {
+  flex: 1;
+  min-width: 0;
+}
+.patient-card .p-meta {
+  font-size: calc(10.5px * var(--density-font));
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  line-height: 1.22;
+}
+.patient-card .p-meta > span:not(:last-child)::after {
+  content: '·';
+  margin: 0 calc(5px * var(--density-space));
+  opacity: 0.45;
+  font-weight: 400;
+}
+.patient-card-svc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
 .patient-toolbar-chip {
   appearance: none;
   -webkit-appearance: none;
@@ -310,8 +360,9 @@ html.dark .patient-drag-hovercard.patient-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: calc(4px * var(--density-space)) calc(2px * var(--density-space)) calc(2px * var(--density-space));
-  padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
+  margin: calc(2px * var(--density-space)) calc(2px * var(--density-space)) calc(1px * var(--density-space));
+  padding: calc(4px * var(--density-space)) calc(10px * var(--density-space));
+  min-height: 24px;
   font-size: calc(10px * var(--density-font));
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -321,10 +372,12 @@ html.dark .patient-drag-hovercard.patient-card {
   border: 1px solid color-mix(in oklab, var(--divider) 72%, transparent);
 }
 .patient-list-section-label--pinned {
-  gap: 10px;
+  gap: 6px;
 }
 .patient-list-pin-svg {
   flex-shrink: 0;
+  width: 13px;
+  height: 13px;
   color: var(--text-muted);
   opacity: 0.92;
   display: block;
@@ -336,7 +389,7 @@ html.dark .patient-drag-hovercard.patient-card {
 }
 .patient-list-section-toggle {
   width: calc(100% - 4px);
-  margin: 4px 2px 2px;
+  margin: 2px 2px 1px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -348,7 +401,8 @@ html.dark .patient-drag-hovercard.patient-card {
   letter-spacing: 0.02em;
   font-weight: 700;
   font-size: 10px;
-  padding: 8px 12px;
+  padding: calc(4px * var(--density-space)) calc(10px * var(--density-space));
+  min-height: 24px;
   cursor: pointer;
 }
 .patient-flag-chip {

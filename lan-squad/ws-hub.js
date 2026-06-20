@@ -206,7 +206,20 @@ function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/w
     ws.on('close', () => leaveAll(ws));
   });
 
-  return { broadcast };
+  function close() {
+    for (const client of wss.clients) {
+      try {
+        client.terminate();
+      } catch (_e) {
+        /* ignore */
+      }
+    }
+    return new Promise((resolve) => {
+      wss.close(() => resolve());
+    });
+  }
+
+  return { broadcast, close };
 }
 
 module.exports = { attachWsHub, AUTH_TIMEOUT_MS };

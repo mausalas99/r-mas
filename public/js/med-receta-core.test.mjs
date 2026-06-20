@@ -550,6 +550,28 @@ test('parseIndicacionesPaste — dieta con macros en descripción o frecuencia',
   assert.equal(rFreq.dietas[0].proteinG, 80);
 });
 
+test('parseIndicacionesPaste — dieta con columna VIA vacía colapsada (5 cols)', () => {
+  var line =
+    '20/06/2026 07:50:06 a.m.\tDIETAS\tBLANDA PICADA ALTA EN FIBRA\t1500 KCAL + 60 GR DE PROTEINA\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'BLANDA PICADA ALTA EN FIBRA');
+  assert.equal(r.dietas[0].kcal, 1500);
+  assert.equal(r.dietas[0].proteinG, 60);
+  assert.equal(looksLikeSomeIndicacionesPaste(line), true);
+});
+
+test('parseIndicacionesPaste — bloque mixto con dieta colapsada', () => {
+  var paste =
+    '20/06/2026 07:49:38 a.m.\tCUIDADOS\tCOLOCAR SELLO VENOSO\t\t\t\tNW\n' +
+    '20/06/2026 07:50:06 a.m.\tDIETAS\tBLANDA PICADA ALTA EN FIBRA\t1500 KCAL + 60 GR DE PROTEINA\tNW\n' +
+    '20/06/2026 07:49:28 a.m.\tMEDICAMENTOS\tPARACETAMOL 1 G SOL INY 100 ML (*)\tVIA INTRAVENOSA\t1 G //\tCADA 8 HORAS\tNW';
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].kcal, 1500);
+  assert.equal(r.items.length, 1);
+});
+
 test('mergeDietaItems concatena descripciones y toma kcal/prot de última fila con patrón', () => {
   var merged = mergeDietaItems([
     { descripcionRaw: 'BLANDA', detalleRaw: '1200 KCAL', kcal: 1200, proteinG: null },

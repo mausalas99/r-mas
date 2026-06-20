@@ -970,9 +970,9 @@ var RELEASE_NOTES_738 = [
       'Modal de registro EA con selector fecha/hora alineado al resto de la UI. Al boot, toast claro si la base clínica está bloqueada o el binario SQLCipher no coincide.',
   },
   {
-    title: 'Sin cambio de esquema',
+    title: 'Directorio LAN y dieta EA',
     body:
-      'Esquema SQLCipher sigue en <strong>v17</strong>. Actualiza cuando quieras el formato COAG; no exige paridad en cada Mac del turno.',
+      'Directorio trae <strong>todos los usuarios registrados</strong> (⇄ todas las salas); filtros y grupos ya no se reinician al refrescar. Confirmar dieta SOME persiste tras sync.',
   },
 ];
 

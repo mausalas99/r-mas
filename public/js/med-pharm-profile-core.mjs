@@ -245,7 +245,14 @@ export function parseSomePharmMonthPaste(text, opts) {
       })
     );
   }
-  return { rows, skipped, daysInMonth, monthKey, year, monthIndex };
+  return {
+    rows: coalesceMedPharmRowsByKey(rows),
+    skipped,
+    daysInMonth,
+    monthKey,
+    year,
+    monthIndex,
+  };
 }
 
 export function parseRecetaDateToDay(fechaDMY, year, monthIndex) {
@@ -283,6 +290,70 @@ function lastIndicatedDay(days, maxDay) {
     if (dayValueInMap(days, d) > 0) last = d;
   }
   return last;
+}
+
+function maxIndicatedDay(days) {
+  let max = 0;
+  const dmap = days || {};
+  const keys = Object.keys(dmap);
+  for (let i = 0; i < keys.length; i += 1) {
+    const d = Number(keys[i]);
+    if (dayValueInMap(dmap, d) > 0 && d > max) max = d;
+  }
+  return max;
+}
+
+function mergeMedPharmRowDays(into, from) {
+  const fromMax = maxIndicatedDay(from.days);
+  const intoMaxBefore = maxIndicatedDay(into.days);
+  const days = Object.assign({}, into.days || {});
+  const srcDays = from.days || {};
+  const srcKeys = Object.keys(srcDays);
+  for (let i = 0; i < srcKeys.length; i += 1) {
+    const d = Number(srcKeys[i]);
+    const v = srcDays[srcKeys[i]];
+    const prev = dayValueInMap(days, d);
+    if (v > prev) days[d] = v;
+  }
+  into.days = days;
+  const notAdmin = Object.assign({}, into.notAdmin || {});
+  const srcNa = from.notAdmin || {};
+  const naKeys = Object.keys(srcNa);
+  for (let j = 0; j < naKeys.length; j += 1) {
+    const d = Number(naKeys[j]);
+    if (srcNa[naKeys[j]]) notAdmin[d] = true;
+  }
+  into.notAdmin = notAdmin;
+  if (fromMax > intoMaxBefore) {
+    into.dosis = from.dosis;
+    into.freq = from.freq;
+    into.via = from.via;
+    into.med = from.med;
+    if (from.cat) into.cat = from.cat;
+  }
+}
+
+/** SOME emits one row per DIA# with the same régimen; merge by rowKey (DIA# ignored in key). */
+export function coalesceMedPharmRowsByKey(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const byKey = Object.create(null);
+  const order = [];
+  for (let i = 0; i < list.length; i += 1) {
+    const row = list[i];
+    if (!row || !row.rowKey) continue;
+    if (!byKey[row.rowKey]) {
+      byKey[row.rowKey] = Object.assign({}, row, {
+        days: Object.assign({}, row.days || {}),
+        notAdmin: Object.assign({}, row.notAdmin || {}),
+      });
+      order.push(row.rowKey);
+      continue;
+    }
+    mergeMedPharmRowDays(byKey[row.rowKey], row);
+  }
+  return order.map(function (key) {
+    return byKey[key];
+  });
 }
 
 function fillGapDays(days, fromDay, toDay) {

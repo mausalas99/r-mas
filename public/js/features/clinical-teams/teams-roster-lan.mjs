@@ -165,18 +165,22 @@ function lanUserSearchHaystack(u, placement) {
     .toLowerCase();
 }
 
-/** @param {object[]} users */
-function uniqueSalasFromLanUsers(users) {
-  const salas = new Set();
+/** @param {object[]} users @param {object[]} teams */
+function lanDirectorySalaFilterOptions(users, teams) {
+  const salas = new Set(CLINICAL_SALAS);
   for (const u of users || []) {
     const sala = String(u?.sala || '').trim();
+    if (sala) salas.add(sala);
+  }
+  for (const t of teams || []) {
+    const sala = String(t?.sala || '').trim();
     if (sala) salas.add(sala);
   }
   return [...salas].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-function renderLanDirectoryToolbarHtml(users) {
-  const salas = uniqueSalasFromLanUsers(users);
+function renderLanDirectoryToolbarHtml(users, teams) {
+  const salas = lanDirectorySalaFilterOptions(users, teams);
   const salaOptions = salas
     .map(
       (s) =>
@@ -528,10 +532,10 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
 
   return `
     <div class="clinical-lan-directory-head">
-      <p class="clinical-lan-users-modal-lead">Asigna residentes a equipos activos en esta Mac (todas las salas).
+      <p class="clinical-lan-users-modal-lead">Asigna residentes a equipos activos en esta Mac. <strong>Actualizar desde ⇄</strong> trae usuarios de todas las salas (Sala 1–E, Interconsultas, UX, Eme, etc.).
         <button type="button" class="btn-med-secondary clinical-lan-directory-refresh-btn">Actualizar desde ⇄</button>
       </p>
-      ${renderLanDirectoryToolbarHtml(list)}
+      ${renderLanDirectoryToolbarHtml(list, teamList)}
     </div>
     ${teamsHint}
     <div class="clinical-lan-rank-groups">${rankSections}${otherSection}</div>`;
@@ -703,14 +707,23 @@ function buildLanDirectoryFingerprint(users, teams) {
   return `${userPart}::${teamPart}`;
 }
 
-async function reloadLanUsersDirectoryAfterMutation() {
+/** @param {{ forceIpc?: boolean, force?: boolean }} [options] */
+async function reloadLanUsersDirectoryPreservingUi(options = {}) {
   const host = lanUsersModalBodyEl();
   if (!host || !isLanDirectoryModalOpen()) return;
+  if (!options.force && isLanDirectoryUserInteracting()) return;
   lastLanDirectoryFingerprint = '';
   captureLanDirectoryCollapseState(host);
   const draft = captureLanDirectoryDraftState(host);
-  await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+  await loadLanUsersDirectoryIntoHost(host, {
+    forceRender: true,
+    forceIpc: options.forceIpc !== false,
+  });
   restoreLanDirectoryDraftState(host, draft);
+}
+
+async function reloadLanUsersDirectoryAfterMutation() {
+  await reloadLanUsersDirectoryPreservingUi({ force: true, forceIpc: true });
 }
 
 /** @param {HTMLElement} host @param {{ forceRender?: boolean, forceIpc?: boolean }} [options] */
@@ -853,11 +866,7 @@ export async function refreshLanDirectoryFromHostUi(options = {}) {
     if (options.pullFromHost !== false) {
       await pullLanDirectoryFromHostIfDue({ force: !!options.forcePull });
     }
-    lastLanDirectoryFingerprint = '';
-    captureLanDirectoryCollapseState(host);
-    const draft = captureLanDirectoryDraftState(host);
-    await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
-    restoreLanDirectoryDraftState(host, draft);
+    await reloadLanUsersDirectoryPreservingUi({ force: true, forceIpc: true });
   } finally {
     if (btn instanceof HTMLButtonElement) btn.disabled = false;
   }
@@ -873,7 +882,10 @@ async function pullLanDirectoryFromHostIfDue(options = {}) {
   try {
     const lanMod = await import('../lan-sync.mjs');
     if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 6000 }));
+    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({
+      timeoutMs: 12_000,
+      allRooms: true,
+    }));
   } catch (_e) {
     return false;
   }
@@ -939,8 +951,7 @@ function wireLanDirectoryActivityRefresh() {
     if (!isLanDirectoryModalOpen()) return;
     const host = lanUsersModalBodyEl();
     if (!host?.querySelector('.clinical-lan-rank-groups')) return;
-    lastLanDirectoryFingerprint = '';
-    void loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+    void reloadLanUsersDirectoryPreservingUi();
   });
 }
 

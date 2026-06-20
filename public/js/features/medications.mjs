@@ -24,15 +24,18 @@ import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveSta
 import { isModeSala } from "../mode-features.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
-import { ensureMonitoreo } from "./estado-actual-data.mjs";
+import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
 import {
+  applyDietProposalFromRecetaBlock,
   applyRecetaProposal,
   bucketsFromRecetaItems,
+  discardDietProposal,
+  discardMedProposal,
   medInstructionFragmentForSoap,
 } from "./estado-actual-meds.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
-import { openPaseSectionInNormal, renderPaseBoard, invalidateInnerTabRenderCache } from "./pase-board.mjs";
+import { openPaseSectionInNormal, renderPaseBoard, invalidateInnerTabRenderCache, invalidatePaseBoardCache } from "./pase-board.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import {
   getMedSubview,
@@ -184,6 +187,21 @@ function getMedNotaSelMap(patientId) {
 var lastMedPanelPatientId = null;
 var _medPanelCacheKey = "";
 
+function bustMedPanelCache() {
+  _medPanelCacheKey = "";
+}
+
+function medRecetaItemById(activeId, itemId) {
+  var block = activeId ? medRecetaByPatient[activeId] : null;
+  if (!block || !block.items) return null;
+  var sid = String(itemId || "");
+  return (
+    block.items.find(function (x) {
+      return String(x.id) === sid;
+    }) || null
+  );
+}
+
 function medPanelCacheKey(activeId) {
   if (!activeId) return "";
   var block = medRecetaByPatient[activeId];
@@ -191,13 +209,20 @@ function medPanelCacheKey(activeId) {
     return String(activeId) + "|empty|" + medOutputTab;
   }
   var selMap = getMedNotaSelMap(activeId);
-  var suspendHash = 0;
-  var selHash = 0;
   var medItems = block.items || [];
-  medItems.forEach(function (it, idx) {
-    if (it.suspendido) suspendHash += 1 << (idx % 24);
-    if (selMap[it.id]) selHash += 1 << (idx % 24);
+  var suspendIds = [];
+  var selIds = [];
+  var overrideSig = [];
+  medItems.forEach(function (it) {
+    var id = String(it.id || "");
+    if (!id) return;
+    if (it.suspendido) suspendIds.push(id);
+    if (selMap[id]) selIds.push(id);
+    if (it.soapCatOverride) overrideSig.push(id + ":" + it.soapCatOverride);
   });
+  suspendIds.sort();
+  selIds.sort();
+  overrideSig.sort();
   return (
     String(activeId) +
     "|N" +
@@ -205,9 +230,11 @@ function medPanelCacheKey(activeId) {
     "|F" +
     (block.fechaActualizacion || "") +
     "|S" +
-    suspendHash +
+    suspendIds.join(",") +
     "|P" +
-    selHash +
+    selIds.join(",") +
+    "|O" +
+    overrideSig.join(",") +
     "|T" +
     medOutputTab +
     "|D" +
@@ -220,6 +247,26 @@ function medPanelCacheKey(activeId) {
       return n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
     })()
   );
+}
+
+function patchMedRecetaRowSoapUi(itemId) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return false;
+  var it = medRecetaItemById(activeId, itemId);
+  if (!it) return false;
+  var listEl = document.getElementById("med-items-list");
+  if (!listEl) return false;
+  var sid = String(itemId || "");
+  var row = listEl.querySelector('[data-med-item-id="' + (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(sid) : sid) + '"]');
+  if (!row) return false;
+  var soapChk = row.querySelector("[data-med-soap-chk]");
+  if (soapChk) soapChk.checked = !!getMedNotaSelMap(activeId)[sid];
+  var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
+  row.classList.toggle(
+    "med-receta-row--needs-dest",
+    autoCat === "otros" && !!getMedNotaSelMap(activeId)[sid] && !it.soapCatOverride
+  );
+  return true;
 }
 
 function manejoDiaOpts(fechaActualizacion) {
@@ -370,6 +417,8 @@ export function renderMedRecetaPanel() {
     return (
       '<div class="med-receta-row' +
       (autoCat === "otros" && paraNota && !it.soapCatOverride ? " med-receta-row--needs-dest" : "") +
+      '" data-med-item-id="' +
+      esc(sid) +
       '">' +
       '<div class="med-receta-checkcell">' +
       '<input type="checkbox"' +
@@ -381,7 +430,7 @@ export function renderMedRecetaPanel() {
       "/>" +
       "</div>" +
       '<div class="med-receta-checkcell">' +
-      '<input type="checkbox"' +
+      '<input type="checkbox" data-med-soap-chk="1"' +
       paraNota +
       ' title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)"' +
       " onchange=\"toggleMedRecetaParaNota('" +
@@ -395,7 +444,9 @@ export function renderMedRecetaPanel() {
       '<div class="med-receta-destcell">' +
       destCell +
       "</div>" +
+      '<div class="med-receta-diacell">' +
       diaCell +
+      "</div>" +
       "</div>"
     );
   });
@@ -435,7 +486,7 @@ export function renderMedRecetaPanel() {
 }
 
 function isMedNotaSelected(patientId, itemId) {
-  return !!getMedNotaSelMap(patientId)[itemId];
+  return !!getMedNotaSelMap(patientId)[String(itemId || "")];
 }
 
 export function toggleMedRecetaSuspendido(itemId, suspended) {
@@ -455,10 +506,13 @@ export function toggleMedRecetaSuspendido(itemId, suspended) {
 export function toggleMedRecetaParaNota(itemId, selected) {
   var activeId = rt.getActiveId();
   if (!activeId) return;
+  var sid = String(itemId || "");
   var m = getMedNotaSelMap(activeId);
-  if (selected) m[itemId] = true;
-  else delete m[itemId];
-  renderMedRecetaPanel();
+  if (selected) m[sid] = true;
+  else delete m[sid];
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(sid)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
 }
 
 export function setMedRecetaSoapCategory(itemId, category) {
@@ -474,14 +528,55 @@ export function setMedRecetaSoapCategory(itemId, category) {
   saveState();
   invalidateEaPanelCache();
   invalidateInnerTabRenderCache("estadoActual");
-  renderMedRecetaPanel();
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(itemId)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
 }
 
-export function limpiarSeleccionMedNota() {
+export function limpiarManejoActual() {
   var activeId = rt.getActiveId();
-  if (activeId) medNotaSelectionByPatient[activeId] = {};
+  if (!activeId) {
+    rt.showToast("Selecciona un paciente", "error");
+    return;
+  }
+  var block = medRecetaByPatient[activeId];
+  var hasContent =
+    block &&
+    ((block.items && block.items.length) ||
+      (block.dietas && block.dietas.length) ||
+      String(block.pasteRaw || "").trim());
+  if (!hasContent) {
+    rt.showToast("No hay manejo importado", "error");
+    return;
+  }
+  delete medRecetaByPatient[activeId];
+  medNotaSelectionByPatient[activeId] = {};
+  var ta = document.getElementById("med-input");
+  if (ta) ta.value = "";
+  var patient = patients.find(function (p) {
+    return String(p.id) === String(activeId);
+  });
+  if (patient) {
+    ensureMonitoreo(patient);
+    discardDietProposal(patient.monitoreo);
+    MED_FIELD_KEYS.forEach(function (k) {
+      discardMedProposal(patient.monitoreo, k);
+    });
+  }
+  saveState();
+  bustMedPanelCache();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
+  invalidatePaseBoardCache();
   renderMedRecetaPanel();
-  rt.showToast("Selección limpiada", "success");
+  if (typeof rt.getActiveAppTab === "function" && rt.getActiveAppTab() === "nota") {
+    var inner = typeof rt.getActiveInner === "function" ? rt.getActiveInner() : "";
+    if (inner === "estadoActual") {
+      renderEstadoActualPanel({ force: true, refreshClinico: true });
+    }
+  }
+  if (isPaseMode()) renderPaseBoard();
+  rt.showToast("Manejo actual limpiado", "success");
 }
 
 export function mediAnadirATratamiento() {
@@ -655,19 +750,11 @@ export function procesarRecetaMed() {
 
   if (isModeSala(rt.getSettings()) && parsed.dietas.length) {
     var patient = patients.find(function (p) {
-      return p.id === activeId;
+      return String(p.id) === String(activeId);
     });
     if (patient) {
       ensureMonitoreo(patient);
-      var merged = mergeDietaItems(parsed.dietas);
-      var mon = patient.monitoreo;
-      if (!mon.pendienteReceta || typeof mon.pendienteReceta !== "object") {
-        mon.pendienteReceta = {};
-      }
-      mon.pendienteReceta.dieta =
-        String(merged.descripcion || "").trim() || buildDietProposalText(merged);
-      if (merged.kcal != null) mon.pendienteReceta.kcal = String(merged.kcal);
-      if (merged.proteinG != null) mon.pendienteReceta.proteinG = String(merged.proteinG);
+      applyDietProposalFromRecetaBlock(patient.monitoreo, medRecetaByPatient[activeId], { force: true });
     }
   }
 
@@ -846,7 +933,7 @@ function renderMedNotaFooter() {
     '<button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' +
     soapBtnLabel +
     '</button>' +
-    '<button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button>' +
+    '<button type="button" class="btn-med-secondary" onclick="limpiarManejoActual()">Limpiar</button>' +
     "</div>" +
     "</div>";
 }
@@ -869,7 +956,7 @@ export const medicationsWindowHandlers = {
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
   setMedRecetaSoapCategory,
-  limpiarSeleccionMedNota,
+  limpiarManejoActual,
   mediAnadirATratamiento,
   mediLlevarASOAP,
   incrementMedDiaTratamiento,

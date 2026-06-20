@@ -2,6 +2,8 @@ import {
   effectiveSoapCategory,
   formatMedicationSoapShort,
   advanceAbxMedTextForManejoDate,
+  mergeDietaItems,
+  buildDietProposalText,
 } from '../med-receta-core.mjs';
 import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
 
@@ -61,18 +63,67 @@ export function hasPendingEaProposals(pendienteReceta) {
  * @param {Record<string, unknown> | null | undefined} monitoreo
  * @returns {Record<string, unknown>}
  */
+function hasActiveDietProposal(pendienteReceta) {
+  return DIET_PENDING_KEYS.some(function (k) {
+    return pendienteReceta && pendienteReceta[k] && String(pendienteReceta[k]).trim();
+  });
+}
+
 function mergePendingDietProposal(ec, pend, conf) {
   if (!ec || typeof ec !== 'object') return ec;
-  if (conf && conf.dieta) return ec;
-  var hasPend = DIET_PENDING_KEYS.some(function (k) {
-    return pend[k] && String(pend[k]).trim();
-  });
-  if (!hasPend) return ec;
+  if (!hasActiveDietProposal(pend)) return ec;
   DIET_PENDING_KEYS.forEach(function (k) {
     var pending = pend[k];
     if (pending != null && String(pending).trim()) ec[k] = String(pending).trim();
   });
   return ec;
+}
+
+/**
+ * Copia dieta detectada en Manejo (block.dietas) a propuesta pendiente de EA si aún no hay una.
+ * @param {Record<string, unknown>} monitoreo
+ * @param {{ dietas?: unknown[] } | null | undefined} recetaBlock
+ * @param {{ force?: boolean } | undefined} [opts]
+ * @returns {boolean}
+ */
+export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
+  opts = opts || {};
+  if (!monitoreo || !recetaBlock || !Array.isArray(recetaBlock.dietas) || !recetaBlock.dietas.length) {
+    return false;
+  }
+  if (
+    !opts.force &&
+    hasActiveDietProposal(
+      monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object'
+        ? monitoreo.pendienteReceta
+        : null
+    )
+  ) {
+    return false;
+  }
+  var ec =
+    monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object' ? monitoreo.estadoClinico : {};
+  var conf =
+    monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
+  if (!opts.force && conf.dieta) return false;
+  if (!opts.force && String(ec.dieta || '').trim()) return false;
+  if (conf.dieta && String(ec.dieta || '').trim()) return false;
+
+  var merged = mergeDietaItems(recetaBlock.dietas);
+  var desc = String(merged.descripcion || '').trim();
+  if (!desc && merged.kcal == null && merged.proteinG == null) return false;
+
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
+    monitoreo.pendienteReceta = {};
+  }
+  monitoreo.pendienteReceta.dieta = desc || buildDietProposalText(merged);
+  if (merged.kcal != null) monitoreo.pendienteReceta.kcal = String(merged.kcal);
+  if (merged.proteinG != null) monitoreo.pendienteReceta.proteinG = String(merged.proteinG);
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = false;
+  return true;
 }
 
 /**

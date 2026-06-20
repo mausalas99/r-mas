@@ -19,7 +19,7 @@
     "build:mac:signed": "npm run build:mac",
     "build:mac:unsigned": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
     "build:mac:arm64-only": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
-    "prebuild:mac": "node scripts/ensure-argon2-pack-natives.mjs && npm run rebuild:db-native && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
+    "prebuild:mac": "node scripts/ensure-argon2-pack-natives.mjs && node scripts/ensure-sqlcipher-electron-native.mjs && npm run rebuild:db-native && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
     "prebuild:win": "node scripts/fetch-argon2-win.mjs && node scripts/fetch-sqlite-win.mjs && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
     "build:win": "npm run prebuild:win && electron-builder --win",
     "build:changelog": "node scripts/build-changelog.js",
