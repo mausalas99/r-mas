@@ -1,27 +1,31 @@
-version: 7.3.7
+version: 7.3.8
 files:
-  - url: R+-7.3.7-arm64.zip
-    sha512: 79mJbDCUY5k0z6gsgHVAbT6Q6s9VGusx1U5YZaVYJOp7eWYOYsXuu3Kn+gJTGYEpmlMjvalQCbVX/kXVMlGRrg==
-    size: 129355135
-  - url: R+-7.3.7-arm64.dmg
-    sha512: rhtxZxJdIouFLnw5PTx6n5r5YmvYtaVK7Kn5tFxo+zJ+loDbsBV0LQd1z00xibXgKWfBbkI7xyl3+6wtPa5EJg==
-    size: 134709810
-  - url: R+-7.3.7-x64.zip
-    sha512: UhdAxmCnSnZ97yXKT6PIg0/FEvvP3LEw1cct2t5uwUjE1hH82uUV0si3sQlarRboN4ZqBGU0XVjAoI4U8t/hLQ==
-    size: 137729229
-  - url: R+-7.3.7-x64.dmg
-    sha512: adbMwSLj9hSW797oBhNJDxOC/JO6H07QKIXrVwKVp55tR+ai1hlRBaz56MB8v18Uuh4gw1rXJZX1C88LIPhFtg==
-    size: 143138335
-path: R+-7.3.7-arm64.zip
-sha512: 79mJbDCUY5k0z6gsgHVAbT6Q6s9VGusx1U5YZaVYJOp7eWYOYsXuu3Kn+gJTGYEpmlMjvalQCbVX/kXVMlGRrg==
-releaseDate: '2026-06-14T15:29:26.000Z'
+  - url: R+-7.3.8-arm64.zip
+    sha512: WcS4MEVduQbngKtZmLNKb8TpgTcUiqRyYW/UXwaBiZZxtf5z/JKAgbHXpI+SlxcnoRIwaO+PmVkJFKQxXyYPBA==
+    size: 129442625
+  - url: R+-7.3.8-arm64.dmg
+    sha512: WSAmys/XoVaWlskyqSLxCm7BiPdOFxVpVjQ6KC7Vwu3JXhN1fl7h4g6yWVHT1haPBzwnvlXe/VCeRT/iEvymhg==
+    size: 134808793
+  - url: R+-7.3.8-x64.zip
+    sha512: kyn1qSfetrjTsI0JZTNNScrCDaaf5rl+hbqXzqg9FaY9I+hdz2o/36R4YQaJepM1Iyz6GpH54WWbU1NIme48nw==
+    size: 137733178
+  - url: R+-7.3.8-x64.dmg
+    sha512: 3G/2nP/KyiRqL817ruk100Z13gLSoE7jZ6kwGK0PBp+zWpurQnNl0WEwm1V+eiCh/7RIjKFAlB+swW4kD1tnNg==
+    size: 143159651
+path: R+-7.3.8-arm64.zip
+sha512: WcS4MEVduQbngKtZmLNKb8TpgTcUiqRyYW/UXwaBiZZxtf5z/JKAgbHXpI+SlxcnoRIwaO+PmVkJFKQxXyYPBA==
+releaseDate: '2026-06-20T15:48:25.000Z'
 releaseNotes: |
-  Sobre 7.3.6: corrige pacientes que desaparecían del censo tras ⇄ LiveSync cuando se reutilizaba el mismo registro hospitalario (readmisión o alta/baja en otro equipo). También reubica Importar desde Drive en la barra del expediente clínico con estilo alineado al resto de la UI.
+  Sobre 7.3.7: coagulación como sección COAG independiente de BH (parser, pase, panel y diagramas); balance hídrico NC cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
   
-  LAN — censo estable — Los deletes de paciente en LiveSync aplican solo por id del expediente; una readmisión con el mismo registro ya no hereda tombstones ni se borra por coincidencia de registro en otro Mac.
+  Laboratorio — COAG — TP/TTP/INR/Fib/DD salen en bloque COAG propio (no anidado bajo BH); merge de filas BH del mismo día conserva la coagulación más completa; encabezados COAG/Coag. con estilo de sección en pase y panel.
   
-  LAN — tombstones — Al registrar un paciente nuevo se limpian tombstones LAN obsoletos del mismo registro (clearPatientDeleteTombstoneForAdmit).
+  Diagramas — Tendencias y SVG de coagulación leen valores desde BH o COAG.
   
-  LAN — bundle merge — Entradas del anfitrión con id distinto al delete remoto se conservan (mismo registro, chart nuevo).
+  Estado actual — I/O — Balance NC cuando hay egresos declarados sin total numérico (p. ej. DIURESIS NC); texto SOAP y snapshot usan BALANCE NC en lugar de guiones o placeholders.
   
-  Expediente — Drive — Botón Importar desde Drive en la barra de acciones del bloque Clínico (modo sala), visible solo en esa pestaña; estilos pill en expediente.css.
+  Estado actual — registro — Selector de fecha/hora del modal alineado al resto de la UI (rpc-date-picker); el control nativo oculto ya no hereda chrome de .ea-input.
+  
+  Arranque DB — Toast al boot si la base clínica está bloqueada o el binario nativo no coincide (ABI); mensaje orientado a código de recuperación / rebuild.
+  
+  DX — SQLCipher — fetch-sqlite-node verifica el prebuild tras instalarlo; ensure-native-db-for-node evita sobrescribir el binario de Node con ABI de Electron y restaura el binario de la app si falla el paso de pruebas.

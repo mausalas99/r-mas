@@ -1,18 +1,22 @@
-version: 7.3.7
+version: 7.3.8
 files:
-  - url: R+-7.3.7-x64.exe
-    sha512: 8GokufrPJA1ZvJ09BgyFeNfCFXc3jQ7qTyGqkadzoL1o+x+C+qT3EMasjKBWxMH6++HrOIuZhWKgdmRE2vUFRA==
-    size: 114986300
-path: R+-7.3.7-x64.exe
-sha512: 8GokufrPJA1ZvJ09BgyFeNfCFXc3jQ7qTyGqkadzoL1o+x+C+qT3EMasjKBWxMH6++HrOIuZhWKgdmRE2vUFRA==
-releaseDate: '2026-06-14T15:29:26.000Z'
+  - url: R+-7.3.8-x64.exe
+    sha512: nbZrJ8j2iqjs/EMtnTbpXkI0ysuc9JrNww6G5Q2aojKz8s7I4FxQ4wHIPJx91AR3mVB2TczAvMX7eQRm5MeMjw==
+    size: 114978849
+path: R+-7.3.8-x64.exe
+sha512: nbZrJ8j2iqjs/EMtnTbpXkI0ysuc9JrNww6G5Q2aojKz8s7I4FxQ4wHIPJx91AR3mVB2TczAvMX7eQRm5MeMjw==
+releaseDate: '2026-06-20T15:48:25.000Z'
 releaseNotes: |
-  Sobre 7.3.6: corrige pacientes que desaparecían del censo tras ⇄ LiveSync cuando se reutilizaba el mismo registro hospitalario (readmisión o alta/baja en otro equipo). También reubica Importar desde Drive en la barra del expediente clínico con estilo alineado al resto de la UI.
+  Sobre 7.3.7: coagulación como sección COAG independiente de BH (parser, pase, panel y diagramas); balance hídrico NC cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
   
-  LAN — censo estable — Los deletes de paciente en LiveSync aplican solo por id del expediente; una readmisión con el mismo registro ya no hereda tombstones ni se borra por coincidencia de registro en otro Mac.
+  Laboratorio — COAG — TP/TTP/INR/Fib/DD salen en bloque COAG propio (no anidado bajo BH); merge de filas BH del mismo día conserva la coagulación más completa; encabezados COAG/Coag. con estilo de sección en pase y panel.
   
-  LAN — tombstones — Al registrar un paciente nuevo se limpian tombstones LAN obsoletos del mismo registro (clearPatientDeleteTombstoneForAdmit).
+  Diagramas — Tendencias y SVG de coagulación leen valores desde BH o COAG.
   
-  LAN — bundle merge — Entradas del anfitrión con id distinto al delete remoto se conservan (mismo registro, chart nuevo).
+  Estado actual — I/O — Balance NC cuando hay egresos declarados sin total numérico (p. ej. DIURESIS NC); texto SOAP y snapshot usan BALANCE NC en lugar de guiones o placeholders.
   
-  Expediente — Drive — Botón Importar desde Drive en la barra de acciones del bloque Clínico (modo sala), visible solo en esa pestaña; estilos pill en expediente.css.
+  Estado actual — registro — Selector de fecha/hora del modal alineado al resto de la UI (rpc-date-picker); el control nativo oculto ya no hereda chrome de .ea-input.
+  
+  Arranque DB — Toast al boot si la base clínica está bloqueada o el binario nativo no coincide (ABI); mensaje orientado a código de recuperación / rebuild.
+  
+  DX — SQLCipher — fetch-sqlite-node verifica el prebuild tras instalarlo; ensure-native-db-for-node evita sobrescribir el binario de Node con ABI de Electron y restaura el binario de la app si falla el paso de pruebas.
