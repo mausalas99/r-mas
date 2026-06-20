@@ -16,3 +16,13 @@ test('renderEntry preserves section label on first line', () => {
   assert.match(out[0], /section-lbl/);
   assert.match(out[0], /Hb/);
 });
+
+test('renderEntry styles COAG like BH/QS', () => {
+  const out = renderEntry('COAG\tTP 18.6*  TTP 39.4*');
+  assert.match(out[0], /section-lbl/);
+  assert.match(out[0], />COAG</);
+  assert.match(out[0], /TP/);
+  const legacy = renderEntry('BH\tHb 6.78\n  Coag.\tTP 18.6*  INR 1.6*');
+  assert.match(legacy[1], /section-lbl/);
+  assert.match(legacy[1], />COAG</);
+});

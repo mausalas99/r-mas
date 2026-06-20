@@ -953,6 +953,29 @@ var RELEASE_NOTES_735 = [
   },
 ];
 
+var RELEASE_NOTES_738 = [
+  {
+    title: 'COAG como sección propia',
+    body:
+      'Coagulación (TP, TTP, INR, Fib, DD) sale en bloque <strong>COAG</strong> separado de BH — en parser, pase, panel y diagramas. Merge del mismo día conserva la fila más completa.',
+  },
+  {
+    title: 'Balance NC en monitoreo',
+    body:
+      'Si los egresos están declarados pero no cuantificados (p. ej. <strong>DIURESIS NC</strong>), el balance muestra <strong>NC</strong> y el texto SOAP incluye <strong>BALANCE NC</strong>.',
+  },
+  {
+    title: 'Registro y arranque',
+    body:
+      'Modal de registro EA con selector fecha/hora alineado al resto de la UI. Al boot, toast claro si la base clínica está bloqueada o el binario SQLCipher no coincide.',
+  },
+  {
+    title: 'Sin cambio de esquema',
+    body:
+      'Esquema SQLCipher sigue en <strong>v17</strong>. Actualiza cuando quieras el formato COAG; no exige paridad en cada Mac del turno.',
+  },
+];
+
 var RELEASE_NOTES_737 = [
   {
     title: 'Censo que no pierde readmisiones',
@@ -977,9 +1000,10 @@ var RELEASE_NOTES_737 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_737;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_738;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.3.8': RELEASE_NOTES_738,
   '7.3.7': RELEASE_NOTES_737,
   '7.3.6': RELEASE_NOTES_736,
   '7.3.5': RELEASE_NOTES_735,

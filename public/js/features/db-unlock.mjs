@@ -129,6 +129,24 @@ function unlockErrorMessage(res, opts) {
   return detail || 'No se pudo desbloquear la base de datos.';
 }
 
+/** User-facing copy when clinical DB cannot open at app boot. */
+export function describeClinicalDbBootFailure(unlockResult) {
+  if (!unlockResult || unlockResult.unlocked) return '';
+  if (unlockResult.reason === 'native_blocked') {
+    return unlockErrorMessage(
+      { code: 'DB_NATIVE_ABI_MISMATCH' },
+      { nativeError: unlockResult.status && unlockResult.status.nativeError }
+    );
+  }
+  if (unlockResult.reason === 'locked') {
+    return (
+      'La base clínica está bloqueada. Usa tu código de recuperación en el diálogo de desbloqueo — ' +
+      'tus pacientes siguen en el disco.'
+    );
+  }
+  return unlockErrorMessage(unlockResult.status || {}, {});
+}
+
 function toggleDbUnlockSecretField(toggleBtn) {
   if (!toggleBtn) return;
   var controlId = toggleBtn.getAttribute('aria-controls');

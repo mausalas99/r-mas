@@ -26,6 +26,7 @@ import {
   formatEgresoPartForText,
   formatEvacForText,
   formatBalanceLive,
+  formatIoBalanceDisplay,
   toEaSalidaText,
 } from './estado-actual-io.mjs';
 import { isVitalAltered, buildAlteredAtDefaults, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
@@ -64,6 +65,7 @@ import {
   countVitalReadingsInRegistroWindow,
   collectBombaInsulinaForRegistroWindow,
 } from './estado-actual-vital-series.mjs';
+import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 
 var _eaPanelCache = { shellKey: '', dataKey: '' };
 
@@ -974,8 +976,7 @@ function syncIoBalanceFromForm(form) {
   if (!ingEl || !egrEl || !out) return;
   var ing = parseNumOrNull(ingEl.value);
   var egrParts = parseIoEgresoLine(egrEl.value);
-  var bal = computeIoBalanceFromIngEgr(ing, { egrParts: egrParts, egr: diuresisValueFromParts(egrParts) });
-  out.textContent = formatBalanceLive(bal);
+  out.textContent = formatIoBalanceDisplay(ing, { egrParts: egrParts, egr: diuresisValueFromParts(egrParts) });
 }
 
 /**
@@ -1117,7 +1118,7 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
         '</span></div>'
       : '') +
     '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' +
-    displayBalance(balTurno) +
+    formatIoBalanceDisplay(snapshot.io.ing, snapshot.io) +
     '</span></div>' +
     '<div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' +
     displayBalance(balGlobal) +
@@ -1701,6 +1702,7 @@ export function buildRegistroFormMarkup() {
 export function wireEaRegistroForm() {
   var form = document.getElementById('ea-form');
   wireFormInteractions(form);
+  refreshRpcDateFields(form);
   var gluList = document.getElementById('ea-glu-list');
   if (gluList && !gluList.querySelector('.ea-glu-row')) {
     fillStandardGluList(gluList);

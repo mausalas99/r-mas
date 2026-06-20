@@ -8,6 +8,7 @@ import {
   refreshAscitisInterpretacionInResLabs_,
   resLabsHasAsciticFluid_,
   renderEntry,
+  isLabSectionHeaderHtml,
 } from "../labs.js";
 import { parseSomeReportTables } from "../labs-some-table.mjs";
 import {
@@ -1884,7 +1885,7 @@ function renderOutput(result, opts) {
     }
     renderEntry(text).forEach(function (html, idx) {
       var div = document.createElement('div');
-      div.className = idx === 0 ? 'out-line' : 'out-indent';
+      div.className = idx === 0 || isLabSectionHeaderHtml(html) ? 'out-line' : 'out-indent';
       div.innerHTML = html;
       box.appendChild(div);
     });

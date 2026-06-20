@@ -105,6 +105,7 @@ export function createProcesarLabs(deps) {
     var bhExtras = {};
     var bhRes = deps.parseBH_(blocks.textoParaBh);
     if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
+    if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
     if (bhRes && bhRes.extras) bhExtras = bhRes.extras;
     pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf));
     pushLabSection_(resLabs, deps.parseESC_(blocks.textoQS));

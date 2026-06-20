@@ -18,6 +18,13 @@ describe('parseBhTrendValuesFromResLab', () => {
     assert.strictEqual(cells.DD.val, '2227');
   });
 
+  it('fila COAG separada', () => {
+    const cells = parseBhTrendValuesFromResLab('COAG\tTP 18.6*  TTP 39.4*  INR 1.6*');
+    assert.strictEqual(cells.TP.val, '18.6');
+    assert.strictEqual(cells.TTP.val, '39.4');
+    assert.strictEqual(cells.INR.val, '1.6');
+  });
+
   it('línea compacta BH', () => {
     const cells = parseBhTrendValuesFromResLab('BH\tHb 9.4  Leu 23  Plt 140');
     assert.strictEqual(cells.Hb.val, '9.4');

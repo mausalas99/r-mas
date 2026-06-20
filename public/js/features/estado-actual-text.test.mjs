@@ -20,6 +20,7 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
     {}
   );
   assert.match(textNc, /DIURESIS NC/);
+  assert.match(textNc, /BALANCE NC\b/);
 
   const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {
     balanceTurno: 200,

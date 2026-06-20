@@ -361,9 +361,9 @@ function svgGases(secs) {
 }
 
 function svgCoag(secs) {
-  var tp = g(secs, "BH", "TP");
-  var ttp = g(secs, "BH", "TTP");
-  var inr = g(secs, "BH", "INR");
+  var tp = g(secs, "BH", "TP") || g(secs, "COAG", "TP");
+  var ttp = g(secs, "BH", "TTP") || g(secs, "COAG", "TTP");
+  var inr = g(secs, "BH", "INR") || g(secs, "COAG", "INR");
   if (!tp && !ttp && !inr) return null;
   var cx = 135,
     jY = 86,

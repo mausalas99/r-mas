@@ -10,7 +10,7 @@ if (typeof requestAnimationFrame === 'function') {
 }
 import { isDbMode, isWebClinicalClient } from './db-storage-bridge.mjs';
 import { wipeSessionClinicalStorage } from './session-clinical-wipe.mjs';
-import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers } from './features/db-unlock.mjs';
+import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers, describeClinicalDbBootFailure } from './features/db-unlock.mjs';
 import {
   bootHydrateFromDb,
   initAppState,
@@ -155,10 +155,12 @@ const appStateReady = (async function loadClinicalStateOnBoot() {
         }
       } catch (_eOps) {}
     } else {
-      console.warn(
-        '[R+] Clinical DB not ready at boot:',
-        (unlockResult && unlockResult.reason) || 'locked'
-      );
+      const reason = (unlockResult && unlockResult.reason) || 'locked';
+      console.warn('[R+] Clinical DB not ready at boot:', reason);
+      const bootMsg = describeClinicalDbBootFailure(unlockResult);
+      if (bootMsg) {
+        showToast(bootMsg, 'error');
+      }
       initAppState();
     }
   } else {

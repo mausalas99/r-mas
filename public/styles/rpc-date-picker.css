@@ -63,11 +63,13 @@ button.rpc-date-field__trigger.profile-input {
 }
 
 .rpc-datetime-field {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(10.5rem, 12rem);
   gap: calc(10px * var(--density-space, 1));
   align-items: center;
   width: 100%;
+  min-width: 0;
 }
 
 .rpc-datetime-field__date {
@@ -137,12 +139,22 @@ button.rpc-date-field__trigger.profile-input {
   user-select: none;
 }
 
-.rpc-datetime-field__native {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+/* Beat .ea-input / .profile-input width & chrome on the hidden native control */
+input.rpc-datetime-field__native,
+input.rpc-datetime-input.rpc-datetime-field__native {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
 }
 
 .rpc-date-popover {

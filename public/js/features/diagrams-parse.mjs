@@ -86,7 +86,8 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
     if (Object.keys(row).length) out[sec] = row;
   });
   (resLabs || []).forEach(function (entry) {
-    if (!entry || !/^BH/i.test(String(entry).split("\n")[0].trim())) return;
+    var head = String(entry).split("\n")[0].trim();
+    if (!/^BH/i.test(head) && !/^COAG/i.test(head)) return;
     var bhCells = parseBhTrendValuesFromResLab(entry);
     Object.keys(bhCells).forEach(function (k) {
       var cell = bhCells[k];

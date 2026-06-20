@@ -34,13 +34,14 @@ OBSERVACIONES
 *
 `;
 
-test('procesarLabs incluye BH con TP/TTP/INR cuando no hay biometría', () => {
+test('procesarLabs incluye COAG con TP/TTP/INR cuando no hay biometría', () => {
   const { resLabs } = procesarLabs(MUESTRA_SOLO_COAG);
-  const bh = resLabs.find((l) => /^BH[:\t]/.test(l));
-  assert.ok(bh, 'debe producir línea BH');
-  assert.match(bh, /TP\s+13\.7/);
-  assert.match(bh, /TTP\s+33\.3/);
-  assert.match(bh, /INR\s+1\.17/);
+  const coag = resLabs.find((l) => /^COAG\t/.test(l));
+  assert.ok(coag, 'debe producir línea COAG');
+  assert.match(coag, /TP\s+13\.7/);
+  assert.match(coag, /TTP\s+33\.3/);
+  assert.match(coag, /INR\s+1\.17/);
+  assert.ok(!resLabs.some((l) => /^BH[:\t]/.test(l)), 'sin BH vacía');
 });
 
 test('computeAnionGap_ corrige AG por hipoalbuminemia cuando hay albúmina', () => {

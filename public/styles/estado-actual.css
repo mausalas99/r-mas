@@ -1784,11 +1784,31 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-field--datetime {
   margin: 0;
+  max-width: none;
+  width: 100%;
 }
 
-.ea-registro-modal .ea-field--datetime .ea-input {
-  padding: 6px 8px;
+.ea-registro-modal .ea-field--datetime .rpc-datetime-field {
+  max-width: min(100%, 26rem);
+}
+
+.ea-registro-modal .ea-field--datetime .rpc-date-field__trigger.profile-input {
+  min-height: 0;
+  height: auto;
+  padding: 7px 10px;
   font-size: calc(13px * var(--density-font, 1));
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: var(--input-fill);
+  box-shadow: none;
+}
+
+.ea-registro-modal .ea-field--datetime .rpc-time-picker__select {
+  min-height: 0;
+  height: auto;
+  padding: 7px 1.35rem 7px 0.5rem;
+  font-size: calc(13px * var(--density-font, 1));
+  border-radius: var(--radius-sm);
 }
 
 .ea-registro-modal .ea-glu-block {

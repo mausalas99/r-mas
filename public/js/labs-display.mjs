@@ -27,6 +27,24 @@ export function renderToken(tok) {
   return escTxt(tok);
 }
 
+function formatLabSectionLabel(label, lineIndex) {
+  var t = String(label || '').trim().replace(/:$/, '');
+  if (/^Coag\.?$/i.test(t)) return 'COAG';
+  if (lineIndex === 0) return t;
+  return t;
+}
+
+function isLabSectionLabel(label, lineIndex) {
+  var t = String(label || '').trim().replace(/:$/, '');
+  if (/^Coag\.?$/i.test(t) || /^COAG$/i.test(t)) return true;
+  if (lineIndex !== 0) return false;
+  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES|COAG)$/i.test(t);
+}
+
+export function isLabSectionHeaderHtml(html) {
+  return /<span class="section-lbl">/.test(String(html || ''));
+}
+
 export function renderEntry(text) {
   text = normalizeGasometryInterpretationLine_(text);
   return text.split('\n').map(function (line, li) {
@@ -34,7 +52,9 @@ export function renderEntry(text) {
     if (tabIdx >= 0) {
       var label = line.substring(0, tabIdx);
       var rest = line.substring(tabIdx + 1);
-      var lh = li === 0 ? '<span class="section-lbl">' + escTxt(label) + '</span>' : escTxt(label);
+      var lh = isLabSectionLabel(label, li)
+        ? '<span class="section-lbl">' + escTxt(formatLabSectionLabel(label, li)) + '</span>'
+        : escTxt(label);
       var rh = rest
         .split(' ')
         .map(function (tok) {

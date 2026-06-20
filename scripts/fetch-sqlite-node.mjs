@@ -19,6 +19,31 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
 const destFile = path.join(pkgDir, NODE_REL);
 
+const NATIVE_PROBE = [
+  "const D = require('better-sqlite3-multiple-ciphers');",
+  "const db = new D(':memory:');",
+  'db.close();',
+].join('');
+
+function probeInstalledNative() {
+  try {
+    execSync(`node -e ${JSON.stringify(NATIVE_PROBE)}`, {
+      cwd: root,
+      stdio: 'pipe',
+      encoding: 'utf8',
+      timeout: 15_000,
+      env: process.env,
+    });
+    return null;
+  } catch (e) {
+    if (e.status === 137 || e.signal === 'SIGKILL') {
+      return 'Native module load aborted (SIGKILL) — binary likely wrong ABI or corrupt';
+    }
+    const stderr = e.stderr ? String(e.stderr).trim() : '';
+    return stderr || (e.message ? String(e.message) : String(e));
+  }
+}
+
 function resolveNodeAbi() {
   // process.versions.modules === NODE_MODULE_VERSION for system Node.
   try {
@@ -60,6 +85,11 @@ async function main() {
     await fs.mkdir(path.dirname(destFile), { recursive: true });
     await fs.copyFile(srcFile, destFile);
     console.log(`[fetch-sqlite-node] Installed ${NODE_REL}`);
+    const probeErr = probeInstalledNative();
+    if (probeErr) {
+      throw new Error(`Installed prebuild does not load under Node ${process.version}: ${probeErr}`);
+    }
+    console.log(`[fetch-sqlite-node] Verified OK for Node ${process.version}`);
   } catch (e) {
     console.error(`[fetch-sqlite-node] Failed: ${e.message}`);
     process.exit(1);

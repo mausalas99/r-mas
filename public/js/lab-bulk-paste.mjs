@@ -132,7 +132,12 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
     return bestBySection[k].row;
   });
   if (bhRows.length) {
-    out.unshift(mergeBhResLabRows_(bhRows));
+    var mergedBh = mergeBhResLabRows_(bhRows);
+    if (mergedBh.bh) out.unshift(mergedBh.bh);
+    if (mergedBh.coag) {
+      var insertAt = mergedBh.bh ? 1 : 0;
+      out.splice(insertAt, 0, mergedBh.coag);
+    }
   }
   return out;
 }

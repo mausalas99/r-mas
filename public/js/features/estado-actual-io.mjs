@@ -22,6 +22,39 @@ export function formatBalanceLive(bal) {
 }
 
 /**
+ * @param {unknown} io
+ * @returns {boolean}
+ */
+export function hasIoEgressDeclared(io) {
+  if (!io || typeof io !== 'object') return false;
+  /** @type {any} */
+  var o = io;
+  if (Array.isArray(o.egrParts) && o.egrParts.length) return true;
+  return o.egr != null && String(o.egr).trim() !== '';
+}
+
+/**
+ * Egresos declarados sin total numérico (p. ej. solo DIURESIS NC).
+ * @param {unknown} io
+ * @returns {boolean}
+ */
+export function isIoBalanceNc(io) {
+  return hasIoEgressDeclared(io) && ioNumericEgressTotal(io) == null;
+}
+
+/**
+ * @param {unknown} ing
+ * @param {unknown} io
+ * @returns {string}
+ */
+export function formatIoBalanceDisplay(ing, io) {
+  var bal = computeIoBalanceFromIngEgr(ing, io);
+  if (Number.isFinite(bal)) return formatBalanceLive(bal);
+  if (isIoBalanceNc(io)) return 'NC';
+  return '—';
+}
+
+/**
  * @param {unknown} raw
  * @returns {number | null}
  */
@@ -370,6 +403,10 @@ export function formatIoClauseForSoap(io, balanceTurno) {
   }
 
   var balNum = NaN;
+  if (isIoBalanceNc(io)) {
+    clauses.push('BALANCE NC');
+    return clauses.join(', ');
+  }
   if (balanceTurno != null && balanceTurno !== '' && Number.isFinite(Number(balanceTurno))) {
     balNum = Number(balanceTurno);
   } else {

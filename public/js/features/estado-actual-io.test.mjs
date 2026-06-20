@@ -4,6 +4,8 @@ import {
   parseIoEgresoLine,
   parseIoEvacField,
   computeIoBalanceFromIngEgr,
+  formatIoBalanceDisplay,
+  isIoBalanceNc,
   formatIoClauseForSoap,
   formatEvacForText,
   diuresisValueFromParts,
@@ -21,6 +23,17 @@ test('parseIoEgresoLine — diuresis NC y componentes separados', () => {
   assert.equal(parts[2].kind, 'nephro');
   assert.match(parts[2].label, /IZQUIERDA/);
   assert.equal(parts[2].value, 20);
+});
+
+test('formatIoBalanceDisplay — NC cuando egresos no cuantificados', () => {
+  const partsNc = parseIoEgresoLine('DIURESIS NC');
+  assert.equal(isIoBalanceNc({ egrParts: partsNc }), true);
+  assert.equal(formatIoBalanceDisplay(645, { egrParts: partsNc }), 'NC');
+  assert.equal(formatIoBalanceDisplay(645, { egr: 'NC' }), 'NC');
+  assert.equal(formatIoBalanceDisplay(null, { egr: 'NC' }), 'NC');
+  assert.equal(formatIoBalanceDisplay(645, {}), '—');
+  const partsMixed = parseIoEgresoLine('DIURESIS NC, DRENAJE 50 CC');
+  assert.equal(formatIoBalanceDisplay(645, { egrParts: partsMixed }), '+595 CC');
 });
 
 test('computeIoBalanceFromIngEgr — suma todas las salidas numéricas', () => {
@@ -52,7 +65,8 @@ test('formatIoClauseForSoap — egresos divididos y evacuaciones', () => {
   assert.match(clauseNc, /DIURESIS NC/);
   assert.doesNotMatch(clauseNc, /NO CUANTIFICADA/);
   assert.match(clauseNc, /EVACUACIONES NC/);
-  assert.match(clauseNc, /BALANCE ___ CC/);
+  assert.match(clauseNc, /BALANCE NC\b/);
+  assert.doesNotMatch(clauseNc, /BALANCE ___ CC/);
   const clauseFromIo = formatIoClauseForSoap(
     { ing: 168, egrParts: parts, evac: 'NC' },
     NaN

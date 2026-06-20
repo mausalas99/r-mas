@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.7](https://github.com/mausalas99/r-mas/releases/tag/v7.3.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.3.8](https://github.com/mausalas99/r-mas/releases/tag/v7.3.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.3.8 (COAG separado, balance I/O NC y arranque DB)
+
+- **Laboratorio** — Coagulación en sección **COAG** independiente de BH; encabezados con estilo de sección en pase y panel; diagramas leen BH o COAG.
+- **Estado actual** — Balance **NC** cuando egresos no cuantificados; SOAP y snapshot muestran `BALANCE NC`.
+- **Estado actual** — Selector fecha/hora del modal de registro alineado al design system.
+- **Arranque** — Toast si la base clínica no abre (bloqueada o binario nativo incompatible).
+- **DX** — Scripts SQLCipher Node/Electron más seguros para pruebas locales.
+
+Notas: `docs/RELEASE_NOTES_7.3.8.txt`.
 
 ## R+ 7.3.7 (censo LAN estable y expediente Drive)
 

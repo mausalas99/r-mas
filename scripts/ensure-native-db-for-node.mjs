@@ -70,11 +70,6 @@ function tryFetchNodePrebuild() {
   runShell('node scripts/fetch-sqlite-node.mjs');
 }
 
-function tryPrebuildInstall() {
-  console.log('[ensure-native-db-for-node] Trying prebuild-install…');
-  runShell('npx --yes prebuild-install', { cwd: pkgDir });
-}
-
 function tryNpmRebuild() {
   console.log('[ensure-native-db-for-node] Trying npm rebuild (may compile from source)…');
   const rebuildCmd = needsDarwinArm64Wrap()
@@ -83,42 +78,49 @@ function tryNpmRebuild() {
   runShell(rebuildCmd);
 }
 
+/** npm test uses Node ABI; R+ app needs Electron ABI — restore after failed pretest. */
+function restoreElectronSqlcipherForApp() {
+  console.warn(
+    '[ensure-native-db-for-node] Restoring Electron SQLCipher binary (R+ app needs this to open your DB)…'
+  );
+  try {
+    runShell('node scripts/rebuild-native-db.mjs');
+  } catch (e) {
+    const msg = e && e.message ? String(e.message) : String(e);
+    console.warn('[ensure-native-db-for-node] Electron restore failed:', msg);
+  }
+}
+
 let lastError = null;
-let fetchSucceeded = false;
 
 try {
   tryFetchNodePrebuild();
-  fetchSucceeded = true;
+  if (!nativeLoadError()) {
+    console.log('[ensure-native-db-for-node] OK for Node', process.version);
+    process.exit(0);
+  }
 } catch (e) {
   lastError = e;
   const msg = e && e.message ? String(e.message) : String(e);
   console.warn('[ensure-native-db-for-node] tryFetchNodePrebuild failed:', msg);
 }
 
-if (!nativeLoadError()) {
-  console.log('[ensure-native-db-for-node] OK for Node', process.version);
-  process.exit(0);
-}
+// Do not run prebuild-install here — it targets npm_config_runtime (Electron) and
+// overwrites a good Node prebuild with the wrong ABI (SIGKILL under system Node).
 
-// npm rebuild deletes build/ — never run it after a successful fetch left a binary on disk.
-const destructiveSteps = fetchSucceeded ? [tryPrebuildInstall] : [tryPrebuildInstall, tryNpmRebuild];
-
-for (const step of destructiveSteps) {
-  try {
-    step();
-  } catch (e) {
-    lastError = e;
-    const msg = e && e.message ? String(e.message) : String(e);
-    if (/libxcrun|need 'x86_64'|Rosetta/i.test(msg)) {
-      console.warn(
-        '[ensure-native-db-for-node] Compile failed (arch mismatch). ' +
-          'Use a native arm64 Terminal (not Rosetta) or rely on prebuild fetch.'
-      );
-    } else {
-      console.warn(`[ensure-native-db-for-node] ${step.name} failed:`, msg);
-    }
+try {
+  tryNpmRebuild();
+} catch (e) {
+  lastError = e;
+  const msg = e && e.message ? String(e.message) : String(e);
+  if (/libxcrun|need 'x86_64'|Rosetta/i.test(msg)) {
+    console.warn(
+      '[ensure-native-db-for-node] Compile failed (arch mismatch). ' +
+        'Use a native arm64 Terminal (not Rosetta) or rely on prebuild fetch.'
+    );
+  } else {
+    console.warn('[ensure-native-db-for-node] tryNpmRebuild failed:', msg);
   }
-  if (!nativeLoadError()) break;
 }
 
 const after = nativeLoadError();
@@ -127,6 +129,10 @@ if (after) {
   if (lastError) {
     console.error('[ensure-native-db-for-node] Last error:', lastError.message || lastError);
   }
+  console.error(
+    '[ensure-native-db-for-node] Try: node scripts/fetch-sqlite-node.mjs  (Node prebuild for tests)'
+  );
+  restoreElectronSqlcipherForApp();
   process.exit(1);
 }
 

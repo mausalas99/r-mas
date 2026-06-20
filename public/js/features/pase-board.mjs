@@ -1,7 +1,7 @@
 /**
  * Vista Pase (resumen) y navegación de pestañas principales / internas.
  */
-import { renderEntry } from "../labs.js";
+import { renderEntry, isLabSectionHeaderHtml } from "../labs.js";
 import { storage } from "../storage.js";
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from "../tend-core.mjs";
 import { dosisBeforeSlash, effectiveDiaTratamiento } from "../med-receta-core.mjs";
@@ -338,8 +338,9 @@ function buildPaseLabBlockHtml(labChunks) {
   var parts = [];
   labChunks.forEach(function (text) {
     renderEntry(text).forEach(function (htmlLine, idx) {
+      var isSechead = idx === 0 || isLabSectionHeaderHtml(htmlLine);
       parts.push(
-        '<div class="pase-lab-line' + (idx === 0 ? " pase-lab-line--sechead" : "") + '">' + htmlLine + "</div>"
+        '<div class="pase-lab-line' + (isSechead ? " pase-lab-line--sechead" : "") + '">' + htmlLine + "</div>"
       );
     });
   });

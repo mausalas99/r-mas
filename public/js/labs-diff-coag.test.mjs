@@ -24,28 +24,31 @@ DIMERO D\tA\n2227\nng/mL\t0.0 - 500.0
 `;
 
 describe('diferencial manual + coagulación SOME', () => {
-  it('parseBH_ muestra diferencial (Seg = segmentados) y coag legibles', () => {
-    const { visible, extras } = parseBH_(ROGELIO_MAY15);
+  it('parseBH_ muestra diferencial (Seg = segmentados) y coag en fila COAG', () => {
+    const { visible, coagVisible, extras } = parseBH_(ROGELIO_MAY15);
     assert.match(visible, /^BH:/);
     assert.match(visible, /\bDif\./);
     assert.match(visible, /\bSeg\s+71%\*/);
     assert.match(visible, /\bLin\s+25%/);
     assert.match(visible, /\bMeta\s+3%/);
-    assert.match(visible, /\bCoag\./);
-    assert.match(visible, /\bTP\s+14\.2/);
-    assert.match(visible, /\bFib\s+405/);
-    assert.match(visible, /\bDD\s+2227/);
+    assert.doesNotMatch(visible, /\bCoag\./);
+    assert.match(coagVisible, /^COAG\t/);
+    assert.match(coagVisible, /\bTP\s+14\.2/);
+    assert.match(coagVisible, /\bFib\s+405/);
+    assert.match(coagVisible, /\bDD\s+2227/);
     assert.strictEqual(extras.NeuPct, '71');
     assert.strictEqual(extras.Metamielo, '3');
   });
 
-  it('procesarLabs incluye BH, FROTIS calidad y plaquetas', () => {
+  it('procesarLabs incluye BH, COAG, FROTIS calidad y plaquetas', () => {
     const { resLabs } = procesarLabs(ROGELIO_MAY15);
     const bh = resLabs.find((l) => /^BH:/.test(l) || /^BH\t/.test(l));
     assert.ok(bh, 'línea BH');
     assert.match(bh, /\bSeg\s+71%\*/);
-    assert.match(bh, /Fib/);
-    assert.match(bh, /DD/);
+    const coag = resLabs.find((l) => /^COAG\t/.test(l));
+    assert.ok(coag, 'línea COAG');
+    assert.match(coag, /Fib/);
+    assert.match(coag, /DD/);
     const frotis = resLabs.filter((l) => l.startsWith('FROTIS\t')).join('\n');
     assert.ok(frotis.includes('HIPOCROMIA') || frotis.includes('PLAQUETAS DISMINUIDAS'));
   });
@@ -65,7 +68,10 @@ DIMERO D\t A 2276 ng/mL 0.0 - 500.0`;
     assert.equal(merged.length, 1);
     const bhLine = merged[0].resLabs.find((l) => /^BH\b/i.test(l));
     assert.ok(bhLine, 'fila BH');
-    assert.match(bhLine, /DD\s+2276/);
+    const coagLine = merged[0].resLabs.find((l) => /^COAG\t/i.test(l));
+    assert.ok(coagLine, 'fila COAG');
+    assert.match(coagLine, /DD\s+2276/);
     assert.match(bhLine, /Leu\s+14\.4/);
+    assert.doesNotMatch(bhLine, /DD\s+2276/);
   });
 });

@@ -1,7 +1,7 @@
 // labs.js — lab parsing and rendering helpers (no app state)
 
 import { escTxt, renderToken } from './labs-display.mjs';
-export { escTxt, renderToken, renderEntry } from './labs-display.mjs';
+export { escTxt, renderToken, renderEntry, isLabSectionHeaderHtml } from './labs-display.mjs';
 
 // ════════════════════════════════════════════════════════════════════
 // LAB PARSER — ported from ~/Laboratoriazo App/index.html
@@ -339,7 +339,7 @@ export function parseBhTrendValuesFromResLab(entry) {
     if (tab < 0) return;
     var head = trimmed.substring(0, tab).trim().replace(/:$/, '');
     var body = trimmed.substring(tab + 1).trim();
-    if (/^BH$/i.test(head)) {
+    if (/^BH$/i.test(head) || /^COAG$/i.test(head)) {
       parseBhTokenPairs_(body, out);
       return;
     }
@@ -407,6 +407,16 @@ function pairListToDisplay_(pairs) {
     if (pairs[i + 1] !== undefined) out.push(pairs[i] + ' ' + pairs[i + 1]);
   }
   return out.join('  ');
+}
+
+function formatCoagResLabLine_(coagDisplay) {
+  if (!coagDisplay || !coagDisplay.length) return '';
+  return 'COAG\t' + coagDisplay.join('  ');
+}
+
+function extractCoagBodyFromBhLine_(line) {
+  var m = String(line || '').match(/^(?:COAG|Coag\.?)\t(.+)/i);
+  return m ? m[1].trim() : '';
 }
 
 export function parseBH_(tNorm) {
@@ -519,7 +529,7 @@ export function parseBH_(tNorm) {
   });
   var hasCoag = [TP, TTP, INR, Fib, DD].some(function (v) { return v !== '---'; });
   if (!hasCore && !hasExtIdx && !hasCoag && Object.keys(extras).length === 0) {
-    return { visible: '', extras: {} };
+    return { visible: '', coagVisible: '', extras: {} };
   }
 
   var corePairs = [];
@@ -567,18 +577,16 @@ export function parseBH_(tNorm) {
   if (DD  !== '---') coagDisplay.push('DD ' + DD);
 
   var visible = '';
+  var coagVisible = formatCoagResLabLine_(coagDisplay);
   if (hasCompactBody) {
-    var lines = ['BH\t' + pairListToDisplay_(corePairs)];
-    if (coagDisplay.length) lines.push('  Coag.\t' + coagDisplay.join('  '));
-    visible = lines.join('\n');
-  } else if (indexDisplay.length || diffDisplay.length || coagDisplay.length) {
+    visible = 'BH\t' + pairListToDisplay_(corePairs);
+  } else if (indexDisplay.length || diffDisplay.length) {
     var sub = ['BH:'];
     if (indexDisplay.length) sub.push('  Hem.\t' + indexDisplay.join('  '));
     if (diffDisplay.length) sub.push('  Dif.\t' + diffDisplay.join('  '));
-    if (coagDisplay.length) sub.push('  Coag.\t' + coagDisplay.join('  '));
     visible = sub.join('\n');
   }
-  return { visible: visible, extras: extras };
+  return { visible: visible, coagVisible: coagVisible, extras: extras };
 }
 
 /** Une varias filas BH del mismo día (p. ej. biometría + dímero D en solicitudes distintas). */
@@ -590,8 +598,7 @@ export function mergeBhResLabRows_(rows) {
     .filter(function (s) {
       return /^BH\b/i.test(s.trim());
     });
-  if (!list.length) return '';
-  if (list.length === 1) return list[0];
+  if (!list.length) return { bh: '', coag: '' };
 
   var best = list[0];
   var bestScore = lineRichnessScore_(best);
@@ -608,39 +615,28 @@ export function mergeBhResLabRows_(rows) {
     String(row)
       .split(/\r?\n/)
       .forEach(function (line) {
-        var m = line.match(/Coag\.\t(.+)/i);
-        if (!m) return;
-        m[1]
-          .trim()
-          .split(/\s{2,}/)
-          .forEach(function (tok) {
-            var t = tok.trim();
-            if (!t) return;
-            var key = t.split(/\s+/)[0];
-            var score = lineRichnessScore_(t);
-            var prev = coagByKey[key];
-            if (!prev || score > prev.score) coagByKey[key] = { tok: t, score: score };
-          });
+        var body = extractCoagBodyFromBhLine_(line);
+        if (!body) return;
+        body.split(/\s{2,}/).forEach(function (tok) {
+          var t = tok.trim();
+          if (!t) return;
+          var key = t.split(/\s+/)[0];
+          var score = lineRichnessScore_(t);
+          var prev = coagByKey[key];
+          if (!prev || score > prev.score) coagByKey[key] = { tok: t, score: score };
+        });
       });
   });
   var coagTokens = Object.keys(coagByKey).map(function (k) {
     return coagByKey[k].tok;
   });
-  if (!coagTokens.length) return best;
+  var coag = coagTokens.length ? formatCoagResLabLine_(coagTokens) : '';
 
   var lines = best.split(/\r?\n/).filter(function (line) {
-    return !/Coag\./i.test(line);
+    return !/^(?:\s*Coag\.|COAG)\t/i.test(line.trim());
   });
-  var coagLine = '  Coag.\t' + coagTokens.join('  ');
-  if (/^BH:/.test(String(lines[0] || '').trim())) {
-    lines.push(coagLine);
-    return lines.join('\n');
-  }
-  if (lines.length === 1 && /^BH\t/.test(lines[0].trim())) {
-    return lines[0] + '\n' + coagLine;
-  }
-  lines.push(coagLine);
-  return lines.join('\n');
+  var bh = lines.join('\n').trim();
+  return { bh: bh, coag: coag };
 }
 
 // Procalcitonina viene en bloque "ESTUDIOS ESPECIALES" con un rango de
@@ -3229,6 +3225,7 @@ function collectCoreLabSections_(resLabs, blocks, demograf, textoBruto, tNorm) {
   var bhExtras = {};
   var bhRes = parseBH_(blocks.textoParaBh);
   if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
+  if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
   if (bhRes && bhRes.extras) bhExtras = bhRes.extras;
   pushLabSection_(resLabs, parseQS_(blocks.textoQS, demograf));
   pushLabSection_(resLabs, parseESC_(blocks.textoQS));

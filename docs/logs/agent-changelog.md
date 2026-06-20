@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-20 | Release 7.3.8 prepare | `docs/RELEASE_NOTES_7.3.8.txt`, `labs.js`, `estado-actual-io.mjs`, `db-unlock.mjs`, `release-notes-curated.mjs` | COAG section split; EA balance NC; DB boot toast; SQLCipher script hardening; bump 7.3.8; metrics OK; 27 targeted tests pass. |
 | 2026-06-14 | Release 7.3.7 prepare | `docs/RELEASE_NOTES_7.3.7.txt`, LAN patient delete fix, `expediente-tabs.mjs`, `release-notes-curated.mjs` | Registro-reuse LAN delete bugfix; Drive import in clínico nav bar; bump 7.3.7. |
 | 2026-06-13 | Release 7.3.6 prepare | `docs/RELEASE_NOTES_7.3.6.txt`, `release-notes-curated.mjs`, `README.md`, plans 010–020 | LAN client identity, orchestrator split, cultivo superset, IPC tests, quarantine drain; bump 7.3.6 on main. |
 | 2026-06-12 | Advisor cycle 2 — LAN orchestrator split + IPC tests | `features/lan/{orchestrator,conflicts,entity-versions,patient-delete,patient-entries,historia-sync,host-patient-http,live-sync-emit}.mjs`, `lib/db/ipc-handlers.test.mjs` | Orchestrator 2,207→1,185 lines (move-only + `configure*` DI); 13 DB IPC integration tests; plans 010–020 DONE; metrics 14,540. |
