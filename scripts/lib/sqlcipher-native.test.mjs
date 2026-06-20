@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { restoreElectronBinaryFromCache, sqlcipherDestAbs } from './sqlcipher-native.mjs';
+import { restoreElectronBinaryFromCache, sqlcipherDestAbs, canProbeSqlcipherUnderElectron } from './sqlcipher-native.mjs';
+
+test('canProbeSqlcipherUnderElectron requires matching platform and arch', () => {
+  assert.equal(canProbeSqlcipherUnderElectron(process.platform, process.arch), true);
+  if (process.platform === 'darwin') {
+    const other = process.arch === 'arm64' ? 'x64' : 'arm64';
+    assert.equal(canProbeSqlcipherUnderElectron('darwin', other), false);
+  }
+});
 
 test('restoreElectronBinaryFromCache returns false when cache missing', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-sqlcipher-'));

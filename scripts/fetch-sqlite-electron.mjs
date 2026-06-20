@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeNativeBinary, isMachO, isWindowsPe, readBinaryHeader } from './lib/native-binary-format.mjs';
 import {
+  canProbeSqlcipherUnderElectron,
   electronSqlcipherLoads,
   rememberElectronBinary,
   sqlcipherDestAbs,
@@ -44,10 +45,6 @@ function prebuildAssetName(version, abiVersion, platform, arch) {
 function prebuildUrl(version, abiVersion, platform, arch) {
   const asset = prebuildAssetName(version, abiVersion, platform, arch);
   return `https://github.com/${PREBUILD_REPO}/releases/download/v${version}/${asset}`;
-}
-
-function canProbeSqlcipherUnderLocalElectron(platform) {
-  return platform === process.platform;
 }
 
 /** @param {string} abs @param {string} platform */
@@ -95,7 +92,7 @@ async function main() {
   if (
     !strict &&
     describeNativeBinary(destFile, platform).ok &&
-    (!canProbeSqlcipherUnderLocalElectron(platform) || electronSqlcipherLoads(root))
+    (!canProbeSqlcipherUnderElectron(platform, arch) || electronSqlcipherLoads(root))
   ) {
     console.log(`[fetch-sqlite-electron] ${NODE_REL} already valid for Electron on ${platform}-${arch}`);
     rememberElectronBinary(root);
@@ -116,7 +113,7 @@ async function main() {
     process.exit(1);
   }
 
-  if (canProbeSqlcipherUnderLocalElectron(platform)) {
+  if (canProbeSqlcipherUnderElectron(platform, arch)) {
     if (!electronSqlcipherLoads(root)) {
       console.error('[fetch-sqlite-electron] Installed prebuild does not load under Electron');
       process.exit(1);
@@ -125,7 +122,9 @@ async function main() {
     console.log('[fetch-sqlite-electron] Verified OK under Electron');
   } else {
     await assertFormat(destFile, platform);
-    console.log(`[fetch-sqlite-electron] Verified ${platform} binary format (cross-host pack)`);
+    console.log(
+      `[fetch-sqlite-electron] Verified ${platform}-${arch} binary format (load probe skipped — host is ${process.platform}-${process.arch})`
+    );
   }
 }
 

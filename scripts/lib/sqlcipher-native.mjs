@@ -35,7 +35,16 @@ export function electronSqlcipherProbeScript(root = repoRoot) {
 }
 
 /**
- * True when better_sqlite3.node loads under Electron (opens :memory: in child process).
+ * True when we can spawn local Electron to open :memory: (same OS + CPU arch).
+ * Cross-arch Mac packs (arm64 host → x64 target) must skip load probe — Mach-O only.
+ * @param {string} platform
+ * @param {string} arch
+ */
+export function canProbeSqlcipherUnderElectron(platform, arch) {
+  return platform === process.platform && arch === process.arch;
+}
+
+/**
  * @param {string} [root]
  */
 export function electronSqlcipherLoads(root = repoRoot) {
