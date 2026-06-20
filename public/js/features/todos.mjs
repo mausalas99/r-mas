@@ -475,12 +475,18 @@ function renderTodoListSection(container, preserveTodoId) {
   }
 
   if (!todos.length && !preservedRow) {
-    var none = document.createElement('p');
+    var none = document.createElement('div');
     none.className = 'todo-empty';
-    none.textContent =
-      listFilter === TODO_FILTER_HANDOFF
-        ? 'Sin pendientes del turno anterior para este paciente.'
-        : 'Sin pendientes. Agrega el primero arriba.';
+    none.setAttribute('role', 'status');
+    if (listFilter === TODO_FILTER_HANDOFF) {
+      none.innerHTML =
+        '<span class="empty-state-title">Sin pendientes del turno anterior para este paciente</span>' +
+        '<span class="empty-state-lead">Los que quedaron abiertos al cerrar el turno previo aparecerán aquí.</span>';
+    } else {
+      none.innerHTML =
+        '<span class="empty-state-title">Sin pendientes</span>' +
+        '<span class="empty-state-lead">Usa el campo de arriba para agregar uno.</span>';
+    }
     container.appendChild(none);
     return;
   }
@@ -577,9 +583,12 @@ export function renderTodoFormIn(container, idPrefix) {
 
   if (!aid()) {
     while (container.firstChild) container.removeChild(container.firstChild);
-    var empty = document.createElement('p');
+    var empty = document.createElement('div');
     empty.className = 'todo-empty';
-    empty.textContent = 'Selecciona un paciente para ver sus pendientes.';
+    empty.setAttribute('role', 'status');
+    empty.innerHTML =
+      '<span class="empty-state-title">Elige un paciente para ver pendientes</span>' +
+      '<span class="empty-state-lead">Selecciona uno en la lista de la izquierda.</span>';
     container.appendChild(empty);
     return;
   }

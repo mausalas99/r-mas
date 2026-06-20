@@ -339,7 +339,7 @@ html.dark .patient-toolbar-chip:hover {
 .patient-drag-hovercard.patient-card {
   cursor: grabbing !important;
   pointer-events: none !important;
-  z-index: 10060;
+  z-index: var(--z-toast);
   box-sizing: border-box;
   opacity: 1 !important;
   background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;

@@ -3,13 +3,13 @@
 .cmdk-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1300;
-  background: color-mix(in oklab, var(--color-ink) 22%, transparent);
+  z-index: var(--z-cmdk);
+  background: var(--scrim-bg);
 }
 
 .cmdk {
   position: fixed;
-  z-index: 1301;
+  z-index: var(--z-cmdk);
   top: 14vh;
   left: 0;
   right: 0;
@@ -83,8 +83,24 @@
 }
 
 .cmdk-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 14px 12px;
   color: var(--text-muted);
+  list-style: none;
+}
+
+.cmdk-empty .empty-state-title {
+  font-size: calc(14px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cmdk-empty .empty-state-lead {
+  font-size: calc(13px * var(--density-font));
+  line-height: 1.45;
+  max-width: 36ch;
 }
 
 .header-cmdk-hint {

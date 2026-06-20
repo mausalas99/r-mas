@@ -135,10 +135,10 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   position: fixed;
   top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
   right: var(--shell-inset, 24px);
-  z-index: 10200;
+  z-index: var(--z-header-dropdown);
   border-radius: var(--radius-lg);
   width: min(320px, calc(100vw - 32px));
-  max-height: min(85vh, calc(100vh - 56px));
+  max-height: min(85dvh, calc(var(--app-height) - 56px));
   overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -165,8 +165,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
     visibility 0s;
 }
 .settings-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: 10199;
-  background: rgba(15, 23, 42, 0.18);
+  display: block; position: fixed; inset: 0; z-index: var(--z-header-backdrop);
+  background: color-mix(in oklab, var(--color-ink) 18%, transparent);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -184,12 +184,12 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   position: fixed;
   top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
   right: calc(var(--shell-inset, 24px) + 52px);
-  z-index: 10202;
+  z-index: var(--z-header-dropdown-front);
   background: var(--surface);
   border: none; border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
   width: min(400px, calc(100vw - 24px));
-  max-height: min(85vh, calc(100vh - 56px));
+  max-height: min(85dvh, calc(var(--app-height) - 56px));
   overflow-x: clip; overflow-y: auto; overscroll-behavior: contain;
   overflow-anchor: none;
   padding: 14px; flex-direction: column; gap: 10px;
@@ -214,8 +214,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
     visibility 0s;
 }
 .connection-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: 10201;
-  background: rgba(15, 23, 42, 0.18);
+  display: block; position: fixed; inset: 0; z-index: calc(var(--z-header-backdrop) + 1);
+  background: color-mix(in oklab, var(--color-ink) 18%, transparent);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;

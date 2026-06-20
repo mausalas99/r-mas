@@ -1838,7 +1838,10 @@ export function renderEstadoActualPanel(opts) {
     invalidateEaPanelCache();
     mount.innerHTML =
       '<div class="estado-actual-panel ea-empty">' +
-      '<p class="ea-muted">Selecciona un paciente para registrar monitoreo.</p>' +
+      '<div class="empty-state empty-state--compact" role="status">' +
+      '<h3 class="empty-state-title">Selecciona un paciente para monitoreo</h3>' +
+      '<p class="empty-state-lead">Elige uno en el censo de la izquierda. Ahí podrás registrar signos, balance hídrico y dieta.</p>' +
+      '</div>' +
       '</div>';
     if (onReady) onReady();
     return;

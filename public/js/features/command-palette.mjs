@@ -114,7 +114,14 @@ function renderResults(query) {
   if (!results.length) {
     var empty = document.createElement('li');
     empty.className = 'cmdk-empty';
-    empty.textContent = 'Sin resultados';
+    empty.setAttribute('role', 'status');
+    if (String(query || '').trim()) {
+      empty.innerHTML =
+        '<span class="empty-state-title">Sin coincidencias</span>' +
+        '<span class="empty-state-lead">Prueba con el nombre del paciente, una pestaña o una sección del expediente.</span>';
+    } else {
+      empty.textContent = 'Sin resultados';
+    }
     d.list.appendChild(empty);
   }
 }

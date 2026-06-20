@@ -742,7 +742,7 @@ html.dark .med-pharm-modal-legend {
 }
 
 .med-pharm-modal-backdrop {
-  z-index: 10050;
+  z-index: var(--z-modal);
   padding: 16px;
 }
 
@@ -1152,7 +1152,7 @@ body.rpc-med-pharm-modal-open {
   max-width: min(400px, 92vw);
   max-height: min(280px, 55vh);
   overflow-y: auto;
-  z-index: 10120;
+  z-index: var(--z-modal-nested);
   padding: 0;
   border-radius: var(--radius-lg, 10px);
   border: 1px solid var(--border);

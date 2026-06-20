@@ -1,3 +1,4 @@
+/* New rules: use var(--*) only; no raw hex */
 /* Guardia census grid — high-density patient chips with R4 ward partitioning */
 .patient-chips-grid {
   display: grid;
@@ -216,7 +217,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 .guardia-entrega-phase-status--error {
-  color: var(--danger, #e53e3e);
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -344,7 +345,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 .entrega-proc-empty {
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
   font-size: 0.9rem;
   padding: 0.25rem 0;
 }
@@ -378,13 +379,13 @@ html.ui-density-guardia #lan-connection-banner {
 
 .entrega-proc-time {
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
 }
 
 .entrega-proc-kind,
 .entrega-proc-meta {
   font-size: 0.8rem;
-  color: var(--text-muted, #666);
+  color: var(--text-muted);
 }
 
 .entrega-proc-chips {
@@ -403,7 +404,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 .entrega-proc-chip--req {
-  background: color-mix(in oklab, var(--warn, #c90) 18%, var(--surface));
+  background: color-mix(in oklab, var(--warn) 18%, var(--surface));
 }
 
 .entrega-proc-chip--lock {
@@ -419,7 +420,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 #entrega-modal-backdrop.entrega-modal-backdrop {
-  background: color-mix(in oklab, var(--color-ink, #1a2332) 52%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 52%, transparent);
 }
 
 #entrega-modal-backdrop.entrega-modal-backdrop.open {
@@ -433,7 +434,7 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 #entrega-modal-backdrop .modal.entrega-modal {
-  --entrega-modal-h: min(92dvh, calc(100vh - 28px));
+  --entrega-modal-h: min(92dvh, calc(var(--app-height) - 28px));
   width: min(98vw, 1140px);
   max-width: none;
   max-height: var(--entrega-modal-h);
@@ -864,9 +865,9 @@ html.ui-density-guardia #lan-connection-banner {
 }
 
 #entrega-modal-backdrop .entrega-check-pill--alert input:checked + span {
-  border-color: color-mix(in oklab, var(--danger, #c53030) 45%, var(--border));
-  background: color-mix(in oklab, var(--danger, #c53030) 14%, var(--surface));
-  color: var(--danger, #c53030);
+  border-color: color-mix(in oklab, var(--danger) 45%, var(--border));
+  background: color-mix(in oklab, var(--danger) 14%, var(--surface));
+  color: var(--danger);
 }
 
 @media (max-width: 720px) {
@@ -1096,7 +1097,7 @@ html.ui-density-guardia #lan-connection-banner {
 
 #entrega-modal-backdrop .entrega-freq-segment .entrega-freq-mode-pill input:checked + span {
   background: var(--surface);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink, #1a2332) 12%, transparent);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink) 12%, transparent);
 }
 
 #entrega-modal-backdrop .entrega-freq-detail-card {
@@ -1361,7 +1362,7 @@ html.dark #entrega-modal-backdrop.entrega-modal-backdrop {
 }
 
 html.dark #entrega-modal-backdrop .modal.entrega-modal {
-  border-color: color-mix(in oklab, var(--color-ink, #0f172a) 35%, var(--border));
+  border-color: color-mix(in oklab, var(--color-ink) 35%, var(--border));
   box-shadow: 0 28px 56px color-mix(in oklab, var(--color-ink) 48%, transparent);
 }
 
@@ -1914,8 +1915,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .guardia-orphan-details {
-  background: color-mix(in srgb, var(--danger, #c0392b) 6%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--danger, #c0392b) 28%, var(--border));
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--border));
   border-radius: var(--radius-md);
   padding: 8px 10px 10px;
 }
@@ -1942,8 +1943,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
-  background: color-mix(in srgb, var(--danger, #c0392b) 18%, transparent);
-  color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
 }
 
 .guardia-orphan-hint {
@@ -1988,7 +1989,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 .guardia-orphan-vitals {
   font-size: 0.75rem;
-  color: var(--danger, #c0392b);
+  color: var(--danger);
 }
 
 .guardia-orphan-row-actions {
@@ -2006,8 +2007,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .guardia-orphan-delete-btn {
-  color: var(--danger, #c0392b);
-  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, var(--border));
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
 .guardia-incoming-details {
@@ -2356,8 +2357,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 }
 
 .patient-chip-symbol--negativas {
-  border-color: color-mix(in oklab, var(--todo-prio-media, #c9a227) 40%, var(--border));
-  color: var(--todo-prio-media, #c9a227);
+  border-color: color-mix(in oklab, var(--todo-prio-media) 40%, var(--border));
+  color: var(--todo-prio-media);
 }
 
 .patient-chip-symbol--show {
@@ -2447,8 +2448,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 #appcontent-guardia .patient-chip-vitals.warning,
 .guardia-census-panel .patient-chip-vitals.warning {
-  background: color-mix(in oklab, var(--todo-prio-media, #c9a227) 12%, var(--surface));
-  color: var(--todo-prio-media, #c9a227);
+  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
+  color: var(--todo-prio-media);
   animation: none;
 }
 
@@ -2555,7 +2556,7 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--todo-prio-media, #c9a227);
+  color: var(--todo-prio-media);
   text-transform: none;
 }
 
@@ -2947,14 +2948,20 @@ html.guardia-entrega-roster-open #guardia-board-scroll {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
   padding: 4px 0 2px;
 }
 
-.vfeed-empty-sub {
+.vfeed-empty .empty-state-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vfeed-empty-sub,
+.vfeed-empty .empty-state-lead {
   font-size: 0.75rem;
   line-height: 1.35;
+  color: var(--text-muted);
 }
 
 /* Entrega roster panel — tokens + shared modal actions (design.md) */
@@ -3210,7 +3217,7 @@ body:has(#entrega-modal-backdrop.entrega-modal-backdrop.open) .roster-panel-foot
 }
 
 #clinical-teams-backdrop.clinical-teams-backdrop {
-  background: color-mix(in oklab, var(--color-ink, #1a2332) 42%, transparent);
+  background: color-mix(in oklab, var(--color-ink) 42%, transparent);
 }
 
 #clinical-teams-backdrop.clinical-teams-backdrop.open {
@@ -3239,7 +3246,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 #clinical-teams-backdrop .modal.clinical-teams-modal {
   width: min(96vw, 1180px);
   max-width: none;
-  max-height: min(88dvh, calc(100vh - 48px));
+  max-height: min(88dvh, calc(var(--app-height) - 48px));
   margin: 0;
   flex-shrink: 0;
   overflow: hidden;
@@ -3249,7 +3256,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   gap: 0;
   background: var(--surface);
   color: var(--text);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
   animation: modal-in var(--dur-normal) var(--ease-out);
@@ -3321,7 +3328,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
-  max-height: calc(min(88dvh, 100vh - 48px) - 56px);
+  max-height: calc(min(88dvh, calc(var(--app-height) - 48px)) - 56px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: clamp(20px, 2.5vw, 28px);
@@ -3690,8 +3697,8 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 }
 
 .clinical-lan-users-backdrop {
-  z-index: 100030;
-  background: color-mix(in oklab, var(--color-ink, #1a2332) 48%, transparent);
+  z-index: var(--z-clinical-lan-users);
+  background: color-mix(in oklab, var(--color-ink) 48%, transparent);
 }
 
 .clinical-lan-users-backdrop.open {
@@ -3703,16 +3710,16 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 
 /* Directorio LAN debe quedar encima de Mi rotación cuando ambos están abiertos */
 body.clinical-lan-directory-open #clinical-lan-users-backdrop.clinical-lan-users-backdrop.open {
-  z-index: 100050;
+  z-index: var(--z-clinical-lan-directory);
 }
 
 body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdrop.open {
-  z-index: 100020;
+  z-index: var(--z-clinical-teams-lower);
 }
 
 .clinical-admin-code-backdrop {
-  z-index: 100040;
-  background: color-mix(in oklab, var(--color-ink, #1a2332) 48%, transparent);
+  z-index: var(--z-clinical-admin);
+  background: color-mix(in oklab, var(--color-ink) 48%, transparent);
 }
 
 .clinical-admin-code-backdrop.open {
@@ -3727,7 +3734,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   padding: 0 20px 20px;
   background: var(--surface);
   color: var(--text);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
 }
@@ -3741,14 +3748,14 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-admin-code-error {
   margin: 0 0 12px;
-  color: var(--danger, #c0392b);
+  color: var(--danger);
   font-size: 0.88rem;
 }
 
 #clinical-lan-users-backdrop .modal.clinical-lan-users-modal {
   width: min(96vw, 1240px);
   max-width: none;
-  max-height: min(86dvh, calc(100vh - 48px));
+  max-height: min(86dvh, calc(var(--app-height) - 48px));
   margin: 0;
   padding: 0;
   display: flex;
@@ -3756,7 +3763,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   overflow: hidden;
   background: var(--surface);
   color: var(--text);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-container);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
 }
@@ -3986,21 +3993,21 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 }
 
 .clinical-lan-user-activity-chip--active {
-  color: color-mix(in oklab, #16a34a 88%, var(--text));
-  background: color-mix(in oklab, #16a34a 12%, var(--surface));
-  border-color: color-mix(in oklab, #16a34a 28%, var(--border));
+  color: color-mix(in oklab, var(--success) 88%, var(--text));
+  background: color-mix(in oklab, var(--success) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--success) 28%, var(--border));
 }
 
 .clinical-lan-user-activity-chip--recent {
-  color: color-mix(in oklab, #ca8a04 90%, var(--text));
-  background: color-mix(in oklab, #ca8a04 12%, var(--surface));
-  border-color: color-mix(in oklab, #ca8a04 28%, var(--border));
+  color: color-mix(in oklab, var(--todo-prio-media) 90%, var(--text));
+  background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--todo-prio-media) 28%, var(--border));
 }
 
 .clinical-lan-user-activity-chip--stale {
-  color: color-mix(in oklab, var(--error, #dc2626) 82%, var(--text));
-  background: color-mix(in oklab, var(--error, #dc2626) 8%, var(--surface));
-  border-color: color-mix(in oklab, var(--error, #dc2626) 24%, var(--border));
+  color: color-mix(in oklab, var(--error) 82%, var(--text));
+  background: color-mix(in oklab, var(--error) 8%, var(--surface));
+  border-color: color-mix(in oklab, var(--error) 24%, var(--border));
 }
 
 .clinical-lan-user-activity-chip--unknown {
@@ -4159,7 +4166,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-lan-users-handle--pending {
   font-weight: 500;
-  color: var(--text-muted, #8a8a8a);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -4509,7 +4516,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 }
 
 .clinical-teams-member-cycle {
-  color: var(--accent, #8b7cf6);
+  color: var(--color-accent);
   font-weight: 500;
 }
 
@@ -4530,7 +4537,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: var(--accent, #8b7cf6);
+  color: var(--color-accent);
 }
 
 .clinical-teams-section--create {
@@ -4556,8 +4563,8 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 .clinical-teams-section--join-code {
   padding: 16px;
   border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in oklab, var(--accent, #8b7cf6) 35%, var(--border));
-  background: color-mix(in oklab, var(--accent, #8b7cf6) 5%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--color-accent) 35%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 5%, var(--surface));
 }
 
 .clinical-teams-join-code-form {
@@ -4612,12 +4619,12 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 .clinical-team-invite-browser-gate {
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: var(--z-modal-nested);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: color-mix(in oklab, var(--bg, #0f1117) 55%, transparent);
+  background: color-mix(in oklab, var(--bg) 55%, transparent);
   backdrop-filter: blur(6px);
 }
 
@@ -4625,8 +4632,8 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   max-width: 420px;
   padding: 20px 22px;
   border-radius: 12px;
-  background: var(--surface, #1a1d26);
-  border: 1px solid var(--border, #2a2f3a);
+  background: var(--surface);
+  border: 1px solid var(--border);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
@@ -4660,7 +4667,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   margin: 0;
   padding: 12px 16px;
   border-top: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--accent, #8b7cf6) 6%, var(--surface));
+  background: color-mix(in oklab, var(--color-accent) 6%, var(--surface));
 }
 
 .clinical-teams-leave-box {
@@ -4831,7 +4838,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-onboarding-progress span.is-active {
   background: var(--action);
-  color: var(--color-on-accent, #fff);
+  color: var(--color-on-accent);
   border-color: transparent;
 }
 
@@ -4904,7 +4911,7 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 }
 
 html.dark .clinical-teams-profile-panel {
-  background: color-mix(in oklab, var(--surface) 96%, #0f172a);
+  background: color-mix(in oklab, var(--surface) 96%, var(--color-ink));
 }
 
 html.dark #clinical-teams-backdrop .modal.clinical-teams-modal {
@@ -4912,7 +4919,7 @@ html.dark #clinical-teams-backdrop .modal.clinical-teams-modal {
 }
 
 html.dark .clinical-teams-modal-head {
-  background: color-mix(in oklab, var(--surface) 94%, #0f172a);
+  background: color-mix(in oklab, var(--surface) 94%, var(--color-ink));
 }
 
 html.dark .clinical-teams-section--joined {
@@ -4925,11 +4932,11 @@ html.dark .clinical-teams-card--mine {
 }
 
 html.dark .clinical-teams-invite-box {
-  background: color-mix(in oklab, #0c0e14 35%, var(--surface));
+  background: color-mix(in oklab, var(--color-paper) 35%, var(--surface));
 }
 
 html.dark .clinical-teams-section--directory {
-  background: color-mix(in oklab, var(--surface) 96%, #0f172a);
+  background: color-mix(in oklab, var(--surface) 96%, var(--color-ink));
 }
 
 html.dark #clinical-lan-users-backdrop .modal.clinical-lan-users-modal {
@@ -4937,7 +4944,7 @@ html.dark #clinical-lan-users-backdrop .modal.clinical-lan-users-modal {
 }
 
 html.dark .clinical-lan-rank-group {
-  background: color-mix(in oklab, var(--surface) 94%, #0f172a);
+  background: color-mix(in oklab, var(--surface) 94%, var(--color-ink));
 }
 
 html.dark .clinical-lan-rank-group-summary {
@@ -5028,14 +5035,14 @@ html.dark .clinical-lan-rank-group-summary {
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: var(--text-muted, #8e8a9f);
+  color: var(--text-muted);
   font-size: 0.72rem;
   cursor: pointer;
   text-align: left;
 }
 
 .clinical-census-filters-toggle:focus-visible {
-  outline: 2px solid var(--accent, #6b9fff);
+  outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
 
@@ -5450,9 +5457,9 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   gap: 8px;
   max-width: min(320px, 42vw);
   padding: 6px 14px;
-  border: 1px solid color-mix(in oklab, var(--accent, #6b9fff) 45%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--color-accent) 45%, var(--border));
   border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--accent, #6b9fff) 10%, var(--surface));
+  background: color-mix(in oklab, var(--color-accent) 10%, var(--surface));
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
@@ -5461,13 +5468,13 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 }
 
 .app-bar-mi-rotacion:hover {
-  border-color: color-mix(in oklab, var(--accent, #6b9fff) 70%, var(--border));
-  background: color-mix(in oklab, var(--accent, #6b9fff) 16%, var(--surface));
+  border-color: color-mix(in oklab, var(--color-accent) 70%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--surface));
 }
 
 .app-bar-mi-rotacion.is-pending {
-  border-color: color-mix(in oklab, #f59e0b 65%, var(--border));
-  background: color-mix(in oklab, #f59e0b 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--warn) 65%, var(--border));
+  background: color-mix(in oklab, var(--warn) 12%, var(--surface));
 }
 
 .app-bar-mi-rotacion-icon {
@@ -5507,9 +5514,9 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  border: 1px solid color-mix(in oklab, #f59e0b 55%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--warn) 55%, var(--border));
   border-radius: var(--radius-pill);
-  background: color-mix(in oklab, #f59e0b 14%, var(--surface));
+  background: color-mix(in oklab, var(--warn) 14%, var(--surface));
   color: var(--text);
   cursor: pointer;
   font-family: inherit;
@@ -5520,8 +5527,8 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 }
 
 .app-bar-lan-connect-cta:hover {
-  border-color: color-mix(in oklab, #f59e0b 75%, var(--border));
-  background: color-mix(in oklab, #f59e0b 22%, var(--surface));
+  border-color: color-mix(in oklab, var(--warn) 75%, var(--border));
+  background: color-mix(in oklab, var(--warn) 22%, var(--surface));
 }
 
 .clinical-teams-advanced-rotation {
@@ -5574,13 +5581,13 @@ html.ui-density-guardia #btn-clinical-lan-connect {
 
 .clinical-teams-nueva-rotacion-btn {
   align-self: flex-start;
-  border-color: color-mix(in oklab, var(--error, #dc2626) 45%, var(--border));
-  color: var(--error, #dc2626);
+  border-color: color-mix(in oklab, var(--error) 45%, var(--border));
+  color: var(--error);
 }
 
 .clinical-teams-nueva-rotacion-btn:hover {
-  border-color: var(--error, #dc2626);
-  background: color-mix(in oklab, var(--error, #dc2626) 10%, var(--surface));
+  border-color: var(--error);
+  background: color-mix(in oklab, var(--error) 10%, var(--surface));
 }
 
 .clinical-census-filter {
@@ -5588,7 +5595,7 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   flex-direction: column;
   gap: 2px;
   font-size: 0.72rem;
-  color: var(--text-muted, #8e8a9f);
+  color: var(--text-muted);
 }
 
 .clinical-census-filter .profile-input {

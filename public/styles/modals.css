@@ -1,7 +1,7 @@
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* Templates modal */
 .templates-modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9990;
+  position: fixed; inset: 0; background: var(--scrim-bg); z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
 }
 .templates-modal {
@@ -17,7 +17,7 @@
 .templates-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 /* ── Lab conflict modal ───────────────────────────────── */
 .lab-conflict-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9995;
+  position: fixed; inset: 0; background: var(--scrim-bg); z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
 }
 .lab-conflict-modal {
@@ -51,11 +51,11 @@
 .btn-conflict-primary .btn-conflict-hint { color: #bbf7d0; opacity: 0.9; }
 .btn-conflict-secondary .btn-conflict-hint { color: var(--text-muted); opacity: 0.95; }
 /* ── Clinical sync conflict viewer ───────────────────── */
-.clinical-conflict-backdrop { z-index: 10020; }
+.clinical-conflict-backdrop { z-index: var(--z-modal-nested); }
 .clinical-conflict-modal {
   width: min(94vw, 760px);
   max-width: min(94vw, 760px);
-  max-height: min(85vh, calc(100vh - 32px));
+  max-height: min(85dvh, calc(var(--app-height) - 32px));
   gap: 12px;
   overflow: auto;
 }
@@ -205,8 +205,8 @@
 }
 /* ── SOAP Evolution modal ────────────────────────────── */
 .soap-modal-backdrop {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  z-index: 9995; align-items: center; justify-content: center;
+  display: none; position: fixed; inset: 0; background: var(--scrim-bg);
+  z-index: var(--z-modal); align-items: center; justify-content: center;
 }
 .soap-modal-backdrop.open {
   display: flex;
@@ -258,7 +258,7 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
   border-radius: var(--radius-lg);
   width: 620px;
   max-width: 95vw;
-  max-height: 90vh;
+  max-height: min(90dvh, calc(var(--app-height) - 56px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -376,8 +376,8 @@ html.dark .soap-btn-cancel {
    https://developer.apple.com/design/human-interface-guidelines/onboarding
 ───────────────────────────────────────────────────────── */
 #onboarding-intro-backdrop {
-  position: fixed; inset: 0; z-index: 200000;
-  background: rgba(15,23,42,0.55);
+  position: fixed; inset: 0; z-index: var(--z-modal-nested);
+  background: var(--scrim-bg);
   display: none;
   padding: 24px;
   overflow-y: auto;
@@ -399,13 +399,13 @@ html.dark .soap-btn-cancel {
   border: none;
   flex-shrink: 0;
   margin: 12px auto 28px;
-  max-height: min(calc(100dvh - 56px), calc(100vh - 56px));
+  max-height: min(85dvh, calc(var(--app-height) - 56px));
   overflow-y: auto;
   box-sizing: border-box;
 }
 @media (max-height: 760px) {
   #onboarding-intro-backdrop { padding: 12px 16px 24px; }
-  .onboarding-intro-modal { padding: 20px 18px 22px; margin-top: 8px; margin-bottom: 20px; max-height: min(calc(100dvh - 44px), calc(100vh - 44px)); }
+  .onboarding-intro-modal { padding: 20px 18px 22px; margin-top: 8px; margin-bottom: 20px; max-height: min(85dvh, calc(var(--app-height) - 44px)); }
   .onboarding-intro-modal h2 { font-size: 1.35rem; }
   .intro-lead { font-size: 13px; margin-bottom: 10px; line-height: 1.45; }
   .intro-options-grid { gap: 12px; margin-bottom: 2px; }
@@ -485,7 +485,7 @@ html.dark .btn-intro-skip:hover {
 }
 #tour-dock {
   position: fixed; bottom: 20px; right: 20px;
-  z-index: 101000; width: min(392px, calc(100vw - 24px));
+  z-index: var(--z-toast); width: min(392px, calc(100vw - 24px));
   display: none;
   pointer-events: none;
   transition: left var(--dur-normal) ease, right var(--dur-normal) ease, transform var(--dur-normal) ease;
@@ -608,7 +608,7 @@ html.dark .btn-intro-skip:hover {
   50% { box-shadow: 0 0 0 7px rgba(96, 165, 250, 0); }
 }
 .tour-spotlight-soap {
-  position: relative; z-index: 100000 !important;
+  position: relative; z-index: var(--z-toast) !important;
   outline: 2px solid #60a5fa !important; outline-offset: 3px !important;
   animation: tour-soap-pulse 1.8s ease-in-out infinite;
 }
@@ -618,7 +618,7 @@ html.dark .tour-spotlight-soap { outline-color: #38bdf8 !important; }
   50% { box-shadow: 0 0 0 6px rgba(124, 131, 255, 0); }
 }
 .tour-spotlight-action {
-  position: relative; z-index: 100000 !important;
+  position: relative; z-index: var(--z-toast) !important;
   outline: 2px solid var(--action) !important; outline-offset: 3px !important;
   animation: tour-action-pulse 1.85s ease-in-out infinite;
 }
@@ -741,8 +741,8 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 .learn-hub-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200005;
-  background: rgba(15, 23, 42, 0.55);
+  z-index: var(--z-modal-nested);
+  background: var(--scrim-bg);
   display: none;
   pointer-events: none;
 }
@@ -756,8 +756,8 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   right: 0;
   width: min(420px, 100vw);
   min-width: min(420px, 100vw);
-  height: 100dvh;
-  max-height: 100vh;
+  height: var(--app-height);
+  max-height: var(--app-height);
   transform: translateX(100%);
   transition: transform var(--dur-normal) ease-out;
   display: flex;
@@ -1121,7 +1121,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   outline-offset: 1px;
 }
 /* ── Novedades (release notes) ─────────────────────────────── */
-#release-notes-backdrop.modal-backdrop.open { z-index: 200010; }
+#release-notes-backdrop.modal-backdrop.open { z-index: var(--z-modal-nested); }
 .release-notes-modal { width: 560px; max-width: 95vw; padding: 24px 24px 18px; }
 .release-notes-actions {
   display: flex;
@@ -1171,18 +1171,18 @@ html.dark .release-notes-modal { background: var(--surface); color: var(--text);
 .confetti-piece {
   position: fixed; width: 8px; height: 8px; border-radius: 2px;
   animation: confetti-fall 2.5s ease-in forwards;
-  pointer-events: none; z-index: 99999;
+  pointer-events: none; z-index: var(--z-celebration);
 }
 /* ── Desbloqueo SQLCipher ──────────────────────────────────── */
 #rpc-db-unlock-overlay,
 #rpc-db-change-pass-overlay {
-  display: none; position: fixed; inset: 0; z-index: 350000;
-  background: rgba(15,23,42,0.92);
+  display: none; position: fixed; inset: 0; z-index: var(--z-db-unlock);
+  background: var(--scrim-bg);
   align-items: center; justify-content: center; padding: 24px;
 }
-#rpc-db-change-pass-overlay { z-index: 349000; }
+#rpc-db-change-pass-overlay { z-index: var(--z-db-unlock); }
 html.dark #rpc-db-unlock-overlay,
-html.dark #rpc-db-change-pass-overlay { background: rgba(0,0,0,0.88); }
+html.dark #rpc-db-change-pass-overlay { background: var(--scrim-bg); }
 body.rpc-db-unlock-active { overflow: hidden; }
 .rpc-db-unlock-panel {
   background: var(--surface); color: var(--text);
@@ -1251,11 +1251,11 @@ body.rpc-db-unlock-active { overflow: hidden; }
 
 /* ── Bloqueo por inactividad ───────────────────────────────── */
 #rpc-idle-lock-overlay {
-  display: none; position: fixed; inset: 0; z-index: 300000;
-  background: rgba(15,23,42,0.88);
+  display: none; position: fixed; inset: 0; z-index: var(--z-db-unlock);
+  background: var(--scrim-bg);
   align-items: center; justify-content: center; padding: 24px;
 }
-html.dark #rpc-idle-lock-overlay { background: rgba(0,0,0,0.82); }
+html.dark #rpc-idle-lock-overlay { background: var(--scrim-bg); }
 .rpc-idle-lock-panel {
   background: var(--surface); color: var(--text);
   border-radius: 16px; max-width: 380px; width: 100%;
@@ -1292,13 +1292,13 @@ html.dark #rpc-idle-lock-overlay { background: rgba(0,0,0,0.82); }
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: var(--z-db-unlock);
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.88);
+  background: var(--scrim-bg);
 }
-html.dark #rpc-clinical-session-lock { background: rgba(0, 0, 0, 0.82); }
+html.dark #rpc-clinical-session-lock { background: var(--scrim-bg); }
 #rpc-clinical-session-lock.active-lock-view-overlay { display: flex; }
 .clinical-session-lock-panel {
   background: var(--surface);
@@ -1346,11 +1346,11 @@ html.dark #rpc-clinical-session-lock { background: rgba(0, 0, 0, 0.82); }
 
 /* ── Borrado de datos ──────────────────────────────────────── */
 #rpc-wipe-modal {
-  display: none; position: fixed; inset: 0; z-index: 200000;
-  background: rgba(15,23,42,0.65);
+  display: none; position: fixed; inset: 0; z-index: var(--z-db-unlock);
+  background: var(--scrim-bg);
   align-items: center; justify-content: center; padding: 24px;
 }
-html.dark #rpc-wipe-modal { background: rgba(0,0,0,0.65); }
+html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
 .rpc-wipe-panel {
   background: var(--surface); color: var(--text);
   border-radius: 14px; max-width: 460px; width: 100%;
@@ -1463,15 +1463,14 @@ body.tend-group-modal-open { overflow: hidden; }
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: var(--z-modal);
   padding: 28px;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.52);
+  background: var(--scrim-bg);
   align-items: center;
   justify-content: center;
   animation: fade-in var(--dur-fast) var(--ease-out);
 }
-html.dark .tend-group-backdrop { background: rgba(0, 0, 0, 0.68); }
 #tend-group-modal {
   background: var(--surface);
   width: 100%;
@@ -1805,7 +1804,7 @@ body > .tend-drag-hovercard,
 body > .sortable-fallback {
   cursor: grabbing !important;
   pointer-events: none !important;
-  z-index: 10060 !important;
+  z-index: var(--z-toast) !important;
   box-sizing: border-box;
   opacity: 1 !important;
   visibility: visible !important;
@@ -1867,12 +1866,12 @@ body.tend-gaso-ext-open { overflow: hidden; }
 .tend-gaso-ext-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 12050;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--scrim-bg);
   backdrop-filter: blur(4px);
   -webkit-app-region: no-drag;
   app-region: no-drag;
@@ -1884,13 +1883,9 @@ html.electron-macos-inset-bar .tend-gaso-ext-backdrop * {
   app-region: no-drag;
 }
 
-html.dark .tend-gaso-ext-backdrop {
-  background: rgba(0, 0, 0, 0.72);
-}
-
 .tend-gaso-ext-dialog {
   width: min(960px, 96vw);
-  max-height: min(90vh, 940px);
+  max-height: min(90dvh, calc(var(--app-height) - 32px), 940px);
   overflow: auto;
   border-radius: 16px;
   border: 1px solid var(--border);
@@ -2337,7 +2332,7 @@ html.dark .tend-gaso-tip {
 #entrega-modal-backdrop .modal.entrega-modal.entrega-modal--wide {
   width: min(98vw, 1140px);
   max-width: none;
-  max-height: min(92dvh, calc(100vh - 28px));
+  max-height: min(92dvh, calc(var(--app-height) - 28px));
   padding: 0;
   overflow: hidden;
 }

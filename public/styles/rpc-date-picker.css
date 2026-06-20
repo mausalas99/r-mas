@@ -159,7 +159,7 @@ input.rpc-datetime-input.rpc-datetime-field__native {
 
 .rpc-date-popover {
   position: fixed;
-  z-index: 10600;
+  z-index: var(--z-popover);
   width: min(292px, calc(100vw - 16px));
   padding: 12px;
   border-radius: var(--radius-lg);

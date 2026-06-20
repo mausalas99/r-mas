@@ -44,6 +44,15 @@ Modal scrims use pure `rgba(0,0,0,…)`; some shells still use bare `100vh` (iOS
 | `--z-floating` | 1000 | tooltips, lab popovers |
 | `--z-modal` | 9000 | modal backdrops + dialogs |
 | `--z-modal-nested` | 9010 | modal-on-modal (release notes over modal) |
+| `--z-clinical-teams-lower` | 9005 | Mi rotación under directorio LAN |
+| `--z-clinical-lan-users` | 9020 | directorio LAN panel |
+| `--z-clinical-admin` | 9030 | admin code modal |
+| `--z-clinical-lan-directory` | 9040 | directorio LAN when stacked above rotación |
+| `--z-header-backdrop` | 9100 | Ajustes / ⇄ menu scrims |
+| `--z-header-dropdown` | 9101 | settings dropdown panel |
+| `--z-header-dropdown-front` | 9102 | ⇄ connection panel (above settings) |
+| `--z-popover` | 9200 | RPC date picker, floating pickers |
+| `--z-banner` | 9400 | mobile boot banner |
 | `--z-toast` | 9500 | toasts |
 | `--z-celebration` | 9600 | confetti (above toast, below cmdk) |
 | `--z-cmdk` | 9800 | command palette |
@@ -53,8 +62,26 @@ Local stacking (1–6 inside a card) stays as literal small integers — do not 
 
 ### Out of scope (track 1)
 
-- Rewriting every z-index in `pase-board.css` / `estado-actual.css` local layers
 - Changing modal open/close JS
+
+---
+
+## Track 1.5 — Deferred overlay z-index (2026-06-20 follow-up)
+
+**Status:** Implemented
+
+Normalize remaining ad-hoc stacks deferred from track 1:
+
+| File | Mappings |
+| --- | --- |
+| `settings.css` | 10199–10202 → `--z-header-backdrop` / `--z-header-dropdown` / `--z-header-dropdown-front`; scrims → ink mix |
+| `mobile.css` | connection dropdown + boot banner → header/banner tokens |
+| `pase-board.css` | LAN directorio 100020–100050 → clinical stack; invite gate → `--z-modal-nested` |
+| `estado-actual.css` | EA charts backdrop → `--z-modal` + `--scrim-bg`; dvh max-height |
+| `rpc-date-picker.css` | 10600 → `--z-popover` |
+| `lab.css` | fixed output menu 1200 → `--z-floating` |
+
+**Success:** zero literal `z-index` values ≥ 1000 in `public/styles/**/*.css`.
 
 ---
 

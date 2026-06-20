@@ -66,8 +66,12 @@ export function openEstadoActualChartsModal() {
       if (mount) {
         var empty = document.getElementById('ea-charts-empty');
         if (empty) {
+          empty.className = 'ea-charts-empty empty-state empty-state--compact';
+          empty.setAttribute('role', 'status');
+          empty.innerHTML =
+            '<span class="empty-state-title">Gráficas no disponibles</span>' +
+            '<span class="empty-state-lead">Chart.js no está disponible. Recarga la aplicación.</span>';
           empty.hidden = false;
-          empty.textContent = 'Chart.js no está disponible. Recarga la aplicación.';
         }
       }
       return;

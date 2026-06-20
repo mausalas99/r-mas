@@ -1,7 +1,7 @@
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
-/* Arc-soft — radial default: pill controls, large container radii (loads last) */
+/* Arc-soft — radius hierarchy (track 4): containers lg, fields 12px, controls pill */
 
-/* Contenedores grandes */
+/* Tier A — containers */
 .listado-section,
 .lab-history-row,
 .med-receta-wrap,
@@ -14,12 +14,28 @@
 .exp-datos-tab-action,
 .card,
 .rpc-disclosure {
-  border-radius: var(--radius-xl) !important;
+  border-radius: var(--radius-container);
 }
 
-/* Controles e inputs — pill */
+/* Tier B — rows / nested panels */
+.listado-row,
+.todo-row,
+.listado-drag-hovercard.listado-row {
+  border-radius: var(--radius-inner) !important;
+}
+
+/* Tier D — fields (rounded rect, not pill) */
 .listado-row input[type="date"],
 .listado-row textarea,
+.todo-add-row input[type="text"],
+.indica-section-body textarea,
+.otros-item input,
+.otros-item textarea,
+.clinical-census-filter .profile-input {
+  border-radius: var(--radius-field) !important;
+}
+
+/* Tier C — controls (pill) */
 .listado-add-row,
 .listado-row .btn-remove-listado,
 .btn-lab-history,
@@ -28,7 +44,6 @@
 .lab-history-more-menu,
 .med-soap-preview-chip,
 .med-output-tabs,
-.todo-add-row input[type="text"],
 .todo-add-row button,
 .btn-remove,
 .btn-remove-otro,
@@ -40,20 +55,18 @@
 .lab-history-toggle,
 .rpc-proc-agenda-block,
 .rpc-proc-agenda-actions button,
-.indica-section-body textarea,
-.otros-item input,
-.otros-item textarea,
 #update-modal button,
 #min-version-modal button,
 .clinical-census-filters--toolbar .clinical-census-filters-toggle,
-.clinical-census-filter .profile-input,
 .app-bar-mi-rotacion {
   border-radius: var(--radius-control) !important;
 }
 
-/* Filas con borde lateral — esquinas suaves sin pastilla completa */
-.listado-row,
-.todo-row,
-.listado-drag-hovercard.listado-row {
-  border-radius: var(--radius-lg) !important;
+/* Dense data — never rounded */
+table,
+.cultivos-table,
+.cultivos-table input,
+.ea-card table,
+.lab-output-box pre {
+  border-radius: 0 !important;
 }

@@ -155,7 +155,10 @@ export function renderEaChartsSummarySection(monitoreo) {
         '<path d="M3 12l5-4 4 3 9-7"/>' +
         '</svg>' +
         '<span>Ver gráficas</span></button>'
-      : '<span class="ea-muted ea-charts-summary-empty">Registra al menos 2 mediciones para ver gráficas.</span>') +
+      : '<div class="ea-charts-summary-empty" role="status">' +
+        '<span class="empty-state-title">Sin datos para graficar</span>' +
+        '<span class="empty-state-lead">Registra al menos 2 mediciones para ver gráficas.</span>' +
+        '</div>') +
     '</div>' +
     '<div class="ea-charts-summary-grid">' +
     eaChartsSummaryTile('Signos vitales', vitalsValue, vitalsHint) +
@@ -199,8 +202,12 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
   if (histAsc.length < 2) {
     var empty = document.getElementById('ea-charts-empty');
     if (empty) {
+      empty.className = 'ea-charts-empty empty-state empty-state--compact';
+      empty.setAttribute('role', 'status');
+      empty.innerHTML =
+        '<span class="empty-state-title">Sin datos para graficar</span>' +
+        '<span class="empty-state-lead">Registra al menos 2 mediciones para ver gráficas.</span>';
       empty.hidden = false;
-      empty.textContent = 'Registra al menos 2 mediciones para ver gráficas.';
     }
     return;
   }

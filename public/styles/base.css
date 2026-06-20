@@ -717,7 +717,7 @@ html.high-contrast .patient-search-input:focus-visible {
   position: absolute;
   left: -9999px;
   top: 0;
-  z-index: 200010;
+  z-index: var(--z-db-unlock);
   padding: 10px 16px;
   font-family: inherit;
   font-size: 14px;
@@ -918,13 +918,13 @@ html.dark .pending-jobs-pill { background: rgba(255,255,255,0.08); border-color:
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 23, 0.55);
-  z-index: 100000;
+  background: var(--scrim-bg);
+  z-index: var(--z-modal-nested);
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
-html.dark #update-modal-backdrop { background: rgba(0, 0, 0, 0.65); }
+html.dark #update-modal-backdrop { background: var(--scrim-bg); }
 #update-modal {
   width: 100%;
   max-width: 420px;
@@ -947,8 +947,8 @@ html.dark #update-modal-backdrop { background: rgba(0, 0, 0, 0.65); }
 }
 html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg); color: var(--color-channel-pill-fg); }
 #min-version-backdrop {
-  display: none; position: fixed; inset: 0; background: rgba(15, 17, 23, 0.85);
-  z-index: 200001; align-items: center; justify-content: center; padding: 24px;
+  display: none; position: fixed; inset: 0; background: var(--scrim-bg);
+  z-index: var(--z-modal-nested); align-items: center; justify-content: center; padding: 24px;
 }
 #min-version-backdrop.open { display: flex; }
 #min-version-modal {
@@ -987,7 +987,9 @@ html {
 body {
   font-family: var(--font-ui);
   background: var(--shell-gap);
-  color: var(--text); height: 100vh;
+  color: var(--text);
+  height: var(--app-height);
+  min-height: var(--app-height);
   display: flex; flex-direction: column;
   overflow: hidden;
   overflow-x: clip;
@@ -1012,14 +1014,14 @@ body {
 .list-row input {
   border-radius: var(--radius-control);
 }
-.card { border-radius: var(--radius-xl); }
+.card { border-radius: var(--radius-container); }
 .btn-header-icon,
 .app-tabs-keys-btn {
   border-radius: var(--radius-pill);
 }
 .modal,
 .soap-modal,
-.templates-modal,
+.templates-modal { border-radius: var(--radius-container); }
 .onboarding-intro-modal,
 #update-modal .modal { border-radius: var(--radius-xl); }
 .type-mono { font-family: var(--font-mono); }

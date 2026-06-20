@@ -154,9 +154,9 @@ export function renderGuardiaVitalsFeed(patients, censusIds = []) {
         ${VITALS_SVG}
         <span class="vfeed-title">Signos en este turno</span>
       </div>
-      <div class="vfeed-empty">
-        <span>Sin registros desde que iniciaste el turno.</span>
-        ${censusCount ? `<span class="vfeed-empty-sub">${censusCount} paciente${censusCount === 1 ? '' : 's'} en censo — los chips de abajo muestran cuándo toca tomar signos.</span>` : ''}
+      <div class="vfeed-empty" role="status">
+        <span class="empty-state-title">Sin registros desde que iniciaste el turno</span>
+        ${censusCount ? `<span class="vfeed-empty-sub empty-state-lead">${censusCount} paciente${censusCount === 1 ? '' : 's'} en censo — los chips de abajo muestran cuándo toca tomar signos.</span>` : ''}
       </div>`;
     return;
   }

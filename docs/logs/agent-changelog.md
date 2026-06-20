@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-20 | Hallmark UI audit tracks 1–4 | `public/tokens.css`, `public/styles/{modals,layout,soft-ui,lab,pase-board}.css`, `public/interno/`, `estado-actual-*`, `command-palette.mjs`, `todos.mjs`, `guardia-vitals-feed.mjs` | Tracks 1–4 shipped: scrim/z-index/dvh, radius tiers, lab/pase hex→tokens (0 hex), empty-state parity; `build:ui:check` + `metrics:check` OK. |
 | 2026-06-20 | Release 7.3.8 prepare | `docs/RELEASE_NOTES_7.3.8.txt`, `labs.js`, `estado-actual-io.mjs`, `db-unlock.mjs`, `release-notes-curated.mjs` | COAG section split; EA balance NC; DB boot toast; SQLCipher script hardening; bump 7.3.8; metrics OK; 27 targeted tests pass. |
 | 2026-06-14 | Release 7.3.7 prepare | `docs/RELEASE_NOTES_7.3.7.txt`, LAN patient delete fix, `expediente-tabs.mjs`, `release-notes-curated.mjs` | Registro-reuse LAN delete bugfix; Drive import in clínico nav bar; bump 7.3.7. |
 | 2026-06-13 | Release 7.3.6 prepare | `docs/RELEASE_NOTES_7.3.6.txt`, `release-notes-curated.mjs`, `README.md`, plans 010–020 | LAN client identity, orchestrator split, cultivo superset, IPC tests, quarantine drain; bump 7.3.6 on main. |
@@ -28,6 +29,22 @@ Chronological record of documentation and integration work. Format per `document
 | 2026-06-10 | Perfil histórico ventana dinámica | `med-pharm-view-window.mjs`, `med-pharm-profile-panel.mjs`, `pase-board.mjs` | Cross-mes grilla + FAB Copiar context-aware; spec/plan 2026-06-10 |
 | 2026-06-10 | Release 7.2.9 prepare | `med-receta-core.mjs`, `medications.mjs`, `estado-actual-*`, `docs/RELEASE_NOTES_7.2.9.txt` | Manejo parser dietas/P2, propuesta dieta EA, bump + commit |
 | 2026-06-08 | Docs hub + North Star integration | `docs/core/`, `.cursor/rules/` | Agent-first documentation library wired to Cursor rules |
+
+---
+
+## [2026-06-20] - Hallmark UI audit tracks 1–4
+
+**Agent:** Cursor (Composer subagent wrap-up)
+
+**Tracks completed:**
+1. Scrim/z-index/dvh viewport tokens + interno skip link
+2. Empty-state parity (EA, cmdk, todos, charts, guardia vitals)
+3. Lab/pase-board hex → design tokens (0 hex remaining)
+4. Radius hierarchy (soft-ui tiers)
+
+**Spec:** `docs/superpowers/specs/2026-06-20-hallmark-ui-audit-tracks-design.md`
+
+**Verification:** `npm run build:ui:check` pass; `npm run metrics:check` pass (totalScore=14690).
 
 ---
 

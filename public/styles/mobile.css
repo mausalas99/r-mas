@@ -85,7 +85,7 @@
   max-width: min(420px, 88vw);
   max-height: min(320px, 50vh);
   overflow-y: auto;
-  z-index: 9200;
+  z-index: var(--z-modal);
   padding: 0;
   border-radius: var(--radius-lg, 10px);
   border: 1px solid var(--border);
@@ -281,7 +281,7 @@ html.rpc-mobile-web #connection-dropdown-backdrop:not(.open) {
   visibility: hidden !important;
 }
 html.rpc-mobile-web #connection-dropdown.open {
-  z-index: 10202;
+  z-index: var(--z-header-dropdown-front);
 }
 body.focus-mode #btn-open-settings,
 body.focus-mode #btn-header-team-sync { display: none !important; }
@@ -420,7 +420,7 @@ html.rpc-mobile-web header {
   left: 12px;
   right: 12px;
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  z-index: 12000;
+  z-index: var(--z-banner);
   padding: 10px 14px;
   border-radius: 12px;
   background: color-mix(in oklab, var(--color-ink) 88%, transparent);
