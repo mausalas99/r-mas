@@ -74,6 +74,7 @@
     "productName": "R+",
     "npmRebuild": false,
     "beforePack": "scripts/electron-builder-before-pack.cjs",
+    "afterPack": "scripts/electron-builder-after-pack.cjs",
     "afterAllArtifactBuild": "scripts/after-all-artifact-build.cjs",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "icon": "AppIcon.icns",

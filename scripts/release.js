@@ -623,8 +623,17 @@ async function cmdPublish(argv) {
       progress.skip('pre-commit');
     }
 
-    if (!skipTests) await runPublishCmd(progress, 'tests', 'npm test');
-    else progress.skip('tests');
+    if (!skipTests) {
+      await runPublishCmd(
+        progress,
+        'native-restore',
+        'R_PLUS_STRICT_NATIVE=1 node scripts/rebuild-native-db.mjs'
+      );
+      await runPublishCmd(progress, 'tests', 'npm test');
+    } else {
+      progress.skip('native-restore');
+      progress.skip('tests');
+    }
 
     if (!skipCommit) {
       progress.start('git-commit');

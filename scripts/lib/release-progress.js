@@ -11,6 +11,7 @@ function buildPublishSteps(opts) {
     steps.push({ id: 'pre-commit', label: 'Commit cambios pendientes', weight: 3 });
   }
   if (!opts.skipTests) {
+    steps.push({ id: 'native-restore', label: 'Restaurar SQLCipher (host arch)', weight: 1 });
     steps.push({ id: 'tests', label: 'Tests', weight: 8 });
   }
   if (!opts.skipCommit) {

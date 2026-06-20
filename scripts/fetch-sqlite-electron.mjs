@@ -16,6 +16,7 @@ import {
   electronSqlcipherLoads,
   rememberElectronBinary,
   sqlcipherDestAbs,
+  stashSqlcipherBinaryForArch,
 } from './lib/sqlcipher-native.mjs';
 
 const require = createRequire(import.meta.url);
@@ -122,6 +123,7 @@ async function main() {
     console.log('[fetch-sqlite-electron] Verified OK under Electron');
   } else {
     await assertFormat(destFile, platform);
+    stashSqlcipherBinaryForArch(root, platform, arch);
     console.log(
       `[fetch-sqlite-electron] Verified ${platform}-${arch} binary format (load probe skipped — host is ${process.platform}-${process.arch})`
     );
