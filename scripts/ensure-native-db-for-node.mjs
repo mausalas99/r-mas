@@ -1,10 +1,12 @@
 /**
  * Rebuild better-sqlite3-multiple-ciphers for the current Node ABI when needed.
- * postinstall targets Electron; npm test uses system Node — they cannot share one .node binary.
+ * Legacy: npm test no longer uses system Node (see scripts/run-with-electron-node.mjs).
+ * Keep for manual `node --test` without the Electron wrapper, or CI without Electron.
  */
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cacheElectronBinaryIfValid } from './lib/sqlcipher-native.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
@@ -43,6 +45,8 @@ if (!mismatch) {
 console.log(
   `[ensure-native-db-for-node] Native DB module mismatch for Node ${process.version} (modules ${process.versions.modules}); rebuilding…`
 );
+
+cacheElectronBinaryIfValid(root);
 
 /** Rosetta Node on Apple Silicon — compile paths need native arm64. */
 function needsDarwinArm64Wrap() {

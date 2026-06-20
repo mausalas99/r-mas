@@ -4,6 +4,8 @@ import {
   getDefaultRegistroRecordedAt,
   getGlucometriaRegistroWindow,
   collectGlucometriasForRegistroWindow,
+  gluPointMs,
+  sortGlucometriasChronologically,
   STANDARD_GLUCOMETRIA_TIMES,
 } from './estado-actual-registro-defaults.mjs';
 
@@ -47,7 +49,7 @@ describe('estado-actual-registro-defaults', () => {
       glus.map(function (g) {
         return g.value + '@' + g.time;
       }),
-      ['180@00:00', '120@10:00']
+      ['120@10:00', '180@00:00']
     );
     var win = getGlucometriaRegistroWindow(now);
     assert.equal(win.start.getHours(), 8);
@@ -55,7 +57,7 @@ describe('estado-actual-registro-defaults', () => {
     assert.equal(win.end.getDate(), 27);
   });
 
-  it('collectGlucometriasForRegistroWindow drops glus after today 00:00 even in midnight row', () => {
+  it('collectGlucometriasForRegistroWindow keeps turn-close 08/16 as previous day and drops post-midnight extras', () => {
     var now = new Date(2026, 4, 28, 8, 39, 0);
     var historial = [
       {
@@ -82,7 +84,39 @@ describe('estado-actual-registro-defaults', () => {
       glus.map(function (g) {
         return g.value + '@' + g.time;
       }),
-      ['159@00:00', '190@08:00', '280@10:00', '221@16:00', '136@20:00']
+      ['135@08:00', '190@08:00', '280@10:00', '194@16:00', '221@16:00', '136@20:00', '159@00:00']
+    );
+  });
+
+  it('gluPointMs maps 08:00 and 16:00 to previous day on turn-close rows', () => {
+    var recordedAt = new Date(2026, 5, 20, 0, 0, 0).toISOString();
+    var ms0800 = gluPointMs(recordedAt, '08:00');
+    var ms1600 = gluPointMs(recordedAt, '16:00');
+    var ms0000 = gluPointMs(recordedAt, '00:00');
+    var ms0400 = gluPointMs(recordedAt, '04:00');
+    assert.equal(new Date(ms0800).getDate(), 19);
+    assert.equal(new Date(ms1600).getDate(), 19);
+    assert.equal(new Date(ms0000).getDate(), 20);
+    assert.equal(new Date(ms0400).getDate(), 20);
+    assert.ok(ms0800 < ms1600 && ms1600 < ms0000 && ms0000 < ms0400);
+  });
+
+  it('sortGlucometriasChronologically orders turn-close glucometrias by time', () => {
+    var recordedAt = new Date(2026, 5, 20, 0, 0, 0).toISOString();
+    var sorted = sortGlucometriasChronologically(
+      [
+        { value: 171, time: '08:00' },
+        { value: 125, time: '16:00' },
+        { value: 243, time: '00:00' },
+        { value: 110, time: '04:00' },
+      ],
+      recordedAt
+    );
+    assert.deepEqual(
+      sorted.map(function (g) {
+        return g.value + '@' + g.time;
+      }),
+      ['171@08:00', '125@16:00', '243@00:00', '110@04:00']
     );
   });
 });

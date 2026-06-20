@@ -363,13 +363,66 @@ function getEstadoActualTextForPatient(patient) {
   return generateEstadoActualText(patient.monitoreo, patient);
 }
 
+/**
+ * Lee inputs del panel EA y sincroniza `estadoClinico` (y propuesta de dieta pendiente).
+ * @param {{ id?: string, monitoreo?: unknown } | null | undefined} [patient]
+ * @param {ParentNode | null | undefined} [root]
+ * @returns {boolean} true si hubo cambios en memoria
+ */
+export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
+  var p = patient;
+  if (!p) {
+    var activeId = rt.getActiveId();
+    if (!activeId) return false;
+    p =
+      patients.find(function (x) {
+        return x && x.id === activeId;
+      }) || null;
+  }
+  if (!p) return false;
+  ensureMonitoreo(p);
+  /** @type {any} */
+  var mon = p.monitoreo;
+  if (!mon || !mon.estadoClinico) return false;
+  var mount =
+    root && typeof root.querySelector === 'function'
+      ? root
+      : typeof document !== 'undefined'
+        ? document.getElementById('exp-pane-estado-actual')
+        : null;
+  if (!mount) return false;
+  var dietProposalActive = hasDietProposal(mon.pendienteReceta);
+  var changed = false;
+  mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
+    var key = el.getAttribute('data-ea-ec');
+    if (!key) return;
+    var val = 'value' in el ? String(el.value) : '';
+    if (String(mon.estadoClinico[key] || '') !== val) {
+      mon.estadoClinico[key] = val;
+      changed = true;
+    }
+    if (dietProposalActive && DIET_PENDING_KEYS.indexOf(key) >= 0) {
+      if (!mon.pendienteReceta || typeof mon.pendienteReceta !== 'object') {
+        mon.pendienteReceta = {};
+      }
+      if (String(mon.pendienteReceta[key] || '') !== val) {
+        mon.pendienteReceta[key] = val;
+        changed = true;
+      }
+    }
+  });
+  return changed;
+}
+
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
+  flushEaEstadoClinicoFieldsFromDom(patient);
   saveState();
   renderEstadoActualPanel({ dataOnly: true, refreshClinico: true, skipChartsSummary: true });
   if (toastMsg) rt.showToast(toastMsg, 'success');
 }
 
-function persistEstadoClinicoLight(monitoreo, patient) {
+function persistEstadoClinicoLight(_monitoreo, patient) {
+  flushEaEstadoClinicoFieldsFromDom(patient);
   saveState();
 }
 
@@ -402,10 +455,21 @@ function restoreEaPanelUiState(mount, state) {
   }
 }
 
-function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
+function applyEstadoClinicoFieldChange(el, patient) {
+  if (!patient) return;
+  ensureMonitoreo(patient);
+  /** @type {any} */
+  var monitoreo = patient.monitoreo;
   var key = el.getAttribute('data-ea-ec');
   if (!key || !monitoreo.estadoClinico) return;
-  monitoreo.estadoClinico[key] = 'value' in el ? String(el.value) : '';
+  var val = 'value' in el ? String(el.value) : '';
+  monitoreo.estadoClinico[key] = val;
+  if (hasDietProposal(monitoreo.pendienteReceta) && DIET_PENDING_KEYS.indexOf(key) >= 0) {
+    if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
+      monitoreo.pendienteReceta = {};
+    }
+    monitoreo.pendienteReceta[key] = val;
+  }
   var w = resolveDietWeightKg({
     patientPeso: patient.peso,
     pesoRef: monitoreo.estadoClinico.pesoRef,
@@ -415,6 +479,9 @@ function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
     if (syncDietKcalFromWeight(monitoreo.estadoClinico, w)) {
       var kcalInput = panel && panel.querySelector('[data-ea-ec="kcal"]');
       if (kcalInput && 'value' in kcalInput) kcalInput.value = String(monitoreo.estadoClinico.kcal || '');
+      if (hasDietProposal(monitoreo.pendienteReceta)) {
+        monitoreo.pendienteReceta.kcal = String(monitoreo.estadoClinico.kcal || '');
+      }
     }
   } else if (key === 'kcal') {
     var kg = computeDietKcalKgFromTotal(monitoreo.estadoClinico.kcal, w);
@@ -422,6 +489,9 @@ function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
       monitoreo.estadoClinico.kcalKg = String(kg);
       var kcalKgInput = panel && panel.querySelector('[data-ea-ec="kcalKg"]');
       if (kcalKgInput && 'value' in kcalKgInput) kcalKgInput.value = String(kg);
+      if (hasDietProposal(monitoreo.pendienteReceta)) {
+        monitoreo.pendienteReceta.kcalKg = String(kg);
+      }
     }
   }
   persistEstadoClinicoLight(monitoreo, patient);
@@ -429,23 +499,21 @@ function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
 
 function wireEstadoClinicoInteractions(mount, patient) {
   if (!mount || !patient) return;
-  var monitoreo = patient.monitoreo;
 
   mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
     var tag = (el.tagName || '').toUpperCase();
     if (tag === 'SELECT') {
       el.addEventListener('change', function () {
-        applyEstadoClinicoFieldChange(el, monitoreo, patient);
+        applyEstadoClinicoFieldChange(el, patient);
       });
       return;
     }
     el.addEventListener('input', function () {
-      applyEstadoClinicoFieldChange(el, monitoreo, patient);
+      applyEstadoClinicoFieldChange(el, patient);
     });
   });
 
   wireMedCategoryGrid(mount, {
-    monitoreo: monitoreo,
     patient: patient,
     medRecetaByPatient: medRecetaByPatient,
     getActiveId: function () {
@@ -2128,6 +2196,7 @@ export function estadoActualGuardar() {
   var patient = findActivePatient();
   if (!patient) return;
   ensureMonitoreo(patient);
+  flushEaEstadoClinicoFieldsFromDom(patient);
   var text = getEstadoActualTextForPatient(patient);
   if (!text.trim()) {
     rt.showToast('No hay texto para guardar', 'error');
@@ -2141,6 +2210,7 @@ export async function estadoActualGuardarCopiar() {
   var patient = findActivePatient();
   if (!patient) return;
   ensureMonitoreo(patient);
+  flushEaEstadoClinicoFieldsFromDom(patient);
   var text = getEstadoActualTextForPatient(patient);
   if (!text.trim()) {
     rt.showToast('No hay texto para guardar', 'error');

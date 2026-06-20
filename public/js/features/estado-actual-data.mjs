@@ -8,6 +8,7 @@ import {
   ioNumericEgressTotal,
   computeIoBalanceFromIngEgr,
 } from './estado-actual-io.mjs';
+import { sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
 import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 
@@ -426,7 +427,9 @@ export function deriveSnapshot(monitoreoLike) {
       if (/** @type {any} */ (gg).value != null && /** @type {any} */ (gg).value !== '') nonempty.push(gg);
     }
     if (nonempty.length > 0) {
-      gluChosen = nonempty;
+      var rowRecordedAt =
+        /** @type {any} */ (r2).recordedAt != null ? String(/** @type {any} */ (r2).recordedAt) : '';
+      gluChosen = sortGlucometriasChronologically(nonempty, rowRecordedAt);
       bombaChosen = [];
       break;
     }
@@ -604,6 +607,14 @@ export function mergeMonitoreo(localIn, remoteIn) {
   var remEco = remote.estadoClinico || emptyEstadoClinico();
   /** @type {any} */
   var remCf = remote.confirmado || {};
+
+  var ecScalarKeys = ['four', 'esferas', 'soporte', 'kcalKg', 'tempContext', 'pesoRef'];
+  for (var sk = 0; sk < ecScalarKeys.length; sk += 1) {
+    var scalarKey = ecScalarKeys[sk];
+    var localScalar = String(resEco[scalarKey] || '').trim();
+    var remoteScalar = String(remEco[scalarKey] || '').trim();
+    if (!localScalar && remoteScalar) resEco[scalarKey] = remEco[scalarKey];
+  }
 
   for (var mk of MED_FIELD_KEYS) {
     if (remCf[mk] && !resCf[mk]) {

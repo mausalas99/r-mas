@@ -6,6 +6,8 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-20 | SQLCipher single runtime (Electron-as-Node tests) | `scripts/run-with-electron-node.mjs`, `package.json`, `test-manifest.mjs`, `CLAUDE.md`, `project-context.mdc` | Removed pretest/posttest ABI swap; `npm test` / `test:one` run under Electron Node 24 (abi 145) — same `.node` as app. |
+| 2026-06-20 | SQLCipher native ABI root fix | `lib/native-runtime-probe.js`, `scripts/lib/sqlcipher-native.mjs`, `rebuild-native-db.mjs`, `ensure-native-db-for-node.mjs`, `fetch-sqlite-electron.mjs`, `package.json` | Probe opens `:memory:` (lazy .node load); Electron binary cached; prestart strict restore. |
 | 2026-06-20 | Hallmark UI audit tracks 1–4 | `public/tokens.css`, `public/styles/{modals,layout,soft-ui,lab,pase-board}.css`, `public/interno/`, `estado-actual-*`, `command-palette.mjs`, `todos.mjs`, `guardia-vitals-feed.mjs` | Tracks 1–4 shipped: scrim/z-index/dvh, radius tiers, lab/pase hex→tokens (0 hex), empty-state parity; `build:ui:check` + `metrics:check` OK. |
 | 2026-06-20 | Release 7.3.8 prepare | `docs/RELEASE_NOTES_7.3.8.txt`, `labs.js`, `estado-actual-io.mjs`, `db-unlock.mjs`, `release-notes-curated.mjs` | COAG section split; EA balance NC; DB boot toast; SQLCipher script hardening; bump 7.3.8; metrics OK; 27 targeted tests pass. |
 | 2026-06-14 | Release 7.3.7 prepare | `docs/RELEASE_NOTES_7.3.7.txt`, LAN patient delete fix, `expediente-tabs.mjs`, `release-notes-curated.mjs` | Registro-reuse LAN delete bugfix; Drive import in clínico nav bar; bump 7.3.7. |

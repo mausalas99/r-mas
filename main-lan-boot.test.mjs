@@ -60,3 +60,14 @@ test('main window.open uses http(s) allowlist', () => {
   const handlerSlice = MAIN_SRC.slice(handlerStart, handlerStart + 280);
   assert.ok(handlerSlice.includes('isAllowedExternalUrl(url)'), 'handler gates on allowlist');
 });
+
+test('main quit: destroy windows before LAN server stop', () => {
+  const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
+  assert.ok(quitStart >= 0, 'before-quit handler');
+  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 900);
+  const destroyIdx = quitBlock.indexOf('destroyAllBrowserWindows');
+  const stopIdx = quitBlock.indexOf('stopLanServer');
+  assert.ok(destroyIdx >= 0, 'destroyAllBrowserWindows in quit path');
+  assert.ok(stopIdx > destroyIdx, 'destroy windows before stopLanServer');
+  assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after shutdown');
+});

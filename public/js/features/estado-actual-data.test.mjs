@@ -70,6 +70,16 @@ test('mergeMonitoreo toma dieta confirmada remota si local no tiene', () => {
   assert.equal(merged.confirmado.dieta, true);
 });
 
+test('mergeMonitoreo fusiona escalares de estado clínico (four local + soporte remoto)', () => {
+  const local = emptyMonitoreo();
+  local.estadoClinico.four = '15';
+  const remote = emptyMonitoreo();
+  remote.estadoClinico.soporte = 'O₂ 2L';
+  const merged = mergeMonitoreo(local, remote);
+  assert.equal(merged.estadoClinico.four, '15');
+  assert.equal(merged.estadoClinico.soporte, 'O₂ 2L');
+});
+
 test('emptyMonitoreo — stable canonical shape', () => {
   const a = emptyMonitoreo();
   const b = emptyMonitoreo();
@@ -132,6 +142,37 @@ test('deriveSnapshot — último no-null por campo en historial', () => {
   assert.equal(snap.io.ing, 500);
   assert.equal(snap.io.egr, 300);
   assert.deepEqual(snap.glucometrias, [{ value: 142, time: '10:10' }]);
+});
+
+test('deriveSnapshot sorts glucometrias chronologically within latest row', () => {
+  /** @type {any} */
+  var monitoreo = {
+    estadoClinico: {},
+    confirmado: {},
+    pendienteReceta: {},
+    historial: [
+      {
+        id: '1',
+        recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
+        vitals: {},
+        glucometrias: [
+          { value: 171, time: '08:00' },
+          { value: 125, time: '16:00' },
+          { value: 243, time: '00:00' },
+          { value: 110, time: '04:00' },
+        ],
+        io: {},
+      },
+    ],
+    textoGuardado: { text: '', savedAt: null },
+  };
+  var snap = deriveSnapshot(monitoreo);
+  assert.deepEqual(
+    snap.glucometrias.map(function (g) {
+      return g.value + '@' + g.time;
+    }),
+    ['171@08:00', '125@16:00', '243@00:00', '110@04:00']
+  );
 });
 
 test('balanceTurno y balanceGlobalHistorico (500−300=200, 600−450=150, global 350)', () => {

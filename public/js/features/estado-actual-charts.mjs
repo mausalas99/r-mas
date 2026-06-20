@@ -25,9 +25,13 @@ export {
   buildIoChartData,
   buildVitalsSeries,
   formatChartLabel,
+  formatChartLabelFromMs,
   historialSortedAsc,
 } from './estado-actual-charts-series.mjs';
-export { downsampleEaChartSeries } from './estado-actual-charts-display.mjs';
+export {
+  downsampleEaChartSeries,
+  stripMonitoreoChartRuntimeCache,
+} from './estado-actual-charts-display.mjs';
 
 export function destroyEstadoActualCharts(mountEl) {
   if (!mountEl) return;
@@ -175,6 +179,11 @@ export function renderEaChartsSummarySection(monitoreo) {
  * @param {unknown} [ChartCtor]
  * @param {{ showTitle?: boolean } | undefined} [opts]
  */
+function hideEaChartsEmptyState() {
+  var empty = document.getElementById('ea-charts-empty');
+  if (empty) empty.hidden = true;
+}
+
 export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
   opts = opts || {};
   if (!mountEl) return;
@@ -186,6 +195,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
 
   if (mountEl._eaChartsSig === sig && mountEl._eaChartInstance) {
     mountEl._eaChartBundle = bundle;
+    hideEaChartsEmptyState();
     return;
   }
 
@@ -195,6 +205,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
     updateEstadoActualChartsInPlace(mountEl, monitoreo, slotData)
   ) {
     mountEl._eaChartsSig = sig;
+    hideEaChartsEmptyState();
     return;
   }
 
@@ -214,6 +225,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
 
   if (!Chart) return;
 
+  hideEaChartsEmptyState();
   mountEaChartsChrome(mountEl, slotData);
   mountEl._eaChartBundle = bundle;
   wireEaChartsTabs(mountEl, bundle, Chart, layoutKey);

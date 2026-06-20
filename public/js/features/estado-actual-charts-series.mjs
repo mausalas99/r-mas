@@ -94,7 +94,26 @@ export function formatChartLabel(iso) {
   if (!iso) return '';
   var d = new Date(iso);
   if (isNaN(d.getTime())) return '';
+  return formatChartLocalDateTime(d);
+}
+
+/**
+ * @param {Date} d
+ * @returns {string}
+ */
+function formatChartLocalDateTime(d) {
   return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+
+/**
+ * @param {number} ms
+ * @returns {string}
+ */
+export function formatChartLabelFromMs(ms) {
+  if (!ms) return '';
+  var d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  return formatChartLocalDateTime(d);
 }
 
 /**
@@ -342,10 +361,9 @@ function pushGluReadingPoints(points, recordedAt, readings, now, opts) {
     var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
     var ms = gluPointMs(recordedAt, timeHm);
     if (!forCharts && !isGluPointInRegistroWindow(ms, now)) continue;
-    var whenLabel = timeHm || formatChartLabel(recordedAt);
     points.push({
       ms: ms,
-      label: whenLabel + ' · ' + formatChartLabel(recordedAt),
+      label: formatChartLabelFromMs(ms),
       value: val,
       altered: isGlucometriaMarkedAltered(/** @type {{ altered?: boolean, value?: unknown }} */ (glu)),
     });
@@ -397,8 +415,20 @@ function eaHistorialRowFingerprint(row) {
   var r = row;
   var vit = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
   var io = r.io && typeof r.io === 'object' ? r.io : {};
-  var gluN = Array.isArray(r.glucometrias) ? r.glucometrias.length : 0;
-  var bombaN = Array.isArray(r.bombaInsulina) ? r.bombaInsulina.length : 0;
+  var glus = Array.isArray(r.glucometrias) ? r.glucometrias : [];
+  var gluSig = glus
+    .map(function (g) {
+      if (!g || typeof g !== 'object') return '';
+      return String(/** @type {any} */ (g).time || '') + '@' + String(/** @type {any} */ (g).value || '');
+    })
+    .join(';');
+  var bombas = Array.isArray(r.bombaInsulina) ? r.bombaInsulina : [];
+  var bombaSig = bombas
+    .map(function (b) {
+      if (!b || typeof b !== 'object') return '';
+      return String(/** @type {any} */ (b).time || '') + '@' + String(/** @type {any} */ (b).value || '');
+    })
+    .join(';');
   return (
     String(r.id || '') +
     '@' +
@@ -420,9 +450,9 @@ function eaHistorialRowFingerprint(row) {
     '/' +
     String(io.egr || '') +
     ':' +
-    gluN +
+    gluSig +
     '/' +
-    bombaN
+    bombaSig
   );
 }
 

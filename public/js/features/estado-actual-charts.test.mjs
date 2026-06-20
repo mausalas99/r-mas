@@ -11,6 +11,69 @@ import {
   updateEstadoActualChartsInPlace,
 } from './estado-actual-charts.mjs';
 
+test('buildGluSeries labels use actual reading datetime, not recordedAt midnight', () => {
+  var hist = [
+    {
+      recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
+      glucometrias: [
+        { value: 171, time: '08:00' },
+        { value: 243, time: '00:00' },
+        { value: 110, time: '04:00' },
+      ],
+    },
+  ];
+  var s = buildGluSeries(hist, new Date(2026, 5, 20, 13, 25, 0), { forCharts: true });
+  assert.match(s.labels[0], /^19\/06 08:00$/);
+  assert.match(s.labels[1], /^20\/06 00:00$/);
+  assert.match(s.labels[2], /^20\/06 04:00$/);
+  assert.doesNotMatch(s.labels.join('|'), / · | - \d/);
+});
+
+test('stripMonitoreoChartRuntimeCache drops persisted chart bundle', async () => {
+  var { stripMonitoreoChartRuntimeCache, getCachedEaChartBundle } = await import(
+    './estado-actual-charts-display.mjs'
+  );
+  /** @type {any} */
+  var monitoreo = {
+    historial: [
+      {
+        recordedAt: new Date(2026, 5, 19, 0, 0, 0).toISOString(),
+        glucometrias: [{ value: 138, time: '16:00' }],
+      },
+      {
+        recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
+        glucometrias: [{ value: 142, time: '08:00' }],
+      },
+    ],
+    _eaChartBundle: {
+      slotData: {
+        glu: { labels: ['16:00 · 19/06 00:00'], datasets: [{ data: [138] }] },
+      },
+    },
+    _eaChartBundleRev: 'stale',
+  };
+  stripMonitoreoChartRuntimeCache(monitoreo);
+  var bundle = getCachedEaChartBundle(monitoreo);
+  assert.match(bundle.slotData.glu.labels[0], /^18\/06 16:00$/);
+});
+
+test('buildGluSeries includes all glucometrias when forCharts is true', () => {
+  var now = new Date(2026, 5, 20, 13, 25, 0);
+  var hist = [
+    {
+      recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
+      glucometrias: [
+        { value: 171, time: '08:00' },
+        { value: 125, time: '16:00' },
+        { value: 243, time: '00:00' },
+        { value: 110, time: '04:00' },
+      ],
+    },
+  ];
+  var s = buildGluSeries(hist, now, { forCharts: true });
+  assert.deepEqual(s.values, [171, 125, 243, 110]);
+});
+
 test('buildGluSeries only plots glucometrias from yesterday 08:00 through today 00:00', () => {
   var now = new Date(2026, 4, 28, 8, 39, 0);
   var hist = [
@@ -34,7 +97,23 @@ test('buildGluSeries only plots glucometrias from yesterday 08:00 through today 
     },
   ];
   var s = buildGluSeries(hist, now);
-  assert.deepEqual(s.values, [190, 280, 221, 136, 159]);
+  assert.deepEqual(s.values, [190, 135, 280, 221, 194, 136, 159]);
+});
+
+test('buildGluSeries registro window includes 08/16 from turn-close row after gluPointMs fix', () => {
+  var now = new Date(2026, 5, 20, 13, 25, 0);
+  var hist = [
+    {
+      recordedAt: new Date(2026, 5, 20, 0, 0, 0).toISOString(),
+      glucometrias: [
+        { value: 171, time: '08:00' },
+        { value: 125, time: '16:00' },
+        { value: 243, time: '00:00' },
+      ],
+    },
+  ];
+  var s = buildGluSeries(hist, now);
+  assert.deepEqual(s.values, [171, 125, 243]);
 });
 
 test('buildGluSeries includes glucometrias even when bombaInsulina is present', () => {

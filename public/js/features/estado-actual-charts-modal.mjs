@@ -1,5 +1,6 @@
 import { getChartJsIfLoaded, loadChartJs } from '../vendor-loader.mjs';
 import { destroyEaChartInstance } from './estado-actual-charts-chartjs.mjs';
+import { stripMonitoreoChartRuntimeCache } from './estado-actual-charts-display.mjs';
 import { destroyEstadoActualCharts, renderEstadoActualCharts } from './estado-actual-charts.mjs';
 
 /** @type {{ getPatient(): { monitoreo?: unknown } | null, getActiveId(): string | null, showToast(msg: string, type?: string): void }} */
@@ -53,10 +54,13 @@ export function openEstadoActualChartsModal() {
   }
   var mount = getMount();
   var activeId = rt.getActiveId ? rt.getActiveId() : null;
-  if (mount && mount._eaChartsPatientId != null && mount._eaChartsPatientId !== activeId) {
+  stripMonitoreoChartRuntimeCache(patient.monitoreo);
+  if (mount) {
     destroyEstadoActualCharts(mount);
+    mount._eaChartsSig = '';
+    mount._eaChartsLayoutKey = '';
+    mount._eaChartsPatientId = activeId;
   }
-  if (mount) mount._eaChartsPatientId = activeId;
 
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');

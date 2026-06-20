@@ -11,6 +11,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describeNativeBinary, isMachO, isWindowsPe, readBinaryHeader } from './lib/native-binary-format.mjs';
+import {
+  electronSqlcipherLoads,
+  rememberElectronBinary,
+  sqlcipherDestAbs,
+} from './lib/sqlcipher-native.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -18,9 +23,7 @@ const PREBUILD_REPO = 'm4heshd/better-sqlite3-multiple-ciphers';
 const NODE_REL = 'build/Release/better_sqlite3.node';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const pkgDir = path.join(root, 'node_modules', 'better-sqlite3-multiple-ciphers');
-const destFile = path.join(pkgDir, NODE_REL);
-const probeScript = path.join(root, 'scripts', 'electron-sqlcipher-probe.cjs');
+const destFile = sqlcipherDestAbs(root);
 
 function resolveElectronAbi() {
   const electronVersion = require('electron/package.json').version;
@@ -43,18 +46,8 @@ function prebuildUrl(version, abiVersion, platform, arch) {
   return `https://github.com/${PREBUILD_REPO}/releases/download/v${version}/${asset}`;
 }
 
-function electronSqlcipherLoads() {
-  try {
-    execSync(`npx electron "${probeScript}"`, {
-      cwd: root,
-      stdio: 'pipe',
-      timeout: 45_000,
-      env: process.env,
-    });
-    return true;
-  } catch {
-    return false;
-  }
+function canProbeSqlcipherUnderLocalElectron(platform) {
+  return platform === process.platform;
 }
 
 /** @param {string} abs @param {string} platform */
@@ -91,10 +84,6 @@ async function installFromUrl(url, platform, label) {
   }
 }
 
-function canProbeSqlcipherUnderLocalElectron(platform) {
-  return platform === process.platform;
-}
-
 async function main() {
   const strict = process.env.R_PLUS_STRICT_NATIVE === '1';
   const { platform, arch } = resolveTarget();
@@ -106,9 +95,10 @@ async function main() {
   if (
     !strict &&
     describeNativeBinary(destFile, platform).ok &&
-    (!canProbeSqlcipherUnderLocalElectron(platform) || electronSqlcipherLoads())
+    (!canProbeSqlcipherUnderLocalElectron(platform) || electronSqlcipherLoads(root))
   ) {
     console.log(`[fetch-sqlite-electron] ${NODE_REL} already valid for Electron on ${platform}-${arch}`);
+    rememberElectronBinary(root);
     process.exit(0);
   }
 
@@ -127,10 +117,11 @@ async function main() {
   }
 
   if (canProbeSqlcipherUnderLocalElectron(platform)) {
-    if (!electronSqlcipherLoads()) {
+    if (!electronSqlcipherLoads(root)) {
       console.error('[fetch-sqlite-electron] Installed prebuild does not load under Electron');
       process.exit(1);
     }
+    rememberElectronBinary(root);
     console.log('[fetch-sqlite-electron] Verified OK under Electron');
   } else {
     await assertFormat(destFile, platform);

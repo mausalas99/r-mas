@@ -16,6 +16,9 @@ public/js/chunks/
 .release-console.json
 scripts/debug-clinical-unlock-electron.cjs
 scripts/debug-clinical-unlock.mjs
+scripts/.native-cache/
+scripts/.sqlite-*.tgz
+scripts/.sqlite-*-tmp/
 
 .DS_Store
 .superpowers/

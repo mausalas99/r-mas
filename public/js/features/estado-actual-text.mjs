@@ -102,18 +102,15 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     snapshot && typeof snapshot === 'object' && Array.isArray(snapshot.glucometrias) ? snapshot.glucometrias : [];
   for (var gi = 0; gi < glSrc.length; gi++) {
     var gg = glSrc[gi];
-    if (!gg || typeof gg !== 'object') {
-      gluParts.push('___');
-      continue;
-    }
+    if (!gg || typeof gg !== 'object') continue;
     var postGv = /** @type {{ postRescueValue?: unknown, value?: unknown }} */ (gg).postRescueValue;
     var gv =
       postGv != null && postGv !== ''
         ? postGv
         : /** @type {{ value?: unknown }} */ (gg).value;
+    if (gv == null || gv === '') continue;
     gluParts.push(num(gv));
   }
-  while (gluParts.length < 3) gluParts.push('___');
 
   var bombaParts = [];
   var bombaSrc =
@@ -163,7 +160,9 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   var nmParts = [nmDiet];
   if (nmMedsClause) nmParts.push(nmMedsClause);
   nmParts.push(ioClause);
-  nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
+  if (gluParts.length) {
+    nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
+  }
   if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
   else {
     var rescatesClause = formatInsulinRescatesClause(glSrc);

@@ -22,10 +22,12 @@ npm start           # Electron; prestart rebuilds natives + bundle
 **Tests:** use targeted runs only — never full `npm test` during dev (CI and release only):
 
 ```bash
-node --test lib/db/schema.test.mjs
+npm run test:one -- lib/db/schema.test.mjs
 ```
 
-SQLCipher-native tests: run `node scripts/ensure-native-db-for-node.mjs` first; after native rebuilds run `node scripts/rebuild-native-db.mjs`.
+Tests run under **Electron's embedded Node** (`ELECTRON_RUN_AS_NODE`) so SQLCipher uses the same native binary as `npm start`. Do not use bare `node --test` for DB/native suites — it targets a different ABI.
+
+After dependency changes: `npm run rebuild:db-native` (or `npm start`, which runs it in `prestart`).
 
 Debt gate: `npm run metrics:check` (must pass before merge).
 

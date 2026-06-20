@@ -6,6 +6,7 @@ import {
   formatClinicalUserLabel,
   resolvePatientRegistrarLabel,
   resolvePatientTeamLabel,
+  resolveUserIdFromLanClientId,
 } from './host-patients-enrich.mjs';
 
 describe('host-patients-enrich', () => {
@@ -79,6 +80,34 @@ describe('host-patients-enrich', () => {
     assert.equal(
       resolvePatientRegistrarLabel({ id: 'p2', audit_log: [] }, lookups, {}),
       'R2 López García · @drlopez'
+    );
+  });
+
+  it('maps audit_log clientId to clinical user via legacy machine username', () => {
+    const ops = {
+      ...clinicalOps,
+      clinical_users: [
+        ...clinicalOps.clinical_users,
+        {
+          user_id: 'u9',
+          username: 'lc_mac_interconsultas',
+          clinical_name: 'Dr. Inter',
+          rank: 'R1',
+        },
+      ],
+    };
+    const lookups = buildClinicalOpsLookups(ops);
+    assert.equal(resolveUserIdFromLanClientId('lc_mac_interconsultas', lookups), 'u9');
+    assert.equal(
+      resolvePatientRegistrarLabel(
+        {
+          id: 'p9',
+          audit_log: [{ action: 'patient.create', clientId: 'lc_mac_interconsultas' }],
+        },
+        lookups,
+        {}
+      ),
+      'R1 Dr. Inter · @lc_mac_interconsultas'
     );
   });
 

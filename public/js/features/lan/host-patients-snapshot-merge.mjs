@@ -1,4 +1,20 @@
 import { extractPatientFromBundleEntry } from './host-patients-bundle-entry.mjs';
+import { mergePatientRegistrationMeta } from '../../patient-registration-meta.mjs';
+
+/** @param {object[]|null|undefined} a @param {object[]|null|undefined} b */
+function mergeHostCensusAuditLogs(a, b) {
+  const out = Array.isArray(a) ? a.slice() : [];
+  const seen = new Set(out.map(function (e) {
+    return JSON.stringify(e);
+  }));
+  for (const entry of Array.isArray(b) ? b : []) {
+    const key = JSON.stringify(entry);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(entry);
+  }
+  return out;
+}
 
 /**
  * @param {Map<string, object>} byId
@@ -15,6 +31,15 @@ export function upsertHostCensusPatient(byId, row, meta) {
     return;
   }
   const merged = Object.assign({}, existing, row);
+  const regHolder = {
+    registeredByUserId: merged.registeredByUserId,
+    registeredAt: merged.registeredAt,
+  };
+  mergePatientRegistrationMeta(regHolder, existing);
+  mergePatientRegistrationMeta(regHolder, row);
+  merged.registeredByUserId = regHolder.registeredByUserId;
+  merged.registeredAt = regHolder.registeredAt;
+  merged.audit_log = mergeHostCensusAuditLogs(existing.audit_log, row.audit_log);
   if (!meta?.bundleOnly) {
     delete merged._bundleOnly;
   }

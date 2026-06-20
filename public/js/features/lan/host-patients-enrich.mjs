@@ -4,13 +4,19 @@
  */
 
 import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
+import { normalizeUsername } from '../../clinical-username.mjs';
 
 /** @param {object|null|undefined} clinicalOps */
 export function buildClinicalOpsLookups(clinicalOps) {
   const usersById = new Map();
+  const usersByUsername = new Map();
   for (const row of clinicalOps?.clinical_users || []) {
     const id = String(row?.user_id || '').trim();
     if (id) usersById.set(id, row);
+    const handle = String(row?.username || '').trim();
+    if (handle) usersByUsername.set(handle, row);
+    const normalized = normalizeUsername(handle);
+    if (normalized && normalized !== handle) usersByUsername.set(normalized, row);
   }
   const teamsById = new Map();
   for (const row of clinicalOps?.teams || []) {
@@ -29,11 +35,23 @@ export function buildClinicalOpsLookups(clinicalOps) {
   }
   return {
     usersById,
+    usersByUsername,
     teamsById,
     assignments: clinicalOps?.patient_team_assignment || [],
     guardiaByTeamId,
     guardiaByPatientId,
   };
+}
+
+/** @param {string} clientId @param {object} lookups */
+export function resolveUserIdFromLanClientId(clientId, lookups) {
+  const raw = String(clientId || '').trim();
+  if (!raw || raw === 'host') return '';
+  const byExact = lookups.usersByUsername?.get(raw);
+  if (byExact?.user_id) return String(byExact.user_id);
+  const byNormalized = lookups.usersByUsername?.get(normalizeUsername(raw));
+  if (byNormalized?.user_id) return String(byNormalized.user_id);
+  return '';
 }
 
 /** @param {object|null|undefined} user */
@@ -98,6 +116,8 @@ export function resolvePatientRegistrarUserId(row, lookups, opts) {
   if (createClientId && localClientId && createClientId === localClientId && localUser?.user_id) {
     return String(localUser.user_id);
   }
+  const fromClientId = resolveUserIdFromLanClientId(createClientId, lookups);
+  if (fromClientId) return fromClientId;
 
   const active = lookups.guardiaByPatientId.get(pid);
   if (active?.covering_user_id) return String(active.covering_user_id);

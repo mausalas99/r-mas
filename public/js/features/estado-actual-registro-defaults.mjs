@@ -49,7 +49,21 @@ function parseRecordedAt(iso) {
 }
 
 /**
+ * @param {Date} d
+ * @returns {boolean}
+ */
+function isStartOfLocalDay(d) {
+  return (
+    d.getHours() === 0 &&
+    d.getMinutes() === 0 &&
+    d.getSeconds() === 0 &&
+    d.getMilliseconds() === 0
+  );
+}
+
+/**
  * Instantánea local de una glucometría (fecha del registro + hora de la toma).
+ * En cierre de turno (recordedAt a las 00:00 locales), 08:00 y 16:00 son del día previo.
  * @param {string} recordedAt
  * @param {string | undefined} timeHm
  * @returns {number}
@@ -64,7 +78,34 @@ export function gluPointMs(recordedAt, timeHm) {
   if (!Number.isFinite(h)) return base.getTime();
   var d = new Date(base);
   d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
+  if (isStartOfLocalDay(base)) {
+    var hm = String(timeHm).trim();
+    if (hm === '08:00' || hm === '16:00') {
+      d.setDate(d.getDate() - 1);
+    }
+  }
   return d.getTime();
+}
+
+/**
+ * @param {Array<{ value?: unknown, time?: string, [key: string]: unknown }>} glus
+ * @param {string} [recordedAt]
+ * @returns {Array<{ value?: unknown, time?: string, [key: string]: unknown }>}
+ */
+export function sortGlucometriasChronologically(glus, recordedAt) {
+  var list = Array.isArray(glus) ? glus.slice() : [];
+  var rec = recordedAt != null ? String(recordedAt) : '';
+  list.sort(function (a, b) {
+    var ta = a && typeof a === 'object' && a.time != null ? String(a.time) : '';
+    var tb = b && typeof b === 'object' && b.time != null ? String(b.time) : '';
+    var ma = gluPointMs(rec, ta);
+    var mb = gluPointMs(rec, tb);
+    if (ma !== mb) return ma - mb;
+    return String(a && typeof a === 'object' ? a.value : '').localeCompare(
+      String(b && typeof b === 'object' ? b.value : '')
+    );
+  });
+  return list;
 }
 
 /**
@@ -86,7 +127,7 @@ export function isGluPointInRegistroWindow(ms, now) {
 export function collectGlucometriasForRegistroWindow(historial, now) {
   var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
   var hist = Array.isArray(historial) ? historial : [];
-  /** @type {Array<{ value: unknown, time: string }>} */
+  /** @type {Array<{ value: unknown, time: string, recordedAt: string }>} */
   var out = [];
   /** @type {Set<string>} */
   var seen = new Set();
@@ -104,18 +145,20 @@ export function collectGlucometriasForRegistroWindow(historial, now) {
       var time = /** @type {any} */ (g).time != null ? String(/** @type {any} */ (g).time) : '';
       var ms = gluPointMs(recordedAt, time);
       if (!isGluPointInRegistroWindow(ms, ref)) continue;
-      var key = String(val) + '@' + time;
+      var key = String(val) + '@' + time + '@' + recordedAt;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({ value: val, time: time });
+      out.push({ value: val, time: time, recordedAt: recordedAt });
     }
   }
 
   out.sort(function (a, b) {
-    var ta = String(a.time || '');
-    var tb = String(b.time || '');
-    if (ta !== tb) return ta.localeCompare(tb);
+    var ma = gluPointMs(a.recordedAt, a.time);
+    var mb = gluPointMs(b.recordedAt, b.time);
+    if (ma !== mb) return ma - mb;
     return String(a.value).localeCompare(String(b.value));
   });
-  return out;
+  return out.map(function (entry) {
+    return { value: entry.value, time: entry.time };
+  });
 }

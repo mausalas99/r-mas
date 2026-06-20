@@ -9,3 +9,6 @@ if (!result.ok) {
   console.error(result.message || 'sqlcipher probe failed');
   process.exit(1);
 }
+
+// Success path must exit — otherwise Electron keeps running (blank dock icon).
+process.exit(0);

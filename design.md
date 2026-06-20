@@ -2,7 +2,8 @@
 
 **Genre:** utilitarian clinical · **Theme:** Quiet workbench  
 **Checkpoint previo a fase 4:** `checkpoint/pre-hallmark-fase-4`  
-**Última actualización:** fase 4 (2026-05-19)
+**Última actualización:** fase 4 (2026-05-19)  
+**UI audit tracks (2026-06-20):** `docs/superpowers/specs/2026-06-20-hallmark-ui-audit-tracks-design.md`
 
 ## Principios
 

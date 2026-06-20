@@ -11,6 +11,35 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: var(--z-db-unlock);
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--surface);
+  background: var(--action);
+  border: none;
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.skip-to-main:focus {
+  left: 12px;
+  top: 12px;
+  outline: 3px solid color-mix(in oklab, var(--action) 50%, var(--surface));
+  outline-offset: 1px;
+}
+
+.interno-app:focus {
+  outline: none;
+}
+
 .interno-app {
   max-width: 640px;
   margin: 0 auto;

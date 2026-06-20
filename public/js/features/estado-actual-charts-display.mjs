@@ -14,6 +14,30 @@ import {
 /** Display cap (like TREND_DETAIL_DOWNSAMPLE) — full series kept for tooltips. */
 const EA_CHART_DISPLAY_POINTS = 100;
 
+/** Bump when axis/tooltip label format changes — busts persisted monitoreo._eaChartBundle. */
+export const EA_CHART_CACHE_REV = 'glu-dt-v2';
+
+/**
+ * @param {unknown} monitoreo
+ */
+export function stripMonitoreoChartRuntimeCache(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  /** @type {any} */
+  var m = monitoreo;
+  delete m._eaChartBundle;
+  delete m._eaChartBundleRev;
+  delete m._eaChartsSummary;
+  delete m._eaChartsSummaryRev;
+}
+
+/**
+ * @param {unknown[]} hist
+ * @returns {string}
+ */
+function eaChartCacheRev(hist) {
+  return historialChartRevision(hist) + '|' + EA_CHART_CACHE_REV;
+}
+
 /**
  * @param {number} length
  * @param {number} [maxPoints]
@@ -243,8 +267,6 @@ function prepareEaChartBundle(monitoreo) {
 
   var summary = scanEaChartsSummary(monitoreo);
   summary.vitalsReady = vitalsReady;
-  m._eaChartsSummaryRev = historialChartRevision(hist);
-  m._eaChartsSummary = summary;
 
   return {
     histAsc: histAsc,
@@ -263,7 +285,7 @@ export function getCachedEaChartBundle(monitoreo) {
   /** @type {any} */
   var m = monitoreo || {};
   var hist = Array.isArray(m.historial) ? m.historial : [];
-  var rev = historialChartRevision(hist);
+  var rev = eaChartCacheRev(hist);
   if (m._eaChartBundle && m._eaChartBundleRev === rev) {
     return m._eaChartBundle;
   }
@@ -280,7 +302,7 @@ export function getCachedEaChartsSummary(monitoreo) {
   /** @type {any} */
   var m = monitoreo || {};
   var hist = Array.isArray(m.historial) ? m.historial : [];
-  var rev = historialChartRevision(hist);
+  var rev = eaChartCacheRev(hist);
   if (m._eaChartsSummary && m._eaChartsSummaryRev === rev) {
     return m._eaChartsSummary;
   }

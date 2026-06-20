@@ -1,4 +1,4 @@
-import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
+import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
 import { buildMedDropdownOptions, resolveManejoFechaActualizacion } from './estado-actual-meds.mjs';
 import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 
@@ -270,8 +270,19 @@ export function refreshMedCategoryBlock(mount, key, monitoreo, activeId, medRece
 }
 
 /**
+ * @param {{ patient?: { monitoreo?: unknown }, monitoreo?: Record<string, unknown> }} ctx
+ */
+function liveMonitoreoFromCtx(ctx) {
+  if (ctx.patient) {
+    ensureMonitoreo(ctx.patient);
+    return /** @type {Record<string, unknown>} */ (ctx.patient.monitoreo);
+  }
+  return ctx.monitoreo || {};
+}
+
+/**
  * @param {HTMLElement | null} mount
- * @param {{ monitoreo: Record<string, unknown>, patient: Record<string, unknown>, medRecetaByPatient: Record<string, { items?: unknown[] }>, getActiveId(): string | null, saveState(): void, syncTextarea(): void }} ctx
+ * @param {{ monitoreo?: Record<string, unknown>, patient?: { monitoreo?: unknown }, medRecetaByPatient: Record<string, { items?: unknown[] }>, getActiveId(): string | null, saveState(): void, syncTextarea(): void }} ctx
  */
 export function wireMedCategoryGrid(mount, ctx) {
   if (!mount) return;
@@ -285,16 +296,18 @@ export function wireMedCategoryGrid(mount, ctx) {
     var addKey = target.getAttribute('data-ea-med-add-select');
     if (!addKey || !('value' in target) || !/** @type {HTMLSelectElement} */ (target).value) return;
     var val = String(/** @type {HTMLSelectElement} */ (target).value);
-    addMedFieldItem(ctx.monitoreo, addKey, val);
+    var monitoreo = liveMonitoreoFromCtx(ctx);
+    addMedFieldItem(monitoreo, addKey, val);
     /** @type {HTMLSelectElement} */ (target).value = '';
     ctx.saveState();
     ctx.syncTextarea();
-    refreshMedCategoryBlock(mount, addKey, ctx.monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
+    refreshMedCategoryBlock(mount, addKey, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
   });
 
   grid.addEventListener('click', function (ev) {
     var target = /** @type {HTMLElement | null} */ (ev.target);
     if (!target || !grid.contains(target)) return;
+    var monitoreo = liveMonitoreoFromCtx(ctx);
 
     var removeBtn = target.closest('[data-ea-med-remove]');
     if (removeBtn) {
@@ -303,10 +316,10 @@ export function wireMedCategoryGrid(mount, ctx) {
       var rKey = removeBtn.getAttribute('data-ea-med-remove');
       var idx = Number(removeBtn.getAttribute('data-ea-med-idx'));
       if (rKey && Number.isFinite(idx)) {
-        removeMedFieldItem(ctx.monitoreo, rKey, idx);
+        removeMedFieldItem(monitoreo, rKey, idx);
         ctx.saveState();
         ctx.syncTextarea();
-        refreshMedCategoryBlock(mount, rKey, ctx.monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
+        refreshMedCategoryBlock(mount, rKey, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
       }
       return;
     }
@@ -333,12 +346,12 @@ export function wireMedCategoryGrid(mount, ctx) {
       var sInput = sPanel && sPanel.querySelector('[data-ea-med-manual-input="' + sKey + '"]');
       var text = sInput && 'value' in sInput ? String(sInput.value).trim() : '';
       if (!text) return;
-      addMedFieldItem(ctx.monitoreo, sKey, text);
+      addMedFieldItem(monitoreo, sKey, text);
       if (sInput && 'value' in sInput) sInput.value = '';
       if (sPanel) sPanel.hidden = true;
       ctx.saveState();
       ctx.syncTextarea();
-      refreshMedCategoryBlock(mount, sKey, ctx.monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
+      refreshMedCategoryBlock(mount, sKey, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
       return;
     }
 

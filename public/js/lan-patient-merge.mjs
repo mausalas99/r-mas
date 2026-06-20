@@ -2,7 +2,8 @@
 
 import { compareIso } from './live-sync-room.mjs';
 import { mergeTodoListsById } from './livesync-patient-ids.mjs';
-import { mergeMonitoreo } from './features/estado-actual-data.mjs';
+import { mergeMonitoreo, emptyEstadoClinico } from './features/estado-actual-data.mjs';
+import { hasPendingEaProposals } from './features/estado-actual-meds.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
@@ -183,9 +184,22 @@ function monitoreoHasLanPayload(monitoreo) {
   const hist = Array.isArray(m.historial) ? m.historial : [];
   if (hist.length > 0) return true;
   const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
-  if (!tg) return false;
-  if (tg.savedAt != null && String(tg.savedAt).trim()) return true;
-  if (String(tg.text || '').trim()) return true;
+  if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) return true;
+  if (String(tg?.text || '').trim()) return true;
+  const ec = m.estadoClinico && typeof m.estadoClinico === 'object' ? m.estadoClinico : null;
+  if (ec) {
+    const template = emptyEstadoClinico();
+    for (const key of Object.keys(template)) {
+      if (String(ec[key] || '').trim()) return true;
+    }
+  }
+  if (hasPendingEaProposals(m.pendienteReceta)) return true;
+  const conf = m.confirmado && typeof m.confirmado === 'object' ? m.confirmado : null;
+  if (conf) {
+    for (const key of Object.keys(conf)) {
+      if (conf[key]) return true;
+    }
+  }
   return false;
 }
 

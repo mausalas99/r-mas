@@ -7,7 +7,11 @@
 export function extractPatientFromBundleEntry(entry) {
   if (!entry || typeof entry !== 'object') return null;
   if (entry.patient && entry.patient.id) {
-    return { ...entry.patient };
+    const row = { ...entry.patient };
+    if (!Array.isArray(row.audit_log) && Array.isArray(entry.audit_log)) {
+      row.audit_log = entry.audit_log;
+    }
+    return row;
   }
   const id = String(entry.id || '').trim();
   if (!id || id.indexOf('demo-') === 0) return null;
@@ -27,5 +31,6 @@ export function extractPatientFromBundleEntry(entry) {
     registeredAt: entry.registeredAt,
     updatedAt: entry.updatedAt,
     lanUpdatedAt: entry.lanUpdatedAt,
+    audit_log: Array.isArray(entry.audit_log) ? entry.audit_log : [],
   };
 }

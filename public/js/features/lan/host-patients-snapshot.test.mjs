@@ -26,4 +26,30 @@ describe('host-patients-snapshot merge', () => {
     upsertHostCensusPatient(byId, { id: 'p1', nombre: 'On host', registro: 'R1' }, { bundleOnly: false });
     assert.equal(byId.get('p1')?._bundleOnly, undefined);
   });
+
+  it('preserves registeredByUserId when bundle row lacks it', () => {
+    const byId = new Map();
+    upsertHostCensusPatient(
+      byId,
+      { id: 'p1', nombre: 'Host', registeredByUserId: 'u1', registeredAt: '2026-06-01T00:00:00.000Z' },
+      { bundleOnly: false }
+    );
+    mergeBundleEntriesIntoCensus(byId, [{ patient: { id: 'p1', nombre: 'Host updated' } }]);
+    assert.equal(byId.get('p1')?.registeredByUserId, 'u1');
+  });
+
+  it('merges audit_log from bundle entry onto host row', () => {
+    const byId = new Map();
+    upsertHostCensusPatient(byId, { id: 'p1', nombre: 'Host' }, { bundleOnly: false });
+    mergeBundleEntriesIntoCensus(byId, [
+      {
+        patient: {
+          id: 'p1',
+          audit_log: [{ action: 'patient.create', clientId: 'dev-b' }],
+        },
+      },
+    ]);
+    assert.equal(byId.get('p1')?.audit_log?.length, 1);
+    assert.equal(byId.get('p1')?.audit_log?.[0]?.clientId, 'dev-b');
+  });
 });

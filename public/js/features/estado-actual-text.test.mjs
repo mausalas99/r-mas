@@ -29,7 +29,8 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.doesNotMatch(text, /^S:/m);
   assert.match(text, /FOUR 15\/16/);
   assert.match(text, /TA 120\/80/);
-  assert.match(text, /GLUCOMETRÍAS CAPILARES \(140/);
+  assert.match(text, /GLUCOMETRÍAS CAPILARES \(140 MG\/DL\)/);
+  assert.doesNotMatch(text, /GLUCOMETRÍAS CAPILARES \(140, ___/);
   assert.match(text, /BALANCE \+200 CC/);
   assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
   // Formato igual a soap-estado: "ANALGESIA CON ___" (no hay subjetivo S:)
@@ -53,7 +54,14 @@ test('buildEstadoActualText documenta rescates aplicados', () => {
     text,
     /RESCATES DE INSULINA APLICADOS \(6 U DE INSULINA RÁPIDA @ 14:00, DXT POST-RESCATE 182 MG\/DL\)/
   );
-  assert.match(text, /GLUCOMETRÍAS CAPILARES \(182/);
+  assert.match(text, /GLUCOMETRÍAS CAPILARES \(182 MG\/DL\)/);
+});
+
+test('buildEstadoActualText omits glucometrías clause when none registered', () => {
+  const m = emptyMonitoreo();
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  assert.doesNotMatch(text, /GLUCOMETRÍAS CAPILARES/);
+  assert.doesNotMatch(text, /RESCATES DE INSULINA/);
 });
 
 test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato corto', () => {

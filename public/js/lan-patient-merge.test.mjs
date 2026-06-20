@@ -12,6 +12,7 @@ import {
   mergeHistoriaClinica,
   cloneEntry,
 } from './lan-patient-merge.mjs';
+import { emptyMonitoreo } from './features/estado-actual-data.mjs';
 
 test('entryUpdatedAt incluye textoGuardado.savedAt de monitoreo', () => {
   const e = {
@@ -28,7 +29,7 @@ test('entryUpdatedAt incluye textoGuardado.savedAt de monitoreo', () => {
   assert.equal(entryUpdatedAt(e), '2026-05-20T12:00:00.000Z');
 });
 
-test('entryUpdatedAt incluye el recordedAt más reciente del historial', () => {
+test('entryUpdatedAt incluye el recordedAt m?s reciente del historial', () => {
   const e = {
     patient: {
       id: 'p1',
@@ -56,7 +57,7 @@ test('monitoreoUpdatedAt combina historial y texto guardado', () => {
   );
 });
 
-test('mergePatientEntry conserva medPharmProfile más reciente', () => {
+test('mergePatientEntry conserva medPharmProfile m?s reciente', () => {
   const older = {
     patient: { id: 'p', registro: 'R' },
     note: { fecha: '01/01/2026' },
@@ -115,7 +116,7 @@ test('mergePatientEntry conserva solo el monitoreo del lado que tiene datos', ()
       registro: 'R',
       monitoreo: {
         historial: [],
-        textoGuardado: { text: 'solo acá', savedAt: '2026-02-01T00:00:00.000Z' },
+        textoGuardado: { text: 'solo ac?', savedAt: '2026-02-01T00:00:00.000Z' },
       },
     },
     note: { fecha: '05/01/2026' },
@@ -131,7 +132,24 @@ test('mergePatientEntry conserva solo el monitoreo del lado que tiene datos', ()
     labHistory: [],
   };
   const m = mergePatientEntry(emptyMon, withText);
-  assert.equal(m.patient.monitoreo.textoGuardado.text, 'solo acá');
+  assert.equal(m.patient.monitoreo.textoGuardado.text, 'solo ac?');
+});
+
+test('mergePatientEntry conserva monitoreo local solo con estado cl?nico general', () => {
+  const localMon = emptyMonitoreo();
+  localMon.estadoClinico.four = '15';
+  const withEc = {
+    patient: { id: 'p', registro: 'R', monitoreo: localMon },
+    note: { fecha: '05/01/2026' },
+    labHistory: [],
+  };
+  const withoutMon = {
+    patient: { id: 'p', registro: 'R' },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(withoutMon, withEc);
+  assert.equal(m.patient.monitoreo.estadoClinico.four, '15');
 });
 
 test('cloneEntry copia monitoreo en profundidad', () => {
@@ -177,7 +195,7 @@ test('mergePatientEntry combina labHistory por id', () => {
   assert.equal(m.labHistory.length, 2);
 });
 
-test('mergeLabHistorySets gana el set más reciente con mismo id', () => {
+test('mergeLabHistorySets gana el set m?s reciente con mismo id', () => {
   const out = mergeLabHistorySets(
     [{ id: '100', fecha: '01/01/2026', resLabs: ['viejo'] }],
     [{ id: '100', fecha: '10/01/2026', resLabs: ['nuevo'] }]
@@ -200,7 +218,7 @@ test('mergePatientEntry fusiona pendientes por id', () => {
   assert.equal(m.todos[0].text, 'nuevo');
 });
 
-test('mismo registro fusiona nota más reciente', () => {
+test('mismo registro fusiona nota m?s reciente', () => {
   const merged = mergeLanPatientEntrySources([
     {
       entries: [
@@ -225,7 +243,7 @@ test('mismo registro fusiona nota más reciente', () => {
   assert.equal(merged[0].note.evolucion, 'nueva');
 });
 
-test('filterEntriesByPatientDeletes quita entrada aunque el host sea más reciente', () => {
+test('filterEntriesByPatientDeletes quita entrada aunque el host sea m?s reciente', () => {
   const entries = [
     {
       patient: { id: 'p1', registro: 'R1', nombre: 'PAC', lanUpdatedAt: '2026-06-06T20:00:00.000Z' },
@@ -244,7 +262,7 @@ test('filterEntriesByPatientDeletes quita entrada aunque el host sea más recien
   assert.equal(filtered.length, 0);
 });
 
-test('filterEntriesByPatientDeletes quita entrada si delete es más reciente', () => {
+test('filterEntriesByPatientDeletes quita entrada si delete es m?s reciente', () => {
   const entries = [
     {
       patient: { id: 'p1', registro: 'R1', nombre: 'PAC', lanUpdatedAt: '2026-05-16T08:00:00.000Z' },
@@ -263,7 +281,7 @@ test('filterEntriesByPatientDeletes quita entrada si delete es más reciente', (
   assert.equal(filtered.length, 0);
 });
 
-test('filterEntriesByPatientDeletes conserva readmisión con mismo registro e id distinto', () => {
+test('filterEntriesByPatientDeletes conserva readmisi?n con mismo registro e id distinto', () => {
   const entries = [
     {
       patient: { id: 'p-new', registro: 'R1', nombre: 'READMIT', lanUpdatedAt: '2026-06-10T08:00:00.000Z' },
@@ -314,7 +332,7 @@ test('mergePatientEntry conserva eventualidades de ambos peers', () => {
   assert.equal(m.patient.eventualidades.entries.length, 2);
 });
 
-test('mergeHistoriaClinica gana la versión más alta', () => {
+test('mergeHistoriaClinica gana la versi?n m?s alta', () => {
   const merged = mergeHistoriaClinica(
     { version: 2, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' }, dx: 'old' } },
     { version: 3, data: { meta: { updatedAt: '2026-06-02T10:00:00.000Z' }, dx: 'new' } }
@@ -323,7 +341,7 @@ test('mergeHistoriaClinica gana la versión más alta', () => {
   assert.equal(merged.data.dx, 'new');
 });
 
-test('mergePatientEntry fusiona historia clínica por versión', () => {
+test('mergePatientEntry fusiona historia cl?nica por versi?n', () => {
   const a = {
     patient: {
       id: 'p1',

@@ -30,23 +30,26 @@ const EXCLUDED_DIRS = new Set([
   'ui-ux-pro-max-skill',
 ]);
 
+const TEST_SCRIPT_PREFIXES = [
+  'node scripts/run-with-electron-node.mjs --test ',
+  'node --test ',
+];
+
 /**
  * Parse the listed test files from package.json scripts.test.
- *
- * Expects the value to start with "node --test " followed by
- * whitespace-separated relative paths.
  *
  * @param {object} pkg - Parsed package.json object
  * @returns {string[]}
  */
 export function listedTestFiles(pkg) {
   const raw = pkg?.scripts?.test ?? '';
-  if (!raw.startsWith('node --test ')) {
+  const prefix = TEST_SCRIPT_PREFIXES.find((p) => raw.startsWith(p));
+  if (!prefix) {
     throw new Error(
-      'pkg.scripts.test does not start with "node --test " — parse assumption violated'
+      'pkg.scripts.test must start with "node scripts/run-with-electron-node.mjs --test " (or legacy "node --test ")'
     );
   }
-  return raw.replace(/^node --test /, '').split(/\s+/).filter(Boolean);
+  return raw.slice(prefix.length).split(/\s+/).filter(Boolean);
 }
 
 /**

@@ -1254,6 +1254,10 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: calc(16px * var(--density-space, 1)) 0;
 }
 
+.ea-charts-empty[hidden] {
+  display: none !important;
+}
+
 .ea-charts-empty .empty-state-title {
   font-size: calc(14px * var(--density-font, 1));
   font-weight: 600;

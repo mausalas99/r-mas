@@ -44,6 +44,7 @@ import {
   refreshClinicalOpsSnapshotCache,
 } from "../../clinical-ops-lan.mjs";
 import { mergePatientMonitoreoFromImported } from "../estado-actual-data.mjs";
+import { flushEaEstadoClinicoFieldsFromDom } from "../estado-actual-panel.mjs";
 import { mergeCensoPatientFields } from "../../patient-diagnosticos.mjs";
 import { mergePatientRegistrationMeta } from "../../patient-registration-meta.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../../versioned-mutation.mjs";
@@ -1112,6 +1113,7 @@ export function registerLanSaveHooks(deps) {
       : function () {};
   setSaveStateHooks({
     before() {
+      flushEaEstadoClinicoFieldsFromDom();
       var aid = runtime.getActiveId();
       if (activeLiveSyncRoomId && aid) touchPatientLanUpdatedAt(aid);
     },

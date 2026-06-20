@@ -21,7 +21,7 @@ import {
   teamInviteCode,
 } from '../../clinical-team-invite.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
-import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
+import { recordClinicalOpsTrace, getClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
 import {
   effectiveClinicalRank,
   hasElevatedTeamPrivileges,
@@ -70,6 +70,7 @@ import {
   resolveLocalUserIdByLanHandle,
 } from './teams-guardia-bridge.mjs';
 import { lanDirectoryUserMatchesFilters } from './lan-directory-filters.mjs';
+import { flushPendingClinicalOpsLanSnapshot } from '../../clinical-ops-lan.mjs';
 
 
 /** Top-bar CTA beside «Crear equipo» (opens separate modal). */
@@ -484,6 +485,38 @@ function renderLanUserRowHtml(u, teamList, opts = {}) {
   </article>`;
 }
 
+/** @param {object[]} users */
+function renderLanDirectoryEmptyStateHtml(users) {
+  const trace = getClinicalOpsTrace();
+  const lastGet = trace.find(function (e) {
+    return e.boundary === 'get' && e.data && e.data.ok === true;
+  });
+  const lastMerge = trace.find(function (e) {
+    return e.boundary === 'merge';
+  });
+  const hostUsers = Number(lastGet?.data?.incomingUsers || 0);
+  const mergeDeferred =
+    lastMerge?.data?.deferred === true || lastMerge?.data?.code === 'DB_LOCKED';
+  let hostHint = '';
+  if (hostUsers > 0 && (!users || !users.length)) {
+    if (mergeDeferred) {
+      hostHint =
+        '<p class="clinical-teams-empty">El anfitrión reporta <strong>' +
+        hostUsers +
+        '</strong> perfil(es) registrados, pero la base clínica no pudo fusionarlos (sesión bloqueada). Desbloquea la base clínica y pulsa <strong>Actualizar desde ⇄</strong>.</p>';
+    } else {
+      hostHint =
+        '<p class="clinical-teams-empty">El anfitrión ya tiene <strong>' +
+        hostUsers +
+        '</strong> perfil(es) en ⇄, pero aún no aparecen en esta Mac. Con LiveSync conectado, pulsa <strong>Actualizar desde ⇄</strong>.</p>';
+    }
+  }
+  return (
+    hostHint +
+    '<p class="clinical-teams-empty">Aún no hay otros @usuario en esta Mac. Cada residente debe conectarse a tu LAN, abrir <strong>⇄ → Unirse</strong> en la misma sala y guardar <strong>Mi rotación → Guardar perfil</strong>. Luego los asignas al equipo desde aquí (no hace falta que ya tengan equipo).</p>'
+  );
+}
+
 /** @param {object[]} users @param {object[]} teams @param {{ canDelete?: boolean, callerUserId?: string }} [opts] */
 function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   const list = Array.isArray(users) ? users : [];
@@ -494,7 +527,7 @@ function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   };
 
   if (!list.length) {
-    return `<p class="clinical-teams-empty">Aún no hay otros @usuario en esta Mac. Cada residente debe conectarse a tu LAN, abrir <strong>⇄ → Unirse</strong> en la misma sala y guardar <strong>Mi rotación → Guardar perfil</strong>. Luego los asignas al equipo desde aquí (no hace falta que ya tengan equipo).</p>`;
+    return renderLanDirectoryEmptyStateHtml(list);
   }
 
   const { groups, other } = groupLanUsersByRank(list);
@@ -925,6 +958,10 @@ export async function openLanUsersDirectoryModal() {
   try {
     await pullLanDirectoryFromHostIfDue({ force: true });
     await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+    const pendingSnap = await flushPendingClinicalOpsLanSnapshot();
+    if (pendingSnap?.changed) {
+      await loadLanUsersDirectoryIntoHost(host, { forceRender: true, forceIpc: true });
+    }
   } catch (err) {
     console.error('[Directorio LAN]', err);
     host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(
