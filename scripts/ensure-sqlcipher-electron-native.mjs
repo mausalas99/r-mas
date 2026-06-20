@@ -12,7 +12,11 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 function runScript(rel) {
   const scriptPath = path.join(root, rel);
   console.log(`→ node ${rel}`);
-  const r = spawnSync(process.execPath, [scriptPath], { cwd: root, stdio: 'inherit' });
+  const r = spawnSync(process.execPath, [scriptPath], {
+    cwd: root,
+    stdio: 'inherit',
+    env: { ...process.env, R_PLUS_STRICT_NATIVE: '1' },
+  });
   if (r.status !== 0) {
     process.exit(r.status === null ? 1 : r.status);
   }

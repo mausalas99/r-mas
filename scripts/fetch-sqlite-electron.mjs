@@ -91,15 +91,23 @@ async function installFromUrl(url, platform, label) {
   }
 }
 
+function canProbeSqlcipherUnderLocalElectron(platform) {
+  return platform === process.platform;
+}
+
 async function main() {
+  const strict = process.env.R_PLUS_STRICT_NATIVE === '1';
   const { platform, arch } = resolveTarget();
   if (platform !== 'darwin' && platform !== 'win32') {
     console.log(`[fetch-sqlite-electron] Skip unsupported platform ${platform}`);
     process.exit(0);
   }
 
-  const format = describeNativeBinary(destFile, platform);
-  if (format.ok && electronSqlcipherLoads()) {
+  if (
+    !strict &&
+    describeNativeBinary(destFile, platform).ok &&
+    (!canProbeSqlcipherUnderLocalElectron(platform) || electronSqlcipherLoads())
+  ) {
     console.log(`[fetch-sqlite-electron] ${NODE_REL} already valid for Electron on ${platform}-${arch}`);
     process.exit(0);
   }
@@ -118,11 +126,16 @@ async function main() {
     process.exit(1);
   }
 
-  if (!electronSqlcipherLoads()) {
-    console.error('[fetch-sqlite-electron] Installed prebuild does not load under Electron');
-    process.exit(1);
+  if (canProbeSqlcipherUnderLocalElectron(platform)) {
+    if (!electronSqlcipherLoads()) {
+      console.error('[fetch-sqlite-electron] Installed prebuild does not load under Electron');
+      process.exit(1);
+    }
+    console.log('[fetch-sqlite-electron] Verified OK under Electron');
+  } else {
+    await assertFormat(destFile, platform);
+    console.log(`[fetch-sqlite-electron] Verified ${platform} binary format (cross-host pack)`);
   }
-  console.log('[fetch-sqlite-electron] Verified OK under Electron');
 }
 
 await main();

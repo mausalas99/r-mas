@@ -649,7 +649,7 @@ async function cmdPublish(argv) {
       await runPublishCmd(
         progress,
         'verify-natives',
-        'R_PLUS_STRICT_NATIVE=1 npm run rebuild:db-native && node scripts/verify-release-natives.mjs'
+        'R_PLUS_STRICT_NATIVE=1 node scripts/fetch-sqlite-electron.mjs && R_PLUS_STRICT_NATIVE=1 npm run rebuild:db-native && node scripts/verify-release-natives.mjs'
       );
       if (!winOnly) await runPublishCmd(progress, 'build-mac', buildMacPublishCmd());
       if (!macOnly) await runPublishCmd(progress, 'build-win', buildWinPublishCmd());
