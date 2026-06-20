@@ -1,11 +1,11 @@
 version: 7.3.8
 files:
   - url: R+-7.3.8-x64.exe
-    sha512: 43xdW4RXIv1m1pAvXM3Ais2WkU/wcHSbLRGuaugYBYoOF7cPXy4IsnWuvmgx9FKze1lOVDsq47rF/V6//CXTLg==
-    size: 114994655
+    sha512: KSn/248l4SzfhQghjlEAWxAYBNDW1Ri65BlnNUXN/AbbbCoSix7cl25fkDappuWYG1q+E1OqKemCICiSx+KVVQ==
+    size: 115026922
 path: R+-7.3.8-x64.exe
-sha512: 43xdW4RXIv1m1pAvXM3Ais2WkU/wcHSbLRGuaugYBYoOF7cPXy4IsnWuvmgx9FKze1lOVDsq47rF/V6//CXTLg==
-releaseDate: '2026-06-20T17:38:39.000Z'
+sha512: KSn/248l4SzfhQghjlEAWxAYBNDW1Ri65BlnNUXN/AbbbCoSix7cl25fkDappuWYG1q+E1OqKemCICiSx+KVVQ==
+releaseDate: '2026-06-20T20:17:02.000Z'
 releaseNotes: |
   Sobre 7.3.7: coagulación como sección COAG independiente de BH (parser, pase, panel y diagramas); balance hídrico NC cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
   

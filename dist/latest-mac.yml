@@ -1,20 +1,20 @@
 version: 7.3.8
 files:
   - url: R+-7.3.8-arm64.zip
-    sha512: G3BDiZAhrRq/hOQ5lBZs8w47vCMn6rRjZG5GwOlrVrTT/VVmGFq+osgoGrGNJ8/viZrwP/rMDAzO7S9KzcM9+A==
-    size: 129372069
+    sha512: eD7m+wTAB55Ci+ISIFfUnhv0CSkhtLvIyZixYv/xEYol5Q9yeJfIpw5GvPpNQc48yvACacA/nwq+2+EFNeT6pg==
+    size: 129389839
   - url: R+-7.3.8-arm64.dmg
-    sha512: zUK094G3/v6TB9WIgfS/3//K8nZuU24Nj8D3hzov06Ve6HR4p/WsmWtFTTSFcq/wwfypyTPmyczn8/3zCcp1Cg==
-    size: 134745428
+    sha512: g2L/k2U+OPZbYCLcIqdseSTYTdEpk1xXDF8moCSc4BrGf4ZUZI41bE91RSqSIMz5xB87w/gscXtJ8dta4vmJzA==
+    size: 134737150
   - url: R+-7.3.8-x64.zip
-    sha512: ejokMmUansvmMpg+Ga7vKd72LnFcd38cOuQQIXX/FrsFUCAtn4mGrLwoaWnoIF2LaM39EzUGJRxsxqdEOoqoqA==
-    size: 137747560
+    sha512: 8p7uWd7H+CQ7T8iltk1/3lS+8+7f8jJkDgqKol5JwMpPHvO0HfdDJnJR/iz0GoirR6Q2/fsxLwQNqPDXEwA+sg==
+    size: 137763886
   - url: R+-7.3.8-x64.dmg
-    sha512: zfwv1Yk/7pjjNyJ8EJSDoA07BubeLL1G+PJ6dKDKoZRTltN7plAhRwIAL/lXEeVk7cr2TBoCFsm6x1G1+IP4oA==
-    size: 143169196
+    sha512: 3TrHJL42bQAu4xz3sWXHC2xAFLCdZo9bokOWXKr6Tx/vcIWE/psZIYbhPZNCkk8b1ahHxASvYFAHMaeU60ib5g==
+    size: 143186699
 path: R+-7.3.8-arm64.zip
-sha512: G3BDiZAhrRq/hOQ5lBZs8w47vCMn6rRjZG5GwOlrVrTT/VVmGFq+osgoGrGNJ8/viZrwP/rMDAzO7S9KzcM9+A==
-releaseDate: '2026-06-20T17:38:39.000Z'
+sha512: eD7m+wTAB55Ci+ISIFfUnhv0CSkhtLvIyZixYv/xEYol5Q9yeJfIpw5GvPpNQc48yvACacA/nwq+2+EFNeT6pg==
+releaseDate: '2026-06-20T20:17:02.000Z'
 releaseNotes: |
   Sobre 7.3.7: coagulación como sección COAG independiente de BH (parser, pase, panel y diagramas); balance hídrico NC cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
   
