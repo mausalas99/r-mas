@@ -43,35 +43,25 @@ import {
   toggleGuardiaMode,
 } from './features/chrome.mjs';
 import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
-import { openEntregaModal } from './features/clinical-entrega.mjs';
 import {
   configureLanFromMobileJoin,
   closeConnectionDropdown,
 } from './features/lan-sync.mjs';
 import {
   loadSettings,
-  openProfileModal,
   toggleProfileSection,
 } from './features/profile.mjs';
 import {
   initProductivityKeyboardShortcuts,
 } from './features/productivity.mjs';
 import {
-  resolveAppVersionForTour,
-  normalizeTourVersionLabel,
-  markGuidedTourVersionDone,
-  initGuidedTourGate,
-} from './features/settings-help/tour-engine.mjs';
-import {
-  syncTeamSyncHeaderButton,
-  toggleSettingsDropdown,
-  closeSettingsDropdown,
-} from './features/settings-help/settings-dropdown.mjs';
-import {
-  initRpcServerHealthWatch,
-  initIdleLockFeature,
-} from './features/platform/offline.mjs';
-import { initGoalGFeatures } from './features/platform/import-backup.mjs';
+  ensureEntregaLoaded,
+  ensurePlatformLoaded,
+  ensureSettingsHelpLoaded,
+  shellCloseSettingsDropdown,
+  shellSyncTeamSyncHeaderButton,
+  shellToggleSettingsDropdown,
+} from './lazy-feature-routes.mjs';
 import {
   renderPatientList,
   renderRoundOverviewPanels,
@@ -179,7 +169,9 @@ async function initMobileWebBoot() {
   try {
     wipeSessionClinicalStorage({ includeLanSession: false });
     clearWebSessionClinicalMemory();
-  } catch (_wipeBoot) {}
+  } catch (_wipeBoot) {
+    void _wipeBoot;
+  }
   setMobileBootBanner(true, 'Cargando R+ Móvil…');
   persistMobilePairingFromSearch(location.search, location.origin);
   restoreMobilePairingFromStorage();
@@ -190,13 +182,18 @@ async function initMobileWebBoot() {
   syncMobileBarebonesChrome();
   try {
     document.title = 'R+ Móvil';
-  } catch (_e) {}
-  syncTeamSyncHeaderButton();
+  } catch (_e) {
+    void _e;
+  }
+  shellSyncTeamSyncHeaderButton();
   try {
-    var v = await resolveAppVersionForTour();
-    window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
-    markGuidedTourVersionDone();
-  } catch (_bootVer) {}
+    var settingsMod = await ensureSettingsHelpLoaded();
+    var v = await settingsMod.resolveAppVersionForTour();
+    window.__RPC_APP_VERSION__ = settingsMod.normalizeTourVersionLabel(v);
+    settingsMod.markGuidedTourVersionDone();
+  } catch (_bootVer) {
+    void _bootVer;
+  }
   var intro = document.getElementById('onboarding-intro-backdrop');
   if (intro) {
     intro.classList.remove('open');
@@ -215,7 +212,9 @@ async function initMobileWebBoot() {
           if (typeof access.finalizeMobileLanPatientCensus === 'function') {
             await access.finalizeMobileLanPatientCensus();
           }
-        } catch (_ePrune) {}
+        } catch (_ePrune) {
+          void _ePrune;
+        }
       })();
     });
   }
@@ -269,67 +268,133 @@ function onMedicoTemplateBlur() {
 
 var shellKeyboardWired = false;
 
+function shellShortcutFromTypingField(e) {
+  var tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : '';
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    (e.target && e.target.isContentEditable)
+  );
+}
+
+function handleShellDigitShortcut(key) {
+  if (isPaseMode()) {
+    if (key === '1') openPaseSectionInNormal('labs');
+    if (key === '2') openPaseSectionInNormal('expediente');
+    if (key === '3') openPaseSectionInNormal('med');
+    if (key === '4' || key === '5') openPaseSectionInNormal('agenda');
+    return;
+  }
+  if (key === '1') switchAppTab('lab');
+  if (key === '2') switchAppTab('nota');
+  if (key === '3') switchAppTab('med');
+  if (key === '4' || key === '5') switchAppTab('agenda');
+}
+
+function handleShellSettingsCommaShortcut() {
+  var dd = document.getElementById('settings-dropdown');
+  if (dd && dd.classList.contains('open')) shellCloseSettingsDropdown();
+  else shellToggleSettingsDropdown();
+}
+
+function handleShellImportOverwriteShortcut() {
+  window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
+  showToast(
+    window.__rpcPreferImportOverwrite
+      ? 'Importación: conflictos → sobrescribir (⌘⇧, o Ctrl+Shift+, de nuevo para apagar).'
+      : 'Importación: se preguntará en cada conflicto.',
+    window.__rpcPreferImportOverwrite ? 'success' : 'info'
+  );
+}
+
+function handleShellNamedShortcut(e, key) {
+  if (key === 'k' && !e.shiftKey && !e.altKey) {
+    e.preventDefault();
+    openCommandPalette();
+    return true;
+  }
+  if (key === 'p' && !e.altKey) {
+    e.preventDefault();
+    if (e.shiftKey) toggleProfileSection();
+    else if (isGuardiaMode()) setUiDensity('normal');
+    else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
+    return true;
+  }
+  if (key === 'g' && e.shiftKey && !e.altKey) {
+    e.preventDefault();
+    toggleGuardiaMode();
+    return true;
+  }
+  return false;
+}
+
+function handleShellCommaShortcut(e) {
+  if (e.key !== ',') return false;
+  if (shellShortcutFromTypingField(e)) return true;
+  e.preventDefault();
+  if (!e.shiftKey && !e.altKey) handleShellSettingsCommaShortcut();
+  else if (e.shiftKey && !e.altKey) handleShellImportOverwriteShortcut();
+  return true;
+}
+
+function onShellModifierKeydown(e) {
+  var key = e.key.toLowerCase();
+  if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
+    e.preventDefault();
+    handleShellDigitShortcut(key);
+    return;
+  }
+  if (handleShellNamedShortcut(e, key)) return;
+  handleShellCommaShortcut(e);
+}
+
 function initShellKeyboardShortcuts() {
   if (shellKeyboardWired) return;
   shellKeyboardWired = true;
-  document.addEventListener('keydown', function(e) {
-    var mod = e.metaKey || e.ctrlKey;
-    if (mod) {
-      var key = e.key.toLowerCase();
-      if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
-        e.preventDefault();
-        if (isPaseMode()) {
-          if (key === '1') openPaseSectionInNormal('labs');
-          if (key === '2') openPaseSectionInNormal('expediente');
-          if (key === '3') openPaseSectionInNormal('med');
-          if (key === '4' || key === '5') openPaseSectionInNormal('agenda');
-        } else {
-          if (key === '1') switchAppTab('lab');
-          if (key === '2') switchAppTab('nota');
-          if (key === '3') switchAppTab('med');
-          if (key === '4' || key === '5') switchAppTab('agenda');
-        }
-      }
-      if (key === 'k' && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        openCommandPalette();
-      }
-      if (key === 'p' && !e.altKey) {
-        e.preventDefault();
-        if (e.shiftKey) toggleProfileSection();
-        else if (isGuardiaMode()) setUiDensity('normal');
-        else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
-      }
-      if (key === 'g' && e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        toggleGuardiaMode();
-      }
-      if (e.key === ',' && !e.shiftKey && !e.altKey) {
-        var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
-        e.preventDefault();
-        var dd = document.getElementById('settings-dropdown');
-        if (dd && dd.classList.contains('open')) closeSettingsDropdown();
-        else toggleSettingsDropdown();
-      }
-      if (e.key === ',' && e.shiftKey && !e.altKey) {
-        var tag2 = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
-        if (tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT' || (e.target && e.target.isContentEditable)) return;
-        e.preventDefault();
-        window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
-        showToast(
-          window.__rpcPreferImportOverwrite
-            ? 'Importación: conflictos → sobrescribir (⌘⇧, o Ctrl+Shift+, de nuevo para apagar).'
-            : 'Importación: se preguntará en cada conflicto.',
-          window.__rpcPreferImportOverwrite ? 'success' : 'info'
-        );
-      }
-    }
-  }, true);
+  document.addEventListener(
+    'keydown',
+    function (e) {
+      if (e.metaKey || e.ctrlKey) onShellModifierKeydown(e);
+    },
+    true
+  );
 }
 
 
 
+
+function normalizePatientFieldValue(field, value) {
+  if (field === 'nombre' || field === 'area' || field === 'servicio') {
+    return String(value || '').toUpperCase();
+  }
+  if (field === 'fiuxFecha' || field === 'fimiFecha') {
+    return dateInputValueToAccesoFecha(value) || String(value || '').trim();
+  }
+  return value;
+}
+
+function applyPatientAccesoField(p, field, next) {
+  if (field !== 'viaAcceso' && field !== 'accesoFecha') return;
+  ensurePatientAccesos(p);
+  var accRow =
+    p.accesosList.find(function (a) {
+      return String((a && a.via) || '').trim();
+    }) || p.accesosList[0];
+  if (field === 'viaAcceso') accRow.via = String(next || '').trim();
+  else accRow.fecha = String(next || '').trim();
+  syncLegacyAccesoFields(p);
+}
+
+function refreshPatientChromeAfterUpdate() {
+  saveState();
+  renderPatientList();
+  syncWorkContextChrome();
+  if (!isPaseMode()) return;
+  renderPaseBoard();
+  renderRoundOverviewPanels();
+  if (shellCtx.getActiveAppTab() === 'agenda') renderProcedureAgendaPanel();
+}
 
 function updatePatient(field, value) {
   if (shellCtx.getActiveId() == null) return;
@@ -338,33 +403,11 @@ function updatePatient(field, value) {
     return String(pl.id) === pid;
   });
   if (!p) return;
-  var next =
-    field === 'nombre' || field === 'area' || field === 'servicio'
-      ? String(value || '').toUpperCase()
-      : value;
+  var next = normalizePatientFieldValue(field, value);
   if (String(p[field] || '') === String(next || '')) return;
   p[field] = next;
-  if (field === 'fiuxFecha' || field === 'fimiFecha') {
-    next = dateInputValueToAccesoFecha(value) || String(value || '').trim();
-  }
-  if (field === 'viaAcceso' || field === 'accesoFecha') {
-    ensurePatientAccesos(p);
-    var accRow =
-      p.accesosList.find(function (a) {
-        return String(a && a.via || '').trim();
-      }) || p.accesosList[0];
-    if (field === 'viaAcceso') accRow.via = String(next || '').trim();
-    else accRow.fecha = String(next || '').trim();
-    syncLegacyAccesoFields(p);
-  }
-  saveState();
-  renderPatientList();
-  syncWorkContextChrome();
-  if (isPaseMode()) {
-    renderPaseBoard();
-    renderRoundOverviewPanels();
-    if (shellCtx.getActiveAppTab() === 'agenda') renderProcedureAgendaPanel();
-  }
+  applyPatientAccesoField(p, field, next);
+  refreshPatientChromeAfterUpdate();
 }
 
 export function rpcPrefersReducedMotion() {
@@ -374,7 +417,7 @@ export function rpcPrefersReducedMotion() {
       window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     );
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -414,7 +457,9 @@ export const appShellWindowHandlers = {
 export function installClinicalAppShell() {
   if (typeof window === 'undefined') return;
   window.appShell = window.appShell || {};
-  window.appShell.openEntregaModal = openEntregaModal;
+  void ensureEntregaLoaded().then(function (mod) {
+    window.appShell.openEntregaModal = mod.openEntregaModal;
+  });
 }
 
 function _rpcDeferInit(fn) {
@@ -442,15 +487,27 @@ function _rpcDeferInit(fn) {
 
 export function scheduleDeferredShellInits() {
   _rpcDeferInit(installClinicalAppShell);
-  _rpcDeferInit(initGoalGFeatures);
-  _rpcDeferInit(initGuidedTourGate);
+  _rpcDeferInit(function () {
+    void ensurePlatformLoaded().then(function (mod) {
+      mod.initGoalGFeatures();
+    });
+  });
+  _rpcDeferInit(function () {
+    void ensureSettingsHelpLoaded().then(function (mod) {
+      mod.initGuidedTourGate();
+    });
+  });
   if (isMobileWeb()) {
     void initMobileWebBoot();
   } else {
     _rpcDeferInit(initMobileWebBoot);
   }
-  _rpcDeferInit(initRpcServerHealthWatch);
-  _rpcDeferInit(initIdleLockFeature);
+  _rpcDeferInit(function () {
+    void ensurePlatformLoaded().then(function (mod) {
+      mod.initRpcServerHealthWatch();
+      mod.initIdleLockFeature();
+    });
+  });
 }
 
 export function scheduleDeferredUiInits() {

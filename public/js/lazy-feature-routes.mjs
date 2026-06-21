@@ -28,7 +28,24 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/lab-panel.mjs',
   'features/tendencias.mjs',
   'features/estado-actual-charts-modal.mjs',
+  'features/clinical-entrega.mjs',
+  'features/settings-help/tour-flow.mjs',
+  'features/settings-help/tour-engine.mjs',
+  'features/settings-help/settings-dropdown.mjs',
+  'features/platform/audit.mjs',
+  'features/platform/import-backup.mjs',
+  'features/platform/offline.mjs',
 ];
+
+let entregaPromise = null;
+/** @type {typeof import('./features/clinical-entrega.mjs') | null} */
+let entregaModule = null;
+
+/** @type {Record<string, unknown> | null} */
+let platformRuntimeCtx = null;
+
+/** @type {Record<string, unknown> | null} */
+let settingsRuntimeCtx = null;
 
 /**
  * @returns {Promise<typeof import('./features/settings-help/index.mjs')>}
@@ -38,6 +55,7 @@ export function ensureSettingsHelpLoaded() {
   if (!settingsHelpPromise) {
     settingsHelpPromise = import('./features/settings-help/index.mjs').then(function (mod) {
       settingsHelpModule = mod;
+      wireSettingsRuntimeExports(mod);
       return mod;
     });
   }
@@ -52,10 +70,158 @@ export function ensurePlatformLoaded() {
   if (!platformPromise) {
     platformPromise = import('./features/platform/index.mjs').then(function (mod) {
       platformModule = mod;
+      wirePlatformRuntimeExports(mod);
       return mod;
     });
   }
   return platformPromise;
+}
+
+/**
+ * @returns {Promise<typeof import('./features/clinical-entrega.mjs')>}
+ */
+export function ensureEntregaLoaded() {
+  if (entregaModule) return Promise.resolve(entregaModule);
+  if (!entregaPromise) {
+    entregaPromise = import('./features/clinical-entrega.mjs').then(function (mod) {
+      entregaModule = mod;
+      return mod;
+    });
+  }
+  return entregaPromise;
+}
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazyPlatformRuntimeCtx(ctx) {
+  platformRuntimeCtx = ctx;
+}
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazySettingsRuntimeCtx(ctx) {
+  settingsRuntimeCtx = ctx;
+}
+
+/**
+ * @param {typeof import('./features/platform/index.mjs')} mod
+ */
+function wirePlatformRuntimeExports(mod) {
+  if (!platformRuntimeCtx) return;
+  Object.assign(platformRuntimeCtx, {
+    addAuditEntry: mod.addAuditEntry,
+    syncPreimportBackupUi: mod.syncPreimportBackupUi,
+    applyImportEntry: mod.applyImportEntry,
+    incrementPendingJobs: mod.incrementPendingJobs,
+    decrementPendingJobs: mod.decrementPendingJobs,
+    syncOfflineButtonStates: mod.syncOfflineButtonStates,
+    isRpcOffline: mod.isRpcOffline,
+  });
+}
+
+/**
+ * @param {typeof import('./features/settings-help/index.mjs')} mod
+ */
+function wireSettingsRuntimeExports(mod) {
+  if (!settingsRuntimeCtx) return;
+  Object.assign(settingsRuntimeCtx, {
+    guidedTourAdvanceAfterNotaGenerated: mod.guidedTourAdvanceAfterNotaGenerated,
+    guidedTourAdvanceAfterIndicaGenerated: mod.guidedTourAdvanceAfterIndicaGenerated,
+    guidedTourAdvanceAfter: mod.guidedTourAdvanceAfter,
+    onboardingAdvanceAfterParse: mod.onboardingAdvanceAfterParse,
+    onboardingAdvanceAfterSend: mod.onboardingAdvanceAfterSend,
+    tourAfterBulkLabParse: mod.tourAfterBulkLabParse,
+    tourOnBulkPreviewPatientSaved: mod.tourOnBulkPreviewPatientSaved,
+    closeSettingsDropdown: mod.closeSettingsDropdown,
+    syncTeamSyncHeaderButton: mod.syncTeamSyncHeaderButton,
+  });
+}
+
+/**
+ * @param {string} exportName
+ * @param {() => Promise<Record<string, unknown>>} loader
+ * @param {Function} [fallback]
+ */
+function lazyRuntimeFn(exportName, loader, fallback) {
+  return function lazyRuntimeProxy() {
+    var args = arguments;
+    void loader().then(function (mod) {
+      var fn = mod[exportName];
+      if (typeof fn === 'function') fn.apply(null, args);
+      else if (typeof fallback === 'function') fallback.apply(null, args);
+    });
+  };
+}
+
+/**
+ * @param {string} exportName
+ * @param {() => Promise<Record<string, unknown>>} loader
+ * @param {Function} fallback
+ */
+function lazyRuntimeSyncFn(exportName, loader, fallback) {
+  return function lazyRuntimeSyncProxy() {
+    var args = arguments;
+    if (loader === ensurePlatformLoaded && platformModule) {
+      var live = platformModule[exportName];
+      if (typeof live === 'function') return live.apply(null, args);
+    }
+    if (loader === ensureSettingsHelpLoaded && settingsHelpModule) {
+      var liveSettings = settingsHelpModule[exportName];
+      if (typeof liveSettings === 'function') return liveSettings.apply(null, args);
+    }
+    return fallback.apply(null, args);
+  };
+}
+
+/** Proxies until ensurePlatformLoaded wires real exports onto runtime ctx. */
+export const platformRuntimeProxies = {
+  addAuditEntry: lazyRuntimeFn('addAuditEntry', ensurePlatformLoaded),
+  syncPreimportBackupUi: lazyRuntimeFn('syncPreimportBackupUi', ensurePlatformLoaded),
+  applyImportEntry: lazyRuntimeFn('applyImportEntry', ensurePlatformLoaded),
+  incrementPendingJobs: lazyRuntimeFn('incrementPendingJobs', ensurePlatformLoaded),
+  decrementPendingJobs: lazyRuntimeFn('decrementPendingJobs', ensurePlatformLoaded),
+  syncOfflineButtonStates: lazyRuntimeFn('syncOfflineButtonStates', ensurePlatformLoaded),
+  isRpcOffline: lazyRuntimeSyncFn('isRpcOffline', ensurePlatformLoaded, function () {
+    return false;
+  }),
+};
+
+/** Proxies until ensureSettingsHelpLoaded wires tour/settings helpers onto runtime ctx. */
+export const settingsHelpRuntimeProxies = {
+  guidedTourAdvanceAfterNotaGenerated: lazyRuntimeFn(
+    'guidedTourAdvanceAfterNotaGenerated',
+    ensureSettingsHelpLoaded
+  ),
+  guidedTourAdvanceAfterIndicaGenerated: lazyRuntimeFn(
+    'guidedTourAdvanceAfterIndicaGenerated',
+    ensureSettingsHelpLoaded
+  ),
+  guidedTourAdvanceAfter: lazyRuntimeFn('guidedTourAdvanceAfter', ensureSettingsHelpLoaded),
+  onboardingAdvanceAfterParse: lazyRuntimeFn('onboardingAdvanceAfterParse', ensureSettingsHelpLoaded),
+  onboardingAdvanceAfterSend: lazyRuntimeFn('onboardingAdvanceAfterSend', ensureSettingsHelpLoaded),
+  tourAfterBulkLabParse: lazyRuntimeFn('tourAfterBulkLabParse', ensureSettingsHelpLoaded),
+  tourOnBulkPreviewPatientSaved: lazyRuntimeFn(
+    'tourOnBulkPreviewPatientSaved',
+    ensureSettingsHelpLoaded
+  ),
+  closeSettingsDropdown: lazyRuntimeFn('closeSettingsDropdown', ensureSettingsHelpLoaded),
+  syncTeamSyncHeaderButton: lazyRuntimeFn('syncTeamSyncHeaderButton', ensureSettingsHelpLoaded),
+};
+
+export function shellToggleSettingsDropdown() {
+  void ensureSettingsHelpLoaded().then(function (mod) {
+    mod.toggleSettingsDropdown();
+  });
+}
+
+export function shellCloseSettingsDropdown() {
+  void ensureSettingsHelpLoaded().then(function (mod) {
+    mod.closeSettingsDropdown();
+  });
+}
+
+export function shellSyncTeamSyncHeaderButton() {
+  void ensureSettingsHelpLoaded().then(function (mod) {
+    mod.syncTeamSyncHeaderButton();
+  });
 }
 
 /**

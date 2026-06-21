@@ -31,7 +31,6 @@ import {
 } from './app-shell.mjs';
 import {
   registerChromeRuntime,
-  windowHandlers as chromeWindowHandlers,
 } from './features/chrome.mjs';
 import {
   registerLanRuntime,
@@ -67,7 +66,6 @@ import {
 } from './features/medications.mjs';
 import {
   registerProfileRuntime,
-  loadSettings,
   openProfileModal,
   closeProfileModal,
 } from './features/profile.mjs';
@@ -118,37 +116,19 @@ import {
   pushUndoSnapshot,
 } from './features/productivity.mjs';
 import { registerCensoRuntime, syncCensoExportButtonVisibility } from './censo-export.mjs';
-import { addAuditEntry } from './features/platform/audit.mjs';
-import {
-  incrementPendingJobs,
-  decrementPendingJobs,
-  syncOfflineButtonStates,
-  isRpcOffline,
-} from './features/platform/offline.mjs';
-import { syncPreimportBackupUi, applyImportEntry } from './features/platform/import-backup.mjs';
-import {
-  syncTeamSyncHeaderButton,
-  closeSettingsDropdown,
-} from './features/settings-help/settings-dropdown.mjs';
-import {
-  guidedTourAdvanceAfterNotaGenerated,
-  guidedTourAdvanceAfterIndicaGenerated,
-  guidedTourAdvanceAfter,
-  onboardingAdvanceAfterParse,
-  onboardingAdvanceAfterSend,
-  tourAfterBulkLabParse,
-  tourOnBulkPreviewPatientSaved,
-} from './features/settings-help/tour-flow.mjs';
 import {
   bindLazyLabsRuntimeCtx,
   bindLazyChartsRuntimeCtx,
+  bindLazyPlatformRuntimeCtx,
+  bindLazySettingsRuntimeCtx,
   chartsRuntimeProxies,
   labsRuntimeProxies,
+  platformRuntimeProxies,
+  settingsHelpRuntimeProxies,
   registerLazyFeatureRuntimes,
 } from './lazy-feature-routes.mjs';
 import {
   registerNotesIndicacionesRuntime,
-  applyProfileToNoteIfEmpty,
   renderNoteForm,
   renderIndicaForm,
 } from './features/notes-indicaciones.mjs';
@@ -193,7 +173,6 @@ import {
   switchConsolidatedTab,
   invalidateInnerTabRenderCache,
   refreshExpedienteAfterPatientSelect,
-  warmExpedienteHeavyTabs,
   renderInnerTabs,
   syncInnerTabVisualOnly,
 } from './features/pase-board.mjs';
@@ -219,7 +198,6 @@ import {
 } from './features/expediente.mjs';
 import {
   emitLiveSyncTodoUpsert,
-  emitLiveSyncTodoDelete,
   syncSettingsLanHostDiskSection,
 } from './features/lan-sync.mjs';
 import {
@@ -257,8 +235,8 @@ export function registerAppRuntimeContext(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
-function installAppRuntimeContextDeps() {
-  Object.assign(rt, {
+function buildRuntimeContextUiDeps() {
+  return {
     showToast,
     navigateToEstadoActualPanel,
     refreshMedPanel: function refreshMedPanel() {
@@ -309,7 +287,7 @@ function installAppRuntimeContextDeps() {
     renderVpo,
     renderRecetaHu,
     pushUndoSnapshot,
-    addAuditEntry,
+    ...platformRuntimeProxies,
     applyDefaultsToNewPatient,
     applyDefaultsToNewIndicaciones,
     normalizeFechaLabHistory,
@@ -320,12 +298,6 @@ function installAppRuntimeContextDeps() {
     requestDocumentJson,
     handleDocumentGenerateResponse,
     guardMobileDocExport,
-    isRpcOffline,
-    incrementPendingJobs,
-    decrementPendingJobs,
-    syncOfflineButtonStates,
-    syncTeamSyncHeaderButton,
-    syncPreimportBackupUi,
     syncSettingsLanHostDiskSection,
     closeProfileModal,
     openProfileModal,
@@ -334,6 +306,34 @@ function installAppRuntimeContextDeps() {
     ...chartsRuntimeProxies,
     renderRoundOverviewPanels,
     switchConsolidatedTab,
+  };
+}
+
+function applyRuntimeParsedToForm(parsed, opts) {
+  opts = opts || {};
+  if (opts.fromNestedPaste) {
+    applyEstadoActualParsedToForm(parsed);
+    var recorded = document.getElementById('ea-recorded-at');
+    if (recorded && 'value' in recorded) {
+      recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+    }
+    return;
+  }
+  navigateToEstadoActualPanel();
+  renderEstadoActualPanel({
+    onReady: function () {
+      openEstadoActualRegistroModal({ preserveForm: true });
+      applyEstadoActualParsedToForm(parsed);
+      var recordedInner = document.getElementById('ea-recorded-at');
+      if (recordedInner && 'value' in recordedInner) {
+        recordedInner.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+      }
+    },
+  });
+}
+
+function buildRuntimeContextFeatureDeps() {
+  return {
     getActivePatient: function () {
       var id = rt.getActiveId();
       if (!id) return null;
@@ -343,28 +343,7 @@ function installAppRuntimeContextDeps() {
         }) || null
       );
     },
-    applyParsed: function (parsed, opts) {
-      opts = opts || {};
-      if (opts.fromNestedPaste) {
-        applyEstadoActualParsedToForm(parsed);
-        var recorded = document.getElementById('ea-recorded-at');
-        if (recorded && 'value' in recorded) {
-          recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
-        }
-        return;
-      }
-      navigateToEstadoActualPanel();
-      renderEstadoActualPanel({
-        onReady: function () {
-          openEstadoActualRegistroModal({ preserveForm: true });
-          applyEstadoActualParsedToForm(parsed);
-          var recorded = document.getElementById('ea-recorded-at');
-          if (recorded && 'value' in recorded) {
-            recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
-          }
-        },
-      });
-    },
+    applyParsed: applyRuntimeParsedToForm,
     ensureForm: ensureEaRegistroModalForm,
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function () {
@@ -377,14 +356,10 @@ function installAppRuntimeContextDeps() {
       resetEaRegistroForm(patient || null);
     },
     selectPatient,
-    onboardingAdvanceAfterParse,
-    onboardingAdvanceAfterSend,
-    tourAfterBulkLabParse,
-    tourOnBulkPreviewPatientSaved,
+    ...settingsHelpRuntimeProxies,
     findPatientByRegistro,
     openPaseSectionInNormal,
     renderDiagramas,
-    closeSettingsDropdown,
     extractParsedValues,
     ...labsRuntimeProxies,
     buildParsedBySectionFromResLabs,
@@ -405,16 +380,19 @@ function installAppRuntimeContextDeps() {
     advanceRondaPatient,
     isMobileWeb,
     ensureUniquePatientName,
-    applyImportEntry,
     buildPatientEntry,
     onMedicionRegistered: function () {
-      guidedTourAdvanceAfter('estado_actual_registro');
+      settingsHelpRuntimeProxies.guidedTourAdvanceAfter('estado_actual_registro');
     },
-    guidedTourAdvanceAfterNotaGenerated,
-    guidedTourAdvanceAfterIndicaGenerated,
     launchConfetti,
     renderEstadoActualBar,
-  });
+  };
+}
+
+function installAppRuntimeContextDeps() {
+  bindLazyPlatformRuntimeCtx(rt);
+  bindLazySettingsRuntimeCtx(rt);
+  Object.assign(rt, buildRuntimeContextUiDeps(), buildRuntimeContextFeatureDeps());
 }
 
 export async function registerAllFeatureRuntimes() {

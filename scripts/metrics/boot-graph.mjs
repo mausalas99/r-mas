@@ -12,6 +12,13 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/lab-panel.mjs',
   'features/tendencias.mjs',
   'features/estado-actual-charts-modal.mjs',
+  'features/clinical-entrega.mjs',
+  'features/settings-help/tour-flow.mjs',
+  'features/settings-help/tour-engine.mjs',
+  'features/settings-help/settings-dropdown.mjs',
+  'features/platform/audit.mjs',
+  'features/platform/import-backup.mjs',
+  'features/platform/offline.mjs',
 ];
 
 function normalizeBootImportPath(from) {
