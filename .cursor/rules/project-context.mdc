@@ -45,15 +45,16 @@ lib/                  Node-side shared logic (importable from main/server)
   historia-clinica/   HC compile, defaults, migration
   drive-import/       Google Drive HC/labs import parsers
 
-lan-squad/            LAN sync host: WS hub, host-store, conflict resolver,
+lan-squad/            LAN sync host: WS hub, host-store (→ host-store/), conflict resolver,
           auth-router, ticket-store, write-queue, team-code
   persistence/        Host durability: CommitBarrier, JSON shards, lab sidecars, SQL v15 repos
 
 public/js/            Renderer modules (pre-bundle)
   features/           UI feature modules (*.mjs) — primary place for new UI work
   app-state.mjs       Patient/state hydration
-  clinical-access-runtime.mjs  Session + privileges
-  storage.js          Legacy localStorage (non-DB paths)
+  clinical-access-runtime.mjs  Session + privileges (façade → clinical-access-runtime/)
+  clinico-access-*.mjs  Scope evaluators (cycle, entrega, guardia, patient, teams, unlock)
+  storage.js          Legacy localStorage (non-DB paths; split helpers under storage/)
 
 public/interno/       Mobile web client (guardia/interno board)
 scripts/              build-ui, bundle-renderer, release, native rebuild
@@ -73,9 +74,9 @@ docs/
 | Topic | Primary locations |
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs`, `lib/db/ipc-handlers.test.mjs` (fake `ipcMain` harness) |
-| Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` (`evaluateClinicalScope` orchestrator + per-rank evaluators) |
-| LAN sync / rooms | `lan-squad/` (`conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` (~1.2k lines) + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
-| Clinical teams / guardia | `public/js/features/clinical-teams/` (`index`, `shared`, `teams-roster*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
+| Roles / privileges | `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs` (teams, guardia, entrega, …), `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` + `clinico-access-*.mjs`; session bootstrap in `clinical-access-runtime/` |
+| LAN sync / rooms | `lan-squad/` (`host-store/` persistence submodules, `conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
+| Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
@@ -84,7 +85,7 @@ docs/
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
 | Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes |
-| Debt metrics | `scripts/metrics/baseline.json`, `npm run metrics` (when wired) |
+| Debt metrics | `scripts/metrics/` (`lint-tier1.mjs`, `check.mjs`, `boot-graph.mjs`, `baseline.json`); `npm run lint:tier1` (changed paths), `npm run metrics:check` |
 | Onboarding / tour | `clinical-onboarding*.mjs`, `tour-targets.mjs`, `features/settings-help/` (tours, help, release notes), barrel `settings-help.mjs` |
 | UI shell / pase board | `app-shell.mjs` (chrome/toast/modals), `clinical-quick-export.mjs`, `document-export-client.mjs`, `features/pase-board.mjs`, `public/styles/pase-board.css` |
 
@@ -127,6 +128,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-20** `debt-refactor`: Tier 1 god-file splits + complexity burn-down — `clinical-access-runtime/`, `clinico-access-*`, `host-store/`, `lib/db/{schema-migrate-*,ipc-handlers-*,clinical-access-*}`, teams-roster LAN/panel splits, tour/settings-help, storage/labs/tendencias; Phase 0 metrics tooling (`lint-tier1`, `top-complexity`, `read-feature-src`); 520 changed paths eslint `--max-warnings 0`; oversized tests → `tests/`.
 - **2026-06-20** `ui-audit-tracks`: scrim/z-index/viewport tokens, interno skip link, radius hierarchy, lab/pase hex tokenization, empty-state parity, track 1.5 header/clinical/popover z-index; spec `docs/superpowers/specs/2026-06-20-hallmark-ui-audit-tracks-design.md`.
 - **2026-06-20** `release-7.3.8`: COAG lab section split from BH; EA I/O balance NC + diet confirm LAN merge; directorio LAN all registered users + sala filter + refresh UI preserve; DB boot toast; SQLCipher pack hardening + sidebar bed-first cards; `patient-sidebar-card.mjs`, `clinical-username.mjs`, `teams-roster-lan.mjs`, `estado-actual-data.mjs`.
 - **2026-06-14** `release-7.3.7`: LAN patient delete by id only (registro reuse / readmisión); `clearPatientDeleteTombstoneForAdmit`; Drive import en barra Clínico expediente; `entity-versions.mjs`, `orchestrator.mjs`, `lan-patient-merge.mjs`, `expediente-tabs.mjs`.
@@ -146,4 +148,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-06-11** `lan-purge-hardening`: purga host de pacientes bundle-only (entries planos sin fila `patients[]`) vía `purgePatientFromHostCensus` + `DELETE /api/lan/v1/patients/:id`; guard de propiedad por `audit_log` (`isHostPatientOwnedByOtherClient`) — purga solo admin/huérfanos, el delete local ya no purga al host; `host-store.js`, `host-router.js`, `orchestrator.mjs`, `host-patients-annotate.mjs`, `patients.mjs`.
 - **2026-06-11** `phase6-procesarlabs`: `procesarLabs` (complejidad 49) descompuesto en orquestador + `parseLabPatientHeader_`/`segmentLabReportBlocks_`/`collectLabSections_` (todas ≤ 15) con goldens de caracterización (`labs-procesar-characterization.test.mjs`, fixtures + script de captura); cero diffs de salida; `labs.js`, `labs-procesar-fixtures.mjs`.
 - **2026-06-11** `ea-charts-split`: `estado-actual-charts.mjs` (1622 líneas) dividido en submódulos bajo presupuesto Tier 1 — façade re-exporta API pública sin cambiar importadores; `estado-actual-charts-series.mjs` (series/colores/firmas), `-display.mjs` (downsample/bundle cache), `-chartjs.mjs` (wiring Chart.js), `-tabs.mjs` (shell de pestañas DOM).
-- **2026-06-11** `ea-charts-tabs`: modal de gráficas Estado Actual con pestañas, downsampling a 100 puntos con tooltips de serie completa, updates in-place por pestaña; `estado-actual-charts.mjs`, `estado-actual-charts-modal.mjs`, `estado-actual.css`.

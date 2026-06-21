@@ -17,9 +17,22 @@ export function sqlcipherDestAbs(root = repoRoot) {
   return path.join(root, SQLCIPHER_NODE_REL);
 }
 
-/** @param {string} [root] */
-function electronCacheAbs(root = repoRoot) {
+export function electronCacheAbs(root = repoRoot, platform = process.platform, arch = process.arch) {
+  return path.join(root, 'scripts', '.native-cache', `better_sqlite3.electron.${platform}-${arch}.node`);
+}
+
+function legacyElectronCacheAbs(root = repoRoot) {
   return path.join(root, 'scripts', '.native-cache', 'better_sqlite3.electron.node');
+}
+
+/** Copy dest → per-arch cache (no load probe). Used after cross-arch beforePack installs. */
+export function stashSqlcipherBinaryForArch(root, platform, arch) {
+  const dest = sqlcipherDestAbs(root);
+  if (!fs.existsSync(dest)) return false;
+  const cache = electronCacheAbs(root, platform, arch);
+  fs.mkdirSync(path.dirname(cache), { recursive: true });
+  fs.copyFileSync(dest, cache);
+  return true;
 }
 
 /** @param {string} [root] */
@@ -34,8 +47,12 @@ export function electronSqlcipherProbeScript(root = repoRoot) {
   return path.join(root, 'scripts', 'electron-sqlcipher-probe.cjs');
 }
 
+/** Headless Electron child env (probe only — no Dock window / main.js). */
+export function electronProbeEnv() {
+  return { ...process.env, ELECTRON_RUN_AS_NODE: '1' };
+}
+
 /**
- * True when we can spawn local Electron to open :memory: (same OS + CPU arch).
  * Cross-arch Mac packs (arm64 host → x64 target) must skip load probe — Mach-O only.
  * @param {string} platform
  * @param {string} arch
@@ -56,7 +73,7 @@ export function electronSqlcipherLoads(root = repoRoot) {
     stdio: 'pipe',
     encoding: 'utf8',
     timeout: 45_000,
-    env: process.env,
+    env: electronProbeEnv(),
   });
   return r.status === 0;
 }
@@ -65,10 +82,15 @@ export function electronSqlcipherLoads(root = repoRoot) {
  * Cache the current dest binary when it already loads under Electron.
  * @param {string} [root]
  */
-export function cacheElectronBinaryIfValid(root = repoRoot) {
+export function cacheElectronBinaryIfValid(
+  root = repoRoot,
+  platform = process.platform,
+  arch = process.arch
+) {
   const dest = sqlcipherDestAbs(root);
+  if (!canProbeSqlcipherUnderElectron(platform, arch)) return false;
   if (!fs.existsSync(dest) || !electronSqlcipherLoads(root)) return false;
-  const cache = electronCacheAbs(root);
+  const cache = electronCacheAbs(root, platform, arch);
   fs.mkdirSync(path.dirname(cache), { recursive: true });
   fs.copyFileSync(dest, cache);
   return true;
@@ -78,13 +100,23 @@ export function cacheElectronBinaryIfValid(root = repoRoot) {
  * Restore a previously cached Electron binary.
  * @param {string} [root]
  */
-export function restoreElectronBinaryFromCache(root = repoRoot) {
-  const cache = electronCacheAbs(root);
+export function restoreElectronBinaryFromCache(
+  root = repoRoot,
+  platform = process.platform,
+  arch = process.arch
+) {
   const dest = sqlcipherDestAbs(root);
-  if (!fs.existsSync(cache)) return false;
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(cache, dest);
-  return true;
+  const candidates = [electronCacheAbs(root, platform, arch)];
+  if (platform === process.platform && arch === process.arch) {
+    candidates.push(legacyElectronCacheAbs(root));
+  }
+  for (const cache of candidates) {
+    if (!fs.existsSync(cache)) continue;
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.copyFileSync(cache, dest);
+    return true;
+  }
+  return false;
 }
 
 /** @param {string} [root] */

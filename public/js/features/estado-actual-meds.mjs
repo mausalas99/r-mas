@@ -2,10 +2,18 @@ import {
   effectiveSoapCategory,
   formatMedicationSoapShort,
   advanceAbxMedTextForManejoDate,
-  mergeDietaItems,
-  buildDietProposalText,
 } from '../med-receta-core.mjs';
-import { MED_FIELD_KEYS } from './estado-actual-data.mjs';
+import {
+  MED_FIELD_KEYS,
+  applyDietaSuplementoPolicy,
+} from './estado-actual-data.mjs';
+import {
+  hasActiveDietProposal,
+  shouldSkipDietProposal,
+  writeDietProposal,
+  mergedDietFromReceta,
+  mergedDietHasContent,
+} from './estado-actual-meds-diet.mjs';
 
 /**
  * @param {string | null | undefined} activeId
@@ -63,19 +71,14 @@ export function hasPendingEaProposals(pendienteReceta) {
  * @param {Record<string, unknown> | null | undefined} monitoreo
  * @returns {Record<string, unknown>}
  */
-function hasActiveDietProposal(pendienteReceta) {
-  return DIET_PENDING_KEYS.some(function (k) {
-    return pendienteReceta && pendienteReceta[k] && String(pendienteReceta[k]).trim();
-  });
-}
-
-function mergePendingDietProposal(ec, pend, conf) {
+function mergePendingDietProposal(ec, pend, _conf) {
   if (!ec || typeof ec !== 'object') return ec;
   if (!hasActiveDietProposal(pend)) return ec;
   DIET_PENDING_KEYS.forEach(function (k) {
     var pending = pend[k];
     if (pending != null && String(pending).trim()) ec[k] = String(pending).trim();
   });
+  applyDietaSuplementoPolicy(ec);
   return ec;
 }
 
@@ -87,42 +90,13 @@ function mergePendingDietProposal(ec, pend, conf) {
  * @returns {boolean}
  */
 export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
-  opts = opts || {};
   if (!monitoreo || !recetaBlock || !Array.isArray(recetaBlock.dietas) || !recetaBlock.dietas.length) {
     return false;
   }
-  if (
-    !opts.force &&
-    hasActiveDietProposal(
-      monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object'
-        ? monitoreo.pendienteReceta
-        : null
-    )
-  ) {
-    return false;
-  }
-  var ec =
-    monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object' ? monitoreo.estadoClinico : {};
-  var conf =
-    monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
-  if (!opts.force && conf.dieta) return false;
-  if (!opts.force && String(ec.dieta || '').trim()) return false;
-  if (conf.dieta && String(ec.dieta || '').trim()) return false;
-
-  var merged = mergeDietaItems(recetaBlock.dietas);
-  var desc = String(merged.descripcion || '').trim();
-  if (!desc && merged.kcal == null && merged.proteinG == null) return false;
-
-  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
-    monitoreo.pendienteReceta = {};
-  }
-  monitoreo.pendienteReceta.dieta = desc || buildDietProposalText(merged);
-  if (merged.kcal != null) monitoreo.pendienteReceta.kcal = String(merged.kcal);
-  if (merged.proteinG != null) monitoreo.pendienteReceta.proteinG = String(merged.proteinG);
-  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
-    monitoreo.confirmado = {};
-  }
-  /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = false;
+  if (shouldSkipDietProposal(monitoreo, opts)) return false;
+  var merged = mergedDietFromReceta(recetaBlock.dietas);
+  if (!mergedDietHasContent(merged)) return false;
+  writeDietProposal(monitoreo, merged);
   return true;
 }
 
@@ -153,6 +127,34 @@ export function estadoClinicoForDisplay(monitoreo, opts) {
  * @param {Record<string, unknown> | null | undefined} monitoreo
  * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  */
+/**
+ * @param {string} pending
+ * @param {string} fechaActualizacion
+ * @param {Date} [refDate]
+ */
+function pendingMedValueForText(key, pending, fechaActualizacion, refDate) {
+  var val = String(pending).trim();
+  return key === 'abx' ? advanceAbxTextForEa(val, fechaActualizacion, refDate) : val;
+}
+
+/**
+ * @param {Record<string, unknown>} ec
+ * @param {Record<string, unknown>} pend
+ * @param {Record<string, unknown>} conf
+ * @param {string} fechaActualizacion
+ * @param {Date} [refDate]
+ */
+function mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate) {
+  for (var k of MED_FIELD_KEYS) {
+    if (conf[k]) continue;
+    var pending = pend[k];
+    if (pending == null || !String(pending).trim()) continue;
+    if (!ec[k] || !String(ec[k]).trim()) {
+      ec[k] = pendingMedValueForText(k, String(pending), fechaActualizacion, refDate);
+    }
+  }
+}
+
 export function estadoClinicoForText(monitoreo, opts) {
   if (!monitoreo || typeof monitoreo !== 'object') return {};
   var fechaActualizacion = opts && opts.fechaActualizacion ? String(opts.fechaActualizacion).trim() : '';
@@ -164,15 +166,7 @@ export function estadoClinicoForText(monitoreo, opts) {
       : {};
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
-  for (var k of MED_FIELD_KEYS) {
-    if (conf[k]) continue;
-    var pending = pend[k];
-    if (pending == null || !String(pending).trim()) continue;
-    if (!ec[k] || !String(ec[k]).trim()) {
-      var val = String(pending).trim();
-      ec[k] = k === 'abx' ? advanceAbxTextForEa(val, fechaActualizacion, refDate) : val;
-    }
-  }
+  mergePendingMedsForText(ec, pend, conf, fechaActualizacion, refDate);
   return ec;
 }
 
@@ -317,6 +311,7 @@ export function confirmDietProposal(monitoreo) {
       monitoreo.pendienteReceta[k] = '';
     }
   });
+  applyDietaSuplementoPolicy(monitoreo.estadoClinico, monitoreo.pendienteReceta);
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};
   }

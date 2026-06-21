@@ -65,6 +65,30 @@ test('confirmDietProposal copia dieta, kcal y proteinG', () => {
   assert.equal(m.confirmado.dieta, true);
 });
 
+test('confirmDietProposal suplemento descarta kcal y proteína stale', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'SUPLEMENTO';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '70';
+  confirmDietProposal(m);
+  assert.equal(m.estadoClinico.dieta, 'SUPLEMENTO');
+  assert.equal(m.estadoClinico.kcal, '');
+  assert.equal(m.estadoClinico.proteinG, '');
+  assert.equal(m.pendienteReceta.kcal, '');
+  assert.equal(m.pendienteReceta.proteinG, '');
+});
+
+test('estadoClinicoForDisplay suplemento omite kcal stale de propuesta', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'SUPLEMENTO';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '70';
+  const ec = estadoClinicoForDisplay(m);
+  assert.equal(ec.dieta, 'SUPLEMENTO');
+  assert.equal(ec.kcal, '');
+  assert.equal(ec.proteinG, '');
+});
+
 test('hasPendingEaProposals detecta dieta pendiente', () => {
   const m = emptyMonitoreo();
   m.pendienteReceta.proteinG = '70';
@@ -165,6 +189,33 @@ test('applyDietProposalFromRecetaBlock copia dieta desde block.dietas', () => {
   assert.equal(ec.dieta, 'BLANDA PICADA ALTA EN FIBRA');
   assert.equal(ec.kcal, '1500');
   assert.equal(ec.proteinG, '60');
+});
+
+test('applyDietProposalFromRecetaBlock suplemento omite kcal y proteína', () => {
+  const m = emptyMonitoreo();
+  const block = {
+    dietas: [{ descripcionRaw: 'SUPLEMENTO', kcal: 500, proteinG: 20 }],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.pendienteReceta.dieta, 'SUPLEMENTO');
+  assert.equal(m.pendienteReceta.kcal, '');
+  assert.equal(m.pendienteReceta.proteinG, '');
+});
+
+test('applyDietProposalFromRecetaBlock normal a suplemento limpia calóricos pendientes', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL PICADA';
+  m.pendienteReceta.kcal = '2000';
+  m.pendienteReceta.proteinG = '70';
+  m.pendienteReceta.kcalKg = '28';
+  const block = {
+    dietas: [{ descripcionRaw: 'SUPLEMENTO', kcal: 500, proteinG: 20 }],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block, { force: true }), true);
+  assert.equal(m.pendienteReceta.dieta, 'SUPLEMENTO');
+  assert.equal(m.pendienteReceta.kcal, '');
+  assert.equal(m.pendienteReceta.proteinG, '');
+  assert.equal(m.pendienteReceta.kcalKg, '');
 });
 
 test('applyDietProposalFromRecetaBlock no pisa propuesta pendiente sin force', () => {

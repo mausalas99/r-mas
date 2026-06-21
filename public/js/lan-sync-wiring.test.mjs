@@ -6,23 +6,88 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFeatureSrc } from '../../scripts/lib/read-feature-src.mjs';
 
 const jsRoot = dirname(fileURLToPath(import.meta.url));
 const read = (rel) => readFileSync(join(jsRoot, rel), 'utf8');
 
-const lanSyncFeature = read('features/lan/orchestrator.mjs');
+function readLanSources(relPaths) {
+  return relPaths.map((rel) => read(rel)).join('\n');
+}
+
+function readHistoriaClinicaPanelSources() {
+  return readLanSources([
+    'features/historia-clinica-panel.mjs',
+    'features/historia-clinica-panel/runtime.mjs',
+    'features/historia-clinica-panel/state.mjs',
+    'features/historia-clinica-panel/catalogs.mjs',
+    'features/historia-clinica-panel/data-normalize.mjs',
+    'features/historia-clinica-panel/fetch.mjs',
+    'features/historia-clinica-panel/labs.mjs',
+    'features/historia-clinica-panel/render-html.mjs',
+    'features/historia-clinica-panel/mount-widgets.mjs',
+    'features/historia-clinica-panel/wire.mjs',
+    'features/historia-clinica-panel/save.mjs',
+    'features/historia-clinica-panel/panel-controller.mjs',
+    'features/historia-clinica-panel/drive-import.mjs',
+    'features/historia-clinica-panel/panel-entry.mjs',
+  ]);
+}
+
+const lanSyncFeature = readLanSources([
+  'features/lan/orchestrator.mjs',
+  'features/lan/orchestrator-wire.mjs',
+  'features/lan/orchestrator-wire-config.mjs',
+  'features/lan/orchestrator-wire-events.mjs',
+  'features/lan/orchestrator-bundle-apply.mjs',
+  'features/lan/orchestrator-commands.mjs',
+  'features/lan/orchestrator-boot.mjs',
+  'features/lan/orchestrator-runtime.mjs',
+]);
 const lanEntityVersions = read('features/lan/entity-versions.mjs');
 const lanConflicts = read('features/lan/conflicts.mjs');
-const lanSyncPush = read('features/lan/push.mjs');
-const lanSyncRoom = read('features/lan/room.mjs');
-const lanSyncPanel = read('features/lan/panel.mjs');
+const lanSyncPush = readLanSources([
+  'features/lan/push.mjs',
+  'features/lan/push-bridge.mjs',
+  'features/lan/push-reconcile.mjs',
+  'features/lan/push-revision.mjs',
+  'features/lan/push-bundle.mjs',
+  'features/lan/push-outbox.mjs',
+  'features/lan/push-outbox-drain.mjs',
+]);
+const lanSyncRoom = readLanSources([
+  'features/lan/room.mjs',
+  'features/lan/room-bridge.mjs',
+  'features/lan/room-wire.mjs',
+  'features/lan/room-snapshot.mjs',
+  'features/lan/room-host-failover.mjs',
+  'features/lan/room-membership.mjs',
+  'features/lan/room-post-join.mjs',
+]);
+const lanSyncPanel =
+  read('features/lan/panel.mjs') +
+  '\n' +
+  read('features/lan/panel-render-once.mjs') +
+  '\n' +
+  read('features/lan/panel-connection-chrome.mjs') +
+  '\n' +
+  read('features/lan/panel-delegation.mjs');
+const lanPanelDiagnostics = read('features/lan/panel-diagnostics.mjs');
+const lanSyncPanelDiagnostics = lanSyncPanel + '\n' + lanPanelDiagnostics;
 function readClinicalTeamsSources() {
   const dir = join(jsRoot, 'features/clinical-teams');
-  return readFileSync(join(dir, 'index.mjs'), 'utf8')
-    + '\n'
-    + readFileSync(join(dir, 'teams-roster.mjs'), 'utf8')
-    + '\n'
-    + readFileSync(join(dir, 'teams-invite.mjs'), 'utf8');
+  return readFeatureSrc(dir, [
+    'index.mjs',
+    'teams-roster.mjs',
+    'teams-roster-shell.mjs',
+    'teams-roster-manage.mjs',
+    'teams-roster-team-cards.mjs',
+    'teams-roster-submit.mjs',
+    'teams-roster-panel.mjs',
+    'teams-roster-panel-build.mjs',
+    'teams-guardia-bridge.mjs',
+    'teams-invite.mjs',
+  ]);
 }
 const clinicalTeams = readClinicalTeamsSources();
 const appJs = read('app.js');
@@ -34,7 +99,12 @@ describe('LAN module boot wiring', () => {
   });
 
   it('transport deps use globalThis bridge (esbuild duplicate chunk guard)', () => {
-    const transport = read('features/lan/transport.mjs');
+    const transport =
+      read('features/lan/transport.mjs') +
+      '\n' +
+      read('features/lan/transport-deps.mjs') +
+      '\n' +
+      read('features/lan/transport-init.mjs');
     assert.match(transport, /__LAN_SYNC_TRANSPORT_DEPS__/);
     assert.match(transport, /ensureLanSyncTransportDepsWired/);
     assert.match(transport, /ensureLanSyncTransportDepsWired\(\)\.then/);
@@ -121,8 +191,8 @@ describe('LAN event and handler wiring', () => {
   });
 
   it('diagnostics retry button flushes outbox', () => {
-    assert.match(lanSyncPanel, /Reintentar cola de sincronización/);
-    assert.match(lanSyncPanel, /flushLiveSyncOutbox\(rid\)/);
+    assert.match(lanSyncPanelDiagnostics, /Reintentar cola de sincronización/);
+    assert.match(lanSyncPanelDiagnostics, /flushLiveSyncOutbox\(rid\)/);
   });
 
   it('clinical-ops sync events wired at boot and on panel delegate', () => {
@@ -140,8 +210,8 @@ describe('LAN event and handler wiring', () => {
       /import\s*\{[\s\S]*?syncLiveSyncStatusChrome[\s\S]*?\}\s*from '\.\/room\.mjs'/
     );
     assert.match(
-      lanSyncPanel,
-      /import\s*\{[\s\S]*?resolveLanHostUrlAuto[\s\S]*?\}\s*from '\.\/transport\.mjs'/
+      read('features/lan/panel-render-once.mjs'),
+      /resolveLanHostUrlAuto/
     );
   });
 
@@ -150,7 +220,7 @@ describe('LAN event and handler wiring', () => {
     assert.match(lanSyncPanel, /lanPanelNeedsFullRebuild/);
     assert.match(
       lanSyncPanel,
-      /isLanConnectionDropdownOpen\(\) && lanPanelHasBuiltChrome\(root\) && !lanPanelNeedsFullRebuild\(root\)/
+      /isLanConnectionDropdownOpen\(\) && deps\.lanPanelHasBuiltChrome\(root\) && !deps\.lanPanelNeedsFullRebuild\(root\)/
     );
     assert.match(lanSyncPanel, /showInvitePaste: needsInvitePaste/);
   });
@@ -191,7 +261,7 @@ describe('LAN event and handler wiring', () => {
   });
 
   it('history-clinica-panel does not call scheduleLiveSyncPush after lanPushHistoriaClinica', () => {
-    const hcPanel = read('features/historia-clinica-panel.mjs');
+    const hcPanel = readHistoriaClinicaPanelSources();
     assert.doesNotMatch(
       hcPanel,
       /scheduleLiveSyncPush\(\)/,
@@ -224,11 +294,18 @@ describe('clinical teams LAN publish wiring', () => {
   const publishPaths = [
     'handleLeaveTeamClick',
     'handleDeleteTeamClick',
-    'handleEditTeamSubmit',
     'handleAddMemberSubmit',
     'joinTeamById',
     'handleCreateTeamSubmit',
   ];
+
+  it('handleEditTeamSubmit delegates to submitTeamEdit which publishes to LAN', () => {
+    assert.match(clinicalTeams, /async function handleEditTeamSubmit[\s\S]*submitTeamEdit/);
+    assert.match(
+      clinicalTeams,
+      /submitTeamEdit[\s\S]*rpc-clinical-teams-changed[\s\S]*publishClinicalTeamsToLan/
+    );
+  });
 
   for (const fn of publishPaths) {
     it(`${fn} publishes or dispatches teams-changed for LAN`, () => {

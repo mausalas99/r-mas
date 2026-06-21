@@ -1,24 +1,42 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFeatureSrc } from '../../../scripts/lib/read-feature-src.mjs';
 import { filterJoinedTeams, CLINICAL_TEAM_SERVICES } from './clinical-teams.mjs';
 
 const featureDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
-const clinicalTeamsSrc = [
+const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'shared.mjs',
   'teams-roster.mjs',
+  'teams-roster-shell.mjs',
+  'teams-roster-manage.mjs',
+  'teams-roster-profile.mjs',
+  'teams-roster-profile-claim.mjs',
+  'teams-roster-profile-persist.mjs',
+  'teams-roster-submit.mjs',
   'teams-roster-render.mjs',
+  'teams-roster-create.mjs',
+  'teams-roster-team-cards.mjs',
+  'teams-roster-directory.mjs',
+  'teams-roster-panel.mjs',
+  'teams-roster-panel-build.mjs',
   'teams-roster-lan.mjs',
+  'teams-roster-lan-dom.mjs',
+  'teams-roster-lan-render.mjs',
+  'teams-roster-lan-filters.mjs',
+  'teams-roster-lan-state.mjs',
+  'teams-roster-lan-load.mjs',
+  'teams-roster-lan-modal.mjs',
+  'teams-roster-lan-assign.mjs',
+  'teams-roster-lan-wire.mjs',
+  'teams-roster-lan-row-html.mjs',
   'teams-roster-interactions.mjs',
   'teams-roster-modal-chrome.mjs',
   'teams-invite.mjs',
   'teams-guardia-bridge.mjs',
   'index.mjs',
-]
-  .map((name) => readFileSync(join(featureDir, name), 'utf8'))
-  .join('\n');
+]);
 
 describe('clinical-teams', () => {
   it('filterJoinedTeams returns teams where user is a member', () => {
@@ -157,8 +175,8 @@ describe('clinical-teams', () => {
   });
 
   it('LAN directorio preserves collapsed rank groups across background refresh', () => {
-    assert.match(clinicalTeamsSrc, /lanDirectoryCollapsedRanks/);
-    assert.match(clinicalTeamsSrc, /lanDirectoryExpandedRanks/);
+    assert.match(clinicalTeamsSrc, /lanDirRt\.collapsedRanks/);
+    assert.match(clinicalTeamsSrc, /lanDirRt\.expandedRanks/);
     assert.match(clinicalTeamsSrc, /shouldLanRankGroupOpen/);
     assert.match(clinicalTeamsSrc, /captureLanDirectoryCollapseState/);
     assert.match(clinicalTeamsSrc, /data-lan-rank-group/);
@@ -178,7 +196,7 @@ describe('clinical-teams', () => {
   });
 
   it('LAN directorio freezes auto-refresh while open (manual Actualizar)', () => {
-    assert.match(clinicalTeamsSrc, /lanDirectoryFreezeAutoRefresh/);
+    assert.match(clinicalTeamsSrc, /lanDirRt\.freezeAutoRefresh/);
     assert.match(clinicalTeamsSrc, /refreshLanDirectoryFromHostUi/);
     assert.match(clinicalTeamsSrc, /clinical-lan-directory-refresh-btn/);
     assert.match(clinicalTeamsSrc, /buildLanDirectoryFingerprint/);

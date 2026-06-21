@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { describeNativeBinary } from './lib/native-binary-format.mjs';
+import { electronProbeEnv } from './lib/sqlcipher-native.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -50,7 +51,7 @@ function probeSqlcipherElectron() {
     stdio: 'pipe',
     encoding: 'utf8',
     timeout: 60_000,
-    env: process.env,
+    env: electronProbeEnv(),
   });
   if (r.status === 0) return { ok: true };
   const err = (r.stderr || r.stdout || '').trim();

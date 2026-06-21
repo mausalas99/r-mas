@@ -21,7 +21,7 @@ test('restoreElectronBinaryFromCache returns false when cache missing', () => {
 test('restoreElectronBinaryFromCache copies cached binary to dest', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-sqlcipher-'));
   const cacheDir = path.join(tmp, 'scripts', '.native-cache');
-  const cache = path.join(cacheDir, 'better_sqlite3.electron.node');
+  const cache = path.join(cacheDir, `better_sqlite3.electron.${process.platform}-${process.arch}.node`);
   const dest = sqlcipherDestAbs(tmp);
   const payload = Buffer.from('cached-electron-binary');
   fs.mkdirSync(cacheDir, { recursive: true });

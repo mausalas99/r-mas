@@ -30,7 +30,7 @@ const tier1 = {
     'lan-squad/**/*.cjs',
   ],
   languageOptions: {
-    ecmaVersion: 2022,
+    ecmaVersion: 'latest',
     sourceType: 'module',
     globals: { ...globals.browser, ...globals.node },
   },
@@ -67,6 +67,20 @@ const bootHubs = {
   files: ['public/js/app.js', 'public/js/app-runtimes.mjs', 'public/js/app-shell.mjs'],
   rules: {
     'max-lines-per-function': ['error', { max: 120, skipBlankLines: true, skipComments: true }],
+  },
+};
+
+/** Characterization / contract tests: long describe blocks with many it() cases */
+const tier1Tests = {
+  files: [
+    '**/*.test.mjs',
+    '**/*.test.js',
+    'public/js/**/*.test.mjs',
+    'lan-squad/**/*.test.js',
+    'lib/**/*.test.mjs',
+  ],
+  rules: {
+    'max-lines-per-function': ['error', { max: 320, skipBlankLines: true, skipComments: true }],
   },
 };
 
@@ -137,6 +151,7 @@ export default [
   tier1Commonjs,
   tier2LegacyCjs,
   bootHubs,
+  tier1Tests,
   rootProcessCommonjs,
   rootProcessEsm,
   scriptsBlock,

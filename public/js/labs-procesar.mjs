@@ -35,6 +35,110 @@ function parseLabUbicacion_(textoBruto) {
   return (uTok[0] || uRaw.split(/\s+(?:Medico|Médico|Edad)\s*:/i)[0] || uRaw).trim();
 }
 
+function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
+  var mGaso = tNorm.match(
+    /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i
+  );
+  var bloqueGaso = mGaso ? mGaso[0] : '';
+  var mLCR =
+    textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
+    textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
+    textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
+  var bloqueLCR = mLCR ? mLCR[0] : '';
+  var bloqueCitoLC = deps.bloqueCitoquimicoLiquidosFull(textoBruto);
+  var mEGO = tNorm.match(
+    /(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i
+  );
+  var bloqueEGO = mEGO ? mEGO[0] : '';
+  var tSinLiqCorp = tNorm;
+  if (bloqueCitoLC) {
+    tSinLiqCorp = tNorm.replace(bloqueCitoLC.replace(/\r/g, '').replace(/\s+/g, ' '), ' ');
+  }
+  var textoQS = tSinLiqCorp
+    .replace(bloqueGaso, ' ')
+    .replace(bloqueEGO, ' ')
+    .replace(bloqueLCR ? bloqueLCR.replace(/\s+/g, ' ') : '', ' ');
+  var textoParaBh = tSinLiqCorp;
+  if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
+  var esSoloGaso =
+    /GASOMETRIA/i.test(tNorm) &&
+    !/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
+  return { bloqueGaso: bloqueGaso, textoQS: textoQS, textoParaBh: textoParaBh, esSoloGaso: esSoloGaso };
+}
+
+function pushLabSection_(resLabs, value) {
+  if (value) resLabs.push(value);
+}
+
+function collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm) {
+  var bhRes = deps.parseBH_(blocks.textoParaBh);
+  if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
+  if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
+  pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf));
+  pushLabSection_(resLabs, deps.parseESC_(blocks.textoQS));
+  pushLabSection_(resLabs, deps.parsePFH_(blocks.textoParaBh));
+  pushLabSection_(resLabs, deps.parseLipasa_(blocks.textoQS));
+  pushLabSection_(resLabs, deps.parsePlaquetasCitrato_(textoBruto, tNorm));
+  return bhRes && bhRes.extras ? bhRes.extras : {};
+}
+
+function appendFrotisLines_(deps, resLabs, textoBruto) {
+  var fro = deps.parseFrotisSangre_(textoBruto);
+  if (!fro) return;
+  fro.split('\n').forEach(function (line) {
+    if (line) resLabs.push(line);
+  });
+}
+
+function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
+  var resLabs = [];
+  var bhExtras = blocks.esSoloGaso
+    ? {}
+    : collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm);
+  pushLabSection_(resLabs, deps.parseGaso_(blocks.bloqueGaso, blocks.textoQS));
+  pushLabSection_(resLabs, deps.parsePIE_(tNorm));
+  pushLabSection_(resLabs, deps.parsearLCR(textoBruto));
+  pushLabSection_(resLabs, deps.parsearCitoquimicoLiquidos(textoBruto));
+  pushLabSection_(
+    resLabs,
+    deps.formatAscitisInterpretacionLine_(deps.buildAscitisLabAlerts_(textoBruto))
+  );
+  pushLabSection_(resLabs, deps.parseFisicoquimicoHeces_(textoBruto));
+  appendFrotisLines_(deps, resLabs, textoBruto);
+  pushLabSection_(resLabs, deps.parseEGO_(textoBruto));
+  pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
+  pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
+  pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
+  return { resLabs: resLabs, bhExtras: bhExtras };
+}
+
+function parseLabPatientHeader_(deps, textoBruto) {
+  var mNombre = textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
+  var mExp = textoBruto.match(/Expediente:\s*([^\n\r]+)/i);
+  var mSexo = textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
+  var mEdad = textoBruto.match(/Edad:\s*([^\n\r]+)/i);
+  var expRaw = mExp
+    ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim()
+    : '';
+  var edadParts = parseLabEdadParts_(mEdad);
+  var sexoRaw = parseLabSexoNorm_(mSexo);
+  var patient = {
+    name: mNombre ? mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim() : '',
+    expediente: expRaw,
+    sexo: sexoRaw,
+    edad: edadParts.edadRaw ? edadParts.edadRaw + ' ' + edadParts.edadUnidad : '',
+    fecha: deps.extractLabReportFechaDMY(textoBruto),
+    hora: deps.extractLabReportHora(textoBruto),
+    ubicacion: parseLabUbicacion_(textoBruto),
+  };
+  return {
+    patient: patient,
+    edadRaw: edadParts.edadRaw,
+    edadUnidad: edadParts.edadUnidad,
+    sexoRaw: sexoRaw,
+  };
+}
+
 /**
  * @param {object} deps
  * @param {(texto: string) => string} deps.bloqueCitoquimicoLiquidosFull
@@ -46,6 +150,7 @@ function parseLabUbicacion_(textoBruto) {
  * @param {(texto: string, demograf: object) => object | null} deps.parseQS_
  * @param {(texto: string) => object | null} deps.parseESC_
  * @param {(texto: string) => object | null} deps.parsePFH_
+ * @param {(texto: string) => object | null} deps.parseLipasa_
  * @param {(texto: string, tNorm: string) => object | null} deps.parsePlaquetasCitrato_
  * @param {(bloque: string, textoQS: string) => object | null} deps.parseGaso_
  * @param {(tNorm: string) => object | null} deps.parsePIE_
@@ -61,119 +166,11 @@ function parseLabUbicacion_(textoBruto) {
  * @param {(texto: string) => object | null} deps.parseSerologiaBancoSangre_
  */
 export function createProcesarLabs(deps) {
-  function segmentLabReportBlocks_(textoBruto, tNorm) {
-    var mGaso = tNorm.match(
-      /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i
-    );
-    var bloqueGaso = mGaso ? mGaso[0] : '';
-    var mLCR =
-      textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
-      textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
-      textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
-    var bloqueLCR = mLCR ? mLCR[0] : '';
-    var bloqueCitoLC = deps.bloqueCitoquimicoLiquidosFull(textoBruto);
-    var mEGO = tNorm.match(
-      /(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i
-    );
-    var bloqueEGO = mEGO ? mEGO[0] : '';
-    var tSinLiqCorp = tNorm;
-    if (bloqueCitoLC) {
-      tSinLiqCorp = tNorm.replace(bloqueCitoLC.replace(/\r/g, '').replace(/\s+/g, ' '), ' ');
-    }
-    var textoQS = tSinLiqCorp
-      .replace(bloqueGaso, ' ')
-      .replace(bloqueEGO, ' ')
-      .replace(bloqueLCR ? bloqueLCR.replace(/\s+/g, ' ') : '', ' ');
-    var textoParaBh = tSinLiqCorp;
-    if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
-    var esSoloGaso =
-      /GASOMETRIA/i.test(tNorm) &&
-      !/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
-    return {
-      bloqueGaso: bloqueGaso,
-      textoQS: textoQS,
-      textoParaBh: textoParaBh,
-      esSoloGaso: esSoloGaso,
-    };
-  }
-
-  function pushLabSection_(resLabs, value) {
-    if (value) resLabs.push(value);
-  }
-
-  function collectCoreLabSections_(resLabs, blocks, demograf, textoBruto, tNorm) {
-    var bhExtras = {};
-    var bhRes = deps.parseBH_(blocks.textoParaBh);
-    if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
-    if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
-    if (bhRes && bhRes.extras) bhExtras = bhRes.extras;
-    pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf));
-    pushLabSection_(resLabs, deps.parseESC_(blocks.textoQS));
-    pushLabSection_(resLabs, deps.parsePFH_(blocks.textoParaBh));
-    pushLabSection_(resLabs, deps.parsePlaquetasCitrato_(textoBruto, tNorm));
-    return bhExtras;
-  }
-
-  function collectLabSections_(textoBruto, tNorm, blocks, demograf) {
-    var resLabs = [];
-    var bhExtras = {};
-    if (!blocks.esSoloGaso) {
-      bhExtras = collectCoreLabSections_(resLabs, blocks, demograf, textoBruto, tNorm);
-    }
-    pushLabSection_(resLabs, deps.parseGaso_(blocks.bloqueGaso, blocks.textoQS));
-    pushLabSection_(resLabs, deps.parsePIE_(tNorm));
-    pushLabSection_(resLabs, deps.parsearLCR(textoBruto));
-    pushLabSection_(resLabs, deps.parsearCitoquimicoLiquidos(textoBruto));
-    pushLabSection_(
-      resLabs,
-      deps.formatAscitisInterpretacionLine_(deps.buildAscitisLabAlerts_(textoBruto))
-    );
-    pushLabSection_(resLabs, deps.parseFisicoquimicoHeces_(textoBruto));
-    var fro = deps.parseFrotisSangre_(textoBruto);
-    if (fro) {
-      fro.split('\n').forEach(function (line) {
-        if (line) resLabs.push(line);
-      });
-    }
-    pushLabSection_(resLabs, deps.parseEGO_(textoBruto));
-    pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
-    pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
-    pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
-    return { resLabs: resLabs, bhExtras: bhExtras };
-  }
-
-  function parseLabPatientHeader_(textoBruto) {
-    var mNombre = textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
-    var mExp = textoBruto.match(/Expediente:\s*([^\n\r]+)/i);
-    var mSexo = textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
-    var mEdad = textoBruto.match(/Edad:\s*([^\n\r]+)/i);
-    var expRaw = mExp
-      ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim()
-      : '';
-    var edadParts = parseLabEdadParts_(mEdad);
-    var sexoRaw = parseLabSexoNorm_(mSexo);
-    var patient = {
-      name: mNombre ? mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim() : '',
-      expediente: expRaw,
-      sexo: sexoRaw,
-      edad: edadParts.edadRaw ? edadParts.edadRaw + ' ' + edadParts.edadUnidad : '',
-      fecha: deps.extractLabReportFechaDMY(textoBruto),
-      hora: deps.extractLabReportHora(textoBruto),
-      ubicacion: parseLabUbicacion_(textoBruto),
-    };
-    return {
-      patient: patient,
-      edadRaw: edadParts.edadRaw,
-      edadUnidad: edadParts.edadUnidad,
-      sexoRaw: sexoRaw,
-    };
-  }
-
   return function procesarLabs(textoBruto) {
     var tNorm = textoBruto.replace(/\s+/g, ' ');
-    var hdr = parseLabPatientHeader_(textoBruto);
-    var blocks = segmentLabReportBlocks_(textoBruto, tNorm);
-    var sections = collectLabSections_(textoBruto, tNorm, blocks, {
+    var hdr = parseLabPatientHeader_(deps, textoBruto);
+    var blocks = segmentLabReportBlocks_(deps, textoBruto, tNorm);
+    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, {
       edad: hdr.edadRaw,
       edadUnidad: hdr.edadUnidad,
       sexo: hdr.sexoRaw,

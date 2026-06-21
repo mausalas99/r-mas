@@ -14,7 +14,10 @@ import {
 } from './lan-ward-host-registry.mjs';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
-const panelSrc = readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8');
+const panelSrc =
+  readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8') +
+  '\n' +
+  readFileSync(join(jsDir, 'features/lan/panel-host-pin.mjs'), 'utf8');
 const orchestratorSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'), 'utf8');
 
 describe('lan-turn-reset', () => {

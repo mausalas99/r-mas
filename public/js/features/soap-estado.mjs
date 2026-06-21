@@ -3,6 +3,7 @@ import { patients, notes, saveState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
+import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
 
 let rt = {
   getActiveId() {
@@ -43,14 +44,14 @@ export async function copyToClipboardSafe(text) {
   ) {
     try {
       if (await window.electronAPI.writeClipboardText(t)) return true;
-    } catch (_eElectron) {}
+    } catch { /* ignore */ }
   }
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(t);
       return true;
     }
-  } catch (_e) {}
+  } catch { /* ignore */ }
   try {
     var ta = document.createElement("textarea");
     ta.value = t;
@@ -62,7 +63,7 @@ export async function copyToClipboardSafe(text) {
     var ok = document.execCommand("copy");
     document.body.removeChild(ta);
     return ok;
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -271,103 +272,101 @@ export function updateSOAPBalance() {
   }
 }
 
-export function buildSOAPText() {
-  function g(id) {
-    var el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  }
-  function val(v) {
-    return v ? v.toUpperCase() : "___";
-  }
-  function num(v) {
-    return v !== "" ? v : "___";
-  }
+function soapFieldValue(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
 
-  var soporteMap = {
-    "Aire ambiente": "AL AIRE AMBIENTE",
-    "Puntillas nasales": "POR PUNTILLAS NASALES",
-    "Alto flujo": "POR ALTO FLUJO",
-    "VM no invasiva": "CON VENTILACIÓN MECÁNICA NO INVASIVA",
-  };
-  var soporte = soporteMap[g("soap-soporte")] || "AL AIRE AMBIENTE";
+function soapUpperOrBlank(v) {
+  return v ? v.toUpperCase() : '___';
+}
 
-  var ing = g("soap-ing");
-  var egr = g("soap-egr");
-  var balance =
-    ing && egr
-      ? (function () {
-          var d = parseFloat(ing) - parseFloat(egr);
-          return (d > 0 ? "+" : "") + d;
-        })()
-      : "___";
+function soapNumOrBlank(v) {
+  return v !== '' ? v : '___';
+}
 
-  var lines = [];
-  var subj = g("soap-s");
-  if (subj) {
-    lines.push("S: " + subj);
-    lines.push("");
-  }
+function soapBalanceText(ing, egr) {
+  if (!ing || !egr) return '___';
+  var d = parseFloat(ing) - parseFloat(egr);
+  return (d > 0 ? '+' : '') + d;
+}
 
-  lines.push(
-    "N: FOUR " +
-      num(g("soap-four")) +
-      "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " +
-      num(g("soap-esferas")) +
-      " ESFERAS, ALERTA || ANALGESIA CON " +
-      val(g("soap-analgesia"))
-  );
-  lines.push(
-    "V: FR " +
-      num(g("soap-fr")) +
-      " RPM, SATO2 " +
-      num(g("soap-sat")) +
-      "% " +
+var SOAP_SOPORTE_MAP = {
+  'Aire ambiente': 'AL AIRE AMBIENTE',
+  'Puntillas nasales': 'POR PUNTILLAS NASALES',
+  'Alto flujo': 'POR ALTO FLUJO',
+  'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+};
+
+function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
+  return [
+    'N: FOUR ' +
+      num(g('soap-four')) +
+      '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
+      num(g('soap-esferas')) +
+      ' ESFERAS, ALERTA || ANALGESIA CON ' +
+      val(g('soap-analgesia')),
+    'V: FR ' +
+      num(g('soap-fr')) +
+      ' RPM, SATO2 ' +
+      num(g('soap-sat')) +
+      '% ' +
       soporte +
-      " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
-  );
-  lines.push(
-    "HD: ESTABLE, TA " +
-      num(g("soap-tas")) +
-      "/" +
-      num(g("soap-tad")) +
-      " MMHG, FC " +
-      num(g("soap-fc")) +
-      " LPM || ANTIHIPERTENSIVOS: " +
-      val(g("soap-antihta") || "NINGUNO") +
-      " || ANTITROMBOTICOS: " +
-      val(g("soap-antitromboticos") || "NINGUNO") +
-      " || VASOPRESORES: " +
-      val(g("soap-vasop") || "NINGUNO")
-  );
-  lines.push(
-    "HI: AFEBRIL, TEMPERATURA " +
-      num(g("soap-temp")) +
-      " °C || ANTIBIÓTICOS: " +
-      val(g("soap-abx") || "NINGUNO")
-  );
-  lines.push(
-    "NM: DIETA " +
-      val(g("soap-dieta")) +
-      " CALCULADA A " +
-      num(g("soap-kcalkg")) +
-      " KCAL/KG (" +
-      num(g("soap-kcal")) +
-      " KCAL) || INGRESOS " +
+      ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS',
+    'HD: ESTABLE, TA ' +
+      num(g('soap-tas')) +
+      '/' +
+      num(g('soap-tad')) +
+      ' MMHG, FC ' +
+      num(g('soap-fc')) +
+      ' LPM || ANTIHIPERTENSIVOS: ' +
+      val(g('soap-antihta') || 'NINGUNO') +
+      ' || ANTITROMBOTICOS: ' +
+      val(g('soap-antitromboticos') || 'NINGUNO') +
+      ' || VASOPRESORES: ' +
+      val(g('soap-vasop') || 'NINGUNO'),
+    'HI: AFEBRIL, TEMPERATURA ' +
+      num(g('soap-temp')) +
+      ' °C || ANTIBIÓTICOS: ' +
+      val(g('soap-abx') || 'NINGUNO'),
+    'NM: ' +
+      formatNmDietClause(
+        { dieta: g('soap-dieta'), kcalKg: g('soap-kcalkg') },
+        g('soap-kcal'),
+        { includeProtein: false }
+      ) +
+      ' || INGRESOS ' +
       num(ing) +
-      " CC, EGRESOS " +
+      ' CC, EGRESOS ' +
       num(egr) +
-      " CC, BALANCE " +
+      ' CC, BALANCE ' +
       balance +
-      " CC || GLUCOMETRÍAS CAPILARES (" +
-      num(g("soap-glu1")) +
-      ", " +
-      num(g("soap-glu2")) +
-      ", " +
-      num(g("soap-glu3")) +
-      " MG/DL)"
-  );
+      ' CC || GLUCOMETRÍAS CAPILARES (' +
+      num(g('soap-glu1')) +
+      ', ' +
+      num(g('soap-glu2')) +
+      ', ' +
+      num(g('soap-glu3')) +
+      ' MG/DL)',
+  ];
+}
 
-  return lines.join("\n");
+export function buildSOAPText() {
+  var g = soapFieldValue;
+  var val = soapUpperOrBlank;
+  var num = soapNumOrBlank;
+  var soporte = SOAP_SOPORTE_MAP[g('soap-soporte')] || 'AL AIRE AMBIENTE';
+  var ing = g('soap-ing');
+  var egr = g('soap-egr');
+  var balance = soapBalanceText(ing, egr);
+  var lines = [];
+  var subj = g('soap-s');
+  if (subj) {
+    lines.push('S: ' + subj);
+    lines.push('');
+  }
+  lines.push.apply(lines, buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance));
+  return lines.join('\n');
 }
 
 export function insertSOAPText() {

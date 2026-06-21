@@ -102,3 +102,13 @@ test('buildEstadoActualText calcula kcal total con peso del paciente', () => {
   assert.match(text, /25 KCAL\/KG \(1750 KCAL\)/);
   assert.doesNotMatch(text, /PARA PESO DE/i);
 });
+
+test('buildEstadoActualText dieta suplemento sin requerimiento calórico', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'SUPLEMENTO';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  const nmLine = text.split('\n').find((line) => line.startsWith('NM:'));
+  assert.match(nmLine, /^NM: DIETA SUPLEMENTO \|\|/);
+  assert.doesNotMatch(nmLine, /CALCULADA A/);
+  assert.doesNotMatch(nmLine, /KCAL\/KG/);
+});

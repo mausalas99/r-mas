@@ -16,6 +16,9 @@ import {
   computeDietKcalTotal,
   computeDietKcalKgFromTotal,
   syncDietKcalFromWeight,
+  isDietaSuplemento,
+  clearDietCaloricFields,
+  applyDietaSuplementoPolicy,
   parseIoEgresoField,
   isIoNumericValue,
 } from './estado-actual-data.mjs';
@@ -246,6 +249,45 @@ test('syncDietKcalFromWeight no sobrescribe kcal total sin peso', () => {
   const ec = { kcalKg: '25', kcal: '1800' };
   assert.equal(syncDietKcalFromWeight(ec, null), false);
   assert.equal(ec.kcal, '1800');
+});
+
+test('isDietaSuplemento reconoce suplemento sin calorías', () => {
+  assert.equal(isDietaSuplemento('SUPLEMENTO'), true);
+  assert.equal(isDietaSuplemento('Dieta suplemento'), true);
+  assert.equal(isDietaSuplemento('NORMAL PICADA'), false);
+  assert.equal(isDietaSuplemento(''), false);
+});
+
+test('applyDietaSuplementoPolicy limpia calóricos en estado y propuesta', () => {
+  const ec = { dieta: 'SUPLEMENTO', kcalKg: '25', kcal: '1750', proteinG: '70' };
+  const pend = { dieta: 'SUPLEMENTO', kcal: '2000', proteinG: '60' };
+  assert.equal(applyDietaSuplementoPolicy(ec, pend), true);
+  assert.equal(ec.kcalKg, '');
+  assert.equal(ec.kcal, '');
+  assert.equal(ec.proteinG, '');
+  assert.equal(pend.kcal, '');
+  assert.equal(pend.proteinG, '');
+});
+
+test('applyDietaSuplementoPolicy no-op en dieta normal', () => {
+  const ec = { dieta: 'NORMAL PICADA', kcal: '2000' };
+  assert.equal(applyDietaSuplementoPolicy(ec), false);
+  assert.equal(ec.kcal, '2000');
+});
+
+test('syncDietKcalFromWeight no recalcula en suplemento', () => {
+  const ec = { dieta: 'SUPLEMENTO', kcalKg: '25', kcal: '' };
+  assert.equal(syncDietKcalFromWeight(ec, 70), false);
+  assert.equal(ec.kcal, '');
+});
+
+test('clearDietCaloricFields vacía kcalKg, kcal y proteinG', () => {
+  const rec = { kcalKg: '30', kcal: '2100', proteinG: '80', dieta: 'X' };
+  clearDietCaloricFields(rec);
+  assert.equal(rec.kcalKg, '');
+  assert.equal(rec.kcal, '');
+  assert.equal(rec.proteinG, '');
+  assert.equal(rec.dieta, 'X');
 });
 
 test('computeDietKcalKgFromTotal — inverso de kcal total', () => {

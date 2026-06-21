@@ -1,0 +1,166 @@
+import { trimStr } from './med-receta-util.mjs';
+import {
+  parseFechaDMYFromTimestampCell,
+  extractDiaTratamiento,
+} from './med-receta-dates.mjs';
+import {
+  extractDietNutrients,
+  dietNutrientBlobFromCols,
+  normalizeDietaCols,
+} from './med-receta-diet.mjs';
+import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
+import { classifyMedicationSoapCategory } from './med-receta-soap.mjs';
+
+var INDICACIONES_MED_CLASSES = { MEDICAMENTOS: 1, 'MEDICAMENTOS P2': 1 };
+
+function parseMedRow(cols, lineIndex, lineText) {
+  var dosisRaw = trimStr(cols[4]);
+  var dia = extractDiaTratamiento(dosisRaw);
+  if (dia == null) dia = extractDiaTratamiento(lineText);
+  return {
+    id: 'med-' + Date.now().toString(36) + '-' + lineIndex + '-' + Math.random().toString(36).slice(2, 5),
+    tipoRaw: trimStr(cols[1]).toUpperCase(),
+    nombreRaw: trimStr(cols[2]),
+    viaRaw: trimStr(cols[3]),
+    dosisRaw: dosisRaw,
+    frecuenciaRaw: trimStr(cols[5]),
+    suspendido: false,
+    diaTratamiento: dia,
+  };
+}
+
+function parseDietaRow(cols, lineIndex) {
+  var norm = normalizeDietaCols(cols);
+  var detalleRaw = trimStr(norm[4]) || trimStr(norm[5]);
+  var nutrients = extractDietNutrients(dietNutrientBlobFromCols(norm));
+  return {
+    id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
+    descripcionRaw: trimStr(cols[2]),
+    detalleRaw: detalleRaw,
+    kcal: nutrients.kcal,
+    proteinG: nutrients.proteinG,
+    suspendido: false,
+  };
+}
+
+function padIndicacionesCols_(cols) {
+  while (cols.length < 7) cols.push('');
+  return cols;
+}
+
+function shouldSkipIndicacionesLine_(cols, tipoEarly) {
+  var minCols = tipoEarly === 'DIETAS' ? 5 : 6;
+  if (cols.length >= 7) return false;
+  if (cols.length >= minCols && (tipoEarly === 'DIETAS' || INDICACIONES_MED_CLASSES[tipoEarly])) {
+    return false;
+  }
+  return true;
+}
+
+function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fechas, skippedSummary) {
+  var tipo = trimStr(cols[1]).toUpperCase();
+  var fd = parseFechaDMYFromTimestampCell(cols[0]);
+  if (fd) fechas.push(fd);
+  if (INDICACIONES_MED_CLASSES[tipo]) {
+    items.push(parseMedRow(cols, lineIndex, lineText));
+    return 0;
+  }
+  if (tipo === 'DIETAS') {
+    dietas.push(parseDietaRow(cols, lineIndex));
+    return 0;
+  }
+  if (tipo === 'CUIDADOS') skippedSummary.cuidados += 1;
+  else if (tipo === 'ESTUDIOS') skippedSummary.estudios += 1;
+  else skippedSummary.other += 1;
+  return 1;
+}
+
+export function parseIndicacionesPaste(text) {
+  var lines = String(text || '')
+    .split(/\r?\n/)
+    .map(trimStr)
+    .filter(Boolean);
+  var items = [];
+  var dietas = [];
+  var fechas = [];
+  var skipped = 0;
+  var skippedSummary = { cuidados: 0, estudios: 0, other: 0 };
+  for (var i = 0; i < lines.length; i += 1) {
+    var cols = lines[i].split('\t');
+    var tipoEarly = cols.length >= 2 ? trimStr(cols[1]).toUpperCase() : '';
+    if (shouldSkipIndicacionesLine_(cols, tipoEarly)) {
+      skipped += 1;
+      skippedSummary.other += 1;
+      continue;
+    }
+    if (cols.length < 7) cols = padIndicacionesCols_(cols);
+    skipped += processIndicacionesLine_(cols, i, lines[i], items, dietas, fechas, skippedSummary);
+  }
+  return {
+    items: items,
+    dietas: dietas,
+    fechas: fechas,
+    skipped: skipped,
+    skippedSummary: skippedSummary,
+  };
+}
+
+export function parseMedicationPaste(text) {
+  var r = parseIndicacionesPaste(text);
+  return { items: r.items, fechas: r.fechas, skipped: r.skipped };
+}
+
+/** Bloque TSV SOME (medicamentos, dietas, etc.). */
+export function looksLikeSomeIndicacionesPaste(text) {
+  var raw = String(text || '');
+  if (!raw.trim() || !/\t/.test(raw)) return false;
+  var lines = raw.split(/\r?\n/).map(trimStr).filter(Boolean);
+  for (var i = 0; i < lines.length; i += 1) {
+    var cols = lines[i].split('\t');
+    if (cols.length < 2) continue;
+    var tipo = trimStr(cols[1]).toUpperCase();
+    var minCols = tipo === 'DIETAS' ? 5 : 6;
+    if (cols.length < minCols) continue;
+    if (tipo === 'MEDICAMENTOS' || tipo === 'MEDICAMENTOS P2' || tipo === 'DIETAS') return true;
+  }
+  return false;
+}
+
+export function looksLikeSomeMedicationPaste(text) {
+  return looksLikeSomeIndicacionesPaste(text);
+}
+
+export function shouldAutoSelectSoap(item) {
+  if (!item || item.suspendido) return false;
+  var nombre = trimStr(item.nombreRaw);
+  if (classifyMedicationSoapCategory(nombre, item.dosisRaw) !== 'otros') return true;
+  var blob = normalizeNombreForSoapClassify(
+    [nombre, item.dosisRaw, item.frecuenciaRaw].join(' ')
+  );
+  if (/\bINSULINA\b/.test(blob)) return true;
+  if (/\b(GLARGINA|DEGLUDEC|DETEMIR|HUMANA\s+RAPIDA|NPH)\b/.test(blob)) return true;
+  if (/\bDEXTROSA\s*50\b/.test(blob)) return true;
+  if (/\bPRN\b/.test(String(item.frecuenciaRaw || '').toUpperCase())) {
+    if (/\b(DESTROXTIS|GLUCOSA|GLUC\s*<|MG\/DL)\b/.test(blob)) return true;
+  }
+  return false;
+}
+
+export function resolveFechaActualizacion(fechas, fallbackDMY) {
+  var list = (fechas || []).filter(Boolean);
+  if (!list.length) return trimStr(fallbackDMY) || '';
+  var counts = Object.create(null);
+  for (var i = 0; i < list.length; i += 1) {
+    var k = list[i];
+    counts[k] = (counts[k] || 0) + 1;
+  }
+  var best = list[0];
+  var bestN = 0;
+  Object.keys(counts).forEach(function (k) {
+    if (counts[k] > bestN) {
+      bestN = counts[k];
+      best = k;
+    }
+  });
+  return best;
+}

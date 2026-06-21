@@ -6,25 +6,99 @@ import { fileURLToPath } from 'node:url';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lanDir = join(jsDir, 'features/lan');
-const lanSyncSrc = readFileSync(join(lanDir, 'orchestrator.mjs'), 'utf8');
+const clinicalTeamsDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
+
+function readConcat(dir, names) {
+  return names.map((name) => readFileSync(join(dir, name), 'utf8')).join('\n');
+}
+
+const lanSyncSrc = readConcat(lanDir, [
+  'orchestrator.mjs',
+  'orchestrator-runtime.mjs',
+  'orchestrator-boot.mjs',
+  'orchestrator-wire.mjs',
+  'orchestrator-wire-config.mjs',
+  'orchestrator-wire-events.mjs',
+  'orchestrator-interno.mjs',
+  'orchestrator-bundle-apply.mjs',
+  'orchestrator-collect.mjs',
+  'orchestrator-commands.mjs',
+]);
 const lanConflictsSrc = readFileSync(join(lanDir, 'conflicts.mjs'), 'utf8');
 const lanHostPatientHttpSrc = readFileSync(join(lanDir, 'host-patient-http.mjs'), 'utf8');
-const lanSyncRoomSrc = readFileSync(join(lanDir, 'room.mjs'), 'utf8');
-const lanSyncTransportSrc = readFileSync(join(lanDir, 'transport.mjs'), 'utf8');
-const lanSyncPanelSrc = readFileSync(join(lanDir, 'panel.mjs'), 'utf8');
+const lanSyncRoomSrc = readConcat(lanDir, [
+  'room.mjs',
+  'room-bridge.mjs',
+  'room-snapshot.mjs',
+  'room-host-failover.mjs',
+  'room-phase-chrome.mjs',
+  'room-clinical-ops.mjs',
+  'room-wire.mjs',
+  'room-membership.mjs',
+  'room-post-join.mjs',
+]);
+const lanSyncTransportSrc = readConcat(lanDir, [
+  'transport.mjs',
+  'transport-deps.mjs',
+  'transport-session.mjs',
+  'transport-host-url.mjs',
+  'transport-pairing.mjs',
+  'transport-mobile.mjs',
+  'transport-host-election.mjs',
+  'transport-init.mjs',
+]);
+const lanSyncPanelSrc = readConcat(lanDir, [
+  'panel.mjs',
+  'panel-invite-join.mjs',
+  'panel-delegation.mjs',
+  'panel-host-pin.mjs',
+  'panel-hub-status.mjs',
+]);
+const lanSyncPushSrc = readConcat(lanDir, [
+  'push.mjs',
+  'push-bridge.mjs',
+  'push-helpers.mjs',
+  'push-bundle.mjs',
+  'push-outbox.mjs',
+  'push-outbox-drain.mjs',
+  'push-revision.mjs',
+  'push-schedule.mjs',
+  'push-conflict.mjs',
+  'push-conflict-ops.mjs',
+  'push-conflict-put.mjs',
+  'push-clinical-ops.mjs',
+  'push-reconcile.mjs',
+]);
 const lanSyncFeatureSrc =
   lanSyncSrc + '\n' + lanSyncRoomSrc + '\n' + lanSyncTransportSrc + '\n' + lanSyncPanelSrc;
-const lanSyncPushSrc = readFileSync(join(lanDir, 'push.mjs'), 'utf8');
 const lanSyncPushAndFeatureSrc = lanSyncFeatureSrc + '\n' + lanSyncPushSrc;
 const clinicalOpsLanSrc = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'),
   'utf8'
 );
-const clinicalTeamsDir = join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams');
+const clinicalTeamsLanSrc = readConcat(clinicalTeamsDir, [
+  'teams-roster-lan.mjs',
+  'teams-roster-lan-dom.mjs',
+  'teams-roster-lan-render.mjs',
+  'teams-roster-lan-row-html.mjs',
+  'teams-roster-lan-filters.mjs',
+  'teams-roster-lan-state.mjs',
+  'teams-roster-lan-load.mjs',
+  'teams-roster-lan-modal.mjs',
+  'teams-roster-lan-assign.mjs',
+  'teams-roster-lan-wire.mjs',
+]);
 const clinicalTeamsSrc =
   readFileSync(join(clinicalTeamsDir, 'index.mjs'), 'utf8') +
   '\n' +
-  readFileSync(join(clinicalTeamsDir, 'teams-roster-render.mjs'), 'utf8') +
+  readConcat(clinicalTeamsDir, [
+    'teams-roster-render.mjs',
+    'teams-roster-create.mjs',
+    'teams-roster-team-cards.mjs',
+    'teams-roster-directory.mjs',
+    'teams-roster-panel.mjs',
+    'teams-roster-panel-build.mjs',
+  ]) +
   '\n' +
   readFileSync(join(clinicalTeamsDir, 'teams-roster.mjs'), 'utf8');
 
@@ -91,7 +165,7 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncRoomSrc, /lanClinicalDirectoryPullRoomIds/);
     assert.match(lanSyncRoomSrc, /allRooms[\s\S]*fetchAndApplyClinicalOpsFromHost/);
     assert.match(
-      readFileSync(join(clinicalTeamsDir, 'teams-roster-lan.mjs'), 'utf8'),
+      clinicalTeamsLanSrc,
       /refreshLanClinicalDirectoryFromRoom[\s\S]*allRooms:\s*true/
     );
   });
@@ -114,7 +188,9 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('offers iPad link to LAN clients connected to the ward host', () => {
-    const canOfferBlock = lanSyncPanelSrc.match(/function canOfferMobileLanShare\(\) \{[\s\S]{0,220}\}/);
+    const canOfferBlock = lanSyncPanelSrc.match(
+      /function canOfferMobileLanShare\(\) \{[\s\S]{0,320}\}/
+    );
     assert.ok(canOfferBlock);
     assert.doesNotMatch(canOfferBlock[0], /isLanRemoteJoinMode\(\)\) return false/);
     assert.match(lanSyncTransportSrc, /if \(isLanRemoteJoinMode\(\)\) \{[\s\S]*remoteCfg\.hostUrl/);
@@ -173,10 +249,13 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('entrega assign pushes clinical ops so interno board receives pendientes', () => {
-    const entregaSrc = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'clinical-entrega.mjs'),
-      'utf8'
-    );
+    const entregaSrc =
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'clinical-entrega.mjs'), 'utf8') +
+      '\n' +
+      readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), 'clinical-entrega/clinical-entrega-submit.mjs'),
+        'utf8'
+      );
     assert.match(entregaSrc, /submitEntregaAssignment[\s\S]*pushClinicalOpsLanNow/);
     assert.match(lanSyncSrc, /registerMutationHandler\('entrega'[\s\S]*pushClinicalOpsLanNow/);
   });
@@ -257,16 +336,14 @@ describe('lan-sync clinical ops', () => {
 
   it('flushLiveSyncOutbox drains clinical_ops and aborts on first failure', () => {
     assert.match(lanSyncPushSrc, /pushClinicalOpsPayloadToHost/);
-    assert.match(lanSyncPushSrc, /drainFromIndex/);
-    assert.match(lanSyncPushSrc, /reenqueueSlice\(sorted\.slice\(index\)\)/);
+    assert.match(lanSyncPushSrc, /drainOutboxFromIndex/);
+    assert.match(lanSyncPushSrc, /reenqueueOutboxSlice\(rid,\s*sorted\.slice\(index\)\)/);
   });
 
   it('clinical-ops 409 returns CONFLICT_RESOLVED success', () => {
     assert.match(lanSyncPushSrc, /CONFLICT_RESOLVED/);
-    assert.match(
-      lanSyncPushSrc,
-      /resolveClinicalOps409[\s\S]*lanPushResult\(true,\s*'CONFLICT_RESOLVED'/
-    );
+    assert.match(lanSyncPushSrc, /resolveClinicalOps409/);
+    assert.match(lanSyncPushSrc, /lanPushResult\(true,\s*'CONFLICT_RESOLVED'/);
   });
 
   it('clinical-ops PUT retries once after 409 revision align', () => {
@@ -301,7 +378,8 @@ describe('lan-sync clinical ops', () => {
 
   it('applyLiveSyncApplied syncs host bases and LWW toast', () => {
     assert.match(lanSyncSrc, /syncHostBundleEntityFromApplied/);
-    assert.match(lanSyncSrc, /function applyLiveSyncApplied[\s\S]*notifyLwwOverwrite/);
+    assert.match(lanSyncSrc, /function applyLiveSyncApplied[\s\S]*notifyLiveSyncAppliedOutcome/);
+    assert.match(lanSyncSrc, /notifyLiveSyncAppliedOutcome[\s\S]*notifyLwwOverwrite/);
   });
 
   it('outbox clinical-ops push handles 409 without re-enqueue loop', () => {
@@ -316,8 +394,7 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('reconcile wraps fetchAndApplyClinicalOpsFromHost in try/catch', () => {
-    assert.match(lanSyncPushSrc, /catch \(_eOps\)/);
-    assert.match(lanSyncPushSrc, /fetchAndApplyClinicalOpsFromHost/);
+    assert.match(lanSyncPushSrc, /fetchAndApplyClinicalOpsFromHost[\s\S]*catch/);
   });
 
   it('push bridge wires fetchAndApplyClinicalOpsFromHost', () => {

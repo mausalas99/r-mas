@@ -6,16 +6,32 @@ import { fileURLToPath } from 'node:url';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 
+const TOUR_FLOW_PARTS = [
+  'tour-flow.mjs',
+  'tour-flow-guardia-copy.mjs',
+  'tour-flow-chapter.mjs',
+  'tour-flow-render.mjs',
+  'tour-flow-navigation.mjs',
+  'tour-flow-lifecycle.mjs',
+  'tour-flow-onboarding.mjs',
+  'tour-flow-demo-cleanup.mjs',
+  'tour-flow-resume.mjs',
+];
+
+function readTourFlowSources() {
+  return TOUR_FLOW_PARTS.map((name) => readFileSync(join(dir, name), 'utf8')).join('\n');
+}
+
 describe('tour intro launch', () => {
   it('loads startOnboarding from tour-flow (avoids circular import)', () => {
-    const src = readFileSync(join(dir, 'tour-engine.mjs'), 'utf8');
+    const src = readFileSync(join(dir, 'tour-intro.mjs'), 'utf8');
     assert.match(src, /import\('\.\/tour-flow\.mjs'\)/);
     assert.match(src, /mod\.startOnboarding\(branch\)/);
     assert.doesNotMatch(src, /^\s*startOnboarding\('/m);
   });
 
   it('prompts Mi rotación after sala tour completion', () => {
-    const src = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
+    const src = readTourFlowSources();
     assert.match(src, /handlePostGuidedTourOnboardingResume/);
     assert.match(src, /promptMiRotacionAfterSalaTourIfNeeded/);
     assert.match(src, /prepareSalaGuidedTourExitSync/);
@@ -31,30 +47,28 @@ describe('tour intro launch', () => {
   });
 
   it('startOnboarding uses imported applyTourTargetForStep', () => {
-    const src = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
+    const src = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
     assert.match(src, /applyTourTargetForStep\(tourState\.tourStepId\)/);
     assert.doesNotMatch(src, /applyTourNavigationForStep/);
   });
 
   it('applyTourTargetForStep imports demo constants from tour-demo-seed', () => {
-    const src = readFileSync(join(dir, 'tour-engine.mjs'), 'utf8');
+    const src = readFileSync(join(dir, 'tour-step-actions.mjs'), 'utf8');
     assert.match(src, /TOUR_STEPS_USE_DEMO_PEREZ/);
     assert.match(src, /from '\.\/tour-demo-seed\.mjs'/);
     assert.doesNotMatch(src, /^\s*var TOUR_STEPS_USE_DEMO_PEREZ/m);
   });
 
   it('tour-flow imports tour-engine cleanup helpers', () => {
-    const flow = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
-    const importBlock = flow.match(/from '\.\/tour-engine\.mjs';/);
-    assert.ok(importBlock);
-    const beforeEngine = flow.slice(0, flow.indexOf("from './tour-engine.mjs';"));
-    assert.match(beforeEngine, /clearTourSoapButtonHighlight/);
-    assert.match(beforeEngine, /syncLearnHubContinueVisibility/);
+    const lifecycle = readFileSync(join(dir, 'tour-flow-lifecycle.mjs'), 'utf8');
+    assert.match(lifecycle, /from '\.\/tour-engine\.mjs'/);
+    assert.match(lifecycle, /clearTourSoapButtonHighlight/);
+    assert.match(lifecycle, /syncLearnHubContinueVisibility/);
   });
 
   it('wrap step uses guidedTourFinish and completes on last step', () => {
-    const flow = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
-    assert.match(flow, /export function finishGuidedTour/);
+    const flow = readTourFlowSources();
+    assert.match(flow, /export function finishGuidedTour|export \{ finishGuidedTour/);
     assert.match(flow, /guidedTourFinish\(\)/);
     const click = flow.match(/function guidedTourClickNext\(\) \{[\s\S]*?\n\}/);
     assert.ok(click);
@@ -83,15 +97,15 @@ describe('tour intro launch', () => {
   });
 
   it('tour lab registration uses preview Agregar paciente (no auto-modal when preview open)', () => {
-    const flow = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
-    const afterBulk = flow.match(/export function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/);
+    const flow = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
+    const afterBulk = flow.match(/(?:export )?function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/);
     assert.ok(afterBulk);
     assert.match(afterBulk[0], /isBulkLabPreviewModalOpen/);
-    const onPreview = flow.match(/export function tourOnBulkPreviewPatientSaved\(\) \{[\s\S]*?\n\}/);
+    const onPreview = flow.match(/(?:export )?function tourOnBulkPreviewPatientSaved\(\) \{[\s\S]*?\n\}/);
     assert.ok(onPreview);
     assert.match(onPreview[0], /Agregar paciente en la tabla/);
     assert.doesNotMatch(onPreview[0], /scheduleTourDemoPatientRegistrationFromLab/);
-    const patients = readFileSync(join(dir, '..', 'patients.mjs'), 'utf8');
+    const patients = readFileSync(join(dir, '..', 'patients-modal.mjs'), 'utf8');
     assert.match(patients, /isAddPatientModalOpenForRegistro/);
   });
 
@@ -123,14 +137,14 @@ describe('tour intro launch', () => {
   });
 
   it('tourAfterBulkLabParse advances lab_parse when both demo patients are in census', () => {
-    const flow = readFileSync(join(dir, 'tour-flow.mjs'), 'utf8');
+    const flow = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
     const fn = flow.match(
-      /export function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/
+      /(?:export )?function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/
     );
     assert.ok(fn, 'tourAfterBulkLabParse export');
     assert.match(fn[0], /onboardingAdvanceAfterParse\(\)/);
     assert.doesNotMatch(fn[0], /if \(tourDemoPatientsBothInCensus\(patients\)\) return;/);
-    const lab = readFileSync(join(dir, '..', 'lab-panel.mjs'), 'utf8');
-    assert.match(lab, /notifyTourAfterBulkLabStore/);
+    const labWorkbench = readFileSync(join(dir, '..', 'lab-panel-workbench.mjs'), 'utf8');
+    assert.match(labWorkbench, /notifyTourAfterBulkLabStore/);
   });
 });

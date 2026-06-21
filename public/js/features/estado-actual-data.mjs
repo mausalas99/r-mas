@@ -4,108 +4,22 @@
 
 import {
   isIoNumericValue as isIoNumericValueIo,
-  ioDiuresisForBalance,
-  ioNumericEgressTotal,
   computeIoBalanceFromIngEgr,
 } from './estado-actual-io.mjs';
-import { sortGlucometriasChronologically } from './estado-actual-registro-defaults.mjs';
-import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
-import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
+import {
+  deriveVitalsFromHistorial_,
+  deriveGluFromHistorial_,
+  deriveIoFromHistorial_,
+  deriveVitalSeriesFromHistorial_,
+} from './estado-actual-data-snapshot.mjs';
+import { MED_FIELD_KEYS, DIET_CALORIC_KEYS } from './estado-actual-data-constants.mjs';
+import { buildEaMonitoreoRevision } from './estado-actual-data-revision.mjs';
+import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
+import { mergeMonitoreo } from './estado-actual-data-merge.mjs';
+import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta } from './estado-actual-data-model.mjs';
 
-export const MED_FIELD_KEYS = /** @type {const} */ ([
-  'analgesia',
-  'abx',
-  'antihta',
-  'diureticos',
-  'antitromboticos',
-  'vasop',
-  'nm',
-]);
-
-/**
- * Revision string for panel/tab cache invalidation (historial + estado clínico + receta).
- * @param {unknown} monitoreoLike
- * @param {string | null | undefined} activeId
- * @param {Record<string, { items?: Array<{ id?: string, suspendido?: boolean }> }>} [medRecetaByPatient]
- * @returns {string}
- */
-export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPatient) {
-  /** @type {any} */
-  var m = monitoreoLike || {};
-  var h = Array.isArray(m.historial) ? m.historial.length : 0;
-  var parts = ['h' + h];
-  for (var i = 0; i < Math.min(4, h); i += 1) {
-    var row = m.historial[i];
-    parts.push(String(row && row.id ? row.id : '') + '@' + String(row && row.recordedAt ? row.recordedAt : ''));
-  }
-  var tg = m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : '';
-  parts.push('t' + tg);
-  var ec = m.estadoClinico && typeof m.estadoClinico === 'object' ? m.estadoClinico : {};
-  var pend = m.pendienteReceta && typeof m.pendienteReceta === 'object' ? m.pendienteReceta : {};
-  var conf = m.confirmado && typeof m.confirmado === 'object' ? m.confirmado : {};
-  parts.push(
-    String(ec.four || ''),
-    String(ec.esferas || ''),
-    String(ec.soporte || ''),
-    String(ec.dieta || ''),
-    String(ec.kcalKg || ''),
-    String(ec.kcal || ''),
-    String(ec.proteinG || '')
-  );
-  for (var dk of ['dieta', 'kcal', 'proteinG']) {
-    parts.push(String(pend[dk] || ''), conf[dk] ? '1' : '0');
-  }
-  for (var k of MED_FIELD_KEYS) {
-    parts.push(String(ec[k] || ''), String(pend[k] || ''), conf[k] ? '1' : '0');
-  }
-  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
-  var items = block && Array.isArray(block.items) ? block.items : [];
-  var dietas = block && Array.isArray(block.dietas) ? block.dietas : [];
-  parts.push('f' + String(block && block.fechaActualizacion ? block.fechaActualizacion : ''));
-  parts.push('d' + dietas.length);
-  for (var d = 0; d < Math.min(2, dietas.length); d += 1) {
-    var di = dietas[d];
-    parts.push(
-      String(di && di.descripcionRaw ? di.descripcionRaw : '') +
-        '@' +
-        String(di && di.kcal != null ? di.kcal : '') +
-        '@' +
-        String(di && di.proteinG != null ? di.proteinG : '')
-    );
-  }
-  var now = new Date();
-  parts.push(
-    'cal' + now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')
-  );
-  parts.push('r' + items.length);
-  for (var j = 0; j < Math.min(4, items.length); j += 1) {
-    var it = items[j];
-    parts.push(String(it && it.id ? it.id : '') + (it && it.suspendido ? 's' : 'a'));
-  }
-  return parts.join(':');
-}
-
-/** @returns {typeof emptyEstadoClinico extends (...a: infer R) => infer V ? V : never} */
-export function emptyEstadoClinico() {
-  return {
-    four: '',
-    esferas: '',
-    analgesia: '',
-    abx: '',
-    antihta: '',
-    diureticos: '',
-    antitromboticos: '',
-    vasop: '',
-    nm: '',
-    soporte: '',
-    tempContext: '',
-    dieta: '',
-    kcalKg: '',
-    kcal: '',
-    proteinG: '',
-    pesoRef: '',
-  };
-}
+export { MED_FIELD_KEYS, DIET_CALORIC_KEYS, buildEaMonitoreoRevision, medicionHasCoreData, mergeMonitoreo };
+export { emptyEstadoClinico, emptyMonitoreo };
 
 function backfillEstadoClinico(monitoreo) {
   if (!monitoreo || typeof monitoreo !== 'object') return;
@@ -133,42 +47,6 @@ function backfillEstadoClinico(monitoreo) {
   for (var mk of MED_FIELD_KEYS) {
     if (monitoreo.confirmado[mk] == null) monitoreo.confirmado[mk] = false;
   }
-}
-
-/** @returns {Record<string, string>} */
-function emptyPendienteReceta() {
-  /** @type {Record<string, string>} */
-  const o = {};
-  for (var k of Object.keys(emptyEstadoClinico())) {
-    o[k] = '';
-  }
-  return o;
-}
-
-/** @returns {typeof emptyMonitoreo extends (...a: infer R) => infer V ? V : never} */
-export function emptyMonitoreo() {
-  /** @type {Record<string, boolean>} */
-  var confirmado = { dieta: false };
-  for (var mk of MED_FIELD_KEYS) {
-    confirmado[mk] = false;
-  }
-  return {
-    estadoClinico: emptyEstadoClinico(),
-    confirmado,
-    pendienteReceta: emptyPendienteReceta(),
-    historial: [],
-    textoGuardado: { text: '', savedAt: null },
-  };
-}
-
-/** @type {readonly string[]} */
-const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
-
-/**
- * @param {unknown} v
- */
-function hasIoNumber(v) {
-  return v != null && v !== '';
 }
 
 /**
@@ -272,54 +150,8 @@ export function mergePatientMonitoreoFromImported(target, source) {
     if ('estadoActual' in s && s.estadoActual != null && typeof s.estadoActual === 'object') {
       t.estadoActual = JSON.parse(JSON.stringify(s.estadoActual));
     }
-  } catch (_e) {}
+  } catch { /* ignore */ }
   return migratePatientMonitoreo(target);
-}
-
-/**
- * @param {unknown} medicion
- */
-export function medicionHasCoreData(medicion) {
-  if (!medicion || typeof medicion !== 'object') return false;
-  /** @type {any} */
-  var m = medicion;
-  /** @type {Record<string, unknown>} */
-  var vit = m.vitals && typeof m.vitals === 'object' ? m.vitals : {};
-  for (var vk of VITAL_KEYS) {
-    var vv = vit[vk];
-    if (vv != null && vv !== '') return true;
-  }
-  for (var ek = 0; ek < VITAL_BASE_KEYS.length; ek++) {
-    var extraKey = getVitalExtraStorageKey(VITAL_BASE_KEYS[ek]);
-    if (vit[extraKey] != null && vit[extraKey] !== '') return true;
-  }
-  var vs = m.vitalSeries;
-  if (vs && typeof vs === 'object') {
-    for (var vk2 in vs) {
-      if (Array.isArray(vs[vk2]) && vs[vk2].length) return true;
-    }
-  }
-  var bombas = Array.isArray(m.bombaInsulina) ? m.bombaInsulina : [];
-  for (var bi = 0; bi < bombas.length; bi++) {
-    var b = bombas[bi];
-    if (b && typeof b === 'object' && /** @type {any} */ (b).value != null && /** @type {any} */ (b).value !== '') {
-      return true;
-    }
-  }
-  var glus = Array.isArray(m.glucometrias) ? m.glucometrias : [];
-  for (var i = 0; i < glus.length; i++) {
-    var g = glus[i];
-    if (!g || typeof g !== 'object') continue;
-    var val = /** @type {any} */ (g).value;
-    if (val != null && val !== '') return true;
-  }
-  var io = m.io && typeof m.io === 'object' ? /** @type {any} */ (m.io) : {};
-  if (hasIoNumber(io.ing)) return true;
-  if (ioNumericEgressTotal(io) != null) return true;
-  if (ioDiuresisForBalance(io) != null && ioDiuresisForBalance(io) !== '') return true;
-  if (Array.isArray(io.egrParts) && io.egrParts.length) return true;
-  if (io.evac != null && io.evac !== '') return true;
-  return hasIoNumber(io.egr);
 }
 
 /**
@@ -338,154 +170,26 @@ function historialSortedAsc(historial) {
  * @param {unknown} monitoreoLike
  */
 export function deriveSnapshot(monitoreoLike) {
-  var emptyVitals = {};
-  var emptyAltered = {};
-  for (var zk of VITAL_KEYS) {
-    emptyVitals[zk] = null;
-  }
-  var snap = {
-    vitals: emptyVitals,
-    alteredAt: emptyAltered,
-    glucometrias: /** @type {Array<{ value?: unknown, time?: string }>} */ ([]),
-    io: /** @type {{ ing: null | unknown, egr: null | unknown }} */ ({ ing: null, egr: null }),
-  };
-
   /** @type {any} */
   var m = monitoreoLike || {};
   var hist = Array.isArray(m.historial) ? m.historial : [];
   var sortedAsc = historialSortedAsc(hist);
 
-  /** @type {typeof snap.vitals} */
-  var vitals = {};
-  for (var v0 of VITAL_KEYS) vitals[v0] = null;
-  /** @type {Record<string, string>} */
-  var alteredAt = {};
+  var snap = {
+    vitals: {},
+    alteredAt: {},
+    glucometrias: /** @type {Array<{ value?: unknown, time?: string }>} */ ([]),
+    io: /** @type {{ ing: null | unknown, egr: null | unknown }} */ ({ ing: null, egr: null }),
+  };
 
-  for (var iRow = 0; iRow < sortedAsc.length; iRow++) {
-    var row = sortedAsc[iRow];
-    if (!row || typeof row !== 'object') continue;
-    var rv = /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object' ? /** @type {any} */ (row).vitals : {};
-    var rowAlt =
-      /** @type {any} */ (row).alteredAt && typeof /** @type {any} */ (row).alteredAt === 'object'
-        ? /** @type {Record<string, string>} */ (/** @type {any} */ (row).alteredAt)
-        : {};
-    for (var vk of VITAL_KEYS) {
-      var val = rv[vk];
-      if (val != null && val !== '') {
-        vitals[vk] = val;
-        if (rowAlt && rowAlt[vk] != null && String(rowAlt[vk]).length > 0) {
-          alteredAt[vk] = String(rowAlt[vk]);
-        } else {
-          delete alteredAt[vk];
-        }
-      }
-    }
-    for (var ex = 0; ex < VITAL_BASE_KEYS.length; ex++) {
-      var baseK = VITAL_BASE_KEYS[ex];
-      var extraK = getVitalExtraStorageKey(baseK);
-      var extraVal = rv[extraK];
-      if (extraVal != null && extraVal !== '') {
-        vitals[extraK] = extraVal;
-        if (rowAlt && rowAlt[extraK] != null && String(rowAlt[extraK]).length > 0) {
-          alteredAt[extraK] = String(rowAlt[extraK]);
-        } else {
-          delete alteredAt[extraK];
-        }
-      }
-    }
-  }
-
-  /** @type {Array<{ value?: unknown, time?: string }>} */
-  var gluChosen = [];
-  /** @type {Array<{ value: number, units: number, time?: string }>} */
-  var bombaChosen = [];
-  for (var j = sortedAsc.length - 1; j >= 0; j--) {
-    var r2 = sortedAsc[j];
-    if (!r2 || typeof r2 !== 'object') continue;
-    var barr = Array.isArray(/** @type {any} */ (r2).bombaInsulina) ? /** @type {any} */ (r2).bombaInsulina : [];
-    if (barr.length) {
-      bombaChosen = barr
-        .map(function (e) {
-          if (!e || typeof e !== 'object') return null;
-          var v = Number(/** @type {any} */ (e).value);
-          var u = Number(/** @type {any} */ (e).units);
-          if (!Number.isFinite(v)) return null;
-          return {
-            value: v,
-            units: Number.isFinite(u) ? u : 0,
-            time: /** @type {any} */ (e).time != null ? String(/** @type {any} */ (e).time) : undefined,
-          };
-        })
-        .filter(Boolean);
-      gluChosen = [];
-      break;
-    }
-    var garr = Array.isArray(/** @type {any} */ (r2).glucometrias) ? /** @type {any} */ (r2).glucometrias : [];
-    var nonempty = /** @type {typeof gluChosen} */ ([]);
-    for (var gg of garr) {
-      if (!gg || typeof gg !== 'object') continue;
-      if (/** @type {any} */ (gg).value != null && /** @type {any} */ (gg).value !== '') nonempty.push(gg);
-    }
-    if (nonempty.length > 0) {
-      var rowRecordedAt =
-        /** @type {any} */ (r2).recordedAt != null ? String(/** @type {any} */ (r2).recordedAt) : '';
-      gluChosen = sortGlucometriasChronologically(nonempty, rowRecordedAt);
-      bombaChosen = [];
-      break;
-    }
-  }
-
-  var ingSeen = /** @type {null | unknown} */ (null);
-  var egrSeen = /** @type {null | unknown} */ (null);
-  /** @type {IoEgresoPart[] | null} */
-  var egrPartsSeen = null;
-  var evacSeen = /** @type {null | unknown} */ (null);
-  for (var k2 = sortedAsc.length - 1; k2 >= 0; k2--) {
-    var rIo = sortedAsc[k2];
-    if (!rIo || typeof rIo !== 'object') continue;
-    var ioObj =
-      /** @type {any} */ (rIo).io && typeof /** @type {any} */ (rIo).io === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (rIo).io)
-        : {};
-    if (egrPartsSeen === null && Array.isArray(ioObj.egrParts) && ioObj.egrParts.length) {
-      egrPartsSeen = ioObj.egrParts.slice();
-      egrSeen = ioNumericEgressTotal(ioObj) ?? ioDiuresisForBalance(ioObj);
-    }
-    if (egrSeen === null && ioObj.egr != null && ioObj.egr !== '') egrSeen = ioObj.egr;
-    if (evacSeen === null && ioObj.evac != null && ioObj.evac !== '') evacSeen = ioObj.evac;
-    if (ingSeen === null && hasIoNumber(ioObj.ing)) ingSeen = ioObj.ing;
-    if (ingSeen !== null && (egrSeen !== null || egrPartsSeen) && evacSeen !== null) break;
-  }
-
-  /** @type {Record<string, Array<{ value: number, time?: string }>>} */
-  var vitalSeries = {};
-  for (var si = sortedAsc.length - 1; si >= 0; si--) {
-    var srow = sortedAsc[si];
-    if (!srow || typeof srow !== 'object') continue;
-    var fromRow = vitalSeriesFromMedicion(srow);
-    VITAL_BASE_KEYS.forEach(function (bk) {
-      if (!vitalSeries[bk]) vitalSeries[bk] = [];
-      var list = fromRow[bk] || [];
-      for (var ri = 0; ri < list.length; ri++) {
-        var rd = list[ri];
-        var dup = vitalSeries[bk].some(function (x) {
-          return x.value === rd.value && (x.time || '') === (rd.time || '');
-        });
-        if (!dup) vitalSeries[bk].push(rd);
-      }
-    });
-  }
-
-  snap.vitals = vitals;
-  snap.alteredAt = alteredAt;
-  snap.vitalSeries = vitalSeries;
-  snap.glucometrias = gluChosen.slice();
-  snap.bombaInsulina = bombaChosen;
-  /** @type {{ ing: null | unknown, egr: null | unknown, egrParts?: IoEgresoPart[], evac?: unknown }} */
-  var snapIo = { ing: ingSeen, egr: egrSeen };
-  if (egrPartsSeen) snapIo.egrParts = egrPartsSeen;
-  if (evacSeen !== null) snapIo.evac = evacSeen;
-  snap.io = snapIo;
+  var vitalsBlock = deriveVitalsFromHistorial_(sortedAsc);
+  var gluBlock = deriveGluFromHistorial_(sortedAsc);
+  snap.vitals = vitalsBlock.vitals;
+  snap.alteredAt = vitalsBlock.alteredAt;
+  snap.glucometrias = gluBlock.glucometrias.slice();
+  snap.bombaInsulina = gluBlock.bombaInsulina;
+  snap.io = deriveIoFromHistorial_(sortedAsc);
+  snap.vitalSeries = deriveVitalSeriesFromHistorial_(sortedAsc);
   return snap;
 }
 
@@ -578,88 +282,6 @@ export function removeMedicion(patientOrMonitoreo, id) {
 }
 
 /**
- * @param {unknown} localIn
- * @param {unknown} remoteIn
- */
-export function mergeMonitoreo(localIn, remoteIn) {
-  var local = /** @type {any} */ (structuredClone(localIn));
-  var remote = /** @type {any} */ (structuredClone(remoteIn));
-
-  var lHist = Array.isArray(local?.historial) ? local.historial : [];
-  var rHist = Array.isArray(remote?.historial) ? remote.historial : [];
-  /** @type {any} */
-  var result = /** @type {any} */ (structuredClone(localIn));
-  result.historial = structuredClone((rHist.length > lHist.length ? remote : local).historial || []);
-
-  var locT = result.textoGuardado || { text: '', savedAt: null };
-  var remT = remote.textoGuardado || { text: '', savedAt: null };
-  result.textoGuardado =
-    compareSavedAt(remT.savedAt, locT.savedAt) > 0
-      ? structuredClone(remT)
-      : structuredClone(locT);
-
-  /** @type {any} */
-  var resEco = result.estadoClinico || emptyEstadoClinico();
-  /** @type {any} */
-  var resCf = result.confirmado || {};
-
-  /** @type {any} */
-  var remEco = remote.estadoClinico || emptyEstadoClinico();
-  /** @type {any} */
-  var remCf = remote.confirmado || {};
-
-  var ecScalarKeys = ['four', 'esferas', 'soporte', 'kcalKg', 'tempContext', 'pesoRef'];
-  for (var sk = 0; sk < ecScalarKeys.length; sk += 1) {
-    var scalarKey = ecScalarKeys[sk];
-    var localScalar = String(resEco[scalarKey] || '').trim();
-    var remoteScalar = String(remEco[scalarKey] || '').trim();
-    if (!localScalar && remoteScalar) resEco[scalarKey] = remEco[scalarKey];
-  }
-
-  for (var mk of MED_FIELD_KEYS) {
-    if (remCf[mk] && !resCf[mk]) {
-      resEco[mk] = remEco[mk];
-      resCf[mk] = true;
-    }
-  }
-
-  var locPend = local.pendienteReceta && typeof local.pendienteReceta === 'object' ? local.pendienteReceta : {};
-  var remPend = remote.pendienteReceta && typeof remote.pendienteReceta === 'object' ? remote.pendienteReceta : {};
-  if (!result.pendienteReceta || typeof result.pendienteReceta !== 'object') {
-    result.pendienteReceta = emptyPendienteReceta();
-  }
-  if (resCf.dieta || String(resEco.dieta || '').trim()) {
-    for (var dk of ['dieta', 'kcal', 'proteinG']) {
-      result.pendienteReceta[dk] = '';
-    }
-  } else if (remCf.dieta && String(remEco.dieta || '').trim()) {
-    for (var dk2 of ['dieta', 'kcal', 'proteinG']) {
-      resEco[dk2] = remEco[dk2];
-      result.pendienteReceta[dk2] = '';
-    }
-    resCf.dieta = true;
-  } else {
-    for (var dk3 of ['dieta', 'kcal', 'proteinG']) {
-      var localPending = locPend[dk3];
-      var remotePending = remPend[dk3];
-      if (localPending != null && String(localPending).trim()) {
-        result.pendienteReceta[dk3] = String(localPending).trim();
-      } else if (remotePending != null && String(remotePending).trim()) {
-        result.pendienteReceta[dk3] = String(remotePending).trim();
-      } else {
-        result.pendienteReceta[dk3] = '';
-      }
-    }
-    if (resCf.dieta == null) resCf.dieta = !!remCf.dieta;
-  }
-
-  result.estadoClinico = resEco;
-  result.confirmado = resCf;
-
-  return result;
-}
-
-/**
  * @param {unknown} raw
  * @returns {number | null}
  */
@@ -678,6 +300,45 @@ export function parseWeightKg(raw) {
 export function resolveDietWeightKg(opts) {
   opts = opts || {};
   return parseWeightKg(opts.patientPeso) ?? parseWeightKg(opts.pesoRef);
+}
+
+/**
+ * Dieta SOME tipo suplemento: sin requerimiento calórico en EA.
+ * @param {unknown} dietaText
+ * @returns {boolean}
+ */
+export function isDietaSuplemento(dietaText) {
+  var t = String(dietaText || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+  if (!t) return false;
+  return t.toUpperCase().replace(/^DIETA\s+/, '') === 'SUPLEMENTO';
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} record
+ */
+export function clearDietCaloricFields(record) {
+  if (!record || typeof record !== 'object') return;
+  DIET_CALORIC_KEYS.forEach(function (k) {
+    record[k] = '';
+  });
+}
+
+/**
+ * Suplemento: sin requerimiento calórico — limpia campos calóricos en estado y propuesta.
+ * @param {Record<string, unknown> | null | undefined} estadoClinico
+ * @param {Record<string, unknown> | null | undefined} [pendienteReceta]
+ * @returns {boolean} true si la dieta es suplemento y se aplicó la limpieza
+ */
+export function applyDietaSuplementoPolicy(estadoClinico, pendienteReceta) {
+  if (!estadoClinico || typeof estadoClinico !== 'object') return false;
+  if (!isDietaSuplemento(estadoClinico.dieta)) return false;
+  clearDietCaloricFields(estadoClinico);
+  if (pendienteReceta && typeof pendienteReceta === 'object') {
+    clearDietCaloricFields(pendienteReceta);
+  }
+  return true;
 }
 
 /**
@@ -710,6 +371,7 @@ export function computeDietKcalKgFromTotal(kcalTotal, weightKg) {
  */
 export function syncDietKcalFromWeight(estadoClinico, weightKg) {
   if (!estadoClinico || typeof estadoClinico !== 'object' || weightKg == null) return false;
+  if (isDietaSuplemento(estadoClinico.dieta)) return false;
   var total = computeDietKcalTotal(estadoClinico.kcalKg, weightKg);
   if (total == null) return false;
   estadoClinico.kcal = String(total);
