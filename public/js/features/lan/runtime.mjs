@@ -122,7 +122,7 @@ export function getLanClientId() {
     var gen = 'lc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
     localStorage.setItem('rpc-lan-client-id', gen);
     return gen;
-  } catch (_e) {
+  } catch {
     return 'lc_anon';
   }
 }

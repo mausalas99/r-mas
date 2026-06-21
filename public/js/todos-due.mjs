@@ -164,7 +164,7 @@ function readPresetOverridesMap() {
     if (!raw) return {};
     var parsed = JSON.parse(raw);
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -173,9 +173,7 @@ function writePresetOverridesMap(map) {
   if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(TODO_DUE_PRESETS_STORAGE_KEY, JSON.stringify(map || {}));
-  } catch (_e) {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('rpc-todo-due-presets-changed'));
   }
@@ -292,40 +290,60 @@ export function getTodoDuePresetsLegacyList() {
   });
 }
 
+function applyDeletedPresetOverride(next, id) {
+  if (isCustomPresetId(id)) delete next[id];
+  else next[id] = { deleted: true };
+}
+
+function applyCustomPresetOverride(next, id, patch) {
+  next[id] = normalizeCustomPresetEntry(id, Object.assign({}, next[id] || {}, patch));
+}
+
+function builtinPresetDiffersFromDefault(def, current) {
+  if (def.kind === 'dayTime') {
+    return (
+      current.dayOffset !== def.dayOffset ||
+      clampHour(current.hour) !== def.hour ||
+      clampMinute(current.minute) !== def.minute ||
+      !!current.label
+    );
+  }
+  if (def.kind === 'offsetHours') {
+    return clampOffsetHours(current.hours) !== def.hours || !!current.label;
+  }
+  return false;
+}
+
+function applyBuiltinPresetOverride(next, id, patch) {
+  var def = TODO_DUE_PRESET_DEFAULTS.find(function (row) {
+    return row.id === id;
+  });
+  if (!def) return;
+  var current = Object.assign({}, next[id] || {}, patch);
+  delete current.deleted;
+  var auto = formatTodoDuePresetAutoLabel(normalizePresetOverride(def, current));
+  if (current.label === auto) delete current.label;
+  if (builtinPresetDiffersFromDefault(def, current)) next[id] = current;
+  else delete next[id];
+}
+
+function applyOnePresetOverride(next, id, patch) {
+  if (!patch || typeof patch !== 'object') return;
+  if (patch.deleted) {
+    applyDeletedPresetOverride(next, id);
+    return;
+  }
+  if (isCustomPresetId(id) || isCustomPresetEntry(patch) || isCustomPresetEntry(next[id])) {
+    applyCustomPresetOverride(next, id, patch);
+    return;
+  }
+  applyBuiltinPresetOverride(next, id, patch);
+}
+
 export function saveTodoDuePresetOverrides(patchById) {
   var next = readPresetOverridesMap();
   Object.keys(patchById || {}).forEach(function (id) {
-    var patch = patchById[id];
-    if (!patch || typeof patch !== 'object') return;
-    if (patch.deleted) {
-      if (isCustomPresetId(id)) delete next[id];
-      else next[id] = { deleted: true };
-      return;
-    }
-    if (isCustomPresetId(id) || isCustomPresetEntry(patch) || isCustomPresetEntry(next[id])) {
-      next[id] = normalizeCustomPresetEntry(id, Object.assign({}, next[id] || {}, patch));
-      return;
-    }
-    var def = TODO_DUE_PRESET_DEFAULTS.find(function (row) {
-      return row.id === id;
-    });
-    if (!def) return;
-    var current = Object.assign({}, next[id] || {}, patch);
-    delete current.deleted;
-    var auto = formatTodoDuePresetAutoLabel(normalizePresetOverride(def, current));
-    if (current.label === auto) delete current.label;
-    var hasDiff = false;
-    if (def.kind === 'dayTime') {
-      hasDiff =
-        current.dayOffset !== def.dayOffset ||
-        clampHour(current.hour) !== def.hour ||
-        clampMinute(current.minute) !== def.minute ||
-        !!current.label;
-    } else if (def.kind === 'offsetHours') {
-      hasDiff = clampOffsetHours(current.hours) !== def.hours || !!current.label;
-    }
-    if (hasDiff) next[id] = current;
-    else delete next[id];
+    applyOnePresetOverride(next, id, patchById[id]);
   });
   writePresetOverridesMap(next);
 }

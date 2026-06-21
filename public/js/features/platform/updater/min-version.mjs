@@ -19,7 +19,7 @@ function showMinVersionBlockingModal(current, minVersion, message) {
     checkBtn.onclick = function () {
       if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
         setAsyncButtonLoading(checkBtn, true, { loadingText: 'Buscando…' });
-        try { window.electronAPI.checkForUpdates(); } catch { /* ignore */ }
+        try { window.electronAPI.checkForUpdates(); } catch (_e) { void _e; }
       } else if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
         window.electronAPI.openExternal(RELEASES_LATEST_URL);
       }
@@ -30,7 +30,7 @@ function showMinVersionBlockingModal(current, minVersion, message) {
       if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
         window.electronAPI.openExternal(RELEASES_LATEST_URL);
       } else {
-        try { window.open(RELEASES_LATEST_URL, '_blank'); } catch { /* ignore */ }
+        try { window.open(RELEASES_LATEST_URL, '_blank'); } catch (_e) { void _e; }
       }
     };
   }

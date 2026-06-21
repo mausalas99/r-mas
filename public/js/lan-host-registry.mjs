@@ -3,18 +3,12 @@
  * All discovery paths write here; all reconnect paths read from here.
  */
 
+import { mergeHostRegistryRecord, SOURCE_WEIGHT } from './lan-host-registry-upsert.mjs';
+
 const PINNED_FP_KEY = 'rplus.lan.pinnedFingerprint';
 
 /** @type {Map<string, object>} */
 const _registry = new Map();
-
-const SOURCE_WEIGHT = {
-  heartbeat: 5,
-  mdns: 4,
-  health_poll: 3,
-  udp: 2,
-  scan: 1,
-};
 
 /** For tests only — clears all registry entries. */
 export function _resetRegistryForTest() {
@@ -39,26 +33,7 @@ export function upsertHost(record) {
   const fp = String(record.fingerprint);
   const existing = _registry.get(fp);
   const incomingWeight = SOURCE_WEIGHT[record.source] ?? 0;
-  const existingWeight = existing ? (SOURCE_WEIGHT[existing.source] ?? 0) : -1;
-
-  const shouldUpdateUrl = !existing
-    || incomingWeight > existingWeight
-    || (incomingWeight === existingWeight && record.lastSeenAt >= existing.lastSeenAt);
-
-  _registry.set(fp, {
-    fingerprint: fp,
-    clientId: String(record.clientId || ''),
-    startedAt: Number(record.startedAt) || 0,
-    currentUrl: shouldUpdateUrl ? String(record.currentUrl || '') : existing.currentUrl,
-    rank: String(record.rank || existing?.rank || ''),
-    dbUnlocked: record.dbUnlocked != null ? !!record.dbUnlocked : (existing?.dbUnlocked ?? false),
-    shiftPinActive: record.shiftPinActive != null
-      ? !!record.shiftPinActive
-      : (existing?.shiftPinActive ?? false),
-    rttMs: Number(record.rttMs) || (existing?.rttMs ?? 0),
-    lastSeenAt: Number(record.lastSeenAt) || Date.now(),
-    source: shouldUpdateUrl ? record.source : (existing?.source ?? 'scan'),
-  });
+  _registry.set(fp, mergeHostRegistryRecord(existing, record, incomingWeight));
 }
 
 /** @param {string} fingerprint @returns {object|null} */
@@ -115,7 +90,7 @@ export function evictStale(maxAgeMs = 90_000) {
 export function getPinnedFingerprint() {
   try {
     return String(localStorage.getItem(PINNED_FP_KEY) || '').trim();
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -128,13 +103,17 @@ export function setPinnedFingerprint(fp) {
       return;
     }
     localStorage.setItem(PINNED_FP_KEY, String(fp));
-  } catch (_e) {}
+  } catch {
+    /* localStorage unavailable */
+  }
 }
 
 export function clearPinnedFingerprint() {
   try {
     localStorage.removeItem(PINNED_FP_KEY);
-  } catch (_e) {}
+  } catch {
+    /* localStorage unavailable */
+  }
 }
 
 /** One-time migration: seed registry from legacy rpc-lan-pinned-host-url if no fingerprint yet. */
@@ -159,7 +138,9 @@ function _migrateFromLegacyPinnedUrl() {
       source: 'scan',
     });
     setPinnedFingerprint(provisionalFp);
-  } catch (_e) {}
+  } catch {
+    /* localStorage unavailable */
+  }
 }
 
 _migrateFromLegacyPinnedUrl();

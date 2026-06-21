@@ -192,7 +192,7 @@ export async function ensureLanElectronHostReady(opts) {
   syncWardHostUrlToMainFile(url, { source: 'host' });
   try {
     lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return true;
 }
 
@@ -539,7 +539,7 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
     if (typeof room.tryReconnectLanToHostUrl === 'function') {
       await room.tryReconnectLanToHostUrl(url, teamCode);
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   recordAutoHostDetectSuccess();
   recordWardHostUrl(url, { source: 'client' });
   const label = String(opts.toastLabel || '').trim();
@@ -565,7 +565,7 @@ export async function initLanHostPlugAndPlay() {
       const easy = await pinMod.tryEasyLanShiftPinConnect({ silent: true });
       if (easy.ok) return;
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   await syncLanHostClinicalMetaToDisk();
   if (getPinnedHostUrl()) {
     if (await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { boot: true })) return;

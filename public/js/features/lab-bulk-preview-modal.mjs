@@ -36,9 +36,6 @@ export function shouldOfferBulkPreviewAddPatient(block) {
 }
 
 function renderPreviewSummary(blocks) {
-  var totalReports = blocks.reduce(function (acc, b) {
-    return acc + (b.reportCount || 0);
-  }, 0);
   var okReports = blocks.reduce(function (acc, b) {
     return acc + (b.okReportCount || 0);
   }, 0);

@@ -20,7 +20,7 @@ export async function fetchMinVersionPayload() {
           message: data.message ? String(data.message) : undefined,
         };
       }
-    } catch (_e) {
+    } catch {
       /* try next */
     }
   }

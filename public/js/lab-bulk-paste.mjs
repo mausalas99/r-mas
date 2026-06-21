@@ -151,43 +151,114 @@ function sortDaysDesc(days) {
   });
 }
 
+function parseReportChunkFailure(reportIndex, error, meta) {
+  return { reportIndex, ok: false, error, ...meta };
+}
+
+function parseReportChunkSuccess(reportText, reportIndex, result) {
+  return {
+    reportIndex: reportIndex,
+    ok: true,
+    reportText: reportText,
+    result: result,
+    expediente: String((result.patient && result.patient.expediente) || '').trim(),
+    nombre: String((result.patient && result.patient.name) || '').trim(),
+    fecha: normalizeFechaLabHistory(result.patient && result.patient.fecha) || '',
+    hora: normalizeHoraLabHistory(result.patient && result.patient.hora),
+    bloques: result.resLabs.length,
+  };
+}
+
 function parseReportChunk(reportText, reportIndex) {
   if (!looksLikeSomeLabReport(reportText)) {
-    return {
-      reportIndex: reportIndex,
-      ok: false,
-      error: 'No parece reporte SOME (copia desde «Expediente:»)',
-    };
+    return parseReportChunkFailure(reportIndex, 'No parece reporte SOME (copia desde «Expediente:»)');
   }
   try {
     var result = procesarLabs(reportText);
     if (!result.resLabs || !result.resLabs.length) {
-      return {
-        reportIndex: reportIndex,
-        ok: false,
-        error: 'Sin resultados parseables',
+      return parseReportChunkFailure(reportIndex, 'Sin resultados parseables', {
         expediente: result.patient && result.patient.expediente,
         nombre: result.patient && result.patient.name,
-      };
+      });
     }
-    return {
-      reportIndex: reportIndex,
-      ok: true,
-      reportText: reportText,
-      result: result,
-      expediente: String((result.patient && result.patient.expediente) || '').trim(),
-      nombre: String((result.patient && result.patient.name) || '').trim(),
-      fecha: normalizeFechaLabHistory(result.patient && result.patient.fecha) || '',
-      hora: normalizeHoraLabHistory(result.patient && result.patient.hora),
-      bloques: result.resLabs.length,
-    };
+    return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
-    return {
-      reportIndex: reportIndex,
-      ok: false,
-      error: e && e.message ? e.message : 'Error al parsear',
-    };
+    return parseReportChunkFailure(reportIndex, e && e.message ? e.message : 'Error al parsear');
   }
+}
+
+function collectUniqueExpedientes(okReports) {
+  var expedientes = [];
+  okReports.forEach(function (r) {
+    if (r.expediente && expedientes.indexOf(r.expediente) === -1) expedientes.push(r.expediente);
+  });
+  return expedientes;
+}
+
+function filterUsableReportsForPatient(okReports, match) {
+  if (!match) return okReports;
+  var patientReg = String(match.registro || '').trim();
+  if (!patientReg) return okReports;
+  return okReports.filter(function (r) {
+    return r.expediente === patientReg;
+  });
+}
+
+function collectReportDays(usableReports) {
+  var days = [];
+  usableReports.forEach(function (r) {
+    if (r.fecha && days.indexOf(r.fecha) === -1) days.push(r.fecha);
+  });
+  return days;
+}
+
+function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports) {
+  if (!chunks.length) return 'empty';
+  if (!okReports.length) return 'parse-errors';
+  if (!match) return 'no-patient';
+  if (expedientes.length > 1) return 'mixed-expediente';
+  if (!usableReports.length) return 'parse-errors';
+  return 'ok';
+}
+
+function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
+  var chunks = splitSomeReportsInBlock(blockText);
+  var reports = chunks.map(function (chunk, ri) {
+    return parseReportChunk(chunk, ri);
+  });
+  var okReports = reports.filter(function (r) {
+    return r.ok;
+  });
+  var expedientes = collectUniqueExpedientes(okReports);
+  var primaryExp = expedientes[0] || '';
+  var match = primaryExp && findPatient ? findPatient(primaryExp) : null;
+  var usableReports = filterUsableReportsForPatient(okReports, match);
+  var days = collectReportDays(usableReports);
+  var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports);
+  var patientReg = match ? String(match.registro || '').trim() : '';
+  var setsAfterMerge = usableReports.length
+    ? mergeBulkParseResults(
+        usableReports.map(function (r) {
+          return { result: r.result, reportText: r.reportText };
+        })
+      ).length
+    : 0;
+
+  return {
+    blockIndex: blockIndex,
+    reportCount: chunks.length,
+    okReportCount: usableReports.length,
+    reports: reports,
+    expedientes: expedientes,
+    patient: match,
+    patientName: match ? match.nombre || 'Sin nombre' : okReports[0] ? okReports[0].nombre || '—' : '—',
+    primaryExpediente: patientReg || primaryExp,
+    days: sortDaysDesc(days),
+    daysLabel: sortDaysDesc(days).join(', ') || '—',
+    setsAfterMerge: setsAfterMerge,
+    status: status,
+    canProcess: !!match && usableReports.length > 0,
+  };
 }
 
 /**
@@ -201,60 +272,7 @@ export function buildBulkLabPreview(text, opts) {
     blocks = [String(text).trim()];
   }
   return blocks.map(function (blockText, blockIndex) {
-    var chunks = splitSomeReportsInBlock(blockText);
-    var reports = chunks.map(function (chunk, ri) {
-      return parseReportChunk(chunk, ri);
-    });
-    var okReports = reports.filter(function (r) {
-      return r.ok;
-    });
-    var expedientes = [];
-    okReports.forEach(function (r) {
-      if (r.expediente && expedientes.indexOf(r.expediente) === -1) expedientes.push(r.expediente);
-    });
-    var primaryExp = expedientes[0] || '';
-    var match = primaryExp && findPatient ? findPatient(primaryExp) : null;
-    var patientReg = match ? String(match.registro || '').trim() : '';
-    var usableReports = okReports;
-    if (match && patientReg) {
-      usableReports = okReports.filter(function (r) {
-        return r.expediente === patientReg;
-      });
-    }
-    var days = [];
-    usableReports.forEach(function (r) {
-      if (r.fecha && days.indexOf(r.fecha) === -1) days.push(r.fecha);
-    });
-    var status = 'ok';
-    if (!chunks.length) status = 'empty';
-    else if (!okReports.length) status = 'parse-errors';
-    else if (!match) status = 'no-patient';
-    else if (expedientes.length > 1) status = 'mixed-expediente';
-    else if (!usableReports.length) status = 'parse-errors';
-
-    var setsAfterMerge = usableReports.length
-      ? mergeBulkParseResults(
-          usableReports.map(function (r) {
-            return { result: r.result, reportText: r.reportText };
-          })
-        ).length
-      : 0;
-
-    return {
-      blockIndex: blockIndex,
-      reportCount: chunks.length,
-      okReportCount: usableReports.length,
-      reports: reports,
-      expedientes: expedientes,
-      patient: match,
-      patientName: match ? match.nombre || 'Sin nombre' : okReports[0] ? okReports[0].nombre || '—' : '—',
-      primaryExpediente: patientReg || primaryExp,
-      days: sortDaysDesc(days),
-      daysLabel: sortDaysDesc(days).join(', ') || '—',
-      setsAfterMerge: setsAfterMerge,
-      status: status,
-      canProcess: !!match && usableReports.length > 0,
-    };
+    return buildBulkBlockPreview(blockText, blockIndex, findPatient);
   });
 }
 
@@ -273,7 +291,7 @@ function buildMergedPayloadFromGroup(items, tipo) {
   var mergedRefs = {};
   var newestHora = '';
   var horaSome = '';
-  mergeOrder.forEach(function (item, idx) {
+  mergeOrder.forEach(function (item, _idx) {
     var result = item.result;
     var rows = (result.resLabs || []).slice();
     if (merged.length && rows.length) merged.push('');

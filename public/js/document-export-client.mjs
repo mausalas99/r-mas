@@ -176,6 +176,24 @@ export async function exportGeneratedDocument({ url, buildPayload, defaultFileNa
   return { success: true, fileName };
 }
 
+async function persistSelectedOutputDir(dir, opts) {
+  if (typeof opts.saveOutputDir === 'function') opts.saveOutputDir(dir);
+  if (window.electronAPI?.setApprovedOutputDir) {
+    await window.electronAPI.setApprovedOutputDir(dir);
+  }
+}
+
+async function retryExportAfterOutputDirPrompt(opts, message) {
+  if (typeof opts.onPrompt === 'function') opts.onPrompt(message);
+  const dir = await opts.selectOutputDir();
+  if (!dir) {
+    if (typeof opts.onCancel === 'function') opts.onCancel(message);
+    return { status: 'cancelled' };
+  }
+  await persistSelectedOutputDir(dir, opts);
+  return exportWithOutputDirFallback(opts);
+}
+
 export async function exportWithOutputDirFallback(opts) {
   try {
     const result = await exportGeneratedDocument(opts);
@@ -184,17 +202,7 @@ export async function exportWithOutputDirFallback(opts) {
   } catch (e) {
     const message = e && e.message ? e.message : String(e);
     if (typeof opts.selectOutputDir === 'function' && isOutputDirError(message)) {
-      if (typeof opts.onPrompt === 'function') opts.onPrompt(message);
-      const dir = await opts.selectOutputDir();
-      if (!dir) {
-        if (typeof opts.onCancel === 'function') opts.onCancel(message);
-        return { status: 'cancelled' };
-      }
-      if (typeof opts.saveOutputDir === 'function') opts.saveOutputDir(dir);
-      if (window.electronAPI?.setApprovedOutputDir) {
-        await window.electronAPI.setApprovedOutputDir(dir);
-      }
-      return exportWithOutputDirFallback(opts);
+      return retryExportAfterOutputDirPrompt(opts, message);
     }
     if (typeof opts.onError === 'function') opts.onError(message);
     throw e;

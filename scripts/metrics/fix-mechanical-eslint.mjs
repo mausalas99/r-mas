@@ -2,13 +2,19 @@
 /**
  * Mechanical ESLint fixes for Tier 1 changed files (no behavior change).
  * Targets: no-empty, no-useless-escape, no-redeclare, no-constant-condition, no-unused-vars.
+ *
+ *   node scripts/metrics/fix-mechanical-eslint.mjs           # git-changed Tier 1 files
+ *   node scripts/metrics/fix-mechanical-eslint.mjs --full    # entire Tier 1 tree
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { join, extname } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { filterTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
 
 const ROOT = process.cwd();
+const args = new Set(process.argv.slice(2));
+const full = args.has('--full');
+const SRC_EXT = new Set(['.js', '.mjs', '.cjs']);
 
 function gitLines(cmd) {
   try {
@@ -22,18 +28,53 @@ function gitLines(cmd) {
 }
 
 function collectPaths() {
+  if (full) return ['public/js', 'lib', 'lan-squad'];
   const committed = filterTier1Paths(gitChangedFilesAgainst('main'));
   const unstaged = filterTier1Paths(gitLines('git diff --name-only HEAD'));
   const untracked = filterTier1Paths(gitLines('git ls-files --others --exclude-standard'));
   return [...new Set([...committed, ...unstaged, ...untracked])].filter((p) => existsSync(p));
 }
 
-function fixEmptyCatchBlocks(src) {
-  return src
-    .replace(/catch\s*\(\s*_[a-zA-Z][a-zA-Z0-9]*\s*\)\s*\{\s*\}/g, 'catch { /* ignore */ }')
-    .replace(/catch\s*\(\s*_[a-zA-Z][a-zA-Z0-9]*\s*\)\s*\{\s*\/\*\s*ignore\s*\*\/\s*\}/g, 'catch { /* ignore */ }')
-    .replace(/catch\s*\(\s*[a-zA-Z][a-zA-Z0-9]*\s*\)\s*\{\s*\}/g, 'catch { /* ignore */ }')
-    .replace(/catch\s*\(\s*[a-zA-Z][a-zA-Z0-9]*\s*\)\s*\{\s*\/\*\s*ignore\s*\*\/\s*\}/g, 'catch { /* ignore */ }');
+function expandSourceFiles(paths) {
+  const out = [];
+  for (const p of paths) {
+    if (!existsSync(p)) continue;
+    const st = statSync(p);
+    if (st.isFile()) {
+      out.push(p.replace(/\\/g, '/'));
+      continue;
+    }
+    if (!st.isDirectory()) continue;
+    for (const rel of readdirSync(p, { recursive: true })) {
+      const fullPath = join(p, rel).replace(/\\/g, '/');
+      if (!SRC_EXT.has(extname(fullPath))) continue;
+      try {
+        if (statSync(fullPath).isFile()) out.push(fullPath);
+      } catch {
+        /* skip */
+      }
+    }
+  }
+  return [...new Set(out)];
+}
+
+/** no-empty: keep catch binding, mark error intentionally unused. */
+function fixNoEmptyCatchBlocks(src) {
+  let out = src;
+  out = out.replace(
+    /catch\s*\(\s*([a-zA-Z_][a-zA-Z0-9]*)\s*\)\s*\{\s*\}/g,
+    'catch ($1) { void $1; }',
+  );
+  out = out.replace(
+    /catch\s*\(\s*([a-zA-Z_][a-zA-Z0-9]*)\s*\)\s*\{\s*\/\*\s*ignore\s*\*\/\s*\}/g,
+    'catch ($1) { void $1; }',
+  );
+  out = out.replace(/catch\s*\{\s*\}/g, 'catch (_e) { void _e; }');
+  out = out.replace(
+    /catch\s*\{\s*\/\*\s*ignore\s*\*\/\s*\}/g,
+    'catch (_e) { void _e; }',
+  );
+  return out;
 }
 
 function fixUnusedCatchBindings(src) {
@@ -280,26 +321,28 @@ function eslintJson(paths) {
 const TARGET_RULES = new Set([
   'no-empty',
   'no-useless-escape',
+  'no-undef',
   'no-redeclare',
   'no-constant-condition',
   'no-unused-vars',
 ]);
 
 const paths = collectPaths();
-console.log(`fix-mechanical-eslint: ${paths.length} file(s)`);
+const sourceFiles = expandSourceFiles(paths);
+const label = full ? 'full Tier 1' : 'changed';
+console.log(`fix-mechanical-eslint (${label}): ${paths.length} path(s), ${sourceFiles.length} source file(s)`);
 
-// Pass 1: empty catch + unused catch bindings across all tier1 files
+// Pass 1: no-empty catch blocks across tier1 source files
 let catchFixCount = 0;
-for (const rel of paths) {
+for (const rel of sourceFiles) {
   const before = readFileSync(rel, 'utf8');
-  let after = fixEmptyCatchBlocks(before);
-  after = fixUnusedCatchBindings(after);
+  const after = fixNoEmptyCatchBlocks(before);
   if (after !== before) {
     writeFileSync(rel, after);
     catchFixCount++;
   }
 }
-console.log(`Pass 1: fixed catch blocks in ${catchFixCount} file(s)`);
+console.log(`Pass 1: fixed empty catch blocks in ${catchFixCount} file(s)`);
 
 // Pass 2: no-redeclare scoped renames
 const redeclareFiles = [...new Set(REDECLARE_SCOPED.map((f) => f.file))];
@@ -338,6 +381,9 @@ for (let pass = 0; pass < 5; pass++) {
   for (const [rel, issues] of byFile) {
     let src = readFileSync(rel, 'utf8');
     const orig = src;
+
+    const empty = issues.filter((i) => i.ruleId === 'no-empty');
+    if (empty.length) src = fixNoEmptyCatchBlocks(src);
 
     const escapes = issues.filter((i) => i.ruleId === 'no-useless-escape');
     if (escapes.length) src = fixUselessEscapes(src, escapes);

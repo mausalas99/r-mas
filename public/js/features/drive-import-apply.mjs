@@ -20,61 +20,52 @@ export async function applyDriveImport(parsed, options) {
   return applyDriveImportInner(parsed, options);
 }
 
-async function applyDriveImportInner(parsed, options) {
-  const mode = options.mode || 'fill';
-  let patient = options.activePatient;
-  let lanSyncDeferred = false;
+function createPatientFromDriveHeader(header) {
+  const h = header || {};
+  const id = generatePatientId();
+  const patient = {
+    id: id,
+    nombre: ensureUniquePatientName(h.nombre || 'PACIENTE SIN NOMBRE'),
+    edad: h.edad || '',
+    sexo: h.sexo === 'F' ? 'F' : 'M',
+    cama: h.cama || '',
+    registro: h.registro || '',
+    area: '',
+    servicio: '',
+    cuarto: '',
+    fromLab: false,
+  };
+  applyDefaultsToNewPatient(patient);
+  patients.unshift(patient);
+  selectPatient(id);
+  return patient;
+}
 
-  if (options.createNew) {
-    const h = parsed.header || {};
-    const id = generatePatientId();
-    patient = {
-      id: id,
-      nombre: ensureUniquePatientName(h.nombre || 'PACIENTE SIN NOMBRE'),
-      edad: h.edad || '',
-      sexo: h.sexo === 'F' ? 'F' : 'M',
-      cama: h.cama || '',
-      registro: h.registro || '',
-      area: '',
-      servicio: '',
-      cuarto: '',
-      fromLab: false,
-    };
-    applyDefaultsToNewPatient(patient);
-    patients.unshift(patient);
-    selectPatient(id);
-  }
+async function applyDriveHcPatchIfNeeded(patient, parsed, mode, options) {
+  if (mode === 'eventos') return { ok: true, lanDeferred: false };
+  const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
+    fromReview: !!options.fromReview,
+  });
+  return { ok: hcRes.ok, lanDeferred: !!hcRes.lanDeferred };
+}
 
-  if (!patient) {
-    return { ok: false, error: 'no-patient' };
-  }
-
-  let hcOk = true;
-  if (mode !== 'eventos') {
-    const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
-      fromReview: !!options.fromReview,
-    });
-    hcOk = hcRes.ok;
-    if (hcRes.lanDeferred) lanSyncDeferred = true;
-    if (!hcOk) return { ok: false, error: 'hc-conflict' };
-  }
-
+async function applyDriveEventualidadesSection(patient, parsed) {
   const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
-  if (evRes.lanDeferred) lanSyncDeferred = true;
   invalidateEventualidadesPanel();
   const evMount = document.getElementById('exp-pane-eventualidades');
   if (evMount && evRes.added) {
     renderEventualidadesPanel(evMount);
   }
+  return evRes;
+}
 
-  let labRes = { added: 0, skipped: 0 };
+async function applyDriveLabSetsIfAny(patient, parsed) {
   const labSets = parsed.laboratorios && parsed.laboratorios.sets ? parsed.laboratorios.sets : [];
-  if (labSets.length) {
-    labRes = await applyDriveImportLabSets(patient, labSets);
-  }
+  if (!labSets.length) return { added: 0, skipped: 0 };
+  return applyDriveImportLabSets(patient, labSets);
+}
 
-  await saveState({ immediate: true });
-
+function resolveDriveImportNavigateTo(mode, parsed, labRes) {
   const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function (k) {
     return !String(k).startsWith('_');
   });
@@ -82,10 +73,35 @@ async function applyDriveImportInner(parsed, options) {
   if (labRes.added && navigateTo === 'eventualidades' && mode === 'eventos') {
     navigateTo = 'lab';
   }
+  return navigateTo;
+}
+
+async function applyDriveImportInner(parsed, options) {
+  const mode = options.mode || 'fill';
+  let patient = options.activePatient;
+  let lanSyncDeferred = false;
+
+  if (options.createNew) {
+    patient = createPatientFromDriveHeader(parsed.header);
+  }
+
+  if (!patient) {
+    return { ok: false, error: 'no-patient' };
+  }
+
+  const hcRes = await applyDriveHcPatchIfNeeded(patient, parsed, mode, options);
+  if (hcRes.lanDeferred) lanSyncDeferred = true;
+  if (!hcRes.ok) return { ok: false, error: 'hc-conflict' };
+
+  const evRes = await applyDriveEventualidadesSection(patient, parsed);
+  if (evRes.lanDeferred) lanSyncDeferred = true;
+
+  const labRes = await applyDriveLabSetsIfAny(patient, parsed);
+  await saveState({ immediate: true });
 
   return {
     ok: true,
-    navigateTo: navigateTo,
+    navigateTo: resolveDriveImportNavigateTo(mode, parsed, labRes),
     evAdded: evRes.added,
     evSkipped: evRes.skipped,
     labAdded: labRes.added,

@@ -2,9 +2,8 @@
  * LAN push when registering @usuario / saving clinical profile.
  */
 
-import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { getRoomMembership, setRoomMembership } from './live-sync-membership.mjs';
-import { liveSyncRoomLabel, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
+import { liveSyncRoomLabel, parseLanJoinQuery } from './lan-join-link.mjs';
 import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
 
 /** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
@@ -46,40 +45,9 @@ export function rememberLiveSyncRoomMembership(roomId, label) {
   return true;
 }
 
-/**
- * @param {{ roomId?: string, sala?: string }} [opts]
- * @returns {string}
- */
-export function resolveRoomIdForUsernameRegister(opts = {}) {
-  const explicit = String(opts.roomId || '').trim();
-  if (explicit) return explicit;
-  const fromSala = resolveLiveSyncRoomIdFromSala(opts.sala);
-  if (fromSala) return fromSala;
+import { resolveRoomIdForUsernameRegister } from './clinical-profile-lan-room.mjs';
 
-  try {
-    const mem = getRoomMembership();
-    const fromMem = String(mem?.roomId || '').trim();
-    if (fromMem) return fromMem;
-  } catch (_e) {
-    /* ignore */
-  }
-
-  if (typeof location !== 'undefined') {
-    const parsed = parseLanJoinQuery(location.search, location.origin);
-    const fromUrl = String(parsed.roomId || '').trim();
-    if (fromUrl) return fromUrl;
-  }
-
-  try {
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    const fromSettings = resolveLiveSyncRoomIdFromSala(settings.clinicalSala);
-    if (fromSettings) return fromSettings;
-  } catch (_e2) {
-    /* ignore */
-  }
-
-  return resolveLiveSyncRoomIdFromSala(clinicalSessionContext.user?.sala);
-}
+export { resolveRoomIdForUsernameRegister };
 
 /**
  * Maps clinical Sala / invite / membership to LiveSync room before @usuario gate.
@@ -105,7 +73,7 @@ export async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
   if (opts.joinLive !== false && typeof lan.joinLanRoom === 'function') {
     try {
       lan.joinLanRoom(roomId, liveSyncRoomLabel(roomId));
-    } catch (_e) {
+    } catch {
       /* membership alone satisfies registration gate */
     }
   }
@@ -122,7 +90,7 @@ export async function seedDevPeerLanConfigIfNeeded() {
     const lan = await import('./features/lan-sync.mjs');
     if (lan.isLanSessionConfiguredForRest?.()) return;
     lan.persistLanClientConfig(seed.hostUrl, seed.teamCode);
-  } catch (_e) {
+  } catch {
     /* non-fatal */
   }
 }
@@ -212,7 +180,7 @@ export async function flushClinicalProfileToLan(opts = {}) {
   try {
     const { lanClient } = await import('./lan-client.mjs');
     if (lanClient && !lanClient.connected) lanClient.connectSyncChannel();
-  } catch (_e) {
+  } catch {
     /* HTTP push still works when sync channel is down */
   }
 

@@ -159,7 +159,7 @@ export function syncClinicalCensusFiltersBar() {
       elevatedPatientFilters.sala = storedSala;
       localStorage.removeItem('clinical.censusFilterSala');
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   const mobileSidebar = isMobileWeb();
   if (!bar) {
     bar = createCensusFiltersBar(user, filtersMount, mobileSidebar);

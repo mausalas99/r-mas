@@ -67,7 +67,7 @@ function ensureLanClientBaseUrl() {
   if (lanClient.baseUrl()) return true;
   try {
     bridge().initLanClientFromStorage();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (lanClient.baseUrl()) return true;
   runtime().showToast('Falta la dirección del servidor LAN. Configúrala en ⇄ antes de unirte.', 'error');
   return false;
@@ -86,7 +86,7 @@ function connectLiveSyncRoom(id) {
   if (!lanClient.connected) {
     try {
       lanClient.connectSyncChannel();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   lanClient.connectLiveChannel(id);
   setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });

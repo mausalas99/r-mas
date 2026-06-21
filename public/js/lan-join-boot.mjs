@@ -19,17 +19,17 @@ export function persistLanJoinCredentials(hostUrl, token) {
   if (bearer) {
     try {
       localStorage.setItem(BEARER_KEY, bearer);
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   if (url) {
     try {
       localStorage.setItem(HOST_KEY, url);
-    } catch (_eHost) {}
+    } catch (_e) { void _e; }
   }
   if (url && bearer) {
     try {
       localStorage.setItem(LAN_CONFIG_KEY, JSON.stringify({ hostUrl: url, teamCode: bearer }));
-    } catch (_eCfg) {}
+    } catch (_e) { void _e; }
   }
 }
 

@@ -52,6 +52,15 @@ export function activePatientTeamId(patientId) {
  * @param {string} patientId
  * @param {string} teamId
  */
+async function notifyPatientTeamAssigned(pid, tid) {
+  await fetchClinicalScopeContextFromDb();
+  const lan = await import('./features/lan-sync.mjs').catch(() => null);
+  if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
+  if (typeof document !== 'undefined') {
+    document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
+  }
+}
+
 export async function assignPatientToTeamClinical(patientId, teamId) {
   const api = dbApi();
   const pid = String(patientId || '').trim();
@@ -66,14 +75,7 @@ export async function assignPatientToTeamClinical(patientId, teamId) {
       effectiveAt: new Date().toISOString(),
     });
     if (!res || res.ok === false) return { ok: false, error: res?.error || 'assign_failed' };
-    await fetchClinicalScopeContextFromDb();
-    const lan = await import('./features/lan-sync.mjs').catch(() => null);
-    if (lan) {
-      if (typeof lan.pushClinicalOpsLanNow === 'function') await lan.pushClinicalOpsLanNow();
-    }
-    if (typeof document !== 'undefined') {
-      document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
-    }
+    await notifyPatientTeamAssigned(pid, tid);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err && err.message ? err.message : 'assign_failed' };
@@ -219,7 +221,7 @@ async function notifyAssignToast(msg, type) {
   try {
     const shell = await import('./app-shell.mjs');
     if (typeof shell.showToast === 'function') shell.showToast(msg, type);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function wirePatientTeamAssignRefresh() {

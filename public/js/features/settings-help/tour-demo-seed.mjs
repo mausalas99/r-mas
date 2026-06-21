@@ -1,33 +1,6 @@
-/** Guided tours, neo companion, mini tours, demo patient hooks. */
-import {
-  getTourSteps,
-  getTourTarget,
-  stepRequiresUserAction,
-} from '../../tour-targets.mjs';
-import {
-  getChapterProgressLabel,
-  getChapterForStep,
-  getFirstStepIdForChapter,
-  getNeoCompanionSteps,
-} from '../../onboarding-curriculum.mjs';
-import {
-  loadTourProgress,
-  saveTourProgress,
-  clearTourProgress,
-} from '../../onboarding-progress.mjs';
-import { syncGuidedTourContext } from '../../tour-guards.mjs';
-import {
-  isPresentationModeActive,
-  startPresentationMode,
-  stopPresentationMode,
-} from '../../presentation-mode.mjs';
-import { applyAppModeSwitchEffects } from '../profile.mjs';
+/** Tour demo patient seeding — clinical bundle for guided tours. */
 import { LAB_BULK_PATIENT_SEPARATOR } from '../../lab-bulk-paste.mjs';
-import { buildTourDemoListadoProblemas } from '../../tour-demo-listado-problemas.mjs';
-import {
-  buildTourMonitoreoHistorial,
-  getTourRegistroFormSample,
-} from '../../tour-demo-monitoreo.mjs';
+import { buildTourMonitoreoHistorial } from '../../tour-demo-monitoreo.mjs';
 import {
   applyTourDemoIngresoDates,
   buildTourDemoDates,
@@ -35,48 +8,14 @@ import {
 } from '../../tour-demo-dates.mjs';
 import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
 import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
-import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
 import {
   DEMO_PATIENT_ID,
   DEMO_PATIENT_ID_2,
   DEMO_REGISTRO,
   DEMO_REGISTRO_2,
   findTourDemoPatientByRegistro,
-  isTourDemoPatientId,
-  registerTourDemoPatientHooks,
-  resolveTourDemoPatientId,
-  tourDemoLabCompleteForTour,
-  tourDemoPatientsBothInCensus,
 } from '../../tour-demo-patient.mjs';
-import {
-  renderEstadoActualPanel,
-  applyEstadoActualParsedToForm,
-  toDatetimeLocalValue,
-  invalidateEaPanelCache,
-} from '../estado-actual-panel.mjs';
-import {
-  closeEstadoActualRegistroModal,
-  openEstadoActualRegistroModal,
-} from '../estado-actual-registro-modal.mjs';
-import { isMobileWeb } from '../../mobile-web.mjs';
-import { getUiDensity, setUiDensity } from '../chrome.mjs';
-import {
-  openConnectionDropdown,
-  closeConnectionDropdown,
-} from '../lan-sync.mjs';
-import { renderPatientList, selectPatient } from '../patients.mjs';
-import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
-import { renderPaseBoard } from '../pase-board.mjs';
-import { setRoundOverviewMode } from '../patients.mjs';
-import { renderRoundOverviewPanels } from '../patients.mjs';
-import { renderLabHistoryPanel } from '../lab-panel.mjs';
-import { limpiarReporte } from '../lab-panel.mjs';
-import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
-import { closeTendGroupModal } from '../tendencias.mjs';
-import { closeSesionIngresoTrendsSendModal } from '../sesion-ingreso-trends-send-modal.mjs';
-import { closeSOAPModal } from '../soap-estado.mjs';
-import { procesarLabs } from '../../labs.js';
-import { extractParsedValues } from '../diagrams-parse.mjs';
+import { selectPatient } from '../patients.mjs';
 import {
   patients,
   notes,
@@ -89,25 +28,10 @@ import {
   setPatients,
 } from '../../app-state.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
-import { settingsHelpBridge } from './bridges.mjs';
-import {
-  closeSettingsDropdown,
-  toggleSettingsDropdown,
-  ensureSettingsDropdownOpen,
-  expandSettingsAccordionBackupSync,
-} from './settings-dropdown.mjs';
-
-
-import { tourState, publishTourGuardContext, GUIDED_TOUR_LS_KEY } from './tour-state.mjs';
-import { tourBridge } from './tour-bridge.mjs';
+import { tourState } from './tour-state.mjs';
 
 const rt = getSettingsHelpRuntime();
 
-
-/** Tour demo patient seeding */
-function getTourDemoPatientId() {
-  return resolveTourDemoPatientId(patients);
-}
 
 function purgeTourDemoPatientsFromState() {
   var removedIds = [];
@@ -339,23 +263,6 @@ function ensureTourDemoLabInputBoth() {
   }
   return true;
 }
-
-/** Plantilla BH de referencia (p. ej. tour guiado). El cuadro de laboratorio no se rellena solo al iniciar. */
-var LAB_INPUT_DEFAULT_REPORT =
-  'BIOMETRÍA HEMÁTICA\n' +
-  'Hemoglobina: 7.44 g/dL\n' +
-  'Hematocrito: 24%\n' +
-  'VCM: 97 fL\n' +
-  'HCM: 30.2 pg\n' +
-  'Leucocitos: 29.1 x10³/µL\n' +
-  'Neutrófilos: 25.8 x10³/µL\n' +
-  'Eosinófilos: 0 x10³/µL\n' +
-  'Plaquetas: 163 x10³/µL\n';
-
-// ── Tour guiado (modal intro + panel por pasos) ───────────────────
-// Persistencia: localStorage sobrevive al cerrar la app (Electron). La clave guarda
-// la última versión para la que el usuario omitió o completó el tutorial; al
-// actualizar a una versión mayor (semver), la bienvenida vuelve a mostrarse.
 
 export {
   TOUR_STEPS_USE_DEMO_PEREZ,

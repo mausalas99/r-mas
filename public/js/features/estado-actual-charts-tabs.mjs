@@ -158,6 +158,102 @@ export function syncActiveEaChartsRef(mountEl, tab) {
 /**
  * @param {HTMLElement} mountEl
  * @param {unknown} ChartCtor
+ * @param {string} [famId]
+ * @param {{ slotData: Record<string, { labels: string[], datasets: object[] }> }} bundle
+ * @param {HTMLCanvasElement} canvas
+ * @param {HTMLElement|null} titleEl
+ * @param {HTMLElement|null} vitalsNav
+ */
+function paintEaVitalsTab(mountEl, ChartCtor, famId, bundle, canvas, titleEl, vitalsNav) {
+  var slotData = bundle.slotData;
+  var familyId = famId || mountEl._eaActiveVitalFamily || defaultEaVitalFamilyId(slotData);
+  if (!slotData['vital:' + familyId]) familyId = defaultEaVitalFamilyId(slotData);
+  mountEl._eaActiveVitalFamily = familyId;
+  if (vitalsNav) {
+    vitalsNav.hidden = false;
+    markEaVitalFamilyActive(familyId);
+  }
+  var fam = VITAL_FAMILIES.find(function (f) {
+    return f.id === familyId;
+  });
+  var raw = slotData['vital:' + familyId];
+  if (!raw || !fam) return;
+  var famData = displayVitalsFamilyData(raw);
+  if (titleEl) titleEl.textContent = fam.title;
+  mountEl._eaChartInstance = paintEaChart(ChartCtor, canvas, {
+    type: 'line',
+    slotId: 'vital:' + familyId,
+    data: { labels: famData.labels, datasets: famData.datasets },
+    options: eaLineChartOptions(),
+  });
+}
+
+function paintEaGluTab(ChartCtor, bundle, canvas, titleEl) {
+  var gluRaw = bundle.slotData.glu;
+  if (!gluRaw) return;
+  var gluDisplay = displayGluChartData(gluRaw);
+  if (titleEl) titleEl.textContent = 'Serie temporal';
+  return paintEaChart(ChartCtor, canvas, {
+    type: 'line',
+    slotId: 'glu',
+    data: gluDisplay,
+    options: eaLineChartOptions({
+      plugins: Object.assign({ legend: { display: false } }, eaChartTooltipPlugin()),
+      scales: {
+        y: { grace: '5%', title: { display: true, text: 'mg/dL', font: { size: 11 } } },
+        x: { ticks: { maxRotation: 0, font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 } },
+      },
+    }),
+  });
+}
+
+function paintEaIoTab(ChartCtor, bundle, canvas, titleEl) {
+  var ioRaw = bundle.slotData.io;
+  if (!ioRaw) return;
+  var ioDisplay = displayIoChartData(ioRaw);
+  if (titleEl) titleEl.textContent = 'Ingresos / egresos y balance global';
+  return paintEaChart(ChartCtor, canvas, {
+    type: 'bar',
+    slotId: 'io',
+    data: {
+      labels: ioDisplay.labels,
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: ioDisplay.datasets[0].data,
+          backgroundColor: chartColor('--ea-chart-io-ing'),
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          label: 'Egresos',
+          data: ioDisplay.datasets[1].data,
+          backgroundColor: chartColor('--ea-chart-io-egr'),
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'Balance global',
+          data: ioDisplay.datasets[2].data,
+          borderColor: chartColor('--ea-chart-io-balance'),
+          backgroundColor: chartColor('--ea-chart-io-balance'),
+          borderDash: [6, 4],
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.25,
+          yAxisID: 'y1',
+          order: 1,
+        },
+      ],
+    },
+    options: eaIoChartOptions(),
+  });
+}
+
+/**
+ * @param {HTMLElement} mountEl
+ * @param {unknown} ChartCtor
  * @param {string} tab
  * @param {string} [famId]
  * @param {{ slotData: Record<string, { labels: string[], datasets: object[] }> }} bundle
@@ -167,101 +263,23 @@ function paintEaChartView(mountEl, ChartCtor, tab, famId, bundle) {
   var titleEl = getChartTitle();
   var emptyEl = getEmptyEl();
   var vitalsNav = getVitalsNav();
-  var slotData = bundle.slotData;
   if (!canvas) return;
 
   if (emptyEl) emptyEl.hidden = true;
   canvas.hidden = false;
 
   if (tab === 'vitals') {
-    var familyId = famId || mountEl._eaActiveVitalFamily || defaultEaVitalFamilyId(slotData);
-    if (!slotData['vital:' + familyId]) familyId = defaultEaVitalFamilyId(slotData);
-    mountEl._eaActiveVitalFamily = familyId;
-    if (vitalsNav) {
-      vitalsNav.hidden = false;
-      markEaVitalFamilyActive(familyId);
-    }
-    var fam = VITAL_FAMILIES.find(function (f) {
-      return f.id === familyId;
-    });
-    var raw = slotData['vital:' + familyId];
-    if (!raw || !fam) return;
-    var famData = displayVitalsFamilyData(raw);
-    if (titleEl) titleEl.textContent = fam.title;
-    var chart = paintEaChart(ChartCtor, canvas, {
-      type: 'line',
-      slotId: 'vital:' + familyId,
-      data: { labels: famData.labels, datasets: famData.datasets },
-      options: eaLineChartOptions(),
-    });
-    mountEl._eaChartInstance = chart;
+    paintEaVitalsTab(mountEl, ChartCtor, famId, bundle, canvas, titleEl, vitalsNav);
     return;
   }
 
   if (vitalsNav) vitalsNav.hidden = true;
-
   if (tab === 'glu') {
-    var gluRaw = slotData.glu;
-    if (!gluRaw) return;
-    var gluDisplay = displayGluChartData(gluRaw);
-    if (titleEl) titleEl.textContent = 'Serie temporal';
-    mountEl._eaChartInstance = paintEaChart(ChartCtor, canvas, {
-      type: 'line',
-      slotId: 'glu',
-      data: gluDisplay,
-      options: eaLineChartOptions({
-        plugins: Object.assign({ legend: { display: false } }, eaChartTooltipPlugin()),
-        scales: {
-          y: { grace: '5%', title: { display: true, text: 'mg/dL', font: { size: 11 } } },
-          x: { ticks: { maxRotation: 0, font: { size: 10 }, autoSkip: true, maxTicksLimit: 12 } },
-        },
-      }),
-    });
+    mountEl._eaChartInstance = paintEaGluTab(ChartCtor, bundle, canvas, titleEl);
     return;
   }
-
   if (tab === 'io') {
-    var ioRaw = slotData.io;
-    if (!ioRaw) return;
-    var ioDisplay = displayIoChartData(ioRaw);
-    if (titleEl) titleEl.textContent = 'Ingresos / egresos y balance global';
-    mountEl._eaChartInstance = paintEaChart(ChartCtor, canvas, {
-      type: 'bar',
-      slotId: 'io',
-      data: {
-        labels: ioDisplay.labels,
-        datasets: [
-          {
-            label: 'Ingresos',
-            data: ioDisplay.datasets[0].data,
-            backgroundColor: chartColor('--ea-chart-io-ing'),
-            borderRadius: 4,
-            order: 2,
-          },
-          {
-            label: 'Egresos',
-            data: ioDisplay.datasets[1].data,
-            backgroundColor: chartColor('--ea-chart-io-egr'),
-            borderRadius: 4,
-            order: 2,
-          },
-          {
-            type: 'line',
-            label: 'Balance global',
-            data: ioDisplay.datasets[2].data,
-            borderColor: chartColor('--ea-chart-io-balance'),
-            backgroundColor: chartColor('--ea-chart-io-balance'),
-            borderDash: [6, 4],
-            borderWidth: 2,
-            pointRadius: 2,
-            tension: 0.25,
-            yAxisID: 'y1',
-            order: 1,
-          },
-        ],
-      },
-      options: eaIoChartOptions(),
-    });
+    mountEl._eaChartInstance = paintEaIoTab(ChartCtor, bundle, canvas, titleEl);
   }
 }
 

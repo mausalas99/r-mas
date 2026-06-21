@@ -67,6 +67,33 @@ function moduleStatusLabel({ completed, inProgress, stepInChapter, chapterSteps 
   return 'Pendiente';
 }
 
+function buildModuleIndexBadge({ neoBadge, moduleIndex }) {
+  if (neoBadge) {
+    return '<span class="learn-hub-module-index learn-hub-module-index--neo" aria-hidden="true">N</span>';
+  }
+  if (moduleIndex != null) {
+    return `<span class="learn-hub-module-index" aria-hidden="true">${moduleIndex}</span>`;
+  }
+  return '';
+}
+
+function buildModuleStatusIcon({ completed, inProgress }) {
+  if (completed) return '<span class="learn-hub-module-check" aria-hidden="true">✓</span>';
+  if (inProgress) return '<span class="learn-hub-module-dot" aria-hidden="true"></span>';
+  return '';
+}
+
+function buildModuleResetBtn({ completed, allowReset, neoStepId, chapterId, branch, label }) {
+  if (!completed || !allowReset || neoStepId) return '';
+  return (
+    `<button type="button" class="learn-hub-module-reset"` +
+    ` data-learn-reset="${escapeHtml(chapterId)}" data-learn-reset-branch="${escapeHtml(branch)}"` +
+    ` title="Resetear progreso" aria-label="Resetear ${escapeHtml(label)}">` +
+    `<span class="learn-hub-module-reset-icon" aria-hidden="true">↺</span>` +
+    `</button>`
+  );
+}
+
 function buildModuleRow({
   chapterId,
   label,
@@ -91,31 +118,23 @@ function buildModuleRow({
   ]
     .filter(Boolean)
     .join(' ');
-  const indexBadge = neoBadge
-    ? '<span class="learn-hub-module-index learn-hub-module-index--neo" aria-hidden="true">N</span>'
-    : moduleIndex != null
-      ? `<span class="learn-hub-module-index" aria-hidden="true">${moduleIndex}</span>`
-      : '';
+  const indexBadge = buildModuleIndexBadge({ neoBadge, moduleIndex });
   const statusLine =
     chapterSteps > 0
       ? `<span class="learn-hub-module-meta">${chapterSteps} pasos · ~${mins} min</span>`
       : '';
-  const statusIcon = completed
-    ? '<span class="learn-hub-module-check" aria-hidden="true">✓</span>'
-    : inProgress
-      ? '<span class="learn-hub-module-dot" aria-hidden="true"></span>'
-      : '';
+  const statusIcon = buildModuleStatusIcon({ completed, inProgress });
   const hitAttrs = neoStepId
     ? ` data-learn-neo-step="${escapeHtml(neoStepId)}"`
     : ` data-learn-chapter="${escapeHtml(chapterId)}" data-learn-branch="${escapeHtml(branch)}"`;
-  const resetBtn =
-    completed && allowReset && !neoStepId
-      ? `<button type="button" class="learn-hub-module-reset"` +
-        ` data-learn-reset="${escapeHtml(chapterId)}" data-learn-reset-branch="${escapeHtml(branch)}"` +
-        ` title="Resetear progreso" aria-label="Resetear ${escapeHtml(label)}">` +
-        `<span class="learn-hub-module-reset-icon" aria-hidden="true">↺</span>` +
-        `</button>`
-      : '';
+  const resetBtn = buildModuleResetBtn({
+    completed,
+    allowReset,
+    neoStepId,
+    chapterId,
+    branch,
+    label,
+  });
   return (
     `<div class="${cardCls}">` +
     `<div class="learn-hub-module-row">` +
@@ -220,31 +239,37 @@ function fundamentosModuleState(chapterId, branch, progress, tourProgress) {
   };
 }
 
-export function renderLearnHubBody(focusTrack = 'guardia-v7') {
-  const host = document.getElementById('learn-hub-body');
-  if (!host) return;
+function renderLearnHubContinueSection(tourProgress, parts) {
+  if (!tourProgress) return;
+  parts.push(
+    '<div class="learn-hub-section learn-hub-section--continue">' +
+    '<button type="button" class="learn-hub-continue-btn" id="learn-hub-btn-continue">' +
+    'Continuar tutorial' +
+    '</button></div>'
+  );
+}
 
-  const progress = loadGuardiaV7Progress();
-  const fundamentosProgress = loadFundamentosProgress();
-  const tourProgress = loadTourProgress();
+function renderLearnHubQuickRouteCard(parts) {
+  parts.push(
+    '<div class="learn-hub-module-card learn-hub-module-card--cta learn-hub-module-card--quick">' +
+    '<button type="button" class="learn-hub-module-hit learn-hub-module-hit--cta"' +
+    ` data-learn-chapter="${escapeHtml(QUICK_ROUTE_HUB_MODULE.chapterId)}"` +
+    ' data-learn-branch="quick-route"' +
+    ' title="Ruta rápida — lab, guardia, LAN y entrega">' +
+    '<span class="learn-hub-module-index learn-hub-module-index--cta" aria-hidden="true">5′</span>' +
+    '<span class="learn-hub-module-main">' +
+    `<span class="learn-hub-module-title">${escapeHtml(QUICK_ROUTE_HUB_MODULE.label)}</span>` +
+    `<span class="learn-hub-module-meta">${QUICK_ROUTE_HUB_MODULE.stepCount} pasos · ~5 min</span>` +
+    '</span>' +
+    '<span class="learn-hub-module-chevron" aria-hidden="true">›</span>' +
+    '</button></div>'
+  );
+}
+
+function renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress) {
   const guardiaCompletedCount = GUARDIA_V7_HUB_MODULES.filter((m) =>
     progress.completedChapters.includes(m.chapterId)
   ).length;
-  const fundamentosTotal = fundamentosModuleCount();
-  const fundamentosCompletedCount = fundamentosProgress.completedChapters.filter(
-    (id) => isFundamentosChapterId(id)
-  ).length;
-  const parts = [];
-
-  if (tourProgress) {
-    parts.push(
-      '<div class="learn-hub-section learn-hub-section--continue">' +
-      '<button type="button" class="learn-hub-continue-btn" id="learn-hub-btn-continue">' +
-      'Continuar tutorial' +
-      '</button></div>'
-    );
-  }
-
   const novedadesOpen = focusTrack !== 'fundamentos';
   parts.push(
     `<details class="learn-hub-track learn-hub-track--novedades"${novedadesOpen ? ' open' : ''}>`
@@ -260,20 +285,7 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
     '<p class="learn-hub-section-lead">Módulos cortos e independientes. Pulsa una tarjeta para empezar; los completados se pueden resetear y abrir después.</p>'
   );
   parts.push('<div class="learn-hub-module-list">');
-  parts.push(
-    '<div class="learn-hub-module-card learn-hub-module-card--cta learn-hub-module-card--quick">' +
-    '<button type="button" class="learn-hub-module-hit learn-hub-module-hit--cta"' +
-    ` data-learn-chapter="${escapeHtml(QUICK_ROUTE_HUB_MODULE.chapterId)}"` +
-    ' data-learn-branch="quick-route"' +
-    ' title="Ruta rápida — lab, guardia, LAN y entrega">' +
-    '<span class="learn-hub-module-index learn-hub-module-index--cta" aria-hidden="true">5′</span>' +
-    '<span class="learn-hub-module-main">' +
-    `<span class="learn-hub-module-title">${escapeHtml(QUICK_ROUTE_HUB_MODULE.label)}</span>` +
-    `<span class="learn-hub-module-meta">${QUICK_ROUTE_HUB_MODULE.stepCount} pasos · ~5 min</span>` +
-    '</span>' +
-    '<span class="learn-hub-module-chevron" aria-hidden="true">›</span>' +
-    '</button></div>'
-  );
+  renderLearnHubQuickRouteCard(parts);
   GUARDIA_V7_HUB_MODULES.forEach((mod, idx) => {
     const st = guardiaModuleState(mod.chapterId, progress, tourProgress);
     parts.push(
@@ -292,7 +304,13 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
     );
   });
   parts.push('</div></div></details>');
+}
 
+function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress) {
+  const fundamentosTotal = fundamentosModuleCount();
+  const fundamentosCompletedCount = fundamentosProgress.completedChapters.filter(
+    (id) => isFundamentosChapterId(id)
+  ).length;
   const fundamentosOpen = focusTrack === 'fundamentos';
   parts.push(
     `<details class="learn-hub-track learn-hub-track--fundamentos"${fundamentosOpen ? ' open' : ''}>`
@@ -366,6 +384,20 @@ export function renderLearnHubBody(focusTrack = 'guardia-v7') {
     );
   });
   parts.push('</div></div></details>');
+}
+
+export function renderLearnHubBody(focusTrack = 'guardia-v7') {
+  const host = document.getElementById('learn-hub-body');
+  if (!host) return;
+
+  const progress = loadGuardiaV7Progress();
+  const fundamentosProgress = loadFundamentosProgress();
+  const tourProgress = loadTourProgress();
+  const parts = [];
+
+  renderLearnHubContinueSection(tourProgress, parts);
+  renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress);
+  renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, tourProgress);
 
   parts.push(
     '<div class="learn-hub-footer">' +
@@ -472,7 +504,7 @@ export function openLearnHub(opts = {}) {
   if (closeBtn && typeof closeBtn.focus === 'function') {
     try {
       closeBtn.focus();
-    } catch (_e) {}
+    } catch { /* focus may fail if element not focusable */ }
   }
   syncLearnAprenderChrome();
   if (typeof settingsHelpBridge.syncLearnHubContinueVisibility === 'function') {
@@ -489,7 +521,7 @@ export function closeLearnHub() {
     if (prev && typeof prev.focus === 'function') {
       try {
         prev.focus();
-      } catch (_e) {}
+      } catch { /* restore focus may fail */ }
     }
   });
 }

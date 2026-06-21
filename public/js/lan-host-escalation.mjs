@@ -15,7 +15,7 @@ function readTs(key) {
   try {
     const n = Number(localStorage.getItem(key) || 0);
     return Number.isFinite(n) && n > 0 ? n : 0;
-  } catch (_e) {
+  } catch {
     return 0;
   }
 }
@@ -23,13 +23,13 @@ function readTs(key) {
 function writeTs(key, ms) {
   try {
     localStorage.setItem(key, String(ms));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 function clearKey(key) {
   try {
     localStorage.removeItem(key);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /** @param {{ rank?: string, isProgramAdmin?: boolean }|null|undefined} meta */

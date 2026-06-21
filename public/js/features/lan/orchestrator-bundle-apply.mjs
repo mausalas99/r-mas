@@ -171,10 +171,10 @@ function refreshMergedPatientsUi(patientsChanged) {
   if (!patientsChanged || !runtime().getActiveId()) return;
   try {
     runtime().renderNoteForm();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   try {
     runtime().renderLabHistoryPanel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function stampMergedTodosMap(todosMap) {
@@ -280,7 +280,7 @@ async function applyLabUpsertDelta(entry) {
     if (runtime().getActiveId() === pid) {
       try {
         runtime().renderLabHistoryPanel();
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
     }
   });
 }
@@ -384,10 +384,10 @@ function applyLiveSyncPatientApplied(entityId, version, entityData) {
   if (runtime().getActiveId() !== entityId) return;
   try {
     runtime().renderNoteForm();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   try {
     runtime().renderLabHistoryPanel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function notifyLiveSyncAppliedOutcome(msg) {

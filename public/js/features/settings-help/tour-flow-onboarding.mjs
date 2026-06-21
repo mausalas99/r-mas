@@ -35,7 +35,7 @@ function setupNonGuardiaTourMode() {
   var prevMode = st.appMode;
   st.appMode = tourState.guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
   if (st.appMode !== prevMode) {
-    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch { /* ignore */ }
+    try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (_e) { void _e; }
     applyAppModeSwitchEffects();
     rt.renderEstadoActualBar();
   }
@@ -209,7 +209,7 @@ function resetAndStartOnboarding() {
   closeSettingsDropdown();
   try {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   try {
     purgeTourDemoPatientsFromState();
     tourState.guidedTourActive = false;

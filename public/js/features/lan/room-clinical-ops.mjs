@@ -156,7 +156,7 @@ export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
     if (!lanClient.connected) {
       try {
         lanClient.connectSyncChannel();
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
     }
     if (allRooms) {
       const perRoomMs = Math.max(2000, Math.ceil(timeoutMs / roomIds.length));

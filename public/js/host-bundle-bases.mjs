@@ -1,6 +1,6 @@
 /** Tracks last known host sync-bundle revision per room (LAN cold storage). */
 
-import { agendaEntityKey, todoEntityKey } from './live-sync-room.mjs';
+import { collectKeysFromEnvelope } from './host-bundle-bases-keys.mjs';
 
 const BASES_KEY = 'rpc-lan-host-bundle-bases';
 
@@ -10,7 +10,7 @@ function readAll() {
     if (!raw) return {};
     const o = JSON.parse(raw);
     return o && typeof o === 'object' ? o : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -47,26 +47,6 @@ export function setHostBundleBases(roomId, bundle) {
   writeAll(all);
 }
 
-function collectKeysFromEnvelope(envelope) {
-  const keys = new Set();
-  if (!envelope || typeof envelope !== 'object') return keys;
-  const agenda = Array.isArray(envelope.agenda) ? envelope.agenda : [];
-  for (const ev of agenda) {
-    if (ev && ev.id) keys.add(agendaEntityKey(ev.id));
-  }
-  const todos = envelope.todos && typeof envelope.todos === 'object' ? envelope.todos : {};
-  for (const pid of Object.keys(todos)) {
-    const arr = Array.isArray(todos[pid]) ? todos[pid] : [];
-    for (const t of arr) {
-      if (t && t.id) keys.add(todoEntityKey(pid, t.id));
-    }
-  }
-  if (envelope.manejo && typeof envelope.manejo === 'object') keys.add('manejo');
-  if (envelope.clinicalOps && typeof envelope.clinicalOps === 'object') keys.add('clinicalOps');
-  return keys;
-}
-
-/** @param {object} envelope @param {Record<string, number>} serverEntityVersions */
 export function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersions) {
   const versions = serverEntityVersions || {};
   const baseEntityVersions = {};

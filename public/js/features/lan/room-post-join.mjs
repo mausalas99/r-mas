@@ -60,7 +60,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
           if (activeLiveSyncRoomId !== rid) return;
           try {
             lanClient.sendLive(hello);
-          } catch { /* ignore */ }
+          } catch (_e) { void _e; }
         });
       }
       syncLiveSyncStatusChrome();

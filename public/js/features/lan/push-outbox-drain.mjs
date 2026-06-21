@@ -54,7 +54,7 @@ function pushLiveSyncPatchOutbox(rid, envelope) {
     if (sent) return true;
     try {
       lanClient.connectLiveChannel(rid);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
     return import('./room.mjs').then(function (mod) {
       if (typeof mod.waitForLiveChannelOpen !== 'function') return false;
       return mod.waitForLiveChannelOpen(rid, 4000).then(function () {

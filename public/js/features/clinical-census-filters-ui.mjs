@@ -35,7 +35,7 @@ export function readElevatedTeamFilterPreference(storage = globalThis.localStora
     const raw = storage?.getItem(CLINICAL_CENSUS_FILTER_TEAM_LS);
     if (raw === CENSUS_TEAM_FILTER_ALL) return { pinned: true, teamId: '' };
     if (raw) return { pinned: true, teamId: String(raw) };
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return { pinned: false, teamId: '' };
 }
 
@@ -46,7 +46,7 @@ export function writeElevatedTeamFilterPreference(teamId, storage = globalThis.l
       CLINICAL_CENSUS_FILTER_TEAM_LS,
       teamId ? String(teamId) : CENSUS_TEAM_FILTER_ALL
     );
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /**
@@ -131,7 +131,7 @@ export function reconcileCensusTeamFilterForSala(teamId, teamsForSala) {
 export function readCensusFiltersCollapsed(storage = globalThis.localStorage) {
   try {
     return storage?.getItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS) === '1';
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -141,5 +141,5 @@ export function writeCensusFiltersCollapsed(collapsed, storage = globalThis.loca
   try {
     if (collapsed) storage?.setItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS, '1');
     else storage?.removeItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }

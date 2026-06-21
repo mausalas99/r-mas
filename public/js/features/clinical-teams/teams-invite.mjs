@@ -9,9 +9,7 @@ import {
   diagnoseInviteCodeFailure,
   inviteCodeFailureMessage,
   isClinicalTeamJoinDesktopApp,
-  normalizeTeamInviteCode,
   parseClinicalTeamJoinQuery,
-  resolveTeamIdFromInviteCode,
   tryMountClinicalTeamInviteBrowserGate,
 } from '../../clinical-team-invite.mjs';
 import { isLanSalaInvitePaste } from '../../lan-join-link.mjs';
@@ -20,40 +18,9 @@ import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId, filterJoinedTeams } from './shared.mjs';
 import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
+import { resolveTeamIdForInviteInput } from './teams-invite-resolve.mjs';
 
-export async function resolveTeamIdForInviteInput(codeOrId) {
-  const raw = String(codeOrId || '').trim();
-  if (!raw) return '';
-
-  await fetchClinicalTeamsFromDb();
-  let teamId = raw.includes('-') && raw.length > 20 ? raw : '';
-  if (!teamId) {
-    teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
-  }
-
-  if (!teamId) {
-    try {
-      const lan = await import('../lan-sync.mjs');
-      if (typeof lan.refreshLanClinicalDirectoryFromRoom === 'function') {
-        await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 });
-        await fetchClinicalTeamsFromDb();
-        teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
-      }
-    } catch (_eLan) {
-      /* offline */
-    }
-  }
-
-  const api = dbApi();
-  if (!teamId && api && typeof api.dbClinicalTeamResolveCode === 'function') {
-    const res = await api.dbClinicalTeamResolveCode({ code: normalizeTeamInviteCode(raw) });
-    if (res?.ok && res.team?.team_id) {
-      teamId = String(res.team.team_id);
-      await fetchClinicalTeamsFromDb();
-    }
-  }
-  return teamId;
-}
+export { resolveTeamIdForInviteInput };
 
 export async function joinTeamById(teamId, subAreaFraction) {
   const userId = currentUserId();
@@ -159,7 +126,7 @@ function clearClinicalTeamJoinQueryParams() {
     url.searchParams.delete('clinicalTeam');
     url.searchParams.delete('teamCode');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /**

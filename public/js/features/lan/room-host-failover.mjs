@@ -87,7 +87,7 @@ export async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
   if (rid) {
     try {
       lanClient.connectLiveChannel(rid);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
     await syncLiveSyncAfterRoomJoin(rid);
     startLiveSyncReconnectLoop();
   }
@@ -104,7 +104,7 @@ async function broadcastSurrogateHandoff(localUrl, activeRoomId) {
   handoff.reason = 'surrogate-promoted';
   try {
     lanClient.sendLive(handoff);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function readSurrogateFormerHost(cfg) {
@@ -117,7 +117,7 @@ async function connectSurrogateLiveChannels(roomId) {
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
     lanClient.connectLiveChannel(roomId);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export async function promoteSelfToSurrogateHost() {
@@ -176,7 +176,7 @@ export async function maybeRevertSurrogateToPrimary() {
   if (activeLiveSyncRoomId) {
     try {
       lanClient.connectLiveChannel(activeLiveSyncRoomId);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
     await syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
   }
   runtime().showToast('El anfitrión original volvió: esta Mac dejó de ser servidor temporal.', 'success');
@@ -188,7 +188,7 @@ async function reconnectLiveChannelsAfterPing() {
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
     if (activeLiveSyncRoomId) lanClient.connectLiveChannel(activeLiveSyncRoomId);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (isSurrogateHostActive()) void maybeRevertSurrogateToPrimary();
 }
 
@@ -319,7 +319,7 @@ function attemptLiveChannelReconnect(mem) {
     if (!lanClient.connected) lanClient.connectSyncChannel();
     lanClient.connectLiveChannel(mem.roomId);
     syncLiveSyncAfterRoomJoin(mem.roomId);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function startLiveSyncReconnectLoop() {
@@ -383,7 +383,7 @@ export function bootLanRoomMembership() {
       try {
         if (!lanClient.connected) lanClient.connectSyncChannel();
         lanClient.connectLiveChannel(rid);
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
       var liveOpen = await waitForLiveChannelOpen(rid, 8000);
       if (!liveOpen) {
         recordLanSyncError({
@@ -396,7 +396,7 @@ export function bootLanRoomMembership() {
           if (typeof pinMod.tryEasyLanShiftPinConnect === 'function') {
             await pinMod.tryEasyLanShiftPinConnect({ roomId: rid, silent: true, force: true });
           }
-        } catch { /* ignore */ }
+        } catch (_e) { void _e; }
       }
       await syncLiveSyncAfterRoomJoin(rid);
       await flushLiveSyncOutbox(rid);

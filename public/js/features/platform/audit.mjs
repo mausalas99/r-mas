@@ -40,7 +40,7 @@ async function fetchDbAuditLog(limit) {
     return (res.entries || []).filter(function (row) {
       return forensicEventVisible(row.event_type);
     }).map(mapForensicAuditRow);
-  } catch (_e) {
+  } catch {
     return [];
   }
 }
@@ -50,7 +50,7 @@ function getAuditLog() {
   try {
     var raw = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
     return Array.isArray(raw) ? raw : [];
-  } catch (_err) {
+  } catch {
     return [];
   }
 }
@@ -116,7 +116,7 @@ async function lockClinicalDatabaseNow() {
     }
     rt.showToast('Base de datos bloqueada', 'success');
     location.reload();
-  } catch (_e) {
+  } catch {
     rt.showToast('No se pudo bloquear la base de datos', 'error');
   }
 }
@@ -141,7 +141,7 @@ async function verifyForensicAuditChain() {
         'error'
       );
     }
-  } catch (_e) {
+  } catch {
     rt.showToast('No se pudo verificar la bitácora', 'error');
   }
 }
@@ -170,7 +170,7 @@ async function exportClinicalDbBackupJson() {
       'R-plus-respaldo-sqlcipher-' + formatDateSlug(new Date()) + '.json'
     );
     rt.showToast('Respaldo JSON exportado', 'success');
-  } catch (_e) {
+  } catch {
     rt.showToast('No se pudo exportar el respaldo', 'error');
   }
 }
@@ -195,7 +195,7 @@ async function exportClinicalDbBackupDb() {
       return;
     }
     rt.showToast('Copia .db guardada' + (res.path ? ': ' + res.path : ''), 'success');
-  } catch (_e) {
+  } catch {
     rt.showToast('No se pudo exportar la copia .db', 'error');
   }
 }
@@ -270,6 +270,53 @@ function triggerImportMedCatalog() {
   if (el) el.click();
 }
 
+function normalizeMedCatalogImportPayload(payload) {
+  var accents = payload.accents;
+  var soapTokens = payload.soapTokens;
+  var somePharm = payload.somePharm;
+  var hasAcc = accents && typeof accents === 'object';
+  var hasSoap = soapTokens && typeof soapTokens === 'object';
+  var hasSome = somePharm && typeof somePharm === 'object';
+  if (!hasAcc && !hasSoap && !hasSome) return null;
+  return {
+    accents: hasAcc ? accents : {},
+    soapTokens: hasSoap ? soapTokens : {},
+    somePharm: hasSome ? somePharm : {},
+  };
+}
+
+function finishMedCatalogImport(merged) {
+  storage.saveMedCatalog(merged);
+  applyMedCatalogOverlay(merged);
+  applySomePharmCatalogOverlay(merged);
+  var nAcc = Object.keys(merged.accents || {}).length;
+  var nTok =
+    (merged.soapTokens.vasop || []).length +
+    (merged.soapTokens.abx || []).length +
+    (merged.soapTokens.analgesia || []).length +
+    (merged.soapTokens.antihta || []).length;
+  addAuditEntry('med-catalog-import', 'ok', nTok, 'accents:' + nAcc);
+  rt.showToast('Catálogo importado (fusionado con el tuyo)', 'success');
+}
+
+function handleMedCatalogFileText(rawText) {
+  try {
+    var json = JSON.parse(String(rawText || ''));
+    var payload = json && typeof json === 'object' ? json : {};
+    var normalized = normalizeMedCatalogImportPayload(payload);
+    if (!normalized) {
+      rt.showToast(
+        'El archivo no es un catálogo válido (faltan accents, soapTokens o somePharm).',
+        'error'
+      );
+      return;
+    }
+    finishMedCatalogImport(mergeMedCatalogStored(normalized));
+  } catch {
+    rt.showToast('No se pudo leer el catálogo', 'error');
+  }
+}
+
 function onMedCatalogFileChosen(ev) {
   var input = ev.target;
   var f = input.files && input.files[0];
@@ -277,41 +324,7 @@ function onMedCatalogFileChosen(ev) {
   if (!f) return;
   var reader = new FileReader();
   reader.onload = function () {
-    try {
-      var json = JSON.parse(String(reader.result || ''));
-      var payload = json && typeof json === 'object' ? json : {};
-      var accents = payload.accents;
-      var soapTokens = payload.soapTokens;
-      var hasAcc = accents && typeof accents === 'object';
-      var hasSoap = soapTokens && typeof soapTokens === 'object';
-      var somePharm = payload.somePharm;
-      var hasSome = somePharm && typeof somePharm === 'object';
-      if (!hasAcc && !hasSoap && !hasSome) {
-        rt.showToast(
-          'El archivo no es un catálogo válido (faltan accents, soapTokens o somePharm).',
-          'error'
-        );
-        return;
-      }
-      var merged = mergeMedCatalogStored({
-        accents: hasAcc ? accents : {},
-        soapTokens: hasSoap ? soapTokens : {},
-        somePharm: hasSome ? somePharm : {},
-      });
-      storage.saveMedCatalog(merged);
-      applyMedCatalogOverlay(merged);
-      applySomePharmCatalogOverlay(merged);
-      var nAcc = Object.keys(merged.accents || {}).length;
-      var nTok =
-        (merged.soapTokens.vasop || []).length +
-        (merged.soapTokens.abx || []).length +
-        (merged.soapTokens.analgesia || []).length +
-        (merged.soapTokens.antihta || []).length;
-      addAuditEntry('med-catalog-import', 'ok', nTok, 'accents:' + nAcc);
-      rt.showToast('Catálogo importado (fusionado con el tuyo)', 'success');
-    } catch (_err) {
-      rt.showToast('No se pudo leer el catálogo', 'error');
-    }
+    handleMedCatalogFileText(reader.result);
   };
   reader.readAsText(f);
 }

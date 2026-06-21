@@ -92,7 +92,7 @@ function wireLanNetworkRefresh() {
           var prefixes = await window.electronAPI.getLanSubnetPrefixes();
           var candidateBaseUrl = await window.electronAPI.getLanCandidateBaseUrl();
           payload = { prefixes: prefixes || [], candidateBaseUrl: candidateBaseUrl || '' };
-        } catch { /* ignore */ }
+        } catch (_e) { void _e; }
       }
       var m = await import('../../lan-network-change.mjs');
       if (typeof m.handleLanNetworkChanged === 'function') {

@@ -77,9 +77,7 @@ export function guardiaBoardSettings() {
     if (typeof window !== 'undefined' && typeof window.loadSettings === 'function') {
       return window.loadSettings();
     }
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   return null;
 }
 

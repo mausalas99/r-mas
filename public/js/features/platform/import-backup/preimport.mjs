@@ -22,7 +22,7 @@ function syncPreimportBackupUi() {
         meta = (when ? when + ' · ' : '') + n + ' paciente(s)';
       }
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   wrap.style.display = has ? 'block' : 'none';
   var el = document.getElementById('settings-preimport-meta');
   if (el) el.textContent = has ? meta : '—';

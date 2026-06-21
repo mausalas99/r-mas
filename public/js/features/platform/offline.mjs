@@ -78,10 +78,10 @@ function setRpcOffline(offline) {
   syncOfflineButtonStates();
   if (!prev && rpcOffline) {
     if (!canGenerateDocumentsOffline()) {
-      try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) {}
+      try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) { void _e; }
     }
   } else if (prev && !rpcOffline) {
-    try { rt.showToast('Servidor local reconectado.', 'success'); } catch (_e) {}
+    try { rt.showToast('Servidor local reconectado.', 'success'); } catch (_e) { void _e; }
   }
 }
 function isRpcOffline() { return rpcOffline; }
@@ -109,7 +109,7 @@ function checkRpcServerHealth() {
       });
   } catch (e) {
     console.error('checkRpcServerHealth crashed:', e && e.message);
-    try { setRpcOffline(true); } catch (_e) {}
+    try { setRpcOffline(true); } catch (_e) { void _e; }
   }
 }
 
@@ -175,7 +175,7 @@ async function promptForIdleLockPinSetup(reason) {
     setIdleLockPinHash(hash);
     addAuditEntry('idle-lock-pin-set', 'ok', 0, reason === 'change' ? 'changed' : 'created');
     return { ok: true, cancelled: false };
-  } catch (_err) {
+  } catch {
     rt.showToast('WebCrypto no disponible en este entorno.', 'error');
     addAuditEntry('idle-lock-pin-set', 'error', 0, 'no-webcrypto');
     return { ok: false, cancelled: false };
@@ -230,7 +230,7 @@ async function changeIdleLockPin() {
         addAuditEntry('idle-lock-pin-change', 'error', 0, 'wrong-pin');
         return;
       }
-    } catch (_err) {
+    } catch {
       rt.showToast('WebCrypto no disponible.', 'error');
       addAuditEntry('idle-lock-pin-change', 'error', 0, 'no-webcrypto');
       return;
@@ -285,7 +285,7 @@ function showIdleLockOverlay() {
   var err = document.getElementById('rpc-idle-lock-error');
   if (err) { err.style.display = 'none'; err.textContent = ''; }
   var input = document.getElementById('rpc-idle-lock-pin');
-  if (input) { input.value = ''; setTimeout(function() { try { input.focus(); } catch (_e) {} }, 60); }
+  if (input) { input.value = ''; setTimeout(function() { try { input.focus(); } catch (_e) { void _e; } }, 60); }
 }
 
 function hideIdleLockOverlay() {
@@ -325,7 +325,7 @@ async function submitIdleLockPin() {
       addAuditEntry('idle-lock-unlock', 'error', 0, 'bad-pin');
       if (input) { input.value = ''; input.focus(); }
     }
-  } catch (_err) {
+  } catch {
     if (err) { err.style.display = 'block'; err.textContent = 'WebCrypto no disponible.'; }
     addAuditEntry('idle-lock-unlock', 'error', 0, 'no-webcrypto');
   }
@@ -410,7 +410,7 @@ function wipeCacheConfirmed() {
   var keys = collectCacheWipeKeys();
   addAuditEntry('data-wipe-cache', 'ok', keys.length, 'pre-wipe');
   keys.forEach(function(k) {
-    try { localStorage.removeItem(k); } catch (_e) {}
+    try { localStorage.removeItem(k); } catch (_e) { void _e; }
   });
   idleLockEnabledMinutes = 0;
   if (idleLockTimerId) { clearTimeout(idleLockTimerId); idleLockTimerId = null; }
@@ -436,11 +436,11 @@ function wipeAllConfirmed() {
   var keys = collectFullWipeKeys();
   addAuditEntry('data-wipe-full', 'ok', keys.length, 'pre-wipe');
   keys.forEach(function(k) {
-    try { localStorage.removeItem(k); } catch (_e) {}
+    try { localStorage.removeItem(k); } catch (_e) { void _e; }
   });
   closeWipeDataModal();
   if (window.electronAPI && typeof window.electronAPI.relaunchApp === 'function') {
-    try { window.electronAPI.relaunchApp(); return; } catch (_e) {}
+    try { window.electronAPI.relaunchApp(); return; } catch (_e) { void _e; }
   }
   location.reload();
 }

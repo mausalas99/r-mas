@@ -11,7 +11,7 @@ export function loadNeoCompanionProgress(storage = localStorage) {
       completedSteps: Array.isArray(p.completedSteps) ? p.completedSteps : [],
       updatedAt: p.updatedAt || null,
     };
-  } catch (_e) {
+  } catch {
     return { completedSteps: [] };
   }
 }

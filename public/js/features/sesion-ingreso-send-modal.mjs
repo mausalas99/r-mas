@@ -39,13 +39,6 @@ function getSelectedIds(root) {
   );
 }
 
-function setSelectedIds(root, ids) {
-  const set = new Set(ids);
-  root.querySelectorAll('input[type="checkbox"][data-table-id]').forEach((el) => {
-    el.checked = set.has(el.dataset.tableId);
-  });
-  updateSendCount(root);
-}
 
 function updateSendCount(root) {
   const n = getSelectedIds(root).length;

@@ -31,7 +31,7 @@ export async function pushBundleToHostUrl(hostUrl, teamCode, roomId, envelope) {
       signal: AbortSignal.timeout(15000),
     });
     return !!(resp && resp.ok);
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -48,6 +48,19 @@ export async function pushBundleToHostUrl(hostUrl, teamCode, roomId, envelope) {
  *   showToast?: (msg: string, kind: string) => void,
  * }} deps
  */
+async function executeConsolidationPush(deps, winnerUrl, teamCode, roomId) {
+  const envelope = await deps.buildBundle(roomId);
+  const pushed = await deps.pushBundle(winnerUrl, teamCode, roomId, envelope);
+  if (!pushed) {
+    deps.showToast?.('No se pudo combinar con el anfitrión; sigues como servidor.', 'error');
+    return false;
+  }
+  await deps.broadcastHandoff(winnerUrl, teamCode, roomId);
+  await deps.switchToClient(winnerUrl, teamCode);
+  deps.showToast?.('Servidores combinados — ahora conectado al anfitrión del turno.', 'success');
+  return true;
+}
+
 export async function runConsolidateIntoHost(opts, deps) {
   if (_consolidating) return false;
   const winnerUrl = String(opts?.winnerUrl || '').trim().replace(/\/+$/, '');
@@ -64,22 +77,7 @@ export async function runConsolidateIntoHost(opts, deps) {
 
   _consolidating = true;
   try {
-    const envelope = await deps.buildBundle(roomId);
-    const pushed = await deps.pushBundle(winnerUrl, teamCode, roomId, envelope);
-    if (!pushed) {
-      deps.showToast?.(
-        'No se pudo combinar con el anfitrión; sigues como servidor.',
-        'error'
-      );
-      return false;
-    }
-    await deps.broadcastHandoff(winnerUrl, teamCode, roomId);
-    await deps.switchToClient(winnerUrl, teamCode);
-    deps.showToast?.(
-      'Servidores combinados — ahora conectado al anfitrión del turno.',
-      'success'
-    );
-    return true;
+    return await executeConsolidationPush(deps, winnerUrl, teamCode, roomId);
   } finally {
     _consolidating = false;
   }

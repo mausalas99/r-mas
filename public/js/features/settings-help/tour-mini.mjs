@@ -1,98 +1,18 @@
 /** Guided tours, neo companion, mini tours, demo patient hooks. */
-import {
-  getTourSteps,
-  getTourTarget,
-  stepRequiresUserAction,
-} from '../../tour-targets.mjs';
-import {
-  getChapterProgressLabel,
-  getChapterForStep,
-  getFirstStepIdForChapter,
-  getNeoCompanionSteps,
-} from '../../onboarding-curriculum.mjs';
-import {
-  loadTourProgress,
-  saveTourProgress,
-  clearTourProgress,
-} from '../../onboarding-progress.mjs';
-import { syncGuidedTourContext } from '../../tour-guards.mjs';
+import { getFirstStepIdForChapter } from '../../onboarding-curriculum.mjs';
 import {
   isPresentationModeActive,
   startPresentationMode,
   stopPresentationMode,
 } from '../../presentation-mode.mjs';
-import { applyAppModeSwitchEffects } from '../profile.mjs';
-import { LAB_BULK_PATIENT_SEPARATOR } from '../../lab-bulk-paste.mjs';
-import { buildTourDemoListadoProblemas } from '../../tour-demo-listado-problemas.mjs';
-import {
-  buildTourMonitoreoHistorial,
-  getTourRegistroFormSample,
-} from '../../tour-demo-monitoreo.mjs';
-import { buildTourDemoDates, buildTourDemoLabPasteBoth } from '../../tour-demo-dates.mjs';
-import { seedTourDemoTodos, clearTourDemoTodos } from '../../tour-demo-todos.mjs';
-import { buildTourDemoEventualidades } from '../../tour-demo-eventualidades.mjs';
-import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../../lab-bulk-paste.mjs';
-import {
-  DEMO_PATIENT_ID,
-  DEMO_PATIENT_ID_2,
-  DEMO_REGISTRO,
-  DEMO_REGISTRO_2,
-  findTourDemoPatientByRegistro,
-  isTourDemoPatientId,
-  registerTourDemoPatientHooks,
-  resolveTourDemoPatientId,
-  tourDemoLabCompleteForTour,
-  tourDemoPatientsBothInCensus,
-} from '../../tour-demo-patient.mjs';
-import {
-  renderEstadoActualPanel,
-  applyEstadoActualParsedToForm,
-  toDatetimeLocalValue,
-  invalidateEaPanelCache,
-} from '../estado-actual-panel.mjs';
-import {
-  closeEstadoActualRegistroModal,
-  openEstadoActualRegistroModal,
-} from '../estado-actual-registro-modal.mjs';
-import { isMobileWeb } from '../../mobile-web.mjs';
-import { getUiDensity, setUiDensity } from '../chrome.mjs';
-import {
-  openConnectionDropdown,
-  closeConnectionDropdown,
-} from '../lan-sync.mjs';
-import { renderPatientList, selectPatient } from '../patients.mjs';
-import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
-import { renderPaseBoard } from '../pase-board.mjs';
-import { setRoundOverviewMode } from '../patients.mjs';
-import { renderRoundOverviewPanels } from '../patients.mjs';
-import { renderLabHistoryPanel } from '../lab-panel.mjs';
-import { limpiarReporte } from '../lab-panel.mjs';
-import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
-import { closeTendGroupModal } from '../tendencias.mjs';
-import { closeSesionIngresoTrendsSendModal } from '../sesion-ingreso-trends-send-modal.mjs';
-import { closeSOAPModal } from '../soap-estado.mjs';
-import { procesarLabs } from '../../labs.js';
-import { extractParsedValues } from '../diagrams-parse.mjs';
-import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  listadoProblemas,
-  medRecetaByPatient,
-  medNotaSelectionByPatient,
-  saveState,
-  setPatients,
-} from '../../app-state.mjs';
+import { registerTourDemoPatientHooks } from '../../tour-demo-patient.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import {
   closeSettingsDropdown,
-  toggleSettingsDropdown,
   ensureSettingsDropdownOpen,
   expandSettingsAccordionBackupSync,
 } from './settings-dropdown.mjs';
-
 import {
   showTourDock,
   hideTourDock,
@@ -106,9 +26,7 @@ import {
   scheduleTourDemoPatientRegistrationFromLab,
 } from './tour-flow.mjs';
 import { applyTourDemoPatientBundle } from './tour-demo-seed.mjs';
-
-import { tourState, publishTourGuardContext, GUIDED_TOUR_LS_KEY } from './tour-state.mjs';
-import { tourBridge } from './tour-bridge.mjs';
+import { tourState, publishTourGuardContext } from './tour-state.mjs';
 
 const rt = getSettingsHelpRuntime();
 
@@ -201,7 +119,7 @@ function renderMiniTourStep() {
   var step = tourState.miniTourSteps[tourState.miniTourIdx];
   if (!step) { endMiniTour(); return; }
   if (typeof step.before === 'function') {
-    try { step.before(); } catch (_err) {}
+    try { step.before(); } catch { /* step.before may throw if DOM not ready */ }
   }
   var badge = document.getElementById('tour-step-badge');
   var body = document.getElementById('tour-dock-body');

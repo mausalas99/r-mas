@@ -44,18 +44,18 @@ function installMinimalIndexedDB() {
     };
   }
 
-  function connect(dbState, dbName) {
+  function connect(dbState, _dbName) {
     return {
       objectStoreNames: {
         contains(name) {
           return dbState.stores.has(name);
         },
       },
-      createObjectStore(name, opts) {
+      createObjectStore(name, _opts) {
         dbState.stores.set(name, new Map());
         return openStore(dbState, name);
       },
-      transaction(storeName, mode) {
+      transaction(storeName, _mode) {
         const store = openStore(dbState, storeName);
         const tx = {
           objectStore() {

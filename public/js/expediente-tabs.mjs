@@ -163,25 +163,10 @@ export function consolidatedTabForGranular(granularTab, settings) {
   return resolveConsolidatedTarget(granularTab, settings).tab;
 }
 
+import { migrateGranularInner as migrateGranularInnerImpl } from './expediente-tabs-migrate.mjs';
+
 export function migrateGranularInner(granularTab, settings) {
-  if (!granularTab) return 'todo';
-  if (granularTab === 'estadoActual' && !isModeSala(settings)) return 'todo';
-  if (granularTab === 'manejo') {
-    return isModeSala(settings) ? 'todo' : 'notas';
-  }
-  var map = granularToConsolidatedMap(settings || {});
-  if (map[granularTab]) {
-    if (isMobileWeb()) {
-      if (granularTab === 'listado' || granularTab === 'recetaHu') {
-        return isModeSala(settings) ? 'historia' : 'todo';
-      }
-      if (isModeSala(settings) && granularTab === 'vpo') return 'historia';
-    }
-    if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'historia';
-    if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
-    return granularTab;
-  }
-  return 'todo';
+  return migrateGranularInnerImpl(granularTab, settings, granularToConsolidatedMap(settings || {}));
 }
 
 export function defaultGranularForConsolidatedTab(compositeTab, settings) {

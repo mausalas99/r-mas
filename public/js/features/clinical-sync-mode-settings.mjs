@@ -55,19 +55,19 @@ export async function enableClinicalLanFromSettings() {
     );
     closeSettingsDropdown();
     syncTeamSyncHeaderButton();
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 
   try {
     const main = await import('./clinical-onboarding-main.mjs');
     await main.refreshMainClinicalOnboardingIfNeeded();
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 
   try {
     const rot = await import('./clinical-rotation-entry.mjs');
     if (typeof rot.syncClinicalRotationEntryChrome === 'function') {
       rot.syncClinicalRotationEntryChrome();
     }
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 
   syncClinicalSyncModeSettingsUi();
   toast('Modo LAN activado. Completa tu perfil de guardia si R+ te lo pide.', 'success');

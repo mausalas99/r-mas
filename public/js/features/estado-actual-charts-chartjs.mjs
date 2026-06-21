@@ -22,9 +22,7 @@ export function destroyEaChartInstance() {
   if (eaChartInstance) {
     try {
       eaChartInstance.destroy();
-    } catch (_e) {
-      /* ignore */
-    }
+    } catch (_e) { void _e; }
     eaChartInstance = null;
   }
 }

@@ -15,7 +15,7 @@ var _lanLwwToastPrefWired = false;
 function writeLanKnownRooms(arr) {
   try {
     localStorage.setItem(LAN_KNOWN_ROOMS_LS, JSON.stringify(arr.slice(0, 12)));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function migrateLanLastRoomToKnown() {
@@ -24,7 +24,7 @@ function migrateLanLastRoomToKnown() {
   var last = '';
   try {
     last = String(localStorage.getItem('rpc-lan-last-room') || '').trim();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (last) writeLanKnownRooms([{ id: last, label: 'Última sala', joinedAt: Date.now() }]);
 }
 
@@ -54,7 +54,7 @@ export function forgetLanRoomSession(roomId) {
     if (String(localStorage.getItem('rpc-lan-last-room') || '').trim() === id) {
       localStorage.removeItem('rpc-lan-last-room');
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function rememberLanRoomJoined(roomId, displayName) {

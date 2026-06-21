@@ -169,7 +169,7 @@ function persistAlignedTeamCodeHash({
   }
   try {
     atomicWriteJson(filePath, migrated);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch((e) => reportPersistFailure('team-code-hash-json', e));
 }
 

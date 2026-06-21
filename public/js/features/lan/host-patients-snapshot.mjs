@@ -9,6 +9,11 @@ import {
   upsertHostCensusPatient,
 } from './host-patients-snapshot-merge.mjs';
 import { extractPatientFromBundleEntry } from './host-patients-bundle-entry.mjs';
+import {
+  fetchRoomBundleEntries,
+  listLanHostRoomIds,
+  resolveFirstRoomClinicalOps,
+} from './host-patients-snapshot-rooms.mjs';
 
 export { mergeBundleEntriesIntoCensus, upsertHostCensusPatient } from './host-patients-snapshot-merge.mjs';
 
@@ -49,64 +54,25 @@ function bundleEntryMatchesPatient(entry, patientId, registro) {
   return false;
 }
 
-/** @param {string} [preferredRoomId] */
-async function listLanHostRoomIds(preferredRoomId) {
-  const ids = new Set();
-  const preferred = String(preferredRoomId || '').trim();
-  if (preferred) ids.add(preferred);
-  try {
-    const resp = await lanFetchAuthed('/api/lan/v1/rooms');
-    if (resp.ok) {
-      const body = await resp.json().catch(function () {
-        return {};
-      });
-      for (const room of body.rooms || []) {
-        const id = String(room?.id || '').trim();
-        if (id) ids.add(id);
-      }
-    }
-  } catch (_roomsErr) {}
-  return Array.from(ids);
-}
-
-/** @param {string} roomId */
-async function fetchRoomBundleEntries(roomId) {
-  const rid = String(roomId || '').trim();
-  if (!rid) return [];
-  try {
-    const bundleResp = await lanFetchAuthed(
-      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle',
-      { cache: 'no-store' }
-    );
-    if (!bundleResp.ok) return [];
-    const bundleBody = await bundleResp.json().catch(function () {
-      return {};
-    });
-    const entries = bundleBody?.bundle?.entries;
-    return Array.isArray(entries) ? entries : [];
-  } catch (_bundleErr) {
-    return [];
+async function loadHostPatientsIntoMap(byId) {
+  const hostRows = await fetchHostPatientsList();
+  if (!hostRows) return { ok: false, error: 'patients_fetch_failed' };
+  for (const row of hostRows) {
+    if (!row?.id || row._deleted) continue;
+    upsertHostCensusPatient(byId, row, { bundleOnly: false });
   }
+  return { ok: true };
 }
 
-/** @param {string} roomId */
-async function fetchRoomClinicalOps(roomId) {
-  const rid = String(roomId || '').trim();
-  if (!rid) return null;
-  try {
-    const opsResp = await lanFetchAuthed(
-      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/clinical-ops',
-      { cache: 'no-store' }
-    );
-    if (!opsResp.ok) return null;
-    const opsBody = await opsResp.json().catch(function () {
-      return {};
-    });
-    if (opsBody?.snapshot && typeof opsBody.snapshot === 'object') {
-      return opsBody.snapshot;
-    }
-  } catch (_opsErr) {}
-  return null;
+async function mergeAllRoomBundlesIntoCensus(byId, roomIds) {
+  const bundleEntryLists = await Promise.all(
+    roomIds.map(function (rid) {
+      return fetchRoomBundleEntries(rid);
+    })
+  );
+  for (const entries of bundleEntryLists) {
+    mergeBundleEntriesIntoCensus(byId, entries);
+  }
 }
 
 /** @param {string} [roomId] */
@@ -116,34 +82,16 @@ export async function fetchLanHostCensusSnapshot(roomId) {
   }
   const byId = new Map();
   try {
-    const hostRows = await fetchHostPatientsList();
-    if (!hostRows) return { ok: false, error: 'patients_fetch_failed' };
-    for (const row of hostRows) {
-      if (!row?.id || row._deleted) continue;
-      upsertHostCensusPatient(byId, row, { bundleOnly: false });
-    }
+    const loaded = await loadHostPatientsIntoMap(byId);
+    if (!loaded.ok) return loaded;
   } catch (err) {
     return { ok: false, error: err && err.message ? err.message : 'patients_fetch_failed' };
   }
 
   const preferredRoomId = String(roomId || activeLiveSyncRoomId || '').trim();
   const roomIds = await listLanHostRoomIds(preferredRoomId);
-  const bundleEntryLists = await Promise.all(
-    roomIds.map(function (rid) {
-      return fetchRoomBundleEntries(rid);
-    })
-  );
-  for (const entries of bundleEntryLists) {
-    mergeBundleEntriesIntoCensus(byId, entries);
-  }
-
-  let clinicalOps = preferredRoomId ? await fetchRoomClinicalOps(preferredRoomId) : null;
-  if (!clinicalOps) {
-    for (const rid of roomIds) {
-      clinicalOps = await fetchRoomClinicalOps(rid);
-      if (clinicalOps) break;
-    }
-  }
+  await mergeAllRoomBundlesIntoCensus(byId, roomIds);
+  const clinicalOps = await resolveFirstRoomClinicalOps(roomIds, preferredRoomId);
 
   return { ok: true, patients: Array.from(byId.values()), clinicalOps };
 }

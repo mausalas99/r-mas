@@ -11,7 +11,7 @@ const ls = {
 global.localStorage = ls;
 global.window = { localStorage: ls };
 
-const { storage } = await import('./storage.js');
+await import('./storage.js');
 const {
   configureTodoReminderScheduler,
   rescheduleAllTodos,

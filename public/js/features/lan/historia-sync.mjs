@@ -29,7 +29,7 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
   var out = {};
   try {
     out = await resp.json();
-  } catch (_eOut) { /* ignored */ }
+  } catch { /* ignored */ }
   if (out && out.lwwApplied && historiaDeps.runtime) {
     notifyLwwOverwrite(historiaDeps.runtime, {
       entityType: 'historiaClinica',
@@ -74,7 +74,7 @@ export async function lanSyncPatientArchivedFlag(patient) {
   var body = {};
   try {
     body = await resp.json();
-  } catch (_e) { /* ignored */ }
+  } catch { /* ignored */ }
   var list = Array.isArray(body.patients) ? body.patients : [];
   var hostRow = list.find(function (row) {
     return row && String(row.id) === String(patient.id);

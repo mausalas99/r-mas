@@ -16,10 +16,7 @@ export function resolveLiveSyncLocalPatientId(remotePatientId, registro, patient
   return byId && byId.id ? String(byId.id) : rid;
 }
 
-export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
-  const map = {};
-  const regByRemote = {};
-  const list = Array.isArray(entries) ? entries : [];
+function mapBundleEntriesToPatientIds(list, map, regByRemote, patients) {
   for (let i = 0; i < list.length; i += 1) {
     const entry = list[i];
     if (!entry || !entry.patient) continue;
@@ -29,6 +26,9 @@ export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
     if (reg) regByRemote[remoteId] = reg;
     map[remoteId] = resolveLiveSyncLocalPatientId(remoteId, reg, patients);
   }
+}
+
+function reconcileLocalPatientIdsByRegistro(patients, map, regByRemote) {
   for (let p = 0; p < (patients || []).length; p += 1) {
     const row = patients[p];
     if (!row || !row.id) continue;
@@ -40,7 +40,9 @@ export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
       if (regByRemote[remoteId] === reg) map[remoteId] = localId;
     }
   }
-  const todos = todosMap && typeof todosMap === 'object' ? todosMap : {};
+}
+
+function mapTodoKeysToPatientIds(todos, map, regByRemote, patients) {
   for (const remotePid of Object.keys(todos)) {
     if (map[remotePid]) continue;
     map[remotePid] = resolveLiveSyncLocalPatientId(
@@ -49,6 +51,16 @@ export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
       patients
     );
   }
+}
+
+export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
+  const map = {};
+  const regByRemote = {};
+  const list = Array.isArray(entries) ? entries : [];
+  mapBundleEntriesToPatientIds(list, map, regByRemote, patients);
+  reconcileLocalPatientIdsByRegistro(patients, map, regByRemote);
+  const todos = todosMap && typeof todosMap === 'object' ? todosMap : {};
+  mapTodoKeysToPatientIds(todos, map, regByRemote, patients);
   return map;
 }
 

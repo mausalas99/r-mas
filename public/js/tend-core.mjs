@@ -23,7 +23,7 @@ export function normalizeFechaLabHistory(fechaRaw) {
     var mon = TEND_MESES_MAP[mEn[1].toLowerCase().slice(0, 3)];
     if (mon) return mEn[2].padStart(2, '0') + '/' + mon + '/' + mEn[3];
   }
-  var mNum = t.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+  var mNum = t.match(/^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$/);
   if (mNum) {
     var y = mNum[3] ? String(mNum[3]) : String(new Date().getFullYear());
     if (y.length === 2) y = '20' + y;
@@ -66,7 +66,7 @@ export function parseFechaLabToMs(fechaStr, horaStr) {
       return applyHoraToMs(ms, horaStr);
     }
   }
-  var mNum = t.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+  var mNum = t.match(/^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$/);
   if (mNum) {
     var y = mNum[3] ? parseInt(mNum[3], 10) : new Date().getFullYear();
     if (y < 100) y += 2000;
@@ -76,26 +76,44 @@ export function parseFechaLabToMs(fechaStr, horaStr) {
   return null;
 }
 
+function isAnteriorLabEntry(entry) {
+  return !!(entry && (entry.fecha === 'Anterior' || entry.id === 'migrated-anterior'));
+}
+
+function compareAnteriorLabEntries(a, b) {
+  var aAnterior = isAnteriorLabEntry(a);
+  var bAnterior = isAnteriorLabEntry(b);
+  if (aAnterior === bAnterior) return 0;
+  return aAnterior ? 1 : -1;
+}
+
+function compareLabEntryTimestamps(a, b) {
+  var ta = parseFechaLabToMs(a.fecha, a.hora);
+  var tb = parseFechaLabToMs(b.fecha, b.hora);
+  var aValid = typeof ta === 'number' && isFinite(ta);
+  var bValid = typeof tb === 'number' && isFinite(tb);
+  if (aValid !== bValid) return aValid ? -1 : 1;
+  if (aValid && bValid && ta !== tb) return tb - ta;
+  return 0;
+}
+
+function compareLabEntryHoras(a, b) {
+  var ha = normalizeHoraLabHistory(a && a.hora);
+  var hb = normalizeHoraLabHistory(b && b.hora);
+  if (ha && hb && ha !== hb) return hb.localeCompare(ha);
+  return 0;
+}
+
+function compareLabHistoryEntries(a, b) {
+  var anteriorCmp = compareAnteriorLabEntries(a, b);
+  if (anteriorCmp !== 0) return anteriorCmp;
+  var timeCmp = compareLabEntryTimestamps(a, b);
+  if (timeCmp !== 0) return timeCmp;
+  return compareLabEntryHoras(a, b);
+}
+
 export function sortLabHistoryChronological(hist) {
-  return (hist || []).slice().sort(function (a, b) {
-    var aAnterior = !!(a && (a.fecha === 'Anterior' || a.id === 'migrated-anterior'));
-    var bAnterior = !!(b && (b.fecha === 'Anterior' || b.id === 'migrated-anterior'));
-    if (aAnterior !== bAnterior) return aAnterior ? 1 : -1;
-
-    var ta = parseFechaLabToMs(a.fecha, a.hora);
-    var tb = parseFechaLabToMs(b.fecha, b.hora);
-
-    var aValid = typeof ta === 'number' && isFinite(ta);
-    var bValid = typeof tb === 'number' && isFinite(tb);
-    if (aValid !== bValid) return aValid ? -1 : 1;
-    if (aValid && bValid && ta !== tb) return tb - ta;
-
-    var ha = normalizeHoraLabHistory(a && a.hora);
-    var hb = normalizeHoraLabHistory(b && b.hora);
-    if (ha && hb && ha !== hb) return hb.localeCompare(ha);
-
-    return 0;
-  });
+  return (hist || []).slice().sort(compareLabHistoryEntries);
 }
 
 /** Número finito desde valor de tendencia (acepta <0.01, comas, *). */
@@ -272,24 +290,28 @@ export function migratePanelFamilyKey(sectionKey, familyKey) {
   return fam;
 }
 
+function classifyBhPanelFamily(fk, unit) {
+  if (BH_COAG_FIELDS[fk]) return 'bh-coag';
+  if (BH_DIFF_FIELDS[fk] || /Pct$/i.test(fk)) return 'bh-diff-manual';
+  if (BH_QUALITY_FIELDS[fk] || isErythrocytePercentField(fk)) return 'bh-quality';
+  if (BH_ABSOLUTE_FIELDS[fk]) return 'bh-absolute';
+  if (String(unit || '').trim() === '%') return 'bh-quality';
+  return 'bh-absolute';
+}
+
+function classifyGenericPanelFamily(fk, unit) {
+  if (/Pct$/i.test(fk)) return 'percent-diff';
+  if (isErythrocytePercentField(fk)) return 'percent-rbc';
+  if (String(unit || '').trim() === '%' && !/Pct$/i.test(fk)) return 'percent-rbc';
+  return 'absolute';
+}
+
 /** Familias de panel para gráfica agrupada (escalas compatibles). */
 export function classifyTendPanelFamily(sectionKey, fieldKey, unit) {
   var fk = String(fieldKey || '').trim();
   if (sectionKey === 'GASES') return 'gases';
-  if (sectionKey === 'BH') {
-    if (BH_COAG_FIELDS[fk]) return 'bh-coag';
-    if (BH_DIFF_FIELDS[fk] || /Pct$/i.test(fk)) return 'bh-diff-manual';
-    if (BH_QUALITY_FIELDS[fk] || isErythrocytePercentField(fk)) return 'bh-quality';
-    if (BH_ABSOLUTE_FIELDS[fk]) return 'bh-absolute';
-    var u = String(unit || '').trim();
-    if (u === '%') return 'bh-quality';
-    return 'bh-absolute';
-  }
-  if (/Pct$/i.test(fk)) return 'percent-diff';
-  if (isErythrocytePercentField(fk)) return 'percent-rbc';
-  var u2 = String(unit || '').trim();
-  if (u2 === '%' && !/Pct$/i.test(fk)) return 'percent-rbc';
-  return 'absolute';
+  if (sectionKey === 'BH') return classifyBhPanelFamily(fk, unit);
+  return classifyGenericPanelFamily(fk, unit);
 }
 
 export function isPercentPanelFamily(family) {

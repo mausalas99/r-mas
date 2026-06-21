@@ -57,9 +57,7 @@ function mountPanelSortable(state, sectionKey, panelSortableRef) {
   if (panelSortableRef.current) {
     try {
       if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
-    } catch {
-      /* ignore */
-    }
+    } catch (_e) { void _e; }
     panelSortableRef.current = null;
   }
   var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
@@ -509,9 +507,7 @@ export function renderGroupCharts(deps, state, sectionKey, legendLabelForSpec, p
   if (panelSortableRef.current) {
     try {
       if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
-    } catch {
-      /* ignore */
-    }
+    } catch (_e) { void _e; }
     panelSortableRef.current = null;
   }
   panelEl.innerHTML = '';
@@ -565,9 +561,7 @@ export function destroyGroupCharts(state, panelSortableRef) {
   if (panelSortableRef.current) {
     try {
       if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
-    } catch {
-      /* ignore */
-    }
+    } catch (_e) { void _e; }
     panelSortableRef.current = null;
   }
 }

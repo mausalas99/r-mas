@@ -40,7 +40,7 @@ function readStorage() {
         ? parsed.prefixes.map((p) => String(p || '').trim()).filter(Boolean)
         : [],
     };
-  } catch (_e) {
+  } catch {
     return emptyRegistry();
   }
 }
@@ -55,7 +55,7 @@ function writeStorage(reg) {
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.setItem(WARD_HOST_REGISTRY_KEY, JSON.stringify(payload));
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   return payload;
 }
@@ -253,7 +253,7 @@ export function clearWardHostRegistry() {
   if (typeof localStorage !== 'undefined') {
     try {
       localStorage.removeItem(WARD_HOST_REGISTRY_KEY);
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   const api = wardHostMainIpc();
   if (api && typeof api.lanWardHostClear === 'function') {

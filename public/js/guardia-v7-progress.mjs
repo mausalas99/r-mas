@@ -13,7 +13,7 @@ export function loadGuardiaV7Progress(storage = localStorage) {
       dismissedCard: !!p.dismissedCard,
       updatedAt: p.updatedAt || null,
     };
-  } catch (_e) {
+  } catch {
     return { completedChapters: [], dismissedCard: false, updatedAt: null };
   }
 }

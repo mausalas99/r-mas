@@ -47,7 +47,7 @@ function applyHostTeamCodeToLanClient(plainTrim) {
   try {
     lanClient.disconnect();
     lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 /** @param {object} deps */
@@ -153,7 +153,7 @@ function persistAndConnectLanSettings(deps, cfg) {
   lanClient.disconnect();
   try {
     deps.getConnectionManager().connect(cfg.hostUrl, cfg.teamCode);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 /** @returns {Promise<{ pingOk: boolean, pingStatus: number }>} */
@@ -375,7 +375,7 @@ function syncLanHostFirstTimeHintUi() {
 function dismissLanHostFirstTimeHint() {
   try {
     localStorage.setItem(LAN_HOST_CODE_HINT_SEEN_KEY, '1');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   syncLanHostFirstTimeHintUi();
 }
 
@@ -401,7 +401,7 @@ async function flushAndReconcileAfterReconnect() {
     if (!rid) return;
     await flushLiveSyncOutbox(rid);
     await reconcileLiveSyncRoom(rid, { force: true, reason: 'reconnect' });
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 /** @param {object} deps */

@@ -38,7 +38,7 @@ function clearLabInputAfterSuccessfulParse() {
   ta.value = '';
   try {
     ta.dispatchEvent(new Event('input', { bubbles: true }));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function limpiarReporte() {

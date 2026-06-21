@@ -302,7 +302,7 @@ export function isValidStepForBranch(stepId, branch, mode) {
 }
 
 /** Maps legacy tour step ids after curriculum merges. */
-export function migrateTourStepId(stepId, branch) {
+export function migrateTourStepId(stepId, _branch) {
   if (
     stepId === 'estado_actual_snapshot' ||
     stepId === 'estado_actual_charts' ||

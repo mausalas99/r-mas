@@ -25,7 +25,7 @@ let rt = {
   sectionLabel(sectionKey) {
     return sectionKey;
   },
-  unitForField(fieldKey) {
+  unitForField(_fieldKey) {
     return '';
   },
   getPatientId() {

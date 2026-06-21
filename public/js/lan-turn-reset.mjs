@@ -26,9 +26,9 @@ export async function performLanTurnClientReset(deps) {
     if (deps.lanClient && typeof deps.lanClient.disconnect === 'function') {
       deps.lanClient.disconnect();
     }
-  } catch (_disc) {}
+  } catch (_e) { void _e; }
   try {
     sessionStorage.removeItem(SPLIT_BRAIN_HINT_KEY);
-  } catch (_ss) {}
+  } catch (_e) { void _e; }
   return { mode: 'client' };
 }

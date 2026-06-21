@@ -74,7 +74,7 @@ function _focusPatientAdmissionField(isFromLab) {
     if (!String(el.value || '').trim()) {
       try {
         el.focus();
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
       return;
     }
   }
@@ -82,7 +82,7 @@ function _focusPatientAdmissionField(isFromLab) {
   if (cama) {
     try {
       cama.focus();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
 }
 
@@ -416,7 +416,7 @@ function showExpedienteAdvice(onConfirm) {
     if (input) {
       try {
         input.focus();
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
     }
   };
   document.getElementById('exp-advice-confirm').onclick = function () {
@@ -442,6 +442,6 @@ export function focusPatientSearchInput() {
   } catch {
     try {
       el.focus();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
 }

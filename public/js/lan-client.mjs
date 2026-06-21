@@ -15,18 +15,14 @@ function safeCloseWebSocket(ws) {
       ws.onopen = () => {
         try {
           ws.close();
-        } catch (_e) {
-          /* ignore */
-        }
+        } catch (_e) { void _e; }
       };
       return;
     }
     if (state === WebSocket.OPEN) {
       ws.close();
     }
-  } catch (_e) {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
 }
 
 function syncConnectBackoffMs(attempt) {
@@ -98,7 +94,7 @@ export class LanClient extends EventTarget {
     if (fromCfg) return fromCfg;
     try {
       return String(localStorage.getItem('rplus.lan.bearer') || '').trim();
-    } catch (_e) {
+    } catch {
       return '';
     }
   }
@@ -156,7 +152,7 @@ export class LanClient extends EventTarget {
     try {
       this._liveWs.send(JSON.stringify(obj));
       return true;
-    } catch (_e) {
+    } catch {
       return false;
     }
   }
@@ -176,9 +172,7 @@ export class LanClient extends EventTarget {
       if (this[prop] !== ws) return;
       try {
         ws.send(JSON.stringify({ type: 'auth', token }));
-      } catch (_e) {
-        /* ignore */
-      }
+      } catch (_e) { void _e; }
       if (kind === 'sync') {
         this._syncConnectAttempt = 0;
         this._syncConnected = true;

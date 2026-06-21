@@ -61,7 +61,7 @@ function getRoundSeenSet() {
 function persistRoundSeenSet(s) {
   try {
     localStorage.setItem(ROUND_SEEN_LS, JSON.stringify(s));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function isPatientRoundSeen(patientId) {

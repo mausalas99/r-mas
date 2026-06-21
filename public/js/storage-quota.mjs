@@ -7,7 +7,7 @@ export const FALLBACK_LOCAL_STORAGE_QUOTA = 5 * 1024 * 1024;
 export function estimateJsonBytes(value) {
   try {
     return new Blob([JSON.stringify(value)]).size;
-  } catch (_e) {
+  } catch {
     return 0;
   }
 }
@@ -55,7 +55,7 @@ export async function readStorageQuotaEstimate() {
         };
       }
     }
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return { usage: null, quota: FALLBACK_LOCAL_STORAGE_QUOTA };
 }
 

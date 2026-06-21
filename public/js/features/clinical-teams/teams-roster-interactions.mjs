@@ -3,22 +3,17 @@
  * Loaded dynamically from teams-roster-render after innerHTML is set.
  */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import {
   buildClinicalTeamInviteMessage,
 } from '../../clinical-team-invite.mjs';
 import { copyToClipboardSafe } from '../soap-estado.mjs';
 import {
-  effectiveClinicalRank,
   hasProgramAdminPrivileges,
 } from '../../clinical-privileges.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
-import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
+import { joinClinicalTeamByButton } from './teams-roster-join-handler.mjs';
 import {
-  dbApi,
   toast,
-  toastTeamWarnings,
-  currentUserId,
   BROWSE_SALA_LS,
   promptAdminAccessCode,
   isAdminAccessGrantedThisSession,
@@ -28,7 +23,6 @@ import {
   writeClinicalTeamsCollapseOpen,
 } from './shared.mjs';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
-import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
 import {
   syncCreateTeamCycleField,
   syncCreateTeamServiceFromSala,
@@ -129,7 +123,7 @@ export function wireBrowseSalaControl(elevated) {
   select.addEventListener('change', () => {
     try {
       localStorage.setItem(BROWSE_SALA_LS, String(select.value || ''));
-    } catch (_e) {}
+    } catch (_e) { void _e; }
     void renderClinicalTeamsPanel({ silent: true });
   });
 }
@@ -139,41 +133,7 @@ export function wireJoinButtons() {
     if (!(btn instanceof HTMLButtonElement) || btn._rpcJoinWired) return;
     btn._rpcJoinWired = true;
     btn.addEventListener('click', async () => {
-      const teamId = String(btn.dataset.teamId || '');
-      const userId = currentUserId();
-      const api = dbApi();
-      if (!api || typeof api.dbClinicalTeamsJoin !== 'function') {
-        toast('No se pudo unir al equipo.', 'error');
-        return;
-      }
-      const team = (clinicalSessionContext.teams || []).find(
-        (t) => String(t.team_id) === teamId
-      );
-      const rank = effectiveClinicalRank(clinicalSessionContext.user);
-      const cycle = inferMembershipCycleForJoin(team || {}, rank);
-      const slotWarn = validateTeamRankSlot(
-        team?.service || '',
-        rank,
-        team?.members || []
-      );
-      if (slotWarn) {
-        toast(slotWarn, 'warn');
-      } else if (team?.joinWarning) {
-        toast(String(team.joinWarning), 'warn');
-      }
-      const res = await api.dbClinicalTeamsJoin({
-        teamId,
-        userId,
-        subAreaFraction: cycle,
-      });
-      if (!res || res.ok === false) {
-        toast(res?.error || 'No se pudo unir al equipo.', 'error');
-        return;
-      }
-      toastTeamWarnings(res.warnings);
-      toast('Te uniste al equipo.', 'success');
-      document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-      void publishClinicalTeamsToLan();
+      await joinClinicalTeamByButton(String(btn.dataset.teamId || ''));
     });
   });
 }

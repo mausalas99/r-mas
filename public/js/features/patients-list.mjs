@@ -71,7 +71,7 @@ function isArchivedSectionCollapsed() {
 export function setArchivedSectionCollapsed(v) {
   try {
     localStorage.setItem(ARCHIVED_SECTION_COLLAPSED_LS, v ? '1' : '0');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export { isArchivedSectionCollapsed };
@@ -80,7 +80,7 @@ function destroyPatientListSortables() {
   _patientListSortables.forEach(function (s) {
     try {
       if (s && typeof s.destroy === 'function') s.destroy();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   });
   _patientListSortables = [];
 }

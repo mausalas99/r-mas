@@ -37,7 +37,7 @@ export function isHostOnCurrentSubnets(hostUrl, prefixes) {
 export function hostIpv4FromBase(base) {
   try {
     return new URL(normalizeLanHostBase(base)).hostname;
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -84,7 +84,7 @@ export async function probeLanHostBase(base, teamCode, signal) {
     const data = await res.json();
     if (!data || data.lan !== true) return null;
     return normalized;
-  } catch (_e) {
+  } catch {
     return null;
   } finally {
     clearTimeout(timer);
@@ -119,7 +119,7 @@ export async function probeLanHostBeacon(base, signal) {
     const data = await res.json();
     if (!data || data.lan !== true) return null;
     return normalized;
-  } catch (_e) {
+  } catch {
     return null;
   } finally {
     clearTimeout(timer);
@@ -130,27 +130,59 @@ export async function probeLanHostBeacon(base, signal) {
 /**
  * @returns {Promise<string[]>}
  */
-export async function resolveLocalLanSubnetPrefixes(ownBaseUrl) {
-  if (typeof window !== 'undefined' && window.electronAPI?.getLanSubnetPrefixes) {
-    try {
-      const fromIpc = await window.electronAPI.getLanSubnetPrefixes();
-      if (Array.isArray(fromIpc) && fromIpc.length) {
-        return fromIpc
-          .map((p) => String(p || '').trim())
-          .filter((p) => /^\d+\.\d+\.\d+$/.test(p));
-      }
-    } catch (_e) {}
+async function readSubnetPrefixesFromIpc() {
+  if (typeof window === 'undefined' || !window.electronAPI?.getLanSubnetPrefixes) return [];
+  try {
+    const fromIpc = await window.electronAPI.getLanSubnetPrefixes();
+    if (!Array.isArray(fromIpc) || !fromIpc.length) return [];
+    return fromIpc
+      .map((p) => String(p || '').trim())
+      .filter((p) => /^\d+\.\d+\.\d+$/.test(p));
+  } catch (_e) {
+    void _e;
+    return [];
   }
+}
+
+async function resolveSeedHostFromElectron() {
+  if (typeof window === 'undefined' || !window.electronAPI?.getLanCandidateBaseUrl) return '';
+  try {
+    const fromElectron = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
+    const h = hostIpv4FromBase(fromElectron);
+    return h && !isLoopbackHostname(h) ? h : '';
+  } catch (_e) {
+    void _e;
+    return '';
+  }
+}
+
+async function scanPrefixesForHosts(prefixes, skip, own, probeFn) {
+  /** @type {Set<string>} */
+  const found = new Set();
+  for (const prefix of prefixes) {
+    if (found.size >= MAX_FOUND) break;
+    const hosts = orderedSubnetHosts(prefix, skip);
+    for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
+      const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
+      const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
+      const probes = await Promise.all(bases.map((base) => probeFn(base)));
+      for (const url of probes) {
+        if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
+        found.add(url);
+        if (found.size >= MAX_FOUND) break;
+      }
+    }
+  }
+  return [...found].sort();
+}
+
+export async function resolveLocalLanSubnetPrefixes(ownBaseUrl) {
+  const fromIpc = await readSubnetPrefixesFromIpc();
+  if (fromIpc.length) return fromIpc;
   const own = normalizeLanHostBase(ownBaseUrl);
   let seedHost = hostIpv4FromBase(own);
-  if ((!seedHost || isLoopbackHostname(seedHost)) && typeof window !== 'undefined') {
-    if (window.electronAPI?.getLanCandidateBaseUrl) {
-      try {
-        const fromElectron = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
-        const h = hostIpv4FromBase(fromElectron);
-        if (h && !isLoopbackHostname(h)) seedHost = h;
-      } catch (_e2) {}
-    }
+  if (!seedHost || isLoopbackHostname(seedHost)) {
+    seedHost = await resolveSeedHostFromElectron() || seedHost;
   }
   if (!seedHost && own) seedHost = hostIpv4FromBase(own);
   const prefix = subnetPrefixFromIpv4(seedHost);
@@ -164,6 +196,17 @@ export async function resolveLocalLanSubnetPrefixes(ownBaseUrl) {
  * @param {{ subnetPrefixes?: string[] }} [opts]
  * @returns {Promise<string[]>}
  */
+function resolveDiscoverySkipHost(own, prefixes) {
+  let seedHost = hostIpv4FromBase(own);
+  if (!seedHost || isLoopbackHostname(seedHost)) {
+    for (const prefix of prefixes) {
+      const probe = `${prefix}.1`;
+      if (isPrivateIpv4(probe)) return probe;
+    }
+  }
+  return seedHost && !isLoopbackHostname(seedHost) ? seedHost : '';
+}
+
 export async function discoverLanHostsOnSubnetViaBeacon(ownBaseUrl, opts = {}) {
   const own = normalizeLanHostBase(ownBaseUrl);
   const prefixes =
@@ -171,37 +214,8 @@ export async function discoverLanHostsOnSubnetViaBeacon(ownBaseUrl, opts = {}) {
       ? opts.subnetPrefixes
       : await resolveLocalLanSubnetPrefixes(own);
   if (!prefixes.length) return [];
-
-  let seedHost = hostIpv4FromBase(own);
-  if (!seedHost || isLoopbackHostname(seedHost)) {
-    for (const prefix of prefixes) {
-      const probe = `${prefix}.1`;
-      if (isPrivateIpv4(probe)) {
-        seedHost = probe;
-        break;
-      }
-    }
-  }
-  const skip = seedHost && !isLoopbackHostname(seedHost) ? seedHost : '';
-  /** @type {Set<string>} */
-  const found = new Set();
-
-  for (const prefix of prefixes) {
-    if (found.size >= MAX_FOUND) break;
-    const hosts = orderedSubnetHosts(prefix, skip);
-    for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
-      const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
-      const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
-      const probes = await Promise.all(bases.map((base) => probeLanHostBeacon(base)));
-      for (const url of probes) {
-        if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
-        found.add(url);
-        if (found.size >= MAX_FOUND) break;
-      }
-    }
-  }
-
-  return [...found].sort();
+  const skip = resolveDiscoverySkipHost(own, prefixes);
+  return scanPrefixesForHosts(prefixes, skip, own, probeLanHostBeacon);
 }
 
 /**
@@ -233,37 +247,13 @@ export async function discoverLanHostsOnSubnet(teamCode, ownBaseUrl, opts = {}) 
   if (!prefixes.length) return [];
 
   let seedHost = hostIpv4FromBase(own);
-  if ((!seedHost || isLoopbackHostname(seedHost)) && typeof window !== 'undefined') {
-    if (window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === 'function') {
-      try {
-        const fromElectron = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
-        const h = hostIpv4FromBase(fromElectron);
-        if (h && !isLoopbackHostname(h)) seedHost = h;
-      } catch (_e) {}
-    }
+  if (!seedHost || isLoopbackHostname(seedHost)) {
+    seedHost = (await resolveSeedHostFromElectron()) || seedHost;
   }
   if (!seedHost && own) seedHost = hostIpv4FromBase(own);
 
   const skip = seedHost && !isLoopbackHostname(seedHost) ? seedHost : '';
-  /** @type {Set<string>} */
-  const found = new Set();
-
-  for (const prefix of prefixes) {
-    if (found.size >= MAX_FOUND) break;
-    const hosts = orderedSubnetHosts(prefix, skip);
-    for (let i = 0; i < hosts.length && found.size < MAX_FOUND; i += PROBE_CONCURRENCY) {
-      const batch = hosts.slice(i, i + PROBE_CONCURRENCY);
-      const bases = batch.map((host) => `http://${host}:${DEFAULT_PORT}`);
-      const probes = await Promise.all(bases.map((base) => probeLanHostBase(base, code)));
-      for (const url of probes) {
-        if (!url || (own && (url === own || lanHostBasesSameMachine(url, own)))) continue;
-        found.add(url);
-        if (found.size >= MAX_FOUND) break;
-      }
-    }
-  }
-
-  return [...found].sort();
+  return scanPrefixesForHosts(prefixes, skip, own, (base) => probeLanHostBase(base, code));
 }
 
 /**

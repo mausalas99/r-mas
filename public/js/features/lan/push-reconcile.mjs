@@ -147,7 +147,7 @@ async function maybeCatchUpClinicalOps(rid, b, merged, bundleHadClinicalOps) {
     ) {
       await b.reapplyLanPatientEntries(merged.entries);
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function maybeToastEmptyMobileBundle(b, hostBundleLoaded, merged) {

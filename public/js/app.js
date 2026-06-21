@@ -1,18 +1,15 @@
-import { perfMark, perfMeasure } from './perf-markers.mjs';
 import { storage } from './storage.js';
 
-perfMark('app-boot-start');
-if (typeof requestAnimationFrame === 'function') {
-  requestAnimationFrame(function () {
-    perfMark('app-first-paint');
-    perfMeasure('boot-to-first-paint', 'app-boot-start', 'app-first-paint');
-  });
-}
+void import('./perf-markers.mjs').then(function (perf) {
+  perf.perfMark('app-boot-start');
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function () {
+      perf.perfMark('app-first-paint');
+      perf.perfMeasure('boot-to-first-paint', 'app-boot-start', 'app-first-paint');
+    });
+  }
+});
 import { isDbMode, isWebClinicalClient } from './db-storage-bridge.mjs';
-import {
-  wipeSessionClinicalStorage,
-  installSessionClinicalWipeOnExit,
-} from './session-clinical-wipe.mjs';
 import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers, describeClinicalDbBootFailure } from './features/db-unlock.mjs';
 import {
   bootHydrateFromDb,
@@ -29,7 +26,6 @@ import {
   runInitialFeatureBoot,
   wasV3MigratedThisBoot,
 } from './app-runtimes.mjs';
-import { isMobileWeb } from './mobile-web.mjs';
 import {
   registerAppShellContext,
   appShellWindowHandlers,
@@ -93,6 +89,17 @@ import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mj
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
 
+function isMobileWeb() {
+  var g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : null;
+  if (!g) return false;
+  return !!(
+    g.__RPC_MOBILE_WEB__ ||
+    (typeof document !== 'undefined' &&
+      document.documentElement &&
+      document.documentElement.classList.contains('rpc-mobile-web'))
+  );
+}
+
 const allWindowHandlers = Object.assign(
   {},
   dbUnlockWindowHandlers,
@@ -145,6 +152,7 @@ const appStateReady = (async function loadClinicalStateOnBoot() {
   }
   if (isWebClinicalClient()) {
     try {
+      const { wipeSessionClinicalStorage } = await import('./session-clinical-wipe.mjs');
       wipeSessionClinicalStorage({ includeLanSession: false });
     } catch (_wipeBoot) {
       void _wipeBoot;
@@ -200,7 +208,9 @@ setSaveStateHooks({
   },
 });
 
-installSessionClinicalWipeOnExit();
+void import('./session-clinical-wipe.mjs').then(function (mod) {
+  mod.installSessionClinicalWipeOnExit();
+});
 
 window.addEventListener('beforeunload', function () {
   flushSaveState();

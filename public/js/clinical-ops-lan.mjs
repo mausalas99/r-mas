@@ -89,20 +89,7 @@ export async function flushPendingClinicalOpsLanSnapshot() {
   return applyClinicalOpsLanSnapshot(snap);
 }
 
-/**
- * @param {object|null} snapshot
- * @returns {Promise<{ ok: boolean, changed: boolean, code?: string, deferred?: boolean }>}
- */
-export async function applyClinicalOpsLanSnapshot(snapshot) {
-  if (!snapshot || typeof snapshot !== 'object') return { ok: false, changed: false };
-  const api = dbApi();
-  if (!api || typeof api.dbClinicalOpsMerge !== 'function') return { ok: false, changed: false };
-  const res = await api.dbClinicalOpsMerge({ snapshot });
-  if (res && res.code === 'DB_LOCKED') {
-    return deferClinicalOpsLanSnapshot(snapshot);
-  }
-  const ok = !!(res && res.ok !== false);
-  const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
+function recordClinicalOpsMergeTrace(snapshot, res, ok, changed) {
   recordClinicalOpsTrace('merge', {
     ok,
     changed,
@@ -111,12 +98,43 @@ export async function applyClinicalOpsLanSnapshot(snapshot) {
     code: ok ? undefined : res?.code,
     error: ok ? undefined : res?.error,
   });
-  if (ok && changed && typeof document !== 'undefined') {
-    document.dispatchEvent(
-      new CustomEvent('rpc-clinical-ops-synced', { detail: { mergeStats: res?.mergeStats || null } })
-    );
-  }
-  return { ok, changed, code: ok ? undefined : res?.code, error: ok ? undefined : res?.error };
+}
+
+function dispatchClinicalOpsSynced(mergeStats) {
+  if (typeof document === 'undefined') return;
+  document.dispatchEvent(
+    new CustomEvent('rpc-clinical-ops-synced', { detail: { mergeStats: mergeStats || null } })
+  );
+}
+
+function buildClinicalOpsMergeResult(res, ok, changed) {
+  return {
+    ok,
+    changed,
+    code: ok ? undefined : res?.code,
+    error: ok ? undefined : res?.error,
+  };
+}
+
+async function mergeClinicalOpsSnapshot(api, snapshot) {
+  const res = await api.dbClinicalOpsMerge({ snapshot });
+  if (res?.code === 'DB_LOCKED') return deferClinicalOpsLanSnapshot(snapshot);
+  const ok = res?.ok !== false;
+  const changed = ok && clinicalOpsMergeHadChanges(res?.mergeStats);
+  recordClinicalOpsMergeTrace(snapshot, res, ok, changed);
+  if (ok && changed) dispatchClinicalOpsSynced(res?.mergeStats);
+  return buildClinicalOpsMergeResult(res, ok, changed);
+}
+
+/**
+ * @param {object|null} snapshot
+ * @returns {Promise<{ ok: boolean, changed: boolean, code?: string, deferred?: boolean }>}
+ */
+export async function applyClinicalOpsLanSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return { ok: false, changed: false };
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalOpsMerge !== 'function') return { ok: false, changed: false };
+  return mergeClinicalOpsSnapshot(api, snapshot);
 }
 
 /** @param {object[]} sources */

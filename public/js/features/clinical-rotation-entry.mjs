@@ -2,17 +2,14 @@
  * Mi rotación entry (barra superior clínica).
  */
 import { isDbMode } from '../db-storage-bridge.mjs';
-import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
-import { normalizeUsername } from '../clinical-username.mjs';
-import { filterJoinedTeams } from './clinical-teams/shared.mjs';
-import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { readRpcSettings, isClinicalLocalOnlyMode } from '../clinical-settings.mjs';
-import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
+import { needsClinicalOnboarding } from './clinical-onboarding.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { syncGuardiaRotationToolbar } from './clinical-rotation.mjs';
 import { isGuardiaMode } from './chrome.mjs';
 import { storage } from '../storage.js';
 import { subscribeRoomSyncPhase } from '../lan-sync-state.mjs';
+import { buildClinicalRotationEntryStatus } from './clinical-rotation-entry-status.mjs';
 
 let entryControlsWired = false;
 
@@ -23,7 +20,7 @@ async function openLanConnectPanelForPin() {
     if (typeof focusLanShiftPinInput === 'function') {
       window.setTimeout(() => focusLanShiftPinInput(), 80);
     }
-  } catch (_e) {
+  } catch {
     if (typeof window.showToast === 'function') {
       window.showToast('Abre ⇄ (Wi‑Fi) arriba e ingresa el PIN del turno.', 'info');
     }
@@ -40,7 +37,7 @@ async function handleLanConnectCtaClick() {
         syncClinicalRotationEntryChrome();
         return;
       }
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   await openLanConnectPanelForPin();
 }
@@ -62,7 +59,7 @@ async function isLanConnectCtaVisible() {
       typeof lan.getActiveLiveSyncRoomId === 'function' ? lan.getActiveLiveSyncRoomId() : '';
     if (!roomId) return true;
     return getRoomSyncPhase(roomId) !== RoomSyncPhase.live;
-  } catch (_e) {
+  } catch {
     return true;
   }
 }
@@ -115,47 +112,7 @@ export async function openMiRotacion() {
  * @returns {{ primary: string, sub: string, pending: boolean }}
  */
 function buildEntryStatus() {
-  if (isClinicalLocalOnlyMode(readRpcSettings())) {
-    return {
-      primary: 'Solo este equipo',
-      sub: 'Sin LAN ni Mi rotación',
-      pending: false,
-    };
-  }
-  if (needsClinicalOnboarding()) {
-    return {
-      primary: 'Configura tu rotación',
-      sub: 'Usuario LAN, rango y sala — equipos después en Mi rotación',
-      pending: true,
-    };
-  }
-
-  const user = clinicalSessionContext.user;
-  if (!user?.user_id) {
-    return {
-      primary: 'Mi rotación',
-      sub: 'Completa la configuración inicial abajo',
-      pending: true,
-    };
-  }
-
-  const handle = normalizeUsername(user.username || '');
-  const rank = String(user.rank || '').trim();
-  const sala = String(user.sala || '').trim();
-  const name = String(user.clinical_name || '').trim();
-  const teams = filterJoinedTeams(clinicalSessionContext.teams || [], user);
-  const parts = [];
-  if (handle) parts.push(`@${handle}`);
-  if (rank) parts.push(rank);
-  if (sala) parts.push(sala);
-  const primary = parts.length ? parts.join(' · ') : 'Mi rotación';
-  let sub = name || 'Equipos, entregas y perfil clínico';
-  if (hasElevatedTeamPrivileges(user)) {
-    sub = name || 'Supervisión de rotaciones — sin equipo requerido';
-  } else if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || '—')}`;
-  else if (teams.length > 1) sub = `${teams.length} equipos`;
-  else if (needsTeamOnboarding()) sub = 'Sin equipo — abre para buscar en tu sala o unirte';
-  return { primary, sub, pending: false };
+  return buildClinicalRotationEntryStatus();
 }
 
 export function syncClinicalRotationEntryChrome() {

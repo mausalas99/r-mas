@@ -1,18 +1,13 @@
 /**
  * Onboarding: LAN vs solo este equipo + minimal local profile.
  */
-import { clinicalSessionContext, refreshClinicalUserProfile } from '../clinical-access-runtime.mjs';
-import {
-  isClinicalLocalOnlyMode,
-  persistClinicalUserBinding,
-  readRpcSettings,
-  setClinicalSyncModeLocalOnly,
-} from '../clinical-settings.mjs';
-import { normalizeUsername } from '../clinical-username.mjs';
+import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
+import { readRpcSettings, setClinicalSyncModeLocalOnly } from '../clinical-settings.mjs';
 import {
   buildOnboardingStageHtml,
   buildSyncModeChoiceBodyHtml,
 } from './clinical-onboarding-shell.mjs';
+import { submitLocalOnlyProfile } from './clinical-onboarding-local-submit.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -111,7 +106,7 @@ export async function handleSyncModeBack() {
   delete settings.clinicalLocalOnly;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   await refreshOnboardingHost();
 }
 
@@ -120,7 +115,6 @@ export async function handleLocalOnlyProfileSubmit(ev) {
   const name = String(document.getElementById('onboard-local-name')?.value || '').trim();
   const rank = String(document.getElementById('onboard-local-rank')?.value || 'R1');
   const errEl = document.getElementById('onboard-error');
-
   if (!name) {
     if (errEl) {
       errEl.textContent = 'Escribe cómo quieres aparecer en notas y documentos.';
@@ -128,71 +122,16 @@ export async function handleLocalOnlyProfileSubmit(ev) {
     }
     return;
   }
-
   const api = dbApi();
-  const sessionUserId = String(clinicalSessionContext.user?.user_id || '');
-  if (!sessionUserId || !api) {
+  if (!api) {
     toast('Sesión clínica no disponible.', 'error');
     return;
   }
-
-  const localHandle = localOnlyUsernameForUserId(sessionUserId);
-  const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || '');
-  if (currentHandle !== localHandle && typeof api.dbClinicalUsernameClaim === 'function') {
-    const claimRes = await api.dbClinicalUsernameClaim({
-      userId: sessionUserId,
-      username: localHandle,
-    });
-    if (!claimRes?.ok && !/ya está en uso/i.test(String(claimRes?.error || ''))) {
-      if (errEl) {
-        errEl.textContent = claimRes?.error || 'No se pudo guardar el perfil local.';
-        errEl.hidden = false;
-      }
-      return;
-    }
-    if (claimRes?.ok && clinicalSessionContext.user) {
-      clinicalSessionContext.user.username = localHandle;
-    }
+  const result = await submitLocalOnlyProfile(name, rank, errEl);
+  if (!result.ok) {
+    if (result.error) toast(result.error, 'error');
+    return;
   }
-
-  if (typeof api.dbClinicalProfileUpsert === 'function') {
-    const profileRes = await api.dbClinicalProfileUpsert({
-      userId: sessionUserId,
-      clinicalName: name,
-      rank,
-      sala: null,
-      isProgramAdmin: false,
-    });
-    if (!profileRes?.ok) {
-      if (errEl) {
-        errEl.textContent = profileRes?.error || 'No se guardó el perfil.';
-        errEl.hidden = false;
-      }
-      return;
-    }
-    if (clinicalSessionContext.user) {
-      clinicalSessionContext.user.rank = rank;
-      clinicalSessionContext.user.clinical_name = name;
-      clinicalSessionContext.user.sala = null;
-      clinicalSessionContext.user.is_program_admin = 0;
-    }
-  }
-
-  persistClinicalUserBinding({
-    userId: sessionUserId,
-    username: localHandle,
-    displayName: name,
-    rank,
-    sala: '',
-    registered: true,
-    lanProfileGateComplete: true,
-    isProgramAdmin: false,
-  });
-  setClinicalSyncModeLocalOnly(true);
-
-  if (errEl) errEl.hidden = true;
-  await refreshClinicalUserProfile();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   toast('Listo. R+ queda solo en este equipo, sin sincronización LAN.', 'success');
   await refreshOnboardingHost();
 }

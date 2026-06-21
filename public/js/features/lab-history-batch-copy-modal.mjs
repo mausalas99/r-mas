@@ -91,25 +91,8 @@ function closeBatchCopyModal(backdrop) {
   if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
 }
 
-/**
- * Modal para elegir varios días del historial y copiar el bloque de estudios al portapapeles.
- */
-export function openLabHistoryBatchCopyModal() {
-  if (!rt.getActiveId()) {
-    rt.showToast('Selecciona un paciente primero', 'error');
-    return;
-  }
-  var loaded = loadPatientHistory();
-  if (!loaded.groups.length) {
-    rt.showToast('No hay laboratorios en el historial de este paciente', 'error');
-    return;
-  }
-
-  var backdrop = document.createElement('div');
-  backdrop.className = 'lab-conflict-backdrop';
-  backdrop.id = 'lab-batch-copy-backdrop';
-
-  var listHtml = loaded.groups
+function buildBatchCopyListHtml(groups) {
+  return groups
     .map(function (group) {
       return (
         '<li style="margin:6px 0;">' +
@@ -123,8 +106,10 @@ export function openLabHistoryBatchCopyModal() {
       );
     })
     .join('');
+}
 
-  backdrop.innerHTML =
+function buildBatchCopyModalHtml(listHtml) {
+  return (
     '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +
     '<h3 style="margin:0 0 8px;">Copiar varios días</h3>' +
     '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca los días que quieres copiar. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por día).</p>' +
@@ -139,10 +124,12 @@ export function openLabHistoryBatchCopyModal() {
     '<button type="button" id="lab-batch-copy-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button>' +
     '<button type="button" id="lab-batch-copy-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
     '<button type="button" id="lab-batch-copy-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Copiar al portapapeles</button>' +
-    '</div></div>';
+    '</div></div>'
+  );
+}
 
-  document.body.appendChild(backdrop);
-
+/** @param {HTMLElement} backdrop @param {{ ordered: unknown[] }} loaded */
+function wireBatchCopyModal(backdrop, loaded) {
   function refreshPreview() {
     syncBatchCopyActions(backdrop, loaded.ordered);
   }
@@ -190,6 +177,28 @@ export function openLabHistoryBatchCopyModal() {
   };
 
   refreshPreview();
+}
+
+/**
+ * Modal para elegir varios días del historial y copiar el bloque de estudios al portapapeles.
+ */
+export function openLabHistoryBatchCopyModal() {
+  if (!rt.getActiveId()) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var loaded = loadPatientHistory();
+  if (!loaded.groups.length) {
+    rt.showToast('No hay laboratorios en el historial de este paciente', 'error');
+    return;
+  }
+
+  var backdrop = document.createElement('div');
+  backdrop.className = 'lab-conflict-backdrop';
+  backdrop.id = 'lab-batch-copy-backdrop';
+  backdrop.innerHTML = buildBatchCopyModalHtml(buildBatchCopyListHtml(loaded.groups));
+  document.body.appendChild(backdrop);
+  wireBatchCopyModal(backdrop, loaded);
 }
 
 export const windowHandlers = {

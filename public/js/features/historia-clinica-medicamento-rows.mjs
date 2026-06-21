@@ -15,22 +15,54 @@ function emptyHint(text) {
   return '<p class="hc-empty-hint">' + esc(text) + '</p>';
 }
 
-/**
- * @param {HTMLElement} host
- * @param {{
- *   list: Array<object>,
- *   onChange: (list: Array<object>) => void,
- *   emptyHint?: string,
- *   addLabel?: string,
- *   allowRemove?: boolean,
- *   readOnlyFilter?: (m: object) => boolean,
- * }} opts
- */
-export function mountMedicamentoRows(host, opts) {
-  if (!host) return;
-  opts = opts || {};
-  const list = normalizeMedicamentosList(opts.list);
-  const addLabel = opts.addLabel || '+ Agregar medicamento';
+/** @param {object} m @param {number} i @param {(m: object) => boolean} isReadOnly @param {boolean} canRemove */
+function renderMedicamentoRowHtml(m, i, isReadOnly, canRemove) {
+  const linked = isReadOnly(m);
+  const ro = linked ? ' readonly tabindex="-1" title="No editable en este bloque"' : '';
+  const tag = linked ? ' <span class="hc-tag">Vinculado</span>' : '';
+  return (
+    '<div class="hc-entry-row' +
+    (linked ? ' hc-entry-row--linked' : '') +
+    '" data-medicamento-idx="' +
+    i +
+    '">' +
+    '<div class="field-group"><label>Medicamento' +
+    tag +
+    '</label>' +
+    '<input type="text" data-med-field="medication" value="' +
+    esc(m.medication || '') +
+    '" placeholder="Nombre genérico o comercial"' +
+    ro +
+    '></div>' +
+    '<div class="field-group"><label>Vía de administración</label>' +
+    '<input type="text" data-med-field="route" value="' +
+    esc(m.route || '') +
+    '" placeholder="VO, IV, SC, inhalada…"' +
+    ro +
+    '></div>' +
+    '<div class="field-group"><label>Dosis</label>' +
+    '<input type="text" data-med-field="dosage" value="' +
+    esc(m.dosage || '') +
+    '" placeholder="ej. 850 mg"' +
+    ro +
+    '></div>' +
+    '<div class="field-group"><label>Frecuencia</label>' +
+    '<input type="text" data-med-field="frequency" value="' +
+    esc(m.frequency || '') +
+    '" placeholder="ej. c/12 h"' +
+    ro +
+    '></div>' +
+    (canRemove && !linked
+      ? '<button type="button" class="btn-remove" data-medicamento-remove="' +
+        i +
+        '" aria-label="Quitar">×</button>'
+      : '') +
+    '</div>'
+  );
+}
+
+/** @param {Array<object>} list @param {{ emptyHint?: string, addLabel?: string, allowRemove?: boolean, readOnlyFilter?: (m: object) => boolean }} opts */
+function buildMedicamentoRowsHtml(list, opts) {
   const emptyText =
     opts.emptyHint || 'Medicamento, vía, dosis y frecuencia de cada fármaco activo.';
   const canRemove = opts.allowRemove !== false;
@@ -40,66 +72,28 @@ export function mountMedicamentoRows(host, opts) {
       : function () {
           return false;
         };
-
   let html = '<div class="hc-medicamentos-list">';
   if (!list.length) {
     html += emptyHint(emptyText);
   } else {
-    html += list
-      .map(function (m, i) {
-        const linked = isReadOnly(m);
-        const ro = linked
-          ? ' readonly tabindex="-1" title="No editable en este bloque"'
-          : '';
-        const tag = linked ? ' <span class="hc-tag">Vinculado</span>' : '';
-        return (
-          '<div class="hc-entry-row' +
-          (linked ? ' hc-entry-row--linked' : '') +
-          '" data-medicamento-idx="' +
-          i +
-          '">' +
-          '<div class="field-group"><label>Medicamento' +
-          tag +
-          '</label>' +
-          '<input type="text" data-med-field="medication" value="' +
-          esc(m.medication || '') +
-          '" placeholder="Nombre genérico o comercial"' +
-          ro +
-          '></div>' +
-          '<div class="field-group"><label>Vía de administración</label>' +
-          '<input type="text" data-med-field="route" value="' +
-          esc(m.route || '') +
-          '" placeholder="VO, IV, SC, inhalada…"' +
-          ro +
-          '></div>' +
-          '<div class="field-group"><label>Dosis</label>' +
-          '<input type="text" data-med-field="dosage" value="' +
-          esc(m.dosage || '') +
-          '" placeholder="ej. 850 mg"' +
-          ro +
-          '></div>' +
-          '<div class="field-group"><label>Frecuencia</label>' +
-          '<input type="text" data-med-field="frequency" value="' +
-          esc(m.frequency || '') +
-          '" placeholder="ej. c/12 h"' +
-          ro +
-          '></div>' +
-          (canRemove && !linked
-            ? '<button type="button" class="btn-remove" data-medicamento-remove="' +
-              i +
-              '" aria-label="Quitar">×</button>'
-            : '') +
-          '</div>'
-        );
-      })
-      .join('');
+    html += list.map((m, i) => renderMedicamentoRowHtml(m, i, isReadOnly, canRemove)).join('');
   }
   html += '</div>';
   html +=
     '<button type="button" class="btn-add-row hc-medicamentos-add">' +
-    esc(addLabel) +
+    esc(opts.addLabel || '+ Agregar medicamento') +
     '</button>';
-  host.innerHTML = html;
+  return { html, isReadOnly, canRemove };
+}
+
+/** @param {HTMLElement} host @param {Array<object>} list @param {object} opts */
+function wireMedicamentoRowEvents(host, list, opts) {
+  const isReadOnly =
+    typeof opts.readOnlyFilter === 'function'
+      ? opts.readOnlyFilter
+      : function () {
+          return false;
+        };
 
   function emit() {
     const next = [];
@@ -159,4 +153,24 @@ export function mountMedicamentoRows(host, opts) {
       if (med) med.focus();
     };
   }
+}
+
+/**
+ * @param {HTMLElement} host
+ * @param {{
+ *   list: Array<object>,
+ *   onChange: (list: Array<object>) => void,
+ *   emptyHint?: string,
+ *   addLabel?: string,
+ *   allowRemove?: boolean,
+ *   readOnlyFilter?: (m: object) => boolean,
+ * }} opts
+ */
+export function mountMedicamentoRows(host, opts) {
+  if (!host) return;
+  opts = opts || {};
+  const list = normalizeMedicamentosList(opts.list);
+  const built = buildMedicamentoRowsHtml(list, opts);
+  host.innerHTML = built.html;
+  wireMedicamentoRowEvents(host, list, opts);
 }

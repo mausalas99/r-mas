@@ -14,128 +14,168 @@ const POLL_INTERVAL_MS = 15_000;
 const WS_FAIL_THRESHOLD = 3;
 const SSE_FAIL_THRESHOLD = 2;
 
-/**
- * @param {{ lanClient: object, sseClientFactory: () => object }} opts
- */
-export function createLanConnectionManager({ lanClient, sseClientFactory }) {
-  let _transport = 'ws';
-  let _hostUrl = '';
-  let _teamCode = '';
-  let _wsFailCount = 0;
-  let _sseFailCount = 0;
-  let _sseClient = null;
-  let _sseRetryTimer = null;
-  let _pollTimer = null;
-  const _eventListeners = new Map();
-
-  function _emit(event, detail) {
-    const cbs = _eventListeners.get(event) || [];
-    cbs.forEach((cb) => { try { cb({ detail }); } catch (_e) {} });
+/** @param {Map<string, Function[]>} eventListeners @param {object} lanClient */
+function createLanTransportEmit(eventListeners, lanClient) {
+  function emit(event, detail) {
+    const cbs = eventListeners.get(event) || [];
+    cbs.forEach((cb) => { try { cb({ detail }); } catch (_e) { void _e; } });
   }
 
   function addEventListener(event, cb) {
-    if (!_eventListeners.has(event)) _eventListeners.set(event, []);
-    _eventListeners.get(event).push(cb);
+    if (!eventListeners.has(event)) eventListeners.set(event, []);
+    eventListeners.get(event).push(cb);
     lanClient.addEventListener(event, cb);
   }
 
-  function getTransport() { return _transport; }
+  return { emit, addEventListener };
+}
 
-  function _transitionToSse() {
-    if (_transport === 'sse') return;
-    _transport = 'sse';
-    _connectSse();
+/** @param {object} ctx */
+function createSseTransport(ctx) {
+  const { sseClientFactory, emit, getState } = ctx;
+
+  function stopSse() {
+    const st = getState();
+    if (st.sseRetryTimer) { clearTimeout(st.sseRetryTimer); st.sseRetryTimer = null; }
+    if (st.sseClient) { try { st.sseClient.disconnect(); } catch (_e) { void _e; } st.sseClient = null; }
   }
 
-  function _transitionToPoll() {
-    if (_transport === 'poll') return;
-    _transport = 'poll';
-    _stopSse();
-    _startPoll();
-  }
-
-  function _transitionToWs() {
-    _transport = 'ws';
-    _wsFailCount = 0;
-    _sseFailCount = 0;
-    _stopSse();
-    _stopPoll();
-  }
-
-  async function _connectSse() {
-    _stopSse();
-    _sseClient = sseClientFactory();
+  async function connectSse() {
+    stopSse();
+    const st = getState();
+    st.sseClient = sseClientFactory();
     try {
-      await _sseClient.connect(_hostUrl, _teamCode, 'sync', (ev) => {
-        _emit('lan-patch', ev);
+      await st.sseClient.connect(st.hostUrl, st.teamCode, 'sync', (ev) => {
+        emit('lan-patch', ev);
       });
-    } catch (_e) {
-      _sseFailCount++;
-      if (_sseFailCount >= SSE_FAIL_THRESHOLD) {
-        _transitionToPoll();
+    } catch {
+      st.sseFailCount++;
+      if (st.sseFailCount >= SSE_FAIL_THRESHOLD) {
+        ctx.transitionToPoll();
       } else {
-        _sseRetryTimer = setTimeout(_connectSse, 2000);
-        if (typeof _sseRetryTimer.unref === 'function') _sseRetryTimer.unref();
+        st.sseRetryTimer = setTimeout(connectSse, 2000);
+        if (typeof st.sseRetryTimer.unref === 'function') st.sseRetryTimer.unref();
       }
     }
   }
 
-  function _stopSse() {
-    if (_sseRetryTimer) { clearTimeout(_sseRetryTimer); _sseRetryTimer = null; }
-    if (_sseClient) { try { _sseClient.disconnect(); } catch (_e) {} _sseClient = null; }
+  return { connectSse, stopSse };
+}
+
+/** @param {object} ctx */
+function createPollTransport(ctx) {
+  const { emit, getState } = ctx;
+
+  function stopPoll() {
+    const st = getState();
+    if (st.pollTimer) { clearInterval(st.pollTimer); st.pollTimer = null; }
   }
 
-  function _startPoll() {
-    _stopPoll();
-    _pollTimer = setInterval(async () => {
+  function startPoll() {
+    stopPoll();
+    const st = getState();
+    st.pollTimer = setInterval(async () => {
       try {
-        const res = await fetch(`${_hostUrl}/api/lan/v1/health`, {
-          headers: { Authorization: `Bearer ${_teamCode}` },
+        const res = await fetch(`${st.hostUrl}/api/lan/v1/health`, {
+          headers: { Authorization: `Bearer ${st.teamCode}` },
         });
         if (res.ok) {
           const data = await res.json();
-          _emit('lan-patch', { type: 'livesync:poll', ...data });
+          emit('lan-patch', { type: 'livesync:poll', ...data });
         }
-      } catch (_e) {}
+      } catch (_e) { void _e; }
     }, POLL_INTERVAL_MS);
-    if (typeof _pollTimer.unref === 'function') _pollTimer.unref();
+    if (typeof st.pollTimer.unref === 'function') st.pollTimer.unref();
   }
 
-  function _stopPoll() {
-    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  return { startPoll, stopPoll };
+}
+
+/**
+ * @param {{ lanClient: object, sseClientFactory: () => object }} opts
+ */
+export function createLanConnectionManager({ lanClient, sseClientFactory }) {
+  const state = {
+    transport: 'ws',
+    hostUrl: '',
+    teamCode: '',
+    wsFailCount: 0,
+    sseFailCount: 0,
+    sseClient: null,
+    sseRetryTimer: null,
+    pollTimer: null,
+  };
+  const eventListeners = new Map();
+  const { emit, addEventListener } = createLanTransportEmit(eventListeners, lanClient);
+
+  const ctx = {
+    sseClientFactory,
+    emit,
+    getState: () => state,
+    transitionToPoll: null,
+    transitionToSse: null,
+  };
+
+  const sse = createSseTransport(ctx);
+  const poll = createPollTransport(ctx);
+
+  function transitionToSse() {
+    if (state.transport === 'sse') return;
+    state.transport = 'sse';
+    void sse.connectSse();
   }
+
+  function transitionToPoll() {
+    if (state.transport === 'poll') return;
+    state.transport = 'poll';
+    sse.stopSse();
+    poll.startPoll();
+  }
+
+  function transitionToWs() {
+    state.transport = 'ws';
+    state.wsFailCount = 0;
+    state.sseFailCount = 0;
+    sse.stopSse();
+    poll.stopPoll();
+  }
+
+  ctx.transitionToPoll = transitionToPoll;
+  ctx.transitionToSse = transitionToSse;
 
   lanClient.addEventListener('lan-status', ({ detail }) => {
     if (!detail) return;
     if (detail.connected) {
-      _transitionToWs();
+      transitionToWs();
     } else if (detail.channel === 'sync') {
-      _wsFailCount++;
-      if (_transport === 'ws' && _wsFailCount >= WS_FAIL_THRESHOLD) {
-        _transitionToSse();
+      state.wsFailCount++;
+      if (state.transport === 'ws' && state.wsFailCount >= WS_FAIL_THRESHOLD) {
+        transitionToSse();
       }
     }
   });
 
   function connect(hostUrl, teamCode) {
-    _hostUrl = String(hostUrl || '');
-    _teamCode = String(teamCode || '');
-    lanClient.configure({ hostUrl: _hostUrl, teamCode: _teamCode });
+    state.hostUrl = String(hostUrl || '');
+    state.teamCode = String(teamCode || '');
+    lanClient.configure({ hostUrl: state.hostUrl, teamCode: state.teamCode });
     lanClient.connectSyncChannel();
   }
 
   function disconnect() {
     lanClient.disconnect();
-    _stopSse();
-    _stopPoll();
-    _transport = 'ws';
-    _wsFailCount = 0;
-    _sseFailCount = 0;
+    sse.stopSse();
+    poll.stopPoll();
+    state.transport = 'ws';
+    state.wsFailCount = 0;
+    state.sseFailCount = 0;
   }
 
+  function getTransport() { return state.transport; }
+
   function _simulateSseFailure() {
-    _sseFailCount++;
-    if (_sseFailCount >= SSE_FAIL_THRESHOLD) _transitionToPoll();
+    state.sseFailCount++;
+    if (state.sseFailCount >= SSE_FAIL_THRESHOLD) transitionToPoll();
   }
 
   return { connect, disconnect, addEventListener, getTransport, _simulateSseFailure };

@@ -38,12 +38,12 @@ function showUpdateModal() {
   el.style.display = 'flex';
   el.setAttribute('aria-hidden', 'false');
   var modal = document.getElementById('update-modal');
-  if (modal) setTimeout(function() { try { modal.focus(); } catch { /* ignore */ } }, 50);
+  if (modal) setTimeout(function() { try { modal.focus(); } catch (_e) { void _e; } }, 50);
 }
 
 function hideUpdateModal() {
   if (updaterState.updateModalMode === 'downgrade' && window.electronAPI && window.electronAPI.resetUpdateFeed) {
-    try { window.electronAPI.resetUpdateFeed(); } catch { /* ignore */ }
+    try { window.electronAPI.resetUpdateFeed(); } catch (_e) { void _e; }
   }
   updaterState.updateModalMode = 'upgrade';
   updaterState.pendingDowngradeVersion = null;

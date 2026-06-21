@@ -98,6 +98,92 @@ export function markHistoriaPendingLanSync(patient, pending) {
  * @param {object} patient
  * @returns {Promise<{ ok: boolean, skipped?: boolean, deferred?: boolean, conflict?: boolean }>}
  */
+function resolvePendingChangedKeys(hc, snap) {
+  if (snap && snap.changedKeys && snap.changedKeys.length) {
+    return snap.changedKeys.slice();
+  }
+  return HC_SYNC_KEYS.filter(function (k) {
+    return hc.data && hc.data[k] !== undefined;
+  });
+}
+
+function clearPendingLanSync(hc) {
+  delete hc.pendingLanSync;
+  delete hc.lanSyncPending;
+}
+
+/** @param {object} patient @param {string[]} changedKeys @param {string} roomId @param {object} hc */
+async function tryDeltaHistoriaPush(patient, changedKeys, roomId, hc) {
+  const delta = buildHistoriaClinicaDelta(patient, {
+    changedPaths: changedKeys,
+    roomId,
+    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
+  });
+  if (!delta) return null;
+  const out = await lanPushHistoriaClinicaDelta(patient.id, delta);
+  if (!out || !out.ok) return null;
+  hc.version = out.version || hc.version;
+  clearPendingLanSync(hc);
+  saveState();
+  return { ok: true };
+}
+
+function buildFullHistoriaMutation(patient, changedKeys, roomId, hc, snap) {
+  const expectedVersion =
+    snap && snap.expectedVersion != null ? Number(snap.expectedVersion) : Math.max(0, Number(hc.version || 1) - 1);
+  const baseData =
+    snap && snap.baseData != null ? snap.baseData : expectedVersion > 0 ? {} : {};
+  const builder = createMutationBuilder('historiaClinica', patient.id).captureBase({
+    version: expectedVersion,
+    data: baseData,
+  });
+  changedKeys.forEach(function (k) {
+    if (hc.data[k] !== undefined) builder.set(k, hc.data[k]);
+  });
+  return builder.build({
+    roomId,
+    patientId: patient.id,
+    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
+    audit: {
+      sections: changedKeys,
+      source: snap && snap.source ? snap.source : 'pending-lan-sync',
+    },
+  });
+}
+
+/** @param {object} patient @param {object} out @param {object} hc */
+function applyHistoriaPushConflict(patient, out, hc) {
+  const body = out.body && typeof out.body === 'object' ? out.body : {};
+  if (body.serverVersion != null || body.serverData) {
+    applyServerHistoriaClinicaToPatient(
+      patient,
+      body.serverVersion != null ? body.serverVersion : hc.version,
+      body.serverData || hc.data
+    );
+    return;
+  }
+  clearPendingLanSync(hc);
+  saveState();
+}
+
+/** @param {object} patient @param {string[]} changedKeys @param {string} roomId @param {object} hc @param {object|null|undefined} snap */
+async function tryFullHistoriaPush(patient, changedKeys, roomId, hc, snap) {
+  const mutation = buildFullHistoriaMutation(patient, changedKeys, roomId, hc, snap);
+  const out = await lanPushHistoriaClinica(patient.id, mutation);
+  if (out && out.conflict) {
+    applyHistoriaPushConflict(patient, out, hc);
+    return { ok: false, conflict: true, deferred: true };
+  }
+  if (out && out.ok) {
+    hc.version = out.version;
+    hc.data = migrateLegacyHistoriaData(out.data, CATALOGS);
+    clearPendingLanSync(hc);
+    saveState();
+    return { ok: true };
+  }
+  return null;
+}
+
 export async function flushPendingHistoriaClinicaLanSync(patient) {
   if (!patient || !patient.historiaClinica || !patient.historiaClinica.pendingLanSync) {
     return { ok: true, skipped: true };
@@ -109,87 +195,18 @@ export async function flushPendingHistoriaClinicaLanSync(patient) {
 
   const hc = patient.historiaClinica;
   const snap = hc.lanSyncPending;
-  const changedKeys =
-    snap && snap.changedKeys && snap.changedKeys.length
-      ? snap.changedKeys.slice()
-      : HC_SYNC_KEYS.filter(function (k) {
-          return hc.data && hc.data[k] !== undefined;
-        });
+  const changedKeys = resolvePendingChangedKeys(hc, snap);
   if (!changedKeys.length) {
-    delete hc.pendingLanSync;
-    delete hc.lanSyncPending;
+    clearPendingLanSync(hc);
     return { ok: true, skipped: true };
   }
 
-  const delta = buildHistoriaClinicaDelta(patient, {
-    changedPaths: changedKeys,
-    roomId,
-    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
-  });
-  if (delta) {
-    const out = await lanPushHistoriaClinicaDelta(patient.id, delta);
-    if (out && out.ok) {
-      hc.version = out.version || hc.version;
-      delete hc.pendingLanSync;
-      delete hc.lanSyncPending;
-      saveState();
-      return { ok: true };
-    }
-  }
-
-  const expectedVersion =
-    snap && snap.expectedVersion != null ? Number(snap.expectedVersion) : Math.max(0, Number(hc.version || 1) - 1);
-  const baseData =
-    snap && snap.baseData != null
-      ? snap.baseData
-      : expectedVersion > 0
-        ? {}
-        : {};
-
-  const builder = createMutationBuilder('historiaClinica', patient.id).captureBase({
-    version: expectedVersion,
-    data: baseData,
-  });
-  changedKeys.forEach(function (k) {
-    if (hc.data[k] !== undefined) builder.set(k, hc.data[k]);
-  });
-
-  const mutation = builder.build({
-    roomId: roomId,
-    patientId: patient.id,
-    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
-    audit: {
-      sections: changedKeys,
-      source: snap && snap.source ? snap.source : 'pending-lan-sync',
-    },
-  });
-
   try {
-    const out = await lanPushHistoriaClinica(patient.id, mutation);
-    if (out && out.conflict) {
-      const body = out.body && typeof out.body === 'object' ? out.body : {};
-      if (body.serverVersion != null || body.serverData) {
-        applyServerHistoriaClinicaToPatient(
-          patient,
-          body.serverVersion != null ? body.serverVersion : hc.version,
-          body.serverData || hc.data
-        );
-      } else {
-        delete hc.pendingLanSync;
-        delete hc.lanSyncPending;
-        saveState();
-      }
-      return { ok: false, conflict: true, deferred: true };
-    }
-    if (out && out.ok) {
-      hc.version = out.version;
-      hc.data = migrateLegacyHistoriaData(out.data, CATALOGS);
-      delete hc.pendingLanSync;
-      delete hc.lanSyncPending;
-      saveState();
-      return { ok: true };
-    }
-  } catch (_e) {
+    const deltaOut = await tryDeltaHistoriaPush(patient, changedKeys, roomId, hc);
+    if (deltaOut) return deltaOut;
+    const fullOut = await tryFullHistoriaPush(patient, changedKeys, roomId, hc, snap);
+    if (fullOut) return fullOut;
+  } catch {
     /* host unreachable — keep pending */
   }
   return { ok: false, deferred: true };

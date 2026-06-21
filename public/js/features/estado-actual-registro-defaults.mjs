@@ -124,6 +124,33 @@ export function isGluPointInRegistroWindow(ms, now) {
  * @param {Date} [now]
  * @returns {Array<{ value: unknown, time: string }>}
  */
+/**
+ * @param {Array<{ recordedAt?: string, glucometrias?: Array<{ value?: unknown, time?: string }> }>} historial
+ * @param {Date} ref
+ * @param {Set<string>} seen
+ * @returns {Array<{ value: unknown, time: string, recordedAt: string }>}
+ */
+function collectGluFromHistRow(row, ref, seen) {
+  var out = [];
+  if (!row || typeof row !== 'object') return out;
+  var recordedAt = row.recordedAt != null ? String(row.recordedAt) : '';
+  var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
+  for (var j = 0; j < glus.length; j++) {
+    var g = glus[j];
+    if (!g || typeof g !== 'object') continue;
+    var val = /** @type {any} */ (g).value;
+    if (val == null || val === '') continue;
+    var time = /** @type {any} */ (g).time != null ? String(/** @type {any} */ (g).time) : '';
+    var ms = gluPointMs(recordedAt, time);
+    if (!isGluPointInRegistroWindow(ms, ref)) continue;
+    var key = String(val) + '@' + time + '@' + recordedAt;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ value: val, time: time, recordedAt: recordedAt });
+  }
+  return out;
+}
+
 export function collectGlucometriasForRegistroWindow(historial, now) {
   var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
   var hist = Array.isArray(historial) ? historial : [];
@@ -133,23 +160,7 @@ export function collectGlucometriasForRegistroWindow(historial, now) {
   var seen = new Set();
 
   for (var i = 0; i < hist.length; i++) {
-    var row = hist[i];
-    if (!row || typeof row !== 'object') continue;
-    var recordedAt = row.recordedAt != null ? String(row.recordedAt) : '';
-    var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
-    for (var j = 0; j < glus.length; j++) {
-      var g = glus[j];
-      if (!g || typeof g !== 'object') continue;
-      var val = /** @type {any} */ (g).value;
-      if (val == null || val === '') continue;
-      var time = /** @type {any} */ (g).time != null ? String(/** @type {any} */ (g).time) : '';
-      var ms = gluPointMs(recordedAt, time);
-      if (!isGluPointInRegistroWindow(ms, ref)) continue;
-      var key = String(val) + '@' + time + '@' + recordedAt;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ value: val, time: time, recordedAt: recordedAt });
-    }
+    out.push.apply(out, collectGluFromHistRow(hist[i], ref, seen));
   }
 
   out.sort(function (a, b) {

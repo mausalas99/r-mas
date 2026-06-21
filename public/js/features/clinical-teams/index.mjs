@@ -29,11 +29,7 @@ export {
 
 export { consumeClinicalTeamJoinFromUrl } from './teams-invite.mjs';
 
-import {
-  closeClinicalTeamsPanel,
-  openClinicalTeamsPanel,
-  refreshTeamsUiAfterChange,
-} from './teams-roster.mjs';
+import { refreshTeamsUiAfterChange } from './teams-roster.mjs';
 
 let teamsControlsWired = false;
 

@@ -16,7 +16,7 @@ function readAll() {
     if (!raw) return {};
     const o = JSON.parse(raw);
     return o && typeof o === 'object' ? o : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }

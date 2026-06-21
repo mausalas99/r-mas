@@ -5,13 +5,7 @@ import { readRpcSettings } from './clinical-settings.mjs';
 import { clinicalSessionContext } from './clinical-session-context.mjs';
 import { userIsOnCallForLanHost } from './clinico-access.mjs';
 import { mergeSalaGuardiaTodayRows } from './features/guardia-hoy-modal.mjs';
-import {
-  pickPreferredLanPeerHost as pickPeer,
-  prefersLanHosting,
-  isClinicalRankConfiguredForLan,
-  canLocalMacBeLanHost,
-  buildLocalLanHostMeta,
-} from './lan-host-rank.mjs';
+import { pickPreferredLanPeerHost as pickPeer, isClinicalRankConfiguredForLan, buildLocalLanHostMeta } from './lan-host-rank.mjs';
 
 export {
   prefersLanHosting,
@@ -39,7 +33,7 @@ export function resolveLocalOnCallGuardia() {
     );
     const rank = String(user?.rank || readRpcSettings()?.clinicalRank || '').trim();
     return userIsOnCallForLanHost(uid, rank, teams, new Date(), salaGuardiaToday);
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -68,7 +62,7 @@ export function getLocalLanHostMeta() {
       rankConfigured: true,
       startedAt,
     };
-  } catch (_e) {
+  } catch {
     return {
       rank: '',
       isProgramAdmin: false,
@@ -88,7 +82,9 @@ export async function syncLanHostClinicalMetaToDisk() {
   ) {
     return false;
   }
-  const { startedAt: _drop, rankConfigured: _rc, ...meta } = getLocalLanHostMeta();
+  const meta = { ...getLocalLanHostMeta() };
+  delete meta.startedAt;
+  delete meta.rankConfigured;
   meta.isOnCallGuardia = !!meta.isOnCallGuardia;
   try {
     const res = await window.electronAPI.syncLanHostClinicalMeta(meta);
@@ -96,7 +92,7 @@ export async function syncLanHostClinicalMetaToDisk() {
       _diskHostMeta = res.meta;
     }
     return !!(res && res.ok);
-  } catch (_e) {
+  } catch {
     return false;
   }
 }

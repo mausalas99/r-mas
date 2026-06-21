@@ -51,7 +51,7 @@ async function _fetchAndRegisterHealthAfterJoin(hostUrl, _teamCode) {
       source: 'health_poll',
     });
     setPinnedFingerprint(fp);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function persistLanClientConfig(hostUrl, teamCode) {
@@ -69,7 +69,7 @@ export function persistLanClientConfig(hostUrl, teamCode) {
     try {
       lanClient.disconnect();
       lanClient.connectSyncChannel();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
     void _fetchAndRegisterHealthAfterJoin(url, code);
   }
   return changed;
@@ -139,7 +139,7 @@ export async function lanFetchAuthed(path, opts) {
   var ct = '';
   try {
     ct = localStorage.getItem('rpc-lan-client-token') || '';
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (ct) {
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers, { 'X-Client-Token': ct });
@@ -172,7 +172,7 @@ async function resolveGuestBearerToken() {
   try {
     var guest = await window.electronAPI.getLanGuestBearer();
     if (guest && guest.ok && guest.code) return String(guest.code).trim();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return '';
 }
 
@@ -183,7 +183,7 @@ async function resolveEffectiveHostBearerToken() {
   try {
     var info = await window.electronAPI.getLanEffectiveTeamCode();
     if (info && info.ok && info.code) return String(info.code).trim();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return '';
 }
 
@@ -257,7 +257,7 @@ export function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
   persistLanClientConfig(url, code);
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return true;
 }
 

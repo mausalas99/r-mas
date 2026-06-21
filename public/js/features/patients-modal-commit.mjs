@@ -185,7 +185,7 @@ async function finalizeMobilePatientCommit(patient, fromBulkPreview) {
     if (typeof access.finalizeMobileLanPatientCensus === 'function') {
       await access.finalizeMobileLanPatientCensus();
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   var activeId = resolveTourActivePatientId(patient.id);
   if (fromBulkPreview) completeBulkPreviewPatientRegistration(activeId);
   else patientsBridge.selectPatient(activeId, { bypassIncomingBlock: true });

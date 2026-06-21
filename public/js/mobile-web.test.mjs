@@ -12,7 +12,7 @@ describe('mobile-web', () => {
   it('isMobileWeb es false sin flag', () => {
     try {
       localStorage.removeItem('rpc-mobile-mode');
-    } catch (_e) {}
+    } catch (_e) { void _e; }
     var g = typeof globalThis !== 'undefined' ? globalThis : null;
     if (g) delete g.__RPC_MOBILE_WEB__;
     if (typeof document !== 'undefined') {

@@ -126,7 +126,7 @@ export function resolveClinicalInviteLanHostUrl() {
     if (!host) return '';
     if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) return '';
     return host;
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -210,7 +210,7 @@ export function mountClinicalTeamInviteBrowserGate(code) {
         url.searchParams.delete('joinCode');
         url.searchParams.delete('clinicalTeam');
         window.history.replaceState({}, '', url.pathname + url.search + url.hash);
-      } catch (_e) {}
+      } catch (_e) { void _e; }
     });
   }
 }

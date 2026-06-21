@@ -44,7 +44,7 @@ async function clearConflictDraft(draftId) {
   if (!draftId) return;
   try {
     await deleteDraftConflict(draftId);
-  } catch (_e) { /* ignored */ }
+  } catch { /* ignored */ }
   void renderLanPanel();
 }
 
@@ -60,7 +60,7 @@ async function discardDraftsForConflictEntity(payload) {
   var drafts = [];
   try {
     drafts = await listDraftConflicts();
-  } catch (_eList) {
+  } catch {
     return;
   }
   var roomId = payload.roomId || null;
@@ -69,7 +69,7 @@ async function discardDraftsForConflictEntity(payload) {
     if (!shouldDiscardDraft(d, payload, roomId)) continue;
     try {
       await deleteDraftConflict(d.id);
-    } catch (_eDel) { /* ignored */ }
+    } catch { /* ignored */ }
   }
 }
 
@@ -240,7 +240,7 @@ export async function appendLanConflictDraftsSection(root) {
   var draftCount = 0;
   try {
     draftCount = await countDraftConflicts();
-  } catch (_eList) {
+  } catch {
     draftCount = 0;
   }
   if (!draftCount) return;
@@ -358,8 +358,7 @@ async function applyLwwConflictLocally(payload) {
   }
 }
 
-export async function handleSyncConflict(payload, options) {
-  options = options || {};
+export async function handleSyncConflict(payload, _options) {
   await applyLwwConflictLocally(payload);
   void renderLanPanel();
 }

@@ -40,7 +40,7 @@ function setLabOutputPrefs(partial) {
   if (partial.quickLabOutput != null) cur.quickLabOutput = !!partial.quickLabOutput;
   try {
     localStorage.setItem(LAB_OUTPUT_PREFS_KEY, JSON.stringify(cur));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return cur;
 }
 

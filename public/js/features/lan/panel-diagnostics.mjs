@@ -210,7 +210,7 @@ async function buildLanPreflightFromDeps(panelDeps, diagDeps, diag) {
     try {
       var prefixes = await resolveLocalLanSubnetPrefixes(hostUrl);
       subnetMatch = isHostOnCurrentSubnets(hostUrl, prefixes);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   return {
     phase: diag.phase,
@@ -270,11 +270,11 @@ function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
   details.className = 'rpc-disclosure lan-connect-card lan-sync-diagnostics-panel';
   try {
     details.open = sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1';
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   details.addEventListener('toggle', function () {
     try {
       sessionStorage.setItem(LAN_SYNC_DIAG_OPEN_KEY, details.open ? '1' : '0');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   });
   var sum = document.createElement('summary');
   sum.className = 'rpc-disclosure__summary';

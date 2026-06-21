@@ -1,4 +1,5 @@
 /** Help center articles and quick help modal. */
+import { esc } from '../patients-html.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { closeSettingsDropdown } from './settings-dropdown.mjs';
 
@@ -242,7 +243,7 @@ function openQuickHelp(preselectId) {
   } else {
     selectHelpArticle(helpCurrentArticleId);
   }
-  syncLearnHubContinueVisibility();
+  settingsHelpBridge.syncLearnHubContinueVisibility();
   setTimeout(function(){ if (input) input.focus(); }, 40);
 }
 

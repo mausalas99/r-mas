@@ -126,7 +126,7 @@ export function recoverPresentationPatientsOnBoot() {
       clearPitchDemo(state);
       recovered = true;
     }
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   if (!recovered && tryRecoverPatientsFromPitchSandboxIfNeeded(state)) {
     recovered = true;
   }

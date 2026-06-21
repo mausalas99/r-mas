@@ -18,7 +18,7 @@ function setUpdateChannel(channel) {
   localStorage.setItem('rpc-settings', JSON.stringify(s));
   syncUpdateChannelUI();
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
-    try { window.electronAPI.setUpdateChannel(normalized); } catch { /* ignore */ }
+    try { window.electronAPI.setUpdateChannel(normalized); } catch (_e) { void _e; }
   }
   if (previous !== normalized) {
     rt.showToast(
@@ -29,7 +29,7 @@ function setUpdateChannel(channel) {
     );
     if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
       setTimeout(function () {
-        try { window.electronAPI.checkForUpdates(); } catch { /* ignore */ }
+        try { window.electronAPI.checkForUpdates(); } catch (_e) { void _e; }
       }, 250);
     }
   }
@@ -66,10 +66,10 @@ function migrateUpdateChannelToStableDefault() {
   s.updateChannel = 'estable';
   localStorage.setItem('rpc-settings', JSON.stringify(s));
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
-    try { window.electronAPI.setUpdateChannel('estable'); } catch { /* ignore */ }
+    try { window.electronAPI.setUpdateChannel('estable'); } catch (_e) { void _e; }
     if (typeof window.electronAPI.checkForUpdates === 'function') {
       setTimeout(function () {
-        try { window.electronAPI.checkForUpdates(); } catch { /* ignore */ }
+        try { window.electronAPI.checkForUpdates(); } catch (_e) { void _e; }
       }, 300);
     }
   }
@@ -162,7 +162,7 @@ function sendUpdateTelemetry(result, versionHint) {
         keepalive: true,
         mode: 'no-cors',
       }).catch(function () {});
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }).catch(function () {});
 }
 

@@ -3,7 +3,7 @@
 export function prefersReducedMotion() {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -11,7 +11,7 @@ export function prefersReducedMotion() {
 export function shakeField(el) {
   if (!el || !(el instanceof HTMLElement)) return;
   if (prefersReducedMotion()) {
-    try { el.focus({ preventScroll: true }); } catch (_e) {}
+    try { el.focus({ preventScroll: true }); } catch (_e) { void _e; }
     return;
   }
   el.classList.remove('field-shake');
@@ -23,7 +23,7 @@ export function shakeField(el) {
     el.classList.remove('field-shake');
   }
   el.addEventListener('animationend', onEnd);
-  try { el.focus({ preventScroll: true }); } catch (_e) {}
+  try { el.focus({ preventScroll: true }); } catch (_e) { void _e; }
 }
 
 export function shakeFields(els) {

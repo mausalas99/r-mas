@@ -24,6 +24,10 @@ function entryForSubstance(entries, substanceId) {
   });
 }
 
+function entryLabel(entry) {
+  return entry.substanceId ? TOXICOMANIAS_SUBSTANCES[entry.substanceId] : entry.customLabel;
+}
+
 function entryHtml(entry, label) {
   return (
     '<div class="hc-tox-entry" data-tox-entry-id="' +
@@ -48,16 +52,8 @@ function entryHtml(entry, label) {
   );
 }
 
-/**
- * @param {HTMLElement} container
- * @param {object} apnp
- * @param {(nextApnp: object) => void} onChange
- */
-export function mountToxicomaniasPanel(container, apnp, onChange) {
-  if (!container) return;
-  apnp = apnp && typeof apnp === 'object' ? apnp : {};
-  let entries = normalizeToxicomaniasDetail(apnp).entries.slice();
-  const options = catalogOptions();
+/** @param {Array<object>} options @param {Array<object>} entries */
+function buildToxicomaniasPanelHtml(options, entries) {
   const activeIds = new Set(
     entries.map(function (e) {
       return e.substanceId;
@@ -80,16 +76,12 @@ export function mountToxicomaniasPanel(container, apnp, onChange) {
       '</span></label>';
   });
   html += '</div>';
-
   html += '<div class="hc-tox-entries" id="hc-tox-entries-host">';
   entries.forEach(function (entry) {
-    const label = entry.substanceId
-      ? TOXICOMANIAS_SUBSTANCES[entry.substanceId]
-      : entry.customLabel;
+    const label = entryLabel(entry);
     if (label) html += entryHtml(entry, label);
   });
   html += '</div>';
-
   html +=
     '<div class="hc-app-custom-row hc-tox-custom-row">' +
     '<div class="field-group hc-app-custom-field">' +
@@ -98,12 +90,51 @@ export function mountToxicomaniasPanel(container, apnp, onChange) {
     '</div>' +
     '<button type="button" class="btn-med-secondary" id="hc-tox-add-custom">Agregar</button>' +
     '</div></div>';
+  return html;
+}
 
-  container.innerHTML = html;
+/** @param {HTMLElement} container @param {Array<object>} entries @param {() => void} emit @param {(next: object[]) => void} setEntries */
+function wireToxicomaniasEntries(container, entries, emit, setEntries) {
+  container.querySelectorAll('[data-tox-field]').forEach(function (el) {
+    el.oninput = function () {
+      const row = el.closest('[data-tox-entry-id]');
+      const id = row.getAttribute('data-tox-entry-id');
+      const entry = entries.find(function (e) {
+        return e.id === id;
+      });
+      if (!entry) return;
+      entry[el.getAttribute('data-tox-field')] = el.value;
+      emit();
+    };
+  });
+  container.querySelectorAll('[data-tox-remove]').forEach(function (btn) {
+    btn.onclick = function () {
+      const id = btn.getAttribute('data-tox-remove');
+      const removed = entries.find(function (e) {
+        return e.id === id;
+      });
+      setEntries(entries.filter(function (e) {
+        return e.id !== id;
+      }));
+      if (removed && removed.substanceId) {
+        const chip = container.querySelector('[data-tox-substance="' + removed.substanceId + '"]');
+        if (chip) chip.checked = false;
+      }
+      emit();
+    };
+  });
+}
+
+/** @param {HTMLElement} container @param {object} apnp @param {(nextApnp: object) => void} onChange */
+export function mountToxicomaniasPanel(container, apnp, onChange) {
+  if (!container) return;
+  apnp = apnp && typeof apnp === 'object' ? apnp : {};
+  let entries = normalizeToxicomaniasDetail(apnp).entries.slice();
+  const options = catalogOptions();
+  container.innerHTML = buildToxicomaniasPanelHtml(options, entries);
 
   function emit() {
-    const next = Object.assign({}, apnp, { toxicomaniasEntries: entries });
-    onChange(next);
+    onChange(Object.assign({}, apnp, { toxicomaniasEntries: entries }));
   }
 
   function renderEntries() {
@@ -111,48 +142,20 @@ export function mountToxicomaniasPanel(container, apnp, onChange) {
     if (!host) return;
     host.innerHTML = entries
       .map(function (entry) {
-        const label = entry.substanceId
-          ? TOXICOMANIAS_SUBSTANCES[entry.substanceId]
-          : entry.customLabel;
+        const label = entryLabel(entry);
         return label ? entryHtml(entry, label) : '';
       })
       .join('');
-    wireEntries();
+    wireToxicomaniasEntries(container, entries, emit, (next) => {
+      entries = next;
+      renderEntries();
+    });
   }
 
-  function wireEntries() {
-    container.querySelectorAll('[data-tox-field]').forEach(function (el) {
-      el.oninput = function () {
-        const row = el.closest('[data-tox-entry-id]');
-        const id = row.getAttribute('data-tox-entry-id');
-        const entry = entries.find(function (e) {
-          return e.id === id;
-        });
-        if (!entry) return;
-        entry[el.getAttribute('data-tox-field')] = el.value;
-        emit();
-      };
-    });
-    container.querySelectorAll('[data-tox-remove]').forEach(function (btn) {
-      btn.onclick = function () {
-        const id = btn.getAttribute('data-tox-remove');
-        const removed = entries.find(function (e) {
-          return e.id === id;
-        });
-        entries = entries.filter(function (e) {
-          return e.id !== id;
-        });
-        if (removed && removed.substanceId) {
-          const chip = container.querySelector(
-            '[data-tox-substance="' + removed.substanceId + '"]'
-          );
-          if (chip) chip.checked = false;
-        }
-        renderEntries();
-        emit();
-      };
-    });
-  }
+  wireToxicomaniasEntries(container, entries, emit, (next) => {
+    entries = next;
+    renderEntries();
+  });
 
   container.querySelectorAll('[data-tox-substance]').forEach(function (el) {
     el.onchange = function () {
@@ -195,6 +198,4 @@ export function mountToxicomaniasPanel(container, apnp, onChange) {
       emit();
     };
   }
-
-  wireEntries();
 }

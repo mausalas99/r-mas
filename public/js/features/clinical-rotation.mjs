@@ -8,6 +8,7 @@ import {
 } from '../clinical-access-runtime.mjs';
 
 import { canConfigureRotation as userCanConfigureRotation } from '../clinical-privileges.mjs';
+import { submitRotationConfigForm } from './clinical-rotation-config-submit.mjs';
 
 /** @param {string|Date|undefined} value */
 function toMillis(value) {
@@ -98,7 +99,6 @@ export function renderIncomingStrip(assignments, opts = {}) {
       const id = String(row.patient_id || row.id || '');
       const { bed, dx } = assignmentChipLabel(row);
       const locked = isChartLockedForPatient(row, now);
-      const effectiveLabel = formatEffectiveLabel(String(row.effective_at || ''));
       return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id)}" data-effective-at="${escapeAttr(String(row.effective_at || ''))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ', bloqueado hasta vigencia' : ''}">
         <span class="guardia-incoming-chip-bed">${escapeHtml(bed)}</span>
         <span class="guardia-incoming-chip-dx">${escapeHtml(dx)}</span>
@@ -174,28 +174,8 @@ function wireRotationConfigFormOnce() {
       toast('Solo R4 o Admin pueden configurar la rotación.', 'error');
       return;
     }
-    const monthEndAt = String(document.getElementById('rotation-config-month-end')?.value || '').trim();
-    const effectiveAt = String(document.getElementById('rotation-config-effective')?.value || '').trim();
-    const previewDays = Number(document.getElementById('rotation-config-preview-days')?.value || 2);
-    if (!monthEndAt || !effectiveAt) {
-      toast('Indica fin de mes y fecha de vigencia.', 'error');
-      return;
-    }
-    const api = dbApi();
-    if (!api || typeof api.dbRotationCycleUpsert !== 'function') {
-      toast('Base de datos no disponible.', 'error');
-      return;
-    }
-    const res = await api.dbRotationCycleUpsert({
-      monthEndAt,
-      effectiveAt,
-      previewDays,
-      createdBy: clinicalSessionContext.user?.user_id,
-    });
-    if (!res || res.ok === false) {
-      toast(res?.error || 'No se guardó la configuración.', 'error');
-      return;
-    }
+    const res = await submitRotationConfigForm(toast);
+    if (!res.ok) return;
     closeRotationConfigModal();
     toast('Configuración de rotación guardada.', 'success');
     document.dispatchEvent(new CustomEvent('rpc-guardia-rotation-changed'));

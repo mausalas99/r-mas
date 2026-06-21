@@ -44,14 +44,14 @@ export async function copyToClipboardSafe(text) {
   ) {
     try {
       if (await window.electronAPI.writeClipboardText(t)) return true;
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(t);
       return true;
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   try {
     var ta = document.createElement("textarea");
     ta.value = t;

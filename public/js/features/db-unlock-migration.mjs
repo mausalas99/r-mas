@@ -26,7 +26,7 @@ export function clearMigratedLocalStorageKeys(keys) {
   for (var i = 0; i < keys.length; i++) {
     try {
       localStorage.removeItem(keys[i]);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
 }
 
@@ -40,7 +40,7 @@ export async function runMigrationProbe(electron) {
     if (res && res.ok !== false) {
       return { needed: !!res.needed, hasHostJson: !!res.hasHostJson };
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return { needed: false, hasHostJson: false };
 }
 

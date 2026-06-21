@@ -1,7 +1,7 @@
 // public/js/lan-sse-client.test.mjs
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readEventStreamLines, parseSseLine } from './lan-sse-client.mjs';
+import { parseSseLine } from './lan-sse-client.mjs';
 
 describe('parseSseLine', () => {
   it('parses a data line', () => {

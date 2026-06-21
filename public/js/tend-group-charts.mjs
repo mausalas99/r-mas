@@ -16,9 +16,7 @@ export function createTendGroupChartsApi(deps, state, tableApi) {
     if (panelSortableRef.current) {
       try {
         if (typeof panelSortableRef.current.destroy === 'function') panelSortableRef.current.destroy();
-      } catch {
-        /* ignore */
-      }
+      } catch (_e) { void _e; }
       panelSortableRef.current = null;
     }
   }

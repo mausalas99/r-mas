@@ -112,6 +112,43 @@ export function renderOrphanEntregasStrip(rows, opts = {}) {
   });
 }
 
+/** @param {string} patientId */
+async function tryRestoreOrphanPatientFromLan(patientId) {
+  if (patientInLocalCensus(patientId)) return;
+  const lan = await import('./features/lan-sync.mjs');
+  if (typeof lan.getActiveLiveSyncRoomId !== 'function' || !lan.getActiveLiveSyncRoomId()) return;
+  const restored =
+    typeof lan.restoreLanPatientFromHost === 'function'
+      ? await lan.restoreLanPatientFromHost(patientId)
+      : null;
+  if (restored?.ok) {
+    toast('Expediente recuperado del anfitrión.', 'success');
+    return;
+  }
+  if (restored?.error === 'patient_not_on_host') {
+    toast('El anfitrión no tiene este expediente; se abre la entrega con datos limitados.', 'warn');
+    return;
+  }
+  if (restored && !restored.ok) {
+    toast('No se pudo recuperar el expediente del anfitrión.', 'warn');
+  }
+}
+
+/** @param {string} patientId */
+async function openEntregaForOrphan(patientId, guardiaId) {
+  const entrega = await import('./features/clinical-entrega.mjs');
+  if (typeof entrega.openEntregaModal !== 'function') return;
+  entrega.openEntregaModal({ patientId, guardiaId });
+}
+
+/** @param {string} patientId */
+function selectOrphanPatientIfLocal(patientId) {
+  if (!patientInLocalCensus(patientId)) return;
+  if (typeof window.selectPatient === 'function') {
+    window.selectPatient(patientId);
+  }
+}
+
 /** @param {HTMLButtonElement} btn @param {Record<string, unknown>|null} settings */
 async function openOrphanEntrega(btn, settings) {
   const patientId = String(btn.dataset.patientId || '').trim();
@@ -120,38 +157,53 @@ async function openOrphanEntrega(btn, settings) {
 
   btn.disabled = true;
   try {
-    if (!patientInLocalCensus(patientId)) {
-      const lan = await import('./features/lan-sync.mjs');
-      if (typeof lan.getActiveLiveSyncRoomId === 'function' && lan.getActiveLiveSyncRoomId()) {
-        const restored =
-          typeof lan.restoreLanPatientFromHost === 'function'
-            ? await lan.restoreLanPatientFromHost(patientId)
-            : null;
-        if (restored?.ok) {
-          toast('Expediente recuperado del anfitrión.', 'success');
-        } else if (restored?.error === 'patient_not_on_host') {
-          toast('El anfitrión no tiene este expediente; se abre la entrega con datos limitados.', 'warn');
-        } else if (restored && !restored.ok) {
-          toast('No se pudo recuperar el expediente del anfitrión.', 'warn');
-        }
-      }
-    }
-
-    const entrega = await import('./features/clinical-entrega.mjs');
-    if (typeof entrega.openEntregaModal === 'function') {
-      entrega.openEntregaModal({ patientId, guardiaId });
-    }
-
-    if (patientInLocalCensus(patientId)) {
-      if (typeof window.selectPatient === 'function') {
-        window.selectPatient(patientId);
-      }
-    }
+    await tryRestoreOrphanPatientFromLan(patientId);
+    await openEntregaForOrphan(patientId, guardiaId);
+    selectOrphanPatientIfLocal(patientId);
   } finally {
     btn.disabled = false;
     await refreshGuardiaCensusFromDb(settings);
     syncOrphanEntregasStrip(settings);
   }
+}
+
+/** @param {string} patientId @returns {Promise<boolean>} */
+async function purgeOrphanPatientOnHost(patientId) {
+  const lan = await import('./features/lan-sync.mjs');
+  const onLan =
+    typeof lan.getActiveLiveSyncRoomId === 'function' && !!lan.getActiveLiveSyncRoomId();
+  if (!onLan || typeof lan.purgeLanPatientFromHost !== 'function') {
+    toast('Sin conexión ⇄; solo se liberará la entrega en esta Mac.', 'info');
+    return false;
+  }
+
+  const purge = await lan.purgeLanPatientFromHost(patientId);
+  if (purge?.ok) {
+    if (!purge.hadHostRow) {
+      toast('No había expediente en el anfitrión; se liberará solo la entrega.', 'info');
+    }
+  } else if (purge?.error === 'owned_by_other_client') {
+    toast('El expediente pertenece a otro equipo LAN; solo se liberará la entrega local.', 'info');
+  } else if (purge?.error === 'not_configured') {
+    toast('Sin conexión ⇄ activa; solo se liberará la entrega local.', 'warn');
+  } else {
+    toast('No se pudo borrar del anfitrión; se liberará la entrega local.', 'warn');
+  }
+
+  if (typeof lan.pushClinicalOpsLanNow === 'function') {
+    await lan.pushClinicalOpsLanNow();
+  }
+  return !!purge?.ok;
+}
+
+/** @param {string} patientId */
+async function removeOrphanPatientLocally(patientId) {
+  if (!patientInLocalCensus(patientId)) return;
+  const lanMod = await import('./features/lan-sync.mjs');
+  if (typeof lanMod.removePatientLocally === 'function') {
+    lanMod.removePatientLocally(patientId);
+  }
+  saveState({ immediate: true });
 }
 
 /** @param {HTMLButtonElement} btn @param {Record<string, unknown>|null} settings */
@@ -181,37 +233,8 @@ async function deleteOrphanFromServer(btn, settings) {
       return;
     }
 
-    const lan = await import('./features/lan-sync.mjs');
-    const onLan =
-      typeof lan.getActiveLiveSyncRoomId === 'function' && !!lan.getActiveLiveSyncRoomId();
-    if (onLan && typeof lan.purgeLanPatientFromHost === 'function') {
-      const purge = await lan.purgeLanPatientFromHost(patientId);
-      if (purge?.ok) {
-        hostPurged = true;
-        if (!purge.hadHostRow) {
-          toast('No había expediente en el anfitrión; se liberará solo la entrega.', 'info');
-        }
-      } else if (purge?.error === 'owned_by_other_client') {
-        toast('El expediente pertenece a otro equipo LAN; solo se liberará la entrega local.', 'info');
-      } else if (purge?.error === 'not_configured') {
-        toast('Sin conexión ⇄ activa; solo se liberará la entrega local.', 'warn');
-      } else {
-        toast('No se pudo borrar del anfitrión; se liberará la entrega local.', 'warn');
-      }
-      if (typeof lan.pushClinicalOpsLanNow === 'function') {
-        await lan.pushClinicalOpsLanNow();
-      }
-    } else {
-      toast('Sin conexión ⇄; solo se liberará la entrega en esta Mac.', 'info');
-    }
-
-    if (patientInLocalCensus(patientId)) {
-      const lanMod = await import('./features/lan-sync.mjs');
-      if (typeof lanMod.removePatientLocally === 'function') {
-        lanMod.removePatientLocally(patientId);
-      }
-      saveState({ immediate: true });
-    }
+    hostPurged = await purgeOrphanPatientOnHost(patientId);
+    await removeOrphanPatientLocally(patientId);
 
     toast(
       hostPurged ? 'Paciente eliminado del servidor y entrega liberada.' : 'Entrega liberada.',

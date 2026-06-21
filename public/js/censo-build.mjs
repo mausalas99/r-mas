@@ -1,17 +1,8 @@
-import { sortLabHistoryChronological } from './tend-core.mjs';
-import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
-import { formatLabsForCensoCompact } from './censo-labs-format.mjs';
+import { buildPatientSections } from './censo-build-sections.mjs';
+import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
-import {
-  ensurePatientDiagnosticos,
-  diagnosticosTextForCenso,
-} from './patient-diagnosticos.mjs';
-import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
-import { formatAccesosForCenso } from './patient-accesos.mjs';
-import { formatPendientesForCenso } from './censo-pendientes-format.mjs';
-import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
-import { formatCensoSignosIoFromPatient } from './censo-signos-format.mjs';
+import { ensurePatientDiagnosticos } from './patient-diagnosticos.mjs';
 import { patientBedSortKey, comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
 
 /** @param {Date} [date] */
@@ -48,67 +39,6 @@ export function sortPatientsForCensus(patients) {
 
 export { patientBedSortKey };
 
-function splitLines(text) {
-  return String(text || '')
-    .split(/\r?\n/)
-    .map(function (l) {
-      return l.trim();
-    })
-    .filter(Boolean);
-}
-
-function buildPatientSections(patient, ctx) {
-  var pid = String(patient.id);
-  var sections = [];
-
-  var dx = diagnosticosTextForCenso(patient.diagnosticosList);
-  if (dx && dx !== '—') {
-    sections.push({ label: 'Diagnósticos', lines: [dx] });
-  }
-
-  var meds =
-    String(patient.censoMedsText || '').trim() ||
-    formatCensoMedsFromReceta(/** @type {{ items?: unknown[] }} */ (ctx.medRecetaByPatient[pid]));
-  var medLines = splitLines(meds).slice(0, 6);
-  if (medLines.length) {
-    sections.push({ label: 'ATB / Medicamentos', lines: medLines });
-  }
-
-  var signosIo = formatCensoSignosIoFromPatient(patient);
-  if (signosIo.signosCol || signosIo.ioCol) {
-    /** @type {string[]} */
-    var signosLines = [];
-    if (signosIo.signosCol) signosLines.push(signosIo.signosCol);
-    if (signosIo.ioCol) signosLines.push(signosIo.ioCol);
-    sections.push({ label: 'Signos / I-O', lines: signosLines });
-  }
-
-  var labLines = formatLabsForCensoCompact(ctx.labHistoryByPatient[pid] || []);
-  if (labLines.length) {
-    sections.push({ label: 'Laboratorios', lines: labLines });
-  }
-
-  var acc = formatAccesosCell(patient);
-  if (acc && acc !== '—') {
-    sections.push({ label: 'Accesos', lines: [acc] });
-  }
-
-  var cult = formatCultivosForCenso(ctx.labHistoryByPatient[pid] || []);
-  if (cult && cult !== '—') {
-    sections.push({ label: 'Cultivos', lines: cult.split(/\n\n+/).filter(Boolean) });
-  }
-
-  var pendLines = formatPendientesForCenso(ctx.todosByPatient[pid] || []);
-  if (pendLines.length) {
-    sections.push({
-      label: 'Pendientes',
-      lines: pendLines,
-    });
-  }
-
-  return { sections: sections, signosIo: signosIo };
-}
-
 /** @param {Array<{ label: string, lines: string[] }>} sections */
 function flattenRowForCompactPdf(sections) {
   var pick = function (label) {
@@ -128,10 +58,6 @@ function flattenRowForCompactPdf(sections) {
     cultivos: pick('Cultivos'),
     pendientes: pick('Pendientes'),
   };
-}
-
-function formatAccesosCell(patient) {
-  return formatAccesosForCenso(patient);
 }
 
 /** Quita ceros a la izquierda; cama 0 no existe (vacío). */

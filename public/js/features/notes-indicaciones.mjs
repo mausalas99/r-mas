@@ -281,6 +281,38 @@ function buildExtraTemplatesSelectorHtml() {
     '</div>';
 }
 
+function indicaHasExistingContent(target) {
+  return (
+    (target.dieta && target.dieta.trim()) ||
+    (target.cuidados && target.cuidados.trim()) ||
+    (target.medicamentos && target.medicamentos.trim())
+  );
+}
+
+function resolveExtraTemplateMergeMode(hasExisting) {
+  if (!hasExisting) return 'replace';
+  var ans = prompt(
+    'Ya hay contenido en las indicaciones.\nEscribe R = reemplazar, A = agregar al final, C = cancelar.',
+    'A'
+  );
+  var v = String(ans || '').trim().toUpperCase();
+  if (v === 'C' || v === '') return null;
+  return v === 'R' ? 'replace' : 'append';
+}
+
+function mergeIndicaField(current, addition, mode) {
+  if (!addition) return current || '';
+  if (mode === 'replace') return addition;
+  if (!current) return addition;
+  return current.replace(/\s+$/, '') + '\n' + addition;
+}
+
+function applyIndicaTemplateFields(target, tmpl, mode) {
+  target.dieta = mergeIndicaField(target.dieta || '', tmpl.dieta || '', mode);
+  target.cuidados = mergeIndicaField(target.cuidados || '', tmpl.cuidados || '', mode);
+  target.medicamentos = mergeIndicaField(target.medicamentos || '', tmpl.medicamentos || '', mode);
+}
+
 function applyExtraTemplateFromIndica() {
   var sel = document.getElementById('indica-extra-tmpl-select');
   if (!sel || !sel.value) { rt.showToast('Elige una plantilla', 'error'); return; }
@@ -288,25 +320,9 @@ function applyExtraTemplateFromIndica() {
   var tmpl = ((rt.getSettings() || {}).extraTemplates || []).find(function(t){ return t.id === sel.value; });
   if (!tmpl) return;
   var target = indicaciones[aid()];
-  var hasExisting = (target.dieta && target.dieta.trim()) ||
-    (target.cuidados && target.cuidados.trim()) ||
-    (target.medicamentos && target.medicamentos.trim());
-  var mode = 'replace';
-  if (hasExisting) {
-    var ans = prompt('Ya hay contenido en las indicaciones.\nEscribe R = reemplazar, A = agregar al final, C = cancelar.', 'A');
-    var v = String(ans || '').trim().toUpperCase();
-    if (v === 'C' || v === '') return;
-    mode = (v === 'R') ? 'replace' : 'append';
-  }
-  function merge(current, addition) {
-    if (!addition) return current || '';
-    if (mode === 'replace') return addition;
-    if (!current) return addition;
-    return current.replace(/\s+$/, '') + '\n' + addition;
-  }
-  target.dieta = merge(target.dieta || '', tmpl.dieta || '');
-  target.cuidados = merge(target.cuidados || '', tmpl.cuidados || '');
-  target.medicamentos = merge(target.medicamentos || '', tmpl.medicamentos || '');
+  var mode = resolveExtraTemplateMergeMode(indicaHasExistingContent(target));
+  if (!mode) return;
+  applyIndicaTemplateFields(target, tmpl, mode);
   saveState();
   renderIndicaForm();
   rt.addAuditEntry('extra-template-apply', 'ok', 1, tmpl.label || '');

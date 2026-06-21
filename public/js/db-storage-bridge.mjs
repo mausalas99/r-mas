@@ -71,14 +71,14 @@ function parseBlobJson(raw, fallback) {
   if (typeof raw !== 'string') {
     try {
       return raw == null ? fallback : raw;
-    } catch (_e) {
+    } catch {
       return fallback;
     }
   }
   try {
     const parsed = JSON.parse(raw);
     return parsed == null ? fallback : parsed;
-  } catch (_e) {
+  } catch {
     return fallback;
   }
 }

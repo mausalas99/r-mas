@@ -48,7 +48,7 @@ export function createMutationRegistry(deps = {}) {
     if (handler) {
       try {
         await handler(patientId, payload);
-      } catch (_err) {
+      } catch {
         const kind = domainKinds.get(String(domain));
         if (kind) {
           const roomId = getActiveRoomIdRef();

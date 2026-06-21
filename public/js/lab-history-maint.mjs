@@ -231,11 +231,11 @@ function refreshLabHistoryUiAfterMaint() {
   if (aid) {
     try {
       maintRt.renderLabHistoryPanel();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   try {
     maintRt.refreshTendenciasOrCultivosPanel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function runLabHistoryPostSaveMaintenance() {
@@ -281,7 +281,7 @@ export function runLabHistoryPostSaveMaintenance() {
   });
   try {
     window.__rpcLabAudit = report;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   var noise =
     report.reprocessedSetCount > 0 ||
     report.exactDuplicates.length > 0 ||
@@ -342,7 +342,7 @@ export function installLabHistoryAuditHook() {
       }
       return window.__rpcLabAudit;
     };
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 // ── Lab History Migration ─────────────────────────────────────────

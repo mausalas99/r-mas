@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-21 | Debt Phase 5c+6 + baseline refresh | `scripts/metrics/baseline.json`, `lazy-feature-routes-*`, LAN/interno god splits, `fix-mechanical-eslint.mjs --full` | `lint:tier1:full` exit 0; `totalScore` 31408→50 (boot graph structural); boot P5c deferrals complete. |
 | 2026-06-20 | SQLCipher single runtime (Electron-as-Node tests) | `scripts/run-with-electron-node.mjs`, `package.json`, `test-manifest.mjs`, `CLAUDE.md`, `project-context.mdc` | Removed pretest/posttest ABI swap; `npm test` / `test:one` run under Electron Node 24 (abi 145) — same `.node` as app. |
 | 2026-06-20 | SQLCipher native ABI root fix | `lib/native-runtime-probe.js`, `scripts/lib/sqlcipher-native.mjs`, `rebuild-native-db.mjs`, `ensure-native-db-for-node.mjs`, `fetch-sqlite-electron.mjs`, `package.json` | Probe opens `:memory:` (lazy .node load); Electron binary cached; prestart strict restore. |
 | 2026-06-20 | Hallmark UI audit tracks 1–4 | `public/tokens.css`, `public/styles/{modals,layout,soft-ui,lab,pase-board}.css`, `public/interno/`, `estado-actual-*`, `command-palette.mjs`, `todos.mjs`, `guardia-vitals-feed.mjs` | Tracks 1–4 shipped: scrim/z-index/dvh, radius tiers, lab/pase hex→tokens (0 hex), empty-state parity; `build:ui:check` + `metrics:check` OK. |

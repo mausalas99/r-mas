@@ -88,7 +88,7 @@ export const prefsStorageMethods = {
         return;
       }
       localStorage.setItem('rpc-lan-shift-pin', code);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   },
 
   getHostPatientMap() {
@@ -126,7 +126,7 @@ export const prefsStorageMethods = {
   saveLanHideDisconnectBanner(hide) {
     try {
       localStorage.setItem('rpc-lan-hide-disconnect-banner', hide ? '1' : '0');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   },
 
   /** Aviso no bloqueante cuando LWW sobrescribe un cambio concurrente en la sala. */
@@ -143,6 +143,6 @@ export const prefsStorageMethods = {
   setLanLwwOverwriteToast(enabled) {
     try {
       localStorage.setItem('rpc-lan-lww-overwrite-toast', enabled ? '1' : '0');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   },
 };

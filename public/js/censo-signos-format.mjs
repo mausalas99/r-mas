@@ -67,14 +67,18 @@ function formatEvacShort(evac) {
  * @param {number} [balTurno]
  * @returns {string}
  */
-function formatBalanceShort(io, balTurno) {
-  io = io && typeof io === 'object' ? io : {};
-  var hasIo =
+function ioSnapshotHasContent(io) {
+  return (
     (io.ing != null && io.ing !== '') ||
     (io.egr != null && io.egr !== '') ||
     (Array.isArray(io.egrParts) && io.egrParts.length > 0) ||
-    (io.evac != null && io.evac !== '');
-  if (!hasIo) return '';
+    (io.evac != null && io.evac !== '')
+  );
+}
+
+function formatBalanceShort(io, balTurno) {
+  io = io && typeof io === 'object' ? io : {};
+  if (!ioSnapshotHasContent(io)) return '';
 
   if (balTurno != null && balTurno !== '' && Number.isFinite(Number(balTurno))) {
     var n = Number(balTurno);
@@ -86,6 +90,46 @@ function formatBalanceShort(io, balTurno) {
   }
   if (ioNumericEgressTotal(io) == null) return 'NC';
   return '';
+}
+
+function appendCensoVitalLines(lines, v) {
+  if (v.temp != null && v.temp !== '') lines.push('T°: ' + v.temp + ' °C');
+  if (v.fc != null && v.fc !== '') lines.push('FC: ' + v.fc + ' LPM');
+  if (v.fr != null && v.fr !== '') lines.push('FR: ' + v.fr + ' RPM');
+  if (v.tas != null || v.tad != null) {
+    lines.push('TA: ' + (v.tas != null && v.tas !== '' ? v.tas : '—') + '/' + (v.tad != null && v.tad !== '' ? v.tad : '—') + ' MMHG');
+  }
+}
+
+function resolveCensoGlucometrias(snapshot) {
+  if (snapshot && Array.isArray(snapshot.glucometrias) && snapshot.glucometrias.length) {
+    return snapshot.glucometrias;
+  }
+  if (snapshot && Array.isArray(snapshot.bombaInsulina) && snapshot.bombaInsulina.length) {
+    return snapshot.bombaInsulina;
+  }
+  return [];
+}
+
+function appendCensoGluLine(lines, glu) {
+  if (!glu.length) return;
+  var vals = glu
+    .map(function (g) {
+      return g && g.value != null && g.value !== '' ? String(g.value) : '';
+    })
+    .filter(Boolean)
+    .join(', ');
+  if (vals) lines.push('DXT: ' + vals + ' MG/DL');
+}
+
+function appendCensoSatLine(lines, v, ctx) {
+  if (v.sat == null || v.sat === '') return;
+  var soporteKey = ctx.soporte != null ? String(ctx.soporte).trim() : '';
+  var soporte =
+    SOPORTE_LABEL[soporteKey] ||
+    (ctx.soporteHint ? toEaSalidaText(ctx.soporteHint) : '') ||
+    SOPORTE_LABEL['Aire ambiente'];
+  lines.push('SAT: ' + v.sat + '% ' + soporte);
 }
 
 /**
@@ -100,39 +144,9 @@ export function formatCensoSignosColumn(snapshot, ctx) {
       ? /** @type {Record<string, unknown>} */ (snapshot.vitals)
       : {};
   var lines = [];
-
-  if (v.temp != null && v.temp !== '') lines.push('T°: ' + v.temp + ' °C');
-  if (v.fc != null && v.fc !== '') lines.push('FC: ' + v.fc + ' LPM');
-  if (v.fr != null && v.fr !== '') lines.push('FR: ' + v.fr + ' RPM');
-  if (v.tas != null || v.tad != null) {
-    lines.push('TA: ' + (v.tas != null && v.tas !== '' ? v.tas : '—') + '/' + (v.tad != null && v.tad !== '' ? v.tad : '—') + ' MMHG');
-  }
-
-  var glu =
-    snapshot && Array.isArray(snapshot.glucometrias) && snapshot.glucometrias.length
-      ? snapshot.glucometrias
-      : snapshot && Array.isArray(snapshot.bombaInsulina) && snapshot.bombaInsulina.length
-        ? snapshot.bombaInsulina
-        : [];
-  if (glu.length) {
-    var vals = glu
-      .map(function (g) {
-        return g && g.value != null && g.value !== '' ? String(g.value) : '';
-      })
-      .filter(Boolean)
-      .join(', ');
-    if (vals) lines.push('DXT: ' + vals + ' MG/DL');
-  }
-
-  if (v.sat != null && v.sat !== '') {
-    var soporteKey = ctx.soporte != null ? String(ctx.soporte).trim() : '';
-    var soporte =
-      SOPORTE_LABEL[soporteKey] ||
-      (ctx.soporteHint ? toEaSalidaText(ctx.soporteHint) : '') ||
-      SOPORTE_LABEL['Aire ambiente'];
-    lines.push('SAT: ' + v.sat + '% ' + soporte);
-  }
-
+  appendCensoVitalLines(lines, v);
+  appendCensoGluLine(lines, resolveCensoGlucometrias(snapshot));
+  appendCensoSatLine(lines, v, ctx);
   return lines;
 }
 
@@ -169,25 +183,23 @@ export function formatCensoIoColumn(io, balTurno) {
  * @param {ReturnType<typeof deriveSnapshot>} snapshot
  * @returns {boolean}
  */
+function snapshotHasVitals(v) {
+  return ['temp', 'fc', 'fr', 'tas', 'tad', 'sat'].some(function (k) {
+    return v[k] != null && v[k] !== '';
+  });
+}
+
 function snapshotHasCensoData(snapshot) {
   if (!snapshot) return false;
   var v =
     snapshot.vitals && typeof snapshot.vitals === 'object'
       ? /** @type {Record<string, unknown>} */ (snapshot.vitals)
       : {};
-  var hasVitals = ['temp', 'fc', 'fr', 'tas', 'tad', 'sat'].some(function (k) {
-    return v[k] != null && v[k] !== '';
-  });
-  if (hasVitals) return true;
+  if (snapshotHasVitals(v)) return true;
   if (Array.isArray(snapshot.glucometrias) && snapshot.glucometrias.length) return true;
   if (Array.isArray(snapshot.bombaInsulina) && snapshot.bombaInsulina.length) return true;
   var io = snapshot.io && typeof snapshot.io === 'object' ? snapshot.io : {};
-  return (
-    (io.ing != null && io.ing !== '') ||
-    (io.egr != null && io.egr !== '') ||
-    (Array.isArray(io.egrParts) && io.egrParts.length > 0) ||
-    (io.evac != null && io.evac !== '')
-  );
+  return ioSnapshotHasContent(io);
 }
 
 /**

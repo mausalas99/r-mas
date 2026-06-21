@@ -12,7 +12,7 @@ export function loadFundamentosProgress(storage = localStorage) {
       completedChapters: Array.isArray(p.completedChapters) ? p.completedChapters : [],
       updatedAt: p.updatedAt || null,
     };
-  } catch (_e) {
+  } catch {
     return { completedChapters: [], updatedAt: null };
   }
 }

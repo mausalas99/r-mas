@@ -93,9 +93,7 @@ export function getEntregaPhase() {
     if (!raw) return null;
     const o = JSON.parse(raw);
     if (o && o.active) return o;
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   return null;
 }
 
@@ -136,9 +134,7 @@ export function endEntregaPhase() {
   try {
     localStorage.removeItem(ENTREGA_PHASE_KEY);
     localStorage.removeItem(GUARDIA_GRID_MODE_KEY);
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
 }
 
 /**
@@ -248,9 +244,7 @@ export function loadGuardiaGridViewContext() {
   try {
     const mode = String(localStorage.getItem(GUARDIA_GRID_MODE_KEY) || 'censo').toLowerCase();
     if (mode === 'entrega') return 'HANDOFF';
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   return 'GUARDIA';
 }
 

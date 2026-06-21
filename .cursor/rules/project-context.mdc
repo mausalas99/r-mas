@@ -128,6 +128,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-21** `debt-phase6`: full-tree Tier 1 ESLint 0 + baseline refresh (31408→50); god-file splits (LAN/interno/renderer), `fix-mechanical-eslint --full`, `lazy-feature-routes-*` split; `lint:tier1:full` gate.
+- **2026-06-21** `boot-lazy-p5c`: boot hub deferrals — lazy `header-context`, `perf-markers`, `session-clinical-wipe`, inline mobile detect in `app.js`, lazy `ui-toast`; `lazy-feature-routes` hub barrel (+2 structural); `bootGraphDebt` 175→**50** interim.
 - **2026-06-20** `boot-lazy-p5b`: shell/app boot deferrals — dynamic mobile LAN modules, lazy modals/quick-export/command-palette/sync-mode handlers, `boot-steps` + todo scheduler dynamic; `bootGraphDebt` 500→175 interim.
 - **2026-06-20** `boot-lazy-p5`: entrega/platform/tour lazy routes — `ensureEntregaLoaded`, runtime proxies for platform + settings-help; boot hubs drop eager submodule imports; `bootGraphDebt` −200 (700→500 interim).
 - **2026-06-20** `debt-refactor`: Tier 1 god-file splits + complexity burn-down — `clinical-access-runtime/`, `clinico-access-*`, `host-store/`, `lib/db/{schema-migrate-*,ipc-handlers-*,clinical-access-*}`, teams-roster LAN/panel splits, tour/settings-help, storage/labs/tendencias; Phase 0 metrics tooling (`lint-tier1`, `top-complexity`, `read-feature-src`); 520 changed paths eslint `--max-warnings 0`; oversized tests → `tests/`.

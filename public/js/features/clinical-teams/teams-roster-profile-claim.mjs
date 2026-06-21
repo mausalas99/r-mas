@@ -28,9 +28,7 @@ async function tryResumeExistingUsername(username, errMsg) {
   let settings = {};
   try {
     settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   const resume = window.confirm(
     `El usuario @${username} ya existe.\n\n¿Recuperar tu cuenta en este dispositivo?`
   );

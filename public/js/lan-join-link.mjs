@@ -55,7 +55,7 @@ export function resolveLanJoinHostUrl(fromServer, pageOrigin) {
     if (u.hostname && !/^(localhost|127\.0\.0\.1)$/i.test(u.hostname)) {
       return `${u.protocol}//${u.host}`;
     }
-  } catch (_e) {
+  } catch {
     /* fall through */
   }
   const origin = String(pageOrigin || '').trim();
@@ -65,9 +65,7 @@ export function resolveLanJoinHostUrl(fromServer, pageOrigin) {
       if (o.hostname && !/^(localhost|127\.0\.0\.1)$/i.test(o.hostname)) {
         return `${o.protocol}//${o.host}`;
       }
-    } catch (_e2) {
-      /* ignore */
-    }
+    } catch (_e) { void _e; }
   }
   return '';
 }
@@ -87,7 +85,7 @@ export async function buildTeamHash(teamCode) {
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
     return hex.slice(0, 8);
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -179,7 +177,7 @@ export function isBareLanHostBaseUrl(url) {
     if (path !== '/' && !/^\/api\/lan\/v1\/?$/i.test(path)) return false;
     const port = u.port || (u.protocol === 'https:' ? '443' : '80');
     return port === '3738' || port === '' || port === '80';
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -200,7 +198,7 @@ function parseBareHostFromText(text) {
       if (isBareLanHostBaseUrl(u)) {
         return { hostUrl: hostFromUrl(u), shiftPin: extractShiftPinFromPaste(text) };
       }
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   const ipMatch = text.match(
     /^(?:https?:\/\/)?(\d{1,3}(?:\.\d{1,3}){3})(?::3738)?\/?(?:\s+(\d{6}))?\s*$/
@@ -212,6 +210,84 @@ function parseBareHostFromText(text) {
     };
   }
   return null;
+}
+
+function parseLanInviteFromUrl(urlMatch, text) {
+  try {
+    const u = new URL(urlMatch[0]);
+    const hostUrl = hostFromUrl(u);
+    const ticketM = u.pathname.match(JOIN_TICKET_PATH_RE);
+    if (ticketM) {
+      return {
+        hostUrl,
+        teamCode: '',
+        roomId: '',
+        ticketId: ticketM[1],
+        legacyInvite: false,
+        shiftPin: extractShiftPinFromPaste(text),
+        bareHost: false,
+      };
+    }
+    const search = u.search || '';
+    if (/\/mobile\/?$/i.test(u.pathname)) {
+      const mobileParsed = parseLanJoinQuery(search, hostUrl);
+      if (mobileParsed.teamCode) {
+        return {
+          hostUrl,
+          teamCode: mobileParsed.teamCode,
+          roomId: mobileParsed.roomId,
+          ticketId: '',
+          legacyInvite: false,
+          shiftPin: '',
+          bareHost: false,
+        };
+      }
+    }
+    if (search.includes('code=') || search.includes('token=')) {
+      const room = String(new URLSearchParams(search).get('room') || '').trim();
+      return {
+        hostUrl,
+        teamCode: '',
+        roomId: room,
+        ticketId: '',
+        legacyInvite: true,
+        shiftPin: '',
+        bareHost: false,
+      };
+    }
+    if (isBareLanHostBaseUrl(u)) {
+      return {
+        hostUrl,
+        teamCode: '',
+        roomId: '',
+        ticketId: '',
+        legacyInvite: false,
+        shiftPin: extractShiftPinFromPaste(text),
+        bareHost: true,
+      };
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
+function parseLanInviteFromQueryText(text) {
+  if (!text.includes('code=') && !text.includes('token=') && !text.includes('room=')) {
+    return null;
+  }
+  const q = text.includes('?') ? text.slice(text.indexOf('?')) : text.startsWith('?') ? text : `?${text}`;
+  const parsed = parseLanJoinQuery(q, '');
+  if (!parsed.teamCode && !parsed.roomId) return null;
+  return {
+    hostUrl: parsed.hostUrl,
+    teamCode: '',
+    roomId: parsed.roomId,
+    ticketId: '',
+    legacyInvite: true,
+    shiftPin: '',
+    bareHost: false,
+  };
 }
 
 /**
@@ -232,62 +308,8 @@ export function parseLanInviteInput(raw) {
 
   const urlMatch = text.match(/https?:\/\/[^\s<>"']+/i);
   if (urlMatch) {
-    try {
-      const u = new URL(urlMatch[0]);
-      const hostUrl = hostFromUrl(u);
-      const ticketM = u.pathname.match(JOIN_TICKET_PATH_RE);
-      if (ticketM) {
-        return {
-          hostUrl,
-          teamCode: '',
-          roomId: '',
-          ticketId: ticketM[1],
-          legacyInvite: false,
-          shiftPin: extractShiftPinFromPaste(text),
-          bareHost: false,
-        };
-      }
-      const search = u.search || '';
-      if (/\/mobile\/?$/i.test(u.pathname)) {
-        const mobileParsed = parseLanJoinQuery(search, hostUrl);
-        if (mobileParsed.teamCode) {
-          return {
-            hostUrl,
-            teamCode: mobileParsed.teamCode,
-            roomId: mobileParsed.roomId,
-            ticketId: '',
-            legacyInvite: false,
-            shiftPin: '',
-            bareHost: false,
-          };
-        }
-      }
-      if (search.includes('code=') || search.includes('token=')) {
-        const room = String(new URLSearchParams(search).get('room') || '').trim();
-        return {
-          hostUrl,
-          teamCode: '',
-          roomId: room,
-          ticketId: '',
-          legacyInvite: true,
-          shiftPin: '',
-          bareHost: false,
-        };
-      }
-      if (isBareLanHostBaseUrl(u)) {
-        return {
-          hostUrl,
-          teamCode: '',
-          roomId: '',
-          ticketId: '',
-          legacyInvite: false,
-          shiftPin: extractShiftPinFromPaste(text),
-          bareHost: true,
-        };
-      }
-    } catch (_e) {
-      /* fall through */
-    }
+    const fromUrl = parseLanInviteFromUrl(urlMatch, text);
+    if (fromUrl) return fromUrl;
   }
 
   const bare = parseBareHostFromText(text);
@@ -316,21 +338,8 @@ export function parseLanInviteInput(raw) {
     };
   }
 
-  if (text.includes('code=') || text.includes('token=') || text.includes('room=')) {
-    const q = text.includes('?') ? text.slice(text.indexOf('?')) : text.startsWith('?') ? text : `?${text}`;
-    const parsed = parseLanJoinQuery(q, '');
-    if (parsed.teamCode || parsed.roomId) {
-      return {
-        hostUrl: parsed.hostUrl,
-        teamCode: '',
-        roomId: parsed.roomId,
-        ticketId: '',
-        legacyInvite: true,
-        shiftPin: '',
-        bareHost: false,
-      };
-    }
-  }
+  const fromQuery = parseLanInviteFromQueryText(text);
+  if (fromQuery) return fromQuery;
 
   return emptyInviteParse();
 }

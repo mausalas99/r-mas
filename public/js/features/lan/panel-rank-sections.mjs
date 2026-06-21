@@ -281,7 +281,7 @@ function buildR4Section(deps, root) {
     try {
       localStorage.setItem('clinical.browseSala', '__all__');
       localStorage.setItem('clinical.censusFilterSala', '__all__');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
     if (typeof deps.runtime().renderPatientList === 'function') deps.runtime().renderPatientList();
     deps.runtime().showToast('Censo global — usa los filtros en la lista de pacientes.', 'info');

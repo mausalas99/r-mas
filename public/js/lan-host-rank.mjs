@@ -12,6 +12,11 @@ import {
   getHostEscalationTier,
   isWardTierHostMeta,
 } from './lan-host-escalation.mjs';
+import {
+  parseLanHostRankResponse,
+  resolveHostElectionByStartedAt,
+  resolveHostElectionByUrl,
+} from './lan-host-rank-election.mjs';
 
 const RANK_PRIORITY = { R1: 1, R2: 2, R3: 3, R4: 4, Admin: 5 };
 
@@ -123,20 +128,13 @@ export function resolveHostElection(selfMeta, peerMeta, urls = {}) {
   if (peerPri > selfPri) return 'peer';
   if (selfPri > peerPri) return 'self';
 
-  const selfStarted = Number(selfMeta?.startedAt) || 0;
-  const peerStarted = Number(peerMeta?.startedAt) || 0;
-  const selfMissing = selfStarted <= 0;
-  const peerMissing = peerStarted <= 0;
-  if (!selfMissing && peerMissing) return 'self';
-  if (selfMissing && !peerMissing) return 'peer';
-  if (peerStarted < selfStarted) return 'peer';
-  if (selfStarted < peerStarted) return 'self';
+  const byStarted = resolveHostElectionByStartedAt(
+    Number(selfMeta?.startedAt) || 0,
+    Number(peerMeta?.startedAt) || 0
+  );
+  if (byStarted) return byStarted;
 
-  const selfUrl = String(urls.selfUrl || '').trim();
-  const peerUrl = String(urls.peerUrl || '').trim();
-  if (peerUrl && selfUrl && peerUrl < selfUrl) return 'tie-peer';
-  if (peerUrl && selfUrl && selfUrl < peerUrl) return 'tie-self';
-  return 'tie-self';
+  return resolveHostElectionByUrl(urls);
 }
 
 /** @deprecated use shouldDeferToPeerHost — rank string only */
@@ -163,13 +161,8 @@ export async function fetchLanHostRank(hostUrl, teamCode) {
     });
     if (!resp.ok) return null;
     const data = await resp.json();
-    return {
-      rank: String(data?.rank || 'R1').trim() || 'R1',
-      isProgramAdmin: !!(data?.isProgramAdmin || data?.is_program_admin),
-      isOnCallGuardia: !!(data?.isOnCallGuardia || data?.is_on_call_guardia),
-      startedAt: Number(data?.startedAt) || 0,
-    };
-  } catch (_e) {
+    return parseLanHostRankResponse(data);
+  } catch {
     return null;
   }
 }

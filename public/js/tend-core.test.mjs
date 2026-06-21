@@ -1,17 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  dedupeTrendSetsForSeries,
-  buildTrendAxisMeta,
-  classifyTendPanelFamily,
-  familyOrderForSection,
-  migratePanelFamilyKey,
-  formatTendSeriesLabel,
-  parseTrendNumeric,
-  buildSectionTableModel,
-  formatTrendColumnHeader,
-  buildTrendColumnTimeVisibility
-} from './tend-core.mjs';
+import { dedupeTrendSetsForSeries, buildTrendAxisMeta, classifyTendPanelFamily, familyOrderForSection, migratePanelFamilyKey, formatTendSeriesLabel, parseTrendNumeric, formatTrendColumnHeader } from './tend-core.mjs';
 
 function mockSet(fecha, hora, sectionKey, fieldKey, val) {
   return {

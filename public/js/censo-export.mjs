@@ -68,11 +68,6 @@ export function syncCensoExportButtonVisibility() {
   if (hint) hint.style.display = show ? '' : 'none';
 }
 
-function censoExportTriggerButtons() {
-  return CENSO_EXPORT_BUTTON_IDS.map(function (id) {
-    return document.getElementById(id);
-  }).filter(Boolean);
-}
 
 /** Loading state only on the modal confirm control (export always runs from the dialog). */
 function censoExportLoadingButtons() {

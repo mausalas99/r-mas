@@ -118,30 +118,27 @@ function parseTempLine(line) {
  * @param {string} text
  * @param {{ vitals: Record<string, number | null>, alteredAt: Record<string, string>, glucometrias: Array<{ value: number, time?: string }>, io: { ing: number | null, egr: number | string | null, egrParts: import('./estado-actual-io.mjs').IoEgresoPart[], evac: number | string | null }, recognized: string[], warnings: string[] }} result
  */
-function parseLine(line, result) {
-  var trimmed = String(line || '').trim();
-  if (!trimmed) return;
-
+function parseVitalLine(trimmed, result) {
   var temp = parseTempLine(trimmed);
   if (temp) {
     result.vitals.temp = temp.temp;
     if (temp.time) result.alteredAt.temp = temp.time;
     result.recognized.push('temp');
-    return;
+    return true;
   }
 
   var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
   if (fc) {
     result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
     result.recognized.push('fc');
-    return;
+    return true;
   }
 
   var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
   if (fr) {
     result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
     result.recognized.push('fr');
-    return;
+    return true;
   }
 
   var sat = parseSatLineVariants(trimmed);
@@ -149,7 +146,7 @@ function parseLine(line, result) {
     result.vitals.sat = sat.value;
     if (sat.soporteHint) result.soporteHint = sat.soporteHint;
     result.recognized.push('sat');
-    return;
+    return true;
   }
 
   var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
@@ -157,36 +154,40 @@ function parseLine(line, result) {
     result.vitals.tas = parseNumberToken(ta[1]);
     result.vitals.tad = parseNumberToken(ta[2]);
     result.recognized.push('ta');
-    return;
+    return true;
   }
+  return false;
+}
 
+function parseDxtLine(trimmed, result) {
   var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
-  if (dxt) {
-    var tokens = splitGlucoseList(dxt[1]);
-    for (var i = 0; i < tokens.length; i++) {
-      var g = parseGlucometriaToken(tokens[i]);
-      if (g) result.glucometrias.push(g);
-    }
-    if (tokens.length && !result.glucometrias.length) {
-      result.warnings.push('No se pudieron leer valores DXT en: ' + dxt[1]);
-    } else {
-      result.recognized.push('dxt');
-    }
-    return;
+  if (!dxt) return false;
+  var tokens = splitGlucoseList(dxt[1]);
+  for (var i = 0; i < tokens.length; i++) {
+    var g = parseGlucometriaToken(tokens[i]);
+    if (g) result.glucometrias.push(g);
   }
+  if (tokens.length && !result.glucometrias.length) {
+    result.warnings.push('No se pudieron leer valores DXT en: ' + dxt[1]);
+  } else {
+    result.recognized.push('dxt');
+  }
+  return true;
+}
 
+function parseIoLine(trimmed, result) {
   var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
   if (ing) {
     result.io.ing = parseIoIngresoField(ing[1]);
     result.recognized.push('ing');
-    return;
+    return true;
   }
 
   var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
   if (evac) {
     result.io.evac = parseIoEvacField(evac[1]);
     result.recognized.push('evac');
-    return;
+    return true;
   }
 
   var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
@@ -199,98 +200,123 @@ function parseLine(line, result) {
     }
     result.io.egr = diuresisValueFromParts(result.io.egrParts);
     result.recognized.push('egr');
-    return;
+    return true;
   }
 
   var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
   if (bal) {
     result.recognized.push('balance-ignored');
-    return;
+    return true;
   }
+  return false;
+}
 
+function parseLine(line, result) {
+  var trimmed = String(line || '').trim();
+  if (!trimmed) return;
+  if (parseVitalLine(trimmed, result)) return;
+  if (parseDxtLine(trimmed, result)) return;
+  if (parseIoLine(trimmed, result)) return;
   result.warnings.push('Línea no reconocida: ' + trimmed);
 }
 
 /**
  * @param {string} text
  */
+function scanInlineTemp(text, result) {
+  if (result.recognized.indexOf('temp') >= 0) return;
+  var t = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
+  if (!t) return;
+  result.vitals.temp = parseNumberToken(t[1]);
+  result.recognized.push('temp');
+}
+
+function scanInlineFc(text, result) {
+  if (result.recognized.indexOf('fc') >= 0) return;
+  var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
+  if (!fc) return;
+  result.vitals.fc = parseNumberToken(fc[1]);
+  result.recognized.push('fc');
+}
+
+function scanInlineFr(text, result) {
+  if (result.recognized.indexOf('fr') >= 0) return;
+  var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
+  if (!fr) return;
+  result.vitals.fr = parseNumberToken(fr[1]);
+  result.recognized.push('fr');
+}
+
+function scanInlineSat(text, result) {
+  if (result.recognized.indexOf('sat') >= 0) return;
+  var satM = text.match(
+    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
+  );
+  if (!satM) return;
+  var satInline = parseSatLineVariants(satM[0]);
+  if (!satInline) return;
+  result.vitals.sat = satInline.value;
+  if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
+  result.recognized.push('sat');
+}
+
+function scanInlineTa(text, result) {
+  if (result.recognized.indexOf('ta') >= 0) return;
+  var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+  if (!ta) return;
+  result.vitals.tas = parseNumberToken(ta[1]);
+  result.vitals.tad = parseNumberToken(ta[2]);
+  result.recognized.push('ta');
+}
+
+function scanInlineDxt(text, result) {
+  if (result.recognized.indexOf('dxt') >= 0) return;
+  var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
+  if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
+  if (!dxt) return;
+  var tokens = splitGlucoseList(dxt[1]);
+  for (var i = 0; i < tokens.length; i++) {
+    var g = parseGlucometriaToken(tokens[i]);
+    if (g) result.glucometrias.push(g);
+  }
+  if (result.glucometrias.length) result.recognized.push('dxt');
+}
+
+function scanInlineIng(text, result) {
+  if (result.recognized.indexOf('ing') >= 0) return;
+  var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
+  if (!ing) return;
+  result.io.ing = parseIoIngresoField(ing[1]);
+  result.recognized.push('ing');
+}
+
+function scanInlineEgr(text, result) {
+  if (result.recognized.indexOf('egr') >= 0) return;
+  var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
+  if (!egr) return;
+  result.io.egrParts = parseIoEgresoLine(egr[1]);
+  result.io.egr = diuresisValueFromParts(result.io.egrParts);
+  result.recognized.push('egr');
+}
+
+function scanInlineEvac(text, result) {
+  if (result.recognized.indexOf('evac') >= 0) return;
+  var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
+  if (!evac) return;
+  result.io.evac = parseIoEvacField(evac[1]);
+  result.recognized.push('evac');
+}
+
 function scanInlinePatterns(text, result) {
-  if (result.recognized.indexOf('temp') < 0) {
-    var t = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
-    if (t) {
-      result.vitals.temp = parseNumberToken(t[1]);
-      result.recognized.push('temp');
-    }
-  }
-  if (result.recognized.indexOf('fc') < 0) {
-    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
-    if (fc) {
-      result.vitals.fc = parseNumberToken(fc[1]);
-      result.recognized.push('fc');
-    }
-  }
-  if (result.recognized.indexOf('fr') < 0) {
-    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
-    if (fr) {
-      result.vitals.fr = parseNumberToken(fr[1]);
-      result.recognized.push('fr');
-    }
-  }
-  if (result.recognized.indexOf('sat') < 0) {
-    var satM = text.match(
-      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
-    );
-    if (satM) {
-      var satInline = parseSatLineVariants(satM[0]);
-      if (satInline) {
-        result.vitals.sat = satInline.value;
-        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
-        result.recognized.push('sat');
-      }
-    }
-  }
-  if (result.recognized.indexOf('ta') < 0) {
-    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
-    if (ta) {
-      result.vitals.tas = parseNumberToken(ta[1]);
-      result.vitals.tad = parseNumberToken(ta[2]);
-      result.recognized.push('ta');
-    }
-  }
-  if (result.recognized.indexOf('dxt') < 0) {
-    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
-    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
-    if (dxt) {
-      var tokens = splitGlucoseList(dxt[1]);
-      for (var i = 0; i < tokens.length; i++) {
-        var g = parseGlucometriaToken(tokens[i]);
-        if (g) result.glucometrias.push(g);
-      }
-      if (result.glucometrias.length) result.recognized.push('dxt');
-    }
-  }
-  if (result.recognized.indexOf('ing') < 0) {
-    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
-    if (ing) {
-      result.io.ing = parseIoIngresoField(ing[1]);
-      result.recognized.push('ing');
-    }
-  }
-  if (result.recognized.indexOf('egr') < 0) {
-    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
-    if (egr) {
-      result.io.egrParts = parseIoEgresoLine(egr[1]);
-      result.io.egr = diuresisValueFromParts(result.io.egrParts);
-      result.recognized.push('egr');
-    }
-  }
-  if (result.recognized.indexOf('evac') < 0) {
-    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
-    if (evac) {
-      result.io.evac = parseIoEvacField(evac[1]);
-      result.recognized.push('evac');
-    }
-  }
+  scanInlineTemp(text, result);
+  scanInlineFc(text, result);
+  scanInlineFr(text, result);
+  scanInlineSat(text, result);
+  scanInlineTa(text, result);
+  scanInlineDxt(text, result);
+  scanInlineIng(text, result);
+  scanInlineEgr(text, result);
+  scanInlineEvac(text, result);
 }
 
 /**
@@ -391,11 +417,7 @@ export function parseEstadoActualPaste(raw) {
  * @param {ReturnType<typeof parseEstadoActualPaste>} parsed
  * @returns {string}
  */
-export function formatEstadoActualParsePreview(parsed) {
-  if (!parsed || !parsed.ok) {
-    return toEaSalidaText(parsed && parsed.error ? parsed.error : 'Sin datos');
-  }
-  var parts = [];
+function formatPreviewVitals(parsed, parts) {
   if (parsed.vitals.temp != null) {
     parts.push('TEMP ' + parsed.vitals.temp + ' °C' + (parsed.alteredAt.temp ? ' @ ' + parsed.alteredAt.temp : ''));
   }
@@ -409,6 +431,9 @@ export function formatEstadoActualParsePreview(parsed) {
   if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
     parts.push('TA ' + (parsed.vitals.tas ?? '—') + '/' + (parsed.vitals.tad ?? '—') + ' MMHG');
   }
+}
+
+function formatPreviewIo(parsed, parts) {
   if (parsed.glucometrias.length) {
     parts.push(
       'DXT ' +
@@ -427,6 +452,15 @@ export function formatEstadoActualParsePreview(parsed) {
     parts.push('E ' + toEaSalidaText(parsed.io.egr));
   }
   if (parsed.io.evac != null) parts.push('EVAC ' + toEaSalidaText(parsed.io.evac));
+}
+
+export function formatEstadoActualParsePreview(parsed) {
+  if (!parsed || !parsed.ok) {
+    return toEaSalidaText(parsed && parsed.error ? parsed.error : 'Sin datos');
+  }
+  var parts = [];
+  formatPreviewVitals(parsed, parts);
+  formatPreviewIo(parsed, parts);
   if (parsed.recognized.indexOf('balance-ignored') >= 0) {
     parts.push('B (CALCULADO AL APLICAR)');
   }

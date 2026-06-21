@@ -23,7 +23,7 @@ function readHostClinicalMeta(userDataPath) {
       startedAt: Number(o.startedAt) || 0,
       updatedAt: String(o.updatedAt || ''),
     };
-  } catch (_e) {
+  } catch {
     return fallback;
   }
 }

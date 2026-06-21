@@ -38,7 +38,7 @@ function readShiftPinClientId() {
   try {
     const id = localStorage.getItem('rpc-lan-client-id');
     if (id && String(id).trim()) return String(id).trim();
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return '';
 }
 
@@ -69,7 +69,7 @@ async function verifyTeamHashFromUrl(joinUrl, ownTeamCode) {
     if (!urlTh) return true;
     const expectedTh = await buildTeamHash(ownTeamCode);
     return !expectedTh || urlTh === expectedTh;
-  } catch (_e) {
+  } catch {
     return true;
   }
 }
@@ -98,7 +98,7 @@ async function exchangeShiftPinOnHost(hostUrl, shiftPin) {
     if (!res.ok) return { ok: false, reason: 'http_' + res.status };
     const data = await res.json();
     return data?.token ? { ok: true, data } : { ok: false, reason: 'bad_response' };
-  } catch (_e) {
+  } catch {
     return { ok: false, reason: 'unreachable' };
   } finally {
     clearTimeout(timer);
@@ -110,12 +110,12 @@ async function persistShiftPinBearer(data) {
   if (window.electronAPI && typeof window.electronAPI.lanGuestWriteBearer === 'function') {
     try {
       await window.electronAPI.lanGuestWriteBearer({ token: String(data.token).trim() });
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   if (data.clientToken) {
     try {
       localStorage.setItem('rpc-lan-client-token', String(data.clientToken));
-    } catch (_eCt) {}
+    } catch (_e) { void _e; }
   }
 }
 
@@ -124,7 +124,7 @@ async function resolveOwnLanBaseUrl() {
   if (window.electronAPI?.getLanCandidateBaseUrl) {
     try {
       ownUrl = normalizeLanHostBase(await window.electronAPI.getLanCandidateBaseUrl());
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   if (!ownUrl) {
     const transport = await loadLanTransport();
@@ -181,7 +181,7 @@ async function joinHostAfterShiftPinExchange(hostUrl, shiftPin, opts) {
       if (typeof room.joinLanRoom === 'function') {
         await room.joinLanRoom(roomId, liveSyncRoomLabel(roomId));
       }
-    } catch (_eRoom) {}
+    } catch (_e) { void _e; }
   }
   _lastShiftPinFailReason = '';
   return true;
@@ -218,6 +218,34 @@ export function collectShiftPinProbeUrls(opts = {}, cfg = {}) {
  * @param {string} ownBaseUrl
  * @returns {Promise<string[]>}
  */
+function registerUdpDiscoveryHost(h, add) {
+  if (!h?.clientId || !h?.startedAt) return;
+  upsertHost({
+    fingerprint: `${h.clientId}:${h.startedAt}`,
+    clientId: h.clientId,
+    startedAt: h.startedAt,
+    currentUrl: h.url,
+    rank: h.rank || '',
+    dbUnlocked: false,
+    shiftPinActive: false,
+    rttMs: 0,
+    lastSeenAt: Date.now(),
+    source: 'udp',
+  });
+  add(h.url);
+}
+
+async function loadUdpDiscoveryUrls(add) {
+  if (typeof window === 'undefined' || !window.electronAPI?.lanUdpDiscover) return;
+  try {
+    const udpHosts = await window.electronAPI.lanUdpDiscover();
+    if (!Array.isArray(udpHosts)) return;
+    for (const h of udpHosts) registerUdpDiscoveryHost(h, add);
+  } catch (_e) {
+    void _e;
+  }
+}
+
 export async function collectShiftPinFastDiscoveryUrls(ownBaseUrl) {
   const own = normalizeLanHostBase(ownBaseUrl);
   const seen = new Set();
@@ -232,33 +260,7 @@ export async function collectShiftPinFastDiscoveryUrls(ownBaseUrl) {
 
   for (const u of listRegistryDiscoveryUrls()) add(u);
 
-  if (
-    !out.length &&
-    typeof window !== 'undefined' &&
-    window.electronAPI?.lanUdpDiscover
-  ) {
-    try {
-      const udpHosts = await window.electronAPI.lanUdpDiscover();
-      if (Array.isArray(udpHosts)) {
-        for (const h of udpHosts) {
-          if (!h?.clientId || !h?.startedAt) continue;
-          upsertHost({
-            fingerprint: `${h.clientId}:${h.startedAt}`,
-            clientId: h.clientId,
-            startedAt: h.startedAt,
-            currentUrl: h.url,
-            rank: h.rank || '',
-            dbUnlocked: false,
-            shiftPinActive: false,
-            rttMs: 0,
-            lastSeenAt: Date.now(),
-            source: 'udp',
-          });
-          add(h.url);
-        }
-      }
-    } catch (_e) {}
-  }
+  if (!out.length) await loadUdpDiscoveryUrls(add);
 
   const verified = [];
   for (const url of out) {
@@ -266,6 +268,16 @@ export async function collectShiftPinFastDiscoveryUrls(ownBaseUrl) {
     if (hit) verified.push(hit);
   }
   return verified;
+}
+
+async function tryJoinShiftPinHosts(hostUrls, pin, opts, tried) {
+  for (const hostUrl of hostUrls) {
+    if (tried.has(hostUrl)) continue;
+    tried.add(hostUrl);
+    const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
+    if (ok) return true;
+  }
+  return false;
 }
 
 function shouldTryLoopbackShiftPin(transport) {
@@ -285,20 +297,46 @@ function shouldTryLoopbackShiftPin(transport) {
  * @param {{ sala?: string, roomId?: string, forceRediscover?: boolean, hostUrl?: string }} [opts]
  * @returns {Promise<boolean>}
  */
+async function discoverExtraWardHosts(ownUrl, localPrefixes, pin, opts, tried) {
+  const allPrefixes = await listWardSubnetPrefixesForProbe(ownUrl);
+  const extraPrefixes = allPrefixes
+    .filter((p) => !localPrefixes.includes(p))
+    .slice(0, MAX_EXTRA_WARD_PREFIXES);
+  for (const prefix of extraPrefixes) {
+    const wardHosts = await discoverLanHostsOnSubnetViaBeacon(ownUrl, {
+      subnetPrefixes: [prefix],
+    });
+    if (await tryJoinShiftPinHosts(wardHosts, pin, opts, tried)) return true;
+  }
+  return false;
+}
+
+async function tryLoopbackShiftPin(transport, pin, opts, tried) {
+  if (!shouldTryLoopbackShiftPin(transport)) return false;
+  const loopbackHost = normalizeLanHostBase('http://127.0.0.1:3738');
+  if (!loopbackHost || tried.has(loopbackHost)) return false;
+  tried.add(loopbackHost);
+  return joinHostAfterShiftPinExchange(loopbackHost, pin, opts);
+}
+
+async function validateShiftPinJoinUrl(opts) {
+  const joinUrl = String(opts.joinUrl || '').trim();
+  if (!joinUrl) return true;
+  const hashOk = await verifyTeamHashFromUrl(joinUrl, getOwnTeamCode());
+  if (!hashOk) {
+    showEasyToast('Este enlace es de otra sala o servicio. Verifica con el anfitrión.', 'warn');
+    return false;
+  }
+  return true;
+}
+
 export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   const transport = await loadLanTransport();
   if (!transport.isLanElectronDesktop()) return false;
   const pin = String(shiftPin || '').trim();
   if (!/^\d{6}$/.test(pin)) return false;
 
-  const joinUrl = String(opts.joinUrl || '').trim();
-  if (joinUrl) {
-    const hashOk = await verifyTeamHashFromUrl(joinUrl, getOwnTeamCode());
-    if (!hashOk) {
-      showEasyToast('Este enlace es de otra sala o servicio. Verifica con el anfitrión.', 'warn');
-      return false;
-    }
-  }
+  if (!(await validateShiftPinJoinUrl(opts))) return false;
 
   if (typeof storage.saveLanShiftPin === 'function') storage.saveLanShiftPin(pin);
 
@@ -311,55 +349,27 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   const localPrefixes = await resolveLocalLanSubnetPrefixes(ownUrl);
   const tried = new Set();
   _lastShiftPinFailReason = '';
-  for (const hostUrl of collectShiftPinProbeUrls(
-    { ...opts, localSubnetPrefixes: localPrefixes },
-    cfg
-  )) {
-    tried.add(hostUrl);
-    const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
-    if (ok) return true;
+  if (
+    await tryJoinShiftPinHosts(
+      collectShiftPinProbeUrls({ ...opts, localSubnetPrefixes: localPrefixes }, cfg),
+      pin,
+      opts,
+      tried
+    )
+  ) {
+    return true;
   }
 
-  for (const hostUrl of await collectShiftPinFastDiscoveryUrls(ownUrl)) {
-    if (tried.has(hostUrl)) continue;
-    tried.add(hostUrl);
-    const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
-    if (ok) return true;
+  if (await tryJoinShiftPinHosts(await collectShiftPinFastDiscoveryUrls(ownUrl), pin, opts, tried)) {
+    return true;
   }
 
   // Dev peer only, or host-role Mac — skip loopback on guest clients (avoids 401 noise).
-  if (shouldTryLoopbackShiftPin(transport)) {
-    const loopbackHost = normalizeLanHostBase('http://127.0.0.1:3738');
-    if (loopbackHost && !tried.has(loopbackHost)) {
-      tried.add(loopbackHost);
-      const viaLoopback = await joinHostAfterShiftPinExchange(loopbackHost, pin, opts);
-      if (viaLoopback) return true;
-    }
+  if (await tryLoopbackShiftPin(transport, pin, opts, tried)) return true;
+  if (await tryJoinShiftPinHosts(await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl), pin, opts, tried)) {
+    return true;
   }
-  const hosts = await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl);
-  for (const hostUrl of hosts) {
-    if (tried.has(hostUrl)) continue;
-    tried.add(hostUrl);
-    const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
-    if (ok) return true;
-  }
-
-  const allPrefixes = await listWardSubnetPrefixesForProbe(ownUrl);
-  const extraPrefixes = allPrefixes
-    .filter((p) => !localPrefixes.includes(p))
-    .slice(0, MAX_EXTRA_WARD_PREFIXES);
-  for (const prefix of extraPrefixes) {
-    const wardHosts = await discoverLanHostsOnSubnetViaBeacon(ownUrl, {
-      subnetPrefixes: [prefix],
-    });
-    for (const hostUrl of wardHosts) {
-      if (tried.has(hostUrl)) continue;
-      tried.add(hostUrl);
-      const ok = await joinHostAfterShiftPinExchange(hostUrl, pin, opts);
-      if (ok) return true;
-    }
-  }
-  return false;
+  return discoverExtraWardHosts(ownUrl, localPrefixes, pin, opts, tried);
 }
 
 /**
@@ -367,21 +377,31 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
  * @param {{ shiftPin?: string, sala?: string, roomId?: string, silent?: boolean, force?: boolean, hostUrl?: string }} [opts]
  * @returns {Promise<{ ok: boolean, reason: string }>}
  */
-export async function tryEasyLanShiftPinConnect(opts = {}) {
-  if (opts.force) {
-    resumeAutoHostDetect();
-  }
-  if (!opts.force && !canAttemptAutoHostDetect()) {
-    return { ok: false, reason: 'paused' };
-  }
-  if (lanNetworkProfile.getNetworkProfile() === 'offline') {
-    return { ok: false, reason: 'offline' };
-  }
+function easyConnectBlockedReason(opts) {
+  if (!opts.force && !canAttemptAutoHostDetect()) return 'paused';
+  if (lanNetworkProfile.getNetworkProfile() === 'offline') return 'offline';
   const now = Date.now();
   if (!opts.force && !opts.skipCooldown && now - _lastEasyConnectAttemptMs < getShiftPinCooldownMs()) {
-    return { ok: false, reason: 'cooldown' };
+    return 'cooldown';
   }
-  _lastEasyConnectAttemptMs = now;
+  return '';
+}
+
+function reportEasyConnectFailure(opts) {
+  recordShiftPinFailure();
+  if (!opts.force && (opts.silent || opts.skipCooldown)) {
+    recordAutoHostDetectMiss();
+  }
+  const reason = _lastShiftPinFailReason || 'not_found';
+  _lastShiftPinFailReason = '';
+  return { ok: false, reason };
+}
+
+export async function tryEasyLanShiftPinConnect(opts = {}) {
+  if (opts.force) resumeAutoHostDetect();
+  const blocked = easyConnectBlockedReason(opts);
+  if (blocked) return { ok: false, reason: blocked };
+  _lastEasyConnectAttemptMs = Date.now();
 
   const pin =
     String(opts.shiftPin || '').trim() ||
@@ -408,13 +428,7 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
     }
     return { ok: true, reason: 'connected' };
   }
-  recordShiftPinFailure();
-  if (!opts.force && (opts.silent || opts.skipCooldown)) {
-    recordAutoHostDetectMiss();
-  }
-  const reason = _lastShiftPinFailReason || 'not_found';
-  _lastShiftPinFailReason = '';
-  return { ok: false, reason };
+  return reportEasyConnectFailure(opts);
 }
 
 /**

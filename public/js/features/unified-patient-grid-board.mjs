@@ -2,37 +2,15 @@
  * High-density Guardia census grid with R4 ward partitioning.
  * Separate from pase-board.mjs (single-patient Pase summary view).
  */
-import {
-  buildEntregaMarkerSymbolsHtml,
-  entregaChipMarkerIds,
-} from '../../../lib/entrega/entrega-chip-markers.mjs';
-import { normalizePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
-import { abbreviatePatientName } from '../../../lib/interno/interno-board.mjs';
 import { calcVitalsBanner, calcVitalsBannerForSpec } from '../../../lib/interno/vitals-banner.mjs';
 import {
   R4_GUARDIA_SECTOR_ORDER,
   resolveR4GuardiaSectorLabel,
 } from '../clinico-access.mjs';
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
+import { buildPatientChipInnerHtml, vitalsBannerForGuardia } from './unified-patient-grid-chip-html.mjs';
 
-export { calcVitalsBanner };
-
-/** @param {string} s */
-function escapeChipAttr(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;');
-}
-
-/** @param {{ last_vitals_check?: string, vitals_frequency?: string, pendientes_json?: string|null }} meta */
-export function vitalsBannerForGuardia(meta) {
-  const doc = normalizePendientesJson(meta?.pendientes_json);
-  return calcVitalsBannerForSpec(
-    meta?.last_vitals_check,
-    doc.vitalsPlan?.frequency ?? meta?.vitals_frequency
-  );
-}
+export { calcVitalsBanner, vitalsBannerForGuardia };
 
 export const R4_FOLLOWUP_PIN_LABEL = 'Interconsultas — Seguimiento';
 
@@ -165,9 +143,7 @@ export class UnifiedPatientGridBoard {
         let spec = null;
         try {
           spec = specRaw ? JSON.parse(specRaw) : null;
-        } catch {
-          /* ignore */
-        }
+        } catch (_e) { void _e; }
         const banner = calcVitalsBannerForSpec(last || null, spec);
         const el = card.querySelector('.patient-chip-vitals');
         if (!el) return;
@@ -190,55 +166,15 @@ export class UnifiedPatientGridBoard {
    * @param {{ is_critical?: number, last_vitals_check?: string, vitals_frequency?: string }|undefined} g
    */
   compileChip(p, g) {
+    const chip = buildPatientChipInnerHtml(p, g);
     const card = document.createElement('div');
-    const meta = p.guardiaMeta || g;
-    const critical = !!(p.isCritical || meta?.is_critical);
-    card.className = `patient-chip-card ${critical ? 'priority-critical' : ''}`;
+    card.className = 'patient-chip-card' + (chip.critical ? ' priority-critical' : '');
     card.setAttribute('data-patient-id', p.id);
-    const vitalsSpec = meta?.pendientes_json
-      ? (normalizePendientesJson(meta.pendientes_json).vitalsPlan?.frequency ?? meta?.vitals_frequency ?? null)
-      : (meta?.vitals_frequency ?? null);
-    card.dataset.vitalsSpec = JSON.stringify(vitalsSpec ?? null);
-    card.dataset.vitalsLast = String(meta?.last_vitals_check ?? '');
+    card.dataset.vitalsSpec = JSON.stringify(chip.vitalsSpec ?? null);
+    card.dataset.vitalsLast = chip.vitalsLast;
     card.setAttribute('role', 'button');
     card.tabIndex = 0;
-
-    const dnr = p.negativa_maniobras_firmada ? '<span class="dnr-badge">DNR</span>' : '';
-    const vitals = vitalsBannerForGuardia(meta);
-    const bed = p.bed_label ? p.bed_label : '—';
-    const nameRaw = String(p.name || '').trim();
-    const nameDisplay = nameRaw ? abbreviatePatientName(nameRaw) : '—';
-    const nameTitle = nameRaw ? escapeChipAttr(nameRaw) : '';
-    const dx = String(p.dxText || 'Sin diagnóstico registrado');
-    const pending = Number(p.pendingCount || 0);
-    const pendingLabel =
-      pending > 0
-        ? `<span class="patient-chip-tasks">${pending} pend.${pending === 1 ? '' : 's'}</span>`
-        : '';
-    const labs = String(p.labsSnippet || '—');
-    const markerIds = Array.isArray(p.entregaMarkers)
-      ? p.entregaMarkers
-      : entregaChipMarkerIds(meta);
-    const markerSymbols = buildEntregaMarkerSymbolsHtml(markerIds);
-    const vitalsTitle = escapeChipAttr(vitals.str);
-    const criticalHint = critical
-      ? '<span class="patient-chip-critical-hint" title="Paciente crítico" aria-hidden="true"></span>'
-      : '';
-
-    card.innerHTML = `
-      <div class="patient-chip-head">
-        <span class="patient-chip-bed">Cama ${bed}</span>
-        <div class="patient-chip-badges">${markerSymbols}${dnr}${criticalHint}</div>
-      </div>
-      <p class="patient-chip-name"${nameTitle ? ` title="${nameTitle}"` : ''}>${nameDisplay}</p>
-      <p class="patient-chip-dx">${dx}</p>
-      <div class="patient-chip-vitals vitals-banner ${vitals.cls}" title="${vitalsTitle}">
-        <span class="patient-chip-vitals__text">${vitals.str}</span>
-      </div>
-      <div class="patient-chip-footer">
-        ${pendingLabel}
-        <span class="patient-chip-labs" title="${escapeChipAttr(labs)}">${labs}</span>
-      </div>`;
+    card.innerHTML = chip.innerHtml;
 
     card.addEventListener('click', () => {
       this.handleChipClick(p.id);

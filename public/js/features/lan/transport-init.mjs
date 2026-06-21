@@ -26,7 +26,7 @@ export function initLanClientFromStorage() {
   }
   try {
     lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   setTimeout(function () {
     void ensureLanSyncTransportDepsWired().then(function () {
       var d = deps();

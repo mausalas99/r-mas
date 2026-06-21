@@ -22,7 +22,7 @@ export function labSetParseFingerprint(set) {
   if (set.bhExtras) {
     try {
       parts.push('b:' + JSON.stringify(set.bhExtras));
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   return parts.join('|');
 }

@@ -22,7 +22,7 @@ async function ensureElectronLanServerOnce(opts, attempt) {
   if (typeof window.electronAPI.ensureLanServerReady !== 'function') return;
   try {
     await window.electronAPI.ensureLanServerReady();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 async function readElectronLanCandidateUrl() {
@@ -31,7 +31,7 @@ async function readElectronLanCandidateUrl() {
       .trim()
       .replace(/\/+$/, '');
     if (url && !isLocalLoopbackLanUrl(url)) return url;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return '';
 }
 
@@ -102,7 +102,7 @@ async function readOwnLanBaseFromElectron() {
       String((await window.electronAPI.getLanCandidateBaseUrl()) || '').trim()
     );
     if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return '';
 }
 

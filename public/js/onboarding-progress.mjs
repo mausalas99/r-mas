@@ -21,7 +21,7 @@ export function loadTourProgress(storage = localStorage) {
     const stepId = migrateTourStepId(p.stepId, branch);
     if (!isValidStepForBranch(stepId, branch, mode)) return null;
     return { ...p, branch, stepId };
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -48,5 +48,5 @@ export function saveTourProgress(payload, storage = localStorage) {
 export function clearTourProgress(storage = localStorage) {
   try {
     storage.removeItem(GUIDED_TOUR_PROGRESS_LS_KEY);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }

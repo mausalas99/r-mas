@@ -1,9 +1,13 @@
 /** Validación y normalización de JSON de exportación de paciente (import Ajustes). */
 
+import { resolvePatientImportPayloads } from './patient-export-payloads.mjs';
+
 export const PATIENT_EXPORT_FORMAT = 'r-plus-patient-export';
 export const PATIENT_EXPORT_VERSION = 1;
 export const DEMO_BUNDLE_FORMAT = 'r-plus-pitch-demo-bundle';
 const RANGE_EXPORT_FORMAT = 'r-plus-range-export';
+
+export { resolvePatientImportPayloads };
 
 /**
  * @param {string} text
@@ -46,58 +50,6 @@ export function isRPlusPatientExportPayload(payload) {
   if (Number(p.version) !== PATIENT_EXPORT_VERSION) return false;
   if (!p.patient || typeof p.patient !== 'object' || Array.isArray(p.patient)) return false;
   return true;
-}
-
-/**
- * @param {unknown} raw
- * @returns {Array<Record<string, unknown>>}
- */
-export function resolvePatientImportPayloads(raw) {
-  if (!raw) return [];
-
-  if (Array.isArray(raw)) {
-    const out = [];
-    for (const item of raw) {
-      out.push(...resolvePatientImportPayloads(item));
-    }
-    return out;
-  }
-
-  if (typeof raw !== 'object') return [];
-
-  const root = /** @type {Record<string, unknown>} */ (raw);
-
-  if (isRPlusPatientExportPayload(root)) {
-    return [root];
-  }
-
-  if (!root.format && root.patient) {
-    const normalized = entryToPatientExportPayload(root);
-    return normalized ? [normalized] : [];
-  }
-
-  if (
-    root.format === DEMO_BUNDLE_FORMAT &&
-    Number(root.version) === PATIENT_EXPORT_VERSION &&
-    Array.isArray(root.patients)
-  ) {
-    return root.patients.flatMap(function (item) {
-      return resolvePatientImportPayloads(item);
-    });
-  }
-
-  if (root.format === RANGE_EXPORT_FORMAT && Array.isArray(root.entries)) {
-    const payloads = [];
-    for (const entry of root.entries) {
-      const normalized = entryToPatientExportPayload(
-        /** @type {Record<string, unknown>} */ (entry)
-      );
-      if (normalized) payloads.push(normalized);
-    }
-    return payloads;
-  }
-
-  return [];
 }
 
 /**

@@ -62,7 +62,7 @@ var UNDO_STACK_MAX = 5;
 function cloneForUndo(value) {
   try {
     return JSON.parse(JSON.stringify(value));
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -90,7 +90,7 @@ function getUndoStack() {
   try {
     var arr = JSON.parse(localStorage.getItem(UNDO_STACK_KEY) || "[]");
     return Array.isArray(arr) ? arr : [];
-  } catch (_e) {
+  } catch {
     return [];
   }
 }
@@ -98,7 +98,7 @@ function getUndoStack() {
 function saveUndoStack(stack) {
   try {
     localStorage.setItem(UNDO_STACK_KEY, JSON.stringify((stack || []).slice(0, UNDO_STACK_MAX)));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function pushUndoSnapshot(label) {
@@ -138,7 +138,7 @@ export async function undoLastOperation() {
       "rpc-scheduled-procedures",
       JSON.stringify(snap.data.scheduledProcedures || [])
     );
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
     storage.saveMedCatalog(snap.data.medCatalog);
@@ -213,7 +213,7 @@ function highlightSnippet(snippet, q) {
     return safe.replace(new RegExp(qEsc, "ig"), function (m) {
       return "<mark>" + m + "</mark>";
     });
-  } catch (_e) {
+  } catch {
     return safe;
   }
 }
@@ -237,6 +237,71 @@ function collectIndicaHaystack(ind) {
   return parts.filter(Boolean).join("\n");
 }
 
+function collectPatientSearchHits(p, q, metaStr, out, max) {
+  var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(' · ');
+  if (meta.toLowerCase().indexOf(q) !== -1) {
+    out.push({
+      id: p.id,
+      tab: 'nota',
+      inner: 'notas',
+      tag: 'paciente',
+      title: p.nombre || 'Sin nombre',
+      meta: metaStr,
+      snippet: '',
+    });
+    return out.length >= max;
+  }
+  var nh = collectNoteHaystack(notes[p.id]);
+  if (nh && nh.toLowerCase().indexOf(q) !== -1) {
+    out.push({
+      id: p.id,
+      tab: 'nota',
+      inner: 'notas',
+      tag: 'nota',
+      title: p.nombre || 'Sin nombre',
+      meta: metaStr,
+      snippet: snippetAround(nh, q, 140),
+    });
+    return out.length >= max;
+  }
+  var ih = collectIndicaHaystack(indicaciones[p.id]);
+  if (ih && ih.toLowerCase().indexOf(q) !== -1) {
+    out.push({
+      id: p.id,
+      tab: 'nota',
+      inner: 'indica',
+      tag: 'indicaciones',
+      title: p.nombre || 'Sin nombre',
+      meta: metaStr,
+      snippet: snippetAround(ih, q, 140),
+    });
+    return out.length >= max;
+  }
+  return false;
+}
+
+function renderUnifiedSearchHtml(out, q) {
+  return out
+    .map(function (r, idx) {
+      return (
+        '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' +
+        idx +
+        ')">' +
+        '<div class="usr-title"><span>' +
+        esc(r.title) +
+        '</span><span class="usr-tag">' +
+        esc(r.tag) +
+        '</span></div>' +
+        '<div class="usr-meta">' +
+        esc(r.meta) +
+        '</div>' +
+        (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + '</div>' : '') +
+        '</div>'
+      );
+    })
+    .join('');
+}
+
 export function updateUnifiedSearchResults() {
   var box = document.getElementById("unified-search-results");
   var inp = document.getElementById("unified-search-input");
@@ -254,73 +319,16 @@ export function updateUnifiedSearchResults() {
   for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
     var p = searchPatients[i];
     if (p.isDemo && !isPitchPatientIsolationActive()) continue;
-    var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(" · ");
-    var metaLc = meta.toLowerCase();
     var metaStr =
-      "Cto. " + (p.cuarto || "-") + " · Cama " + (p.cama || "-") + (p.registro ? " · " + p.registro : "");
-    if (metaLc.indexOf(q) !== -1) {
-      out.push({
-        id: p.id,
-        tab: "nota",
-        inner: "notas",
-        tag: "paciente",
-        title: p.nombre || "Sin nombre",
-        meta: metaStr,
-        snippet: "",
-      });
-      if (out.length >= MAX) break;
-    }
-    var nh = collectNoteHaystack(notes[p.id]);
-    if (nh && nh.toLowerCase().indexOf(q) !== -1) {
-      out.push({
-        id: p.id,
-        tab: "nota",
-        inner: "notas",
-        tag: "nota",
-        title: p.nombre || "Sin nombre",
-        meta: metaStr,
-        snippet: snippetAround(nh, q, 140),
-      });
-      if (out.length >= MAX) break;
-    }
-    var ih = collectIndicaHaystack(indicaciones[p.id]);
-    if (ih && ih.toLowerCase().indexOf(q) !== -1) {
-      out.push({
-        id: p.id,
-        tab: "nota",
-        inner: "indica",
-        tag: "indicaciones",
-        title: p.nombre || "Sin nombre",
-        meta: metaStr,
-        snippet: snippetAround(ih, q, 140),
-      });
-      if (out.length >= MAX) break;
-    }
+      'Cto. ' + (p.cuarto || '-') + ' · Cama ' + (p.cama || '-') + (p.registro ? ' · ' + p.registro : '');
+    if (collectPatientSearchHits(p, q, metaStr, out, MAX)) break;
   }
   _unifiedSearchCurrent = out;
   if (!out.length) {
     box.innerHTML = '<div class="unified-search-empty">Sin coincidencias.</div>';
     return;
   }
-  box.innerHTML = out
-    .map(function (r, idx) {
-      return (
-        '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' +
-        idx +
-        ')">' +
-        '<div class="usr-title"><span>' +
-        esc(r.title) +
-        '</span><span class="usr-tag">' +
-        esc(r.tag) +
-        "</span></div>" +
-        '<div class="usr-meta">' +
-        esc(r.meta) +
-        "</div>" +
-        (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") +
-        "</div>"
-      );
-    })
-    .join("");
+  box.innerHTML = renderUnifiedSearchHtml(out, q);
 }
 
 export function selectUnifiedSearchResult(idx) {
@@ -496,41 +504,50 @@ function isTypingContext(target) {
   return false;
 }
 
+function handleProductivityModShortcut(e, k) {
+  if (k === 'n') {
+    e.preventDefault();
+    rt.openAddModal();
+    return true;
+  }
+  if (k === 's') {
+    e.preventDefault();
+    if (!rt.getActiveId()) {
+      rt.showToast('Selecciona un paciente primero', 'error');
+      return true;
+    }
+    rt.saveState();
+    rt.addAuditEntry('quick-save', 'ok', 1, String(rt.getActiveId()));
+    rt.showToast('Estado guardado ✓', 'success');
+    return true;
+  }
+  return false;
+}
+
+function handlePaseRoundShortcut(e) {
+  if (!isPaseMode() || !document.body || document.body.classList.contains('focus-mode')) return false;
+  if (isTypingContext(e.target) || e.metaKey || e.ctrlKey || e.altKey) return false;
+  var roundKey = (e.key || '').toLowerCase();
+  if (roundKey !== 'j' && roundKey !== 'k') return false;
+  e.preventDefault();
+  rt.advanceRondaPatient(roundKey === 'j' ? 1 : -1);
+  return true;
+}
+
+function onProductivityKeydown(e) {
+  if (e.key === 'F6') {
+    e.preventDefault();
+    toggleFocusMode();
+    return;
+  }
+  if (handlePaseRoundShortcut(e)) return;
+  var mod = e.metaKey || e.ctrlKey;
+  if (!mod || e.altKey || e.shiftKey) return;
+  handleProductivityModShortcut(e, (e.key || '').toLowerCase());
+}
+
 export function initProductivityKeyboardShortcuts() {
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "F6") {
-      e.preventDefault();
-      toggleFocusMode();
-      return;
-    }
-    if (isPaseMode() && document.body && !document.body.classList.contains("focus-mode")) {
-      if (!isTypingContext(e.target) && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        var roundKey = (e.key || "").toLowerCase();
-        if (roundKey === "j" || roundKey === "k") {
-          e.preventDefault();
-          rt.advanceRondaPatient(roundKey === "j" ? 1 : -1);
-          return;
-        }
-      }
-    }
-    var mod = e.metaKey || e.ctrlKey;
-    if (!mod) return;
-    if (e.altKey || e.shiftKey) return;
-    var k = (e.key || "").toLowerCase();
-    if (k === "n") {
-      e.preventDefault();
-      rt.openAddModal();
-    } else if (k === "s") {
-      e.preventDefault();
-      if (!rt.getActiveId()) {
-        rt.showToast("Selecciona un paciente primero", "error");
-        return;
-      }
-      rt.saveState();
-      rt.addAuditEntry("quick-save", "ok", 1, String(rt.getActiveId()));
-      rt.showToast("Estado guardado ✓", "success");
-    }
-  });
+  document.addEventListener('keydown', onProductivityKeydown);
   applyFocusModeFromStorage();
   refreshUndoButtonState();
 }

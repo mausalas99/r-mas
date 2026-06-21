@@ -47,7 +47,7 @@ function flushOne(patientId) {
   pending.delete(pid);
   try {
     entry.onCommit(entry.patient);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function flushStagedPatientDeletes() {

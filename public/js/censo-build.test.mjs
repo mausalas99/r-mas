@@ -1,15 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  sortPatientsForCensus,
-  formatCensusMonthLabel,
-  formatCensusDateLabel,
-  truncateCensusCell,
-  buildCensusPayload,
-  formatPacienteMetaForCenso,
-  formatCamaCellForCenso,
-  formatPatientNameForCenso,
-} from './censo-build.mjs';
+import { sortPatientsForCensus, formatCensusMonthLabel, truncateCensusCell, buildCensusPayload, formatPacienteMetaForCenso, formatCamaCellForCenso, formatPatientNameForCenso } from './censo-build.mjs';
 
 test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
   assert.equal(formatCamaCellForCenso({ cuarto: '201', cama: '0' }), '201');

@@ -14,7 +14,7 @@ export async function publishClinicalTeamsToLan() {
     if (typeof mod.pushClinicalOpsLanNow === 'function') {
       return mod.pushClinicalOpsLanNow();
     }
-  } catch (_e) {
+  } catch {
     /* LAN optional */
   }
   return { ok: false, code: 'NO_LAN' };
@@ -74,7 +74,7 @@ export async function pullClinicalOpsFromLanRoom(options = {}) {
       const lan = await import('../lan-sync.mjs');
       if (typeof lan.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
       return !!(await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs }));
-    } catch (_e) {
+    } catch {
       return false;
     } finally {
       lanClinicalOpsPullLastAt = Date.now();

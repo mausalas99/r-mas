@@ -71,7 +71,7 @@ export async function readClinicalDbGateKind() {
     if (status && status.state === 'unlocked') return 'unlocked';
     if (status && status.state) return 'locked';
     return 'unknown';
-  } catch (_e) {
+  } catch {
     return 'unknown';
   }
 }
@@ -193,7 +193,7 @@ export async function showMainClinicalOnboarding() {
     if (flushed.changed) {
       document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
     }
-  } catch (_eOps) {}
+  } catch (_e) { void _e; }
 
   let sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
@@ -225,13 +225,13 @@ async function syncChromeAfterOnboardingChange() {
   try {
     const rot = await import('./clinical-rotation-entry.mjs');
     if (typeof rot.syncClinicalRotationEntryChrome === 'function') rot.syncClinicalRotationEntryChrome();
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   try {
     const settings = await import('./settings-help/settings-dropdown.mjs');
     if (typeof settings.syncTeamSyncHeaderButton === 'function') {
       settings.syncTeamSyncHeaderButton();
     }
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export async function refreshMainClinicalOnboardingIfNeeded() {

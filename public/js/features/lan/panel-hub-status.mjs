@@ -77,7 +77,7 @@ export function hasLanAutoJoinConfirmed(roomId) {
 export function setLanAutoJoinConfirmed(roomId) {
   try {
     sessionStorage.setItem(lanAutoJoinConfirmedSessionKey(roomId), '1');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function lanHubStatusCopy() {

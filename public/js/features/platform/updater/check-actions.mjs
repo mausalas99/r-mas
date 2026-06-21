@@ -23,13 +23,13 @@ function checkForRepairUpdate() {
     if (typeof window.electronAPI.resetUpdateFeed === 'function') {
       window.electronAPI.resetUpdateFeed();
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   setUpdateChannel('estable');
   syncUpdateChannelUI();
   if (typeof window.electronAPI.setUpdateChannel === 'function') {
     try {
       window.electronAPI.setUpdateChannel('estable');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   setAsyncButtonLoading(document.getElementById('settings-repair-update-btn'), true, {
     loadingText: 'Buscando…',
@@ -47,7 +47,7 @@ function checkForRepairUpdate() {
   setTimeout(function () {
     try {
       window.electronAPI.reinstallCurrentRelease();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }, 150);
 }
 
@@ -57,13 +57,13 @@ function checkForAppUpdates() {
     return;
   }
   if (typeof window.electronAPI.setUpdateChannel === 'function') {
-    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch { /* ignore */ }
+    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) { void _e; }
   }
   setAsyncButtonLoading(document.getElementById('settings-check-updates-btn'), true, {
     loadingText: 'Buscando…',
   });
   setTimeout(function () {
-    try { window.electronAPI.checkForUpdates(); } catch { /* ignore */ }
+    try { window.electronAPI.checkForUpdates(); } catch (_e) { void _e; }
   }, 150);
 }
 

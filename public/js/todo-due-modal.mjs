@@ -239,6 +239,45 @@ function readVisiblePresetRowIds() {
   return ids;
 }
 
+function readPresetRowLabel(row) {
+  var labelInput = row.querySelector('.todo-due-preset-label-input');
+  return labelInput instanceof HTMLInputElement ? String(labelInput.value || '').trim() : '';
+}
+
+function readPresetRowMode(row, def) {
+  var modeSelect = row.querySelector('.todo-due-preset-mode-select');
+  return modeSelect instanceof HTMLSelectElement ? modeSelect.value : presetModeValue(def);
+}
+
+function buildDayTimePatchFromRow(row, def, dayOffset) {
+  var timeInput = row.querySelector('.todo-due-preset-time-input');
+  var fallback = String(def.hour).padStart(2, '0') + ':' + String(def.minute).padStart(2, '0');
+  var parts = String(timeInput instanceof HTMLInputElement ? timeInput.value : fallback).split(':');
+  return {
+    kind: 'dayTime',
+    dayOffset: dayOffset,
+    hour: Number(parts[0]),
+    minute: Number(parts[1]),
+  };
+}
+
+function patchFromPresetEditRow(row, id, def) {
+  var patch = { label: readPresetRowLabel(row) };
+  if (isCustomPresetRowId(id)) patch.custom = true;
+  var mode = readPresetRowMode(row, def);
+  var modeSelect = row.querySelector('.todo-due-preset-mode-select');
+  if (mode === 'today' || (def.kind === 'dayTime' && def.dayOffset === 0 && !modeSelect)) {
+    return Object.assign(patch, buildDayTimePatchFromRow(row, def, 0));
+  }
+  if (mode === 'tomorrow' || (def.kind === 'dayTime' && def.dayOffset === 1 && !modeSelect)) {
+    return Object.assign(patch, buildDayTimePatchFromRow(row, def, 1));
+  }
+  var hoursInput = row.querySelector('.todo-due-preset-hours-input');
+  patch.kind = 'offsetHours';
+  patch.hours = hoursInput instanceof HTMLInputElement ? Number(hoursInput.value) : Number(def.hours || 6);
+  return patch;
+}
+
 function readPresetEditRowsIntoPatch() {
   /** @type {Record<string, Record<string, unknown>>} */
   var patchById = {};
@@ -249,46 +288,7 @@ function readPresetEditRowsIntoPatch() {
     if (!id) return;
     var def = resolveTodoDuePresetDef(id);
     if (!def) return;
-    var labelInput = row.querySelector('.todo-due-preset-label-input');
-    var label = labelInput instanceof HTMLInputElement ? String(labelInput.value || '').trim() : '';
-    var patch = { label: label };
-    if (isCustomPresetRowId(id)) patch.custom = true;
-    var modeSelect = row.querySelector('.todo-due-preset-mode-select');
-    var mode =
-      modeSelect instanceof HTMLSelectElement ? modeSelect.value : presetModeValue(def);
-    if (mode === 'today' || (def.kind === 'dayTime' && def.dayOffset === 0 && !modeSelect)) {
-      patch.kind = 'dayTime';
-      patch.dayOffset = 0;
-      var timeToday = row.querySelector('.todo-due-preset-time-input');
-      var todayParts = String(
-        timeToday instanceof HTMLInputElement
-          ? timeToday.value
-          : String(def.hour).padStart(2, '0') + ':' + String(def.minute).padStart(2, '0')
-      ).split(':');
-      patch.hour = Number(todayParts[0]);
-      patch.minute = Number(todayParts[1]);
-      patchById[id] = patch;
-      return;
-    }
-    if (mode === 'tomorrow' || (def.kind === 'dayTime' && def.dayOffset === 1 && !modeSelect)) {
-      patch.kind = 'dayTime';
-      patch.dayOffset = 1;
-      var timeTomorrow = row.querySelector('.todo-due-preset-time-input');
-      var tomorrowParts = String(
-        timeTomorrow instanceof HTMLInputElement
-          ? timeTomorrow.value
-          : String(def.hour).padStart(2, '0') + ':' + String(def.minute).padStart(2, '0')
-      ).split(':');
-      patch.hour = Number(tomorrowParts[0]);
-      patch.minute = Number(tomorrowParts[1]);
-      patchById[id] = patch;
-      return;
-    }
-    patch.kind = 'offsetHours';
-    var hoursInput = row.querySelector('.todo-due-preset-hours-input');
-    patch.hours =
-      hoursInput instanceof HTMLInputElement ? Number(hoursInput.value) : Number(def.hours || 6);
-    patchById[id] = patch;
+    patchById[id] = patchFromPresetEditRow(row, id, def);
   });
   return patchById;
 }

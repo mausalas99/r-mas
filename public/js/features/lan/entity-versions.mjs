@@ -27,7 +27,7 @@ export function readLiveSyncEntityMap() {
     var raw = localStorage.getItem(LIVE_SYNC_ENTITIES_LS);
     var parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -50,7 +50,7 @@ export function rememberLiveSyncEntity(entityType, entityId, patientId, version,
   map[liveSyncEntityStoreKey(entityType, entityId, patientId)] = row;
   try {
     localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
-  } catch (_e) { /* ignored */ }
+  } catch { /* ignored */ }
 }
 
 /** Local tombstone so LAN reconcile cannot resurrect a patient pending delete sync. */
@@ -67,6 +67,20 @@ export function rememberPatientDeleteTombstone(patient) {
   });
 }
 
+function purgeRegistroTombstones(map, reg, selfKey) {
+  var changed = false;
+  for (var key of Object.keys(map)) {
+    if (!key.startsWith('patient:')) continue;
+    var row = map[key];
+    if (!row || row._deleted !== true) continue;
+    if (String(row.registro || '').trim() !== reg) continue;
+    if (key === selfKey) continue;
+    delete map[key];
+    changed = true;
+  }
+  return changed;
+}
+
 /** New admission with same hospital registro must not inherit stale LAN delete tombstones. */
 export function clearPatientDeleteTombstoneForAdmit(patientId, registro) {
   var pid = String(patientId || '').trim();
@@ -79,21 +93,11 @@ export function clearPatientDeleteTombstoneForAdmit(patientId, registro) {
     delete map[selfKey];
     changed = true;
   }
-  if (reg) {
-    for (var key of Object.keys(map)) {
-      if (!key.startsWith('patient:')) continue;
-      var row = map[key];
-      if (!row || row._deleted !== true) continue;
-      if (String(row.registro || '').trim() !== reg) continue;
-      if (key === selfKey) continue;
-      delete map[key];
-      changed = true;
-    }
-  }
+  if (reg) changed = purgeRegistroTombstones(map, reg, selfKey) || changed;
   if (!changed) return;
   try {
     localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
-  } catch (_e) { /* ignored */ }
+  } catch { /* ignored */ }
 }
 
 export function syncHostBundleEntityFromApplied(msg) {
@@ -190,7 +194,7 @@ export function sendLiveSyncMutation(mutation) {
   if (transmit()) return;
   try {
     lanClient.connectLiveChannel(rid);
-  } catch (_eConn) { /* ignored */ }
+  } catch { /* ignored */ }
   void waitForLiveChannelOpen(rid, 4500).then(function () {
     transmit();
   });

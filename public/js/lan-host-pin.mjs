@@ -9,7 +9,7 @@ export function getPinnedHostUrl() {
     return String(localStorage.getItem(PINNED_HOST_KEY) || '')
       .trim()
       .replace(/\/+$/, '');
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -24,13 +24,13 @@ export function setPinnedHostUrl(hostUrl) {
   }
   try {
     localStorage.setItem(PINNED_HOST_KEY, url);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function clearPinnedHostUrl() {
   try {
     localStorage.removeItem(PINNED_HOST_KEY);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /** True when pin points at this Mac's LAN base URL (host holds the turn; do not yield). */

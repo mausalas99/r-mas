@@ -3,8 +3,9 @@
  * Policy (ownership, tombstone, live-sync) stays in orchestrator.mjs.
  */
 import { lanFetchAuthed } from './transport.mjs';
-import { createMutationBuilder, wrapLiveSyncPatch } from '../../versioned-mutation.mjs';
+import { createMutationBuilder } from '../../versioned-mutation.mjs';
 import { resolveLanPatientDeleteSteps } from './lan-patient-delete-policy.mjs';
+import { runLanPatientDeleteStep } from './lan-patient-delete-steps.mjs';
 
 export { resolveLanPatientDeleteSteps } from './lan-patient-delete-policy.mjs';
 
@@ -68,45 +69,29 @@ export async function pushPatientDeleteToHost(patientId, hostRow, registroFallba
   if (!rid) return { ok: false, error: 'not_configured' };
 
   var steps = resolveLanPatientDeleteSteps(!!hostRow);
-  /** @type {{ ok: false, error: string, status?: number }} */
-  var lastFail = { ok: false, error: 'purge_failed' };
-  var mutation = null;
+  var stepCtx = {
+    pid: pid,
+    reg: reg,
+    rid: rid,
+    hostRow: hostRow,
+    pushVersioned: ctx.pushVersioned,
+    enqueueOutbox: ctx.enqueueOutbox,
+    flushOutbox: ctx.flushOutbox,
+    getClientId: ctx.getClientId,
+    lastFail: { ok: false, error: 'purge_failed' },
+    mutation: null,
+  };
 
   for (var i = 0; i < steps.length; i += 1) {
-    var step = steps[i];
-    if (step === 'census_delete') {
-      var census = await deleteHostPatientCensus(pid, reg);
-      if (census.ok) {
-        return { ok: true, via: hostRow ? 'delete_census' : 'delete_bundle' };
-      }
-      lastFail = {
-        ok: false,
-        error: census.status ? 'host_reject_' + census.status : 'purge_failed',
-        status: census.status,
-      };
-      continue;
+    var result = await runLanPatientDeleteStep(steps[i], stepCtx);
+    if (result.ok) {
+      if (result.via) return { ok: true, via: result.via };
+      return result.result || { ok: true };
     }
-    if (step === 'versioned_delete') {
-      mutation = buildPatientDeleteMutation(pid, hostRow, reg, rid);
-      var httpResult = await ctx.pushVersioned(pid, mutation);
-      if (httpResult?.ok) return httpResult;
-      lastFail = {
-        ok: false,
-        error: httpResult?.status ? 'host_reject_' + httpResult.status : 'purge_failed',
-        status: httpResult?.status,
-      };
-      continue;
-    }
-    if (step === 'outbox_delete') {
-      if (!mutation) mutation = buildPatientDeleteMutation(pid, hostRow, reg, rid);
-      await ctx.enqueueOutbox(rid, {
-        kind: 'patch',
-        payload: wrapLiveSyncPatch(rid, ctx.getClientId(), mutation),
-      });
-      await ctx.flushOutbox(rid);
-      return lastFail;
-    }
+    if (result.lastFail) stepCtx.lastFail = result.lastFail;
+    if (result.mutation) stepCtx.mutation = result.mutation;
+    if (result.done) return stepCtx.lastFail;
   }
 
-  return lastFail;
+  return stepCtx.lastFail;
 }

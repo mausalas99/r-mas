@@ -4,19 +4,9 @@
  * @param {object|null|undefined} entry
  * @returns {object|null}
  */
-export function extractPatientFromBundleEntry(entry) {
-  if (!entry || typeof entry !== 'object') return null;
-  if (entry.patient && entry.patient.id) {
-    const row = { ...entry.patient };
-    if (!Array.isArray(row.audit_log) && Array.isArray(entry.audit_log)) {
-      row.audit_log = entry.audit_log;
-    }
-    return row;
-  }
-  const id = String(entry.id || '').trim();
-  if (!id || id.indexOf('demo-') === 0) return null;
+function flatBundlePatientRow(entry, id) {
   return {
-    id: id,
+    id,
     nombre: entry.nombre || entry.name || '',
     registro: entry.registro || '',
     sala: entry.sala || '',
@@ -33,4 +23,18 @@ export function extractPatientFromBundleEntry(entry) {
     lanUpdatedAt: entry.lanUpdatedAt,
     audit_log: Array.isArray(entry.audit_log) ? entry.audit_log : [],
   };
+}
+
+export function extractPatientFromBundleEntry(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  if (entry.patient && entry.patient.id) {
+    const row = { ...entry.patient };
+    if (!Array.isArray(row.audit_log) && Array.isArray(entry.audit_log)) {
+      row.audit_log = entry.audit_log;
+    }
+    return row;
+  }
+  const id = String(entry.id || '').trim();
+  if (!id || id.indexOf('demo-') === 0) return null;
+  return flatBundlePatientRow(entry, id);
 }

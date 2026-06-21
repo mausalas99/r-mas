@@ -114,7 +114,7 @@ function destroyListadoSortables() {
   _listadoSortables.forEach(function (s) {
     try {
       if (s && typeof s.destroy === 'function') s.destroy();
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   });
   _listadoSortables = [];
 }

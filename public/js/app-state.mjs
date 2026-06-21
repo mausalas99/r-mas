@@ -1,4 +1,4 @@
-import { storage, normalizeLabHistoryPatientSets, ensureStorageHydrated } from './storage.js';
+import { storage, ensureStorageHydrated } from './storage.js';
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isSessionScopedWebClient } from './session-clinical-wipe.mjs';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
@@ -101,7 +101,7 @@ function clonePlainRecord(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   try {
     return JSON.parse(JSON.stringify(value));
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -173,7 +173,7 @@ export function initAppState() {
     if (clinicalSala) {
       salaMigrated = migratePatientsClinicalSala(patients, { sala: clinicalSala });
     }
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
     saveState({ immediate: true });
   }

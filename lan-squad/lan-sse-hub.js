@@ -15,7 +15,7 @@ function createSseHub() {
     for (const client of set) {
       try {
         client.res.write(line);
-      } catch (_e) {
+      } catch {
         /* client disconnected */
       }
     }
@@ -41,7 +41,7 @@ function createSseHub() {
       const keepAlive = setInterval(() => {
         try {
           res.write(':\n\n');
-        } catch (_e) {
+        } catch {
           clearInterval(keepAlive);
         }
       }, KEEP_ALIVE_INTERVAL_MS);

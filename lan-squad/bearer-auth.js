@@ -13,7 +13,7 @@ function createBearerAuthMiddleware(getState, { onAuthFail } = {}) {
     let st;
     try {
       st = getState();
-    } catch (e) {
+    } catch {
       return res.status(500).json({ error: 'host_store_error' });
     }
     if (!verifyTeamCode(token, st.teamCodeHash)) {

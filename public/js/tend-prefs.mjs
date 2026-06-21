@@ -35,7 +35,7 @@ function readJson(key, fallback) {
     if (!raw) return fallback;
     var o = JSON.parse(raw);
     return o && typeof o === 'object' ? o : fallback;
-  } catch (_e) {
+  } catch {
     return fallback;
   }
 }
@@ -43,7 +43,7 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function seriesColorKey(sectionKey, fieldKey) {

@@ -77,12 +77,6 @@ function rowStatus(g) {
   return ctx.clinicalStatus || '';
 }
 
-/** @param {object} g */
-function rowIsCriticalOrUnstable(g) {
-  const status = rowStatus(g);
-  return status === 'critical' || status === 'unstable' || !!g?.is_critical;
-}
-
 /**
  * @param {Record<string, unknown>|null|undefined} settings
  */
@@ -107,37 +101,17 @@ export function isEntregaRosterOpen() {
 
 const TURNO_STARTED_KEY = 'guardia.turnoStartedAt';
 
-export async function openEntregaRosterPanel(settings) {
-  await refreshGuardiaCensusFromDb(settings);
-  const host = ensureRosterHost();
-  document.documentElement.classList.add('guardia-entrega-roster-open');
+/** @param {object} p @param {Map<string, object>} guardiasMap */
+function renderRosterRow(p, guardiasMap) {
+  const g = guardiasMap.get(p.id);
+  const summary = rowContextSummary(g);
+  const icons = rowIcons(g);
+  const status = rowStatus(g);
+  const label = STATUS_LABELS[status] || '—';
+  const cls = STATUS_CLASS[status] || 'roster-sbadge--none';
+  const hasCtx = !!summary;
 
-  const guardiasMap = clinicalSessionContext.guardiasMap;
-
-  const censusPatients = sortPatientsByPriorityThenBed(
-    patients
-      .filter((p) => p && p.id && !p.isDemo && !p.archived)
-      .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p })),
-    guardiasMap
-  );
-
-  const critical = censusPatients.filter(
-    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) < 2
-  );
-  const stable = censusPatients.filter(
-    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) >= 2
-  );
-
-  function renderRow(p) {
-    const g = guardiasMap.get(p.id);
-    const summary = rowContextSummary(g);
-    const icons = rowIcons(g);
-    const status = rowStatus(g);
-    const label = STATUS_LABELS[status] || '—';
-    const cls = STATUS_CLASS[status] || 'roster-sbadge--none';
-    const hasCtx = !!summary;
-
-    return `
+  return `
       <div class="roster-row${hasCtx ? ' roster-row--ctx' : ''}" data-patient-id="${p.id}" role="button" tabindex="0">
         <div class="roster-row-bed">${p.bed_label || '—'}</div>
         <div class="roster-row-body">
@@ -152,9 +126,12 @@ export async function openEntregaRosterPanel(settings) {
           <div class="roster-icon-flags">${icons}</div>
         </div>
       </div>`;
-  }
+}
 
-  host.innerHTML = `
+/** @param {object[]} censusPatients @param {object[]} critical @param {object[]} stable @param {Map<string, object>} guardiasMap */
+function buildRosterPanelHtml(censusPatients, critical, stable, guardiasMap) {
+  const renderRow = (p) => renderRosterRow(p, guardiasMap);
+  return `
     <div class="roster-panel">
       <div class="roster-panel-header">
         <div class="roster-panel-title">Entrega</div>
@@ -170,9 +147,10 @@ export async function openEntregaRosterPanel(settings) {
         <button type="button" class="btn-save roster-foot-btn" id="roster-btn-confirm">Confirmar entrega</button>
       </div>
     </div>`;
+}
 
-  const rosterPatientIds = censusPatients.map((p) => String(p.id));
-
+/** @param {HTMLElement} host @param {Map<string, object>} guardiasMap @param {string[]} rosterPatientIds @param {Record<string, unknown>|null|undefined} settings */
+function wireRosterRows(host, guardiasMap, rosterPatientIds, settings) {
   host.querySelectorAll('.roster-row').forEach((row) => {
     const patientId = row.dataset.patientId;
     const open = () => {
@@ -204,7 +182,22 @@ export async function openEntregaRosterPanel(settings) {
       }
     });
   });
+}
 
+/** @param {Map<string, object>} guardiasMap */
+function rosterHasSavedEntregas(guardiasMap) {
+  let totalEstudios = 0;
+  let patientsWithSignos = 0;
+  for (const g of guardiasMap.values()) {
+    if (!g?.pendientes_json) continue;
+    const doc = normalizePendientesJson(g.pendientes_json);
+    totalEstudios += listActiveProcedimientos(doc).length;
+    if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) patientsWithSignos += 1;
+  }
+  return totalEstudios > 0 || patientsWithSignos > 0;
+}
+
+function wireRosterFooter(guardiasMap) {
   document.getElementById('roster-btn-cancel')?.addEventListener('click', () => {
     void (async () => {
       closeEntregaRosterPanel();
@@ -216,15 +209,7 @@ export async function openEntregaRosterPanel(settings) {
 
   document.getElementById('roster-btn-confirm')?.addEventListener('click', () => {
     void (async () => {
-      let totalEstudios = 0;
-      let patientsWithSignos = 0;
-      for (const g of guardiasMap.values()) {
-        if (!g?.pendientes_json) continue;
-        const doc = normalizePendientesJson(g.pendientes_json);
-        totalEstudios += listActiveProcedimientos(doc).length;
-        if (vitalsStructuredMonitoringEnabled(doc.vitalsPlan)) patientsWithSignos += 1;
-      }
-      if (totalEstudios === 0 && patientsWithSignos === 0) {
+      if (!rosterHasSavedEntregas(guardiasMap)) {
         const proceed = window.confirm(
           'No hay entregas guardadas con signos vitales ni estudios.\n\n' +
             'Los internos (MIP) solo ven pacientes entregados al R1 de guardia. Abre cada paciente, configura signos (y procedimientos si aplica) y pulsa Guardar entrega.\n\n' +
@@ -240,6 +225,31 @@ export async function openEntregaRosterPanel(settings) {
       window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
     })();
   });
+}
+
+export async function openEntregaRosterPanel(settings) {
+  await refreshGuardiaCensusFromDb(settings);
+  const host = ensureRosterHost();
+  document.documentElement.classList.add('guardia-entrega-roster-open');
+
+  const guardiasMap = clinicalSessionContext.guardiasMap;
+  const censusPatients = sortPatientsByPriorityThenBed(
+    patients
+      .filter((p) => p && p.id && !p.isDemo && !p.archived)
+      .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p })),
+    guardiasMap
+  );
+  const critical = censusPatients.filter(
+    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) < 2
+  );
+  const stable = censusPatients.filter(
+    (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) >= 2
+  );
+
+  host.innerHTML = buildRosterPanelHtml(censusPatients, critical, stable, guardiasMap);
+  const rosterPatientIds = censusPatients.map((p) => String(p.id));
+  wireRosterRows(host, guardiasMap, rosterPatientIds, settings);
+  wireRosterFooter(guardiasMap);
 }
 
 export function closeEntregaRosterPanel() {

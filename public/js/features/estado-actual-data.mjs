@@ -150,7 +150,7 @@ export function mergePatientMonitoreoFromImported(target, source) {
     if ('estadoActual' in s && s.estadoActual != null && typeof s.estadoActual === 'object') {
       t.estadoActual = JSON.parse(JSON.stringify(s.estadoActual));
     }
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return migratePatientMonitoreo(target);
 }
 

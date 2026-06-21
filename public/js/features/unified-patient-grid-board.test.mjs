@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, mock } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
 import { defaultHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';

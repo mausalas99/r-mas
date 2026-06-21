@@ -73,7 +73,7 @@ async function pushClinicalOpsLanNowBody(_opts) {
 
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 
   var envelope = await b.buildLiveSyncBundleEnvelope(roomId);
   envelope.clinicalOps = snap;

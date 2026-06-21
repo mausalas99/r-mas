@@ -22,7 +22,7 @@ export function entryMatchKey(entry) {
 
 function parseDateDMY(value) {
   const t = String(value || '').trim();
-  const m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  const m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (!m) return null;
   let y = parseInt(m[3], 10);
   if (y < 100) y += 2000;
@@ -75,6 +75,26 @@ export function eventualidadesUpdatedAt(store) {
   return best;
 }
 
+function mergeEventualidadRow(byId, row) {
+  if (!row || typeof row !== 'object') return;
+  const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
+  if (!id) return;
+  const cur = byId.get(id);
+  const at = String(/** @type {{ at?: string }} */ (row).at || '');
+  const curAt = cur ? String(/** @type {{ at?: string }} */ (cur).at || '') : '';
+  if (!cur || compareIso(at, curAt) >= 0) byId.set(id, { ...row });
+}
+
+function appendAnonymousEventualidades(byId, leftEntries, rightEntries) {
+  const { toAdd } = filterNewEventualidades(
+    Array.from(byId.values()),
+    rightEntries.filter((row) => !String(/** @type {{ id?: string }} */ (row).id || '').trim())
+  );
+  for (const row of toAdd) {
+    byId.set('anon:' + dedupeEventualidadKey(row), { ...row });
+  }
+}
+
 /** @param {unknown} a @param {unknown} b */
 export function mergeEventualidades(a, b) {
   const left = a && typeof a === 'object' ? /** @type {{ entries?: object[] }} */ (a) : null;
@@ -83,29 +103,9 @@ export function mergeEventualidades(a, b) {
   const leftEntries = left && Array.isArray(left.entries) ? left.entries : [];
   const rightEntries = right && Array.isArray(right.entries) ? right.entries : [];
   const byId = new Map();
-  for (const row of leftEntries) {
-    if (!row || typeof row !== 'object') continue;
-    const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
-    if (id) byId.set(id, { ...row });
-  }
-  for (const row of rightEntries) {
-    if (!row || typeof row !== 'object') continue;
-    const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
-    if (id) {
-      const cur = byId.get(id);
-      const at = String(/** @type {{ at?: string }} */ (row).at || '');
-      const curAt = cur ? String(/** @type {{ at?: string }} */ (cur).at || '') : '';
-      if (!cur || compareIso(at, curAt) >= 0) byId.set(id, { ...row });
-      continue;
-    }
-  }
-  const { toAdd } = filterNewEventualidades(
-    Array.from(byId.values()),
-    rightEntries.filter((row) => !String(/** @type {{ id?: string }} */ (row).id || '').trim())
-  );
-  for (const row of toAdd) {
-    byId.set('anon:' + dedupeEventualidadKey(row), { ...row });
-  }
+  for (const row of leftEntries) mergeEventualidadRow(byId, row);
+  for (const row of rightEntries) mergeEventualidadRow(byId, row);
+  appendAnonymousEventualidades(byId, leftEntries, rightEntries);
   const entries = Array.from(byId.values()).sort(function (x, y) {
     return compareIso(String(/** @type {{ at?: string }} */ (y).at || ''), String(/** @type {{ at?: string }} */ (x).at || ''));
   });
@@ -155,6 +155,17 @@ function medPharmTimestamp(profile) {
  * Timestamp más reciente del bloque Estado actual / monitoreo para sync LWW (historial + texto guardado).
  * @param {unknown} monitoreo
  */
+function bestRecordedAtFromHistorial(hist, best) {
+  for (let i = 0; i < hist.length; i += 1) {
+    const row = hist[i];
+    if (!row || typeof row !== 'object') continue;
+    const ra =
+      /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
+    if (ra && compareIso(ra, best) > 0) return ra;
+  }
+  return best;
+}
+
 export function monitoreoUpdatedAt(monitoreo) {
   if (!monitoreo || typeof monitoreo !== 'object') return '';
   let best = '';
@@ -162,45 +173,54 @@ export function monitoreoUpdatedAt(monitoreo) {
   const m = monitoreo;
   const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
   if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) {
-    const s = String(tg.savedAt);
-    if (compareIso(s, best) > 0) best = s;
+    best = String(tg.savedAt);
   }
   const hist = Array.isArray(m.historial) ? m.historial : [];
-  for (let i = 0; i < hist.length; i += 1) {
-    const row = hist[i];
-    if (!row || typeof row !== 'object') continue;
-    const ra =
-      /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
-    if (ra && compareIso(ra, best) > 0) best = ra;
+  return bestRecordedAtFromHistorial(hist, best);
+}
+
+function estadoClinicoHasContent(ec) {
+  const template = emptyEstadoClinico();
+  for (const key of Object.keys(template)) {
+    if (String(ec[key] || '').trim()) return true;
   }
-  return best;
+  return false;
+}
+
+function confirmadoHasContent(conf) {
+  for (const key of Object.keys(conf)) {
+    if (conf[key]) return true;
+  }
+  return false;
+}
+
+function monitoreoTextoGuardadoHasPayload(tg) {
+  if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) return true;
+  return !!String(tg?.text || '').trim();
 }
 
 /** @param {unknown} monitoreo */
 function monitoreoHasLanPayload(monitoreo) {
   if (!monitoreo || typeof monitoreo !== 'object') return false;
+  return monitoreoHasHistorialOrText(monitoreo) || monitoreoHasClinicalFlags(monitoreo);
+}
+
+function monitoreoHasHistorialOrText(monitoreo) {
   /** @type {any} */
   const m = monitoreo;
-  const hist = Array.isArray(m.historial) ? m.historial : [];
-  if (hist.length > 0) return true;
+  if (Array.isArray(m.historial) && m.historial.length > 0) return true;
   const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
-  if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) return true;
-  if (String(tg?.text || '').trim()) return true;
+  return !!(tg && monitoreoTextoGuardadoHasPayload(tg));
+}
+
+function monitoreoHasClinicalFlags(monitoreo) {
+  /** @type {any} */
+  const m = monitoreo;
   const ec = m.estadoClinico && typeof m.estadoClinico === 'object' ? m.estadoClinico : null;
-  if (ec) {
-    const template = emptyEstadoClinico();
-    for (const key of Object.keys(template)) {
-      if (String(ec[key] || '').trim()) return true;
-    }
-  }
+  if (ec && estadoClinicoHasContent(ec)) return true;
   if (hasPendingEaProposals(m.pendienteReceta)) return true;
   const conf = m.confirmado && typeof m.confirmado === 'object' ? m.confirmado : null;
-  if (conf) {
-    for (const key of Object.keys(conf)) {
-      if (conf[key]) return true;
-    }
-  }
-  return false;
+  return !!(conf && confirmadoHasContent(conf));
 }
 
 /** @param {object} entry */
@@ -313,6 +333,85 @@ function pickPatientFields(older, newer) {
   return out;
 }
 
+function pickNewerByTimestamp(tsA, tsB, aVal, bVal, cloneFn) {
+  return compareIso(tsA, tsB) >= 0 ? cloneFn(aVal) : cloneFn(bVal);
+}
+
+function mergePatientMonitoreo(patient, first, second) {
+  const monOlder = second.patient?.monitoreo;
+  const monNewer = first.patient?.monitoreo;
+  const payOlder = monitoreoHasLanPayload(monOlder);
+  const payNewer = monitoreoHasLanPayload(monNewer);
+  if (payOlder && payNewer) {
+    patient.monitoreo = mergeMonitoreo(monOlder, monNewer);
+    return;
+  }
+  if (payNewer && monNewer) {
+    patient.monitoreo = structuredClone(monNewer);
+    return;
+  }
+  if (payOlder && monOlder) {
+    patient.monitoreo = structuredClone(monOlder);
+    return;
+  }
+  delete patient.monitoreo;
+}
+
+function mergePatientDocuments(a, b) {
+  return {
+    note: pickNewerByTimestamp(
+      noteTimestamp(a.note),
+      noteTimestamp(b.note),
+      a.note,
+      b.note,
+      (v) => ({ ...(v || {}) })
+    ),
+    indicaciones: pickNewerByTimestamp(
+      noteTimestamp(a.indicaciones),
+      noteTimestamp(b.indicaciones),
+      a.indicaciones,
+      b.indicaciones,
+      (v) => ({ ...(v || {}) })
+    ),
+    medReceta: pickNewerByTimestamp(
+      medRecetaTimestamp(a.medReceta),
+      medRecetaTimestamp(b.medReceta),
+      a.medReceta,
+      b.medReceta,
+      (v) => (v ? { ...v } : null)
+    ),
+    medPharmProfile: pickNewerByTimestamp(
+      medPharmTimestamp(a.medPharmProfile),
+      medPharmTimestamp(b.medPharmProfile),
+      a.medPharmProfile,
+      b.medPharmProfile,
+      (v) => (v ? structuredClone(v) : null)
+    ),
+  };
+}
+
+function buildMergedPatientEntry(a, b, patient, first, second) {
+  mergePatientMonitoreo(patient, first, second);
+
+  const mergedEventualidades = mergeEventualidades(first.patient?.eventualidades, second.patient?.eventualidades);
+  if (mergedEventualidades) patient.eventualidades = mergedEventualidades;
+
+  const mergedHc = mergeHistoriaClinica(first.patient?.historiaClinica, second.patient?.historiaClinica);
+  if (mergedHc) patient.historiaClinica = mergedHc;
+
+  if (patient.id) bumpLabHistoryRevision(patient.id);
+
+  const docs = mergePatientDocuments(a, b);
+  return {
+    patient,
+    ...docs,
+    labHistory: mergeLabHistorySets(a.labHistory, b.labHistory),
+    vpo: mergeVpoPayload(a.vpo, b.vpo),
+    listadoProblemas: mergeListadoProblemas(a.listadoProblemas, b.listadoProblemas),
+    todos: mergeTodoListsById(a.todos, b.todos),
+  };
+}
+
 /** @param {object} a @param {object} b */
 export function mergePatientEntry(a, b) {
   if (!a || !a.patient) return b ? cloneEntry(b) : null;
@@ -326,65 +425,7 @@ export function mergePatientEntry(a, b) {
     compareIso(entryUpdatedAt(first), entryUpdatedAt(second)) >= 0 ? first.patient : second.patient
   );
   patient.id = first.patient.id || second.patient.id;
-
-  const note =
-    compareIso(noteTimestamp(a.note), noteTimestamp(b.note)) >= 0
-      ? { ...(a.note || {}) }
-      : { ...(b.note || {}) };
-  const indicaciones =
-    compareIso(noteTimestamp(a.indicaciones), noteTimestamp(b.indicaciones)) >= 0
-      ? { ...(a.indicaciones || {}) }
-      : { ...(b.indicaciones || {}) };
-  const medReceta =
-    compareIso(medRecetaTimestamp(a.medReceta), medRecetaTimestamp(b.medReceta)) >= 0
-      ? a.medReceta
-        ? { ...a.medReceta }
-        : null
-      : b.medReceta
-        ? { ...b.medReceta }
-        : null;
-  const medPharmProfile =
-    compareIso(medPharmTimestamp(a.medPharmProfile), medPharmTimestamp(b.medPharmProfile)) >= 0
-      ? a.medPharmProfile
-        ? structuredClone(a.medPharmProfile)
-        : null
-      : b.medPharmProfile
-        ? structuredClone(b.medPharmProfile)
-        : null;
-
-  const monOlder = second.patient?.monitoreo;
-  const monNewer = first.patient?.monitoreo;
-  const payOlder = monitoreoHasLanPayload(monOlder);
-  const payNewer = monitoreoHasLanPayload(monNewer);
-  if (payOlder && payNewer) {
-    patient.monitoreo = mergeMonitoreo(monOlder, monNewer);
-  } else if (payNewer && monNewer) {
-    patient.monitoreo = structuredClone(monNewer);
-  } else if (payOlder && monOlder) {
-    patient.monitoreo = structuredClone(monOlder);
-  } else {
-    delete patient.monitoreo;
-  }
-
-  const mergedEventualidades = mergeEventualidades(first.patient?.eventualidades, second.patient?.eventualidades);
-  if (mergedEventualidades) patient.eventualidades = mergedEventualidades;
-
-  const mergedHc = mergeHistoriaClinica(first.patient?.historiaClinica, second.patient?.historiaClinica);
-  if (mergedHc) patient.historiaClinica = mergedHc;
-
-  if (patient.id) bumpLabHistoryRevision(patient.id);
-
-  return {
-    patient,
-    note,
-    indicaciones,
-    labHistory: mergeLabHistorySets(a.labHistory, b.labHistory),
-    medReceta,
-    medPharmProfile,
-    vpo: mergeVpoPayload(a.vpo, b.vpo),
-    listadoProblemas: mergeListadoProblemas(a.listadoProblemas, b.listadoProblemas),
-    todos: mergeTodoListsById(a.todos, b.todos),
-  };
+  return buildMergedPatientEntry(a, b, patient, first, second);
 }
 
 /** @param {object|null|undefined} a @param {object|null|undefined} b */
@@ -394,14 +435,12 @@ function mergeVpoPayload(a, b) {
   if (!b) return structuredClone(a);
   try {
     return JSON.parse(JSON.stringify(b));
-  } catch (_e) {
+  } catch {
     return structuredClone(b);
   }
 }
 
-/** @param {object} entry */
-export function cloneEntry(entry) {
-  const patRaw = entry.patient || {};
+function clonePatientShell(patRaw) {
   const patient =
     typeof patRaw === 'object' && patRaw != null ? { ...patRaw } : /** @type {any} */ ({});
   const monSrc = patient.monitoreo;
@@ -411,8 +450,13 @@ export function cloneEntry(entry) {
   if (patient.historiaClinica != null && typeof patient.historiaClinica === 'object') {
     patient.historiaClinica = structuredClone(patient.historiaClinica);
   }
+  return patient;
+}
+
+/** @param {object} entry */
+export function cloneEntry(entry) {
   return {
-    patient,
+    patient: clonePatientShell(entry.patient || {}),
     note: { ...(entry.note || {}) },
     indicaciones: { ...(entry.indicaciones || {}) },
     labHistory: Array.isArray(entry.labHistory) ? entry.labHistory.map((s) => ({ ...s })) : [],

@@ -18,7 +18,7 @@ function initUpdateChannelAndGate() {
   syncUpdateChannelUI();
   syncUpdateTelemetryUI();
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
-    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch { /* ignore */ }
+    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) { void _e; }
   }
   initStableDowngradeSettings({
     showToast: rt.showToast.bind(rt),

@@ -10,7 +10,7 @@ function publicAssetUrl(pathname) {
   var clean = String(pathname || '').replace(/^\/+/, '');
   try {
     return new URL(clean, window.location.href).href;
-  } catch (_e) {
+  } catch {
     return '/' + clean;
   }
 }

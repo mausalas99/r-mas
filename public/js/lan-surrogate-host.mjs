@@ -14,7 +14,7 @@ export function rememberPrimaryHostUrl(hostUrl) {
   if (!url) return;
   try {
     localStorage.setItem(PRIMARY_HOST_KEY, url);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function getPrimaryHostUrl() {
@@ -22,7 +22,7 @@ export function getPrimaryHostUrl() {
     return String(localStorage.getItem(PRIMARY_HOST_KEY) || '')
       .trim()
       .replace(/\/+$/, '');
-  } catch (_e) {
+  } catch {
     return '';
   }
 }
@@ -33,7 +33,7 @@ function readPeersRaw() {
     if (!raw) return {};
     const o = JSON.parse(raw);
     return o && typeof o === 'object' ? o : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -41,7 +41,7 @@ function readPeersRaw() {
 function writePeersRaw(map) {
   try {
     localStorage.setItem(PEERS_KEY, JSON.stringify(map || {}));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function pruneLivePeers(nowMs) {
@@ -133,7 +133,7 @@ export async function pingLanHostUrl(hostUrl, teamCode) {
       signal: ctrl.signal,
     });
     return !!(r && r.ok);
-  } catch (_e) {
+  } catch {
     return false;
   } finally {
     clearTimeout(timer);
@@ -153,7 +153,7 @@ export function getSurrogateHostState() {
       promotedAt: String(o.promotedAt || ''),
       roomId: String(o.roomId || '').trim(),
     };
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -174,13 +174,13 @@ export function setSurrogateHostState(state) {
         roomId: String(state.roomId || '').trim(),
       })
     );
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function clearSurrogateHostState() {
   try {
     localStorage.removeItem(SURROGATE_KEY);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 export function isSurrogateHostActive() {

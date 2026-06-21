@@ -2,10 +2,7 @@
  * Edición de formatos por defecto dentro de las pestañas Nota / Indicaciones (no en Mi Perfil).
  */
 
-import {
-  ensureProfileTemplateDefaults,
-  resetProfileTemplatesToBlank,
-} from "./profile-templates.mjs";
+import { ensureProfileTemplateDefaults } from "./profile-templates.mjs";
 
 /** @type {null | 'nota' | 'indica'} */
 var formatsEditMode = null;

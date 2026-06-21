@@ -5,42 +5,14 @@
 
 import { resolvePatientTeamIdFromAssignments } from '../../clinico-access.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
+import {
+  buildClinicalOpsLookups as buildLookupsFromOps,
+  resolveRegistrarFromAudit,
+} from './host-patients-enrich-lookups.mjs';
 
 /** @param {object|null|undefined} clinicalOps */
 export function buildClinicalOpsLookups(clinicalOps) {
-  const usersById = new Map();
-  const usersByUsername = new Map();
-  for (const row of clinicalOps?.clinical_users || []) {
-    const id = String(row?.user_id || '').trim();
-    if (id) usersById.set(id, row);
-    const handle = String(row?.username || '').trim();
-    if (handle) usersByUsername.set(handle, row);
-    const normalized = normalizeUsername(handle);
-    if (normalized && normalized !== handle) usersByUsername.set(normalized, row);
-  }
-  const teamsById = new Map();
-  for (const row of clinicalOps?.teams || []) {
-    const id = String(row?.team_id || '').trim();
-    if (id) teamsById.set(id, row);
-  }
-  const guardiaByTeamId = new Map();
-  for (const row of clinicalOps?.team_guardia_today || []) {
-    const tid = String(row?.team_id || '').trim();
-    if (tid) guardiaByTeamId.set(tid, row);
-  }
-  const guardiaByPatientId = new Map();
-  for (const row of clinicalOps?.active_guardias || []) {
-    const pid = String(row?.patient_id || '').trim();
-    if (pid) guardiaByPatientId.set(pid, row);
-  }
-  return {
-    usersById,
-    usersByUsername,
-    teamsById,
-    assignments: clinicalOps?.patient_team_assignment || [],
-    guardiaByTeamId,
-    guardiaByPatientId,
-  };
+  return buildLookupsFromOps(clinicalOps);
 }
 
 /** @param {string} clientId @param {object} lookups */
@@ -103,35 +75,7 @@ export function resolvePatientUpdatedAt(row) {
 export function resolvePatientRegistrarUserId(row, lookups, opts) {
   const explicit = String(row?.registeredByUserId || '').trim();
   if (explicit) return explicit;
-
-  const pid = String(row?.id || '').trim();
-  const audit = Array.isArray(row?.audit_log) ? row.audit_log : [];
-  const createEntry =
-    audit.find(function (e) {
-      return e && e.action === 'patient.create';
-    }) || audit[0];
-  const createClientId = String(createEntry?.clientId || '').trim();
-  const localClientId = String(opts?.localClientId || '').trim();
-  const localUser = opts?.localUser || null;
-  if (createClientId && localClientId && createClientId === localClientId && localUser?.user_id) {
-    return String(localUser.user_id);
-  }
-  const fromClientId = resolveUserIdFromLanClientId(createClientId, lookups);
-  if (fromClientId) return fromClientId;
-
-  const active = lookups.guardiaByPatientId.get(pid);
-  if (active?.covering_user_id) return String(active.covering_user_id);
-
-  const teamId = resolvePatientTeamIdFromAssignments(pid, lookups.assignments);
-  if (teamId) {
-    const onCall = lookups.guardiaByTeamId.get(teamId);
-    if (onCall?.user_id) return String(onCall.user_id);
-    const team = lookups.teamsById.get(teamId);
-    if (team?.leader_user_id) return String(team.leader_user_id);
-    if (team?.created_by) return String(team.created_by);
-  }
-
-  return '';
+  return resolveRegistrarFromAudit(row, lookups, opts, resolveUserIdFromLanClientId);
 }
 
 /** @param {object} row @param {object} lookups @param {{ localClientId?: string, localUser?: object|null }} [opts] */

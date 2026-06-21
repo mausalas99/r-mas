@@ -35,7 +35,7 @@ export function buildHeaderPatientLine(p) {
   var dx = '';
   try {
     dx = String(diagnosticosTextForCenso(p.diagnosticosList) || '').trim();
-  } catch (_e) {
+  } catch {
     dx = '';
   }
   if (dx) parts.push(dx.length > 48 ? dx.slice(0, 47) + '…' : dx);

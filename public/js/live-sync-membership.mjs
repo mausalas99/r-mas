@@ -14,7 +14,7 @@ export function getRoomMembership() {
       label: String(o.label || o.roomId).trim(),
       joinedAt: String(o.joinedAt || ''),
     };
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -35,7 +35,7 @@ export function clearRoomMembership() {
   try {
     localStorage.removeItem(MEMBERSHIP_KEY);
     localStorage.removeItem(LAST_ROOM_KEY);
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /** Migra rpc-lan-last-room si aún no hay membresía explícita. */
@@ -45,5 +45,5 @@ export function migrateLastRoomToMembership() {
     const id = String(localStorage.getItem(LAST_ROOM_KEY) || '').trim();
     if (!id) return;
     setRoomMembership({ roomId: id, label: id });
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }

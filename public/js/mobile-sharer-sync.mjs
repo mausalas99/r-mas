@@ -22,9 +22,7 @@ export function resolveMobilePairingRoomId(activeRoomId) {
   try {
     const mem = getRoomMembership();
     if (mem?.roomId) return String(mem.roomId).trim();
-  } catch (_e) {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   const s = readRpcSettings();
   return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
 }
@@ -48,7 +46,7 @@ export function appendMobileSharerParamsToJoinUrl(url, activeRoomId) {
     const roomId = resolveMobilePairingRoomId(activeRoomId);
     if (roomId) u.searchParams.set('room', roomId);
     return u.toString();
-  } catch (_eUrl) {
+  } catch {
     return url;
   }
 }
@@ -63,6 +61,27 @@ export function mobileSharerDisplayLabel() {
   return user || 'tu compañero';
 }
 
+function hasMobileSharerUrlContext(userRaw, name, rank, sala, roomId) {
+  return !!(userRaw || name || rank || sala || roomId);
+}
+
+function buildMobileSharerBinding(userRaw, name, rank, sala) {
+  const binding = { registered: true };
+  if (name) binding.displayName = name;
+  if (rank) binding.rank = rank;
+  if (sala != null) binding.sala = sala;
+  if (!userRaw) return binding;
+  const normalized = normalizeUsername(userRaw.replace(/^@/, ''));
+  if (normalized) binding.username = normalized;
+  else binding.userId = userRaw;
+  return binding;
+}
+
+function rememberMobileSharerRoom(roomId) {
+  if (!roomId) return;
+  rememberLiveSyncRoomMembership(roomId, liveSyncRoomLabel(roomId) || roomId);
+}
+
 /**
  * Apply name/rank/sala/user from the mobile pairing URL into rpc-settings + session stub.
  */
@@ -75,22 +94,10 @@ export function applyMobileSharerContextFromUrl() {
   const sala = String(params.get('sala') || '').trim();
   const parsed = parseLanJoinQuery(window.location.search, window.location.origin);
   const roomId = String(parsed.roomId || '').trim();
-  if (!userRaw && !name && !rank && !sala && !roomId) return false;
+  if (!hasMobileSharerUrlContext(userRaw, name, rank, sala, roomId)) return false;
 
-  const binding = { registered: true };
-  if (name) binding.displayName = name;
-  if (rank) binding.rank = rank;
-  if (sala != null) binding.sala = sala;
-  if (userRaw) {
-    const normalized = normalizeUsername(userRaw.replace(/^@/, ''));
-    if (normalized) binding.username = normalized;
-    else binding.userId = userRaw;
-  }
-  persistClinicalUserBinding(binding);
-
-  if (roomId) {
-    rememberLiveSyncRoomMembership(roomId, liveSyncRoomLabel(roomId) || roomId);
-  }
+  persistClinicalUserBinding(buildMobileSharerBinding(userRaw, name, rank, sala));
+  rememberMobileSharerRoom(roomId);
   hydrateMobileSharerSessionFromSettings();
   return true;
 }

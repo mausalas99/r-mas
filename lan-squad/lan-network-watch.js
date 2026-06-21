@@ -37,7 +37,7 @@ function createLanNetworkWatch(send, opts = {}) {
         const prev = JSON.parse(lastFingerprint);
         prevPrefixes = Array.isArray(prev.prefixes) ? prev.prefixes : [];
         prevCandidateBaseUrl = String(prev.candidate || '');
-      } catch (_e) {}
+      } catch (_e) { void _e; }
       send({
         prefixes,
         candidateBaseUrl,

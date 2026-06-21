@@ -29,7 +29,7 @@ function stripHtmlFromReleaseBody(html) {
     var el = document.createElement('div');
     el.innerHTML = raw;
     return (el.textContent || '').replace(/\s+/g, ' ').trim();
-  } catch (_err) {
+  } catch {
     return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 }
@@ -74,7 +74,7 @@ export function maybeShowReleaseNotesFor(version, prevVersion) {
   if (!version || !prevVersion || prevVersion === version) return;
   try {
     if (localStorage.getItem(RELEASE_NOTES_SEEN_PREFIX + version)) return;
-  } catch (_err) {
+  } catch {
     return;
   }
   setTimeout(function(){ showReleaseNotesModal(version); }, 150);
@@ -85,7 +85,7 @@ export function initReleaseNotesDevPreviewIfEnabled(version) {
   if (!RELEASE_NOTES_DEV_FORCE_SHOW || !version) return;
   try {
     localStorage.removeItem(RELEASE_NOTES_SEEN_PREFIX + version);
-  } catch (_err) {}
+  } catch { /* localStorage unavailable */ }
   setTimeout(function () {
     showReleaseNotesModal(version);
   }, 400);
@@ -196,6 +196,6 @@ export function closeReleaseNotes() {
   el.classList.remove('open');
   el.setAttribute('aria-hidden', 'true');
   if (v && !RELEASE_NOTES_DEV_FORCE_SHOW) {
-    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch (_err) {}
+    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch { /* localStorage unavailable */ }
   }
 }

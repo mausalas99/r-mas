@@ -153,7 +153,7 @@ function wireUpdateReadyActions(isDowngrade) {
 function handleUpdateReady(payload) {
   var version = (payload && payload.version) ? payload.version : String(payload || '');
   var isDowngrade = updaterState.updateModalMode === 'downgrade';
-  try { sendUpdateTelemetry('success', version); } catch { /* ignore */ }
+  try { sendUpdateTelemetry('success', version); } catch (_e) { void _e; }
   if (!isDowngrade && isSnoozeActiveForVersion(version)) return;
   resetUpdateModalPanels();
   syncUpdateModalChannelPill(updaterState.pendingUpdaterIsPrerelease);
@@ -195,7 +195,7 @@ function handleUpdateNotAvailable(payload) {
 
 function handleUpdateError(msg) {
   resetUpdateCheckButtons();
-  try { sendUpdateTelemetry('fail'); } catch { /* ignore */ }
+  try { sendUpdateTelemetry('fail'); } catch (_e) { void _e; }
   renderUpdateError(msg);
 }
 

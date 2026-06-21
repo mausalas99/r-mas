@@ -10,20 +10,12 @@ import { enqueueOutbox } from '../../live-sync-outbox.mjs';
 import { createMutationBuilder, wrapLiveSyncPatch } from '../../versioned-mutation.mjs';
 import { flushLiveSyncOutbox } from './push.mjs';
 import { rememberPatientDeleteTombstone } from './entity-versions.mjs';
+import { patients, setPatients } from '../../app-state.mjs';
 import {
-  patients,
-  notes,
-  indicaciones,
-  labHistory,
-  medRecetaByPatient,
-  medPharmProfileByPatient,
-  vpoByPatient,
-  recetaHuByPatient,
-  listadoProblemas,
-  medNotaSelectionByPatient,
-  setPatients,
-} from '../../app-state.mjs';
-import { storage } from '../../storage.js';
+  clearPatientAgendaLocal,
+  clearPatientLocalStateMaps,
+  clearPatientTodosLocal,
+} from './patient-delete-local.mjs';
 
 /** @type {{
  *   lanFetchHostPatientRow?: (patientId: string) => Promise<object|null>,
@@ -49,28 +41,9 @@ export function removePatientLocally(patientId) {
   setPatients(patients.filter(function (p) {
     return p.id !== pid;
   }));
-  delete notes[pid];
-  delete indicaciones[pid];
-  if (labHistory && labHistory[pid]) delete labHistory[pid];
-  if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
-  if (medPharmProfileByPatient && medPharmProfileByPatient[pid]) delete medPharmProfileByPatient[pid];
-  if (typeof vpoByPatient !== 'undefined' && vpoByPatient && vpoByPatient[pid]) delete vpoByPatient[pid];
-  if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
-  if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
-  if (listadoProblemas && listadoProblemas[pid]) delete listadoProblemas[pid];
-  try {
-    var rawTodosMap = localStorage.getItem('rpc-todos');
-    if (rawTodosMap) {
-      var todosMap = JSON.parse(rawTodosMap);
-      if (todosMap && typeof todosMap === 'object' && todosMap[pid]) {
-        delete todosMap[pid];
-        localStorage.setItem('rpc-todos', JSON.stringify(todosMap));
-      }
-    }
-  } catch { /* ignored */ }
-  try {
-    if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(pid);
-  } catch { /* ignored */ }
+  clearPatientLocalStateMaps(pid);
+  clearPatientTodosLocal(pid);
+  clearPatientAgendaLocal(pid);
   var rt = deleteDeps.runtime;
   if (rt && typeof rt.getActiveId === 'function' && rt.getActiveId() === pid) {
     rt.setActiveId(patients.length ? patients[0].id : null);
@@ -82,7 +55,7 @@ async function readOwnedByOtherClientError(resp) {
   var body = null;
   try {
     body = await resp.json();
-  } catch (_e) { /* ignored */ }
+  } catch { /* ignored */ }
   if (body && body.error === 'owned_by_other_client') {
     return { ok: false, error: 'owned_by_other_client', skipped: true, status: 403 };
   }

@@ -1,5 +1,6 @@
 import { prefersReducedMotion } from './ui-motion.mjs';
 import { consolidatedInnerTabButtonId, resolveConsolidatedTarget } from './expediente-tabs.mjs';
+import { consolidatedInnerTabButtonId as mapConsolidatedId, granularInnerTabButtonId } from './ui-tab-motion-ids.mjs';
 
 var resizeTimer = null;
 var indicatorsReady = false;
@@ -56,18 +57,8 @@ export function syncAppTabIndicator(tab) {
 
 export function innerTabButtonId(tab, opts) {
   opts = opts || {};
-  if (opts.consolidated) {
-    if (tab === 'recetaHu') return 'itab-salida';
-    if (tab === 'datos' || tab === 'todo') return 'itab-paciente';
-    if (tab === 'notas' || tab === 'indica' || tab === 'manejo') return 'itab-clinico';
-    if (tab === 'tend' || tab === 'cult') return 'itab-resultados';
-    if (tab === 'paciente' || tab === 'clinico' || tab === 'estadoActual' || tab === 'resultados' || tab === 'salida') {
-      return 'itab-' + tab;
-    }
-    return 'itab-paciente';
-  }
-  if (tab === 'recetaHu') return 'itab-receta-hu';
-  return 'itab-' + tab;
+  if (opts.consolidated) return mapConsolidatedId(tab);
+  return granularInnerTabButtonId(tab);
 }
 
 function getExpedienteInnerTabBar() {

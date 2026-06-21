@@ -151,8 +151,6 @@ describe('bundle-merge', () => {
 });
 
 describe('entriesPartial — partial merge', () => {
-  const TYPED = ['note', 'indicaciones', 'labHistory', 'todos'];
-
   function mkServerEntry(id, overrides = {}) {
     return {
       id,

@@ -2,16 +2,17 @@
  * Sync LAN host bindings when local subnets change (no transport/orchestrator imports).
  */
 import { storage } from './storage.js';
-import { lanClient } from './features/lan/runtime.mjs';
-import { clearPinnedHostUrl, getPinnedHostUrl, isPinnedHostLocal } from './lan-host-pin.mjs';
+import { getPinnedHostUrl } from './lan-host-pin.mjs';
 import { findByFingerprint, getPinnedFingerprint } from './lan-host-registry.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
+import { normalizeLanHostBase } from './lan-host-subnet-discovery.mjs';
 import {
-  isHostOnCurrentSubnets,
-  normalizeLanHostBase,
-} from './lan-host-subnet-discovery.mjs';
+  applyHostRoleNetworkRoaming,
+  clearStaleClientHostIfNeeded,
+  clearStalePinnedHostIfNeeded,
+} from './lan-network-roam-handlers.mjs';
 
-export { isHostOnCurrentSubnets };
+export { isHostOnCurrentSubnets } from './lan-host-subnet-discovery.mjs';
 
 /**
  * @param {{ prefixes?: string[], candidateBaseUrl?: string }} payload
@@ -24,31 +25,15 @@ export function applyLanNetworkRoaming(payload = {}) {
   const uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
   const pinned = getPinnedHostUrl();
 
-  if (pinned && !isHostOnCurrentSubnets(pinned, prefixes) && !isPinnedHostLocal(candidateBaseUrl)) {
-    clearPinnedHostUrl();
-  }
+  clearStalePinnedHostIfNeeded(pinned, prefixes, candidateBaseUrl);
 
   if (uiRole === 'host' && candidateBaseUrl && teamCode) {
-    const current = normalizeLanHostBase(cfg.hostUrl || '');
-    if (current !== candidateBaseUrl) {
-      storage.saveLanConfig({ hostUrl: candidateBaseUrl, teamCode });
-      lanClient.configure({ hostUrl: candidateBaseUrl, teamCode });
-      try {
-        lanClient.disconnect();
-        lanClient.connectSyncChannel();
-      } catch (_e) {}
-    }
-    return { role: 'host', candidateBaseUrl };
+    return applyHostRoleNetworkRoaming(candidateBaseUrl, teamCode, cfg);
   }
 
   const savedHost = normalizeLanHostBase(cfg.hostUrl || '');
-  if (savedHost && prefixes.length && !isHostOnCurrentSubnets(savedHost, prefixes)) {
-    storage.saveLanConfig(teamCode ? { hostUrl: '', teamCode } : null);
-    try {
-      lanClient.disconnect();
-    } catch (_e2) {}
-    return { role: 'client', clearedStaleHost: true };
-  }
+  const cleared = clearStaleClientHostIfNeeded(savedHost, prefixes, teamCode);
+  if (cleared) return cleared;
 
   return { role: uiRole, clearedStaleHost: false };
 }

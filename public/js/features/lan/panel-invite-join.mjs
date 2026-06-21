@@ -177,11 +177,11 @@ function appendLanInviteCollapsible(root, opts) {
     String(opts.extraClass || '');
   try {
     details.open = sessionStorage.getItem(opts.openKey) === '1';
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   details.addEventListener('toggle', function () {
     try {
       sessionStorage.setItem(opts.openKey, details.open ? '1' : '0');
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   });
   var sum = document.createElement('summary');
   sum.className = 'rpc-disclosure__summary lan-invite-collapsible-summary';

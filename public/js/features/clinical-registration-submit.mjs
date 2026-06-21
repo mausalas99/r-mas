@@ -147,7 +147,7 @@ function maybePersistMobilePairing_() {
   if (!host || !code) return;
   try {
     persistLanClientConfig(host, code);
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 /**

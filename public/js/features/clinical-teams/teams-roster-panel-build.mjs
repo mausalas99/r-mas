@@ -31,7 +31,7 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
   try {
     settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
     clientId = String(settings.clientId || '');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 
   const rawUsername = String(user.username || '');
   const legacyUsername = isLegacyMachineUsername(rawUsername, clientId);

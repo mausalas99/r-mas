@@ -81,7 +81,7 @@ export async function copyInternoQrImage(url, showToast) {
     const dataUrl = canvas.toDataURL('image/png');
     await navigator.clipboard.writeText(dataUrl);
     toast('QR copiado como imagen (data URL)', 'info');
-  } catch (_e) {
+  } catch {
     toast('No se pudo copiar el QR', 'error');
   }
 }

@@ -85,7 +85,7 @@ async function persistFullBackupPayload(payload) {
         Array.isArray(payload.data.scheduledProcedures) ? payload.data.scheduledProcedures : []
       )
     );
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
   if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
     storage.saveMedCatalog(payload.data.medCatalog);

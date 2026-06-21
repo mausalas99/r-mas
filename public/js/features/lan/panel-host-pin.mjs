@@ -165,9 +165,7 @@ async function appendLanTurnResetSection(deps, root, gen) {
   var ownHost = false;
   try {
     ownHost = await isLanRestHostOwnMachine();
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
 
   if (deps.lanPanelRenderStale(gen)) return;
 
@@ -215,9 +213,7 @@ async function resetLanTurnConnectionFromUi(deps) {
     if (typeof profileLan.seedDevPeerLanConfigIfNeeded === 'function') {
       await profileLan.seedDevPeerLanConfigIfNeeded();
     }
-  } catch {
-    /* ignore */
-  }
+  } catch (_e) { void _e; }
   deps.resumeAutoHostDetectAndReconnect();
 
   deps.runtime().showToast(

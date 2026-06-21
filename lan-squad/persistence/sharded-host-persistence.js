@@ -71,7 +71,7 @@ function cacheFromMetaAndBundles(meta, bundlesByRoom) {
   };
 }
 
-async function loadShardedState(hostStateDir, teamCodeHash) {
+async function loadShardedState(hostStateDir, _teamCodeHash) {
   const meta = await readMeta(hostStateDir);
   if (!meta) return null;
   const bundlesByRoom = {};
@@ -86,7 +86,7 @@ async function loadShardedState(hostStateDir, teamCodeHash) {
   return cacheFromMetaAndBundles(meta, bundlesByRoom);
 }
 
-function loadShardedStateSync(hostStateDir, teamCodeHash) {
+function loadShardedStateSync(hostStateDir, _teamCodeHash) {
   const meta = readJsonSync(metaPath(hostStateDir));
   if (!meta) return null;
   const bundlesByRoom = {};
@@ -111,7 +111,6 @@ async function initEmptyShardedState(hostStateDir, teamCodeHash) {
 function initEmptyShardedStateSync(hostStateDir, teamCodeHash) {
   fs.mkdirSync(path.join(hostStateDir, 'bundles'), { recursive: true });
   const meta = defaultMeta(teamCodeHash);
-  const { writeJsonAtomic } = require('../atomic-json.js');
   const dir = path.dirname(metaPath(hostStateDir));
   fs.mkdirSync(dir, { recursive: true });
   const tmp = `${metaPath(hostStateDir)}.${process.pid}.${Date.now()}.tmp`;
@@ -128,7 +127,7 @@ async function migrateMonolithToShards({ monolithPath, hostStateDir, teamCodeHas
   let parsed;
   try {
     parsed = JSON.parse(fs.readFileSync(monolithPath, 'utf8'));
-  } catch (_e) {
+  } catch {
     throw new Error('monolith invalid JSON');
   }
 
@@ -145,7 +144,7 @@ async function migrateMonolithToShards({ monolithPath, hostStateDir, teamCodeHas
   let backupParsed;
   try {
     backupParsed = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
-  } catch (_e) {
+  } catch {
     throw new Error('backup verification failed');
   }
   const normalizedBackup = normalizeMonolithShape(backupParsed);
@@ -192,6 +191,58 @@ function entryPatientId(entry) {
   return '';
 }
 
+function normalizeLabKeyList(dirtyLabSidecars) {
+  if (dirtyLabSidecars instanceof Set) return [...dirtyLabSidecars];
+  return dirtyLabSidecars ? [...dirtyLabSidecars] : [];
+}
+
+async function commitDirtyLabSidecars(hostStateDir, labKeys, payloads) {
+  const shards = [];
+  let byteLength = 0;
+  for (const key of labKeys) {
+    const parsed = parseLabSidecarKey(key);
+    if (!parsed) continue;
+    const sidecar = payloads ? payloads.get(key) : null;
+    if (!sidecar) continue;
+    const payload = JSON.stringify(sidecar);
+    byteLength += Buffer.byteLength(payload, 'utf8');
+    await writeLabSidecar(hostStateDir, parsed.roomId, parsed.patientId, sidecar);
+    shards.push(`labs:${parsed.roomId}:${parsed.patientId}`);
+  }
+  return { shards, byteLength };
+}
+
+async function commitDirtyRoomBundles(hostStateDir, state, dirtyRooms, meta) {
+  const shards = [];
+  let byteLength = 0;
+  for (const roomId of dirtyRooms) {
+    const bundle = state.roomSyncBundles && state.roomSyncBundles[roomId];
+    if (!bundle) continue;
+    const payload = JSON.stringify(bundle);
+    byteLength += Buffer.byteLength(payload, 'utf8');
+    await writeRoomBundle(hostStateDir, roomId, bundle);
+    if (!meta.roomRevisions || typeof meta.roomRevisions !== 'object') {
+      meta.roomRevisions = {};
+    }
+    meta.roomRevisions[roomId] = Number(bundle.revision || 0);
+    shards.push(`bundle:${roomId}`);
+  }
+  return { shards, byteLength };
+}
+
+async function pruneInactiveRoomShards(hostStateDir, meta, activeRoomIds) {
+  for (const rid of Object.keys(meta.roomRevisions || {})) {
+    if (activeRoomIds.has(rid)) continue;
+    delete meta.roomRevisions[rid];
+    const fp = bundlePath(hostStateDir, rid);
+    try {
+      await fsp.unlink(fp);
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+    }
+  }
+}
+
 async function commitDirtyShards({
   hostStateDir,
   cache,
@@ -204,45 +255,22 @@ async function commitDirtyShards({
   let meta = await readMeta(hostStateDir);
   if (!meta) meta = defaultMeta(state.teamCodeHash);
 
-  const shards = [];
-  let byteLength = 0;
   let metaNeedsWrite = !!dirtyMeta;
 
-  const labKeys =
-    dirtyLabSidecars instanceof Set
-      ? [...dirtyLabSidecars]
-      : dirtyLabSidecars
-        ? [...dirtyLabSidecars]
-        : [];
+  const labKeys = normalizeLabKeyList(dirtyLabSidecars);
   const payloads =
     labSidecarPayloads && typeof labSidecarPayloads.get === 'function'
       ? labSidecarPayloads
       : null;
 
-  for (const key of labKeys) {
-    const parsed = parseLabSidecarKey(key);
-    if (!parsed) continue;
-    const sidecar = payloads ? payloads.get(key) : null;
-    if (!sidecar) continue;
-    const payload = JSON.stringify(sidecar);
-    byteLength += Buffer.byteLength(payload, 'utf8');
-    await writeLabSidecar(hostStateDir, parsed.roomId, parsed.patientId, sidecar);
-    shards.push(`labs:${parsed.roomId}:${parsed.patientId}`);
-  }
+  const labCommit = await commitDirtyLabSidecars(hostStateDir, labKeys, payloads);
+  const shards = [...labCommit.shards];
+  let byteLength = labCommit.byteLength;
 
-  for (const roomId of dirtyRooms) {
-    const bundle = state.roomSyncBundles && state.roomSyncBundles[roomId];
-    if (!bundle) continue;
-    const payload = JSON.stringify(bundle);
-    byteLength += Buffer.byteLength(payload, 'utf8');
-    await writeRoomBundle(hostStateDir, roomId, bundle);
-    if (!meta.roomRevisions || typeof meta.roomRevisions !== 'object') {
-      meta.roomRevisions = {};
-    }
-    meta.roomRevisions[roomId] = Number(bundle.revision || 0);
-    shards.push(`bundle:${roomId}`);
-    metaNeedsWrite = true;
-  }
+  const roomCommit = await commitDirtyRoomBundles(hostStateDir, state, dirtyRooms, meta);
+  shards.push(...roomCommit.shards);
+  byteLength += roomCommit.byteLength;
+  if (roomCommit.shards.length) metaNeedsWrite = true;
 
   if (metaNeedsWrite) {
     meta.version = 2;
@@ -250,17 +278,7 @@ async function commitDirtyShards({
     meta.patients = state.patients;
     meta.rooms = state.rooms;
     const activeRoomIds = new Set((state.rooms || []).map((r) => r && r.id).filter(Boolean));
-    for (const rid of Object.keys(meta.roomRevisions || {})) {
-      if (!activeRoomIds.has(rid)) {
-        delete meta.roomRevisions[rid];
-        const fp = bundlePath(hostStateDir, rid);
-        try {
-          await fsp.unlink(fp);
-        } catch (e) {
-          if (e.code !== 'ENOENT') throw e;
-        }
-      }
-    }
+    await pruneInactiveRoomShards(hostStateDir, meta, activeRoomIds);
     const metaPayload = JSON.stringify(meta);
     byteLength += Buffer.byteLength(metaPayload, 'utf8');
     await writeMeta(hostStateDir, meta);
@@ -268,6 +286,22 @@ async function commitDirtyShards({
   }
 
   return { shards, byteLength };
+}
+
+async function repairRoomRevisionOnBoot(hostStateDir, meta, roomId, bundle, metaRev) {
+  const bundleRev = bundle ? Number(bundle.revision || 0) : 0;
+  if (bundleRev === metaRev) return false;
+
+  if (bundleRev > metaRev) {
+    if (!meta.roomRevisions) meta.roomRevisions = {};
+    meta.roomRevisions[roomId] = bundleRev;
+    return true;
+  }
+  if (!bundle) return false;
+  await writeRoomBundle(hostStateDir, roomId, bundle);
+  if (!meta.roomRevisions) meta.roomRevisions = {};
+  meta.roomRevisions[roomId] = bundleRev;
+  return true;
 }
 
 async function repairShardsOnBoot(hostStateDir, cache) {
@@ -281,21 +315,10 @@ async function repairShardsOnBoot(hostStateDir, cache) {
   for (const room of state.rooms || []) {
     const roomId = room && room.id;
     if (!roomId) continue;
-    const bundle = state.roomSyncBundles && state.roomSyncBundles[roomId];
     const metaRev = Number((meta.roomRevisions && meta.roomRevisions[roomId]) || 0);
-    const bundleRev = bundle ? Number(bundle.revision || 0) : 0;
-
-    if (bundleRev === metaRev) continue;
-
-    if (bundleRev > metaRev) {
-      if (!meta.roomRevisions) meta.roomRevisions = {};
-      meta.roomRevisions[roomId] = bundleRev;
-      metaChanged = true;
-      repairedRooms.push(roomId);
-    } else if (bundle) {
-      await writeRoomBundle(hostStateDir, roomId, bundle);
-      if (!meta.roomRevisions) meta.roomRevisions = {};
-      meta.roomRevisions[roomId] = bundleRev;
+    const bundle = state.roomSyncBundles && state.roomSyncBundles[roomId];
+    const didRepair = await repairRoomRevisionOnBoot(hostStateDir, meta, roomId, bundle, metaRev);
+    if (didRepair) {
       metaChanged = true;
       repairedRooms.push(roomId);
     }
@@ -307,6 +330,35 @@ async function repairShardsOnBoot(hostStateDir, cache) {
   }
 
   return { repairedRooms };
+}
+
+async function migrateEntryLabSidecar(hostStateDir, roomId, entry) {
+  const patientId = entryPatientId(entry);
+  if (!patientId) return false;
+  const labHistory = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  if (!labHistory.length) return false;
+
+  const sidecar = sidecarFromLabHistory(labHistory);
+  await writeLabSidecar(hostStateDir, roomId, patientId, sidecar);
+  entry.labMeta = labMetaFromSidecar(sidecar, entry.labMeta && entry.labMeta.labHistoryVersion);
+  delete entry.labHistory;
+  return true;
+}
+
+async function migrateRoomLabSidecars(hostStateDir, roomId, bundle) {
+  if (!bundle || !Array.isArray(bundle.entries)) return { entriesMigrated: 0, roomChanged: false };
+  let entriesMigrated = 0;
+  let roomChanged = false;
+  for (const entry of bundle.entries) {
+    const migrated = await migrateEntryLabSidecar(hostStateDir, roomId, entry);
+    if (!migrated) continue;
+    entriesMigrated += 1;
+    roomChanged = true;
+  }
+  if (roomChanged) {
+    await writeRoomBundle(hostStateDir, roomId, bundle);
+  }
+  return { entriesMigrated, roomChanged };
 }
 
 async function migrateLabSidecarsOnBoot(hostStateDir, cache) {
@@ -321,26 +373,12 @@ async function migrateLabSidecarsOnBoot(hostStateDir, cache) {
   let metaChanged = false;
 
   for (const [roomId, bundle] of Object.entries(state.roomSyncBundles || {})) {
-    if (!bundle || !Array.isArray(bundle.entries)) continue;
-    let roomChanged = false;
-    for (const entry of bundle.entries) {
-      const patientId = entryPatientId(entry);
-      if (!patientId) continue;
-      const labHistory = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-      if (!labHistory.length) continue;
-
-      const sidecar = sidecarFromLabHistory(labHistory);
-      await writeLabSidecar(hostStateDir, roomId, patientId, sidecar);
-      entry.labMeta = labMetaFromSidecar(sidecar, entry.labMeta && entry.labMeta.labHistoryVersion);
-      delete entry.labHistory;
-      entriesMigrated += 1;
-      roomChanged = true;
-      metaChanged = true;
-    }
-    if (roomChanged) {
-      await writeRoomBundle(hostStateDir, roomId, bundle);
+    const roomResult = await migrateRoomLabSidecars(hostStateDir, roomId, bundle);
+    entriesMigrated += roomResult.entriesMigrated;
+    if (roomResult.roomChanged) {
       if (!meta.roomRevisions) meta.roomRevisions = {};
       meta.roomRevisions[roomId] = Number(bundle.revision || 0);
+      metaChanged = true;
     }
   }
 
@@ -356,6 +394,50 @@ async function migrateLabSidecarsOnBoot(hostStateDir, cache) {
   return { migrated: entriesMigrated > 0, entriesMigrated };
 }
 
+async function repairMissingLabSidecar(hostStateDir, roomId, patientId, entry, labSidecarCache, repaired) {
+  if (!Array.isArray(entry.labHistory) || !entry.labHistory.length) return;
+  const rebuilt = sidecarFromLabHistory(entry.labHistory);
+  await writeLabSidecar(hostStateDir, roomId, patientId, rebuilt);
+  if (labSidecarCache) labSidecarCache.set(`${roomId}:${patientId}`, rebuilt);
+  repaired.push(`${roomId}:${patientId}:sidecar_regenerated`);
+}
+
+async function repairEntryLabMeta(hostStateDir, roomId, patientId, entry, bundle, meta, labSidecarCache, repaired) {
+  const sidecarOnDisk = await readLabSidecar(hostStateDir, roomId, patientId);
+  entry.labMeta = labMetaFromSidecar(sidecarOnDisk, 0);
+  delete entry.labHistory;
+  if (labSidecarCache) labSidecarCache.set(`${roomId}:${patientId}`, sidecarOnDisk);
+  await writeRoomBundle(hostStateDir, roomId, bundle);
+  if (!meta.roomRevisions) meta.roomRevisions = {};
+  meta.roomRevisions[roomId] = Number(bundle.revision || 0);
+  repaired.push(`${roomId}:${patientId}:lab_meta_repaired`);
+  return true;
+}
+
+async function repairLabSidecarEntry(hostStateDir, roomId, entry, bundle, meta, labSidecarCache, repaired) {
+  const patientId = entryPatientId(entry);
+  if (!patientId) return false;
+
+  const fp = sidecarPath(hostStateDir, roomId, patientId);
+  const sidecarOnDisk = fs.existsSync(fp) ? await readLabSidecar(hostStateDir, roomId, patientId) : null;
+  const labMeta = entry.labMeta && typeof entry.labMeta === 'object' ? entry.labMeta : null;
+  const labVersion = Number(labMeta && labMeta.labHistoryVersion ? labMeta.labHistoryVersion : 0);
+
+  if (labVersion > 0 && !sidecarOnDisk) {
+    await repairMissingLabSidecar(hostStateDir, roomId, patientId, entry, labSidecarCache, repaired);
+    return false;
+  }
+
+  if (sidecarOnDisk && (!labMeta || labVersion === 0)) {
+    return repairEntryLabMeta(hostStateDir, roomId, patientId, entry, bundle, meta, labSidecarCache, repaired);
+  }
+
+  if (sidecarOnDisk && labSidecarCache) {
+    labSidecarCache.set(`${roomId}:${patientId}`, sidecarOnDisk);
+  }
+  return false;
+}
+
 async function repairLabSidecarsOnBoot(hostStateDir, cache, labSidecarCache) {
   const state = typeof cache.get === 'function' ? cache.get() : cache;
   const repaired = [];
@@ -366,35 +448,16 @@ async function repairLabSidecarsOnBoot(hostStateDir, cache, labSidecarCache) {
   for (const [roomId, bundle] of Object.entries(state.roomSyncBundles || {})) {
     if (!bundle || !Array.isArray(bundle.entries)) continue;
     for (const entry of bundle.entries) {
-      const patientId = entryPatientId(entry);
-      if (!patientId) continue;
-      const fp = sidecarPath(hostStateDir, roomId, patientId);
-      const sidecarOnDisk = fs.existsSync(fp) ? await readLabSidecar(hostStateDir, roomId, patientId) : null;
-      const labMeta = entry.labMeta && typeof entry.labMeta === 'object' ? entry.labMeta : null;
-      const labVersion = Number(labMeta && labMeta.labHistoryVersion ? labMeta.labHistoryVersion : 0);
-
-      if (labVersion > 0 && !sidecarOnDisk) {
-        if (Array.isArray(entry.labHistory) && entry.labHistory.length) {
-          const rebuilt = sidecarFromLabHistory(entry.labHistory);
-          await writeLabSidecar(hostStateDir, roomId, patientId, rebuilt);
-          if (labSidecarCache) labSidecarCache.set(`${roomId}:${patientId}`, rebuilt);
-          repaired.push(`${roomId}:${patientId}:sidecar_regenerated`);
-        }
-        continue;
-      }
-
-      if (sidecarOnDisk && (!labMeta || labVersion === 0)) {
-        entry.labMeta = labMetaFromSidecar(sidecarOnDisk, 0);
-        delete entry.labHistory;
-        if (labSidecarCache) labSidecarCache.set(`${roomId}:${patientId}`, sidecarOnDisk);
-        await writeRoomBundle(hostStateDir, roomId, bundle);
-        if (!meta.roomRevisions) meta.roomRevisions = {};
-        meta.roomRevisions[roomId] = Number(bundle.revision || 0);
-        metaChanged = true;
-        repaired.push(`${roomId}:${patientId}:lab_meta_repaired`);
-      } else if (sidecarOnDisk && labSidecarCache) {
-        labSidecarCache.set(`${roomId}:${patientId}`, sidecarOnDisk);
-      }
+      const metaChangedForEntry = await repairLabSidecarEntry(
+        hostStateDir,
+        roomId,
+        entry,
+        bundle,
+        meta,
+        labSidecarCache,
+        repaired
+      );
+      if (metaChangedForEntry) metaChanged = true;
     }
   }
 

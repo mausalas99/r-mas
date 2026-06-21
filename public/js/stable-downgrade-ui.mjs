@@ -45,7 +45,7 @@ export async function fetchGitHubPublishedVersions() {
         return String((r && r.tag_name) || '').replace(/^v/, '');
       })
       .filter(Boolean);
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -133,7 +133,7 @@ export async function fetchStableVersionsCatalog() {
     const raw = await res.json();
     const remote = resolveDowngradeEntries(raw, current, 'remote');
     if (remote.entries.length) resolved = remote;
-  } catch (_e) {
+  } catch {
     /* fall through */
   }
   if (!resolved) {
@@ -154,7 +154,7 @@ function openExternal(url) {
   } else {
     try {
       window.open(url, '_blank');
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
 }
 

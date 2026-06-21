@@ -2,7 +2,6 @@
  * Shell de aplicación: chrome de contexto, toast, modales, export clínico, atajos y arranque diferido.
  */
 import { storage } from './storage.js';
-import { syncHeaderContext } from './features/header-context.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
@@ -15,7 +14,6 @@ import {
   registerDocumentExportRuntime,
   saveOutputDirSelection,
 } from './document-export-client.mjs';
-import { showToast } from './ui-toast.mjs';
 import {
   getUiDensity,
   isPaseMode,
@@ -48,6 +46,35 @@ import {
 } from './features/pase-board.mjs';
 import { renderProcedureAgendaPanel } from './features/agenda.mjs';
 import { patients, saveState } from './app-state.mjs';
+
+/** @type {typeof import('./ui-toast.mjs').showToast | null} */
+let showToastImpl = null;
+let showToastLoadPromise = null;
+
+function loadShowToast() {
+  if (showToastImpl) return Promise.resolve(showToastImpl);
+  if (!showToastLoadPromise) {
+    showToastLoadPromise = import('./ui-toast.mjs').then(function (mod) {
+      showToastImpl = mod.showToast;
+      return showToastImpl;
+    });
+  }
+  return showToastLoadPromise;
+}
+
+/**
+ * @param {string} msg
+ * @param {'success'|'error'|'warn'|'info'|'ok'|''} [type]
+ */
+export function showToast(msg, type) {
+  if (showToastImpl) {
+    showToastImpl(msg, type);
+    return;
+  }
+  void loadShowToast().then(function (fn) {
+    fn(msg, type);
+  });
+}
 
 const shellCtx = {
   getActiveId() { return null; },
@@ -156,7 +183,9 @@ function syncWorkContextChrome() {
   syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
   renderGuardiaCensusGrid(shellCtx.getSettings());
   if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
-  syncHeaderContext(shellCtx);
+  void import('./features/header-context.mjs').then(function (mod) {
+    mod.syncHeaderContext(shellCtx);
+  });
 }
 
 
@@ -477,7 +506,6 @@ export {
 } from './features/patients.mjs';
 
 export {
-  showToast,
   syncWorkContextChrome,
   setMedTabAttention,
 };

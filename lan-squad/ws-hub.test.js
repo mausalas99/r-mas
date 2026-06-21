@@ -19,7 +19,7 @@ function closeWs(ws) {
     ws.once('close', resolve);
     try {
       ws.close();
-    } catch (_e) {
+    } catch {
       resolve();
       return;
     }
@@ -70,7 +70,7 @@ function waitForMessage(ws, predicate, timeoutMs = 2000) {
       let msg;
       try {
         msg = JSON.parse(String(raw));
-      } catch (_e) {
+      } catch {
         return;
       }
       if (predicate(msg)) {

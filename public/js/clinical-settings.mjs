@@ -39,7 +39,7 @@ export function setClinicalSyncModeLocalOnly(localOnly) {
   settings.clinicalLocalOnly = !!localOnly;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return settings;
 }
 
@@ -70,7 +70,7 @@ export function bundledWardHostUrl() {
 export function readRpcSettings() {
   try {
     return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -83,7 +83,7 @@ export function resolveClinicalClientId(settings = readRpcSettings()) {
     const raw = localStorage.getItem('rpc-lan-client-id');
     const fromLan = String(raw || '').trim();
     if (fromLan) return fromLan;
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return 'desktop-host';
 }
 
@@ -100,7 +100,7 @@ export function markClinicalLanProfileGateComplete(settings = readRpcSettings())
   settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return settings;
 }
 
@@ -122,7 +122,7 @@ export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
   if (dirty) {
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(next));
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   return next;
 }
@@ -158,6 +158,6 @@ export function persistClinicalUserBinding(patch) {
   }
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return settings;
 }

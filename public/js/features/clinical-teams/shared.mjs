@@ -28,7 +28,7 @@ export function readClinicalTeamsCollapseOpen(key, defaultOpen = true) {
     const v = localStorage.getItem(CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key);
     if (v === '0') return false;
     if (v === '1') return true;
-  } catch (_e) {}
+  } catch (_e) { void _e; }
   return defaultOpen;
 }
 
@@ -36,7 +36,7 @@ export function readClinicalTeamsCollapseOpen(key, defaultOpen = true) {
 export function writeClinicalTeamsCollapseOpen(key, open) {
   try {
     localStorage.setItem(CLINICAL_TEAMS_COLLAPSE_LS_PREFIX + key, open ? '1' : '0');
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 /**

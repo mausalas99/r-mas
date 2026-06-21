@@ -1,3 +1,8 @@
+import {
+  mergeClinicalUsersData,
+  mergeClinicalUsersDeletedData,
+} from './clinical-ops-merge-users.mjs';
+
 function indexBy(rows, key) {
   const map = new Map();
   for (const row of rows || []) {
@@ -201,6 +206,21 @@ function filterMembershipAfterRemovals(rows, removals) {
   });
 }
 
+function applyIncomingMembershipRow(map, row) {
+  if (!row?.team_id || !row?.user_id) return;
+  const key = `${row.team_id}\0${row.user_id}`;
+  const prev = map.get(key);
+  if (!prev) {
+    map.set(key, { ...row });
+    return;
+  }
+  const fraction =
+    row.sub_area_fraction != null && String(row.sub_area_fraction).trim()
+      ? String(row.sub_area_fraction).trim()
+      : prev.sub_area_fraction ?? null;
+  map.set(key, { ...prev, ...row, sub_area_fraction: fraction });
+}
+
 function mergeTeamMembershipData(localRows, incomingRows) {
   const map = new Map();
   for (const row of localRows || []) {
@@ -208,18 +228,7 @@ function mergeTeamMembershipData(localRows, incomingRows) {
     map.set(`${row.team_id}\0${row.user_id}`, { ...row });
   }
   for (const row of incomingRows || []) {
-    if (!row?.team_id || !row?.user_id) continue;
-    const key = `${row.team_id}\0${row.user_id}`;
-    const prev = map.get(key);
-    if (!prev) {
-      map.set(key, { ...row });
-      continue;
-    }
-    const fraction =
-      row.sub_area_fraction != null && String(row.sub_area_fraction).trim()
-        ? String(row.sub_area_fraction).trim()
-        : prev.sub_area_fraction ?? null;
-    map.set(key, { ...prev, ...row, sub_area_fraction: fraction });
+    applyIncomingMembershipRow(map, row);
   }
   return [...map.values()];
 }
@@ -307,130 +316,33 @@ function filterActiveGuardiasByResolved(activeRows, resolvedRows) {
   });
 }
 
-function normalizeUsername(raw) {
-  return String(raw || '')
-    .trim()
-    .replace(/^@+/, '')
-    .toLowerCase();
-}
 
-function isValidUsernameFormat(raw) {
-  return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername(raw));
-}
-
-function mergeClinicalUsersDeletedData(localIds, incomingIds) {
-  const set = new Set();
-  for (const id of localIds || []) {
-    const uid = String(id || '').trim();
-    if (uid) set.add(uid);
-  }
-  for (const id of incomingIds || []) {
-    const uid = String(id || '').trim();
-    if (uid) set.add(uid);
-  }
-  return [...set];
-}
-
-function mergeClinicalUsersData(localRows, incomingRows) {
-  const byUsername = new Map();
-  const byUserId = new Map();
-  for (const row of localRows || []) {
-    if (!row?.user_id) continue;
-    byUserId.set(String(row.user_id), { ...row });
-    const handle = normalizeUsername(row.username);
-    if (handle && isValidUsernameFormat(handle)) byUsername.set(handle, { ...row });
-  }
-  for (const row of incomingRows || []) {
-    if (!row?.user_id) continue;
-    const handle = normalizeUsername(row.username);
-    if (!handle || !isValidUsernameFormat(handle)) continue;
-    const uid = String(row.user_id);
-    const existingByHandle = byUsername.get(handle);
-    if (existingByHandle && existingByHandle.user_id !== uid) {
-      const prevByUid = byUserId.get(uid) || null;
-      const mergedByUid = prevByUid
-        ? {
-            ...prevByUid,
-            rank: row.rank ?? prevByUid.rank,
-            clinical_name: row.clinical_name ?? prevByUid.clinical_name,
-            sala: row.sala ?? prevByUid.sala,
-            is_program_admin:
-              row.is_program_admin != null ? row.is_program_admin : prevByUid.is_program_admin,
-          }
-        : { ...row, username: prevByUid ? prevByUid.username : row.username };
-      byUserId.set(uid, mergedByUid);
-      continue;
-    }
-    const prev = byUserId.get(uid) || existingByHandle || null;
-    const merged = prev
-      ? {
-          ...prev,
-          username: handle,
-          rank: row.rank ?? prev.rank,
-          clinical_name: row.clinical_name ?? prev.clinical_name,
-          sala: row.sala ?? prev.sala,
-          is_program_admin:
-            row.is_program_admin != null ? row.is_program_admin : prev.is_program_admin,
-        }
-      : { ...row, username: handle };
-    byUserId.set(uid, merged);
-    byUsername.set(handle, merged);
-  }
-  return [...byUserId.values()];
-}
-
-/** @param {object|null} local @param {object|null} incoming */
-export function mergeClinicalOpsSnapshotsData(local, incoming) {
-  if (!local) return incoming && typeof incoming === 'object' ? { ...incoming } : null;
-  if (!incoming || typeof incoming !== 'object') return { ...local };
-
-  const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : '';
-  const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : '';
-  if (remoteNueva && (!localNueva || remoteNueva > localNueva)) {
-    const clinical_users_deleted = mergeClinicalUsersDeletedData(
-      local.clinical_users_deleted || [],
-      incoming.clinical_users_deleted || []
-    );
-    const deletedSet = new Set(clinical_users_deleted);
-    return {
-      ...incoming,
-      exportedAt:
-        String(incoming.exportedAt || '') >= String(local.exportedAt || '')
-          ? incoming.exportedAt
-          : local.exportedAt,
-      clinical_users_deleted,
-      clinical_users: mergeClinicalUsersData(
-        local.clinical_users || [],
-        incoming.clinical_users || []
-      ).filter((row) => !deletedSet.has(String(row?.user_id || ''))),
-    };
-  }
-
-  const exportedAt =
-    String(incoming.exportedAt || '') >= String(local.exportedAt || '')
-      ? incoming.exportedAt
-      : local.exportedAt;
-
+function mergeAfterRotationNueva(local, incoming) {
   const clinical_users_deleted = mergeClinicalUsersDeletedData(
     local.clinical_users_deleted || [],
     incoming.clinical_users_deleted || []
   );
   const deletedSet = new Set(clinical_users_deleted);
+  return {
+    ...incoming,
+    exportedAt:
+      String(incoming.exportedAt || '') >= String(local.exportedAt || '')
+        ? incoming.exportedAt
+        : local.exportedAt,
+    clinical_users_deleted,
+    clinical_users: mergeClinicalUsersData(
+      local.clinical_users || [],
+      incoming.clinical_users || []
+    ).filter((row) => !deletedSet.has(String(row?.user_id || ''))),
+  };
+}
+
+function buildMergedMembership(local, incoming, deletedSet, mergedTeams, teams_archived) {
+  const archivedTeamIds = archivedTeamIdSet(mergedTeams, teams_archived);
   const team_membership_rejoins = mergeMembershipRejoinsData(
     local.team_membership_rejoins || [],
     incoming.team_membership_rejoins || []
   );
-  const teams_archived = mergeTeamsArchivedData(
-    local.teams_archived || [],
-    incoming.teams_archived || []
-  );
-  let mergedTeams = mergeTeamsData(local.teams || [], incoming.teams || []);
-  mergedTeams = applyArchivedTeamTombstonesToTeams(mergedTeams, teams_archived);
-  const archivedTeamIds = archivedTeamIdSet(mergedTeams, teams_archived);
-  const mergedClinicalUsers = mergeClinicalUsersData(
-    local.clinical_users || [],
-    incoming.clinical_users || []
-  ).filter((row) => !deletedSet.has(String(row?.user_id || '')));
   const team_membership_removals = pruneStaleMembershipRemovalsData(
     reconcileMembershipRemovalsData(
       local,
@@ -441,18 +353,95 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
       team_membership_rejoins
     ),
     deletedSet,
-    mergedClinicalUsers,
+    mergeClinicalUsersData(local.clinical_users || [], incoming.clinical_users || []).filter(
+      (row) => !deletedSet.has(String(row?.user_id || ''))
+    ),
     mergedTeams
   );
+  return filterMembershipAfterRemovals(
+    filterMembershipForArchivedTeams(
+      filterMembershipForDeletedUsers(
+        mergeTeamMembershipData(local.team_membership || [], incoming.team_membership || []),
+        deletedSet
+      ),
+      archivedTeamIds
+    ),
+    team_membership_removals
+  );
+}
+
+function shouldApplyRotationNuevaMerge(local, incoming) {
+  const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : '';
+  const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : '';
+  return !!(remoteNueva && (!localNueva || remoteNueva > localNueva));
+}
+
+function buildMergedTeamsBlock(local, incoming) {
+  const teams_archived = mergeTeamsArchivedData(
+    local.teams_archived || [],
+    incoming.teams_archived || []
+  );
+  let mergedTeams = mergeTeamsData(local.teams || [], incoming.teams || []);
+  mergedTeams = applyArchivedTeamTombstonesToTeams(mergedTeams, teams_archived);
+  return { teams_archived, mergedTeams };
+}
+
+function buildClinicalOpsMergePrep(local, incoming) {
+  const exportedAt =
+    String(incoming.exportedAt || '') >= String(local.exportedAt || '')
+      ? incoming.exportedAt
+      : local.exportedAt;
+  const clinical_users_deleted = mergeClinicalUsersDeletedData(
+    local.clinical_users_deleted || [],
+    incoming.clinical_users_deleted || []
+  );
+  const deletedSet = new Set(clinical_users_deleted);
+  const { teams_archived, mergedTeams } = buildMergedTeamsBlock(local, incoming);
+  const mergedClinicalUsers = mergeClinicalUsersData(
+    local.clinical_users || [],
+    incoming.clinical_users || []
+  ).filter((row) => !deletedSet.has(String(row?.user_id || '')));
   const active_guardias_resolved = mergeResolvedGuardiasData(
     local.active_guardias_resolved || [],
     incoming.active_guardias_resolved || []
   );
+  return {
+    exportedAt,
+    clinical_users_deleted,
+    deletedSet,
+    teams_archived,
+    mergedTeams,
+    mergedClinicalUsers,
+    active_guardias_resolved,
+    localNueva: local.rotationNuevaAt ? String(local.rotationNuevaAt) : '',
+    remoteNueva: incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : '',
+  };
+}
 
+function buildTeamMembershipRemovals(local, incoming, prep) {
+  return pruneStaleMembershipRemovalsData(
+    reconcileMembershipRemovalsData(
+      local,
+      mergeMembershipRemovalsData(
+        local.team_membership_removals || [],
+        incoming.team_membership_removals || []
+      ),
+      mergeMembershipRejoinsData(
+        local.team_membership_rejoins || [],
+        incoming.team_membership_rejoins || []
+      )
+    ),
+    prep.deletedSet,
+    prep.mergedClinicalUsers,
+    prep.mergedTeams
+  );
+}
+
+function assembleClinicalOpsMergedSnapshot(local, incoming, prep) {
   return {
     version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
-    exportedAt,
-    rotationNuevaAt: localNueva || remoteNueva || null,
+    exportedAt: prep.exportedAt,
+    rotationNuevaAt: prep.localNueva || prep.remoteNueva || null,
     rotation_cycles: mergeRotationCyclesData(
       local.rotation_cycles || [],
       incoming.rotation_cycles || []
@@ -465,28 +454,37 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
       local.team_guardia_today || [],
       incoming.team_guardia_today || []
     ),
-    teams: mergedTeams,
-    teams_archived,
-    team_membership_rejoins,
-    team_membership_removals,
-    team_membership: filterMembershipAfterRemovals(
-      filterMembershipForArchivedTeams(
-        filterMembershipForDeletedUsers(
-          mergeTeamMembershipData(local.team_membership || [], incoming.team_membership || []),
-          deletedSet
-        ),
-        archivedTeamIds
-      ),
-      team_membership_removals
+    teams: prep.mergedTeams,
+    teams_archived: prep.teams_archived,
+    team_membership_rejoins: mergeMembershipRejoinsData(
+      local.team_membership_rejoins || [],
+      incoming.team_membership_rejoins || []
+    ),
+    team_membership_removals: buildTeamMembershipRemovals(local, incoming, prep),
+    team_membership: buildMergedMembership(
+      local,
+      incoming,
+      prep.deletedSet,
+      prep.mergedTeams,
+      prep.teams_archived
     ),
     active_guardias: filterActiveGuardiasByResolved(
       mergeActiveGuardiasData(local.active_guardias || [], incoming.active_guardias || []),
-      active_guardias_resolved
+      prep.active_guardias_resolved
     ),
-    active_guardias_resolved,
-    clinical_users: mergedClinicalUsers,
-    clinical_users_deleted,
+    active_guardias_resolved: prep.active_guardias_resolved,
+    clinical_users: prep.mergedClinicalUsers,
+    clinical_users_deleted: prep.clinical_users_deleted,
   };
+}
+
+export function mergeClinicalOpsSnapshotsData(local, incoming) {
+  if (!local) return incoming && typeof incoming === 'object' ? { ...incoming } : null;
+  if (!incoming || typeof incoming !== 'object') return { ...local };
+  if (shouldApplyRotationNuevaMerge(local, incoming)) {
+    return mergeAfterRotationNueva(local, incoming);
+  }
+  return assembleClinicalOpsMergedSnapshot(local, incoming, buildClinicalOpsMergePrep(local, incoming));
 }
 
 /** @param {object[]} sources */

@@ -10,6 +10,11 @@ import {
 import { upsertHost, listRegistryDiscoveryUrls } from './lan-host-registry.mjs';
 import { listWardHostUrlsForProbe } from './lan-ward-host-registry.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
+import {
+  collectUdpDiscoveryUrls,
+  resolveDiscoveryFastPath,
+  runDiscoverySubnetScan,
+} from './lan-discovery-udp.mjs';
 
 const DEFAULT_REGISTRY_AGE_MS = 90_000;
 
@@ -64,33 +69,13 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
     opts.registryMaxAgeMs ?? DEFAULT_REGISTRY_AGE_MS
   ).filter((url) => url !== own);
 
+  const skipUdp = opts.skipUdpDiscover || registryUrls.length > 0;
   const udpHosts =
-    opts.skipUdpDiscover || registryUrls.length > 0
+    skipUdp || typeof window === 'undefined' || !window.electronAPI?.lanUdpDiscover
       ? []
-      : typeof window !== 'undefined' && window.electronAPI?.lanUdpDiscover
-        ? await window.electronAPI.lanUdpDiscover().catch(() => [])
-        : [];
+      : await window.electronAPI.lanUdpDiscover().catch(() => []);
 
-  const udpUrls = [];
-  if (Array.isArray(udpHosts)) {
-    for (const h of udpHosts) {
-      if (!h?.clientId || !h?.startedAt) continue;
-      upsertHost({
-        fingerprint: `${h.clientId}:${h.startedAt}`,
-        clientId: h.clientId,
-        startedAt: h.startedAt,
-        currentUrl: h.url,
-        rank: h.rank || '',
-        dbUnlocked: false,
-        shiftPinActive: false,
-        rttMs: 0,
-        lastSeenAt: Date.now(),
-        source: 'udp',
-      });
-      const url = normalizeHostUrl(h.url);
-      if (url && url !== own) udpUrls.push(url);
-    }
-  }
+  const udpUrls = collectUdpDiscoveryUrls(udpHosts, own, upsertHost);
 
   const localPrefixes = await resolveLocalLanSubnetPrefixes(own);
   const wardUrls = listWardHostUrlsForProbe(undefined, {
@@ -101,21 +86,17 @@ export async function discoverLanHostsConcurrent(teamCode, ownUrl, opts = {}) {
     ? await verifyLanHostsWithBearer(fastUrls, teamCode)
     : [];
 
-  if (opts.skipSubnetScan) {
-    return verifiedFast.length ? verifiedFast : fastUrls;
-  }
-  if (verifiedFast.length > 0 && !opts.forceSubnetScan) {
-    return verifiedFast;
-  }
+  const fastPath = resolveDiscoveryFastPath(opts, verifiedFast, fastUrls);
+  if (fastPath) return fastPath;
 
-  const scanMode = opts.subnetScanMode || 'beacon';
-  let scanned = [];
-  if (scanMode === 'bearer') {
-    scanned = await discoverLanHostsOnSubnet(teamCode, ownUrl);
-  } else {
-    const beaconHits = await discoverLanHostsOnSubnetViaBeacon(ownUrl);
-    scanned = await verifyLanHostsWithBearer(beaconHits, teamCode);
-  }
+  const scanned = await runDiscoverySubnetScan(
+    opts,
+    teamCode,
+    ownUrl,
+    verifyLanHostsWithBearer,
+    discoverLanHostsOnSubnet,
+    discoverLanHostsOnSubnetViaBeacon
+  );
 
   return dedupeUrls([...verifiedFast, ...scanned]);
 }

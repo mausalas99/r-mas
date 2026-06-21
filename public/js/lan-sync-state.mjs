@@ -22,7 +22,7 @@ function notify(roomId, phase, meta) {
   listeners.forEach(function (cb) {
     try {
       cb(detail);
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   });
 }
 

@@ -145,7 +145,7 @@ async function processFullBackupFile(payload) {
   await saveState({ immediate: true });
   try {
     localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   await persistFullBackupPayload(payload);
   addAuditEntry('backup-full-import', 'ok', n, '');
   rt.showToast(

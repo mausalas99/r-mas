@@ -1,18 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  buildLanJoinUrls,
-  buildPermanentMobileJoinUrl,
-  buildTeamHash,
-  parseLanJoinQuery,
-  parseLanInviteInput,
-  isLanSalaInvitePaste,
-  resolveLanJoinHostUrl,
-  resolveLiveSyncRoomIdFromSala,
-  liveSyncRoomLabel,
-  lanClinicalDirectoryPullRoomIds,
-  LIVE_SYNC_SALA_DEFS,
-} from './lan-join-link.mjs';
+import { buildLanJoinUrls, buildPermanentMobileJoinUrl, buildTeamHash, parseLanJoinQuery, parseLanInviteInput, resolveLanJoinHostUrl, resolveLiveSyncRoomIdFromSala, liveSyncRoomLabel, lanClinicalDirectoryPullRoomIds, LIVE_SYNC_SALA_DEFS } from './lan-join-link.mjs';
 
 describe('lan-join-link', () => {
   it('buildPermanentMobileJoinUrl usa /mobile/?token= sin ticket', async () => {

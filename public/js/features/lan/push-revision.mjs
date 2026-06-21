@@ -76,7 +76,7 @@ export function emitLiveSyncRevisionHint(roomId, revision) {
   if (!lanClient.liveConnected) {
     try {
       lanClient.connectLiveChannel(rid);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   if (!lanClient.liveConnected) return;
   try {
@@ -86,7 +86,7 @@ export function emitLiveSyncRevisionHint(roomId, revision) {
       revision: Number(revision || 0),
       clientId: getLanClientId(),
     });
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 export function scheduleReconcileLiveSyncRoom(roomId, options) {

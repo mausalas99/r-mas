@@ -60,7 +60,7 @@ export function captureLanPanelExpandState(root) {
     if (sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1') state.syncDiagnostics = true;
     if (sessionStorage.getItem(LAN_INVITE_MOBILE_OPEN_KEY) === '1') state.inviteMobile = true;
     if (sessionStorage.getItem(LAN_INVITE_SALA_OPEN_KEY) === '1') state.inviteSala = true;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (!root) return state;
   var diag = root.querySelector('.lan-sync-diagnostics-panel');
   if (diag && diag.open) state.syncDiagnostics = true;

@@ -1,9 +1,6 @@
 import { isVitalAltered, isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
 import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 
-/** @type {readonly string[]} */
-const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
-
 /** @type {Record<string, string>} */
 const VITAL_LABELS = {
   tas: 'TAS',
@@ -270,29 +267,72 @@ export function lineDataset(labels, values, alteredFlags, color) {
  * @param {unknown[]} histAsc
  * @param {readonly string[]} keys
  */
-export function buildVitalsFamilyData(histAsc, keys) {
+function rowHasVitalKeys(row, keys) {
+  var vit =
+    /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object'
+      ? /** @type {any} */ (/** @type {any} */ (row).vitals)
+      : {};
+  for (var ki = 0; ki < keys.length; ki++) {
+    var raw = vit[keys[ki]];
+    if (raw != null && raw !== '') return true;
+  }
+  return false;
+}
+
+function filterHistorialWithVitals(histAsc, keys) {
   /** @type {unknown[]} */
   var rows = [];
   for (var ri = 0; ri < histAsc.length; ri++) {
     var row = histAsc[ri];
     if (!row || typeof row !== 'object') continue;
-    var vit =
-      /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (row).vitals)
-        : {};
-    var hasAny = false;
-    for (var ki = 0; ki < keys.length; ki++) {
-      var raw = vit[keys[ki]];
-      if (raw != null && raw !== '') {
-        hasAny = true;
-        break;
-      }
-    }
-    if (hasAny) rows.push(row);
+    if (rowHasVitalKeys(row, keys)) rows.push(row);
   }
+  return rows;
+}
+
+function buildVitalDatasetForKey(rows, labels, key, k) {
+  /** @type {(number | null)[]} */
+  var values = [];
+  /** @type {boolean[]} */
+  var alteredFlags = [];
+  var count = 0;
+  for (var j = 0; j < rows.length; j++) {
+    var r2 = rows[j];
+    var vit2 =
+      /** @type {any} */ (r2).vitals && typeof /** @type {any} */ (r2).vitals === 'object'
+        ? /** @type {any} */ (/** @type {any} */ (r2).vitals)
+        : {};
+    var raw2 = vit2[key];
+    if (raw2 == null || raw2 === '') {
+      values.push(null);
+      alteredFlags.push(false);
+      continue;
+    }
+    var n = Number(raw2);
+    if (!Number.isFinite(n)) {
+      values.push(null);
+      alteredFlags.push(false);
+      continue;
+    }
+    values.push(n);
+    count++;
+    var rowAlt =
+      /** @type {any} */ (r2).alteredAt && typeof /** @type {any} */ (r2).alteredAt === 'object'
+        ? /** @type {Record<string, string>} */ (/** @type {any} */ (r2).alteredAt)
+        : {};
+    alteredFlags.push(isVitalAltered(key, raw2) || !!(rowAlt && rowAlt[key]));
+  }
+  if (count < 2) return null;
+  var color = vitalSeriesColor(k);
+  var ds = lineDataset(labels, values, alteredFlags, color);
+  ds.label = VITAL_LABELS[key] || key;
+  return ds;
+}
+
+export function buildVitalsFamilyData(histAsc, keys) {
+  var rows = filterHistorialWithVitals(histAsc, keys);
   if (rows.length < 2) return null;
 
-  /** @type {string[]} */
   var labels = rows.map(function (r) {
     return formatChartLabel(/** @type {any} */ (r).recordedAt);
   });
@@ -301,42 +341,8 @@ export function buildVitalsFamilyData(histAsc, keys) {
   var datasets = [];
   for (var k = 0; k < keys.length; k++) {
     var key = keys[k];
-    /** @type {(number | null)[]} */
-    var values = [];
-    /** @type {boolean[]} */
-    var alteredFlags = [];
-    var count = 0;
-    for (var j = 0; j < rows.length; j++) {
-      var r2 = rows[j];
-      var vit2 =
-        /** @type {any} */ (r2).vitals && typeof /** @type {any} */ (r2).vitals === 'object'
-          ? /** @type {any} */ (/** @type {any} */ (r2).vitals)
-          : {};
-      var raw2 = vit2[key];
-      if (raw2 == null || raw2 === '') {
-        values.push(null);
-        alteredFlags.push(false);
-        continue;
-      }
-      var n = Number(raw2);
-      if (!Number.isFinite(n)) {
-        values.push(null);
-        alteredFlags.push(false);
-        continue;
-      }
-      values.push(n);
-      count++;
-      var rowAlt =
-        /** @type {any} */ (r2).alteredAt && typeof /** @type {any} */ (r2).alteredAt === 'object'
-          ? /** @type {Record<string, string>} */ (/** @type {any} */ (r2).alteredAt)
-          : {};
-      alteredFlags.push(isVitalAltered(key, raw2) || !!(rowAlt && rowAlt[key]));
-    }
-    if (count < 2) continue;
-    var color = vitalSeriesColor(k);
-    var ds = lineDataset(labels, values, alteredFlags, color);
-    ds.label = VITAL_LABELS[key] || key;
-    datasets.push(ds);
+    var ds = buildVitalDatasetForKey(rows, labels, key, k);
+    if (ds) datasets.push(ds);
   }
 
   if (!datasets.length) return null;
@@ -409,31 +415,17 @@ export function buildGluSeries(histAsc, now, seriesOpts) {
  * @param {unknown} row
  * @returns {string}
  */
-function eaHistorialRowFingerprint(row) {
-  if (!row || typeof row !== 'object') return '';
-  /** @type {any} */
-  var r = row;
-  var vit = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
-  var io = r.io && typeof r.io === 'object' ? r.io : {};
-  var glus = Array.isArray(r.glucometrias) ? r.glucometrias : [];
-  var gluSig = glus
+function glucometriaSignature(rows) {
+  return rows
     .map(function (g) {
       if (!g || typeof g !== 'object') return '';
       return String(/** @type {any} */ (g).time || '') + '@' + String(/** @type {any} */ (g).value || '');
     })
     .join(';');
-  var bombas = Array.isArray(r.bombaInsulina) ? r.bombaInsulina : [];
-  var bombaSig = bombas
-    .map(function (b) {
-      if (!b || typeof b !== 'object') return '';
-      return String(/** @type {any} */ (b).time || '') + '@' + String(/** @type {any} */ (b).value || '');
-    })
-    .join(';');
+}
+
+function vitalsFingerprint(vit) {
   return (
-    String(r.id || '') +
-    '@' +
-    String(r.recordedAt || '') +
-    ':' +
     String(vit.tas || '') +
     '/' +
     String(vit.tad || '') +
@@ -444,14 +436,31 @@ function eaHistorialRowFingerprint(row) {
     '/' +
     String(vit.temp || '') +
     '/' +
-    String(vit.sat || '') +
+    String(vit.sat || '')
+  );
+}
+
+function eaHistorialRowFingerprint(row) {
+  if (!row || typeof row !== 'object') return '';
+  /** @type {any} */
+  var r = row;
+  var vit = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
+  var io = r.io && typeof r.io === 'object' ? r.io : {};
+  var gluSig = glucometriaSignature(Array.isArray(r.glucometrias) ? r.glucometrias : []);
+  var bombaSig = glucometriaSignature(Array.isArray(r.bombaInsulina) ? r.bombaInsulina : []);
+  return (
+    String(r.id || '') +
+    '@' +
+    String(r.recordedAt || '') +
+    ':' +
+    vitalsFingerprint(vit) +
     ':' +
     String(io.ing || '') +
     '/' +
     String(io.egr || '') +
     ':' +
     gluSig +
-    '/' +
+    ':' +
     bombaSig
   );
 }
@@ -487,42 +496,26 @@ export function historialChartRevision(hist) {
  * @param {readonly string[]} keys
  * @returns {boolean}
  */
-function scanFamilyChartReady(histAsc, keys) {
-  /** @type {unknown[]} */
-  var rows = [];
-  for (var ri = 0; ri < histAsc.length; ri++) {
-    var row = histAsc[ri];
-    if (!row || typeof row !== 'object') continue;
-    var vit =
-      /** @type {any} */ (row).vitals && typeof /** @type {any} */ (row).vitals === 'object'
-        ? /** @type {any} */ (/** @type {any} */ (row).vitals)
+function countFiniteVitalValues(rows, key) {
+  var count = 0;
+  for (var j = 0; j < rows.length; j++) {
+    var vit2 =
+      /** @type {any} */ (rows[j]).vitals && typeof /** @type {any} */ (rows[j]).vitals === 'object'
+        ? /** @type {any} */ (/** @type {any} */ (rows[j]).vitals)
         : {};
-    var hasAny = false;
-    for (var ki = 0; ki < keys.length; ki++) {
-      var raw = vit[keys[ki]];
-      if (raw != null && raw !== '') {
-        hasAny = true;
-        break;
-      }
-    }
-    if (hasAny) rows.push(row);
+    var raw2 = vit2[key];
+    if (raw2 == null || raw2 === '') continue;
+    if (!Number.isFinite(Number(raw2))) continue;
+    count += 1;
   }
+  return count;
+}
+
+function scanFamilyChartReady(histAsc, keys) {
+  var rows = filterHistorialWithVitals(histAsc, keys);
   if (rows.length < 2) return false;
   for (var k = 0; k < keys.length; k++) {
-    var key = keys[k];
-    var count = 0;
-    for (var j = 0; j < rows.length; j++) {
-      var r2 = rows[j];
-      var vit2 =
-        /** @type {any} */ (r2).vitals && typeof /** @type {any} */ (r2).vitals === 'object'
-          ? /** @type {any} */ (/** @type {any} */ (r2).vitals)
-          : {};
-      var raw2 = vit2[key];
-      if (raw2 == null || raw2 === '') continue;
-      if (!Number.isFinite(Number(raw2))) continue;
-      count += 1;
-      if (count >= 2) return true;
-    }
+    if (countFiniteVitalValues(rows, keys[k]) >= 2) return true;
   }
   return false;
 }

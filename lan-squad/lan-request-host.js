@@ -11,7 +11,7 @@ function hostUrlFromRequest(req) {
     const u = new URL(`${proto}://${host}`);
     if (!u.hostname || /^(localhost|127\.0\.0\.1)$/i.test(u.hostname)) return '';
     return `${u.protocol}//${u.host}`.replace(/\/+$/, '');
-  } catch (_e) {
+  } catch {
     return '';
   }
 }

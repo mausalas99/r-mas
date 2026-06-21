@@ -10,15 +10,7 @@ import {
   getCachedEaChartsSummary,
 } from './estado-actual-charts-display.mjs';
 import { destroyEaChartInstance, resolveChartCtor } from './estado-actual-charts-chartjs.mjs';
-import {
-  activateEaChartTab,
-  defaultEaChartTab,
-  destroyAllEaTabCharts,
-  eaChartTabHasData,
-  mountEaChartsChrome,
-  syncActiveEaChartsRef,
-  wireEaChartsTabs,
-} from './estado-actual-charts-tabs.mjs';
+import { activateEaChartTab, defaultEaChartTab, destroyAllEaTabCharts, mountEaChartsChrome, syncActiveEaChartsRef, wireEaChartsTabs } from './estado-actual-charts-tabs.mjs';
 
 export {
   buildGluSeries,
@@ -184,8 +176,7 @@ function hideEaChartsEmptyState() {
   if (empty) empty.hidden = true;
 }
 
-export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, opts) {
-  opts = opts || {};
+export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor, _opts) {
   if (!mountEl) return;
   var bundle = getCachedEaChartBundle(monitoreo);
   var sig = bundle.signature;

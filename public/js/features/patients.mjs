@@ -221,7 +221,7 @@ function readSidebarAutoHide() {
 function writeSidebarAutoHide(on) {
   try {
     localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 function applySidebarAutoHideUi() {

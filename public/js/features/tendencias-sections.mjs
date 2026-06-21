@@ -23,7 +23,7 @@ function tendSectionExpandedRead() {
 function tendSectionExpandedWrite(map) {
   try {
     localStorage.setItem(TEND_SECTION_EXPANDED_LS, JSON.stringify(map || {}));
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
 }
 
 /** @param {string} sectionKey */

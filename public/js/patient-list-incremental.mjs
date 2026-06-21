@@ -2,26 +2,9 @@
  * Incremental sidebar patient list updates (LAN sync — no full list flash).
  */
 
-/** @param {object} p @param {{ activeId?: string|null, isRonda?: boolean, isRoundSeen?: (id: string) => boolean }} ctx */
-export function patientCardDisplayKey(p, ctx = {}) {
-  const roundSeen =
-    ctx.isRonda && typeof ctx.isRoundSeen === 'function'
-      ? ctx.isRoundSeen(String(p.id || ''))
-        ? 1
-        : 0
-      : 0;
-  return [
-    String(p.id || ''),
-    String(p.nombre || ''),
-    String(p.cuarto || ''),
-    String(p.cama || ''),
-    String(p.servicio || ''),
-    p.pinned ? 1 : 0,
-    p.archived ? 1 : 0,
-    roundSeen,
-    String(ctx.activeId || '') === String(p.id || '') ? 1 : 0,
-  ].join('\u0001');
-}
+import { patientCardDisplayKey } from './patient-list-display-key.mjs';
+
+export { patientCardDisplayKey };
 
 /** @param {object[]} filtered */
 export function buildPatientListZones(filtered) {
@@ -61,7 +44,7 @@ function cardIds(zoneEl) {
 }
 
 /** @param {HTMLElement} list @param {boolean} archivedCollapsed */
-export function readVirtualPatientListStructure(list, archivedCollapsed) {
+export function readVirtualPatientListStructure(list, _archivedCollapsed) {
   const parts = [];
   const pinned = list.querySelector('.patient-sort-zone[data-patient-zone="pinned"]');
   if (pinned) parts.push(`p:${cardIds(pinned).join(',')}`);
@@ -176,12 +159,7 @@ export function trySilentPatientListPatch(list, options) {
  * @param {{ zones: object, archivedCollapsed: boolean, isRonda: boolean, virtualizeActive?: boolean, renderCard: (p: object) => string, renderPinnedLabel: () => string, renderActiveLabel: () => string, renderArchivedToggle: (collapsed: boolean, count: number) => string, ctx: object, onRondaNav?: (zones: object) => void }} options
  * @returns {boolean}
  */
-export function updatePatientListDomIncremental(list, options) {
-  if (!list) return false;
-  const zones = options.zones;
-  const hasPatients = zones.pinned.length || zones.active.length || zones.archived.length;
-  if (!hasPatients) return false;
-
+function removeNonStructuralPatientListNodes(list) {
   list.querySelectorAll(':scope > *').forEach((node) => {
     if (
       node instanceof HTMLElement &&
@@ -193,37 +171,48 @@ export function updatePatientListDomIncremental(list, options) {
     }
     node.remove();
   });
+}
 
-  const ctx = options.ctx || {};
+function appendPatientZoneSection(frag, labelHtml, zoneName, zoneClass) {
+  frag.appendChild(htmlToElement(labelHtml));
+  const zone = document.createElement('div');
+  zone.className = zoneClass || 'patient-sort-zone';
+  zone.setAttribute('data-patient-zone', zoneName);
+  frag.appendChild(zone);
+}
+
+function buildIncrementalPatientListFragment(zones, options) {
   const frag = document.createDocumentFragment();
-
   if (zones.pinned.length) {
-    frag.appendChild(htmlToElement(options.renderPinnedLabel()));
-    const zone = document.createElement('div');
-    zone.className = 'patient-sort-zone';
-    zone.setAttribute('data-patient-zone', 'pinned');
-    frag.appendChild(zone);
+    appendPatientZoneSection(frag, options.renderPinnedLabel(), 'pinned');
   }
   if (zones.active.length) {
-    frag.appendChild(htmlToElement(options.renderActiveLabel()));
-    const zone = document.createElement('div');
-    zone.className = options.virtualizeActive
+    const zoneClass = options.virtualizeActive
       ? 'patient-sort-zone patient-sort-zone--virtual-active'
       : 'patient-sort-zone';
-    zone.setAttribute('data-patient-zone', 'active');
-    frag.appendChild(zone);
+    appendPatientZoneSection(frag, options.renderActiveLabel(), 'active', zoneClass);
   }
   if (zones.archived.length) {
     frag.appendChild(
       htmlToElement(options.renderArchivedToggle(options.archivedCollapsed, zones.archived.length))
     );
     if (!options.archivedCollapsed) {
-      const zone = document.createElement('div');
-      zone.className = 'patient-sort-zone';
-      zone.setAttribute('data-patient-zone', 'archived');
-      frag.appendChild(zone);
+      appendPatientZoneSection(frag, '', 'archived');
     }
   }
+  return frag;
+}
+
+export function updatePatientListDomIncremental(list, options) {
+  if (!list) return false;
+  const zones = options.zones;
+  const hasPatients = zones.pinned.length || zones.active.length || zones.archived.length;
+  if (!hasPatients) return false;
+
+  removeNonStructuralPatientListNodes(list);
+
+  const ctx = options.ctx || {};
+  const frag = buildIncrementalPatientListFragment(zones, options);
 
   const keep = Array.from(
     list.querySelectorAll(

@@ -88,7 +88,7 @@ async function tryAutoOpenClinicalDb() {
   try {
     const res = await api.dbAutoUnlock({ lsSnapshot: collectClinicalLsSnapshot() });
     return !!(res && res.ok !== false && res.state === 'unlocked');
-  } catch (_e) {
+  } catch {
     return false;
   }
 }

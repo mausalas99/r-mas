@@ -15,7 +15,6 @@ import {
   ensureEntregaTargetUser,
   collectEntregaScopeUsers,
 } from './clinical-entrega.mjs';
-import { isOnCallToday, getCycleConfig, salaOnCallR2 } from '../clinico-access.mjs';
 
 const users = [
   { user_id: 'r1a', username: 'r1a', rank: 'R1' },

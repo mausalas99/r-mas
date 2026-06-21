@@ -324,20 +324,39 @@ async function deletePatientFromDashboard(backdrop, btn) {
 }
 
 /** @param {HTMLElement} backdrop */
+function countForeignGhosts(backdrop) {
+  return (backdrop._lanHostCensusRows || []).filter(function (x) {
+    return x.status === 'ghost' && isHostPatientOwnedByOtherClient(x.row, getLanClientId());
+  }).length;
+}
+
+function showPurgeGhostsEmptyToast(showToast, foreignGhostCount) {
+  showToast(
+    foreignGhostCount
+      ? 'No hay fantasmas propios para eliminar (' + foreignGhostCount + ' pertenecen a otro equipo).'
+      : 'No hay pacientes fantasma en el anfitrión.',
+    'info'
+  );
+}
+
+function showPurgeGhostsResult(showToast, ok, total, foreignGhostCount) {
+  if (!ok) {
+    showToast('No se pudieron eliminar los fantasmas del anfitrión.', 'error');
+    return;
+  }
+  var msg = ok + ' fantasma(s) eliminado(s) del anfitrión.';
+  if (foreignGhostCount) msg += ' ' + foreignGhostCount + ' de otro equipo sin cambios.';
+  showToast(msg, ok < total ? 'warn' : 'success');
+}
+
+/** @param {HTMLElement} backdrop */
 async function purgeGhostsFromDashboard(backdrop) {
   const opts = backdrop._lanHostCensusOpts || {};
   const showToast = resolveDashboardToast(opts);
   const ghosts = (backdrop._lanHostCensusRows || []).filter(isPurgeableHostCensusRow);
-  const foreignGhostCount = (backdrop._lanHostCensusRows || []).filter(function (x) {
-    return x.status === 'ghost' && isHostPatientOwnedByOtherClient(x.row, getLanClientId());
-  }).length;
+  const foreignGhostCount = countForeignGhosts(backdrop);
   if (!ghosts.length) {
-    showToast(
-      foreignGhostCount
-        ? 'No hay fantasmas propios para eliminar (' + foreignGhostCount + ' pertenecen a otro equipo).'
-        : 'No hay pacientes fantasma en el anfitrión.',
-      'info'
-    );
+    showPurgeGhostsEmptyToast(showToast, foreignGhostCount);
     return;
   }
   if (
@@ -357,13 +376,7 @@ async function purgeGhostsFromDashboard(backdrop) {
     if (res?.ok) ok += 1;
   }
   if (btn) btn.disabled = false;
-  if (!ok) {
-    showToast('No se pudieron eliminar los fantasmas del anfitrión.', 'error');
-  } else {
-    var msg = ok + ' fantasma(s) eliminado(s) del anfitrión.';
-    if (foreignGhostCount) msg += ' ' + foreignGhostCount + ' de otro equipo sin cambios.';
-    showToast(msg, ok < ghosts.length ? 'warn' : 'success');
-  }
+  showPurgeGhostsResult(showToast, ok, ghosts.length, foreignGhostCount);
   if (ok && typeof opts.onChanged === 'function') opts.onChanged();
   await refreshLanHostCensusDashboard(opts);
 }

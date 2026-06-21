@@ -1,5 +1,10 @@
 /** LAN sync diagnostics ring buffer and support report (IM-09). */
 
+import {
+  buildLanSyncDiagnosticsCore,
+  resolveClinicalOpsTraceSource,
+} from './lan-sync-diagnostics-build.mjs';
+
 const MAX_ERRORS = 5;
 const MAX_OPS_TRACE = 12;
 
@@ -54,33 +59,9 @@ export function clearClinicalOpsTrace() {
  */
 export function getLanSyncDiagnostics(deps) {
   const d = deps && typeof deps === 'object' ? deps : {};
-  const trace =
-    Array.isArray(d.clinicalOpsTrace) && d.clinicalOpsTrace.length
-      ? d.clinicalOpsTrace
-      : getClinicalOpsTrace();
+  const trace = resolveClinicalOpsTraceSource(d) || getClinicalOpsTrace();
   return {
-    hostUrl: String(d.hostUrl || ''),
-    pingAt: d.pingAt != null ? d.pingAt : null,
-    pingStatus: d.pingStatus != null ? d.pingStatus : null,
-    wsSync: !!d.wsSync,
-    wsLive: !!d.wsLive,
-    liveRoomId: String(d.liveRoomId || ''),
-    roomId: String(d.roomId || ''),
-    phase: String(d.phase || 'offline'),
-    bundleRevision: Number(d.bundleRevision || 0),
-    outboxCount: Number(d.outboxCount || 0),
-    pinnedHost: String(d.pinnedHost || ''),
-    teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
-    peerHostCount: Number(d.peerHostCount || 0),
-    networkProfile: String(d.networkProfile || ''),
-    transport: String(d.transport || ''),
-    rttMs: Number(d.rttMs || 0),
-    registryHostCount: Number(d.registryHostCount || 0),
-    wardHostRegistry:
-      d.wardHostRegistry && typeof d.wardHostRegistry === 'object'
-        ? { ...d.wardHostRegistry }
-        : null,
-    role: String(d.role || ''),
+    ...buildLanSyncDiagnosticsCore(d),
     clinicalOpsTrace: trace,
     lastErrors: lastErrors.map(function (e) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };

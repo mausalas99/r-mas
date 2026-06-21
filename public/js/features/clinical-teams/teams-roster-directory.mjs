@@ -42,7 +42,7 @@ export function resolveBrowseSala(elevated, homeSala) {
     const stored = localStorage.getItem(BROWSE_SALA_LS);
     if (stored === '__all__') return '__all__';
     if (stored && CLINICAL_SALAS.includes(stored)) return stored;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (!homeSala) return '__all__';
   return homeSala;
 }

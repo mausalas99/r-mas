@@ -1,5 +1,6 @@
 import { normalizeMotionMode, motionClassFor, ALL_MOTION_CLASSES } from '../motion-mode.mjs';
 import { isModeSala } from '../mode-features.mjs';
+import { paseSectionLabelFromTab } from './chrome-pase-label.mjs';
 
 /** Runtime hooks supplied by app.js once shell functions exist. */
 let runtime = {
@@ -251,7 +252,7 @@ export function getWorkMode() {
   var st = null;
   try {
     st = JSON.parse(localStorage.getItem('rpc-settings') || 'null');
-  } catch (_e) {
+  } catch {
     st = null;
   }
   return isModeSala(st) ? 'sala' : 'interconsulta';
@@ -324,23 +325,7 @@ export function clearPaseDetailEscape() {
 }
 
 function paseSectionLabelFromContext() {
-  var tab = runtime.getActiveAppTab();
-  if (tab === 'lab') return 'Laboratorio';
-  if (tab === 'med') return 'Manejo';
-  if (tab === 'agenda') return 'Agenda';
-  if (tab === 'nota') {
-    var inner = runtime.getActiveInner() || 'todo';
-    if (inner === 'notas') return 'Nota';
-    if (inner === 'indica') return 'Indicaciones';
-    if (inner === 'tend') return 'Tendencias';
-    if (inner === 'cult') return 'Cultivos';
-    if (inner === 'listado') return 'Listado';
-    if (inner === 'datos') return 'Datos';
-    if (inner === 'todo') return 'Pendientes';
-    if (inner === 'manejo') return 'Manejo';
-    if (inner === 'recetaHu') return 'Receta HU';
-  }
-  return 'Expediente';
+  return paseSectionLabelFromTab(runtime.getActiveAppTab(), runtime.getActiveInner());
 }
 
 export function toggleGuardiaMode() {

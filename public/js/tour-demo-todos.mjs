@@ -10,7 +10,7 @@ function readTodosMap() {
   try {
     const raw = localStorage.getItem(TODOS_LS_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch (_e) {
+  } catch {
     return {};
   }
 }
@@ -18,7 +18,7 @@ function readTodosMap() {
 function writeTodosMap(map) {
   try {
     localStorage.setItem(TODOS_LS_KEY, JSON.stringify(map || {}));
-  } catch (_e) {}
+  } catch (_e) { void _e; }
 }
 
 function todoEntry(id, text, priority, completed) {

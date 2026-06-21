@@ -80,7 +80,7 @@ export async function maybeShowLanMigrationNotice() {
   if (typeof sessionStorage === 'undefined') return;
   try {
     if (sessionStorage.getItem(LAN_MIGRATION_NOTICE_KEY)) return;
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (!isLanSessionConfiguredForRest()) return;
   var resp;
   try {
@@ -98,7 +98,7 @@ export async function maybeShowLanMigrationNotice() {
   if (!data || !data.requiresMigrationNotice) return;
   try {
     sessionStorage.setItem(LAN_MIGRATION_NOTICE_KEY, '1');
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   showLanMigrationNoticeModal();
 }
 

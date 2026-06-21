@@ -41,11 +41,11 @@ export async function persistGuestBearerFromExchange(data) {
   if (!token) return;
   try {
     await window.electronAPI.lanGuestWriteBearer({ token: token });
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   if (data.clientToken) {
     try {
       localStorage.setItem('rpc-lan-client-token', String(data.clientToken));
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
 }
 
@@ -69,7 +69,7 @@ export async function syncMobileWithSharedInvite(hintRoomId) {
   if (!lanClient.baseUrl()) return false;
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   var rid = '';
   if (typeof d.resolveAutoJoinRoomId === 'function') {
     rid = String(d.resolveAutoJoinRoomId(hintRoomId || '') || '').trim();
@@ -120,13 +120,13 @@ function persistMobileJoinConfig(cfg, roomId) {
     try {
       var merged = Object.assign({}, cfg, { roomId: String(roomId || '').trim() });
       if (merged.roomId) storage.saveLanConfig(merged);
-    } catch { /* ignore */ }
+    } catch (_e) { void _e; }
   }
   rememberPrimaryHostUrl(cfg.hostUrl);
   lanClient.configure(cfg);
   try {
     lanClient.connectSyncChannel();
-  } catch { /* ignore */ }
+  } catch (_e) { void _e; }
   return true;
 }
 

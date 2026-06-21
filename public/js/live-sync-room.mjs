@@ -29,49 +29,55 @@ export function patientEntityKey(id, registro) {
  * Tombstones locales (_deleted) → parches para que el merge no reviva pendientes del host.
  * @param {Record<string, { version?: number, updatedAt?: string, _deleted?: boolean }>} entityMap
  */
+function buildTodoDeletePatch(key, row) {
+  const rest = key.slice(5);
+  const colon = rest.indexOf(':');
+  if (colon < 0) return null;
+  return {
+    type: 'livesync:patch',
+    entity: 'todo',
+    op: 'delete',
+    id: rest.slice(colon + 1),
+    patientId: rest.slice(0, colon),
+    entityVersion: row.version != null ? Number(row.version) : null,
+    updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+  };
+}
+
+function buildAgendaDeletePatch(key, row) {
+  return {
+    type: 'livesync:patch',
+    entity: 'agenda',
+    op: 'delete',
+    id: key.slice(7),
+    entityVersion: row.version != null ? Number(row.version) : null,
+    updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+  };
+}
+
+function buildPatientDeletePatch(key, row) {
+  return {
+    type: 'livesync:patch',
+    entity: 'patient',
+    op: 'delete',
+    id: key.slice(8),
+    registro: String(row.registro || '').trim(),
+    entityVersion: row.version != null ? Number(row.version) : null,
+    updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
+  };
+}
+
 export function liveSyncDeletePatchesFromEntityMap(entityMap) {
   const patches = [];
   if (!entityMap || typeof entityMap !== 'object') return patches;
   for (const key of Object.keys(entityMap)) {
     const row = entityMap[key];
     if (!row || row._deleted !== true) continue;
-    if (key.startsWith('todo:')) {
-      const rest = key.slice(5);
-      const colon = rest.indexOf(':');
-      if (colon < 0) continue;
-      patches.push({
-        type: 'livesync:patch',
-        entity: 'todo',
-        op: 'delete',
-        id: rest.slice(colon + 1),
-        patientId: rest.slice(0, colon),
-        entityVersion: row.version != null ? Number(row.version) : null,
-        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
-      });
-      continue;
-    }
-    if (key.startsWith('agenda:')) {
-      patches.push({
-        type: 'livesync:patch',
-        entity: 'agenda',
-        op: 'delete',
-        id: key.slice(7),
-        entityVersion: row.version != null ? Number(row.version) : null,
-        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
-      });
-      continue;
-    }
-    if (key.startsWith('patient:')) {
-      patches.push({
-        type: 'livesync:patch',
-        entity: 'patient',
-        op: 'delete',
-        id: key.slice(8),
-        registro: String(row.registro || '').trim(),
-        entityVersion: row.version != null ? Number(row.version) : null,
-        updatedAt: String(row.updatedAt || row.lanUpdatedAt || ''),
-      });
-    }
+    let patch = null;
+    if (key.startsWith('todo:')) patch = buildTodoDeletePatch(key, row);
+    else if (key.startsWith('agenda:')) patch = buildAgendaDeletePatch(key, row);
+    else if (key.startsWith('patient:')) patch = buildPatientDeletePatch(key, row);
+    if (patch) patches.push(patch);
   }
   return patches;
 }
@@ -121,77 +127,152 @@ function normalizeLiveSyncPatch(patch) {
   return patch;
 }
 
-/** @param {Array<{ agenda?: object[], todos?: Record<string, object[]>, entityVersions?: Record<string, number> }>} sources */
-export function mergeLiveSyncBundles(sources) {
-  /** @type {Map<string, { kind: 'agenda', item: object, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
+function blocksResurrectingDeleted(cur, deleted, ver) {
+  if (!cur || !cur.deleted || deleted) return false;
+  if (ver == null || cur.entityVersion == null) return true;
+  return ver <= cur.entityVersion;
+}
+
+function upsertLiveSyncAgenda(agenda, ev, deleted, entityVersion, updatedAt, src) {
+  if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
+  const k = agendaEntityKey(ev.id);
+  const ver =
+    entityVersion != null
+      ? entityVersion
+      : versionFromSource(src, k) ?? (ev.version != null ? Number(ev.version) : null);
+  const at = String(updatedAt || ev.updatedAt || ev.createdAt || '');
+  const cur = agenda.get(k);
+  if (blocksResurrectingDeleted(cur, deleted, ver)) return;
+  if (shouldAcceptEntry(cur, ver, at)) {
+    agenda.set(k, {
+      kind: 'agenda',
+      item: deleted ? { id: ev.id } : { ...ev },
+      updatedAt: at,
+      entityVersion: ver,
+      deleted: !!deleted,
+    });
+  }
+}
+
+function upsertLiveSyncTodo(todos, patientId, item, deleted, entityVersion, updatedAt, src) {
+  if (!item || !item.id || isDemoPatientId(patientId)) return;
+  const k = todoEntityKey(patientId, item.id);
+  const ver =
+    entityVersion != null
+      ? entityVersion
+      : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
+  const at = String(updatedAt || item.updatedAt || item.createdAt || '');
+  const cur = todos.get(k);
+  if (blocksResurrectingDeleted(cur, deleted, ver)) return;
+  if (shouldAcceptEntry(cur, ver, at)) {
+    todos.set(k, {
+      kind: 'todo',
+      patientId: String(patientId),
+      item: deleted ? { id: item.id } : { ...item },
+      updatedAt: at,
+      entityVersion: ver,
+      deleted: !!deleted,
+    });
+  }
+}
+
+function applyLiveSyncAgendaPatch(agenda, patch, at, patchVer) {
+  const k = agendaEntityKey(patch.id);
+  if (patch.op === 'delete') {
+    const cur = agenda.get(k);
+    if (shouldAcceptEntry(cur, patchVer, at)) {
+      agenda.set(k, {
+        kind: 'agenda',
+        item: { id: patch.id },
+        updatedAt: at,
+        entityVersion: patchVer,
+        deleted: true,
+      });
+    }
+    return;
+  }
+  upsertLiveSyncAgenda(
+    agenda,
+    { ...(patch.body || {}), id: patch.id, updatedAt: at },
+    false,
+    patchVer,
+    at,
+    null
+  );
+}
+
+function applyLiveSyncTodoPatch(todos, todoTouchedPatientIds, patch, at, patchVer) {
+  const pid = String(patch.patientId || '');
+  if (pid) todoTouchedPatientIds.add(pid);
+  if (patch.op === 'delete') {
+    const k = todoEntityKey(pid, patch.id);
+    const cur = todos.get(k);
+    if (shouldAcceptEntry(cur, patchVer, at)) {
+      todos.set(k, {
+        kind: 'todo',
+        patientId: pid,
+        item: { id: patch.id },
+        updatedAt: at,
+        entityVersion: patchVer,
+        deleted: true,
+      });
+    }
+    return;
+  }
+  upsertLiveSyncTodo(
+    todos,
+    pid,
+    { ...(patch.body || {}), id: patch.id, updatedAt: at },
+    false,
+    patchVer,
+    at,
+    null
+  );
+}
+
+function applyLiveSyncPatientPatch(patientDeletes, patch, at, patchVer) {
+  const k = patientEntityKey(patch.id, patch.registro);
+  if (patch.op !== 'delete') return;
+  const cur = patientDeletes.get(k);
+  if (shouldAcceptEntry(cur, patchVer, at)) {
+    patientDeletes.set(k, {
+      id: String(patch.id || ''),
+      registro: String(patch.registro || '').trim(),
+      updatedAt: at,
+      entityVersion: patchVer,
+      deleted: true,
+    });
+  }
+}
+
+function createLiveSyncMergeContext() {
   const agenda = new Map();
-  /** @type {Map<string, { kind: 'todo', patientId: string, item: object, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
   const todos = new Map();
-  /** @type {Map<string, { id: string, registro: string, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
   const patientDeletes = new Map();
   const todoTouchedPatientIds = new Set();
 
-  function blocksResurrectingDeleted(cur, deleted, ver) {
-    if (!cur || !cur.deleted || deleted) return false;
-    if (ver == null || cur.entityVersion == null) return true;
-    return ver <= cur.entityVersion;
-  }
-
-  function upsertAgenda(ev, deleted, entityVersion, updatedAt, src) {
-    if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
-    const k = agendaEntityKey(ev.id);
-    const ver =
-      entityVersion != null
-        ? entityVersion
-        : versionFromSource(src, k) ?? (ev.version != null ? Number(ev.version) : null);
-    const at = String(updatedAt || ev.updatedAt || ev.createdAt || '');
-    const cur = agenda.get(k);
-    if (blocksResurrectingDeleted(cur, deleted, ver)) return;
-    if (shouldAcceptEntry(cur, ver, at)) {
-      agenda.set(k, {
-        kind: 'agenda',
-        item: deleted ? { id: ev.id } : { ...ev },
-        updatedAt: at,
-        entityVersion: ver,
-        deleted: !!deleted,
-      });
-    }
-  }
-
-  function upsertTodo(patientId, item, deleted, entityVersion, updatedAt, src) {
-    if (!item || !item.id || isDemoPatientId(patientId)) return;
-    const k = todoEntityKey(patientId, item.id);
-    const ver =
-      entityVersion != null
-        ? entityVersion
-        : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
-    const at = String(updatedAt || item.updatedAt || item.createdAt || '');
-    const cur = todos.get(k);
-    if (blocksResurrectingDeleted(cur, deleted, ver)) return;
-    if (shouldAcceptEntry(cur, ver, at)) {
-      todos.set(k, {
-        kind: 'todo',
-        patientId: String(patientId),
-        item: deleted ? { id: item.id } : { ...item },
-        updatedAt: at,
-        entityVersion: ver,
-        deleted: !!deleted,
-      });
-    }
+  function applyPatch(rawPatch) {
+    const patch = normalizeLiveSyncPatch(rawPatch);
+    if (!patch) return;
+    const at = String(patch.updatedAt || '');
+    const patchVer = patch.entityVersion != null ? Number(patch.entityVersion) : null;
+    if (patch.entity === 'agenda') return applyLiveSyncAgendaPatch(agenda, patch, at, patchVer);
+    if (patch.entity === 'todo') return applyLiveSyncTodoPatch(todos, todoTouchedPatientIds, patch, at, patchVer);
+    if (patch.entity === 'patient') return applyLiveSyncPatientPatch(patientDeletes, patch, at, patchVer);
   }
 
   function ingestSource(src) {
     if (!src) return;
     const list = Array.isArray(src.agenda) ? src.agenda : [];
     for (let i = 0; i < list.length; i += 1) {
-      upsertAgenda(list[i], false, null, null, src);
+      upsertLiveSyncAgenda(agenda, list[i], false, null, null, src);
     }
     const map = src.todos && typeof src.todos === 'object' ? src.todos : {};
     for (const pid of Object.keys(map)) {
       if (isDemoPatientId(pid)) continue;
       const arr = Array.isArray(map[pid]) ? map[pid] : [];
       for (let j = 0; j < arr.length; j += 1) {
-        upsertTodo(pid, arr[j], false, null, null, src);
+        upsertLiveSyncTodo(todos, pid, arr[j], false, null, null, src);
       }
     }
     const patches = Array.isArray(src.patches) ? src.patches : [];
@@ -200,82 +281,10 @@ export function mergeLiveSyncBundles(sources) {
     }
   }
 
-  function applyPatch(rawPatch) {
-    const patch = normalizeLiveSyncPatch(rawPatch);
-    if (!patch) return;
-    const at = String(patch.updatedAt || '');
-    const patchVer = patch.entityVersion != null ? Number(patch.entityVersion) : null;
-    if (patch.entity === 'agenda') {
-      const k = agendaEntityKey(patch.id);
-      if (patch.op === 'delete') {
-        const cur = agenda.get(k);
-        if (shouldAcceptEntry(cur, patchVer, at)) {
-          agenda.set(k, {
-            kind: 'agenda',
-            item: { id: patch.id },
-            updatedAt: at,
-            entityVersion: patchVer,
-            deleted: true,
-          });
-        }
-      } else {
-        upsertAgenda(
-          { ...(patch.body || {}), id: patch.id, updatedAt: at },
-          false,
-          patchVer,
-          at,
-          null
-        );
-      }
-      return;
-    }
-    if (patch.entity === 'todo') {
-      const pid = String(patch.patientId || '');
-      if (pid) todoTouchedPatientIds.add(pid);
-      if (patch.op === 'delete') {
-        const k = todoEntityKey(pid, patch.id);
-        const cur = todos.get(k);
-        if (shouldAcceptEntry(cur, patchVer, at)) {
-          todos.set(k, {
-            kind: 'todo',
-            patientId: pid,
-            item: { id: patch.id },
-            updatedAt: at,
-            entityVersion: patchVer,
-            deleted: true,
-          });
-        }
-      } else {
-        upsertTodo(pid, { ...(patch.body || {}), id: patch.id, updatedAt: at }, false, patchVer, at, null);
-      }
-      return;
-    }
-    if (patch.entity === 'patient') {
-      const k = patientEntityKey(patch.id, patch.registro);
-      if (patch.op === 'delete') {
-        const cur = patientDeletes.get(k);
-        if (shouldAcceptEntry(cur, patchVer, at)) {
-          patientDeletes.set(k, {
-            id: String(patch.id || ''),
-            registro: String(patch.registro || '').trim(),
-            updatedAt: at,
-            entityVersion: patchVer,
-            deleted: true,
-          });
-        }
-      }
-    }
-  }
+  return { agenda, todos, patientDeletes, todoTouchedPatientIds, applyPatch, ingestSource };
+}
 
-  for (let s = 0; s < (sources || []).length; s += 1) {
-    const src = sources[s];
-    if (src && src.type === 'livesync:patch') {
-      applyPatch(src);
-    } else {
-      ingestSource(src);
-    }
-  }
-
+function buildLiveSyncMergeOutput(agenda, todos, patientDeletes, todoTouchedPatientIds) {
   const agendaOut = [];
   for (const row of agenda.values()) {
     if (!row.deleted && row.item && row.item.id) agendaOut.push(row.item);
@@ -300,6 +309,27 @@ export function mergeLiveSyncBundles(sources) {
     todoTouchedPatientIds: Array.from(todoTouchedPatientIds),
     patientDeletes: patientDeletesOut,
   };
+}
+
+/** @param {Array<{ agenda?: object[], todos?: Record<string, object[]>, entityVersions?: Record<string, number> }>} sources */
+export function mergeLiveSyncBundles(sources) {
+  const ctx = createLiveSyncMergeContext();
+
+  for (let s = 0; s < (sources || []).length; s += 1) {
+    const src = sources[s];
+    if (src && src.type === 'livesync:patch') {
+      ctx.applyPatch(src);
+    } else {
+      ctx.ingestSource(src);
+    }
+  }
+
+  return buildLiveSyncMergeOutput(
+    ctx.agenda,
+    ctx.todos,
+    ctx.patientDeletes,
+    ctx.todoTouchedPatientIds
+  );
 }
 
 /** @param {{ getScheduledProcedures: () => object[], getTodos: (id: string) => object[], patientIds?: string[] }} storageApi */

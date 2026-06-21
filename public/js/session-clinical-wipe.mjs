@@ -28,7 +28,7 @@ export function wipeSessionClinicalStorage(opts) {
     try {
       localStorage.removeItem(key);
       removed += 1;
-    } catch (_e) {}
+    } catch (_e) { void _e; }
   }
   if (includeLan) {
     for (var j = 0; j < SESSION_WEB_LS_KEYS.length; j += 1) {
@@ -37,7 +37,7 @@ export function wipeSessionClinicalStorage(opts) {
       try {
         localStorage.removeItem(lanKey);
         removed += 1;
-      } catch (_e2) {}
+      } catch (_e) { void _e; }
     }
   }
   return removed;

@@ -14,7 +14,7 @@ export function parseSseLine(line) {
   if (!s || s.startsWith(':')) return null;
   if (s.startsWith('data:')) {
     const json = s.slice(5).trim();
-    try { return JSON.parse(json); } catch (_e) { return null; }
+    try { return JSON.parse(json); } catch { return null; }
   }
   return null;
 }
@@ -39,7 +39,7 @@ export async function* readEventStreamLines(body) {
       }
     }
   } finally {
-    try { reader.releaseLock(); } catch (_e) {}
+    try { reader.releaseLock(); } catch (_e) { void _e; }
   }
 }
 

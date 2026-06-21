@@ -119,7 +119,7 @@ async function scanSubnetPeers(deps, teamCode, ownUrl, wsPeers, peerMetasForEsca
       if (sessionStorage.getItem(LAN_SPLIT_BRAIN_HINT_KEY)) return;
       try {
         sessionStorage.setItem(LAN_SPLIT_BRAIN_HINT_KEY, '1');
-      } catch { /* ignore */ }
+      } catch (_e) { void _e; }
       deps.runtime().showToast(
         'Otra R+ en la red (' +
           hostUrl +
