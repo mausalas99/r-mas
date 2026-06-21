@@ -736,6 +736,26 @@ export const platformWindowHandlersLazy = buildLazyWindowHandlers(
   ensurePlatformLoaded
 );
 
+export const commandPaletteWindowHandlersLazy = buildLazyWindowHandlers(
+  {
+    openCommandPalette: 'openCommandPalette',
+    closeCommandPalette: 'closeCommandPalette',
+  },
+  function () {
+    return import('./features/command-palette.mjs');
+  }
+);
+
+export const clinicalSyncModeSettingsHandlersLazy = buildLazyWindowHandlers(
+  {
+    enableClinicalLanFromSettings: 'enableClinicalLanFromSettings',
+    syncClinicalSyncModeSettingsUi: 'syncClinicalSyncModeSettingsUi',
+  },
+  function () {
+    return import('./features/clinical-sync-mode-settings.mjs');
+  }
+);
+
 /**
  * Register platform + settings-help runtimes and replace lazy window stubs with real handlers.
  * @param {object} ctx

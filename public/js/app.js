@@ -9,12 +9,14 @@ if (typeof requestAnimationFrame === 'function') {
   });
 }
 import { isDbMode, isWebClinicalClient } from './db-storage-bridge.mjs';
-import { wipeSessionClinicalStorage } from './session-clinical-wipe.mjs';
+import {
+  wipeSessionClinicalStorage,
+  installSessionClinicalWipeOnExit,
+} from './session-clinical-wipe.mjs';
 import { ensureClinicalDbUnlocked, dbUnlockWindowHandlers, describeClinicalDbBootFailure } from './features/db-unlock.mjs';
 import {
   bootHydrateFromDb,
   initAppState,
-  patients,
   setSaveStateHooks,
   flushSaveState,
   clearWebSessionClinicalMemory,
@@ -28,7 +30,6 @@ import {
   wasV3MigratedThisBoot,
 } from './app-runtimes.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { installSessionClinicalWipeOnExit } from './session-clinical-wipe.mjs';
 import {
   registerAppShellContext,
   appShellWindowHandlers,
@@ -40,12 +41,10 @@ import {
 } from './app-shell.mjs';
 import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
 import { windowHandlers as chromeWindowHandlers } from './features/chrome.mjs';
-import { windowHandlers as commandPaletteWindowHandlers } from './features/command-palette.mjs';
 import { windowHandlers as lanWindowHandlers } from './features/lan-sync.mjs';
 import {
   windowHandlers as patientsWindowHandlers,
   renderPatientList,
-  selectPatient,
   ensureActivePatientInSidebarScope,
   initSidebarAutoHide,
   initPatientModalEnterSave,
@@ -63,11 +62,12 @@ import { windowHandlers as notesIndicacionesWindowHandlers } from './features/no
 import { productivityWindowHandlers } from './features/productivity.mjs';
 import {
   ensureLabsLoaded,
-  ensureChartsLoaded,
   labPanelWindowHandlersLazy,
   chartsWindowHandlersLazy,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
+  commandPaletteWindowHandlersLazy,
+  clinicalSyncModeSettingsHandlersLazy,
 } from './lazy-feature-routes.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
@@ -76,7 +76,6 @@ import { medicationsWindowHandlers } from './features/medications.mjs';
 import {
   profileWindowHandlers,
   hydrateProfileSettings,
-  toggleHeaderWorkMode,
 } from './features/profile.mjs';
 import { initRpcDatePicker } from './rpc-date-picker.mjs';
 import {
@@ -89,12 +88,10 @@ import {
   wireClinicalRotationEntryControls,
   syncClinicalRotationEntryChrome,
 } from './features/clinical-rotation-entry.mjs';
-import { windowHandlers as clinicalSyncModeSettingsHandlers } from './features/clinical-sync-mode-settings.mjs';
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 import { resolveClinicalClientId } from './clinical-settings.mjs';
-import { runBootSteps } from './boot/boot-steps.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -120,12 +117,12 @@ const allWindowHandlers = Object.assign(
   todosWindowHandlers,
   recetaHuWindowHandlers,
   paseBoardWindowHandlers,
-  commandPaletteWindowHandlers,
+  commandPaletteWindowHandlersLazy,
   medicationsWindowHandlers,
   profileWindowHandlers,
   clinicalRegistrationWindowHandlers,
   clinicalRotationEntryHandlers,
-  clinicalSyncModeSettingsHandlers,
+  clinicalSyncModeSettingsHandlersLazy,
   appShellWindowHandlers,
   {
     showToast,
@@ -144,35 +141,42 @@ try {
 
 const appStateReady = (async function loadClinicalStateOnBoot() {
   if (isDbMode()) {
-    const unlockResult = await ensureClinicalDbUnlocked();
-    if (unlockResult && unlockResult.unlocked) {
-      await bootHydrateFromDb();
-      try {
-        const { flushPendingClinicalOpsLanSnapshot } = await import('./clinical-ops-lan.mjs');
-        const flushed = await flushPendingClinicalOpsLanSnapshot();
-        if (flushed.changed && typeof document !== 'undefined') {
-          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
-        }
-      } catch (_eOps) {}
-    } else {
-      const reason = (unlockResult && unlockResult.reason) || 'locked';
-      console.warn('[R+] Clinical DB not ready at boot:', reason);
-      const bootMsg = describeClinicalDbBootFailure(unlockResult);
-      if (bootMsg) {
-        showToast(bootMsg, 'error');
-      }
-      initAppState();
-    }
-  } else {
-    if (isWebClinicalClient()) {
-      try {
-        wipeSessionClinicalStorage({ includeLanSession: false });
-      } catch (_wipeBoot) {}
-      clearWebSessionClinicalMemory();
-    }
-    initAppState();
+    return loadClinicalStateFromDb();
   }
+  if (isWebClinicalClient()) {
+    try {
+      wipeSessionClinicalStorage({ includeLanSession: false });
+    } catch (_wipeBoot) {
+      void _wipeBoot;
+    }
+    clearWebSessionClinicalMemory();
+  }
+  initAppState();
 })();
+
+async function loadClinicalStateFromDb() {
+  const unlockResult = await ensureClinicalDbUnlocked();
+  if (unlockResult && unlockResult.unlocked) {
+    await bootHydrateFromDb();
+    try {
+      const { flushPendingClinicalOpsLanSnapshot } = await import('./clinical-ops-lan.mjs');
+      const flushed = await flushPendingClinicalOpsLanSnapshot();
+      if (flushed.changed && typeof document !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
+    } catch (_eOps) {
+      void _eOps;
+    }
+    return;
+  }
+  const reason = (unlockResult && unlockResult.reason) || 'locked';
+  console.warn('[R+] Clinical DB not ready at boot:', reason);
+  const bootMsg = describeClinicalDbBootFailure(unlockResult);
+  if (bootMsg) {
+    showToast(bootMsg, 'error');
+  }
+  initAppState();
+}
 
 setSaveStateHooks({
   onSaveResult(result) {
@@ -375,7 +379,9 @@ function runDomBootAfterState() {
       setTimeout(function () {
         try {
           showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.');
-        } catch (_e) {}
+        } catch (_e) {
+          void _e;
+        }
       }, 800);
     }
     scheduleDeferredShellInits();
@@ -403,11 +409,14 @@ function runDomBootAfterState() {
         });
     }
     if (isDbMode()) {
-      void runBootSteps(CLINICAL_DB_BOOT_STEPS, {
-        settings,
-        getClinicalClientId,
-        teamsMod: null,
-      })
+      void import('./boot/boot-steps.mjs')
+        .then(function (boot) {
+          return boot.runBootSteps(CLINICAL_DB_BOOT_STEPS, {
+            settings,
+            getClinicalClientId,
+            teamsMod: null,
+          });
+        })
         .then(finishPatientListBoot)
         .catch(function (err) {
           console.warn('[R+] Clinical access runtime init:', err && err.message);

@@ -3,36 +3,19 @@
  */
 import { storage } from './storage.js';
 import { syncHeaderContext } from './features/header-context.mjs';
-import { openCommandPalette, setCommandPaletteContext } from './features/command-palette.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import { isMobileWeb, syncMobileBarebonesChrome } from './mobile-web.mjs';
 import { clearWebSessionClinicalMemory } from './app-state.mjs';
-import { wipeSessionClinicalStorage } from './session-clinical-wipe.mjs';
-import {
-  persistMobilePairingFromSearch,
-  restoreMobilePairingFromStorage,
-  resolveStoredMobileRoomId,
-} from './mobile-lan-query-persist.mjs';
-import { scheduleMobileLanWork } from './mobile-lan-boot.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { prefillRegistrationFromUrlParams } from './features/clinical-registration.mjs';
-import {
-  applyMobileSharerContextFromUrl,
-  hydrateMobileSharerSessionFromSettings,
-} from './mobile-sharer-sync.mjs';
 import {
   registerDocumentExportRuntime,
   saveOutputDirSelection,
 } from './document-export-client.mjs';
-import {
-  quickExportCurrentPatient,
-  registerClinicalQuickExportRuntime,
-} from './clinical-quick-export.mjs';
 import { showToast } from './ui-toast.mjs';
-import { initModalDismiss } from './app-shell-modals.mjs';
 import {
   getUiDensity,
   isPaseMode,
@@ -55,14 +38,6 @@ import {
   initProductivityKeyboardShortcuts,
 } from './features/productivity.mjs';
 import {
-  ensureEntregaLoaded,
-  ensurePlatformLoaded,
-  ensureSettingsHelpLoaded,
-  shellCloseSettingsDropdown,
-  shellSyncTeamSyncHeaderButton,
-  shellToggleSettingsDropdown,
-} from './lazy-feature-routes.mjs';
-import {
   renderPatientList,
   renderRoundOverviewPanels,
 } from './features/patients.mjs';
@@ -81,9 +56,52 @@ const shellCtx = {
   getSettings() { return {}; },
 };
 
+function importLazyRoutes() {
+  return import('./lazy-feature-routes.mjs');
+}
+
+function shellCloseSettingsDropdown() {
+  void importLazyRoutes().then(function (routes) {
+    routes.shellCloseSettingsDropdown();
+  });
+}
+
+function shellToggleSettingsDropdown() {
+  void importLazyRoutes().then(function (routes) {
+    routes.shellToggleSettingsDropdown();
+  });
+}
+
+function shellSyncTeamSyncHeaderButton() {
+  void importLazyRoutes().then(function (routes) {
+    routes.shellSyncTeamSyncHeaderButton();
+  });
+}
+
+function openCommandPaletteFromShell() {
+  void import('./features/command-palette.mjs').then(function (mod) {
+    mod.openCommandPalette();
+  });
+}
+
+export function initModalDismiss() {
+  void import('./app-shell-modals.mjs').then(function (mod) {
+    mod.initModalDismiss();
+  });
+}
+
+function quickExportCurrentPatientLazy() {
+  var args = arguments;
+  void import('./clinical-quick-export.mjs').then(function (mod) {
+    mod.quickExportCurrentPatient.apply(null, args);
+  });
+}
+
 export function registerAppShellContext(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(shellCtx, ctx);
-  setCommandPaletteContext(shellCtx);
+  void import('./features/command-palette.mjs').then(function (mod) {
+    mod.setCommandPaletteContext(shellCtx);
+  });
   wireShellExportRuntimes();
 }
 
@@ -95,17 +113,19 @@ function wireShellExportRuntimes() {
     },
     loadSettings,
   });
-  registerClinicalQuickExportRuntime({
-    getActiveId: function () {
-      return shellCtx.getActiveId();
-    },
-    getActiveInner: function () {
-      return shellCtx.getActiveInner();
-    },
-    getSettings: function () {
-      return shellCtx.getSettings();
-    },
-    showToast,
+  void import('./clinical-quick-export.mjs').then(function (mod) {
+    mod.registerClinicalQuickExportRuntime({
+      getActiveId: function () {
+        return shellCtx.getActiveId();
+      },
+      getActiveInner: function () {
+        return shellCtx.getActiveInner();
+      },
+      getSettings: function () {
+        return shellCtx.getSettings();
+      },
+      showToast,
+    });
   });
 }
 
@@ -166,18 +186,36 @@ function setMobileBootBanner(visible, text) {
 async function initMobileWebBoot() {
   tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
+  const mobile = await Promise.all([
+    import('./session-clinical-wipe.mjs'),
+    import('./mobile-lan-query-persist.mjs'),
+    import('./mobile-lan-boot.mjs'),
+    import('./mobile-sharer-sync.mjs'),
+    importLazyRoutes(),
+  ]).then(function (mods) {
+    return {
+      wipeSessionClinicalStorage: mods[0].wipeSessionClinicalStorage,
+      persistMobilePairingFromSearch: mods[1].persistMobilePairingFromSearch,
+      restoreMobilePairingFromStorage: mods[1].restoreMobilePairingFromStorage,
+      resolveStoredMobileRoomId: mods[1].resolveStoredMobileRoomId,
+      scheduleMobileLanWork: mods[2].scheduleMobileLanWork,
+      applyMobileSharerContextFromUrl: mods[3].applyMobileSharerContextFromUrl,
+      hydrateMobileSharerSessionFromSettings: mods[3].hydrateMobileSharerSessionFromSettings,
+      ensureSettingsHelpLoaded: mods[4].ensureSettingsHelpLoaded,
+    };
+  });
   try {
-    wipeSessionClinicalStorage({ includeLanSession: false });
+    mobile.wipeSessionClinicalStorage({ includeLanSession: false });
     clearWebSessionClinicalMemory();
   } catch (_wipeBoot) {
     void _wipeBoot;
   }
   setMobileBootBanner(true, 'Cargando R+ Móvil…');
-  persistMobilePairingFromSearch(location.search, location.origin);
-  restoreMobilePairingFromStorage();
+  mobile.persistMobilePairingFromSearch(location.search, location.origin);
+  mobile.restoreMobilePairingFromStorage();
   prefillRegistrationFromUrlParams();
-  applyMobileSharerContextFromUrl();
-  hydrateMobileSharerSessionFromSettings();
+  mobile.applyMobileSharerContextFromUrl();
+  mobile.hydrateMobileSharerSessionFromSettings();
   closeConnectionDropdown();
   syncMobileBarebonesChrome();
   try {
@@ -187,7 +225,7 @@ async function initMobileWebBoot() {
   }
   shellSyncTeamSyncHeaderButton();
   try {
-    var settingsMod = await ensureSettingsHelpLoaded();
+    var settingsMod = await mobile.ensureSettingsHelpLoaded();
     var v = await settingsMod.resolveAppVersionForTour();
     window.__RPC_APP_VERSION__ = settingsMod.normalizeTourVersionLabel(v);
     settingsMod.markGuidedTourVersionDone();
@@ -200,7 +238,7 @@ async function initMobileWebBoot() {
     intro.setAttribute('aria-hidden', 'true');
   }
   var parsed = parseLanJoinQuery(location.search, location.origin);
-  var storedRoomId = resolveStoredMobileRoomId();
+  var storedRoomId = mobile.resolveStoredMobileRoomId();
   var roomId = String(parsed.roomId || storedRoomId || '').trim();
   if (!window._rpcMobileLanSettledWired) {
     window._rpcMobileLanSettledWired = true;
@@ -219,7 +257,7 @@ async function initMobileWebBoot() {
     });
   }
   setMobileBootBanner(false);
-  scheduleMobileLanWork(function () {
+  mobile.scheduleMobileLanWork(function () {
     setMobileBootBanner(true, 'Sincronizando con el anfitrión…');
     if (!parsed.teamCode) {
       var savedCfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
@@ -311,7 +349,7 @@ function handleShellImportOverwriteShortcut() {
 function handleShellNamedShortcut(e, key) {
   if (key === 'k' && !e.shiftKey && !e.altKey) {
     e.preventDefault();
-    openCommandPalette();
+    openCommandPaletteFromShell();
     return true;
   }
   if (key === 'p' && !e.altKey) {
@@ -442,7 +480,6 @@ export {
   showToast,
   syncWorkContextChrome,
   setMedTabAttention,
-  initModalDismiss,
 };
 
 export const appShellWindowHandlers = {
@@ -450,14 +487,16 @@ export const appShellWindowHandlers = {
   onMedicoTemplateBlur,
   chooseOutputDir,
   updatePatient,
-  quickExportCurrentPatient,
+  quickExportCurrentPatient: quickExportCurrentPatientLazy,
 };
 
 /** Expose clinical handoff entry points on window.appShell. */
 export function installClinicalAppShell() {
   if (typeof window === 'undefined') return;
   window.appShell = window.appShell || {};
-  void ensureEntregaLoaded().then(function (mod) {
+  void importLazyRoutes().then(function (routes) {
+    return routes.ensureEntregaLoaded();
+  }).then(function (mod) {
     window.appShell.openEntregaModal = mod.openEntregaModal;
   });
 }
@@ -488,12 +527,16 @@ function _rpcDeferInit(fn) {
 export function scheduleDeferredShellInits() {
   _rpcDeferInit(installClinicalAppShell);
   _rpcDeferInit(function () {
-    void ensurePlatformLoaded().then(function (mod) {
+    void importLazyRoutes().then(function (routes) {
+      return routes.ensurePlatformLoaded();
+    }).then(function (mod) {
       mod.initGoalGFeatures();
     });
   });
   _rpcDeferInit(function () {
-    void ensureSettingsHelpLoaded().then(function (mod) {
+    void importLazyRoutes().then(function (routes) {
+      return routes.ensureSettingsHelpLoaded();
+    }).then(function (mod) {
       mod.initGuidedTourGate();
     });
   });
@@ -503,7 +546,9 @@ export function scheduleDeferredShellInits() {
     _rpcDeferInit(initMobileWebBoot);
   }
   _rpcDeferInit(function () {
-    void ensurePlatformLoaded().then(function (mod) {
+    void importLazyRoutes().then(function (routes) {
+      return routes.ensurePlatformLoaded();
+    }).then(function (mod) {
       mod.initRpcServerHealthWatch();
       mod.initIdleLockFeature();
     });
@@ -514,5 +559,3 @@ export function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
   _rpcDeferInit(initShellKeyboardShortcuts);
 }
-
-wireShellExportRuntimes();

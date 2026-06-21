@@ -54,10 +54,6 @@ import {
   registerTodosRuntime,
 } from './features/todos.mjs';
 import {
-  configureTodoReminderScheduler,
-  rescheduleAllTodos,
-} from './todos-reminder-scheduler.mjs';
-import {
   registerPaseBoardRuntime,
 } from './features/pase-board.mjs';
 import {
@@ -418,7 +414,8 @@ export async function registerAllFeatureRuntimes() {
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
 
   registerTodosRuntime(ctx);
-  configureTodoReminderScheduler({
+  const reminderScheduler = await import('./todos-reminder-scheduler.mjs');
+  reminderScheduler.configureTodoReminderScheduler({
     getPatientLabel: function (pid) {
       var p = patients.find(function (row) {
         return row.id === pid;
@@ -427,7 +424,7 @@ export async function registerAllFeatureRuntimes() {
     },
     showToast: showToast,
   });
-  rescheduleAllTodos();
+  reminderScheduler.rescheduleAllTodos();
   registerVpoRuntime(ctx);
   registerRecetaHuRuntime(ctx);
   registerCensoRuntime(
