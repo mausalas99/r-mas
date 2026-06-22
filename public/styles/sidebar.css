@@ -231,10 +231,20 @@ aside.patient-sidebar .patient-toolbar-chip {
   font-size: calc(10px * var(--density-font));
 }
 aside.patient-sidebar .btn-delete-card {
+  position: relative;
   font-size: 15px;
   min-width: 22px;
   min-height: 22px;
   padding: 1px 4px;
+}
+aside.patient-sidebar .btn-delete-card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
 }
 .patient-card .p-name {
   font-size: calc(12px * var(--density-font));

@@ -165,14 +165,14 @@ function selectPatientCore(id) {
   var prevId = rt.getActiveId();
   var wasOnLab = rt.getActiveAppTab() === 'lab';
   var appTab = rt.getActiveAppTab();
-  var patientChanged = prevId != null && String(prevId) !== String(id);
+  var patientChanged = String(prevId ?? '') !== String(id);
   if (patientChanged) {
     stashPatientDraftsOnChange(prevId);
     rt.invalidateInnerTabRenderCache();
   }
   rt.setActiveId(id);
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {
-    patientsBridge.patientsBridge.renderPatientList();
+    patientsBridge.renderPatientList();
   }
   showPatientViewShell();
   rt.renderEstadoActualButton();
@@ -181,6 +181,9 @@ function selectPatientCore(id) {
   var inner = rt.getActiveInner();
   if (patientChanged) {
     inner = migrateInnerOnPatientChange(inner, settings);
+    if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
+      setRoundOverviewMode(inner === 'todo' || !inner);
+    }
   } else {
     applyInnerTabOnSamePatient(settings, inner);
   }
@@ -239,7 +242,7 @@ export function deletePatient(e, id) {
   }
   saveState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', 1, target ? target.registro || target.nombre || '' : '');
-  patientsBridge.patientsBridge.renderPatientList();
+  patientsBridge.renderPatientList();
   if (rt.getActiveId()) patientsBridge.selectPatient(rt.getActiveId());
   else showEmptyPatientShell();
 }

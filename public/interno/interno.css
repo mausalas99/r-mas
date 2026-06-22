@@ -8,6 +8,8 @@
   background: var(--bg, #0f1419);
   color: var(--text, #e8eaed);
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
 

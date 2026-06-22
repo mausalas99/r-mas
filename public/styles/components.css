@@ -6,8 +6,9 @@
 .btn-cancel:active:not(:disabled),
 .btn-med-secondary:active:not(:disabled),
 .btn-primary:active:not(:disabled),
-.btn-add:active:not(:disabled) {
-  transform: scale(0.97); /* canvas .rp-btn:active; tarjetas quedan en 0.985 */
+.btn-add:active:not(:disabled),
+.btn-header-icon:active:not(:disabled) {
+  transform: scale(0.96);
   transition:
     transform 100ms var(--ease-out),
     background var(--dur-fast) var(--ease-out),
@@ -27,7 +28,7 @@
 /* Guardia / pase chips */
 .pase-mini-card:active,
 .guardia-census-chip:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
   transition: transform 100ms var(--ease-out);
 }
 

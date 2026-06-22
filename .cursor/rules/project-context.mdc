@@ -128,6 +128,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-22** `release-7.4.0`: arranque lazy (boot graph 700→50), deuda Tier 1 cero, EA vitals turn limits, censo highlight patch, UI tokens; `data/release-notes-highlights.mjs`, `docs/RELEASE_NOTES_7.4.0.txt`.
 - **2026-06-21** `debt-phase6`: full-tree Tier 1 ESLint 0 + baseline refresh (31408→50); god-file splits (LAN/interno/renderer), `fix-mechanical-eslint --full`, `lazy-feature-routes-*` split; `lint:tier1:full` gate.
 - **2026-06-21** `boot-lazy-p5c`: boot hub deferrals — lazy `header-context`, `perf-markers`, `session-clinical-wipe`, inline mobile detect in `app.js`, lazy `ui-toast`; `lazy-feature-routes` hub barrel (+2 structural); `bootGraphDebt` 175→**50** interim.
 - **2026-06-20** `boot-lazy-p5b`: shell/app boot deferrals — dynamic mobile LAN modules, lazy modals/quick-export/command-palette/sync-mode handlers, `boot-steps` + todo scheduler dynamic; `bootGraphDebt` 500→175 interim.

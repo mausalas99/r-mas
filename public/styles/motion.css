@@ -237,7 +237,7 @@ textarea.field-shake {
 }
 
 .todo-prio-chip:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .todo-prio-chip.todo-prio-chip--pulse {

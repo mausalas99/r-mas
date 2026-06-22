@@ -449,7 +449,7 @@ html.dark .intro-option-card-accent { border-color: var(--color-accent); }
   background: var(--action); color: var(--color-on-accent); transition: filter var(--dur-fast), transform 0.1s;
 }
 .btn-intro-pick:hover { filter: brightness(1.06); }
-.btn-intro-pick:active { transform: scale(0.99); }
+.btn-intro-pick:active { transform: scale(0.96); }
 .btn-intro-pick-secondary {
   background: var(--color-surface);
   border: 1px solid var(--action);

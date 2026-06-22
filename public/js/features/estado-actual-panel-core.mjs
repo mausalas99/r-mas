@@ -14,7 +14,7 @@ export function findActivePatient() {
   if (!activeId) return null;
   return (
     patients.find(function (p) {
-      return p.id === activeId;
+      return String(p.id) === String(activeId);
     }) || null
   );
 }

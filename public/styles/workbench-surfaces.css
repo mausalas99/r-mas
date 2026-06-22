@@ -8,8 +8,16 @@ html.ui-density-normal #appcontent-lab > .main-work-scroll,
 html.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
 html.ui-density-normal #appcontent-med > .med-active-shell,
 html.ui-density-normal .patient-expediente-classic {
+  border: none;
+  box-shadow: var(--shadow-border);
+}
+
+html.high-contrast.ui-density-normal #appcontent-lab > .main-work-scroll,
+html.high-contrast.ui-density-normal #appcontent-agenda > .rpc-proc-agenda-root,
+html.high-contrast.ui-density-normal #appcontent-med > .med-active-shell,
+html.high-contrast.ui-density-normal .patient-expediente-classic {
   border: var(--border-hairline);
-  box-shadow: var(--elev-raised);
+  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -39,11 +47,34 @@ html.ui-density-normal .patient-expediente-classic {
 .patient-expediente-classic .card,
 #patient-expediente .listado-section,
 .patient-expediente-classic .listado-section {
-  border: var(--border-hairline);
+  border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--elev-raised);
+  box-shadow: var(--shadow-border);
   overflow: hidden;
   background: var(--surface);
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
+html.high-contrast #patient-expediente .card,
+html.high-contrast .patient-expediente-classic .card,
+html.high-contrast #patient-expediente .listado-section,
+html.high-contrast .patient-expediente-classic .listado-section {
+  border: var(--border-hairline);
+  box-shadow: none;
+}
+
+#patient-expediente .card:hover,
+.patient-expediente-classic .card:hover,
+#patient-expediente .listado-section:hover,
+.patient-expediente-classic .listado-section:hover {
+  box-shadow: var(--shadow-border-hover);
+}
+
+html.high-contrast #patient-expediente .card:hover,
+html.high-contrast .patient-expediente-classic .card:hover,
+html.high-contrast #patient-expediente .listado-section:hover,
+html.high-contrast .patient-expediente-classic .listado-section:hover {
+  box-shadow: none;
 }
 
 #patient-expediente .card-header,

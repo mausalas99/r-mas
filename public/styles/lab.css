@@ -54,6 +54,7 @@ html.dark .lab-value-star { color: var(--error); }
   font-size: 16px;
   font-weight: 700;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 .btn-delete-card {
   position: static; background: none; border: none;
@@ -211,7 +212,6 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
   padding: 6px 8px; font-size: 14px; font-family: inherit; line-height: 1.5;
   font-weight: 400; color: var(--text); background: transparent;
   cursor: text;
-  -webkit-font-smoothing: antialiased;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s;
 }
 .todo-text-input:hover:not(:focus) {
@@ -286,7 +286,7 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-add-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 .todo-cell-main {
@@ -1205,7 +1205,7 @@ html.lab-copy-fab-active .lab-panel-root .lab-work-scroll {
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18);
 }
 .lab-copy-fab:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 .lab-copy-fab:focus-visible {
   outline: 2px solid var(--action);
@@ -1686,7 +1686,7 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   border-color: color-mix(in oklab, var(--action) 48%, var(--border));
   box-shadow: 0 4px 14px rgba(79, 86, 255, 0.14);
 }
-.btn-med-secondary:active { transform: scale(0.98); }
+.btn-med-secondary:active { transform: scale(0.96); }
 .btn-med-secondary:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.2), 0 2px 8px rgba(79, 86, 255, 0.1);
@@ -2363,7 +2363,7 @@ html.dark .lab-out-ascitis-alert {
   filter: brightness(1.06);
 }
 .lab-bulk-preview-add-pill:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
   z-index: 110;

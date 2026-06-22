@@ -48,7 +48,7 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   min-width: 44px; min-height: 44px; width: 44px; height: 44px;
   padding: 0;
   cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-  transition: background var(--dur-fast), color var(--dur-fast); flex-shrink: 0; color: var(--text-muted);
+  transition: background var(--dur-fast), color var(--dur-fast), transform 100ms var(--ease-out); flex-shrink: 0; color: var(--text-muted);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }

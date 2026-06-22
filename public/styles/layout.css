@@ -113,6 +113,7 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 .header-center .estado-actual-meta {
   max-width: 100%;

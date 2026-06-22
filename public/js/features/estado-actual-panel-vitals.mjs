@@ -195,26 +195,36 @@ export function syncAllVitalAddButtonVisibility(form) {
 }
 
 /**
+ * @param {unknown[]} historial
+ * @param {Record<string, Array<{ value: number, time?: string }>>} vitalSeries
+ * @param {Date} [now]
+ * @returns {{ ok: true } | { ok: false, key: string, label: string }}
+ */
+export function validateVitalSeriesTurnLimits(historial, vitalSeries, now) {
+  var hist = Array.isArray(historial) ? historial : [];
+  for (var ki = 0; ki < VITAL_KEYS.length; ki++) {
+    var key = VITAL_KEYS[ki];
+    var newList = vitalSeries && vitalSeries[key] ? vitalSeries[key] : [];
+    if (!newList.length) continue;
+    var inWindow = countVitalReadingsInRegistroWindow(hist, key, now);
+    if (inWindow + newList.length > MAX_VITAL_READINGS_PER_DAY) {
+      return { ok: false, key: key, label: VITAL_LABELS[key] || key };
+    }
+  }
+  return { ok: true };
+}
+
+/**
  * @param {HTMLElement | null} form
  * @param {string} vitalKey
- * @param {unknown} [historial]
  */
-export function expandVitalNextLayer(form, vitalKey, historial) {
+export function expandVitalNextLayer(form, vitalKey) {
   if (!form) return;
   var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
   if (!stack) return;
   var count = getVitalStackLayerCount(stack);
   if (count >= MAX_VITAL_LAYERS_IN_FORM) {
     getEaPanelRuntime().showToast('Máximo ' + MAX_VITAL_LAYERS_IN_FORM + ' lecturas por signo en este registro', 'error');
-    return;
-  }
-  var hist = historial || [];
-  var inWindow = countVitalReadingsInRegistroWindow(hist, vitalKey);
-  if (inWindow + count >= MAX_VITAL_READINGS_PER_DAY) {
-    getEaPanelRuntime().showToast(
-      'Máximo ' + MAX_VITAL_READINGS_PER_DAY + ' lecturas de ' + (VITAL_LABELS[vitalKey] || vitalKey) + ' en el turno',
-      'error'
-    );
     return;
   }
   var active = count - 1;

@@ -1,24 +1,36 @@
 /** Registro form wiring — extracted from estado-actual-panel-registro.mjs */
 import { isVitalAltered } from './estado-actual-ranges.mjs';
-import { findActivePatient } from './estado-actual-panel-core.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
 import { expandVitalNextLayer, syncAllVitalAddButtonVisibility, vitalLayerBoxKey } from './estado-actual-panel-vitals.mjs';
 import { syncIoBalanceFromForm } from './estado-actual-panel-registro-io.mjs';
 
+function defaultAlteredTimeFromForm(form) {
+  var recEl = form.querySelector('#ea-recorded-at');
+  if (!recEl || !('value' in recEl) || !recEl.value) return '';
+  var match = String(recEl.value).match(/T(\d{2}):(\d{2})/);
+  if (!match) return '';
+  return match[1] + ':' + match[2];
+}
+
 function syncAlteredFields(form) {
+  var defaultTime = defaultAlteredTimeFromForm(form);
   function syncLayer(baseKey, layerIdx) {
     var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
     var input = form.querySelector('[data-ea-vital="' + baseKey + '"][data-ea-layer-idx="' + layerIdx + '"]');
     var wrap = form.querySelector('[data-ea-altered-wrap="' + boxKey + '"]');
     var box = form.querySelector('[data-ea-vital-box="' + boxKey + '"]');
+    var timeEl = form.querySelector('[data-ea-altered="' + boxKey + '"]');
     if (!input || !wrap) return;
     var val = input.value;
     var altered = String(val).trim() !== '' && isVitalAltered(baseKey, val);
     wrap.classList.toggle('ea-altered-slot--hidden', !altered);
     wrap.hidden = !altered;
     if (box) box.classList.toggle('ea-vital-box--altered', altered);
+    if (altered && timeEl && 'value' in timeEl && !String(timeEl.value).trim() && defaultTime) {
+      timeEl.value = defaultTime;
+    }
   }
   form.querySelectorAll('[data-ea-vital][data-ea-layer-idx]').forEach(function (input) {
     syncLayer(input.getAttribute('data-ea-vital') || '', input.getAttribute('data-ea-layer-idx') || '0');
@@ -33,9 +45,8 @@ function handleFormClick(form, ev) {
   if (addBtn) {
     var vitalKey = addBtn.getAttribute('data-ea-vital-add');
     if (!vitalKey) return;
-    var patient = findActivePatient();
-    var hist = patient && patient.monitoreo && Array.isArray(patient.monitoreo.historial) ? patient.monitoreo.historial : [];
-    expandVitalNextLayer(form, vitalKey, hist);
+    expandVitalNextLayer(form, vitalKey);
+    syncAlteredFields(form);
     return;
   }
   if (target.id === 'ea-add-glu' || target.closest('#ea-add-glu')) {
@@ -66,6 +77,7 @@ function handleFormInput(form, ev) {
   var target = /** @type {HTMLElement | null} */ (ev.target);
   if (!target) return;
   if (target.matches('[data-ea-vital][data-ea-layer-idx]')) syncAlteredFields(form);
+  else if (target.id === 'ea-recorded-at') syncAlteredFields(form);
   else if (target.matches('[data-ea-glu-value], [data-ea-glu-rescue-units], [data-ea-glu-post-rescue-value]')) {
     var gluRow = target.closest('.ea-glu-row');
     if (gluRow) syncGluRowAltered(/** @type {HTMLElement} */ (gluRow));

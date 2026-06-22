@@ -1,0 +1,30 @@
+R+ 7.4.0 (arranque lazy, deuda cero y pulido UI)
+====================================================
+
+Fecha: 2026-06-22
+
+## Resumen
+
+Sobre **7.3.8**: arranque más liviano con **imports lazy** en shell y features pesados; deuda técnica Tier 1 a **cero** (god-files divididos, complejidad acotada); validación de signos vitales por turno; censo que no parpadea al re-seleccionar paciente; y pulido de tokens/superficies en sidebar, EA e interno.
+
+## Nuevo / mejorado
+
+- **Rendimiento — arranque** — Entrega, plataforma, tour, modales, export rápido, command palette, sync mode y módulos LAN móvil entran con `import()`; boot graph debt **700 → 50** (interino estructural).
+- **Deuda técnica** — God-files divididos en LAN (`orchestrator`, `host-store`), acceso clínico, DB IPC, tour, storage y renderer; ESLint Tier 1 en **0** en árbol completo; baseline de métricas **31408 → 50**.
+- **Estado actual — signos vitales** — Límite por turno validado al guardar el registro (`validateVitalSeriesTurnLimits`); expansión de capas en formulario sin doble conteo.
+- **Censo — selección** — Re-seleccionar el mismo paciente ya no re-renderiza toda la lista; highlight activo se parchea en silencio al cambiar de paciente.
+- **UI — tokens y superficies** — Sidebar cama-first, workbench surfaces, spacing EA, radius/z-index en tokens; interno alineado al design system.
+- **DX** — Gate `lint:tier1:full`; highlights de release en `data/release-notes-highlights.mjs` fuera del scan ESLint Tier 1.
+
+## Operación en guardia
+
+Instala **7.4.0** cuando quieras arranque más rápido en Macs del turno. Sin cambio de esquema SQLCipher (sigue **v17**). Recomendable paridad en estaciones del turno para el mismo perfil de lazy-load, aunque no es obligatorio para datos clínicos.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.4.0
+
+- Mac: `R+-7.4.0-arm64.dmg`, `R+-7.4.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.4.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

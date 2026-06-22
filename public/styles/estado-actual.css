@@ -1530,20 +1530,26 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   line-height: 1.35;
 }
 
-/* Una celda de la grilla: lecturas +1 se superponen, no se apilan abajo */
+/* Una celda de la grilla: compacta por defecto; crece solo con alterado o lecturas previas */
 .ea-registro-modal .ea-vital-stack {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   width: 100%;
   min-width: 0;
-  aspect-ratio: 1;
   max-height: 5.75rem;
 }
 
+.ea-registro-modal .ea-vital-stack.ea-vital-stack--multi,
+.ea-registro-modal .ea-vital-stack:has(.ea-vital-box--altered) {
+  max-height: none;
+}
+
 .ea-registro-modal .ea-vital-stack .ea-vital-slot {
-  position: absolute;
-  inset: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
+  flex: 0 0 auto;
   min-height: 0;
   z-index: 1;
 }
@@ -1562,17 +1568,24 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-vital-stack .ea-vital-slot .ea-vital-chip {
   width: 100%;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: 5.75rem;
+  min-height: 0;
   box-sizing: border-box;
+  overflow: visible;
+}
+
+.ea-registro-modal .ea-vital-stack .ea-vital-slot .ea-vital-chip.ea-vital-box--altered {
+  max-height: none;
 }
 
 .ea-registro-modal .ea-vital-prev-badge {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 4px;
-  z-index: 4;
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  flex: 0 0 auto;
+  z-index: 1;
   padding: 2px 4px;
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -1629,6 +1642,11 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-vital-chip.ea-vital-box--altered {
   aspect-ratio: auto;
   max-height: none;
+  overflow: visible;
+}
+
+.ea-registro-modal .ea-vital-chip.ea-vital-box--altered .ea-vital-value-wrap {
+  flex: 0 0 auto;
 }
 
 .ea-registro-modal .ea-vital-chip .vital-label:not(.ea-vital-label-row) {
@@ -1776,42 +1794,37 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-vital-chip .ea-altered-time-input {
   display: block;
-  width: min(100%, 5.25rem);
+  width: 100%;
+  max-width: 5.75rem;
+  min-width: 4.5rem;
   margin: 0 auto;
-  padding: 2px 1.35rem;
+  padding: 2px 4px;
   font-size: 10px;
+  font-variant-numeric: tabular-nums;
   text-align: center;
   text-align-last: center;
   box-sizing: border-box;
 }
 
+.ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-calendar-picker-indicator {
+  margin: 0;
+  padding: 0;
+  opacity: 0.65;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
 .ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-datetime-edit {
   margin: 0 auto;
+  padding: 0;
   text-align: center;
 }
 
 .ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-datetime-edit-hour-field,
 .ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-datetime-edit-minute-field,
 .ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-datetime-edit-ampm-field {
+  padding: 0 1px;
   text-align: center;
-}
-
-.ea-registro-modal .ea-vital-chip .ea-altered-time-input::-webkit-calendar-picker-indicator {
-  margin-left: 0;
-  opacity: 0.85;
-}
-
-.ea-registro-modal .ea-vital-stack.ea-vital-stack--dual {
-  aspect-ratio: auto;
-  max-height: none;
-  min-height: 5.75rem;
-}
-
-.ea-registro-modal .ea-vital-stack.ea-vital-stack--dual .ea-vital-slot--extra .ea-vital-chip.ea-vital-box--altered {
-  aspect-ratio: auto;
-  max-height: none;
-  height: auto;
-  min-height: 100%;
 }
 
 .ea-registro-modal .ea-form--registro {

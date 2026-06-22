@@ -128,8 +128,9 @@ export function refreshExpedienteAfterPatientSelect(opts) {
   invalidateHistoriaClinicaPanel();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
-  if (opts.patientChanged || !isInnerTabContentFresh(tab, settings)) {
-    renderGranularInnerTab(tab, opts.patientChanged ? { force: true } : undefined);
+  var forceRender = !!opts.patientChanged || granularMountIsEmpty(tab);
+  if (forceRender || !isInnerTabContentFresh(tab, settings)) {
+    renderGranularInnerTab(tab, forceRender ? { force: true } : undefined);
   }
   warmExpedienteHeavyTabs();
 }

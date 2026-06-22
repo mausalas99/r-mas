@@ -23,6 +23,8 @@ import {
   parseGlucometriasFromForm,
   parseBombaFromForm,
 } from './estado-actual-panel-parse-form.mjs';
+import { validateVitalSeriesTurnLimits } from './estado-actual-panel-vitals.mjs';
+import { MAX_VITAL_READINGS_PER_DAY } from './estado-actual-vital-series.mjs';
 import {
   confirmMedField,
   discardMedProposal,
@@ -92,6 +94,14 @@ export function registrarEstadoActualMedicion() {
   var medicion = parseFormMedicion();
   if (!medicion) {
     getEaPanelRuntime().showToast('Formulario no disponible', 'error');
+    return;
+  }
+  var vitalLimit = validateVitalSeriesTurnLimits(patient.monitoreo.historial, medicion.vitalSeries || {});
+  if (!vitalLimit.ok) {
+    getEaPanelRuntime().showToast(
+      'Máximo ' + MAX_VITAL_READINGS_PER_DAY + ' lecturas de ' + vitalLimit.label + ' en el turno',
+      'error'
+    );
     return;
   }
   var result = appendMedicion(patient.monitoreo, medicion);

@@ -39,9 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.3.8](https://github.com/mausalas99/r-mas/releases/tag/v7.3.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.4.0](https://github.com/mausalas99/r-mas/releases/tag/v7.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.4.0 (arranque lazy, deuda cero y pulido UI)
+
+- **Arranque** — Imports lazy en entrega, plataforma, tour, modales y shell; boot graph debt 700→50.
+- **Deuda técnica** — God-files divididos; ESLint Tier 1 en cero; baseline métricas 31408→50.
+- **Estado actual** — Límite de signos vitales por turno al guardar registro.
+- **Censo** — Re-selección del mismo paciente sin re-render completo de la lista.
+- **UI** — Tokens de sidebar, workbench y EA; interno alineado al design system.
+
+Notas: `docs/RELEASE_NOTES_7.4.0.txt`.
 
 ## R+ 7.3.8 (COAG separado, balance I/O NC y arranque DB)
 

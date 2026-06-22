@@ -132,7 +132,7 @@ function toggleTendSection(ev, sectionKey) {
     applyTendSectionExpandedState(sectionEl, sectionKey, next);
     return;
   }
-  tendenciasBridge.tendenciasBridge.tendenciasBridge.renderTendencias();
+  tendenciasBridge.renderTendencias();
 }
 
 /** Título y unidad para tarjeta spark (evita «%» duplicado en título y unidad). */

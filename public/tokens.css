@@ -90,6 +90,15 @@
   --elev-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
   --elev-floating: 0 6px 22px rgba(15, 23, 42, 0.07), 0 2px 6px rgba(15, 23, 42, 0.05);
   --elev-overlay: 0 18px 48px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+  /* Depth ring + lift (prefer over solid borders on cards/containers) */
+  --shadow-border:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0 2px 4px 0 rgba(0, 0, 0, 0.04);
+  --shadow-border-hover:
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px 0 rgba(0, 0, 0, 0.06);
   --border-hairline: 1px solid color-mix(in oklab, var(--color-ink) 9%, transparent);
   /* Interaction-state fills, layered over any surface */
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 4%, transparent);
@@ -220,6 +229,8 @@ html.dark {
   --elev-raised: 0 1px 3px rgba(0, 0, 0, 0.35);
   --elev-floating: 0 8px 26px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.24);
   --elev-overlay: 0 18px 52px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-border-hover: 0 0 0 1px rgba(255, 255, 255, 0.13);
   --border-hairline: 1px solid rgba(148, 163, 184, 0.16);
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 10%, transparent);
@@ -277,6 +288,8 @@ html.high-contrast {
   --elev-raised: none;
   --elev-floating: none;
   --elev-overlay: none;
+  --shadow-border: none;
+  --shadow-border-hover: none;
   --border-hairline: 1px solid var(--border);
   --state-hover-bg: color-mix(in oklab, var(--color-accent) 12%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-accent) 20%, transparent);
