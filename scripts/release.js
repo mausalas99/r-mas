@@ -18,7 +18,7 @@
  *   npm run release:publish -- --yes
  *   npm run release:publish -- --skip-pre-commit   (no commit automático antes de tests)
  *
- * Tras bump, edita docs/RELEASE_NOTES_X.Y.Z.txt, README y release-notes-curated.mjs.
+ * Tras bump, edita docs/RELEASE_NOTES_X.Y.Z.txt, README y data/release-notes-highlights.mjs.
  */
 
 const fs = require('fs');
@@ -43,10 +43,7 @@ const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
 const { allReleaseArtifactNames } = require('./lib/artifact-names');
 const APP_JS = path.join(ROOT, 'public/js/app.js');
-const RELEASE_NOTES_CURATED = path.join(
-  ROOT,
-  'public/js/features/settings-help/release-notes-curated.mjs'
-);
+const RELEASE_NOTES_HIGHLIGHTS = path.join(ROOT, 'data/release-notes-highlights.mjs');
 const README = path.join(ROOT, 'README.md');
 
 function run(cmd, opts = {}) {
@@ -220,11 +217,11 @@ function updateReadme(version, title) {
 }
 
 function updateHighlightsStub(version) {
-  let text = fs.readFileSync(RELEASE_NOTES_CURATED, 'utf8');
+  let text = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
   const constName = curatedConstName(version);
   const key = `'${version}':`;
   if (text.includes(key)) {
-    console.log('release-notes-curated.mjs ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
+    console.log('release-notes-highlights.mjs ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
     return;
   }
   const varBlock = `var ${constName} = [
@@ -242,32 +239,32 @@ function updateHighlightsStub(version) {
   const mapEntry = `  '${version}': ${constName},\n`;
   const fallbackMarker = '/** Fallback when a version has no curated entry';
   if (!text.includes(fallbackMarker)) {
-    throw new Error('release-notes-curated.mjs: no se encontró marcador FALLBACK.');
+    throw new Error('data/release-notes-highlights.mjs: no se encontró marcador FALLBACK.');
   }
   text = text.replace(fallbackMarker, varBlock + fallbackMarker);
   const marker = 'export var RELEASE_NOTES_HIGHLIGHTS = {\n';
   if (!text.includes(marker)) {
-    throw new Error('release-notes-curated.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS.');
+    throw new Error('data/release-notes-highlights.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS.');
   }
   text = text.replace(marker, marker + mapEntry);
-  fs.writeFileSync(RELEASE_NOTES_CURATED, text, 'utf8');
-  console.log('Añadido stub', constName, 'en release-notes-curated.mjs');
+  fs.writeFileSync(RELEASE_NOTES_HIGHLIGHTS, text, 'utf8');
+  console.log('Añadido stub', constName, 'en data/release-notes-highlights.mjs');
 }
 
 function updateHighlightsDefault(version) {
-  let text = fs.readFileSync(RELEASE_NOTES_CURATED, 'utf8');
+  let text = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
   const constName = curatedConstName(version);
   const re = /export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_\d+;/;
   if (!re.test(text)) {
-    throw new Error('release-notes-curated.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS_DEFAULT.');
+    throw new Error('data/release-notes-highlights.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS_DEFAULT.');
   }
   if (!text.includes(`var ${constName} =`)) {
     throw new Error(
-      `release-notes-curated.mjs: falta var ${constName} — completa highlights antes del bump.`
+      `data/release-notes-highlights.mjs: falta var ${constName} — completa highlights antes del bump.`
     );
   }
   text = text.replace(re, `export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = ${constName};`);
-  fs.writeFileSync(RELEASE_NOTES_CURATED, text, 'utf8');
+  fs.writeFileSync(RELEASE_NOTES_HIGHLIGHTS, text, 'utf8');
   console.log('Actualizado RELEASE_NOTES_HIGHLIGHTS_DEFAULT →', constName);
 }
 
@@ -318,7 +315,7 @@ async function cmdBump(argv) {
 Edita antes de publish:
   • docs/RELEASE_NOTES_${version}.txt
   • README.md (bullets de ## R+ ${version})
-  • public/js/features/settings-help/release-notes-curated.mjs (RELEASE_NOTES_HIGHLIGHTS['${version}'])
+  • data/release-notes-highlights.mjs (RELEASE_NOTES_HIGHLIGHTS['${version}'])
 
 Luego:
   npm run release:publish -- --yes
@@ -544,10 +541,10 @@ async function cmdPublish(argv) {
       console.warn(warn);
     }
   }
-  const highlightsText = fs.readFileSync(RELEASE_NOTES_CURATED, 'utf8');
+  const highlightsText = fs.readFileSync(RELEASE_NOTES_HIGHLIGHTS, 'utf8');
   if (new RegExp(`'${version}':[\\s\\S]*?title: 'TODO'`).test(highlightsText)) {
     const warn =
-      '⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa release-notes-curated.mjs.';
+      '⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa data/release-notes-highlights.mjs.';
     if (progressJson) {
       process.stdout.write(`${JSON.stringify({ type: 'log', stream: 'stderr', line: warn })}\n`);
     } else {

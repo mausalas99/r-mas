@@ -11,6 +11,7 @@ const RELEASE_STAGE_PATHS = [
   'package-lock.json',
   'README.md',
   'docs/',
+  'data/release-notes-highlights.mjs',
   'stable-versions.json',
   'main.js',
   'preload.js',
