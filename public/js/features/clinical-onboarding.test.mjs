@@ -113,25 +113,25 @@ describe('clinical-onboarding helpers', () => {
   });
 
   it('registration shows connect-needed message when LAN push returns NO_LAN', () => {
-    const onboardingSrc = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding.mjs'),
+    const handlersSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-handlers.mjs'),
       'utf8'
     );
-    assert.match(onboardingSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
-    assert.match(onboardingSrc, /isLanProfileNeedsConnectCode\(lanPush\.code\)/);
-    assert.match(onboardingSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
-    assert.match(onboardingSrc, /!localOnly[\s\S]*isLanProfileNeedsConnectCode/);
+    assert.match(handlersSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
+    assert.match(handlersSrc, /isLanProfileNeedsConnectCode\(lanPush\.code\)/);
+    assert.match(handlersSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
+    assert.match(handlersSrc, /!localOnly[\s\S]*isLanProfileNeedsConnectCode/);
   });
 
   it('resume requires an existing DB user and claim runs for legacy handles', () => {
-    const onboardingSrc = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding.mjs'),
+    const handlersSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-handlers.mjs'),
       'utf8'
     );
-    assert.match(onboardingSrc, /lookupClinicalUserByUsername/);
-    assert.match(onboardingSrc, /shouldClaimClinicalUsername/);
+    assert.match(handlersSrc, /lookupClinicalUserByUsername/);
+    assert.match(handlersSrc, /shouldClaimClinicalUsername/);
     assert.match(
-      onboardingSrc,
+      handlersSrc,
       /No encontramos @\$\{username\} en esta base de datos/
     );
   });

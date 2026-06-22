@@ -18,7 +18,7 @@ const {
   normalizeLabHistoryPatientSets,
   clearBlobCacheForTests,
   ensureStorageHydrated,
-} = await import('./storage.js');
+} = await import('../../../public/js/storage.js');
 
 describe('storage todos', () => {
   beforeEach(() => {

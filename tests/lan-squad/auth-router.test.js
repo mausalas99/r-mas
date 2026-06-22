@@ -170,7 +170,7 @@ test('POST /auth/exchange rejects ambiguous or missing credentials', async () =>
 });
 
 test('auth routes emit forensic audit events when dbManager is unlocked', async () => {
-  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const { createUnlockedDbManager } = await import('../../lib/db/test-open-db.mjs');
   const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-audit-'));
   const hostToken = 'f'.repeat(64);
   const hostUrl = 'http://127.0.0.1:3738';

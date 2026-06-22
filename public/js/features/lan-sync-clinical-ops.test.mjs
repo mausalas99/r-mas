@@ -443,7 +443,7 @@ describe('clinical-profile-lan-sync', () => {
 
   it('resolves LiveSync room from clinical Sala when LAN is available (optional)', () => {
     assert.match(profileLanSrc, /ensureLiveSyncRoomForUsernameRegister/);
-    assert.match(profileLanSrc, /resolveLiveSyncRoomIdFromSala\(opts\.sala\)/);
+    assert.match(profileLanSrc, /resolveRoomIdForUsernameRegister/);
     assert.match(profileLanSrc, /isBenignLanPushSkipCode/);
   });
 

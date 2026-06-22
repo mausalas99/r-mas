@@ -33,7 +33,7 @@ function createHostStoreContext({ filePath, hostStateDir, teamCodePlain, dbManag
     stateDir,
     teamCodeHash,
     dbManager,
-    getClientId,
+    getClientId: typeof getClientId === 'function' ? getClientId : () => '',
     cache,
     queue,
     commitBarrier,

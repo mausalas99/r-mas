@@ -48,16 +48,18 @@ describe('lan-shift-pin-connect probe order', () => {
     assert.ok(urls.includes('http://10.0.99.1:3738'));
   });
 
-  it('connectLanWithShiftPin probes registry before local beacon scan', () => {
+  it('connectLanWithShiftPin probes registry before ward subnet beacon scan', () => {
     const fnStart = shiftPinSrc.indexOf('export async function connectLanWithShiftPin');
     assert.ok(fnStart > 0);
     const fnBody = shiftPinSrc.slice(fnStart);
     const probeIdx = fnBody.indexOf('collectShiftPinProbeUrls');
     const fastIdx = fnBody.indexOf('collectShiftPinFastDiscoveryUrls');
     const beaconIdx = fnBody.indexOf('discoverLanHostsOnAllLocalSubnetsViaBeacon');
-    const wardPrefixIdx = fnBody.indexOf('listWardSubnetPrefixesForProbe');
+    const wardExtraIdx = fnBody.indexOf('discoverExtraWardHosts');
+    const wardPrefixIdx = shiftPinSrc.indexOf('listWardSubnetPrefixesForProbe');
     assert.ok(probeIdx > 0 && fastIdx > probeIdx && beaconIdx > fastIdx);
-    assert.ok(wardPrefixIdx > beaconIdx);
+    assert.ok(wardExtraIdx > beaconIdx);
+    assert.ok(wardPrefixIdx > 0);
   });
 
   it('connectLanWithShiftPin skips loopback for remote join clients', () => {

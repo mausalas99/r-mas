@@ -38,7 +38,10 @@ describe('tour intro launch', () => {
     assert.match(src, /hideMainClinicalOnboarding/);
     assert.match(src, /setClinicalSyncModeLocalOnly\(false\)/);
     assert.match(src, /openClinicalTeamsPanel\(\{ skipProfileGate: true \}\)/);
-    const roster = readFileSync(join(dir, '..', 'clinical-teams', 'teams-roster.mjs'), 'utf8');
+    const roster = readFileSync(
+      join(dir, '..', 'clinical-teams', 'teams-roster-shell.mjs'),
+      'utf8'
+    );
     assert.match(roster, /skipProfileGate/);
     assert.match(src, /nombre completo de tu R2/);
     assert.match(src, /needsTeamOnboarding/);
@@ -82,7 +85,7 @@ describe('tour intro launch', () => {
     const idxCheck = click[0].indexOf('if (i < 0) return');
     assert.ok(wrapIdx < idxCheck, 'wrap finish runs before i < 0 bail');
     assert.match(click[0], /if \(i \+ 1 >= steps\.length\) \{\s*finishGuidedTour/);
-    const lazy = readFileSync(join(dir, '..', '..', 'lazy-feature-routes.mjs'), 'utf8');
+    const lazy = readFileSync(join(dir, '..', '..', 'lazy-feature-routes-handlers.mjs'), 'utf8');
     assert.match(lazy, /guidedTourFinish: 'finishGuidedTour'/);
     const index = readFileSync(join(dir, 'index.mjs'), 'utf8');
     assert.match(index, /guidedTourFinish:\s*finishGuidedTour/);
@@ -97,14 +100,14 @@ describe('tour intro launch', () => {
   });
 
   it('tour lab registration uses preview Agregar paciente (no auto-modal when preview open)', () => {
-    const flow = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
-    const afterBulk = flow.match(/(?:export )?function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/);
-    assert.ok(afterBulk);
-    assert.match(afterBulk[0], /isBulkLabPreviewModalOpen/);
-    const onPreview = flow.match(/(?:export )?function tourOnBulkPreviewPatientSaved\(\) \{[\s\S]*?\n\}/);
-    assert.ok(onPreview);
-    assert.match(onPreview[0], /Agregar paciente en la tabla/);
-    assert.doesNotMatch(onPreview[0], /scheduleTourDemoPatientRegistrationFromLab/);
+    const onboarding = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
+    assert.match(onboarding, /function tourAfterBulkLabParse/);
+    assert.match(onboarding, /isBulkLabPreviewModalOpen/);
+    assert.match(onboarding, /function tourOnBulkPreviewPatientSaved/);
+    assert.match(onboarding, /Agregar paciente en la tabla/);
+    const previewBody = onboarding.match(/function tourOnBulkPreviewPatientSaved\(\) \{([\s\S]*?)\n\}/);
+    assert.ok(previewBody, 'tourOnBulkPreviewPatientSaved body');
+    assert.doesNotMatch(previewBody[1], /scheduleTourDemoPatientRegistrationFromLab/);
     const patients = readFileSync(join(dir, '..', 'patients-modal.mjs'), 'utf8');
     assert.match(patients, /isAddPatientModalOpenForRegistro/);
   });
@@ -137,13 +140,10 @@ describe('tour intro launch', () => {
   });
 
   it('tourAfterBulkLabParse advances lab_parse when both demo patients are in census', () => {
-    const flow = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
-    const fn = flow.match(
-      /(?:export )?function tourAfterBulkLabParse\(blocks\) \{[\s\S]*?\n\}/
-    );
-    assert.ok(fn, 'tourAfterBulkLabParse export');
-    assert.match(fn[0], /onboardingAdvanceAfterParse\(\)/);
-    assert.doesNotMatch(fn[0], /if \(tourDemoPatientsBothInCensus\(patients\)\) return;/);
+    const onboarding = readFileSync(join(dir, 'tour-flow-onboarding.mjs'), 'utf8');
+    assert.match(onboarding, /function tourAfterBulkLabParse/);
+    assert.match(onboarding, /if \(!tourDemoPatientsBothInCensus\(patients\)\)/);
+    assert.match(onboarding, /onboardingAdvanceAfterParse\(\)/);
     const labWorkbench = readFileSync(join(dir, '..', 'lab-panel-workbench.mjs'), 'utf8');
     assert.match(labWorkbench, /notifyTourAfterBulkLabStore/);
   });

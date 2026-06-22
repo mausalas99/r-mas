@@ -77,7 +77,11 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   return buildGasoLine_(g);
 }
 
+/** Product policy: auto gasometría interpretation line disabled (see labs-gases.test.mjs). */
+const GASO_AUTO_INTERPRETATION_ENABLED = false;
+
 export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
+  if (!GASO_AUTO_INTERPRETATION_ENABLED) return '';
   if (!bloqueGaso) return '';
   var bloqueX = gasoBlockForExtract_(bloqueGaso);
   var phData   = extraerConRango(['PH '], bloqueX);
