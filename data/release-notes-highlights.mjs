@@ -955,29 +955,34 @@ var RELEASE_NOTES_735 = [
 
 var RELEASE_NOTES_740 = [
   {
-    title: 'Arranque más liviano',
+    title: 'Arranque más rápido',
     body:
-      'Entrega, plataforma, tour, modales, export rápido y varios módulos del shell entran con <strong>import()</strong>. Menos código en el primer paint.',
+      'Entrega, plataforma, tour, modales y export rápido cargan <strong>bajo demanda</strong>. Menos espera al abrir R+ entre pacientes.',
   },
   {
-    title: 'Deuda técnica a cero',
+    title: 'Signos vitales por turno',
     body:
-      'God-files divididos (LAN, DB, acceso clínico, renderer); ESLint Tier 1 en <strong>0</strong> en el árbol completo. Base sana para 7.4.x.',
-  },
-  {
-    title: 'EA — signos vitales',
-    body:
-      'Al guardar un registro se valida el <strong>máximo por turno</strong> por signo; mensajes claros si superas el límite.',
+      'Al <strong>registrar</strong> monitoreo se valida el máximo por signo en el turno. La hora de alteración se prellena desde la fecha/hora del registro.',
   },
   {
     title: 'Censo sin parpadeo',
     body:
-      'Re-seleccionar el mismo paciente ya no re-dibuja toda la lista; el highlight activo se actualiza en silencio al cambiar de paciente.',
+      'Re-tocar el mismo paciente ya no re-dibuja toda la lista. El highlight activo se actualiza en silencio al cambiar de cama.',
+  },
+  {
+    title: 'Pase y expediente',
+    body:
+      'Al cambiar paciente, el expediente se fuerza a pintar si el panel estaba vacío. En pase + nota, el overview del turno queda alineado.',
+  },
+  {
+    title: 'UI más clara',
+    body:
+      'Tarjetas con profundidad sutil, sidebar <strong>cama primero</strong>, spacing en Estado actual e interno alineado al design system.',
   },
   {
     title: 'Actualiza el turno',
     body:
-      'Instala <strong>7.4.0 en todas</strong> las estaciones si queréis el mismo perfil de arranque. Esquema SQLCipher sigue en <strong>v17</strong>.',
+      'Instala <strong>7.4.0 en todas</strong> las estaciones para arranque homogéneo. Esquema SQLCipher sigue en <strong>v17</strong>; sin migración de base.',
   },
 ];
 

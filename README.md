@@ -44,13 +44,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ---
 
 
-## R+ 7.4.0 (arranque lazy, deuda cero y pulido UI)
+## R+ 7.4.0 (arranque rápido, monitoreo EA y UI pulida)
 
-- **Arranque** — Imports lazy en entrega, plataforma, tour, modales y shell; boot graph debt 700→50.
-- **Deuda técnica** — God-files divididos; ESLint Tier 1 en cero; baseline métricas 31408→50.
-- **Estado actual** — Límite de signos vitales por turno al guardar registro.
-- **Censo** — Re-selección del mismo paciente sin re-render completo de la lista.
-- **UI** — Tokens de sidebar, workbench y EA; interno alineado al design system.
+- **Arranque** — Carga diferida de entrega, plataforma, tour, modales y shell; menos trabajo antes del primer uso.
+- **Estado actual** — Máximo de signos vitales por turno al registrar; hora de alteración prellenada desde el registro.
+- **Censo** — Re-tocar el mismo paciente no parpadea la lista; highlight activo en silencio.
+- **Pase** — Expediente se pinta al cambiar paciente aunque el panel estuviera vacío.
+- **UI** — Profundidad en tarjetas, sidebar cama-first, EA e interno alineados al design system.
 
 Notas: `docs/RELEASE_NOTES_7.4.0.txt`.
 
