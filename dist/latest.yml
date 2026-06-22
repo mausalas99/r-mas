@@ -1,28 +1,20 @@
-version: 7.3.8
+version: 7.4.0
 files:
-  - url: R+-7.3.8-x64.exe
-    sha512: KSn/248l4SzfhQghjlEAWxAYBNDW1Ri65BlnNUXN/AbbbCoSix7cl25fkDappuWYG1q+E1OqKemCICiSx+KVVQ==
-    size: 115026922
-path: R+-7.3.8-x64.exe
-sha512: KSn/248l4SzfhQghjlEAWxAYBNDW1Ri65BlnNUXN/AbbbCoSix7cl25fkDappuWYG1q+E1OqKemCICiSx+KVVQ==
-releaseDate: '2026-06-20T20:17:02.000Z'
+  - url: R+-7.4.0-x64.exe
+    sha512: CMfCi+h8PDOhmvKA8Kd4402kqAaemLHceFq1+OMT/F23Qao0hF8NTFEQu7wJ8sX7NonOAb2lbhTTujTVxsG/Rw==
+    size: 115229760
+path: R+-7.4.0-x64.exe
+sha512: CMfCi+h8PDOhmvKA8Kd4402kqAaemLHceFq1+OMT/F23Qao0hF8NTFEQu7wJ8sX7NonOAb2lbhTTujTVxsG/Rw==
+releaseDate: '2026-06-22T16:04:05.000Z'
 releaseNotes: |
-  Sobre 7.3.7: coagulación como sección COAG independiente de BH (parser, pase, panel y diagramas); balance hídrico NC cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
+  Sobre 7.3.8: la app abre más rápido (módulos pesados cargan bajo demanda); Estado actual valida signos vitales por turno y rellena la hora de alteración desde el registro; el censo deja de parpadear al re-tocar el mismo paciente; el expediente en pase se pinta aunque el panel estuviera vacío; y pulido visual en sidebar, workbench, EA e interno.
   
-  Laboratorio — COAG — TP/TTP/INR/Fib/DD salen en bloque COAG propio (no anidado bajo BH); merge de filas BH del mismo día conserva la coagulación más completa; encabezados COAG/Coag. con estilo de sección en pase y panel.
+  Arranque — Modo entrega, plataforma, tour, modales, export rápido, paleta de comandos, ajustes de sync y cliente LAN móvil entran con carga diferida; menos trabajo antes del primer uso visible.
   
-  Diagramas — Tendencias y SVG de coagulación leen valores desde BH o COAG.
+  Estado actual — signos vitales — Al registrar la medición se valida el máximo por turno por signo (TA, FC, FR, etc.); mensaje claro si superas el límite. Al agregar capas, la hora de alteración se prellena desde la fecha/hora del registro.
   
-  Estado actual — I/O — Balance NC cuando hay egresos declarados sin total numérico (p. ej. DIURESIS NC); texto SOAP y snapshot usan BALANCE NC en lugar de guiones o placeholders.
+  Censo — Re-seleccionar el mismo paciente ya no re-dibuja toda la lista; el highlight activo se actualiza en silencio. Primera selección desde estado vacío ya no se trata como «sin cambio».
   
-  Estado actual — registro — Selector de fecha/hora del modal alineado al resto de la UI (rpc-date-picker); el control nativo oculto ya no hereda chrome de .ea-input.
+  Pase / expediente — Al cambiar de paciente, las pestañas del expediente se fuerzan a render si el montaje estaba vacío (p. ej. overview en nota). En pase + nota, el modo overview del turno se alinea al cambiar paciente.
   
-  Arranque DB — Toast al boot si la base clínica está bloqueada o el binario nativo no coincide (ABI); mensaje orientado a código de recuperación / rebuild.
-  
-  DX — SQLCipher — fetch-sqlite-node verifica el prebuild tras instalarlo; ensure-native-db-for-node evita sobrescribir el binario de Node con ABI de Electron y restaura el binario de la app si falla el paso de pruebas.
-  
-  Directorio LAN — Actualizar desde ⇄ trae usuarios registrados de todas las salas (sin exigir sala activa en el perfil); filtro de sala incluye Interconsultas, UX, Eme, etc.; el directorio conserva grupos abiertos y asignaciones al refrescar actividad.
-  
-  Estado actual — dieta — Confirmar dieta desde SOME ya no vuelve a pedir aceptación tras sync ⇄; merge de monitoreo preserva dieta confirmada local.
-  
-  Censo — tarjetas — Sidebar de pacientes con cama primero y chips de prioridad más legibles.
+  UI — tokens y superficies — Anillos de profundidad (shadow-border) en tarjetas y contenedores; sidebar con cama primero; spacing y jerarquía en EA; lab, modales y interno alineados al design system.
