@@ -2711,3 +2711,215 @@ Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.3
 
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
 
+
+## [7.3.4](docs/RELEASE_NOTES_7.3.4.txt)
+
+R+ 7.3.4 (perf, pendientes con vencimiento y censo virtual)
+============================================================
+
+Fecha: 2026-06-12
+
+## Resumen
+
+Sobre **7.3.3**: arranque y censo más fluidos (chunks perezosos de labs/gráficas, scroll virtual en lista activa >30), pendientes con **fecha de vencimiento**, recordatorios del sistema y filtro **Entrega**; iPad/PWA refleja solo pacientes de equipos unidos (+ guardia activa); pulido visual en laboratorio y motion.
+
+## Nuevo / mejorado
+
+- **Rendimiento — arranque** — Labs, gráficas de Estado actual y Tendencias cargan con `import()` y chunks de esbuild; menos código en el boot inicial.
+- **Rendimiento — censo virtual** — Lista activa con scroll virtual cuando hay más de 30 pacientes; repintado incremental conservado en listas cortas.
+- **Rendimiento — LiveSync** — Marcas de perfilado en reconcile; refresco acotado de pendientes tras merge LAN (sin repintar toda la UI del turno).
+- **Pendientes — vencimiento** — Fecha/hora opcional por tarea, orden por vencidos primero, modal de fecha y recordatorio nativo de Electron cuando corresponde.
+- **Pendientes — entrega** — Filtro **Entrega** para tareas dejadas por otro residente; chip «De @usuario» y acuse al completar.
+- **Guardia v7** — Barra de progreso del currículo y aviso en tablero cuando hay módulos pendientes.
+- **Laboratorio** — Estilos premium alineados al Workbench; extracción de `labs-display` para listados más ligeros.
+- **iPad / PWA — alcance por equipo** — El espejo móvil muestra solo pacientes asignados a equipos a los que te uniste, más cobertura de guardia activa; sin censo completo de sala por rango.
+- **Motion y skeleton** — Presets de movimiento refinados; placeholders skeleton en cargas largas.
+
+## Operación en guardia
+
+Instala **7.3.4 en todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). Actualiza también iPads que usen el enlace móvil para el nuevo alcance por equipo.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.4
+
+- Mac: `R+-7.3.4-arm64.dmg`, `R+-7.3.4-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.4-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.3.5](docs/RELEASE_NOTES_7.3.5.txt)
+
+R+ 7.3.5 (LAN hardening, host durability y pulido UI)
+====================================================
+
+Fecha: 2026-06-12
+
+## Resumen
+
+Sobre **7.3.4**: endurecimiento LAN (purga con guard de propiedad en servidor, bloqueo tras PIN fallidos), persistencia del anfitrión más fiable al cerrar, caché de blobs parseados, parser unificado de cultivos y pulido clínico/UI (modal Datos del paciente, ATB por día de manejo, presets de vencimiento editables).
+
+## Nuevo / mejorado
+
+- **LAN — purga segura** — `DELETE /api/lan/v1/patients/:id` valida propiedad en servidor; solo admin o pacientes huérfanos; el cliente envía identidad y mapea 403.
+- **LAN — bloqueo PIN** — Tras 8 intentos fallidos en `POST /auth/exchange`, bloqueo global en memoria 5 min (HTTP 429).
+- **Anfitrión — durabilidad** — Fallos de persistencia registrados y consultables; barrera de commit con `onError`; `flushHostStoreNow` al salir (tope 3 s); `putRoomClinicalOps` DB-first.
+- **Rendimiento — caché parseada** — Blobs parseados en caché con invalidación al escribir; menos re-parse en labs y flujos repetidos.
+- **Laboratorio — cultivos** — Parser único `cultivo-block-core` para censo, pegado masivo e historial (flags por contexto).
+- **Expediente — Datos del paciente** — Pestaña **Paciente** abre en modal dedicado con la misma tarjeta demográfica.
+- **Estado actual — ATB por día** — Texto de antibióticos avanza según **fecha de actualización** del bloque Manejo (panel y copia).
+- **Pendientes — presets de vencimiento** — Atajos Hoy 18:00, Mañana 8:00, En 3 h / 24 h; horas editables y persistidas en el dispositivo.
+- **UI** — Laboratorio y superficies Workbench refinadas; motion y modales alineados al sistema premium.
+
+## Operación en guardia
+
+Instala **7.3.5 en todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). El bloqueo PIN y la purga server-side requieren que anfitrión y clientes estén en la misma versión.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.5
+
+- Mac: `R+-7.3.5-arm64.dmg`, `R+-7.3.5-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.5-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.3.6](docs/RELEASE_NOTES_7.3.6.txt)
+
+R+ 7.3.6 (LAN identity, sync modular y calidad)
+================================================
+
+Fecha: 2026-06-13
+
+## Resumen
+
+Sobre **7.3.5**: identidad LAN emitida por el anfitrión (la purga ya no confía en parámetros del cliente), `orchestrator.mjs` dividido en módulos enfocados, detección unificada de cultivos, arranque más rápido sin rebuild nativo forzado, y más cobertura de pruebas (IPC clínico + suites antes en cuarentena).
+
+## Nuevo / mejorado
+
+- **LAN — identidad por cliente** — En `POST /auth/exchange` el host emite token de identidad ligado al `clientId`; la purga y auditoría prefieren identidad resuelta en servidor (fallback legacy para turnos mixtos).
+- **LAN — orchestrator modular** — Façade ~1,185 líneas; extraídos `conflicts`, `entity-versions`, `patient-delete`, `patient-entries`, `historia-sync`, `host-patient-http`, `live-sync-emit`.
+- **Laboratorio — cultivos** — Detección superset alineada en censo, pegado masivo, historial y panel; parser lipasa con golden.
+- **Shell — modales** — `app-shell-modals.mjs` extrae modales del shell; presupuesto de líneas restaurado.
+- **Anfitrión — hot path** — Menos reensamblado en `clinicalOps` PUT; un solo `byteLength` por flush.
+- **Seguridad — window.open** — Allowlist GitHub + LAN privada en lugar de solo esquema.
+- **DX / CI** — ESLint en raíz y `scripts/`; cinco suites reactivadas; 13 pruebas de integración IPC (`ipc-handlers.test.mjs`).
+- **Arranque** — `npm start` ya no fuerza rebuild SQLCipher si el binario nativo coincide con Electron.
+
+## Operación en guardia
+
+Instala **7.3.6 en todas** las estaciones del turno el mismo día. Sin cambio de esquema SQLCipher (sigue **v17**). La identidad LAN requiere anfitrión y clientes en **7.3.6** (o superior) para dejar de depender del fallback por query string.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.6
+
+- Mac: `R+-7.3.6-arm64.dmg`, `R+-7.3.6-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.6-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.3.7](docs/RELEASE_NOTES_7.3.7.txt)
+
+R+ 7.3.7 (censo LAN estable y expediente Drive)
+===================================================
+
+Fecha: 2026-06-14
+
+## Resumen
+
+Sobre **7.3.6**: corrige pacientes que desaparecían del censo tras ⇄ LiveSync cuando se reutilizaba el mismo **registro hospitalario** (readmisión o alta/baja en otro equipo). También reubica **Importar desde Drive** en la barra del expediente clínico con estilo alineado al resto de la UI.
+
+## Nuevo / mejorado
+
+- **LAN — censo estable** — Los deletes de paciente en LiveSync aplican solo por **id** del expediente; una readmisión con el mismo registro ya no hereda tombstones ni se borra por coincidencia de registro en otro Mac.
+- **LAN — tombstones** — Al registrar un paciente nuevo se limpian tombstones LAN obsoletos del mismo registro (`clearPatientDeleteTombstoneForAdmit`).
+- **LAN — bundle merge** — Entradas del anfitrión con id distinto al delete remoto se conservan (mismo registro, chart nuevo).
+- **Expediente — Drive** — Botón **Importar desde Drive** en la barra de acciones del bloque **Clínico** (modo sala), visible solo en esa pestaña; estilos pill en `expediente.css`.
+
+## Operación en guardia
+
+Instala **7.3.7 en todas** las estaciones del turno el mismo día si usáis ⇄ con censo compartido. Sin cambio de esquema SQLCipher (sigue **v17**). Prioridad si vieron pacientes que “desaparecían” tras sync sin borrado explícito.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.7
+
+- Mac: `R+-7.3.7-arm64.dmg`, `R+-7.3.7-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.7-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.3.8](docs/RELEASE_NOTES_7.3.8.txt)
+
+R+ 7.3.8 (COAG separado, balance I/O NC y arranque DB)
+==========================================================
+
+Fecha: 2026-06-20
+
+## Resumen
+
+Sobre **7.3.7**: coagulación como sección **COAG** independiente de BH (parser, pase, panel y diagramas); balance hídrico **NC** cuando los egresos no son cuantificables; mejor feedback al arrancar si la base clínica no abre; y endurecimiento del flujo de binarios SQLCipher para pruebas vs Electron.
+
+## Nuevo / mejorado
+
+- **Laboratorio — COAG** — TP/TTP/INR/Fib/DD salen en bloque `COAG` propio (no anidado bajo BH); merge de filas BH del mismo día conserva la coagulación más completa; encabezados `COAG`/`Coag.` con estilo de sección en pase y panel.
+- **Diagramas** — Tendencias y SVG de coagulación leen valores desde **BH** o **COAG**.
+- **Estado actual — I/O** — Balance **NC** cuando hay egresos declarados sin total numérico (p. ej. DIURESIS NC); texto SOAP y snapshot usan `BALANCE NC` en lugar de guiones o placeholders.
+- **Estado actual — registro** — Selector de fecha/hora del modal alineado al resto de la UI (`rpc-date-picker`); el control nativo oculto ya no hereda chrome de `.ea-input`.
+- **Arranque DB** — Toast al boot si la base clínica está bloqueada o el binario nativo no coincide (ABI); mensaje orientado a código de recuperación / rebuild.
+- **DX — SQLCipher** — `fetch-sqlite-node` verifica el prebuild tras instalarlo; `ensure-native-db-for-node` evita sobrescribir el binario de Node con ABI de Electron y restaura el binario de la app si falla el paso de pruebas.
+- **Directorio LAN** — **Actualizar desde ⇄** trae usuarios registrados de todas las salas (sin exigir sala activa en el perfil); filtro de sala incluye Interconsultas, UX, Eme, etc.; el directorio conserva grupos abiertos y asignaciones al refrescar actividad.
+- **Estado actual — dieta** — Confirmar dieta desde SOME ya no vuelve a pedir aceptación tras sync ⇄; merge de monitoreo preserva dieta confirmada local.
+- **Censo — tarjetas** — Sidebar de pacientes con cama primero y chips de prioridad más legibles.
+
+## Operación en guardia
+
+Instala **7.3.8** cuando pegues labs con coagulación separada o uses balance NC en monitoreo. Sin cambio de esquema SQLCipher (sigue **v17**). No exige paridad en todas las estaciones del turno salvo que queráis el mismo formato COAG en cada Mac.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.3.8
+
+- Mac: `R+-7.3.8-arm64.dmg`, `R+-7.3.8-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.3.8-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+
+## [7.4.0](docs/RELEASE_NOTES_7.4.0.txt)
+
+R+ 7.4.0 (arranque rápido, monitoreo EA y UI pulida)
+========================================================
+
+Fecha: 2026-06-22
+
+## Resumen
+
+Sobre **7.3.8**: la app **abre más rápido** (módulos pesados cargan bajo demanda); **Estado actual** valida signos vitales por turno y rellena la hora de alteración desde el registro; el **censo** deja de parpadear al re-tocar el mismo paciente; el **expediente** en pase se pinta aunque el panel estuviera vacío; y pulido visual en sidebar, workbench, EA e interno.
+
+## Nuevo / mejorado
+
+- **Arranque** — Modo entrega, plataforma, tour, modales, export rápido, paleta de comandos, ajustes de sync y cliente LAN móvil entran con carga diferida; menos trabajo antes del primer uso visible.
+- **Estado actual — signos vitales** — Al **registrar** la medición se valida el máximo por turno por signo (TA, FC, FR, etc.); mensaje claro si superas el límite. Al agregar capas, la hora de **alteración** se prellena desde la fecha/hora del registro.
+- **Censo** — Re-seleccionar el mismo paciente ya no re-dibuja toda la lista; el highlight activo se actualiza en silencio. Primera selección desde estado vacío ya no se trata como «sin cambio».
+- **Pase / expediente** — Al cambiar de paciente, las pestañas del expediente se fuerzan a render si el montaje estaba vacío (p. ej. overview en nota). En pase + nota, el modo overview del turno se alinea al cambiar paciente.
+- **UI — tokens y superficies** — Anillos de profundidad (`shadow-border`) en tarjetas y contenedores; sidebar con cama primero; spacing y jerarquía en EA; lab, modales y **interno** alineados al design system.
+
+## Operación en guardia
+
+Instala **7.4.0** si notas lentitud al abrir R+ entre pacientes o usas monitoreo con varias lecturas de signos por turno. Sin cambio de esquema SQLCipher (sigue **v17**). Recomendable el mismo build en todas las Macs del turno para arranque homogéneo; no es obligatorio para datos clínicos ni ⇄.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.4.0
+
+- Mac: `R+-7.4.0-arm64.dmg`, `R+-7.4.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.4.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+

@@ -173,13 +173,20 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.3.2)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.4.0)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.4.0** | Arranque rápido (carga diferida), EA signos por turno, censo sin parpadeo, pase/expediente, UI tokens |
+| **7.3.8** | COAG separado de BH, balance NC en monitoreo, toast arranque DB, directorio LAN |
+| **7.3.7** | Censo LAN sin pérdida por readmisión, importar expediente desde Drive |
+| **7.3.6** | Identidad LAN por cliente, orchestrator modular, cultivo superset |
+| **7.3.5** | Purga LAN con guard, PIN lockout, persistencia anfitrión |
+| **7.3.4** | Perf lazy chunks, pendientes con vencimiento, censo virtual |
+| **7.3.3** | EA balance I/O mixto, evacuaciones sin CC, dieta kcal total |
 | **7.3.2** | Premium UI (nav + tokens), gráficas EA con pestañas, endurecimiento + LAN purge |
 | **7.3.1** | Manejo modal SOME, AAS SOAP por dosis, borrar perfil farmacoterapéutico |
 | **7.3.0** | Perfil histórico cross-mes, directorio LAN actividad, lab historial por fecha |
@@ -246,7 +253,7 @@ npm run build:ui
 # Ejecutar en modo desarrollo (prestart regenera el bundle si hace falta)
 npm start
 
-# Publicar release: versión en package.json, docs/RELEASE_NOTES_X.Y.Z.txt, README, release-notes-curated.mjs; luego:
+# Publicar release: versión en package.json, docs/RELEASE_NOTES_X.Y.Z.txt, README, data/release-notes-highlights.mjs; luego:
 npm run build:ui
 npm run bundle:renderer:prod   # incluido en prebuild:mac/win; corre explícito si solo publicas
 npm run release:publish -- --yes   # tests, commit, build Mac+Win, tag, GitHub release
