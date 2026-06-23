@@ -1,17 +1,19 @@
 /**
  * LAN host peer probe helpers — extracted from panel.mjs scanLanHosts.
  */
+import { probeLanHostBeacon } from '../../lan-host-subnet-discovery.mjs';
 
 /**
  * @param {string[]} urls
  * @param {string} teamCode
  * @param {{
  *   pingLanHostUrl: (url: string, teamCode: string) => Promise<boolean>,
- *   fetchLanHostRank: (url: string, teamCode: string) => Promise<object|null>,
+ *   fetchLanHostRank: (url: string, teamCode: string, opts?: object) => Promise<object|null>,
  *   reactToDiscoveredLanHost?: (url: string, teamCode: string) => Promise<boolean>,
  *   addPeer: (url: string) => void,
  *   pushMeta: (meta: object) => void,
  *   onJoined?: () => void,
+ *   beaconFirst?: boolean,
  * }} deps
  * @returns {Promise<boolean>} true when discovery short-circuited (host joined)
  */
@@ -19,9 +21,12 @@ export async function probeLanPeerUrls_(urls, teamCode, deps) {
   for (var i = 0; i < urls.length; i += 1) {
     var url = urls[i];
     if (!url) continue;
+    if (deps.beaconFirst) {
+      if (!(await probeLanHostBeacon(url))) continue;
+    }
     var alive = await deps.pingLanHostUrl(url, teamCode);
     if (!alive) continue;
-    var meta = await deps.fetchLanHostRank(url, teamCode);
+    var meta = await deps.fetchLanHostRank(url, teamCode, { skipPing: true });
     if (meta) deps.pushMeta(meta);
     deps.addPeer(url);
     if (typeof deps.reactToDiscoveredLanHost === 'function') {
@@ -38,7 +43,8 @@ export async function probeLanPeerUrls_(urls, teamCode, deps) {
  * @param {string[]} scanned
  * @param {string} teamCode
  * @param {{
- *   fetchLanHostRank: (url: string, teamCode: string) => Promise<object|null>,
+ *   pingLanHostUrl?: (url: string, teamCode: string) => Promise<boolean>,
+ *   fetchLanHostRank: (url: string, teamCode: string, opts?: object) => Promise<object|null>,
  *   prefersLanHosting: (meta: object) => boolean,
  *   wsPeerCount: number,
  *   showSplitBrainHint?: (hostUrl: string) => void,
@@ -49,7 +55,10 @@ export async function collectSubnetScanMetas_(scanned, teamCode, deps) {
   var peerMetas = [];
   var wardHosts = [];
   for (var hi = 0; hi < scanned.length; hi += 1) {
-    var peerMeta = await deps.fetchLanHostRank(scanned[hi], teamCode);
+    if (typeof deps.pingLanHostUrl === 'function') {
+      if (!(await deps.pingLanHostUrl(scanned[hi], teamCode))) continue;
+    }
+    var peerMeta = await deps.fetchLanHostRank(scanned[hi], teamCode, { skipPing: true });
     if (!peerMeta) continue;
     peerMetas.push(peerMeta);
     if (deps.prefersLanHosting(peerMeta)) wardHosts.push(scanned[hi]);

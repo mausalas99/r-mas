@@ -6,6 +6,7 @@ import { describeNativeBinary } from './lib/native-binary-format.mjs';
 import {
   cacheElectronBinaryIfValid,
   electronSqlcipherLoads,
+  ensureElectronRuntime,
   rememberElectronBinary,
   restoreElectronBinaryFromCache,
   sqlcipherDestAbs,
@@ -54,6 +55,12 @@ if (!needsRebuild) {
 }
 
 console.log('[rebuild-native-db] SQLCipher missing or wrong ABI for Electron — restoring…');
+
+if (!ensureElectronRuntime(root)) {
+  failOrWarn(
+    '[rebuild-native-db] Electron runtime missing. Run: node node_modules/electron/install.js && npm run rebuild:db-native'
+  );
+}
 
 if (restoreElectronBinaryFromCache(root) && electronSqlcipherLoads(root)) {
   console.log('[rebuild-native-db] Restored Electron binary from cache');

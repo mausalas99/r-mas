@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { restoreElectronBinaryFromCache, sqlcipherDestAbs, canProbeSqlcipherUnderElectron } from './sqlcipher-native.mjs';
+import { restoreElectronBinaryFromCache, sqlcipherDestAbs, canProbeSqlcipherUnderElectron, electronAppBinaryAbs } from './sqlcipher-native.mjs';
 
 test('canProbeSqlcipherUnderElectron requires matching platform and arch', () => {
   assert.equal(canProbeSqlcipherUnderElectron(process.platform, process.arch), true);
@@ -11,6 +11,12 @@ test('canProbeSqlcipherUnderElectron requires matching platform and arch', () =>
     const other = process.arch === 'arm64' ? 'x64' : 'arm64';
     assert.equal(canProbeSqlcipherUnderElectron('darwin', other), false);
   }
+});
+
+test('electronAppBinaryAbs points at Electron.app on darwin', () => {
+  if (process.platform !== 'darwin') return;
+  const p = electronAppBinaryAbs('/tmp/rplus');
+  assert.match(p, /Electron\.app\/Contents\/MacOS\/Electron$/);
 });
 
 test('restoreElectronBinaryFromCache returns false when cache missing', () => {

@@ -9,6 +9,7 @@ import {
 } from '../../clinical-ops-lan.mjs';
 import { getHostBundleBases, setHostBundleBases } from '../../host-bundle-bases.mjs';
 import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
+import { pingLanHostUrl } from '../../lan-surrogate-host.mjs';
 import { storage } from '../../storage.js';
 import { lanClient } from './runtime.mjs';
 import { isLanSessionConfiguredForRest, getLanTeamCodeFromConfig } from './transport.mjs';
@@ -72,6 +73,7 @@ export async function fetchClinicalOpsFromAlternateHost(hostUrl, roomId, options
   }
   const teamCode = getAlternateHostTeamCode(url);
   if (!teamCode) return false;
+  if (!(await pingLanHostUrl(url, teamCode))) return false;
 
   const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 5000);
   const ctrl = new AbortController();

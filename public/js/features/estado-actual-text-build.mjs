@@ -64,7 +64,9 @@ export function buildHiTempClause(v, snapAlt) {
   var tempPeak = v.tempPeak;
   var hiTemp = 'TEMPERATURA ' + num(tempActual) + ' °C';
   if (tempPeak != null && tempPeak !== '' && String(tempPeak) !== String(tempActual)) {
-    hiTemp += ', TEMPERATURA ' + num(tempPeak) + ' °C' + (snapAlt.tempPeak ? ' @ ' + snapAlt.tempPeak : '');
+    hiTemp += ' (PICO ' + num(tempPeak) + ' °C';
+    if (snapAlt.tempPeak) hiTemp += ' @ ' + snapAlt.tempPeak;
+    hiTemp += ')';
   } else if (snapAlt.temp) {
     hiTemp += ' @ ' + snapAlt.temp;
   }

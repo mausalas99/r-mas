@@ -254,6 +254,8 @@ test('syncDietKcalFromWeight no sobrescribe kcal total sin peso', () => {
 test('isDietaSuplemento reconoce suplemento sin calorías', () => {
   assert.equal(isDietaSuplemento('SUPLEMENTO'), true);
   assert.equal(isDietaSuplemento('Dieta suplemento'), true);
+  assert.equal(isDietaSuplemento('*SUPLEMENTO'), true);
+  assert.equal(isDietaSuplemento('* SUPLEMENTO'), true);
   assert.equal(isDietaSuplemento('NORMAL PICADA'), false);
   assert.equal(isDietaSuplemento(''), false);
 });
@@ -324,4 +326,34 @@ test('balanceTurno ignora turno con egresos NC', () => {
     ],
   };
   assert.equal(balanceTurno(monitoreo), 150);
+});
+
+test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', () => {
+  /** @type {any} */
+  var monitoreo = {
+    estadoClinico: {},
+    confirmado: {},
+    pendienteReceta: {},
+    historial: [
+      {
+        id: '1',
+        recordedAt: '2026-06-22T06:00:00.000Z',
+        vitals: { temp: 36 },
+        vitalSeries: {
+          temp: [
+            { value: 37.2, time: '08:00' },
+            { value: 38.5, time: '14:00' },
+          ],
+        },
+        glucometrias: [],
+        io: {},
+      },
+    ],
+    textoGuardado: { text: '', savedAt: null },
+  };
+  var snap = deriveSnapshot(monitoreo);
+  assert.equal(snap.vitals.temp, 38.5);
+  assert.equal(snap.vitals.tempPeak, 37.2);
+  assert.equal(snap.alteredAt.temp, '14:00');
+  assert.equal(snap.alteredAt.tempPeak, '08:00');
 });

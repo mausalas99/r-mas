@@ -561,6 +561,16 @@ test('parseIndicacionesPaste — dieta con columna VIA vacía colapsada (5 cols)
   assert.equal(looksLikeSomeIndicacionesPaste(line), true);
 });
 
+test('parseIndicacionesPaste — dieta con descripción desplazada a columna VIA', () => {
+  var line =
+    '22/06/2026 07:01:02 a.m.\tDIETAS\t\tNORMAL DIABETICA ALTA EN FIBRA\t1500 KCAL + 60 GR DE PROTEINA\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'NORMAL DIABETICA ALTA EN FIBRA');
+  assert.equal(r.dietas[0].kcal, 1500);
+  assert.equal(r.dietas[0].proteinG, 60);
+});
+
 test('parseIndicacionesPaste — bloque mixto con dieta colapsada', () => {
   var paste =
     '20/06/2026 07:49:38 a.m.\tCUIDADOS\tCOLOCAR SELLO VENOSO\t\t\t\tNW\n' +

@@ -82,6 +82,13 @@ appExpress.use((req, res, next) => {
   next();
 });
 
+/** frame-ancestors only applies via HTTP headers (ignored in <meta> CSP). */
+appExpress.use((_req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  next();
+});
+
 const rateLimitHandler = (req, res) => {
   applyLanCorsHeaders(req, res);
   res.status(429).json({ error: 'rate_limit_exceeded' });

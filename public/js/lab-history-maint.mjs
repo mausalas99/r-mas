@@ -288,7 +288,13 @@ export function runLabHistoryPostSaveMaintenance() {
     report.sourceDuplicates.length > 0 ||
     report.sameDateTimeConflicts.length > 0;
   if (noise) {
-    console.info('[R+ Laboratorio] Auditoría tras guardado — revisa window.__rpcLabAudit:', report);
+    try {
+      if (localStorage.getItem('rplus.debug-labs') === '1') {
+        console.info('[R+ Laboratorio] Auditoría tras guardado — revisa window.__rpcLabAudit:', report);
+      }
+    } catch (_dbg) {
+      void _dbg;
+    }
   }
   if (changed && report.patientsReprocessed.length) {
     report.patientsReprocessed.forEach(function (pid) {

@@ -59,6 +59,38 @@ export function dietNutrientBlobFromCols(cols) {
   return [norm[2], norm[4], norm[5]].map(trimStr).filter(Boolean).join(' ');
 }
 
+/**
+ * Descripción SOME cuando la columna tipo/dieta viene vacía o desplazada.
+ * @param {string[]} cols
+ * @param {string[]} norm
+ */
+export function resolveDietaDescripcionRaw(cols, norm) {
+  var primary = trimStr(cols[2]);
+  if (primary && !isDietNutrientCell(primary)) return primary;
+  var candidates = [trimStr(norm[2]), trimStr(norm[3])];
+  for (var i = 0; i < candidates.length; i += 1) {
+    var c = candidates[i];
+    if (c && !isDietNutrientCell(c)) return c;
+  }
+  return primary;
+}
+
+/**
+ * Huella estable para comparar dieta SOME vs estado clínico confirmado.
+ * @param {{ descripcion?: unknown, kcal?: unknown, proteinG?: unknown }} merged
+ */
+export function dietProposalFingerprint(merged) {
+  return (
+    String(merged && merged.descripcion != null ? merged.descripcion : '')
+      .trim()
+      .toUpperCase() +
+    '|' +
+    (merged && merged.kcal != null ? String(merged.kcal) : '') +
+    '|' +
+    (merged && merged.proteinG != null ? String(merged.proteinG) : '')
+  );
+}
+
 export function mergeDietaItems(dietas) {
   var list = Array.isArray(dietas) ? dietas : [];
   var parts = [];
@@ -68,6 +100,10 @@ export function mergeDietaItems(dietas) {
     var d = list[i];
     if (!d) continue;
     var desc = trimStr(d.descripcionRaw);
+    if (!desc) {
+      var det = trimStr(d.detalleRaw);
+      if (det && !isDietNutrientCell(det)) desc = det;
+    }
     if (desc) parts.push(desc);
     if (d.kcal != null) kcal = d.kcal;
     if (d.proteinG != null) proteinG = d.proteinG;

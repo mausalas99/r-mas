@@ -299,14 +299,15 @@ function buildRecetaProcessToast(parsed) {
   return msg + ". Omitidas " + parsed.skipped + " líneas" + (omit.length ? " (" + omit.join(", ") + ")" : "");
 }
 
-function applySalaDietFromParsed(activeId, parsed) {
-  if (!isModeSala(rt.getSettings()) || !parsed.dietas.length) return;
+function applyDietFromParsedReceta(activeId) {
+  var block = medRecetaByPatient[activeId];
+  if (!block || !block.dietas || !block.dietas.length) return;
   var patient = patients.find(function (p) {
     return String(p.id) === String(activeId);
   });
   if (!patient) return;
   ensureMonitoreo(patient);
-  applyDietProposalFromRecetaBlock(patient.monitoreo, medRecetaByPatient[activeId], { force: true });
+  applyDietProposalFromRecetaBlock(patient.monitoreo, block, { force: true });
 }
 
 function commitProcessedReceta(activeId, raw, parsed) {
@@ -329,7 +330,7 @@ function commitProcessedReceta(activeId, raw, parsed) {
     if (shouldAutoSelectSoap(it)) sel[it.id] = true;
   });
   medNotaSelectionByPatient[activeId] = sel;
-  applySalaDietFromParsed(activeId, parsed);
+  applyDietFromParsedReceta(activeId);
   saveState();
   onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
   invalidateEaPanelCache();

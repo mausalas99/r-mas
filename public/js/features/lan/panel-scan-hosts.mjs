@@ -84,7 +84,9 @@ async function scanWardPeerBatch(deps, teamCode, wardProbeUrls, peerMetasForEsca
   return probeLanPeerUrls_(
     wardProbeUrls,
     teamCode,
-    makePeerProbeCtx(deps, teamCode, peerMetasForEscalation, addPeer)
+    Object.assign(makePeerProbeCtx(deps, teamCode, peerMetasForEscalation, addPeer), {
+      beaconFirst: true,
+    })
   );
 }
 
@@ -112,6 +114,7 @@ async function scanSubnetPeers(deps, teamCode, ownUrl, wsPeers, peerMetasForEsca
   _lastSubnetLanScanAt = Date.now();
   var scanned = await discoverLanHostsConcurrent(teamCode, ownUrl, subnetScanOptions());
   var subnetMeta = await collectSubnetScanMetas_(scanned, teamCode, {
+    pingLanHostUrl,
     fetchLanHostRank,
     prefersLanHosting,
     wsPeerCount: wsPeers.length,

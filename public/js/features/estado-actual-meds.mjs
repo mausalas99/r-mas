@@ -93,9 +93,9 @@ export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
   if (!monitoreo || !recetaBlock || !Array.isArray(recetaBlock.dietas) || !recetaBlock.dietas.length) {
     return false;
   }
-  if (shouldSkipDietProposal(monitoreo, opts)) return false;
   var merged = mergedDietFromReceta(recetaBlock.dietas);
   if (!mergedDietHasContent(merged)) return false;
+  if (shouldSkipDietProposal(monitoreo, opts, merged)) return false;
   writeDietProposal(monitoreo, merged);
   return true;
 }

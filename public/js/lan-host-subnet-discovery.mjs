@@ -7,7 +7,6 @@ import {
   orderedSubnetHosts,
   subnetPrefixFromIpv4,
 } from '../interno/host-discovery.mjs';
-import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 
 const LAN_BEACON_PATH = '/api/lan/v1/beacon';
 const LAN_PING_PATH = '/api/lan/v1/ping';
@@ -72,8 +71,6 @@ export async function probeLanHostBase(base, teamCode, signal) {
   try {
     const code = String(teamCode || '').trim();
     if (!normalized || !code) return null;
-    const ok = await pingLanHostUrl(normalized, code);
-    if (!ok) return null;
     const res = await fetch(`${normalized}${LAN_PING_PATH}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${code}` },

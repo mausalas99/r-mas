@@ -87,7 +87,7 @@ export function buildRegistroFormMarkup() {
     '<button type="button" class="ea-btn ea-btn--ghost ea-registro-paste-btn" onclick="openEstadoActualPasteModal({ skipRegistro: true })">Pegar monitoreo</button>' +
     '<div class="ea-registro-modal-actions">' +
     '<button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button>' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="eaPanelBridge.registrarEstadoActualMedicion()">Registrar</button>' +
+    '<button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button>' +
     '</div>' +
     '</footer>' +
     '</div>'

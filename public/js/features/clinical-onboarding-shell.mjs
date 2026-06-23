@@ -59,7 +59,7 @@ export function buildSyncModeChoiceBodyHtml() {
               ${MODE_LOCAL_ICON}
               <span class="clinical-onboard-mode-card-title">Solo este equipo</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Sin LAN ni LiveSync: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
+            <span class="clinical-onboard-mode-card-desc">Para médicos ajenos a medicina interna: sin LAN ni LiveSync; expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
           </button>
         </div>`;
 }

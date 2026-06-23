@@ -96,7 +96,7 @@ export async function openMiRotacion() {
   if (isClinicalLocalOnlyMode(readRpcSettings())) {
     if (typeof window.showToast === 'function') {
       window.showToast(
-        'Mi rotación y equipos LAN no están disponibles en modo solo este equipo.',
+        'Mi rotación y equipos LAN no están disponibles en modo solo este equipo (ajeno a medicina interna).',
         'info'
       );
     }

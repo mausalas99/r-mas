@@ -57,7 +57,8 @@ export function mergeVitalSeriesFromLegacyVitals(out, vit, alt) {
   for (var vi = 0; vi < VITAL_BASE_KEYS.length; vi++) {
     var key = VITAL_BASE_KEYS[vi];
     if (!out[key]) out[key] = [];
-    if (vit[key] != null && vit[key] !== '') {
+    var hadStoredSeries = out[key].length > 0;
+    if (vit[key] != null && vit[key] !== '' && !hadStoredSeries) {
       pushVitalReading(out[key], {
         value: Number(vit[key]),
         time: alt[key] ? String(alt[key]) : undefined,

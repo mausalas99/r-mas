@@ -60,7 +60,7 @@ export function renderLocalOnlyProfilePanel(host, settings) {
   host.innerHTML = buildOnboardingStageHtml({
     title: 'Perfil local',
     leadHtml:
-      '<p>R+ no usará red de guardia. Solo necesitamos cómo firmar notas y documentos en esta Mac.</p>',
+      '<p>R+ no usará red de guardia. Modo pensado para médicos ajenos a medicina interna; solo necesitamos cómo firmar notas y documentos en esta Mac.</p>',
     stepperIndex: 2,
     bodyHtml: `
       <div class="clinical-onboard-form-shell clinical-onboard-form-shell--narrow">
@@ -132,7 +132,7 @@ export async function handleLocalOnlyProfileSubmit(ev) {
     if (result.error) toast(result.error, 'error');
     return;
   }
-  toast('Listo. R+ queda solo en este equipo, sin sincronización LAN.', 'success');
+  toast('Listo. R+ queda solo en este equipo (ajeno a medicina interna), sin sincronización LAN.', 'success');
   await refreshOnboardingHost();
 }
 

@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECUR
   process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 }
 
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -19,6 +19,7 @@ const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
+const { installElectronLanCors } = require('./lib/electron-lan-cors.cjs');
 
 // Aceleración por hardware ACTIVADA por defecto: las animaciones del premium UI
 // (transform/opacity/backdrop-filter) componen en GPU; en software se ven
@@ -1010,6 +1011,7 @@ async function unlockClinicalDbAtStartup(dbManager) {
 
 app.whenReady().then(async () => {
   try {
+    installElectronLanCors(session.defaultSession);
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();

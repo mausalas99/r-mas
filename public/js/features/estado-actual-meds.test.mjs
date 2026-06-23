@@ -245,11 +245,23 @@ test('applyDietProposalFromRecetaBlock no repropone dieta ya confirmada', () => 
   assert.equal(m.pendienteReceta.dieta, '');
 });
 
-test('applyDietProposalFromRecetaBlock no repropone si estado clínico ya tiene dieta', () => {
+test('applyDietProposalFromRecetaBlock propone dieta SOME aunque ec.dieta tenga texto sin confirmar', () => {
   const m = emptyMonitoreo();
-  m.estadoClinico.dieta = 'DIETA MANUAL';
-  const block = { dietas: [{ descripcionRaw: 'DESDE SOME', kcal: 1500, proteinG: 60 }] };
-  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  m.estadoClinico.dieta = 'SUPLEMENTO';
+  const block = { dietas: [{ descripcionRaw: 'NORMAL DIABETICA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.pendienteReceta.dieta, 'NORMAL DIABETICA ALTA EN FIBRA');
+  assert.equal(m.pendienteReceta.kcal, '1500');
+});
+
+test('applyDietProposalFromRecetaBlock force propone cambio sobre dieta confirmada distinta', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'SUPLEMENTO';
+  m.confirmado.dieta = true;
+  const block = { dietas: [{ descripcionRaw: 'NORMAL DIABETICA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block, { force: true }), true);
+  assert.equal(m.pendienteReceta.dieta, 'NORMAL DIABETICA ALTA EN FIBRA');
+  assert.equal(m.estadoClinico.dieta, 'SUPLEMENTO');
 });
 
 test('estadoClinicoForDisplay muestra propuesta de dieta pendiente', () => {

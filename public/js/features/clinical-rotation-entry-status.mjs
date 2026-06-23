@@ -8,7 +8,7 @@ import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 /** @returns {{ primary: string, sub: string, pending: boolean }|null} */
 export function buildEntryStatusEarly() {
   if (isClinicalLocalOnlyMode(readRpcSettings())) {
-    return { primary: 'Solo este equipo', sub: 'Sin LAN ni Mi rotación', pending: false };
+    return { primary: 'Solo este equipo', sub: 'Ajeno a medicina interna · sin LAN', pending: false };
   }
   if (needsClinicalOnboarding()) {
     return {

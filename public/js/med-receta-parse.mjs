@@ -7,6 +7,7 @@ import {
   extractDietNutrients,
   dietNutrientBlobFromCols,
   normalizeDietaCols,
+  resolveDietaDescripcionRaw,
 } from './med-receta-diet.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { classifyMedicationSoapCategory } from './med-receta-soap.mjs';
@@ -35,7 +36,7 @@ function parseDietaRow(cols, lineIndex) {
   var nutrients = extractDietNutrients(dietNutrientBlobFromCols(norm));
   return {
     id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
-    descripcionRaw: trimStr(cols[2]),
+    descripcionRaw: resolveDietaDescripcionRaw(cols, norm),
     detalleRaw: detalleRaw,
     kcal: nutrients.kcal,
     proteinG: nutrients.proteinG,

@@ -13,8 +13,13 @@ test('formatNmDietClause dieta calórica con proteína (EA)', () => {
 
 test('formatNmDietClause suplemento sin calorías', () => {
   assert.equal(formatNmDietClause({ dieta: 'SUPLEMENTO' }, '2000'), 'DIETA SUPLEMENTO');
+  assert.equal(formatNmDietClause({ dieta: '*SUPLEMENTO' }, '2000'), 'DIETA SUPLEMENTO');
   assert.equal(
     formatNmDietClause({ dieta: 'SUPLEMENTO', kcalKg: '25', proteinG: '60' }, '1750'),
+    'DIETA SUPLEMENTO'
+  );
+  assert.equal(
+    formatNmDietClause({ dieta: '*SUPLEMENTO', kcalKg: '25', proteinG: '60' }, '1750'),
     'DIETA SUPLEMENTO'
   );
 });

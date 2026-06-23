@@ -12,6 +12,8 @@ import {
   deriveIoFromHistorial_,
   deriveVitalSeriesFromHistorial_,
 } from './estado-actual-data-snapshot.mjs';
+import { VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
+import { vitalSeriesToLegacyFields } from './estado-actual-vital-series.mjs';
 import { MED_FIELD_KEYS, DIET_CALORIC_KEYS } from './estado-actual-data-constants.mjs';
 import { buildEaMonitoreoRevision } from './estado-actual-data-revision.mjs';
 import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
@@ -167,6 +169,26 @@ function historialSortedAsc(historial) {
 }
 
 /**
+ * SOAP/snapshot vitals follow vitalSeries when present (matches Signos vitales strip).
+ * @param {{ vitals: Record<string, unknown>, alteredAt: Record<string, string>, vitalSeries: Record<string, unknown> }} snap
+ */
+function overlayVitalsFromSeries(snap) {
+  var series = snap.vitalSeries;
+  if (!series || typeof series !== 'object') return;
+  var hasSeries = VITAL_BASE_KEYS.some(function (k) {
+    return Array.isArray(series[k]) && series[k].length > 0;
+  });
+  if (!hasSeries) return;
+  var leg = vitalSeriesToLegacyFields(/** @type {Record<string, Array<{ value: number, time?: string }>>} */ (series));
+  Object.keys(leg.vitals).forEach(function (k) {
+    if (leg.vitals[k] != null) snap.vitals[k] = leg.vitals[k];
+  });
+  Object.keys(leg.alteredAt).forEach(function (k) {
+    if (leg.alteredAt[k]) snap.alteredAt[k] = leg.alteredAt[k];
+  });
+}
+
+/**
  * @param {unknown} monitoreoLike
  */
 export function deriveSnapshot(monitoreoLike) {
@@ -190,6 +212,7 @@ export function deriveSnapshot(monitoreoLike) {
   snap.bombaInsulina = gluBlock.bombaInsulina;
   snap.io = deriveIoFromHistorial_(sortedAsc);
   snap.vitalSeries = deriveVitalSeriesFromHistorial_(sortedAsc);
+  overlayVitalsFromSeries(snap);
   return snap;
 }
 
@@ -303,16 +326,31 @@ export function resolveDietWeightKg(opts) {
 }
 
 /**
+ * Normaliza etiqueta SOME de tipo dieta (quita *, prefijo DIETA, espacios).
+ * @param {unknown} dietaText
+ * @returns {string}
+ */
+export function normalizeDietaTypeLabel(dietaText) {
+  return String(dietaText || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/^[\*\u2022\-]+\s*/g, '')
+    .replace(/\s*[\*\u2022\-]+$/g, '')
+    .toUpperCase()
+    .replace(/^DIETA\s+/, '');
+}
+
+/**
  * Dieta SOME tipo suplemento: sin requerimiento calórico en EA.
  * @param {unknown} dietaText
  * @returns {boolean}
  */
 export function isDietaSuplemento(dietaText) {
-  var t = String(dietaText || '')
-    .trim()
-    .replace(/\s+/g, ' ');
+  var t = normalizeDietaTypeLabel(dietaText);
   if (!t) return false;
-  return t.toUpperCase().replace(/^DIETA\s+/, '') === 'SUPLEMENTO';
+  if (t === 'SUPLEMENTO') return true;
+  if (!t.startsWith('SUPLEMENTO')) return false;
+  return !/\b(NORMAL|BLANDA|LIQUIDA|LIQUID[OA]|PICAD[OA]|DIABETIC[OA]|HIPERPROTEIC[OA]|RESTRINGID[OA])\b/.test(t);
 }
 
 /**

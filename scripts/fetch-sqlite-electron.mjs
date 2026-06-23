@@ -13,7 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { describeNativeBinary, isMachO, isWindowsPe, readBinaryHeader } from './lib/native-binary-format.mjs';
 import {
   canProbeSqlcipherUnderElectron,
+  electronRuntimeReady,
   electronSqlcipherLoads,
+  ensureElectronRuntime,
   rememberElectronBinary,
   sqlcipherDestAbs,
   stashSqlcipherBinaryForArch,
@@ -90,6 +92,14 @@ async function main() {
     process.exit(0);
   }
 
+  if (canProbeSqlcipherUnderElectron(platform, arch) && !ensureElectronRuntime(root)) {
+    console.error(
+      '[fetch-sqlite-electron] Electron runtime is missing (node_modules/electron/dist incomplete). ' +
+        'Run: node node_modules/electron/install.js'
+    );
+    process.exit(1);
+  }
+
   if (
     !strict &&
     describeNativeBinary(destFile, platform).ok &&
@@ -116,7 +126,17 @@ async function main() {
 
   if (canProbeSqlcipherUnderElectron(platform, arch)) {
     if (!electronSqlcipherLoads(root)) {
-      console.error('[fetch-sqlite-electron] Installed prebuild does not load under Electron');
+      if (!electronRuntimeReady(root)) {
+        console.error(
+          '[fetch-sqlite-electron] Electron runtime missing after install attempt. ' +
+            'Run: node node_modules/electron/install.js'
+        );
+      } else {
+        console.error(
+          '[fetch-sqlite-electron] Installed prebuild does not load under Electron (ABI mismatch). ' +
+            'Try: npm run rebuild:db-native'
+        );
+      }
       process.exit(1);
     }
     rememberElectronBinary(root);

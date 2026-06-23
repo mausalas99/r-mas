@@ -2,15 +2,56 @@
  * Shared SQLCipher native helpers: Electron probe + on-disk Electron backup.
  * better-sqlite3 lazy-loads the .node on first Database() — probes must open :memory:.
  */
-import { spawnSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 export const SQLCIPHER_NODE_REL = 'node_modules/better-sqlite3-multiple-ciphers/build/Release/better_sqlite3.node';
 
 const libDir = path.dirname(fileURLToPath(import.meta.url));
 export const repoRoot = path.join(libDir, '..', '..');
+const require = createRequire(import.meta.url);
+
+/** @param {string} [root] */
+export function electronAppBinaryAbs(root = repoRoot) {
+  if (process.platform === 'win32') {
+    return path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
+  }
+  if (process.platform === 'darwin') {
+    return path.join(
+      root,
+      'node_modules',
+      'electron',
+      'dist',
+      'Electron.app',
+      'Contents',
+      'MacOS',
+      'Electron'
+    );
+  }
+  return path.join(root, 'node_modules', 'electron', 'dist', 'electron');
+}
+
+/** @param {string} [root] */
+export function electronRuntimeReady(root = repoRoot) {
+  return fs.existsSync(electronAppBinaryAbs(root));
+}
+
+/**
+ * Download Electron.app when npm postinstall was skipped or dist/ is incomplete.
+ * @param {string} [root]
+ * @returns {boolean}
+ */
+export function ensureElectronRuntime(root = repoRoot) {
+  if (electronRuntimeReady(root)) return true;
+  const installScript = path.join(root, 'node_modules', 'electron', 'install.js');
+  if (!fs.existsSync(installScript)) return false;
+  console.log('[sqlcipher-native] Electron runtime missing — running electron/install.js…');
+  execSync(`node "${installScript}"`, { cwd: root, stdio: 'inherit', timeout: 300_000 });
+  return electronRuntimeReady(root);
+}
 
 /** @param {string} [root] */
 export function sqlcipherDestAbs(root = repoRoot) {
@@ -65,6 +106,7 @@ export function canProbeSqlcipherUnderElectron(platform, arch) {
  * @param {string} [root]
  */
 export function electronSqlcipherLoads(root = repoRoot) {
+  if (!electronRuntimeReady(root)) return false;
   const electronBin = electronBinAbs(root);
   if (!fs.existsSync(electronBin)) return false;
   const probeScript = electronSqlcipherProbeScript(root);

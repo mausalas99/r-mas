@@ -17,6 +17,7 @@ import {
   resolveHostElectionByStartedAt,
   resolveHostElectionByUrl,
 } from './lan-host-rank-election.mjs';
+import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 
 const RANK_PRIORITY = { R1: 1, R2: 2, R3: 3, R4: 4, Admin: 5 };
 
@@ -146,14 +147,19 @@ export function shouldSupersedeRank(peerRank, myRank) {
 /**
  * @param {string} hostUrl
  * @param {string} teamCode
+ * @param {{ skipPing?: boolean }} [opts]
  * @returns {Promise<{ rank: string, isProgramAdmin: boolean } | null>}
  */
-export async function fetchLanHostRank(hostUrl, teamCode) {
+export async function fetchLanHostRank(hostUrl, teamCode, opts = {}) {
   const base = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
   const code = String(teamCode || '').trim();
   if (!base || !code) return null;
+  if (!opts.skipPing) {
+    const alive = await pingLanHostUrl(base, code);
+    if (!alive) return null;
+  }
   try {
     const resp = await fetch(`${base}/api/lan/v1/host-rank`, {
       headers: { Authorization: `Bearer ${code}` },

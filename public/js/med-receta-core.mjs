@@ -16,6 +16,8 @@ export {
   dietNutrientBlobFromCols,
   mergeDietaItems,
   buildDietProposalText,
+  resolveDietaDescripcionRaw,
+  dietProposalFingerprint,
 } from './med-receta-diet.mjs';
 
 export {

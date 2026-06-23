@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
+import { buildHiTempClause } from './estado-actual-text-build.mjs';
 import { emptyMonitoreo, deriveSnapshot } from './estado-actual-data.mjs';
 
 test('buildEstadoActualText usa placeholders y omite línea S', () => {
@@ -111,4 +112,43 @@ test('buildEstadoActualText dieta suplemento sin requerimiento calórico', () =>
   assert.match(nmLine, /^NM: DIETA SUPLEMENTO \|\|/);
   assert.doesNotMatch(nmLine, /CALCULADA A/);
   assert.doesNotMatch(nmLine, /KCAL\/KG/);
+});
+
+test('buildEstadoActualText SOME *SUPLEMENTO sin cláusula calórica', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = '*SUPLEMENTO';
+  m.estadoClinico.kcalKg = '25';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  const nmLine = text.split('\n').find((line) => line.startsWith('NM:'));
+  assert.match(nmLine, /^NM: DIETA SUPLEMENTO \|\|/);
+  assert.doesNotMatch(nmLine, /CALCULADA A/);
+});
+
+test('buildHiTempClause documenta pico en paréntesis, no duplica TEMPERATURA', () => {
+  const clause = buildHiTempClause({ temp: 36, tempPeak: 37.2 }, { tempPeak: '08:00' });
+  assert.equal(clause, 'TEMPERATURA 36 °C (PICO 37.2 °C @ 08:00)');
+});
+
+test('buildEstadoActualText temperatura con pico en turno', () => {
+  const m = emptyMonitoreo();
+  m.historial = [
+    {
+      id: '1',
+      recordedAt: '2026-06-22T06:00:00.000Z',
+      vitals: { temp: 36, fr: 15, sat: 97, tas: 120, tad: 60, fc: 98 },
+      vitalSeries: {
+        temp: [
+          { value: 37.2, time: '08:00' },
+          { value: 36, time: '16:00' },
+        ],
+      },
+      glucometrias: [],
+      io: {},
+    },
+  ];
+  const snap = deriveSnapshot(m);
+  const text = buildEstadoActualText(m.estadoClinico, snap, {}, {});
+  const hiLine = text.split('\n').find((line) => line.startsWith('HI:'));
+  assert.match(hiLine, /TEMPERATURA 36 °C \(PICO 37\.2 °C @ 08:00\)/);
+  assert.doesNotMatch(hiLine, /TEMPERATURA.*TEMPERATURA/);
 });

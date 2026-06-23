@@ -39,6 +39,12 @@ import { renderEstadoActualPanel, navigateToEstadoActualPanel } from './estado-a
 eaPanelBridge.renderEstadoActualPanel = renderEstadoActualPanel;
 eaPanelBridge.registrarEstadoActualMedicion = registrarEstadoActualMedicion;
 
+try {
+  if (typeof window !== 'undefined') window.eaPanelBridge = eaPanelBridge;
+} catch (_eaBridge) {
+  void _eaBridge;
+}
+
 export { registerEstadoActualPanelRuntime, invalidateEaPanelCache };
 export {
   formatEaSavedLabel,

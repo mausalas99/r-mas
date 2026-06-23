@@ -54,4 +54,19 @@ describe('estado-actual-vital-series', () => {
     assert.equal(leg.vitals.temp, 38.5);
     assert.equal(leg.vitals.tempPeak, 37.2);
   });
+
+  it('legacy vitals do not duplicate when vitalSeries already has readings', () => {
+    var med = {
+      vitals: { temp: 36 },
+      vitalSeries: {
+        temp: [
+          { value: 37.2, time: '08:00' },
+          { value: 38.5, time: '14:00' },
+        ],
+      },
+    };
+    var series = vitalSeriesFromMedicion(med);
+    assert.equal(series.temp.length, 2);
+    assert.equal(series.temp[1].value, 38.5);
+  });
 });
