@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.4.0](https://github.com/mausalas99/r-mas/releases/tag/v7.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.4.1](https://github.com/mausalas99/r-mas/releases/tag/v7.4.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.4.1 (dieta EA, LAN ward y CORS Electron)
+
+- **Dieta SOME en EA** — Suplemento, columnas desplazadas y re-aplicar receta sin perder confirmación.
+- **Signos y SOAP** — Vitals alineados a la tira de monitoreo; pico de temperatura con formato claro.
+- **LAN ward** — Beacon-first al escanear peers; CORS en Electron para API `:3738`.
+- **Seguridad** — `frame-ancestors` por header en el servidor LAN.
+
+Notas: `docs/RELEASE_NOTES_7.4.1.txt`.
 
 ## R+ 7.4.0 (arranque rápido, monitoreo EA y UI pulida)
 
@@ -173,13 +182,14 @@ Notas: `docs/RELEASE_NOTES_7.2.6.txt`.
 
 Las release notes detalladas de cada versión están en:
 
-- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.4.0)
+- **[CHANGELOG.md](./CHANGELOG.md)** — Listado cronológico completo de todas las versiones (5.0.1 → 7.4.1)
 - `docs/RELEASE_NOTES_X.Y.Z.txt` — Archivos individuales por versión
 
 ### Versiones recientes
 
 | Versión | Destacado |
 |---------|----------|
+| **7.4.1** | Dieta SOME en EA, signos/SOAP alineados, LAN beacon + CORS Electron |
 | **7.4.0** | Arranque rápido (carga diferida), EA signos por turno, censo sin parpadeo, pase/expediente, UI tokens |
 | **7.3.8** | COAG separado de BH, balance NC en monitoreo, toast arranque DB, directorio LAN |
 | **7.3.7** | Censo LAN sin pérdida por readmisión, importar expediente desde Drive |

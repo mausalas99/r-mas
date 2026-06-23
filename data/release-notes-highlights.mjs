@@ -1032,10 +1032,34 @@ var RELEASE_NOTES_737 = [
   },
 ];
 
+var RELEASE_NOTES_741 = [
+  {
+    title: 'Dieta SOME más fiable',
+    body:
+      'Suplemento bien clasificado; parser tolera columnas desplazadas. Al re-aplicar receta, no pisa dieta confirmada si la huella coincide.',
+  },
+  {
+    title: 'Signos alineados al SOAP',
+    body:
+      'El texto de monitoreo usa las mismas lecturas que la <strong>tira de signos</strong>. Pico de temperatura con formato <strong>(PICO … °C)</strong>.',
+  },
+  {
+    title: 'LAN en la subred',
+    body:
+      'Escaneo con <strong>beacon</strong> antes de ping. Electron inyecta <strong>CORS</strong> para consultar peers en <code>:3738</code> sin depender de cada anfitrión.',
+  },
+  {
+    title: 'Sin migración de base',
+    body:
+      'Esquema SQLCipher sigue en <strong>v17</strong>. Instala <strong>7.4.1</strong> en el turno si usáis ⇄ o dieta desde SOME.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_740;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_741;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.4.1': RELEASE_NOTES_741,
   '7.4.0': RELEASE_NOTES_740,
   '7.3.8': RELEASE_NOTES_738,
   '7.3.7': RELEASE_NOTES_737,
