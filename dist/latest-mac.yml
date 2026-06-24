@@ -1,35 +1,33 @@
-version: 7.4.1
+version: 7.5.0
 files:
-  - url: R+-7.4.1-arm64.zip
-    sha512: ilUTRRAUuFtFhUUffpojSIlSKGqbRdqol1p4ogI8kAAKtJ7MG/dnP781UHzlPGBpuMyTTiC4PJkGR0jyd2hegA==
-    size: 129623174
-  - url: R+-7.4.1-arm64.dmg
-    sha512: VMraftdosNJwDzryC99VySwvgFFoSOIe13pVvsQgLAFekR/Yk9p6MCpydiZw+jl9FWG0tiyfVcCf4FhguAGHXw==
-    size: 134993307
-  - url: R+-7.4.1-x64.zip
-    sha512: uFPV2YVDX22T7GSuxzR4BpEoGmxkklYym/19IumoW4hP2jaf37f162u1Ju1uww7ReIxYAREN9f6DsquOL82w1w==
-    size: 137997282
-  - url: R+-7.4.1-x64.dmg
-    sha512: ws95WkcdBAKpqC7o5CBLCk+9/+0HIWWbfe4ZaHLwMMV8hhZiWwWCXZSK38EBjaMYsyTFok9MDeynQGYMkRRT4w==
-    size: 143415996
-path: R+-7.4.1-arm64.zip
-sha512: ilUTRRAUuFtFhUUffpojSIlSKGqbRdqol1p4ogI8kAAKtJ7MG/dnP781UHzlPGBpuMyTTiC4PJkGR0jyd2hegA==
-releaseDate: '2026-06-23T15:19:29.000Z'
+  - url: R+-7.5.0-arm64.zip
+    sha512: yuIwCEHfEZKXIj2yXUPMka6LqIlCvRXyuInFqllQbkum6guKeoj4i/Zh5e65CsIDnFq2rwKHSvcMh+SBQBy5ew==
+    size: 129702339
+  - url: R+-7.5.0-arm64.dmg
+    sha512: HZ79sOI+McQNg7stP1KROdSPnHXTyvzDqgHda+pc4aXP5ESXJ1QneyDRZeGkKEfaozUxBemR1cHE60GDpkMdlw==
+    size: 135080058
+  - url: R+-7.5.0-x64.zip
+    sha512: WCgobJGtH7pXEZhPaYF3C3eAJkPCH1fe6Z+3B2ifKtxOPDz99u2g24QU41dFsgXcENLSeGS/6HgJuczsEv9wcg==
+    size: 138076420
+  - url: R+-7.5.0-x64.dmg
+    sha512: 9YmoFiTXYw3dPsJTyhtA4EPdYGxrxtengsdwf668HE6o2Qy9b6xop+VRrJ7cRe3uQHKdmzyjcp7wr6MSvR+/rA==
+    size: 143517741
+path: R+-7.5.0-arm64.zip
+sha512: yuIwCEHfEZKXIj2yXUPMka6LqIlCvRXyuInFqllQbkum6guKeoj4i/Zh5e65CsIDnFq2rwKHSvcMh+SBQBy5ew==
+releaseDate: '2026-06-24T15:58:07.000Z'
 releaseNotes: |
-  Sobre 7.4.0: corrige propuestas de dieta SOME en Estado actual (suplemento, columnas desplazadas y re-aplicar receta); alinea signos vitales del SOAP con la tira de monitoreo; mejora descubrimiento LAN en la red de guardia; e inyecta CORS en Electron para consultar peers en :3738.
+  Sobre 7.4.1: cola de custodia Lumify / EKG / Ultrasonido con tablero en escritorio, micro-app móvil en /equipos y opción cloud en Cloudflare (sin Mac anfitrión); panel ⇄ rediseñado con héroe de estado/PIN y filas unificadas; Ajustes alinea botones fantasma en paneles internos.
   
-  Estado actual — dieta SOME — Detección de SUPLEMENTO más robusta (no confunde con “suplemento proteico”, etc.). Al forzar receta, compara huella SOME vs dieta confirmada antes de omitir. Parser recupera descripción cuando la columna tipo viene vacía o desplazada.
+  Equipos — cola del programa — Un Lumify, un EKG y un ultrasonido compartidos a nivel de internado. Lista de espera, checkout/devolución con fotos comprimidas (Lumify y EKG), reportes de material/falla; fotos visibles en admin 14 días (purga diaria 06:00 UTC solo de expiradas).
   
-  Estado actual — signos y SOAP — Snapshot y texto usan vitalSeries cuando hay lecturas (misma fuente que la tira de signos). Pico de temperatura en SOAP: TEMPERATURA X °C (PICO Y °C @ …).
+  Equipos — móvil — QR + token en /equipos para MIP/residentes: retiro, devolución, alertas y cola en tiempo real (WebSocket).
   
-  LAN — descubrimiento — Escaneo ward con beacon antes de ping; menos probes redundantes al rankear hosts en subred.
+  Equipos — escritorio — Tablero en Modo Guardia, panel QR para R4/Admin, historial de sesiones y failover temporal si el anfitrión de equipos cae.
   
-  LAN — CORS en Electron — El renderer puede hacer fetch a APIs LAN de peers en red privada sin depender del CORS de cada Mac anfitriona.
+  Equipos — cloud (opcional) — Cola en Cloudflare Worker + D1 + R2 cuando no hay Mac anfitrión en la red; configuración en escritorio y badge de estado del enlace público.
   
-  Arranque / SQLCipher — Si falta Electron.app, scripts pueden ejecutar electron/install.js antes de probar el binario nativo.
+  Panel ⇄ — Zona héroe con estado en una línea y PIN en monoespaciado; filas settings-card-stack unificadas (iPad, salas, diagnóstico, toggles); alertas de conflicto/offline como franja, no tarjeta competidora.
   
-  Seguridad LAN — frame-ancestors 'none' y X-Frame-Options: DENY vía headers HTTP (la meta CSP no aplica frame-ancestors).
+  Ajustes — Misma gramática de filas en paneles internos; acciones secundarias en botón fantasma en lugar de paredes de botones morados.
   
-  Onboarding — Perfil local aclara modo para médicos ajenos a medicina interna (sin ⇄).
-  
-  Laboratorio — Log de auditoría post-guardado solo con localStorage rplus.debug-labs=1.
+  Base clínica — Esquema SQLCipher v17 → v19 (tablas equipos_*, fotos con photo_kind=alert en reportes).

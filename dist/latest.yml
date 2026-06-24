@@ -1,26 +1,24 @@
-version: 7.4.1
+version: 7.5.0
 files:
-  - url: R+-7.4.1-x64.exe
-    sha512: EmiwcxtC/vNd9nbSZoPwZs9MM9hkC/L9RNJKKYnhn/u/w6gccsueWDcH1CIpF48J+EGsbSSfyxBmrcZKPC2ySA==
-    size: 115237297
-path: R+-7.4.1-x64.exe
-sha512: EmiwcxtC/vNd9nbSZoPwZs9MM9hkC/L9RNJKKYnhn/u/w6gccsueWDcH1CIpF48J+EGsbSSfyxBmrcZKPC2ySA==
-releaseDate: '2026-06-23T15:19:29.000Z'
+  - url: R+-7.5.0-x64.exe
+    sha512: Y/COH72b4Suul2FFbsO8olvsIj7lYW7bMGV2/8g5S+xvY+x+MmeMneDVjkQQZlOCSEm5iar1/Pv74gjuKh7wBg==
+    size: 115299242
+path: R+-7.5.0-x64.exe
+sha512: Y/COH72b4Suul2FFbsO8olvsIj7lYW7bMGV2/8g5S+xvY+x+MmeMneDVjkQQZlOCSEm5iar1/Pv74gjuKh7wBg==
+releaseDate: '2026-06-24T15:58:07.000Z'
 releaseNotes: |
-  Sobre 7.4.0: corrige propuestas de dieta SOME en Estado actual (suplemento, columnas desplazadas y re-aplicar receta); alinea signos vitales del SOAP con la tira de monitoreo; mejora descubrimiento LAN en la red de guardia; e inyecta CORS en Electron para consultar peers en :3738.
+  Sobre 7.4.1: cola de custodia Lumify / EKG / Ultrasonido con tablero en escritorio, micro-app móvil en /equipos y opción cloud en Cloudflare (sin Mac anfitrión); panel ⇄ rediseñado con héroe de estado/PIN y filas unificadas; Ajustes alinea botones fantasma en paneles internos.
   
-  Estado actual — dieta SOME — Detección de SUPLEMENTO más robusta (no confunde con “suplemento proteico”, etc.). Al forzar receta, compara huella SOME vs dieta confirmada antes de omitir. Parser recupera descripción cuando la columna tipo viene vacía o desplazada.
+  Equipos — cola del programa — Un Lumify, un EKG y un ultrasonido compartidos a nivel de internado. Lista de espera, checkout/devolución con fotos comprimidas (Lumify y EKG), reportes de material/falla; fotos visibles en admin 14 días (purga diaria 06:00 UTC solo de expiradas).
   
-  Estado actual — signos y SOAP — Snapshot y texto usan vitalSeries cuando hay lecturas (misma fuente que la tira de signos). Pico de temperatura en SOAP: TEMPERATURA X °C (PICO Y °C @ …).
+  Equipos — móvil — QR + token en /equipos para MIP/residentes: retiro, devolución, alertas y cola en tiempo real (WebSocket).
   
-  LAN — descubrimiento — Escaneo ward con beacon antes de ping; menos probes redundantes al rankear hosts en subred.
+  Equipos — escritorio — Tablero en Modo Guardia, panel QR para R4/Admin, historial de sesiones y failover temporal si el anfitrión de equipos cae.
   
-  LAN — CORS en Electron — El renderer puede hacer fetch a APIs LAN de peers en red privada sin depender del CORS de cada Mac anfitriona.
+  Equipos — cloud (opcional) — Cola en Cloudflare Worker + D1 + R2 cuando no hay Mac anfitrión en la red; configuración en escritorio y badge de estado del enlace público.
   
-  Arranque / SQLCipher — Si falta Electron.app, scripts pueden ejecutar electron/install.js antes de probar el binario nativo.
+  Panel ⇄ — Zona héroe con estado en una línea y PIN en monoespaciado; filas settings-card-stack unificadas (iPad, salas, diagnóstico, toggles); alertas de conflicto/offline como franja, no tarjeta competidora.
   
-  Seguridad LAN — frame-ancestors 'none' y X-Frame-Options: DENY vía headers HTTP (la meta CSP no aplica frame-ancestors).
+  Ajustes — Misma gramática de filas en paneles internos; acciones secundarias en botón fantasma en lugar de paredes de botones morados.
   
-  Onboarding — Perfil local aclara modo para médicos ajenos a medicina interna (sin ⇄).
-  
-  Laboratorio — Log de auditoría post-guardado solo con localStorage rplus.debug-labs=1.
+  Base clínica — Esquema SQLCipher v17 → v19 (tablas equipos_*, fotos con photo_kind=alert en reportes).
