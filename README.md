@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.4.1](https://github.com/mausalas99/r-mas/releases/tag/v7.4.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.0](https://github.com/mausalas99/r-mas/releases/tag/v7.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.0 (equipos Lumify/EKG/US, panel ⇄ y cola cloud)
+
+- **Equipos** — Cola Lumify/EKG/US con móvil `/equipos`, tablero en guardia, fotos y reportes; opción cloud en Cloudflare sin Mac anfitrión.
+- **Panel ⇄** — Héroe estado/PIN y filas unificadas; alertas como franja; toggles y chevrons consistentes.
+- **Ajustes** — Paneles internos con botones fantasma y jerarquía clara (menos paredes moradas).
+- **SQLCipher v19** — Tablas equipos y fotos de alerta en reportes de material/falla.
+
+Notas: `docs/RELEASE_NOTES_7.5.0.txt`.
 
 ## R+ 7.4.1 (dieta EA, LAN ward y CORS Electron)
 

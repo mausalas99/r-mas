@@ -1028,7 +1028,7 @@ var RELEASE_NOTES_737 = [
   {
     title: 'Actualiza el turno',
     body:
-      'Instala <strong>7.3.7 en todas</strong> las estaciones si usáis ⇄ compartido. Esquema SQLCipher sigue en <strong>v17</strong>.',
+      'Instala <strong>7.3.7 en todas</strong> las estaciones del turno si usan ⇄ compartido. Esquema SQLCipher sigue en <strong>v17</strong>.',
   },
 ];
 
@@ -1036,29 +1036,53 @@ var RELEASE_NOTES_741 = [
   {
     title: 'Dieta SOME más fiable',
     body:
-      'Suplemento bien clasificado; parser tolera columnas desplazadas. Al re-aplicar receta, no pisa dieta confirmada si la huella coincide.',
+      'Mejor clasificación de suplementos y columnas desalineadas. Al re-aplicar receta, no sobrescribe dieta confirmada con la misma huella.',
   },
   {
     title: 'Signos alineados al SOAP',
     body:
-      'El texto de monitoreo usa las mismas lecturas que la <strong>tira de signos</strong>. Pico de temperatura con formato <strong>(PICO … °C)</strong>.',
+      'Monitoreo y tira de signos comparten las mismas lecturas. Temperatura pico en formato <strong>(PICO … °C)</strong>.',
   },
   {
     title: 'LAN en la subred',
     body:
-      'Escaneo con <strong>beacon</strong> antes de ping. Electron inyecta <strong>CORS</strong> para consultar peers en <code>:3738</code> sin depender de cada anfitrión.',
+      'Beacon antes del ping; CORS en Electron para consultar peers en <code>:3738</code> sin depender de cada anfitrión.',
   },
   {
     title: 'Sin migración de base',
     body:
-      'Esquema SQLCipher sigue en <strong>v17</strong>. Instala <strong>7.4.1</strong> en el turno si usáis ⇄ o dieta desde SOME.',
+      'SQLCipher sigue en <strong>v17</strong>. Instala <strong>7.4.1</strong> en todas las estaciones del turno si usan ⇄ o pegan dieta desde SOME.',
+  },
+];
+
+var RELEASE_NOTES_750 = [
+  {
+    title: 'Cola Lumify / EKG / US',
+    body:
+      'Lista de espera del programa en <strong>Modo Guardia</strong> y móvil <code>/equipos</code>: retiro, devolución con fotos, alertas de material/falla y reportes por equipo.',
+  },
+  {
+    title: 'Cloud sin Mac anfitrión',
+    body:
+      'Opcional: cola en <strong>Cloudflare Worker</strong> (D1 + R2) cuando no hay servidor LAN. Configura URL y clave admin en escritorio → Equipos.',
+  },
+  {
+    title: 'Panel ⇄ más claro',
+    body:
+      'Estado y <strong>PIN del turno</strong> en zona héroe; filas unificadas para iPad, salas, diagnóstico y toggles. Alertas de conflicto como franja, no tarjeta morada.',
+  },
+  {
+    title: 'SQLCipher v19',
+    body:
+      'Al desbloquear, la base migra a <strong>v19</strong> (tablas equipos). Instala <strong>7.5.0</strong> en estaciones que usen cola LAN de equipos o el nuevo panel ⇄.',
   },
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_741;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_750;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.0': RELEASE_NOTES_750,
   '7.4.1': RELEASE_NOTES_741,
   '7.4.0': RELEASE_NOTES_740,
   '7.3.8': RELEASE_NOTES_738,
