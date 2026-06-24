@@ -1,6 +1,9 @@
 /** API client for equipos micro-app. */
 
-const TARGET_DATA_URL_LEN = 480_000;
+/** Sync with lib/equipos/equipos-constants.mjs */
+const TARGET_DATA_URL_LEN = 320_000;
+const DEFAULT_MAX_DIM = 720;
+const DEFAULT_JPEG_QUALITY = 0.72;
 
 /**
  * @param {string} apiBase
@@ -26,18 +29,18 @@ export async function equiposFetch(apiBase, token, path, opts = {}) {
 }
 
 /**
- * Resize + JPEG compress for upload (target well under 2 MB server cap).
+ * Resize + JPEG compress for upload (target well under 1 MB server cap).
  * @param {File} file
  * @param {number} [maxDim]
  */
-export function resizeImageFile(file, maxDim = 960) {
+export function resizeImageFile(file, maxDim = DEFAULT_MAX_DIM) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
       let dim = maxDim;
-      let quality = 0.78;
+      let quality = DEFAULT_JPEG_QUALITY;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return reject(new Error('canvas'));
@@ -55,9 +58,9 @@ export function resizeImageFile(file, maxDim = 960) {
           quality -= 0.1;
           return encode();
         }
-        if (dataUrl.length > TARGET_DATA_URL_LEN && dim > 560) {
+        if (dataUrl.length > TARGET_DATA_URL_LEN && dim > 480) {
           dim = Math.round(dim * 0.82);
-          quality = 0.78;
+          quality = DEFAULT_JPEG_QUALITY;
           return encode();
         }
         resolve(dataUrl);

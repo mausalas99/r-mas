@@ -9,7 +9,7 @@ Sobre **7.4.1**: cola de custodia **Lumify / EKG / Ultrasonido** con tablero en 
 
 ## Nuevo / mejorado
 
-- **Equipos — cola del programa** — Un Lumify, un EKG y un ultrasonido compartidos en todo el internado. Lista de espera, checkout/devolución con fotos (Lumify y EKG), reportes de material/falla y purga diaria de fotos a las 06:00 UTC conservando reportes.
+- **Equipos — cola del programa** — Un Lumify, un EKG y un ultrasonido compartidos en todo el internado. Lista de espera, checkout/devolución con fotos comprimidas (Lumify y EKG), reportes de material/falla; fotos visibles en admin **14 días** (purga diaria 06:00 UTC solo de expiradas).
 - **Equipos — móvil** — QR + token en `/equipos` para MIP/residentes: retiro, devolución, alertas y cola en tiempo real (WebSocket).
 - **Equipos — escritorio** — Tablero en **Modo Guardia**, panel QR para R4/Admin, historial de sesiones y failover temporal si el anfitrión de equipos cae.
 - **Equipos — cloud (opcional)** — Cola en **Cloudflare Worker + D1 + R2** cuando no hay Mac anfitrión en la red; configuración en escritorio y badge de estado del enlace público.

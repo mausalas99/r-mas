@@ -98,7 +98,7 @@ EQUIPOS_ADMIN_KEY=dev-admin npm run dev
 
 ## Photo purge
 
-Cron `0 6 * * *` (06:00 UTC) deletes pickup/return photos when the queue is idle — same policy as LAN.
+Cron `0 6 * * *` (06:00 UTC) deletes photos **older than 14 days** (admin history window). Uploads are JPEG-compressed client-side (~720px).
 
 ## Syncing static UI after edits
 

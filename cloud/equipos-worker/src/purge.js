@@ -1,28 +1,33 @@
-import { hasActiveCustodyOrWaitlist } from './board.js';
-import { clearSessionEquiposPhotoRows } from './actions.js';
+import { clearEquiposPhotoReferences } from './actions.js';
 import { deletePhotoObjects } from './photos.js';
+import { equiposPhotoRetentionCutoffIso } from './constants.js';
 
 /**
- * Purge pickup/return photos at 06:00 UTC when queue is idle (matches LAN behavior).
+ * Delete equipos photos older than retention window (admin history ~2 weeks).
+ * Daily 06:00 UTC cron — age-based, not queue-idle.
+ *
  * @param {import('@cloudflare/workers-types').D1Database} db
  * @param {import('@cloudflare/workers-types').R2Bucket} bucket
+ * @param {number} [nowMs]
  */
-export async function purgeEquiposPhotosIfIdle(db, bucket) {
-  if (await hasActiveCustodyOrWaitlist(db)) {
-    return { skipped: true, reason: 'active_queue' };
-  }
+export async function purgeExpiredEquiposPhotos(db, bucket, nowMs = Date.now()) {
+  const cutoff = equiposPhotoRetentionCutoffIso(nowMs);
   const { results } = await db
-    .prepare(`SELECT id, file_path FROM equipos_photos WHERE photo_kind IN ('pickup', 'return')`)
+    .prepare(`SELECT id, file_path FROM equipos_photos WHERE captured_at < ?`)
+    .bind(cutoff)
     .all();
   const rows = results || [];
+  if (!rows.length) {
+    return { purged: true, removed: 0, cutoff };
+  }
   const keys = rows.map((r) => r.file_path).filter(Boolean);
   if (keys.length) await deletePhotoObjects(bucket, keys);
-  await clearSessionEquiposPhotoRows(db);
-  await db
-    .prepare(
-      `UPDATE equipos_sessions SET pickup_photo_id = NULL, return_photo_id = NULL
-       WHERE pickup_photo_id IS NOT NULL OR return_photo_id IS NOT NULL`
-    )
-    .run();
-  return { purged: true, removed: rows.length };
+  const ids = rows.map((r) => r.id);
+  await clearEquiposPhotoReferences(db, ids);
+  return { purged: true, removed: ids.length, cutoff };
+}
+
+/** @deprecated Use purgeExpiredEquiposPhotos */
+export async function purgeEquiposPhotosIfIdle(db, bucket) {
+  return purgeExpiredEquiposPhotos(db, bucket);
 }

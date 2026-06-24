@@ -77,9 +77,9 @@ Verify: `curl -s "https://lista-de-espera.tudominio.org/api/equipos/v1/ping"`
 1. **Workers & Pages** → **rmas-lista-de-espera** → **Settings** → **Variables and Secrets**
 2. **Add** → type **Secret** → name: `EQUIPOS_ADMIN_KEY` → value: (same string you will enter in R+ desktop)
 
-### 5. Cron (photo purge — optional check)
+### 5. Cron (photo retention — optional check)
 
-**Workers & Pages** → **rmas-lista-de-espera** → **Triggers** → should show `0 6 * * *` after deploy (from `wrangler.toml`). If missing, add cron: `0 6 * * *`.
+**Workers & Pages** → **rmas-lista-de-espera** → **Triggers** → should show `0 6 * * *` after deploy (from `wrangler.toml`). If missing, add cron: `0 6 * * *`. Deletes photos **older than 14 days** only (admin history window).
 
 ### 6. Configure R+ desktop
 

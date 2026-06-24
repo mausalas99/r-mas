@@ -18,7 +18,7 @@ Program-wide custody + waitlist for one Lumify, one EKG, and one Ultrasonido. Ho
 | Lumify return | Photo + charge required + gel vacío |
 | EKG | Photo on pickup and return |
 | Ultrasonido | No photos |
-| Photos | Web server only; 06:00 UTC purge when idle |
+| Photos | Web server only; JPEG compressed on upload; 14-day retention (daily 06:00 UTC purge of expired only) |
 | Failover | Temporary host on user R+ until higher rank returns |
 | Admin | Manual queue purge; team reports permanent |
 | UI | 100 % español |

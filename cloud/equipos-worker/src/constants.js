@@ -34,4 +34,11 @@ export function newEquiposId() {
   return crypto.randomUUID();
 }
 
-export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+export const EQUIPOS_PHOTO_RETENTION_DAYS = 14;
+export const MAX_PHOTO_BYTES = 1024 * 1024;
+
+/** @param {number} [nowMs] */
+export function equiposPhotoRetentionCutoffIso(nowMs = Date.now()) {
+  const ms = EQUIPOS_PHOTO_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  return new Date(nowMs - ms).toISOString();
+}

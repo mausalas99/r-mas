@@ -1,6 +1,6 @@
 import { applyCors, corsPreflight } from './cors.js';
 import { handleEquiposApi } from './routes.js';
-import { purgeEquiposPhotosIfIdle } from './purge.js';
+import { purgeExpiredEquiposPhotos } from './purge.js';
 
 const API_PREFIX = '/api/equipos/v1';
 
@@ -46,7 +46,7 @@ export default {
   /** @param {ScheduledEvent} event @param {import('@cloudflare/workers-types').ExecutionContext} env */
   async scheduled(event, env) {
     try {
-      await purgeEquiposPhotosIfIdle(env.DB, env.PHOTOS);
+      await purgeExpiredEquiposPhotos(env.DB, env.PHOTOS);
     } catch (e) {
       console.error('[equipos-purge]', e?.message || e);
     }

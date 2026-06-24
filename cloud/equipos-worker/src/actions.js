@@ -386,7 +386,30 @@ export async function insertEquiposPhotoRow(db, row) {
     .run();
 }
 
-/** @param {import('@cloudflare/workers-types').D1Database} db */
-export async function clearSessionEquiposPhotoRows(db) {
-  await db.prepare(`DELETE FROM equipos_photos WHERE photo_kind IN ('pickup', 'return')`).run();
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {string[]} photoIds */
+export async function clearEquiposPhotoReferences(db, photoIds) {
+  if (!photoIds.length) return;
+  const placeholders = photoIds.map(() => '?').join(',');
+  await db
+    .prepare(
+      `UPDATE equipos_sessions SET pickup_photo_id = NULL WHERE pickup_photo_id IN (${placeholders})`
+    )
+    .bind(...photoIds)
+    .run();
+  await db
+    .prepare(
+      `UPDATE equipos_sessions SET return_photo_id = NULL WHERE return_photo_id IN (${placeholders})`
+    )
+    .bind(...photoIds)
+    .run();
+  await db
+    .prepare(
+      `UPDATE equipos_team_reports SET photo_id = NULL WHERE photo_id IN (${placeholders})`
+    )
+    .bind(...photoIds)
+    .run();
+  await db
+    .prepare(`DELETE FROM equipos_photos WHERE id IN (${placeholders})`)
+    .bind(...photoIds)
+    .run();
 }

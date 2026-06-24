@@ -133,7 +133,7 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
 - **2026-06-24** `ui-lan-settings`: ⇄ hero + unified stack rows; Ajustes panel ghost rows — `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`.
 - **2026-06-23** `equipos-cloud`: cola Lumify/EKG/US en Cloudflare Worker+D1+R2 (sin Mac anfitrión); `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, desktop board/QR cloud-aware.
-- **2026-06-23** `equipos-tracking`: cola Lumify/EKG/US — schema v18→19, `/equipos` + API, fotos en reportes material/falla (`photo_kind=alert`), purge 06:00 UTC conserva reportes; `lib/equipos/`, `public/equipos/`.
+- **2026-06-23** `equipos-tracking`: cola Lumify/EKG/US — schema v18→19, `/equipos` + API, fotos comprimidas + retención **14 días** en admin (`photo_kind=alert` incluido); purga 06:00 UTC solo expiradas; `lib/equipos/`, `public/equipos/`.
 - **2026-06-22** `release-7.4.0`: arranque lazy (boot graph 700→50), deuda Tier 1 cero, EA vitals turn limits, censo highlight patch, UI tokens; `data/release-notes-highlights.mjs`, `docs/RELEASE_NOTES_7.4.0.txt`.
 - **2026-06-21** `debt-phase6`: full-tree Tier 1 ESLint 0 + baseline refresh (31408→50); god-file splits (LAN/interno/renderer), `fix-mechanical-eslint --full`, `lazy-feature-routes-*` split; `lint:tier1:full` gate.
 - **2026-06-21** `boot-lazy-p5c`: boot hub deferrals — lazy `header-context`, `perf-markers`, `session-clinical-wipe`, inline mobile detect in `app.js`, lazy `ui-toast`; `lazy-feature-routes` hub barrel (+2 structural); `bootGraphDebt` 175→**50** interim.
