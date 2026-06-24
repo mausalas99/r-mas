@@ -82,7 +82,7 @@ function renderLanPreflightRow(deps, root, preflight) {
         if (ok) deps.runtime().showToast('Diagnóstico copiado', 'info');
       });
     });
-    var anchor = root.querySelector('.lan-hub-status-card');
+    var anchor = root.querySelector('.lan-connection-hero') || root.querySelector('.lan-hub-status-card');
     if (anchor) root.insertBefore(row, anchor);
     else if (root.firstChild) root.insertBefore(row, root.firstChild);
     else root.appendChild(row);
@@ -267,7 +267,7 @@ function updateLanSyncDiagnosticsSection(panel, report, diag) {
 /** @param {PanelDiagnosticsDeps} panelDeps @param {object} diagDeps @param {object} diag @param {string} report */
 function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
   var details = document.createElement('details');
-  details.className = 'rpc-disclosure lan-connect-card lan-sync-diagnostics-panel';
+  details.className = 'rpc-disclosure lan-sync-diagnostics-panel';
   try {
     details.open = sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1';
   } catch (_e) { void _e; }
@@ -277,8 +277,11 @@ function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
     } catch (_e) { void _e; }
   });
   var sum = document.createElement('summary');
-  sum.className = 'rpc-disclosure__summary';
-  sum.textContent = 'Estado de sincronización';
+  sum.className =
+    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary lan-sync-diagnostics-summary';
+  sum.innerHTML =
+    '<span class="settings-card__title">Estado de sincronización</span>' +
+    '<span class="settings-card__desc">Informe técnico y cola de sync</span>';
   details.appendChild(sum);
   var diagBody = document.createElement('div');
   diagBody.className = 'rpc-disclosure__body';

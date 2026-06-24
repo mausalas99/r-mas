@@ -20,6 +20,23 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
   box-shadow: none;
 }
 
+/* ── Toolbar → content section gap (hallmark P2-A) ─────────── */
+#appcontent-lab .main-work-scroll > #lab-input-section {
+  margin-bottom: var(--density-gap-section);
+}
+
+#appcontent-lab .lab-some-table-toolbar {
+  margin-bottom: var(--density-gap-section);
+}
+
+#appcontent-med > .med-active-shell > #med-subview-tabs-bar {
+  margin-bottom: var(--density-gap-section);
+}
+
+#appcontent-agenda .rpc-proc-agenda-header {
+  margin-bottom: var(--density-gap-section);
+}
+
 /* ═══════════════════════════════════════════════════════════
    1 · EXPEDIENTE PANES
    ═══════════════════════════════════════════════════════════ */
@@ -30,7 +47,11 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
 }
 
 .patient-expediente-classic .exp-composite-pane {
-  gap: calc(12px * var(--density-space, 1));
+  gap: var(--density-gap-section);
+}
+
+.patient-expediente-classic .exp-composite-pane > .exp-segment-bar {
+  margin-bottom: var(--density-gap-section);
 }
 
 .patient-expediente-classic .exp-datos-tab-action {
@@ -195,6 +216,11 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 .exp-pendientes-mount .todo-toolbar {
   order: 1;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 2rem;
+  margin-bottom: var(--density-gap-section);
 }
 
 .exp-pendientes-mount .todo-list,
@@ -296,13 +322,6 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   line-height: 1.2;
 }
 
-.exp-pendientes-mount .todo-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 2rem;
-}
-
 .exp-pendientes-mount .todo-list {
   display: flex;
   flex-direction: column;
@@ -367,6 +386,11 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-raised);
   background: var(--surface);
+}
+
+#patient-expediente .ea-action-bar,
+.patient-expediente-classic .ea-action-bar {
+  margin-bottom: var(--density-gap-section);
 }
 
 #patient-expediente .ea-section-title,

@@ -2,22 +2,6 @@
  * charts: modal + summary strip · texto: copy from estado clínico
  */
 
-/* Estado Actual panel — aligned with app tokens (Sala expediente tab) */
-
-:root {
-  --ea-chart-vital-1: var(--color-accent);
-  --ea-chart-vital-2: var(--error);
-  --ea-chart-vital-3: var(--color-success-emphasis);
-  --ea-chart-vital-4: var(--todo-prio-media);
-  --ea-chart-vital-5: #0891b2;
-  --ea-chart-vital-6: #7c3aed;
-  --ea-chart-glu: var(--color-success-emphasis);
-  --ea-chart-io-ing: #60a5fa;
-  --ea-chart-io-egr: #f87171;
-  --ea-chart-io-balance: var(--color-accent);
-  --ea-chart-altered: var(--todo-prio-media);
-}
-
 #itab-content-estadoActual.exp-composite-pane.active {
   flex-direction: column;
   min-height: 0;
@@ -72,10 +56,10 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
-  gap: 8px 12px;
+  gap: 8px 16px;
   min-height: 36px;
   padding: 0;
-  margin: 0;
+  margin: 0 0 calc(12px * var(--density-space, 1));
 }
 
 .ea-action-bar__cluster {
@@ -96,7 +80,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: inline-flex;
   align-items: center;
   flex: 1 1 auto;
-  min-height: 36px;
+  min-height: 0;
   padding: 0 2px;
   margin-left: auto;
   font-size: calc(11px * var(--density-font, 1));
@@ -151,15 +135,27 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-btn--primary {
-  background: var(--action, var(--color-success-emphasis, #065f46));
-  border-color: var(--action, var(--color-success-emphasis, #065f46));
-  color: var(--color-on-action, #fff);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
   box-shadow: none;
 }
 
 .ea-btn--primary:hover {
-  background: var(--action-hover, var(--color-success-emphasis-hover, #047857));
-  border-color: var(--action-hover, var(--color-success-emphasis-hover, #047857));
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.ea-btn--success {
+  background: var(--color-success-emphasis);
+  border-color: var(--color-success-emphasis);
+  color: var(--color-on-success);
+  box-shadow: none;
+}
+
+.ea-btn--success:hover {
+  background: var(--color-success-emphasis-hover);
+  border-color: var(--color-success-emphasis-hover);
 }
 
 .ea-btn--ghost {
@@ -465,8 +461,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-strip--primary {
-  border-color: color-mix(in oklab, var(--color-accent, #2563eb) 28%, var(--divider));
-  box-shadow: 0 1px 0 color-mix(in oklab, var(--color-accent, #2563eb) 12%, transparent);
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--divider));
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--color-accent) 12%, transparent);
 }
 
 .ea-snapshot-strip-head {
@@ -1446,16 +1442,16 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-svg-bar-ing {
-  fill: var(--ea-chart-io-ing, #60a5fa);
+  fill: var(--ea-chart-io-ing);
 }
 
 .ea-svg-bar-egr {
-  fill: var(--ea-chart-io-egr, #f87171);
+  fill: var(--ea-chart-io-egr);
 }
 
 .ea-svg-point-balance {
-  fill: var(--ea-chart-io-balance, #4a52e8);
-  stroke: var(--ea-chart-io-balance, #4a52e8);
+  fill: var(--ea-chart-io-balance);
+  stroke: var(--ea-chart-io-balance);
 }
 
 .ea-svg-legend {
@@ -1482,15 +1478,15 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-svg-legend-swatch-ing {
-  background: var(--ea-chart-io-ing, #60a5fa);
+  background: var(--ea-chart-io-ing);
 }
 
 .ea-svg-legend-swatch-egr {
-  background: var(--ea-chart-io-egr, #f87171);
+  background: var(--ea-chart-io-egr);
 }
 
 .ea-svg-legend-swatch-bal {
-  background: var(--ea-chart-io-balance, #4a52e8);
+  background: var(--ea-chart-io-balance);
 }
 
 .ea-svg-tooltip {
@@ -1500,7 +1496,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   max-width: 220px;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 92%, #000 8%);
+  background: color-mix(in oklab, var(--surface) 92%, var(--color-ink) 8%);
   border: 1px solid var(--divider);
   color: var(--text);
   font-size: calc(11px * var(--density-font, 1));
@@ -1933,7 +1929,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   width: 14px;
   height: 14px;
   margin: 0;
-  accent-color: var(--warning, #b45309);
+  accent-color: var(--warn);
 }
 
 .ea-glu-rescue-wrap--hidden {
@@ -1946,14 +1942,14 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   gap: 8px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in oklab, var(--warning, #b45309) 35%, var(--divider));
-  background: color-mix(in oklab, var(--warning, #b45309) 5%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--warn) 35%, var(--divider));
+  background: color-mix(in oklab, var(--warn) 5%, var(--surface));
 }
 
 .ea-glu-rescue-box-title {
   font-size: calc(12px * var(--density-font, 1));
   font-weight: 600;
-  color: var(--warning, #b45309);
+  color: var(--warn);
   letter-spacing: 0.02em;
 }
 
@@ -2031,8 +2027,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-glu-row--altered {
-  border-color: color-mix(in oklab, var(--warning, #b45309) 45%, var(--divider));
-  background: color-mix(in oklab, var(--warning, #b45309) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--warn) 45%, var(--divider));
+  background: color-mix(in oklab, var(--warn) 6%, var(--surface));
 }
 
 .ea-registro-modal .ea-glu-row--standard .ea-glu-row-meta,
@@ -2045,20 +2041,20 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-glu-chip--altered {
-  border-color: color-mix(in oklab, var(--warning, #b45309) 55%, var(--divider));
-  color: var(--warning, #b45309);
+  border-color: color-mix(in oklab, var(--warn) 55%, var(--divider));
+  color: var(--warn);
 }
 
 .ea-snapshot-glu-rescue {
   font-size: calc(11px * var(--density-font, 1));
   font-weight: 600;
-  color: var(--warning, #b45309);
+  color: var(--warn);
 }
 
 .ea-snapshot-glu-post {
   font-size: calc(11px * var(--density-font, 1));
   font-weight: 600;
-  color: var(--success, #15803d);
+  color: var(--success);
 }
 
 

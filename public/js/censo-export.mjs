@@ -56,16 +56,17 @@ export function syncCensoExportButtonVisibility() {
   CENSO_EXPORT_BUTTON_IDS.forEach(function (id) {
     var btn = document.getElementById(id);
     if (!btn) return;
+    if (id === 'btn-export-censo-settings') return;
     if (!show) {
       btn.style.display = 'none';
       return;
     }
     btn.style.display = id === 'btn-export-censo-header' ? 'inline-flex' : '';
   });
+  var settingsRow = document.getElementById('btn-export-censo-settings-row');
+  if (settingsRow) settingsRow.style.display = show ? '' : 'none';
   var wrap = document.getElementById('sidebar-censo-export-wrap');
   if (wrap) wrap.style.display = show ? '' : 'none';
-  var hint = document.getElementById('btn-export-censo-settings-hint');
-  if (hint) hint.style.display = show ? '' : 'none';
 }
 
 

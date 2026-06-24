@@ -26,6 +26,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `clinical-onboarding*.mjs`, `learn-hub.mjs` | |
 | Interno mobile | `lib/interno/`, `public/interno/` | [spec](../superpowers/specs/2026-06-02-interno-guardia-mobile-design.md) |
+| Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
 | Settings / tours | `public/js/features/settings-help/` | |
 | Platform / backup | `public/js/features/platform/` | |
 

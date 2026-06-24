@@ -33,20 +33,20 @@ import {
   resolveOwnLanBaseForPin,
 } from './transport.mjs';
 
+function formatShiftPinDisplay(pin) {
+  var s = String(pin || '').replace(/\D/g, '');
+  if (s.length === 6) return s.slice(0, 3) + ' ' + s.slice(3);
+  return s;
+}
+
 /** @typedef {ReturnType<typeof createPanelHostPin>} PanelHostPinApi */
 
-function createLanHostPinCheckboxLabel() {
-  var label = document.createElement('label');
-  label.className = 'lan-host-pin-label';
-  label.setAttribute('for', 'lan-pin-host-checkbox');
+function createLanHostPinCheckboxParts() {
   var cb = document.createElement('input');
   cb.type = 'checkbox';
   cb.id = 'lan-pin-host-checkbox';
-  label.appendChild(cb);
-  label.appendChild(
-    document.createTextNode(' Fijar anfitrión del turno (solo en la Mac servidor)')
-  );
-  return { label, cb };
+  cb.className = 'settings-card__toggle';
+  return { cb };
 }
 
 function buildLanHostPinModeHint() {
@@ -120,45 +120,82 @@ function appendLanHostPinSection(deps, root) {
   if (!root || !isLanElectronDesktop() || !canLocalMacBeLanHost()) return;
   var hostUrl = deps.lanHostUrl();
   if (!hostUrl && !getPinnedHostUrl()) return;
+  if (root.querySelector('#lan-pin-host-checkbox')) return;
 
-  var wrap = document.createElement('div');
-  wrap.className = 'lan-connect-card lan-host-pin-card';
-  var pinParts = createLanHostPinCheckboxLabel();
+  var row = document.createElement('div');
+  row.className = 'settings-card settings-card--toggle';
+  var copy = document.createElement('div');
+  copy.className = 'settings-card__copy';
+  var title = document.createElement('p');
+  title.className = 'settings-card__title';
+  title.textContent = 'Fijar anfitrión del turno';
+  var desc = document.createElement('p');
+  desc.className = 'settings-card__desc';
+  desc.textContent = 'Solo en Mac servidor';
+  copy.appendChild(title);
+  copy.appendChild(desc);
+
+  var pinParts = createLanHostPinCheckboxParts();
+  var action = document.createElement('label');
+  action.className = 'settings-card__action settings-card__toggle-label';
+  action.setAttribute('for', 'lan-pin-host-checkbox');
+  action.appendChild(pinParts.cb);
+
+  row.appendChild(copy);
+  row.appendChild(action);
+  root.appendChild(row);
+
   var ownBase = hostUrl || '';
   var pinned = getPinnedHostUrl();
 
   void resolveOwnLanBaseForPin().then(function (resolvedOwn) {
     wireLanHostPinCheckbox(deps, pinParts.cb, hostUrl, resolvedOwn);
+    if (pinned) {
+      var pinnedNote = copy.querySelector('[data-lan-pin-pinned-note]');
+      if (!pinnedNote) {
+        pinnedNote = document.createElement('p');
+        pinnedNote.className = 'settings-card__desc';
+        pinnedNote.setAttribute('data-lan-pin-pinned-note', '1');
+        copy.appendChild(pinnedNote);
+      }
+      pinnedNote.textContent = isPinnedHostLocal(resolvedOwn || ownBase)
+        ? 'Anfitrión fijado en esta Mac.'
+        : 'Anfitrión fijado: ' + pinned;
+    }
   });
-
-  wrap.appendChild(pinParts.label);
-  wrap.appendChild(buildLanHostPinModeHint());
-  appendLanHostPinPinnedHints(wrap, ownBase, pinned);
-  root.appendChild(wrap);
 }
 
-function buildLanTurnResetCard(ownHost) {
-  var card = document.createElement('div');
-  card.className = 'lan-connect-card lan-turn-reset-card';
-  if (ownHost) card.classList.add('lan-turn-reset-card--warn');
+function buildLanTurnResetAlertStrip(deps, ownHost) {
+  var strip = document.createElement('div');
+  strip.className = 'lan-alert-strip lan-turn-reset-alert';
 
-  var title = document.createElement('div');
-  title.className = 'lan-connect-card-title';
+  var copy = document.createElement('div');
+  copy.className = 'lan-alert-strip__copy';
+  var title = document.createElement('strong');
   title.textContent = ownHost ? 'Dos servidores en la misma sala' : 'Restablecer conexión ⇄';
-  card.appendChild(title);
-
-  var hint = document.createElement('p');
-  hint.className = 'lan-connect-card-hint';
+  var hint = document.createElement('div');
+  hint.className = 'lan-alert-strip__hint';
   hint.textContent = ownHost
-    ? 'Esta Mac está usando su propio servidor. Para ver el mismo directorio que el turno, restablece y conéctate al anfitrión con el PIN o el enlace ⇄.'
-    : 'Si el directorio no coincide entre Macs, sal de la sala, quita el anfitrión fijado y vuelve a conectar.';
-  card.appendChild(hint);
+    ? 'Esta Mac usa su propio servidor. Restablece y conéctate al anfitrión del turno (PIN o enlace ⇄).'
+    : 'Si el directorio no coincide entre Macs, restablece y vuelve a conectar.';
+  copy.appendChild(title);
+  copy.appendChild(hint);
+  strip.appendChild(copy);
 
-  return card;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = ownHost ? 'btn-settings-row btn-settings-row--warn' : 'btn-settings-row';
+  btn.textContent = 'Restablecer';
+  btn.onclick = function () {
+    void resetLanTurnConnectionFromUi(deps);
+  };
+  strip.appendChild(btn);
+
+  return strip;
 }
 
 /** @param {Parameters<typeof createPanelHostPin>[0]} deps */
-async function appendLanTurnResetSection(deps, root, gen) {
+async function appendLanTurnResetAlertStrip(deps, root, gen) {
   if (!isLanElectronDesktop()) return;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return;
 
@@ -169,30 +206,11 @@ async function appendLanTurnResetSection(deps, root, gen) {
 
   if (deps.lanPanelRenderStale(gen)) return;
 
-  var existing = root.querySelector('.lan-turn-reset-card');
-  if (existing) existing.remove();
+  root.querySelectorAll('.lan-turn-reset-alert, .lan-turn-reset-card').forEach(function (el) {
+    el.remove();
+  });
 
-  var card = buildLanTurnResetCard(ownHost);
-  var btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = ownHost ? 'btn-lan-primary' : 'btn-lan-secondary';
-  btn.style.width = '100%';
-  btn.textContent = 'Restablecer conexión al turno';
-  btn.onclick = function () {
-    void resetLanTurnConnectionFromUi(deps);
-  };
-  card.appendChild(btn);
-
-  if (canLocalMacBeLanHost()) {
-    var hostHint = document.createElement('p');
-    hostHint.className = 'lan-connect-card-hint';
-    hostHint.style.marginTop = '8px';
-    hostHint.innerHTML =
-      'Si <strong>tú</strong> eres el único R4 anfitrión, en Ajustes usa «LAN · servidor en esta computadora» → Restablecer estado del host.';
-    card.appendChild(hostHint);
-  }
-
-  root.appendChild(card);
+  root.appendChild(buildLanTurnResetAlertStrip(deps, ownHost));
 }
 
 /** @param {Parameters<typeof createPanelHostPin>[0]} deps */
@@ -380,10 +398,8 @@ function appendLanHostAddressCopyButton(deps, root, gen) {
 
   var btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn-lan-secondary';
+  btn.className = 'btn-settings-row';
   btn.setAttribute('data-lan-host-address-copy', '1');
-  btn.style.width = '100%';
-  btn.style.marginTop = '6px';
   btn.textContent = 'Copiar dirección';
   btn.addEventListener('click', function () {
     void resolveLanShareBaseUrl().then(function (shareUrl) {
@@ -391,18 +407,31 @@ function appendLanHostAddressCopyButton(deps, root, gen) {
         deps.runtime().showToast('No hay dirección del anfitrión disponible.', 'error');
         return;
       }
-      copyToClipboardSafe(shareUrl);
-      deps.runtime().showToast(
-        'Dirección copiada — en la otra Mac pégala en ⇄ (Unirse) junto con el PIN del turno.',
-        'success'
-      );
+      void copyToClipboardSafe(shareUrl).then(function (ok) {
+        if (ok) {
+          deps.runtime().showToast(
+            'Dirección copiada — en la otra Mac pégala en ⇄ (Unirse) junto con el PIN del turno.',
+            'success'
+          );
+          return;
+        }
+        deps.runtime().showToast('No se pudo copiar al portapapeles.', 'error');
+      });
     });
   });
 
   var anchor =
-    root.querySelector('.lan-shift-pin-card') || root.querySelector('.lan-hub-status-card');
+    root.querySelector('.lan-connection-hero__pin-actions') ||
+    root.querySelector('[data-lan-shift-pin]') ||
+    root.querySelector('.lan-connection-hero');
   if (anchor) {
-    anchor.appendChild(btn);
+    if (anchor.classList.contains('lan-connection-hero__pin-actions')) {
+      anchor.appendChild(btn);
+    } else {
+      var actions = anchor.querySelector('.lan-connection-hero__pin-actions');
+      if (actions) actions.appendChild(btn);
+      else anchor.appendChild(btn);
+    }
   } else {
     root.appendChild(btn);
   }
@@ -426,7 +455,7 @@ async function fetchValidLanShiftPin(deps, gen) {
 
 function buildLanShiftPinExpiryLine(expiresAt) {
   var exp = document.createElement('p');
-  exp.className = 'lan-shift-pin-expiry';
+  exp.className = 'lan-pin-meta';
   try {
     exp.textContent =
       'Válido hasta ' +
@@ -444,24 +473,28 @@ function buildLanShiftPinExpiryLine(expiresAt) {
 
 function buildLanShiftPinHostActions(deps, pin) {
   var actions = document.createElement('div');
-  actions.className = 'lan-shift-pin-actions';
+  actions.className = 'lan-connection-hero__pin-actions';
 
   var copyBtn = document.createElement('button');
   copyBtn.type = 'button';
-  copyBtn.className = 'btn-med-secondary';
+  copyBtn.className = 'btn-settings-row';
   copyBtn.id = 'lan-copy-shift-pin';
-  copyBtn.textContent = 'Copiar PIN';
+  copyBtn.textContent = 'Copiar';
   copyBtn.addEventListener('click', function () {
-    copyToClipboardSafe(pin);
-    deps.runtime().showToast('PIN del turno copiado.', 'success');
+    void copyToClipboardSafe(pin).then(function (ok) {
+      deps.runtime().showToast(
+        ok ? 'PIN del turno copiado.' : 'No se pudo copiar al portapapeles.',
+        ok ? 'success' : 'error'
+      );
+    });
   });
   actions.appendChild(copyBtn);
 
   var regenBtn = document.createElement('button');
   regenBtn.type = 'button';
-  regenBtn.className = 'btn-med-secondary';
+  regenBtn.className = 'btn-settings-row';
   regenBtn.id = 'lan-regen-shift-pin';
-  regenBtn.textContent = 'Nuevo PIN';
+  regenBtn.textContent = 'Nuevo';
   regenBtn.addEventListener('click', function () {
     void lanFetchAuthed('/api/lan/v1/auth/shift-pin/regenerate', { method: 'POST' }).then(
       function (r) {
@@ -479,48 +512,41 @@ function buildLanShiftPinHostActions(deps, pin) {
   return actions;
 }
 
-function buildLanShiftPinHostCard(deps, pin, body) {
-  var wrap = document.createElement('div');
-  wrap.className = 'lan-connect-card lan-shift-pin-card';
-  wrap.setAttribute('data-lan-shift-pin', '1');
-
-  var title = document.createElement('p');
-  title.className = 'lan-connect-card-title';
-  title.textContent = 'PIN del turno';
-  wrap.appendChild(title);
-
-  var lead = document.createElement('p');
-  lead.className = 'lan-shift-pin-lead';
-  lead.textContent =
-    'Dilo en voz alta al equipo (6 dígitos). Sirve al registrar @usuario o si cambian de Wi‑Fi.';
-  wrap.appendChild(lead);
-
-  var display = document.createElement('p');
-  display.className = 'lan-shift-pin-display';
-  var code = document.createElement('code');
-  code.id = 'lan-shift-pin-code';
-  code.textContent = pin;
-  display.appendChild(code);
-  wrap.appendChild(display);
-
-  wrap.appendChild(buildLanShiftPinHostActions(deps, pin));
-
-  if (body.expiresAt) {
-    wrap.appendChild(buildLanShiftPinExpiryLine(body.expiresAt));
+function ensureLanHeroPinSlot(root) {
+  var hero = root.classList.contains('lan-connection-hero')
+    ? root
+    : root.querySelector('.lan-connection-hero') || root;
+  var pin = hero.querySelector('.lan-connection-hero__pin');
+  if (!pin) {
+    pin = document.createElement('div');
+    pin.className = 'lan-connection-hero__pin';
+    pin.setAttribute('data-lan-shift-pin', '1');
+    pin.setAttribute('aria-label', 'PIN del turno');
+    hero.appendChild(pin);
   }
-
-  return wrap;
+  return pin;
 }
 
-function insertLanShiftPinHostCard(root, wrap) {
-  var anchor = root.querySelector('.lan-hub-status-card');
-  if (anchor && anchor.nextSibling) {
-    root.insertBefore(wrap, anchor.nextSibling);
-  } else if (anchor) {
-    anchor.insertAdjacentElement('afterend', wrap);
-  } else {
-    root.prepend(wrap);
+function buildLanShiftPinHostPinContent(deps, pinValue, body) {
+  var pin = document.createElement('div');
+  pin.className = 'lan-connection-hero__pin-main';
+  var code = document.createElement('code');
+  code.id = 'lan-shift-pin-code';
+  code.className = 'lan-pin-code';
+  code.textContent = formatShiftPinDisplay(pinValue);
+  pin.appendChild(code);
+  if (body.expiresAt) {
+    pin.appendChild(buildLanShiftPinExpiryLine(body.expiresAt));
   }
+  return pin;
+}
+
+function renderLanShiftPinIntoHero(deps, root, pinValue, body) {
+  var slot = ensureLanHeroPinSlot(root);
+  slot.innerHTML = '';
+  slot.setAttribute('data-lan-shift-pin', '1');
+  slot.appendChild(buildLanShiftPinHostPinContent(deps, pinValue, body));
+  slot.appendChild(buildLanShiftPinHostActions(deps, pinValue));
 }
 
 /** Shared ward PIN for registration (reusable until shift TTL). */
@@ -530,11 +556,12 @@ async function appendLanShiftPinSection(deps, root, gen) {
   var fetched = await fetchValidLanShiftPin(deps, gen);
   if (!fetched || deps.lanPanelRenderStale(gen)) return;
 
-  root.querySelectorAll('.lan-shift-pin-card').forEach(function (el) {
+  root.querySelectorAll('[data-lan-shift-pin]').forEach(function (el) {
+    if (el.classList.contains('lan-connection-hero__pin')) return;
     el.remove();
   });
 
-  insertLanShiftPinHostCard(root, buildLanShiftPinHostCard(deps, fetched.pin, fetched.body));
+  renderLanShiftPinIntoHero(deps, root, fetched.pin, fetched.body);
 }
 
 /** Host: copy base URL for cross-VLAN clients (no new card). */
@@ -554,8 +581,8 @@ export function createPanelHostPin(deps) {
     appendLanHostPinSection: function (root) {
       return appendLanHostPinSection(deps, root);
     },
-    appendLanTurnResetSection: function (root, gen) {
-      return appendLanTurnResetSection(deps, root, gen);
+    appendLanTurnResetAlertStrip: function (root, gen) {
+      return appendLanTurnResetAlertStrip(deps, root, gen);
     },
     appendLanShiftPinClientConnectSection: function (root, gen) {
       return appendLanShiftPinClientConnectSection(deps, root, gen);

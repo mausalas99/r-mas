@@ -14,32 +14,52 @@
  *   showInvitePaste?: boolean,
  * }} opts
  */
-export function appendLanHubStatusCard(root, opts) {
-  const statusCard = document.createElement('div');
-  statusCard.className = 'lan-connect-card lan-hub-status-card';
-  const connected = !!opts.connected;
-  const line =
+export function appendLanHubStatusHero(root, opts) {
+  var hero = root.classList.contains('lan-connection-hero')
+    ? root
+    : root.querySelector('.lan-connection-hero');
+  if (!hero) {
+    hero = document.createElement('div');
+    hero.className = 'lan-connection-hero';
+    root.prepend(hero);
+  }
+
+  var existingStatus = hero.querySelector('.lan-connection-hero__status');
+  if (existingStatus) existingStatus.remove();
+
+  var connected = !!opts.connected;
+  var line =
     String(opts.statusLine || '').trim() ||
     (connected
       ? 'Conectado a la red del hospital'
       : 'Sin red \u2014 buscando anfitri\u00f3n en la Wi\u2011Fi del hospital\u2026');
-  statusCard.innerHTML =
+
+  var status = document.createElement('div');
+  status.className = 'lan-connection-hero__status';
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  status.innerHTML =
     '<div class="lan-hub-status-line">' +
     (connected
       ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> '
       : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> ') +
     line +
     '</div>';
-  const hint = String(opts.statusHint || '').trim();
-  if (hint) {
-    const hintEl = document.createElement('p');
-    hintEl.className = 'lan-connect-card-hint';
-    hintEl.style.marginTop = '6px';
+  hero.appendChild(status);
+
+  var hint = String(opts.statusHint || '').trim();
+  var showStatusHint = hint && opts.showStatusHint !== false;
+  if (showStatusHint) {
+    var hintEl = document.createElement('p');
+    hintEl.className = 'lan-connection-hero__hint lan-connect-card-hint';
     hintEl.textContent = hint;
-    statusCard.appendChild(hintEl);
+    var pinBlock = hero.querySelector('.lan-connection-hero__pin');
+    if (pinBlock) hero.insertBefore(hintEl, pinBlock);
+    else hero.appendChild(hintEl);
   }
+
   if (!connected && opts.isElectronDesktop && opts.showBecomeHost !== false) {
-    const becomeHostBtn = document.createElement('button');
+    var becomeHostBtn = document.createElement('button');
     becomeHostBtn.type = 'button';
     becomeHostBtn.className = 'btn-lan-primary';
     becomeHostBtn.style.marginTop = '8px';
@@ -48,16 +68,17 @@ export function appendLanHubStatusCard(root, opts) {
     becomeHostBtn.onclick = function () {
       if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
     };
-    statusCard.appendChild(becomeHostBtn);
+    hero.appendChild(becomeHostBtn);
   }
+
   if (opts.showInvitePaste) {
-    const inviteHint = document.createElement('p');
+    var inviteHint = document.createElement('p');
     inviteHint.className = 'lan-connect-card-hint lan-hub-invite-paste-hint';
     inviteHint.style.marginTop = '10px';
     inviteHint.innerHTML =
-      'Pega aquí el enlace <strong>Otra Mac del equipo</strong> del anfitrión (<code>http://…/join/req_…</code>).';
-    statusCard.appendChild(inviteHint);
-    const inputInvite = document.createElement('textarea');
+      'Pega aqu\u00e9 el enlace <strong>Otra Mac del equipo</strong> del anfitri\u00f3n (<code>http://\u2026/join/req_\u2026</code>).';
+    hero.appendChild(inviteHint);
+    var inputInvite = document.createElement('textarea');
     inputInvite.className = 'profile-input';
     inputInvite.setAttribute('data-lan-invite-input', '1');
     inputInvite.id = 'lan-input-invite-link';
@@ -65,20 +86,24 @@ export function appendLanHubStatusCard(root, opts) {
     inputInvite.autocomplete = 'off';
     inputInvite.placeholder = 'http://10.x.x.x:3738/join/req_…';
     inputInvite.style.marginTop = '6px';
-    statusCard.appendChild(inputInvite);
-    const row = document.createElement('div');
+    hero.appendChild(inputInvite);
+    var row = document.createElement('div');
     row.className = 'lan-connect-actions-row';
     row.style.marginTop = '8px';
-    const btnJoin = document.createElement('button');
+    var btnJoin = document.createElement('button');
     btnJoin.type = 'button';
     btnJoin.className = 'btn-lan-primary';
     btnJoin.style.flex = '1';
     btnJoin.textContent = 'Unirse con enlace';
     btnJoin.setAttribute('data-lan-action', 'join-invite');
     row.appendChild(btnJoin);
-    statusCard.appendChild(row);
+    hero.appendChild(row);
   }
-  root.appendChild(statusCard);
+}
+
+/** @param {HTMLElement} root @param {Parameters<typeof appendLanHubStatusHero>[1]} opts */
+export function appendLanHubStatusCard(root, opts) {
+  appendLanHubStatusHero(root, opts);
 }
 
 /**
@@ -89,33 +114,44 @@ export function appendLanHubStatusCard(root, opts) {
  * }} opts
  */
 export function appendLanHubRoomsCard(root, opts) {
-  const roomsCard = document.createElement('div');
-  roomsCard.className = 'lan-connect-card lan-rooms-panel';
-  roomsCard.innerHTML = '<div class="lan-connect-card-title">Salas de guardia</div>';
-
   const defs = opts.visibleSalaDefs || [];
+  const activeRoomId = String(opts.activeRoomId || '');
+  const activeDef = defs.find((d) => d.id === activeRoomId);
+  const summaryHint = activeDef
+    ? `En sala: ${activeDef.label}`
+    : defs.length
+      ? `${defs.length} sala${defs.length === 1 ? '' : 's'} disponible${defs.length === 1 ? '' : 's'}`
+      : 'Sin salas visibles';
+
+  const roomsCard = document.createElement('details');
+  roomsCard.className = 'rpc-disclosure lan-rooms-panel';
+  roomsCard.open = !activeDef && defs.length > 0;
+
+  const summary = document.createElement('summary');
+  summary.className = 'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary';
+  summary.innerHTML =
+    '<span class="lan-connect-card-title">Salas de guardia</span>' +
+    `<span class="lan-connect-card-hint lan-rooms-summary-hint">${summaryHint}</span>`;
+  roomsCard.appendChild(summary);
+
+  const body = document.createElement('div');
+  body.className = 'rpc-disclosure__body lan-rooms-panel-body';
+
   if (defs.length) {
     const list = document.createElement('ul');
-    list.style.listStyle = 'none';
-    list.style.padding = '0';
-    list.style.margin = '0';
+    list.className = 'lan-rooms-list';
     defs.forEach(function (d) {
       const li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.gap = '8px';
-      li.style.alignItems = 'center';
-      li.style.marginBottom = '8px';
+      li.className = 'lan-rooms-list-item';
 
       const name = document.createElement('span');
-      name.style.flex = '1';
-      name.style.fontSize = '13px';
+      name.className = 'lan-rooms-list-label';
       name.textContent = d.label;
 
       const joinBtn = document.createElement('button');
       joinBtn.type = 'button';
       joinBtn.className = 'btn-lan-secondary';
-      joinBtn.style.flex = '0 0 auto';
-      const inRoom = opts.activeRoomId === d.id;
+      const inRoom = activeRoomId === d.id;
       joinBtn.textContent = inRoom ? 'En sala' : 'Unirse';
       joinBtn.disabled = inRoom;
       joinBtn.setAttribute('data-lan-action', 'join-room');
@@ -126,7 +162,14 @@ export function appendLanHubRoomsCard(root, opts) {
       li.appendChild(joinBtn);
       list.appendChild(li);
     });
-    roomsCard.appendChild(list);
+    body.appendChild(list);
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'lan-connect-card-hint';
+    empty.textContent = 'No hay salas visibles para tu rango o sala asignada.';
+    body.appendChild(empty);
   }
+
+  roomsCard.appendChild(body);
   root.appendChild(roomsCard);
 }

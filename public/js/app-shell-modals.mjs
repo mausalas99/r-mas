@@ -169,8 +169,8 @@ function wireModalDismissLayers(registry) {
 function wireDropdownAndDynamicLayers(registry) {
   registry.register({
     isOpen: function () {
-      var c = shellEl('connection-dropdown');
-      return c && c.classList.contains('open');
+      var bg = shellEl('connection-dropdown-backdrop');
+      return bg && bg.classList.contains('open');
     },
     close: closeConnectionDropdown,
     backdropEl: function () {
@@ -180,8 +180,8 @@ function wireDropdownAndDynamicLayers(registry) {
 
   registry.register({
     isOpen: function () {
-      var s = shellEl('settings-dropdown');
-      return s && s.classList.contains('open');
+      var bg = shellEl('settings-dropdown-backdrop');
+      return bg && bg.classList.contains('open');
     },
     close: closeSettingsDropdown,
     backdropEl: function () {

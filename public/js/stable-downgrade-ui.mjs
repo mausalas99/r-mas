@@ -5,7 +5,7 @@ import {
   buildManualInstallerUrl,
 } from '../../lib/update-downgrade.mjs';
 
-import { fetchMinVersionPayload } from './min-version-fetch.mjs';
+import { showSettingsPanel } from './features/settings-help/settings-dropdown.mjs';
 
 const RELEASES_PAGE = 'https://github.com/mausalas99/r-mas/releases';
 
@@ -173,8 +173,19 @@ async function openManualInstallerForVersion(version) {
   openExternal(RELEASES_PAGE);
 }
 
+export const SETTINGS_UPDATES_PANEL_EVENT = 'rpc-settings-updates-panel-shown';
+
 function populateDowngradeSelect(select, entries) {
   select.innerHTML = '';
+  if (!entries.length) {
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = 'Sin versiones anteriores';
+    select.appendChild(empty);
+    select.disabled = true;
+    return;
+  }
+  select.disabled = false;
   entries.forEach(function (e) {
     const opt = document.createElement('option');
     opt.value = e.version;
@@ -203,15 +214,45 @@ export async function refreshStableDowngradeSettings(deps) {
 
   section.hidden = false;
   btn.disabled = true;
+  select.disabled = true;
   if (hint) {
     hint.textContent = 'Cargando versiones estables anteriores…';
   }
 
-  const [catalog, minVersion, currentVersion] = await Promise.all([
-    fetchStableVersionsCatalog(),
-    fetchMinVersion(),
-    getCurrentAppVersion(),
-  ]);
+  let catalog = { entries: [], source: 'none', filteredByGithub: false };
+  let minVersion = null;
+  let currentVersion = '0.0.0';
+  try {
+    const results = await Promise.race([
+      Promise.all([
+        fetchStableVersionsCatalog(),
+        fetchMinVersion(),
+        getCurrentAppVersion(),
+      ]),
+      new Promise(function (_resolve, reject) {
+        setTimeout(function () {
+          reject(new Error('downgrade catalog timeout'));
+        }, 12000);
+      }),
+    ]);
+    catalog = results[0];
+    minVersion = results[1];
+    currentVersion = results[2];
+  } catch {
+    if (hint) {
+      hint.textContent =
+        'No se pudo cargar el catálogo de versiones. Revisa la red o abre el instalador en GitHub.';
+    }
+    populateDowngradeSelect(select, []);
+    if (githubBtn) {
+      githubBtn.disabled = false;
+      githubBtn.onclick = function () {
+        openExternal(RELEASES_PAGE);
+      };
+    }
+    return { entries: [], source: 'error' };
+  }
+
   const entries = catalog.entries;
   const source = catalog.source;
 
@@ -222,7 +263,7 @@ export async function refreshStableDowngradeSettings(deps) {
         currentVersion +
         ' en el catálogo. Abre Releases en GitHub para instalar manualmente.';
     }
-    select.innerHTML = '';
+    populateDowngradeSelect(select, []);
     btn.disabled = true;
     if (githubBtn) {
       githubBtn.disabled = false;
@@ -279,11 +320,8 @@ export async function refreshStableDowngradeSettings(deps) {
 
 export function wireSettingsDowngradeAccordion(deps) {
   if (downgradeUiWired) return;
-  const acc = document.getElementById('settings-accordion-updates');
-  if (!acc) return;
   downgradeUiWired = true;
-  acc.addEventListener('toggle', function () {
-    if (!acc.open) return;
+  document.addEventListener(SETTINGS_UPDATES_PANEL_EVENT, function () {
     void refreshStableDowngradeSettings(deps);
   });
 }
@@ -303,7 +341,7 @@ export function openSettingsDowngradeSection() {
   if (settingsBtn && typeof settingsBtn.click === 'function') settingsBtn.click();
   const acc = document.getElementById('settings-accordion-updates');
   if (acc) {
-    acc.open = true;
+    showSettingsPanel('settings-accordion-updates');
     if (downgradeDeps) void refreshStableDowngradeSettings(downgradeDeps);
   }
   const section = document.getElementById('settings-downgrade-section');

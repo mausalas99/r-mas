@@ -107,13 +107,13 @@ function appendLanJoinOtherMacSection(root, opts) {
   } else {
     container = document.createElement('details');
     container.className = 'rpc-disclosure lan-connect-other-mac';
-    container.style.marginBottom = '8px';
     if (opts.open) container.open = true;
     var sum = document.createElement('summary');
-    sum.className = 'rpc-disclosure__summary';
-    sum.style.fontSize = '12px';
-    sum.style.color = 'var(--text-muted)';
-    sum.textContent = 'Unirme a la sala de otra computadora (enlace de invitación)';
+    sum.className =
+      'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary';
+    sum.innerHTML =
+      '<span class="settings-card__title">Otra Mac del equipo</span>' +
+      '<span class="settings-card__desc">Unirme con enlace de invitación</span>';
     container.appendChild(sum);
   }
 
@@ -173,7 +173,7 @@ function appendLanBackToLocalHostSection(deps, root) {
 function appendLanInviteCollapsible(root, opts) {
   var details = document.createElement('details');
   details.className =
-    'rpc-disclosure lan-connect-card lan-invite-collapsible lan-hub-invite-card ' +
+    'rpc-disclosure lan-invite-collapsible lan-hub-invite-card ' +
     String(opts.extraClass || '');
   try {
     details.open = sessionStorage.getItem(opts.openKey) === '1';
@@ -184,8 +184,11 @@ function appendLanInviteCollapsible(root, opts) {
     } catch (_e) { void _e; }
   });
   var sum = document.createElement('summary');
-  sum.className = 'rpc-disclosure__summary lan-invite-collapsible-summary';
-  sum.textContent = opts.title;
+  sum.className =
+    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary';
+  sum.innerHTML =
+    '<span class="settings-card__title">' + opts.title + '</span>' +
+    (opts.subtitle ? '<span class="settings-card__desc">' + opts.subtitle + '</span>' : '');
   details.appendChild(sum);
   var body = document.createElement('div');
   body.className = 'rpc-disclosure__body lan-invite-collapsible-body';
@@ -197,6 +200,7 @@ function appendLanInviteCollapsible(root, opts) {
 function appendLanMobileInviteCard(deps, root) {
   appendLanInviteCollapsible(root, {
     title: 'iPad / R+ Móvil',
+    subtitle: 'Emparejar dispositivo',
     openKey: LAN_INVITE_MOBILE_OPEN_KEY,
     extraClass: 'lan-invite-collapsible--mobile lan-hub-invite-card--mobile',
     fill: function (body) {

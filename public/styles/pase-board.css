@@ -2952,16 +2952,16 @@ html.guardia-entrega-roster-open #guardia-board-scroll {
 }
 
 .vfeed-empty .empty-state-title {
-  font-size: 0.8125rem;
+  font-size: calc(14px * var(--density-font));
   font-weight: 600;
   color: var(--text);
 }
 
-.vfeed-empty-sub,
 .vfeed-empty .empty-state-lead {
-  font-size: 0.75rem;
-  line-height: 1.35;
+  font-size: calc(13px * var(--density-font));
+  line-height: 1.45;
   color: var(--text-muted);
+  max-width: 36ch;
 }
 
 /* Entrega roster panel — tokens + shared modal actions (design.md) */

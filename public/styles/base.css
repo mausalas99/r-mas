@@ -462,8 +462,16 @@ html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
   color: var(--action);
 }
 html:not(.ui-density-normal) .patient-ronda-fullbar.is-visible { display: flex; }
-html.dark .dcard-copy:hover { border-color: var(--action); color: var(--action); background: #1e3a5f; }
-html.dark .dcard-copy.copied { border-color: #4ade80; color: #4ade80; background: #14532d; }
+html.dark .dcard-copy:hover {
+  border-color: var(--action);
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 28%, var(--surface));
+}
+html.dark .dcard-copy.copied {
+  border-color: var(--success);
+  color: var(--success);
+  background: color-mix(in oklab, var(--success) 32%, var(--surface));
+}
 /* Dark mode overrides for hardcoded backgrounds */
 html.dark .field-group input:not([type="checkbox"]):not([type="radio"]),
 html.dark .field-group select,
@@ -493,7 +501,7 @@ html.dark .otros-item input,
 html.dark .otros-item textarea { background: var(--bg); }
 html.dark .lab-item { background: var(--lab-chip-bg); }
 html.dark .lab-value-altered { color: var(--error); }
-html.dark .lab-value-normal { color: #4ade80; }
+html.dark .lab-value-normal { color: var(--success); }
 #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
 html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 1px; }
 /* ── Alto contraste (accesibilidad) — tokens en tokens.css ─ */
@@ -838,15 +846,15 @@ html.dark #update-banner { background: var(--color-update-banner-bg); border-bot
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  background: #7f1d1d;
-  color: #fecaca;
-  border-bottom: 1px solid #991b1b;
+  background: color-mix(in oklab, var(--error) 58%, black);
+  color: color-mix(in oklab, var(--error) 22%, white);
+  border-bottom: 1px solid color-mix(in oklab, var(--error) 72%, black);
   text-align: center;
 }
 html.dark .rpc-offline-banner {
-  background: #450a0a;
-  color: #fca5a5;
-  border-bottom-color: #7f1d1d;
+  background: color-mix(in oklab, var(--error) 42%, black);
+  color: color-mix(in oklab, var(--error) 38%, white);
+  border-bottom-color: color-mix(in oklab, var(--error) 58%, black);
 }
 .rpc-offline-banner.visible { display: flex; }
 .lan-connection-banner {
@@ -858,15 +866,15 @@ html.dark .rpc-offline-banner {
   padding: 8px 12px 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  background: #7c2d12;
+  background: color-mix(in oklab, var(--warn) 54%, black);
   color: var(--color-on-accent);
-  border-bottom: 1px solid #9a3412;
+  border-bottom: 1px solid color-mix(in oklab, var(--warn) 66%, black);
   text-align: center;
 }
 html.dark .lan-connection-banner {
-  background: #431407;
-  color: #fed7aa;
-  border-bottom-color: #7c2d12;
+  background: color-mix(in oklab, var(--warn) 38%, black);
+  color: color-mix(in oklab, var(--warn) 24%, white);
+  border-bottom-color: color-mix(in oklab, var(--warn) 52%, black);
 }
 .lan-connection-banner:not([hidden]) { display: flex; }
 .lan-connection-banner-text { flex: 1; min-width: 0; line-height: 1.35; }
@@ -904,14 +912,14 @@ html.dark .lan-connection-banner {
 .pending-jobs-pill::before {
   content: '';
   width: 8px; height: 8px; border-radius: 50%;
-  background: #fbbf24;
-  box-shadow: 0 0 0 0 rgba(251,191,36,0.6);
+  background: var(--warn);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--warn) 60%, transparent);
   animation: pjp-pulse 1.4s ease-in-out infinite;
 }
 @keyframes pjp-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(251,191,36,0.6); }
-  70%  { box-shadow: 0 0 0 6px rgba(251,191,36,0); }
-  100% { box-shadow: 0 0 0 0 rgba(251,191,36,0); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--warn) 60%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in oklab, var(--warn) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--warn) 0%, transparent); }
 }
 html.dark .pending-jobs-pill { background: rgba(255,255,255,0.08); border-color: rgba(148,163,184,0.22); color: var(--text); }
 #update-modal-backdrop {

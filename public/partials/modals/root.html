@@ -601,6 +601,37 @@
   </div>
 </div>
 
+<!-- @include settings-dropdown.html -->
+
+<div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
+  <div class="modal connection-dropdown connection-dropdown-modal" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
+    <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
+    <header class="connection-dropdown-modal-head">
+      <div class="connection-dropdown-head">
+        <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
+        <div>
+          <div class="connection-dropdown-head-title">Conexión guardia</div>
+          <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
+        </div>
+      </div>
+      <button type="button" class="clinical-teams-dismiss" id="btn-connection-dropdown-close" aria-label="Cerrar">×</button>
+    </header>
+    <div class="connection-dropdown-body" id="connection-dropdown-scroll">
+      <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
+    </div>
+  </div>
+</div>
+
+<div id="equipos-lista-backdrop" class="modal-backdrop equipos-lista-backdrop" aria-hidden="true">
+  <div class="modal equipos-lista-modal" role="dialog" aria-modal="true" aria-labelledby="equipos-lista-title" onclick="event.stopPropagation()">
+    <header class="equipos-lista-modal-head">
+      <h3 id="equipos-lista-title">R+ Lista de espera</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-equipos-lista-close" aria-label="Cerrar">×</button>
+    </header>
+    <div id="equipos-lista-panel-body" class="equipos-lista-panel-body"></div>
+  </div>
+</div>
+
 <div id="clinical-teams-backdrop" class="modal-backdrop clinical-teams-backdrop" aria-hidden="true">
   <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
     <header class="clinical-teams-modal-head">

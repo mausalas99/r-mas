@@ -22,18 +22,32 @@ export async function appendLanHostPatientsSection(root, opts) {
 
   if (root.querySelector('.lan-host-patients-panel')) return;
 
-  const wrap = document.createElement('div');
-  wrap.className = 'lan-host-patients-panel';
+  const row = document.createElement('div');
+  row.className = 'settings-card lan-host-patients-panel';
 
+  const copy = document.createElement('div');
+  copy.className = 'settings-card__copy';
+  const title = document.createElement('p');
+  title.className = 'settings-card__title';
+  title.textContent = 'Censo LAN';
+  const desc = document.createElement('p');
+  desc.className = 'settings-card__desc';
+  desc.textContent = 'Pacientes en el servidor';
+  copy.appendChild(title);
+  copy.appendChild(desc);
+
+  const action = document.createElement('div');
+  action.className = 'settings-card__action';
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn-lan-primary lan-host-patients-open-dashboard';
-  btn.style.width = '100%';
-  btn.textContent = 'Abrir censo LAN';
+  btn.className = 'btn-settings-row';
+  btn.textContent = 'Abrir';
   btn.addEventListener('click', function () {
     void openLanHostCensusDashboard({ showToast: showToast, onChanged: onChanged });
   });
+  action.appendChild(btn);
 
-  wrap.appendChild(btn);
-  root.appendChild(wrap);
+  row.appendChild(copy);
+  row.appendChild(action);
+  root.appendChild(row);
 }

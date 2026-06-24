@@ -433,15 +433,6 @@ async function reconnectFromOfflineUi(deps) {
   deps.renderLanPanel({ force: true });
 }
 
-function bindLanHostDiskAccordionToggle(acc) {
-  if (acc.dataset.lanHostToggleBound) return;
-  acc.dataset.lanHostToggleBound = '1';
-  acc.addEventListener('toggle', function () {
-    if (!acc.open) return;
-    syncLanHostTeamCodeSettingsInput();
-    syncLanHostFirstTimeHintUi();
-  });
-}
 
 function syncSettingsLanHostDiskSection() {
   var acc = document.getElementById('settings-accordion-lan-host-disk');
@@ -451,7 +442,11 @@ function syncSettingsLanHostDiskSection() {
   if (!desktop || isLanRemoteJoinMode()) return;
   syncLanHostTeamCodeSettingsInput();
   syncLanHostFirstTimeHintUi();
-  bindLanHostDiskAccordionToggle(acc);
+  void import('../settings-help/settings-dropdown.mjs')
+    .then(function (m) {
+      if (typeof m.syncSettingsNavVisibility === 'function') m.syncSettingsNavVisibility();
+    })
+    .catch(function () {});
 }
 
 async function syncLanHostTeamCodeSettingsInput() {

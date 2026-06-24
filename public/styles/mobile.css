@@ -272,16 +272,12 @@ html.dark .tend-range-vbar-track {
 body.focus-mode aside { display: none !important; }
 body.focus-mode #settings-dropdown,
 body.focus-mode #settings-dropdown-backdrop,
-body.focus-mode #connection-dropdown,
 body.focus-mode #connection-dropdown-backdrop { display: none !important; }
 /* ⇄ backdrop must not block taps when the panel is closed (iPad Safari). */
 html.rpc-mobile-web #connection-dropdown-backdrop:not(.open) {
   display: none !important;
   pointer-events: none !important;
   visibility: hidden !important;
-}
-html.rpc-mobile-web #connection-dropdown.open {
-  z-index: var(--z-header-dropdown-front);
 }
 body.focus-mode #btn-open-settings,
 body.focus-mode #btn-header-team-sync { display: none !important; }
@@ -317,7 +313,6 @@ body.focus-mode #focus-mode-pill { display: block; }
 .unified-search-result .usr-snippet mark {
   background: var(--color-focus-ring); color: var(--text); padding: 0 2px; border-radius: 2px;
 }
-.unified-search-empty { color: var(--text-muted); font-size: 13px; padding: 14px; text-align: center; }
 /* ── Plantillas guardadas (extra-templates) ────────────────── */
 .extra-tmpl-row {
   border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;

@@ -5,12 +5,6 @@
   --some-med-block-h: calc(var(--some-day-band-h) * 2);
   --some-day-w: clamp(32px, 3.1vw, 48px);
   --some-hdr-row-h: 30px;
-  --med-pharm-indicated: color-mix(in oklab, var(--color-accent) 18%, #e8edf4);
-  --med-pharm-indicated-border: color-mix(in oklab, var(--color-accent) 48%, #94a3b8);
-  --med-pharm-today: color-mix(in oklab, #d97706 22%, #fef9e8);
-  --med-pharm-today-fg: #92400e;
-  --med-pharm-not-admin: color-mix(in oklab, var(--bg) 72%, var(--surface));
-  --med-pharm-not-admin-border: #e11d48;
 }
 
 .med-pharm-scroll {
@@ -408,16 +402,6 @@ html.dark .med-pharm-swatch-today {
   border-top: 1px solid var(--border);
 }
 
-html.dark .med-pharm-root,
-html.dark .med-pharm-grid-scope {
-  --med-pharm-indicated: color-mix(in oklab, var(--color-accent) 26%, var(--surface));
-  --med-pharm-indicated-border: color-mix(in oklab, var(--color-accent) 62%, #64748b);
-  --med-pharm-today: color-mix(in oklab, #d97706 24%, var(--surface));
-  --med-pharm-today-fg: #fcd34d;
-  --med-pharm-not-admin: color-mix(in oklab, var(--bg) 88%, var(--surface));
-  --med-pharm-not-admin-border: #fb7185;
-}
-
 html.dark .med-pharm-list-head {
   background: color-mix(in oklab, var(--surface) 88%, var(--border));
 }
@@ -430,7 +414,7 @@ html.dark .med-pharm-grid-scope .some-grid-unified thead .col-meta-hdr {
 }
 
 html.dark .med-pharm-grid-scope .some-grid-unified th.day-hdr.today-col {
-  color: #fde68a;
+  color: var(--med-pharm-today-fg);
 }
 
 html.dark .med-pharm-grid-scope .some-grid-unified td.day-pad.today-col {
@@ -467,7 +451,7 @@ html.dark .med-pharm-modal-legend {
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text-muted);
-  background: #e8ecf2;
+  background: var(--input-fill);
   border-bottom: 1px solid var(--border);
   align-items: center;
 }
@@ -711,7 +695,7 @@ html.dark .med-pharm-modal-legend {
 }
 
 .med-pharm-adh-miss {
-  color: #b45309;
+  color: var(--warn);
 }
 
 .med-pharm-cat-select {
@@ -1227,7 +1211,7 @@ html.dark .med-pharm-adh-panel {
 }
 
 .med-pharm-grid-scope .some-grid-unified .adh-miss {
-  color: #b45309;
+  color: var(--warn);
 }
 
 .med-pharm-grid-scope .some-grid-unified .adh-miss strong {

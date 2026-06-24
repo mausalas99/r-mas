@@ -130,126 +130,1268 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
-.settings-dropdown {
+.settings-dropdown-backdrop {
+  z-index: var(--z-modal-nested);
+  background: color-mix(in oklab, var(--color-ink) 42%, transparent);
+}
+html.electron-macos-inset-bar .settings-dropdown-backdrop.open {
+  padding-top: max(
+    var(--electron-macos-chrome-top, 52px),
+    12px,
+    env(safe-area-inset-top, 0px)
+  );
+}
+body.settings-dropdown-open {
+  overflow: hidden;
+}
+#settings-dropdown-backdrop .settings-dropdown.settings-dropdown-modal {
+  width: min(96vw, 820px);
+  max-width: none;
+  max-height: min(92dvh, calc(var(--app-height) - 32px));
+  margin: 0;
+  flex-shrink: 0;
+  overflow: hidden;
   display: flex;
-  position: fixed;
-  top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
-  right: var(--shell-inset, 24px);
-  z-index: var(--z-header-dropdown);
-  border-radius: var(--radius-lg);
-  width: min(320px, calc(100vw - 32px));
-  max-height: min(85dvh, calc(var(--app-height) - 56px));
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-container);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow: var(--shadow-md);
+  animation: modal-in var(--dur-normal) var(--ease-out);
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+.settings-dropdown-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--modal-shell-gutter, var(--content-gutter));
+  min-height: 48px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+.settings-dropdown-head-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 4px;
+}
+.settings-head-link {
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.settings-head-link:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+}
+.settings-dropdown-modal-head h3,
+.settings-dropdown-modal-head h3#settings-dropdown-title {
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.settings-dropdown-body {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--modal-shell-gutter, var(--content-gutter));
+}
+.settings-split {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(152px, 184px) minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  overflow: hidden;
+}
+.settings-nav-item {
+  width: 100%;
+  margin: 0;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.25;
+}
+.settings-nav-item:hover {
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+  color: var(--text);
+}
+.settings-nav-item.is-active {
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--action);
+}
+.settings-nav-item:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 55%, transparent);
+  outline-offset: 1px;
+}
+.settings-panels {
+  min-width: 0;
+  min-height: 0;
   overflow-x: clip;
   overflow-y: auto;
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding: calc(14px * var(--density-space)); flex-direction: column; gap: calc(8px * var(--density-space));
-  visibility: hidden;
-  opacity: 0;
-  transform: scale(0.96) translateY(-6px);
-  transform-origin: top right;
-  pointer-events: none;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform var(--dur-normal) var(--ease-out),
-    visibility 0s linear var(--dur-normal);
+  padding: 0;
 }
-.settings-dropdown.open {
-  visibility: visible;
+.settings-panel {
+  width: 100%;
+}
+.settings-panel.settings-panel--wide .settings-acc-body {
+  max-width: none;
+}
+.settings-panel > .settings-acc-body,
+.settings-panel.settings-accordion > .settings-acc-body {
+  max-height: none;
   opacity: 1;
-  transform: scale(1) translateY(0);
+  padding: 0;
   pointer-events: auto;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform var(--dur-normal) var(--ease-out),
-    visibility 0s;
+  overflow: visible;
 }
-.settings-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: var(--z-header-backdrop);
-  background: color-mix(in oklab, var(--color-ink) 18%, transparent);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease-out), visibility 0s linear var(--dur-fast);
+.settings-panel[hidden] {
+  display: none !important;
 }
-.settings-dropdown-backdrop.open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transition: opacity var(--dur-fast) var(--ease-out), visibility 0s;
-}
-/* Menú ⇄ · LAN / LiveSync (separado de Ajustes) */
-.connection-dropdown {
+.settings-form {
   display: flex;
-  position: fixed;
-  top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
-  right: calc(var(--shell-inset, 24px) + 52px);
-  z-index: var(--z-header-dropdown-front);
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
   background: var(--surface);
-  border: none; border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
-  width: min(400px, calc(100vw - 24px));
-  max-height: min(85dvh, calc(var(--app-height) - 56px));
-  overflow-x: clip; overflow-y: auto; overscroll-behavior: contain;
-  overflow-anchor: none;
-  padding: 14px; flex-direction: column; gap: 10px;
-  visibility: hidden;
-  opacity: 0;
-  transform: scale(0.96) translateY(-6px);
-  transform-origin: top right;
-  pointer-events: none;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform var(--dur-normal) var(--ease-out),
-    visibility 0s linear var(--dur-normal);
 }
-.connection-dropdown.open {
-  visibility: visible;
+.settings-form--compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+}
+.settings-form-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 108px) minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.settings-form--compact .settings-form-row:nth-child(2n) {
+  border-right: none;
+}
+.settings-form--compact .settings-form-row--wide {
+  grid-column: 1 / -1;
+  border-right: none;
+}
+.settings-form--compact .settings-form-foot {
+  grid-column: 1 / -1;
+  border-right: none;
+  border-bottom: none;
+}
+.settings-form-row:last-child {
+  border-bottom: none;
+}
+.settings-form--compact .settings-form-row:nth-last-child(2):not(.settings-form-row--wide):not(.settings-form-foot) {
+  border-bottom: 1px solid var(--border);
+}
+.settings-form-foot {
+  margin: 0;
+  padding: 10px 16px 12px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+}
+.settings-form-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.settings-form-row .settings-acc-hint,
+.settings-form-row .overview-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.settings-theme-row--fit {
+  width: fit-content;
+  max-width: 100%;
+}
+.settings-dropdown-modal .settings-theme-row--fit .settings-theme-btn {
+  flex: 0 1 auto;
+  min-width: 4.75rem;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+/* Fluent-style settings cards (Ajustes + ⇄ administración) */
+.settings-card-stack {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.settings-card-stack__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 var(--settings-copy-inset, 16px) 12px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
+}
+.settings-card-stack__foot .lan-connect-card-hint,
+.settings-card-stack__foot .overview-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.settings-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  padding: 13px var(--settings-copy-inset, 16px);
+  border-bottom: 1px solid var(--border);
+}
+.settings-card:last-child {
+  border-bottom: none;
+}
+.settings-card__copy {
+  min-width: 0;
+}
+.settings-card__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+.settings-card__desc {
+  margin: 3px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.settings-card__action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.settings-card__toggle-label {
+  margin: 0;
+  cursor: pointer;
+  min-height: 44px;
+  padding-left: 8px;
+}
+.settings-card__toggle {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--action);
+}
+.btn-settings-row {
+  margin: 0;
+  padding: 5px 12px;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-settings-row:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 30%, var(--border));
+  background: var(--state-hover-bg);
+}
+.btn-settings-row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-settings-row--warn {
+  color: var(--warn);
+  border-color: var(--color-warn-border-strong);
+}
+.btn-settings-row--warn:hover {
+  background: var(--color-warn-surface);
+}
+.btn-settings-row--danger {
+  color: var(--error);
+  border-color: color-mix(in oklab, var(--error) 35%, var(--border));
+}
+.btn-settings-row--danger:hover {
+  background: var(--color-danger-hover-bg);
+}
+.settings-section-label {
+  margin: 12px 0 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+.settings-section-label:first-child {
+  margin-top: 0;
+}
+/* Modal shells — one readable column for copy + full-width stacks */
+.settings-dropdown-modal,
+.connection-dropdown-modal {
+  --modal-shell-gutter: var(--content-gutter);
+  --settings-copy-inset: 16px;
+}
+.settings-dropdown-modal .settings-panel > .settings-acc-body,
+.settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 20px;
+  max-height: none;
   opacity: 1;
-  transform: scale(1) translateY(0);
+  overflow: visible;
   pointer-events: auto;
-  transition:
-    opacity var(--dur-fast) var(--ease-out),
-    transform var(--dur-normal) var(--ease-out),
-    visibility 0s;
+  box-sizing: border-box;
 }
+.settings-dropdown-modal .settings-acc-prose,
+.settings-dropdown-modal .settings-acc-body > .settings-acc-hint,
+.settings-dropdown-modal .settings-acc-body > .settings-acc-lead,
+.settings-dropdown-modal .settings-acc-body > .settings-section-label,
+.settings-dropdown-modal .settings-acc-body > .settings-acc-danger-label,
+.settings-dropdown-modal .settings-acc-body > .settings-sync-help-link,
+.settings-dropdown-modal #settings-downgrade-section > .settings-section-label,
+.settings-dropdown-modal #settings-downgrade-section > .settings-acc-hint,
+.settings-dropdown-modal #settings-downgrade-section > .settings-acc-lead {
+  margin: 0;
+  padding-inline: var(--settings-copy-inset);
+  box-sizing: border-box;
+}
+.settings-dropdown-modal #settings-downgrade-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+.settings-dropdown-modal #settings-downgrade-section[hidden] {
+  display: none !important;
+}
+.settings-dropdown-modal .settings-acc-body > hr.settings-acc-divider {
+  margin: 4px var(--settings-copy-inset);
+  width: auto;
+}
+.settings-dropdown-modal .settings-acc-lead {
+  margin-bottom: 0;
+}
+.settings-dropdown-modal .settings-acc-body > .settings-section-label {
+  margin-top: 4px;
+}
+.settings-dropdown-modal .settings-acc-body > .settings-section-label:first-child,
+.settings-dropdown-modal .settings-acc-body > .settings-acc-lead:first-child,
+.settings-dropdown-modal .settings-acc-body > .settings-acc-hint:first-child {
+  margin-top: 0;
+}
+.settings-dropdown-modal .settings-card {
+  align-items: center;
+}
+.settings-dropdown-modal .settings-card:has(.settings-card__desc),
+.settings-dropdown-modal .settings-card--toggle {
+  align-items: start;
+}
+.settings-dropdown-modal .settings-card:has(.settings-card__desc) .settings-card__action,
+.settings-dropdown-modal .settings-card--toggle .settings-card__action {
+  padding-top: 2px;
+}
+.settings-dropdown-modal .settings-card__action .settings-acc-select,
+.settings-dropdown-modal .settings-card__action .profile-input {
+  min-width: 0;
+}
+.settings-acc-select--compact,
+.settings-dropdown-modal .settings-card__action .settings-acc-select--compact,
+.settings-dropdown-modal .settings-card__action select.settings-acc-select {
+  width: auto;
+  max-width: min(200px, 44vw);
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 26px 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-chip);
+  background-color: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  box-shadow: none;
+  appearance: auto;
+  -webkit-appearance: menulist;
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+.settings-acc-select--compact:hover,
+.settings-dropdown-modal .settings-card__action select.settings-acc-select:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action) 30%, var(--border));
+  background-color: var(--state-hover-bg);
+}
+.settings-acc-select--compact:focus,
+.settings-dropdown-modal .settings-card__action select.settings-acc-select:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  color: var(--text);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 18%, transparent);
+}
+.settings-dropdown-modal .settings-sync-help-link .btn-settings-row {
+  margin-left: 6px;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.lan-connection-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 4px;
+}
+.lan-connection-hero__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+.lan-connection-hero__hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.lan-connection-hero__pin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+.lan-connection-hero__pin-main {
+  min-width: 0;
+}
+.lan-pin-code {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  line-height: 1.2;
+}
+.lan-pin-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.lan-connection-hero__pin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lan-alert-strip {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-chip);
+  background: var(--color-warn-surface);
+  border: 1px solid var(--color-warn-border);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.lan-alert-strip--offline {
+  background: color-mix(in oklab, var(--text-muted) 8%, var(--surface));
+  border-color: var(--border);
+}
+.lan-alert-strip__copy {
+  min-width: 0;
+  flex: 1;
+}
+.lan-alert-strip__hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.btn-lan-primary--compact {
+  min-width: 0;
+  width: auto;
+  padding: 7px 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.lan-connection-stack {
+  width: 100%;
+}
+.lan-connection-stack--admin {
+  width: 100%;
+}
+.lan-panel-group--admin .lan-panel-group__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lan-panel-group--admin .rpc-disclosure,
+.lan-panel-group--admin .settings-card-stack,
+.lan-panel-group--admin .equipos-qr-compact-card {
+  border-radius: 10px;
+}
+.lan-panel-group--admin .lan-sync-diagnostics-panel > .rpc-disclosure__summary,
+.lan-panel-group--admin .lan-hub-interno-details > .lan-settings-card-summary {
+  min-height: 44px;
+  padding: 10px 32px 10px 14px;
+}
+.lan-settings-card-summary {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding-right: 32px !important;
+}
+.lan-settings-card-summary .settings-card__title {
+  grid-column: 1;
+  grid-row: 1;
+}
+.lan-settings-card-summary .settings-card__desc {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+}
+.lan-settings-card-summary::after {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+.lan-panel-group--grid .rpc-disclosure__summary--stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  padding: 12px 32px 12px 14px;
+}
+.lan-panel-group--grid .rpc-disclosure__summary--stacked .lan-connect-card-title {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+.lan-panel-group--grid .rpc-disclosure__summary--stacked .lan-connect-card-hint {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+}
+.lan-panel-group--grid .rpc-disclosure__summary--stacked::after {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  position: static;
+  margin-top: 0;
+}
+.lan-panel-group--grid .lan-invite-collapsible-summary {
+  min-height: 44px;
+  padding: 12px 32px 12px 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.lan-hub-team-card {
+  padding: 12px 14px;
+}
+.lan-hub-team-card .lan-connect-card-title {
+  margin: 0;
+}
+.lan-hub-team-name {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  .settings-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .settings-nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .settings-nav-item.is-active {
+    box-shadow: inset 0 -2px 0 var(--action);
+  }
+}
+.settings-dropdown-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.settings-help-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.btn-settings-help-primary,
+.btn-settings-help-secondary {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: min(100%, 220px);
+}
+.btn-settings-help-secondary {
+  margin-top: 0;
+}
+@media (min-width: 720px) {
+  .settings-help-cta {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+  .btn-settings-help-primary,
+  .btn-settings-help-secondary {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+.settings-accordion-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-dropdown-modal .settings-acc-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .settings-dropdown-modal .settings-acc-compact {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    align-items: center;
+  }
+}
+.settings-dropdown-modal .btn-edit-templates {
+  width: auto;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.settings-dropdown-modal .settings-acc-btn-grid .btn-edit-templates {
+  width: 100%;
+  white-space: normal;
+}
+@media (min-width: 720px) {
+  .settings-dropdown-modal,
+  .connection-dropdown-modal {
+    --modal-shell-gutter: var(--content-gutter-lg);
+    --settings-copy-inset: 18px;
+  }
+  .settings-dropdown-modal .settings-panel > .settings-acc-body,
+  .settings-dropdown-modal .settings-panel.settings-accordion:not([hidden]) > .settings-acc-body {
+    padding-inline: 20px;
+  }
+}
+.settings-acc-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+@media (min-width: 560px) {
+  .settings-acc-btn-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.settings-acc-btn-grid > .btn-edit-templates {
+  margin-top: 0;
+  width: 100%;
+  justify-content: center;
+}
+.settings-accordion-grid .settings-accordion {
+  margin-bottom: 0;
+  min-height: 0;
+  width: 100%;
+}
+.settings-data-sync-compare {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 560px) {
+  .settings-data-sync-compare {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Menú ⇄ · LAN / LiveSync — centered wide modal (como Mi rotación) */
 .connection-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: calc(var(--z-header-backdrop) + 1);
-  background: color-mix(in oklab, var(--color-ink) 18%, transparent);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity var(--dur-fast) var(--ease-out), visibility 0s linear var(--dur-fast);
+  z-index: var(--z-modal-nested);
+  background: color-mix(in oklab, var(--color-ink) 42%, transparent);
 }
-.connection-dropdown-backdrop.open {
-  opacity: 1;
+html.electron-macos-inset-bar .connection-dropdown-backdrop.open {
+  padding-top: max(
+    var(--electron-macos-chrome-top, 52px),
+    12px,
+    env(safe-area-inset-top, 0px)
+  );
+}
+body.connection-dropdown-open {
+  overflow: hidden;
+}
+#connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal {
+  width: min(96vw, 840px);
+  max-width: none;
+  max-height: min(92dvh, calc(var(--app-height) - 24px));
+  margin: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-container);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow: var(--shadow-md);
+  animation: modal-in var(--dur-normal) var(--ease-out);
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
   visibility: visible;
+  opacity: 1;
   pointer-events: auto;
-  transition: opacity var(--dur-fast) var(--ease-out), visibility 0s;
+}
+.connection-dropdown-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px var(--stack-inner-pad);
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+.connection-dropdown-body {
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px var(--stack-inner-pad) 18px;
 }
 .connection-dropdown-head {
-  display: flex; gap: 10px; align-items: flex-start;
-  padding: 10px 12px; margin: -4px -4px 8px -4px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--lab-chip-bg);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .connection-dropdown-head-icon {
-  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
-.connection-dropdown-head-icon svg { display: block; }
+.connection-dropdown-head-icon svg { display: block; width: 16px; height: 16px; }
 .connection-dropdown-head-title {
-  font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.25;
-  margin: 0 0 2px 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  margin: 0;
 }
 .connection-dropdown-head-sub {
-  font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
+  display: none;
 }
-.lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+.lan-connection-prefs {
+  padding: 0;
+  flex-shrink: 0;
+}
+.lan-disconnect-banner-pref {
+  font-size: 10px;
+  line-height: 1.35;
+  gap: 6px;
+}
+.lan-connection-panel-root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+/* ⇄ unified list — one bordered stack; children are rows, not nested cards */
+.lan-connection-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.lan-connection-stack > .rpc-disclosure,
+.lan-connection-stack > .lan-connect-card,
+.lan-connection-stack > .settings-card,
+.lan-connection-stack > .settings-card-stack,
+.lan-connection-stack > .equipos-qr-compact-card,
+.lan-connection-stack > .lan-host-patients-panel {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  background: transparent;
+}
+.lan-connection-stack > * + * {
+  border-top: 1px solid var(--border);
+}
+.lan-connection-stack > .settings-card-stack {
+  border-top: none;
+}
+.lan-connection-stack > .settings-card-stack > .settings-card {
+  border-bottom: 1px solid var(--border);
+}
+.lan-connection-stack > .settings-card-stack > .settings-card:last-child {
+  border-bottom: none;
+}
+.lan-connection-stack .rpc-disclosure > summary,
+.lan-connection-stack .rpc-disclosure > .rpc-disclosure__summary,
+.lan-connection-stack .rpc-disclosure > .lan-settings-card-summary {
+  position: relative;
+  min-height: 44px;
+  padding: 9px 32px 9px 12px;
+  border-bottom: none;
+  cursor: pointer;
+  list-style: none;
+}
+.lan-connection-stack .rpc-disclosure__summary--stacked,
+.lan-connection-stack .lan-settings-card-summary,
+.lan-connection-stack .lan-invite-collapsible-summary {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+.lan-connection-stack .rpc-disclosure__summary--stacked::after,
+.lan-connection-stack .lan-settings-card-summary::after {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  margin-top: -0.22em;
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: none;
+  border-right: 1.5px solid var(--text-muted);
+  border-bottom: 1.5px solid var(--text-muted);
+  border-radius: 0;
+  background: transparent;
+  font-size: inherit;
+  font-weight: normal;
+  color: inherit;
+  transform: rotate(-45deg);
+  opacity: 0.72;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.lan-connection-stack .rpc-disclosure[open] > .rpc-disclosure__summary--stacked::after,
+.lan-connection-stack .rpc-disclosure[open] > .lan-settings-card-summary::after {
+  transform: rotate(45deg);
+  margin-top: -0.28em;
+}
+.lan-connection-stack .rpc-disclosure__summary--stacked .lan-connect-card-title,
+.lan-connection-stack .lan-settings-card-summary .settings-card__title,
+.lan-connection-stack .lan-invite-collapsible-summary {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.lan-connection-stack .rpc-disclosure__summary--stacked .lan-connect-card-hint,
+.lan-connection-stack .lan-settings-card-summary .settings-card__desc {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+.lan-connection-stack .rpc-disclosure__body,
+.lan-connection-stack .lan-invite-collapsible-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+}
+.lan-connection-stack > .settings-card {
+  min-height: 44px;
+  padding: 12px 16px;
+  border-bottom: none;
+}
+.lan-connection-stack .lan-hub-team-card {
+  padding: 9px 12px;
+}
+.lan-connection-stack .lan-shift-pin-client-card {
+  padding: 10px 12px 12px;
+}
+.lan-connection-stack--admin {
+  margin-top: 0;
+}
+.connection-dropdown-modal .lan-connection-hero {
+  padding: 2px 4px 0;
+  margin-bottom: 0;
+  border-bottom: none;
+  gap: 12px;
+}
+.connection-dropdown-modal .lan-connection-hero__status {
+  font-size: 13px;
+}
+.connection-dropdown-modal .lan-connection-hero__status .lan-hub-status-line {
+  font-size: inherit;
+  font-weight: 600;
+}
+.connection-dropdown-modal .lan-connection-hero .lan-connect-card-hint,
+.connection-dropdown-modal .lan-connection-hero__hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0;
+}
+.connection-dropdown-modal .lan-pin-code {
+  font-size: 1.55rem;
+  letter-spacing: 0.12em;
+}
+.connection-dropdown-modal .lan-pin-meta {
+  font-size: 11px;
+  margin-top: 3px;
+}
+.connection-dropdown-modal .lan-alert-strip {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 11px;
+}
+.connection-dropdown-modal .lan-alert-strip strong {
+  font-weight: 600;
+  font-size: 12px;
+}
+.connection-dropdown-modal .lan-connection-stack.settings-card-stack {
+  border-radius: 12px;
+  border-color: color-mix(in oklab, var(--border) 100%, transparent);
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+.connection-dropdown-modal .lan-connection-stack > .settings-card {
+  padding: 12px 16px;
+  min-height: 46px;
+}
+.connection-dropdown-modal .settings-card__title {
+  font-size: 12px;
+  font-weight: 600;
+}
+.connection-dropdown-modal .settings-card__desc {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.connection-dropdown-modal .settings-card--toggle {
+  align-items: start;
+}
+.connection-dropdown-modal .settings-card--toggle .settings-card__toggle-label {
+  min-height: 0;
+  padding: 2px 0 0 4px;
+}
+.connection-dropdown-modal .settings-card__toggle {
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--text-muted) 22%, var(--surface));
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.connection-dropdown-modal .settings-card__toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+  transition: transform var(--dur-fast);
+}
+.connection-dropdown-modal .settings-card__toggle:checked {
+  background: var(--action);
+  border-color: var(--action);
+}
+.connection-dropdown-modal .settings-card__toggle:checked::after {
+  transform: translateX(18px);
+}
+.connection-dropdown-modal .settings-card__toggle:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
+  outline-offset: 2px;
+}
+.connection-dropdown-modal .equipos-qr-compact-host .settings-card {
+  border-bottom: none;
+}
+.lan-panel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.connection-dropdown-modal .lan-panel-group__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.lan-panel-group--connection {
+  grid-column: 1 / -1;
+}
+.lan-panel-group--connection.lan-panel-group--stack .lan-panel-group__body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 8px;
+  align-items: stretch;
+}
+.lan-panel-group--connection .lan-turn-reset-card,
+.lan-panel-group--connection .lan-shift-pin-client-card,
+.lan-panel-group--connection .lan-offline-banner,
+.lan-panel-group--connection .lan-connect-other-mac--prominent {
+  grid-column: 1 / -1;
+}
+.lan-panel-group--access {
+  grid-column: 1 / -1;
+}
+.lan-panel-group--admin {
+  grid-column: 1 / -1;
+}
+.lan-panel-group--admin.lan-panel-group--stack .lan-panel-group__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+.lan-panel-group--admin .lan-sync-diagnostics-panel[open],
+.lan-panel-group--admin .lan-hub-interno-details[open] {
+  grid-column: 1 / -1;
+}
+.lan-panel-group__title {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.lan-panel-group--stack .lan-panel-group__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lan-panel-group--list .lan-panel-group__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.lan-panel-group--list .lan-panel-group__body > .rpc-disclosure,
+.lan-panel-group--list .lan-panel-group__body > .lan-connect-card,
+.lan-panel-group--list .lan-panel-group__body > .settings-card-stack {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+.lan-panel-group--list .lan-panel-group__body > * + * {
+  border-top: 1px solid var(--border);
+}
+.lan-panel-group--list .lan-panel-group__body > .rpc-disclosure > summary,
+.lan-panel-group--list .lan-panel-group__body > .rpc-disclosure > .rpc-disclosure__summary,
+.lan-panel-group--list .lan-panel-group__body > .rpc-disclosure > .lan-settings-card-summary {
+  border-bottom: none;
+}
+.lan-panel-group--list .lan-hub-team-card {
+  padding: 11px 14px;
+  background: transparent;
+}
+.lan-panel-group--list .rpc-disclosure > summary,
+.lan-panel-group--list .rpc-disclosure > .rpc-disclosure__summary,
+.lan-panel-group--list .rpc-disclosure > .lan-settings-card-summary {
+  position: relative;
+  min-height: 38px;
+  padding: 7px 30px 7px 12px;
+  border-bottom: none;
+}
+.lan-panel-group--list .lan-invite-collapsible-summary {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.lan-panel-group--list .rpc-disclosure__summary--stacked,
+.lan-panel-group--list .lan-settings-card-summary {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+}
+.lan-panel-group--list .rpc-disclosure__summary--stacked::after,
+.lan-panel-group--list .lan-settings-card-summary::after {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  margin-top: -0.22em;
+  grid-column: unset;
+  grid-row: unset;
+  align-self: auto;
+}
+.lan-panel-group--list .rpc-disclosure__summary--stacked .lan-connect-card-title,
+.lan-panel-group--list .lan-settings-card-summary .settings-card__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.lan-panel-group--list .rpc-disclosure__summary--stacked .lan-connect-card-hint,
+.lan-panel-group--list .lan-settings-card-summary .settings-card__desc {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+.lan-panel-group--grid .lan-panel-group__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.lan-panel-group__body > .lan-connect-other-mac--prominent,
+.lan-panel-group__body > .lan-offline-banner,
+.lan-panel-group__body > .lan-hub-status-card,
+.lan-panel-group__body > .lan-shift-pin-card,
+.lan-panel-group__body > .lan-turn-reset-card,
+.lan-panel-group__body > .equipos-qr-compact-card,
+.lan-panel-group__body > .lan-sync-diagnostics-panel,
+.lan-panel-group__body > .lan-host-patients-panel,
+.lan-panel-group__body > .lan-known-sessions-card,
+.lan-panel-group__body > .lan-panel-span-full {
+  grid-column: 1 / -1;
+}
+@media (min-width: 640px) {
+  .lan-connect-other-mac--prominent .lan-connect-other-mac-body {
+    display: grid;
+    grid-template-columns: 1fr minmax(168px, 220px);
+    gap: 10px 12px;
+    align-items: end;
+  }
+  .lan-connect-other-mac--prominent .lan-connect-other-mac-body > .lan-connect-card-hint {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+  .lan-connect-other-mac--prominent .lan-connect-other-mac-body > .lan-connect-actions-row {
+    margin-top: 0;
+  }
+}
 .lan-sync-diagnostics-pre {
   font-size: 11px;
   white-space: pre-wrap;
@@ -267,6 +1409,53 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   line-height: 1.35;
 }
 .lan-disconnect-banner-pref input { flex-shrink: 0; margin-top: 2px; }
+.lan-known-sessions-card {
+  padding: 10px 12px 12px;
+}
+.lan-known-sessions-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.lan-known-sessions-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+@media (min-width: 560px) {
+  .lan-known-sessions-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.lan-known-sessions-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.lan-known-sessions-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lan-known-sessions-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+.lan-known-sessions-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
   border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
@@ -280,6 +1469,484 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 .lan-connect-card-hint {
   font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
 }
+
+/* R+ Lista de espera — compact ⇄ teaser + wide modal panel */
+.equipos-qr-compact-card {
+  padding: 12px 14px;
+}
+.equipos-qr-compact-card .equipos-qr-compact-host {
+  padding: 0;
+}
+.equipos-qr-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.equipos-qr-compact-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.equipos-qr-compact-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.equipos-qr-compact-line {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.equipos-qr-compact-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.equipos-qr-compact-warn {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--status-warning, #b45309);
+}
+.equipos-qr-compact-card .equipos-qr-open-btn {
+  flex-shrink: 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .equipos-qr-compact-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .equipos-qr-compact-card .equipos-qr-open-btn {
+    width: 100%;
+  }
+}
+
+.lan-rooms-summary-hint {
+  font-size: 11px;
+  font-weight: 400;
+}
+.lan-rooms-panel-body {
+  padding-top: 4px;
+}
+.lan-rooms-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .lan-rooms-list {
+    grid-template-columns: 1fr;
+  }
+}
+.lan-rooms-list-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+}
+.lan-rooms-list-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.lan-rooms-list-item .btn-lan-secondary {
+  flex: 0 0 auto;
+}
+
+#equipos-lista-backdrop.equipos-lista-backdrop {
+  z-index: calc(var(--z-modal-nested) + 1);
+  background: color-mix(in oklab, var(--color-ink) 42%, transparent);
+}
+#equipos-lista-backdrop.equipos-lista-backdrop.open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 12px
+    max(12px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  overscroll-behavior: none;
+  animation: fade-in var(--dur-fast) var(--ease-out);
+}
+body.equipos-lista-modal-open {
+  overflow: hidden;
+}
+html.electron-macos-inset-bar #equipos-lista-backdrop.equipos-lista-backdrop.open {
+  padding-top: max(
+    var(--electron-macos-chrome-top, 52px),
+    12px,
+    env(safe-area-inset-top, 0px)
+  );
+}
+#equipos-lista-backdrop .modal.equipos-lista-modal {
+  width: min(96vw, 920px);
+  max-width: none;
+  max-height: min(88dvh, calc(var(--app-height) - 48px));
+  margin: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-container);
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  box-shadow: var(--shadow-md);
+  animation: modal-in var(--dur-normal) var(--ease-out);
+}
+.equipos-lista-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  min-height: 56px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+.equipos-lista-modal h3,
+.equipos-lista-modal h3#equipos-lista-title {
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+#equipos-lista-backdrop .equipos-lista-panel-body {
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(min(88dvh, calc(var(--app-height) - 48px)) - 56px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px 18px;
+}
+
+.equipos-lista-panel-body .equipos-cloud-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.equipos-lista-panel-body .equipos-cloud-setup-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.equipos-lista-panel-body .equipos-cloud-setup-title {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+.equipos-lista-panel-body .equipos-cloud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklab, var(--success) 32%, var(--border));
+  background: color-mix(in oklab, var(--success) 10%, transparent);
+  color: var(--success);
+  line-height: 1.2;
+}
+.equipos-lista-panel-body .equipos-cloud-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+.equipos-lista-panel-body .equipos-cloud-badge.is-live::before {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--success) 22%, transparent);
+}
+.equipos-lista-panel-body .equipos-cloud-badge.is-pending {
+  border-color: color-mix(in oklab, var(--text-muted) 28%, var(--border));
+  background: color-mix(in oklab, var(--surface) 88%, var(--text-muted));
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.equipos-lista-panel-body .equipos-cloud-badge.is-pending::before {
+  opacity: 0.55;
+  box-shadow: none;
+}
+.equipos-lista-panel-body .equipos-cloud-setup-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.equipos-lista-panel-body .equipos-cloud-setup-warn {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--status-warning, #b45309);
+}
+.equipos-lista-panel-body .equipos-cloud-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: end;
+}
+@media (max-width: 640px) {
+  .equipos-lista-panel-body .equipos-cloud-fields {
+    grid-template-columns: 1fr;
+  }
+}
+.equipos-lista-panel-body .lan-connect-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.equipos-lista-panel-body .profile-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--input-fill, var(--surface));
+  border: 1px solid var(--border);
+}
+.equipos-lista-panel-body .profile-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+.equipos-lista-panel-body .equipos-cloud-save {
+  align-self: end;
+  min-width: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.equipos-lista-panel-body .equipos-qr-meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.equipos-lista-panel-body .equipos-qr-resident {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.equipos-lista-panel-body .equipos-qr-resident-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px 16px;
+  align-items: start;
+}
+@media (max-width: 560px) {
+  .equipos-lista-panel-body .equipos-qr-resident-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.equipos-lista-panel-body .equipos-qr-preview-host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  width: fit-content;
+  max-width: 100%;
+}
+.equipos-lista-panel-body .equipos-qr-canvas {
+  display: block;
+  max-width: 148px;
+  height: auto;
+}
+.equipos-lista-panel-body .equipos-qr-resident-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.equipos-lista-panel-body .equipos-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.equipos-lista-panel-body .equipos-qr-actions--row .btn-lan-primary,
+.equipos-lista-panel-body .equipos-qr-actions--row .btn-lan-secondary {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.equipos-lista-panel-body .equipos-qr-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.equipos-lista-panel-body .equipos-qr-url-box {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-fill, var(--surface));
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equipos-lista-panel-body .equipos-qr-lan-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, var(--warning, #b45309) 28%, var(--border));
+  background: color-mix(in oklab, var(--warning, #b45309) 8%, var(--surface));
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* Equipos queue board — lista de espera modal */
+.equipos-lista-panel-body .equipos-queue-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.equipos-lista-panel-body .equipos-queue-panel-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-mode {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-open-mobile {
+  margin-left: auto;
+  font-size: 11px;
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-storage-hint {
+  margin: 0 0 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row {
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-desktop-row-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.equipos-lista-panel-body .equipos-queue-board-host .equipos-board-admin-actions .btn-lan-secondary {
+  font-size: 11px;
+}
+.equipos-history-host {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+}
+.equipos-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.equipos-history-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+.equipos-history-scroll {
+  max-height: 220px;
+  overflow: auto;
+}
+.equipos-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.equipos-history-table th,
+.equipos-history-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.equipos-history-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+}
+.equipos-history-empty,
+.equipos-history-loading {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 .lan-host-patients-list {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px;
   max-height: 240px; overflow-y: auto;
@@ -319,6 +1986,9 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 .lan-host-patients-preview-more {
   font-size: 10px; color: var(--text-muted); padding: 2px 4px;
 }
+.lan-host-census-backdrop.modal-backdrop {
+  z-index: calc(var(--z-modal-nested) + 1);
+}
 .lan-host-census-backdrop .lan-host-census-modal {
   width: min(960px, 96vw); max-height: 88vh; padding: 20px 22px;
   display: flex; flex-direction: column; gap: 10px;
@@ -353,8 +2023,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
 }
 .lan-host-census-badge--archived {
-  background: color-mix(in srgb, var(--warning, #b8860b) 16%, transparent);
-  color: var(--warning, #b8860b);
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--warn);
 }
 .lan-host-census-summary {
   margin: 0; font-size: 11px; color: var(--text-muted);
@@ -393,50 +2063,99 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger);
 }
 .lan-host-census-badge--local {
-  background: color-mix(in srgb, var(--success, #2e7d32) 14%, transparent);
-  color: var(--success, #2e7d32);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
 }
 .lan-host-census-actions {
   margin-top: 0; flex-shrink: 0;
 }
-.lan-shift-pin-card {
-  gap: 10px;
+.connection-dropdown-modal .lan-hub-status-card {
+  padding: 8px 10px !important;
+  min-height: 0;
 }
-.lan-shift-pin-lead {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 0;
+.connection-dropdown-modal .lan-hub-status-card .lan-connect-card-hint {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.35;
 }
-.lan-shift-pin-display {
-  margin: 0;
-  padding: 14px 12px;
-  background: var(--lab-chip-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md, 8px);
-  text-align: center;
+.connection-dropdown-modal .lan-connection-hero__pin {
+  gap: 4px;
+  padding: 0;
 }
-.lan-shift-pin-display code {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
+.connection-dropdown-modal .lan-connection-hero__pin-main {
+  min-width: 0;
 }
-.lan-shift-pin-actions {
+.connection-dropdown-modal .lan-connection-hero__pin .lan-pin-code {
+  font-size: 1.25rem;
+}
+.connection-dropdown-modal .lan-connection-hero__pin-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
 }
-.lan-shift-pin-actions .btn-med-secondary {
-  flex: 1 1 120px;
-  min-height: 40px;
+.connection-dropdown-modal .lan-shift-pin-card {
+  gap: 4px;
+  padding: 8px 10px !important;
 }
-.lan-shift-pin-expiry {
+.connection-dropdown-modal .lan-shift-pin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.connection-dropdown-modal .lan-shift-pin-display {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  flex: 0 0 auto;
+}
+.connection-dropdown-modal .lan-shift-pin-display code {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  font-variant-numeric: inherit;
+  color: inherit;
+}
+.connection-dropdown-modal .lan-shift-pin-actions .btn-med-secondary,
+.connection-dropdown-modal .lan-shift-pin-toolbar .btn-lan-secondary {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 5px 9px;
   font-size: 11px;
+  min-width: 0;
+  width: auto;
+}
+.connection-dropdown-modal .lan-shift-pin-expiry {
+  font-size: 10px;
   color: var(--text-muted);
   margin: 0;
+}
+@media (max-width: 620px) {
+  .connection-dropdown-modal .lan-connection-panel-root {
+    grid-template-columns: 1fr;
+  }
+  .connection-dropdown-modal .lan-panel-group--connection.lan-panel-group--stack .lan-panel-group__body,
+  .connection-dropdown-modal .lan-panel-group--admin.lan-panel-group--stack .lan-panel-group__body {
+    grid-template-columns: 1fr;
+  }
+  .connection-dropdown-modal .connection-dropdown-head-sub {
+    display: block;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+}
+.lan-turn-reset-body {
+  display: contents;
+}
+.lan-turn-reset-actions .btn-lan-primary,
+.lan-turn-reset-actions .btn-lan-secondary {
+  width: auto;
+  white-space: nowrap;
 }
 .lan-hub-interno-summary-hint { font-size: 11px; font-weight: 400; }
 .lan-connect-field { display: flex; flex-direction: column; gap: 4px; }
@@ -463,11 +2182,13 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
 }
 .btn-lan-danger {
-  background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+  background: var(--color-danger-hover-bg);
+  color: var(--error);
+  border: 1px solid color-mix(in oklab, var(--error) 28%, var(--surface));
   border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer;
 }
-.btn-lan-danger:hover { background: #fee2e2; }
+.btn-lan-danger:hover { background: color-mix(in oklab, var(--error) 10%, var(--surface)); }
 .btn-lan-danger:disabled { opacity: 0.5; cursor: not-allowed; }
 .lan-role-tabs {
   display: flex; gap: 6px; margin-bottom: 6px; padding: 5px;
@@ -490,7 +2211,6 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   margin-bottom: 4px;
 }
 .btn-settings-help-primary {
-  width: 100%;
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
@@ -504,8 +2224,6 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 }
 .btn-settings-help-primary:hover { background: var(--action-hover); }
 .btn-settings-help-secondary {
-  width: 100%;
-  margin-top: 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 12px;
@@ -580,6 +2298,13 @@ details.settings-accordion:not([open]) > .settings-acc-body {
   padding-top: 0;
   padding-bottom: 0;
   pointer-events: none;
+}
+.settings-panel.settings-accordion:not([hidden]) > .settings-acc-body {
+  max-height: none;
+  opacity: 1;
+  padding: 0;
+  pointer-events: auto;
+  overflow: visible;
 }
 .settings-clinical-sync-mode {
   margin: 0 0 14px;
@@ -808,8 +2533,8 @@ select.profile-input.profile-select {
   grid-column: 1 / -1;
 }
 .profile-block--bridge {
-  border-color: color-mix(in oklab, var(--accent, #6b9fff) 35%, var(--border));
-  background: color-mix(in oklab, var(--accent, #6b9fff) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--color-accent) 35%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 6%, var(--surface));
 }
 .profile-bridge-btn { margin-top: 4px; }
 .profile-hint--compact { margin-bottom: 8px; }
@@ -853,7 +2578,7 @@ select.profile-input.profile-select {
   line-height: 1.4;
   color: var(--text-muted);
 }
-.profile-hint--warn { color: #b45309; }
+.profile-hint--warn { color: var(--warn); }
 .profile-field { margin-bottom: calc(8px * var(--density-space, 1)); }
 .profile-field:last-child { margin-bottom: 0; }
 .profile-grid-2 {
@@ -1072,11 +2797,6 @@ select.profile-input.profile-select {
 }
 
 /* ===== Guardia LAN Hub ===== */
-.lan-hub-status-card {
-  padding: 10px 14px !important;
-  margin-bottom: 10px;
-}
-
 .lan-hub-status-line {
   display: flex;
   align-items: center;
@@ -1084,6 +2804,18 @@ select.profile-input.profile-select {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
+}
+.connection-dropdown-modal .lan-hub-status-card {
+  padding: 8px 10px !important;
+}
+.connection-dropdown-modal .lan-hub-status-card .lan-connect-card-hint {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.connection-dropdown-modal .lan-hub-status-line {
+  font-size: 12px;
+  gap: 6px;
 }
 
 .lan-hub-status-dot {
@@ -1095,23 +2827,23 @@ select.profile-input.profile-select {
 }
 
 .lan-hub-status-dot--online {
-  background: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  background: var(--success);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--success) 20%, transparent);
 }
 
 .lan-hub-status-dot--offline {
-  background: #9ca3af;
-  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.15);
+  background: var(--text-muted);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--text-muted) 15%, transparent);
 }
 
 .lan-hub-status-dot--pass {
-  background: #10b981;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  background: var(--success);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--success) 20%, transparent);
 }
 
 .lan-hub-status-dot--fail {
-  background: #ef4444;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  background: var(--error);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--error) 20%, transparent);
 }
 
 .lan-preflight-row {
@@ -1132,7 +2864,7 @@ select.profile-input.profile-select {
 }
 
 .lan-preflight-transport {
-  color: #f59e0b;
+  color: var(--warn);
   font-weight: 600;
 }
 

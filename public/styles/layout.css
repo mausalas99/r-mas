@@ -297,14 +297,45 @@ html.ui-density-normal #main-area {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 8px;
+  gap: 4px 6px;
   flex: 0 1 auto;
   min-width: 0;
   max-width: min(100%, 52vw);
   justify-content: flex-end;
 }
 
-/* Píldoras del cluster: censo PDF — misma caja tipográfica */
+/* Cluster hierarchy: one accent CTA max; censo PDF = secondary surface pill */
+.header-work-cluster .header-pase-breadcrumb {
+  font-weight: 500;
+}
+.header-work-cluster .header-pase-breadcrumb-link {
+  font-weight: 600;
+}
+.header-work-cluster .header-pase-breadcrumb-section {
+  font-weight: 500;
+}
+.header-work-cluster .header-return-pase-btn {
+  font-weight: 600;
+}
+.header-work-cluster .header-cmdk-hint {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  opacity: 1;
+}
+.header-work-cluster .header-cmdk-hint:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+.header-work-cluster .header-mode-seg-btn:not(.is-active) {
+  font-weight: 500;
+}
+
+/* Píldoras del cluster: censo PDF — btn-med-secondary weight, subtle accent rim */
 .header-work-cluster .btn-export-censo-header {
   display: inline-flex;
   align-items: center;
@@ -314,6 +345,15 @@ html.ui-density-normal #main-area {
   font-weight: 600;
   line-height: 1.25;
   min-height: 0;
+  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 32%, var(--border));
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.header-work-cluster .btn-export-censo-header:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--lab-chip-bg);
 }
 
 @media (max-width: 920px) {
@@ -413,6 +453,16 @@ html.dark .btn-export-censo-header {
   background: transparent;
   color: var(--text-muted);
 }
+html.dark .header-work-cluster .btn-export-censo-header {
+  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 32%, var(--border));
+  color: var(--text-muted);
+}
+html.dark .header-work-cluster .btn-export-censo-header:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--lab-chip-bg);
+}
 .sidebar-censo-export-wrap {
   display: none;
   padding: 0 10px 8px;
@@ -425,9 +475,9 @@ html.dark .btn-export-censo-header {
   width: 100%;
   padding: 9px 12px;
   border-radius: var(--radius-md);
-  border: 1px solid color-mix(in oklab, #4f46e5 35%, var(--border));
-  background: color-mix(in oklab, #4f46e5 10%, var(--surface));
-  color: color-mix(in oklab, #4f46e5 85%, var(--text));
+  border: 1px solid color-mix(in oklab, var(--color-accent) 35%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 10%, var(--surface));
+  color: color-mix(in oklab, var(--color-accent) 85%, var(--text));
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
@@ -435,8 +485,8 @@ html.dark .btn-export-censo-header {
   transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .btn-export-censo-sidebar:hover {
-  background: color-mix(in oklab, #4f46e5 16%, var(--surface));
-  border-color: color-mix(in oklab, #4f46e5 50%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--surface));
+  border-color: color-mix(in oklab, var(--color-accent) 50%, var(--border));
 }
 .btn-export-censo-sidebar svg {
   flex-shrink: 0;
@@ -923,8 +973,8 @@ html:not(.ui-density-normal) .pase-lab-meta {
   line-height: 1.45;
 }
 html.dark:not(.ui-density-normal) .pase-lab-meta {
-  color: #93c5fd;
-  border-bottom-color: rgba(148, 163, 184, 0.35);
+  color: var(--color-accent-soft-text);
+  border-bottom-color: color-mix(in oklab, var(--text-muted) 35%, transparent);
 }
 html:not(.ui-density-normal) .pase-lab-block {
   font-family: var(--font-mono);
@@ -948,7 +998,7 @@ html:not(.ui-density-normal) .pase-lab-line--sechead:first-child {
   margin-top: 0;
 }
 html.dark:not(.ui-density-normal) .pase-lab-block .section-lbl {
-  color: #93c5fd;
+  color: var(--color-accent-soft-text);
 }
 html:not(.ui-density-normal) .pase-lab-snippet {
   font-family: var(--font-mono);
@@ -1020,7 +1070,7 @@ html:not(.ui-density-normal) .pase-empty-screen {
 .settings-sync-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 14px 16px;
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
 }
 .settings-sync-card h4 {
@@ -1088,6 +1138,26 @@ html:not(.ui-density-normal) .pase-empty-screen {
 .empty-state--compact .empty-state-lead {
   text-align: left;
   max-width: 36ch;
+}
+.unified-search-empty.empty-state--compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 14px 12px;
+  color: var(--text-muted);
+}
+.unified-search-empty.empty-state--compact .empty-state-title {
+  font-size: calc(14px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+.unified-search-empty.empty-state--compact .empty-state-lead {
+  font-size: calc(13px * var(--density-font));
+  line-height: 1.45;
+  color: var(--text-muted);
 }
 .empty-state-actions {
   display: flex;

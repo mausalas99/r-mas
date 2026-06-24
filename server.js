@@ -26,6 +26,8 @@ const {
   shouldSkipGlobalRateLimit,
 } = require('./lib/server-http-security.js');
 const { createInternoRouter, broadcastInterno } = require('./lib/interno/interno-router.js');
+const { createEquiposRouter } = require('./lib/equipos/equipos-router.js');
+const { scheduleEquiposPhotoPurge } = require('./lib/equipos/equipos-photo-purge.mjs');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 
@@ -69,7 +71,7 @@ function applyLanCorsHeaders(req, res) {
       res.setHeader('Access-Control-Allow-Origin', rawOrigin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala, X-Equipos-Token');
     }
   } catch (_e) {
     // Ignore malformed Origin headers and continue normal handling.
@@ -139,6 +141,10 @@ for (const slug of INTERNO_SLUGS) {
   });
 }
 
+appExpress.get('/equipos', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'equipos', 'index.html'));
+});
+
 appExpress.get('/health', (_req, res) => {
   try {
     res.json({ ok: true, app: 'r-plus' });
@@ -166,6 +172,7 @@ const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
 const lanHostStateDir = path.join(userData, 'lan-host');
 const lanShiftPinPath = path.join(userData, 'lan-shift-pin.json');
 const lanWardHostRegistryPath = path.join(userData, 'lan-ward-host-registry.json');
+const equiposPhotosDir = path.join(userData, 'equipos-photos');
 
 let lanBoot;
 try {
@@ -414,6 +421,15 @@ appExpress.use(
   })
 );
 
+appExpress.use(
+  '/api/equipos/v1',
+  createEquiposRouter({
+    getDb: getClinicalDbForInterno,
+    photosDir: equiposPhotosDir,
+    httpServer: httpServer,
+  })
+);
+
 appExpress.use((err, req, res, _next) => {
   console.error('[express]', redactForLog({
     message: err && err.message,
@@ -447,6 +463,11 @@ function startLanServer() {
     const srv = httpServer.listen(PORT, () => {
       console.log(`R+ → http://localhost:${PORT}`);
       serverInstance = srv;
+      try {
+        scheduleEquiposPhotoPurge(equiposPhotosDir, getClinicalDbForInterno);
+      } catch (e) {
+        console.error('[equipos-purge]', e && e.message ? e.message : e);
+      }
       resolve(srv);
     });
     srv.once('error', (err) => {

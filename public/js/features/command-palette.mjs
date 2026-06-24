@@ -120,7 +120,9 @@ function renderResults(query) {
         '<span class="empty-state-title">Sin coincidencias</span>' +
         '<span class="empty-state-lead">Prueba con el nombre del paciente, una pestaña o una sección del expediente.</span>';
     } else {
-      empty.textContent = 'Sin resultados';
+      empty.innerHTML =
+        '<span class="empty-state-title">Atajos del workbench</span>' +
+        '<span class="empty-state-lead">Escribe para buscar pacientes, pestañas o secciones del expediente.</span>';
     }
     d.list.appendChild(empty);
   }

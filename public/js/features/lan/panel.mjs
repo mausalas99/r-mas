@@ -22,6 +22,7 @@ import {
 } from './panel-known-sessions.mjs';
 import { createPanelInviteJoin } from './panel-invite-join.mjs';
 import { createPanelRenderOnce } from './panel-render-once.mjs';
+import { getLanRuntime } from './orchestrator-runtime.mjs';
 import {
   wireClinicalOpsLanSyncEvents as wireClinicalOpsLanSyncEventsImpl,
   wireLanPanelDelegation as wireLanPanelDelegationImpl,
@@ -91,17 +92,17 @@ export function registerLanSyncPanelRuntime(ctx) {
 }
 
 function runtime() {
-  return (
-    panelRuntime || {
-      showToast() {},
-      isMobileWeb() {
-        return false;
-      },
-      renderPatientList() {},
-      closeSettingsDropdown() {},
-      appendLanConflictDraftsSection: null,
-    }
-  );
+  const fallbacks = {
+    showToast() {},
+    isMobileWeb() {
+      return false;
+    },
+    renderPatientList() {},
+    closeSettingsDropdown() {},
+    appendLanConflictDraftsSection: null,
+  };
+  // Live orchestrator runtime wins over the wire-time snapshot (showToast is stub until registerLanRuntime).
+  return Object.assign({}, fallbacks, panelRuntime || {}, getLanRuntime());
 }
 
 function esc(s) {
@@ -155,7 +156,7 @@ function ensurePanelRenderOnce() {
       appendLanShiftPinSection,
       appendLanHostAddressCopyButton,
       appendLanShiftPinClientConnectSection,
-      appendLanTurnResetSection,
+      appendLanTurnResetAlertStrip,
       appendLanMobileJoinSection,
       appendLanMobileSharerCard,
       appendLanJoinOtherMacSection,
@@ -236,7 +237,7 @@ function ensurePanelConnectionChrome() {
 
 function purgeDuplicateLanShiftPinCards(root) {
   if (!root) return;
-  var cards = root.querySelectorAll('.lan-shift-pin-card');
+  var cards = root.querySelectorAll('[data-lan-shift-pin]');
   for (var i = 0; i < cards.length - 1; i += 1) {
     cards[i].remove();
   }
@@ -439,8 +440,8 @@ function appendLanHostPinSection(root) {
   ensurePanelHostPin().appendLanHostPinSection(root);
 }
 
-async function appendLanTurnResetSection(root, gen) {
-  return ensurePanelHostPin().appendLanTurnResetSection(root, gen);
+async function appendLanTurnResetAlertStrip(root, gen) {
+  return ensurePanelHostPin().appendLanTurnResetAlertStrip(root, gen);
 }
 
 export async function resetLanTurnConnectionFromUi() {

@@ -156,9 +156,9 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   cursor: grab;
   position: relative;
   border-radius: var(--radius-md);
-  border: 1px solid transparent;
+  border: var(--border-hairline);
   background: color-mix(in oklab, var(--surface) 82%, transparent);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-sm);
   transition:
     background var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
@@ -178,16 +178,14 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 }
 .patient-card:active { cursor: grabbing; }
 .patient-card:hover {
-  background: color-mix(in oklab, #ffffff 92%, var(--lab-chip-bg));
+  background: color-mix(in oklab, var(--surface) 92%, var(--lab-chip-bg));
   border-color: color-mix(in oklab, var(--action) 28%, var(--border));
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-sm);
 }
 .patient-card.active {
   background: color-mix(in oklab, var(--surface) 70%, var(--lab-chip-bg));
-  border-color: color-mix(in oklab, var(--action) 38%, var(--border));
-  box-shadow:
-    0 4px 16px rgba(79, 86, 255, 0.1),
-    inset 0 0 0 1px color-mix(in oklab, var(--action) 22%, transparent);
+  border: 2px solid color-mix(in oklab, var(--color-accent) 55%, var(--border));
+  box-shadow: var(--elev-raised);
 }
 .patient-card.active::before { background: var(--action); }
 html.dark .patient-card {
@@ -201,7 +199,8 @@ html.dark .patient-card:hover {
 }
 html.dark .patient-card.active {
   background: color-mix(in oklab, var(--surface) 82%, var(--action) 18%);
-  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  border: 2px solid color-mix(in oklab, var(--color-accent) 55%, var(--border));
+  box-shadow: var(--elev-raised);
 }
 .patient-card-toolbar {
   position: relative;
@@ -358,7 +357,7 @@ html.dark .patient-toolbar-chip:hover {
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
 }
 html.dark .patient-drag-hovercard.patient-card {
-  background: color-mix(in oklab, var(--surface) 94%, #0f172a) !important;
+  background: color-mix(in oklab, var(--surface) 94%, var(--color-ink)) !important;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
 }

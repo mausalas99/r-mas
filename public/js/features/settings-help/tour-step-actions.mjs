@@ -33,7 +33,7 @@ import { extractParsedValues } from '../diagrams-parse.mjs';
 import { patients, labHistory, listadoProblemas, saveState } from '../../app-state.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
-import { closeSettingsDropdown, toggleSettingsDropdown } from './settings-dropdown.mjs';
+import { closeSettingsDropdown, isSettingsDropdownOpen, toggleSettingsDropdown } from './settings-dropdown.mjs';
 import {
   TOUR_STEPS_USE_DEMO_PEREZ,
   ensureTourPrimaryDemoPatientActive,
@@ -191,9 +191,7 @@ export function ensureProfileExpandedForTour() {
 }
 
 export function ensureSettingsExpandedForTour() {
-  var dd = document.getElementById('settings-dropdown');
-  if (!dd) return;
-  if (!dd.classList.contains('open')) toggleSettingsDropdown();
+  if (!isSettingsDropdownOpen()) toggleSettingsDropdown();
 }
 
 export function ensureConnectionExpandedForTour() {

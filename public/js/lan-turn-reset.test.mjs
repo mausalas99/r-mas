@@ -67,7 +67,7 @@ describe('lan-turn-reset', () => {
 
   it('wires reset UI in ⇄ panel and window handlers', () => {
     assert.match(panelSrc, /resetLanTurnConnectionFromUi/);
-    assert.match(panelSrc, /appendLanTurnResetSection/);
+    assert.match(panelSrc, /appendLanTurnResetAlertStrip/);
     assert.match(panelSrc, /lan-turn-reset\.mjs/);
     assert.match(orchestratorSrc, /resetLanTurnConnectionFromUi/);
   });

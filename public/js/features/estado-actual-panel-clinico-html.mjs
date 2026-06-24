@@ -71,7 +71,7 @@ function renderDietProposalBarHtml() {
     '<div class="ea-diet-proposal-bar">' +
     '<span class="ea-diet-proposal-lead">Dieta importada desde SOME — revisa los valores y confirma o descarta.</span>' +
     '<div class="ea-diet-proposal-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaDietProposal()">Confirmar dieta</button>' +
+    '<button type="button" class="ea-btn ea-btn--success" onclick="confirmEaDietProposal()">Confirmar dieta</button>' +
     '<button type="button" class="ea-btn" onclick="discardEaDietProposal()">Descartar</button>' +
     '</div></div>'
   );
@@ -100,7 +100,7 @@ export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kc
     '</div>' +
     (anyPending
       ? '<div class="ea-clinico-actions">' +
-        '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button>' +
+        '<button type="button" class="ea-btn ea-btn--success" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button>' +
         '</div>'
       : '') +
     '</div>'

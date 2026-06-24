@@ -182,10 +182,10 @@ export function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
+import { showToast } from '../../ui-toast.mjs';
+
 export function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
+  showToast(msg, type);
 }
 
 /** @param {string[]|undefined|null} warnings */

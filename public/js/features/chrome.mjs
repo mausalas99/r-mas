@@ -40,6 +40,9 @@ const MOTION_MODE_LS = 'rpc-motion-mode';
 
 const I18N_ES = {
   'settings.appearance': 'Apariencia',
+  'settings.theme': 'Tema',
+  'settings.appearanceFoot':
+    '⌘P alterna Normal/Pase. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
   'settings.themeGroup': 'Tema de la aplicación',
   'settings.themeLight': 'Claro',
   'settings.themeDark': 'Oscuro',

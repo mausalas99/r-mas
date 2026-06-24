@@ -76,6 +76,10 @@ export function showToast(msg, type) {
   });
 }
 
+if (typeof window !== 'undefined') {
+  window.showToast = showToast;
+}
+
 const shellCtx = {
   getActiveId() { return null; },
   getActiveAppTab() { return 'lab'; },
@@ -360,8 +364,8 @@ function handleShellDigitShortcut(key) {
 }
 
 function handleShellSettingsCommaShortcut() {
-  var dd = document.getElementById('settings-dropdown');
-  if (dd && dd.classList.contains('open')) shellCloseSettingsDropdown();
+  var bg = document.getElementById('settings-dropdown-backdrop');
+  if (bg && bg.classList.contains('open')) shellCloseSettingsDropdown();
   else shellToggleSettingsDropdown();
 }
 

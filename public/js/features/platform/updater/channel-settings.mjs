@@ -101,9 +101,19 @@ function syncHardwareAccelerationUI() {
   var api = window.electronAPI;
   if (!api || typeof api.getPerformancePrefs !== 'function') {
     acc.style.display = 'none';
+    void import('../../settings-help/settings-dropdown.mjs')
+      .then(function (m) {
+        if (typeof m.syncSettingsNavVisibility === 'function') m.syncSettingsNavVisibility();
+      })
+      .catch(function () {});
     return;
   }
   acc.style.display = '';
+  void import('../../settings-help/settings-dropdown.mjs')
+    .then(function (m) {
+      if (typeof m.syncSettingsNavVisibility === 'function') m.syncSettingsNavVisibility();
+    })
+    .catch(function () {});
   api
     .getPerformancePrefs()
     .then(function (prefs) {

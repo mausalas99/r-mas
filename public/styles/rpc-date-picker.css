@@ -254,7 +254,7 @@ input.rpc-datetime-input.rpc-datetime-field__native {
 
 .rpc-date-popover__day.is-selected {
   background: var(--action);
-  color: var(--color-on-accent, #fff);
+  color: var(--color-on-accent);
   box-shadow: 0 2px 8px color-mix(in oklab, var(--action) 35%, transparent);
 }
 

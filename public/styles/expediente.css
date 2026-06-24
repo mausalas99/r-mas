@@ -1,8 +1,8 @@
 /* ── Listado de Problemas (v3.0 Sala) ────────────────────── */
 .listado-section { border: var(--border-hairline); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
 .listado-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.listado-section-header.activos { background: #ecfdf5; color: #065f46; }
-.listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
+.listado-section-header.activos { background: color-mix(in oklab, var(--color-success-emphasis) 8%, var(--surface)); color: var(--color-success-emphasis-hover); }
+.listado-section-header.inactivos { background: color-mix(in oklab, var(--text-muted) 10%, var(--surface)); color: var(--text-muted); }
 .listado-section-body { padding: 12px 14px; display:flex; flex-direction:column; gap:8px; }
 .listado-sort-zone { gap: calc(8px * var(--density-space, 1)); }
 .listado-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
@@ -30,7 +30,7 @@
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
 }
 html.dark .listado-drag-hovercard.listado-row {
-  background: color-mix(in oklab, var(--surface) 94%, #0f172a) !important;
+  background: color-mix(in oklab, var(--surface) 94%, var(--color-ink)) !important;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
 }
@@ -39,21 +39,21 @@ html.dark .listado-drag-hovercard.listado-row {
 .listado-row .listado-num,
 .listado-row .listado-drag-handle { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; touch-action: none; }
 .listado-row .listado-drag-handle:active { cursor: grabbing; }
-.listado-row input[type="date"] { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 8px; font-size: 12px; font-family: inherit; background: #F8FAFC; color: var(--text); }
+.listado-row input[type="date"] { border: 1px solid var(--border); border-radius: var(--radius-field); padding: 7px 8px; font-size: 12px; font-family: inherit; background: var(--input-fill); color: var(--text); }
 .listado-row input[type="date"]:focus:not(:focus-visible) { outline: none; }
 .listado-row input[type="date"]:focus-visible { border-color: var(--action); background: var(--surface); outline: 2px solid var(--action); outline-offset: 1px; box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .listado-row textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 10px; font-size: 13px; font-family: inherit; background: var(--input-fill); color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .listado-row textarea:focus:not(:focus-visible) { outline: none; }
 .listado-row textarea:focus-visible { border-color: var(--action); outline: 2px solid var(--action); outline-offset: 1px; box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; min-width: 28px; min-height: 28px; }
-.listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
+.listado-row .btn-remove-listado:hover { color: var(--error); background: var(--color-danger-hover-bg); border-color: color-mix(in oklab, var(--error) 28%, transparent); }
 .listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .listado-add-row:hover { border-color: var(--action); color: var(--action); background: var(--section-header-bg); }
 .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
 html.dark .listado-section { background: var(--surface); }
 html.dark .listado-section-header { background: var(--lab-chip-bg); color: var(--lab-chip-txt); }
-html.dark .listado-section-header.activos { background: rgba(16,185,129,0.18); color: #6ee7b7; }
-html.dark .listado-section-header.inactivos { background: rgba(107,114,128,0.18); color: #d1d5db; }
+html.dark .listado-section-header.activos { background: color-mix(in oklab, var(--color-success-emphasis) 18%, transparent); color: color-mix(in oklab, var(--success) 80%, var(--color-ink)); }
+html.dark .listado-section-header.inactivos { background: color-mix(in oklab, var(--text-muted) 18%, transparent); color: color-mix(in oklab, var(--text-muted) 88%, var(--color-ink)); }
 html.dark .listado-row textarea, html.dark .listado-row input[type="date"] { background: var(--bg); }
 .diagrams-wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
 .lab-history-card-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -237,8 +237,8 @@ html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
   padding: 5px 6px; border-radius: var(--radius-md); border: 1px solid var(--border);
   background: var(--surface); color: var(--text); font-family: inherit;
 }
-.med-receta-row--needs-dest .med-receta-dest { border-color: #b45309; }
-html.dark .med-receta-row--needs-dest .med-receta-dest { border-color: #fbbf24; }
+.med-receta-row--needs-dest .med-receta-dest { border-color: var(--warn); }
+html.dark .med-receta-row--needs-dest .med-receta-dest { border-color: var(--color-livesync-syncing); }
 .med-receta-dia {
   font-size: 10px; font-weight: 700;
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
@@ -257,8 +257,8 @@ html.dark .med-receta-row--needs-dest .med-receta-dest { border-color: #fbbf24; 
   font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
   color: var(--text-muted); margin-bottom: 6px;
 }
-.med-soap-preview-sec--otros .med-soap-preview-sec-title { color: #b45309; }
-html.dark .med-soap-preview-sec--otros .med-soap-preview-sec-title { color: #fbbf24; }
+.med-soap-preview-sec--otros .med-soap-preview-sec-title { color: var(--warn); }
+html.dark .med-soap-preview-sec--otros .med-soap-preview-sec-title { color: var(--color-livesync-syncing); }
 .med-soap-preview-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
 .med-soap-preview-chip {
   font-size: 11px; line-height: 1.35; padding: 5px 9px; border-radius: var(--radius-md);
@@ -322,10 +322,10 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   .toast { transform: translateY(-10px); opacity: 0; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .modal { animation: none; }
-  .settings-dropdown:not(.open),
-  .connection-dropdown:not(.open) { opacity: 0; visibility: hidden; }
-  .settings-dropdown.open,
-  .connection-dropdown.open { opacity: 1; visibility: visible; transform: none; }
+  #settings-dropdown-backdrop:not(.open),
+  #connection-dropdown-backdrop:not(.open) { opacity: 0; visibility: hidden; }
+  #settings-dropdown-backdrop.open,
+  #connection-dropdown-backdrop.open { opacity: 1; visibility: visible; transform: none; }
   aside.patient-sidebar,
   html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
     transform: none;
@@ -459,7 +459,7 @@ html.dark .dcard svg [stroke] { stroke: var(--diagram-line); }
 html.dark .dcard svg text { fill: var(--diagram-label); }
 .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); white-space:nowrap; }
 .dcard-copy:hover { border-color:var(--action); color:var(--action); background:var(--section-header-bg); }
-.dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
+.dcard-copy.copied { border-color: var(--success); color: var(--success); background: color-mix(in oklab, var(--success) 10%, var(--surface)); }
 @media (max-width: 700px) {
   aside { width: 220px !important; }
   .vitals-grid { grid-template-columns: repeat(3, 1fr); }
@@ -932,7 +932,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   max-width: 52rem;
 }
 
@@ -972,13 +972,13 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .drive-import-modes .drive-import-radio:has(input:checked) {
-  background: color-mix(in oklab, var(--action, #4f56ff) 14%, var(--surface));
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
   color: var(--text);
 }
 
@@ -987,7 +987,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 8px 10px;
   font-size: 12px;
   border-radius: 8px;
-  background: color-mix(in oklab, var(--warning, #f59e0b) 18%, transparent);
+  background: color-mix(in oklab, var(--warn) 18%, transparent);
   color: inherit;
 }
 
@@ -1010,7 +1010,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   gap: 8px;
   margin: 0;
   padding: 12px 14px;
-  border: 1px dashed color-mix(in oklab, var(--border) 70%, var(--action, #4f56ff));
+  border: 1px dashed color-mix(in oklab, var(--border) 70%, var(--action));
   border-radius: 10px;
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
   cursor: text;
@@ -1019,8 +1019,8 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 
 .drive-import-dropzone:focus-within {
   border-style: solid;
-  border-color: color-mix(in oklab, var(--action, #4f56ff) 40%, var(--border));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action, #4f56ff) 12%, transparent);
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action) 12%, transparent);
 }
 
 .drive-import-dropzone-label {
@@ -1028,12 +1028,12 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
 }
 
 .drive-import-dropzone-meta {
   font-size: 10px;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   opacity: 0.85;
 }
 
@@ -1043,7 +1043,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   font-size: 12px;
   line-height: 1.45;
   border-radius: 8px;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   background: color-mix(in oklab, var(--surface) 90%, var(--bg));
   border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
 }
@@ -1065,7 +1065,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   min-width: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1078,14 +1078,14 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 0;
   font-size: 12px;
   font-weight: 600;
-  color: var(--action, #4f56ff);
+  color: var(--action);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .drive-import-doc-edit:hover {
-  color: var(--action-hover, #3d44e6);
+  color: var(--action-hover);
 }
 
 .drive-import-input {
@@ -1110,7 +1110,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 }
 
 .drive-import-input::placeholder {
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
   opacity: 0.75;
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   font-size: 13px;
@@ -1167,13 +1167,13 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--border) 80%, var(--text-muted, #888));
+  background: color-mix(in oklab, var(--border) 80%, var(--text-muted));
   cursor: pointer;
 }
 
 .drive-import-review-dot.is-active {
-  background: var(--action, #4f56ff);
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action, #4f56ff) 28%, transparent);
+  background: var(--action);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 28%, transparent);
 }
 
 .drive-import-review-card {
@@ -1201,7 +1201,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
 }
 
 .drive-import-review-include {
@@ -1306,8 +1306,8 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 }
 
 .drive-import-lab-status--new {
-  color: #15803d;
-  background: color-mix(in oklab, #22c55e 14%, transparent);
+  color: var(--success);
+  background: color-mix(in oklab, var(--success) 14%, transparent);
 }
 
 .drive-import-lab-status--dup {
@@ -1316,7 +1316,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 }
 
 html.dark .drive-import-lab-status--new {
-  color: #4ade80;
+  color: color-mix(in oklab, var(--success) 92%, var(--color-ink));
 }
 
 .drive-import-review-header-pre {
@@ -1350,7 +1350,7 @@ html.dark .drive-import-lab-status--new {
 }
 
 .drive-import-review-row-date {
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
 }
 
 .drive-import-review-row-text {
@@ -1369,16 +1369,16 @@ html.dark .drive-import-lab-status--new {
 .drive-import-review-structured {
   margin: 0 0 10px;
   padding: 10px 12px;
-  border: 1px solid color-mix(in oklab, var(--accent, #3b82f6) 35%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--color-accent) 35%, var(--border));
   border-radius: 8px;
-  background: color-mix(in oklab, var(--accent, #3b82f6) 8%, var(--surface, #fff));
+  background: color-mix(in oklab, var(--color-accent) 8%, var(--surface));
 }
 
 .drive-import-structured-head {
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--text-muted, #5c6570);
+  color: var(--text-muted);
 }
 
 .drive-import-structured-list {
@@ -1394,7 +1394,7 @@ html.dark .drive-import-lab-status--new {
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
-  background: var(--surface, #fff);
+  background: var(--surface);
   font-size: 12px;
   cursor: pointer;
 }

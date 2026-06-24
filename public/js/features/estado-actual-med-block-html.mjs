@@ -55,7 +55,7 @@ function buildMedCategoryPendingHtml(key, pendingVal) {
     '<div class="ea-med-pending">' +
     '<div class="ea-pendiente-preview" title="Propuesta pendiente">' + escHtml(pendingVal) + '</div>' +
     '<div class="ea-clinico-med-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField(\'' + key + '\')">Confirmar</button>' +
+    '<button type="button" class="ea-btn ea-btn--success" onclick="confirmEaMedField(\'' + key + '\')">Confirmar</button>' +
     '<button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal(\'' + key + '\')">Descartar</button>' +
     '</div></div>'
   );
@@ -102,7 +102,7 @@ export function buildMedCategoryBlockHtml(key, monitoreo, activeId, medRecetaByP
     '<div class="ea-med-manual-panel" hidden data-ea-med-manual-panel="' + escAttr(key) + '">' +
     '<input type="text" class="ea-input" data-ea-med-manual-input="' + escAttr(key) + '" placeholder="Indicación manual">' +
     '<div class="ea-med-manual-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" data-ea-med-manual-save="' + escAttr(key) + '">Añadir</button>' +
+    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-manual-save="' + escAttr(key) + '">Añadir</button>' +
     '<button type="button" class="ea-btn ea-btn--ghost" data-ea-med-manual-cancel="' + escAttr(key) + '">Cancelar</button>' +
     '</div></div></div></details>'
   );

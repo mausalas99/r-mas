@@ -2,6 +2,8 @@
  * R4 / program admin panel: QR internos por sala (colapsable, carga bajo demanda).
  */
 import { copyInternoQrImage } from '../interno-qr-render.mjs';
+import { copyToClipboardSafe } from './soap-estado.mjs';
+import { showToast } from '../ui-toast.mjs';
 import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../../lib/clinical-salas.mjs';
 
 const SALA_DEFS = CLINICAL_SALA_VALUES.map((key) => ({
@@ -151,12 +153,8 @@ function appendSalaInternoBlock(ctx, def, row) {
           showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
           return;
         }
-        try {
-          await navigator.clipboard.writeText(url);
-          showToast('Enlace copiado', 'success');
-        } catch {
-          showToast('No se pudo copiar', 'error');
-        }
+        const ok = await copyToClipboardSafe(url);
+        toast(ok ? 'Enlace copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
       })
     );
     btnRow.appendChild(
@@ -184,15 +182,14 @@ export async function appendInternoQrPanel(root, opts = {}) {
   if (!api || !userId || typeof api.dbInternoAccessList !== 'function') return;
 
   const details = document.createElement('details');
-  details.className =
-    'rpc-disclosure lan-connect-card lan-hub-interno-details';
+  details.className = 'rpc-disclosure lan-hub-interno-details';
 
   const summary = document.createElement('summary');
   summary.className =
-    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-hub-interno-summary';
+    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary lan-hub-interno-summary';
   summary.innerHTML =
-    '<span class="lan-connect-card-title">QR Internos (MIP)</span>' +
-    '<span class="lan-connect-card-hint lan-hub-interno-summary-hint">Celulares pregrado · config. única</span>';
+    '<span class="settings-card__title">QR Internos (MIP)</span>' +
+    '<span class="settings-card__desc">Celulares pregrado · config. única</span>';
   details.appendChild(summary);
 
   const body = document.createElement('div');
@@ -201,7 +198,7 @@ export async function appendInternoQrPanel(root, opts = {}) {
   details.appendChild(body);
   root.appendChild(details);
 
-  const showToast = typeof opts.showToast === 'function' ? opts.showToast : () => {};
+  const toast = showToast;
   let hostBase = normalizeHostBase(opts.hostBaseUrl);
   let loaded = false;
 
@@ -225,7 +222,7 @@ export async function appendInternoQrPanel(root, opts = {}) {
       return;
     }
     const bySala = new Map(rows.map((r) => [String(r.sala), r]));
-    const ctx = { api, userId, hostBase, showToast, card, rerender: () => renderPanel(body) };
+    const ctx = { api, userId, hostBase, showToast: toast, card, rerender: () => renderPanel(body) };
     for (const def of SALA_DEFS) {
       appendSalaInternoBlock(ctx, def, bySala.get(def.key) || {});
     }

@@ -19,6 +19,15 @@ import { getRoomMembership } from '../../live-sync-membership.mjs';
 import { isLanRemoteJoinMode } from './transport.mjs';
 import { lanClient, activeLiveSyncRoomId } from './runtime.mjs';
 
+export function shouldOmitLanHubStatusHint(hubStatus) {
+  return !!(
+    hubStatus &&
+    hubStatus.connected &&
+    !isLanRemoteJoinMode() &&
+    String(hubStatus.line || '').indexOf('servidor del turno') !== -1
+  );
+}
+
 function lanHubPausedCopy() {
   return {
     connected: false,

@@ -135,28 +135,36 @@ function buildAvailableTeamsSection(deps, root, userSala) {
 
 function buildR1Section(deps, root) {
   var userSala = deps.getUserSala();
-  var card = document.createElement('div');
-  card.className = 'lan-connect-card lan-hub-team-card';
-  card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
-
   var user = clinicalSessionContext.user || {};
   var joined = filterJoinedTeams(clinicalSessionContext.teams || [], user);
   var myTeam = joined[0] || null;
 
+  var row = document.createElement('div');
+  row.className = 'settings-card';
+  var copy = document.createElement('div');
+  copy.className = 'settings-card__copy';
+  var title = document.createElement('p');
+  title.className = 'settings-card__title';
+  title.textContent = 'Mi equipo';
+  copy.appendChild(title);
+
   if (myTeam) {
     var teamName = document.createElement('p');
-    teamName.className = 'lan-hub-team-name';
-    teamName.textContent = 'Mi equipo: ' + (myTeam.name || 'Sin nombre');
-    card.appendChild(teamName);
+    teamName.className = 'settings-card__desc';
+    teamName.textContent = myTeam.name || 'Sin nombre';
+    copy.appendChild(teamName);
   } else {
     var noTeam = document.createElement('p');
-    noTeam.className = 'lan-connect-card-hint';
-    noTeam.innerHTML = 'Sin equipo — <button type="button" class="lan-hub-link-btn" id="lan-hub-join-team">Unirse a un equipo</button>';
-    card.appendChild(noTeam);
+    noTeam.className = 'settings-card__desc';
+    noTeam.innerHTML =
+      'Sin equipo — <button type="button" class="lan-hub-link-btn" id="lan-hub-join-team">Unirse a un equipo</button>';
+    copy.appendChild(noTeam);
   }
 
-  root.appendChild(card);
-  var joinTeamBtn = card.querySelector('#lan-hub-join-team');
+  row.appendChild(copy);
+  root.appendChild(row);
+
+  var joinTeamBtn = row.querySelector('#lan-hub-join-team');
   if (joinTeamBtn) {
     joinTeamBtn.onclick = function () {
       var availCard = document.getElementById('lan-hub-available-teams');
@@ -169,7 +177,7 @@ function buildR1Section(deps, root) {
       avail.className = 'lan-connect-card';
       avail.innerHTML = '<div class="lan-connect-card-title">Equipos disponibles</div>';
       buildAvailableTeamsSection(deps, avail, userSala);
-      card.parentNode.insertBefore(avail, card.nextSibling);
+      card.parentNode.insertBefore(avail, row.nextSibling);
     };
   }
 }

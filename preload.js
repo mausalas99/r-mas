@@ -326,6 +326,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbInternoAccessSetActive: function(opts) {
     return ipcRenderer.invoke('db:interno-access-set-active', opts);
   },
+  dbEquiposAccessGet: function() {
+    return ipcRenderer.invoke('db:equipos-access-get');
+  },
+  dbEquiposAccessRotate: function(opts) {
+    return ipcRenderer.invoke('db:equipos-access-rotate', opts);
+  },
+  dbEquiposAccessSetActive: function(opts) {
+    return ipcRenderer.invoke('db:equipos-access-set-active', opts);
+  },
+  dbEquiposBoard: function() {
+    return ipcRenderer.invoke('db:equipos-board');
+  },
+  dbEquiposReports: function(opts) {
+    return ipcRenderer.invoke('db:equipos-reports', opts);
+  },
+  dbEquiposPurgeQueue: function(opts) {
+    return ipcRenderer.invoke('db:equipos-purge-queue', opts);
+  },
+  dbEquiposPromoteTemporaryHost: function(opts) {
+    return ipcRenderer.invoke('db:equipos-promote-temporary-host', opts);
+  },
+  dbEquiposExportMergeSnapshot: function() {
+    return ipcRenderer.invoke('db:equipos-export-merge-snapshot');
+  },
+  dbEquiposMergeSnapshot: function(opts) {
+    return ipcRenderer.invoke('db:equipos-merge-snapshot', opts);
+  },
   dbLanOutboxEnqueue: function(opts) {
     return ipcRenderer.invoke('db:lan-outbox-enqueue', opts);
   },

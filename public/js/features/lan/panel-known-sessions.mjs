@@ -10,7 +10,6 @@ const LAN_DISCONNECT_BANNER_MSG =
 
 var _lanLastConnected = true;
 var _lanClientChromeWired = false;
-var _lanLwwToastPrefWired = false;
 
 function writeLanKnownRooms(arr) {
   try {
@@ -73,42 +72,27 @@ export function appendLanKnownSessionsSection(root) {
   migrateLanLastRoomToKnown();
   var list = readLanKnownRooms();
   var sec = document.createElement('div');
-  sec.style.marginBottom = '14px';
-  sec.style.paddingBottom = '12px';
-  sec.style.borderBottom = '1px solid var(--border)';
+  sec.className = 'lan-connect-card lan-known-sessions-card';
   var h = document.createElement('div');
-  h.style.fontSize = '11px';
-  h.style.fontWeight = '700';
-  h.style.textTransform = 'uppercase';
-  h.style.letterSpacing = '0.4px';
-  h.style.color = 'var(--text-muted)';
-  h.style.marginBottom = '8px';
+  h.className = 'lan-known-sessions-title';
   h.textContent = 'Sesiones guardadas';
   sec.appendChild(h);
   if (!list.length) {
     var empty = document.createElement('p');
-    empty.style.fontSize = '12px';
-    empty.style.color = 'var(--text-muted)';
-    empty.style.margin = '0';
-    empty.style.lineHeight = '1.45';
+    empty.className = 'lan-known-sessions-empty';
     empty.textContent =
       'Aún no hay salas guardadas. Cuando estés conectado por LAN, elige una sala abajo y pulsa «Unirse»; después podrás volver a entrar desde aquí.';
     sec.appendChild(empty);
     root.appendChild(sec);
     return;
   }
+  var listEl = document.createElement('div');
+  listEl.className = 'lan-known-sessions-list';
   list.forEach(function (rec) {
     var row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.gap = '8px';
-    row.style.alignItems = 'center';
-    row.style.marginBottom = '6px';
+    row.className = 'lan-known-sessions-row';
     var lab = document.createElement('span');
-    lab.style.flex = '1';
-    lab.style.fontSize = '13px';
-    lab.style.overflow = 'hidden';
-    lab.style.textOverflow = 'ellipsis';
-    lab.style.whiteSpace = 'nowrap';
+    lab.className = 'lan-known-sessions-label';
     lab.textContent = String(rec.label || rec.id);
     lab.title = String(rec.id);
     var inThisRoom = String(activeLiveSyncRoomId || '') === String(rec.id || '');
@@ -132,13 +116,11 @@ export function appendLanKnownSessionsSection(root) {
     row.appendChild(lab);
     row.appendChild(join);
     row.appendChild(del);
-    sec.appendChild(row);
+    listEl.appendChild(row);
   });
+  sec.appendChild(listEl);
   var hint = document.createElement('p');
-  hint.style.fontSize = '10px';
-  hint.style.color = 'var(--text-muted)';
-  hint.style.margin = '4px 0 0 0';
-  hint.style.lineHeight = '1.35';
+  hint.className = 'lan-known-sessions-hint';
   hint.textContent = 'Se actualizan al unirte a una sala (relay en vivo).';
   sec.appendChild(hint);
   root.appendChild(sec);
@@ -174,10 +156,9 @@ export function setLanLwwOverwriteToastFromUi(enabled) {
 }
 
 export function wireLanLwwToastPref() {
-  if (_lanLwwToastPrefWired) return;
   var cb = document.getElementById('settings-lan-lww-toast');
-  if (!cb) return;
-  _lanLwwToastPrefWired = true;
+  if (!cb || cb.dataset.lanLwwWired === '1') return;
+  cb.dataset.lanLwwWired = '1';
   cb.addEventListener('change', function () {
     setLanLwwOverwriteToastFromUi(cb.checked);
   });

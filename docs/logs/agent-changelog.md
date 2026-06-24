@@ -6,6 +6,9 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-24 | LAN ⇄ + Ajustes panel redesign | `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`, `panel-host-pin.mjs` | Hero status/PIN, unified stack rows, Ajustes ghost buttons; spec `2026-06-24-lan-settings-panel-redesign-design.md`. |
+| 2026-06-23 | Equipos cloud (CF Worker) | `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `equipos-qr-panel.mjs`, `equipos-board.mjs` | Standalone queue on Worker+D1+R2; desktop cloud config + admin API; mobile cloud mode via `__EQUIPOS_API_MODE__`. |
+| 2026-06-23 | Equipos tracking (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, schema v18, `equipos-router.js`, `equipos-board.mjs` | Program-wide custody queue, mobile `/equipos`, host DB, photo purge, temp host failover, R4 purge. |
 | 2026-06-21 | Debt Phase 5c+6 + baseline refresh | `scripts/metrics/baseline.json`, `lazy-feature-routes-*`, LAN/interno god splits, `fix-mechanical-eslint.mjs --full` | `lint:tier1:full` exit 0; `totalScore` 31408→50 (boot graph structural); boot P5c deferrals complete. |
 | 2026-06-20 | SQLCipher single runtime (Electron-as-Node tests) | `scripts/run-with-electron-node.mjs`, `package.json`, `test-manifest.mjs`, `CLAUDE.md`, `project-context.mdc` | Removed pretest/posttest ABI swap; `npm test` / `test:one` run under Electron Node 24 (abi 145) — same `.node` as app. |
 | 2026-06-20 | SQLCipher native ABI root fix | `lib/native-runtime-probe.js`, `scripts/lib/sqlcipher-native.mjs`, `rebuild-native-db.mjs`, `ensure-native-db-for-node.mjs`, `fetch-sqlite-electron.mjs`, `package.json` | Probe opens `:memory:` (lazy .node load); Electron binary cached; prestart strict restore. |

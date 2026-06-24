@@ -65,10 +65,11 @@ export function syncMobileBarebonesChrome() {
 }
 
 function closeSettingsDropdownIfPresent() {
-  var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
-  if (dd) dd.classList.remove('open');
+  var dd = document.getElementById('settings-dropdown');
   if (bg) bg.classList.remove('open');
+  if (dd) dd.classList.remove('open');
+  document.body.classList.remove('settings-dropdown-open');
 }
 
 function closeProfileModalIfPresent() {

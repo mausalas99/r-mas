@@ -1,36 +1,54 @@
 /**
- * LAN ⇄ dropdown chrome (scroll, expand state, in-place refresh) — extracted from panel.mjs.
+ * LAN ⇄ modal chrome (scroll, expand state, in-place refresh) — extracted from panel.mjs.
  */
+import { closeModalAnimated } from '../../ui-motion.mjs';
 import { LAN_SYNC_DIAG_OPEN_KEY } from './panel-diagnostics.mjs';
 import {
   LAN_INVITE_MOBILE_OPEN_KEY,
   LAN_INVITE_SALA_OPEN_KEY,
 } from './panel-invite-join.mjs';
 import { isLanSessionConfiguredForRest } from './transport.mjs';
-import { lanHubStatusCopy } from './panel-hub-status.mjs';
+import { lanHubStatusCopy, shouldOmitLanHubStatusHint } from './panel-hub-status.mjs';
 import {
   wireLanLwwToastPref,
   syncLanLwwOverwriteToastPrefUi,
 } from './panel-known-sessions.mjs';
 
 export function isLanConnectionDropdownOpen() {
-  var dd = document.getElementById('connection-dropdown');
-  return !!(dd && dd.classList.contains('open'));
+  var bg = document.getElementById('connection-dropdown-backdrop');
+  return !!(bg && bg.classList.contains('open'));
 }
 
 function getConnectionDropdownScrollEl() {
-  return document.getElementById('connection-dropdown');
+  return (
+    document.getElementById('connection-dropdown-scroll') ||
+    document.getElementById('connection-dropdown')
+  );
+}
+
+let connectionModalChromeWired = false;
+
+function wireConnectionModalChromeOnce(closeConnectionDropdown) {
+  if (connectionModalChromeWired) return;
+  connectionModalChromeWired = true;
+  document.getElementById('btn-connection-dropdown-close')?.addEventListener('click', () => {
+    closeConnectionDropdown();
+  });
+  var bg = document.getElementById('connection-dropdown-backdrop');
+  bg?.addEventListener('click', (ev) => {
+    if (ev.target === bg) closeConnectionDropdown();
+  });
 }
 
 export function captureConnectionDropdownScrollTop() {
   var dd = getConnectionDropdownScrollEl();
-  if (!dd || !dd.classList.contains('open')) return 0;
+  if (!dd || !isLanConnectionDropdownOpen()) return 0;
   return dd.scrollTop;
 }
 
 export function restoreConnectionDropdownScrollTop(scrollTop) {
   var dd = getConnectionDropdownScrollEl();
-  if (!dd || !dd.classList.contains('open')) return;
+  if (!dd || !isLanConnectionDropdownOpen()) return;
   var top = Math.max(0, Number(scrollTop) || 0);
   function apply() {
     if (dd.scrollHeight > 0) dd.scrollTop = Math.min(top, dd.scrollHeight - dd.clientHeight);
@@ -55,6 +73,7 @@ export function captureLanPanelExpandState(root) {
     syncDiagnostics: false,
     inviteMobile: false,
     inviteSala: false,
+    roomsPanel: false,
   };
   try {
     if (sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1') state.syncDiagnostics = true;
@@ -68,6 +87,8 @@ export function captureLanPanelExpandState(root) {
   if (mobile && mobile.open) state.inviteMobile = true;
   var sala = root.querySelector('.lan-invite-collapsible--sala');
   if (sala && sala.open) state.inviteSala = true;
+  var rooms = root.querySelector('.lan-rooms-panel');
+  if (rooms && rooms.open) state.roomsPanel = true;
   return state;
 }
 
@@ -79,10 +100,15 @@ export function restoreLanPanelExpandState(root, state) {
   if (mobile && state.inviteMobile) mobile.open = true;
   var sala = root.querySelector('.lan-invite-collapsible--sala');
   if (sala && state.inviteSala) sala.open = true;
+  var rooms = root.querySelector('.lan-rooms-panel');
+  if (rooms && state.roomsPanel) rooms.open = true;
 }
 
 function lanPanelHasBuiltChrome(root) {
-  return !!(root && root.querySelector('.lan-hub-status-card'));
+  return !!(
+    root &&
+    (root.querySelector('.lan-connection-hero__status') || root.querySelector('.lan-hub-status-card'))
+  );
 }
 
 function lanPanelNeedsFullRebuild(root, runtime) {
@@ -94,6 +120,9 @@ function lanPanelNeedsFullRebuild(root, runtime) {
 }
 
 function refreshHubStatusCard(statusCard, hubStatus, esc) {
+  var hero = statusCard.closest('.lan-connection-hero') || statusCard.parentElement;
+  if (!hero) return;
+
   var connected = !!hubStatus.connected;
   var line =
     String(hubStatus.line || '').trim() ||
@@ -108,29 +137,60 @@ function refreshHubStatusCard(statusCard, hubStatus, esc) {
         : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> ') +
       esc(line);
   }
-  var hints = statusCard.querySelectorAll('.lan-connect-card-hint');
+
+  statusCard
+    .querySelectorAll('.lan-connect-card-hint, .lan-connection-hero__hint')
+    .forEach(function (el) {
+      el.remove();
+    });
+
   var hintText = String(hubStatus.hint || '').trim();
-  if (hintText) {
-    if (hints.length) hints[0].textContent = hintText;
-    else {
-      var hintEl = document.createElement('p');
-      hintEl.className = 'lan-connect-card-hint';
-      hintEl.style.marginTop = '6px';
-      hintEl.textContent = hintText;
-      statusCard.appendChild(hintEl);
+  var showHint = hintText && !shouldOmitLanHubStatusHint(hubStatus);
+  var hintEl = hero.querySelector('.lan-connection-hero__hint');
+  if (showHint) {
+    if (!hintEl) {
+      hintEl = document.createElement('p');
+      hintEl.className = 'lan-connection-hero__hint lan-connect-card-hint';
+      var pinBlock = hero.querySelector('.lan-connection-hero__pin');
+      if (pinBlock) hero.insertBefore(hintEl, pinBlock);
+      else hero.appendChild(hintEl);
     }
-  } else if (hints.length) hints[0].remove();
+    hintEl.textContent = hintText;
+  } else if (hintEl) {
+    hintEl.remove();
+  }
+}
+
+function findHubStatusRefreshTarget(root) {
+  return (
+    root.querySelector('.lan-connection-hero__status') ||
+    root.querySelector('.lan-hub-status-card')
+  );
 }
 
 function setConnectionDropdownOpen(open, deps) {
   var dd = document.getElementById('connection-dropdown');
   var bg = document.getElementById('connection-dropdown-backdrop');
   var syncBtn = document.getElementById('btn-header-team-sync');
-  if (!dd) return;
+  if (!dd && !bg) return;
+
+  function finishClose() {
+    if (dd) dd.classList.remove('open');
+    if (syncBtn) syncBtn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('connection-dropdown-open');
+  }
+
   if (open) {
     deps.runtime().closeSettingsDropdown();
+    wireConnectionModalChromeOnce(function () {
+      setConnectionDropdownOpen(false, deps);
+    });
+    if (bg) {
+      bg.classList.add('open');
+      bg.setAttribute('aria-hidden', 'false');
+    }
     dd.classList.add('open');
-    if (bg) bg.classList.add('open');
+    document.body.classList.add('connection-dropdown-open');
     if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
     deps.wireLanPanelDelegation();
     wireLanLwwToastPref();
@@ -142,9 +202,12 @@ function setConnectionDropdownOpen(open, deps) {
     }, 120);
     return;
   }
-  dd.classList.remove('open');
-  if (bg) bg.classList.remove('open');
-  if (syncBtn) syncBtn.setAttribute('aria-expanded', 'false');
+
+  if (bg) {
+    closeModalAnimated(bg, finishClose);
+  } else {
+    finishClose();
+  }
 }
 
 /** @param {{
@@ -163,7 +226,7 @@ export function createPanelConnectionChrome(deps) {
     var root = document.getElementById('lan-connection-panel-root');
     if (!root) return;
     var scrollTop = captureConnectionDropdownScrollTop();
-    var statusCard = root.querySelector('.lan-hub-status-card');
+    var statusCard = findHubStatusRefreshTarget(root);
     if (statusCard) refreshHubStatusCard(statusCard, lanHubStatusCopy(), deps.esc);
     await deps.refreshLanSyncDiagnosticsInPlace();
     await deps.renderLanPreflightUx(root);
@@ -188,9 +251,7 @@ export function createPanelConnectionChrome(deps) {
       ev.preventDefault();
       ev.stopPropagation();
     }
-    var dd = document.getElementById('connection-dropdown');
-    if (!dd) return;
-    if (dd.classList.contains('open')) closeConnectionDropdown();
+    if (isLanConnectionDropdownOpen()) closeConnectionDropdown();
     else openConnectionDropdown();
   }
 

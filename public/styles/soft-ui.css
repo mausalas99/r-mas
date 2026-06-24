@@ -31,7 +31,18 @@
 .indica-section-body textarea,
 .otros-item input,
 .otros-item textarea,
-.clinical-census-filter .profile-input {
+.clinical-census-filter .profile-input,
+.cultivos-table input[type="date"],
+.ea-card input,
+.ea-card textarea,
+.ea-card select,
+.rpc-proc-agenda-block input,
+.rpc-proc-agenda-block textarea,
+.med-receta-wrap input:not([type="checkbox"]):not([type="radio"]),
+.med-receta-wrap textarea,
+.med-receta-wrap select,
+#procedure-agenda-modal .profile-input,
+.exp-pendientes-mount .todo-composer input[type="text"] {
   border-radius: var(--radius-field) !important;
 }
 
@@ -65,7 +76,7 @@
 /* Dense data — never rounded */
 table,
 .cultivos-table,
-.cultivos-table input,
+.cultivos-table input:not([type="date"]),
 .ea-card table,
 .lab-output-box pre {
   border-radius: 0 !important;

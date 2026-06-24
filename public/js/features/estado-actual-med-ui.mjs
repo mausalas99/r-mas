@@ -175,7 +175,7 @@ function medPendingBlockHtml(key, pendingVal) {
     escHtml(pendingVal) +
     '</div>' +
     '<div class="ea-clinico-med-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField(\'' +
+    '<button type="button" class="ea-btn ea-btn--success" onclick="confirmEaMedField(\'' +
     key +
     '\')">Confirmar</button>' +
     '<button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal(\'' +
@@ -194,7 +194,7 @@ function medManualPanelHtml(key) {
     escAttr(key) +
     '" placeholder="Indicación manual">' +
     '<div class="ea-med-manual-actions">' +
-    '<button type="button" class="ea-btn ea-btn--primary" data-ea-med-manual-save="' +
+    '<button type="button" class="ea-btn ea-btn--success" data-ea-med-manual-save="' +
     escAttr(key) +
     '">Añadir</button>' +
     '<button type="button" class="ea-btn ea-btn--ghost" data-ea-med-manual-cancel="' +

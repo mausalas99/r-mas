@@ -10,6 +10,8 @@ import {
   closeSettingsDropdown,
   expandSettingsAccordionBackupSync,
   syncTeamSyncHeaderButton,
+  showSettingsPanel,
+  syncSettingsNavVisibility,
 } from './settings-dropdown.mjs';
 import {
   openQuickHelp,
@@ -119,6 +121,8 @@ export const settingsHelpWindowHandlers = {
   closeSettingsDropdown,
   expandSettingsAccordionBackupSync,
   syncTeamSyncHeaderButton,
+  showSettingsPanel,
+  syncSettingsNavVisibility,
   openQuickHelp,
   closeQuickHelp,
   onHelpSearchInput,

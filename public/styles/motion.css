@@ -362,7 +362,10 @@ html.motion-expresivo .app-tab-panel-enter {
 .modal-backdrop.closing > .profile-modal,
 .soap-modal-backdrop.closing .soap-modal,
 .learn-hub-backdrop.closing .learn-hub-sheet,
-#clinical-teams-backdrop.closing .clinical-teams-modal {
+#clinical-teams-backdrop.closing .clinical-teams-modal,
+#equipos-lista-backdrop.closing .equipos-lista-modal,
+#connection-dropdown-backdrop.closing .connection-dropdown-modal,
+#settings-dropdown-backdrop.closing .settings-dropdown-modal {
   animation: modal-out var(--dur-fast) var(--ease-out) forwards;
 }
 

@@ -87,4 +87,9 @@ export function syncDbSecuritySectionUi() {
   var section = document.getElementById('settings-accordion-db-security');
   if (!section) return;
   section.style.display = 'none';
+  void import('./settings-help/settings-dropdown.mjs')
+    .then(function (m) {
+      if (typeof m.syncSettingsNavVisibility === 'function') m.syncSettingsNavVisibility();
+    })
+    .catch(function () {});
 }

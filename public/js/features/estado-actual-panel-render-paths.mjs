@@ -138,8 +138,8 @@ export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, save
     '<div class="estado-actual-panel">' +
     '<div class="ea-action-bar">' +
     '<div class="ea-action-bar__cluster" role="group" aria-label="Acciones de monitoreo">' +
-    '<button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button>' +
-    '<button type="button" class="ea-btn ea-btn--ghost" onclick="estadoActualGuardar()">Guardar</button>' +
+    '<button type="button" class="ea-btn" onclick="openEstadoActualRegistroModal()">Registro manual</button>' +
+    '<button type="button" class="ea-btn ea-btn--success" onclick="estadoActualGuardar()">Guardar</button>' +
     '</div>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
     savedLabel +

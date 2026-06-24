@@ -4,8 +4,10 @@
 import { storage } from '../../storage.js';
 import { hasElevatedTeamPrivileges, canManageInternoQr } from '../../clinical-privileges.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { appendLanHubStatusCard, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
+import { appendLanHubStatusHero, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
+import { appendEquiposQrPanel } from '../equipos-qr-panel.mjs';
+import { getEquiposCloudConfig } from '../../equipos-cloud-config.mjs';
 import { LIVE_SYNC_SALA_DEFS } from '../../lan-join-link.mjs';
 import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
 import { canLocalMacBeLanHost, isClinicalRankConfiguredForLan } from '../../lan-host-rank-policy.mjs';
@@ -21,8 +23,12 @@ import {
 } from './transport.mjs';
 import { activeLiveSyncRoomId } from './runtime.mjs';
 import { appendLanPanelGuardCards_ } from './panel-render-guards.mjs';
-import { lanHubStatusCopy } from './panel-hub-status.mjs';
-import { patchLanPanelJoinButtons } from './panel-known-sessions.mjs';
+import { lanHubStatusCopy, shouldOmitLanHubStatusHint } from './panel-hub-status.mjs';
+import {
+  patchLanPanelJoinButtons,
+  wireLanLwwToastPref,
+  syncLanLwwOverwriteToastPrefUi,
+} from './panel-known-sessions.mjs';
 import {
   isLanConnectionDropdownOpen,
   captureConnectionDropdownScrollTop,
@@ -39,6 +45,8 @@ import {
   getClinicalUserUserId,
   isLanHostActive,
 } from './panel-clinical-context.mjs';
+import { appendLanConnectionStack, appendLanAdminStack } from './panel-group.mjs';
+import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
@@ -48,7 +56,19 @@ function maybeAppendInternoQrPanel_(deps, root) {
     void appendInternoQrPanel(root, {
       hostBaseUrl: hostBaseUrl,
       userId: getClinicalUserUserId(),
-      showToast: deps.runtime().showToast,
+    });
+  });
+}
+
+function maybeAppendEquiposQrPanel_(deps, root) {
+  if (!isLanElectronDesktop()) return;
+  if (!canManageInternoQr(clinicalSessionContext.user)) return;
+  const cloud = getEquiposCloudConfig();
+  if (!cloud.enabled && !isLanHostActive()) return;
+  void resolveLanHostUrlAuto().then(function (hostBaseUrl) {
+    void appendEquiposQrPanel(root, {
+      hostBaseUrl: hostBaseUrl,
+      userId: getClinicalUserUserId(),
     });
   });
 }
@@ -87,21 +107,25 @@ async function tryRefreshChromeInPlace_(deps, root, _gen) {
 
 function appendOfflineBanner_(root) {
   if (lanNetworkProfile.getNetworkProfile() !== 'offline') return;
-  var offlineBanner = document.createElement('div');
-  offlineBanner.className = 'lan-offline-banner';
-  offlineBanner.innerHTML = [
-    '<div class="lan-offline-banner__text">',
-    '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span>',
-    ' Sin conexión al anfitrión · LiveSync en pausa',
-    '</div>',
-    '<div class="lan-offline-banner__hint">',
-    'Los cambios se guardan localmente y se sincronizarán al reconectar.',
-    '</div>',
-    '<button class="lan-offline-banner__btn" data-lan-action="reconnect-from-offline">',
-    'Reconectar',
-    '</button>',
-  ].join('');
-  root.appendChild(offlineBanner);
+  var strip = document.createElement('div');
+  strip.className = 'lan-alert-strip lan-alert-strip--offline';
+
+  var copy = document.createElement('div');
+  copy.className = 'lan-alert-strip__copy';
+  copy.innerHTML =
+    '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> ' +
+    'Sin conexión al anfitrión · LiveSync en pausa' +
+    '<div class="lan-alert-strip__hint">Los cambios se guardan localmente y se sincronizarán al reconectar.</div>';
+  strip.appendChild(copy);
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-settings-row';
+  btn.setAttribute('data-lan-action', 'reconnect-from-offline');
+  btn.textContent = 'Reconectar';
+  strip.appendChild(btn);
+
+  root.appendChild(strip);
 }
 
 function resolveVisibleSalaDefs_(isElevated, userSala, registered, clinicalUserId) {
@@ -118,11 +142,12 @@ function resolveVisibleSalaDefs_(isElevated, userSala, registered, clinicalUserI
 }
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
-function appendHubStatusCardSection_(deps, root, hubStatus, needsInvitePaste) {
-  appendLanHubStatusCard(root, {
+function appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste) {
+  appendLanHubStatusHero(heroHost, {
     connected: hubStatus.connected,
     statusLine: hubStatus.line,
     statusHint: hubStatus.hint,
+    showStatusHint: !shouldOmitLanHubStatusHint(hubStatus),
     isElectronDesktop: isLanElectronDesktop(),
     showBecomeHost: canLocalMacBeLanHost(),
     showInvitePaste: needsInvitePaste && deps.runtime().isMobileWeb(),
@@ -133,15 +158,12 @@ function appendHubStatusCardSection_(deps, root, hubStatus, needsInvitePaste) {
 }
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
-async function appendShiftPinSections_(deps, root, gen) {
+async function appendHeroPinSections_(deps, root, heroHost, gen) {
   await deps.renderLanPreflightUx(root);
-  await deps.appendLanShiftPinSection(root, gen);
   if (deps.isRenderStale(gen)) return;
-  deps.appendLanHostAddressCopyButton(root, gen);
+  await deps.appendLanShiftPinSection(heroHost, gen);
   if (deps.isRenderStale(gen)) return;
-  await deps.appendLanShiftPinClientConnectSection(root, gen);
-  if (deps.isRenderStale(gen)) return;
-  await deps.appendLanTurnResetSection(root, gen);
+  deps.appendLanHostAddressCopyButton(heroHost, gen);
 }
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
@@ -188,7 +210,6 @@ function appendRoomsAndRankSections_(deps, root, hubStatus, visibleSalaDefs, ran
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
 async function appendPanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop) {
-  deps.appendLanHostPinSection(root);
   var appendConflictDrafts = deps.runtime().appendLanConflictDraftsSection;
   if (typeof appendConflictDrafts === 'function') {
     void appendConflictDrafts(root);
@@ -207,6 +228,7 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   restoreLanPanelExpandState(root, expandState);
   restoreConnectionDropdownScrollTop(dropdownScrollTop);
   maybeAppendInternoQrPanel_(deps, root);
+  maybeAppendEquiposQrPanel_(deps, root);
 }
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
@@ -246,18 +268,33 @@ async function renderLanPanelOnce_(deps) {
 
   var hubStatus = lanHubStatusCopy();
   var needsInvitePaste = !deps.runtime().isMobileWeb() && !isLanSessionConfiguredForRest();
-  appendHubStatusCardSection_(deps, root, hubStatus, needsInvitePaste);
-  if (deps.isRenderStale(gen)) return;
-
-  await appendShiftPinSections_(deps, root, gen);
-  if (deps.isRenderStale(gen)) return;
-
-  appendMobileLanSections_(deps, root, hubStatus);
-  appendElectronDesktopSections_(deps, root, needsInvitePaste);
-
   var visibleSalaDefs = resolveVisibleSalaDefs_(isElevated, userSala, registered, clinicalUserId);
-  appendRoomsAndRankSections_(deps, root, hubStatus, visibleSalaDefs, rank, isElevated);
-  await appendPanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop);
+
+  var heroHost = document.createElement('div');
+  heroHost.className = 'lan-connection-hero';
+  root.appendChild(heroHost);
+
+  appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste);
+  if (deps.isRenderStale(gen)) return;
+
+  await appendHeroPinSections_(deps, root, heroHost, gen);
+  if (deps.isRenderStale(gen)) return;
+
+  await deps.appendLanTurnResetAlertStrip(root, gen);
+  if (deps.isRenderStale(gen)) return;
+
+  var mainStack = appendLanConnectionStack(root);
+  await deps.appendLanShiftPinClientConnectSection(mainStack, gen);
+  if (deps.isRenderStale(gen)) return;
+
+  appendMobileLanSections_(deps, mainStack, hubStatus);
+  appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
+  appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
+  deps.appendLanHostPinSection(mainStack);
+  await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
+  appendLanLwwToastRow(mainStack);
+  wireLanLwwToastPref();
+  syncLanLwwOverwriteToastPrefUi();
 }
 
 /** @param {{
@@ -271,7 +308,7 @@ async function renderLanPanelOnce_(deps) {
  *   appendLanShiftPinSection: (root: HTMLElement, gen: number) => Promise<void>,
  *   appendLanHostAddressCopyButton: (root: HTMLElement, gen: number) => void,
  *   appendLanShiftPinClientConnectSection: (root: HTMLElement, gen: number) => Promise<void>,
- *   appendLanTurnResetSection: (root: HTMLElement, gen: number) => Promise<void>,
+ *   appendLanTurnResetAlertStrip: (root: HTMLElement, gen: number) => Promise<void>,
  *   appendLanMobileJoinSection: (root: HTMLElement) => void,
  *   appendLanMobileSharerCard: (root: HTMLElement) => void,
  *   appendLanJoinOtherMacSection: (root: HTMLElement, opts?: object) => void,

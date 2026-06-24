@@ -309,7 +309,10 @@ export function updateUnifiedSearchResults() {
   var q = String(inp.value || "").trim().toLowerCase();
   if (!q) {
     box.innerHTML =
-      '<div class="unified-search-empty">Escribe para buscar pacientes, notas o indicaciones.</div>';
+      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
+      '<span class="empty-state-title">Buscar en el censo</span>' +
+      '<span class="empty-state-lead">Escribe nombre, registro, cuarto o texto de notas.</span>' +
+      '</div>';
     _unifiedSearchCurrent = [];
     return;
   }
@@ -325,7 +328,11 @@ export function updateUnifiedSearchResults() {
   }
   _unifiedSearchCurrent = out;
   if (!out.length) {
-    box.innerHTML = '<div class="unified-search-empty">Sin coincidencias.</div>';
+    box.innerHTML =
+      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
+      '<span class="empty-state-title">Sin coincidencias</span>' +
+      '<span class="empty-state-lead">Prueba otro término o abre una pestaña desde el encabezado.</span>' +
+      '</div>';
     return;
   }
   box.innerHTML = renderUnifiedSearchHtml(out, q);
@@ -372,7 +379,11 @@ function renderExtraTemplatesList() {
   if (!list) return;
   var arr = ensureExtraTemplatesArray();
   if (!arr.length) {
-    list.innerHTML = '<div class="unified-search-empty">Aún no tienes plantillas guardadas.</div>';
+    list.innerHTML =
+      '<div class="unified-search-empty empty-state empty-state--compact" role="status">' +
+      '<span class="empty-state-title">Sin plantillas guardadas</span>' +
+      '<span class="empty-state-lead">Las plantillas que guardes aparecerán aquí.</span>' +
+      '</div>';
     return;
   }
   list.innerHTML = arr

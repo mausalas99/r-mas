@@ -167,15 +167,17 @@ function showReleaseNotesModal(version) {
   if (list) {
     var notes = getCuratedReleaseNotes(version);
     list.innerHTML = '';
-    notes.forEach(function(n) {
+    notes.forEach(function (n) {
       var li = document.createElement('li');
-      var strong = document.createElement('strong');
-      strong.textContent = n.title;
-      li.appendChild(strong);
-      li.appendChild(document.createTextNode(' — '));
-      var span = document.createElement('span');
-      span.innerHTML = releaseNoteBodyHtml(n.body);
-      li.appendChild(span);
+      li.className = 'release-notes-item';
+      var titleEl = document.createElement('p');
+      titleEl.className = 'release-notes-item-title';
+      titleEl.textContent = n.title || '';
+      li.appendChild(titleEl);
+      var bodyEl = document.createElement('p');
+      bodyEl.className = 'release-notes-item-body';
+      bodyEl.innerHTML = releaseNoteBodyHtml(n.body);
+      li.appendChild(bodyEl);
       list.appendChild(li);
     });
   }
