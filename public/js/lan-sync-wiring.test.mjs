@@ -99,15 +99,14 @@ describe('LAN module boot wiring', () => {
   });
 
   it('transport deps use globalThis bridge (esbuild duplicate chunk guard)', () => {
-    const transport =
-      read('features/lan/transport.mjs') +
-      '\n' +
-      read('features/lan/transport-deps.mjs') +
-      '\n' +
-      read('features/lan/transport-init.mjs');
-    assert.match(transport, /__LAN_SYNC_TRANSPORT_DEPS__/);
-    assert.match(transport, /ensureLanSyncTransportDepsWired/);
-    assert.match(transport, /ensureLanSyncTransportDepsWired\(\)\.then/);
+    const bridgeGlobals = read('features/lan/lan-sync-bridge-globals.mjs');
+    const transportDeps = read('features/lan/transport-deps.mjs');
+    const transportInit = read('features/lan/transport-init.mjs');
+    assert.match(bridgeGlobals, /__LAN_SYNC_TRANSPORT_DEPS__/);
+    assert.match(transportDeps, /lanSyncTransportDepsGlobal/);
+    assert.match(transportDeps, /setLanSyncTransportDepsGlobal/);
+    assert.match(transportDeps, /ensureLanSyncTransportDepsWired/);
+    assert.match(transportInit, /ensureLanSyncTransportDepsWired\(\)\.then/);
   });
 
   it('lan-sync wires push bridge before transport and document init', () => {
