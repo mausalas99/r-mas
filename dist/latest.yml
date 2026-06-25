@@ -1,24 +1,24 @@
-version: 7.5.0
+version: 7.5.1
 files:
-  - url: R+-7.5.0-x64.exe
-    sha512: Y/COH72b4Suul2FFbsO8olvsIj7lYW7bMGV2/8g5S+xvY+x+MmeMneDVjkQQZlOCSEm5iar1/Pv74gjuKh7wBg==
-    size: 115299242
-path: R+-7.5.0-x64.exe
-sha512: Y/COH72b4Suul2FFbsO8olvsIj7lYW7bMGV2/8g5S+xvY+x+MmeMneDVjkQQZlOCSEm5iar1/Pv74gjuKh7wBg==
-releaseDate: '2026-06-24T15:58:07.000Z'
+  - url: R+-7.5.1-x64.exe
+    sha512: LENGV9hIUXJiCPDA6DZwkRUTKyxWWiGeAYhC1R/B66O6uClkl/O91NQFEaOFhUVAZbuInlQxlbXeCqZrG4QkZQ==
+    size: 115335926
+path: R+-7.5.1-x64.exe
+sha512: LENGV9hIUXJiCPDA6DZwkRUTKyxWWiGeAYhC1R/B66O6uClkl/O91NQFEaOFhUVAZbuInlQxlbXeCqZrG4QkZQ==
+releaseDate: '2026-06-25T20:07:36.000Z'
 releaseNotes: |
-  Sobre 7.4.1: cola de custodia Lumify / EKG / Ultrasonido con tablero en escritorio, micro-app móvil en /equipos y opción cloud en Cloudflare (sin Mac anfitrión); panel ⇄ rediseñado con héroe de estado/PIN y filas unificadas; Ajustes alinea botones fantasma en paneles internos.
+  Sobre 7.5.0: notificaciones Web Push en la cola de equipos (LAN y cloud); eTFG en química usa sexo y edad del expediente; pegado masivo de labs agrupa por ventana de 2 h; superficies más planas (tokens Rams/Tufte).
   
-  Equipos — cola del programa — Un Lumify, un EKG y un ultrasonido compartidos a nivel de internado. Lista de espera, checkout/devolución con fotos comprimidas (Lumify y EKG), reportes de material/falla; fotos visibles en admin 14 días (purga diaria 06:00 UTC solo de expiradas).
+  Equipos — notificaciones push — En /equipos (móvil) puedes activar avisos cuando un Lumify/EKG/US queda libre, al devolver Lumify (con % de carga si eres el siguiente) o cuando hay reporte de material/falla. Funciona en cola LAN y en cloud (VAPID en Worker).
   
-  Equipos — móvil — QR + token en /equipos para MIP/residentes: retiro, devolución, alertas y cola en tiempo real (WebSocket).
+  Equipos — código compartido — Misma lógica de mensajes y API entre escritorio, móvil LAN y páginas cloud; script build:equipos-pages para empaquetar la micro-app.
   
-  Equipos — escritorio — Tablero en Modo Guardia, panel QR para R4/Admin, historial de sesiones y failover temporal si el anfitrión de equipos cae.
+  Laboratorio — eTFG — CKD-EPI 2021 toma sexo y edad del paciente en R+ (no el encabezado SOME); si falta sexo en expediente, no calcula eTFG.
   
-  Equipos — cloud (opcional) — Cola en Cloudflare Worker + D1 + R2 cuando no hay Mac anfitrión en la red; configuración en escritorio y badge de estado del enlace público.
+  Laboratorio — pegado masivo — Consolidación por día + tipo dentro de ventana de 2 horas (menos duplicados al pegar varios bloques del mismo turno).
   
-  Panel ⇄ — Zona héroe con estado en una línea y PIN en monoespaciado; filas settings-card-stack unificadas (iPad, salas, diagnóstico, toggles); alertas de conflicto/offline como franja, no tarjeta competidora.
+  UI — Rams/Tufte — Papel cálido, bordes hairline, sin sombras en tarjetas; gráficas EA con menos tinta decorativa.
   
-  Ajustes — Misma gramática de filas en paneles internos; acciones secundarias en botón fantasma en lugar de paredes de botones morados.
+  Seguridad renderer — Escape HTML centralizado en dom-escape.mjs (expediente, LAN, interno, equipos).
   
-  Base clínica — Esquema SQLCipher v17 → v19 (tablas equipos_*, fotos con photo_kind=alert en reportes).
+  Base clínica — Esquema SQLCipher v19 → v20 (suscripciones push de equipos en host LAN).
