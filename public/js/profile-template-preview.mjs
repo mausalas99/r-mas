@@ -2,14 +2,7 @@
  * Vista previa de plantillas clínicas con el mismo aspecto que Nota / Indicaciones en el expediente.
  */
 
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
+import { esc } from './dom-escape.mjs';
 function readonlyTextarea(rows, value, placeholder) {
   var ph = placeholder ? ' placeholder="' + esc(placeholder) + '"' : "";
   var body = esc(value || "");

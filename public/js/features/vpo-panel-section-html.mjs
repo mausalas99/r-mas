@@ -1,14 +1,7 @@
 import { VPO_OFFICIAL_CALCULATOR_DISCLAIMER, VPO_SUGGESTED_SCALES } from '../vpo-text.mjs';
 import { ensureScaleResults } from '../vpo-data.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 export function renderRiskScalesOnlyBody(state) {
   ensureScaleResults(state);
   const sr = state.scaleResults;

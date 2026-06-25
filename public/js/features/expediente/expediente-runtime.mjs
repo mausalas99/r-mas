@@ -1,3 +1,5 @@
+import { esc } from '../../dom-escape.mjs';
+export { esc };
 // Expediente shared runtime bridge
 let rt = {
   getActiveId() { return null; },
@@ -31,12 +33,4 @@ export function registerExpedienteRuntime(ctx) {
 
 export function aid() {
   return rt.getActiveId();
-}
-
-export function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }

@@ -43,6 +43,7 @@ import {
   syncLiveSyncStatusChrome,
 } from './room.mjs';
 
+import { esc } from '../../dom-escape.mjs';
 var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
 // Scan interval adapts to network profile — call getLanScanIntervalMs() where set.
@@ -103,14 +104,6 @@ function runtime() {
   };
   // Live orchestrator runtime wins over the wire-time snapshot (showToast is stub until registerLanRuntime).
   return Object.assign({}, fallbacks, panelRuntime || {}, getLanRuntime());
-}
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 function bumpPanelRenderGen() {

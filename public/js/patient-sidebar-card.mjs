@@ -4,14 +4,12 @@
 
 /** @param {string} s */
 export function escSidebarHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return escHtml(s);
 }
 
 /** @param {{ cuarto?: string, cama?: string }} p */
+import { escHtml } from './dom-escape.mjs';
+
 export function formatPatientBedParts(p) {
   const cuarto = String(p?.cuarto || '').trim();
   const cama = String(p?.cama || '').trim();

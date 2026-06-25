@@ -1,16 +1,8 @@
 import { medNotaSelectionByPatient } from "../app-state.mjs";
+import { isDemoPatientId } from '../demo-patient.mjs';
 
-export function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-export function isDemoPatientId(patientId) {
-  return String(patientId || "").indexOf("demo-") === 0;
-}
+import { esc } from '../dom-escape.mjs';
+export { esc, isDemoPatientId };
 
 export function manejoDiaOpts(fechaActualizacion) {
   var fecha = String(fechaActualizacion || "").trim();

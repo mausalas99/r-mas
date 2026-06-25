@@ -1,7 +1,15 @@
+import { esc } from '../js/dom-escape.mjs';
+import { isCloudEquiposMode } from '../lib/equipos/equipos-cloud-mode.mjs';
 import { resolveEquiposApiBase } from './host-discovery.mjs';
 import { equiposFetch, resizeImageFile } from './equipos-api.mjs';
 import { EQUIPOS_ROTACIONES, DEVICE_LABELS, STATUS_LABELS } from './equipos-rotaciones.mjs';
 import { initEquiposAdmin, exitEquiposAdmin } from './equipos-admin.mjs';
+import {
+  registerEquiposServiceWorker,
+  enableQueuePush,
+  disableQueuePush,
+  pushSupported,
+} from './equipos-push.mjs';
 
 const TOKEN_KEY = 'rpc-equipos-token';
 const NAME_KEY = 'rpc-equipos-name';
@@ -85,14 +93,6 @@ function loadToken() {
   return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '';
 }
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function closeModal() {
   if (modalEl) modalEl.remove();
   modalEl = null;
@@ -148,10 +148,6 @@ async function readPhotoInput(input) {
   const file = input?.files?.[0];
   if (!file) return null;
   return resizeImageFile(file);
-}
-
-function isCloudEquiposMode() {
-  return typeof window !== 'undefined' && window.__EQUIPOS_API_MODE__ === 'cloud';
 }
 
 function renderLoadError(kind = 'unavailable') {
@@ -369,12 +365,32 @@ async function handleAction(btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...id, deviceType: dev }),
     });
-    showToast('Te uniste a la cola.');
+    const pushResult = await enableQueuePush({
+      apiBase,
+      token,
+      deviceType: dev,
+      reporterName: id.reporterName,
+      rotation: id.rotation,
+    });
+    if (pushResult.ok) {
+      showToast('Te uniste a la cola. Notificaciones activadas.');
+    } else if (pushResult.reason === 'denied') {
+      showToast('En cola. Activa notificaciones en Ajustes para avisos.');
+    } else {
+      showToast('Te uniste a la cola.');
+    }
     await refreshBoard();
     return;
   }
 
   if (act === 'leave') {
+    await disableQueuePush({
+      apiBase,
+      token,
+      deviceType: dev,
+      reporterName: id.reporterName,
+      rotation: id.rotation,
+    });
     await equiposFetch(apiBase, token, '/waitlist/leave', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -537,6 +553,30 @@ function connectWs() {
   ws.onclose = () => setTimeout(connectWs, 4000);
 }
 
+async function syncExistingQueuePushSubscriptions() {
+  if (!board || !pushSupported() || Notification.permission !== 'granted') return;
+  const me = identity();
+  if (!me.reporterName || !me.rotation) return;
+  for (const dev of board.devices || []) {
+    const wl = dev.waitlist || [];
+    const inQueue = wl.some(
+      (w) => w.reporter_name === me.reporterName && w.rotation === me.rotation
+    );
+    if (!inQueue) continue;
+    try {
+      await enableQueuePush({
+        apiBase,
+        token,
+        deviceType: dev.device_type,
+        reporterName: me.reporterName,
+        rotation: me.rotation,
+      });
+    } catch (_e) {
+      void _e;
+    }
+  }
+}
+
 async function init() {
   migrateIdentityStorage();
 
@@ -575,6 +615,8 @@ async function init() {
   }
   try {
     await refreshBoard();
+    await syncExistingQueuePushSubscriptions();
+    if (pushSupported()) void registerEquiposServiceWorker();
     initEquiposAdmin({
       apiBase,
       token,

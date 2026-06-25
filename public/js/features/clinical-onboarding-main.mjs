@@ -17,17 +17,11 @@ import {
 } from './clinical-onboarding-sync-mode.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 
+import { escapeHtml } from '../dom-escape.mjs';
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
 
 let teamsChangedListenerWired = false;
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
 
 export function getClinicalOnboardingMainHost() {
   return document.getElementById(CLINICAL_ONBOARDING_MAIN_ID);

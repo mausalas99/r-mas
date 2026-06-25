@@ -10,14 +10,6 @@ import {
 } from '../../../../lib/entrega/entrega-vitals-plan.mjs';
 import { entregaDraft } from './entrega-modal-state.mjs';
 
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 /** @param {(hhmm: string|null|undefined, scope: 'interval'|'shift') => string} buildUntilMarkup @param {string} uiMode @param {object} freq */
 function buildVitalsFreqPanelsMarkup(buildUntilMarkup, uiMode, freq) {
   const hourChips = VITALS_FREQ_HOUR_PRESETS.map(
@@ -73,6 +65,8 @@ function buildVitalsFreqPanelsMarkup(buildUntilMarkup, uiMode, freq) {
 }
 
 /** @param {ReturnType<typeof normalizeVitalsPlan>} plan @param {(hhmm: string|null|undefined, scope: 'interval'|'shift') => string} buildUntilMarkup */
+
+import { escapeHtml } from '../../dom-escape.mjs';
 export function buildVitalsPanelMarkup(plan, buildUntilMarkup) {
   const freq = plan.frequency;
   const metricChecks = VITALS_METRIC_KEYS.map(

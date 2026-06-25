@@ -27,17 +27,3 @@ export function readFeatureSrc(dir, names) {
   }
   return parts.join('\n');
 }
-
-/**
- * @param {string} baseDir
- * @param {Record<string, string[]>} groups - label → filename list
- * @returns {Record<string, string>}
- */
-export function readFeatureSrcGroups(baseDir, groups) {
-  /** @type {Record<string, string>} */
-  const out = {};
-  for (const [key, names] of Object.entries(groups)) {
-    out[key] = readFeatureSrc(join(baseDir, key), names);
-  }
-  return out;
-}

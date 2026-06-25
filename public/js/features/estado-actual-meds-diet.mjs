@@ -39,11 +39,59 @@ export function shouldSkipDietProposal(monitoreo, opts, merged) {
     monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object' ? monitoreo.estadoClinico : {};
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
+  if (merged && mergedDietHasContent(merged)) {
+    if (confirmedDietFingerprint(ec) === dietProposalFingerprint(merged)) return true;
+  }
   if (!conf.dieta) return false;
   if (opts.force && merged && mergedDietHasContent(merged)) {
     return dietProposalFingerprint(merged) === confirmedDietFingerprint(ec);
   }
   return true;
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ */
+function clearDietPending(monitoreo) {
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
+  DIET_PENDING_KEYS.forEach(function (k) {
+    monitoreo.pendienteReceta[k] = '';
+  });
+}
+
+/**
+ * Estado clínico ya coincide con SOME — marcar confirmada sin re-propuesta (evita wipe diario).
+ * @param {Record<string, unknown>} monitoreo
+ * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} merged
+ * @returns {boolean} true si se auto-confirmó
+ */
+export function tryAutoConfirmMatchingDiet(monitoreo, merged) {
+  if (!monitoreo || !merged || !mergedDietHasContent(merged)) return false;
+  var ec =
+    monitoreo.estadoClinico && typeof monitoreo.estadoClinico === 'object' ? monitoreo.estadoClinico : {};
+  var conf =
+    monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
+  if (conf.dieta) return false;
+  if (confirmedDietFingerprint(ec) !== dietProposalFingerprint(merged)) return false;
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
+  clearDietPending(monitoreo);
+  return true;
+}
+
+/**
+ * Edición manual en EA — tratar como confirmada y descartar propuesta pendiente.
+ * @param {Record<string, unknown>} monitoreo
+ */
+export function markDietAsManuallyConfirmed(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
+  clearDietPending(monitoreo);
 }
 
 /**

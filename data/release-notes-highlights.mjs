@@ -1055,6 +1055,34 @@ var RELEASE_NOTES_741 = [
   },
 ];
 
+var RELEASE_NOTES_751 = [
+  {
+    title: 'Push en cola de equipos',
+    body:
+      'En <code>/equipos</code> activa avisos cuando un <strong>Lumify / EKG / US</strong> queda libre, al devolver Lumify (con % si eres el siguiente) o hay reporte de material/falla. LAN y <strong>cloud</strong>.',
+  },
+  {
+    title: 'eTFG del expediente',
+    body:
+      'La <strong>eTFG</strong> en química usa sexo y edad del paciente en R+ (CKD-EPI 2021), no el encabezado SOME.',
+  },
+  {
+    title: 'Labs masivos — ventana 2 h',
+    body:
+      'Al pegar varios bloques del mismo turno, la consolidación agrupa por día + tipo dentro de <strong>2 horas</strong> — menos duplicados.',
+  },
+  {
+    title: 'UI plana Rams',
+    body:
+      'Papel cálido, bordes hairline y sin sombras en tarjetas; gráficas EA con menos tinta decorativa.',
+  },
+  {
+    title: 'Parche sobre 7.5.0',
+    body:
+      'Instala <strong>7.5.1</strong> si usas cola de equipos con push o pegas labs masivos. Esquema SQLCipher sube a <strong>v20</strong> (suscripciones push en host LAN).',
+  },
+];
+
 var RELEASE_NOTES_750 = [
   {
     title: 'Cola Lumify / EKG / US',
@@ -1079,9 +1107,10 @@ var RELEASE_NOTES_750 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_750;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_751;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.1': RELEASE_NOTES_751,
   '7.5.0': RELEASE_NOTES_750,
   '7.4.1': RELEASE_NOTES_741,
   '7.4.0': RELEASE_NOTES_740,

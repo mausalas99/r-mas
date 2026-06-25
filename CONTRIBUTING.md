@@ -9,6 +9,7 @@
 - [Agentes AI](#agentes-ai)
 - [Estándar de documentación](#estándar-de-documentación)
 - [Pull requests](#pull-requests)
+- [VibeDrift (opcional)](#vibedrift-opcional)
 
 ## Documentación
 
@@ -68,10 +69,26 @@ Ver [`docs/core/17-docs-blueprint.md`](docs/core/17-docs-blueprint.md) para:
 - Convenciones de nomenclatura
 - Reglas de mantenimiento para agentes
 
+## VibeDrift (opcional)
+
+VibeDrift mide drift arquitectónico (duplicación, patrones dominantes, funciones huérfanas). El repo incluye `@vibedrift/cli` como devDependency.
+
+```bash
+# Ver score local (no falla el build)
+npm run vibedrift:scan
+
+# Mismo check que CI (falla si score < 55)
+npm run vibedrift:check
+```
+
+**Pre-push hook (opcional):** `npx vibedrift hook install --fail-on-score 45` — útil antes de abrir PR; no es obligatorio para contribuir.
+
+Agentes: skill `.agents/skills/vibedrift/SKILL.md`; runner local `node .agents/skills/vibedrift/scripts/vibedrift-tools.mjs intent --root .`.
+
 ## Pull requests
 
 1. Crea un branch con nombre descriptivo
-2. Asegúrate de que `npm test` pase
+2. Asegúrate de que `npm test` y `npm run metrics:check` pasen (CI también corre `npm run vibedrift:check`)
 3. Si agregas una feature nueva, incluye o actualiza la documentación correspondiente
 4. Actualiza `docs/logs/agent-changelog.md` si un agente AI participó en el cambio
 5. Para cambios arquitectónicos, considera registrar la decisión en `docs/core/18-knowledge-capture.md`

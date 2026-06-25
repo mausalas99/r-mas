@@ -385,7 +385,12 @@ function scheduleUpdateCheck(delayMs) {
     updateCheckTimer = null;
     if (!mainWindow || mainWindow.isDestroyed()) return;
     try {
-      autoUpdater.checkForUpdates().catch(function () {});
+      autoUpdater.checkForUpdates().catch(function (err) {
+        // intentional: ignore if window closed or updater busy during scheduled check
+        if (process.env.R_PLUS_DEBUG_UPDATER === '1') {
+          console.warn('[updater] scheduled check failed:', err && err.message);
+        }
+      });
     } catch (_e) { /* noop */ }
   }, typeof delayMs === 'number' ? delayMs : 400);
 }

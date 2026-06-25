@@ -9,15 +9,9 @@ import { equiposCloudFetch, getEquiposCloudConfig } from '../equipos-cloud-confi
 import { loadEquiposHistoryPanel } from './equipos-history.mjs';
 import { showToast } from '../ui-toast.mjs';
 
+import { esc } from '../dom-escape.mjs';
 function dbApi() {
   return window.rplusDb || window.electronAPI || null;
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 /** @param {object} dev */

@@ -27,15 +27,9 @@ import { needsClinicalOnboarding } from '../clinical-onboarding.mjs';
 import { settingsHelpBridge } from './bridges.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
+import { escapeHtml } from '../../dom-escape.mjs';
 let learnHubDismissWired = false;
 let learnHubLastFocus = null;
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
 
 function estMinutesForSteps(stepCount) {
   const n = Math.max(1, Number(stepCount) || 1);

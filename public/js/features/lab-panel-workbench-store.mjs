@@ -140,6 +140,14 @@ export async function applyDriveImportLabSets(patient, labSets) {
   return { added: added, skipped: skipped };
 }
 
+function finalizeLabHistoryImport(patientId) {
+  var consolidation = autoConsolidateLabHistoryForPatient(patientId);
+  if (consolidation.merged > 0 && typeof rt.addAuditEntry === 'function') {
+    rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
+  }
+  rt.rebuildEstudiosFromLabHistory(patientId);
+}
+
 function storeBulkLabBlocks(blocks, processable) {
   if (processable.length > 1 && typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Procesar laboratorios (' + processable.length + ' pacientes)');
@@ -165,11 +173,7 @@ function storeBulkLabBlocks(blocks, processable) {
       pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
       storedSets += 1;
     });
-    var consolidation = autoConsolidateLabHistoryForPatient(patientId);
-    if (consolidation.merged > 0 && typeof rt.addAuditEntry === 'function') {
-      rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
-    }
-    rt.rebuildEstudiosFromLabHistory(patientId);
+    finalizeLabHistoryImport(patientId);
   });
   if (storedSets || skippedDupes) {
     saveState({ immediate: true });
@@ -217,6 +221,7 @@ function pickDisplayLabResult(blocks, processable, activeId) {
 export {
   pushLabHistory,
   pushLabHistoryFromBulkPayload,
+  finalizeLabHistoryImport,
   isDuplicateInPatientHistory,
   storeBulkLabBlocks,
   pickDisplayLabResult,

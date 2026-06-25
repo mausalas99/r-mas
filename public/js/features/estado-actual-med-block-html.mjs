@@ -2,17 +2,7 @@ import { EA_MED_FIELD_LABELS, parseMedFieldItems } from './estado-actual-med-ui.
 import { buildMedDropdownOptions, resolveManejoFechaActualizacion } from './estado-actual-meds.mjs';
 import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 
-function escHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escAttr(s) {
-  return escHtml(s).replace(/"/g, '&quot;');
-}
-
+import { escHtml, escAttr } from '../dom-escape.mjs';
 function medCatPreviewText(items) {
   if (!items.length) return 'Sin medicamentos';
   const short = String(items[0] || '').trim();

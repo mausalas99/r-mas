@@ -1,10 +1,11 @@
 {
   "name": "r-plus",
-  "version": "7.5.0",
+  "version": "7.5.1",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "build:ui": "node scripts/build-ui.mjs && node scripts/bundle-renderer.mjs",
+    "build:equipos-pages": "node scripts/build-equipos-pages.mjs",
     "build:ui:check": "node scripts/build-ui.mjs --check && node scripts/bundle-renderer.mjs --check",
     "bundle:renderer": "node scripts/bundle-renderer.mjs",
     "bundle:renderer:prod": "node scripts/bundle-renderer.mjs --prod",
@@ -41,12 +42,15 @@
     "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline",
     "dev:lan-virtual-peer": "node scripts/lan-virtual-peer.mjs",
     "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs",
-    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh"
+    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
+    "vibedrift:scan": "vibedrift . --local-only",
+    "vibedrift:check": "vibedrift . --local-only --fail-on-score 45"
   },
   "author": "Mauricio Salas",
   "license": "ISC",
   "dependencies": {
     "@node-rs/argon2": "2.0.2",
+    "@pushforge/builder": "^2.0.5",
     "better-sqlite3-multiple-ciphers": "12.10.0",
     "bonjour-service": "^1.4.0",
     "compression": "^1.8.1",
@@ -62,6 +66,7 @@
   "devDependencies": {
     "@electron/rebuild": "3.7.2",
     "@eslint/js": "^9.39.1",
+    "@vibedrift/cli": "^0.14.0",
     "chart.js": "^4.5.1",
     "dependency-cruiser": "^16.10.4",
     "electron": "^41.2.0",

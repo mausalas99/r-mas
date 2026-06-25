@@ -10,6 +10,7 @@ import {
 import {
   hasActiveDietProposal,
   shouldSkipDietProposal,
+  tryAutoConfirmMatchingDiet,
   writeDietProposal,
   mergedDietFromReceta,
   mergedDietHasContent,
@@ -95,6 +96,7 @@ export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
   }
   var merged = mergedDietFromReceta(recetaBlock.dietas);
   if (!mergedDietHasContent(merged)) return false;
+  if (tryAutoConfirmMatchingDiet(monitoreo, merged)) return true;
   if (shouldSkipDietProposal(monitoreo, opts, merged)) return false;
   writeDietProposal(monitoreo, merged);
   return true;
@@ -188,14 +190,16 @@ export function syncRecetaProposalsFromSoapSelection(
 ) {
   if (!patientId || !monitoreo) return false;
   var block = medRecetaByPatient ? medRecetaByPatient[patientId] : null;
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var fechaActualizacion = resolveManejoFechaActualizacion(patientId, medRecetaByPatient);
+  var pruned = pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyFn, fechaActualizacion);
   var sel = medNotaSelectionByPatient && medNotaSelectionByPatient[patientId];
-  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel || {}, classifyFn);
+  var buckets = bucketsFromRecetaItems(items, sel || {}, classifyFn);
+  applyRecetaProposal(monitoreo, buckets);
   var hasAny = MED_FIELD_KEYS.some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
-  if (!hasAny) return false;
-  applyRecetaProposal(monitoreo, buckets);
-  return true;
+  return pruned || hasAny;
 }
 
 /**
@@ -242,6 +246,144 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
 }
 
 /**
+ * @param {unknown} raw
+ * @returns {string[]}
+ */
+function parseMedFieldItemsLocal(raw) {
+  if (raw == null || !String(raw).trim()) return [];
+  return String(raw)
+    .split(' | ')
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean);
+}
+
+/**
+ * @param {string[]} items
+ * @returns {string}
+ */
+function serializeMedFieldItemsLocal(items) {
+  return (items || [])
+    .map(function (s) {
+      return String(s).trim();
+    })
+    .filter(Boolean)
+    .join(' | ');
+}
+
+/**
+ * @param {string} text
+ */
+function normalizeMedSoapLine(text) {
+  return String(text || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .replace(/\s+DIA\s+\d+\s*$/i, '')
+    .replace(/(\d+)\s+G\b/g, '$1G')
+    .replace(/(\d+)\s+MG\b/g, '$1MG')
+    .replace(/(\d+)\s+MCG\b/g, '$1MCG')
+    .trim();
+}
+
+/**
+ * @param {string} line
+ * @param {string[]} allowedFrags
+ */
+function medSoapLineMatchesReceta(line, allowedFrags) {
+  var norm = normalizeMedSoapLine(line);
+  if (!norm) return false;
+  return allowedFrags.some(function (frag) {
+    var f = normalizeMedSoapLine(frag);
+    return f && (norm === f || norm.indexOf(f) >= 0 || f.indexOf(norm) >= 0);
+  });
+}
+
+/**
+ * @param {unknown[]} items
+ * @param {(nombreRaw: string, dosisRaw?: string) => string} classifyFn
+ * @param {string} fechaActualizacion
+ * @returns {Record<string, string[]>}
+ */
+export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualizacion) {
+  /** @type {Record<string, string[]>} */
+  var byCat = {};
+  MED_FIELD_KEYS.forEach(function (k) {
+    byCat[k] = [];
+  });
+  var list = Array.isArray(items) ? items : [];
+  list.forEach(function (it) {
+    if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
+    var cat = effectiveSoapCategory(
+      /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
+      classifyFn
+    );
+    if (cat === 'otros') return;
+    var key = cat === 'diuretico' ? 'diureticos' : cat;
+    var frag = medInstructionFragmentForSoap(
+      /** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it)
+    );
+    if (key === 'abx' && fechaActualizacion) {
+      frag = advanceAbxMedTextForManejoDate(frag, fechaActualizacion);
+    }
+    if (byCat[key]) byCat[key].push(frag);
+  });
+  return byCat;
+}
+
+/**
+ * Quita de EA medicamentos que ya no están en el manejo SOME pegado.
+ * @param {Record<string, unknown>} monitoreo
+ * @param {unknown[]} items
+ * @param {(nombreRaw: string, dosisRaw?: string) => string} classifyFn
+ * @param {string} [fechaActualizacion]
+ * @returns {boolean}
+ */
+export function pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyFn, fechaActualizacion) {
+  if (!monitoreo || typeof monitoreo !== 'object') return false;
+  if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
+    monitoreo.estadoClinico = {};
+  }
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
+    monitoreo.pendienteReceta = {};
+  }
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
+    monitoreo.confirmado = {};
+  }
+  var allowed = allowedSoapFragmentsByCategory(items, classifyFn, fechaActualizacion || '');
+  var changed = false;
+  MED_FIELD_KEYS.forEach(function (key) {
+    var allowedFrags = allowed[key] || [];
+    var ecItems = parseMedFieldItemsLocal(monitoreo.estadoClinico[key]);
+    var keptEc = ecItems.filter(function (line) {
+      return medSoapLineMatchesReceta(line, allowedFrags);
+    });
+    if (keptEc.length !== ecItems.length) {
+      /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[key] = serializeMedFieldItemsLocal(keptEc);
+      changed = true;
+    }
+    if (!keptEc.length && monitoreo.confirmado[key]) {
+      /** @type {Record<string, boolean>} */ (monitoreo.confirmado)[key] = false;
+      changed = true;
+    }
+    var pendVal = monitoreo.pendienteReceta[key];
+    if (pendVal != null && String(pendVal).trim()) {
+      var pendItems = parseMedFieldItemsLocal(pendVal);
+      var keptPend = pendItems.filter(function (line) {
+        return medSoapLineMatchesReceta(line, allowedFrags);
+      });
+      var nextPend = serializeMedFieldItemsLocal(keptPend);
+      if (nextPend !== String(pendVal).trim()) {
+        monitoreo.pendienteReceta[key] = nextPend;
+        changed = true;
+      }
+    }
+  });
+  return changed;
+}
+
+/**
  * @param {Record<string, unknown>} monitoreo
  * @param {Record<string, string>} buckets
  */
@@ -253,9 +395,7 @@ export function applyRecetaProposal(monitoreo, buckets) {
   for (var k of MED_FIELD_KEYS) {
     if (monitoreo.confirmado && monitoreo.confirmado[k]) continue;
     var val = buckets && buckets[k];
-    if (val != null && String(val).trim()) {
-      monitoreo.pendienteReceta[k] = String(val).trim();
-    }
+    monitoreo.pendienteReceta[k] = val != null && String(val).trim() ? String(val).trim() : '';
   }
 }
 

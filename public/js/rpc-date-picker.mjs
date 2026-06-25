@@ -1,5 +1,6 @@
 import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
 
+import { esc } from './dom-escape.mjs';
 const MONTHS_ES = [
   'Enero',
   'Febrero',
@@ -23,14 +24,6 @@ const CALENDAR_SVG =
 let popoverEl = null;
 /** @type {(() => void)|null} */
 let activeClose = null;
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 export function formatIsoDateDisplay(iso) {
   return formatAccesoFechaDisplay(iso);

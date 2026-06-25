@@ -1,13 +1,6 @@
 import { pickDiffKeys, summarizeConflictFieldValue, formatFieldLabel } from '../lan-conflict-silent-match.mjs';
 
-function escHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { escHtml } from '../dom-escape.mjs';
 function formatConflictValue(value, fieldKey) {
   return summarizeConflictFieldValue(fieldKey, value);
 }

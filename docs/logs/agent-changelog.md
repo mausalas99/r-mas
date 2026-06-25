@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-25 | VibeDrift phases 0–5 | `.vibedriftignore`, `@vibedrift/cli`, `package.json`, `.github/workflows/ci.yml`, `CONTRIBUTING.md`, `.agents/skills/vibedrift/` | Scan hygiene, arch/DI/dom-escape/equipos dedup; CI `vibedrift:check` floor 55; optional pre-push hook documented. |
 | 2026-06-24 | LAN ⇄ + Ajustes panel redesign | `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`, `panel-host-pin.mjs` | Hero status/PIN, unified stack rows, Ajustes ghost buttons; spec `2026-06-24-lan-settings-panel-redesign-design.md`. |
 | 2026-06-23 | Equipos cloud (CF Worker) | `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `equipos-qr-panel.mjs`, `equipos-board.mjs` | Standalone queue on Worker+D1+R2; desktop cloud config + admin API; mobile cloud mode via `__EQUIPOS_API_MODE__`. |
 | 2026-06-23 | Equipos tracking (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, schema v18, `equipos-router.js`, `equipos-board.mjs` | Program-wide custody queue, mobile `/equipos`, host DB, photo purge, temp host failover, R4 purge. |
@@ -35,6 +36,18 @@ Chronological record of documentation and integration work. Format per `document
 | 2026-06-10 | Perfil histórico ventana dinámica | `med-pharm-view-window.mjs`, `med-pharm-profile-panel.mjs`, `pase-board.mjs` | Cross-mes grilla + FAB Copiar context-aware; spec/plan 2026-06-10 |
 | 2026-06-10 | Release 7.2.9 prepare | `med-receta-core.mjs`, `medications.mjs`, `estado-actual-*`, `docs/RELEASE_NOTES_7.2.9.txt` | Manejo parser dietas/P2, propuesta dieta EA, bump + commit |
 | 2026-06-08 | Docs hub + North Star integration | `docs/core/`, `.cursor/rules/` | Agent-first documentation library wired to Cursor rules |
+
+---
+
+## [2026-06-25] - VibeDrift phases 0–5
+
+**Agent:** Cursor (Composer subagent)
+
+**Scope:** Phase 0 `.vibedriftignore` hygiene; phases 1–4 arch/DI, `dom-escape`, equipos shared modules; Phase 5 CI gate + agent workflow.
+
+**Paths:** `@vibedrift/cli@0.14.0`, `vibedrift:scan`/`vibedrift:check`, `.github/workflows/ci.yml`, `CONTRIBUTING.md`, `.agents/skills/vibedrift/`.
+
+**Verification:** `node .agents/skills/vibedrift/scripts/vibedrift-tools.mjs intent --root .`; `npm run vibedrift:check`.
 
 ---
 

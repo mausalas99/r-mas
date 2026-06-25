@@ -35,6 +35,42 @@ export function isVitalAltered(key, raw) {
   return n < r.min || n > r.max;
 }
 
+/** @param {unknown} raw */
+export function isTempFebrile(raw) {
+  if (raw == null || String(raw).trim() === '') return false;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return false;
+  return n > RANGES.temp.max;
+}
+
+/**
+ * @param {unknown} tas
+ * @param {unknown} tad
+ */
+export function isBpHypotensive(tas, tad) {
+  if (tas != null && String(tas).trim() !== '') {
+    const n = Number(tas);
+    if (Number.isFinite(n) && n < RANGES.tas.min) return true;
+  }
+  if (tad != null && String(tad).trim() !== '') {
+    const n = Number(tad);
+    if (Number.isFinite(n) && n < RANGES.tad.min) return true;
+  }
+  return false;
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} vitals
+ * @param {unknown} vasopField
+ */
+export function isHemodynamicallyUnstable(vitals, vasopField) {
+  const v = vitals && typeof vitals === 'object' ? vitals : {};
+  if (isBpHypotensive(v.tas, v.tad)) return true;
+  if (isVitalAltered('fc', v.fc)) return true;
+  if (vasopField != null && String(vasopField).trim() !== '') return true;
+  return false;
+}
+
 export function buildAlteredAtDefaults(vitals, defaultTime) {
   const out = {};
   Object.keys(RANGES).forEach((k) => {

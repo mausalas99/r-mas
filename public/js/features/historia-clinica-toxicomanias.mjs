@@ -4,14 +4,7 @@ import {
   normalizeToxicomaniasDetail,
 } from '../../../lib/historia-clinica/toxicomanias.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 function catalogOptions() {
   return Object.keys(TOXICOMANIAS_SUBSTANCES).map(function (id) {
     return { id, label: TOXICOMANIAS_SUBSTANCES[id] };

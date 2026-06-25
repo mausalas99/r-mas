@@ -7,14 +7,7 @@ import {
 import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
 import { patients, medRecetaByPatient, vpoByPatient, saveState } from './app-state.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from './dom-escape.mjs';
 function activePatient(patientId) {
   return patients.find(function (p) {
     return String(p.id) === String(patientId);

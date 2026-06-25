@@ -2,14 +2,7 @@ import { notes, saveState } from '../app-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 function renderLabDedupeRowsHtml(rows) {
   return rows
     .map(function (r) {

@@ -1,11 +1,21 @@
 /**
  * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
- * vista previa y consolidación por día + tipo antes de guardar en historial.
+ * vista previa y consolidación por día + tipo dentro de ventana de 2 h.
  */
-import { procesarLabs, looksLikeSomeLabReport, mergeBhResLabRows_ } from './labs.js';
+import {
+  procesarLabs,
+  looksLikeSomeLabReport,
+  mergeBhResLabRows_,
+  extractLabExpedienteFromReport,
+} from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
+import {
+  clusterByDayTipoAndTimeWindow,
+  clusterByTimeWindow,
+  labTimestampMsFromFechaHora,
+} from './lab-consolidation-cluster.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
@@ -169,12 +179,20 @@ function parseReportChunkSuccess(reportText, reportIndex, result) {
   };
 }
 
-function parseReportChunk(reportText, reportIndex) {
+function resolveChartPatientForReport_(reportText, findPatient) {
+  if (!findPatient) return null;
+  var exp = extractLabExpedienteFromReport(reportText);
+  if (!exp) return null;
+  return findPatient(exp) || null;
+}
+
+function parseReportChunk(reportText, reportIndex, findPatient) {
   if (!looksLikeSomeLabReport(reportText)) {
     return parseReportChunkFailure(reportIndex, 'No parece reporte SOME (copia desde «Expediente:»)');
   }
   try {
-    var result = procesarLabs(reportText);
+    var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
+    var result = procesarLabs(reportText, chartPatient ? { patient: chartPatient } : undefined);
     if (!result.resLabs || !result.resLabs.length) {
       return parseReportChunkFailure(reportIndex, 'Sin resultados parseables', {
         expediente: result.patient && result.patient.expediente,
@@ -224,7 +242,7 @@ function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableRep
 function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var chunks = splitSomeReportsInBlock(blockText);
   var reports = chunks.map(function (chunk, ri) {
-    return parseReportChunk(chunk, ri);
+    return parseReportChunk(chunk, ri, findPatient);
   });
   var okReports = reports.filter(function (r) {
     return r.ok;
@@ -325,39 +343,33 @@ function buildMergedPayloadFromGroup(items, tipo) {
   };
 }
 
+function timestampMsFromParsedItem(item) {
+  var result = item && item.result;
+  if (!result) return null;
+  return labTimestampMsFromFechaHora(result.patient && result.patient.fecha, result.patient && result.patient.hora);
+}
+
 /**
- * Agrupa reportes parseados del mismo paciente por día + tipo y consolida renglones.
+ * Agrupa reportes del mismo día y tipo homogéneo si caen en ventana de 2 h consecutiva.
  * @param {{ result: object, reportText: string }[]} parsedItems
  */
 export function mergeBulkParseResults(parsedItems) {
-  var groups = Object.create(null);
-  var mixedSingles = [];
-
-  (parsedItems || []).forEach(function (item) {
-    if (!item || !item.result) return;
-    var resLabs = item.result.resLabs || [];
-    if (!resLabs.length) return;
-    var tipo = primaryTipoForResLabs(resLabs);
-    if (tipo === 'mixed') {
-      mixedSingles.push(item);
-      return;
-    }
-    var dk = dayKeyFromResult(item.result);
-    var gk = dk + '\x01' + tipo;
-    if (!groups[gk]) groups[gk] = [];
-    groups[gk].push(item);
+  var clusters = clusterByDayTipoAndTimeWindow(
+    (parsedItems || []).filter(function (item) {
+      return item && item.result && item.result.resLabs && item.result.resLabs.length;
+    }),
+    function (item) {
+      return dayKeyFromResult(item.result);
+    },
+    function (item) {
+      return primaryTipoForResLabs(item.result.resLabs || []);
+    },
+    timestampMsFromParsedItem
+  );
+  return clusters.map(function (cluster) {
+    var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
+    return buildMergedPayloadFromGroup(cluster, tipo);
   });
-
-  var out = [];
-  mixedSingles.forEach(function (item) {
-    out.push(buildMergedPayloadFromGroup([item], 'mixed'));
-  });
-  Object.keys(groups).forEach(function (gk) {
-    var arr = groups[gk];
-    var tipo = gk.split('\x01')[1] || 'labs';
-    out.push(buildMergedPayloadFromGroup(arr, tipo));
-  });
-  return out;
 }
 
 function latestDayKeyFromParsedItems(parsedItems) {
@@ -387,9 +399,7 @@ function wrapSingleParsedLabDisplay(item) {
 }
 
 /**
- * Resultados tras pegado: si el texto trae varios días, no mezclarlos en un solo bloque.
- * Muestra solo el día más reciente, consolidando solicitudes SOME distintas de ese día
- * (p. ej. lipasa + química + gaso del 12/06).
+ * Resultados tras pegado: día más reciente; fusiona solicitudes del mismo bloque horario (≤2 h).
  * @param {{ result: object, reportText: string }[]} parsedItems
  */
 export function pickLatestDayMergedLabDisplay(parsedItems) {
@@ -408,21 +418,26 @@ export function pickLatestDayMergedLabDisplay(parsedItems) {
   if (!dayItems.length) dayItems = items.slice();
   if (dayItems.length === 1) return wrapSingleParsedLabDisplay(dayItems[0]);
 
-  var mergedSets = mergeBulkParseResults(dayItems);
-  if (!mergedSets.length) return null;
-  if (mergedSets.length === 1) return mergedSets[0];
-
-  var best = mergedSets[0];
-  mergedSets.forEach(function (payload) {
-    var msBest = parseFechaLabToMs(best.fecha, best.hora);
-    var msCand = parseFechaLabToMs(payload.fecha, payload.hora);
-    if (typeof msCand === 'number' && isFinite(msCand)) {
-      if (typeof msBest !== 'number' || !isFinite(msBest) || msCand > msBest) {
-        best = payload;
+  var latestItem = dayItems[0];
+  var latestMs = timestampMsFromParsedItem(latestItem);
+  dayItems.slice(1).forEach(function (item) {
+    var ms = timestampMsFromParsedItem(item);
+    if (typeof ms === 'number' && isFinite(ms)) {
+      if (typeof latestMs !== 'number' || !isFinite(latestMs) || ms > latestMs) {
+        latestItem = item;
+        latestMs = ms;
       }
     }
   });
-  return best;
+
+  var dayClusters = clusterByTimeWindow(dayItems, timestampMsFromParsedItem);
+  var targetCluster = dayClusters.find(function (cluster) {
+    return cluster.indexOf(latestItem) !== -1;
+  }) || [latestItem];
+  if (targetCluster.length === 1) return wrapSingleParsedLabDisplay(targetCluster[0]);
+
+  var tipo = primaryTipoForResLabs(targetCluster[0].result.resLabs || []);
+  return buildMergedPayloadFromGroup(targetCluster, tipo);
 }
 
 function bulkBlocksHaveProcessablePatient(blocks) {

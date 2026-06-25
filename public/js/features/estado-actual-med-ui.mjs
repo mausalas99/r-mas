@@ -18,6 +18,8 @@ export const EA_MED_FIELD_LABELS = {
  * @param {unknown} raw
  * @returns {string[]}
  */
+
+import { escHtml, escAttr } from '../dom-escape.mjs';
 export function parseMedFieldItems(raw) {
   if (raw == null || !String(raw).trim()) return [];
   return String(raw)
@@ -75,18 +77,6 @@ export function removeMedFieldItem(monitoreo, key, index) {
   monitoreo.estadoClinico[key] = serializeMedFieldItems(items);
   if (!monitoreo.confirmado) monitoreo.confirmado = {};
   monitoreo.confirmado[key] = items.length > 0;
-}
-
-function escHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escAttr(s) {
-  return escHtml(s).replace(/'/g, '&#39;');
 }
 
 /**

@@ -8,14 +8,7 @@ import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from './dom-escape.mjs';
 function dbApi() {
   if (typeof window === 'undefined') return null;
   return window.rplusDb || window.electronAPI || null;

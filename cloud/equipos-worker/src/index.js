@@ -4,17 +4,23 @@ import { purgeExpiredEquiposPhotos } from './purge.js';
 
 const API_PREFIX = '/api/equipos/v1';
 
+/** @param {string} pathname */
+function normalizePath(pathname) {
+  if (!pathname || pathname === '/') return '/';
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
 /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
-async function handleRequest(request, env) {
+async function handleRequest(request, env, ctx) {
   const preflight = corsPreflight(request);
   if (preflight) return applyCors(request, preflight);
 
   const url = new URL(request.url);
-  const path = url.pathname;
+  const path = normalizePath(url.pathname);
 
   if (path === API_PREFIX || path.startsWith(`${API_PREFIX}/`)) {
     const subpath = path.slice(API_PREFIX.length) || '/';
-    const res = await handleEquiposApi(request, env, subpath);
+    const res = await handleEquiposApi(request, env, subpath, ctx);
     return applyCors(request, res);
   }
 
@@ -22,6 +28,14 @@ async function handleRequest(request, env) {
     const assetRes = await env.ASSETS.fetch(request);
     if (assetRes.status !== 404) {
       return applyCors(request, assetRes);
+    }
+    // Trailing-slash static paths (e.g. /equipos/) — retry without slash.
+    if (url.pathname !== path) {
+      const slashless = new Request(new URL(path + url.search, url.origin), request);
+      const retryRes = await env.ASSETS.fetch(slashless);
+      if (retryRes.status !== 404) {
+        return applyCors(request, retryRes);
+      }
     }
   }
 
@@ -39,8 +53,8 @@ async function handleRequest(request, env) {
 
 export default {
   /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
-  async fetch(request, env) {
-    return handleRequest(request, env);
+  async fetch(request, env, ctx) {
+    return handleRequest(request, env, ctx);
   },
 
   /** @param {ScheduledEvent} event @param {import('@cloudflare/workers-types').ExecutionContext} env */

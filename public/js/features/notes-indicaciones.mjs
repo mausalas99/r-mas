@@ -1,3 +1,4 @@
+import { esc } from '../dom-escape.mjs';
 // Expediente · nota evolución, indicaciones, Word
 import {
   notes,
@@ -48,14 +49,6 @@ export function registerNotesIndicacionesRuntime(ctx) {
 
 function aid() {
   return rt.getActiveId();
-}
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 // ── Prefill médico ─────────────────────────────────────────────────────

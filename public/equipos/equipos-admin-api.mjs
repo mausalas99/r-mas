@@ -1,5 +1,7 @@
 /** Admin API client for equipos mobile dashboard. */
 
+import { bearerHeaders } from '../lib/equipos/equipos-http-headers.mjs';
+
 const ADMIN_KEY_KEY = 'rpc-equipos-admin-key-session';
 
 export const EQUIPOS_ADMIN_HISTORY_DAYS = 14;
@@ -73,7 +75,7 @@ export async function equiposAdminFetch(apiBase, token, path, opts = {}) {
     'Content-Type': 'application/json',
     'X-Equipos-Admin-Key': adminKey,
   };
-  if (token) headers['X-Equipos-Token'] = token;
+  if (token) Object.assign(headers, bearerHeaders(token));
   const res = await fetch(u.toString(), {
     method: opts.method || 'GET',
     headers,
@@ -114,7 +116,7 @@ export async function verifyEquiposAdminKey(apiBase, token, adminKey) {
     headers: {
       'Content-Type': 'application/json',
       'X-Equipos-Admin-Key': key,
-      ...(token ? { 'X-Equipos-Token': token } : {}),
+      ...bearerHeaders(token || ''),
     },
     body: JSON.stringify({ adminKey: key }),
   });

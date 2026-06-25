@@ -1,3 +1,4 @@
+import { esc } from '../dom-escape.mjs';
 // Lab panel — workbench: limpiar, enviar, bulk paste storage
 import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
 import {
@@ -11,7 +12,7 @@ import {
   renderLabHistoryPanel,
   maybeShowLabHistoryForActivePatient,
 } from './lab-panel-history.mjs';
-import { pushLabHistory } from './lab-panel-workbench-store.mjs';
+import { pushLabHistory, finalizeLabHistoryImport } from './lab-panel-workbench-store.mjs';
 import {
   filterProcessableBulkBlocks,
   storeProcessableBulkBlocks,
@@ -23,14 +24,6 @@ import {
   notifyTourAfterBulkLabStore,
   isMultiBulkLabPaste,
 } from './lab-panel-workbench-finalize.mjs';
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function clearLabInputAfterSuccessfulParse() {
   var ta = document.getElementById('lab-input');
@@ -223,7 +216,7 @@ function insertLabsAsRecent(_lines) {
     activeLab.bhExtras,
     activeLab.refsBySection
   );
-  rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
+  finalizeLabHistoryImport(rt.getActiveId());
   saveState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
@@ -247,7 +240,7 @@ function insertLabsAsAnteriorThenRecent(_newLines) {
     activeLab.bhExtras,
     activeLab.refsBySection
   );
-  rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
+  finalizeLabHistoryImport(rt.getActiveId());
   saveState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
@@ -291,7 +284,7 @@ function showLabConflictModal(newLines, existingDate) {
       activeLab.bhExtras,
       activeLab.refsBySection
     );
-    rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
+    finalizeLabHistoryImport(rt.getActiveId());
     saveState({ immediate: true });
     rt.refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();

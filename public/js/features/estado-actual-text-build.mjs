@@ -5,6 +5,7 @@ import { resolveDietWeightKg, computeDietKcalTotal, isDietaSuplemento } from './
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
+import { isTempFebrile, isHemodynamicallyUnstable } from './estado-actual-ranges.mjs';
 
 /**
  * @param {unknown} v
@@ -74,6 +75,21 @@ export function buildHiTempClause(v, snapAlt) {
 }
 
 /**
+ * @param {Record<string, unknown>} v
+ */
+export function resolveFebrilLabel(v) {
+  return isTempFebrile(v.temp) ? 'FEBRIL' : 'AFEBRIL';
+}
+
+/**
+ * @param {Record<string, unknown>} v
+ * @param {Record<string, unknown>} ec
+ */
+export function resolveHemodynamicLabel(v, ec) {
+  return isHemodynamicallyUnstable(v, ec.vasop) ? 'INESTABLE' : 'ESTABLE';
+}
+
+/**
  * @param {Array<{ value?: unknown, postRescueValue?: unknown }>} glSrc
  */
 export function collectGluDisplayValues(glSrc) {
@@ -96,7 +112,7 @@ export function buildBombaClause(bombaSrc) {
   for (var bi = 0; bi < bombaSrc.length; bi++) {
     var bb = bombaSrc[bi];
     if (!bb || typeof bb !== 'object') continue;
-    var seg = num(bb.value) + ' mg/dL';
+    var seg = num(bb.value);
     if (bb.units != null && bb.units !== '') seg += ' (' + num(bb.units) + ' U)';
     bombaParts.push(seg);
   }
@@ -165,7 +181,9 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, vasopClause, nmClause)
       '% ' +
       soporte +
       ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS',
-    'HD: ESTABLE, TA ' +
+    'HD: ' +
+      resolveHemodynamicLabel(v, ec) +
+      ', TA ' +
       num(v.tas) +
       '/' +
       num(v.tad) +
@@ -179,7 +197,7 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, vasopClause, nmClause)
       medsClauseOrFallback(ec.antitromboticos, 'NINGUNO') +
       ' || ' +
       vasopClause,
-    'HI: AFEBRIL, ' + hiTemp + ' || ANTIBIÓTICOS: ' + medsClauseOrFallback(ec.abx, 'NINGUNO'),
+    'HI: ' + resolveFebrilLabel(v) + ', ' + hiTemp + ' || ANTIBIÓTICOS: ' + medsClauseOrFallback(ec.abx, 'NINGUNO'),
     'NM: ' + nmClause,
   ];
 }

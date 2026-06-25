@@ -34,7 +34,7 @@ function estadoCommand(overrides = {}) {
 
 test('applyCommand assigns deltaSeq and appends command log before ack', () => {
   const { store } = makeStore();
-  const resolver = createCommandResolver({ store, nowIso: () => '2026-06-06T14:34:10.000Z' });
+  const resolver = createCommandResolver(store, { nowIso: () => '2026-06-06T14:34:10.000Z' });
   const out = resolver.applyCommand(estadoCommand());
 
   assert.equal(out.status, 'accepted');
@@ -51,7 +51,7 @@ test('applyCommand assigns deltaSeq and appends command log before ack', () => {
 
 test('applyCommand returns duplicate_ignored for repeated commandId', () => {
   const { store } = makeStore();
-  const resolver = createCommandResolver({ store });
+  const resolver = createCommandResolver(store);
   const first = resolver.applyCommand(estadoCommand());
   const second = resolver.applyCommand(estadoCommand());
 
@@ -63,7 +63,7 @@ test('applyCommand returns duplicate_ignored for repeated commandId', () => {
 
 test('applyCommand returns stale_base_seq_requires_snapshot when baseSeq is too old', () => {
   const { store } = makeStore();
-  const resolver = createCommandResolver({ store });
+  const resolver = createCommandResolver(store);
   store.ensureRoomBundleForTest('room-a').deltaSeq = 200;
 
   const out = resolver.applyCommand(estadoCommand({ baseSeq: 49 }));

@@ -1,10 +1,4 @@
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
+import { escapeHtml } from '../../dom-escape.mjs';
 export function moduleStatusLabel({ completed, inProgress, stepInChapter, chapterSteps }) {
   if (completed) return 'Completado';
   if (inProgress && stepInChapter > 0) return `En curso · paso ${stepInChapter} de ${chapterSteps}`;

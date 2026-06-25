@@ -6,6 +6,7 @@ import {
   applyDietaSuplementoPolicy,
 } from './estado-actual-data.mjs';
 import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
+import { markDietAsManuallyConfirmed } from './estado-actual-meds-diet.mjs';
 
 /**
  * @param {Record<string, unknown>} pendienteReceta
@@ -82,7 +83,11 @@ export function applyEstadoClinicoFieldChange(el, patient) {
   var val = 'value' in el ? String(el.value) : '';
   monitoreo.estadoClinico[key] = val;
   if (key === 'dieta') applyDietaSuplementoPolicy(monitoreo.estadoClinico, monitoreo.pendienteReceta);
-  syncDietPendingField(monitoreo, key, val);
+  if (DIET_PENDING_KEYS.indexOf(key) >= 0) {
+    markDietAsManuallyConfirmed(monitoreo);
+  } else {
+    syncDietPendingField(monitoreo, key, val);
+  }
   if (key === 'kcalKg') applyKcalKgFieldChange(monitoreo, patient);
   else if (key === 'kcal') applyKcalFieldChange(monitoreo, patient);
 }

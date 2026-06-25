@@ -1,3 +1,44 @@
+/** Normaliza sexo del expediente (M/F) para CKD-EPI; no usa el encabezado SOME. */
+export function normalizePatientSexoForEgfr(sexo) {
+  var s = String(sexo == null ? '' : sexo).trim().toUpperCase();
+  if (!s) return '';
+  if (s === 'F' || s === 'FEMENINO' || s === 'MUJER' || s === 'FEMALE') return 'F';
+  if (s === 'M' || s === 'MASCULINO' || s === 'HOMBRE' || s === 'MALE') return 'M';
+  return '';
+}
+
+/** Edad del paciente en R+ (p. ej. "57", "57 años", "8 meses"). */
+export function patientEdadPartsForEgfr(patient) {
+  if (!patient) return { edadRaw: '', edadUnidad: 'años' };
+  var raw = String(patient.edad == null ? '' : patient.edad).trim();
+  if (!raw) return { edadRaw: '', edadUnidad: 'años' };
+  var m = raw.match(/^(\d+)\s*(años|meses|días|dias|semanas)?/i);
+  if (!m) {
+    var n = parseInt(raw, 10);
+    return { edadRaw: isFinite(n) ? String(n) : '', edadUnidad: 'años' };
+  }
+  var unit = (m[2] || 'años').toLowerCase();
+  if (unit === 'dias') unit = 'días';
+  return { edadRaw: m[1], edadUnidad: unit };
+}
+
+/**
+ * Demografía para eTFG: sexo (y edad si existe) del paciente en R+.
+ * Edad del reporte SOME solo si el expediente no trae edad.
+ * @returns {{ edad: string, edadUnidad: string, sexo: 'M'|'F' } | null}
+ */
+export function buildEgfrPatientCtx(hdrEdadRaw, hdrEdadUnidad, chartPatient) {
+  if (!chartPatient) return null;
+  var sexo = normalizePatientSexoForEgfr(chartPatient.sexo);
+  if (!sexo) return null;
+  var edadParts = patientEdadPartsForEgfr(chartPatient);
+  return {
+    edad: edadParts.edadRaw || hdrEdadRaw || '',
+    edadUnidad: edadParts.edadRaw ? edadParts.edadUnidad : hdrEdadUnidad || 'años',
+    sexo: sexo,
+  };
+}
+
 export function ageYearsFromLabDemographics(edadRaw, edadUnidad) {
   var n = parseInt(String(edadRaw == null ? '' : edadRaw).trim(), 10);
   if (!isFinite(n) || n < 0) return null;

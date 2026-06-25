@@ -5,6 +5,7 @@ import {
   normalizeRecetaHuDraft,
 } from '../receta-hu-core.mjs';
 
+import { esc } from '../dom-escape.mjs';
 export var rt = {
   getActiveId() {
     return null;
@@ -44,14 +45,6 @@ export function registerRecetaHuRuntime(ctx) {
 
 function aid() {
   return rt.getActiveId();
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function getDraft(pid) {

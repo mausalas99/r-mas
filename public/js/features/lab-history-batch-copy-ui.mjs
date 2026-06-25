@@ -1,10 +1,3 @@
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 /** @param {Array<{ dayKey: string, label: string }>} groups */
 export function buildLabBatchCopyListHtml(groups) {
   return groups
@@ -20,6 +13,8 @@ export function buildLabBatchCopyListHtml(groups) {
 }
 
 /** @param {string} listHtml */
+
+import { esc } from '../dom-escape.mjs';
 export function buildLabBatchCopyModalHtml(listHtml) {
   return (
     '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +

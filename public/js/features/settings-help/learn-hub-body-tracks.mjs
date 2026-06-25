@@ -6,13 +6,6 @@ import {
 } from '../../onboarding-curriculum.mjs';
 import { buildModuleRow } from './learn-hub-module-row.mjs';
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 /** @param {number} guardiaCompletedCount @param {object} progress @param {object|null} tourProgress @param {(id: string, progress: object, tour: object|null) => object} guardiaModuleState */
 export function renderLearnHubGuardiaTrack(guardiaCompletedCount, progress, tourProgress, guardiaModuleState) {
   const parts = [];
@@ -51,6 +44,8 @@ export function renderLearnHubGuardiaTrack(guardiaCompletedCount, progress, tour
 }
 
 /** @param {boolean} fundamentosOpen @param {number} fundamentosCompletedCount @param {number} fundamentosTotal */
+
+import { escapeHtml } from '../../dom-escape.mjs';
 export function renderLearnHubFundamentosHeader(fundamentosOpen, fundamentosCompletedCount, fundamentosTotal) {
   return (
     `<details class="learn-hub-track learn-hub-track--fundamentos"${fundamentosOpen ? ' open' : ''}>` +

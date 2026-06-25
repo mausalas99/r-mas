@@ -2,7 +2,10 @@
 
 const { createCommandRegistry } = require('./command-registry.js');
 
-function createCommandResolver({ store, registry = createCommandRegistry(), nowIso = () => new Date().toISOString() }) {
+function createCommandResolver(store, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const registry = opts.registry || createCommandRegistry();
+  const nowIso = typeof opts.nowIso === 'function' ? opts.nowIso : () => new Date().toISOString();
   function applyCommand(command) {
     const roomId = String(command && command.roomId || '').trim();
     const commandId = String(command && command.commandId || '').trim();

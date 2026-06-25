@@ -7,6 +7,9 @@
       "enabled": true,
       "gitUrl": "https://github.com/CMC-27/Vibe-App-Wiki",
       "gitRef": "main"
+    },
+    "cloudflare": {
+      "enabled": true
     }
   }
 }

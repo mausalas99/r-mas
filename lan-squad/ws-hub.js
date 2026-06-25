@@ -43,7 +43,7 @@ function attachConnectionHandler(wss, deps) {
 function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/ws' }) {
   const wss = new WebSocketServer({ noServer: true });
   const deltaResolver =
-    resolver && resolver.store ? createDeltaResolver({ store: resolver.store }) : null;
+    resolver && resolver.store ? createDeltaResolver(resolver.store) : null;
   const { joinRoom, leaveAll, broadcast } = createRoomRegistry();
 
   attachUpgradeHandler(httpServer, wss, pathName);

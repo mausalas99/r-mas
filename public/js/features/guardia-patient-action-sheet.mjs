@@ -9,6 +9,7 @@ import {
   savePatientEventualidad,
 } from './eventualidades-panel.mjs';
 
+import { escapeHtml } from '../dom-escape.mjs';
 let dismissWired = false;
 
 function toast(msg, type = 'info') {
@@ -23,14 +24,6 @@ function backdropEl() {
 
 function bodyEl() {
   return document.getElementById('guardia-patient-action-body');
-}
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 /** @param {string} patientId */

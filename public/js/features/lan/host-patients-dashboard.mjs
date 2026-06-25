@@ -13,6 +13,7 @@ import {
 import { enrichLanHostPatientRows, formatLanHostTimestamp } from './host-patients-enrich.mjs';
 import { fetchLanHostCensusSnapshot } from './host-patients-snapshot.mjs';
 
+import { esc } from '../../dom-escape.mjs';
 const MODAL_ID = 'lan-host-census-modal';
 
 function resolveDashboardToast(opts) {
@@ -22,14 +23,6 @@ function resolveDashboardToast(opts) {
       window.showToast(msg, kind);
     }
   };
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function patientLabel(row) {

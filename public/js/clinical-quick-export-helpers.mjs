@@ -1,12 +1,5 @@
-export function escHtml(value) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
+import { escHtml } from './dom-escape.mjs';
+export { escHtml };
 export function toLines(value) {
   if (Array.isArray(value)) {
     return value.map(function (v) {

@@ -36,17 +36,7 @@ import {
 } from './clinical-onboarding-gates.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
-}
-
+import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 async function tryAutoResumeCachedUsername(settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
   const cachedUsername = profileGatePending

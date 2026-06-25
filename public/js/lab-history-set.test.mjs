@@ -193,6 +193,8 @@ describe('lab-history-set', () => {
     const text = lines.join('\n');
     assert.match(text, /Hb 10/);
     assert.match(text, /Glu 100/);
+    assert.match(text, /01\/06 08:00/);
+    assert.match(text, /01\/06 14:00/);
     assert.doesNotMatch(text, /Hb 12/);
   });
 });

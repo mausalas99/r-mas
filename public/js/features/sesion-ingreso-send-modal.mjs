@@ -6,6 +6,7 @@ import {
 import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
 import { isCasiopeaTourSendBlocked } from '../tour-guards.mjs';
 
+import { escHtml } from '../dom-escape.mjs';
 let rt = {
   showToast() {},
   getParsed() {
@@ -23,14 +24,6 @@ let rt = {
 export function registerSesionIngresoSendRuntime(ctx) {
   if (!ctx || typeof ctx !== 'object') return;
   Object.assign(rt, ctx);
-}
-
-function escHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function getSelectedIds(root) {

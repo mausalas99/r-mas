@@ -8,7 +8,9 @@ const {
   buildSuccessResult,
 } = require('./delta-resolver-apply.js');
 
-function createDeltaResolver({ store, nowIso: _nowIso = () => new Date().toISOString() }) {
+function createDeltaResolver(store, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const _nowIso = typeof opts.nowIso === 'function' ? opts.nowIso : () => new Date().toISOString();
   function applyDelta(delta) {
     const entityType = String(delta && delta.entityType ? delta.entityType : '');
     const validation = validateDeltaPaths(entityType, delta);

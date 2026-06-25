@@ -1,14 +1,7 @@
 import { AHF_RELATIVES } from '../../../lib/historia-clinica/ahf-relatives.mjs';
 import { syncAhfConditionsFromEntries } from '../../../lib/historia-clinica/compile-ahf.mjs';
 
-export function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 export function catalogOptions(map) {
   return Object.keys(map || {}).map(function (id) {
     return { id, label: map[id] };

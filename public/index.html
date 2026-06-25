@@ -118,6 +118,7 @@
 <link rel="stylesheet" href="/styles/workbench-tokens.css">
 <link rel="stylesheet" href="/styles/soft-ui.css">
 <link rel="stylesheet" href="/styles/workbench-surfaces.css">
+<link rel="stylesheet" href="/styles/rams-tufte-workbench.css">
 <link rel="stylesheet" href="/styles/mobile.css">
 <link rel="stylesheet" href="/styles/rpc-date-picker.css">
 <link rel="stylesheet" href="/styles/overlays.css">
@@ -795,7 +796,7 @@
                 </summary>
                 <div class="lab-output-more-menu" role="menu">
                   <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryBatchCopyModal();" title="Marca los días del historial que quieras y copia el texto de estudios al portapapeles">Copiar varios días…</button>
-                  <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une envíos del mismo día si son solo laboratorio o solo cultivos">Consolidar</button>
+                  <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Fusiona envíos del mismo día (≤2 h); opción para unir outliers como BH + gases">Consolidar</button>
                   <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); reprocessSelectedLabHistorySet();" title="Regenera resultados desde el texto SOME guardado">Reprocesar</button>
                   <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" onclick="closeLabHistoryMoreMenu(); deleteSelectedLabHistorySet();" title="Quita este conjunto del historial del paciente">Eliminar</button>
                 </div>

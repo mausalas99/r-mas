@@ -42,9 +42,11 @@ function backfillEstadoClinico(monitoreo) {
     });
   }
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
-    monitoreo.confirmado = { dieta: false };
-  } else if (monitoreo.confirmado.dieta == null) {
-    monitoreo.confirmado.dieta = false;
+    monitoreo.confirmado = {
+      dieta: !!String(monitoreo.estadoClinico.dieta || '').trim(),
+    };
+  } else if (monitoreo.confirmado.dieta == null || monitoreo.confirmado.dieta === false) {
+    monitoreo.confirmado.dieta = !!String(monitoreo.estadoClinico.dieta || '').trim();
   }
   for (var mk of MED_FIELD_KEYS) {
     if (monitoreo.confirmado[mk] == null) monitoreo.confirmado[mk] = false;

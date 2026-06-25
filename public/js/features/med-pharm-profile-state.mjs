@@ -13,7 +13,10 @@ import {
   profileHasMonthData,
 } from '../med-pharm-profile-core.mjs';
 import { buildPharmViewWindow, unifyRowsForWindow, groupUnifiedRowsByMed } from '../med-pharm-view-window.mjs';
+import { isDemoPatientId } from '../demo-patient.mjs';
 
+import { esc } from '../dom-escape.mjs';
+export { esc, isDemoPatientId };
 export const MONTH_NAMES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -50,14 +53,6 @@ export function getMedSubview() {
   return mp.medSubview;
 }
 
-export function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 export function monthLabel(year, monthIndex) {
   return MONTH_NAMES[monthIndex] + ' ' + year;
 }
@@ -74,10 +69,6 @@ export function isToday(year, monthIndex, day) {
 
 export function getProfile(pid) {
   return medPharmProfileByPatient[pid] || null;
-}
-
-export function isDemoPatientId(patientId) {
-  return String(patientId || '').indexOf('demo-') === 0;
 }
 
 export function getViewMonth(pid) {

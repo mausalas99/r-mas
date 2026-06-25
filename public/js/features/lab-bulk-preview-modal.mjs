@@ -9,20 +9,14 @@ import { closePatientDatosModal } from '../patient-datos-modal.mjs';
  *   rebuildBulkLabPreviewBlocks?(text: string): object[],
  *   openAddModalFromLabPatient?(patient: object, opts?: { onSaved?: (p: object) => void }): void,
  * }} */
+
+import { esc } from '../dom-escape.mjs';
 let rt = {
   showToast() {},
 };
 
 var pendingConfirm = null;
 var modalSession = null;
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function statusClass(status) {
   if (status === 'ok') return 'lab-bulk-preview-status--ok';

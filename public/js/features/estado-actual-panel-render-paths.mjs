@@ -55,21 +55,27 @@ export function renderEaEmptyPanel(mount, onReady) {
  * @param {Record<string, unknown>} monitoreo
  */
 export function syncEaRecetaProposals(patient, activeId, monitoreo) {
+  var changed = false;
   if (
     applyDietProposalFromRecetaBlock(
       monitoreo,
       activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null
     )
   ) {
-    saveState();
+    changed = true;
   }
-  syncRecetaProposalsFromSoapSelection(
-    activeId,
-    monitoreo,
-    medRecetaByPatient,
-    medNotaSelectionByPatient,
-    classifyMedicationSoapCategory
-  );
+  if (
+    syncRecetaProposalsFromSoapSelection(
+      activeId,
+      monitoreo,
+      medRecetaByPatient,
+      medNotaSelectionByPatient,
+      classifyMedicationSoapCategory
+    )
+  ) {
+    changed = true;
+  }
+  if (changed) saveState();
 }
 
 /**

@@ -1,5 +1,7 @@
 import { patients } from '../../app-state.mjs';
 
+import { esc } from '../../dom-escape.mjs';
+export { esc };
 let rt = {
   getActiveId() {
     return null;
@@ -20,14 +22,6 @@ export { rt };
 
 export function registerHistoriaClinicaRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
-}
-
-export function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 export function activePatient() {

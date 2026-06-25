@@ -1,12 +1,5 @@
+import { escapeHtml } from '../../dom-escape.mjs';
 // Time select helpers for entrega procedures / vitals
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 
 /** @param {string|null|undefined} scheduledAt */
 function formatHHmm(scheduledAt) {

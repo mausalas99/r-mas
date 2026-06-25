@@ -5,6 +5,7 @@ import {
   subnetPrefixFromIpv4,
   orderedSubnetHosts,
 } from '../interno/host-discovery.mjs';
+import { isCloudEquiposMode } from '../lib/equipos/equipos-cloud-mode.mjs';
 
 const PING_PATH = '/api/equipos/v1/ping';
 const PROBE_TIMEOUT_MS = 500;
@@ -39,10 +40,6 @@ async function probeHosts(protocol, port, hosts, signal) {
     if (hit) return hit;
   }
   return null;
-}
-
-function isCloudEquiposMode() {
-  return typeof window !== 'undefined' && window.__EQUIPOS_API_MODE__ === 'cloud';
 }
 
 export async function resolveEquiposApiBase(opts = {}) {

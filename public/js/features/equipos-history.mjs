@@ -5,6 +5,7 @@ import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { DEVICE_LABELS } from '../../equipos/equipos-rotaciones.mjs';
 import { equiposCloudFetch, getEquiposCloudConfig } from '../equipos-cloud-config.mjs';
 
+import { esc } from '../dom-escape.mjs';
 const CLOSED_LABELS = {
   return: 'Devolución',
   admin_purge: 'Purgado',
@@ -13,13 +14,6 @@ const CLOSED_LABELS = {
 
 function dbApi() {
   return window.rplusDb || window.electronAPI || null;
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 /** @param {string} [iso] */

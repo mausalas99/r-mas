@@ -5,20 +5,16 @@ import {
   shouldApplyCommandBroadcast,
   updateCommandSeqState,
 } from '../../lan-command-room-order.mjs';
+import {
+  lanSyncRoomBridgeGlobal,
+  setLanSyncRoomBridgeGlobal,
+} from './lan-sync-bridge-globals.mjs';
 
 /** @type {Record<string, unknown> | null} */
 let roomBridge = null;
 
 /** @type {Promise<void> | null} */
 var roomBridgeWirePromise = null;
-
-function lanSyncRoomBridgeGlobal() {
-  return globalThis['__LAN_SYNC_ROOM_BRIDGE__'];
-}
-
-function setLanSyncRoomBridgeGlobal(value) {
-  globalThis['__LAN_SYNC_ROOM_BRIDGE__'] = value;
-}
 
 export function registerLanSyncRoomBridge(deps) {
   roomBridge = deps && typeof deps === 'object' ? deps : null;

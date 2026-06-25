@@ -2,14 +2,6 @@ import { buildConflictActionCopy, buildConflictModalTitle } from './clinical-con
 import { buildConflictDiffParts } from './clinical-conflict-diff.mjs';
 import { buildConflictContextHtml } from './clinical-conflict-context.mjs';
 
-function escHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 /**
  * @param {{
  *   draftId?: string,
@@ -19,6 +11,8 @@ function escHtml(s) {
  *   context?: object,
  * }} opts
  */
+
+import { escHtml } from '../dom-escape.mjs';
 export function buildClinicalConflictModalHtml(opts) {
   const { draftId, conflictingKeys, localData, serverData, context } = opts || {};
   const contextHtml = buildConflictContextHtml(context);

@@ -3,7 +3,7 @@
  */
 import { isAscitisInterpretacionResLabChunk, looksLikeSomeLabReport } from './labs.js';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
-import { compareLabSetIdForDedupe, normalizeLabLine } from './lab-history-auto-store-core.mjs';
+import { compareLabSetIdForDedupe } from './lab-history-auto-store-core.mjs';
 import {
   parseFechaLabToMs,
   normalizeFechaLabHistory,
@@ -228,47 +228,44 @@ export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
   groups.forEach(function (group) {
     if (allowDay && !allowDay.has(group.dayKey)) return;
     var sets = group.sets;
-    var labsAcc = [];
-    var cultAcc = [];
-    var seenLab = Object.create(null);
-    var seenCul = Object.create(null);
+    var multiOnDay = sets.length > 1;
     sets.forEach(function (set) {
       var sp = splitResLabsByTipo(set.resLabs);
+      var labsAcc = [];
+      var cultAcc = [];
       sp.labs.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
         if (!clean || isAscitisInterpretacionResLabChunk(clean)) return;
-        var norm = normalizeLabLine(clean);
-        if (seenLab[norm]) return;
-        seenLab[norm] = true;
         labsAcc.push(row);
       });
       sp.cultivo.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
         if (!clean) return;
-        var norm = normalizeLabLine(clean);
-        if (seenCul[norm]) return;
-        seenCul[norm] = true;
         cultAcc.push(row);
       });
+      if (!labsAcc.length && !cultAcc.length) return;
+      var dateLine = buildLabSetDateLineForNota(set);
+      if (multiOnDay) {
+        var hora = normalizeHoraLabHistory(set.hora);
+        if (hora && dateLine) dateLine = dateLine + ' ' + hora.slice(0, 5);
+      }
+      if (dateLine) lines.push(dateLine);
+      if (labsAcc.length) {
+        labsAcc.forEach(function (row) {
+          var clean = String(row == null ? '' : row).trim();
+          if (clean) lines.push(clean);
+        });
+      }
+      if (cultAcc.length) {
+        if (labsAcc.length) lines.push('');
+        lines.push('Cultivos');
+        cultAcc.forEach(function (row) {
+          var clean = String(row == null ? '' : row).trim();
+          if (clean) lines.push(clean);
+        });
+      }
+      lines.push('');
     });
-    if (!labsAcc.length && !cultAcc.length) return;
-    var dateLine = buildLabSetDateLineForNota(sets[0]);
-    if (dateLine) lines.push(dateLine);
-    if (labsAcc.length) {
-      labsAcc.forEach(function (row) {
-        var clean = String(row == null ? '' : row).trim();
-        if (clean) lines.push(clean);
-      });
-    }
-    if (cultAcc.length) {
-      if (labsAcc.length) lines.push('');
-      lines.push('Cultivos');
-      cultAcc.forEach(function (row) {
-        var clean = String(row == null ? '' : row).trim();
-        if (clean) lines.push(clean);
-      });
-    }
-    lines.push('');
   });
   while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
   return lines;

@@ -53,7 +53,15 @@ export {
   parseLipasa_,
 } from './labs-chemistry.mjs';
 
-export { ageYearsFromLabDemographics, computeEgfrCkdEpi2021Creatinine } from './labs-egfr.mjs';
+export {
+  ageYearsFromLabDemographics,
+  computeEgfrCkdEpi2021Creatinine,
+  normalizePatientSexoForEgfr,
+  patientEdadPartsForEgfr,
+  buildEgfrPatientCtx,
+} from './labs-egfr.mjs';
+
+export { extractLabExpedienteFromReport } from './labs-procesar.mjs';
 
 export {
   parseGaso_,

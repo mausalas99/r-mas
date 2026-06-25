@@ -2,13 +2,6 @@
  * Shared markup shell for first-run onboarding steps (sync mode, profile, session).
  */
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 /** @param {1|2|3} activeIndex */
 export function buildClinicalOnboardingStepperHtml(activeIndex) {
   const labels = ['Modo', 'Perfil', 'Equipo'];
@@ -25,6 +18,8 @@ export function buildClinicalOnboardingStepperHtml(activeIndex) {
 /**
  * @param {{ title: string, leadHtml: string, bodyHtml: string, stepperIndex?: number|null }} parts
  */
+
+import { escapeHtml } from '../dom-escape.mjs';
 export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml, stepperIndex = null }) {
   const stepper =
     stepperIndex != null ? buildClinicalOnboardingStepperHtml(/** @type {1|2|3} */ (stepperIndex)) : '';

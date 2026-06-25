@@ -3,14 +3,7 @@ import {
   newToxicomaniaEntryId,
 } from '../../../lib/historia-clinica/toxicomanias.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 export function toxicomaniaEntryHtml(entry, label) {
   return (
     '<div class="hc-tox-entry" data-tox-entry-id="' + esc(entry.id) + '">' +

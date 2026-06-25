@@ -1,13 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-23",
+  "updatedAt": "2026-06-25",
   "entries": [
+    {
+      "version": "7.5.1",
+      "label": "7.5.1",
+      "publishedAt": "2026-06-25",
+      "summary": "Push equipos, eTFG paciente y UI Rams",
+      "recommended": true
+    },
+    {
+      "version": "7.5.0",
+      "label": "7.5.0",
+      "publishedAt": "2026-06-24",
+      "summary": "Release estable 7.5.0",
+      "recommended": false
+    },
     {
       "version": "7.4.1",
       "label": "7.4.1",
       "publishedAt": "2026-06-23",
       "summary": "Release estable 7.4.1",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.4.0",

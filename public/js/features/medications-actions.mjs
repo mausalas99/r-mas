@@ -22,6 +22,8 @@ import {
   bucketsFromRecetaItems,
   discardDietProposal,
   discardMedProposal,
+  pruneEstadoClinicoMedsFromReceta,
+  syncRecetaProposalsFromSoapSelection,
 } from "./estado-actual-meds.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import {
@@ -310,6 +312,21 @@ function applyDietFromParsedReceta(activeId) {
   applyDietProposalFromRecetaBlock(patient.monitoreo, block, { force: true });
 }
 
+function syncEaMedsFromProcessedReceta(activeId) {
+  var patient = patients.find(function (p) {
+    return String(p.id) === String(activeId);
+  });
+  if (!patient) return;
+  ensureMonitoreo(patient);
+  var block = medRecetaByPatient[activeId];
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var fecha = block && block.fechaActualizacion ? String(block.fechaActualizacion).trim() : '';
+  var monitoreo = patient.monitoreo;
+  pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
+  var sel = medNotaSelectionByPatient[activeId] || {};
+  applyRecetaProposal(monitoreo, bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory));
+}
+
 function commitProcessedReceta(activeId, raw, parsed) {
   var today = new Date();
   var fallback =
@@ -331,6 +348,7 @@ function commitProcessedReceta(activeId, raw, parsed) {
   });
   medNotaSelectionByPatient[activeId] = sel;
   applyDietFromParsedReceta(activeId);
+  syncEaMedsFromProcessedReceta(activeId);
   saveState();
   onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
   invalidateEaPanelCache();

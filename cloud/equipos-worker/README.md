@@ -82,6 +82,9 @@ When cloud URL is set, the desktop board and QR panel use the Worker API instead
 | POST | `/api/equipos/v1/waitlist/leave` | token |
 | POST | `/api/equipos/v1/alert` | token |
 | POST | `/api/equipos/v1/alert/:id/ack` | token |
+| POST | `/api/equipos/v1/push/subscribe` | token (must be in waitlist) |
+| POST | `/api/equipos/v1/push/unsubscribe` | token |
+| GET | `/api/equipos/v1/push/vapid-public-key` | — |
 | GET | `/api/equipos/v1/admin/access` | admin |
 | POST | `/api/equipos/v1/admin/access/rotate` | admin |
 | POST | `/api/equipos/v1/admin/access/set-active` | admin |
@@ -100,13 +103,47 @@ EQUIPOS_ADMIN_KEY=dev-admin npm run dev
 
 Cron `0 6 * * *` (06:00 UTC) deletes photos **older than 14 days** (admin history window). Uploads are JPEG-compressed client-side (~720px).
 
+## Web Push (cola en espera)
+
+Residents in the waitlist can enable push notifications when joining a queue. Alerts fire when:
+
+- A device becomes **available** (return or alert resolved)
+- **Lumify** is returned — includes **tablet battery %** in the notification body
+- A **malfunction** or **missing material** report is filed
+
+### One-time VAPID setup
+
+```bash
+npx @pushforge/builder vapid
+```
+
+| Where | Variable |
+|-------|----------|
+| Worker secret | `EQUIPOS_VAPID_PRIVATE_JWK` (full JWK JSON string) |
+| Worker var / LAN env | `EQUIPOS_VAPID_PUBLIC_KEY` |
+
+```bash
+npx wrangler secret put EQUIPOS_VAPID_PRIVATE_JWK
+# wrangler.toml [vars] EQUIPOS_VAPID_PUBLIC_KEY = "..."
+```
+
+Apply push schema migration:
+
+```bash
+npm run db:migrate:remote   # includes 002-push.sql
+```
+
+PWA: `/equipos/manifest.webmanifest` + `/equipos-sw.js` — homescreen icon (R+ ultrasound motif).
+
 ## Syncing static UI after edits
 
 If you change `public/equipos/*` in the main repo, copy to Pages assets:
 
 ```bash
-cp public/equipos/{equipos-app.mjs,host-discovery.mjs,equipos-api.mjs,equipos-rotaciones.mjs,equipos.css} \
+cp public/equipos/{equipos-app.mjs,equipos-push.mjs,host-discovery.mjs,equipos-api.mjs,equipos-rotaciones.mjs,equipos.css,manifest.webmanifest} \
   cloud/equipos-pages/public/equipos/
+cp public/equipos-sw.js cloud/equipos-pages/public/
+cp -r public/equipos/icons cloud/equipos-pages/public/equipos/
 ```
 
 Then redeploy the worker.

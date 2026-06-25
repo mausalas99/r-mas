@@ -6,6 +6,7 @@ import {
   isLoopbackHostname,
 } from './host-discovery.mjs';
 
+import { escapeHtml, escapeAttr } from '../js/dom-escape.mjs';
 const POLL_MS = 30000;
 const TOKEN_KEY = 'rpc-interno-token';
 const REPORTER_KEY = 'rpc-interno-reporter';
@@ -707,18 +708,6 @@ async function submitVitals(bd, patientId, close) {
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
-}
-
-function escapeHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/'/g, '&#39;');
 }
 
 void init();

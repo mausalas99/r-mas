@@ -1,15 +1,8 @@
 import { rt } from './tendencias-runtime-state.mjs';
 
+import { esc } from '../dom-escape.mjs';
 function aid() {
   return rt.getActiveId();
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function trendSparkDomId(sectionKey, fieldKey) {

@@ -14,13 +14,6 @@ import {
 } from './db-unlock.mjs';
 import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
 /** Panel body inside the visible Mi rotación backdrop. */
 export function getClinicalTeamsPanelHost() {
   const bd = document.getElementById('clinical-teams-backdrop');
@@ -39,6 +32,8 @@ export function setClinicalTeamsPanelLoading() {
 }
 
 /** Open Mi rotación shell immediately; content loads additively. */
+
+import { escapeHtml } from '../dom-escape.mjs';
 export function showClinicalTeamsPanelShell() {
   const bd = document.getElementById('clinical-teams-backdrop');
   if (!bd) return false;

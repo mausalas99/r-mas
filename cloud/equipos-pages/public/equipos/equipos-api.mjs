@@ -1,5 +1,7 @@
 /** API client for equipos micro-app. */
 
+import { bearerHeaders } from '../lib/equipos/equipos-http-headers.mjs';
+
 /** Sync with lib/equipos/equipos-constants.mjs */
 const TARGET_DATA_URL_LEN = 320_000;
 const DEFAULT_MAX_DIM = 720;
@@ -16,7 +18,7 @@ export async function equiposFetch(apiBase, token, path, opts = {}) {
   const url = `${apiBase}/api/equipos/v1${path}${sep}t=${encodeURIComponent(token)}`;
   const headers = {
     ...(opts.headers || {}),
-    'X-Equipos-Token': token,
+    ...bearerHeaders(token),
   };
   const res = await fetch(url, { ...opts, headers });
   const data = await res.json().catch(() => ({}));

@@ -1,6 +1,8 @@
 /** Display / escape helpers for Estado Actual panel markup. */
 import { formatBalanceLive } from './estado-actual-io.mjs';
 
+export { escHtml, escAttr };
+
 export function pad2(n) {
   return String(n).padStart(2, '0');
 }
@@ -9,6 +11,8 @@ export function pad2(n) {
  * @param {unknown} value
  * @returns {string}
  */
+
+import { escHtml, escAttr } from '../dom-escape.mjs';
 export function displayValue(value) {
   return value != null && value !== '' ? String(value) : '—';
 }
@@ -20,18 +24,6 @@ export function displayValue(value) {
 export function displayBalance(n) {
   if (typeof n !== 'number' || !Number.isFinite(n)) return '—';
   return formatBalanceLive(n);
-}
-
-export function escHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-export function escAttr(s) {
-  return escHtml(s).replace(/'/g, '&#39;');
 }
 
 /** Number inputs reject non-numeric value attributes (e.g. legacy demo strings). */

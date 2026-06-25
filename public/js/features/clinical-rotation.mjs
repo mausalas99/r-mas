@@ -21,6 +21,8 @@ function toMillis(value) {
  * @param {{ preview_start_at?: string, effective_at?: string }|null|undefined} cycle
  * @param {Date} nowDate
  */
+
+import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 export function isIncomingPreviewWindow(cycle, nowDate) {
   if (!cycle?.preview_start_at || !cycle?.effective_at) return false;
   const now = toMillis(nowDate);
@@ -127,17 +129,6 @@ export function renderIncomingStrip(assignments, opts = {}) {
       }
     });
   });
-}
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
 }
 
 function rotationModalEl() {

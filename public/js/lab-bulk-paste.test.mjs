@@ -108,7 +108,7 @@ describe('lab-bulk-paste', () => {
     assert.equal(perDaySets.length, 2, 'varios días en historial: un conjunto por día, sin fusionar');
   });
 
-  it('mergeBulkParseResults consolida mismo día en un conjunto', () => {
+  it('mergeBulkParseResults consolida mismo día si están a ≤2 h', () => {
     var dupDay = DEMO_SOME_LAB_REPORT.replace('9:42AM', '10:15AM');
     var items = [DEMO_SOME_LAB_REPORT, dupDay].map(function (text) {
       return { result: procesarLabs(text), reportText: text };

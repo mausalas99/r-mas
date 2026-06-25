@@ -8,6 +8,8 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { verifyAdminAccessCode } from '../../../../lib/admin-access-code.mjs';
 import { CLINICAL_SALA_VALUES } from '../../../../lib/clinical-salas.mjs';
 
+import { escapeHtml, escapeAttr } from '../../dom-escape.mjs';
+export { escapeHtml, escapeAttr };
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
   'Interconsultas',
@@ -192,17 +194,6 @@ export function toast(msg, type = 'info') {
 export function toastTeamWarnings(warnings) {
   const first = Array.isArray(warnings) ? String(warnings[0] || '').trim() : '';
   if (first) toast(first, 'warn');
-}
-
-export function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-export function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
 }
 
 export function hintHtml(text) {

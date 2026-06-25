@@ -41,7 +41,7 @@ test('ensureMonitoreo backfill proteinG en pacientes legacy', () => {
   };
   ensureMonitoreo(patient);
   assert.equal(patient.monitoreo.estadoClinico.proteinG, '');
-  assert.equal(patient.monitoreo.confirmado.dieta, false);
+  assert.equal(patient.monitoreo.confirmado.dieta, true);
 });
 
 test('mergePatientMonitoreoFromImported preserva dieta confirmada local', () => {

@@ -5,6 +5,7 @@ import { patients, saveState } from './app-state.mjs';
 import { clinicalSessionContext, refreshGuardiaCensusFromDb } from './clinical-access-runtime.mjs';
 import { vitalsMonitorAlertState } from './features/session-manager.mjs';
 
+import { escapeHtml, escapeAttr } from './dom-escape.mjs';
 function dbApi() {
   return typeof window !== 'undefined' ? window.rplusDb || window.electronAPI || null : null;
 }
@@ -13,17 +14,6 @@ function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(msg, type);
   }
-}
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
 }
 
 function patientInLocalCensus(patientId) {

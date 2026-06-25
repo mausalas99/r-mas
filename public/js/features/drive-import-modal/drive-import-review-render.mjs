@@ -1,14 +1,7 @@
 import { patchReviewStep, reviewStepHint } from '../../../../lib/drive-import/drive-import-review.mjs';
 import { driveImportState } from './drive-import-state.mjs';
 
-export function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { escapeHtml } from '../../dom-escape.mjs';
 export function formatEvDate(iso) {
   if (!iso) return 'sin fecha';
   const d = new Date(iso);

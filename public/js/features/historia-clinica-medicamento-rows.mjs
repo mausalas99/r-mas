@@ -3,14 +3,7 @@ import {
   normalizeMedicamentosList,
 } from '../../../lib/historia-clinica/medicamento-entry.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 function emptyHint(text) {
   return '<p class="hc-empty-hint">' + esc(text) + '</p>';
 }

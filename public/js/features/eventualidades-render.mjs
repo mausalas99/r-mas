@@ -22,17 +22,10 @@ import {
   groupEntriesByDay,
 } from './eventualidades-store.mjs';
 
+import { esc } from '../dom-escape.mjs';
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function daySectionIsOpen(dayGroup, editingId) {
   if (_dayOpenPrefs.has(dayGroup.day)) return _dayOpenPrefs.get(dayGroup.day);

@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.0](https://github.com/mausalas99/r-mas/releases/tag/v7.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.1](https://github.com/mausalas99/r-mas/releases/tag/v7.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.1 (push equipos, eTFG paciente y UI Rams)
+
+- **Equipos push** — Web Push en `/equipos` cuando un dispositivo queda libre, Lumify devuelto o hay alerta de material/falla (LAN + cloud).
+- **Laboratorio** — eTFG desde sexo/edad del expediente; pegado masivo agrupa por ventana de 2 h.
+- **UI** — Superficies planas Rams/Tufte: papel cálido, hairlines, sin sombras en tarjetas.
+- **SQLCipher v20** — Suscripciones push de equipos en host LAN.
+
+Notas: `docs/RELEASE_NOTES_7.5.1.txt`.
 
 ## R+ 7.5.0 (equipos Lumify/EKG/US, panel ⇄ y cola cloud)
 

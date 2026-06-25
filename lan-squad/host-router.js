@@ -11,20 +11,19 @@ const { mountRoomRoutes } = require('./host-router-rooms.js');
 const { mountHistoriaRoutes } = require('./host-router-historia.js');
 const { mountMutationRoutes } = require('./host-router-mutations.js');
 
-function createLanRouter({
-  store,
-  broadcast,
-  resolver,
-  getHostClinicalMeta,
-  getHealthExtras,
-  sseBroadcast,
-  onClinicalOpsMerged,
-  clientIdentityStore = null,
-}) {
+function createLanRouter(config) {
+  const store = config.store;
+  const broadcast = config.broadcast;
+  const resolver = config.resolver;
+  const getHostClinicalMeta = config.getHostClinicalMeta;
+  const getHealthExtras = config.getHealthExtras;
+  const sseBroadcast = config.sseBroadcast;
+  const onClinicalOpsMerged = config.onClinicalOpsMerged;
+  const clientIdentityStore = config.clientIdentityStore != null ? config.clientIdentityStore : null;
   const r = express.Router();
   const getState = () => store.getState();
-  const deltaResolver = createDeltaResolver({ store });
-  const commandResolver = createCommandResolver({ store });
+  const deltaResolver = createDeltaResolver(store);
+  const commandResolver = createCommandResolver(store);
   const syncScheduler = createSyncScheduler({ hostStore: store });
   const { broadcastAll, broadcastLiveRevision } = createBroadcastHelpers({ broadcast, sseBroadcast });
 

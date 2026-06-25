@@ -1,3 +1,4 @@
+import { esc } from '../dom-escape.mjs';
 // Lab panel — historial, dedupe, consolidación
 import {
   procesarLabs,
@@ -13,14 +14,6 @@ import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-ca
 import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 
 
@@ -267,12 +260,21 @@ function collectReprocessSourceParts_(set, ctx) {
   return srcParts;
 }
 
+function chartPatientForActiveId_() {
+  const patientId = rt.getActiveId();
+  if (!patientId) return null;
+  return patients.find(function (p) {
+    return String(p.id) === String(patientId);
+  }) || null;
+}
+
 function reprocessLabSetResLabs_(set, ctx) {
   const srcParts = collectReprocessSourceParts_(set, ctx);
   let repro;
   if (srcParts.length) {
     const mergedSrc = srcParts.join('\n\n---\n\n');
-    const parsed = procesarLabs(mergedSrc);
+    const chartPatient = chartPatientForActiveId_();
+    const parsed = procesarLabs(mergedSrc, chartPatient ? { patient: chartPatient } : undefined);
     repro = reprocessLabResultLines_(parsed.resLabs || []);
     if (parsed.bhExtras && typeof parsed.bhExtras === 'object') {
       set.bhExtras = Object.assign({}, set.bhExtras || {}, parsed.bhExtras);

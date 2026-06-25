@@ -8,10 +8,9 @@ import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
 import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
+import { isDemoPatientId } from './demo-patient.mjs';
 
-export function isDemoPatientId(patientId) {
-  return String(patientId || '').indexOf('demo-') === 0;
-}
+export { isDemoPatientId };
 
 /** @param {object} entry */
 export function entryMatchKey(entry) {

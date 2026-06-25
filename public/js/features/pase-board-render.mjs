@@ -18,14 +18,6 @@ import { todoCompareForSort, toggleTodo } from './todos.mjs';
 import { rt } from './pase-board-runtime.mjs';
 import { buildPaseBoardCacheKey, getPaseBoardCacheKey, setPaseBoardCacheKey } from './pase-board-cache-keys.mjs';
 
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 /** Misma fila que Laboratorio (colores BH/QS, valores alterados). */
 function buildPaseLabBlockHtml(labChunks) {
   if (!labChunks || !labChunks.length) return "";
@@ -42,6 +34,8 @@ function buildPaseLabBlockHtml(labChunks) {
 }
 
 /** Limpia línea de dosis para tarjeta Pase: solo lo aplicable (antes de //), sin *DIA#*, sin calendario colado. */
+
+import { esc } from '../dom-escape.mjs';
 function cleanPaseMedDosisForCard(dosisRaw) {
   var s = String(dosisBeforeSlash(dosisRaw) || "")
     .replace(/\s+/g, " ")

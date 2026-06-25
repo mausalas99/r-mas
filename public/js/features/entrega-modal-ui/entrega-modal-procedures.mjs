@@ -1,3 +1,4 @@
+import { escapeHtml } from '../../dom-escape.mjs';
 // Entrega pendientes — procedures list + add form
 import {
   canDeletePendienteItem,
@@ -18,14 +19,6 @@ function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(msg, type);
   }
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function renderBadgeChips(item) {

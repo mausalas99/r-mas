@@ -53,7 +53,7 @@ describe('diferencial manual + coagulación SOME', () => {
     assert.ok(frotis.includes('HIPOCROMIA') || frotis.includes('PLAQUETAS DISMINUIDAS'));
   });
 
-  it('consolidación mismo día conserva DD cuando biometría y dímero vienen en solicitudes distintas', async () => {
+  it('mismo día separa solicitudes con >2 h de diferencia (intradía)', async () => {
     const { mergeBulkParseResults } = await import('./lab-bulk-paste.mjs');
     const bh = `Expediente:\t1\tFecha Registro:\tJun 12 2026 5:08AM
 BIOMETRIA HEMATICA COMPLETA
@@ -65,13 +65,15 @@ DIMERO D
 DIMERO D\t A 2276 ng/mL 0.0 - 500.0`;
     const items = [bh, dd].map((text) => ({ result: procesarLabs(text), reportText: text }));
     const merged = mergeBulkParseResults(items);
-    assert.equal(merged.length, 1);
-    const bhLine = merged[0].resLabs.find((l) => /^BH\b/i.test(l));
-    assert.ok(bhLine, 'fila BH');
-    const coagLine = merged[0].resLabs.find((l) => /^COAG\t/i.test(l));
-    assert.ok(coagLine, 'fila COAG');
-    assert.match(coagLine, /DD\s+2276/);
+    assert.equal(merged.length, 2);
+    const bhSet = merged.find((m) => m.resLabs.some((l) => /^BH\b/i.test(l)));
+    const coagSet = merged.find((m) => m.resLabs.some((l) => /^COAG\t/i.test(l)));
+    assert.ok(bhSet, 'conjunto BH');
+    assert.ok(coagSet, 'conjunto COAG/DD');
+    const bhLine = bhSet.resLabs.find((l) => /^BH\b/i.test(l));
     assert.match(bhLine, /Leu\s+14\.4/);
     assert.doesNotMatch(bhLine, /DD\s+2276/);
+    const coagLine = coagSet.resLabs.find((l) => /^COAG\t/i.test(l));
+    assert.match(coagLine, /DD\s+2276/);
   });
 });

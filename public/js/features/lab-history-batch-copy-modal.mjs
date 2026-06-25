@@ -11,6 +11,8 @@ import {
  *   showToast(msg: string, type?: string): void,
  *   copyToClipboardSafe(text: string): Promise<boolean>,
  * }} */
+
+import { esc } from '../dom-escape.mjs';
 let rt = {
   getActiveId() {
     return null;
@@ -26,14 +28,6 @@ let rt = {
 
 export function registerLabHistoryBatchCopyRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
-}
-
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function loadPatientHistory() {

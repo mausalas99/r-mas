@@ -19,7 +19,7 @@ function makeStore() {
 
 test('applyDelta creates fieldMeta and appends delta log entry', () => {
   const { store } = makeStore();
-  const resolver = createDeltaResolver({ store, nowIso: () => '2026-06-05T20:45:10.000Z' });
+  const resolver = createDeltaResolver(store, { nowIso: () => '2026-06-05T20:45:10.000Z' });
   const out = resolver.applyDelta({
     roomId: 'room-a',
     entityType: 'historiaClinica',
@@ -53,7 +53,7 @@ test('applyDelta creates fieldMeta and appends delta log entry', () => {
 
 test('applyDelta partially accepts paths by per-path timestamp', () => {
   const { store } = makeStore();
-  const resolver = createDeltaResolver({ store, nowIso: () => '2026-06-05T20:45:10.000Z' });
+  const resolver = createDeltaResolver(store, { nowIso: () => '2026-06-05T20:45:10.000Z' });
 
   resolver.applyDelta({
     roomId: 'room-a',
@@ -99,7 +99,7 @@ test('applyDelta partially accepts paths by per-path timestamp', () => {
 
 test('applyDelta returns stale_delta when all paths are older', () => {
   const { store } = makeStore();
-  const resolver = createDeltaResolver({ store, nowIso: () => '2026-06-05T20:45:10.000Z' });
+  const resolver = createDeltaResolver(store, { nowIso: () => '2026-06-05T20:45:10.000Z' });
   resolver.applyDelta({
     roomId: 'room-a',
     entityType: 'todo',
@@ -129,7 +129,7 @@ test('applyDelta returns stale_delta when all paths are older', () => {
 
 test('applyDelta rejects invalid paths without mutating state', () => {
   const { store } = makeStore();
-  const resolver = createDeltaResolver({ store, nowIso: () => '2026-06-05T20:45:10.000Z' });
+  const resolver = createDeltaResolver(store, { nowIso: () => '2026-06-05T20:45:10.000Z' });
   const out = resolver.applyDelta({
     roomId: 'room-a',
     entityType: 'historiaClinica',

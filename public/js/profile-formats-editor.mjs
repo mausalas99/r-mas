@@ -12,20 +12,14 @@ export function getFormatsEditMode() {
 }
 
 /** @param {null | 'nota' | 'indica'} mode */
+
+import { esc } from './dom-escape.mjs';
 export function setFormatsEditMode(mode) {
   formatsEditMode = mode;
 }
 
 export function clearFormatsEditMode() {
   formatsEditMode = null;
-}
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 function editorBanner(title, subtitle) {

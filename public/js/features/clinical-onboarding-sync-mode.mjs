@@ -9,6 +9,7 @@ import {
 } from './clinical-onboarding-shell.mjs';
 import { submitLocalOnlyProfile } from './clinical-onboarding-local-submit.mjs';
 
+import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 function dbApi() {
   if (typeof window === 'undefined') return null;
   return window.rplusDb || window.electronAPI || null;
@@ -18,17 +19,6 @@ function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(msg, type);
   }
-}
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/"/g, '&quot;');
 }
 
 /** @param {string} userId */

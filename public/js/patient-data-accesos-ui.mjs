@@ -3,14 +3,7 @@ import { refreshRpcDateFields } from './rpc-date-picker.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
 import { patients, saveState } from './app-state.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from './dom-escape.mjs';
 function activePatient(patientId) {
   return patients.find(function (p) {
     return String(p.id) === String(patientId);

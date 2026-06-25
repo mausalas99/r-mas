@@ -2,14 +2,6 @@
 import { formatSomeResultado } from './labs-some-table-helpers.mjs';
 import { normalizeSomeGroup } from './labs-some-table-normalize.mjs';
 
-function escHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function renderSomeTableToolbarHtml(options, exportLabel, deptIndex, groupIndex) {
   if (options.hideToolbar) return '';
   var deptAttr = deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : '';
@@ -184,3 +176,5 @@ export function renderSomeReportTablesHtml(parsed, opts) {
   html += '</div>';
   return html;
 }
+
+import { escHtml } from './dom-escape.mjs';

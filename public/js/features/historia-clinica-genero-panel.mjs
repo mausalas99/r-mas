@@ -5,14 +5,7 @@ import {
 import { normalizeMedicamentosList } from '../../../lib/historia-clinica/medicamento-entry.mjs';
 import { mountMedicamentoRows } from './historia-clinica-medicamento-rows.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 function ageBodyHtml(spec, val) {
   val = val && typeof val === 'object' ? val : {};
   return (

@@ -2,6 +2,16 @@
  * procesarLabs pipeline — header parse, block segmentation, section collection.
  * Wired from labs.js via createProcesarLabs(deps) to avoid circular imports with parse*.
  */
+import { buildEgfrPatientCtx } from './labs-egfr.mjs';
+
+/** Expediente del encabezado SOME (para enlazar con el paciente en R+). */
+export function extractLabExpedienteFromReport(textoBruto) {
+  var mExp = String(textoBruto || '').match(/Expediente:\s*([^\n\r]+)/i);
+  if (!mExp) return '';
+  return mExp[1]
+    .split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0]
+    .trim();
+}
 
 /** Normaliza Sexo: a 'M' / 'F' (o '' si no se reconoce). */
 function parseLabSexoNorm_(mSexo) {
@@ -166,15 +176,17 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object | null} deps.parseSerologiaBancoSangre_
  */
 export function createProcesarLabs(deps) {
-  return function procesarLabs(textoBruto) {
+  /**
+   * @param {string} textoBruto
+   * @param {{ patient?: { sexo?: string, edad?: string } }} [options]
+   */
+  return function procesarLabs(textoBruto, options) {
     var tNorm = textoBruto.replace(/\s+/g, ' ');
     var hdr = parseLabPatientHeader_(deps, textoBruto);
     var blocks = segmentLabReportBlocks_(deps, textoBruto, tNorm);
-    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, {
-      edad: hdr.edadRaw,
-      edadUnidad: hdr.edadUnidad,
-      sexo: hdr.sexoRaw,
-    });
+    var chartPatient = options && options.patient ? options.patient : null;
+    var egfrCtx = buildEgfrPatientCtx(hdr.edadRaw, hdr.edadUnidad, chartPatient);
+    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx);
     return {
       patient: hdr.patient,
       resLabs: deps.dedupeSingletonSections_(sections.resLabs),

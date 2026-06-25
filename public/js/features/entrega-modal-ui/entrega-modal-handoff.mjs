@@ -1,10 +1,8 @@
+import { escapeHtml } from '../../dom-escape.mjs';
 // Entrega handoff context panel
 import { CLINICAL_STATUS_OPTIONS, VASOPRESSOR_AGENTS, VASOPRESSOR_INFUSION_DEFAULTS, VASOPRESSOR_UNIT_LABELS, VENTILATION_MODES, coerceVasopressorUnit, handoffContextSummary, normalizeHandoffContext, normalizeVasopressorAgent, defaultVasopressorInfusion } from '../../../../lib/entrega/entrega-handoff-context.mjs';
 import { entregaDraft, entregaUiFlags } from './entrega-modal-state.mjs';
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 export function checkPill(name, label, checked, extraClass = '', inputId = '') {
   const cls = ['entrega-check-pill', extraClass].filter(Boolean).join(' ');
   const idAttr = inputId ? ` id="${escapeHtml(inputId)}"` : '';

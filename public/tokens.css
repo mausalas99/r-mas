@@ -1,12 +1,13 @@
 /* Hallmark · phase 4 · utilitarian clinical · theme: Quiet workbench
+ * Rams (equipment chrome) + Tufte (chart data-ink) · 2026-06-24
  * contrast: pass (tokens + HC)
  */
 
 :root {
-  --color-paper: #eceef2;
-  --color-surface: #ffffff;
-  --color-ink: #1a2332;
-  --color-ink-muted: #5c6778;
+  --color-paper: #e4e1dc;
+  --color-surface: #f5f4f0;
+  --color-ink: #191919;
+  --color-ink-muted: #5c5c5c;
   --color-accent: #4a52e8;
   --color-accent-hover: #3b42c9;
   --color-accent-soft: color-mix(in oklab, var(--color-accent) 9%, transparent);
@@ -42,8 +43,8 @@
   --action-hover: var(--color-accent-hover);
   --bg: var(--color-paper);
   --surface: var(--color-surface);
-  --border: rgba(15, 23, 42, 0.09);
-  --divider: rgba(15, 23, 42, 0.06);
+  --border: color-mix(in oklab, var(--color-ink) 14%, transparent);
+  --divider: color-mix(in oklab, var(--color-ink) 8%, transparent);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
   --error: #c62828;
@@ -90,24 +91,17 @@
   --stack-inner-pad: 16px;
   --shell-frame-border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
   --shell-gap: color-mix(in oklab, var(--color-ink) 5.5%, var(--color-paper));
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow: 0 6px 22px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 12px 36px rgba(15, 23, 42, 0.08), 0 3px 10px rgba(15, 23, 42, 0.04);
-  /* Elevation scale (premium UI phase 1) — flat / raised / floating / overlay */
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.12);
+  /* Rams · flat equipment — hairline borders, no card lift */
   --elev-flat: none;
-  --elev-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --elev-floating: 0 6px 22px rgba(15, 23, 42, 0.07), 0 2px 6px rgba(15, 23, 42, 0.05);
-  --elev-overlay: 0 18px 48px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
-  /* Depth ring + lift (prefer over solid borders on cards/containers) */
-  --shadow-border:
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    0 1px 2px -1px rgba(0, 0, 0, 0.06),
-    0 2px 4px 0 rgba(0, 0, 0, 0.04);
-  --shadow-border-hover:
-    0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 1px 2px -1px rgba(0, 0, 0, 0.08),
-    0 2px 4px 0 rgba(0, 0, 0, 0.06);
-  --border-hairline: 1px solid color-mix(in oklab, var(--color-ink) 9%, transparent);
+  --elev-raised: none;
+  --elev-floating: none;
+  --elev-overlay: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-border: 0 0 0 1px color-mix(in oklab, var(--color-ink) 12%, transparent);
+  --shadow-border-hover: 0 0 0 1px color-mix(in oklab, var(--color-ink) 18%, transparent);
+  --border-hairline: 1px solid color-mix(in oklab, var(--color-ink) 14%, transparent);
   /* Interaction-state fills, layered over any surface */
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 4%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 7%, transparent);
@@ -160,6 +154,20 @@
   --ea-chart-io-egr: var(--error);
   --ea-chart-io-balance: var(--color-accent);
   --ea-chart-altered: var(--todo-prio-media);
+
+  /* Tufte · clinical charts — max data-ink (EA + Tendencias) */
+  --chart-grid-line: color-mix(in oklab, var(--color-ink) 12%, transparent);
+  --chart-axis-ink: var(--color-ink-muted);
+  --chart-tick-size: 10px;
+  --chart-line-width: 2px;
+  --chart-point-radius: 3px;
+
+  /* Rams · equipment surfaces (workbench cards, chart frames) */
+  --equipment-radius: var(--radius-inner);
+  --equipment-border: var(--border-hairline);
+  --equipment-surface: color-mix(in oklab, var(--surface) 97%, var(--bg));
+  --equipment-shadow: none;
+  --equipment-active-dot: var(--color-accent);
 
   /* Med pharm calendar */
   --med-pharm-indicated: color-mix(in oklab, var(--color-accent) 18%, var(--input-fill));
@@ -253,14 +261,14 @@ html.dark {
   --lab-header-violet: color-mix(in oklab, #6d28d9 36%, var(--surface));
   --lab-chip-bg: var(--color-accent-soft);
   --lab-chip-txt: var(--color-accent-soft-text);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow: 0 8px 26px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.24);
-  --shadow-md: 0 14px 38px rgba(0, 0, 0, 0.48), 0 4px 12px rgba(0, 0, 0, 0.32);
-  --elev-raised: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --elev-floating: 0 8px 26px rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.24);
-  --elev-overlay: 0 18px 52px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.35);
-  --shadow-border: 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-border-hover: 0 0 0 1px rgba(255, 255, 255, 0.13);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --elev-raised: none;
+  --elev-floating: none;
+  --elev-overlay: 0 14px 36px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-border: 0 0 0 1px rgba(148, 163, 184, 0.2);
+  --shadow-border-hover: 0 0 0 1px rgba(148, 163, 184, 0.32);
   --border-hairline: 1px solid rgba(148, 163, 184, 0.16);
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 10%, transparent);
@@ -282,6 +290,9 @@ html.dark {
   --med-pharm-today-fg: var(--warn);
   --med-pharm-not-admin: color-mix(in oklab, var(--bg) 88%, var(--surface));
   --med-pharm-not-admin-border: color-mix(in oklab, var(--error) 88%, var(--surface));
+  --chart-grid-line: color-mix(in oklab, var(--color-ink) 11%, transparent);
+  --chart-axis-ink: var(--color-ink-muted);
+  --equipment-surface: color-mix(in oklab, var(--surface) 98%, var(--bg));
   --shell-gap: color-mix(in oklab, #3d2430 42%, var(--color-paper));
   --sidebar-rail-color: color-mix(in oklab, #6b4456 58%, var(--color-surface));
   color-scheme: dark;

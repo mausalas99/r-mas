@@ -13,6 +13,7 @@ import {
   bucketsFromRecetaItems,
   estadoClinicoForDisplay,
   estadoClinicoForText,
+  pruneEstadoClinicoMedsFromReceta,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
 import { emptyMonitoreo } from './estado-actual-data.mjs';
@@ -32,6 +33,63 @@ test('applyRecetaProposal sets pendienteReceta for unconfirmed keys', () => {
   applyRecetaProposal(m, { analgesia: 'PARACETAMOL 1G VO', abx: 'CEFTRIAXONA 1G IV' });
   assert.equal(m.pendienteReceta.analgesia, 'PARACETAMOL 1G VO');
   assert.equal(m.pendienteReceta.abx, 'CEFTRIAXONA 1G IV');
+});
+
+test('applyRecetaProposal limpia pendiente cuando la categoría queda vacía en SOME', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.abx = 'CEFTRIAXONA 1G IV';
+  applyRecetaProposal(m, { abx: '' });
+  assert.equal(m.pendienteReceta.abx, '');
+});
+
+test('pruneEstadoClinicoMedsFromReceta quita medicamentos ausentes del nuevo manejo', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H | CEFTRIAXONA 1G IV C/24H';
+  m.confirmado.abx = true;
+  const items = [
+    {
+      id: '1',
+      nombreRaw: 'MEROPENEM 1 G',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1 G',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      suspendido: false,
+    },
+  ];
+  const changed = pruneEstadoClinicoMedsFromReceta(m, items, classifyMedicationSoapCategory, '');
+  assert.equal(changed, true);
+  assert.match(m.estadoClinico.abx, /MEROPENEM/i);
+  assert.doesNotMatch(m.estadoClinico.abx, /CEFTRIAXONA/i);
+});
+
+test('syncRecetaProposalsFromSoapSelection poda y propone desde nuevo SOME', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.analgesia = 'KETOROLACO 30 MG IV C/8H';
+  const medRecetaByPatient = {
+    p1: {
+      items: [
+        {
+          id: 'a',
+          nombreRaw: 'PARACETAMOL 1G TABLETA',
+          viaRaw: 'VIA ORAL',
+          dosisRaw: '1 G',
+          frecuenciaRaw: 'CADA 8 HORAS',
+          suspendido: false,
+        },
+      ],
+    },
+  };
+  const sel = { a: true };
+  const ok = syncRecetaProposalsFromSoapSelection(
+    'p1',
+    m,
+    medRecetaByPatient,
+    { p1: sel },
+    classifyMedicationSoapCategory
+  );
+  assert.equal(ok, true);
+  assert.equal(m.estadoClinico.analgesia, '');
+  assert.match(String(m.pendienteReceta.analgesia), /PARACETAMOL/i);
 });
 
 test('confirmMedField copies pendiente to estadoClinico', () => {
@@ -241,6 +299,30 @@ test('applyDietProposalFromRecetaBlock no repropone dieta ya confirmada', () => 
   m.estadoClinico.proteinG = '60';
   m.confirmado.dieta = true;
   const block = { dietas: [{ descripcionRaw: 'BLANDA PICADA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock auto-confirma dieta SOME ya reflejada en estado clínico', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'BLANDA PICADA ALTA EN FIBRA';
+  m.estadoClinico.kcal = '1500';
+  m.estadoClinico.proteinG = '60';
+  m.confirmado.dieta = false;
+  const block = { dietas: [{ descripcionRaw: 'BLANDA PICADA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.confirmado.dieta, true);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock passive sync no repropone tras auto-confirm', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'BLANDA PICADA ALTA EN FIBRA';
+  m.estadoClinico.kcal = '1500';
+  m.estadoClinico.proteinG = '60';
+  m.confirmado.dieta = false;
+  const block = { dietas: [{ descripcionRaw: 'BLANDA PICADA ALTA EN FIBRA', kcal: 1500, proteinG: 60 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
   assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
   assert.equal(m.pendienteReceta.dieta, '');
 });

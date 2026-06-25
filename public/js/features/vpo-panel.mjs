@@ -43,14 +43,6 @@ export function registerVpoPanelRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(rt, ctx);
 }
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function scheduleSave() {
   if (_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(function () {
@@ -110,6 +102,8 @@ function renderRiskScalesOnlyBody(state) {
  * @param {boolean} open
  * @param {string} body
  */
+
+import { esc } from '../dom-escape.mjs';
 function vpoSection(title, tone, open, body) {
   return (
     '<details class="vpo-section ea-card"' +

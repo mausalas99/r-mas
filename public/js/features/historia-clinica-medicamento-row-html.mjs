@@ -1,13 +1,5 @@
 import { newMedicamentoRowId, normalizeMedicamentosList } from '../../../lib/historia-clinica/medicamento-entry.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 /** @param {object} m @param {number} i @param {boolean} linked @param {boolean} canRemove */
 export function buildMedicamentoRowHtml(m, i, linked, canRemove) {
   const ro = linked ? ' readonly tabindex="-1" title="No editable en este bloque"' : '';
@@ -35,6 +27,8 @@ export function buildMedicamentoRowHtml(m, i, linked, canRemove) {
  * @param {(list: Array<object>) => void} onChange
  * @param {(m: object) => boolean} isReadOnly
  */
+
+import { esc } from '../dom-escape.mjs';
 export function wireMedicamentoRowEvents(host, list, onChange, isReadOnly) {
   function emit() {
     const next = [];

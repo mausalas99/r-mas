@@ -40,11 +40,11 @@
 }
 
 .equipos-brand-mark {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-accent, #4a52e8);
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  display: block;
+  border-radius: 0;
 }
 
 .equipos-brand-title {

@@ -29,6 +29,14 @@ import {
 } from './actions.js';
 import { savePhotoFromBase64, readPhotoObject } from './photos.js';
 import { EquiposError, equiposErrorStatus, jsonEquiposError } from './errors.js';
+import { getEquiposDevice } from './board.js';
+import { scheduleEquiposPush } from './push.js';
+import {
+  getVapidPublicKey,
+  handlePushSubscribe,
+  handlePushUnsubscribe,
+  handlePushLeaveCleanup,
+} from './push-routes.js';
 
 /** @param {unknown} data @param {number} [status] */
 function jsonOk(data, status = 200) {
@@ -58,13 +66,26 @@ async function readJson(req) {
  * @param {import('@cloudflare/workers-types').ExecutionContext} env
  * @param {string} subpath
  */
-export async function handleEquiposApi(req, env, subpath) {
+/**
+ * @param {Request} req
+ * @param {import('@cloudflare/workers-types').ExecutionContext} env
+ * @param {string} subpath
+ * @param {import('@cloudflare/workers-types').ExecutionContext} [execCtx]
+ */
+export async function handleEquiposApi(req, env, subpath, execCtx) {
   const db = env.DB;
   const bucket = env.PHOTOS;
   const auth = extractAuth(req, env);
   const method = req.method;
+  const vapidJwk = env.EQUIPOS_VAPID_PRIVATE_JWK;
 
   try {
+    if (method === 'GET' && subpath === '/push/vapid-public-key') {
+      const row = getVapidPublicKey(env);
+      if (!row) throw new EquiposError('push_unconfigured', 'Notificaciones no configuradas.');
+      return jsonOk(row);
+    }
+
     if (method === 'GET' && subpath === '/ping') {
       return jsonOk({ ok: true, equipos: true, cloud: true, lease: null });
     }
@@ -172,6 +193,12 @@ export async function handleEquiposApi(req, env, subpath) {
         }, bucket, db);
       }
       const out = await equiposReturn(db, { ...body, returnPhotoId });
+      const kind =
+        body.deviceType === 'lumify' ? 'lumify_return' : 'device_available';
+      scheduleEquiposPush(db, execCtx, kind, {
+        deviceType: body.deviceType,
+        chargePct: body.chargePct != null ? Number(body.chargePct) : null,
+      }, vapidJwk);
       return jsonOk({ ok: true, ...out });
     }
 
@@ -184,7 +211,20 @@ export async function handleEquiposApi(req, env, subpath) {
     if (method === 'POST' && subpath === '/waitlist/leave') {
       await assertEquiposAuth(db, auth);
       await equiposWaitlistLeave(db, body);
+      await handlePushLeaveCleanup(env, body);
       return jsonOk({ ok: true });
+    }
+
+    if (method === 'POST' && subpath === '/push/subscribe') {
+      await assertEquiposAuth(db, auth);
+      const out = await handlePushSubscribe(req, env, body);
+      return jsonOk(out);
+    }
+
+    if (method === 'POST' && subpath === '/push/unsubscribe') {
+      await assertEquiposAuth(db, auth);
+      const out = await handlePushUnsubscribe(env, body);
+      return jsonOk(out);
     }
 
     if (method === 'POST' && subpath === '/alert') {
@@ -197,13 +237,30 @@ export async function handleEquiposApi(req, env, subpath) {
         }, bucket, db);
       }
       const out = await equiposCreateAlert(db, { ...body, photoId });
+      const alertKind = body.kind === 'malfunction' ? 'malfunction' : 'missing_material';
+      scheduleEquiposPush(db, execCtx, alertKind, {
+        deviceType: body.deviceType,
+        message: body.message,
+      }, vapidJwk);
       return jsonOk({ ok: true, ...out });
     }
 
     if (method === 'POST' && subpath.startsWith('/alert/') && subpath.endsWith('/ack')) {
       await assertEquiposAuth(db, auth);
       const reportId = subpath.slice('/alert/'.length, -'/ack'.length);
+      const reportRow = await db
+        .prepare(`SELECT device_type FROM equipos_team_reports WHERE id = ?`)
+        .bind(reportId)
+        .first();
       await equiposAckAlert(db, reportId, body);
+      if (reportRow?.device_type) {
+        const dev = await getEquiposDevice(db, reportRow.device_type);
+        if (dev?.status === 'available') {
+          scheduleEquiposPush(db, execCtx, 'device_available', {
+            deviceType: reportRow.device_type,
+          }, vapidJwk);
+        }
+      }
       return jsonOk({ ok: true });
     }
 
@@ -215,6 +272,13 @@ export async function handleEquiposApi(req, env, subpath) {
         adminUserId: body.adminUserId,
         adminName: body.adminName,
       });
+      for (const r of results) {
+        if (r.hadCustody || r.cleared > 0) {
+          scheduleEquiposPush(db, execCtx, 'device_available', {
+            deviceType: r.deviceType,
+          }, vapidJwk);
+        }
+      }
       return jsonOk({ ok: true, results });
     }
 

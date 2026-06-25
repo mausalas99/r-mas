@@ -1,19 +1,13 @@
 import { accesoFechaToDateInputValue } from './patient-date-fields.mjs';
 import { resolveCensoFimiLabel } from './censo-header-format.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 /**
  * FIUX (urgencias) y FIMI/servicio — fechas con calendario rpc-date.
  * @param {Record<string, unknown>} patient
  * @param {Record<string, unknown>} [settings]
  */
+
+import { esc } from './dom-escape.mjs';
 export function buildPatientIngresoFechasHtml(patient, settings) {
   var fimiLabel = resolveCensoFimiLabel(settings || {});
   return (

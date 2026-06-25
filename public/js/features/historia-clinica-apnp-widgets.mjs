@@ -3,14 +3,7 @@ import {
   calcAlcoholBurden,
 } from '../../../lib/historia-clinica/apnp-calculators.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
+import { esc } from '../dom-escape.mjs';
 function numInput(name, value, label, attrs) {
   attrs = attrs || '';
   return (

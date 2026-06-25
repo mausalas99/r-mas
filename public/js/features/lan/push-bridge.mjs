@@ -1,19 +1,16 @@
 /**
  * LAN push bridge registry (avoids circular import with orchestrator).
  */
+import {
+  lanSyncPushBridgeGlobal,
+  setLanSyncPushBridgeGlobal,
+} from './lan-sync-bridge-globals.mjs';
+
 /** @type {Record<string, unknown> | null} */
 let pushBridge = null;
 
 /** @type {Promise<void> | null} */
 var pushBridgeWirePromise = null;
-
-function lanSyncPushBridgeGlobal() {
-  return globalThis['__LAN_SYNC_PUSH_BRIDGE__'];
-}
-
-function setLanSyncPushBridgeGlobal(value) {
-  globalThis['__LAN_SYNC_PUSH_BRIDGE__'] = value;
-}
 
 export function registerLanSyncPushBridge(deps) {
   pushBridge = deps && typeof deps === 'object' ? deps : null;

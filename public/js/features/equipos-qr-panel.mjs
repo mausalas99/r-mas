@@ -25,14 +25,6 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function normalizeHostBase(hostBase) {
   const base = String(hostBase || '')
     .trim()
@@ -192,6 +184,8 @@ function renderCompactSummary({ cloudMode, active, hasToken, errorMsg }) {
 }
 
 /** @param {HTMLElement} host @param {string} url */
+
+import { esc } from '../dom-escape.mjs';
 function mountQrPreview(host, url) {
   if (!host || !url) return;
   host.innerHTML = '';

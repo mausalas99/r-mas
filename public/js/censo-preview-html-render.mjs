@@ -6,13 +6,7 @@ import {
   censoTheadRowHtml,
 } from './censo-table-columns.mjs';
 
-export function escCensoHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
+import { escHtml as escCensoHtml } from './dom-escape.mjs';
 export function censoLineClass(role) {
   if (role === 'muted') return 'censo-line censo-line--muted';
   if (role === 'emphasis') return 'censo-line censo-line--emphasis';

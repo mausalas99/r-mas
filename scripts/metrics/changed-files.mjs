@@ -6,7 +6,7 @@ export function filterTier1Paths(paths) {
   return paths.filter((p) => TIER1_RE.test(p.replace(/\\/g, '/')));
 }
 
-export function gitChangedFiles(baseRef = 'HEAD') {
+function gitChangedFiles(baseRef = 'HEAD') {
   try {
     const out = execSync(`git diff --name-only ${baseRef}`, { encoding: 'utf8' });
     return out.split('\n').map((s) => s.trim()).filter(Boolean);

@@ -1,5 +1,6 @@
 import { formatFieldLabel } from '../lan-conflict-silent-match.mjs';
 
+import { escHtml } from '../dom-escape.mjs';
 const ENTITY_LABELS = {
   historiaClinica: 'Historia clínica',
   patient: 'Datos del paciente',
@@ -7,14 +8,6 @@ const ENTITY_LABELS = {
   agenda: 'Evento de agenda',
   roomBundle: 'Sala (agenda y pendientes)',
 };
-
-function escHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 /** @param {object} ctx */
 export function buildConflictLeadLine(ctx) {

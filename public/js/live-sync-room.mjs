@@ -1,4 +1,7 @@
 /** LiveSync por sala: merge por entityVersion (sin LWW por reloj en la capa de red). */
+import { isDemoPatientId } from './demo-patient.mjs';
+
+export { isDemoPatientId };
 
 export const LAN_CLIENT_ID_KEY = 'rpc-lan-client-id';
 export const LAN_ROOM_SNAPSHOTS_KEY = 'rpc-lan-room-snapshots';
@@ -80,10 +83,6 @@ export function liveSyncDeletePatchesFromEntityMap(entityMap) {
     if (patch) patches.push(patch);
   }
   return patches;
-}
-
-export function isDemoPatientId(patientId) {
-  return String(patientId || '').indexOf('demo-') === 0;
 }
 
 function versionFromSource(src, key) {

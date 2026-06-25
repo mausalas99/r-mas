@@ -9,14 +9,6 @@ import {
 import { storage } from '../storage.js';
 import { getProcedureAgendaRowPx } from './chrome.mjs';
 
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 /** @param {Date} monday */
 export function buildAgendaBoardHead(monday) {
   const head = document.createElement('div');
@@ -39,6 +31,8 @@ export function buildAgendaBoardHead(monday) {
 }
 
 /** @param {Date} monday @param {{ start: Date, endExclusive: Date }} week @param {Record<string, string>} pmap */
+
+import { esc } from '../dom-escape.mjs';
 export function collectAgendaClipsByDay(monday, week, pmap) {
   const clipsByDay = [[], [], [], [], [], [], []];
   storage.getScheduledProcedures().forEach(function (ev) {

@@ -1,3 +1,4 @@
+import { esc } from '../dom-escape.mjs';
 // Undo, focus mode, unified search, plantillas extra, atajos (Bloque F)
 import {
   patients,
@@ -45,14 +46,6 @@ let rt = {
 export function registerProductivityRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(rt, ctx);
-}
-
-function esc(s) {
-  return String(s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }
 
 var UNDO_STACK_KEY = "rpc-undo-stack";
