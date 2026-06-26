@@ -1,33 +1,29 @@
-version: 7.5.1
+version: 7.5.2
 files:
-  - url: R+-7.5.1-arm64.zip
-    sha512: 4rXiKh/xwCPbHh2FDm9ptMOX28HqpAbLBnrSU/IsM+UdHkBC1FniFYUSmnfQmsvezjAxKpIb8PtI+uOdoF6PnQ==
-    size: 129745741
-  - url: R+-7.5.1-arm64.dmg
-    sha512: AlY4PcFAT4zWq/SdNEds4v8TUvzzxCIII9yHCD3y+tMll9yw0eWuqvK9f3kk5HNJot+X2kgtgLG2EVxgaIo9Xg==
-    size: 135124578
-  - url: R+-7.5.1-x64.zip
-    sha512: lTrcO2ZN5pbUbTZ2bv4yNvm2rreqBh2OxYqffb3x01Hq34CH+WqBzQFeM1DUtpl5n0cHNK+KZlyZ2Je0QIo+dw==
-    size: 138119780
-  - url: R+-7.5.1-x64.dmg
-    sha512: dmmgY++PT39oL/DhI7kk6f+oIknSNBwp/+yymvgqUpoCwFekytfGaqzRg4dKGY+8DiUvCmEc0bHTyAZpUBPc/g==
-    size: 143537618
-path: R+-7.5.1-arm64.zip
-sha512: 4rXiKh/xwCPbHh2FDm9ptMOX28HqpAbLBnrSU/IsM+UdHkBC1FniFYUSmnfQmsvezjAxKpIb8PtI+uOdoF6PnQ==
-releaseDate: '2026-06-25T20:07:36.000Z'
+  - url: R+-7.5.2-arm64.zip
+    sha512: t5nduTpbCJDVRGFDyQXLYpAid9wqCSs5mohbjGOFJxaPbClMTgJASeTpiIQbUoErSeNtg/DoKmpuT8BrYaFDgA==
+    size: 129764815
+  - url: R+-7.5.2-arm64.dmg
+    sha512: +2bDaEA5JF6JZAn8tBUZ9z0rcAH0AT4Mv5LdzVeCCKGAGFjZw1pwvgmC6kErG7b4LwI9F7bz2CmVdyKWbJSPTA==
+    size: 135122875
+  - url: R+-7.5.2-x64.zip
+    sha512: qJ6kke3U7Qpdf3HGGlVNHRUiV8234n43DdkwYTuNqr5KnllwY3ytbKNb0zRs1H4LCB37EW4FtTxXzK6Qtej75w==
+    size: 138138836
+  - url: R+-7.5.2-x64.dmg
+    sha512: pZUj/MWwySx4GQF0AEI5HHqi+233RL88qJqrvg0wMnPrNbB29I21v5jAKewtYvjb2EtfuL8+I3LHO514QpZAug==
+    size: 143629477
+path: R+-7.5.2-arm64.zip
+sha512: t5nduTpbCJDVRGFDyQXLYpAid9wqCSs5mohbjGOFJxaPbClMTgJASeTpiIQbUoErSeNtg/DoKmpuT8BrYaFDgA==
+releaseDate: '2026-06-26T20:56:27.000Z'
 releaseNotes: |
-  Sobre 7.5.0: notificaciones Web Push en la cola de equipos (LAN y cloud); eTFG en química usa sexo y edad del expediente; pegado masivo de labs agrupa por ventana de 2 h; superficies más planas (tokens Rams/Tufte).
+  Sobre 7.5.1: franja de signos vitales más legible (filas compactas + historial al tocar), SOAP/copiar alineados a la lectura más reciente, reglas de PICO febril, AYUNO en SOME y soporte Traqueostomía en Estado Actual.
   
-  Equipos — notificaciones push — En /equipos (móvil) puedes activar avisos cuando un Lumify/EKG/US queda libre, al devolver Lumify (con % de carga si eres el siguiente) o cuando hay reporte de material/falla. Funciona en cola LAN y en cloud (VAPID en Worker).
+  Estado Actual — signos vitales — Resumen en filas (T/A, FC, FR, Temp, SatO₂) dentro de una columna estrecha; al tocar una fila con historial se abre un modal con lecturas del turno (más reciente arriba).
   
-  Equipos — código compartido — Misma lógica de mensajes y API entre escritorio, móvil LAN y páginas cloud; script build:equipos-pages para empaquetar la micro-app.
+  Estado Actual — SOAP y copiar — Signos y texto guardado usan la última lectura del turno (antes podían quedar valores viejos). PICO solo si temperatura ≥ 38 °C y dentro de 5 días; fecha corta (dd/mm o dd/mm HH:mm) sin ruido de @ 00:00 en cierre de turno.
   
-  Laboratorio — eTFG — CKD-EPI 2021 toma sexo y edad del paciente en R+ (no el encabezado SOME); si falta sexo en expediente, no calcula eTFG.
+  SOME — ayuno — DIETAS AYUNO se reconoce en pegado SOME (filas cortas, con o sin tabs); propuesta y SOAP muestran DIETA AYUNO sin placeholder calórico.
   
-  Laboratorio — pegado masivo — Consolidación por día + tipo dentro de ventana de 2 horas (menos duplicados al pegar varios bloques del mismo turno).
+  Soporte respiratorio — traqueostomía — Nueva opción en Estado Actual, modal SOAP y export; SatO₂ puede inferirse al pegar monitoreo (TQT, TRAQUEOSTOMÍA).
   
-  UI — Rams/Tufte — Papel cálido, bordes hairline, sin sombras en tarjetas; gráficas EA con menos tinta decorativa.
-  
-  Seguridad renderer — Escape HTML centralizado en dom-escape.mjs (expediente, LAN, interno, equipos).
-  
-  Base clínica — Esquema SQLCipher v19 → v20 (suscripciones push de equipos en host LAN).
+  T/A unificada — TAS/TAD en una sola fila en signos y en el modal de historial.
