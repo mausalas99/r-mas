@@ -2,9 +2,51 @@
  * Defaults del modal «Registrar medición»: cierre de turno a las 00:00 de hoy,
  * glucometrías del turno previo (ayer 08:00 → hoy 00:00).
  */
+import { pad2 } from './estado-actual-panel-format.mjs';
 
 /** Horarios estándar: 08:00 y 16:00 del día previo, 00:00 (medianoche) del día actual. */
 export const STANDARD_GLUCOMETRIA_TIMES = ['08:00', '16:00', '00:00'];
+
+/** Hora de cierre de turno en registro manual — no es «cuándo» ocurrió un signo alterado. */
+export const TURN_CLOSE_HM = '00:00';
+
+/**
+ * @param {unknown} time
+ * @returns {boolean}
+ */
+export function isTurnCloseHm(time) {
+  return String(time || '').trim() === TURN_CLOSE_HM;
+}
+
+/**
+ * Hora alterada para narrativa SOAP / snapshot de signos (omite cierre de turno).
+ * @param {unknown} time
+ * @returns {string}
+ */
+export function vitalAlteredTimeForDisplay(time) {
+  var t = String(time || '').trim();
+  if (!t || isTurnCloseHm(t)) return '';
+  return t;
+}
+
+/**
+ * Etiqueta de momento para snapshot: fecha corta si cierre de turno; si no, `dd/mm HH:mm`.
+ * @param {string | undefined} recordedAt
+ * @param {string | undefined} timeHm
+ * @returns {string}
+ */
+export function formatEaVitalStampForSnapshot(recordedAt, timeHm) {
+  var rec = recordedAt != null ? String(recordedAt) : '';
+  if (!rec) return vitalAlteredTimeForDisplay(timeHm);
+  if (isTurnCloseHm(timeHm) || !String(timeHm || '').trim()) {
+    var ms = gluPointMs(rec, '');
+    if (!ms) return '';
+    var d = new Date(ms);
+    if (isNaN(d.getTime())) return '';
+    return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1);
+  }
+  return formatEaVitalPointShorthand(rec, timeHm);
+}
 
 /**
  * @param {Date} d
@@ -85,6 +127,30 @@ export function gluPointMs(recordedAt, timeHm) {
     }
   }
   return d.getTime();
+}
+
+/**
+ * Fecha corta para narrativa SOAP de picos: `dd/mm HH:mm` (local).
+ * @param {string | undefined} recordedAt
+ * @param {string | undefined} timeHm
+ * @returns {string}
+ */
+export function formatEaVitalPointShorthand(recordedAt, timeHm) {
+  var rec = recordedAt != null ? String(recordedAt) : '';
+  if (!rec) return '';
+  var ms = gluPointMs(rec, timeHm != null ? String(timeHm) : '');
+  if (!ms) return '';
+  var d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  return (
+    pad2(d.getDate()) +
+    '/' +
+    pad2(d.getMonth() + 1) +
+    ' ' +
+    pad2(d.getHours()) +
+    ':' +
+    pad2(d.getMinutes())
+  );
 }
 
 /**

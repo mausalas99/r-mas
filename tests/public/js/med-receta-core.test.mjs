@@ -550,6 +550,40 @@ test('parseIndicacionesPaste — dieta con macros en descripción o frecuencia',
   assert.equal(rFreq.dietas[0].proteinG, 80);
 });
 
+test('parseIndicacionesPaste — DIETAS AYUNO con 4 columnas (sin VIA)', () => {
+  var line = '26/06/2026 08:59:39 a.m.\tDIETAS\tAYUNO\t\t\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
+  assert.equal(looksLikeSomeIndicacionesPaste(line), true);
+});
+
+test('parseIndicacionesPaste — DIETAS AYUNO colapsada (4 cols sin tabs intermedios)', () => {
+  var line = '26/06/2026 08:59:39 a.m.\tDIETAS\tAYUNO\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
+});
+
+test('parseIndicacionesPaste — DIETAS AYUNO espacios (sin tabs)', () => {
+  var line = '26/06/2026 08:59:39 a.m.  DIETAS  AYUNO  NW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
+  assert.equal(looksLikeSomeIndicacionesPaste(line), true);
+});
+
+test('parseIndicacionesPaste — bloque usuario con AYUNO entre meds y cuidados', () => {
+  var paste =
+    '26/06/2026 07:17:48 a.m.\tCUIDADOS\tGLUCOMETRIA CAPILAR\t\tPOR TURNO\t\tNW\n' +
+    '26/06/2026 08:59:39 a.m.\tDIETAS\tAYUNO\t\t\tNW\n' +
+    '26/06/2026 07:17:55 a.m.\tMEDICAMENTOS\tBUPRENORFINA 0.3 MG SOL INY 1 ML\tVIA INTRAVENOSA\t75 MCG //\tPRN\tNW';
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
+  assert.equal(r.items.length, 1);
+});
+
 test('parseIndicacionesPaste — dieta con columna VIA vacía colapsada (5 cols)', () => {
   var line =
     '20/06/2026 07:50:06 a.m.\tDIETAS\tBLANDA PICADA ALTA EN FIBRA\t1500 KCAL + 60 GR DE PROTEINA\tNW';

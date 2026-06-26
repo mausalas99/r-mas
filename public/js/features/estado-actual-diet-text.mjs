@@ -1,4 +1,4 @@
-import { isDietaSuplemento } from './estado-actual-data.mjs';
+import { isDietaSuplemento, isDietaAyuno } from './estado-actual-data.mjs';
 
 /**
  * @param {unknown} v
@@ -26,6 +26,7 @@ function numPlaceholder(v) {
 export function formatNmDietClause(fields, kcalDisplay, opts) {
   opts = opts || {};
   fields = fields || {};
+  if (isDietaAyuno(fields.dieta)) return 'DIETA AYUNO';
   if (isDietaSuplemento(fields.dieta)) return 'DIETA SUPLEMENTO';
   var proteinClause = '';
   if (

@@ -1,5 +1,6 @@
 /** parseFormMedicion helpers — extracted from estado-actual-panel-actions.mjs */
 import { isVitalAltered } from './estado-actual-ranges.mjs';
+import { isTurnCloseHm } from './estado-actual-registro-defaults.mjs';
 import { getVitalExtraStorageKey } from './estado-actual-vital-extras.mjs';
 import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
 import { parseNumOrNull } from './estado-actual-panel-format.mjs';
@@ -27,7 +28,7 @@ export function parseVitalsFromForm(form, defaultTime) {
         if (li === list.length - 1) alteredAt[key] = rd.time;
         else if (li === list.length - 2 && key === 'temp') alteredAt.tempPeak = rd.time;
         else if (li === list.length - 2) alteredAt[getVitalExtraStorageKey(key)] = rd.time;
-      } else if (li === list.length - 1 && isVitalAltered(key, rd.value)) {
+      } else if (li === list.length - 1 && isVitalAltered(key, rd.value) && !isTurnCloseHm(defaultTime)) {
         alteredAt[key] = defaultTime;
       }
     }

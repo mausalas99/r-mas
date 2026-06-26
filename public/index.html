@@ -264,6 +264,16 @@
   </div>
 </div>
 
+<div id="ea-vital-history-backdrop" class="ea-vital-history-backdrop" aria-hidden="true">
+  <div class="ea-vital-history-modal" role="dialog" aria-modal="true" aria-labelledby="ea-vital-history-title" onclick="event.stopPropagation()">
+    <header class="ea-vital-history-modal-head">
+      <h3 id="ea-vital-history-title">Historial</h3>
+      <button type="button" class="ea-vital-history-modal-close" onclick="closeEaVitalHistoryModal()" aria-label="Cerrar historial">×</button>
+    </header>
+    <div id="ea-vital-history-body" class="ea-vital-history-modal-body"></div>
+  </div>
+</div>
+
 <div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" onclick="event.stopPropagation()">
     <header class="ea-registro-modal-head">
@@ -1541,6 +1551,7 @@
                 <option value="Puntillas nasales">Puntillas nasales</option>
                 <option value="Alto flujo">Alto flujo</option>
                 <option value="VM no invasiva">VM no invasiva</option>
+                <option value="Traqueostomía">Traqueostomía</option>
               </select>
             </div>
           </div>

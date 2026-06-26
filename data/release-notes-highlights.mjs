@@ -1055,6 +1055,29 @@ var RELEASE_NOTES_741 = [
   },
 ];
 
+var RELEASE_NOTES_752 = [
+  {
+    title: 'Signos vitales en filas',
+    body:
+      'Resumen compacto en <strong>filas</strong> (no cajas anchas). Toca una fila con historial para ver lecturas del turno en un modal.',
+  },
+  {
+    title: 'SOAP al día',
+    body:
+      'Copiar/guardar usa la <strong>última</strong> lectura. <strong>PICO</strong> solo fiebre ≥38 °C dentro de 5 días, con fecha corta y sin <code>@ 00:00</code> en cierre de turno.',
+  },
+  {
+    title: 'SOME ayuno + traqueostomía',
+    body:
+      'Detecta <strong>AYUNO</strong> en indicaciones (filas cortas, con o sin tabs). Nuevo soporte <strong>Traqueostomía</strong> en Estado Actual y export.',
+  },
+  {
+    title: 'Parche sobre 7.5.1',
+    body:
+      'Sin migración de base (SQLCipher <strong>v20</strong>). Instala <strong>7.5.2</strong> en estaciones que usen Estado Actual o peguen SOME con ayuno.',
+  },
+];
+
 var RELEASE_NOTES_751 = [
   {
     title: 'Push en cola de equipos',
@@ -1107,9 +1130,10 @@ var RELEASE_NOTES_750 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_751;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_752;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.2': RELEASE_NOTES_752,
   '7.5.1': RELEASE_NOTES_751,
   '7.5.0': RELEASE_NOTES_750,
   '7.4.1': RELEASE_NOTES_741,

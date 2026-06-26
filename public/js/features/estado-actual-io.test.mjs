@@ -93,6 +93,8 @@ test('diuresisValueFromParts — primer bloque diuresis', () => {
 test('normalizeEvacAbbrev y soporte desde SAT', () => {
   assert.equal(normalizeEvacAbbrev('NO REPORTADAS'), 'NC');
   assert.equal(soporteFromSatTail('AL AIRE AMBIENTE'), 'Aire ambiente');
+  assert.equal(soporteFromSatTail('CON TRAQUEOSTOMÍA'), 'Traqueostomía');
+  assert.equal(soporteFromSatTail('TQT'), 'Traqueostomía');
   const sat = parseSatLineVariants('SAT: 97% AL AIRE AMBIENTE');
   assert.equal(sat && sat.value, 97);
   assert.equal(sat && sat.soporteHint, 'Aire ambiente');

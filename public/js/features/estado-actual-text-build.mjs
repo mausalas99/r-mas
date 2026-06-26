@@ -5,13 +5,78 @@ import { resolveDietWeightKg, computeDietKcalTotal, isDietaSuplemento } from './
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
-import { isTempFebrile, isHemodynamicallyUnstable } from './estado-actual-ranges.mjs';
+import { isTempFebrile, isHemodynamicallyUnstable, isTempFeverPeak } from './estado-actual-ranges.mjs';
+import {
+  gluPointMs,
+  vitalAlteredTimeForDisplay,
+  formatEaVitalPointShorthand,
+} from './estado-actual-registro-defaults.mjs';
+
+/** Máximo de antigüedad del pico febril para documentarlo en SOAP. */
+export const TEMP_PICO_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
 
 /**
  * @param {unknown} v
  */
 export function num(v) {
   return v !== '' && v != null ? String(v) : '___';
+}
+
+/**
+ * @param {Record<string, string>} snapAlt
+ * @param {{ recordedAt?: string, time?: string } | null | undefined} tempPeakAt
+ */
+function resolveTempPeakAtLabel(snapAlt, tempPeakAt) {
+  if (tempPeakAt && tempPeakAt.recordedAt) {
+    var timeHm =
+      tempPeakAt.time != null && String(tempPeakAt.time).trim()
+        ? String(tempPeakAt.time)
+        : snapAlt.tempPeak || '';
+    return formatEaVitalPointShorthand(tempPeakAt.recordedAt, timeHm);
+  }
+  return vitalAlteredTimeForDisplay(snapAlt.tempPeak);
+}
+
+/**
+ * @param {unknown} tempPeak
+ * @param {unknown} tempActual
+ * @param {{ recordedAt?: string, time?: string } | null | undefined} tempPeakAt
+ * @param {Date} [now]
+ */
+export function shouldDocumentTempPeak(tempPeak, tempActual, tempPeakAt, now) {
+  if (tempPeak == null || tempPeak === '') return false;
+  if (String(tempPeak) === String(tempActual)) return false;
+  if (!isTempFeverPeak(tempPeak)) return false;
+  if (!tempPeakAt || !tempPeakAt.recordedAt) return true;
+  var peakMs = gluPointMs(
+    String(tempPeakAt.recordedAt),
+    tempPeakAt.time != null ? String(tempPeakAt.time) : ''
+  );
+  if (!peakMs) return true;
+  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
+  return ref.getTime() - peakMs <= TEMP_PICO_MAX_AGE_MS;
+}
+
+/**
+ * @param {Record<string, unknown>} v
+ * @param {Record<string, string>} snapAlt
+ * @param {{ recordedAt?: string, time?: string } | null | undefined} [tempPeakAt]
+ * @param {Date} [now]
+ */
+export function buildHiTempClause(v, snapAlt, tempPeakAt, now) {
+  var tempActual = v.temp;
+  var tempPeak = v.tempPeak;
+  var hiTemp = 'TEMPERATURA ' + num(tempActual) + ' °C';
+  if (shouldDocumentTempPeak(tempPeak, tempActual, tempPeakAt, now)) {
+    hiTemp += ' (PICO ' + num(tempPeak) + ' °C';
+    var peakLabel = resolveTempPeakAtLabel(snapAlt, tempPeakAt);
+    if (peakLabel) hiTemp += ' @ ' + peakLabel;
+    hiTemp += ')';
+  } else {
+    var curTime = vitalAlteredTimeForDisplay(snapAlt.temp);
+    if (curTime) hiTemp += ' @ ' + curTime;
+  }
+  return hiTemp;
 }
 
 /**
@@ -46,6 +111,7 @@ const SOPORTE_MAP = {
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
   'Alto flujo': 'POR ALTO FLUJO',
   'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+  Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
 
 /**
@@ -54,24 +120,6 @@ const SOPORTE_MAP = {
 export function resolveSoporteClause(ec) {
   var soporteKey = ec.soporte != null ? String(ec.soporte) : '';
   return SOPORTE_MAP[soporteKey] || 'AL AIRE AMBIENTE';
-}
-
-/**
- * @param {Record<string, unknown>} v
- * @param {Record<string, string>} snapAlt
- */
-export function buildHiTempClause(v, snapAlt) {
-  var tempActual = v.temp;
-  var tempPeak = v.tempPeak;
-  var hiTemp = 'TEMPERATURA ' + num(tempActual) + ' °C';
-  if (tempPeak != null && tempPeak !== '' && String(tempPeak) !== String(tempActual)) {
-    hiTemp += ' (PICO ' + num(tempPeak) + ' °C';
-    if (snapAlt.tempPeak) hiTemp += ' @ ' + snapAlt.tempPeak;
-    hiTemp += ')';
-  } else if (snapAlt.temp) {
-    hiTemp += ' @ ' + snapAlt.temp;
-  }
-  return hiTemp;
 }
 
 /**

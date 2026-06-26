@@ -505,17 +505,36 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 @media (min-width: 780px) {
   .ea-snapshot-strip-body {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
   }
 }
 
+.ea-snapshot-zone--vitals {
+  max-width: 13rem;
+  padding: 8px 10px;
+}
+
+.ea-snapshot-zone--vitals > .ea-snapshot-vitals {
+  flex: 0 1 auto;
+}
+
 .ea-snapshot-zone {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 100%;
   padding: 10px 12px;
   border: 1px solid var(--divider);
   border-radius: var(--radius-sm);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+.ea-snapshot-zone > .ea-snapshot-vitals,
+.ea-snapshot-zone > .ea-snapshot-glu,
+.ea-snapshot-zone > .ea-snapshot-io {
+  flex: 1;
+  min-height: 0;
 }
 
 .ea-snapshot-zone-title {
@@ -527,27 +546,90 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-snapshot-vitals {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.ea-snapshot-item {
-  display: inline-flex;
-  align-items: baseline;
+  flex-direction: column;
   gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 65%, var(--surface));
+}
+
+.ea-snapshot-row {
+  display: grid;
+  grid-template-columns: 2.35rem auto auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 50%, var(--surface));
   font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.25;
 }
 
-.ea-snapshot-item--altered {
-  background: color-mix(in oklab, var(--todo-prio-media) 22%, var(--surface));
+.ea-snapshot-row-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.ea-snapshot-item--altered .ea-snapshot-value {
+.ea-snapshot-row-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  justify-self: start;
+}
+
+.ea-snapshot-row-value {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ea-snapshot-row-unit {
+  font-size: calc(10px * var(--density-font, 1));
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ea-snapshot-row-stamp {
+  font-size: calc(10px * var(--density-font, 1));
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-align: right;
+  justify-self: end;
+}
+
+.ea-snapshot-row-stamp--empty {
+  visibility: hidden;
+}
+
+.ea-snapshot-row--interactive {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.ea-snapshot-row--interactive:hover {
+  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 72%, var(--surface));
+}
+
+.ea-snapshot-row--interactive:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.ea-snapshot-row--altered {
+  background: color-mix(in oklab, var(--todo-prio-media) 18%, var(--surface));
+}
+
+.ea-snapshot-row--altered .ea-snapshot-row-value {
   color: var(--todo-prio-media);
   font-weight: 700;
+}
+
+.ea-snapshot-row--altered .ea-snapshot-row-stamp {
+  color: color-mix(in oklab, var(--todo-prio-media) 75%, var(--text-muted));
 }
 
 .ea-snapshot-label {
@@ -555,26 +637,16 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   font-weight: 600;
 }
 
-.ea-snapshot-value {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.ea-snapshot-unit {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
 .ea-snapshot-altered-at {
   font-size: 10px;
   color: var(--todo-prio-media);
-  margin-left: 2px;
 }
 
 .ea-snapshot-glu {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-content: flex-start;
 }
 
 .ea-snapshot-glu-chip {
@@ -598,6 +670,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 8px;
+  align-content: start;
 }
 
 .ea-snapshot-io > div {
@@ -1165,6 +1238,172 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-charts-backdrop.open {
   display: flex;
+}
+
+.ea-vital-history-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: var(--scrim-bg);
+  align-items: center;
+  justify-content: center;
+}
+
+.ea-vital-history-backdrop.open {
+  display: flex;
+}
+
+.ea-vital-history-modal {
+  width: min(92vw, 400px);
+  max-height: min(72dvh, calc(var(--app-height) - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-md, 0 16px 48px rgba(0, 0, 0, 0.35));
+}
+
+.ea-vital-history-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.ea-vital-history-modal-head h3 {
+  margin: 0;
+  font-size: calc(15px * var(--density-font, 1));
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.ea-vital-history-modal-close {
+  flex-shrink: 0;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.ea-vital-history-modal-close:hover {
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  color: var(--text);
+}
+
+.ea-vital-history-modal-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.ea-vital-history-modal-body {
+  padding: 8px 12px 12px;
+  overflow: auto;
+}
+
+.ea-vital-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ea-vital-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.ea-vital-history-row--latest {
+  border-color: color-mix(in oklab, var(--color-accent) 32%, var(--divider));
+  background: color-mix(in oklab, var(--lab-chip-bg, var(--color-accent-soft)) 42%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.ea-vital-history-row--altered {
+  border-color: color-mix(in oklab, var(--todo-prio-media) 28%, var(--divider));
+}
+
+.ea-vital-history-row--altered .ea-vital-history-value {
+  color: var(--todo-prio-media);
+}
+
+.ea-vital-history-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ea-vital-history-value {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(18px * var(--density-font, 1));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.ea-vital-history-unit {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ea-vital-history-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.ea-vital-history-stamp {
+  font-size: calc(11px * var(--density-font, 1));
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ea-vital-history-badge {
+  font-size: calc(9px * var(--density-font, 1));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-accent) 16%, var(--surface));
+  color: var(--color-accent);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 28%, transparent);
+}
+
+.ea-vital-history-row--altered .ea-vital-history-stamp {
+  color: color-mix(in oklab, var(--todo-prio-media) 70%, var(--text-muted));
 }
 
 .ea-charts-modal {

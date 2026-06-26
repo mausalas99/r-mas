@@ -249,6 +249,17 @@ test('applyDietProposalFromRecetaBlock copia dieta desde block.dietas', () => {
   assert.equal(ec.proteinG, '60');
 });
 
+test('applyDietProposalFromRecetaBlock ayuno omite kcal y proteína', () => {
+  const m = emptyMonitoreo();
+  const block = {
+    dietas: [{ descripcionRaw: 'AYUNO', kcal: null, proteinG: null }],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.pendienteReceta.dieta, 'AYUNO');
+  assert.equal(m.pendienteReceta.kcal, '');
+  assert.equal(m.pendienteReceta.proteinG, '');
+});
+
 test('applyDietProposalFromRecetaBlock suplemento omite kcal y proteína', () => {
   const m = emptyMonitoreo();
   const block = {

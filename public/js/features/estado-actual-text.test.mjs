@@ -41,6 +41,19 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.match(text, /RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE/);
 });
 
+test('buildEstadoActualText incluye traqueostomía en línea V', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.soporte = 'Traqueostomía';
+  m.historial.push({
+    id: 'tqt',
+    recordedAt: '2026-05-26T08:00:00.000Z',
+    vitals: { fr: 16, sat: 96 },
+    io: {},
+  });
+  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
+  assert.match(text, /SATO2 96% CON TRAQUEOSTOMÍA/);
+});
+
 test('buildEstadoActualText documenta rescates aplicados', () => {
   const m = emptyMonitoreo();
   m.historial.push({
@@ -124,9 +137,46 @@ test('buildEstadoActualText SOME *SUPLEMENTO sin cláusula calórica', () => {
   assert.doesNotMatch(nmLine, /CALCULADA A/);
 });
 
-test('buildHiTempClause documenta pico en paréntesis, no duplica TEMPERATURA', () => {
-  const clause = buildHiTempClause({ temp: 36, tempPeak: 37.2 }, { tempPeak: '08:00' });
-  assert.equal(clause, 'TEMPERATURA 36 °C (PICO 37.2 °C @ 08:00)');
+test('buildHiTempClause documenta pico febril (≥38 °C) con fecha corta', () => {
+  const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  const clause = buildHiTempClause(
+    { temp: 36, tempPeak: 38.2 },
+    { tempPeak: '08:00' },
+    { recordedAt, time: '08:00' }
+  );
+  assert.equal(clause, 'TEMPERATURA 36 °C (PICO 38.2 °C @ 22/06 08:00)');
+});
+
+test('buildHiTempClause omite pico < 38 °C aunque difiera de la actual', () => {
+  const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  const clause = buildHiTempClause(
+    { temp: 36, tempPeak: 37.2 },
+    { tempPeak: '08:00' },
+    { recordedAt, time: '08:00' }
+  );
+  assert.equal(clause, 'TEMPERATURA 36 °C');
+});
+
+test('buildHiTempClause pico en cierre de turno usa fecha corta 00:00', () => {
+  const recordedAt = new Date(2026, 5, 26, 0, 0, 0).toISOString();
+  const clause = buildHiTempClause(
+    { temp: 36, tempPeak: 38.4 },
+    { tempPeak: '00:00' },
+    { recordedAt, time: '00:00' }
+  );
+  assert.equal(clause, 'TEMPERATURA 36 °C (PICO 38.4 °C @ 26/06 00:00)');
+});
+
+test('buildHiTempClause omite pico febril mayor a 5 días', () => {
+  const peakAt = new Date(2026, 5, 20, 8, 0, 0);
+  const now = new Date(2026, 5, 26, 12, 0, 0);
+  const clause = buildHiTempClause(
+    { temp: 36, tempPeak: 38.5 },
+    { tempPeak: '08:00' },
+    { recordedAt: peakAt.toISOString(), time: '08:00' },
+    now
+  );
+  assert.equal(clause, 'TEMPERATURA 36 °C');
 });
 
 test('buildEstadoActualText bomba de insulina muestra glucosa sin sufijo mg/dL', () => {
@@ -220,19 +270,47 @@ test('buildEstadoActualText marca AFEBRIL con pico febril documentado en parént
       io: {},
     },
   ];
-  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
+  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {
+    now: new Date(2026, 5, 22, 18, 0, 0),
+  });
   const hiLine = text.split('\n').find((line) => line.startsWith('HI:'));
   assert.match(hiLine, /^HI: AFEBRIL,/);
   assert.match(hiLine, /PICO 38\.2 °C/);
 });
 
-test('buildEstadoActualText temperatura con pico en turno', () => {
+test('buildEstadoActualText temperatura con pico febril reciente en turno', () => {
   const m = emptyMonitoreo();
+  const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
   m.historial = [
     {
       id: '1',
-      recordedAt: '2026-06-22T06:00:00.000Z',
+      recordedAt,
       vitals: { temp: 36, fr: 15, sat: 97, tas: 120, tad: 60, fc: 98 },
+      vitalSeries: {
+        temp: [
+          { value: 38.2, time: '08:00' },
+          { value: 36, time: '16:00' },
+        ],
+      },
+      glucometrias: [],
+      io: {},
+    },
+  ];
+  const snap = deriveSnapshot(m);
+  const text = buildEstadoActualText(m.estadoClinico, snap, {}, { now: new Date(2026, 5, 22, 18, 0, 0) });
+  const hiLine = text.split('\n').find((line) => line.startsWith('HI:'));
+  assert.match(hiLine, /TEMPERATURA 36 °C \(PICO 38\.2 °C @ 22\/06 08:00\)/);
+  assert.doesNotMatch(hiLine, /TEMPERATURA.*TEMPERATURA/);
+});
+
+test('buildEstadoActualText omite pico subfebril en turno', () => {
+  const m = emptyMonitoreo();
+  const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  m.historial = [
+    {
+      id: '1',
+      recordedAt,
+      vitals: { temp: 36 },
       vitalSeries: {
         temp: [
           { value: 37.2, time: '08:00' },
@@ -243,9 +321,8 @@ test('buildEstadoActualText temperatura con pico en turno', () => {
       io: {},
     },
   ];
-  const snap = deriveSnapshot(m);
-  const text = buildEstadoActualText(m.estadoClinico, snap, {}, {});
+  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
   const hiLine = text.split('\n').find((line) => line.startsWith('HI:'));
-  assert.match(hiLine, /TEMPERATURA 36 °C \(PICO 37\.2 °C @ 08:00\)/);
-  assert.doesNotMatch(hiLine, /TEMPERATURA.*TEMPERATURA/);
+  assert.match(hiLine, /TEMPERATURA 36 °C/);
+  assert.doesNotMatch(hiLine, /PICO/);
 });

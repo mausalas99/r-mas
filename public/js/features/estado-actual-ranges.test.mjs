@@ -8,6 +8,8 @@ import {
   isBpHypotensive,
   isHemodynamicallyUnstable,
   isTempFebrile,
+  isTempFeverPeak,
+  TEMP_FEVER_PICO_MIN,
 } from './estado-actual-ranges.mjs';
 
 test('isVitalAltered flags out-of-range FR', () => {
@@ -30,6 +32,11 @@ test('buildAlteredAtDefaults only includes altered keys', () => {
   const altered = buildAlteredAtDefaults({ fr: 28, fc: 80 }, '11:40');
   assert.equal(altered.fr, '11:40');
   assert.equal(altered.fc, undefined);
+});
+
+test('buildAlteredAtDefaults omits turn-close 00:00 placeholder', () => {
+  const altered = buildAlteredAtDefaults({ temp: 38.2 }, '00:00');
+  assert.deepEqual(altered, {});
 });
 
 test('isGluAltered flags hypo and hyper', () => {
@@ -59,4 +66,12 @@ test('isHemodynamicallyUnstable uses hypotension, FC altered, or vasopressors', 
 test('isTempFebrile flags fever above upper range', () => {
   assert.equal(isTempFebrile(38), true);
   assert.equal(isTempFebrile(37.2), false);
+});
+
+test('isTempFeverPeak — PICO solo ≥ 38 °C', () => {
+  assert.equal(isTempFeverPeak(38), true);
+  assert.equal(isTempFeverPeak(38.2), true);
+  assert.equal(isTempFeverPeak(37.9), false);
+  assert.equal(isTempFeverPeak(37.2), false);
+  assert.equal(TEMP_FEVER_PICO_MIN, 38);
 });

@@ -296,6 +296,7 @@ var SOAP_SOPORTE_MAP = {
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
   'Alto flujo': 'POR ALTO FLUJO',
   'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+  Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
 
 function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {

@@ -11,6 +11,8 @@ import {
   deriveGluFromHistorial_,
   deriveIoFromHistorial_,
   deriveVitalSeriesFromHistorial_,
+  deriveTempPeakAtFromHistorial_,
+  deriveBpPairsFromHistorial_,
 } from './estado-actual-data-snapshot.mjs';
 import { VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
 import { vitalSeriesToLegacyFields } from './estado-actual-vital-series.mjs';
@@ -214,6 +216,8 @@ export function deriveSnapshot(monitoreoLike) {
   snap.bombaInsulina = gluBlock.bombaInsulina;
   snap.io = deriveIoFromHistorial_(sortedAsc);
   snap.vitalSeries = deriveVitalSeriesFromHistorial_(sortedAsc);
+  snap.tempPeakAt = deriveTempPeakAtFromHistorial_(sortedAsc);
+  snap.bpPairs = deriveBpPairsFromHistorial_(sortedAsc);
   overlayVitalsFromSeries(snap);
   return snap;
 }
@@ -342,6 +346,10 @@ export function normalizeDietaTypeLabel(dietaText) {
     .replace(/^DIETA\s+/, '');
 }
 
+export function isDietaAyuno(dietaText) {
+  return normalizeDietaTypeLabel(dietaText) === 'AYUNO';
+}
+
 /**
  * Dieta SOME tipo suplemento: sin requerimiento calórico en EA.
  * @param {unknown} dietaText
@@ -373,7 +381,7 @@ export function clearDietCaloricFields(record) {
  */
 export function applyDietaSuplementoPolicy(estadoClinico, pendienteReceta) {
   if (!estadoClinico || typeof estadoClinico !== 'object') return false;
-  if (!isDietaSuplemento(estadoClinico.dieta)) return false;
+  if (!isDietaSuplemento(estadoClinico.dieta) && !isDietaAyuno(estadoClinico.dieta)) return false;
   clearDietCaloricFields(estadoClinico);
   if (pendienteReceta && typeof pendienteReceta === 'object') {
     clearDietCaloricFields(pendienteReceta);

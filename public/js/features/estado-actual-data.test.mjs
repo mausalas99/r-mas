@@ -260,6 +260,18 @@ test('isDietaSuplemento reconoce suplemento sin calorías', () => {
   assert.equal(isDietaSuplemento(''), false);
 });
 
+test('applyDietaSuplementoPolicy limpia calóricos en ayuno', () => {
+  var ec = { dieta: 'AYUNO', kcal: '2000', proteinG: '70', kcalKg: '25' };
+  var pend = { kcal: '2000', proteinG: '70', kcalKg: '25' };
+  assert.equal(applyDietaSuplementoPolicy(ec, pend), true);
+  assert.equal(ec.kcal, '');
+  assert.equal(ec.proteinG, '');
+  assert.equal(ec.kcalKg, '');
+  assert.equal(pend.kcal, '');
+  assert.equal(pend.proteinG, '');
+  assert.equal(pend.kcalKg, '');
+});
+
 test('applyDietaSuplementoPolicy limpia calóricos en estado y propuesta', () => {
   const ec = { dieta: 'SUPLEMENTO', kcalKg: '25', kcal: '1750', proteinG: '70' };
   const pend = { dieta: 'SUPLEMENTO', kcal: '2000', proteinG: '60' };
@@ -328,7 +340,7 @@ test('balanceTurno ignora turno con egresos NC', () => {
   assert.equal(balanceTurno(monitoreo), 150);
 });
 
-test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', () => {
+test('deriveSnapshot — vitalSeries across rows keeps latest reading for SOAP', () => {
   /** @type {any} */
   var monitoreo = {
     estadoClinico: {},
@@ -338,6 +350,43 @@ test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', 
       {
         id: '1',
         recordedAt: '2026-06-22T06:00:00.000Z',
+        vitals: { tas: 100, tad: 60, fc: 80 },
+        glucometrias: [],
+        io: {},
+      },
+      {
+        id: '2',
+        recordedAt: '2026-06-22T14:00:00.000Z',
+        vitals: {},
+        vitalSeries: {
+          tas: [{ value: 130, time: '14:00' }],
+          tad: [{ value: 75, time: '14:00' }],
+          fc: [{ value: 95, time: '14:00' }],
+        },
+        glucometrias: [],
+        io: {},
+      },
+    ],
+    textoGuardado: { text: '', savedAt: null },
+  };
+  var snap = deriveSnapshot(monitoreo);
+  assert.equal(snap.vitals.tas, 130);
+  assert.equal(snap.vitals.tad, 75);
+  assert.equal(snap.vitals.fc, 95);
+  assert.equal(snap.alteredAt.tas, '14:00');
+});
+
+test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', () => {
+  const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  /** @type {any} */
+  var monitoreo = {
+    estadoClinico: {},
+    confirmado: {},
+    pendienteReceta: {},
+    historial: [
+      {
+        id: '1',
+        recordedAt,
         vitals: { temp: 36 },
         vitalSeries: {
           temp: [
@@ -356,4 +405,8 @@ test('deriveSnapshot overlay vitals from vitalSeries (SOAP alineado al strip)', 
   assert.equal(snap.vitals.tempPeak, 37.2);
   assert.equal(snap.alteredAt.temp, '14:00');
   assert.equal(snap.alteredAt.tempPeak, '08:00');
+  assert.deepEqual(snap.tempPeakAt, {
+    recordedAt,
+    time: '08:00',
+  });
 });

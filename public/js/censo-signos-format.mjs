@@ -15,6 +15,7 @@ const SOPORTE_LABEL = {
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
   'Alto flujo': 'POR ALTO FLUJO',
   'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+  Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
 
 /**

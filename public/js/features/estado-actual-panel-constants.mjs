@@ -24,4 +24,10 @@ export const VITAL_UNITS = {
 };
 
 /** @type {readonly string[]} */
-export const SOPORTE_OPTIONS = ['Aire ambiente', 'Puntillas nasales', 'Alto flujo', 'VM no invasiva'];
+export const SOPORTE_OPTIONS = [
+  'Aire ambiente',
+  'Puntillas nasales',
+  'Alto flujo',
+  'VM no invasiva',
+  'Traqueostomía',
+];

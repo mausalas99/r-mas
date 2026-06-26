@@ -5,6 +5,7 @@
 /** @type {readonly [RegExp, string][]} */
 const SOPORTE_FROM_TAIL = [
   [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, 'VM no invasiva'],
+  [/TRAQUEOSTOM[ÍI]A|\bTQT\b/i, 'Traqueostomía'],
   [/ALTO\s+FLUJO|OAF\b/i, 'Alto flujo'],
   [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, 'Puntillas nasales'],
   [/AIRE\s+AMBIENTE|\bAA\b/i, 'Aire ambiente'],

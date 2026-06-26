@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-06-26 | Release 7.5.2 prepare | `docs/RELEASE_NOTES_7.5.2.txt`, `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`, `release-notes-highlights.mjs` | EA signos en filas + modal historial, SOAP última lectura/PICO, SOME ayuno, traqueostomía; bump 7.5.2; metrics:check OK (no Tier-1 ratchet vs main). |
 | 2026-06-25 | VibeDrift phases 0–5 | `.vibedriftignore`, `@vibedrift/cli`, `package.json`, `.github/workflows/ci.yml`, `CONTRIBUTING.md`, `.agents/skills/vibedrift/` | Scan hygiene, arch/DI/dom-escape/equipos dedup; CI `vibedrift:check` floor 55; optional pre-push hook documented. |
 | 2026-06-24 | LAN ⇄ + Ajustes panel redesign | `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`, `panel-host-pin.mjs` | Hero status/PIN, unified stack rows, Ajustes ghost buttons; spec `2026-06-24-lan-settings-panel-redesign-design.md`. |
 | 2026-06-23 | Equipos cloud (CF Worker) | `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `equipos-qr-panel.mjs`, `equipos-board.mjs` | Standalone queue on Worker+D1+R2; desktop cloud config + admin API; mobile cloud mode via `__EQUIPOS_API_MODE__`. |

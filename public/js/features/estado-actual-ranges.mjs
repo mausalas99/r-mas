@@ -9,6 +9,17 @@ export const RANGES = {
 
 export const GLU_RANGE = { min: 70, max: 180 };
 
+/** Umbral de fiebre para documentar PICO en SOAP (°C, inclusive). */
+export const TEMP_FEVER_PICO_MIN = 38;
+
+/** @param {unknown} raw */
+export function isTempFeverPeak(raw) {
+  if (raw == null || String(raw).trim() === '') return false;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return false;
+  return n >= TEMP_FEVER_PICO_MIN;
+}
+
 /** @param {unknown} raw */
 export function isGluAltered(raw) {
   if (raw == null || String(raw).trim() === '') return false;
@@ -71,10 +82,16 @@ export function isHemodynamicallyUnstable(vitals, vasopField) {
   return false;
 }
 
+import { isTurnCloseHm } from './estado-actual-registro-defaults.mjs';
+
 export function buildAlteredAtDefaults(vitals, defaultTime) {
   const out = {};
+  const dt =
+    defaultTime != null && String(defaultTime).trim() && !isTurnCloseHm(defaultTime)
+      ? String(defaultTime).trim()
+      : '';
   Object.keys(RANGES).forEach((k) => {
-    if (isVitalAltered(k, vitals[k])) out[k] = defaultTime;
+    if (isVitalAltered(k, vitals[k]) && dt) out[k] = dt;
   });
   return out;
 }

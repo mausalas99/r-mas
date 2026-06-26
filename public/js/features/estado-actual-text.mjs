@@ -20,7 +20,7 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   options = options || {};
   var ctx = normalizeEaTextInputs(estadoClinico, snapshot, balances);
   var soporte = resolveSoporteClause(ctx.ec);
-  var hiTemp = buildHiTempClause(ctx.v, ctx.snapAlt);
+  var hiTemp = buildHiTempClause(ctx.v, ctx.snapAlt, ctx.tempPeakAt, options.now);
   var kcalDisplay = resolveKcalDisplay(ctx.ec, options);
   var vasopList = medsListForSoap(ctx.ec.vasop, ', ');
   var vasopClause = vasopList ? 'VASOPRESORES: ' + vasopList : 'SIN VASOPRESORES';

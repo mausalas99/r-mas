@@ -32,6 +32,12 @@ function snapshotBomba(snapshot) {
     : [];
 }
 
+function snapshotTempPeakAt(snapshot) {
+  return snapshot && typeof snapshot === 'object' && snapshot.tempPeakAt && typeof snapshot.tempPeakAt === 'object'
+    ? /** @type {{ recordedAt?: string, time?: string }} */ (snapshot.tempPeakAt)
+    : null;
+}
+
 /**
  * @param {Record<string, unknown> | null | undefined} estadoClinico
  * @param {unknown} snapshot
@@ -45,7 +51,8 @@ export function normalizeEaTextInputs(estadoClinico, snapshot, balances) {
   const btTurno =
     balances && typeof balances === 'object' ? /** @type {{ balanceTurno?: unknown }} */ (balances).balanceTurno : undefined;
   const snapAlt = snapshotAlteredAt(snapshot);
+  const tempPeakAt = snapshotTempPeakAt(snapshot);
   const glSrc = snapshotGlu(snapshot);
   const bombaSrc = snapshotBomba(snapshot);
-  return { ec, v, snapIo, btTurno, snapAlt, glSrc, bombaSrc };
+  return { ec, v, snapIo, btTurno, snapAlt, tempPeakAt, glSrc, bombaSrc };
 }

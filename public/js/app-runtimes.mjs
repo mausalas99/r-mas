@@ -91,6 +91,10 @@ import {
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
 } from './features/estado-actual-registro-modal.mjs';
+import {
+  registerEaVitalHistoryModalRuntime,
+  wireEaVitalHistoryModalDismiss,
+} from './features/estado-actual-vital-history-modal.mjs';
 import { getDefaultRegistroRecordedAt } from './features/estado-actual-registro-defaults.mjs';
 import {
   registerProcedureAgendaRuntime,
@@ -444,6 +448,7 @@ export async function registerAllFeatureRuntimes() {
   registerDriveImportRuntime(ctx);
   registerEstadoActualPasteModalRuntime(ctx);
   registerEstadoActualRegistroModalRuntime(ctx);
+  registerEaVitalHistoryModalRuntime(ctx);
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
@@ -455,5 +460,6 @@ export function runInitialFeatureBoot() {
   wireEstadoActualPasteModal();
   wireDriveImportModal();
   wireEaModalDismiss();
+  wireEaVitalHistoryModalDismiss();
   syncCensoExportButtonVisibility();
 }

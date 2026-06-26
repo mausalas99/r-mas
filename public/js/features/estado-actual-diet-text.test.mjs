@@ -11,6 +11,14 @@ test('formatNmDietClause dieta calórica con proteína (EA)', () => {
   assert.match(clause, /^DIETA NORMAL PICADA CALCULADA A 25 KCAL\/KG \(1750 KCAL\) \+ 70 GR PROTEINA$/);
 });
 
+test('formatNmDietClause ayuno sin calorías', () => {
+  assert.equal(formatNmDietClause({ dieta: 'AYUNO' }, '2000'), 'DIETA AYUNO');
+  assert.equal(
+    formatNmDietClause({ dieta: 'AYUNO', kcalKg: '25', proteinG: '60' }, '1750'),
+    'DIETA AYUNO'
+  );
+});
+
 test('formatNmDietClause suplemento sin calorías', () => {
   assert.equal(formatNmDietClause({ dieta: 'SUPLEMENTO' }, '2000'), 'DIETA SUPLEMENTO');
   assert.equal(formatNmDietClause({ dieta: '*SUPLEMENTO' }, '2000'), 'DIETA SUPLEMENTO');

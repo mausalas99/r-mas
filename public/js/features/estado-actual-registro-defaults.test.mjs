@@ -7,9 +7,32 @@ import {
   gluPointMs,
   sortGlucometriasChronologically,
   STANDARD_GLUCOMETRIA_TIMES,
+  vitalAlteredTimeForDisplay,
+  isTurnCloseHm,
+  formatEaVitalPointShorthand,
+  formatEaVitalStampForSnapshot,
 } from './estado-actual-registro-defaults.mjs';
 
 describe('estado-actual-registro-defaults', () => {
+  it('vitalAlteredTimeForDisplay omits turn-close 00:00', () => {
+    assert.equal(vitalAlteredTimeForDisplay('00:00'), '');
+    assert.equal(vitalAlteredTimeForDisplay('08:15'), '08:15');
+    assert.equal(isTurnCloseHm('00:00'), true);
+  });
+
+  it('formatEaVitalStampForSnapshot — solo fecha en cierre de turno', () => {
+    var cierre = new Date(2026, 5, 26, 0, 0, 0).toISOString();
+    assert.equal(formatEaVitalStampForSnapshot(cierre, '00:00'), '26/06');
+    assert.equal(formatEaVitalStampForSnapshot(cierre, ''), '26/06');
+  });
+
+  it('formatEaVitalPointShorthand — dd/mm HH:mm local', () => {
+    var recordedAt = new Date(2026, 4, 25, 12, 39, 0).toISOString();
+    assert.equal(formatEaVitalPointShorthand(recordedAt, '08:15'), '25/05 08:15');
+    var cierre = new Date(2026, 5, 26, 0, 0, 0).toISOString();
+    assert.equal(formatEaVitalPointShorthand(cierre, '00:00'), '26/06 00:00');
+  });
+
   it('STANDARD_GLUCOMETRIA_TIMES are 08:00, 16:00 (prev day) and 00:00 (current day)', () => {
     assert.deepEqual(STANDARD_GLUCOMETRIA_TIMES, ['08:00', '16:00', '00:00']);
   });

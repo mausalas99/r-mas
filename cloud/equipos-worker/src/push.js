@@ -98,7 +98,7 @@ export async function clearPushSubsForWaiter(db, input) {
 
 /**
  * @param {import('@cloudflare/workers-types').D1Database} db
- * @param {'device_available'|'lumify_return'|'malfunction'|'missing_material'} kind
+ * @param {'device_available'|'lumify_return'|'malfunction'|'missing_material'|'waitlist_next'} kind
  * @param {object} ctx
  * @param {string} vapidPrivateJwk
  */
@@ -137,6 +137,49 @@ export async function notifyEquiposWaitlist(db, kind, ctx, vapidPrivateJwk) {
   }
 
   return { sent, pruned };
+}
+
+/**
+ * @param {import('@cloudflare/workers-types').D1Database} db
+ * @param {string} deviceType
+ * @param {string} vapidPrivateJwk
+ */
+export async function notifyEquiposWaitlistHead(db, deviceType, vapidPrivateJwk) {
+  if (!vapidPrivateJwk) return { sent: 0, pruned: 0 };
+  const waitlist = await listWaitlistRows(db, deviceType);
+  if (!waitlist.length) return { sent: 0, pruned: 0 };
+
+  const row = waitlist[0];
+  const payload = buildEquiposPushPayload('waitlist_next', { deviceType, isNext: true });
+  let sent = 0;
+  let pruned = 0;
+  const subs = await listPushSubsForWaiter(db, deviceType, row.reporter_name, row.rotation);
+  for (const sub of subs) {
+    try {
+      const result = await sendEquiposWebPush(sub, payload, vapidPrivateJwk);
+      if (result.gone) {
+        await deletePushSub(db, sub.id);
+        pruned += 1;
+      } else if (result.ok) {
+        sent += 1;
+      }
+    } catch (_e) {
+      void _e;
+    }
+  }
+  return { sent, pruned };
+}
+
+/**
+ * Fire-and-forget push dispatch (never blocks API response).
+ * @param {import('@cloudflare/workers-types').ExecutionContext} [execCtx]
+ */
+export function scheduleEquiposWaitlistHeadPush(db, execCtx, deviceType, vapidPrivateJwk) {
+  const task = notifyEquiposWaitlistHead(db, deviceType, vapidPrivateJwk).catch((e) => {
+    console.error('[equipos-push]', e?.message || e);
+  });
+  if (execCtx?.waitUntil) execCtx.waitUntil(task);
+  else void task;
 }
 
 /**

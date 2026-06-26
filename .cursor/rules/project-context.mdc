@@ -131,6 +131,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-26** `release-7.5.2`: EA signos en filas + modal historial, SOAP/copiar última lectura, PICO febril ≤5 días, SOME ayuno + traqueostomía; `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`.
 - **2026-06-25** `release-7.5.1`: push equipos LAN/cloud, eTFG desde expediente, labs masivos ventana 2 h, UI Rams, SQLCipher v20; `lib/equipos/equipos-push-*`, `labs-egfr.mjs`, `public/tokens.css`.
 - **2026-06-25** `vibedrift`: phases 0–5 — scan hygiene, arch/DI fixes, `dom-escape`, equipos shared, CI gate `--fail-on-score 45`; `@vibedrift/cli`, `vibedrift:scan`/`vibedrift:check`.
 - **2026-06-24** `ui-lan-settings`: ⇄ hero + unified stack rows; Ajustes panel ghost rows — `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`.

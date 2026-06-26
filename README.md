@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.1](https://github.com/mausalas99/r-mas/releases/tag/v7.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.2](https://github.com/mausalas99/r-mas/releases/tag/v7.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.2 (Estado Actual signos, SOME ayuno y traqueostomía)
+
+- **Signos vitales** — Filas compactas en Estado Actual; toca una fila para ver historial del turno en modal.
+- **SOAP / copiar** — Última lectura del turno; PICO febril (≥38 °C, ≤5 días) con fecha corta; menos ruido `@ 00:00`.
+- **SOME** — Detecta **AYUNO**; soporte **Traqueostomía** en EA y export.
+- **Sin migración** — SQLCipher sigue en v20.
+
+Notas: `docs/RELEASE_NOTES_7.5.2.txt`.
 
 ## R+ 7.5.1 (push equipos, eTFG paciente y UI Rams)
 

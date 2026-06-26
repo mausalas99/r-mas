@@ -92,11 +92,12 @@ export function deriveIoFromHistorial_(sortedAsc) {
 
 /** @param {unknown[]} sortedAsc */
 export function deriveVitalSeriesFromHistorial_(sortedAsc) {
-  /** @type {Record<string, Array<{ value: number, time?: string }>>} */
+  /** @type {Record<string, Array<{ value: number, time?: string, recordedAt?: string }>>} */
   var vitalSeries = {};
-  for (var si = sortedAsc.length - 1; si >= 0; si--) {
+  for (var si = 0; si < sortedAsc.length; si++) {
     var srow = sortedAsc[si];
     if (!srow || typeof srow !== 'object') continue;
+    var recordedAt = /** @type {any} */ (srow).recordedAt != null ? String(/** @type {any} */ (srow).recordedAt) : '';
     var fromRow = vitalSeriesFromMedicion(srow);
     VITAL_BASE_KEYS.forEach(function (bk) {
       if (!vitalSeries[bk]) vitalSeries[bk] = [];
@@ -104,11 +105,93 @@ export function deriveVitalSeriesFromHistorial_(sortedAsc) {
       for (var ri = 0; ri < list.length; ri++) {
         var rd = list[ri];
         var dup = vitalSeries[bk].some(function (x) {
-          return x.value === rd.value && (x.time || '') === (rd.time || '');
+          return (
+            x.value === rd.value &&
+            (x.time || '') === (rd.time || '') &&
+            (x.recordedAt || '') === recordedAt
+          );
         });
-        if (!dup) vitalSeries[bk].push(rd);
+        if (!dup) vitalSeries[bk].push({ value: rd.value, time: rd.time, recordedAt: recordedAt });
       }
     });
   }
   return vitalSeries;
+}
+
+/**
+ * @param {unknown[]} sortedAsc
+ * @param {string} vitalKey
+ * @returns {Array<{ value: number, time?: string, recordedAt: string }>}
+ */
+export function deriveVitalSeriesProvenanceFromHistorial_(sortedAsc, vitalKey) {
+  /** @type {Array<{ value: number, time?: string, recordedAt: string }>} */
+  var out = [];
+  for (var si = 0; si < sortedAsc.length; si++) {
+    var srow = sortedAsc[si];
+    if (!srow || typeof srow !== 'object') continue;
+    var recordedAt = /** @type {any} */ (srow).recordedAt != null ? String(/** @type {any} */ (srow).recordedAt) : '';
+    var fromRow = vitalSeriesFromMedicion(srow)[vitalKey] || [];
+    for (var ri = 0; ri < fromRow.length; ri++) {
+      var rd = fromRow[ri];
+      var dup = out.some(function (x) {
+        return x.value === rd.value && (x.time || '') === (rd.time || '') && x.recordedAt === recordedAt;
+      });
+      if (!dup) out.push({ value: rd.value, time: rd.time, recordedAt: recordedAt });
+    }
+  }
+  return out;
+}
+
+/** @param {unknown[]} sortedAsc */
+export function deriveTempPeakAtFromHistorial_(sortedAsc) {
+  var series = deriveVitalSeriesProvenanceFromHistorial_(sortedAsc, 'temp');
+  if (series.length < 2) return null;
+  var peak = series[series.length - 2];
+  return { recordedAt: peak.recordedAt, time: peak.time };
+}
+
+/** @param {unknown[]} sortedAsc */
+export function deriveBpPairsFromHistorial_(sortedAsc) {
+  /** @type {Array<{ tas: number | null, tad: number | null, recordedAt: string, time?: string }>} */
+  var pairs = [];
+  for (var i = 0; i < sortedAsc.length; i++) {
+    var row = sortedAsc[i];
+    if (!row || typeof row !== 'object') continue;
+    /** @type {any} */
+    var r = row;
+    var recordedAt = r.recordedAt != null ? String(r.recordedAt) : '';
+    var fromRow = vitalSeriesFromMedicion(row);
+    /** @type {Array<{ value: number, time?: string }>} */
+    var tasList = (fromRow.tas || []).slice();
+    /** @type {Array<{ value: number, time?: string }>} */
+    var tadList = (fromRow.tad || []).slice();
+    var rv = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
+    var rowAlt = r.alteredAt && typeof r.alteredAt === 'object' ? r.alteredAt : {};
+    if (!tasList.length && rv.tas != null && rv.tas !== '') {
+      tasList.push({ value: Number(rv.tas), time: rowAlt.tas });
+    }
+    if (!tadList.length && rv.tad != null && rv.tad !== '') {
+      tadList.push({ value: Number(rv.tad), time: rowAlt.tad });
+    }
+    var layers = Math.max(tasList.length, tadList.length);
+    if (!layers) continue;
+    for (var li = 0; li < layers; li++) {
+      var tasReading = tasList[li] || null;
+      var tadReading = tadList[li] || null;
+      if (!tasReading && !tadReading) continue;
+      var time =
+        tasReading && tasReading.time
+          ? String(tasReading.time)
+          : tadReading && tadReading.time
+            ? String(tadReading.time)
+            : undefined;
+      pairs.push({
+        tas: tasReading && Number.isFinite(Number(tasReading.value)) ? Number(tasReading.value) : null,
+        tad: tadReading && Number.isFinite(Number(tadReading.value)) ? Number(tadReading.value) : null,
+        recordedAt: recordedAt,
+        time: time,
+      });
+    }
+  }
+  return pairs;
 }

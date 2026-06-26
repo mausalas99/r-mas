@@ -233,8 +233,12 @@ function renderWaitlistPanel(dev) {
 
   let queueActions = '';
   if (myIndex >= 0) {
+    const canSkip = myIndex < wl.length - 1;
     queueActions = `<p class="equipos-queue-you">Tu posición: ${myIndex + 1}</p>
-      <button type="button" class="equipos-btn secondary" data-act="leave" data-dev="${dev.device_type}">Salir de cola</button>`;
+      <div class="equipos-queue-btn-row">
+        ${canSkip ? `<button type="button" class="equipos-btn secondary" data-act="skip" data-dev="${dev.device_type}">Ceder turno</button>` : ''}
+        <button type="button" class="equipos-btn secondary" data-act="leave" data-dev="${dev.device_type}">Salir de cola</button>
+      </div>`;
   } else if (!isHolder) {
     queueActions = `<button type="button" class="equipos-btn secondary" data-act="join" data-dev="${dev.device_type}">Unirse a cola</button>`;
   }
@@ -397,6 +401,17 @@ async function handleAction(btn) {
       body: JSON.stringify({ ...id, deviceType: dev }),
     });
     showToast('Saliste de la cola.');
+    await refreshBoard();
+    return;
+  }
+
+  if (act === 'skip') {
+    await equiposFetch(apiBase, token, '/waitlist/skip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...id, deviceType: dev }),
+    });
+    showToast('Cediste tu turno. Sigues en la cola.');
     await refreshBoard();
     return;
   }

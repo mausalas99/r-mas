@@ -476,6 +476,13 @@
   width: 100%;
 }
 
+.equipos-queue-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
 .equipos-actions {
   display: flex;
   flex-wrap: wrap;

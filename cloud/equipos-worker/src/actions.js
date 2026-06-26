@@ -19,8 +19,8 @@ export { getEquiposPhoto };
 function validateIdentity(reporterName, rotation) {
   const name = normalizeReporterName(reporterName);
   const rot = normalizeEquiposRotation(rotation);
-  if (!name) throw new EquiposError('invalid_name', 'Nombre inválido.');
-  if (!rot) throw new EquiposError('invalid_rotation', 'Rotación inválida.');
+  if (!name) throw new EquiposError('invalid_name', 'Nombre inv?lido.');
+  if (!rot) throw new EquiposError('invalid_rotation', 'Rotaci?n inv?lida.');
   return { name, rot };
 }
 
@@ -46,7 +46,7 @@ function parseLumifyReturnFields(deviceType, input) {
     throw new EquiposError('charge_required', 'La carga de tablet es obligatoria al entregar.');
   }
   if (input.gelEmpty === undefined || input.gelEmpty === null) {
-    throw new EquiposError('gel_required', 'Indica si el gel está vacío.');
+    throw new EquiposError('gel_required', 'Indica si el gel est? vac?o.');
   }
   return { lumifyCharge: Math.round(pct), gelEmpty: input.gelEmpty ? 1 : 0 };
 }
@@ -77,12 +77,12 @@ async function closeEquiposSession(db, session, fields) {
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
 export async function equiposCheckout(db, input) {
   const deviceType = normalizeEquiposDeviceType(input.deviceType);
-  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inválido.');
+  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
   const { name, rot } = validateIdentity(input.reporterName, input.rotation);
   const device = await getEquiposDevice(db, deviceType);
   if (!device) throw new EquiposError('device_missing', 'Dispositivo no encontrado.');
   if (device.status !== 'available') {
-    throw new EquiposError('not_available', 'El dispositivo no está disponible.');
+    throw new EquiposError('not_available', 'El dispositivo no est? disponible.');
   }
   if (await hasActiveAlertOnDevice(db, deviceType)) {
     throw new EquiposError('alert_active', 'Hay un reporte activo en este dispositivo.');
@@ -94,7 +94,7 @@ export async function equiposCheckout(db, input) {
   if (deviceType === 'lumify' && input.pickupChargePct != null && input.pickupChargePct !== '') {
     const pct = Number(input.pickupChargePct);
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-      throw new EquiposError('invalid_charge', 'Carga de tablet inválida.');
+      throw new EquiposError('invalid_charge', 'Carga de tablet inv?lida.');
     }
     pickupCharge = Math.round(pct);
   }
@@ -124,6 +124,14 @@ export async function equiposCheckout(db, input) {
     .bind(name, rot, now, now, deviceType)
     .run();
 
+  await db
+    .prepare(
+      `DELETE FROM equipos_waitlist
+       WHERE device_type = ? AND reporter_name = ? AND rotation = ?`
+    )
+    .bind(deviceType, name, rot)
+    .run();
+
   await insertEquiposEvent(db, 'checkout', {
     deviceType,
     reporterName: name,
@@ -137,11 +145,11 @@ export async function equiposCheckout(db, input) {
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
 export async function equiposReturn(db, input) {
   const deviceType = normalizeEquiposDeviceType(input.deviceType);
-  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inválido.');
+  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
   const { name, rot } = validateIdentity(input.reporterName, input.rotation);
   const device = await getEquiposDevice(db, deviceType);
   if (!device || device.status !== 'in_use') {
-    throw new EquiposError('not_in_use', 'El dispositivo no está en uso.');
+    throw new EquiposError('not_in_use', 'El dispositivo no est? en uso.');
   }
   const isHolder = device.holder_name === name && device.holder_rotation === rot;
   if (!isHolder && !input.adminForce) {
@@ -187,11 +195,11 @@ export async function equiposReturn(db, input) {
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
 export async function equiposWaitlistJoin(db, input) {
   const deviceType = normalizeEquiposDeviceType(input.deviceType);
-  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inválido.');
+  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
   const { name, rot } = validateIdentity(input.reporterName, input.rotation);
   const device = await getEquiposDevice(db, deviceType);
   if (!device || device.status !== 'in_use') {
-    throw new EquiposError('not_busy', 'El dispositivo no está en uso.');
+    throw new EquiposError('not_busy', 'El dispositivo no est? en uso.');
   }
   const dup = await db
     .prepare(
@@ -200,7 +208,7 @@ export async function equiposWaitlistJoin(db, input) {
     )
     .bind(deviceType, name, rot)
     .first();
-  if (dup) throw new EquiposError('already_queued', 'Ya estás en la cola.');
+  if (dup) throw new EquiposError('already_queued', 'Ya est?s en la cola.');
 
   const maxPos = await db
     .prepare(`SELECT COALESCE(MAX(position), 0) AS m FROM equipos_waitlist WHERE device_type = ?`)
@@ -231,9 +239,56 @@ export async function equiposWaitlistLeave(db, input) {
     )
     .bind(deviceType, name, rot)
     .run();
-  if (!res.meta.changes) throw new EquiposError('not_in_queue', 'No estás en la cola.');
+  if (!res.meta.changes) throw new EquiposError('not_in_queue', 'No est?s en la cola.');
   await insertEquiposEvent(db, 'waitlist_leave', { deviceType, reporterName: name, rotation: rot });
   return { ok: true };
+}
+
+/**
+ * Defer one slot: swap position with the person immediately behind you.
+ *
+ * @param {import('@cloudflare/workers-types').D1Database} db @param {object} input
+ */
+export async function equiposWaitlistSkip(db, input) {
+  const deviceType = normalizeEquiposDeviceType(input.deviceType);
+  if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
+  const { name, rot } = validateIdentity(input.reporterName, input.rotation);
+  const list = await listWaitlistForDevice(db, deviceType);
+  const myIndex = list.findIndex((r) => r.reporter_name === name && r.rotation === rot);
+  if (myIndex < 0) throw new EquiposError('not_in_queue', 'No est?s en la cola.');
+  if (myIndex >= list.length - 1) {
+    throw new EquiposError('cannot_skip', 'Eres el ?ltimo en la cola.');
+  }
+
+  const me = list[myIndex];
+  const behind = list[myIndex + 1];
+  const myPos = me.position;
+  await db
+    .prepare(`UPDATE equipos_waitlist SET position = ? WHERE id = ?`)
+    .bind(behind.position, me.id)
+    .run();
+  await db
+    .prepare(`UPDATE equipos_waitlist SET position = ? WHERE id = ?`)
+    .bind(myPos, behind.id)
+    .run();
+
+  const wasNext = myIndex === 0;
+  await insertEquiposEvent(db, 'waitlist_skip', {
+    deviceType,
+    reporterName: name,
+    rotation: rot,
+    meta: {
+      deferredBehind: behind.reporter_name,
+      deferredBehindRotation: behind.rotation,
+    },
+  });
+  return {
+    ok: true,
+    wasNext,
+    newNext: wasNext
+      ? { reporterName: behind.reporter_name, rotation: behind.rotation }
+      : null,
+  };
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
@@ -245,7 +300,7 @@ export async function equiposCreateAlert(db, input) {
   if (!photoId) throw new EquiposError('photo_required', 'Se requiere foto al reportar.');
   const photo = await getEquiposPhoto(db, photoId);
   if (!photo || photo.photo_kind !== 'alert') {
-    throw new EquiposError('photo_invalid', 'Foto de reporte inválida.');
+    throw new EquiposError('photo_invalid', 'Foto de reporte inv?lida.');
   }
   const id = newEquiposId();
   const now = new Date().toISOString();
@@ -317,7 +372,7 @@ export async function equiposAckAlert(db, reportId, input) {
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
 export async function equiposAdminPurgeQueue(db, input) {
   const targets = resolvePurgeDeviceTypes(input.deviceType || 'all');
-  if (!targets.length) throw new EquiposError('invalid_device', 'Dispositivo inválido.');
+  if (!targets.length) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
 
   const now = new Date().toISOString();
   const results = [];

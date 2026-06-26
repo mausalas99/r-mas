@@ -23,6 +23,7 @@ import {
   equiposReturn,
   equiposWaitlistJoin,
   equiposWaitlistLeave,
+  equiposWaitlistSkip,
   equiposCreateAlert,
   equiposAckAlert,
   equiposAdminPurgeQueue,
@@ -30,7 +31,7 @@ import {
 import { savePhotoFromBase64, readPhotoObject } from './photos.js';
 import { EquiposError, equiposErrorStatus, jsonEquiposError } from './errors.js';
 import { getEquiposDevice } from './board.js';
-import { scheduleEquiposPush } from './push.js';
+import { scheduleEquiposPush, scheduleEquiposWaitlistHeadPush } from './push.js';
 import {
   getVapidPublicKey,
   handlePushSubscribe,
@@ -213,6 +214,15 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
       await equiposWaitlistLeave(db, body);
       await handlePushLeaveCleanup(env, body);
       return jsonOk({ ok: true });
+    }
+
+    if (method === 'POST' && subpath === '/waitlist/skip') {
+      await assertEquiposAuth(db, auth);
+      const out = await equiposWaitlistSkip(db, body);
+      if (out.wasNext && body?.deviceType) {
+        scheduleEquiposWaitlistHeadPush(db, execCtx, body.deviceType, vapidJwk);
+      }
+      return jsonOk({ ok: true, ...out });
     }
 
     if (method === 'POST' && subpath === '/push/subscribe') {

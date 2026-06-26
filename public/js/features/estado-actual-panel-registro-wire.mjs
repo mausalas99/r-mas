@@ -1,5 +1,6 @@
 /** Registro form wiring — extracted from estado-actual-panel-registro.mjs */
 import { isVitalAltered } from './estado-actual-ranges.mjs';
+import { isTurnCloseHm } from './estado-actual-registro-defaults.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
@@ -28,7 +29,7 @@ function syncAlteredFields(form) {
     wrap.classList.toggle('ea-altered-slot--hidden', !altered);
     wrap.hidden = !altered;
     if (box) box.classList.toggle('ea-vital-box--altered', altered);
-    if (altered && timeEl && 'value' in timeEl && !String(timeEl.value).trim() && defaultTime) {
+    if (altered && timeEl && 'value' in timeEl && !String(timeEl.value).trim() && defaultTime && !isTurnCloseHm(defaultTime)) {
       timeEl.value = defaultTime;
     }
   }

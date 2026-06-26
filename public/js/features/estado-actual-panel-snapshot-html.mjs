@@ -6,58 +6,275 @@ import {
   formatIoBalanceDisplay,
   toEaSalidaText,
 } from './estado-actual-io.mjs';
-import { isGlucometriaMarkedAltered } from './estado-actual-ranges.mjs';
+import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-ranges.mjs';
+import { formatEaVitalStampForSnapshot } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
-import { pad2, displayValue, displayBalance, escHtml } from './estado-actual-panel-format.mjs';
+import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-actual-panel-format.mjs';
 import { formatSnapshotEgresos } from './estado-actual-panel-snapshot-format.mjs';
+
+/** Vitals shown as individual cards in the snapshot strip (T/A is combined). */
+var SNAPSHOT_STRIP_VITAL_KEYS = ['fc', 'fr', 'temp', 'sat'];
+
+/** Labels in the snapshot strip. */
+var SNAPSHOT_STRIP_LABELS = {
+  fc: VITAL_LABELS.fc,
+  fr: VITAL_LABELS.fr,
+  temp: VITAL_LABELS.temp,
+  sat: 'SatO₂',
+};
+
+var VITAL_HISTORY_TITLES = {
+  bp: 'T/A',
+  fc: VITAL_LABELS.fc,
+  fr: VITAL_LABELS.fr,
+  temp: VITAL_LABELS.temp,
+  sat: VITAL_LABELS.sat,
+};
+
+/**
+ * @param {string} vitalKey
+ */
+export function vitalHistoryTitle(vitalKey) {
+  return VITAL_HISTORY_TITLES[vitalKey] || vitalKey;
+}
+
+/**
+ * @param {string} vitalKey
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+export function getVitalHistoryEntries(vitalKey, snapshot) {
+  if (vitalKey === 'bp') {
+    var pairs = Array.isArray(snapshot.bpPairs) ? snapshot.bpPairs.slice() : [];
+    return pairs
+      .slice()
+      .reverse()
+      .map(function (p) {
+        return {
+          value: formatBpPairValue(p.tas, p.tad),
+          unit: 'mmHg',
+          stamp: formatEaVitalStampForSnapshot(p.recordedAt, p.time),
+          altered: isVitalAltered('tas', p.tas) || isVitalAltered('tad', p.tad),
+        };
+      });
+  }
+  var series =
+    snapshot.vitalSeries && Array.isArray(snapshot.vitalSeries[vitalKey])
+      ? snapshot.vitalSeries[vitalKey].slice()
+      : [];
+  return series
+    .slice()
+    .reverse()
+    .map(function (reading) {
+      return {
+        value: displayValue(reading.value),
+        unit: VITAL_UNITS[vitalKey] || '',
+        stamp: formatEaVitalStampForSnapshot(reading.recordedAt, reading.time),
+        altered: isVitalAltered(vitalKey, reading.value),
+      };
+    });
+}
+
+/**
+ * @param {string} vitalKey
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+export function vitalHasHistory(vitalKey, snapshot) {
+  return getVitalHistoryEntries(vitalKey, snapshot).length > 1;
+}
+
+/**
+ * @param {Array<{ value: string, unit?: string, stamp?: string, altered?: boolean }>} entries
+ */
+export function renderVitalHistoryListHtml(entries) {
+  if (!entries.length) {
+    return '<p class="ea-muted">Sin lecturas registradas.</p>';
+  }
+  return (
+    '<ol class="ea-vital-history-list">' +
+    entries
+      .map(function (entry, idx) {
+        var cls = 'ea-vital-history-row' + (idx === 0 ? ' ea-vital-history-row--latest' : '');
+        if (entry.altered) cls += ' ea-vital-history-row--altered';
+        var badge =
+          idx === 0 ? '<span class="ea-vital-history-badge">Actual</span>' : '';
+        var unitHtml = entry.unit
+          ? '<span class="ea-vital-history-unit">' + escHtml(entry.unit) + '</span>'
+          : '';
+        var stampHtml = entry.stamp
+          ? '<span class="ea-vital-history-stamp">' + escHtml(entry.stamp) + '</span>'
+          : '';
+        return (
+          '<li class="' +
+          cls +
+          '">' +
+          '<div class="ea-vital-history-metric">' +
+          '<span class="ea-vital-history-value">' +
+          escHtml(entry.value) +
+          '</span>' +
+          unitHtml +
+          '</div>' +
+          '<div class="ea-vital-history-meta">' +
+          stampHtml +
+          badge +
+          '</div>' +
+          '</li>'
+        );
+      })
+      .join('') +
+    '</ol>'
+  );
+}
+
+/**
+ * @param {string} vitalKey
+ * @param {boolean} hasHistory
+ */
+function snapshotItemInteractionAttrs(vitalKey, hasHistory) {
+  if (!hasHistory) return '';
+  var safeKey = String(vitalKey).replace(/'/g, "\\'");
+  return (
+    ' role="button" tabindex="0" data-ea-vital-history="' +
+    escAttr(vitalKey) +
+    '" onclick="openEaVitalHistoryModal(\'' +
+    safeKey +
+    '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openEaVitalHistoryModal(\'' +
+    safeKey +
+    '\')}" title="Ver historial del turno"'
+  );
+}
+
+/**
+ * @param {number | null | undefined} tas
+ * @param {number | null | undefined} tad
+ */
+function formatBpPairValue(tas, tad) {
+  return displayValue(tas) + '/' + displayValue(tad);
+}
+
+/**
+ * @param {{ recordedAt?: string, time?: string } | null | undefined} reading
+ * @param {string} [fallbackKey]
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+function resolveVitalStamp(reading, fallbackKey, snapshot) {
+  if (reading && reading.recordedAt) {
+    return formatEaVitalStampForSnapshot(reading.recordedAt, reading.time);
+  }
+  if (fallbackKey && snapshot.alteredAt) {
+    return formatEaVitalStampForSnapshot('', snapshot.alteredAt[fallbackKey]);
+  }
+  return '';
+}
+
+/**
+ * @param {{ label: string, value: string, unit: string, stamp: string, vitalKey: string, altered: boolean, hasHistory: boolean }} opts
+ */
+function renderSnapshotVitalRow(opts) {
+  var cls =
+    'ea-snapshot-row' +
+    (opts.altered ? ' ea-snapshot-row--altered' : '') +
+    (opts.hasHistory ? ' ea-snapshot-row--interactive' : '');
+  var unitHtml = opts.unit
+    ? '<span class="ea-snapshot-row-unit">' + escHtml(opts.unit) + '</span>'
+    : '';
+  var stampHtml = opts.stamp
+    ? '<span class="ea-snapshot-row-stamp">' + escHtml(opts.stamp) + '</span>'
+    : '<span class="ea-snapshot-row-stamp ea-snapshot-row-stamp--empty" aria-hidden="true"></span>';
+  return (
+    '<div class="' +
+    cls +
+    '"' +
+    snapshotItemInteractionAttrs(opts.vitalKey, opts.hasHistory) +
+    '>' +
+    '<span class="ea-snapshot-row-label">' +
+    escHtml(opts.label) +
+    '</span>' +
+    '<span class="ea-snapshot-row-reading">' +
+    '<span class="ea-snapshot-row-value">' +
+    escHtml(opts.value) +
+    '</span>' +
+    unitHtml +
+    '</span>' +
+    stampHtml +
+    '</div>'
+  );
+}
 
 /**
  * @param {string} key
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
 function renderVitalSnapshotItem(key, snapshot) {
-  var val = snapshot.vitals[key];
-  var altered = snapshot.alteredAt && snapshot.alteredAt[key];
-  var cls = 'ea-snapshot-item' + (altered ? ' ea-snapshot-item--altered' : '');
-  var meta = altered ? '<span class="ea-snapshot-altered-at">' + altered + '</span>' : '';
-  var fakeMed = { vitals: snapshot.vitals, alteredAt: snapshot.alteredAt, vitalSeries: snapshot.vitalSeries };
-  var series = vitalSeriesFromMedicion(fakeMed)[key] || [];
-  var display =
-    series.length > 0
-      ? series
-          .map(function (rd) {
-            var bit = displayValue(rd.value);
-            if (rd.time) bit += ' @ ' + escHtml(rd.time);
-            return bit;
-          })
-          .join(' · ')
-      : displayValue(val);
-  return (
-    '<div class="' +
-    cls +
-    '">' +
-    '<span class="ea-snapshot-label">' +
-    VITAL_LABELS[key] +
-    '</span>' +
-    '<span class="ea-snapshot-value">' +
-    display +
-    '</span>' +
-    '<span class="ea-snapshot-unit">' +
-    (VITAL_UNITS[key] || '') +
-    '</span>' +
-    meta +
-    '</div>'
-  );
+  var unit = VITAL_UNITS[key] || '';
+  var series =
+    snapshot.vitalSeries && Array.isArray(snapshot.vitalSeries[key]) ? snapshot.vitalSeries[key] : [];
+  var latestVal = snapshot.vitals[key];
+  var latestFromSeries = series.length ? series[series.length - 1] : null;
+  var displayVal =
+    latestVal != null && latestVal !== ''
+      ? latestVal
+      : latestFromSeries && latestFromSeries.value != null
+        ? latestFromSeries.value
+        : null;
+
+  return renderSnapshotVitalRow({
+    label: SNAPSHOT_STRIP_LABELS[key] || VITAL_LABELS[key] || key,
+    value: displayValue(displayVal),
+    unit: unit,
+    stamp: resolveVitalStamp(latestFromSeries, key, snapshot),
+    vitalKey: key,
+    altered: isVitalAltered(key, displayVal),
+    hasHistory: vitalHasHistory(key, snapshot),
+  });
+}
+
+/**
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
+function renderBpSnapshotItem(snapshot) {
+  /** @type {Array<{ tas: number | null, tad: number | null, recordedAt?: string, time?: string }>} */
+  var pairs = Array.isArray(snapshot.bpPairs) ? snapshot.bpPairs : [];
+  if (!pairs.length) {
+    var tasOnly = snapshot.vitals.tas;
+    var tadOnly = snapshot.vitals.tad;
+    if ((tasOnly != null && tasOnly !== '') || (tadOnly != null && tadOnly !== '')) {
+      pairs = [{ tas: tasOnly, tad: tadOnly, recordedAt: '', time: undefined }];
+    }
+  }
+  if (!pairs.length) {
+    return renderSnapshotVitalRow({
+      label: 'T/A',
+      value: '—',
+      unit: 'mmHg',
+      stamp: '',
+      vitalKey: 'bp',
+      altered: false,
+      hasHistory: false,
+    });
+  }
+
+  var latest = pairs[pairs.length - 1];
+  return renderSnapshotVitalRow({
+    label: 'T/A',
+    value: formatBpPairValue(latest.tas, latest.tad),
+    unit: 'mmHg',
+    stamp: formatEaVitalStampForSnapshot(latest.recordedAt, latest.time),
+    vitalKey: 'bp',
+    altered: isVitalAltered('tas', latest.tas) || isVitalAltered('tad', latest.tad),
+    hasHistory: vitalHasHistory('bp', snapshot),
+  });
 }
 
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
 export function renderSnapshotVitalsHtml(snapshot) {
-  return VITAL_KEYS.map(function (key) {
-    return renderVitalSnapshotItem(key, snapshot);
-  }).join('');
+  var html = renderBpSnapshotItem(snapshot);
+  for (var ki = 0; ki < SNAPSHOT_STRIP_VITAL_KEYS.length; ki++) {
+    html += renderVitalSnapshotItem(SNAPSHOT_STRIP_VITAL_KEYS[ki], snapshot);
+  }
+  return html;
 }
 
 function renderBombaChip(b) {
