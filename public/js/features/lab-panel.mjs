@@ -42,6 +42,12 @@ import {
 } from './lab-panel-workbench.mjs';
 import { applyDriveImportLabSets } from './lab-panel-workbench-store.mjs';
 import { procesarReporte, renderOutput } from './lab-panel-parse.mjs';
+import {
+  openLabRepoImportModal,
+  closeLabRepoImportModal,
+  confirmLabRepoImport,
+  registerLabRepoImportRuntime,
+} from './lab-repo-import.mjs';
 
 var activeLab = null;
 
@@ -57,6 +63,7 @@ labPanelBridge.renderLabHistoryPanel = renderLabHistoryPanel;
 
 export function registerLabPanelRuntime(ctx) {
   _registerRt(ctx);
+  registerLabRepoImportRuntime(ctx);
 }
 
 export function getActiveLab() {
@@ -251,4 +258,7 @@ export const windowHandlers = {
   onLabHistoryDateChange,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
+  openLabRepoImportModal,
+  closeLabRepoImportModal,
+  confirmLabRepoImport,
 };

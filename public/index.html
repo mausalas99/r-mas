@@ -367,6 +367,31 @@
   </div>
 </div>
 
+<div id="lab-repo-import-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal lab-repo-import-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-import-title" onclick="event.stopPropagation()">
+    <h3 id="lab-repo-import-title">Importar del repositorio</h3>
+    <p class="lab-repo-import-hint">Consulta estudios del portal intrahospitalario por registro y rango de fechas.</p>
+    <div class="lab-repo-import-fields">
+      <div class="field-group">
+        <label for="lab-repo-registro">Registro</label>
+        <input id="lab-repo-registro" type="text" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="field-group">
+        <label for="lab-repo-desde">Desde</label>
+        <input id="lab-repo-desde" type="datetime-local" />
+      </div>
+      <div class="field-group">
+        <label for="lab-repo-hasta">Hasta</label>
+        <input id="lab-repo-hasta" type="datetime-local" />
+      </div>
+    </div>
+    <div class="modal-actions lab-repo-import-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeLabRepoImportModal()">Cancelar</button>
+      <button type="button" class="btn-generate" id="lab-repo-import-confirm" onclick="confirmLabRepoImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
 <div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-bulk-preview-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" onclick="event.stopPropagation()">
     <h3 id="lab-bulk-preview-title">Vista previa — laboratorios</h3>
@@ -766,6 +791,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
+              <button type="button" id="btn-lab-repo-import" class="btn-med-secondary" onclick="openLabRepoImportModal()">Importar del repositorio</button>
               <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary btn-med-secondary--muted" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>

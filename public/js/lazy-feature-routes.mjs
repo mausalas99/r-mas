@@ -390,6 +390,9 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     onLabHistoryDateChange: 'onLabHistoryDateChange',
     reprocessSelectedLabHistorySet: 'reprocessSelectedLabHistorySet',
     deleteSelectedLabHistorySet: 'deleteSelectedLabHistorySet',
+    openLabRepoImportModal: 'openLabRepoImportModal',
+    closeLabRepoImportModal: 'closeLabRepoImportModal',
+    confirmLabRepoImport: 'confirmLabRepoImport',
   },
   ensureLabsLoaded
 );

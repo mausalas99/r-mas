@@ -1863,6 +1863,25 @@ html.dark .btn-med-secondary--muted:hover {
   flex-direction: column;
   gap: 16px;
 }
+.lab-repo-import-modal .lab-repo-import-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.lab-repo-import-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.lab-repo-import-actions {
+  margin-top: 16px;
+}
+.lab-repo-import-modal input[readonly] {
+  opacity: 0.85;
+  cursor: default;
+}
 .lab-display-prefs-hint {
   margin: 0 0 16px;
   font-size: 12px;

@@ -15,6 +15,7 @@ import { closeProcedureAgendaModal } from './features/agenda.mjs';
 import { chartsShellCloseProxies } from './lazy-feature-routes.mjs';
 import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
 import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
+import { closeLabRepoImportModal } from './features/lab-repo-import.mjs';
 import { closeSesionIngresoSendModal } from './features/sesion-ingreso-send-modal.mjs';
 import { closeSesionIngresoTrendsSendModal } from './features/sesion-ingreso-trends-send-modal.mjs';
 import {
@@ -143,6 +144,9 @@ function wireModalDismissLayers(registry) {
   );
   regOpenClass(registry, 'lab-bulk-preview-backdrop', closeLabBulkPreviewModal, {
     panelSelector: '.lab-bulk-preview-modal',
+  });
+  regOpenClass(registry, 'lab-repo-import-modal', closeLabRepoImportModal, {
+    panelSelector: '.lab-repo-import-modal',
   });
   regOpenClass(registry, 'lab-bulk-tour-hint-backdrop', closeLabBulkTourHintModal, {
     panelSelector: '.lab-bulk-tour-hint-modal',
