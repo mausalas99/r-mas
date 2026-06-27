@@ -1,18 +1,20 @@
-version: 7.5.3
+version: 7.5.4
 files:
-  - url: R+-7.5.3-x64.exe
-    sha512: qe0Uf0NfmOLbQkWHgHrLuj0NbAodHyQ3qgOSA9Gs1zH0rlbONAmtJlGpBbavx2f6ZQtiKPuhx0o4ATylCaGtog==
-    size: 120444784
-path: R+-7.5.3-x64.exe
-sha512: qe0Uf0NfmOLbQkWHgHrLuj0NbAodHyQ3qgOSA9Gs1zH0rlbONAmtJlGpBbavx2f6ZQtiKPuhx0o4ATylCaGtog==
-releaseDate: '2026-06-27T16:05:24.000Z'
+  - url: R+-7.5.4-x64.exe
+    sha512: U8wDAE/yr0F1TlCVG51YMUUYwlhAb16/2H8uMHG4AIyqH1JK9HxzHQDdU9TQSyrbiFFtVX8DtyPjMvQ/7ALOKQ==
+    size: 120458046
+path: R+-7.5.4-x64.exe
+sha512: U8wDAE/yr0F1TlCVG51YMUUYwlhAb16/2H8uMHG4AIyqH1JK9HxzHQDdU9TQSyrbiFFtVX8DtyPjMvQ/7ALOKQ==
+releaseDate: '2026-06-27T19:19:24.000Z'
 releaseNotes: |
-  Sobre 7.5.2: importación directa desde el repositorio web de laboratorio del hospital (registro + rango de fechas) al historial del paciente, reutilizando pegado masivo, deduplicación y tendencias existentes.
+  Sobre 7.5.3: corrige la sincronización de signos vitales desde R+ Móvil (iPad) al anfitrión LAN — Guardar en Estado Actual empuja al outbox, bundles grandes ya no devuelven 500, y hay recuperación desde la cola local si el censo se borró antes de sincronizar.
   
-  Importar desde repositorio — Botón en el panel de laboratorio: indica registro y rango Desde/Hasta (días calendario); R+ consulta la tabla del portal, descarga PDFs, extrae texto SOME y procesa con procesarLabs.
+  Guardar empuja LAN — Registrar medición, Guardar texto EA, eliminar medición y persistencia clínico disparan scheduleLiveSyncPush (antes solo guardaban en localStorage).
   
-  Flujo híbrido — Si el paciente activo coincide y los estudios son nuevos, importación silenciosa; si hay ambigüedad, registro distinto o duplicados, abre el modal de revisión masiva (Agregar paciente / confirmar).
+  sync-bundle 16 MB — El parser JSON global de server.js ya no limita a 2 MB las rutas LAN; evita PUT sync-bundle rechazado (500) con censos grandes.
   
-  Mensajes claros — Toasts específicos: sin estudios para ese registro, estudios fuera del rango (con conteo), error de conexión al portal.
+  Merge monitoreo por id — Al reconciliar LAN, el historial de signos hace unión por medicion id (no gana solo el lado con más filas).
   
-  Seguridad local — Descarga y extracción en proceso principal; PDFs temporales se borran tras extraer texto. Requiere red hospitalaria (LAN); sin almacenamiento en la nube.
+  iPad: censo al refrescar — Mientras el ámbito clínico carga, ya no se vacía el censo móvil ni se pisa el snapshot LAN con entradas vacías.
+  
+  Recuperar signos — En ⇄ → Estado de sincronización: botón Recuperar signos desde caché LAN (outbox + snapshot + undo). Script de consola en scripts/recover-ipad-vitals-console.js para emergencias sin rebuild.

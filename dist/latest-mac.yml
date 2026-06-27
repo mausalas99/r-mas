@@ -1,27 +1,29 @@
-version: 7.5.3
+version: 7.5.4
 files:
-  - url: R+-7.5.3-arm64.zip
-    sha512: DFaIq6vHZif0vqu6xsUawcH9N+yS3zindk77tdRXeVwVspBWEwyTq2ACO06wfTiX+v3bMrOmtGahep6RpSxjGw==
-    size: 136778545
-  - url: R+-7.5.3-arm64.dmg
-    sha512: 50WzWjPJSQS3RDFkc9Ri/V6anqYYyUcDncupn5m99K814QUYmEoEF/XiKmr+OQLQeRNmvEjQ3DjsC4XxeamMiw==
-    size: 142495856
-  - url: R+-7.5.3-x64.zip
-    sha512: vqKDdkroFo2Ie7vo2y/rF6kVrkXSrBhpvWinolgLsJw/CO+7O0hnXEmsTKhxTj17k5HT9JsRAwTh0c1fW/lFPw==
-    size: 145152581
-  - url: R+-7.5.3-x64.dmg
-    sha512: 28lGBlRwjwHQlrhZSbSWWY5Bq1EF0FubT3VAQWpINvACmSjBHBUL647DZLOD7mt+uaPLJEzPVpzsDdD81SAsIQ==
-    size: 150934051
-path: R+-7.5.3-arm64.zip
-sha512: DFaIq6vHZif0vqu6xsUawcH9N+yS3zindk77tdRXeVwVspBWEwyTq2ACO06wfTiX+v3bMrOmtGahep6RpSxjGw==
-releaseDate: '2026-06-27T16:05:23.000Z'
+  - url: R+-7.5.4-arm64.zip
+    sha512: FJuUWXS8ByiEu7SEJv8B2w80ifXo197DmUqtk7bCd1vtLWUSL3ghPLTSWOhkdGJ9OSGsGLfbdua/poxrpgzxCA==
+    size: 136793501
+  - url: R+-7.5.4-arm64.dmg
+    sha512: iJCgM39OTQSJ8/W5VJLljVLm/R0cbHePpp2SYsa+Jf21MAdkQqAbD8KzPuQ0t7u85o1eiy9QheqvKD+MTvo5cg==
+    size: 142503954
+  - url: R+-7.5.4-x64.zip
+    sha512: ZwJxN/HA1C0a6tSeUJt1Iq7XPgSw+1fIC7SfkZDa4Q3nBCzmkaRQ4/71mT7qFNa+NXkmiC6VZvomBERbeWHT0A==
+    size: 145167585
+  - url: R+-7.5.4-x64.dmg
+    sha512: 63ftAxa1AjPtSTllSHFMRMyoHOeWfXILZwcdQNilTVlnrcJINqARKXF90riwk8lhXDbZuXX4xXBLQxqBLh6F1Q==
+    size: 150951129
+path: R+-7.5.4-arm64.zip
+sha512: FJuUWXS8ByiEu7SEJv8B2w80ifXo197DmUqtk7bCd1vtLWUSL3ghPLTSWOhkdGJ9OSGsGLfbdua/poxrpgzxCA==
+releaseDate: '2026-06-27T19:19:24.000Z'
 releaseNotes: |
-  Sobre 7.5.2: importación directa desde el repositorio web de laboratorio del hospital (registro + rango de fechas) al historial del paciente, reutilizando pegado masivo, deduplicación y tendencias existentes.
+  Sobre 7.5.3: corrige la sincronización de signos vitales desde R+ Móvil (iPad) al anfitrión LAN — Guardar en Estado Actual empuja al outbox, bundles grandes ya no devuelven 500, y hay recuperación desde la cola local si el censo se borró antes de sincronizar.
   
-  Importar desde repositorio — Botón en el panel de laboratorio: indica registro y rango Desde/Hasta (días calendario); R+ consulta la tabla del portal, descarga PDFs, extrae texto SOME y procesa con procesarLabs.
+  Guardar empuja LAN — Registrar medición, Guardar texto EA, eliminar medición y persistencia clínico disparan scheduleLiveSyncPush (antes solo guardaban en localStorage).
   
-  Flujo híbrido — Si el paciente activo coincide y los estudios son nuevos, importación silenciosa; si hay ambigüedad, registro distinto o duplicados, abre el modal de revisión masiva (Agregar paciente / confirmar).
+  sync-bundle 16 MB — El parser JSON global de server.js ya no limita a 2 MB las rutas LAN; evita PUT sync-bundle rechazado (500) con censos grandes.
   
-  Mensajes claros — Toasts específicos: sin estudios para ese registro, estudios fuera del rango (con conteo), error de conexión al portal.
+  Merge monitoreo por id — Al reconciliar LAN, el historial de signos hace unión por medicion id (no gana solo el lado con más filas).
   
-  Seguridad local — Descarga y extracción en proceso principal; PDFs temporales se borran tras extraer texto. Requiere red hospitalaria (LAN); sin almacenamiento en la nube.
+  iPad: censo al refrescar — Mientras el ámbito clínico carga, ya no se vacía el censo móvil ni se pisa el snapshot LAN con entradas vacías.
+  
+  Recuperar signos — En ⇄ → Estado de sincronización: botón Recuperar signos desde caché LAN (outbox + snapshot + undo). Script de consola en scripts/recover-ipad-vitals-console.js para emergencias sin rebuild.
