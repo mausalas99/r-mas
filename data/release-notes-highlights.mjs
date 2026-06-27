@@ -1055,6 +1055,29 @@ var RELEASE_NOTES_741 = [
   },
 ];
 
+var RELEASE_NOTES_753 = [
+  {
+    title: 'Importar desde repositorio',
+    body:
+      'En el panel de laboratorio: <strong>registro</strong> + rango de fechas → R+ consulta el portal intrahospitalario, descarga PDFs y los ingresa al historial con la misma deduplicación que el pegado masivo.',
+  },
+  {
+    title: 'Silencioso o revisión',
+    body:
+      'Si el paciente activo coincide y los estudios son nuevos, importación <strong>directa</strong>; si hay ambigüedad, registro distinto o duplicados, abre el modal de <strong>revisión masiva</strong>.',
+  },
+  {
+    title: 'PDF efímero',
+    body:
+      'Descarga y extracción en el proceso principal; los PDF temporales se <strong>borran</strong> tras extraer el texto SOME. Solo red hospitalaria — sin nube.',
+  },
+  {
+    title: 'Parche sobre 7.5.2',
+    body:
+      'Sin migración de base (SQLCipher <strong>v20</strong>). Instala <strong>7.5.3</strong> en estaciones con acceso al portal de laboratorio del hospital.',
+  },
+];
+
 var RELEASE_NOTES_752 = [
   {
     title: 'Signos vitales en filas',
@@ -1130,9 +1153,10 @@ var RELEASE_NOTES_750 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_752;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_753;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.3': RELEASE_NOTES_753,
   '7.5.2': RELEASE_NOTES_752,
   '7.5.1': RELEASE_NOTES_751,
   '7.5.0': RELEASE_NOTES_750,

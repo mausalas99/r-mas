@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.2](https://github.com/mausalas99/r-mas/releases/tag/v7.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.3](https://github.com/mausalas99/r-mas/releases/tag/v7.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.5.3 (Repositorio intrahospitalario de laboratorio)
+
+- **Importar desde repositorio** — Registro + rango de fechas → PDFs del portal → historial y tendencias (misma deduplicación que pegado masivo).
+- **Flujo híbrido** — Importación silenciosa cuando cuadra el paciente; modal de revisión si hay ambigüedad o duplicados.
+- **Sin migración** — SQLCipher sigue en v20; requiere acceso LAN al portal de laboratorio.
+
+Notas: `docs/RELEASE_NOTES_7.5.3.txt`.
 
 ## R+ 7.5.2 (Estado Actual signos, SOME ayuno y traqueostomía)
 
