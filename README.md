@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.3](https://github.com/mausalas99/r-mas/releases/tag/v7.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.4](https://github.com/mausalas99/r-mas/releases/tag/v7.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.4 (iPad signos vitales LAN)
+
+- **Guardar empuja LAN** — Estado Actual en iPad/móvil sincroniza signos al anfitrión (Guardar, registrar y eliminar medición).
+- **sync-bundle 16 MB** — Corrige 500 en censos grandes; reinicia R+ en la Mac anfitrión tras instalar.
+- **Recuperar signos** — Botón en ⇄ → Estado de sincronización; restaura desde outbox/snapshot local.
+- **Sin migración** — SQLCipher sigue en v20.
+
+Notas: `docs/RELEASE_NOTES_7.5.4.txt`.
 ## R+ 7.5.3 (Repositorio intrahospitalario de laboratorio)
 
 - **Importar desde repositorio** — Registro + rango de fechas → PDFs del portal → historial y tendencias (misma deduplicación que pegado masivo).

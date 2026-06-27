@@ -1152,10 +1152,34 @@ var RELEASE_NOTES_750 = [
   },
 ];
 
+var RELEASE_NOTES_754 = [
+  {
+    title: 'Signos iPad → Mac',
+    body:
+      '<strong>Guardar</strong> en Estado Actual empuja al outbox LAN (registrar, eliminar medición y texto clínico incluidos). El anfitrión acepta bundles hasta <strong>16 MB</strong> — menos 500 en censos grandes.',
+  },
+  {
+    title: 'Recuperar desde cola',
+    body:
+      'En ⇄ → <strong>Estado de sincronización</strong>: <strong>Recuperar signos desde caché LAN</strong> restaura monitoreo del outbox o snapshot si el iPad refrescó antes de sincronizar.',
+  },
+  {
+    title: 'Merge por lectura',
+    body:
+      'Al reconciliar LAN, el historial de signos hace <strong>unión por id de medición</strong> — no se pierden lecturas solo del iPad.',
+  },
+  {
+    title: 'Parche sobre 7.5.3',
+    body:
+      'Sin migración de base (SQLCipher <strong>v20</strong>). Instala <strong>7.5.4</strong> en Mac anfitrión e iPad; reinicia R+ en el host tras actualizar.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_753;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_754;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.4': RELEASE_NOTES_754,
   '7.5.3': RELEASE_NOTES_753,
   '7.5.2': RELEASE_NOTES_752,
   '7.5.1': RELEASE_NOTES_751,
