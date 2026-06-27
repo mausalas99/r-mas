@@ -1,29 +1,23 @@
-version: 7.5.4
+version: 7.5.5
 files:
-  - url: R+-7.5.4-arm64.zip
-    sha512: FJuUWXS8ByiEu7SEJv8B2w80ifXo197DmUqtk7bCd1vtLWUSL3ghPLTSWOhkdGJ9OSGsGLfbdua/poxrpgzxCA==
-    size: 136793501
-  - url: R+-7.5.4-arm64.dmg
-    sha512: iJCgM39OTQSJ8/W5VJLljVLm/R0cbHePpp2SYsa+Jf21MAdkQqAbD8KzPuQ0t7u85o1eiy9QheqvKD+MTvo5cg==
-    size: 142503954
-  - url: R+-7.5.4-x64.zip
-    sha512: ZwJxN/HA1C0a6tSeUJt1Iq7XPgSw+1fIC7SfkZDa4Q3nBCzmkaRQ4/71mT7qFNa+NXkmiC6VZvomBERbeWHT0A==
-    size: 145167585
-  - url: R+-7.5.4-x64.dmg
-    sha512: 63ftAxa1AjPtSTllSHFMRMyoHOeWfXILZwcdQNilTVlnrcJINqARKXF90riwk8lhXDbZuXX4xXBLQxqBLh6F1Q==
-    size: 150951129
-path: R+-7.5.4-arm64.zip
-sha512: FJuUWXS8ByiEu7SEJv8B2w80ifXo197DmUqtk7bCd1vtLWUSL3ghPLTSWOhkdGJ9OSGsGLfbdua/poxrpgzxCA==
-releaseDate: '2026-06-27T19:19:24.000Z'
+  - url: R+-7.5.5-arm64.zip
+    sha512: pZOgBbfuHgeVybzQyNVQt+zDfB3RLprao1eEfm7bO/ly0zRXvFNM/6fSb3dNB8zVyWEYGqWUEFQSzxMC1dCSQQ==
+    size: 136793384
+  - url: R+-7.5.5-arm64.dmg
+    sha512: FLjFD0yrcVqwaNejuIaA+V2lqM8M12ncnDPcEm2aW0yfLgjbX4/bCDtFT2er9ptYf2b5boG6onf3Iv/LyH4rwA==
+    size: 142502825
+  - url: R+-7.5.5-x64.zip
+    sha512: p68iXnsEiDyNw6fSJd87yIuWxPOszumbJagpgEiDpfRhGD4MU7HriLv6+nzeA1nLP1i9h5OZgjgP1gZQjBKuyg==
+    size: 145167486
+  - url: R+-7.5.5-x64.dmg
+    sha512: fcREgWFJbfs8oJk3PzlU9nlAVyxyb7GKM4QF1clcDq+9vhI9C0SWDvXoVJGKavhWuLX7kvm69R4x94SzWzEbxA==
+    size: 150945004
+path: R+-7.5.5-arm64.zip
+sha512: pZOgBbfuHgeVybzQyNVQt+zDfB3RLprao1eEfm7bO/ly0zRXvFNM/6fSb3dNB8zVyWEYGqWUEFQSzxMC1dCSQQ==
+releaseDate: '2026-06-27T19:36:44.000Z'
 releaseNotes: |
-  Sobre 7.5.3: corrige la sincronización de signos vitales desde R+ Móvil (iPad) al anfitrión LAN — Guardar en Estado Actual empuja al outbox, bundles grandes ya no devuelven 500, y hay recuperación desde la cola local si el censo se borró antes de sincronizar.
+  Sobre 7.5.4: al pegar SOME con receta/dieta, R+ propone el cambio de dieta aunque AYUNO (u otra dieta) ya estuviera confirmada — sin necesidad de force.
   
-  Guardar empuja LAN — Registrar medición, Guardar texto EA, eliminar medición y persistencia clínico disparan scheduleLiveSyncPush (antes solo guardaban en localStorage).
+  Dieta pendiente desde AYUNO — Si el SOME trae una dieta distinta a la confirmada (p. ej. AYUNO → astringente alta en fibra), se llena pendienteReceta con kcal/proteína y se desconfirma dieta para revisión en Estado Actual.
   
-  sync-bundle 16 MB — El parser JSON global de server.js ya no limita a 2 MB las rutas LAN; evita PUT sync-bundle rechazado (500) con censos grandes.
-  
-  Merge monitoreo por id — Al reconciliar LAN, el historial de signos hace unión por medicion id (no gana solo el lado con más filas).
-  
-  iPad: censo al refrescar — Mientras el ámbito clínico carga, ya no se vacía el censo móvil ni se pisa el snapshot LAN con entradas vacías.
-  
-  Recuperar signos — En ⇄ → Estado de sincronización: botón Recuperar signos desde caché LAN (outbox + snapshot + undo). Script de consola en scripts/recover-ipad-vitals-console.js para emergencias sin rebuild.
+  Sin migración — SQLCipher sigue en v20.

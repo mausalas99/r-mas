@@ -1,20 +1,14 @@
-version: 7.5.4
+version: 7.5.5
 files:
-  - url: R+-7.5.4-x64.exe
-    sha512: U8wDAE/yr0F1TlCVG51YMUUYwlhAb16/2H8uMHG4AIyqH1JK9HxzHQDdU9TQSyrbiFFtVX8DtyPjMvQ/7ALOKQ==
-    size: 120458046
-path: R+-7.5.4-x64.exe
-sha512: U8wDAE/yr0F1TlCVG51YMUUYwlhAb16/2H8uMHG4AIyqH1JK9HxzHQDdU9TQSyrbiFFtVX8DtyPjMvQ/7ALOKQ==
-releaseDate: '2026-06-27T19:19:24.000Z'
+  - url: R+-7.5.5-x64.exe
+    sha512: U7AE8LMOgt1xoiBKaPWEKoSf2mXXSSR44N7R2j/nFrZYRgascZu7KeTEdBi6jLc5J/jefAGu3TNMsVS/TaEV6Q==
+    size: 120461328
+path: R+-7.5.5-x64.exe
+sha512: U7AE8LMOgt1xoiBKaPWEKoSf2mXXSSR44N7R2j/nFrZYRgascZu7KeTEdBi6jLc5J/jefAGu3TNMsVS/TaEV6Q==
+releaseDate: '2026-06-27T19:36:44.000Z'
 releaseNotes: |
-  Sobre 7.5.3: corrige la sincronización de signos vitales desde R+ Móvil (iPad) al anfitrión LAN — Guardar en Estado Actual empuja al outbox, bundles grandes ya no devuelven 500, y hay recuperación desde la cola local si el censo se borró antes de sincronizar.
+  Sobre 7.5.4: al pegar SOME con receta/dieta, R+ propone el cambio de dieta aunque AYUNO (u otra dieta) ya estuviera confirmada — sin necesidad de force.
   
-  Guardar empuja LAN — Registrar medición, Guardar texto EA, eliminar medición y persistencia clínico disparan scheduleLiveSyncPush (antes solo guardaban en localStorage).
+  Dieta pendiente desde AYUNO — Si el SOME trae una dieta distinta a la confirmada (p. ej. AYUNO → astringente alta en fibra), se llena pendienteReceta con kcal/proteína y se desconfirma dieta para revisión en Estado Actual.
   
-  sync-bundle 16 MB — El parser JSON global de server.js ya no limita a 2 MB las rutas LAN; evita PUT sync-bundle rechazado (500) con censos grandes.
-  
-  Merge monitoreo por id — Al reconciliar LAN, el historial de signos hace unión por medicion id (no gana solo el lado con más filas).
-  
-  iPad: censo al refrescar — Mientras el ámbito clínico carga, ya no se vacía el censo móvil ni se pisa el snapshot LAN con entradas vacías.
-  
-  Recuperar signos — En ⇄ → Estado de sincronización: botón Recuperar signos desde caché LAN (outbox + snapshot + undo). Script de consola en scripts/recover-ipad-vitals-console.js para emergencias sin rebuild.
+  Sin migración — SQLCipher sigue en v20.
