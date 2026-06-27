@@ -90,6 +90,7 @@ const generatedIgnores = {
     'public/js/app.bundle.mjs',
     'public/js/app.bundle.js',
     'public/js/**/*.map',
+    'lib/**/fixtures/**',
   ],
 };
 

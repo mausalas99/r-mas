@@ -8,12 +8,16 @@
  */
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { filterTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
+import { filterTier1Paths, filterLintableTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
 
 const ROOT = process.cwd();
 const args = new Set(process.argv.slice(2));
 const full = args.has('--full');
 const staged = args.has('--staged');
+
+function lintablePaths(paths) {
+  return filterLintableTier1Paths(paths);
+}
 
 function gitLines(cmd) {
   try {
@@ -28,11 +32,13 @@ function gitLines(cmd) {
 
 function collectPaths() {
   if (full) return ['public/js', 'lib', 'lan-squad'];
-  if (staged) return filterTier1Paths(gitLines('git diff --cached --name-only'));
+  if (staged) return lintablePaths(filterTier1Paths(gitLines('git diff --cached --name-only')));
   const committed = filterTier1Paths(gitChangedFilesAgainst('main'));
   const unstaged = filterTier1Paths(gitLines('git diff --name-only HEAD'));
   const untracked = filterTier1Paths(gitLines('git ls-files --others --exclude-standard'));
-  return [...new Set([...committed, ...unstaged, ...untracked])].filter((p) => existsSync(p));
+  return lintablePaths(
+    [...new Set([...committed, ...unstaged, ...untracked])].filter((p) => existsSync(p))
+  );
 }
 
 const paths = collectPaths();

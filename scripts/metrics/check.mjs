@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-import { filterTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
+import { filterLintableTier1Paths, gitChangedFilesAgainst } from './changed-files.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const REPORT = path.join(ROOT, 'scripts/metrics/report.json');
@@ -26,7 +26,7 @@ if (baseline.totalScore == null) {
   failed = true;
 }
 
-const changed = filterTier1Paths(gitChangedFilesAgainst('main'));
+const changed = filterLintableTier1Paths(gitChangedFilesAgainst('main'));
 if (changed.length) {
   try {
     execSync(`npx eslint ${changed.map((p) => JSON.stringify(p)).join(' ')} --max-warnings 0`, {
