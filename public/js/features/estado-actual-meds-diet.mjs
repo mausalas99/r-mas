@@ -43,7 +43,7 @@ export function shouldSkipDietProposal(monitoreo, opts, merged) {
     if (confirmedDietFingerprint(ec) === dietProposalFingerprint(merged)) return true;
   }
   if (!conf.dieta) return false;
-  if (opts.force && merged && mergedDietHasContent(merged)) {
+  if (merged && mergedDietHasContent(merged)) {
     return dietProposalFingerprint(merged) === confirmedDietFingerprint(ec);
   }
   return true;

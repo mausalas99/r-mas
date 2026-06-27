@@ -357,6 +357,21 @@ test('applyDietProposalFromRecetaBlock force propone cambio sobre dieta confirma
   assert.equal(m.estadoClinico.dieta, 'SUPLEMENTO');
 });
 
+test('applyDietProposalFromRecetaBlock propone cambio desde AYUNO confirmado sin force', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'AYUNO';
+  m.confirmado.dieta = true;
+  const block = {
+    dietas: [{ descripcionRaw: 'ASTRINGENTE ALTA EN FIBRA', kcal: 1750, proteinG: 90 }],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(m.pendienteReceta.dieta, 'ASTRINGENTE ALTA EN FIBRA');
+  assert.equal(m.pendienteReceta.kcal, '1750');
+  assert.equal(m.pendienteReceta.proteinG, '90');
+  assert.equal(m.estadoClinico.dieta, 'AYUNO');
+  assert.equal(m.confirmado.dieta, false);
+});
+
 test('estadoClinicoForDisplay muestra propuesta de dieta pendiente', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.dieta = 'BLANDA';
