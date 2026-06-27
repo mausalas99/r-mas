@@ -1152,6 +1152,19 @@ var RELEASE_NOTES_750 = [
   },
 ];
 
+var RELEASE_NOTES_755 = [
+  {
+    title: 'Dieta desde AYUNO',
+    body:
+      'Al pegar SOME con <strong>receta/dieta</strong>, si la dieta confirmada (p. ej. <strong>AYUNO</strong>) difiere de la del SOME, R+ llena <strong>pendienteReceta</strong> con kcal/proteína — sin flag <code>force</code>.',
+  },
+  {
+    title: 'Parche sobre 7.5.4',
+    body:
+      'Incluye <strong>7.5.4</strong>: signos iPad→LAN, sync-bundle 16 MB y recuperación desde cola. Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 var RELEASE_NOTES_754 = [
   {
     title: 'Signos iPad → Mac',
@@ -1176,9 +1189,10 @@ var RELEASE_NOTES_754 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_754;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_755;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.5': RELEASE_NOTES_755,
   '7.5.4': RELEASE_NOTES_754,
   '7.5.3': RELEASE_NOTES_753,
   '7.5.2': RELEASE_NOTES_752,

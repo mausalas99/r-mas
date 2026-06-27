@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.4](https://github.com/mausalas99/r-mas/releases/tag/v7.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.5](https://github.com/mausalas99/r-mas/releases/tag/v7.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.5 (propuesta dieta desde AYUNO)
+
+- **Dieta desde AYUNO confirmado** — Pegar SOME con receta propone nueva dieta en pendienteReceta sin flag force.
+- **Parche sobre 7.5.4** — Incluye signos iPad→LAN, sync-bundle 16 MB y recuperación desde cola LAN.
+
+Notas: `docs/RELEASE_NOTES_7.5.5.txt`.
 
 ## R+ 7.5.4 (iPad signos vitales LAN)
 

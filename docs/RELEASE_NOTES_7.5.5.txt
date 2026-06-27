@@ -1,0 +1,22 @@
+R+ 7.5.5 (propuesta dieta desde AYUNO)
+==========================================
+
+Fecha: 2026-06-27
+
+## Resumen
+
+Sobre **7.5.4**: al pegar SOME con **receta/dieta**, R+ propone el cambio de dieta aunque **AYUNO** (u otra dieta) ya estuviera **confirmada** — sin necesidad de `force`.
+
+## Nuevo / mejorado
+
+- **Dieta pendiente desde AYUNO** — Si el SOME trae una dieta distinta a la confirmada (p. ej. AYUNO → astringente alta en fibra), se llena `pendienteReceta` con kcal/proteína y se desconfirma dieta para revisión en Estado Actual.
+- **Sin migración** — SQLCipher sigue en v20.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.5.5
+
+- Mac: `R+-7.5.5-arm64.dmg`, `R+-7.5.5-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.5.5-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
