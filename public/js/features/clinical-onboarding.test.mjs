@@ -120,7 +120,17 @@ describe('clinical-onboarding helpers', () => {
     assert.match(handlersSrc, /LAN_PROFILE_NEEDS_CONNECT_MSG/);
     assert.match(handlersSrc, /isLanProfileNeedsConnectCode\(lanPush\.code\)/);
     assert.match(handlersSrc, /toast\(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info'\)/);
-    assert.match(handlersSrc, /!localOnly[\s\S]*isLanProfileNeedsConnectCode/);
+    assert.match(handlersSrc, /refreshMainClinicalOnboardingIfNeeded/);
+    assert.match(handlersSrc, /finishRegistrationLanSideEffects/);
+  });
+
+  it('modal registration form submit is wired again', () => {
+    const regSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-registration.mjs'),
+      'utf8'
+    );
+    assert.match(regSrc, /wireRegistrationFormOnce/);
+    assert.match(regSrc, /handleClinicalRegistrationSubmit/);
   });
 
   it('resume requires an existing DB user and claim runs for legacy handles', () => {

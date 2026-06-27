@@ -58,18 +58,56 @@ export function needsClinicalSyncModeChoice() {
   return true;
 }
 
+function syncSessionFromPersistedProfile(settings, user) {
+  if (!user) return;
+  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  if (cachedUser && isValidUsernameFormat(cachedUser)) {
+    user.username = cachedUser;
+  }
+  if (!String(user.clinical_name || '').trim() && settings.clinicalDisplayName) {
+    user.clinical_name = String(settings.clinicalDisplayName);
+  }
+  if (!String(user.sala || '').trim() && settings.clinicalSala) {
+    user.sala = String(settings.clinicalSala);
+  }
+  if (settings.clinicalRank && !String(user.rank || '').trim()) {
+    user.rank = String(settings.clinicalRank);
+  }
+}
+
+/** Device binding written by onboarding submit — trust when session row lags IPC refresh. */
+export function hasPersistedClinicalProfile(settings = readRpcSettings(), user = clinicalSessionContext.user) {
+  if (settings.clinicalRegistered !== true) return false;
+  if (isClinicalLocalOnlyMode(settings)) {
+    return !!String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
+  }
+  if (needsClinicalLanProfileGate(settings)) return false;
+  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  const hasName = String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
+  const hasSala = String(settings.clinicalSala || user?.sala || '').trim();
+  return (
+    isValidUsernameFormat(cachedUser) &&
+    !isLegacyMachineUsername(cachedUser, getClientId()) &&
+    !isLocalOnlyPlaceholderUsername(cachedUser) &&
+    !!hasName &&
+    !!hasSala
+  );
+}
+
 function needsLocalOnlyProfile(settings, user) {
   if (!isClinicalLocalOnlyMode(settings)) return false;
+  if (hasPersistedClinicalProfile(settings, user)) return false;
   if (settings.clinicalRegistered !== true) return true;
-  return !String(user?.clinical_name || '').trim();
+  return !String(user?.clinical_name || settings.clinicalDisplayName || '').trim();
 }
 
 function needsLanProfile(settings, user) {
+  if (hasPersistedClinicalProfile(settings, user)) return false;
   if (needsClinicalLanProfileGate(settings)) return true;
   if (isLocalOnlyPlaceholderUsername(user?.username)) return true;
   if (needsUsernameClaim()) return true;
-  if (!String(user?.clinical_name || '').trim()) return true;
-  if (!String(user?.sala || '').trim()) return true;
+  if (!String(user?.clinical_name || settings.clinicalDisplayName || '').trim()) return true;
+  if (!String(user?.sala || settings.clinicalSala || '').trim()) return true;
   return false;
 }
 
@@ -80,6 +118,10 @@ export function needsProfileOnboarding() {
   if (needsClinicalSyncModeChoice()) return true;
   const settings = readRpcSettings();
   const user = clinicalSessionContext.user;
+  if (hasPersistedClinicalProfile(settings, user)) {
+    syncSessionFromPersistedProfile(settings, user);
+    return false;
+  }
   if (needsLocalOnlyProfile(settings, user)) return true;
   return needsLanProfile(settings, user);
 }

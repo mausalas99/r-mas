@@ -44,10 +44,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ---
 
 
-## R+ 7.5.5 (propuesta dieta desde AYUNO)
+## R+ 7.5.5 (dieta AYUNO + onboarding registro)
 
 - **Dieta desde AYUNO confirmado** — Pegar SOME con receta propone nueva dieta en pendienteReceta sin flag force.
-- **Parche sobre 7.5.4** — Incluye signos iPad→LAN, sync-bundle 16 MB y recuperación desde cola LAN.
+- **Onboarding registro** — Formulario submit cableado; perfil persistido no repite gate; LAN push en background.
+- **Parche sobre 7.5.4** — Signos iPad→LAN, sync-bundle 16 MB y recuperación desde cola LAN.
 
 Notas: `docs/RELEASE_NOTES_7.5.5.txt`.
 

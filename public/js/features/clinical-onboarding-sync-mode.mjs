@@ -117,13 +117,20 @@ export async function handleLocalOnlyProfileSubmit(ev) {
     toast('Sesión clínica no disponible.', 'error');
     return;
   }
-  const result = await submitLocalOnlyProfile(name, rank, errEl);
-  if (!result.ok) {
-    if (result.error) toast(result.error, 'error');
-    return;
+  try {
+    const result = await submitLocalOnlyProfile(name, rank, errEl);
+    if (!result.ok) {
+      if (result.error) toast(result.error, 'error');
+      return;
+    }
+    toast('Listo. R+ queda solo en este equipo (ajeno a medicina interna), sin sincronización LAN.', 'success');
+    await refreshOnboardingHost();
+  } catch (err) {
+    if (errEl) {
+      errEl.textContent = err instanceof Error ? err.message : 'Error al guardar el perfil.';
+      errEl.hidden = false;
+    }
   }
-  toast('Listo. R+ queda solo en este equipo (ajeno a medicina interna), sin sincronización LAN.', 'success');
-  await refreshOnboardingHost();
 }
 
 export function wireSyncModeOnboardingInteractions() {

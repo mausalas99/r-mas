@@ -210,20 +210,31 @@ export async function handleClinicalRegistrationSubmit(deps) {
   }
 
   if (errEl) errEl.hidden = true;
-  await connectShiftPinIfNeeded_(fields.shiftPin, sala, deps.runtime);
 
-  var lanPush = await flushClinicalProfileToLan({ sala, roomId: lanRoom.roomId });
-  notifyLanProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
-  if (
-    !lanPush.ok &&
-    !isBenignLanPushSkipCode(lanPush.code) &&
-    !(lanPush.channels && lanPush.channels.outbox) &&
-    errEl
-  ) {
-    showRegistrationError_(errEl, LAN_PROFILE_PUSH_FAILED_MSG);
-  }
+  const { refreshClinicalUserProfile } = await import('../clinical-access-runtime.mjs');
+  await refreshClinicalUserProfile();
 
   deps.closeModal();
   maybePersistMobilePairing_();
   resolvePendingRegistration_(deps);
+
+  try {
+    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+    await refreshMainClinicalOnboardingIfNeeded();
+  } catch {
+    /* onboarding shell optional */
+  }
+
+  void (async () => {
+    await connectShiftPinIfNeeded_(fields.shiftPin, sala, deps.runtime);
+    var lanPush = await flushClinicalProfileToLan({ sala, roomId: lanRoom.roomId });
+    notifyLanProfilePushResult(lanPush, (msg, kind) => deps.runtime.showToast(msg, kind));
+    if (
+      !lanPush.ok &&
+      !isBenignLanPushSkipCode(lanPush.code) &&
+      !(lanPush.channels && lanPush.channels.outbox)
+    ) {
+      deps.runtime.showToast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+    }
+  })();
 }

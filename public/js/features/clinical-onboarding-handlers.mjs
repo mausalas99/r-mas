@@ -173,9 +173,7 @@ async function pushProfileToLanAndNotify(sala, needsClaim) {
     toast(LAN_PROFILE_NEEDS_CONNECT_MSG, 'info');
     const rot = await import('./clinical-rotation-entry.mjs');
     rot.syncClinicalRotationEntryChrome();
-    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
-    await refreshMainClinicalOnboardingIfNeeded();
-    return { earlyReturn: true };
+    return;
   }
 
   if (
@@ -185,14 +183,17 @@ async function pushProfileToLanAndNotify(sala, needsClaim) {
   ) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (lanPush.ok && needsClaim) {
-    toast('Perfil guardado y @usuario publicado en la sala ⇄.', 'success');
-  } else {
-    toast(
-      'Perfil guardado. Abre Mi rotación cuando quieras buscar equipos o crear el tuyo.',
-      'success'
-    );
+    toast('@usuario publicado en la sala ⇄.', 'success');
   }
-  return { earlyReturn: false };
+}
+
+async function finishRegistrationLanSideEffects(fields, needsClaim) {
+  try {
+    await connectShiftPinIfProvided(fields.shiftPin, fields.sala);
+    await pushProfileToLanAndNotify(fields.sala, needsClaim);
+  } catch {
+    /* LAN connect/push are best-effort after profile save */
+  }
 }
 
 export async function handleUsernameStepSubmit(ev) {
@@ -209,42 +210,45 @@ export async function handleUsernameStepSubmit(ev) {
     return;
   }
 
-  const claimResult = await claimUsernameIfNeeded(
-    api,
-    sessionUserId,
-    fields.username,
-    fields.sala,
-    settings,
-    errEl
-  );
-  if (!claimResult.ok) return;
-  sessionUserId = claimResult.sessionUserId;
-  settings = claimResult.settings;
+  try {
+    const claimResult = await claimUsernameIfNeeded(
+      api,
+      sessionUserId,
+      fields.username,
+      fields.sala,
+      settings,
+      errEl
+    );
+    if (!claimResult.ok) return;
+    sessionUserId = claimResult.sessionUserId;
+    settings = claimResult.settings;
 
-  const saved = await upsertClinicalProfile(api, sessionUserId, fields, errEl);
-  if (!saved) return;
+    const saved = await upsertClinicalProfile(api, sessionUserId, fields, errEl);
+    if (!saved) return;
 
-  persistClinicalUserBinding({
-    userId: sessionUserId,
-    username: fields.username,
-    displayName: fields.name,
-    rank: fields.rank,
-    sala: fields.sala || '',
-    registered: true,
-    lanProfileGateComplete: true,
-    isProgramAdmin: false,
-  });
+    persistClinicalUserBinding({
+      userId: sessionUserId,
+      username: fields.username,
+      displayName: fields.name,
+      rank: fields.rank,
+      sala: fields.sala || '',
+      registered: true,
+      lanProfileGateComplete: true,
+      isProgramAdmin: false,
+    });
 
-  await connectShiftPinIfProvided(fields.shiftPin, fields.sala);
-  if (errEl) errEl.hidden = true;
-  await refreshClinicalUserProfile();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    if (errEl) errEl.hidden = true;
+    await refreshClinicalUserProfile();
+    document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 
-  const pushResult = await pushProfileToLanAndNotify(fields.sala, claimResult.needsClaim);
-  if (pushResult.earlyReturn) return;
+    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+    await refreshMainClinicalOnboardingIfNeeded();
+    toast('Perfil guardado.', 'success');
 
-  const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
-  await refreshMainClinicalOnboardingIfNeeded();
+    void finishRegistrationLanSideEffects(fields, claimResult.needsClaim);
+  } catch (err) {
+    showOnboardError(errEl, err instanceof Error ? err.message : 'Error al guardar el perfil.');
+  }
 }
 
 function applyResumedProfileToSession(name, rank, sala) {

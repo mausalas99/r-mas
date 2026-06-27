@@ -10,7 +10,7 @@ import {
   needsClinicalSyncModeChoice,
   renderOnboardingPanelInto,
 } from './clinical-onboarding.mjs';
-import { prefillRegistrationFromUrlParams } from './clinical-registration.mjs';
+import { prefillRegistrationFromUrlParams, wireClinicalRegistrationForm } from './clinical-registration.mjs';
 import {
   renderSyncModeChoicePanel,
   wireSyncModeOnboardingInteractions,
@@ -208,6 +208,7 @@ export async function showMainClinicalOnboarding() {
   try {
     await renderOnboardingPanelInto(host);
     prefillRegistrationFromUrlParams();
+    wireClinicalRegistrationForm();
     const rot = await import('./clinical-rotation-entry.mjs');
     rot.syncClinicalRotationEntryChrome();
   } catch (err) {

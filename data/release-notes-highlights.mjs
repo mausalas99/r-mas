@@ -1159,6 +1159,11 @@ var RELEASE_NOTES_755 = [
       'Al pegar SOME con <strong>receta/dieta</strong>, si la dieta confirmada (p. ej. <strong>AYUNO</strong>) difiere de la del SOME, R+ llena <strong>pendienteReceta</strong> con kcal/proteína — sin flag <code>force</code>.',
   },
   {
+    title: 'Onboarding registro',
+    body:
+      'Formulario de registro clínico <strong>cableado de nuevo</strong>; perfil persistido en ajustes evita repetir onboarding si la sesión IPC va retrasada; LAN push en segundo plano tras guardar.',
+  },
+  {
     title: 'Parche sobre 7.5.4',
     body:
       'Incluye <strong>7.5.4</strong>: signos iPad→LAN, sync-bundle 16 MB y recuperación desde cola. Sin migración (SQLCipher <strong>v20</strong>).',

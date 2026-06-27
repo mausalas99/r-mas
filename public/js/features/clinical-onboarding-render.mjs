@@ -16,7 +16,6 @@ import {
   isClinicalLocalOnlyMode,
   needsClinicalLanProfileGate,
   readRpcSettings,
-  bundledWardShiftPin,
 } from '../clinical-settings.mjs';
 import {
   isValidUsernameFormat,
@@ -95,7 +94,7 @@ function buildLanProfileFormBody(settings) {
     ? ''
     : String(settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || '');
   const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
-  const prefilledShiftPin = bundledWardShiftPin();
+  const prefilledShiftPin = '';
 
   return `
       <div class="clinical-onboard-form-shell">
