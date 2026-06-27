@@ -299,6 +299,9 @@ function refreshLanPatientUiAfterApply() {
     try {
       lanRuntime().renderLabHistoryPanel();
     } catch { /* ignored */ }
+    try {
+      lanRuntime().renderEstadoActualPanel({ force: true, syncHeavy: true });
+    } catch { /* ignored */ }
   }
 }
 

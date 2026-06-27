@@ -11,6 +11,7 @@ import {
   getCachedClinicalOpsSnapshot,
   isClinicalOpsLanAvailable,
 } from '../../clinical-ops-lan.mjs';
+import { isClinicalScopeReadyForLanPatientApply } from '../../clinical-access-runtime.mjs';
 import { lanClient, getLanClientId } from './runtime.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode, resolveLanHostUrlAuto } from './transport.mjs';
 import { isSurrogateHostActive } from '../../lan-surrogate-host.mjs';
@@ -65,6 +66,15 @@ function saveLocalRoomSnapshotBody(roomId) {
   var snap = buildRoomSnapshotFromStorage(storage, bridge().collectPatientIdsForLiveSync());
   var prev = storage.getLanRoomSnapshot(rid);
   var entries = bridge().collectPatientEntriesForLanSync();
+  if (
+    !entries.length &&
+    !isClinicalScopeReadyForLanPatientApply() &&
+    prev &&
+    Array.isArray(prev.entries) &&
+    prev.entries.length
+  ) {
+    entries = prev.entries;
+  }
   storage.saveLanRoomSnapshot(rid, {
     savedAt: snap.savedAt,
     generation: nextRoomSnapshotGeneration(prev),

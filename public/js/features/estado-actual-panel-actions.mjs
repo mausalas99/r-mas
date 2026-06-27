@@ -1,5 +1,6 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
 import { saveState } from '../app-state.mjs';
+import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   ensureMonitoreo,
   appendMedicion,
@@ -147,6 +148,7 @@ export function eliminarEstadoActualMedicion(id) {
   ensureMonitoreo(patient);
   removeMedicion(patient.monitoreo, id);
   saveState();
+  scheduleLiveSyncPush();
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true });
   getEaPanelRuntime().showToast('Medición eliminada', 'success');
 }
@@ -162,6 +164,7 @@ function persistEstadoActualTexto(patient, text) {
     savedAt: new Date().toISOString(),
   };
   saveState();
+  scheduleLiveSyncPush();
   renderEstadoActualBar();
   var meta = document.getElementById('ea-meta-guardado');
   if (meta && patient.monitoreo.textoGuardado.savedAt) {

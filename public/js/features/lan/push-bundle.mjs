@@ -96,12 +96,22 @@ function pushRoomSyncBundleToHostBody(roomId, envelope) {
           return true;
         });
       }
-      recordLanSyncError({
-        op: 'sync-bundle',
-        code: String(resp.status || 'HTTP'),
-        message: 'PUT sync-bundle rechazado',
+      return resp.json().then(function (body) {
+        var detail = body && body.error ? String(body.error) : '';
+        recordLanSyncError({
+          op: 'sync-bundle',
+          code: String(resp.status || 'HTTP'),
+          message: 'PUT sync-bundle rechazado' + (detail ? ': ' + detail : ''),
+        });
+        return false;
+      }).catch(function () {
+        recordLanSyncError({
+          op: 'sync-bundle',
+          code: String(resp.status || 'HTTP'),
+          message: 'PUT sync-bundle rechazado',
+        });
+        return false;
       });
-      return false;
     })
     .catch(function (err) {
       recordLanSyncError({

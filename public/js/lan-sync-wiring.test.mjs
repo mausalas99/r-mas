@@ -259,6 +259,49 @@ describe('LAN event and handler wiring', () => {
     );
   });
 
+  it('onMedicionRegistered schedules LAN bundle push for mobile EA vitals', () => {
+    const appRuntimes = read('app-runtimes.mjs');
+    const hookStart = appRuntimes.indexOf('onMedicionRegistered: function ()');
+    assert.ok(hookStart >= 0, 'onMedicionRegistered hook must exist');
+    const hookBlock = appRuntimes.slice(hookStart, hookStart + 220);
+    assert.match(
+      hookBlock,
+      /scheduleLiveSyncPush\(\)/,
+      'vitals registration must debounce-push monitoreo to LAN host'
+    );
+  });
+
+  it('estadoActualGuardar schedules LAN bundle push after saveState', () => {
+    const eaActions = read('features/estado-actual-panel-actions.mjs');
+    const fnStart = eaActions.indexOf('function persistEstadoActualTexto(');
+    assert.ok(fnStart >= 0, 'persistEstadoActualTexto must exist');
+    const fnBlock = eaActions.slice(fnStart, fnStart + 350);
+    assert.match(fnBlock, /saveState\(\)/);
+    assert.match(
+      fnBlock,
+      /scheduleLiveSyncPush\(\)/,
+      'Guardar must debounce-push monitoreo to LAN host'
+    );
+  });
+
+  it('LAN patient entry apply refreshes Estado Actual for active patient', () => {
+    const patientEntries = read('features/lan/patient-entries.mjs');
+    assert.match(
+      patientEntries,
+      /renderEstadoActualPanel\(\{ force: true, syncHeavy: true \}\)/,
+      'host reconcile must repaint EA when monitoreo merges'
+    );
+  });
+
+  it('mobile LAN prune does not wipe census before scope is ready', () => {
+    const mobileLan = read('clinical-access-runtime/mobile.mjs');
+    assert.doesNotMatch(
+      mobileLan,
+      /isClinicalScopeReadyForLanPatientApply\(\)[\s\S]{0,180}setPatients\(\[\]\)/,
+      'must not clear census while clinical scope is still loading'
+    );
+  });
+
   it('history-clinica-panel does not call scheduleLiveSyncPush after lanPushHistoriaClinica', () => {
     const hcPanel = readHistoriaClinicaPanelSources();
     assert.doesNotMatch(

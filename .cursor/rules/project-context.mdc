@@ -133,6 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-27** `ipad-vitals-sync`: EA Guardar empuja LAN; sync-bundle 16mb; merge monitoreo por id; recuperación desde outbox; iPad no borra censo al refrescar; `vitals-recovery.mjs`, `server-http-security.js`.
 - **2026-06-27** `release-7.5.3`: repositorio intrahospitalario — registro + rango fechas, PDF→SOME, import híbrido silencioso/revisión; `lib/lab-repo/`, `lab-repo-import*.mjs`, IPC `lab-repo-fetch`.
 - **2026-06-26** `release-7.5.2`: EA signos en filas + modal historial, SOAP/copiar última lectura, PICO febril ≤5 días, SOME ayuno + traqueostomía; `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`.
 - **2026-06-25** `release-7.5.1`: push equipos LAN/cloud, eTFG desde expediente, labs masivos ventana 2 h, UI Rams, SQLCipher v20; `lib/equipos/equipos-push-*`, `labs-egfr.mjs`, `public/tokens.css`.

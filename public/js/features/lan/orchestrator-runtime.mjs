@@ -19,6 +19,7 @@ let runtime = {
   renderPatientList(_opts) {},
   renderNoteForm() {},
   renderLabHistoryPanel() {},
+  renderEstadoActualPanel() {},
   getActiveId() {
     return null;
   },

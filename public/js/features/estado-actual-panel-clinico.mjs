@@ -1,5 +1,6 @@
 /** Estado clínico general section + DOM sync. */
 import { patients, medRecetaByPatient, saveState } from '../app-state.mjs';
+import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   ensureMonitoreo,
   deriveSnapshot,
@@ -110,6 +111,7 @@ export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   flushEaEstadoClinicoFieldsFromDom(patient);
   saveState();
+  scheduleLiveSyncPush();
   eaPanelBridge.renderEstadoActualPanel({ dataOnly: true, refreshClinico: true, skipChartsSummary: true });
   if (toastMsg) getEaPanelRuntime().showToast(toastMsg, 'success');
 }
@@ -117,6 +119,7 @@ function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
 function persistEstadoClinicoLight(_monitoreo, patient) {
   flushEaEstadoClinicoFieldsFromDom(patient);
   saveState();
+  scheduleLiveSyncPush();
 }
 
 function captureEaPanelUiState(mount) {

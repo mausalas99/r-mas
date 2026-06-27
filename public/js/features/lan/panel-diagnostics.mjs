@@ -24,6 +24,7 @@ import { getRoomSyncPhase } from '../../lan-sync-state.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode } from './transport.mjs';
 import { flushLiveSyncOutbox } from './push.mjs';
 import { getLanClientId } from './runtime.mjs';
+import { recoverMonitoreoFromLanCache } from './vitals-recovery.mjs';
 
 export const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
 
@@ -264,8 +265,94 @@ function updateLanSyncDiagnosticsSection(panel, report, diag) {
   }
 }
 
-/** @param {PanelDiagnosticsDeps} panelDeps @param {object} diagDeps @param {object} diag @param {string} report */
-function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
+function createDiagnosticsSecondaryButton(label, marginTop) {
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-lan-secondary';
+  btn.style.width = '100%';
+  if (marginTop) btn.style.marginTop = marginTop;
+  btn.textContent = label;
+  return btn;
+}
+
+/** @param {PanelDiagnosticsDeps} panelDeps */
+function resolveActiveRoomId(panelDeps) {
+  return (
+    String(panelDeps.getActiveLiveSyncRoomId() || '').trim() ||
+    String((getRoomMembership() && getRoomMembership().roomId) || '').trim()
+  );
+}
+
+/** @param {PanelDiagnosticsDeps} panelDeps @param {object} diagDeps @param {HTMLElement} diagBody */
+function appendDiagnosticsCopyButton(panelDeps, diagDeps, diagBody) {
+  var copyBtn = createDiagnosticsSecondaryButton('Copiar informe');
+  copyBtn.onclick = function () {
+    var copyReport = formatDiagnosticsReport(getLanSyncDiagnostics(diagDeps));
+    void copyToClipboardSafe(copyReport).then(function (ok) {
+      panelDeps.runtime().showToast(
+        ok ? 'Informe copiado (códigos redactados).' : 'No se pudo copiar el informe.',
+        ok ? 'success' : 'error'
+      );
+    });
+  };
+  diagBody.appendChild(copyBtn);
+}
+
+/** @param {PanelDiagnosticsDeps} panelDeps @param {HTMLElement} diagBody */
+function appendRetryOutboxButton(panelDeps, diagBody) {
+  var retryBtn = createDiagnosticsSecondaryButton('Reintentar cola de sincronización', '6px');
+  retryBtn.onclick = function () {
+    var rid = resolveActiveRoomId(panelDeps);
+    if (!rid) {
+      panelDeps.runtime().showToast('No hay sala activa para reintentar.', 'warn');
+      return;
+    }
+    void flushLiveSyncOutbox(rid).then(function () {
+      panelDeps.runtime().showToast('Cola reintentada. Revisa el informe abajo.', 'info');
+      panelDeps.renderLanPanel({ force: true });
+    });
+  };
+  diagBody.appendChild(retryBtn);
+}
+
+/** @param {PanelDiagnosticsDeps} panelDeps @param {HTMLElement} diagBody */
+function appendRecoverVitalsButton(panelDeps, diagBody) {
+  var recoverBtn = createDiagnosticsSecondaryButton('Recuperar signos desde caché LAN', '6px');
+  recoverBtn.onclick = function () {
+    var rid = resolveActiveRoomId(panelDeps);
+    if (!rid) {
+      panelDeps.runtime().showToast('No hay sala activa.', 'warn');
+      return;
+    }
+    var preview = recoverMonitoreoFromLanCache({ roomId: rid, dryRun: true });
+    if (!preview.ok) {
+      panelDeps.runtime().showToast(
+        'No hay signos en la cola LAN ni instantáneas locales.',
+        'warn'
+      );
+      return;
+    }
+    var applied = recoverMonitoreoFromLanCache({ roomId: rid });
+    var msg =
+      'Recuperados: ' +
+      (applied.restored + applied.readded) +
+      ' paciente(s) · cola ' +
+      preview.sources.outbox +
+      ' · snapshot ' +
+      preview.sources.snapshot;
+    panelDeps.runtime().showToast(msg, 'success');
+    panelDeps.renderLanPanel({ force: true });
+    if (typeof panelDeps.runtime().renderEstadoActualPanel === 'function') {
+      try {
+        panelDeps.runtime().renderEstadoActualPanel({ force: true, syncHeavy: true });
+      } catch (_ea) { void _ea; }
+    }
+  };
+  diagBody.appendChild(recoverBtn);
+}
+
+/** @returns {HTMLDetailsElement} */
+function createDiagnosticsDisclosureShell() {
   var details = document.createElement('details');
   details.className = 'rpc-disclosure lan-sync-diagnostics-panel';
   try {
@@ -283,6 +370,12 @@ function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
     '<span class="settings-card__title">Estado de sincronización</span>' +
     '<span class="settings-card__desc">Informe técnico y cola de sync</span>';
   details.appendChild(sum);
+  return details;
+}
+
+/** @param {PanelDiagnosticsDeps} panelDeps @param {object} diagDeps @param {object} diag @param {string} report */
+function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
+  var details = createDiagnosticsDisclosureShell();
   var diagBody = document.createElement('div');
   diagBody.className = 'rpc-disclosure__body';
   var reportPre = document.createElement('pre');
@@ -296,41 +389,9 @@ function createLanSyncDiagnosticsSection(panelDeps, diagDeps, diag, report) {
     diagBody.appendChild(splitHintP);
   }
   diagBody.appendChild(reportPre);
-  var copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'btn-lan-secondary';
-  copyBtn.style.width = '100%';
-  copyBtn.textContent = 'Copiar informe';
-  copyBtn.onclick = function () {
-    var copyReport = formatDiagnosticsReport(getLanSyncDiagnostics(diagDeps));
-    void copyToClipboardSafe(copyReport).then(function (ok) {
-      panelDeps.runtime().showToast(
-        ok ? 'Informe copiado (códigos redactados).' : 'No se pudo copiar el informe.',
-        ok ? 'success' : 'error'
-      );
-    });
-  };
-  diagBody.appendChild(copyBtn);
-  var retryBtn = document.createElement('button');
-  retryBtn.type = 'button';
-  retryBtn.className = 'btn-lan-secondary';
-  retryBtn.style.marginTop = '6px';
-  retryBtn.style.width = '100%';
-  retryBtn.textContent = 'Reintentar cola de sincronización';
-  retryBtn.onclick = function () {
-    var rid =
-      String(panelDeps.getActiveLiveSyncRoomId() || '').trim() ||
-      String((getRoomMembership() && getRoomMembership().roomId) || '').trim();
-    if (!rid) {
-      panelDeps.runtime().showToast('No hay sala activa para reintentar.', 'warn');
-      return;
-    }
-    void flushLiveSyncOutbox(rid).then(function () {
-      panelDeps.runtime().showToast('Cola reintentada. Revisa el informe abajo.', 'info');
-      panelDeps.renderLanPanel({ force: true });
-    });
-  };
-  diagBody.appendChild(retryBtn);
+  appendDiagnosticsCopyButton(panelDeps, diagDeps, diagBody);
+  appendRetryOutboxButton(panelDeps, diagBody);
+  appendRecoverVitalsButton(panelDeps, diagBody);
   details.appendChild(diagBody);
   return details;
 }

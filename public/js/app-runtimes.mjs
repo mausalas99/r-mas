@@ -35,6 +35,7 @@ import {
 import {
   registerLanRuntime,
   registerLanSaveHooks,
+  scheduleLiveSyncPush,
 } from './features/lan-sync.mjs';
 import {
   registerPatientsRuntime,
@@ -272,6 +273,7 @@ function buildRuntimeContextUiDeps() {
     invalidateInnerTabRenderCache,
     refreshExpedienteAfterPatientSelect,
     renderEstadoActualButton,
+    renderEstadoActualPanel,
     renderPatientDataPane,
     renderNoteForm,
     renderIndicaForm,
@@ -383,6 +385,7 @@ function buildRuntimeContextFeatureDeps() {
     buildPatientEntry,
     onMedicionRegistered: function () {
       settingsHelpRuntimeProxies.guidedTourAdvanceAfter('estado_actual_registro');
+      scheduleLiveSyncPush();
     },
     launchConfetti,
     renderEstadoActualBar,

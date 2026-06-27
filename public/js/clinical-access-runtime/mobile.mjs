@@ -19,12 +19,8 @@ export function pruneMobilePatientsOutsideTeamScope() {
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return 0;
   if (!isClinicalScopeReadyForLanPatientApply()) {
-    const stale = patients.length;
-    if (stale > 0) {
-      setPatients([]);
-      for (const pid of Object.keys(notes)) dropPatientSidecars(pid);
-    }
-    return stale;
+    // Scope still hydrating from LAN clinicalOps — keep local census until ready.
+    return 0;
   }
   const ctx = getClinicalScopeContextForEvaluate();
   const visible = filterPatientsForClinicalSidebar(

@@ -24,6 +24,7 @@ const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.j
 const {
   createDocumentExportAuthMiddleware,
   shouldSkipGlobalRateLimit,
+  shouldSkipGlobalJsonBodyParser,
 } = require('./lib/server-http-security.js');
 const { createInternoRouter, broadcastInterno } = require('./lib/interno/interno-router.js');
 const { createEquiposRouter } = require('./lib/equipos/equipos-router.js');
@@ -32,7 +33,11 @@ const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 
 const appExpress = express();
-appExpress.use(express.json({ limit: '2mb' }));
+const globalJsonBodyParser = express.json({ limit: '2mb' });
+appExpress.use((req, res, next) => {
+  if (shouldSkipGlobalJsonBodyParser(req)) return next();
+  return globalJsonBodyParser(req, res, next);
+});
 
 const LAN_HTTP_PORT = 3738;
 
@@ -436,7 +441,11 @@ appExpress.use((err, req, res, _next) => {
     code: err && err.code,
     ...(req.__safeForLog || {}),
   }));
-  if (!res.headersSent) res.status(500).json({ error: 'internal_error' });
+  if (res.headersSent) return;
+  const status = Number(err && (err.status || err.statusCode)) || 500;
+  const error =
+    status === 413 ? 'payload_too_large' : status === 500 ? 'internal_error' : err.message || 'request_failed';
+  res.status(status).json({ error });
 });
 
 let serverInstance = null;

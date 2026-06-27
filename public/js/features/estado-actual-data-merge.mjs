@@ -16,6 +16,44 @@ function compareSavedAt(a, b) {
 }
 
 /**
+ * @param {unknown} row
+ */
+function medicionMergeKey(row) {
+  if (!row || typeof row !== 'object') return '';
+  /** @type {any} */
+  var r = row;
+  if (r.recordedAt != null && String(r.recordedAt).trim()) return String(r.recordedAt);
+  if (r.createdAt != null && String(r.createdAt).trim()) return String(r.createdAt);
+  return String(r.id || '');
+}
+
+/**
+ * Union vitals historial by medicion id; newer recordedAt wins per row.
+ * @param {unknown[]} localHist
+ * @param {unknown[]} remoteHist
+ */
+function mergeHistorialMonitoreo(localHist, remoteHist) {
+  /** @type {Map<string, object>} */
+  var map = new Map();
+  var combined = (localHist || []).concat(remoteHist || []);
+  for (var i = 0; i < combined.length; i += 1) {
+    var row = combined[i];
+    if (!row || typeof row !== 'object') continue;
+    /** @type {any} */
+    var r = row;
+    var id = String(r.id || '').trim();
+    if (!id) continue;
+    var cur = map.get(id);
+    if (!cur || compareSavedAt(medicionMergeKey(r), medicionMergeKey(cur)) > 0) {
+      map.set(id, structuredClone(r));
+    }
+  }
+  return Array.from(map.values()).sort(function (a, b) {
+    return compareSavedAt(medicionMergeKey(a), medicionMergeKey(b));
+  });
+}
+
+/**
  * @param {Record<string, unknown>} resEco
  * @param {Record<string, unknown>} remEco
  */
@@ -132,7 +170,7 @@ export function mergeMonitoreo(localIn, remoteIn) {
   var rHist = Array.isArray(remote?.historial) ? remote.historial : [];
   /** @type {any} */
   var result = /** @type {any} */ (structuredClone(localIn));
-  result.historial = structuredClone((rHist.length > lHist.length ? remote : local).historial || []);
+  result.historial = mergeHistorialMonitoreo(lHist, rHist);
 
   var locT = result.textoGuardado || { text: '', savedAt: null };
   var remT = remote.textoGuardado || { text: '', savedAt: null };

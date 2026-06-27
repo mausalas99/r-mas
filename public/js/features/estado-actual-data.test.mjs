@@ -83,6 +83,22 @@ test('mergeMonitoreo fusiona escalares de estado clínico (four local + soporte 
   assert.equal(merged.estadoClinico.soporte, 'O₂ 2L');
 });
 
+test('mergeMonitoreo une historial por id aunque remoto tenga más filas', () => {
+  const local = emptyMonitoreo();
+  local.historial = [
+    { id: 'ipad-1', recordedAt: '2026-06-27T18:00:00.000Z', vitals: { tas: 120 } },
+  ];
+  const remote = emptyMonitoreo();
+  remote.historial = [
+    { id: 'host-a', recordedAt: '2026-06-27T08:00:00.000Z', vitals: { tas: 110 } },
+    { id: 'host-b', recordedAt: '2026-06-27T10:00:00.000Z', vitals: { tas: 115 } },
+    { id: 'host-c', recordedAt: '2026-06-27T12:00:00.000Z', vitals: { tas: 118 } },
+  ];
+  const merged = mergeMonitoreo(local, remote);
+  assert.equal(merged.historial.length, 4);
+  assert.ok(merged.historial.some((row) => row.id === 'ipad-1'));
+});
+
 test('emptyMonitoreo — stable canonical shape', () => {
   const a = emptyMonitoreo();
   const b = emptyMonitoreo();
