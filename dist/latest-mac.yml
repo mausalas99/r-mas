@@ -1,29 +1,27 @@
-version: 7.5.2
+version: 7.5.3
 files:
-  - url: R+-7.5.2-arm64.zip
-    sha512: t5nduTpbCJDVRGFDyQXLYpAid9wqCSs5mohbjGOFJxaPbClMTgJASeTpiIQbUoErSeNtg/DoKmpuT8BrYaFDgA==
-    size: 129764815
-  - url: R+-7.5.2-arm64.dmg
-    sha512: +2bDaEA5JF6JZAn8tBUZ9z0rcAH0AT4Mv5LdzVeCCKGAGFjZw1pwvgmC6kErG7b4LwI9F7bz2CmVdyKWbJSPTA==
-    size: 135122875
-  - url: R+-7.5.2-x64.zip
-    sha512: qJ6kke3U7Qpdf3HGGlVNHRUiV8234n43DdkwYTuNqr5KnllwY3ytbKNb0zRs1H4LCB37EW4FtTxXzK6Qtej75w==
-    size: 138138836
-  - url: R+-7.5.2-x64.dmg
-    sha512: pZUj/MWwySx4GQF0AEI5HHqi+233RL88qJqrvg0wMnPrNbB29I21v5jAKewtYvjb2EtfuL8+I3LHO514QpZAug==
-    size: 143629477
-path: R+-7.5.2-arm64.zip
-sha512: t5nduTpbCJDVRGFDyQXLYpAid9wqCSs5mohbjGOFJxaPbClMTgJASeTpiIQbUoErSeNtg/DoKmpuT8BrYaFDgA==
-releaseDate: '2026-06-26T20:56:27.000Z'
+  - url: R+-7.5.3-arm64.zip
+    sha512: DFaIq6vHZif0vqu6xsUawcH9N+yS3zindk77tdRXeVwVspBWEwyTq2ACO06wfTiX+v3bMrOmtGahep6RpSxjGw==
+    size: 136778545
+  - url: R+-7.5.3-arm64.dmg
+    sha512: 50WzWjPJSQS3RDFkc9Ri/V6anqYYyUcDncupn5m99K814QUYmEoEF/XiKmr+OQLQeRNmvEjQ3DjsC4XxeamMiw==
+    size: 142495856
+  - url: R+-7.5.3-x64.zip
+    sha512: vqKDdkroFo2Ie7vo2y/rF6kVrkXSrBhpvWinolgLsJw/CO+7O0hnXEmsTKhxTj17k5HT9JsRAwTh0c1fW/lFPw==
+    size: 145152581
+  - url: R+-7.5.3-x64.dmg
+    sha512: 28lGBlRwjwHQlrhZSbSWWY5Bq1EF0FubT3VAQWpINvACmSjBHBUL647DZLOD7mt+uaPLJEzPVpzsDdD81SAsIQ==
+    size: 150934051
+path: R+-7.5.3-arm64.zip
+sha512: DFaIq6vHZif0vqu6xsUawcH9N+yS3zindk77tdRXeVwVspBWEwyTq2ACO06wfTiX+v3bMrOmtGahep6RpSxjGw==
+releaseDate: '2026-06-27T16:05:23.000Z'
 releaseNotes: |
-  Sobre 7.5.1: franja de signos vitales más legible (filas compactas + historial al tocar), SOAP/copiar alineados a la lectura más reciente, reglas de PICO febril, AYUNO en SOME y soporte Traqueostomía en Estado Actual.
+  Sobre 7.5.2: importación directa desde el repositorio web de laboratorio del hospital (registro + rango de fechas) al historial del paciente, reutilizando pegado masivo, deduplicación y tendencias existentes.
   
-  Estado Actual — signos vitales — Resumen en filas (T/A, FC, FR, Temp, SatO₂) dentro de una columna estrecha; al tocar una fila con historial se abre un modal con lecturas del turno (más reciente arriba).
+  Importar desde repositorio — Botón en el panel de laboratorio: indica registro y rango Desde/Hasta (días calendario); R+ consulta la tabla del portal, descarga PDFs, extrae texto SOME y procesa con procesarLabs.
   
-  Estado Actual — SOAP y copiar — Signos y texto guardado usan la última lectura del turno (antes podían quedar valores viejos). PICO solo si temperatura ≥ 38 °C y dentro de 5 días; fecha corta (dd/mm o dd/mm HH:mm) sin ruido de @ 00:00 en cierre de turno.
+  Flujo híbrido — Si el paciente activo coincide y los estudios son nuevos, importación silenciosa; si hay ambigüedad, registro distinto o duplicados, abre el modal de revisión masiva (Agregar paciente / confirmar).
   
-  SOME — ayuno — DIETAS AYUNO se reconoce en pegado SOME (filas cortas, con o sin tabs); propuesta y SOAP muestran DIETA AYUNO sin placeholder calórico.
+  Mensajes claros — Toasts específicos: sin estudios para ese registro, estudios fuera del rango (con conteo), error de conexión al portal.
   
-  Soporte respiratorio — traqueostomía — Nueva opción en Estado Actual, modal SOAP y export; SatO₂ puede inferirse al pegar monitoreo (TQT, TRAQUEOSTOMÍA).
-  
-  T/A unificada — TAS/TAD en una sola fila en signos y en el modal de historial.
+  Seguridad local — Descarga y extracción en proceso principal; PDFs temporales se borran tras extraer texto. Requiere red hospitalaria (LAN); sin almacenamiento en la nube.
