@@ -1,33 +1,54 @@
+import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import {
   buildLabRepoPreviewBlocks,
   buildLabRepoBulkText,
   shouldSilentImportLabRepo,
+  resolveLabRepoFetchUserMessage,
 } from './lab-repo-import-gate.mjs';
 import { openLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
 
 function defaultDateRange() {
   var hasta = new Date();
-  var desde = new Date(hasta.getTime() - 48 * 60 * 60 * 1000);
+  hasta.setHours(0, 0, 0, 0);
+  var desde = new Date(hasta);
+  desde.setDate(desde.getDate() - 2);
   return { desde: desde, hasta: hasta };
 }
 
-function toDatetimeLocalValue(d) {
+function toDateInputValue(d) {
   var pad = function (n) {
     return String(n).padStart(2, '0');
   };
-  return (
-    d.getFullYear() +
-    '-' +
-    pad(d.getMonth() + 1) +
-    '-' +
-    pad(d.getDate()) +
-    'T' +
-    pad(d.getHours()) +
-    ':' +
-    pad(d.getMinutes())
-  );
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function parseDateInputDay(isoDay) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(isoDay || '').trim());
+  if (!m) return null;
+  var y = Number(m[1]);
+  var mo = Number(m[2]) - 1;
+  var day = Number(m[3]);
+  var dt = new Date(y, mo, day);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== day) return null;
+  return dt;
+}
+
+/** Inclusive calendar-day range for portal Fecha Solicitud filter. */
+export function labRepoFetchRangeFromDateInputs(desdeDay, hastaDay) {
+  var desde = parseDateInputDay(desdeDay);
+  var hasta = parseDateInputDay(hastaDay);
+  if (!desde || !hasta) return null;
+  desde.setHours(0, 0, 0, 0);
+  hasta.setHours(23, 59, 59, 999);
+  if (desde.getTime() > hasta.getTime()) return null;
+  return { desde: desde, hasta: hasta };
+}
+
+function syncLabRepoDateField(input) {
+  if (!input) return;
+  input.dispatchEvent(new Event('rpc-date-refresh'));
 }
 
 function getActivePatient() {
@@ -80,15 +101,10 @@ function setLabRepoImportBusy(busy) {
 }
 
 function toastLabRepoFetchOutcome(studies, errors) {
-  if (!studies.length && errors.length) {
-    rt.showToast('No se pudo conectar al repositorio de laboratorio', 'error');
-    return false;
-  }
-  if (!studies.length) {
-    rt.showToast('Sin estudios en el rango seleccionado', 'info');
-    return false;
-  }
-  return true;
+  var msg = resolveLabRepoFetchUserMessage(studies, errors);
+  if (!msg) return true;
+  rt.showToast(msg.toast, msg.type);
+  return false;
 }
 
 function finishLabRepoImport(studies, registro, errors) {
@@ -134,6 +150,12 @@ export function openLabRepoImportModal() {
   if (!registroEl || !desdeEl || !hastaEl) return;
 
   var range = defaultDateRange();
+  refreshRpcDateFields(modal);
+  desdeEl.value = toDateInputValue(range.desde);
+  hastaEl.value = toDateInputValue(range.hasta);
+  syncLabRepoDateField(desdeEl);
+  syncLabRepoDateField(hastaEl);
+
   var registro = getRegistroInitial();
   registroEl.value = registro;
   registroEl.readOnly = registroReadOnly();
@@ -142,8 +164,6 @@ export function openLabRepoImportModal() {
   } else {
     registroEl.removeAttribute('aria-readonly');
   }
-  desdeEl.value = toDatetimeLocalValue(range.desde);
-  hastaEl.value = toDatetimeLocalValue(range.hasta);
 
   modal.hidden = false;
   modal.classList.add('open');
@@ -163,10 +183,20 @@ export async function confirmLabRepoImport() {
   var fields = readLabRepoImportFields();
   if (!validateLabRepoImportFields(fields)) return;
 
+  var range = labRepoFetchRangeFromDateInputs(fields.desde, fields.hasta);
+  if (!range) {
+    rt.showToast('Revisa el rango de fechas (Desde no puede ser posterior a Hasta)', 'error');
+    return;
+  }
+
   setLabRepoImportBusy(true);
   rt.showToast('Consultando repositorio…', 'info');
   try {
-    var res = await window.electronAPI.labRepoFetch(fields);
+    var res = await window.electronAPI.labRepoFetch({
+      registro: fields.registro,
+      desde: range.desde.toISOString(),
+      hasta: range.hasta.toISOString(),
+    });
     var studies = (res && res.studies) || [];
     var errors = (res && res.errors) || [];
     if (!toastLabRepoFetchOutcome(studies, errors)) return;

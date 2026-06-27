@@ -1882,6 +1882,13 @@ html.dark .btn-med-secondary--muted:hover {
   opacity: 0.85;
   cursor: default;
 }
+.lab-repo-import-modal .rpc-date-field {
+  width: 100%;
+}
+.lab-repo-import-modal .rpc-date-field__trigger.profile-input {
+  width: 100%;
+  justify-content: space-between;
+}
 .lab-display-prefs-hint {
   margin: 0 0 16px;
   font-size: 12px;

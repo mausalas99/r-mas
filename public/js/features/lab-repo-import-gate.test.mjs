@@ -5,6 +5,7 @@ const {
   shouldSilentImportLabRepo,
   buildLabRepoBulkText,
   buildLabRepoPreviewBlocks,
+  resolveLabRepoFetchUserMessage,
 } = await import('./lab-repo-import-gate.mjs');
 
 function okBlock(overrides) {
@@ -144,4 +145,29 @@ test('buildLabRepoPreviewBlocks delegates to buildBulkLabPreview', async () => {
   assert.equal(blocks[0].status, 'ok');
   assert.ok(blocks[0].okReportCount >= 1);
   assert.equal(blocks[0].patient.id, 'p1');
+});
+
+test('resolveLabRepoFetchUserMessage maps no-search-results without connection error', () => {
+  var msg = resolveLabRepoFetchUserMessage([], [{ folio: '', message: 'no-search-results' }]);
+  assert.ok(msg);
+  assert.match(msg.toast, /No hay estudios para ese registro/);
+  assert.equal(msg.type, 'info');
+});
+
+test('resolveLabRepoFetchUserMessage maps no-rows-in-range with totalRows hint', () => {
+  var msg = resolveLabRepoFetchUserMessage([], [{
+    folio: '',
+    message: 'no-rows-in-range',
+    totalRows: 5,
+  }]);
+  assert.ok(msg);
+  assert.match(msg.toast, /5 estudio/);
+  assert.match(msg.toast, /rango de fechas/);
+});
+
+test('resolveLabRepoFetchUserMessage maps HTTP errors to connection toast', () => {
+  var msg = resolveLabRepoFetchUserMessage([], [{ folio: '', message: 'lab-repo-http-503' }]);
+  assert.ok(msg);
+  assert.match(msg.toast, /No se pudo conectar/);
+  assert.equal(msg.type, 'error');
 });
