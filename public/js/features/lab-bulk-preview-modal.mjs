@@ -220,6 +220,7 @@ function handlePreviewBodyClick(event) {
     rt.showToast('No se pudo abrir el formulario de alta', 'error');
     return;
   }
+  suspendLabBulkPreviewModal();
   rt.openAddModalFromLabPatient(labPatient, {
     fromBulkPreview: true,
     onSaved: function () {

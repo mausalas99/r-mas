@@ -13,7 +13,8 @@ import { syncPatientRegistrationTeamSelect } from '../patient-team-assign-ui.mjs
 import { rt } from './patients-runtime-state.mjs';
 import { esc } from './patients-html.mjs';
 import { escTxtSafe } from './patients-html.mjs';
-import { commitPatientFromModal, clearPendingAddPatientCallbacks, setPendingAddPatientFromBulkPreview, setPendingAddPatientSavedCallback } from './patients-modal-commit.mjs';
+import { commitPatientFromModal, clearPendingAddPatientCallbacks, setPendingAddPatientFromBulkPreview, setPendingAddPatientSavedCallback, getPendingAddPatientFromBulkPreview } from './patients-modal-commit.mjs';
+import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 
 function _prefillServicioForSala() {
   var srv = document.getElementById('m-servicio');
@@ -205,10 +206,13 @@ export function openAddModalFromLabPatient(patient, opts) {
 }
 
 export function closeModal() {
+  var wasBulkPreview = getPendingAddPatientFromBulkPreview();
   pendingAddPatientSavedCallback = null;
   pendingAddPatientFromBulkPreview = false;
   clearPendingAddPatientCallbacks();
-  closeModalAnimated(document.getElementById('modal'));
+  closeModalAnimated(document.getElementById('modal'), function () {
+    if (wasBulkPreview) resumeLabBulkPreviewModalIfSuspended();
+  });
 }
 
 export function confirmCloseAddPatientModal() {

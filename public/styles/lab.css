@@ -2385,7 +2385,7 @@ html.dark .lab-out-ascitis-alert {
   transform: scale(0.96);
 }
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
-  z-index: 110;
+  z-index: var(--z-modal-nested);
 }
 .lab-bulk-preview-detail-row td {
   padding-top: 0;
