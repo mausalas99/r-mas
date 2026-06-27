@@ -86,7 +86,7 @@ docs/
 | Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
 | Labs / tendencias | `public/js/labs*.mjs`, `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs` |
-| Lab repo scraper | `lib/lab-repo/` (`portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
+| Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
 | Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes |
@@ -133,7 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-27** `lab-repo`: portal HTML parse + date filter (GridView rows, REGISTRO controls, ViewState); `lib/lab-repo/portal-html.mjs`, fixtures.
+- **2026-06-27** `lab-repo`: ASP.NET portal client (cookie jar, REGISTRO search POST) + HTML parse/date filter; `lib/lab-repo/portal-client.mjs`, `portal-html.mjs`, fixtures.
 - **2026-06-26** `release-7.5.2`: EA signos en filas + modal historial, SOAP/copiar última lectura, PICO febril ≤5 días, SOME ayuno + traqueostomía; `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`.
 - **2026-06-25** `release-7.5.1`: push equipos LAN/cloud, eTFG desde expediente, labs masivos ventana 2 h, UI Rams, SQLCipher v20; `lib/equipos/equipos-push-*`, `labs-egfr.mjs`, `public/tokens.css`.
 - **2026-06-25** `vibedrift`: phases 0–5 — scan hygiene, arch/DI fixes, `dom-escape`, equipos shared, CI gate `--fail-on-score 45`; `@vibedrift/cli`, `vibedrift:scan`/`vibedrift:check`.
