@@ -105,8 +105,9 @@ test('mergePatientEntry fusiona monitoreo con mergeMonitoreo si ambos tienen car
     labHistory: [],
   };
   const m = mergePatientEntry(olderNote, newerNote);
-  assert.equal(m.patient.monitoreo.historial.length, 2);
+  assert.equal(m.patient.monitoreo.historial.length, 3);
   assert.equal(m.patient.monitoreo.historial[0].id, 'x');
+  assert.equal(m.patient.monitoreo.historial[2].id, 'z');
 });
 
 test('mergePatientEntry conserva solo el monitoreo del lado que tiene datos', () => {
