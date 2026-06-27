@@ -139,30 +139,36 @@ test('buildEstadoActualText SOME *SUPLEMENTO sin cláusula calórica', () => {
 
 test('buildHiTempClause documenta pico febril (≥38 °C) con fecha corta', () => {
   const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  const now = new Date(2026, 5, 24, 12, 0, 0);
   const clause = buildHiTempClause(
     { temp: 36, tempPeak: 38.2 },
     { tempPeak: '08:00' },
-    { recordedAt, time: '08:00' }
+    { recordedAt, time: '08:00' },
+    now
   );
   assert.equal(clause, 'TEMPERATURA 36 °C (PICO 38.2 °C @ 22/06 08:00)');
 });
 
 test('buildHiTempClause omite pico < 38 °C aunque difiera de la actual', () => {
   const recordedAt = new Date(2026, 5, 22, 6, 0, 0).toISOString();
+  const now = new Date(2026, 5, 24, 12, 0, 0);
   const clause = buildHiTempClause(
     { temp: 36, tempPeak: 37.2 },
     { tempPeak: '08:00' },
-    { recordedAt, time: '08:00' }
+    { recordedAt, time: '08:00' },
+    now
   );
   assert.equal(clause, 'TEMPERATURA 36 °C');
 });
 
 test('buildHiTempClause pico en cierre de turno usa fecha corta 00:00', () => {
   const recordedAt = new Date(2026, 5, 26, 0, 0, 0).toISOString();
+  const now = new Date(2026, 5, 26, 18, 0, 0);
   const clause = buildHiTempClause(
     { temp: 36, tempPeak: 38.4 },
     { tempPeak: '00:00' },
-    { recordedAt, time: '00:00' }
+    { recordedAt, time: '00:00' },
+    now
   );
   assert.equal(clause, 'TEMPERATURA 36 °C (PICO 38.4 °C @ 26/06 00:00)');
 });
