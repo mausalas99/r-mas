@@ -916,6 +916,18 @@ ipcMain.handle('clipboard-write-text', (_e, text) => {
     return false;
   }
 });
+
+ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
+  try {
+    const { fetchLabRepoStudies } = await import('./lib/lab-repo/lab-repo-fetch.mjs');
+    return await fetchLabRepoStudies(payload);
+  } catch (err) {
+    return {
+      studies: [],
+      errors: [{ folio: '', message: String(err?.message || err) }],
+    };
+  }
+});
 function getTargetWebContents() {
   const focused = BrowserWindow.getFocusedWindow();
   if (focused && !focused.isDestroyed()) return focused.webContents;
