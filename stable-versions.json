@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-27",
   "entries": [
     {
+      "version": "7.5.5",
+      "label": "7.5.5",
+      "publishedAt": "2026-06-27",
+      "summary": "Release estable 7.5.5",
+      "recommended": true
+    },
+    {
       "version": "7.5.4",
       "label": "7.5.4",
       "publishedAt": "2026-06-27",
       "summary": "Release estable 7.5.4",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.5.3",
