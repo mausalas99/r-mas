@@ -141,6 +141,9 @@ export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
  */
 export function persistClinicalUserBinding(patch) {
   const settings = readRpcSettings();
+  if (!settings.clientId) {
+    settings.clientId = resolveClinicalClientId(settings);
+  }
   if (patch.userId) settings.clinicalUserId = String(patch.userId);
   if (patch.staleDeviceUserId) {
     settings.clinicalStaleDeviceUserId = String(patch.staleDeviceUserId);

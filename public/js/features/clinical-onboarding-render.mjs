@@ -19,19 +19,24 @@ import {
 } from '../clinical-settings.mjs';
 import {
   isValidUsernameFormat,
+  isLegacyMachineUsername,
   normalizeUsername,
 } from '../clinical-username.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import {
-  renderLocalOnlyProfilePanel,
   renderSyncModeChoicePanel,
+  wireSyncModeOnboardingInteractions,
 } from './clinical-onboarding-sync-mode.mjs';
+import {
+  defaultLocalOnlyDisplayName,
+  submitLocalOnlyProfile,
+} from './clinical-onboarding-local-submit.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import {
   getClientId,
   needsClinicalSyncModeChoice,
+  needsLocalOnlyProfile,
   needsProfileOnboarding,
-  needsUsernameClaim,
 } from './clinical-onboarding-gates.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 
@@ -84,15 +89,29 @@ function buildSalaOptionsHtml(prefilledSala) {
   ).join('');
 }
 
-function buildLanProfileFormBody(settings) {
+function resolveOnboardUsernamePrefill(settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
-  const cachedUsername = profileGatePending
-    ? ''
-    : normalizeUsername(String(settings.clinicalUsername || ''));
+  const sessionUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
+  if (!profileGatePending) {
+    return normalizeUsername(String(settings.clinicalUsername || ''));
+  }
+  if (
+    isValidUsernameFormat(sessionUsername) &&
+    !isLegacyMachineUsername(sessionUsername, getClientId())
+  ) {
+    return sessionUsername;
+  }
+  return '';
+}
+
+function buildLanProfileFormBody(settings) {
+  const cachedUsername = resolveOnboardUsernamePrefill(settings);
   const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
-  const prefilledName = profileGatePending
-    ? ''
-    : String(settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || '');
+  const prefilledName = String(
+    settings.clinicalDisplayName ||
+      clinicalSessionContext.user?.clinical_name ||
+      ''
+  );
   const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
   const prefilledShiftPin = '';
 
@@ -190,8 +209,31 @@ export async function renderOnboardingPanelInto(host) {
   }
 
   if (isClinicalLocalOnlyMode(settings)) {
-    renderLocalOnlyProfilePanel(host, settings);
-    await wireOnboardingInteractions();
+    if (!needsLocalOnlyProfile(settings)) {
+      await renderCompletedOnboarding(host);
+      return;
+    }
+    const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
+    const result = await submitLocalOnlyProfile(defaultLocalOnlyDisplayName(), rank, null);
+    if (result.ok) {
+      if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+        window.showToast(
+          'Listo. R+ queda solo en este equipo, sin sincronización LAN.',
+          'success'
+        );
+      }
+      await renderCompletedOnboarding(host);
+      return;
+    }
+    host.innerHTML = buildOnboardingStageHtml({
+      title: 'Perfil local',
+      leadHtml: `<p class="clinical-registration-error">${escapeHtml(
+        result.error || 'No se pudo activar el modo solo en este equipo.'
+      )}</p>`,
+      bodyHtml: `<div class="modal-actions clinical-onboard-session-actions"><button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button></div>`,
+    });
+    const { wireOnboardingSessionRecoveryOnce } = await import('./clinical-onboarding-main.mjs');
+    wireOnboardingSessionRecoveryOnce(host);
     return;
   }
 

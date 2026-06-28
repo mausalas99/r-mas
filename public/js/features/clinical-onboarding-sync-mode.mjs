@@ -1,25 +1,11 @@
 /**
  * Onboarding: LAN vs solo este equipo + minimal local profile.
  */
-import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { readRpcSettings, setClinicalSyncModeLocalOnly } from '../clinical-settings.mjs';
 import {
   buildOnboardingStageHtml,
   buildSyncModeChoiceBodyHtml,
 } from './clinical-onboarding-shell.mjs';
-import { submitLocalOnlyProfile } from './clinical-onboarding-local-submit.mjs';
-
-import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
-function dbApi() {
-  if (typeof window === 'undefined') return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-
-function toast(msg, type = 'info') {
-  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-    window.showToast(msg, type);
-  }
-}
 
 /** @param {string} userId */
 export function localOnlyUsernameForUserId(userId) {
@@ -35,47 +21,9 @@ export function renderSyncModeChoicePanel(host) {
   host.innerHTML = buildOnboardingStageHtml({
     title: '¿Cómo usarás R+?',
     leadHtml:
-      '<p>Elige antes de configurar tu perfil. La elección queda guardada en este equipo.</p>',
+      '<p>Elige cómo usarás R+ en este equipo. Con red LAN pediremos tu perfil de guardia; en solo equipo entras directo.</p>',
     bodyHtml: buildSyncModeChoiceBodyHtml(),
     stepperIndex: 1,
-  });
-}
-
-/** @param {Record<string, unknown>} settings */
-export function renderLocalOnlyProfilePanel(host, settings) {
-  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
-  const prefilledName = String(
-    settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
-  );
-  host.innerHTML = buildOnboardingStageHtml({
-    title: 'Perfil local',
-    leadHtml:
-      '<p>R+ no usará red de guardia. Modo pensado para médicos ajenos a medicina interna; solo necesitamos cómo firmar notas y documentos en esta Mac.</p>',
-    stepperIndex: 2,
-    bodyHtml: `
-      <div class="clinical-onboard-form-shell clinical-onboard-form-shell--narrow">
-        <form id="clinical-onboard-local-form" class="clinical-teams-create-form clinical-onboard-form clinical-onboard-form--local">
-          <div class="field-group">
-            <label for="onboard-local-name">Tu nombre en notas *</label>
-            <input id="onboard-local-name" type="text" class="profile-input" placeholder="ej. Dr. Mendoza"
-              value="${escapeAttr(prefilledName)}" required autocomplete="name">
-          </div>
-          <div class="field-group">
-            <label for="onboard-local-rank">Rango (opcional)</label>
-            <select id="onboard-local-rank" class="profile-input">
-              <option value="R1" ${rank === 'R1' ? 'selected' : ''}>R1</option>
-              <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
-              <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
-              <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
-            </select>
-          </div>
-          <p id="onboard-error" class="clinical-registration-error" hidden></p>
-          <div class="modal-actions clinical-onboard-form-actions">
-            <button type="submit" class="btn-save">Continuar sin LAN</button>
-            <button type="button" id="clinical-onboard-back-mode" class="btn-med-secondary">Cambiar modo</button>
-          </div>
-        </form>
-      </div>`,
   });
 }
 
@@ -100,39 +48,6 @@ export async function handleSyncModeBack() {
   await refreshOnboardingHost();
 }
 
-export async function handleLocalOnlyProfileSubmit(ev) {
-  ev.preventDefault();
-  const name = String(document.getElementById('onboard-local-name')?.value || '').trim();
-  const rank = String(document.getElementById('onboard-local-rank')?.value || 'R1');
-  const errEl = document.getElementById('onboard-error');
-  if (!name) {
-    if (errEl) {
-      errEl.textContent = 'Escribe cómo quieres aparecer en notas y documentos.';
-      errEl.hidden = false;
-    }
-    return;
-  }
-  const api = dbApi();
-  if (!api) {
-    toast('Sesión clínica no disponible.', 'error');
-    return;
-  }
-  try {
-    const result = await submitLocalOnlyProfile(name, rank, errEl);
-    if (!result.ok) {
-      if (result.error) toast(result.error, 'error');
-      return;
-    }
-    toast('Listo. R+ queda solo en este equipo (ajeno a medicina interna), sin sincronización LAN.', 'success');
-    await refreshOnboardingHost();
-  } catch (err) {
-    if (errEl) {
-      errEl.textContent = err instanceof Error ? err.message : 'Error al guardar el perfil.';
-      errEl.hidden = false;
-    }
-  }
-}
-
 export function wireSyncModeOnboardingInteractions() {
   const modeHost = document.querySelector('.clinical-onboard-mode-grid');
   if (modeHost && !modeHost._rpcModeWired) {
@@ -142,17 +57,5 @@ export function wireSyncModeOnboardingInteractions() {
       if (!btn) return;
       void handleSyncModeChoice(String(btn.getAttribute('data-sync-mode') || ''));
     });
-  }
-
-  const localForm = document.getElementById('clinical-onboard-local-form');
-  if (localForm && !localForm._rpcLocalWired) {
-    localForm._rpcLocalWired = true;
-    localForm.addEventListener('submit', (ev) => void handleLocalOnlyProfileSubmit(ev));
-  }
-
-  const backModeBtn = document.getElementById('clinical-onboard-back-mode');
-  if (backModeBtn && !backModeBtn._rpcBackModeWired) {
-    backModeBtn._rpcBackModeWired = true;
-    backModeBtn.addEventListener('click', () => void handleSyncModeBack());
   }
 }

@@ -361,10 +361,67 @@ function initIdleLockFeature() {
 }
 
 // ── Borrado de datos (privacidad) ─────────────────────────────────
+var wipeModalWired = false;
+
+function showWipeStep(stepId) {
+  var steps = ['choose', 'cache', 'full'];
+  steps.forEach(function(id) {
+    var node = document.getElementById('rpc-wipe-step-' + id);
+    if (!node) return;
+    node.hidden = id !== stepId;
+  });
+  var modal = document.getElementById('rpc-wipe-modal');
+  if (!modal) return;
+  var titleId = stepId === 'cache'
+    ? 'rpc-wipe-cache-title'
+    : stepId === 'full'
+      ? 'rpc-wipe-full-title'
+      : 'rpc-wipe-title';
+  modal.setAttribute('aria-labelledby', titleId);
+}
+
+function resetWipeConfirmUi() {
+  showWipeStep('choose');
+  var input = document.getElementById('rpc-wipe-full-input');
+  if (input) input.value = '';
+  var err = document.getElementById('rpc-wipe-full-error');
+  if (err) {
+    err.textContent = '';
+    err.hidden = true;
+  }
+}
+
+function wireWipeDataModalOnce() {
+  if (wipeModalWired) return;
+  var panel = document.querySelector('#rpc-wipe-modal .rpc-wipe-panel');
+  if (!panel) return;
+  wipeModalWired = true;
+  panel.addEventListener('click', function(ev) {
+    var btn = ev.target.closest('[data-wipe-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-wipe-action');
+    if (action === 'close') closeWipeDataModal();
+    else if (action === 'choose') showWipeStep('choose');
+    else if (action === 'cache-exec') executeWipeCache();
+    else if (action === 'full-exec') executeWipeAll();
+  });
+  var input = document.getElementById('rpc-wipe-full-input');
+  if (input) {
+    input.addEventListener('keydown', function(ev) {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        executeWipeAll();
+      }
+    });
+  }
+}
+
 function openWipeDataModal() {
   closeSettingsDropdown();
+  wireWipeDataModalOnce();
   var m = document.getElementById('rpc-wipe-modal');
   if (!m) return;
+  resetWipeConfirmUi();
   m.style.display = 'flex';
   m.setAttribute('aria-hidden', 'false');
 }
@@ -374,6 +431,7 @@ function closeWipeDataModal() {
   if (!m) return;
   m.style.display = 'none';
   m.setAttribute('aria-hidden', 'true');
+  resetWipeConfirmUi();
 }
 
 function collectCacheWipeKeys() {
@@ -402,11 +460,18 @@ function collectFullWipeKeys() {
 }
 
 function wipeCacheConfirmed() {
-  var confirmMsg = 'Se eliminarán caché y temporales: respaldo pre-importación, bitácora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer. ¿Continuar?';
-  if (!confirm(confirmMsg)) {
-    addAuditEntry('data-wipe-cache', 'cancelled', 0, 'user-cancelled');
-    return;
-  }
+  wireWipeDataModalOnce();
+  showWipeStep('cache');
+}
+
+function wipeAllConfirmed() {
+  wireWipeDataModalOnce();
+  showWipeStep('full');
+  var input = document.getElementById('rpc-wipe-full-input');
+  if (input) setTimeout(function() { try { input.focus(); } catch (_e) { void _e; } }, 60);
+}
+
+function executeWipeCache() {
   var keys = collectCacheWipeKeys();
   addAuditEntry('data-wipe-cache', 'ok', keys.length, 'pre-wipe');
   keys.forEach(function(k) {
@@ -421,17 +486,22 @@ function wipeCacheConfirmed() {
   rt.showToast('Se eliminaron ' + keys.length + ' elementos temporales.', 'success');
 }
 
-function wipeAllConfirmed() {
-  var firstOk = confirm('Esto BORRARÁ todos los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. No se puede deshacer. ¿Continuar?');
-  if (!firstOk) {
-    addAuditEntry('data-wipe-full', 'cancelled', 0, 'first-cancel');
+function executeWipeAll() {
+  var input = document.getElementById('rpc-wipe-full-input');
+  var err = document.getElementById('rpc-wipe-full-error');
+  var typed = String(input && input.value != null ? input.value : '').trim().toUpperCase();
+  if (typed !== 'BORRAR') {
+    addAuditEntry('data-wipe-full', 'cancelled', 0, 'confirmation-failed');
+    if (err) {
+      err.textContent = 'Escribe BORRAR en mayúsculas para continuar.';
+      err.hidden = false;
+    }
+    if (input) input.focus();
     return;
   }
-  var typed = prompt('Escribe BORRAR en mayúsculas para confirmar el borrado completo:', '');
-  if (String(typed == null ? '' : typed).trim().toUpperCase() !== 'BORRAR') {
-    addAuditEntry('data-wipe-full', 'cancelled', 0, 'confirmation-failed');
-    rt.showToast('Borrado cancelado.', 'error');
-    return;
+  if (err) {
+    err.textContent = '';
+    err.hidden = true;
   }
   var keys = collectFullWipeKeys();
   addAuditEntry('data-wipe-full', 'ok', keys.length, 'pre-wipe');

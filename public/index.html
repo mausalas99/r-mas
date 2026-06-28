@@ -2615,16 +2615,40 @@
 
 <div id="rpc-wipe-modal" role="dialog" aria-modal="true" aria-labelledby="rpc-wipe-title" aria-hidden="true">
   <div class="rpc-wipe-panel" onclick="event.stopPropagation()">
-    <h3 id="rpc-wipe-title">Borrar datos de R+ en este equipo</h3>
-    <p>Elige qué información eliminar. Esta acción <strong>no se puede deshacer</strong>. Se registrará en la bitácora antes de borrar.</p>
-    <button type="button" class="rpc-wipe-option" onclick="wipeCacheConfirmed()">
-      <strong>Solo caché y temporales</strong>
-      <span>Elimina respaldo pre-importación, bitácora, auto-respaldos guardados y el recordatorio de tiempo de bloqueo (conserva el hash del PIN). No toca pacientes, notas, indicaciones ni ajustes.</span>
-    </button>
-    <button type="button" class="rpc-wipe-option rpc-wipe-danger" onclick="wipeAllConfirmed()">
-      <strong>Borrado completo</strong>
-      <span>Elimina <strong>todos</strong> los datos clínicos, ajustes, plantillas, historial de labs, bitácora, PIN de bloqueo y preferencias. R+ se reiniciará vacío.</span>
-    </button>
+    <div id="rpc-wipe-step-choose" class="rpc-wipe-step">
+      <h3 id="rpc-wipe-title">Borrar datos de R+ en este equipo</h3>
+      <p>Elige qué información eliminar. Esta acción <strong>no se puede deshacer</strong>. Se registrará en la bitácora antes de borrar.</p>
+      <button type="button" class="rpc-wipe-option" onclick="wipeCacheConfirmed()">
+        <strong>Solo caché y temporales</strong>
+        <span>Elimina respaldo pre-importación, bitácora, auto-respaldos guardados y el recordatorio de tiempo de bloqueo (conserva el hash del PIN). No toca pacientes, notas, indicaciones ni ajustes.</span>
+      </button>
+      <button type="button" class="rpc-wipe-option rpc-wipe-danger" onclick="wipeAllConfirmed()">
+        <strong>Borrado completo</strong>
+        <span>Elimina <strong>todos</strong> los datos clínicos, ajustes, plantillas, historial de labs, bitácora, PIN de bloqueo y preferencias. R+ se reiniciará vacío.</span>
+      </button>
+      <div class="rpc-wipe-actions">
+        <button type="button" class="btn-close" data-wipe-action="close">Cancelar</button>
+      </div>
+    </div>
+    <div id="rpc-wipe-step-cache" class="rpc-wipe-step" hidden>
+      <h3 id="rpc-wipe-cache-title">Confirmar borrado de caché</h3>
+      <p>Se eliminarán caché y temporales: respaldo pre-importación, bitácora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer.</p>
+      <div class="rpc-wipe-actions">
+        <button type="button" class="btn-close" data-wipe-action="choose">Volver</button>
+        <button type="button" class="rpc-wipe-danger-btn" data-wipe-action="cache-exec">Continuar</button>
+      </div>
+    </div>
+    <div id="rpc-wipe-step-full" class="rpc-wipe-step" hidden>
+      <h3 id="rpc-wipe-full-title">Confirmar borrado completo</h3>
+      <p>Esto <strong>borrará todos</strong> los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. R+ se reiniciará vacío.</p>
+      <label class="rpc-wipe-confirm-label" for="rpc-wipe-full-input">Escribe <strong>BORRAR</strong> en mayúsculas para confirmar:</label>
+      <input id="rpc-wipe-full-input" class="rpc-wipe-confirm-input profile-input" type="text" autocomplete="off" spellcheck="false" inputmode="text">
+      <p id="rpc-wipe-full-error" class="rpc-wipe-confirm-error" hidden></p>
+      <div class="rpc-wipe-actions">
+        <button type="button" class="btn-close" data-wipe-action="choose">Volver</button>
+        <button type="button" class="rpc-wipe-danger-btn" data-wipe-action="full-exec">Borrar todo</button>
+      </div>
+    </div>
   </div>
 </div>
 

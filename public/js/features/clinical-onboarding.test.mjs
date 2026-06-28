@@ -12,7 +12,7 @@ import {
   needsClinicalLanProfileGate,
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
-import { needsClinicalSyncModeChoice, needsTeamOnboarding } from './clinical-onboarding.mjs';
+import { needsClinicalOnboarding, needsClinicalSyncModeChoice, needsTeamOnboarding } from './clinical-onboarding.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 
 describe('clinical-onboarding helpers', () => {
@@ -133,6 +133,46 @@ describe('clinical-onboarding helpers', () => {
     assert.match(regSrc, /handleClinicalRegistrationSubmit/);
   });
 
+  it('local-only registered users skip onboarding gate', () => {
+    const store = {
+      'rpc-settings': JSON.stringify({ clinicalRegistered: true, clinicalLocalOnly: true }),
+    };
+    const ls = {
+      getItem(k) {
+        return store[k];
+      },
+      setItem(k, v) {
+        store[k] = v;
+      },
+    };
+    const prevUser = clinicalSessionContext.user;
+    const prevWin = globalThis.window;
+    const prevLs = globalThis.localStorage;
+    globalThis.localStorage = ls;
+    globalThis.window = {
+      electronAPI: { dbClinicalLoadAll: async () => ({ ok: true, blobs: {} }) },
+    };
+    clinicalSessionContext.user = { user_id: 'local-1' };
+    try {
+      assert.equal(needsClinicalOnboarding(), false);
+    } finally {
+      clinicalSessionContext.user = prevUser;
+      if (prevWin === undefined) delete globalThis.window;
+      else globalThis.window = prevWin;
+      if (prevLs === undefined) delete globalThis.localStorage;
+      else globalThis.localStorage = prevLs;
+    }
+  });
+
+  it('local-only skips second profile screen', () => {
+    const renderSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-render.mjs'),
+      'utf8'
+    );
+    assert.equal(renderSrc.includes('renderLocalOnlyProfilePanel'), false);
+    assert.match(renderSrc, /submitLocalOnlyProfile/);
+  });
+
   it('resume requires an existing DB user and claim runs for legacy handles', () => {
     const handlersSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-handlers.mjs'),
@@ -140,6 +180,7 @@ describe('clinical-onboarding helpers', () => {
     );
     assert.match(handlersSrc, /lookupClinicalUserByUsername/);
     assert.match(handlersSrc, /shouldClaimClinicalUsername/);
+    assert.equal(handlersSrc.includes('window.confirm('), false);
     assert.match(
       handlersSrc,
       /No encontramos @\$\{username\} en esta base de datos/

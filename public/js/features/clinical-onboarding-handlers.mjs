@@ -67,17 +67,7 @@ function validateUsernameForm(fields, errEl) {
 }
 
 async function tryResumeExistingUsername(username, settings, errEl, errMsg) {
-  const cached = normalizeUsername(String(settings.clinicalUsername || ''));
-  const autoResume = cached === username;
-  const resume =
-    autoResume ||
-    window.confirm(
-      `El usuario @${username} ya está registrado en esta base de datos.\n\n¿Recuperar tu cuenta en este dispositivo?`
-    );
-  if (!resume) {
-    showOnboardError(errEl, errMsg);
-    return { ok: false };
-  }
+  // Electron renderer cannot use window.confirm; Guardar perfil / Recuperar already express intent.
   const resumeRes = await resumeClinicalIdentityByUsername(username, settings, getClientId());
   if (!resumeRes.ok) {
     showOnboardError(errEl, resumeRes.error || errMsg);

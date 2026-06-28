@@ -115,7 +115,7 @@ export async function buildOnboardingSessionBlockHtml() {
   });
 }
 
-function wireOnboardingSessionRecoveryOnce(host) {
+export function wireOnboardingSessionRecoveryOnce(host) {
   if (!host || host._rpcSessionRecoveryWired) return;
   host._rpcSessionRecoveryWired = true;
   host.addEventListener('click', (ev) => {

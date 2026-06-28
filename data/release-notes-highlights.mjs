@@ -1193,10 +1193,34 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_756 = [
+  {
+    title: 'Borrado en Windows',
+    body:
+      'El borrado completo confirma dentro del modal (<strong>escribe BORRAR</strong>). Ya no depende de <code>prompt()</code> ni <code>confirm()</code>, que fallaban en Electron.',
+  },
+  {
+    title: 'Registro tras wipe',
+    body:
+      '<strong>Guardar perfil</strong> y <strong>Recuperar mi usuario</strong> vuelven a avanzar tras borrar ajustes locales; el <code>clientId</code> del dispositivo se repone automáticamente.',
+  },
+  {
+    title: 'Solo este equipo',
+    body:
+      'Un clic en <strong>Solo este equipo</strong> entra directo a la app (sin segunda pantalla). Firma por defecto <strong>Usuario R+</strong> — cámbiala en Mi Perfil cuando quieras.',
+  },
+  {
+    title: 'Parche sobre 7.5.5',
+    body:
+      'Incluye dieta AYUNO, registro cableado y la línea <strong>7.5.4</strong> (signos iPad→LAN). Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_755;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_756;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.6': RELEASE_NOTES_756,
   '7.5.5': RELEASE_NOTES_755,
   '7.5.4': RELEASE_NOTES_754,
   '7.5.3': RELEASE_NOTES_753,

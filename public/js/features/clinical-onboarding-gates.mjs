@@ -8,6 +8,7 @@ import {
   isLocalOnlyPlaceholderUsername,
   needsClinicalLanProfileGate,
   readRpcSettings,
+  resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
@@ -19,12 +20,7 @@ import {
 } from '../clinical-username.mjs';
 
 function getClientId() {
-  try {
-    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-    return String(settings.clientId || '');
-  } catch {
-    return '';
-  }
+  return resolveClinicalClientId(readRpcSettings());
 }
 
 export function needsUsernameClaim() {
@@ -78,9 +74,7 @@ function syncSessionFromPersistedProfile(settings, user) {
 /** Device binding written by onboarding submit — trust when session row lags IPC refresh. */
 export function hasPersistedClinicalProfile(settings = readRpcSettings(), user = clinicalSessionContext.user) {
   if (settings.clinicalRegistered !== true) return false;
-  if (isClinicalLocalOnlyMode(settings)) {
-    return !!String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
-  }
+  if (isClinicalLocalOnlyMode(settings)) return true;
   if (needsClinicalLanProfileGate(settings)) return false;
   const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
   const hasName = String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
@@ -94,11 +88,9 @@ export function hasPersistedClinicalProfile(settings = readRpcSettings(), user =
   );
 }
 
-function needsLocalOnlyProfile(settings, user) {
+function needsLocalOnlyProfile(settings) {
   if (!isClinicalLocalOnlyMode(settings)) return false;
-  if (hasPersistedClinicalProfile(settings, user)) return false;
-  if (settings.clinicalRegistered !== true) return true;
-  return !String(user?.clinical_name || settings.clinicalDisplayName || '').trim();
+  return settings.clinicalRegistered !== true;
 }
 
 function needsLanProfile(settings, user) {
@@ -122,7 +114,7 @@ export function needsProfileOnboarding() {
     syncSessionFromPersistedProfile(settings, user);
     return false;
   }
-  if (needsLocalOnlyProfile(settings, user)) return true;
+  if (needsLocalOnlyProfile(settings)) return true;
   return needsLanProfile(settings, user);
 }
 
@@ -130,4 +122,4 @@ export function needsClinicalOnboarding() {
   return needsProfileOnboarding();
 }
 
-export { getClientId };
+export { getClientId, needsLocalOnlyProfile };

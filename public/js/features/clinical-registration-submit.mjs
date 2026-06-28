@@ -2,7 +2,11 @@
  * Clinical registration form submit — extracted from clinical-registration.mjs.
  */
 import { normalizeUsername, isValidUsernameFormat } from '../clinical-username.mjs';
-import { persistClinicalUserBinding, isClinicalLocalOnlyMode } from '../clinical-settings.mjs';
+import {
+  persistClinicalUserBinding,
+  isClinicalLocalOnlyMode,
+  resolveClinicalClientId,
+} from '../clinical-settings.mjs';
 import { persistLanClientConfig } from './lan/transport.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
@@ -170,10 +174,14 @@ export async function handleClinicalRegistrationSubmit(deps) {
   var name = fields.name;
   var sala = fields.sala;
   var settings = readRpcSettingsFromStorage_();
-  var clientId = String(settings.clientId || '').trim();
+  var clientId = resolveClinicalClientId(settings);
   if (!clientId) {
     showRegistrationError_(errEl, 'No se encontró el identificador del dispositivo. Reinicia R+.');
     return;
+  }
+  if (!settings.clientId) {
+    persistClinicalUserBinding({ userId: String(settings.clinicalUserId || '') });
+    settings = readRpcSettingsFromStorage_();
   }
 
   var {

@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.5](https://github.com/mausalas99/r-mas/releases/tag/v7.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.6](https://github.com/mausalas99/r-mas/releases/tag/v7.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.6 (onboarding local + wipe Windows)
+
+- **Borrado completo Electron** — Modal in-app confirma con BORRAR; sin prompt/confirm nativos en Windows.
+- **Registro tras wipe** — Recuperar @usuario y Guardar perfil avanzan; clientId del dispositivo se repone en ajustes.
+- **Solo este equipo** — Un clic entra a la app; firma por defecto editable en Mi Perfil.
+- **Parche sobre 7.5.5** — Dieta AYUNO, registro cableado y signos iPad→LAN de la línea anterior.
+
+Notas: `docs/RELEASE_NOTES_7.5.6.txt`.
 
 ## R+ 7.5.5 (dieta AYUNO + onboarding registro)
 

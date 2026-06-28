@@ -3,6 +3,15 @@ import { persistClinicalUserBinding, setClinicalSyncModeLocalOnly } from '../cli
 import { normalizeUsername } from '../clinical-username.mjs';
 import { localOnlyUsernameForUserId } from './clinical-onboarding-sync-mode.mjs';
 
+/** Default signature for notes when local-only skips the profile step. */
+export const DEFAULT_LOCAL_ONLY_DISPLAY_NAME = 'Usuario R+';
+
+/** @param {{ clinical_name?: string|null }|null|undefined} [user] */
+export function defaultLocalOnlyDisplayName(user = clinicalSessionContext.user) {
+  const existing = String(user?.clinical_name || '').trim();
+  return existing || DEFAULT_LOCAL_ONLY_DISPLAY_NAME;
+}
+
 function dbApi() {
   if (typeof window === 'undefined') return null;
   return window.rplusDb || window.electronAPI || null;

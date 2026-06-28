@@ -1397,6 +1397,21 @@ html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
   background: transparent; color: var(--text-muted); border: 1px solid var(--border);
   border-radius: var(--radius-field); padding: 8px 14px; font-size: 13px; font-family: inherit; cursor: pointer;
 }
+.rpc-wipe-confirm-label {
+  font-size: 13px; color: var(--text); line-height: 1.45;
+}
+.rpc-wipe-confirm-input {
+  width: 100%; margin-top: 4px;
+}
+.rpc-wipe-confirm-error {
+  font-size: 12px; color: var(--error); margin: 0;
+}
+.rpc-wipe-danger-btn {
+  background: var(--error); color: #fff; border: none;
+  border-radius: var(--radius-field); padding: 8px 14px; font-size: 13px;
+  font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.rpc-wipe-danger-btn:hover { filter: brightness(0.92); }
 /* ── Tendencias de Lab ─────────────────────────────────────── */
 .tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
 .tend-loading { opacity: 0.72; }
