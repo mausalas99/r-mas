@@ -1193,6 +1193,19 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_758 = [
+  {
+    title: 'Catálogo downgrade',
+    body:
+      'En <strong>Ajustes → Restaurar versión estable anterior</strong>, <strong>7.5.7</strong> aparece como release curada recomendada para volver desde versiones más nuevas.',
+  },
+  {
+    title: 'Parche sobre 7.5.7',
+    body:
+      'Incluye confirmación de dieta <strong>SUPLEMENTO</strong> en Estado actual (sin re-propuesta tras sync) y la línea <strong>7.5.6</strong> (onboarding Windows/wipe). Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 var RELEASE_NOTES_757 = [
   {
     title: 'Confirmar suplemento',
@@ -1235,9 +1248,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_757;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_758;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.8': RELEASE_NOTES_758,
   '7.5.7': RELEASE_NOTES_757,
   '7.5.6': RELEASE_NOTES_756,
   '7.5.5': RELEASE_NOTES_755,

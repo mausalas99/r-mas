@@ -1,13 +1,20 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-28",
+  "updatedAt": "2026-06-30",
   "entries": [
+    {
+      "version": "7.5.7",
+      "label": "7.5.7",
+      "publishedAt": "2026-06-30",
+      "summary": "EA suplemento confirm — confirmar dieta SOME sin re-propuesta",
+      "recommended": true
+    },
     {
       "version": "7.5.6",
       "label": "7.5.6",
       "publishedAt": "2026-06-28",
       "summary": "Release estable 7.5.6",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.5.5",
