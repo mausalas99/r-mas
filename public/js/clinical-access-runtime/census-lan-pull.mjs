@@ -143,7 +143,7 @@ export function wireClinicalOpsSyncRefresh() {
     setClinicalOpsSyncedRefreshTimer(
       setTimeout(function () {
         setClinicalOpsSyncedRefreshTimer(null);
-        void refreshClinicalPatientListForScope({ allowLanPull: true });
+        void refreshClinicalPatientListForScope({ allowLanPull: false });
         void pullHostPatientsAfterOpsMerge(event);
       }, 1500)
     );
