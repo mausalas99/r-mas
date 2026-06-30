@@ -1,21 +1,41 @@
-import { mergeDietaItems, buildDietProposalText, dietProposalFingerprint } from '../med-receta-core.mjs';
-import { applyDietaSuplementoPolicy, isDietaSuplemento } from './estado-actual-data.mjs';
+import { mergeDietaItems, buildDietProposalText } from '../med-receta-core.mjs';
+import {
+  applyDietaSuplementoPolicy,
+  isDietaSuplemento,
+  isDietaAyuno,
+  normalizeDietaTypeLabel,
+} from './estado-actual-data.mjs';
 
 const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
+
+/**
+ * Huella estable para comparar dieta confirmada vs SOME (ignora calóricos en suplemento/ayuno).
+ * @param {unknown} dietaText
+ * @param {unknown} kcal
+ * @param {unknown} proteinG
+ */
+function dietMatchFingerprint(dietaText, kcal, proteinG) {
+  var label = normalizeDietaTypeLabel(dietaText);
+  if (isDietaSuplemento(label)) return 'SUPLEMENTO||';
+  if (isDietaAyuno(label)) return 'AYUNO||';
+  var k = kcal != null && kcal !== '' ? String(kcal) : '';
+  var p = proteinG != null && proteinG !== '' ? String(proteinG) : '';
+  return label + '|' + k + '|' + p;
+}
 
 /**
  * @param {Record<string, unknown>} ec
  */
 function confirmedDietFingerprint(ec) {
-  return (
-    String(ec.dieta != null ? ec.dieta : '')
-      .trim()
-      .toUpperCase() +
-    '|' +
-    (ec.kcal != null && ec.kcal !== '' ? String(ec.kcal) : '') +
-    '|' +
-    (ec.proteinG != null && ec.proteinG !== '' ? String(ec.proteinG) : '')
-  );
+  return dietMatchFingerprint(ec.dieta, ec.kcal, ec.proteinG);
+}
+
+/**
+ * @param {{ descripcion?: unknown, kcal?: unknown, proteinG?: unknown }} merged
+ */
+function mergedDietFingerprint(merged) {
+  var dietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
+  return dietMatchFingerprint(dietaText, merged.kcal, merged.proteinG);
 }
 
 /**
@@ -40,11 +60,11 @@ export function shouldSkipDietProposal(monitoreo, opts, merged) {
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
   if (merged && mergedDietHasContent(merged)) {
-    if (confirmedDietFingerprint(ec) === dietProposalFingerprint(merged)) return true;
+    if (confirmedDietFingerprint(ec) === mergedDietFingerprint(merged)) return true;
   }
   if (!conf.dieta) return false;
   if (merged && mergedDietHasContent(merged)) {
-    return dietProposalFingerprint(merged) === confirmedDietFingerprint(ec);
+    return mergedDietFingerprint(merged) === confirmedDietFingerprint(ec);
   }
   return true;
 }
@@ -72,7 +92,7 @@ export function tryAutoConfirmMatchingDiet(monitoreo, merged) {
   var conf =
     monitoreo.confirmado && typeof monitoreo.confirmado === 'object' ? monitoreo.confirmado : {};
   if (conf.dieta) return false;
-  if (confirmedDietFingerprint(ec) !== dietProposalFingerprint(merged)) return false;
+  if (confirmedDietFingerprint(ec) !== mergedDietFingerprint(merged)) return false;
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};
   }

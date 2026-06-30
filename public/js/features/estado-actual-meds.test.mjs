@@ -347,6 +347,28 @@ test('applyDietProposalFromRecetaBlock propone dieta SOME aunque ec.dieta tenga 
   assert.equal(m.pendienteReceta.kcal, '1500');
 });
 
+test('applyDietProposalFromRecetaBlock no repropone suplemento confirmado con kcal SOME', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'SUPLEMENTO';
+  m.confirmado.dieta = true;
+  const block = { dietas: [{ descripcionRaw: 'SUPLEMENTO', kcal: 500, proteinG: 20 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock confirmar suplemento y sync pasivo no repropone', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = '*SUPLEMENTO';
+  m.pendienteReceta.kcal = '500';
+  m.pendienteReceta.proteinG = '20';
+  const block = { dietas: [{ descripcionRaw: 'SUPLEMENTO', kcal: 500, proteinG: 20 }] };
+  confirmDietProposal(m);
+  assert.equal(m.confirmado.dieta, true);
+  assert.equal(m.pendienteReceta.dieta, '');
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
 test('applyDietProposalFromRecetaBlock force propone cambio sobre dieta confirmada distinta', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.dieta = 'SUPLEMENTO';
