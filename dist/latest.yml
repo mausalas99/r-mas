@@ -1,16 +1,14 @@
-version: 7.5.7
+version: 7.5.8
 files:
-  - url: R+-7.5.7-x64.exe
-    sha512: KhSPG8Q2rygqiiMdtW57EBcozp9S3myKqLKb6INGoGBJmrVoADNybSly97xA6/xAwnlnWiPBwHKeAit8Abvw3w==
-    size: 120461348
-path: R+-7.5.7-x64.exe
-sha512: KhSPG8Q2rygqiiMdtW57EBcozp9S3myKqLKb6INGoGBJmrVoADNybSly97xA6/xAwnlnWiPBwHKeAit8Abvw3w==
-releaseDate: '2026-06-30T16:38:49.000Z'
+  - url: R+-7.5.8-x64.exe
+    sha512: B9p5xQ+wGMm6f0+IkjClluT9YffOPQASrJkHVqJi1TQR89g2cT7PvWIpi0WdQttmUzug/WD/BqM6AjtTi6ZoYw==
+    size: 120462077
+path: R+-7.5.8-x64.exe
+sha512: B9p5xQ+wGMm6f0+IkjClluT9YffOPQASrJkHVqJi1TQR89g2cT7PvWIpi0WdQttmUzug/WD/BqM6AjtTi6ZoYw==
+releaseDate: '2026-06-30T19:03:51.000Z'
 releaseNotes: |
-  Parche sobre 7.5.6: corrige Confirmar dieta en Estado actual cuando la propuesta SOME es SUPLEMENTO — la barra de propuesta ya no reaparece tras confirmar.
+  Parche sobre 7.5.7: corrige el catálogo Restaurar versión estable anterior para incluir 7.5.7 como release curada recomendada.
   
-  Suplemento confirmado — Al aceptar dieta SUPLEMENTO importada desde SOME, desaparecen el badge Propuesta y los botones Confirmar/Descartar.
+  Catálogo downgrade — En Ajustes → Restaurar versión estable anterior, 7.5.7 aparece como opción recomendada para volver desde versiones más nuevas.
   
-  Sync pasivo — Refrescar el panel EA o re-sincronizar Manejo ya no vuelve a proponer el mismo suplemento por kcal/proteína residuales del SOME.
-  
-  Sin migración — SQLCipher sigue en v20.
+  Parche sobre 7.5.7 — Incluye confirmación de dieta SUPLEMENTO en Estado actual (sin re-propuesta tras sync). Sin migración (SQLCipher v20).
