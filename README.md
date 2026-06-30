@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.6](https://github.com/mausalas99/r-mas/releases/tag/v7.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.7](https://github.com/mausalas99/r-mas/releases/tag/v7.5.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.7 (EA suplemento confirm)
+
+- **Confirmar suplemento** — Aceptar dieta SUPLEMENTO desde SOME limpia la propuesta pendiente; ya no queda atascada la barra Confirmar/Descartar.
+- **Sync Manejo** — kcal/proteína del SOME no re-disparan la propuesta tras confirmar el mismo suplemento.
+- **Parche sobre 7.5.6** — Onboarding Windows/wipe y la línea anterior sin migración (SQLCipher v20).
+
+Notas: `docs/RELEASE_NOTES_7.5.7.txt`.
 
 ## R+ 7.5.6 (onboarding local + wipe Windows)
 

@@ -1193,6 +1193,24 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_757 = [
+  {
+    title: 'Confirmar suplemento',
+    body:
+      'Al aceptar dieta <strong>SUPLEMENTO</strong> importada desde SOME en <strong>Estado actual</strong>, desaparecen el badge <strong>Propuesta</strong> y los botones Confirmar/Descartar.',
+  },
+  {
+    title: 'Sync sin re-propuesta',
+    body:
+      'Refrescar EA o re-sincronizar Manejo ya no vuelve a proponer el mismo suplemento por kcal/proteína residuales del SOME.',
+  },
+  {
+    title: 'Parche sobre 7.5.6',
+    body:
+      'Incluye onboarding Windows/wipe y la línea <strong>7.5.5</strong> (dieta AYUNO, signos iPad→LAN). Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 var RELEASE_NOTES_756 = [
   {
     title: 'Borrado en Windows',
@@ -1217,9 +1235,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_756;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_757;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.7': RELEASE_NOTES_757,
   '7.5.6': RELEASE_NOTES_756,
   '7.5.5': RELEASE_NOTES_755,
   '7.5.4': RELEASE_NOTES_754,
