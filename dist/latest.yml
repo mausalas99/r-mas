@@ -1,14 +1,22 @@
-version: 7.5.8
+version: 7.5.9
 files:
-  - url: R+-7.5.8-x64.exe
-    sha512: B9p5xQ+wGMm6f0+IkjClluT9YffOPQASrJkHVqJi1TQR89g2cT7PvWIpi0WdQttmUzug/WD/BqM6AjtTi6ZoYw==
-    size: 120462077
-path: R+-7.5.8-x64.exe
-sha512: B9p5xQ+wGMm6f0+IkjClluT9YffOPQASrJkHVqJi1TQR89g2cT7PvWIpi0WdQttmUzug/WD/BqM6AjtTi6ZoYw==
-releaseDate: '2026-06-30T19:03:51.000Z'
+  - url: R+-7.5.9-x64.exe
+    sha512: 0eWDP6kOhOVdUgu3Z9TM36j0NfywY9PZC/a3BE6jeQpgLwSXiT+qhvf2PoD3KbJMeAGPSjdR6f5wgvWTKtkD6A==
+    size: 120482878
+path: R+-7.5.9-x64.exe
+sha512: 0eWDP6kOhOVdUgu3Z9TM36j0NfywY9PZC/a3BE6jeQpgLwSXiT+qhvf2PoD3KbJMeAGPSjdR6f5wgvWTKtkD6A==
+releaseDate: '2026-06-30T22:32:02.000Z'
 releaseNotes: |
-  Parche sobre 7.5.7: corrige el catálogo Restaurar versión estable anterior para incluir 7.5.7 como release curada recomendada.
+  Parche sobre 7.5.8: recupera pacientes cuando el sidebar está vacío, exporta varios del censo a JSON, y limpia fantasmas/tombstones del anfitrión LAN con respaldo automático.
   
-  Catálogo downgrade — En Ajustes → Restaurar versión estable anterior, 7.5.7 aparece como opción recomendada para volver desde versiones más nuevas.
+  Exportar censo recuperable — En Ajustes → Exportar censo recuperable… lee pacientes desde SQLCipher (incluye caché LAN) aunque el sidebar esté vacío; importa con Importar rango…. Atajo CLI: npm run recover:census.
   
-  Parche sobre 7.5.7 — Incluye confirmación de dieta SUPLEMENTO en Estado actual (sin re-propuesta tras sync). Sin migración (SQLCipher v20).
+  Exportar pacientes… — Selector multi-paciente del censo para un solo JSON (Ajustes → Respaldo).
+  
+  Censo anfitrión — Limpiar tombstones restaura visibilidad local; Restaurar por fila fantasma; Eliminar fantasmas descarga respaldo antes de purgar solo el host.
+  
+  Directorio LAN — Asignaciones de equipo remapean user_id al @usuario canónico de esta Mac (menos membresías huérfanas tras sync).
+  
+  Import respaldo fantasmas — JSON r-plus-purge-ghosts-backup se fusiona al importar (incluye entradas del bundle del host).
+  
+  Parche sobre 7.5.8 — Catálogo downgrade 7.5.7 y confirmación SUPLEMENTO en EA. Sin migración (SQLCipher v20).

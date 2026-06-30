@@ -1,23 +1,31 @@
-version: 7.5.8
+version: 7.5.9
 files:
-  - url: R+-7.5.8-arm64.zip
-    sha512: dWN0fnDBjldtK5/b0BNz5/YgQK7DbJ3B/Nd6S1LQDmOW5jYdS4ukDM858DTdammQunb53M175cf9Xivj85lfjQ==
-    size: 136803402
-  - url: R+-7.5.8-arm64.dmg
-    sha512: tiI1DymSrCBwHsFW2xo809q3fePWa5T8sFAjsJQ+BfH3LIRNfMv4fA5LbP9ir+SgJMe6uqwiADErM4gaR4ASPw==
-    size: 142509218
-  - url: R+-7.5.8-x64.zip
-    sha512: YynkYbMBOcSCK/D4ozFtY+tS6oiEGFzmN2SdVLPXIpo1WEjjrHNplqyF1XClT0iaz4WIEa49LVKSOtsVYv/9cw==
-    size: 145177446
-  - url: R+-7.5.8-x64.dmg
-    sha512: T+2YSJbq87ujx/yRLBHYSSEL9rcOlN5QIZGneEt7jyXEAeY86taAkstfoJLo0E5+q2dpur+RdCwY9FogNgbD2g==
-    size: 150968969
-path: R+-7.5.8-arm64.zip
-sha512: dWN0fnDBjldtK5/b0BNz5/YgQK7DbJ3B/Nd6S1LQDmOW5jYdS4ukDM858DTdammQunb53M175cf9Xivj85lfjQ==
-releaseDate: '2026-06-30T19:03:51.000Z'
+  - url: R+-7.5.9-arm64.zip
+    sha512: l9XnrSHbReU2nvXm4HXl99WE1FFUDZsfaxpZmB8UbteoDafikF38xvdMAvuP5DG+zQzMJ+usNQrVy9gpwHvEWQ==
+    size: 136832153
+  - url: R+-7.5.9-arm64.dmg
+    sha512: jlKmxslvFLAFsnCEJIpiff0940t3YeATSGzpB6JIT1sTxoVyXWsa9wDKI3mVt85PaeMCtpFYoduwkj8HGi2MOg==
+    size: 142568253
+  - url: R+-7.5.9-x64.zip
+    sha512: SWmoDVu/u+axmfBpMcxlcqCn1NPkfGYJnqJzF0MBNeMunoyojRdnZ6OEuAoCO7TE1aqXiAEl81HBji+h6jWvuA==
+    size: 145206191
+  - url: R+-7.5.9-x64.dmg
+    sha512: FgxrKFRhOAW0FUIaHSrx1G+xOXVc5BwRw5zTWVMKxbmToSZjrg9UgmaovQdej9/1onj+cpKnDaShSuTF4hs+Vg==
+    size: 150986731
+path: R+-7.5.9-arm64.zip
+sha512: l9XnrSHbReU2nvXm4HXl99WE1FFUDZsfaxpZmB8UbteoDafikF38xvdMAvuP5DG+zQzMJ+usNQrVy9gpwHvEWQ==
+releaseDate: '2026-06-30T22:32:02.000Z'
 releaseNotes: |
-  Parche sobre 7.5.7: corrige el catálogo Restaurar versión estable anterior para incluir 7.5.7 como release curada recomendada.
+  Parche sobre 7.5.8: recupera pacientes cuando el sidebar está vacío, exporta varios del censo a JSON, y limpia fantasmas/tombstones del anfitrión LAN con respaldo automático.
   
-  Catálogo downgrade — En Ajustes → Restaurar versión estable anterior, 7.5.7 aparece como opción recomendada para volver desde versiones más nuevas.
+  Exportar censo recuperable — En Ajustes → Exportar censo recuperable… lee pacientes desde SQLCipher (incluye caché LAN) aunque el sidebar esté vacío; importa con Importar rango…. Atajo CLI: npm run recover:census.
   
-  Parche sobre 7.5.7 — Incluye confirmación de dieta SUPLEMENTO en Estado actual (sin re-propuesta tras sync). Sin migración (SQLCipher v20).
+  Exportar pacientes… — Selector multi-paciente del censo para un solo JSON (Ajustes → Respaldo).
+  
+  Censo anfitrión — Limpiar tombstones restaura visibilidad local; Restaurar por fila fantasma; Eliminar fantasmas descarga respaldo antes de purgar solo el host.
+  
+  Directorio LAN — Asignaciones de equipo remapean user_id al @usuario canónico de esta Mac (menos membresías huérfanas tras sync).
+  
+  Import respaldo fantasmas — JSON r-plus-purge-ghosts-backup se fusiona al importar (incluye entradas del bundle del host).
+  
+  Parche sobre 7.5.8 — Catálogo downgrade 7.5.7 y confirmación SUPLEMENTO en EA. Sin migración (SQLCipher v20).
