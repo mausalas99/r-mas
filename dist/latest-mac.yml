@@ -1,27 +1,25 @@
-version: 7.5.6
+version: 7.5.7
 files:
-  - url: R+-7.5.6-arm64.zip
-    sha512: EE05x/QrFjp/XPSyl7VTVXVgs7cSWdPfqVzxMm+e0RynkHNjSgS4yqTxAcR6v/5Iy8rETAe7U5cwvNq0SS69rA==
-    size: 136800689
-  - url: R+-7.5.6-arm64.dmg
-    sha512: Ry8ma9fpnPPX+NY14UkCMNJ5KctnK12QeoKyFT3xr4emTSBh+lT/5leE+cotT39p8v9DoLE5yeCx75haxwPjng==
-    size: 142512743
-  - url: R+-7.5.6-x64.zip
-    sha512: 1zZGoCFff9agSylInWEucpljwcIBG6GLP+zcfPrBBIzk2VpwaXwBhr4DYGlPQODx8/mQuhJPceO2PCmlsUP/jQ==
-    size: 145174770
-  - url: R+-7.5.6-x64.dmg
-    sha512: vtBdXOUQaUNYGHCV5AwCBKpeeRCh4SMCylYHC5U1PueMNVI/VV8M/R3HSxWoALZZaluNpPHTjc1yUvyA7o98eA==
-    size: 150964493
-path: R+-7.5.6-arm64.zip
-sha512: EE05x/QrFjp/XPSyl7VTVXVgs7cSWdPfqVzxMm+e0RynkHNjSgS4yqTxAcR6v/5Iy8rETAe7U5cwvNq0SS69rA==
-releaseDate: '2026-06-28T19:04:50.000Z'
+  - url: R+-7.5.7-arm64.zip
+    sha512: dpi5mYrhdfy785izqM5QHaciDGjrYBEGh5lutqxqJIZDWLHCMv17Ril5ocD4sSJ+B4jpMYVONTKQEJ40XtZ+mw==
+    size: 136802105
+  - url: R+-7.5.7-arm64.dmg
+    sha512: hZZK7zJpATsu3XoWiV596h/nlYzVom9xsV0nqDlYJ6EK37+fovme+F9V7j3ZdJD6kiuoWPw1bX/OQaj4x5cRHQ==
+    size: 142510705
+  - url: R+-7.5.7-x64.zip
+    sha512: x/7CSLuQmDWTRjJFGc8XbnowPPUTZZCAhAN2MUblqY5+p2vB7Z1umUYhTxKzdHbYqb4TtvBMx1AI/3KyuO33KQ==
+    size: 145176178
+  - url: R+-7.5.7-x64.dmg
+    sha512: L5gqxMIcf9Z8XrdwE27n9975OKH1/INGQ6KxOHR6WndyJUW5V8LFZ0S16wRR0ZELPL8NVACQq1H4/NJ8Cwtg0w==
+    size: 150961369
+path: R+-7.5.7-arm64.zip
+sha512: dpi5mYrhdfy785izqM5QHaciDGjrYBEGh5lutqxqJIZDWLHCMv17Ril5ocD4sSJ+B4jpMYVONTKQEJ40XtZ+mw==
+releaseDate: '2026-06-30T16:38:49.000Z'
 releaseNotes: |
-  Sobre 7.5.5: corrige onboarding en Windows/Electron (borrado de datos, registro LAN y modo solo equipo) sin diálogos nativos bloqueados.
+  Parche sobre 7.5.6: corrige Confirmar dieta en Estado actual cuando la propuesta SOME es SUPLEMENTO — la barra de propuesta ya no reaparece tras confirmar.
   
-  Borrado completo — Confirmación dentro del modal (escribe BORRAR); ya no usa prompt()/confirm() del navegador, que fallaban en Electron.
+  Suplemento confirmado — Al aceptar dieta SUPLEMENTO importada desde SOME, desaparecen el badge Propuesta y los botones Confirmar/Descartar.
   
-  Registro / recuperar @usuario — Tras borrar ajustes locales, Guardar perfil y Recuperar mi usuario avanzan sin window.confirm; clientId se restaura desde el dispositivo.
-  
-  Solo este equipo — Un clic en la tarjeta local entra directo a la app (sin segunda pantalla de nombre); firma por defecto «Usuario R+» (editable en Mi Perfil).
+  Sync pasivo — Refrescar el panel EA o re-sincronizar Manejo ya no vuelve a proponer el mismo suplemento por kcal/proteína residuales del SOME.
   
   Sin migración — SQLCipher sigue en v20.
