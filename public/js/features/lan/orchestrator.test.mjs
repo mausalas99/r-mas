@@ -11,6 +11,8 @@ import {
   purgeLanPatientFromHost,
   rememberPatientDeleteTombstone,
   clearPatientDeleteTombstoneForAdmit,
+  listPatientDeleteTombstones,
+  clearPatientDeleteTombstones,
   acceptServerBundleConflict,
   profiledMergeLiveSyncFullBundles,
   buildEstadoActualCommand,
@@ -142,6 +144,23 @@ describe('orchestrator.mjs characterization', () => {
     assert.equal(fetchCalls, 0);
   });
 
+  it('purgeLanPatientFromHost hostOnly skips tombstone and uses census delete path', async () => {
+    seedLanSession();
+    let pushOpts = null;
+    const result = await purgeLanPatientFromHost('p-host-only', {
+      hostOnly: true,
+      fetchHostRow: async () => ({ id: 'p-host-only', registro: 'REG-H', version: 2 }),
+      pushDelete: async (_pid, _row, _reg, opts) => {
+        pushOpts = opts;
+        return { ok: true, via: 'delete_census' };
+      },
+    });
+    assert.equal(result.ok, true);
+    assert.equal(pushOpts?.hostOnly, true);
+    const map = JSON.parse(localStorage.getItem(LIVE_SYNC_ENTITIES_LS) || '{}');
+    assert.equal(map['patient:p-host-only'], undefined);
+  });
+
   it('rememberPatientDeleteTombstone writes _deleted patient entity', () => {
     rememberPatientDeleteTombstone({ id: 'p-tomb', registro: 'REG-T' });
     const map = JSON.parse(localStorage.getItem(LIVE_SYNC_ENTITIES_LS));
@@ -161,6 +180,21 @@ describe('orchestrator.mjs characterization', () => {
     const map = JSON.parse(localStorage.getItem(LIVE_SYNC_ENTITIES_LS));
     assert.equal(map['patient:p-old'], undefined);
     assert.equal(map['patient:p-new'], undefined);
+  });
+
+  it('listPatientDeleteTombstones and clearPatientDeleteTombstones recover visibility', () => {
+    rememberPatientDeleteTombstone({ id: 'p-a', registro: 'REG-A' });
+    rememberPatientDeleteTombstone({ id: 'p-b', registro: 'REG-B' });
+    assert.equal(listPatientDeleteTombstones().length, 2);
+    assert.equal(clearPatientDeleteTombstones({ patientId: 'p-a' }), 1);
+    assert.deepEqual(
+      listPatientDeleteTombstones().map(function (r) {
+        return r.id;
+      }),
+      ['p-b']
+    );
+    assert.equal(clearPatientDeleteTombstones(), 1);
+    assert.equal(listPatientDeleteTombstones().length, 0);
   });
 
   it('acceptServerBundleConflict updates host bundle bases', () => {

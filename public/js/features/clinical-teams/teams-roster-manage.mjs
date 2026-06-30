@@ -84,7 +84,15 @@ async function handleLeaveTeamClick(btn) {
   const res = await api.dbClinicalTeamsMemberRemove({ teamId, userId });
   btn.disabled = false;
   if (!res || res.ok === false) {
-    toast(res?.error || 'No se pudo salir del equipo.', 'error');
+    const err = String(res?.error || 'No se pudo salir del equipo.');
+    if (/entregas activas/i.test(err)) {
+      toast(
+        `${err} Abre Guardia → «Solo mis entregas» para ver cuáles te bloquean; reasígnalas o libéralas (no hace falta documentar todo el censo).`,
+        'error'
+      );
+    } else {
+      toast(err, 'error');
+    }
     return;
   }
 

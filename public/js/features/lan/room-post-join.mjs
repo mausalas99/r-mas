@@ -67,7 +67,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
       runtime().renderProcedureAgendaPanel();
       void import('../../clinical-access-runtime.mjs').then(function (accessMod) {
         if (typeof accessMod.refreshClinicalPatientListForScope === 'function') {
-          return accessMod.refreshClinicalPatientListForScope({ allowLanPull: false });
+          return accessMod.refreshClinicalPatientListForScope({ allowLanPull: true });
         }
         runtime().renderPatientList({ silent: true });
       });

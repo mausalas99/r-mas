@@ -136,10 +136,21 @@ async function enqueuePatientDeletePatch(pid, hostRow, reg, httpResult) {
 }
 
 /** HTTP-first delete; bundle-only charts use DELETE /patients/:id. */
-export async function pushPatientDeleteToHost(patientId, hostRow, registroFallback) {
+export async function pushPatientDeleteToHost(patientId, hostRow, registroFallback, purgeOpts) {
+  purgeOpts = purgeOpts || {};
   var pid = String(patientId || '').trim();
   var reg = String(registroFallback || (hostRow && hostRow.registro) || '').trim();
   if (!String(activeLiveSyncRoomId || '').trim()) return { ok: false, error: 'not_configured' };
+
+  if (purgeOpts.hostOnly) {
+    var hostOnlyDelete = await lanDeleteHostPatientCensus(pid, reg);
+    if (hostOnlyDelete?.ok) return { ok: true, via: 'delete_census' };
+    return {
+      ok: false,
+      error: hostOnlyDelete?.status ? 'host_reject_' + hostOnlyDelete.status : 'purge_failed',
+      status: hostOnlyDelete?.status,
+    };
+  }
 
   if (!hostRow) {
     var bundleOnly = await tryBundleOnlyCensusDelete(pid, reg);
@@ -163,9 +174,10 @@ export async function pushPatientDeleteToHost(patientId, hostRow, registroFallba
   return enqueuePatientDeletePatch(pid, hostRow, reg, attempts.httpResult);
 }
 
-async function afterHostPatientDelete(hostRow, snap) {
+/** @param {object|null|undefined} hostRow @param {object} snap @param {{ hostOnly?: boolean }} [purgeOpts] */
+async function afterHostPatientDelete(hostRow, snap, purgeOpts) {
   invalidateHostPatientsCache();
-  if (!hostRow) return;
+  if (purgeOpts?.hostOnly || !hostRow) return;
   if (typeof deleteDeps.emitLiveSyncPatientDelete === 'function') {
     deleteDeps.emitLiveSyncPatientDelete(snap);
   }
@@ -197,7 +209,7 @@ function purgeOwnershipBlocked(opts, censusRow) {
 /**
  * Remove a patient chart from the LAN host (admin/orphan cleanup only).
  * @param {string} patientId
- * @param {{ force?: boolean, registro?: string, bundleOnly?: boolean, fetchHostRow?: Function, pushDelete?: Function }} [opts]
+ * @param {{ force?: boolean, hostOnly?: boolean, registro?: string, bundleOnly?: boolean, fetchHostRow?: Function, pushDelete?: Function }} [opts]
  */
 export async function purgeLanPatientFromHost(patientId, opts) {
   opts = opts || {};
@@ -214,11 +226,13 @@ export async function purgeLanPatientFromHost(patientId, opts) {
     id: pid,
     registro: String((resolved.hostRow && resolved.hostRow.registro) || resolved.registroHint || '').trim(),
   };
-  rememberPatientDeleteTombstone(snap);
+  if (!opts.hostOnly) {
+    rememberPatientDeleteTombstone(snap);
+  }
   var pushDelete =
     typeof opts.pushDelete === 'function' ? opts.pushDelete : pushPatientDeleteToHost;
-  var deleteResult = await pushDelete(pid, resolved.hostRow, snap.registro);
+  var deleteResult = await pushDelete(pid, resolved.hostRow, snap.registro, opts);
   if (!deleteResult?.ok) return deleteResult;
-  await afterHostPatientDelete(resolved.hostRow, snap);
+  await afterHostPatientDelete(resolved.hostRow, snap, opts);
   return { ok: true, hadHostRow: !!resolved.hostRow, bundleOnly: !resolved.hostRow };
 }

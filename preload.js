@@ -185,6 +185,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbBackupExportJson: function() {
     return ipcRenderer.invoke('db:backup-export-json');
   },
+  dbRecoverCensusRangeExport: function() {
+    return ipcRenderer.invoke('db:recover-census-range-export');
+  },
   dbBackupExportDb: function() {
     return ipcRenderer.invoke('db:backup-export-db');
   },

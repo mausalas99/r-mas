@@ -168,7 +168,7 @@ var HELP_ARTICLES = [
       '<p>R+ ofrece varias vías para mover o resguardar datos desde <strong>Ajustes</strong>:</p>' +
       '<ul>' +
       '<li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li>' +
-      '<li><strong>Exportar paciente actual</strong> o por <strong>rango de fechas</strong> para mover casos específicos.</li>' +
+      '<li><strong>Exportar paciente actual</strong>, <strong>varios pacientes</strong> (selección del censo) o por <strong>rango de fechas</strong> para mover casos específicos.</li>' +
       '<li><strong>Copia automática</strong> guarda hasta 14 snapshots locales rotativos.</li>' +
       '<li><strong>Paquete sync</strong> cifrado con passphrase para combinar datos entre equipos sin pisar los del otro lado.</li>' +
       '<li><strong>Registro de auditoría</strong>: descarga un JSON con exportaciones e importaciones relevantes.</li>' +

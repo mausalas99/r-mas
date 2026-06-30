@@ -31,6 +31,8 @@ export {
   exportRangeBackupPrompt,
 } from './import-backup/export-backup.mjs';
 
+export { openExportPatientsModal } from './import-backup/export-patients-modal.mjs';
+
 export {
   triggerImportRangeBackup,
   onRangeBackupFileChosen,

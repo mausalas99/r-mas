@@ -40,6 +40,18 @@ export function isInactiveHostPatientRow(row, local, status) {
   return false;
 }
 
+/**
+ * Host census row eligible for «Eliminar fantasmas» (own ghosts + bundle-only stubs).
+ * @param {object|null|undefined} item
+ * @param {string} [localClientId]
+ */
+export function isPurgeableHostCensusRow(item, localClientId) {
+  if (!item) return false;
+  if (isHostPatientOwnedByOtherClient(item.row, localClientId)) return false;
+  if (item.status === 'ghost') return true;
+  return item.row?._bundleOnly === true;
+}
+
 /** @param {object[]} rows @param {object[]} [localPatients] */
 export function annotateLanHostPatientRows(rows, localPatients) {
   const localById = new Map();

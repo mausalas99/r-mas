@@ -1,4 +1,4 @@
-import { getJoinedTeams, userHasJoinedClinicalTeams } from '../clinico-access.mjs';
+import { getJoinedTeamsForUser } from '../clinico-access-teams.mjs';
 import { makeAllowDeny } from './shared.mjs';
 
 /** @param {string|Date|undefined|null} ctxNow */
@@ -67,11 +67,10 @@ export function buildScopeContext(currentUser, targetPatient, activeGuardia, con
 /** @param {object} built @param {string} userId */
 export function attachJoinedTeamScope(built, userId) {
   const { teams, scopeCtx, enforceTeamPatientScope } = built;
-  const joinedTeams = getJoinedTeams(teams, userId);
+  const currentUser = scopeCtx.currentUser;
+  const joinedTeams = getJoinedTeamsForUser(teams, currentUser || userId);
   const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
-  const strictTeamFilter = enforceTeamPatientScope
-    ? true
-    : userHasJoinedClinicalTeams(teams, userId);
+  const strictTeamFilter = enforceTeamPatientScope ? true : joinedTeams.length > 0;
   Object.assign(scopeCtx, { joinedTeams, joinedTeamIds, strictTeamFilter });
   return scopeCtx;
 }

@@ -2102,10 +2102,28 @@
             </div>
             <div class="settings-card">
               <div class="settings-card__copy">
+                <p class="settings-card__title">Varios pacientes</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Elige del censo cuáles incluir en un solo JSON.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openExportPatientsModal();">Exportar pacientes…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
                 <p class="settings-card__title">Por rango</p>
               </div>
               <div class="settings-card__action">
                 <button type="button" class="btn-settings-row" onclick="exportRangeBackupPrompt()">Exportar por rango…</button>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card__copy">
+                <p class="settings-card__title">Recuperar censo desde base</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Lee pacientes guardados en SQLCipher (incluye caché LAN) aunque el sidebar esté vacío.</p>
+              </div>
+              <div class="settings-card__action">
+                <button type="button" class="btn-settings-row" onclick="exportRecoverCensusRangeJson()">Exportar censo recuperable…</button>
               </div>
             </div>
             <div class="settings-card">

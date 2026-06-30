@@ -86,6 +86,9 @@ export function describePatientImportRejection(raw) {
   if (format === 'r-plus-backup') {
     return 'Es un respaldo completo. Usa «Importar copia de seguridad…», no «Importar paciente…».';
   }
+  if (format === 'r-plus-purge-ghosts-backup') {
+    return 'Es un respaldo de fantasmas (formato anterior). Usa «Importar copia de seguridad…».';
+  }
   if (format === RANGE_EXPORT_FORMAT) {
     return 'Es export por rango: también puedes usar «Importar paciente…» (versión reciente) o «Importar rango…».';
   }

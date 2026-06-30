@@ -7,6 +7,7 @@ import {
 import { addAuditEntry } from '../audit.mjs';
 import { getPlatformRuntime } from '../runtime.mjs';
 import { buildFullBackupPayload, persistFullBackupPayload } from './backup-payload.mjs';
+import { normalizeFullBackupImportPayload } from './backup-host-merge.mjs';
 import { importEntriesWithConflicts, importPatientExportPayloads } from './import-core.mjs';
 
 const rt = getPlatformRuntime();
@@ -134,8 +135,9 @@ function reportFullBackupImportError(err) {
   addAuditEntry('backup-full-import', 'error', 0, code || 'read-error');
 }
 
-async function processFullBackupFile(payload) {
-  if (!payload || payload.format !== 'r-plus-backup' || payload.version !== 1 || !payload.data) {
+async function processFullBackupFile(rawPayload) {
+  const payload = normalizeFullBackupImportPayload(rawPayload);
+  if (!payload) {
     rt.showToast('El archivo no es un respaldo válido de R+', 'error');
     return;
   }

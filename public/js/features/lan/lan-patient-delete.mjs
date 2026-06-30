@@ -60,6 +60,7 @@ export async function deleteHostPatientCensus(patientId, registro) {
  *   pushVersioned: (pid: string, mutation: object) => Promise<{ ok?: boolean, status?: number }>,
  *   enqueueOutbox: (rid: string, item: object) => Promise<void>,
  *   flushOutbox: (rid: string) => Promise<void>,
+ *   hostOnly?: boolean,
  * }} ctx
  */
 export async function pushPatientDeleteToHost(patientId, hostRow, registroFallback, ctx) {
@@ -68,7 +69,7 @@ export async function pushPatientDeleteToHost(patientId, hostRow, registroFallba
   var rid = String(ctx.roomId || '').trim();
   if (!rid) return { ok: false, error: 'not_configured' };
 
-  var steps = resolveLanPatientDeleteSteps(!!hostRow);
+  var steps = resolveLanPatientDeleteSteps(!!hostRow, { hostOnly: !!ctx.hostOnly });
   var stepCtx = {
     pid: pid,
     reg: reg,

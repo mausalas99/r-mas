@@ -12,10 +12,11 @@ export function isClinicalScopeReadyForLanPatientApply() {
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return false;
   if (shouldUseElevatedPatientCensus(user)) return true;
+  // Desktop: scope evaluate has a session fallback — do not block push/apply on scopeContext hydrate races.
+  if (!shouldEnforceTeamPatientMirror()) return true;
   const ctx = clinicalSessionContext.scopeContext;
   if (!ctx) return false;
-  if (!shouldEnforceTeamPatientMirror()) return true;
-  return joinedTeamIdsForUser(ctx.teams, user.user_id).size > 0;
+  return joinedTeamIdsForUser(ctx.teams, user).size > 0;
 }
 
 function applyLanOpsScopeContext(snapshot) {

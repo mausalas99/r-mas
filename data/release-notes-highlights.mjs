@@ -1193,6 +1193,34 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_759 = [
+  {
+    title: 'Censo recuperable',
+    body:
+      'En <strong>Ajustes → Exportar censo recuperable…</strong> lee pacientes desde SQLCipher (incluye caché LAN) aunque el sidebar esté vacío. Importa con <strong>Importar rango…</strong>.',
+  },
+  {
+    title: 'Exportar pacientes…',
+    body:
+      'Elige varios del censo en un solo JSON desde <strong>Ajustes → Respaldo</strong>.',
+  },
+  {
+    title: 'Anfitrión LAN',
+    body:
+      '<strong>Limpiar tombstones</strong> restaura visibilidad local; <strong>Restaurar</strong> por fantasma; <strong>Eliminar fantasmas</strong> descarga respaldo antes de purgar solo el host.',
+  },
+  {
+    title: 'Directorio LAN',
+    body:
+      'Asignaciones de equipo remapean al <strong>@usuario</strong> canónico de esta Mac tras sync entre equipos.',
+  },
+  {
+    title: 'Parche sobre 7.5.8',
+    body:
+      'Incluye catálogo downgrade <strong>7.5.7</strong> y confirmación <strong>SUPLEMENTO</strong> en EA. Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 var RELEASE_NOTES_758 = [
   {
     title: 'Catálogo downgrade',
@@ -1248,9 +1276,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_758;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_759;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.5.9': RELEASE_NOTES_759,
   '7.5.8': RELEASE_NOTES_758,
   '7.5.7': RELEASE_NOTES_757,
   '7.5.6': RELEASE_NOTES_756,

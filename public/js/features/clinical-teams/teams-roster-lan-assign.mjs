@@ -162,6 +162,10 @@ export async function handleLanAssignButtonClick(btn) {
   toast(wasMember ? 'Ciclo actualizado.' : 'Integrante asignado al equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();
+  try {
+    const lan = await import('../lan-sync.mjs');
+    if (typeof lan.scheduleLiveSyncPush === 'function') lan.scheduleLiveSyncPush();
+  } catch { /* LAN optional */ }
   await fetchClinicalTeamsFromDb();
   const { reloadLanUsersDirectoryAfterMutation } = await import('./teams-roster-lan-load.mjs');
   await reloadLanUsersDirectoryAfterMutation();

@@ -1,4 +1,5 @@
 import { normalizeServiceKey, toMillis } from './clinico-access-shared.mjs';
+import { normalizeUsername } from './clinical-username.mjs';
 import {
   getCycleLettersForTeamCreate,
   isOnCallToday,
@@ -36,13 +37,30 @@ export function patientMatchesTeam(patient, team) {
   return false;
 }
 
+/** @param {object[]} teams @param {string|object} userOrUserId @param {string} [usernameHint] */
+export function getJoinedTeamsForUser(teams, userOrUserId, usernameHint) {
+  let uid = '';
+  let handle = '';
+  if (userOrUserId && typeof userOrUserId === 'object') {
+    uid = String(userOrUserId.user_id || '');
+    handle = normalizeUsername(String(userOrUserId.username || ''));
+  } else {
+    uid = String(userOrUserId || '');
+    handle = normalizeUsername(usernameHint || '');
+  }
+  if (!uid && !handle) return [];
+  return (teams || []).filter((team) =>
+    (team.members || []).some((m) => {
+      if (uid && String(m.user_id) === uid) return true;
+      if (handle && normalizeUsername(m.username || '') === handle) return true;
+      return false;
+    })
+  );
+}
+
 /** @param {object[]} teams @param {string} userId */
 export function getJoinedTeams(teams, userId) {
-  const uid = String(userId || '');
-  if (!uid) return [];
-  return (teams || []).filter((team) =>
-    (team.members || []).some((m) => String(m.user_id) === uid)
-  );
+  return getJoinedTeamsForUser(teams, userId);
 }
 
 /** @param {object[]} teams @param {string} userId */

@@ -336,6 +336,9 @@ export function toggleGuardiaMode() {
     void import('./entrega-roster-panel.mjs').then(({ closeEntregaRosterPanel }) => {
       closeEntregaRosterPanel();
     });
+    void import('./clinical-entrega.mjs').then(({ endEntregaPhase }) => {
+      endEntregaPhase();
+    });
     void import('./guardia-phase-bar.mjs').then(({ teardownGuardiaPhaseBar }) => {
       teardownGuardiaPhaseBar();
     });

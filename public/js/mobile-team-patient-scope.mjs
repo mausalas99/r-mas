@@ -4,15 +4,20 @@
  */
 import {
   getJoinedTeams,
+  getJoinedTeamsForUser,
   resolvePatientTeamIdFromAssignments,
   isActiveGuardiaCoveringUser,
   patientCoveredByGuardia,
 } from './clinico-access.mjs';
 
-/** @param {object[]} teams @param {string} userId */
-export function joinedTeamIdsForUser(teams, userId) {
+/** @param {object[]} teams @param {string|object|null|undefined} userOrUserId */
+export function joinedTeamIdsForUser(teams, userOrUserId) {
   const ids = new Set();
-  for (const team of getJoinedTeams(teams || [], userId)) {
+  const joined =
+    typeof userOrUserId === 'string'
+      ? getJoinedTeams(teams || [], userOrUserId)
+      : getJoinedTeamsForUser(teams || [], userOrUserId || '');
+  for (const team of joined) {
     const tid = String(team?.team_id || '').trim();
     if (tid) ids.add(tid);
   }

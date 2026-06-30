@@ -146,6 +146,34 @@ async function verifyForensicAuditChain() {
   }
 }
 
+async function exportRecoverCensusRangeJson() {
+  if (
+    !isDbMode() ||
+    !window.electronAPI ||
+    typeof window.electronAPI.dbRecoverCensusRangeExport !== 'function'
+  ) {
+    rt.showToast('Recuperación solo disponible con base cifrada en escritorio.', 'error');
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbRecoverCensusRangeExport();
+    if (!res || res.ok === false) {
+      rt.showToast((res && res.error) || 'No se encontraron pacientes para exportar', 'error');
+      return;
+    }
+    downloadJsonPayload(
+      res.payload,
+      'R-plus-recuperacion-censo-' + formatDateSlug(new Date()) + '.json'
+    );
+    rt.showToast(
+      'Exportados ' + (res.count || 0) + ' paciente(s) — importa con Importar rango…',
+      'success'
+    );
+  } catch {
+    rt.showToast('No se pudo exportar el censo recuperable', 'error');
+  }
+}
+
 async function exportClinicalDbBackupJson() {
   if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbBackupExportJson !== 'function') {
     rt.showToast('Exportación solo disponible con base cifrada en escritorio.', 'error');
@@ -337,6 +365,7 @@ export {
   lockClinicalDatabaseNow,
   verifyForensicAuditChain,
   exportClinicalDbBackupJson,
+  exportRecoverCensusRangeJson,
   exportClinicalDbBackupDb,
   mergeMedCatalogStored,
   exportMedCatalogBundle,

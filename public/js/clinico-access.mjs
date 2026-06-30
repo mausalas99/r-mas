@@ -46,6 +46,7 @@ export {
 export {
   patientMatchesTeam,
   getJoinedTeams,
+  getJoinedTeamsForUser,
   userHasJoinedClinicalTeams,
   patientHasExplicitTeamAssignment,
   resolvePatientTeamIdFromAssignments,

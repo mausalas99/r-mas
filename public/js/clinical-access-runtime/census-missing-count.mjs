@@ -1,5 +1,3 @@
-import { userHasJoinedClinicalTeams } from '../clinico-access.mjs';
-
 /** @param {object[]} assignments @param {Set<string>} localIds */
 export function countElevatedMissingPatients(assignments, localIds) {
   let missing = 0;
@@ -18,7 +16,6 @@ export function countElevatedMissingPatients(assignments, localIds) {
  * @param {string} now
  */
 export async function countTeamMemberMissingPatients(user, teams, assignments, localIds, now) {
-  if (!userHasJoinedClinicalTeams(teams, user.user_id)) return null;
   const { filterJoinedTeams } = await import('../features/clinical-teams/shared.mjs');
   const { resolvePatientTeamIdFromAssignments } = await import('../clinico-access.mjs');
   const joined = filterJoinedTeams(teams, user);

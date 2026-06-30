@@ -4,14 +4,8 @@ import {
   annotateLanHostPatientRows,
   isHostPatientOwnedByOtherClient,
   isInactiveHostPatientRow,
+  isPurgeableHostCensusRow,
 } from './host-patients-annotate.mjs';
-
-function isPurgeableHostCensusRow(item, localClientId) {
-  if (!item) return false;
-  if (isHostPatientOwnedByOtherClient(item.row, localClientId)) return false;
-  if (item.status === 'ghost') return true;
-  return item.row?._bundleOnly === true;
-}
 
 describe('annotateLanHostPatientRows', () => {
   it('marks host-only rows as ghost and inactive', () => {

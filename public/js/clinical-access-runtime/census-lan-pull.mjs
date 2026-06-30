@@ -88,7 +88,10 @@ export async function refreshClinicalPatientListForScope(options) {
       if (isDbMode()) {
         await fetchClinicalTeamsFromDb();
         await fetchClinicalScopeContextFromDb();
-        await ensureTeamAssignedPatientsOnDevice({ allowLanPull: !!opts.allowLanPull });
+        await ensureTeamAssignedPatientsOnDevice({
+          allowLanPull: opts.allowLanPull !== false,
+          lanPullDelayMs: opts.lanPullDelayMs,
+        });
       }
       if (typeof document === 'undefined') return;
       try {
@@ -104,10 +107,15 @@ export async function refreshClinicalPatientListForScope(options) {
   return refreshClinicalPatientListForScopeInFlight;
 }
 
-/** One-shot host bundle pull when new team assignments arrive (not on every no-op merge). */
-async function pullHostPatientsAfterAssignmentMerge(event) {
+/** One-shot host bundle pull when roster/assignments change visibility (not on every no-op merge). */
+async function pullHostPatientsAfterOpsMerge(event) {
   const stats = event?.detail?.mergeStats;
-  if (!stats || !(Number(stats.assignmentsInserted) > 0)) return;
+  if (!stats) return;
+  const rosterChanged =
+    Number(stats.assignmentsInserted) > 0 ||
+    Number(stats.membershipInserted) > 0 ||
+    Number(stats.membershipRejoinsApplied) > 0;
+  if (!rosterChanged) return;
   if (!isDbMode()) return;
   try {
     const lan = await import('../features/lan-sync.mjs');
@@ -135,8 +143,8 @@ export function wireClinicalOpsSyncRefresh() {
     setClinicalOpsSyncedRefreshTimer(
       setTimeout(function () {
         setClinicalOpsSyncedRefreshTimer(null);
-        void refreshClinicalPatientListForScope({ allowLanPull: false });
-        void pullHostPatientsAfterAssignmentMerge(event);
+        void refreshClinicalPatientListForScope({ allowLanPull: true });
+        void pullHostPatientsAfterOpsMerge(event);
       }, 1500)
     );
   });

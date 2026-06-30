@@ -81,6 +81,54 @@ function purgeRegistroTombstones(map, reg, selfKey) {
   return changed;
 }
 
+/** @returns {Array<{ key: string, id: string, registro: string }>} */
+export function listPatientDeleteTombstones() {
+  var map = readLiveSyncEntityMap();
+  var out = [];
+  for (var key of Object.keys(map)) {
+    if (!key.startsWith('patient:')) continue;
+    var row = map[key];
+    if (!row || row._deleted !== true) continue;
+    out.push({
+      key: key,
+      id: String(row.id || key.slice(8)).trim(),
+      registro: String(row.registro || '').trim(),
+    });
+  }
+  return out;
+}
+
+/**
+ * Remove local patient delete tombstones (visibility / reconcile recovery).
+ * @param {{ patientId?: string, registro?: string }} [filter]
+ * @returns {number} cleared count
+ */
+export function clearPatientDeleteTombstones(filter) {
+  filter = filter || {};
+  var wantId = String(filter.patientId || '').trim();
+  var wantReg = String(filter.registro || '').trim();
+  var map = readLiveSyncEntityMap();
+  var changed = false;
+  var cleared = 0;
+  for (var key of Object.keys(map)) {
+    if (!key.startsWith('patient:')) continue;
+    var row = map[key];
+    if (!row || row._deleted !== true) continue;
+    var pid = String(row.id || key.slice(8)).trim();
+    var reg = String(row.registro || '').trim();
+    if (wantId && pid !== wantId) continue;
+    if (wantReg && reg !== wantReg) continue;
+    delete map[key];
+    changed = true;
+    cleared += 1;
+  }
+  if (!changed) return 0;
+  try {
+    localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
+  } catch { /* ignored */ }
+  return cleared;
+}
+
 /** New admission with same hospital registro must not inherit stale LAN delete tombstones. */
 export function clearPatientDeleteTombstoneForAdmit(patientId, registro) {
   var pid = String(patientId || '').trim();

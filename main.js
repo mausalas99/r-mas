@@ -1088,6 +1088,29 @@ app.whenReady().then(async () => {
       }
     }
     if (unlockPromise) await unlockPromise;
+
+    if (process.env.R_PLUS_RECOVER_CENSUS === '1') {
+      try {
+        const { runRecoverCensusExport } = await import('./scripts/recover-census-export.mjs');
+        const result = await runRecoverCensusExport({ app, dbManager });
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Recuperación de censo',
+          message:
+            'Exportados ' +
+            result.count +
+            ' paciente(s) a Descargas.\n\nImporta con Ajustes → Importar rango…',
+        });
+      } catch (recoverErr) {
+        dialog.showErrorBox(
+          'Recuperación de censo',
+          recoverErr && recoverErr.message ? recoverErr.message : String(recoverErr)
+        );
+      }
+      app.quit();
+      return;
+    }
+
     try {
       const userData = app.getPath('userData');
       const { readLanTeamCodeFile, reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');

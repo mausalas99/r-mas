@@ -9,9 +9,21 @@ import { purgeLanPatientFromHost } from './orchestrator.mjs';
 import {
   annotateLanHostPatientRows,
   isHostPatientOwnedByOtherClient,
+  isPurgeableHostCensusRow,
 } from './host-patients-annotate.mjs';
 import { enrichLanHostPatientRows, formatLanHostTimestamp } from './host-patients-enrich.mjs';
 import { fetchLanHostCensusSnapshot } from './host-patients-snapshot.mjs';
+import {
+  backupAndPurgeGhostRowsFromHost,
+  buildPurgeGhostsConfirmMessage,
+  partitionPurgeableGhosts,
+  reportGhostPurgeResult,
+} from './host-patients-ghost-purge.mjs';
+import {
+  clearLocalPatientDeleteTombstonesAndReconcile,
+  clearPatientTombstoneAndRestoreFromHost,
+  countLocalPatientDeleteTombstones,
+} from './host-patients-tombstone-clear.mjs';
 
 import { esc } from '../../dom-escape.mjs';
 const MODAL_ID = 'lan-host-census-modal';
@@ -62,6 +74,9 @@ function wireLanHostCensusActions(backdrop) {
   });
   backdrop.querySelector('.lan-host-census-purge-ghosts')?.addEventListener('click', function () {
     void purgeGhostsFromDashboard(backdrop);
+  });
+  backdrop.querySelector('.lan-host-census-clear-tombstones')?.addEventListener('click', function () {
+    void clearTombstonesFromDashboard(backdrop);
   });
   backdrop._lanHostCensusActionsWired = true;
 }
@@ -144,6 +159,7 @@ function ensureModal() {
     '</div>' +
     '<div class="modal-actions lan-host-census-actions">' +
     '<button type="button" class="btn-lan-secondary lan-host-census-purge-ghosts">Eliminar fantasmas</button>' +
+    '<button type="button" class="btn-lan-secondary lan-host-census-clear-tombstones">Limpiar tombstones</button>' +
     '<button type="button" class="btn-lan-secondary lan-host-census-refresh">Actualizar</button>' +
     '<button type="button" class="btn-generate lan-host-census-close">Cerrar</button>' +
     '</div>' +
@@ -162,17 +178,15 @@ function ensureModal() {
 }
 
 /** @param {object} item */
-function isPurgeableHostCensusRow(item) {
-  if (!item) return false;
-  if (isHostPatientOwnedByOtherClient(item.row, getLanClientId())) return false;
-  if (item.status === 'ghost') return true;
-  return item.row?._bundleOnly === true;
+function isPurgeableDashboardRow(item) {
+  return isPurgeableHostCensusRow(item, getLanClientId());
 }
 
 function purgeOptsForCensusItem(item) {
   return {
     registro: String(item?.row?.registro || '').trim(),
     bundleOnly: item?.row?._bundleOnly === true,
+    hostOnly: true,
   };
 }
 
@@ -215,7 +229,8 @@ function renderLanHostCensusTable(backdrop) {
   const ghostCount = all.filter(function (x) {
     return x.status === 'ghost';
   }).length;
-  const purgeableGhostCount = all.filter(isPurgeableHostCensusRow).length;
+  const purgeableGhostCount = all.filter(isPurgeableDashboardRow).length;
+  const tombstoneCount = countLocalPatientDeleteTombstones();
   if (summary) {
     summary.textContent =
       inactiveCount +
@@ -224,6 +239,7 @@ function renderLanHostCensusTable(backdrop) {
       (purgeableGhostCount < ghostCount
         ? ' · ' + (ghostCount - purgeableGhostCount) + ' de otro equipo'
         : '') +
+      (tombstoneCount ? ' · ' + tombstoneCount + ' tombstone(s) local(es)' : '') +
       ' · ' +
       all.length +
       ' en anfitrión' +
@@ -266,6 +282,11 @@ function renderLanHostCensusTable(backdrop) {
       statusBadge(item) +
       '</td>' +
       '<td class="lan-host-census-actions-cell">' +
+      (item.status === 'ghost'
+        ? '<button type="button" class="btn-lan-secondary lan-host-census-restore" data-patient-id="' +
+          esc(String(item.row.id)) +
+          '">Restaurar</button> '
+        : '') +
       '<button type="button" class="btn-lan-secondary lan-host-census-delete" data-patient-id="' +
       esc(String(item.row.id)) +
       '">Eliminar</button>' +
@@ -277,6 +298,11 @@ function renderLanHostCensusTable(backdrop) {
   tbody.querySelectorAll('.lan-host-census-delete').forEach(function (btn) {
     btn.addEventListener('click', function () {
       void deletePatientFromDashboard(backdrop, btn);
+    });
+  });
+  tbody.querySelectorAll('.lan-host-census-restore').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      void restorePatientFromDashboard(backdrop, btn);
     });
   });
 }
@@ -316,13 +342,6 @@ async function deletePatientFromDashboard(backdrop, btn) {
   }
 }
 
-/** @param {HTMLElement} backdrop */
-function countForeignGhosts(backdrop) {
-  return (backdrop._lanHostCensusRows || []).filter(function (x) {
-    return x.status === 'ghost' && isHostPatientOwnedByOtherClient(x.row, getLanClientId());
-  }).length;
-}
-
 function showPurgeGhostsEmptyToast(showToast, foreignGhostCount) {
   showToast(
     foreignGhostCount
@@ -332,45 +351,97 @@ function showPurgeGhostsEmptyToast(showToast, foreignGhostCount) {
   );
 }
 
-function showPurgeGhostsResult(showToast, ok, total, foreignGhostCount) {
-  if (!ok) {
-    showToast('No se pudieron eliminar los fantasmas del anfitrión.', 'error');
-    return;
-  }
-  var msg = ok + ' fantasma(s) eliminado(s) del anfitrión.';
-  if (foreignGhostCount) msg += ' ' + foreignGhostCount + ' de otro equipo sin cambios.';
-  showToast(msg, ok < total ? 'warn' : 'success');
-}
-
 /** @param {HTMLElement} backdrop */
 async function purgeGhostsFromDashboard(backdrop) {
   const opts = backdrop._lanHostCensusOpts || {};
   const showToast = resolveDashboardToast(opts);
-  const ghosts = (backdrop._lanHostCensusRows || []).filter(isPurgeableHostCensusRow);
-  const foreignGhostCount = countForeignGhosts(backdrop);
+  const rows = backdrop._lanHostCensusRows || [];
+  const { ghosts, foreignGhostCount } = partitionPurgeableGhosts(rows);
   if (!ghosts.length) {
     showPurgeGhostsEmptyToast(showToast, foreignGhostCount);
     return;
   }
-  if (
-    !window.confirm(
-      '¿Eliminar ' +
-        ghosts.length +
-        ' fantasma(s) huérfano(s) del anfitrión LAN?\n\nLos pacientes de otro equipo no se tocan.'
-    )
-  ) {
+  const localCount = (patients || []).filter(function (p) {
+    return p && p.id;
+  }).length;
+  if (!window.confirm(buildPurgeGhostsConfirmMessage(ghosts.length, localCount))) {
     return;
   }
   const btn = backdrop.querySelector('.lan-host-census-purge-ghosts');
   if (btn) btn.disabled = true;
-  let ok = 0;
-  for (const g of ghosts) {
-    const res = await purgeLanPatientFromHost(String(g.row.id), purgeOptsForCensusItem(g));
-    if (res?.ok) ok += 1;
-  }
+  const result = await backupAndPurgeGhostRowsFromHost(rows, showToast);
   if (btn) btn.disabled = false;
-  showPurgeGhostsResult(showToast, ok, ghosts.length, foreignGhostCount);
-  if (ok && typeof opts.onChanged === 'function') opts.onChanged();
+  if (result.cancelled || result.empty) return;
+  reportGhostPurgeResult(result.ok, result.total, result.foreignGhostCount, showToast, result.backup);
+  if (result.ok && typeof opts.onChanged === 'function') opts.onChanged();
+  await refreshLanHostCensusDashboard(opts);
+}
+
+/** @param {HTMLElement} backdrop */
+async function clearTombstonesFromDashboard(backdrop) {
+  const opts = backdrop._lanHostCensusOpts || {};
+  const showToast = resolveDashboardToast(opts);
+  const count = countLocalPatientDeleteTombstones();
+  if (!count) {
+    showToast('No hay tombstones locales de pacientes.', 'info');
+    return;
+  }
+  if (
+    !window.confirm(
+      '¿Limpiar ' +
+        count +
+        ' tombstone(s) local(es) de borrado?\n\nEsto permite que el censo vuelva a sincronizar pacientes ocultos por un «Eliminar fantasmas» previo. No borra datos del anfitrión.'
+    )
+  ) {
+    return;
+  }
+  const btn = backdrop.querySelector('.lan-host-census-clear-tombstones');
+  if (btn) btn.disabled = true;
+  const result = await clearLocalPatientDeleteTombstonesAndReconcile();
+  if (btn) btn.disabled = false;
+  if (!result.cleared) {
+    showToast('No había tombstones que limpiar.', 'info');
+    return;
+  }
+  let msg =
+    result.cleared +
+    ' tombstone(s) limpiado(s).';
+  if (result.restored) msg += ' ' + result.restored + ' expediente(s) recuperado(s) del anfitrión.';
+  showToast(msg, result.restored ? 'success' : 'warn');
+  if (typeof opts.onChanged === 'function') opts.onChanged();
+  await refreshLanHostCensusDashboard(opts);
+}
+
+/** @param {HTMLElement} backdrop @param {HTMLButtonElement} btn */
+async function restorePatientFromDashboard(backdrop, btn) {
+  const pid = String(btn.getAttribute('data-patient-id') || '').trim();
+  if (!pid) return;
+  const item = (backdrop._lanHostCensusRows || []).find(function (x) {
+    return String(x.row.id) === pid;
+  });
+  const label = item ? patientLabel(item.row) : pid;
+  const opts = backdrop._lanHostCensusOpts || {};
+  const showToast = resolveDashboardToast(opts);
+  if (
+    !window.confirm(
+      '¿Restaurar «' +
+        label +
+        '» en tu censo?\n\nSe limpian tombstones locales y se intenta recuperar el expediente del anfitrión.'
+    )
+  ) {
+    return;
+  }
+  btn.disabled = true;
+  const registro = String(item?.row?.registro || '').trim();
+  const result = await clearPatientTombstoneAndRestoreFromHost(pid, registro);
+  if (result.restored) {
+    showToast('Expediente restaurado en tu censo.', 'success');
+  } else if (result.restore?.error === 'patient_not_on_host') {
+    showToast('Tombstones limpiados, pero el anfitrión ya no tiene este expediente.', 'warn');
+  } else {
+    showToast('Tombstones limpiados. Revisa el censo tras sincronizar.', 'warn');
+  }
+  if (typeof opts.onChanged === 'function') opts.onChanged();
   await refreshLanHostCensusDashboard(opts);
 }
 
@@ -433,6 +504,16 @@ function upgradeLanHostCensusModalIfNeeded(backdrop) {
     purgeBtn.textContent = 'Eliminar fantasmas';
     if (refreshBtn) actions.insertBefore(purgeBtn, refreshBtn);
     else actions.prepend(purgeBtn);
+    backdrop._lanHostCensusActionsWired = false;
+  }
+  if (actions && !actions.querySelector('.lan-host-census-clear-tombstones')) {
+    const refreshBtn = actions.querySelector('.lan-host-census-refresh');
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn-lan-secondary lan-host-census-clear-tombstones';
+    clearBtn.textContent = 'Limpiar tombstones';
+    if (refreshBtn) actions.insertBefore(clearBtn, refreshBtn);
+    else actions.appendChild(clearBtn);
     backdrop._lanHostCensusActionsWired = false;
   }
   wireLanHostCensusActions(backdrop);

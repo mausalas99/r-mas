@@ -39,10 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.8](https://github.com/mausalas99/r-mas/releases/tag/v7.5.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.5.9](https://github.com/mausalas99/r-mas/releases/tag/v7.5.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.5.9 (recuperación censo + tombstones LAN)
+
+- **Censo recuperable** — Ajustes exporta pacientes desde SQLCipher aunque el sidebar esté vacío; importa con **Importar rango…** (`npm run recover:census` en CLI).
+- **Exportar pacientes…** — Selector multi-paciente del censo para un JSON de respaldo.
+- **Anfitrión LAN** — Limpiar tombstones, restaurar fantasmas y purgar huérfanos del host con respaldo automático previo.
+- **Directorio LAN** — Membresías de equipo remapean al @usuario local tras sync entre Macs.
+- **Parche sobre 7.5.8** — Catálogo downgrade y EA suplemento; sin migración (SQLCipher v20).
+
+Notas: `docs/RELEASE_NOTES_7.5.9.txt`.
 
 ## R+ 7.5.8 (catálogo downgrade 7.5.7)
 

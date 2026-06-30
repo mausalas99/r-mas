@@ -4,10 +4,13 @@
  */
 import {
   clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
   mapPatientForGuardiaGrid,
   refreshGuardiaCensusFromDb,
 } from '../clinical-access-runtime.mjs';
 import { patients } from '../app-state.mjs';
+import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
+import { filterPatientsForGuardiaCensus } from './patients-clinical-filter.mjs';
 import {
   listActiveProcedimientos,
   normalizePendientesJson,
@@ -227,18 +230,30 @@ function wireRosterFooter(guardiasMap) {
   });
 }
 
+function rosterScopePatients(guardiasMap) {
+  const basePatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived);
+  const scopeContext =
+    clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate() || {};
+  const scoped = filterPatientsForGuardiaCensus(
+    basePatients,
+    clinicalSessionContext.user,
+    scopeContext,
+    guardiasMap,
+    elevatedPatientFilters
+  );
+  return sortPatientsByPriorityThenBed(
+    scoped.map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p })),
+    guardiasMap
+  );
+}
+
 export async function openEntregaRosterPanel(settings) {
   await refreshGuardiaCensusFromDb(settings);
   const host = ensureRosterHost();
   document.documentElement.classList.add('guardia-entrega-roster-open');
 
   const guardiasMap = clinicalSessionContext.guardiasMap;
-  const censusPatients = sortPatientsByPriorityThenBed(
-    patients
-      .filter((p) => p && p.id && !p.isDemo && !p.archived)
-      .map((p) => ({ ...mapPatientForGuardiaGrid(p), _raw: p })),
-    guardiasMap
-  );
+  const censusPatients = rosterScopePatients(guardiasMap);
   const critical = censusPatients.filter(
     (p) => patientClinicalPriorityRank(p, guardiasMap.get(p.id)) < 2
   );

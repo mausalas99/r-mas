@@ -23,7 +23,7 @@ export async function refreshTeamsUiAfterChange() {
   if (isLanDirectoryModalOpen()) return;
 
   const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
-  await refreshClinicalPatientListForScope({ allowLanPull: false });
+  await refreshClinicalPatientListForScope({ allowLanPull: true });
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelOpen()) {
     await renderClinicalTeamsPanel({ silent: true, skipLanPull: true });

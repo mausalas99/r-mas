@@ -3,11 +3,25 @@
   "updatedAt": "2026-06-30",
   "entries": [
     {
+      "version": "7.5.9",
+      "label": "7.5.9",
+      "publishedAt": "2026-06-30",
+      "summary": "Recuperación censo SQLCipher + tombstones/fantasmas LAN",
+      "recommended": true
+    },
+    {
+      "version": "7.5.8",
+      "label": "7.5.8",
+      "publishedAt": "2026-06-30",
+      "summary": "Catálogo downgrade 7.5.7",
+      "recommended": false
+    },
+    {
       "version": "7.5.7",
       "label": "7.5.7",
       "publishedAt": "2026-06-30",
       "summary": "EA suplemento confirm — confirmar dieta SOME sin re-propuesta",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.5.6",

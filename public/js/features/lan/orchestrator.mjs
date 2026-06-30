@@ -66,7 +66,7 @@ export {
 
 export { lanPushHistoriaClinica, lanPushHistoriaClinicaDelta, lanSyncPatientArchivedFlag, lanFetchHistoriaClinica } from './historia-sync.mjs';
 export { acceptServerBundleConflict, acceptServerClinicalOpsConflict } from './conflicts.mjs';
-export { rememberPatientDeleteTombstone, clearPatientDeleteTombstoneForAdmit } from './entity-versions.mjs';
+export { rememberPatientDeleteTombstone, clearPatientDeleteTombstoneForAdmit, listPatientDeleteTombstones, clearPatientDeleteTombstones } from './entity-versions.mjs';
 export { purgeLanPatientFromHost, removePatientLocally } from './patient-delete.mjs';
 export {
   lanFetchHostPatientRow,

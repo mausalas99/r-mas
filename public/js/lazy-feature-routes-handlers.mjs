@@ -9,6 +9,7 @@ const platformHandlerNames = {
   lockClinicalDatabaseNow: 'lockClinicalDatabaseNow',
   verifyForensicAuditChain: 'verifyForensicAuditChain',
   exportClinicalDbBackupJson: 'exportClinicalDbBackupJson',
+  exportRecoverCensusRangeJson: 'exportRecoverCensusRangeJson',
   exportClinicalDbBackupDb: 'exportClinicalDbBackupDb',
   exportAuditLog: 'exportAuditLog',
   exportMedCatalogBundle: 'exportMedCatalogBundle',
