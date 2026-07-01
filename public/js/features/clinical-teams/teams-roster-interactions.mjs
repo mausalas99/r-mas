@@ -124,7 +124,7 @@ export function wireBrowseSalaControl(elevated) {
     try {
       localStorage.setItem(BROWSE_SALA_LS, String(select.value || ''));
     } catch (_e) { void _e; }
-    void renderClinicalTeamsPanel({ silent: true });
+    void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
   });
 }
 

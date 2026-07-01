@@ -17,6 +17,7 @@ import {
   resolveLocalUserIdByLanHandle,
 } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
+import { closeCreateTeamPanelAfterSuccess } from './teams-roster-panel-draft.mjs';
 
 function readCreateTeamBasics() {
   const name = String(document.getElementById('clinical-team-create-name')?.value || '').trim();
@@ -38,7 +39,8 @@ async function createElevatedTeam(api, { name, sala, userId }) {
     toast(res?.error || 'No se creó el equipo.', 'error');
     return;
   }
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  closeCreateTeamPanelAfterSuccess();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
   const lanPush = await publishClinicalTeamsToLan();
   toastTeamLanPublishResult(
     lanPush,
@@ -88,7 +90,8 @@ async function createStandardTeam(api, { name, sala, userId }) {
   const teamId = String(res.team?.team_id || '');
   await autoJoinCreatorToTeam(api, teamId, userId, cycleLetter);
 
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  closeCreateTeamPanelAfterSuccess();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
   const lanPush = await publishClinicalTeamsToLan();
   toastTeamLanPublishResult(lanPush, 'Equipo creado.');
 }

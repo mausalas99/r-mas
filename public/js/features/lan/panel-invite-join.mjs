@@ -551,7 +551,6 @@ function focusLanShiftPinInput() {
   return tryFocus(0);
 }
 
-/** Prefill ward host URL field after pasting «Copiar dirección» into invite box. */
 function prefillLanShiftPinHostUrl(hostUrl) {
   var url = normalizeLanHostBase(String(hostUrl || '').trim());
   if (!url) return false;

@@ -1,13 +1,20 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-30",
+  "updatedAt": "2026-07-01",
   "entries": [
+    {
+      "version": "7.6.0",
+      "label": "7.6.0",
+      "publishedAt": "2026-07-01",
+      "summary": "Release estable 7.6.0",
+      "recommended": true
+    },
     {
       "version": "7.5.9",
       "label": "7.5.9",
       "publishedAt": "2026-06-30",
       "summary": "Recuperación censo SQLCipher + tombstones/fantasmas LAN",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.5.8",

@@ -150,48 +150,62 @@ export function deriveTempPeakAtFromHistorial_(sortedAsc) {
   return { recordedAt: peak.recordedAt, time: peak.time };
 }
 
+function appendVitalsBpFallback(tasList, tadList, rv, rowAlt) {
+  if (!tasList.length && rv.tas != null && rv.tas !== '') {
+    tasList.push({ value: Number(rv.tas), time: rowAlt.tas });
+  }
+  if (!tadList.length && rv.tad != null && rv.tad !== '') {
+    tadList.push({ value: Number(rv.tad), time: rowAlt.tad });
+  }
+}
+
+/** @param {unknown} row */
+function collectBpListsFromHistorialRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  /** @type {any} */
+  var r = row;
+  var recordedAt = r.recordedAt != null ? String(r.recordedAt) : '';
+  var fromRow = vitalSeriesFromMedicion(row);
+  /** @type {Array<{ value: number, time?: string }>} */
+  var tasList = (fromRow.tas || []).slice();
+  /** @type {Array<{ value: number, time?: string }>} */
+  var tadList = (fromRow.tad || []).slice();
+  var rv = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
+  var rowAlt = r.alteredAt && typeof r.alteredAt === 'object' ? r.alteredAt : {};
+  appendVitalsBpFallback(tasList, tadList, rv, rowAlt);
+  return { recordedAt, tasList, tadList };
+}
+
+function appendBpPairsFromLayers(pairs, recordedAt, tasList, tadList) {
+  var layers = Math.max(tasList.length, tadList.length);
+  if (!layers) return;
+  for (var li = 0; li < layers; li++) {
+    var tasReading = tasList[li] || null;
+    var tadReading = tadList[li] || null;
+    if (!tasReading && !tadReading) continue;
+    var time =
+      tasReading && tasReading.time
+        ? String(tasReading.time)
+        : tadReading && tadReading.time
+          ? String(tadReading.time)
+          : undefined;
+    pairs.push({
+      tas: tasReading && Number.isFinite(Number(tasReading.value)) ? Number(tasReading.value) : null,
+      tad: tadReading && Number.isFinite(Number(tadReading.value)) ? Number(tadReading.value) : null,
+      recordedAt: recordedAt,
+      time: time,
+    });
+  }
+}
+
 /** @param {unknown[]} sortedAsc */
 export function deriveBpPairsFromHistorial_(sortedAsc) {
   /** @type {Array<{ tas: number | null, tad: number | null, recordedAt: string, time?: string }>} */
   var pairs = [];
   for (var i = 0; i < sortedAsc.length; i++) {
-    var row = sortedAsc[i];
-    if (!row || typeof row !== 'object') continue;
-    /** @type {any} */
-    var r = row;
-    var recordedAt = r.recordedAt != null ? String(r.recordedAt) : '';
-    var fromRow = vitalSeriesFromMedicion(row);
-    /** @type {Array<{ value: number, time?: string }>} */
-    var tasList = (fromRow.tas || []).slice();
-    /** @type {Array<{ value: number, time?: string }>} */
-    var tadList = (fromRow.tad || []).slice();
-    var rv = r.vitals && typeof r.vitals === 'object' ? r.vitals : {};
-    var rowAlt = r.alteredAt && typeof r.alteredAt === 'object' ? r.alteredAt : {};
-    if (!tasList.length && rv.tas != null && rv.tas !== '') {
-      tasList.push({ value: Number(rv.tas), time: rowAlt.tas });
-    }
-    if (!tadList.length && rv.tad != null && rv.tad !== '') {
-      tadList.push({ value: Number(rv.tad), time: rowAlt.tad });
-    }
-    var layers = Math.max(tasList.length, tadList.length);
-    if (!layers) continue;
-    for (var li = 0; li < layers; li++) {
-      var tasReading = tasList[li] || null;
-      var tadReading = tadList[li] || null;
-      if (!tasReading && !tadReading) continue;
-      var time =
-        tasReading && tasReading.time
-          ? String(tasReading.time)
-          : tadReading && tadReading.time
-            ? String(tadReading.time)
-            : undefined;
-      pairs.push({
-        tas: tasReading && Number.isFinite(Number(tasReading.value)) ? Number(tasReading.value) : null,
-        tad: tadReading && Number.isFinite(Number(tadReading.value)) ? Number(tadReading.value) : null,
-        recordedAt: recordedAt,
-        time: time,
-      });
-    }
+    var collected = collectBpListsFromHistorialRow(sortedAsc[i]);
+    if (!collected) continue;
+    appendBpPairsFromLayers(pairs, collected.recordedAt, collected.tasList, collected.tadList);
   }
   return pairs;
 }

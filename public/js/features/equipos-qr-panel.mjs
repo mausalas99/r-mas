@@ -262,151 +262,154 @@ export async function openEquiposListaPanel(overrideOpts = {}) {
   await renderEquiposListaPanelInto(body, opts);
 }
 
+function readEquiposCloudFieldsFromDom(body) {
+  return {
+    url: body.querySelector('[data-eq-cloud-url]')?.value?.trim() || '',
+    adminKey: body.querySelector('[data-eq-cloud-admin]')?.value?.trim() || '',
+  };
+}
+
+function persistEquiposCloudFieldsFromDom(body, toast) {
+  const { url, adminKey } = readEquiposCloudFieldsFromDom(body);
+  if (!url || !adminKey) {
+    toast('Indica URL y clave admin.', 'error');
+    return false;
+  }
+  setEquiposCloudConfig({ url, adminKey });
+  return true;
+}
+
+function mountEquiposListaBody(body, panelCtx, html, programToken, summary) {
+  body.innerHTML = html;
+  body.querySelector('[data-eq-cloud-save]')?.addEventListener('click', () => {
+    if (!persistEquiposCloudFieldsFromDom(body, panelCtx.toast)) return;
+    panelCtx.toast('Enlace cloud guardado.', 'success');
+    void refreshEquiposListaPanel(body, panelCtx);
+  });
+  void refreshQueueBoard(body, programToken);
+  if (typeof panelCtx.opts.onCompactChange === 'function') panelCtx.opts.onCompactChange(summary);
+}
+
+function wireEquiposListaQrActions(body, panelCtx, url, active, hasToken) {
+  const toast = panelCtx.toast;
+  const refresh = () => refreshEquiposListaPanel(body, panelCtx);
+  if (hasToken) {
+    mountQrPreview(body.querySelector('[data-eq-qr-preview]'), url);
+  }
+  body.querySelector('[data-eq-copy]')?.addEventListener('click', () => {
+    if (!url) {
+      toast('Genera el enlace primero.', 'error');
+      return;
+    }
+    void copyToClipboardSafe(url).then((ok) => {
+      toast(ok ? 'Enlace copiado.' : 'No se pudo copiar al portapapeles.', ok ? 'success' : 'error');
+    });
+  });
+  body.querySelector('[data-eq-qr]')?.addEventListener('click', () => {
+    if (!url) {
+      toast('Genera el enlace primero.', 'error');
+      return;
+    }
+    void copyInternoQrImage(url, (msg, kind) => toast(msg, kind));
+  });
+  body.querySelector('[data-eq-rotate]')?.addEventListener('click', async () => {
+    try {
+      if (!persistEquiposCloudFieldsFromDom(body, toast)) return;
+      if (hasToken && !confirm('¿Regenerar enlace? El anterior dejará de funcionar.')) return;
+      await rotateAccessToken(panelCtx.opts.userId || panelCtx.user.user_id);
+      toast(hasToken ? 'Enlace regenerado.' : 'Enlace generado.', 'success');
+      await refresh();
+    } catch (e) {
+      toast(e?.message || 'No se pudo generar el enlace.', 'error');
+    }
+  });
+  body.querySelector('[data-eq-toggle]')?.addEventListener('click', async () => {
+    try {
+      if (!persistEquiposCloudFieldsFromDom(body, toast)) return;
+      await setAccessActive(panelCtx.opts.userId || panelCtx.user.user_id, !active);
+      toast(active ? 'Acceso desactivado.' : 'Acceso activado.', 'info');
+      await refresh();
+    } catch (e) {
+      toast(e?.message || 'No se pudo cambiar el acceso.', 'error');
+    }
+  });
+}
+
+async function refreshEquiposListaPanel(body, panelCtx) {
+  const cloudNow = getEquiposCloudConfig();
+  const cloudBlock = renderCloudSetupBlock();
+  const hostBase = panelCtx.hostBase;
+
+  try {
+    const row = await fetchAccessRow();
+    if (!row) {
+      const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: '' };
+      mountEquiposListaBody(
+        body,
+        panelCtx,
+        cloudBlock +
+          renderQueueBoardSection() +
+          renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
+        '',
+        summary
+      );
+      wireEquiposListaQrActions(body, panelCtx, '', false, false);
+      return;
+    }
+    const accessToken = String(row.access_token || '').trim();
+    const hasToken = accessToken.length > 0;
+    const url = hasToken ? equiposUrlForToken(accessToken, hostBase) : '';
+    const active = row.is_active === 1;
+    const summary = { cloudMode: cloudNow.enabled, active, hasToken, errorMsg: '' };
+    mountEquiposListaBody(
+      body,
+      panelCtx,
+      cloudBlock +
+        renderQueueBoardSection() +
+        renderQrBlock({
+          url,
+          active,
+          cloudMode: cloudNow.enabled,
+          showLanNotice: !cloudNow.enabled,
+          hasToken,
+        }),
+      accessToken,
+      summary
+    );
+    wireEquiposListaQrActions(body, panelCtx, url, active, hasToken);
+  } catch (e) {
+    const msg = String(e.message || 'No se pudo conectar.');
+    const needsAdmin = /administrador|admin_required/i.test(msg);
+    const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: msg };
+    mountEquiposListaBody(
+      body,
+      panelCtx,
+      cloudBlock +
+        renderQueueBoardSection() +
+        `<p class="clinical-teams-empty">${esc(msg)}</p>` +
+        (needsAdmin
+          ? `<p class="equipos-qr-lan-notice">Guarda URL y clave admin arriba, luego pulsa <strong>Generar enlace</strong>.</p>`
+          : '') +
+        renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
+      '',
+      summary
+    );
+    wireEquiposListaQrActions(body, panelCtx, '', false, false);
+  }
+}
+
 /**
  * @param {HTMLElement} body
  * @param {{ hostBaseUrl?: string, userId?: string, showToast?: (msg: string, kind?: string) => void, onCompactChange?: (summary: object) => void }} opts
  */
 async function renderEquiposListaPanelInto(body, opts) {
-  const user = clinicalSessionContext.user || {};
-  const hostBase = normalizeHostBase(opts.hostBaseUrl);
-  const toast = showToast;
-
-  function readCloudFieldsFromDom() {
-    return {
-      url: body.querySelector('[data-eq-cloud-url]')?.value?.trim() || '',
-      adminKey: body.querySelector('[data-eq-cloud-admin]')?.value?.trim() || '',
-    };
-  }
-
-  function persistCloudFieldsFromDom() {
-    const { url, adminKey } = readCloudFieldsFromDom();
-    if (!url || !adminKey) {
-      toast('Indica URL y clave admin.', 'error');
-      return false;
-    }
-    setEquiposCloudConfig({ url, adminKey });
-    return true;
-  }
-
-  function notifyCompact(summary) {
-    if (typeof opts.onCompactChange === 'function') opts.onCompactChange(summary);
-  }
-
-  function wireCloudConfigSave() {
-    body.querySelector('[data-eq-cloud-save]')?.addEventListener('click', () => {
-      if (!persistCloudFieldsFromDom()) return;
-      toast('Enlace cloud guardado.', 'success');
-      void refresh();
-    });
-  }
-
-  function mountBody(html, programToken = '', summary = {}) {
-    body.innerHTML = html;
-    wireCloudConfigSave();
-    void refreshQueueBoard(body, programToken);
-    notifyCompact(summary);
-  }
-
-  function wireQrActions(url, active, hasToken) {
-    if (hasToken) {
-      mountQrPreview(body.querySelector('[data-eq-qr-preview]'), url);
-    }
-    body.querySelector('[data-eq-copy]')?.addEventListener('click', () => {
-      if (!url) {
-        toast('Genera el enlace primero.', 'error');
-        return;
-      }
-      void copyToClipboardSafe(url).then((ok) => {
-        toast(ok ? 'Enlace copiado.' : 'No se pudo copiar al portapapeles.', ok ? 'success' : 'error');
-      });
-    });
-    body.querySelector('[data-eq-qr]')?.addEventListener('click', () => {
-      if (!url) {
-        toast('Genera el enlace primero.', 'error');
-        return;
-      }
-      void copyInternoQrImage(url, (msg, kind) => toast(msg, kind));
-    });
-    body.querySelector('[data-eq-rotate]')?.addEventListener('click', async () => {
-      try {
-        if (!persistCloudFieldsFromDom()) return;
-        if (hasToken && !confirm('¿Regenerar enlace? El anterior dejará de funcionar.')) return;
-        await rotateAccessToken(opts.userId || user.user_id);
-        toast(hasToken ? 'Enlace regenerado.' : 'Enlace generado.', 'success');
-        await refresh();
-      } catch (e) {
-        toast(e?.message || 'No se pudo generar el enlace.', 'error');
-      }
-    });
-    body.querySelector('[data-eq-toggle]')?.addEventListener('click', async () => {
-      try {
-        if (!persistCloudFieldsFromDom()) return;
-        await setAccessActive(opts.userId || user.user_id, !active);
-        toast(active ? 'Acceso desactivado.' : 'Acceso activado.', 'info');
-        await refresh();
-      } catch (e) {
-        toast(e?.message || 'No se pudo cambiar el acceso.', 'error');
-      }
-    });
-  }
-
-  async function refresh() {
-    const cloudNow = getEquiposCloudConfig();
-    const cloudBlock = renderCloudSetupBlock();
-
-    try {
-      const row = await fetchAccessRow();
-      if (!row) {
-        const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: '' };
-        mountBody(
-          cloudBlock +
-            renderQueueBoardSection() +
-            renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
-          '',
-          summary
-        );
-        wireQrActions('', false, false);
-        return;
-      }
-      const accessToken = String(row.access_token || '').trim();
-      const hasToken = accessToken.length > 0;
-      const url = hasToken ? equiposUrlForToken(accessToken, hostBase) : '';
-      const active = row.is_active === 1;
-      const summary = { cloudMode: cloudNow.enabled, active, hasToken, errorMsg: '' };
-      mountBody(
-        cloudBlock +
-          renderQueueBoardSection() +
-          renderQrBlock({
-            url,
-            active,
-            cloudMode: cloudNow.enabled,
-            showLanNotice: !cloudNow.enabled,
-            hasToken,
-          }),
-        accessToken,
-        summary
-      );
-      wireQrActions(url, active, hasToken);
-    } catch (e) {
-      const msg = String(e.message || 'No se pudo conectar.');
-      const needsAdmin = /administrador|admin_required/i.test(msg);
-      const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: msg };
-      mountBody(
-        cloudBlock +
-          renderQueueBoardSection() +
-          `<p class="clinical-teams-empty">${esc(msg)}</p>` +
-          (needsAdmin
-            ? `<p class="equipos-qr-lan-notice">Guarda URL y clave admin arriba, luego pulsa <strong>Generar enlace</strong>.</p>`
-            : '') +
-          renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
-        '',
-        summary
-      );
-      wireQrActions('', false, false);
-    }
-  }
-
-  await refresh();
+  const panelCtx = {
+    user: clinicalSessionContext.user || {},
+    hostBase: normalizeHostBase(opts.hostBaseUrl),
+    toast: opts.showToast || showToast,
+    opts,
+  };
+  await refreshEquiposListaPanel(body, panelCtx);
 }
 
 /**

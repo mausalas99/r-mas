@@ -17,24 +17,26 @@ import { probeLanHostBeacon } from '../../lan-host-subnet-discovery.mjs';
  * }} deps
  * @returns {Promise<boolean>} true when discovery short-circuited (host joined)
  */
+async function probeSingleLanPeerUrl(url, teamCode, deps) {
+  if (deps.beaconFirst) {
+    if (!(await probeLanHostBeacon(url))) return false;
+  }
+  var alive = await deps.pingLanHostUrl(url, teamCode);
+  if (!alive) return false;
+  var meta = await deps.fetchLanHostRank(url, teamCode, { skipPing: true });
+  if (meta) deps.pushMeta(meta);
+  deps.addPeer(url);
+  if (typeof deps.reactToDiscoveredLanHost !== 'function') return false;
+  if (!(await deps.reactToDiscoveredLanHost(url, teamCode))) return false;
+  if (deps.onJoined) deps.onJoined();
+  return true;
+}
+
 export async function probeLanPeerUrls_(urls, teamCode, deps) {
   for (var i = 0; i < urls.length; i += 1) {
     var url = urls[i];
     if (!url) continue;
-    if (deps.beaconFirst) {
-      if (!(await probeLanHostBeacon(url))) continue;
-    }
-    var alive = await deps.pingLanHostUrl(url, teamCode);
-    if (!alive) continue;
-    var meta = await deps.fetchLanHostRank(url, teamCode, { skipPing: true });
-    if (meta) deps.pushMeta(meta);
-    deps.addPeer(url);
-    if (typeof deps.reactToDiscoveredLanHost === 'function') {
-      if (await deps.reactToDiscoveredLanHost(url, teamCode)) {
-        if (deps.onJoined) deps.onJoined();
-        return true;
-      }
-    }
+    if (await probeSingleLanPeerUrl(url, teamCode, deps)) return true;
   }
   return false;
 }

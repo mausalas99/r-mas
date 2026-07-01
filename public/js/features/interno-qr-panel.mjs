@@ -154,7 +154,7 @@ function appendSalaInternoBlock(ctx, def, row) {
           return;
         }
         const ok = await copyToClipboardSafe(url);
-        toast(ok ? 'Enlace copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
+        showToast(ok ? 'Enlace copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
       })
     );
     btnRow.appendChild(

@@ -98,6 +98,16 @@ export function listPatientDeleteTombstones() {
   return out;
 }
 
+function tombstoneMatchesFilter(row, key, filter) {
+  var wantId = String(filter.patientId || '').trim();
+  var wantReg = String(filter.registro || '').trim();
+  var pid = String(row.id || key.slice(8)).trim();
+  var reg = String(row.registro || '').trim();
+  if (wantId && pid !== wantId) return false;
+  if (wantReg && reg !== wantReg) return false;
+  return true;
+}
+
 /**
  * Remove local patient delete tombstones (visibility / reconcile recovery).
  * @param {{ patientId?: string, registro?: string }} [filter]
@@ -105,8 +115,6 @@ export function listPatientDeleteTombstones() {
  */
 export function clearPatientDeleteTombstones(filter) {
   filter = filter || {};
-  var wantId = String(filter.patientId || '').trim();
-  var wantReg = String(filter.registro || '').trim();
   var map = readLiveSyncEntityMap();
   var changed = false;
   var cleared = 0;
@@ -114,10 +122,7 @@ export function clearPatientDeleteTombstones(filter) {
     if (!key.startsWith('patient:')) continue;
     var row = map[key];
     if (!row || row._deleted !== true) continue;
-    var pid = String(row.id || key.slice(8)).trim();
-    var reg = String(row.registro || '').trim();
-    if (wantId && pid !== wantId) continue;
-    if (wantReg && reg !== wantReg) continue;
+    if (!tombstoneMatchesFilter(row, key, filter)) continue;
     delete map[key];
     changed = true;
     cleared += 1;

@@ -564,8 +564,6 @@ async function appendLanShiftPinSection(deps, root, gen) {
   renderLanShiftPinIntoHero(deps, root, fetched.pin, fetched.body);
 }
 
-/** Host: copy base URL for cross-VLAN clients (no new card). */
-
 /** @param {{
  *   runtime: () => object,
  *   renderLanPanel: (opts?: object) => void,

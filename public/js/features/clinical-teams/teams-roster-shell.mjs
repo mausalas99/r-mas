@@ -17,8 +17,11 @@ function isClinicalTeamsPanelOpen() {
   return !!(bd && bd.classList.contains('open'));
 }
 
-/** Tras cambios de equipos: actualiza caché y panel si está abierto (sin «Cargando…»). */
-export async function refreshTeamsUiAfterChange() {
+/**
+ * Tras cambios de equipos: actualiza caché y panel si está abierto (sin «Cargando…»).
+ * @param {{ force?: boolean }} [opts] — force: re-render aunque haya borradores abiertos
+ */
+export async function refreshTeamsUiAfterChange(opts = {}) {
   const { isLanDirectoryModalOpen } = await import('./teams-roster-lan.mjs');
   if (isLanDirectoryModalOpen()) return;
 
@@ -26,7 +29,11 @@ export async function refreshTeamsUiAfterChange() {
   await refreshClinicalPatientListForScope({ allowLanPull: true });
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   if (isClinicalTeamsPanelOpen()) {
-    await renderClinicalTeamsPanel({ silent: true, skipLanPull: true });
+    if (!opts.force) {
+      const { isClinicalTeamsPanelUserInteracting } = await import('./teams-roster-panel-draft.mjs');
+      if (isClinicalTeamsPanelUserInteracting()) return;
+    }
+    await renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: !opts.force });
   }
 }
 

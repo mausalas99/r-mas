@@ -14,6 +14,49 @@
  *   showInvitePaste?: boolean,
  * }} opts
  */
+function appendBecomeHostButton(hero, opts, connected) {
+  if (connected || !opts.isElectronDesktop || opts.showBecomeHost === false) return;
+  var becomeHostBtn = document.createElement('button');
+  becomeHostBtn.type = 'button';
+  becomeHostBtn.className = 'btn-lan-primary';
+  becomeHostBtn.style.marginTop = '8px';
+  becomeHostBtn.style.width = '100%';
+  becomeHostBtn.textContent = 'Convertirse en host';
+  becomeHostBtn.onclick = function () {
+    if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
+  };
+  hero.appendChild(becomeHostBtn);
+}
+
+function appendInvitePasteBlock(hero) {
+  var inviteHint = document.createElement('p');
+  inviteHint.className = 'lan-connect-card-hint lan-hub-invite-paste-hint';
+  inviteHint.style.marginTop = '10px';
+  inviteHint.innerHTML =
+    'Pega aqu\u00e9 el enlace <strong>Otra Mac del equipo</strong> del anfitri\u00f3n (<code>http://\u2026/join/req_\u2026</code>).';
+  hero.appendChild(inviteHint);
+  var inputInvite = document.createElement('textarea');
+  inputInvite.className = 'profile-input';
+  inputInvite.setAttribute('data-lan-invite-input', '1');
+  inputInvite.id = 'lan-input-invite-link';
+  inputInvite.rows = 2;
+  inputInvite.autocomplete = 'off';
+  inputInvite.placeholder = 'http://10.x.x.x:3738/join/req_…';
+  inputInvite.style.marginTop = '6px';
+  hero.appendChild(inputInvite);
+  var row = document.createElement('div');
+  row.className = 'lan-connect-actions-row';
+  row.style.marginTop = '8px';
+  var btnJoin = document.createElement('button');
+  btnJoin.type = 'button';
+  btnJoin.className = 'btn-lan-primary';
+  btnJoin.style.flex = '1';
+  btnJoin.textContent = 'Unirse con enlace';
+  btnJoin.setAttribute('data-lan-action', 'join-invite');
+  row.appendChild(btnJoin);
+  hero.appendChild(row);
+}
+
 export function appendLanHubStatusHero(root, opts) {
   var hero = root.classList.contains('lan-connection-hero')
     ? root
@@ -58,46 +101,10 @@ export function appendLanHubStatusHero(root, opts) {
     else hero.appendChild(hintEl);
   }
 
-  if (!connected && opts.isElectronDesktop && opts.showBecomeHost !== false) {
-    var becomeHostBtn = document.createElement('button');
-    becomeHostBtn.type = 'button';
-    becomeHostBtn.className = 'btn-lan-primary';
-    becomeHostBtn.style.marginTop = '8px';
-    becomeHostBtn.style.width = '100%';
-    becomeHostBtn.textContent = 'Convertirse en host';
-    becomeHostBtn.onclick = function () {
-      if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
-    };
-    hero.appendChild(becomeHostBtn);
-  }
+  appendBecomeHostButton(hero, opts, connected);
 
   if (opts.showInvitePaste) {
-    var inviteHint = document.createElement('p');
-    inviteHint.className = 'lan-connect-card-hint lan-hub-invite-paste-hint';
-    inviteHint.style.marginTop = '10px';
-    inviteHint.innerHTML =
-      'Pega aqu\u00e9 el enlace <strong>Otra Mac del equipo</strong> del anfitri\u00f3n (<code>http://\u2026/join/req_\u2026</code>).';
-    hero.appendChild(inviteHint);
-    var inputInvite = document.createElement('textarea');
-    inputInvite.className = 'profile-input';
-    inputInvite.setAttribute('data-lan-invite-input', '1');
-    inputInvite.id = 'lan-input-invite-link';
-    inputInvite.rows = 2;
-    inputInvite.autocomplete = 'off';
-    inputInvite.placeholder = 'http://10.x.x.x:3738/join/req_…';
-    inputInvite.style.marginTop = '6px';
-    hero.appendChild(inputInvite);
-    var row = document.createElement('div');
-    row.className = 'lan-connect-actions-row';
-    row.style.marginTop = '8px';
-    var btnJoin = document.createElement('button');
-    btnJoin.type = 'button';
-    btnJoin.className = 'btn-lan-primary';
-    btnJoin.style.flex = '1';
-    btnJoin.textContent = 'Unirse con enlace';
-    btnJoin.setAttribute('data-lan-action', 'join-invite');
-    row.appendChild(btnJoin);
-    hero.appendChild(row);
+    appendInvitePasteBlock(hero);
   }
 }
 

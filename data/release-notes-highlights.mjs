@@ -1193,6 +1193,34 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_761 = [
+  {
+    title: 'SQLCipher v21 — Interconsultas',
+    body:
+      'Al desbloquear la base, migración automática a <strong>v21</strong>: <strong>users</strong>, <strong>teams</strong> y acceso interno aceptan salas <strong>Interconsultas</strong>, <strong>UX</strong> y <strong>Eme</strong>.',
+  },
+  {
+    title: 'Mi rotación sin perder borrador',
+    body:
+      'Crear equipo, editar perfil o pegar código de unión ya no se borran cuando el panel <strong>Mi rotación</strong> se refresca en segundo plano (sync LAN o directorio).',
+  },
+  {
+    title: 'Equipos — push en cola',
+    body:
+      'Las notificaciones push de Lumify/EKG/US solo se activan si ya estás <strong>en la cola</strong> del dispositivo.',
+  },
+  {
+    title: 'Downgrade estable',
+    body:
+      'Restaurar versión anterior tolera mejor la red: timeout de catálogo y enlace directo al instalador en <strong>GitHub</strong> si falla la carga.',
+  },
+  {
+    title: 'Parche sobre 7.6.0',
+    body:
+      'Incluye <strong>⇄ sin PIN</strong> y <strong>censo abierto por equipo</strong> de la versión anterior.',
+  },
+];
+
 var RELEASE_NOTES_760 = [
   {
     title: '⇄ sin PIN de turno',
@@ -1299,9 +1327,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_760;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_761;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.1': RELEASE_NOTES_761,
   '7.6.0': RELEASE_NOTES_760,
   '7.5.9': RELEASE_NOTES_759,
   '7.5.8': RELEASE_NOTES_758,

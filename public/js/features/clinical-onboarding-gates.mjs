@@ -71,21 +71,24 @@ function syncSessionFromPersistedProfile(settings, user) {
   }
 }
 
+function hasValidPersistedUsername(settings) {
+  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  return (
+    isValidUsernameFormat(cachedUser) &&
+    !isLegacyMachineUsername(cachedUser, getClientId()) &&
+    !isLocalOnlyPlaceholderUsername(cachedUser)
+  );
+}
+
 /** Device binding written by onboarding submit — trust when session row lags IPC refresh. */
 export function hasPersistedClinicalProfile(settings = readRpcSettings(), user = clinicalSessionContext.user) {
   if (settings.clinicalRegistered !== true) return false;
   if (isClinicalLocalOnlyMode(settings)) return true;
   if (needsClinicalLanProfileGate(settings)) return false;
-  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  if (!hasValidPersistedUsername(settings)) return false;
   const hasName = String(settings.clinicalDisplayName || user?.clinical_name || '').trim();
   const hasSala = String(settings.clinicalSala || user?.sala || '').trim();
-  return (
-    isValidUsernameFormat(cachedUser) &&
-    !isLegacyMachineUsername(cachedUser, getClientId()) &&
-    !isLocalOnlyPlaceholderUsername(cachedUser) &&
-    !!hasName &&
-    !!hasSala
-  );
+  return !!hasName && !!hasSala;
 }
 
 function needsLocalOnlyProfile(settings) {

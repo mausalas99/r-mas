@@ -334,6 +334,28 @@ async function validateShiftPinJoinUrl(opts) {
   return true;
 }
 
+async function tryShiftPinJoinSequence(transport, pin, opts, ownUrl, localPrefixes, tried) {
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  if (
+    await tryJoinShiftPinHosts(
+      collectShiftPinProbeUrls({ ...opts, localSubnetPrefixes: localPrefixes }, cfg),
+      pin,
+      opts,
+      tried
+    )
+  ) {
+    return true;
+  }
+  if (await tryJoinShiftPinHosts(await collectShiftPinFastDiscoveryUrls(ownUrl), pin, opts, tried)) {
+    return true;
+  }
+  if (await tryLoopbackShiftPin(transport, pin, opts, tried)) return true;
+  if (await tryJoinShiftPinHosts(await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl), pin, opts, tried)) {
+    return true;
+  }
+  return discoverExtraWardHosts(ownUrl, localPrefixes, pin, opts, tried);
+}
+
 export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   const transport = await loadLanTransport();
   if (!transport.isLanElectronDesktop()) return false;
@@ -349,32 +371,11 @@ export async function connectLanWithShiftPin(shiftPin, opts = {}) {
     return true;
   }
 
-  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
   const ownUrl = await resolveOwnLanBaseUrl();
   const localPrefixes = await resolveLocalLanSubnetPrefixes(ownUrl);
   const tried = new Set();
   _lastShiftPinFailReason = '';
-  if (
-    await tryJoinShiftPinHosts(
-      collectShiftPinProbeUrls({ ...opts, localSubnetPrefixes: localPrefixes }, cfg),
-      pin,
-      opts,
-      tried
-    )
-  ) {
-    return true;
-  }
-
-  if (await tryJoinShiftPinHosts(await collectShiftPinFastDiscoveryUrls(ownUrl), pin, opts, tried)) {
-    return true;
-  }
-
-  // Dev peer only, or host-role Mac — skip loopback on guest clients (avoids 401 noise).
-  if (await tryLoopbackShiftPin(transport, pin, opts, tried)) return true;
-  if (await tryJoinShiftPinHosts(await discoverLanHostsOnAllLocalSubnetsViaBeacon(ownUrl), pin, opts, tried)) {
-    return true;
-  }
-  return discoverExtraWardHosts(ownUrl, localPrefixes, pin, opts, tried);
+  return tryShiftPinJoinSequence(transport, pin, opts, ownUrl, localPrefixes, tried);
 }
 
 /**

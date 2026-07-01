@@ -21,6 +21,7 @@ const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'teams-roster-directory.mjs',
   'teams-roster-panel.mjs',
   'teams-roster-panel-build.mjs',
+  'teams-roster-panel-draft.mjs',
   'teams-roster-lan.mjs',
   'teams-roster-lan-dom.mjs',
   'teams-roster-lan-render.mjs',
@@ -135,7 +136,10 @@ describe('clinical-teams', () => {
 
   it('silent Mi rotación refresh skips LAN pull to avoid ops-sync loop', () => {
     assert.match(clinicalTeamsSrc, /skipLanPull/);
-    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanel\(\{ silent: true, skipLanPull: true \}/);
+    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanel\(\{ silent: true, skipLanPull: true/);
+    assert.match(clinicalTeamsSrc, /isClinicalTeamsPanelUserInteracting/);
+    assert.match(clinicalTeamsSrc, /captureClinicalTeamsPanelDraft/);
+    assert.match(clinicalTeamsSrc, /restoreClinicalTeamsPanelDraft/);
     assert.match(clinicalTeamsSrc, /LAN_CLINICAL_OPS_PULL_MIN_MS/);
     assert.match(clinicalTeamsSrc, /opsSyncedTeamsRefreshTimer/);
   });

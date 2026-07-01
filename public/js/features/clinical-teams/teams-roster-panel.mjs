@@ -38,6 +38,11 @@ import {
   buildClinicalTeamsConfigSectionHtml,
   buildJoinedTeamsEmptyHtml,
 } from './teams-roster-panel-build.mjs';
+import {
+  captureClinicalTeamsPanelDraft,
+  restoreClinicalTeamsPanelDraft,
+  isClinicalTeamsPanelUserInteracting,
+} from './teams-roster-panel-draft.mjs';
 
 /**
  * @param {{ silent?: boolean, skipLanPull?: boolean }} [opts]
@@ -51,7 +56,10 @@ export async function renderClinicalTeamsPanel(opts = {}) {
     const host = getClinicalTeamsPanelHost();
     if (!host) return;
     try {
-      await renderClinicalTeamsPanelInto(host, { skipLanPull });
+      await renderClinicalTeamsPanelInto(host, {
+        skipLanPull,
+        preserveDraft: opts.preserveDraft !== false,
+      });
     } catch (err) {
       console.error('[Mi rotación]', err);
       setClinicalTeamsPanelError(
@@ -93,7 +101,8 @@ async function maybePullClinicalOpsFromLan(skipLanPull) {
   void pullClinicalOpsFromLanRoom({ timeoutMs: 12000 }).then((ok) => {
     const bd = document.getElementById('clinical-teams-backdrop');
     if (!ok || !bd?.classList.contains('open')) return;
-    void renderClinicalTeamsPanel({ silent: true, skipLanPull: true });
+    if (isClinicalTeamsPanelUserInteracting()) return;
+    void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
   });
 }
 
@@ -104,6 +113,8 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
       '<p class="clinical-teams-lead">Activa la sesión clínica para gestionar equipos.</p>';
     return;
   }
+
+  const draft = opts.preserveDraft ? captureClinicalTeamsPanelDraft(host) : null;
 
   await maybePullClinicalOpsFromLan(opts.skipLanPull);
   await fetchClinicalTeamsFromDb();
@@ -141,4 +152,5 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   wireNuevaRotacionControl(host);
   const { wireRenderedClinicalTeamsPanel } = await import('./teams-roster-interactions.mjs');
   wireRenderedClinicalTeamsPanel(elevated);
+  restoreClinicalTeamsPanelDraft(host, draft);
 }

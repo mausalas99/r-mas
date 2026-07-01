@@ -45,8 +45,8 @@ export function wireClinicalTeamsControls() {
 
   if (!document._rpcClinicalTeamsChangedWired) {
     document._rpcClinicalTeamsChangedWired = true;
-    document.addEventListener('rpc-clinical-teams-changed', () => {
-      void refreshTeamsUiAfterChange();
+    document.addEventListener('rpc-clinical-teams-changed', (ev) => {
+      void refreshTeamsUiAfterChange({ force: !!ev.detail?.force });
     });
   }
 

@@ -177,7 +177,7 @@ function buildR1Section(deps, root) {
       avail.className = 'lan-connect-card';
       avail.innerHTML = '<div class="lan-connect-card-title">Equipos disponibles</div>';
       buildAvailableTeamsSection(deps, avail, userSala);
-      card.parentNode.insertBefore(avail, row.nextSibling);
+      row.parentNode.insertBefore(avail, row.nextSibling);
     };
   }
 }

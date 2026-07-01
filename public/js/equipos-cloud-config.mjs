@@ -94,6 +94,22 @@ export function setEquiposCloudConfig(cfg) {
   }
 }
 
+function equiposCloudErrorMessage(code, fallback) {
+  if (code === 'admin_required') {
+    return 'Clave admin incorrecta o no configurada en el worker (wrangler secret put EQUIPOS_ADMIN_KEY).';
+  }
+  if (code === 'admin_invalid') {
+    return 'Clave de administrador incorrecta. Debe ser exactamente EQUIPOS_ADMIN_KEY del worker desplegado en esta URL.';
+  }
+  if (code === 'admin_not_configured') {
+    return 'El worker no tiene EQUIPOS_ADMIN_KEY. Ejecuta: wrangler secret put EQUIPOS_ADMIN_KEY';
+  }
+  if (code === 'auth_required') {
+    return 'Genera el enlace y QR primero, o guarda la clave admin.';
+  }
+  return fallback;
+}
+
 /**
  * @param {string} path e.g. `/admin/access`
  * @param {{ method?: string, body?: object, useAdminKey?: boolean, programToken?: string }} [opts]
@@ -124,19 +140,7 @@ export async function equiposCloudFetch(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const code = data.error || '';
-    let message = data.message || 'Error de red.';
-    if (code === 'admin_required') {
-      message =
-        'Clave admin incorrecta o no configurada en el worker (wrangler secret put EQUIPOS_ADMIN_KEY).';
-    } else if (code === 'admin_invalid') {
-      message =
-        'Clave de administrador incorrecta. Debe ser exactamente EQUIPOS_ADMIN_KEY del worker desplegado en esta URL.';
-    } else if (code === 'admin_not_configured') {
-      message = 'El worker no tiene EQUIPOS_ADMIN_KEY. Ejecuta: wrangler secret put EQUIPOS_ADMIN_KEY';
-    } else if (code === 'auth_required') {
-      message = 'Genera el enlace y QR primero, o guarda la clave admin.';
-    }
-    const err = new Error(message);
+    const err = new Error(equiposCloudErrorMessage(code, data.message || 'Error de red.'));
     err.code = code;
     throw err;
   }

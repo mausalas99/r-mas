@@ -107,30 +107,37 @@ export async function refreshClinicalPatientListForScope(options) {
   return refreshClinicalPatientListForScopeInFlight;
 }
 
+function rosterChangedFromMergeStats(stats) {
+  return (
+    Number(stats.assignmentsInserted) > 0 ||
+    Number(stats.membershipInserted) > 0 ||
+    Number(stats.membershipRejoinsApplied) > 0
+  );
+}
+
+async function scheduleHostReconcileAfterOpsMerge() {
+  const lan = await import('../features/lan-sync.mjs');
+  if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
+    return;
+  }
+  const rid =
+    typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
+  if (!rid) return;
+  const push = await import('../features/lan/push.mjs');
+  if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
+    push.scheduleReconcileLiveSyncRoom(rid, { reason: 'assignment-merge', delayMs: 2000 });
+  } else if (typeof push.reconcileLiveSyncRoom === 'function') {
+    void push.reconcileLiveSyncRoom(rid, { force: true, reason: 'assignment-merge' });
+  }
+}
+
 /** One-shot host bundle pull when roster/assignments change visibility (not on every no-op merge). */
 async function pullHostPatientsAfterOpsMerge(event) {
   const stats = event?.detail?.mergeStats;
-  if (!stats) return;
-  const rosterChanged =
-    Number(stats.assignmentsInserted) > 0 ||
-    Number(stats.membershipInserted) > 0 ||
-    Number(stats.membershipRejoinsApplied) > 0;
-  if (!rosterChanged) return;
+  if (!stats || !rosterChangedFromMergeStats(stats)) return;
   if (!isDbMode()) return;
   try {
-    const lan = await import('../features/lan-sync.mjs');
-    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
-      return;
-    }
-    const rid =
-      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
-    if (!rid) return;
-    const push = await import('../features/lan/push.mjs');
-    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
-      push.scheduleReconcileLiveSyncRoom(rid, { reason: 'assignment-merge', delayMs: 2000 });
-    } else if (typeof push.reconcileLiveSyncRoom === 'function') {
-      void push.reconcileLiveSyncRoom(rid, { force: true, reason: 'assignment-merge' });
-    }
+    await scheduleHostReconcileAfterOpsMerge();
   } catch { /* LAN optional */ }
 }
 

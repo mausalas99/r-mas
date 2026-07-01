@@ -36,23 +36,22 @@ function isPatientAlreadyPresent(patient, index) {
   return !!(reg && index.byRegistro.has(reg));
 }
 
+function cloneObjectMap(value) {
+  return value && typeof value === 'object' ? { ...value } : {};
+}
+
 function cloneBackupDataMaps(data) {
   return {
     patients: Array.isArray(data.patients) ? data.patients.slice() : [],
-    notes: data.notes && typeof data.notes === 'object' ? { ...data.notes } : {},
-    indicaciones: data.indicaciones && typeof data.indicaciones === 'object' ? { ...data.indicaciones } : {},
-    labHistory: data.labHistory && typeof data.labHistory === 'object' ? { ...data.labHistory } : {},
-    medRecetaByPatient:
-      data.medRecetaByPatient && typeof data.medRecetaByPatient === 'object' ? { ...data.medRecetaByPatient } : {},
-    medPharmProfileByPatient:
-      data.medPharmProfileByPatient && typeof data.medPharmProfileByPatient === 'object'
-        ? { ...data.medPharmProfileByPatient }
-        : {},
-    listadoProblemas:
-      data.listadoProblemas && typeof data.listadoProblemas === 'object' ? { ...data.listadoProblemas } : {},
+    notes: cloneObjectMap(data.notes),
+    indicaciones: cloneObjectMap(data.indicaciones),
+    labHistory: cloneObjectMap(data.labHistory),
+    medRecetaByPatient: cloneObjectMap(data.medRecetaByPatient),
+    medPharmProfileByPatient: cloneObjectMap(data.medPharmProfileByPatient),
+    listadoProblemas: cloneObjectMap(data.listadoProblemas),
     scheduledProcedures: Array.isArray(data.scheduledProcedures) ? data.scheduledProcedures.slice() : [],
-    settings: data.settings && typeof data.settings === 'object' ? { ...data.settings } : {},
-    medCatalog: data.medCatalog && typeof data.medCatalog === 'object' ? { ...data.medCatalog } : {},
+    settings: cloneObjectMap(data.settings),
+    medCatalog: cloneObjectMap(data.medCatalog),
   };
 }
 

@@ -7,7 +7,7 @@ description: "SQLCipher clinical store — schema, migrations, outbox."
 
 # Database Index
 
-**Canonical schema:** `lib/db/schema.mjs` (currently **v17**).
+**Canonical schema:** `lib/db/schema.mjs` (currently **v21**).
 
 ## When to read which file
 

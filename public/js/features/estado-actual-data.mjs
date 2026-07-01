@@ -340,8 +340,8 @@ export function normalizeDietaTypeLabel(dietaText) {
   return String(dietaText || '')
     .trim()
     .replace(/\s+/g, ' ')
-    .replace(/^[\*\u2022\-]+\s*/g, '')
-    .replace(/\s*[\*\u2022\-]+$/g, '')
+    .replace(/^[*•-]+\s*/g, '')
+    .replace(/\s*[*•-]+$/g, '')
     .toUpperCase()
     .replace(/^DIETA\s+/, '');
 }

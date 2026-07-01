@@ -216,13 +216,8 @@ function getFilteredRows(backdrop) {
   });
 }
 
-/** @param {HTMLElement} backdrop */
-function renderLanHostCensusTable(backdrop) {
-  const tbody = backdrop.querySelector('.lan-host-census-tbody');
-  const summary = backdrop.querySelector('.lan-host-census-summary');
-  if (!tbody) return;
-  const all = backdrop._lanHostCensusRows || [];
-  const filtered = getFilteredRows(backdrop);
+/** @param {object[]} all @param {object[]} filtered */
+function buildCensusSummaryText(all, filtered) {
   const inactiveCount = all.filter(function (x) {
     return x.inactive;
   }).length;
@@ -231,70 +226,64 @@ function renderLanHostCensusTable(backdrop) {
   }).length;
   const purgeableGhostCount = all.filter(isPurgeableDashboardRow).length;
   const tombstoneCount = countLocalPatientDeleteTombstones();
-  if (summary) {
-    summary.textContent =
-      inactiveCount +
-      ' no activo(s)' +
-      (ghostCount ? ' · ' + ghostCount + ' fantasma(s)' : '') +
-      (purgeableGhostCount < ghostCount
-        ? ' · ' + (ghostCount - purgeableGhostCount) + ' de otro equipo'
-        : '') +
-      (tombstoneCount ? ' · ' + tombstoneCount + ' tombstone(s) local(es)' : '') +
-      ' · ' +
-      all.length +
-      ' en anfitrión' +
-      (filtered.length !== all.length ? ' · mostrando ' + filtered.length : '');
-  }
-  if (!filtered.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="7" class="lan-host-census-empty">No hay pacientes que coincidan.</td></tr>';
-    return;
-  }
-  const sorted = filtered.slice().sort(function (a, b) {
-    return (b.updatedAtMs || 0) - (a.updatedAtMs || 0);
-  });
-  let html = '';
-  for (const item of sorted) {
-    html +=
-      '<tr data-patient-id="' +
-      esc(String(item.row.id)) +
-      '">' +
-      '<td class="lan-host-census-patient"><span class="lan-host-census-patient-name">' +
-      esc(patientLabel(item.row)) +
-      '</span></td>' +
-      '<td>' +
-      esc(locationLabel(item.row)) +
-      '</td>' +
-      '<td>' +
-      esc(item.teamLabel || '—') +
-      '</td>' +
-      '<td class="lan-host-census-registrar" title="' +
-      esc(item.row?.registeredAt ? 'Registrado: ' + formatLanHostTimestamp(item.row.registeredAt) : '') +
-      '">' +
-      esc(item.registrarLabel || '—') +
-      '</td>' +
-      '<td class="lan-host-census-updated" title="' +
-      esc(item.updatedAt || '') +
-      '">' +
-      esc(formatLanHostTimestamp(item.updatedAt)) +
-      '</td>' +
-      '<td>' +
-      statusBadge(item) +
-      '</td>' +
-      '<td class="lan-host-census-actions-cell">' +
-      (item.status === 'ghost'
-        ? '<button type="button" class="btn-lan-secondary lan-host-census-restore" data-patient-id="' +
-          esc(String(item.row.id)) +
-          '">Restaurar</button> '
-        : '') +
-      '<button type="button" class="btn-lan-secondary lan-host-census-delete" data-patient-id="' +
-      esc(String(item.row.id)) +
-      '">Eliminar</button>' +
-      '</td>' +
-      '</tr>';
-  }
-  tbody.innerHTML = html;
+  return (
+    inactiveCount +
+    ' no activo(s)' +
+    (ghostCount ? ' · ' + ghostCount + ' fantasma(s)' : '') +
+    (purgeableGhostCount < ghostCount
+      ? ' · ' + (ghostCount - purgeableGhostCount) + ' de otro equipo'
+      : '') +
+    (tombstoneCount ? ' · ' + tombstoneCount + ' tombstone(s) local(es)' : '') +
+    ' · ' +
+    all.length +
+    ' en anfitrión' +
+    (filtered.length !== all.length ? ' · mostrando ' + filtered.length : '')
+  );
+}
 
+/** @param {object} item */
+function buildCensusRowHtml(item) {
+  return (
+    '<tr data-patient-id="' +
+    esc(String(item.row.id)) +
+    '">' +
+    '<td class="lan-host-census-patient"><span class="lan-host-census-patient-name">' +
+    esc(patientLabel(item.row)) +
+    '</span></td>' +
+    '<td>' +
+    esc(locationLabel(item.row)) +
+    '</td>' +
+    '<td>' +
+    esc(item.teamLabel || '—') +
+    '</td>' +
+    '<td class="lan-host-census-registrar" title="' +
+    esc(item.row?.registeredAt ? 'Registrado: ' + formatLanHostTimestamp(item.row.registeredAt) : '') +
+    '">' +
+    esc(item.registrarLabel || '—') +
+    '</td>' +
+    '<td class="lan-host-census-updated" title="' +
+    esc(item.updatedAt || '') +
+    '">' +
+    esc(formatLanHostTimestamp(item.updatedAt)) +
+    '</td>' +
+    '<td>' +
+    statusBadge(item) +
+    '</td>' +
+    '<td class="lan-host-census-actions-cell">' +
+    (item.status === 'ghost'
+      ? '<button type="button" class="btn-lan-secondary lan-host-census-restore" data-patient-id="' +
+        esc(String(item.row.id)) +
+        '">Restaurar</button> '
+      : '') +
+    '<button type="button" class="btn-lan-secondary lan-host-census-delete" data-patient-id="' +
+    esc(String(item.row.id)) +
+    '">Eliminar</button>' +
+    '</td>' +
+    '</tr>'
+  );
+}
+
+function wireCensusTableActions(tbody, backdrop) {
   tbody.querySelectorAll('.lan-host-census-delete').forEach(function (btn) {
     btn.addEventListener('click', function () {
       void deletePatientFromDashboard(backdrop, btn);
@@ -305,6 +294,26 @@ function renderLanHostCensusTable(backdrop) {
       void restorePatientFromDashboard(backdrop, btn);
     });
   });
+}
+
+/** @param {HTMLElement} backdrop */
+function renderLanHostCensusTable(backdrop) {
+  const tbody = backdrop.querySelector('.lan-host-census-tbody');
+  const summary = backdrop.querySelector('.lan-host-census-summary');
+  if (!tbody) return;
+  const all = backdrop._lanHostCensusRows || [];
+  const filtered = getFilteredRows(backdrop);
+  if (summary) summary.textContent = buildCensusSummaryText(all, filtered);
+  if (!filtered.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="7" class="lan-host-census-empty">No hay pacientes que coincidan.</td></tr>';
+    return;
+  }
+  const sorted = filtered.slice().sort(function (a, b) {
+    return (b.updatedAtMs || 0) - (a.updatedAtMs || 0);
+  });
+  tbody.innerHTML = sorted.map(buildCensusRowHtml).join('');
+  wireCensusTableActions(tbody, backdrop);
 }
 
 /** @param {HTMLElement} backdrop @param {HTMLButtonElement} btn */

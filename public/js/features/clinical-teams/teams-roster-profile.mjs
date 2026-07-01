@@ -17,7 +17,6 @@ import {
   getVerifiedAdminAccessCode,
   rememberAdminAccessCode,
 } from './shared.mjs';
-import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 import { claimClinicalUsernameIfNeeded } from './teams-roster-profile-claim.mjs';
 import { persistProfileFromPanel } from './teams-roster-profile-persist.mjs';
 
@@ -112,8 +111,7 @@ export async function handleProfileFormSubmit(ev) {
       : 'Perfil guardado.';
   await toastProfileSaveResult({ msg, usernameWillChange, sala: fields.sala });
   syncRotationConfigButton();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await refreshTeamsUiAfterChange();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
   void import('../lan-sync.mjs')
     .then((mod) => {
       if (typeof mod.pushClinicalOpsLanNow === 'function') void mod.pushClinicalOpsLanNow();

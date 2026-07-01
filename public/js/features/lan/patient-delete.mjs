@@ -135,6 +135,30 @@ async function enqueuePatientDeletePatch(pid, hostRow, reg, httpResult) {
   };
 }
 
+async function pushHostOnlyPatientDelete(pid, reg) {
+  var hostOnlyDelete = await lanDeleteHostPatientCensus(pid, reg);
+  if (hostOnlyDelete?.ok) return { ok: true, via: 'delete_census' };
+  return {
+    ok: false,
+    error: hostOnlyDelete?.status ? 'host_reject_' + hostOnlyDelete.status : 'purge_failed',
+    status: hostOnlyDelete?.status,
+  };
+}
+
+async function pushPatientDeleteWithoutHostRow(pid, reg, mutation) {
+  var bundleOnly = await tryBundleOnlyCensusDelete(pid, reg);
+  if (bundleOnly) return bundleOnly;
+  var attempts = await tryVersionedThenCensusDelete(pid, null, reg, mutation);
+  if (attempts.ok) return attempts.result;
+  return {
+    ok: false,
+    error: attempts.censusDelete?.status
+      ? 'host_reject_' + attempts.censusDelete.status
+      : 'purge_failed',
+    status: attempts.censusDelete?.status,
+  };
+}
+
 /** HTTP-first delete; bundle-only charts use DELETE /patients/:id. */
 export async function pushPatientDeleteToHost(patientId, hostRow, registroFallback, purgeOpts) {
   purgeOpts = purgeOpts || {};
@@ -142,34 +166,15 @@ export async function pushPatientDeleteToHost(patientId, hostRow, registroFallba
   var reg = String(registroFallback || (hostRow && hostRow.registro) || '').trim();
   if (!String(activeLiveSyncRoomId || '').trim()) return { ok: false, error: 'not_configured' };
 
-  if (purgeOpts.hostOnly) {
-    var hostOnlyDelete = await lanDeleteHostPatientCensus(pid, reg);
-    if (hostOnlyDelete?.ok) return { ok: true, via: 'delete_census' };
-    return {
-      ok: false,
-      error: hostOnlyDelete?.status ? 'host_reject_' + hostOnlyDelete.status : 'purge_failed',
-      status: hostOnlyDelete?.status,
-    };
-  }
+  if (purgeOpts.hostOnly) return pushHostOnlyPatientDelete(pid, reg);
 
   if (!hostRow) {
-    var bundleOnly = await tryBundleOnlyCensusDelete(pid, reg);
-    if (bundleOnly) return bundleOnly;
+    return pushPatientDeleteWithoutHostRow(pid, reg, buildPatientDeleteMutation(pid, null, reg));
   }
 
   var mutation = buildPatientDeleteMutation(pid, hostRow, reg);
   var attempts = await tryVersionedThenCensusDelete(pid, hostRow, reg, mutation);
   if (attempts.ok) return attempts.result;
-
-  if (!hostRow) {
-    return {
-      ok: false,
-      error: attempts.censusDelete?.status
-        ? 'host_reject_' + attempts.censusDelete.status
-        : 'purge_failed',
-      status: attempts.censusDelete?.status,
-    };
-  }
 
   return enqueuePatientDeletePatch(pid, hostRow, reg, attempts.httpResult);
 }

@@ -39,10 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.0](https://github.com/mausalas99/r-mas/releases/tag/v7.6.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.1](https://github.com/mausalas99/r-mas/releases/tag/v7.6.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.1 (Interconsultas en DB + Mi rotación sin perder borrador)
+
+- **SQLCipher v21** — Salas Interconsultas, UX y Eme válidas en users/teams/sala_interno_access (migración al desbloquear).
+- **Mi rotación — borrador** — Formularios de crear equipo, perfil y código de unión no se pierden al refrescar el panel.
+- **Equipos push** — Notificaciones solo si ya estás en la cola del dispositivo.
+- **Downgrade estable** — Catálogo con timeout y enlace a GitHub si falla la red.
+- **Parche sobre 7.6.0** — ⇄ sin PIN y censo abierto por equipo; sin cambios de comportamiento LAN respecto a 7.6.0.
+
+Notas: `docs/RELEASE_NOTES_7.6.1.txt`.
 
 ## R+ 7.6.0 (LAN sin PIN de turno + censo abierto por equipo)
 

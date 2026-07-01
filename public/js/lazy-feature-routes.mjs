@@ -37,6 +37,7 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/lab-panel.mjs',
   'features/tendencias.mjs',
   'features/estado-actual-charts-modal.mjs',
+  'features/estado-actual-vital-history-modal.mjs',
   'features/clinical-entrega.mjs',
   'features/settings-help/tour-flow.mjs',
   'features/settings-help/tour-engine.mjs',
@@ -49,6 +50,12 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
 let entregaPromise = null;
 /** @type {typeof import('./features/clinical-entrega.mjs') | null} */
 let entregaModule = null;
+
+let eaVitalHistoryPromise = null;
+/** @type {typeof import('./features/estado-actual-vital-history-modal.mjs') | null} */
+let eaVitalHistoryModule = null;
+/** @type {Record<string, unknown> | null} */
+let eaVitalHistoryRuntimeCtx = null;
 
 /** @type {Record<string, unknown> | null} */
 let platformRuntimeCtx = null;
@@ -99,6 +106,37 @@ export function ensureEntregaLoaded() {
   }
   return entregaPromise;
 }
+
+/** @param {Record<string, unknown>} ctx */
+export function bindLazyEaVitalHistoryRuntimeCtx(ctx) {
+  eaVitalHistoryRuntimeCtx = ctx;
+}
+
+/**
+ * @returns {Promise<typeof import('./features/estado-actual-vital-history-modal.mjs')>}
+ */
+export function ensureEaVitalHistoryLoaded() {
+  if (eaVitalHistoryModule) return Promise.resolve(eaVitalHistoryModule);
+  if (!eaVitalHistoryPromise) {
+    eaVitalHistoryPromise = import('./features/estado-actual-vital-history-modal.mjs').then(function (mod) {
+      eaVitalHistoryModule = mod;
+      if (eaVitalHistoryRuntimeCtx) {
+        mod.registerEaVitalHistoryModalRuntime(eaVitalHistoryRuntimeCtx);
+      }
+      mod.wireEaVitalHistoryModalDismiss();
+      return mod;
+    });
+  }
+  return eaVitalHistoryPromise;
+}
+
+export const eaVitalHistoryWindowHandlersLazy = buildLazyWindowHandlers(
+  {
+    openEaVitalHistoryModal: 'openEaVitalHistoryModal',
+    closeEaVitalHistoryModal: 'closeEaVitalHistoryModal',
+  },
+  ensureEaVitalHistoryLoaded
+);
 
 /** @param {Record<string, unknown>} ctx */
 export function bindLazyPlatformRuntimeCtx(ctx) {
@@ -413,6 +451,7 @@ async function registerLazyFeatureRuntimesBody(ctx) {
   const [platformMod, settingsMod] = await Promise.all([
     ensurePlatformLoaded(),
     ensureSettingsHelpLoaded(),
+    ensureEaVitalHistoryLoaded(),
   ]);
   platformMod.registerPlatformRuntime(ctx);
   settingsMod.registerSettingsHelpRuntime(ctx);

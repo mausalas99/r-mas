@@ -6,6 +6,7 @@ import {
 } from '../../lib/update-downgrade.mjs';
 
 import { showSettingsPanel } from './features/settings-help/settings-dropdown.mjs';
+import { fetchMinVersionPayload } from './min-version-fetch.mjs';
 
 const RELEASES_PAGE = 'https://github.com/mausalas99/r-mas/releases';
 
@@ -195,6 +196,75 @@ function populateDowngradeSelect(select, entries) {
   select.value = pickDefaultDowngradeVersion(entries);
 }
 
+async function loadDowngradeCatalogBundle() {
+  return Promise.race([
+    Promise.all([fetchStableVersionsCatalog(), fetchMinVersion(), getCurrentAppVersion()]),
+    new Promise(function (_resolve, reject) {
+      setTimeout(function () {
+        reject(new Error('downgrade catalog timeout'));
+      }, 12000);
+    }),
+  ]);
+}
+
+function renderDowngradeLoadError(hint, select, githubBtn) {
+  if (hint) {
+    hint.textContent =
+      'No se pudo cargar el catálogo de versiones. Revisa la red o abre el instalador en GitHub.';
+  }
+  populateDowngradeSelect(select, []);
+  if (githubBtn) {
+    githubBtn.disabled = false;
+    githubBtn.onclick = function () {
+      openExternal(RELEASES_PAGE);
+    };
+  }
+}
+
+function wireDowngradeGithubButton(githubBtn, select, entries) {
+  if (!githubBtn) return;
+  githubBtn.disabled = false;
+  githubBtn.onclick = function () {
+    const version = select.value || pickDefaultDowngradeVersion(entries);
+    if (version) openManualInstallerForVersion(version);
+    else openExternal(RELEASES_PAGE);
+  };
+}
+
+function wireDowngradeStableButton(deps, btn, select, entries, minVersion) {
+  btn.disabled = false;
+  btn.onclick = function () {
+    const version = select.value;
+    if (!version) return;
+    if (isBlockedByMinVersion(version, minVersion)) {
+      deps.showToast(
+        'Esa versión ya no es compatible con tus datos (mínimo v' + minVersion + ').',
+        'error'
+      );
+      return;
+    }
+    const entry = entries.find(function (e) {
+      return e.version === version;
+    });
+    deps.confirmDowngrade(version, entry);
+  };
+}
+
+function renderDowngradeHint(hint, catalog) {
+  if (!hint) return;
+  const srcNote =
+    catalog.source === 'embedded'
+      ? ' (lista integrada — catálogo en main aún no publicado)'
+      : '';
+  const ghNote = catalog.filteredByGithub
+    ? ' Solo versiones con instalador en GitHub Releases.'
+    : '';
+  hint.textContent =
+    'Si esta versión falla (p. ej. «native binding»), restaura una publicada en GitHub. Tus datos locales no se borran.' +
+    ghNote +
+    srcNote;
+}
+
 /**
  * @param {{ showToast: Function, confirmDowngrade: Function }} deps
  * @returns {Promise<{ entries: object[], source: string }>}
@@ -223,33 +293,12 @@ export async function refreshStableDowngradeSettings(deps) {
   let minVersion = null;
   let currentVersion = '0.0.0';
   try {
-    const results = await Promise.race([
-      Promise.all([
-        fetchStableVersionsCatalog(),
-        fetchMinVersion(),
-        getCurrentAppVersion(),
-      ]),
-      new Promise(function (_resolve, reject) {
-        setTimeout(function () {
-          reject(new Error('downgrade catalog timeout'));
-        }, 12000);
-      }),
-    ]);
+    const results = await loadDowngradeCatalogBundle();
     catalog = results[0];
     minVersion = results[1];
     currentVersion = results[2];
   } catch {
-    if (hint) {
-      hint.textContent =
-        'No se pudo cargar el catálogo de versiones. Revisa la red o abre el instalador en GitHub.';
-    }
-    populateDowngradeSelect(select, []);
-    if (githubBtn) {
-      githubBtn.disabled = false;
-      githubBtn.onclick = function () {
-        openExternal(RELEASES_PAGE);
-      };
-    }
+    renderDowngradeLoadError(hint, select, githubBtn);
     return { entries: [], source: 'error' };
   }
 
@@ -265,55 +314,14 @@ export async function refreshStableDowngradeSettings(deps) {
     }
     populateDowngradeSelect(select, []);
     btn.disabled = true;
-    if (githubBtn) {
-      githubBtn.disabled = false;
-      githubBtn.onclick = function () {
-        openExternal(RELEASES_PAGE);
-      };
-    }
+    wireDowngradeGithubButton(githubBtn, select, entries);
     return { entries, source };
   }
 
   populateDowngradeSelect(select, entries);
-  if (hint) {
-    const srcNote =
-      source === 'embedded'
-        ? ' (lista integrada — catálogo en main aún no publicado)'
-        : '';
-    const ghNote = catalog.filteredByGithub
-      ? ' Solo versiones con instalador en GitHub Releases.'
-      : '';
-    hint.textContent =
-      'Si esta versión falla (p. ej. «native binding»), restaura una publicada en GitHub. Tus datos locales no se borran.' +
-      ghNote +
-      srcNote;
-  }
-
-  btn.disabled = false;
-  btn.onclick = function () {
-    const version = select.value;
-    if (!version) return;
-    if (isBlockedByMinVersion(version, minVersion)) {
-      deps.showToast(
-        'Esa versión ya no es compatible con tus datos (mínimo v' + minVersion + ').',
-        'error'
-      );
-      return;
-    }
-    const entry = entries.find(function (e) {
-      return e.version === version;
-    });
-    deps.confirmDowngrade(version, entry);
-  };
-
-  if (githubBtn) {
-    githubBtn.disabled = false;
-    githubBtn.onclick = function () {
-      const version = select.value || pickDefaultDowngradeVersion(entries);
-      if (version) openManualInstallerForVersion(version);
-      else openExternal(RELEASES_PAGE);
-    };
-  }
+  renderDowngradeHint(hint, catalog);
+  wireDowngradeStableButton(deps, btn, select, entries, minVersion);
+  wireDowngradeGithubButton(githubBtn, select, entries);
 
   return { entries, source };
 }

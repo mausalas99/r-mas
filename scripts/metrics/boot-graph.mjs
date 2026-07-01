@@ -12,6 +12,7 @@ export const BOOT_LAZY_ONLY_SUFFIXES = [
   'features/lab-panel.mjs',
   'features/tendencias.mjs',
   'features/estado-actual-charts-modal.mjs',
+  'features/estado-actual-vital-history-modal.mjs',
   'features/clinical-entrega.mjs',
   'features/settings-help/tour-flow.mjs',
   'features/settings-help/tour-engine.mjs',

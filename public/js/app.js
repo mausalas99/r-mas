@@ -52,7 +52,6 @@ import { windowHandlers as estadoActualPanelWindowHandlers } from './features/es
 import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
 import { windowHandlers as driveImportWindowHandlers } from './features/drive-import-modal.mjs';
 import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
-import { windowHandlers as eaVitalHistoryWindowHandlers } from './features/estado-actual-vital-history-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
@@ -65,6 +64,7 @@ import {
   platformWindowHandlersLazy,
   commandPaletteWindowHandlersLazy,
   clinicalSyncModeSettingsHandlersLazy,
+  eaVitalHistoryWindowHandlersLazy,
 } from './lazy-feature-routes.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
@@ -115,7 +115,7 @@ const allWindowHandlers = Object.assign(
   estadoActualPasteWindowHandlers,
   driveImportWindowHandlers,
   estadoActualRegistroWindowHandlers,
-  eaVitalHistoryWindowHandlers,
+  eaVitalHistoryWindowHandlersLazy,
   chartsWindowHandlersLazy,
   agendaWindowHandlers,
   expedienteWindowHandlers,

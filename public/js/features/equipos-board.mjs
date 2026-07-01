@@ -94,6 +94,58 @@ function renderLoadFailure(host, cloud, detail) {
   host.innerHTML = `<p class="clinical-teams-empty">${esc(msg)}</p>`;
 }
 
+function buildEquiposAlertsHtml(alerts) {
+  return (alerts || [])
+    .map(
+      (a) =>
+        `<div class="equipos-alert-banner" style="margin-bottom:8px;font-size:12px">` +
+        `${a.kind === 'malfunction' ? 'Falla' : 'Material faltante'} — ${esc(DEVICE_LABELS[a.device_type])}</div>`
+    )
+    .join('');
+}
+
+function buildEquiposBoardHtml(board, cloud, isAdmin) {
+  const mobileHref = cloud.enabled ? cloud.url : '/equipos';
+  const storageHint = cloud.enabled
+    ? '<p class="equipos-board-storage-hint">Datos en Cloudflare (D1). No están en rplus-clinical.db local.</p>'
+    : '<p class="equipos-board-storage-hint">Datos en rplus-clinical.db (este Mac si es anfitrión).</p>';
+  return (
+    `<div class="equipos-desktop-head">` +
+    `<span class="equipos-board-mode">${cloud.enabled ? 'Cloud' : 'LAN'}</span>` +
+    `<a href="${esc(mobileHref)}" target="_blank" rel="noopener" class="btn-lan-secondary equipos-board-open-mobile">Abrir móvil</a>` +
+    `</div>${storageHint}${buildEquiposAlertsHtml(board.alerts)}` +
+    `<div id="equipos-board-live">${(board.devices || []).map((d) => renderDeviceRow(d, isAdmin)).join('')}</div>` +
+    `<div id="equipos-history-host" class="equipos-history-host" hidden></div>` +
+    (isAdmin
+      ? `<div class="equipos-board-admin-actions">` +
+        `<button type="button" class="btn-lan-secondary" id="btn-equipos-history">Historial de uso</button>` +
+        `<button type="button" class="btn-lan-secondary" id="btn-equipos-purge-all">Purgar todo</button>` +
+        `</div>`
+      : '')
+  );
+}
+
+function wireEquiposBoardActions(host) {
+  host.querySelectorAll('[data-purge]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Liberar este dispositivo y vaciar la cola?')) return;
+      await purgeQueue(btn.getAttribute('data-purge'));
+      showToast('Cola purgada.', 'success');
+      await renderEquiposBoardPanel(host);
+    });
+  });
+  host.querySelector('#btn-equipos-purge-all')?.addEventListener('click', async () => {
+    if (!confirm('¿Purgar cola de los tres dispositivos?')) return;
+    await purgeQueue('all');
+    showToast('Colas purgadas.', 'success');
+    await renderEquiposBoardPanel(host);
+  });
+  host.querySelector('#btn-equipos-history')?.addEventListener('click', () => {
+    const historyHost = host.querySelector('#equipos-history-host');
+    void loadEquiposHistoryPanel(historyHost, showToast);
+  });
+}
+
 /** @param {HTMLElement | null} [hostEl] @param {{ programToken?: string }} [opts] */
 export async function renderEquiposBoardPanel(hostEl, opts = {}) {
   const host = hostEl || document.getElementById('equipos-queue-board-host');
@@ -116,52 +168,8 @@ export async function renderEquiposBoardPanel(hostEl, opts = {}) {
       return;
     }
     const isAdmin = canManageInternoQr(clinicalSessionContext.user);
-    const alerts = (board.alerts || [])
-      .map(
-        (a) =>
-          `<div class="equipos-alert-banner" style="margin-bottom:8px;font-size:12px">` +
-          `${a.kind === 'malfunction' ? 'Falla' : 'Material faltante'} — ${esc(DEVICE_LABELS[a.device_type])}</div>`
-      )
-      .join('');
-
-    const mobileHref = cloud.enabled ? cloud.url : '/equipos';
-
-    const storageHint = cloud.enabled
-      ? '<p class="equipos-board-storage-hint">Datos en Cloudflare (D1). No están en rplus-clinical.db local.</p>'
-      : '<p class="equipos-board-storage-hint">Datos en rplus-clinical.db (este Mac si es anfitrión).</p>';
-
-    host.innerHTML =
-      `<div class="equipos-desktop-head">` +
-      `<span class="equipos-board-mode">${cloud.enabled ? 'Cloud' : 'LAN'}</span>` +
-      `<a href="${esc(mobileHref)}" target="_blank" rel="noopener" class="btn-lan-secondary equipos-board-open-mobile">Abrir móvil</a>` +
-      `</div>${storageHint}${alerts}` +
-      `<div id="equipos-board-live">${(board.devices || []).map((d) => renderDeviceRow(d, isAdmin)).join('')}</div>` +
-      `<div id="equipos-history-host" class="equipos-history-host" hidden></div>` +
-      (isAdmin
-        ? `<div class="equipos-board-admin-actions">` +
-          `<button type="button" class="btn-lan-secondary" id="btn-equipos-history">Historial de uso</button>` +
-          `<button type="button" class="btn-lan-secondary" id="btn-equipos-purge-all">Purgar todo</button>` +
-          `</div>`
-        : '');
-
-    host.querySelectorAll('[data-purge]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('¿Liberar este dispositivo y vaciar la cola?')) return;
-        await purgeQueue(btn.getAttribute('data-purge'));
-        showToast('Cola purgada.', 'success');
-        await renderEquiposBoardPanel(host);
-      });
-    });
-    host.querySelector('#btn-equipos-purge-all')?.addEventListener('click', async () => {
-      if (!confirm('¿Purgar cola de los tres dispositivos?')) return;
-      await purgeQueue('all');
-      showToast('Colas purgadas.', 'success');
-      await renderEquiposBoardPanel(host);
-    });
-    host.querySelector('#btn-equipos-history')?.addEventListener('click', () => {
-      const historyHost = host.querySelector('#equipos-history-host');
-      void loadEquiposHistoryPanel(historyHost, showToast);
-    });
+    host.innerHTML = buildEquiposBoardHtml(board, cloud, isAdmin);
+    wireEquiposBoardActions(host);
   } catch (e) {
     renderLoadFailure(host, cloud.enabled, e?.message);
   }
