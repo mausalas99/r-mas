@@ -1,31 +1,31 @@
-version: 7.5.9
+version: 7.6.0
 files:
-  - url: R+-7.5.9-arm64.zip
-    sha512: l9XnrSHbReU2nvXm4HXl99WE1FFUDZsfaxpZmB8UbteoDafikF38xvdMAvuP5DG+zQzMJ+usNQrVy9gpwHvEWQ==
-    size: 136832153
-  - url: R+-7.5.9-arm64.dmg
-    sha512: jlKmxslvFLAFsnCEJIpiff0940t3YeATSGzpB6JIT1sTxoVyXWsa9wDKI3mVt85PaeMCtpFYoduwkj8HGi2MOg==
-    size: 142568253
-  - url: R+-7.5.9-x64.zip
-    sha512: SWmoDVu/u+axmfBpMcxlcqCn1NPkfGYJnqJzF0MBNeMunoyojRdnZ6OEuAoCO7TE1aqXiAEl81HBji+h6jWvuA==
-    size: 145206191
-  - url: R+-7.5.9-x64.dmg
-    sha512: FgxrKFRhOAW0FUIaHSrx1G+xOXVc5BwRw5zTWVMKxbmToSZjrg9UgmaovQdej9/1onj+cpKnDaShSuTF4hs+Vg==
-    size: 150986731
-path: R+-7.5.9-arm64.zip
-sha512: l9XnrSHbReU2nvXm4HXl99WE1FFUDZsfaxpZmB8UbteoDafikF38xvdMAvuP5DG+zQzMJ+usNQrVy9gpwHvEWQ==
-releaseDate: '2026-06-30T22:32:02.000Z'
+  - url: R+-7.6.0-arm64.zip
+    sha512: 71LwQy9JUAddmi8pO/nF1hs9j5XONckRda7nZD2mMcV/3UTAu8AO26Iq5LKIxsLhloIxjRCPi29xe52O/T1x6g==
+    size: 136835714
+  - url: R+-7.6.0-arm64.dmg
+    sha512: 5MqIEraMkFiMtGFTt0GS/FrMmrYqQOVrZUkFOjoSgjvX6OGsNTmkqwsd+3o0zjHe4qIGcsKM2EaA58rHFdJLwA==
+    size: 142563374
+  - url: R+-7.6.0-x64.zip
+    sha512: KCRdr/wNnGYhE1Oljftz3WhEu1ZJV+9Zy+MYlo7W/0klxHUDRXaHrkI8JilKZXY0p9xT4yBtUSTCmzBPMJShYw==
+    size: 145209778
+  - url: R+-7.6.0-x64.dmg
+    sha512: meOJVBhwHdN1Gr1PNdTsMGBjN+fJAY7/PF+Oh/PtTh1AfZKdhqMxAa+UFVNJ5UfCaaWluZIbdfOUprEJNIW3Eg==
+    size: 151000068
+path: R+-7.6.0-arm64.zip
+sha512: 71LwQy9JUAddmi8pO/nF1hs9j5XONckRda7nZD2mMcV/3UTAu8AO26Iq5LKIxsLhloIxjRCPi29xe52O/T1x6g==
+releaseDate: '2026-07-01T14:54:18.000Z'
 releaseNotes: |
-  Parche sobre 7.5.8: recupera pacientes cuando el sidebar está vacío, exporta varios del censo a JSON, y limpia fantasmas/tombstones del anfitrión LAN con respaldo automático.
+  Sobre 7.5.9: el turno LAN se une sin PIN de 6 dígitos por defecto (onboarding y registro sin campo PIN; conexión automática al anfitrión). Temporalmente, el censo clínico muestra todos los pacientes de la sala sin filtrar por equipo asignado. El anfitrión puede volver a exigir PIN con R_PLUS_LAN_REQUIRE_SHIFT_PIN=1 al arrancar.
   
-  Exportar censo recuperable — En Ajustes → Exportar censo recuperable… lee pacientes desde SQLCipher (incluye caché LAN) aunque el sidebar esté vacío; importa con Importar rango…. Atajo CLI: npm run recover:census.
+  ⇄ sin PIN (por defecto) — Al guardar perfil o registrarte en LAN, R+ descubre el anfitrión y obtiene token sin pedir los 6 dígitos. El panel ⇄ oculta entrada y display de PIN de turno.
   
-  Exportar pacientes… — Selector multi-paciente del censo para un solo JSON (Ajustes → Respaldo).
+  Onboarding / registro — Formularios de perfil LAN y modal de registro ya no muestran el campo «PIN del turno» mientras el bypass esté activo.
   
-  Censo anfitrión — Limpiar tombstones restaura visibilidad local; Restaurar por fila fantasma; Eliminar fantasmas descarga respaldo antes de purgar solo el host.
+  Servidor LAN — POST /auth/exchange con cuerpo vacío devuelve token del anfitrión cuando no se exige PIN; auditoría lan.shift_pin.bypass.
   
-  Directorio LAN — Asignaciones de equipo remapean user_id al @usuario canónico de esta Mac (menos membresías huérfanas tras sync).
+  Restaurar PIN (opt-in) — En el Mac anfitrión, define R_PLUS_LAN_REQUIRE_SHIFT_PIN=1 antes de abrir R+ (ver .env.example). Los clientes vuelven a ver el campo PIN y el intercambio exige credenciales.
   
-  Import respaldo fantasmas — JSON r-plus-purge-ghosts-backup se fusiona al importar (incluye entradas del bundle del host).
+  Censo sin filtro por equipo (temporal) — Todos los pacientes de la sala son legibles en guía clínica, independientemente de asignación a equipo. Pensado para despliegue en guardia; el filtro por equipo se reactivará en una versión posterior.
   
-  Parche sobre 7.5.8 — Catálogo downgrade 7.5.7 y confirmación SUPLEMENTO en EA. Sin migración (SQLCipher v20).
+  Parche sobre 7.5.9 — Recuperación de censo, tombstones LAN y directorio de equipos de la línea anterior. Sin migración (SQLCipher v20).
