@@ -1,31 +1,31 @@
-version: 7.6.0
+version: 7.6.1
 files:
-  - url: R+-7.6.0-arm64.zip
-    sha512: 71LwQy9JUAddmi8pO/nF1hs9j5XONckRda7nZD2mMcV/3UTAu8AO26Iq5LKIxsLhloIxjRCPi29xe52O/T1x6g==
-    size: 136835714
-  - url: R+-7.6.0-arm64.dmg
-    sha512: 5MqIEraMkFiMtGFTt0GS/FrMmrYqQOVrZUkFOjoSgjvX6OGsNTmkqwsd+3o0zjHe4qIGcsKM2EaA58rHFdJLwA==
-    size: 142563374
-  - url: R+-7.6.0-x64.zip
-    sha512: KCRdr/wNnGYhE1Oljftz3WhEu1ZJV+9Zy+MYlo7W/0klxHUDRXaHrkI8JilKZXY0p9xT4yBtUSTCmzBPMJShYw==
-    size: 145209778
-  - url: R+-7.6.0-x64.dmg
-    sha512: meOJVBhwHdN1Gr1PNdTsMGBjN+fJAY7/PF+Oh/PtTh1AfZKdhqMxAa+UFVNJ5UfCaaWluZIbdfOUprEJNIW3Eg==
-    size: 151000068
-path: R+-7.6.0-arm64.zip
-sha512: 71LwQy9JUAddmi8pO/nF1hs9j5XONckRda7nZD2mMcV/3UTAu8AO26Iq5LKIxsLhloIxjRCPi29xe52O/T1x6g==
-releaseDate: '2026-07-01T14:54:18.000Z'
+  - url: R+-7.6.1-arm64.zip
+    sha512: YyqXXbPSnF0mM2MBf2VYBlvHhJ3jFadvNFngpgtJ87I31Eu9nE+gNU0LA3Fvmfg7hivLcV0nFkwwA3W4g7jdIA==
+    size: 136848297
+  - url: R+-7.6.1-arm64.dmg
+    sha512: /bzXFhab3LWdpLrtisCaXsZ63fEo/R28sWvC5x2b0ceQHgdiDMGLtcKX1Zhz0YLkwNQ5Qqt4zJaiWdGqCqM//A==
+    size: 142577805
+  - url: R+-7.6.1-x64.zip
+    sha512: rNTmQjTDhW+TlsWC+DgURwETIPlVDoEq3X9P8ErPLO8tCblp/nmfqRgYD2ehy/EfzTgSFbgm5m3i68vnz6SIjQ==
+    size: 145161208
+  - url: R+-7.6.1-x64.dmg
+    sha512: I7ZeO3x3WLDUwkQ5nJadM3Je7kftowmFe+p2r2Q0vhcn058am5AUEfisGiTU/bI9Nmg3SWD9vR/bQDywmByzZg==
+    size: 150933445
+path: R+-7.6.1-arm64.zip
+sha512: YyqXXbPSnF0mM2MBf2VYBlvHhJ3jFadvNFngpgtJ87I31Eu9nE+gNU0LA3Fvmfg7hivLcV0nFkwwA3W4g7jdIA==
+releaseDate: '2026-07-01T20:29:01.000Z'
 releaseNotes: |
-  Sobre 7.5.9: el turno LAN se une sin PIN de 6 dígitos por defecto (onboarding y registro sin campo PIN; conexión automática al anfitrión). Temporalmente, el censo clínico muestra todos los pacientes de la sala sin filtrar por equipo asignado. El anfitrión puede volver a exigir PIN con R_PLUS_LAN_REQUIRE_SHIFT_PIN=1 al arrancar.
+  Sobre 7.6.0: migración SQLCipher v21 alinea el CHECK de sala con Interconsultas, UX y Eme; Mi rotación conserva el borrador del formulario al refrescar el panel en segundo plano; equipos exige estar en cola para activar notificaciones push; el downgrade a versión estable tolera mejor fallos de red.
   
-  ⇄ sin PIN (por defecto) — Al guardar perfil o registrarte en LAN, R+ descubre el anfitrión y obtiene token sin pedir los 6 dígitos. El panel ⇄ oculta entrada y display de PIN de turno.
+  SQLCipher v21 — users, teams y sala_interno_access aceptan las salas Interconsultas, UX y Eme (migración automática al desbloquear la base).
   
-  Onboarding / registro — Formularios de perfil LAN y modal de registro ya no muestran el campo «PIN del turno» mientras el bypass esté activo.
+  Mi rotación — borrador — Crear equipo, editar perfil y código de unión no se pierden cuando el panel se refresca por sync LAN o directorio.
   
-  Servidor LAN — POST /auth/exchange con cuerpo vacío devuelve token del anfitrión cuando no se exige PIN; auditoría lan.shift_pin.bypass.
+  Equipos push — La suscripción a notificaciones solo se acepta si ya estás en la cola del dispositivo (Lumify/EKG/US).
   
-  Restaurar PIN (opt-in) — En el Mac anfitrión, define R_PLUS_LAN_REQUIRE_SHIFT_PIN=1 antes de abrir R+ (ver .env.example). Los clientes vuelven a ver el campo PIN y el intercambio exige credenciales.
+  Downgrade estable — Catálogo de versiones con timeout de 12 s y enlace directo al instalador en GitHub si falla la red.
   
-  Censo sin filtro por equipo (temporal) — Todos los pacientes de la sala son legibles en guía clínica, independientemente de asignación a equipo. Pensado para despliegue en guardia; el filtro por equipo se reactivará en una versión posterior.
+  Onboarding — Perfil persistido válido reconocido aunque nombre o sala lleguen desde IPC con retraso.
   
-  Parche sobre 7.5.9 — Recuperación de censo, tombstones LAN y directorio de equipos de la línea anterior. Sin migración (SQLCipher v20).
+  Parche sobre 7.6.0 — Incluye ⇄ sin PIN de turno y censo abierto por equipo de la línea anterior.
