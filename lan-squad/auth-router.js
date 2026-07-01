@@ -114,6 +114,7 @@ function createAuthRouter({
     ticketStore,
     shiftPinStore,
     wardHostRegistry,
+    getHostToken,
     getHostUrl,
     authFailureLockout,
     clientIdentityStore,

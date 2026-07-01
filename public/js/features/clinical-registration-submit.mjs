@@ -8,6 +8,7 @@ import {
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { persistLanClientConfig } from './lan/transport.mjs';
+import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
@@ -103,7 +104,13 @@ function validateRegistrationFields_(fields, errEl) {
 }
 
 async function connectShiftPinIfNeeded_(shiftPin, sala, _runtime) {
-  if (!shiftPin || isClinicalLocalOnlyMode()) return;
+  if (isClinicalLocalOnlyMode()) return;
+  if (isLanSkipShiftPin()) {
+    var { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
+    await tryEasyLanShiftPinConnect({ sala, force: true });
+    return;
+  }
+  if (!shiftPin) return;
   var { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
   var connected = await connectLanWithShiftPin(shiftPin, { sala });
   if (!connected && typeof window.showToast === 'function') {

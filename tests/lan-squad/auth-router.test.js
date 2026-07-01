@@ -143,7 +143,9 @@ test('POST /auth/exchange by pin', async () => {
   }
 });
 
-test('POST /auth/exchange rejects ambiguous or missing credentials', async () => {
+test('POST /auth/exchange rejects ambiguous or missing credentials when PIN required', async () => {
+  const prev = process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN;
+  process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN = '1';
   const hostToken = 'd'.repeat(64);
   const { app, dir } = createTestApp({ hostToken, hostUrl: 'http://127.0.0.1:3738' });
   const { server, base } = await listen(app);
@@ -166,6 +168,31 @@ test('POST /auth/exchange rejects ambiguous or missing credentials', async () =>
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });
+    if (prev !== undefined) process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN = prev;
+    else delete process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN;
+  }
+});
+
+test('POST /auth/exchange without credentials by default (shift PIN off)', async () => {
+  const prevRequire = process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN;
+  delete process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN;
+  const hostToken = 'e'.repeat(64);
+  const { app, dir } = createTestApp({ hostToken, hostUrl: 'http://10.0.0.2:3738' });
+  const { server, base } = await listen(app);
+  try {
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.token, hostToken);
+    assert.ok(body.hostUrl);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+    if (prevRequire !== undefined) process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN = prevRequire;
   }
 });
 

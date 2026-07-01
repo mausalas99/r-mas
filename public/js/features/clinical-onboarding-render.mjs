@@ -23,10 +23,8 @@ import {
   normalizeUsername,
 } from '../clinical-username.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
-import {
-  renderSyncModeChoicePanel,
-  wireSyncModeOnboardingInteractions,
-} from './clinical-onboarding-sync-mode.mjs';
+import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
+import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 import {
   defaultLocalOnlyDisplayName,
   submitLocalOnlyProfile,
@@ -37,6 +35,7 @@ import {
   needsClinicalSyncModeChoice,
   needsLocalOnlyProfile,
   needsProfileOnboarding,
+  needsUsernameClaim,
 } from './clinical-onboarding-gates.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 
@@ -114,6 +113,16 @@ function buildLanProfileFormBody(settings) {
   );
   const prefilledSala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '');
   const prefilledShiftPin = '';
+  const shiftPinFieldHtml = isLanSkipShiftPin()
+    ? ''
+    : `
+          <div class="field-group">
+            <label for="onboard-shift-pin">PIN del turno (⇄)</label>
+            <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
+              pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off"
+              value="${escapeAttr(prefilledShiftPin)}">
+            <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
+          </div>`;
 
   return `
       <div class="clinical-onboard-form-shell">
@@ -142,14 +151,7 @@ function buildLanProfileFormBody(settings) {
               <option value="">— Seleccionar —</option>
               ${buildSalaOptionsHtml(prefilledSala)}
             </select>
-          </div>
-          <div class="field-group">
-            <label for="onboard-shift-pin">PIN del turno (⇄)</label>
-            <input id="onboard-shift-pin" type="text" class="profile-input" inputmode="numeric"
-              pattern="[0-9]{6}" maxlength="6" placeholder="6 dígitos del anfitrión" autocomplete="off"
-              value="${escapeAttr(prefilledShiftPin)}">
-            <p class="clinical-teams-hint">6 dígitos del anfitrión (⇄). R+ conecta solo; si cambias de Wi‑Fi, vuelve a usar el mismo PIN.</p>
-          </div>
+          </div>${shiftPinFieldHtml}
           <p id="onboard-error" class="clinical-registration-error" hidden></p>
           <div class="modal-actions clinical-onboard-form-actions">
             <button type="submit" class="btn-save">Guardar perfil</button>

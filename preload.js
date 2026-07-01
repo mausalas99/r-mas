@@ -125,6 +125,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isLanDevPeer: function() {
     return process.env.R_PLUS_LAN_PEER === '1';
   },
+  isLanShiftPinRequired: function() {
+    return process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN === '1';
+  },
   lanGuestWriteBearer: function(payload) {
     return ipcRenderer.invoke('lan-guest-write-bearer', payload);
   },

@@ -15,6 +15,7 @@ import { activeLiveSyncRoomId } from './runtime.mjs';
 import { getRoomSyncPhase, RoomSyncPhase } from '../../lan-sync-state.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { canLocalMacBeLanHost } from '../../lan-host-rank-policy.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import { normalizeLanHostBase, lanHostBasesSameMachine } from '../../lan-host-subnet-discovery.mjs';
 
 async function ensureElectronLanServerOnce(opts, attempt) {
@@ -148,6 +149,7 @@ export async function resolveLanHostUrlForShare() {
 
 /** Client PIN entry on ⇄ (R1–R3, or not live on remote host). */
 export async function shouldShowLanShiftPinClientConnect() {
+  if (isLanSkipShiftPin()) return false;
   if (!isLanElectronDesktop()) return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
   // After reset / no bearer — R4 also reconnects via PIN or host URL.
@@ -163,6 +165,7 @@ export async function shouldShowLanShiftPinClientConnect() {
 
 /** Host PIN display for R4+ acting as turn anfitrión. */
 export function shouldShowLanShiftPinHostDisplay() {
+  if (isLanSkipShiftPin()) return false;
   if (!isLanElectronDesktop()) return false;
   if (!canLocalMacBeLanHost() || isLanRemoteJoinMode()) return false;
   return true;

@@ -4,8 +4,13 @@ import {
   buildClinicalScopeContextFromOpsSnapshot,
   resolveClinicalUserRowFromOpsSnapshot,
 } from './clinical-scope-from-ops.mjs';
-import { isPatientReadableInClinicalScope } from './clinico-access.mjs';
+import { evaluateClinicalScope } from './clinico-access.mjs';
 import { patientForScopeEvaluate } from './features/patients-clinical-filter.mjs';
+
+/** Scope rules under test — bypass TEMP_DISABLE_TEAM_BASED_FILTERING in isPatientReadableInClinicalScope. */
+function isReadableInScope(user, patient, activeGuardia, context) {
+  return evaluateClinicalScope(user, patient, activeGuardia, context).readable === true;
+}
 
 const snapshot = {
   clinical_users: [
@@ -62,13 +67,13 @@ describe('clinical-scope-from-ops', () => {
     assert.equal(ctx.teams.length, 2);
     assert.equal(ctx.teams[0].members.length, 1);
     const user = { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' };
-    const mine = isPatientReadableInClinicalScope(
+    const mine = isReadableInScope(
       user,
       patientForScopeEvaluate({ id: 'p-mine', servicio: 'Sala', sala: 'Sala 2' }),
       null,
       ctx
     );
-    const other = isPatientReadableInClinicalScope(
+    const other = isReadableInScope(
       user,
       patientForScopeEvaluate({ id: 'p-other', servicio: 'Sala', sala: 'Sala 2' }),
       null,
@@ -96,13 +101,13 @@ describe('clinical-scope-from-ops', () => {
       { enforceTeamPatientScope: true }
     );
     const user = { user_id: 'u-admin', rank: 'Admin', is_program_admin: 1, sala: 'Sala 2' };
-    const mine = isPatientReadableInClinicalScope(
+    const mine = isReadableInScope(
       user,
       patientForScopeEvaluate({ id: 'p-mine', servicio: 'Sala', sala: 'Sala 2' }),
       null,
       ctx
     );
-    const other = isPatientReadableInClinicalScope(
+    const other = isReadableInScope(
       user,
       patientForScopeEvaluate({ id: 'p-other', servicio: 'Sala', sala: 'Sala 2' }),
       null,

@@ -2,6 +2,20 @@
 
 const { resolveHostUrlForClient } = require('./lan-request-host.js');
 const { redactAuthBody } = require('./redact-secrets.js');
+const { isShiftPinBypassEnabled } = require('./lan-shift-pin-policy.js');
+
+function exchangeShiftPinBypass({ getHostToken, authFailureLockout, auditLanSecurity }) {
+  if (typeof getHostToken !== 'function') {
+    return { status: 503, body: { error: 'shift_pin_unavailable' } };
+  }
+  const token = String(getHostToken() || '').trim();
+  if (!token || token.length < 32) {
+    return { status: 503, body: { error: 'shift_pin_unavailable' } };
+  }
+  authFailureLockout.recordSuccess();
+  auditLanSecurity('lan.shift_pin.bypass', {});
+  return { status: 200, result: { token } };
+}
 
 function countCredentialTypes(body) {
   const hasTicket = body.ticket != null && String(body.ticket).trim() !== '';
@@ -88,6 +102,18 @@ function handleAuthExchange(req, res, deps) {
     return res.status(400).json({ error: 'ambiguous_credentials' });
   }
   if (credCount === 0) {
+    if (isShiftPinBypassEnabled()) {
+      try {
+        const exchangeOut = exchangeShiftPinBypass(deps);
+        if (exchangeOut.status !== 200) {
+          return res.status(exchangeOut.status).json(exchangeOut.body);
+        }
+        return res.json(buildExchangeResponse(req, body, exchangeOut.result, deps));
+      } catch (e) {
+        console.error('[auth/exchange]', redactAuthBody(body), e && e.message);
+        return res.status(500).json({ error: 'exchange_failed' });
+      }
+    }
     auditLanSecurity('lan.auth.fail', { reason: 'missing_credentials' });
     return res.status(400).json({ error: 'missing_credentials' });
   }
@@ -110,6 +136,7 @@ module.exports = {
   handleAuthExchange,
   countCredentialTypes,
   exchangeShiftPin,
+  exchangeShiftPinBypass,
   exchangeTicket,
   buildExchangeResponse,
 };

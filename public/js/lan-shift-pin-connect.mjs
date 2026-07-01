@@ -26,6 +26,7 @@ import {
   resumeAutoHostDetect,
 } from './lan-host-detect-guard.mjs';
 import { lanNetworkProfile } from './lan-network-profile.mjs';
+import { isLanSkipShiftPin } from './lan-shift-pin-bypass.mjs';
 
 const EXCHANGE_TIMEOUT_MS = 8000;
 const BACKOFF_STEPS_MS = [12_000, 30_000, 60_000, 120_000];
@@ -82,19 +83,22 @@ function getOwnTeamCode() {
 /** @param {string} hostUrl @param {string} shiftPin */
 async function exchangeShiftPinOnHost(hostUrl, shiftPin) {
   const base = normalizeLanHostBase(hostUrl);
+  const bypass = isLanSkipShiftPin();
   const pin = String(shiftPin || '').trim();
-  if (!base || !/^\d{6}$/.test(pin)) return { ok: false, reason: 'bad_input' };
+  if (!base) return { ok: false, reason: 'bad_input' };
+  if (!bypass && !/^\d{6}$/.test(pin)) return { ok: false, reason: 'bad_input' };
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EXCHANGE_TIMEOUT_MS);
+  const body = bypass && !pin ? { clientId: readShiftPinClientId() } : { shiftPin: pin, clientId: readShiftPinClientId() };
   try {
     const res = await fetch(`${base}/api/lan/v1/auth/exchange`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shiftPin: pin, clientId: readShiftPinClientId() }),
+      body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-    if (res.status === 401) return { ok: false, reason: 'invalid_pin' };
+    if (res.status === 401) return { ok: false, reason: bypass ? 'bypass_rejected' : 'invalid_pin' };
     if (!res.ok) return { ok: false, reason: 'http_' + res.status };
     const data = await res.json();
     return data?.token ? { ok: true, data } : { ok: false, reason: 'bad_response' };
@@ -333,12 +337,13 @@ async function validateShiftPinJoinUrl(opts) {
 export async function connectLanWithShiftPin(shiftPin, opts = {}) {
   const transport = await loadLanTransport();
   if (!transport.isLanElectronDesktop()) return false;
+  const bypass = isLanSkipShiftPin();
   const pin = String(shiftPin || '').trim();
-  if (!/^\d{6}$/.test(pin)) return false;
+  if (!bypass && !/^\d{6}$/.test(pin)) return false;
 
   if (!(await validateShiftPinJoinUrl(opts))) return false;
 
-  if (typeof storage.saveLanShiftPin === 'function') storage.saveLanShiftPin(pin);
+  if (pin && typeof storage.saveLanShiftPin === 'function') storage.saveLanShiftPin(pin);
 
   if (!opts.forceRediscover && (await isCurrentLanHostReachable())) {
     return true;
@@ -406,7 +411,7 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
   const pin =
     String(opts.shiftPin || '').trim() ||
     (typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '');
-  if (!/^\d{6}$/.test(pin)) {
+  if (!isLanSkipShiftPin() && !/^\d{6}$/.test(pin)) {
     return { ok: false, reason: 'no_pin' };
   }
 

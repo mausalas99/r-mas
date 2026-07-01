@@ -80,8 +80,16 @@ export {
 
 export { ENTREGA_PHASE_LS_KEY, readEntregaPhaseActive } from './clinico-access-entrega.mjs';
 
+/**
+ * TEMPORARY kill switch: when true, team-based patient scope is bypassed and every
+ * patient is treated as readable, regardless of team assignment/rank rules below.
+ * Flip back to `false` to restore normal team-based filtering.
+ */
+export const TEMP_DISABLE_TEAM_BASED_FILTERING = true;
+
 /** @param {object} user @param {object} patient @param {object|null} activeGuardia @param {object|null} context */
 export function isPatientReadableInClinicalScope(user, patient, activeGuardia = null, context = null) {
+  if (TEMP_DISABLE_TEAM_BASED_FILTERING) return true;
   const scope = evaluateClinicalScope(user, patient, activeGuardia, context);
   return scope.readable === true;
 }

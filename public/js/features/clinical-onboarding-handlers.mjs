@@ -19,6 +19,7 @@ import {
 } from '../clinical-username.mjs';
 import { getClientId, needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { wireSyncModeOnboardingInteractions } from './clinical-onboarding-sync-mode.mjs';
+import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -133,7 +134,13 @@ async function upsertClinicalProfile(api, sessionUserId, fields, errEl) {
 }
 
 async function connectShiftPinIfProvided(shiftPin, sala) {
-  if (!shiftPin || isClinicalLocalOnlyMode()) return;
+  if (isClinicalLocalOnlyMode()) return;
+  if (isLanSkipShiftPin()) {
+    const { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
+    await tryEasyLanShiftPinConnect({ sala, force: true });
+    return;
+  }
+  if (!shiftPin) return;
   const { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
   const connected = await connectLanWithShiftPin(shiftPin, { sala });
   if (!connected) {
