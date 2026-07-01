@@ -49,7 +49,7 @@ describe('lan-shift-pin-connect probe order', () => {
   });
 
   it('connectLanWithShiftPin probes registry before ward subnet beacon scan', () => {
-    const fnStart = shiftPinSrc.indexOf('export async function connectLanWithShiftPin');
+    const fnStart = shiftPinSrc.indexOf('async function tryShiftPinJoinSequence');
     assert.ok(fnStart > 0);
     const fnBody = shiftPinSrc.slice(fnStart);
     const probeIdx = fnBody.indexOf('collectShiftPinProbeUrls');
