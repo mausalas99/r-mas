@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.5.9](https://github.com/mausalas99/r-mas/releases/tag/v7.5.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.0](https://github.com/mausalas99/r-mas/releases/tag/v7.6.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.0 (LAN sin PIN de turno + censo abierto por equipo)
+
+- **⇄ sin PIN** — Unión LAN automática al guardar perfil; sin campo de 6 dígitos en onboarding ni registro (por defecto).
+- **Restaurar PIN** — El anfitrión puede exigir PIN otra vez con `R_PLUS_LAN_REQUIRE_SHIFT_PIN=1` al arrancar.
+- **Censo abierto (temporal)** — Todos los pacientes de la sala visibles en guía clínica, sin filtro por equipo asignado.
+- **Parche sobre 7.5.9** — Censo recuperable, tombstones LAN y directorio de equipos; sin migración (SQLCipher v20).
+
+Notas: `docs/RELEASE_NOTES_7.6.0.txt`.
 
 ## R+ 7.5.9 (recuperación censo + tombstones LAN)
 

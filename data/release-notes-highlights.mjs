@@ -1193,6 +1193,29 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_760 = [
+  {
+    title: '⇄ sin PIN de turno',
+    body:
+      'Por defecto R+ se une al anfitrión LAN <strong>sin los 6 dígitos</strong>: al guardar perfil o registrarte descubre el host y obtiene token. El panel ⇄ ya no pide ni muestra PIN de turno.',
+  },
+  {
+    title: 'Restaurar PIN (anfitrión)',
+    body:
+      'Para volver al emparejamiento con PIN, el Mac anfitrión arranca con <strong>R_PLUS_LAN_REQUIRE_SHIFT_PIN=1</strong> (ver <code>.env.example</code>). Los clientes vuelven a ver el campo PIN.',
+  },
+  {
+    title: 'Censo abierto por equipo (temporal)',
+    body:
+      'Todos los pacientes de la sala son legibles en guía clínica, <strong>sin filtrar por equipo asignado</strong>. Pensado para despliegue en guardia; el filtro por equipo regresará en una versión posterior.',
+  },
+  {
+    title: 'Parche sobre 7.5.9',
+    body:
+      'Incluye censo recuperable, tombstones/fantasmas del anfitrión LAN y directorio de equipos. Sin migración (SQLCipher <strong>v20</strong>).',
+  },
+];
+
 var RELEASE_NOTES_759 = [
   {
     title: 'Censo recuperable',
@@ -1276,9 +1299,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_759;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_760;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.0': RELEASE_NOTES_760,
   '7.5.9': RELEASE_NOTES_759,
   '7.5.8': RELEASE_NOTES_758,
   '7.5.7': RELEASE_NOTES_757,
