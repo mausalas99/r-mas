@@ -56,6 +56,12 @@ export function resetLastDeltaSeq(roomId) {
  */
 export function initLanSyncRuntime(deps) {
   if (deps && deps.lanClient) {
+    try {
+      if (typeof lanClient.disconnect === 'function') lanClient.disconnect();
+      else if (typeof lanClient.disconnectLiveChannel === 'function') lanClient.disconnectLiveChannel();
+    } catch (_e) {
+      void _e;
+    }
     lanClient = deps.lanClient;
   }
 }

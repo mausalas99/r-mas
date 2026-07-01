@@ -3,6 +3,7 @@ import {
   patientMatchesTeam,
   resolvePatientTeamIdFromAssignments,
   patientHasExplicitTeamAssignment,
+  resolvePatientSala,
 } from '../clinico-access.mjs';
 import {
   shouldEnforceTeamPatientMirror,
@@ -88,15 +89,38 @@ export function resolvePatientCensusTeamId(patient, teams, assignments, now) {
   return '';
 }
 
+/**
+ * Census sala filter: explicit patient sala, inferred sala, or assigned team's sala.
+ * @param {object} patient
+ * @param {string} sala
+ * @param {object[]} teams
+ * @param {object[]} assignments
+ * @param {Date|string|number} [now]
+ */
+export function patientMatchesCensusSalaFilter(patient, sala, teams, assignments, now) {
+  const target = String(sala || '').trim();
+  if (!target) return true;
+  if (String(patient?.sala || '').trim() === target) return true;
+  if (resolvePatientSala(patient) === target) return true;
+  const assignedTeamId = resolvePatientTeamIdFromAssignments(
+    String(patient?.id || ''),
+    assignments,
+    now
+  );
+  if (!assignedTeamId) return false;
+  const team = (teams || []).find((t) => String(t.team_id || '') === assignedTeamId);
+  return String(team?.sala || '').trim() === target;
+}
+
 export function applyElevatedPatientFilters(patients, filters, ctx = {}) {
   let list = patients || [];
-  const sala = filters?.sala;
-  if (sala && sala !== '__all__') {
-    list = list.filter((p) => String(p.sala || '') === sala);
-  }
+  const sala = filters.sala;
   const teams = ctx.teams || [];
   const assignments = ctx.assignments || [];
   const now = ctx.now || new Date().toISOString();
+  if (sala && sala !== '__all__') {
+    list = list.filter((p) => patientMatchesCensusSalaFilter(p, sala, teams, assignments, now));
+  }
   if (filters?.teamId === CENSUS_TEAM_FILTER_UNASSIGNED) {
     list = list.filter((p) =>
       patientMatchesCensusTeamFilter(p, CENSUS_TEAM_FILTER_UNASSIGNED, teams, assignments, now)

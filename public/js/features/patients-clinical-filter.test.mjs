@@ -7,6 +7,7 @@ import {
   filterPatientsForGuardiaCensus,
   patientForScopeEvaluate,
   patientMatchesCensusTeamFilter,
+  patientMatchesCensusSalaFilter,
 } from './patients-clinical-filter.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
 
@@ -205,4 +206,41 @@ test('R2 sidebar without team includes same-sala census', () => {
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
   );
   assert.deepEqual(out.map((p) => p.id), ['p1']);
+});
+
+test('Interconsultas sala filter includes patient assigned to Interconsultas team with UX stamp', () => {
+  const icTeam = {
+    team_id: 't-ic',
+    name: 'Interconsultas A',
+    service: 'Interconsultas',
+    sub_area_fraction: 'A',
+    sala: 'Interconsultas',
+  };
+  const patient = {
+    id: 'p-ic',
+    servicio: 'Cardiología',
+    area: '',
+    sala: 'UX',
+  };
+  const assignments = [
+    { patient_id: 'p-ic', team_id: 't-ic', effective_at: '2026-06-01T00:00:00Z' },
+  ];
+  assert.equal(
+    patientMatchesCensusSalaFilter(patient, 'Interconsultas', [icTeam], assignments, '2026-06-02T12:00:00Z'),
+    true
+  );
+  const out = filterPatientsForGuardiaCensus(
+    [patient],
+    { user_id: 'admin', rank: 'Admin' },
+    {
+      teams: [icTeam],
+      guardias: [],
+      assignments,
+      cycle: null,
+      now: '2026-06-02T12:00:00Z',
+    },
+    null,
+    { sala: 'Interconsultas', teamId: '', service: '' }
+  );
+  assert.deepEqual(out.map((p) => p.id), ['p-ic']);
 });

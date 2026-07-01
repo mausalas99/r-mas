@@ -7,6 +7,8 @@ import {
   isClinicalOpsLanAvailable,
   refreshClinicalOpsSnapshotCache,
 } from '../../clinical-ops-lan.mjs';
+import { applyClinicalScopeFromLanOpsSnapshot } from '../../clinical-access-runtime.mjs';
+import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { getHostBundleBases, setHostBundleBases } from '../../host-bundle-bases.mjs';
 import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
 import { pingLanHostUrl } from '../../lan-surrogate-host.mjs';
@@ -54,6 +56,24 @@ async function applyFetchedClinicalOpsSnapshot(body, options) {
     scheduleClinicalOpsGossipPush();
   }
   return true;
+}
+
+function dispatchMobileClinicalOpsSynced() {
+  if (typeof document === 'undefined') return;
+  document.dispatchEvent(
+    new CustomEvent('rpc-clinical-ops-synced', { detail: { mergeStats: null } })
+  );
+}
+
+function applyFetchedMobileClinicalOpsSnapshot(body) {
+  if (!body?.snapshot || typeof body.snapshot !== 'object') return false;
+  const applied = applyClinicalScopeFromLanOpsSnapshot(body.snapshot);
+  if (applied) dispatchMobileClinicalOpsSynced();
+  return applied;
+}
+
+function canFetchClinicalOpsFromHost() {
+  return isClinicalOpsLanAvailable() || shouldEnforceTeamPatientMirror();
 }
 
 function updateHostRevisionFromBody(rid, body) {
@@ -104,10 +124,10 @@ function getAlternateHostTeamCode(url) {
   return getLanTeamCodeFromConfig() || '';
 }
 
-/** GET /clinical-ops from host and merge into local SQLCipher (directorio LAN). */
+/** GET /clinical-ops from host; desktop merges SQLCipher, iPad hydrates scope from snapshot. */
 export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
   const rid = String(roomId || '').trim();
-  if (!rid || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+  if (!rid || !canFetchClinicalOpsFromHost() || !isLanSessionConfiguredForRest()) {
     return false;
   }
   const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 8000);
@@ -138,7 +158,10 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
       ok: true,
     });
     updateHostRevisionFromBody(rid, body);
-    return applyFetchedClinicalOpsSnapshot(body, options);
+    if (isClinicalOpsLanAvailable()) {
+      return applyFetchedClinicalOpsSnapshot(body, options);
+    }
+    return applyFetchedMobileClinicalOpsSnapshot(body);
   } catch {
     return false;
   } finally {

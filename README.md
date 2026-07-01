@@ -39,10 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.1](https://github.com/mausalas99/r-mas/releases/tag/v7.6.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.2](https://github.com/mausalas99/r-mas/releases/tag/v7.6.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.2 (iPad scope LAN + Interconsultas sala)
+
+- **iPad — scope LAN** — Conserva scope hidratado por LAN sin SQLCipher; censo espera equipo unido antes de aplicar pacientes del host.
+- **iPad — ops clínicas** — Snapshot del anfitrión en móvil; reconcile de pacientes tras merge de ops.
+- **Interconsultas — sala** — Sala del equipo al registrar o asignar (prevalece sobre stamp UX del perfil).
+- **Censo — filtro sala** — Incluye pacientes por sala del equipo asignado.
+- **Tests** — `room.test` ya no cuelga el pipeline de release.
+- **Parche sobre 7.6.1** — SQLCipher v21, borrador Mi rotación y equipos push de la línea anterior.
+
+Notas: `docs/RELEASE_NOTES_7.6.2.txt`.
 
 ## R+ 7.6.1 (Interconsultas en DB + Mi rotación sin perder borrador)
 

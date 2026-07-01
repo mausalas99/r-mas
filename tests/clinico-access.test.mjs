@@ -292,6 +292,22 @@ test('stampPatientClinicalSala uses creator profile sala', () => {
   assert.equal(patient.sala, 'Sala 2');
 });
 
+test('stampPatientClinicalSala prefers assigned team sala over creator profile', () => {
+  const patient = { id: 'p-ic', servicio: 'Cardiología', area: '' };
+  stampPatientClinicalSala(
+    patient,
+    { sala: 'UX' },
+    {
+      team: {
+        team_id: 't-ic',
+        service: 'Interconsultas',
+        sala: 'Interconsultas',
+      },
+    }
+  );
+  assert.equal(patient.sala, 'Interconsultas');
+});
+
 test('resolveMembershipCycleForUser keeps saved member subcycle', () => {
   const team = {
     service: 'Sala',

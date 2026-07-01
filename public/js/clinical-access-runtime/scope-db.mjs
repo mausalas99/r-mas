@@ -6,8 +6,8 @@ export async function fetchClinicalScopeContextFromDb() {
   const api = electronApi();
   const userId = clinicalSessionContext.user?.user_id;
   if (!api || typeof api.dbClinicalScopeContext !== 'function' || !userId) {
-    clinicalSessionContext.scopeContext = null;
-    return null;
+    // iPad/PWA: keep LAN-hydrated scopeContext when SQLCipher IPC is unavailable.
+    return clinicalSessionContext.scopeContext ?? null;
   }
   const res = await api.dbClinicalScopeContext({ userId });
   if (!res || res.ok === false) {

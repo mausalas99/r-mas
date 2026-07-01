@@ -134,7 +134,8 @@ async function reconcileLiveSyncRoomBody(roomId) {
 }
 
 async function maybeCatchUpClinicalOps(rid, b, merged, bundleHadClinicalOps) {
-  if (bundleHadClinicalOps || !isClinicalOpsLanAvailable()) return;
+  if (bundleHadClinicalOps) return;
+  if (!isClinicalOpsLanAvailable() && !isMobileWeb()) return;
   if (typeof b.fetchAndApplyClinicalOpsFromHost !== 'function') return;
   try {
     const opsApplied = await b.fetchAndApplyClinicalOpsFromHost(rid, { skipGossipPush: true });

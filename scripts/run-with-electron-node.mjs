@@ -23,10 +23,24 @@ if (args.length === 0) {
   process.exit(1);
 }
 
+// LAN characterization suites may leave fetch/WebSocket handles open; don't block CI/release.
+if (args.includes('--test') && !args.includes('--test-force-exit')) {
+  const testIdx = args.indexOf('--test');
+  args.splice(testIdx + 1, 0, '--test-force-exit');
+}
+
 const r = spawnSync(electronPath, args, {
   cwd: root,
   stdio: 'inherit',
   env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+  // Avoid macOS spawnSync occasionally waiting on orphaned stdio pipes from Electron's test runner.
+  detached: false,
+  windowsHide: true,
 });
+
+if (r.error) {
+  console.error(r.error.message || r.error);
+  process.exit(1);
+}
 
 process.exit(r.status === null ? 1 : r.status);

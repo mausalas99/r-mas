@@ -220,7 +220,11 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
   var adoptResult = adoptTourPatientOnCommit(patient, registro);
   patient = adoptResult.patient;
   if (handleDuplicateDemoPatient(patient)) return;
-  stampPatientClinicalSala(patient, clinicalSessionContext.user);
+  var registrationTeamId = readPatientRegistrationTeamId();
+  stampPatientClinicalSala(patient, clinicalSessionContext.user, {
+    teamId: registrationTeamId,
+    teams: clinicalSessionContext.teams || [],
+  });
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);

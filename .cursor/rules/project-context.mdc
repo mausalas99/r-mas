@@ -134,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
 - **2026-07-01** `release-7.6.1`: SQLCipher v21 sala CHECK (Interconsultas/UX/Eme), borrador Mi rotación, equipos push en cola, downgrade timeout; `schema-migrate-v21-clinical-sala-check.mjs`, `teams-roster-panel-draft.mjs`.
+- **2026-07-01** `ipad-lan-scope`: iPad conserva scope LAN sin SQLCipher; ops clínicas en móvil; sala Interconsultas por equipo; `scope-db.mjs`, `room-clinical-ops.mjs`, `patients-clinical-filter.mjs`; `room.test` exit fix en wrapper Electron.
 - **2026-06-27** `release-7.5.4`: iPad EA signos → LAN (Guardar push), sync-bundle 16mb, merge monitoreo por id, recuperación outbox; `vitals-recovery.mjs`, `server-http-security.js`.
 - **2026-06-27** `ipad-vitals-sync`: EA Guardar empuja LAN; sync-bundle 16mb; merge monitoreo por id; recuperación desde outbox; iPad no borra censo al refrescar; `vitals-recovery.mjs`, `server-http-security.js`.
 - **2026-06-27** `release-7.5.3`: repositorio intrahospitalario — registro + rango fechas, PDF→SOME, import híbrido silencioso/revisión; `lib/lab-repo/`, `lab-repo-import*.mjs`, IPC `lab-repo-fetch`.

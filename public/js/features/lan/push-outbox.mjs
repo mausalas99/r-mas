@@ -42,3 +42,9 @@ export function scheduleLiveSyncOutboxFlush() {
     }, LIVE_SYNC_OUTBOX_FLUSH_MS)
   );
 }
+
+export function stopLiveSyncOutboxFlush() {
+  var timer = getLiveSyncOutboxFlushTimer();
+  if (timer) clearInterval(timer);
+  setLiveSyncOutboxFlushTimer(null);
+}

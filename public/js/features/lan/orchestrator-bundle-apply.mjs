@@ -215,7 +215,9 @@ async function applyMergedBundleEffects(merged, clinicalOpsApplied) {
 /** Re-apply host bundle patient rows after clinical-ops directorio catch-up. */
 async function reapplyLanPatientEntries(entries) {
   if (!entries || !entries.length) return { added: 0, updated: 0 };
-  await fetchClinicalScopeContextFromDb();
+  if (isClinicalOpsLanAvailable()) {
+    await fetchClinicalScopeContextFromDb();
+  }
   return applyLanPatientEntries(entries, { skipTodos: true });
 }
 

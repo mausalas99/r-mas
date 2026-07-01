@@ -1193,6 +1193,29 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_762 = [
+  {
+    title: 'iPad — scope LAN',
+    body:
+      'Sin SQLCipher en el navegador se conserva el <strong>scope</strong> hidratado por el anfitrión; el censo no aplica pacientes LAN hasta que tengas <strong>equipo unido</strong>.',
+  },
+  {
+    title: 'Interconsultas — sala correcta',
+    body:
+      'Al registrar o asignar equipo, la <strong>sala del equipo</strong> prevalece sobre el stamp UX del perfil; el filtro de censo por sala incluye pacientes del equipo.',
+  },
+  {
+    title: 'Ops clínicas en móvil',
+    body:
+      'iPad/PWA descarga y aplica el snapshot de ops del host; reconcile de pacientes tras merge sin depender del modo DB del escritorio.',
+  },
+  {
+    title: 'Parche sobre 7.6.1',
+    body:
+      'Incluye <strong>SQLCipher v21</strong>, borrador <strong>Mi rotación</strong> y equipos push de la versión anterior.',
+  },
+];
+
 var RELEASE_NOTES_761 = [
   {
     title: 'SQLCipher v21 — Interconsultas',
@@ -1327,9 +1350,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_761;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_762;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.2': RELEASE_NOTES_762,
   '7.6.1': RELEASE_NOTES_761,
   '7.6.0': RELEASE_NOTES_760,
   '7.5.9': RELEASE_NOTES_759,

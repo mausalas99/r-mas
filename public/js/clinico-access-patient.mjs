@@ -82,13 +82,31 @@ export function userOnCallForInterconsultasTeam(userId, joinedTeams, rank, now) 
   });
 }
 
+/** @param {object[]|null|undefined} teams @param {string} teamId */
+function findClinicalTeamById(teams, teamId) {
+  const id = String(teamId || '').trim();
+  if (!id) return null;
+  return (teams || []).find((t) => String(t?.team_id || '') === id) || null;
+}
+
 /**
- * Tag a new chart row with the creator's sala so LAN peers can see it without admin.
+ * Tag a new chart row with clinical sala for census/LAN scope.
+ * Team sala wins over creator profile sala (e.g. off-call UX assigning Interconsultas).
  * @param {Record<string, unknown>} patient
  * @param {{ sala?: string|null|undefined }|null|undefined} user
+ * @param {{ team?: object|null, teamId?: string, teams?: object[] }|null|undefined} [opts]
  */
-export function stampPatientClinicalSala(patient, user) {
+export function stampPatientClinicalSala(patient, user, opts) {
   if (!patient || typeof patient !== 'object') return patient;
+  const team =
+    opts?.team ||
+    findClinicalTeamById(opts?.teams, opts?.teamId) ||
+    null;
+  const teamSala = String(team?.sala || '').trim();
+  if (teamSala) {
+    patient.sala = teamSala;
+    return patient;
+  }
   const profileSala = String(user?.sala || '').trim();
   if (profileSala) {
     patient.sala = profileSala;

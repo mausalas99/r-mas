@@ -74,9 +74,8 @@ function ensureLanClientBaseUrl() {
 }
 
 function handleAlreadyJoinedRoom(id, silent) {
-  setRoomSyncPhase(id, RoomSyncPhase.joining);
-  syncLiveSyncAfterRoomJoin(id);
   markLiveSyncSessionResyncDone(true);
+  applyRoomSyncPhaseAfterReconcile(id);
   syncLiveSyncStatusChrome();
   bridge().patchLanPanelJoinButtons();
   if (!silent) runtime().showToast('Ya estás en esta sala', 'success');

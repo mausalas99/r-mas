@@ -3,10 +3,11 @@ import {
   fetchClinicalScopeContextFromDb,
   getClinicalScopeContextForEvaluate,
 } from './clinical-access-runtime.mjs';
-import { resolvePatientTeamIdFromAssignments } from './clinico-access.mjs';
+import { resolvePatientTeamIdFromAssignments, stampPatientClinicalSala } from './clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
+import { patients, saveState } from './app-state.mjs';
 
 import { esc } from './dom-escape.mjs';
 function dbApi() {
@@ -46,12 +47,26 @@ export function activePatientTeamId(patientId) {
  * @param {string} teamId
  */
 async function notifyPatientTeamAssigned(pid, tid) {
+  syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
   const lan = await import('./features/lan-sync.mjs').catch(() => null);
   if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
   }
+}
+
+function syncLocalPatientSalaFromTeamAssignment(patientId, teamId) {
+  const pid = String(patientId || '').trim();
+  const tid = String(teamId || '').trim();
+  if (!pid || !tid) return;
+  const patient = (patients || []).find((p) => String(p?.id) === pid);
+  if (!patient) return;
+  const team = (clinicalSessionContext.teams || []).find((t) => String(t?.team_id) === tid);
+  if (!team) return;
+  const prev = String(patient.sala || '').trim();
+  stampPatientClinicalSala(patient, clinicalSessionContext.user, { team });
+  if (String(patient.sala || '').trim() !== prev) saveState();
 }
 
 export async function assignPatientToTeamClinical(patientId, teamId) {

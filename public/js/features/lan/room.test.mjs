@@ -1,10 +1,22 @@
+/** Prime LAN module graph (panel→orchestrator cycle) before room direct import. */
 import './orchestrator.mjs';
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { storage } from '../../storage.js';
 import { setRoomMembership, clearRoomMembership } from '../../live-sync-membership.mjs';
 import { RoomSyncPhase, getRoomSyncPhase, clearRoomSyncPhase } from '../../lan-sync-state.mjs';
-import { initLanSyncRuntime, setActiveLiveSyncRoom, clearActiveLiveSyncRoom } from './runtime.mjs';
+import {
+  initLanSyncRuntime,
+  setActiveLiveSyncRoom,
+  clearActiveLiveSyncRoom,
+  getLiveSyncPushTimer,
+  setLiveSyncPushTimer,
+  getLiveSyncRevisionReconcileTimer,
+  setLiveSyncRevisionReconcileTimer,
+} from './runtime.mjs';
+import { registerLanSyncPushBridge } from './push.mjs';
+import { stopLiveSyncOutboxFlush } from './push-outbox.mjs';
+import { stopLiveSyncReconnectLoop } from './room-host-failover.mjs';
 import {
   registerLanSyncRoomBridge,
   ensureLanSyncRoomBridgeWired,
@@ -19,6 +31,7 @@ import {
 } from './room.mjs';
 
 const ROOM_BRIDGE_KEY = '__LAN_SYNC_ROOM_BRIDGE__';
+const PUSH_BRIDGE_KEY = '__LAN_SYNC_PUSH_BRIDGE__';
 const TEST_BEARER = 'd'.repeat(32);
 
 function mockLocalStorage() {
@@ -80,6 +93,43 @@ function stubBrowserGlobals() {
   };
 }
 
+function wirePushBridge(extra = {}) {
+  registerLanSyncPushBridge({
+    isLanSessionConfiguredForRest: () => true,
+    buildLiveSyncBundleEnvelope: async () => ({
+      type: 'livesync:bundle',
+      roomId: 'sala-1',
+      entries: [],
+    }),
+    saveLocalRoomSnapshot() {},
+    buildLiveSyncLocalMergeSource: () => ({}),
+    mergeLiveSyncFullBundles: () => ({}),
+    applyLiveSyncMerged: async () => {},
+    applyLiveSyncDeltas: async () => {},
+    reapplyLanPatientEntries: async () => {},
+    applyRoomSyncPhaseAfterReconcile() {},
+    fetchAndApplyClinicalOpsFromHost: async () => false,
+    syncLiveSyncStatusChrome() {},
+    acceptServerBundleConflict() {},
+    acceptServerClinicalOpsConflict() {},
+    renderLanPanel() {},
+    showToast() {},
+    ...extra,
+  });
+}
+
+function teardownLanSyncTestTimers() {
+  stopSurrogateFailoverTimer();
+  stopLiveSyncReconnectLoop();
+  stopLiveSyncOutboxFlush();
+  const pushTimer = getLiveSyncPushTimer();
+  if (pushTimer) clearTimeout(pushTimer);
+  setLiveSyncPushTimer(null);
+  const reconcileTimer = getLiveSyncRevisionReconcileTimer();
+  if (reconcileTimer) clearTimeout(reconcileTimer);
+  setLiveSyncRevisionReconcileTimer(null);
+}
+
 function wireRoomBridge(extra = {}) {
   const toasts = [];
   registerLanSyncRoomBridge({
@@ -101,6 +151,7 @@ function wireRoomBridge(extra = {}) {
 
 describe('room.mjs characterization', () => {
   beforeEach(() => {
+    teardownLanSyncTestTimers();
     mockLocalStorage();
     stubBrowserGlobals();
     storage.saveLanConfig({ hostUrl: 'http://10.0.0.57:3738', teamCode: TEST_BEARER });
@@ -109,8 +160,21 @@ describe('room.mjs characterization', () => {
     clearRoomSyncPhase('sala-1');
     initLanSyncRuntime({ lanClient: fakeLanClient() });
     delete globalThis[ROOM_BRIDGE_KEY];
+    delete globalThis[PUSH_BRIDGE_KEY];
     registerLanSyncRoomBridge(null);
-    stopSurrogateFailoverTimer();
+    registerLanSyncPushBridge(null);
+    wirePushBridge();
+  });
+
+  afterEach(() => {
+    teardownLanSyncTestTimers();
+    initLanSyncRuntime({ lanClient: fakeLanClient() });
+    clearActiveLiveSyncRoom();
+    clearRoomMembership();
+    registerLanSyncRoomBridge(null);
+    registerLanSyncPushBridge(null);
+    delete globalThis[ROOM_BRIDGE_KEY];
+    delete globalThis[PUSH_BRIDGE_KEY];
   });
 
   it('buildLiveSyncHelloPayload includes client and room metadata', () => {
@@ -214,7 +278,6 @@ describe('room.mjs characterization', () => {
       lanClient: fakeLanClient({ liveConnected: true, liveRoomId: 'sala-same' }),
     });
     await joinLanRoom('sala-same', 'Same');
-    await new Promise((resolve) => setTimeout(resolve, 50));
     assert.equal(toasts.some((t) => t.msg.includes('Ya estás en esta sala')), true);
   });
 });

@@ -88,11 +88,11 @@ export async function refreshClinicalPatientListForScope(options) {
       if (isDbMode()) {
         await fetchClinicalTeamsFromDb();
         await fetchClinicalScopeContextFromDb();
-        await ensureTeamAssignedPatientsOnDevice({
-          allowLanPull: opts.allowLanPull !== false,
-          lanPullDelayMs: opts.lanPullDelayMs,
-        });
       }
+      await ensureTeamAssignedPatientsOnDevice({
+        allowLanPull: opts.allowLanPull !== false,
+        lanPullDelayMs: opts.lanPullDelayMs,
+      });
       if (typeof document === 'undefined') return;
       try {
         const mod = await import('../features/patients.mjs');
@@ -135,7 +135,6 @@ async function scheduleHostReconcileAfterOpsMerge() {
 async function pullHostPatientsAfterOpsMerge(event) {
   const stats = event?.detail?.mergeStats;
   if (!stats || !rosterChangedFromMergeStats(stats)) return;
-  if (!isDbMode()) return;
   try {
     await scheduleHostReconcileAfterOpsMerge();
   } catch { /* LAN optional */ }
