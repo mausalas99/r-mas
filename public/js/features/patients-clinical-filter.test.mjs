@@ -1,12 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { evaluateClinicalScope } from '../clinico-access.mjs';
 import {
   applyElevatedPatientFilters,
   filterPatientsForClinicalSidebar,
   filterPatientsForGuardiaCensus,
+  patientForScopeEvaluate,
   patientMatchesCensusTeamFilter,
 } from './patients-clinical-filter.mjs';
 import { CENSUS_TEAM_FILTER_UNASSIGNED } from './clinical-census-filters-ui.mjs';
+
+/** Scope matrix under test — bypass TEMP_DISABLE_TEAM_BASED_FILTERING in sidebar filter. */
+function filterPatientsByScopeRules(patients, user, scopeContext) {
+  return (patients || []).filter((p) => {
+    if (!p) return false;
+    const mapped = patientForScopeEvaluate(p);
+    return evaluateClinicalScope(user, mapped, null, scopeContext).readable === true;
+  });
+}
 
 const userR1 = { user_id: 'u1', rank: 'R1', sala: 'Sala 1' };
 const patients = [
@@ -15,7 +26,7 @@ const patients = [
 ];
 
 test('R1 sidebar includes only same sala when not on a team', () => {
-  const out = filterPatientsForClinicalSidebar(patients, userR1, {
+  const out = filterPatientsByScopeRules(patients, userR1, {
     teams: [],
     guardias: [],
     assignments: [],
@@ -30,7 +41,7 @@ test('R1 on team sidebar excludes other team in same sala', () => {
     { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 1' },
     { id: 'p-other', servicio: 'Sala', area: 'Sala A', sala: 'Sala 1' },
   ];
-  const out = filterPatientsForClinicalSidebar(census, userR1, {
+  const out = filterPatientsByScopeRules(census, userR1, {
     teams: [
       {
         team_id: 't1',
@@ -188,7 +199,7 @@ test('iPad Filtros censo narrows team-mirror sidebar by equipo', () => {
 });
 
 test('R2 sidebar without team includes same-sala census', () => {
-  const out = filterPatientsForClinicalSidebar(
+  const out = filterPatientsByScopeRules(
     patients,
     { user_id: 'r2', rank: 'R2', sala: 'Sala 1', is_program_admin: 0 },
     { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }

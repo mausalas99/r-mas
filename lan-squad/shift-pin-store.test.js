@@ -48,7 +48,7 @@ test('regenerate keeps previous PIN in grace until month end', () => {
 test('persisted PIN survives store restart within same month', () => {
   const token = 'p'.repeat(64);
   const filePath = tempPinFile();
-  const now = new Date('2026-06-20T10:00:00').getTime();
+  const now = new Date('2030-06-20T10:00:00').getTime();
 
   const first = createShiftPinStore({ getHostToken: () => token, filePath });
   const { pin } = first.ensure(now);
@@ -62,7 +62,7 @@ test('persisted PIN survives store restart within same month', () => {
 test('grace PIN survives restart after manual regenerate', () => {
   const token = 'g'.repeat(64);
   const filePath = tempPinFile();
-  const now = new Date('2026-06-20T10:00:00').getTime();
+  const now = new Date('2030-06-20T10:00:00').getTime();
 
   const host = createShiftPinStore({ getHostToken: () => token, filePath });
   const oldPin = host.ensure(now).pin;

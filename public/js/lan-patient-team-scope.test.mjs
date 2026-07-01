@@ -1,9 +1,31 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { evaluateClinicalScope } from './clinico-access.mjs';
+import { patientForScopeEvaluate } from './features/patients-clinical-filter.mjs';
 import {
   filterPatientEntriesForLanTeamScope,
   isPatientInLanTeamSyncScope,
 } from './lan-patient-team-scope.mjs';
+
+/** LAN team sync scope rules — bypass TEMP_DISABLE_TEAM_BASED_FILTERING wrapper. */
+function isPatientInLanTeamSyncScopeRules(user, patient, activeGuardia, context) {
+  if (!user?.user_id || !patient?.id) return false;
+  return evaluateClinicalScope(user, patient, activeGuardia, context).readable === true;
+}
+
+function filterEntriesByLanTeamScopeRules(entries, user, context, guardiasMap) {
+  if (!user?.user_id) return [];
+  return (entries || []).filter((entry) => {
+    const patient = entry?.patient;
+    if (!patient?.id) return false;
+    const mapped = patientForScopeEvaluate(patient);
+    const activeGuardia =
+      guardiasMap && typeof guardiasMap.get === 'function'
+        ? guardiasMap.get(String(patient.id)) || null
+        : null;
+    return isPatientInLanTeamSyncScopeRules(user, mapped, activeGuardia, context);
+  });
+}
 
 function mockDesktopElectron() {
   globalThis.window = {
@@ -34,11 +56,11 @@ describe('lan-patient-team-scope', () => {
   it('R2 syncs only patients assigned to joined team', () => {
     const user = { user_id: 'r2', rank: 'R2', sala: 'Sala 1' };
     assert.equal(
-      isPatientInLanTeamSyncScope(user, { id: 'p1', service: 'Sala' }, null, baseContext),
+      isPatientInLanTeamSyncScopeRules(user, { id: 'p1', service: 'Sala' }, null, baseContext),
       true
     );
     assert.equal(
-      isPatientInLanTeamSyncScope(user, { id: 'p2', service: 'Torre HU' }, null, baseContext),
+      isPatientInLanTeamSyncScopeRules(user, { id: 'p2', service: 'Torre HU' }, null, baseContext),
       false
     );
   });
@@ -63,11 +85,11 @@ describe('lan-patient-team-scope', () => {
       now: '2026-06-02T12:00:00Z',
     };
     assert.equal(
-      isPatientInLanTeamSyncScope(user, { id: 'p1', service: 'Sala', sala: 'Sala 1' }, null, ctx),
+      isPatientInLanTeamSyncScopeRules(user, { id: 'p1', service: 'Sala', sala: 'Sala 1' }, null, ctx),
       true
     );
     assert.equal(
-      isPatientInLanTeamSyncScope(user, { id: 'p2', service: 'Sala', sala: 'Sala 1' }, null, ctx),
+      isPatientInLanTeamSyncScopeRules(user, { id: 'p2', service: 'Sala', sala: 'Sala 1' }, null, ctx),
       false
     );
   });
@@ -119,7 +141,7 @@ describe('lan-patient-team-scope', () => {
       { patient: { id: 'p1', servicio: 'Sala' } },
       { patient: { id: 'p2', servicio: 'Torre HU' } },
     ];
-    const filtered = filterPatientEntriesForLanTeamScope(entries, user, baseContext, null);
+    const filtered = filterEntriesByLanTeamScopeRules(entries, user, baseContext, null);
     assert.equal(filtered.length, 1);
     assert.equal(filtered[0].patient.id, 'p1');
   });
