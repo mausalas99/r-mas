@@ -1,22 +1,16 @@
-version: 7.6.1
+version: 7.6.3
 files:
-  - url: R+-7.6.1-x64.exe
-    sha512: InZdUsndDLKc45X16eAiT95f/XazlvNLmhgouBK59UqKdc1TePrMlNUreWC7N43Q77vgzs+R6cC0JWL8a+rYyg==
-    size: 120498324
-path: R+-7.6.1-x64.exe
-sha512: InZdUsndDLKc45X16eAiT95f/XazlvNLmhgouBK59UqKdc1TePrMlNUreWC7N43Q77vgzs+R6cC0JWL8a+rYyg==
-releaseDate: '2026-07-01T20:29:01.000Z'
+  - url: R+-7.6.3-x64.exe
+    sha512: 4PrN1UM9Hn9M2IjBc4ePGTZRDuQGkfQoQr+MJs+xOsp3vFpzVvlXxWNBkhBmkmd3BdPTFsYiigTTYfaOBpxg3Q==
+    size: 120503134
+path: R+-7.6.3-x64.exe
+sha512: 4PrN1UM9Hn9M2IjBc4ePGTZRDuQGkfQoQr+MJs+xOsp3vFpzVvlXxWNBkhBmkmd3BdPTFsYiigTTYfaOBpxg3Q==
+releaseDate: '2026-07-02T16:33:16.000Z'
 releaseNotes: |
-  Sobre 7.6.0: migración SQLCipher v21 alinea el CHECK de sala con Interconsultas, UX y Eme; Mi rotación conserva el borrador del formulario al refrescar el panel en segundo plano; equipos exige estar en cola para activar notificaciones push; el downgrade a versión estable tolera mejor fallos de red.
+  Sobre 7.6.2: R1–R3 vuelven a unirse al turno sin PIN ni código manual — la app prueba los endpoints del hospital embarcados (bundledWardHostUrl) al arrancar, en el barrido ⇄ y al cambiar de Wi‑Fi.
   
-  SQLCipher v21 — users, teams y sala_interno_access aceptan las salas Interconsultas, UX y Eme (migración automática al desbloquear la base).
+  LAN — auto-connect — Clientes sin bearer guardado reconectan solos vía auth/exchange (bypass de PIN); el registro ward siembra la URL/prefijo del turno.
   
-  Mi rotación — borrador — Crear equipo, editar perfil y código de unión no se pierden cuando el panel se refresca por sync LAN o directorio.
+  LAN — barrido — El loop de descubrimiento ya no se detiene cuando falta teamCode; sigue probando endpoints conocidos.
   
-  Equipos push — La suscripción a notificaciones solo se acepta si ya estás en la cola del dispositivo (Lumify/EKG/US).
-  
-  Downgrade estable — Catálogo de versiones con timeout de 12 s y enlace directo al instalador en GitHub si falla la red.
-  
-  Onboarding — Perfil persistido válido reconocido aunque nombre o sala lleguen desde IPC con retraso.
-  
-  Parche sobre 7.6.0 — Incluye ⇄ sin PIN de turno y censo abierto por equipo de la línea anterior.
+  LAN — UI — «Conectar al turno» y ⇄ funcionan sin campo PIN cuando el bypass está activo; mensajes alineados al flujo sin código.
