@@ -18,6 +18,7 @@ import {
 import { getRoomMembership } from '../../live-sync-membership.mjs';
 import { isLanRemoteJoinMode } from './transport.mjs';
 import { lanClient, activeLiveSyncRoomId } from './runtime.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 
 export function shouldOmitLanHubStatusHint(hubStatus) {
   return !!(
@@ -32,8 +33,9 @@ function lanHubPausedCopy() {
   return {
     connected: false,
     line: 'Sin anfitrión detectado',
-    hint:
-      'Búsqueda automática en pausa (5 intentos). Usa PIN, Restablecer conexión ⇄ o vuelve a abrir este panel.',
+    hint: isLanSkipShiftPin()
+      ? 'Búsqueda automática en pausa (5 intentos). Pulsa Conectar al turno, pega el enlace del anfitrión en ⇄ o Restablecer conexión.'
+      : 'Búsqueda automática en pausa (5 intentos). Usa PIN, Restablecer conexión ⇄ o vuelve a abrir este panel.',
   };
 }
 
@@ -115,9 +117,9 @@ export function lanHubStatusCopy() {
       return {
         connected: false,
         line: 'Sin conexión al turno',
-        hint:
-          'Pide el PIN de 6 dígitos al anfitrión (⇄) o pulsa Conectar al turno arriba. ' +
-          escHint,
+        hint: isLanSkipShiftPin()
+          ? 'Pulsa Conectar al turno arriba o pega el enlace del anfitrión en ⇄. ' + escHint
+          : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o pulsa Conectar al turno arriba. ' + escHint,
       };
     }
     var onCallHost = resolveLocalOnCallGuardia();
@@ -126,7 +128,9 @@ export function lanHubStatusCopy() {
       line: onCallHost ? 'De guardia hoy — listo para anfitrionar' : 'Sin conexión al turno',
       hint: onCallHost
         ? 'Esta Mac puede ser el servidor del turno en tu Wi‑Fi. Pulsa Conectar al turno o abre ⇄.'
-        : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o conéctate abajo.',
+        : isLanSkipShiftPin()
+          ? 'Pulsa Conectar al turno o pega el enlace del anfitrión en ⇄.'
+          : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o conéctate abajo.',
     };
   }
   if (isLanRemoteJoinMode()) {

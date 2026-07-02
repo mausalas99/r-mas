@@ -8,6 +8,7 @@ import {
   LAN_INVITE_SALA_OPEN_KEY,
 } from './panel-invite-join.mjs';
 import { isLanSessionConfiguredForRest } from './transport.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import { lanHubStatusCopy, shouldOmitLanHubStatusHint } from './panel-hub-status.mjs';
 import {
   wireLanLwwToastPref,
@@ -115,7 +116,7 @@ function lanPanelNeedsFullRebuild(root, runtime) {
   if (!lanPanelHasBuiltChrome(root)) return true;
   if (runtime().isMobileWeb() || isLanSessionConfiguredForRest()) return false;
   if (!root.querySelector('#lan-input-invite-link')) return true;
-  if (!root.querySelector('[data-lan-shift-pin-client]')) return true;
+  if (!isLanSkipShiftPin() && !root.querySelector('[data-lan-shift-pin-client]')) return true;
   return false;
 }
 
@@ -197,9 +198,11 @@ function setConnectionDropdownOpen(open, deps) {
     syncLanLwwOverwriteToastPrefUi();
     deps.resumeAutoHostDetectAndReconnect();
     deps.renderLanPanel({ force: true });
-    window.setTimeout(function () {
-      deps.focusLanShiftPinInput();
-    }, 120);
+    if (!isLanSkipShiftPin()) {
+      window.setTimeout(function () {
+        deps.focusLanShiftPinInput();
+      }, 120);
+    }
     return;
   }
 

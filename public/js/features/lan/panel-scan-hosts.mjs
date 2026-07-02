@@ -12,6 +12,7 @@ import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
 import { listWardHostUrlsForProbe } from '../../lan-ward-host-registry.mjs';
 import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
 import { canAttemptAutoHostDetect } from '../../lan-host-detect-guard.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import { updateLanHostEscalationFromPeerMetas } from '../../lan-host-escalation.mjs';
 import {
   canLocalMacBeLanHost,
@@ -166,6 +167,21 @@ async function maybeRunPlugAndPlay(now) {
   void initLanHostPlugAndPlay();
 }
 
+/** Ward endpoints ship in the build; exchange without bearer when shift PIN is off. */
+async function tryBundledWardAutoConnect(deps) {
+  if (!isLanSkipShiftPin()) return false;
+  const pinMod = await import('../../lan-shift-pin-connect.mjs');
+  const result = await pinMod.tryEasyLanShiftPinConnect({
+    silent: true,
+    skipCooldown: true,
+  });
+  if (result.ok) {
+    deps.requestRenderLanPanelAfterScan();
+    return true;
+  }
+  return false;
+}
+
 async function scanLanHosts_(deps) {
   if (_lanScanInFlight) return;
   if (!isLanElectronDesktop()) return;
@@ -173,7 +189,10 @@ async function scanLanHosts_(deps) {
   if (!canAttemptAutoHostDetect()) return;
 
   var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) return;
+  if (!teamCode) {
+    await tryBundledWardAutoConnect(deps);
+    return;
+  }
 
   _lanScanInFlight = true;
   try {

@@ -554,6 +554,8 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
 
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop()) return;
+  const { seedBundledWardConnectionPoints } = await import('../../lan-ward-host-registry.mjs');
+  seedBundledWardConnectionPoints();
   if (isLanRemoteJoinMode()) {
     await ensureLanGuestBearerFileFromConfig();
   }

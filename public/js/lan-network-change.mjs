@@ -7,7 +7,11 @@ import { resetShiftPinBackoff } from './lan-shift-pin-connect.mjs';
 import { storage } from './storage.js';
 import { applyLanNetworkRoaming, applyLanNetworkRoamingWithFingerprint } from './lan-network-roam.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode } from './features/lan/transport.mjs';
-import { recordWardHostUrl, syncWardHostUrlToMainFile } from './lan-ward-host-registry.mjs';
+import {
+  recordWardHostUrl,
+  syncWardHostUrlToMainFile,
+  seedBundledWardConnectionPoints,
+} from './lan-ward-host-registry.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from './clinical-settings.mjs';
 
 /** @type {ReturnType<typeof setTimeout> | null} */
@@ -18,6 +22,7 @@ let _networkChangePending = null;
 async function restartLanDiscoveryAfterNetworkChange() {
   resumeAutoHostDetect();
   lanNetworkProfile.resetProfile();
+  seedBundledWardConnectionPoints();
 
   const room = await import('./features/lan/room.mjs');
   if (typeof room.resumeAutoHostDetectAndReconnect === 'function') {
@@ -29,11 +34,23 @@ async function restartLanDiscoveryAfterNetworkChange() {
   if (typeof panel.startLanAutoDiscovery === 'function') panel.startLanAutoDiscovery();
 
   const transport = await import('./features/lan/transport.mjs');
+  const pin = await import('./lan-shift-pin-connect.mjs');
+  if (
+    typeof transport.isLanSessionConfiguredForRest === 'function' &&
+    !transport.isLanSessionConfiguredForRest() &&
+    typeof pin.tryEasyLanShiftPinConnect === 'function'
+  ) {
+    const easy = await pin.tryEasyLanShiftPinConnect({
+      silent: true,
+      force: true,
+      skipCooldown: true,
+    });
+    if (easy.ok) return;
+  }
   if (typeof transport.initLanHostPlugAndPlay === 'function') {
     await transport.initLanHostPlugAndPlay();
   }
   if (isLanRemoteJoinMode()) {
-    const pin = await import('./lan-shift-pin-connect.mjs');
     if (typeof pin.tryEasyLanShiftPinConnect === 'function') {
       await pin.tryEasyLanShiftPinConnect({ silent: true, force: true, skipCooldown: true });
     }

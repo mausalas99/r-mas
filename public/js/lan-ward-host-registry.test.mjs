@@ -10,6 +10,7 @@ import {
   listWardSubnetPrefixesForProbe,
   clearWardHostRegistry,
   recordWardHostPrefix,
+  seedBundledWardConnectionPoints,
 } from './lan-ward-host-registry.mjs';
 
 function mockLocalStorage() {
@@ -105,5 +106,11 @@ describe('lan-ward-host-registry', () => {
     const prefixes = await listWardSubnetPrefixesForProbe('http://10.0.57.9:3738');
     assert.ok(prefixes.includes('10.0.57'));
     assert.ok(prefixes.includes('10.0.166'));
+  });
+
+  it('seedBundledWardConnectionPoints writes shipped host URL and prefix', () => {
+    const reg = seedBundledWardConnectionPoints();
+    assert.ok(reg.hostUrls.some((e) => e.url === 'http://10.0.57.52:3738'));
+    assert.ok(reg.prefixes.includes('10.0.57'));
   });
 });

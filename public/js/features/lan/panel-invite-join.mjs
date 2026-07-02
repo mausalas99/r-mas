@@ -31,6 +31,7 @@ import {
 } from './transport.mjs';
 import { lanClient, activeLiveSyncRoomId } from './runtime.mjs';
 import { canLocalMacBeLanHost } from '../../lan-host-rank-policy.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 
 export const LAN_INVITE_MOBILE_OPEN_KEY = 'rpc-lan-invite-mobile-open';
 export const LAN_INVITE_SALA_OPEN_KEY = 'rpc-lan-invite-sala-open';
@@ -453,6 +454,13 @@ function joinFromBareHost(deps, fromBtn, parsed) {
   var wardPin =
     String(parsed.shiftPin || '').trim() ||
     (typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '');
+  if (isLanSkipShiftPin()) {
+    runShiftPinConnectFromUi(deps, fromBtn, {
+      shiftPin: wardPin || undefined,
+      hostUrl: parsed.hostUrl,
+    });
+    return true;
+  }
   if (!/^\d{6}$/.test(wardPin)) {
     deps.runtime().showToast(
       'Dirección del anfitrión reconocida. Ingresa el PIN del turno (6 dígitos) y pulsa Conectar.',

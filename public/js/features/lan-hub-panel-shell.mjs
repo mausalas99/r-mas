@@ -28,6 +28,20 @@ function appendBecomeHostButton(hero, opts, connected) {
   hero.appendChild(becomeHostBtn);
 }
 
+function appendConnectTurnButton(hero, opts, connected) {
+  if (connected || !opts.showConnectTurn) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-lan-primary';
+  btn.style.marginTop = '8px';
+  btn.style.width = '100%';
+  btn.textContent = 'Conectar al turno';
+  btn.onclick = function () {
+    if (typeof opts.onConnectTurn === 'function') opts.onConnectTurn();
+  };
+  hero.appendChild(btn);
+}
+
 function appendInvitePasteBlock(hero) {
   var inviteHint = document.createElement('p');
   inviteHint.className = 'lan-connect-card-hint lan-hub-invite-paste-hint';
@@ -101,6 +115,7 @@ export function appendLanHubStatusHero(root, opts) {
     else hero.appendChild(hintEl);
   }
 
+  appendConnectTurnButton(hero, opts, connected);
   appendBecomeHostButton(hero, opts, connected);
 
   if (opts.showInvitePaste) {

@@ -222,6 +222,16 @@ export function pruneWardHostRegistry(maxAgeMs = DEFAULT_MAX_AGE_MS) {
   return saveWardHostRegistry(reg);
 }
 
+/** Persist shipped ward host URL + /24 prefix so discovery probes them without user input. */
+export function seedBundledWardConnectionPoints() {
+  const url = normalizeLanHostBase(bundledWardHostUrl());
+  if (!url) return loadWardHostRegistry();
+  recordWardHostUrl(url, { source: 'host' });
+  const prefix = prefixFromUrl(url);
+  if (prefix) recordWardHostPrefix(prefix);
+  return loadWardHostRegistry();
+}
+
 function wardHostMainIpc() {
   if (typeof window === 'undefined') return null;
   return window.electronAPI || null;

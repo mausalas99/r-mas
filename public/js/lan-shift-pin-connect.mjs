@@ -19,6 +19,7 @@ import {
 } from './lan-ward-host-registry.mjs';
 import { pingLanHostUrl } from './lan-surrogate-host.mjs';
 import { storage } from './storage.js';
+import { isLanSkipShiftPin } from './lan-shift-pin-bypass.mjs';
 import {
   canAttemptAutoHostDetect,
   recordAutoHostDetectMiss,
@@ -26,7 +27,6 @@ import {
   resumeAutoHostDetect,
 } from './lan-host-detect-guard.mjs';
 import { lanNetworkProfile } from './lan-network-profile.mjs';
-import { isLanSkipShiftPin } from './lan-shift-pin-bypass.mjs';
 
 const EXCHANGE_TIMEOUT_MS = 8000;
 const BACKOFF_STEPS_MS = [12_000, 30_000, 60_000, 120_000];
@@ -395,7 +395,11 @@ function easyConnectBlockedReason(opts) {
 
 function reportEasyConnectFailure(opts) {
   recordShiftPinFailure();
-  if (!opts.force && (opts.silent || opts.skipCooldown)) {
+  if (
+    !isLanSkipShiftPin() &&
+    !opts.force &&
+    (opts.silent || opts.skipCooldown)
+  ) {
     recordAutoHostDetectMiss();
   }
   const reason = _lastShiftPinFailReason || 'not_found';

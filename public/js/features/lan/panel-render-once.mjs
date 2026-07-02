@@ -38,6 +38,7 @@ import {
 } from './panel-connection-chrome.mjs';
 import { lanNetworkProfile } from '../../lan-network-profile.mjs';
 import { appendLanHostPatientsSection } from './host-patients-panel.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import {
   getClinicalRank,
   getUserSala,
@@ -150,9 +151,26 @@ function appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste
     showStatusHint: !shouldOmitLanHubStatusHint(hubStatus),
     isElectronDesktop: isLanElectronDesktop(),
     showBecomeHost: canLocalMacBeLanHost(),
+    showConnectTurn: needsInvitePaste && isLanElectronDesktop() && isLanSkipShiftPin(),
     showInvitePaste: needsInvitePaste && deps.runtime().isMobileWeb(),
     onBecomeHost: function () {
       void promoteThisMacToLanHost();
+    },
+    onConnectTurn: function () {
+      void import('../../lan-shift-pin-connect.mjs')
+        .then(function (m) {
+          return m.tryEasyLanShiftPinConnect({ force: true });
+        })
+        .then(function (result) {
+          if (result && result.ok) {
+            deps.renderLanPanel({ force: true });
+            return;
+          }
+          deps.runtime().showToast(
+            'No encontramos el anfitrión en esta red. Pega el enlace del R4 abajo o revisa el Wi‑Fi.',
+            'error'
+          );
+        });
     },
   });
 }

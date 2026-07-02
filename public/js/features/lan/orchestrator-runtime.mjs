@@ -119,9 +119,11 @@ export function registerLanRuntime(ctx) {
   void (async function () {
     const { isClinicalLocalOnlyMode, readRpcSettings } = await import('../../clinical-settings.mjs');
     if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+    const { seedBundledWardConnectionPoints } = await import('../../lan-ward-host-registry.mjs');
+    seedBundledWardConnectionPoints();
     const pin = await import('../../lan-shift-pin-connect.mjs');
     if (typeof pin.tryEasyLanShiftPinConnect === 'function') {
-      await pin.tryEasyLanShiftPinConnect({ silent: true });
+      await pin.tryEasyLanShiftPinConnect({ silent: true, skipCooldown: true });
     }
     await initLanHostPlugAndPlay();
   })();

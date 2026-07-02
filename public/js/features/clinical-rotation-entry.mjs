@@ -10,6 +10,7 @@ import { isGuardiaMode } from './chrome.mjs';
 import { storage } from '../storage.js';
 import { subscribeRoomSyncPhase } from '../lan-sync-state.mjs';
 import { buildClinicalRotationEntryStatus } from './clinical-rotation-entry-status.mjs';
+import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 
 let entryControlsWired = false;
 
@@ -17,24 +18,41 @@ async function openLanConnectPanelForPin() {
   try {
     const { openConnectionDropdown, focusLanShiftPinInput } = await import('./lan-sync.mjs');
     if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
-    if (typeof focusLanShiftPinInput === 'function') {
+    if (!isLanSkipShiftPin() && typeof focusLanShiftPinInput === 'function') {
       window.setTimeout(() => focusLanShiftPinInput(), 80);
     }
   } catch {
     if (typeof window.showToast === 'function') {
-      window.showToast('Abre ⇄ (Wi‑Fi) arriba e ingresa el PIN del turno.', 'info');
+      window.showToast(
+        isLanSkipShiftPin()
+          ? 'Abre ⇄ (Wi‑Fi) y pulsa Conectar al turno o pega el enlace del anfitrión.'
+          : 'Abre ⇄ (Wi‑Fi) arriba e ingresa el PIN del turno.',
+        'info'
+      );
     }
   }
 }
 
 async function handleLanConnectCtaClick() {
   const savedPin = typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '';
-  if (/^\d{6}$/.test(savedPin)) {
+  const bypass = isLanSkipShiftPin();
+  if (bypass || /^\d{6}$/.test(savedPin)) {
     try {
       const { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
-      const result = await tryEasyLanShiftPinConnect({ force: true });
+      const result = await tryEasyLanShiftPinConnect({
+        force: true,
+        shiftPin: savedPin || undefined,
+      });
       if (result.ok) {
         syncClinicalRotationEntryChrome();
+        return;
+      }
+      if (bypass && typeof window.showToast === 'function') {
+        window.showToast(
+          'No encontramos el anfitrión en esta red. Pega el enlace del R4 en ⇄ o revisa el Wi‑Fi.',
+          'error'
+        );
+        await openLanConnectPanelForPin();
         return;
       }
     } catch (_e) { void _e; }
@@ -80,7 +98,9 @@ function syncLanConnectCta(show) {
     btn.type = 'button';
     btn.className = 'app-bar-lan-connect-cta';
     btn.textContent = 'Conectar al turno';
-    btn.title = 'Usa el PIN de 6 dígitos del anfitrión (⇄)';
+    btn.title = isLanSkipShiftPin()
+      ? 'Busca el anfitrión del turno en la Wi‑Fi del hospital'
+      : 'Usa el PIN de 6 dígitos del anfitrión (⇄)';
     btn.addEventListener('click', () => void handleLanConnectCtaClick());
     section.appendChild(btn);
   }
