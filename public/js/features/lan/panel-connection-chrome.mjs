@@ -203,6 +203,15 @@ function setConnectionDropdownOpen(open, deps) {
         deps.focusLanShiftPinInput();
       }, 120);
     }
+    if (isLanSkipShiftPin() && !isLanSessionConfiguredForRest()) {
+      void import('../../lan-shift-pin-connect.mjs')
+        .then(function (m) {
+          return m.tryEasyLanShiftPinConnect({ silent: true, force: true, skipCooldown: true });
+        })
+        .then(function (result) {
+          if (result && result.ok) deps.renderLanPanel({ force: true });
+        });
+    }
     return;
   }
 

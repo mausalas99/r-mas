@@ -99,6 +99,6 @@ describe('bundledWardShiftPin', () => {
 
 describe('bundledWardHostUrl', () => {
   it('returns ward LAN host base URL', () => {
-    assert.equal(bundledWardHostUrl(), 'http://10.0.57.52:3738');
+    assert.equal(bundledWardHostUrl(), 'http://10.0.57.65:3738');
   });
 });

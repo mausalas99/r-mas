@@ -4,7 +4,8 @@
 import { setRoomMembership, clearRoomMembership } from '../../live-sync-membership.mjs';
 import { RoomSyncPhase, setRoomSyncPhase, clearRoomSyncPhase } from '../../lan-sync-state.mjs';
 import { lanClient, activeLiveSyncRoomId, activeLiveSyncRoomLabel, setActiveLiveSyncRoom, clearActiveLiveSyncRoom, getLanClientId } from './runtime.mjs';
-import { isLanSessionConfiguredForRest } from './transport.mjs';
+import { isLanSessionConfiguredForRest, isLanElectronDesktop } from './transport.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import { pushRoomSyncBundleToHost, liveSyncBundleHasPayload, scheduleLiveSyncOutboxFlush } from './push.mjs';
 import { bridge, runtime, ensureLanSyncRoomBridgeWired } from './room-bridge.mjs';
 import { buildLiveSyncBundleEnvelope, saveLocalRoomSnapshot, waitForLiveChannelOpen } from './room-snapshot.mjs';
@@ -48,19 +49,44 @@ export function leaveLiveSyncRoom(opts) {
   });
 }
 
-function validateJoinLanRoomInputs(id) {
+async function ensureHostBeforeRoomJoin(id) {
   if (!id) {
     runtime().showToast('No se pudo identificar la sala. Vuelve a abrir ⇄ e inténtalo.', 'error');
     return false;
   }
-  if (!isLanSessionConfiguredForRest()) {
+  if (isLanSessionConfiguredForRest()) return true;
+  if (!isLanSkipShiftPin()) {
     runtime().showToast(
       'Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitación).',
       'error'
     );
     return false;
   }
-  return true;
+  if (!isLanElectronDesktop()) {
+    runtime().showToast(
+      'Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitación).',
+      'error'
+    );
+    return false;
+  }
+  try {
+    const pinMod = await import('../../lan-shift-pin-connect.mjs');
+    if (typeof pinMod.tryEasyLanShiftPinConnect !== 'function') {
+      runtime().showToast('Buscando anfitrión del turno…', 'info');
+      return false;
+    }
+    const result = await pinMod.tryEasyLanShiftPinConnect({
+      force: true,
+      skipCooldown: true,
+      silent: true,
+    });
+    if (result && result.ok && isLanSessionConfiguredForRest()) return true;
+  } catch (_e) { void _e; }
+  runtime().showToast(
+    'No encontramos el anfitrión en esta red. Pulsa Conectar al turno en ⇄ o pega el enlace del R4.',
+    'error'
+  );
+  return false;
 }
 
 function ensureLanClientBaseUrl() {
@@ -116,7 +142,7 @@ export async function joinLanRoom(roomId, displayName, opts) {
   var silent = !!(opts.silent || opts.mobileSharerSync);
   await ensureLanSyncRoomBridgeWired();
   var id = String(roomId || '').trim();
-  if (!validateJoinLanRoomInputs(id)) return;
+  if (!(await ensureHostBeforeRoomJoin(id))) return;
   if (!ensureLanClientBaseUrl()) return;
 
   if (

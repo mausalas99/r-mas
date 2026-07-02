@@ -189,10 +189,12 @@ async function scanLanHosts_(deps) {
   if (!canAttemptAutoHostDetect()) return;
 
   var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) {
-    await tryBundledWardAutoConnect(deps);
-    return;
+  if (!teamCode && isLanSkipShiftPin()) {
+    if (await tryBundledWardAutoConnect(deps)) return;
+    teamCode = getLanTeamCodeFromConfig();
+    if (!teamCode) return;
   }
+  if (!teamCode) return;
 
   _lanScanInFlight = true;
   try {

@@ -39,7 +39,7 @@ describe('lan-ward-host-registry', () => {
   });
 
   it('listWardHostUrlsForProbe always includes bundled ward host', () => {
-    assert.deepEqual(listWardHostUrlsForProbe(), ['http://10.0.57.52:3738']);
+    assert.deepEqual(listWardHostUrlsForProbe(), ['http://10.0.57.65:3738']);
   });
 
   it('listWardHostUrlsForProbe skips registry URLs off current subnet', () => {
@@ -48,7 +48,7 @@ describe('lan-ward-host-registry', () => {
     const filtered = listWardHostUrlsForProbe(undefined, {
       localSubnetPrefixes: ['10.0.166'],
     });
-    assert.ok(filtered.includes('http://10.0.57.52:3738'));
+    assert.ok(filtered.includes('http://10.0.57.65:3738'));
     assert.ok(filtered.includes('http://10.0.166.59:3738'));
     assert.ok(!filtered.includes('http://172.20.10.2:3738'));
   });
@@ -97,7 +97,7 @@ describe('lan-ward-host-registry', () => {
     assert.equal(after.hostUrls[0].url, 'http://10.0.2.2:3738');
     const probeUrls = listWardHostUrlsForProbe();
     assert.equal(probeUrls.length, 2);
-    assert.ok(probeUrls.includes('http://10.0.57.52:3738'));
+    assert.ok(probeUrls.includes('http://10.0.57.65:3738'));
     assert.ok(probeUrls.includes('http://10.0.2.2:3738'));
   });
 
@@ -110,7 +110,7 @@ describe('lan-ward-host-registry', () => {
 
   it('seedBundledWardConnectionPoints writes shipped host URL and prefix', () => {
     const reg = seedBundledWardConnectionPoints();
-    assert.ok(reg.hostUrls.some((e) => e.url === 'http://10.0.57.52:3738'));
+    assert.ok(reg.hostUrls.some((e) => e.url === 'http://10.0.57.65:3738'));
     assert.ok(reg.prefixes.includes('10.0.57'));
   });
 });

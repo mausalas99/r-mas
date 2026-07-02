@@ -80,6 +80,15 @@ function getOwnTeamCode() {
   return String(cfg.teamCode || '').trim();
 }
 
+function resolveAutoJoinSalaFromProfile() {
+  try {
+    const s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return String(s.clinicalSala || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 /** @param {string} hostUrl @param {string} shiftPin */
 async function exchangeShiftPinOnHost(hostUrl, shiftPin) {
   const base = normalizeLanHostBase(hostUrl);
@@ -420,6 +429,9 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
     return { ok: false, reason: 'no_pin' };
   }
 
+  const sala = String(opts.sala || '').trim() || resolveAutoJoinSalaFromProfile();
+  const connectOpts = { ...opts, sala, forceRediscover: true };
+
   if (!opts.force && (await isCurrentLanHostReachable())) {
     resetShiftPinBackoff();
     return { ok: true, reason: 'already_live' };
@@ -429,7 +441,7 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
     showEasyToast('Buscando anfitrión del turno…', 'info');
   }
 
-  const ok = await connectLanWithShiftPin(pin, { ...opts, forceRediscover: true });
+  const ok = await connectLanWithShiftPin(pin, connectOpts);
   if (ok) {
     resetShiftPinBackoff();
     recordAutoHostDetectSuccess();

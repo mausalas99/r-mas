@@ -9,6 +9,7 @@ import {
   bundledWardShiftPin,
   bundledWardHostUrl,
 } from '../../clinical-settings.mjs';
+import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import {
   getPinnedHostUrl,
   setPinnedHostUrl,
@@ -234,14 +235,37 @@ async function resetLanTurnConnectionFromUi(deps) {
   } catch (_e) { void _e; }
   deps.resumeAutoHostDetectAndReconnect();
 
+  var connected = false;
+  try {
+    const pinMod = await import('../../lan-shift-pin-connect.mjs');
+    if (typeof pinMod.tryEasyLanShiftPinConnect === 'function') {
+      const result = await pinMod.tryEasyLanShiftPinConnect({
+        force: true,
+        skipCooldown: true,
+      });
+      connected = !!(result && result.ok);
+    }
+  } catch (_e) { void _e; }
+
+  try {
+    const panel = await import('./panel.mjs');
+    if (typeof panel.scanLanHosts === 'function') {
+      void panel.scanLanHosts();
+    }
+  } catch (_e) { void _e; }
+
   deps.runtime().showToast(
-    'Conexión restablecida. Ingresa el PIN del turno o pega el enlace del anfitrión.',
-    'success'
+    connected
+      ? 'Conexión restablecida — conectado al anfitrión del turno.'
+      : 'Conexión restablecida. Buscando anfitrión en la Wi‑Fi del hospital…',
+    connected ? 'success' : 'info'
   );
   deps.renderLanPanel({ force: true });
-  window.setTimeout(function () {
-    deps.focusLanShiftPinInput();
-  }, 120);
+  if (!isLanSkipShiftPin()) {
+    window.setTimeout(function () {
+      deps.focusLanShiftPinInput();
+    }, 120);
+  }
 }
 
 function resolveLanShiftPinHostPrefill() {
@@ -284,7 +308,9 @@ function createLanShiftPinHostUrlField(wardPrefill) {
   hostUrlLabel.style.marginTop = '8px';
   hostUrlLabel.style.marginBottom = '4px';
   hostUrlLabel.setAttribute('for', 'lan-input-host-url-ward');
-  hostUrlLabel.textContent = 'Dirección del anfitrión (opcional)';
+  hostUrlLabel.textContent = isLanSkipShiftPin()
+    ? 'Dirección del anfitrión'
+    : 'Dirección del anfitrión (opcional)';
 
   var hostUrlInput = document.createElement('input');
   hostUrlInput.type = 'text';
@@ -304,10 +330,10 @@ function createLanShiftPinHostUrlField(wardPrefill) {
   return { hostUrlLabel, hostUrlInput, hostUrlHint };
 }
 
-function wireLanShiftPinClientConnect(deps, input, hostUrlInput, btn) {
+function wireLanShiftPinClientConnect(deps, input, hostUrlInput, btn, bypass) {
   btn.addEventListener('click', function () {
-    var pin = String(input.value || '').trim();
-    if (!/^\d{6}$/.test(pin)) {
+    var pin = input ? String(input.value || '').trim() : '';
+    if (!bypass && !/^\d{6}$/.test(pin)) {
       deps.runtime().showToast('Ingresa los 6 dígitos del PIN.', 'error');
       return;
     }
@@ -316,7 +342,7 @@ function wireLanShiftPinClientConnect(deps, input, hostUrlInput, btn) {
     void import('../../lan-shift-pin-connect.mjs')
       .then(function (m) {
         return m.tryEasyLanShiftPinConnect({
-          shiftPin: pin,
+          shiftPin: bypass ? undefined : pin,
           hostUrl: manualHost,
           force: true,
         });
@@ -327,7 +353,9 @@ function wireLanShiftPinClientConnect(deps, input, hostUrlInput, btn) {
           return;
         }
         deps.runtime().showToast(
-          'No encontramos el turno con ese PIN. Revisa el Wi‑Fi clínico o pide otro PIN.',
+          bypass
+            ? 'No encontramos el anfitrión en esa dirección. Revisa el Wi‑Fi o pide la URL al R4.'
+            : 'No encontramos el turno con ese PIN. Revisa el Wi‑Fi clínico o pide otro PIN.',
           'error'
         );
       })
@@ -335,30 +363,41 @@ function wireLanShiftPinClientConnect(deps, input, hostUrlInput, btn) {
         btn.disabled = false;
       });
   });
-  input.addEventListener('keydown', function (ev) {
+  if (input) {
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') btn.click();
+    });
+  }
+  hostUrlInput.addEventListener('keydown', function (ev) {
     if (ev.key === 'Enter') btn.click();
   });
 }
 
 function buildLanShiftPinClientConnectCard(deps) {
+  var bypass = isLanSkipShiftPin();
   var wrap = document.createElement('div');
   wrap.className = 'lan-connect-card lan-shift-pin-client-card';
   wrap.setAttribute('data-lan-shift-pin-client', '1');
 
   var title = document.createElement('p');
   title.className = 'lan-connect-card-title';
-  title.textContent = 'PIN del turno';
+  title.textContent = bypass ? 'Conectar al anfitrión del turno' : 'PIN del turno';
   wrap.appendChild(title);
 
   var lead = document.createElement('p');
   lead.className = 'lan-connect-card-hint';
-  lead.textContent = 'Pide los 6 dígitos al anfitrión (R4 en ⇄).';
+  lead.textContent = bypass
+    ? 'Buscamos al R4 en la Wi‑Fi del hospital. Si no conecta, pega su dirección abajo (p. ej. http://10.0.57.65:3738).'
+    : 'Pide los 6 dígitos al anfitrión (R4 en ⇄).';
   wrap.appendChild(lead);
 
-  var input = createLanShiftPinClientInput();
-  wrap.appendChild(input);
+  var input = bypass ? null : createLanShiftPinClientInput();
+  if (input) wrap.appendChild(input);
 
   var hostFields = createLanShiftPinHostUrlField(resolveLanShiftPinHostPrefill());
+  if (bypass) {
+    hostFields.hostUrlLabel.textContent = 'Dirección del anfitrión';
+  }
   wrap.appendChild(hostFields.hostUrlLabel);
   wrap.appendChild(hostFields.hostUrlInput);
   wrap.appendChild(hostFields.hostUrlHint);
@@ -371,7 +410,7 @@ function buildLanShiftPinClientConnectCard(deps) {
   btn.className = 'btn-lan-primary';
   btn.style.flex = '1';
   btn.textContent = 'Conectar';
-  wireLanShiftPinClientConnect(deps, input, hostFields.hostUrlInput, btn);
+  wireLanShiftPinClientConnect(deps, input, hostFields.hostUrlInput, btn, bypass);
   row.appendChild(btn);
   wrap.appendChild(row);
 

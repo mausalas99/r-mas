@@ -147,9 +147,8 @@ export async function resolveLanHostUrlForShare() {
   return resolveLanShareBaseUrl();
 }
 
-/** Client PIN entry on ⇄ (R1–R3, or not live on remote host). */
+/** Client connect on ⇄ — PIN when required; host URL + Conectar when bypass. */
 export async function shouldShowLanShiftPinClientConnect() {
-  if (isLanSkipShiftPin()) return false;
   if (!isLanElectronDesktop()) return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
   // After reset / no bearer — R4 also reconnects via PIN or host URL.

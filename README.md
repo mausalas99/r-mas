@@ -39,10 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.3](https://github.com/mausalas99/r-mas/releases/tag/v7.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.4](https://github.com/mausalas99/r-mas/releases/tag/v7.6.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.4 (LAN reconnect — host URL visible)
+
+- **LAN — campo anfitrión** — ⇄ muestra dirección del R4 editable cuando no hay PIN (bypass activo).
+- **LAN — host empaquetado** — Primer probe a `http://10.0.57.65:3738`.
+- **LAN — Restablecer** — Re-siembra ward registry y reconecta sin pedir PIN.
+- **LAN — Unirse sala** — Auto-conecta al host antes de unirse a la sala.
+- **Parche sobre 7.6.3** — Auto-connect sin código de la versión anterior.
+
+Notas: `docs/RELEASE_NOTES_7.6.4.txt`.
 
 ## R+ 7.6.3 (LAN auto-connect sin código)
 

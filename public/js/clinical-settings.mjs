@@ -63,7 +63,7 @@ export function bundledWardShiftPin() {
  * @returns {string} http://host:3738 or ''
  */
 export function bundledWardHostUrl() {
-  return 'http://10.0.57.52:3738';
+  return 'http://10.0.57.65:3738';
 }
 
 /** @returns {Record<string, unknown>} */

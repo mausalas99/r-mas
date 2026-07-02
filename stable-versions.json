@@ -1,13 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-07-01",
+  "updatedAt": "2026-07-02",
   "entries": [
+    {
+      "version": "7.6.4",
+      "label": "7.6.4",
+      "publishedAt": "2026-07-02",
+      "summary": "LAN reconnect — host URL visible, Restablecer auto-connect",
+      "recommended": true
+    },
+    {
+      "version": "7.6.3",
+      "label": "7.6.3",
+      "publishedAt": "2026-07-02",
+      "summary": "Release estable 7.6.3",
+      "recommended": false
+    },
     {
       "version": "7.6.1",
       "label": "7.6.1",
       "publishedAt": "2026-07-01",
       "summary": "Release estable 7.6.1",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "7.6.0",

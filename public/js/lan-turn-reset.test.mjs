@@ -8,7 +8,6 @@ import {
   performLanTurnClientReset,
 } from './lan-turn-reset.mjs';
 import {
-  WARD_HOST_REGISTRY_KEY,
   recordWardHostUrl,
   loadWardHostRegistry,
 } from './lan-ward-host-registry.mjs';
@@ -22,7 +21,7 @@ const orchestratorSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'
 
 describe('lan-turn-reset', () => {
   it('exports client confirm copy', () => {
-    assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /PIN del R4/);
+    assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /Wi‑Fi/);
     assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /no se borran/);
   });
 
@@ -58,7 +57,8 @@ describe('lan-turn-reset', () => {
       assert.equal(disconnect.mock.callCount(), 1);
       assert.equal(store.getItem('rpc-lan-ui-role'), 'client');
       assert.equal(store.getItem('rpc-lan-config'), null);
-      assert.equal(store.getItem(WARD_HOST_REGISTRY_KEY), null);
+      const reg = loadWardHostRegistry();
+      assert.ok(reg.hostUrls.some((e) => e.url === 'http://10.0.57.65:3738'));
     } finally {
       globalThis.localStorage = origLs;
       globalThis.sessionStorage = origSs;

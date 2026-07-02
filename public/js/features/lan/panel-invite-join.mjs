@@ -133,7 +133,9 @@ function appendLanJoinOtherMacSection(root, opts) {
   inputInvite.id = 'lan-input-invite-link';
   inputInvite.rows = 2;
   inputInvite.autocomplete = 'off';
-  inputInvite.placeholder = 'http://…/join/req_…, PIN (6 dígitos), o dirección http://…:3738';
+  inputInvite.placeholder = isLanSkipShiftPin()
+    ? 'http://…/join/req_… o dirección http://10.0.57.65:3738'
+    : 'http://…/join/req_…, PIN (6 dígitos), o dirección http://…:3738';
   inner.appendChild(inputInvite);
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';

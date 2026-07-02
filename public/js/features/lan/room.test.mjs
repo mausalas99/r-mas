@@ -266,6 +266,7 @@ describe('room.mjs characterization', () => {
 
   it('joinLanRoom toasts when LAN REST not configured', async () => {
     storage.saveLanConfig({ hostUrl: '', teamCode: '' });
+    globalThis.window = {};
     const { toasts } = wireRoomBridge();
     await joinLanRoom('sala-x', 'Sala');
     assert.match(toasts[0].msg, /Primero conecta al servidor/);

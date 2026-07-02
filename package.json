@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "7.6.3",
+  "version": "7.6.4",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {

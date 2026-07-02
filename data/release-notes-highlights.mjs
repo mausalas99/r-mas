@@ -1367,10 +1367,34 @@ var RELEASE_NOTES_756 = [
   },
 ];
 
+var RELEASE_NOTES_764 = [
+  {
+    title: 'Dirección del anfitrión visible',
+    body:
+      'En ⇄, <strong>Conectar al anfitrión del turno</strong> muestra el campo de URL del R4 (sin PIN). Pega <code>http://10.0.57.65:3738</code> si el barrido no encuentra al host.',
+  },
+  {
+    title: 'Restablecer reconecta solo',
+    body:
+      'Tras <strong>Restablecer conexión</strong>, R+ vuelve a buscar al anfitrión en la Wi‑Fi y conserva el endpoint del hospital — ya no pide PIN.',
+  },
+  {
+    title: 'Unirse a sala más fácil',
+    body:
+      '<strong>Unirse</strong> en una sala intenta conectar al R4 antes de mostrar error; al conectar, entra a tu sala de <strong>Mi rotación</strong> cuando aplica.',
+  },
+  {
+    title: 'Parche sobre 7.6.3',
+    body:
+      'Incluye auto-connect sin código de la versión anterior. Instala <strong>7.6.4</strong> en Macs cliente y anfitrión el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_763;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_764;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.4': RELEASE_NOTES_764,
   '7.6.3': RELEASE_NOTES_763,
   '7.6.2': RELEASE_NOTES_762,
   '7.6.1': RELEASE_NOTES_761,
