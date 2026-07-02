@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.2](https://github.com/mausalas99/r-mas/releases/tag/v7.6.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.3](https://github.com/mausalas99/r-mas/releases/tag/v7.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.3 (LAN auto-connect sin código)
+
+- **LAN — auto-connect** — R1–R3 se unen al turno sin PIN ni código: la app prueba los endpoints del hospital al arrancar, en ⇄ y al cambiar de Wi‑Fi.
+- **LAN — barrido** — El descubrimiento sigue activo aunque el cliente aún no tenga bearer guardado.
+- **Parche sobre 7.6.2** — iPad scope LAN, Interconsultas en sala y filtro de censo por equipo.
+
+Notas: `docs/RELEASE_NOTES_7.6.3.txt`.
 
 ## R+ 7.6.2 (iPad scope LAN + Interconsultas sala)
 

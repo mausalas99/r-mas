@@ -1193,6 +1193,24 @@ var RELEASE_NOTES_754 = [
   },
 ];
 
+var RELEASE_NOTES_763 = [
+  {
+    title: 'Conexión sin código',
+    body:
+      'R1–R3 se unen al turno <strong>sin PIN ni código manual</strong>: R+ busca el anfitrión en la Wi‑Fi del hospital al arrancar y al abrir ⇄.',
+  },
+  {
+    title: 'Endpoints del turno embarcados',
+    body:
+      'La app prueba la URL y prefijo LAN del hospital guardados en el build; el barrido sigue aunque aún no tengas token en esta Mac.',
+  },
+  {
+    title: 'Parche sobre 7.6.2',
+    body:
+      'Incluye <strong>iPad scope LAN</strong>, sala <strong>Interconsultas</strong> por equipo y filtro de censo de la versión anterior.',
+  },
+];
+
 var RELEASE_NOTES_762 = [
   {
     title: 'iPad — scope LAN',
@@ -1350,9 +1368,10 @@ var RELEASE_NOTES_756 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_762;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_763;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.3': RELEASE_NOTES_763,
   '7.6.2': RELEASE_NOTES_762,
   '7.6.1': RELEASE_NOTES_761,
   '7.6.0': RELEASE_NOTES_760,
