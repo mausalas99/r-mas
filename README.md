@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.4](https://github.com/mausalas99/r-mas/releases/tag/v7.6.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.5](https://github.com/mausalas99/r-mas/releases/tag/v7.6.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.5 (LAN token fix + invite empaquetado)
+
+- **LAN — token anfitrión** — Alinea bearer con `lan-team-code.txt`; corrige 401 en sync-bundle cuando el host tenía token obsoleto en localStorage.
+- **LAN — invite empaquetado** — Enlace de sala pre-llenado en ⇄ tras actualizar (`bundledWardInviteUrl`; rotar por turno antes del build).
+- **Parche sobre 7.6.4** — Campo anfitrión visible, auto-connect y host `10.0.57.65`.
+
+Notas: `docs/RELEASE_NOTES_7.6.5.txt`.
 
 ## R+ 7.6.4 (LAN reconnect — host URL visible)
 

@@ -133,6 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-07-03** `release-7.6.5`: host bearer alineado con lan-team-code.txt (401 sync-bundle), `bundledWardInviteUrl` prefill ⇄; `transport-session.mjs`, `push-bundle.mjs`, `clinical-settings.mjs`.
 - **2026-07-02** `lan-bundled-autoconnect`: clientes sin bearer reconectan solos a endpoints del turno (`bundledWardHostUrl`, ward registry); scan loop + bypass sin pausar; `lan-ward-host-registry.mjs`, `panel-scan-hosts.mjs`, `lan-shift-pin-connect.mjs`.
 - **2026-07-01** `release-7.6.1`: SQLCipher v21 sala CHECK (Interconsultas/UX/Eme), borrador Mi rotación, equipos push en cola, downgrade timeout; `schema-migrate-v21-clinical-sala-check.mjs`, `teams-roster-panel-draft.mjs`.
 - **2026-07-01** `ipad-lan-scope`: iPad conserva scope LAN sin SQLCipher; ops clínicas en móvil; sala Interconsultas por equipo; `scope-db.mjs`, `room-clinical-ops.mjs`, `patients-clinical-filter.mjs`; `room.test` exit fix en wrapper Electron.

@@ -66,6 +66,15 @@ export function bundledWardHostUrl() {
   return 'http://10.0.57.65:3738';
 }
 
+/**
+ * Ward sala invite link shipped with the release (rotate when R4 mints a new ticket).
+ * Clients see it pre-filled in ⇄ → Unirse con enlace after updating.
+ * @returns {string} http://host:3738/join/req_… or ''
+ */
+export function bundledWardInviteUrl() {
+  return 'http://10.0.57.65:3738/join/req_5246cafe2d94?th=1407e41b';
+}
+
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {

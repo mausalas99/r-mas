@@ -4,6 +4,7 @@ import {
   CLINICAL_LAN_PROFILE_GATE_VERSION,
   bundledWardShiftPin,
   bundledWardHostUrl,
+  bundledWardInviteUrl,
   ensureLanProfileGateDeviceReset,
   needsClinicalLanProfileGate,
   persistClinicalUserBinding,
@@ -100,5 +101,14 @@ describe('bundledWardShiftPin', () => {
 describe('bundledWardHostUrl', () => {
   it('returns ward LAN host base URL', () => {
     assert.equal(bundledWardHostUrl(), 'http://10.0.57.65:3738');
+  });
+});
+
+describe('bundledWardInviteUrl', () => {
+  it('returns ward sala invite for this release', () => {
+    assert.equal(
+      bundledWardInviteUrl(),
+      'http://10.0.57.65:3738/join/req_5246cafe2d94?th=1407e41b'
+    );
   });
 });

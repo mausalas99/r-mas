@@ -1,6 +1,13 @@
 /**
  * Guardia LAN hub shell UI (status line + sala rooms). Extracted from lan-sync.mjs.
  */
+import { bundledWardInviteUrl } from '../clinical-settings.mjs';
+
+function prefillBundledWardInviteInput(input) {
+  if (!input || String(input.value || '').trim()) return;
+  var bundled = String(bundledWardInviteUrl() || '').trim();
+  if (bundled) input.value = bundled;
+}
 
 /**
  * @param {HTMLElement} root
@@ -57,6 +64,7 @@ function appendInvitePasteBlock(hero) {
   inputInvite.autocomplete = 'off';
   inputInvite.placeholder = 'http://10.x.x.x:3738/join/req_…';
   inputInvite.style.marginTop = '6px';
+  prefillBundledWardInviteInput(inputInvite);
   hero.appendChild(inputInvite);
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';

@@ -1390,10 +1390,34 @@ var RELEASE_NOTES_764 = [
   },
 ];
 
+var RELEASE_NOTES_765 = [
+  {
+    title: 'Anfitrión sin 401',
+    body:
+      'Si el R4 ve <strong>degraded</strong> con <code>invalid_token</code>, esta versión alinea el bearer con <code>lan-team-code.txt</code> y reintenta el sync automáticamente.',
+  },
+  {
+    title: 'Enlace de sala empaquetado',
+    body:
+      'Tras actualizar, ⇄ muestra el enlace del turno pre-llenado en <strong>Unirse con enlace</strong>. El R4 debe pegar el ticket vigente en el build antes de publicar.',
+  },
+  {
+    title: 'Auto-connect conservado',
+    body:
+      'Sigue el host empaquetado <code>http://10.0.57.65:3738</code> y la reconexión sin PIN de <strong>7.6.4</strong>.',
+  },
+  {
+    title: 'Actualiza todo el turno',
+    body:
+      'Instala <strong>7.6.5</strong> en Macs anfitrión y cliente el mismo día. Reinicia R+ en el R4 tras instalar.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_764;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_765;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.5': RELEASE_NOTES_765,
   '7.6.4': RELEASE_NOTES_764,
   '7.6.3': RELEASE_NOTES_763,
   '7.6.2': RELEASE_NOTES_762,

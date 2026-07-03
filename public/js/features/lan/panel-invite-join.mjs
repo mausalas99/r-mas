@@ -32,6 +32,7 @@ import {
 import { lanClient, activeLiveSyncRoomId } from './runtime.mjs';
 import { canLocalMacBeLanHost } from '../../lan-host-rank-policy.mjs';
 import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
+import { bundledWardInviteUrl } from '../../clinical-settings.mjs';
 
 export const LAN_INVITE_MOBILE_OPEN_KEY = 'rpc-lan-invite-mobile-open';
 export const LAN_INVITE_SALA_OPEN_KEY = 'rpc-lan-invite-sala-open';
@@ -76,6 +77,7 @@ function appendLanMobileJoinSection(deps, root) {
   inputInvite.rows = 2;
   inputInvite.autocomplete = 'off';
   inputInvite.placeholder = 'http://192.168.x.x:3738/join/req_…';
+  prefillBundledWardInviteInput(inputInvite);
   card.appendChild(inputInvite);
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';
@@ -561,6 +563,12 @@ function focusLanShiftPinInput() {
   return tryFocus(0);
 }
 
+function prefillBundledWardInviteInput(input) {
+  if (!input || String(input.value || '').trim()) return;
+  var bundled = String(bundledWardInviteUrl() || '').trim();
+  if (bundled) input.value = bundled;
+}
+
 function prefillLanShiftPinHostUrl(hostUrl) {
   var url = normalizeLanHostBase(String(hostUrl || '').trim());
   if (!url) return false;
@@ -605,5 +613,6 @@ export function createPanelInviteJoin(deps) {
     },
     focusLanShiftPinInput,
     prefillLanShiftPinHostUrl,
+    prefillBundledWardInviteInput,
   };
 }

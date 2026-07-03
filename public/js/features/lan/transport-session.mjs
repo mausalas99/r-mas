@@ -159,12 +159,22 @@ export async function lanFetchAuthed(path, opts) {
 export async function resolveHostBearerToken() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
   var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  if (uiRole === 'host') {
+    var fromDisk = await resolveEffectiveHostBearerToken();
+    if (fromDisk) {
+      var fromCfg = trimStoredLanBearer(cfg.teamCode);
+      if (fromCfg !== fromDisk) {
+        persistLanClientConfig(normalizeLanUrl(cfg.hostUrl), fromDisk);
+      }
+      return fromDisk;
+    }
+  }
   var fromCfg = trimStoredLanBearer(cfg.teamCode);
   if (fromCfg.length >= 32) return fromCfg;
   if (uiRole !== 'host') {
     return resolveGuestBearerToken();
   }
-  return resolveEffectiveHostBearerToken();
+  return '';
 }
 
 async function resolveGuestBearerToken() {

@@ -5,7 +5,7 @@ import { enqueueOutbox } from '../../live-sync-outbox.mjs';
 import { setHostBundleBases } from '../../host-bundle-bases.mjs';
 import { recordLanSyncError } from '../../lan-sync-diagnostics.mjs';
 import { isBundlePushPaused } from '../../lan-sync-bundle-push.mjs';
-import { lanClient } from './runtime.mjs';
+import { lanFetchAuthed } from './transport-session.mjs';
 import { bridge, ensureLanSyncPushBridgeWired } from './push-bridge.mjs';
 import { liveSyncBundleHasPayload, hostBundleBodyFromEnvelope } from './push-helpers.mjs';
 import {
@@ -59,8 +59,7 @@ function pushRoomSyncBundleToHostBody(roomId, envelope) {
   var rid = String(roomId || '').trim();
   if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
   if (isBundlePushPaused(rid)) return Promise.resolve('paused');
-  return lanClient
-    .fetch('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle', {
+  return lanFetchAuthed('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
