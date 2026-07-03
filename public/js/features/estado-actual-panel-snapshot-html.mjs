@@ -13,6 +13,16 @@ import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-con
 import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-actual-panel-format.mjs';
 import { formatSnapshotEgresos } from './estado-actual-panel-snapshot-format.mjs';
 
+/**
+ * @param {unknown} ing
+ * @returns {string}
+ */
+function formatSnapshotIngresos(ing) {
+  if (ing === 'NC' || String(ing || '').toUpperCase() === 'NC') return escHtml('NC');
+  if (ing == null || ing === '') return escHtml('—');
+  return escHtml(String(ing) + ' CC');
+}
+
 /** Vitals shown as individual cards in the snapshot strip (T/A is combined). */
 var SNAPSHOT_STRIP_VITAL_KEYS = ['fc', 'fr', 'temp', 'sat'];
 
@@ -344,8 +354,8 @@ export function renderSnapshotIoHtml(snapshot, balGlobal) {
   return (
     '<div class="ea-snapshot-io">' +
     '<div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' +
-    displayValue(snapshot.io.ing) +
-    ' CC</span></div>' +
+    formatSnapshotIngresos(snapshot.io.ing) +
+    '</span></div>' +
     '<div class="ea-snapshot-io-egr">' +
     '<span class="ea-snapshot-label">Egresos</span>' +
     '<span class="ea-snapshot-io-val">' +

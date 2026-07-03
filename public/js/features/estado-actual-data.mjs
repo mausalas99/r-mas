@@ -346,6 +346,18 @@ export function normalizeDietaTypeLabel(dietaText) {
     .replace(/^DIETA\s+/, '');
 }
 
+/**
+ * Quita sufijo calórico SOME en paréntesis del label (p. ej. "NORMAL (1750 kcal, 70 g prot)" → "NORMAL").
+ * @param {unknown} dietaText
+ * @returns {string}
+ */
+export function stripDietaMacroSuffixFromLabel(dietaText) {
+  return normalizeDietaTypeLabel(dietaText).replace(
+    /\s*\(\s*\d+\s*KCAL(?:\s*,\s*\d+\s*G\s*PROT)?[^)]*\)\s*$/i,
+    ''
+  ).trim();
+}
+
 export function isDietaAyuno(dietaText) {
   return normalizeDietaTypeLabel(dietaText) === 'AYUNO';
 }

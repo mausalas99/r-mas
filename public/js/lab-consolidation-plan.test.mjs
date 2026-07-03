@@ -56,6 +56,27 @@ describe('lab-consolidation-plan', () => {
     assert.equal(countAutoLabConsolidationMerges(jobs), 1);
   });
 
+  it('buildLabConsolidationMergeJobs no fusiona gasometrías por ventana 2 h', () => {
+    var sets = [
+      { id: 'a', day: '2026-6-12', tipo: 'gaso', ms: 0 },
+      { id: 'b', day: '2026-6-12', tipo: 'gaso', ms: 90 * 60 * 1000 },
+    ];
+    var jobs = buildLabConsolidationMergeJobs(
+      sets,
+      function (s) {
+        return s.day;
+      },
+      function (s) {
+        return s.tipo;
+      },
+      function (s) {
+        return s.ms;
+      },
+      null
+    );
+    assert.equal(jobs.length, 0);
+  });
+
   it('buildLabConsolidationMergeJobs outlier une día completo', () => {
     var sets = [
       { id: 'a', day: '2026-6-12', tipo: 'labs', ms: 0 },

@@ -87,7 +87,9 @@ export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
         ? document.getElementById('exp-pane-estado-actual')
         : null;
   if (!mount) return false;
-  var dietProposalActive = hasDietProposal(mon.pendienteReceta);
+  var conf =
+    mon.confirmado && typeof mon.confirmado === 'object' ? mon.confirmado : {};
+  var dietProposalActive = hasDietProposal(mon.pendienteReceta) && !conf.dieta;
   var changed = false;
   mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
     var key = el.getAttribute('data-ea-ec');
@@ -158,19 +160,20 @@ function wireEstadoClinicoInteractions(mount, patient) {
   });
 }
 
-function generateEstadoActualText(monitoreo, patient) {
+function generateEstadoActualText(monitoreo, patient, activeId) {
   var snapshot = deriveSnapshot(monitoreo);
   var weightKg = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
     pesoRef: monitoreo.estadoClinico && monitoreo.estadoClinico.pesoRef,
   });
   if (monitoreo.estadoClinico) syncDietKcalFromWeight(monitoreo.estadoClinico, weightKg);
-  var activeId = getEaPanelRuntime().getActiveId();
+  var id = activeId != null ? activeId : getEaPanelRuntime().getActiveId();
+  var recetaBlock = id && medRecetaByPatient ? medRecetaByPatient[id] : null;
   return buildEstadoActualText(
-    estadoClinicoForText(monitoreo, eaManejoFechaOpts(activeId)),
+    estadoClinicoForText(monitoreo, eaManejoFechaOpts(id)),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
-    { patientPeso: patient && patient.peso }
+    { patientPeso: patient && patient.peso, recetaBlock: recetaBlock }
   );
 }
 

@@ -27,6 +27,7 @@ import {
   assignPatientToTeamClinical,
   readPatientRegistrationTeamId,
 } from '../patient-team-assign-ui.mjs';
+import { readPatientRegistrationSala } from '../patient-sala-ui.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
 import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
@@ -225,6 +226,8 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
     teamId: registrationTeamId,
     teams: clinicalSessionContext.teams || [],
   });
+  const registrationSala = readPatientRegistrationSala();
+  if (registrationSala) patient.sala = registrationSala;
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);

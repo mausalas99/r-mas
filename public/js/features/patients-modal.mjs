@@ -10,6 +10,10 @@ import {
 } from '../mode-features.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import { syncPatientRegistrationTeamSelect } from '../patient-team-assign-ui.mjs';
+import {
+  syncPatientRegistrationSalaSelect,
+  wirePatientRegistrationSalaControls,
+} from '../patient-sala-ui.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { esc } from './patients-html.mjs';
 import { escTxtSafe } from './patients-html.mjs';
@@ -114,6 +118,8 @@ export function openAddModal() {
   _prefillServicioForSala();
   _prefillCuartoCamaForSala();
   syncPatientRegistrationTeamSelect();
+  syncPatientRegistrationSalaSelect();
+  wirePatientRegistrationSalaControls();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(false);
@@ -171,6 +177,8 @@ function fillLabPatientModalFields(p) {
   }
   _prefillCuartoCamaForSala(p.expediente || p.registro || '');
   syncPatientRegistrationTeamSelect();
+  syncPatientRegistrationSalaSelect();
+  wirePatientRegistrationSalaControls();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
     _focusPatientAdmissionField(true);

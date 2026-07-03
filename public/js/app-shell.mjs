@@ -439,6 +439,9 @@ function normalizePatientFieldValue(field, value) {
   if (field === 'nombre' || field === 'area' || field === 'servicio') {
     return String(value || '').toUpperCase();
   }
+  if (field === 'sala') {
+    return String(value || '').trim();
+  }
   if (field === 'fiuxFecha' || field === 'fimiFecha') {
     return dateInputValueToAccesoFecha(value) || String(value || '').trim();
   }

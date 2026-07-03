@@ -5,7 +5,7 @@ import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
 import { expandVitalNextLayer, syncAllVitalAddButtonVisibility, vitalLayerBoxKey } from './estado-actual-panel-vitals.mjs';
-import { syncIoBalanceFromForm } from './estado-actual-panel-registro-io.mjs';
+import { syncIoBalanceFromForm, applyIoNcMode } from './estado-actual-panel-registro-io.mjs';
 
 function defaultAlteredTimeFromForm(form) {
   var recEl = form.querySelector('#ea-recorded-at');
@@ -42,6 +42,10 @@ function syncAlteredFields(form) {
 function handleFormClick(form, ev) {
   var target = /** @type {HTMLElement | null} */ (ev.target);
   if (!target || !form.contains(target)) return;
+  if (target.matches('[data-ea-io-nc]') || target.closest('[data-ea-io-nc]')) {
+    applyIoNcMode(form);
+    return;
+  }
   var addBtn = target.closest('[data-ea-vital-add]');
   if (addBtn) {
     var vitalKey = addBtn.getAttribute('data-ea-vital-add');

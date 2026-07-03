@@ -14,7 +14,9 @@ import {
   writeDietProposal,
   mergedDietFromReceta,
   mergedDietHasContent,
+  clearDietPending,
 } from './estado-actual-meds-diet.mjs';
+import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
 
 /**
  * @param {string | null | undefined} activeId
@@ -452,10 +454,15 @@ export function confirmDietProposal(monitoreo) {
     }
   });
   applyDietaSuplementoPolicy(monitoreo.estadoClinico, monitoreo.pendienteReceta);
+  if (monitoreo.estadoClinico.dieta) {
+    var dietaClean = stripDietaMacroSuffixFromLabel(monitoreo.estadoClinico.dieta);
+    if (dietaClean) monitoreo.estadoClinico.dieta = dietaClean;
+  }
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};
   }
   /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
+  clearDietPending(monitoreo);
 }
 
 export function discardDietProposal(monitoreo) {

@@ -188,8 +188,10 @@ export function resolveKcalDisplay(ec, options) {
  * @param {unknown} btTurno
  * @param {Array<{ value?: unknown, postRescueValue?: unknown, rescueUnits?: number }>} glSrc
  * @param {Array<{ value?: unknown, units?: unknown }>} bombaSrc
+ * @param {{ rescatesInSome?: boolean }} [opts]
  */
-export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc) {
+export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc, opts) {
+  opts = opts || {};
   var ioClause = formatIoClauseForSoap(snapIo, btTurno);
   var gluParts = collectGluDisplayValues(glSrc);
   var bombaClause = buildBombaClause(bombaSrc);
@@ -200,7 +202,7 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc)
   if (gluParts.length) nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
   if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
   else {
-    var rescatesClause = formatInsulinRescatesClause(glSrc);
+    var rescatesClause = formatInsulinRescatesClause(glSrc, { rescatesInSome: opts.rescatesInSome });
     if (rescatesClause) nmParts.push(rescatesClause);
   }
   return nmParts.join(' || ');

@@ -12,7 +12,7 @@ import {
   invalidateHistoriaClinicaPanel,
 } from './historia-clinica-panel.mjs';
 import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
-import { invalidateEaPanelCache, syncEaCopyFab } from './estado-actual-panel.mjs';
+import { eaHasCopyableContent, invalidateEaPanelCache, syncEaCopyFab } from './estado-actual-panel.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import {
   scrollActiveRondaCardIntoView,
@@ -237,7 +237,8 @@ export function switchInnerTab(tab, opts) {
   var settings = rt.getSettings();
   tab = migrateGranularInner(tab, settings);
   var prevInner = migrateGranularInner(rt.getActiveInner() || 'todo', settings);
-  if (prevInner === 'estadoActual' && tab !== 'estadoActual') syncEaCopyFab(false);
+  if (tab === 'estadoActual') syncEaCopyFab(eaHasCopyableContent());
+  else if (prevInner === 'estadoActual') syncEaCopyFab(false);
   var prevComposite = expedienteCompositeTab(prevInner, settings);
   var nextComposite = expedienteCompositeTab(tab, settings);
   if (tryPaseRecetaRedirect(tab)) return;

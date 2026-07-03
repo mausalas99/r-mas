@@ -1,5 +1,5 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
-import { saveState } from '../app-state.mjs';
+import { saveState, medRecetaByPatient } from '../app-state.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   ensureMonitoreo,
@@ -11,6 +11,7 @@ import {
 import {
   parseIoEgresoLine,
   parseIoEvacField,
+  parseIoIngresoField,
   diuresisValueFromParts,
 } from './estado-actual-io.mjs';
 import {
@@ -33,10 +34,13 @@ import {
   confirmDietProposal,
   discardDietProposal,
 } from './estado-actual-meds.mjs';
+import { backfillDietPendingMacrosFromReceta } from './estado-actual-meds-diet.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
+import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { findActivePatient } from './estado-actual-panel-core.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
+import { syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro-io.mjs';
 import {
   flushEaEstadoClinicoFieldsFromDom,
   persistEstadoClinicoAndRefresh,
@@ -77,7 +81,7 @@ function parseFormMedicion() {
     glucometrias: glucometrias,
     bombaInsulina: bombaInsulina,
     io: {
-      ing: parseNumOrNull(ingEl && 'value' in ingEl ? ingEl.value : ''),
+      ing: parseIoIngresoField(ingEl && 'value' in ingEl ? ingEl.value : ''),
       egr: diuresisValueFromParts(egrParts),
       egrParts: egrParts,
       evac: parseIoEvacField(evacEl && 'value' in evacEl ? evacEl.value : ''),
@@ -206,6 +210,23 @@ export async function estadoActualGuardarCopiar() {
 
 var eaCopyFabBound = false;
 
+function eaCopyFabContextActive() {
+  var runtime = getEaPanelRuntime();
+  if (typeof runtime.getActiveAppTab === 'function' && runtime.getActiveAppTab() !== 'nota') return false;
+  if (typeof runtime.getActiveInner !== 'function' || typeof runtime.getSettings !== 'function') return true;
+  var inner = migrateGranularInner(runtime.getActiveInner() || 'todo', runtime.getSettings());
+  return inner === 'estadoActual';
+}
+
+function hideLabCopyFabDom() {
+  var fab = document.getElementById('lab-copy-fab');
+  if (!fab) return;
+  fab.setAttribute('hidden', '');
+  fab.style.display = 'none';
+  fab.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('lab-copy-fab-active');
+}
+
 function ensureEaCopyFabController() {
   var fab = document.getElementById('ea-copy-fab');
   if (!fab || eaCopyFabBound) return;
@@ -230,7 +251,8 @@ function ensureEaCopyFabController() {
 
 export function syncEaCopyFab(show) {
   ensureEaCopyFabController();
-  var visible = !!show;
+  var visible = !!show && eaCopyFabContextActive();
+  if (visible) hideLabCopyFabDom();
   var fab = document.getElementById('ea-copy-fab');
   if (fab) {
     if (visible) {
@@ -295,6 +317,9 @@ export function confirmEaDietProposal() {
   var patient = findActivePatient();
   if (!patient) return;
   ensureMonitoreo(patient);
+  var activeId = getEaPanelRuntime().getActiveId();
+  var recetaBlock = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  backfillDietPendingMacrosFromReceta(patient.monitoreo, recetaBlock);
   confirmDietProposal(patient.monitoreo);
   persistEstadoClinicoAndRefresh(patient.monitoreo, 'Dieta confirmada', patient);
 }

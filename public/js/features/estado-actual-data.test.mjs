@@ -19,6 +19,7 @@ import {
   isDietaSuplemento,
   clearDietCaloricFields,
   applyDietaSuplementoPolicy,
+  stripDietaMacroSuffixFromLabel,
   parseIoEgresoField,
   isIoNumericValue,
 } from './estado-actual-data.mjs';
@@ -265,6 +266,12 @@ test('syncDietKcalFromWeight no sobrescribe kcal total sin peso', () => {
   const ec = { kcalKg: '25', kcal: '1800' };
   assert.equal(syncDietKcalFromWeight(ec, null), false);
   assert.equal(ec.kcal, '1800');
+});
+
+test('stripDietaMacroSuffixFromLabel quita macros SOME en paréntesis', () => {
+  assert.equal(stripDietaMacroSuffixFromLabel('NORMAL (1750 kcal, 70 g prot)'), 'NORMAL');
+  assert.equal(stripDietaMacroSuffixFromLabel('*DIETA NORMAL (1750 KCAL)'), 'NORMAL');
+  assert.equal(stripDietaMacroSuffixFromLabel('NORMAL PICADA ALTA EN FIBRA'), 'NORMAL PICADA ALTA EN FIBRA');
 });
 
 test('isDietaSuplemento reconoce suplemento sin calorías', () => {

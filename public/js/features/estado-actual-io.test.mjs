@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseIoEgresoLine,
   parseIoEvacField,
+  parseIoIngresoField,
   computeIoBalanceFromIngEgr,
   formatIoBalanceDisplay,
   isIoBalanceNc,
@@ -34,6 +35,24 @@ test('formatIoBalanceDisplay — NC cuando egresos no cuantificados', () => {
   assert.equal(formatIoBalanceDisplay(645, {}), '—');
   const partsMixed = parseIoEgresoLine('DIURESIS NC, DRENAJE 50 CC');
   assert.equal(formatIoBalanceDisplay(645, { egrParts: partsMixed }), '+595 CC');
+});
+
+test('formatIoBalanceDisplay — NC cuando ingresos NC', () => {
+  assert.equal(formatIoBalanceDisplay('NC', { ing: 'NC', egr: 'NC' }), 'NC');
+  assert.equal(isIoBalanceNc({ ing: 'NC', egr: 'NC' }), true);
+});
+
+test('parseIoIngresoField acepta NC', () => {
+  assert.equal(parseIoIngresoField('NC'), 'NC');
+  assert.equal(parseIoIngresoField('500'), 500);
+});
+
+test('formatIoClauseForSoap — ingresos NC fuerza egresos y balance NC', () => {
+  const clause = formatIoClauseForSoap({ ing: 'NC', evac: 'NC' }, NaN);
+  assert.match(clause, /INGRESOS NC/);
+  assert.match(clause, /DIURESIS NC/);
+  assert.match(clause, /BALANCE NC\b/);
+  assert.doesNotMatch(clause, /INGRESOS ___ CC/);
 });
 
 test('computeIoBalanceFromIngEgr — suma todas las salidas numéricas', () => {

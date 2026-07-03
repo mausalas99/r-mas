@@ -34,11 +34,23 @@ export function hasIoEgressDeclared(io) {
 }
 
 /**
- * Egresos declarados sin total numérico (p. ej. solo DIURESIS NC).
+ * @param {unknown} io
+ * @returns {boolean}
+ */
+export function isIoIngresoNc(io) {
+  if (!io || typeof io !== 'object') return false;
+  /** @type {any} */
+  var o = io;
+  return o.ing === 'NC' || String(o.ing || '').toUpperCase() === 'NC';
+}
+
+/**
+ * Egresos declarados sin total numérico (p. ej. solo DIURESIS NC), o ingresos NC.
  * @param {unknown} io
  * @returns {boolean}
  */
 export function isIoBalanceNc(io) {
+  if (isIoIngresoNc(io)) return true;
   return hasIoEgressDeclared(io) && ioNumericEgressTotal(io) == null;
 }
 
@@ -48,6 +60,8 @@ export function isIoBalanceNc(io) {
  * @returns {string}
  */
 export function formatIoBalanceDisplay(ing, io) {
+  io = io || {};
+  if (isIoIngresoNc(io) || ing === 'NC' || String(ing || '').toUpperCase() === 'NC') return 'NC';
   var bal = computeIoBalanceFromIngEgr(ing, io);
   if (Number.isFinite(bal)) return formatBalanceLive(bal);
   if (isIoBalanceNc(io)) return 'NC';
@@ -65,6 +79,7 @@ export function formatIoBalanceDisplay(ing, io) {
 export function parseIoIngresoField(raw) {
   var s = String(raw == null ? '' : raw).trim();
   if (!s) return null;
+  if (/^nc$/i.test(s) || /no\s+cuantificad/i.test(s)) return 'NC';
   var numMatch = s.match(/([\d.,]+)\s*(?:CC|ML)?\b/i);
   if (numMatch) {
     var n = parseIoNumber(numMatch[1]);
@@ -417,6 +432,12 @@ function resolveSoapBalanceNum(io, balanceTurno) {
  */
 export function formatIoClauseForSoap(io, balanceTurno) {
   io = io || {};
+  if (isIoIngresoNc(io)) {
+    var ncClauses = ['INGRESOS NC', 'DIURESIS NC'];
+    if (io.evac != null && io.evac !== '') ncClauses.push('EVACUACIONES ' + formatEvacForText(io.evac));
+    ncClauses.push('BALANCE NC');
+    return ncClauses.join(', ');
+  }
   var clauses = ['INGRESOS ' + (io.ing != null && io.ing !== '' ? String(io.ing) : '___') + ' CC'];
   appendEgressClauses(clauses, io);
   if (io.evac != null && io.evac !== '') clauses.push('EVACUACIONES ' + formatEvacForText(io.evac));

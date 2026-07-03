@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { backfillDietPendingMacrosFromReceta } from './estado-actual-meds-diet.mjs';
 import {
   applyRecetaProposal,
   applyDietProposalFromRecetaBlock,
@@ -116,7 +117,7 @@ test('confirmDietProposal copia dieta, kcal y proteinG', () => {
   m.pendienteReceta.kcal = '2000';
   m.pendienteReceta.proteinG = '70';
   confirmDietProposal(m);
-  assert.equal(m.estadoClinico.dieta, 'NORMAL PICADA (2000 kcal, 70 g prot)');
+  assert.equal(m.estadoClinico.dieta, 'NORMAL PICADA');
   assert.equal(m.estadoClinico.kcal, '2000');
   assert.equal(m.estadoClinico.proteinG, '70');
   assert.equal(m.pendienteReceta.dieta, '');
@@ -367,6 +368,65 @@ test('applyDietProposalFromRecetaBlock confirmar suplemento y sync pasivo no rep
   assert.equal(m.pendienteReceta.dieta, '');
   assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
   assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock confirmar NORMAL y sync pasivo no repropone', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL (1750 kcal, 70 g prot)';
+  m.pendienteReceta.kcal = '1750';
+  m.pendienteReceta.proteinG = '70';
+  const block = { dietas: [{ descripcionRaw: 'NORMAL', kcal: 1750, proteinG: 70 }] };
+  confirmDietProposal(m);
+  assert.equal(m.estadoClinico.dieta, 'NORMAL');
+  assert.equal(m.confirmado.dieta, true);
+  assert.equal(m.pendienteReceta.dieta, '');
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock no repropone NORMAL confirmado con kcal SOME', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'NORMAL';
+  m.estadoClinico.kcal = '1750';
+  m.estadoClinico.proteinG = '70';
+  m.confirmado.dieta = true;
+  const block = { dietas: [{ descripcionRaw: 'NORMAL', kcal: 1750, proteinG: 70 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('applyDietProposalFromRecetaBlock no repropone NORMAL confirmado sin macros SOME', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.dieta = 'NORMAL';
+  m.confirmado.dieta = true;
+  const block = { dietas: [{ descripcionRaw: 'NORMAL', kcal: 1750, proteinG: 70 }] };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+  assert.equal(m.confirmado.dieta, true);
+});
+
+test('confirmDietProposal + sync pasivo no repropone NORMAL sin macros en ec', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL';
+  const block = { dietas: [{ descripcionRaw: 'NORMAL', kcal: 1750, proteinG: 70 }] };
+  confirmDietProposal(m);
+  assert.equal(m.estadoClinico.dieta, 'NORMAL');
+  assert.equal(m.confirmado.dieta, true);
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
+  assert.equal(m.pendienteReceta.dieta, '');
+});
+
+test('backfillDietPendingMacrosFromReceta copia kcal SOME antes de confirmar', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.dieta = 'NORMAL';
+  const block = { dietas: [{ descripcionRaw: 'NORMAL', kcal: 1750, proteinG: 70 }] };
+  backfillDietPendingMacrosFromReceta(m, block);
+  assert.equal(m.pendienteReceta.kcal, '1750');
+  assert.equal(m.pendienteReceta.proteinG, '70');
+  confirmDietProposal(m);
+  assert.equal(m.estadoClinico.kcal, '1750');
+  assert.equal(m.estadoClinico.proteinG, '70');
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), false);
 });
 
 test('applyDietProposalFromRecetaBlock force propone cambio sobre dieta confirmada distinta', () => {

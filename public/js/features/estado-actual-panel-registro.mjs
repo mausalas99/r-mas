@@ -14,7 +14,7 @@ import {
 } from './estado-actual-panel-vitals.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { wireFormInteractions } from './estado-actual-panel-registro-wire.mjs';
-import { syncIoBalanceFromForm, clearIoFields } from './estado-actual-panel-registro-io.mjs';
+import { syncIoBalanceFromForm, clearIoFields, applyIoNcMode, syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro-io.mjs';
 import { prefillRegistroFormFromMonitoreo } from './estado-actual-panel-registro-prefill.mjs';
 import { applyEstadoActualParsedToForm } from './estado-actual-panel-registro-apply.mjs';
 
@@ -65,8 +65,10 @@ export function buildRegistroFormMarkup() {
     '</div>' +
     '<div class="ea-io-grid">' +
     '<label class="ea-field">' +
-    '<span class="ea-label">Ingresos (cc)</span>' +
-    '<input type="number" class="ea-input" id="ea-io-ing" min="0" step="1">' +
+    '<span class="ea-label ea-label--with-action">Ingresos (cc)' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-io-nc-btn" data-ea-io-nc title="Marcar ingresos, egresos y balance como NC">NC</button>' +
+    '</span>' +
+    '<input type="text" class="ea-input" id="ea-io-ing" inputmode="text" autocomplete="off" placeholder="cc o NC">' +
     '</label>' +
     '<label class="ea-field ea-field--full">' +
     '<span class="ea-label">Egresos (diuresis, drenajes, nefrostomías…)</span>' +
@@ -98,6 +100,7 @@ export function wireEaRegistroForm() {
   var form = document.getElementById('ea-form');
   wireFormInteractions(form);
   refreshRpcDateFields(form);
+  syncEaRegistroInsulinRescateFlag(form);
   var gluList = document.getElementById('ea-glu-list');
   if (gluList && !gluList.querySelector('.ea-glu-row')) fillStandardGluList(gluList);
   var bombaList = document.getElementById('ea-bomba-list');

@@ -3,6 +3,7 @@ import { patients } from '../../app-state.mjs';
 import { isModeSala } from '../../mode-features.mjs';
 import { buildPatientAccesosSectionHtml } from '../../patient-data-accesos-ui.mjs';
 import { buildPatientTeamAssignSectionHtml, wirePatientTeamAssignRefresh } from '../../patient-team-assign-ui.mjs';
+import { buildPatientSalaFieldHtml } from '../../patient-sala-ui.mjs';
 import { buildPatientIngresoFechasHtml } from '../../patient-data-ingreso-ui.mjs';
 import { refreshRpcDateFields } from '../../rpc-date-picker.mjs';
 import { buildPatientCensoDatosSectionsHtml } from '../../patient-data-censo-ui.mjs';
@@ -12,6 +13,7 @@ function buildPatientDemographicsFieldsHtml(patient) {
   return (
     '<div style="display:flex;flex-direction:column;gap:10px;">' +
     buildPatientTeamAssignSectionHtml(patient) +
+    buildPatientSalaFieldHtml(patient) +
     '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" oninput="updatePatient(\'nombre\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;">' +
     '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +

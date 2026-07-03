@@ -3,7 +3,7 @@ import {
   applyDietaSuplementoPolicy,
   isDietaSuplemento,
   isDietaAyuno,
-  normalizeDietaTypeLabel,
+  stripDietaMacroSuffixFromLabel,
 } from './estado-actual-data.mjs';
 
 const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
@@ -15,7 +15,7 @@ const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
  * @param {unknown} proteinG
  */
 function dietMatchFingerprint(dietaText, kcal, proteinG) {
-  var label = normalizeDietaTypeLabel(dietaText);
+  var label = stripDietaMacroSuffixFromLabel(dietaText);
   if (isDietaSuplemento(label)) return 'SUPLEMENTO||';
   if (isDietaAyuno(label)) return 'AYUNO||';
   var k = kcal != null && kcal !== '' ? String(kcal) : '';
@@ -36,6 +36,16 @@ function confirmedDietFingerprint(ec) {
 function mergedDietFingerprint(merged) {
   var dietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
   return dietMatchFingerprint(dietaText, merged.kcal, merged.proteinG);
+}
+
+/**
+ * @param {unknown} dietaText
+ */
+function normalizedDietTypeLabel(dietaText) {
+  var label = stripDietaMacroSuffixFromLabel(dietaText);
+  if (isDietaSuplemento(label)) return 'SUPLEMENTO';
+  if (isDietaAyuno(label)) return 'AYUNO';
+  return label;
 }
 
 /**
@@ -64,16 +74,40 @@ export function shouldSkipDietProposal(monitoreo, opts, merged) {
   }
   if (!conf.dieta) return false;
   if (merged && mergedDietHasContent(merged)) {
+    var mergedDietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
+    if (normalizedDietTypeLabel(ec.dieta) === normalizedDietTypeLabel(mergedDietaText)) return true;
     return mergedDietFingerprint(merged) === confirmedDietFingerprint(ec);
   }
   return true;
 }
 
 /**
+ * Completa kcal/proteína pendientes desde SOME antes de confirmar (evita re-propuesta por macros vacíos).
+ * @param {Record<string, unknown>} monitoreo
+ * @param {{ dietas?: unknown[] } | null | undefined} recetaBlock
+ */
+export function backfillDietPendingMacrosFromReceta(monitoreo, recetaBlock) {
+  if (!monitoreo || !hasActiveDietProposal(getPendienteReceta(monitoreo))) return;
+  if (!recetaBlock || !Array.isArray(recetaBlock.dietas) || !recetaBlock.dietas.length) return;
+  var merged = mergedDietFromReceta(recetaBlock.dietas);
+  if (!mergedDietHasContent(merged)) return;
+  var pend = getPendienteReceta(monitoreo);
+  if (!pend) return;
+  var mergedDietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
+  if (normalizedDietTypeLabel(pend.dieta) !== normalizedDietTypeLabel(mergedDietaText)) return;
+  if (!String(pend.kcal || '').trim() && merged.kcal != null && merged.kcal !== '') {
+    pend.kcal = String(merged.kcal);
+  }
+  if (!String(pend.proteinG || '').trim() && merged.proteinG != null && merged.proteinG !== '') {
+    pend.proteinG = String(merged.proteinG);
+  }
+}
+
+/**
  * @param {Record<string, unknown>} monitoreo
  */
-function clearDietPending(monitoreo) {
-  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
+export function clearDietPending(monitoreo) {
+  if (!monitoreo || !monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
   DIET_PENDING_KEYS.forEach(function (k) {
     monitoreo.pendienteReceta[k] = '';
   });
@@ -132,6 +166,7 @@ export function writeDietProposal(monitoreo, merged) {
     monitoreo.pendienteReceta = {};
   }
   var dietaText = String(merged.descripcion || '').trim() || buildDietProposalText(merged);
+  dietaText = stripDietaMacroSuffixFromLabel(dietaText) || String(dietaText || '').trim();
   if (isDietaSuplemento(dietaText)) dietaText = 'SUPLEMENTO';
   monitoreo.pendienteReceta.dieta = dietaText;
   if (!applyDietaSuplementoPolicy(monitoreo.pendienteReceta)) {

@@ -10,27 +10,18 @@ import {
 } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
-import { splitResLabsByTipo } from './cultivo-block-core.mjs';
+import { primaryTipoForLabSet } from './lab-history-format.mjs';
 import {
   clusterByDayTipoAndTimeWindow,
   clusterByTimeWindow,
   labTimestampMsFromFechaHora,
+  resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
-
 function primaryTipoForResLabs(resLabs) {
-  var sp = splitResLabsByTipo(resLabs || []);
-  var hasL = sp.labs.some(function (r) {
-    return String(r || '').trim();
-  });
-  var hasC = sp.cultivo.some(function (r) {
-    return String(r || '').trim();
-  });
-  if (hasC && hasL) return 'mixed';
-  if (hasC) return 'cultivo';
-  return 'labs';
+  return primaryTipoForLabSet(resLabs);
 }
 
 export function dayKeyFromResult(result) {
@@ -430,7 +421,12 @@ export function pickLatestDayMergedLabDisplay(parsedItems) {
     }
   });
 
-  var dayClusters = clusterByTimeWindow(dayItems, timestampMsFromParsedItem);
+  var dayTipo = primaryTipoForResLabs(latestItem.result.resLabs || []);
+  var dayClusters = clusterByTimeWindow(
+    dayItems,
+    timestampMsFromParsedItem,
+    resolveLabConsolidationWindowMs(dayTipo)
+  );
   var targetCluster = dayClusters.find(function (cluster) {
     return cluster.indexOf(latestItem) !== -1;
   }) || [latestItem];

@@ -10,6 +10,18 @@ import {
 /** Ventana máxima entre tomas consecutivas para fusionar (2 h). */
 export const LAB_CONSOLIDATION_WINDOW_MS = 2 * 60 * 60 * 1000;
 
+/** Gasometrías: no fusionar por ventana — cada toma es un conjunto. */
+export const LAB_GASO_CONSOLIDATION_WINDOW_MS = 0;
+
+/**
+ * @param {string} [tipo]
+ * @param {number} [windowMs]
+ */
+export function resolveLabConsolidationWindowMs(tipo, windowMs) {
+  if (tipo === 'gaso') return LAB_GASO_CONSOLIDATION_WINDOW_MS;
+  return typeof windowMs === 'number' && isFinite(windowMs) ? windowMs : LAB_CONSOLIDATION_WINDOW_MS;
+}
+
 export function labTimestampMsFromFechaHora(fecha, hora) {
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
   if (!fechaNorm || fechaNorm === 'Anterior') return null;
@@ -95,7 +107,9 @@ export function clusterByDayTipoAndTimeWindow(items, getDayKey, getTipo, getMs, 
 
   var out = mixedSingles.slice();
   Object.keys(groups).forEach(function (gk) {
-    clusterByTimeWindow(groups[gk], getMs, windowMs).forEach(function (cluster) {
+    var tipo = String(gk.split('\x01')[1] || 'labs');
+    var w = resolveLabConsolidationWindowMs(tipo, windowMs);
+    clusterByTimeWindow(groups[gk], getMs, w).forEach(function (cluster) {
       out.push(cluster);
     });
   });

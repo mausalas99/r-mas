@@ -1,11 +1,37 @@
 /** Registro IO / prefill helpers — extracted from estado-actual-panel-registro.mjs */
 import {
   parseIoEgresoLine,
+  parseIoIngresoField,
   serializeEgrPartsToFormText,
   diuresisValueFromParts,
   formatIoBalanceDisplay,
 } from './estado-actual-io.mjs';
-import { parseNumOrNull } from './estado-actual-panel-format.mjs';
+import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
+import { medRecetaByPatient } from '../app-state.mjs';
+import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
+
+/**
+ * @param {HTMLElement | null} form
+ */
+export function syncEaRegistroInsulinRescateFlag(form) {
+  if (!form) return;
+  var activeId = getEaPanelRuntime().getActiveId();
+  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var hasRescates = patientHasInsulinRescatesInReceta(block);
+  form.classList.toggle('ea-form--no-insulin-rescates', !hasRescates);
+}
+
+/**
+ * @param {HTMLElement | null} form
+ */
+export function applyIoNcMode(form) {
+  if (!form) return;
+  var ingEl = form.querySelector('#ea-io-ing');
+  var egrEl = form.querySelector('#ea-io-egr');
+  if (ingEl && 'value' in ingEl) ingEl.value = 'NC';
+  if (egrEl && 'value' in egrEl) egrEl.value = 'DIURESIS NC';
+  syncIoBalanceFromForm(form);
+}
 
 /**
  * @param {HTMLElement | null} form
@@ -16,9 +42,12 @@ export function syncIoBalanceFromForm(form) {
   var egrEl = form.querySelector('#ea-io-egr');
   var out = form.querySelector('#ea-balance-turno-live');
   if (!ingEl || !egrEl || !out) return;
-  var ing = parseNumOrNull(ingEl.value);
+  var ing = parseIoIngresoField(ingEl.value);
+  if (ing === 'NC' && String(egrEl.value || '').trim().toUpperCase() !== 'DIURESIS NC') {
+    egrEl.value = 'DIURESIS NC';
+  }
   var egrParts = parseIoEgresoLine(egrEl.value);
-  out.textContent = formatIoBalanceDisplay(ing, { egrParts: egrParts, egr: diuresisValueFromParts(egrParts) });
+  out.textContent = formatIoBalanceDisplay(ing, { ing: ing, egrParts: egrParts, egr: diuresisValueFromParts(egrParts) });
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   clusterByTimeWindow,
   labTimestampMsFromFechaHora,
   LAB_CONSOLIDATION_WINDOW_MS,
+  resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
 
 export function labDayTipoGroupKey(dayKey, tipo) {
@@ -39,9 +40,9 @@ export function findOutlierLabConsolidationGroups(sets, getDayKey, getTipo, getM
   Object.keys(groups).forEach(function (gk) {
     var arr = groups[gk];
     if (arr.length < 2) return;
-    var clusters = clusterByTimeWindow(arr, getMs, windowMs);
-    if (clusters.length < 2) return;
     var split = splitLabDayTipoGroupKey(gk);
+    var clusters = clusterByTimeWindow(arr, getMs, resolveLabConsolidationWindowMs(split.tipo, windowMs));
+    if (clusters.length < 2) return;
     outliers.push({
       groupKey: gk,
       dayKey: split.dayKey,
@@ -80,7 +81,8 @@ export function buildLabConsolidationMergeJobs(
       jobs.push({ groupKey: gk, kind: 'outlier', sets: arr.slice() });
       return;
     }
-    clusterByTimeWindow(arr, getMs, windowMs).forEach(function (cluster) {
+    var split = splitLabDayTipoGroupKey(gk);
+    clusterByTimeWindow(arr, getMs, resolveLabConsolidationWindowMs(split.tipo, windowMs)).forEach(function (cluster) {
       if (cluster.length >= 2) {
         jobs.push({ groupKey: gk, kind: 'auto', sets: cluster.slice() });
       }

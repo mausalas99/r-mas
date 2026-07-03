@@ -17,6 +17,10 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding-bottom: calc(80px + 24px * var(--density-space, 1));
 }
 
+#ea-copy-fab.lab-copy-fab {
+  z-index: 151;
+}
+
 .estado-actual-panel {
   display: flex;
   flex-direction: column;
@@ -1004,6 +1008,24 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-io-grid .ea-field--full {
   grid-column: 1 / -1;
+}
+
+.ea-label--with-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ea-io-nc-btn {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.ea-form--no-insulin-rescates .ea-glu-altered-toggle,
+.ea-form--no-insulin-rescates .ea-glu-rescue-wrap {
+  display: none !important;
 }
 
 @media (max-width: 640px) {

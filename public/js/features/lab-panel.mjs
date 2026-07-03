@@ -84,6 +84,21 @@ export function safeAttrJsString(s) {
 
 var labCopyFabBound = false;
 
+function isLabAppTabActive() {
+  if (typeof rt.getActiveAppTab !== 'function') return false;
+  var tab = rt.getActiveAppTab();
+  return tab === 'lab' || tab === 'lan';
+}
+
+function hideEaCopyFabDom() {
+  var fab = document.getElementById('ea-copy-fab');
+  if (!fab) return;
+  fab.setAttribute('hidden', '');
+  fab.style.display = 'none';
+  fab.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('ea-copy-fab-active');
+}
+
 function ensureLabCopyFabController() {
   var fab = document.getElementById('lab-copy-fab');
   if (!fab || labCopyFabBound) return;
@@ -108,7 +123,8 @@ function ensureLabCopyFabController() {
 
 export function syncLabCopyFab(show) {
   ensureLabCopyFabController();
-  var visible = !!show;
+  var visible = !!show && isLabAppTabActive();
+  if (visible) hideEaCopyFabDom();
   var fab = document.getElementById('lab-copy-fab');
   if (fab) {
     if (visible) {
@@ -185,7 +201,7 @@ registerSesionIngresoSendRuntime({
 
 export function syncLabOutputChrome() {
   var sec = document.getElementById('lab-output-section');
-  var show = !!(sec && sec.style.display !== 'none');
+  var outputVisible = !!(sec && sec.style.display !== 'none');
   if (isPaseMode()) {
     syncLabCopyFab(false);
     syncLabSomeTablesBtn(false);
@@ -198,6 +214,7 @@ export function syncLabOutputChrome() {
     activeLab.someTablesParsed.departments &&
     activeLab.someTablesParsed.departments.length
   );
+  var show = outputVisible && isLabAppTabActive();
   syncLabCopyFab(show);
   syncLabSomeTablesBtn(show && hasSome);
 }

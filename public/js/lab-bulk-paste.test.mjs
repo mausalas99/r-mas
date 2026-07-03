@@ -30,20 +30,12 @@ const {
   extractLabPatientFromBulkBlock,
 } = await import('./lab-bulk-paste.mjs');
 const { procesarLabs } = await import('./labs.js');
-const { splitResLabsByTipo } = await import('./cultivo-block-core.mjs');
+const { primaryTipoForLabSet, isGasometriaOnlyResLabs } = await import('./lab-history-format.mjs');
+const { GASO_VENOSA_SOLO } = await import('./labs-procesar-fixtures.mjs');
 const { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } = await import('./tour-demo-some-lab.mjs');
 
 function primaryTipoForResLabs(resLabs) {
-  var sp = splitResLabsByTipo(resLabs || []);
-  var hasL = sp.labs.some(function (r) {
-    return String(r || '').trim();
-  });
-  var hasC = sp.cultivo.some(function (r) {
-    return String(r || '').trim();
-  });
-  if (hasC && hasL) return 'mixed';
-  if (hasC) return 'cultivo';
-  return 'labs';
+  return primaryTipoForLabSet(resLabs);
 }
 
 describe('lab-bulk-paste', () => {
@@ -116,6 +108,18 @@ describe('lab-bulk-paste', () => {
     var merged = mergeBulkParseResults(items);
     assert.equal(merged.length, 1);
     assert.ok(merged[0].resLabs.length > 0);
+  });
+
+  it('mergeBulkParseResults mantiene cada gasometría del mismo día (sin ventana 2 h)', () => {
+    var gasoA = GASO_VENOSA_SOLO.replace('6:43AM', '6:43AM');
+    var gasoB = GASO_VENOSA_SOLO.replace('6:43AM', '7:30AM').replace('7.39', '7.35');
+    var items = [gasoA, gasoB].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    assert.ok(isGasometriaOnlyResLabs(items[0].result.resLabs));
+    assert.equal(primaryTipoForResLabs(items[0].result.resLabs), 'gaso');
+    var merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 2, 'cada gasometría debe quedar como conjunto propio');
   });
 
   it('mergeBulkParseResults mantiene días distintos separados', () => {

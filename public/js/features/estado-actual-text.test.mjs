@@ -38,6 +38,30 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.match(text, /ANALGESIA CON ___/);
   assert.match(text, /DIURÉTICOS: NINGUNO/);
   assert.match(text, /SIN VASOPRESORES/);
+  assert.doesNotMatch(text, /RESCATES DE INSULINA/);
+});
+
+test('buildEstadoActualText documenta rescates disponibles solo con escala SOME', () => {
+  const m = emptyMonitoreo();
+  m.historial.push({
+    id: '1',
+    recordedAt: '2026-05-26T08:00:00.000Z',
+    vitals: {},
+    glucometrias: [{ value: 140, time: '08:00' }],
+    io: {},
+  });
+  const text = buildEstadoActualText(
+    m.estadoClinico,
+    deriveSnapshot(m),
+    { balanceTurno: NaN },
+    {
+      recetaBlock: {
+        items: [],
+        pasteRaw:
+          '26/06/2026 07:17:48 a.m.\tCUIDADOS\tRESCATE DE INSULINA\t180-220 4 UI, 221-250 6 UI\tPOR TURNO\tNW',
+      },
+    }
+  );
   assert.match(text, /RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE/);
 });
 

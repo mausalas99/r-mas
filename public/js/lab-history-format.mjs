@@ -154,7 +154,31 @@ function dayKeyToSortMs(dk) {
   return new Date(p[0], p[1] - 1, p[2]).getTime();
 }
 
+/**
+ * Conjunto SOME solo gasometría (sin BH/QS/cultivo).
+ * @param {unknown[]} [resLabs]
+ */
+export function isGasometriaOnlyResLabs(resLabs) {
+  var sp = splitResLabsByTipo(resLabs || []);
+  if (
+    sp.cultivo.some(function (r) {
+      return String(r || '').trim();
+    })
+  ) {
+    return false;
+  }
+  var labRows = sp.labs.filter(function (r) {
+    return String(r || '').trim();
+  });
+  if (!labRows.length) return false;
+  return labRows.every(function (chunk) {
+    var s = String(chunk).trim();
+    return /^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s);
+  });
+}
+
 export function primaryTipoForLabSet(resLabs) {
+  if (isGasometriaOnlyResLabs(resLabs)) return 'gaso';
   var sp = splitResLabsByTipo(resLabs || []);
   var hasL = sp.labs.some(function (r) {
     return String(r || '').trim();
