@@ -217,9 +217,10 @@ describe('LAN event and handler wiring', () => {
   it('lan panel full render runs on first open while dropdown is open', () => {
     assert.match(lanSyncPanel, /lanPanelHasBuiltChrome/);
     assert.match(lanSyncPanel, /lanPanelNeedsFullRebuild/);
+    assert.match(lanSyncPanel, /!force &&/);
     assert.match(
       lanSyncPanel,
-      /isLanConnectionDropdownOpen\(\) && deps\.lanPanelHasBuiltChrome\(root\) && !deps\.lanPanelNeedsFullRebuild\(root\)/
+      /isLanConnectionDropdownOpen\(\)[\s\S]*?deps\.lanPanelHasBuiltChrome\(root\)[\s\S]*?!deps\.lanPanelNeedsFullRebuild\(root\)/
     );
     assert.match(lanSyncPanel, /showInvitePaste: needsInvitePaste/);
   });
