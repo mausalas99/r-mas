@@ -1413,10 +1413,29 @@ var RELEASE_NOTES_765 = [
   },
 ];
 
+var RELEASE_NOTES_766 = [
+  {
+    title: 'QR listo para imprimir',
+    body:
+      'En interno y equipos: <strong>Copiar QR</strong> o <strong>Descargar QR</strong> generan PNG en alta resolución (~2048px) para pegar en carteleras o WhatsApp.',
+  },
+  {
+    title: 'Anfitrión que no cede',
+    body:
+      'Si el R4 tenía rol <strong>host</strong> pero un pin remoto viejo, ⇄ ya no lo empuja a unirse al otro Mac: repinea la IP local automáticamente.',
+  },
+  {
+    title: 'Parche sobre 7.6.5',
+    body:
+      'Incluye token <code>lan-team-code.txt</code>, invite empaquetado y auto-connect. Instala <strong>7.6.6</strong> en anfitrión y clientes el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_765;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_766;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.6': RELEASE_NOTES_766,
   '7.6.5': RELEASE_NOTES_765,
   '7.6.4': RELEASE_NOTES_764,
   '7.6.3': RELEASE_NOTES_763,

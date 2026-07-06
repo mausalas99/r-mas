@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-07-06 | Equipos push return fix (local dev) | `cloud/equipos-worker/src/{push,routes}.js`, `public/equipos/equipos-sw-push.js`, `equipos-push.mjs` | Push send loop deduped into logged helper (sent/pruned/failed per sub); `/return`+push routes await dispatch on localhost (wrangler dev drops `waitUntil`); SW v20 with push-event log. Verified: return → FCM 201 `lumify_return`. |
 | 2026-07-02 | LAN bundled auto-connect | `lan-ward-host-registry.mjs`, `panel-scan-hosts.mjs`, `lan-shift-pin-connect.mjs`, `lan-network-change.mjs` | Clients without bearer probe shipped ward URL; scan loop + boot/roam bypass; no PIN/code entry. |
 | 2026-06-30 | Release 7.5.7 EA suplemento | `estado-actual-meds-diet.mjs`, `docs/RELEASE_NOTES_7.5.7.txt`, `release-notes-highlights.mjs` | Fix confirm suplemento re-proposal; bump/publish v7.5.7 to GitHub Releases. |
 | 2026-06-26 | Release 7.5.2 prepare | `docs/RELEASE_NOTES_7.5.2.txt`, `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`, `release-notes-highlights.mjs` | EA signos en filas + modal historial, SOAP última lectura/PICO, SOME ayuno, traqueostomía; bump 7.5.2; metrics:check OK (no Tier-1 ratchet vs main). |

@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.5](https://github.com/mausalas99/r-mas/releases/tag/v7.6.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.6](https://github.com/mausalas99/r-mas/releases/tag/v7.6.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.6 (QR imprimible + host estable)
+
+- **QR — imprimible** — Copiar o **Descargar QR** en alta resolución (~2048px) para interno por sala y lista de espera equipos.
+- **LAN — host estable** — El R4 conserva rol anfitrión: repinea IP local si ⇄ tenía un pin remoto obsoleto.
+- **Parche sobre 7.6.5** — Token `lan-team-code.txt`, invite empaquetado y auto-connect.
+
+Notas: `docs/RELEASE_NOTES_7.6.6.txt`.
 
 ## R+ 7.6.5 (LAN token fix + invite empaquetado)
 
