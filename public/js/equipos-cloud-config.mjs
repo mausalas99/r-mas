@@ -147,9 +147,9 @@ export async function equiposCloudFetch(path, opts = {}) {
   return data;
 }
 
-/** @param {string} token */
-export function equiposCloudMobileUrl(token) {
+/** @param {string} [_token] kept for LAN parity; cloud URL needs no query param */
+export function equiposCloudMobileUrl(_token) {
   const cfg = getEquiposCloudConfig();
   if (!cfg.url) return '';
-  return `${cfg.url}?t=${encodeURIComponent(token)}`;
+  return cfg.url;
 }

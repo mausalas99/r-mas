@@ -1,4 +1,4 @@
-import { copyInternoQrImage } from '../interno-qr-render.mjs';
+import { copyInternoQrImage, downloadInternoQrPng } from '../interno-qr-render.mjs';
 import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../../lib/clinical-salas.mjs';
 
 const SALA_DEFS = CLINICAL_SALA_VALUES.map((key) => ({
@@ -126,6 +126,15 @@ export function buildInternoSalaBlock(def, row, hostBase, api, userId, showToast
         return;
       }
       void copyInternoQrImage(url, showToast);
+    }));
+    btnRow.appendChild(mkBtn('Descargar QR', () => {
+      if (isLocalOnlyInternoHost(hostBase)) {
+        showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
+        return;
+      }
+      const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
+      downloadInternoQrPng(url, `qr-interno-${slug}.png`);
+      showToast('QR descargado en alta resolución.', 'success');
     }));
   }
   block.appendChild(btnRow);

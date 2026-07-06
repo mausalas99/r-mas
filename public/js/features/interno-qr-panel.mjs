@@ -1,7 +1,7 @@
 /**
  * R4 / program admin panel: QR internos por sala (colapsable, carga bajo demanda).
  */
-import { copyInternoQrImage } from '../interno-qr-render.mjs';
+import { copyInternoQrImage, downloadInternoQrPng } from '../interno-qr-render.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 import { showToast } from '../ui-toast.mjs';
 import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../../lib/clinical-salas.mjs';
@@ -164,6 +164,17 @@ function appendSalaInternoBlock(ctx, def, row) {
           return;
         }
         void copyInternoQrImage(url, showToast);
+      })
+    );
+    btnRow.appendChild(
+      mkInternoBtn('Descargar QR', () => {
+        if (isLocalOnlyHost(hostBase)) {
+          showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
+          return;
+        }
+        const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
+        downloadInternoQrPng(url, `qr-interno-${slug}.png`);
+        showToast('QR descargado en alta resolución.', 'success');
       })
     );
   }

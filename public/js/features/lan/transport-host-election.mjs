@@ -4,9 +4,12 @@
 import { storage } from '../../storage.js';
 import { rememberPrimaryHostUrl, pingLanHostUrl, listLivePeerHostUrls } from '../../lan-surrogate-host.mjs';
 import {
+  clearPinnedHostUrl,
   getPinnedHostUrl,
   hasPinnedHostOverride,
   isPinnedHostLocal,
+  isPinnedHostRemote,
+  setPinnedHostUrl,
 } from '../../lan-host-pin.mjs';
 import { lanHostBasesSameMachine, normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import { discoverLanHostsConcurrent } from '../../lan-discovery.mjs';
@@ -105,6 +108,10 @@ async function promotePinnedLocalHost(opts) {
   });
 }
 
+function isExplicitLanHostUiRole() {
+  return typeof storage.getLanUiRole === 'function' && storage.getLanUiRole() === 'host';
+}
+
 export async function applyPinnedHostOverride(teamCode, opts) {
   opts = opts || {};
   const pinned = getPinnedHostUrl();
@@ -114,6 +121,12 @@ export async function applyPinnedHostOverride(teamCode, opts) {
 
   const ownUrl = await resolveOwnLanBaseForPin();
   if (pinTargetsThisMac(pinned, ownUrl)) {
+    return promotePinnedLocalHost(opts);
+  }
+
+  // Host role must not auto-yield to a stale remote pin (scan/boot/render).
+  if (isExplicitLanHostUiRole() && canLocalMacBeLanHost()) {
+    await repinLocalHostAfterPromotion();
     return promotePinnedLocalHost(opts);
   }
 
@@ -360,6 +373,14 @@ async function confirmPromoteDespiteActivePeers(opts) {
   return true;
 }
 
+/** Remote pin would undo explicit promotion on the next ⇄ panel render. */
+export async function repinLocalHostAfterPromotion() {
+  const ownUrl = await resolveOwnLanBaseForPin();
+  if (!getPinnedHostUrl() || !isPinnedHostRemote(ownUrl)) return;
+  if (ownUrl) setPinnedHostUrl(ownUrl);
+  else clearPinnedHostUrl();
+}
+
 async function finalizePromotedLanHost(opts) {
   var ok = await ensureLanElectronHostReady({ forceLocal: true });
   if (ok) {
@@ -407,6 +428,7 @@ export async function promoteThisMacToLanHost(opts) {
     clearActiveLiveSyncRoom();
     clearRoomMembership();
   }
+  await repinLocalHostAfterPromotion();
   return finalizePromotedLanHost(opts);
 }
 

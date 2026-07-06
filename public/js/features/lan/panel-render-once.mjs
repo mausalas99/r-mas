@@ -9,17 +9,17 @@ import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
 import { appendEquiposQrPanel } from '../equipos-qr-panel.mjs';
 import { getEquiposCloudConfig } from '../../equipos-cloud-config.mjs';
 import { LIVE_SYNC_SALA_DEFS } from '../../lan-join-link.mjs';
-import { getPinnedHostUrl } from '../../lan-host-pin.mjs';
+import { getPinnedHostUrl, isPinnedHostLocal } from '../../lan-host-pin.mjs';
 import { canLocalMacBeLanHost, isClinicalRankConfiguredForLan } from '../../lan-host-rank-policy.mjs';
 import {
   isLanSessionConfiguredForRest,
   isLanElectronDesktop,
-  promoteThisMacToLanHost,
   syncLanHostClinicalMetaToDisk,
   ensureLanElectronHostReady,
   applyPinnedHostOverride,
   getLanTeamCodeFromConfig,
   resolveLanHostUrlAuto,
+  resolveOwnLanBaseForPin,
 } from './transport.mjs';
 import { activeLiveSyncRoomId } from './runtime.mjs';
 import { appendLanPanelGuardCards_ } from './panel-render-guards.mjs';
@@ -79,13 +79,18 @@ async function syncLanHostBeforeRender_(deps, rankConfigured) {
   if (!rankConfigured) return;
   try {
     await syncLanHostClinicalMetaToDisk();
-    if (getPinnedHostUrl() && !isLanConnectionDropdownOpen()) {
-      await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
-    } else if (
-      typeof storage.getLanUiRole === 'function' &&
-      storage.getLanUiRole() === 'host' &&
-      canLocalMacBeLanHost()
-    ) {
+    var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+    var pinned = getPinnedHostUrl();
+    if (pinned && !isLanConnectionDropdownOpen()) {
+      if (uiRole === 'host') {
+        var ownUrl = await resolveOwnLanBaseForPin();
+        if (isPinnedHostLocal(ownUrl)) {
+          await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
+        }
+      } else {
+        await applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true });
+      }
+    } else if (uiRole === 'host' && canLocalMacBeLanHost()) {
       await ensureLanElectronHostReady();
     }
   } catch {
@@ -97,8 +102,13 @@ async function syncLanHostBeforeRender_(deps, rankConfigured) {
  * @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps
  * @returns {Promise<boolean>} true when render should stop after in-place refresh
  */
-async function tryRefreshChromeInPlace_(deps, root, _gen) {
-  if (isLanConnectionDropdownOpen() && deps.lanPanelHasBuiltChrome(root) && !deps.lanPanelNeedsFullRebuild(root)) {
+async function tryRefreshChromeInPlace_(deps, root, _gen, force) {
+  if (
+    !force &&
+    isLanConnectionDropdownOpen() &&
+    deps.lanPanelHasBuiltChrome(root) &&
+    !deps.lanPanelNeedsFullRebuild(root)
+  ) {
     await deps.refreshLanPanelChromeInPlace();
     patchLanPanelJoinButtons();
     return true;
@@ -153,25 +163,6 @@ function appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste
     showBecomeHost: canLocalMacBeLanHost(),
     showConnectTurn: needsInvitePaste && isLanElectronDesktop() && isLanSkipShiftPin(),
     showInvitePaste: needsInvitePaste && deps.runtime().isMobileWeb(),
-    onBecomeHost: function () {
-      void promoteThisMacToLanHost();
-    },
-    onConnectTurn: function () {
-      void import('../../lan-shift-pin-connect.mjs')
-        .then(function (m) {
-          return m.tryEasyLanShiftPinConnect({ force: true });
-        })
-        .then(function (result) {
-          if (result && result.ok) {
-            deps.renderLanPanel({ force: true });
-            return;
-          }
-          deps.runtime().showToast(
-            'No encontramos el anfitrión en esta red. Pega el enlace del R4 abajo o revisa el Wi‑Fi.',
-            'error'
-          );
-        });
-    },
   });
 }
 
@@ -250,7 +241,7 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
 }
 
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
-async function renderLanPanelOnce_(deps) {
+async function renderLanPanelOnce_(deps, force) {
   var gen = deps.bumpRenderGen();
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
@@ -263,7 +254,7 @@ async function renderLanPanelOnce_(deps) {
 
   await syncLanHostBeforeRender_(deps, rankConfigured);
   if (deps.isRenderStale(gen)) return;
-  if (await tryRefreshChromeInPlace_(deps, root, gen)) return;
+  if (await tryRefreshChromeInPlace_(deps, root, gen, force)) return;
 
   var expandState = captureLanPanelExpandState(root);
   var dropdownScrollTop = captureConnectionDropdownScrollTop();
@@ -306,6 +297,7 @@ async function renderLanPanelOnce_(deps) {
   if (deps.isRenderStale(gen)) return;
 
   appendMobileLanSections_(deps, mainStack, hubStatus);
+  deps.appendLanBackToLocalHostSection(mainStack);
   appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
   appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
   deps.appendLanHostPinSection(mainStack);
@@ -331,6 +323,7 @@ async function renderLanPanelOnce_(deps) {
  *   appendLanMobileSharerCard: (root: HTMLElement) => void,
  *   appendLanJoinOtherMacSection: (root: HTMLElement, opts?: object) => void,
  *   appendLanInviteShareCards: (root: HTMLElement) => void,
+ *   appendLanBackToLocalHostSection: (root: HTMLElement) => void,
  *   canOfferMobileLanShare: () => boolean,
  *   buildR1Section: (root: HTMLElement) => void,
  *   buildR2Section: (root: HTMLElement) => void,
@@ -340,8 +333,8 @@ async function renderLanPanelOnce_(deps) {
  *   purgeDuplicateLanShiftPinCards: (root: HTMLElement) => void,
  * }} deps */
 export function createPanelRenderOnce(deps) {
-  async function renderLanPanelOnce() {
-    await renderLanPanelOnce_(deps);
+  async function renderLanPanelOnce(force) {
+    await renderLanPanelOnce_(deps, !!force);
   }
   return { renderLanPanelOnce };
 }

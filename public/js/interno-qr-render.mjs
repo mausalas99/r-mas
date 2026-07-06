@@ -3,6 +3,28 @@
  */
 import qrcode from 'qrcode-generator';
 
+/** ~7" edge at 300 DPI — crisp when pasted or scaled on a full letter page. */
+const QR_PRINT_TARGET_PX = 2048;
+const QR_PRINT_MARGIN_MODULES = 4;
+
+/**
+ * Canvas opts sized for print/export (~2048px edge regardless of payload length).
+ * @param {string} text
+ * @param {{ targetPx?: number, marginModules?: number }} [cfg]
+ * @returns {{ cellPx: number, margin: number }}
+ */
+export function resolveQrCanvasOpts(text, cfg = {}) {
+  const targetPx = cfg.targetPx ?? QR_PRINT_TARGET_PX;
+  const marginModules = cfg.marginModules ?? QR_PRINT_MARGIN_MODULES;
+  const qr = qrcode(0, 'M');
+  qr.addData(String(text || ''));
+  qr.make();
+  const n = qr.getModuleCount();
+  const totalModules = n + marginModules * 2;
+  const cellPx = Math.max(8, Math.floor(targetPx / totalModules));
+  return { cellPx, margin: marginModules * cellPx };
+}
+
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {string} text
@@ -67,14 +89,14 @@ export async function copyInternoQrImage(url, showToast) {
 
   try {
     const canvas = document.createElement('canvas');
-    drawInternoQrCanvas(canvas, url);
+    drawInternoQrCanvas(canvas, url, resolveQrCanvasOpts(url));
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('blob_failed'))), 'image/png');
     });
 
     if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast('QR copiado — pégalo en WhatsApp o imprime', 'success');
+      toast('QR copiado en alta resolución — listo para imprimir', 'success');
       return;
     }
 
@@ -84,4 +106,18 @@ export async function copyInternoQrImage(url, showToast) {
   } catch {
     toast('No se pudo copiar el QR', 'error');
   }
+}
+
+/**
+ * Save a print-ready PNG (same resolution as copyInternoQrImage).
+ * @param {string} url
+ * @param {string} [filename]
+ */
+export function downloadInternoQrPng(url, filename = 'qr-rplus.png') {
+  const canvas = document.createElement('canvas');
+  drawInternoQrCanvas(canvas, url, resolveQrCanvasOpts(url));
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }

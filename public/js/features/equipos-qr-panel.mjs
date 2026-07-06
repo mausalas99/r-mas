@@ -2,7 +2,7 @@
  * R4 / program admin: QR lista de espera (Lumify / EKG / US).
  * Compact teaser in ⇄ dropdown; full panel in a wide modal (like Mi rotación).
  */
-import { copyInternoQrImage, drawInternoQrCanvas } from '../interno-qr-render.mjs';
+import { copyInternoQrImage, downloadInternoQrPng, drawInternoQrCanvas } from '../interno-qr-render.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 import { showToast } from '../ui-toast.mjs';
 import { canManageInternoQr } from '../clinical-privileges.mjs';
@@ -32,9 +32,9 @@ function normalizeHostBase(hostBase) {
   return base || 'http://127.0.0.1:3738';
 }
 
-function lanEquiposUrl(token, hostBase) {
+function lanEquiposUrl(hostBase) {
   const host = normalizeHostBase(hostBase);
-  return `${host}/equipos?t=${encodeURIComponent(token)}`;
+  return `${host}/equipos`;
 }
 
 function equiposListaBackdrop() {
@@ -88,10 +88,10 @@ async function setAccessActive(userId, active) {
   await api.dbEquiposAccessSetActive({ userId, active });
 }
 
-function equiposUrlForToken(token, hostBase) {
+function equiposUrlForToken(_token, hostBase) {
   const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) return equiposCloudMobileUrl(token);
-  return lanEquiposUrl(token, hostBase);
+  if (cloud.enabled) return equiposCloudMobileUrl();
+  return lanEquiposUrl(hostBase);
 }
 
 function renderQueueBoardSection() {
@@ -159,6 +159,7 @@ function renderQrBlock({ url, active, cloudMode, showLanNotice, hasToken }) {
     `<div class="equipos-qr-actions equipos-qr-actions--row">` +
     `<button type="button" class="btn-lan-secondary" data-eq-rotate>Regenerar</button>` +
     `<button type="button" class="btn-lan-primary" data-eq-qr>Copiar QR</button>` +
+    `<button type="button" class="btn-lan-secondary" data-eq-qr-download>Descargar QR</button>` +
     `<button type="button" class="btn-lan-secondary" data-eq-copy>Copiar enlace</button>` +
     `<button type="button" class="btn-lan-secondary" data-eq-toggle>${active ? 'Desactivar' : 'Activar'}</button>` +
     `</div></div></div></section>`
@@ -311,6 +312,14 @@ function wireEquiposListaQrActions(body, panelCtx, url, active, hasToken) {
       return;
     }
     void copyInternoQrImage(url, (msg, kind) => toast(msg, kind));
+  });
+  body.querySelector('[data-eq-qr-download]')?.addEventListener('click', () => {
+    if (!url) {
+      toast('Genera el enlace primero.', 'error');
+      return;
+    }
+    downloadInternoQrPng(url, 'qr-lista-espera.png');
+    toast('QR descargado en alta resolución.', 'success');
   });
   body.querySelector('[data-eq-rotate]')?.addEventListener('click', async () => {
     try {

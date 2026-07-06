@@ -112,6 +112,7 @@ function bumpPanelRenderGen() {
 
 function buildPanelDelegationDeps() {
   return {
+    runtime,
     renderLanPanel,
     refreshClinicalSessionTeams,
     joinLanFromInviteUi: function (btn) {
@@ -154,6 +155,7 @@ function ensurePanelRenderOnce() {
       appendLanMobileSharerCard,
       appendLanJoinOtherMacSection,
       appendLanInviteShareCards,
+      appendLanBackToLocalHostSection,
       canOfferMobileLanShare,
       buildR1Section,
       buildR2Section,
@@ -166,8 +168,8 @@ function ensurePanelRenderOnce() {
   return panelRenderOnce;
 }
 
-async function renderLanPanelOnce() {
-  return ensurePanelRenderOnce().renderLanPanelOnce();
+async function renderLanPanelOnce(force) {
+  return ensurePanelRenderOnce().renderLanPanelOnce(force);
 }
 
 
@@ -196,7 +198,7 @@ export function renderLanPanel(opts) {
   _lanPanelRenderChain = _lanPanelRenderChain
     .catch(function () {})
     .then(function () {
-      return renderLanPanelOnce();
+      return renderLanPanelOnce(o.force);
     });
   return _lanPanelRenderChain;
 }
@@ -362,6 +364,10 @@ function appendLanJoinOtherMacSection(root, opts) {
 
 function appendLanInviteShareCards(root) {
   ensurePanelInviteJoin().appendLanInviteShareCards(root);
+}
+
+function appendLanBackToLocalHostSection(root) {
+  ensurePanelInviteJoin().appendLanBackToLocalHostSection(root);
 }
 
 export async function mintMobileLanPairingFromUi() {

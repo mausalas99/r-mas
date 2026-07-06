@@ -21,6 +21,12 @@ function prefillBundledWardInviteInput(input) {
  *   showInvitePaste?: boolean,
  * }} opts
  */
+function removeHeroPrimaryCtas(hero) {
+  hero.querySelectorAll('[data-lan-hero-cta]').forEach(function (el) {
+    el.remove();
+  });
+}
+
 function appendBecomeHostButton(hero, opts, connected) {
   if (connected || !opts.isElectronDesktop || opts.showBecomeHost === false) return;
   var becomeHostBtn = document.createElement('button');
@@ -29,9 +35,8 @@ function appendBecomeHostButton(hero, opts, connected) {
   becomeHostBtn.style.marginTop = '8px';
   becomeHostBtn.style.width = '100%';
   becomeHostBtn.textContent = 'Convertirse en host';
-  becomeHostBtn.onclick = function () {
-    if (typeof opts.onBecomeHost === 'function') opts.onBecomeHost();
-  };
+  becomeHostBtn.setAttribute('data-lan-action', 'become-host');
+  becomeHostBtn.setAttribute('data-lan-hero-cta', '1');
   hero.appendChild(becomeHostBtn);
 }
 
@@ -43,9 +48,8 @@ function appendConnectTurnButton(hero, opts, connected) {
   btn.style.marginTop = '8px';
   btn.style.width = '100%';
   btn.textContent = 'Conectar al turno';
-  btn.onclick = function () {
-    if (typeof opts.onConnectTurn === 'function') opts.onConnectTurn();
-  };
+  btn.setAttribute('data-lan-action', 'connect-turn');
+  btn.setAttribute('data-lan-hero-cta', '1');
   hero.appendChild(btn);
 }
 
@@ -123,6 +127,7 @@ export function appendLanHubStatusHero(root, opts) {
     else hero.appendChild(hintEl);
   }
 
+  removeHeroPrimaryCtas(hero);
   appendConnectTurnButton(hero, opts, connected);
   appendBecomeHostButton(hero, opts, connected);
 

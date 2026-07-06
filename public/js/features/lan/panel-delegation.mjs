@@ -2,7 +2,7 @@
  * LAN panel click delegation + clinical-ops event wiring — extracted from panel.mjs.
  */
 import { storage } from '../../storage.js';
-import { isLanElectronDesktop } from './transport.mjs';
+import { isLanElectronDesktop, promoteThisMacToLanHost } from './transport.mjs';
 import { joinLanRoom } from './room.mjs';
 import {
   scheduleLiveSyncPush,
@@ -12,6 +12,7 @@ import { syncLanHostClinicalMetaToDisk } from './transport.mjs';
 import { forgetLanRoomSession } from './panel-known-sessions.mjs';
 
 /** @param {{
+ *   runtime: () => { showToast: (msg: string, kind?: string) => void },
  *   renderLanPanel: (opts?: object) => void,
  *   refreshClinicalSessionTeams: () => Promise<void>,
  *   joinLanFromInviteUi: (btn: HTMLElement) => void,
@@ -77,6 +78,25 @@ function dispatchLanPanelAction(action, btn, deps) {
     },
     'reconnect-from-offline': function () {
       void deps.reconnectFromOfflineUi();
+    },
+    'become-host': function () {
+      void promoteThisMacToLanHost();
+    },
+    'connect-turn': function () {
+      void import('../../lan-shift-pin-connect.mjs')
+        .then(function (m) {
+          return m.tryEasyLanShiftPinConnect({ force: true });
+        })
+        .then(function (result) {
+          if (result && result.ok) {
+            deps.renderLanPanel({ force: true });
+            return;
+          }
+          deps.runtime().showToast(
+            'No encontramos el anfitrión en esta red. Pega el enlace del R4 abajo o revisa el Wi‑Fi.',
+            'error'
+          );
+        });
     },
   };
   var handler = handlers[action];
