@@ -1,16 +1,20 @@
-version: 7.6.5
+version: 7.6.7
 files:
-  - url: R+-7.6.5-x64.exe
-    sha512: +hujL594jZZVFjogwiYN1o/xHaaSOvkr8iUZuijr7sUi0egDUuyzKyC59emwtA5yLA/IK9QnBvd4KmRZHhbyRQ==
-    size: 120528964
-path: R+-7.6.5-x64.exe
-sha512: +hujL594jZZVFjogwiYN1o/xHaaSOvkr8iUZuijr7sUi0egDUuyzKyC59emwtA5yLA/IK9QnBvd4KmRZHhbyRQ==
-releaseDate: '2026-07-04T00:17:36.000Z'
+  - url: R+-7.6.7-x64.exe
+    sha512: iDbYouwoEftO9jDw6RskTcPaIiNLiiBIW+QaQV4udzb40Aaa4G+rqwMwtA3YC/o3H6gneTdj7PVMpx28LbD4RQ==
+    size: 120546487
+path: R+-7.6.7-x64.exe
+sha512: iDbYouwoEftO9jDw6RskTcPaIiNLiiBIW+QaQV4udzb40Aaa4G+rqwMwtA3YC/o3H6gneTdj7PVMpx28LbD4RQ==
+releaseDate: '2026-07-07T22:18:11.000Z'
 releaseNotes: |
-  Sobre 7.6.4: corrige el 401 invalid_token en anfitriones cuando rpc-lan-config tenía un bearer distinto al de lan-team-code.txt, y empaqueta un enlace de sala opcional que aparece pre-llenado en ⇄ tras actualizar.
+  Sobre 7.6.6: la PWA de equipos avisa por push cuando te llaman de la cola (LAN y cloud), troponina I hs entra al flujo SOME/tendencias, y la consolidación de labs respeta mejor gasometrías vs química.
   
-  LAN — token anfitrión — El host alinea el bearer con lan-team-code.txt al conectar; sync-bundle reintenta tras 401.
+  Equipos — push PWA — Service worker + Web Push en /equipos: activar avisos desde la cola; sync de contexto en IndexedDB; ayuda e instalación en iOS (Añadir a pantalla de inicio).
   
-  LAN — invite empaquetado — bundledWardInviteUrl() en clinical-settings.mjs: el enlace del turno se pre-llena en ⇄ → Unirse con enlace (rotar cuando el R4 genere ticket nuevo).
+  Equipos — cloud — Worker envía push al llamar paciente; custodia de cola y wipe admin en panel.
   
-  LAN — host empaquetado — Sigue en http://10.0.57.65:3738 para auto-connect sin código.
+  Labs — troponina hs — parseTroponina_ y sección QUÍMICA reconocen reportes solo troponina; tarjeta Troponina I (hs) en tendencias.
+  
+  Labs — consolidación — Familia labwork: une bloques >2 h si aplica; nunca fusiona gasometría con gasometría; cultivos y mixtos aparte.
+  
+  Parche sobre 7.6.6 — QR imprimible, host LAN estable y token lan-team-code.txt.
