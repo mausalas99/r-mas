@@ -41,6 +41,7 @@ export async function handlePushSubscribe(req, env, body) {
   if (!endpoint || !p256dh || !auth) {
     throw new EquiposError('invalid_subscription', 'Suscripción push inválida.');
   }
+  await clearPushSubsForWaiter(db, { deviceType, reporterName: name, rotation: rot });
   const out = await upsertPushSubscription(db, {
     endpoint,
     p256dh,

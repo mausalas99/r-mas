@@ -9,9 +9,6 @@
     "db:migrate:local": "wrangler d1 execute rplus-equipos --local --file=./schema/001-init.sql && wrangler d1 execute rplus-equipos --local --file=./schema/002-push.sql",
     "db:migrate:remote": "wrangler d1 execute rplus-equipos --remote --file=./schema/001-init.sql && wrangler d1 execute rplus-equipos --remote --file=./schema/002-push.sql"
   },
-  "dependencies": {
-    "@pushforge/builder": "^2.0.5"
-  },
   "devDependencies": {
     "wrangler": "^4.14.0"
   }

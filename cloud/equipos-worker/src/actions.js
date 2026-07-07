@@ -13,6 +13,10 @@ import {
   resolvePurgeDeviceTypes,
   getEquiposPhoto,
 } from './board.js';
+import {
+  canJoinEquiposWaitlist,
+  resolveCheckoutQueueGate,
+} from '../../../lib/equipos/equipos-queue-custody.mjs';
 
 export { getEquiposPhoto };
 
@@ -90,6 +94,15 @@ export async function equiposCheckout(db, input) {
   if (photoRequired(deviceType) && !input.pickupPhotoId) {
     throw new EquiposError('photo_required', 'Se requiere foto al tomar el dispositivo.');
   }
+
+  const waitlist = await listWaitlistForDevice(db, deviceType);
+  const gate = resolveCheckoutQueueGate(
+    waitlist,
+    name,
+    rot,
+    !!input.forceQueueBypass
+  );
+
   let pickupCharge = null;
   if (deviceType === 'lumify' && input.pickupChargePct != null && input.pickupChargePct !== '') {
     const pct = Number(input.pickupChargePct);
@@ -136,10 +149,15 @@ export async function equiposCheckout(db, input) {
     deviceType,
     reporterName: name,
     rotation: rot,
-    meta: { sessionId },
+    meta: { sessionId, queueBypassed: gate.bypassed },
   });
 
-  return { sessionId, deviceType };
+  return {
+    sessionId,
+    deviceType,
+    queueBypassed: gate.bypassed,
+    notifyWaitlist: gate.bypassed ? gate.notifyWaitlist : [],
+  };
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {object} input */
@@ -198,8 +216,8 @@ export async function equiposWaitlistJoin(db, input) {
   if (!deviceType) throw new EquiposError('invalid_device', 'Dispositivo inv?lido.');
   const { name, rot } = validateIdentity(input.reporterName, input.rotation);
   const device = await getEquiposDevice(db, deviceType);
-  if (!device || device.status !== 'in_use') {
-    throw new EquiposError('not_busy', 'El dispositivo no est? en uso.');
+  if (!device || !canJoinEquiposWaitlist(device.status)) {
+    throw new EquiposError('not_busy', 'No puedes entrar en la cola ahora.');
   }
   const dup = await db
     .prepare(

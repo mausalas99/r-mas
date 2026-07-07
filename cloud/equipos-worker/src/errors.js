@@ -10,6 +10,7 @@ export class EquiposError extends Error {
 export function equiposErrorStatus(err) {
   const code = err?.code || 'error';
   if (code === 'not_available' || code === 'not_in_use' || code === 'not_holder') return 409;
+  if (code === 'not_in_queue' || code === 'not_next_in_queue') return 409;
   if (
     code === 'invalid_token' ||
     code === 'auth_required' ||

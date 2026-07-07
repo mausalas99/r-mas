@@ -1,10 +1,11 @@
 {
+  "id": "/equipos/",
   "name": "R+ Lista de espera",
   "short_name": "R+ Cola",
   "description": "Cola Lumify, EKG y Ultrasonido — R+",
   "lang": "es",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/equipos/",
+  "scope": "/equipos/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f1419",

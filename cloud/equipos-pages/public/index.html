@@ -5,15 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' https: wss:; base-uri 'self'; form-action 'self'" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="R+ Lista de espera" />
   <meta name="theme-color" content="#4a52e8" />
-  <link rel="manifest" href="/equipos/manifest.webmanifest?v=12" />
+  <link rel="manifest" href="/manifest.webmanifest?v=1" />
+  <script>
+    (function () {
+      try {
+        var m = /[?&]t=([^&]+)/.exec(location.search);
+        if (!m) return;
+        var t = decodeURIComponent(m[1]);
+        localStorage.setItem('rpc-equipos-token', t);
+        var secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie =
+          'rpc-equipos-token=' + encodeURIComponent(t) +
+          '; path=/; max-age=31536000; SameSite=Lax' + secure;
+      } catch (_e) {}
+    })();
+  </script>
   <link rel="icon" type="image/png" sizes="192x192" href="/equipos/icons/icon-192.png?v=12" />
   <link rel="apple-touch-icon" href="/equipos/icons/apple-touch-icon.png?v=12" />
   <title>R+ Lista de espera — Lumify / EKG / US</title>
   <link rel="stylesheet" href="/tokens.css" />
   <link rel="stylesheet" href="/styles/overlays.css" />
-  <link rel="stylesheet" href="/equipos/equipos.css?v=cloud7" />
+  <link rel="stylesheet" href="/equipos/equipos.css?v=cloud8" />
   <script>window.__EQUIPOS_API_MODE__ = 'cloud';</script>
 </head>
 <body class="equipos-body">
@@ -35,6 +50,7 @@
       </div>
       <div class="equipos-topbar-actions">
         <button type="button" class="equipos-admin-btn" id="equipos-admin-btn" hidden>Admin</button>
+        <button type="button" class="equipos-inicio-btn" id="equipos-ayuda">Ayuda</button>
         <button type="button" class="equipos-inicio-btn" id="equipos-inicio">Inicio</button>
       </div>
     </div>
@@ -42,6 +58,6 @@
   <div id="equipos-app" class="equipos-app" tabindex="-1" aria-live="polite">
     <div class="equipos-empty"><p>Cargando cola…</p></div>
   </div>
-  <script type="module" src="/equipos/equipos-app.mjs?v=cloud6"></script>
+  <script type="module" src="/equipos/equipos-app.mjs?v=cloud16"></script>
 </body>
 </html>

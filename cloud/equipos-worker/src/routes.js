@@ -7,7 +7,7 @@ import {
   rotateEquiposProgramToken,
   setEquiposProgramActive,
 } from './auth.js';
-import { buildEquiposBoard, getEquiposPhoto } from './board.js';
+import { buildEquiposBoard, getBoardStamp, getEquiposPhoto } from './board.js';
 import {
   parseAdminListQuery,
   listEquiposSessionsPaged,
@@ -28,10 +28,16 @@ import {
   equiposAckAlert,
   equiposAdminPurgeQueue,
 } from './actions.js';
+import { equiposAdminWipeHistory } from './admin-wipe.js';
 import { savePhotoFromBase64, readPhotoObject } from './photos.js';
 import { EquiposError, equiposErrorStatus, jsonEquiposError } from './errors.js';
 import { getEquiposDevice } from './board.js';
-import { scheduleEquiposPush, scheduleEquiposWaitlistHeadPush } from './push.js';
+import {
+  scheduleEquiposPush,
+  scheduleEquiposWaitlistHeadPush,
+  scheduleEquiposWaitlistTopTwoKindPush,
+  scheduleEquiposQueueBypassPush,
+} from './push.js';
 import {
   getVapidPublicKey,
   handlePushSubscribe,
@@ -62,6 +68,24 @@ async function readJson(req) {
   }
 }
 
+/** wrangler dev can drop waitUntil work; on localhost we await push inline instead. */
+function isLocalDevRequest(req) {
+  try {
+    const host = new URL(req.url).hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {Request} req
+ * @param {Promise<unknown>} pushTask
+ */
+async function settlePushForLocalDev(req, pushTask) {
+  if (isLocalDevRequest(req)) await pushTask;
+}
+
 /**
  * @param {Request} req
  * @param {import('@cloudflare/workers-types').ExecutionContext} env
@@ -89,6 +113,30 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
 
     if (method === 'GET' && subpath === '/ping') {
       return jsonOk({ ok: true, equipos: true, cloud: true, lease: null });
+    }
+
+    if (method === 'GET' && subpath === '/access/invite') {
+      const row = await getEquiposProgramAccess(db);
+      if (!row || row.is_active !== 1) {
+        throw new EquiposError(
+          'access_inactive',
+          'La lista de espera no está activa.'
+        );
+      }
+      const inviteToken = String(row.access_token || '').trim();
+      if (!inviteToken) {
+        throw new EquiposError(
+          'access_not_ready',
+          'Aún no hay enlace configurado.'
+        );
+      }
+      return jsonOk({ ok: true, token: inviteToken });
+    }
+
+    if (method === 'GET' && subpath === '/board/stamp') {
+      await assertEquiposAuth(db, auth);
+      const stamp = await getBoardStamp(db);
+      return jsonOk({ ok: true, stamp });
     }
 
     if (method === 'GET' && subpath === '/board') {
@@ -181,6 +229,20 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
         }, bucket, db);
       }
       const out = await equiposCheckout(db, { ...body, pickupPhotoId });
+      if (out.queueBypassed && out.notifyWaitlist?.length) {
+        const pushTask = scheduleEquiposQueueBypassPush(
+          db,
+          execCtx,
+          {
+            deviceType: out.deviceType,
+            takerName: body.reporterName,
+            takerRotation: body.rotation,
+            waitlistRows: out.notifyWaitlist,
+          },
+          vapidJwk
+        );
+        await settlePushForLocalDev(req, pushTask);
+      }
       return jsonOk({ ok: true, ...out });
     }
 
@@ -194,12 +256,18 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
         }, bucket, db);
       }
       const out = await equiposReturn(db, { ...body, returnPhotoId });
-      const kind =
-        body.deviceType === 'lumify' ? 'lumify_return' : 'device_available';
-      scheduleEquiposPush(db, execCtx, kind, {
-        deviceType: body.deviceType,
-        chargePct: body.chargePct != null ? Number(body.chargePct) : null,
-      }, vapidJwk);
+      const kind = out.deviceType === 'lumify' ? 'lumify_return' : 'device_available';
+      const pushTask = scheduleEquiposWaitlistTopTwoKindPush(
+        db,
+        execCtx,
+        kind,
+        {
+          deviceType: out.deviceType,
+          chargePct: body.chargePct != null ? Number(body.chargePct) : null,
+        },
+        vapidJwk
+      );
+      await settlePushForLocalDev(req, pushTask);
       return jsonOk({ ok: true, ...out });
     }
 
@@ -220,7 +288,8 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
       await assertEquiposAuth(db, auth);
       const out = await equiposWaitlistSkip(db, body);
       if (out.wasNext && body?.deviceType) {
-        scheduleEquiposWaitlistHeadPush(db, execCtx, body.deviceType, vapidJwk);
+        const pushTask = scheduleEquiposWaitlistHeadPush(db, execCtx, body.deviceType, vapidJwk);
+        await settlePushForLocalDev(req, pushTask);
       }
       return jsonOk({ ok: true, ...out });
     }
@@ -248,10 +317,11 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
       }
       const out = await equiposCreateAlert(db, { ...body, photoId });
       const alertKind = body.kind === 'malfunction' ? 'malfunction' : 'missing_material';
-      scheduleEquiposPush(db, execCtx, alertKind, {
+      const pushTask = scheduleEquiposPush(db, execCtx, alertKind, {
         deviceType: body.deviceType,
         message: body.message,
       }, vapidJwk);
+      await settlePushForLocalDev(req, pushTask);
       return jsonOk({ ok: true, ...out });
     }
 
@@ -266,9 +336,10 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
       if (reportRow?.device_type) {
         const dev = await getEquiposDevice(db, reportRow.device_type);
         if (dev?.status === 'available') {
-          scheduleEquiposPush(db, execCtx, 'device_available', {
+          const pushTask = scheduleEquiposPush(db, execCtx, 'device_available', {
             deviceType: reportRow.device_type,
           }, vapidJwk);
+          await settlePushForLocalDev(req, pushTask);
         }
       }
       return jsonOk({ ok: true });
@@ -284,12 +355,22 @@ export async function handleEquiposApi(req, env, subpath, execCtx) {
       });
       for (const r of results) {
         if (r.hadCustody || r.cleared > 0) {
-          scheduleEquiposPush(db, execCtx, 'device_available', {
+          const pushTask = scheduleEquiposPush(db, execCtx, 'device_available', {
             deviceType: r.deviceType,
           }, vapidJwk);
+          await settlePushForLocalDev(req, pushTask);
         }
       }
       return jsonOk({ ok: true, results });
+    }
+
+    if (method === 'POST' && subpath === '/admin/wipe-history') {
+      assertAdminAuth(env, auth);
+      const out = await equiposAdminWipeHistory(db, bucket, {
+        adminUserId: body.adminUserId,
+        adminName: body.adminName,
+      });
+      return jsonOk({ ok: true, ...out });
     }
 
     return jsonOk({ error: 'not_found', message: 'Ruta no encontrada.' }, 404);

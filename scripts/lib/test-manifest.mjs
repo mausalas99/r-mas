@@ -96,10 +96,6 @@ export function testFilesOnDisk(rootDir) {
  * the file is added back to scripts.test.
  */
 export const QUARANTINED = [
-  // equipos push WIP — add to scripts.test when feature ships
-  'cloud/equipos-pages/public/equipos/equipos-push.test.mjs',
-  'lib/equipos/equipos-webpush.test.mjs',
-  'public/equipos/equipos-push.test.mjs',
 ];
 
 // ---------------------------------------------------------------------------

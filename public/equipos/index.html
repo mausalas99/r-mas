@@ -7,7 +7,21 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="R+ Lista de espera" />
   <meta name="theme-color" content="#4a52e8" />
-  <link rel="manifest" href="/equipos/manifest.webmanifest?v=12" />
+  <link rel="manifest" href="/equipos/manifest.webmanifest?v=14" />
+  <script>
+    (function () {
+      try {
+        var m = /[?&]t=([^&]+)/.exec(location.search);
+        if (!m) return;
+        var t = decodeURIComponent(m[1]);
+        localStorage.setItem('rpc-equipos-token', t);
+        var secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie =
+          'rpc-equipos-token=' + encodeURIComponent(t) +
+          '; path=/; max-age=31536000; SameSite=Lax' + secure;
+      } catch (_e) {}
+    })();
+  </script>
   <link rel="icon" type="image/png" sizes="192x192" href="/equipos/icons/icon-192.png?v=12" />
   <link rel="apple-touch-icon" href="/equipos/icons/apple-touch-icon.png?v=12" />
   <title>R+ Lista de espera — Lumify / EKG / US</title>
@@ -34,6 +48,7 @@
       </div>
       <div class="equipos-topbar-actions">
         <button type="button" class="equipos-admin-btn" id="equipos-admin-btn" hidden>Admin</button>
+        <button type="button" class="equipos-inicio-btn" id="equipos-ayuda">Ayuda</button>
         <button type="button" class="equipos-inicio-btn" id="equipos-inicio">Inicio</button>
       </div>
     </div>

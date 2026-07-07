@@ -30,3 +30,6 @@ binding = "ASSETS"
 #
 # [vars]
 # EQUIPOS_PUBLIC_ORIGIN = "https://rmas-lista-de-espera.rmas-workersdev.workers.dev"
+
+[vars]
+EQUIPOS_VAPID_PUBLIC_KEY = "BG1y_wrXtoDskOEV5MYXwXKYP_cA_SO2ZkpQr4VugpN_1GpxPfl0cZdNoW72tXJg1h-dONaqYYMukj7xgHtEbg0"

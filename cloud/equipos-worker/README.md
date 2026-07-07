@@ -85,6 +85,7 @@ When cloud URL is set, the desktop board and QR panel use the Worker API instead
 | POST | `/api/equipos/v1/push/subscribe` | token (must be in waitlist) |
 | POST | `/api/equipos/v1/push/unsubscribe` | token |
 | GET | `/api/equipos/v1/push/vapid-public-key` | — |
+| GET | `/api/equipos/v1/access/invite` | public (bare URL bootstrap) |
 | GET | `/api/equipos/v1/admin/access` | admin |
 | POST | `/api/equipos/v1/admin/access/rotate` | admin |
 | POST | `/api/equipos/v1/admin/access/set-active` | admin |

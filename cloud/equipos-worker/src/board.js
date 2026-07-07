@@ -1,4 +1,5 @@
 import { EQUIPOS_DEVICE_TYPES, normalizeEquiposDeviceType, newEquiposId } from './constants.js';
+import { formatBoardStamp } from '../../../lib/equipos/equipos-board-stamp.mjs';
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {string} eventType @param {object} fields */
 export async function insertEquiposEvent(db, eventType, fields = {}) {
@@ -84,6 +85,30 @@ export async function buildEquiposBoard(db) {
   );
   const alerts = await listActiveTeamReports(db);
   return { devices: withWaitlist, alerts, lease: null };
+}
+
+/** @param {import('@cloudflare/workers-types').D1Database} db */
+export async function getBoardStamp(db) {
+  const dev = await db
+    .prepare(
+      `SELECT MAX(updated_at) AS max_dev,
+              SUM(CASE WHEN status = 'in_use' THEN 1 ELSE 0 END) AS in_use,
+              SUM(CASE WHEN previous_holder_name IS NOT NULL THEN 1 ELSE 0 END) AS prev_count,
+              MAX(COALESCE(previous_holder_name, '') || '|' || COALESCE(previous_holder_rotation, '')) AS prev_sig
+       FROM equipos_device`
+    )
+    .first();
+  const wl = await db
+    .prepare(`SELECT COUNT(*) AS c, MAX(joined_at) AS max_j FROM equipos_waitlist`)
+    .first();
+  const alerts = await db
+    .prepare(
+      `SELECT COUNT(*) AS c, MAX(created_at) AS max_c
+       FROM equipos_team_reports WHERE active = 1`
+    )
+    .first();
+  const ev = await db.prepare(`SELECT MAX(created_at) AS max_ev FROM equipos_events`).first();
+  return formatBoardStamp(dev, wl, alerts, ev);
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {number} [limit] */

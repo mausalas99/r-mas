@@ -20,7 +20,7 @@ const REPORT_KIND_LABELS = {
   missing_material: 'Material faltante',
 };
 
-/** @type {{ apiBase: string, token: string, root: HTMLElement, onExit: () => void, showToast: (msg: string) => void } | null} */
+/** @type {{ apiBase: string, token: string, root: HTMLElement, onExit: () => void, showToast: (msg: string) => void, markBoardDirty?: () => void } | null} */
 let ctx = null;
 
 /** @type {'historial' | 'reportes' | 'personas'} */
@@ -161,6 +161,7 @@ async function renderHistorial(host) {
   host.innerHTML =
     `<div class="equipos-admin-toolbar">` +
     `<button type="button" class="equipos-btn secondary" data-act="export-sessions-csv">Exportar CSV</button>` +
+    `<button type="button" class="equipos-btn warn secondary equipos-btn-wipe" data-act="wipe-history">Borrar todo el historial y fotos</button>` +
     `</div>` +
     cards +
     paginationHtml(sessionOffset, res.total || 0, EQUIPOS_ADMIN_PAGE_SIZE, 'sess-prev', 'sess-next');
@@ -286,6 +287,28 @@ function wireAdminActions() {
         downloadCsv(`lista-espera-reportes-${EQUIPOS_ADMIN_HISTORY_DAYS}d.csv`, reportsToCsv(rows));
         ctx.showToast('CSV de reportes descargado.');
       });
+    } else if (act === 'wipe-history') {
+      if (
+        !confirm(
+          '¿Borrar TODO el historial (sesiones, reportes, fotos, eventos) y quitar «Anterior» de la cola? No cambia quién tiene el equipo ahora.'
+        )
+      ) {
+        return;
+      }
+      if (!confirm('Confirmación final: esta acción no se puede deshacer.')) return;
+      void equiposAdminFetch(ctx.apiBase, ctx.token, '/admin/wipe-history', {
+        method: 'POST',
+        body: {},
+      })
+        .then((res) => {
+          sessionOffset = 0;
+          reportOffset = 0;
+          ctx.markBoardDirty?.();
+          const total = (res.sessions || 0) + (res.reports || 0);
+          ctx.showToast(`Historial borrado (${total} registros). Sal de admin para ver la cola limpia.`);
+          void renderActiveTab();
+        })
+        .catch((e) => ctx.showToast(e.message || 'No se pudo borrar el historial.'));
     }
   });
 }
@@ -321,7 +344,7 @@ export function exitEquiposAdmin() {
 }
 
 /**
- * @param {{ apiBase: string, token: string, root: HTMLElement, onExit: () => void, showToast: (msg: string) => void }} opts
+ * @param {{ apiBase: string, token: string, root: HTMLElement, onExit: () => void, showToast: (msg: string) => void, markBoardDirty?: () => void }} opts
  */
 export function openEquiposAdminDashboard(opts) {
   ctx = opts;
@@ -373,7 +396,7 @@ export function openEquiposAdminUnlock(opts) {
 }
 
 /**
- * @param {{ apiBase: string, token: string, root: HTMLElement, resumeBoard: () => void, showToast: (msg: string) => void, cloudOnly?: boolean }} opts
+ * @param {{ apiBase: string, token: string, root: HTMLElement, resumeBoard: () => void, showToast: (msg: string) => void, cloudOnly?: boolean, markBoardDirty?: () => void }} opts
  */
 export function initEquiposAdmin(opts) {
   const adminBtn = document.getElementById('equipos-admin-btn');
@@ -390,6 +413,7 @@ export function initEquiposAdmin(opts) {
         token: opts.token,
         root: opts.root,
         showToast: opts.showToast,
+        markBoardDirty: opts.markBoardDirty,
         onExit: opts.resumeBoard,
       });
     if (isEquiposAdminUnlocked()) go();
@@ -408,6 +432,7 @@ export function initEquiposAdmin(opts) {
       token: opts.token,
       root: opts.root,
       showToast: opts.showToast,
+      markBoardDirty: opts.markBoardDirty,
       onExit: opts.resumeBoard,
     });
   }

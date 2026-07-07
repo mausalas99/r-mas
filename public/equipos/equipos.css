@@ -193,8 +193,23 @@
 
 .equipos-admin-toolbar {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  justify-content: stretch;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.equipos-admin-toolbar .equipos-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 9.5rem;
+  text-align: center;
+}
+
+.equipos-admin-toolbar .equipos-btn-wipe {
+  flex: 1 1 100%;
+  border-color: color-mix(in srgb, var(--color-warning, #f59e0b) 55%, var(--border-subtle));
+  color: #fcd34d;
+  background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
 }
 
 .equipos-admin-pager {
@@ -476,6 +491,14 @@
   width: 100%;
 }
 
+.equipos-push-hint {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #9aa0a6);
+  width: 100%;
+}
+
 .equipos-queue-btn-row {
   display: flex;
   flex-wrap: wrap;
@@ -487,6 +510,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+}
+
+.equipos-queue-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #3b82f6) 35%, transparent);
 }
 
 .equipos-btn {
@@ -618,4 +654,44 @@
 
 .equipos-lease-strip {
   margin-bottom: 12px;
+}
+
+.equipos-ios-install {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent, #4a52e8) 35%, transparent);
+  background: color-mix(in srgb, var(--accent, #4a52e8) 10%, var(--surface-1, #1a1f26));
+}
+
+.equipos-ios-install-title {
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary, #e8eaed);
+}
+
+.equipos-ios-install-lead {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #9aa0a6);
+}
+
+.equipos-ios-install-steps {
+  margin: 0 0 12px;
+  padding-left: 1.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #9aa0a6);
+}
+
+.equipos-ios-install-steps li + li {
+  margin-top: 4px;
+}
+
+.equipos-ios-install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
