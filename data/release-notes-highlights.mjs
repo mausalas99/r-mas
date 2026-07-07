@@ -1413,6 +1413,29 @@ var RELEASE_NOTES_765 = [
   },
 ];
 
+var RELEASE_NOTES_767 = [
+  {
+    title: 'Equipos — avisos push',
+    body:
+      'La PWA de lista de espera (<strong>Lumify / EKG / US</strong>) puede avisarte cuando te llaman: <strong>Activar avisos</strong> en la cola. En iPhone: instalar desde Safari (pantalla de inicio) y seguir la guía en <strong>Ayuda</strong>.',
+  },
+  {
+    title: 'Troponina I (hs)',
+    body:
+      'Pega reportes SOME solo troponina: R+ extrae <strong>TnI</strong> con flag de elevación y muestra la serie en <strong>Tendencias</strong>.',
+  },
+  {
+    title: 'Labs — consolidación',
+    body:
+      'Al pegar varios bloques del mismo día: une química y gasometría inicial en ventana de 2 h, pero <strong>nunca</strong> fusiona gasometría con gasometría.',
+  },
+  {
+    title: 'Parche sobre 7.6.6',
+    body:
+      'Incluye QR imprimible y anfitrión LAN estable. Instala <strong>7.6.7</strong> en Mac anfitrión y clientes el mismo día.',
+  },
+];
+
 var RELEASE_NOTES_766 = [
   {
     title: 'QR listo para imprimir',
@@ -1432,9 +1455,10 @@ var RELEASE_NOTES_766 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_766;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_767;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.7': RELEASE_NOTES_767,
   '7.6.6': RELEASE_NOTES_766,
   '7.6.5': RELEASE_NOTES_765,
   '7.6.4': RELEASE_NOTES_764,

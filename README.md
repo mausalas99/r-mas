@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.6](https://github.com/mausalas99/r-mas/releases/tag/v7.6.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.7](https://github.com/mausalas99/r-mas/releases/tag/v7.6.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.7 (equipos push + troponina hs)
+
+- **Equipos — avisos push** — PWA de lista de espera Lumify/EKG/US con notificaciones web cuando te llaman (LAN y cloud); guía iOS y página de ayuda.
+- **Labs — troponina hs** — Parseo de reportes SOME solo troponina I (alta sensibilidad) y tarjeta en tendencias.
+- **Labs — consolidación** — Mezcla más inteligente: gasometría no fusiona con gasometría; labwork + gaso en ventana de 2 h.
+- **Parche sobre 7.6.6** — QR imprimible y host LAN estable de la versión anterior.
+
+Notas: `docs/RELEASE_NOTES_7.6.7.txt`.
 
 ## R+ 7.6.6 (QR imprimible + host estable)
 

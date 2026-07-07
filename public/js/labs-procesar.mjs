@@ -119,6 +119,7 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
   pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
   pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
+  pushLabSection_(resLabs, deps.parseTroponina_(textoBruto));
   return { resLabs: resLabs, bhExtras: bhExtras };
 }
 
@@ -174,6 +175,7 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object | null} deps.parseCuantOrina_
  * @param {(texto: string, tNorm: string) => object | null} deps.parseCultivo_
  * @param {(texto: string) => object | null} deps.parseSerologiaBancoSangre_
+ * @param {(texto: string) => string} deps.parseTroponina_
  */
 export function createProcesarLabs(deps) {
   /**

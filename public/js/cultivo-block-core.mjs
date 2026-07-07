@@ -32,7 +32,7 @@ var CULTIVO_BASE_START_PATTERNS = [
 ];
 
 var LAB_SECTION_BASE =
-  /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES)\b/i;
+  /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES|LIPASA|TROP)\b/i;
 
 function matchesAnyPattern(t, patterns) {
   for (var i = 0; i < patterns.length; i++) {

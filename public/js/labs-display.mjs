@@ -38,7 +38,7 @@ function isLabSectionLabel(label, lineIndex) {
   var t = String(label || '').trim().replace(/:$/, '');
   if (/^Coag\.?$/i.test(t) || /^COAG$/i.test(t)) return true;
   if (lineIndex !== 0) return false;
-  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES|COAG)$/i.test(t);
+  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES|COAG|LIPASA|TROP)$/i.test(t);
 }
 
 export function isLabSectionHeaderHtml(html) {

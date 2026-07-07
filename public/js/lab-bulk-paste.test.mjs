@@ -110,7 +110,7 @@ describe('lab-bulk-paste', () => {
     assert.ok(merged[0].resLabs.length > 0);
   });
 
-  it('mergeBulkParseResults mantiene cada gasometría del mismo día (sin ventana 2 h)', () => {
+  it('mergeBulkParseResults mantiene cada gasometría seriada del mismo día', () => {
     var gasoA = GASO_VENOSA_SOLO.replace('6:43AM', '6:43AM');
     var gasoB = GASO_VENOSA_SOLO.replace('6:43AM', '7:30AM').replace('7.39', '7.35');
     var items = [gasoA, gasoB].map(function (text) {
@@ -119,7 +119,27 @@ describe('lab-bulk-paste', () => {
     assert.ok(isGasometriaOnlyResLabs(items[0].result.resLabs));
     assert.equal(primaryTipoForResLabs(items[0].result.resLabs), 'gaso');
     var merged = mergeBulkParseResults(items);
-    assert.equal(merged.length, 2, 'cada gasometría debe quedar como conjunto propio');
+    assert.equal(merged.length, 2, 'cada gasometría seriada debe quedar como conjunto propio');
+  });
+
+  it('mergeBulkParseResults une labs + gasometría inicial del mismo día', () => {
+    var labs = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 8:00AM');
+    var gaso = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 8:15AM');
+    var items = [labs, gaso].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 1);
+    assert.ok(
+      merged[0].resLabs.some(function (row) {
+        return /^GASES\b/i.test(String(row));
+      })
+    );
+    assert.ok(
+      merged[0].resLabs.some(function (row) {
+        return /^BH\b/i.test(String(row));
+      })
+    );
   });
 
   it('mergeBulkParseResults mantiene días distintos separados', () => {

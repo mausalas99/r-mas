@@ -11,7 +11,7 @@ export function tendEligibleSectionKey(sec) {
     .replace(/:+$/, '')
     .toUpperCase();
   if (!u) return false;
-  return /^(BH|PLTCIT|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA|FROTIS)$/.test(u);
+  return /^(BH|PLTCIT|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA|FROTIS|LIPASA|TROP)$/.test(u);
 }
 
 export function normalizeFechaLabHistory(fechaRaw) {

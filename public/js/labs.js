@@ -51,6 +51,7 @@ export {
   parseESC_,
   parsePFH_,
   parseLipasa_,
+  parseTroponina_,
 } from './labs-chemistry.mjs';
 
 export {
@@ -110,7 +111,7 @@ import { createProcesarLabs } from './labs-procesar.mjs';
 import { bloqueCitoquimicoLiquidosFull, formatAscitisInterpretacionLine_, buildAscitisLabAlerts_, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_ } from './labs-fluidos.mjs';
 import { dedupeSingletonSections_, parseGaso_, parsePIE_, parsearLCR } from './labs-gaso-section.mjs';
 import { parseBH_ } from './labs-bh.mjs';
-import { parseQS_, parseESC_, parsePFH_, parseLipasa_ } from './labs-chemistry.mjs';
+import { parseQS_, parseESC_, parsePFH_, parseLipasa_, parseTroponina_ } from './labs-chemistry.mjs';
 import { parseCultivo_ } from './labs-cultivo.mjs';
 import { parseEGO_ } from './labs-ego-parse.mjs';
 import { extractLabReportFechaDMY, extractLabReportHora, buildRefsBySectionFromReport } from './labs-report-refs.mjs';
@@ -126,6 +127,7 @@ export const procesarLabs = createProcesarLabs({
   parseESC_,
   parsePFH_,
   parseLipasa_,
+  parseTroponina_,
   parsePlaquetasCitrato_,
   parseGaso_,
   parsePIE_,

@@ -6,6 +6,7 @@ import {
 import { patients, labHistory } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { findExactDuplicateLabGroups, compareLabSetIdForDedupe } from '../lab-history-auto-store-core.mjs';
+import { isGasometriaOnlyResLabs } from '../lab-history-format.mjs';
 import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
 import {
   buildLabConsolidationMergeJobs,
@@ -201,6 +202,10 @@ function labSetTipo(set) {
   return rt.primaryTipoForLabSet(set.resLabs);
 }
 
+function labSetIsGasoOnly(set) {
+  return isGasometriaOnlyResLabs(set && set.resLabs);
+}
+
 function labSetTimestampMs(set) {
   return labTimestampMsFromFechaHora(set.fecha, set.hora);
 }
@@ -255,7 +260,11 @@ function executeLabConsolidationMergeJobs(patientId, jobs) {
   var todo = [];
   var keeperIds = [];
   jobs.forEach(function (job) {
-    var tipoGrupo = labSetTipo(job.sets[0]) || 'labs';
+    var tipoGrupo = job.sets.some(function (s) {
+      return labSetTipo(s) === 'labs';
+    })
+      ? 'labs'
+      : labSetTipo(job.sets[0]) || 'labs';
     var removed = mergeLabHistorySetsCluster(patientId, job.sets, tipoGrupo);
     if (!removed.length) return;
     removed.forEach(function (id) {
@@ -289,9 +298,17 @@ function analyzeLabConsolidation(patientId) {
     sets,
     labSetDayKey,
     labSetTipo,
-    labSetTimestampMs
+    labSetTimestampMs,
+    labSetIsGasoOnly
   );
-  var autoJobs = buildLabConsolidationMergeJobs(sets, labSetDayKey, labSetTipo, labSetTimestampMs, null);
+  var autoJobs = buildLabConsolidationMergeJobs(
+    sets,
+    labSetDayKey,
+    labSetTipo,
+    labSetTimestampMs,
+    null,
+    labSetIsGasoOnly
+  );
   return {
     autoJobs: autoJobs,
     outlierGroups: outlierGroups,
@@ -321,7 +338,8 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
     labSetDayKey,
     labSetTipo,
     labSetTimestampMs,
-    outlierGroupKeys
+    outlierGroupKeys,
+    labSetIsGasoOnly
   );
   var result = executeLabConsolidationMergeJobs(patientId, jobs);
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);

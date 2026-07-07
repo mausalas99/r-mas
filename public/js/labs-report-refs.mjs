@@ -45,7 +45,7 @@ export function looksLikeSomeLabReport(textoBruto) {
   var t = textoBruto;
   if (!/Expediente\s*:/i.test(t)) return false;
   if (!/Nombre\s*:/i.test(t)) return false;
-  return /Fecha\s+Registro/i.test(t) || /HEMATOLOG[IÍ]A|QU[IÍ]MICA|BIOMETR[IÍ]A|GASOMETR[IÍ]A/i.test(t);
+  return /Fecha\s+Registro/i.test(t) || /HEMATOLOG[IÍ]A|QU[IÍ]MICA|BIOMETR[IÍ]A|GASOMETR[IÍ]A|BANCO\s+DE\s+SANGRE|TROPONINA/i.test(t);
 }
 
 function applyMeridiemHour(hh, meridiemRaw) {
@@ -192,6 +192,28 @@ export function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH '], tNorm));
     putTrendRef_(refs, 'PFHs', 'Amil', extraerConRango(['AMILASA SERICA', 'AMILASA'], tNorm));
     putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
+  }
+
+  var tropData = extraerConRango(
+    [
+      'TROPONINA I (ALTA SENSIBILIDAD)',
+      'HS TNL O TROPONINA I',
+      'HSTNL O TROPONINA I',
+      'HSTNL O TROPONINA',
+      'TROPONINA I',
+      'TROPONINA',
+    ],
+    textoBruto
+  );
+  if (tropData.valor !== '---') {
+    putTrendRef_(refs, 'TROP', 'TnI', {
+      valor: tropData.valor,
+      min: tropData.min != null ? tropData.min : 0,
+      max:
+        tropData.max != null && tropData.min != null && tropData.max > tropData.min
+          ? tropData.max
+          : 34,
+    });
   }
 
   if (bloqueGaso) {

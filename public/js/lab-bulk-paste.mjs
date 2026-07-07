@@ -10,7 +10,7 @@ import {
 } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
-import { primaryTipoForLabSet } from './lab-history-format.mjs';
+import { isGasometriaOnlyResLabs, primaryTipoForLabSet } from './lab-history-format.mjs';
 import {
   clusterByDayTipoAndTimeWindow,
   clusterByTimeWindow,
@@ -355,7 +355,10 @@ export function mergeBulkParseResults(parsedItems) {
     function (item) {
       return primaryTipoForResLabs(item.result.resLabs || []);
     },
-    timestampMsFromParsedItem
+    timestampMsFromParsedItem,
+    function (item) {
+      return isGasometriaOnlyResLabs(item.result.resLabs || []);
+    }
   );
   return clusters.map(function (cluster) {
     var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);

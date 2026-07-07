@@ -11,7 +11,7 @@ var TEND_UNITS = {
   AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', VSG:'mm/h', CPK:'U/L',
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
   AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
-  LDH:'U/L', Amil:'U/L',
+  LDH:'U/L', Amil:'U/L', Lip:'U/L', TnI:'ng/L',
   Lactato:'mmol/L', Dens:'g/L', Prot:'mg/dL', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg',
   iCa:'mmol/L'
 };
@@ -26,7 +26,7 @@ var TEND_REF = {
   AU:[3.5,7], TGL:[0,150], COL:[0,200], CPK:[30,200],
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
   AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2], Alb:[3.5,5.2], BD:[0,0.3], BI:[0.1,1],
-  LDH:[120,250], Amil:[30,110],
+  LDH:[120,250], Amil:[30,110], Lip:[8,57], TnI:[0,34],
   LCR_pH:[7.28,7.42], LCR_Leu:[0,5], LCR_Glu:[40,80], LCR_Cl:[118,132], LCR_Prot:[15,45],
   Liq_pH:[7.1,7.6], Liq_Glu:[20,600], Liq_Leu:[0,5000], Liq_LDH:[0,500], Liq_Dens:[1000,1050], Liq_Prot:[10,50]
 };
@@ -57,10 +57,12 @@ var TEND_SECTION_LABELS = {
   EGO: 'EGO',
   CUANTORINA: 'Cuantificación urinaria',
   PltCit: 'Plaquetas (citrato)',
-  FROTIS: 'Frotis de sangre'
+  FROTIS: 'Frotis de sangre',
+  LIPASA: 'Lipasa',
+  TROP: 'Troponina I (hs)'
 };
 var TEND_SECTION_ORDER = [
-  'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
+  'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
 ];
 
 /**
@@ -127,6 +129,8 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'PFHs', fieldKey: 'BI', cardTitle: 'Bilirrubina indirecta' },
   { sectionKey: 'PFHs', fieldKey: 'LDH', cardTitle: 'LDH' },
   { sectionKey: 'PFHs', fieldKey: 'Amil', cardTitle: 'Amilasa' },
+  { sectionKey: 'LIPASA', fieldKey: 'Lip', cardTitle: 'Lipasa' },
+  { sectionKey: 'TROP', fieldKey: 'TnI', cardTitle: 'Troponina I (hs)' },
   { sectionKey: 'GASES', fieldKey: 'pH', cardTitle: 'pH (gas)' },
   { sectionKey: 'GASES', fieldKey: 'pCO2', cardTitle: 'pCO₂ (gas)' },
   { sectionKey: 'GASES', fieldKey: 'pO2', cardTitle: 'pO₂ (gas)' },
