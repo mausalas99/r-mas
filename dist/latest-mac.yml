@@ -1,20 +1,20 @@
 version: 7.6.7
 files:
   - url: R+-7.6.7-arm64.zip
-    sha512: bCT+RNgFP0wabWAUrUu2vKOsdfLs/oMZ+N5YK2uG+6k45R8EujamSMlUc++Is+0j0ysguWmfwv2OPmOJ1LgE4w==
-    size: 136901317
+    sha512: K9ZJQVPCbj0svkAm+UyyfQ4LzGRonboxL3cTiOEHpx84teilWNvAnyyb71PVuWFSAW5CA0C8cVvPnGYfd8jQpQ==
+    size: 136906352
   - url: R+-7.6.7-arm64.dmg
-    sha512: uzPmeHNJfvwXxgY5Ff5XUj4QHuRIbCSh40N9P02xlLJpoxbBf+hM7X4BQ5uk5DGRZW6D61xD5QZH1C1r4whu+g==
-    size: 142618367
+    sha512: UazFD0wJl/F8VI1a/6u+11vu8dKhzNT7S7u2xRVx9Gb+jBPYGDZ8CnqtjKmuZvDAQHrWdkXUq7K+qx++MF1YAA==
+    size: 142633423
   - url: R+-7.6.7-x64.zip
-    sha512: nNxo1lWXd7ZCTPHwME/dI9EFs05biGBw2+aMrhAecadpUzaXn5iMkiM+/AZ0WYIwfYwQde8UiMyUyWOnS+y8dQ==
-    size: 145275354
+    sha512: tdcZfOmHRHq9TU91APgbdvyRSfU/Huf1OfvbvTJOO4NZCkfyu5PAS8Q3NG0wxJ/PshxXQ6/D+0QxmnWhmva0Qg==
+    size: 145280410
   - url: R+-7.6.7-x64.dmg
-    sha512: R3V63W4EBAszSzHHnXBUhSQttX2bq1pn1bhIx6nDEqsSJoixHY3gQguwho5w4HG7vPLTFUQlHkhiabnLTxArJQ==
-    size: 151026961
+    sha512: BTQSBYwnB6/TYMwyupkBkPt4zGSbBx30mE66sKkACOC1Q4/7bnzBJyzAr32OPID0kK5h0WMaLdt4VdLlKhLllQ==
+    size: 151048995
 path: R+-7.6.7-arm64.zip
-sha512: bCT+RNgFP0wabWAUrUu2vKOsdfLs/oMZ+N5YK2uG+6k45R8EujamSMlUc++Is+0j0ysguWmfwv2OPmOJ1LgE4w==
-releaseDate: '2026-07-07T22:40:51.000Z'
+sha512: K9ZJQVPCbj0svkAm+UyyfQ4LzGRonboxL3cTiOEHpx84teilWNvAnyyb71PVuWFSAW5CA0C8cVvPnGYfd8jQpQ==
+releaseDate: '2026-07-07T23:33:30.000Z'
 releaseNotes: |
   Sobre 7.6.6: la PWA de equipos avisa por push cuando te llaman de la cola (LAN y cloud), troponina I hs entra al flujo SOME/tendencias, y la consolidación de labs respeta mejor gasometrías vs química.
   
