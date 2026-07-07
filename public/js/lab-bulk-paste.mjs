@@ -17,6 +17,7 @@ import {
   labTimestampMsFromFechaHora,
   resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
+import { mergeTroponinaResLabRows_ } from './labs-troponin.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
@@ -112,9 +113,11 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   if (tipo !== 'labs') return normalized;
 
   var bhRows = [];
+  var tropRows = [];
   var otherRows = [];
   normalized.forEach(function (row) {
     if (isBhResLabRow(row)) bhRows.push(row);
+    else if (labRowSectionKey(row) === 'TROP') tropRows.push(row);
     else otherRows.push(row);
   });
 
@@ -132,6 +135,8 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   var out = Object.keys(bestBySection).map(function (k) {
     return bestBySection[k].row;
   });
+  var mergedTrop = mergeTroponinaResLabRows_(tropRows);
+  if (mergedTrop) out.push(mergedTrop);
   if (bhRows.length) {
     var mergedBh = mergeBhResLabRows_(bhRows);
     if (mergedBh.bh) out.unshift(mergedBh.bh);

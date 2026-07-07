@@ -1,4 +1,8 @@
 import { extraerConRango, extraerConRangoSuero } from './labs-extract.mjs';
+import {
+  extractAllTroponinaFromText_,
+  TROPONINA_HS_NORMAL_MAX_NG_L,
+} from './labs-troponin.mjs';
 import { extraerProcalcitonina_ } from './labs-chemistry.mjs';
 import { bloqueCitoquimicoLiquidosFull } from './labs-fluidos.mjs';
 
@@ -194,26 +198,28 @@ export function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
   }
 
-  var tropData = extraerConRango(
-    [
-      'TROPONINA I (ALTA SENSIBILIDAD)',
-      'HS TNL O TROPONINA I',
-      'HSTNL O TROPONINA I',
-      'HSTNL O TROPONINA',
-      'TROPONINA I',
-      'TROPONINA',
-    ],
-    textoBruto
-  );
-  if (tropData.valor !== '---') {
-    putTrendRef_(refs, 'TROP', 'TnI', {
-      valor: tropData.valor,
-      min: tropData.min != null ? tropData.min : 0,
-      max:
-        tropData.max != null && tropData.min != null && tropData.max > tropData.min
-          ? tropData.max
-          : 34,
+  var tropHits = extractAllTroponinaFromText_(textoBruto);
+  if (tropHits.length) {
+    var tropMax = TROPONINA_HS_NORMAL_MAX_NG_L;
+    var tropMin = 0;
+    var first = tropHits[0];
+    if (first.max != null && first.min != null && first.max > first.min) {
+      tropMin = first.min;
+      tropMax = first.max;
+    }
+    putTrendRef_(refs, 'TROP', 'TnI1', {
+      valor: first.valor,
+      min: tropMin,
+      max: tropMax,
     });
+    if (tropHits.length > 1) {
+      var last = tropHits[tropHits.length - 1];
+      putTrendRef_(refs, 'TROP', 'TnI2', {
+        valor: last.valor,
+        min: tropMin,
+        max: tropMax,
+      });
+    }
   }
 
   if (bloqueGaso) {

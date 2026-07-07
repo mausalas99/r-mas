@@ -1,6 +1,7 @@
 // Parsed resLabs sections → valores numéricos (diagramas SVG + tendencias por estudio)
 import { parseBhTrendValuesFromResLab } from "../labs.js";
 import { tendEligibleSectionKey } from "../tend-core.mjs";
+import { normalizeTropTrendFields_ } from "../labs-troponin.mjs";
 
 export function parsearSecciones(resLabs) {
   var secs = {};
@@ -83,7 +84,10 @@ export function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
       if (!isFinite(n)) return;
       row[k] = n;
     });
-    if (Object.keys(row).length) out[sec] = row;
+    if (Object.keys(row).length) {
+      if (sec === 'TROP') normalizeTropTrendFields_(row);
+      out[sec] = row;
+    }
   });
   (resLabs || []).forEach(function (entry) {
     var head = String(entry).split("\n")[0].trim();

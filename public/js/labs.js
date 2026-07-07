@@ -51,8 +51,14 @@ export {
   parseESC_,
   parsePFH_,
   parseLipasa_,
-  parseTroponina_,
 } from './labs-chemistry.mjs';
+
+export {
+  parseTroponina_,
+  TROPONINA_HS_NORMAL_MAX_NG_L,
+  troponinaDeltaPct_,
+  mergeTroponinaResLabRows_,
+} from './labs-troponin.mjs';
 
 export {
   ageYearsFromLabDemographics,
@@ -111,7 +117,8 @@ import { createProcesarLabs } from './labs-procesar.mjs';
 import { bloqueCitoquimicoLiquidosFull, formatAscitisInterpretacionLine_, buildAscitisLabAlerts_, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_ } from './labs-fluidos.mjs';
 import { dedupeSingletonSections_, parseGaso_, parsePIE_, parsearLCR } from './labs-gaso-section.mjs';
 import { parseBH_ } from './labs-bh.mjs';
-import { parseQS_, parseESC_, parsePFH_, parseLipasa_, parseTroponina_ } from './labs-chemistry.mjs';
+import { parseQS_, parseESC_, parsePFH_, parseLipasa_ } from './labs-chemistry.mjs';
+import { parseTroponina_, TROPONINA_HS_NORMAL_MAX_NG_L } from './labs-troponin.mjs';
 import { parseCultivo_ } from './labs-cultivo.mjs';
 import { parseEGO_ } from './labs-ego-parse.mjs';
 import { extractLabReportFechaDMY, extractLabReportHora, buildRefsBySectionFromReport } from './labs-report-refs.mjs';
