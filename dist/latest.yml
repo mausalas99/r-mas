@@ -1,11 +1,11 @@
 version: 7.6.7
 files:
   - url: R+-7.6.7-x64.exe
-    sha512: iDbYouwoEftO9jDw6RskTcPaIiNLiiBIW+QaQV4udzb40Aaa4G+rqwMwtA3YC/o3H6gneTdj7PVMpx28LbD4RQ==
-    size: 120546487
+    sha512: CLinig/5XyLcFNynf4VqE4/IoYt8zanAD588p5L2RK8t/qbgHI2gruYYNlEnlrwxD7rF14Ify92kw7QFFlKRHw==
+    size: 120546489
 path: R+-7.6.7-x64.exe
-sha512: iDbYouwoEftO9jDw6RskTcPaIiNLiiBIW+QaQV4udzb40Aaa4G+rqwMwtA3YC/o3H6gneTdj7PVMpx28LbD4RQ==
-releaseDate: '2026-07-07T22:18:11.000Z'
+sha512: CLinig/5XyLcFNynf4VqE4/IoYt8zanAD588p5L2RK8t/qbgHI2gruYYNlEnlrwxD7rF14Ify92kw7QFFlKRHw==
+releaseDate: '2026-07-07T22:40:51.000Z'
 releaseNotes: |
   Sobre 7.6.6: la PWA de equipos avisa por push cuando te llaman de la cola (LAN y cloud), troponina I hs entra al flujo SOME/tendencias, y la consolidación de labs respeta mejor gasometrías vs química.
   
