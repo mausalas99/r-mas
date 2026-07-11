@@ -1,29 +1,27 @@
-version: 7.6.7
+version: 7.6.8
 files:
-  - url: R+-7.6.7-arm64.zip
-    sha512: K9ZJQVPCbj0svkAm+UyyfQ4LzGRonboxL3cTiOEHpx84teilWNvAnyyb71PVuWFSAW5CA0C8cVvPnGYfd8jQpQ==
-    size: 136906352
-  - url: R+-7.6.7-arm64.dmg
-    sha512: UazFD0wJl/F8VI1a/6u+11vu8dKhzNT7S7u2xRVx9Gb+jBPYGDZ8CnqtjKmuZvDAQHrWdkXUq7K+qx++MF1YAA==
-    size: 142633423
-  - url: R+-7.6.7-x64.zip
-    sha512: tdcZfOmHRHq9TU91APgbdvyRSfU/Huf1OfvbvTJOO4NZCkfyu5PAS8Q3NG0wxJ/PshxXQ6/D+0QxmnWhmva0Qg==
-    size: 145280410
-  - url: R+-7.6.7-x64.dmg
-    sha512: BTQSBYwnB6/TYMwyupkBkPt4zGSbBx30mE66sKkACOC1Q4/7bnzBJyzAr32OPID0kK5h0WMaLdt4VdLlKhLllQ==
-    size: 151048995
-path: R+-7.6.7-arm64.zip
-sha512: K9ZJQVPCbj0svkAm+UyyfQ4LzGRonboxL3cTiOEHpx84teilWNvAnyyb71PVuWFSAW5CA0C8cVvPnGYfd8jQpQ==
-releaseDate: '2026-07-07T23:33:30.000Z'
+  - url: R+-7.6.8-arm64.zip
+    sha512: aQ1FzhDczN7VzvsGp7rCCp84lPZPcrXeKXHHij00Cn50Dcnyj1fi1wWeb00JNqVi2VoX2CoOIabIywtymKV+6g==
+    size: 136916521
+  - url: R+-7.6.8-arm64.dmg
+    sha512: ilBriMxR2v0Kbsxb8IAcV4+rOUeVe6PbEvvb8pWprYDgirdEc5kakCIIWcTc8mHLSS9Tq02vY0kEnrdiTTupVw==
+    size: 142642629
+  - url: R+-7.6.8-x64.zip
+    sha512: 5ZvJya+kTgVughouJa5lbLPyQx3qe14B9syZLn4TbYQczYzH8QGyc48mPwCcDzEmaOjXYHk7G10qejvllg4AbA==
+    size: 145290604
+  - url: R+-7.6.8-x64.dmg
+    sha512: /YzgPURXopuLHaC3K/7tVDckTmFUBECGieanngauG4HPkCEB5qzdfHxhhcrU7rGdG7iWV/+JmQm3emvqiH/NRQ==
+    size: 151069428
+path: R+-7.6.8-arm64.zip
+sha512: aQ1FzhDczN7VzvsGp7rCCp84lPZPcrXeKXHHij00Cn50Dcnyj1fi1wWeb00JNqVi2VoX2CoOIabIywtymKV+6g==
+releaseDate: '2026-07-11T17:21:18.000Z'
 releaseNotes: |
-  Sobre 7.6.6: la PWA de equipos avisa por push cuando te llaman de la cola (LAN y cloud), troponina I hs entra al flujo SOME/tendencias, y la consolidación de labs respeta mejor gasometrías vs química.
+  Sobre 7.6.7: Estado actual registra bomba de insulina IV desde SOME (algoritmos 1–4), y los filtros de censo por sala aplican al instante sin esperar sync LAN.
   
-  Equipos — push PWA — Service worker + Web Push en /equipos: activar avisos desde la cola; sync de contexto en IndexedDB; ayuda e instalación en iOS (Añadir a pantalla de inicio).
+  EA — bomba de insulina — Detección en SOME (BOMBA EN ALGORITMO n + insulina IV); toggle en registro, lecturas en snapshot, texto NM y SOAP de medicamentos.
   
-  Equipos — cloud — Worker envía push al llamar paciente; custodia de cola y wipe admin en panel.
+  Filtros censo — sala — Al cambiar sala/equipo/servicio la lista y el tablero Guardia se actualizan de inmediato; reconcilia equipo fuera de sala; pull LAN en segundo plano.
   
-  Labs — troponina hs — parseTroponina_ y sección QUÍMICA reconocen reportes solo troponina; tarjeta Troponina I (hs) en tendencias.
+  Medicamentos — Receta hospitalaria consolidada en pestaña Manejo del expediente (sin tab Manejo separado).
   
-  Labs — consolidación — Familia labwork: une bloques >2 h si aplica; nunca fusiona gasometría con gasometría; cultivos y mixtos aparte.
-  
-  Parche sobre 7.6.6 — QR imprimible, host LAN estable y token lan-team-code.txt.
+  Parche sobre 7.6.7 — Equipos push, troponina hs y consolidación de labs.

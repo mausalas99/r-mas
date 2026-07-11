@@ -1,20 +1,18 @@
-version: 7.6.7
+version: 7.6.8
 files:
-  - url: R+-7.6.7-x64.exe
-    sha512: wq2l3EQ0S2RzhpMade4GOdolO88u6MKyNeTnB3Ck9SnZB3Iw0hna4u7qirl+madAY1eQ5pLDNTmd2iyvMTB96Q==
-    size: 120546754
-path: R+-7.6.7-x64.exe
-sha512: wq2l3EQ0S2RzhpMade4GOdolO88u6MKyNeTnB3Ck9SnZB3Iw0hna4u7qirl+madAY1eQ5pLDNTmd2iyvMTB96Q==
-releaseDate: '2026-07-07T23:33:30.000Z'
+  - url: R+-7.6.8-x64.exe
+    sha512: TxgckzlWrI+Izfj5jM/r7WWaOK4F7bj2pAtnMsphEvK+kuUpA3uEuOVv7YKPK/C2WVYtxSCjHskRqFCIBmI8vw==
+    size: 120559712
+path: R+-7.6.8-x64.exe
+sha512: TxgckzlWrI+Izfj5jM/r7WWaOK4F7bj2pAtnMsphEvK+kuUpA3uEuOVv7YKPK/C2WVYtxSCjHskRqFCIBmI8vw==
+releaseDate: '2026-07-11T17:21:18.000Z'
 releaseNotes: |
-  Sobre 7.6.6: la PWA de equipos avisa por push cuando te llaman de la cola (LAN y cloud), troponina I hs entra al flujo SOME/tendencias, y la consolidación de labs respeta mejor gasometrías vs química.
+  Sobre 7.6.7: Estado actual registra bomba de insulina IV desde SOME (algoritmos 1–4), y los filtros de censo por sala aplican al instante sin esperar sync LAN.
   
-  Equipos — push PWA — Service worker + Web Push en /equipos: activar avisos desde la cola; sync de contexto en IndexedDB; ayuda e instalación en iOS (Añadir a pantalla de inicio).
+  EA — bomba de insulina — Detección en SOME (BOMBA EN ALGORITMO n + insulina IV); toggle en registro, lecturas en snapshot, texto NM y SOAP de medicamentos.
   
-  Equipos — cloud — Worker envía push al llamar paciente; custodia de cola y wipe admin en panel.
+  Filtros censo — sala — Al cambiar sala/equipo/servicio la lista y el tablero Guardia se actualizan de inmediato; reconcilia equipo fuera de sala; pull LAN en segundo plano.
   
-  Labs — troponina hs — parseTroponina_ y sección QUÍMICA reconocen reportes solo troponina; tarjeta Troponina I (hs) en tendencias.
+  Medicamentos — Receta hospitalaria consolidada en pestaña Manejo del expediente (sin tab Manejo separado).
   
-  Labs — consolidación — Familia labwork: une bloques >2 h si aplica; nunca fusiona gasometría con gasometría; cultivos y mixtos aparte.
-  
-  Parche sobre 7.6.6 — QR imprimible, host LAN estable y token lan-team-code.txt.
+  Parche sobre 7.6.7 — Equipos push, troponina hs y consolidación de labs.
