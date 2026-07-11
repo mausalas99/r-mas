@@ -122,6 +122,19 @@ export function syncClinicalCensusFiltersChrome() {
   syncClinicalCensusFiltersBar();
 }
 
+/** Filtros censo — apply toolbar state immediately, then optional LAN census pull. */
+export function refreshCensusViewsAfterFilterChange() {
+  const user = clinicalSessionContext.user;
+  if (user) syncCensusScalarFilterInputs(user);
+  patientsBridge.renderPatientList();
+  if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
+  if (shouldEnforceTeamPatientMirror()) return;
+  void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
+    patientsBridge.renderPatientList({ silent: true });
+    if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
+  });
+}
+
 function censusFiltersMountEl() {
   if (isMobileWeb()) {
     return document.getElementById('clinical-census-filters-sidebar-mount');
@@ -163,18 +176,7 @@ export function syncClinicalCensusFiltersBar() {
   const mobileSidebar = isMobileWeb();
   if (!bar) {
     bar = createCensusFiltersBar(user, filtersMount, mobileSidebar);
-    const refreshCensusViews = () => {
-      if (shouldEnforceTeamPatientMirror()) {
-        patientsBridge.renderPatientList();
-        if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
-        return;
-      }
-      void ensureTeamAssignedPatientsOnDevice({ allowLanPull: true, lanPullDelayMs: 5000 }).then(() => {
-        patientsBridge.renderPatientList();
-        if (isGuardiaMode()) renderGuardiaCensusGrid(rt.getSettings());
-      });
-    };
-    wireCensusFilterInputs(bar, refreshCensusViews);
+    wireCensusFilterInputs(bar, refreshCensusViewsAfterFilterChange);
   }
   syncCensusScalarFilterInputs(user);
   syncClinicalContextBarVisibility();

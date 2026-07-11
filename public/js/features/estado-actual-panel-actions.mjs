@@ -140,7 +140,8 @@ export function ensureEaRegistroModalForm() {
   ) {
     body.innerHTML = buildRegistroFormMarkup();
   }
-  wireEaRegistroForm();
+  var patient = findActivePatient();
+  wireEaRegistroForm(patient && patient.monitoreo ? patient.monitoreo : null);
 }
 
 /**

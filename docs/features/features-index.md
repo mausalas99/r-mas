@@ -17,7 +17,6 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
 | Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md) |
 | Historia clínica | `lib/historia-clinica/`, expediente Sala | [spec](../superpowers/specs/2026-05-31-historia-clinica-institutional-format-design.md) |
-| Manejo clínico | `public/js/features/manejo-*.mjs` | Electrolitos, ATB, CAD/EHH |
 | VPO | `public/js/features/vpo.mjs`, `vpo-*.mjs` | [spec](../superpowers/specs/2026-05-29-vpo-design.md) |
 | Medicamentos / receta | `public/js/med-receta-core.mjs` | |
 | Document export | `lib/doc-generators/`, `document-export-client.mjs` | [spec](../superpowers/specs/2026-05-30-native-document-generation-design.md) |

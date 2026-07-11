@@ -48,13 +48,6 @@ const TARGETS = {
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
-  sala_manejo: {
-    appTab: 'nota',
-    innerTab: 'manejo',
-    selector: '#manejo-container, #exp-segment-manejo, #itab-clinico',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
   ic_expediente_tabs: {
     appTab: 'nota',
     selector: '.inner-tab-bar',

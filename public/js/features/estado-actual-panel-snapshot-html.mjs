@@ -10,6 +10,7 @@ import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-rang
 import { formatEaVitalStampForSnapshot } from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
+import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
 import { pad2, displayValue, displayBalance, escHtml, escAttr } from './estado-actual-panel-format.mjs';
 import { formatSnapshotEgresos } from './estado-actual-panel-snapshot-format.mjs';
 
@@ -330,9 +331,34 @@ function renderGluChip(g) {
 /**
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
  */
+export function renderSnapshotGluZoneTitle(snapshot) {
+  var alg = snapshot.bombaInsulinaAlgoritmo;
+  if (alg != null && Number.isFinite(Number(alg))) {
+    return formatInsulinPumpAlgoritmoLabel(Number(alg)) || 'Glucometrías';
+  }
+  if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) return 'Bomba de insulina';
+  return 'Glucometrías';
+}
+
+/**
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').deriveSnapshot>} snapshot
+ */
 export function renderSnapshotGluHtml(snapshot) {
+  var algLabel =
+    snapshot.bombaInsulinaAlgoritmo != null && Number.isFinite(Number(snapshot.bombaInsulinaAlgoritmo))
+      ? formatInsulinPumpAlgoritmoLabel(Number(snapshot.bombaInsulinaAlgoritmo))
+      : '';
   if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) {
-    return snapshot.bombaInsulina.map(renderBombaChip).join('');
+    var chips = snapshot.bombaInsulina.map(renderBombaChip).join('');
+    if (algLabel) {
+      return (
+        '<span class="ea-snapshot-glu-alg-badge ea-muted">' + escHtml(algLabel) + '</span>' + chips
+      );
+    }
+    return chips;
+  }
+  if (algLabel) {
+    return '<span class="ea-snapshot-glu-alg-badge ea-muted">' + escHtml(algLabel) + '</span>';
   }
   if (snapshot.glucometrias && snapshot.glucometrias.length) {
     return snapshot.glucometrias.map(renderGluChip).join('');

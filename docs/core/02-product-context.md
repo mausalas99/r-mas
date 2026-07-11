@@ -32,7 +32,7 @@ R+ serves **Hospital Universitario** guardia and sala workflows. It is a **coady
 
 | Mode | Primary surfaces |
 |------|------------------|
-| **Sala** | Estado actual, HC ingreso, eventualidades, manejo, listado, censo guardia |
+| **Sala** | Estado actual, HC ingreso, eventualidades, listado, censo guardia |
 | **Interconsulta** | Nota, indicaciones, VPO, receta HU |
 | **Modo Pase** | Round board; expediente opens in tabbed detail |
 

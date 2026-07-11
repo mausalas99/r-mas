@@ -214,6 +214,10 @@ export function deriveSnapshot(monitoreoLike) {
   snap.alteredAt = vitalsBlock.alteredAt;
   snap.glucometrias = gluBlock.glucometrias.slice();
   snap.bombaInsulina = gluBlock.bombaInsulina;
+  snap.bombaInsulinaAlgoritmo =
+    m.bombaInsulinaAlgoritmo != null && Number.isFinite(Number(m.bombaInsulinaAlgoritmo))
+      ? Number(m.bombaInsulinaAlgoritmo)
+      : null;
   snap.io = deriveIoFromHistorial_(sortedAsc);
   snap.vitalSeries = deriveVitalSeriesFromHistorial_(sortedAsc);
   snap.tempPeakAt = deriveTempPeakAtFromHistorial_(sortedAsc);

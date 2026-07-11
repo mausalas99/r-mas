@@ -7,6 +7,7 @@ import {
   SOAP_DESTINATION_LABELS,
 } from "../med-receta-core.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
+import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 
 export function buildMedDietHtml(dietas) {
@@ -60,12 +61,18 @@ function buildMedRecetaDestCell(it, sid) {
   );
 }
 
-function buildMedRecetaRowHtml(activeId, it, fechaActualizacion) {
+function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
-  var listLabel = formatMedicationSoapShort(it, diaOpts);
-  if (it.diaTratamiento != null) listLabel = listLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
-  var label = esc(listLabel.slice(0, 160));
+  var pumpAlg = insulinPumpAlgorithmForMedicationItem(allItems || [], it);
+  var label;
+  if (pumpAlg != null) {
+    label = insulinPumpMedLabelHtml(pumpAlg, esc);
+  } else {
+    var listLabel = formatMedicationSoapShort(it, diaOpts);
+    if (it.diaTratamiento != null) listLabel = listLabel.replace(/\s+DIA\s+\d+\s*$/i, "");
+    label = esc(listLabel.slice(0, 160));
+  }
   var chk = it.suspendido ? " checked" : "";
   var paraNota = isMedNotaSelected(activeId, sid) ? " checked" : "";
   var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
@@ -116,7 +123,7 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion) {
 export function buildMedRecetaListHtml(activeId, block) {
   var items = block.items || [];
   var rows = items.map(function (it) {
-    return buildMedRecetaRowHtml(activeId, it, block.fechaActualizacion);
+    return buildMedRecetaRowHtml(activeId, it, block.fechaActualizacion, items);
   });
   if (!rows.length) return "";
   return (

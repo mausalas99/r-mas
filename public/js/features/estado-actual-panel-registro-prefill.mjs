@@ -6,6 +6,8 @@ import {
 } from './estado-actual-registro-defaults.mjs';
 import { buildGluRow, fillStandardGluList, syncEaGluMode, buildBombaRow } from './estado-actual-panel-glu.mjs';
 import { mergeVitalSeriesFromHistorial, collectBombaInsulinaForRegistroWindow } from './estado-actual-vital-series.mjs';
+import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
+import { syncEaRegistroInsulinPumpFlag } from './estado-actual-panel-registro-io.mjs';
 import { VITAL_KEYS } from './estado-actual-panel-constants.mjs';
 import { setVitalStackFromSeries, collapseVitalStack, syncAllVitalAddButtonVisibility } from './estado-actual-panel-vitals.mjs';
 import { fillIoFields } from './estado-actual-panel-registro-io.mjs';
@@ -47,19 +49,22 @@ export function prefillGluFromHistorial(form, hist, bombaOn) {
 /**
  * @param {HTMLElement} form
  * @param {unknown[]} hist
+ * @param {Record<string, unknown> | null | undefined} [monitoreo]
  */
-export function prefillBombaFromHistorial(form, hist) {
+export function prefillBombaFromHistorial(form, hist, monitoreo) {
   var bombaToggle = form.querySelector('#ea-bomba-enabled');
   var bombaList = form.querySelector('#ea-bomba-list');
   var bombas = collectBombaInsulinaForRegistroWindow(hist);
-  if (bombaToggle && 'checked' in bombaToggle) bombaToggle.checked = bombas.length > 0;
-  if (!bombaList) return bombas.length > 0;
+  var algFromSome = insulinPumpAlgorithmFromMonitoreo(monitoreo);
+  var bombaOn = bombas.length > 0 || algFromSome != null;
+  if (bombaToggle && 'checked' in bombaToggle) bombaToggle.checked = bombaOn;
+  if (!bombaList) return bombaOn;
   bombaList.innerHTML = '';
   if (bombas.length) bombas.forEach(function (b) {
     bombaList.appendChild(buildBombaRow(b));
   });
   else bombaList.appendChild(buildBombaRow());
-  return bombas.length > 0;
+  return bombaOn;
 }
 
 /**
@@ -71,8 +76,9 @@ export function prefillRegistroFormFromMonitoreo(form, monitoreo) {
   var snap = deriveSnapshot(monitoreo);
   prefillVitalsFromHistorial(form, hist);
   fillIoFields(form, snap.io || {});
-  var bombaOn = prefillBombaFromHistorial(form, hist);
+  var bombaOn = prefillBombaFromHistorial(form, hist, monitoreo);
   prefillGluFromHistorial(form, hist, bombaOn);
+  syncEaRegistroInsulinPumpFlag(form, monitoreo);
   syncEaGluMode(form);
   syncAllVitalAddButtonVisibility(form);
 }

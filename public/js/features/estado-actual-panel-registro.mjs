@@ -14,7 +14,7 @@ import {
 } from './estado-actual-panel-vitals.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { wireFormInteractions } from './estado-actual-panel-registro-wire.mjs';
-import { syncIoBalanceFromForm, clearIoFields, applyIoNcMode, syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro-io.mjs';
+import { syncIoBalanceFromForm, clearIoFields, applyIoNcMode, syncEaRegistroInsulinRescateFlag, syncEaRegistroInsulinPumpFlag } from './estado-actual-panel-registro-io.mjs';
 import { prefillRegistroFormFromMonitoreo } from './estado-actual-panel-registro-prefill.mjs';
 import { applyEstadoActualParsedToForm } from './estado-actual-panel-registro-apply.mjs';
 
@@ -57,6 +57,7 @@ export function buildRegistroFormMarkup() {
     '<div id="ea-glu-list" class="ea-glu-list"></div>' +
     '</div>' +
     '<div id="ea-bomba-block" class="ea-glu-pane ea-glu-block ea-bomba-block ea-glu-pane--off" hidden>' +
+    '<p id="ea-bomba-algoritmo-hint" class="ea-bomba-algoritmo-hint ea-muted" hidden></p>' +
     '<div class="ea-glu-head">' +
     '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-bomba">+ Agregar</button>' +
     '</div>' +
@@ -96,11 +97,12 @@ export function buildRegistroFormMarkup() {
   );
 }
 
-export function wireEaRegistroForm() {
+export function wireEaRegistroForm(monitoreo) {
   var form = document.getElementById('ea-form');
   wireFormInteractions(form);
   refreshRpcDateFields(form);
   syncEaRegistroInsulinRescateFlag(form);
+  syncEaRegistroInsulinPumpFlag(form, monitoreo);
   var gluList = document.getElementById('ea-glu-list');
   if (gluList && !gluList.querySelector('.ea-glu-row')) fillStandardGluList(gluList);
   var bombaList = document.getElementById('ea-bomba-list');
@@ -155,6 +157,7 @@ export function resetEaRegistroForm(_patient, opts) {
   clearIoFields(form);
   resetGluAndBombaFields();
   if (opts.prefill && _patient && _patient.monitoreo) prefillRegistroFormFromMonitoreo(form, _patient.monitoreo);
+  syncEaRegistroInsulinPumpFlag(form, _patient && _patient.monitoreo ? _patient.monitoreo : null);
   syncEaGluMode(form);
   syncIoBalanceFromForm(form);
   syncAllVitalAddButtonVisibility(form);

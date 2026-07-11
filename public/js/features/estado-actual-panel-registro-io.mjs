@@ -7,6 +7,8 @@ import {
   formatIoBalanceDisplay,
 } from './estado-actual-io.mjs';
 import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
+import { patientHasInsulinPumpInReceta } from '../insulin-pump-some-detect.mjs';
+import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
 import { medRecetaByPatient } from '../app-state.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 
@@ -19,6 +21,25 @@ export function syncEaRegistroInsulinRescateFlag(form) {
   var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
   var hasRescates = patientHasInsulinRescatesInReceta(block);
   form.classList.toggle('ea-form--no-insulin-rescates', !hasRescates);
+}
+
+/**
+ * Marca el formulario cuando SOME indica bomba de insulina (algoritmo activo).
+ * @param {HTMLElement | null} form
+ * @param {Record<string, unknown> | null | undefined} [monitoreo]
+ */
+export function syncEaRegistroInsulinPumpFlag(form, monitoreo) {
+  if (!form) return;
+  var activeId = getEaPanelRuntime().getActiveId();
+  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
+  var alg = insulinPumpAlgorithmFromMonitoreo(monitoreo);
+  var hasPump = alg != null || patientHasInsulinPumpInReceta(block);
+  form.classList.toggle('ea-form--insulin-pump-some', hasPump);
+  var algEl = form.querySelector('#ea-bomba-algoritmo-hint');
+  if (algEl) {
+    algEl.textContent = alg != null ? 'BOMBA DE INSULINA EN ALGORITMO ' + alg : '';
+    algEl.hidden = alg == null;
+  }
 }
 
 /**

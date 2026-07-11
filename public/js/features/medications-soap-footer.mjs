@@ -2,10 +2,15 @@ import { medRecetaByPatient } from "../app-state.mjs";
 import { effectiveSoapCategory, classifyMedicationSoapCategory } from "../med-receta-core.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { medInstructionFragmentForSoap } from "./estado-actual-meds.mjs";
+import {
+  detectInsulinPumpAlgorithmFromRecetaItems,
+  insulinPumpMedLabelHtml,
+  isInsulinIvMedicationItem,
+} from "../insulin-pump-some-detect.mjs";
 import { rt } from "./medications-runtime-state.mjs";
 import { esc, getMedNotaSelMap } from "./medications-utils.mjs";
 
-function groupSoapPreviewItems(soapItems) {
+function groupSoapPreviewItems(soapItems, allItems) {
   var groups = {
     analgesia: [],
     antihta: [],
@@ -16,7 +21,16 @@ function groupSoapPreviewItems(soapItems) {
     nm: [],
     otros: [],
   };
+  var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(allItems || []);
+  var pumpChipAdded = false;
   soapItems.forEach(function (it) {
+    if (pumpAlg != null && isInsulinIvMedicationItem(it)) {
+      if (!pumpChipAdded) {
+        groups.nm.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
+        pumpChipAdded = true;
+      }
+      return;
+    }
     var cat = effectiveSoapCategory(it, classifyMedicationSoapCategory);
     if (cat === "otros") groups.otros.push(it);
     else if (groups[cat]) groups[cat].push(it);
@@ -28,6 +42,13 @@ function groupSoapPreviewItems(soapItems) {
 function chipsForSoapItems(arr) {
   return arr
     .map(function (it) {
+      if (it && it._insulinPumpChip) {
+        return (
+          '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-pump" title="Bomba de insulina IV (SOME)">' +
+          insulinPumpMedLabelHtml(it._algorithm, esc) +
+          "</span>"
+        );
+      }
       var frag = medInstructionFragmentForSoap(it);
       return (
         '<span class="med-soap-preview-chip" title="' +
@@ -55,11 +76,11 @@ function soapPreviewSection(cat, title, groups) {
   );
 }
 
-function buildSoapPreviewHtml(soapItems) {
+function buildSoapPreviewHtml(soapItems, allItems) {
   if (!soapItems.length) {
     return '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
   }
-  var groups = groupSoapPreviewItems(soapItems);
+  var groups = groupSoapPreviewItems(soapItems, allItems);
   return (
     '<div class="med-soap-preview">' +
     soapPreviewSection("analgesia", "Analgésicos / antieméticos", groups) +
@@ -89,7 +110,8 @@ export function renderMedNotaFooter() {
         })
       : [];
 
-  var previewHtml = buildSoapPreviewHtml(soapItems);
+  var allItems = block && block.items ? block.items : [];
+  var previewHtml = buildSoapPreviewHtml(soapItems, allItems);
   var soapBtnLabel = isModeSala(rt.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
 
   foot.innerHTML =

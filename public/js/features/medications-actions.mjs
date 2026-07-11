@@ -25,6 +25,7 @@ import {
   pruneEstadoClinicoMedsFromReceta,
   syncRecetaProposalsFromSoapSelection,
 } from "./estado-actual-meds.mjs";
+import { syncMonitoreoInsulinPumpFromReceta } from "./estado-actual-insulin-pump.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import {
   openPaseSectionInNormal,
@@ -325,6 +326,7 @@ function syncEaMedsFromProcessedReceta(activeId) {
   pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyMedicationSoapCategory, fecha);
   var sel = medNotaSelectionByPatient[activeId] || {};
   applyRecetaProposal(monitoreo, bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory));
+  syncMonitoreoInsulinPumpFromReceta(monitoreo, block);
 }
 
 function commitProcessedReceta(activeId, raw, parsed) {

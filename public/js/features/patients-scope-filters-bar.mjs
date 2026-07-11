@@ -70,6 +70,7 @@ export function wireCensusFilterInputs(bar, refreshCensusViews) {
   if (salaSel) {
     salaSel.addEventListener('change', () => {
       elevatedPatientFilters.sala = String(salaSel.value || '__all__');
+      syncCensusTeamFilterSelect(clinicalSessionContext.user);
       refreshCensusViews();
     });
   }

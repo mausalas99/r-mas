@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.7](https://github.com/mausalas99/r-mas/releases/tag/v7.6.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.8](https://github.com/mausalas99/r-mas/releases/tag/v7.6.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.8 (bomba insulina EA + filtro censo)
+
+- **EA — bomba de insulina** — SOME detecta algoritmo 1–4; registro, snapshot, texto copiable y SOAP de medicamentos.
+- **Filtros censo** — Sala/equipo/servicio filtran al instante; sin esperar sync LAN para ver el censo correcto.
+- **Medicamentos** — Receta hospitalaria en pestaña **Manejo** del expediente.
+- **Parche sobre 7.6.7** — Equipos push, troponina hs y consolidación de labs.
+
+Notas: `docs/RELEASE_NOTES_7.6.8.txt`.
 
 ## R+ 7.6.7 (equipos push + troponina hs)
 
@@ -381,12 +390,11 @@ Las release notes detalladas de cada versión están en:
 ## Funcionalidades
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
-- **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Sala**, **Clínico** incluye **Historia Clínica**, **Estado actual**, **Eventualidades** y **Manejo**; en **Interconsulta**, Nota, Indicaciones, VPO y Manejo. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
+- **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Sala**, **Clínico** incluye **Historia Clínica**, **Estado actual** y **Eventualidades**; en **Interconsulta**, Nota, Indicaciones y VPO. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
 - **Historia Clínica (Sala)** — Ingreso institucional en 3 pasos, catálogos APP/AHF/IPAS, vista **Lectura** con texto compilado, ancla de laboratorios y sincronización en sala en vivo.
 - **Eventualidades (Sala)** — Registro cronológico de hechos clínicos por día dentro de **Clínico**.
 - **Estado Actual (Sala)** — Monitoreo estructurado en **Clínico → Estado actual**: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
-- **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Infusiones** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
-- **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
+- **Medicamentos** — Receta hospitalaria (TSV) en la pestaña **Manejo**, copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Nota).
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Indicaciones).
 - **Valoración preoperatoria (VPO)** — Calculadora de riesgo, plantillas EKG/Rx, fármacos perioperatorios y texto copiable; **Interconsulta** en Clínico, **Sala** en Salida.

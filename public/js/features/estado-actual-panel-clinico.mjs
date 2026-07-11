@@ -173,7 +173,7 @@ function generateEstadoActualText(monitoreo, patient, activeId) {
     estadoClinicoForText(monitoreo, eaManejoFechaOpts(id)),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
-    { patientPeso: patient && patient.peso, recetaBlock: recetaBlock }
+    { patientPeso: patient && patient.peso, recetaBlock: recetaBlock, bombaAlgoritmo: monitoreo.bombaInsulinaAlgoritmo ?? null }
   );
 }
 

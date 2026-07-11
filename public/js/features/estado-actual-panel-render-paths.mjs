@@ -11,6 +11,7 @@ import {
   applyDietProposalFromRecetaBlock,
   syncRecetaProposalsFromSoapSelection,
 } from './estado-actual-meds.mjs';
+import { syncMonitoreoInsulinPumpFromReceta } from './estado-actual-insulin-pump.mjs';
 import { classifyMedicationSoapCategory } from '../med-receta-core.mjs';
 import {
   buildEaHistorialChartsRevision,
@@ -71,6 +72,14 @@ export function syncEaRecetaProposals(patient, activeId, monitoreo) {
       medRecetaByPatient,
       medNotaSelectionByPatient,
       classifyMedicationSoapCategory
+    )
+  ) {
+    changed = true;
+  }
+  if (
+    syncMonitoreoInsulinPumpFromReceta(
+      monitoreo,
+      activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null
     )
   ) {
     changed = true;

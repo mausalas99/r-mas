@@ -154,8 +154,9 @@ export function collectGluDisplayValues(glSrc) {
 
 /**
  * @param {Array<{ value?: unknown, units?: unknown }>} bombaSrc
+ * @param {number | null | undefined} [algorithmNumber]
  */
-export function buildBombaClause(bombaSrc) {
+export function buildBombaClause(bombaSrc, algorithmNumber) {
   var bombaParts = [];
   for (var bi = 0; bi < bombaSrc.length; bi++) {
     var bb = bombaSrc[bi];
@@ -164,7 +165,13 @@ export function buildBombaClause(bombaSrc) {
     if (bb.units != null && bb.units !== '') seg += ' (' + num(bb.units) + ' U)';
     bombaParts.push(seg);
   }
-  return bombaParts.length > 0 ? ' || BOMBA DE INSULINA (' + bombaParts.join(', ') + ')' : '';
+  var alg = algorithmNumber != null && Number.isFinite(Number(algorithmNumber)) ? Number(algorithmNumber) : null;
+  var prefix = alg != null ? 'BOMBA DE INSULINA EN ALGORITMO ' + alg : 'BOMBA DE INSULINA';
+  if (bombaParts.length > 0) {
+    return ' || ' + prefix + ' (' + bombaParts.join(', ') + ')';
+  }
+  if (alg != null) return ' || ' + prefix;
+  return '';
 }
 
 /**
@@ -188,13 +195,13 @@ export function resolveKcalDisplay(ec, options) {
  * @param {unknown} btTurno
  * @param {Array<{ value?: unknown, postRescueValue?: unknown, rescueUnits?: number }>} glSrc
  * @param {Array<{ value?: unknown, units?: unknown }>} bombaSrc
- * @param {{ rescatesInSome?: boolean }} [opts]
+ * @param {{ rescatesInSome?: boolean, bombaAlgoritmo?: number | null }} [opts]
  */
 export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc, opts) {
   opts = opts || {};
   var ioClause = formatIoClauseForSoap(snapIo, btTurno);
   var gluParts = collectGluDisplayValues(glSrc);
-  var bombaClause = buildBombaClause(bombaSrc);
+  var bombaClause = buildBombaClause(bombaSrc, opts.bombaAlgoritmo);
   var nmMedsClause = medsListForSoap(ec.nm, ' || ');
   var nmParts = [formatNmDietClause(ec, kcalDisplay, { includeProtein: true })];
   if (nmMedsClause) nmParts.push(nmMedsClause);

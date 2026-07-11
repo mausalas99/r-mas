@@ -2,6 +2,7 @@
 import {
   renderSnapshotVitalsHtml,
   renderSnapshotGluHtml,
+  renderSnapshotGluZoneTitle,
   renderSnapshotIoHtml,
   formatHistorialWhen,
   buildHistorialRowParts,
@@ -25,7 +26,7 @@ export function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     '</div>' +
     '</div>' +
     '<div class="ea-snapshot-zone">' +
-    '<h4 class="ea-snapshot-zone-title">Glucometrías</h4>' +
+    '<h4 class="ea-snapshot-zone-title">' + renderSnapshotGluZoneTitle(snapshot) + '</h4>' +
     '<div class="ea-snapshot-glu">' +
     renderSnapshotGluHtml(snapshot) +
     '</div>' +

@@ -17,6 +17,10 @@ import {
   clearDietPending,
 } from './estado-actual-meds-diet.mjs';
 import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
+import {
+  insulinPumpNmSoapFragment,
+  skipRecetaItemForNmSoapBucket,
+} from '../insulin-pump-receta-display.mjs';
 
 /**
  * @param {string | null | undefined} activeId
@@ -231,10 +235,22 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
     otros: [],
   };
   var list = Array.isArray(items) ? items : [];
+  var soapSelected = list.filter(function (it) {
+    return it && selMap[it.id] && !it.suspendido;
+  });
+  var pumpNmFrag = insulinPumpNmSoapFragment(list, soapSelected);
+  var pumpNmAdded = false;
   list.forEach(function (it) {
     if (!it || !selMap[it.id] || it.suspendido) return;
     var cat = effectiveSoapCategory(it, classifyFn);
     if (cat === 'otros') return;
+    if (cat === 'nm' && skipRecetaItemForNmSoapBucket(it, list)) {
+      if (pumpNmFrag && !pumpNmAdded) {
+        arrays.nm.push(pumpNmFrag);
+        pumpNmAdded = true;
+      }
+      return;
+    }
     if (arrays[cat]) arrays[cat].push(medInstructionFragmentForSoap(it));
     else arrays.otros.push(medInstructionFragmentForSoap(it));
   });

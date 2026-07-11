@@ -45,5 +45,6 @@ export function emptyMonitoreo() {
     pendienteReceta: emptyPendienteReceta(),
     historial: [],
     textoGuardado: { text: '', savedAt: null },
+    bombaInsulinaAlgoritmo: null,
   };
 }

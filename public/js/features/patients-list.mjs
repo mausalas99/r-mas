@@ -376,7 +376,7 @@ function renderPatientListNow(opts) {
   if (!list) return;
   var isRonda = isPaseMode();
   var visiblePatients = patientsVisibleInSidebar();
-  if (reselectIfActivePatientHidden(visiblePatients)) return;
+  reselectIfActivePatientHidden(visiblePatients);
   if (!visiblePatients.length) {
     renderPatientListMessage(list, 'Sin pacientes aún', opts);
     return;

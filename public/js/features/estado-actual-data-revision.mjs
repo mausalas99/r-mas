@@ -91,6 +91,7 @@ export function buildEaMonitoreoRevision(monitoreoLike, activeId, medRecetaByPat
   appendHistorialRevision(parts, hist);
   var tg = m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : '';
   parts.push('t' + tg);
+  parts.push('bi' + String(m.bombaInsulinaAlgoritmo != null ? m.bombaInsulinaAlgoritmo : ''));
   var ec = m.estadoClinico && typeof m.estadoClinico === 'object' ? m.estadoClinico : {};
   var pend = m.pendienteReceta && typeof m.pendienteReceta === 'object' ? m.pendienteReceta : {};
   var conf = m.confirmado && typeof m.confirmado === 'object' ? m.confirmado : {};

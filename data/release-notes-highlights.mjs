@@ -1454,10 +1454,34 @@ var RELEASE_NOTES_766 = [
   },
 ];
 
+var RELEASE_NOTES_768 = [
+  {
+    title: 'Bomba de insulina en EA',
+    body:
+      'Al pegar SOME con <strong>insulina IV</strong> y <strong>BOMBA EN ALGORITMO 1–4</strong>, R+ activa el bloque en <strong>Estado actual</strong>: registro, snapshot y texto copiable.',
+  },
+  {
+    title: 'Filtro de sala al instante',
+    body:
+      'En <strong>Filtros censo</strong>, al cambiar sala la lista y el tablero Guardia se actualizan de inmediato — sin esperar sync LAN ni un segundo clic.',
+  },
+  {
+    title: 'Medicamentos en Manejo',
+    body:
+      'La receta hospitalaria (TSV/SOME) vive en la pestaña <strong>Manejo</strong> del expediente; menos pestañas sueltas en Clínico.',
+  },
+  {
+    title: 'Parche sobre 7.6.7',
+    body:
+      'Incluye avisos push en equipos, <strong>troponina hs</strong> en tendencias y consolidación de labs. Instala <strong>7.6.8</strong> en todo el turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_767;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_768;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.8': RELEASE_NOTES_768,
   '7.6.7': RELEASE_NOTES_767,
   '7.6.6': RELEASE_NOTES_766,
   '7.6.5': RELEASE_NOTES_765,
