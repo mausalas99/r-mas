@@ -1,20 +1,20 @@
 version: 7.6.8
 files:
   - url: R+-7.6.8-arm64.zip
-    sha512: aQ1FzhDczN7VzvsGp7rCCp84lPZPcrXeKXHHij00Cn50Dcnyj1fi1wWeb00JNqVi2VoX2CoOIabIywtymKV+6g==
-    size: 136916521
+    sha512: dS0L1ftHRA14rurs5gz2C8I7cFRCv1NmqHHX4GCcbwTGdsfuqEp8Ezf40a6wwi2tIC69rUf7aN0XXMT+b6VVxA==
+    size: 136918446
   - url: R+-7.6.8-arm64.dmg
-    sha512: ilBriMxR2v0Kbsxb8IAcV4+rOUeVe6PbEvvb8pWprYDgirdEc5kakCIIWcTc8mHLSS9Tq02vY0kEnrdiTTupVw==
-    size: 142642629
+    sha512: 14dK31+xFMB7JxiyYkKgKnQuYGaVQCoZEtdaIM0/UUw9BhNHRmDBcKNu/6OENCPVY30+irl34LJaQ626vAMngw==
+    size: 142648744
   - url: R+-7.6.8-x64.zip
-    sha512: 5ZvJya+kTgVughouJa5lbLPyQx3qe14B9syZLn4TbYQczYzH8QGyc48mPwCcDzEmaOjXYHk7G10qejvllg4AbA==
-    size: 145290604
+    sha512: Q6rQf+6WJEcKkE9r4M2fY4dNqajMsPBoLfTHmhJzZKneAeXMas6LP5RfZVAc1T2klQGQQmp5a6SKUAokGwEdGg==
+    size: 145292526
   - url: R+-7.6.8-x64.dmg
-    sha512: /YzgPURXopuLHaC3K/7tVDckTmFUBECGieanngauG4HPkCEB5qzdfHxhhcrU7rGdG7iWV/+JmQm3emvqiH/NRQ==
-    size: 151069428
+    sha512: 3wlm/lOxlHsig5Uu5FFYEV1cfLLW8OAAJ5anpdDfYeVUw3s7w/kcC42U5A5UQFG6yzSwEG2vHqXu7dvW3kJIEA==
+    size: 151078548
 path: R+-7.6.8-arm64.zip
-sha512: aQ1FzhDczN7VzvsGp7rCCp84lPZPcrXeKXHHij00Cn50Dcnyj1fi1wWeb00JNqVi2VoX2CoOIabIywtymKV+6g==
-releaseDate: '2026-07-11T17:21:18.000Z'
+sha512: dS0L1ftHRA14rurs5gz2C8I7cFRCv1NmqHHX4GCcbwTGdsfuqEp8Ezf40a6wwi2tIC69rUf7aN0XXMT+b6VVxA==
+releaseDate: '2026-07-12T00:14:57.000Z'
 releaseNotes: |
   Sobre 7.6.7: Estado actual registra bomba de insulina IV desde SOME (algoritmos 1–4), y los filtros de censo por sala aplican al instante sin esperar sync LAN.
   

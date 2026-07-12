@@ -1,11 +1,11 @@
 version: 7.6.8
 files:
   - url: R+-7.6.8-x64.exe
-    sha512: TxgckzlWrI+Izfj5jM/r7WWaOK4F7bj2pAtnMsphEvK+kuUpA3uEuOVv7YKPK/C2WVYtxSCjHskRqFCIBmI8vw==
-    size: 120559712
+    sha512: wpAlk/DYb/ntmDHaOEP94WaYvNC89WypmrJCEgcOWgnuRA4TH6RAnaUenbtRSIKl23+EL5h1kMi/IbGoDqxWBA==
+    size: 120557312
 path: R+-7.6.8-x64.exe
-sha512: TxgckzlWrI+Izfj5jM/r7WWaOK4F7bj2pAtnMsphEvK+kuUpA3uEuOVv7YKPK/C2WVYtxSCjHskRqFCIBmI8vw==
-releaseDate: '2026-07-11T17:21:18.000Z'
+sha512: wpAlk/DYb/ntmDHaOEP94WaYvNC89WypmrJCEgcOWgnuRA4TH6RAnaUenbtRSIKl23+EL5h1kMi/IbGoDqxWBA==
+releaseDate: '2026-07-12T00:14:57.000Z'
 releaseNotes: |
   Sobre 7.6.7: Estado actual registra bomba de insulina IV desde SOME (algoritmos 1–4), y los filtros de censo por sala aplican al instante sin esperar sync LAN.
   
