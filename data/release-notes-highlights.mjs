@@ -1458,7 +1458,7 @@ var RELEASE_NOTES_768 = [
   {
     title: 'Bomba de insulina en EA',
     body:
-      'Al pegar SOME con <strong>insulina IV</strong> y <strong>BOMBA EN ALGORITMO 1–4</strong>, R+ activa el bloque en <strong>Estado actual</strong>: registro, snapshot y texto copiable.',
+      'Al pegar SOME con <strong>insulina IV</strong> y <strong>BOMBA EN ALGORITMO 1–4</strong>, R+ activa el bloque en <strong>Estado actual</strong>: registro, snapshot y texto copiable. Confirmar la propuesta NM ya no vuelve a mostrar <strong>Propuesta</strong> tras refrescar.',
   },
   {
     title: 'Filtro de sala al instante',

@@ -21,6 +21,10 @@ import {
   insulinPumpNmSoapFragment,
   skipRecetaItemForNmSoapBucket,
 } from '../insulin-pump-receta-display.mjs';
+import {
+  detectInsulinPumpAlgorithmFromRecetaItems,
+  formatInsulinPumpAlgoritmoLabel,
+} from '../insulin-pump-some-detect.mjs';
 
 /**
  * @param {string | null | undefined} activeId
@@ -347,6 +351,13 @@ export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualiza
     }
     if (byCat[key]) byCat[key].push(frag);
   });
+  // Propuesta/confirmación NM usa etiqueta de bomba, no el SOAP corto de insulina IV.
+  // Sin esto, prune borra la línea confirmada y reabre la propuesta (igual que dieta).
+  var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(list);
+  if (pumpAlg != null) {
+    var pumpLabel = formatInsulinPumpAlgoritmoLabel(pumpAlg);
+    if (pumpLabel && byCat.nm) byCat.nm.push(pumpLabel);
+  }
   return byCat;
 }
 

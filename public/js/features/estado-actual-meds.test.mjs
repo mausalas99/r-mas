@@ -512,6 +512,53 @@ test('syncRecetaProposalsFromSoapSelection applies SOAP-marked receta', () => {
   assert.match(String(m.pendienteReceta.analgesia), /PARACETAMOL/i);
 });
 
+test('confirm bomba NM + sync pasivo no repropone (igual que dieta)', () => {
+  const insulin = {
+    id: 'ins-1',
+    nombreRaw: 'INSULINA HUMANA RAPIDA',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '100 UI',
+    frecuenciaRaw: '-',
+    suspendido: false,
+  };
+  const carrier = {
+    id: 'nacl-1',
+    nombreRaw: 'CLORURO DE SODIO 0.9 % SOL INY 100 ML',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '100 ML / VEL.INF: BOMBA EN ALGORITMO 2',
+    frecuenciaRaw: 'CADA 24 HORAS',
+    suspendido: false,
+  };
+  const medRecetaByPatient = { p1: { items: [carrier, insulin] } };
+  const sel = { 'ins-1': true };
+  const m = emptyMonitoreo();
+  assert.equal(
+    syncRecetaProposalsFromSoapSelection(
+      'p1',
+      m,
+      medRecetaByPatient,
+      { p1: sel },
+      classifyMedicationSoapCategory
+    ),
+    true
+  );
+  assert.equal(m.pendienteReceta.nm, 'BOMBA DE INSULINA EN ALGORITMO 2');
+  confirmMedField(m, 'nm');
+  assert.equal(m.estadoClinico.nm, 'BOMBA DE INSULINA EN ALGORITMO 2');
+  assert.equal(m.confirmado.nm, true);
+  assert.equal(m.pendienteReceta.nm, '');
+  syncRecetaProposalsFromSoapSelection(
+    'p1',
+    m,
+    medRecetaByPatient,
+    { p1: sel },
+    classifyMedicationSoapCategory
+  );
+  assert.equal(m.confirmado.nm, true);
+  assert.equal(m.estadoClinico.nm, 'BOMBA DE INSULINA EN ALGORITMO 2');
+  assert.equal(m.pendienteReceta.nm, '');
+});
+
 test('estadoClinicoForText avanza DIA de abx según fecha de Manejo', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.abx = 'MEROPENEM 1G IV C/8H DIA 10';

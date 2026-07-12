@@ -14,6 +14,10 @@ Sobre **7.6.7**: **Estado actual** registra bomba de insulina IV desde SOME (alg
 - **Medicamentos** — Receta hospitalaria consolidada en pestaña **Manejo** del expediente (sin tab Manejo separado).
 - **Parche sobre 7.6.7** — Equipos push, troponina hs y consolidación de labs.
 
+## Correcciones (republish 7.6.8)
+
+- **Confirmar bomba de insulina** — Tras confirmar la propuesta NM (`BOMBA DE INSULINA EN ALGORITMO n`), ya no reaparece el badge Propuesta al refrescar el panel (mismo patrón que dieta).
+
 ## Instalación
 
 Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.6.8
