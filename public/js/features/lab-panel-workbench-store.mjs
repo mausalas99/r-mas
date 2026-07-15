@@ -1,10 +1,11 @@
 // Lab panel — persistencia de historial (push, bulk store, drive import)
 import { buildRefsBySectionFromReport } from '../labs.js';
 import { areDuplicateLabSets } from '../lab-history-auto-store-core.mjs';
-import { mergeBulkParseResults, pickLatestDayMergedLabDisplay } from '../lab-bulk-paste.mjs';
+import { mergeBulkParseResults, mergeBulkParseResultsForStorage, pickLatestDayMergedLabDisplay } from '../lab-bulk-paste.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
 import { notes, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
+import { syncLabHistoryConsolidationToLan, syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { renderLabHistoryPanel, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
 import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.mjs';
@@ -142,8 +143,11 @@ export async function applyDriveImportLabSets(patient, labSets) {
 
 function finalizeLabHistoryImport(patientId) {
   var consolidation = autoConsolidateLabHistoryForPatient(patientId);
-  if (consolidation.merged > 0 && typeof rt.addAuditEntry === 'function') {
-    rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
+  if (consolidation.merged > 0) {
+    syncLabHistoryConsolidationToLan(patientId, consolidation);
+    if (typeof rt.addAuditEntry === 'function') {
+      rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
+    }
   }
   rt.rebuildEstudiosFromLabHistory(patientId);
 }
@@ -164,7 +168,7 @@ function storeBulkLabBlocks(blocks, processable) {
       .map(function (r) {
         return { result: r.result, reportText: r.reportText };
       });
-    var mergedSets = mergeBulkParseResults(okItems);
+    var mergedSets = mergeBulkParseResultsForStorage(okItems);
     mergedSets.forEach(function (payload, idx) {
       if (isDuplicateInPatientHistory(patientId, payload)) {
         skippedDupes += 1;

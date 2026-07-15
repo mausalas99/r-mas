@@ -99,6 +99,13 @@ var OUTBOX_ITEM_DISPATCH = {
       'POST'
     );
   },
+  lab_history_delete: function (_rid, item) {
+    return pushTypedMutationToHost(
+      '/patients/' + encodeURIComponent(item.payload.patientId) + '/lab-history/delete-set',
+      item.payload.data !== undefined ? item.payload.data : item.payload,
+      'POST'
+    );
+  },
   patient_fields: function (_rid, item) {
     return pushTypedMutationToHost(
       '/patients/' + encodeURIComponent(item.payload.patientId) + '/fields',

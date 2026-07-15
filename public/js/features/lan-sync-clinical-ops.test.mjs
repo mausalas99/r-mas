@@ -419,6 +419,10 @@ describe('flushLiveSyncOutboxBody — typed mutation drain', () => {
     assert.match(lanSyncPushSrc, /lab_history_upsert/);
   });
 
+  it('lab_history_delete outbox item is handled', () => {
+    assert.match(lanSyncPushSrc, /lab_history_delete/);
+  });
+
   it('patient_fields outbox item is handled', () => {
     assert.match(lanSyncPushSrc, /patient_fields/);
   });

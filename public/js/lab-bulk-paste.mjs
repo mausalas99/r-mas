@@ -252,7 +252,7 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports);
   var patientReg = match ? String(match.registro || '').trim() : '';
   var setsAfterMerge = usableReports.length
-    ? mergeBulkParseResults(
+    ? mergeBulkParseResultsForStorage(
         usableReports.map(function (r) {
           return { result: r.result, reportText: r.reportText };
         })
@@ -373,6 +373,43 @@ export function mergeBulkParseResults(parsedItems) {
     var tipo = primaryTipoForResLabs(cluster[0].result.resLabs || []);
     return buildMergedPayloadFromGroup(cluster, tipo);
   });
+}
+
+/**
+ * Historial: un conjunto por día calendario (repo / pegado masivo del mismo día).
+ * Evita duplicar Labs (1)…(4) cuando llegan gasometría y química en PDFs separados.
+ */
+export function mergeBulkParseResultsForStorage(parsedItems) {
+  var items = (parsedItems || []).filter(function (item) {
+    return item && item.result && item.result.resLabs && item.result.resLabs.length;
+  });
+  if (!items.length) return [];
+
+  var byDay = Object.create(null);
+  var passthrough = [];
+
+  items.forEach(function (item) {
+    var tipo = primaryTipoForResLabs(item.result.resLabs || []);
+    var dk = dayKeyFromResult(item.result);
+    if (tipo === 'mixed' || tipo === 'cultivo' || !dk || dk === 'unknown' || dk === 'Anterior') {
+      passthrough.push(item);
+      return;
+    }
+    if (!byDay[dk]) byDay[dk] = [];
+    byDay[dk].push(item);
+  });
+
+  var out = [];
+  Object.keys(byDay).forEach(function (dk) {
+    var dayItems = byDay[dk];
+    var tipo = primaryTipoForResLabs(dayItems[0].result.resLabs || []);
+    out.push(buildMergedPayloadFromGroup(dayItems, tipo));
+  });
+
+  if (passthrough.length) {
+    out = out.concat(mergeBulkParseResults(passthrough));
+  }
+  return out;
 }
 
 function latestDayKeyFromParsedItems(parsedItems) {

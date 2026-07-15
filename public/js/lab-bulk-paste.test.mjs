@@ -25,6 +25,7 @@ const {
   splitSomeReportsInBlock,
   buildBulkLabPreview,
   mergeBulkParseResults,
+  mergeBulkParseResultsForStorage,
   pickLatestDayMergedLabDisplay,
   shouldShowBulkLabPreview,
   extractLabPatientFromBulkBlock,
@@ -145,6 +146,31 @@ describe('lab-bulk-paste', () => {
     });
     assert.ok(gasesLine, 'debe incluir línea GASES');
     assert.match(String(gasesLine), /\bAG \d/, 'debe calcular anión gap al fusionar labs + gasometría');
+  });
+
+  it('mergeBulkParseResultsForStorage un solo conjunto por día (repo gaso + química)', () => {
+    var labs = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 9:56AM');
+    var gasoA = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 9:56AM');
+    var gasoB = GASO_VENOSA_SOLO
+      .replace('May 7 2026 6:43AM', 'Apr 11 2026 9:58AM')
+      .replace('7.39', '7.35');
+    var items = [gasoA, labs, gasoB].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var clustered = mergeBulkParseResults(items);
+    assert.ok(clustered.length >= 2, 'cluster horario puede partir gasometrías seriadas');
+    var stored = mergeBulkParseResultsForStorage(items);
+    assert.equal(stored.length, 1, 'historial: un conjunto por día calendario');
+    assert.ok(
+      stored[0].resLabs.some(function (row) {
+        return /^BH\b/i.test(String(row));
+      })
+    );
+    assert.ok(
+      stored[0].resLabs.some(function (row) {
+        return /^GASES\b/i.test(String(row));
+      })
+    );
   });
 
   it('mergeBulkParseResults mantiene días distintos separados', () => {

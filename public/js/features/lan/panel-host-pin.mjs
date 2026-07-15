@@ -15,6 +15,7 @@ import {
   setPinnedHostUrl,
   clearPinnedHostUrl,
   isPinnedHostLocal,
+  hasPinnedHostOverride,
 } from '../../lan-host-pin.mjs';
 import { normalizeLanHostBase } from '../../lan-host-subnet-discovery.mjs';
 import { listWardHostUrlsForProbe } from '../../lan-ward-host-registry.mjs';
@@ -33,6 +34,7 @@ import {
   applyPinnedHostOverride,
   resolveOwnLanBaseForPin,
 } from './transport.mjs';
+import { lanClient } from './runtime.mjs';
 
 function formatShiftPinDisplay(pin) {
   var s = String(pin || '').replace(/\D/g, '');
@@ -80,6 +82,11 @@ function wireLanHostPinCheckbox(deps, cb, hostUrl, resolvedOwn) {
               'Anfitrión fijado: esta Mac asume el servidor del turno.',
               'success'
             );
+          } else {
+            deps.runtime().showToast(
+              'No se pudo activar el servidor en esta Mac. Revisa «Configura tu rotación» o pulsa Convertirse en host.',
+              'error'
+            );
           }
           deps.renderLanPanel({ force: true });
         });
@@ -93,6 +100,11 @@ function wireLanHostPinCheckbox(deps, cb, hostUrl, resolvedOwn) {
       deps.renderLanPanel({ force: true });
     }
   };
+  if (cb.checked && !lanClient.connected && isPinnedHostLocal(ownForPin) && canLocalMacBeLanHost()) {
+    void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true }).then(function (ok) {
+      if (ok) deps.renderLanPanel({ force: true });
+    });
+  }
 }
 
 function appendLanHostPinPinnedHints(wrap, ownBase, pinned) {
@@ -201,11 +213,24 @@ async function appendLanTurnResetAlertStrip(deps, root, gen) {
   if (isClinicalLocalOnlyMode(readRpcSettings())) return;
 
   var ownHost = false;
+  var ownUrl = '';
   try {
+    ownUrl = await resolveOwnLanBaseForPin();
     ownHost = await isLanRestHostOwnMachine();
   } catch (_e) { void _e; }
 
   if (deps.lanPanelRenderStale(gen)) return;
+
+  if (hasPinnedHostOverride() && isPinnedHostLocal(ownUrl)) {
+    if (!lanClient.connected && canLocalMacBeLanHost()) {
+      void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true }).then(
+        function (ok) {
+          if (ok) deps.renderLanPanel({ force: true });
+        }
+      );
+    }
+    return;
+  }
 
   root.querySelectorAll('.lan-turn-reset-alert, .lan-turn-reset-card').forEach(function (el) {
     el.remove();

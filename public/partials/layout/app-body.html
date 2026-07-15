@@ -170,6 +170,7 @@
                   <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Fusiona envíos del mismo día (≤2 h); opción para unir outliers como BH + gases">Consolidar</button>
                   <button type="button" class="lab-output-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); reprocessSelectedLabHistorySet();" title="Regenera resultados desde el texto SOME guardado">Reprocesar</button>
                   <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" onclick="closeLabHistoryMoreMenu(); deleteSelectedLabHistorySet();" title="Quita este conjunto del historial del paciente">Eliminar</button>
+                  <button type="button" class="lab-output-more-item lab-output-more-item--danger" role="menuitem" onclick="closeLabHistoryMoreMenu(); deleteAllLabHistorySets();" title="Borra todos los conjuntos de laboratorio del paciente activo">Eliminar todos los estudios</button>
                 </div>
               </details>
               <button type="button" id="lab-some-tables-btn" class="lab-icon-square-btn" hidden onclick="openLabSomeTablesModal()" title="Tablas del reporte SOME" aria-label="Abrir tablas del reporte">

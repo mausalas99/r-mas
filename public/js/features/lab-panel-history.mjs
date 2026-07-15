@@ -11,6 +11,7 @@ import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { patients, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
+import { syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
 import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
@@ -236,6 +237,46 @@ function deleteSelectedLabHistorySet() {
   deleteLabHistorySet(selectEl.value);
 }
 
+function deleteAllLabHistorySets() {
+  var pid = rt.getActiveId();
+  if (!pid) {
+    rt.showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var sets = normalizeLabHistoryPatientSets(labHistory[pid]);
+  if (!sets.length) {
+    rt.showToast('No hay estudios en el historial', 'info');
+    return;
+  }
+  var removedIds = sets.map(function (s) {
+    return String(s.id);
+  }).filter(Boolean);
+  if (
+    !confirm(
+      '¿Eliminar todos los estudios de laboratorio de este paciente?\n\n' +
+        'Se borrarán ' +
+        sets.length +
+        ' conjunto' +
+        (sets.length === 1 ? '' : 's') +
+        ' del historial. Las tendencias y diagramas se recalcularán.'
+    )
+  ) {
+    return;
+  }
+  delete labHistory[pid];
+  bumpLabHistoryRevision(pid);
+  syncLabHistoryDeletesToLan(pid, removedIds);
+  saveState({ immediate: true });
+  rt.addAuditEntry('lab-history-delete-all', 'ok', sets.length, String(pid));
+  labPanelBridge.setActiveLab(null);
+  clearLabHistoryDateSelectCache();
+  _labHistorySelectedSetId[pid] = '';
+  rt.rebuildEstudiosFromLabHistory(pid);
+  renderLabHistoryPanel();
+  rt.refreshTendenciasOrCultivosPanel();
+  rt.showToast('Historial de laboratorio borrado', 'success');
+}
+
 function replayLabHistorySet(setId) {
   if (!rt.getActiveId()) {
     rt.showToast('Selecciona un paciente primero', 'error');
@@ -350,6 +391,9 @@ function deleteLabHistorySet(setId) {
   if (sets.length) labHistory[pid] = sets;
   else delete labHistory[pid];
   bumpLabHistoryRevision(pid);
+  if (sid.indexOf('__idx_') !== 0) {
+    syncLabHistoryDeletesToLan(pid, [sid]);
+  }
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   labPanelBridge.setActiveLab(null);
@@ -448,6 +492,7 @@ export {
   onLabHistoryDateChange,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
+  deleteAllLabHistorySets,
   replayLabHistorySet,
   reprocessLabHistorySet,
   deleteLabHistorySet,

@@ -131,6 +131,11 @@ describe('LAN module boot wiring', () => {
     assert.match(lanSyncPush, /applyLiveSyncDeltas/);
   });
 
+  it('applyLiveSyncDeltas handles lab_delete delta log entries', () => {
+    assert.match(lanSyncFeature, /entry\.type === 'lab_delete'/);
+    assert.match(lanSyncFeature, /applyLabDeleteDelta/);
+  });
+
   it('push bridge includes fetchAndApplyClinicalOpsFromHost for reconcile', () => {
     const block = lanSyncFeature.slice(
       lanSyncFeature.indexOf('registerLanSyncPushBridge({'),

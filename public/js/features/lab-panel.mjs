@@ -25,6 +25,7 @@ import {
   onLabHistoryDateChange,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
+  deleteAllLabHistorySets,
   labHistoryPanelIsCollapsed,
   toggleLabHistoryPanel,
 } from './lab-panel-history.mjs';
@@ -257,6 +258,7 @@ export const windowHandlers = {
   replayLabHistorySet,
   reprocessLabHistorySet,
   deleteLabHistorySet,
+  deleteAllLabHistorySets,
   toggleLabHistoryPanel,
   syncLabHistoryCollapseUI,
   setLabHistoryPanelCollapsed,
@@ -275,6 +277,7 @@ export const windowHandlers = {
   onLabHistoryDateChange,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
+  deleteAllLabHistorySets,
   openLabRepoImportModal,
   closeLabRepoImportModal,
   confirmLabRepoImport,

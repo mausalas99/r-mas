@@ -26,6 +26,30 @@ function mountLabHistoryRoute(r, { store, broadcastLiveRevision }) {
       res.status(400).json({ error: e.message });
     }
   });
+
+  r.post('/patients/:id/lab-history/delete-set', express.json({ limit: '32kb' }), async (req, res) => {
+    try {
+      const { setId, clientId, clientTimestamp } = req.body || {};
+      if (!setId) return res.status(400).json({ error: 'setId required' });
+      const result = store.deletePatientLabHistorySet(
+        req.params.id,
+        setId,
+        Number(clientTimestamp || 0),
+        clientId
+      );
+      if (!result.ok) return res.status(404).json({ error: result.error });
+      await store.awaitDurableCommit();
+      broadcastLiveRevision(result.roomId || req.params.id, result.revision, clientId || 'host');
+      res.json({
+        ok: true,
+        setId,
+        revision: result.revision,
+        deltaSeq: result.deltaSeq,
+      });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
 }
 
 function mountNotaIndicacionesRoutes(r, { store, broadcastLiveRevision }) {

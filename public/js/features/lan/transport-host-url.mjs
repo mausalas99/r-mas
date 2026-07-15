@@ -17,6 +17,7 @@ import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-setting
 import { canLocalMacBeLanHost } from '../../lan-host-rank-policy.mjs';
 import { isLanSkipShiftPin } from '../../lan-shift-pin-bypass.mjs';
 import { normalizeLanHostBase, lanHostBasesSameMachine } from '../../lan-host-subnet-discovery.mjs';
+import { getPinnedHostUrl, isPinnedHostLocal } from '../../lan-host-pin.mjs';
 
 async function ensureElectronLanServerOnce(opts, attempt) {
   if (!opts.ensureServer || attempt !== 0) return;
@@ -151,6 +152,8 @@ export async function resolveLanHostUrlForShare() {
 export async function shouldShowLanShiftPinClientConnect() {
   if (!isLanElectronDesktop()) return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  const ownUrl = await resolveOwnLanBaseForPin();
+  if (getPinnedHostUrl() && isPinnedHostLocal(ownUrl)) return false;
   // After reset / no bearer — R4 also reconnects via PIN or host URL.
   if (!isLanSessionConfiguredForRest()) return true;
   if (canLocalMacBeLanHost() && !isLanRemoteJoinMode()) return false;

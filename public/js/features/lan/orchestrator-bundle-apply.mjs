@@ -287,6 +287,41 @@ async function applyLabUpsertDelta(entry) {
   });
 }
 
+function shouldSkipLabDeleteEcho(entry) {
+  if (String(entry.originClientId || '') !== String(getLanClientId())) return false;
+  var setId = String(entry.setId || '');
+  if (!setId) return false;
+  return !(labHistory[entry.patientId] || []).some(function (s) {
+    return s && String(s.id) === setId;
+  });
+}
+
+async function applyLabDeleteDelta(entry) {
+  if (!entry || isPitchPatientIsolationActive()) return;
+  if (entry.roomId && activeLiveSyncRoomId && entry.roomId !== activeLiveSyncRoomId) return;
+  var pid = String(entry.patientId || '').trim();
+  var setId = String(entry.setId || '').trim();
+  if (!pid || !setId) return;
+  if (shouldSkipLabDeleteEcho(entry)) return;
+  await withRemoteDeltaApply(async function () {
+    var list = labHistory[pid];
+    if (!list || !list.length) return;
+    var next = list.filter(function (s) {
+      return s && String(s.id) !== setId;
+    });
+    if (next.length === list.length) return;
+    if (next.length) labHistory[pid] = next;
+    else delete labHistory[pid];
+    bumpLabHistoryRevision(pid);
+    saveState({ immediate: true });
+    if (runtime().getActiveId() === pid) {
+      try {
+        runtime().renderLabHistoryPanel();
+      } catch (_e) { void _e; }
+    }
+  });
+}
+
 /**
  * Apply a batch of delta-log entries from GET /deltas (Flow B catch-up).
  * @param {string} roomId
@@ -308,6 +343,10 @@ async function applyLiveSyncDeltas(roomId, deltas) {
     }
     if (entry && entry.type === 'lab_upsert') {
       await applyLabUpsertDelta(Object.assign({ roomId: rid }, entry));
+      continue;
+    }
+    if (entry && entry.type === 'lab_delete') {
+      await applyLabDeleteDelta(Object.assign({ roomId: rid }, entry));
       continue;
     }
     await applyLiveSyncDeltaApplied(Object.assign({ roomId: rid }, entry));

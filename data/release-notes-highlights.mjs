@@ -1494,6 +1494,16 @@ var RELEASE_NOTES_769 = [
       'Al importar gasometría y química del mismo día desde el <strong>repositorio</strong>, R+ fusiona los reportes y calcula <strong>AG</strong> y <strong>Delta-Delta</strong> con Na/Cl de la química.',
   },
   {
+    title: 'Historial — consolidar y LiveSync',
+    body:
+      'Al fusionar estudios del mismo día, el cambio se replica al anfitrión del turno; ya no vuelven a aparecer Labs (1)–(4) tras sincronizar.',
+  },
+  {
+    title: '⇄ — fijar anfitrión',
+    body:
+      '«Fijar anfitrión del turno» activa el servidor en esta Mac; desaparece el aviso contradictorio cuando ya elegiste ser anfitrión.',
+  },
+  {
     title: 'Parche sobre 7.6.8',
     body:
       'Incluye bomba de insulina en EA, filtro de sala al instante y receta en <strong>Manejo</strong>. Instala <strong>7.6.9</strong> en todo el turno el mismo día.',

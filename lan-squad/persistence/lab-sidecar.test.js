@@ -7,6 +7,7 @@ const {
   HOST_LAB_SET_CAP,
   emptySidecar,
   upsertLabSidecar,
+  deleteLabSidecarSet,
   assembleLabHistory,
 } = require('./lab-sidecar.js');
 
@@ -47,5 +48,18 @@ describe('lab-sidecar', () => {
     assert.strictEqual(hist.length, 2);
     assert.strictEqual(hist[0].id, 'y');
     assert.strictEqual(hist[1].id, 'x');
+  });
+
+  it('deleteLabSidecarSet removes set and blocks stale upsert', () => {
+    let sc = emptySidecar();
+    sc = upsertLabSidecar(sc, { id: 'a', date: '2026-06-01' }, 10);
+    sc = upsertLabSidecar(sc, { id: 'b', date: '2026-06-02' }, 20);
+    sc = deleteLabSidecarSet(sc, 'a', 30);
+    assert.strictEqual(assembleLabHistory(sc).length, 1);
+    assert.strictEqual(assembleLabHistory(sc)[0].id, 'b');
+    sc = upsertLabSidecar(sc, { id: 'a', date: '2026-06-01' }, 25);
+    assert.strictEqual(assembleLabHistory(sc).length, 1);
+    sc = upsertLabSidecar(sc, { id: 'a', date: '2026-06-01', values: { x: 1 } }, 35);
+    assert.strictEqual(assembleLabHistory(sc).length, 2);
   });
 });

@@ -6,7 +6,7 @@ const { readJson, writeJsonAtomic } = require('../atomic-json.js');
 const HOST_LAB_SET_CAP = 20;
 
 function emptySidecar() {
-  return { setsById: {}, orderedIds: [], updatedAt: '' };
+  return { setsById: {}, orderedIds: [], deletedById: {}, updatedAt: '' };
 }
 
 function labSetWithTimestamp(set, clientTimestamp) {
@@ -21,11 +21,16 @@ function upsertLabSidecar(sc, set, clientTimestamp) {
   const setId = String(set && set.id ? set.id : '');
   if (!setId) return sc;
 
+  const deletedAt = sc.deletedById && sc.deletedById[setId] != null ? Number(sc.deletedById[setId]) : 0;
+  if (deletedAt && clientTimestamp <= deletedAt) return sc;
+
   const sidecar = {
     setsById: { ...(sc.setsById || {}) },
     orderedIds: Array.isArray(sc.orderedIds) ? [...sc.orderedIds] : [],
+    deletedById: { ...(sc.deletedById || {}) },
     updatedAt: new Date().toISOString(),
   };
+  if (deletedAt) delete sidecar.deletedById[setId];
   const stored = labSetWithTimestamp(set, clientTimestamp);
   const existingIdx = sidecar.orderedIds.indexOf(setId);
 
@@ -40,6 +45,26 @@ function upsertLabSidecar(sc, set, clientTimestamp) {
     const popped = sidecar.orderedIds.pop();
     if (popped) delete sidecar.setsById[popped];
   }
+  return sidecar;
+}
+
+function deleteLabSidecarSet(sc, setId, clientTimestamp) {
+  const id = String(setId || '');
+  if (!id) return sc;
+
+  const existing = sc.setsById && sc.setsById[id];
+  const existingTs = existing ? Number(existing._clientTimestamp || 0) : 0;
+  const priorDeleteTs =
+    sc.deletedById && sc.deletedById[id] != null ? Number(sc.deletedById[id]) : 0;
+  if (clientTimestamp < Math.max(existingTs, priorDeleteTs)) return sc;
+
+  const sidecar = {
+    setsById: { ...(sc.setsById || {}) },
+    orderedIds: Array.isArray(sc.orderedIds) ? sc.orderedIds.filter((x) => x !== id) : [],
+    deletedById: { ...(sc.deletedById || {}), [id]: clientTimestamp },
+    updatedAt: new Date().toISOString(),
+  };
+  delete sidecar.setsById[id];
   return sidecar;
 }
 
@@ -76,6 +101,7 @@ async function readLabSidecar(hostStateDir, roomId, patientId) {
   return {
     setsById: raw.setsById && typeof raw.setsById === 'object' ? raw.setsById : {},
     orderedIds: Array.isArray(raw.orderedIds) ? raw.orderedIds : [],
+    deletedById: raw.deletedById && typeof raw.deletedById === 'object' ? raw.deletedById : {},
     updatedAt: raw.updatedAt || '',
   };
 }
@@ -88,6 +114,7 @@ function readLabSidecarSync(hostStateDir, roomId, patientId) {
     return {
       setsById: raw.setsById && typeof raw.setsById === 'object' ? raw.setsById : {},
       orderedIds: Array.isArray(raw.orderedIds) ? raw.orderedIds : [],
+      deletedById: raw.deletedById && typeof raw.deletedById === 'object' ? raw.deletedById : {},
       updatedAt: raw.updatedAt || '',
     };
   } catch (e) {
@@ -132,6 +159,7 @@ module.exports = {
   HOST_LAB_SET_CAP,
   emptySidecar,
   upsertLabSidecar,
+  deleteLabSidecarSet,
   assembleLabHistory,
   latestSetAt,
   labMetaFromSidecar,

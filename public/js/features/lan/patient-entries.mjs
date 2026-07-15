@@ -16,6 +16,7 @@ import {
 import {
   mergeEventualidades,
   mergeHistoriaClinica,
+  mergeLabHistorySets,
 } from '../../lan-patient-merge.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
 import { mergeCensoPatientFields } from '../../patient-diagnosticos.mjs';
@@ -122,8 +123,9 @@ function applyLanPatientCharts(existing, entry) {
     changed = true;
   }
   var nextLabs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  if (!lanJsonEqual(labHistory[existing.id], nextLabs)) {
-    labHistory[existing.id] = nextLabs;
+  var mergedLabs = mergeLabHistorySets(labHistory[existing.id] || [], nextLabs);
+  if (!lanJsonEqual(labHistory[existing.id], mergedLabs)) {
+    labHistory[existing.id] = mergedLabs;
     changed = true;
   }
   return applyLanPatientMedArtifacts(existing, entry) || changed;

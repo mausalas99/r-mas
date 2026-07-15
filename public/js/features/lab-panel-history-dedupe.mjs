@@ -13,7 +13,8 @@ import {
   countAutoLabConsolidationMerges,
   findOutlierLabConsolidationGroups,
 } from '../lab-consolidation-plan.mjs';
-import { buildLabConsolidateModalHtml, wireLabConsolidateModal, finishLabConsolidateUi } from './lab-panel-history-consolidate-modal.mjs';
+import { finishLabConsolidateUi, wireLabConsolidateModal, buildLabConsolidateModalHtml } from './lab-panel-history-consolidate-modal.mjs';
+import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labSetIdForHistory, clearLabHistoryDateSelectCache, dedupeConsolidatedRowsBySection, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
 import { buildLabDedupeModalHtml, wireLabDedupeModal } from './lab-panel-history-dedupe-modal.mjs';
@@ -420,6 +421,7 @@ function consolidateLabHistoryByDayAndTipo() {
       rt.pushUndoSnapshot('Consolidar historial de labs por día y tipo');
     }
     var result = runLabConsolidationForPatient(patientId, outlierKeys);
+    syncLabHistoryConsolidationToLan(patientId, result);
     finishLabConsolidateUi(patientId, result.merged);
   }
 

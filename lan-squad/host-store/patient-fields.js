@@ -1,6 +1,6 @@
 'use strict';
 
-const { upsertLabSidecar, labMetaFromSidecar } = require('../persistence/lab-sidecar.js');
+const { upsertLabSidecar, deleteLabSidecarSet, labMetaFromSidecar } = require('../persistence/lab-sidecar.js');
 const { nowIso } = require('./utils.js');
 
 function resolveLabHistoryRoom(ctx, patientId) {
@@ -62,6 +62,60 @@ function upsertPatientLabHistorySet(ctx, patientId, set, clientTimestamp, client
     patientId: pid,
     setId: String((set && set.id) || ''),
     set,
+    labHistoryVersion:
+      entry.labMeta && entry.labMeta.labHistoryVersion != null
+        ? entry.labMeta.labHistoryVersion
+        : null,
+    originClientId: String(clientId || ''),
+    clientTimestamp: Number(clientTimestamp || 0),
+    deltaSeq: nextSeq,
+    revision,
+    committedAt,
+  }));
+
+  ctx.markDirty(roomId);
+  void ctx.schedulePersist();
+  return { ok: true, revision, roomId, deltaSeq: nextSeq };
+}
+
+function deletePatientLabHistorySet(ctx, patientId, setId, clientTimestamp, clientId) {
+  const resolved = resolveLabHistoryRoom(ctx, patientId);
+  if (!resolved.ok) return resolved;
+
+  const { roomId, bundle, entry } = resolved;
+  const pid = String(patientId || '').trim();
+  const sid = String(setId || '').trim();
+  if (!sid) return { ok: false, error: 'setId required' };
+
+  const sidecar = ctx.getLabSidecar(roomId, pid);
+  const existing = sidecar.setsById && sidecar.setsById[sid];
+  const deletedAt =
+    sidecar.deletedById && sidecar.deletedById[sid] != null
+      ? Number(sidecar.deletedById[sid])
+      : 0;
+  const existingTs = existing ? Number(existing._clientTimestamp || 0) : 0;
+  if (clientTimestamp < Math.max(existingTs, deletedAt)) {
+    return {
+      ok: true,
+      revision: Number(bundle.revision || 0),
+      roomId,
+      deltaSeq: Number(bundle.deltaSeq || 0),
+    };
+  }
+
+  const nextSidecar = deleteLabSidecarSet(sidecar, sid, clientTimestamp);
+  ctx.setLabSidecar(roomId, pid, nextSidecar);
+  entry.labMeta = labMetaFromSidecar(
+    nextSidecar,
+    entry.labMeta && entry.labMeta.labHistoryVersion
+  );
+  delete entry.labHistory;
+
+  const { nextSeq, revision } = appendLabDeltaLog(bundle, ({ nextSeq, committedAt, revision }) => ({
+    type: 'lab_delete',
+    roomId,
+    patientId: pid,
+    setId: sid,
     labHistoryVersion:
       entry.labMeta && entry.labMeta.labHistoryVersion != null
         ? entry.labMeta.labHistoryVersion
@@ -142,6 +196,8 @@ function createPatientFieldHandlers(ctx) {
   return {
     upsertPatientLabHistorySet: (patientId, set, clientTimestamp, clientId) =>
       upsertPatientLabHistorySet(ctx, patientId, set, clientTimestamp, clientId),
+    deletePatientLabHistorySet: (patientId, setId, clientTimestamp, clientId) =>
+      deletePatientLabHistorySet(ctx, patientId, setId, clientTimestamp, clientId),
     replacePatientNota: (patientId, data, expectedVersion, clientTimestamp) =>
       replacePatientNota(ctx, patientId, data, expectedVersion, clientTimestamp),
     replacePatientIndicaciones: (patientId, data, expectedVersion, clientTimestamp) =>

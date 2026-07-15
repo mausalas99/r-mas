@@ -99,8 +99,7 @@ async function promotePinnedLocalHost(opts) {
     current &&
     (pinTargetsThisMac(pinned, current) || lanHostBasesSameMachine(pinned, current));
   if (alreadyHost) {
-    await ensureLanElectronHostReady({ forceLocal: true });
-    return true;
+    return ensureLanElectronHostReady({ forceLocal: true });
   }
   return promoteThisMacToLanHost({
     skipOtherHostCheck: true,

@@ -65,13 +65,32 @@ export function wireLanMutationRegistryHandlers() {
         body: JSON.stringify({
           set: payload,
           clientId: getLanClientId(),
-          clientTimestamp: Date.now(),
+          clientTimestamp: Number(payload && payload._clientTimestamp ? payload._clientTimestamp : Date.now()),
         }),
       }
     );
     if (!res || !res.ok) throw new Error('lab-history push failed');
   });
   lanMutationRegistry.setDomainOutboxKind('lab-history', 'lab_history_upsert');
+
+  lanMutationRegistry.registerMutationHandler('lab-history-delete', async (pid, payload) => {
+    const rid = getActiveLiveSyncRoomId();
+    if (!rid) return;
+    const res = await lanClient.fetch(
+      '/api/lan/v1/patients/' + encodeURIComponent(pid) + '/lab-history/delete-set',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          setId: payload && payload.setId,
+          clientId: getLanClientId(),
+          clientTimestamp: Number(payload && payload.clientTimestamp ? payload.clientTimestamp : Date.now()),
+        }),
+      }
+    );
+    if (!res || !res.ok) throw new Error('lab-history delete failed');
+  });
+  lanMutationRegistry.setDomainOutboxKind('lab-history-delete', 'lab_history_delete');
 
   lanMutationRegistry.registerMutationHandler('entrega', async () => {
     await pushClinicalOpsLanNow();
