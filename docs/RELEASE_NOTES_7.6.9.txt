@@ -16,7 +16,7 @@ Parche sobre **7.6.8**: corrige el resaltado de valores alterados en **gasometr�
 ## Correcciones
 
 - **Gasometría sin highlight** — `reprocessLabResultLines_` copiaba valores numéricos sin `*`; solo el anión gap conservaba el marcado. Afectaba historial tras guardado y reproceso manual.
-- **AG ausente en import repositorio** — La consolidación masiva unía GASES y ESC/QS pero no pasaba por `reprocessLabResultLines_`, así que el gap no se calculaba hasta pegar todo en un solo SOME.
+- **AG ausente en import repositorio** — La consolidación masiva unía GASES y ESC/QS pero no pasaba por `reprocessLabResultLines_`, así que el gap no se calculaba hasta pegar ambos bloques en un solo SOME.
 
 ## Instalación
 
