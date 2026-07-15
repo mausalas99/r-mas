@@ -1477,10 +1477,29 @@ var RELEASE_NOTES_768 = [
   },
 ];
 
+var RELEASE_NOTES_769 = [
+  {
+    title: 'Gasometría — alterados visibles',
+    body:
+      'pCO₂, pO₂, lactato, bicarbonato y demás vuelven a marcarse en <strong>RESULTADOS</strong> (asterisco rojo) y en el diagrama <strong>Gasometría</strong> (subrayado).',
+  },
+  {
+    title: 'Historial y reproceso',
+    body:
+      'Al guardar estudios o reprocesar desde el reporte SOME, R+ ya no pierde el resaltado de gasometría — reaplica rangos del laboratorio.',
+  },
+  {
+    title: 'Parche sobre 7.6.8',
+    body:
+      'Incluye bomba de insulina en EA, filtro de sala al instante y receta en <strong>Manejo</strong>. Instala <strong>7.6.9</strong> en todo el turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_768;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_769;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.6.9': RELEASE_NOTES_769,
   '7.6.8': RELEASE_NOTES_768,
   '7.6.7': RELEASE_NOTES_767,
   '7.6.6': RELEASE_NOTES_766,

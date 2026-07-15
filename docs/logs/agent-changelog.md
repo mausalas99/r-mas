@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-07-15 | Release 7.6.9 prepare — gasometría highlight fix | `labs-gaso-section.mjs`, `lab-history-maint.mjs`, `lab-panel-history.mjs`, `RELEASE_NOTES_7.6.9.txt`, `release-notes-highlights.mjs` | Fix reprocess stripping GASES asterisks; bump 7.6.9; metrics:check OK; release notes + highlights filled. |
 | 2026-07-06 | Equipos push return fix (local dev) | `cloud/equipos-worker/src/{push,routes}.js`, `public/equipos/equipos-sw-push.js`, `equipos-push.mjs` | Push send loop deduped into logged helper (sent/pruned/failed per sub); `/return`+push routes await dispatch on localhost (wrangler dev drops `waitUntil`); SW v20 with push-event log. Verified: return → FCM 201 `lumify_return`. |
 | 2026-07-02 | LAN bundled auto-connect | `lan-ward-host-registry.mjs`, `panel-scan-hosts.mjs`, `lan-shift-pin-connect.mjs`, `lan-network-change.mjs` | Clients without bearer probe shipped ward URL; scan loop + boot/roam bypass; no PIN/code entry. |
 | 2026-06-30 | Release 7.5.7 EA suplemento | `estado-actual-meds-diet.mjs`, `docs/RELEASE_NOTES_7.5.7.txt`, `release-notes-highlights.mjs` | Fix confirm suplemento re-proposal; bump/publish v7.5.7 to GitHub Releases. |

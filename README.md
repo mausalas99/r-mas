@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.8](https://github.com/mausalas99/r-mas/releases/tag/v7.6.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.6.9](https://github.com/mausalas99/r-mas/releases/tag/v7.6.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.6.9 (gasometría — resaltado de alterados)
+
+- **Labs — gasometría** — Valores alterados (pCO₂, pO₂, lactato, bicarbonato, etc.) vuelven a resaltarse en RESULTADOS y en el diagrama Gasometría.
+- **Labs — reproceso** — Al guardar historial o reprocesar, se conservan asteriscos y rangos del reporte SOME.
+- **Parche sobre 7.6.8** — Bomba insulina EA, filtro censo instantáneo y receta en Manejo.
+
+Notas: `docs/RELEASE_NOTES_7.6.9.txt`.
 
 ## R+ 7.6.8 (bomba insulina EA + filtro censo)
 

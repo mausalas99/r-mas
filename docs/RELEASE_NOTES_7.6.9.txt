@@ -1,0 +1,26 @@
+R+ 7.6.9 (gasometría — resaltado de alterados)
+==================================================
+
+Fecha: 2026-07-15
+
+## Resumen
+
+Parche sobre **7.6.8**: corrige el resaltado de valores alterados en **gasometría** (lista RESULTADOS y diagrama Gasometría) que se perdía al guardar o reprocesar estudios.
+
+## Nuevo / mejorado
+
+- **Labs — gasometría** — pH, pCO₂, pO₂, lactato, bicarbonato y demás campos vuelven a marcarse con asterisco y subrayado rojo cuando están fuera de rango.
+- **Labs — mantenimiento** — Al reconstruir la línea GASES se preservan asteriscos y se reaplican rangos del reporte (`refsBySection`).
+
+## Correcciones
+
+- **Gasometría sin highlight** — `reprocessLabResultLines_` copiaba valores numéricos sin `*`; solo el anión gap conservaba el marcado. Afectaba historial tras guardado y reproceso manual.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.6.9
+
+- Mac: `R+-7.6.9-arm64.dmg`, `R+-7.6.9-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.6.9-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
