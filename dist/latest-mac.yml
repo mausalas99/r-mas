@@ -1,25 +1,31 @@
 version: 7.6.9
 files:
   - url: R+-7.6.9-arm64.zip
-    sha512: 8H2Q+TwkH8CIWetenGUgPs3t0NvWB7nHXZgj0EH9G041H/XVdsMmO6QB9XZA2BnHJr/F1El65K+9jFHI6Xhz/g==
-    size: 136920402
+    sha512: HEDUeiyQpBymgv1l4FTe4t18TrCRASQU2H+00i9yS/1xm26mmYB8NSYzKXxHUWIHudU7PavB10gxghTvBuT0Rw==
+    size: 136926139
   - url: R+-7.6.9-arm64.dmg
-    sha512: bUKiRqEsFRnb+rTd1EgUQHWJGx9DkTt09uC/GZNsCzRUrj0rlNcMv5IbRArKH166IozjQYu6+Q2S8Zg3sEvdFA==
-    size: 142645348
+    sha512: t96S6FyakML1hs3BlwLYcAm/rWFNcV8NPoI4++5tph1uuUz7RzhsiYQ4ahoh8BRplkpXZJGFFN1TEgJfJ3WLKQ==
+    size: 142658215
   - url: R+-7.6.9-x64.zip
-    sha512: 4zWmbWVoronA3dEsZ4cwoJ/qc4VFRixhBTIIEroWYGnCqi38yKDBPmdqVNwCjqaeA26MZ46GE1cn4wswNAYNGQ==
-    size: 145294446
+    sha512: f0LThxPWIa0qswVquUX0JijQuQFqG+cmAdZpmybRhYPJXDr2TakHm+gKMPrx3gojDXcrN2uPI/APOEE30vihow==
+    size: 145300262
   - url: R+-7.6.9-x64.dmg
-    sha512: 5Uch8yi4+34GUwf14/Fk6MgUkQW7QO04GTgOIKXAOashqjfi9onTra10fDf12B6mbj+p0SDYS4Ip+RheQx955A==
-    size: 151094397
+    sha512: m6uws1n4skv6QVpGSYbhgad5nsbpVh9aGxyPJD6/GbmACm9q4iuX+kH2sT+9yCF6+VNlgCGdi7HWFpo7bUI6FA==
+    size: 151107118
 path: R+-7.6.9-arm64.zip
-sha512: 8H2Q+TwkH8CIWetenGUgPs3t0NvWB7nHXZgj0EH9G041H/XVdsMmO6QB9XZA2BnHJr/F1El65K+9jFHI6Xhz/g==
-releaseDate: '2026-07-15T17:23:23.000Z'
+sha512: HEDUeiyQpBymgv1l4FTe4t18TrCRASQU2H+00i9yS/1xm26mmYB8NSYzKXxHUWIHudU7PavB10gxghTvBuT0Rw==
+releaseDate: '2026-07-15T19:27:23.000Z'
 releaseNotes: |
-  Parche sobre 7.6.8: corrige el resaltado de valores alterados en gasometría y el anión gap al importar desde el repositorio cuando gasometría y química vienen en solicitudes separadas.
+  Parche sobre 7.6.8: gasometría con resaltado correcto, import del repositorio sin duplicar estudios del mismo día, consolidación de historial que persiste en LiveSync, y corrección al fijar anfitrión en ⇄.
   
   Labs — gasometría — pH, pCO₂, pO₂, lactato, bicarbonato y demás campos vuelven a marcarse con asterisco y subrayado rojo cuando están fuera de rango.
   
   Labs — mantenimiento — Al reconstruir la línea GASES se preservan asteriscos y se reaplican rangos del reporte (refsBySection).
   
-  Repositorio — Al fusionar reportes del mismo día (p. ej. gasometría + electrolitos), R+ recalcula AG y Delta-Delta con Na/Cl de la química.
+  Repositorio — Un solo conjunto por día al importar varios PDFs; calcula AG y Delta-Delta con Na/Cl de la química fusionada.
+  
+  Historial ⋯ — Eliminar todos los estudios del paciente (reimportar limpio tras duplicados).
+  
+  LiveSync — labs — Consolidar o deduplicar historial empuja al anfitrión (upsert + borrado); el turno ya no «desconsolida» al sincronizar.
+  
+  ⇄ Conexión guardia — «Fijar anfitrión del turno» activa el servidor local de verdad; sin banner contradictorio de dos servidores.
