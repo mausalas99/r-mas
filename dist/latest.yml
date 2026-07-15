@@ -1,18 +1,16 @@
-version: 7.6.8
+version: 7.6.9
 files:
-  - url: R+-7.6.8-x64.exe
-    sha512: wpAlk/DYb/ntmDHaOEP94WaYvNC89WypmrJCEgcOWgnuRA4TH6RAnaUenbtRSIKl23+EL5h1kMi/IbGoDqxWBA==
-    size: 120557312
-path: R+-7.6.8-x64.exe
-sha512: wpAlk/DYb/ntmDHaOEP94WaYvNC89WypmrJCEgcOWgnuRA4TH6RAnaUenbtRSIKl23+EL5h1kMi/IbGoDqxWBA==
-releaseDate: '2026-07-12T00:14:57.000Z'
+  - url: R+-7.6.9-x64.exe
+    sha512: r3NcnrvUQovbhBMTjyk7QCWVPHyaS2SRs1aVhQj7caloxqB3YT/Vqy0XV8Fc94LJTMKa/ef60YB5FoRm2BAc0Q==
+    size: 120560406
+path: R+-7.6.9-x64.exe
+sha512: r3NcnrvUQovbhBMTjyk7QCWVPHyaS2SRs1aVhQj7caloxqB3YT/Vqy0XV8Fc94LJTMKa/ef60YB5FoRm2BAc0Q==
+releaseDate: '2026-07-15T17:23:23.000Z'
 releaseNotes: |
-  Sobre 7.6.7: Estado actual registra bomba de insulina IV desde SOME (algoritmos 1–4), y los filtros de censo por sala aplican al instante sin esperar sync LAN.
+  Parche sobre 7.6.8: corrige el resaltado de valores alterados en gasometría y el anión gap al importar desde el repositorio cuando gasometría y química vienen en solicitudes separadas.
   
-  EA — bomba de insulina — Detección en SOME (BOMBA EN ALGORITMO n + insulina IV); toggle en registro, lecturas en snapshot, texto NM y SOAP de medicamentos.
+  Labs — gasometría — pH, pCO₂, pO₂, lactato, bicarbonato y demás campos vuelven a marcarse con asterisco y subrayado rojo cuando están fuera de rango.
   
-  Filtros censo — sala — Al cambiar sala/equipo/servicio la lista y el tablero Guardia se actualizan de inmediato; reconcilia equipo fuera de sala; pull LAN en segundo plano.
+  Labs — mantenimiento — Al reconstruir la línea GASES se preservan asteriscos y se reaplican rangos del reporte (refsBySection).
   
-  Medicamentos — Receta hospitalaria consolidada en pestaña Manejo del expediente (sin tab Manejo separado).
-  
-  Parche sobre 7.6.7 — Equipos push, troponina hs y consolidación de labs.
+  Repositorio — Al fusionar reportes del mismo día (p. ej. gasometría + electrolitos), R+ recalcula AG y Delta-Delta con Na/Cl de la química.
