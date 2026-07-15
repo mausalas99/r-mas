@@ -13,10 +13,10 @@ import {
 } from './lan-ward-host-registry.mjs';
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
+const panelHostPinSrc = readFileSync(join(jsDir, 'features/lan/panel-host-pin.mjs'), 'utf8');
+const panelRenderOnceSrc = readFileSync(join(jsDir, 'features/lan/panel-render-once.mjs'), 'utf8');
 const panelSrc =
-  readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8') +
-  '\n' +
-  readFileSync(join(jsDir, 'features/lan/panel-host-pin.mjs'), 'utf8');
+  readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8') + '\n' + panelHostPinSrc;
 const orchestratorSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'), 'utf8');
 
 describe('lan-turn-reset', () => {
@@ -70,5 +70,14 @@ describe('lan-turn-reset', () => {
     assert.match(panelSrc, /appendLanTurnResetAlertStrip/);
     assert.match(panelSrc, /lan-turn-reset\.mjs/);
     assert.match(orchestratorSrc, /resetLanTurnConnectionFromUi/);
+  });
+
+  it('does not force re-render from pinned-host alert strip (flash loop guard)', () => {
+    assert.doesNotMatch(
+      panelHostPinSrc,
+      /appendLanTurnResetAlertStrip[\s\S]*applyPinnedHostOverride[\s\S]*renderLanPanel\(\{ force: true \}\)/
+    );
+    assert.doesNotMatch(panelHostPinSrc, /if \(cb\.checked && !lanClient\.connected/);
+    assert.doesNotMatch(panelRenderOnceSrc, /pinned && !isLanConnectionDropdownOpen\(\)/);
   });
 });

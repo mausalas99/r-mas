@@ -1501,7 +1501,7 @@ var RELEASE_NOTES_769 = [
   {
     title: '⇄ — fijar anfitrión',
     body:
-      '«Fijar anfitrión del turno» activa el servidor en esta Mac; desaparece el aviso contradictorio cuando ya elegiste ser anfitrión.',
+      '«Fijar anfitrión del turno» activa el servidor en esta Mac sin parpadear el panel; desaparece el aviso contradictorio cuando ya elegiste ser anfitrión.',
   },
   {
     title: 'Parche sobre 7.6.8',

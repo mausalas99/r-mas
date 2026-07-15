@@ -34,7 +34,6 @@ import {
   applyPinnedHostOverride,
   resolveOwnLanBaseForPin,
 } from './transport.mjs';
-import { lanClient } from './runtime.mjs';
 
 function formatShiftPinDisplay(pin) {
   var s = String(pin || '').replace(/\D/g, '');
@@ -100,11 +99,6 @@ function wireLanHostPinCheckbox(deps, cb, hostUrl, resolvedOwn) {
       deps.renderLanPanel({ force: true });
     }
   };
-  if (cb.checked && !lanClient.connected && isPinnedHostLocal(ownForPin) && canLocalMacBeLanHost()) {
-    void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true }).then(function (ok) {
-      if (ok) deps.renderLanPanel({ force: true });
-    });
-  }
 }
 
 function appendLanHostPinPinnedHints(wrap, ownBase, pinned) {
@@ -221,14 +215,11 @@ async function appendLanTurnResetAlertStrip(deps, root, gen) {
 
   if (deps.lanPanelRenderStale(gen)) return;
 
+  // Local pin: no split-brain banner. Promotion runs in syncLanHostBeforeRender_ / user toggle — never re-render here.
   if (hasPinnedHostOverride() && isPinnedHostLocal(ownUrl)) {
-    if (!lanClient.connected && canLocalMacBeLanHost()) {
-      void applyPinnedHostOverride(getLanTeamCodeFromConfig(), { quiet: true, boot: true }).then(
-        function (ok) {
-          if (ok) deps.renderLanPanel({ force: true });
-        }
-      );
-    }
+    root.querySelectorAll('.lan-turn-reset-alert, .lan-turn-reset-card').forEach(function (el) {
+      el.remove();
+    });
     return;
   }
 

@@ -81,7 +81,7 @@ async function syncLanHostBeforeRender_(deps, rankConfigured) {
     await syncLanHostClinicalMetaToDisk();
     var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
     var pinned = getPinnedHostUrl();
-    if (pinned && !isLanConnectionDropdownOpen()) {
+    if (pinned) {
       if (uiRole === 'host') {
         var ownUrl = await resolveOwnLanBaseForPin();
         if (isPinnedHostLocal(ownUrl)) {

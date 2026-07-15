@@ -23,6 +23,7 @@ Parche sobre **7.6.8**: gasometría con resaltado correcto, import del repositor
 - **Labs (1)–(4) del mismo día** — Import masivo del repositorio creaba un conjunto por PDF; ahora fusiona por calendario.
 - **Historial se reabre tras consolidar** — El bundle LAN reemplazaba `labHistory` sin borrar sets obsoletos en el host.
 - **Fijar anfitrión sin efecto** — El pin devolvía éxito sin conectar el servidor embebido; coexistía con «Dos servidores en la misma sala».
+- **⇄ panel parpadeante** — Al marcar «Fijar anfitrión del turno», el panel entraba en bucle de re-render; corregido en republicación 7.6.9.
 
 ## Instalación
 
