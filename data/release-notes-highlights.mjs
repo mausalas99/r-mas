@@ -1489,6 +1489,11 @@ var RELEASE_NOTES_769 = [
       'Al guardar estudios o reprocesar desde el reporte SOME, R+ ya no pierde el resaltado de gasometría — reaplica rangos del laboratorio.',
   },
   {
+    title: 'Repositorio — anión gap',
+    body:
+      'Al importar gasometría y química del mismo día desde el <strong>repositorio</strong>, R+ fusiona los reportes y calcula <strong>AG</strong> y <strong>Delta-Delta</strong> con Na/Cl de la química.',
+  },
+  {
     title: 'Parche sobre 7.6.8',
     body:
       'Incluye bomba de insulina en EA, filtro de sala al instante y receta en <strong>Manejo</strong>. Instala <strong>7.6.9</strong> en todo el turno el mismo día.',

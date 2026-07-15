@@ -7,6 +7,7 @@ import {
   looksLikeSomeLabReport,
   mergeBhResLabRows_,
   extractLabExpedienteFromReport,
+  reprocessLabResultLines_,
 } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
@@ -326,6 +327,9 @@ function buildMergedPayloadFromGroup(items, tipo) {
     if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
   });
   var deduped = dedupeConsolidatedLabRows(merged, tipo);
+  deduped = reprocessLabResultLines_(deduped, {
+    gasRefs: mergedRefs.GASES,
+  });
   var first = mergeOrder[0].result;
   var fecha = normalizeFechaLabHistory(first.patient && first.patient.fecha) || '';
   return {

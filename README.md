@@ -47,6 +47,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 7.6.9 (gasometría — resaltado de alterados)
 
 - **Labs — gasometría** — Valores alterados (pCO₂, pO₂, lactato, bicarbonato, etc.) vuelven a resaltarse en RESULTADOS y en el diagrama Gasometría.
+- **Repositorio** — Al importar gasometría + química del mismo día, R+ calcula **anión gap** y **Delta-Delta** automáticamente.
 - **Labs — reproceso** — Al guardar historial o reprocesar, se conservan asteriscos y rangos del reporte SOME.
 - **Parche sobre 7.6.8** — Bomba insulina EA, filtro censo instantáneo y receta en Manejo.
 

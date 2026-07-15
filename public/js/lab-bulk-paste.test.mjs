@@ -140,6 +140,11 @@ describe('lab-bulk-paste', () => {
         return /^BH\b/i.test(String(row));
       })
     );
+    var gasesLine = merged[0].resLabs.find(function (row) {
+      return /^GASES\b/i.test(String(row));
+    });
+    assert.ok(gasesLine, 'debe incluir línea GASES');
+    assert.match(String(gasesLine), /\bAG \d/, 'debe calcular anión gap al fusionar labs + gasometría');
   });
 
   it('mergeBulkParseResults mantiene días distintos separados', () => {

@@ -5,16 +5,18 @@ Fecha: 2026-07-15
 
 ## Resumen
 
-Parche sobre **7.6.8**: corrige el resaltado de valores alterados en **gasometría** (lista RESULTADOS y diagrama Gasometría) que se perdía al guardar o reprocesar estudios.
+Parche sobre **7.6.8**: corrige el resaltado de valores alterados en **gasometría** y el **anión gap** al importar desde el repositorio cuando gasometría y química vienen en solicitudes separadas.
 
 ## Nuevo / mejorado
 
 - **Labs — gasometría** — pH, pCO₂, pO₂, lactato, bicarbonato y demás campos vuelven a marcarse con asterisco y subrayado rojo cuando están fuera de rango.
 - **Labs — mantenimiento** — Al reconstruir la línea GASES se preservan asteriscos y se reaplican rangos del reporte (`refsBySection`).
+- **Repositorio** — Al fusionar reportes del mismo día (p. ej. gasometría + electrolitos), R+ recalcula **AG** y **Delta-Delta** con Na/Cl de la química.
 
 ## Correcciones
 
 - **Gasometría sin highlight** — `reprocessLabResultLines_` copiaba valores numéricos sin `*`; solo el anión gap conservaba el marcado. Afectaba historial tras guardado y reproceso manual.
+- **AG ausente en import repositorio** — La consolidación masiva unía GASES y ESC/QS pero no pasaba por `reprocessLabResultLines_`, así que el gap no se calculaba hasta pegar todo en un solo SOME.
 
 ## Instalación
 
