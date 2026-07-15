@@ -1,20 +1,20 @@
 version: 7.6.9
 files:
   - url: R+-7.6.9-arm64.zip
-    sha512: HEDUeiyQpBymgv1l4FTe4t18TrCRASQU2H+00i9yS/1xm26mmYB8NSYzKXxHUWIHudU7PavB10gxghTvBuT0Rw==
-    size: 136926139
+    sha512: SH/FoNb9DhdNFbIhh84xVqFgMYy5M6pFBR0X6hn2kI7aWOB0kBORArLzBEs84fD1TQ/h+cJZlfoyHMaAYpvQ0A==
+    size: 136925336
   - url: R+-7.6.9-arm64.dmg
-    sha512: t96S6FyakML1hs3BlwLYcAm/rWFNcV8NPoI4++5tph1uuUz7RzhsiYQ4ahoh8BRplkpXZJGFFN1TEgJfJ3WLKQ==
-    size: 142658215
+    sha512: b+STQ9eeM5XMtRs6YvgyAgoQ5FVvJxaxBBIsfMLajuQExN1HQrw+FkvDPyOsISSC7sR8erRET+T7RfmOLRIsgg==
+    size: 142657880
   - url: R+-7.6.9-x64.zip
-    sha512: f0LThxPWIa0qswVquUX0JijQuQFqG+cmAdZpmybRhYPJXDr2TakHm+gKMPrx3gojDXcrN2uPI/APOEE30vihow==
-    size: 145300262
+    sha512: v4LGdeRFrsb1uLQXD2E7gxzTrLdXU3Ciq1gboAENVHyxsrlOse96i9gGrpBSAVvVfE2JaAvEKKK9xcHeONGpGQ==
+    size: 145299392
   - url: R+-7.6.9-x64.dmg
-    sha512: m6uws1n4skv6QVpGSYbhgad5nsbpVh9aGxyPJD6/GbmACm9q4iuX+kH2sT+9yCF6+VNlgCGdi7HWFpo7bUI6FA==
-    size: 151107118
+    sha512: goqfy56Pn897I2/5VgJPP1jhrLCggT25HVKv6yzBex5wW0yGl/vNgdF2ogVkrcbbVF86vWVAICjUuJaKigQpmQ==
+    size: 151104168
 path: R+-7.6.9-arm64.zip
-sha512: HEDUeiyQpBymgv1l4FTe4t18TrCRASQU2H+00i9yS/1xm26mmYB8NSYzKXxHUWIHudU7PavB10gxghTvBuT0Rw==
-releaseDate: '2026-07-15T19:27:23.000Z'
+sha512: SH/FoNb9DhdNFbIhh84xVqFgMYy5M6pFBR0X6hn2kI7aWOB0kBORArLzBEs84fD1TQ/h+cJZlfoyHMaAYpvQ0A==
+releaseDate: '2026-07-15T20:23:49.000Z'
 releaseNotes: |
   Parche sobre 7.6.8: gasometría con resaltado correcto, import del repositorio sin duplicar estudios del mismo día, consolidación de historial que persiste en LiveSync, y corrección al fijar anfitrión en ⇄.
   

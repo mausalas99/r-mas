@@ -1,11 +1,11 @@
 version: 7.6.9
 files:
   - url: R+-7.6.9-x64.exe
-    sha512: I74vS2X1oZwSsDOBpTfz+LIvejDDin3mYMIoFxGs5leXEbsfGIzwueL/f8UQaHC2MMTA09tEKpC+HwasU7oL1Q==
-    size: 120566928
+    sha512: xcBNfc4uVUpxn7nqQiGbdyWdM0jUY0/E+ZE9+vAxxDZeodkmKgebsKaW0gfOQpkcmk63b7oFMSX3OE3d1y7eQQ==
+    size: 120564657
 path: R+-7.6.9-x64.exe
-sha512: I74vS2X1oZwSsDOBpTfz+LIvejDDin3mYMIoFxGs5leXEbsfGIzwueL/f8UQaHC2MMTA09tEKpC+HwasU7oL1Q==
-releaseDate: '2026-07-15T19:27:23.000Z'
+sha512: xcBNfc4uVUpxn7nqQiGbdyWdM0jUY0/E+ZE9+vAxxDZeodkmKgebsKaW0gfOQpkcmk63b7oFMSX3OE3d1y7eQQ==
+releaseDate: '2026-07-15T20:23:49.000Z'
 releaseNotes: |
   Parche sobre 7.6.8: gasometría con resaltado correcto, import del repositorio sin duplicar estudios del mismo día, consolidación de historial que persiste en LiveSync, y corrección al fijar anfitrión en ⇄.
   
