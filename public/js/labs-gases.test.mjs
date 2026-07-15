@@ -224,6 +224,41 @@ test('reprocessLabResultLines_ depura GASES duplicados y recalcula AG sin interp
   assert.match(gases[0], /\bDelta-Delta 0\.5\b/);
 });
 
+test('reprocessLabResultLines_ preserva asteriscos de gasometría al reconstruir GASES', () => {
+  const inRows = [
+    'ESC\tNa 133.4 Cl 98.7 K 3.9',
+    'GASES\tpH 7.4 pCO2 23* pO2 59* Lactato 11.2* Bica 14.2* AG 23.8*',
+  ];
+  const out = reprocessLabResultLines_(inRows);
+  const gases = out.find((l) => /^GASES\t/.test(l));
+  assert.ok(gases);
+  assert.match(gases, /\bpCO2 23\*/);
+  assert.match(gases, /\bpO2 59\*/);
+  assert.match(gases, /\bLactato 11\.2\*/);
+  assert.match(gases, /\bBica 14\.2\*/);
+});
+
+test('reprocessLabResultLines_ remarca gasometría con refs del reporte', () => {
+  const inRows = [
+    'ESC\tNa 133.4 Cl 98.7 K 3.9',
+    'GASES\tpH 7.4 pCO2 23 pO2 59 Lactato 11.2 Bica 14.2',
+  ];
+  const gasRefs = {
+    pCO2: [35, 45],
+    pO2: [83, 100],
+    Lactato: [0.5, 2.2],
+    Bica: [22, 28],
+  };
+  const out = reprocessLabResultLines_(inRows, { gasRefs });
+  const gases = out.find((l) => /^GASES\t/.test(l));
+  assert.ok(gases);
+  assert.match(gases, /\bpCO2 23\*/);
+  assert.match(gases, /\bpO2 59\*/);
+  assert.match(gases, /\bLactato 11\.2\*/);
+  assert.match(gases, /\bBica 14\.2\*/);
+  assert.doesNotMatch(gases, /\bpH 7\.4\*/);
+});
+
 test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {
   const res = procesarLabs(MUESTRA_GASO_VENOSA);
   const lineaGases = (res.resLabs || []).find((l) => /^GASES\b/.test(l));

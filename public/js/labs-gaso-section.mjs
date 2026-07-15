@@ -177,8 +177,30 @@ export function dedupeSingletonSections_(rows) {
 function valueFromSectionLine_(line, key) {
   var s = normalizeLabLine_(line);
   if (!s) return null;
-  var m = s.match(new RegExp('(?:^|\\s)' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+(-?\\d+(?:\\.\\d+)?)', 'i'));
-  return m ? m[1] : null;
+  var m = s.match(
+    new RegExp(
+      '(?:^|\\s)' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+(-?\\d+(?:\\.\\d+)?)(\\*)?',
+      'i'
+    )
+  );
+  return m ? m[1] + (m[2] || '') : null;
+}
+
+function gasoRefRange_(gasRefs, fieldKey) {
+  var r = gasRefs && gasRefs[fieldKey];
+  if (r && r.length === 2 && isFinite(r[0]) && isFinite(r[1]) && r[1] > r[0]) {
+    return [r[0], r[1]];
+  }
+  return null;
+}
+
+function markGasoToken_(valStr, gasRefs, fieldKey) {
+  if (valStr == null || valStr === '') return valStr;
+  var bare = String(valStr).replace(/\*$/, '');
+  var starred = String(valStr).endsWith('*');
+  var range = gasoRefRange_(gasRefs, fieldKey);
+  if (range) return fmt(marcarSegunRango(bare, range[0], range[1]));
+  return fmt(starred ? bare + '*' : bare);
 }
 
 function pickBestSectionLine_(rows, sectionName) {
@@ -198,7 +220,7 @@ function formatNumericToken_(n) {
   return rounded === Math.trunc(rounded) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
-function rebuildGasesFromResults_(rows) {
+function rebuildGasesFromResults_(rows, gasRefs) {
   var gases = pickBestSectionLine_(rows, 'GASES');
   if (!gases) return { gasesLine: '', interpLine: '' };
   var base = normalizeLabLine_(gases);
@@ -218,7 +240,9 @@ function rebuildGasesFromResults_(rows) {
   var bica = values.Bica;
 
   orderedKeys.forEach(function (k) {
-    if (values[k] != null && values[k] !== '') out.push(k, values[k]);
+    if (values[k] != null && values[k] !== '') {
+      out.push(k, markGasoToken_(values[k], gasRefs, k));
+    }
   });
 
   var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---', alb || '---');
@@ -233,9 +257,10 @@ function rebuildGasesFromResults_(rows) {
   return { gasesLine: out[0] + '\t' + out.slice(1).join(' '), interpLine: interp };
 }
 
-export function reprocessLabResultLines_(rows) {
+export function reprocessLabResultLines_(rows, opts) {
+  var gasRefs = opts && opts.gasRefs;
   var clean = dedupeSingletonSections_(rows || []);
-  var rebuilt = rebuildGasesFromResults_(clean);
+  var rebuilt = rebuildGasesFromResults_(clean, gasRefs);
   var out = clean.filter(function (r) {
     var k = labSectionKey_(r);
     return k !== 'GASES' && k !== 'INTERPRETACIÓN GASOMETRÍA:';

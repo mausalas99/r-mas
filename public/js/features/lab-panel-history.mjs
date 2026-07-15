@@ -275,12 +275,16 @@ function reprocessLabSetResLabs_(set, ctx) {
     const mergedSrc = srcParts.join('\n\n---\n\n');
     const chartPatient = chartPatientForActiveId_();
     const parsed = procesarLabs(mergedSrc, chartPatient ? { patient: chartPatient } : undefined);
-    repro = reprocessLabResultLines_(parsed.resLabs || []);
+    repro = reprocessLabResultLines_(parsed.resLabs || [], {
+      gasRefs: parsed.refsBySection && parsed.refsBySection.GASES,
+    });
     if (parsed.bhExtras && typeof parsed.bhExtras === 'object') {
       set.bhExtras = Object.assign({}, set.bhExtras || {}, parsed.bhExtras);
     }
   } else {
-    repro = reprocessLabResultLines_(set.resLabs);
+    repro = reprocessLabResultLines_(set.resLabs, {
+      gasRefs: set.refsBySection && set.refsBySection.GASES,
+    });
   }
   return repro;
 }

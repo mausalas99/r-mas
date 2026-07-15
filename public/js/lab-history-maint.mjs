@@ -254,7 +254,9 @@ export function runLabHistoryPostSaveMaintenance() {
     if (!Array.isArray(sets) || !sets.length) return;
     sets.forEach(function (set) {
       if (!set.resLabs || !set.resLabs.length) return;
-      var repro = reprocessLabResultLines_(set.resLabs);
+      var repro = reprocessLabResultLines_(set.resLabs, {
+        gasRefs: set.refsBySection && set.refsBySection.GASES,
+      });
       if (!repro || !repro.length) return;
       if (!areLabSetsEquivalent(set.resLabs, repro)) {
         set.resLabs = repro.slice();
