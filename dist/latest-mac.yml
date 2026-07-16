@@ -1,31 +1,31 @@
-version: 7.6.9
+version: 7.7.0
 files:
-  - url: R+-7.6.9-arm64.zip
-    sha512: SH/FoNb9DhdNFbIhh84xVqFgMYy5M6pFBR0X6hn2kI7aWOB0kBORArLzBEs84fD1TQ/h+cJZlfoyHMaAYpvQ0A==
-    size: 136925336
-  - url: R+-7.6.9-arm64.dmg
-    sha512: b+STQ9eeM5XMtRs6YvgyAgoQ5FVvJxaxBBIsfMLajuQExN1HQrw+FkvDPyOsISSC7sR8erRET+T7RfmOLRIsgg==
-    size: 142657880
-  - url: R+-7.6.9-x64.zip
-    sha512: v4LGdeRFrsb1uLQXD2E7gxzTrLdXU3Ciq1gboAENVHyxsrlOse96i9gGrpBSAVvVfE2JaAvEKKK9xcHeONGpGQ==
-    size: 145299392
-  - url: R+-7.6.9-x64.dmg
-    sha512: goqfy56Pn897I2/5VgJPP1jhrLCggT25HVKv6yzBex5wW0yGl/vNgdF2ogVkrcbbVF86vWVAICjUuJaKigQpmQ==
-    size: 151104168
-path: R+-7.6.9-arm64.zip
-sha512: SH/FoNb9DhdNFbIhh84xVqFgMYy5M6pFBR0X6hn2kI7aWOB0kBORArLzBEs84fD1TQ/h+cJZlfoyHMaAYpvQ0A==
-releaseDate: '2026-07-15T20:23:49.000Z'
+  - url: R+-7.7.0-arm64.zip
+    sha512: Westt37YtnyBd7gSAUUX1sOVlSqds5BbZwxkmeFauSZo1PDQL20bcq+U9poz3c01MLteAL0SgCkng2YKkpZfhw==
+    size: 136944346
+  - url: R+-7.7.0-arm64.dmg
+    sha512: 6jpABeYbAGoqi6pPCSubu1ad4ooxag1tqXhlWS2XXJJmsSqNsOaPC75GiYS/Ca5vk+Ig0ZOnwUeAh/mBOdrpxw==
+    size: 142668897
+  - url: R+-7.7.0-x64.zip
+    sha512: EEP5VMLfBaMlPZ9GohFq+o18fkACJhdPXi3tuH0F+Uj511wtT7U4l+tKg+KjKk2bZqnixf7itTeHSFsNecmcGA==
+    size: 145318432
+  - url: R+-7.7.0-x64.dmg
+    sha512: xXdWkhJqAxyecXTe2HO2I56WoCTHBK1h1hUqIUrYnpAcf5EtF8skOd+f6sp2vlEpag7aen4xB3A8+kot5MEzMA==
+    size: 151126447
+path: R+-7.7.0-arm64.zip
+sha512: Westt37YtnyBd7gSAUUX1sOVlSqds5BbZwxkmeFauSZo1PDQL20bcq+U9poz3c01MLteAL0SgCkng2YKkpZfhw==
+releaseDate: '2026-07-16T00:18:13.000Z'
 releaseNotes: |
-  Parche sobre 7.6.8: gasometría con resaltado correcto, import del repositorio sin duplicar estudios del mismo día, consolidación de historial que persiste en LiveSync, y corrección al fijar anfitrión en ⇄.
+  7.7.0 añade interpretación citoquímica automática al pegar SOME (ascitis, pleural y LCR), fusiona bloques duales de LCR química + bacteriología, y permite colapsar la sección de diagramas en Resultados.
   
-  Labs — gasometría — pH, pCO₂, pO₂, lactato, bicarbonato y demás campos vuelven a marcarse con asterisco y subrayado rojo cuando están fuera de rango.
+  Labs — interpretación citoquímica — Tras procesar líquidos corporales, R+ genera un bloque INTERPRETACIÓN CITOQUÍMICO: con GASA (portal y no portal), criterios de Light en derrame pleural, sospecha de PBE/SBP (PMN ≥250), banderas de empiema pleural y heurísticas de etiología en LCR (bacteriana, viral, TB).
   
-  Labs — mantenimiento — Al reconstruir la línea GASES se preservan asteriscos y se reaplican rangos del reporte (refsBySection).
+  Solo informativo — La interpretación aparece como alerta ámbar en el panel de laboratorio; no se copia a portapapeles, nota ni censo (la línea compacta Liq: / LCR: sigue siendo la copiable).
   
-  Repositorio — Un solo conjunto por día al importar varios PDFs; calcula AG y Delta-Delta con Na/Cl de la química fusionada.
+  LCR — bloques duales SOME — Fusiona CITOQUIMICO DE LCR (química) con CITOQUIMICO LIQ. LCR (bacteriología) en una sola línea LCR:; evita que glucosa u otros valores filtren a química sanguínea.
   
-  Historial ⋯ — Eliminar todos los estudios del paciente (reimportar limpio tras duplicados).
+  LCR — pH fuera de rango — Si el pH reportado está fuera de 7.28–7.42, R+ avisa en interpretación (sin alterar el valor copiable).
   
-  LiveSync — labs — Consolidar o deduplicar historial empuja al anfitrión (upsert + borrado); el turno ya no «desconsolida» al sincronizar.
+  Labs — diagramas colapsables — En Resultados puedes plegar la sección de diagramas; la preferencia se recuerda en localStorage.
   
-  ⇄ Conexión guardia — «Fijar anfitrión del turno» activa el servidor local de verdad; sin banner contradictorio de dos servidores.
+  Parche sobre 7.6.9 — Gasometría con resaltado, consolidación de historial en LiveSync, import del repositorio y ⇄ fijar anfitrión.
