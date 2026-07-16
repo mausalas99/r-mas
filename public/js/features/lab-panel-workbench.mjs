@@ -126,6 +126,7 @@ function buildLabLines() {
   var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
     if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;
+    if (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(entry)) return;
     if (rt.isAscitisInterpretacionResLabChunk(entry)) return;
     entry.split(/\r?\n/).forEach(function(subline) {
       var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
@@ -300,11 +301,16 @@ function showLabConflictModal(newLines, existingDate) {
   };
 }
 
-function toastAscitisAlertsFromResult(result) {
+function toastCitoquimInterpFromResult(result) {
   if (!result || !result.resLabs || !result.resLabs.length) return;
   result.resLabs.forEach(function (chunk) {
-    if (!rt.isAscitisInterpretacionResLabChunk(chunk)) return;
-    var msg = rt.ascitisInterpretacionBody_(chunk);
+    var isInterp =
+      (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(chunk)) ||
+      rt.isAscitisInterpretacionResLabChunk(chunk);
+    if (!isInterp) return;
+    var msg = rt.citoquimInterpretacionBody_
+      ? rt.citoquimInterpretacionBody_(chunk)
+      : rt.ascitisInterpretacionBody_(chunk);
     if (msg) rt.showToast(msg, 'warn');
   });
 }
@@ -330,7 +336,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   applyBulkLabPatientSwitch(displayPick, displayResult, processable, applyLabPastePatientResolution);
 
   labPanelBridge.renderOutput(displayResult);
-  toastAscitisAlertsFromResult(displayResult);
+  toastCitoquimInterpFromResult(displayResult);
   rt.renderDiagramas(displayResult.resLabs);
   syncBulkLabHistorySelection(rt.getActiveId(), displayResult, processable);
 

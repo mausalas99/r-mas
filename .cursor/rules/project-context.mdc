@@ -133,6 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-07-16** `release-7.7.0`: interpretación citoquímica (GASA, Light, PBE, LCR), fusión bloques duales LCR, diagramas colapsables; `labs-citoquimico-interpret*.mjs`, `labs-lcr-parse.mjs`.
 - **2026-07-11** `release-7.6.8`: bomba insulina IV en EA (SOME algoritmo 1–4), filtro censo sala instantáneo, receta en pestaña Manejo; `insulin-pump-*.mjs`, `estado-actual-insulin-pump.mjs`, `patients-scope.mjs`.
 - **2026-07-07** `release-7.6.7`: equipos PWA Web Push (LAN+cloud), troponina hs SOME/tendencias, consolidación labwork+gaso; `equipos-push.mjs`, `equipos-sw-push.js`, `labs-chemistry.mjs`.
 - **2026-07-03** `release-7.6.5`: host bearer alineado con lan-team-code.txt (401 sync-bundle), `bundledWardInviteUrl` prefill ⇄; `transport-session.mjs`, `push-bundle.mjs`, `clinical-settings.mjs`.

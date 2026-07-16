@@ -54,8 +54,23 @@ function isAscitisInterpretacionResLabChunk(text) {
   return /^INTERPRETACI[ÓO]N\s+ASCITIS\s*:/i.test(head);
 }
 
+function isCitoquimInterpretacionResLabChunk(text) {
+  var head = String(text || '').split('\n')[0].trim();
+  return (
+    /^INTERPRETACI[ÓO]N\s+CITOQU[IÍ]MICO\s*:/i.test(head) ||
+    /^INTERPRETACI[ÓO]N\s+ASCITIS\s*:/i.test(head) ||
+    /^INTERPRETACI[ÓO]N\s+PLEURAL\s*:/i.test(head)
+  );
+}
+
+function citoquimInterpretacionBody_(text) {
+  return String(text || '')
+    .replace(/^INTERPRETACI[ÓO]N\s+(?:CITOQU[IÍ]MICO|ASCITIS|PLEURAL)\s*:\t?/i, '')
+    .trim();
+}
+
 function ascitisInterpretacionBody_(text) {
-  return String(text || '').replace(/^INTERPRETACI[ÓO]N\s+ASCITIS\s*:\t?/i, '').trim();
+  return citoquimInterpretacionBody_(text);
 }
 
 function isBhMainResLabChunk(text) {
@@ -124,7 +139,9 @@ export {
   getLabOutputPrefs,
   setLabOutputPrefs,
   isGasoInterpretacionResLabChunk,
+  isCitoquimInterpretacionResLabChunk,
   isAscitisInterpretacionResLabChunk,
+  citoquimInterpretacionBody_,
   ascitisInterpretacionBody_,
   isBhMainResLabChunk,
   formatBhExtendedTabLine,

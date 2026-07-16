@@ -1,7 +1,7 @@
 /**
  * Utilidades de conjuntos de laboratorio en historial: parseo, fusión por tipo, estudios en nota.
  */
-import { isAscitisInterpretacionResLabChunk, looksLikeSomeLabReport } from './labs.js';
+import { isCitoquimInterpretacionResLabChunk, looksLikeSomeLabReport } from './labs.js';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
 import { compareLabSetIdForDedupe } from './lab-history-auto-store-core.mjs';
 import {
@@ -259,7 +259,7 @@ export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
       var cultAcc = [];
       sp.labs.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
-        if (!clean || isAscitisInterpretacionResLabChunk(clean)) return;
+        if (!clean || isCitoquimInterpretacionResLabChunk(clean)) return;
         labsAcc.push(row);
       });
       sp.cultivo.forEach(function (row) {

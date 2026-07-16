@@ -88,15 +88,13 @@ export {
   esLiquidoAscitico_,
   computeGasaValue_,
   evaluarGasa_,
-  isAscitisInterpretacionResLabChunk,
-  formatAscitisInterpretacionLine_,
-  ASCITIS_INTERPRETACION_HEADER,
   extractSerumAlbuminGdlFromResLabs_,
   resolveSerumAlbuminForGasa_,
   resLabsHasAsciticFluid_,
-  refreshAscitisInterpretacionInResLabs_,
-  evaluarAscitisNoPortal_,
-  buildAscitisLabAlerts_,
+  resLabsHasPleuralFluid_,
+  parseCitoquimicoLiquidosParsed,
+  resolveSerumGlucoseForInterpret_,
+  extractSerumGlucoseMgdlFromResLabs_,
   evaluarCriteriosLight_,
   parsearCitoquimicoLiquidos,
   parseFisicoquimicoHeces_,
@@ -107,6 +105,32 @@ export {
 } from './labs-fluidos.mjs';
 
 export {
+  CITOQUIM_INTERPRETACION_HEADER,
+  ASCITIS_INTERPRETACION_HEADER,
+  isCitoquimInterpretacionResLabChunk,
+  isAscitisInterpretacionResLabChunk,
+  citoquimInterpretacionBody_,
+  ascitisInterpretacionBody_,
+  formatCitoquimicoInterpretacionLine_,
+  formatAscitisInterpretacionLine_,
+  buildAscitisLabAlerts_,
+  buildPleuralLabAlerts_,
+  buildLcrLabAlerts_,
+  buildCitoquimicoInterpretAlerts_,
+  refreshCitoquimicoInterpretacionInResLabs_,
+  refreshAscitisInterpretacionInResLabs_,
+  resLabsHasCitoquimFluid_,
+  resLabsHasLcr_,
+  evaluarAscitisNoPortal_,
+  evaluarPbeAscitis_,
+  evaluarPleuralInfeccion_,
+  evaluarLcrEtiologia_,
+  evaluarLcrPhSanity_,
+} from './labs-citoquimico-interpret.mjs';
+
+export { parseLcrParsed } from './labs-lcr-parse.mjs';
+
+export {
   extractLabReportFechaDMY,
   looksLikeSomeLabReport,
   extractLabReportHora,
@@ -114,7 +138,8 @@ export {
 } from './labs-report-refs.mjs';
 
 import { createProcesarLabs } from './labs-procesar.mjs';
-import { bloqueCitoquimicoLiquidosFull, formatAscitisInterpretacionLine_, buildAscitisLabAlerts_, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_ } from './labs-fluidos.mjs';
+import { bloqueCitoquimicoLiquidosFull, parsearCitoquimicoLiquidos, parseFisicoquimicoHeces_, parseFrotisSangre_, parsePlaquetasCitrato_, parseSerologiaBancoSangre_, parseCuantOrina_ } from './labs-fluidos.mjs';
+import { formatCitoquimicoInterpretacionLine_, buildCitoquimicoInterpretAlerts_ } from './labs-citoquimico-interpret.mjs';
 import { dedupeSingletonSections_, parseGaso_, parsePIE_, parsearLCR } from './labs-gaso-section.mjs';
 import { parseBH_ } from './labs-bh.mjs';
 import { parseQS_, parseESC_, parsePFH_, parseLipasa_ } from './labs-chemistry.mjs';
@@ -140,8 +165,8 @@ export const procesarLabs = createProcesarLabs({
   parsePIE_,
   parsearLCR,
   parsearCitoquimicoLiquidos,
-  formatAscitisInterpretacionLine_,
-  buildAscitisLabAlerts_,
+  formatCitoquimicoInterpretacionLine_,
+  buildCitoquimicoInterpretAlerts_,
   parseFisicoquimicoHeces_,
   parseFrotisSangre_,
   parseEGO_,

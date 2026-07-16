@@ -66,11 +66,13 @@ function appendBhExtendedLines(box, text, result, labDisp, rt) {
   });
 }
 
-function appendAscitisChunk(box, text, rt) {
+function appendCitoquimInterpretacionChunk(box, text, rt) {
   var alertDiv = document.createElement('div');
-  alertDiv.className = 'lab-out-ascitis-alert out-line';
+  alertDiv.className = 'lab-out-citoquim-interp out-line';
   alertDiv.setAttribute('role', 'status');
-  alertDiv.textContent = rt.ascitisInterpretacionBody_(text);
+  alertDiv.textContent = rt.citoquimInterpretacionBody_
+    ? rt.citoquimInterpretacionBody_(text)
+    : rt.ascitisInterpretacionBody_(text);
   box.appendChild(alertDiv);
 }
 
@@ -93,8 +95,11 @@ function appendStandardResLabChunk(box, text) {
 export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt) {
   resLabs.forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;
-    if (rt.isAscitisInterpretacionResLabChunk(text)) {
-      appendAscitisChunk(box, text, rt);
+    if (
+      (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(text)) ||
+      rt.isAscitisInterpretacionResLabChunk(text)
+    ) {
+      appendCitoquimInterpretacionChunk(box, text, rt);
       return;
     }
     if (rt.isResLabChunkPureCultivo(text)) {

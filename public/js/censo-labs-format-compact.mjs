@@ -1,13 +1,13 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
 import { splitResLabsByTipo } from './censo-cultivo-format.mjs';
-import { formatBhExtrasDisplayLine, isAscitisInterpretacionResLabChunk } from './labs.js';
+import { formatBhExtrasDisplayLine, isCitoquimInterpretacionResLabChunk } from './labs.js';
 import { normalizeCensoPanelLine, reflowLabsForCensoDisplay } from './censo-table-style.mjs';
 import { linesFromParsedBySectionFull, pushLabTextLines } from './censo-labs-format-lines.mjs';
 
 function appendLabChunks(lines, set, sp) {
   var bhExtDone = false;
   sp.labs.forEach(function (chunk) {
-    if (isAscitisInterpretacionResLabChunk(chunk)) return;
+    if (isCitoquimInterpretacionResLabChunk(chunk)) return;
     pushLabTextLines(lines, chunk);
     if (!bhExtDone && set.bhExtras && typeof set.bhExtras === 'object') {
       var ext = formatBhExtrasDisplayLine(set.bhExtras, set.sourceText);

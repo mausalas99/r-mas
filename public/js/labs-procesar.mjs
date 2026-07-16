@@ -3,6 +3,7 @@
  * Wired from labs.js via createProcesarLabs(deps) to avoid circular imports with parse*.
  */
 import { buildEgfrPatientCtx } from './labs-egfr.mjs';
+import { lcrBlocksNormText_ } from './labs-lcr-parse.mjs';
 
 /** Expediente del encabezado SOME (para enlazar con el paciente en R+). */
 export function extractLabExpedienteFromReport(textoBruto) {
@@ -50,11 +51,7 @@ function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
     /GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i
   );
   var bloqueGaso = mGaso ? mGaso[0] : '';
-  var mLCR =
-    textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
-    textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i) ||
-    textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
-  var bloqueLCR = mLCR ? mLCR[0] : '';
+  var lcrNormChunks = lcrBlocksNormText_(textoBruto);
   var bloqueCitoLC = deps.bloqueCitoquimicoLiquidosFull(textoBruto);
   var mEGO = tNorm.match(
     /(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i
@@ -64,10 +61,10 @@ function segmentLabReportBlocks_(deps, textoBruto, tNorm) {
   if (bloqueCitoLC) {
     tSinLiqCorp = tNorm.replace(bloqueCitoLC.replace(/\r/g, '').replace(/\s+/g, ' '), ' ');
   }
-  var textoQS = tSinLiqCorp
-    .replace(bloqueGaso, ' ')
-    .replace(bloqueEGO, ' ')
-    .replace(bloqueLCR ? bloqueLCR.replace(/\s+/g, ' ') : '', ' ');
+  var textoQS = tSinLiqCorp.replace(bloqueGaso, ' ').replace(bloqueEGO, ' ');
+  for (var li = 0; li < lcrNormChunks.length; li++) {
+    textoQS = textoQS.replace(lcrNormChunks[li], ' ');
+  }
   var textoParaBh = tSinLiqCorp;
   if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
   var esSoloGaso =
@@ -111,7 +108,7 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
   pushLabSection_(resLabs, deps.parsearCitoquimicoLiquidos(textoBruto));
   pushLabSection_(
     resLabs,
-    deps.formatAscitisInterpretacionLine_(deps.buildAscitisLabAlerts_(textoBruto))
+    deps.formatCitoquimicoInterpretacionLine_(deps.buildCitoquimicoInterpretAlerts_(textoBruto))
   );
   pushLabSection_(resLabs, deps.parseFisicoquimicoHeces_(textoBruto));
   appendFrotisLines_(deps, resLabs, textoBruto);
@@ -167,8 +164,8 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(tNorm: string) => object | null} deps.parsePIE_
  * @param {(texto: string) => object | null} deps.parsearLCR
  * @param {(texto: string) => object | null} deps.parsearCitoquimicoLiquidos
- * @param {(texto: string) => string} deps.formatAscitisInterpretacionLine_
- * @param {(texto: string) => object} deps.buildAscitisLabAlerts_
+ * @param {(texto: string) => string} deps.formatCitoquimicoInterpretacionLine_
+ * @param {(texto: string) => object} deps.buildCitoquimicoInterpretAlerts_
  * @param {(texto: string) => object | null} deps.parseFisicoquimicoHeces_
  * @param {(texto: string) => string | null} deps.parseFrotisSangre_
  * @param {(texto: string) => object | null} deps.parseEGO_

@@ -1477,6 +1477,34 @@ var RELEASE_NOTES_768 = [
   },
 ];
 
+var RELEASE_NOTES_770 = [
+  {
+    title: 'Interpretación citoquímica',
+    body:
+      'Al pegar SOME de líquidos corporales, R+ muestra un bloque <strong>INTERPRETACIÓN CITOQUÍMICO:</strong> con GASA, Light, PBE/SBP, empiema pleural y etiología LCR — solo informativo, no se copia a nota ni censo.',
+  },
+  {
+    title: 'LCR — química + bacteriología',
+    body:
+      'Fusiona los bloques duales del SOME (<strong>CITOQUIMICO DE LCR</strong> + <strong>LIQ. LCR</strong>) en una línea <strong>LCR:</strong> sin mezclar glucosa con química sanguínea.',
+  },
+  {
+    title: 'pH LCR fuera de rango',
+    body:
+      'Si el pH reportado está fuera de <strong>7.28–7.42</strong>, R+ avisa en interpretación para verificar muestra o reporte; el valor copiable no cambia.',
+  },
+  {
+    title: 'Diagramas colapsables',
+    body:
+      'En <strong>Resultados</strong> puedes plegar la sección de diagramas de laboratorio; la preferencia se recuerda en esta Mac.',
+  },
+  {
+    title: 'Parche sobre 7.6.9',
+    body:
+      'Incluye gasometría resaltada, historial consolidado en LiveSync e import del repositorio. Instala <strong>7.7.0</strong> en todo el turno el mismo día.',
+  },
+];
+
 var RELEASE_NOTES_769 = [
   {
     title: 'Gasometría — alterados visibles',
@@ -1511,9 +1539,10 @@ var RELEASE_NOTES_769 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_769;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_770;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.0': RELEASE_NOTES_770,
   '7.6.9': RELEASE_NOTES_769,
   '7.6.8': RELEASE_NOTES_768,
   '7.6.7': RELEASE_NOTES_767,

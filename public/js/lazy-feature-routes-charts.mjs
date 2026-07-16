@@ -64,7 +64,9 @@ function wireChartsRuntimeExports(tendMod) {
     inferFechaLabSetFromId: tendMod.inferFechaLabSetFromId,
     getLabOutputPrefs: tendMod.getLabOutputPrefs,
     isGasoInterpretacionResLabChunk: tendMod.isGasoInterpretacionResLabChunk,
+    isCitoquimInterpretacionResLabChunk: tendMod.isCitoquimInterpretacionResLabChunk,
     isAscitisInterpretacionResLabChunk: tendMod.isAscitisInterpretacionResLabChunk,
+    citoquimInterpretacionBody_: tendMod.citoquimInterpretacionBody_,
     ascitisInterpretacionBody_: tendMod.ascitisInterpretacionBody_,
     formatBhExtendedTabLine: tendMod.formatBhExtendedTabLine,
     isBhMainResLabChunk: tendMod.isBhMainResLabChunk,
@@ -146,8 +148,14 @@ export const chartsRuntimeProxies = {
   isGasoInterpretacionResLabChunk: chartsSyncFn('isGasoInterpretacionResLabChunk', function () {
     return false;
   }),
+  isCitoquimInterpretacionResLabChunk: chartsSyncFn('isCitoquimInterpretacionResLabChunk', function () {
+    return false;
+  }),
   isAscitisInterpretacionResLabChunk: chartsSyncFn('isAscitisInterpretacionResLabChunk', function () {
     return false;
+  }),
+  citoquimInterpretacionBody_: chartsSyncFn('citoquimInterpretacionBody_', function () {
+    return '';
   }),
   ascitisInterpretacionBody_: chartsSyncFn('ascitisInterpretacionBody_', function () {
     return '';

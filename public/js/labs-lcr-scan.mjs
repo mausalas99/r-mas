@@ -1,9 +1,18 @@
 // LCR citoquímico line scanner (complexity split from labs.js).
 
+function isLcrFieldLabel_(txt) {
+  return /^(RECUENTO(?:\s+CELULAR)?|LEUCOCITOS(?:\s+POLIMORFONUCLEARES|\s*\/\s*MM3?)?|POLIMORFONUCLEARES|LINFOCITOS|%PMN|%LINFOCITOS|GLUCOSA|PROTEINAS|CLORURO|GRAM|TINTA(?:\s+CHINA)?|ERITROCITOS|COAGLUTIN(?:ACION)?|PH\b|ASPECTO|OTROS|LCR|ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA|COMENTARIOS?)$/i.test(
+    txt
+  );
+}
+
 function scanNumericAfter_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
-    var m = lineas[j].match(/(\d+(\.\d+)?)/);
-    if (m) return m[1];
+    var raw = lineas[j].replace(/\*/g, '').trim();
+    if (!raw) continue;
+    if (isLcrFieldLabel_(raw)) break;
+    var m = raw.match(/^(\d+(?:[.,]\d+)?)/);
+    if (m) return m[1].replace(',', '.');
   }
   return '';
 }
@@ -11,15 +20,24 @@ function scanNumericAfter_(lineas, i, maxLook) {
 function scanTextAfter_(lineas, i, maxLook) {
   for (var j = i + 1; j < Math.min(i + maxLook, lineas.length); j++) {
     var txt = lineas[j].replace(/\*/g, '').trim();
-    if (txt && !/ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA/i.test(txt)) return txt.toUpperCase();
+    if (!txt) continue;
+    if (/ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA/i.test(txt)) continue;
+    if (isLcrFieldLabel_(txt)) break;
+    if (/^\d+(?:[.,]\d+)?$/.test(txt)) break;
+    if (/^---+$/.test(txt)) return '';
+    return txt.toUpperCase();
   }
   return '';
 }
 
 function scanLeucocitos_(lineas, i) {
-  for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
-    var m = lineas[j].match(/(\d+)\s*$/);
-    if (m) return m[1];
+  for (var j = i + 1; j < Math.min(i + 6, lineas.length); j++) {
+    var raw = lineas[j].replace(/\*/g, '').trim();
+    if (!raw) continue;
+    if (isLcrFieldLabel_(raw)) break;
+    if (/^---+$/.test(raw)) return '0';
+    var m = raw.match(/^(\d+(?:[.,]\d+)?)\s*$/);
+    if (m) return m[1].replace(',', '.');
   }
   return '';
 }
@@ -40,7 +58,8 @@ export function scanLcrLine_(fields, lineas, i, linUp, lin) {
   if (linUp.indexOf('PH') === 0) fields.pH = scanNumericAfter_(lineas, i, 4);
   if (linUp.indexOf('ASPECTO') === 0) fields.aspecto = scanTextAfter_(lineas, i, 4);
   if (linUp.indexOf('RECUENTO CELULAR') === 0 || linUp.indexOf('LEUCOCITOS') === 0) {
-    fields.leu = scanLeucocitos_(lineas, i);
+    var leuVal = scanLeucocitos_(lineas, i);
+    if (leuVal !== '') fields.leu = leuVal;
   }
   if (linUp.indexOf('GLUCOSA') === 0) fields.glu = scanNumericAfter_(lineas, i, 4);
   if (linUp.indexOf('PROTEINAS') === 0) fields.prot = scanProteinas_(lineas, i, lin);
@@ -49,15 +68,31 @@ export function scanLcrLine_(fields, lineas, i, linUp, lin) {
   if (linUp.indexOf('TINTA CHINA') === 0) fields.tinta = scanTextAfter_(lineas, i, 4);
 }
 
+export function isInvalidLcrTextField_(val) {
+  if (val === '' || val == null) return true;
+  var s = String(val).toUpperCase().trim();
+  if (/^---+$/.test(s)) return true;
+  return isLcrFieldLabel_(s);
+}
+
 export function lcrFieldsEmpty_(fields) {
-  return !(fields.aspecto || fields.leu || fields.glu || fields.prot || fields.cl || fields.gram || fields.tinta);
+  return !(
+    fields.aspecto ||
+    fields.leu !== '' ||
+    fields.glu ||
+    fields.prot ||
+    fields.cl ||
+    fields.gram ||
+    fields.tinta ||
+    fields.pH
+  );
 }
 
 export function buildLcrLine_(fields) {
   var p = ['LCR:'];
   if (fields.pH) p.push('pH', fields.pH);
   if (fields.aspecto) p.push('Asp', fields.aspecto);
-  if (fields.leu) p.push('Leu', fields.leu);
+  if (fields.leu !== '') p.push('Leu', fields.leu);
   if (fields.glu) p.push('Glu', fields.glu);
   if (fields.prot) p.push('Prot', fields.prot);
   if (fields.cl) p.push('Cl', fields.cl);

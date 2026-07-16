@@ -298,6 +298,38 @@ export function copiarDiagrama(svgStr, vw, vh, title, btn) {
   img.src = url;
 }
 
+const LAB_DIAGRAMS_COLLAPSED_KEY = "rpc-lab-diagrams-collapsed-v1";
+
+function labDiagramsIsCollapsed() {
+  try {
+    return localStorage.getItem(LAB_DIAGRAMS_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setLabDiagramsCollapsed(collapsed) {
+  try {
+    localStorage.setItem(LAB_DIAGRAMS_COLLAPSED_KEY, collapsed ? "1" : "0");
+  } catch (_e) {
+    void _e;
+  }
+  syncLabDiagramsCollapseUI();
+}
+
+export function toggleLabDiagramsSection() {
+  setLabDiagramsCollapsed(!labDiagramsIsCollapsed());
+}
+
+export function syncLabDiagramsCollapseUI() {
+  var sec = document.getElementById("lab-diagrams-section");
+  var btn = document.querySelector(".lab-diagrams-toggle");
+  if (!sec) return;
+  var collapsed = labDiagramsIsCollapsed();
+  sec.classList.toggle("is-collapsed", collapsed);
+  if (btn) btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
 export function renderDiagramas(resLabs) {
   var secs = parsearSecciones(resLabs);
   var grid = document.getElementById("diagrams-grid");
@@ -331,4 +363,5 @@ export function renderDiagramas(resLabs) {
     grid.appendChild(div);
   });
   document.getElementById("lab-diagrams-section").style.display = any ? "block" : "none";
+  syncLabDiagramsCollapseUI();
 }

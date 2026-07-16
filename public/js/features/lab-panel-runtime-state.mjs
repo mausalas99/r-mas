@@ -47,8 +47,14 @@ var rt = {
   isGasoInterpretacionResLabChunk() {
     return false;
   },
+  isCitoquimInterpretacionResLabChunk() {
+    return false;
+  },
   isAscitisInterpretacionResLabChunk() {
     return false;
+  },
+  citoquimInterpretacionBody_(text) {
+    return String(text || '');
   },
   ascitisInterpretacionBody_(text) {
     return String(text || '');

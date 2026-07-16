@@ -3,4 +3,10 @@ export {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
 } from "./diagrams-parse.mjs";
-export { renderDiagramas, copiarDiagrama } from "./diagrams-render.mjs";
+export {
+  renderDiagramas,
+  copiarDiagrama,
+  toggleLabDiagramsSection,
+  syncLabDiagramsCollapseUI,
+  setLabDiagramsCollapsed,
+} from "./diagrams-render.mjs";

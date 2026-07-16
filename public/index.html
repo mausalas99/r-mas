@@ -848,12 +848,17 @@
           </div>
         </div>
 
-        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
-          <div class="card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Diagramas
+        <div id="lab-diagrams-section" class="card" style="display:none;flex-shrink:0;">
+          <div class="card-header lab-diagrams-card-header">
+            <button type="button" class="lab-diagrams-toggle" onclick="toggleLabDiagramsSection()" aria-label="Mostrar u ocultar diagramas" aria-expanded="true">
+              <svg class="lab-diagrams-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <span class="lab-diagrams-card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Diagramas
+            </span>
           </div>
-          <div class="card-body">
+          <div id="lab-diagrams-body" class="card-body">
             <div id="diagrams-grid" class="diagrams-wrap"></div>
           </div>
         </div>

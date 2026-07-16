@@ -201,6 +201,5 @@ export function buildCitoquimicoParts_(fields, ctx) {
     p.push(label, fmt(raw));
   }
   if (ctx.gasaVal != null) p.push('GASA', String(ctx.gasaVal));
-  if (ctx.lightTxt) p.push(ctx.lightTxt);
   return p;
 }

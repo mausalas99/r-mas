@@ -7,7 +7,10 @@ import {
   evaluarGasa_,
   evaluarAscitisNoPortal_,
   buildAscitisLabAlerts_,
-  formatAscitisInterpretacionLine_,
+  buildPleuralLabAlerts_,
+  buildCitoquimicoInterpretAlerts_,
+  formatCitoquimicoInterpretacionLine_,
+  isCitoquimInterpretacionResLabChunk,
   isAscitisInterpretacionResLabChunk,
   computeGasaValue_,
   esLiquidoAscitico_,
@@ -15,7 +18,7 @@ import {
   esLiquidoPleural_,
   resolveSerumAlbuminForGasa_,
   extractSerumAlbuminGdlFromResLabs_,
-  refreshAscitisInterpretacionInResLabs_,
+  refreshCitoquimicoInterpretacionInResLabs_,
 } from './labs.js';
 
 const MUESTRA_PERITONEAL = `
@@ -182,7 +185,7 @@ test('normalizarProteinasFluidoGdl — mg/dL del laboratorio', () => {
   assert.equal(normalizarProteinasFluidoGdl_('300'), 3);
 });
 
-test('parsearCitoquimicoLiquidos — líquido pleural + Light exudado', () => {
+test('parsearCitoquimicoLiquidos — líquido pleural sin Light en línea Liq', () => {
   const out = parsearCitoquimicoLiquidos(MUESTRA_PLEURAL);
   assert.match(out, /Liq:/);
   assert.match(out, /PLEURAL/i);
@@ -192,8 +195,25 @@ test('parsearCitoquimicoLiquidos — líquido pleural + Light exudado', () => {
   assert.match(out, /Asp.*XANTOCROMICO/);
   assert.match(out, /Leu.*3000/);
   assert.match(out, /Linf.*100/);
-  assert.match(out, /Light EXUDADO/i);
-  assert.match(out, /LDH>2\/3/);
+  assert.ok(!/Light EXUDADO/i.test(out));
+});
+
+test('buildPleuralLabAlerts — Light exudado en interpretación', () => {
+  const alerts = buildPleuralLabAlerts_(MUESTRA_PLEURAL);
+  assert.match(alerts.join(' '), /Light EXUDADO/i);
+  assert.match(alerts.join(' '), /LDH>2\/3/);
+  const interp = formatCitoquimicoInterpretacionLine_(alerts);
+  assert.ok(isCitoquimInterpretacionResLabChunk(interp));
+});
+
+test('procesarLabs — pleural Light en bloque interpretación citoquímico', () => {
+  const { resLabs } = procesarLabs(MUESTRA_PLEURAL);
+  const liq = resLabs.find((l) => l.startsWith('Liq:\t'));
+  const interp = resLabs.find((l) => isCitoquimInterpretacionResLabChunk(l));
+  assert.ok(liq);
+  assert.ok(!/Light EXUDADO/i.test(liq));
+  assert.ok(interp);
+  assert.match(interp, /Light EXUDADO/i);
 });
 
 test('evaluarCriteriosLight — exudado por LDH > 2/3 ULN', () => {
@@ -347,8 +367,8 @@ test('parsearCitoquimicoLiquidos — GASA numérico sin interpretación en Liq',
 test('buildAscitisLabAlerts — interpretación aparte de resultados', () => {
   const alerts = buildAscitisLabAlerts_(MUESTRA_WENDY_ASCITIS);
   assert.match(alerts.join(' '), /GASA 1\.3 ≥1\.1 — probable hipertensión portal/);
-  const interp = formatAscitisInterpretacionLine_(alerts);
-  assert.ok(isAscitisInterpretacionResLabChunk(interp));
+  const interp = formatCitoquimicoInterpretacionLine_(alerts);
+  assert.ok(isCitoquimInterpretacionResLabChunk(interp));
 });
 
 const MUESTRA_WENDY_NO_PORTAL = MUESTRA_WENDY_ASCITIS.replace('3.4', '2.5');
@@ -371,14 +391,16 @@ test('GASA<1.1 sin TGL ni amilasa — sugerir ambos', () => {
   assert.match(alerts.join(' '), /triglicéridos y amilasa/i);
 });
 
-test('procesarLabs — interpretación ascitis en resLabs pero filtrable al copiar', () => {
+test('procesarLabs — interpretación citoquímica en resLabs pero filtrable al copiar', () => {
   const { resLabs } = procesarLabs(MUESTRA_WENDY_ASCITIS);
   const liq = resLabs.find((l) => l.startsWith('Liq:\t'));
-  const interp = resLabs.find((l) => isAscitisInterpretacionResLabChunk(l));
+  const interp = resLabs.find((l) => isCitoquimInterpretacionResLabChunk(l));
   assert.match(liq, /\bGASA 1\.3\b/);
   assert.ok(!/portal HTN/.test(liq));
   assert.ok(interp);
+  assert.match(interp, /peritonitis bacteriana espontánea/i);
   assert.match(interp, /hipertensión portal/);
+  assert.match(interp, /^INTERPRETACIÓN CITOQUÍMICO:/);
 });
 
 test('evaluarAscitisNoPortal — ramas del algoritmo', () => {
@@ -438,18 +460,25 @@ test('GASA — albúmina sérica en otro envío del mismo día (PFHs parseado)',
   );
 });
 
-test('refreshAscitisInterpretacionInResLabs_ — une PFHs de otro bloque guardado', () => {
+test('buildCitoquimicoInterpretAlerts — combina ascitis y pleural', () => {
+  const alerts = buildCitoquimicoInterpretAlerts_(MUESTRA_WENDY_ASCITIS);
+  assert.match(alerts.join(' '), /hipertensión portal/);
+  const pleuralAlerts = buildCitoquimicoInterpretAlerts_(MUESTRA_PLEURAL);
+  assert.match(pleuralAlerts.join(' '), /Light EXUDADO/i);
+});
+
+test('refreshCitoquimicoInterpretacionInResLabs_ — une PFHs de otro bloque guardado', () => {
   const ascitisOnly = MUESTRA_WENDY_ASCITIS.replace(
     /QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/,
     ''
   );
   const liqOnly = parsearCitoquimicoLiquidos(ascitisOnly);
-  const resLabs = [liqOnly, 'INTERPRETACIÓN ASCITIS:\tIncluir albúmina sérica del mismo día para calcular GASA'];
-  const next = refreshAscitisInterpretacionInResLabs_(resLabs, ascitisOnly, {
+  const resLabs = [liqOnly, 'INTERPRETACIÓN CITOQUÍMICO:\tIncluir albúmina sérica del mismo día para calcular GASA'];
+  const next = refreshCitoquimicoInterpretacionInResLabs_(resLabs, ascitisOnly, {
     extraResLabs: [['PFHs\tAlb 3.4']],
   });
   const liq = next.find((l) => l.startsWith('Liq:\t'));
-  const interp = next.find((l) => isAscitisInterpretacionResLabChunk(l));
+  const interp = next.find((l) => isCitoquimInterpretacionResLabChunk(l));
   assert.match(liq, /\bGASA 1\.3\b/);
   assert.match(interp, /hipertensión portal/);
 });

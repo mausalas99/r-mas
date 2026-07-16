@@ -1,11 +1,6 @@
 import { extraerConRango, extraerConRangoSuero, marcarSegunRango, fmt, toNum_ } from './labs-extract.mjs';
 import { buildGasoInterpretacionFromValues_ } from './labs-gaso-interpret.mjs';
-import {
-  emptyLcrFields_,
-  scanLcrLine_,
-  lcrFieldsEmpty_,
-  buildLcrLine_,
-} from './labs-lcr-scan.mjs';
+export { parsearLCR } from './labs-lcr-parse.mjs';
 
 function gasoBlockForExtract_(bloqueGaso) {
   return String(bloqueGaso || '').replace(/\r/g, '').replace(/\s+/g, ' ');
@@ -143,6 +138,7 @@ export function dedupeSingletonSections_(rows) {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, LIPASA: 1, TROP: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
     HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
     'INTERPRETACIÓN ASCITIS:': 1,
+    'INTERPRETACIÓN CITOQUÍMICO:': 1,
   };
   var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
   var best = Object.create(null);
@@ -342,25 +338,5 @@ export function parsePIE_(tNorm) {
   var mPie = subPie.match(/\b(NEGATIVO|POSITIVO)\b/i);
   if (!mPie) return '';
   return 'PIE\t' + mPie[1].toUpperCase() + '*';
-}
-
-export function parsearLCR(textoBruto) {
-  var tUp = textoBruto.toUpperCase();
-  if (
-    tUp.indexOf('CITOQUIMICO DE LCR') === -1 &&
-    tUp.indexOf('CITOQUIMICO LIQ. LCR') === -1 &&
-    tUp.indexOf('CITOQUIMICO LCR') === -1
-  ) {
-    return '';
-  }
-  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
-    return l.trim();
-  });
-  var fields = emptyLcrFields_();
-  for (var i = 0; i < lineas.length; i++) {
-    scanLcrLine_(fields, lineas, i, lineas[i].toUpperCase(), lineas[i]);
-  }
-  if (lcrFieldsEmpty_(fields)) return '';
-  return buildLcrLine_(fields);
 }
 

@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.6.9](https://github.com/mausalas99/r-mas/releases/tag/v7.6.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.0](https://github.com/mausalas99/r-mas/releases/tag/v7.7.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.7.0 (interpretación citoquímica y LCR)
+
+- **Labs — interpretación citoquímica** — GASA, Light, PBE/SBP, empiema pleural y etiología LCR en bloque informativo (no se copia a nota/censo).
+- **LCR — bloques duales SOME** — Fusiona química + bacteriología; evita fugas de glucosa a QS; bandera si pH fuera de 7.28–7.42.
+- **Labs — diagramas** — Sección colapsable en Resultados con preferencia guardada.
+- **Parche sobre 7.6.9** — Gasometría resaltada, historial LAN y repositorio.
+
+Notas: `docs/RELEASE_NOTES_7.7.0.txt`.
 
 ## R+ 7.6.9 (gasometría — resaltado de alterados)
 

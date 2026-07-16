@@ -1276,6 +1276,10 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 .lab-output-more {
   position: relative;
 }
+#appcontent-lab #lab-output-section:has(.lab-output-more[open]) {
+  z-index: 5;
+  position: relative;
+}
 #appcontent-lab #lab-output-section.card,
 #appcontent-lab #lab-input-section.card,
 #appcontent-lab #lab-diagrams-section.card,
@@ -1367,6 +1371,57 @@ html.electron-windows .lab-copy-fab:not([hidden]) {
 }
 html.dark .lab-output-more-item--danger:hover {
   background: rgba(248, 113, 113, 0.12);
+}
+.lab-diagrams-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lab-diagrams-toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lab-diagrams-toggle:hover {
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+.lab-diagrams-chevron {
+  transition: transform 0.2s ease;
+}
+#lab-diagrams-section.is-collapsed .lab-diagrams-chevron {
+  transform: rotate(-90deg);
+}
+#lab-diagrams-body {
+  max-height: min(120vh, 3200px);
+  opacity: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  transition:
+    max-height var(--dur-normal) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    padding var(--dur-normal) var(--ease-out);
+}
+#lab-diagrams-section.is-collapsed #lab-diagrams-body {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.lab-diagrams-card-title {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 #lab-some-tables-btn {
   flex-shrink: 0;
@@ -2271,6 +2326,7 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
 
 .out-line   { font-family: var(--font-mono); line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
 .out-indent { font-family: var(--font-mono); line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
+.lab-out-citoquim-interp,
 .lab-out-ascitis-alert {
   font-family: var(--font-sans, inherit);
   font-size: 13px;
@@ -2283,6 +2339,7 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
   color: var(--text);
   white-space: pre-wrap;
 }
+html.dark .lab-out-citoquim-interp,
 html.dark .lab-out-ascitis-alert {
   border-color: color-mix(in oklab, var(--warn) 40%, var(--border));
   background: color-mix(in oklab, var(--warn) 10%, var(--surface));

@@ -3,8 +3,8 @@ import { esc } from '../dom-escape.mjs';
 import {
   procesarLabs,
   reprocessLabResultLines_,
-  refreshAscitisInterpretacionInResLabs_,
-  resLabsHasAsciticFluid_,
+  refreshCitoquimicoInterpretacionInResLabs_,
+  resLabsHasCitoquimFluid_,
 } from '../labs.js';
 import { dedupeConsolidatedLabRows } from '../lab-bulk-paste.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
@@ -368,7 +368,7 @@ function reprocessLabHistorySet(setId) {
       rt.showToast('No se pudieron regenerar resultados desde el bloque guardado', 'error');
       return;
     }
-    const repro = refreshAscitisInterpretacionInResLabs_(rawRepro, set.sourceText || '', ctx);
+    const repro = refreshCitoquimicoInterpretacionInResLabs_(rawRepro, set.sourceText || '', ctx);
     finalizeReprocessedLabSet_(set, repro, setId);
   } catch {
     rt.showToast('Error al reprocesar este estudio', 'error');
@@ -447,10 +447,12 @@ export function refreshSameDayAscitisForPatient(patientId, triggerSetId) {
     sets.forEach(function (set) {
       if (!set || rt.dayKeyFromLabSet(set) !== dk) return;
       var src = String(set.sourceText || '').trim();
-      var hasAscitis = resLabsHasAsciticFluid_(set.resLabs) || (src && /\bCITOQUIMICO DE LIQUIDOS CORPORALES\b/i.test(src));
-      if (!hasAscitis) return;
+      var hasCitoquim =
+        resLabsHasCitoquimFluid_(set.resLabs) ||
+        (src && /\bCITOQUIMICO\b/i.test(src));
+      if (!hasCitoquim) return;
       var ctx = buildSameDaySerumContext(patientId, set);
-      var next = refreshAscitisInterpretacionInResLabs_(set.resLabs || [], src, ctx);
+      var next = refreshCitoquimicoInterpretacionInResLabs_(set.resLabs || [], src, ctx);
       var prevStr = '';
       var nextStr = '';
       try {
