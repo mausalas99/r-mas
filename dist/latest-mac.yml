@@ -1,31 +1,31 @@
-version: 7.7.0
+version: 7.7.1
 files:
-  - url: R+-7.7.0-arm64.zip
-    sha512: Westt37YtnyBd7gSAUUX1sOVlSqds5BbZwxkmeFauSZo1PDQL20bcq+U9poz3c01MLteAL0SgCkng2YKkpZfhw==
-    size: 136944346
-  - url: R+-7.7.0-arm64.dmg
-    sha512: 6jpABeYbAGoqi6pPCSubu1ad4ooxag1tqXhlWS2XXJJmsSqNsOaPC75GiYS/Ca5vk+Ig0ZOnwUeAh/mBOdrpxw==
-    size: 142668897
-  - url: R+-7.7.0-x64.zip
-    sha512: EEP5VMLfBaMlPZ9GohFq+o18fkACJhdPXi3tuH0F+Uj511wtT7U4l+tKg+KjKk2bZqnixf7itTeHSFsNecmcGA==
-    size: 145318432
-  - url: R+-7.7.0-x64.dmg
-    sha512: xXdWkhJqAxyecXTe2HO2I56WoCTHBK1h1hUqIUrYnpAcf5EtF8skOd+f6sp2vlEpag7aen4xB3A8+kot5MEzMA==
-    size: 151126447
-path: R+-7.7.0-arm64.zip
-sha512: Westt37YtnyBd7gSAUUX1sOVlSqds5BbZwxkmeFauSZo1PDQL20bcq+U9poz3c01MLteAL0SgCkng2YKkpZfhw==
-releaseDate: '2026-07-16T00:18:13.000Z'
+  - url: R+-7.7.1-arm64.zip
+    sha512: AB35QGbuKytxwPJsJJ+wlHCOPo+jEeyVBgH7/Mkv2fr6EpaqwSASKHJ6PuOFmeYwWdVnZ9xEjQd5kWcZ9cX3rA==
+    size: 136970296
+  - url: R+-7.7.1-arm64.dmg
+    sha512: lfwM8S93/00fuFzhHn5I6/Mque5jw5J5HJv1vY5fpDUMI3owCo6AUfLbrItivgHvTPw9d3yFPaeDONXBo+1sGQ==
+    size: 142697158
+  - url: R+-7.7.1-x64.zip
+    sha512: v813rv0YWLfH8n8JJxJ28YRTyJsFxdFsKNJk+FAFmhF1sTFZJPyAnJPO96dSFGuEI/3Q9fO/mw6/fQ+M/h6gew==
+    size: 145344372
+  - url: R+-7.7.1-x64.dmg
+    sha512: hFpJnNhiiyAKLvWnAtIB7VVCW21ziGgc3l2N9U8uV5hTKf9XP9ga3KrPYbl07uSMY5yA4Bz5KwQiuau6yxV/Kw==
+    size: 151126854
+path: R+-7.7.1-arm64.zip
+sha512: AB35QGbuKytxwPJsJJ+wlHCOPo+jEeyVBgH7/Mkv2fr6EpaqwSASKHJ6PuOFmeYwWdVnZ9xEjQd5kWcZ9cX3rA==
+releaseDate: '2026-07-19T17:20:34.000Z'
 releaseNotes: |
-  7.7.0 añade interpretación citoquímica automática al pegar SOME (ascitis, pleural y LCR), fusiona bloques duales de LCR química + bacteriología, y permite colapsar la sección de diagramas en Resultados.
+  7.7.1 amplía la clasificación SOAP de medicamentos desde la receta hospitalaria (más familias y destinos manuales), agrupa rescates de insulina PRN en Manejo y refleja glucometrías con UI aplicadas en el texto de Estado actual.
   
-  Labs — interpretación citoquímica — Tras procesar líquidos corporales, R+ genera un bloque INTERPRETACIÓN CITOQUÍMICO: con GASA (portal y no portal), criterios de Light en derrame pleural, sospecha de PBE/SBP (PMN ≥250), banderas de empiema pleural y heurísticas de etiología en LCR (bacteriana, viral, TB).
+  Receta → SOAP — más categorías — Clasificación automática y override manual para antieméticos, sedación, antiepilépticos, antiparkinsonianos, antídotos, vía aérea, transfusiones, anticoagulación terapéutica, antiarrítmicos y estatinas (además de analgesia, ABX, vasopresores, etc.).
   
-  Solo informativo — La interpretación aparece como alerta ámbar en el panel de laboratorio; no se copia a portapapeles, nota ni censo (la línea compacta Liq: / LCR: sigue siendo la copiable).
+  SOAP EA — partición de medicamentos — Analgésicos y antieméticos van a cláusulas separadas; insulina basal/SC y rescates se separan del resto del bloque NM.
   
-  LCR — bloques duales SOME — Fusiona CITOQUIMICO DE LCR (química) con CITOQUIMICO LIQ. LCR (bacteriología) en una sola línea LCR:; evita que glucosa u otros valores filtren a química sanguínea.
+  Rescates de insulina — Detecta insulina PRN SC por glucometría en el SOME; en Manejo aparece como grupo RESCATES DE INSULINA con checkbox SOAP y suspender en bloque.
   
-  LCR — pH fuera de rango — Si el pH reportado está fuera de 7.28–7.42, R+ avisa en interpretación (sin alterar el valor copiable).
+  Glucometrías con rescate — Si registraste UI aplicadas en monitoreo, el texto SOAP muestra valor, NUI (p. ej. 142, 4UI) y omite la frase genérica de rescates disponibles cuando ya hubo aplicación.
   
-  Labs — diagramas colapsables — En Resultados puedes plegar la sección de diagramas; la preferencia se recuerda en localStorage.
+  Bomba de insulina IV — Mejor detección (algoritmo en P1 sin «EN», cloruro portador excluido del bucket NM); sincroniza con monitoreo al fusionar receta.
   
-  Parche sobre 7.6.9 — Gasometría con resaltado, consolidación de historial en LiveSync, import del repositorio y ⇄ fijar anfitrión.
+  Modal SOAP legacy — Campos médicos ampliados alineados con las nuevas categorías; limpieza centralizada al cerrar.

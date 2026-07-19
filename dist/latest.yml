@@ -1,22 +1,22 @@
-version: 7.7.0
+version: 7.7.1
 files:
-  - url: R+-7.7.0-x64.exe
-    sha512: lUa4oo7c6sTPiVhVwmqIoVAK01waJpJU/uD/8QLovWdNcb/2xmP8sf3tU29fBldqeRGgj6HVTyLpUnWG/E9rzw==
-    size: 120576876
-path: R+-7.7.0-x64.exe
-sha512: lUa4oo7c6sTPiVhVwmqIoVAK01waJpJU/uD/8QLovWdNcb/2xmP8sf3tU29fBldqeRGgj6HVTyLpUnWG/E9rzw==
-releaseDate: '2026-07-16T00:18:13.000Z'
+  - url: R+-7.7.1-x64.exe
+    sha512: +uK3u6QqCfiH1XonuqTNqblgMCxlAsq0k9Dn4ayqg7biKXQYZwr5a85qqo7F3XKBDu7AB07JsTBuyu2VDfQl4Q==
+    size: 120603926
+path: R+-7.7.1-x64.exe
+sha512: +uK3u6QqCfiH1XonuqTNqblgMCxlAsq0k9Dn4ayqg7biKXQYZwr5a85qqo7F3XKBDu7AB07JsTBuyu2VDfQl4Q==
+releaseDate: '2026-07-19T17:20:34.000Z'
 releaseNotes: |
-  7.7.0 añade interpretación citoquímica automática al pegar SOME (ascitis, pleural y LCR), fusiona bloques duales de LCR química + bacteriología, y permite colapsar la sección de diagramas en Resultados.
+  7.7.1 amplía la clasificación SOAP de medicamentos desde la receta hospitalaria (más familias y destinos manuales), agrupa rescates de insulina PRN en Manejo y refleja glucometrías con UI aplicadas en el texto de Estado actual.
   
-  Labs — interpretación citoquímica — Tras procesar líquidos corporales, R+ genera un bloque INTERPRETACIÓN CITOQUÍMICO: con GASA (portal y no portal), criterios de Light en derrame pleural, sospecha de PBE/SBP (PMN ≥250), banderas de empiema pleural y heurísticas de etiología en LCR (bacteriana, viral, TB).
+  Receta → SOAP — más categorías — Clasificación automática y override manual para antieméticos, sedación, antiepilépticos, antiparkinsonianos, antídotos, vía aérea, transfusiones, anticoagulación terapéutica, antiarrítmicos y estatinas (además de analgesia, ABX, vasopresores, etc.).
   
-  Solo informativo — La interpretación aparece como alerta ámbar en el panel de laboratorio; no se copia a portapapeles, nota ni censo (la línea compacta Liq: / LCR: sigue siendo la copiable).
+  SOAP EA — partición de medicamentos — Analgésicos y antieméticos van a cláusulas separadas; insulina basal/SC y rescates se separan del resto del bloque NM.
   
-  LCR — bloques duales SOME — Fusiona CITOQUIMICO DE LCR (química) con CITOQUIMICO LIQ. LCR (bacteriología) en una sola línea LCR:; evita que glucosa u otros valores filtren a química sanguínea.
+  Rescates de insulina — Detecta insulina PRN SC por glucometría en el SOME; en Manejo aparece como grupo RESCATES DE INSULINA con checkbox SOAP y suspender en bloque.
   
-  LCR — pH fuera de rango — Si el pH reportado está fuera de 7.28–7.42, R+ avisa en interpretación (sin alterar el valor copiable).
+  Glucometrías con rescate — Si registraste UI aplicadas en monitoreo, el texto SOAP muestra valor, NUI (p. ej. 142, 4UI) y omite la frase genérica de rescates disponibles cuando ya hubo aplicación.
   
-  Labs — diagramas colapsables — En Resultados puedes plegar la sección de diagramas; la preferencia se recuerda en localStorage.
+  Bomba de insulina IV — Mejor detección (algoritmo en P1 sin «EN», cloruro portador excluido del bucket NM); sincroniza con monitoreo al fusionar receta.
   
-  Parche sobre 7.6.9 — Gasometría con resaltado, consolidación de historial en LiveSync, import del repositorio y ⇄ fijar anfitrión.
+  Modal SOAP legacy — Campos médicos ampliados alineados con las nuevas categorías; limpieza centralizada al cerrar.
