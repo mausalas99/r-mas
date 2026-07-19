@@ -1538,10 +1538,39 @@ var RELEASE_NOTES_769 = [
   },
 ];
 
+var RELEASE_NOTES_771 = [
+  {
+    title: 'SOAP — más categorías desde receta',
+    body:
+      'Al pegar SOME/TSV en <strong>Manejo</strong>, R+ clasifica antieméticos, sedación, antiepilépticos, transfusiones, anticoagulación y más; puedes corregir el destino SOAP por fila.',
+  },
+  {
+    title: 'Rescates de insulina',
+    body:
+      'Insulina PRN SC por glucometría se agrupa como <strong>RESCATES DE INSULINA</strong> con un solo checkbox SOAP y suspender en bloque.',
+  },
+  {
+    title: 'Glucometrías con UI en nota',
+    body:
+      'Si aplicaste rescate en monitoreo, el texto NM muestra <strong>valor, NUI</strong> (p. ej. 142, 4UI) en lugar de solo la cifra capilar.',
+  },
+  {
+    title: 'Bomba IV más fiable',
+    body:
+      'Mejor detección de bomba en algoritmo 1–4; el cloruro portador ya no aparece como medicamento NM suelto.',
+  },
+  {
+    title: 'Parche sobre 7.7.0',
+    body:
+      'Incluye interpretación citoquímica, fusión LCR y diagramas colapsables. Instala <strong>7.7.1</strong> en todo el turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_770;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_771;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.1': RELEASE_NOTES_771,
   '7.7.0': RELEASE_NOTES_770,
   '7.6.9': RELEASE_NOTES_769,
   '7.6.8': RELEASE_NOTES_768,

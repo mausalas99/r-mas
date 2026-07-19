@@ -3,6 +3,7 @@ import {
   formatMedicationSoapShort,
   advanceAbxMedTextForManejoDate,
 } from '../med-receta-core.mjs';
+import { shouldIncludeMedicationInSoap } from '../med-receta-soap.mjs';
 import {
   MED_FIELD_KEYS,
   applyDietaSuplementoPolicy,
@@ -20,7 +21,15 @@ import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
 import {
   insulinPumpNmSoapFragment,
   skipRecetaItemForNmSoapBucket,
+  skipRecetaItemForInsulinPumpCarrier,
 } from '../insulin-pump-receta-display.mjs';
+import {
+  insulinRescateNmSoapFragment,
+  skipRecetaItemForInsulinRescateBucket,
+  INSULIN_RESCATE_NM_LABEL,
+  patientHasInsulinRescateMeds,
+  isInsulinRescateMedicationItem,
+} from '../insulin-rescate-display.mjs';
 import {
   detectInsulinPumpAlgorithmFromRecetaItems,
   formatInsulinPumpAlgoritmoLabel,
@@ -230,10 +239,20 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
   /** @type {Record<string, string[]>} */
   var arrays = {
     analgesia: [],
+    antiemeticos: [],
+    sedacion: [],
+    antiepilepticos: [],
+    antiparkinsonianos: [],
+    antidotos: [],
+    viaAerea: [],
     abx: [],
+    transfusiones: [],
     antihta: [],
     diuretico: [],
     antitromboticos: [],
+    anticoagulacion: [],
+    antiarritmicos: [],
+    estatinas: [],
     vasop: [],
     nm: [],
     otros: [],
@@ -244,14 +263,25 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
   });
   var pumpNmFrag = insulinPumpNmSoapFragment(list, soapSelected);
   var pumpNmAdded = false;
+  var rescateNmFrag = insulinRescateNmSoapFragment(list, soapSelected);
+  var rescateNmAdded = false;
   list.forEach(function (it) {
     if (!it || !selMap[it.id] || it.suspendido) return;
+    if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
+    if (!shouldIncludeMedicationInSoap(it, classifyFn)) return;
     var cat = effectiveSoapCategory(it, classifyFn);
     if (cat === 'otros') return;
     if (cat === 'nm' && skipRecetaItemForNmSoapBucket(it, list)) {
       if (pumpNmFrag && !pumpNmAdded) {
         arrays.nm.push(pumpNmFrag);
         pumpNmAdded = true;
+      }
+      return;
+    }
+    if (cat === 'nm' && skipRecetaItemForInsulinRescateBucket(it, list)) {
+      if (rescateNmFrag && !rescateNmAdded) {
+        arrays.nm.push(rescateNmFrag);
+        rescateNmAdded = true;
       }
       return;
     }
@@ -337,12 +367,21 @@ export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualiza
   var list = Array.isArray(items) ? items : [];
   list.forEach(function (it) {
     if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
+    if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
+    if (!shouldIncludeMedicationInSoap(
+      /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
+      classifyFn
+    )) {
+      return;
+    }
+    if (isInsulinRescateMedicationItem(it)) return;
     var cat = effectiveSoapCategory(
       /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
       classifyFn
     );
     if (cat === 'otros') return;
     var key = cat === 'diuretico' ? 'diureticos' : cat;
+    if (key === 'nm' && skipRecetaItemForNmSoapBucket(it, list)) return;
     var frag = medInstructionFragmentForSoap(
       /** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it)
     );
@@ -357,6 +396,9 @@ export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualiza
   if (pumpAlg != null) {
     var pumpLabel = formatInsulinPumpAlgoritmoLabel(pumpAlg);
     if (pumpLabel && byCat.nm) byCat.nm.push(pumpLabel);
+  }
+  if (patientHasInsulinRescateMeds(list) && byCat.nm) {
+    byCat.nm.push(INSULIN_RESCATE_NM_LABEL);
   }
   return byCat;
 }
@@ -539,14 +581,30 @@ export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, 
   var items = block && Array.isArray(block.items) ? block.items : [];
   var fecha = category === 'abx' ? resolveManejoFechaActualizacion(activeId, medRecetaByPatient) : '';
 
+  var rescateAdded = false;
   items.forEach(function (it) {
     if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
+    if (skipRecetaItemForInsulinPumpCarrier(it, items)) return;
+    if (!shouldIncludeMedicationInSoap(
+      /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
+      classifyFn
+    )) {
+      return;
+    }
+    if (category === 'nm' && isInsulinRescateMedicationItem(it)) {
+      if (!rescateAdded) {
+        options.push({ value: INSULIN_RESCATE_NM_LABEL, label: INSULIN_RESCATE_NM_LABEL });
+        rescateAdded = true;
+      }
+      return;
+    }
     var cat = effectiveSoapCategory(
       /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
       classifyFn
     );
     var matchCat = cat === category || (category === 'diureticos' && cat === 'diuretico');
     if (!matchCat) return;
+    if (category === 'nm' && skipRecetaItemForNmSoapBucket(it, items)) return;
     var value = medInstructionFragmentForSoap(/** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it));
     if (!value || seen[value]) return;
     seen[value] = 1;

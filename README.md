@@ -39,9 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.0](https://github.com/mausalas99/r-mas/releases/tag/v7.7.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.1](https://github.com/mausalas99/r-mas/releases/tag/v7.7.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.7.1 (receta SOAP ampliada e insulina rescate)
+
+- **Receta → SOAP** — Más familias (antieméticos, sedación, antiepilépticos, transfusiones, anticoagulación, etc.) con override manual por fila.
+- **Rescates de insulina** — Grupo PRN SC en Manejo; cláusula NM **RESCATES DE INSULINA** al marcar SOAP.
+- **Glucometrías con UI** — Texto EA/SOAP muestra valor + unidades aplicadas; evita duplicar «rescates disponibles».
+- **Bomba IV** — Detección más robusta y exclusión del cloruro portador en NM.
+- **Parche sobre 7.7.0** — Interpretación citoquímica, LCR dual-block y diagramas colapsables.
+
+Notas: `docs/RELEASE_NOTES_7.7.1.txt`.
 
 ## R+ 7.7.0 (interpretación citoquímica y LCR)
 

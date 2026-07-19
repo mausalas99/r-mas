@@ -4,6 +4,7 @@ import { isModeSala } from "../mode-features.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
+import { SOAP_LEGACY_MED_FIELD_IDS } from "./soap-legacy-field-map.mjs";
 
 let rt = {
   getActiveId() {
@@ -100,17 +101,12 @@ export function closeSOAPModal() {
     "soap-s",
     "soap-four",
     "soap-esferas",
-    "soap-analgesia",
     "soap-fr",
     "soap-sat",
     "soap-tas",
     "soap-tad",
     "soap-fc",
-    "soap-antihta",
-    "soap-antitromboticos",
-    "soap-vasop",
     "soap-temp",
-    "soap-abx",
     "soap-dieta",
     "soap-kcalkg",
     "soap-kcal",
@@ -121,7 +117,11 @@ export function closeSOAPModal() {
     "soap-glu1",
     "soap-glu2",
     "soap-glu3",
-  ].forEach(function (id) {
+    "soap-insulina",
+    "soap-rescates-insulina",
+  ]
+    .concat(SOAP_LEGACY_MED_FIELD_IDS)
+    .forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -299,56 +299,102 @@ var SOAP_SOPORTE_MAP = {
   Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
 
+function legacyMedsClause(fieldId, g) {
+  var v = g(fieldId);
+  return v ? v.toUpperCase() : "";
+}
+
 function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
+  var analgesia = legacyMedsClause("soap-analgesia", g);
+  var antiemeticos = legacyMedsClause("soap-antiemeticos", g);
+  var sedacion = legacyMedsClause("soap-sedacion", g);
+  var antiepilepticos = legacyMedsClause("soap-antiepilepticos", g);
+  var antiparkinsonianos = legacyMedsClause("soap-antiparkinsonianos", g);
+  var antidotos = legacyMedsClause("soap-antidotos", g);
+  var viaAerea = legacyMedsClause("soap-via-aerea", g);
+  var vasop = legacyMedsClause("soap-vasop", g);
+  var antihta = legacyMedsClause("soap-antihta", g);
+  var antitromboticos = legacyMedsClause("soap-antitromboticos", g);
+  var anticoagulacion = legacyMedsClause("soap-anticoagulacion", g);
+  var antiarritmicos = legacyMedsClause("soap-antiarritmicos", g);
+  var diureticos = legacyMedsClause("soap-diureticos", g);
+  var estatinas = legacyMedsClause("soap-estatinas", g);
+  var abx = legacyMedsClause("soap-abx", g);
+  var transfusiones = legacyMedsClause("soap-transfusiones", g);
+  var nmSoporte = legacyMedsClause("soap-nm-soporte", g);
+  var insulina = legacyMedsClause("soap-insulina", g);
+  var rescatesInsulina = legacyMedsClause("soap-rescates-insulina", g);
+  /** @type {string[]} */
+  var nmParts = [
+    formatNmDietClause({ dieta: g("soap-dieta"), kcalKg: g("soap-kcalkg") }, g("soap-kcal"), {
+      includeProtein: false,
+    }),
+  ];
+  if (nmSoporte) nmParts.push(nmSoporte);
+  nmParts.push(
+    "INGRESOS " + num(ing) + " CC, DIURESIS " + num(egr) + " CC, BALANCE " + balance + " CC"
+  );
+  var glu1 = g("soap-glu1");
+  var glu2 = g("soap-glu2");
+  var glu3 = g("soap-glu3");
+  if (glu1 || glu2 || glu3) {
+    nmParts.push(
+      "GLUCOMETRÍAS CAPILARES (" + num(glu1) + ", " + num(glu2) + ", " + num(glu3) + " MG/DL)"
+    );
+  }
+  if (rescatesInsulina) nmParts.push(rescatesInsulina);
+  if (insulina) nmParts.push("INSULINA: " + insulina);
   return [
-    'N: FOUR ' +
-      num(g('soap-four')) +
-      '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
-      num(g('soap-esferas')) +
-      ' ESFERAS, ALERTA || ANALGESIA CON ' +
-      val(g('soap-analgesia')),
-    'V: FR ' +
-      num(g('soap-fr')) +
-      ' RPM, SATO2 ' +
-      num(g('soap-sat')) +
-      '% ' +
+    "N: FOUR " +
+      num(g("soap-four")) +
+      "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " +
+      num(g("soap-esferas")) +
+      " ESFERAS, ALERTA || ANALGESIA: " +
+      analgesia +
+      " | ANTIEMETICOS: " +
+      antiemeticos +
+      " | SEDACION: " +
+      sedacion +
+      " | ANTIEPILEPTICOS: " +
+      antiepilepticos +
+      " | ANTIPARKINSONIANOS: " +
+      antiparkinsonianos +
+      " | ANTIDOTOS: " +
+      antidotos,
+    "V: FR " +
+      num(g("soap-fr")) +
+      " RPM, SATO2 " +
+      num(g("soap-sat")) +
+      "% " +
       soporte +
-      ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS',
-    'HD: ESTABLE, TA ' +
-      num(g('soap-tas')) +
-      '/' +
-      num(g('soap-tad')) +
-      ' MMHG, FC ' +
-      num(g('soap-fc')) +
-      ' LPM || ANTIHIPERTENSIVOS: ' +
-      val(g('soap-antihta') || 'NINGUNO') +
-      ' || ANTITROMBOTICOS: ' +
-      val(g('soap-antitromboticos') || 'NINGUNO') +
-      ' || VASOPRESORES: ' +
-      val(g('soap-vasop') || 'NINGUNO'),
-    'HI: AFEBRIL, TEMPERATURA ' +
-      num(g('soap-temp')) +
-      ' °C || ANTIBIÓTICOS: ' +
-      val(g('soap-abx') || 'NINGUNO'),
-    'NM: ' +
-      formatNmDietClause(
-        { dieta: g('soap-dieta'), kcalKg: g('soap-kcalkg') },
-        g('soap-kcal'),
-        { includeProtein: false }
-      ) +
-      ' || INGRESOS ' +
-      num(ing) +
-      ' CC, EGRESOS ' +
-      num(egr) +
-      ' CC, BALANCE ' +
-      balance +
-      ' CC || GLUCOMETRÍAS CAPILARES (' +
-      num(g('soap-glu1')) +
-      ', ' +
-      num(g('soap-glu2')) +
-      ', ' +
-      num(g('soap-glu3')) +
-      ' MG/DL)',
+      " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS" +
+      (viaAerea ? " || VIA AEREA: " + viaAerea : ""),
+    "HD: ESTABLE, TA " +
+      num(g("soap-tas")) +
+      "/" +
+      num(g("soap-tad")) +
+      " MMHG, FC " +
+      num(g("soap-fc")) +
+      " LPM || VASOPRESORES: " +
+      vasop +
+      " | ANTIHIPERTENSIVOS: " +
+      antihta +
+      " | TROMBOPROFILAXIS: " +
+      antitromboticos +
+      " | ANTICOAGULACION: " +
+      anticoagulacion +
+      " | ANTIARRITMICOS: " +
+      antiarritmicos +
+      " | DIURÉTICOS: " +
+      diureticos +
+      " | ESTATINAS: " +
+      estatinas,
+    "HI: AFEBRIL, TEMPERATURA " +
+      num(g("soap-temp")) +
+      " °C || ANTIBIOTICOTERAPIA: " +
+      abx +
+      (transfusiones ? " | TRANSFUSIONES: " + transfusiones : ""),
+    "NM: " + nmParts.join(" || "),
   ];
 }
 

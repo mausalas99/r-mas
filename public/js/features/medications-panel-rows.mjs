@@ -5,9 +5,18 @@ import {
   effectiveDiaTratamiento,
   SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
+  shouldIncludeMedicationInSoap,
 } from "../med-receta-core.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
+import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
+import {
+  INSULIN_RESCATE_GROUP_ID,
+  insulinRescateMedLabelHtml,
+  isInsulinRescateGroupSoapSelected,
+  isInsulinRescateGroupSuspended,
+  isInsulinRescateMedicationItem,
+} from "../insulin-rescate-display.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 
 export function buildMedDietHtml(dietas) {
@@ -61,6 +70,43 @@ function buildMedRecetaDestCell(it, sid) {
   );
 }
 
+function buildInsulinRescateGroupRowHtml(activeId, items) {
+  var paraNota = isInsulinRescateGroupSoapSelected(activeId, items, isMedNotaSelected) ? " checked" : "";
+  var chk = isInsulinRescateGroupSuspended(items, function (id) {
+    var it = items.find(function (x) {
+      return String(x.id) === String(id);
+    });
+    return !!(it && it.suspendido);
+  })
+    ? " checked"
+    : "";
+  return (
+    '<div class="med-receta-row med-receta-row--insulin-rescate" data-med-item-id="' +
+    esc(INSULIN_RESCATE_GROUP_ID) +
+    '">' +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox"' +
+    chk +
+    ' title="Excluir rescates de insulina del texto de egreso"' +
+    " onchange=\"toggleMedRecetaInsulinRescateSuspendido(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox" data-med-soap-chk="1"' +
+    paraNota +
+    ' title="Incluir rescates de insulina en Estado Actual / SOAP"' +
+    " onchange=\"toggleMedRecetaInsulinRescateParaNota(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-name">' +
+    insulinRescateMedLabelHtml(esc) +
+    "</div>" +
+    '<div class="med-receta-destcell"></div>' +
+    '<div class="med-receta-diacell"></div>' +
+    "</div>"
+  );
+}
+
 function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
@@ -74,9 +120,23 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
     label = esc(listLabel.slice(0, 160));
   }
   var chk = it.suspendido ? " checked" : "";
-  var paraNota = isMedNotaSelected(activeId, sid) ? " checked" : "";
+  var soapEligible = shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory);
+  var paraNota = soapEligible && isMedNotaSelected(activeId, sid) ? " checked" : "";
   var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
   var destCell = buildMedRecetaDestCell(it, sid);
+  var soapCell = soapEligible
+    ? '<div class="med-receta-checkcell">' +
+      '<input type="checkbox" data-med-soap-chk="1"' +
+      paraNota +
+      ' title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)"' +
+      " onchange=\"toggleMedRecetaParaNota('" +
+      safeAttrJsString(sid) +
+      "', this.checked)\"" +
+      "/>" +
+      "</div>"
+    : '<div class="med-receta-checkcell" title="PRN / rescate: no se documenta en SOAP (excepto analgesia)">' +
+      '<span class="med-receta-soap-na" aria-hidden="true">—</span>' +
+      "</div>";
   var diaDisplay =
     it.diaTratamiento != null ? effectiveDiaTratamiento(it.diaTratamiento, fechaActualizacion) : null;
   var diaCell =
@@ -98,15 +158,7 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
     "', this.checked)\"" +
     "/>" +
     "</div>" +
-    '<div class="med-receta-checkcell">' +
-    '<input type="checkbox" data-med-soap-chk="1"' +
-    paraNota +
-    ' title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)"' +
-    " onchange=\"toggleMedRecetaParaNota('" +
-    safeAttrJsString(sid) +
-    "', this.checked)\"" +
-    "/>" +
-    "</div>" +
+    soapCell +
     '<div class="med-receta-name">' +
     label +
     "</div>" +
@@ -122,8 +174,18 @@ function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
 
 export function buildMedRecetaListHtml(activeId, block) {
   var items = block.items || [];
-  var rows = items.map(function (it) {
-    return buildMedRecetaRowHtml(activeId, it, block.fechaActualizacion, items);
+  var rows = [];
+  var rescateShown = false;
+  items.forEach(function (it) {
+    if (isInsulinRescateMedicationItem(it)) {
+      if (!rescateShown) {
+        rows.push(buildInsulinRescateGroupRowHtml(activeId, items));
+        rescateShown = true;
+      }
+      return;
+    }
+    if (skipRecetaItemForInsulinPumpCarrier(it, items)) return;
+    rows.push(buildMedRecetaRowHtml(activeId, it, block.fechaActualizacion, items));
   });
   if (!rows.length) return "";
   return (

@@ -3,6 +3,10 @@ import { classifyMedicationSoapCategory } from "../med-receta-core.mjs";
 import { getMedSubview } from "./med-pharm-profile-panel.mjs";
 import { rt, medOutputTab } from "./medications-runtime-state.mjs";
 import { getMedNotaSelMap } from "./medications-utils.mjs";
+import {
+  INSULIN_RESCATE_GROUP_ID,
+  isInsulinRescateGroupSoapSelected,
+} from "../insulin-rescate-display.mjs";
 
 export function medRecetaItemById(activeId, itemId) {
   var block = activeId ? medRecetaByPatient[activeId] : null;
@@ -65,6 +69,22 @@ export function buildMedPanelCacheKey(activeId) {
 export function patchMedRecetaRowSoapUi(itemId) {
   var activeId = rt.getActiveId();
   if (!activeId) return false;
+  var sid = String(itemId || "");
+  if (sid === INSULIN_RESCATE_GROUP_ID) {
+    var block = medRecetaByPatient[activeId];
+    var items = block && block.items ? block.items : [];
+    var listEl = document.getElementById("med-items-list");
+    if (!listEl) return false;
+    var row = listEl.querySelector('[data-med-item-id="' + INSULIN_RESCATE_GROUP_ID + '"]');
+    if (!row) return false;
+    var soapChk = row.querySelector("[data-med-soap-chk]");
+    if (soapChk) {
+      soapChk.checked = isInsulinRescateGroupSoapSelected(activeId, items, function (pid, id) {
+        return !!getMedNotaSelMap(pid)[id];
+      });
+    }
+    return true;
+  }
   var it = medRecetaItemById(activeId, itemId);
   if (!it) return false;
   var listEl = document.getElementById("med-items-list");

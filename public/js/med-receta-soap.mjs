@@ -1,6 +1,28 @@
 import { trimStr } from './med-receta-util.mjs';
 import { getMedCatalogSoapTokens } from './med-receta-catalog.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
+import { isPrnMedicationItem } from './med-receta-format.mjs';
+import { isInsulinRescateMedicationItem } from './insulin-rescate-detect.mjs';
+import {
+  classifyVasopressors_,
+  classifyAbx_,
+  classifyAnalgesia_,
+  classifyAntiemeticos_,
+  classifyDiureticos_,
+  classifyAntitromboticos_,
+  classifyAnticoagulacion_,
+  classifyEstatinas_,
+  classifyViaAerea_,
+  classifySedacion_,
+  classifyAntiepilepticos_,
+  classifyAntiparkinsonianos_,
+  classifyAntidotos_,
+  classifyAntiarritmicos_,
+  classifyTransfusiones_,
+  classifyNmDiabetesThyroidPpi_,
+  classifyNmSupport_,
+  classifyAntihta_,
+} from './med-receta-soap-families.mjs';
 
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -33,22 +55,42 @@ function isAspirinNombre(n) {
 /** Destinos SOAP asignables manualmente cuando la clasificación automática es «otros». */
 export const SOAP_DESTINATION_KEYS = [
   'analgesia',
+  'antiemeticos',
+  'sedacion',
+  'antiepilepticos',
+  'antiparkinsonianos',
+  'antidotos',
+  'viaAerea',
+  'abx',
+  'transfusiones',
   'antihta',
   'diuretico',
   'antitromboticos',
-  'abx',
+  'anticoagulacion',
+  'antiarritmicos',
+  'estatinas',
   'vasop',
   'nm',
 ];
 
 export const SOAP_DESTINATION_LABELS = {
-  analgesia: 'Analgésicos / antieméticos',
+  analgesia: 'Analgésicos',
+  antiemeticos: 'Antieméticos',
+  sedacion: 'Sedación / delirium',
+  antiepilepticos: 'Antiepilépticos',
+  antiparkinsonianos: 'Antiparkinsonianos',
+  antidotos: 'Antídotos',
+  viaAerea: 'Vía aérea (broncodilatadores / mucolíticos)',
   antihta: 'Antihipertensivos',
   diuretico: 'Diuréticos',
-  antitromboticos: 'Antitrombóticos',
+  antitromboticos: 'Tromboprofilaxis / antiagregación',
+  anticoagulacion: 'Anticoagulación terapéutica',
+  antiarritmicos: 'Antiarrítmicos',
+  estatinas: 'Estatinas',
   abx: 'Antibióticos / antifúngicos',
+  transfusiones: 'Transfusiones / hemoderivados',
   vasop: 'Vasopresores / inotrópicos',
-  nm: 'NM (insulina, tiroides, etc.)',
+  nm: 'NM (soporte, crónicos, etc.)',
 };
 
 /**
@@ -94,62 +136,42 @@ function classifyByCatalogTokens_(n, o) {
 }
 
 function classifyByNameHeuristics_(n) {
-  if (
-    /\b(NORADRENALINA|NOREPINEFRINA|EPINEFRINA|ADRENALINA|DOPAMINA|DOBUTAMINA|VASOPRESINA|TERLIPRESINA|FENILEFRINA|MILRINONA|DOPEXAMINA)\b/.test(
-      n
-    )
-  ) {
-    return 'vasop';
-  }
-  if (
-    /\b(ERTAPENEM|MEROPENEM|IMIPENEM|CEFTRIAX|CEFEPIME|CEFTAZID|CEFOXIT|CEFUROXI|CEFOTAX|CEFTAROL|CEFACLOR|CEFAZOLINA|PIPERACILINA|TAZOBACTAM|VANCOMICINA|TEICOPLANINA|DALBAVANCINA|ORITAVANCINA|TIGECICLINA|AMIKACINA|GENTAMICINA|TOBRAMICINA|PLAZOMICINA|LEVOFLOX|CIPROFLOX|MOXIFLOX|DELAFLOX|OFLOXACINO|NORFLOXACINO|METRONIDAZOL|LINEZOLID|DAPTOMICINA|AZTREONAM|COLISTINA|POLIMIXINA|CLINDAMICINA|AZITROMICINA|CLARITROMICINA|ERITROMICINA|DOXICICLINA|MINOCICLINA|FOSFOMICINA|NITROFURANTOINA|RIFAMPICINA|RIFAXIMINA|AMPICILINA|SULBACTAM|AMOXICILINA|BENZILPENICILINA|FLUCLOXACIL|PENICILINA|TRIMETOPRIM|SULFAMETOXAZOL|BACTRIM|COTRIMOX|FLUCONAZOL|VORICONAZOL|ITRACONAZOL|POSACONAZOL|ISAVUCONAZOL|ANIDULAFUNGINA|MICAFUNGINA|CASPOFUNGINA|AMFOTERICINA|ACICLOVIR|VALACICLOVIR|GANCICLOVIR|FOSCARNET|OSELTAMIVIR|REMDESIVIR|REM\s*DESIVIR)\b/.test(
-      n
-    )
-  ) {
-    return 'abx';
-  }
-  if (
-    /\b(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|MORFINA|TRAMADOL|IBUPROFENO|NAPROXENO|DICLOFENACO|ONDANSETRON|GRANISETRON|PALONOSETRON|METOCLOPRAMIDA|DROPERIDOL|DIMENHIDRINATO|BUTILHIOSCINA|BROMURO\s+DE\s+BUTILHIOSCINA|BUSCAPINA|BUPRENORFINA|FENTANILO|REMIFENTANILO|SUFENTANILO|HIDROMORFONA|OXICODONA|NALBUFINA|PENTAZOCINA|TAPENTADOL)\b/.test(
-      n
-    )
-  ) {
-    return 'analgesia';
-  }
-  if (
-    /\b(HIDROCLOROTIAZ|CLORTALIDONA|INDAPAMIDA|FUROSEMIDA|TORASEMIDA|BUMETANIDA|ESPIRONOLACTONA|EPLERENONA)\b/.test(
-      n
-    )
-  ) {
-    return 'diuretico';
-  }
-  if (
-    /\b(ENOXAPARINA|HEPARINA|DALTEPARINA|TINZAPARINA|FONDAPARINUX|NADROPARINA|APIXABAN|RIVAROXABAN|EDOXABAN|DABIGATRAN|WARFARINA|ACENOCUMAROL|CLOPIDOGREL|TICAGRELOR|PRASUGREL|CILOSTAZOL|TICLOPIDINA)\b/.test(
-      n
-    )
-  ) {
-    return 'antitromboticos';
-  }
-  if (
-    /\b(INSULINA|GLARGINA|DEGLUDEC|DETEMIR|ASPARTA|LISPRO|GLULISINA|NPH|LEVOTIROXINA|LIOTIRONINA)\b/.test(
-      n
-    )
-  ) {
-    return 'nm';
-  }
-  if (
-    /\b(LOSARTAN|IRBESARTAN|VALSARTAN|TELMISARTAN|OLMESARTAN|CANDESARTAN|ENALAPRIL|LISINOPRIL|RAMIPRIL|CAPTOPRIL|AMLODIPINO|NIFEDIPINO|FELODIPINO|LERCANIDIPINO|CARVEDILOL|METOPROLOL|BISOPROLOL|NEBIVOLOL|PROPRANOLOL|ATENOLOL|LABETALOL|ESMOLOL|SOTALOL|CLONIDINA|HIDRALAZINA|MINOXIDIL|NICARDIPINO|CLEVUDIPINO|DILTIAZEM|VERAPAMILO|NITROGLICERINA|ISOSORBIDE|DINITRATO|SACUBITRIL)\b/.test(
-      n
-    )
-  ) {
-    return 'antihta';
-  }
+  if (classifyVasopressors_(n)) return 'vasop';
+  if (classifyAbx_(n)) return 'abx';
+  if (classifyTransfusiones_(n)) return 'transfusiones';
+  if (classifyAnalgesia_(n)) return 'analgesia';
+  if (classifyAntiemeticos_(n)) return 'antiemeticos';
+  if (classifyDiureticos_(n)) return 'diuretico';
+  if (classifyAnticoagulacion_(n)) return 'anticoagulacion';
+  if (classifyAntitromboticos_(n)) return 'antitromboticos';
+  if (classifyEstatinas_(n)) return 'estatinas';
+  if (classifyAntiarritmicos_(n)) return 'antiarritmicos';
+  if (classifyViaAerea_(n)) return 'viaAerea';
+  if (classifySedacion_(n)) return 'sedacion';
+  if (classifyAntiepilepticos_(n)) return 'antiepilepticos';
+  if (classifyAntiparkinsonianos_(n)) return 'antiparkinsonianos';
+  if (classifyAntidotos_(n)) return 'antidotos';
+  if (classifyNmSupport_(n)) return 'nm';
+  if (classifyNmDiabetesThyroidPpi_(n)) return 'nm';
+  if (classifyAntihta_(n)) return 'antihta';
   return '';
 }
 
-function isExplicitOtrosMedication_(n) {
-  return /\b(METFORMINA|REPAGLINIDA|GLIBENCLAMIDA|GLIMEPIRIDA|PIOGLITAZON|EMPAGLIFLOZINA|DAPAGLIFLOZINA|SITAGLIPTINA|OMEPRAZOL|PANTOPRAZOL|ESOMEPRAZOL|LANSOPRAZOL|RABEPRAZOL|DEXAMETASONA|BETAMETASONA|HIDROCORTISONA|METILPREDNISOLONA|PREDNISON|PREDNISOLONA|ATORVASTATINA|ROSUVASTATINA|PRAVASTATINA|SINVASTATINA|SALBUTAMOL|LEVOSALBUTAMOL|TERBUTALINA|BUDESONIDA|BECLOMETASONA|FLUTICASONA|TIOTROPIO|IPRATROPIO|FOLICO|CIANOCOBALAMINA|FERROSO|CLORURO\s+DE\s+POTASIO|SULFATO\s+DE\s+MAGNESIO|LACTULOSA|BISACODILO|SENOSIDOS|PROPOFOL|MIDAZOLAM|LORAZEPAM|DIAZEPAM|CLONAZEPAM|HALOPERIDOL|QUETIAPINA|OLANZAPINA|LEVETIRACETAM|FENITOINA|CARBAMAZEPINA|VALPROATO|GABAPENTINA|PREGABALINA|DONEPECILO|MEMANTINA|BROMOCRIPTINA|FINASTERIDA|TAMSULOSINA|SOLIFENACINA|OXYBUTININA)\b/.test(
-    n
+/**
+ * D50 no va al SOAP. PRN solo en analgesia, salvo rescates de insulina por glucometría (SOME).
+ */
+export function shouldIncludeMedicationInSoap(item, classifyFn) {
+  if (!item || item.suspendido) return false;
+  var blob = normalizeNombreForSoapClassify(
+    [item.nombreRaw, item.dosisRaw, item.frecuenciaRaw].filter(Boolean).join(' ')
   );
+  if (/\bDEXTROSA\s*50\b/.test(blob)) return false;
+  if (isInsulinRescateMedicationItem(item)) return true;
+  if (isPrnMedicationItem(item)) {
+    var classify = classifyFn || classifyMedicationSoapCategory;
+    return classify(item.nombreRaw, item.dosisRaw) === 'analgesia';
+  }
+  return true;
 }
 
 export function classifyMedicationSoapCategory(nombreRaw, dosisRaw) {
@@ -164,6 +186,5 @@ export function classifyMedicationSoapCategory(nombreRaw, dosisRaw) {
   if (fromCatalog) return fromCatalog;
   var fromHeuristic = classifyByNameHeuristics_(n);
   if (fromHeuristic) return fromHeuristic;
-  if (isExplicitOtrosMedication_(n)) return 'otros';
   return 'otros';
 }

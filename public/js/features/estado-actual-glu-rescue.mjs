@@ -21,6 +21,22 @@ function num(n) {
  * @param {unknown} text
  * @returns {InsulinRescateTier[]}
  */
+var RESCATE_UNITS_ENTRE_RE =
+  /(\d+(?:[.,]\d+)?)\s*(?:UI|U\.?I\.?|UNIDADES?)\b[\s\S]*?ENTRE\s+(\d{2,3})\s*[-–—]\s*(\d{2,3})/gi;
+var RESCATE_UNITS_GT_RE = /(\d+(?:[.,]\d+)?)\s*(?:UI|U\.?I\.?|UNIDADES?)\b[\s\S]*?>\s*(\d{2,3})/gi;
+
+/**
+ * @param {InsulinRescateTier[]} tiers
+ * @param {number} minMgDl
+ * @param {number} maxMgDl
+ * @param {number} units
+ */
+function pushRescateTier(tiers, minMgDl, maxMgDl, units) {
+  if (!Number.isFinite(minMgDl) || !Number.isFinite(maxMgDl) || !Number.isFinite(units)) return;
+  if (minMgDl >= maxMgDl || units <= 0) return;
+  tiers.push({ minMgDl: minMgDl, maxMgDl: maxMgDl, units: units });
+}
+
 export function parseInsulinRescateCriteria(text) {
   var s = String(text || '');
   if (!s.trim()) return [];
@@ -29,12 +45,26 @@ export function parseInsulinRescateCriteria(text) {
   var re = new RegExp(RESCATE_TIER_RE.source, 'gi');
   var m;
   while ((m = re.exec(s)) !== null) {
-    var minMgDl = Number(m[1]);
-    var maxMgDl = Number(m[2]);
-    var units = Number(String(m[3]).replace(',', '.'));
-    if (!Number.isFinite(minMgDl) || !Number.isFinite(maxMgDl) || !Number.isFinite(units)) continue;
-    if (minMgDl >= maxMgDl || units <= 0) continue;
-    tiers.push({ minMgDl: minMgDl, maxMgDl: maxMgDl, units: units });
+    pushRescateTier(
+      tiers,
+      Number(m[1]),
+      Number(m[2]),
+      Number(String(m[3]).replace(',', '.'))
+    );
+  }
+  var entreRe = new RegExp(RESCATE_UNITS_ENTRE_RE.source, 'gi');
+  while ((m = entreRe.exec(s)) !== null) {
+    pushRescateTier(
+      tiers,
+      Number(m[2]),
+      Number(m[3]),
+      Number(String(m[1]).replace(',', '.'))
+    );
+  }
+  var gtRe = new RegExp(RESCATE_UNITS_GT_RE.source, 'gi');
+  while ((m = gtRe.exec(s)) !== null) {
+    var threshold = Number(m[2]);
+    pushRescateTier(tiers, threshold, threshold + 200, Number(String(m[1]).replace(',', '.')));
   }
   return tiers;
 }
@@ -95,22 +125,9 @@ export function formatInsulinRescatesClause(glucometrias, opts) {
     return Number.isFinite(u) && u > 0;
   });
 
-  if (applied.length) {
-    const parts = applied.map(function (g) {
-      const u = num(/** @type {{ rescueUnits?: unknown }} */ (g).rescueUnits);
-      const t =
-        /** @type {{ time?: string }} */ (g).time != null && String(/** @type {{ time?: string }} */ (g).time).length
-          ? ' @ ' + String(/** @type {{ time?: string }} */ (g).time)
-          : '';
-      const post = Number(/** @type {{ postRescueValue?: unknown }} */ (g).postRescueValue);
-      const postSeg =
-        Number.isFinite(post) && post > 0 ? ', DXT POST-RESCATE ' + post + ' MG/DL' : '';
-      return u + ' U DE INSULINA RÁPIDA' + t + postSeg;
-    });
-    return 'RESCATES DE INSULINA APLICADOS (' + parts.join(', ') + ')';
-  }
+  if (applied.length) return '';
 
   opts = opts || {};
   if (opts.rescatesInSome === false) return '';
-  return 'RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE';
+  return 'RESCATES DE INSULINA DISPONIBLES';
 }

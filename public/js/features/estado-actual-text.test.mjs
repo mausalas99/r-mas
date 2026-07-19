@@ -34,10 +34,10 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.doesNotMatch(text, /GLUCOMETRÍAS CAPILARES \(140, ___/);
   assert.match(text, /BALANCE \+200 CC/);
   assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
-  // Formato igual a soap-estado: "ANALGESIA CON ___" (no hay subjetivo S:)
-  assert.match(text, /ANALGESIA CON ___/);
-  assert.match(text, /DIURÉTICOS: NINGUNO/);
-  assert.match(text, /SIN VASOPRESORES/);
+  // Formato seccional N / HD
+  assert.match(text, /ANALGESIA:.*\| ANTIEMETICOS:.*\| SEDACION:.*\| ANTIEPILEPTICOS:.*\| ANTIPARKINSONIANOS:.*\| ANTIDOTOS:/);
+  assert.match(text, /TROMBOPROFILAXIS:.*\| ANTICOAGULACION:/);
+  assert.match(text, /VASOPRESORES:.*\| ANTIHIPERTENSIVOS:/);
   assert.doesNotMatch(text, /RESCATES DE INSULINA/);
 });
 
@@ -62,7 +62,33 @@ test('buildEstadoActualText documenta rescates disponibles solo con escala SOME'
       },
     }
   );
-  assert.match(text, /RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE/);
+  assert.match(text, /RESCATES DE INSULINA DISPONIBLES/);
+  assert.doesNotMatch(text, /INSULINA: RESCATES DE INSULINA/);
+});
+
+test('buildEstadoActualText — rescates en NM aunque no haya glucometrías', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.nm = 'RESCATES DE INSULINA';
+  const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
+  assert.match(text, /RESCATES DE INSULINA DISPONIBLES/);
+  assert.doesNotMatch(text, /INSULINA: RESCATES DE INSULINA/);
+});
+
+test('buildEstadoActualText — vía aérea en V y sedación en N', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.viaAerea = 'SALBUTAMOL 5 MG NEB C/6H';
+  m.estadoClinico.sedacion = 'MIDAZOLAM 2 MG IV C/8H';
+  m.estadoClinico.antiepilepticos = 'LEVETIRACETAM 500 MG VO C/12H';
+  m.historial.push({
+    id: 'meds',
+    recordedAt: '2026-05-26T08:00:00.000Z',
+    vitals: { fr: 18, sat: 94 },
+    io: {},
+  });
+  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
+  assert.match(text, /V:.*VIA AEREA: SALBUTAMOL 5 MG NEB C\/6H/);
+  assert.match(text, /N:.*SEDACION: MIDAZOLAM 2 MG IV C\/8H/);
+  assert.match(text, /N:.*ANTIEPILEPTICOS: LEVETIRACETAM 500 MG VO C\/12H/);
 });
 
 test('buildEstadoActualText incluye traqueostomía en línea V', () => {
@@ -88,11 +114,10 @@ test('buildEstadoActualText documenta rescates aplicados', () => {
     io: {},
   });
   const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
-  assert.match(
-    text,
-    /RESCATES DE INSULINA APLICADOS \(6 U DE INSULINA RÁPIDA @ 14:00, DXT POST-RESCATE 182 MG\/DL\)/
-  );
-  assert.match(text, /GLUCOMETRÍAS CAPILARES \(182 MG\/DL\)/);
+  assert.match(text, /GLUCOMETRÍAS CAPILARES \(248, 6UI\)/);
+  assert.doesNotMatch(text, /RESCATES DE INSULINA APLICADOS/);
+  assert.doesNotMatch(text, /RESCATES DE INSULINA DISPONIBLES/);
+  assert.doesNotMatch(text, /INSULINA: RESCATES/);
 });
 
 test('buildEstadoActualText omits glucometrías clause when none registered', () => {
@@ -112,12 +137,10 @@ test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato c
   const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
   assert.match(text, /ANTIHIPERTENSIVOS: NIFEDIPINO 60MG VO C\/12H, SACUBITRILO\/VALSARTÁN 200MG VO C\/12H/);
   assert.match(text, /DIURÉTICOS: FUROSEMIDA 80MG IV C\/8H/);
-  assert.match(
-    text,
-    /ANTITROMBOTICOS: ENOXAPARINA 40MG SC C\/24H, ACIDO ACETILSALICILICO 100MG VO C\/24H/
-  );
-  assert.match(text, /ANTIBIÓTICOS: MEROPENEM 1G IV C\/8H DIA 13/);
-  assert.match(text, /INSULINA GLARGINA 10UI SC C\/24H \|\| LEVOTIROXINA 50MCG VO C\/24H/);
+  assert.match(text, /TROMBOPROFILAXIS: ENOXAPARINA 40MG SC C\/24H, ACIDO ACETILSALICILICO 100MG VO C\/24H/);
+  assert.match(text, /ANTIBIOTICOTERAPIA: MEROPENEM 1G IV C\/8H DIA 13/);
+  assert.match(text, /LEVOTIROXINA 50MCG VO C\/24H/);
+  assert.match(text, /INSULINA: INSULINA GLARGINA 10UI SC C\/24H/);
 });
 
 test('buildEstadoActualText incluye GR PROTEINA cuando proteinG está definido', () => {

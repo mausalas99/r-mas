@@ -270,6 +270,29 @@
               <input type="text" id="soap-analgesia" placeholder="Fármaco dosis vía frecuencia">
             </div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antieméticos</div>
+              <input type="text" id="soap-antiemeticos" placeholder="Ondansetrón, metoclopramida…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Sedación</div>
+              <input type="text" id="soap-sedacion" placeholder="Midazolam, haloperidol…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiepilépticos</div>
+              <input type="text" id="soap-antiepilepticos" placeholder="Levetiracetam, fenitoína…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiparkinsonianos</div>
+              <input type="text" id="soap-antiparkinsonianos" placeholder="Levodopa, pramipexol…">
+            </div>
+            <div style="grid-column:1 / -1;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antídotos</div>
+              <input type="text" id="soap-antidotos" placeholder="Naloxona, flumazenil…">
+            </div>
+          </div>
+
         </div>
       </div>
       <!-- V: Ventilatorio -->
@@ -296,6 +319,11 @@
               </select>
             </div>
           </div>
+          <div style="margin-top:10px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vía aérea (broncodilatadores / mucolíticos)</div>
+            <input type="text" id="soap-via-aerea" placeholder="Salbutamol, ambroxol…">
+          </div>
+
         </div>
       </div>
       <!-- HD: Hemodinámico -->
@@ -322,14 +350,35 @@
               <input type="text" id="soap-antihta" placeholder="Ninguno o detalle">
             </div>
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antitrombóticos</div>
-              <input type="text" id="soap-antitromboticos" placeholder="Fármaco dosis vía frecuencia">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tromboprofilaxis</div>
+              <input type="text" id="soap-antitromboticos" placeholder="Enoxaparina 40 mg, clopidogrel…">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vasopresores</div>
               <input type="text" id="soap-vasop" placeholder="Ninguno o detalle">
             </div>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Diuréticos</div>
+              <input type="text" id="soap-diureticos" placeholder="Furosemida, espironolactona…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Estatinas</div>
+              <input type="text" id="soap-estatinas" placeholder="Atorvastatina…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antiarrítmicos</div>
+              <input type="text" id="soap-antiarritmicos" placeholder="Amiodarona, lidocaína…">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Anticoagulación terapéutica</div>
+              <input type="text" id="soap-anticoagulacion" placeholder="Warfarina, apixaban, alteplasa…">
+            </div>
+          </div>
+
         </div>
       </div>
       <!-- HI: Infeccioso -->
@@ -345,6 +394,11 @@
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antibióticos</div>
               <input type="text" id="soap-abx" placeholder="Ninguno o fármaco dosis vía">
             </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Transfusiones</div>
+              <input type="text" id="soap-transfusiones" placeholder="Concentrado eritrocitario, plaquetas…">
+            </div>
+
           </div>
         </div>
       </div>
@@ -386,6 +440,22 @@
           </div>
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Glucometrías capilares (mg/dL)</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte NM</div>
+              <input type="text" id="soap-nm-soporte" placeholder="Omeprazol, electrolitos, crónicos…">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Insulina programada</div>
+              <input type="text" id="soap-insulina" placeholder="Glargina, NPH…">
+            </div>
+            <div style="grid-column:1 / -1;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Rescates de insulina</div>
+              <input type="text" id="soap-rescates-insulina" placeholder="RESCATES DE INSULINA DISPONIBLES">
+            </div>
+          </div>
+
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
               <input type="number" id="soap-glu1" placeholder="1ª" style="text-align:center;">
               <input type="number" id="soap-glu2" placeholder="2ª" style="text-align:center;">

@@ -69,7 +69,7 @@ import {
 import { todosWindowHandlers } from './features/todos.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
-import { medicationsWindowHandlers } from './features/medications.mjs';
+import { medicationsWindowHandlers, registerMedicationsRuntime } from './features/medications.mjs';
 import {
   profileWindowHandlers,
   hydrateProfileSettings,
@@ -264,6 +264,16 @@ registerAppRuntimeContext({
   setActiveInner: function (v) {
     activeInner = v;
   },
+  getSettings: function () {
+    return settings;
+  },
+});
+
+registerMedicationsRuntime({
+  getActiveId: function () {
+    return activeId;
+  },
+  showToast: showToast,
   getSettings: function () {
     return settings;
   },

@@ -5,6 +5,7 @@ import {
   detectInsulinPumpAlgorithmFromRecetaBlock,
   detectInsulinPumpAlgorithmFromRecetaItems,
   formatInsulinPumpAlgoritmoLabel,
+  isInsulinPumpCarrierMedicationItem,
   parseInsulinPumpAlgorithmFromText,
 } from './insulin-pump-some-detect.mjs';
 
@@ -14,7 +15,9 @@ var SAMPLE_SOME =
 
 test('parseInsulinPumpAlgorithmFromText extrae algoritmo 1–4', () => {
   assert.equal(parseInsulinPumpAlgorithmFromText('100 ML / VEL.INF: BOMBA EN ALGORITMO 2'), 2);
+  assert.equal(parseInsulinPumpAlgorithmFromText('100 ML / VEL.INF: BOMBA ALGORITMO 2'), 2);
   assert.equal(parseInsulinPumpAlgorithmFromText('BOMBA EN ALGORITMO 4'), 4);
+  assert.equal(parseInsulinPumpAlgorithmFromText('BOMBA ALGORITMO 1'), 1);
   assert.equal(parseInsulinPumpAlgorithmFromText('A 60CC/ HRA'), null);
 });
 
@@ -75,5 +78,50 @@ test('detectInsulinPumpAlgorithmFromRecetaItems — insulina SC no activa bomba 
       },
     ]),
     null
+  );
+});
+
+test('detectInsulinPumpAlgorithmFromRecetaItems — algoritmo en P1 sin «EN» + insulina IV', () => {
+  assert.equal(
+    detectInsulinPumpAlgorithmFromRecetaItems([
+      {
+        nombreRaw: 'CLORURO DE SODIO 0.9 % SOL INY 100 ML',
+        dosisRaw: '100 ML / VEL.INF: BOMBA ALGORITMO 2',
+        viaRaw: 'VIA INTRAVENOSA',
+        suspendido: false,
+      },
+      {
+        nombreRaw: 'INSULINA HUMANA RAPIDA',
+        dosisRaw: '100 UI',
+        viaRaw: 'VIA INTRAVENOSA',
+        suspendido: false,
+      },
+    ]),
+    2
+  );
+});
+
+test('isInsulinPumpCarrierMedicationItem — cloruro con algoritmo, no la insulina', () => {
+  var items = [
+    {
+      nombreRaw: 'CLORURO DE SODIO 0.9 % SOL INY 100 ML',
+      dosisRaw: '100 ML / VEL.INF: BOMBA ALGORITMO 1',
+      viaRaw: 'VIA INTRAVENOSA',
+      suspendido: false,
+    },
+    {
+      nombreRaw: 'INSULINA HUMANA RAPIDA',
+      dosisRaw: '100 UI',
+      viaRaw: 'VIA INTRAVENOSA',
+      suspendido: false,
+    },
+  ];
+  assert.equal(
+    isInsulinPumpCarrierMedicationItem(items[0], items),
+    true
+  );
+  assert.equal(
+    isInsulinPumpCarrierMedicationItem(items[1], items),
+    false
   );
 });

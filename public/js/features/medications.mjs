@@ -8,6 +8,8 @@ import { renderMedRecetaPanel } from "./medications-panel-render.mjs";
 import {
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
+  toggleMedRecetaInsulinRescateParaNota,
+  toggleMedRecetaInsulinRescateSuspendido,
   setMedRecetaSoapCategory,
   limpiarManejoActual,
   mediAnadirATratamiento,
@@ -30,6 +32,8 @@ export { renderMedRecetaPanel };
 export {
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
+  toggleMedRecetaInsulinRescateParaNota,
+  toggleMedRecetaInsulinRescateSuspendido,
   setMedRecetaSoapCategory,
   limpiarManejoActual,
   mediAnadirATratamiento,
@@ -50,6 +54,8 @@ export const medicationsWindowHandlers = {
   setMedOutputTab,
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
+  toggleMedRecetaInsulinRescateParaNota,
+  toggleMedRecetaInsulinRescateSuspendido,
   setMedRecetaSoapCategory,
   limpiarManejoActual,
   mediAnadirATratamiento,

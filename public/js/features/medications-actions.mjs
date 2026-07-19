@@ -15,6 +15,7 @@ import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveSta
 import { isModeSala } from "../mode-features.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
+import { soapLegacyFieldIdForCategory } from "./soap-legacy-field-map.mjs";
 import { ensureMonitoreo, MED_FIELD_KEYS } from "./estado-actual-data.mjs";
 import {
   applyDietProposalFromRecetaBlock,
@@ -35,7 +36,15 @@ import {
 } from "./pase-board.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { onRecetaMergedToProfile } from "./med-pharm-profile-panel.mjs";
-import { rt, medOutputTab, bustMedPanelCache, setMedOutputTabState } from "./medications-runtime-state.mjs";
+import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
+import {
+  rt,
+  medToast,
+  medOutputTab,
+  bustMedPanelCache,
+  setMedOutputTabState,
+} from "./medications-runtime-state.mjs";
+import { insulinRescateItemsFromList, INSULIN_RESCATE_GROUP_ID } from "../insulin-rescate-display.mjs";
 import { getMedNotaSelMap, manejoDiaOpts } from "./medications-utils.mjs";
 import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { patchMedRecetaRowSoapUi } from "./medications-panel-cache.mjs";
@@ -66,6 +75,39 @@ export function toggleMedRecetaParaNota(itemId, selected) {
   bustMedPanelCache();
   if (!patchMedRecetaRowSoapUi(sid)) renderMedRecetaPanel();
   else renderMedNotaFooter();
+}
+
+function toggleInsulinRescateGroupSelection(activeId, selected) {
+  var block = medRecetaByPatient[activeId];
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var m = getMedNotaSelMap(activeId);
+  insulinRescateItemsFromList(items).forEach(function (it) {
+    var id = String(it.id || "");
+    if (!id) return;
+    if (selected) m[id] = true;
+    else delete m[id];
+  });
+}
+
+export function toggleMedRecetaInsulinRescateParaNota(selected) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return;
+  toggleInsulinRescateGroupSelection(activeId, selected);
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(INSULIN_RESCATE_GROUP_ID)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
+}
+
+export function toggleMedRecetaInsulinRescateSuspendido(suspended) {
+  var activeId = rt.getActiveId();
+  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
+  insulinRescateItemsFromList(medRecetaByPatient[activeId].items).forEach(function (it) {
+    it.suspendido = !!suspended;
+  });
+  saveState();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
+  renderMedRecetaPanel();
 }
 
 export function setMedRecetaSoapCategory(itemId, category) {
@@ -115,12 +157,12 @@ function refreshEaAfterMedClear() {
 export function limpiarManejoActual() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente", "error");
+    medToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId];
   if (!hasMedRecetaContent(block)) {
-    rt.showToast("No hay manejo importado", "error");
+    medToast("No hay manejo importado", "error");
     return;
   }
   delete medRecetaByPatient[activeId];
@@ -140,31 +182,35 @@ export function limpiarManejoActual() {
   renderMedRecetaPanel();
   refreshEaAfterMedClear();
   if (isPaseMode()) renderPaseBoard();
-  rt.showToast("Manejo actual limpiado", "success");
+  medToast("Manejo actual limpiado", "success");
 }
 
 export function mediAnadirATratamiento() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente", "error");
+    medToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId];
   if (!block || !block.items || !block.items.length) {
-    rt.showToast("No hay medicamentos en la receta", "error");
+    medToast("No hay medicamentos en la receta", "error");
     return;
   }
   var sel = getMedNotaSelMap(activeId);
   var lines = block.items
     .filter(function (it) {
-      return sel[it.id] && !it.suspendido;
+      return (
+        sel[it.id] &&
+        !it.suspendido &&
+        !skipRecetaItemForInsulinPumpCarrier(it, block.items)
+      );
     })
     .map(function (it) {
       var recBlock = medRecetaByPatient[activeId];
       return formatMedicationEgresoLine(it, manejoDiaOpts(recBlock && recBlock.fechaActualizacion));
     });
   if (!lines.length) {
-    rt.showToast('Marca «SOAP» en al menos un medicamento activo', "error");
+    medToast('Marca «SOAP» en al menos un medicamento activo', "error");
     return;
   }
   if (!notes[activeId]) notes[activeId] = {};
@@ -182,24 +228,16 @@ export function mediAnadirATratamiento() {
   saveState();
   openPaseSectionInNormal("expediente");
   renderNoteForm();
-  rt.showToast(lines.length + " línea(s) añadidas a Tratamiento", "success");
+  medToast(lines.length + " línea(s) añadidas a Tratamiento", "success");
 }
 
-function soapFieldIdForCategory(cat) {
-  if (cat === "analgesia") return "soap-analgesia";
-  if (cat === "abx") return "soap-abx";
-  if (cat === "antihta" || cat === "diureticos") return "soap-antihta";
-  if (cat === "antitromboticos") return "soap-antitromboticos";
-  if (cat === "nm") return "soap-dieta";
-  return "soap-vasop";
-}
 
 function mediLlevarASOAPToEstadoActual(activeId, buckets) {
   var patient = patients.find(function (p) {
     return p.id === activeId;
   });
   if (!patient) {
-    rt.showToast("Paciente no encontrado", "error");
+    medToast("Paciente no encontrado", "error");
     return;
   }
   ensureMonitoreo(patient);
@@ -211,16 +249,17 @@ function mediLlevarASOAPToEstadoActual(activeId, buckets) {
     rt.navigateToEstadoActualPanel();
   }
   renderEstadoActualPanel({ force: true, refreshClinico: true, syncHeavy: true });
-  rt.showToast("Propuesta en Estado Actual — confirma en Estado clínico general", "success");
+  medToast("Propuesta en Estado Actual — confirma en Estado clínico general", "success");
   renderMedRecetaPanel();
 }
 
 function mediLlevarASOAPToTemplate(buckets) {
-  ["analgesia", "abx", "antihta", "diureticos", "antitromboticos", "vasop", "nm"].forEach(function (cat) {
+  MED_FIELD_KEYS.forEach(function (cat) {
     var parts = String(buckets[cat] || "")
       .split(" | ")
       .filter(Boolean);
-    var fieldId = soapFieldIdForCategory(cat);
+    var fieldId = soapLegacyFieldIdForCategory(cat === "diureticos" ? "diuretico" : cat);
+    if (!fieldId) return;
     parts.forEach(function (t) {
       mergeSoapMedField(fieldId, t);
     });
@@ -228,14 +267,14 @@ function mediLlevarASOAPToTemplate(buckets) {
   openPaseSectionInNormal("expediente");
   renderNoteForm();
   openSOAPModalDirect();
-  rt.showToast("Campos SOAP actualizados · completa e Insertar en evolución", "success");
+  medToast("Campos SOAP actualizados · completa e Insertar en evolución", "success");
   renderMedRecetaPanel();
 }
 
 export function mediLlevarASOAP() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente", "error");
+    medToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId];
@@ -247,12 +286,12 @@ export function mediLlevarASOAP() {
       return sel[it.id] && !it.suspendido;
     });
   if (!hasReceta) {
-    rt.showToast("Marca «SOAP» en al menos un medicamento de la receta", "error");
+    medToast("Marca «SOAP» en al menos un medicamento de la receta", "error");
     return;
   }
   var pendingOtros = unassignedOtrosSoapItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
   if (pendingOtros.length) {
-    rt.showToast(
+    medToast(
       "Elegí destino para " +
         pendingOtros.length +
         " medicamento(s) «Otros» antes de enviar a Estado Actual",
@@ -261,11 +300,11 @@ export function mediLlevarASOAP() {
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
-  var hasBuckets = ["analgesia", "abx", "antihta", "diureticos", "antitromboticos", "vasop", "nm"].some(function (k) {
+  var hasBuckets = MED_FIELD_KEYS.some(function (k) {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
-    rt.showToast("No quedó nada que volcar", "error");
+    medToast("No quedó nada que volcar", "error");
     return;
   }
   if (isModeSala(rt.getSettings())) {
@@ -278,12 +317,12 @@ export function mediLlevarASOAP() {
 function toastParseRecetaFailure(raw, parsed) {
   if (parsed.items.length || parsed.dietas.length) return false;
   if (!looksLikeSomeIndicacionesPaste(raw || "")) {
-    rt.showToast(
+    medToast(
       "No parece el bloque de SOME. Copia desde Fecha/hora con tabuladores (medicamentos, dietas…) y pégalo aquí.",
       "error"
     );
   } else {
-    rt.showToast("No se encontraron filas MEDICAMENTOS ni DIETAS válidas", "error");
+    medToast("No se encontraron filas MEDICAMENTOS ni DIETAS válidas", "error");
   }
   return true;
 }
@@ -358,19 +397,32 @@ function commitProcessedReceta(activeId, raw, parsed) {
   renderMedRecetaPanel();
 }
 
+function getMedRecetaPasteRaw() {
+  var ta =
+    document.querySelector("#med-receta-paste-modal #med-input") || document.getElementById("med-input");
+  return ta ? String(ta.value || "") : "";
+}
+
 export function procesarRecetaMed() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente primero", "error");
+    medToast("Selecciona un paciente primero", "error");
     return;
   }
-  var ta = document.getElementById("med-input");
-  var raw = ta ? ta.value : "";
-  var parsed = parseIndicacionesPaste(raw || "");
-  if (toastParseRecetaFailure(raw, parsed)) return;
-  commitProcessedReceta(activeId, raw, parsed);
-  rt.showToast(buildRecetaProcessToast(parsed), "success");
-  closeMedRecetaPasteModal();
+  var raw = getMedRecetaPasteRaw();
+  try {
+    var parsed = parseIndicacionesPaste(raw || "");
+    if (toastParseRecetaFailure(raw, parsed)) return;
+    commitProcessedReceta(activeId, raw, parsed);
+    medToast(buildRecetaProcessToast(parsed), "success");
+    closeMedRecetaPasteModal();
+  } catch (err) {
+    console.error("[R+] procesarRecetaMed:", err);
+    medToast(
+      "No se pudo procesar la receta. Si persiste, reinicia la app (⌘R) y vuelve a pegar desde SOME.",
+      "error"
+    );
+  }
 }
 
 export function limpiarRecetaInput() {
@@ -381,23 +433,23 @@ export function limpiarRecetaInput() {
 export function incrementMedDiaTratamiento() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente primero", "error");
+    medToast("Selecciona un paciente primero", "error");
     return;
   }
   var block = medRecetaByPatient[activeId];
   if (!block || !block.items || !block.items.length) {
-    rt.showToast("No hay medicamentos procesados", "error");
+    medToast("No hay medicamentos procesados", "error");
     return;
   }
   var res = incrementMedItemsDiaTratamiento(block.items);
   if (!res.count) {
-    rt.showToast("Ningún medicamento con DIA# activo", "error");
+    medToast("Ningún medicamento con DIA# activo", "error");
     return;
   }
   block.items = res.items;
   saveState();
   renderMedRecetaPanel();
-  rt.showToast(
+  medToast(
     res.count === 1
       ? "Día de tratamiento +1 (1 medicamento)"
       : "Día de tratamiento +1 (" + res.count + " medicamentos)",
@@ -408,7 +460,7 @@ export function incrementMedDiaTratamiento() {
 export function copiarMedicamentosAlPortapapeles() {
   var activeId = rt.getActiveId();
   if (!activeId || !medRecetaByPatient[activeId]) {
-    rt.showToast("No hay medicamentos procesados", "error");
+    medToast("No hay medicamentos procesados", "error");
     return;
   }
   var block = medRecetaByPatient[activeId];
@@ -420,15 +472,15 @@ export function copiarMedicamentosAlPortapapeles() {
     text = simple;
   }
   if (!text.trim()) {
-    rt.showToast("No hay medicamentos activos para copiar", "error");
+    medToast("No hay medicamentos activos para copiar", "error");
     return;
   }
   navigator.clipboard.writeText(text).then(
     function () {
-      rt.showToast("Medicamentos copiados al portapapeles ✓", "success");
+      medToast("Medicamentos copiados al portapapeles ✓", "success");
     },
     function () {
-      rt.showToast("Error al copiar al portapapeles", "error");
+      medToast("Error al copiar al portapapeles", "error");
     }
   );
 }

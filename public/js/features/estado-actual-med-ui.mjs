@@ -6,12 +6,22 @@ import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '
 /** @type {Record<string, string>} */
 export const EA_MED_FIELD_LABELS = {
   analgesia: 'Analgesia',
+  antiemeticos: 'Antieméticos',
+  sedacion: 'Sedación / delirium',
+  antiepilepticos: 'Antiepilépticos',
+  antiparkinsonianos: 'Antiparkinsonianos',
+  antidotos: 'Antídotos',
+  viaAerea: 'Vía aérea',
   abx: 'Antibióticos',
+  transfusiones: 'Transfusiones',
   antihta: 'Antihipertensivos',
   diureticos: 'Diuréticos',
-  antitromboticos: 'Antitrombóticos',
+  antitromboticos: 'Tromboprofilaxis',
+  anticoagulacion: 'Anticoagulación',
+  antiarritmicos: 'Antiarrítmicos',
+  estatinas: 'Estatinas',
   vasop: 'Vasopresores',
-  nm: 'NM (insulina, tiroides, etc.)',
+  nm: 'NM (soporte, crónicos, etc.)',
 };
 
 /**

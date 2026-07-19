@@ -1,5 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   parseMedicationPaste,
   parseIndicacionesPaste,
@@ -419,9 +420,13 @@ test('bloque dorado — 12 medicamentos del spec', () => {
 });
 
 test('effectiveSoapCategory — otros requiere override manual', () => {
-  const item = { nombreRaw: 'OMEPRAZOL 40 MG' };
+  const item = { nombreRaw: 'FARMACO SIN LISTA XYZ 500 MG' };
   assert.equal(classifyMedicationSoapCategory(item.nombreRaw), 'otros');
   assert.equal(effectiveSoapCategory(item, classifyMedicationSoapCategory), 'otros');
+  assert.equal(
+    effectiveSoapCategory({ nombreRaw: 'HALOPERIDOL 5 MG' }, classifyMedicationSoapCategory),
+    'sedacion'
+  );
   assert.equal(
     effectiveSoapCategory({ ...item, soapCatOverride: 'nm' }, classifyMedicationSoapCategory),
     'nm'
@@ -438,8 +443,8 @@ test('effectiveSoapCategory — otros requiere override manual', () => {
 
 test('unassignedOtrosSoapItems — solo SOAP sin destino', () => {
   const items = [
-    { id: 'a', nombreRaw: 'OMEPRAZOL 40 MG', suspendido: false },
-    { id: 'b', nombreRaw: 'OMEPRAZOL 40 MG', soapCatOverride: 'nm', suspendido: false },
+    { id: 'a', nombreRaw: 'FARMACO SIN LISTA XYZ', suspendido: false },
+    { id: 'b', nombreRaw: 'FARMACO SIN LISTA XYZ', soapCatOverride: 'nm', suspendido: false },
     { id: 'c', nombreRaw: 'PARACETAMOL 1 G', suspendido: false },
   ];
   const sel = { a: true, b: true, c: true };
@@ -457,10 +462,30 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('INSULINA GLARGINA'), 'nm');
   assert.equal(classifyMedicationSoapCategory('DINITRATO DE ISOSORBIDE 40 MG'), 'antihta');
   assert.equal(classifyMedicationSoapCategory('ENOXAPARINA 40 MG'), 'antitromboticos');
-  assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'otros');
+  assert.equal(classifyMedicationSoapCategory('WARFARINA 5 MG'), 'anticoagulacion');
+  assert.equal(classifyMedicationSoapCategory('APIXABAN 5 MG'), 'anticoagulacion');
+  assert.equal(classifyMedicationSoapCategory('ALTEPLASA 100 MG'), 'anticoagulacion');
+  assert.equal(classifyMedicationSoapCategory('AMIODARONA 200 MG'), 'antiarritmicos');
+  assert.equal(classifyMedicationSoapCategory('NALOXONA 0.4 MG'), 'antidotos');
+  assert.equal(classifyMedicationSoapCategory('LEVODOPA/CARBIDOPA'), 'antiparkinsonianos');
+  assert.equal(classifyMedicationSoapCategory('AMBROXOL JARABE'), 'viaAerea');
+  assert.equal(classifyMedicationSoapCategory('CONCENTRADO ERITROCITARIO'), 'transfusiones');
+  assert.equal(classifyMedicationSoapCategory('TIAMINA 100 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('CELECOXIB 200 MG'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('SERTRALINA 50 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('METFORMINA 850 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('DAPAGLIFLOZINA 10 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('ATORVASTATINA 40 MG'), 'estatinas');
+  assert.equal(classifyMedicationSoapCategory('DEXAMETASONA 8 MG'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('SALBUTAMOL 5 MG'), 'viaAerea');
+  assert.equal(classifyMedicationSoapCategory('HALOPERIDOL 5 MG'), 'sedacion');
+  assert.equal(classifyMedicationSoapCategory('LEVETIRACETAM 500 MG'), 'antiepilepticos');
+  assert.equal(classifyMedicationSoapCategory('LACTULOSA JARABE'), 'nm');
+  assert.equal(classifyMedicationSoapCategory('CLORURO DE POTASIO'), 'nm');
   assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
-  assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
-  assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'antiemeticos');
+  assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'antiemeticos');
   assert.equal(
     classifyMedicationSoapCategory('ACIDO ACETIL SALICILICO 100 MG TABLETA', '100 MG'),
     'antitromboticos'
@@ -565,6 +590,25 @@ test('parseIndicacionesPaste — DIETAS AYUNO colapsada (4 cols sin tabs interme
   assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
 });
 
+test('parseIndicacionesPaste — SOME hospital espacios simples (MEDICAMENTOS P1)', () => {
+  var paste =
+    '19/07/2026 06:42:01 a.m. MEDICAMENTOS OMEPRAZOL 40 MG SOL INY 10 ML (*) VIA INTRAVENOSA 40 MG // CADA 12 HORAS NW\n' +
+    '19/07/2026 06:42:03 a.m. MEDICAMENTOS PARACETAMOL 1 G SOL INY 100 ML (*) VIA INTRAVENOSA 1 G // CADA 8 HORAS NW\n' +
+    '19/07/2026 06:42:07 a.m. MEDICAMENTOS P1 CLORURO DE SODIO 0.9 % SOL INY 100 ML VIA INTRAVENOSA 100 ML / VEL.INF: BOMBA ALGORITMO 1 CADA 24 HORAS NW\n' +
+    '19/07/2026 06:42:08 a.m. MEDICAMENTO P1 INSULINA HUMANA RAPIDA VIA INTRAVENOSA 100 UI - NW\n' +
+    '19/07/2026 10:41:32 a.m. PROCEDIMIENTO COLOCACION DE CATETER VENOSO CENTRAL MEDIANTE GUIADO KIT PARA CVC NW';
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(r.items.length, 4);
+  assert.equal(r.skipped, 1);
+  assert.equal(r.items[0].nombreRaw, 'OMEPRAZOL 40 MG SOL INY 10 ML (*)');
+  assert.equal(r.items[0].viaRaw, 'VIA INTRAVENOSA');
+  assert.equal(r.items[0].frecuenciaRaw, 'CADA 12 HORAS');
+  assert.equal(r.items[2].nombreRaw, 'CLORURO DE SODIO 0.9 % SOL INY 100 ML');
+  assert.match(r.items[2].dosisRaw, /BOMBA ALGORITMO 1/);
+  assert.equal(r.items[3].nombreRaw, 'INSULINA HUMANA RAPIDA');
+  assert.equal(looksLikeSomeIndicacionesPaste(paste), true);
+});
+
 test('parseIndicacionesPaste — DIETAS AYUNO espacios (sin tabs)', () => {
   var line = '26/06/2026 08:59:39 a.m.  DIETAS  AYUNO  NW';
   var r = parseIndicacionesPaste(line);
@@ -651,7 +695,7 @@ test('looksLikeSomeIndicacionesPaste true con solo DIETAS', () => {
   assert.equal(looksLikeSomeIndicacionesPaste(line), true);
 });
 
-test('shouldAutoSelectSoap pre-marca MEROPENEM y DEXTROSA PRN', () => {
+test('shouldAutoSelectSoap pre-marca MEROPENEM; excluye D50 y PRN no analgésico', () => {
   assert.equal(
     shouldAutoSelectSoap({
       nombreRaw: 'MEROPENEM 1 G SOL INY',
@@ -667,6 +711,22 @@ test('shouldAutoSelectSoap pre-marca MEROPENEM y DEXTROSA PRN', () => {
       dosisRaw: '50 ML / VEL.INF: EN CASO DE GLUCOSA <70 MG/DL',
       frecuenciaRaw: 'PRN',
     }),
+    false
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'ONDANSETRON 8 MG SOL INY 4 ML',
+      dosisRaw: '8 MG // CRITERIO PRN: EN CASO DE NAUSEAS O VÓMITO',
+      frecuenciaRaw: 'PRN',
+    }),
+    false
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'PARACETAMOL 1 G SOL INY 100 ML',
+      dosisRaw: '1 G // CRITERIO PRN: EN CASO DE DOLOR',
+      frecuenciaRaw: 'PRN',
+    }),
     true
   );
   assert.equal(
@@ -675,7 +735,24 @@ test('shouldAutoSelectSoap pre-marca MEROPENEM y DEXTROSA PRN', () => {
       dosisRaw: '4 G DILUIR',
       frecuenciaRaw: 'UNICA VEZ',
     }),
-    false
+    true
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'INSULINA HUMANA RAPIDA',
+      viaRaw: 'VIA SUBCUTANEA',
+      dosisRaw: '4 UI // CRITERIO PRN: EN CASO DE DESTROXTIS ENTRE 180 - 220',
+      frecuenciaRaw: 'PRN',
+    }),
+    true
+  );
+  assert.equal(
+    shouldAutoSelectSoap({
+      nombreRaw: 'DEXAMETASONA 8 MG SOL INY',
+      dosisRaw: '8 MG //',
+      frecuenciaRaw: 'CADA 24 HORAS',
+    }),
+    true
   );
 });
 
@@ -691,4 +768,22 @@ test('applyMedCatalogOverlay clasifica tokens personalizados antes que listas in
     soapTokens: { vasop: [], abx: [], analgesia: ['FARMACOX'], antihta: [] },
   });
   assert.equal(classifyMedicationSoapCategory('FARMACOX 500 MG'), 'analgesia');
+});
+
+test('parseIndicacionesPaste — bloque real usuario 2026-07-19 (14 meds, P1, dieta)', () => {
+  var paste = readFileSync(
+    new URL('../../fixtures/some-paste-user-2026-07-19.tsv', import.meta.url),
+    'utf8'
+  );
+  var r = parseIndicacionesPaste(paste);
+  assert.equal(looksLikeSomeIndicacionesPaste(paste), true);
+  assert.equal(r.items.length, 14);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'AYUNO');
+  assert.ok(
+    r.items.some(function (it) {
+      return /CLORURO DE SODIO/i.test(it.nombreRaw || '');
+    }),
+    'incluye MEDICAMENTOS P1 (bomba)'
+  );
 });

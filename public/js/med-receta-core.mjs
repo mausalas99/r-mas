@@ -38,6 +38,7 @@ export {
   buildMedRecetaCopyText,
   formatMedicationSoapShort,
   buildMedRecetaNameOnlyText,
+  isPrnMedicationItem,
 } from './med-receta-format.mjs';
 
 export {
@@ -46,4 +47,5 @@ export {
   effectiveSoapCategory,
   unassignedOtrosSoapItems,
   classifyMedicationSoapCategory,
+  shouldIncludeMedicationInSoap,
 } from './med-receta-soap.mjs';

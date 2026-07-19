@@ -9,6 +9,15 @@ let rt = {
   },
 };
 
+/** Toast con fallback a `window.showToast` (registrado de forma síncrona en app.js). */
+export function medToast(message, type) {
+  if (typeof window !== "undefined" && typeof window.showToast === "function") {
+    window.showToast(message, type);
+    return;
+  }
+  if (typeof rt.showToast === "function") rt.showToast(message, type);
+}
+
 export function registerMedicationsRuntime(ctx) {
   if (ctx && typeof ctx === "object") Object.assign(rt, ctx);
 }

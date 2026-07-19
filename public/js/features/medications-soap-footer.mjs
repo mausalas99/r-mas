@@ -1,5 +1,5 @@
 import { medRecetaByPatient } from "../app-state.mjs";
-import { effectiveSoapCategory, classifyMedicationSoapCategory } from "../med-receta-core.mjs";
+import { effectiveSoapCategory, classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from "../med-receta-core.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { medInstructionFragmentForSoap } from "./estado-actual-meds.mjs";
 import {
@@ -7,27 +7,52 @@ import {
   insulinPumpMedLabelHtml,
   isInsulinIvMedicationItem,
 } from "../insulin-pump-some-detect.mjs";
+import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
+import {
+  isInsulinRescateMedicationItem,
+  insulinRescateMedLabelHtml,
+} from "../insulin-rescate-display.mjs";
 import { rt } from "./medications-runtime-state.mjs";
 import { esc, getMedNotaSelMap } from "./medications-utils.mjs";
 
 function groupSoapPreviewItems(soapItems, allItems) {
   var groups = {
     analgesia: [],
+    antiemeticos: [],
+    sedacion: [],
+    antiepilepticos: [],
+    antiparkinsonianos: [],
+    antidotos: [],
+    viaAerea: [],
     antihta: [],
     diuretico: [],
     antitromboticos: [],
+    anticoagulacion: [],
+    antiarritmicos: [],
+    estatinas: [],
     abx: [],
+    transfusiones: [],
     vasop: [],
     nm: [],
     otros: [],
   };
   var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(allItems || []);
   var pumpChipAdded = false;
+  var rescateChipAdded = false;
   soapItems.forEach(function (it) {
+    if (skipRecetaItemForInsulinPumpCarrier(it, allItems || [])) return;
+    if (!shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory)) return;
     if (pumpAlg != null && isInsulinIvMedicationItem(it)) {
       if (!pumpChipAdded) {
         groups.nm.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
         pumpChipAdded = true;
+      }
+      return;
+    }
+    if (isInsulinRescateMedicationItem(it)) {
+      if (!rescateChipAdded) {
+        groups.nm.push({ _insulinRescateChip: true });
+        rescateChipAdded = true;
       }
       return;
     }
@@ -46,6 +71,13 @@ function chipsForSoapItems(arr) {
         return (
           '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-pump" title="Bomba de insulina IV (SOME)">' +
           insulinPumpMedLabelHtml(it._algorithm, esc) +
+          "</span>"
+        );
+      }
+      if (it && it._insulinRescateChip) {
+        return (
+          '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-rescate" title="Rescates de insulina PRN (SOME)">' +
+          insulinRescateMedLabelHtml(esc) +
           "</span>"
         );
       }
@@ -83,11 +115,21 @@ function buildSoapPreviewHtml(soapItems, allItems) {
   var groups = groupSoapPreviewItems(soapItems, allItems);
   return (
     '<div class="med-soap-preview">' +
-    soapPreviewSection("analgesia", "Analgésicos / antieméticos", groups) +
+    soapPreviewSection("analgesia", "Analgésicos", groups) +
+    soapPreviewSection("antiemeticos", "Antieméticos", groups) +
+    soapPreviewSection("sedacion", "Sedación / delirium", groups) +
+    soapPreviewSection("antiepilepticos", "Antiepilépticos", groups) +
+    soapPreviewSection("antiparkinsonianos", "Antiparkinsonianos", groups) +
+    soapPreviewSection("antidotos", "Antídotos", groups) +
+    soapPreviewSection("viaAerea", "Vía aérea", groups) +
     soapPreviewSection("antihta", "Antihipertensivos", groups) +
     soapPreviewSection("diuretico", "Diuréticos", groups) +
-    soapPreviewSection("antitromboticos", "Antitrombóticos", groups) +
+    soapPreviewSection("antitromboticos", "Tromboprofilaxis", groups) +
+    soapPreviewSection("anticoagulacion", "Anticoagulación", groups) +
+    soapPreviewSection("antiarritmicos", "Antiarrítmicos", groups) +
+    soapPreviewSection("estatinas", "Estatinas", groups) +
     soapPreviewSection("abx", "Antibióticos / antifúngicos", groups) +
+    soapPreviewSection("transfusiones", "Transfusiones", groups) +
     soapPreviewSection("vasop", "Vasopresores / inotrópicos", groups) +
     soapPreviewSection("nm", "NM (insulina, tiroides, etc.)", groups) +
     soapPreviewSection("otros", "Otros — elegí destino en el listado", groups) +

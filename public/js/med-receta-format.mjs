@@ -8,6 +8,11 @@ import {
   normalizeFrecuencia,
   normalizeSpacesPct,
 } from './med-receta-nombre.mjs';
+import {
+  formatInsulinPumpAlgoritmoLabel,
+  insulinPumpAlgorithmForMedicationItem,
+  isInsulinPumpCarrierMedicationItem,
+} from './insulin-pump-some-detect.mjs';
 
 /** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
 export function dosisBeforeSlash(dosisRaw) {
@@ -124,10 +129,15 @@ export function extractRecetaNameOnlyDose(dosisRaw) {
   return compactRecetaDoseToken(dosisBeforeSlash(dosisRaw));
 }
 
-function isPrnItem(item) {
+export function isPrnMedicationItem(item) {
+  if (!item) return false;
   var f = trimStr(item.frecuenciaRaw).toUpperCase();
   if (f === 'PRN') return true;
   return /CRITERIO\s+PRN/i.test(item.dosisRaw || '');
+}
+
+function isPrnItem(item) {
+  return isPrnMedicationItem(item);
 }
 
 function extractPrnTail(dosisRaw) {
@@ -251,10 +261,15 @@ export function formatMedicationEgresoLine(item, opts) {
  * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  */
 export function buildMedRecetaCopyText(items, opts) {
-  var list = (items || []).filter(function (it) {
-    return it && !it.suspendido;
+  var all = items || [];
+  var list = all.filter(function (it) {
+    return it && !it.suspendido && !isInsulinPumpCarrierMedicationItem(it, all);
   });
   var lines = list.map(function (it) {
+    var alg = insulinPumpAlgorithmForMedicationItem(all, it);
+    if (alg != null) {
+      return formatInsulinPumpAlgoritmoLabel(alg) + ', SIN SUSPENDER HASTA NUEVO AVISO.';
+    }
     return formatMedicationEgresoLine(it, opts);
   });
   return lines.join('\n\n');
@@ -371,10 +386,13 @@ export function formatMedicationSoapShort(item, opts) {
  * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  */
 export function buildMedRecetaNameOnlyText(items, opts) {
-  var list = (items || []).filter(function (it) {
-    return it && !it.suspendido;
+  var all = items || [];
+  var list = all.filter(function (it) {
+    return it && !it.suspendido && !isInsulinPumpCarrierMedicationItem(it, all);
   });
   var lines = list.map(function (it) {
+    var alg = insulinPumpAlgorithmForMedicationItem(all, it);
+    if (alg != null) return formatInsulinPumpAlgoritmoLabel(alg);
     return formatMedicationSoapShort(it, opts);
   });
   return lines.join('\n');

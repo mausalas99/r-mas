@@ -19,6 +19,21 @@ test('parseInsulinRescateCriteria detecta rango glucosa + UI', () => {
   assert.equal(parseInsulinRescateCriteria('HIPOGLUCEMIA <70').length, 0);
 });
 
+test('parseInsulinRescateCriteria — formato SOME PRN (UI antes del rango)', () => {
+  assert.deepEqual(
+    parseInsulinRescateCriteria(
+      '2 UI // CRITERIO PRN: EN CASO DE DESTROXTIS ENTRE 140 - 180'
+    ),
+    [{ minMgDl: 140, maxMgDl: 180, units: 2 }]
+  );
+  assert.deepEqual(
+    parseInsulinRescateCriteria(
+      '14 UI // CRITERIO PRN: EN CASO DE DESTROXTIS > 400'
+    ),
+    [{ minMgDl: 400, maxMgDl: 600, units: 14 }]
+  );
+});
+
 test('patientHasInsulinRescatesInReceta lee escala en pasteRaw (CUIDADOS)', () => {
   assert.equal(
     patientHasInsulinRescatesInReceta({
@@ -68,14 +83,13 @@ test('formatInsulinRescatesClause omite disponibles sin escala SOME', () => {
 
 test('formatInsulinRescatesClause disponibles cuando hay escala SOME', () => {
   const clause = formatInsulinRescatesClause([{ value: 140, time: '08:00' }], { rescatesInSome: true });
-  assert.match(clause, /RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE/);
+  assert.equal(clause, 'RESCATES DE INSULINA DISPONIBLES');
 });
 
-test('formatInsulinRescatesClause aplicados aunque no haya escala SOME', () => {
+test('formatInsulinRescatesClause aplicados van en glucometrías, no en cláusula aparte', () => {
   const clause = formatInsulinRescatesClause(
     [{ value: 220, time: '14:00', altered: true, rescueUnits: 4, postRescueValue: 168 }],
     { rescatesInSome: false }
   );
-  assert.match(clause, /RESCATES DE INSULINA APLICADOS/);
-  assert.match(clause, /4 U DE INSULINA RÁPIDA @ 14:00, DXT POST-RESCATE 168 MG\/DL/);
+  assert.equal(clause, '');
 });

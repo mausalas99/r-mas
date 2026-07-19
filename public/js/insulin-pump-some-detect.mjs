@@ -2,7 +2,8 @@
 
 import { parseIndicacionesPaste } from './med-receta-parse.mjs';
 
-var BOMBA_ALGORITMO_RE = /BOMBA\s+EN\s+ALGORITMO\s*(\d)/i;
+/** `BOMBA EN ALGORITMO 2` o `BOMBA ALGORITMO 2` (SOME a veces omite «EN» en el diluyente P1/P2). */
+var BOMBA_ALGORITMO_RE = /BOMBA\s+(?:EN\s+)?ALGORITMO\s*(\d)/i;
 var INSULIN_IV_RE = /\bINSULINA\b/i;
 var IV_VIA_RE = /\b(?:VIA\s+)?INTRAVENOSA\b|\bIV\b/i;
 
@@ -93,6 +94,31 @@ export function formatInsulinPumpAlgorithmPill(algorithmNumber) {
   var n = Number(algorithmNumber);
   if (!Number.isFinite(n) || n < 1 || n > 4) return '';
   return 'ALGORITMO ' + n;
+}
+
+/**
+ * Diluyente P1/P2 con «BOMBA ALGORITMO N» cuando el bloque activa bomba + insulina IV.
+ * @param {unknown} item
+ * @param {unknown[]} allItems
+ * @returns {boolean}
+ */
+export function isInsulinPumpCarrierMedicationItem(item, allItems) {
+  if (!item || typeof item !== 'object' || /** @type {{ suspendido?: boolean }} */ (item).suspendido) {
+    return false;
+  }
+  if (isInsulinIvMedicationItem(/** @type {Parameters<typeof isInsulinIvMedicationItem>[0]} */ (item))) {
+    return false;
+  }
+  if (detectInsulinPumpAlgorithmFromRecetaItems(allItems) == null) return false;
+  var blob = [
+    /** @type {{ nombreRaw?: unknown, dosisRaw?: unknown, frecuenciaRaw?: unknown, viaRaw?: unknown }} */ (
+      item
+    ).nombreRaw,
+    /** @type {{ dosisRaw?: unknown }} */ (item).dosisRaw,
+    /** @type {{ frecuenciaRaw?: unknown }} */ (item).frecuenciaRaw,
+    /** @type {{ viaRaw?: unknown }} */ (item).viaRaw,
+  ].join(' ');
+  return parseInsulinPumpAlgorithmFromText(blob) != null;
 }
 
 /**

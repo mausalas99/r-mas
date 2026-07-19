@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bucketsFromRecetaItems } from './features/estado-actual-meds.mjs';
 import { classifyMedicationSoapCategory } from './med-receta-core.mjs';
-import { insulinPumpNmSoapFragment } from './insulin-pump-receta-display.mjs';
+import { insulinPumpNmSoapFragment, skipRecetaItemForInsulinPumpCarrier } from './insulin-pump-receta-display.mjs';
 
 var INSULIN_ITEM = {
   id: 'ins-1',
@@ -36,4 +36,16 @@ test('bucketsFromRecetaItems — NM usa bomba en lugar de insulina IV', () => {
   var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
   assert.equal(buckets.nm, 'BOMBA DE INSULINA EN ALGORITMO 2');
   assert.doesNotMatch(buckets.nm || '', /INSULINA HUMANA RAPIDA/i);
+});
+
+test('skipRecetaItemForInsulinPumpCarrier — excluye cloruro portador aunque esté en SOAP', () => {
+  var items = [CARRIER_ITEM, INSULIN_ITEM];
+  assert.equal(skipRecetaItemForInsulinPumpCarrier(CARRIER_ITEM, items), true);
+  var sel = { 'nacl-1': true, 'ins-1': true };
+  var buckets = bucketsFromRecetaItems(items, sel, classifyMedicationSoapCategory);
+  assert.equal(buckets.nm, 'BOMBA DE INSULINA EN ALGORITMO 2');
+  assert.doesNotMatch(
+    [buckets.otros, buckets.nm, buckets.vasop].join(' '),
+    /CLORURO DE SODIO/i
+  );
 });

@@ -5,6 +5,7 @@ import { resolveDietWeightKg, computeDietKcalTotal, isDietaSuplemento } from './
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { formatInsulinRescatesClause } from './estado-actual-glu-rescue.mjs';
 import { formatIoClauseForSoap } from './estado-actual-io.mjs';
+import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
 import { isTempFebrile, isHemodynamicallyUnstable, isTempFeverPeak } from './estado-actual-ranges.mjs';
 import {
   gluPointMs,
@@ -106,6 +107,14 @@ export function medsClauseOrFallback(fieldVal, fallback) {
   return list || fallback;
 }
 
+/**
+ * @param {unknown} fieldVal
+ * @returns {string}
+ */
+export function medsClauseOrEmpty(fieldVal) {
+  return medsListForSoap(fieldVal, ', ');
+}
+
 const SOPORTE_MAP = {
   'Aire ambiente': 'AL AIRE AMBIENTE',
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
@@ -138,16 +147,29 @@ export function resolveHemodynamicLabel(v, ec) {
 }
 
 /**
- * @param {Array<{ value?: unknown, postRescueValue?: unknown }>} glSrc
+ * @param {{ value?: unknown, postRescueValue?: unknown, rescueUnits?: unknown }} gg
+ * @returns {string}
+ */
+export function formatGluSoapSegment(gg) {
+  if (!gg || typeof gg !== 'object') return '';
+  var rescueUnits = Number(gg.rescueUnits);
+  var hasRescue = Number.isFinite(rescueUnits) && rescueUnits > 0;
+  if (hasRescue && gg.value != null && gg.value !== '') {
+    return num(gg.value) + ', ' + num(rescueUnits) + 'UI';
+  }
+  var gv = gg.postRescueValue != null && gg.postRescueValue !== '' ? gg.postRescueValue : gg.value;
+  if (gv == null || gv === '') return '';
+  return num(gv);
+}
+
+/**
+ * @param {Array<{ value?: unknown, postRescueValue?: unknown, rescueUnits?: unknown }>} glSrc
  */
 export function collectGluDisplayValues(glSrc) {
   var gluParts = [];
   for (var gi = 0; gi < glSrc.length; gi++) {
-    var gg = glSrc[gi];
-    if (!gg || typeof gg !== 'object') continue;
-    var gv = gg.postRescueValue != null && gg.postRescueValue !== '' ? gg.postRescueValue : gg.value;
-    if (gv == null || gv === '') continue;
-    gluParts.push(num(gv));
+    var seg = formatGluSoapSegment(glSrc[gi]);
+    if (seg) gluParts.push(seg);
   }
   return gluParts;
 }
@@ -202,16 +224,33 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc,
   var ioClause = formatIoClauseForSoap(snapIo, btTurno);
   var gluParts = collectGluDisplayValues(glSrc);
   var bombaClause = buildBombaClause(bombaSrc, opts.bombaAlgoritmo);
-  var nmMedsClause = medsListForSoap(ec.nm, ' || ');
+  var nmPartition = partitionNmMedsForSoap(ec.nm);
+  var nmOtherClause = medsListForSoap(nmPartition.other, ' || ');
+  var nmInsulinClause = medsListForSoap(nmPartition.insulin, ', ');
+  var hasAppliedRescates = glSrc.some(function (g) {
+    if (!g || typeof g !== 'object') return false;
+    var u = Number(/** @type {{ rescueUnits?: unknown }} */ (g).rescueUnits);
+    return Number.isFinite(u) && u > 0;
+  });
+  /** @type {string[]} */
   var nmParts = [formatNmDietClause(ec, kcalDisplay, { includeProtein: true })];
-  if (nmMedsClause) nmParts.push(nmMedsClause);
+  if (nmOtherClause) nmParts.push(nmOtherClause);
   nmParts.push(ioClause);
-  if (gluParts.length) nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + ' MG/DL)');
+  if (gluParts.length) {
+    var gluHasRescueFmt = gluParts.some(function (p) {
+      return /UI$/.test(p);
+    });
+    var gluSuffix = gluHasRescueFmt ? '' : ' MG/DL';
+    nmParts.push('GLUCOMETRÍAS CAPILARES (' + gluParts.join(', ') + gluSuffix + ')');
+  }
   if (bombaClause) nmParts.push(bombaClause.replace(/^\s*\|\|\s*/, ''));
-  else {
-    var rescatesClause = formatInsulinRescatesClause(glSrc, { rescatesInSome: opts.rescatesInSome });
+  else if (!hasAppliedRescates) {
+    var rescatesClause = nmPartition.rescatesDisponibles
+      ? 'RESCATES DE INSULINA DISPONIBLES'
+      : formatInsulinRescatesClause(glSrc, { rescatesInSome: opts.rescatesInSome });
     if (rescatesClause) nmParts.push(rescatesClause);
   }
+  if (nmInsulinClause) nmParts.push('INSULINA: ' + nmInsulinClause);
   return nmParts.join(' || ');
 }
 
@@ -220,24 +259,43 @@ export function buildNmClause(ec, kcalDisplay, snapIo, btTurno, glSrc, bombaSrc,
  * @param {Record<string, unknown>} v
  * @param {string} soporte
  * @param {string} hiTemp
- * @param {string} vasopClause
  * @param {string} nmClause
  */
-export function assembleSoapLines(ec, v, soporte, hiTemp, vasopClause, nmClause) {
+export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
+  var analgesiaSplit = partitionAnalgesiaForSoap(ec.analgesia);
+  var analgesiaClause = medsClauseOrEmpty(analgesiaSplit.analgesia);
+  var antiemeticosClause = medsClauseOrEmpty(ec.antiemeticos || analgesiaSplit.antiemeticos);
+  var sedacionClause = medsClauseOrEmpty(ec.sedacion);
+  var antiepilepticosClause = medsClauseOrEmpty(ec.antiepilepticos);
+  var antiparkinsonianosClause = medsClauseOrEmpty(ec.antiparkinsonianos);
+  var antidotosClause = medsClauseOrEmpty(ec.antidotos);
+  var viaAereaClause = medsClauseOrEmpty(ec.viaAerea);
+  var vasopClause = medsClauseOrEmpty(ec.vasop);
   return [
     'N: FOUR ' +
       num(ec.four) +
       '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
       num(ec.esferas) +
-      ' ESFERAS, ALERTA || ANALGESIA CON ' +
-      medsClauseOrFallback(ec.analgesia, '___'),
+      ' ESFERAS, ALERTA || ANALGESIA: ' +
+      analgesiaClause +
+      ' | ANTIEMETICOS: ' +
+      antiemeticosClause +
+      ' | SEDACION: ' +
+      sedacionClause +
+      ' | ANTIEPILEPTICOS: ' +
+      antiepilepticosClause +
+      ' | ANTIPARKINSONIANOS: ' +
+      antiparkinsonianosClause +
+      ' | ANTIDOTOS: ' +
+      antidotosClause,
     'V: FR ' +
       num(v.fr) +
       ' RPM, SATO2 ' +
       num(v.sat) +
       '% ' +
       soporte +
-      ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS',
+      ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS' +
+      (viaAereaClause ? ' || VIA AEREA: ' + viaAereaClause : ''),
     'HD: ' +
       resolveHemodynamicLabel(v, ec) +
       ', TA ' +
@@ -246,15 +304,27 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, vasopClause, nmClause)
       num(v.tad) +
       ' MMHG, FC ' +
       num(v.fc) +
-      ' LPM || ANTIHIPERTENSIVOS: ' +
-      medsClauseOrFallback(ec.antihta, 'NINGUNO') +
-      ' || DIURÉTICOS: ' +
-      medsClauseOrFallback(ec.diureticos, 'NINGUNO') +
-      ' || ANTITROMBOTICOS: ' +
-      medsClauseOrFallback(ec.antitromboticos, 'NINGUNO') +
-      ' || ' +
-      vasopClause,
-    'HI: ' + resolveFebrilLabel(v) + ', ' + hiTemp + ' || ANTIBIÓTICOS: ' + medsClauseOrFallback(ec.abx, 'NINGUNO'),
+      ' LPM || VASOPRESORES: ' +
+      vasopClause +
+      ' | ANTIHIPERTENSIVOS: ' +
+      medsClauseOrEmpty(ec.antihta) +
+      ' | TROMBOPROFILAXIS: ' +
+      medsClauseOrEmpty(ec.antitromboticos) +
+      ' | ANTICOAGULACION: ' +
+      medsClauseOrEmpty(ec.anticoagulacion) +
+      ' | ANTIARRITMICOS: ' +
+      medsClauseOrEmpty(ec.antiarritmicos) +
+      ' | DIURÉTICOS: ' +
+      medsClauseOrEmpty(ec.diureticos) +
+      ' | ESTATINAS: ' +
+      medsClauseOrEmpty(ec.estatinas),
+    'HI: ' +
+      resolveFebrilLabel(v) +
+      ', ' +
+      hiTemp +
+      ' || ANTIBIOTICOTERAPIA: ' +
+      medsClauseOrEmpty(ec.abx) +
+      (medsClauseOrEmpty(ec.transfusiones) ? ' | TRANSFUSIONES: ' + medsClauseOrEmpty(ec.transfusiones) : ''),
     'NM: ' + nmClause,
   ];
 }

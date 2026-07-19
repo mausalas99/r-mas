@@ -4,7 +4,6 @@ import {
   resolveKcalDisplay,
   buildNmClause,
   assembleSoapLines,
-  medsListForSoap,
 } from './estado-actual-text-build.mjs';
 import { normalizeEaTextInputs } from './estado-actual-text-inputs.mjs';
 import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
@@ -24,8 +23,6 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   var soporte = resolveSoporteClause(ctx.ec);
   var hiTemp = buildHiTempClause(ctx.v, ctx.snapAlt, ctx.tempPeakAt, options.now);
   var kcalDisplay = resolveKcalDisplay(ctx.ec, options);
-  var vasopList = medsListForSoap(ctx.ec.vasop, ', ');
-  var vasopClause = vasopList ? 'VASOPRESORES: ' + vasopList : 'SIN VASOPRESORES';
   var rescatesInSome =
     options.rescatesInSome != null
       ? !!options.rescatesInSome
@@ -42,5 +39,5 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     rescatesInSome: rescatesInSome,
     bombaAlgoritmo: bombaAlgoritmo,
   });
-  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, vasopClause, nmClause).join('\n');
+  return assembleSoapLines(ctx.ec, ctx.v, soporte, hiTemp, nmClause).join('\n');
 }

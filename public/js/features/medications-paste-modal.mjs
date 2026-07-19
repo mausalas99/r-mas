@@ -1,4 +1,9 @@
-import { rt, medRecetaPasteModalWired, markMedRecetaPasteModalWired } from "./medications-runtime-state.mjs";
+import {
+  rt,
+  medToast,
+  medRecetaPasteModalWired,
+  markMedRecetaPasteModalWired,
+} from "./medications-runtime-state.mjs";
 import { restoreMedInputForPatient, stashMedInputForPatient } from "./medications-input.mjs";
 import { closeMedPharmModals } from "./med-pharm-profile-panel.mjs";
 
@@ -31,7 +36,7 @@ export function wireMedRecetaPasteModalOnce() {
 export function openMedRecetaPasteModal() {
   var activeId = rt.getActiveId();
   if (!activeId) {
-    rt.showToast("Selecciona un paciente primero", "error");
+    medToast("Selecciona un paciente primero", "error");
     return;
   }
   wireMedRecetaPasteModalOnce();
