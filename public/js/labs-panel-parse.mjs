@@ -2,7 +2,8 @@
  * Parser genérico de paneles extendidos (numéricos + cualitativos).
  */
 import { extraerConRangoPanel, marcarSegunRango, fmt } from './labs-extract.mjs';
-import { LAB_EXTENDED_PANEL_DEFS, LAB_EXTENDED_SECTION_KEYS } from './labs-panel-defs.mjs';
+import { LAB_EXTENDED_SECTION_KEYS } from './labs-panel-defs.mjs';
+import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
 
@@ -144,8 +145,9 @@ function mergeSectionLines_(lines) {
 export function parseExtendedLabPanels_(textoBruto) {
   if (!textoBruto || typeof textoBruto !== 'string') return [];
   var out = [];
-  for (var i = 0; i < LAB_EXTENDED_PANEL_DEFS.length; i++) {
-    var line = parsePanelDef_(LAB_EXTENDED_PANEL_DEFS[i], textoBruto);
+  var defs = getEffectivePanelDefs();
+  for (var i = 0; i < defs.length; i++) {
+    var line = parsePanelDef_(defs[i], textoBruto);
     if (line) out.push(line);
   }
   return mergeSectionLines_(out);
