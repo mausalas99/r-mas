@@ -14,7 +14,7 @@ export const tourState = {
   guidedTourActive: false,
   /** @type {'sala'|'interconsulta'|null} */
   guidedTourBranch: null,
-  /** @type {'base'|'neo'} */
+  /** @type {'base'} */
   guidedTourMode: 'base',
   /** @type {string|null} */
   tourStepId: null,

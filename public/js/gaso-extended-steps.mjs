@@ -164,19 +164,32 @@ export function buildCompensation_(hco3, metaLow, pCO2, winterCenter) {
   return compensation;
 }
 
-/** @param {number|null} agVal */
-export function buildAnionGapStep_(agVal) {
+/** @param {number|null} agVal @param {number|null} [agcVal] */
+export function buildAnionGapStep_(agVal, agcVal) {
+  var display = agcVal != null ? agcVal : agVal;
   var anionGap = {
     value: agVal != null ? Math.round((agVal + Number.EPSILON) * 10) / 10 : null,
+    corrected: agcVal != null ? Math.round((agcVal + Number.EPSILON) * 10) / 10 : null,
     interpretation: '',
   };
-  if (agVal != null && isFinite(agVal)) {
-    if (agVal < 8) anionGap.interpretation = 'Anión gap por debajo del rango usual (referencia habitual 8–12 mEq/L).';
-    else if (agVal > 12) {
+  if (display != null && isFinite(display)) {
+    var label = agcVal != null ? 'Anión gap corregido por albúmina (AGc)' : 'Anión gap';
+    if (display < 8) {
       anionGap.interpretation =
-        'Anión gap elevado (>12): favorézcase gap en acidosis metabólica (lista amplia diferencial).';
+        label + ' por debajo del rango usual (referencia habitual 8–12 mEq/L).';
+    } else if (display > 12) {
+      anionGap.interpretation =
+        label + ' elevado (>12): favorézcase gap en acidosis metabólica (lista amplia diferencial).';
     } else {
-      anionGap.interpretation = 'Anión gap dentro del rango usual (aproximadamente 8–12).';
+      anionGap.interpretation = label + ' dentro del rango usual (aproximadamente 8–12).';
+    }
+    if (agcVal != null && agVal != null) {
+      anionGap.interpretation +=
+        ' AG crudo ' +
+        String(Math.round((agVal + Number.EPSILON) * 10) / 10) +
+        ' → AGc ' +
+        String(Math.round((agcVal + Number.EPSILON) * 10) / 10) +
+        ' (corrección +2.5×(4−Alb)).';
     }
   } else {
     anionGap.interpretation = 'No se puede calcular (falta Na, Cl u HCO₃⁻).';
@@ -184,14 +197,36 @@ export function buildAnionGapStep_(agVal) {
   return anionGap;
 }
 
-/** @param {number|null} agVal @param {number|null} hco3 */
-export function buildDeltaDeltaStep_(agVal, hco3) {
-  var ddValue = deltaDeltaValue_(agVal, hco3);
+/** @param {number|null} uagVal */
+export function buildUrinaryAnionGapStep_(uagVal) {
+  var urinaryAnionGap = {
+    value: uagVal != null ? Math.round((uagVal + Number.EPSILON) * 10) / 10 : null,
+    interpretation: '',
+  };
+  if (uagVal != null && isFinite(uagVal)) {
+    if (uagVal < 0) {
+      urinaryAnionGap.interpretation =
+        'UAG negativo: favorece excreción renal adecuada de NH₄⁺ (p. ej. pérdidas GI / diarrea).';
+    } else {
+      urinaryAnionGap.interpretation =
+        'UAG positivo o cero: sugiere alteración en excreción de NH₄⁺ (considerar ATR u otras causas renales).';
+    }
+  } else {
+    urinaryAnionGap.interpretation =
+      'No se puede calcular (faltan Na, K o Cl urinarios).';
+  }
+  return urinaryAnionGap;
+}
+
+/** @param {number|null} agVal @param {number|null} hco3 @param {number|null} [agcVal] */
+export function buildDeltaDeltaStep_(agVal, hco3, agcVal) {
+  var effAg = agcVal != null ? agcVal : agVal;
+  var ddValue = deltaDeltaValue_(effAg, hco3);
   var deltaDelta = {
     value: ddValue != null ? Math.round((ddValue + Number.EPSILON) * 10) / 10 : null,
     interpretation: '',
   };
-  if (agVal != null && agVal > 12 && ddValue != null) {
+  if (effAg != null && effAg > 12 && ddValue != null) {
     if (ddValue < 0.8) {
       deltaDelta.interpretation =
         'Delta-delta bajo: componente hiperclorémico destacado coexistiendo con AG elevado (coexistencia plausible).';
@@ -201,7 +236,7 @@ export function buildDeltaDeltaStep_(agVal, hco3) {
     } else {
       deltaDelta.interpretation = 'Delta-delta cercano al patrón de acidosis típico de gap elevado.';
     }
-  } else if (agVal != null && agVal <= 12) {
+  } else if (effAg != null && effAg <= 12) {
     deltaDelta.interpretation = 'Sin relevancia de delta-delta habitual si el AG no está elevado.';
   } else {
     deltaDelta.interpretation = 'No disponible.';
@@ -273,7 +308,16 @@ export function buildSummaryLines_(parts) {
   );
   if (parts.compensation.note) summaryLines.push('Compensación: ' + parts.compensation.note);
   if (parts.anionGap.value != null) {
-    summaryLines.push('Anión gap: ' + String(parts.anionGap.value) + '. ' + parts.anionGap.interpretation);
+    var agLine = 'Anión gap: ' + String(parts.anionGap.value);
+    if (parts.anionGap.corrected != null) {
+      agLine += ' (AGc ' + String(parts.anionGap.corrected) + ')';
+    }
+    summaryLines.push(agLine + '. ' + parts.anionGap.interpretation);
+  }
+  if (parts.urinaryAnionGap && parts.urinaryAnionGap.value != null) {
+    summaryLines.push(
+      'UAG: ' + String(parts.urinaryAnionGap.value) + '. ' + parts.urinaryAnionGap.interpretation
+    );
   }
   if (parts.deltaDelta.value != null) summaryLines.push('Delta-delta: ' + parts.deltaDelta.interpretation);
   if (parts.oxygenation.pfRatio != null || parts.oxygenation.aaGradient != null || parts.oxygenation.note) {

@@ -6,8 +6,7 @@ export function moduleStatusLabel({ completed, inProgress, stepInChapter, chapte
   return 'Pendiente';
 }
 
-function buildModuleIndexBadge(moduleIndex, neoBadge) {
-  if (neoBadge) return '<span class="learn-hub-module-index learn-hub-module-index--neo" aria-hidden="true">N</span>';
+function buildModuleIndexBadge(moduleIndex) {
   if (moduleIndex != null) return `<span class="learn-hub-module-index" aria-hidden="true">${moduleIndex}</span>`;
   return '';
 }
@@ -24,8 +23,8 @@ function buildModuleStatusMeta(chapterSteps, mins, status, completed, inProgress
   return { statusLine, statusIcon };
 }
 
-function buildModuleResetBtn(completed, allowReset, neoStepId, chapterId, branch, label) {
-  if (!completed || !allowReset || neoStepId) return '';
+function buildModuleResetBtn(completed, allowReset, chapterId, branch, label) {
+  if (!completed || !allowReset) return '';
   return (
     `<button type="button" class="learn-hub-module-reset"` +
     ` data-learn-reset="${escapeHtml(chapterId)}" data-learn-reset-branch="${escapeHtml(branch)}"` +
@@ -37,28 +36,27 @@ function buildModuleResetBtn(completed, allowReset, neoStepId, chapterId, branch
 export function buildModuleRow(opts) {
   const {
     chapterId, label, branch, completed, inProgress, stepInChapter, chapterSteps,
-    active, moduleIndex = null, allowReset = false, neoStepId = null, neoBadge = false,
+    active, moduleIndex = null, allowReset = false,
   } = opts;
   const mins = Math.max(1, Math.round(Math.max(1, Number(chapterSteps) || 1) * 0.75));
   const status = moduleStatusLabel({ completed, inProgress, stepInChapter, chapterSteps });
   const cardCls = ['learn-hub-module-card', active ? 'is-active' : '', completed ? 'is-complete' : '', inProgress ? 'is-in-progress' : '']
     .filter(Boolean).join(' ');
   const { statusLine, statusIcon } = buildModuleStatusMeta(chapterSteps, mins, status, completed, inProgress);
-  const hitAttrs = neoStepId
-    ? ` data-learn-neo-step="${escapeHtml(neoStepId)}"`
-    : ` data-learn-chapter="${escapeHtml(chapterId)}" data-learn-branch="${escapeHtml(branch)}"`;
+  const hitAttrs =
+    ` data-learn-chapter="${escapeHtml(chapterId)}" data-learn-branch="${escapeHtml(branch)}"`;
   return (
     `<div class="${cardCls}">` +
     `<div class="learn-hub-module-row">` +
     `<button type="button" class="learn-hub-module-hit"` + hitAttrs +
     ` title="${escapeHtml(label)} — ${escapeHtml(status)}">` +
-    buildModuleIndexBadge(moduleIndex, neoBadge) +
+    buildModuleIndexBadge(moduleIndex) +
     `<span class="learn-hub-module-main">` +
     `<span class="learn-hub-module-title">${escapeHtml(label)}</span>` + statusLine +
     `</span><span class="learn-hub-module-status">` +
     `<span class="learn-hub-module-status-text">${statusIcon}${escapeHtml(status)}</span>` +
     `</span><span class="learn-hub-module-chevron" aria-hidden="true">›</span></button>` +
-    buildModuleResetBtn(completed, allowReset, neoStepId, chapterId, branch, label) +
+    buildModuleResetBtn(completed, allowReset, chapterId, branch, label) +
     `</div></div>`
   );
 }

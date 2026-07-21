@@ -7,10 +7,7 @@ import {
   getInterconsultaTourSteps as curriculumIcSteps,
   getGuardiaV7TourSteps as curriculumGuardiaV7Steps,
   getQuickRouteTourSteps as curriculumQuickRouteSteps,
-  getNeoCompanionSteps,
 } from './onboarding-curriculum.mjs';
-
-export { getNeoCompanionSteps };
 
 // Pasos cuyo avance depende de que el usuario presione un botón real
 // (no se muestra "Siguiente" en el dock).
@@ -42,12 +39,6 @@ const TARGETS = {
                        openProfile: true },
   lab_parse:         { appTab: 'lab',  selector: '#btn-procesar, #lab-input',                focus: false },
   lab_view:          { appTab: 'lab',  selector: '#lab-output-section',                      focus: false },
-  sala_casiopea_lab: {
-    appTab: 'lab',
-    selector: '#lab-some-tables-btn',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
   ic_expediente_tabs: {
     appTab: 'nota',
     selector: '.inner-tab-bar',
@@ -77,13 +68,6 @@ const TARGETS = {
   sala_tend:         { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container', focus: false },
   sala_tend_chart:   { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container .tend-section-chart-btn',
                        focus: false, spotlightClass: 'tour-spotlight-action' },
-  sala_casiopea_trends: {
-    appTab: 'nota',
-    innerTab: 'tend',
-    selector: '[data-tour="casiopea-trends-send"]',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
   sala_soap:         { appTab: 'nota', innerTab: 'notas',   selector: '#btn-soap-template',  focus: false,
                        spotlightClass: 'tour-spotlight-soap' },
   estado_actual: {

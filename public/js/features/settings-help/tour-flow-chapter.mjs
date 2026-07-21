@@ -16,7 +16,7 @@ function maybeMarkFundamentosChapterComplete(stepId) {
   if (branch !== 'sala' && branch !== 'interconsulta') return;
   const tourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
   const chapter = getChapterForStep(stepId, tourBranch);
-  if (!chapter?.id || chapter.id === 'unknown' || chapter.id === 'ch-neo') return;
+  if (!chapter?.id || chapter.id === 'unknown') return;
   const stepsInChapter = getChapterProgressLabel(stepId, tourBranch);
   if (stepsInChapter.stepInChapter !== stepsInChapter.chapterSteps) return;
   void import('../../fundamentos-progress.mjs').then((m) => {

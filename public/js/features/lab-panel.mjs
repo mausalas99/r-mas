@@ -1,5 +1,4 @@
 // Laboratorio pane — barrel: runtime registration, chrome, re-exports
-import { patients } from '../app-state.mjs';
 import { isPaseMode } from './chrome.mjs';
 import {
   closeLabSomeTablesModal,
@@ -7,11 +6,6 @@ import {
   registerLabSomeTablesModalRuntime,
   syncLabSomeTablesBtn,
 } from './lab-some-tables-modal.mjs';
-import {
-  closeSesionIngresoSendModal,
-  openSesionIngresoSendModal,
-  registerSesionIngresoSendRuntime,
-} from './sesion-ingreso-send-modal.mjs';
 import { rt, registerLabPanelRuntime as _registerRt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import {
@@ -49,6 +43,15 @@ import {
   confirmLabRepoImport,
   registerLabRepoImportRuntime,
 } from './lab-repo-import.mjs';
+import {
+  openLabRepoBatchModal,
+  closeLabRepoBatchModal,
+  confirmLabRepoBatchImport,
+  labRepoBatchSelectAll,
+  labRepoBatchSelectNone,
+  dismissLabRepoBatchQueue,
+  registerLabRepoBatchImportRuntime,
+} from './lab-repo-batch-import.mjs';
 
 var activeLab = null;
 
@@ -65,6 +68,7 @@ labPanelBridge.renderLabHistoryPanel = renderLabHistoryPanel;
 export function registerLabPanelRuntime(ctx) {
   _registerRt(ctx);
   registerLabRepoImportRuntime(ctx);
+  registerLabRepoBatchImportRuntime(ctx);
 }
 
 export function getActiveLab() {
@@ -164,40 +168,6 @@ registerLabSomeTablesModalRuntime({
   syncLabOutputChrome: function () {
     syncLabOutputChrome();
   },
-  openSesionIngresoSend: function () {
-    openSesionIngresoSendModal();
-  },
-});
-
-registerSesionIngresoSendRuntime({
-  showToast: function (msg, kind) {
-    rt.showToast(msg, kind);
-  },
-  getParsed: function () {
-    return activeLab && activeLab.someTablesParsed ? activeLab.someTablesParsed : null;
-  },
-  getPatientLabel: function () {
-    var patient = patients.find(function (p) {
-      return p.id === rt.getActiveId();
-    });
-    return patient ? patient.nombre || patient.registro || '' : '';
-  },
-  getReportDate: function () {
-    if (activeLab && activeLab.patient && activeLab.patient.fecha) {
-      return String(activeLab.patient.fecha).trim();
-    }
-    return '';
-  },
-  sendPayload: function (payload) {
-    if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
-      window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
-        if (ok) rt.showToast('Enviado a Neo', 'ok');
-        else rt.showToast('No se pudo abrir Neo', 'warn');
-      });
-      return;
-    }
-    rt.showToast('Integración disponible solo en la app de escritorio', 'warn');
-  },
 });
 
 export function syncLabOutputChrome() {
@@ -266,8 +236,6 @@ export const windowHandlers = {
   copiarLabsAlPortapapeles,
   openLabSomeTablesModal,
   closeLabSomeTablesModal,
-  openSesionIngresoSendModal,
-  closeSesionIngresoSendModal,
   closeLabHistoryMoreMenu,
   openLabPatientPicker,
   openLabHistoryDedupeReview,
@@ -277,8 +245,13 @@ export const windowHandlers = {
   onLabHistoryDateChange,
   reprocessSelectedLabHistorySet,
   deleteSelectedLabHistorySet,
-  deleteAllLabHistorySets,
   openLabRepoImportModal,
   closeLabRepoImportModal,
   confirmLabRepoImport,
+  openLabRepoBatchModal,
+  closeLabRepoBatchModal,
+  confirmLabRepoBatchImport,
+  labRepoBatchSelectAll,
+  labRepoBatchSelectNone,
+  dismissLabRepoBatchQueue,
 };

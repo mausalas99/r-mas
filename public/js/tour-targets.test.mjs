@@ -131,23 +131,6 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('wrap'), false);
   assert.equal(stepRequiresUserAction('livesync_desktop'), true);
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
-  assert.equal(stepRequiresUserAction('sala_casiopea_lab'), false);
-  assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
-});
-
-test('getTourTarget para sala_casiopea_lab apunta al botón Tablas SOME', () => {
-  const t = getTourTarget('sala_casiopea_lab', 'sala');
-  assert.equal(t.appTab, 'lab');
-  assert.match(t.selector, /lab-some-tables-btn/);
-  assert.equal(stepRequiresUserAction('sala_casiopea_lab'), false);
-});
-
-test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Neo', () => {
-  const t = getTourTarget('sala_casiopea_trends', 'sala');
-  assert.equal(t.appTab, 'nota');
-  assert.equal(t.innerTab, 'tend');
-  assert.match(t.selector, /casiopea-trends-send/);
-  assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
 });
 
 test('getInterconsultaTourSteps orden curriculum: 17 pasos, lab antes de expediente', () => {

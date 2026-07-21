@@ -25,6 +25,19 @@
       <span class="sidebar-ronda-hint-keys"><kbd>J</kbd><kbd>K</kbd></span>
       <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
     </div>
+    <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
+      <div class="lab-repo-batch-queue-header">
+        <div class="lab-repo-batch-queue-title-row">
+          <span class="lab-repo-batch-queue-title">Cola labs</span>
+          <span id="lab-repo-batch-queue-meta" class="lab-repo-batch-queue-meta"></span>
+        </div>
+        <div class="lab-repo-batch-queue-actions">
+          <button type="button" class="btn-med-secondary btn-med-secondary--muted lab-repo-batch-queue-stop" id="lab-repo-batch-queue-stop" hidden>Detener</button>
+          <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="lab-repo-batch-queue-dismiss" onclick="dismissLabRepoBatchQueue()">Cerrar</button>
+        </div>
+      </div>
+      <ul id="lab-repo-batch-queue-list" class="lab-repo-batch-queue-list"></ul>
+    </div>
     <div class="patient-list" id="patient-list"></div>
   </aside>
 
@@ -127,6 +140,7 @@
                 Procesar
               </button>
               <button type="button" id="btn-lab-repo-import" class="btn-med-secondary" onclick="openLabRepoImportModal()">Importar del repositorio</button>
+              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio para los pacientes de tu equipo">Actualizar labs de mi equipo</button>
               <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary btn-med-secondary--muted" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>

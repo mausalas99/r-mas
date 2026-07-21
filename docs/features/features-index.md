@@ -13,6 +13,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 |---------|-----------|------------|
 | Laboratorio / SOME | `public/js/labs*.mjs`, `lab-panel.mjs` | Magic moment pipeline |
 | Lab repo import | `lib/lab-repo/`, `public/js/features/lab-repo-import.mjs` | [spec](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
+| Lab repo batch (mi equipo) | `public/js/features/lab-repo-batch-import.mjs`, `lab-repo-batch-model.mjs` | Bulk morning update: mi equipo + checkboxes + sidebar job queue |
 | Tendencias | `public/js/features/tendencias.mjs` | |
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
 | Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md) |

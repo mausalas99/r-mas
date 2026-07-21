@@ -1,8 +1,6 @@
 /** Tour prev/next/advance navigation. */
 import { getChapterForStep } from '../../onboarding-curriculum.mjs';
 import { saveTourProgress } from '../../onboarding-progress.mjs';
-import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
-import { closeSesionIngresoTrendsSendModal } from '../sesion-ingreso-trends-send-modal.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
 import {
   getGuidedTourSteps,
@@ -69,12 +67,6 @@ function guidedTourClickNext() {
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourState.tourStepId);
   if (i < 0) return;
-  if (tourState.tourStepId === 'sala_casiopea_lab') {
-    closeLabSomeTablesModal();
-  }
-  if (tourState.tourStepId === 'sala_casiopea_trends') {
-    closeSesionIngresoTrendsSendModal();
-  }
   if (tourState.tourStepId === 'lab_bulk_separator') {
     closeLabBulkTourHintModal();
   }
@@ -83,14 +75,6 @@ function guidedTourClickNext() {
   }
   maybeMarkFundamentosChapterComplete(tourState.tourStepId);
   maybeMarkGuardiaV7ChapterComplete(tourState.tourStepId);
-  if (tourState.guidedTourMode === 'neo') {
-    void import('../../neo-companion-progress.mjs').then((m) => {
-      if (m.isNeoCompanionStepId(tourState.tourStepId)) {
-        const result = m.markNeoCompanionStepComplete(tourState.tourStepId);
-        if (result.wasNew) syncLearnHubContinueVisibility();
-      }
-    });
-  }
   if (i + 1 >= steps.length) {
     finishGuidedTour();
     return;

@@ -227,12 +227,24 @@ function collectReportDays(usableReports) {
   return days;
 }
 
-function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports) {
+/** Count expedientes that resolve to a patient in the census (true multi-patient mix). */
+function countCensusMatchedExpedientes(expedientes, findPatient) {
+  if (!findPatient) return (expedientes || []).length;
+  var n = 0;
+  (expedientes || []).forEach(function (exp) {
+    if (exp && findPatient(exp)) n += 1;
+  });
+  return n;
+}
+
+function resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports, findPatient) {
   if (!chunks.length) return 'empty';
   if (!okReports.length) return 'parse-errors';
   if (!match) return 'no-patient';
-  if (expedientes.length > 1) return 'mixed-expediente';
   if (!usableReports.length) return 'parse-errors';
+  // Only warn when two+ distinct census patients appear — stray portal PDFs with another
+  // expediente (or unparseable noise) should not block silent import.
+  if (countCensusMatchedExpedientes(expedientes, findPatient) > 1) return 'mixed-expediente';
   return 'ok';
 }
 
@@ -249,7 +261,14 @@ function buildBulkBlockPreview(blockText, blockIndex, findPatient) {
   var match = primaryExp && findPatient ? findPatient(primaryExp) : null;
   var usableReports = filterUsableReportsForPatient(okReports, match);
   var days = collectReportDays(usableReports);
-  var status = resolveBulkBlockStatus(chunks, okReports, match, expedientes, usableReports);
+  var status = resolveBulkBlockStatus(
+    chunks,
+    okReports,
+    match,
+    expedientes,
+    usableReports,
+    findPatient
+  );
   var patientReg = match ? String(match.registro || '').trim() : '';
   var setsAfterMerge = usableReports.length
     ? mergeBulkParseResultsForStorage(

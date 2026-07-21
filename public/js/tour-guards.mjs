@@ -42,10 +42,3 @@ export function shouldOpenEntregaRosterForTour(stepId) {
   if (!guidedTourActive || !stepId) return false;
   return GUARDIA_V7_ENTREGA_ROSTER_STEPS.has(stepId);
 }
-
-export function isCasiopeaTourSendBlocked(kind) {
-  if (!guidedTourActive) return false;
-  if (kind === 'lab') return tourStepId === 'sala_casiopea_lab';
-  if (kind === 'trends') return tourStepId === 'sala_casiopea_trends';
-  return false;
-}

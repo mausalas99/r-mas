@@ -2,7 +2,6 @@
 import { getTourSteps, getTourTarget, stepRequiresUserAction } from '../../tour-targets.mjs';
 import {
   getChapterForStep,
-  getNeoCompanionSteps,
   getTourStepsForChapter,
 } from '../../onboarding-curriculum.mjs';
 import { saveTourProgress } from '../../onboarding-progress.mjs';
@@ -26,7 +25,6 @@ import { openConnectionDropdown, closeConnectionDropdown } from '../lan-sync.mjs
 import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';
-import { closeSesionIngresoTrendsSendModal } from '../sesion-ingreso-trends-send-modal.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
 import { procesarLabs } from '../../labs.js';
 import { extractParsedValues } from '../diagrams-parse.mjs';
@@ -80,7 +78,6 @@ export function resetTourUiBeforeResume() {
   rt.closeProfileModal();
   closeLabSomeTablesModal();
   closeLabBulkTourHintModal();
-  closeSesionIngresoTrendsSendModal();
   closeTendGroupModal();
   closeSOAPModal();
   hideTourIntroModal();
@@ -220,7 +217,6 @@ export function syncTourSoapButtonHighlight() {
 }
 
 export function getGuidedTourSteps() {
-  if (tourState.guidedTourMode === 'neo') return getNeoCompanionSteps();
   const branch = resolveTourBranch();
   if (tourState.guidedTourModuleOnly && tourState.guidedTourChapterScope) {
     const scoped = getTourStepsForChapter(tourState.guidedTourChapterScope, branch);
@@ -382,8 +378,6 @@ var TOUR_DOCK_LEFT_STEPS = {
   ic_indica: 1,
   estado_actual_registro: 1,
   listado_problemas: 1,
-  sala_casiopea_lab: 1,
-  sala_casiopea_trends: 1,
   livesync_desktop: 1,
   livesync_mobile: 1,
   gv7_lan_wifi: 1,
@@ -548,11 +542,6 @@ function scheduleEstadoActualTourPrep(id, t) {
 }
 
 function closeStaleModalsForTourStep(id) {
-  if (id === 'sala_casiopea_lab') closeLabSomeTablesModal();
-  if (id === 'sala_casiopea_trends') {
-    closeTendGroupModal();
-    closeSesionIngresoTrendsSendModal();
-  }
   if (id === 'sala_med' || id === 'listado_problemas') closeSOAPModal();
 }
 

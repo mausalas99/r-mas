@@ -208,6 +208,50 @@ describe('lab-bulk-paste', () => {
     assert.ok(preview[0].days.length >= 2);
   });
 
+  it('buildBulkLabPreview ignora expediente ajeno fuera de censo (no Varios expedientes)', () => {
+    var foreign = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '9999999-9');
+    var block = DEMO_SOME_LAB_REPORT + '\n\n' + foreign;
+    var preview = buildBulkLabPreview(block, {
+      findPatientByRegistro: function (reg) {
+        if (reg === '0008421-7') return { id: 'p1', nombre: 'Demo Pérez', registro: '0008421-7' };
+        return null;
+      },
+    });
+    assert.equal(preview.length, 1);
+    assert.equal(preview[0].status, 'ok');
+    assert.equal(preview[0].okReportCount, 1);
+  });
+
+  it('buildBulkLabPreview marca Varios expedientes solo con 2+ pacientes de censo', () => {
+    var other = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
+    var block = DEMO_SOME_LAB_REPORT + '\n\n' + other;
+    var preview = buildBulkLabPreview(block, {
+      findPatientByRegistro: function (reg) {
+        if (reg === '0008421-7') return { id: 'p1', nombre: 'Demo Pérez', registro: '0008421-7' };
+        if (reg === '1111111-1') return { id: 'p2', nombre: 'Otro', registro: '1111111-1' };
+        return null;
+      },
+    });
+    assert.equal(preview.length, 1);
+    assert.equal(preview[0].status, 'mixed-expediente');
+  });
+
+  it('buildBulkLabPreview separa pacientes con --- PACIENTE ---', () => {
+    var other = String(DEMO_SOME_LAB_REPORT).replace(/0008421-7/g, '1111111-1');
+    var text =
+      DEMO_SOME_LAB_REPORT + '\n\n' + LAB_BULK_PATIENT_SEPARATOR + '\n\n' + other;
+    var preview = buildBulkLabPreview(text, {
+      findPatientByRegistro: function (reg) {
+        if (reg === '0008421-7') return { id: 'p1', nombre: 'Demo Pérez', registro: '0008421-7' };
+        if (reg === '1111111-1') return { id: 'p2', nombre: 'Otro', registro: '1111111-1' };
+        return null;
+      },
+    });
+    assert.equal(preview.length, 2);
+    assert.equal(preview[0].status, 'ok');
+    assert.equal(preview[1].status, 'ok');
+  });
+
   it('extractLabPatientFromBulkBlock toma datos del primer reporte válido', () => {
     var preview = buildBulkLabPreview(DEMO_SOME_LAB_REPORT, {
       findPatientByRegistro: function () {

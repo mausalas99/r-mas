@@ -103,6 +103,7 @@ function extractGasoLabValues(latest) {
     pCO2: serieNumFromLabSet(latest, 'GASES', 'pCO2'),
     pO2: serieNumFromLabSet(latest, 'GASES', 'pO2'),
     bic: serieNumFromLabSet(latest, 'GASES', 'Bica'),
+    uag: serieNumFromLabSet(latest, 'GASES', 'UAG'),
   };
 }
 
@@ -169,7 +170,7 @@ function appendOxygenationStep(steps, ox) {
   }
   if (oxGrid.childNodes.length) oxBody.appendChild(oxGrid);
   oxBody.appendChild(gasoStepText(ox.note));
-  steps.appendChild(gasoStepCard(6, 'Oxigenación', oxBody));
+  steps.appendChild(gasoStepCard(7, 'Oxigenación', oxBody));
 }
 
 function buildGasoMetricsRow(lab, ev) {
@@ -178,13 +179,20 @@ function buildGasoMetricsRow(lab, ev) {
   metrics.appendChild(gasoMetricChip('pH', fmtGasoNum(lab.pH), phChipTone(lab.pH)));
   metrics.appendChild(gasoMetricChip('PaCO₂', fmtGasoNum(lab.pCO2, 'mmHg')));
   metrics.appendChild(gasoMetricChip('HCO₃⁻', fmtGasoNum(lab.bic, 'mEq/L')));
+  var agDisplay =
+    ev.steps.anionGap.corrected != null ? ev.steps.anionGap.corrected : ev.steps.anionGap.value;
   metrics.appendChild(
     gasoMetricChip(
-      'Anión gap',
-      fmtGasoNum(ev.steps.anionGap.value, 'mEq/L'),
-      agChipTone(ev.steps.anionGap.value)
+      ev.steps.anionGap.corrected != null ? 'AGc' : 'Anión gap',
+      fmtGasoNum(agDisplay, 'mEq/L'),
+      agChipTone(agDisplay)
     )
   );
+  if (ev.steps.urinaryAnionGap && ev.steps.urinaryAnionGap.value != null) {
+    metrics.appendChild(
+      gasoMetricChip('UAG', fmtGasoNum(ev.steps.urinaryAnionGap.value, 'mEq/L'))
+    );
+  }
   return metrics;
 }
 
@@ -195,16 +203,27 @@ function buildGasoSteps(ev) {
   appendPrimaryStep(steps, ev);
   appendCompensationStep(steps, ev.steps.compensation);
   var ag = ev.steps.anionGap;
+  var agBadge =
+    ag.corrected != null
+      ? 'AGc ' + ag.corrected + ' (AG ' + ag.value + ') mEq/L'
+      : ag.value != null
+        ? ag.value + ' mEq/L'
+        : null;
+  var agHigh =
+    (ag.corrected != null ? ag.corrected : ag.value) != null &&
+    (ag.corrected != null ? ag.corrected : ag.value) > 12;
+  appendBadgeStep(steps, 4, 'Anión gap', agBadge, agHigh, ag.interpretation);
+  var uag = ev.steps.urinaryAnionGap;
   appendBadgeStep(
     steps,
-    4,
-    'Anión gap',
-    ag.value != null ? ag.value + ' mEq/L' : null,
-    ag.value != null && ag.value > 12,
-    ag.interpretation
+    5,
+    'UAG (urinario)',
+    uag && uag.value != null ? uag.value + ' mEq/L' : null,
+    false,
+    uag ? uag.interpretation : ''
   );
   var dd = ev.steps.deltaDelta;
-  appendBadgeStep(steps, 5, 'Delta-delta', dd.value != null ? String(dd.value) : null, false, dd.interpretation);
+  appendBadgeStep(steps, 6, 'Delta-delta', dd.value != null ? String(dd.value) : null, false, dd.interpretation);
   appendOxygenationStep(steps, ev.steps.oxygenation);
   return steps;
 }
@@ -257,6 +276,7 @@ export function refillGasoExtendedSlot(slot, latest, fio2, escHtml) {
       na: lab.na,
       cl: lab.cl,
       alb: lab.alb,
+      uag: lab.uag,
       fio2: fio2,
     });
 

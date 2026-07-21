@@ -8,7 +8,6 @@ const ONBOARDING_WINDOW_HANDLERS = [
   'resumeGuidedTourFromProgress',
   'startTourModule',
   'startHelpTourInterconsulta',
-  'startNeoCompanionTour',
   'resetAndStartOnboarding',
 ];
 

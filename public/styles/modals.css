@@ -875,13 +875,6 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
   color: var(--warn);
   border-color: color-mix(in oklab, var(--warn) 35%, transparent);
 }
-.learn-hub-module-index--neo {
-  background: color-mix(in oklab, var(--color-accent) 20%, var(--color-accent-soft));
-  color: var(--color-accent-soft-text);
-  border-color: color-mix(in oklab, var(--color-accent) 35%, transparent);
-  font-size: 11px;
-  letter-spacing: 0.02em;
-}
 .learn-hub-module-card--cta {
   border-color: color-mix(in oklab, var(--warn) 35%, var(--border));
   background: color-mix(in oklab, var(--warn) 8%, var(--color-surface));

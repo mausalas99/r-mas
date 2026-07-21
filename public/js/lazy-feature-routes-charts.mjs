@@ -194,8 +194,6 @@ export const chartsShellCloseProxies = {
 
 /** @type {Record<string, string>} */
 var tendenciasHandlerNames = {
-  openSesionIngresoTrendsSendModal: 'openSesionIngresoTrendsSendModal',
-  closeSesionIngresoTrendsSendModal: 'closeSesionIngresoTrendsSendModal',
   closeTendDetail: 'closeTendDetail',
   openTendGroupModal: 'openTendGroupModal',
   openTendGasoExtendedModal: 'openTendGasoExtendedModal',

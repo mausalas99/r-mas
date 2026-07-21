@@ -17,9 +17,6 @@ import {
 import { renderFundamentosStep } from './tour-flow-fundamentos-steps.mjs';
 import { tourState } from './tour-state.mjs';
 
-const NEO_OPTIONAL_LINE =
-  '<p style="margin:0 0 8px;font-size:13px;color:var(--text-muted);">R+ funciona sin Neo; módulo opcional.</p>';
-
 function syncTourDockBranchClass(branch) {
   var d = document.getElementById('tour-dock');
   if (!d) return;
@@ -77,10 +74,9 @@ function renderTourDockBadge(tourBranch, prog, idx, total) {
     return;
   }
   var branchLabel = tourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
-  var sub = prog.isCompanion
-    ? 'Extensión Neo · paso ' + prog.stepInChapter + ' de ' + prog.chapterSteps
-    : 'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle +
-      ' · paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
+  var sub =
+    'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle +
+    ' · paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
   badge.innerHTML =
     '<span class="tour-dock-badge-line tour-dock-badge-module">Paso ' + idx + ' de ' + total +
     ' · ' + escapeTourHtml(branchLabel) + '</span>' +
@@ -163,7 +159,7 @@ function renderTourStep() {
     return;
   }
 
-  renderFundamentosStep(tourState.tourStepId, bodyEl, nextBtn, NEO_OPTIONAL_LINE);
+  renderFundamentosStep(tourState.tourStepId, bodyEl, nextBtn);
   applyTourStepUserActionGate(nextBtn);
   finalizeTourStepRender(prevBtn);
 }

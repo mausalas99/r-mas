@@ -1,12 +1,4 @@
 // Tendencias — barrel: runtime registration + re-exports
-import { patients } from '../app-state.mjs';
-import { TEND_UNITS } from './tendencias-constants.mjs';
-import { registerSesionIngresoTrendsRuntime } from '../sesion-ingreso-trends-export.mjs';
-import {
-  closeSesionIngresoTrendsSendModal,
-  openSesionIngresoTrendsSendModal,
-  registerSesionIngresoTrendsSendRuntime,
-} from './sesion-ingreso-trends-send-modal.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
 import * as tc from './tendencias-core.mjs';
@@ -23,45 +15,6 @@ export function registerTendenciasRuntime(ctx) {
   tc.initTendGroupModal();
   tc.ensureTendHiddenModalDelegation();
   tc.ensureTendenciasClickDelegation();
-  registerSesionIngresoTrendsRuntime({
-    buildCatalog: tc.buildMergedTrendSeriesCatalog,
-    sectionLabel: tc.getTendSectionLabel,
-    refForSeries: function (history, sectionKey, fieldKey) {
-      return tc.tendRefForSeries(history, sectionKey, fieldKey, null);
-    },
-    unitForField: function (fieldKey) {
-      return TEND_UNITS[fieldKey] || '';
-    },
-  });
-  registerSesionIngresoTrendsSendRuntime({
-    showToast: function (msg, kind) {
-      rt.showToast(msg, kind);
-    },
-    getHistory: function () {
-      var pid = tc.aid();
-      return pid ? tc.tendParsedHistoryDesc(pid) : [];
-    },
-    getPatientLabel: function () {
-      var pid = tc.aid();
-      var patient = (patients || []).find(function (p) {
-        return p.id === pid;
-      });
-      return patient ? patient.nombre || patient.registro || '' : '';
-    },
-    getPatientId: function () {
-      return tc.aid() || '';
-    },
-    sendPayload: function (payload) {
-      if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
-        window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
-          if (ok) rt.showToast('Tendencias enviadas a Neo', 'ok');
-          else rt.showToast('No se pudo abrir Neo', 'warn');
-        });
-        return;
-      }
-      rt.showToast('Integración disponible solo en la app de escritorio', 'warn');
-    },
-  });
 }
 
 
@@ -104,8 +57,6 @@ export {
 } from './tendencias-core.mjs';
 
 export const tendenciasWindowHandlers = {
-  openSesionIngresoTrendsSendModal,
-  closeSesionIngresoTrendsSendModal,
   closeTendDetail: tc.closeTendDetail,
   openTendGroupModal: tc.openTendGroupModal,
   openTendGasoExtendedModal: tc.openTendGasoExtendedModal,

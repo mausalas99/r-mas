@@ -8,7 +8,6 @@ import {
   IC_CHAPTERS,
   getChapterForStep,
   getChapterProgressLabel,
-  NEO_COMPANION,
 } from '../../onboarding-curriculum.mjs';
 import { loadTourProgress } from '../../onboarding-progress.mjs';
 import {
@@ -20,7 +19,6 @@ import {
   fundamentosModuleCount,
   isFundamentosChapterId,
 } from '../../fundamentos-progress.mjs';
-import { isNeoCompanionStepComplete } from '../../neo-companion-progress.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
 import { needsClinicalOnboarding } from '../clinical-onboarding.mjs';
@@ -61,10 +59,7 @@ function moduleStatusLabel({ completed, inProgress, stepInChapter, chapterSteps 
   return 'Pendiente';
 }
 
-function buildModuleIndexBadge({ neoBadge, moduleIndex }) {
-  if (neoBadge) {
-    return '<span class="learn-hub-module-index learn-hub-module-index--neo" aria-hidden="true">N</span>';
-  }
+function buildModuleIndexBadge({ moduleIndex }) {
   if (moduleIndex != null) {
     return `<span class="learn-hub-module-index" aria-hidden="true">${moduleIndex}</span>`;
   }
@@ -77,8 +72,8 @@ function buildModuleStatusIcon({ completed, inProgress }) {
   return '';
 }
 
-function buildModuleResetBtn({ completed, allowReset, neoStepId, chapterId, branch, label }) {
-  if (!completed || !allowReset || neoStepId) return '';
+function buildModuleResetBtn({ completed, allowReset, chapterId, branch, label }) {
+  if (!completed || !allowReset) return '';
   return (
     `<button type="button" class="learn-hub-module-reset"` +
     ` data-learn-reset="${escapeHtml(chapterId)}" data-learn-reset-branch="${escapeHtml(branch)}"` +
@@ -99,8 +94,6 @@ function buildModuleRow({
   active,
   moduleIndex = null,
   allowReset = false,
-  neoStepId = null,
-  neoBadge = false,
 }) {
   const mins = estMinutesForSteps(chapterSteps);
   const status = moduleStatusLabel({ completed, inProgress, stepInChapter, chapterSteps });
@@ -112,19 +105,17 @@ function buildModuleRow({
   ]
     .filter(Boolean)
     .join(' ');
-  const indexBadge = buildModuleIndexBadge({ neoBadge, moduleIndex });
+  const indexBadge = buildModuleIndexBadge({ moduleIndex });
   const statusLine =
     chapterSteps > 0
       ? `<span class="learn-hub-module-meta">${chapterSteps} pasos · ~${mins} min</span>`
       : '';
   const statusIcon = buildModuleStatusIcon({ completed, inProgress });
-  const hitAttrs = neoStepId
-    ? ` data-learn-neo-step="${escapeHtml(neoStepId)}"`
-    : ` data-learn-chapter="${escapeHtml(chapterId)}" data-learn-branch="${escapeHtml(branch)}"`;
+  const hitAttrs =
+    ` data-learn-chapter="${escapeHtml(chapterId)}" data-learn-branch="${escapeHtml(branch)}"`;
   const resetBtn = buildModuleResetBtn({
     completed,
     allowReset,
-    neoStepId,
     chapterId,
     branch,
     label,
@@ -184,25 +175,6 @@ function guardiaModuleState(chapterId, progress, tourProgress) {
     stepInChapter,
     chapterSteps,
     active: inProgress && tourProgress && tourProgress.chapterId === chapterId,
-  };
-}
-
-function neoModuleState(startStepId, tourProgress) {
-  const chapterSteps = 1;
-  const neoIdx = NEO_COMPANION.stepIds.indexOf(startStepId);
-  const completed = isNeoCompanionStepComplete(startStepId);
-  let inProgress = false;
-  let stepInChapter = 0;
-  if (tourProgress?.mode === 'neo' && tourProgress.stepId === startStepId && !completed) {
-    inProgress = true;
-    stepInChapter = neoIdx >= 0 ? neoIdx + 1 : 1;
-  }
-  return {
-    completed,
-    inProgress,
-    stepInChapter,
-    chapterSteps,
-    active: inProgress,
   };
 }
 
@@ -321,7 +293,7 @@ function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, 
   );
   parts.push('<p class="learn-hub-fundamentos-sub">Sala</p>');
   parts.push('<div class="learn-hub-module-list">');
-  for (const mod of SALA_HUB_MODULES.filter((m) => m.chapterId && !m.companion)) {
+  for (const mod of SALA_HUB_MODULES.filter((m) => m.chapterId)) {
     const st = fundamentosModuleState(mod.chapterId, 'sala', fundamentosProgress, tourProgress);
     parts.push(
       buildModuleRow({
@@ -333,23 +305,6 @@ function renderLearnHubFundamentosTrack(parts, focusTrack, fundamentosProgress, 
         stepInChapter: st.stepInChapter,
         chapterSteps: st.chapterSteps,
         active: st.active,
-      })
-    );
-  }
-  for (const mod of SALA_HUB_MODULES.filter((m) => m.companion === 'neo')) {
-    const st = neoModuleState(mod.startStepId, tourProgress);
-    parts.push(
-      buildModuleRow({
-        chapterId: mod.id,
-        label: mod.label,
-        branch: 'sala',
-        completed: st.completed,
-        inProgress: st.inProgress,
-        stepInChapter: st.stepInChapter,
-        chapterSteps: st.chapterSteps,
-        active: st.active,
-        neoStepId: mod.startStepId,
-        neoBadge: true,
       })
     );
   }
@@ -422,15 +377,6 @@ function wireLearnHubBodyOnce(host) {
     const row = ev.target.closest('[data-learn-chapter]');
     if (row) {
       startLearnModule(row.getAttribute('data-learn-chapter'));
-      return;
-    }
-    const neo = ev.target.closest('[data-learn-neo-step]');
-    if (neo) {
-      const stepId = neo.getAttribute('data-learn-neo-step');
-      closeLearnHub();
-      void import('./tour-runtime.mjs').then((mod) => {
-        if (typeof mod.startNeoCompanionTour === 'function') mod.startNeoCompanionTour(stepId);
-      });
       return;
     }
     if (ev.target.closest('#learn-hub-btn-continue')) {

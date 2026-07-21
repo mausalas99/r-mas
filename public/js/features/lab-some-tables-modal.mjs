@@ -2,7 +2,6 @@ import {
   renderSomeReportTablesHtml,
   wireSomeTableExportButtons,
 } from '../labs-some-table.mjs';
-import { isCasiopeaTourSendBlocked } from '../tour-guards.mjs';
 
 let rt = {
   showToast() {},
@@ -14,38 +13,7 @@ let rt = {
   },
   syncLabCopyFab() {},
   syncLabOutputChrome() {},
-  openSesionIngresoSend() {},
 };
-
-let sendButtonWired = false;
-
-function triggerSesionIngresoSend(ev) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  if (isCasiopeaTourSendBlocked('lab')) {
-    rt.showToast('En el tutorial solo mostramos el botón; fuera del tour aquí se abre Neo.', 'info');
-    return;
-  }
-  rt.openSesionIngresoSend();
-}
-
-function wireSesionIngresoSendButton() {
-  if (sendButtonWired) return;
-  var backdrop = document.getElementById('lab-some-tables-backdrop');
-  if (!backdrop) return;
-  sendButtonWired = true;
-  backdrop.addEventListener(
-    'pointerup',
-    function (ev) {
-      if (ev.button !== 0) return;
-      if (!ev.target.closest('#lab-some-tables-send-sesion-btn, .lab-some-tables-send-btn')) return;
-      triggerSesionIngresoSend(ev);
-    },
-    true,
-  );
-}
 
 export function registerLabSomeTablesModalRuntime(ctx) {
   if (!ctx || typeof ctx !== 'object') return;
@@ -93,7 +61,6 @@ export function openLabSomeTablesModal() {
   backdrop.setAttribute('aria-hidden', 'false');
   document.documentElement.classList.add('lab-some-tables-modal-open');
   rt.syncLabCopyFab(false);
-  wireSesionIngresoSendButton();
 }
 
 export function closeLabSomeTablesModal() {

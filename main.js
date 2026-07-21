@@ -463,22 +463,6 @@ ipcMain.handle('open-external', async (_e, url) => {
   return true;
 });
 
-ipcMain.handle('sesion-ingreso-send', async (_e, payload) => {
-  try {
-    const json = JSON.stringify(payload || {});
-    if (json.length > 8000) {
-      const file = path.join(app.getPath('userData'), 'sesion-ingreso-pending.json');
-      await fs.promises.writeFile(file, json, 'utf8');
-      await shell.openExternal(`sesion-ingreso://import?file=${encodeURIComponent(file)}`);
-    } else {
-      await shell.openExternal(`sesion-ingreso://import?payload=${encodeURIComponent(json)}`);
-    }
-    return true;
-  } catch (_e) {
-    return false;
-  }
-});
-
 ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.handle('get-native-runtime-status', () => {

@@ -171,13 +171,15 @@ function onboardingAdvanceAfterParse() {
 
 function onboardingAdvanceAfterSend() {
   if (!tourState.guidedTourActive) return;
-  if (tourState.tourStepId === 'lab_view') {
-    clearAllTourSpotlights();
-    tourState.tourStepId = 'sala_casiopea_lab';
-    publishTourGuardContext();
-    applyTourTargetForStep(tourState.tourStepId);
-    renderTourStep();
-  }
+  if (tourState.tourStepId !== 'lab_view') return;
+  var steps = getGuidedTourSteps();
+  var i = steps.indexOf('lab_view');
+  if (i < 0 || i + 1 >= steps.length) return;
+  clearAllTourSpotlights();
+  tourState.tourStepId = steps[i + 1];
+  publishTourGuardContext();
+  applyTourTargetForStep(tourState.tourStepId);
+  renderTourStep();
 }
 
 function tourAfterBulkLabParse(_blocks) {

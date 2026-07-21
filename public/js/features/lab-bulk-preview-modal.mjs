@@ -39,28 +39,37 @@ function renderPreviewSummary(blocks) {
   var processable = blocks.filter(function (b) {
     return b.canProcess && b.okReportCount > 0 && b.patient;
   }).length;
-  var issues = blocks.filter(function (b) {
-    return b.status !== 'ok';
-  }).length;
+  var badReports = blocks.reduce(function (acc, b) {
+    var n = (b.reports || []).filter(function (r) {
+      return !r.ok;
+    }).length;
+    return acc + n;
+  }, 0);
   var missing = blocks.filter(function (b) {
     return shouldOfferBulkPreviewAddPatient(b);
   }).length;
 
-  var parts = [
-    blocks.length + ' bloque' + (blocks.length === 1 ? '' : 's'),
-    okReports + ' reporte' + (okReports === 1 ? '' : 's') + ' válido' + (okReports === 1 ? '' : 's'),
-    sets + ' conjunto' + (sets === 1 ? '' : 's') + ' a guardar',
-  ];
+  var parts = [];
   if (processable) {
-    parts.push(processable + ' paciente' + (processable === 1 ? '' : 's') + ' listo' + (processable === 1 ? '' : 's'));
+    parts.push(
+      processable + ' paciente' + (processable === 1 ? '' : 's') + ' listo' + (processable === 1 ? '' : 's')
+    );
+  }
+  parts.push(okReports + ' reporte' + (okReports === 1 ? '' : 's'));
+  parts.push(sets + ' conjunto' + (sets === 1 ? '' : 's'));
+  if (badReports) {
+    parts.push(badReports + ' omitido' + (badReports === 1 ? '' : 's'));
   }
   if (missing) {
     parts.push(missing + ' sin registrar');
   }
-  if (issues && !missing) {
-    parts.push(issues + ' con aviso' + (issues === 1 ? '' : 's'));
-  }
   return parts.join(' · ');
+}
+
+function countBadReports(block) {
+  return (block.reports || []).filter(function (r) {
+    return !r.ok;
+  }).length;
 }
 
 function renderReportIssues(block) {
@@ -68,33 +77,45 @@ function renderReportIssues(block) {
     return !r.ok;
   });
   if (!bad.length) return '';
+  var maxShow = 3;
+  var shown = bad.slice(0, maxShow);
+  var more = bad.length - shown.length;
   return (
-    '<ul class="lab-bulk-preview-issues">' +
-    bad
+    '<details class="lab-bulk-preview-issues">' +
+    '<summary>' +
+    bad.length +
+    ' reporte' +
+    (bad.length === 1 ? '' : 's') +
+    ' omitido' +
+    (bad.length === 1 ? '' : 's') +
+    ' (ruido del portal)</summary>' +
+    '<ul>' +
+    shown
       .map(function (r, idx) {
-        var msg = r.error || 'No se pudo parsear el reporte';
+        var msg = r.error || 'No se pudo parsear';
         var label = r.expediente ? 'Exp. ' + r.expediente : 'Reporte ' + (idx + 1);
-        return '<li><strong>' + esc(label) + ':</strong> ' + esc(msg) + '</li>';
+        return '<li><span class="lab-bulk-preview-issue-label">' + esc(label) + '</span> ' + esc(msg) + '</li>';
       })
       .join('') +
-    '</ul>'
+    (more > 0 ? '<li>+' + more + ' más</li>' : '') +
+    '</ul></details>'
   );
 }
 
-function renderStatusCell(block, idx) {
-  var statusHtml =
+function renderRowActions(block, idx) {
+  var html =
     '<span class="lab-bulk-preview-status ' +
     statusClass(block.status) +
     '">' +
     esc(bulkPreviewStatusLabel(block.status)) +
     '</span>';
   if (shouldOfferBulkPreviewAddPatient(block)) {
-    statusHtml +=
+    html +=
       '<button type="button" class="lab-bulk-preview-add-pill" data-bulk-block-idx="' +
       idx +
-      '" title="Registrar paciente con datos del reporte">Agregar paciente</button>';
+      '" title="Registrar paciente con datos del reporte">Agregar</button>';
   }
-  return '<div class="lab-bulk-preview-status-cell">' + statusHtml + '</div>';
+  return html;
 }
 
 export function resolveBulkPreviewConfirmState(blocks) {
@@ -112,54 +133,50 @@ export function resolveBulkPreviewConfirmState(blocks) {
   };
 }
 
-function renderPreviewTable(blocks) {
-  var rows = blocks
-    .map(function (block, idx) {
-      var issues = renderReportIssues(block);
-      return (
-        '<tr class="lab-bulk-preview-row lab-bulk-preview-row--' +
-        esc(block.status || 'unknown') +
-        '">' +
-        '<td>' +
-        (idx + 1) +
-        '</td>' +
-        '<td><strong>' +
-        esc(block.patientName || '—') +
-        '</strong>' +
-        (block.primaryExpediente
-          ? '<span class="lab-bulk-preview-exp">Exp. ' + esc(block.primaryExpediente) + '</span>'
-          : '') +
-        '</td>' +
-        '<td>' +
-        (block.reportCount || 0) +
-        ' <span class="lab-bulk-preview-muted">(' +
-        (block.okReportCount || 0) +
-        ' ok)</span></td>' +
-        '<td>' +
-        esc(block.daysLabel || '—') +
-        '</td>' +
-        '<td>' +
-        (block.setsAfterMerge || 0) +
-        '</td>' +
-        '<td>' +
-        renderStatusCell(block, idx) +
-        '</td>' +
-        '</tr>' +
-        (issues
-          ? '<tr class="lab-bulk-preview-detail-row"><td colspan="6">' + issues + '</td></tr>'
-          : '')
-      );
-    })
-    .join('');
+function renderBlockMeta(block) {
+  var parts = [];
+  var ok = block.okReportCount || 0;
+  var total = block.reportCount || 0;
+  var sets = block.setsAfterMerge || 0;
+  var omitted = countBadReports(block);
+  if (ok) parts.push(ok + '/' + total + ' reportes');
+  else if (total) parts.push(total + ' reportes');
+  if (sets) parts.push(sets + ' conjunto' + (sets === 1 ? '' : 's'));
+  if (block.daysLabel && block.daysLabel !== '—') parts.push(block.daysLabel);
+  if (omitted) parts.push(omitted + ' omitido' + (omitted === 1 ? '' : 's'));
+  return parts.join(' · ');
+}
 
+function renderPreviewList(blocks) {
   return (
-    '<table class="lab-bulk-preview-table">' +
-    '<thead><tr>' +
-    '<th>#</th><th>Paciente</th><th>Reportes</th><th>Días</th><th>Conjuntos</th><th>Estado</th>' +
-    '</tr></thead>' +
-    '<tbody>' +
-    rows +
-    '</tbody></table>'
+    '<ul class="lab-bulk-preview-list">' +
+    blocks
+      .map(function (block, idx) {
+        var issues = renderReportIssues(block);
+        return (
+          '<li class="lab-bulk-preview-row lab-bulk-preview-row--' +
+          esc(block.status || 'unknown') +
+          '">' +
+          '<div class="lab-bulk-preview-row-main">' +
+          '<div class="lab-bulk-preview-row-text">' +
+          '<div class="lab-bulk-preview-row-name">' +
+          esc(block.patientName || '—') +
+          '</div>' +
+          '<div class="lab-bulk-preview-row-meta">' +
+          (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) + ' · ' : '') +
+          esc(renderBlockMeta(block)) +
+          '</div>' +
+          '</div>' +
+          '<div class="lab-bulk-preview-row-aside">' +
+          renderRowActions(block, idx) +
+          '</div>' +
+          '</div>' +
+          (issues || '') +
+          '</li>'
+        );
+      })
+      .join('') +
+    '</ul>'
   );
 }
 
@@ -168,7 +185,7 @@ function paintModalContent(blocks) {
   var body = document.getElementById('lab-bulk-preview-body');
   var btn = document.getElementById('lab-bulk-preview-confirm');
   if (summary) summary.textContent = renderPreviewSummary(blocks);
-  if (body) body.innerHTML = renderPreviewTable(blocks);
+  if (body) body.innerHTML = renderPreviewList(blocks);
 
   var confirmState = resolveBulkPreviewConfirmState(blocks);
   if (btn) {

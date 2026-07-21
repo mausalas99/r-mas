@@ -417,8 +417,6 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     copiarLabsAlPortapapeles: 'copiarLabsAlPortapapeles',
     openLabSomeTablesModal: 'openLabSomeTablesModal',
     closeLabSomeTablesModal: 'closeLabSomeTablesModal',
-    openSesionIngresoSendModal: 'openSesionIngresoSendModal',
-    closeSesionIngresoSendModal: 'closeSesionIngresoSendModal',
     closeLabHistoryMoreMenu: 'closeLabHistoryMoreMenu',
     openLabPatientPicker: 'openLabPatientPicker',
     openLabHistoryDedupeReview: 'openLabHistoryDedupeReview',

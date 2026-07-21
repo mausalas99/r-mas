@@ -1,5 +1,9 @@
 // Gasometría extendida (interpretación Ácido-Base auxiliar para Tendencias)
-import { computeAnionGapValue_ } from './labs.js';
+import {
+  computeAnionGapValue_,
+  computeAlbuminCorrectedAnionGapValue_,
+  computeUrinaryAnionGapValue_,
+} from './labs.js';
 import {
   toFiniteNum_,
   buildPhStep_,
@@ -7,6 +11,7 @@ import {
   classifyPrimaryDisorder_,
   buildCompensation_,
   buildAnionGapStep_,
+  buildUrinaryAnionGapStep_,
   buildDeltaDeltaStep_,
   buildOxygenationStep_,
   buildSummaryLines_,
@@ -22,6 +27,10 @@ import { buildPrimaryRationale_ } from './gaso-extended-rationale.mjs';
  * @property {unknown} [na]
  * @property {unknown} [cl]
  * @property {unknown} [alb]
+ * @property {unknown} [naU]
+ * @property {unknown} [kU]
+ * @property {unknown} [clU]
+ * @property {unknown} [uag]
  * @property {unknown} [fio2]
  * @property {unknown} [ageMonths]
  */
@@ -39,11 +48,22 @@ export function evaluateGasoExtended(input) {
   var na = toFiniteNum_(inp.na);
   var cl = toFiniteNum_(inp.cl);
   var alb = toFiniteNum_(inp.alb);
+  var naU = toFiniteNum_(inp.naU);
+  var kU = toFiniteNum_(inp.kU);
+  var clU = toFiniteNum_(inp.clU);
   var ageMonths = toFiniteNum_(inp.ageMonths);
   var fio2 = toFiniteNum_(inp.fio2);
   if (fio2 == null || !isFinite(fio2)) fio2 = 0.21;
 
-  var agVal = computeAnionGapValue_(strLab_(na), strLab_(cl), strLab_(hco3), strLab_(alb)) ?? null;
+  var agVal = computeAnionGapValue_(strLab_(na), strLab_(cl), strLab_(hco3)) ?? null;
+  var agcVal =
+    computeAlbuminCorrectedAnionGapValue_(strLab_(na), strLab_(cl), strLab_(hco3), strLab_(alb)) ??
+    null;
+  var uagVal = toFiniteNum_(inp.uag);
+  if (uagVal == null) {
+    uagVal = computeUrinaryAnionGapValue_(strLab_(naU), strLab_(kU), strLab_(clU)) ?? null;
+  }
+
   var phStep = buildPhStep_(pH);
 
   var metaLow = hco3 != null && hco3 < 22;
@@ -72,10 +92,19 @@ export function evaluateGasoExtended(input) {
   };
 
   var compensation = buildCompensation_(hco3, metaLow, pCO2, winterCenter);
-  var anionGap = buildAnionGapStep_(agVal);
-  var deltaDelta = buildDeltaDeltaStep_(agVal, hco3);
+  var anionGap = buildAnionGapStep_(agVal, agcVal);
+  var urinaryAnionGap = buildUrinaryAnionGapStep_(uagVal);
+  var deltaDelta = buildDeltaDeltaStep_(agVal, hco3, agcVal);
   var oxygenation = buildOxygenationStep_(pO2, pCO2, fio2, ageMonths);
-  var summaryLines = buildSummaryLines_({ phStep, primary, compensation, anionGap, deltaDelta, oxygenation });
+  var summaryLines = buildSummaryLines_({
+    phStep,
+    primary,
+    compensation,
+    anionGap,
+    urinaryAnionGap,
+    deltaDelta,
+    oxygenation,
+  });
 
   return {
     steps: {
@@ -83,6 +112,7 @@ export function evaluateGasoExtended(input) {
       primary,
       compensation,
       anionGap,
+      urinaryAnionGap,
       deltaDelta,
       oxygenation,
     },

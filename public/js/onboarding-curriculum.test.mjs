@@ -5,7 +5,6 @@ import {
   getSalaTourSteps,
   getInterconsultaTourSteps,
   getGuardiaV7TourSteps,
-  getNeoCompanionSteps,
   getQuickRouteTourSteps,
   getChapterForStep,
   getChapterProgressLabel,
@@ -13,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 9 with guardia-v7 and quick-route tracks', () => {
-  assert.equal(CURRICULUM_VERSION, 9);
+test('CURRICULUM_VERSION is 10 with guardia-v7 and quick-route tracks', () => {
+  assert.equal(CURRICULUM_VERSION, 10);
 });
 
 test('getSalaTourSteps has 22 base steps without Neo or Manejo', () => {
@@ -62,10 +61,6 @@ test('getChapterProgressLabel quick-route uses linear index', () => {
 test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('estado_actual_charts', 'sala'), 'estado_actual_review');
   assert.equal(migrateTourStepId('lab_view', 'sala'), 'lab_view');
-});
-
-test('getNeoCompanionSteps is separate', () => {
-  assert.deepEqual(getNeoCompanionSteps(), ['sala_casiopea_lab', 'sala_casiopea_trends']);
 });
 
 test('getChapterForStep maps servicio_default to ch-patient-lab', () => {

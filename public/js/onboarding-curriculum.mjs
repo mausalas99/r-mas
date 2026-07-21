@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 9;
+export const CURRICULUM_VERSION = 10;
 
 export const SALA_CHAPTERS = [
   {
@@ -47,7 +47,7 @@ export const SALA_CHAPTERS = [
   },
 ];
 
-/** Interconsulta: lab block first (sin Neo; sin servicio_default en v1). */
+/** Interconsulta: lab block first (sin servicio_default en v1). */
 export const IC_CHAPTERS = [
   {
     id: 'ch-ic-lab',
@@ -84,12 +84,6 @@ export const IC_CHAPTERS = [
     stepIds: ['livesync_desktop', 'livesync_mobile', 'wrap'],
   },
 ];
-
-export const NEO_COMPANION = {
-  companion: 'neo',
-  title: 'Neo (app companion)',
-  stepIds: ['sala_casiopea_lab', 'sala_casiopea_trends'],
-};
 
 export const GUARDIA_V7_CHAPTERS = [
   {
@@ -209,16 +203,11 @@ export function getQuickRouteTourSteps() {
   return QUICK_ROUTE_CHAPTERS.flatMap((c) => c.stepIds.slice());
 }
 
-export function getNeoCompanionSteps() {
-  return NEO_COMPANION.stepIds.slice();
-}
-
 export function getChapterForStep(stepId, branch) {
   const chapters = chaptersForBranch(branch);
   for (const ch of chapters) {
     if (ch.stepIds.includes(stepId)) return ch;
   }
-  if (NEO_COMPANION.stepIds.includes(stepId)) return { id: 'ch-neo', title: NEO_COMPANION.title };
   return { id: 'unknown', title: '' };
 }
 
@@ -241,17 +230,6 @@ export function getChapterProgressLabel(stepId, branch) {
   const chapters = chaptersForBranch(branch);
   const chapter = chapters.find((c) => c.id === ch.id);
   if (!chapter) {
-    const neoIdx = NEO_COMPANION.stepIds.indexOf(stepId);
-    if (neoIdx >= 0) {
-      return {
-        chapterTitle: NEO_COMPANION.title,
-        stepInChapter: neoIdx + 1,
-        chapterSteps: NEO_COMPANION.stepIds.length,
-        chapterIndex: 0,
-        chapterCount: 1,
-        isCompanion: true,
-      };
-    }
     const linear =
       branch === 'guardia-v7'
         ? getGuardiaV7TourSteps()
@@ -293,8 +271,7 @@ export function getTourStepsForChapter(chapterId, branch) {
   return ch ? ch.stepIds.slice() : [];
 }
 
-export function isValidStepForBranch(stepId, branch, mode) {
-  if (mode === 'neo') return NEO_COMPANION.stepIds.includes(stepId);
+export function isValidStepForBranch(stepId, branch, _mode) {
   if (branch === 'guardia-v7') return getGuardiaV7TourSteps().includes(stepId);
   if (branch === 'quick-route') return getQuickRouteTourSteps().includes(stepId);
   const steps = branch === 'interconsulta' ? getInterconsultaTourSteps() : getSalaTourSteps();

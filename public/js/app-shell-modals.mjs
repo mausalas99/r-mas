@@ -16,8 +16,6 @@ import { chartsShellCloseProxies } from './lazy-feature-routes.mjs';
 import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
 import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
 import { closeLabRepoImportModal } from './features/lab-repo-import.mjs';
-import { closeSesionIngresoSendModal } from './features/sesion-ingreso-send-modal.mjs';
-import { closeSesionIngresoTrendsSendModal } from './features/sesion-ingreso-trends-send-modal.mjs';
 import {
   closeUnifiedSearch,
   closeExtraTemplatesManager,
@@ -148,6 +146,22 @@ function wireModalDismissLayers(registry) {
   regOpenClass(registry, 'lab-repo-import-modal', closeLabRepoImportModal, {
     panelSelector: '.lab-repo-import-modal',
   });
+  regOpenClass(
+    registry,
+    'lab-repo-batch-modal',
+    function closeLabRepoBatchModalProxy() {
+      if (typeof window.closeLabRepoBatchModal === 'function') {
+        window.closeLabRepoBatchModal();
+        return;
+      }
+      var modal = document.getElementById('lab-repo-batch-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.hidden = true;
+    },
+    { panelSelector: '.lab-repo-batch-modal' }
+  );
   regOpenClass(registry, 'lab-bulk-tour-hint-backdrop', closeLabBulkTourHintModal, {
     panelSelector: '.lab-bulk-tour-hint-modal',
   });
@@ -157,15 +171,6 @@ function wireModalDismissLayers(registry) {
   regOpenClass(registry, 'lab-some-tables-backdrop', closeLabSomeTablesModal, {
     panelSelector: '.lab-some-tables-modal',
   });
-  regOpenClass(registry, 'sesion-ingreso-send-backdrop', closeSesionIngresoSendModal, {
-    panelSelector: '.sesion-ingreso-send-modal',
-  });
-  regOpenClass(
-    registry,
-    'sesion-ingreso-trends-send-backdrop',
-    closeSesionIngresoTrendsSendModal,
-    { panelSelector: '.sesion-ingreso-send-modal' }
-  );
   regOpenClass(registry, 'onboarding-intro-backdrop', hideTourIntroModal);
 }
 

@@ -1,4 +1,4 @@
-/** Guided tours, neo companion, mini tours, demo patient hooks. */
+/** Guided tours, mini tours, demo patient hooks. */
 import { getFirstStepIdForChapter } from '../../onboarding-curriculum.mjs';
 import {
   isPresentationModeActive,

@@ -35,4 +35,4 @@ export {
   scheduleTourDemoPatientRegistrationFromLab,
   resetAndStartOnboarding,
 } from './tour-flow-onboarding.mjs';
-export { resumeGuidedTourFromProgress, startNeoCompanionTour } from './tour-flow-resume.mjs';
+export { resumeGuidedTourFromProgress } from './tour-flow-resume.mjs';

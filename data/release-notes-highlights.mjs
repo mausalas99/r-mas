@@ -2137,14 +2137,9 @@ export var RELEASE_NOTES_HIGHLIGHTS = {
   ],
   '5.2.0': [
     {
-      title: 'Integración Neo',
-      body:
-        'Envía tablas SOME y tendencias a la app Neo (antes Sesión de Ingreso) con los botones Enviar a Neo.',
-    },
-    {
       title: 'Tutorial Sala',
       body:
-        'El tour señala dónde enviar laboratorio y gráficas; durante el tutorial no se abre Neo.',
+        'Tour guiado de paciente, laboratorio y tendencias desde Aprender R+.',
     },
   ],
   '5.1.0': [

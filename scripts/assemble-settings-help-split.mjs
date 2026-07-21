@@ -6,7 +6,7 @@ import path from 'path';
 const root = path.join(process.cwd(), 'public/js/features/settings-help');
 const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
 
-const TOUR_HEADER = `/** Guided tours, neo companion, mini tours, demo patient hooks. */
+const TOUR_HEADER = `/** Guided tours, mini tours, demo patient hooks. */
 import {
   getTourSteps,
   getTourTarget,
@@ -16,7 +16,6 @@ import {
   getChapterProgressLabel,
   getChapterForStep,
   getFirstStepIdForChapter,
-  getNeoCompanionSteps,
 } from '../../onboarding-curriculum.mjs';
 import {
   loadTourProgress,
@@ -78,7 +77,6 @@ import { renderLabHistoryPanel } from '../lab-panel.mjs';
 import { limpiarReporte } from '../lab-panel.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';
-import { closeSesionIngresoTrendsSendModal } from '../sesion-ingreso-trends-send-modal.mjs';
 import { closeSOAPModal } from '../soap-estado.mjs';
 import { procesarLabs } from '../../labs.js';
 import { extractParsedValues } from '../diagrams-parse.mjs';

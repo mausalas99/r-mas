@@ -17,10 +17,9 @@ export function loadTourProgress(storage = localStorage) {
         : p.branch === 'quick-route' ? 'quick-route'
           : p.branch === 'interconsulta' ? 'interconsulta'
             : 'sala';
-    const mode = p.mode === 'neo' ? 'neo' : 'base';
     const stepId = migrateTourStepId(p.stepId, branch);
-    if (!isValidStepForBranch(stepId, branch, mode)) return null;
-    return { ...p, branch, stepId };
+    if (!isValidStepForBranch(stepId, branch, 'base')) return null;
+    return { ...p, branch, stepId, mode: 'base' };
   } catch {
     return null;
   }
@@ -38,7 +37,7 @@ export function saveTourProgress(payload, storage = localStorage) {
     stepId: payload.stepId,
     chapterId: payload.chapterId || null,
     moduleOnly: !!payload.moduleOnly,
-    mode: payload.mode === 'neo' ? 'neo' : 'base',
+    mode: 'base',
     curriculumVersion: CURRICULUM_VERSION,
     updatedAt: Date.now(),
   };

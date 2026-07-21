@@ -67,8 +67,6 @@ html.electron-macos-inset-bar .tend-group-backdrop:not([style*="display: none"])
 }
 /* Modales grandes: quedar bajo la franja de semáforos / drag nativo */
 html.electron-macos-inset-bar #lab-some-tables-backdrop.modal-backdrop.open,
-html.electron-macos-inset-bar #sesion-ingreso-send-backdrop.modal-backdrop.open,
-html.electron-macos-inset-bar #sesion-ingreso-trends-send-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #med-pharm-modal-full.med-pharm-modal-backdrop.open,
 html.electron-macos-inset-bar #censo-preview-backdrop.censo-preview-backdrop.open,
 html.electron-macos-inset-bar #entrega-modal-backdrop.entrega-modal-backdrop.open {

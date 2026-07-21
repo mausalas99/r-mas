@@ -83,7 +83,6 @@ export function buildSettingsHelpWindowHandlersLazy(ensureSettingsHelpLoaded) {
       insertLabTourSecondPatientExample: 'insertLabTourSecondPatientExample',
       closeLabBulkTourHintModal: 'closeLabBulkTourHintModal',
       resumeGuidedTourFromProgress: 'resumeGuidedTourFromProgress',
-      startNeoCompanionTour: 'startNeoCompanionTour',
       openLearnHub: 'openLearnHub',
       closeLearnHub: 'closeLearnHub',
       dismissGuardiaV7UpgradeCard: 'dismissGuardiaV7UpgradeCard',

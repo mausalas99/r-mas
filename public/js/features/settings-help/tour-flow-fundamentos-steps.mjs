@@ -87,14 +87,6 @@ function renderLabView(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
-function renderSalaCasiopeaLab(bodyEl, nextBtn, neoOptionalLine) {
-  bodyEl.innerHTML =
-    neoOptionalLine +
-    '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado arriba a la derecha del laboratorio). Dentro verás <strong>Enviar a Neo</strong> para el paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte).</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El recuadro del tutorial se movió a la izquierda para no tapar el botón. Pulsa <strong>Siguiente</strong> cuando lo hayas visto.</p>';
-  showNext(nextBtn);
-}
-
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p>' +
@@ -145,14 +137,6 @@ function renderSalaTendChart(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
-  showNext(nextBtn);
-}
-
-function renderSalaCasiopeaTrends(bodyEl, nextBtn, neoOptionalLine) {
-  bodyEl.innerHTML =
-    neoOptionalLine +
-    '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Neo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
   showNext(nextBtn);
 }
 
@@ -272,7 +256,6 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   map_lab_teaser: renderMapLabTeaser,
   lab_parse: renderLabParse,
   lab_view: renderLabView,
-  sala_casiopea_lab: renderSalaCasiopeaLab,
   ic_expediente_tabs: renderIcExpedienteTabs,
   sala_expediente_tabs: renderSalaExpedienteTabs,
   historia_clinica: renderHistoriaClinica,
@@ -281,7 +264,6 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   ic_exports: renderIcExports,
   sala_tend: renderSalaTend,
   sala_tend_chart: renderSalaTendChart,
-  sala_casiopea_trends: renderSalaCasiopeaTrends,
   sala_soap: renderSalaSoap,
   sala_med: renderSalaMed,
   profile: renderProfile,
@@ -299,13 +281,13 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   wrap: renderWrap,
 };
 
-function renderFundamentosStep(stepId, bodyEl, nextBtn, neoOptionalLine) {
+function renderFundamentosStep(stepId, bodyEl, nextBtn) {
   var handler = FUNDAMENTOS_STEP_HANDLERS[stepId];
   if (!handler) {
     hideTourDock();
     return;
   }
-  handler(bodyEl, nextBtn, neoOptionalLine);
+  handler(bodyEl, nextBtn);
 }
 
 export { renderFundamentosStep };

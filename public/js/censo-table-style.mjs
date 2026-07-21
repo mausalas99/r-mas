@@ -1,6 +1,6 @@
 /** Códigos de panel de laboratorio reconocidos en censo PDF/HTML. */
 export const CENSO_LAB_PANEL_CODES =
-  'BH|QS|ELECTROLITOS|PFHs|PFH|GASES|COAG|ORINA|ESC|LIPASA|PROCALCITONINA|HCG|TROP';
+  'BH|QS|ELECTROLITOS|PFHs|PFH|GASES|COAG|ORINA|ESC|LIPASA|PROCALCITONINA|HCG|TROP|GS|SEROL';
 
 const LAB_DATE_RE = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
 const LAB_DATE_LEAD_RE = /^(\d{1,2}\/\d{1,2}\/\d{2,4})\s+(.+)$/;

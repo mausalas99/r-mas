@@ -196,7 +196,6 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
     '</button>' +
     ocultosBtn +
     gasoBtn +
-    '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button>' +
     '</div>'
   );
 }

@@ -40,7 +40,30 @@ test('Trastorno mixto alcalino: HCO3 bajo y PaCO2 bajo frente a Winter', () => {
 });
 
 test('Anión gap reutiliza computeAnionGapValue_ de labs.js', () => {
-  const agFromLabs = computeAnionGapValue_('140', '103', '17', '---');
+  const agFromLabs = computeAnionGapValue_('140', '103', '17');
   const r = evaluateGasoExtended({ na: 140, cl: 103, hco3: 17 });
   assert.equal(r.steps.anionGap.value, Math.round((agFromLabs + Number.EPSILON) * 10) / 10);
+});
+
+test('AGc y UAG en evaluateGasoExtended', () => {
+  const r = evaluateGasoExtended({
+    na: 134.5,
+    cl: 102.3,
+    hco3: 17.1,
+    alb: 2.1,
+    naU: 40,
+    kU: 22,
+    clU: 34,
+  });
+  assert.equal(r.steps.anionGap.value, 15.1);
+  assert.equal(r.steps.anionGap.corrected, 19.8);
+  assert.equal(r.steps.urinaryAnionGap.value, 28);
+  assert.match(r.steps.urinaryAnionGap.interpretation, /positivo|ATR/i);
+  assert.match(r.steps.anionGap.interpretation, /AGc|albúmina/i);
+});
+
+test('UAG negativo interpreta excreción de NH₄⁺', () => {
+  const r = evaluateGasoExtended({ uag: -15 });
+  assert.equal(r.steps.urinaryAnionGap.value, -15);
+  assert.match(r.steps.urinaryAnionGap.interpretation, /negativo|NH/i);
 });

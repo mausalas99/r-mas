@@ -6,6 +6,7 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-07-21 | CP1 lab-repo batch mi equipo + queue | `lab-repo-batch-*.mjs`, `lab-bulk-paste.mjs`, `lab-bulk-preview-modal.mjs`, overlays, `lab.css` | Morning bulk update for team patients; sidebar queue; silent import; preview UX fix; auto-dismiss queue. |
 | 2026-07-15 | Release 7.6.9 prepare — gasometría highlight fix | `labs-gaso-section.mjs`, `lab-history-maint.mjs`, `lab-panel-history.mjs`, `RELEASE_NOTES_7.6.9.txt`, `release-notes-highlights.mjs` | Fix reprocess stripping GASES asterisks; bump 7.6.9; metrics:check OK; release notes + highlights filled. |
 | 2026-07-06 | Equipos push return fix (local dev) | `cloud/equipos-worker/src/{push,routes}.js`, `public/equipos/equipos-sw-push.js`, `equipos-push.mjs` | Push send loop deduped into logged helper (sent/pruned/failed per sub); `/return`+push routes await dispatch on localhost (wrangler dev drops `waitUntil`); SW v20 with push-event log. Verified: return → FCM 201 `lumify_return`. |
 | 2026-07-02 | LAN bundled auto-connect | `lan-ward-host-registry.mjs`, `panel-scan-hosts.mjs`, `lan-shift-pin-connect.mjs`, `lan-network-change.mjs` | Clients without bearer probe shipped ward URL; scan loop + boot/roam bypass; no PIN/code entry. |
@@ -41,6 +42,37 @@ Chronological record of documentation and integration work. Format per `document
 | 2026-06-10 | Perfil histórico ventana dinámica | `med-pharm-view-window.mjs`, `med-pharm-profile-panel.mjs`, `pase-board.mjs` | Cross-mes grilla + FAB Copiar context-aware; spec/plan 2026-06-10 |
 | 2026-06-10 | Release 7.2.9 prepare | `med-receta-core.mjs`, `medications.mjs`, `estado-actual-*`, `docs/RELEASE_NOTES_7.2.9.txt` | Manejo parser dietas/P2, propuesta dieta EA, bump + commit |
 | 2026-06-08 | Docs hub + North Star integration | `docs/core/`, `.cursor/rules/` | Agent-first documentation library wired to Cursor rules |
+
+---
+
+## [2026-07-21] - CP1 Actualizar labs de mi equipo (batch lab-repo)
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/features/lab-repo-batch-import.mjs` (new) — UI + sequential fetch + sidebar queue
+- `public/js/features/lab-repo-batch-model.mjs` (new) — pure helpers + jobs
+- `public/js/features/lab-repo-batch-model.test.mjs` (new)
+- `public/js/features/lab-panel.mjs` — windowHandlers wiring
+- `public/js/features/lab-bulk-preview-modal.mjs` — quiet list UI (no nested cards)
+- `public/js/lab-bulk-paste.mjs` — “Varios expedientes” only if 2+ census patients
+- `public/js/lab-bulk-paste.test.mjs` — mixed-expediente / separator goldens
+- `public/partials/chrome/overlays.html`, `public/partials/layout/app-body.html`
+- `public/styles/lab.css` — batch modal + preview + queue
+- `public/js/app-shell-modals.mjs` — Escape proxy for batch modal
+- `docs/features/features-index.md`
+
+**Database changes:** None
+
+**Summary:** Implemented morning “Actualizar labs de mi equipo”: patient set = mi equipo only, checkboxes opt-out, sequential existing `labRepoFetch` IPC, sidebar job queue that auto-dismisses ~1.6s after completion. Fixed false “Varios expedientes” (batch join without `--- PACIENTE ---` + foreign portal noise). Preview/modal layout fixed — never use `<header>` inside modals (inherits app chrome grid from `layout.css`). Work is uncommitted.
+
+**Next (proposed backlog, not started):**
+- CP2 — Cola documentación + inbox de labs del turno
+- CP3 — Paste-anywhere / Procesar inteligente
+- CP4 — Nota en 1 gesto post-labs
+- CP5 — Navegación (⌘K actions, Pase, pins)
+- CP6 — Entrega prep checklist
+- CP7 — Cultivo queue + EA→clipboard
 
 ---
 
