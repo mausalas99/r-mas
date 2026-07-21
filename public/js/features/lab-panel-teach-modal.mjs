@@ -23,6 +23,9 @@ import {
   renderTeachRowsPage,
   wireTeachRowsPage,
 } from './lab-panel-teach-page-rows.mjs';
+import { queueLabPanelOverlayLanSync } from './lan/lab-panel-overlay-sync.mjs';
+
+export { queueLabPanelOverlayLanSync };
 
 /** @type {null | {
  *   sourceText: string,
@@ -37,10 +40,6 @@ import {
 var session = null;
 var wired = false;
 
-/** Stub until Task 8 wires LAN push. */
-export function queueLabPanelOverlayLanSync(_record) {
-  /* no-op until Task 8 */
-}
 
 function getSession() {
   return session;

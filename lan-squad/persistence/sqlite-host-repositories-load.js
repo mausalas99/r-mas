@@ -19,7 +19,14 @@ function parseBundleEntryRow(er) {
   return entry;
 }
 
+function hydrateLabPanelOverlay(entities) {
+  const rec = entities && entities.labPanelOverlay;
+  if (rec && Array.isArray(rec.data)) return rec.data;
+  return [];
+}
+
 function bundleFromSqlRow(row) {
+  const entities = row.entities_json ? JSON.parse(row.entities_json) : {};
   return {
     revision: Number(row.revision || 0),
     entityVersions: row.entity_versions_json ? JSON.parse(row.entity_versions_json) : {},
@@ -31,7 +38,8 @@ function bundleFromSqlRow(row) {
     committedAt: row.committed_at || null,
     audit_log: row.audit_log_json ? JSON.parse(row.audit_log_json) : [],
     uploadedByClientId: row.uploaded_by_client_id || '',
-    entities: row.entities_json ? JSON.parse(row.entities_json) : {},
+    entities,
+    labPanelOverlay: hydrateLabPanelOverlay(entities),
     entries: [],
   };
 }

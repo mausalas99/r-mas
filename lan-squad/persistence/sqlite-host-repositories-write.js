@@ -8,6 +8,23 @@ function entryJsonForSql(entry) {
   return JSON.stringify(copy);
 }
 
+
+const LAB_PANEL_OVERLAY_ENTITY_KEY = 'labPanelOverlay';
+
+/** Mirror top-level labPanelOverlay into entities_json (no schema column). */
+function entitiesJsonForBundle(bundle) {
+  const entities = { ...(bundle.entities || {}) };
+  if (Array.isArray(bundle.labPanelOverlay)) {
+    entities[LAB_PANEL_OVERLAY_ENTITY_KEY] = {
+      version: Number(
+        (bundle.entityVersions && bundle.entityVersions.labPanelOverlay) || 1
+      ),
+      data: bundle.labPanelOverlay,
+    };
+  }
+  return JSON.stringify(entities);
+}
+
 function upsertRoomBundleRow(db, roomId, bundle) {
   db.prepare(
     `INSERT INTO lan_room_bundles (
@@ -39,7 +56,7 @@ function upsertRoomBundleRow(db, roomId, bundle) {
     bundle.committedAt || null,
     JSON.stringify(bundle.audit_log || []),
     bundle.uploadedByClientId || null,
-    JSON.stringify(bundle.entities || {})
+    entitiesJsonForBundle(bundle)
   );
 }
 

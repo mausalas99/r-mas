@@ -72,6 +72,7 @@ function shouldReplaceOverlay(prev, rec) {
   return String(rec.updatedBy || '') > String(prev.updatedBy || '');
 }
 
+// LWW by panelId — keep in sync with lib/labs/lab-panel-overlay-lww.cjs
 export function mergeLabPanelOverlayLww(localArr, incomingArr) {
   var map = Object.create(null);
   function put(rec) {

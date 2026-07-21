@@ -11,6 +11,7 @@ import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scop
 import { patients } from '../../app-state.mjs';
 import { readLiveSyncEntityMap } from './entity-versions.mjs';
 import { getLanRuntime } from './orchestrator-runtime.mjs';
+import { loadLabPanelOverlays } from '../../labs-panel-overlay-store.mjs';
 
 export function collectPatientIdsForLiveSync() {
   return patients
@@ -56,6 +57,7 @@ export function buildLiveSyncLocalMergeSource() {
     todos: collectTodosMapForLiveSync(),
     entries: collectPatientEntriesForLanSync(),
     clinicalOps: getCachedClinicalOpsSnapshot(),
+    labPanelOverlay: loadLabPanelOverlays(),
     patches: liveSyncDeletePatchesFromEntityMap(readLiveSyncEntityMap()),
   };
 }

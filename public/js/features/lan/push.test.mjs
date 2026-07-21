@@ -103,6 +103,12 @@ describe('push.mjs characterization', () => {
       liveSyncBundleHasPayload({ clinicalOps: { clinical_users: [{ handle: '@x' }] } }),
       true
     );
+    assert.equal(
+      liveSyncBundleHasPayload({
+        labPanelOverlay: [{ panelId: 'user:1', updatedAt: 1, updatedBy: 'a' }],
+      }),
+      true
+    );
     assert.equal(liveSyncBundleHasPayload({ revision: 1 }), false);
   });
 

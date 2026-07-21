@@ -54,6 +54,7 @@ export function liveSyncBundleHasPayload(bundle) {
   if (Array.isArray(bundle.entries) && bundle.entries.length > 0) return true;
   if (Array.isArray(bundle.agenda) && bundle.agenda.length > 0) return true;
   if (todosBundleHasPayload(bundle.todos)) return true;
+  if (Array.isArray(bundle.labPanelOverlay) && bundle.labPanelOverlay.length > 0) return true;
   return clinicalOpsBundleHasPayload(bundle.clinicalOps);
 }
 

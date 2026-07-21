@@ -51,6 +51,9 @@ function buildLegacyMergeInput(cur, incoming) {
     todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
     entries: Array.isArray(incoming.entries) ? incoming.entries : [],
     manejo: incoming.manejo,
+    labPanelOverlay: Array.isArray(incoming.labPanelOverlay)
+      ? incoming.labPanelOverlay
+      : undefined,
     clinicalOps:
       incoming.clinicalOps && typeof incoming.clinicalOps === 'object'
         ? incoming.clinicalOps

@@ -9,6 +9,7 @@ import {
 } from './lan-patient-merge.mjs';
 import { attachTodosMapToPatientEntries } from './livesync-patient-ids.mjs';
 import { mergeClinicalOpsFromSources } from './clinical-ops-lan.mjs';
+import { mergeLabPanelOverlayLww } from './labs-panel-overlay.mjs';
 
 /** @type {Record<string, (sources: object[]) => unknown>} */
 const domainMergers = {
@@ -20,6 +21,16 @@ const domainMergers = {
   },
   clinicalOps(sources) {
     return mergeClinicalOpsFromSources(sources);
+  },
+  labPanelOverlay(sources) {
+    var acc = [];
+    for (var i = 0; i < sources.length; i += 1) {
+      var s = sources[i];
+      if (s && Array.isArray(s.labPanelOverlay) && s.labPanelOverlay.length) {
+        acc = mergeLabPanelOverlayLww(acc, s.labPanelOverlay);
+      }
+    }
+    return acc;
   },
 };
 
@@ -34,6 +45,8 @@ export function mergeLiveSyncFullBundles(sources) {
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos, base.todoTouchedPatientIds);
   base.clinicalOps = domainMergers.clinicalOps(list);
+  var overlay = domainMergers.labPanelOverlay(list);
+  if (overlay && overlay.length) base.labPanelOverlay = overlay;
   return base;
 }
 

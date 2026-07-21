@@ -240,3 +240,61 @@ describe('entriesPartial — partial merge', () => {
     assert.deepStrictEqual(merged.note, { texto: 'client note' }, 'without entriesPartial, note from client');
   });
 });
+
+
+describe('labPanelOverlay merge', () => {
+  it('LWW-merges overlay records by panelId on put', () => {
+    const now = () => '2026-07-21T12:00:00.000Z';
+    let bundle = emptyBundle(now());
+    bundle.revision = 1;
+    bundle.entityVersions = { labPanelOverlay: 1 };
+    bundle.labPanelOverlay = [
+      {
+        panelId: 'builtin:TIR',
+        sectionKey: 'TIR',
+        mode: 'num',
+        gates: ['TSH'],
+        fields: [],
+        updatedAt: 1,
+        updatedBy: 'host',
+      },
+    ];
+    const result = mergeBundlePut(
+      bundle,
+      {
+        baseRevision: 1,
+        baseEntityVersions: { labPanelOverlay: 1 },
+        labPanelOverlay: [
+          {
+            panelId: 'builtin:TIR',
+            sectionKey: 'TIR',
+            mode: 'num',
+            gates: ['TSH', 'T4 LIBRE'],
+            fields: [],
+            updatedAt: 2,
+            updatedBy: 'peer',
+          },
+          {
+            panelId: 'user:x',
+            sectionKey: 'CUST',
+            mode: 'num',
+            gates: ['FOO'],
+            fields: [],
+            updatedAt: 1,
+            updatedBy: 'peer',
+          },
+        ],
+        clientId: 'lc_peer',
+      },
+      { nowIso: now }
+    );
+    assert.equal(result.ok, true);
+    const byId = Object.fromEntries(
+      (result.bundle.labPanelOverlay || []).map((r) => [r.panelId, r])
+    );
+    assert.equal(byId['builtin:TIR'].gates.length, 2);
+    assert.equal(byId['builtin:TIR'].updatedBy, 'peer');
+    assert.ok(byId['user:x']);
+    assert.ok(result.bundle.entityVersions.labPanelOverlay >= 2);
+  });
+});
