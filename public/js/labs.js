@@ -60,6 +60,8 @@ export {
   mergeTroponinaResLabRows_,
 } from './labs-troponin.mjs';
 
+export { parseGrupoSangreCoombs_ } from './labs-grupo-sangre.mjs';
+
 export {
   ageYearsFromLabDemographics,
   computeEgfrCkdEpi2021Creatinine,
@@ -76,6 +78,12 @@ export {
   reprocessLabResultLines_,
   computeAnionGapValue_,
   computeAnionGap_,
+  computeAlbuminCorrectedAnionGapValue_,
+  computeAlbuminCorrectedAnionGap_,
+  computeUrinaryAnionGapValue_,
+  computeUrinaryAnionGap_,
+  extractUrineElectrolytes_,
+  resolveEffectiveAnionGapValue_,
   parsePIE_,
   parsearLCR,
   dedupeSingletonSections_,
@@ -143,10 +151,14 @@ import { formatCitoquimicoInterpretacionLine_, buildCitoquimicoInterpretAlerts_ 
 import { dedupeSingletonSections_, parseGaso_, parsePIE_, parsearLCR } from './labs-gaso-section.mjs';
 import { parseBH_ } from './labs-bh.mjs';
 import { parseQS_, parseESC_, parsePFH_, parseLipasa_ } from './labs-chemistry.mjs';
-import { parseTroponina_, TROPONINA_HS_NORMAL_MAX_NG_L } from './labs-troponin.mjs';
+import { parseTroponina_ } from './labs-troponin.mjs';
+import { parseGrupoSangreCoombs_ } from './labs-grupo-sangre.mjs';
 import { parseCultivo_ } from './labs-cultivo.mjs';
 import { parseEGO_ } from './labs-ego-parse.mjs';
 import { extractLabReportFechaDMY, extractLabReportHora, buildRefsBySectionFromReport } from './labs-report-refs.mjs';
+import { parseExtendedLabPanels_ } from './labs-panel-parse.mjs';
+
+export { parseExtendedLabPanels_, LAB_EXTENDED_SECTION_KEYS } from './labs-panel-parse.mjs';
 
 export const procesarLabs = createProcesarLabs({
   bloqueCitoquimicoLiquidosFull,
@@ -160,6 +172,7 @@ export const procesarLabs = createProcesarLabs({
   parsePFH_,
   parseLipasa_,
   parseTroponina_,
+  parseGrupoSangreCoombs_,
   parsePlaquetasCitrato_,
   parseGaso_,
   parsePIE_,
@@ -173,4 +186,5 @@ export const procesarLabs = createProcesarLabs({
   parseCuantOrina_,
   parseCultivo_,
   parseSerologiaBancoSangre_,
+  parseExtendedLabPanels_,
 });

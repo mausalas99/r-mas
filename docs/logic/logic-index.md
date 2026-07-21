@@ -9,7 +9,7 @@ description: "Parsers, sync engines, and algorithm modules."
 
 | Module | Path | Input → output |
 |--------|------|----------------|
-| SOME lab parser | `public/js/labs.js`, `labs-*.mjs` | Raw SOME text → structured lab lines |
+| SOME lab parser | `public/js/labs.js`, `labs-*.mjs` (AG/AGc/UAG; QS lípidos; GS; paneles scaffold `labs-panel-defs.mjs`/`labs-panel-parse.mjs`: TIR/ENDO/CARD/FE/…) | Raw SOME text → structured lab lines |
 | Lab historial | `lab-history-auto-store-core.mjs` | Parsed labs → per-patient history |
 | BH trends | `public/js/tend-core.mjs`, `labs-bh-trend-parse.mjs` | History → chart series |
 | Cultivos | `public/js/labs-cultivo.mjs` | SOME micro sections → isolate rows |
