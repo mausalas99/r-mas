@@ -2,7 +2,6 @@
  * Parser genérico de paneles extendidos (numéricos + cualitativos).
  */
 import { extraerConRangoPanel, marcarSegunRango, fmt } from './labs-extract.mjs';
-import { LAB_EXTENDED_SECTION_KEYS } from './labs-panel-defs.mjs';
 import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
@@ -54,20 +53,30 @@ function lineMatchesPatterns_(line, patterns) {
   return false;
 }
 
+function isQualFollowNoiseLine_(t) {
+  if (!t || t === ':') return true;
+  if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(t)) return true;
+  if (/^S\/CO$/i.test(t)) return true;
+  if (/^(Positivo|Indeterminado|Negativo)\s*[<>=]/i.test(t)) return true;
+  return false;
+}
+
+function qualDupTitleDecision_(t, j, i, sco, qual) {
+  // Título duplicado SOME (mismo estudio) vs estudio siguiente.
+  if (!/^(Anticuerpos|Ant[ií]geno|Antigeno)\b/i.test(t) || j <= i + 1) return 'none';
+  if (sco == null && !qual) return 'skip';
+  return 'break';
+}
+
 function readQualFromFollowLines_(lineas, i) {
   var sco = null;
   var qual = '';
   for (var j = i + 1; j < Math.min(i + 12, lineas.length); j++) {
     var t = String(lineas[j] || '').replace(/\*/g, '').trim();
-    if (!t || t === ':') continue;
-    if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(t)) continue;
-    if (/^S\/CO$/i.test(t)) continue;
-    if (/^(Positivo|Indeterminado|Negativo)\s*[<>=]/i.test(t)) continue;
-    // Título duplicado SOME (mismo estudio) vs estudio siguiente.
-    if (/^(Anticuerpos|Ant[ií]geno|Antigeno)\b/i.test(t) && j > i + 1) {
-      if (sco == null && !qual) continue;
-      break;
-    }
+    if (isQualFollowNoiseLine_(t)) continue;
+    var dup = qualDupTitleDecision_(t, j, i, sco, qual);
+    if (dup === 'skip') continue;
+    if (dup === 'break') break;
     var mNum = t.match(/^(\d+\.\d+|\d+)$/);
     if (mNum && sco === null) {
       sco = mNum[1];

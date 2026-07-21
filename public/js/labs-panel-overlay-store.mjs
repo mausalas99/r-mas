@@ -20,7 +20,7 @@ export function loadLabPanelOverlays() {
         }
       }
     }
-  } catch (_e) { /* ignore */ }
+  } catch { /* ignore */ }
   return memory.slice();
 }
 
@@ -30,7 +30,7 @@ export function saveLabPanelOverlays(arr) {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LS_KEY, JSON.stringify({ overlays: memory }));
     }
-  } catch (_e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 export function upsertLabPanelOverlay(record) {
