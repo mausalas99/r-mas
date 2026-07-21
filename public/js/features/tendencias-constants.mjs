@@ -81,11 +81,14 @@ var TEND_SECTION_LABELS = {
   TM: 'Marcadores tumorales',
   NUT: 'Nutrición',
   GI: 'GI / heces',
-  TOX: 'Toxicología'
+  TOX: 'Toxicología',
+  HEPB: 'Hepatitis B',
+  VIRAL: 'Serología viral',
+  MICRO: 'Antígenos / micro'
 };
 var TEND_SECTION_ORDER = [
   'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'CARD', 'TIR', 'ENDO', 'FE',
-  'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX',
+  'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX', 'HEPB', 'VIRAL', 'MICRO',
   'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
 ];
 
@@ -214,6 +217,12 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'TOX', fieldKey: 'EtOH', cardTitle: 'Etanol' }
 ];
 
+/** Etiqueta de sección; claves desconocidas (p. ej. overlay enseñado) muestran el sectionKey. */
+function getTendSectionLabel(sectionKey) {
+  if (sectionKey == null || sectionKey === '') return '';
+  return TEND_SECTION_LABELS[sectionKey] || String(sectionKey);
+}
+
 export {
   TEND_UNITS,
   TEND_REF,
@@ -221,4 +230,5 @@ export {
   TEND_SECTION_LABELS,
   TEND_SECTION_ORDER,
   TEND_SERIES_CATALOG,
+  getTendSectionLabel,
 };

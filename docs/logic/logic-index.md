@@ -9,6 +9,7 @@ description: "Parsers, sync engines, and algorithm modules."
 
 | Module | Path | Input → output |
 |--------|------|----------------|
+| Lab panel teach overlay | `labs-panel-overlay*.mjs`, `features/lab-panel-teach-*.mjs`, room `labPanelOverlay` | User-taught PanelDef overlay + wizard |
 | SOME lab parser | `public/js/labs.js`, `labs-*.mjs` (AG/AGc/UAG; QS lípidos; GS; paneles scaffold `labs-panel-defs.mjs`/`labs-panel-parse.mjs`: TIR/ENDO/CARD/FE/…) | Raw SOME text → structured lab lines |
 | Lab historial | `lab-history-auto-store-core.mjs` | Parsed labs → per-patient history |
 | BH trends | `public/js/tend-core.mjs`, `labs-bh-trend-parse.mjs` | History → chart series |

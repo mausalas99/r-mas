@@ -133,8 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-07-21** `labs-teach-overlay`: teach overlay syncs as room `labPanelOverlay` (silent LWW); `lib/labs/lab-panel-overlay-lww.cjs`, `features/lan/lab-panel-overlay-sync.mjs`, `bundle-merge-sections.js`.
-- **2026-07-21** `labs-panels`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/INFL/INM/META/NEF/NIVEL/TM/NUT/GI/TOX/HEPB/VIRAL/MICRO) + PFH GGT/Prot; `labs-panel-defs.mjs`, `labs-panel-parse.mjs`.
+- **2026-07-21** `labs-panels` + `labs-teach-overlay`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/INFL/INM/META/NEF/NIVEL/TM/NUT/GI/TOX/HEPB/VIRAL/MICRO) + PFH GGT/Prot; wizard 2 páginas SOME residual → PanelDef overlay + sync LAN `labPanelOverlay`; `labs-panel-defs.mjs`, `labs-panel-parse.mjs`, `labs-panel-overlay*.mjs`, `features/lab-panel-teach-*.mjs`.
 - **2026-07-19** `remove-neo`: drop Neo/Casiopea companion — Enviar a Neo UI/IPC, sesion-ingreso export, tour steps `sala_casiopea_*`, Aprender R+ neo modules; curriculum v10; `labs-anion-gap` AG/AGc/UAG.
 - **2026-07-19** `release-7.7.1`: receta SOAP ampliada (familias antieméticos/sedación/transfusiones…), rescates insulina PRN agrupados, glucometrías con UI en NM; `med-receta-soap*.mjs`, `insulin-rescate-*.mjs`, `estado-actual-med-soap-split.mjs`.
 - **2026-07-16** `release-7.7.0`: interpretación citoquímica (GASA, Light, PBE, LCR), fusión bloques duales LCR, diagramas colapsables; `labs-citoquimico-interpret*.mjs`, `labs-lcr-parse.mjs`.
