@@ -7,7 +7,7 @@
  * isParsedCultivoHeaderLine (BACILOSCOPIA, MICOBACTERIAS, LIQUIDO, …), and ALL-CAPS site headers
  * (2–5 words, no tabs) via matchesAllCapsSiteHeader exclusion guards.
  *
- * isLabSectionHeaderLine: BH|QS|…|FROTIS|SEROL|HECES lab section boundaries.
+ * isLabSectionHeaderLine: BH|QS|…|FROTIS|SEROL|GS|HECES lab section boundaries.
  *
  * splitResLabsByTipo / findCultivoChunkInSet: shared loop and chunk lookup for all call sites.
  *
@@ -32,7 +32,7 @@ var CULTIVO_BASE_START_PATTERNS = [
 ];
 
 var LAB_SECTION_BASE =
-  /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|HECES|LIPASA|TROP)\b/i;
+  /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS|SEROL|GS|HECES|LIPASA|TROP|TIR|ENDO|CARD|FE|INFL|INM|META|NEF|NIVEL|TM|NUT|GI|TOX|HEPB|VIRAL|MICRO)\b/i;
 
 function matchesAnyPattern(t, patterns) {
   for (var i = 0; i < patterns.length; i++) {

@@ -32,12 +32,18 @@ export function extraerConRango(nombres, texto) {
 
 /** True si el nombre del estudio (justo tras la keyword) es de orina, no sérico. */
 function esContextoUrinario_(texto, idxNombre, nombreLen) {
-  var b = Math.min(texto.length, idxNombre + nombreLen + 90);
-  var w = texto.substring(idxNombre, b).toUpperCase();
-  if (/\bEN\s+ORINA\b/.test(w)) return true;
-  if (/\bURINARIO\b/.test(w)) return true;
-  if (/\bURINARIA\b/.test(w)) return true;
+  // Solo mirar inmediatamente después del analito (p. ej. "SODIO EN ORINA"),
+  // no 90+ chars hacia adelante — eso marcaba Cl sérico como urinario cuando
+  // el mismo reporte traía electrolitos de orina a continuación.
+  var after = texto.substring(idxNombre + nombreLen, idxNombre + nombreLen + 48).toUpperCase();
+  if (/^\s*(EN\s+ORINA|URINARIO|URINARIA)\b/.test(after)) return true;
   return false;
+}
+
+/** True si «COLESTEROL» es en realidad HDL/LDL (no total). */
+function esFraccionColesterol_(texto, idxNombre, nombreLen) {
+  var after = texto.substring(idxNombre + nombreLen, idxNombre + nombreLen + 16).toUpperCase();
+  return /^\s*(HDL|LDL)\b/.test(after);
 }
 
 /** True si la etiqueta pertenece a EGO/sedimento urinario (no biometría hemática). */
@@ -110,6 +116,11 @@ export function extraerConRangoSuero(nombres, texto) {
         start = idx + nombre.length;
         continue;
       }
+      // «COLESTEROL» solo = total; no tomar COLESTEROL HDL / LDL.
+      if (nombre === 'COLESTEROL' && esFraccionColesterol_(texto, idx, nombre.length)) {
+        start = idx + nombre.length;
+        continue;
+      }
       var subStart = idx + nombre.length;
       var sub = texto.substring(subStart, subStart + 220);
       var mValor = sub.match(/(-?\d+[.,]?\d*)/);
@@ -124,6 +135,79 @@ export function extraerConRangoSuero(nombres, texto) {
         min: parseFloat(mRango[1].replace(',', '.')),
         max: parseFloat(mRango[2].replace(',', '.')) };
     }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
+/**
+ * Índice aterogénico SOME: valor + umbral «N RIESGO PROM.» (sin rango min-max).
+ */
+export function extraerIndiceAterogenico_(texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  var nombres = ['INDICE ATEROGENICO', 'ÍNDICE ATEROGÉNICO', 'INDICE ATEROGÉNICO'];
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var start = 0;
+    while (true) {
+      var idx = t.indexOf(nombre, start);
+      if (idx === -1) break;
+      var sub = texto.substring(idx + nombre.length, idx + nombre.length + 220);
+      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      if (!mValor) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
+      // Preferir «N RIESGO PROM.» del propio índice; el rango min-max del
+      // cociente CT/HDL suele quedar en la misma ventana de 220 chars.
+      var mRiesgo = sub.match(/(\d+[.,]?\d*)\s*RIESGO/);
+      if (mRiesgo) {
+        return {
+          valor: valorStr,
+          min: 0,
+          max: parseFloat(mRiesgo[1].replace(',', '.')),
+        };
+      }
+      var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (mRango) {
+        return {
+          valor: valorStr,
+          min: parseFloat(mRango[1].replace(',', '.')),
+          max: parseFloat(mRango[2].replace(',', '.')),
+        };
+      }
+      return { valor: valorStr, min: null, max: null };
+    }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
+/**
+ * Como extraerConRango, pero elimina repeticiones del nombre del estudio en la
+ * ventana (layout SOME) para no tomar dígitos de etiquetas tipo T4, C3, B12, CA 125.
+ */
+export function extraerConRangoPanel(nombres, texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var idx = t.indexOf(nombre);
+    if (idx === -1) continue;
+    var sub = texto.substring(idx + nombre.length, idx + nombre.length + 260);
+    var stripped = sub;
+    var reName = new RegExp(nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    stripped = stripped.replace(reName, ' ');
+    var mValor = stripped.match(/(-?\d+[.,]?\d*)/);
+    if (!mValor) continue;
+    var valorStr = mValor[1];
+    var mRango = stripped.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+    if (!mRango) return { valor: valorStr, min: null, max: null };
+    return {
+      valor: valorStr,
+      min: parseFloat(mRango[1].replace(',', '.')),
+      max: parseFloat(mRango[2].replace(',', '.')),
+    };
   }
   return { valor: '---', min: null, max: null };
 }

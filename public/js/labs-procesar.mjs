@@ -116,8 +116,18 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
   pushLabSection_(resLabs, deps.parseCuantOrina_(textoBruto));
   pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
   pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
+  pushLabSection_(resLabs, deps.parseGrupoSangreCoombs_(textoBruto));
   pushLabSection_(resLabs, deps.parseTroponina_(textoBruto));
+  appendExtendedPanelLines_(deps, resLabs, textoBruto);
   return { resLabs: resLabs, bhExtras: bhExtras };
+}
+
+function appendExtendedPanelLines_(deps, resLabs, textoBruto) {
+  if (typeof deps.parseExtendedLabPanels_ !== 'function') return;
+  var lines = deps.parseExtendedLabPanels_(textoBruto) || [];
+  for (var i = 0; i < lines.length; i++) {
+    pushLabSection_(resLabs, lines[i]);
+  }
 }
 
 function parseLabPatientHeader_(deps, textoBruto) {
@@ -172,7 +182,9 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object | null} deps.parseCuantOrina_
  * @param {(texto: string, tNorm: string) => object | null} deps.parseCultivo_
  * @param {(texto: string) => object | null} deps.parseSerologiaBancoSangre_
+ * @param {(texto: string) => string} deps.parseGrupoSangreCoombs_
  * @param {(texto: string) => string} deps.parseTroponina_
+ * @param {(texto: string) => string[]} [deps.parseExtendedLabPanels_]
  */
 export function createProcesarLabs(deps) {
   /**

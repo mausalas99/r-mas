@@ -1,4 +1,4 @@
-import { extraerConRango, extraerConRangoSuero } from './labs-extract.mjs';
+import { extraerConRango, extraerConRangoSuero, extraerIndiceAterogenico_ } from './labs-extract.mjs';
 import {
   extractAllTroponinaFromText_,
   TROPONINA_HS_NORMAL_MAX_NG_L,
@@ -174,8 +174,18 @@ export function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, 'QS', 'PCR', extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], textoQS));
     putTrendRef_(refs, 'QS', 'PCT', extraerProcalcitonina_(textoQS));
     putTrendRef_(refs, 'QS', 'AU', extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], textoQS));
-    putTrendRef_(refs, 'QS', 'TGL', extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], textoQS));
     putTrendRef_(refs, 'QS', 'COL', extraerConRangoSuero(['COLESTEROL'], textoQS));
+    putTrendRef_(refs, 'QS', 'HDL', extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], textoQS));
+    putTrendRef_(refs, 'QS', 'LDL', extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], textoQS));
+    putTrendRef_(refs, 'QS', 'VLDL', extraerConRangoSuero(['VLDL'], textoQS));
+    putTrendRef_(refs, 'QS', 'TGL', extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], textoQS));
+    putTrendRef_(refs, 'QS', 'IA', extraerIndiceAterogenico_(textoQS));
+    putTrendRef_(
+      refs,
+      'QS',
+      'CTHDL',
+      extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], textoQS)
+    );
     putTrendRef_(refs, 'QS', 'VSG', extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], textoQS));
     putTrendRef_(refs, 'QS', 'CPK', extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA', 'CPK '], textoQS));
 

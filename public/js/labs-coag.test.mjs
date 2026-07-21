@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeAnionGap_, procesarLabs } from './labs.js';
+import { computeAnionGap_, computeAlbuminCorrectedAnionGap_, procesarLabs } from './labs.js';
 
 const MUESTRA_SOLO_COAG = `
 Expediente:	2180481-3	Solicitud:	2605090476
@@ -44,9 +44,9 @@ test('procesarLabs incluye COAG con TP/TTP/INR cuando no hay biometría', () => 
   assert.ok(!resLabs.some((l) => /^BH[:\t]/.test(l)), 'sin BH vacía');
 });
 
-test('computeAnionGap_ corrige AG por hipoalbuminemia cuando hay albúmina', () => {
+test('computeAnionGap_ es AG crudo; AGc corrige por hipoalbuminemia', () => {
   const sinCorreccion = computeAnionGap_('134.5', '102.3', '17.1');
-  const corregido = computeAnionGap_('134.5', '102.3', '17.1', '2.1');
+  const agc = computeAlbuminCorrectedAnionGap_('134.5', '102.3', '17.1', '2.1');
   assert.equal(sinCorreccion, '15.1*');
-  assert.equal(corregido, '19.8*');
+  assert.equal(agc, '19.8*');
 });

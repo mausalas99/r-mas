@@ -74,6 +74,35 @@ test('parseGaso_ calcula anion gap usando Na/Cl de la química sanguínea', () =
   assert.match(out, /\bDelta-Delta 1\b/);
 });
 
+test('parseGaso_ añade AGc cuando hay albúmina en la química', () => {
+  const conAlb =
+    QS_TEXT +
+    ` QUIMICA CLINICA ALBUMINA N 2.1 g/dL 3.2 - 5.5`.replace(/\s+/g, ' ');
+  const out = parseGaso_(GAS_VEN_HCO3, conAlb);
+  // AG = 140 − (104 + 21.2) = 14.8; AGc = 14.8 + 2.5×(4−2.1) ≈ 19.55 → 19.5*
+  assert.match(out, /\bAG 14\.8\*/);
+  assert.match(out, /\bAGc 19\.5\*/);
+});
+
+test('parseGaso_ calcula UAG con electrolitos urinarios', () => {
+  const conOrina =
+    QS_TEXT +
+    `
+POTASIO EN ORINA
+B
+22
+mmol/L	40 - 80
+SODIO EN ORINA
+B
+40
+mmol/L	80 - 180
+CLORO EN ORINA: 34mmol/L
+`.replace(/\s+/g, ' ');
+  const out = parseGaso_(GAS_VEN_HCO3, conOrina);
+  assert.match(out, /\bAG 14\.8\*/);
+  assert.match(out, /\bUAG 28\b/);
+});
+
 test('parseGaso_ marca anion gap elevado con asterisco', () => {
   const externo = QS_TEXT.replace('104', '95');
   const out = parseGaso_(GAS_VEN_HCO3, externo);

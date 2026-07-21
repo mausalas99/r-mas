@@ -8,12 +8,18 @@ var TEND_UNITS = {
   Bandas:'%', Mielo:'%', Metamielo:'%', Promielo:'%', Blastos:'%', Atipicos:'%',
   Ret:'%', TP:'s', TTP:'s', INR:'', Fib:'mg/dL', DD:'ng/mL',
   Glu:'mg/dL',Cr:'mg/dL', eTFG:'mL/min/1.73m²', BUN:'mg/dL',PCR:'mg/dL',
-  AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', VSG:'mm/h', CPK:'U/L',
+  AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', HDL:'mg/dL', LDL:'mg/dL', VLDL:'mg/dL',
+  IA:'', CTHDL:'', VSG:'mm/h', CPK:'U/L',
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
-  AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
+  AST:'U/L',  ALT:'U/L',  FA:'U/L', GGT:'U/L', Prot:'g/dL', BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
   LDH:'U/L', Amil:'U/L', Lip:'U/L', TnI1:'ng/L', TnI2:'ng/L',
-  Lactato:'mmol/L', Dens:'g/L', Prot:'mg/dL', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg',
-  iCa:'mmol/L'
+  Lactato:'mmol/L', Dens:'g/L', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg',
+  iCa:'mmol/L',
+  TSH:'uUI/mL', T4L:'ng/dL', T3L:'pg/mL', HbA1c:'%', Cortisol:'ug/dL', PTH:'pg/mL', VitD:'ng/mL',
+  NTproBNP:'pg/mL', CKMB:'ng/mL', Fe:'ug/dL', TIBC:'ug/dL', Sat:'%', Ferr:'ng/mL',
+  FR:'UI/mL', C3:'mg/dL', C4:'mg/dL', NH3:'umol/L', Osm:'mOsm/kg', CysC:'mg/L', AlbCr:'mg/g',
+  Vanco:'ug/mL', Dig:'ng/mL', AFP:'ng/mL', CEA:'ng/mL', CA125:'U/mL', PSA:'ng/mL',
+  B12:'pg/mL', Fol:'ng/mL', Calpro:'ug/g', EtOH:'mg/dL'
 };
 var TEND_REF = {
   Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400], VCM:[80,100], HCM:[27,33],
@@ -23,10 +29,13 @@ var TEND_REF = {
   Bandas:[0,5], Mielo:[0,1], Metamielo:[0,1], Promielo:[0,1], Blastos:[0,1], Atipicos:[0,5],
   Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2], Fib:[150,400], DD:[0,500],
   Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
-  AU:[3.5,7], TGL:[0,150], COL:[0,200], CPK:[30,200],
+  AU:[3.5,7], TGL:[0,150], COL:[0,200], HDL:[40,60], LDL:[0,130], VLDL:[2,40],
+  IA:[0,3.22], CTHDL:[0,3.1], CPK:[30,200],
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
-  AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2], Alb:[3.5,5.2], BD:[0,0.3], BI:[0.1,1],
+  AST:[10,40], ALT:[7,56], FA:[44,147], GGT:[0,55], Prot:[6,8.3], BT:[0.1,1.2], Alb:[3.5,5.2], BD:[0,0.3], BI:[0.1,1],
   LDH:[120,250], Amil:[30,110], Lip:[8,57], TnI1:[0,34], TnI2:[0,34],
+  TSH:[0.4,4], T4L:[0.8,1.8], HbA1c:[4,5.6], NTproBNP:[0,125], Fe:[50,170], Ferr:[30,400],
+  CysC:[0.5,1], Vanco:[10,20], B12:[200,900],
   LCR_pH:[7.28,7.42], LCR_Leu:[0,5], LCR_Glu:[40,80], LCR_Cl:[118,132], LCR_Prot:[15,45],
   Liq_pH:[7.1,7.6], Liq_Glu:[20,600], Liq_Leu:[0,5000], Liq_LDH:[0,500], Liq_Dens:[1000,1050], Liq_Prot:[10,50]
 };
@@ -59,10 +68,25 @@ var TEND_SECTION_LABELS = {
   PltCit: 'Plaquetas (citrato)',
   FROTIS: 'Frotis de sangre',
   LIPASA: 'Lipasa',
-  TROP: 'Troponina I (hs)'
+  TROP: 'Troponina I (hs)',
+  TIR: 'Tiroides',
+  ENDO: 'Endocrino',
+  CARD: 'Cardiología',
+  FE: 'Hierro / ferritina',
+  INFL: 'Inflamación',
+  INM: 'Inmunología',
+  META: 'Metabolismo',
+  NEF: 'Nefrología',
+  NIVEL: 'Niveles terapéuticos',
+  TM: 'Marcadores tumorales',
+  NUT: 'Nutrición',
+  GI: 'GI / heces',
+  TOX: 'Toxicología'
 };
 var TEND_SECTION_ORDER = [
-  'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
+  'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'LIPASA', 'TROP', 'CARD', 'TIR', 'ENDO', 'FE',
+  'INFL', 'INM', 'META', 'NEF', 'NIVEL', 'TM', 'NUT', 'GI', 'TOX',
+  'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
 ];
 
 /**
@@ -111,7 +135,12 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
   { sectionKey: 'QS', fieldKey: 'PCT', cardTitle: 'Procalcitonina' },
   { sectionKey: 'QS', fieldKey: 'COL', cardTitle: 'Colesterol' },
+  { sectionKey: 'QS', fieldKey: 'HDL', cardTitle: 'HDL' },
+  { sectionKey: 'QS', fieldKey: 'LDL', cardTitle: 'LDL' },
+  { sectionKey: 'QS', fieldKey: 'VLDL', cardTitle: 'VLDL' },
   { sectionKey: 'QS', fieldKey: 'TGL', cardTitle: 'Triglicéridos' },
+  { sectionKey: 'QS', fieldKey: 'IA', cardTitle: 'Índice aterogénico' },
+  { sectionKey: 'QS', fieldKey: 'CTHDL', cardTitle: 'Cociente CT/HDL' },
   { sectionKey: 'QS', fieldKey: 'VSG', cardTitle: 'VSG' },
   { sectionKey: 'QS', fieldKey: 'CPK', cardTitle: 'CPK' },
   { sectionKey: 'ESC', fieldKey: 'Na', cardTitle: 'Na' },
@@ -124,6 +153,8 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'PFHs', fieldKey: 'AST', cardTitle: 'AST' },
   { sectionKey: 'PFHs', fieldKey: 'ALT', cardTitle: 'ALT' },
   { sectionKey: 'PFHs', fieldKey: 'FA', cardTitle: 'FA' },
+  { sectionKey: 'PFHs', fieldKey: 'GGT', cardTitle: 'GGT' },
+  { sectionKey: 'PFHs', fieldKey: 'Prot', cardTitle: 'Proteínas totales' },
   { sectionKey: 'PFHs', fieldKey: 'BT', cardTitle: 'Bilirrubina total' },
   { sectionKey: 'PFHs', fieldKey: 'BD', cardTitle: 'Bilirrubina directa' },
   { sectionKey: 'PFHs', fieldKey: 'BI', cardTitle: 'Bilirrubina indirecta' },
@@ -152,7 +183,35 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'Liq', fieldKey: 'Glu', cardTitle: 'Glucosa (liq.)' },
   { sectionKey: 'Liq', fieldKey: 'Prot', cardTitle: 'Proteínas (liq.)' },
   { sectionKey: 'Liq', fieldKey: 'LDH', cardTitle: 'LDH (liq.)' },
-  { sectionKey: 'Liq', fieldKey: 'Leu', cardTitle: 'Leucocitos (liq.)' }
+  { sectionKey: 'Liq', fieldKey: 'Leu', cardTitle: 'Leucocitos (liq.)' },
+  { sectionKey: 'TIR', fieldKey: 'TSH', cardTitle: 'TSH' },
+  { sectionKey: 'TIR', fieldKey: 'T4L', cardTitle: 'T4 libre' },
+  { sectionKey: 'TIR', fieldKey: 'T3L', cardTitle: 'T3 libre' },
+  { sectionKey: 'ENDO', fieldKey: 'HbA1c', cardTitle: 'HbA1c' },
+  { sectionKey: 'ENDO', fieldKey: 'Cortisol', cardTitle: 'Cortisol' },
+  { sectionKey: 'ENDO', fieldKey: 'PTH', cardTitle: 'PTH' },
+  { sectionKey: 'ENDO', fieldKey: 'VitD', cardTitle: 'Vitamina D' },
+  { sectionKey: 'CARD', fieldKey: 'NTproBNP', cardTitle: 'NT-proBNP' },
+  { sectionKey: 'CARD', fieldKey: 'CKMB', cardTitle: 'CK-MB' },
+  { sectionKey: 'FE', fieldKey: 'Fe', cardTitle: 'Hierro' },
+  { sectionKey: 'FE', fieldKey: 'Ferr', cardTitle: 'Ferritina' },
+  { sectionKey: 'FE', fieldKey: 'Sat', cardTitle: '% saturación' },
+  { sectionKey: 'INFL', fieldKey: 'FR', cardTitle: 'Factor reumatoide' },
+  { sectionKey: 'INM', fieldKey: 'C3', cardTitle: 'C3' },
+  { sectionKey: 'INM', fieldKey: 'C4', cardTitle: 'C4' },
+  { sectionKey: 'META', fieldKey: 'NH3', cardTitle: 'Amonio' },
+  { sectionKey: 'META', fieldKey: 'Osm', cardTitle: 'Osmolaridad' },
+  { sectionKey: 'NEF', fieldKey: 'CysC', cardTitle: 'Cistatina C' },
+  { sectionKey: 'NEF', fieldKey: 'AlbCr', cardTitle: 'Alb/Cr' },
+  { sectionKey: 'NIVEL', fieldKey: 'Vanco', cardTitle: 'Vancomicina' },
+  { sectionKey: 'NIVEL', fieldKey: 'Dig', cardTitle: 'Digoxina' },
+  { sectionKey: 'TM', fieldKey: 'AFP', cardTitle: 'AFP' },
+  { sectionKey: 'TM', fieldKey: 'CEA', cardTitle: 'CEA' },
+  { sectionKey: 'TM', fieldKey: 'PSA', cardTitle: 'PSA' },
+  { sectionKey: 'NUT', fieldKey: 'B12', cardTitle: 'Vitamina B12' },
+  { sectionKey: 'NUT', fieldKey: 'Fol', cardTitle: 'Folato' },
+  { sectionKey: 'GI', fieldKey: 'Calpro', cardTitle: 'Calprotectina' },
+  { sectionKey: 'TOX', fieldKey: 'EtOH', cardTitle: 'Etanol' }
 ];
 
 export {

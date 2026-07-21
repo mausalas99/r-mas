@@ -15,7 +15,11 @@ test('BH_SOME_TREND_ORDER sigue biometría SOME (RBC antes que Hb)', () => {
 
 test('QS_SOME_TREND_ORDER: glucosa, BUN, creatinina, ácido úrico, lípidos', () => {
   assert.deepEqual(QS_SOME_TREND_ORDER.slice(0, 5), ['Glu', 'BUN', 'Cr', 'eTFG', 'AU']);
-  assert.ok(QS_SOME_TREND_ORDER.indexOf('COL') < QS_SOME_TREND_ORDER.indexOf('TGL'));
+  assert.ok(QS_SOME_TREND_ORDER.indexOf('COL') < QS_SOME_TREND_ORDER.indexOf('HDL'));
+  assert.ok(QS_SOME_TREND_ORDER.indexOf('HDL') < QS_SOME_TREND_ORDER.indexOf('LDL'));
+  assert.ok(QS_SOME_TREND_ORDER.indexOf('LDL') < QS_SOME_TREND_ORDER.indexOf('TGL'));
+  assert.ok(QS_SOME_TREND_ORDER.indexOf('TGL') < QS_SOME_TREND_ORDER.indexOf('IA'));
+  assert.ok(QS_SOME_TREND_ORDER.indexOf('IA') < QS_SOME_TREND_ORDER.indexOf('CTHDL'));
 });
 
 test('sortTrendSpecsBySomeOrder ordena filas de tabla BH', () => {

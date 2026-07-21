@@ -33,7 +33,13 @@ export function isLikelyLabDataLine(line) {
   if (!t) return false;
   if (/^\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?$/.test(t)) return false;
   if (t.indexOf('\t') !== -1) return true;
-  if (/^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|CULTIVO|SEROL|HECES)\b/i.test(t)) return true;
+  if (
+    /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|CULTIVO|SEROL|GS|HECES|TIR|ENDO|CARD|FE|INFL|INM|META|NEF|NIVEL|TM|NUT|GI|TOX|HEPB|VIRAL|MICRO)\b/i.test(
+      t
+    )
+  ) {
+    return true;
+  }
   return /\d/.test(t) && /[A-Za-z]/.test(t);
 }
 

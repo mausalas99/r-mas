@@ -47,6 +47,10 @@ describe('isLabSectionHeaderLine', () => {
     assert.equal(isLabSectionHeaderLine('SEROL VIH'), true);
     assert.equal(isLabSectionHeaderLine('HECES copro'), true);
   });
+
+  it('recognizes GS section header', function () {
+    assert.equal(isLabSectionHeaderLine('GS B+ CD 1+*'), true);
+  });
 });
 
 describe('splitResLabsByTipo', () => {

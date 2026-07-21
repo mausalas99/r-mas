@@ -1,4 +1,11 @@
-import { extraerConRango, extraerConRangoSuero, marcarSegunRango, fmt, toNum_ } from './labs-extract.mjs';
+import {
+  extraerConRango,
+  extraerConRangoSuero,
+  extraerIndiceAterogenico_,
+  marcarSegunRango,
+  fmt,
+  toNum_,
+} from './labs-extract.mjs';
 import { ageYearsFromLabDemographics, computeEgfrCkdEpi2021Creatinine } from './labs-egfr.mjs';
 
 export function extraerProcalcitonina_(texto) {
@@ -58,8 +65,15 @@ function extractQsFormatted_(texto) {
     PCR: fmtSuero_(extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], texto)),
     PCT: fmtSuero_(extraerProcalcitonina_(texto)),
     AU: fmtSuero_(extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], texto)),
-    TGL: fmtSuero_(extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], texto)),
     COL: fmtSuero_(extraerConRangoSuero(['COLESTEROL'], texto)),
+    HDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], texto)),
+    LDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], texto)),
+    VLDL: fmtSuero_(extraerConRangoSuero(['VLDL'], texto)),
+    TGL: fmtSuero_(extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], texto)),
+    IA: fmtSuero_(extraerIndiceAterogenico_(texto)),
+    CTHDL: fmtSuero_(
+      extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], texto)
+    ),
     VSG: fmtSuero_(extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], texto)),
     CPK: fmtSuero_(extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA', 'CPK '], texto)),
   };
@@ -67,7 +81,11 @@ function extractQsFormatted_(texto) {
 
 export function parseQS_(texto, patientCtx) {
   var q = extractQsFormatted_(texto);
-  var vals = [q.Glu, q.Cr, q.BUN, q.PCR, q.PCT, q.AU, q.TGL, q.COL, q.VSG, q.CPK];
+  var vals = [
+    q.Glu, q.Cr, q.BUN, q.PCR, q.PCT, q.AU,
+    q.COL, q.HDL, q.LDL, q.VLDL, q.TGL, q.IA, q.CTHDL,
+    q.VSG, q.CPK,
+  ];
   if (vals.every(function (v) {
     return v === '---';
   })) {
@@ -84,8 +102,13 @@ export function parseQS_(texto, patientCtx) {
   appendQsPair_(p, 'PCR', q.PCR);
   appendQsPair_(p, 'PCT', q.PCT);
   appendQsPair_(p, 'AU', q.AU);
-  appendQsPair_(p, 'TGL', q.TGL);
   appendQsPair_(p, 'COL', q.COL);
+  appendQsPair_(p, 'HDL', q.HDL);
+  appendQsPair_(p, 'LDL', q.LDL);
+  appendQsPair_(p, 'VLDL', q.VLDL);
+  appendQsPair_(p, 'TGL', q.TGL);
+  appendQsPair_(p, 'IA', q.IA);
+  appendQsPair_(p, 'CTHDL', q.CTHDL);
   appendQsPair_(p, 'VSG', q.VSG);
   appendQsPair_(p, 'CPK', q.CPK);
   return p[0] + '\t' + p.slice(1).join(' ');
@@ -122,6 +145,8 @@ export function parsePFH_(tNorm) {
   var astData  = extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)','AST '], tNorm);
   var altData  = extraerConRango(['ALT ALANIN AMINO TRANSFERASA','ALT '], tNorm);
   var alpData  = extraerConRango(['ALP FOSFATASA ALCALINA','FOSFATASA ALCALINA'], tNorm);
+  var ggtData  = extraerConRango(['GGT', 'GAMA GLUTAMIL TRANSFERASA', 'GAMMA GLUTAMIL TRANSFERASA'], tNorm);
+  var protData = extraerConRangoSuero(['PROTEINAS TOTALES', 'PROTEÍNAS TOTALES'], tNorm);
   var btData   = extraerConRango(['BILIRRUBINA TOTAL'], tNorm);
   var bdData   = extraerConRango(['BILIRRUBINA DIRECTA'], tNorm);
   var biData   = extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm);
@@ -132,18 +157,22 @@ export function parsePFH_(tNorm) {
   var AST  = fmt(marcarSegunRango(astData.valor,  astData.min,  astData.max));
   var ALT  = fmt(marcarSegunRango(altData.valor,  altData.min,  altData.max));
   var FA   = fmt(marcarSegunRango(alpData.valor,  alpData.min,  alpData.max));
+  var GGT  = fmt(marcarSegunRango(ggtData.valor,  ggtData.min,  ggtData.max));
+  var Prot = fmt(marcarSegunRango(protData.valor, protData.min, protData.max));
   var BT   = fmt(marcarSegunRango(btData.valor,   btData.min,   btData.max));
   var BD   = fmt(marcarSegunRango(bdData.valor,   bdData.min,   bdData.max));
   var BI   = fmt(marcarSegunRango(biData.valor,   biData.min,   biData.max));
   var LDH  = fmt(marcarSegunRango(ldhData.valor,  ldhData.min,  ldhData.max));
   var Amil = fmt(marcarSegunRango(amilData.valor, amilData.min, amilData.max));
 
-  if ([Alb,AST,ALT,FA,BT,BD,BI,LDH,Amil].every(function(v){return v==='---';})) return '';
+  if ([Alb,AST,ALT,FA,GGT,Prot,BT,BD,BI,LDH,Amil].every(function(v){return v==='---';})) return '';
   var p = ['PFHs'];
   if (Alb  !== '---') p.push('Alb',  Alb);
   if (AST  !== '---') p.push('AST',  AST);
   if (ALT  !== '---') p.push('ALT',  ALT);
   if (FA   !== '---') p.push('FA',   FA);
+  if (GGT  !== '---') p.push('GGT',  GGT);
+  if (Prot !== '---') p.push('Prot', Prot);
   if (BT   !== '---') p.push('BT',   BT);
   if (BD   !== '---') p.push('BD',   BD);
   if (BI   !== '---') p.push('BI',   BI);

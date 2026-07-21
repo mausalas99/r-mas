@@ -243,7 +243,9 @@ function isStudyRowHeader(line, nextLines) {
 
 /** Analitos de química sérica que siguen al bloque de citoquímico en el mismo departamento. */
 function isSerumQcAnalyte(name) {
-  return /^(ALBUMINA|COLESTEROL|TRIGLICERIDOS)\b/i.test(String(name || '').trim());
+  return /^(ALBUMINA|COLESTEROL|TRIGLICERIDOS|VLDL|INDICE ATEROGENICO|ÍNDICE ATEROGÉNICO|COCIENTE COL)\b/i.test(
+    String(name || '').trim()
+  );
 }
 
 function isInvalidGroupTitleName_(name) {

@@ -85,7 +85,7 @@ docs/
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
-| Labs / tendencias | `public/js/labs*.mjs`, `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs` |
+| Labs / tendencias | `public/js/labs*.mjs`, `labs-panel-defs.mjs` / `labs-panel-parse.mjs` (paneles extendidos), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
@@ -133,6 +133,9 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-07-21** `labs-panels`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/INFL/INM/META/NEF/NIVEL/TM/NUT/GI/TOX/HEPB/VIRAL/MICRO) + PFH GGT/Prot; `labs-panel-defs.mjs`, `labs-panel-parse.mjs`.
+- **2026-07-19** `remove-neo`: drop Neo/Casiopea companion — Enviar a Neo UI/IPC, sesion-ingreso export, tour steps `sala_casiopea_*`, Aprender R+ neo modules; curriculum v10; `labs-anion-gap` AG/AGc/UAG.
+- **2026-07-19** `release-7.7.1`: receta SOAP ampliada (familias antieméticos/sedación/transfusiones…), rescates insulina PRN agrupados, glucometrías con UI en NM; `med-receta-soap*.mjs`, `insulin-rescate-*.mjs`, `estado-actual-med-soap-split.mjs`.
 - **2026-07-16** `release-7.7.0`: interpretación citoquímica (GASA, Light, PBE, LCR), fusión bloques duales LCR, diagramas colapsables; `labs-citoquimico-interpret*.mjs`, `labs-lcr-parse.mjs`.
 - **2026-07-11** `release-7.6.8`: bomba insulina IV en EA (SOME algoritmo 1–4), filtro censo sala instantáneo, receta en pestaña Manejo; `insulin-pump-*.mjs`, `estado-actual-insulin-pump.mjs`, `patients-scope.mjs`.
 - **2026-07-07** `release-7.6.7`: equipos PWA Web Push (LAN+cloud), troponina hs SOME/tendencias, consolidación labwork+gaso; `equipos-push.mjs`, `equipos-sw-push.js`, `labs-chemistry.mjs`.

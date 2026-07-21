@@ -1,6 +1,25 @@
 import { extraerConRango, extraerConRangoSuero, marcarSegunRango, fmt, toNum_ } from './labs-extract.mjs';
 import { buildGasoInterpretacionFromValues_ } from './labs-gaso-interpret.mjs';
+import {
+  computeAnionGapValue_,
+  computeAnionGap_,
+  computeAlbuminCorrectedAnionGapValue_,
+  computeAlbuminCorrectedAnionGap_,
+  computeUrinaryAnionGap_,
+  extractUrineElectrolytes_,
+  resolveEffectiveAnionGapValue_,
+} from './labs-anion-gap.mjs';
 export { parsearLCR } from './labs-lcr-parse.mjs';
+export {
+  computeAnionGapValue_,
+  computeAnionGap_,
+  computeAlbuminCorrectedAnionGapValue_,
+  computeAlbuminCorrectedAnionGap_,
+  computeUrinaryAnionGapValue_,
+  computeUrinaryAnionGap_,
+  extractUrineElectrolytes_,
+  resolveEffectiveAnionGapValue_,
+} from './labs-anion-gap.mjs';
 
 function gasoBlockForExtract_(bloqueGaso) {
   return String(bloqueGaso || '').replace(/\r/g, '').replace(/\s+/g, ' ');
@@ -22,10 +41,11 @@ function extractGasoFormatted_(bloqueX, textoFuera) {
   var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
   var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
   var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
+  var urine = textoFuera ? extractUrineElectrolytes_(textoFuera) : { na: '---', k: '---', cl: '---' };
   var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueX);
   var iCaMin = iCaData.min != null ? iCaData.min : 1.12;
   var iCaMax = iCaData.max != null ? iCaData.max : 1.32;
-  var agv = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
+  var agEff = resolveEffectiveAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   return {
     phData: phData,
     pH: fmtGasoRanged_(phData),
@@ -38,8 +58,10 @@ function extractGasoFormatted_(bloqueX, textoFuera) {
     Bica: fmtGasoRanged_(hco3Data),
     Hto: fmtGasoRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueX)),
     iCa: fmtGasoRanged_({ valor: iCaData.valor, min: iCaMin, max: iCaMax }),
-    AG: computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor),
-    DD: computeDeltaDelta_(agv, hco3Data.valor),
+    AG: computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor),
+    AGc: computeAlbuminCorrectedAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor),
+    UAG: computeUrinaryAnionGap_(urine.na, urine.k, urine.cl),
+    DD: computeDeltaDelta_(agEff, hco3Data.valor),
   };
 }
 
@@ -58,6 +80,8 @@ function buildGasoLine_(g) {
   appendGasoPair_(p, 'Lactato', g.Lac);
   appendGasoPair_(p, 'Bica', g.Bica);
   appendGasoPair_(p, 'AG', g.AG);
+  appendGasoPair_(p, 'AGc', g.AGc);
+  appendGasoPair_(p, 'UAG', g.UAG);
   appendGasoPair_(p, 'Delta-Delta', g.DD);
   appendGasoPair_(p, 'Hto', g.Hto);
   appendGasoPair_(p, 'iCa', g.iCa);
@@ -87,7 +111,7 @@ export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
   var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
   var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
   var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
-  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
+  var ag = resolveEffectiveAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var dd = computeDeltaDeltaValue_(ag, hco3Data.valor);
 
   var pH = toNum_(phData.valor);
@@ -113,7 +137,7 @@ export function lineRichnessScore_(line) {
   var s = normalizeLabLine_(line);
   if (!s) return 0;
   var score = s.length;
-  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\b(?:AG|AGC|UAG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
   score += (s.match(/\d/g) || []).length;
   return score;
 }
@@ -136,9 +160,11 @@ function labRowText_(row) {
 export function dedupeSingletonSections_(rows) {
   var singleton = {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, LIPASA: 1, TROP: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
-    HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
+    HECES: 1, FROTIS: 1, EGO: 1, SEROL: 1, GS: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
     'INTERPRETACIÓN ASCITIS:': 1,
     'INTERPRETACIÓN CITOQUÍMICO:': 1,
+    TIR: 1, ENDO: 1, CARD: 1, FE: 1, INFL: 1, INM: 1, META: 1, NEF: 1, NIVEL: 1, TM: 1, NUT: 1,
+    GI: 1, TOX: 1, HEPB: 1, VIRAL: 1, MICRO: 1,
   };
   var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
   var best = Object.create(null);
@@ -216,6 +242,29 @@ function formatNumericToken_(n) {
   return rounded === Math.trunc(rounded) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
+function appendMarkedAgToken_(out, key, value) {
+  if (value == null) return;
+  out.push(key, marcarSegunRango(formatNumericToken_(value), 8, 12));
+}
+
+function appendAnionGapDerivedTokens_(out, base, na, cl, bica, alb) {
+  var agRaw = computeAnionGapValue_(na || '---', cl || '---', bica || '---');
+  appendMarkedAgToken_(out, 'AG', agRaw);
+  var agc = computeAlbuminCorrectedAnionGapValue_(
+    na || '---',
+    cl || '---',
+    bica || '---',
+    alb || '---'
+  );
+  appendMarkedAgToken_(out, 'AGc', agc);
+  var uagExisting = valueFromSectionLine_(base, 'UAG');
+  if (uagExisting != null && uagExisting !== '') {
+    out.push('UAG', String(uagExisting).replace(/\*$/, ''));
+  }
+  var ddv = computeDeltaDeltaValue_(agc != null ? agc : agRaw, bica || '---');
+  if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
+}
+
 function rebuildGasesFromResults_(rows, gasRefs) {
   var gases = pickBestSectionLine_(rows, 'GASES');
   if (!gases) return { gasesLine: '', interpLine: '' };
@@ -233,7 +282,6 @@ function rebuildGasesFromResults_(rows, gasRefs) {
   var na = valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || values.Na;
   var cl = valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl');
   var alb = valueFromSectionLine_(pfhs, 'Alb');
-  var bica = values.Bica;
 
   orderedKeys.forEach(function (k) {
     if (values[k] != null && values[k] !== '') {
@@ -241,16 +289,8 @@ function rebuildGasesFromResults_(rows, gasRefs) {
     }
   });
 
-  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---', alb || '---');
-  if (agv != null) {
-    var agStr = formatNumericToken_(agv);
-    out.push('AG', marcarSegunRango(agStr, 8, 12));
-  }
-  var ddv = computeDeltaDeltaValue_(agv, bica || '---');
-  if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
-
-  var interp = '';
-  return { gasesLine: out[0] + '\t' + out.slice(1).join(' '), interpLine: interp };
+  appendAnionGapDerivedTokens_(out, base, na, cl, values.Bica, alb);
+  return { gasesLine: out[0] + '\t' + out.slice(1).join(' '), interpLine: '' };
 }
 
 export function reprocessLabResultLines_(rows, opts) {
@@ -264,18 +304,6 @@ export function reprocessLabResultLines_(rows, opts) {
   if (rebuilt.gasesLine) out.push(rebuilt.gasesLine);
   if (rebuilt.interpLine) out.push(rebuilt.interpLine);
   return dedupeSingletonSections_(out);
-}
-
-export function computeAnionGapValue_(naStr, clStr, hco3Str, albStr) {
-  if (naStr === '---' || clStr === '---' || hco3Str === '---') return null;
-  var na = parseFloat(String(naStr).replace(',', '.'));
-  var cl = parseFloat(String(clStr).replace(',', '.'));
-  var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
-  if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return null;
-  var ag = na - (cl + hco3);
-  var alb = parseFloat(String(albStr == null ? '' : albStr).replace(',', '.'));
-  if (!isNaN(alb)) ag += 2.5 * (4 - alb);
-  return ag;
 }
 
 function computeDeltaDeltaValue_(agValue, hco3Str) {
@@ -292,20 +320,6 @@ function computeDeltaDelta_(agValue, hco3Str) {
   if (dd == null) return '---';
   var rounded = Math.round(dd * 10) / 10;
   return (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
-}
-
-// Anion gap clásico (sin K), con corrección por albúmina opcional:
-// AGcorr = AG + 2.5 * (4 - Alb[g/dL]).
-// Rango normal 8-12 mEq/L. Devuelve string formateado
-// (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato crítico.
-export function computeAnionGap_(naStr, clStr, hco3Str, albStr) {
-  var ag = computeAnionGapValue_(naStr, clStr, hco3Str, albStr);
-  if (ag == null) return '---';
-  // Una decimal cuando el valor no es entero (mismo comportamiento
-  // visual que Bica 21.2 vs Na 140).
-  var rounded = Math.round((ag + Number.EPSILON) * 10) / 10;
-  var agStr = (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
-  return marcarSegunRango(agStr, 8, 12);
 }
 
 export function parsePIE_(tNorm) {

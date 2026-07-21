@@ -45,7 +45,7 @@ export const BH_SOME_TREND_ORDER = [
 export const QS_SOME_TREND_ORDER = [
   'Glu', 'BUN', 'Cr', 'eTFG', 'AU',
   'PCR', 'PCT',
-  'COL', 'TGL',
+  'COL', 'HDL', 'LDL', 'VLDL', 'TGL', 'IA', 'CTHDL',
   'VSG', 'CPK',
 ];
 
