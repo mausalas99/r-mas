@@ -46,6 +46,7 @@ import {
   renderPatientListLanSilent,
   profiledRefreshTodoUIsAfterReconcile,
 } from './orchestrator-runtime.mjs';
+import { applyLabPanelOverlayFromBundle } from './lab-panel-overlay-sync.mjs';
 
 const deltaEchoTracker = createDeltaEchoTracker(getLanClientId());
 
@@ -78,6 +79,7 @@ async function applyLiveSyncMerged(merged) {
   perfMark('lan-sync-bundle-apply-start');
   try {
     var clinicalOpsApplied = await applyMergedClinicalOps(merged);
+    applyLabPanelOverlayFromBundle(merged);
     await applyMergedBundleEffects(merged, clinicalOpsApplied);
   } finally {
     perfMark('lan-sync-bundle-apply-end');

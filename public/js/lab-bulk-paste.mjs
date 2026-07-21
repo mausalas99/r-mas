@@ -190,12 +190,8 @@ function parseReportChunk(reportText, reportIndex, findPatient) {
   try {
     var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
     var result = procesarLabs(reportText, chartPatient ? { patient: chartPatient } : undefined);
-    if (!result.resLabs || !result.resLabs.length) {
-      return parseReportChunkFailure(reportIndex, 'Sin resultados parseables', {
-        expediente: result.patient && result.patient.expediente,
-        nombre: result.patient && result.patient.name,
-      });
-    }
+    // Empty resLabs: still succeed so teach wizard can map residual SOME studies.
+    if (!result.resLabs) result.resLabs = [];
     return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
     return parseReportChunkFailure(reportIndex, e && e.message ? e.message : 'Error al parsear');
@@ -462,9 +458,14 @@ function wrapSingleParsedLabDisplay(item) {
  * @param {{ result: object, reportText: string }[]} parsedItems
  */
 export function pickLatestDayMergedLabDisplay(parsedItems) {
-  var items = (parsedItems || []).filter(function (item) {
+  var withLabs = (parsedItems || []).filter(function (item) {
     return item && item.result && item.result.resLabs && item.result.resLabs.length;
   });
+  var items = withLabs.length
+    ? withLabs
+    : (parsedItems || []).filter(function (item) {
+        return item && item.result && Array.isArray(item.result.resLabs);
+      });
   if (!items.length) return null;
   if (items.length === 1) return wrapSingleParsedLabDisplay(items[0]);
 

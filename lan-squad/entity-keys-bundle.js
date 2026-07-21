@@ -32,6 +32,9 @@ function collectTodoKeys(payload, keys) {
 function collectStaticBundleKeys(payload, keys) {
   if (payload.manejo && typeof payload.manejo === 'object') keys.add('manejo');
   if (payload.clinicalOps && typeof payload.clinicalOps === 'object') keys.add('clinicalOps');
+  if (Array.isArray(payload.labPanelOverlay) && payload.labPanelOverlay.length) {
+    keys.add('labPanelOverlay');
+  }
 }
 
 function collectKeysFromBundlePayload(payload) {

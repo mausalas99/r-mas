@@ -75,6 +75,11 @@ export {
 } from './host-patient-http.mjs';
 
 export {
+  enqueueLabPanelOverlayPush,
+  queueLabPanelOverlayLanSync,
+} from './lab-panel-overlay-sync.mjs';
+
+export {
   appendLanConflictDraftsSection,
   pushClinicalOpsLanNow,
   refreshLanClinicalDirectoryFromRoom,

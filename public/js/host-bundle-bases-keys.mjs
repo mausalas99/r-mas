@@ -20,6 +20,9 @@ function collectTodoKeys(envelope, keys) {
 function collectMiscKeys(envelope, keys) {
   if (envelope.manejo && typeof envelope.manejo === 'object') keys.add('manejo');
   if (envelope.clinicalOps && typeof envelope.clinicalOps === 'object') keys.add('clinicalOps');
+  if (Array.isArray(envelope.labPanelOverlay) && envelope.labPanelOverlay.length) {
+    keys.add('labPanelOverlay');
+  }
 }
 
 /** @param {object} envelope */

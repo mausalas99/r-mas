@@ -1,6 +1,7 @@
 'use strict';
 
 const { mergeClinicalOpsSnapshotsData } = require('../lib/db/clinical-ops-bundle-merge.cjs');
+const { mergeLabPanelOverlayLww } = require('../lib/labs/lab-panel-overlay-lww.cjs');
 
 /**
  * @param {number} serverRevision
@@ -40,6 +41,7 @@ function entityKindForKey(key) {
   if (key.startsWith('t:')) return 'todo';
   if (key === 'manejo') return 'manejo';
   if (key === 'clinicalOps') return 'clinicalOps';
+  if (key === 'labPanelOverlay') return 'labPanelOverlay';
   return 'entity';
 }
 
@@ -167,6 +169,15 @@ function mergeManejoSection(bundle, base) {
 }
 
 /** @param {object} bundle @param {object} base */
+function mergeLabPanelOverlaySection(bundle, base) {
+  if (!('labPanelOverlay' in base)) return;
+  const incoming = Array.isArray(base.labPanelOverlay) ? base.labPanelOverlay : null;
+  if (!incoming) return;
+  const server = Array.isArray(bundle.labPanelOverlay) ? bundle.labPanelOverlay : [];
+  bundle.labPanelOverlay = mergeLabPanelOverlayLww(server, incoming);
+}
+
+/** @param {object} bundle @param {object} base */
 function mergeClinicalOpsSection(bundle, base) {
   if (!('clinicalOps' in base)) return;
   const incomingOps = base.clinicalOps && typeof base.clinicalOps === 'object' ? base.clinicalOps : null;
@@ -179,6 +190,9 @@ function mergeClinicalOpsSection(bundle, base) {
 function extractPayloadForKey(payload, key) {
   if (key === 'manejo') return payload.manejo || null;
   if (key === 'clinicalOps') return payload.clinicalOps || null;
+  if (key === 'labPanelOverlay') {
+    return Array.isArray(payload.labPanelOverlay) ? payload.labPanelOverlay : null;
+  }
   if (key.startsWith('a:')) {
     const id = key.slice(2);
     const list = Array.isArray(payload.agenda) ? payload.agenda : [];
@@ -202,6 +216,7 @@ module.exports = {
   mergeTodosSection,
   mergeEntriesSection,
   mergeManejoSection,
+  mergeLabPanelOverlaySection,
   mergeClinicalOpsSection,
   extractPayloadForKey,
 };

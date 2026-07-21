@@ -54,3 +54,27 @@ test('host bundle PUT body includes clinicalOps only when snapshot present', () 
   });
   assert.ok(withOps.clinicalOps);
 });
+
+test('host bundle PUT body includes labPanelOverlay when non-empty', () => {
+  global.localStorage = {
+    _d: {},
+    getItem(k) {
+      return this._d[k] ?? null;
+    },
+    setItem(k, v) {
+      this._d[k] = v;
+    },
+    removeItem(k) {
+      delete this._d[k];
+    },
+  };
+  const emptyBody = hostBundlePutBodyFromEnvelope('r1', { clientId: 'c1', agenda: [] });
+  assert.equal('labPanelOverlay' in emptyBody, false);
+  const withOverlay = hostBundlePutBodyFromEnvelope('r1', {
+    clientId: 'c1',
+    agenda: [],
+    labPanelOverlay: [{ panelId: 'user:1', updatedAt: 1, updatedBy: 'a' }],
+  });
+  assert.equal(withOverlay.labPanelOverlay.length, 1);
+});
+

@@ -240,6 +240,21 @@ describe('LAN event and handler wiring', () => {
     assert.match(read('clinical-ops-lan.mjs'), /rpc-clinical-ops-synced/);
   });
 
+  it('applyLiveSyncMerged applies labPanelOverlay after clinicalOps', () => {
+    const applySrc = read('features/lan/orchestrator-bundle-apply.mjs');
+    const syncSrc = read('features/lan/lab-panel-overlay-sync.mjs');
+    assert.match(applySrc, /applyLabPanelOverlayFromBundle\(merged\)/);
+    assert.match(syncSrc, /export function applyLabPanelOverlayFromBundle/);
+    assert.match(syncSrc, /export function queueLabPanelOverlayLanSync/);
+    const fnStart = applySrc.indexOf('async function applyLiveSyncMerged');
+    assert.ok(fnStart >= 0);
+    const opsIdx = applySrc.indexOf('await applyMergedClinicalOps(merged)', fnStart);
+    const overlayIdx = applySrc.indexOf('applyLabPanelOverlayFromBundle(merged)', fnStart);
+    assert.ok(opsIdx >= 0 && overlayIdx >= 0);
+    assert.ok(opsIdx < overlayIdx, 'clinicalOps apply before labPanelOverlay');
+  });
+
+
   it('stampTodosWithEntityVersions uses liveSyncEntityStoreKey not bare todoEntityKey', () => {
     const fnStart = lanEntityVersions.indexOf('function stampTodosWithEntityVersions');
     assert.ok(fnStart >= 0);

@@ -80,5 +80,8 @@ export function hostBundlePutBodyFromEnvelope(roomId, envelope) {
   if (envelope.clinicalOps != null && typeof envelope.clinicalOps === 'object') {
     body.clinicalOps = envelope.clinicalOps;
   }
+  if (Array.isArray(envelope.labPanelOverlay) && envelope.labPanelOverlay.length) {
+    body.labPanelOverlay = envelope.labPanelOverlay;
+  }
   return body;
 }

@@ -23,9 +23,11 @@ describe('entity-keys', () => {
       agenda: [{ id: 'e1' }],
       todos: { p1: [{ id: 't1' }] },
       manejo: { customProtocols: [] },
+      labPanelOverlay: [{ panelId: 'user:1', updatedAt: 1, updatedBy: 'a' }],
     });
     assert.ok(keys.has('a:e1'));
     assert.ok(keys.has('t:p1:t1'));
     assert.ok(keys.has('manejo'));
+    assert.ok(keys.has('labPanelOverlay'));
   });
 });

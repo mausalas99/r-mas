@@ -13,6 +13,7 @@ const {
   mergeTodosSection,
   mergeEntriesSection,
   mergeManejoSection,
+  mergeLabPanelOverlaySection,
   mergeClinicalOpsSection,
 } = require('./bundle-merge-sections.js');
 
@@ -24,6 +25,7 @@ function emptyBundle(nowIso) {
     todos: {},
     entries: [],
     manejo: null,
+    labPanelOverlay: [],
     clinicalOps: null,
     uploadedByClientId: '',
     committedAt: nowIso,
@@ -202,6 +204,7 @@ function mergeBundlePut(serverBundle, incoming, opts) {
   mergeTodosSection(ctx.bundle, ctx.base, conflictKeys, lwwAppliedKeys, mergeHelpers);
   mergeEntriesSection(ctx.bundle, ctx.base, mergePartialEntry);
   mergeManejoSection(ctx.bundle, ctx.base);
+  mergeLabPanelOverlaySection(ctx.bundle, ctx.base);
   mergeClinicalOpsSection(ctx.bundle, ctx.base);
 
   commitBundleRevision_(ctx.bundle, {

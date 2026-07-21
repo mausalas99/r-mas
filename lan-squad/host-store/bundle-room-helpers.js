@@ -35,6 +35,7 @@ function ensureRoomBundle(state, roomId) {
       todos: {},
       entries: [],
       manejo: null,
+      labPanelOverlay: [],
       clinicalOps: null,
       audit_log: [],
     };
@@ -44,6 +45,7 @@ function ensureRoomBundle(state, roomId) {
   if (!b.entityVersions || typeof b.entityVersions !== 'object') b.entityVersions = {};
   if (!Array.isArray(b.deltaLog)) b.deltaLog = [];
   if (!Number.isFinite(Number(b.deltaSeq))) b.deltaSeq = 0;
+  if (!Array.isArray(b.labPanelOverlay)) b.labPanelOverlay = [];
   return b;
 }
 

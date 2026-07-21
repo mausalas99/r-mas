@@ -6,7 +6,7 @@ import {
   TEND_REF,
   TEND_REF_GASES,
   TEND_SERIES_CATALOG,
-  TEND_SECTION_LABELS,
+  getTendSectionLabel,
 } from './tendencias-constants.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 
@@ -206,9 +206,6 @@ function getTendCatalogSpecsForSection(sectionKey, history) {
   return specs;
 }
 
-function getTendSectionLabel(sectionKey) {
-  return TEND_SECTION_LABELS[sectionKey] || sectionKey;
-}
 
 function tendEyeVisibilitySvg() {
   return (

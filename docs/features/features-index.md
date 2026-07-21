@@ -12,6 +12,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Feature | Code path | Doc / spec |
 |---------|-----------|------------|
 | Laboratorio / SOME | `public/js/labs*.mjs`, `lab-panel.mjs` | Magic moment pipeline |
+| Lab panel teach overlay | `labs-panel-overlay*.mjs`, `features/lab-panel-teach-*.mjs` | Wizard 2 páginas SOME residual → PanelDef overlay (LAN sync) |
 | Lab repo import | `lib/lab-repo/`, `public/js/features/lab-repo-import.mjs` | [spec](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
 | Lab repo batch (mi equipo) | `public/js/features/lab-repo-batch-import.mjs`, `lab-repo-batch-model.mjs` | Bulk morning update: mi equipo + checkboxes + sidebar job queue |
 | Tendencias | `public/js/features/tendencias.mjs` | |

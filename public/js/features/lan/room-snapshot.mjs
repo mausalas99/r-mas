@@ -16,6 +16,7 @@ import { lanClient, getLanClientId } from './runtime.mjs';
 import { isLanElectronDesktop, isLanRemoteJoinMode, resolveLanHostUrlAuto } from './transport.mjs';
 import { isSurrogateHostActive } from '../../lan-surrogate-host.mjs';
 import { bridge, ensureLanSyncRoomBridgeWired } from './room-bridge.mjs';
+import { loadLabPanelOverlays } from '../../labs-panel-overlay-store.mjs';
 
 export async function resolveSelfLanAdvertiseHostUrl() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return '';
@@ -82,6 +83,7 @@ function saveLocalRoomSnapshotBody(roomId) {
     todos: snap.todos,
     entries: entries,
     clinicalOps: getCachedClinicalOpsSnapshot(),
+    labPanelOverlay: loadLabPanelOverlays(),
   });
 }
 
@@ -104,6 +106,7 @@ export async function buildLiveSyncBundleEnvelope(roomId) {
     todos: snap.todos,
     entries: entries,
     clinicalOps: getCachedClinicalOpsSnapshot(),
+    labPanelOverlay: loadLabPanelOverlays(),
   };
 }
 

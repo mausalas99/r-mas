@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseExtendedLabPanels_, LAB_EXTENDED_SECTION_KEYS } from './labs-panel-parse.mjs';
 import { parsePFH_, procesarLabs } from './labs.js';
+import { replaceLabPanelOverlayForTests, clearLabPanelOverlayForTests } from './labs-panel-overlay-store.mjs';
 
 /** Bloque SOME sintético numérico (layout típico HU). */
 function someNum(name, value, unit, ref) {
@@ -140,4 +141,24 @@ test('procesarLabs cablea paneles extendidos', () => {
   assert.ok(resLabs.some((l) => l.startsWith('TIR\t')));
   assert.ok(resLabs.some((l) => l.startsWith('CARD\t')));
   assert.ok(resLabs.some((l) => l.startsWith('HEPB\t')));
+});
+
+
+test('parseExtendedLabPanels_ honors overlay store patch', () => {
+  replaceLabPanelOverlayForTests([{
+    panelId: 'user:zz',
+    sectionKey: 'CUST',
+    mode: 'num',
+    gates: ['MARCADOR ZZ'],
+    fields: [{ key: 'Zz', labels: ['MARCADOR ZZ'] }],
+    updatedAt: 1,
+    updatedBy: 't',
+  }]);
+  try {
+    var t = 'QUIMICA CLINICA\n' + someNum('MARCADOR ZZ', '9', 'ng/mL', '0 - 5');
+    var lines = parseExtendedLabPanels_(t);
+    assert.ok(lines.some((l) => l.startsWith('CUST\t') && /\bZz 9\*/.test(l)));
+  } finally {
+    clearLabPanelOverlayForTests();
+  }
 });

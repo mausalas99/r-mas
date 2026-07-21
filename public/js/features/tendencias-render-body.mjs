@@ -6,7 +6,7 @@ import {
 } from '../lab-history-cache.mjs';
 import { readTendCardOrder } from '../tend-prefs.mjs';
 import { getSetTrendValueForSeries, buildTendChartLabels } from '../tend-core.mjs';
-import { TEND_SECTION_LABELS, TEND_SECTION_ORDER } from './tendencias-constants.mjs';
+import { getTendSectionLabel, TEND_SECTION_ORDER } from './tendencias-constants.mjs';
 import { isAbgAnalysisHidden } from './tendencias-lab-prefs.mjs';
 import { tendAbnormalOnlyRead, tendHiddenSeriesRead, tendSectionIsExpanded, tendRefForSeries } from './tendencias-series.mjs';
 import * as tc from './tendencias-core.mjs';
@@ -167,7 +167,7 @@ function buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded) {
 
 function buildTendenciaSectionHtml(sectionKey, list, seriesIndex) {
   var expanded = tc.tendSectionIsExpanded(sectionKey);
-  var secLabel = TEND_SECTION_LABELS[sectionKey] || sectionKey;
+  var secLabel = getTendSectionLabel(sectionKey);
   var cardParts = list.map(function (spec) {
     return buildTendenciaCardHtml(sectionKey, spec, seriesIndex, expanded);
   });
