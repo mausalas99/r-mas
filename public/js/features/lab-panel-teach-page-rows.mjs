@@ -119,7 +119,11 @@ function parseOptionalNum(raw) {
   return n != null && isFinite(n) ? n : null;
 }
 
-function readOneDraftRow(node) {
+function normalizeTeachMode(mode) {
+  return mode === 'qual' ? 'qual' : 'num';
+}
+
+function readOneDraftRow(node, mode) {
   var includedEl = fieldEl(node, 'included');
   var minEl = fieldEl(node, 'min');
   var maxEl = fieldEl(node, 'max');
@@ -133,7 +137,7 @@ function readOneDraftRow(node) {
     value: valueEl ? String(valueEl.value || '') : '',
     min: parseOptionalNum(minEl ? minEl.value : ''),
     max: parseOptionalNum(maxEl ? maxEl.value : ''),
-    mode: 'num',
+    mode: normalizeTeachMode(mode),
     qual: '',
     sco: '',
   };
@@ -141,15 +145,22 @@ function readOneDraftRow(node) {
 
 /**
  * Read draft rows from the rows container DOM.
+ * Uses wizard mode from #lab-panel-teach-mode (or passed meta) so confirm honors qual vs num.
  * @param {HTMLElement|null} container
+ * @param {{ sectionKey?: string, mode?: string }|null} [meta]
  * @returns {object[]}
  */
-export function readDraftRowsFromDom(container) {
+export function readDraftRowsFromDom(container, meta) {
   if (!container) return [];
+  var resolved =
+    meta && meta.mode
+      ? { mode: normalizeTeachMode(meta.mode) }
+      : readTeachMetaFromDom(container.ownerDocument || (typeof document !== 'undefined' ? document : null));
+  var mode = resolved.mode || 'num';
   var nodes = container.querySelectorAll('.lab-panel-teach-row[data-teach-row-idx]');
   var out = [];
   nodes.forEach(function (node) {
-    out.push(readOneDraftRow(node));
+    out.push(readOneDraftRow(node, mode));
   });
   return out;
 }
