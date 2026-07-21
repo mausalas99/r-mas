@@ -8,14 +8,24 @@ function escapeRe(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function hydrateGate(g) {
+  if (typeof g !== 'string') return g;
+  if (/[\\^$*+?()|[\]{}]/.test(g)) return new RegExp(g, 'i');
+  return new RegExp(escapeRe(g), 'i');
+}
+
+function serializeGate(g) {
+  if (typeof g === 'string') return g;
+  if (g instanceof RegExp) return g.source;
+  return String(g);
+}
+
 function hydrateField(f) {
   if (!f) return f;
   if (f.patterns) {
     return {
       key: f.key,
-      patterns: (f.patterns || []).map(function (p) {
-        return typeof p === 'string' ? new RegExp(escapeRe(p), 'i') : p;
-      }),
+      patterns: (f.patterns || []).map(hydrateGate),
     };
   }
   return { key: f.key, labels: (f.labels || []).slice() };
@@ -44,21 +54,22 @@ function findBuiltinIndex(list, rec) {
   return -1;
 }
 
-function serializeGate(g) {
-  if (g instanceof RegExp) return g.source;
-  return String(g);
-}
-
 function serializeField(f) {
   if (f.patterns) {
     return {
       key: f.key,
-      patterns: (f.patterns || []).map(function (p) {
-        return p instanceof RegExp ? p.source : String(p);
-      }),
+      patterns: (f.patterns || []).map(serializeGate),
     };
   }
   return { key: f.key, labels: (f.labels || []).slice() };
+}
+
+function shouldReplaceOverlay(prev, rec) {
+  var prevAt = Number(prev.updatedAt || 0);
+  var recAt = Number(rec.updatedAt || 0);
+  if (recAt > prevAt) return true;
+  if (recAt < prevAt) return false;
+  return String(rec.updatedBy || '') > String(prev.updatedBy || '');
 }
 
 export function mergeLabPanelOverlayLww(localArr, incomingArr) {
@@ -66,7 +77,7 @@ export function mergeLabPanelOverlayLww(localArr, incomingArr) {
   function put(rec) {
     if (!rec || !rec.panelId) return;
     var prev = map[rec.panelId];
-    if (!prev || Number(rec.updatedAt || 0) >= Number(prev.updatedAt || 0)) {
+    if (!prev || shouldReplaceOverlay(prev, rec)) {
       map[rec.panelId] = rec;
     }
   }
@@ -76,9 +87,7 @@ export function mergeLabPanelOverlayLww(localArr, incomingArr) {
 }
 
 export function overlayRecordToPanelDef(rec) {
-  var gates = (rec.gates || []).map(function (g) {
-    return typeof g === 'string' ? new RegExp(escapeRe(g), 'i') : g;
-  });
+  var gates = (rec.gates || []).map(hydrateGate);
   var fields = (rec.fields || []).map(hydrateField);
   return { sectionKey: rec.sectionKey, mode: rec.mode || 'num', gates: gates, fields: fields };
 }
@@ -102,8 +111,10 @@ export function panelDefToOverlayPatch(def, meta) {
     panelId: meta.panelId,
     sectionKey: def.sectionKey,
     mode: def.mode || 'num',
-    gates: (def.gates || []).map(serializeGate),
-    fields: (def.fields || []).map(serializeField),
+    gates: Array.isArray(meta.gates) ? meta.gates.slice() : (def.gates || []).map(serializeGate),
+    fields: Array.isArray(meta.fields) ? meta.fields.map(function (f) {
+      return f.patterns ? { key: f.key, patterns: (f.patterns || []).slice() } : { key: f.key, labels: (f.labels || []).slice() };
+    }) : (def.fields || []).map(serializeField),
     updatedAt: meta.updatedAt,
     updatedBy: meta.updatedBy,
   };
