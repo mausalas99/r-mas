@@ -24,6 +24,8 @@ import {
   notifyTourAfterBulkLabStore,
   isMultiBulkLabPaste,
 } from './lab-panel-workbench-finalize.mjs';
+import { shouldOpenLabPanelTeach } from '../labs-panel-teach-trigger.mjs';
+import { looksLikeSomeLabReport } from '../labs.js';
 
 function clearLabInputAfterSuccessfulParse() {
   var ta = document.getElementById('lab-input');
@@ -315,6 +317,32 @@ function toastCitoquimInterpFromResult(result) {
   });
 }
 
+function openTeachWizardAfterPaste(sourceText, displayResult) {
+  var teach = shouldOpenLabPanelTeach(sourceText, displayResult);
+  if (!teach.open) return;
+  import('./lab-panel-teach-modal.mjs')
+    .then(function (mod) {
+      if (!mod || typeof mod.openLabPanelTeachModal !== 'function') return;
+      mod.openLabPanelTeachModal({
+        sourceText: sourceText,
+        resLabs: (displayResult && displayResult.resLabs) || [],
+        residual: teach.residual,
+        patient: displayResult && displayResult.patient,
+        onConfirm: function (payload) {
+          if (!displayResult || !payload) return;
+          displayResult.resLabs = payload.mergedResLabs || displayResult.resLabs || [];
+          labPanelBridge.renderOutput(displayResult);
+          if (typeof rt.showToast === 'function') {
+            rt.showToast('Lectura configurada', 'success');
+          }
+        },
+      });
+    })
+    .catch(function () {
+      /* teach modal optional */
+    });
+}
+
 function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   var quickOut = rt.getLabOutputPrefs().quickLabOutput;
   var processable = filterProcessableBulkBlocks(blocks);
@@ -326,6 +354,11 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
 
   var displayPick = resolveBulkDisplayPick(blocks, processable, text);
   if (!displayPick || !displayPick.result) {
+    if (looksLikeSomeLabReport(text)) {
+      openTeachWizardAfterPaste(text, { resLabs: [], patient: null, sourceText: text });
+      notifyTourAfterBulkLabStore(blocks, processable.length > 0);
+      return;
+    }
     rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
     notifyTourAfterBulkLabStore(blocks, processable.length > 0);
     return;
@@ -335,7 +368,9 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   displayResult.sourceText = displayPick.reportText || text;
   applyBulkLabPatientSwitch(displayPick, displayResult, processable, applyLabPastePatientResolution);
 
+  // Render parsed QS/BH first (partial case), then maybe open teach wizard.
   labPanelBridge.renderOutput(displayResult);
+  openTeachWizardAfterPaste(displayResult.sourceText || text, displayResult);
   toastCitoquimInterpFromResult(displayResult);
   rt.renderDiagramas(displayResult.resLabs);
   syncBulkLabHistorySelection(rt.getActiveId(), displayResult, processable);
