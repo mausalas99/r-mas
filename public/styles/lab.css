@@ -2509,6 +2509,200 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
   -webkit-app-region: no-drag;
 }
 
+
+/* Teach wizard — configurar lectura de panel */
+.lab-panel-teach-modal {
+  width: min(720px, 95vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+.lab-panel-teach-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.lab-panel-teach-modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.3;
+}
+.lab-panel-teach-modal-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lab-panel-teach-modal-close:hover {
+  color: var(--color-ink);
+  background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+}
+.lab-panel-teach-modal-close:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+.lab-panel-teach-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.lab-panel-teach-some-list {
+  overflow: auto;
+  max-height: min(48vh, 360px);
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+.lab-panel-teach-some-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  border-bottom: 1px solid var(--divider);
+  cursor: pointer;
+}
+.lab-panel-teach-some-item:last-child {
+  border-bottom: none;
+}
+.lab-panel-teach-some-item.is-selected {
+  box-shadow: inset 3px 0 0 var(--action);
+  background: color-mix(in oklab, var(--action) 8%, var(--color-surface));
+}
+.lab-panel-teach-some-item.is-covered {
+  opacity: 0.45;
+}
+.lab-panel-teach-some-item-label {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.lab-panel-teach-some-item-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+.lab-panel-teach-some-item-ref {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.lab-panel-teach-back {
+  margin-bottom: 12px;
+}
+.lab-panel-teach-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+.lab-panel-teach-meta-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.lab-panel-teach-meta-field .profile-input {
+  min-width: 120px;
+}
+.lab-panel-teach-rows {
+  overflow: auto;
+  max-height: min(36vh, 280px);
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.lab-panel-teach-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.9fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.3;
+  border-bottom: 1px solid var(--divider);
+}
+.lab-panel-teach-row:last-child {
+  border-bottom: none;
+}
+.lab-panel-teach-row.is-covered {
+  opacity: 0.45;
+}
+.lab-panel-teach-row .profile-input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+.lab-panel-teach-row-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--section-header-bg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.lab-panel-teach-add-row-btn {
+  margin-bottom: 12px;
+}
+.lab-panel-teach-preview-wrap {
+  margin-bottom: 12px;
+}
+.lab-panel-teach-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.lab-panel-teach-preview {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-ink);
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+.lab-panel-teach-actions {
+  margin-top: 0;
+  justify-content: flex-end;
+  gap: 10px;
+}
+html.electron-macos-inset-bar #lab-panel-teach-backdrop.modal-backdrop.open,
+html.electron-macos-inset-bar #lab-panel-teach-backdrop.modal-backdrop.open * {
+  -webkit-app-region: no-drag;
+}
+
 /* Aligned digits for clinical values (design system phase 1) */
 #lab-output-box,
 #lab-history-body,
