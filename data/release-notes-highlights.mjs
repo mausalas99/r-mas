@@ -1538,6 +1538,39 @@ var RELEASE_NOTES_769 = [
   },
 ];
 
+var RELEASE_NOTES_772 = [
+  {
+    title: 'Pega SOME en cualquier pantalla',
+    body:
+      'Pega texto de laboratorio donde estés o usa <strong>⌘K → Procesar SOME</strong>: R+ propone paciente por registro/nombre y abre <strong>Laboratorio</strong> listo.',
+  },
+  {
+    title: '⌘K con acciones directas',
+    body:
+      'Batch labs mi equipo, cola docs, EA, export, pendiente y pase desde la paleta; con búsqueda vacía aparecen <strong>pins</strong> frecuentes primero.',
+  },
+  {
+    title: 'Colas en el header',
+    body:
+      '<strong>Docs</strong> (labs hoy + pendientes) y <strong>cultivos</strong> (ATB pendiente / sin nota) con badge — un clic al paciente correcto.',
+  },
+  {
+    title: 'Labs → Eventualidades',
+    body:
+      'Tras <strong>Procesar</strong>, import del repositorio o <strong>Actualizar</strong> batch, hallazgos relevantes se envían solos a Eventualidades.',
+  },
+  {
+    title: 'Pre-entrega y clipboard EA',
+    body:
+      'Checklist mi equipo (HC, EA hoy, pendientes vencidos, cultivos) y <strong>Copiar indicaciones</strong> (meds + bomba) desde Estado actual.',
+  },
+  {
+    title: 'Parche sobre 7.7.1',
+    body:
+      'Incluye receta SOAP ampliada, rescates insulina y citoquímica. Instala <strong>7.7.2</strong> en todo el turno el mismo día.',
+  },
+];
+
 var RELEASE_NOTES_771 = [
   {
     title: 'SOAP — más categorías desde receta',
@@ -1567,9 +1600,10 @@ var RELEASE_NOTES_771 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_771;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_772;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.2': RELEASE_NOTES_772,
   '7.7.1': RELEASE_NOTES_771,
   '7.7.0': RELEASE_NOTES_770,
   '7.6.9': RELEASE_NOTES_769,

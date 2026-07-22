@@ -37,3 +37,33 @@ test('residual excludes labels covered by effective TIR defs', () => {
   var r = findResidualSomeStudies(texto, { resLabs: [] });
   assert.ok(!r.candidates.some((c) => /^TSH$/i.test(String(c.label).trim())));
 });
+
+test('residual covers BH synonyms when compact BH tokens exist', () => {
+  clearLabPanelOverlayForTests();
+  var texto =
+    'HEMATOLOGIA\n' +
+    'Estudio\tResultado\tUnidades\tValor de Referencia\n' +
+    'HCT\n*\n43.9\n%\t39.5 - 53.1\n' +
+    'MCV\n*\n92\nfL\t80 - 100\n' +
+    'MARCADOR RARO\n*\n12\nng/mL\t0 - 5\n';
+  var r = findResidualSomeStudies(texto, {
+    resLabs: ['BH\tHb 15.2 Hto 43.9 VCM 92 Leu 5.22 Plt 296'],
+  });
+  assert.ok(!r.candidates.some((c) => /^HCT$/i.test(String(c.label).trim())));
+  assert.ok(!r.candidates.some((c) => /^MCV$/i.test(String(c.label).trim())));
+  assert.ok(r.candidates.some((c) => /MARCADOR RARO/i.test(c.label)));
+});
+
+test('residual covers QS/ESC/PFHs synonyms when tokens exist', () => {
+  clearLabPanelOverlayForTests();
+  var texto =
+    'QUIMICA CLINICA\n' +
+    'Estudio\tResultado\tUnidades\tValor de Referencia\n' +
+    'CALCIO EN SUERO\n*\n9.0\nmg/dL\t8.5 - 10.5\n' +
+    'BILIRRUBINA INDIRECTA\n*\n0.5\nmg/dL\t0 - 0.8\n' +
+    'COLESTEROL\n*\n160\nmg/dL\t0 - 200\n';
+  var r = findResidualSomeStudies(texto, {
+    resLabs: ['ESC\tCa 9.0', 'PFHs\tBI 0.5', 'QS\tCOL 160'],
+  });
+  assert.equal(r.candidates.length, 0);
+});

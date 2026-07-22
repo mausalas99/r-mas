@@ -9,7 +9,7 @@ import { storeBulkLabBlocks, pickDisplayLabResult } from './lab-panel-workbench-
 
 export function storeProcessableBulkBlocks(blocks, processable) {
   if (!processable.length) {
-    return { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length };
+    return { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length, storedByPatient: {} };
   }
   var storeSummary = storeBulkLabBlocks(blocks, processable);
   if (typeof rt.addAuditEntry === 'function') {

@@ -329,6 +329,20 @@ html.ui-density-normal #main-area {
   background: var(--state-hover-bg);
   color: var(--text);
 }
+.header-work-cluster .header-doc-queue-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  opacity: 1;
+}
+.header-work-cluster .header-doc-queue-btn:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
 .header-work-cluster .header-mode-seg-btn:not(.is-active) {
   font-weight: 500;
 }

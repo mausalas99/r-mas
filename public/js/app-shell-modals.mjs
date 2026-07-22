@@ -92,6 +92,25 @@ function regAriaOpen(registry, id, close) {
   });
 }
 
+/**
+ * Escape/backdrop close: prefer window handler, else hide modal by id.
+ * @param {string} winFn
+ * @param {string} modalId
+ */
+function closeModalViaWindowOrHide(winFn, modalId) {
+  return function () {
+    if (typeof window[winFn] === 'function') {
+      window[winFn]();
+      return;
+    }
+    var modal = document.getElementById(modalId);
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modal.hidden = true;
+  };
+}
+
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */
 function wireModalDismissLayers(registry) {
   regOverlay(registry, 'update-modal-backdrop', hideUpdateModal);
@@ -143,25 +162,22 @@ function wireModalDismissLayers(registry) {
   regOpenClass(registry, 'lab-bulk-preview-backdrop', closeLabBulkPreviewModal, {
     panelSelector: '.lab-bulk-preview-modal',
   });
-  regOpenClass(registry, 'lab-repo-import-modal', closeLabRepoImportModal, {
-    panelSelector: '.lab-repo-import-modal',
-  });
-  regOpenClass(
-    registry,
-    'lab-repo-batch-modal',
-    function closeLabRepoBatchModalProxy() {
-      if (typeof window.closeLabRepoBatchModal === 'function') {
-        window.closeLabRepoBatchModal();
-        return;
-      }
-      var modal = document.getElementById('lab-repo-batch-modal');
-      if (!modal) return;
-      modal.classList.remove('open');
-      modal.setAttribute('aria-hidden', 'true');
-      modal.hidden = true;
+  registry.register({
+    isOpen: function () {
+      var bd = shellEl('paste-smart-backdrop');
+      return !!(bd && !bd.hidden);
     },
-    { panelSelector: '.lab-repo-batch-modal' }
-  );
+    close: function closePasteSmartConfirmProxy() {
+      void import('./features/paste-smart.mjs').then(function (mod) {
+        mod.closeSmartPasteConfirmIfOpen();
+      });
+    },
+    backdropEl: function () {
+      return shellEl('paste-smart-backdrop');
+    },
+    panelSelector: '.paste-smart-modal',
+  });
+  wireQueuePanelDismissLayers(registry);
   regOpenClass(registry, 'lab-bulk-tour-hint-backdrop', closeLabBulkTourHintModal, {
     panelSelector: '.lab-bulk-tour-hint-modal',
   });
@@ -172,6 +188,37 @@ function wireModalDismissLayers(registry) {
     panelSelector: '.lab-some-tables-modal',
   });
   regOpenClass(registry, 'onboarding-intro-backdrop', hideTourIntroModal);
+}
+
+/** @param {ReturnType<typeof createModalDismissRegistry>} registry */
+function wireQueuePanelDismissLayers(registry) {
+  regOpenClass(registry, 'lab-repo-import-modal', closeLabRepoImportModal, {
+    panelSelector: '.lab-repo-import-modal',
+  });
+  regOpenClass(
+    registry,
+    'lab-repo-batch-modal',
+    closeModalViaWindowOrHide('closeLabRepoBatchModal', 'lab-repo-batch-modal'),
+    { panelSelector: '.lab-repo-batch-modal' }
+  );
+  regOpenClass(
+    registry,
+    'doc-queue-modal',
+    closeModalViaWindowOrHide('closeDocQueuePanel', 'doc-queue-modal'),
+    { panelSelector: '.doc-queue-modal' }
+  );
+  regOpenClass(
+    registry,
+    'cultivo-queue-modal',
+    closeModalViaWindowOrHide('closeCultivoQueuePanel', 'cultivo-queue-modal'),
+    { panelSelector: '.cultivo-queue-modal' }
+  );
+  regOpenClass(
+    registry,
+    'entrega-prep-modal',
+    closeModalViaWindowOrHide('closeEntregaPrepPanel', 'entrega-prep-modal'),
+    { panelSelector: '.entrega-prep-modal' }
+  );
 }
 
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */

@@ -14,5 +14,11 @@ export {
   groupEntriesByDay,
 } from './eventualidades-store.mjs';
 export { registerEventualidadesRuntime } from './eventualidades-store.mjs';
-export { renderEventualidadesPanel, invalidateEventualidadesPanel, savePatientEventualidad } from './eventualidades-render.mjs';
+export {
+  renderEventualidadesPanel,
+  invalidateEventualidadesPanel,
+  savePatientEventualidad,
+  queueEventualidadesPrefill,
+  applyEventualidadesPrefill,
+} from './eventualidades-render.mjs';
 export { applyDriveImportEventualidades } from './eventualidades-drive.mjs';

@@ -162,6 +162,18 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   border-color: var(--color-success-emphasis-hover);
 }
 
+.ea-btn--accent {
+  background: color-mix(in oklab, var(--action, var(--color-accent)) 12%, var(--surface));
+  border-color: color-mix(in oklab, var(--action, var(--color-accent)) 35%, var(--border));
+  color: var(--action, var(--color-accent));
+  box-shadow: none;
+}
+
+.ea-btn--accent:hover {
+  background: color-mix(in oklab, var(--action, var(--color-accent)) 20%, var(--surface));
+  border-color: color-mix(in oklab, var(--action, var(--color-accent)) 50%, var(--border));
+}
+
 .ea-btn--ghost {
   background: transparent;
   border-color: color-mix(in oklab, var(--border) 92%, transparent);

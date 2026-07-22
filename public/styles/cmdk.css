@@ -82,6 +82,11 @@
   flex-shrink: 0;
 }
 
+.cmdk-item--action .cmdk-item-hint {
+  color: var(--action);
+  opacity: 0.85;
+}
+
 .cmdk-empty {
   display: flex;
   flex-direction: column;
@@ -132,9 +137,132 @@
   color: var(--text);
 }
 
+.header-doc-queue-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--border-hairline);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.header-doc-queue-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.header-doc-queue-btn:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.header-doc-queue-btn:hover .header-doc-queue-icon {
+  opacity: 1;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cmdk {
     animation: none !important;
   }
 }
+
+/* CP3 — Paste-anywhere confirm */
+.paste-smart-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: color-mix(in srgb, var(--text) 28%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.paste-smart-backdrop[hidden],
+.paste-smart-modal[hidden] {
+  display: none !important;
+}
+
+.paste-smart-modal {
+  position: fixed;
+  z-index: 12001;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(80vh, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-radius: var(--radius-lg, 12px);
+  border: var(--border-hairline);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay, 0 18px 48px color-mix(in srgb, var(--text) 18%, transparent));
+  color: var(--text);
+}
+
+.paste-smart-head h3 {
+  margin: 0 0 4px;
+  font-size: calc(16px * var(--density-font, 1));
+  font-weight: 700;
+}
+
+.paste-smart-lead {
+  margin: 0;
+  font-size: calc(13px * var(--density-font, 1));
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.paste-smart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+  max-height: 320px;
+}
+
+.paste-smart-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.paste-smart-choice:hover,
+.paste-smart-choice:focus-visible {
+  background: var(--state-hover-bg);
+  outline: none;
+}
+
+.paste-smart-choice-name {
+  font-size: calc(14px * var(--density-font, 1));
+  font-weight: 600;
+}
+
+.paste-smart-choice-hint {
+  font-size: calc(12px * var(--density-font, 1));
+  color: var(--text-muted);
+}
+
+.paste-smart-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+

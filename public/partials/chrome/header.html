@@ -10,8 +10,17 @@
   </div>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
-      <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" onclick="openCommandPalette()" title="Ir a sección o paciente (⌘K)" aria-label="Ir a sección o paciente">
+      <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" onclick="openCommandPalette()" title="Ir a… o acción (⌘K)" aria-label="Ir a sección, paciente o acción">
         <svg class="header-cmdk-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+      <button type="button" id="btn-doc-queue" class="header-doc-queue-btn" onclick="openDocQueuePanel()" title="Cola de documentación" aria-label="Cola de documentación">
+        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      </button>
+      <button type="button" id="btn-entrega-prep" class="header-doc-queue-btn" onclick="openEntregaPrepPanel()" title="Preparar entrega" aria-label="Preparar entrega">
+        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </button>
+      <button type="button" id="btn-cultivo-queue" class="header-doc-queue-btn" onclick="openCultivoQueuePanel()" title="Cultivos por seguir" aria-label="Cultivos por seguir">
+        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4H9z"/><path d="M8 7h8v14H8z"/><path d="M10 11h4M10 15h4"/></svg>
       </button>
 
       <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">

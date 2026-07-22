@@ -4,6 +4,7 @@
 import { parseSomeReportTables } from './labs-some-table-parse.mjs';
 import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
 
+/** Labels always treated as core (substring match on estudio). */
 var CORE_DENY_LABELS = [
   'GLUCOSA',
   'HGB',
@@ -16,6 +17,54 @@ var CORE_DENY_LABELS = [
   'SODIO',
   'POTASIO',
   'CLORO',
+];
+
+/**
+ * If ANY of `tokens` appears as a compact lab key in resLabs, matching SOME labels are covered.
+ * @type {{ tokens: string[], labels: string[] }[]}
+ */
+var CORE_TOKEN_ALIASES = [
+  { tokens: ['Hb', 'HGB'], labels: ['HGB', 'HEMOGLOBINA', 'HB'] },
+  { tokens: ['Hto'], labels: ['HCT', 'HEMATOCRITO', 'HTO'] },
+  { tokens: ['VCM'], labels: ['MCV', 'VCM', 'VOLUMEN CORPUSCULAR MEDIO'] },
+  { tokens: ['HCM'], labels: ['MCH', 'HCM', 'HEMOGLOBINA CORPUSCULAR'] },
+  { tokens: ['CHCM'], labels: ['MCHC', 'CHCM'] },
+  { tokens: ['RDW'], labels: ['RDW'] },
+  { tokens: ['Leu', 'WBC'], labels: ['WBC', 'LEUCOCIT'] },
+  { tokens: ['Neu'], labels: ['NEU ', 'NEUTROFIL'] },
+  { tokens: ['NeuPct', 'Seg'], labels: ['NEU%', 'NEUTROFILOS %', '% NEUTRO'] },
+  { tokens: ['Lin', 'LinPct'], labels: ['LYM', 'LINFOCIT'] },
+  { tokens: ['Mono', 'MonoPct'], labels: ['MONO', 'MONOCIT'] },
+  { tokens: ['Eos', 'EosPct'], labels: ['EOS', 'EOSINOFIL'] },
+  { tokens: ['Plt'], labels: ['PLT', 'PLAQUET'] },
+  { tokens: ['RBC', 'Eri'], labels: ['RBC', 'ERITROCIT'] },
+  { tokens: ['Glu'], labels: ['GLUCOSA'] },
+  { tokens: ['Cr'], labels: ['CREATININA'] },
+  { tokens: ['BUN'], labels: ['UREA', 'NITROGENO DE LA UREA', 'BUN'] },
+  { tokens: ['Na'], labels: ['SODIO'] },
+  { tokens: ['K'], labels: ['POTASIO'] },
+  { tokens: ['Cl'], labels: ['CLORO'] },
+  { tokens: ['Ca'], labels: ['CALCIO'] },
+  { tokens: ['F', 'P'], labels: ['FOSFORO', 'FÓSFORO', 'FOSFATO'] },
+  { tokens: ['Mg'], labels: ['MAGNESIO'] },
+  { tokens: ['Alb'], labels: ['ALBUMINA', 'ALBÚMINA'] },
+  { tokens: ['BT'], labels: ['BILIRRUBINA TOTAL'] },
+  { tokens: ['BD'], labels: ['BILIRRUBINA DIRECTA'] },
+  { tokens: ['BI'], labels: ['BILIRRUBINA INDIRECTA'] },
+  { tokens: ['LDH'], labels: ['LDH', 'DESHIDROGENASA'] },
+  { tokens: ['Amil'], labels: ['AMILASA'] },
+  { tokens: ['Lip'], labels: ['LIPASA'] },
+  { tokens: ['FA', 'ALP'], labels: ['FOSFATASA ALCALINA', 'ALP'] },
+  { tokens: ['AST'], labels: ['AST', 'ASPARTATO'] },
+  { tokens: ['ALT'], labels: ['ALT', 'ALANIN'] },
+  { tokens: ['GGT'], labels: ['GGT', 'GLUTAMIL'] },
+  { tokens: ['COL'], labels: ['COLESTEROL'] },
+  { tokens: ['TGL', 'TG'], labels: ['TRIGLICER'] },
+  { tokens: ['HDL'], labels: ['HDL'] },
+  { tokens: ['LDL'], labels: ['LDL'] },
+  { tokens: ['PCR'], labels: ['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA', 'PCR'] },
+  { tokens: ['AU'], labels: ['ACIDO URICO', 'ÁCIDO ÚRICO'] },
+  { tokens: ['CPK'], labels: ['CPK', 'CREATIN FOSFO'] },
 ];
 
 function flattenSomeRows(departments) {
@@ -82,6 +131,34 @@ function isCoveredByDefs(labelUpper, idx) {
   return false;
 }
 
+function resLabsHasToken(blob, token) {
+  var t = String(token || '').trim();
+  if (!t || !blob) return false;
+  // Compact lines: "Hb 15.2" / "\tCa 9.0" / start of line
+  var re = new RegExp('(?:^|[\\s\\t])' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:\\s|$)', 'i');
+  return re.test(blob);
+}
+
+function isCoveredByCoreTokens(labelUpper, resLabs) {
+  if (!resLabs || !resLabs.length) return false;
+  var blob = resLabs.join('\n');
+  for (var i = 0; i < CORE_TOKEN_ALIASES.length; i++) {
+    var alias = CORE_TOKEN_ALIASES[i];
+    var labelHit = false;
+    for (var l = 0; l < alias.labels.length; l++) {
+      if (substringLabelMatch(labelUpper, alias.labels[l])) {
+        labelHit = true;
+        break;
+      }
+    }
+    if (!labelHit) continue;
+    for (var t = 0; t < alias.tokens.length; t++) {
+      if (resLabsHasToken(blob, alias.tokens[t])) return true;
+    }
+  }
+  return false;
+}
+
 function isCoveredByResLabs(labelUpper, resLabs, idx) {
   if (!resLabs || !resLabs.length) return false;
   var blob = resLabs.join('\n').toUpperCase();
@@ -100,6 +177,7 @@ function isCoveredByResLabs(labelUpper, resLabs, idx) {
 function isRowCovered(estudio, resLabs, idx) {
   var labelUpper = String(estudio || '').toUpperCase().trim();
   if (!labelUpper) return true;
+  if (isCoveredByCoreTokens(labelUpper, resLabs)) return true;
   if (matchesDenyList(labelUpper)) return true;
   if (isCoveredByDefs(labelUpper, idx)) return true;
   if (isCoveredByResLabs(labelUpper, resLabs, idx)) return true;

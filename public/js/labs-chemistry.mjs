@@ -150,7 +150,10 @@ export function parsePFH_(tNorm) {
   var btData   = extraerConRango(['BILIRRUBINA TOTAL'], tNorm);
   var bdData   = extraerConRango(['BILIRRUBINA DIRECTA'], tNorm);
   var biData   = extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm);
-  var ldhData  = extraerConRango(['LDH DESHIDROGENASA LACTICA','LDH '], tNorm);
+  var ldhData  = extraerConRango(
+    ['LDH DESHIDROGENASA LACTICA', 'LDH DESHIDROGENASA LAC', 'LDH '],
+    tNorm
+  );
   var amilData = extraerConRango(['AMILASA SERICA','AMILASA'], tNorm);
 
   var Alb  = fmt(marcarSegunRango(albData.valor,  albData.min,  albData.max));

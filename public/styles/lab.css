@@ -2951,3 +2951,301 @@ html.electron-macos-inset-bar #lab-panel-teach-backdrop.modal-backdrop.open * {
   color: var(--text-muted);
   opacity: 0.72;
 }
+
+/* CP2 — Cola de documentación (panel global) */
+.doc-queue-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, calc(100vw - 32px));
+  max-width: 460px;
+  max-height: min(88vh, 680px);
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.doc-queue-modal-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 20px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--divider);
+  background: transparent;
+}
+.doc-queue-modal-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.3;
+}
+.doc-queue-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 42ch;
+}
+.doc-queue-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in srgb, var(--text-muted) 5%, var(--surface));
+}
+.doc-queue-empty {
+  margin: 16px 8px;
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+}
+.doc-queue-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+}
+.doc-queue-row-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.doc-queue-row-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.doc-queue-row-name {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--text);
+}
+.doc-queue-row-bed {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+.doc-queue-row-status {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+}
+.doc-queue-primary {
+  flex-shrink: 0;
+  align-self: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.doc-queue-row-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--divider) 70%, transparent);
+}
+.doc-queue-row-links-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+.doc-queue-row-links-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+  opacity: 0.7;
+}
+.doc-queue-link {
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--action, var(--color-accent));
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.doc-queue-link:hover {
+  filter: brightness(1.08);
+}
+.doc-queue-actions {
+  flex-shrink: 0;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--divider);
+  margin: 0;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--surface);
+}
+
+/* CP6 — Preparar entrega (checklist handoff) */
+.entrega-prep-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, calc(100vw - 32px));
+  max-width: 460px;
+  max-height: min(88vh, 680px);
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.entrega-prep-modal-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 20px 14px;
+  margin: 0;
+  border-bottom: 1px solid var(--divider);
+  background: transparent;
+}
+.entrega-prep-modal-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.3;
+}
+.entrega-prep-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 42ch;
+}
+.entrega-prep-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: color-mix(in srgb, var(--text-muted) 5%, var(--surface));
+}
+.entrega-prep-empty {
+  margin: 16px 8px;
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+}
+.entrega-prep-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+}
+.entrega-prep-row-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.entrega-prep-row-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.entrega-prep-row-name {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--text);
+}
+.entrega-prep-row-bed {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+.entrega-prep-row-status {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+}
+.entrega-prep-primary {
+  flex-shrink: 0;
+  align-self: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.entrega-prep-row-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--divider) 70%, transparent);
+}
+.entrega-prep-row-links-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+.entrega-prep-row-links-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+  opacity: 0.7;
+}
+.entrega-prep-link {
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--action, var(--color-accent));
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.entrega-prep-link:hover {
+  filter: brightness(1.08);
+}
+.entrega-prep-actions {
+  flex-shrink: 0;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--divider);
+  margin: 0;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--surface);
+}

@@ -115,6 +115,60 @@ function openCommandPaletteFromShell() {
   });
 }
 
+function openDocQueuePanelFromShell() {
+  void import('./features/doc-queue-panel.mjs').then(function (mod) {
+    mod.openDocQueuePanel();
+  });
+}
+
+function closeDocQueuePanelFromShell() {
+  void import('./features/doc-queue-panel.mjs').then(function (mod) {
+    mod.closeDocQueuePanel();
+  });
+}
+
+function refreshDocQueueBadgeFromShell() {
+  void import('./features/doc-queue-panel.mjs').then(function (mod) {
+    mod.refreshDocQueueBadge();
+  });
+}
+
+function openEntregaPrepPanelFromShell() {
+  void import('./features/entrega-prep-panel.mjs').then(function (mod) {
+    mod.openEntregaPrepPanel();
+  });
+}
+
+function closeEntregaPrepPanelFromShell() {
+  void import('./features/entrega-prep-panel.mjs').then(function (mod) {
+    mod.closeEntregaPrepPanel();
+  });
+}
+
+function refreshEntregaPrepBadgeFromShell() {
+  void import('./features/entrega-prep-panel.mjs').then(function (mod) {
+    mod.refreshEntregaPrepBadge();
+  });
+}
+
+function openCultivoQueuePanelFromShell() {
+  void import('./features/cultivo-queue-panel.mjs').then(function (mod) {
+    mod.openCultivoQueuePanel();
+  });
+}
+
+function closeCultivoQueuePanelFromShell() {
+  void import('./features/cultivo-queue-panel.mjs').then(function (mod) {
+    mod.closeCultivoQueuePanel();
+  });
+}
+
+function refreshCultivoQueueBadgeFromShell() {
+  void import('./features/cultivo-queue-panel.mjs').then(function (mod) {
+    mod.refreshCultivoQueueBadge();
+  });
+}
+
 export function initModalDismiss() {
   void import('./app-shell-modals.mjs').then(function (mod) {
     mod.initModalDismiss();
@@ -523,6 +577,15 @@ export const appShellWindowHandlers = {
   chooseOutputDir,
   updatePatient,
   quickExportCurrentPatient: quickExportCurrentPatientLazy,
+  openDocQueuePanel: openDocQueuePanelFromShell,
+  closeDocQueuePanel: closeDocQueuePanelFromShell,
+  refreshDocQueueBadge: refreshDocQueueBadgeFromShell,
+  openEntregaPrepPanel: openEntregaPrepPanelFromShell,
+  closeEntregaPrepPanel: closeEntregaPrepPanelFromShell,
+  refreshEntregaPrepBadge: refreshEntregaPrepBadgeFromShell,
+  openCultivoQueuePanel: openCultivoQueuePanelFromShell,
+  closeCultivoQueuePanel: closeCultivoQueuePanelFromShell,
+  refreshCultivoQueueBadge: refreshCultivoQueueBadgeFromShell,
 };
 
 /** Expose clinical handoff entry points on window.appShell. */
@@ -561,6 +624,24 @@ function _rpcDeferInit(fn) {
 
 export function scheduleDeferredShellInits() {
   _rpcDeferInit(installClinicalAppShell);
+  _rpcDeferInit(function () {
+    void import('./features/paste-smart.mjs').then(function (mod) {
+      mod.initPasteSmart();
+    });
+  });
+  _rpcDeferInit(refreshDocQueueBadgeFromShell);
+  _rpcDeferInit(refreshEntregaPrepBadgeFromShell);
+  _rpcDeferInit(refreshCultivoQueueBadgeFromShell);
+  _rpcDeferInit(function () {
+    if (typeof document === 'undefined' || !document.addEventListener) return;
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        refreshDocQueueBadgeFromShell();
+        refreshEntregaPrepBadgeFromShell();
+        refreshCultivoQueueBadgeFromShell();
+      }
+    });
+  });
   _rpcDeferInit(function () {
     void importLazyRoutes().then(function (routes) {
       return routes.ensurePlatformLoaded();

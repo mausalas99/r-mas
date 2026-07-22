@@ -280,6 +280,45 @@
   </div>
 </div>
 
+<div id="doc-queue-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal doc-queue-modal" role="dialog" aria-modal="true" aria-labelledby="doc-queue-title" onclick="event.stopPropagation()">
+    <div class="doc-queue-modal-head">
+      <h3 id="doc-queue-title">Falta documentar</h3>
+      <p id="doc-queue-meta" class="doc-queue-hint">De tu equipo: labs de hoy sin nota, o pendientes abiertos. Un toque abre al paciente.</p>
+    </div>
+    <div id="doc-queue-list" class="doc-queue-list" role="list" aria-label="Pacientes que faltan por documentar"></div>
+    <div class="modal-actions doc-queue-actions">
+      <button type="button" class="btn-med-secondary" id="doc-queue-close" onclick="closeDocQueuePanel()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="cultivo-queue-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal doc-queue-modal cultivo-queue-modal" role="dialog" aria-modal="true" aria-labelledby="cultivo-queue-title" onclick="event.stopPropagation()">
+    <div class="doc-queue-modal-head">
+      <h3 id="cultivo-queue-title">Cultivos por seguir</h3>
+      <p id="cultivo-queue-meta" class="doc-queue-hint">De tu equipo: cultivos positivos sin antibiograma, o sin nota desde el resultado. Un toque abre Cultivos.</p>
+    </div>
+    <div id="cultivo-queue-list" class="doc-queue-list" role="list" aria-label="Pacientes con cultivos por seguir"></div>
+    <div class="modal-actions doc-queue-actions">
+      <button type="button" class="btn-med-secondary" id="cultivo-queue-close" onclick="closeCultivoQueuePanel()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="entrega-prep-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal entrega-prep-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-prep-title" onclick="event.stopPropagation()">
+    <div class="entrega-prep-modal-head">
+      <h3 id="entrega-prep-title">Preparar entrega</h3>
+      <p id="entrega-prep-meta" class="entrega-prep-hint">De tu equipo: HC incompleta, EA sin guardar hoy, pendientes vencidos o cultivos sin seguimiento.</p>
+    </div>
+    <div id="entrega-prep-list" class="entrega-prep-list" role="list" aria-label="Pacientes con gaps para entrega"></div>
+    <div class="modal-actions entrega-prep-actions">
+      <button type="button" class="btn-med-secondary" id="entrega-prep-close" onclick="closeEntregaPrepPanel()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
   <div class="modal lab-repo-batch-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">

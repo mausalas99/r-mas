@@ -26,6 +26,66 @@ import { esc } from '../dom-escape.mjs';
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
+/** Pending compose prefill (e.g. lab interpretations from doc-queue). */
+let _pendingPrefillText = null;
+
+/**
+ * Queue text into the Eventualidades compose box (nueva eventualidad).
+ * Applied on next render; call after navigating to the panel.
+ * @param {string} text
+ * @returns {boolean} true if text was queued
+ */
+export function queueEventualidadesPrefill(text) {
+  var t = String(text || '').trim();
+  if (!t) {
+    _pendingPrefillText = null;
+    return false;
+  }
+  _editingEntryId = null;
+  _pendingPrefillText = t;
+  return true;
+}
+
+/**
+ * Apply queued prefill into the compose box if the mount exists.
+ * Prefer calling after `renderEventualidadesPanel` (which also applies pending).
+ * @param {HTMLElement|null} [mountEl]
+ * @returns {boolean}
+ */
+export function applyEventualidadesPrefill(mountEl) {
+  if (!_pendingPrefillText) return false;
+  var mount =
+    mountEl ||
+    (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
+  if (!mount) return false;
+  return fillComposeFromPending_(mount);
+}
+
+function fillComposeFromPending_(mountEl) {
+  if (!_pendingPrefillText || !mountEl) return false;
+  var input = mountEl.querySelector('#eventualidades-input');
+  if (!input) return false;
+  var pending = _pendingPrefillText;
+  _pendingPrefillText = null;
+  input.value = pending;
+  try {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } catch (_e) {
+    /* ignore */
+  }
+  if (typeof input.focus === 'function') {
+    try {
+      input.focus();
+    } catch (_e2) {
+      /* ignore */
+    }
+  }
+  var compose = mountEl.querySelector('.ev-compose');
+  if (compose && compose.scrollIntoView) {
+    compose.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  return true;
+}
 
 function daySectionIsOpen(dayGroup, editingId) {
   if (_dayOpenPrefs.has(dayGroup.day)) return _dayOpenPrefs.get(dayGroup.day);
@@ -386,11 +446,13 @@ export function renderEventualidadesPanel(mountEl) {
   wireEventualidadesDayToggles(mountEl);
   wireEventualidadesCompose(mountEl, patient, store);
   wireEventualidadesTimeline(mountEl, patient, store);
+  fillComposeFromPending_(mountEl);
 }
 
 export function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
+  _pendingPrefillText = null;
 }
 
 /** @type {number} */

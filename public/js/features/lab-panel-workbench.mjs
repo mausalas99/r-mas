@@ -24,6 +24,7 @@ import {
   notifyTourAfterBulkLabStore,
   isMultiBulkLabPaste,
 } from './lab-panel-workbench-finalize.mjs';
+import { autosendLabsEventualidadForStored } from './lab-eventualidad-autosend.mjs';
 import { shouldOpenLabPanelTeach } from '../labs-panel-teach-trigger.mjs';
 import { looksLikeSomeLabReport } from '../labs.js';
 
@@ -47,14 +48,25 @@ export function limpiarReporte() {
   maybeShowLabHistoryForActivePatient({ forceReload: true });
 }
 
-function openLabPatientPicker() {
+/**
+ * @param {{ title?: string, onPick?: (patientId: string) => void }} [opts]
+ */
+function openLabPatientPicker(opts) {
+  var options = opts && typeof opts === 'object' ? opts : {};
+  var onPick =
+    typeof options.onPick === 'function'
+      ? options.onPick
+      : function () {
+          enviarLabsANota();
+        };
+  var titleText = String(options.title || '¿A qué paciente enviar los labs?');
   var overlay = document.createElement('div');
   overlay.id = 'lab-picker-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
   var box = document.createElement('div');
   box.style.cssText = 'background:#1f2937;border-radius:10px;padding:20px;min-width:260px;max-width:360px;width:90%;';
   var title = document.createElement('div');
-  title.textContent = '¿A qué paciente enviar los labs?';
+  title.textContent = titleText;
   title.style.cssText = 'color:#f9fafb;font-size:14px;font-weight:600;margin-bottom:14px;';
   box.appendChild(title);
   patients.forEach(function(p) {
@@ -66,7 +78,7 @@ function openLabPatientPicker() {
     btn.onclick = function() {
       document.body.removeChild(overlay);
       rt.selectPatient(p.id);
-      enviarLabsANota();
+      onPick(p.id);
     };
     box.appendChild(btn);
   });
@@ -348,7 +360,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   var processable = filterProcessableBulkBlocks(blocks);
   var storeSummary = processable.length
     ? storeProcessableBulkBlocks(blocks, processable)
-    : { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length };
+    : { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length, storedByPatient: {} };
 
   if (!processable.length) toastNoMatchingPatients(blocks, quickOut);
 
@@ -386,6 +398,14 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
 
   clearLabInputAfterSuccessfulParse();
   notifyTourAfterBulkLabStore(blocks, true);
+
+  if (storeSummary.storedSets > 0 && storeSummary.storedByPatient) {
+    void autosendLabsEventualidadForStored(storeSummary.storedByPatient, {
+      showToast: function (msg, type) {
+        rt.showToast(msg, type);
+      },
+    });
+  }
 }
 
 export { finalizeBulkLabPaste, clearLabInputAfterSuccessfulParse, openLabPatientPicker, copiarLabsAlPortapapeles };

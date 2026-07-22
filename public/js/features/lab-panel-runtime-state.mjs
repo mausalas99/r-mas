@@ -1,6 +1,9 @@
 // Lab panel — injected runtime callbacks
 var rt = {
   showToast() {},
+  getSettings() {
+    return {};
+  },
   getActiveId() {
     return null;
   },

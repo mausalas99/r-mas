@@ -52,6 +52,10 @@ import {
   resetEaRegistroForm,
   applyEstadoActualParsedToForm,
 } from './estado-actual-panel-registro.mjs';
+import {
+  buildEaIndicacionesClipboardText,
+  hasEaIndicacionesClipboardContent,
+} from './ea-indicaciones-clipboard.mjs';
 
 function parseFormMedicion() {
   var form = document.getElementById('ea-form');
@@ -293,6 +297,29 @@ export async function copiarEstadoActualTexto() {
 }
 
 /**
+ * Bloque SOAP/indicaciones (meds confirmados + bomba) → portapapeles para Word/EMR.
+ */
+export async function copiarEaIndicacionesClipboard() {
+  var patient = findActivePatient();
+  if (!patient) {
+    getEaPanelRuntime().showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  ensureMonitoreo(patient);
+  flushEaEstadoClinicoFieldsFromDom(patient);
+  if (!hasEaIndicacionesClipboardContent(patient.monitoreo)) {
+    getEaPanelRuntime().showToast('No hay indicaciones confirmadas para copiar', 'error');
+    return;
+  }
+  var text = buildEaIndicacionesClipboardText(patient.monitoreo);
+  var ok = await getEaPanelRuntime().copyToClipboardSafe(text);
+  getEaPanelRuntime().showToast(
+    ok ? 'Indicaciones copiadas al portapapeles ✓' : 'No se pudo copiar',
+    ok ? 'success' : 'error'
+  );
+}
+
+/**
  * @param {string} key
  */
 export function confirmEaMedField(key) {
@@ -352,6 +379,7 @@ export const windowHandlers = {
   estadoActualGuardar,
   estadoActualGuardarCopiar,
   copiarEstadoActualTexto,
+  copiarEaIndicacionesClipboard,
   confirmEaMedField,
   discardEaMedProposal,
   confirmEaDietProposal,

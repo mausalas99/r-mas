@@ -203,7 +203,7 @@ export function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, 'PFHs', 'BT', extraerConRango(['BILIRRUBINA TOTAL'], tNorm));
     putTrendRef_(refs, 'PFHs', 'BD', extraerConRango(['BILIRRUBINA DIRECTA'], tNorm));
     putTrendRef_(refs, 'PFHs', 'BI', extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH '], tNorm));
+    putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH DESHIDROGENASA LAC', 'LDH '], tNorm));
     putTrendRef_(refs, 'PFHs', 'Amil', extraerConRango(['AMILASA SERICA', 'AMILASA'], tNorm));
     putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
   }

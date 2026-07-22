@@ -52,7 +52,6 @@ import {
   dismissLabRepoBatchQueue,
   registerLabRepoBatchImportRuntime,
 } from './lab-repo-batch-import.mjs';
-
 var activeLab = null;
 
 labPanelBridge.getActiveLab = function () {

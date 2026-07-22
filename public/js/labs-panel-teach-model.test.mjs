@@ -11,6 +11,12 @@ import { parsePanelDef_ } from './labs-panel-parse.mjs';
 test('suggestKeyFromLabel', () => {
   assert.equal(suggestKeyFromLabel('T4 LIBRE'), 'T4L');
   assert.equal(suggestKeyFromLabel('HEMOGLOBINA GLICOSILADA'), 'HbA1c');
+  assert.equal(suggestKeyFromLabel('CALCIO EN SUERO'), 'Ca');
+  assert.equal(suggestKeyFromLabel('LDH DESHIDROGENASA LAC'), 'LDH');
+  assert.equal(suggestKeyFromLabel('BILIRRUBINA INDIRECTA'), 'BI');
+  assert.equal(suggestKeyFromLabel('TRIGLICERIDOS'), 'TGL');
+  assert.equal(suggestKeyFromLabel('HCT'), 'Hto');
+  assert.equal(suggestKeyFromLabel('MCV'), 'VCM');
 });
 
 test('draftRowsToPanelDef + parsePanelDef_ preview', () => {

@@ -15,6 +15,12 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Lab panel teach overlay | `labs-panel-overlay*.mjs`, `features/lab-panel-teach-*.mjs` | Wizard 2 páginas SOME residual → PanelDef overlay (LAN sync) |
 | Lab repo import | `lib/lab-repo/`, `public/js/features/lab-repo-import.mjs` | [spec](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
 | Lab repo batch (mi equipo) | `public/js/features/lab-repo-batch-import.mjs`, `lab-repo-batch-model.mjs` | Bulk morning update: mi equipo + checkboxes + sidebar job queue |
+| Paste-anywhere / Procesar SOME | `public/js/features/paste-smart.mjs`, `paste-smart-model.mjs` | Global paste or ⌘K → match census → confirm once → Labs |
+| Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs` | Labs → Eventualidades al Procesar / repo / Actualizar; cola docs también auto-envía labs de hoy |
+| ⌘K palette (acciones) | `public/js/command-palette-model.mjs`, `features/command-palette.mjs` | Jumps + shift actions (Procesar SOME, labs batch, doc queue, EA, export, pase) |
+| Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: HC / EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
+| Cola cultivos (mi equipo) | `public/js/features/cultivo-queue-panel.mjs`, `cultivo-queue-model.mjs` | ATB pendiente / sin nota → Cultivos |
+| EA → clipboard indicaciones | `public/js/features/ea-indicaciones-clipboard.mjs` | Copiar meds confirmados + bomba a portapapeles |
 | Tendencias | `public/js/features/tendencias.mjs` | |
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
 | Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md) |

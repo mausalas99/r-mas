@@ -3,6 +3,30 @@ import { isPaseMode } from './chrome.mjs';
 import { aid, getTodosRuntime } from './todos-runtime.mjs';
 import { renderTodoFormIn } from './todos-list-render.mjs';
 
+function pingDocQueueBadge() {
+  void import('./doc-queue-panel.mjs')
+    .then(function (mod) {
+      if (typeof mod.refreshDocQueueBadge === 'function') mod.refreshDocQueueBadge();
+    })
+    .catch(function () {
+      /* ignore */
+    });
+  void import('./entrega-prep-panel.mjs')
+    .then(function (mod) {
+      if (typeof mod.refreshEntregaPrepBadge === 'function') mod.refreshEntregaPrepBadge();
+    })
+    .catch(function () {
+      /* ignore */
+    });
+  void import('./cultivo-queue-panel.mjs')
+    .then(function (mod) {
+      if (typeof mod.refreshCultivoQueueBadge === 'function') mod.refreshCultivoQueueBadge();
+    })
+    .catch(function () {
+      /* ignore */
+    });
+}
+
 function refreshRondaTodoMount() {
   var overview = document.getElementById('patient-ronda-overview');
   var ronda = document.getElementById('patient-ronda-todos-mount');
@@ -37,6 +61,7 @@ export function refreshTodoUIsForPatient(patientId, opts) {
   if (isPaseMode() && !opts.skipPaseBoard) {
     getTodosRuntime().renderPaseBoard();
   }
+  if (!opts.skipDocQueueBadge) pingDocQueueBadge();
 }
 
 /** Batch LAN refresh — one pase-board repaint for many touched patients. */
@@ -50,11 +75,12 @@ export function refreshTodoUIsForPatients(patientIds) {
     unique.push(id);
   });
   unique.forEach(function (pid) {
-    refreshTodoUIsForPatient(pid, { skipPaseBoard: true });
+    refreshTodoUIsForPatient(pid, { skipPaseBoard: true, skipDocQueueBadge: true });
   });
   if (unique.length && isPaseMode()) {
     getTodosRuntime().renderPaseBoard();
   }
+  if (unique.length) pingDocQueueBadge();
 }
 
 export function refreshAllTodoUIs() {
@@ -62,6 +88,7 @@ export function refreshAllTodoUIs() {
   if (todoForm) renderTodoFormIn(todoForm, '');
   refreshRondaTodoMount();
   if (isPaseMode()) getTodosRuntime().renderPaseBoard();
+  pingDocQueueBadge();
 }
 
 export function renderTodoForm() {

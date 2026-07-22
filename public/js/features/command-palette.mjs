@@ -1,6 +1,7 @@
 /**
- * ⌘K command palette: fuzzy jump to sections and patients.
+ * ⌘K command palette: fuzzy jump + shift actions.
  * Keyboard-first glass overlay. Executes via existing globals/functions.
+ * Heavy lab features load on demand (no static boot import).
  */
 import { patients } from '../app-state.mjs';
 import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
@@ -20,6 +21,92 @@ function settings() {
   return ctx && typeof ctx.getSettings === 'function' ? ctx.getSettings() : {};
 }
 
+function callWin(name, arg) {
+  var fn = typeof window !== 'undefined' ? window[name] : null;
+  if (typeof fn !== 'function') return false;
+  if (arguments.length > 1) fn(arg);
+  else fn();
+  return true;
+}
+
+/** Dynamic import: lab panel is heavy; avoid boot-graph debt. */
+function ensureLabsThen(exportName) {
+  if (callWin(exportName)) return;
+  void import('../lazy-feature-routes.mjs')
+    .then(function (routes) {
+      return routes.ensureLabsLoaded();
+    })
+    .then(function (mod) {
+      if (mod && typeof mod[exportName] === 'function') {
+        mod[exportName]();
+        return;
+      }
+      callWin(exportName);
+    });
+}
+
+function focusTodoInput() {
+  requestAnimationFrame(function () {
+    var el = document.getElementById('todo-input');
+    if (el && typeof el.focus === 'function') el.focus();
+  });
+}
+
+function goExpedienteSection(section) {
+  if (typeof window.switchAppTab === 'function') window.switchAppTab('nota');
+  if (typeof window.switchInnerTab === 'function') window.switchInnerTab(section);
+}
+
+function executeAction(item) {
+  var id = item && item.actionId;
+  if (id === 'procesar-some') {
+    void import('./paste-smart.mjs').then(function (mod) {
+      mod.procesarSomeFromClipboard();
+    });
+    return;
+  }
+  if (id === 'doc-queue') {
+    callWin('openDocQueuePanel');
+    return;
+  }
+  if (id === 'entrega-prep') {
+    callWin('openEntregaPrepPanel');
+    return;
+  }
+  if (id === 'lab-repo-batch') {
+    ensureLabsThen('openLabRepoBatchModal');
+    return;
+  }
+  if (id === 'open-lab') {
+    if (!callWin('openPaseSectionInNormal', 'labs')) callWin('switchAppTab', 'lab');
+    return;
+  }
+  if (id === 'open-eventualidades') {
+    goExpedienteSection('eventualidades');
+    return;
+  }
+  if (id === 'open-ea') {
+    goExpedienteSection('estadoActual');
+    return;
+  }
+  if (id === 'export-note') {
+    callWin('quickExportCurrentPatient');
+    return;
+  }
+  if (id === 'new-pendiente') {
+    if (!callWin('openPaseSectionInNormal', 'pendientes')) goExpedienteSection('todo');
+    focusTodoInput();
+    return;
+  }
+  if (id === 'copy-labs') {
+    ensureLabsThen('copiarLabsAlPortapapeles');
+    return;
+  }
+  if (id === 'open-pase') {
+    callWin('setUiDensity', 'pase');
+  }
+}
+
 function ensureDom() {
   if (dom) return dom;
   var backdrop = document.createElement('div');
@@ -32,13 +119,13 @@ function ensureDom() {
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
-  panel.setAttribute('aria-label', 'Ir a sección o paciente');
+  panel.setAttribute('aria-label', 'Ir a sección, paciente o acción');
 
   var input = document.createElement('input');
   input.className = 'cmdk-input';
   input.type = 'text';
-  input.placeholder = 'Ir a… sección o paciente (ej. "tend gar")';
-  input.setAttribute('aria-label', 'Buscar sección o paciente');
+  input.placeholder = 'Ir a… o acción (ej. “exportar”, “labs”, “pase”)';
+  input.setAttribute('aria-label', 'Buscar sección, paciente o acción');
 
   var list = document.createElement('ul');
   list.className = 'cmdk-list';
@@ -95,7 +182,10 @@ function renderResults(query) {
   d.list.textContent = '';
   results.forEach(function (item, i) {
     var li = document.createElement('li');
-    li.className = 'cmdk-item' + (i === 0 ? ' is-selected' : '');
+    li.className =
+      'cmdk-item' +
+      (item.kind === 'action' ? ' cmdk-item--action' : '') +
+      (i === 0 ? ' is-selected' : '');
     li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
     var label = document.createElement('span');
@@ -118,11 +208,11 @@ function renderResults(query) {
     if (String(query || '').trim()) {
       empty.innerHTML =
         '<span class="empty-state-title">Sin coincidencias</span>' +
-        '<span class="empty-state-lead">Prueba con el nombre del paciente, una pestaña o una sección del expediente.</span>';
+        '<span class="empty-state-lead">Prueba con una acción (exportar, labs), el nombre del paciente o una sección.</span>';
     } else {
       empty.innerHTML =
         '<span class="empty-state-title">Atajos del workbench</span>' +
-        '<span class="empty-state-lead">Escribe para buscar pacientes, pestañas o secciones del expediente.</span>';
+        '<span class="empty-state-lead">Escribe para buscar acciones, pacientes o secciones del expediente.</span>';
     }
     d.list.appendChild(empty);
   }
@@ -130,6 +220,10 @@ function renderResults(query) {
 
 function executeItem(item) {
   closeCommandPalette();
+  if (item.kind === 'action') {
+    executeAction(item);
+    return;
+  }
   if (item.kind === 'app-tab') {
     if (typeof window.switchAppTab === 'function') window.switchAppTab(item.tab);
     return;

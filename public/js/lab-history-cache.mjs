@@ -24,11 +24,44 @@ export function invalidateTrendSeriesIndexCache() {
   _trendSeriesIndexCache.index = null;
 }
 
+/** @type {ReturnType<typeof setTimeout>|null} */
+var _docQueueBadgeTimer = null;
+
+function scheduleDocQueueBadgeRefresh() {
+  if (typeof setTimeout !== 'function') return;
+  if (_docQueueBadgeTimer) clearTimeout(_docQueueBadgeTimer);
+  _docQueueBadgeTimer = setTimeout(function () {
+    _docQueueBadgeTimer = null;
+    void import('./features/doc-queue-panel.mjs')
+      .then(function (mod) {
+        if (typeof mod.refreshDocQueueBadge === 'function') mod.refreshDocQueueBadge();
+      })
+      .catch(function () {
+        /* ignore */
+      });
+    void import('./features/entrega-prep-panel.mjs')
+      .then(function (mod) {
+        if (typeof mod.refreshEntregaPrepBadge === 'function') mod.refreshEntregaPrepBadge();
+      })
+      .catch(function () {
+        /* ignore */
+      });
+    void import('./features/cultivo-queue-panel.mjs')
+      .then(function (mod) {
+        if (typeof mod.refreshCultivoQueueBadge === 'function') mod.refreshCultivoQueueBadge();
+      })
+      .catch(function () {
+        /* ignore */
+      });
+  }, 120);
+}
+
 export function bumpLabHistoryRevision(patientId) {
   if (patientId == null || patientId === '') return;
   var k = String(patientId);
   _revisionByPatient[k] = (_revisionByPatient[k] || 0) + 1;
   invalidateTrendSeriesIndexCache();
+  scheduleDocQueueBadgeRefresh();
 }
 
 export function getLabHistoryRevision(patientId) {

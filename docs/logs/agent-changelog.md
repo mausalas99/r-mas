@@ -6,6 +6,13 @@ Chronological record of documentation and integration work. Format per `document
 
 | Date | Task | Key paths | Outcome |
 |------|------|-----------|---------|
+| 2026-07-21 | CP3 Paste-anywhere / Procesar SOME | `paste-smart*.mjs`, cmdk action, `cmdk.css` | Global paste or ⌘K → registro/nombre match → confirm once → Labs process. |
+| 2026-07-21 | CP7 Cultivo queue + EA→clipboard | `cultivo-queue-*.mjs`, `ea-indicaciones-clipboard.mjs`, EA action bar | Cola cultivos ATB/sin nota → Cultivos; Copiar indicaciones (meds+bomba). |
+| 2026-07-21 | CP6 Entrega prep checklist | `entrega-prep-checklist.mjs`, `entrega-prep-panel.mjs`, header, overlays | Pre-entrega gaps (HC/EA/pendientes/cultivos) → 1 clic; badge in header. |
+| 2026-07-21 | Remove CP4 Generar nota labs | deleted `lab-nota-one-gesture*.mjs`, lab panel CTA, `lab.css` | CTA Generar nota quitado del laboratorio (no .docx 1-gesto). |
+| 2026-07-21 | Labs → Eventualidades on ingest | `lab-eventualidad-autosend.mjs`, `lab-panel-workbench*.mjs` | Auto-send after Procesar / repo / Actualizar; compact fallback if no abnormal phrases. |
+| 2026-07-21 | CP5 ⌘K actions | `command-palette-model.mjs`, `features/command-palette.mjs` | Palette `action` kind: labs batch, doc queue, EA/eventualidades, export, pendiente, pase; pins first on empty. |
+| 2026-07-21 | CP2 doc queue panel (mi equipo) | `doc-queue-*.mjs`, header, overlays, `lab.css`/`cmdk.css` | Global cola docs: labs hoy + pendientes → 1 clic Labs/Nota/Pendientes; badge in header. |
 | 2026-07-21 | CP1 lab-repo batch mi equipo + queue | `lab-repo-batch-*.mjs`, `lab-bulk-paste.mjs`, `lab-bulk-preview-modal.mjs`, overlays, `lab.css` | Morning bulk update for team patients; sidebar queue; silent import; preview UX fix; auto-dismiss queue. |
 | 2026-07-15 | Release 7.6.9 prepare — gasometría highlight fix | `labs-gaso-section.mjs`, `lab-history-maint.mjs`, `lab-panel-history.mjs`, `RELEASE_NOTES_7.6.9.txt`, `release-notes-highlights.mjs` | Fix reprocess stripping GASES asterisks; bump 7.6.9; metrics:check OK; release notes + highlights filled. |
 | 2026-07-06 | Equipos push return fix (local dev) | `cloud/equipos-worker/src/{push,routes}.js`, `public/equipos/equipos-sw-push.js`, `equipos-push.mjs` | Push send loop deduped into logged helper (sent/pruned/failed per sub); `/return`+push routes await dispatch on localhost (wrangler dev drops `waitUntil`); SW v20 with push-event log. Verified: return → FCM 201 `lumify_return`. |
@@ -45,6 +52,135 @@ Chronological record of documentation and integration work. Format per `document
 
 ---
 
+## [2026-07-21] - CP3 Paste-anywhere / Procesar inteligente
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/features/paste-smart-model.mjs` (new) — matching/routing pure helpers
+- `public/js/features/paste-smart-model.test.mjs` (new)
+- `public/js/features/paste-smart.mjs` (new) — global paste + confirm UI + clipboard action
+- `public/js/command-palette-model.mjs` / `features/command-palette.mjs` — action `procesar-some`
+- `public/js/app-shell.mjs` — deferred `initPasteSmart`
+- `public/js/app-shell-modals.mjs` — Escape for confirm
+- `public/styles/cmdk.css` — confirm modal styles
+- `docs/features/features-index.md`
+
+**Database changes:** None
+
+**Summary:** Paste SOME anywhere (outside Labs textarea) or ⌘K → “Procesar SOME”: detect Expediente/Nombre, match census (registro then nombre), confirm once if ambiguous or nombre-only, then open Labs and reuse bulk preview / finalize. No autodiagnosis; human confirm when match is fuzzy.
+
+**Next:** User test CP3; remaining polish across CP1–CP7.
+
+---
+
+## [2026-07-21] - CP7 Cultivo queue + EA→clipboard
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/features/cultivo-queue-model.mjs` (new) — ATB pendiente / sin nota heuristics
+- `public/js/features/cultivo-queue-model.test.mjs` (new)
+- `public/js/features/cultivo-queue-panel.mjs` (new) — header modal → Cultivos
+- `public/js/features/ea-indicaciones-clipboard.mjs` (new) — confirmed meds + bomba text
+- `public/js/features/ea-indicaciones-clipboard.test.mjs` (new)
+- EA action bar `Copiar indicaciones`; header badge; overlays Escape
+- `docs/features/features-index.md`, `project-context.mdc`
+
+**Database changes:** None
+
+**Summary:** Cultivo follow-up queue for mi equipo (pending antibiograma or no note since result) with jump to Cultivos. EA button copies SOAP/indicaciones block (confirmed meds + insulin pump) to clipboard for Word/EMR paste. Uncommitted.
+
+**Next:** User test CP7.
+
+---
+
+## [2026-07-21] - CP4 Nota en 1 gesto post-labs
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/features/lab-nota-one-gesture-model.mjs` (new) — pure prepare/confirm copy
+- `public/js/features/lab-nota-one-gesture-model.test.mjs` (new)
+- `public/js/features/lab-nota-one-gesture.mjs` (new) — CTA + confirm → `generateWord`
+- `public/js/features/lab-panel.mjs`, `lab-panel-workbench.mjs` — wire CTA / picker onPick
+- `public/partials/layout/app-body.html`, `public/styles/lab.css`
+- `public/js/app-shell-modals.mjs` — Escape dismiss confirm
+- `docs/features/features-index.md`
+
+**Database changes:** None
+
+**Summary:** After Procesar (labs ready), primary CTA **Generar nota** slots estudios + last SOAP scaffold (Mi Perfil), confirms in Spanish, then exports `.docx` via existing `generateWord`. No EMR theater; human confirm required.
+
+**Next:** User test CP4; remaining CP3 paste-anywhere / other CPs as needed.
+
+---
+
+## [2026-07-21] - CP6 Preparar entrega (checklist)
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `lib/entrega/entrega-prep-checklist.mjs` (new) — pure gap rules
+- `lib/entrega/entrega-prep-checklist.test.mjs` (new)
+- `public/js/features/entrega-prep-panel.mjs` (new) — modal UI + navigate
+- `public/partials/chrome/header.html`, `overlays.html`
+- `public/styles/lab.css`
+- `public/js/app-shell.mjs`, `app-shell-modals.mjs` — lazy open + Escape
+- `public/js/features/todos-refresh.mjs`, `lab-history-cache.mjs` — badge refresh
+- `public/js/command-palette-model.mjs`, `features/command-palette.mjs` — ⌘K “Preparar entrega”
+- `docs/features/features-index.md`, `.cursor/rules/project-context.mdc`
+
+**Database changes:** None
+
+**Summary:** Global “Preparar entrega” checklist for mi equipo. Gaps: HC incompleta, EA sin guardar hoy, pendientes vencidos (todos + procedimientos entrega), cultivos positivos sin antibiograma/seguimiento. Click → patient + HC/EA/Pendientes/Cultivos. Also ⌘K action. No AI. Ready for user test.
+
+**Next:** CP7 Cultivo queue + EA→clipboard (may already be in flight); user test CP6.
+
+---
+
+## [2026-07-21] - CP5 ⌘K actions (navegación)
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/command-palette-model.mjs` — `ACTION_ITEMS` + empty ranking (actions → pins → patients/sections)
+- `public/js/command-palette-model.test.mjs` — ranking/actions coverage
+- `public/js/features/command-palette.mjs` — execute handlers; lazy lab load
+- `public/js/lazy-feature-routes.mjs` — lab-repo-batch window stubs
+- `public/styles/cmdk.css` — action hint accent
+- `docs/features/features-index.md`
+
+**Database changes:** None
+
+**Summary:** ⌘K is shift remote control: actions (Actualizar labs, Falta documentar, Labs/EA/Eventualidades, Exportar nota, Nuevo pendiente, Copiar labs, Pase) plus pinned patients on empty query. Calls existing window handlers; does not rewrite doc-queue navigation.
+
+**Next:** CP3 paste-anywhere; CP4 nota 1 gesto; user test CP5.
+
+---
+
+## [2026-07-21] - CP2 Cola de documentación (panel global)
+
+**Agent:** Cursor (Grok)
+
+**Files modified / added:**
+- `public/js/features/doc-queue-model.mjs` (new) — pure heuristics
+- `public/js/features/doc-queue-model.test.mjs` (new)
+- `public/js/features/doc-queue-panel.mjs` (new) — modal UI + navigate
+- `public/partials/chrome/header.html`, `overlays.html`
+- `public/styles/lab.css`, `cmdk.css`, `layout.css`
+- `public/js/app-shell.mjs`, `app-shell-modals.mjs` — lazy open + Escape
+- `public/js/features/todos-refresh.mjs`, `lab-history-cache.mjs` — badge refresh
+- `docs/features/features-index.md`
+
+**Database changes:** None
+
+**Summary:** Global documentation queue for mi equipo (header button + badge). Rows when labs today need note catch-up and/or open pendientes. Click → patient + Labs / Nota / Pendientes. No new modes/tabs. Ready for user test.
+
+**Next:** CP5 shipped separately; remaining CP3–CP4, CP6–CP7.
+
+---
+
 ## [2026-07-21] - CP1 Actualizar labs de mi equipo (batch lab-repo)
 
 **Agent:** Cursor (Grok)
@@ -66,13 +202,7 @@ Chronological record of documentation and integration work. Format per `document
 
 **Summary:** Implemented morning “Actualizar labs de mi equipo”: patient set = mi equipo only, checkboxes opt-out, sequential existing `labRepoFetch` IPC, sidebar job queue that auto-dismisses ~1.6s after completion. Fixed false “Varios expedientes” (batch join without `--- PACIENTE ---` + foreign portal noise). Preview/modal layout fixed — never use `<header>` inside modals (inherits app chrome grid from `layout.css`). Work is uncommitted.
 
-**Next (proposed backlog, not started):**
-- CP2 — Cola documentación + inbox de labs del turno
-- CP3 — Paste-anywhere / Procesar inteligente
-- CP4 — Nota en 1 gesto post-labs
-- CP5 — Navegación (⌘K actions, Pase, pins)
-- CP6 — Entrega prep checklist
-- CP7 — Cultivo queue + EA→clipboard
+**Next:** CP2 shipped separately (doc queue panel); remaining CP3–CP7.
 
 ---
 

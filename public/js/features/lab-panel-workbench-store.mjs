@@ -158,6 +158,8 @@ function storeBulkLabBlocks(blocks, processable) {
   }
   var storedSets = 0;
   var skippedDupes = 0;
+  /** @type {Record<string, object[]>} */
+  var storedByPatient = Object.create(null);
   processable.forEach(function (block) {
     var patientId = block.patient.id;
     var patientReg = String(block.patient.registro || '').trim();
@@ -176,6 +178,12 @@ function storeBulkLabBlocks(blocks, processable) {
       }
       pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
       storedSets += 1;
+      if (!storedByPatient[patientId]) storedByPatient[patientId] = [];
+      storedByPatient[patientId].push({
+        fecha: payload.fecha,
+        hora: payload.hora || '',
+        resLabs: payload.resLabs || [],
+      });
     });
     finalizeLabHistoryImport(patientId);
   });
@@ -184,7 +192,12 @@ function storeBulkLabBlocks(blocks, processable) {
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
   }
-  return { storedSets: storedSets, skippedDupes: skippedDupes, skippedBlocks: blocks.length - processable.length };
+  return {
+    storedSets: storedSets,
+    skippedDupes: skippedDupes,
+    skippedBlocks: blocks.length - processable.length,
+    storedByPatient: storedByPatient,
+  };
 }
 
 function pickDisplayLabResult(blocks, processable, activeId) {

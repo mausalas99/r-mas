@@ -430,6 +430,12 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     openLabRepoImportModal: 'openLabRepoImportModal',
     closeLabRepoImportModal: 'closeLabRepoImportModal',
     confirmLabRepoImport: 'confirmLabRepoImport',
+    openLabRepoBatchModal: 'openLabRepoBatchModal',
+    closeLabRepoBatchModal: 'closeLabRepoBatchModal',
+    confirmLabRepoBatchImport: 'confirmLabRepoBatchImport',
+    labRepoBatchSelectAll: 'labRepoBatchSelectAll',
+    labRepoBatchSelectNone: 'labRepoBatchSelectNone',
+    dismissLabRepoBatchQueue: 'dismissLabRepoBatchQueue',
   },
   ensureLabsLoaded
 );

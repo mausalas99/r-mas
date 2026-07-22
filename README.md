@@ -39,10 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.1](https://github.com/mausalas99/r-mas/releases/tag/v7.7.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.2](https://github.com/mausalas99/r-mas/releases/tag/v7.7.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.7.2 (colas guardia, paste SOME y ⌘K acciones)
+
+- **Paste SOME** — Pega en cualquier pantalla o ⌘K «Procesar SOME» → match paciente → Laboratorio.
+- **⌘K acciones** — Batch labs, cola docs, EA, export, pendiente, pase; pins en query vacío.
+- **Colas sidebar** — Docs (labs hoy + pendientes) y cultivos (ATB/sin nota) con badge en header.
+- **Labs → Eventualidades** — Auto-envío tras Procesar, repo o Actualizar batch.
+- **Pre-entrega** — Checklist HC/EA/pendientes/cultivos; copiar indicaciones desde EA.
+- **Paneles + teach overlay** — Scaffold paneles hospitalarios y wizard SOME → PanelDef LAN.
+
+Notas: `docs/RELEASE_NOTES_7.7.2.txt`.
 
 ## R+ 7.7.1 (receta SOAP ampliada e insulina rescate)
 
