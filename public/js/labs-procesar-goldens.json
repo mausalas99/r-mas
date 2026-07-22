@@ -11,9 +11,9 @@
     },
     "resLabs": [
       "BH\tHb 11.85*  Hto 38.4  VCM 82  HCM 26.1*  Leu 6.12  Neu 3.88  Eos 0.11  Plt 248",
-      "QS\tGlu 94 Cr 1.35 BUN 22* AU 7.4 TGL 118 COL 142",
+      "QS\tGlu 94 Cr 1.35 BUN 22* AU 7.4 COL 142 TGL 118",
       "ESC\tNa 138 Cl 102 K 3.9 Ca 8.8 F 3.8",
-      "PFHs\tAlb 4.1 AST 19 ALT 14 FA 118 BT 1.2* BD 0.5* BI 0.7 LDH 142 Amil 68"
+      "PFHs\tAlb 4.1 AST 19 ALT 14 FA 118 Prot 7.6 BT 1.2* BD 0.5* BI 0.7 LDH 142 Amil 68"
     ],
     "bhExtras": {
       "Lin": "1.05",
@@ -113,13 +113,13 @@
           4.8,
           8.7
         ],
-        "TGL": [
-          35,
-          150
-        ],
         "COL": [
           130,
           200
+        ],
+        "TGL": [
+          35,
+          150
         ]
       },
       "ESC": {
@@ -196,7 +196,7 @@
     },
     "resLabs": [
       "BH\tHb 10.2*  Hto 35.8*  VCM 81  Leu 5.4  Plt 198",
-      "QS\tGlu 108* Cr 1.55* BUN 28* TGL 132 COL 155",
+      "QS\tGlu 108* Cr 1.55* BUN 28* COL 155 TGL 132",
       "ESC\tNa 134* K 3.5*"
     ],
     "bhExtras": {
@@ -246,13 +246,13 @@
           0,
           0.05
         ],
-        "TGL": [
-          35,
-          150
-        ],
         "COL": [
           130,
           200
+        ],
+        "TGL": [
+          35,
+          150
         ]
       },
       "ESC": {
