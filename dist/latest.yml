@@ -1,22 +1,26 @@
-version: 7.7.1
+version: 7.7.2
 files:
-  - url: R+-7.7.1-x64.exe
-    sha512: +uK3u6QqCfiH1XonuqTNqblgMCxlAsq0k9Dn4ayqg7biKXQYZwr5a85qqo7F3XKBDu7AB07JsTBuyu2VDfQl4Q==
-    size: 120603926
-path: R+-7.7.1-x64.exe
-sha512: +uK3u6QqCfiH1XonuqTNqblgMCxlAsq0k9Dn4ayqg7biKXQYZwr5a85qqo7F3XKBDu7AB07JsTBuyu2VDfQl4Q==
-releaseDate: '2026-07-19T17:20:34.000Z'
+  - url: R+-7.7.2-x64.exe
+    sha512: CZeJigbU8YS4SZl+MMweqxz9GptWsRE7uPrKCMmVyJS05oQvKaliP9BQVJDcaQaK5tEAX4gI1f8uuGrO27Xlpg==
+    size: 120742790
+path: R+-7.7.2-x64.exe
+sha512: CZeJigbU8YS4SZl+MMweqxz9GptWsRE7uPrKCMmVyJS05oQvKaliP9BQVJDcaQaK5tEAX4gI1f8uuGrO27Xlpg==
+releaseDate: '2026-07-22T20:48:02.000Z'
 releaseNotes: |
-  7.7.1 amplía la clasificación SOAP de medicamentos desde la receta hospitalaria (más familias y destinos manuales), agrupa rescates de insulina PRN en Manejo y refleja glucometrías con UI aplicadas en el texto de Estado actual.
+  7.7.2 acelera la guardia con colas globales (labs, docs, cultivos), paste inteligente de SOME en cualquier pantalla, acciones rápidas en ⌘K y checklist pre-entrega; los labs nuevos pueden enviarse solos a Eventualidades.
   
-  Receta → SOAP — más categorías — Clasificación automática y override manual para antieméticos, sedación, antiepilépticos, antiparkinsonianos, antídotos, vía aérea, transfusiones, anticoagulación terapéutica, antiarrítmicos y estatinas (además de analgesia, ABX, vasopresores, etc.).
+  Paste-anywhere / Procesar SOME — Pega SOME en cualquier vista o usa ⌘K «Procesar SOME»: R+ propone paciente por registro/nombre, confirmas una vez y abre Laboratorio listo para procesar.
   
-  SOAP EA — partición de medicamentos — Analgésicos y antieméticos van a cláusulas separadas; insulina basal/SC y rescates se separan del resto del bloque NM.
+  ⌘K acciones — La paleta incluye acciones directas: batch labs mi equipo, cola docs, EA, export, pendiente, pase; con query vacío muestra pins frecuentes primero.
   
-  Rescates de insulina — Detecta insulina PRN SC por glucometría en el SOME; en Manejo aparece como grupo RESCATES DE INSULINA con checkbox SOAP y suspender en bloque.
+  Cola docs (mi equipo) — Badge en header: labs de hoy + pendientes de documentar → un clic a Labs, Nota o Pendientes.
   
-  Glucometrías con rescate — Si registraste UI aplicadas en monitoreo, el texto SOAP muestra valor, NUI (p. ej. 142, 4UI) y omite la frase genérica de rescates disponibles cuando ya hubo aplicación.
+  Cola cultivos — Cultivos con ATB pendiente o sin nota de seguimiento en cola lateral → abre Cultivos del paciente.
   
-  Bomba de insulina IV — Mejor detección (algoritmo en P1 sin «EN», cloruro portador excluido del bucket NM); sincroniza con monitoreo al fusionar receta.
+  Labs → Eventualidades — Tras Procesar, import repo o Actualizar batch, hallazgos relevantes se envían automáticamente a Eventualidades (fallback compacto si no hay frases anormales).
   
-  Modal SOAP legacy — Campos médicos ampliados alineados con las nuevas categorías; limpieza centralizada al cerrar.
+  Checklist pre-entrega — Panel mi equipo: HC incompleta, EA sin nota hoy, pendientes vencidos, cultivos sin seguimiento → un clic al gap.
+  
+  Copiar indicaciones EA — Desde Estado actual: copia meds + bomba al portapapeles para mensajes/indicaciones.
+  
+  Paneles hospitalarios + teach overlay — Scaffold de paneles (TIR/ENDO/CARD/…) y wizard 2 páginas SOME residual → PanelDef con sync LAN.

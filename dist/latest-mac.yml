@@ -1,31 +1,35 @@
-version: 7.7.1
+version: 7.7.2
 files:
-  - url: R+-7.7.1-arm64.zip
-    sha512: AB35QGbuKytxwPJsJJ+wlHCOPo+jEeyVBgH7/Mkv2fr6EpaqwSASKHJ6PuOFmeYwWdVnZ9xEjQd5kWcZ9cX3rA==
-    size: 136970296
-  - url: R+-7.7.1-arm64.dmg
-    sha512: lfwM8S93/00fuFzhHn5I6/Mque5jw5J5HJv1vY5fpDUMI3owCo6AUfLbrItivgHvTPw9d3yFPaeDONXBo+1sGQ==
-    size: 142697158
-  - url: R+-7.7.1-x64.zip
-    sha512: v813rv0YWLfH8n8JJxJ28YRTyJsFxdFsKNJk+FAFmhF1sTFZJPyAnJPO96dSFGuEI/3Q9fO/mw6/fQ+M/h6gew==
-    size: 145344372
-  - url: R+-7.7.1-x64.dmg
-    sha512: hFpJnNhiiyAKLvWnAtIB7VVCW21ziGgc3l2N9U8uV5hTKf9XP9ga3KrPYbl07uSMY5yA4Bz5KwQiuau6yxV/Kw==
-    size: 151126854
-path: R+-7.7.1-arm64.zip
-sha512: AB35QGbuKytxwPJsJJ+wlHCOPo+jEeyVBgH7/Mkv2fr6EpaqwSASKHJ6PuOFmeYwWdVnZ9xEjQd5kWcZ9cX3rA==
-releaseDate: '2026-07-19T17:20:34.000Z'
+  - url: R+-7.7.2-arm64.zip
+    sha512: eT6Vum/N29+Rv58eF06xPIfCPhRjEEzwAXrBXwQD1YxMTGl6NpwiBZyfOy5tFZIhCYu1DusFFlPAPbJIqMppag==
+    size: 137159625
+  - url: R+-7.7.2-arm64.dmg
+    sha512: lSmrYWUdgflMSdXi2HUsg7B3aqF28UOQh3EZZve7LFzvxSdddrYyf2Eu04zDEidQ31rCqqEd5AChnYZNYTYUAw==
+    size: 142895196
+  - url: R+-7.7.2-x64.zip
+    sha512: 4gsPROXkYT6/K53rHJKlfEYZDYx4upx+nY8dd2izA0LUkK21rybsXU/9DVn4xciLktHtlIyPabCrI2gzgu+90w==
+    size: 145533745
+  - url: R+-7.7.2-x64.dmg
+    sha512: uFpI6PMwqoYBe2eVFqUeD0DAVal8Sa9gLNYXvkQzwL1F+4wuMiK9+gycYTi5uVcnsGdREpEnxK/Vky9AWffLsQ==
+    size: 151385574
+path: R+-7.7.2-arm64.zip
+sha512: eT6Vum/N29+Rv58eF06xPIfCPhRjEEzwAXrBXwQD1YxMTGl6NpwiBZyfOy5tFZIhCYu1DusFFlPAPbJIqMppag==
+releaseDate: '2026-07-22T20:48:02.000Z'
 releaseNotes: |
-  7.7.1 amplía la clasificación SOAP de medicamentos desde la receta hospitalaria (más familias y destinos manuales), agrupa rescates de insulina PRN en Manejo y refleja glucometrías con UI aplicadas en el texto de Estado actual.
+  7.7.2 acelera la guardia con colas globales (labs, docs, cultivos), paste inteligente de SOME en cualquier pantalla, acciones rápidas en ⌘K y checklist pre-entrega; los labs nuevos pueden enviarse solos a Eventualidades.
   
-  Receta → SOAP — más categorías — Clasificación automática y override manual para antieméticos, sedación, antiepilépticos, antiparkinsonianos, antídotos, vía aérea, transfusiones, anticoagulación terapéutica, antiarrítmicos y estatinas (además de analgesia, ABX, vasopresores, etc.).
+  Paste-anywhere / Procesar SOME — Pega SOME en cualquier vista o usa ⌘K «Procesar SOME»: R+ propone paciente por registro/nombre, confirmas una vez y abre Laboratorio listo para procesar.
   
-  SOAP EA — partición de medicamentos — Analgésicos y antieméticos van a cláusulas separadas; insulina basal/SC y rescates se separan del resto del bloque NM.
+  ⌘K acciones — La paleta incluye acciones directas: batch labs mi equipo, cola docs, EA, export, pendiente, pase; con query vacío muestra pins frecuentes primero.
   
-  Rescates de insulina — Detecta insulina PRN SC por glucometría en el SOME; en Manejo aparece como grupo RESCATES DE INSULINA con checkbox SOAP y suspender en bloque.
+  Cola docs (mi equipo) — Badge en header: labs de hoy + pendientes de documentar → un clic a Labs, Nota o Pendientes.
   
-  Glucometrías con rescate — Si registraste UI aplicadas en monitoreo, el texto SOAP muestra valor, NUI (p. ej. 142, 4UI) y omite la frase genérica de rescates disponibles cuando ya hubo aplicación.
+  Cola cultivos — Cultivos con ATB pendiente o sin nota de seguimiento en cola lateral → abre Cultivos del paciente.
   
-  Bomba de insulina IV — Mejor detección (algoritmo en P1 sin «EN», cloruro portador excluido del bucket NM); sincroniza con monitoreo al fusionar receta.
+  Labs → Eventualidades — Tras Procesar, import repo o Actualizar batch, hallazgos relevantes se envían automáticamente a Eventualidades (fallback compacto si no hay frases anormales).
   
-  Modal SOAP legacy — Campos médicos ampliados alineados con las nuevas categorías; limpieza centralizada al cerrar.
+  Checklist pre-entrega — Panel mi equipo: HC incompleta, EA sin nota hoy, pendientes vencidos, cultivos sin seguimiento → un clic al gap.
+  
+  Copiar indicaciones EA — Desde Estado actual: copia meds + bomba al portapapeles para mensajes/indicaciones.
+  
+  Paneles hospitalarios + teach overlay — Scaffold de paneles (TIR/ENDO/CARD/…) y wizard 2 páginas SOME residual → PanelDef con sync LAN.
