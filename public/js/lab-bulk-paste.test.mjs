@@ -296,7 +296,7 @@ describe('lab-bulk-paste', () => {
       ),
       true
     );
-    assert.equal(shouldShowBulkLabPreview([{ status: 'no-patient' }], 1), true);
+    assert.equal(shouldShowBulkLabPreview([{ status: 'no-patient' }], 1), false);
     assert.equal(
       shouldShowBulkLabPreview([{ status: 'no-patient', okReportCount: 1 }], 1, { quickLabOutput: true }),
       false

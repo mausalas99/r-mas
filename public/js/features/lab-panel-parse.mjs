@@ -5,8 +5,12 @@ import {
 import {
   buildBulkLabPreview,
   shouldShowBulkLabPreview,
+  extractLabPatientFromBulkBlock,
 } from '../lab-bulk-paste.mjs';
-import { openLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
+import {
+  openLabBulkPreviewModal,
+  shouldOfferBulkPreviewAddPatient,
+} from './lab-bulk-preview-modal.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
@@ -18,6 +22,31 @@ import {
   syncLabOutputHistoryAfterRender,
   prepareLabOutputBox,
 } from './lab-panel-output-helpers.mjs';
+
+function runFinalizeWithFreshBlocks(text) {
+  var freshBlocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+  var freshTotal = freshBlocks.reduce(function (acc, b) {
+    return acc + b.okReportCount;
+  }, 0);
+  finalizeBulkLabPaste(text, freshBlocks, freshTotal);
+}
+
+/** Un reporte de paciente nuevo: alta directa, sin modal de confirmar. */
+function tryOfferAddPatientThenProcess(text, blocks) {
+  if (!blocks || blocks.length !== 1) return false;
+  var block = blocks[0];
+  if (!shouldOfferBulkPreviewAddPatient(block)) return false;
+  if (typeof rt.openAddModalFromLabPatient !== 'function') return false;
+  var labPatient = extractLabPatientFromBulkBlock(block);
+  if (!labPatient) return false;
+  rt.openAddModalFromLabPatient(labPatient, {
+    fromBulkPreview: true,
+    onSaved: function () {
+      runFinalizeWithFreshBlocks(text);
+    },
+  });
+  return true;
+}
 
 export function procesarReporte() {
   var text = document.getElementById('lab-input').value.trim();
@@ -52,15 +81,12 @@ export function procesarReporte() {
         blocks: blocks,
         sourceText: text,
         onConfirm: function () {
-          var freshBlocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
-          var freshTotal = freshBlocks.reduce(function (acc, b) {
-            return acc + b.okReportCount;
-          }, 0);
-          finalizeBulkLabPaste(text, freshBlocks, freshTotal);
+          runFinalizeWithFreshBlocks(text);
         },
       });
       return;
     }
+    if (tryOfferAddPatientThenProcess(text, blocks)) return;
     finalizeBulkLabPaste(text, blocks, totalOkReports);
   } catch (e) {
     rt.showToast('Error al procesar el reporte', 'error');

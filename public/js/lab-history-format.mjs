@@ -3,6 +3,7 @@
  */
 import { isCitoquimInterpretacionResLabChunk, looksLikeSomeLabReport } from './labs.js';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
+import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 import { compareLabSetIdForDedupe } from './lab-history-auto-store-core.mjs';
 import {
   parseFechaLabToMs,
@@ -274,6 +275,7 @@ export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
         cultAcc.push(row);
       });
       if (!labsAcc.length && !cultAcc.length) return;
+      labsAcc = sortResLabsByClinicalOrder(labsAcc);
       var dateLine = buildLabSetDateLineForNota(set);
       if (multiOnDay) {
         var hora = normalizeHoraLabHistory(set.hora);

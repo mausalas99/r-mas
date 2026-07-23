@@ -2533,25 +2533,27 @@ html.dark .lab-out-ascitis-alert {
 .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
 .btn-remove-otro:hover { color: var(--error); background: var(--color-danger-hover-bg); }
 
-/* Vista previa — pegado masivo / batch repo (quiet list, no nested chrome) */
+/* Vista previa — pegado masivo (quiet workbench, same family as paste-smart / batch) */
 .lab-bulk-preview-modal {
-  width: min(480px, 94vw);
-  max-height: 90vh;
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(88vh, 560px);
   display: flex;
   flex-direction: column;
+  gap: 0;
   padding: 0;
   overflow: hidden;
   background: var(--surface);
-  border: 1px solid var(--divider);
+  border: var(--border-hairline, 1px solid var(--divider));
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-overlay, var(--shadow-md));
+  color: var(--text);
 }
 .lab-bulk-preview-modal-head {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px 14px;
+  gap: 4px;
+  padding: 18px 18px 12px;
   margin: 0;
   height: auto;
   min-height: 0;
@@ -2562,19 +2564,51 @@ html.dark .lab-out-ascitis-alert {
   background: transparent;
   z-index: auto;
 }
+.lab-bulk-preview-modal-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 .lab-bulk-preview-modal-head h3,
 .lab-bulk-preview-modal h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: calc(16px * var(--density-font, 1));
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text);
   line-height: 1.3;
+  text-wrap: balance;
+}
+.lab-bulk-preview-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lab-bulk-preview-close:hover {
+  color: var(--text);
+  background: var(--state-hover-bg, color-mix(in srgb, var(--text) 6%, transparent));
+}
+.lab-bulk-preview-close:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 .lab-bulk-preview-summary {
   margin: 0;
   padding: 0;
-  font-size: 12px;
+  font-size: calc(12px * var(--density-font, 1));
   font-weight: 500;
   color: var(--text-muted);
   line-height: 1.4;
@@ -2582,10 +2616,10 @@ html.dark .lab-out-ascitis-alert {
 .lab-bulk-preview-scroll {
   overflow: auto;
   flex: 1 1 auto;
-  min-height: 80px;
-  max-height: min(48vh, 380px);
+  min-height: 0;
+  max-height: min(52vh, 360px);
   margin: 0;
-  padding: 8px 12px;
+  padding: 12px 18px;
 }
 .lab-bulk-preview-list {
   list-style: none;
@@ -2593,75 +2627,78 @@ html.dark .lab-out-ascitis-alert {
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 .lab-bulk-preview-row {
-  padding: 12px 8px;
-  border-bottom: 1px solid var(--divider);
+  padding: 12px 14px;
+  border: var(--border-hairline, 1px solid var(--divider));
+  border-radius: var(--radius-md);
+  background: transparent;
 }
-.lab-bulk-preview-row:last-child {
-  border-bottom: none;
+.lab-bulk-preview-row--no-patient,
+.lab-bulk-preview-row--parse-errors {
+  border-color: color-mix(in srgb, var(--error) 28%, var(--divider));
+  background: color-mix(in srgb, var(--error) 5%, transparent);
+}
+.lab-bulk-preview-row--ok {
+  border-color: color-mix(in srgb, var(--success) 22%, var(--divider));
+}
+.lab-bulk-preview-row--mixed-expediente {
+  border-color: color-mix(in srgb, var(--todo-prio-media) 28%, var(--divider));
+  background: color-mix(in srgb, var(--todo-prio-media) 5%, transparent);
 }
 .lab-bulk-preview-row-main {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 .lab-bulk-preview-row-text {
   min-width: 0;
   flex: 1;
 }
 .lab-bulk-preview-row-name {
-  font-size: 13px;
+  font-size: calc(14px * var(--density-font, 1));
   font-weight: 650;
   line-height: 1.35;
   color: var(--text);
 }
 .lab-bulk-preview-row-meta {
-  margin-top: 3px;
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: calc(12px * var(--density-font, 1));
   line-height: 1.4;
   color: var(--text-muted);
-  font-family: var(--font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
 }
 .lab-bulk-preview-row-aside {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+  max-width: 46%;
 }
 .lab-bulk-preview-status {
-  font-size: 12px;
-  font-weight: 650;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--text-muted);
-  white-space: nowrap;
+  text-align: right;
 }
 .lab-bulk-preview-status--ok { color: var(--success); }
 .lab-bulk-preview-status--warn { color: var(--todo-prio-media); }
 .lab-bulk-preview-status--err { color: var(--error); }
 .lab-bulk-preview-status--muted { color: var(--text-muted); }
-.lab-bulk-preview-add-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  line-height: 1.2;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--action);
-  cursor: pointer;
+.lab-bulk-preview-add-btn {
   white-space: nowrap;
-}
-.lab-bulk-preview-add-pill:hover {
-  background: color-mix(in srgb, var(--action) 10%, transparent);
+  padding: 5px 10px;
+  font-size: 12px;
 }
 .lab-bulk-preview-issues {
-  margin: 8px 0 0;
-  font-size: 12px;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+  font-size: calc(12px * var(--density-font, 1));
   color: var(--text-muted);
 }
 .lab-bulk-preview-issues summary {
@@ -2694,7 +2731,7 @@ html.dark .lab-out-ascitis-alert {
   justify-content: flex-end;
   gap: 8px;
   margin: 0;
-  padding: 12px 20px 16px;
+  padding: 12px 18px 16px;
   border-top: 1px solid var(--divider);
 }
 html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
@@ -2743,199 +2780,6 @@ html.electron-macos-inset-bar #lab-bulk-tour-hint-backdrop.modal-backdrop.open *
   -webkit-app-region: no-drag;
 }
 
-
-/* Teach wizard — configurar lectura de panel */
-.lab-panel-teach-modal {
-  width: min(720px, 95vw);
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  color: var(--color-ink);
-}
-.lab-panel-teach-modal-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.lab-panel-teach-modal-head h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--primary);
-  line-height: 1.3;
-}
-.lab-panel-teach-modal-close {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
-.lab-panel-teach-modal-close:hover {
-  color: var(--color-ink);
-  background: color-mix(in oklab, var(--color-ink) 6%, transparent);
-}
-.lab-panel-teach-modal-close:focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 2px;
-}
-.lab-panel-teach-hint {
-  margin: 0 0 12px;
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-.lab-panel-teach-some-list {
-  overflow: auto;
-  max-height: min(48vh, 360px);
-  margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg);
-}
-.lab-panel-teach-some-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
-  font-size: 12px;
-  line-height: 1.35;
-  border-bottom: 1px solid var(--divider);
-  cursor: pointer;
-}
-.lab-panel-teach-some-item:last-child {
-  border-bottom: none;
-}
-.lab-panel-teach-some-item.is-selected {
-  box-shadow: inset 3px 0 0 var(--action);
-  background: color-mix(in oklab, var(--action) 8%, var(--color-surface));
-}
-.lab-panel-teach-some-item.is-covered {
-  opacity: 0.45;
-}
-.lab-panel-teach-some-item-label {
-  font-weight: 600;
-  color: var(--color-ink);
-}
-.lab-panel-teach-some-item-value {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-ink);
-}
-.lab-panel-teach-some-item-ref {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-.lab-panel-teach-back {
-  margin-bottom: 12px;
-}
-.lab-panel-teach-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  margin-bottom: 12px;
-}
-.lab-panel-teach-meta-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-.lab-panel-teach-meta-field .profile-input {
-  min-width: 120px;
-}
-.lab-panel-teach-rows {
-  overflow: auto;
-  max-height: min(36vh, 280px);
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-.lab-panel-teach-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 0.9fr) auto;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  font-size: 11px;
-  line-height: 1.3;
-  border-bottom: 1px solid var(--divider);
-}
-.lab-panel-teach-row:last-child {
-  border-bottom: none;
-}
-.lab-panel-teach-row.is-covered {
-  opacity: 0.45;
-}
-.lab-panel-teach-row .profile-input {
-  width: 100%;
-  min-width: 0;
-  padding: 4px 6px;
-  font-size: 11px;
-}
-.lab-panel-teach-row-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--section-header-bg);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-.lab-panel-teach-add-row-btn {
-  margin-bottom: 12px;
-}
-.lab-panel-teach-preview-wrap {
-  margin-bottom: 12px;
-}
-.lab-panel-teach-preview-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-.lab-panel-teach-preview {
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.45;
-  color: var(--color-ink);
-  max-height: 160px;
-  overflow: auto;
-  white-space: pre-wrap;
-}
-.lab-panel-teach-actions {
-  margin-top: 0;
-  justify-content: flex-end;
-  gap: 10px;
-}
-html.electron-macos-inset-bar #lab-panel-teach-backdrop.modal-backdrop.open,
-html.electron-macos-inset-bar #lab-panel-teach-backdrop.modal-backdrop.open * {
-  -webkit-app-region: no-drag;
-}
 
 /* Aligned digits for clinical values (design system phase 1) */
 #lab-output-box,

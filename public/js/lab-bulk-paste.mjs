@@ -19,6 +19,7 @@ import {
   resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
 import { mergeTroponinaResLabRows_ } from './labs-troponin.mjs';
+import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
@@ -140,13 +141,12 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   if (mergedTrop) out.push(mergedTrop);
   if (bhRows.length) {
     var mergedBh = mergeBhResLabRows_(bhRows);
-    if (mergedBh.bh) out.unshift(mergedBh.bh);
-    if (mergedBh.coag) {
-      var insertAt = mergedBh.bh ? 1 : 0;
-      out.splice(insertAt, 0, mergedBh.coag);
-    }
+    if (mergedBh.bh) out.push(mergedBh.bh);
+    if (mergedBh.coag) out.push(mergedBh.coag);
   }
-  return out;
+  // BH-first unshift used to leave EGO (from an earlier same-day set) stuck
+  // right after BH. Canonical clinical order puts EGO after the rest.
+  return sortResLabsByClinicalOrder(out);
 }
 
 function sortDaysDesc(days) {
@@ -190,7 +190,6 @@ function parseReportChunk(reportText, reportIndex, findPatient) {
   try {
     var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
     var result = procesarLabs(reportText, chartPatient ? { patient: chartPatient } : undefined);
-    // Empty resLabs: still succeed so teach wizard can map residual SOME studies.
     if (!result.resLabs) result.resLabs = [];
     return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
@@ -528,6 +527,10 @@ export function shouldShowBulkLabPreview(blocks, totalOkReports, opts) {
     bulkBlocksHaveDisplayableReports(blocks) &&
     !bulkBlocksHaveProcessablePatient(blocks)
   ) {
+    return false;
+  }
+  // Un solo bloque sin paciente: no confirmamos en modal (alta directa o formateo).
+  if (blocks.length === 1 && blocks[0] && blocks[0].status === 'no-patient') {
     return false;
   }
   if (blocks.length > 1) return true;

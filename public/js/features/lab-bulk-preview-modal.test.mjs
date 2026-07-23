@@ -5,6 +5,7 @@ const {
   resolveBulkPreviewConfirmState,
   shouldOfferBulkPreviewAddPatient,
   hasPendingBulkLabPreviewSession,
+  shouldAutoConfirmAfterPatientSave,
 } = await import('./lab-bulk-preview-modal.mjs');
 
 describe('resolveBulkPreviewConfirmState', () => {
@@ -73,5 +74,26 @@ describe('shouldOfferBulkPreviewAddPatient', () => {
 describe('hasPendingBulkLabPreviewSession', () => {
   it('is false without an open modal session', () => {
     assert.equal(hasPendingBulkLabPreviewSession(), false);
+  });
+});
+
+describe('shouldAutoConfirmAfterPatientSave', () => {
+  it('confirma cuando el bloque quedó listo y no faltan altas', () => {
+    assert.equal(
+      shouldAutoConfirmAfterPatientSave([
+        { status: 'ok', okReportCount: 1, canProcess: true, patient: { id: 'p1' } },
+      ]),
+      true
+    );
+  });
+
+  it('no confirma si aún hay pacientes sin registrar', () => {
+    assert.equal(
+      shouldAutoConfirmAfterPatientSave([
+        { status: 'ok', okReportCount: 1, canProcess: true, patient: { id: 'p1' } },
+        { status: 'no-patient', okReportCount: 1, canProcess: false },
+      ]),
+      false
+    );
   });
 });

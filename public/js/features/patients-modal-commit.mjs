@@ -29,7 +29,6 @@ import {
 } from '../patient-team-assign-ui.mjs';
 import { readPatientRegistrationSala } from '../patient-sala-ui.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
-import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
 import { closeModalAnimated } from '../ui-motion.mjs';
 import { rt } from './patients-runtime-state.mjs';
@@ -71,15 +70,13 @@ async function assignTeamFromRegistrationModal(patientId) {
   return res;
 }
 
-/** Tras alta desde vista previa multipaciente: quedarse en Lab con la preview abierta. */
+/** Tras alta desde vista previa: no reabrir el modal (onSaved confirma solo). */
 function completeBulkPreviewPatientRegistration(patientId) {
   patientsBridge.selectPatient(patientId, { bypassIncomingBlock: true });
   closePatientDatosModal();
   if (rt.getActiveAppTab() !== 'lab') {
     rt.switchAppTab('lab');
   }
-  resumeLabBulkPreviewModalIfSuspended();
-  rt.showToast('Paciente registrado. Pulsa Procesar todo en la vista previa.', 'success');
 }
 
 function patientAdmissionTimestamp() {

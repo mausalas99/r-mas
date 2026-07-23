@@ -93,44 +93,6 @@
   </div>
 </div>
 
-<div id="lab-panel-teach-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal lab-panel-teach-modal" role="dialog" aria-modal="true" aria-labelledby="lab-panel-teach-title" onclick="event.stopPropagation()">
-    <header class="lab-panel-teach-modal-head">
-      <h3 id="lab-panel-teach-title">Configurar lectura</h3>
-      <button type="button" class="lab-panel-teach-modal-close" id="lab-panel-teach-close" aria-label="Cerrar">×</button>
-    </header>
-    <div class="lab-panel-teach-step" data-teach-step="1" id="lab-panel-teach-step-1">
-      <p class="lab-panel-teach-hint">Selecciona los estudios del pegado SOME que quieres mapear.</p>
-      <div id="lab-panel-teach-some-list" class="lab-panel-teach-some-list"></div>
-      <div class="modal-actions lab-panel-teach-actions">
-        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="lab-panel-teach-cancel">Descartar</button>
-        <button type="button" class="btn-generate" id="lab-panel-teach-continue">Continuar</button>
-      </div>
-    </div>
-    <div class="lab-panel-teach-step" data-teach-step="2" id="lab-panel-teach-step-2" hidden>
-      <button type="button" class="btn-med-secondary btn-med-secondary--muted lab-panel-teach-back" id="lab-panel-teach-back">← Volver al SOME</button>
-      <div class="lab-panel-teach-meta">
-        <label class="lab-panel-teach-meta-field">Grupo <input id="lab-panel-teach-section" class="profile-input" maxlength="12" /></label>
-        <label class="lab-panel-teach-meta-field">Modo
-          <select id="lab-panel-teach-mode" class="profile-input">
-            <option value="num">Numérico</option>
-            <option value="qual">Cualitativo</option>
-          </select>
-        </label>
-      </div>
-      <div id="lab-panel-teach-rows" class="lab-panel-teach-rows"></div>
-      <button type="button" class="btn-med-secondary btn-med-secondary--muted lab-panel-teach-add-row-btn" id="lab-panel-teach-add-row">+ Añadir fila</button>
-      <div class="lab-panel-teach-preview-wrap">
-        <div class="lab-panel-teach-preview-label">Vista previa</div>
-        <pre id="lab-panel-teach-preview" class="lab-panel-teach-preview"></pre>
-      </div>
-      <div class="modal-actions lab-panel-teach-actions">
-        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="lab-panel-teach-cancel-2">Descartar</button>
-        <button type="button" class="btn-generate" id="lab-panel-teach-confirm">Confirmar lectura</button>
-      </div>
-    </div>
-  </div>
-</div>
 <div id="ea-charts-backdrop" class="ea-charts-backdrop" aria-hidden="true">
   <div class="ea-charts-modal" role="dialog" aria-modal="true" aria-labelledby="ea-charts-title" onclick="event.stopPropagation()">
     <header class="ea-charts-modal-head">
@@ -356,7 +318,10 @@
 <div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-bulk-preview-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" onclick="event.stopPropagation()">
     <div class="lab-bulk-preview-modal-head">
-      <h3 id="lab-bulk-preview-title">Confirmar laboratorios</h3>
+      <div class="lab-bulk-preview-modal-head-row">
+        <h3 id="lab-bulk-preview-title">Confirmar laboratorios</h3>
+        <button type="button" class="lab-bulk-preview-close" onclick="closeLabBulkPreviewModal()" aria-label="Cerrar">×</button>
+      </div>
       <p id="lab-bulk-preview-summary" class="lab-bulk-preview-summary"></p>
     </div>
     <div id="lab-bulk-preview-body" class="lab-bulk-preview-scroll"></div>

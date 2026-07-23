@@ -6,6 +6,7 @@ import {
 } from '../labs.js';
 import { parseSomeReportTables } from '../labs-some-table.mjs';
 import { normalizeFechaLabHistory } from '../tend-core.mjs';
+import { sortResLabsByClinicalOrder } from '../labs-section-order.mjs';
 import {
   getActivePatientLabHistory,
   labSetIdForHistory,
@@ -93,7 +94,7 @@ function appendStandardResLabChunk(box, text) {
 }
 
 export function appendResLabChunksToBox(box, resLabs, src, result, labDisp, rt) {
-  resLabs.forEach(function (text) {
+  sortResLabsByClinicalOrder(resLabs || []).forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;
     if (
       (rt.isCitoquimInterpretacionResLabChunk && rt.isCitoquimInterpretacionResLabChunk(text)) ||

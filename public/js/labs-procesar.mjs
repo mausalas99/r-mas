@@ -4,6 +4,7 @@
  */
 import { buildEgfrPatientCtx } from './labs-egfr.mjs';
 import { lcrBlocksNormText_ } from './labs-lcr-parse.mjs';
+import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 
 /** Expediente del encabezado SOME (para enlazar con el paciente en R+). */
 export function extractLabExpedienteFromReport(textoBruto) {
@@ -200,7 +201,7 @@ export function createProcesarLabs(deps) {
     var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx);
     return {
       patient: hdr.patient,
-      resLabs: deps.dedupeSingletonSections_(sections.resLabs),
+      resLabs: sortResLabsByClinicalOrder(deps.dedupeSingletonSections_(sections.resLabs)),
       bhExtras: sections.bhExtras,
       refsBySection: deps.buildRefsBySectionFromReport(textoBruto),
     };

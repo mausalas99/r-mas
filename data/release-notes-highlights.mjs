@@ -1538,6 +1538,29 @@ var RELEASE_NOTES_769 = [
   },
 ];
 
+var RELEASE_NOTES_773 = [
+  {
+    title: 'Alta directa desde SOME',
+    body:
+      'Un solo reporte de <strong>paciente nuevo</strong> abre el modal de alta con datos del laboratorio; al guardar, <strong>Procesar</strong> continúa sin confirmación intermedia.',
+  },
+  {
+    title: 'Orden clínico en Resultados',
+    body:
+      'Las secciones SOME se ordenan fijo: <strong>BH → QS → ESC → PFHs → GASES</strong>, otros bloques y <strong>EGO al final</strong>.',
+  },
+  {
+    title: 'Labs más simples',
+    body:
+      'Retirado el wizard de 2 páginas <strong>Configurar lectura</strong>; los paneles hospitalarios siguen por <strong>overlay PanelDef</strong> y sync LAN.',
+  },
+  {
+    title: 'Parche sobre 7.7.2',
+    body:
+      'Incluye paste SOME, ⌘K acciones, colas docs/cultivos y checklist pre-entrega. Instala <strong>7.7.3</strong> en todo el turno el mismo día.',
+  },
+];
+
 var RELEASE_NOTES_772 = [
   {
     title: 'Pega SOME en cualquier pantalla',
@@ -1600,9 +1623,10 @@ var RELEASE_NOTES_771 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_772;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_773;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.3': RELEASE_NOTES_773,
   '7.7.2': RELEASE_NOTES_772,
   '7.7.1': RELEASE_NOTES_771,
   '7.7.0': RELEASE_NOTES_770,

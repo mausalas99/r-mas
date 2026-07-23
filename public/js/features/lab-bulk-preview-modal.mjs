@@ -111,9 +111,9 @@ function renderRowActions(block, idx) {
     '</span>';
   if (shouldOfferBulkPreviewAddPatient(block)) {
     html +=
-      '<button type="button" class="lab-bulk-preview-add-pill" data-bulk-block-idx="' +
+      '<button type="button" class="btn-med-secondary lab-bulk-preview-add-btn" data-bulk-block-idx="' +
       idx +
-      '" title="Registrar paciente con datos del reporte">Agregar</button>';
+      '" title="Registrar paciente con datos del reporte">Agregar al censo</button>';
   }
   return html;
 }
@@ -153,9 +153,10 @@ function renderPreviewList(blocks) {
     blocks
       .map(function (block, idx) {
         var issues = renderReportIssues(block);
+        var status = block.status || 'unknown';
         return (
           '<li class="lab-bulk-preview-row lab-bulk-preview-row--' +
-          esc(block.status || 'unknown') +
+          esc(status) +
           '">' +
           '<div class="lab-bulk-preview-row-main">' +
           '<div class="lab-bulk-preview-row-text">' +
@@ -163,8 +164,8 @@ function renderPreviewList(blocks) {
           esc(block.patientName || '—') +
           '</div>' +
           '<div class="lab-bulk-preview-row-meta">' +
-          (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) + ' · ' : '') +
-          esc(renderBlockMeta(block)) +
+          (block.primaryExpediente ? 'Exp. ' + esc(block.primaryExpediente) : 'Sin expediente') +
+          (renderBlockMeta(block) ? ' · ' + esc(renderBlockMeta(block)) : '') +
           '</div>' +
           '</div>' +
           '<div class="lab-bulk-preview-row-aside">' +
@@ -221,6 +222,32 @@ function refreshModalPreview() {
   paintModalContent(modalSession.blocks);
 }
 
+/** After alta: process immediately when nothing else is blocking. */
+export function shouldAutoConfirmAfterPatientSave(blocks) {
+  var state = resolveBulkPreviewConfirmState(blocks);
+  if (!state.processable) return false;
+  return !(blocks || []).some(shouldOfferBulkPreviewAddPatient);
+}
+
+function handleBulkPreviewPatientSaved() {
+  refreshModalPreview();
+  if (typeof rt.tourOnBulkPreviewPatientSaved === 'function') {
+    rt.tourOnBulkPreviewPatientSaved();
+  }
+  if (!modalSession) return;
+  if (!shouldAutoConfirmAfterPatientSave(modalSession.blocks)) {
+    resumeLabBulkPreviewModalIfSuspended();
+    if (typeof rt.showToast === 'function') {
+      rt.showToast('Paciente registrado. Revisa el resto en la vista previa.', 'success');
+    }
+    return;
+  }
+  if (typeof rt.showToast === 'function') {
+    rt.showToast('Paciente registrado', 'success');
+  }
+  confirmLabBulkPreview();
+}
+
 function handlePreviewBodyClick(event) {
   var btn = event.target && event.target.closest ? event.target.closest('[data-bulk-block-idx]') : null;
   if (!btn || !modalSession) return;
@@ -240,12 +267,7 @@ function handlePreviewBodyClick(event) {
   suspendLabBulkPreviewModal();
   rt.openAddModalFromLabPatient(labPatient, {
     fromBulkPreview: true,
-    onSaved: function () {
-      refreshModalPreview();
-      if (typeof rt.tourOnBulkPreviewPatientSaved === 'function') {
-        rt.tourOnBulkPreviewPatientSaved();
-      }
-    },
+    onSaved: handleBulkPreviewPatientSaved,
   });
 }
 

@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.2](https://github.com/mausalas99/r-mas/releases/tag/v7.7.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.3](https://github.com/mausalas99/r-mas/releases/tag/v7.7.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.7.3 (labs simplificados y alta desde SOME)
+
+- **Alta desde SOME** — Paciente nuevo en un solo reporte → modal de alta con datos del lab; al guardar, Procesar sigue sin confirmación extra.
+- **Orden de secciones** — BH → QS → ESC → PFHs → GASES → otros → EGO al final en Resultados.
+- **Sin wizard teach** — Retirado «Configurar lectura»; paneles vía overlay PanelDef + sync LAN.
+- **UI Laboratorio** — Preview batch y estilos más ligeros.
+
+Notas: `docs/RELEASE_NOTES_7.7.3.txt`.
 
 ## R+ 7.7.2 (colas guardia, paste SOME y ⌘K acciones)
 
