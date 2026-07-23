@@ -1,35 +1,27 @@
-version: 7.7.2
+version: 7.7.3
 files:
-  - url: R+-7.7.2-arm64.zip
-    sha512: eT6Vum/N29+Rv58eF06xPIfCPhRjEEzwAXrBXwQD1YxMTGl6NpwiBZyfOy5tFZIhCYu1DusFFlPAPbJIqMppag==
-    size: 137159625
-  - url: R+-7.7.2-arm64.dmg
-    sha512: lSmrYWUdgflMSdXi2HUsg7B3aqF28UOQh3EZZve7LFzvxSdddrYyf2Eu04zDEidQ31rCqqEd5AChnYZNYTYUAw==
-    size: 142895196
-  - url: R+-7.7.2-x64.zip
-    sha512: 4gsPROXkYT6/K53rHJKlfEYZDYx4upx+nY8dd2izA0LUkK21rybsXU/9DVn4xciLktHtlIyPabCrI2gzgu+90w==
-    size: 145533745
-  - url: R+-7.7.2-x64.dmg
-    sha512: uFpI6PMwqoYBe2eVFqUeD0DAVal8Sa9gLNYXvkQzwL1F+4wuMiK9+gycYTi5uVcnsGdREpEnxK/Vky9AWffLsQ==
-    size: 151385574
-path: R+-7.7.2-arm64.zip
-sha512: eT6Vum/N29+Rv58eF06xPIfCPhRjEEzwAXrBXwQD1YxMTGl6NpwiBZyfOy5tFZIhCYu1DusFFlPAPbJIqMppag==
-releaseDate: '2026-07-22T20:48:02.000Z'
+  - url: R+-7.7.3-arm64.zip
+    sha512: j3okFtydbYTQrTv0Pad0/2cKGVtSPJQ+y9xng5cnJryyW4yM1HsipnSAw2ekXUFfQU7SQMrMyzapbEpFemc4DQ==
+    size: 137124441
+  - url: R+-7.7.3-arm64.dmg
+    sha512: szcXuN4r7fK2P2oyQqZpcXIj/+Jm6VIsC8QcdhPVN5BF3lqSEsWn6P01GujhQ9W+ssDMPMV2/fInG8C7AAnq6w==
+    size: 142878931
+  - url: R+-7.7.3-x64.zip
+    sha512: DGoJIXoqfahfvmzBhsYCOAXypZxsbWOmtKrk82zmGvXGfCnqcpCGPXo5ItP7Ii4VChHR3jAxWYP1TmX7xZ4AOQ==
+    size: 145498543
+  - url: R+-7.7.3-x64.dmg
+    sha512: Y3sfEgIb27BDHoOuN8VEmzgIJrX5Jcm0jntq22BEMsxNB3juMg3ukMbZTEDjGIR6iRImH6R3qeVq27SXef1UBA==
+    size: 151280512
+path: R+-7.7.3-arm64.zip
+sha512: j3okFtydbYTQrTv0Pad0/2cKGVtSPJQ+y9xng5cnJryyW4yM1HsipnSAw2ekXUFfQU7SQMrMyzapbEpFemc4DQ==
+releaseDate: '2026-07-23T15:07:52.000Z'
 releaseNotes: |
-  7.7.2 acelera la guardia con colas globales (labs, docs, cultivos), paste inteligente de SOME en cualquier pantalla, acciones rápidas en ⌘K y checklist pre-entrega; los labs nuevos pueden enviarse solos a Eventualidades.
+  7.7.3 simplifica Laboratorio: se retira el wizard «Configurar lectura», el orden de secciones SOME es estable (BH → QS → … → EGO al final) y un paciente nuevo en un solo reporte abre el alta directa sin modal intermedio.
   
-  Paste-anywhere / Procesar SOME — Pega SOME en cualquier vista o usa ⌘K «Procesar SOME»: R+ propone paciente por registro/nombre, confirmas una vez y abre Laboratorio listo para procesar.
+  Alta desde SOME — Un solo reporte de paciente no registrado abre el modal de alta con datos del laboratorio; al guardar, Procesar continúa sin paso extra de confirmación.
   
-  ⌘K acciones — La paleta incluye acciones directas: batch labs mi equipo, cola docs, EA, export, pendiente, pase; con query vacío muestra pins frecuentes primero.
+  Orden de secciones — Resultados SOME se muestran en orden clínico fijo: BH, QS, ESC, PFHs, GASES, otros bloques, EGO al final.
   
-  Cola docs (mi equipo) — Badge en header: labs de hoy + pendientes de documentar → un clic a Labs, Nota o Pendientes.
+  Labs sin wizard teach — Retirado el flujo de 2 páginas «Configurar lectura»; los paneles hospitalarios siguen vía overlay PanelDef + sync LAN (como en 7.7.2).
   
-  Cola cultivos — Cultivos con ATB pendiente o sin nota de seguimiento en cola lateral → abre Cultivos del paciente.
-  
-  Labs → Eventualidades — Tras Procesar, import repo o Actualizar batch, hallazgos relevantes se envían automáticamente a Eventualidades (fallback compacto si no hay frases anormales).
-  
-  Checklist pre-entrega — Panel mi equipo: HC incompleta, EA sin nota hoy, pendientes vencidos, cultivos sin seguimiento → un clic al gap.
-  
-  Copiar indicaciones EA — Desde Estado actual: copia meds + bomba al portapapeles para mensajes/indicaciones.
-  
-  Paneles hospitalarios + teach overlay — Scaffold de paneles (TIR/ENDO/CARD/…) y wizard 2 páginas SOME residual → PanelDef con sync LAN.
+  UI Laboratorio — Estilos y preview batch más ligeros; menos superficie muerta en el panel.

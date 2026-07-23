@@ -1,26 +1,18 @@
-version: 7.7.2
+version: 7.7.3
 files:
-  - url: R+-7.7.2-x64.exe
-    sha512: CZeJigbU8YS4SZl+MMweqxz9GptWsRE7uPrKCMmVyJS05oQvKaliP9BQVJDcaQaK5tEAX4gI1f8uuGrO27Xlpg==
-    size: 120742790
-path: R+-7.7.2-x64.exe
-sha512: CZeJigbU8YS4SZl+MMweqxz9GptWsRE7uPrKCMmVyJS05oQvKaliP9BQVJDcaQaK5tEAX4gI1f8uuGrO27Xlpg==
-releaseDate: '2026-07-22T20:48:02.000Z'
+  - url: R+-7.7.3-x64.exe
+    sha512: PaGvlEcnKCHaFa60LpAczhx5pRD3fWjBopmfYtd+F+oQDTFqPtswXEGPyoblAC6CYOdXkjY8e1p3ctEXo4HlUg==
+    size: 120717379
+path: R+-7.7.3-x64.exe
+sha512: PaGvlEcnKCHaFa60LpAczhx5pRD3fWjBopmfYtd+F+oQDTFqPtswXEGPyoblAC6CYOdXkjY8e1p3ctEXo4HlUg==
+releaseDate: '2026-07-23T15:07:52.000Z'
 releaseNotes: |
-  7.7.2 acelera la guardia con colas globales (labs, docs, cultivos), paste inteligente de SOME en cualquier pantalla, acciones rápidas en ⌘K y checklist pre-entrega; los labs nuevos pueden enviarse solos a Eventualidades.
+  7.7.3 simplifica Laboratorio: se retira el wizard «Configurar lectura», el orden de secciones SOME es estable (BH → QS → … → EGO al final) y un paciente nuevo en un solo reporte abre el alta directa sin modal intermedio.
   
-  Paste-anywhere / Procesar SOME — Pega SOME en cualquier vista o usa ⌘K «Procesar SOME»: R+ propone paciente por registro/nombre, confirmas una vez y abre Laboratorio listo para procesar.
+  Alta desde SOME — Un solo reporte de paciente no registrado abre el modal de alta con datos del laboratorio; al guardar, Procesar continúa sin paso extra de confirmación.
   
-  ⌘K acciones — La paleta incluye acciones directas: batch labs mi equipo, cola docs, EA, export, pendiente, pase; con query vacío muestra pins frecuentes primero.
+  Orden de secciones — Resultados SOME se muestran en orden clínico fijo: BH, QS, ESC, PFHs, GASES, otros bloques, EGO al final.
   
-  Cola docs (mi equipo) — Badge en header: labs de hoy + pendientes de documentar → un clic a Labs, Nota o Pendientes.
+  Labs sin wizard teach — Retirado el flujo de 2 páginas «Configurar lectura»; los paneles hospitalarios siguen vía overlay PanelDef + sync LAN (como en 7.7.2).
   
-  Cola cultivos — Cultivos con ATB pendiente o sin nota de seguimiento en cola lateral → abre Cultivos del paciente.
-  
-  Labs → Eventualidades — Tras Procesar, import repo o Actualizar batch, hallazgos relevantes se envían automáticamente a Eventualidades (fallback compacto si no hay frases anormales).
-  
-  Checklist pre-entrega — Panel mi equipo: HC incompleta, EA sin nota hoy, pendientes vencidos, cultivos sin seguimiento → un clic al gap.
-  
-  Copiar indicaciones EA — Desde Estado actual: copia meds + bomba al portapapeles para mensajes/indicaciones.
-  
-  Paneles hospitalarios + teach overlay — Scaffold de paneles (TIR/ENDO/CARD/…) y wizard 2 páginas SOME residual → PanelDef con sync LAN.
+  UI Laboratorio — Estilos y preview batch más ligeros; menos superficie muerta en el panel.
