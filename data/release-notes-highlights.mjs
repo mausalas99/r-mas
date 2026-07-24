@@ -1631,7 +1631,7 @@ var RELEASE_NOTES_774 = [
   {
     title: 'Consolidar a tu medida',
     body:
-      'En historial de Labs, <strong>Consolidar</strong> lista los conjuntos y tú armas los grupos (mismo día). Ya no fusiona todo el día por defecto.',
+      'En historial de Labs, <strong>Consolidar</strong> lista los conjuntos y tú armas los grupos (mismo día). Ya no fusiona el día entero por defecto.',
   },
   {
     title: 'COAG más fiable',
