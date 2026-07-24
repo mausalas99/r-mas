@@ -10,7 +10,7 @@ Fecha: 2026-07-23
 ## Nuevo / mejorado
 
 - **Repo / pegado masivo** — Historial respeta ventana ≤2 h y no fusiona gasometría con gasometría; la BH de la mañana queda solo en el bloque matutino.
-- **Consolidar historial** — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece «fusionar todo el día» por defecto.
+- **Consolidar historial** — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece fusionar el día entero por defecto.
 - **COAG (TP / TTP / INR)** — Extracción más estricta en PDFs incompletos: no cruza al estudio siguiente ni usa el mínimo del rango cuando falta el resultado.
 
 ## Instalación
