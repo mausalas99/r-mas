@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.3](https://github.com/mausalas99/r-mas/releases/tag/v7.7.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.4](https://github.com/mausalas99/r-mas/releases/tag/v7.7.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.7.4 (labs repo, consolidar y COAG)
+
+- **Repo / series q4h** — BH matutina no se copia a electrolitos/gases seriados; ventana ≤2 h + gaso aparte.
+- **Consolidar** — Armas grupos de conjuntos a mano; ya no fusiona el día entero por defecto.
+- **COAG** — No toma TTP como INR ni el mín. del rango como TP en PDFs incompletos.
+
+Notas: `docs/RELEASE_NOTES_7.7.4.txt`.
 ## R+ 7.7.3 (labs simplificados y alta desde SOME)
 
 - **Alta desde SOME** — Paciente nuevo en un solo reporte → modal de alta con datos del lab; al guardar, Procesar sigue sin confirmación extra.

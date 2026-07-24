@@ -183,6 +183,111 @@ export function extraerIndiceAterogenico_(texto) {
   return { valor: '---', min: null, max: null };
 }
 
+/** Fin de ventana para un renglón de coagulación SOME (evita robar el valor del siguiente estudio). */
+var COAG_ROW_BOUNDARIES_ = [
+  'TIEMPO DE PROTROMBINA',
+  'TIEMPO DE TROMBOPLASTINA',
+  'INR',
+  'FIBRINOGENO',
+  'FIBRINÓGENO',
+  'DIMERO D',
+  'D-DIMERO',
+  'D DIMERO',
+  'TESTIGO',
+  'OBSERVACIONES',
+  'FROTIS',
+  'DIFERENCIAL',
+  'BIOMETRIA',
+];
+
+function isCoagPanelTitleAfter_(tUpper, idx, nombreLen) {
+  var after = tUpper.substring(idx + nombreLen, idx + nombreLen + 24);
+  return /^\s*Y\s+TROMBO/.test(after);
+}
+
+function findCoagBoundaryPos_(tUpper, fromIdx, bound) {
+  if (bound !== 'INR') return tUpper.indexOf(bound, fromIdx);
+  var slice = tUpper.substring(fromIdx);
+  var re = /(?:^|[^A-Z0-9])INR(?![A-Z0-9])/g;
+  var m = re.exec(slice);
+  if (!m) return -1;
+  var at = m[0].indexOf('INR');
+  return fromIdx + m.index + at;
+}
+
+function coagWindowEnd_(tUpper, fromIdx, nombre) {
+  var end = Math.min(tUpper.length, fromIdx + 220);
+  var nombreU = String(nombre || '').toUpperCase();
+  for (var i = 0; i < COAG_ROW_BOUNDARIES_.length; i++) {
+    var bound = COAG_ROW_BOUNDARIES_[i];
+    if (bound === nombreU) continue;
+    var pos = findCoagBoundaryPos_(tUpper, fromIdx, bound);
+    if (pos > fromIdx && pos < end) end = pos;
+  }
+  return end;
+}
+
+function parseCoagValorRango_(sub) {
+  if (!sub) return null;
+  // Quitar bloque TESTIGO interno si quedó en la ventana
+  var clean = String(sub).replace(/TESTIGO[\s\S]*$/i, ' ');
+  var mRango = clean.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+  var min = mRango ? parseFloat(mRango[1].replace(',', '.')) : null;
+  var max = mRango ? parseFloat(mRango[2].replace(',', '.')) : null;
+  var rangoIdx = mRango ? clean.search(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/) : -1;
+  // Solo números ANTES del rango = resultado. Si falta el resultado, no usar el mín. del rango.
+  var beforeRango = rangoIdx >= 0 ? clean.substring(0, rangoIdx) : clean;
+  var mValor = beforeRango.match(/(-?\d+[.,]?\d*)/);
+  if (!mValor) return null;
+  return { valor: mValor[1], min: min, max: max };
+}
+
+function shouldSkipCoagMatch_(tUpper, nombre, idx) {
+  if (nombre === 'TIEMPO DE PROTROMBINA' && isCoagPanelTitleAfter_(tUpper, idx, nombre.length)) {
+    return true;
+  }
+  if (nombre !== 'INR') return false;
+  var before = tUpper.charAt(idx - 1) || ' ';
+  var afterCh = tUpper.charAt(idx + 3) || ' ';
+  return /[A-Z0-9]/.test(before) || /[A-Z0-9]/.test(afterCh);
+}
+
+function isImplausibleInr_(valorStr, maxInr) {
+  var inrN = parseFloat(String(valorStr || '').replace(',', '.'));
+  return isFinite(inrN) && inrN > maxInr;
+}
+
+function tryParseCoagAt_(texto, tUpper, nombre, idx, maxInr) {
+  if (shouldSkipCoagMatch_(tUpper, nombre, idx)) return null;
+  var subStart = idx + nombre.length;
+  var parsed = parseCoagValorRango_(texto.substring(subStart, coagWindowEnd_(tUpper, subStart, nombre)));
+  if (!parsed) return null;
+  if (nombre === 'INR' && isImplausibleInr_(parsed.valor, maxInr)) return null;
+  return parsed;
+}
+
+/**
+ * Extracción de coagulación SOME: no cruza al siguiente estudio (INR≠TTP)
+ * ni toma el mínimo del rango cuando falta el resultado (TP≠10.25).
+ */
+export function extraerConRangoCoag(nombres, texto, opts) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  var maxInr = opts && typeof opts.maxInr === 'number' ? opts.maxInr : 8;
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var start = 0;
+    while (true) {
+      var idx = t.indexOf(nombre, start);
+      if (idx === -1) break;
+      var parsed = tryParseCoagAt_(texto, t, nombre, idx, maxInr);
+      if (parsed) return parsed;
+      start = idx + nombre.length;
+    }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
 /**
  * Como extraerConRango, pero elimina repeticiones del nombre del estudio en la
  * ventana (layout SOME) para no tomar dígitos de etiquetas tipo T4, C3, B12, CA 125.

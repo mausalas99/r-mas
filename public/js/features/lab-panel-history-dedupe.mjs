@@ -10,10 +10,17 @@ import { isGasometriaOnlyResLabs } from '../lab-history-format.mjs';
 import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
 import {
   buildLabConsolidationMergeJobs,
-  countAutoLabConsolidationMerges,
-  findOutlierLabConsolidationGroups,
+  buildManualLabConsolidationJobs,
+  labSetSectionSummary,
+  listLabConsolidationCandidates,
+  validateManualConsolidationGroup,
 } from '../lab-consolidation-plan.mjs';
-import { finishLabConsolidateUi, wireLabConsolidateModal, buildLabConsolidateModalHtml } from './lab-panel-history-consolidate-modal.mjs';
+import {
+  finishLabConsolidateUi,
+  wireLabConsolidateModal,
+  buildLabConsolidateModalHtml,
+  tipoLabel,
+} from './lab-panel-history-consolidate-modal.mjs';
 import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labSetIdForHistory, clearLabHistoryDateSelectCache, dedupeConsolidatedRowsBySection, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
@@ -289,34 +296,6 @@ function executeLabConsolidationMergeJobs(patientId, jobs) {
   return out;
 }
 
-function analyzeLabConsolidation(patientId) {
-  if (!patientId || !labHistory[patientId] || labHistory[patientId].length < 2) {
-    return { autoJobs: [], outlierGroups: [], autoMergeCount: 0 };
-  }
-  rt.ensureParsedLabHistory(patientId);
-  var sets = labHistory[patientId].slice();
-  var outlierGroups = findOutlierLabConsolidationGroups(
-    sets,
-    labSetDayKey,
-    labSetTipo,
-    labSetTimestampMs,
-    labSetIsGasoOnly
-  );
-  var autoJobs = buildLabConsolidationMergeJobs(
-    sets,
-    labSetDayKey,
-    labSetTipo,
-    labSetTimestampMs,
-    null,
-    labSetIsGasoOnly
-  );
-  return {
-    autoJobs: autoJobs,
-    outlierGroups: outlierGroups,
-    autoMergeCount: countAutoLabConsolidationMerges(autoJobs),
-  };
-}
-
 function dayLabelFromDayKey(dayKey) {
   if (!dayKey || dayKey === 'unknown') return '—';
   var parts = String(dayKey).split('-').map(function (x) {
@@ -328,6 +307,32 @@ function dayLabelFromDayKey(dayKey) {
   return dd + '/' + mm + '/' + parts[0];
 }
 
+function buildConsolidationCandidateRows(patientId) {
+  rt.ensureParsedLabHistory(patientId);
+  var sets = labHistory[patientId] ? labHistory[patientId].slice() : [];
+  return listLabConsolidationCandidates(sets, labSetDayKey, labSetTipo).map(function (set) {
+    var tipo = labSetTipo(set);
+    return {
+      id: String(set.id),
+      label: rt.formatLabHistoryDateSelectLabel(set),
+      dayKey: labSetDayKey(set),
+      dayLabel: dayLabelFromDayKey(labSetDayKey(set)),
+      tipo: tipo,
+      tipoLabel: tipoLabel(tipo),
+      sections: labSetSectionSummary(set.resLabs),
+    };
+  });
+}
+
+function setsByIdForPatient(patientId) {
+  var map = Object.create(null);
+  (labHistory[patientId] || []).forEach(function (set) {
+    if (set && set.id != null) map[String(set.id)] = set;
+  });
+  return map;
+}
+
+/** Auto (import): solo ventana ≤2 h. Manual UI: grupos elegidos por el usuario. */
 function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
   if (!patientId || !labHistory[patientId] || labHistory[patientId].length < 2) {
     return { merged: 0, removedIds: [], keeperIds: [] };
@@ -342,6 +347,18 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
     outlierGroupKeys,
     labSetIsGasoOnly
   );
+  var result = executeLabConsolidationMergeJobs(patientId, jobs);
+  if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
+  return result;
+}
+
+function runManualLabConsolidationForPatient(patientId, groups) {
+  if (!patientId || !labHistory[patientId] || !groups || !groups.length) {
+    return { merged: 0, removedIds: [], keeperIds: [] };
+  }
+  rt.ensureParsedLabHistory(patientId);
+  var byId = setsByIdForPatient(patientId);
+  var jobs = buildManualLabConsolidationJobs(groups, byId);
   var result = executeLabConsolidationMergeJobs(patientId, jobs);
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
   return result;
@@ -395,8 +412,8 @@ function findDisplayLabHistorySetId(patientId, displayResult) {
 }
 
 /**
- * Fusiona entradas de labHistory del mismo día, tipo homogéneo y bloque horario ≤2 h.
- * Los conjuntos mixtos (laboratorio + cultivo en un mismo set) no se fusionan ni se agrupan con otros.
+ * Consolidación manual: el usuario arma grupos de conjuntos (mismo día).
+ * Los mixtos no aparecen como candidatos. El auto ≤2 h sigue en import (autoConsolidate).
  */
 function consolidateLabHistoryByDayAndTipo() {
   if (!rt.getActiveId()) {
@@ -410,45 +427,50 @@ function consolidateLabHistoryByDayAndTipo() {
     return;
   }
 
-  var analysis = analyzeLabConsolidation(patientId);
-  if (!analysis.autoMergeCount && !analysis.outlierGroups.length) {
-    rt.showToast('No hay grupos del mismo día y tipo homogéneo para fusionar', 'success');
+  var candidates = buildConsolidationCandidateRows(patientId);
+  if (candidates.length < 2) {
+    rt.showToast('No hay suficientes conjuntos con fecha para consolidar', 'success');
     return;
   }
 
-  function applyConsolidation(outlierKeys) {
+  var byDay = Object.create(null);
+  candidates.forEach(function (c) {
+    byDay[c.dayKey] = (byDay[c.dayKey] || 0) + 1;
+  });
+  var hasPairableDay = Object.keys(byDay).some(function (dk) {
+    return byDay[dk] >= 2;
+  });
+  if (!hasPairableDay) {
+    rt.showToast('Necesitas al menos 2 conjuntos del mismo día para armar un grupo', 'success');
+    return;
+  }
+
+  function applyManualGroups(groups) {
     if (typeof rt.pushUndoSnapshot === 'function') {
-      rt.pushUndoSnapshot('Consolidar historial de labs por día y tipo');
+      rt.pushUndoSnapshot('Consolidar historial de labs (grupos manuales)');
     }
-    var result = runLabConsolidationForPatient(patientId, outlierKeys);
+    var result = runManualLabConsolidationForPatient(patientId, groups);
     syncLabHistoryConsolidationToLan(patientId, result);
     finishLabConsolidateUi(patientId, result.merged);
-  }
-
-  if (!analysis.outlierGroups.length) {
-    if (
-      !confirm(
-        '¿Consolidar el historial por día?\n\n' +
-          'R+ fusionará envíos del mismo día y tipo (solo labs o solo cultivos) si están a ≤2 h entre sí.\n\n' +
-          'Se conserva la entrada más antigua; las líneas idénticas se guardan una sola vez.'
-      )
-    ) {
-      return;
-    }
-    applyConsolidation(null);
-    return;
   }
 
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'lab-consolidate-backdrop';
-  backdrop.innerHTML = buildLabConsolidateModalHtml({
-    autoMergeCount: analysis.autoMergeCount,
-    outlierGroups: analysis.outlierGroups,
-    dayLabelFromKey: dayLabelFromDayKey,
-  });
+  backdrop.innerHTML = buildLabConsolidateModalHtml({ candidates: candidates });
   document.body.appendChild(backdrop);
-  wireLabConsolidateModal(backdrop, applyConsolidation);
+  wireLabConsolidateModal(backdrop, {
+    candidates: candidates,
+    validateGroup: function (setIds) {
+      return validateManualConsolidationGroup(
+        setIds,
+        setsByIdForPatient(patientId),
+        labSetDayKey,
+        labSetTipo
+      );
+    },
+    onConfirm: applyManualGroups,
+  });
 }
 export {
   findDisplayLabHistorySetId,

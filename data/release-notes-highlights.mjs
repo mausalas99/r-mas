@@ -1622,10 +1622,34 @@ var RELEASE_NOTES_771 = [
   },
 ];
 
+var RELEASE_NOTES_774 = [
+  {
+    title: 'Repo sin BH en series q4h',
+    body:
+      'Al importar del repositorio, la <strong>BH matutina</strong> ya no se copia a electrolitos/gases cada 4 h. Se respeta la ventana de <strong>≤2 h</strong> y las gasometrías seriadas quedan aparte.',
+  },
+  {
+    title: 'Consolidar a tu medida',
+    body:
+      'En historial de Labs, <strong>Consolidar</strong> lista los conjuntos y tú armas los grupos (mismo día). Ya no fusiona todo el día por defecto.',
+  },
+  {
+    title: 'COAG más fiable',
+    body:
+      'En PDFs incompletos, R+ ya no toma el <strong>TTP como INR</strong> ni el mínimo del rango como <strong>TP</strong>.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.4 en todas</strong> las Macs y PCs del turno el mismo día si usan import del repositorio o consolidación de labs.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_773;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_774;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.4': RELEASE_NOTES_774,
   '7.7.3': RELEASE_NOTES_773,
   '7.7.2': RELEASE_NOTES_772,
   '7.7.1': RELEASE_NOTES_771,

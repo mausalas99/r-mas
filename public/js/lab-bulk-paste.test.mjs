@@ -148,7 +148,7 @@ describe('lab-bulk-paste', () => {
     assert.match(String(gasesLine), /\bAG \d/, 'debe calcular anión gap al fusionar labs + gasometría');
   });
 
-  it('mergeBulkParseResultsForStorage un solo conjunto por día (repo gaso + química)', () => {
+  it('mergeBulkParseResultsForStorage une química + gas inicial; gas seriado aparte', () => {
     var labs = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 9:56AM');
     var gasoA = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 9:56AM');
     var gasoB = GASO_VENOSA_SOLO
@@ -157,20 +157,40 @@ describe('lab-bulk-paste', () => {
     var items = [gasoA, labs, gasoB].map(function (text) {
       return { result: procesarLabs(text), reportText: text };
     });
-    var clustered = mergeBulkParseResults(items);
-    assert.ok(clustered.length >= 2, 'cluster horario puede partir gasometrías seriadas');
     var stored = mergeBulkParseResultsForStorage(items);
-    assert.equal(stored.length, 1, 'historial: un conjunto por día calendario');
-    assert.ok(
-      stored[0].resLabs.some(function (row) {
+    assert.equal(stored.length, 2, 'gasometría seriada no se fusiona con la anterior');
+    var withBh = stored.filter(function (s) {
+      return s.resLabs.some(function (row) {
         return /^BH\b/i.test(String(row));
-      })
-    );
+      });
+    });
+    assert.equal(withBh.length, 1, 'BH solo en el bloque con química');
     assert.ok(
-      stored[0].resLabs.some(function (row) {
+      withBh[0].resLabs.some(function (row) {
         return /^GASES\b/i.test(String(row));
-      })
+      }),
+      'química + gas inicial del mismo bloque horario'
     );
+  });
+
+  it('mergeBulkParseResultsForStorage no copia BH matutina a series q4h', () => {
+    var morning = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 6:00AM');
+    var gasoMid = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 10:00AM');
+    var gasoEve = GASO_VENOSA_SOLO
+      .replace('May 7 2026 6:43AM', 'Apr 11 2026 14:00PM')
+      .replace('7.39', '7.33');
+    var items = [morning, gasoMid, gasoEve].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var stored = mergeBulkParseResultsForStorage(items);
+    assert.equal(stored.length, 3, 'mañana + dos gases seriados → tres conjuntos');
+    var withBh = stored.filter(function (s) {
+      return s.resLabs.some(function (row) {
+        return /^BH\b/i.test(String(row));
+      });
+    });
+    assert.equal(withBh.length, 1, 'BH solo en el conjunto de la mañana');
+    assert.match(String(withBh[0].hora || ''), /^06:00/);
   });
 
   it('mergeBulkParseResults mantiene días distintos separados', () => {

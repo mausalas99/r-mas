@@ -80,12 +80,12 @@ docs/
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs` (teams, guardia, entrega, …), `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` + `clinico-access-*.mjs`; session bootstrap in `clinical-access-runtime/` |
 | LAN sync / rooms | `lan-squad/` (`host-store/` persistence submodules, `conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
-| Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
+| Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
-| Labs / tendencias | `public/js/labs*.mjs`, `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, `features/lan/lab-panel-overlay-sync.mjs` |
+| Labs / tendencias | `public/js/labs*.mjs`, `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, `features/lan/lab-panel-overlay-sync.mjs`, paste-anywhere `features/paste-smart*.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
 | VPO (documentación) | `public/js/features/vpo.mjs`, `vpo-panel.mjs`, `vpo-data.mjs`, `vpo-text.mjs` |
 | Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
@@ -133,8 +133,15 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-07-23** `release-7.7.4`: repo/pegado ≤2 h (BH no en series q4h); Consolidar por grupos manuales; COAG sin robar TTP→INR ni rango→TP; `lab-bulk-paste.mjs`, `lab-panel-history-consolidate-modal.mjs`, `labs-extract.mjs`.
+- **2026-07-21** `paste-smart`: paste-anywhere / Procesar SOME — global paste + ⌘K match registro/nombre → confirm once → Labs; `paste-smart*.mjs`.
+- **2026-07-21** `cultivo-queue` + `ea-clipboard`: cola cultivos (ATB pendiente / sin nota) + Copiar indicaciones EA; `cultivo-queue-*.mjs`, `ea-indicaciones-clipboard.mjs`.
+- **2026-07-21** `entrega-prep`: checklist pre-entrega mi equipo (HC / EA hoy / pendientes vencidos / cultivos sin seguimiento); `entrega-prep-checklist.mjs`, `entrega-prep-panel.mjs`.
+- **2026-07-21** `cmdk-actions`: ⌘K `action` kind (Procesar SOME, labs batch, doc queue, EA, export, pendiente, pase) + pins on empty; `command-palette-model.mjs`, `features/command-palette.mjs`.
+- **2026-07-21** `doc-queue`: cola docs + labs→Eventualidades auto (Procesar/repo/Actualizar + cola); `lab-eventualidad-autosend.mjs`, `lab-eventualidad-interpret.mjs`, `lab-panel-workbench*.mjs`.
 - **2026-07-21** `lab-repo-batch`: Actualizar labs de mi equipo — set mi equipo + checkboxes, fetch IPC secuencial, cola sidebar, import silencioso/preview; `lab-repo-batch-*.mjs`, `lab-bulk-paste.mjs`.
-- **2026-07-21** `labs-panels` + `labs-teach-overlay`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/INFL/INM/META/NEF/NIVEL/TM/NUT/GI/TOX/HEPB/VIRAL/MICRO) + PFH GGT/Prot; wizard 2 páginas SOME residual → PanelDef overlay + sync LAN `labPanelOverlay`; `labs-panel-defs.mjs`, `labs-panel-parse.mjs`, `labs-panel-overlay*.mjs`, `features/lab-panel-teach-*.mjs`.
+- **2026-07-23** `labs-7.7.3`: alta directa desde SOME (paciente nuevo sin modal intermedio), orden fijo secciones `labs-section-order.mjs`; retirados módulos teach wizard (`labs-panel-teach-*`, `lab-panel-teach-*`).
+- **2026-07-23** `labs-panels` + `labs-teach-overlay`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/…) + PFH GGT/Prot; overlay PanelDef + sync LAN `labPanelOverlay` (wizard «Configurar lectura» removed); `labs-panel-defs.mjs`, `labs-panel-parse.mjs`, `labs-panel-overlay*.mjs`.
 - **2026-07-19** `remove-neo`: drop Neo/Casiopea companion — Enviar a Neo UI/IPC, sesion-ingreso export, tour steps `sala_casiopea_*`, Aprender R+ neo modules; curriculum v10; `labs-anion-gap` AG/AGc/UAG.
 - **2026-07-19** `release-7.7.1`: receta SOAP ampliada (familias antieméticos/sedación/transfusiones…), rescates insulina PRN agrupados, glucometrías con UI en NM; `med-receta-soap*.mjs`, `insulin-rescate-*.mjs`, `estado-actual-med-soap-split.mjs`.
 - **2026-07-16** `release-7.7.0`: interpretación citoquímica (GASA, Light, PBE, LCR), fusión bloques duales LCR, diagramas colapsables; `labs-citoquimico-interpret*.mjs`, `labs-lcr-parse.mjs`.
@@ -144,11 +151,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-07-02** `lan-bundled-autoconnect`: clientes sin bearer reconectan solos a endpoints del turno (`bundledWardHostUrl`, ward registry); scan loop + bypass sin pausar; `lan-ward-host-registry.mjs`, `panel-scan-hosts.mjs`, `lan-shift-pin-connect.mjs`.
 - **2026-07-01** `release-7.6.1`: SQLCipher v21 sala CHECK (Interconsultas/UX/Eme), borrador Mi rotación, equipos push en cola, downgrade timeout; `schema-migrate-v21-clinical-sala-check.mjs`, `teams-roster-panel-draft.mjs`.
 - **2026-07-01** `ipad-lan-scope`: iPad conserva scope LAN sin SQLCipher; ops clínicas en móvil; sala Interconsultas por equipo; `scope-db.mjs`, `room-clinical-ops.mjs`, `patients-clinical-filter.mjs`; `room.test` exit fix en wrapper Electron.
-- **2026-06-27** `release-7.5.4`: iPad EA signos → LAN (Guardar push), sync-bundle 16mb, merge monitoreo por id, recuperación outbox; `vitals-recovery.mjs`, `server-http-security.js`.
-- **2026-06-27** `ipad-vitals-sync`: EA Guardar empuja LAN; sync-bundle 16mb; merge monitoreo por id; recuperación desde outbox; iPad no borra censo al refrescar; `vitals-recovery.mjs`, `server-http-security.js`.
-- **2026-06-27** `release-7.5.3`: repositorio intrahospitalario — registro + rango fechas, PDF→SOME, import híbrido silencioso/revisión; `lib/lab-repo/`, `lab-repo-import*.mjs`, IPC `lab-repo-fetch`.
-- **2026-06-26** `release-7.5.2`: EA signos en filas + modal historial, SOAP/copiar última lectura, PICO febril ≤5 días, SOME ayuno + traqueostomía; `estado-actual-panel-snapshot-*`, `estado-actual-vital-history-modal.mjs`, `med-receta-parse.mjs`.
-- **2026-06-25** `release-7.5.1`: push equipos LAN/cloud, eTFG desde expediente, labs masivos ventana 2 h, UI Rams, SQLCipher v20; `lib/equipos/equipos-push-*`, `labs-egfr.mjs`, `public/tokens.css`.
-- **2026-06-25** `vibedrift`: phases 0–5 — scan hygiene, arch/DI fixes, `dom-escape`, equipos shared, CI gate `--fail-on-score 45`; `@vibedrift/cli`, `vibedrift:scan`/`vibedrift:check`.
-- **2026-06-24** `ui-lan-settings`: ⇄ hero + unified stack rows; Ajustes panel ghost rows — `settings.css`, `panel-render-once.mjs`, `settings-dropdown.html`, `lan-hub-panel-shell.mjs`.
-- **2026-06-23** `equipos-cloud`: cola Lumify/EKG/US en Cloudflare Worker+D1+R2 (sin Mac anfitrión); `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, desktop board/QR cloud-aware.

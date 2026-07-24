@@ -1,5 +1,11 @@
 // Biometría hemática (BH) — extracted from labs.js
-import { extraerConRango, extraerConRangoBH, marcarSegunRango, fmt } from './labs-extract.mjs';
+import {
+  extraerConRango,
+  extraerConRangoBH,
+  extraerConRangoCoag,
+  marcarSegunRango,
+  fmt,
+} from './labs-extract.mjs';
 import { lineRichnessScore_ } from './labs-gaso-section.mjs';
 
 export const BH_EXTRA_DISPLAY_LABELS = {
@@ -314,11 +320,11 @@ function extractBhScalarFields_(tNorm) {
     Plt: fmtBhRanged_(extraerConRango(['PLT '], tNorm)),
     MPV: fmtBhRanged_(extraerConRango(['MPV ', 'VPM '], tNorm)),
     Ret: fmtBhRanged_(extraerConRango(['RETICULOCITOS'], tNorm)),
-    TP: fmtBhRanged_(extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm)),
-    TTP: fmtBhRanged_(extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm)),
-    INR: fmtBhRanged_(extraerConRango(['INR ', 'INR'], tNorm)),
-    Fib: fmtBhRanged_(extraerConRango(['FIBRINOGENO'], tNorm)),
-    DD: fmtBhRanged_(extraerConRango(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm)),
+    TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm)),
+    TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm)),
+    INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm)),
+    Fib: fmtBhRanged_(extraerConRangoCoag(['FIBRINOGENO', 'FIBRINÓGENO'], tNorm)),
+    DD: fmtBhRanged_(extraerConRangoCoag(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm)),
     Neu: fmtBhRanged_(extraerConRango(['NEU '], tNorm)),
     Eos: fmtBhRanged_(extraerConRango(['EOS '], tNorm)),
   };

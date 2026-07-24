@@ -390,40 +390,14 @@ export function mergeBulkParseResults(parsedItems) {
 }
 
 /**
- * Historial: un conjunto por día calendario (repo / pegado masivo del mismo día).
- * Evita duplicar Labs (1)…(4) cuando llegan gasometría y química en PDFs separados.
+ * Historial (repo / pegado masivo): misma consolidación que preview —
+ * día + tipo homogéneo dentro de ventana ≤2 h; gasometría seriada no se fusiona
+ * con otra gasometría. Así la BH matutina no se copia a electrolitos/gases q4h.
+ *
+ * (Antes: un conjunto por día calendario, lo que sobreponía la BH en todas las series.)
  */
 export function mergeBulkParseResultsForStorage(parsedItems) {
-  var items = (parsedItems || []).filter(function (item) {
-    return item && item.result && item.result.resLabs && item.result.resLabs.length;
-  });
-  if (!items.length) return [];
-
-  var byDay = Object.create(null);
-  var passthrough = [];
-
-  items.forEach(function (item) {
-    var tipo = primaryTipoForResLabs(item.result.resLabs || []);
-    var dk = dayKeyFromResult(item.result);
-    if (tipo === 'mixed' || tipo === 'cultivo' || !dk || dk === 'unknown' || dk === 'Anterior') {
-      passthrough.push(item);
-      return;
-    }
-    if (!byDay[dk]) byDay[dk] = [];
-    byDay[dk].push(item);
-  });
-
-  var out = [];
-  Object.keys(byDay).forEach(function (dk) {
-    var dayItems = byDay[dk];
-    var tipo = primaryTipoForResLabs(dayItems[0].result.resLabs || []);
-    out.push(buildMergedPayloadFromGroup(dayItems, tipo));
-  });
-
-  if (passthrough.length) {
-    out = out.concat(mergeBulkParseResults(passthrough));
-  }
-  return out;
+  return mergeBulkParseResults(parsedItems);
 }
 
 function latestDayKeyFromParsedItems(parsedItems) {

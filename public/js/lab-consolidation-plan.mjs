@@ -162,4 +162,93 @@ export function countOutlierLabConsolidationMerges(jobs) {
   }, 0);
 }
 
+/** Resumen compacto de secciones (BH · QS · GASES) para UI de consolidación. */
+export function labSetSectionSummary(resLabs) {
+  var seen = Object.create(null);
+  var keys = [];
+  (resLabs || []).forEach(function (row) {
+    var s = String(row || '').trim();
+    if (!s) return;
+    var m = s.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ0-9]+)/);
+    if (!m) return;
+    var k = m[1].toUpperCase();
+    if (seen[k]) return;
+    seen[k] = true;
+    keys.push(k);
+  });
+  return keys.join(' · ');
+}
+
+/**
+ * Sets elegibles para consolidación manual (día conocido, no mixtos).
+ * @returns {object[]}
+ */
+export function listLabConsolidationCandidates(sets, getDayKey, getTipo) {
+  return (sets || []).filter(function (set) {
+    if (!set || set.id == null) return false;
+    var tipo = getTipo(set);
+    if (tipo === 'mixed') return false;
+    var dk = getDayKey(set);
+    return !!(dk && dk !== 'unknown' && dk !== 'Anterior');
+  });
+}
+
+/**
+ * Valida un grupo manual: ≥2 ids, mismo día, misma familia (labwork|cultivo).
+ * @returns {{ ok: true, dayKey: string, family: string } | { ok: false, error: string }}
+ */
+export function validateManualConsolidationGroup(setIds, setsById, getDayKey, getTipo) {
+  var ids = (setIds || []).map(String).filter(Boolean);
+  if (ids.length < 2) return { ok: false, error: 'Selecciona al menos 2 conjuntos' };
+  var dayKey = '';
+  var family = '';
+  for (var i = 0; i < ids.length; i++) {
+    var set = setsById[ids[i]];
+    if (!set) return { ok: false, error: 'Conjunto no encontrado' };
+    var tipo = getTipo(set);
+    if (tipo === 'mixed') return { ok: false, error: 'No se pueden fusionar conjuntos mixtos' };
+    var dk = getDayKey(set);
+    if (!dk || dk === 'unknown' || dk === 'Anterior') {
+      return { ok: false, error: 'Solo conjuntos con fecha conocida' };
+    }
+    var fam = labConsolidationFamily(tipo);
+    if (!dayKey) {
+      dayKey = dk;
+      family = fam;
+      continue;
+    }
+    if (dk !== dayKey) return { ok: false, error: 'Los conjuntos del grupo deben ser del mismo día' };
+    if (fam !== family) {
+      return { ok: false, error: 'No mezcles laboratorio con cultivos en el mismo grupo' };
+    }
+  }
+  return { ok: true, dayKey: dayKey, family: family };
+}
+
+/**
+ * Jobs de merge a partir de grupos elegidos por el usuario (sin auto ≤2 h ni día completo).
+ * @param {string[][]} groups — cada grupo es lista de set ids
+ * @param {Record<string, object>} setsById
+ */
+export function buildManualLabConsolidationJobs(groups, setsById) {
+  var jobs = [];
+  var used = Object.create(null);
+  (groups || []).forEach(function (ids) {
+    var arr = [];
+    (ids || []).forEach(function (id) {
+      var sid = String(id);
+      if (used[sid]) return;
+      var set = setsById[sid];
+      if (!set) return;
+      arr.push(set);
+    });
+    if (arr.length < 2) return;
+    arr.forEach(function (set) {
+      used[String(set.id)] = true;
+    });
+    jobs.push({ groupKey: 'manual', kind: 'manual', sets: arr });
+  });
+  return jobs;
+}
+
 export { LAB_CONSOLIDATION_WINDOW_MS, labTimestampMsFromFechaHora };

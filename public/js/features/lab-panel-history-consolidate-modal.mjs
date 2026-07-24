@@ -4,95 +4,258 @@ import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 
 function tipoLabel(tipo) {
-  if (tipo === 'cultivo') return 'Cultivos';
-  return 'Laboratorio';
+  if (tipo === 'cultivo') return 'Cultivo';
+  if (tipo === 'gaso') return 'Gasometría';
+  return 'Labs';
 }
 
-function clusterLine(sets) {
-  return (sets || [])
-    .map(function (set) {
-      return rt.formatLabHistoryDateSelectLabel(set);
+function groupSetsByDay(candidates) {
+  var byDay = Object.create(null);
+  (candidates || []).forEach(function (c) {
+    var dk = c.dayKey || 'unknown';
+    if (!byDay[dk]) byDay[dk] = [];
+    byDay[dk].push(c);
+  });
+  return Object.keys(byDay)
+    .sort(function (a, b) {
+      return String(b).localeCompare(String(a));
     })
-    .join(' · ');
+    .map(function (dk) {
+      return { dayKey: dk, dayLabel: byDay[dk][0].dayLabel || dk, sets: byDay[dk] };
+    });
 }
 
-function renderOutlierRow(group) {
-  var lines = (group.clusters || [])
-    .map(function (cluster) {
-      return '<li style="margin:4px 0 4px 16px;font-size:12px;color:var(--text-muted);">' + esc(clusterLine(cluster)) + '</li>';
-    })
-    .join('');
+function assignedSetIds(groups) {
+  var used = Object.create(null);
+  (groups || []).forEach(function (g) {
+    (g.setIds || []).forEach(function (id) {
+      used[String(id)] = true;
+    });
+  });
+  return used;
+}
+
+function renderSetRow(c, used) {
+  var sid = String(c.id);
+  var taken = !!used[sid];
   return (
-    '<label class="lab-consolidate-outlier-row" style="display:flex;gap:10px;align-items:flex-start;margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);">' +
-    '<input type="checkbox" class="lab-consolidate-outlier-cb" data-gk="' +
-    esc(group.groupKey) +
-    '" style="margin-top:3px;flex-shrink:0;" />' +
-    '<span style="font-size:13px;line-height:1.45;">' +
+    '<label class="lab-consolidate-set-row' +
+    (taken ? ' lab-consolidate-set-row--taken' : '') +
+    '" style="display:flex;gap:10px;align-items:flex-start;margin:6px 0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:' +
+    (taken ? 'default' : 'pointer') +
+    ';background:var(--surface);opacity:' +
+    (taken ? '0.55' : '1') +
+    ';">' +
+    '<input type="checkbox" class="lab-consolidate-set-cb" data-sid="' +
+    esc(sid) +
+    '"' +
+    (taken ? ' disabled' : '') +
+    ' style="margin-top:3px;flex-shrink:0;" />' +
+    '<span style="font-size:13px;line-height:1.4;">' +
     '<strong>' +
-    esc(group.dayLabel || group.dayKey) +
-    ' · ' +
-    esc(tipoLabel(group.tipo)) +
-    '</strong><br>' +
-    '<span style="color:var(--text-muted);">' +
-    esc(String(group.setCount)) +
-    ' envíos separados (&gt;2 h). Marca para fusionarlos en un solo reporte.</span>' +
-    '<ul style="margin:6px 0 0;padding:0;list-style:none;">' +
-    lines +
-    '</ul></span></label>'
+    esc(c.label || sid) +
+    '</strong>' +
+    (c.sections
+      ? '<br><span style="color:var(--text-muted);font-size:12px;">' + esc(c.sections) + '</span>'
+      : '') +
+    (taken
+      ? '<br><span style="color:var(--text-muted);font-size:11px;">Ya está en un grupo</span>'
+      : '') +
+    '</span></label>'
   );
 }
 
-/**
- * @param {{ autoMergeCount: number, outlierGroups: object[], dayLabelFromKey: (dk: string) => string }} opts
- */
-export function buildLabConsolidateModalHtml(opts) {
-  var autoCount = opts.autoMergeCount || 0;
-  var outliers = (opts.outlierGroups || []).map(function (g) {
-    return Object.assign({}, g, {
-      dayLabel: opts.dayLabelFromKey(g.dayKey),
-    });
-  });
-  var autoBlock =
-    autoCount > 0
-      ? '<p style="margin:0 0 12px;font-size:13px;line-height:1.45;color:var(--text-muted);">' +
-        'Se fusionarán automáticamente <strong>' +
-        esc(String(autoCount)) +
-        '</strong> conjunto(s) con tomas del mismo día a ≤2 h de diferencia.</p>'
-      : '';
-  var outlierBlock =
-    outliers.length > 0
-      ? '<p style="margin:0 0 8px;font-size:12px;font-weight:600;color:var(--text-muted);">Outliers (&gt;2 h) — opcional</p>' +
-        outliers.map(renderOutlierRow).join('')
-      : '';
+function renderDayBlock(day, used) {
   return (
-    '<div class="lab-conflict-modal" style="max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +
-    '<h3 style="margin:0 0 8px;">Consolidar historial</h3>' +
-    '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Puedes unir envíos del mismo día que quedaron separados por la ventana de 2 h (p. ej. biometría matutina y gases vespertinos).</p>' +
-    autoBlock +
-    '<div style="overflow-y:auto;flex:1;min-height:0;padding-right:4px;">' +
-    outlierBlock +
+    '<div class="lab-consolidate-day" style="margin:0 0 14px;">' +
+    '<p style="margin:0 0 6px;font-size:12px;font-weight:600;color:var(--text-muted);">' +
+    esc(day.dayLabel || day.dayKey) +
+    '</p>' +
+    day.sets.map(function (c) {
+      return renderSetRow(c, used);
+    }).join('') +
+    '</div>'
+  );
+}
+
+function renderGroupCard(group, idx, candidatesById) {
+  var labels = (group.setIds || [])
+    .map(function (id) {
+      var c = candidatesById[String(id)];
+      return c ? c.label : String(id);
+    })
+    .join(' + ');
+  return (
+    '<div class="lab-consolidate-group-card" data-gi="' +
+    esc(String(idx)) +
+    '" style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between;margin:6px 0;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);">' +
+    '<span style="font-size:13px;line-height:1.4;">' +
+    '<strong>Grupo ' +
+    esc(String(idx + 1)) +
+    '</strong><br>' +
+    '<span style="color:var(--text-muted);font-size:12px;">' +
+    esc(labels) +
+    '</span></span>' +
+    '<button type="button" class="lab-consolidate-group-remove" data-gi="' +
+    esc(String(idx)) +
+    '" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);flex-shrink:0;">Quitar</button>' +
+    '</div>'
+  );
+}
+
+function renderBodyHtml(candidates, groups) {
+  var used = assignedSetIds(groups);
+  var byId = Object.create(null);
+  (candidates || []).forEach(function (c) {
+    byId[String(c.id)] = c;
+  });
+  var days = groupSetsByDay(candidates);
+  var setsHtml = days.map(function (d) {
+    return renderDayBlock(d, used);
+  }).join('');
+  var groupsHtml =
+    groups.length > 0
+      ? groups
+          .map(function (g, i) {
+            return renderGroupCard(g, i, byId);
+          })
+          .join('')
+      : '<p style="margin:0;font-size:12px;color:var(--text-muted);">Ningún grupo aún. Marca ≥2 conjuntos del mismo día y pulsa «Añadir grupo».</p>';
+  return (
+    '<div style="margin:0 0 12px;">' +
+    '<p style="margin:0 0 8px;font-size:12px;font-weight:600;color:var(--text-muted);">Conjuntos</p>' +
+    setsHtml +
     '</div>' +
-    '<div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;">' +
-    '<button type="button" id="lab-consolidate-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
-    '<button type="button" id="lab-consolidate-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Consolidar</button>' +
+    '<div style="margin:0 0 4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+    '<button type="button" id="lab-consolidate-add-group" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Añadir grupo</button>' +
+    '<span id="lab-consolidate-hint" style="font-size:12px;color:var(--text-muted);"></span>' +
+    '</div>' +
+    '<div style="margin:14px 0 0;">' +
+    '<p style="margin:0 0 8px;font-size:12px;font-weight:600;color:var(--text-muted);">Grupos a fusionar</p>' +
+    '<div id="lab-consolidate-groups">' +
+    groupsHtml +
     '</div></div>'
   );
 }
 
-/** @param {HTMLElement} backdrop @param {(outlierKeys: string[]) => void} onConfirm */
-export function wireLabConsolidateModal(backdrop, onConfirm) {
+/**
+ * @param {{ candidates: object[] }} opts
+ *   candidates: { id, label, dayKey, dayLabel, tipo, sections }[]
+ */
+export function buildLabConsolidateModalHtml(opts) {
+  var candidates = opts.candidates || [];
+  return (
+    '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +
+    '<h3 style="margin:0 0 8px;">Consolidar historial</h3>' +
+    '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Elige qué conjuntos unir. Arma uno o más grupos (mismo día; no mezcles labs con cultivos). Solo se fusionan los grupos que crees.</p>' +
+    '<div id="lab-consolidate-body" style="overflow-y:auto;flex:1;min-height:0;padding-right:4px;">' +
+    renderBodyHtml(candidates, []) +
+    '</div>' +
+    '<div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;">' +
+    '<button type="button" id="lab-consolidate-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
+    '<button type="button" id="lab-consolidate-ok" disabled style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Consolidar</button>' +
+    '</div></div>'
+  );
+}
+
+function selectedSetIds(backdrop) {
+  var ids = [];
+  backdrop.querySelectorAll('.lab-consolidate-set-cb:checked:not(:disabled)').forEach(function (cb) {
+    var sid = cb.getAttribute('data-sid');
+    if (sid) ids.push(sid);
+  });
+  return ids;
+}
+
+function setOkEnabled(backdrop, groups) {
+  var ok = document.getElementById('lab-consolidate-ok');
+  if (!ok) return;
+  var enabled = groups.length > 0;
+  ok.disabled = !enabled;
+  ok.style.opacity = enabled ? '1' : '0.55';
+  ok.style.cursor = enabled ? 'pointer' : 'not-allowed';
+}
+
+function setHint(msg, isError) {
+  var el = document.getElementById('lab-consolidate-hint');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B91C1C' : 'var(--text-muted)';
+}
+
+/**
+ * @param {HTMLElement} backdrop
+ * @param {{
+ *   candidates: object[],
+ *   validateGroup: (setIds: string[]) => { ok: boolean, error?: string },
+ *   onConfirm: (groups: string[][]) => void
+ * }} opts
+ */
+export function wireLabConsolidateModal(backdrop, opts) {
+  var candidates = (opts && opts.candidates) || [];
+  var validateGroup =
+    opts && typeof opts.validateGroup === 'function'
+      ? opts.validateGroup
+      : function () {
+          return { ok: true };
+        };
+  var onConfirm = opts && typeof opts.onConfirm === 'function' ? opts.onConfirm : function () {};
+  /** @type {{ setIds: string[] }[]} */
+  var groups = [];
+
+  function refresh() {
+    var body = document.getElementById('lab-consolidate-body');
+    if (body) body.innerHTML = renderBodyHtml(candidates, groups);
+    setOkEnabled(backdrop, groups);
+    setHint('');
+    bindDynamic();
+  }
+
+  function bindDynamic() {
+    var addBtn = document.getElementById('lab-consolidate-add-group');
+    if (addBtn) {
+      addBtn.onclick = function () {
+        var ids = selectedSetIds(backdrop);
+        var check = validateGroup(ids);
+        if (!check || !check.ok) {
+          setHint((check && check.error) || 'Grupo inválido', true);
+          return;
+        }
+        var used = assignedSetIds(groups);
+        for (var i = 0; i < ids.length; i++) {
+          if (used[ids[i]]) {
+            setHint('Ese conjunto ya está en otro grupo', true);
+            return;
+          }
+        }
+        groups.push({ setIds: ids.slice() });
+        refresh();
+      };
+    }
+    backdrop.querySelectorAll('.lab-consolidate-group-remove').forEach(function (btn) {
+      btn.onclick = function () {
+        var gi = parseInt(btn.getAttribute('data-gi') || '', 10);
+        if (!isFinite(gi) || gi < 0) return;
+        groups.splice(gi, 1);
+        refresh();
+      };
+    });
+  }
+
   document.getElementById('lab-consolidate-cancel').onclick = function () {
     backdrop.remove();
   };
   document.getElementById('lab-consolidate-ok').onclick = function () {
-    var keys = [];
-    backdrop.querySelectorAll('.lab-consolidate-outlier-cb:checked').forEach(function (cb) {
-      var gk = cb.getAttribute('data-gk');
-      if (gk) keys.push(gk);
+    if (!groups.length) return;
+    var payload = groups.map(function (g) {
+      return g.setIds.slice();
     });
     backdrop.remove();
-    onConfirm(keys);
+    onConfirm(payload);
   };
+
+  bindDynamic();
+  setOkEnabled(backdrop, groups);
 }
 
 export function finishLabConsolidateUi(patientId, mergedCount) {
@@ -110,3 +273,5 @@ export function finishLabConsolidateUi(patientId, mergedCount) {
     rt.showToast('No había conjuntos para fusionar con la selección actual', 'success');
   }
 }
+
+export { tipoLabel };
