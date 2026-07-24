@@ -1,27 +1,25 @@
-version: 7.7.3
+version: 7.7.4
 files:
-  - url: R+-7.7.3-arm64.zip
-    sha512: j3okFtydbYTQrTv0Pad0/2cKGVtSPJQ+y9xng5cnJryyW4yM1HsipnSAw2ekXUFfQU7SQMrMyzapbEpFemc4DQ==
-    size: 137124441
-  - url: R+-7.7.3-arm64.dmg
-    sha512: szcXuN4r7fK2P2oyQqZpcXIj/+Jm6VIsC8QcdhPVN5BF3lqSEsWn6P01GujhQ9W+ssDMPMV2/fInG8C7AAnq6w==
-    size: 142878931
-  - url: R+-7.7.3-x64.zip
-    sha512: DGoJIXoqfahfvmzBhsYCOAXypZxsbWOmtKrk82zmGvXGfCnqcpCGPXo5ItP7Ii4VChHR3jAxWYP1TmX7xZ4AOQ==
-    size: 145498543
-  - url: R+-7.7.3-x64.dmg
-    sha512: Y3sfEgIb27BDHoOuN8VEmzgIJrX5Jcm0jntq22BEMsxNB3juMg3ukMbZTEDjGIR6iRImH6R3qeVq27SXef1UBA==
-    size: 151280512
-path: R+-7.7.3-arm64.zip
-sha512: j3okFtydbYTQrTv0Pad0/2cKGVtSPJQ+y9xng5cnJryyW4yM1HsipnSAw2ekXUFfQU7SQMrMyzapbEpFemc4DQ==
-releaseDate: '2026-07-23T15:07:52.000Z'
+  - url: R+-7.7.4-arm64.zip
+    sha512: +sSUjWyCv8b/VZBLYwantC/jTdQRSYes+k8evoTMpOw0kmbk0kbnrDWxhe9Kqzvc4G1hTN2O2zm3/aOLe3ltgw==
+    size: 137133893
+  - url: R+-7.7.4-arm64.dmg
+    sha512: PiOmSWYaYWt7ciH0M8wiL4yfTLaIZdjw+H1s1vb6C+Re/CSja6xVGunG4pWSFuEXvrcyjSgk+1jsBar/o3XY4Q==
+    size: 142878130
+  - url: R+-7.7.4-x64.zip
+    sha512: vfln/xvba+5pFhQ2CAUKbyTamurQTYekbXD16F4zrFgXr1T6udayrIF1nyvBjZE/S8PaAbyb068gvTbk6Gs8Zw==
+    size: 145507976
+  - url: R+-7.7.4-x64.dmg
+    sha512: 5DYpZXBYydmOFhX6J+U9ieS5GwNsgFESlrPmDlI1mNrLGvxxQ/x6udYrdvgNyt07fC+BrDQBTGqquCMH04mckw==
+    size: 151278670
+path: R+-7.7.4-arm64.zip
+sha512: +sSUjWyCv8b/VZBLYwantC/jTdQRSYes+k8evoTMpOw0kmbk0kbnrDWxhe9Kqzvc4G1hTN2O2zm3/aOLe3ltgw==
+releaseDate: '2026-07-24T04:34:27.000Z'
 releaseNotes: |
-  7.7.3 simplifica Laboratorio: se retira el wizard «Configurar lectura», el orden de secciones SOME es estable (BH → QS → … → EGO al final) y un paciente nuevo en un solo reporte abre el alta directa sin modal intermedio.
+  7.7.4 corrige el import del repositorio cuando hay electrolitos/gases seriados (la BH matutina ya no se copia a todas las tomas), deja que Consolidar arme grupos a mano, y evita que COAG tome el TTP como INR o el mínimo del rango como TP.
   
-  Alta desde SOME — Un solo reporte de paciente no registrado abre el modal de alta con datos del laboratorio; al guardar, Procesar continúa sin paso extra de confirmación.
+  Repo / pegado masivo — Historial respeta ventana ≤2 h y no fusiona gasometría con gasometría; la BH de la mañana queda solo en el bloque matutino.
   
-  Orden de secciones — Resultados SOME se muestran en orden clínico fijo: BH, QS, ESC, PFHs, GASES, otros bloques, EGO al final.
+  Consolidar historial — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece fusionar el día entero por defecto.
   
-  Labs sin wizard teach — Retirado el flujo de 2 páginas «Configurar lectura»; los paneles hospitalarios siguen vía overlay PanelDef + sync LAN (como en 7.7.2).
-  
-  UI Laboratorio — Estilos y preview batch más ligeros; menos superficie muerta en el panel.
+  COAG (TP / TTP / INR) — Extracción más estricta en PDFs incompletos: no cruza al estudio siguiente ni usa el mínimo del rango cuando falta el resultado.

@@ -1,18 +1,16 @@
-version: 7.7.3
+version: 7.7.4
 files:
-  - url: R+-7.7.3-x64.exe
-    sha512: PaGvlEcnKCHaFa60LpAczhx5pRD3fWjBopmfYtd+F+oQDTFqPtswXEGPyoblAC6CYOdXkjY8e1p3ctEXo4HlUg==
-    size: 120717379
-path: R+-7.7.3-x64.exe
-sha512: PaGvlEcnKCHaFa60LpAczhx5pRD3fWjBopmfYtd+F+oQDTFqPtswXEGPyoblAC6CYOdXkjY8e1p3ctEXo4HlUg==
-releaseDate: '2026-07-23T15:07:52.000Z'
+  - url: R+-7.7.4-x64.exe
+    sha512: 8iEJdg9Q1I5KdgPgB+TrtHSfmdapbmowxS7tv1UXRo90ZtCgbJfVKzjVX94KhclUzQ/aktUux/Gr908Z9vAcug==
+    size: 120730564
+path: R+-7.7.4-x64.exe
+sha512: 8iEJdg9Q1I5KdgPgB+TrtHSfmdapbmowxS7tv1UXRo90ZtCgbJfVKzjVX94KhclUzQ/aktUux/Gr908Z9vAcug==
+releaseDate: '2026-07-24T04:34:27.000Z'
 releaseNotes: |
-  7.7.3 simplifica Laboratorio: se retira el wizard «Configurar lectura», el orden de secciones SOME es estable (BH → QS → … → EGO al final) y un paciente nuevo en un solo reporte abre el alta directa sin modal intermedio.
+  7.7.4 corrige el import del repositorio cuando hay electrolitos/gases seriados (la BH matutina ya no se copia a todas las tomas), deja que Consolidar arme grupos a mano, y evita que COAG tome el TTP como INR o el mínimo del rango como TP.
   
-  Alta desde SOME — Un solo reporte de paciente no registrado abre el modal de alta con datos del laboratorio; al guardar, Procesar continúa sin paso extra de confirmación.
+  Repo / pegado masivo — Historial respeta ventana ≤2 h y no fusiona gasometría con gasometría; la BH de la mañana queda solo en el bloque matutino.
   
-  Orden de secciones — Resultados SOME se muestran en orden clínico fijo: BH, QS, ESC, PFHs, GASES, otros bloques, EGO al final.
+  Consolidar historial — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece fusionar el día entero por defecto.
   
-  Labs sin wizard teach — Retirado el flujo de 2 páginas «Configurar lectura»; los paneles hospitalarios siguen vía overlay PanelDef + sync LAN (como en 7.7.2).
-  
-  UI Laboratorio — Estilos y preview batch más ligeros; menos superficie muerta en el panel.
+  COAG (TP / TTP / INR) — Extracción más estricta en PDFs incompletos: no cruza al estudio siguiente ni usa el mínimo del rango cuando falta el resultado.
