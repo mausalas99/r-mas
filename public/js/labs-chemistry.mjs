@@ -99,7 +99,7 @@ function extractQsFormatted_(texto) {
           'CK TOTAL',
           'CPK TOTAL',
           'CPK ',
-          'CK ',
+          // No usar 'CK ' solo: coincide con «SHOCK» en ubicación.
         ],
         texto
       )

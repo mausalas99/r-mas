@@ -28,6 +28,15 @@ test('procesarLabs reporte solo lipasa produce sección LIPASA', () => {
   assert.match(r.resLabs[0], /^LIPASA\tLip 1244\*$/);
 });
 
+test('procesarLabs no inventa CPK desde ubicación SHOCK', () => {
+  const r = procesarLabs(LIPASA_ONLY);
+  assert.ok(
+    !r.resLabs.some(function (row) {
+      return /^QS\b/i.test(String(row)) && /\bCPK\b/i.test(String(row));
+    })
+  );
+});
+
 test('parseLipasa_ devuelve vacío sin lipasa', () => {
   assert.equal(parseLipasa_('GLUCOSA EN SANGRE 95 mg/dL'), '');
 });
