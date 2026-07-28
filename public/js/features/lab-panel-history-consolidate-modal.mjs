@@ -2,6 +2,7 @@ import { esc } from '../dom-escape.mjs';
 import { notes, saveState } from '../app-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
+import { runLabConsolidateUiRefresh } from './lab-panel-history-consolidate-refresh.mjs';
 
 function tipoLabel(tipo) {
   if (tipo === 'cultivo') return 'Cultivo';
@@ -258,20 +259,36 @@ export function wireLabConsolidateModal(backdrop, opts) {
   setOkEnabled(backdrop, groups);
 }
 
-export function finishLabConsolidateUi(patientId, mergedCount) {
-  saveState({ immediate: true });
-  labPanelBridge.renderLabHistoryPanel();
-  rt.refreshTendenciasOrCultivosPanel();
-  var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-  if (el && patientId && notes[patientId]) {
-    el.value = notes[patientId].estudios || '';
-  }
-  if (mergedCount > 0) {
-    rt.addAuditEntry('lab-history-consolidate', 'ok', mergedCount, String(patientId));
-    rt.showToast('Fusionados ' + mergedCount + ' conjunto(s) ✓', 'success');
-  } else {
-    rt.showToast('No había conjuntos para fusionar con la selección actual', 'success');
-  }
+export function finishLabConsolidateUi(patientId, mergedCount, opts) {
+  runLabConsolidateUiRefresh(
+    {
+      saveState: saveState,
+      setActiveLab: function (v) {
+        labPanelBridge.setActiveLab(v);
+      },
+      renderLabHistoryPanel: function () {
+        labPanelBridge.renderLabHistoryPanel();
+      },
+      refreshTendenciasOrCultivosPanel: function () {
+        rt.refreshTendenciasOrCultivosPanel();
+      },
+      syncEstudiosTextarea: function (pid) {
+        var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+        if (el && pid && notes[pid]) {
+          el.value = notes[pid].estudios || '';
+        }
+      },
+      addAuditEntry: function (action, status, n, detail) {
+        rt.addAuditEntry(action, status, n, detail);
+      },
+      showToast: function (msg, kind) {
+        rt.showToast(msg, kind);
+      },
+    },
+    patientId,
+    mergedCount,
+    opts
+  );
 }
 
 export { tipoLabel };

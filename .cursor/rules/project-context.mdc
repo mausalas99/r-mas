@@ -133,6 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-07-28** `release-7.7.5`: gasos repo — todas las tomas, empareja la más cercana ≤2 h, no absorbe 2ª gaso; merge QS/ESC/PFH; receta HU landscape; `lab-consolidation-cluster.mjs`, `lab-bulk-paste.mjs`, `labs-chemistry.mjs`, `generate-receta-hu.js`.
 - **2026-07-23** `release-7.7.4`: repo/pegado ≤2 h (BH no en series q4h); Consolidar por grupos manuales; COAG sin robar TTP→INR ni rango→TP; `lab-bulk-paste.mjs`, `lab-panel-history-consolidate-modal.mjs`, `labs-extract.mjs`.
 - **2026-07-21** `paste-smart`: paste-anywhere / Procesar SOME — global paste + ⌘K match registro/nombre → confirm once → Labs; `paste-smart*.mjs`.
 - **2026-07-21** `cultivo-queue` + `ea-clipboard`: cola cultivos (ATB pendiente / sin nota) + Copiar indicaciones EA; `cultivo-queue-*.mjs`, `ea-indicaciones-clipboard.mjs`.

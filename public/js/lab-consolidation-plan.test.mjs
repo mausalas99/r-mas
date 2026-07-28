@@ -129,6 +129,30 @@ describe('lab-consolidation-plan', () => {
     assert.equal(jobs[0].sets[1].id, 'b');
   });
 
+  it('buildLabConsolidationMergeJobs no fusiona 2ª gaso con labs+gaso ya pareados', () => {
+    var sets = [
+      { id: 'pair', day: '2026-6-12', tipo: 'labs', hasGaso: true, ms: 0 },
+      { id: 'gaso2', day: '2026-6-12', tipo: 'gaso', hasGaso: true, ms: 64 * 60 * 1000 },
+    ];
+    var jobs = buildLabConsolidationMergeJobs(
+      sets,
+      function (s) {
+        return s.day;
+      },
+      function (s) {
+        return s.tipo;
+      },
+      function (s) {
+        return s.ms;
+      },
+      null,
+      function (s) {
+        return !!s.hasGaso;
+      }
+    );
+    assert.equal(jobs.length, 0, 'par existente no debe absorber otra gasometría ≤2 h');
+  });
+
   it('findOutlierLabConsolidationGroups no ofrece outlier para solo gasometrías seriadas', () => {
     var sets = [
       { id: 'a', day: '2026-6-12', tipo: 'gaso', ms: 0 },

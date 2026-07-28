@@ -11,14 +11,19 @@ import {
 } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
-import { isGasometriaOnlyResLabs, primaryTipoForLabSet } from './lab-history-format.mjs';
+import { resLabsHasGasometria, primaryTipoForLabSet } from './lab-history-format.mjs';
 import {
   clusterByDayTipoAndTimeWindow,
-  clusterByTimeWindow,
+  clusterLabworkByTimeWindow,
   labTimestampMsFromFechaHora,
-  resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
 import { mergeTroponinaResLabRows_ } from './labs-troponin.mjs';
+import {
+  mergeQsResLabRows_,
+  mergeEscResLabRows_,
+  mergePfhResLabRows_,
+  mergeLipasaResLabRows_,
+} from './labs-chemistry.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
@@ -101,6 +106,10 @@ function isBhResLabRow(row) {
   return key === 'BH' || /^BH:/i.test(String(row || '').trim());
 }
 
+function isPairMergeSectionKey(key) {
+  return key === 'QS' || key === 'ESC' || key === 'PFHS' || key === 'LIPASA';
+}
+
 /** Dedupe de renglones al consolidar mismo día (misma lógica que lab-panel). */
 export function dedupeConsolidatedLabRows(rows, tipo) {
   var normalized = [];
@@ -116,17 +125,29 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
 
   var bhRows = [];
   var tropRows = [];
+  var qsRows = [];
+  var escRows = [];
+  var pfhRows = [];
+  var lipasaRows = [];
   var otherRows = [];
   normalized.forEach(function (row) {
-    if (isBhResLabRow(row)) bhRows.push(row);
-    else if (labRowSectionKey(row) === 'TROP') tropRows.push(row);
+    if (isBhResLabRow(row)) {
+      bhRows.push(row);
+      return;
+    }
+    var key = labRowSectionKey(row);
+    if (key === 'TROP') tropRows.push(row);
+    else if (key === 'QS') qsRows.push(row);
+    else if (key === 'ESC') escRows.push(row);
+    else if (key === 'PFHS') pfhRows.push(row);
+    else if (key === 'LIPASA') lipasaRows.push(row);
     else otherRows.push(row);
   });
 
   var bestBySection = Object.create(null);
   otherRows.forEach(function (row, idx) {
     var key = labRowSectionKey(row);
-    if (!key) return;
+    if (!key || isPairMergeSectionKey(key)) return;
     var cand = { row: row, idx: idx, score: labRowRichnessScore(row) };
     var prev = bestBySection[key];
     if (!prev || cand.score > prev.score || (cand.score === prev.score && cand.idx > prev.idx)) {
@@ -137,6 +158,14 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   var out = Object.keys(bestBySection).map(function (k) {
     return bestBySection[k].row;
   });
+  var mergedQs = mergeQsResLabRows_(qsRows);
+  if (mergedQs) out.push(mergedQs);
+  var mergedEsc = mergeEscResLabRows_(escRows);
+  if (mergedEsc) out.push(mergedEsc);
+  var mergedPfh = mergePfhResLabRows_(pfhRows);
+  if (mergedPfh) out.push(mergedPfh);
+  var mergedLip = mergeLipasaResLabRows_(lipasaRows);
+  if (mergedLip) out.push(mergedLip);
   var mergedTrop = mergeTroponinaResLabRows_(tropRows);
   if (mergedTrop) out.push(mergedTrop);
   if (bhRows.length) {
@@ -380,7 +409,8 @@ export function mergeBulkParseResults(parsedItems) {
     },
     timestampMsFromParsedItem,
     function (item) {
-      return isGasometriaOnlyResLabs(item.result.resLabs || []);
+      // Cupo de gasometría: set que ya trae GASES (solo-gaso o labs+gaso).
+      return resLabsHasGasometria(item.result.resLabs || []);
     }
   );
   return clusters.map(function (cluster) {
@@ -391,8 +421,9 @@ export function mergeBulkParseResults(parsedItems) {
 
 /**
  * Historial (repo / pegado masivo): misma consolidación que preview —
- * día + tipo homogéneo dentro de ventana ≤2 h; gasometría seriada no se fusiona
- * con otra gasometría. Así la BH matutina no se copia a electrolitos/gases q4h.
+ * día + tipo homogéneo dentro de ventana ≤2 h; empareja la gaso más cercana;
+ * nunca dos gasometrías en el mismo conjunto. Así la BH matutina no se copia
+ * a electrolitos/gases q4h.
  *
  * (Antes: un conjunto por día calendario, lo que sobreponía la BH en todas las series.)
  */
@@ -463,11 +494,12 @@ export function pickLatestDayMergedLabDisplay(parsedItems) {
     }
   });
 
-  var dayTipo = primaryTipoForResLabs(latestItem.result.resLabs || []);
-  var dayClusters = clusterByTimeWindow(
+  var dayClusters = clusterLabworkByTimeWindow(
     dayItems,
     timestampMsFromParsedItem,
-    resolveLabConsolidationWindowMs(dayTipo)
+    function (item) {
+      return resLabsHasGasometria(item.result.resLabs || []);
+    }
   );
   var targetCluster = dayClusters.find(function (cluster) {
     return cluster.indexOf(latestItem) !== -1;

@@ -74,6 +74,61 @@ describe('lab-consolidation-cluster', () => {
     );
   });
 
+  it('clusterLabworkByTimeWindow empareja la gaso más cercana al labs', () => {
+    var items = [
+      { id: 'gasoEarly', tipo: 'gaso', ms: 0 },
+      { id: 'labs', tipo: 'labs', ms: 90 * 60 * 1000 },
+      { id: 'gasoNear', tipo: 'gaso', ms: 105 * 60 * 1000 },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return x.tipo === 'gaso';
+      }
+    );
+    assert.equal(clusters.length, 2);
+    assert.deepEqual(
+      clusters[0].map(function (x) {
+        return x.id;
+      }),
+      ['gasoEarly']
+    );
+    assert.deepEqual(
+      clusters[1].map(function (x) {
+        return x.id;
+      }),
+      ['labs', 'gasoNear']
+    );
+  });
+
+  it('clusterLabworkByTimeWindow no absorbe 2ª gaso en set que ya trae GASES', () => {
+    var items = [
+      { id: 'labsGaso', hasGaso: true, ms: 0 },
+      { id: 'gaso2', hasGaso: true, ms: 64 * 60 * 1000 },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return !!x.hasGaso;
+      }
+    );
+    assert.equal(clusters.length, 2);
+    assert.deepEqual(
+      clusters.map(function (c) {
+        return c.map(function (x) {
+          return x.id;
+        });
+      }),
+      [['labsGaso'], ['gaso2']]
+    );
+  });
+
   it('clusterByDayTipoAndTimeWindow agrupa labs y gaso del mismo día', () => {
     var items = [
       { day: '2026-6-12', tipo: 'labs', ms: 0 },

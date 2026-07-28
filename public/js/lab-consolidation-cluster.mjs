@@ -89,22 +89,101 @@ export function clusterByTimeWindow(items, getMs, windowMs) {
   return clusters;
 }
 
+function chainTimedEntries(entries, windowMs) {
+  var clusters = [];
+  var cur = [];
+  var prevMs = null;
+  (entries || []).forEach(function (entry) {
+    if (!cur.length || (prevMs != null && entry.ms - prevMs <= windowMs)) {
+      cur.push(entry);
+    } else {
+      clusters.push(cur);
+      cur = [entry];
+    }
+    prevMs = entry.ms;
+  });
+  if (cur.length) clusters.push(cur);
+  return clusters;
+}
+
+function minAbsDistToCluster(ms, clusterEntries) {
+  var dist = Infinity;
+  (clusterEntries || []).forEach(function (e) {
+    var d = Math.abs(ms - e.ms);
+    if (d < dist) dist = d;
+  });
+  return dist;
+}
+
+function assignGasosToClosestLabClusters(labClusters, gasoEntries, windowMs) {
+  var assigned = labClusters.map(function () {
+    return null;
+  });
+  var candidates = [];
+  gasoEntries.forEach(function (g, gi) {
+    labClusters.forEach(function (cluster, ci) {
+      var dist = minAbsDistToCluster(g.ms, cluster);
+      if (dist <= windowMs) candidates.push({ gi: gi, ci: ci, dist: dist, ms: g.ms });
+    });
+  });
+  candidates.sort(function (a, b) {
+    if (a.dist !== b.dist) return a.dist - b.dist;
+    return a.ms - b.ms;
+  });
+  var gasoUsed = Object.create(null);
+  var clusterUsed = Object.create(null);
+  candidates.forEach(function (c) {
+    if (gasoUsed[c.gi] || clusterUsed[c.ci]) return;
+    gasoUsed[c.gi] = true;
+    clusterUsed[c.ci] = true;
+    assigned[c.ci] = gasoEntries[c.gi];
+  });
+  return { assigned: assigned, gasoUsed: gasoUsed };
+}
+
+function clustersFromLabGasoAssignment(labClusters, assignedGasos) {
+  return labClusters.map(function (cluster, ci) {
+    var entries = cluster.slice();
+    if (assignedGasos[ci]) entries.push(assignedGasos[ci]);
+    entries.sort(function (a, b) {
+      return a.ms - b.ms;
+    });
+    return entries.map(function (e) {
+      return e.item;
+    });
+  });
+}
+
+function appendUntimedLabworkClusters(out, untimed, hasGasoFn) {
+  var labs = [];
+  var gasos = [];
+  (untimed || []).forEach(function (item) {
+    if (hasGasoFn(item)) gasos.push(item);
+    else labs.push(item);
+  });
+  if (labs.length) out.push(labs);
+  gasos.forEach(function (g) {
+    out.push([g]);
+  });
+}
+
 /**
- * Labs + gasometría inicial: ventana 2 h, pero nunca fusionar gasometría con gasometría.
+ * Labs + una gasometría: ventana 2 h; empareja la gaso más cercana;
+ * nunca dos gasometrías en el mismo cluster (también si el set ya trae GASES).
  * @template T
  * @param {T[]} items
  * @param {(item: T) => number|null} getMs
- * @param {(item: T) => boolean} isGasoOnly
+ * @param {(item: T) => boolean} hasGaso — ítem ocupa el cupo de gasometría del cluster
  * @param {number} [windowMs]
  * @returns {T[][]}
  */
-export function clusterLabworkByTimeWindow(items, getMs, isGasoOnly, windowMs) {
+export function clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs) {
   var list = items || [];
   if (!list.length) return [];
   var w = typeof windowMs === 'number' && isFinite(windowMs) ? windowMs : LAB_CONSOLIDATION_WINDOW_MS;
   var gasoFn =
-    typeof isGasoOnly === 'function'
-      ? isGasoOnly
+    typeof hasGaso === 'function'
+      ? hasGaso
       : function () {
           return false;
         };
@@ -114,39 +193,35 @@ export function clusterLabworkByTimeWindow(items, getMs, isGasoOnly, windowMs) {
   list.forEach(function (item) {
     var ms = getMs(item);
     if (ms == null) untimed.push(item);
-    else timed.push({ item: item, ms: ms });
+    else timed.push({ item: item, ms: ms, isGaso: !!gasoFn(item) });
   });
 
   timed.sort(function (a, b) {
     return a.ms - b.ms;
   });
 
-  var clusters = [];
-  var cur = [];
-  var prevMs = null;
-  timed.forEach(function (entry) {
-    var isGaso = gasoFn(entry.item);
-    var clusterHasGaso = cur.some(gasoFn);
-    var withinWindow = !cur.length || (prevMs != null && entry.ms - prevMs <= w);
-    var canJoin = withinWindow && !(isGaso && clusterHasGaso);
-
-    if (canJoin) {
-      cur.push(entry.item);
-    } else {
-      if (cur.length) clusters.push(cur);
-      cur = [entry.item];
-    }
-    prevMs = entry.ms;
+  var labsEntries = timed.filter(function (e) {
+    return !e.isGaso;
   });
-  if (cur.length) clusters.push(cur);
+  var gasoEntries = timed.filter(function (e) {
+    return e.isGaso;
+  });
+  var labClusters = chainTimedEntries(labsEntries, w);
+  var pairing = assignGasosToClosestLabClusters(labClusters, gasoEntries, w);
+  var out = clustersFromLabGasoAssignment(labClusters, pairing.assigned);
 
-  if (untimed.length === 1) {
-    clusters.push(untimed);
-  } else if (untimed.length > 1) {
-    clusters.push(untimed.slice());
-  }
+  gasoEntries.forEach(function (g, gi) {
+    if (!pairing.gasoUsed[gi]) out.push([g.item]);
+  });
 
-  return clusters;
+  out.sort(function (a, b) {
+    var ma = getMs(a[0]);
+    var mb = getMs(b[0]);
+    return (ma == null ? 0 : ma) - (mb == null ? 0 : mb);
+  });
+
+  appendUntimedLabworkClusters(out, untimed, gasoFn);
+  return out;
 }
 
 /**
@@ -154,13 +229,13 @@ export function clusterLabworkByTimeWindow(items, getMs, isGasoOnly, windowMs) {
  * @param {T[]} items
  * @param {(item: T) => number|null} getMs
  * @param {(item: T) => string} getTipo
- * @param {(item: T) => boolean} isGasoOnly
+ * @param {(item: T) => boolean} hasGaso
  * @param {number} [windowMs]
  */
-export function clusterLabConsolidationGroup(items, getMs, getTipo, isGasoOnly, windowMs) {
+export function clusterLabConsolidationGroup(items, getMs, getTipo, hasGaso, windowMs) {
   var tipo = getTipo((items || [])[0]);
   if (labConsolidationFamily(tipo) === 'labwork') {
-    return clusterLabworkByTimeWindow(items, getMs, isGasoOnly, windowMs);
+    return clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs);
   }
   return clusterByTimeWindow(items, getMs, resolveLabConsolidationWindowMs(tipo, windowMs));
 }
@@ -172,16 +247,16 @@ export function clusterLabConsolidationGroup(items, getMs, getTipo, isGasoOnly, 
  * @param {(item: T) => string} getDayKey
  * @param {(item: T) => string} getTipo — 'mixed' queda fuera de consolidación
  * @param {(item: T) => number|null} getMs
- * @param {(item: T) => boolean} [isGasoOnly]
+ * @param {(item: T) => boolean} [hasGaso]
  * @param {number} [windowMs]
  * @returns {T[][]}
  */
-export function clusterByDayTipoAndTimeWindow(items, getDayKey, getTipo, getMs, isGasoOnly, windowMs) {
+export function clusterByDayTipoAndTimeWindow(items, getDayKey, getTipo, getMs, hasGaso, windowMs) {
   var groups = Object.create(null);
   var mixedSingles = [];
   var gasoFn =
-    typeof isGasoOnly === 'function'
-      ? isGasoOnly
+    typeof hasGaso === 'function'
+      ? hasGaso
       : function (item) {
           return getTipo(item) === 'gaso';
         };

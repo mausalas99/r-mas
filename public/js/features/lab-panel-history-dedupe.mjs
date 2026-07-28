@@ -6,7 +6,7 @@ import {
 import { patients, labHistory } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { findExactDuplicateLabGroups, compareLabSetIdForDedupe } from '../lab-history-auto-store-core.mjs';
-import { isGasometriaOnlyResLabs } from '../lab-history-format.mjs';
+import { resLabsHasGasometria } from '../lab-history-format.mjs';
 import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
 import {
   buildLabConsolidationMergeJobs,
@@ -21,9 +21,10 @@ import {
   buildLabConsolidateModalHtml,
   tipoLabel,
 } from './lab-panel-history-consolidate-modal.mjs';
+import { preferKeeperSetIdFromConsolidateResult } from './lab-panel-history-consolidate-refresh.mjs';
 import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
-import { labSetIdForHistory, clearLabHistoryDateSelectCache, dedupeConsolidatedRowsBySection, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
+import { labSetIdForHistory, clearLabHistoryDateSelectCache, dedupeConsolidatedRowsBySection, refreshSameDayAscitisForPatient, setLabHistorySelectedSetId } from './lab-panel-history.mjs';
 import { buildLabDedupeModalHtml, wireLabDedupeModal } from './lab-panel-history-dedupe-modal.mjs';
 
 function labDedupeSummaryLine(set) {
@@ -210,8 +211,9 @@ function labSetTipo(set) {
   return rt.primaryTipoForLabSet(set.resLabs);
 }
 
-function labSetIsGasoOnly(set) {
-  return isGasometriaOnlyResLabs(set && set.resLabs);
+/** True si el set ya ocupa el cupo de gasometría (solo-gaso o labs+GASES). */
+function labSetHasGasometria(set) {
+  return resLabsHasGasometria(set && set.resLabs);
 }
 
 function labSetTimestampMs(set) {
@@ -345,7 +347,7 @@ function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
     labSetTipo,
     labSetTimestampMs,
     outlierGroupKeys,
-    labSetIsGasoOnly
+    labSetHasGasometria
   );
   var result = executeLabConsolidationMergeJobs(patientId, jobs);
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
@@ -451,6 +453,8 @@ function consolidateLabHistoryByDayAndTipo() {
     }
     var result = runManualLabConsolidationForPatient(patientId, groups);
     syncLabHistoryConsolidationToLan(patientId, result);
+    var preferSetId = preferKeeperSetIdFromConsolidateResult(result);
+    if (preferSetId) setLabHistorySelectedSetId(patientId, preferSetId);
     finishLabConsolidateUi(patientId, result.merged);
   }
 

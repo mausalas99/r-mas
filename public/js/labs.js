@@ -51,6 +51,11 @@ export {
   parseESC_,
   parsePFH_,
   parseLipasa_,
+  mergeTabPairResLabRows_,
+  mergeQsResLabRows_,
+  mergeEscResLabRows_,
+  mergePfhResLabRows_,
+  mergeLipasaResLabRows_,
 } from './labs-chemistry.mjs';
 
 export {

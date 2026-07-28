@@ -51,3 +51,38 @@ test('dedupeConsolidatedLabRows: EGO last; COAG in otros after GASES', () => {
   );
   assert.match(out[out.length - 1], /^EGO:/);
 });
+
+test('dedupeConsolidatedLabRows: une QS por campos (CPK no se pierde)', () => {
+  var rows = [
+    'QS\tGlu 90 Cr 1.2 BUN 18 PCR 4.1',
+    'QS\tCPK 450*',
+    'ESC\tNa 138 Cl 102',
+    'ESC\tK 3.1* Mg 1.4',
+    'PFHs\tAlb 3.2 AST 28',
+    'PFHs\tGGT 90* LDH 220',
+  ];
+  var out = dedupeConsolidatedLabRows(rows, 'labs');
+  var qs = out.find(function (r) {
+    return /^QS\b/i.test(String(r));
+  });
+  var esc = out.find(function (r) {
+    return /^ESC\b/i.test(String(r));
+  });
+  var pfh = out.find(function (r) {
+    return /^PFHS\b/i.test(String(r));
+  });
+  assert.ok(qs, 'debe quedar una fila QS');
+  assert.match(String(qs), /\bCPK\s+450\*/);
+  assert.match(String(qs), /\bGlu\s+90\b/);
+  assert.match(String(qs), /\bCr\s+1\.2\b/);
+  assert.equal(
+    out.filter(function (r) {
+      return /^QS\b/i.test(String(r));
+    }).length,
+    1
+  );
+  assert.match(String(esc), /\bNa\s+138\b/);
+  assert.match(String(esc), /\bK\s+3\.1\*/);
+  assert.match(String(pfh), /\bAlb\s+3\.2\b/);
+  assert.match(String(pfh), /\bGGT\s+90\*/);
+});

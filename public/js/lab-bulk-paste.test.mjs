@@ -173,6 +173,33 @@ describe('lab-bulk-paste', () => {
     );
   });
 
+  it('mergeBulkParseResultsForStorage empareja gaso más cercana a labs (5:01/5:09 vs 6:05)', () => {
+    var gasoEarly = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Jul 27 2026 5:01PM');
+    var labs = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Jul 27 2026 5:09PM');
+    var gasoLate = GASO_VENOSA_SOLO
+      .replace('May 7 2026 6:43AM', 'Jul 27 2026 6:05PM')
+      .replace('7.39', '7.41');
+    var items = [gasoEarly, labs, gasoLate].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var stored = mergeBulkParseResultsForStorage(items);
+    assert.equal(stored.length, 2, 'labs+gaso cercana; gaso de las 18:05 aparte');
+    var withBh = stored.filter(function (s) {
+      return s.resLabs.some(function (row) {
+        return /^BH\b/i.test(String(row));
+      });
+    });
+    assert.equal(withBh.length, 1);
+    assert.match(String(withBh[0].hora || ''), /^17:0/);
+    var gasoOnly = stored.filter(function (s) {
+      return !s.resLabs.some(function (row) {
+        return /^BH\b/i.test(String(row));
+      });
+    });
+    assert.equal(gasoOnly.length, 1);
+    assert.match(String(gasoOnly[0].hora || ''), /^18:05/);
+  });
+
   it('mergeBulkParseResultsForStorage no copia BH matutina a series q4h', () => {
     var morning = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 6:00AM');
     var gasoMid = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 10:00AM');

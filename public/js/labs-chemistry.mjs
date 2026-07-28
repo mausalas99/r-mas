@@ -7,6 +7,19 @@ import {
   toNum_,
 } from './labs-extract.mjs';
 import { ageYearsFromLabDemographics, computeEgfrCkdEpi2021Creatinine } from './labs-egfr.mjs';
+import { QS_SOME_TREND_ORDER } from './labs-bh.mjs';
+
+/** Orden ESC al consolidar varias filas del mismo día. */
+var ESC_MERGE_FIELD_ORDER = ['Na', 'Cl', 'K', 'Ca', 'F', 'Mg'];
+
+/** Orden PFHs al consolidar. */
+var PFH_MERGE_FIELD_ORDER = [
+  'Alb', 'AST', 'ALT', 'FA', 'GGT', 'Prot', 'BT', 'BD', 'BI', 'LDH', 'Amil',
+];
+
+var LIPASA_MERGE_FIELD_ORDER = ['Lip'];
+
+var PAIR_VALUE_RE_ = /^(-?\d+(?:[.,]\d+)?%?)\*?$|^---$/;
 
 export function extraerProcalcitonina_(texto) {
   var defaultRange = { valor: '---', min: 0, max: 0.05 };
@@ -75,7 +88,22 @@ function extractQsFormatted_(texto) {
       extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], texto)
     ),
     VSG: fmtSuero_(extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], texto)),
-    CPK: fmtSuero_(extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA', 'CPK '], texto)),
+    CPK: fmtSuero_(
+      extraerConRangoSuero(
+        [
+          'CPK CREATIN FOSFO QUINASA',
+          'CPK CREATINA FOSFOQUINASA',
+          'CREATINA FOSFOQUINASA',
+          'CREATIN FOSFO QUINASA',
+          'CREATINA KINASA',
+          'CK TOTAL',
+          'CPK TOTAL',
+          'CPK ',
+          'CK ',
+        ],
+        texto
+      )
+    ),
   };
 }
 
@@ -189,5 +217,108 @@ export function parseLipasa_(texto) {
   var Lip = fmt(marcarSegunRango(lipData.valor, lipData.min, lipData.max));
   if (Lip === '---') return '';
   return 'LIPASA\tLip ' + Lip;
+}
+
+function pairTokenScore_(val) {
+  var s = String(val == null ? '' : val);
+  var score = s.length;
+  if (s.indexOf('*') >= 0) score += 5;
+  if (/\d/.test(s)) score += 2;
+  return score;
+}
+
+function ingestTabPairBody_(body, into) {
+  var tokens = String(body || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  var i = 0;
+  while (i < tokens.length) {
+    var label = tokens[i];
+    var next = tokens[i + 1];
+    if (!label || next == null) {
+      i += 1;
+      continue;
+    }
+    if (!PAIR_VALUE_RE_.test(next)) {
+      i += 1;
+      continue;
+    }
+    var key = String(label).replace(/:$/, '');
+    var score = pairTokenScore_(next);
+    var prev = into[key];
+    if (!prev || score > prev.score) into[key] = { val: next, score: score };
+    i += 2;
+  }
+}
+
+/**
+ * Une filas tabulares Label/valor del mismo panel (p. ej. varias QS del día).
+ * Conserva analitos de solicitudes distintas (CPK + química básica, etc.).
+ * @param {unknown[]} rows
+ * @param {RegExp} sectionRe — ancla de sección al inicio (sin flags g)
+ * @param {string[]} [preferredOrder]
+ * @returns {string}
+ */
+export function mergeTabPairResLabRows_(rows, sectionRe, preferredOrder) {
+  var list = (rows || [])
+    .map(function (r) {
+      return String(r == null ? '' : r).trim();
+    })
+    .filter(function (s) {
+      return s && sectionRe.test(s);
+    });
+  if (!list.length) return '';
+  if (list.length === 1) return list[0];
+
+  var header = list[0].split(/\t/)[0] || list[0].split(/\s/)[0] || '';
+  var byKey = Object.create(null);
+  list.forEach(function (row) {
+    var tab = row.indexOf('\t');
+    var body = tab >= 0 ? row.slice(tab + 1) : row.replace(sectionRe, '').trim();
+    if (tab >= 0) header = row.slice(0, tab).trim() || header;
+    ingestTabPairBody_(body, byKey);
+  });
+
+  var keys = Object.keys(byKey);
+  if (!keys.length) return list[list.length - 1];
+
+  var order = preferredOrder || [];
+  var rank = Object.create(null);
+  order.forEach(function (k, i) {
+    rank[k] = i;
+  });
+  keys.sort(function (a, b) {
+    var ra = Object.prototype.hasOwnProperty.call(rank, a) ? rank[a] : 9999;
+    var rb = Object.prototype.hasOwnProperty.call(rank, b) ? rank[b] : 9999;
+    if (ra !== rb) return ra - rb;
+    return String(a).localeCompare(String(b), 'es');
+  });
+
+  var parts = [];
+  keys.forEach(function (k) {
+    parts.push(k, byKey[k].val);
+  });
+  return header + '\t' + parts.join(' ');
+}
+
+/** Une varias filas QS (química) al consolidar el mismo día. */
+export function mergeQsResLabRows_(rows) {
+  return mergeTabPairResLabRows_(rows, /^QS\b/i, QS_SOME_TREND_ORDER);
+}
+
+/** Une varias filas ESC al consolidar. */
+export function mergeEscResLabRows_(rows) {
+  return mergeTabPairResLabRows_(rows, /^ESC\b/i, ESC_MERGE_FIELD_ORDER);
+}
+
+/** Une varias filas PFHs al consolidar. */
+export function mergePfhResLabRows_(rows) {
+  return mergeTabPairResLabRows_(rows, /^PFHS?\b/i, PFH_MERGE_FIELD_ORDER);
+}
+
+/** Une varias filas LIPASA al consolidar. */
+export function mergeLipasaResLabRows_(rows) {
+  return mergeTabPairResLabRows_(rows, /^LIPASA\b/i, LIPASA_MERGE_FIELD_ORDER);
 }
 

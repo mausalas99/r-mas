@@ -107,10 +107,22 @@ const rootProcessCommonjs = {
 };
 
 const rootProcessEsm = {
-  files: ['generate-censo.js', 'generate-receta-hu.js'],
+  files: ['generate-censo.js'],
   languageOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
+    globals: { ...globals.node },
+  },
+  rules: {
+    'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+  },
+};
+
+const rootProcessRecetaHu = {
+  files: ['generate-receta-hu.js', 'generate-receta-hu.test.js'],
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'commonjs',
     globals: { ...globals.node },
   },
   rules: {
@@ -155,6 +167,7 @@ export default [
   tier1Tests,
   rootProcessCommonjs,
   rootProcessEsm,
+  rootProcessRecetaHu,
   scriptsBlock,
   scriptsEsm,
   scriptsCommonjs,

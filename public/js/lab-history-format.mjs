@@ -161,6 +161,14 @@ function dayKeyToSortMs(dk) {
   return new Date(p[0], p[1] - 1, p[2]).getTime();
 }
 
+/** True si el conjunto ya trae línea de gasometría (GASES / interpretación). */
+export function resLabsHasGasometria(resLabs) {
+  return (resLabs || []).some(function (chunk) {
+    var s = String(chunk || '').trim();
+    return /^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s);
+  });
+}
+
 /**
  * Conjunto SOME solo gasometría (sin BH/QS/cultivo).
  * @param {unknown[]} [resLabs]

@@ -1645,10 +1645,34 @@ var RELEASE_NOTES_774 = [
   },
 ];
 
+var RELEASE_NOTES_775 = [
+  {
+    title: 'Todas las gasometrías del repo',
+    body:
+      'Importar del repositorio trae <strong>todas</strong> las gasos. Junta solo la más cercana a labs dentro de <strong>≤2 h</strong>; el resto queda aparte (nunca dos gasos en el mismo conjunto).',
+  },
+  {
+    title: 'Química al consolidar',
+    body:
+      'QS, ESC, PFHs y Lipasa se unen por campos al consolidar: <strong>CPK</strong> y el resto no se pierden entre PDFs del mismo bloque.',
+  },
+  {
+    title: 'Receta HU oficial',
+    body:
+      'La plantilla <strong>HU 000-061-R-06-12</strong> llena el ejemplar izquierdo de forma legible (vista landscape).',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.5 en todas</strong> las Macs y PCs del turno el mismo día si importan labs del repositorio con varias gasometrías.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_774;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_775;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.5': RELEASE_NOTES_775,
   '7.7.4': RELEASE_NOTES_774,
   '7.7.3': RELEASE_NOTES_773,
   '7.7.2': RELEASE_NOTES_772,
