@@ -1,25 +1,27 @@
-version: 7.7.4
+version: 7.7.5
 files:
-  - url: R+-7.7.4-arm64.zip
-    sha512: +sSUjWyCv8b/VZBLYwantC/jTdQRSYes+k8evoTMpOw0kmbk0kbnrDWxhe9Kqzvc4G1hTN2O2zm3/aOLe3ltgw==
-    size: 137133893
-  - url: R+-7.7.4-arm64.dmg
-    sha512: PiOmSWYaYWt7ciH0M8wiL4yfTLaIZdjw+H1s1vb6C+Re/CSja6xVGunG4pWSFuEXvrcyjSgk+1jsBar/o3XY4Q==
-    size: 142878130
-  - url: R+-7.7.4-x64.zip
-    sha512: vfln/xvba+5pFhQ2CAUKbyTamurQTYekbXD16F4zrFgXr1T6udayrIF1nyvBjZE/S8PaAbyb068gvTbk6Gs8Zw==
-    size: 145507976
-  - url: R+-7.7.4-x64.dmg
-    sha512: 5DYpZXBYydmOFhX6J+U9ieS5GwNsgFESlrPmDlI1mNrLGvxxQ/x6udYrdvgNyt07fC+BrDQBTGqquCMH04mckw==
-    size: 151278670
-path: R+-7.7.4-arm64.zip
-sha512: +sSUjWyCv8b/VZBLYwantC/jTdQRSYes+k8evoTMpOw0kmbk0kbnrDWxhe9Kqzvc4G1hTN2O2zm3/aOLe3ltgw==
-releaseDate: '2026-07-24T04:34:27.000Z'
+  - url: R+-7.7.5-arm64.zip
+    sha512: 7BfqMwwwoFKXgWaZLkqMsLh3WdCxrPrncw4hrdSyaadzLu9VRX77DaRfsewHLNhGZLtDsIxUz2DJMA4Uu9d2Mg==
+    size: 137277896
+  - url: R+-7.7.5-arm64.dmg
+    sha512: 1hOSPlXtSzF64Rb/+BYFtaFHY5gpH0Pa3TlnLzuXLoH82CesD59PT8hv7hqPpFzMYihvA6VF9v3HZVg1mQbg0w==
+    size: 143052376
+  - url: R+-7.7.5-x64.zip
+    sha512: YevsFkPRwa5RtjEuR1kkHrhOmu/ZihdBx7hJAYMtbV2jCRyaJ9NuFg+cVfio+DBpnJa8PGrEP2sH0t6IRtn4xg==
+    size: 145651963
+  - url: R+-7.7.5-x64.dmg
+    sha512: feOwb6y0B6ph9BqzMOVnnYO7ZpSCXQ1+WkJG4uWzbnJvSxUTF+Y7Peug7PKdfpNm17aFDhQl1j6GBItablENRA==
+    size: 151435521
+path: R+-7.7.5-arm64.zip
+sha512: 7BfqMwwwoFKXgWaZLkqMsLh3WdCxrPrncw4hrdSyaadzLu9VRX77DaRfsewHLNhGZLtDsIxUz2DJMA4Uu9d2Mg==
+releaseDate: '2026-07-28T12:37:43.000Z'
 releaseNotes: |
-  7.7.4 corrige el import del repositorio cuando hay electrolitos/gases seriados (la BH matutina ya no se copia a todas las tomas), deja que Consolidar arme grupos a mano, y evita que COAG tome el TTP como INR o el mínimo del rango como TP.
+  7.7.5 importa todas las gasometrías del repositorio (empareja la más cercana a labs ≤2 h y deja el resto aparte), une mejor QS/ESC/PFH al consolidar, y mejora el llenado de la receta HU oficial.
   
-  Repo / pegado masivo — Historial respeta ventana ≤2 h y no fusiona gasometría con gasometría; la BH de la mañana queda solo en el bloque matutino.
+  Gasometrías del repo — Trae todas las tomas; junta solo la gaso más cercana a labs dentro de ≤2 h; un conjunto nunca absorbe una segunda gasometría (tampoco si ya trae GASES).
   
-  Consolidar historial — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece fusionar el día entero por defecto.
+  Química al consolidar — QS/ESC/PFHs/Lipasa se fusionan por campos (p. ej. CPK no se pierde); más alias de CPK/CK en el parser.
   
-  COAG (TP / TTP / INR) — Extracción más estricta en PDFs incompletos: no cruza al estudio siguiente ni usa el mínimo del rango cuando falta el resultado.
+  Receta HU — Plantilla oficial HU 000-061-R-06-12: ejemplar izquierdo legible (rotación landscape) y PDF de plantilla actualizado.
+  
+  Consolidar UI — Tras fusionar, el historial selecciona el conjunto keeper y refresca tendencias/estudios.

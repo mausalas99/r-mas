@@ -1,16 +1,18 @@
-version: 7.7.4
+version: 7.7.5
 files:
-  - url: R+-7.7.4-x64.exe
-    sha512: 8iEJdg9Q1I5KdgPgB+TrtHSfmdapbmowxS7tv1UXRo90ZtCgbJfVKzjVX94KhclUzQ/aktUux/Gr908Z9vAcug==
-    size: 120730564
-path: R+-7.7.4-x64.exe
-sha512: 8iEJdg9Q1I5KdgPgB+TrtHSfmdapbmowxS7tv1UXRo90ZtCgbJfVKzjVX94KhclUzQ/aktUux/Gr908Z9vAcug==
-releaseDate: '2026-07-24T04:34:27.000Z'
+  - url: R+-7.7.5-x64.exe
+    sha512: iAyhO//o1QEmiEtv00NTeLuvRLdJQGIBxJZk6x7EI+ff3mJx501+LwW9p15eaZRCXbSzL9qlvWsOp1TSA428VA==
+    size: 120865637
+path: R+-7.7.5-x64.exe
+sha512: iAyhO//o1QEmiEtv00NTeLuvRLdJQGIBxJZk6x7EI+ff3mJx501+LwW9p15eaZRCXbSzL9qlvWsOp1TSA428VA==
+releaseDate: '2026-07-28T12:37:43.000Z'
 releaseNotes: |
-  7.7.4 corrige el import del repositorio cuando hay electrolitos/gases seriados (la BH matutina ya no se copia a todas las tomas), deja que Consolidar arme grupos a mano, y evita que COAG tome el TTP como INR o el mínimo del rango como TP.
+  7.7.5 importa todas las gasometrías del repositorio (empareja la más cercana a labs ≤2 h y deja el resto aparte), une mejor QS/ESC/PFH al consolidar, y mejora el llenado de la receta HU oficial.
   
-  Repo / pegado masivo — Historial respeta ventana ≤2 h y no fusiona gasometría con gasometría; la BH de la mañana queda solo en el bloque matutino.
+  Gasometrías del repo — Trae todas las tomas; junta solo la gaso más cercana a labs dentro de ≤2 h; un conjunto nunca absorbe una segunda gasometría (tampoco si ya trae GASES).
   
-  Consolidar historial — Lista los conjuntos del día; tú armas grupos (mismo día) y solo se fusionan esos. Ya no ofrece fusionar el día entero por defecto.
+  Química al consolidar — QS/ESC/PFHs/Lipasa se fusionan por campos (p. ej. CPK no se pierde); más alias de CPK/CK en el parser.
   
-  COAG (TP / TTP / INR) — Extracción más estricta en PDFs incompletos: no cruza al estudio siguiente ni usa el mínimo del rango cuando falta el resultado.
+  Receta HU — Plantilla oficial HU 000-061-R-06-12: ejemplar izquierdo legible (rotación landscape) y PDF de plantilla actualizado.
+  
+  Consolidar UI — Tras fusionar, el historial selecciona el conjunto keeper y refresca tendencias/estudios.
