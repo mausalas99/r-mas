@@ -65,12 +65,12 @@ describe('EGO no debe generar BH falso', () => {
 describe('Plaquetas con citrato', () => {
   it('parsePlaquetasCitrato_ extrae conteo', () => {
     const line = parsePlaquetasCitrato_(PLT_CIT, PLT_CIT.replace(/\s+/g, ' '));
-    assert.strictEqual(line, 'PltCit\tPlt 14');
+    assert.strictEqual(line, 'PltCit\tPlt 14*');
   });
 
   it('procesarLabs incluye PltCit', () => {
     const { resLabs } = procesarLabs(PLT_CIT);
-    assert.ok(resLabs.some((l) => l === 'PltCit\tPlt 14'));
+    assert.ok(resLabs.some((l) => l === 'PltCit\tPlt 14*'));
     assert.ok(!resLabs.some((l) => /^BH\t/.test(l)));
   });
 });
