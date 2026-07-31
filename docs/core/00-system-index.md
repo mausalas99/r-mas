@@ -55,16 +55,13 @@ flowchart LR
 | Features | [features/features-index.md](../features/features-index.md) | User-facing domains → code |
 | Logic | [logic/logic-index.md](../logic/logic-index.md) | Parsers, sync engines, generators |
 | Database | [database/database-index.md](../database/database-index.md) | SQLCipher schema & migrations |
-| Plans & specs | `docs/superpowers/` | Design before large features (user-managed) |
-| Agent changelog | [logs/agent-changelog.md](../logs/agent-changelog.md) | Doc/integration audit trail |
 | API Reference | [api/README.md](../api/README.md) | HTTP + IPC endpoints |
 
-## Read order for new agents
+## Read order
 
 1. [01-vision-north-star.md](./01-vision-north-star.md) — *should we build this?*
-2. `.cursor/rules/project-context.mdc` — *where is the code?*
-3. [04-directory-structure.md](./04-directory-structure.md) — *where do I put new files?*
-4. Relevant category index + `docs/superpowers/specs/` if touching a large feature
+2. [04-directory-structure.md](./04-directory-structure.md) — *where is the code / where do I put new files?*
+3. Relevant category index if touching a large feature
 
 ## User-facing docs
 

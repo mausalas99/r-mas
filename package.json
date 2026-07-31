@@ -43,9 +43,7 @@
     "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline",
     "dev:lan-virtual-peer": "node scripts/lan-virtual-peer.mjs",
     "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs",
-    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
-    "vibedrift:scan": "vibedrift . --local-only",
-    "vibedrift:check": "vibedrift . --local-only --fail-on-score 45"
+    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh"
   },
   "author": "Mauricio Salas",
   "license": "ISC",
@@ -68,7 +66,6 @@
   "devDependencies": {
     "@electron/rebuild": "3.7.2",
     "@eslint/js": "^9.39.1",
-    "@vibedrift/cli": "^0.14.0",
     "chart.js": "^4.5.1",
     "dependency-cruiser": "^16.10.4",
     "electron": "^41.2.0",

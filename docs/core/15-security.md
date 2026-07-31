@@ -34,7 +34,7 @@ R+ sync and document export on the hospital LAN use **HTTP + WebSocket without T
 | Token hygiene | Team bearer + shift PIN; logs redacted (`lan-squad/redact-secrets.js`) |
 | PHI at rest (web) | iPad/Safari clients wipe clinical `localStorage` on session end (`session-clinical-wipe.mjs`) |
 
-**Revisit trigger:** IT offers managed TLS (WSS) on the VLAN, or an audit finds LAN exposure beyond the ward perimeter. See [remediation spec](../superpowers/specs/2026-05-30-r-plus-security-architecture-remediation-design.md).
+**Revisit trigger:** IT offers managed TLS (WSS) on the VLAN, or an audit finds LAN exposure beyond the ward perimeter.
 
 ## Legacy recovery passphrase
 
@@ -44,7 +44,7 @@ The `'r+123'` recovery path remains for field support. Sunset when `legacy: true
 
 | Gap | Mitigation today | Roadmap |
 |-----|------------------|---------|
-| HTTP without TLS on LAN | Accepted risk (table above) | WSS + IT certs ([remediation spec](../superpowers/specs/2026-05-30-r-plus-security-architecture-remediation-design.md)) |
+| HTTP without TLS on LAN | Accepted risk (table above) | WSS + IT certs |
 | Shared turn token | Shift-level access | RBAC per user (LATER) |
 | Adjunct not EMR | Product positioning | Institutional agreement |
 

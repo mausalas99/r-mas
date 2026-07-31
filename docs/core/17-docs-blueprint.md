@@ -2,12 +2,10 @@
 type: "core"
 name: "Documentation Blueprint"
 status: "stable"
-description: "In-repo pointer to the Documentation Architecture Bootstrap standard."
+description: "In-repo documentation taxonomy and maintenance rules."
 ---
 
 # Documentation Blueprint
-
-R+ follows the **vibe-app-wiki Documentation Architecture Bootstrap** standard.
 
 ## Folder taxonomy
 
@@ -18,8 +16,7 @@ R+ follows the **vibe-app-wiki Documentation Architecture Bootstrap** standard.
 | `docs/logic/` | Parsers, sync engines, generators |
 | `docs/database/` | SQLCipher schema |
 | `docs/api/` | HTTP + IPC API reference |
-| `docs/logs/` | `agent-changelog.md` |
-| `docs/superpowers/` | **User-managed** specs & plans (do not auto-index) |
+| `docs/logs/` | Profiling / session notes |
 
 ## Root-level docs
 
@@ -35,24 +32,9 @@ R+ follows the **vibe-app-wiki Documentation Architecture Bootstrap** standard.
 - Features: `feat-<name>.md`
 - Logic: `util-<name>.md`
 
-## Agent config directories
-
-| Tool | Config location |
-|------|----------------|
-| **DeepSeek GUI (Kun)** | `.deepseek/rules.md` → `.cursor/rules/` (canonical) |
-| Cursor | `.cursor/rules/` (canonical) |
-| Claude Code | `.claude/` |
-| OpenCode | `.opencode/` |
-| Repowise | `.repowise/` |
-
-`.cursor/rules/` is the **canonical home** for always-on agent rules.
-
-## Agent maintenance rules
+## Maintenance rules
 
 1. **Product trade-offs** → read `01-vision-north-star.md` before proposing features
-2. **Code locations** → `.cursor/rules/project-context.mdc` on every session
-3. **New feature domain** → update `features-index.md` + `project-context` changelog on commit
-4. **Large features** → spec in `docs/superpowers/specs/` before implementation
-5. **Wrap-up** → append `docs/logs/agent-changelog.md`
-
-Full standard: Cursor skill `documentation-architecture-bootstrap`.
+2. **Code locations** → `04-directory-structure.md` + category indices
+3. **New feature domain** → update `features-index.md`
+4. **Schema changes** → update `docs/database/`

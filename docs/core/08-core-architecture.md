@@ -51,7 +51,7 @@ flowchart TB
 2. **Delta-first** — revision hints → delta log before full bundle
 3. **Safety bundle** — periodic `entriesPartial` (~30s) for untyped paths
 4. **Transport fallback** — WS → SSE → HTTP polling
-5. **Conflict policy** — LWW on overlap ([spec](../superpowers/specs/2026-06-03-lan-conflict-lww-design.md))
+5. **Conflict policy** — LWW on overlap
 
 ## Document pipeline
 

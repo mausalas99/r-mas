@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "vibedrift": {
-      "command": "npx",
-      "args": ["-y", "@vibedrift/cli", "mcp"]
-    }
-  }
-}

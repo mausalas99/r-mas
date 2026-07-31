@@ -24,11 +24,25 @@ scripts/.sqlite-*-tmp/
 .superpowers/
 __pycache__/
 *.pyc
-# Accidental gitlinks at repo root (local tooling — not part of R+ product)
+# Local AI / editor tooling — not part of the published product repo
+.cursor/
+.cursorignore
+.agents/
+.claude/
+.deepseek/
+.kunsdd/
+.understand-anything/
+.vibedrift/
+.vibedriftignore
 /hallmark/
 /micode/
 /plugins/
 /superpowers/
 /ui-ux-pro-max-skill/
-/.tmp/Vibe-App-Wiki/
-
+/garden-skills/
+/.tmp/
+/skills-lock.json
+/CLAUDE.md
+/plans/
+docs/superpowers/
+docs/logs/agent-changelog.md

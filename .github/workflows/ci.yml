@@ -30,8 +30,5 @@ jobs:
       - name: Debt metrics
         run: npm run metrics:check
 
-      - name: VibeDrift drift gate
-        run: npm run vibedrift:check
-
       - name: Test suite
         run: npm test

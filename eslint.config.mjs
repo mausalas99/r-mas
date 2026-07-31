@@ -13,8 +13,6 @@ const vendoredIgnores = {
     'dist/**',
     'build/**',
     '.worktrees/**',
-    '.claude/**',
-    '.agents/**',
   ],
 };
 

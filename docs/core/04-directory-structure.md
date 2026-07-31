@@ -7,7 +7,7 @@ description: "Canonical map of where source files, docs, and build artifacts bel
 
 # Directory Structure
 
-**Living duplicate:** `.cursor/rules/project-context.mdc` is updated on architectural commits. This doc explains *why* paths exist; the rule file is the fastest agent lookup.
+This doc is the canonical map of *where* paths exist and *why*.
 
 ## Root layout
 
@@ -20,14 +20,12 @@ R+/
 │   └── features/                       # Primary place for new UI features
 ├── public/interno/                     # Mobile interno/guardia web client
 ├── scripts/                            # build-ui, bundle, release, metrics
-├── docs/
-│   ├── core/                           # Strategy & architecture (agent hub)
-│   ├── features/                       # Feature docs + features-index.md
-│   ├── logic/                          # Parsers, engines + logic-index.md
-│   ├── database/                       # Schema docs + database-index.md
-│   ├── logs/                           # agent-changelog.md
-│   └── superpowers/                    # specs/ + plans/ (large features)
-└── .cursor/rules/                      # Always-on agent rules
+└── docs/
+    ├── core/                           # Strategy & architecture
+    ├── features/                       # Feature docs + features-index.md
+    ├── logic/                          # Parsers, engines + logic-index.md
+    ├── database/                       # Schema docs + database-index.md
+    └── logs/                           # profiling / session notes
 ```
 
 ## Where to add new work
@@ -39,8 +37,6 @@ R+/
 | LAN HTTP/WS route | `lan-squad/host-router.js` or `server.js` |
 | IPC channel | `preload.js` + `main.js` or `lib/db/ipc-handlers.mjs` |
 | DB schema change | `lib/db/schema.mjs` + `schema.test.mjs` (bump version) |
-| Feature design (large) | `docs/superpowers/specs/YYYY-MM-DD-*.md` |
-| Implementation plan | `docs/superpowers/plans/YYYY-MM-DD-*.md` |
 | Feature documentation | `docs/features/feat-*.md` + update `features-index.md` |
 
 ## Generated — do not hand-edit
