@@ -10,7 +10,13 @@ var LAB_SECTION_LEAD_RE =
   /^(BH|QS|ESC|PFHs?|GASES|COAG|ORINA|EGO|CUANTORINA|PltCit|LIPASA|CULTIVO|LCR|TROP|GS|SEROL|FROTIS|HECES|PIE|INTERPRETACI[OÓ]N|LIQ|ASCITIS|TIR|ENDO|CARD|FE|INFL|INM|META|NEF|NIVEL|TM|NUT|GI|TOX|HEPB|VIRAL|MICRO)\b/i;
 
 var CULTIVO_START_RE =
-  /^(CULTIVO|BACTERIOLOGIA|UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO|TINCION\s+DE\s+GRAM|CATETER|ATB|Cuenta:|Cultivos)\b/i;
+  /^(CULTIVO|BACTERIOLOGIA|UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO|TINCION\s+DE\s+GRAM|CATETER|ATB|Cuenta:|Cultivos|BACILOSCOPIA)\b/i;
+
+/** Mirrors labs-cultivo-atb isParsedCultivoHeaderLine (no import — circular with procesarLabs). */
+var PARSED_CULTIVO_HEADER_RE =
+  /^(SECRECION|LIQUIDO|ASPIRADO|ABSCESO|BRONCOALVEOLAR)\b/i;
+var PARSED_CULTIVO_DATED_RE =
+  /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ()\s/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i;
 
 function firstLine(text) {
   return (
@@ -24,6 +30,9 @@ function isCultivoStartLineLocal(first) {
   var t = String(first || '').trim();
   if (!t) return false;
   if (CULTIVO_START_RE.test(t)) return true;
+  if (/^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(t)) return true;
+  if (PARSED_CULTIVO_HEADER_RE.test(t)) return true;
+  if (PARSED_CULTIVO_DATED_RE.test(t)) return true;
   if (/^[•\u2022\u00B7]\s*/.test(t)) return true;
   return false;
 }
@@ -74,9 +83,10 @@ export function sanitizeResLabsChunks(rows) {
     var first = firstLine(s);
 
     if (looksLikeLabSectionChunk(s)) {
-      inCultivo = false;
       var cleaned = stripTrailingSomeReportChrome(s);
       if (cleaned && looksLikeLabSectionChunk(cleaned)) out.push(cleaned);
+      // CULTIVO panel lead keeps subsequent ATB/Cuenta rows; other panels end cultivo mode.
+      inCultivo = /^CULTIVO\b/i.test(firstLine(cleaned || s));
       return;
     }
 

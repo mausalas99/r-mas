@@ -68,6 +68,18 @@ test('sanitizeResLabsChunks preserva bloque cultivo multi-fila', () => {
   assert.match(out[2], /^ATB/);
 });
 
+test('sanitizeResLabsChunks preserva cabeceras condensadas parseCultivo_', () => {
+  var out = sanitizeResLabsChunks([
+    'ASPIRADO TRAQUEAL 18/05: ESCHERICHIA COLI · BLEE\nATB R: AMP\nCuenta: +100,000 UFC/ML',
+    'LIQUIDO PERITONEAL 20/05: PSEUDOMONAS AERUGINOSA\nCuenta: >100000',
+    'SECRECION DE HERIDA (TRAQUEO) 24/05: ACINETOBACTER BAUMANNII',
+  ]);
+  assert.equal(out.length, 3);
+  assert.match(out[0], /^ASPIRADO TRAQUEAL/);
+  assert.match(out[1], /^LIQUIDO PERITONEAL/);
+  assert.match(out[2], /^SECRECION DE HERIDA/);
+});
+
 test('procesarLabs no mete membrete en resLabs aunque venga en el pegado', () => {
   var report =
     LETTERHEAD_COLLAPSED.replace(/HEMATOLOGIA[\s\S]*$/, '') +
