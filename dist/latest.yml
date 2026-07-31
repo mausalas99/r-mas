@@ -1,16 +1,16 @@
-version: 7.7.6
+version: 7.7.7
 files:
-  - url: R+-7.7.6-x64.exe
-    sha512: ZBjTeUo7V+260eMAsy345yb5HRNqLA1rB0L1jo9xyObSLwdINLuWJCQqR6MmjHpapzP0BowF0KFzs12klsffWg==
-    size: 120875353
-path: R+-7.7.6-x64.exe
-sha512: ZBjTeUo7V+260eMAsy345yb5HRNqLA1rB0L1jo9xyObSLwdINLuWJCQqR6MmjHpapzP0BowF0KFzs12klsffWg==
-releaseDate: '2026-07-31T18:57:25.000Z'
+  - url: R+-7.7.7-x64.exe
+    sha512: Y+WV7pnTTweAwxv08ScZX0fHdkkkbpNwvL0hETK6fCJHvANIfm1zyetVohjYlRHXzxlf4Ol56UULMpzUa6Q7IA==
+    size: 120884522
+path: R+-7.7.7-x64.exe
+sha512: Y+WV7pnTTweAwxv08ScZX0fHdkkkbpNwvL0hETK6fCJHvANIfm1zyetVohjYlRHXzxlf4Ol56UULMpzUa6Q7IA==
+releaseDate: '2026-07-31T20:10:19.000Z'
 releaseNotes: |
-  7.7.6 evita que el membrete o basura de Impresión SOME entre en el historial de labs, y corrige los signos vitales del Estado actual para que el prefill del turno no cuente doble ni arrastre lecturas de días previos.
+  7.7.7 permite capturar un estudio de lab externo a mano (elige tipo y llena celdas) y unifica Actualizar labs: con paciente activo solo pedirá fechas; sin paciente, la lista de mi equipo.
   
-  Labs limpios (resLabs) — Solo se guardan paneles clínicos (BH/QS/…/cultivo). El membrete SOME, demografía y “sopa” de Impresión.aspx se descartan al procesar, consolidar, migrar o mostrar en censo.
+  Labs externos — En Laboratorio: elige tipo (BH, QS, GASES, paneles extendidos…), fecha (hora opcional) y valores en celdas. Se guarda en el historial como set normal (origin: externo, etiqueta · Ext) para tendencias, nota y LiveSync.
   
-  Mantenimiento de historial — Si el blob de Estudios parece un reporte SOME, se re-parsea con Procesar en lugar de filtrar líneas a ciegas.
+  Actualizar labs — Un solo botón (se retira «Importar del repositorio»). Paciente activo con registro → modal solo fechas; si no hay paciente → checkboxes de mi equipo + cola lateral.
   
-  Signos vitales (EA) — El prefill solo trae lecturas de la ventana del turno; el límite de 4 por signo une historial + formulario sin duplicar el mismo value@hora.
+  ⌘K — Acciones «Labs externos» y «Actualizar labs».

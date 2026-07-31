@@ -1,25 +1,25 @@
-version: 7.7.6
+version: 7.7.7
 files:
-  - url: R+-7.7.6-arm64.zip
-    sha512: MOzKIqrf8q9uP/pptI+2hV9si2AbQArxRQAfxo3uDchblG8INJPz3lmG+g+oQaxhSj9CkoXmLHrwEsXumZjm4w==
-    size: 137285669
-  - url: R+-7.7.6-arm64.dmg
-    sha512: MyOiH9xr2JZ2rVWhznC5bxc7Py2o5PLw3HG5aCwt6VmCwWIjTp701e3xlHsKv3fqTFwXJeyZt98DdoAOV0X1OA==
-    size: 143020638
-  - url: R+-7.7.6-x64.zip
-    sha512: M+/ee1KRDEjUOpW+rtg171wbZxJ228V1s8N4OG4YKiv+EO6O17c0gEemRPaHe/9+fEttuHu7nVlenDPyHwHHqA==
-    size: 145659765
-  - url: R+-7.7.6-x64.dmg
-    sha512: Tg7PUq3XPNJS5Z1vYZCrYK06QRgODlFhOhn2Z1elHN7uuUTpB99K987rPqAi/L3f85ChQYjJqBD4I+ooqeRCxQ==
-    size: 151463408
-path: R+-7.7.6-arm64.zip
-sha512: MOzKIqrf8q9uP/pptI+2hV9si2AbQArxRQAfxo3uDchblG8INJPz3lmG+g+oQaxhSj9CkoXmLHrwEsXumZjm4w==
-releaseDate: '2026-07-31T18:57:25.000Z'
+  - url: R+-7.7.7-arm64.zip
+    sha512: a8TiTZL7tGMZAYytFmsjBqt+TArYBnTBNSehzrFJjqpSzW15aR9P/vW3TnVnj3MJrU5Pp2U7oks7pfo0uwq0yg==
+    size: 137303433
+  - url: R+-7.7.7-arm64.dmg
+    sha512: 6nIJSFlZ0/RXr9jh8QoIpMi/V+Z0S3geOfWt/dLpf/+7wM00td9ZHdSIswQE4yawnWz0nCyEE0R9/ZXxp+c9Fw==
+    size: 143034251
+  - url: R+-7.7.7-x64.zip
+    sha512: zMfiIzcJx+YZh4STUEeox4aolShmRWS4Dw5H2l1jbLtJH27zo3aqo6+e/Q6cC7GuPLdjPHQQgz7z3rqLr9vwSA==
+    size: 145677520
+  - url: R+-7.7.7-x64.dmg
+    sha512: MT5l0qeuX2qmQAouDQLL1T3sf4oSsdQ/9vbA41CppDC51FtD7WCmcDvwpV2tk0kG+JlOXCh9wLhxfYnVO1qkNQ==
+    size: 151467413
+path: R+-7.7.7-arm64.zip
+sha512: a8TiTZL7tGMZAYytFmsjBqt+TArYBnTBNSehzrFJjqpSzW15aR9P/vW3TnVnj3MJrU5Pp2U7oks7pfo0uwq0yg==
+releaseDate: '2026-07-31T20:10:19.000Z'
 releaseNotes: |
-  7.7.6 evita que el membrete o basura de Impresión SOME entre en el historial de labs, y corrige los signos vitales del Estado actual para que el prefill del turno no cuente doble ni arrastre lecturas de días previos.
+  7.7.7 permite capturar un estudio de lab externo a mano (elige tipo y llena celdas) y unifica Actualizar labs: con paciente activo solo pedirá fechas; sin paciente, la lista de mi equipo.
   
-  Labs limpios (resLabs) — Solo se guardan paneles clínicos (BH/QS/…/cultivo). El membrete SOME, demografía y “sopa” de Impresión.aspx se descartan al procesar, consolidar, migrar o mostrar en censo.
+  Labs externos — En Laboratorio: elige tipo (BH, QS, GASES, paneles extendidos…), fecha (hora opcional) y valores en celdas. Se guarda en el historial como set normal (origin: externo, etiqueta · Ext) para tendencias, nota y LiveSync.
   
-  Mantenimiento de historial — Si el blob de Estudios parece un reporte SOME, se re-parsea con Procesar en lugar de filtrar líneas a ciegas.
+  Actualizar labs — Un solo botón (se retira «Importar del repositorio»). Paciente activo con registro → modal solo fechas; si no hay paciente → checkboxes de mi equipo + cola lateral.
   
-  Signos vitales (EA) — El prefill solo trae lecturas de la ventana del turno; el límite de 4 por signo une historial + formulario sin duplicar el mismo value@hora.
+  ⌘K — Acciones «Labs externos» y «Actualizar labs».
