@@ -12,6 +12,8 @@ import {
 } from './tend-core.mjs';
 import { inferFechaLabSetFromId } from './features/tendencias.mjs';
 import { isModeSala } from './mode-features.mjs';
+import { looksLikeLabSectionChunk } from './labs-reslabs-sanitize.mjs';
+import { isCultivoBlockStartLine } from './cultivo-block-core.mjs';
 
 export function labSetParseFingerprint(set) {
   if (!set) return '';
@@ -28,20 +30,18 @@ export function labSetParseFingerprint(set) {
   return parts.join('|');
 }
 
+/**
+ * Only structured panel / cultivo leads — never raw SOME letterhead or digit+letter soup.
+ * (The old `/\d/ && /[A-Za-z]/` fallback + any-tab acceptance let Impresion chrome into resLabs.)
+ */
 export function isLikelyLabDataLine(line) {
   if (!line) return false;
   var t = line.trim();
   if (!t) return false;
   if (/^\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?$/.test(t)) return false;
-  if (t.indexOf('\t') !== -1) return true;
-  if (
-    /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|CULTIVO|SEROL|GS|HECES|TIR|ENDO|CARD|FE|INFL|INM|META|NEF|NIVEL|TM|NUT|GI|TOX|HEPB|VIRAL|MICRO)\b/i.test(
-      t
-    )
-  ) {
-    return true;
-  }
-  return /\d/.test(t) && /[A-Za-z]/.test(t);
+  if (looksLikeLabSectionChunk(t)) return true;
+  if (isCultivoBlockStartLine(t)) return true;
+  return false;
 }
 
 export function extractLabDataLines(lines) {

@@ -2,8 +2,8 @@
 import {
   MAX_VITAL_LAYERS_IN_FORM,
   MAX_VITAL_READINGS_PER_DAY,
-  vitalSeriesFromMedicion,
-  countVitalReadingsInRegistroWindow,
+  collectVitalReadingsInRegistroWindow,
+  pushVitalReading,
 } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
@@ -195,6 +195,8 @@ export function syncAllVitalAddButtonVisibility(form) {
 }
 
 /**
+ * Unión única (value@time) de historial del turno + lecturas del formulario.
+ * Evita bloquear cuando el prefill reenvía lecturas ya guardadas.
  * @param {unknown[]} historial
  * @param {Record<string, Array<{ value: number, time?: string }>>} vitalSeries
  * @param {Date} [now]
@@ -206,8 +208,11 @@ export function validateVitalSeriesTurnLimits(historial, vitalSeries, now) {
     var key = VITAL_KEYS[ki];
     var newList = vitalSeries && vitalSeries[key] ? vitalSeries[key] : [];
     if (!newList.length) continue;
-    var inWindow = countVitalReadingsInRegistroWindow(hist, key, now);
-    if (inWindow + newList.length > MAX_VITAL_READINGS_PER_DAY) {
+    var merged = collectVitalReadingsInRegistroWindow(hist, key, now).slice();
+    for (var ni = 0; ni < newList.length; ni++) {
+      pushVitalReading(merged, newList[ni]);
+    }
+    if (merged.length > MAX_VITAL_READINGS_PER_DAY) {
       return { ok: false, key: key, label: VITAL_LABELS[key] || key };
     }
   }
@@ -321,24 +326,3 @@ export function readVitalSeriesFromStack(form, vitalKey) {
   return out;
 }
 
-/**
- * @param {unknown[]} historial
- * @param {string} vitalKey
- * @returns {Array<{ value: number, time?: string }>}
- */
-export function mergeVitalSeriesFromHistorial(historial, vitalKey) {
-  var hist = Array.isArray(historial) ? historial : [];
-  /** @type {Array<{ value: number, time?: string }>} */
-  var out = [];
-  for (var i = 0; i < hist.length; i++) {
-    var list = vitalSeriesFromMedicion(hist[i])[vitalKey] || [];
-    for (var j = 0; j < list.length; j++) {
-      var rd = list[j];
-      var dup = out.some(function (x) {
-        return x.value === rd.value && (x.time || '') === (rd.time || '');
-      });
-      if (!dup) out.push(rd);
-    }
-  }
-  return out.slice(-MAX_VITAL_READINGS_PER_DAY);
-}

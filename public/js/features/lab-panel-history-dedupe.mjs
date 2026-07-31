@@ -7,6 +7,7 @@ import { patients, labHistory } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
 import { findExactDuplicateLabGroups, compareLabSetIdForDedupe } from '../lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria } from '../lab-history-format.mjs';
+import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
 import {
   buildLabConsolidationMergeJobs,
@@ -241,7 +242,7 @@ function mergeLabHistorySetsCluster(patientId, setsToMerge, tipoGrupo) {
     merged = merged.concat(other);
     if (set.sourceText && String(set.sourceText).trim()) sourceParts.push(String(set.sourceText).trim());
   });
-  var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
+  var deduped = sanitizeResLabsChunks(dedupeConsolidatedRowsBySection(merged, tipoGrupo));
   keeper.resLabs = deduped;
   keeper.parsed = rt.extractParsedValues(deduped);
   var mergedBhExtras = {};

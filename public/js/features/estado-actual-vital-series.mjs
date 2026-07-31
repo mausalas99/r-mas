@@ -10,7 +10,7 @@ import {
   pushVitalReading,
 } from './estado-actual-vital-series-helpers.mjs';
 
-export { mergeVitalSeriesFromHistorial } from './estado-actual-panel-vitals.mjs';
+export { pushVitalReading };
 
 /** Máximo de lecturas del mismo signo vital en la ventana del turno (por día de registro). */
 export const MAX_VITAL_READINGS_PER_DAY = 4;
@@ -76,11 +76,13 @@ export function vitalSeriesToLegacyFields(series) {
 }
 
 /**
+ * Lecturas del signo en la ventana del turno (ayer 08:00 → hoy 00:00), sin duplicar value@time.
  * @param {Array<{ recordedAt?: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, VitalReading[]>, alteredAt?: Record<string, string> }>} historial
  * @param {string} vitalKey
  * @param {Date} [now]
+ * @returns {VitalReading[]}
  */
-export function countVitalReadingsInRegistroWindow(historial, vitalKey, now) {
+export function collectVitalReadingsInRegistroWindow(historial, vitalKey, now) {
   var hist = Array.isArray(historial) ? historial : [];
   /** @type {VitalReading[]} */
   var all = [];
@@ -97,7 +99,33 @@ export function countVitalReadingsInRegistroWindow(historial, vitalKey, now) {
       pushVitalReading(all, rd);
     }
   }
-  return all.length;
+  return all;
+}
+
+/**
+ * Prefill del modal: solo lecturas del turno actual (no arrastra días previos).
+ * @param {unknown[]} historial
+ * @param {string} vitalKey
+ * @param {Date} [now]
+ * @returns {VitalReading[]}
+ */
+export function mergeVitalSeriesFromHistorial(historial, vitalKey, now) {
+  return collectVitalReadingsInRegistroWindow(
+    /** @type {Array<{ recordedAt?: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, VitalReading[]>, alteredAt?: Record<string, string> }>} */ (
+      historial
+    ),
+    vitalKey,
+    now
+  ).slice(-MAX_VITAL_READINGS_PER_DAY);
+}
+
+/**
+ * @param {Array<{ recordedAt?: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, VitalReading[]>, alteredAt?: Record<string, string> }>} historial
+ * @param {string} vitalKey
+ * @param {Date} [now]
+ */
+export function countVitalReadingsInRegistroWindow(historial, vitalKey, now) {
+  return collectVitalReadingsInRegistroWindow(historial, vitalKey, now).length;
 }
 
 /**

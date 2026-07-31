@@ -1,11 +1,12 @@
 // Lab panel — persistencia de historial (push, bulk store, drive import)
 import { buildRefsBySectionFromReport } from '../labs.js';
 import { areDuplicateLabSets } from '../lab-history-auto-store-core.mjs';
-import { mergeBulkParseResults, mergeBulkParseResultsForStorage, pickLatestDayMergedLabDisplay } from '../lab-bulk-paste.mjs';
+import { mergeBulkParseResultsForStorage, pickLatestDayMergedLabDisplay } from '../lab-bulk-paste.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
 import { notes, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
-import { syncLabHistoryConsolidationToLan, syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
+import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
+import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { renderLabHistoryPanel, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
 import { autoConsolidateLabHistoryForPatient } from './lab-panel-history-dedupe.mjs';
@@ -34,6 +35,7 @@ function buildLabHistorySet(patientId, resLabs, fecha, hora, sourceText, bhExtra
   }
   var fechaNorm = resolveLabHistoryFechaNorm(patientId, fecha);
   var horaNorm = normalizeHoraLabHistory(hora);
+  var cleanResLabs = sanitizeResLabsChunks(resLabs);
   var set = {
     id:
       idSeed != null && String(idSeed).trim() !== ''
@@ -41,10 +43,10 @@ function buildLabHistorySet(patientId, resLabs, fecha, hora, sourceText, bhExtra
         : Date.now().toString(),
     fecha: fechaNorm,
     hora: horaNorm,
-    resLabs: resLabs,
+    resLabs: cleanResLabs,
     bhExtras: extras,
-    parsed: rt.extractParsedValues(resLabs),
-    parsedBySection: rt.buildParsedBySectionFromResLabs(resLabs, extras),
+    parsed: rt.extractParsedValues(cleanResLabs),
+    parsedBySection: rt.buildParsedBySectionFromResLabs(cleanResLabs, extras),
     refsBySection: refs,
     updatedAt: new Date().toISOString(),
   };
@@ -66,6 +68,7 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
     refsBySection,
     idSeed
   );
+  if (!set.resLabs || !set.resLabs.length) return;
   labHistory[patientId].push(set);
   refreshSameDayAscitisForPatient(patientId, set.id);
   bumpLabHistoryRevision(patientId);

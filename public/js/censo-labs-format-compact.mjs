@@ -3,6 +3,7 @@ import { splitResLabsByTipo } from './censo-cultivo-format.mjs';
 import { formatBhExtrasDisplayLine, isCitoquimInterpretacionResLabChunk } from './labs.js';
 import { normalizeCensoPanelLine, reflowLabsForCensoDisplay } from './censo-table-style.mjs';
 import { linesFromParsedBySectionFull, pushLabTextLines } from './censo-labs-format-lines.mjs';
+import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
 
 function appendLabChunks(lines, set, sp) {
   var bhExtDone = false;
@@ -37,7 +38,8 @@ export function formatLabsForCensoCompactBody(sets) {
   var lines = [];
   if (fecha) lines.push(fecha);
 
-  var sp = splitResLabsByTipo(set.resLabs || []);
+  var cleanResLabs = sanitizeResLabsChunks(set.resLabs || []);
+  var sp = splitResLabsByTipo(cleanResLabs);
   var hasLabChunks = sp.labs.some(function (r) {
     return String(r || '').trim();
   });

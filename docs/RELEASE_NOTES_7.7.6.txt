@@ -1,0 +1,23 @@
+R+ 7.7.6 (labs sin membrete SOME y vitales del turno)
+=======================================================
+
+Fecha: 2026-07-31
+
+## Resumen
+
+**7.7.6** evita que el membrete o basura de Impresión SOME entre en el historial de labs, y corrige los signos vitales del Estado actual para que el prefill del turno no cuente doble ni arrastre lecturas de días previos.
+
+## Nuevo / mejorado
+
+- **Labs limpios (resLabs)** — Solo se guardan paneles clínicos (BH/QS/…/cultivo). El membrete SOME, demografía y “sopa” de Impresión.aspx se descartan al procesar, consolidar, migrar o mostrar en censo.
+- **Mantenimiento de historial** — Si el blob de Estudios parece un reporte SOME, se re-parsea con Procesar en lugar de filtrar líneas a ciegas.
+- **Signos vitales (EA)** — El prefill solo trae lecturas de la ventana del turno; el límite de 4 por signo une historial + formulario sin duplicar el mismo value@hora.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.7.6
+
+- Mac: `R+-7.7.6-arm64.dmg`, `R+-7.7.6-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.7.6-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

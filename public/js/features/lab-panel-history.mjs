@@ -12,6 +12,7 @@ import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { patients, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
 import { syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
+import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
@@ -331,7 +332,7 @@ function reprocessLabSetResLabs_(set, ctx) {
 }
 
 function finalizeReprocessedLabSet_(set, repro, setId) {
-  set.resLabs = repro.slice();
+  set.resLabs = sanitizeResLabsChunks(repro);
   refreshSameDayAscitisForPatient(rt.getActiveId(), set.id);
   set.parsed = rt.extractParsedValues(set.resLabs);
   set.parsedBySection = rt.buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);

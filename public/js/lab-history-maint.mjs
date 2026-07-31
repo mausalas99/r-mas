@@ -1,7 +1,13 @@
 /**
  * Utilidades de conjuntos de laboratorio en historial: parseo, fusión por tipo, estudios en nota.
  */
-import { procesarLabs, buildRefsBySectionFromReport, extractLabReportHora, reprocessLabResultLines_ } from './labs.js';
+import {
+  procesarLabs,
+  buildRefsBySectionFromReport,
+  extractLabReportHora,
+  reprocessLabResultLines_,
+  looksLikeSomeLabReport,
+} from './labs.js';
 export { isLabSectionHeaderLine, isCultivoBlockStartLine, splitResLabsByTipo } from './cultivo-block-core.mjs';
 import { findExactDuplicateLabGroups, findNormalizedSourceDuplicateGroups, findConflictingSameDateTimeGroups, areLabSetsEquivalent } from './lab-history-auto-store-core.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, sortLabHistoryChronological } from './tend-core.mjs';
@@ -16,6 +22,7 @@ import {
   buildEstudiosCopyLinesFromLabSets,
   resolveEstudiosCopyOptions,
 } from './lab-history-format.mjs';
+import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
 import {
   patients,
   notes,
@@ -34,14 +41,34 @@ export function registerLabHistoryMaintRuntime(ctx) {
   if (ctx && typeof ctx === 'object') Object.assign(maintRt, ctx);
 }
 
+/**
+ * Prefer procesarLabs when the note blob is a SOME report so letterhead never becomes resLabs.
+ * Fall back to whitelist line filter for already-structured estudios lines.
+ */
+function resLabsFromNoteLines(noteLines) {
+  var lines = noteLines || [];
+  var text = lines.join('\n');
+  if (looksLikeSomeLabReport(text)) {
+    try {
+      var parsed = procesarLabs(text);
+      if (parsed && parsed.resLabs && parsed.resLabs.length) {
+        return sanitizeResLabsChunks(parsed.resLabs);
+      }
+    } catch (_e) {
+      void _e;
+    }
+  }
+  return sanitizeResLabsChunks(extractLabDataLines(lines));
+}
+
 function applyMigratedResLabs(set, noteLines) {
   if (set.resLabs && set.resLabs.length) return false;
   if (set.id === 'migrated-anterior') {
-    set.resLabs = extractLabDataLines(noteLines.slice(0, 3));
+    set.resLabs = resLabsFromNoteLines(noteLines.slice(0, 3));
     return true;
   }
   if (set.id === 'migrated-recent') {
-    set.resLabs = extractLabDataLines(noteLines.slice(3));
+    set.resLabs = resLabsFromNoteLines(noteLines.slice(3));
     return true;
   }
   return false;
@@ -254,9 +281,11 @@ export function runLabHistoryPostSaveMaintenance() {
     if (!Array.isArray(sets) || !sets.length) return;
     sets.forEach(function (set) {
       if (!set.resLabs || !set.resLabs.length) return;
-      var repro = reprocessLabResultLines_(set.resLabs, {
-        gasRefs: set.refsBySection && set.refsBySection.GASES,
-      });
+      var repro = sanitizeResLabsChunks(
+        reprocessLabResultLines_(set.resLabs, {
+          gasRefs: set.refsBySection && set.refsBySection.GASES,
+        })
+      );
       if (!repro || !repro.length) return;
       if (!areLabSetsEquivalent(set.resLabs, repro)) {
         set.resLabs = repro.slice();
@@ -372,7 +401,7 @@ export function installLabHistoryAuditHook() {
       });
       var sets = [];
       if (anteriorLines.length) {
-        var migratedAnteriorLabs = extractLabDataLines(anteriorLines);
+        var migratedAnteriorLabs = resLabsFromNoteLines(anteriorLines);
         sets.push({
           id: 'migrated-anterior',
           fecha: 'Anterior',
@@ -382,7 +411,7 @@ export function installLabHistoryAuditHook() {
         });
       }
       if (recentLines.length) {
-        var migratedRecentLabs = extractLabDataLines(recentLines);
+        var migratedRecentLabs = resLabsFromNoteLines(recentLines);
         sets.push({
           id: 'migrated-recent',
           fecha: normalizeFechaLabHistory(recentLines[0] || notes[p.id].fecha || ''),

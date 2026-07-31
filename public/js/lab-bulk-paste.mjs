@@ -25,6 +25,7 @@ import {
   mergeLipasaResLabRows_,
 } from './labs-chemistry.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
+import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
 
 export const LAB_BULK_PATIENT_SEPARATOR = '--- PACIENTE ---';
 
@@ -370,9 +371,11 @@ function buildMergedPayloadFromGroup(items, tipo) {
     if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
   });
   var deduped = dedupeConsolidatedLabRows(merged, tipo);
-  deduped = reprocessLabResultLines_(deduped, {
-    gasRefs: mergedRefs.GASES,
-  });
+  deduped = sanitizeResLabsChunks(
+    reprocessLabResultLines_(deduped, {
+      gasRefs: mergedRefs.GASES,
+    })
+  );
   var first = mergeOrder[0].result;
   var fecha = normalizeFechaLabHistory(first.patient && first.patient.fecha) || '';
   return {

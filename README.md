@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.5](https://github.com/mausalas99/r-mas/releases/tag/v7.7.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.6](https://github.com/mausalas99/r-mas/releases/tag/v7.7.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.7.6 (labs sin membrete SOME y vitales del turno)
+
+- **Labs limpios** — resLabs solo guarda paneles clínicos; descarta membrete SOME / Impresión.aspx.
+- **Historial** — Migración/mantenimiento re-parsea reportes SOME en vez de filtrar líneas a ciegas.
+- **Vitales EA** — Prefill solo del turno; el tope de 4 no cuenta dos veces la misma lectura.
+
+Notas: `docs/RELEASE_NOTES_7.7.6.txt`.
 ## R+ 7.7.5 (gasometrías seriadas, química y receta HU)
 
 - **Gasos del repo** — Importa todas las tomas; empareja la más cercana a labs ≤2 h; no absorbe una segunda gasometría.

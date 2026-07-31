@@ -1668,10 +1668,29 @@ var RELEASE_NOTES_775 = [
   },
 ];
 
+var RELEASE_NOTES_776 = [
+  {
+    title: 'Labs sin membrete SOME',
+    body:
+      'El historial solo guarda paneles clínicos (BH/QS/…/cultivo). Se descarta el membrete, demografía y basura de <strong>Impresión.aspx</strong> al procesar o consolidar.',
+  },
+  {
+    title: 'Vitales del turno',
+    body:
+      'En Estado actual, el prefill trae solo lecturas de la <strong>ventana del turno</strong> y el tope de 4 no cuenta dos veces la misma lectura ya guardada.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.6 en todas</strong> las Macs y PCs del turno el mismo día si pegan labs SOME o usan signos vitales seriados en EA.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_775;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_776;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.6': RELEASE_NOTES_776,
   '7.7.5': RELEASE_NOTES_775,
   '7.7.4': RELEASE_NOTES_774,
   '7.7.3': RELEASE_NOTES_773,
