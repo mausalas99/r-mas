@@ -46,3 +46,17 @@ __pycache__/
 /plans/
 docs/superpowers/
 docs/logs/agent-changelog.md
+# One-off chores / local-only maintenance
+scripts/tmp/
+scripts/split-*.mjs
+scripts/migrate-dom-escape.mjs
+scripts/patch-tour-state-refs.mjs
+scripts/fix-dom-escape-imports.mjs
+scripts/capture-procesar-labs-goldens.mjs
+scripts/recover-ipad-vitals-console.js
+docs/mockups/
+docs/examples/
+docs/demo-patients/
+docs/presentacion-r-plus-gemini-slides.md
+docs/vision-north-star.md
+docs/logs/
