@@ -52,6 +52,12 @@ import {
   dismissLabRepoBatchQueue,
   registerLabRepoBatchImportRuntime,
 } from './lab-repo-batch-import.mjs';
+import {
+  openLabManualEntryModal,
+  closeLabManualEntryModal,
+  confirmLabManualEntry,
+  registerLabManualEntryRuntime,
+} from './lab-manual-entry.mjs';
 var activeLab = null;
 
 labPanelBridge.getActiveLab = function () {
@@ -68,6 +74,7 @@ export function registerLabPanelRuntime(ctx) {
   _registerRt(ctx);
   registerLabRepoImportRuntime(ctx);
   registerLabRepoBatchImportRuntime(ctx);
+  registerLabManualEntryRuntime(ctx);
 }
 
 export function getActiveLab() {
@@ -253,4 +260,7 @@ export const windowHandlers = {
   labRepoBatchSelectAll,
   labRepoBatchSelectNone,
   dismissLabRepoBatchQueue,
+  openLabManualEntryModal,
+  closeLabManualEntryModal,
+  confirmLabManualEntry,
 };

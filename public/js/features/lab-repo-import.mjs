@@ -1,4 +1,3 @@
-import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import {
   buildLabRepoPreviewBlocks,
@@ -9,7 +8,7 @@ import {
 import { openLabBulkPreviewModal } from './lab-bulk-preview-modal.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
 
-function defaultDateRange() {
+export function labRepoDefaultDateRange() {
   var hasta = new Date();
   hasta.setHours(0, 0, 0, 0);
   var desde = new Date(hasta);
@@ -17,11 +16,16 @@ function defaultDateRange() {
   return { desde: desde, hasta: hasta };
 }
 
-function toDateInputValue(d) {
+export function labRepoToDateInputValue(d) {
   var pad = function (n) {
     return String(n).padStart(2, '0');
   };
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+export function syncLabRepoDateField(input) {
+  if (!input) return;
+  input.dispatchEvent(new Event('rpc-date-refresh'));
 }
 
 function parseDateInputDay(isoDay) {
@@ -46,22 +50,8 @@ export function labRepoFetchRangeFromDateInputs(desdeDay, hastaDay) {
   return { desde: desde, hasta: hasta };
 }
 
-function syncLabRepoDateField(input) {
-  if (!input) return;
-  input.dispatchEvent(new Event('rpc-date-refresh'));
-}
-
 function getActivePatient() {
   return typeof rt.getActivePatient === 'function' ? rt.getActivePatient() : null;
-}
-
-function getRegistroInitial() {
-  var p = getActivePatient();
-  return p && p.registro ? String(p.registro).trim() : '';
-}
-
-function registroReadOnly() {
-  return !!getRegistroInitial();
 }
 
 function readLabRepoImportFields() {
@@ -141,34 +131,13 @@ export function registerLabRepoImportRuntime(ctx) {
   registerLabPanelRuntime(ctx);
 }
 
+/** @deprecated Prefer openLabRepoBatchModal (Actualizar labs unificado). */
 export function openLabRepoImportModal() {
-  var modal = document.getElementById('lab-repo-import-modal');
-  if (!modal) return;
-  var registroEl = document.getElementById('lab-repo-registro');
-  var desdeEl = document.getElementById('lab-repo-desde');
-  var hastaEl = document.getElementById('lab-repo-hasta');
-  if (!registroEl || !desdeEl || !hastaEl) return;
-
-  var range = defaultDateRange();
-  refreshRpcDateFields(modal);
-  desdeEl.value = toDateInputValue(range.desde);
-  hastaEl.value = toDateInputValue(range.hasta);
-  syncLabRepoDateField(desdeEl);
-  syncLabRepoDateField(hastaEl);
-
-  var registro = getRegistroInitial();
-  registroEl.value = registro;
-  registroEl.readOnly = registroReadOnly();
-  if (registroReadOnly()) {
-    registroEl.setAttribute('aria-readonly', 'true');
-  } else {
-    registroEl.removeAttribute('aria-readonly');
+  if (typeof window !== 'undefined' && typeof window.openLabRepoBatchModal === 'function') {
+    window.openLabRepoBatchModal();
+    return;
   }
-
-  modal.hidden = false;
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden', 'false');
-  registroEl.focus();
+  rt.showToast('Usa Actualizar labs en Laboratorio', 'info');
 }
 
 export function closeLabRepoImportModal() {
@@ -179,6 +148,7 @@ export function closeLabRepoImportModal() {
   modal.hidden = true;
 }
 
+/** @deprecated Prefer confirmLabRepoBatchImport via Actualizar labs. */
 export async function confirmLabRepoImport() {
   var fields = readLabRepoImportFields();
   if (!validateLabRepoImportFields(fields)) return;

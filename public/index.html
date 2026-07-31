@@ -348,27 +348,32 @@
   </div>
 </div>
 
-<div id="lab-repo-import-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal lab-repo-import-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-import-title" onclick="event.stopPropagation()">
-    <h3 id="lab-repo-import-title">Importar del repositorio</h3>
-    <p class="lab-repo-import-hint">Consulta estudios del portal intrahospitalario por registro y rango de fechas.</p>
-    <div class="lab-repo-import-fields">
-      <div class="field-group">
-        <label for="lab-repo-registro">Registro</label>
-        <input id="lab-repo-registro" type="text" autocomplete="off" spellcheck="false" />
-      </div>
-      <div class="field-group">
-        <label for="lab-repo-desde">Desde</label>
-        <input id="lab-repo-desde" type="date" class="rpc-date-input" />
-      </div>
-      <div class="field-group">
-        <label for="lab-repo-hasta">Hasta</label>
-        <input id="lab-repo-hasta" type="date" class="rpc-date-input" />
-      </div>
+<div id="lab-manual-entry-modal" class="modal-backdrop" aria-hidden="true" hidden>
+  <div class="modal lab-manual-entry-modal" role="dialog" aria-modal="true" aria-labelledby="lab-manual-entry-title" onclick="event.stopPropagation()">
+    <div class="lab-manual-entry-head">
+      <h3 id="lab-manual-entry-title">Labs externos</h3>
+      <p id="lab-manual-patient-meta" class="lab-manual-patient-meta"></p>
     </div>
-    <div class="modal-actions lab-repo-import-actions">
-      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeLabRepoImportModal()">Cancelar</button>
-      <button type="button" class="btn-generate" id="lab-repo-import-confirm" onclick="confirmLabRepoImport()">Importar</button>
+    <div class="lab-manual-entry-fields">
+      <div class="lab-manual-meta-row">
+        <div class="field-group">
+          <label for="lab-manual-type">Tipo de estudio</label>
+          <select id="lab-manual-type" class="profile-input"></select>
+        </div>
+        <div class="field-group">
+          <label for="lab-manual-fecha">Fecha</label>
+          <input id="lab-manual-fecha" type="date" class="rpc-date-input" />
+        </div>
+        <div class="field-group">
+          <label for="lab-manual-hora">Hora <span class="lab-manual-optional">(opcional)</span></label>
+          <input id="lab-manual-hora" type="time" class="profile-input" />
+        </div>
+      </div>
+      <div id="lab-manual-fields" class="lab-manual-fields" role="group" aria-label="Valores del estudio"></div>
+    </div>
+    <div class="modal-actions lab-manual-entry-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeLabManualEntryModal()">Cancelar</button>
+      <button type="button" class="btn-generate" id="lab-manual-entry-confirm" onclick="confirmLabManualEntry()">Guardar</button>
     </div>
   </div>
 </div>
@@ -415,8 +420,8 @@
 <div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
   <div class="modal lab-repo-batch-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">
-      <h3 id="lab-repo-batch-title">Actualizar labs de mi equipo</h3>
-      <p class="lab-repo-batch-hint">Rango compartido · la cola queda en la barra lateral</p>
+      <h3 id="lab-repo-batch-title">Actualizar labs</h3>
+      <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Rango compartido · la cola queda en la barra lateral</p>
     </div>
     <div class="lab-repo-batch-fields">
       <div class="lab-repo-batch-dates">
@@ -429,6 +434,7 @@
           <input id="lab-repo-batch-hasta" type="date" class="rpc-date-input" />
         </div>
       </div>
+      <div id="lab-repo-batch-team-block" class="lab-repo-batch-team-block">
       <div class="lab-repo-batch-toolbar">
         <div class="lab-repo-batch-toolbar-actions">
           <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="lab-repo-batch-select-all" onclick="labRepoBatchSelectAll()">Todos</button>
@@ -437,6 +443,7 @@
         <span id="lab-repo-batch-count" class="lab-repo-batch-count"></span>
       </div>
       <div id="lab-repo-batch-list" class="lab-repo-batch-list" role="group" aria-label="Pacientes de mi equipo"></div>
+      </div>
       <p id="lab-repo-batch-progress" class="lab-repo-batch-progress" hidden></p>
     </div>
     <div class="modal-actions lab-repo-batch-actions">
@@ -870,8 +877,8 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
-              <button type="button" id="btn-lab-repo-import" class="btn-med-secondary" onclick="openLabRepoImportModal()">Importar del repositorio</button>
-              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio para los pacientes de tu equipo">Actualizar labs de mi equipo</button>
+              <button type="button" id="btn-lab-manual-entry" class="btn-med-secondary" onclick="openLabManualEntryModal()" title="Captura manual de un estudio (lab externo)">Labs externos</button>
+              <button type="button" id="btn-lab-repo-batch" class="btn-med-secondary" onclick="openLabRepoBatchModal()" title="Actualiza labs desde el repositorio (paciente activo o mi equipo)">Actualizar labs</button>
               <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary btn-med-secondary--muted" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>

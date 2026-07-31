@@ -197,6 +197,12 @@ function wireQueuePanelDismissLayers(registry) {
   });
   regOpenClass(
     registry,
+    'lab-manual-entry-modal',
+    closeModalViaWindowOrHide('closeLabManualEntryModal', 'lab-manual-entry-modal'),
+    { panelSelector: '.lab-manual-entry-modal' }
+  );
+  regOpenClass(
+    registry,
     'lab-repo-batch-modal',
     closeModalViaWindowOrHide('closeLabRepoBatchModal', 'lab-repo-batch-modal'),
     { panelSelector: '.lab-repo-batch-modal' }

@@ -61,7 +61,7 @@ test('rankPalette: "procesar some" → Procesar SOME action', () => {
   assert.equal(top[0].actionId, 'procesar-some');
 });
 
-test('rankPalette: "actualizar labs" → Actualizar labs de mi equipo', () => {
+test('rankPalette: "actualizar labs" → Actualizar labs', () => {
   const items = buildPaletteItems(SALA, PATIENTS);
   const top = rankPalette('actualizar labs', items, 12);
   assert.ok(top.length >= 1);

@@ -13,8 +13,8 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 |---------|-----------|------------|
 | Laboratorio / SOME | `public/js/labs*.mjs`, `lab-panel.mjs` | Magic moment pipeline |
 | Lab panel overlay | `labs-panel-overlay*.mjs`, `features/lan/lab-panel-overlay-sync.mjs` | PanelDef overlay + LAN `labPanelOverlay` (sin wizard) |
-| Lab repo import | `lib/lab-repo/`, `public/js/features/lab-repo-import.mjs` | [spec](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
-| Lab repo batch (mi equipo) | `public/js/features/lab-repo-batch-import.mjs`, `lab-repo-batch-model.mjs` | Bulk morning update: mi equipo + checkboxes + sidebar job queue |
+| Lab repo / Actualizar labs | `lib/lab-repo/`, `lab-repo-import.mjs`, `lab-repo-batch-import.mjs` | Unificado: paciente activo → fechas; sin paciente → mi equipo. [scraper](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
+| Labs externos (manual) | `labs-manual-catalog.mjs`, `labs-manual-synthesize.mjs`, `features/lab-manual-entry.mjs` | [spec](../superpowers/specs/2026-07-31-labs-externos-manual-entry-design.md) — tipo + celdas → historial `origin: 'externo'` |
 | Paste-anywhere / Procesar SOME | `public/js/features/paste-smart.mjs`, `paste-smart-model.mjs` | Global paste or ⌘K → match census → confirm once → Labs |
 | Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs` | Labs → Eventualidades al Procesar / repo / Actualizar; cola docs también auto-envía labs de hoy |
 | ⌘K palette (acciones) | `public/js/command-palette-model.mjs`, `features/command-palette.mjs` | Jumps + shift actions (Procesar SOME, labs batch, doc queue, EA, export, pase) |

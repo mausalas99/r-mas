@@ -56,7 +56,7 @@ function buildLabHistorySet(patientId, resLabs, fecha, hora, sourceText, bhExtra
 }
 
 function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
-  if (!patientId || !resLabs || !resLabs.length) return;
+  if (!patientId || !resLabs || !resLabs.length) return null;
   if (!labHistory[patientId]) labHistory[patientId] = [];
   var set = buildLabHistorySet(
     patientId,
@@ -68,10 +68,35 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
     refsBySection,
     idSeed
   );
-  if (!set.resLabs || !set.resLabs.length) return;
+  if (!set.resLabs || !set.resLabs.length) return null;
   labHistory[patientId].push(set);
   refreshSameDayAscitisForPatient(patientId, set.id);
   bumpLabHistoryRevision(patientId);
+  return set;
+}
+
+/**
+ * Entrada manual / labs externos → historial con origin: 'externo'.
+ * @param {string} patientId
+ * @param {{ resLabs: string[], fecha?: string, hora?: string, sectionKey?: string }} opts
+ * @returns {object|null}
+ */
+function pushExternalLabHistory(patientId, opts) {
+  var o = opts && typeof opts === 'object' ? opts : {};
+  var sectionKey = String(o.sectionKey || 'LAB').trim() || 'LAB';
+  var set = pushLabHistory(
+    patientId,
+    o.resLabs,
+    o.fecha,
+    o.hora,
+    '[entrada manual · ' + sectionKey + ']',
+    {},
+    {},
+    'ext-' + sectionKey
+  );
+  if (!set) return null;
+  set.origin = 'externo';
+  return set;
 }
 
 function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
@@ -240,6 +265,7 @@ function pickDisplayLabResult(blocks, processable, activeId) {
 }
 export {
   pushLabHistory,
+  pushExternalLabHistory,
   pushLabHistoryFromBulkPayload,
   finalizeLabHistoryImport,
   isDuplicateInPatientHistory,

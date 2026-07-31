@@ -77,6 +77,10 @@ function executeAction(item) {
     ensureLabsThen('openLabRepoBatchModal');
     return;
   }
+  if (id === 'lab-manual-entry') {
+    ensureLabsThen('openLabManualEntryModal');
+    return;
+  }
   if (id === 'open-lab') {
     if (!callWin('openPaseSectionInNormal', 'labs')) callWin('switchAppTab', 'lab');
     return;

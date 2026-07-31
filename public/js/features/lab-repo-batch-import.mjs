@@ -11,7 +11,12 @@ import { isPatientAssignedToJoinedTeam } from '../mobile-team-patient-scope.mjs'
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import { buildBulkLabPreview, LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
-import { labRepoFetchRangeFromDateInputs } from './lab-repo-import.mjs';
+import {
+  labRepoFetchRangeFromDateInputs,
+  labRepoDefaultDateRange,
+  labRepoToDateInputValue,
+  syncLabRepoDateField,
+} from './lab-repo-import.mjs';
 import {
   buildLabRepoPreviewBlocks,
   buildLabRepoBulkText,
@@ -32,6 +37,11 @@ import {
   labRepoBatchJobStatusLabel,
   jobStatusFromFetchKind,
 } from './lab-repo-batch-model.mjs';
+import {
+  resolveActivePatientBatchRow,
+  syncBatchModalModeUi,
+  activePatientMissingRegistroMessage,
+} from './lab-repo-batch-mode.mjs';
 
 /** @type {import('./lab-repo-batch-model.mjs').LabRepoBatchRow[]} */
 var batchRows = [];
@@ -39,6 +49,7 @@ var batchRows = [];
 var batchJobs = [];
 var batchBusy = false;
 var batchAbort = false;
+var batchSinglePatientMode = false;
 /** @type {ReturnType<typeof setTimeout> | null} */
 var queueAutoDismissTimer = null;
 var QUEUE_AUTO_DISMISS_MS = 1600;
@@ -57,26 +68,6 @@ function scheduleQueueAutoDismiss() {
     batchJobs = [];
     renderSidebarQueue();
   }, QUEUE_AUTO_DISMISS_MS);
-}
-
-function defaultDateRange() {
-  var hasta = new Date();
-  hasta.setHours(0, 0, 0, 0);
-  var desde = new Date(hasta);
-  desde.setDate(desde.getDate() - 2);
-  return { desde: desde, hasta: hasta };
-}
-
-function toDateInputValue(d) {
-  var pad = function (n) {
-    return String(n).padStart(2, '0');
-  };
-  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
-
-function syncLabRepoDateField(input) {
-  if (!input) return;
-  input.dispatchEvent(new Event('rpc-date-refresh'));
 }
 
 function teamPatients() {
@@ -294,21 +285,37 @@ export function openLabRepoBatchModal() {
   wireBatchModalOnce();
   batchAbort = false;
 
-  var range = defaultDateRange();
+  var missingReg = activePatientMissingRegistroMessage(rt);
+  if (missingReg) {
+    rt.showToast(missingReg, 'error');
+    return;
+  }
+
+  var range = labRepoDefaultDateRange();
   var desdeEl = document.getElementById('lab-repo-batch-desde');
   var hastaEl = document.getElementById('lab-repo-batch-hasta');
   refreshRpcDateFields(modal);
   if (desdeEl && hastaEl) {
-    desdeEl.value = toDateInputValue(range.desde);
-    hastaEl.value = toDateInputValue(range.hasta);
+    desdeEl.value = labRepoToDateInputValue(range.desde);
+    hastaEl.value = labRepoToDateInputValue(range.hasta);
     syncLabRepoDateField(desdeEl);
     syncLabRepoDateField(hastaEl);
   }
 
-  batchRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
+  var single = resolveActivePatientBatchRow(rt);
+  batchSinglePatientMode = !!single;
+  if (single) {
+    batchRows = [single];
+  } else {
+    batchRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
+  }
   setBatchProgress('', false);
   setBatchBusy(false);
-  syncBatchCount();
+  syncBatchModalModeUi(batchSinglePatientMode, batchRows[0]);
+  if (!batchSinglePatientMode) {
+    renderBatchList();
+    syncBatchCount();
+  }
 
   modal.hidden = false;
   modal.classList.add('open');

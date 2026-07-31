@@ -1686,10 +1686,29 @@ var RELEASE_NOTES_776 = [
   },
 ];
 
+var RELEASE_NOTES_777 = [
+  {
+    title: 'Labs externos',
+    body:
+      'En Laboratorio: elige el <strong>tipo</strong> de estudio, llena <strong>celdas</strong> y guarda. Entra al historial (tendencias, nota y LiveSync) marcado como <strong>· Ext</strong>.',
+  },
+  {
+    title: 'Actualizar labs unificado',
+    body:
+      'Un solo botón reemplaza Importar del repositorio. Con <strong>paciente activo</strong> solo pedirá fechas; sin paciente, la lista de <strong>mi equipo</strong>.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.7 en todas</strong> las Macs y PCs del turno el mismo día si capturan labs externos o actualizan desde el repositorio.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_776;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_777;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.7': RELEASE_NOTES_777,
   '7.7.6': RELEASE_NOTES_776,
   '7.7.5': RELEASE_NOTES_775,
   '7.7.4': RELEASE_NOTES_774,

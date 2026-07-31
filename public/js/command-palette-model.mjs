@@ -25,9 +25,16 @@ export var ACTION_ITEMS = [
   {
     kind: 'action',
     actionId: 'lab-repo-batch',
-    label: 'Actualizar labs de mi equipo',
+    label: 'Actualizar labs',
     hint: 'Acción',
-    keywords: 'labs laboratorio repositorio batch actualizar equipo',
+    keywords: 'labs laboratorio repositorio batch actualizar equipo importar',
+  },
+  {
+    kind: 'action',
+    actionId: 'lab-manual-entry',
+    label: 'Labs externos',
+    hint: 'Acción',
+    keywords: 'labs externos manual entrada celdas agregar estudio',
   },
   {
     kind: 'action',
@@ -176,7 +183,12 @@ function emptyPaletteRanking(items, max) {
     else if (it.kind === 'patient') patients.push(it);
     else if (it.kind === 'section') sections.push(it);
   });
-  return actions.concat(pinned, patients, sections).slice(0, max);
+  // Keep a few pinned patients visible even as ACTION_ITEMS grows.
+  var pinSlots = pinned.length ? Math.min(pinned.length, Math.min(3, Math.max(0, max - 6))) : 0;
+  var actionSlice = actions.slice(0, Math.max(0, max - pinSlots));
+  var pinnedSlice = pinned.slice(0, Math.max(0, max - actionSlice.length));
+  var rest = Math.max(0, max - actionSlice.length - pinnedSlice.length);
+  return actionSlice.concat(pinnedSlice, patients.slice(0, rest), sections).slice(0, max);
 }
 
 export function rankPalette(query, items, limit) {

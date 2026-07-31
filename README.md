@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.6](https://github.com/mausalas99/r-mas/releases/tag/v7.7.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.7](https://github.com/mausalas99/r-mas/releases/tag/v7.7.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.7.7 (labs externos y Actualizar labs unificado)
+
+- **Labs externos** — Tipo + celdas → historial (tendencias / nota / sync), marcado · Ext.
+- **Actualizar labs** — Un botón: paciente activo = solo fechas; sin paciente = mi equipo.
+- **⌘K** — Acciones Labs externos y Actualizar labs.
+
+Notas: `docs/RELEASE_NOTES_7.7.7.txt`.
 
 ## R+ 7.7.6 (labs sin membrete SOME y vitales del turno)
 
