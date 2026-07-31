@@ -1,6 +1,4 @@
-/**
- * Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue.
- */
+/** Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue. */
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { esc } from '../dom-escape.mjs';
 import {
@@ -39,6 +37,7 @@ import {
 } from './lab-repo-batch-model.mjs';
 import {
   resolveActivePatientBatchRow,
+  resolveBatchOpenMode,
   syncBatchModalModeUi,
   activePatientMissingRegistroMessage,
 } from './lab-repo-batch-mode.mjs';
@@ -285,7 +284,11 @@ export function openLabRepoBatchModal() {
   wireBatchModalOnce();
   batchAbort = false;
 
-  var missingReg = activePatientMissingRegistroMessage(rt);
+  var teamRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
+  var teamWithReg = teamRows.filter(function (r) {
+    return r && r.hasRegistro;
+  }).length;
+  var missingReg = activePatientMissingRegistroMessage(rt, teamWithReg);
   if (missingReg) {
     rt.showToast(missingReg, 'error');
     return;
@@ -302,13 +305,9 @@ export function openLabRepoBatchModal() {
     syncLabRepoDateField(hastaEl);
   }
 
-  var single = resolveActivePatientBatchRow(rt);
-  batchSinglePatientMode = !!single;
-  if (single) {
-    batchRows = [single];
-  } else {
-    batchRows = buildLabRepoBatchRows(teamPatients(), { defaultSelectWithRegistro: true });
-  }
+  var mode = resolveBatchOpenMode(teamRows, resolveActivePatientBatchRow(rt));
+  batchSinglePatientMode = mode.singlePatientMode;
+  batchRows = mode.rows;
   setBatchProgress('', false);
   setBatchBusy(false);
   syncBatchModalModeUi(batchSinglePatientMode, batchRows[0]);

@@ -47,15 +47,13 @@ function fillTypeSelect() {
   var prev = sel.value;
   sel.innerHTML = types
     .map(function (t) {
-      return (
-        '<option value="' +
-        esc(t.sectionKey) +
-        '">' +
-        esc(t.label) +
-        ' (' +
-        esc(t.sectionKey) +
-        ')</option>'
-      );
+      var label = String(t.label || t.sectionKey);
+      var key = String(t.sectionKey || '');
+      // Avoid "Biometría (BH) (BH)" when label already includes the key.
+      if (key && label.indexOf('(' + key + ')') === -1) {
+        label = label + ' (' + key + ')';
+      }
+      return '<option value="' + esc(t.sectionKey) + '">' + esc(label) + '</option>';
     })
     .join('');
   if (prev && getManualLabType(prev)) sel.value = prev;

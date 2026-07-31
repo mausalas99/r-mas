@@ -1704,10 +1704,29 @@ var RELEASE_NOTES_777 = [
   },
 ];
 
+var RELEASE_NOTES_778 = [
+  {
+    title: 'Actualizar labs de mi equipo',
+    body:
+      'Con <strong>2 o más</strong> pacientes del equipo abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.',
+  },
+  {
+    title: 'Labs externos más claros',
+    body:
+      'Toolbar: Procesar → Actualizar → Separador → Limpiar → <strong>Labs externos</strong>. El selector de tipo ya no duplica el código (BH).',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.8 en todas</strong> las Macs y PCs del turno el mismo día si usan Actualizar labs o Labs externos.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_777;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_778;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.8': RELEASE_NOTES_778,
   '7.7.7': RELEASE_NOTES_777,
   '7.7.6': RELEASE_NOTES_776,
   '7.7.5': RELEASE_NOTES_775,

@@ -39,9 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.7](https://github.com/mausalas99/r-mas/releases/tag/v7.7.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.8](https://github.com/mausalas99/r-mas/releases/tag/v7.7.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.7.8 (Actualizar labs equipo y polish Labs externos)
+
+- **Actualizar labs** — 2+ en mi equipo → modal con checkboxes; un solo paciente → solo fechas.
+- **Toolbar** — Procesar → Actualizar → Separador → Limpiar → Labs externos.
+- **Labs externos** — Sin doblete en el selector de tipo (p. ej. Biometría (BH)).
+
+Notas: `docs/RELEASE_NOTES_7.7.8.txt`.
 
 ## R+ 7.7.7 (labs externos y Actualizar labs unificado)
 
