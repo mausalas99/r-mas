@@ -1,16 +1,18 @@
-version: 7.7.8
+version: 7.7.9
 files:
-  - url: R+-7.7.8-x64.exe
-    sha512: LoWLywAkI3LEYDaISNS3LMxBY2aUOI3X/t6Hxj5bnYetVDFRSUU9WK2WbcrHZbVM1fXbp/qGKpxx/zN1U0iK6g==
-    size: 120886611
-path: R+-7.7.8-x64.exe
-sha512: LoWLywAkI3LEYDaISNS3LMxBY2aUOI3X/t6Hxj5bnYetVDFRSUU9WK2WbcrHZbVM1fXbp/qGKpxx/zN1U0iK6g==
-releaseDate: '2026-07-31T21:15:32.000Z'
+  - url: R+-7.7.9-x64.exe
+    sha512: ZNo7/BBRmEymWPppLrIaIniT86QEXprLtH8jnaylbNoCY2Eus+Tr7bgI5GhMTOOdGvjGs4RNPqJ4c7J5z2SubA==
+    size: 120892544
+path: R+-7.7.9-x64.exe
+sha512: ZNo7/BBRmEymWPppLrIaIniT86QEXprLtH8jnaylbNoCY2Eus+Tr7bgI5GhMTOOdGvjGs4RNPqJ4c7J5z2SubA==
+releaseDate: '2026-07-31T23:34:58.000Z'
 releaseNotes: |
-  7.7.8 corrige Actualizar labs para abrir el modal de mi equipo cuando hay 2+ pacientes, y afina Labs externos (orden del toolbar y etiquetas sin doblete).
+  7.7.9 marca valores fuera de rango aunque el SOME no traiga «Valor de Referencia», evita clonar el mismo set al reimportar (misma hora / mismos GASES), y afina Actualizar labs.
   
-  Actualizar labs — Con 2 o más pacientes de mi equipo (con registro) abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.
+  Alterados sin rangos — Si el reporte no trae referencia, R+ aplica rangos de estudios previos del mismo paciente; si no hay, estándares (p. ej. pH 7.35–7.45, Glu 70–100, Na 136–145).
   
-  Toolbar Laboratorio — Orden: Procesar → Actualizar labs → Separador → Limpiar → Labs externos.
+  Todos los paneles — BH, QS, ESC, PFHs, lipasa, paneles extendidos y gasometría (no solo gases).
   
-  Labs externos — El selector de tipo ya no muestra códigos duplicados (p. ej. «Biometría (BH) (BH)»).
+  Sin clones en historial — Misma fecha+hora: no crea Labs (1)…(8); paneles nuevos se anexan al set. Mismos GASES se filtran; gasos seriados distintos siguen aparte.
+  
+  Actualizar labs — Cola anclada al pie del sidebar; lista de pacientes más limpia; Todos / Solo activo / Ninguno; toolbar Laboratorio con Limpiar al final.

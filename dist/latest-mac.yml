@@ -1,25 +1,27 @@
-version: 7.7.8
+version: 7.7.9
 files:
-  - url: R+-7.7.8-arm64.zip
-    sha512: 4qILvKAjxAwogR6kI6kfYkvnZuXOL9M77IZEZ2A9p/XXlT6w7wPeiLIgGsa4niycbxiP0z9Lk9VqKPWkaaiE+g==
-    size: 137304768
-  - url: R+-7.7.8-arm64.dmg
-    sha512: K1x+drhyIPJ3LuSKBKMqS71BUmZghm//cWrIhkEkcgI5MAetI3oi5jjNgajqujacjXw9vLRlr4xkVFDT4yQhkQ==
-    size: 143021515
-  - url: R+-7.7.8-x64.zip
-    sha512: SIvrOoG8+Ud8pkmWq1EHBapG5FHfrmnB5/g0/Hswhq4HmNCaYm0QeitguMWa2X2HbDRZmFfRK8IAoP7iPQJCDg==
-    size: 145678897
-  - url: R+-7.7.8-x64.dmg
-    sha512: Ho+IP1eW/Jy77q/yXBIMCZ9G6v//+QkJrjew6GpqA7baYUBEBckMbjVg3VMXlQZPWXYLDMNat7/Z5gnGCYdzjw==
-    size: 151463649
-path: R+-7.7.8-arm64.zip
-sha512: 4qILvKAjxAwogR6kI6kfYkvnZuXOL9M77IZEZ2A9p/XXlT6w7wPeiLIgGsa4niycbxiP0z9Lk9VqKPWkaaiE+g==
-releaseDate: '2026-07-31T21:15:32.000Z'
+  - url: R+-7.7.9-arm64.zip
+    sha512: kP8DHYgiLLv6kVndRTNdP6D1IWvzFLIvh5kJiRAZnWjer4ROI/8yOYo/tJtNOs6wEqvj4jXDeb71bP4JycAV7g==
+    size: 137320522
+  - url: R+-7.7.9-arm64.dmg
+    sha512: wGgewOiJv+3m5JEFi2alGZETOaWGeE9lBTqeMSBbAhUNiMNchjW7tJwdBdzR2hYW7qD8vNvHG9fA/ToCOS7b1Q==
+    size: 143065656
+  - url: R+-7.7.9-x64.zip
+    sha512: JZWr0E6XLnQloty0LFG//jFEjLyRdtfDTdMJkL99tv2wjwdtjRCGuU5OAA3IFApSa09Ecpb6tR/u2fNBpm7K9g==
+    size: 145694554
+  - url: R+-7.7.9-x64.dmg
+    sha512: uY8uFJF3le6Xxs9Qo2Ezy1FIw9p/vGpqRUco4roVEteNWcRqhS+PxMD5K9LjpbbhPacY01+u4f3Kish+2F5DuA==
+    size: 151476811
+path: R+-7.7.9-arm64.zip
+sha512: kP8DHYgiLLv6kVndRTNdP6D1IWvzFLIvh5kJiRAZnWjer4ROI/8yOYo/tJtNOs6wEqvj4jXDeb71bP4JycAV7g==
+releaseDate: '2026-07-31T23:34:58.000Z'
 releaseNotes: |
-  7.7.8 corrige Actualizar labs para abrir el modal de mi equipo cuando hay 2+ pacientes, y afina Labs externos (orden del toolbar y etiquetas sin doblete).
+  7.7.9 marca valores fuera de rango aunque el SOME no traiga «Valor de Referencia», evita clonar el mismo set al reimportar (misma hora / mismos GASES), y afina Actualizar labs.
   
-  Actualizar labs — Con 2 o más pacientes de mi equipo (con registro) abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.
+  Alterados sin rangos — Si el reporte no trae referencia, R+ aplica rangos de estudios previos del mismo paciente; si no hay, estándares (p. ej. pH 7.35–7.45, Glu 70–100, Na 136–145).
   
-  Toolbar Laboratorio — Orden: Procesar → Actualizar labs → Separador → Limpiar → Labs externos.
+  Todos los paneles — BH, QS, ESC, PFHs, lipasa, paneles extendidos y gasometría (no solo gases).
   
-  Labs externos — El selector de tipo ya no muestra códigos duplicados (p. ej. «Biometría (BH) (BH)»).
+  Sin clones en historial — Misma fecha+hora: no crea Labs (1)…(8); paneles nuevos se anexan al set. Mismos GASES se filtran; gasos seriados distintos siguen aparte.
+  
+  Actualizar labs — Cola anclada al pie del sidebar; lista de pacientes más limpia; Todos / Solo activo / Ninguno; toolbar Laboratorio con Limpiar al final.
