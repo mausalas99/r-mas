@@ -9,7 +9,13 @@ import { storeBulkLabBlocks, pickDisplayLabResult } from './lab-panel-workbench-
 
 export function storeProcessableBulkBlocks(blocks, processable) {
   if (!processable.length) {
-    return { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length, storedByPatient: {} };
+    return {
+      storedSets: 0,
+      mergedSets: 0,
+      skippedDupes: 0,
+      skippedBlocks: blocks.length,
+      storedByPatient: {},
+    };
   }
   var storeSummary = storeBulkLabBlocks(blocks, processable);
   if (typeof rt.addAuditEntry === 'function') {
@@ -71,6 +77,14 @@ function bulkStoreSummaryParts(storeSummary) {
         (storeSummary.storedSets === 1 ? '' : 's')
     );
   }
+  if (storeSummary.mergedSets) {
+    parts.push(
+      storeSummary.mergedSets +
+        ' actualizado' +
+        (storeSummary.mergedSets === 1 ? '' : 's') +
+        ' (misma hora)'
+    );
+  }
   if (storeSummary.skippedDupes) {
     parts.push(
       storeSummary.skippedDupes +
@@ -98,8 +112,17 @@ export function showBulkLabPasteSummaryToast(multi, storeSummary, processable, b
     rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', 'success');
     return;
   }
-  if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
+  if (
+    processable.length === 1 &&
+    storeSummary.storedSets === 0 &&
+    !storeSummary.mergedSets &&
+    storeSummary.skippedDupes
+  ) {
     rt.showToast('Resultado ya registrado en historial', 'success');
+    return;
+  }
+  if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.mergedSets) {
+    rt.showToast('Labs actualizados en el mismo horario ✓', 'success');
     return;
   }
   if (

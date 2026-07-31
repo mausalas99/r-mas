@@ -129,6 +129,55 @@ describe('lab-consolidation-cluster', () => {
     );
   });
 
+  it('clusterLabworkByTimeWindow une clones con los mismos GASES', () => {
+    var items = [
+      { id: 'a', hasGaso: true, ms: 0, gasKey: 'GASES\tpH 7.36 pCO2 40' },
+      { id: 'b', hasGaso: true, ms: 5 * 60 * 1000, gasKey: 'GASES\tpH 7.36 pCO2 40' },
+      { id: 'c', hasGaso: true, ms: 10 * 60 * 1000, gasKey: 'GASES\tpH 7.36 pCO2 40' },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return !!x.hasGaso;
+      },
+      undefined,
+      function (x) {
+        return x.gasKey;
+      }
+    );
+    assert.equal(clusters.length, 1);
+    assert.deepEqual(
+      clusters[0].map(function (x) {
+        return x.id;
+      }),
+      ['a', 'b', 'c']
+    );
+  });
+
+  it('clusterLabworkByTimeWindow mantiene gasos con valores distintos separados', () => {
+    var items = [
+      { id: 'g1', hasGaso: true, ms: 0, gasKey: 'GASES\tpH 7.39' },
+      { id: 'g2', hasGaso: true, ms: 30 * 60 * 1000, gasKey: 'GASES\tpH 7.35' },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return !!x.hasGaso;
+      },
+      undefined,
+      function (x) {
+        return x.gasKey;
+      }
+    );
+    assert.equal(clusters.length, 2);
+  });
+
   it('clusterByDayTipoAndTimeWindow agrupa labs y gaso del mismo día', () => {
     var items = [
       { day: '2026-6-12', tipo: 'labs', ms: 0 },

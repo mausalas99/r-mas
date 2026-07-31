@@ -4,7 +4,7 @@
 import { isCitoquimInterpretacionResLabChunk, looksLikeSomeLabReport } from './labs.js';
 import { splitResLabsByTipo } from './cultivo-block-core.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
-import { compareLabSetIdForDedupe } from './lab-history-auto-store-core.mjs';
+import { compareLabSetIdForDedupe, gasometriaFingerprintFromResLabs } from './lab-history-auto-store-core.mjs';
 import {
   parseFechaLabToMs,
   normalizeFechaLabHistory,
@@ -14,6 +14,8 @@ import { inferFechaLabSetFromId } from './features/tendencias.mjs';
 import { isModeSala } from './mode-features.mjs';
 import { looksLikeLabSectionChunk } from './labs-reslabs-sanitize.mjs';
 import { isCultivoBlockStartLine } from './cultivo-block-core.mjs';
+
+export { gasometriaFingerprintFromResLabs };
 
 export function labSetParseFingerprint(set) {
   if (!set) return '';

@@ -1729,14 +1729,14 @@ var RELEASE_NOTES_779 = [
       'Si el reporte no trae <strong>Valor de Referencia</strong>, R+ marca fuera de rango con refs de estudios previos del paciente o estándares (BH, QS, ESC, PFH, gases…).',
   },
   {
-    title: 'Actualizar labs más claro',
+    title: 'Historial sin clones',
     body:
-      'Cola al <strong>pie del sidebar</strong>, lista de pacientes más limpia y botón <strong>Solo activo</strong> junto a Todos / Ninguno.',
+      'Reimportar a la <strong>misma hora</strong> no crea Labs (1)…(8): anexa paneles nuevos o omite duplicados. <strong>Mismos GASES</strong> se filtran; gasos seriados distintos siguen aparte.',
   },
   {
-    title: 'Actualiza el turno',
+    title: 'Actualizar labs más claro',
     body:
-      'Instala <strong>7.7.9 en todas</strong> las Macs y PCs del turno el mismo día si pegan labs incompletos o usan Actualizar labs.',
+      'Cola al <strong>pie del sidebar</strong>, lista más limpia y botón <strong>Solo activo</strong> junto a Todos / Ninguno.',
   },
 ];
 

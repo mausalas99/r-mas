@@ -43,11 +43,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-## R+ 7.7.9 (labs alterados sin rangos + cola Actualizar labs)
+## R+ 7.7.9 (labs alterados sin rangos + historial sin clones)
 
 - **Sin Valor de Referencia** — Marca alterados con rangos de estudios previos o estándares (BH/QS/ESC/PFH/gases…).
-- **Actualizar labs** — Cola al pie del sidebar; selector más limpio; botón Solo activo.
-- **Toolbar Laboratorio** — Limpiar al final; Separador/Limpiar con el mismo estilo.
+- **Sin clones** — Misma hora → un set (anexa paneles nuevos); mismos GASES se filtran.
+- **Actualizar labs** — Cola al pie del sidebar; Solo activo; Limpiar al final.
 
 Notas: `docs/RELEASE_NOTES_7.7.9.txt`.
 

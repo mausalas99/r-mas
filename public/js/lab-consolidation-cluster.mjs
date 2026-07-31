@@ -6,6 +6,7 @@ import {
   normalizeHoraLabHistory,
   parseFechaLabToMs,
 } from './tend-core.mjs';
+import { gasometriaFingerprintFromResLabs } from './lab-history-auto-store-core.mjs';
 
 /** Ventana máxima entre tomas consecutivas para fusionar (2 h). */
 export const LAB_CONSOLIDATION_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -115,36 +116,81 @@ function minAbsDistToCluster(ms, clusterEntries) {
   return dist;
 }
 
-function assignGasosToClosestLabClusters(labClusters, gasoEntries, windowMs) {
+function defaultGasometriaKey(item) {
+  if (!item) return '';
+  if (Array.isArray(item.resLabs)) return gasometriaFingerprintFromResLabs(item.resLabs);
+  if (item.result && Array.isArray(item.result.resLabs)) {
+    return gasometriaFingerprintFromResLabs(item.result.resLabs);
+  }
+  return '';
+}
+
+/**
+ * Agrupa gasos por huella (mismos GASES) y ventana horaria.
+ * Sin huella → cada ítem es único (compat tests / sin resLabs).
+ */
+function buildGasoIdentityGroups(gasoEntries, getGasoKey, windowMs) {
+  var byFp = Object.create(null);
+  var uniqueSeq = 0;
+  (gasoEntries || []).forEach(function (g, gi) {
+    var raw =
+      typeof getGasoKey === 'function' ? String(getGasoKey(g.item) || '').trim() : '';
+    if (!raw) raw = defaultGasometriaKey(g.item);
+    var fp = raw || '\0unique:' + uniqueSeq++ + ':' + gi;
+    if (!byFp[fp]) byFp[fp] = [];
+    byFp[fp].push(g);
+  });
+  var groups = [];
+  Object.keys(byFp).forEach(function (fp) {
+    chainTimedEntries(byFp[fp], windowMs).forEach(function (chain) {
+      if (!chain.length) return;
+      groups.push({
+        fingerprint: fp,
+        entries: chain,
+        rep: chain[0],
+      });
+    });
+  });
+  groups.sort(function (a, b) {
+    return a.rep.ms - b.rep.ms;
+  });
+  return groups;
+}
+
+function assignGasoGroupsToClosestLabClusters(labClusters, gasoGroups, windowMs) {
   var assigned = labClusters.map(function () {
     return null;
   });
   var candidates = [];
-  gasoEntries.forEach(function (g, gi) {
+  gasoGroups.forEach(function (grp, gi) {
     labClusters.forEach(function (cluster, ci) {
-      var dist = minAbsDistToCluster(g.ms, cluster);
-      if (dist <= windowMs) candidates.push({ gi: gi, ci: ci, dist: dist, ms: g.ms });
+      var dist = minAbsDistToCluster(grp.rep.ms, cluster);
+      if (dist <= windowMs) candidates.push({ gi: gi, ci: ci, dist: dist, ms: grp.rep.ms });
     });
   });
   candidates.sort(function (a, b) {
     if (a.dist !== b.dist) return a.dist - b.dist;
     return a.ms - b.ms;
   });
-  var gasoUsed = Object.create(null);
+  var groupUsed = Object.create(null);
   var clusterUsed = Object.create(null);
   candidates.forEach(function (c) {
-    if (gasoUsed[c.gi] || clusterUsed[c.ci]) return;
-    gasoUsed[c.gi] = true;
+    if (groupUsed[c.gi] || clusterUsed[c.ci]) return;
+    groupUsed[c.gi] = true;
     clusterUsed[c.ci] = true;
-    assigned[c.ci] = gasoEntries[c.gi];
+    assigned[c.ci] = gasoGroups[c.gi];
   });
-  return { assigned: assigned, gasoUsed: gasoUsed };
+  return { assigned: assigned, groupUsed: groupUsed };
 }
 
-function clustersFromLabGasoAssignment(labClusters, assignedGasos) {
+function clustersFromLabGasoGroupAssignment(labClusters, assignedGroups) {
   return labClusters.map(function (cluster, ci) {
     var entries = cluster.slice();
-    if (assignedGasos[ci]) entries.push(assignedGasos[ci]);
+    if (assignedGroups[ci]) {
+      assignedGroups[ci].entries.forEach(function (e) {
+        entries.push(e);
+      });
+    }
     entries.sort(function (a, b) {
       return a.ms - b.ms;
     });
@@ -154,7 +200,7 @@ function clustersFromLabGasoAssignment(labClusters, assignedGasos) {
   });
 }
 
-function appendUntimedLabworkClusters(out, untimed, hasGasoFn) {
+function appendUntimedLabworkClusters(out, untimed, hasGasoFn, getGasoKey) {
   var labs = [];
   var gasos = [];
   (untimed || []).forEach(function (item) {
@@ -162,22 +208,34 @@ function appendUntimedLabworkClusters(out, untimed, hasGasoFn) {
     else labs.push(item);
   });
   if (labs.length) out.push(labs);
-  gasos.forEach(function (g) {
-    out.push([g]);
+  var byFp = Object.create(null);
+  var uniqueSeq = 0;
+  gasos.forEach(function (g, gi) {
+    var raw =
+      typeof getGasoKey === 'function' ? String(getGasoKey(g) || '').trim() : '';
+    if (!raw) raw = defaultGasometriaKey(g);
+    var fp = raw || '\0unique:' + uniqueSeq++ + ':' + gi;
+    if (!byFp[fp]) byFp[fp] = [];
+    byFp[fp].push(g);
+  });
+  Object.keys(byFp).forEach(function (fp) {
+    out.push(byFp[fp]);
   });
 }
 
 /**
  * Labs + una gasometría: ventana 2 h; empareja la gaso más cercana;
- * nunca dos gasometrías en el mismo cluster (también si el set ya trae GASES).
+ * nunca dos gasometrías *distintas* en el mismo cluster. Clones con los
+ * mismos GASES (misma huella) se agrupan y se filtran al consolidar.
  * @template T
  * @param {T[]} items
  * @param {(item: T) => number|null} getMs
  * @param {(item: T) => boolean} hasGaso — ítem ocupa el cupo de gasometría del cluster
  * @param {number} [windowMs]
+ * @param {(item: T) => string} [getGasoKey] — huella de GASES; default desde resLabs
  * @returns {T[][]}
  */
-export function clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs) {
+export function clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs, getGasoKey) {
   var list = items || [];
   if (!list.length) return [];
   var w = typeof windowMs === 'number' && isFinite(windowMs) ? windowMs : LAB_CONSOLIDATION_WINDOW_MS;
@@ -207,11 +265,17 @@ export function clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs) {
     return e.isGaso;
   });
   var labClusters = chainTimedEntries(labsEntries, w);
-  var pairing = assignGasosToClosestLabClusters(labClusters, gasoEntries, w);
-  var out = clustersFromLabGasoAssignment(labClusters, pairing.assigned);
+  var gasoGroups = buildGasoIdentityGroups(gasoEntries, getGasoKey, w);
+  var pairing = assignGasoGroupsToClosestLabClusters(labClusters, gasoGroups, w);
+  var out = clustersFromLabGasoGroupAssignment(labClusters, pairing.assigned);
 
-  gasoEntries.forEach(function (g, gi) {
-    if (!pairing.gasoUsed[gi]) out.push([g.item]);
+  gasoGroups.forEach(function (grp, gi) {
+    if (pairing.groupUsed[gi]) return;
+    out.push(
+      grp.entries.map(function (e) {
+        return e.item;
+      })
+    );
   });
 
   out.sort(function (a, b) {
@@ -220,7 +284,7 @@ export function clusterLabworkByTimeWindow(items, getMs, hasGaso, windowMs) {
     return (ma == null ? 0 : ma) - (mb == null ? 0 : mb);
   });
 
-  appendUntimedLabworkClusters(out, untimed, gasoFn);
+  appendUntimedLabworkClusters(out, untimed, gasoFn, getGasoKey);
   return out;
 }
 

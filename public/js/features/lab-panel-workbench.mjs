@@ -332,7 +332,13 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   var processable = filterProcessableBulkBlocks(blocks);
   var storeSummary = processable.length
     ? storeProcessableBulkBlocks(blocks, processable)
-    : { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length, storedByPatient: {} };
+    : {
+        storedSets: 0,
+        mergedSets: 0,
+        skippedDupes: 0,
+        skippedBlocks: blocks.length - processable.length,
+        storedByPatient: {},
+      };
 
   if (!processable.length) toastNoMatchingPatients(blocks, quickOut);
 
@@ -364,7 +370,10 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   clearLabInputAfterSuccessfulParse();
   notifyTourAfterBulkLabStore(blocks, true);
 
-  if (storeSummary.storedSets > 0 && storeSummary.storedByPatient) {
+  if (
+    (storeSummary.storedSets > 0 || storeSummary.mergedSets > 0) &&
+    storeSummary.storedByPatient
+  ) {
     void autosendLabsEventualidadForStored(storeSummary.storedByPatient, {
       showToast: function (msg, type) {
         rt.showToast(msg, type);

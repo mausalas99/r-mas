@@ -15,6 +15,24 @@ export function normalizeLabLines(lines) {
   return (Array.isArray(lines) ? lines : []).map(normalizeLabLine).filter(Boolean);
 }
 
+/**
+ * Huella de gasometría: mismos GASES → misma clave (filtrar clones);
+ * tomas seriadas con valores distintos → claves distintas.
+ */
+export function gasometriaFingerprintFromResLabs(resLabs) {
+  var parts = [];
+  (resLabs || []).forEach(function (chunk) {
+    var s = String(chunk || '').trim();
+    if (!s) return;
+    if (/^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s)) {
+      parts.push(normalizeLabLine(s));
+    }
+  });
+  if (!parts.length) return '';
+  parts.sort();
+  return parts.join('\x02');
+}
+
 export function areLabSetsEquivalent(a, b) {
   var aa = normalizeLabLines(a);
   var bb = normalizeLabLines(b);
@@ -179,4 +197,47 @@ export function findConflictingSameDateTimeGroups(sets) {
     });
   });
   return out;
+}
+
+/**
+ * Misma fecha + hora no vacía (hora vacía no agrupa: varios tomas del día sin hora).
+ */
+export function findLabSetsByDateTime(sets, fecha, hora) {
+  var f = normalizeDateValue(fecha);
+  var h = normalizeTimeValue(hora);
+  if (!f || !h) return [];
+  var matches = (sets || []).filter(function (s) {
+    if (!s || s.id == null || String(s.id) === '') return false;
+    return normalizeDateValue(s.fecha) === f && normalizeTimeValue(s.hora) === h;
+  });
+  matches.sort(compareLabSetIdForDedupe);
+  return matches;
+}
+
+/**
+ * Decide skip / merge / add al importar contra historial existente.
+ * @param {object[]} existingSets
+ * @param {{ fecha?: string, hora?: string, resLabs?: string[] }} incoming
+ * @returns {{ action: 'skip'|'merge'|'add', keeper: object|null, siblings: object[] }}
+ */
+export function planLabHistoryDateTimeUpsert(existingSets, incoming) {
+  var fecha = incoming && incoming.fecha;
+  var hora = incoming && incoming.hora;
+  var matches = findLabSetsByDateTime(existingSets, fecha, hora);
+  if (!matches.length) {
+    return { action: 'add', keeper: null, siblings: [] };
+  }
+  var keeper = matches[0];
+  var siblings = matches.slice(1);
+  if (
+    !siblings.length &&
+    areDuplicateLabSets(keeper, {
+      fecha: fecha,
+      hora: hora,
+      resLabs: (incoming && incoming.resLabs) || [],
+    })
+  ) {
+    return { action: 'skip', keeper: keeper, siblings: [] };
+  }
+  return { action: 'merge', keeper: keeper, siblings: siblings };
 }
