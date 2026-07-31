@@ -1,7 +1,7 @@
 /**
  * Parser genérico de paneles extendidos (numéricos + cualitativos).
  */
-import { extraerConRangoPanel, marcarSegunRango, fmt } from './labs-extract.mjs';
+import { extraerConRangoPanel, fmtLabRanged_ } from './labs-extract.mjs';
 import { getEffectivePanelDefs } from './labs-panel-overlay-store.mjs';
 
 export { LAB_EXTENDED_SECTION_KEYS, labExtendedSectionAlt_ } from './labs-panel-defs.mjs';
@@ -15,17 +15,17 @@ function panelGatesMatch_(def, texto) {
   return false;
 }
 
-function fmtNumField_(labels, texto) {
+function fmtNumField_(labels, texto, fieldKey, priorRefs) {
   var data = extraerConRangoPanel(labels, texto);
-  return fmt(marcarSegunRango(data.valor, data.min, data.max));
+  return fmtLabRanged_(data, fieldKey, priorRefs);
 }
 
-export function parseNumericPanel_(def, texto) {
+export function parseNumericPanel_(def, texto, priorRefs) {
   if (!texto || !panelGatesMatch_(def, texto)) return '';
   var parts = [];
   for (var i = 0; i < def.fields.length; i++) {
     var f = def.fields[i];
-    var val = fmtNumField_(f.labels, texto);
+    var val = fmtNumField_(f.labels, texto, f.key, priorRefs);
     if (val !== '---') parts.push(f.key, val);
   }
   if (!parts.length) return '';
@@ -120,10 +120,10 @@ export function parseQualPanel_(def, texto) {
   return def.sectionKey + '\t' + parts.join(' ');
 }
 
-export function parsePanelDef_(def, texto) {
+export function parsePanelDef_(def, texto, priorRefs) {
   if (!def) return '';
   if (def.mode === 'qual') return parseQualPanel_(def, texto);
-  return parseNumericPanel_(def, texto);
+  return parseNumericPanel_(def, texto, priorRefs);
 }
 
 function mergeSectionLines_(lines) {
@@ -149,14 +149,19 @@ function mergeSectionLines_(lines) {
 
 /**
  * Parsea todos los paneles extendidos definidos; fusiona secciones repetidas (p. ej. GI num+qual).
+ * @param {string} textoBruto
+ * @param {{ [section: string]: { [field: string]: [number, number] } }} [priorRefsBySection]
  * @returns {string[]}
  */
-export function parseExtendedLabPanels_(textoBruto) {
+export function parseExtendedLabPanels_(textoBruto, priorRefsBySection) {
   if (!textoBruto || typeof textoBruto !== 'string') return [];
   var out = [];
   var defs = getEffectivePanelDefs();
+  var priorMap = priorRefsBySection && typeof priorRefsBySection === 'object' ? priorRefsBySection : null;
   for (var i = 0; i < defs.length; i++) {
-    var line = parsePanelDef_(defs[i], textoBruto);
+    var def = defs[i];
+    var prior = priorMap && def ? priorMap[def.sectionKey] : null;
+    var line = parsePanelDef_(def, textoBruto, prior);
     if (line) out.push(line);
   }
   return mergeSectionLines_(out);

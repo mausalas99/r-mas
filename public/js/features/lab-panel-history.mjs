@@ -3,6 +3,8 @@ import { esc } from '../dom-escape.mjs';
 import {
   procesarLabs,
   reprocessLabResultLines_,
+  collectPriorRefsFromHistory,
+  mergeGasRefs_,
   refreshCitoquimicoInterpretacionInResLabs_,
   resLabsHasCitoquimFluid_,
 } from '../labs.js';
@@ -310,22 +312,36 @@ function chartPatientForActiveId_() {
   }) || null;
 }
 
+function priorRefsForActivePatient_(excludeSetId) {
+  const pid = rt.getActiveId();
+  if (!pid) return Object.create(null);
+  const others = sortLabHistoryChronological(labHistory[pid] || []).filter(function (s) {
+    return !excludeSetId || String(s.id) !== String(excludeSetId);
+  });
+  return collectPriorRefsFromHistory(others);
+}
+
 function reprocessLabSetResLabs_(set, ctx) {
   const srcParts = collectReprocessSourceParts_(set, ctx);
+  const priorRefs = priorRefsForActivePatient_(set && set.id);
+  const priorGas = priorRefs.GASES || Object.create(null);
   let repro;
   if (srcParts.length) {
     const mergedSrc = srcParts.join('\n\n---\n\n');
     const chartPatient = chartPatientForActiveId_();
-    const parsed = procesarLabs(mergedSrc, chartPatient ? { patient: chartPatient } : undefined);
+    const parsed = procesarLabs(mergedSrc, {
+      patient: chartPatient || undefined,
+      priorRefsBySection: priorRefs,
+    });
     repro = reprocessLabResultLines_(parsed.resLabs || [], {
-      gasRefs: parsed.refsBySection && parsed.refsBySection.GASES,
+      gasRefs: mergeGasRefs_(priorGas, parsed.refsBySection && parsed.refsBySection.GASES),
     });
     if (parsed.bhExtras && typeof parsed.bhExtras === 'object') {
       set.bhExtras = Object.assign({}, set.bhExtras || {}, parsed.bhExtras);
     }
   } else {
     repro = reprocessLabResultLines_(set.resLabs, {
-      gasRefs: set.refsBySection && set.refsBySection.GASES,
+      gasRefs: mergeGasRefs_(priorGas, set.refsBySection && set.refsBySection.GASES),
     });
   }
   return repro;

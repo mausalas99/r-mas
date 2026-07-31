@@ -7,6 +7,8 @@ import {
   extractLabReportHora,
   reprocessLabResultLines_,
   looksLikeSomeLabReport,
+  collectPriorRefsFromHistory,
+  mergeGasRefs_,
 } from './labs.js';
 export { isLabSectionHeaderLine, isCultivoBlockStartLine, splitResLabsByTipo } from './cultivo-block-core.mjs';
 import { findExactDuplicateLabGroups, findNormalizedSourceDuplicateGroups, findConflictingSameDateTimeGroups, areLabSetsEquivalent } from './lab-history-auto-store-core.mjs';
@@ -281,9 +283,17 @@ export function runLabHistoryPostSaveMaintenance() {
     if (!Array.isArray(sets) || !sets.length) return;
     sets.forEach(function (set) {
       if (!set.resLabs || !set.resLabs.length) return;
+      var priorRefs = collectPriorRefsFromHistory(
+        sortLabHistoryChronological(sets).filter(function (s) {
+          return String(s.id) !== String(set.id);
+        })
+      );
       var repro = sanitizeResLabsChunks(
         reprocessLabResultLines_(set.resLabs, {
-          gasRefs: set.refsBySection && set.refsBySection.GASES,
+          gasRefs: mergeGasRefs_(
+            priorRefs.GASES,
+            set.refsBySection && set.refsBySection.GASES
+          ),
         })
       );
       if (!repro || !repro.length) return;

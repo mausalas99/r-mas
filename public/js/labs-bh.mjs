@@ -3,8 +3,7 @@ import {
   extraerConRango,
   extraerConRangoBH,
   extraerConRangoCoag,
-  marcarSegunRango,
-  fmt,
+  fmtLabRanged_,
 } from './labs-extract.mjs';
 import { lineRichnessScore_ } from './labs-gaso-section.mjs';
 
@@ -203,15 +202,17 @@ export function parseBhTrendValuesFromResLab(entry) {
   return out;
 }
 
-function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
+function formatBhDiffPctDisplay_(key, rawVal, tNorm, priorRefs) {
   var label = bhExtraDisplayLabel(key);
   var val = String(rawVal);
   var labels = BH_DIFF_RANGE_LABELS[key];
   if (labels && tNorm) {
     var d = extraerConRangoBH(labels, tNorm);
     if (d.valor && d.valor !== '---') {
-      val = fmt(marcarSegunRango(d.valor, d.min, d.max));
+      val = fmtLabRanged_(d, key, priorRefs);
     }
+  } else if (val && val !== '---') {
+    val = fmtLabRanged_({ valor: val, min: null, max: null }, key, priorRefs);
   }
   if (val.endsWith('*')) return label + ' ' + val.slice(0, -1) + '%*';
   return label + ' ' + val + '%';
@@ -303,30 +304,30 @@ function extraerSimpleBh_(labels, texto) {
   return '';
 }
 
-function fmtBhRanged_(data) {
-  return fmt(marcarSegunRango(data.valor, data.min, data.max));
+function fmtBhRanged_(data, fieldKey, priorRefs) {
+  return fmtLabRanged_(data, fieldKey, priorRefs);
 }
 
-function extractBhScalarFields_(tNorm) {
+function extractBhScalarFields_(tNorm, priorRefs) {
   return {
-    Hb: fmtBhRanged_(extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm)),
-    Hto: fmtBhRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm)),
-    VCM: fmtBhRanged_(extraerConRango(['MCV ', 'VCM '], tNorm)),
-    HCM: fmtBhRanged_(extraerConRango(['MCH ', 'HCM '], tNorm)),
-    CHCM: fmtBhRanged_(extraerConRango(['MCHC', 'CHCM'], tNorm)),
-    RDW: fmtBhRanged_(extraerConRango(['RDW '], tNorm)),
-    Leu: fmtBhRanged_(extraerConRango(['WBC '], tNorm)),
-    RBC: fmtBhRanged_(extraerConRangoBH(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm)),
-    Plt: fmtBhRanged_(extraerConRango(['PLT '], tNorm)),
-    MPV: fmtBhRanged_(extraerConRango(['MPV ', 'VPM '], tNorm)),
-    Ret: fmtBhRanged_(extraerConRango(['RETICULOCITOS'], tNorm)),
-    TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm)),
-    TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm)),
-    INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm)),
-    Fib: fmtBhRanged_(extraerConRangoCoag(['FIBRINOGENO', 'FIBRINÓGENO'], tNorm)),
-    DD: fmtBhRanged_(extraerConRangoCoag(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm)),
-    Neu: fmtBhRanged_(extraerConRango(['NEU '], tNorm)),
-    Eos: fmtBhRanged_(extraerConRango(['EOS '], tNorm)),
+    Hb: fmtBhRanged_(extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm), 'Hb', priorRefs),
+    Hto: fmtBhRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm), 'Hto', priorRefs),
+    VCM: fmtBhRanged_(extraerConRango(['MCV ', 'VCM '], tNorm), 'VCM', priorRefs),
+    HCM: fmtBhRanged_(extraerConRango(['MCH ', 'HCM '], tNorm), 'HCM', priorRefs),
+    CHCM: fmtBhRanged_(extraerConRango(['MCHC', 'CHCM'], tNorm), 'CHCM', priorRefs),
+    RDW: fmtBhRanged_(extraerConRango(['RDW '], tNorm), 'RDW', priorRefs),
+    Leu: fmtBhRanged_(extraerConRango(['WBC '], tNorm), 'Leu', priorRefs),
+    RBC: fmtBhRanged_(extraerConRangoBH(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm), 'RBC', priorRefs),
+    Plt: fmtBhRanged_(extraerConRango(['PLT '], tNorm), 'Plt', priorRefs),
+    MPV: fmtBhRanged_(extraerConRango(['MPV ', 'VPM '], tNorm), 'MPV', priorRefs),
+    Ret: fmtBhRanged_(extraerConRango(['RETICULOCITOS'], tNorm), 'Ret', priorRefs),
+    TP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE PROTROMBINA'], tNorm), 'TP', priorRefs),
+    TTP: fmtBhRanged_(extraerConRangoCoag(['TIEMPO DE TROMBOPLASTINA'], tNorm), 'TTP', priorRefs),
+    INR: fmtBhRanged_(extraerConRangoCoag(['INR ', 'INR'], tNorm), 'INR', priorRefs),
+    Fib: fmtBhRanged_(extraerConRangoCoag(['FIBRINOGENO', 'FIBRINÓGENO'], tNorm), 'Fib', priorRefs),
+    DD: fmtBhRanged_(extraerConRangoCoag(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm), 'DD', priorRefs),
+    Neu: fmtBhRanged_(extraerConRango(['NEU '], tNorm), 'Neu', priorRefs),
+    Eos: fmtBhRanged_(extraerConRango(['EOS '], tNorm), 'Eos', priorRefs),
   };
 }
 
@@ -396,13 +397,13 @@ function mergeBhIndexExtras_(extras, f) {
   if (f.Ret !== '---') pushBhExtra_(extras, 'Ret', f.Ret);
 }
 
-function buildBhDiffDisplay_(extras, tNorm, hasCompactBody) {
+function buildBhDiffDisplay_(extras, tNorm, hasCompactBody, priorRefs) {
   if (hasCompactBody) return [];
   var diffDisplay = [];
   BH_DIFF_DISPLAY_ORDER.forEach(function (k) {
     var v = extras[k];
     if (!v || v === '0') return;
-    diffDisplay.push(formatBhDiffPctDisplay_(k, v, tNorm));
+    diffDisplay.push(formatBhDiffPctDisplay_(k, v, tNorm, priorRefs));
   });
   return diffDisplay;
 }
@@ -440,8 +441,8 @@ function bhHasAnyData_(f, extras) {
   return hasCore || hasExtIdx || hasCoag || Object.keys(extras).length > 0;
 }
 
-export function parseBH_(tNorm) {
-  var f = extractBhScalarFields_(tNorm);
+export function parseBH_(tNorm, priorRefs) {
+  var f = extractBhScalarFields_(tNorm, priorRefs);
   var extras = buildBhExtras_(tNorm, f.Leu);
   if (!bhHasAnyData_(f, extras)) return { visible: '', coagVisible: '', extras: {} };
 
@@ -454,7 +455,7 @@ export function parseBH_(tNorm) {
     hasCompactBody,
     corePairs,
     buildBhIndexDisplay_(f, hasCompactBody),
-    buildBhDiffDisplay_(extras, tNorm, hasCompactBody)
+    buildBhDiffDisplay_(extras, tNorm, hasCompactBody, priorRefs)
   );
   return { visible: visible, coagVisible: formatCoagResLabLine_(coagDisplay), extras: extras };
 }

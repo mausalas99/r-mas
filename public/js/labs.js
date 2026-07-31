@@ -81,6 +81,9 @@ export {
   parseGaso_,
   buildGasoInterpretacion_,
   reprocessLabResultLines_,
+  DEFAULT_GASO_REFS,
+  collectPriorGasRefsFromHistory,
+  mergeGasRefs_,
   computeAnionGapValue_,
   computeAnionGap_,
   computeAlbuminCorrectedAnionGapValue_,
@@ -93,6 +96,13 @@ export {
   parsearLCR,
   dedupeSingletonSections_,
 } from './labs-gaso-section.mjs';
+
+export {
+  DEFAULT_LAB_REFS,
+  collectPriorRefsFromHistory,
+  mergeRefsMap_,
+  resolveLabFieldRange_,
+} from './labs-default-refs.mjs';
 
 export {
   bloqueCitoquimicoLiquidosFull,

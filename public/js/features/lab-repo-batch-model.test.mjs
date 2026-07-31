@@ -5,6 +5,7 @@ const {
   buildLabRepoBatchRows,
   selectedLabRepoBatchRows,
   setAllSelectableLabRepoBatchRows,
+  selectOnlyActiveLabRepoBatchRows,
   setLabRepoBatchRowSelected,
   formatLabRepoBatchSummaryToast,
   classifyLabRepoBatchFetch,
@@ -45,6 +46,16 @@ test('select all / none / toggle', () => {
   assert.equal(selectedLabRepoBatchRows(rows).length, 2);
   rows = setLabRepoBatchRowSelected(rows, 'p1', false);
   assert.equal(selectedLabRepoBatchRows(rows).length, 1);
+});
+
+test('selectOnlyActiveLabRepoBatchRows deja solo el activo', () => {
+  var rows = buildLabRepoBatchRows(patients);
+  rows = selectOnlyActiveLabRepoBatchRows(rows, 'p3');
+  var selected = selectedLabRepoBatchRows(rows);
+  assert.equal(selected.length, 1);
+  assert.equal(selected[0].id, 'p3');
+  rows = selectOnlyActiveLabRepoBatchRows(rows, 'missing');
+  assert.equal(selectedLabRepoBatchRows(rows).length, 0);
 });
 
 test('classifyLabRepoBatchFetch', () => {

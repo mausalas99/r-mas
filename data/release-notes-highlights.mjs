@@ -1722,10 +1722,29 @@ var RELEASE_NOTES_778 = [
   },
 ];
 
+var RELEASE_NOTES_779 = [
+  {
+    title: 'Alterados sin rangos SOME',
+    body:
+      'Si el reporte no trae <strong>Valor de Referencia</strong>, R+ marca fuera de rango con refs de estudios previos del paciente o estándares (BH, QS, ESC, PFH, gases…).',
+  },
+  {
+    title: 'Actualizar labs más claro',
+    body:
+      'Cola al <strong>pie del sidebar</strong>, lista de pacientes más limpia y botón <strong>Solo activo</strong> junto a Todos / Ninguno.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.7.9 en todas</strong> las Macs y PCs del turno el mismo día si pegan labs incompletos o usan Actualizar labs.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_778;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_779;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.7.9': RELEASE_NOTES_779,
   '7.7.8': RELEASE_NOTES_778,
   '7.7.7': RELEASE_NOTES_777,
   '7.7.6': RELEASE_NOTES_776,

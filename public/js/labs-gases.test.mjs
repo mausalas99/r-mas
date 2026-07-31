@@ -1,6 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_, parseESC_, parseQS_, renderEntry } from './labs.js';
+import {
+  parseGaso_,
+  procesarLabs,
+  buildGasoInterpretacion_,
+  reprocessLabResultLines_,
+  collectPriorGasRefsFromHistory,
+  mergeGasRefs_,
+  parseESC_,
+  parseQS_,
+  renderEntry,
+} from './labs.js';
 
 const MUESTRA_GASO_VENOSA = `
 Expediente:	2213511-4	Solicitud:	2605070398
@@ -286,6 +296,95 @@ test('reprocessLabResultLines_ remarca gasometría con refs del reporte', () => 
   assert.match(gases, /\bLactato 11\.2\*/);
   assert.match(gases, /\bBica 14\.2\*/);
   assert.doesNotMatch(gases, /\bpH 7\.4\*/);
+});
+
+/** Gasometría SOME sin columna Valor de Referencia (solo flag *). */
+const MUESTRA_GASO_SIN_RANGOS = `
+Expediente:	1087426-2	Solicitud:	2607310874
+Nombre:	MARIA HILDA SALINAS CANTU	Fecha Registro:	Jul 31 2026 4:02PM
+Sexo:	FEMENINO	Ubicación:	URGENCIAS ADULTOS
+Edad:	273	Medico:	A QUIEN CORRESPONDA
+
+GASOMETRIAS
+GASOMETRIA VENOSA PARCIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	
+*
+7.31
+pCO2	
+*
+33
+mmHg	
+pO2	
+*
+45
+mmHg	
+Lactato	
+*
+1.4
+mmol/L	
+HCO3	
+*
+16.6
+mmol/L	
+EX. BASE	
+*
+-8.7
+mmol/L	
+SAT 02	
+*
+76
+%	
+OBSERVACIONES	
+*
+`;
+
+test('procesarLabs marca alterados con rangos estándar si el reporte no trae refs', () => {
+  const res = procesarLabs(MUESTRA_GASO_SIN_RANGOS);
+  const gases = (res.resLabs || []).find((l) => /^GASES\b/.test(l));
+  assert.ok(gases);
+  assert.match(gases, /\bpH 7\.31\*/);
+  assert.match(gases, /\bpCO2 33\*/);
+  assert.match(gases, /\bpO2 45\*/);
+  assert.match(gases, /\bBica 16\.6\*/);
+  assert.match(gases, /\bLactato 1\.4(?!\*)/);
+});
+
+test('reprocessLabResultLines_ remarca con rangos estándar sin gasRefs', () => {
+  const inRows = ['GASES\tpH 7.31 pCO2 33 pO2 45 Lactato 1.4 Bica 16.6'];
+  const out = reprocessLabResultLines_(inRows);
+  const gases = out.find((l) => /^GASES\t/.test(l));
+  assert.ok(gases);
+  assert.match(gases, /\bpH 7\.31\*/);
+  assert.match(gases, /\bpCO2 33\*/);
+  assert.match(gases, /\bBica 16\.6\*/);
+  assert.match(gases, /\bLactato 1\.4(?!\*)/);
+});
+
+test('reprocessLabResultLines_ prioriza refs de estudios previos sobre estándar', () => {
+  const inRows = ['GASES\tpH 7.33 pCO2 42 Lactato 1.0 Bica 23'];
+  // Rango hospitalario venoso: pH 7.32–7.43 → 7.33 normal; estándar arterial lo marcaría bajo.
+  const out = reprocessLabResultLines_(inRows, {
+    gasRefs: { pH: [7.32, 7.43], pCO2: [40, 45], Lactato: [0.9, 1.9], Bica: [24, 30] },
+  });
+  const gases = out.find((l) => /^GASES\t/.test(l));
+  assert.ok(gases);
+  assert.doesNotMatch(gases, /\bpH 7\.33\*/);
+  assert.doesNotMatch(gases, /\bpCO2 42\*/);
+  assert.match(gases, /\bBica 23\*/);
+});
+
+test('collectPriorGasRefsFromHistory y mergeGasRefs_ acumulan refs del historial', () => {
+  const prior = collectPriorGasRefsFromHistory([
+    { refsBySection: { GASES: { pH: [7.32, 7.43], Bica: [24, 30] } } },
+    { refsBySection: { GASES: { pCO2: [40, 45] } } },
+  ]);
+  assert.deepEqual(prior.pH, [7.32, 7.43]);
+  assert.deepEqual(prior.pCO2, [40, 45]);
+  assert.deepEqual(prior.Bica, [24, 30]);
+  const merged = mergeGasRefs_(prior, { Bica: [22, 28] });
+  assert.deepEqual(merged.Bica, [22, 28], 'overlay del reporte gana');
+  assert.deepEqual(merged.pH, [7.32, 7.43]);
 });
 
 test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {

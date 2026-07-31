@@ -1,3 +1,5 @@
+import { resolveLabFieldRange_ } from './labs-default-refs.mjs';
+
 export function extraer(nombres, bloque) {
   if (!bloque) return '---';
   for (var i = 0; i < nombres.length; i++) {
@@ -330,6 +332,20 @@ export function fmt(val) {
   var n = parseFloat((star ? val.slice(0,-1) : val).replace(',','.'));
   if (isNaN(n)) return val;
   return String(n) + (star ? '*' : '');
+}
+
+/**
+ * Marca valor con rango del reporte, o priorRefs, o DEFAULT_LAB_REFS / defaults.
+ * @param {{ valor: string, min?: number|null, max?: number|null }} data
+ * @param {string} fieldKey
+ * @param {{ [field: string]: [number, number] }|null|undefined} [priorRefs]
+ * @param {{ [field: string]: [number, number] }|null|undefined} [defaults]
+ */
+export function fmtLabRanged_(data, fieldKey, priorRefs, defaults) {
+  if (!data || data.valor === '---' || data.valor == null) return data ? data.valor : '---';
+  var range = resolveLabFieldRange_(data, fieldKey, priorRefs, defaults);
+  if (!range) return fmt(data.valor);
+  return fmt(marcarSegunRango(data.valor, range[0], range[1]));
 }
 
 export function toNum_(v) {

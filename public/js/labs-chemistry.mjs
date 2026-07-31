@@ -2,8 +2,7 @@ import {
   extraerConRango,
   extraerConRangoSuero,
   extraerIndiceAterogenico_,
-  marcarSegunRango,
-  fmt,
+  fmtLabRanged_,
   toNum_,
 } from './labs-extract.mjs';
 import { ageYearsFromLabDemographics, computeEgfrCkdEpi2021Creatinine } from './labs-egfr.mjs';
@@ -47,8 +46,8 @@ export function extraerProcalcitonina_(texto) {
   return defaultRange;
 }
 
-function fmtSuero_(data) {
-  return fmt(marcarSegunRango(data.valor, data.min, data.max));
+function fmtSuero_(data, fieldKey, priorRefs) {
+  return fmtLabRanged_(data, fieldKey, priorRefs);
 }
 
 function appendQsPair_(p, key, val) {
@@ -66,28 +65,32 @@ function appendEgfrIfEligible_(p, crData, patientCtx) {
   if (egfr != null) p.push('eTFG', String(Math.round(egfr)));
 }
 
-function extractQsFormatted_(texto) {
+function extractQsFormatted_(texto, priorRefs) {
   var crData = extraerConRangoSuero(['CREATININA EN SANGRE', 'CREATININA'], texto);
   return {
-    Glu: fmtSuero_(extraerConRangoSuero(['GLUCOSA EN SANGRE', 'GLUCOSA EN', 'GLUCOSA'], texto)),
+    Glu: fmtSuero_(extraerConRangoSuero(['GLUCOSA EN SANGRE', 'GLUCOSA EN', 'GLUCOSA'], texto), 'Glu', priorRefs),
     crData: crData,
-    Cr: fmtSuero_(crData),
+    Cr: fmtSuero_(crData, 'Cr', priorRefs),
     BUN: fmtSuero_(
-      extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE', 'NITROGENO DE LA UREA', 'UREA'], texto)
+      extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE', 'NITROGENO DE LA UREA', 'UREA'], texto),
+      'BUN',
+      priorRefs
     ),
-    PCR: fmtSuero_(extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], texto)),
-    PCT: fmtSuero_(extraerProcalcitonina_(texto)),
-    AU: fmtSuero_(extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], texto)),
-    COL: fmtSuero_(extraerConRangoSuero(['COLESTEROL'], texto)),
-    HDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], texto)),
-    LDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], texto)),
-    VLDL: fmtSuero_(extraerConRangoSuero(['VLDL'], texto)),
-    TGL: fmtSuero_(extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], texto)),
-    IA: fmtSuero_(extraerIndiceAterogenico_(texto)),
+    PCR: fmtSuero_(extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], texto), 'PCR', priorRefs),
+    PCT: fmtSuero_(extraerProcalcitonina_(texto), 'PCT', priorRefs),
+    AU: fmtSuero_(extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], texto), 'AU', priorRefs),
+    COL: fmtSuero_(extraerConRangoSuero(['COLESTEROL'], texto), 'COL', priorRefs),
+    HDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], texto), 'HDL', priorRefs),
+    LDL: fmtSuero_(extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], texto), 'LDL', priorRefs),
+    VLDL: fmtSuero_(extraerConRangoSuero(['VLDL'], texto), 'VLDL', priorRefs),
+    TGL: fmtSuero_(extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], texto), 'TGL', priorRefs),
+    IA: fmtSuero_(extraerIndiceAterogenico_(texto), 'IA', priorRefs),
     CTHDL: fmtSuero_(
-      extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], texto)
+      extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], texto),
+      'CTHDL',
+      priorRefs
     ),
-    VSG: fmtSuero_(extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], texto)),
+    VSG: fmtSuero_(extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], texto), 'VSG', priorRefs),
     CPK: fmtSuero_(
       extraerConRangoSuero(
         [
@@ -102,13 +105,15 @@ function extractQsFormatted_(texto) {
           // No usar 'CK ' solo: coincide con «SHOCK» en ubicación.
         ],
         texto
-      )
+      ),
+      'CPK',
+      priorRefs
     ),
   };
 }
 
-export function parseQS_(texto, patientCtx) {
-  var q = extractQsFormatted_(texto);
+export function parseQS_(texto, patientCtx, priorRefs) {
+  var q = extractQsFormatted_(texto, priorRefs);
   var vals = [
     q.Glu, q.Cr, q.BUN, q.PCR, q.PCT, q.AU,
     q.COL, q.HDL, q.LDL, q.VLDL, q.TGL, q.IA, q.CTHDL,
@@ -142,7 +147,7 @@ export function parseQS_(texto, patientCtx) {
   return p[0] + '\t' + p.slice(1).join(' ');
 }
 
-export function parseESC_(texto) {
+export function parseESC_(texto, priorRefs) {
   var naData = extraerConRangoSuero(['SODIO'], texto);
   if (naData.valor === '---') return '';
   var clData = extraerConRangoSuero(['CLORO'], texto);
@@ -151,12 +156,12 @@ export function parseESC_(texto) {
   var fData  = extraerConRangoSuero(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
   var mgData = extraerConRangoSuero(['MAGNESIO'], texto);
 
-  var Na = fmt(marcarSegunRango(naData.valor, naData.min, naData.max));
-  var Cl = fmt(marcarSegunRango(clData.valor, clData.min, clData.max));
-  var K  = fmt(marcarSegunRango(kData.valor,  kData.min,  kData.max));
-  var Ca = fmt(marcarSegunRango(caData.valor, caData.min, caData.max));
-  var F  = fmt(marcarSegunRango(fData.valor,  fData.min,  fData.max));
-  var Mg = fmt(marcarSegunRango(mgData.valor, mgData.min, mgData.max));
+  var Na = fmtLabRanged_(naData, 'Na', priorRefs);
+  var Cl = fmtLabRanged_(clData, 'Cl', priorRefs);
+  var K  = fmtLabRanged_(kData, 'K', priorRefs);
+  var Ca = fmtLabRanged_(caData, 'Ca', priorRefs);
+  var F  = fmtLabRanged_(fData, 'F', priorRefs);
+  var Mg = fmtLabRanged_(mgData, 'Mg', priorRefs);
 
   var p = ['ESC'];
   p.push('Na', Na);
@@ -168,7 +173,7 @@ export function parseESC_(texto) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
-export function parsePFH_(tNorm) {
+export function parsePFH_(tNorm, priorRefs) {
   var albData  = extraerConRangoSuero(['ALBUMINA'], tNorm);
   var astData  = extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)','AST '], tNorm);
   var altData  = extraerConRango(['ALT ALANIN AMINO TRANSFERASA','ALT '], tNorm);
@@ -184,17 +189,17 @@ export function parsePFH_(tNorm) {
   );
   var amilData = extraerConRango(['AMILASA SERICA','AMILASA'], tNorm);
 
-  var Alb  = fmt(marcarSegunRango(albData.valor,  albData.min,  albData.max));
-  var AST  = fmt(marcarSegunRango(astData.valor,  astData.min,  astData.max));
-  var ALT  = fmt(marcarSegunRango(altData.valor,  altData.min,  altData.max));
-  var FA   = fmt(marcarSegunRango(alpData.valor,  alpData.min,  alpData.max));
-  var GGT  = fmt(marcarSegunRango(ggtData.valor,  ggtData.min,  ggtData.max));
-  var Prot = fmt(marcarSegunRango(protData.valor, protData.min, protData.max));
-  var BT   = fmt(marcarSegunRango(btData.valor,   btData.min,   btData.max));
-  var BD   = fmt(marcarSegunRango(bdData.valor,   bdData.min,   bdData.max));
-  var BI   = fmt(marcarSegunRango(biData.valor,   biData.min,   biData.max));
-  var LDH  = fmt(marcarSegunRango(ldhData.valor,  ldhData.min,  ldhData.max));
-  var Amil = fmt(marcarSegunRango(amilData.valor, amilData.min, amilData.max));
+  var Alb  = fmtLabRanged_(albData, 'Alb', priorRefs);
+  var AST  = fmtLabRanged_(astData, 'AST', priorRefs);
+  var ALT  = fmtLabRanged_(altData, 'ALT', priorRefs);
+  var FA   = fmtLabRanged_(alpData, 'FA', priorRefs);
+  var GGT  = fmtLabRanged_(ggtData, 'GGT', priorRefs);
+  var Prot = fmtLabRanged_(protData, 'Prot', priorRefs);
+  var BT   = fmtLabRanged_(btData, 'BT', priorRefs);
+  var BD   = fmtLabRanged_(bdData, 'BD', priorRefs);
+  var BI   = fmtLabRanged_(biData, 'BI', priorRefs);
+  var LDH  = fmtLabRanged_(ldhData, 'LDH', priorRefs);
+  var Amil = fmtLabRanged_(amilData, 'Amil', priorRefs);
 
   if ([Alb,AST,ALT,FA,GGT,Prot,BT,BD,BI,LDH,Amil].every(function(v){return v==='---';})) return '';
   var p = ['PFHs'];
@@ -212,9 +217,9 @@ export function parsePFH_(tNorm) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
-export function parseLipasa_(texto) {
+export function parseLipasa_(texto, priorRefs) {
   var lipData = extraerConRango(['LIPASA SERICA', 'LIPASA'], texto);
-  var Lip = fmt(marcarSegunRango(lipData.valor, lipData.min, lipData.max));
+  var Lip = fmtLabRanged_(lipData, 'Lip', priorRefs);
   if (Lip === '---') return '';
   return 'LIPASA\tLip ' + Lip;
 }

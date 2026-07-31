@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.8](https://github.com/mausalas99/r-mas/releases/tag/v7.7.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.7.9](https://github.com/mausalas99/r-mas/releases/tag/v7.7.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.7.9 (labs alterados sin rangos + cola Actualizar labs)
+
+- **Sin Valor de Referencia** — Marca alterados con rangos de estudios previos o estándares (BH/QS/ESC/PFH/gases…).
+- **Actualizar labs** — Cola al pie del sidebar; selector más limpio; botón Solo activo.
+- **Toolbar Laboratorio** — Limpiar al final; Separador/Limpiar con el mismo estilo.
+
+Notas: `docs/RELEASE_NOTES_7.7.9.txt`.
 
 ## R+ 7.7.8 (Actualizar labs equipo y polish Labs externos)
 

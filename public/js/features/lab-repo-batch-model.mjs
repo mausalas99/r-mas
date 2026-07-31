@@ -93,6 +93,20 @@ export function setAllSelectableLabRepoBatchRows(rows, selected) {
 }
 
 /**
+ * Deja seleccionado solo el paciente activo (si está en la lista y tiene registro).
+ * @param {LabRepoBatchRow[]} rows
+ * @param {string} activePatientId
+ * @returns {LabRepoBatchRow[]}
+ */
+export function selectOnlyActiveLabRepoBatchRows(rows, activePatientId) {
+  var id = String(activePatientId || '');
+  return (rows || []).map(function (r) {
+    if (!r || !r.hasRegistro) return Object.assign({}, r, { selected: false });
+    return Object.assign({}, r, { selected: id !== '' && String(r.id) === id });
+  });
+}
+
+/**
  * @param {LabRepoBatchRow[]} rows
  * @param {string} patientId
  * @param {boolean} selected

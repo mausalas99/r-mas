@@ -1,4 +1,4 @@
-import { extraerConRango, marcarSegunRango, fmt } from './labs-extract.mjs';
+import { extraerConRango, fmtLabRanged_ } from './labs-extract.mjs';
 
 var HECES_ROW_DEFS = [
   { key: 'ASPECTO', out: 'Asp' },
@@ -167,7 +167,7 @@ function formatFrotisSangreLines_(desc) {
 /**
  * Plaquetas con citrato (SOME): solo conteo plaquetario en muestra citratada.
  */
-export function parsePlaquetasCitrato_(textoBruto, tNorm) {
+export function parsePlaquetasCitrato_(textoBruto, tNorm, priorRefs) {
   if (!tNorm || !/PLAQUETAS\s+CON\s+CITRATO/i.test(tNorm)) return '';
   var bloque = '';
   var m = textoBruto.match(
@@ -176,7 +176,7 @@ export function parsePlaquetasCitrato_(textoBruto, tNorm) {
   bloque = m ? m[0].replace(/\s+/g, ' ') : tNorm;
   var pltData = extraerConRango(['CUENTA DE PLAQUETAS', 'PLT '], bloque);
   if (pltData.valor === '---') return '';
-  var Plt = fmt(marcarSegunRango(pltData.valor, pltData.min, pltData.max));
+  var Plt = fmtLabRanged_(pltData, 'Plt', priorRefs);
   return 'PltCit\tPlt ' + Plt;
 }
 

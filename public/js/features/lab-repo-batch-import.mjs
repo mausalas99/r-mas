@@ -26,6 +26,7 @@ import {
   buildLabRepoBatchRows,
   selectedLabRepoBatchRows,
   setAllSelectableLabRepoBatchRows,
+  selectOnlyActiveLabRepoBatchRows,
   setLabRepoBatchRowSelected,
   formatLabRepoBatchSummaryToast,
   classifyLabRepoBatchFetch,
@@ -209,6 +210,7 @@ function setBatchBusy(busy) {
   var btn = document.getElementById('lab-repo-batch-confirm');
   var cancel = document.getElementById('lab-repo-batch-cancel');
   var selectAll = document.getElementById('lab-repo-batch-select-all');
+  var selectActive = document.getElementById('lab-repo-batch-select-active');
   var selectNone = document.getElementById('lab-repo-batch-select-none');
   if (btn) {
     btn.disabled = busy;
@@ -219,6 +221,7 @@ function setBatchBusy(busy) {
     cancel.textContent = busy ? 'Detener' : 'Cancelar';
   }
   if (selectAll) selectAll.disabled = busy;
+  if (selectActive) selectActive.disabled = busy;
   if (selectNone) selectNone.disabled = busy;
   renderBatchList();
   renderSidebarQueue();
@@ -342,6 +345,15 @@ function hideBatchModal() {
 export function labRepoBatchSelectAll() {
   if (batchBusy) return;
   batchRows = setAllSelectableLabRepoBatchRows(batchRows, true);
+  renderBatchList();
+  syncBatchCount();
+}
+
+export function labRepoBatchSelectActive() {
+  if (batchBusy) return;
+  var activeId =
+    typeof rt.getActiveId === 'function' ? String(rt.getActiveId() || '') : '';
+  batchRows = selectOnlyActiveLabRepoBatchRows(batchRows, activeId);
   renderBatchList();
   syncBatchCount();
 }

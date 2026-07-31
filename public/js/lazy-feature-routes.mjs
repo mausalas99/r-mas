@@ -434,6 +434,7 @@ export const labPanelWindowHandlersLazy = buildLazyWindowHandlers(
     closeLabRepoBatchModal: 'closeLabRepoBatchModal',
     confirmLabRepoBatchImport: 'confirmLabRepoBatchImport',
     labRepoBatchSelectAll: 'labRepoBatchSelectAll',
+    labRepoBatchSelectActive: 'labRepoBatchSelectActive',
     labRepoBatchSelectNone: 'labRepoBatchSelectNone',
     dismissLabRepoBatchQueue: 'dismissLabRepoBatchQueue',
     openLabManualEntryModal: 'openLabManualEntryModal',

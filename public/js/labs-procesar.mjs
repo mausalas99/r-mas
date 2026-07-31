@@ -79,15 +79,22 @@ function pushLabSection_(resLabs, value) {
   if (value) resLabs.push(value);
 }
 
-function collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm) {
-  var bhRes = deps.parseBH_(blocks.textoParaBh);
+function sectionPrior_(priorBySec, key) {
+  return priorBySec && priorBySec[key] ? priorBySec[key] : null;
+}
+
+function collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec) {
+  var bhRes = deps.parseBH_(blocks.textoParaBh, sectionPrior_(priorBySec, 'BH'));
   if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
   if (bhRes && bhRes.coagVisible) resLabs.push(bhRes.coagVisible);
-  pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf));
-  pushLabSection_(resLabs, deps.parseESC_(blocks.textoQS));
-  pushLabSection_(resLabs, deps.parsePFH_(blocks.textoParaBh));
-  pushLabSection_(resLabs, deps.parseLipasa_(blocks.textoQS));
-  pushLabSection_(resLabs, deps.parsePlaquetasCitrato_(textoBruto, tNorm));
+  pushLabSection_(resLabs, deps.parseQS_(blocks.textoQS, demograf, sectionPrior_(priorBySec, 'QS')));
+  pushLabSection_(resLabs, deps.parseESC_(blocks.textoQS, sectionPrior_(priorBySec, 'ESC')));
+  pushLabSection_(resLabs, deps.parsePFH_(blocks.textoParaBh, sectionPrior_(priorBySec, 'PFHs')));
+  pushLabSection_(resLabs, deps.parseLipasa_(blocks.textoQS, sectionPrior_(priorBySec, 'LIPASA')));
+  pushLabSection_(
+    resLabs,
+    deps.parsePlaquetasCitrato_(textoBruto, tNorm, sectionPrior_(priorBySec, 'PltCit'))
+  );
   return bhRes && bhRes.extras ? bhRes.extras : {};
 }
 
@@ -99,12 +106,15 @@ function appendFrotisLines_(deps, resLabs, textoBruto) {
   });
 }
 
-function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
+function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf, priorBySec) {
   var resLabs = [];
   var bhExtras = blocks.esSoloGaso
     ? {}
-    : collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm);
-  pushLabSection_(resLabs, deps.parseGaso_(blocks.bloqueGaso, blocks.textoQS));
+    : collectCoreLabSections_(deps, resLabs, blocks, demograf, textoBruto, tNorm, priorBySec);
+  pushLabSection_(
+    resLabs,
+    deps.parseGaso_(blocks.bloqueGaso, blocks.textoQS, sectionPrior_(priorBySec, 'GASES'))
+  );
   pushLabSection_(resLabs, deps.parsePIE_(tNorm));
   pushLabSection_(resLabs, deps.parsearLCR(textoBruto));
   pushLabSection_(resLabs, deps.parsearCitoquimicoLiquidos(textoBruto));
@@ -119,14 +129,14 @@ function collectLabSections_(deps, textoBruto, tNorm, blocks, demograf) {
   pushLabSection_(resLabs, deps.parseCultivo_(textoBruto, tNorm));
   pushLabSection_(resLabs, deps.parseSerologiaBancoSangre_(textoBruto));
   pushLabSection_(resLabs, deps.parseGrupoSangreCoombs_(textoBruto));
-  pushLabSection_(resLabs, deps.parseTroponina_(textoBruto));
-  appendExtendedPanelLines_(deps, resLabs, textoBruto);
+  pushLabSection_(resLabs, deps.parseTroponina_(textoBruto, sectionPrior_(priorBySec, 'TROP')));
+  appendExtendedPanelLines_(deps, resLabs, textoBruto, priorBySec);
   return { resLabs: resLabs, bhExtras: bhExtras };
 }
 
-function appendExtendedPanelLines_(deps, resLabs, textoBruto) {
+function appendExtendedPanelLines_(deps, resLabs, textoBruto, priorBySec) {
   if (typeof deps.parseExtendedLabPanels_ !== 'function') return;
-  var lines = deps.parseExtendedLabPanels_(textoBruto) || [];
+  var lines = deps.parseExtendedLabPanels_(textoBruto, priorBySec) || [];
   for (var i = 0; i < lines.length; i++) {
     pushLabSection_(resLabs, lines[i]);
   }
@@ -172,7 +182,7 @@ function parseLabPatientHeader_(deps, textoBruto) {
  * @param {(texto: string) => object | null} deps.parsePFH_
  * @param {(texto: string) => object | null} deps.parseLipasa_
  * @param {(texto: string, tNorm: string) => object | null} deps.parsePlaquetasCitrato_
- * @param {(bloque: string, textoQS: string) => object | null} deps.parseGaso_
+ * @param {(bloque: string, textoQS: string, gasRefs?: object) => object | null} deps.parseGaso_
  * @param {(tNorm: string) => object | null} deps.parsePIE_
  * @param {(texto: string) => object | null} deps.parsearLCR
  * @param {(texto: string) => object | null} deps.parsearCitoquimicoLiquidos
@@ -191,15 +201,30 @@ function parseLabPatientHeader_(deps, textoBruto) {
 export function createProcesarLabs(deps) {
   /**
    * @param {string} textoBruto
-   * @param {{ patient?: { sexo?: string, edad?: string } }} [options]
+   * @param {{
+   *   patient?: { sexo?: string, edad?: string },
+   *   priorRefsBySection?: { [section: string]: { [field: string]: [number, number] } },
+   *   gasRefs?: { [field: string]: [number, number] },
+   * }} [options]
    */
   return function procesarLabs(textoBruto, options) {
     var tNorm = textoBruto.replace(/\s+/g, ' ');
     var hdr = parseLabPatientHeader_(deps, textoBruto);
     var blocks = segmentLabReportBlocks_(deps, textoBruto, tNorm);
     var chartPatient = options && options.patient ? options.patient : null;
+    var priorBySec =
+      options && options.priorRefsBySection && typeof options.priorRefsBySection === 'object'
+        ? Object.assign(Object.create(null), options.priorRefsBySection)
+        : Object.create(null);
+    if (options && options.gasRefs) {
+      priorBySec.GASES = Object.assign(
+        Object.create(null),
+        priorBySec.GASES || Object.create(null),
+        options.gasRefs
+      );
+    }
     var egfrCtx = buildEgfrPatientCtx(hdr.edadRaw, hdr.edadUnidad, chartPatient);
-    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx);
+    var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx, priorBySec);
     return {
       patient: hdr.patient,
       resLabs: sanitizeResLabsChunks(

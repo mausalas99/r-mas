@@ -8,8 +8,10 @@ import {
   mergeBhResLabRows_,
   extractLabExpedienteFromReport,
   reprocessLabResultLines_,
+  collectPriorRefsFromHistory,
 } from './labs.js';
-import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
+import { labHistory } from './app-state.mjs';
+import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs, sortLabHistoryChronological } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 import { resLabsHasGasometria, primaryTipoForLabSet } from './lab-history-format.mjs';
 import {
@@ -213,13 +215,22 @@ function resolveChartPatientForReport_(reportText, findPatient) {
   return findPatient(exp) || null;
 }
 
+function priorRefsForPatient_(patient) {
+  if (!patient || !patient.id) return Object.create(null);
+  return collectPriorRefsFromHistory(sortLabHistoryChronological(labHistory[patient.id] || []));
+}
+
 function parseReportChunk(reportText, reportIndex, findPatient) {
   if (!looksLikeSomeLabReport(reportText)) {
     return parseReportChunkFailure(reportIndex, 'No parece reporte SOME (copia desde «Expediente:»)');
   }
   try {
     var chartPatient = resolveChartPatientForReport_(reportText, findPatient);
-    var result = procesarLabs(reportText, chartPatient ? { patient: chartPatient } : undefined);
+    var priorRefs = priorRefsForPatient_(chartPatient);
+    var result = procesarLabs(reportText, {
+      patient: chartPatient || undefined,
+      priorRefsBySection: priorRefs,
+    });
     if (!result.resLabs) result.resLabs = [];
     return parseReportChunkSuccess(reportText, reportIndex, result);
   } catch (e) {
@@ -371,6 +382,8 @@ function buildMergedPayloadFromGroup(items, tipo) {
     if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
   });
   var deduped = dedupeConsolidatedLabRows(merged, tipo);
+  // Prior gas refs ya se aplicaron en parseReportChunk; aquí el reporte del merge
+  // gana y DEFAULT_GASO_REFS cubre campos sin rango.
   deduped = sanitizeResLabsChunks(
     reprocessLabResultLines_(deduped, {
       gasRefs: mergedRefs.GASES,

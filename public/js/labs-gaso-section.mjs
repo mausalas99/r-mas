@@ -1,4 +1,12 @@
-import { extraerConRango, extraerConRangoSuero, marcarSegunRango, fmt, toNum_ } from './labs-extract.mjs';
+import {
+  extraerConRango,
+  extraerConRangoSuero,
+  marcarSegunRango,
+  fmt,
+  fmtLabRanged_,
+  toNum_,
+} from './labs-extract.mjs';
+import { DEFAULT_GASO_REFS, resolveLabFieldRange_ } from './labs-default-refs.mjs';
 import { buildGasoInterpretacionFromValues_ } from './labs-gaso-interpret.mjs';
 import {
   computeAnionGapValue_,
@@ -20,6 +28,11 @@ export {
   extractUrineElectrolytes_,
   resolveEffectiveAnionGapValue_,
 } from './labs-anion-gap.mjs';
+export {
+  DEFAULT_GASO_REFS,
+  collectPriorGasRefsFromHistory,
+  mergeGasRefs_,
+} from './labs-default-refs.mjs';
 
 function gasoBlockForExtract_(bloqueGaso) {
   return String(bloqueGaso || '').replace(/\r/g, '').replace(/\s+/g, ' ');
@@ -31,11 +44,11 @@ function extractGasoPh_(bloqueX) {
   return phData;
 }
 
-function fmtGasoRanged_(data) {
-  return fmt(marcarSegunRango(data.valor, data.min, data.max));
+function fmtGasoRanged_(data, fieldKey, gasRefs) {
+  return fmtLabRanged_(data, fieldKey, gasRefs, DEFAULT_GASO_REFS);
 }
 
-function extractGasoFormatted_(bloqueX, textoFuera) {
+function extractGasoFormatted_(bloqueX, textoFuera, gasRefs) {
   var phData = extractGasoPh_(bloqueX);
   var hco3Data = extraerConRango(['HCO3'], bloqueX);
   var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
@@ -43,21 +56,19 @@ function extractGasoFormatted_(bloqueX, textoFuera) {
   var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
   var urine = textoFuera ? extractUrineElectrolytes_(textoFuera) : { na: '---', k: '---', cl: '---' };
   var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueX);
-  var iCaMin = iCaData.min != null ? iCaData.min : 1.12;
-  var iCaMax = iCaData.max != null ? iCaData.max : 1.32;
   var agEff = resolveEffectiveAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   return {
     phData: phData,
-    pH: fmtGasoRanged_(phData),
-    pCO2: fmtGasoRanged_(extraerConRango(['PCO2'], bloqueX)),
-    pO2: fmtGasoRanged_(extraerConRango(['PO2 '], bloqueX)),
-    Na: fmtGasoRanged_(extraerConRango(['SODIO'], bloqueX)),
-    K: fmtGasoRanged_(extraerConRango(['POTASIO'], bloqueX)),
-    GLU: fmtGasoRanged_(extraerConRango(['GLUCOSA'], bloqueX)),
-    Lac: fmtGasoRanged_(extraerConRango(['LACTATO'], bloqueX)),
-    Bica: fmtGasoRanged_(hco3Data),
-    Hto: fmtGasoRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueX)),
-    iCa: fmtGasoRanged_({ valor: iCaData.valor, min: iCaMin, max: iCaMax }),
+    pH: fmtGasoRanged_(phData, 'pH', gasRefs),
+    pCO2: fmtGasoRanged_(extraerConRango(['PCO2'], bloqueX), 'pCO2', gasRefs),
+    pO2: fmtGasoRanged_(extraerConRango(['PO2 '], bloqueX), 'pO2', gasRefs),
+    Na: fmtGasoRanged_(extraerConRango(['SODIO'], bloqueX), 'Na', gasRefs),
+    K: fmtGasoRanged_(extraerConRango(['POTASIO'], bloqueX), 'K', gasRefs),
+    GLU: fmtGasoRanged_(extraerConRango(['GLUCOSA'], bloqueX), 'GLU', gasRefs),
+    Lac: fmtGasoRanged_(extraerConRango(['LACTATO'], bloqueX), 'Lactato', gasRefs),
+    Bica: fmtGasoRanged_(hco3Data, 'Bica', gasRefs),
+    Hto: fmtGasoRanged_(extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueX), 'Hto', gasRefs),
+    iCa: fmtGasoRanged_(iCaData, 'iCa', gasRefs),
     AG: computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor),
     AGc: computeAlbuminCorrectedAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor),
     UAG: computeUrinaryAnionGap_(urine.na, urine.k, urine.cl),
@@ -88,10 +99,15 @@ function buildGasoLine_(g) {
   return p[0] + '\t' + p.slice(1).join(' ');
 }
 
-export function parseGaso_(bloqueGaso, textoFuera) {
+/**
+ * @param {string} bloqueGaso
+ * @param {string} [textoFuera]
+ * @param {{ [field: string]: [number, number] }} [gasRefs] refs de estudios previos
+ */
+export function parseGaso_(bloqueGaso, textoFuera, gasRefs) {
   if (!bloqueGaso) return '';
   var bloqueX = gasoBlockForExtract_(bloqueGaso);
-  var g = extractGasoFormatted_(bloqueX, textoFuera);
+  var g = extractGasoFormatted_(bloqueX, textoFuera, gasRefs);
   if (g.phData.valor === '---') return '';
   return buildGasoLine_(g);
 }
@@ -208,20 +224,17 @@ function valueFromSectionLine_(line, key) {
   return m ? m[1] + (m[2] || '') : null;
 }
 
-function gasoRefRange_(gasRefs, fieldKey) {
-  var r = gasRefs && gasRefs[fieldKey];
-  if (r && r.length === 2 && isFinite(r[0]) && isFinite(r[1]) && r[1] > r[0]) {
-    return [r[0], r[1]];
-  }
-  return null;
-}
-
 function markGasoToken_(valStr, gasRefs, fieldKey) {
   if (valStr == null || valStr === '') return valStr;
   var bare = String(valStr).replace(/\*$/, '');
-  var starred = String(valStr).endsWith('*');
-  var range = gasoRefRange_(gasRefs, fieldKey);
+  var range = resolveLabFieldRange_(
+    { valor: bare, min: null, max: null },
+    fieldKey,
+    gasRefs,
+    DEFAULT_GASO_REFS
+  );
   if (range) return fmt(marcarSegunRango(bare, range[0], range[1]));
+  var starred = String(valStr).endsWith('*');
   return fmt(starred ? bare + '*' : bare);
 }
 
