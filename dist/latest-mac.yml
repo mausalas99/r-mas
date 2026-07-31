@@ -1,0 +1,25 @@
+version: 7.7.8
+files:
+  - url: R+-7.7.8-arm64.zip
+    sha512: 4qILvKAjxAwogR6kI6kfYkvnZuXOL9M77IZEZ2A9p/XXlT6w7wPeiLIgGsa4niycbxiP0z9Lk9VqKPWkaaiE+g==
+    size: 137304768
+  - url: R+-7.7.8-arm64.dmg
+    sha512: K1x+drhyIPJ3LuSKBKMqS71BUmZghm//cWrIhkEkcgI5MAetI3oi5jjNgajqujacjXw9vLRlr4xkVFDT4yQhkQ==
+    size: 143021515
+  - url: R+-7.7.8-x64.zip
+    sha512: SIvrOoG8+Ud8pkmWq1EHBapG5FHfrmnB5/g0/Hswhq4HmNCaYm0QeitguMWa2X2HbDRZmFfRK8IAoP7iPQJCDg==
+    size: 145678897
+  - url: R+-7.7.8-x64.dmg
+    sha512: Ho+IP1eW/Jy77q/yXBIMCZ9G6v//+QkJrjew6GpqA7baYUBEBckMbjVg3VMXlQZPWXYLDMNat7/Z5gnGCYdzjw==
+    size: 151463649
+path: R+-7.7.8-arm64.zip
+sha512: 4qILvKAjxAwogR6kI6kfYkvnZuXOL9M77IZEZ2A9p/XXlT6w7wPeiLIgGsa4niycbxiP0z9Lk9VqKPWkaaiE+g==
+releaseDate: '2026-07-31T21:15:32.000Z'
+releaseNotes: |
+  7.7.8 corrige Actualizar labs para abrir el modal de mi equipo cuando hay 2+ pacientes, y afina Labs externos (orden del toolbar y etiquetas sin doblete).
+  
+  Actualizar labs — Con 2 o más pacientes de mi equipo (con registro) abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.
+  
+  Toolbar Laboratorio — Orden: Procesar → Actualizar labs → Separador → Limpiar → Labs externos.
+  
+  Labs externos — El selector de tipo ya no muestra códigos duplicados (p. ej. «Biometría (BH) (BH)»).

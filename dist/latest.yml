@@ -1,0 +1,16 @@
+version: 7.7.8
+files:
+  - url: R+-7.7.8-x64.exe
+    sha512: LoWLywAkI3LEYDaISNS3LMxBY2aUOI3X/t6Hxj5bnYetVDFRSUU9WK2WbcrHZbVM1fXbp/qGKpxx/zN1U0iK6g==
+    size: 120886611
+path: R+-7.7.8-x64.exe
+sha512: LoWLywAkI3LEYDaISNS3LMxBY2aUOI3X/t6Hxj5bnYetVDFRSUU9WK2WbcrHZbVM1fXbp/qGKpxx/zN1U0iK6g==
+releaseDate: '2026-07-31T21:15:32.000Z'
+releaseNotes: |
+  7.7.8 corrige Actualizar labs para abrir el modal de mi equipo cuando hay 2+ pacientes, y afina Labs externos (orden del toolbar y etiquetas sin doblete).
+  
+  Actualizar labs — Con 2 o más pacientes de mi equipo (con registro) abre el modal con checkboxes aunque haya uno activo. Solo fechas cuando es un único paciente.
+  
+  Toolbar Laboratorio — Orden: Procesar → Actualizar labs → Separador → Limpiar → Labs externos.
+  
+  Labs externos — El selector de tipo ya no muestra códigos duplicados (p. ej. «Biometría (BH) (BH)»).
