@@ -14,9 +14,17 @@ import {
 
 const jsDir = join(dirname(fileURLToPath(import.meta.url)));
 const panelHostPinSrc = readFileSync(join(jsDir, 'features/lan/panel-host-pin.mjs'), 'utf8');
+const panelHostPinTurnResetSrc = readFileSync(
+  join(jsDir, 'features/lan/panel-host-pin-turn-reset.mjs'),
+  'utf8'
+);
 const panelRenderOnceSrc = readFileSync(join(jsDir, 'features/lan/panel-render-once.mjs'), 'utf8');
 const panelSrc =
-  readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8') + '\n' + panelHostPinSrc;
+  readFileSync(join(jsDir, 'features/lan/panel.mjs'), 'utf8') +
+  '\n' +
+  panelHostPinSrc +
+  '\n' +
+  panelHostPinTurnResetSrc;
 const orchestratorSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'), 'utf8');
 
 describe('lan-turn-reset', () => {

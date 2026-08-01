@@ -45,13 +45,19 @@ const lanSyncTransportSrc = readConcat(lanDir, [
   'transport-pairing.mjs',
   'transport-mobile.mjs',
   'transport-host-election.mjs',
+  'transport-host-election-peers.mjs',
   'transport-init.mjs',
 ]);
 const lanSyncPanelSrc = readConcat(lanDir, [
   'panel.mjs',
   'panel-invite-join.mjs',
+  'panel-invite-join-connect.mjs',
   'panel-delegation.mjs',
   'panel-host-pin.mjs',
+  'panel-host-pin-fix.mjs',
+  'panel-host-pin-shift-client.mjs',
+  'panel-host-pin-shift-host.mjs',
+  'panel-host-pin-turn-reset.mjs',
   'panel-hub-status.mjs',
 ]);
 const lanSyncPushSrc = readConcat(lanDir, [
