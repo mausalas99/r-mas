@@ -114,16 +114,35 @@ export function preloadNoteDxFromPatient(note, patient) {
   return true;
 }
 
+function diagnosticosListHasContent(list) {
+  return (list || []).some(function (d) {
+    return String(d || '').trim();
+  });
+}
+
 /** @param {Record<string, unknown>} target @param {Record<string, unknown>|undefined} source */
 export function mergeCensoPatientFields(target, source) {
   if (!target || !source) return;
   mergeAccesosPatientFields(target, source);
   if (source.censoMedsText) target.censoMedsText = source.censoMedsText;
-  if (Array.isArray(source.diagnosticosList) && source.diagnosticosList.length) {
-    target.diagnosticosList = source.diagnosticosList;
-    if (source.diagnosticosText) target.diagnosticosText = source.diagnosticosText;
-    else ensurePatientDiagnosticos(target);
-  }
+  // Never clobber real diagnoses with placeholder [''] from ensurePatientDiagnosticos.
+  if (!diagnosticosListHasContent(source.diagnosticosList)) return;
+  target.diagnosticosList = source.diagnosticosList;
+  if (source.diagnosticosText) target.diagnosticosText = source.diagnosticosText;
+  else ensurePatientDiagnosticos(target);
+}
+
+/**
+ * Two-way censo merge for LAN entry merge.
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>|undefined} preferred — usually newer by lanUpdatedAt
+ * @param {Record<string, unknown>|undefined} fallback
+ */
+export function mergeCensoPatientFieldsFromBoth(target, preferred, fallback) {
+  if (!target) return;
+  // Apply fallback first, then preferred so non-empty preferred dx/meds win.
+  mergeCensoPatientFields(target, fallback);
+  mergeCensoPatientFields(target, preferred);
 }
 
 export function pushDiagnosticosToPatient(patient, list) {

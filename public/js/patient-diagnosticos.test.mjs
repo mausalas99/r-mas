@@ -4,6 +4,7 @@ import {
   ensurePatientDiagnosticos,
   diagnosticosTextForCenso,
   migratePatientDiagnosticosFromVpo,
+  mergeCensoPatientFields,
 } from './patient-diagnosticos.mjs';
 
 test('ensurePatientDiagnosticos normaliza list y text', () => {
@@ -30,4 +31,32 @@ test('migratePatientDiagnosticosFromVpo solo si paciente vacío', () => {
   assert.equal(p.diagnosticosList[0], 'IRC');
   p.diagnosticosList = ['X'];
   assert.equal(migratePatientDiagnosticosFromVpo(p, vpo), false);
+});
+
+test('mergeCensoPatientFields no sobrescribe dx reales con lista vacía', () => {
+  var target = {
+    diagnosticosList: ['DM2', ''],
+    diagnosticosText: '1. DM2',
+    censoMedsText: 'ATB',
+  };
+  mergeCensoPatientFields(target, { diagnosticosList: [''], censoMedsText: '' });
+  assert.deepEqual(
+    (target.diagnosticosList || []).filter(Boolean),
+    ['DM2']
+  );
+  assert.equal(target.censoMedsText, 'ATB');
+});
+
+test('mergeCensoPatientFields toma dx no vacíos del source', () => {
+  var target = { diagnosticosList: [''], diagnosticosText: '' };
+  mergeCensoPatientFields(target, {
+    diagnosticosList: ['IRC', ''],
+    diagnosticosText: '1. IRC',
+    censoMedsText: 'PIP/TAZO',
+  });
+  assert.deepEqual(
+    (target.diagnosticosList || []).filter(Boolean),
+    ['IRC']
+  );
+  assert.equal(target.censoMedsText, 'PIP/TAZO');
 });

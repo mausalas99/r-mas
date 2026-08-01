@@ -1758,10 +1758,29 @@ var RELEASE_NOTES_780 = [
   },
 ];
 
+var RELEASE_NOTES_781 = [
+  {
+    title: 'Diagnósticos que sí se guardan',
+    body:
+      'Al sincronizar por LAN, los <strong>diagnósticos en Datos del paciente</strong> (y meds de censo) ya no se pierden en el merge.',
+  },
+  {
+    title: 'Sin borrado fantasma',
+    body:
+      'Una fila vacía del formulario ya no pisa diagnósticos reales al aplicar el host.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.8.1 en todas</strong> las Macs y PCs del turno el mismo día si usan Diagnósticos en Datos con LiveSync.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_780;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_781;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.8.1': RELEASE_NOTES_781,
   '7.8.0': RELEASE_NOTES_780,
   '7.7.9': RELEASE_NOTES_779,
   '7.7.8': RELEASE_NOTES_778,

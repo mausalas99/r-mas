@@ -39,10 +39,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.8.0](https://github.com/mausalas99/r-mas/releases/tag/v7.8.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.8.1](https://github.com/mausalas99/r-mas/releases/tag/v7.8.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.8.1 (diagnósticos LAN en Datos)
+
+- **Diagnósticos** — LiveSync ya no pierde diagnósticos ni meds de censo al fusionar pacientes.
+- **Sin borrado fantasma** — Listas vacías del UI no pisan diagnósticos reales del host/peer.
+
+Notas: `docs/RELEASE_NOTES_7.8.1.txt`.
 
 ## R+ 7.8.0 (labs sin refs + debt baseline)
 

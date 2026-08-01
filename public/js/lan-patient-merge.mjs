@@ -8,6 +8,7 @@ import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
 import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
+import { mergeCensoPatientFieldsFromBoth } from './patient-diagnosticos.mjs';
 import { isDemoPatientId } from './demo-patient.mjs';
 
 export { isDemoPatientId };
@@ -397,6 +398,9 @@ function buildMergedPatientEntry(a, b, patient, first, second) {
 
   const mergedHc = mergeHistoriaClinica(first.patient?.historiaClinica, second.patient?.historiaClinica);
   if (mergedHc) patient.historiaClinica = mergedHc;
+
+  // pickPatientFields only whitelists demographics — restore censo/dx from both sides.
+  mergeCensoPatientFieldsFromBoth(patient, first.patient, second.patient);
 
   if (patient.id) bumpLabHistoryRevision(patient.id);
 

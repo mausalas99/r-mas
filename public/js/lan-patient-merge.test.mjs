@@ -333,6 +333,70 @@ test('mergePatientEntry conserva eventualidades de ambos peers', () => {
   assert.equal(m.patient.eventualidades.entries.length, 2);
 });
 
+test('mergePatientEntry conserva diagnósticos del peer más reciente', () => {
+  const stale = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      nombre: 'PAC',
+      lanUpdatedAt: '2026-06-01T10:00:00.000Z',
+    },
+    note: {},
+    labHistory: [],
+  };
+  const withDx = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      nombre: 'PAC',
+      lanUpdatedAt: '2026-06-02T12:00:00.000Z',
+      diagnosticosList: ['DM2', 'IRC', ''],
+      diagnosticosText: '1. DM2\n2. IRC',
+      censoMedsText: 'MEROPENEM',
+    },
+    note: {},
+    labHistory: [],
+  };
+  const m = mergePatientEntry(stale, withDx);
+  assert.deepEqual(
+    (m.patient.diagnosticosList || []).filter(Boolean),
+    ['DM2', 'IRC']
+  );
+  assert.match(String(m.patient.diagnosticosText || ''), /DM2/);
+  assert.equal(m.patient.censoMedsText, 'MEROPENEM');
+});
+
+test('mergePatientEntry no borra diagnósticos locales si el peer reciente viene vacío', () => {
+  const localDx = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      lanUpdatedAt: '2026-06-01T10:00:00.000Z',
+      diagnosticosList: ['NEUMONÍA', ''],
+      diagnosticosText: '1. NEUMONÍA',
+    },
+    note: {},
+    labHistory: [],
+  };
+  const peerEmpty = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      lanUpdatedAt: '2026-06-03T08:00:00.000Z',
+      nombre: 'PAC ACTUALIZADO',
+      diagnosticosList: [''],
+    },
+    note: {},
+    labHistory: [],
+  };
+  const m = mergePatientEntry(localDx, peerEmpty);
+  assert.equal(m.patient.nombre, 'PAC ACTUALIZADO');
+  assert.deepEqual(
+    (m.patient.diagnosticosList || []).filter(Boolean),
+    ['NEUMONÍA']
+  );
+});
+
 test('mergeHistoriaClinica gana la versi?n m?s alta', () => {
   const merged = mergeHistoriaClinica(
     { version: 2, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' }, dx: 'old' } },
