@@ -66,38 +66,54 @@ export function buildMedPanelCacheKey(activeId) {
   );
 }
 
-export function patchMedRecetaRowSoapUi(itemId) {
-  var activeId = rt.getActiveId();
-  if (!activeId) return false;
+function findMedRecetaRow(listEl, itemId) {
   var sid = String(itemId || "");
-  if (sid === INSULIN_RESCATE_GROUP_ID) {
-    var block = medRecetaByPatient[activeId];
-    var items = block && block.items ? block.items : [];
-    var listEl = document.getElementById("med-items-list");
-    if (!listEl) return false;
-    var row = listEl.querySelector('[data-med-item-id="' + INSULIN_RESCATE_GROUP_ID + '"]');
-    if (!row) return false;
-    var soapChk = row.querySelector("[data-med-soap-chk]");
-    if (soapChk) {
-      soapChk.checked = isInsulinRescateGroupSoapSelected(activeId, items, function (pid, id) {
-        return !!getMedNotaSelMap(pid)[id];
-      });
-    }
-    return true;
-  }
-  var it = medRecetaItemById(activeId, itemId);
-  if (!it) return false;
-  var listEl = document.getElementById("med-items-list");
-  if (!listEl) return false;
-  var sid = String(itemId || "");
-  var row = listEl.querySelector('[data-med-item-id="' + (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(sid) : sid) + '"]');
+  var escaped = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(sid) : sid;
+  return listEl.querySelector('[data-med-item-id="' + escaped + '"]');
+}
+
+function syncRowSoapCheckbox(row, activeId, itemId) {
+  var soapChk = row.querySelector("[data-med-soap-chk]");
+  if (!soapChk) return;
+  soapChk.checked = !!getMedNotaSelMap(activeId)[String(itemId || "")];
+}
+
+function patchInsulinRescateRowSoapUi(activeId, listEl) {
+  var block = medRecetaByPatient[activeId];
+  var items = block && block.items ? block.items : [];
+  var row = listEl.querySelector('[data-med-item-id="' + INSULIN_RESCATE_GROUP_ID + '"]');
   if (!row) return false;
   var soapChk = row.querySelector("[data-med-soap-chk]");
-  if (soapChk) soapChk.checked = !!getMedNotaSelMap(activeId)[sid];
+  if (soapChk) {
+    soapChk.checked = isInsulinRescateGroupSoapSelected(activeId, items, function (pid, id) {
+      return !!getMedNotaSelMap(pid)[id];
+    });
+  }
+  return true;
+}
+
+function patchRegularMedRecetaRowSoapUi(activeId, itemId, it, listEl) {
+  var sid = String(itemId || "");
+  var row = findMedRecetaRow(listEl, sid);
+  if (!row) return false;
+  syncRowSoapCheckbox(row, activeId, sid);
   var autoCat = classifyMedicationSoapCategory(it.nombreRaw, it.dosisRaw);
   row.classList.toggle(
     "med-receta-row--needs-dest",
     autoCat === "otros" && !!getMedNotaSelMap(activeId)[sid] && !it.soapCatOverride
   );
   return true;
+}
+
+export function patchMedRecetaRowSoapUi(itemId) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return false;
+  var listEl = document.getElementById("med-items-list");
+  if (!listEl) return false;
+  if (String(itemId || "") === INSULIN_RESCATE_GROUP_ID) {
+    return patchInsulinRescateRowSoapUi(activeId, listEl);
+  }
+  var it = medRecetaItemById(activeId, itemId);
+  if (!it) return false;
+  return patchRegularMedRecetaRowSoapUi(activeId, itemId, it, listEl);
 }

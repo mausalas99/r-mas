@@ -97,6 +97,28 @@ function pushLcrTbAlert_(alerts, leu, glu, prot) {
   alerts.push('Meningitis tuberculosa? (' + bits.join(', ') + ' — ADA/BAAR/genXpert)');
 }
 
+function lcrTintaSuggestive_(tinta) {
+  return tinta && !isGramNegative_(tinta) && /POSITIV|LEVADUR|COC/i.test(tinta);
+}
+
+function isLcrNormocellular_(leu, glu, prot, serumGlu) {
+  return leu != null && leu <= 5 && !lcrGluLow_(glu, serumGlu) && (prot == null || prot <= 45);
+}
+
+function evaluarLcrLeu100Plus_(alerts, leu, glu, prot, gram, serumGlu) {
+  if (!lcrGluLow_(glu, serumGlu)) {
+    alerts.push(
+      'Meningitis bacteriana parcialmente tratada vs viral? (Leu ' + leu + ' — correlacionar clínica)'
+    );
+    return;
+  }
+  if (prot != null && prot > 100) {
+    pushLcrTbAlert_(alerts, leu, glu, prot);
+    return;
+  }
+  pushLcrBacterialAlert_(alerts, leu, glu, gram);
+}
+
 /**
  * Orientación etiológica LCR (bacteriana vs viral vs TB).
  * @param {number|null} leu
@@ -109,44 +131,27 @@ function pushLcrTbAlert_(alerts, leu, glu, prot) {
 export function evaluarLcrEtiologia_(leu, glu, prot, gram, tinta, serumGlu) {
   var alerts = [];
   if (leu == null && glu == null && prot == null) return alerts;
+  if (isLcrNormocellular_(leu, glu, prot, serumGlu)) return alerts;
 
-  if (leu != null && leu <= 5 && !lcrGluLow_(glu, serumGlu) && (prot == null || prot <= 45)) {
-    return alerts;
-  }
-
-  if (gramIsPositive_(gram) || (tinta && !isGramNegative_(tinta) && /POSITIV|LEVADUR|COC/i.test(tinta))) {
+  if (gramIsPositive_(gram) || lcrTintaSuggestive_(tinta)) {
     pushLcrBacterialAlert_(alerts, leu, glu, gram || tinta);
     return alerts;
   }
 
-  if (leu != null && leu >= 1000) {
+  if (leu == null) return alerts;
+  if (leu >= 1000) {
     pushLcrBacterialAlert_(alerts, leu, glu, gram);
     return alerts;
   }
-
-  if (leu != null && leu >= 100 && lcrGluLow_(glu, serumGlu) && prot != null && prot > 100) {
-    pushLcrTbAlert_(alerts, leu, glu, prot);
+  if (leu >= 100) {
+    evaluarLcrLeu100Plus_(alerts, leu, glu, prot, gram, serumGlu);
     return alerts;
   }
-
-  if (leu != null && leu >= 100 && lcrGluLow_(glu, serumGlu)) {
-    pushLcrBacterialAlert_(alerts, leu, glu, gram);
-    return alerts;
-  }
-
-  if (leu != null && leu >= 100 && !lcrGluLow_(glu, serumGlu)) {
-    alerts.push(
-      'Meningitis bacteriana parcialmente tratada vs viral? (Leu ' + leu + ' — correlacionar clínica)'
-    );
-    return alerts;
-  }
-
-  if (leu != null && leu >= 10 && leu < 100) {
+  if (leu >= 10) {
     pushLcrViralAlert_(alerts, leu);
     return alerts;
   }
-
-  if (leu != null && leu > 5) {
+  if (leu > 5) {
     alerts.push('Pleocitosis leve LCR (Leu ' + leu + ') — correlacionar clínica');
   }
   return alerts;

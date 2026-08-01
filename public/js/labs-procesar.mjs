@@ -6,6 +6,7 @@ import { buildEgfrPatientCtx } from './labs-egfr.mjs';
 import { lcrBlocksNormText_ } from './labs-lcr-parse.mjs';
 import { sortResLabsByClinicalOrder } from './labs-section-order.mjs';
 import { sanitizeResLabsChunks } from './labs-reslabs-sanitize.mjs';
+import { mergeRefsBySection_ } from './labs-default-refs.mjs';
 
 /** Expediente del encabezado SOME (para enlazar con el paciente en R+). */
 export function extractLabExpedienteFromReport(textoBruto) {
@@ -225,13 +226,15 @@ export function createProcesarLabs(deps) {
     }
     var egfrCtx = buildEgfrPatientCtx(hdr.edadRaw, hdr.edadUnidad, chartPatient);
     var sections = collectLabSections_(deps, textoBruto, tNorm, blocks, egfrCtx, priorBySec);
+    var reportRefs = deps.buildRefsBySectionFromReport(textoBruto);
     return {
       patient: hdr.patient,
       resLabs: sanitizeResLabsChunks(
         sortResLabsByClinicalOrder(deps.dedupeSingletonSections_(sections.resLabs))
       ),
       bhExtras: sections.bhExtras,
-      refsBySection: deps.buildRefsBySectionFromReport(textoBruto),
+      // Reporte gana; prior rellena huecos (SOME sin Valor de Referencia).
+      refsBySection: mergeRefsBySection_(reportRefs, priorBySec),
     };
   };
 }

@@ -39,7 +39,7 @@ function primaryTipoForResLabs(resLabs) {
   return primaryTipoForLabSet(resLabs);
 }
 
-describe('lab-bulk-paste', () => {
+describe('lab-bulk-paste split helpers', () => {
   beforeEach(() => {
     store = {};
   });
@@ -77,6 +77,12 @@ describe('lab-bulk-paste', () => {
     var reports = splitSomeReportsInBlock(glued);
     assert.equal(reports.length, 2);
     assert.match(reports[1], /1111111-1/);
+  });
+});
+
+describe('lab-bulk-paste merge and consolidation', () => {
+  beforeEach(() => {
+    store = {};
   });
 
   it('pickLatestDayMergedLabDisplay consolida solo el día más reciente', () => {
@@ -247,6 +253,12 @@ describe('lab-bulk-paste', () => {
       return m.fecha;
     });
     assert.notEqual(fechas[0], fechas[1]);
+  });
+});
+
+describe('lab-bulk-paste preview and tipo', () => {
+  beforeEach(() => {
+    store = {};
   });
 
   it('buildBulkLabPreview detecta paciente por expediente', () => {

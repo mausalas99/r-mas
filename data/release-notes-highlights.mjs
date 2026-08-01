@@ -1740,10 +1740,29 @@ var RELEASE_NOTES_779 = [
   },
 ];
 
+var RELEASE_NOTES_780 = [
+  {
+    title: 'Alterados sin rangos SOME',
+    body:
+      'Si el reporte no trae <strong>Valor de Referencia</strong>, R+ marca fuera de rango con refs de estudios previos o estándares (QS, ESC, PFH, BH, gases…).',
+  },
+  {
+    title: 'Historial más fiel',
+    body:
+      'Reproceso completo del SOME; match de expediente con dígito verificador; ya no inventa PCT fantasma en refs.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.8.0 en todas</strong> las Macs y PCs del turno el mismo día si pegan labs incompletos del SOME.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_779;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_780;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.8.0': RELEASE_NOTES_780,
   '7.7.9': RELEASE_NOTES_779,
   '7.7.8': RELEASE_NOTES_778,
   '7.7.7': RELEASE_NOTES_777,

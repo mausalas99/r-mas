@@ -57,58 +57,52 @@ function goExpedienteSection(section) {
   if (typeof window.switchInnerTab === 'function') window.switchInnerTab(section);
 }
 
-function executeAction(item) {
-  var id = item && item.actionId;
-  if (id === 'procesar-some') {
+var ACTION_HANDLERS = {
+  'procesar-some': function () {
     void import('./paste-smart.mjs').then(function (mod) {
       mod.procesarSomeFromClipboard();
     });
-    return;
-  }
-  if (id === 'doc-queue') {
+  },
+  'doc-queue': function () {
     callWin('openDocQueuePanel');
-    return;
-  }
-  if (id === 'entrega-prep') {
+  },
+  'entrega-prep': function () {
     callWin('openEntregaPrepPanel');
-    return;
-  }
-  if (id === 'lab-repo-batch') {
+  },
+  'lab-repo-batch': function () {
     ensureLabsThen('openLabRepoBatchModal');
-    return;
-  }
-  if (id === 'lab-manual-entry') {
+  },
+  'lab-manual-entry': function () {
     ensureLabsThen('openLabManualEntryModal');
-    return;
-  }
-  if (id === 'open-lab') {
+  },
+  'open-lab': function () {
     if (!callWin('openPaseSectionInNormal', 'labs')) callWin('switchAppTab', 'lab');
-    return;
-  }
-  if (id === 'open-eventualidades') {
+  },
+  'open-eventualidades': function () {
     goExpedienteSection('eventualidades');
-    return;
-  }
-  if (id === 'open-ea') {
+  },
+  'open-ea': function () {
     goExpedienteSection('estadoActual');
-    return;
-  }
-  if (id === 'export-note') {
+  },
+  'export-note': function () {
     callWin('quickExportCurrentPatient');
-    return;
-  }
-  if (id === 'new-pendiente') {
+  },
+  'new-pendiente': function () {
     if (!callWin('openPaseSectionInNormal', 'pendientes')) goExpedienteSection('todo');
     focusTodoInput();
-    return;
-  }
-  if (id === 'copy-labs') {
+  },
+  'copy-labs': function () {
     ensureLabsThen('copiarLabsAlPortapapeles');
-    return;
-  }
-  if (id === 'open-pase') {
+  },
+  'open-pase': function () {
     callWin('setUiDensity', 'pase');
-  }
+  },
+};
+
+function executeAction(item) {
+  var id = item && item.actionId;
+  var handler = id && ACTION_HANDLERS[id];
+  if (handler) handler();
 }
 
 function ensureDom() {

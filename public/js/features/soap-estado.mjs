@@ -304,33 +304,38 @@ function legacyMedsClause(fieldId, g) {
   return v ? v.toUpperCase() : "";
 }
 
-function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
-  var analgesia = legacyMedsClause("soap-analgesia", g);
-  var antiemeticos = legacyMedsClause("soap-antiemeticos", g);
-  var sedacion = legacyMedsClause("soap-sedacion", g);
-  var antiepilepticos = legacyMedsClause("soap-antiepilepticos", g);
-  var antiparkinsonianos = legacyMedsClause("soap-antiparkinsonianos", g);
-  var antidotos = legacyMedsClause("soap-antidotos", g);
-  var viaAerea = legacyMedsClause("soap-via-aerea", g);
-  var vasop = legacyMedsClause("soap-vasop", g);
-  var antihta = legacyMedsClause("soap-antihta", g);
-  var antitromboticos = legacyMedsClause("soap-antitromboticos", g);
-  var anticoagulacion = legacyMedsClause("soap-anticoagulacion", g);
-  var antiarritmicos = legacyMedsClause("soap-antiarritmicos", g);
-  var diureticos = legacyMedsClause("soap-diureticos", g);
-  var estatinas = legacyMedsClause("soap-estatinas", g);
-  var abx = legacyMedsClause("soap-abx", g);
-  var transfusiones = legacyMedsClause("soap-transfusiones", g);
-  var nmSoporte = legacyMedsClause("soap-nm-soporte", g);
-  var insulina = legacyMedsClause("soap-insulina", g);
-  var rescatesInsulina = legacyMedsClause("soap-rescates-insulina", g);
+function collectSoapLegacyMedClauses(g) {
+  return {
+    analgesia: legacyMedsClause("soap-analgesia", g),
+    antiemeticos: legacyMedsClause("soap-antiemeticos", g),
+    sedacion: legacyMedsClause("soap-sedacion", g),
+    antiepilepticos: legacyMedsClause("soap-antiepilepticos", g),
+    antiparkinsonianos: legacyMedsClause("soap-antiparkinsonianos", g),
+    antidotos: legacyMedsClause("soap-antidotos", g),
+    viaAerea: legacyMedsClause("soap-via-aerea", g),
+    vasop: legacyMedsClause("soap-vasop", g),
+    antihta: legacyMedsClause("soap-antihta", g),
+    antitromboticos: legacyMedsClause("soap-antitromboticos", g),
+    anticoagulacion: legacyMedsClause("soap-anticoagulacion", g),
+    antiarritmicos: legacyMedsClause("soap-antiarritmicos", g),
+    diureticos: legacyMedsClause("soap-diureticos", g),
+    estatinas: legacyMedsClause("soap-estatinas", g),
+    abx: legacyMedsClause("soap-abx", g),
+    transfusiones: legacyMedsClause("soap-transfusiones", g),
+    nmSoporte: legacyMedsClause("soap-nm-soporte", g),
+    insulina: legacyMedsClause("soap-insulina", g),
+    rescatesInsulina: legacyMedsClause("soap-rescates-insulina", g),
+  };
+}
+
+function buildSoapNmParts(g, num, ing, egr, balance, meds) {
   /** @type {string[]} */
   var nmParts = [
     formatNmDietClause({ dieta: g("soap-dieta"), kcalKg: g("soap-kcalkg") }, g("soap-kcal"), {
       includeProtein: false,
     }),
   ];
-  if (nmSoporte) nmParts.push(nmSoporte);
+  if (meds.nmSoporte) nmParts.push(meds.nmSoporte);
   nmParts.push(
     "INGRESOS " + num(ing) + " CC, DIURESIS " + num(egr) + " CC, BALANCE " + balance + " CC"
   );
@@ -342,25 +347,31 @@ function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
       "GLUCOMETRÍAS CAPILARES (" + num(glu1) + ", " + num(glu2) + ", " + num(glu3) + " MG/DL)"
     );
   }
-  if (rescatesInsulina) nmParts.push(rescatesInsulina);
-  if (insulina) nmParts.push("INSULINA: " + insulina);
+  if (meds.rescatesInsulina) nmParts.push(meds.rescatesInsulina);
+  if (meds.insulina) nmParts.push("INSULINA: " + meds.insulina);
+  return nmParts;
+}
+
+function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
+  var meds = collectSoapLegacyMedClauses(g);
+  var nmParts = buildSoapNmParts(g, num, ing, egr, balance, meds);
   return [
     "N: FOUR " +
       num(g("soap-four")) +
       "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " +
       num(g("soap-esferas")) +
       " ESFERAS, ALERTA || ANALGESIA: " +
-      analgesia +
+      meds.analgesia +
       " | ANTIEMETICOS: " +
-      antiemeticos +
+      meds.antiemeticos +
       " | SEDACION: " +
-      sedacion +
+      meds.sedacion +
       " | ANTIEPILEPTICOS: " +
-      antiepilepticos +
+      meds.antiepilepticos +
       " | ANTIPARKINSONIANOS: " +
-      antiparkinsonianos +
+      meds.antiparkinsonianos +
       " | ANTIDOTOS: " +
-      antidotos,
+      meds.antidotos,
     "V: FR " +
       num(g("soap-fr")) +
       " RPM, SATO2 " +
@@ -368,7 +379,7 @@ function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
       "% " +
       soporte +
       " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS" +
-      (viaAerea ? " || VIA AEREA: " + viaAerea : ""),
+      (meds.viaAerea ? " || VIA AEREA: " + meds.viaAerea : ""),
     "HD: ESTABLE, TA " +
       num(g("soap-tas")) +
       "/" +
@@ -376,24 +387,24 @@ function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
       " MMHG, FC " +
       num(g("soap-fc")) +
       " LPM || VASOPRESORES: " +
-      vasop +
+      meds.vasop +
       " | ANTIHIPERTENSIVOS: " +
-      antihta +
+      meds.antihta +
       " | TROMBOPROFILAXIS: " +
-      antitromboticos +
+      meds.antitromboticos +
       " | ANTICOAGULACION: " +
-      anticoagulacion +
+      meds.anticoagulacion +
       " | ANTIARRITMICOS: " +
-      antiarritmicos +
+      meds.antiarritmicos +
       " | DIURÉTICOS: " +
-      diureticos +
+      meds.diureticos +
       " | ESTATINAS: " +
-      estatinas,
+      meds.estatinas,
     "HI: AFEBRIL, TEMPERATURA " +
       num(g("soap-temp")) +
       " °C || ANTIBIOTICOTERAPIA: " +
-      abx +
-      (transfusiones ? " | TRANSFUSIONES: " + transfusiones : ""),
+      meds.abx +
+      (meds.transfusiones ? " | TRANSFUSIONES: " + meds.transfusiones : ""),
     "NM: " + nmParts.join(" || "),
   ];
 }

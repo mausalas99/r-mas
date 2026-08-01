@@ -163,40 +163,38 @@ export function captureClinicalTeamsPanelDraft(host) {
   };
 }
 
-/** @param {HTMLElement} host @param {ReturnType<typeof captureClinicalTeamsPanelDraft>|null} draft */
-export function restoreClinicalTeamsPanelDraft(host, draft) {
-  if (!draft) return;
-
-  restoreFieldGroup(draft.create);
-  restoreFieldGroup(draft.profile);
-  restoreFieldGroup(draft.joinCode);
-
+function restoreCreateTeamPanelDraft(draft) {
   const createPanel = document.getElementById('clinical-team-create-panel');
   const openBtn = document.getElementById('btn-clinical-team-create-open');
-  if (createPanel instanceof HTMLElement && openBtn instanceof HTMLElement) {
-    createPanel.hidden = !draft.createPanelOpen;
-    openBtn.hidden = draft.createOpenBtnHidden;
-    if (draft.createPanelOpen) {
-      void import('./teams-roster-create.mjs').then((m) => {
-        m.syncCreateTeamServiceFromSala();
-        m.syncCreateTeamCycleField();
-      });
-    }
-  }
+  if (!(createPanel instanceof HTMLElement) || !(openBtn instanceof HTMLElement)) return;
+  createPanel.hidden = !draft.createPanelOpen;
+  openBtn.hidden = draft.createOpenBtnHidden;
+  if (!draft.createPanelOpen) return;
+  void import('./teams-roster-create.mjs').then((m) => {
+    m.syncCreateTeamServiceFromSala();
+    m.syncCreateTeamCycleField();
+  });
+}
 
-  if (draft.browseSala) {
-    const browse = document.getElementById('clinical-browse-sala');
-    if (browse instanceof HTMLSelectElement) browse.value = draft.browseSala;
-  }
+function restoreBrowseSalaDraft(draft) {
+  if (!draft.browseSala) return;
+  const browse = document.getElementById('clinical-browse-sala');
+  if (browse instanceof HTMLSelectElement) browse.value = draft.browseSala;
+}
 
-  for (const teamId of draft.editPanelsOpen || []) {
+/** @param {HTMLElement} host @param {string[]} teamIds */
+function restoreEditPanelsOpen(host, teamIds) {
+  for (const teamId of teamIds || []) {
     const panel = host.querySelector(
       `.clinical-teams-edit-panel[data-team-id="${CSS.escape(teamId)}"]`
     );
     if (panel instanceof HTMLElement) panel.hidden = false;
   }
+}
 
-  for (const row of draft.addMember || []) {
+/** @param {HTMLElement} host @param {Array<{ teamId: string, username: string, cycle: string }>} rows */
+function restoreAddMemberDraftRows(host, rows) {
+  for (const row of rows || []) {
     if (!row.teamId || !row.username) continue;
     const form = host.querySelector(
       `.clinical-teams-add-member-form[data-team-id="${CSS.escape(row.teamId)}"]`
@@ -207,7 +205,19 @@ export function restoreClinicalTeamsPanelDraft(host, draft) {
     if (input instanceof HTMLInputElement) input.value = row.username;
     if (cycleEl instanceof HTMLSelectElement && row.cycle) cycleEl.value = row.cycle;
   }
+}
 
+/** @param {HTMLElement} host @param {ReturnType<typeof captureClinicalTeamsPanelDraft>|null} draft */
+export function restoreClinicalTeamsPanelDraft(host, draft) {
+  if (!draft) return;
+
+  restoreFieldGroup(draft.create);
+  restoreFieldGroup(draft.profile);
+  restoreFieldGroup(draft.joinCode);
+  restoreCreateTeamPanelDraft(draft);
+  restoreBrowseSalaDraft(draft);
+  restoreEditPanelsOpen(host, draft.editPanelsOpen);
+  restoreAddMemberDraftRows(host, draft.addMember);
   host.scrollTop = Number.isFinite(draft.scrollTop) ? draft.scrollTop : 0;
 }
 

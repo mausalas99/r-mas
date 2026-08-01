@@ -50,48 +50,10 @@ export function parseCompactLabPairs(entry) {
 export function interpretBhPhrases(pairs) {
   var p = normalizePairs_(pairs);
   var phrases = [];
-  var hb = numOf_(p.Hb);
-  var vcm = numOf_(p.VCM);
-  var hto = numOf_(p.Hto);
-  var anemia =
-    (hb != null && hb < 12) ||
-    flagged_(p.Hb) ||
-    (hto != null && hto < 36) ||
-    flagged_(p.Hto);
-  if (anemia && hb != null) {
-    var morph = 'normocítica';
-    if (vcm != null && vcm < 80) morph = 'microcítica';
-    else if (vcm != null && vcm > 100) morph = 'macrocítica';
-    var bits = ['Hb ' + fmtNum_(hb)];
-    if (vcm != null) bits.push('VCM ' + fmtNum_(vcm));
-    if (hto != null) bits.push('Hto ' + fmtNum_(hto));
-    phrases.push('anemia ' + morph + ' con ' + joinProse_(bits));
-  } else if (hb != null && hb > 17) {
-    phrases.push('poliglobulia con Hb ' + fmtNum_(hb));
-  }
-
-  var leu = numOf_(p.Leu);
-  if (leu != null && (leu > 11 || (flagged_(p.Leu) && leu >= 11))) {
-    phrases.push('leucocitosis con Leu ' + fmtNum_(leu));
-  } else if (leu != null && (leu < 4 || (flagged_(p.Leu) && leu < 11))) {
-    phrases.push('leucopenia con Leu ' + fmtNum_(leu));
-  }
-
-  var plt = numOf_(p.Plt);
-  if (plt != null && (plt < 150 || (flagged_(p.Plt) && plt <= 150))) {
-    phrases.push('trombocitopenia con Plt ' + fmtNum_(plt));
-  } else if (plt != null && (plt > 450 || (flagged_(p.Plt) && plt >= 450))) {
-    phrases.push('trombocitosis con Plt ' + fmtNum_(plt));
-  }
-
-  var neu = numOf_(p.Neu);
-  if (neu != null && (neu > 75 || flagged_(p.Neu))) {
-    phrases.push('neutrofilia con Neu ' + fmtNum_(neu) + '%');
-  }
-  var eos = numOf_(p.Eos);
-  if (eos != null && (eos > 5 || flagged_(p.Eos))) {
-    phrases.push('eosinofilia con Eos ' + fmtNum_(eos) + '%');
-  }
+  pushBhHbPhrases_(phrases, p);
+  pushBhLeuPhrases_(phrases, p);
+  pushBhPltPhrases_(phrases, p);
+  pushBhDiffPhrases_(phrases, p);
   return phrases;
 }
 
@@ -179,68 +141,17 @@ export function extractExistingInterpretBodies(resLabs) {
  * @returns {string[]}
  */
 export function interpretGasoPhrases(set) {
-  var resLabs = (set && set.resLabs) || [];
-  var gasPairs = Object.create(null);
-  var chemPairs = Object.create(null);
-  resLabs.forEach(function (row) {
-    var s = String(row || '');
-    if (/^GASES\b/i.test(s.trim())) Object.assign(gasPairs, parseCompactLabPairs(s));
-    if (/^(QS|ESC|PFHs)\b/i.test(s.trim())) Object.assign(chemPairs, parseCompactLabPairs(s));
-  });
-  var pH = numOf_(gasPairs.pH);
-  var pCO2 = numOf_(gasPairs.pCO2);
-  var pO2 = numOf_(gasPairs.pO2);
-  var hco3 = numOf_(gasPairs.Bica) != null ? numOf_(gasPairs.Bica) : numOf_(gasPairs.HCO3);
-  var input = {
-    pH: pH,
-    pCO2: pCO2,
-    pO2: pO2,
-    hco3: hco3,
-    na: numOf_(chemPairs.Na) != null ? numOf_(chemPairs.Na) : numOf_(gasPairs.Na),
-    cl: numOf_(chemPairs.Cl),
-    alb: numOf_(chemPairs.Alb),
-    uag: numOf_(gasPairs.UAG),
-  };
-  var hasCore = input.pH != null || input.pCO2 != null || input.hco3 != null;
-  if (!hasCore) return [];
+  var pairCtx = extractGasoChemPairs_((set && set.resLabs) || []);
+  var input = buildGasoExtendedInput_(pairCtx);
+  if (input.pH == null && input.pCO2 == null && input.hco3 == null) return [];
 
   var ev = evaluateGasoExtended(input);
   var bits = [];
-  if (pH != null) {
-    if (pH < 7.35) bits.push('acidemia con pH ' + fmtNum_(pH));
-    else if (pH > 7.45) bits.push('alcalemia con pH ' + fmtNum_(pH));
-    else bits.push('pH en rango con ' + fmtNum_(pH));
-  }
-
-  var primary = ev && ev.steps && ev.steps.primary ? ev.steps.primary : null;
-  var primaryEs = primaryDisorderEs_(primary);
-  if (primaryEs) bits.push(primaryEs);
-
-  var metaLow = hco3 != null && hco3 < 22;
-  var winterCenter = hco3 != null ? 1.5 * hco3 + 8 : null;
-  if (
-    metaLow &&
-    pCO2 != null &&
-    winterCenter != null &&
-    isFinite(winterCenter) &&
-    (pCO2 > winterCenter + 2 || pCO2 < winterCenter - 2)
-  ) {
-    bits.push(
-      'la PaCO₂ medida no corresponde a la compensación respiratoria esperada de una acidosis metabólica única'
-    );
-  }
-
-  if (pCO2 != null) bits.push('PaCO₂ ' + fmtNum_(pCO2) + ' mmHg');
-  if (hco3 != null) bits.push('HCO₃⁻ ' + fmtNum_(hco3));
-  if (pO2 != null) bits.push('PaO₂ ' + fmtNum_(pO2) + ' mmHg');
-
-  var ag = ev && ev.steps && ev.steps.anionGap ? ev.steps.anionGap : null;
-  if (ag && ag.value != null) {
-    var agBit = 'anión gap ' + String(ag.value);
-    if (ag.corrected != null) agBit += ', corregido ' + String(ag.corrected);
-    bits.push(agBit);
-  }
-
+  pushGasoPhBits_(bits, input.pH);
+  pushGasoPrimaryBit_(bits, ev);
+  pushGasoWinterMismatchBit_(bits, input.pCO2, input.hco3);
+  pushGasoMeasureBits_(bits, input.pCO2, input.hco3, input.pO2);
+  pushGasoAnionGapBit_(bits, ev);
   return bits.slice(0, 6);
 }
 
@@ -289,104 +200,265 @@ export function buildLabEventualidadInterpretText(labSets, opts) {
 
   var sections = [];
   todays.forEach(function (set) {
-    var fecha = norm(set.fecha) || String(set.fecha || '').trim() || today;
-    var hora = String(set.hora || '').trim();
-    var stamp = fecha + (hora ? ' ' + hora : '');
-    var paragraphs = [];
-
-    var bhPairs = Object.create(null);
-    var chemPairs = Object.create(null);
-    var coagPairs = Object.create(null);
-    var tropBits = [];
-
-    (set.resLabs || []).forEach(function (row) {
-      var s = String(row || '').trim();
-      if (!s) return;
-      if (/^BH\b/i.test(s) || /^BH:/i.test(s)) {
-        Object.assign(bhPairs, bhPairsFromEntry_(row));
-        return;
-      }
-      if (/^(QS|ESC|PFHs)\b/i.test(s)) {
-        Object.assign(chemPairs, parseCompactLabPairs(s));
-        return;
-      }
-      if (/^COAG\b/i.test(s)) {
-        Object.assign(coagPairs, parseCompactLabPairs(s));
-        return;
-      }
-      if (/^TROP\b/i.test(s)) {
-        var tp = parseCompactLabPairs(s);
-        Object.keys(tp).forEach(function (k) {
-          if (numOf_(tp[k]) != null) {
-            tropBits.push(k + ' ' + fmtNum_(numOf_(tp[k])));
-          }
-        });
-      }
-    });
-
-    var bh = interpretBhPhrases(bhPairs);
-    if (bh.length) paragraphs.push('En la biometría se aprecia ' + joinProse_(bh) + '.');
-
-    var chem = interpretChemPhrases(chemPairs);
-    if (chem.length) paragraphs.push('En la química clínica se aprecia ' + joinProse_(chem) + '.');
-
-    var coag = interpretCoagPhrases(coagPairs);
-    if (coag.length) paragraphs.push('En la coagulación se aprecia ' + joinProse_(coag) + '.');
-
-    if (tropBits.length) {
-      paragraphs.push('En troponinas se aprecia ' + joinProse_(tropBits) + '.');
-    }
-
-    var gaso = interpretGasoPhrases(set);
-    if (gaso.length) paragraphs.push('En la gasometría se aprecia ' + joinProse_(gaso) + '.');
-
-    var existing = extractExistingInterpretBodies(set.resLabs || []);
-    existing.forEach(function (body) {
-      var t = String(body || '').trim();
-      if (!t) return;
-      paragraphs.push(t.endsWith('.') ? t : t + '.');
-    });
-
-    if (!paragraphs.length && useFallback) {
-      var compact = compactFallbackLines_(set);
-      if (compact.length) {
-        paragraphs.push('En laboratorio se registran ' + joinProse_(compact) + '.');
-      }
-    }
-
-    if (!paragraphs.length) return;
-    sections.push('Labs ' + stamp + ':\n' + paragraphs.join(' '));
+    var section = buildLabSetSection_(set, today, norm, useFallback);
+    if (section) sections.push(section);
   });
 
   return sections.join('\n\n').trim().toUpperCase();
 }
 
+function pushBhHbPhrases_(phrases, p) {
+  var hb = numOf_(p.Hb);
+  var vcm = numOf_(p.VCM);
+  var hto = numOf_(p.Hto);
+  var anemia =
+    (hb != null && hb < 12) ||
+    flagged_(p.Hb) ||
+    (hto != null && hto < 36) ||
+    flagged_(p.Hto);
+  if (anemia && hb != null) {
+    var morph = anemiaMorphologyEs_(vcm);
+    var bits = ['Hb ' + fmtNum_(hb)];
+    if (vcm != null) bits.push('VCM ' + fmtNum_(vcm));
+    if (hto != null) bits.push('Hto ' + fmtNum_(hto));
+    phrases.push('anemia ' + morph + ' con ' + joinProse_(bits));
+    return;
+  }
+  if (hb != null && hb > 17) {
+    phrases.push('poliglobulia con Hb ' + fmtNum_(hb));
+  }
+}
+
+function anemiaMorphologyEs_(vcm) {
+  if (vcm != null && vcm < 80) return 'microcítica';
+  if (vcm != null && vcm > 100) return 'macrocítica';
+  return 'normocítica';
+}
+
+function pushBhLeuPhrases_(phrases, p) {
+  var leu = numOf_(p.Leu);
+  if (leu != null && (leu > 11 || (flagged_(p.Leu) && leu >= 11))) {
+    phrases.push('leucocitosis con Leu ' + fmtNum_(leu));
+  } else if (leu != null && (leu < 4 || (flagged_(p.Leu) && leu < 11))) {
+    phrases.push('leucopenia con Leu ' + fmtNum_(leu));
+  }
+}
+
+function pushBhPltPhrases_(phrases, p) {
+  var plt = numOf_(p.Plt);
+  if (plt != null && (plt < 150 || (flagged_(p.Plt) && plt <= 150))) {
+    phrases.push('trombocitopenia con Plt ' + fmtNum_(plt));
+  } else if (plt != null && (plt > 450 || (flagged_(p.Plt) && plt >= 450))) {
+    phrases.push('trombocitosis con Plt ' + fmtNum_(plt));
+  }
+}
+
+function pushBhDiffPhrases_(phrases, p) {
+  var neu = numOf_(p.Neu);
+  if (neu != null && (neu > 75 || flagged_(p.Neu))) {
+    phrases.push('neutrofilia con Neu ' + fmtNum_(neu) + '%');
+  }
+  var eos = numOf_(p.Eos);
+  if (eos != null && (eos > 5 || flagged_(p.Eos))) {
+    phrases.push('eosinofilia con Eos ' + fmtNum_(eos) + '%');
+  }
+}
+
+function extractGasoChemPairs_(resLabs) {
+  var gasPairs = Object.create(null);
+  var chemPairs = Object.create(null);
+  resLabs.forEach(function (row) {
+    var s = String(row || '');
+    if (/^GASES\b/i.test(s.trim())) Object.assign(gasPairs, parseCompactLabPairs(s));
+    if (/^(QS|ESC|PFHs)\b/i.test(s.trim())) Object.assign(chemPairs, parseCompactLabPairs(s));
+  });
+  return { gasPairs: gasPairs, chemPairs: chemPairs };
+}
+
+function buildGasoExtendedInput_(pairCtx) {
+  var gasPairs = pairCtx.gasPairs;
+  var chemPairs = pairCtx.chemPairs;
+  return {
+    pH: numOf_(gasPairs.pH),
+    pCO2: numOf_(gasPairs.pCO2),
+    pO2: numOf_(gasPairs.pO2),
+    hco3: numOf_(gasPairs.Bica) != null ? numOf_(gasPairs.Bica) : numOf_(gasPairs.HCO3),
+    na: numOf_(chemPairs.Na) != null ? numOf_(chemPairs.Na) : numOf_(gasPairs.Na),
+    cl: numOf_(chemPairs.Cl),
+    alb: numOf_(chemPairs.Alb),
+    uag: numOf_(gasPairs.UAG),
+  };
+}
+
+function pushGasoPhBits_(bits, pH) {
+  if (pH == null) return;
+  if (pH < 7.35) bits.push('acidemia con pH ' + fmtNum_(pH));
+  else if (pH > 7.45) bits.push('alcalemia con pH ' + fmtNum_(pH));
+  else bits.push('pH en rango con ' + fmtNum_(pH));
+}
+
+function pushGasoPrimaryBit_(bits, ev) {
+  var primary = ev && ev.steps && ev.steps.primary ? ev.steps.primary : null;
+  var primaryEs = primaryDisorderEs_(primary);
+  if (primaryEs) bits.push(primaryEs);
+}
+
+function pushGasoWinterMismatchBit_(bits, pCO2, hco3) {
+  var metaLow = hco3 != null && hco3 < 22;
+  var winterCenter = hco3 != null ? 1.5 * hco3 + 8 : null;
+  if (
+    !metaLow ||
+    pCO2 == null ||
+    winterCenter == null ||
+    !isFinite(winterCenter) ||
+    (pCO2 <= winterCenter + 2 && pCO2 >= winterCenter - 2)
+  ) {
+    return;
+  }
+  bits.push(
+    'la PaCO₂ medida no corresponde a la compensación respiratoria esperada de una acidosis metabólica única'
+  );
+}
+
+function pushGasoMeasureBits_(bits, pCO2, hco3, pO2) {
+  if (pCO2 != null) bits.push('PaCO₂ ' + fmtNum_(pCO2) + ' mmHg');
+  if (hco3 != null) bits.push('HCO₃⁻ ' + fmtNum_(hco3));
+  if (pO2 != null) bits.push('PaO₂ ' + fmtNum_(pO2) + ' mmHg');
+}
+
+function pushGasoAnionGapBit_(bits, ev) {
+  var ag = ev && ev.steps && ev.steps.anionGap ? ev.steps.anionGap : null;
+  if (!ag || ag.value == null) return;
+  var agBit = 'anión gap ' + String(ag.value);
+  if (ag.corrected != null) agBit += ', corregido ' + String(ag.corrected);
+  bits.push(agBit);
+}
+
+function collectLabPairsFromSet_(set) {
+  var bhPairs = Object.create(null);
+  var chemPairs = Object.create(null);
+  var coagPairs = Object.create(null);
+  var tropBits = [];
+  (set.resLabs || []).forEach(function (row) {
+    var s = String(row || '').trim();
+    if (!s) return;
+    if (/^BH\b/i.test(s) || /^BH:/i.test(s)) {
+      Object.assign(bhPairs, bhPairsFromEntry_(row));
+      return;
+    }
+    if (/^(QS|ESC|PFHs)\b/i.test(s)) {
+      Object.assign(chemPairs, parseCompactLabPairs(s));
+      return;
+    }
+    if (/^COAG\b/i.test(s)) {
+      Object.assign(coagPairs, parseCompactLabPairs(s));
+      return;
+    }
+    if (/^TROP\b/i.test(s)) {
+      pushTropBitsFromRow_(tropBits, s);
+    }
+  });
+  return {
+    bhPairs: bhPairs,
+    chemPairs: chemPairs,
+    coagPairs: coagPairs,
+    tropBits: tropBits,
+  };
+}
+
+function pushTropBitsFromRow_(tropBits, rowText) {
+  var tp = parseCompactLabPairs(rowText);
+  Object.keys(tp).forEach(function (k) {
+    if (numOf_(tp[k]) != null) {
+      tropBits.push(k + ' ' + fmtNum_(numOf_(tp[k])));
+    }
+  });
+}
+
+function buildLabSetParagraphs_(set, useFallback) {
+  var pairs = collectLabPairsFromSet_(set);
+  var paragraphs = [];
+
+  var bh = interpretBhPhrases(pairs.bhPairs);
+  if (bh.length) paragraphs.push('En la biometría se aprecia ' + joinProse_(bh) + '.');
+
+  var chem = interpretChemPhrases(pairs.chemPairs);
+  if (chem.length) paragraphs.push('En la química clínica se aprecia ' + joinProse_(chem) + '.');
+
+  var coag = interpretCoagPhrases(pairs.coagPairs);
+  if (coag.length) paragraphs.push('En la coagulación se aprecia ' + joinProse_(coag) + '.');
+
+  if (pairs.tropBits.length) {
+    paragraphs.push('En troponinas se aprecia ' + joinProse_(pairs.tropBits) + '.');
+  }
+
+  var gaso = interpretGasoPhrases(set);
+  if (gaso.length) paragraphs.push('En la gasometría se aprecia ' + joinProse_(gaso) + '.');
+
+  appendExistingInterpretParagraphs_(paragraphs, set.resLabs || []);
+
+  if (!paragraphs.length && useFallback) {
+    var compact = compactFallbackLines_(set);
+    if (compact.length) {
+      paragraphs.push('En laboratorio se registran ' + joinProse_(compact) + '.');
+    }
+  }
+  return paragraphs;
+}
+
+function appendExistingInterpretParagraphs_(paragraphs, resLabs) {
+  extractExistingInterpretBodies(resLabs).forEach(function (body) {
+    var t = String(body || '').trim();
+    if (!t) return;
+    paragraphs.push(t.endsWith('.') ? t : t + '.');
+  });
+}
+
+function buildLabSetSection_(set, today, norm, useFallback) {
+  var fecha = norm(set.fecha) || String(set.fecha || '').trim() || today;
+  var hora = String(set.hora || '').trim();
+  var stamp = fecha + (hora ? ' ' + hora : '');
+  var paragraphs = buildLabSetParagraphs_(set, useFallback);
+  if (!paragraphs.length) return '';
+  return 'Labs ' + stamp + ':\n' + paragraphs.join(' ');
+}
+
+function disorderTypeEs_(t) {
+  if (t === 'acidosis') return 'acidosis';
+  if (t === 'alkalosis') return 'alcalosis';
+  return '';
+}
+
+function primaryMixedDisorderEs_(typeEs) {
+  return typeEs ? 'trastorno mixto con ' + typeEs : 'trastorno ácido-base mixto';
+}
+
+function primaryMetabolicDisorderEs_(typeEs) {
+  if (typeEs === 'acidosis') return 'acidosis metabólica';
+  if (typeEs === 'alcalosis') return 'alcalosis metabólica';
+  return 'trastorno metabólico';
+}
+
+function primaryRespiratoryDisorderEs_(typeEs) {
+  if (typeEs === 'acidosis') return 'acidosis respiratoria';
+  if (typeEs === 'alcalosis') return 'alcalosis respiratoria';
+  return 'trastorno respiratorio';
+}
+
+function primaryCompensatedDisorderEs_(typeEs) {
+  return typeEs && typeEs !== 'none'
+    ? 'trastorno compensado con ' + typeEs
+    : 'trastorno ácido-base compensado';
+}
+
 function primaryDisorderEs_(primary) {
   if (!primary) return '';
   var d = String(primary.disorder || '');
-  var t = String(primary.type || '');
-  var typeEs =
-    t === 'acidosis' ? 'acidosis' : t === 'alkalosis' ? 'alcalosis' : '';
-  if (d === 'mixed') {
-    return typeEs
-      ? 'trastorno mixto con ' + typeEs
-      : 'trastorno ácido-base mixto';
-  }
-  if (d === 'metabolic') {
-    if (typeEs === 'acidosis') return 'acidosis metabólica';
-    if (typeEs === 'alcalosis') return 'alcalosis metabólica';
-    return 'trastorno metabólico';
-  }
-  if (d === 'respiratory') {
-    if (typeEs === 'acidosis') return 'acidosis respiratoria';
-    if (typeEs === 'alcalosis') return 'alcalosis respiratoria';
-    return 'trastorno respiratorio';
-  }
-  if (d === 'compensated') {
-    return typeEs && typeEs !== 'none'
-      ? 'trastorno compensado con ' + typeEs
-      : 'trastorno ácido-base compensado';
-  }
+  var typeEs = disorderTypeEs_(String(primary.type || ''));
+  if (d === 'mixed') return primaryMixedDisorderEs_(typeEs);
+  if (d === 'metabolic') return primaryMetabolicDisorderEs_(typeEs);
+  if (d === 'respiratory') return primaryRespiratoryDisorderEs_(typeEs);
+  if (d === 'compensated') return primaryCompensatedDisorderEs_(typeEs);
   if (d === 'unknown') return '';
   return '';
 }

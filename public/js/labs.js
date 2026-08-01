@@ -101,6 +101,7 @@ export {
   DEFAULT_LAB_REFS,
   collectPriorRefsFromHistory,
   mergeRefsMap_,
+  mergeRefsBySection_,
   resolveLabFieldRange_,
 } from './labs-default-refs.mjs';
 

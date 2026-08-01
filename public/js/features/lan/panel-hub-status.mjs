@@ -91,48 +91,61 @@ export function setLanAutoJoinConfirmed(roomId) {
   } catch (_e) { void _e; }
 }
 
-export function lanHubStatusCopy() {
-  if (!lanClient.connected) {
-    if (isAutoHostDetectPaused()) {
-      return lanHubPausedCopy();
-    }
-    if (!isClinicalRankConfiguredForLan()) {
-      return {
-        connected: false,
-        line: 'Configura tu rotación para usar la red del turno',
-        hint: 'Abre «Configura tu rotación» y confirma rango y sala; después buscaremos al anfitrión en la Wi‑Fi.',
-      };
-    }
-    if (!canLocalMacBeLanHost()) {
-      var hostEsc = getHostEscalationStatus();
-      var nextRank = ['R3', 'R2', 'R1'][hostEsc.tier] || '';
-      var escHint =
-        hostEsc.tier < 3 && hostEsc.msUntilNext > 0
-          ? 'Sin R4/admin en la red: en ' +
-            formatEscalationCountdown(hostEsc.msUntilNext) +
-            ' podrá anfitrionar ' +
-            nextRank +
-            ' (escalada automática 10+10+10 min).'
-          : 'R1–R3 esperan anfitrión R4 o escalada. Pide enlace (⇄) o pégalo abajo.';
-      return {
-        connected: false,
-        line: 'Sin conexión al turno',
-        hint: isLanSkipShiftPin()
-          ? 'Pulsa Conectar al turno arriba o pega el enlace del anfitrión en ⇄. ' + escHint
-          : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o pulsa Conectar al turno arriba. ' + escHint,
-      };
-    }
-    var onCallHost = resolveLocalOnCallGuardia();
-    return {
-      connected: false,
-      line: onCallHost ? 'De guardia hoy — listo para anfitrionar' : 'Sin conexión al turno',
-      hint: onCallHost
-        ? 'Esta Mac puede ser el servidor del turno en tu Wi‑Fi. Pulsa Conectar al turno o abre ⇄.'
-        : isLanSkipShiftPin()
-          ? 'Pulsa Conectar al turno o pega el enlace del anfitrión en ⇄.'
-          : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o conéctate abajo.',
-    };
+function lanDisconnectedRankHint() {
+  return {
+    connected: false,
+    line: 'Configura tu rotación para usar la red del turno',
+    hint: 'Abre «Configura tu rotación» y confirma rango y sala; después buscaremos al anfitrión en la Wi‑Fi.',
+  };
+}
+
+function lanHostEscalationHint() {
+  var hostEsc = getHostEscalationStatus();
+  var nextRank = ['R3', 'R2', 'R1'][hostEsc.tier] || '';
+  if (hostEsc.tier < 3 && hostEsc.msUntilNext > 0) {
+    return (
+      'Sin R4/admin en la red: en ' +
+      formatEscalationCountdown(hostEsc.msUntilNext) +
+      ' podrá anfitrionar ' +
+      nextRank +
+      ' (escalada automática 10+10+10 min).'
+    );
   }
+  return 'R1–R3 esperan anfitrión R4 o escalada. Pide enlace (⇄) o pégalo abajo.';
+}
+
+function lanDisconnectedClientHint() {
+  var escHint = lanHostEscalationHint();
+  return {
+    connected: false,
+    line: 'Sin conexión al turno',
+    hint: isLanSkipShiftPin()
+      ? 'Pulsa Conectar al turno arriba o pega el enlace del anfitrión en ⇄. ' + escHint
+      : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o pulsa Conectar al turno arriba. ' + escHint,
+  };
+}
+
+function lanDisconnectedHostHint() {
+  var onCallHost = resolveLocalOnCallGuardia();
+  return {
+    connected: false,
+    line: onCallHost ? 'De guardia hoy — listo para anfitrionar' : 'Sin conexión al turno',
+    hint: onCallHost
+      ? 'Esta Mac puede ser el servidor del turno en tu Wi‑Fi. Pulsa Conectar al turno o abre ⇄.'
+      : isLanSkipShiftPin()
+        ? 'Pulsa Conectar al turno o pega el enlace del anfitrión en ⇄.'
+        : 'Pide el PIN de 6 dígitos al anfitrión (⇄) o conéctate abajo.',
+  };
+}
+
+function lanDisconnectedStatusCopy() {
+  if (isAutoHostDetectPaused()) return lanHubPausedCopy();
+  if (!isClinicalRankConfiguredForLan()) return lanDisconnectedRankHint();
+  if (!canLocalMacBeLanHost()) return lanDisconnectedClientHint();
+  return lanDisconnectedHostHint();
+}
+
+function lanConnectedStatusCopy() {
   if (isLanRemoteJoinMode()) {
     var remoteUrl = String(lanClient.baseUrl() || '').replace(/\/+$/, '');
     return {
@@ -149,4 +162,9 @@ export function lanHubStatusCopy() {
     hint:
       'Comparte el enlace de sala (⇄ → Copiar enlace de sala). Para iPad usa «Copiar enlace móvil». No activen otro servidor salvo suplente.',
   };
+}
+
+export function lanHubStatusCopy() {
+  if (!lanClient.connected) return lanDisconnectedStatusCopy();
+  return lanConnectedStatusCopy();
 }

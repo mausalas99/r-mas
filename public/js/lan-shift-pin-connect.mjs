@@ -416,15 +416,29 @@ function reportEasyConnectFailure(opts) {
   return { ok: false, reason };
 }
 
+function resolveEasyConnectPin(opts) {
+  return (
+    String(opts.shiftPin || '').trim() ||
+    (typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '')
+  );
+}
+
+function reportEasyConnectSuccess(opts) {
+  resetShiftPinBackoff();
+  recordAutoHostDetectSuccess();
+  if (!opts.silent) {
+    showEasyToast('Listo: conectado al turno.', 'success');
+  }
+  return { ok: true, reason: 'connected' };
+}
+
 export async function tryEasyLanShiftPinConnect(opts = {}) {
   if (opts.force) resumeAutoHostDetect();
   const blocked = easyConnectBlockedReason(opts);
   if (blocked) return { ok: false, reason: blocked };
   _lastEasyConnectAttemptMs = Date.now();
 
-  const pin =
-    String(opts.shiftPin || '').trim() ||
-    (typeof storage.getLanShiftPin === 'function' ? storage.getLanShiftPin() : '');
+  const pin = resolveEasyConnectPin(opts);
   if (!isLanSkipShiftPin() && !/^\d{6}$/.test(pin)) {
     return { ok: false, reason: 'no_pin' };
   }
@@ -442,14 +456,7 @@ export async function tryEasyLanShiftPinConnect(opts = {}) {
   }
 
   const ok = await connectLanWithShiftPin(pin, connectOpts);
-  if (ok) {
-    resetShiftPinBackoff();
-    recordAutoHostDetectSuccess();
-    if (!opts.silent) {
-      showEasyToast('Listo: conectado al turno.', 'success');
-    }
-    return { ok: true, reason: 'connected' };
-  }
+  if (ok) return reportEasyConnectSuccess(opts);
   return reportEasyConnectFailure(opts);
 }
 

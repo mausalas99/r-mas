@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-21T14:33:24.565Z",
-  "totalScore": 50,
-  "bootGraphHash": "89cec49ea6ea9607",
+  "updatedAt": "2026-08-01T00:25:30.717Z",
+  "totalScore": 0,
+  "bootGraphHash": "dd48ea3f8d115649",
   "bootGraph": {
-    "hash": "89cec49ea6ea9607",
+    "hash": "dd48ea3f8d115649",
     "imports": [
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -248,28 +248,28 @@
       },
       {
         "hub": "public/js/app-shell.mjs",
+        "from": "./app-shell-deferred.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./app-shell-lazy-panels.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
         "from": "./app-shell-modals.mjs",
         "isDynamic": true
       },
       {
         "hub": "public/js/app-shell.mjs",
-        "from": "./app-state.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./app-state.mjs",
+        "from": "./app-shell-patient-update.mjs",
         "isDynamic": false
       },
       {
         "hub": "public/js/app-shell.mjs",
         "from": "./clinical-access-runtime.mjs",
         "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./clinical-access-runtime.mjs",
-        "isDynamic": true
       },
       {
         "hub": "public/js/app-shell.mjs",
@@ -283,22 +283,12 @@
       },
       {
         "hub": "public/js/app-shell.mjs",
-        "from": "./clinical-team-invite.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
         "from": "./document-export-client.mjs",
         "isDynamic": false
       },
       {
         "hub": "public/js/app-shell.mjs",
         "from": "./document-export-client.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/agenda.mjs",
         "isDynamic": false
       },
       {
@@ -310,16 +300,6 @@
         "hub": "public/js/app-shell.mjs",
         "from": "./features/chrome.mjs",
         "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/clinical-registration.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/command-palette.mjs",
-        "isDynamic": true
       },
       {
         "hub": "public/js/app-shell.mjs",
@@ -338,82 +318,12 @@
       },
       {
         "hub": "public/js/app-shell.mjs",
-        "from": "./features/lan-sync.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/pase-board.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
         "from": "./features/patients.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/patients.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./features/productivity.mjs",
         "isDynamic": false
       },
       {
         "hub": "public/js/app-shell.mjs",
         "from": "./features/profile.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./lan-join-link.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./lazy-feature-routes.mjs",
-        "isDynamic": true
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./mobile-lan-boot.mjs",
-        "isDynamic": true
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./mobile-lan-query-persist.mjs",
-        "isDynamic": true
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./mobile-sharer-sync.mjs",
-        "isDynamic": true
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./mobile-web.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./patient-accesos.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./patient-date-fields.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./session-clinical-wipe.mjs",
-        "isDynamic": true
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./storage.js",
         "isDynamic": false
       },
       {
@@ -665,6 +575,10 @@
     {
       "date": "2026-06-21",
       "note": "Baseline refresh totalScore=50"
+    },
+    {
+      "date": "2026-08-01",
+      "note": "Baseline refresh totalScore=0 (was 50; paid down complexity/length; shell modularization)"
     }
   ]
 }

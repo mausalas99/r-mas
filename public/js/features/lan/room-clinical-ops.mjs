@@ -124,6 +124,24 @@ function getAlternateHostTeamCode(url) {
   return getLanTeamCodeFromConfig() || '';
 }
 
+function recordClinicalOpsGetTrace(rid, resp, body) {
+  recordClinicalOpsTrace('get', {
+    roomId: rid,
+    httpStatus: resp ? resp.status : 0,
+    incomingUsers: Array.isArray(body?.snapshot?.clinical_users)
+      ? body.snapshot.clinical_users.length
+      : 0,
+    ok: !!(resp && resp.ok),
+  });
+}
+
+async function applyClinicalOpsBody(body, options) {
+  if (isClinicalOpsLanAvailable()) {
+    return applyFetchedClinicalOpsSnapshot(body, options);
+  }
+  return applyFetchedMobileClinicalOpsSnapshot(body);
+}
+
 /** GET /clinical-ops from host; desktop merges SQLCipher, iPad hydrates scope from snapshot. */
 export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
   const rid = String(roomId || '').trim();
@@ -140,28 +158,13 @@ export async function fetchAndApplyClinicalOpsFromHost(roomId, options = {}) {
       { signal: ctrl.signal, cache: 'no-store' }
     );
     if (!resp || !resp.ok) {
-      recordClinicalOpsTrace('get', {
-        roomId: rid,
-        httpStatus: resp ? resp.status : 0,
-        incomingUsers: 0,
-        ok: false,
-      });
+      recordClinicalOpsGetTrace(rid, resp, null);
       return false;
     }
     const body = await resp.json();
-    recordClinicalOpsTrace('get', {
-      roomId: rid,
-      httpStatus: resp.status,
-      incomingUsers: Array.isArray(body?.snapshot?.clinical_users)
-        ? body.snapshot.clinical_users.length
-        : 0,
-      ok: true,
-    });
+    recordClinicalOpsGetTrace(rid, resp, body);
     updateHostRevisionFromBody(rid, body);
-    if (isClinicalOpsLanAvailable()) {
-      return applyFetchedClinicalOpsSnapshot(body, options);
-    }
-    return applyFetchedMobileClinicalOpsSnapshot(body);
+    return applyClinicalOpsBody(body, options);
   } catch {
     return false;
   } finally {

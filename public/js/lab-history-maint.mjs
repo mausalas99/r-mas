@@ -267,6 +267,11 @@ function refreshLabHistoryUiAfterMaint() {
   } catch (_e) { void _e; }
 }
 
+/**
+ * Post-save path must stay cheap: only rebuild GASES lines.
+ * Full SOME re-parse (procesarLabs) runs on explicit «Reprocesar» in lab-panel-history —
+ * never for every set on every save (that lagged the UI with large histories).
+ */
 export function runLabHistoryPostSaveMaintenance() {
   var report = {
     at: new Date().toISOString(),

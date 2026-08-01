@@ -147,6 +147,26 @@ export function mergeRefsMap_(base, overlay) {
   return out;
 }
 
+/**
+ * Combina refsBySection: reporte gana por campo; prior rellena huecos
+ * (cuando SOME omite Valor de Referencia). No escribe estándares.
+ * @param {object|null|undefined} reportRefs
+ * @param {object|null|undefined} priorBySec
+ */
+export function mergeRefsBySection_(reportRefs, priorBySec) {
+  var out = Object.create(null);
+  var prior = priorBySec && typeof priorBySec === 'object' ? priorBySec : null;
+  var report = reportRefs && typeof reportRefs === 'object' ? reportRefs : null;
+  var keys = Object.create(null);
+  if (prior) Object.keys(prior).forEach(function (k) { keys[k] = true; });
+  if (report) Object.keys(report).forEach(function (k) { keys[k] = true; });
+  Object.keys(keys).forEach(function (sec) {
+    var merged = mergeRefsMap_(prior && prior[sec], report && report[sec]);
+    if (Object.keys(merged).length) out[sec] = merged;
+  });
+  return out;
+}
+
 export function mergeGasRefs_(base, overlay) {
   return mergeRefsMap_(base, overlay);
 }

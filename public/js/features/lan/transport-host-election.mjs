@@ -2,7 +2,7 @@
  * LAN host election, pin override, promotion, and auto-join.
  */
 import { storage } from '../../storage.js';
-import { rememberPrimaryHostUrl, pingLanHostUrl, listLivePeerHostUrls } from '../../lan-surrogate-host.mjs';
+import { rememberPrimaryHostUrl, pingLanHostUrl } from '../../lan-surrogate-host.mjs';
 import {
   clearPinnedHostUrl,
   getPinnedHostUrl,
@@ -29,7 +29,6 @@ import {
   fetchLanHostRank,
   getLocalLanHostMeta,
   isClinicalRankConfiguredForLan,
-  pickPreferredLanPeerHost,
   prefersLanHosting,
   resolveHostElection,
   syncLanHostClinicalMetaToDisk,
@@ -41,7 +40,6 @@ import {
 import {
   lanClient,
   clearActiveLiveSyncRoom,
-  getLanClientId,
 } from './runtime.mjs';
 import { clearRoomMembership } from '../../live-sync-membership.mjs';
 import { deps, runtime } from './transport-deps.mjs';
@@ -57,6 +55,11 @@ import {
   maybeApplyLanHostUrlSwitch,
   ensureLanGuestBearerFileFromConfig,
 } from './transport-session.mjs';
+import {
+  collectAutoJoinPeers,
+  joinPreferredLanPeer,
+  tryReactToDiscoveredPeers,
+} from './transport-host-election-peers.mjs';
 import {
   resolveLanShareBaseUrl,
   resolveLanHostUrlAuto,
@@ -140,13 +143,6 @@ function migrateLanElectronStaleClientRole() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (cfg && String(cfg.hostUrl || '').trim()) return;
   if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
-}
-
-/** Subnet scan only when this Mac already acts as turn host (not while discovering peers). */
-function shouldSkipSubnetScanForDiscovery() {
-  if (isLanRemoteJoinMode()) return false;
-  if (typeof storage.getLanUiRole === 'function' && storage.getLanUiRole() !== 'host') return false;
-  return canLocalMacBeLanHost();
 }
 
 /** Escritorio: detecta IP, alinea código y deja lista la URL del servidor embebido. */
@@ -483,40 +479,6 @@ export async function tryConnectToPinnedHost(teamCode, opts) {
   return joined;
 }
 
-async function collectAutoJoinPeers(teamCode, ownUrl) {
-  let peers = listLivePeerHostUrls(getLanClientId());
-  const subnetPeers = await discoverLanHostsConcurrent(teamCode, ownUrl, {
-    skipSubnetScan: shouldSkipSubnetScanForDiscovery(),
-  });
-  const seen = new Set();
-  return [...peers, ...subnetPeers].filter((u) => {
-    const n = normalizeLanHostBase(u);
-    if (!n || seen.has(n)) return false;
-    seen.add(n);
-    return true;
-  });
-}
-
-async function tryReactToDiscoveredPeers(peers, teamCode, opts) {
-  for (const peerUrl of peers) {
-    if (!(await reactToDiscoveredLanHost(peerUrl, teamCode))) continue;
-    if (!opts.boot) deps().renderLanPanel?.();
-    return true;
-  }
-  return false;
-}
-
-async function joinPreferredLanPeer(peers, teamCode, ownUrl, opts) {
-  const pick = await pickPreferredLanPeerHost(peers, teamCode, ownUrl);
-  if (!pick || !pick.url) return false;
-  const joined = await joinRemoteLanHostAsClient(pick.url, teamCode, {
-    requireConfirm: false,
-    toastLabel: pick.peer?.rank || 'R4',
-  });
-  if (joined && !opts.boot) deps().renderLanPanel?.();
-  return joined;
-}
-
 export async function tryAutoJoinPreferredLanHost(opts) {
   opts = opts || {};
   if (!isLanElectronDesktop() || !isClinicalRankConfiguredForLan()) return false;
@@ -528,10 +490,10 @@ export async function tryAutoJoinPreferredLanHost(opts) {
   if (isLanRemoteJoinMode()) return false;
 
   const ownUrl = normalizeLanHostBase((await resolveLanShareBaseUrl()) || '');
-  const peers = await collectAutoJoinPeers(teamCode, ownUrl);
+  const peers = await collectAutoJoinPeers(teamCode, ownUrl, canLocalMacBeLanHost);
   if (!peers.length) return false;
-  if (await tryReactToDiscoveredPeers(peers, teamCode, opts)) return true;
-  return joinPreferredLanPeer(peers, teamCode, ownUrl, opts);
+  if (await tryReactToDiscoveredPeers(peers, teamCode, opts, reactToDiscoveredLanHost)) return true;
+  return joinPreferredLanPeer(peers, teamCode, ownUrl, opts, joinRemoteLanHostAsClient);
 }
 
 /** Cambia a cliente y apunta al anfitrión remoto. */

@@ -97,6 +97,8 @@ export function extractLabReportHora(textoBruto) {
 
 function putTrendRef_(refs, sectionKey, fieldKey, data) {
   if (!data || data.min == null || data.max == null) return;
+  // No guardar rangos fantasma (p. ej. PCT default cuando el estudio no viene).
+  if (data.valor === '---' || data.valor == null) return;
   var min = Number(data.min);
   var max = Number(data.max);
   if (!isFinite(min) || !isFinite(max) || max <= min) return;
@@ -135,6 +137,103 @@ function someReportBlocks_(textoBruto) {
   return { tNorm: tNorm, tSinLiqCorp: tSinLiqCorp, textoQS: textoQS, bloqueGaso: bloqueGaso, esSoloGaso: esSoloGaso };
 }
 
+function putBhTrendRefs_(refs, tNorm) {
+  putTrendRef_(refs, 'BH', 'Hb', extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'Hto', extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm));
+  putTrendRef_(refs, 'BH', 'VCM', extraerConRango(['MCV ', 'VCM '], tNorm));
+  putTrendRef_(refs, 'BH', 'HCM', extraerConRango(['MCH ', 'HCM '], tNorm));
+  putTrendRef_(refs, 'BH', 'CHCM', extraerConRango(['MCHC', 'CHCM'], tNorm));
+  putTrendRef_(refs, 'BH', 'RDW', extraerConRango(['RDW '], tNorm));
+  putTrendRef_(refs, 'BH', 'Leu', extraerConRango(['WBC '], tNorm));
+  putTrendRef_(refs, 'BH', 'Neu', extraerConRango(['NEU '], tNorm));
+  putTrendRef_(refs, 'BH', 'Eos', extraerConRango(['EOS '], tNorm));
+  putTrendRef_(refs, 'BH', 'Lin', extraerConRango(['LYM ', 'LINFOCITOS'], tNorm));
+  putTrendRef_(refs, 'BH', 'Mono', extraerConRango(['MONO '], tNorm));
+  putTrendRef_(refs, 'BH', 'Baso', extraerConRango(['BASO '], tNorm));
+  putTrendRef_(refs, 'BH', 'Plt', extraerConRango(['PLT '], tNorm));
+  putTrendRef_(refs, 'BH', 'MPV', extraerConRango(['MPV ', 'VPM '], tNorm));
+  putTrendRef_(refs, 'BH', 'RBC', extraerConRango(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm));
+  putTrendRef_(refs, 'BH', 'Ret', extraerConRango(['RETICULOCITOS'], tNorm));
+  putTrendRef_(refs, 'BH', 'TP', extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'TTP', extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm));
+  putTrendRef_(refs, 'BH', 'INR', extraerConRango(['INR ', 'INR'], tNorm));
+}
+
+function putQsEscPfhTrendRefs_(refs, textoQS, tNorm) {
+  putTrendRef_(refs, 'QS', 'Glu', extraerConRangoSuero(['GLUCOSA EN SANGRE', 'GLUCOSA EN', 'GLUCOSA'], textoQS));
+  putTrendRef_(refs, 'QS', 'Cr', extraerConRangoSuero(['CREATININA EN SANGRE', 'CREATININA'], textoQS));
+  putTrendRef_(refs, 'QS', 'BUN', extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE', 'NITROGENO DE LA UREA', 'UREA'], textoQS));
+  putTrendRef_(refs, 'QS', 'PCR', extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], textoQS));
+  putTrendRef_(refs, 'QS', 'PCT', extraerProcalcitonina_(textoQS));
+  putTrendRef_(refs, 'QS', 'AU', extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], textoQS));
+  putTrendRef_(refs, 'QS', 'COL', extraerConRangoSuero(['COLESTEROL'], textoQS));
+  putTrendRef_(refs, 'QS', 'HDL', extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], textoQS));
+  putTrendRef_(refs, 'QS', 'LDL', extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], textoQS));
+  putTrendRef_(refs, 'QS', 'VLDL', extraerConRangoSuero(['VLDL'], textoQS));
+  putTrendRef_(refs, 'QS', 'TGL', extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], textoQS));
+  putTrendRef_(refs, 'QS', 'IA', extraerIndiceAterogenico_(textoQS));
+  putTrendRef_(
+    refs,
+    'QS',
+    'CTHDL',
+    extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], textoQS)
+  );
+  putTrendRef_(refs, 'QS', 'VSG', extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], textoQS));
+  putTrendRef_(refs, 'QS', 'CPK', extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA', 'CPK '], textoQS));
+  putTrendRef_(refs, 'ESC', 'Na', extraerConRangoSuero(['SODIO'], textoQS));
+  putTrendRef_(refs, 'ESC', 'Cl', extraerConRangoSuero(['CLORO'], textoQS));
+  putTrendRef_(refs, 'ESC', 'K', extraerConRangoSuero(['POTASIO'], textoQS));
+  putTrendRef_(refs, 'ESC', 'Ca', extraerConRangoSuero(['CALCIO EN SUERO', 'CALCIO'], textoQS));
+  putTrendRef_(refs, 'ESC', 'F', extraerConRangoSuero(['FOSFORO EN SANGRE', 'FOSFORO', 'FÓSFORO'], textoQS));
+  putTrendRef_(refs, 'ESC', 'Mg', extraerConRangoSuero(['MAGNESIO'], textoQS));
+  putTrendRef_(refs, 'PFHs', 'Alb', extraerConRangoSuero(['ALBUMINA'], tNorm));
+  putTrendRef_(refs, 'PFHs', 'AST', extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)', 'AST '], tNorm));
+  putTrendRef_(refs, 'PFHs', 'ALT', extraerConRango(['ALT ALANIN AMINO TRANSFERASA', 'ALT '], tNorm));
+  putTrendRef_(refs, 'PFHs', 'FA', extraerConRango(['ALP FOSFATASA ALCALINA', 'FOSFATASA ALCALINA'], tNorm));
+  putTrendRef_(refs, 'PFHs', 'BT', extraerConRango(['BILIRRUBINA TOTAL'], tNorm));
+  putTrendRef_(refs, 'PFHs', 'BD', extraerConRango(['BILIRRUBINA DIRECTA'], tNorm));
+  putTrendRef_(refs, 'PFHs', 'BI', extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm));
+  putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH DESHIDROGENASA LAC', 'LDH '], tNorm));
+  putTrendRef_(refs, 'PFHs', 'Amil', extraerConRango(['AMILASA SERICA', 'AMILASA'], tNorm));
+  putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
+}
+
+function putTropTrendRefs_(refs, textoBruto) {
+  var tropHits = extractAllTroponinaFromText_(textoBruto);
+  if (!tropHits.length) return;
+  var tropMax = TROPONINA_HS_NORMAL_MAX_NG_L;
+  var tropMin = 0;
+  var first = tropHits[0];
+  if (first.max != null && first.min != null && first.max > first.min) {
+    tropMin = first.min;
+    tropMax = first.max;
+  }
+  putTrendRef_(refs, 'TROP', 'TnI1', { valor: first.valor, min: tropMin, max: tropMax });
+  if (tropHits.length > 1) {
+    var last = tropHits[tropHits.length - 1];
+    putTrendRef_(refs, 'TROP', 'TnI2', { valor: last.valor, min: tropMin, max: tropMax });
+  }
+}
+
+function putGasoTrendRefs_(refs, bloqueGaso) {
+  if (!bloqueGaso) return;
+  putTrendRef_(refs, 'GASES', 'pH', extraerConRango(['PH '], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'pCO2', extraerConRango(['PCO2'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'pO2', extraerConRango(['PO2 '], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'Na', extraerConRango(['SODIO'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'K', extraerConRango(['POTASIO'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'GLU', extraerConRango(['GLUCOSA'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'Lactato', extraerConRango(['LACTATO'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'Bica', extraerConRango(['HCO3'], bloqueGaso));
+  putTrendRef_(refs, 'GASES', 'Hto', extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueGaso));
+  var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueGaso);
+  putTrendRef_(refs, 'GASES', 'iCa', {
+    valor: iCaData.valor,
+    min: iCaData.min != null ? iCaData.min : 1.12,
+    max: iCaData.max != null ? iCaData.max : 1.32,
+  });
+}
+
 /**
  * Rangos min/max del reporte (columna Valor de Referencia) por sección y analito R+.
  * Usado en tendencias; misma extracción que parseBH_/QS_/ESC_/PFH_/gasometría.
@@ -142,113 +241,12 @@ function someReportBlocks_(textoBruto) {
 export function buildRefsBySectionFromReport(textoBruto) {
   if (!textoBruto || typeof textoBruto !== 'string') return {};
   var blocks = someReportBlocks_(textoBruto);
-  var tNorm = blocks.tSinLiqCorp;
-  var textoQS = blocks.textoQS;
-  var bloqueGaso = blocks.bloqueGaso;
   var refs = {};
-
   if (!blocks.esSoloGaso) {
-    putTrendRef_(refs, 'BH', 'Hb', extraerConRango(['HGB', 'HEMOGLOBINA TOTAL', 'HEMOGLOBINA'], tNorm));
-    putTrendRef_(refs, 'BH', 'Hto', extraerConRango(['HCT ', 'HEMATOCRITO'], tNorm));
-    putTrendRef_(refs, 'BH', 'VCM', extraerConRango(['MCV ', 'VCM '], tNorm));
-    putTrendRef_(refs, 'BH', 'HCM', extraerConRango(['MCH ', 'HCM '], tNorm));
-    putTrendRef_(refs, 'BH', 'CHCM', extraerConRango(['MCHC', 'CHCM'], tNorm));
-    putTrendRef_(refs, 'BH', 'RDW', extraerConRango(['RDW '], tNorm));
-    putTrendRef_(refs, 'BH', 'Leu', extraerConRango(['WBC '], tNorm));
-    putTrendRef_(refs, 'BH', 'Neu', extraerConRango(['NEU '], tNorm));
-    putTrendRef_(refs, 'BH', 'Eos', extraerConRango(['EOS '], tNorm));
-    putTrendRef_(refs, 'BH', 'Lin', extraerConRango(['LYM ', 'LINFOCITOS'], tNorm));
-    putTrendRef_(refs, 'BH', 'Mono', extraerConRango(['MONO '], tNorm));
-    putTrendRef_(refs, 'BH', 'Baso', extraerConRango(['BASO '], tNorm));
-    putTrendRef_(refs, 'BH', 'Plt', extraerConRango(['PLT '], tNorm));
-    putTrendRef_(refs, 'BH', 'MPV', extraerConRango(['MPV ', 'VPM '], tNorm));
-    putTrendRef_(refs, 'BH', 'RBC', extraerConRango(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm));
-    putTrendRef_(refs, 'BH', 'Ret', extraerConRango(['RETICULOCITOS'], tNorm));
-    putTrendRef_(refs, 'BH', 'TP', extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm));
-    putTrendRef_(refs, 'BH', 'TTP', extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm));
-    putTrendRef_(refs, 'BH', 'INR', extraerConRango(['INR ', 'INR'], tNorm));
-
-    putTrendRef_(refs, 'QS', 'Glu', extraerConRangoSuero(['GLUCOSA EN SANGRE', 'GLUCOSA EN', 'GLUCOSA'], textoQS));
-    putTrendRef_(refs, 'QS', 'Cr', extraerConRangoSuero(['CREATININA EN SANGRE', 'CREATININA'], textoQS));
-    putTrendRef_(refs, 'QS', 'BUN', extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE', 'NITROGENO DE LA UREA', 'UREA'], textoQS));
-    putTrendRef_(refs, 'QS', 'PCR', extraerConRangoSuero(['PROTEINA C REACTIVA', 'PROTEÍNA C REACTIVA'], textoQS));
-    putTrendRef_(refs, 'QS', 'PCT', extraerProcalcitonina_(textoQS));
-    putTrendRef_(refs, 'QS', 'AU', extraerConRangoSuero(['ACIDO URICO EN SANGRE', 'ACIDO URICO', 'ÁCIDO ÚRICO'], textoQS));
-    putTrendRef_(refs, 'QS', 'COL', extraerConRangoSuero(['COLESTEROL'], textoQS));
-    putTrendRef_(refs, 'QS', 'HDL', extraerConRangoSuero(['COLESTEROL HDL', 'HDL COLESTEROL'], textoQS));
-    putTrendRef_(refs, 'QS', 'LDL', extraerConRangoSuero(['COLESTEROL LDL', 'LDL COLESTEROL'], textoQS));
-    putTrendRef_(refs, 'QS', 'VLDL', extraerConRangoSuero(['VLDL'], textoQS));
-    putTrendRef_(refs, 'QS', 'TGL', extraerConRangoSuero(['TRIGLICERIDOS', 'TRIGLICÉRIDOS'], textoQS));
-    putTrendRef_(refs, 'QS', 'IA', extraerIndiceAterogenico_(textoQS));
-    putTrendRef_(
-      refs,
-      'QS',
-      'CTHDL',
-      extraerConRangoSuero(['COCIENTE COL.TOT/HDL', 'COCIENTE COL.TOT / HDL', 'COCIENTE COL TOT/HDL'], textoQS)
-    );
-    putTrendRef_(refs, 'QS', 'VSG', extraerConRangoSuero(['VSG ', 'VELOCIDAD DE SEDIMENTACION'], textoQS));
-    putTrendRef_(refs, 'QS', 'CPK', extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA', 'CPK '], textoQS));
-
-    putTrendRef_(refs, 'ESC', 'Na', extraerConRangoSuero(['SODIO'], textoQS));
-    putTrendRef_(refs, 'ESC', 'Cl', extraerConRangoSuero(['CLORO'], textoQS));
-    putTrendRef_(refs, 'ESC', 'K', extraerConRangoSuero(['POTASIO'], textoQS));
-    putTrendRef_(refs, 'ESC', 'Ca', extraerConRangoSuero(['CALCIO EN SUERO', 'CALCIO'], textoQS));
-    putTrendRef_(refs, 'ESC', 'F', extraerConRangoSuero(['FOSFORO EN SANGRE', 'FOSFORO', 'FÓSFORO'], textoQS));
-    putTrendRef_(refs, 'ESC', 'Mg', extraerConRangoSuero(['MAGNESIO'], textoQS));
-
-    putTrendRef_(refs, 'PFHs', 'Alb', extraerConRangoSuero(['ALBUMINA'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'AST', extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)', 'AST '], tNorm));
-    putTrendRef_(refs, 'PFHs', 'ALT', extraerConRango(['ALT ALANIN AMINO TRANSFERASA', 'ALT '], tNorm));
-    putTrendRef_(refs, 'PFHs', 'FA', extraerConRango(['ALP FOSFATASA ALCALINA', 'FOSFATASA ALCALINA'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'BT', extraerConRango(['BILIRRUBINA TOTAL'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'BD', extraerConRango(['BILIRRUBINA DIRECTA'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'BI', extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm));
-    putTrendRef_(refs, 'PFHs', 'LDH', extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH DESHIDROGENASA LAC', 'LDH '], tNorm));
-    putTrendRef_(refs, 'PFHs', 'Amil', extraerConRango(['AMILASA SERICA', 'AMILASA'], tNorm));
-    putTrendRef_(refs, 'LIPASA', 'Lip', extraerConRango(['LIPASA SERICA', 'LIPASA '], textoQS));
+    putBhTrendRefs_(refs, blocks.tSinLiqCorp);
+    putQsEscPfhTrendRefs_(refs, blocks.textoQS, blocks.tSinLiqCorp);
   }
-
-  var tropHits = extractAllTroponinaFromText_(textoBruto);
-  if (tropHits.length) {
-    var tropMax = TROPONINA_HS_NORMAL_MAX_NG_L;
-    var tropMin = 0;
-    var first = tropHits[0];
-    if (first.max != null && first.min != null && first.max > first.min) {
-      tropMin = first.min;
-      tropMax = first.max;
-    }
-    putTrendRef_(refs, 'TROP', 'TnI1', {
-      valor: first.valor,
-      min: tropMin,
-      max: tropMax,
-    });
-    if (tropHits.length > 1) {
-      var last = tropHits[tropHits.length - 1];
-      putTrendRef_(refs, 'TROP', 'TnI2', {
-        valor: last.valor,
-        min: tropMin,
-        max: tropMax,
-      });
-    }
-  }
-
-  if (bloqueGaso) {
-    putTrendRef_(refs, 'GASES', 'pH', extraerConRango(['PH '], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'pCO2', extraerConRango(['PCO2'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'pO2', extraerConRango(['PO2 '], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'Na', extraerConRango(['SODIO'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'K', extraerConRango(['POTASIO'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'GLU', extraerConRango(['GLUCOSA'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'Lactato', extraerConRango(['LACTATO'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'Bica', extraerConRango(['HCO3'], bloqueGaso));
-    putTrendRef_(refs, 'GASES', 'Hto', extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueGaso));
-    var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueGaso);
-    putTrendRef_(refs, 'GASES', 'iCa', {
-      valor: iCaData.valor,
-      min: iCaData.min != null ? iCaData.min : 1.12,
-      max: iCaData.max != null ? iCaData.max : 1.32,
-    });
-  }
-
+  putTropTrendRefs_(refs, textoBruto);
+  putGasoTrendRefs_(refs, blocks.bloqueGaso);
   return refs;
 }

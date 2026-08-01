@@ -1,9 +1,6 @@
 import {
-  effectiveSoapCategory,
-  formatMedicationSoapShort,
   advanceAbxMedTextForManejoDate,
 } from '../med-receta-core.mjs';
-import { shouldIncludeMedicationInSoap } from '../med-receta-soap.mjs';
 import {
   MED_FIELD_KEYS,
   applyDietaSuplementoPolicy,
@@ -19,30 +16,30 @@ import {
 } from './estado-actual-meds-diet.mjs';
 import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
 import {
-  insulinPumpNmSoapFragment,
-  skipRecetaItemForNmSoapBucket,
-  skipRecetaItemForInsulinPumpCarrier,
-} from '../insulin-pump-receta-display.mjs';
+  DIET_PENDING_KEYS,
+  resolveManejoFechaActualizacion,
+  hasPendingEaProposals,
+} from './estado-actual-meds-core.mjs';
 import {
-  insulinRescateNmSoapFragment,
-  skipRecetaItemForInsulinRescateBucket,
-  INSULIN_RESCATE_NM_LABEL,
-  patientHasInsulinRescateMeds,
-  isInsulinRescateMedicationItem,
-} from '../insulin-rescate-display.mjs';
+  medInstructionFragmentForSoap,
+  bucketsFromRecetaItems,
+} from './estado-actual-meds-receta-buckets.mjs';
 import {
-  detectInsulinPumpAlgorithmFromRecetaItems,
-  formatInsulinPumpAlgoritmoLabel,
-} from '../insulin-pump-some-detect.mjs';
+  allowedSoapFragmentsByCategory,
+  pruneEstadoClinicoMedsFromReceta,
+} from './estado-actual-meds-receta-prune.mjs';
+import { buildMedDropdownOptions } from './estado-actual-meds-dropdown.mjs';
 
-/**
- * @param {string | null | undefined} activeId
- * @param {Record<string, { fechaActualizacion?: string }>} [medRecetaByPatient]
- */
-export function resolveManejoFechaActualizacion(activeId, medRecetaByPatient) {
-  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
-  return block && block.fechaActualizacion ? String(block.fechaActualizacion).trim() : '';
-}
+export {
+  DIET_PENDING_KEYS,
+  resolveManejoFechaActualizacion,
+  hasPendingEaProposals,
+  medInstructionFragmentForSoap,
+  bucketsFromRecetaItems,
+  allowedSoapFragmentsByCategory,
+  pruneEstadoClinicoMedsFromReceta,
+  buildMedDropdownOptions,
+};
 
 /**
  * @param {string} text
@@ -64,26 +61,6 @@ function withAdvancedAbxEc(ec, fechaActualizacion, refDate) {
   var next = Object.assign({}, ec);
   next.abx = advanceAbxTextForEa(String(ec.abx), fechaActualizacion, refDate);
   return next;
-}
-
-export const DIET_PENDING_KEYS = /** @type {const} */ (['dieta', 'kcal', 'proteinG']);
-
-/**
- * @param {Record<string, unknown> | null | undefined} pendienteReceta
- * @returns {boolean}
- */
-export function hasPendingEaProposals(pendienteReceta) {
-  var pend = pendienteReceta && typeof pendienteReceta === 'object' ? pendienteReceta : {};
-  if (
-    DIET_PENDING_KEYS.some(function (k) {
-      return pend[k] && String(pend[k]).trim();
-    })
-  ) {
-    return true;
-  }
-  return MED_FIELD_KEYS.some(function (k) {
-    return pend[k] && String(pend[k]).trim();
-  });
 }
 
 /**
@@ -144,10 +121,6 @@ export function estadoClinicoForDisplay(monitoreo, opts) {
   return withAdvancedAbxEc(ec, fechaActualizacion, refDate);
 }
 
-/**
- * @param {Record<string, unknown> | null | undefined} monitoreo
- * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
- */
 /**
  * @param {string} pending
  * @param {string} fechaActualizacion
@@ -219,239 +192,6 @@ export function syncRecetaProposalsFromSoapSelection(
     return buckets[k] && String(buckets[k]).trim();
   });
   return pruned || hasAny;
-}
-
-/**
- * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} it
- * @returns {string}
- */
-export function medInstructionFragmentForSoap(it) {
-  return formatMedicationSoapShort(it);
-}
-
-/**
- * @param {unknown[]} items
- * @param {Record<string, boolean>} selMap
- * @param {(nombreRaw: string) => string} classifyFn
- * @returns {Record<string, string>}
- */
-export function bucketsFromRecetaItems(items, selMap, classifyFn) {
-  /** @type {Record<string, string[]>} */
-  var arrays = {
-    analgesia: [],
-    antiemeticos: [],
-    sedacion: [],
-    antiepilepticos: [],
-    antiparkinsonianos: [],
-    antidotos: [],
-    viaAerea: [],
-    abx: [],
-    transfusiones: [],
-    antihta: [],
-    diuretico: [],
-    antitromboticos: [],
-    anticoagulacion: [],
-    antiarritmicos: [],
-    estatinas: [],
-    vasop: [],
-    nm: [],
-    otros: [],
-  };
-  var list = Array.isArray(items) ? items : [];
-  var soapSelected = list.filter(function (it) {
-    return it && selMap[it.id] && !it.suspendido;
-  });
-  var pumpNmFrag = insulinPumpNmSoapFragment(list, soapSelected);
-  var pumpNmAdded = false;
-  var rescateNmFrag = insulinRescateNmSoapFragment(list, soapSelected);
-  var rescateNmAdded = false;
-  list.forEach(function (it) {
-    if (!it || !selMap[it.id] || it.suspendido) return;
-    if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
-    if (!shouldIncludeMedicationInSoap(it, classifyFn)) return;
-    var cat = effectiveSoapCategory(it, classifyFn);
-    if (cat === 'otros') return;
-    if (cat === 'nm' && skipRecetaItemForNmSoapBucket(it, list)) {
-      if (pumpNmFrag && !pumpNmAdded) {
-        arrays.nm.push(pumpNmFrag);
-        pumpNmAdded = true;
-      }
-      return;
-    }
-    if (cat === 'nm' && skipRecetaItemForInsulinRescateBucket(it, list)) {
-      if (rescateNmFrag && !rescateNmAdded) {
-        arrays.nm.push(rescateNmFrag);
-        rescateNmAdded = true;
-      }
-      return;
-    }
-    if (arrays[cat]) arrays[cat].push(medInstructionFragmentForSoap(it));
-    else arrays.otros.push(medInstructionFragmentForSoap(it));
-  });
-  /** @type {Record<string, string>} */
-  var buckets = {};
-  for (var k of MED_FIELD_KEYS) {
-    var srcKey = k === 'diureticos' ? 'diuretico' : k;
-    buckets[k] = (arrays[srcKey] || []).join(' | ');
-  }
-  return buckets;
-}
-
-/**
- * @param {unknown} raw
- * @returns {string[]}
- */
-function parseMedFieldItemsLocal(raw) {
-  if (raw == null || !String(raw).trim()) return [];
-  return String(raw)
-    .split(' | ')
-    .map(function (s) {
-      return s.trim();
-    })
-    .filter(Boolean);
-}
-
-/**
- * @param {string[]} items
- * @returns {string}
- */
-function serializeMedFieldItemsLocal(items) {
-  return (items || [])
-    .map(function (s) {
-      return String(s).trim();
-    })
-    .filter(Boolean)
-    .join(' | ');
-}
-
-/**
- * @param {string} text
- */
-function normalizeMedSoapLine(text) {
-  return String(text || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, ' ')
-    .replace(/\s+DIA\s+\d+\s*$/i, '')
-    .replace(/(\d+)\s+G\b/g, '$1G')
-    .replace(/(\d+)\s+MG\b/g, '$1MG')
-    .replace(/(\d+)\s+MCG\b/g, '$1MCG')
-    .trim();
-}
-
-/**
- * @param {string} line
- * @param {string[]} allowedFrags
- */
-function medSoapLineMatchesReceta(line, allowedFrags) {
-  var norm = normalizeMedSoapLine(line);
-  if (!norm) return false;
-  return allowedFrags.some(function (frag) {
-    var f = normalizeMedSoapLine(frag);
-    return f && (norm === f || norm.indexOf(f) >= 0 || f.indexOf(norm) >= 0);
-  });
-}
-
-/**
- * @param {unknown[]} items
- * @param {(nombreRaw: string, dosisRaw?: string) => string} classifyFn
- * @param {string} fechaActualizacion
- * @returns {Record<string, string[]>}
- */
-export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualizacion) {
-  /** @type {Record<string, string[]>} */
-  var byCat = {};
-  MED_FIELD_KEYS.forEach(function (k) {
-    byCat[k] = [];
-  });
-  var list = Array.isArray(items) ? items : [];
-  list.forEach(function (it) {
-    if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
-    if (skipRecetaItemForInsulinPumpCarrier(it, list)) return;
-    if (!shouldIncludeMedicationInSoap(
-      /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
-      classifyFn
-    )) {
-      return;
-    }
-    if (isInsulinRescateMedicationItem(it)) return;
-    var cat = effectiveSoapCategory(
-      /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
-      classifyFn
-    );
-    if (cat === 'otros') return;
-    var key = cat === 'diuretico' ? 'diureticos' : cat;
-    if (key === 'nm' && skipRecetaItemForNmSoapBucket(it, list)) return;
-    var frag = medInstructionFragmentForSoap(
-      /** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it)
-    );
-    if (key === 'abx' && fechaActualizacion) {
-      frag = advanceAbxMedTextForManejoDate(frag, fechaActualizacion);
-    }
-    if (byCat[key]) byCat[key].push(frag);
-  });
-  // Propuesta/confirmación NM usa etiqueta de bomba, no el SOAP corto de insulina IV.
-  // Sin esto, prune borra la línea confirmada y reabre la propuesta (igual que dieta).
-  var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(list);
-  if (pumpAlg != null) {
-    var pumpLabel = formatInsulinPumpAlgoritmoLabel(pumpAlg);
-    if (pumpLabel && byCat.nm) byCat.nm.push(pumpLabel);
-  }
-  if (patientHasInsulinRescateMeds(list) && byCat.nm) {
-    byCat.nm.push(INSULIN_RESCATE_NM_LABEL);
-  }
-  return byCat;
-}
-
-/**
- * Quita de EA medicamentos que ya no están en el manejo SOME pegado.
- * @param {Record<string, unknown>} monitoreo
- * @param {unknown[]} items
- * @param {(nombreRaw: string, dosisRaw?: string) => string} classifyFn
- * @param {string} [fechaActualizacion]
- * @returns {boolean}
- */
-export function pruneEstadoClinicoMedsFromReceta(monitoreo, items, classifyFn, fechaActualizacion) {
-  if (!monitoreo || typeof monitoreo !== 'object') return false;
-  if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
-    monitoreo.estadoClinico = {};
-  }
-  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') {
-    monitoreo.pendienteReceta = {};
-  }
-  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
-    monitoreo.confirmado = {};
-  }
-  var allowed = allowedSoapFragmentsByCategory(items, classifyFn, fechaActualizacion || '');
-  var changed = false;
-  MED_FIELD_KEYS.forEach(function (key) {
-    var allowedFrags = allowed[key] || [];
-    var ecItems = parseMedFieldItemsLocal(monitoreo.estadoClinico[key]);
-    var keptEc = ecItems.filter(function (line) {
-      return medSoapLineMatchesReceta(line, allowedFrags);
-    });
-    if (keptEc.length !== ecItems.length) {
-      /** @type {Record<string, string>} */ (monitoreo.estadoClinico)[key] = serializeMedFieldItemsLocal(keptEc);
-      changed = true;
-    }
-    if (!keptEc.length && monitoreo.confirmado[key]) {
-      /** @type {Record<string, boolean>} */ (monitoreo.confirmado)[key] = false;
-      changed = true;
-    }
-    var pendVal = monitoreo.pendienteReceta[key];
-    if (pendVal != null && String(pendVal).trim()) {
-      var pendItems = parseMedFieldItemsLocal(pendVal);
-      var keptPend = pendItems.filter(function (line) {
-        return medSoapLineMatchesReceta(line, allowedFrags);
-      });
-      var nextPend = serializeMedFieldItemsLocal(keptPend);
-      if (nextPend !== String(pendVal).trim()) {
-        monitoreo.pendienteReceta[key] = nextPend;
-        changed = true;
-      }
-    }
-  });
-  return changed;
 }
 
 /**
@@ -563,60 +303,4 @@ export function confirmAllMedProposals(monitoreo) {
       confirmMedField(monitoreo, k);
     }
   }
-}
-
-/**
- * @param {string | null | undefined} activeId
- * @param {string} category
- * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
- * @param {(nombreRaw: string) => string} classifyFn
- * @param {Date} [refDate] — día efectivo para ABX en label (default: hoy)
- * @returns {Array<{ value: string, label: string }>}
- */
-export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, classifyFn, refDate) {
-  /** @type {Array<{ value: string, label: string }>} */
-  var options = [];
-  var seen = Object.create(null);
-  var block = activeId && medRecetaByPatient ? medRecetaByPatient[activeId] : null;
-  var items = block && Array.isArray(block.items) ? block.items : [];
-  var fecha = category === 'abx' ? resolveManejoFechaActualizacion(activeId, medRecetaByPatient) : '';
-
-  var rescateAdded = false;
-  items.forEach(function (it) {
-    if (!it || /** @type {{ suspendido?: boolean }} */ (it).suspendido) return;
-    if (skipRecetaItemForInsulinPumpCarrier(it, items)) return;
-    if (!shouldIncludeMedicationInSoap(
-      /** @type {{ nombreRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, suspendido?: boolean }} */ (it),
-      classifyFn
-    )) {
-      return;
-    }
-    if (category === 'nm' && isInsulinRescateMedicationItem(it)) {
-      if (!rescateAdded) {
-        options.push({ value: INSULIN_RESCATE_NM_LABEL, label: INSULIN_RESCATE_NM_LABEL });
-        rescateAdded = true;
-      }
-      return;
-    }
-    var cat = effectiveSoapCategory(
-      /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
-      classifyFn
-    );
-    var matchCat = cat === category || (category === 'diureticos' && cat === 'diuretico');
-    if (!matchCat) return;
-    if (category === 'nm' && skipRecetaItemForNmSoapBucket(it, items)) return;
-    var value = medInstructionFragmentForSoap(/** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */ (it));
-    if (!value || seen[value]) return;
-    seen[value] = 1;
-    var label =
-      category === 'abx' && fecha
-        ? formatMedicationSoapShort(
-            /** @type {Parameters<typeof formatMedicationSoapShort>[0]} */ (it),
-            { fechaActualizacion: fecha, refDate: refDate }
-          )
-        : value;
-    options.push({ value: value, label: label });
-  });
-
-  return options;
 }

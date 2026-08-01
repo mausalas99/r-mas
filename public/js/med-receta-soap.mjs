@@ -135,25 +135,32 @@ function classifyByCatalogTokens_(n, o) {
   return '';
 }
 
+const NAME_HEURISTIC_CLASSIFIERS = [
+  [classifyVasopressors_, 'vasop'],
+  [classifyAbx_, 'abx'],
+  [classifyTransfusiones_, 'transfusiones'],
+  [classifyAnalgesia_, 'analgesia'],
+  [classifyAntiemeticos_, 'antiemeticos'],
+  [classifyDiureticos_, 'diuretico'],
+  [classifyAnticoagulacion_, 'anticoagulacion'],
+  [classifyAntitromboticos_, 'antitromboticos'],
+  [classifyEstatinas_, 'estatinas'],
+  [classifyAntiarritmicos_, 'antiarritmicos'],
+  [classifyViaAerea_, 'viaAerea'],
+  [classifySedacion_, 'sedacion'],
+  [classifyAntiepilepticos_, 'antiepilepticos'],
+  [classifyAntiparkinsonianos_, 'antiparkinsonianos'],
+  [classifyAntidotos_, 'antidotos'],
+  [classifyNmSupport_, 'nm'],
+  [classifyNmDiabetesThyroidPpi_, 'nm'],
+  [classifyAntihta_, 'antihta'],
+];
+
 function classifyByNameHeuristics_(n) {
-  if (classifyVasopressors_(n)) return 'vasop';
-  if (classifyAbx_(n)) return 'abx';
-  if (classifyTransfusiones_(n)) return 'transfusiones';
-  if (classifyAnalgesia_(n)) return 'analgesia';
-  if (classifyAntiemeticos_(n)) return 'antiemeticos';
-  if (classifyDiureticos_(n)) return 'diuretico';
-  if (classifyAnticoagulacion_(n)) return 'anticoagulacion';
-  if (classifyAntitromboticos_(n)) return 'antitromboticos';
-  if (classifyEstatinas_(n)) return 'estatinas';
-  if (classifyAntiarritmicos_(n)) return 'antiarritmicos';
-  if (classifyViaAerea_(n)) return 'viaAerea';
-  if (classifySedacion_(n)) return 'sedacion';
-  if (classifyAntiepilepticos_(n)) return 'antiepilepticos';
-  if (classifyAntiparkinsonianos_(n)) return 'antiparkinsonianos';
-  if (classifyAntidotos_(n)) return 'antidotos';
-  if (classifyNmSupport_(n)) return 'nm';
-  if (classifyNmDiabetesThyroidPpi_(n)) return 'nm';
-  if (classifyAntihta_(n)) return 'antihta';
+  for (var i = 0; i < NAME_HEURISTIC_CLASSIFIERS.length; i++) {
+    var pair = NAME_HEURISTIC_CLASSIFIERS[i];
+    if (pair[0](n)) return pair[1];
+  }
   return '';
 }
 

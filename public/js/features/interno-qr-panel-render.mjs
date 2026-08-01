@@ -48,6 +48,37 @@ export function renderInternoQrLanBanner(card, hostBase, onRefresh) {
   card.appendChild(ok);
 }
 
+function appendInternoUrlButtons(btnRow, mkBtn, hostBase, showToast, def, url) {
+  btnRow.appendChild(mkBtn('Copiar enlace', async () => {
+    if (isLocalOnlyInternoHost(hostBase)) {
+      showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Enlace copiado', 'success');
+    } catch {
+      showToast('No se pudo copiar', 'error');
+    }
+  }));
+  btnRow.appendChild(mkBtn('Copiar QR', () => {
+    if (isLocalOnlyInternoHost(hostBase)) {
+      showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
+      return;
+    }
+    void copyInternoQrImage(url, showToast);
+  }));
+  btnRow.appendChild(mkBtn('Descargar QR', () => {
+    if (isLocalOnlyInternoHost(hostBase)) {
+      showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
+      return;
+    }
+    const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
+    downloadInternoQrPng(url, `qr-interno-${slug}.png`);
+    showToast('QR descargado en alta resolución.', 'success');
+  }));
+}
+
 /**
  * @param {object} def
  * @param {object} row
@@ -108,34 +139,7 @@ export function buildInternoSalaBlock(def, row, hostBase, api, userId, showToast
     } else showToast(r?.error || 'Error', 'error');
   }));
   if (url) {
-    btnRow.appendChild(mkBtn('Copiar enlace', async () => {
-      if (isLocalOnlyInternoHost(hostBase)) {
-        showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
-        return;
-      }
-      try {
-        await navigator.clipboard.writeText(url);
-        showToast('Enlace copiado', 'success');
-      } catch {
-        showToast('No se pudo copiar', 'error');
-      }
-    }));
-    btnRow.appendChild(mkBtn('Copiar QR', () => {
-      if (isLocalOnlyInternoHost(hostBase)) {
-        showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
-        return;
-      }
-      void copyInternoQrImage(url, showToast);
-    }));
-    btnRow.appendChild(mkBtn('Descargar QR', () => {
-      if (isLocalOnlyInternoHost(hostBase)) {
-        showToast('Primero obtén la IP LAN (Actualizar IP)', 'error');
-        return;
-      }
-      const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
-      downloadInternoQrPng(url, `qr-interno-${slug}.png`);
-      showToast('QR descargado en alta resolución.', 'success');
-    }));
+    appendInternoUrlButtons(btnRow, mkBtn, hostBase, showToast, def, url);
   }
   block.appendChild(btnRow);
   return block;

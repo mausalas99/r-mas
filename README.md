@@ -39,9 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.7.9](https://github.com/mausalas99/r-mas/releases/tag/v7.7.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.8.0](https://github.com/mausalas99/r-mas/releases/tag/v7.8.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.8.0 (labs sin refs + debt baseline)
+
+- **Sin Valor de Referencia** — QS/ESC/PFH/BH marcan alterados con rangos previos del paciente o estándares.
+- **Historial** — Reproceso completo; expediente con dígito (`1087426` ↔ `1087426-2`); sin PCT fantasma.
+- **Debt** — Complejidad/length en 0; baseline `totalScore=0`; shell modularizado.
+
+Notas: `docs/RELEASE_NOTES_7.8.0.txt`.
 
 ## R+ 7.7.9 (labs alterados sin rangos + historial sin clones)
 

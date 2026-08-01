@@ -259,6 +259,18 @@ export function resLabsHasCitoquimFluid_(resLabs) {
   return resLabsHasAsciticFluid_(resLabs) || resLabsHasPleuralFluid_(resLabs) || resLabsHasLcr_(resLabs);
 }
 
+function hasCitoquimRefreshTarget_(parsed, hasLcr) {
+  if (hasLcr) return true;
+  if (!parsed) return false;
+  return parsed.esAscitico || parsed.esPleural || parsed.line;
+}
+
+function applyLiqLineRefresh_(out, src, serumOpts, parsed) {
+  if (src) return replaceLiqLineFromSource_(out, src, serumOpts);
+  if (parsed && parsed.esAscitico) return updateLiqLineWithGasa_(out, parsed);
+  return out;
+}
+
 /**
  * Actualiza línea Liq/LCR y bloque INTERPRETACIÓN CITOQUÍMICO con datos del mismo día.
  */
@@ -267,23 +279,18 @@ export function refreshCitoquimicoInterpretacionInResLabs_(resLabs, textoBruto, 
   var src = String(textoBruto || '').trim();
   var parsed = src ? parseCitoquimicoLiquidosParsed(src, serumOpts) : ascitisParsedFromResLabsLiq_(rows);
   var hasLcr = src ? !!parseLcrParsed(src) : resLabsHasLcr_(rows);
-  if ((!parsed || (!parsed.esAscitico && !parsed.esPleural && !parsed.line)) && !hasLcr) {
-    return rows.slice();
-  }
+  if (!hasCitoquimRefreshTarget_(parsed, hasLcr)) return rows.slice();
 
   if (parsed && parsed.esAscitico) enrichAscitisGasa_(parsed, src, serumOpts);
 
   var out = rows.filter(function (r) {
     return !isCitoquimInterpretacionResLabChunk(r);
   });
-  if (src) {
-    out = replaceLiqLineFromSource_(out, src, serumOpts);
-  } else if (parsed && parsed.esAscitico) {
-    out = updateLiqLineWithGasa_(out, parsed);
-  }
+  out = applyLiqLineRefresh_(out, src, serumOpts, parsed);
 
+  var interpParsed = parsed && parsed.line ? parsed : null;
   var interp = formatCitoquimicoInterpretacionLine_(
-    buildCitoquimicoInterpretAlerts_(src, serumOpts, parsed && parsed.line ? parsed : null)
+    buildCitoquimicoInterpretAlerts_(src, serumOpts, interpParsed)
   );
   if (interp) out.push(interp);
   return dedupeSingletonSections_(out);

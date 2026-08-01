@@ -294,14 +294,28 @@ export function buildPatientEntry(patientId) {
   };
 }
 
+function registroBase_(reg) {
+  var s = String(reg || '').trim();
+  if (!s) return '';
+  var base = s.split('-')[0];
+  return base.length >= 5 ? base : s;
+}
+
+/** Exact match, then same hospital base (1087426 ↔ 1087426-2). */
 export function findPatientByRegistro(registro) {
   var r = String(registro || '').trim();
   if (!r) return null;
-  return (
+  var exact =
     patients.find(function (p) {
       return String(p.registro || '').trim() === r;
-    }) || null
-  );
+    }) || null;
+  if (exact) return exact;
+  var base = registroBase_(r);
+  if (!base || base === r) return null;
+  var fuzzy = patients.filter(function (p) {
+    return registroBase_(p.registro) === base;
+  });
+  return fuzzy.length === 1 ? fuzzy[0] : null;
 }
 
 export function ensureUniquePatientName(base) {
