@@ -1,25 +1,23 @@
-version: 7.8.0
+version: 7.8.1
 files:
-  - url: R+-7.8.0-arm64.zip
-    sha512: 6V4Zct3OPhzTNVA2npNajpbepN6KSGsim2oJG74eoKkTZzp2hm5XBffWrAX4M35AbAnfqDKp63bQzUenNwTUSA==
-    size: 137338782
-  - url: R+-7.8.0-arm64.dmg
-    sha512: ZRLXnZzNksdzSpf8J0fwpXJwhyxtbEVx1RscPoSQLhLgfBdPOBClOeckpeoV+RD6/O2XNp9KBY/mouz66eaY9A==
-    size: 143076281
-  - url: R+-7.8.0-x64.zip
-    sha512: Z2xsulmjqh1Q2BMrBT6Ns7yeF/lwaJUSpeDDXqFbECw9NGoNUwfPM2ThrJ3a67ZbIxqiru2Ocwh5LKEuAlPgXg==
-    size: 145712824
-  - url: R+-7.8.0-x64.dmg
-    sha512: 9E4umA7d0aHlMTLGo/qXJOJa/bqyc5m3I0Zptph7pKJnMyzq7sKbk+KzjbogkgFiYo2uhee85vjwheEP35XZQw==
-    size: 151507803
-path: R+-7.8.0-arm64.zip
-sha512: 6V4Zct3OPhzTNVA2npNajpbepN6KSGsim2oJG74eoKkTZzp2hm5XBffWrAX4M35AbAnfqDKp63bQzUenNwTUSA==
-releaseDate: '2026-08-01T00:42:37.000Z'
+  - url: R+-7.8.1-arm64.zip
+    sha512: lrfQbV9j7ap0qxxjQ3X6s0P582nh9H9tj4PQvY/bhQEvnz11/eqt2pk4onJxjtIuWpQZcjVv3HI0DqyV0IjoMw==
+    size: 137340488
+  - url: R+-7.8.1-arm64.dmg
+    sha512: dGzW1DBh6jm7xrj0YaYcEWs1FjhyIIUocsl7Z8Fu9+GD6PLv2OCmnRUQAzxSScOtdY3yi9DaFxfcNZiFptlNuA==
+    size: 143076859
+  - url: R+-7.8.1-x64.zip
+    sha512: xGhF7UaqaEr2nqvBmVjgemw2pdsw+LzUz+PJJxFwC2mLEBMlHs0hBnrIjsAYEXChQ2LljsXTyD9AxsAPQ4AXSw==
+    size: 145714544
+  - url: R+-7.8.1-x64.dmg
+    sha512: zj6HZAcsHI4GSJ3tyHBcTm28ORfzDgxUd1Y+FsurH1QF7lqY9fMczNuIgZfkSOcDdi6Y3eNvbLTU/4KvOr9wxw==
+    size: 151516121
+path: R+-7.8.1-arm64.zip
+sha512: lrfQbV9j7ap0qxxjQ3X6s0P582nh9H9tj4PQvY/bhQEvnz11/eqt2pk4onJxjtIuWpQZcjVv3HI0DqyV0IjoMw==
+releaseDate: '2026-08-01T15:25:21.000Z'
 releaseNotes: |
-  7.8.0 marca alterados en QS/ESC/PFH/BH aunque SOME omita «Valor de Referencia» (rangos previos del paciente o estándares). Baja deuda estructural (complejidad/length → 0) y refresca el baseline de métricas.
+  7.8.1 corrige la pérdida de diagnósticos (y texto de censo/meds) en Datos del paciente al sincronizar por LAN: el merge ya no descartaba esos campos ni los pisaba con listas vacías.
   
-  Alterados sin rangos — Química/PFH/ESC sin columna de referencia usan rangos de estudios previos; si no hay, estándares (p. ej. Cl 96–106, LDH 120–250).
+  Diagnósticos en Datos — Al fusionar expedientes en LiveSync se conservan diagnosticosList / diagnosticosText y censoMedsText del peer con contenido (priorizando el más reciente).
   
-  Historial — Reproceso completo del SOME al mantener historial; match de expediente con dígito (1087426 ↔ 1087426-2); no inventa PCT fantasma.
-  
-  Debt — Complejidad y overage de longitud en 0; baseline totalScore=0. Shell modularizado (app-shell-*) con imports diferidos.
+  Sin borrado fantasma — Una lista vacía [''] (placeholder de UI) ya no sobrescribe diagnósticos reales al aplicar el host.

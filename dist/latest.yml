@@ -1,16 +1,14 @@
-version: 7.8.0
+version: 7.8.1
 files:
-  - url: R+-7.8.0-x64.exe
-    sha512: tEqx6/r6Sqh5y3lEtsFQyEAyBciNaRltBVZX457/inHSxwsSCkfNKjDKBAXJo3MUroBtS+svUB6WY3wFi1GoDg==
-    size: 120897047
-path: R+-7.8.0-x64.exe
-sha512: tEqx6/r6Sqh5y3lEtsFQyEAyBciNaRltBVZX457/inHSxwsSCkfNKjDKBAXJo3MUroBtS+svUB6WY3wFi1GoDg==
-releaseDate: '2026-08-01T00:42:37.000Z'
+  - url: R+-7.8.1-x64.exe
+    sha512: gntU4Q+A/F8lh1LNLKF/hLOlMHhpvERRyQOjEgC3tYP8drpqQTi7blEEk0JpVD4Dabgyevt9AAX0mhZQJHsgvQ==
+    size: 120906647
+path: R+-7.8.1-x64.exe
+sha512: gntU4Q+A/F8lh1LNLKF/hLOlMHhpvERRyQOjEgC3tYP8drpqQTi7blEEk0JpVD4Dabgyevt9AAX0mhZQJHsgvQ==
+releaseDate: '2026-08-01T15:25:21.000Z'
 releaseNotes: |
-  7.8.0 marca alterados en QS/ESC/PFH/BH aunque SOME omita «Valor de Referencia» (rangos previos del paciente o estándares). Baja deuda estructural (complejidad/length → 0) y refresca el baseline de métricas.
+  7.8.1 corrige la pérdida de diagnósticos (y texto de censo/meds) en Datos del paciente al sincronizar por LAN: el merge ya no descartaba esos campos ni los pisaba con listas vacías.
   
-  Alterados sin rangos — Química/PFH/ESC sin columna de referencia usan rangos de estudios previos; si no hay, estándares (p. ej. Cl 96–106, LDH 120–250).
+  Diagnósticos en Datos — Al fusionar expedientes en LiveSync se conservan diagnosticosList / diagnosticosText y censoMedsText del peer con contenido (priorizando el más reciente).
   
-  Historial — Reproceso completo del SOME al mantener historial; match de expediente con dígito (1087426 ↔ 1087426-2); no inventa PCT fantasma.
-  
-  Debt — Complejidad y overage de longitud en 0; baseline totalScore=0. Shell modularizado (app-shell-*) con imports diferidos.
+  Sin borrado fantasma — Una lista vacía [''] (placeholder de UI) ya no sobrescribe diagnósticos reales al aplicar el host.
