@@ -1,5 +1,6 @@
 import { handleAuth } from './auth.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
+import { handleRooms } from './rooms.js';
 
 export const API_PREFIX = '/api/sync/v1';
 
@@ -30,7 +31,12 @@ export async function handleApiRoute(request, env) {
       return await handleAuth(request, env, authSub);
     }
 
-    if (subpath.startsWith('/rooms') || subpath.startsWith('/sync')) {
+    if (subpath === '/rooms' || subpath.startsWith('/rooms/')) {
+      const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
+      return await handleRooms(request, env, roomsSub);
+    }
+
+    if (subpath.startsWith('/sync')) {
       throw new SyncError('not_implemented', 'Endpoint pendiente de implementación.');
     }
 
