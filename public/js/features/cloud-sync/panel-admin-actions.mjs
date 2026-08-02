@@ -73,7 +73,7 @@ function buildSalasCtx(deps) {
 }
 
 /** @param {string | null} action @param {Element} btn @param {object} deps @param {object} ctx */
-function dispatchRoomAction(action, btn, deps, ctx) {
+function dispatchRoomAction(action, btn, deps, _ctx) {
   const roomId = btn.getAttribute('data-room-id');
   if (action === 'room-detail' && roomId) {
     deps.setOpenRoomDetailId(roomId);

@@ -1778,6 +1778,11 @@ var RELEASE_NOTES_781 = [
 
 var RELEASE_NOTES_790 = [
   {
+    title: 'Recuperar Nube y panel Conexión',
+    body:
+      'Código de recuperación al registrarte (guárdalo). Panel ⇄ en pasos: <strong>Conectar → Sala → Equipo → Más</strong>; sin sesión solo ves Conectar. Admin puede restablecer contraseña.',
+  },
+  {
     title: 'Nube sin host LAN',
     body:
       'En <strong>Sala</strong> y <strong>Torre HU</strong>, el panel ⇄ conecta a una sala en la nube (Cloudflare Free): el turno sincroniza sin depender de un Mac anfitrión.',

@@ -149,9 +149,52 @@ Default assumptions (**10 users × 12 h × 15 s poll** + light edits) stay under
 
 Override assumptions: `USERS=15 HOURS=8 POLL_SEC=20 npm run estimate:free`
 
-## Auth note (Free plan)
+## Auth
 
 Password hashing uses **PBKDF2-SHA-256 at 50k iterations** so register/login stay under Workers Free CPU (~10ms). Raise iterations (and use Paid `[limits] cpu_ms`) before a broader rollout.
+
+### Recovery (migration 003)
+
+Apply `schema/003-recovery.sql` via migrations (`npm run db:migrate:remote` after deploy). Adds to `users`:
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `recovery_salt` | BLOB | Salt for recovery-code hash |
+| `recovery_hash` | BLOB | PBKDF2 hash of one-time recovery code |
+| `recovery_updated_at` | TEXT | Last mint/regenerate timestamp |
+
+Register and login responses include a **one-time `recoveryCode`** when the user has none yet. Logged-in users can **regenerate** (invalidates the previous code). Self-service **recover** sets a new password and returns a fresh code.
+
+### Recover password (self-service)
+
+```bash
+curl -s -X POST "$BASE/api/sync/v1/auth/recover" \
+  -H 'content-type: application/json' \
+  -d '{"username":"r1demo","recoveryCode":"XXXX-XXXX-XXXX","newPassword":"new-password-1"}'
+# → {"ok":true,"token":"...","expiresAt":"...","user":{...},"recoveryCode":"YYYY-..."}
+```
+
+### Regenerate recovery code (logged in)
+
+```bash
+curl -s -X POST "$BASE/api/sync/v1/auth/regenerate-recovery" \
+  -H "Authorization: Bearer $TOKEN"
+# → {"ok":true,"recoveryCode":"ZZZZ-..."}
+```
+
+### Admin reset password
+
+Program admin / R4 (admin session or `X-Sync-Admin-Key`):
+
+```bash
+curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/reset-password" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"temporaryPassword":"temp-password-1","rotateRecovery":true}'
+# rotateRecovery optional — when true, returns a new recoveryCode
+```
+
+See also [Admin API](#admin-api-r4--program-admin).
 
 ## Secrets
 
@@ -284,6 +327,7 @@ curl -s "$BASE/api/sync/v1/admin/overview" \
 | POST | `/admin/users/:id/revoke-sessions` | logout everywhere |
 | POST | `/admin/users/:id/promote` | set `role` (admin key OK for bootstrap) |
 | POST | `/admin/users/:id/disable` | `disabled=1` + revoke sessions |
+| POST | `/admin/users/:id/reset-password` | set temporary password; optional `rotateRecovery` |
 | DELETE | `/admin/users/:id` | delete user (sessions + memberships) |
 
 ## Tests
