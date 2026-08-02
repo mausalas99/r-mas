@@ -16,6 +16,20 @@ Fecha: 2026-08-02
 - **Labs sin tope de sets** — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
 - **Despliegue del worker** — Desde la raíz del repo: `node cloudflare/setup-sync.mjs` (D1, secretos, deploy). Estimación de cuota Free: `cd cloud/sync-worker && npm run estimate:free`.
 
+## Corte de usuarios (7.9)
+
+Con **7.9** se reinician los **usuarios clínicos** locales y en la nube del piloto. Esto no borra pacientes ni laboratorios del turno por defecto.
+
+**Qué hacer al actualizar**
+
+1. **Vuelve a registrarte** con tu **@usuario** y **nombre** (mismas reglas que siempre). En **Sala** o **Torre HU** también crea tu **contraseña de Nube** (mín. 10 caracteres).
+2. **Conexión en tres pasos:** **Cuenta nube** (crear o entrar) → **Mi rotación** (unirte o crear equipo) → la app asegura automáticamente tu **sala de turno** (sin código manual).
+3. **Pacientes del turno** — Al unirte a **Mi rotación** y conectar Nube, el censo compartido del turno se recupera desde la sala nube (pull del estado de sala). Si ya había datos en la sala del turno, reaparecen al sincronizar.
+4. **Interconsultas, UX, Eme y Área A** — Siguen en **LiveSync LAN** (host + PIN). Ahí también vuelves a registrar @usuario + nombre; no usan contraseña de Nube.
+5. **Administración nube (R4 / admin de programa)** — Menú **Administración nube** para ver salas, usuarios, sesiones y purgar salas obsoletas del piloto. El primer admin se promueve con `SYNC_ADMIN_KEY` (ver `cloud/sync-worker/README.md`).
+
+**Nota:** Si el piloto arranca con D1 vacío o reseteado el mismo día del deploy, todos empiezan con cuentas nuevas; el censo vivo depende de quién empuje primero a la sala de turno o de un respaldo previo.
+
 ## Instalación
 
 Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.0

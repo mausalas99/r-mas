@@ -17,6 +17,69 @@ When Nube is connected for Sala or Torre HU, **cloud room authority overrides LA
 
 ---
 
+## Pilot cutover (7.9 user wipe)
+
+Release **7.9** resets **clinical user accounts** (local + cloud pilot). **Patient/lab blobs are not wiped by default** — teams re-register and reclaim turn censo via the cloud turn room.
+
+### Desktop (each workstation)
+
+1. Install **7.9.0**.
+2. Re-register **@usuario + nombre** (LAN salas) or **@usuario + nombre + contraseña nube** (Sala / Torre HU).
+3. Flow: **Cuenta nube** → **Mi rotación** → app calls **`ensure-turn`** (canonical turn room for today’s `sala` + `turnKey`).
+4. Shared turn patients reappear after pull from the turn room (if state already exists in D1).
+
+User-facing copy: [`../../docs/RELEASE_NOTES_7.9.0.txt`](../../docs/RELEASE_NOTES_7.9.0.txt) § *Corte de usuarios*.
+
+### Cloud D1 reset (pilot day)
+
+Use when you want a **clean slate** for accounts/sessions/rooms on deploy day. **Destructive** — back up first if any room has live censo you need to keep.
+
+**Option A — truncate auth + rooms (keep schema):**
+
+```bash
+cd cloud/sync-worker
+npx wrangler d1 execute rplus-sync --remote --command "
+  DELETE FROM tombstones;
+  DELETE FROM mutations;
+  DELETE FROM room_state;
+  DELETE FROM room_members;
+  DELETE FROM rooms;
+  DELETE FROM sessions;
+  DELETE FROM users;
+"
+```
+
+**Option B — recreate database** (new `database_id` in `wrangler.toml`, then `npm run db:migrate:remote`).
+
+**Option C — surgical purge** — per-room `POST /admin/rooms/:id/purge` or per-user `DELETE /admin/users/:id` (see [Admin API](#admin-api-r4--program-admin)).
+
+After reset, bootstrap at least one **program admin** (below) before the team registers.
+
+### Bootstrap first admin (`SYNC_ADMIN_KEY`)
+
+```bash
+openssl rand -hex 32 | npx wrangler secret put SYNC_ADMIN_KEY
+```
+
+1. Any resident registers via the app or `POST /auth/register`.
+2. Copy their `user.id` from the register response (or `GET /admin/users?q=` once an admin exists).
+3. Promote:
+
+```bash
+BASE="https://YOUR-URL"
+ADMIN_KEY="<SYNC_ADMIN_KEY>"
+USER_ID="<user id>"
+
+curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/promote" \
+  -H "X-Sync-Admin-Key: $ADMIN_KEY" \
+  -H 'content-type: application/json' \
+  -d '{"role":"admin"}'
+```
+
+`role` may be `admin` or `program_admin`. After promotion, that user can open **Administración nube** in R+ (Sala/Torre, admin session).
+
+---
+
 ## Plug-and-play deploy
 
 From repo root (Wrangler logged in):
@@ -125,7 +188,20 @@ curl -s "$BASE/api/sync/v1/auth/me" -H "Authorization: Bearer $TOKEN"
 curl -s -X POST "$BASE/api/sync/v1/auth/logout" -H "Authorization: Bearer $TOKEN"
 ```
 
-### Create room (Sala or Torre HU only)
+### Ensure turn room (join-or-create)
+
+Canonical room for **Sala** or **Torre HU** + today’s turn key (America/Mexico_City). The desktop client calls this after **Mi rotación** — no manual room code.
+
+```bash
+curl -s -X POST "$BASE/api/sync/v1/rooms/ensure-turn" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"sala":"Sala"}'
+# optional explicit turn: {"sala":"Torre HU","turnKey":"2026-08-02"}
+# → {"room":{"id":"...","code":"ABC123","sala":"Sala","turnKey":"2026-08-02",...}}
+```
+
+### Create room (manual / smoke)
 
 ```bash
 curl -s -X POST "$BASE/api/sync/v1/rooms" \
@@ -147,7 +223,7 @@ curl -s -X POST "$BASE/api/sync/v1/rooms/join" \
 ### Push mutation + pull
 
 ```bash
-ROOM_ID="<room id from create>"
+ROOM_ID="<room id from create or ensure-turn>"
 curl -s -X POST "$BASE/api/sync/v1/rooms/$ROOM_ID/mutations" \
   -H "Authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' \
@@ -179,13 +255,17 @@ BASE="https://YOUR-URL"
 ADMIN_KEY="<paste SYNC_ADMIN_KEY>"
 USER_ID="<user id from register>"
 
-curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/promote"   -H "X-Sync-Admin-Key: $ADMIN_KEY"   -H 'content-type: application/json'   -d '{"role":"admin"}'
+curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/promote" \
+  -H "X-Sync-Admin-Key: $ADMIN_KEY" \
+  -H 'content-type: application/json' \
+  -d '{"role":"admin"}'
 ```
 
 Overview:
 
 ```bash
-curl -s "$BASE/api/sync/v1/admin/overview"   -H "Authorization: Bearer $TOKEN"
+curl -s "$BASE/api/sync/v1/admin/overview" \
+  -H "Authorization: Bearer $TOKEN"
 # or: -H "X-Sync-Admin-Key: $ADMIN_KEY"
 ```
 
