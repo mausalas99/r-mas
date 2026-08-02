@@ -15,7 +15,7 @@ description: "Master documentation hub for R+ — start here for strategy, archi
 |-----------|----------|
 | North Star | Paste SOME → structured labs → `.docx` note in minimum TTD |
 | Ideal user | R1/R2 on 24h high-intensity guardia |
-| Architecture | Local-first Electron + LAN LiveSync (:3738), no cloud PHI |
+| Architecture | Electron + offline SQLCipher; LAN LiveSync (:3738); opt-in Nube (Cloudflare Free pilot) |
 | Scope | Adjunct documentation tool — **not** institutional EMR |
 
 ## Architecture (data flow)
