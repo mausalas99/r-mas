@@ -52,6 +52,7 @@ export async function mountCloudNubeSection(root, deps) {
   });
 
   _cloudNubeMount = mountNubeSection(root, {
+    renderLanPanel: deps.renderLanPanel,
     getUserSala,
     getCloudSyncUrl: settings.getCloudSyncUrl,
     setCloudSyncUrl: settings.setCloudSyncUrl,

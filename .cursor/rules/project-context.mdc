@@ -134,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-02** `cloud-sync`: rebuild ⇄ Conexión chrome on Nube login/logout (session gate); stepped UI token-without-room; `panel-session-gate.mjs`, `panel-conexion-handlers.mjs`.
 - **2026-08-02** `nube-recovery-ux`: recovery codes + admin reset; Conexión steps (Connect→Sala→Equipo→Más); logged-out shows only Connect; `cloud/sync-worker` auth-recovery, `public/js/features/cloud-sync/panel-steps-html.mjs`.
 - **2026-08-02** `patient-bulk-delete`: multi-select en lista + borrado unificado (local + tombstone + host/Nube/WS); retirado defer 30s; `patient-delete-batch.mjs`, `patients-bulk-select.mjs`.
 - **2026-08-02** `cloud-sync-7.9`: Nube Free pilot for **Sala + Torre HU** only (overrides LAN); Inters/UX/Eme/Área A stay LAN; offline + uncapped labs; `cloud/sync-worker`, `public/js/features/cloud-sync/`.

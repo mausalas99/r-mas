@@ -6,3 +6,8 @@
 export function shouldShowNubePostAuthChrome(token) {
   return Boolean(token && String(token).trim());
 }
+
+/** @param {unknown} prevToken @param {unknown} nextToken */
+export function shouldForcePanelRebuildOnAuthChange(prevToken, nextToken) {
+  return shouldShowNubePostAuthChrome(prevToken) !== shouldShowNubePostAuthChrome(nextToken);
+}

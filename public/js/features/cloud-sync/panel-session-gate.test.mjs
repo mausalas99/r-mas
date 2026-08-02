@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { shouldShowNubePostAuthChrome } from './panel-session-gate.mjs';
+import { shouldShowNubePostAuthChrome, shouldForcePanelRebuildOnAuthChange } from './panel-session-gate.mjs';
 
 describe('shouldShowNubePostAuthChrome', () => {
   it('returns false for null, undefined, empty, or whitespace-only token', () => {
@@ -15,3 +15,17 @@ describe('shouldShowNubePostAuthChrome', () => {
     assert.equal(shouldShowNubePostAuthChrome('  token  '), true);
   });
 });
+describe('shouldForcePanelRebuildOnAuthChange', () => {
+  it('returns true when token presence changes', () => {
+    assert.equal(shouldForcePanelRebuildOnAuthChange(null, 'tok'), true);
+    assert.equal(shouldForcePanelRebuildOnAuthChange('tok', null), true);
+    assert.equal(shouldForcePanelRebuildOnAuthChange('', 'tok'), true);
+  });
+
+  it('returns false when token presence unchanged', () => {
+    assert.equal(shouldForcePanelRebuildOnAuthChange(null, null), false);
+    assert.equal(shouldForcePanelRebuildOnAuthChange('tok', 'tok2'), false);
+    assert.equal(shouldForcePanelRebuildOnAuthChange('', '   '), false);
+  });
+});
+

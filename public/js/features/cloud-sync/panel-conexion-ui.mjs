@@ -1,7 +1,5 @@
 import {
-  accountSummaryHtml,
   authFormsHtml,
-  nextStepHtml,
   roomConnectedHtml,
   roomActionsHtml,
   advancedUrlHtml,
@@ -37,10 +35,19 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
 
   function renderDisconnected() {
     const hasToken = !!deps.getCloudSyncToken();
+    if (!hasToken) {
+      renderShell(authFormsHtml(deps.getCloudSyncUrl()), 'offline');
+      return;
+    }
+    const masBodyHtml = (ctx.masAdminHtml || '') + advancedUrlHtml(deps.getCloudSyncUrl());
     renderShell(
-      '<div class="cloud-sync-account">' + (hasToken ? accountSummaryHtml(ctx.cloudUser) : authFormsHtml(deps.getCloudSyncUrl())) + '</div>' +
-      (hasToken ? nextStepHtml(deps.getCloudSyncToken) + roomActionsHtml(normalizedSala) + advancedUrlHtml(deps.getCloudSyncUrl()) : ''),
-      hasToken ? 'idle' : 'offline'
+      connectedStepsHtml({
+        cloudUser: ctx.cloudUser,
+        roomHtml: roomActionsHtml(normalizedSala),
+        equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
+        masBodyHtml,
+      }),
+      'idle'
     );
   }
 

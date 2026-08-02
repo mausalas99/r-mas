@@ -1,10 +1,20 @@
 import { normalizeCloudSala } from './sala-allowlist.mjs';
+import { shouldForcePanelRebuildOnAuthChange } from './panel-session-gate.mjs';
 import { bridgeCloudIdentityToLocal } from './identity-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 
+
+/** @param {object} deps @param {unknown} prevToken */
+function rebuildPanelOnAuthChange(deps, prevToken) {
+  if (shouldForcePanelRebuildOnAuthChange(prevToken, deps.getCloudSyncToken())) {
+    deps.renderLanPanel?.({ force: true });
+    return true;
+  }
+  return false;
+}
 const REGENERATE_CONFIRM = '¿Regenerar código? El anterior deja de funcionar.';
 
 /** @param {{ recoveryCode?: string } | null | undefined} data */
@@ -71,11 +81,12 @@ export async function handleRegister(deps) {
   if (!validateRegisterForm(form, deps.toast)) return;
   try {
     const data = await deps.getApi().register(form);
+    const prevToken = deps.getCloudSyncToken();
     deps.setCloudSyncToken(data.token);
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || form);
     deps.toast('Cuenta creada. Sesión nube iniciada.', 'success');
-    deps.renderAfterAuth();
+    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
   } catch (err) {
     toastRegisterError(err, deps.toast);
   }
@@ -101,11 +112,12 @@ export async function handleLogin(deps) {
   }
   try {
     const data = await deps.getApi().login(form);
+    const prevToken = deps.getCloudSyncToken();
     deps.setCloudSyncToken(data.token);
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || { username: form.username });
     deps.toast('Sesión nube iniciada.', 'success');
-    deps.renderAfterAuth();
+    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo iniciar sesión.', 'error');
   }
@@ -147,11 +159,12 @@ export async function handleRecover(deps) {
       recoveryCode: form.recoveryCode,
       newPassword: form.password,
     });
+    const prevToken = deps.getCloudSyncToken();
     deps.setCloudSyncToken(data.token);
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || { username: form.username });
     deps.toast('Cuenta recuperada. Sesión nube iniciada.', 'success');
-    deps.renderAfterAuth();
+    if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo recuperar la cuenta.', 'error');
   }
@@ -232,12 +245,13 @@ export async function handleLeaveRoom(deps) {
 
 /** @param {object} deps */
 export async function handleLogout(deps) {
+  const prevToken = deps.getCloudSyncToken();
   deps.stopRuntime();
   try { await deps.getApi().logout(); } catch { /* ignore */ }
   deps.clearCloudSyncSession();
   deps.setCloudUser(null);
   deps.onCloudRoomChange?.(false);
-  deps.renderDisconnected();
+  if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderDisconnected();
 }
 
 /** @param {(msg: string, kind?: string) => void} toast */

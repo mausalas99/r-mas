@@ -27,6 +27,7 @@ export function adminShellHtml() {
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */
 export function wireConexionClicks(section, deps, ui) {
   const handlerDeps = {
+    renderLanPanel: deps.renderLanPanel,
     section,
     normalizedSala: ui.normalizedSala,
     toast: ui.toast,
