@@ -2,6 +2,7 @@ import { encryptJson } from './crypto-at-rest.js';
 import { SyncError } from './errors.js';
 import { QUOTAS } from './quotas.js';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.js';
+import { defaultTurnKey } from './turn-key.js';
 import { handleSync } from './sync.js';
 import { userFromAuthHeader } from './session.js';
 
@@ -49,6 +50,17 @@ async function parseJsonBody(request) {
   }
 }
 
+/** @param {unknown} salaRaw @returns {string} */
+export function validateCloudSalaForRoom(salaRaw) {
+  if (!salaRaw || !isCloudSala(salaRaw)) {
+    throw new SyncError(
+      'invalid_request',
+      'Sala no disponible en la nube. Solo Sala y Torre HU.'
+    );
+  }
+  return normalizeCloudSala(salaRaw);
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 async function requireUser(db, request) {
   const user = await userFromAuthHeader(db, request);
@@ -82,6 +94,7 @@ function roomPayload(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...(row.role ? { role: row.role } : {}),
+    ...(row.turn_key != null && row.turn_key !== '' ? { turnKey: row.turn_key } : {}),
   };
 }
 
@@ -120,7 +133,7 @@ async function countRoomMembers(db, roomId) {
 async function getMembership(db, roomId, userId) {
   return db
     .prepare(
-      `SELECT rm.role, r.id, r.code, r.name, r.sala, r.owner_user_id, r.revision,
+      `SELECT rm.role, r.id, r.code, r.name, r.sala, r.turn_key, r.owner_user_id, r.revision,
               r.storage_bytes, r.created_at, r.updated_at
        FROM room_members rm
        JOIN rooms r ON r.id = rm.room_id
@@ -145,16 +158,7 @@ async function handleCreateRoom(env, db, request) {
 
   const body = await parseJsonBody(request);
   const name = String(body?.name ?? '').trim();
-  const salaRaw = body?.sala;
-
-  if (!salaRaw || !isCloudSala(salaRaw)) {
-    throw new SyncError(
-      'invalid_request',
-      'Sala no disponible en la nube. Solo Sala y Torre HU.'
-    );
-  }
-
-  const sala = normalizeCloudSala(salaRaw);
+  const sala = validateCloudSalaForRoom(body?.sala);
   const id = crypto.randomUUID();
   const code = await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
@@ -305,6 +309,106 @@ async function handleGetRoom(db, request, roomId) {
   });
 }
 
+
+/** @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
+async function handleEnsureTurn(env, db, request) {
+  const user = await requireUser(db, request);
+  requireDataKey(env);
+
+  const body = await parseJsonBody(request);
+  const sala = validateCloudSalaForRoom(body?.sala);
+  const turnKey = String(body?.turnKey ?? '').trim() || defaultTurnKey();
+  const name = `${sala} ${turnKey}`;
+
+  const existingRoom = await db
+    .prepare(
+      `SELECT id, code, name, sala, turn_key, owner_user_id, revision, storage_bytes, created_at, updated_at
+       FROM rooms WHERE sala = ? AND turn_key = ?`
+    )
+    .bind(sala, turnKey)
+    .first();
+
+  if (existingRoom) {
+    const membership = await db
+      .prepare('SELECT role FROM room_members WHERE room_id = ? AND user_id = ?')
+      .bind(existingRoom.id, user.id)
+      .first();
+
+    if (membership) {
+      return Response.json({
+        room: roomPayload({ ...existingRoom, role: membership.role }),
+      });
+    }
+
+    const members = await countRoomMembers(db, existingRoom.id);
+    if (members >= QUOTAS.maxMembers) {
+      throw new SyncError('quota_exceeded', `La sala está llena (máx. ${QUOTAS.maxMembers} miembros).`);
+    }
+
+    const now = new Date().toISOString();
+    await db
+      .prepare(
+        `INSERT INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'member', ?)`
+      )
+      .bind(existingRoom.id, user.id, now)
+      .run();
+
+    return Response.json({
+      room: roomPayload({ ...existingRoom, role: 'member' }),
+    });
+  }
+
+  const owned = await countOwnedRooms(db, user.id);
+  if (owned >= QUOTAS.maxRoomsCreatedPerUser) {
+    throw new SyncError(
+      'quota_exceeded',
+      `Límite de salas creadas (${QUOTAS.maxRoomsCreatedPerUser}).`
+    );
+  }
+
+  const id = crypto.randomUUID();
+  const code = await generateUniqueRoomCode(db);
+  const now = new Date().toISOString();
+  const state = emptyRoomState();
+  const { ciphertext, iv } = await encryptJson(env, state);
+  const storageBytes = ciphertext.length / 2 + iv.length / 2;
+
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO rooms (id, code, name, sala, turn_key, owner_user_id, revision, storage_bytes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`
+      )
+      .bind(id, code, name, sala, turnKey, user.id, storageBytes, now, now),
+    db
+      .prepare(
+        `INSERT INTO room_members (room_id, user_id, role, joined_at) VALUES (?, ?, 'owner', ?)`
+      )
+      .bind(id, user.id, now),
+    db
+      .prepare(
+        `INSERT INTO room_state (room_id, ciphertext, iv, updated_at) VALUES (?, ?, ?, ?)`
+      )
+      .bind(id, hexToBytes(ciphertext), hexToBytes(iv), now),
+  ]);
+
+  return Response.json({
+    room: roomPayload({
+      id,
+      code,
+      name,
+      sala,
+      turn_key: turnKey,
+      owner_user_id: user.id,
+      revision: 0,
+      storage_bytes: storageBytes,
+      created_at: now,
+      updated_at: now,
+      role: 'owner',
+    }),
+  });
+}
+
 /**
  * @param {Request} request
  * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string }} env
@@ -326,6 +430,11 @@ export async function handleRooms(request, env, subpath) {
 
   if (subpath === '/join') {
     if (method === 'POST') return handleJoinRoom(db, request);
+    throw new SyncError('not_found', 'Método no permitido.');
+  }
+
+  if (subpath === '/ensure-turn') {
+    if (method === 'POST') return handleEnsureTurn(env, db, request);
     throw new SyncError('not_found', 'Método no permitido.');
   }
 

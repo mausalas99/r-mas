@@ -115,11 +115,14 @@ async function handleRegister(db, request, ip) {
   checkRateLimit(rlKey);
 
   const existing = await db
-    .prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE')
+    .prepare('SELECT id, disabled FROM users WHERE username = ? COLLATE NOCASE')
     .bind(username)
     .first();
   if (existing) {
     recordFailure(rlKey);
+    if (Number(existing.disabled) !== 0) {
+      throw new SyncError('forbidden', 'Cuenta deshabilitada.');
+    }
     throw new SyncError('conflict', 'Ese usuario ya existe.');
   }
 
@@ -166,7 +169,9 @@ async function handleLogin(db, request, ip) {
   checkRateLimit(rlKey);
 
   const row = await db
-    .prepare('SELECT id, username, display_name, password_salt, password_hash FROM users WHERE username = ? COLLATE NOCASE')
+    .prepare(
+      'SELECT id, username, display_name, password_salt, password_hash, disabled FROM users WHERE username = ? COLLATE NOCASE'
+    )
     .bind(username)
     .first();
 
@@ -181,6 +186,10 @@ async function handleLogin(db, request, ip) {
   if (!ok) {
     recordFailure(rlKey);
     throw new SyncError('invalid_credentials', 'Usuario o contraseña incorrectos.');
+  }
+
+  if (Number(row.disabled) !== 0) {
+    throw new SyncError('forbidden', 'Cuenta deshabilitada.');
   }
 
   clearFailures(rlKey);
