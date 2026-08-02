@@ -1,4 +1,7 @@
+import { validatePassword } from './auth.js';
+import { mintRecoveryForUser } from './auth-recovery.js';
 import { SyncError } from './errors.js';
+import { hashPassword } from './password.js';
 import { QUOTAS } from './quotas.js';
 import { randomRoomCode } from './rooms.js';
 import { userFromAuthHeader } from './session.js';
@@ -353,6 +356,39 @@ async function handleDeleteUser(db, userId) {
   return Response.json({ ok: true });
 }
 
+
+
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {string} userId @param {Request} request */
+async function handleResetPassword(db, userId, request) {
+  const user = await db.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
+  if (!user) {
+    throw new SyncError('not_found', 'Usuario no encontrado.');
+  }
+
+  const body = await parseJsonBody(request);
+  const temporaryPassword = body?.temporaryPassword;
+  if (temporaryPassword == null || temporaryPassword === '') {
+    throw new SyncError('invalid_request', 'Contraseña temporal requerida.');
+  }
+
+  validatePassword(temporaryPassword);
+
+  const { salt, hash } = await hashPassword(temporaryPassword);
+  const now = new Date().toISOString();
+  await db.batch([
+    db.prepare('UPDATE users SET password_salt = ?, password_hash = ?, updated_at = ? WHERE id = ?')
+      .bind(salt, hash, now, userId),
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
+  ]);
+
+  const rotateRecovery = Boolean(body?.rotateRecovery);
+  if (rotateRecovery) {
+    const recoveryCode = await mintRecoveryForUser(db, userId);
+    return Response.json({ ok: true, recoveryCode });
+  }
+
+  return Response.json({ ok: true });
+}
 /**
  * @param {Request} request
  * @param {{ DB?: import('@cloudflare/workers-types').D1Database, SYNC_ADMIN_KEY?: string }} env
@@ -428,6 +464,12 @@ export async function handleAdmin(request, env, subpath) {
   if (disableMatch && method === 'POST') {
     await requireAdminUser(db, request, env);
     return handleDisableUser(db, disableMatch[1]);
+  }
+
+  const resetMatch = /^\/users\/([^/]+)\/reset-password$/.exec(subpath);
+  if (resetMatch && method === 'POST') {
+    await requireAdminUser(db, request, env);
+    return handleResetPassword(db, resetMatch[1], request);
   }
 
   const userDeleteMatch = /^\/users\/([^/]+)$/.exec(subpath);
