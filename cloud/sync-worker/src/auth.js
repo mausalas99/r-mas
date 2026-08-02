@@ -1,6 +1,13 @@
 import { SyncError } from './errors.js';
 import { hashPassword, verifyPassword } from './password.js';
 import { createSession, revokeSession, userFromAuthHeader } from './session.js';
+import { dbBlobToHex, userPayload, parseJsonBody } from './auth-util.js';
+import {
+  mintRecoveryForUser,
+  userNeedsRecoveryMint,
+  handleRecover,
+  handleRegenerateRecovery,
+} from './auth-recovery.js';
 
 const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
 const MIN_PASSWORD_LEN = 10;
@@ -59,32 +66,6 @@ export function recordFailure(key) {
 /** @param {string} key */
 export function clearFailures(key) {
   failureCounts.delete(key);
-}
-
-/** @param {unknown} val */
-function dbBlobToHex(val) {
-  if (!val) return '';
-  if (typeof val === 'string') return val;
-  const bytes = val instanceof ArrayBuffer ? new Uint8Array(val) : /** @type {Uint8Array} */ (val);
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** @param {{ id: string, username: string, display_name: string }} row */
-function userPayload(row) {
-  return {
-    id: row.id,
-    username: row.username,
-    displayName: row.display_name ?? '',
-  };
-}
-
-/** @param {Request} request */
-async function parseJsonBody(request) {
-  try {
-    return await request.json();
-  } catch {
-    throw new SyncError('invalid_request', 'JSON inválido.');
-  }
 }
 
 /** @param {Request} request @param {string} ip */
@@ -148,10 +129,12 @@ async function handleRegister(db, request, ip) {
 
   clearFailures(rlKey);
   const session = await createSession(db, id);
+  const recoveryCode = await mintRecoveryForUser(db, id);
   return Response.json({
     token: session.token,
     expiresAt: session.expiresAt,
     user: { id, username, displayName },
+    recoveryCode,
   });
 }
 
@@ -170,7 +153,8 @@ async function handleLogin(db, request, ip) {
 
   const row = await db
     .prepare(
-      'SELECT id, username, display_name, password_salt, password_hash, disabled FROM users WHERE username = ? COLLATE NOCASE'
+      `SELECT id, username, display_name, password_salt, password_hash, recovery_hash, disabled
+       FROM users WHERE username = ? COLLATE NOCASE`
     )
     .bind(username)
     .first();
@@ -194,11 +178,15 @@ async function handleLogin(db, request, ip) {
 
   clearFailures(rlKey);
   const session = await createSession(db, row.id);
-  return Response.json({
+  const payload = {
     token: session.token,
     expiresAt: session.expiresAt,
     user: userPayload(row),
-  });
+  };
+  if (userNeedsRecoveryMint(row)) {
+    payload.recoveryCode = await mintRecoveryForUser(db, row.id);
+  }
+  return Response.json(payload);
 }
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
@@ -245,6 +233,12 @@ export async function handleAuth(request, env, subpath) {
   }
   if (subpath === '/me' && method === 'GET') {
     return handleMe(db, request);
+  }
+  if (subpath === '/recover' && method === 'POST') {
+    return handleRecover(db, request, ip);
+  }
+  if (subpath === '/regenerate-recovery' && method === 'POST') {
+    return handleRegenerateRecovery(db, request);
   }
 
   throw new SyncError('not_found', 'Ruta de auth no encontrada.');

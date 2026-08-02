@@ -6,35 +6,10 @@ import {
   recordFailure,
   clearFailures,
 } from './auth.js';
+import { dbBlobToHex, userPayload, parseJsonBody } from './auth-util.js';
 import { hashPassword } from './password.js';
 import { hashRecoveryCode, verifyRecoveryCode, generateRecoveryCode } from './recovery-code.js';
 import { createSession, userFromAuthHeader } from './session.js';
-
-/** @param {unknown} val */
-function dbBlobToHex(val) {
-  if (!val) return '';
-  if (typeof val === 'string') return val;
-  const bytes = val instanceof ArrayBuffer ? new Uint8Array(val) : /** @type {Uint8Array} */ (val);
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** @param {{ id: string, username: string, display_name: string }} row */
-function userPayload(row) {
-  return {
-    id: row.id,
-    username: row.username,
-    displayName: row.display_name ?? '',
-  };
-}
-
-/** @param {Request} request */
-async function parseJsonBody(request) {
-  try {
-    return await request.json();
-  } catch {
-    throw new SyncError('invalid_request', 'JSON inválido.');
-  }
-}
 
 /** @param {string} username @param {string} ip */
 function recoveryRateLimitKey(username, ip) {
