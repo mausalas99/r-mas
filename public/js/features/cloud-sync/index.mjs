@@ -15,3 +15,20 @@ export {
 export { createCloudSyncApi } from './api-client.mjs';
 export { createOutbox, OUTBOX_STORAGE_KEY } from './outbox.mjs';
 export { startCloudSyncRuntime } from './sync-runtime.mjs';
+
+export {
+  CLOUD_SALAS,
+  LAN_ONLY_SALAS,
+  normalizeCloudSala,
+  isCloudSala,
+  isLanOnlySala,
+} from './sala-allowlist.mjs';
+
+export {
+  shouldShowNubePanel,
+  shouldUseNubeNotLan,
+  isCloudSyncActive,
+  setCloudRoomConnected,
+} from './lan-override.mjs';
+
+export { mountNubeSection } from './panel-nube-section.mjs';

@@ -48,6 +48,7 @@ import {
 } from './panel-clinical-context.mjs';
 import { appendLanConnectionStack, appendLanAdminStack } from './panel-group.mjs';
 import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
+import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
@@ -286,21 +287,37 @@ async function renderLanPanelOnce_(deps, force) {
   appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste);
   if (deps.isRenderStale(gen)) return;
 
-  await appendHeroPinSections_(deps, root, heroHost, gen);
+  const showNubePanel = shouldShowNubePanel(userSala);
+  const nubeOverridesLan = shouldUseNubeNotLan(userSala) || showNubePanel;
+
+  if (showNubePanel && typeof deps.mountCloudNubeSection === 'function') {
+    await deps.mountCloudNubeSection(root);
+    if (deps.isRenderStale(gen)) return;
+  }
+
+  if (!nubeOverridesLan) {
+    await appendHeroPinSections_(deps, root, heroHost, gen);
+  }
   if (deps.isRenderStale(gen)) return;
 
-  await deps.appendLanTurnResetAlertStrip(root, gen);
-  if (deps.isRenderStale(gen)) return;
+  if (!nubeOverridesLan) {
+    await deps.appendLanTurnResetAlertStrip(root, gen);
+    if (deps.isRenderStale(gen)) return;
+  }
 
   var mainStack = appendLanConnectionStack(root);
-  await deps.appendLanShiftPinClientConnectSection(mainStack, gen);
-  if (deps.isRenderStale(gen)) return;
+  if (!nubeOverridesLan) {
+    await deps.appendLanShiftPinClientConnectSection(mainStack, gen);
+    if (deps.isRenderStale(gen)) return;
 
-  appendMobileLanSections_(deps, mainStack, hubStatus);
-  deps.appendLanBackToLocalHostSection(mainStack);
-  appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
-  appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
-  deps.appendLanHostPinSection(mainStack);
+    appendMobileLanSections_(deps, mainStack, hubStatus);
+    deps.appendLanBackToLocalHostSection(mainStack);
+    appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
+    appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
+    deps.appendLanHostPinSection(mainStack);
+  } else if (showNubePanel) {
+    appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
+  }
   await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
   appendLanLwwToastRow(mainStack);
   wireLanLwwToastPref();
@@ -331,6 +348,7 @@ async function renderLanPanelOnce_(deps, force) {
  *   appendLanHostPinSection: (root: HTMLElement) => void,
  *   appendLanSyncDiagnosticsSection: (root: HTMLElement) => Promise<void>,
  *   purgeDuplicateLanShiftPinCards: (root: HTMLElement) => void,
+ *   mountCloudNubeSection?: (root: HTMLElement) => void | Promise<void>,
  * }} deps */
 export function createPanelRenderOnce(deps) {
   async function renderLanPanelOnce(force) {

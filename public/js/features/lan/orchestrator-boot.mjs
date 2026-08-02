@@ -12,6 +12,8 @@ import {
 } from './panel.mjs';
 import { wireLanSyncBridges } from './orchestrator-wire.mjs';
 import { scheduleTierALanServerWarm } from './orchestrator-runtime.mjs';
+import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { getUserSala } from './panel-clinical-context.mjs';
 
 let _lanRuntimeStarted = false;
 let _lanRegistryEvictionStarted = false;
@@ -50,9 +52,12 @@ export function ensureLanSyncRuntimeStarted() {
   if (_lanRuntimeStarted) return;
   _lanRuntimeStarted = true;
   wireLanSyncBridges();
-  initLanClientFromStorage();
   wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();
+  if (shouldShowNubePanel(getUserSala()) || shouldUseNubeNotLan(getUserSala())) {
+    return;
+  }
+  initLanClientFromStorage();
   wireLanHostRegistryDiscovery();
   if (isLanElectronDesktop()) {
     scheduleTierALanServerWarm();

@@ -10,8 +10,11 @@ import { getRoomMembership } from '../../live-sync-membership.mjs';
 import { deps, ensureLanSyncTransportDepsWired } from './transport-deps.mjs';
 import { persistLanClientConfig } from './transport-session.mjs';
 import { fixMobileLanHostUrl } from './transport-mobile.mjs';
+import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { getUserSala } from './panel-clinical-context.mjs';
 
 export function initLanClientFromStorage() {
+  if (shouldShowNubePanel(getUserSala()) || shouldUseNubeNotLan(getUserSala())) return;
   if (isMobileWeb()) restoreMobilePairingFromStorage();
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (!cfg || !String(cfg.hostUrl || '').trim()) return;

@@ -457,6 +457,7 @@ export async function registerAllFeatureRuntimes() {
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
   registerLanRuntime(ctx);
+  // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from features/lan/panel.mjs (no static import here).
 }
 
 export function runInitialFeatureBoot() {
