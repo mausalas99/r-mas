@@ -15,6 +15,7 @@ import {
 } from '../../clinical-settings.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { filterJoinedTeams } from '../clinical-teams/shared.mjs';
+import { canAccessCloudAdmin } from './panel-admin.mjs';
 
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
@@ -69,6 +70,8 @@ export function mountNubeSection(root, deps) {
   let runtime = null;
   /** @type {{ username?: string, displayName?: string } | null} */
   let cloudUser = null;
+  /** @type {ReturnType<import('./panel-admin.mjs').mountCloudAdminPanel> | null} */
+  let adminMount = null;
 
   const section = document.createElement('section');
   section.className = 'cloud-sync-conexion';
@@ -461,6 +464,39 @@ export function mountNubeSection(root, deps) {
     }
   }
 
+
+  function mountAdminShell() {
+    if (!canAccessCloudAdmin(clinicalSessionContext.user)) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cloud-sync-admin-wrap';
+    wrap.innerHTML =
+      '<button type="button" class="cloud-sync-btn" data-cloud-action="toggle-admin" aria-expanded="false">' +
+      'Administración nube</button>' +
+      '<div class="cloud-sync-admin-host" data-cloud-admin-host hidden></div>';
+    section.appendChild(wrap);
+  }
+
+  async function toggleAdminPanel() {
+    const host = section.querySelector('[data-cloud-admin-host]');
+    const btn = section.querySelector('[data-cloud-action="toggle-admin"]');
+    if (!host || !btn) return;
+    const opening = host.hasAttribute('hidden');
+    if (opening) {
+      host.removeAttribute('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      if (!adminMount) {
+        const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
+        host.textContent = '';
+        adminMount = mountCloudAdminPanel(host, { getApi: deps.getApi, toast });
+      } else {
+        adminMount.refresh?.();
+      }
+    } else {
+      host.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
   section.addEventListener('click', function (ev) {
     const btn = ev.target instanceof Element ? ev.target.closest('[data-cloud-action]') : null;
     if (!btn) return;
@@ -472,6 +508,7 @@ export function mountNubeSection(root, deps) {
     else if (action === 'leave-room') void handleLeaveRoom();
     else if (action === 'logout') void handleLogout();
     else if (action === 'open-rotation') void handleOpenRotation();
+    else if (action === 'toggle-admin') void toggleAdminPanel();
   });
 
   document.addEventListener('rpc-clinical-teams-changed', function onTeamsChanged() {
@@ -508,6 +545,7 @@ export function mountNubeSection(root, deps) {
   }
 
   root.appendChild(section);
+  mountAdminShell();
   return {
     section,
     stop() {

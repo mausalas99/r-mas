@@ -223,3 +223,198 @@
 .cloud-sync-room--actions .cloud-sync-btn + .cloud-sync-field {
   margin-top: calc(4px * var(--density-space));
 }
+
+/* Administración nube — dense ops tables */
+
+.cloud-sync-admin-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+  margin-top: calc(4px * var(--density-space));
+  padding-top: calc(10px * var(--density-space));
+  border-top: 1px dashed var(--divider);
+}
+
+.cloud-sync-admin {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space));
+}
+
+.cloud-sync-admin-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cloud-sync-admin-title {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-bootstrap {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+  padding: calc(10px * var(--density-space));
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in oklab, var(--surface) 97%, transparent);
+}
+
+.cloud-sync-admin-bootstrap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6px * var(--density-space));
+}
+
+.cloud-sync-admin-block {
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
+}
+
+.cloud-sync-admin-block summary {
+  cursor: pointer;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-block[open] summary {
+  margin-bottom: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-block--danger {
+  border-color: color-mix(in oklab, var(--danger, #c0392b) 22%, var(--divider));
+}
+
+.cloud-sync-admin-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: calc(8px * var(--density-space));
+  margin: 0;
+}
+
+.cloud-sync-admin-stats dt {
+  margin: 0;
+  font-size: calc(10px * var(--density-font));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-stats dd {
+  margin: 2px 0 0;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+}
+
+.cloud-sync-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(11px * var(--density-font));
+}
+
+.cloud-sync-admin-table th,
+.cloud-sync-admin-table td {
+  padding: calc(5px * var(--density-space)) calc(8px * var(--density-space));
+  text-align: left;
+  border-bottom: 1px solid var(--divider);
+  vertical-align: top;
+}
+
+.cloud-sync-admin-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  white-space: nowrap;
+}
+
+.cloud-sync-admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cloud-sync-admin-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(4px * var(--density-space));
+}
+
+.cloud-sync-admin-role-select {
+  min-width: 7rem;
+  padding: 4px 6px;
+  font-size: calc(11px * var(--density-font));
+}
+
+.cloud-sync-admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6px * var(--density-space));
+}
+
+.cloud-sync-admin-toolbar .profile-input {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.cloud-sync-admin-ops {
+  display: block;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: calc(10px * var(--density-font));
+}
+
+.cloud-sync-admin-badge.is-disabled {
+  color: var(--danger, #c0392b);
+  font-weight: 600;
+}
+
+.cloud-sync-admin-error {
+  margin: 0;
+  color: var(--danger, #c0392b);
+  font-size: calc(12px * var(--density-font));
+}
+
+.cloud-sync-admin-danger-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: calc(12px * var(--density-font));
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-danger-list li + li {
+  margin-top: calc(6px * var(--density-space));
+}
+
+.cloud-sync-admin-room-detail {
+  margin-top: calc(8px * var(--density-space));
+  padding: calc(10px * var(--density-space));
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in oklab, var(--surface) 98%, transparent);
+}

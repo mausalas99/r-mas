@@ -21,12 +21,14 @@ export async function mountCloudNubeSection(root, deps) {
 
   const settings = await import('../cloud-sync/settings.mjs');
   const { createCloudSyncApi } = await import('../cloud-sync/api-client.mjs');
+  const { getSessionAdminKey } = await import('../cloud-sync/panel-admin.mjs');
   const { mountNubeSection } = await import('../cloud-sync/panel-nube-section.mjs');
   const { setCloudRoomConnected } = await import('../cloud-sync/lan-override.mjs');
 
   const api = createCloudSyncApi({
     getBaseUrl: settings.getCloudSyncUrl,
     getToken: settings.getCloudSyncToken,
+    getAdminKey: getSessionAdminKey,
   });
 
   _cloudNubeMount = mountNubeSection(root, {

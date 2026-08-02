@@ -1,0 +1,44 @@
+import { esc } from '../../dom-escape.mjs';
+
+export const ROLE_LABELS = {
+  member: 'Miembro',
+  admin: 'Admin',
+  program_admin: 'Admin programa',
+};
+
+/** @param {string} role */
+export function fmtRole(role) {
+  return ROLE_LABELS[role] || role || '—';
+}
+
+/** @param {Array<Record<string, unknown>>} rows @param {Array<{ label: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols */
+export function adminTableHtml(rows, cols) {
+  if (!rows.length) {
+    return '<p class="cloud-sync-hint">Sin registros.</p>';
+  }
+  const head = cols.map((c) => '<th>' + esc(c.label) + '</th>').join('');
+  const body = rows
+    .map((row) => {
+      const tds = cols
+        .map((c) => '<td>' + (c.cell ? c.cell(row) : esc(String(row[c.key] ?? ''))) + '</td>')
+        .join('');
+      return '<tr>' + tds + '</tr>';
+    })
+    .join('');
+  return (
+    '<div class="cloud-sync-admin-table-wrap"><table class="cloud-sync-admin-table">' +
+    '<thead><tr>' +
+    head +
+    '</tr></thead><tbody>' +
+    body +
+    '</tbody></table></div>'
+  );
+}
+
+/** @param {string} value */
+export function normalizeUsernameConfirm(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase();
+}
