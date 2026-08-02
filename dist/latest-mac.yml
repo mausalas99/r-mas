@@ -1,23 +1,31 @@
-version: 7.8.1
+version: 7.9.0
 files:
-  - url: R+-7.8.1-arm64.zip
-    sha512: lrfQbV9j7ap0qxxjQ3X6s0P582nh9H9tj4PQvY/bhQEvnz11/eqt2pk4onJxjtIuWpQZcjVv3HI0DqyV0IjoMw==
-    size: 137340488
-  - url: R+-7.8.1-arm64.dmg
-    sha512: dGzW1DBh6jm7xrj0YaYcEWs1FjhyIIUocsl7Z8Fu9+GD6PLv2OCmnRUQAzxSScOtdY3yi9DaFxfcNZiFptlNuA==
-    size: 143076859
-  - url: R+-7.8.1-x64.zip
-    sha512: xGhF7UaqaEr2nqvBmVjgemw2pdsw+LzUz+PJJxFwC2mLEBMlHs0hBnrIjsAYEXChQ2LljsXTyD9AxsAPQ4AXSw==
-    size: 145714544
-  - url: R+-7.8.1-x64.dmg
-    sha512: zj6HZAcsHI4GSJ3tyHBcTm28ORfzDgxUd1Y+FsurH1QF7lqY9fMczNuIgZfkSOcDdi6Y3eNvbLTU/4KvOr9wxw==
-    size: 151516121
-path: R+-7.8.1-arm64.zip
-sha512: lrfQbV9j7ap0qxxjQ3X6s0P582nh9H9tj4PQvY/bhQEvnz11/eqt2pk4onJxjtIuWpQZcjVv3HI0DqyV0IjoMw==
-releaseDate: '2026-08-01T15:25:21.000Z'
+  - url: R+-7.9.0-arm64.zip
+    sha512: mQWMHd+PlZzUjcJSchNpDj5nhN6pCVWYdfwZ++m/JlzucxUVHrBXg8Btvs17Sttdpn0NNVga9rSuqJgqzUDH0A==
+    size: 137465085
+  - url: R+-7.9.0-arm64.dmg
+    sha512: vUH4mOvU8VwDaK432TYCAXiqYiMvAMv441BBXr/79uKwx4rTFglU9SXE+brP+IJ0cwnc8c9U13BLRti7+6qx4w==
+    size: 143193496
+  - url: R+-7.9.0-x64.zip
+    sha512: dHMbK71W15dRFoa7yVB+Y2xwQOaML6T8ZMLoaMGokGsWijeIbKGCJfY5SmSyNlAWY138wuSmhNil5aZ+rPQQOg==
+    size: 145839182
+  - url: R+-7.9.0-x64.dmg
+    sha512: PKn5T5IWrLG+nGvYxosKx4aI0vk3728sOlKbpIuhOBnCoIFs0JxRu0cZcMlLclkjaiulMKjjqlawn8T6MuL0wQ==
+    size: 151689389
+path: R+-7.9.0-arm64.zip
+sha512: mQWMHd+PlZzUjcJSchNpDj5nhN6pCVWYdfwZ++m/JlzucxUVHrBXg8Btvs17Sttdpn0NNVga9rSuqJgqzUDH0A==
+releaseDate: '2026-08-02T20:23:03.000Z'
 releaseNotes: |
-  7.8.1 corrige la pérdida de diagnósticos (y texto de censo/meds) en Datos del paciente al sincronizar por LAN: el merge ya no descartaba esos campos ni los pisaba con listas vacías.
+  7.9.0 introduce Nube, un piloto opt-in en Cloudflare Free para sincronizar el censo del turno sin depender de un Mac anfitrión en LAN. Disponible solo para perfiles de sala Sala y Torre HU; el resto de salas sigue en LiveSync LAN como hasta ahora.
   
-  Diagnósticos en Datos — Al fusionar expedientes en LiveSync se conservan diagnosticosList / diagnosticosText y censoMedsText del peer con contenido (priorizando el más reciente).
+  Nube en el panel ⇄ — Registro e inicio de sesión (usuario + contraseña) y unión a sala de turno desde el mismo panel de sincronización. Solo visible para Sala y Torre HU.
   
-  Sin borrado fantasma — Una lista vacía [''] (placeholder de UI) ya no sobrescribe diagnósticos reales al aplicar el host.
+  Nube sustituye anfitrión LAN — En esas salas, cuando Nube está conectada, la autoridad del turno es la sala en la nube: no hace falta elegir ni mantener un host Mac en la red local.
+  
+  Otras salas sin cambios — Interconsultas, UX, Eme y Área A (Pensionistas) permanecen en LiveSync LAN (host + PIN).
+  
+  Offline + outbox — SQLCipher local sigue siendo la caché del turno; sin Internet las ediciones se encolan y se envían al reconectar.
+  
+  Labs sin tope de sets — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
+  
+  Despliegue del worker — Desde la raíz del repo: node cloudflare/setup-sync.mjs (D1, secretos, deploy). Estimación de cuota Free: cd cloud/sync-worker && npm run estimate:free.

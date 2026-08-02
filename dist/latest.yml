@@ -1,14 +1,22 @@
-version: 7.8.1
+version: 7.9.0
 files:
-  - url: R+-7.8.1-x64.exe
-    sha512: gntU4Q+A/F8lh1LNLKF/hLOlMHhpvERRyQOjEgC3tYP8drpqQTi7blEEk0JpVD4Dabgyevt9AAX0mhZQJHsgvQ==
-    size: 120906647
-path: R+-7.8.1-x64.exe
-sha512: gntU4Q+A/F8lh1LNLKF/hLOlMHhpvERRyQOjEgC3tYP8drpqQTi7blEEk0JpVD4Dabgyevt9AAX0mhZQJHsgvQ==
-releaseDate: '2026-08-01T15:25:21.000Z'
+  - url: R+-7.9.0-x64.exe
+    sha512: 4Y8vckZxcL6EkU6mOaGuui1XRibNBNVht/1ZWRH+Qo4o0Yz7hB5wykwXLPj4GS6F+ZvK1LpqcRxRo0ozyn+qMQ==
+    size: 121014459
+path: R+-7.9.0-x64.exe
+sha512: 4Y8vckZxcL6EkU6mOaGuui1XRibNBNVht/1ZWRH+Qo4o0Yz7hB5wykwXLPj4GS6F+ZvK1LpqcRxRo0ozyn+qMQ==
+releaseDate: '2026-08-02T20:23:03.000Z'
 releaseNotes: |
-  7.8.1 corrige la pérdida de diagnósticos (y texto de censo/meds) en Datos del paciente al sincronizar por LAN: el merge ya no descartaba esos campos ni los pisaba con listas vacías.
+  7.9.0 introduce Nube, un piloto opt-in en Cloudflare Free para sincronizar el censo del turno sin depender de un Mac anfitrión en LAN. Disponible solo para perfiles de sala Sala y Torre HU; el resto de salas sigue en LiveSync LAN como hasta ahora.
   
-  Diagnósticos en Datos — Al fusionar expedientes en LiveSync se conservan diagnosticosList / diagnosticosText y censoMedsText del peer con contenido (priorizando el más reciente).
+  Nube en el panel ⇄ — Registro e inicio de sesión (usuario + contraseña) y unión a sala de turno desde el mismo panel de sincronización. Solo visible para Sala y Torre HU.
   
-  Sin borrado fantasma — Una lista vacía [''] (placeholder de UI) ya no sobrescribe diagnósticos reales al aplicar el host.
+  Nube sustituye anfitrión LAN — En esas salas, cuando Nube está conectada, la autoridad del turno es la sala en la nube: no hace falta elegir ni mantener un host Mac en la red local.
+  
+  Otras salas sin cambios — Interconsultas, UX, Eme y Área A (Pensionistas) permanecen en LiveSync LAN (host + PIN).
+  
+  Offline + outbox — SQLCipher local sigue siendo la caché del turno; sin Internet las ediciones se encolan y se envían al reconectar.
+  
+  Labs sin tope de sets — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
+  
+  Despliegue del worker — Desde la raíz del repo: node cloudflare/setup-sync.mjs (D1, secretos, deploy). Estimación de cuota Free: cd cloud/sync-worker && npm run estimate:free.
