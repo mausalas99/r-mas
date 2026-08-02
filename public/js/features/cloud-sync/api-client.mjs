@@ -39,6 +39,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken }) {
     me: () => req('/auth/me'),
     createRoom: (body) => req('/rooms', { method: 'POST', body }),
     joinRoom: (body) => req('/rooms/join', { method: 'POST', body }),
+    ensureTurn: (body) => req('/rooms/ensure-turn', { method: 'POST', body }),
     listRooms: () => req('/rooms'),
     getRoom: (roomId) => req(`/rooms/${roomId}`),
     leaveRoom: (roomId) => req(`/rooms/${roomId}/leave`, { method: 'POST', body: {} }),

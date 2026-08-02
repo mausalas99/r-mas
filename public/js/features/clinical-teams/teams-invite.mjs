@@ -62,6 +62,9 @@ export async function joinTeamById(teamId, subAreaFraction) {
   toast(`Te uniste al equipo ${team.name || ''} (ciclo ${cycle}).`, 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();
+  void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
+    ensureTurnRoomAfterTeamJoin(toast)
+  );
   const { refreshTeamsUiAfterChange } = await import('./teams-roster.mjs');
   await refreshTeamsUiAfterChange();
   return true;

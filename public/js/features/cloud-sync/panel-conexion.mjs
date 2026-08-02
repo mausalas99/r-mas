@@ -296,6 +296,23 @@ export function mountNubeSection(root, deps) {
     if (input) deps.setCloudSyncUrl(String(input.value || '').trim());
   }
 
+  async function tryAutoEnsureTurnRoom() {
+    if (!userHasJoinedTeam() || deps.getCloudSyncRoomId()) return null;
+    const { ensureTurnRoom } = await import('./ensure-turn-room.mjs');
+    return ensureTurnRoom({
+      api: deps.getApi(),
+      getSala: deps.getUserSala,
+      getToken: deps.getCloudSyncToken,
+      setCloudSyncRoomId: deps.setCloudSyncRoomId,
+      setCloudSyncRevision: deps.setCloudSyncRevision,
+      onConnected: function (room) {
+        deps.onCloudRoomChange?.(true);
+        renderConnected(room);
+      },
+      toast,
+    });
+  }
+
   async function afterAuthSuccess(user) {
     cloudUser = {
       username: user?.username || '',
@@ -305,6 +322,7 @@ export function mountNubeSection(root, deps) {
       username: cloudUser.username,
       displayName: cloudUser.displayName,
     });
+    await tryAutoEnsureTurnRoom();
   }
 
   async function handleRegister() {
@@ -334,7 +352,7 @@ export function mountNubeSection(root, deps) {
       deps.setCloudSyncToken(data.token);
       await afterAuthSuccess(data.user || { username, displayName });
       toast('Cuenta creada.', 'success');
-      renderDisconnected();
+      if (!deps.getCloudSyncRoomId()) renderDisconnected();
     } catch (err) {
       toast(err?.data?.message || err?.message || 'No se pudo registrar.', 'error');
     }
@@ -357,7 +375,7 @@ export function mountNubeSection(root, deps) {
       deps.setCloudSyncToken(data.token);
       await afterAuthSuccess(data.user || { username });
       toast('Sesión iniciada.', 'success');
-      renderDisconnected();
+      if (!deps.getCloudSyncRoomId()) renderDisconnected();
     } catch (err) {
       toast(err?.data?.message || err?.message || 'No se pudo iniciar sesión.', 'error');
     }

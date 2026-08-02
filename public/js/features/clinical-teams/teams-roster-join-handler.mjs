@@ -33,4 +33,7 @@ export async function joinClinicalTeamByButton(teamId) {
   toast('Te uniste al equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   void publishClinicalTeamsToLan();
+  void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
+    ensureTurnRoomAfterTeamJoin(toast)
+  );
 }
