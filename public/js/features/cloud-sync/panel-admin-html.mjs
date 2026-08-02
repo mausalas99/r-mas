@@ -137,6 +137,8 @@ export function userActionsHtml(user) {
     '<option value="member">Miembro</option></select>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="promote-user" data-user-id="' +
     id + '" data-user-handle="' + handle + '">Cambiar rol</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="reset-password" data-user-id="' +
+    id + '" data-user-handle="' + handle + '">Restablecer contraseña</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-action="disable-user" data-user-id="' +
     id + '" data-user-handle="' + handle + '">Deshabilitar</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="delete-user" data-user-id="' +

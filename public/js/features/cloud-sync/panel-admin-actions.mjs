@@ -1,5 +1,6 @@
 import { confirmAction, fmtRole, normalizeUsernameConfirm } from './panel-admin-helpers.mjs';
 import { setSessionAdminKey } from './panel-admin-helpers.mjs';
+import { showRecoveryCodeModal } from './recovery-modal.mjs';
 import {
   loadAdminMutations,
   loadAdminResumen,
@@ -91,6 +92,7 @@ function dispatchUserAction(action, btn, deps) {
   const handle = btn.getAttribute('data-user-handle') || '';
   if (action === 'revoke-sessions' && userId) void handleRevokeSessions(deps, userId, handle);
   if (action === 'promote-user' && userId) void handlePromoteUser(deps, userId, handle, btn);
+  if (action === 'reset-password' && userId) void handleResetPassword(deps, userId, handle);
   if (action === 'disable-user' && userId) void handleDisableUser(deps, userId, handle);
   if (action === 'delete-user' && userId) void handleDeleteUser(deps, userId, handle);
 }
@@ -167,6 +169,31 @@ async function handlePromoteUser(deps, userId, handle, btn) {
     void loadAdminUsers(deps.root, deps.getApi);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo cambiar el rol.', 'error');
+  }
+}
+
+/** @param {object} deps @param {string} userId @param {string} handle */
+async function handleResetPassword(deps, userId, handle) {
+  const temporaryPassword = window.prompt(
+    'Contraseña temporal para @' + handle + ' (mínimo 10 caracteres):'
+  );
+  if (temporaryPassword === null) return;
+  if (String(temporaryPassword).length < 10) {
+    deps.toast('La contraseña debe tener al menos 10 caracteres.', 'error');
+    return;
+  }
+  const rotateRecovery = confirmAction(
+    '¿Rotar también el código de recuperación? El anterior dejará de funcionar.'
+  );
+  try {
+    const data = await deps.getApi().adminResetPassword(userId, {
+      temporaryPassword,
+      rotateRecovery,
+    });
+    deps.toast('Contraseña restablecida.', 'success');
+    if (data?.recoveryCode) await showRecoveryCodeModal({ code: data.recoveryCode });
+  } catch (err) {
+    deps.toast(err?.data?.message || err?.message || 'No se pudo restablecer la contraseña.', 'error');
   }
 }
 
