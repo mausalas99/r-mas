@@ -28,7 +28,7 @@ export async function userFromAuthHeader(db, request) {
   const tokenHash = await sha256Hex(m[1].trim());
   const row = await db
     .prepare(
-      `SELECT u.id, u.username, u.display_name FROM sessions s
+      `SELECT u.id, u.username, u.display_name, u.role, u.disabled FROM sessions s
        JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.expires_at > ?`
     )

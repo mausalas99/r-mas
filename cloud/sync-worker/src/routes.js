@@ -1,3 +1,4 @@
+import { handleAdmin } from './admin.js';
 import { handleAuth } from './auth.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
 import { handleRooms } from './rooms.js';
@@ -34,6 +35,11 @@ export async function handleApiRoute(request, env) {
     if (subpath === '/rooms' || subpath.startsWith('/rooms/')) {
       const roomsSub = subpath === '/rooms' ? '/' : subpath.slice('/rooms'.length) || '/';
       return await handleRooms(request, env, roomsSub);
+    }
+
+    if (subpath === '/admin' || subpath.startsWith('/admin/')) {
+      const adminSub = subpath === '/admin' ? '/' : subpath.slice('/admin'.length) || '/';
+      return await handleAdmin(request, env, adminSub);
     }
 
     if (subpath.startsWith('/sync')) {

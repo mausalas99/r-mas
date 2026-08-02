@@ -236,6 +236,83 @@ async function ensureDataKeySecret() {
   }
 }
 
+
+async function ensureAdminKeySecret() {
+  log('Secret SYNC_ADMIN_KEY (admin API bootstrap)');
+  console.log(
+    '  Optional break-glass key for /api/sync/v1/admin/* via X-Sync-Admin-Key.
+' +
+      '  Generate: openssl rand -hex 32
+' +
+      '  Skip if you will promote admins via another channel.
+'
+  );
+
+  const nonInteractive = !process.stdin.isTTY || process.env.CI === '1';
+  let key;
+  if (nonInteractive) {
+    key = crypto.randomBytes(32).toString('hex');
+    console.log('  (non-interactive) auto-generated SYNC_ADMIN_KEY');
+  } else {
+    const choice = await prompt(
+      'Press Enter to auto-generate SYNC_ADMIN_KEY, paste a key, or type skip: '
+    );
+    if (/^skip$/i.test(choice)) {
+      log('Skipped SYNC_ADMIN_KEY (set later with wrangler secret put SYNC_ADMIN_KEY).');
+      return;
+    }
+    key = choice || crypto.randomBytes(32).toString('hex');
+  }
+  if (!/^[0-9a-fA-F]{32,}$/.test(key)) {
+    console.error('✘ SYNC_ADMIN_KEY should be a long random string (e.g. 64 hex chars).');
+    process.exit(1);
+  }
+
+  const child = spawnSync('npx', ['wrangler', 'secret', 'put', 'SYNC_ADMIN_KEY'], {
+    cwd: WORKER_DIR,
+    input: key,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
+  if (child.status !== 0) process.exit(child.status || 1);
+
+  let saveLocal = 'y';
+  if (!nonInteractive) {
+    saveLocal = await prompt(
+      'Also append SYNC_ADMIN_KEY to cloud/sync-worker/.dev.vars? [Y/n] '
+    );
+  }
+  if (!saveLocal || /^y/i.test(saveLocal)) {
+    const devVarsPath = path.join(WORKER_DIR, '.dev.vars');
+    const line = `SYNC_ADMIN_KEY=${key}
+`;
+    if (fs.existsSync(devVarsPath)) {
+      let content = fs.readFileSync(devVarsPath, 'utf8');
+      if (/^SYNC_ADMIN_KEY=/m.test(content)) {
+        content = content.replace(/^SYNC_ADMIN_KEY=.*$/m, `SYNC_ADMIN_KEY=${key}`);
+      } else {
+        content = content.replace(/
+?$/, `
+${line}`);
+      }
+      fs.writeFileSync(devVarsPath, content);
+    } else {
+      fs.writeFileSync(devVarsPath, `# local only — gitignored
+${line}`);
+    }
+    log('Updated .dev.vars with SYNC_ADMIN_KEY.');
+  }
+
+  if (!nonInteractive) {
+    console.log(
+      '
+  ⚠ Save SYNC_ADMIN_KEY somewhere safe. Bootstrap promote curl in cloud/sync-worker/README.md
+' +
+        `  SYNC_ADMIN_KEY=${key}
+`
+    );
+  }
+}
+
 function deploy() {
   log('Deploying rplus-sync worker…');
   run('npm run deploy');
@@ -267,6 +344,7 @@ async function main() {
   ensureD1();
   migrateRemote();
   await ensureDataKeySecret();
+  await ensureAdminKeySecret();
   deploy();
   printNextSteps();
 }

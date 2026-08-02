@@ -1,3 +1,5 @@
 # Copy to .dev.vars for local `npm run dev` (gitignored).
 # Generate: openssl rand -hex 32
 WORKER_DATA_KEY=
+# Optional — admin API bootstrap (X-Sync-Admin-Key)
+SYNC_ADMIN_KEY=

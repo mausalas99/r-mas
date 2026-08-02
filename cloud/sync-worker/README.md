@@ -92,6 +92,7 @@ Override assumptions: `USERS=15 HOURS=8 POLL_SEC=20 npm run estimate:free`
 | Secret | Purpose |
 |--------|---------|
 | `WORKER_DATA_KEY` | 64 hex chars — AES-256-GCM for `room_state` ciphertext |
+| `SYNC_ADMIN_KEY` | Bootstrap + break-glass admin API (`X-Sync-Admin-Key` header); optional if all admins use `role=admin` sessions |
 
 ## API smoke (curl)
 
@@ -159,6 +160,48 @@ curl -s -X POST "$BASE/api/sync/v1/rooms/$ROOM_ID/mutations" \
 curl -s "$BASE/api/sync/v1/rooms/$ROOM_ID/pull?since=0" \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+
+## Admin API (R4 / program admin)
+
+All routes under `/api/sync/v1/admin/...`. Requires **Bearer** session with `role` `admin` or `program_admin`, **or** header `X-Sync-Admin-Key` matching wrangler secret `SYNC_ADMIN_KEY`.
+
+Set the secret:
+
+```bash
+openssl rand -hex 32 | npx wrangler secret put SYNC_ADMIN_KEY
+```
+
+Bootstrap first admin (no admin user yet — admin key only):
+
+```bash
+BASE="https://YOUR-URL"
+ADMIN_KEY="<paste SYNC_ADMIN_KEY>"
+USER_ID="<user id from register>"
+
+curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/promote"   -H "X-Sync-Admin-Key: $ADMIN_KEY"   -H 'content-type: application/json'   -d '{"role":"admin"}'
+```
+
+Overview:
+
+```bash
+curl -s "$BASE/api/sync/v1/admin/overview"   -H "Authorization: Bearer $TOKEN"
+# or: -H "X-Sync-Admin-Key: $ADMIN_KEY"
+```
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/admin/overview` | counts + storage meters |
+| GET | `/admin/rooms` | list rooms + memberCount |
+| GET | `/admin/rooms/:id` | room detail + members |
+| POST | `/admin/rooms/:id/rotate-code` | new join code |
+| POST | `/admin/rooms/:id/purge` | delete room data |
+| GET | `/admin/rooms/:id/mutations?limit=50` | recent mutations (ops truncated) |
+| GET | `/admin/users?q=` | search users |
+| POST | `/admin/users/:id/revoke-sessions` | logout everywhere |
+| POST | `/admin/users/:id/promote` | set `role` (admin key OK for bootstrap) |
+| POST | `/admin/users/:id/disable` | `disabled=1` + revoke sessions |
+| DELETE | `/admin/users/:id` | delete user (sessions + memberships) |
 
 ## Tests
 
