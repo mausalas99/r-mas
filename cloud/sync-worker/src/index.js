@@ -1,12 +1,5 @@
 import { applyCors, corsPreflight } from './cors.js';
-
-const API_PREFIX = '/api/sync/v1';
-
-/** @param {string} pathname */
-function normalizePath(pathname) {
-  if (!pathname || pathname === '/') return '/';
-  return pathname.replace(/\/+$/, '') || '/';
-}
+import { API_PREFIX, handleApiRoute } from './routes.js';
 
 /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
 async function handleRequest(request, env) {
@@ -14,13 +7,18 @@ async function handleRequest(request, env) {
   if (preflight) return applyCors(request, preflight);
 
   const url = new URL(request.url);
-  const path = normalizePath(url.pathname);
+  const path = url.pathname.replace(/\/+$/, '') || '/';
 
   if (path === `${API_PREFIX}/ping` && request.method === 'GET') {
     return applyCors(
       request,
       Response.json({ ok: true, service: 'rplus-sync' })
     );
+  }
+
+  const apiResponse = await handleApiRoute(request, env);
+  if (apiResponse) {
+    return applyCors(request, apiResponse);
   }
 
   return applyCors(

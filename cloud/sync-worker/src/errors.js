@@ -10,6 +10,7 @@ export class SyncError extends Error {
 export function syncErrorStatus(err) {
   const code = err?.code || 'error';
   if (code === 'conflict' || code === 'revision_stale' || code === 'quota_exceeded') return 409;
+  if (code === 'invalid_credentials' || code === 'unauthorized') return 401;
   if (
     code === 'invalid_token' ||
     code === 'auth_required' ||
@@ -19,6 +20,7 @@ export function syncErrorStatus(err) {
     return 403;
   }
   if (code === 'not_found') return 404;
+  if (code === 'not_implemented') return 501;
   if (code === 'payload_too_large') return 413;
   return 400;
 }
