@@ -5,6 +5,7 @@ import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs'
 import { createNubeRuntime } from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
+  adminShellHtml,
   mountAdminShell,
   wireConexionClicks,
   wireTeamsChangedListener,
@@ -53,6 +54,7 @@ export function mountNubeSection(root, deps) {
     get cloudUser() { return cloudUser; },
     set cloudUser(v) { cloudUser = v; },
     startRuntime,
+    masAdminHtml: adminShellHtml(),
   };
   const { renderConnected, renderDisconnected } = createConexionRenderers(section, normalizedSala, deps, cloudUserRef);
 

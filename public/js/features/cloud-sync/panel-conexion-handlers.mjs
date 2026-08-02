@@ -3,6 +3,15 @@ import { bridgeCloudIdentityToLocal } from './identity-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
+import { showRecoveryCodeModal } from './recovery-modal.mjs';
+
+const REGENERATE_CONFIRM = '¿Regenerar código? El anterior deja de funcionar.';
+
+/** @param {{ recoveryCode?: string } | null | undefined} data */
+async function maybeShowRecoveryCodeModal(data) {
+  const code = String(data?.recoveryCode || '').trim();
+  if (code) await showRecoveryCodeModal({ code });
+}
 
 /** @param {HTMLElement} section */
 export function readRegisterForm(section) {
@@ -63,6 +72,7 @@ export async function handleRegister(deps) {
   try {
     const data = await deps.getApi().register(form);
     deps.setCloudSyncToken(data.token);
+    await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || form);
     deps.toast('Cuenta creada. Sesión nube iniciada.', 'success');
     deps.renderAfterAuth();
@@ -92,11 +102,72 @@ export async function handleLogin(deps) {
   try {
     const data = await deps.getApi().login(form);
     deps.setCloudSyncToken(data.token);
+    await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || { username: form.username });
     deps.toast('Sesión nube iniciada.', 'success');
     deps.renderAfterAuth();
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo iniciar sesión.', 'error');
+  }
+}
+
+/** @param {HTMLElement} section */
+export function readRecoverForm(section) {
+  const user = section.querySelector('[data-cloud-recover-user]');
+  const code = section.querySelector('[data-cloud-recover-code]');
+  const pass = section.querySelector('[data-cloud-recover-pass]');
+  const pass2 = section.querySelector('[data-cloud-recover-pass2]');
+  return {
+    username: normalizeUsername(String(user?.value || '')),
+    recoveryCode: String(code?.value || '').trim(),
+    password: String(pass?.value || ''),
+    password2: String(pass2?.value || ''),
+  };
+}
+
+/** @param {object} deps */
+export async function handleRecover(deps) {
+  await deps.saveUrlFromUi();
+  const form = readRecoverForm(deps.section);
+  if (!form.username || !form.recoveryCode) {
+    deps.toast('Usuario y código de recuperación requeridos.', 'error');
+    return;
+  }
+  if (form.password.length < 10) {
+    deps.toast('Contraseña: mínimo 10 caracteres.', 'error');
+    return;
+  }
+  if (form.password !== form.password2) {
+    deps.toast('Las contraseñas no coinciden.', 'error');
+    return;
+  }
+  try {
+    const data = await deps.getApi().recover({
+      username: form.username,
+      recoveryCode: form.recoveryCode,
+      newPassword: form.password,
+    });
+    deps.setCloudSyncToken(data.token);
+    await maybeShowRecoveryCodeModal(data);
+    await afterAuthSuccess(deps, data.user || { username: form.username });
+    deps.toast('Cuenta recuperada. Sesión nube iniciada.', 'success');
+    deps.renderAfterAuth();
+  } catch (err) {
+    deps.toast(err?.data?.message || err?.message || 'No se pudo recuperar la cuenta.', 'error');
+  }
+}
+
+/** @param {object} deps */
+export async function handleRegenerateRecovery(deps) {
+  if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+    if (!window.confirm(REGENERATE_CONFIRM)) return;
+  }
+  try {
+    const data = await deps.getApi().regenerateRecovery();
+    await maybeShowRecoveryCodeModal(data);
+    deps.toast('Código de recuperación regenerado.', 'success');
+  } catch (err) {
+    deps.toast(err?.data?.message || err?.message || 'No se pudo regenerar el código.', 'error');
   }
 }
 

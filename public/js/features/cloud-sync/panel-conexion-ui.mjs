@@ -6,13 +6,15 @@ import {
   roomActionsHtml,
   advancedUrlHtml,
   conexionShellHtml,
+  equipoStepHtml,
 } from './panel-conexion-html.mjs';
+import { connectedStepsHtml } from './panel-steps-html.mjs';
 
 /**
  * @param {HTMLElement} section
  * @param {string} normalizedSala
  * @param {object} deps
- * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void }} ctx
+ * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, masAdminHtml?: string }} ctx
  */
 export function createConexionRenderers(section, normalizedSala, deps, ctx) {
   function renderShell(bodyHtml, status) {
@@ -20,9 +22,14 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
   }
 
   function renderConnected(room) {
+    const masBodyHtml = (ctx.masAdminHtml || '') + advancedUrlHtml(deps.getCloudSyncUrl());
     renderShell(
-      '<div class="cloud-sync-account">' + accountSummaryHtml(ctx.cloudUser) + '</div>' +
-      nextStepHtml(deps.getCloudSyncToken) + roomConnectedHtml(room, deps.getCloudSyncRevision) + advancedUrlHtml(deps.getCloudSyncUrl()),
+      connectedStepsHtml({
+        cloudUser: ctx.cloudUser,
+        roomHtml: roomConnectedHtml(room, deps.getCloudSyncRevision),
+        equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
+        masBodyHtml,
+      }),
       'idle'
     );
     ctx.startRuntime();

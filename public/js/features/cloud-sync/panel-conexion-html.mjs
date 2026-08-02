@@ -114,3 +114,15 @@ export function conexionShellHtml(normalizedSala, bodyHtml, status) {
     'Interconsultas, UX, Eme y Área A siguen en LAN.</p>' + bodyHtml
   );
 }
+
+/** @param {() => string} getToken */
+export function equipoStepHtml(getToken) {
+  if (!getToken() || userHasJoinedTeam()) {
+    return '<p class="cloud-sync-hint" data-cloud-equipo-body>Equipo configurado.</p>';
+  }
+  return (
+    '<div class="cloud-sync-equipo-body" data-cloud-equipo-body>' +
+    '<p class="cloud-sync-hint">Configurá tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
+  );
+}

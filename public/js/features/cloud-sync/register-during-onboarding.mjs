@@ -15,9 +15,11 @@ import {
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { configureCloudMutateBridge } from './mutate-bridge.mjs';
+import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { createOutbox } from './outbox.mjs';
 import { setCloudRoomConnected } from './lan-override.mjs';
 import { isCloudSala } from './sala-allowlist.mjs';
+import { showRecoveryCodeModal } from './recovery-modal.mjs';
 
 function createApi() {
   return createCloudSyncApi({
@@ -79,6 +81,7 @@ async function authAndBridge(client, mode, chosenUser, password) {
   };
   const data = mode === 'login' ? await client.login(body) : await client.register(body);
   setCloudSyncToken(data.token);
+  if (data.recoveryCode) await showRecoveryCodeModal({ code: data.recoveryCode });
   await bridgeCloudIdentityToLocal({
     username: chosenUser.username,
     displayName: chosenUser.displayName,
