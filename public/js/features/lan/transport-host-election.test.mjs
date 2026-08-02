@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { storage } from '../../storage.js';
 import { initLanSyncRuntime } from './runtime.mjs';
 import { setPinnedHostUrl, getPinnedHostUrl } from '../../lan-host-pin.mjs';
+import { CLINICAL_LAN_PROFILE_GATE_VERSION } from '../../clinical-settings.mjs';
 import {
   applyPinnedHostOverride,
   registerLanSyncTransportDeps,
@@ -41,7 +42,7 @@ function seedClinicalProfile() {
       clinicalRank: 'R4',
       clinicalProgramAdmin: true,
       clinicalSala: 'Sala 1',
-      clinicalLanProfileGateVersion: '6.6.6',
+      clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
     })
   );
 }
