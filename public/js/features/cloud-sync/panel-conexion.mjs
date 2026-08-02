@@ -9,6 +9,7 @@ import {
   wireConexionClicks,
   wireTeamsChangedListener,
 } from './panel-conexion-bootstrap.mjs';
+import { wireCloudAuthTabs } from './panel-steps-html.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -91,6 +92,7 @@ export function mountNubeSection(root, deps) {
     toggleAdminPanel,
   };
 
+  wireCloudAuthTabs(section);
   wireConexionClicks(section, deps, ui);
   wireTeamsChangedListener(section, deps, ui);
   bootstrapConexionState(section, deps, ui);

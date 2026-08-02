@@ -76,6 +76,122 @@
   color: var(--text-muted);
 }
 
+.cloud-sync-step {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space));
+  padding: calc(10px * var(--density-space));
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-shadow: var(--wb-frame-shadow, none);
+}
+
+.cloud-sync-step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8px * var(--density-space));
+  flex-wrap: wrap;
+}
+
+.cloud-sync-step-title {
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-connected-steps {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space));
+}
+
+.cloud-sync-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(4px * var(--density-space));
+  padding: 3px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+.cloud-sync-tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: calc(6px * var(--density-space)) calc(10px * var(--density-space));
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md, 8px) - 2px);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+
+.cloud-sync-tab:hover {
+  color: var(--text);
+  background: color-mix(in oklab, #5b4bdb 6%, var(--surface));
+}
+
+.cloud-sync-tab.is-active {
+  color: var(--text);
+  border-color: color-mix(in oklab, #5b4bdb 28%, var(--divider));
+  background: color-mix(in oklab, #5b4bdb 12%, var(--surface));
+  box-shadow: 0 1px 0 color-mix(in oklab, #5b4bdb 10%, transparent);
+}
+
+.cloud-sync-tab-panels {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+}
+
+.cloud-sync-tab-panel[hidden] {
+  display: none;
+}
+
+.cloud-sync-mas {
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-shadow: var(--wb-frame-shadow, none);
+}
+
+.cloud-sync-mas-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: calc(10px * var(--density-space));
+}
+
+.cloud-sync-mas-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cloud-sync-mas-summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: calc(11px * var(--density-font));
+  transition: transform var(--dur-fast);
+}
+
+.cloud-sync-mas[open] .cloud-sync-mas-summary::after {
+  transform: rotate(90deg);
+}
+
+.cloud-sync-mas-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+  padding: 0 calc(10px * var(--density-space)) calc(10px * var(--density-space));
+  border-top: 1px solid var(--divider);
+}
+
 .cloud-sync-hint {
   margin: 4px 0 0;
   font-size: calc(11px * var(--density-font));

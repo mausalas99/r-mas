@@ -1,20 +1,17 @@
 import { esc } from '../../dom-escape.mjs';
-import {
-  CLINICAL_LAN_USERNAME_HINT_HTML,
-  CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
-  readRpcSettings,
-} from '../../clinical-settings.mjs';
+import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterJoinedTeams } from '../clinical-teams/shared.mjs';
+import { connectStepHtml } from './panel-steps-html.mjs';
 
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
 export const STATUS_LABELS = {
-  idle: 'Al día',
+  idle: 'Nube al día',
   syncing: 'Sincronizando…',
   pending: 'Pendiente',
-  offline: 'Sin conexión',
+  offline: 'Sin conexión Nube',
   error: 'Error',
 };
 
@@ -54,29 +51,7 @@ export function accountSummaryHtml(cloudUser) {
 
 /** @param {string} url */
 export function authFormsHtml(url) {
-  return (
-    '<div class="cloud-sync-account-forms">' +
-    '<details class="cloud-sync-auth-block" open><summary>Crear cuenta</summary>' +
-    '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
-    '<input type="text" class="profile-input" data-cloud-reg-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" />' +
-    '<p class="cloud-sync-hint">' + CLINICAL_LAN_USERNAME_HINT_HTML + '</p></div>' +
-    '<div class="cloud-sync-field"><label>Nombre en guardia</label>' +
-    '<input type="text" class="profile-input" data-cloud-reg-display autocomplete="name" placeholder="ej. Dr. Mendoza" />' +
-    '<p class="cloud-sync-hint">' + CLINICAL_LAN_DISPLAY_NAME_HINT_HTML + '</p></div>' +
-    '<div class="cloud-sync-field"><label>Contraseña</label>' +
-    '<input type="password" class="profile-input" data-cloud-reg-pass autocomplete="new-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="register">Crear cuenta</button></details>' +
-    '<details class="cloud-sync-auth-block"><summary>Entrar</summary>' +
-    '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
-    '<input type="text" class="profile-input" data-cloud-login-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" /></div>' +
-    '<div class="cloud-sync-field"><label>Contraseña</label>' +
-    '<input type="password" class="profile-input" data-cloud-login-pass autocomplete="current-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="login">Entrar</button></details>' +
-    '<details class="cloud-sync-advanced"><summary>Avanzado</summary>' +
-    '<div class="cloud-sync-field"><label for="cloud-sync-url">URL del servicio</label>' +
-    '<input id="cloud-sync-url" type="url" class="profile-input" data-cloud-sync-url value="' + esc(url) +
-    '" placeholder="https://…workers.dev" /></div></details></div>'
-  );
+  return connectStepHtml(url);
 }
 
 /** @param {() => string} getToken */
