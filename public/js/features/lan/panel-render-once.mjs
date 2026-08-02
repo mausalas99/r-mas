@@ -49,6 +49,7 @@ import {
 import { appendLanConnectionStack } from './panel-group.mjs';
 import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { shouldShowNubePostAuthChrome } from '../cloud-sync/panel-session-gate.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
@@ -260,6 +261,8 @@ async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expan
   if (showNubePanel && typeof deps.mountCloudNubeSection === 'function') {
     await deps.mountCloudNubeSection(root);
     if (deps.isRenderStale(gen)) return;
+    const token = deps.getCloudSyncToken?.();
+    if (!shouldShowNubePostAuthChrome(token)) return;
   }
   if (nubeOverridesLan) {
     const mainStack = appendLanConnectionStack(root);
@@ -376,6 +379,7 @@ async function renderLanPanelOnce_(deps, force) {
  *   appendLanSyncDiagnosticsSection: (root: HTMLElement) => Promise<void>,
  *   purgeDuplicateLanShiftPinCards: (root: HTMLElement) => void,
  *   mountCloudNubeSection?: (root: HTMLElement) => void | Promise<void>,
+ *   getCloudSyncToken?: () => string,
  * }} deps */
 export function createPanelRenderOnce(deps) {
   async function renderLanPanelOnce(force) {

@@ -23,6 +23,7 @@ import {
 import { createPanelInviteJoin } from './panel-invite-join.mjs';
 import { createPanelRenderOnce } from './panel-render-once.mjs';
 import { mountCloudNubeSection as mountCloudNubeSectionImpl } from './panel-nube-mount.mjs';
+import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
 import { getLanRuntime } from './orchestrator-runtime.mjs';
 import {
   wireClinicalOpsLanSyncEvents as wireClinicalOpsLanSyncEventsImpl,
@@ -164,6 +165,7 @@ function ensurePanelRenderOnce() {
       appendLanHostPinSection,
       appendLanSyncDiagnosticsSection,
       purgeDuplicateLanShiftPinCards,
+      getCloudSyncToken,
       mountCloudNubeSection: function (root) {
         return mountCloudNubeSectionImpl(root, {
           runtime: runtime,
