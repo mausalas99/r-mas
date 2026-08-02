@@ -1,10 +1,18 @@
 /**
  * Lazy ⇄ Nube section mount — keeps panel.mjs under file budget.
+ * Remount only when missing from DOM (avoids flash on force panel refresh).
  */
 import { getUserSala } from './panel-clinical-context.mjs';
 
 /** @type {ReturnType<import('../cloud-sync/panel-nube-section.mjs').mountNubeSection> | null} */
 let _cloudNubeMount = null;
+
+function nubeSectionInDom() {
+  return !!(
+    typeof document !== 'undefined' &&
+    document.querySelector('.cloud-sync-conexion')
+  );
+}
 
 /**
  * @param {HTMLElement} root
@@ -13,6 +21,18 @@ let _cloudNubeMount = null;
 export async function mountCloudNubeSection(root, deps) {
   const { shouldShowNubePanel } = await import('../cloud-sync/lan-override.mjs');
   if (!shouldShowNubePanel(getUserSala())) return;
+  try {
+    deps.stopLanAutoDiscovery();
+  } catch {
+    /* ignore */
+  }
+
+  if (_cloudNubeMount && nubeSectionInDom()) {
+    // Already mounted — move to top of root if panel rebuilt around it.
+    const el = root.querySelector('.cloud-sync-conexion');
+    if (el && root.firstChild !== el) root.insertBefore(el, root.firstChild);
+    return;
+  }
 
   if (_cloudNubeMount && typeof _cloudNubeMount.stop === 'function') {
     _cloudNubeMount.stop();
@@ -51,7 +71,13 @@ export async function mountCloudNubeSection(root, deps) {
     onCloudRoomChange: function (connected) {
       setCloudRoomConnected(connected);
       if (connected) deps.stopLanAutoDiscovery();
-      deps.renderLanPanel({ force: true });
+      // Do NOT force full ⇄ rebuild — remounting Nube caused UI flash.
+      try {
+        const rot = import('../clinical-rotation-entry.mjs');
+        void rot.then((m) => m.syncClinicalRotationEntryChrome?.());
+      } catch {
+        /* ignore */
+      }
     },
   });
 }

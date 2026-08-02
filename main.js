@@ -217,7 +217,8 @@ function createWindow() {
   }
   mainWindow = new BrowserWindow(winOpts);
 
-  mainWindow.loadURL('http://localhost:3738');
+  const rendererPort = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
+  mainWindow.loadURL(`http://localhost:${rendererPort}`);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedExternalUrl(url)) shell.openExternal(url);
@@ -728,7 +729,7 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
   } catch (lanErr) {
     const portBusy =
       (lanErr && lanErr.code === 'EADDRINUSE') ||
-      (lanErr && lanErr.message && String(lanErr.message).includes('3738'));
+      (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
     if (!(peerMode && portBusy)) throw lanErr;
   }
   if (!peerMode) {
@@ -1062,10 +1063,10 @@ app.whenReady().then(async () => {
       const peerMode = process.env.R_PLUS_LAN_PEER === '1';
       const portBusy =
         (lanErr && lanErr.code === 'EADDRINUSE') ||
-        (lanErr && lanErr.message && String(lanErr.message).includes('3738'));
+        (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
       if (peerMode && portBusy) {
         console.warn(
-          '[R+ LAN peer mode] Puerto 3738 en uso — esta ventana usará el servidor LAN del anfitrión ya abierto.'
+          '[R+ LAN peer mode] Puerto LAN en uso — esta ventana usará el servidor del anfitrión ya abierto.'
         );
       } else {
         throw lanErr;

@@ -108,12 +108,16 @@ export function restoreLanPanelExpandState(root, state) {
 function lanPanelHasBuiltChrome(root) {
   return !!(
     root &&
-    (root.querySelector('.lan-connection-hero__status') || root.querySelector('.lan-hub-status-card'))
+    (root.querySelector('.cloud-sync-conexion') ||
+      root.querySelector('.lan-connection-hero__status') ||
+      root.querySelector('.lan-hub-status-card'))
   );
 }
 
 function lanPanelNeedsFullRebuild(root, runtime) {
   if (!lanPanelHasBuiltChrome(root)) return true;
+  // Nube (Sala/Torre): never tear down for LAN invite/PIN heuristics — that caused flash.
+  if (root.querySelector('.cloud-sync-conexion')) return false;
   if (runtime().isMobileWeb() || isLanSessionConfiguredForRest()) return false;
   if (!root.querySelector('#lan-input-invite-link')) return true;
   if (!isLanSkipShiftPin() && !root.querySelector('[data-lan-shift-pin-client]')) return true;

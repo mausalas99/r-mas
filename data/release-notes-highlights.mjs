@@ -1776,10 +1776,39 @@ var RELEASE_NOTES_781 = [
   },
 ];
 
+var RELEASE_NOTES_790 = [
+  {
+    title: 'Nube sin host LAN',
+    body:
+      'En <strong>Sala</strong> y <strong>Torre HU</strong>, el panel ⇄ conecta a una sala en la nube (Cloudflare Free): el turno sincroniza sin depender de un Mac anfitrión.',
+  },
+  {
+    title: 'Migración 7.9',
+    body:
+      'Al abrir 7.9 se reinician usuarios clínicos con un panel de migración: eliges tu <strong>@usuario</strong>, recuperas equipo y reclamas pacientes. Los pacientes y labs no se borran.',
+  },
+  {
+    title: 'Offline con outbox',
+    body:
+      'Sin Internet sigues trabajando en local; al reconectar se envían los cambios. Labs sin tope de sets en el piloto.',
+  },
+  {
+    title: 'Otras salas igual',
+    body:
+      '<strong>Interconsultas</strong>, <strong>UX</strong>, <strong>Eme</strong> y <strong>Área A</strong> siguen en LiveSync LAN (host + PIN).',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.0 en todas</strong> las Macs y PCs del turno el mismo día. En Sala/Torre: completa la migración y entra a Nube desde ⇄.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_781;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_790;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.0': RELEASE_NOTES_790,
   '7.8.1': RELEASE_NOTES_781,
   '7.8.0': RELEASE_NOTES_780,
   '7.7.9': RELEASE_NOTES_779,

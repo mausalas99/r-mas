@@ -266,6 +266,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalUserDelete: function(opts) {
     return ipcRenderer.invoke('db:clinical-user-delete', opts);
   },
+  dbClinical79CutoverWipe: function() {
+    return ipcRenderer.invoke('db:clinical-79-cutover-wipe');
+  },
   dbClinicalTeamResolveCode: function(opts) {
     return ipcRenderer.invoke('db:clinical-team-resolve-code', opts);
   },

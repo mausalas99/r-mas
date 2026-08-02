@@ -46,7 +46,7 @@ import {
   getClinicalUserUserId,
   isLanHostActive,
 } from './panel-clinical-context.mjs';
-import { appendLanConnectionStack, appendLanAdminStack } from './panel-group.mjs';
+import { appendLanConnectionStack } from './panel-group.mjs';
 import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
 
@@ -241,6 +241,67 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   maybeAppendEquiposQrPanel_(deps, root);
 }
 
+
+/** @param {Parameters<typeof renderLanPanelOnce_>[0]} deps */
+async function tryNubeEarlyRefresh_(deps, root, gen, force) {
+  const userSala = getUserSala();
+  if (!shouldShowNubePanel(userSala)) return false;
+  if (force) return false;
+  if (!root.querySelector('.cloud-sync-conexion')) return false;
+  if (typeof deps.mountCloudNubeSection !== 'function') return false;
+  await deps.mountCloudNubeSection(root);
+  return true;
+}
+
+/** @param {Parameters<typeof renderLanPanelOnce_>[0]} deps */
+async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expandState, dropdownScrollTop) {
+  const showNubePanel = shouldShowNubePanel(userSala);
+  const nubeOverridesLan = shouldUseNubeNotLan(userSala) || showNubePanel;
+  if (showNubePanel && typeof deps.mountCloudNubeSection === 'function') {
+    await deps.mountCloudNubeSection(root);
+    if (deps.isRenderStale(gen)) return;
+  }
+  if (nubeOverridesLan) {
+    const mainStack = appendLanConnectionStack(root);
+    if (showNubePanel && isElevated) deps.buildR4Section(mainStack);
+    await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
+    appendLanLwwToastRow(mainStack);
+    wireLanLwwToastPref();
+    syncLanLwwOverwriteToastPrefUi();
+    return;
+  }
+  return nubeOverridesLan;
+}
+
+
+/** @param {Parameters<typeof renderLanPanelOnce_>[0]} deps */
+async function renderLanPanelBody_(deps, root, gen, userSala, rank, isElevated, expandState, dropdownScrollTop) {
+  var hubStatus = lanHubStatusCopy();
+  var needsInvitePaste = !deps.runtime().isMobileWeb() && !isLanSessionConfiguredForRest();
+  var visibleSalaDefs = resolveVisibleSalaDefs_(isElevated, userSala, isClinicalRegistered(), getClinicalUserUserId());
+  var heroHost = document.createElement('div');
+  heroHost.className = 'lan-connection-hero';
+  root.appendChild(heroHost);
+  appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste);
+  if (deps.isRenderStale(gen)) return;
+  await appendHeroPinSections_(deps, root, heroHost, gen);
+  if (deps.isRenderStale(gen)) return;
+  await deps.appendLanTurnResetAlertStrip(root, gen);
+  if (deps.isRenderStale(gen)) return;
+  var mainStack = appendLanConnectionStack(root);
+  await deps.appendLanShiftPinClientConnectSection(mainStack, gen);
+  if (deps.isRenderStale(gen)) return;
+  appendMobileLanSections_(deps, mainStack, hubStatus);
+  deps.appendLanBackToLocalHostSection(mainStack);
+  appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
+  appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
+  deps.appendLanHostPinSection(mainStack);
+  await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
+  appendLanLwwToastRow(mainStack);
+  wireLanLwwToastPref();
+  syncLanLwwOverwriteToastPrefUi();
+}
+
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
 async function renderLanPanelOnce_(deps, force) {
   var gen = deps.bumpRenderGen();
@@ -255,6 +316,9 @@ async function renderLanPanelOnce_(deps, force) {
 
   await syncLanHostBeforeRender_(deps, rankConfigured);
   if (deps.isRenderStale(gen)) return;
+
+  if (await tryNubeEarlyRefresh_(deps, root, gen, force)) return;
+
   if (await tryRefreshChromeInPlace_(deps, root, gen, force)) return;
 
   var expandState = captureLanPanelExpandState(root);
@@ -276,52 +340,15 @@ async function renderLanPanelOnce_(deps, force) {
   var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   appendOfflineBanner_(root);
 
-  var hubStatus = lanHubStatusCopy();
-  var needsInvitePaste = !deps.runtime().isMobileWeb() && !isLanSessionConfiguredForRest();
-  var visibleSalaDefs = resolveVisibleSalaDefs_(isElevated, userSala, registered, clinicalUserId);
-
-  var heroHost = document.createElement('div');
-  heroHost.className = 'lan-connection-hero';
-  root.appendChild(heroHost);
-
-  appendHubStatusHeroSection_(deps, heroHost, hubStatus, needsInvitePaste);
-  if (deps.isRenderStale(gen)) return;
-
-  const showNubePanel = shouldShowNubePanel(userSala);
-  const nubeOverridesLan = shouldUseNubeNotLan(userSala) || showNubePanel;
-
-  if (showNubePanel && typeof deps.mountCloudNubeSection === 'function') {
-    await deps.mountCloudNubeSection(root);
-    if (deps.isRenderStale(gen)) return;
+  const nubeOverridesLan = shouldUseNubeNotLan(userSala) || shouldShowNubePanel(userSala);
+  if (nubeOverridesLan) {
+    await renderNubeMainStack_(deps, root, gen, userSala, isElevated, expandState, dropdownScrollTop);
+    return;
   }
 
   if (!nubeOverridesLan) {
-    await appendHeroPinSections_(deps, root, heroHost, gen);
+    await renderLanPanelBody_(deps, root, gen, userSala, rank, isElevated, expandState, dropdownScrollTop);
   }
-  if (deps.isRenderStale(gen)) return;
-
-  if (!nubeOverridesLan) {
-    await deps.appendLanTurnResetAlertStrip(root, gen);
-    if (deps.isRenderStale(gen)) return;
-  }
-
-  var mainStack = appendLanConnectionStack(root);
-  if (!nubeOverridesLan) {
-    await deps.appendLanShiftPinClientConnectSection(mainStack, gen);
-    if (deps.isRenderStale(gen)) return;
-
-    appendMobileLanSections_(deps, mainStack, hubStatus);
-    deps.appendLanBackToLocalHostSection(mainStack);
-    appendElectronDesktopSections_(deps, mainStack, needsInvitePaste);
-    appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
-    deps.appendLanHostPinSection(mainStack);
-  } else if (showNubePanel) {
-    appendRoomsAndRankSections_(deps, mainStack, hubStatus, visibleSalaDefs, rank, isElevated);
-  }
-  await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
-  appendLanLwwToastRow(mainStack);
-  wireLanLwwToastPref();
-  syncLanLwwOverwriteToastPrefUi();
 }
 
 /** @param {{

@@ -24,9 +24,8 @@ Release **7.9** resets **clinical user accounts** (local + cloud pilot). **Patie
 ### Desktop (each workstation)
 
 1. Install **7.9.0**.
-2. Re-register **@usuario + nombre** (LAN salas) or **@usuario + nombre + contraseña nube** (Sala / Torre HU).
-3. Flow: **Cuenta nube** → **Mi rotación** → app calls **`ensure-turn`** (canonical turn room for today’s `sala` + `turnKey`).
-4. Shared turn patients reappear after pull from the turn room (if state already exists in D1).
+2. On first launch, complete **Migración de usuarios y pacientes** (snapshot → wipe users → pick/create @usuario → reclaim team/patients → Nube sync for Sala/Torre).
+3. Shared turn patients: claimed locally and/or pulled/pushed via the cloud turn room (`ensure-turn`).
 
 User-facing copy: [`../../docs/RELEASE_NOTES_7.9.0.txt`](../../docs/RELEASE_NOTES_7.9.0.txt) § *Corte de usuarios*.
 

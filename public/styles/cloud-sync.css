@@ -418,3 +418,123 @@
   border-radius: var(--radius-md, 8px);
   background: color-mix(in oklab, var(--surface) 98%, transparent);
 }
+
+/* —— 7.9 cutover migration —— */
+.cloud-sync-cutover-host {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--bg, #0f1419) 55%, transparent);
+  backdrop-filter: blur(4px);
+}
+.cloud-sync-cutover-host:empty { display: none; }
+.cloud-sync-cutover {
+  width: min(36rem, 100%);
+  max-height: min(90vh, 44rem);
+  overflow: auto;
+}
+.cloud-sync-cutover-card {
+  background: var(--card-body-bg, #fff);
+  color: var(--text, #1a1a1a);
+  border: 1px solid var(--border, #d8dde3);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem 1.4rem;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 18%);
+}
+.cloud-sync-cutover-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #667);
+}
+.cloud-sync-cutover-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+}
+.cloud-sync-cutover-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted, #667);
+}
+.cloud-sync-cutover-lead { margin: 0.85rem 0 0.75rem; line-height: 1.45; }
+.cloud-sync-cutover-stats {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  line-height: 1.55;
+}
+.cloud-sync-cutover-list,
+.cloud-sync-cutover-patients {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+.cloud-sync-cutover-pick {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border, #d8dde3);
+  background: var(--card-header, #f6f7f9);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+.cloud-sync-cutover-pick:hover { border-color: var(--accent, #5b4dc0); }
+.cloud-sync-cutover-pick-user { display: block; font-weight: 600; }
+.cloud-sync-cutover-pick-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted, #667);
+  margin-top: 0.15rem;
+}
+.cloud-sync-cutover-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+.cloud-sync-cutover-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+.cloud-sync-cutover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.cloud-sync-cutover-check {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.35rem 0.2rem;
+}
+
+
+/* Onboarding migration (Configura tu rotación) */
+.clinical-onboard-cutover-block { margin: 0 0 1rem; }
+.clinical-onboard-cutover-lead { margin: 0 0 0.5rem; font-size: 0.92rem; }
+.clinical-onboard-cutover-list { max-height: 12rem; overflow: auto; }
+.clinical-onboard-nube-mode {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.clinical-onboard-nube-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}

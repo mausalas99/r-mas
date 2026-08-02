@@ -6,13 +6,10 @@ import { saveState } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../lan/patient-entries.mjs';
 import { removePatientLocally } from '../lan/patient-delete.mjs';
 import {
-  assembleLabHistoryFromSidecars,
-  cloudEntryToLanEntry,
   cloudStateToLanEntries,
   createOpFold,
   foldCloudOp,
   opFoldToLanEntries,
-  opsToLanEntries,
 } from './pull-apply-state.mjs';
 
 export {

@@ -20,6 +20,12 @@ import {
 import { getClientId, needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { wireSyncModeOnboardingInteractions } from './clinical-onboarding-sync-mode.mjs';
 import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
+import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
+import {
+  applyOnboardPickUser,
+  syncOnboardingNubeVisibility,
+} from './clinical-onboarding-nube.mjs';
+import { finishOnboardingCloudAndCutover } from './clinical-onboarding-cloud-finish.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -186,6 +192,7 @@ async function pushProfileToLanAndNotify(sala, needsClaim) {
 
 async function finishRegistrationLanSideEffects(fields, needsClaim) {
   try {
+    if (isCloudSala(fields.sala)) return;
     await connectShiftPinIfProvided(fields.shiftPin, fields.sala);
     await pushProfileToLanAndNotify(fields.sala, needsClaim);
   } catch {
@@ -235,6 +242,16 @@ export async function handleUsernameStepSubmit(ev) {
     });
 
     if (errEl) errEl.hidden = true;
+
+    const cloudOk = await finishOnboardingCloudAndCutover({
+      username: fields.username,
+      name: fields.name,
+      sala: fields.sala,
+      toast,
+      showError: (msg) => showOnboardError(errEl, msg),
+    });
+    if (!cloudOk) return;
+
     await refreshClinicalUserProfile();
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 
@@ -358,4 +375,24 @@ export async function wireOnboardingInteractions() {
     resumeBtn._rpcResumeWired = true;
     resumeBtn.addEventListener('click', () => void handleResumeIdentityClick());
   }
+
+  wireOnboardingNubeExtras();
+}
+
+function wireOnboardingNubeExtras() {
+  const sala = document.getElementById('onboard-sala');
+  if (sala && !sala._rpcNubeSalaWired) {
+    sala._rpcNubeSalaWired = true;
+    sala.addEventListener('change', () => syncOnboardingNubeVisibility());
+  }
+  const shell = document.querySelector('.clinical-onboard-form-shell');
+  if (shell && !shell._rpcCutoverPickWired) {
+    shell._rpcCutoverPickWired = true;
+    shell.addEventListener('click', (ev) => {
+      const t = ev.target instanceof Element ? ev.target : null;
+      const btn = t?.closest?.('[data-onboard-pick-user]');
+      if (btn) applyOnboardPickUser(btn);
+    });
+  }
+  syncOnboardingNubeVisibility();
 }

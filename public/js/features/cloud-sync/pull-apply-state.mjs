@@ -2,10 +2,28 @@
  * Pure cloud pull state folding (no renderer/LAN imports — safe for unit tests).
  */
 
+const ENTRY_SKIP_KEYS = new Set(['id', 'note', 'indicaciones', 'historiaClinica', 'fields']);
+
 /** @param {Record<string, unknown>} sidecarMap */
 export function assembleLabHistoryFromSidecars(sidecarMap) {
   if (!sidecarMap || typeof sidecarMap !== 'object') return [];
   return Object.values(sidecarMap).filter((row) => row && typeof row === 'object');
+}
+
+/** @param {Record<string, unknown>} entry */
+function buildPatientFromCloudEntry(entry) {
+  const patientId = String(entry.id).trim();
+  const fields = entry.fields;
+  const patient = {
+    id: patientId,
+    ...(fields && typeof fields === 'object' ? fields : {}),
+  };
+  for (const [key, value] of Object.entries(entry)) {
+    if (ENTRY_SKIP_KEYS.has(key)) continue;
+    patient[key] = value;
+  }
+  if (entry.historiaClinica) patient.historiaClinica = entry.historiaClinica;
+  return patient;
 }
 
 /**
@@ -14,24 +32,10 @@ export function assembleLabHistoryFromSidecars(sidecarMap) {
  */
 export function cloudEntryToLanEntry(entry, labSidecarsForPatient) {
   if (!entry?.id) return null;
-  const patientId = String(entry.id).trim();
   const note = entry.note;
   const indicaciones = entry.indicaciones;
-  const historiaClinica = entry.historiaClinica;
-  const fields = entry.fields;
-  const patient = {
-    id: patientId,
-    ...(fields && typeof fields === 'object' ? fields : {}),
-  };
-  for (const [key, value] of Object.entries(entry)) {
-    if (key === 'id' || key === 'note' || key === 'indicaciones' || key === 'historiaClinica' || key === 'fields') {
-      continue;
-    }
-    patient[key] = value;
-  }
-  if (historiaClinica) patient.historiaClinica = historiaClinica;
   return {
-    patient,
+    patient: buildPatientFromCloudEntry(entry),
     note: note && typeof note === 'object' ? note : {},
     indicaciones: indicaciones && typeof indicaciones === 'object' ? indicaciones : {},
     labHistory: assembleLabHistoryFromSidecars(labSidecarsForPatient),
@@ -74,6 +78,33 @@ export function createOpFold() {
   };
 }
 
+/** @param {OpFold} fold @param {string} pid @param {unknown} value */
+function foldEntryRoot(fold, pid, value) {
+  const prev = fold.entries.get(pid) || { id: pid };
+  fold.entries.set(pid, { ...prev, ...(value && typeof value === 'object' ? value : {}), id: pid });
+}
+
+/** @param {OpFold} fold @param {string} pid @param {string} field @param {unknown} value */
+function foldEntryField(fold, pid, field, value) {
+  const prev = fold.entries.get(pid) || { id: pid };
+  prev[field] = value;
+  fold.entries.set(pid, prev);
+}
+
+/** @param {OpFold} fold @param {string} patientId @param {string} setId @param {unknown} value */
+function foldLabSidecar(fold, patientId, setId, value) {
+  if (!fold.labSidecars[patientId]) fold.labSidecars[patientId] = {};
+  fold.labSidecars[patientId][setId] = value;
+}
+
+/** @param {OpFold} fold @param {unknown} value */
+function foldAgendaList(fold, value) {
+  const list = Array.isArray(value) ? value : [];
+  for (let i = 0; i < list.length; i += 1) {
+    if (list[i]?.id) fold.agenda[String(list[i].id)] = list[i];
+  }
+}
+
 /** @param {OpFold} fold @param {{ path: string, value: unknown }} op */
 export function foldCloudOp(fold, op) {
   const path = String(op?.path || '');
@@ -81,27 +112,19 @@ export function foldCloudOp(fold, op) {
 
   const entryRoot = /^entries\/([^/]+)$/.exec(path);
   if (entryRoot) {
-    const pid = entryRoot[1];
-    const prev = fold.entries.get(pid) || { id: pid };
-    fold.entries.set(pid, { ...prev, ...(value && typeof value === 'object' ? value : {}), id: pid });
+    foldEntryRoot(fold, entryRoot[1], value);
     return;
   }
 
   const entryField = /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|fields)$/.exec(path);
   if (entryField) {
-    const pid = entryField[1];
-    const field = entryField[2];
-    const prev = fold.entries.get(pid) || { id: pid };
-    prev[field] = value;
-    fold.entries.set(pid, prev);
+    foldEntryField(fold, entryField[1], entryField[2], value);
     return;
   }
 
   const labSidecar = /^labSidecars\/([^/]+)\/([^/]+)$/.exec(path);
   if (labSidecar) {
-    const [, patientId, setId] = labSidecar;
-    if (!fold.labSidecars[patientId]) fold.labSidecars[patientId] = {};
-    fold.labSidecars[patientId][setId] = value;
+    foldLabSidecar(fold, labSidecar[1], labSidecar[2], value);
     return;
   }
 
@@ -118,10 +141,7 @@ export function foldCloudOp(fold, op) {
   }
 
   if (path === 'agenda') {
-    const list = Array.isArray(value) ? value : [];
-    for (let i = 0; i < list.length; i += 1) {
-      if (list[i]?.id) fold.agenda[String(list[i].id)] = list[i];
-    }
+    foldAgendaList(fold, value);
     return;
   }
 
@@ -155,4 +175,3 @@ export function opsToLanEntries(ops) {
   }
   return opFoldToLanEntries(fold);
 }
-

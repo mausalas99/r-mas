@@ -33,7 +33,7 @@ describe('clinical-settings LAN profile gate', () => {
     delete global.localStorage;
   });
 
-  it('bumps gate to 6.6.6 and clears cached username/display when pending', () => {
+  it('bumps gate to 7.9.0 and clears cached username/display when pending', () => {
     memory.set(
       'rpc-settings',
       JSON.stringify({

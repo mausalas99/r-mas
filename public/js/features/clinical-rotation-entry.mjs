@@ -11,6 +11,8 @@ import { storage } from '../storage.js';
 import { subscribeRoomSyncPhase } from '../lan-sync-state.mjs';
 import { buildClinicalRotationEntryStatus } from './clinical-rotation-entry-status.mjs';
 import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
+import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
+import { getUserSala } from './lan/panel-clinical-context.mjs';
 
 let entryControlsWired = false;
 
@@ -69,6 +71,8 @@ function needsLanConnectCta() {
 
 async function isLanConnectCtaVisible() {
   if (!needsLanConnectCta()) return false;
+  // Sala / Torre HU → Nube; never show LAN "Conectar al turno".
+  if (isCloudSala(getUserSala())) return false;
   try {
     const lan = await import('./lan-sync.mjs');
     if (!lan.isLanSessionConfiguredForRest?.()) return true;

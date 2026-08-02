@@ -1,4 +1,7 @@
 const SETTINGS_KEY = 'rpc-settings';
+/** Deployed Free-pilot Worker (override in ⇄ → Avanzado). */
+export const DEFAULT_CLOUD_SYNC_URL =
+  'https://rplus-sync.rmas-workersdev.workers.dev';
 const TOKEN_KEY = 'rpc-cloud-sync-token';
 const ROOM_ID_KEY = 'rpc-cloud-sync-room-id';
 const REVISION_KEY = 'rpc-cloud-sync-revision';
@@ -19,7 +22,8 @@ function writeSettings(settings) {
 
 export function getCloudSyncUrl() {
   const s = readSettings();
-  return String(s.cloudSyncUrl || '').replace(/\/$/, '');
+  const raw = String(s.cloudSyncUrl || '').trim();
+  return (raw || DEFAULT_CLOUD_SYNC_URL).replace(/\/$/, '');
 }
 
 /** @param {string} url */

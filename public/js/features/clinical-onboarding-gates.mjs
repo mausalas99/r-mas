@@ -18,6 +18,7 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from '../clinical-username.mjs';
+import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
 function getClientId() {
   return resolveClinicalClientId(readRpcSettings());
@@ -107,6 +108,11 @@ function needsLanProfile(settings, user) {
 }
 
 /** Falta perfil clínico mínimo antes de usar guardia / Mi rotación con datos. */
+function needsCloudRegistration(settings, _user) {
+  // LAN-only → Sala/Torre: force landing until Nube password saved.
+  return isCloudSalaUpgradePending(settings);
+}
+
 export function needsProfileOnboarding() {
   if (!isDbMode()) return false;
   if (!clinicalSessionContext.user?.user_id) return true;
@@ -115,6 +121,7 @@ export function needsProfileOnboarding() {
   const user = clinicalSessionContext.user;
   if (hasPersistedClinicalProfile(settings, user)) {
     syncSessionFromPersistedProfile(settings, user);
+    if (needsCloudRegistration(settings, user)) return true;
     return false;
   }
   if (needsLocalOnlyProfile(settings)) return true;

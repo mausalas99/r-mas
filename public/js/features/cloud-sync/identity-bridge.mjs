@@ -18,22 +18,28 @@ function dbApi() {
  * @param {string} sessionUserId
  * @param {string} username
  */
+/** @param {string} username */
+async function readClientId() {
+  try {
+    const { readRpcSettings } = await import('../../clinical-settings.mjs');
+    return String(readRpcSettings().clientId || '');
+  } catch {
+    return '';
+  }
+}
+
+/** @param {string} username @param {string} clientId */
+function shouldSkipUsernameClaim(username, clientId) {
+  const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || '');
+  return !shouldClaimClinicalUsername(currentHandle, username, clientId);
+}
+
 async function tryClaimUsername(sessionUserId, username) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalUsernameClaim !== 'function') return { ok: true };
 
-  const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || '');
-  let clientId = '';
-  try {
-    const { readRpcSettings } = await import('../../clinical-settings.mjs');
-    clientId = String(readRpcSettings().clientId || '');
-  } catch {
-    /* ignore */
-  }
-
-  if (!shouldClaimClinicalUsername(currentHandle, username, clientId)) {
-    return { ok: true };
-  }
+  const clientId = await readClientId();
+  if (shouldSkipUsernameClaim(username, clientId)) return { ok: true };
 
   const claimRes = await api.dbClinicalUsernameClaim({ userId: sessionUserId, username });
   if (claimRes?.ok) {

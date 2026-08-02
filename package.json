@@ -1,7 +1,7 @@
 {
   "name": "r-plus",
-  "version": "7.8.1",
-  "description": "R+ — Laboratoriazo + Notas de Evolución",
+  "version": "7.9.0",
+  "description": "R+ \u2014 Laboratoriazo + Notas de Evoluci\u00f3n",
   "main": "main.js",
   "scripts": {
     "build:ui": "node scripts/build-ui.mjs && node scripts/bundle-renderer.mjs",
@@ -43,7 +43,9 @@
     "metrics:baseline": "node scripts/metrics/run.mjs --write-baseline",
     "dev:lan-virtual-peer": "node scripts/lan-virtual-peer.mjs",
     "dev:lan-peer-app": "node scripts/dev-lan-peer-app.mjs",
-    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh"
+    "dev:lan-peer-fresh": "node scripts/dev-lan-peer-app.mjs --fresh",
+    "dev:nube-test": "node scripts/dev-nube-test-app.mjs",
+    "dev:nube-test-fresh": "node scripts/dev-nube-test-app.mjs --fresh"
   },
   "author": "Mauricio Salas",
   "license": "ISC",

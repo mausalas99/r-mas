@@ -7,6 +7,7 @@ import {
   readRpcSettings,
 } from '../../clinical-settings.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
+import { maybeMarkCloudSalaUpgrade } from '../cloud-sync/cloud-sala-upgrade.mjs';
 
 function syncProgramAdminFlag(isProgramAdmin, res) {
   if (!clinicalSessionContext.user) return;
@@ -57,7 +58,20 @@ export async function persistProfileFromPanel(fields) {
     toast('Base de datos no disponible.', 'error');
     return false;
   }
-  return submitProfileUpsert(api, userId, fields);
+  const prevSala = String(clinicalSessionContext.user?.sala || readRpcSettings().clinicalSala || '');
+  const nextSala = String(fields.sala ?? prevSala);
+  const upgraded = maybeMarkCloudSalaUpgrade(prevSala, nextSala);
+  const ok = await submitProfileUpsert(api, userId, fields);
+  if (ok && upgraded) {
+    toast('Sala Nube: completa el registro de contraseña.', 'info');
+    try {
+      const main = await import('../clinical-onboarding-main.mjs');
+      await main.refreshMainClinicalOnboardingIfNeeded?.();
+    } catch {
+      /* ignore */
+    }
+  }
+  return ok;
 }
 
 async function submitProfileUpsert(api, userId, fields) {

@@ -18,17 +18,18 @@ Fecha: 2026-08-02
 
 ## Corte de usuarios (7.9)
 
-Con **7.9** se reinician los **usuarios clínicos** locales y en la nube del piloto. Esto no borra pacientes ni laboratorios del turno por defecto.
+Con **7.9** se reinician los **usuarios clínicos** locales (y en la nube del piloto si se resetea D1). **No se borran pacientes ni labs** del turno.
 
-**Qué hacer al actualizar**
+Al abrir **7.9** por primera vez verás **Migración 7.9** en **Configura tu rotación** (mismo landing de registro):
 
-1. **Vuelve a registrarte** con tu **@usuario** y **nombre** (mismas reglas que siempre). En **Sala** o **Torre HU** también crea tu **contraseña de Nube** (mín. 10 caracteres).
-2. **Conexión en tres pasos:** **Cuenta nube** (crear o entrar) → **Mi rotación** (unirte o crear equipo) → la app asegura automáticamente tu **sala de turno** (sin código manual).
-3. **Pacientes del turno** — Al unirte a **Mi rotación** y conectar Nube, el censo compartido del turno se recupera desde la sala nube (pull del estado de sala). Si ya había datos en la sala del turno, reaparecen al sincronizar.
-4. **Interconsultas, UX, Eme y Área A** — Siguen en **LiveSync LAN** (host + PIN). Ahí también vuelves a registrar @usuario + nombre; no usan contraseña de Nube.
-5. **Administración nube (R4 / admin de programa)** — Menú **Administración nube** para ver salas, usuarios, sesiones y purgar salas obsoletas del piloto. El primer admin se promueve con `SYNC_ADMIN_KEY` (ver `cloud/sync-worker/README.md`).
+1. La app **guarda una captura** de usuarios, equipos y pacientes, y luego limpia las cuentas locales (crash-safe: si se interrumpe, no vuelve a borrar).
+2. **Elige tu @usuario anterior** de la lista **o crea uno nuevo** (nombre + rango + sala).
+3. **Recupera tu equipo** (unirte / recrear) y **reclama pacientes** con la lista de casillas.
+4. **Sala / Torre HU:** crea o entra a Nube (contraseña ≥10), la app hace `ensure-turn` y **pull** si la sala nube ya tiene censo, o **empuja** el censo local si está vacía (merge LWW).
+5. **Interconsultas, UX, Eme y Área A** — mismos pasos 1–3; siguen en LiveSync LAN (sin contraseña nube).
+6. **Administración nube (R4 / admin de programa)** — menú en ⇄; primer admin con `SYNC_ADMIN_KEY` (ver `cloud/sync-worker/README.md`).
 
-**Nota:** Si el piloto arranca con D1 vacío o reseteado el mismo día del deploy, todos empiezan con cuentas nuevas; el censo vivo depende de quién empuje primero a la sala de turno o de un respaldo previo.
+**Nota:** Si el piloto arranca con D1 vacío el mismo día del deploy, el censo vivo depende de quién empuje primero a la sala de turno tras la migración.
 
 ## Instalación
 

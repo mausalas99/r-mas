@@ -1,6 +1,17 @@
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
 import { setCloudRoomConnected } from './lan-override.mjs';
 
+/** @param {object} deps @param {object} room */
+function applyEnsureTurnSuccess(deps, room) {
+  deps.setCloudSyncRoomId(String(room.id));
+  deps.setCloudSyncRevision(Number(room.revision) || 0);
+  setCloudRoomConnected(true);
+  deps.onConnected?.(room);
+  deps.startSyncRuntime?.();
+  deps.toast?.('Sala nube lista', 'success');
+}
+
+
 /**
  * @param {{
  *   api: { ensureTurn: (body: { sala: string }) => Promise<{ room: object }> },
@@ -22,15 +33,8 @@ export async function ensureTurnRoom(deps) {
   try {
     const data = await deps.api.ensureTurn({ sala });
     const room = data?.room;
-    if (!room?.id) {
-      throw new Error('Respuesta inválida del servidor.');
-    }
-    deps.setCloudSyncRoomId(String(room.id));
-    deps.setCloudSyncRevision(Number(room.revision) || 0);
-    setCloudRoomConnected(true);
-    deps.onConnected?.(room);
-    deps.startSyncRuntime?.();
-    deps.toast?.('Sala nube lista', 'success');
+    if (!room?.id) throw new Error('Respuesta inválida del servidor.');
+    applyEnsureTurnSuccess(deps, room);
     return room;
   } catch (err) {
     deps.toast?.(

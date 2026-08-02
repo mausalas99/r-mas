@@ -99,14 +99,10 @@ export function mapPatientEntryToOps(entry, meta) {
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
  */
-export function mapBundleEnvelopeToOps(bundle, meta) {
-  if (!bundle) return [];
-  const ops = [];
-  const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
-  for (let i = 0; i < entries.length; i += 1) {
-    ops.push(...mapPatientEntryToOps(entries[i], meta));
-  }
 
+/** @param {object} bundle @param {{ actorId: string, updatedAt: string }} meta */
+function mapBundleTodosToOps(bundle, meta) {
+  const ops = [];
   const todos = bundle.todos && typeof bundle.todos === 'object' ? bundle.todos : {};
   for (const pid of Object.keys(todos)) {
     const list = Array.isArray(todos[pid]) ? todos[pid] : [];
@@ -116,14 +112,30 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
       ops.push(cloudOp({ path: `todos/${todo.id}`, value: todo, ...meta }));
     }
   }
+  return ops;
+}
 
+/** @param {object} bundle @param {{ actorId: string, updatedAt: string }} meta */
+function mapBundleAgendaToOps(bundle, meta) {
+  const ops = [];
   const agenda = Array.isArray(bundle.agenda) ? bundle.agenda : [];
   for (let k = 0; k < agenda.length; k += 1) {
     const item = agenda[k];
     if (!item?.id) continue;
     ops.push(cloudOp({ path: `agenda/${item.id}`, value: item, ...meta }));
   }
+  return ops;
+}
 
+export function mapBundleEnvelopeToOps(bundle, meta) {
+  if (!bundle) return [];
+  const ops = [];
+  const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
+  for (let i = 0; i < entries.length; i += 1) {
+    ops.push(...mapPatientEntryToOps(entries[i], meta));
+  }
+  ops.push(...mapBundleTodosToOps(bundle, meta));
+  ops.push(...mapBundleAgendaToOps(bundle, meta));
   if (bundle.clinicalOps != null) {
     ops.push(cloudOp({ path: 'clinicalOps', value: bundle.clinicalOps, ...meta }));
   }

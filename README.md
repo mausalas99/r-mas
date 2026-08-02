@@ -39,9 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.8.1](https://github.com/mausalas99/r-mas/releases/tag/v7.8.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.0](https://github.com/mausalas99/r-mas/releases/tag/v7.9.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 7.9.0 (Nube piloto Free — Sala y Torre HU)
+
+- **Nube (Sala / Torre HU)** — Sync del turno en Cloudflare Free desde ⇄, sin Mac anfitrión LAN.
+- **Migración 7.9** — Reinicio de usuarios clínicos con panel de captura → @usuario → equipo → pacientes (pacientes/labs se conservan).
+- **Otras salas** — Interconsultas, UX, Eme y Área A siguen en LiveSync LAN.
+
+Notas: `docs/RELEASE_NOTES_7.9.0.txt`.
 
 ## R+ 7.8.1 (diagnósticos LAN en Datos)
 

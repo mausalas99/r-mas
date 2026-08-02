@@ -7,7 +7,7 @@
  */
 const users = Number(process.env.USERS || 10);
 const hours = Number(process.env.HOURS || 12);
-const pollSec = Number(process.env.POLL_SEC || 15);
+const pollSec = Number(process.env.POLL_SEC || 20);
 const editsPerHour = Number(process.env.EDITS_PER_HOUR || 30);
 const writesPerPatientEdit = Number(process.env.WRITES_PER_EDIT || 2);
 

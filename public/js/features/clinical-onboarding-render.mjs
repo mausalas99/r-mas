@@ -38,6 +38,13 @@ import {
   needsUsernameClaim,
 } from './clinical-onboarding-gates.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
+import {
+  buildCutoverPickerHtml,
+  buildNubePasswordFieldHtml,
+  syncOnboardingNubeVisibility,
+} from './clinical-onboarding-nube.mjs';
+import { isCutoverPending } from './cloud-sync/cutover-flags.mjs';
+import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 async function tryAutoResumeCachedUsername(settings) {
@@ -127,6 +134,7 @@ function buildLanProfileFormBody(settings) {
   return `
       <div class="clinical-onboard-form-shell">
         <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
+          ${buildCutoverPickerHtml()}
           <div class="field-group">
             <label for="onboard-username">Usuario LAN (@usuario) *</label>
             <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
@@ -151,7 +159,9 @@ function buildLanProfileFormBody(settings) {
               <option value="">— Seleccionar —</option>
               ${buildSalaOptionsHtml(prefilledSala)}
             </select>
-          </div>${shiftPinFieldHtml}
+          </div>
+          ${buildNubePasswordFieldHtml(prefilledSala)}
+          ${shiftPinFieldHtml}
           <p id="onboard-error" class="clinical-registration-error" hidden></p>
           <div class="modal-actions clinical-onboard-form-actions">
             <button type="submit" class="btn-save">Guardar perfil</button>
@@ -163,16 +173,34 @@ function buildLanProfileFormBody(settings) {
 
 function renderLanProfileForm(host, settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
-  const gateLead = profileGatePending
-    ? `<p class="clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`
-    : '<p>Confirma tu usuario LAN, nombre en guardia, rango y rotación. Para equipos, abre <strong>Mi rotación</strong> después.</p>';
+  const cutover = isCutoverPending();
+  const salaUpgrade = isCloudSalaUpgradePending(settings);
+  let gateLead;
+  if (profileGatePending || cutover) {
+    gateLead = `<p class="clinical-onboard-gate-lead">${CLINICAL_LAN_PROFILE_GATE_LEAD_HTML}</p>`;
+  } else if (salaUpgrade) {
+    gateLead =
+      '<p class="clinical-onboard-gate-lead">Pasaste a <strong>Sala</strong> o <strong>Torre HU</strong>. ' +
+      'Completa el perfil y registra tu <strong>contraseña de Nube</strong> para sincronizar el turno.</p>';
+  } else {
+    gateLead =
+      '<p>Confirma tu usuario LAN, nombre en guardia, rango y rotación. En Sala/Torre HU también Nube. ' +
+      'Para equipos, abre <strong>Mi rotación</strong> después.</p>';
+  }
+  const title =
+    profileGatePending || cutover
+      ? 'Migración 7.9'
+      : salaUpgrade
+        ? 'Conectar Nube'
+        : 'Configura tu rotación';
 
   host.innerHTML = buildOnboardingStageHtml({
-    title: 'Configura tu rotación',
+    title,
     leadHtml: gateLead,
     stepperIndex: 2,
     bodyHtml: buildLanProfileFormBody(settings),
   });
+  syncOnboardingNubeVisibility(host);
 }
 
 async function renderNoSessionOnboarding(host) {

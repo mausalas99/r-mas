@@ -14,6 +14,15 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
    */
   async function req(path, { method = 'GET', body } = {}) {
     const baseUrl = String(getBaseUrl() || '').replace(/\/$/, '');
+    if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
+      const err = new Error('URL nube no configurada');
+      err.status = 0;
+      err.data = {
+        error: 'missing_url',
+        message: 'Configurá la URL del servicio en ⇄ → Avanzado.',
+      };
+      throw err;
+    }
     const headers = { Accept: 'application/json' };
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;

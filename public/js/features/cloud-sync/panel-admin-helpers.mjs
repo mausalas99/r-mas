@@ -1,3 +1,14 @@
+
+/** Session-only admin key for bootstrap (not persisted). */
+let sessionAdminKey = '';
+
+export function getSessionAdminKey() {
+  return sessionAdminKey;
+}
+
+export function setSessionAdminKey(key) {
+  sessionAdminKey = String(key || '').trim();
+}
 import { esc } from '../../dom-escape.mjs';
 
 export const ROLE_LABELS = {
@@ -9,6 +20,11 @@ export const ROLE_LABELS = {
 /** @param {string} role */
 export function fmtRole(role) {
   return ROLE_LABELS[role] || role || '—';
+}
+
+/** @param {string} message */
+export function confirmAction(message) {
+  return window.confirm(message);
 }
 
 /** @param {Array<Record<string, unknown>>} rows @param {Array<{ label: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols */

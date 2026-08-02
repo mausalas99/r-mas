@@ -19,7 +19,14 @@ export function getClinicalRank() {
 
 export function getUserSala() {
   var s = getClinicalSettings();
-  return String(s.clinicalSala || '').trim();
+  var fromSettings = String(s.clinicalSala || '').trim();
+  if (fromSettings) return fromSettings;
+  try {
+    var user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
+    return String(user && user.sala ? user.sala : '').trim();
+  } catch {
+    return '';
+  }
 }
 
 export function isClinicalRegistered() {

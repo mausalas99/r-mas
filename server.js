@@ -39,7 +39,7 @@ appExpress.use((req, res, next) => {
   return globalJsonBodyParser(req, res, next);
 });
 
-const LAN_HTTP_PORT = 3738;
+const LAN_HTTP_PORT = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
 
 function isPrivateIpv4Host(host) {
   const h = String(host || '').split(':')[0];
