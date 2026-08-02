@@ -3,7 +3,7 @@
 > **For implementation:** After this spec is approved in review, use **writing-plans** for a task-by-task plan. Do not implement until the written spec is reviewed.
 
 **Date:** 2026-08-02  
-**Status:** Approved in brainstorm; awaiting written-spec review.  
+**Status:** Approved; implementation plan at [`../plans/2026-08-02-nube-recovery-panel-ux.md`](../plans/2026-08-02-nube-recovery-panel-ux.md).  
 **Release target:** 7.9.x (on top of Cloud Sync Free pilot).  
 **Related:** [`2026-08-02-cloud-sync-free-pilot-design.md`](2026-08-02-cloud-sync-free-pilot-design.md), worker `cloud/sync-worker/`, renderer `public/js/features/cloud-sync/`, LAN panel mount `public/js/features/lan/panel-nube-mount.mjs`.
 
