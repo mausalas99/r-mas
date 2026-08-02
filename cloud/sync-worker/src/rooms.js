@@ -2,6 +2,7 @@ import { encryptJson } from './crypto-at-rest.js';
 import { SyncError } from './errors.js';
 import { QUOTAS } from './quotas.js';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.js';
+import { handleSync } from './sync.js';
 import { userFromAuthHeader } from './session.js';
 
 /** Unambiguous uppercase alphanumeric (no 0/O, 1/I/L). */
@@ -326,6 +327,11 @@ export async function handleRooms(request, env, subpath) {
   if (subpath === '/join') {
     if (method === 'POST') return handleJoinRoom(db, request);
     throw new SyncError('not_found', 'Método no permitido.');
+  }
+
+  const syncMatch = /^\/([^/]+)\/(mutations|pull)$/.exec(subpath);
+  if (syncMatch) {
+    return handleSync(request, env, syncMatch[1], syncMatch[2]);
   }
 
   const leaveMatch = /^\/([^/]+)\/leave$/.exec(subpath);
