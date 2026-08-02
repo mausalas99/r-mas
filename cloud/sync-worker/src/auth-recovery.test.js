@@ -250,6 +250,39 @@ describe('handleRecover', () => {
       }
     );
   });
+
+  it('rate-limits after repeated wrong recovery codes', async () => {
+    const recoveryCode = generateRecoveryCode();
+    const { user } = await seedUser(users, { recoveryCode });
+    const db = createFakeDb(users, sessions);
+    const ip = 'rate-limit-test-ip';
+    const payload = {
+      username: user.username,
+      recoveryCode: generateRecoveryCode(),
+      newPassword: 'new-password-9',
+    };
+
+    for (let i = 0; i < 10; i++) {
+      await assert.rejects(
+        () => handleRecover(db, jsonRequest(payload), ip),
+        (err) => {
+          assert.ok(err instanceof SyncError);
+          assert.equal(err.code, 'invalid_credentials');
+          return true;
+        }
+      );
+    }
+
+    await assert.rejects(
+      () => handleRecover(db, jsonRequest(payload), ip),
+      (err) => {
+        assert.ok(err instanceof SyncError);
+        assert.equal(err.code, 'invalid_credentials');
+        assert.match(err.message, /Demasiados intentos/);
+        return true;
+      }
+    );
+  });
 });
 
 describe('handleRegenerateRecovery', () => {
