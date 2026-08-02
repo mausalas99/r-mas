@@ -51,6 +51,9 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     register: (body) => req('/auth/register', { method: 'POST', body }),
     login: (body) => req('/auth/login', { method: 'POST', body }),
     logout: () => req('/auth/logout', { method: 'POST', body: {} }),
+    recover: (body) => req('/auth/recover', { method: 'POST', body }),
+    regenerateRecovery: () =>
+      req('/auth/regenerate-recovery', { method: 'POST', body: {} }),
     me: () => req('/auth/me'),
     createRoom: (body) => req('/rooms', { method: 'POST', body }),
     joinRoom: (body) => req('/rooms/join', { method: 'POST', body }),
@@ -77,6 +80,8 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     adminPromote: (userId, role) =>
       req(`/admin/users/${userId}/promote`, { method: 'POST', body: role ? { role } : {} }),
     adminDisable: (userId) => req(`/admin/users/${userId}/disable`, { method: 'POST', body: {} }),
+    adminResetPassword: (userId, body) =>
+      req(`/admin/users/${userId}/reset-password`, { method: 'POST', body }),
     adminDeleteUser: (userId) => req(`/admin/users/${userId}`, { method: 'DELETE' }),
   };
 }
