@@ -33,6 +33,8 @@ export {
 
 export { mountNubeSection } from './panel-nube-section.mjs';
 
+export { bridgeCloudIdentityToLocal, normalizeCloudIdentityUsername } from './identity-bridge.mjs';
+
 export {
   configureCloudMutateBridge,
   mapPatientEntryToOps,

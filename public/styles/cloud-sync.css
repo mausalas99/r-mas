@@ -1,0 +1,225 @@
+/* Hallmark · cloud sync Conexión panel · Quiet workbench tokens */
+
+.cloud-sync-conexion {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12px * var(--density-space));
+  padding: calc(12px * var(--density-space)) 0;
+  border-top: 1px solid var(--divider);
+}
+
+.cloud-sync-conexion-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(10px * var(--density-space));
+}
+
+.cloud-sync-conexion-title {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.cloud-sync-status-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--wb-pill-radius, var(--radius-pill));
+  border: 1px solid var(--wb-pill-border, var(--border-hairline));
+  background: var(--wb-pill-bg, var(--surface));
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  box-shadow: var(--wb-pill-shadow, none);
+}
+
+.cloud-sync-status-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.cloud-sync-status-chip.is-idle::before {
+  background: var(--success, #2d8a4e);
+}
+
+.cloud-sync-status-chip.is-syncing::before {
+  background: var(--action);
+  animation: cloud-sync-pulse 1.2s ease-in-out infinite;
+}
+
+.cloud-sync-status-chip.is-pending::before,
+.cloud-sync-status-chip.is-offline::before {
+  background: var(--warning, #c47d12);
+}
+
+.cloud-sync-status-chip.is-error::before {
+  background: var(--danger, #c0392b);
+}
+
+@keyframes cloud-sync-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+.cloud-sync-lead {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.cloud-sync-hint {
+  margin: 4px 0 0;
+  font-size: calc(11px * var(--density-font));
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.cloud-sync-account,
+.cloud-sync-room,
+.cloud-sync-next-step {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+  padding: calc(10px * var(--density-space));
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-shadow: var(--wb-frame-shadow, none);
+}
+
+.cloud-sync-room-title,
+.cloud-sync-next-step-lead {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-account-label {
+  display: inline-block;
+  min-width: 7.5rem;
+  color: var(--text-muted);
+  font-size: calc(11px * var(--density-font));
+}
+
+.cloud-sync-account-summary p {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+}
+
+.cloud-sync-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cloud-sync-field label {
+  font-size: calc(11px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cloud-sync-auth-block,
+.cloud-sync-advanced {
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
+  background: color-mix(in oklab, var(--surface) 98%, transparent);
+}
+
+.cloud-sync-auth-block + .cloud-sync-auth-block,
+.cloud-sync-auth-block + .cloud-sync-advanced {
+  margin-top: calc(8px * var(--density-space));
+}
+
+.cloud-sync-auth-block summary,
+.cloud-sync-advanced summary {
+  cursor: pointer;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-auth-block[open] summary,
+.cloud-sync-advanced[open] summary {
+  margin-bottom: calc(8px * var(--density-space));
+}
+
+.cloud-sync-room-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(8px * var(--density-space));
+  margin: 0;
+}
+
+.cloud-sync-room-meta dt {
+  margin: 0;
+  font-size: calc(10px * var(--density-font));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.cloud-sync-room-meta dd {
+  margin: 2px 0 0;
+  font-size: calc(13px * var(--density-font));
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  color: var(--text);
+}
+
+.cloud-sync-btn {
+  align-self: flex-start;
+  margin: 0;
+  padding: calc(7px * var(--density-space)) calc(12px * var(--density-space));
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+
+.cloud-sync-btn:hover {
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--action) 22%, var(--divider));
+}
+
+.cloud-sync-btn--primary {
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--color-on-accent, #fff);
+}
+
+.cloud-sync-btn--primary:hover {
+  background: var(--action-hover, var(--action));
+  border-color: var(--action-hover, var(--action));
+}
+
+.cloud-sync-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+  padding-left: 0;
+}
+
+.cloud-sync-btn--danger {
+  color: var(--danger, #c0392b);
+  border-color: color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
+}
+
+.cloud-sync-room--actions .cloud-sync-btn + .cloud-sync-field {
+  margin-top: calc(4px * var(--density-space));
+}
