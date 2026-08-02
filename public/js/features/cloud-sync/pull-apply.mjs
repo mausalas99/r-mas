@@ -1,0 +1,147 @@
+/**
+ * Apply cloud pull results into local patient/note/lab state (LAN hydration paths).
+ */
+import { storage } from '../../storage.js';
+import { saveState } from '../../app-state.mjs';
+import { applyLanPatientEntries } from '../lan/patient-entries.mjs';
+import { removePatientLocally } from '../lan/patient-delete.mjs';
+import {
+  assembleLabHistoryFromSidecars,
+  cloudEntryToLanEntry,
+  cloudStateToLanEntries,
+  createOpFold,
+  foldCloudOp,
+  opFoldToLanEntries,
+  opsToLanEntries,
+} from './pull-apply-state.mjs';
+
+export {
+  assembleLabHistoryFromSidecars,
+  cloudEntryToLanEntry,
+  cloudStateToLanEntries,
+  createOpFold,
+  foldCloudOp,
+  opFoldToLanEntries,
+  opsToLanEntries,
+} from './pull-apply-state.mjs';
+
+/** @param {Record<string, unknown>} todosMap */
+function applyCloudTodosMap(todosMap) {
+  const byPatient = {};
+  for (const todo of Object.values(todosMap || {})) {
+    if (!todo || typeof todo !== 'object') continue;
+    const row = todo;
+    const pid = String(row.patientId || '').trim();
+    const id = String(row.id || '').trim();
+    if (!pid || !id) continue;
+    if (!byPatient[pid]) byPatient[pid] = storage.getTodos(pid).slice();
+    const idx = byPatient[pid].findIndex(function (t) {
+      return t && String(t.id) === id;
+    });
+    if (row._deleted) {
+      if (idx >= 0) byPatient[pid].splice(idx, 1);
+      continue;
+    }
+    if (idx >= 0) byPatient[pid][idx] = row;
+    else byPatient[pid].push(row);
+  }
+  for (const pid of Object.keys(byPatient)) {
+    storage.saveTodos(pid, byPatient[pid]);
+  }
+}
+
+/** @param {Record<string, unknown>} agendaMap */
+function applyCloudAgendaMap(agendaMap) {
+  const live = Object.values(agendaMap || {}).filter(function (item) {
+    return item && typeof item === 'object' && !item._deleted;
+  });
+  storage.saveScheduledProcedures(live);
+}
+
+/** @param {Record<string, unknown>} tombstones */
+function applyCloudTombstones(tombstones) {
+  let removed = false;
+  for (const patientId of Object.keys(tombstones || {})) {
+    if (removePatientLocally(patientId)) removed = true;
+  }
+  return removed;
+}
+
+async function applyClinicalOpsSnapshot(clinicalOps) {
+  if (clinicalOps == null) return false;
+  try {
+    const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot, refreshClinicalOpsSnapshotCache } =
+      await import('../../clinical-ops-lan.mjs');
+    const { applyClinicalScopeFromLanOpsSnapshot } = await import('../../clinical-access-runtime.mjs');
+    if (isClinicalOpsLanAvailable()) {
+      const result = await applyClinicalOpsLanSnapshot(clinicalOps);
+      if (result.ok) {
+        await refreshClinicalOpsSnapshotCache();
+        return true;
+      }
+      return false;
+    }
+    return applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} state
+ * @param {{ skipTodos?: boolean }} [opts]
+ */
+export async function applyCloudState(state, opts) {
+  if (!state) return { added: 0, updated: 0, removed: false };
+  const entries = cloudStateToLanEntries(state);
+  const patientSync = entries.length
+    ? applyLanPatientEntries(entries, { skipTodos: true, skipTeamScopeFilter: true })
+    : { added: 0, updated: 0 };
+
+  if (!opts?.skipTodos && state.todos) applyCloudTodosMap(state.todos);
+  if (Array.isArray(state.agenda)) {
+    storage.saveScheduledProcedures(state.agenda.filter((item) => item && !item._deleted));
+  }
+  const removed = applyCloudTombstones(state.tombstones || {});
+  await applyClinicalOpsSnapshot(state.clinicalOps);
+
+  if (patientSync.added || patientSync.updated || removed) {
+    saveState({ immediate: true });
+  }
+  return { ...patientSync, removed };
+}
+
+/** @param {unknown[]} ops */
+export async function applyCloudOps(ops) {
+  if (!Array.isArray(ops) || !ops.length) return { added: 0, updated: 0, removed: false };
+  const fold = createOpFold();
+  for (let i = 0; i < ops.length; i += 1) {
+    foldCloudOp(fold, ops[i]);
+  }
+  const entries = opFoldToLanEntries(fold);
+  const patientSync = entries.length
+    ? applyLanPatientEntries(entries, { skipTodos: true, skipTeamScopeFilter: true })
+    : { added: 0, updated: 0 };
+  applyCloudTodosMap(fold.todos);
+  applyCloudAgendaMap(fold.agenda);
+  const removed = applyCloudTombstones(fold.tombstones);
+  await applyClinicalOpsSnapshot(fold.clinicalOps);
+
+  if (patientSync.added || patientSync.updated || removed) {
+    saveState({ immediate: true });
+  }
+  return { ...patientSync, removed };
+}
+
+/** @param {unknown} result */
+export async function applyCloudPullResult(result) {
+  if (!result || typeof result !== 'object') return { added: 0, updated: 0, removed: false };
+  const row = result;
+  if (row.needSnapshot && row.state) {
+    return applyCloudState(row.state);
+  }
+  if (Array.isArray(row.ops) && row.ops.length) {
+    return applyCloudOps(row.ops);
+  }
+  return { added: 0, updated: 0, removed: false };
+}

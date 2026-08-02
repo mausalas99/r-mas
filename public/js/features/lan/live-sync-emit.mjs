@@ -9,6 +9,18 @@ import {
   rememberLiveSyncEntity,
   sendLiveSyncMutation,
 } from './entity-versions.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+
+function cloudEmit(kind, args) {
+  if (!isCloudSyncActive()) return;
+  void import('../cloud-sync/mutate-bridge.mjs').then(function (m) {
+    if (kind === 'agenda-upsert') m.enqueueCloudAgendaUpsert(args[0]);
+    else if (kind === 'agenda-delete') m.enqueueCloudAgendaDelete(args[0], args[1]);
+    else if (kind === 'todo-upsert') m.enqueueCloudTodoUpsert(args[0], args[1]);
+    else if (kind === 'todo-delete') m.enqueueCloudTodoDelete(args[0], args[1], args[2]);
+    else if (kind === 'patient-delete') m.enqueueCloudPatientDelete(args[0]);
+  });
+}
 
 export function emitLiveSyncAgendaUpsert(eventObj) {
   if (!eventObj || !eventObj.id) return;
@@ -17,6 +29,7 @@ export function emitLiveSyncAgendaUpsert(eventObj) {
     op: 'upsert',
   });
   sendLiveSyncMutation(mutation);
+  cloudEmit('agenda-upsert', [eventObj]);
 }
 
 export function emitLiveSyncAgendaDelete(id, updatedAt) {
@@ -27,6 +40,7 @@ export function emitLiveSyncAgendaDelete(id, updatedAt) {
     .captureBase(base)
     .build({ roomId: activeLiveSyncRoomId, op: 'delete' });
   sendLiveSyncMutation(mutation);
+  cloudEmit('agenda-delete', [id, updatedAt]);
 }
 
 export function emitLiveSyncTodoUpsert(patientId, todo) {
@@ -38,6 +52,7 @@ export function emitLiveSyncTodoUpsert(patientId, todo) {
     op: 'upsert',
   });
   sendLiveSyncMutation(mutation);
+  cloudEmit('todo-upsert', [patientId, todo]);
 }
 
 function buildTodoDeleteBase(todo, eid, patientId, updatedAt, cached) {
@@ -68,6 +83,7 @@ export function emitLiveSyncTodoDelete(patientId, todoRef, updatedAt) {
     updatedAt: String((todo && todo.updatedAt) || updatedAt || new Date().toISOString()),
   });
   sendLiveSyncMutation(mutation);
+  cloudEmit('todo-delete', [patientId, todoRef, updatedAt]);
 }
 
 export function emitLiveSyncPatientDelete(patient) {
@@ -80,4 +96,5 @@ export function emitLiveSyncPatientDelete(patient) {
     { roomId: activeLiveSyncRoomId, op: 'delete' }
   );
   sendLiveSyncMutation(mutation);
+  cloudEmit('patient-delete', [patient]);
 }

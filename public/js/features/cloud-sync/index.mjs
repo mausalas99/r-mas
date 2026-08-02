@@ -32,3 +32,14 @@ export {
 } from './lan-override.mjs';
 
 export { mountNubeSection } from './panel-nube-section.mjs';
+
+export {
+  configureCloudMutateBridge,
+  mapPatientEntryToOps,
+  mapBundleEnvelopeToOps,
+  maybeScheduleCloudSyncPush,
+  scheduleCloudSyncPush,
+} from './mutate-bridge.mjs';
+
+export { applyCloudPullResult, applyCloudState, applyCloudOps } from './pull-apply.mjs';
+

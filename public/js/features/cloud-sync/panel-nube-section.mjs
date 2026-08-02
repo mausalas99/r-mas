@@ -3,6 +3,10 @@ import { normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldShowNubePanel } from './lan-override.mjs';
 import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { createOutbox } from './outbox.mjs';
+import { configureCloudMutateBridge } from './mutate-bridge.mjs';
+import { applyCloudPullResult } from './pull-apply.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { getLanClientId } from '../lan/runtime.mjs';
 
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
@@ -74,17 +78,33 @@ export function mountNubeSection(root, deps) {
     stopRuntime();
     const roomId = deps.getCloudSyncRoomId();
     if (!roomId || !deps.getCloudSyncToken()) return;
+    const outbox = createOutbox();
     runtime = startCloudSyncRuntime({
       api: deps.getApi(),
-      outbox: createOutbox(),
+      outbox,
       getRoomId: deps.getCloudSyncRoomId,
       getRevision: deps.getCloudSyncRevision,
       setRevision: deps.setCloudSyncRevision,
       onStatus: renderStatusChip,
-      applyPullResult: async function () {
-        toast('Sincronización en la nube activa (aplicar cambios en próxima tarea).', 'info');
+      applyPullResult: async function (result) {
+        try {
+          await applyCloudPullResult(result);
+        } catch {
+          toast('No se pudieron aplicar los cambios de la nube.', 'error');
+        }
       },
     });
+    configureCloudMutateBridge({
+      outbox,
+      getRevision: deps.getCloudSyncRevision,
+      flush: function () {
+        return runtime?.flushOutbox();
+      },
+      getActorId: function () {
+        return String(clinicalSessionContext.user?.user_id || getLanClientId() || 'local');
+      },
+    });
+    void runtime.syncCycle();
     deps.onCloudRoomChange?.(true);
   }
 

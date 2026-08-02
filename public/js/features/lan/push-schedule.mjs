@@ -9,6 +9,7 @@ import { getLanClientId, getLiveSyncPushTimer, setLiveSyncPushTimer, getLiveSync
 import { bridge, ensureLanSyncPushBridgeWired } from './push-bridge.mjs';
 import { ensureEffectiveLiveSyncRoomId, BUNDLE_PUSH_HANDLED } from './push-helpers.mjs';
 import { pushRoomSyncBundleToHost } from './push-bundle.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 
 const UNTYPED_SAFETY_BUNDLE_DEBOUNCE_MS = 30000;
 
@@ -99,6 +100,12 @@ export function scheduleUntypedSafetyBundle() {
 
 /** Debounced room push: HTTP sync-bundle is authoritative; WS carries patches + revision hints (IM-05). */
 export function scheduleLiveSyncPush() {
+  if (isCloudSyncActive()) {
+    void import('../cloud-sync/mutate-bridge.mjs').then(function (m) {
+      m.maybeScheduleCloudSyncPush();
+    });
+    return;
+  }
   var roomId = ensureEffectiveLiveSyncRoomId();
   if (!roomId) return;
   if (isBundlePushPaused(roomId)) return;
