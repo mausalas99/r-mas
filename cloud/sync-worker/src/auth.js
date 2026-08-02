@@ -33,7 +33,7 @@ export function validatePassword(password) {
 }
 
 /** @param {string} key */
-function checkRateLimit(key) {
+export function checkRateLimit(key) {
   const now = Date.now();
   const entry = failureCounts.get(key);
   if (!entry || now >= entry.resetAt) {
@@ -46,7 +46,7 @@ function checkRateLimit(key) {
 }
 
 /** @param {string} key */
-function recordFailure(key) {
+export function recordFailure(key) {
   const now = Date.now();
   const entry = failureCounts.get(key);
   if (!entry || now >= entry.resetAt) {
@@ -57,7 +57,7 @@ function recordFailure(key) {
 }
 
 /** @param {string} key */
-function clearFailures(key) {
+export function clearFailures(key) {
   failureCounts.delete(key);
 }
 
