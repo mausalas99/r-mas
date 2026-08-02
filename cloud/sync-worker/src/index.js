@@ -30,6 +30,15 @@ async function handleRequest(request, env) {
 export default {
   /** @param {Request} request @param {import('@cloudflare/workers-types').ExecutionContext} env */
   async fetch(request, env) {
-    return handleRequest(request, env);
+    try {
+      return await handleRequest(request, env);
+    } catch (err) {
+      const message = err && err.message ? String(err.message) : 'error';
+      console.error('rplus-sync unhandled', message);
+      return applyCors(
+        request,
+        Response.json({ error: 'internal_error', message }, { status: 500 })
+      );
+    }
   },
 };

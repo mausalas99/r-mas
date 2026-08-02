@@ -1,4 +1,5 @@
-const ITERATIONS = 600_000;
+/** Free Workers ~10ms CPU — 50k PBKDF2-SHA-256 for pilot. Raise on Paid. */
+const ITERATIONS = 50_000;
 const HASH_BYTES = 32;
 const SALT_BYTES = 16;
 

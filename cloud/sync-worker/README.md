@@ -150,6 +150,10 @@ Default assumptions (**10 users × 12 h × 15 s poll** + light edits) stay under
 
 Override assumptions: `USERS=15 HOURS=8 POLL_SEC=20 npm run estimate:free`
 
+## Auth note (Free plan)
+
+Password hashing uses **PBKDF2-SHA-256 at 50k iterations** so register/login stay under Workers Free CPU (~10ms). Raise iterations (and use Paid `[limits] cpu_ms`) before a broader rollout.
+
 ## Secrets
 
 | Secret | Purpose |
