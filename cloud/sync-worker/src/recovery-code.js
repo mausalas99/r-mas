@@ -22,11 +22,18 @@ export function normalizeRecoveryCode(raw) {
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '');
-  return CODE_RE.test(s) ? s : '';
+  if (!CODE_RE.test(s)) return '';
+  const body = s.slice(2).replace(/-/g, '');
+  for (const ch of body) {
+    if (!ALPHABET.includes(ch)) return '';
+  }
+  return s;
 }
 
 export async function hashRecoveryCode(code) {
-  return hashPassword(normalizeRecoveryCode(code) || code);
+  const normalized = normalizeRecoveryCode(code);
+  if (!normalized) throw new Error('invalid_recovery_code');
+  return hashPassword(normalized);
 }
 
 export async function verifyRecoveryCode(code, saltHex, hashHex) {
