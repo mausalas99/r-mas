@@ -1,34 +1,38 @@
-/* Hallmark · phase 4 · utilitarian clinical · theme: Quiet workbench
- * Rams (equipment chrome) + Tufte (chart data-ink) · 2026-06-24
+/* Hybrid H · soft workbench + glass floating · 2026-08-03
+ * Solid chrome/content; glass only on overlays (Spec B+). Ink accent.
  * contrast: pass (tokens + HC)
  */
 
 :root {
-  --color-paper: #e4e1dc;
-  --color-surface: #f5f4f0;
-  --color-ink: #191919;
-  --color-ink-muted: #5c5c5c;
-  --color-accent: #4a52e8;
-  --color-accent-hover: #3b42c9;
-  --color-accent-soft: color-mix(in oklab, var(--color-accent) 9%, transparent);
-  --color-accent-soft-text: #3b42c9;
+  --color-paper: #eceae6;
+  --color-surface: #f7f6f3;
+  --color-content: #f2f1ed;
+  --color-elevated: #ffffff;
+  --color-ink: #1c1c1e;
+  --color-ink-muted: #6c6c70;
+  --color-accent: var(--color-ink);
+  --color-accent-hover: #000000;
+  --color-accent-soft: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  --color-accent-soft-text: var(--color-ink);
   --color-on-accent: #ffffff;
-  --color-section-header-bg: color-mix(in oklab, var(--color-accent) 6%, var(--color-surface));
+  --color-section-header-bg: color-mix(in oklab, var(--color-ink) 6%, var(--color-surface));
   --color-section-accent: var(--color-accent);
-  --color-channel-pill-bg: color-mix(in oklab, var(--color-accent) 78%, #4338ca);
-  --color-channel-pill-fg: #ffffff;
-  --color-focus-ring: color-mix(in oklab, var(--color-accent) 26%, transparent);
-  --color-success-emphasis: #047857;
-  --color-success-emphasis-hover: #065f46;
+  --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 12%, var(--color-surface));
+  --color-channel-pill-fg: var(--color-ink);
+  --color-focus-ring: color-mix(in oklab, var(--color-ink) 26%, transparent);
+  --color-danger: #d70015;
+  --color-success: #248a3d;
+  --color-success-emphasis: var(--color-success);
+  --color-success-emphasis-hover: color-mix(in oklab, var(--color-success) 88%, #000000);
   --color-on-success: #ffffff;
   /* LiveSync header · estado de conexión */
-  --color-livesync-live: var(--color-success-emphasis);
+  --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #b45309;
   --color-livesync-degraded: #c2410c;
-  --color-livesync-local: var(--color-accent);
+  --color-livesync-local: var(--color-ink-muted);
   --color-livesync-idle: var(--text-muted);
-  --color-agenda-block-bg: color-mix(in oklab, var(--color-accent) 11%, var(--color-surface));
-  --color-agenda-block-border: color-mix(in oklab, var(--color-accent) 32%, var(--border));
+  --color-agenda-block-bg: color-mix(in oklab, var(--color-ink) 11%, var(--color-surface));
+  --color-agenda-block-border: color-mix(in oklab, var(--color-ink) 32%, var(--border));
   --color-update-banner-bg: #166534;
   --color-update-banner-fg: #bbf7d0;
   --color-update-banner-track: rgba(255, 255, 255, 0.2);
@@ -47,15 +51,15 @@
   --divider: color-mix(in oklab, var(--color-ink) 8%, transparent);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
-  --error: #c62828;
-  --danger: var(--error);
+  --error: var(--color-danger);
+  --danger: var(--color-danger);
   --color-danger-hover-bg: color-mix(in oklab, var(--error) 14%, var(--surface));
   --warn: var(--color-livesync-syncing);
   --color-warn-surface: color-mix(in oklab, var(--warn) 7%, transparent);
   --color-warn-border: color-mix(in oklab, var(--warn) 20%, transparent);
   --color-warn-border-strong: color-mix(in oklab, var(--warn) 35%, transparent);
-  --surface-elevated: color-mix(in oklab, var(--color-surface) 94%, var(--color-ink));
-  --success: #15803d;
+  --surface-elevated: var(--color-elevated);
+  --success: var(--color-success);
   --lab-header-slate: #374151;
   --lab-header-green: #065f46;
   --lab-header-indigo: #3730a3;
@@ -77,11 +81,12 @@
   --radius-shell: 28px;
   --radius-pill: 999px;
   /* Controls + inner workbench frame (Arc-style radial default) */
-  --radius-control: var(--radius-pill);
-  --radius-field: 12px;
+  --radius-control: 8px;
+  --radius-field: 8px;
   --radius-chip: 8px;
   --radius-inner: var(--radius-md);
-  --radius-container: var(--radius-lg);
+  --radius-container: 12px;
+  --radius-sheet: 14px;
   --radius-frame-outer: var(--radius-shell);
   --shell-inset: 6px;
   --shell-frame-inset: 4px;
@@ -105,10 +110,18 @@
   /* Interaction-state fills, layered over any surface */
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 4%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 7%, transparent);
-  /* Glass overlay surfaces (modals, dropdowns, palette, toasts) */
-  --overlay-bg: color-mix(in oklab, var(--surface) 78%, transparent);
-  --overlay-blur: 14px;
-  --overlay-border: 1px solid color-mix(in oklab, #ffffff 65%, transparent);
+  /* Hybrid H materials — glass for floating layers only */
+  --material-solid-surface: var(--color-surface);
+  --material-solid-content: var(--color-content);
+  --material-solid-elevated: var(--color-elevated);
+  --material-glass-bg: color-mix(in oklab, #ffffff 72%, transparent);
+  --material-glass-blur: 24px;
+  --material-glass-saturate: 180%;
+  --material-glass-border: 1px solid color-mix(in oklab, #ffffff 80%, transparent);
+  /* Legacy overlay aliases → glass materials (Spec B restyles consumers) */
+  --overlay-bg: var(--material-glass-bg);
+  --overlay-blur: var(--material-glass-blur);
+  --overlay-border: var(--material-glass-border);
   --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --scrim-bg: color-mix(in oklab, var(--color-ink) 52%, transparent);
   --app-height: 100vh;
@@ -170,8 +183,8 @@
   --equipment-active-dot: var(--color-accent);
 
   /* Med pharm calendar */
-  --med-pharm-indicated: color-mix(in oklab, var(--color-accent) 18%, var(--input-fill));
-  --med-pharm-indicated-border: color-mix(in oklab, var(--color-accent) 48%, var(--text-muted));
+  --med-pharm-indicated: color-mix(in oklab, var(--color-ink) 18%, var(--input-fill));
+  --med-pharm-indicated-border: color-mix(in oklab, var(--color-ink) 48%, var(--text-muted));
   --med-pharm-today: color-mix(in oklab, var(--warn) 22%, var(--color-paper));
   --med-pharm-today-fg: var(--lab-header-amber);
   --med-pharm-not-admin: color-mix(in oklab, var(--bg) 72%, var(--surface));
@@ -187,12 +200,17 @@
   --sidebar-rail-width: 5px;
   --sidebar-rail-color: color-mix(in oklab, #5c4a52 18%, var(--color-paper));
 
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-fast: 150ms;
-  --dur-normal: 220ms;
-  --dur-slow: 320ms;
-  --font-ui: "IBM Plex Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --press-scale: 0.97;
+  --dur-press: 140ms;
+  --dur-ui: 200ms;
+  --ease-spring: var(--ease-out);
+  --dur-fast: 140ms;
+  --dur-normal: 200ms;
+  --dur-slow: 300ms;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Type scale (font shorthand: weight size/line-height family) */
