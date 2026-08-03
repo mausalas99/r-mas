@@ -1,25 +1,27 @@
-version: 7.9.1
+version: 7.9.2
 files:
-  - url: R+-7.9.1-arm64.zip
-    sha512: dv9G79RiS5WI7yWTpyj/vR15W7XjEUDLbUXP46zUkr3ipK1+r6ngPPIt4t6IxyhoskezOilpOi4kLxzBxJW/Ig==
-    size: 137487931
-  - url: R+-7.9.1-arm64.dmg
-    sha512: Hq1Y38UMckWlHkneD4yEHjG7mBydaPAho7rXzCPAn3VN+djbIXwDYrk7b84Wcb1s6AmSFY+oqLLo6HOXpg1fBg==
-    size: 143235590
-  - url: R+-7.9.1-x64.zip
-    sha512: b520qtgmc88fbkWxY6zIdjyjvgDkTyj1xEGQ+YRzNhUO/mQPkFZJWSsu0SVFuyWo5mL8VQQ581kPnrgY4zQcgA==
-    size: 145862030
-  - url: R+-7.9.1-x64.dmg
-    sha512: CtpTPVvXm3C2+3+Q2fPNqpDxK7MNh4gCrW81eIhUMxi6Xn0xm6wv1EpUqIrUPi0T+aVnbXL/iZ34D1Olx3JmoA==
-    size: 151661058
-path: R+-7.9.1-arm64.zip
-sha512: dv9G79RiS5WI7yWTpyj/vR15W7XjEUDLbUXP46zUkr3ipK1+r6ngPPIt4t6IxyhoskezOilpOi4kLxzBxJW/Ig==
-releaseDate: '2026-08-03T12:16:29.000Z'
+  - url: R+-7.9.2-arm64.zip
+    sha512: Cpu2Ubcxzw6hE4ajsXa7Xh+qavq0MVjerUhJ/F3acRcz5llItJzh+FNlH5Wmq6HyVd/51ZuFoov0JSuYNuMptw==
+    size: 137513290
+  - url: R+-7.9.2-arm64.dmg
+    sha512: 2j24dMlLS9wd7Nr+NBxqH+/7Fgc4bXFoREjbA/feAkwtZz5RAkvCqePjzm4vMK7jkYff0pkTz8FqweGsu0s2GQ==
+    size: 143252878
+  - url: R+-7.9.2-x64.zip
+    sha512: DfGnsKlMUjn0cXeCUjGRLzDaJ1Ke0JfQgeGyFPtWac4wZWd75UD7DitHcVyaxM0hPSCe2h0v22mUIW+SGi0kbw==
+    size: 145887402
+  - url: R+-7.9.2-x64.dmg
+    sha512: 97UFu1fFPAFL2peOQr7tDarYkkaStqTZ01qjl46Dx6CkyWrgEvhSXQ7SLjysEF+S6kSuvmTNgOF/poTp1YLcmg==
+    size: 151663556
+path: R+-7.9.2-arm64.zip
+sha512: Cpu2Ubcxzw6hE4ajsXa7Xh+qavq0MVjerUhJ/F3acRcz5llItJzh+FNlH5Wmq6HyVd/51ZuFoov0JSuYNuMptw==
+releaseDate: '2026-08-03T15:28:17.000Z'
 releaseNotes: |
-  7.9.1 añade códigos de recuperación y un panel Conexión por pasos para Nube (Sala / Torre HU), y borrado masivo de pacientes en la lista con purge en LAN/Nube para que no regresen al sincronizar.
+  7.9.2 alinea el censo con Estado Actual (rescates de insulina y dieta suplemento), simplifica el panel ⇄ Conexión a una hoja de estado con Opciones, y limpia membrete SOME en cultivos / SV del día.
   
-  Código de recuperación Nube — Al registrarte recibes un código de un solo uso (guárdalo). Con él puedes recuperar la cuenta si olvidaste la contraseña; también puedes regenerarlo. Admin de programa puede restablecer contraseña.
+  Censo — ATB / Meds — Las insulinas rápidas PRN SC salen como RESCATES DE INSULINA (una línea). El suplemento nutricional SOME (ALIMENTACION… SUPLEMENTO) va a DIETA SUPLEMENTO, no como medicamento.
   
-  Panel ⇄ por pasos — Conectar → Sala → Equipo → Más. Sin sesión Nube solo ves Conectar; el chrome de Conexión se reconstruye al login/logout.
+  Conexión Nube — Vista de estado al abrir ⇄; R4 / admin / LAN avanzado en Opciones (fuera del primer viewport).
   
-  Borrado masivo — Multi-select en la lista de pacientes y borrado unificado (local + tombstone + purge en host LAN / Nube / WS) para que los borrados no reaparezcan.
+  Cultivos — Filtra membrete SOME (USER / Labo) para no contaminar ATB y resultado.
+  
+  Estado Actual — signos — Prefill del modal solo con lecturas del mismo día calendario (no arrastra SV de ayer).

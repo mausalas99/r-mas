@@ -1,16 +1,18 @@
-version: 7.9.1
+version: 7.9.2
 files:
-  - url: R+-7.9.1-x64.exe
-    sha512: LNDhINsRDfDXQGwO0NW57893CLhuOKBMBLVjOLFfAFePOkSEckXrOUBqJbxh88zdbfjExkVOaju8c1RFfseZ+g==
-    size: 121029493
-path: R+-7.9.1-x64.exe
-sha512: LNDhINsRDfDXQGwO0NW57893CLhuOKBMBLVjOLFfAFePOkSEckXrOUBqJbxh88zdbfjExkVOaju8c1RFfseZ+g==
-releaseDate: '2026-08-03T12:16:29.000Z'
+  - url: R+-7.9.2-x64.exe
+    sha512: +XCc5a2Ley+LEHNHXUL50mj7uKXXYsYN/wht2iok4LJwBGVdjUPuJeo4ZJ7n+4yWaABLoC7P+B7yvvOZmvvi6w==
+    size: 121071225
+path: R+-7.9.2-x64.exe
+sha512: +XCc5a2Ley+LEHNHXUL50mj7uKXXYsYN/wht2iok4LJwBGVdjUPuJeo4ZJ7n+4yWaABLoC7P+B7yvvOZmvvi6w==
+releaseDate: '2026-08-03T15:28:17.000Z'
 releaseNotes: |
-  7.9.1 añade códigos de recuperación y un panel Conexión por pasos para Nube (Sala / Torre HU), y borrado masivo de pacientes en la lista con purge en LAN/Nube para que no regresen al sincronizar.
+  7.9.2 alinea el censo con Estado Actual (rescates de insulina y dieta suplemento), simplifica el panel ⇄ Conexión a una hoja de estado con Opciones, y limpia membrete SOME en cultivos / SV del día.
   
-  Código de recuperación Nube — Al registrarte recibes un código de un solo uso (guárdalo). Con él puedes recuperar la cuenta si olvidaste la contraseña; también puedes regenerarlo. Admin de programa puede restablecer contraseña.
+  Censo — ATB / Meds — Las insulinas rápidas PRN SC salen como RESCATES DE INSULINA (una línea). El suplemento nutricional SOME (ALIMENTACION… SUPLEMENTO) va a DIETA SUPLEMENTO, no como medicamento.
   
-  Panel ⇄ por pasos — Conectar → Sala → Equipo → Más. Sin sesión Nube solo ves Conectar; el chrome de Conexión se reconstruye al login/logout.
+  Conexión Nube — Vista de estado al abrir ⇄; R4 / admin / LAN avanzado en Opciones (fuera del primer viewport).
   
-  Borrado masivo — Multi-select en la lista de pacientes y borrado unificado (local + tombstone + purge en host LAN / Nube / WS) para que los borrados no reaparezcan.
+  Cultivos — Filtra membrete SOME (USER / Labo) para no contaminar ATB y resultado.
+  
+  Estado Actual — signos — Prefill del modal solo con lecturas del mismo día calendario (no arrastra SV de ayer).
