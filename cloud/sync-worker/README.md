@@ -139,15 +139,15 @@ Dashboard → **rplus-sync** → Domains & Routes → e.g. `sync.tudominio.org`,
 npm run estimate:free
 ```
 
-Default assumptions (**10 users × 12 h × 15 s poll** + light edits) stay under **100k requests/day** and **100k D1 writes/day**. Poll runs only while the app is focused.
+Default assumptions (**10 users × 12 h × 45 s idle poll** + light edits, 3s push debounce) stay under **100k requests/day** and **100k D1 writes/day**. Poll runs only while the app is focused; backs off on 429.
 
 | Resource | Free / day | V1 behavior |
 |----------|------------|-------------|
-| Worker requests | 100k | 15s poll when visible + push-on-save |
+| Worker requests | 100k | 45s idle / 20s after edits when visible + coalesced push |
 | D1 rows written | 100k | Coalesced mutations |
 | D1 storage | 500 MB / DB | Room storage quota |
 
-Override assumptions: `USERS=15 HOURS=8 POLL_SEC=20 npm run estimate:free`
+Override assumptions: `USERS=15 HOURS=8 POLL_SEC=45 npm run estimate:free`
 
 ## Auth
 
@@ -328,7 +328,7 @@ curl -s "$BASE/api/sync/v1/admin/overview" \
 | POST | `/admin/users/:id/promote` | set `role` (admin key OK for bootstrap) |
 | POST | `/admin/users/:id/disable` | `disabled=1` + revoke sessions |
 | POST | `/admin/users/:id/reset-password` | set temporary password; optional `rotateRecovery` |
-| DELETE | `/admin/users/:id` | delete user (sessions + memberships) |
+| DELETE | `/admin/users/:id` | delete user (sessions + memberships; reassign or purge owned rooms) |
 
 ## Tests
 

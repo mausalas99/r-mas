@@ -3,13 +3,61 @@
  */
 import { isCloudSyncActive } from './lan-override.mjs';
 import { getCloudSyncRoomId } from './settings.mjs';
-import { getLiveSyncPushDebounceMs } from '../lan/runtime.mjs';
+import { lanNetworkProfile } from '../../lan-network-profile.mjs';
+import { slimLabSetForCloud } from './cloud-op-slim.mjs';
+import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_DEBOUNCE_SLOW_MS } from './cloud-sync-timing.mjs';
+import { labSetTimestamp, monitoreoUpdatedAt } from '../../lan-patient-merge.mjs';
+import { patients } from '../../app-state.mjs';
+
+function cloudPushDebounceMs() {
+  return lanNetworkProfile.getNetworkProfile() === 'slow'
+    ? CLOUD_PUSH_DEBOUNCE_SLOW_MS
+    : CLOUD_PUSH_DEBOUNCE_MS;
+}
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
 export const CLOUD_BATCH_MUTATION_ID = 'cloud-room-push';
 
-const FIELD_SKIP = new Set(['historiaClinica', 'id']);
+/** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
+const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades']);
+
+/** @param {unknown} note @param {string} fallback */
+function noteOpUpdatedAt(note, fallback) {
+  if (!note || typeof note !== 'object') return fallback;
+  /** @type {{ updatedAt?: unknown, savedAt?: unknown }} */
+  const row = note;
+  const at = String(row.updatedAt || row.savedAt || '').trim();
+  return at || fallback;
+}
+
+/** @param {unknown} patient */
+function fieldsOpUpdatedAt(patient) {
+  return String(patient?.lanUpdatedAt || '').trim();
+}
+
+/** @param {unknown} monitoreo */
+function monitoreoOpUpdatedAt(monitoreo) {
+  return String(monitoreoUpdatedAt(monitoreo) || '').trim();
+}
+
+/** @param {unknown} hc @param {string} fallback */
+function historiaOpUpdatedAt(hc, fallback) {
+  if (!hc || typeof hc !== 'object') return fallback;
+  /** @type {{ data?: { meta?: { updatedAt?: unknown } }, updatedAt?: unknown }} */
+  const row = hc;
+  const at = String(row.data?.meta?.updatedAt || row.updatedAt || '').trim();
+  return at || fallback;
+}
+
+/** @param {unknown} ev @param {string} fallback */
+function eventualidadesOpUpdatedAt(ev, fallback) {
+  if (!ev || typeof ev !== 'object') return fallback;
+  /** @type {{ updatedAt?: unknown }} */
+  const row = ev;
+  const at = String(row.updatedAt || '').trim();
+  return at || fallback;
+}
 
 /** @type {{ outbox?: import('./outbox.mjs').createOutbox extends (...args: any) => infer R ? R : never, getRevision?: () => number, flush?: () => void | Promise<void>, getActorId?: () => string } | null} */
 let bridgeRuntime = null;
@@ -56,6 +104,96 @@ function cloudOp(fields) {
   };
 }
 
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId */
+function pushCensusFieldsOp(ops, patientId, patient, actorId) {
+  const fieldsAt = fieldsOpUpdatedAt(patient);
+  const fields = pickCensusFields(patient);
+  // Only emit when the census clock is set — never stamp fields with the batch "now"
+  // (that let unrelated lab/note pushes overwrite cuarto/cama on the server).
+  if (!fieldsAt || !Object.keys(fields).length) return;
+  ops.push(
+    cloudOp({
+      path: `entries/${patientId}/fields`,
+      value: fields,
+      actorId,
+      updatedAt: fieldsAt,
+    })
+  );
+}
+
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId @param {string} batchAt */
+function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
+  const monAt = monitoreoOpUpdatedAt(patient.monitoreo);
+  if (monAt && patient.monitoreo) {
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/monitoreo`,
+        value: patient.monitoreo,
+        actorId,
+        updatedAt: monAt,
+      })
+    );
+  }
+  if (patient.eventualidades) {
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/eventualidades`,
+        value: patient.eventualidades,
+        actorId,
+        updatedAt: eventualidadesOpUpdatedAt(patient.eventualidades, batchAt),
+      })
+    );
+  }
+  if (patient.historiaClinica) {
+    ops.push(
+      cloudOp({
+        path: `entries/${patientId}/historiaClinica`,
+        value: patient.historiaClinica,
+        actorId,
+        updatedAt: historiaOpUpdatedAt(patient.historiaClinica, batchAt),
+      })
+    );
+  }
+}
+
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt */
+function pushDocOps(ops, patientId, entry, actorId, batchAt) {
+  ops.push(
+    cloudOp({
+      path: `entries/${patientId}/note`,
+      value: entry.note || {},
+      actorId,
+      updatedAt: noteOpUpdatedAt(entry.note, batchAt),
+    })
+  );
+  ops.push(
+    cloudOp({
+      path: `entries/${patientId}/indicaciones`,
+      value: entry.indicaciones || {},
+      actorId,
+      updatedAt: noteOpUpdatedAt(entry.indicaciones, batchAt),
+    })
+  );
+}
+
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {unknown[]} labs @param {string} actorId @param {string} batchAt */
+function pushLabSidecarOps(ops, patientId, labs, actorId, batchAt) {
+  for (let i = 0; i < labs.length; i += 1) {
+    const setId = labSetId(labs[i], i);
+    if (!setId) continue;
+    const labAt = String(labSetTimestamp(labs[i]) || '').trim() || batchAt;
+    // Text stays (PDF already discarded after parse). Slim strips any stray binary keys.
+    ops.push(
+      cloudOp({
+        path: `labSidecars/${patientId}/${setId}`,
+        value: slimLabSetForCloud(labs[i]),
+        actorId,
+        updatedAt: labAt,
+      })
+    );
+  }
+}
+
 /**
  * @param {object} entry — buildPatientEntry shape
  * @param {{ actorId: string, updatedAt: string }} meta
@@ -66,31 +204,14 @@ export function mapPatientEntryToOps(entry, meta) {
   const patientId = String(entry.patient.id).trim();
   if (!patientId || patientId.indexOf('demo-') === 0) return [];
 
+  const actorId = meta.actorId;
+  const batchAt = meta.updatedAt;
   const ops = [];
-  const fields = pickCensusFields(entry.patient);
-  if (Object.keys(fields).length) {
-    ops.push(cloudOp({ path: `entries/${patientId}/fields`, value: fields, ...meta }));
-  }
-  ops.push(cloudOp({ path: `entries/${patientId}/note`, value: entry.note || {}, ...meta }));
-  ops.push(
-    cloudOp({ path: `entries/${patientId}/indicaciones`, value: entry.indicaciones || {}, ...meta })
-  );
-  if (entry.patient.historiaClinica) {
-    ops.push(
-      cloudOp({
-        path: `entries/${patientId}/historiaClinica`,
-        value: entry.patient.historiaClinica,
-        ...meta,
-      })
-    );
-  }
-
+  pushCensusFieldsOp(ops, patientId, entry.patient, actorId);
+  pushClinicalBlockOps(ops, patientId, entry.patient, actorId, batchAt);
+  pushDocOps(ops, patientId, entry, actorId, batchAt);
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  for (let i = 0; i < labs.length; i += 1) {
-    const setId = labSetId(labs[i], i);
-    if (!setId) continue;
-    ops.push(cloudOp({ path: `labSidecars/${patientId}/${setId}`, value: labs[i], ...meta }));
-  }
+  pushLabSidecarOps(ops, patientId, labs, actorId, batchAt);
   return ops;
 }
 
@@ -169,7 +290,19 @@ export function scheduleCloudSyncPush() {
   cloudPushTimer = setTimeout(function () {
     cloudPushTimer = null;
     void pushCloudBundleOps();
-  }, getLiveSyncPushDebounceMs());
+  }, cloudPushDebounceMs());
+}
+
+/**
+ * One-time census clock on live patients so empty-room seed can emit `fields`.
+ * Must mutate `patients` (buildPatientEntry shallow-copies) so later pushes reuse the same clock.
+ */
+function ensureLiveCensusClocks(nowIso) {
+  for (let i = 0; i < patients.length; i += 1) {
+    const patient = patients[i];
+    if (!patient || typeof patient !== 'object') continue;
+    if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = nowIso;
+  }
 }
 
 async function pushCloudBundleOps() {
@@ -178,11 +311,12 @@ async function pushCloudBundleOps() {
   try {
     const { ensureLanSyncPushBridgeWired, bridge } = await import('../lan/push-bridge.mjs');
     await ensureLanSyncPushBridgeWired();
-    const bundle = await bridge().buildLiveSyncBundleEnvelope(getCloudSyncRoomId());
     const meta = {
       actorId: resolveCloudActorId(bridgeRuntime),
       updatedAt: new Date().toISOString(),
     };
+    ensureLiveCensusClocks(meta.updatedAt);
+    const bundle = await bridge().buildLiveSyncBundleEnvelope(getCloudSyncRoomId());
     enqueueOps(mapBundleEnvelopeToOps(bundle, meta));
   } catch {
     // Best-effort enqueue; outbox persists for retry.

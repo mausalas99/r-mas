@@ -6,35 +6,44 @@ import {
   equipoStepHtml,
 } from './panel-conexion-html.mjs';
 import { connectedViewsHtml, applyConexionView } from './panel-conexion-views.mjs';
+import { adminShellHtml } from './panel-conexion-bootstrap.mjs';
 
 /**
  * @param {HTMLElement} section
- * @param {string} normalizedSala
+ * @param {string} normalizedSala — cloud bucket for API (Sala / Torre HU)
  * @param {object} deps
- * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, masAdminHtml?: string, ensureAdminOpen?: () => void | Promise<void> }} ctx
+ * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, ensureAdminOpen?: () => void | Promise<void>, displaySala?: string }} ctx
  */
 export function createConexionRenderers(section, normalizedSala, deps, ctx) {
-  function renderShell(bodyHtml, status) {
-    section.innerHTML = conexionShellHtml(normalizedSala, bodyHtml, status);
+  const displaySala = String(ctx.displaySala || normalizedSala || '').trim() || normalizedSala;
+
+  function renderShell(bodyHtml, status, detail) {
+    section.innerHTML = conexionShellHtml(displaySala, bodyHtml, status, detail);
   }
 
   function renderConnectedBody(roomHtml) {
+    const hasCloudSession = !!deps.getCloudSyncToken();
     renderShell(
       connectedViewsHtml({
         cloudUser: ctx.cloudUser,
         roomHtml,
         equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
-        adminHtml: ctx.masAdminHtml || '',
+        adminHtml: adminShellHtml(hasCloudSession),
         url: deps.getCloudSyncUrl(),
+        hasCloudSession,
       }),
       'idle'
     );
     applyConexionView(section, 'status', { onAdmin: ctx.ensureAdminOpen });
   }
 
-  function renderConnected(room) {
+  /**
+   * @param {object} room
+   * @param {{ startRuntime?: boolean }} [opts]
+   */
+  function renderConnected(room, opts) {
     renderConnectedBody(roomConnectedHtml(room, deps.getCloudSyncRevision));
-    ctx.startRuntime();
+    if (opts?.startRuntime !== false) ctx.startRuntime();
   }
 
   function renderDisconnected() {
@@ -43,7 +52,7 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
       renderShell(authFormsHtml(deps.getCloudSyncUrl()), 'offline');
       return;
     }
-    renderConnectedBody(roomActionsHtml(normalizedSala));
+    renderConnectedBody(roomActionsHtml(displaySala));
   }
 
   return { renderConnected, renderDisconnected };

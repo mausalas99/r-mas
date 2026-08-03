@@ -354,7 +354,7 @@ function buildRuntimeContextFeatureDeps() {
         patients.find(function (p) {
           return p.id === activeId;
         });
-  resetEaRegistroForm(patient || null, { prefill: true });
+      resetEaRegistroForm(patient || null);
     },
     selectPatient,
     ...settingsHelpRuntimeProxies,

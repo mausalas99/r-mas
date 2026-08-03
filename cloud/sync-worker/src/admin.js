@@ -340,6 +340,60 @@ async function handleDisableUser(db, userId) {
   return Response.json({ ok: true });
 }
 
+/**
+ * Cascade plan for DELETE user: rooms.owner_user_id FK blocks a bare delete.
+ * Reassign owned rooms to another member, or purge sole-occupant rooms.
+ * @param {import('@cloudflare/workers-types').D1Database} db
+ * @param {string} userId
+ */
+export async function buildDeleteUserStatements(db, userId) {
+  const now = new Date().toISOString();
+  /** @type {import('@cloudflare/workers-types').D1PreparedStatement[]} */
+  const stmts = [];
+
+  const { results: ownedRooms } = await db
+    .prepare('SELECT id FROM rooms WHERE owner_user_id = ?')
+    .bind(userId)
+    .all();
+
+  for (const room of ownedRooms || []) {
+    const roomId = String(room.id);
+    const successor = await db
+      .prepare(
+        `SELECT user_id FROM room_members
+         WHERE room_id = ? AND user_id != ?
+         ORDER BY CASE role WHEN 'owner' THEN 0 ELSE 1 END, joined_at ASC
+         LIMIT 1`
+      )
+      .bind(roomId, userId)
+      .first();
+
+    if (successor?.user_id) {
+      stmts.push(
+        db
+          .prepare('UPDATE rooms SET owner_user_id = ?, updated_at = ? WHERE id = ?')
+          .bind(String(successor.user_id), now, roomId)
+      );
+    } else {
+      stmts.push(
+        db.prepare('DELETE FROM room_members WHERE room_id = ?').bind(roomId),
+        db.prepare('DELETE FROM mutations WHERE room_id = ?').bind(roomId),
+        db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
+        db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
+        db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId)
+      );
+    }
+  }
+
+  stmts.push(
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
+    db.prepare('DELETE FROM room_members WHERE user_id = ?').bind(userId),
+    db.prepare('DELETE FROM users WHERE id = ?').bind(userId)
+  );
+
+  return stmts;
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {string} userId */
 async function handleDeleteUser(db, userId) {
   const user = await db.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
@@ -347,11 +401,8 @@ async function handleDeleteUser(db, userId) {
     throw new SyncError('not_found', 'Usuario no encontrado.');
   }
 
-  await db.batch([
-    db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
-    db.prepare('DELETE FROM room_members WHERE user_id = ?').bind(userId),
-    db.prepare('DELETE FROM users WHERE id = ?').bind(userId),
-  ]);
+  const stmts = await buildDeleteUserStatements(db, userId);
+  await db.batch(stmts);
 
   return Response.json({ ok: true });
 }

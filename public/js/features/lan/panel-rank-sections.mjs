@@ -5,6 +5,7 @@ import { filterJoinedTeams } from '../clinical-teams.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { patients } from '../../app-state.mjs';
 import { LIVE_SYNC_SALA_DEFS } from '../../lan-join-link.mjs';
+import { esc } from '../../dom-escape.mjs';
 
 function teamSalaKey(team) {
   return String(team && team.sala || '').trim();
@@ -97,19 +98,13 @@ function buildAvailableTeamsSection(deps, root, userSala) {
   }
 
   var list = document.createElement('ul');
-  list.style.listStyle = 'none';
-  list.style.padding = '0';
-  list.style.margin = '0';
+  list.className = 'lan-hub-available-list';
   available.forEach(function (t) {
     var li = document.createElement('li');
-    li.style.display = 'flex';
-    li.style.gap = '8px';
-    li.style.alignItems = 'center';
-    li.style.marginBottom = '6px';
+    li.className = 'lan-hub-available-row';
 
     var info = document.createElement('span');
-    info.style.flex = '1';
-    info.style.fontSize = '12px';
+    info.className = 'lan-hub-available-info';
     var cycle = t.sub_area_fraction ? String(t.sub_area_fraction) : '';
     info.textContent =
       (t.name || 'Equipo') +
@@ -120,7 +115,6 @@ function buildAvailableTeamsSection(deps, root, userSala) {
     var joinBtn = document.createElement('button');
     joinBtn.type = 'button';
     joinBtn.className = 'btn-lan-secondary';
-    joinBtn.style.flex = '0 0 auto';
     joinBtn.textContent = 'Unirse';
     joinBtn.onclick = function () {
       void joinClinicalTeam(deps, String(t.team_id));
@@ -205,13 +199,10 @@ function buildR2Section(deps, root) {
     entregaCard.appendChild(emptyHint);
   } else {
     var entregaList = document.createElement('ul');
-    entregaList.style.listStyle = 'none';
-    entregaList.style.padding = '0';
-    entregaList.style.margin = '0';
+    entregaList.className = 'lan-hub-available-list';
     guardiasForTeam.forEach(function (g) {
       var li = document.createElement('li');
-      li.style.marginBottom = '6px';
-      li.style.fontSize = '12px';
+      li.className = 'lan-hub-available-row';
       li.textContent = 'Paciente ' + String(g.patient_id || '').slice(0, 8) + '\u2026' + ' \u2014 ' + (g.covering_user_id || '');
       entregaList.appendChild(li);
     });
@@ -239,81 +230,80 @@ async function handleFinalizarRotacion(deps) {
   }
 }
 
-function buildR4Section(deps, root) {
-  var teamCard = document.createElement('div');
-  teamCard.className = 'lan-connect-card lan-hub-team-create-card';
-  teamCard.setAttribute('data-cloud-secondary', 'ops');
-  teamCard.innerHTML = '<div class="lan-connect-card-title">Crear equipos del mes</div>';
-
-  var btnCreate = document.createElement('button');
-  btnCreate.type = 'button';
-  btnCreate.className = 'btn-lan-primary';
-  btnCreate.style.width = '100%';
-  btnCreate.textContent = 'Crear equipos del mes';
-  btnCreate.onclick = function () {
-    openR4TeamCreationModal(deps.runtime);
-  };
-  teamCard.appendChild(btnCreate);
-  root.appendChild(teamCard);
-
-  var censusCard = document.createElement('div');
-  censusCard.className = 'lan-connect-card lan-hub-census-card';
-  censusCard.setAttribute('data-cloud-secondary', 'ops');
-  censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
-
+/** @returns {string} */
+export function buildCensusRowsHtml() {
   var teams = clinicalSessionContext.teams || [];
   var allPatients = patients || [];
-  var salas = LIVE_SYNC_SALA_DEFS.map(function (d) { return d.key; });
-
-  salas.forEach(function (salaName) {
+  return LIVE_SYNC_SALA_DEFS.map(function (d) {
+    var salaName = d.key;
     var salaTeams = teams.filter(function (t) {
       return teamSalaKey(t) === salaName;
     });
     var salaPatientCount = allPatients.filter(function (p) {
       return p && String(p.sala || '') === salaName;
     }).length;
+    var meta = salaTeams.length + ' eq · ' + salaPatientCount + ' pac';
+    return (
+      '<div class="cloud-sync-settings-row lan-ops-census-row">' +
+      '<dt>' + esc(salaName) + '</dt>' +
+      '<dd>' + esc(meta) + '</dd></div>'
+    );
+  }).join('');
+}
 
-    var row = document.createElement('p');
-    row.className = 'lan-connect-card-hint';
-    row.style.marginBottom = '4px';
-    row.textContent =
-      salaName + ': ' + salaTeams.length + ' equipos · ' + salaPatientCount + ' pacientes';
-    censusCard.appendChild(row);
-  });
+function buildR4Section(deps, root) {
+  var teamCard = document.createElement('div');
+  teamCard.className = 'lan-ops-card lan-hub-team-create-card';
+  teamCard.setAttribute('data-cloud-secondary', 'ops');
+  teamCard.innerHTML =
+    '<p class="lan-ops-card-title">Equipos</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary cloud-sync-btn--block" data-lan-ops-create-teams>' +
+    'Crear equipos del mes</button>';
+  var createBtn = teamCard.querySelector('[data-lan-ops-create-teams]');
+  if (createBtn) {
+    createBtn.addEventListener('click', function () {
+      openR4TeamCreationModal(deps.runtime);
+    });
+  }
+  root.appendChild(teamCard);
 
-  var viewBtn = document.createElement('button');
-  viewBtn.type = 'button';
-  viewBtn.className = 'btn-lan-secondary';
-  viewBtn.style.width = '100%';
-  viewBtn.style.marginTop = '8px';
-  viewBtn.textContent = 'Ver censo en lista de pacientes';
-  viewBtn.onclick = function () {
-    try {
-      localStorage.setItem('clinical.browseSala', '__all__');
-      localStorage.setItem('clinical.censusFilterSala', '__all__');
-    } catch (_e) { void _e; }
-    document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-    if (typeof deps.runtime().renderPatientList === 'function') deps.runtime().renderPatientList();
-    deps.runtime().showToast('Censo global — usa los filtros en la lista de pacientes.', 'info');
-  };
-  censusCard.appendChild(viewBtn);
-
+  var censusCard = document.createElement('div');
+  censusCard.className = 'lan-ops-card lan-hub-census-card';
+  censusCard.setAttribute('data-cloud-secondary', 'ops');
+  censusCard.innerHTML =
+    '<p class="lan-ops-card-title">Censo global</p>' +
+    '<dl class="cloud-sync-settings-rows lan-ops-census-rows" aria-label="Censo por sala">' +
+    buildCensusRowsHtml() +
+    '</dl>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--block" data-lan-ops-view-census>' +
+    'Ver censo en lista de pacientes</button>';
+  var viewBtn = censusCard.querySelector('[data-lan-ops-view-census]');
+  if (viewBtn) {
+    viewBtn.addEventListener('click', function () {
+      try {
+        localStorage.setItem('clinical.browseSala', '__all__');
+        localStorage.setItem('clinical.censusFilterSala', '__all__');
+      } catch (_e) { void _e; }
+      document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+      if (typeof deps.runtime().renderPatientList === 'function') deps.runtime().renderPatientList();
+      deps.runtime().showToast('Censo global — usa los filtros en la lista de pacientes.', 'info');
+    });
+  }
   root.appendChild(censusCard);
 
   var rotCard = document.createElement('div');
-  rotCard.className = 'lan-connect-card lan-hub-rotation-card';
+  rotCard.className = 'lan-ops-card lan-hub-rotation-card';
   rotCard.setAttribute('data-cloud-secondary', 'ops');
-  rotCard.innerHTML = '<div class="lan-connect-card-title">Rotación</div>';
-  var btnFinalizar = document.createElement('button');
-  btnFinalizar.type = 'button';
-  btnFinalizar.className = 'btn-lan-secondary';
-  btnFinalizar.style.width = '100%';
-  btnFinalizar.style.color = 'var(--danger)';
-  btnFinalizar.textContent = 'Finalizar rotación (archivar equipos)';
-  btnFinalizar.onclick = function () {
-    void handleFinalizarRotacion(deps);
-  };
-  rotCard.appendChild(btnFinalizar);
+  rotCard.innerHTML =
+    '<p class="lan-ops-card-title">Rotación</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger-text cloud-sync-btn--block" data-lan-ops-end-rotation>' +
+    'Finalizar rotación (archivar equipos)</button>';
+  var rotBtn = rotCard.querySelector('[data-lan-ops-end-rotation]');
+  if (rotBtn) {
+    rotBtn.addEventListener('click', function () {
+      void handleFinalizarRotacion(deps);
+    });
+  }
   root.appendChild(rotCard);
 }
 

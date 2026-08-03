@@ -40,9 +40,77 @@ export function eventualidadDateToIso(dateIso) {
   return Number.isFinite(dt.getTime()) ? dt.toISOString() : new Date().toISOString();
 }
 
+/** @param {unknown} deleted */
+function cloneDeletedIds_(deleted) {
+  if (!deleted || typeof deleted !== 'object') return null;
+  /** @type {Record<string, string>} */
+  const deletedIds = {};
+  for (const key of Object.keys(deleted)) {
+    const id = String(key || '').trim();
+    if (!id) continue;
+    deletedIds[id] = String(/** @type {Record<string, unknown>} */ (deleted)[id] || '');
+  }
+  return Object.keys(deletedIds).length ? deletedIds : null;
+}
+
+function cloneStoreShell_(store) {
+  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
+  const labsText =
+    store && store.labsText != null ? normalizeEventualidadText(store.labsText) : '';
+  /** @type {{ entries: object[], labsText: string, deletedIds?: Record<string, string>, updatedAt?: string }} */
+  const next = { entries: entries, labsText: labsText };
+  const deletedIds = cloneDeletedIds_(store && store.deletedIds);
+  if (deletedIds) next.deletedIds = deletedIds;
+  if (store && store.updatedAt) next.updatedAt = String(store.updatedAt);
+  return next;
+}
+
+/** @param {{ updatedAt?: string, deletedIds?: Record<string, string> }} store */
+function touchEventualidadesMeta_(store) {
+  store.updatedAt = new Date().toISOString();
+  return store;
+}
+
+/** @param {unknown} store @returns {string} */
+export function getEventualidadesLabsText(store) {
+  if (!store || typeof store !== 'object') return '';
+  return normalizeEventualidadText(/** @type {{ labsText?: unknown }} */ (store).labsText);
+}
+
+/**
+ * Reemplaza el bloque de interpretación de labs (mismo registro eventualidades).
+ * @param {{ entries?: object[], labsText?: string }|null|undefined} store
+ * @param {string} text
+ */
+export function setEventualidadesLabsText(store, text) {
+  const next = cloneStoreShell_(store);
+  next.labsText = normalizeEventualidadText(text);
+  return touchEventualidadesMeta_(next);
+}
+
+/**
+ * Fusiona texto de labs si aún no está contenido (autosend parcial).
+ * @param {{ entries?: object[], labsText?: string }|null|undefined} store
+ * @param {string} text
+ * @returns {{ entries: object[], labsText: string, changed: boolean }}
+ */
+export function mergeEventualidadesLabsText(store, text) {
+  const next = cloneStoreShell_(store);
+  const t = normalizeEventualidadText(text);
+  if (!t) return Object.assign(next, { changed: false });
+  const cur = next.labsText;
+  if (cur === t || (cur && cur.indexOf(t) >= 0)) {
+    return Object.assign(next, { changed: false });
+  }
+  next.labsText = cur ? cur + '\n\n' + t : t;
+  touchEventualidadesMeta_(next);
+  return Object.assign(next, { changed: true });
+}
+
 export function appendEventualidad(store, text, clientId, atIso) {
   const t = normalizeEventualidadText(text);
-  if (!t) return store || { entries: [] };
+  const base = cloneStoreShell_(store);
+  if (!t) return base;
   const at =
     atIso && String(atIso).trim()
       ? String(atIso).trim()
@@ -53,31 +121,31 @@ export function appendEventualidad(store, text, clientId, atIso) {
     text: t,
     clientId: clientId || undefined,
   };
-  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
-  entries.push(entry);
-  return { entries };
+  base.entries.push(entry);
+  if (base.deletedIds && base.deletedIds[entry.id]) delete base.deletedIds[entry.id];
+  return touchEventualidadesMeta_(base);
 }
 
 export function updateEventualidad(store, entryId, patch) {
   const id = String(entryId || '').trim();
-  if (!id) return store || { entries: [] };
-  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
-  const idx = entries.findIndex(function (e) {
+  const base = cloneStoreShell_(store);
+  if (!id) return base;
+  const idx = base.entries.findIndex(function (e) {
     return e && String(e.id) === id;
   });
-  if (idx === -1) return { entries };
-  const cur = entries[idx];
+  if (idx === -1) return base;
+  const cur = base.entries[idx];
   const text =
     patch && patch.text != null
       ? normalizeEventualidadText(patch.text)
       : normalizeEventualidadText(cur.text);
-  if (!text) return { entries };
+  if (!text) return base;
   const at =
     patch && patch.at != null && String(patch.at).trim()
       ? String(patch.at).trim()
       : cur.at;
-  entries[idx] = Object.assign({}, cur, { text: text, at: at });
-  return { entries };
+  base.entries[idx] = Object.assign({}, cur, { text: text, at: at });
+  return touchEventualidadesMeta_(base);
 }
 
 export function findEventualidadEntry(store, entryId) {
@@ -92,11 +160,14 @@ export function findEventualidadEntry(store, entryId) {
 
 export function removeEventualidad(store, entryId) {
   const id = String(entryId || '').trim();
-  if (!id) return store || { entries: [] };
-  const entries = (Array.isArray(store && store.entries) ? store.entries : []).filter(function (e) {
+  const base = cloneStoreShell_(store);
+  if (!id) return base;
+  base.entries = base.entries.filter(function (e) {
     return e && String(e.id) !== id;
   });
-  return { entries };
+  if (!base.deletedIds) base.deletedIds = {};
+  base.deletedIds[id] = new Date().toISOString();
+  return touchEventualidadesMeta_(base);
 }
 
 export function sortEntriesDesc(entries) {

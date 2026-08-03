@@ -264,7 +264,7 @@
   background: color-mix(in oklab, var(--error) 10%, transparent);
 }
 
-/* ── Composición ──────────────────────────────────────────── */
+/* ── Composición + switcher Eventualidad | Labs ───────────── */
 .ev-compose {
   flex-shrink: 0;
   padding: 0 4px 2px;
@@ -279,6 +279,139 @@
   border-radius: var(--radius-md);
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
   box-shadow: var(--shadow-sm);
+}
+
+.ev-compose__switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  width: 100%;
+  max-width: 280px;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--primary) 14%, var(--surface));
+  border: 1px solid var(--border);
+  gap: 0;
+}
+
+.ev-compose__switch-pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ev-compose[data-ev-mode='labs'] .ev-compose__switch-pill {
+  transform: translateX(100%);
+}
+
+.ev-compose__tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.ev-compose__tab:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.ev-compose__tab.active {
+  color: var(--primary);
+}
+
+.ev-compose__tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ev-compose__pane {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+}
+
+.ev-compose__pane[hidden] {
+  display: none !important;
+}
+
+.ev-compose__pane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ev-labs__hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.ev-labs__kbd {
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.ev-labs__input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: calc(11px * var(--density-space, 1)) calc(13px * var(--density-space, 1));
+  border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--input-fill);
+  color: var(--text);
+  font: inherit;
+  font-size: calc(13px * var(--density-font, 1));
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  resize: vertical;
+  min-height: calc(96px + 12px * (var(--density-space, 1) - 1));
+  max-height: 280px;
+}
+
+.ev-labs__input::placeholder {
+  text-transform: none;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.ev-labs__input:hover {
+  border-color: color-mix(in oklab, var(--border) 70%, var(--action));
+}
+
+.ev-labs__input:focus {
+  outline: none;
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .ev-compose__label {
@@ -431,16 +564,37 @@ html.dark .ev-compose__card {
     inset 0 1px 0 color-mix(in oklab, var(--action) 10%, transparent);
 }
 
+html.dark .ev-compose__switch {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.dark .ev-compose__switch-pill {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .ev-compose__tab.active {
+  color: var(--text);
+}
+
+html.dark .ev-labs__input,
 html.dark .ev-compose__input {
   background: var(--input-fill);
   box-shadow: inset 0 1px 2px color-mix(in oklab, var(--color-ink) 22%, transparent);
 }
 
+html.dark .ev-labs__input:focus,
 html.dark .ev-compose__input:focus {
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
   box-shadow:
     inset 0 1px 2px color-mix(in oklab, var(--color-ink) 18%, transparent),
     0 0 0 3px var(--color-focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ev-compose__switch-pill {
+    transition: none;
+  }
 }
 
 @media (hover: none) {

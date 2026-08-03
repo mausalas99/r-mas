@@ -80,6 +80,20 @@ function teamPatients() {
   });
 }
 
+function batchConfirmLabel(selectedCount) {
+  if (batchBusy) return 'Actualizando…';
+  if (batchSinglePatientMode) return 'Actualizar';
+  if (selectedCount > 0) return 'Actualizar · ' + selectedCount;
+  return 'Actualizar';
+}
+
+function syncConfirmButtonLabel() {
+  var btn = document.getElementById('lab-repo-batch-confirm');
+  if (!btn || batchBusy) return;
+  var selected = selectedLabRepoBatchRows(batchRows).length;
+  btn.textContent = batchConfirmLabel(selected);
+}
+
 function renderBatchList() {
   var list = document.getElementById('lab-repo-batch-list');
   if (!list) return;
@@ -91,9 +105,18 @@ function renderBatchList() {
   list.innerHTML = batchRows
     .map(function (r) {
       var disabled = !r.hasRegistro || batchBusy;
-      var meta = r.hasRegistro
-        ? 'Reg. ' + esc(r.registro) + (r.hint ? ' · ' + esc(r.hint) : '')
-        : 'Sin registro — se omite';
+      var metaHtml;
+      if (r.hasRegistro) {
+        metaHtml =
+          '<span class="lab-repo-batch-row-reg">Reg. ' +
+          esc(r.registro) +
+          '</span>' +
+          (r.hint
+            ? '<span class="lab-repo-batch-row-loc">' + esc(r.hint) + '</span>'
+            : '');
+      } else {
+        metaHtml = '<span class="lab-repo-batch-row-warn">Sin registro — se omite</span>';
+      }
       return (
         '<label class="lab-repo-batch-row' +
         (r.hasRegistro ? '' : ' lab-repo-batch-row--disabled') +
@@ -109,7 +132,7 @@ function renderBatchList() {
         esc(r.nombre) +
         '</span>' +
         '<span class="lab-repo-batch-row-meta">' +
-        meta +
+        metaHtml +
         '</span>' +
         '</span>' +
         '</label>'
@@ -120,14 +143,16 @@ function renderBatchList() {
 
 function syncBatchCount() {
   var el = document.getElementById('lab-repo-batch-count');
-  if (!el) return;
   var selected = selectedLabRepoBatchRows(batchRows).length;
   var noReg = batchRows.filter(function (r) {
     return r && !r.hasRegistro;
   }).length;
-  var parts = [selected + ' seleccionado' + (selected === 1 ? '' : 's')];
-  if (noReg) parts.push(noReg + ' sin registro');
-  el.textContent = parts.join(' · ');
+  if (el) {
+    var parts = [selected + ' seleccionado' + (selected === 1 ? '' : 's')];
+    if (noReg) parts.push(noReg + ' sin registro');
+    el.textContent = parts.join(' · ');
+  }
+  syncConfirmButtonLabel();
 }
 
 function setBatchProgress(text, visible) {
@@ -208,7 +233,7 @@ function setBatchBusy(busy) {
   if (btn) {
     btn.disabled = busy;
     btn.setAttribute('aria-disabled', busy ? 'true' : 'false');
-    btn.textContent = busy ? 'Actualizando…' : 'Actualizar';
+    btn.textContent = batchConfirmLabel(selectedLabRepoBatchRows(batchRows).length);
   }
   if (cancel) {
     cancel.textContent = busy ? 'Detener' : 'Cancelar';

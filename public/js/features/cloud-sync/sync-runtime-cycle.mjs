@@ -1,8 +1,20 @@
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
+import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
+import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
+
+/**
+ * @param {unknown} err
+ * @param {string} fallback
+ */
+function errorMessage(err, fallback) {
+  const data = err && typeof err === 'object' ? /** @type {{ data?: { message?: string }, message?: string }} */ (err) : null;
+  return String(data?.data?.message || data?.message || fallback).trim() || fallback;
+}
+
 /**
  * @param {import('./outbox.mjs').createOutbox extends () => infer O ? O : never} outbox
- * @param {(status: CloudSyncStatus) => void} setStatus
+ * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
  */
 function createOutboxSync(outbox, setStatus) {
   function pendingCount() {
@@ -22,10 +34,11 @@ function createOutboxSync(outbox, setStatus) {
 
 /**
  * @param {object} deps
- * @param {(status: CloudSyncStatus) => void} setStatus
+ * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
  * @param {ReturnType<typeof createOutboxSync>} outboxSync
+ * @param {{ markLocalWrite: () => void }} pace
  */
-function createPullPush(deps, setStatus, outboxSync) {
+function createPullPush(deps, setStatus, outboxSync, pace) {
   const { api, outbox, getRoomId, getRevision, setRevision, applyPullResult } = deps;
 
   async function pullLatest() {
@@ -48,18 +61,24 @@ function createPullPush(deps, setStatus, outboxSync) {
     if (pending.length === 0) return;
     setStatus('syncing');
     for (const item of pending) {
+      const sanitized = sanitizeOpsForCloudPush(item.ops);
+      if (!sanitized.ops.length) {
+        outbox.remove(item.clientMutationId);
+        continue;
+      }
       try {
         const result = await api.push(roomId, {
           clientMutationId: item.clientMutationId,
-          ops: item.ops,
+          ops: sanitized.ops,
           baseRevision: item.baseRevision ?? getRevision(),
         });
         outbox.remove(item.clientMutationId);
+        pace.markLocalWrite();
         if (result?.revision != null) setRevision(Number(result.revision));
         if (result?.needPull) await pullLatest();
-      } catch {
-        setStatus('error');
-        return;
+      } catch (err) {
+        setStatus('error', errorMessage(err, 'No se pudo enviar un cambio a la nube.'));
+        throw err;
       }
     }
   }
@@ -74,28 +93,36 @@ function createPullPush(deps, setStatus, outboxSync) {
  *   getRoomId: () => string,
  *   getRevision: () => number,
  *   setRevision: (revision: number) => void,
- *   onStatus?: (status: CloudSyncStatus) => void,
+ *   onStatus?: (status: CloudSyncStatus, detail?: string) => void,
  *   applyPullResult?: (result: unknown) => void | Promise<void>,
  *   onStop?: (handle: { stop: () => void }) => void,
  * }} deps
  */
 export function createSyncRuntimeCycle(deps) {
   const { outbox, getRoomId, onStatus } = deps;
-  /** @type {ReturnType<typeof setInterval> | null} */
-  let intervalId = null;
   let stopped = false;
   let cycleInflight = null;
   /** @type {CloudSyncStatus} */
   let currentStatus = 'idle';
+  /** @type {string} */
+  let lastDetail = '';
+  let lastLocalWriteAt = 0;
 
-  /** @param {CloudSyncStatus} status */
-  function setStatus(status) {
+  /** @param {CloudSyncStatus} status @param {string} [detail] */
+  function setStatus(status, detail) {
     currentStatus = status;
-    onStatus?.(status);
+    if (status === 'error') lastDetail = String(detail || lastDetail || '').trim();
+    else if (status === 'idle' || status === 'syncing') lastDetail = '';
+    else if (detail) lastDetail = String(detail).trim();
+    onStatus?.(status, lastDetail || undefined);
   }
 
+  const pace = { markLocalWrite() { lastLocalWriteAt = Date.now(); } };
   const outboxSync = createOutboxSync(outbox, setStatus);
-  const { pullLatest, flushOutbox } = createPullPush(deps, setStatus, outboxSync);
+  const { pullLatest, flushOutbox } = createPullPush(deps, setStatus, outboxSync, pace);
+
+  /** @type {ReturnType<typeof createCloudPollScheduler>} */
+  let scheduler;
 
   async function syncCycle() {
     if (stopped) return;
@@ -103,43 +130,57 @@ export function createSyncRuntimeCycle(deps) {
     if (!getRoomId()) return;
     if (!navigator.onLine) {
       setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
+      scheduler.armNextTimer(false);
       return;
     }
     if (cycleInflight) return cycleInflight;
-    cycleInflight = (async () => {
-      try {
-        setStatus('syncing');
-        await flushOutbox();
-        await pullLatest();
-        outboxSync.refreshIdleStatus();
-      } catch {
-        setStatus('error');
-      } finally {
-        cycleInflight = null;
-      }
-    })();
+    cycleInflight = runSyncCycleBody().finally(function () { cycleInflight = null; });
     return cycleInflight;
   }
+
+  async function runSyncCycleBody() {
+    try {
+      setStatus('syncing');
+      await flushOutbox();
+      await pullLatest();
+      outboxSync.refreshIdleStatus();
+      scheduler.noteSuccess();
+    } catch (err) {
+      if (scheduler.isRateLimitedError(err)) {
+        setStatus('error', 'Nube ocupada (límite de peticiones). Reintento automático más lento.');
+      } else {
+        setStatus('error', errorMessage(err, 'Error de sincronización con la nube.'));
+      }
+      scheduler.noteFailure(err);
+    }
+  }
+
+  scheduler = createCloudPollScheduler({
+    syncCycle,
+    pendingCount: outboxSync.pendingCount,
+    getLastLocalWriteAt: function () { return lastLocalWriteAt; },
+  });
 
   function onOnline() { void syncCycle(); }
   function onVisibility() {
     if (document.visibilityState === 'visible') void syncCycle();
   }
 
-  intervalId = setInterval(() => void syncCycle(), 20_000);
   if (typeof window !== 'undefined') {
     window.addEventListener('online', onOnline);
     document.addEventListener('visibilitychange', onVisibility);
   }
   outboxSync.refreshIdleStatus();
+  scheduler.armNextTimer(false);
 
   const handle = {
     getStatus: () => currentStatus,
+    getDetail: () => lastDetail,
     flushOutbox,
     syncCycle,
     stop() {
       stopped = true;
-      if (intervalId != null) { clearInterval(intervalId); intervalId = null; }
+      scheduler.stop();
       if (typeof window !== 'undefined') {
         window.removeEventListener('online', onOnline);
         document.removeEventListener('visibilitychange', onVisibility);

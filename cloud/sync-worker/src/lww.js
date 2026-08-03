@@ -115,7 +115,10 @@ function applyOpToState(state, op) {
     return;
   }
 
-  const entryField = /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|fields)$/.exec(path);
+  const entryField =
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|fields)$/.exec(
+      path
+    );
   if (entryField) {
     setEntryField(state, entryField[1], entryField[2], value);
     return;
@@ -147,7 +150,9 @@ function applyOpToState(state, op) {
     return;
   }
 
-  throw new Error(`unsupported path: ${path}`);
+  const err = new Error(`unsupported path: ${path}`);
+  err.code = 'unsupported_path';
+  throw err;
 }
 
 export class QuotaExceededError extends Error {
@@ -202,8 +207,8 @@ export function applyOps(state, ops) {
       };
       applied.push(op);
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        rejected.push({ op, reason: err.code });
+      if (err instanceof QuotaExceededError || err?.code === 'unsupported_path') {
+        rejected.push({ op, reason: err.code || 'unsupported_path' });
         continue;
       }
       throw err;

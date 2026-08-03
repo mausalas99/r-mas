@@ -52,8 +52,30 @@ export function lanJsonEqual(a, b) {
   }
 }
 
-function assignLanScalarIfChanged(target, key, incoming, fallback) {
-  var next = incoming != null && incoming !== '' ? incoming : fallback;
+/**
+ * Prefer incoming non-empty scalars only when the remote patient clock is ahead.
+ * Without clocks, keep local non-empty values (avoids cloud/LAN pulls rewriting cuarto/cama).
+ * @param {Record<string, unknown>} existing
+ * @param {Record<string, unknown>} incoming
+ */
+function incomingScalarsAreAuthoritative(existing, incoming) {
+  var localAt = String((existing && existing.lanUpdatedAt) || '').trim();
+  var remoteAt = String((incoming && incoming.lanUpdatedAt) || '').trim();
+  if (!localAt && !remoteAt) return false;
+  if (!localAt) return true;
+  if (!remoteAt) return false;
+  return remoteAt.localeCompare(localAt) >= 0;
+}
+
+function assignLanScalarIfChanged(target, key, incoming, fallback, takeIncoming) {
+  var next;
+  if (takeIncoming) {
+    next = incoming != null && incoming !== '' ? incoming : fallback;
+  } else {
+    var localVal = target[key];
+    if (localVal != null && String(localVal).trim() !== '') next = localVal;
+    else next = incoming != null && incoming !== '' ? incoming : fallback;
+  }
   if (String(target[key] || '') === String(next || '')) return false;
   target[key] = next;
   return true;
@@ -90,12 +112,17 @@ function saveEntryTodosOnLocalPatient(localPatientId, entry) {
 
 function applyLanPatientScalars(existing, p) {
   var changed = false;
+  var takeIncoming = incomingScalarsAreAuthoritative(existing, p);
   var scalarKeys = [
     'nombre', 'edad', 'sexo', 'area', 'servicio', 'cuarto', 'cama', 'peso', 'talla', 'viaAcceso', 'registro',
   ];
   for (var sk = 0; sk < scalarKeys.length; sk += 1) {
     var key = scalarKeys[sk];
-    if (assignLanScalarIfChanged(existing, key, p[key], existing[key])) changed = true;
+    if (assignLanScalarIfChanged(existing, key, p[key], existing[key], takeIncoming)) changed = true;
+  }
+  if (takeIncoming && p.lanUpdatedAt && String(p.lanUpdatedAt) !== String(existing.lanUpdatedAt || '')) {
+    existing.lanUpdatedAt = p.lanUpdatedAt;
+    changed = true;
   }
   var censoBefore = JSON.stringify(existing);
   mergeCensoPatientFields(existing, p);

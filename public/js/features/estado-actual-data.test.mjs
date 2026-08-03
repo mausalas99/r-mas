@@ -84,6 +84,29 @@ test('mergeMonitoreo fusiona escalares de estado clínico (four local + soporte 
   assert.equal(merged.estadoClinico.soporte, 'O₂ 2L');
 });
 
+test('mergeMonitoreo LWW de escalares cuando remoto tiene estadoClinicoUpdatedAt más nuevo', () => {
+  const local = emptyMonitoreo();
+  local.estadoClinico.four = '10';
+  local.estadoClinicoUpdatedAt = '2026-08-03T10:00:00.000Z';
+  const remote = emptyMonitoreo();
+  remote.estadoClinico.four = '15';
+  remote.estadoClinicoUpdatedAt = '2026-08-03T11:00:00.000Z';
+  const merged = mergeMonitoreo(local, remote);
+  assert.equal(merged.estadoClinico.four, '15');
+  assert.equal(merged.estadoClinicoUpdatedAt, '2026-08-03T11:00:00.000Z');
+});
+
+test('mergeMonitoreo conserva escalar local si remoto es más viejo', () => {
+  const local = emptyMonitoreo();
+  local.estadoClinico.four = '15';
+  local.estadoClinicoUpdatedAt = '2026-08-03T11:00:00.000Z';
+  const remote = emptyMonitoreo();
+  remote.estadoClinico.four = '10';
+  remote.estadoClinicoUpdatedAt = '2026-08-03T10:00:00.000Z';
+  const merged = mergeMonitoreo(local, remote);
+  assert.equal(merged.estadoClinico.four, '15');
+});
+
 test('mergeMonitoreo une historial por id aunque remoto tenga más filas', () => {
   const local = emptyMonitoreo();
   local.historial = [

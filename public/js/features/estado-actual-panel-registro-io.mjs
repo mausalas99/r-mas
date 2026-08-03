@@ -68,7 +68,15 @@ export function syncIoBalanceFromForm(form) {
     egrEl.value = 'DIURESIS NC';
   }
   var egrParts = parseIoEgresoLine(egrEl.value);
-  out.textContent = formatIoBalanceDisplay(ing, { ing: ing, egrParts: egrParts, egr: diuresisValueFromParts(egrParts) });
+  var label = formatIoBalanceDisplay(ing, {
+    ing: ing,
+    egrParts: egrParts,
+    egr: diuresisValueFromParts(egrParts),
+  });
+  out.textContent = label;
+  out.classList.remove('ea-balance-live--pos', 'ea-balance-live--neg');
+  if (/^\+\d/.test(String(label))) out.classList.add('ea-balance-live--pos');
+  else if (/^-\d/.test(String(label))) out.classList.add('ea-balance-live--neg');
 }
 
 /**

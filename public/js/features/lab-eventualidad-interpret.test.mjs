@@ -2,10 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const {
-  parseCompactLabPairs,
-  interpretBhPhrases,
-  interpretChemPhrases,
   buildLabEventualidadInterpretText,
+  consolidateLabSetsForEventualidad,
 } = await import('./lab-eventualidad-interpret.mjs');
 
 const TODAY = '21/07/2026';
@@ -13,76 +11,20 @@ const identityNorm = function (raw) {
   return String(raw || '').trim();
 };
 
-test('parseCompactLabPairs reads tab body tokens', () => {
-  var p = parseCompactLabPairs('BH\tHb 9.0* VCM 72 Leu 14.2*');
-  assert.equal(p.Hb.n, 9);
-  assert.equal(p.Hb.flagged, true);
-  assert.equal(p.VCM.n, 72);
-  assert.equal(p.Leu.n, 14.2);
-});
-
-test('interpretBhPhrases — prosa sin paréntesis', () => {
-  var phrases = interpretBhPhrases({
-    Hb: { n: 9, raw: '9', flagged: true },
-    VCM: { n: 72, raw: '72', flagged: false },
-    Hto: { n: 28, raw: '28', flagged: false },
-    Leu: { n: 14.2, raw: '14.2', flagged: true },
-    Plt: { n: 90, raw: '90', flagged: false },
-  });
-  assert.ok(phrases.some(function (p) {
-    return /anemia microcítica con Hb 9, VCM 72 y Hto 28/.test(p);
-  }));
-  assert.ok(phrases.some(function (p) {
-    return /leucocitosis con Leu 14\.2/.test(p);
-  }));
-  assert.ok(phrases.every(function (p) {
-    return p.indexOf('(') < 0;
-  }));
-});
-
-test('interpretChemPhrases — elevado/disminuido, no alterado; glu por valor', () => {
-  var phrases = interpretChemPhrases({
-    Na: { n: 128, raw: '128', flagged: true },
-    K: { n: 5.6, raw: '5.6', flagged: true },
-    Glu: { n: 58, raw: '58', flagged: true },
-    Cr: { n: 1.8, raw: '1.8', flagged: true },
-    Alb: { n: 2.6, raw: '2.6', flagged: true },
-    FA: { n: 273, raw: '273', flagged: true },
-    BUN: { n: 5, raw: '5', flagged: true },
-  });
-  assert.ok(phrases.some(function (p) {
-    return /hiponatremia con Na 128/.test(p);
-  }));
-  assert.ok(phrases.some(function (p) {
-    return /hipoglucemia con Glu 58/.test(p);
-  }));
-  assert.ok(phrases.some(function (p) {
-    return /albúmina disminuida con 2\.6/.test(p);
-  }));
-  assert.ok(phrases.some(function (p) {
-    return /FA elevada con 273/.test(p);
-  }));
-  assert.ok(phrases.some(function (p) {
-    return /BUN disminuido con 5/.test(p);
-  }));
-  assert.ok(phrases.every(function (p) {
-    return !/alterado/i.test(p) && p.indexOf('(') < 0;
-  }));
-});
-
-test('buildLabEventualidadInterpretText — prosa corrida hoy + BH/QS/cito', () => {
+test('buildLabEventualidadInterpretText — formato Estudios (labs consolidados)', () => {
   var text = buildLabEventualidadInterpretText(
     [
       {
+        id: 'a',
         fecha: TODAY,
         hora: '08:00',
         resLabs: [
           'BH\tHb 9.0* VCM 72 Hto 28 Leu 14.2* Plt 90',
           'QS\tNa 128* K 5.6* Glu 210* Cr 1.8*',
-          'INTERPRETACIÓN CITOQUÍMICO:\tExudado por Light',
         ],
       },
       {
+        id: 'old',
         fecha: '20/07/2026',
         hora: '10:00',
         resLabs: ['BH\tHb 7.0* VCM 70'],
@@ -90,16 +32,12 @@ test('buildLabEventualidadInterpretText — prosa corrida hoy + BH/QS/cito', () 
     ],
     { todayFecha: TODAY, normalizeFecha: identityNorm }
   );
-  assert.match(text, /LABS 21\/07\/2026 08:00/);
-  assert.match(text, /EN LA BIOMETRÍA SE APRECIA|EN LA BIOMETRIA SE APRECIA/);
-  assert.match(text, /ANEMIA MICROCÍTICA|ANEMIA MICROCITICA/);
-  assert.match(text, /EN LA QUÍMICA CLÍNICA SE APRECIA|EN LA QUIMICA CLINICA SE APRECIA/);
-  assert.match(text, /HIPONATREMIA CON NA 128/);
-  assert.match(text, /EXUDADO POR LIGHT/);
-  assert.doesNotMatch(text, /HB 7/);
-  assert.doesNotMatch(text, /\(/);
-  assert.doesNotMatch(text, /\bMIXED\b/);
-  assert.doesNotMatch(text, /ALTERADO/);
+  assert.match(text, /21\/07/);
+  assert.match(text, /BH\tHb 9\.0\*/);
+  assert.match(text, /QS\tNa 128\*/);
+  assert.doesNotMatch(text, /Hb 7\.0/);
+  assert.doesNotMatch(text, /EN LA BIOMETR/);
+  assert.doesNotMatch(text, /^LABS /m);
 });
 
 test('buildLabEventualidadInterpretText — empty when no today sets', () => {
@@ -118,18 +56,54 @@ test('buildLabEventualidadInterpretText — filterToday false includes other day
     normalizeFecha: identityNorm,
     filterToday: false,
   });
-  assert.match(text, /ANEMIA MICROCÍTICA|ANEMIA MICROCITICA/);
+  assert.match(text, /BH\tHb 9/);
 });
 
-test('buildLabEventualidadInterpretText — fallback compact when no abnormal phrases', () => {
-  var text = buildLabEventualidadInterpretText(
-    [{ fecha: TODAY, hora: '10:00', resLabs: ['BH\tHb 13.5 Leu 7 Plt 220'] }],
+test('consolidateLabSetsForEventualidad — misma hora fusiona BH+QS como labs consolidados', () => {
+  var out = consolidateLabSetsForEventualidad([
     {
-      todayFecha: TODAY,
-      normalizeFecha: identityNorm,
-      includeFallbackCompact: true,
-    }
+      id: '1',
+      fecha: TODAY,
+      hora: '08:00',
+      resLabs: ['BH\tHb 9.0* VCM 72'],
+    },
+    {
+      id: '2',
+      fecha: TODAY,
+      hora: '08:00',
+      resLabs: ['QS\tNa 128* K 5.6*'],
+    },
+  ]);
+  assert.equal(out.length, 1);
+  var joined = (out[0].resLabs || []).join('\n');
+  assert.match(joined, /BH\t/);
+  assert.match(joined, /QS\t/);
+  assert.equal(String(out[0].hora).slice(0, 5), '08:00');
+});
+
+test('buildLabEventualidadInterpretText — sets misma hora → un bloque Estudios', () => {
+  var text = buildLabEventualidadInterpretText(
+    [
+      {
+        id: '1',
+        fecha: TODAY,
+        hora: '08:00',
+        resLabs: ['BH\tHb 9.0* VCM 72'],
+      },
+      {
+        id: '2',
+        fecha: TODAY,
+        hora: '08:00',
+        resLabs: ['QS\tNa 128*'],
+      },
+    ],
+    { todayFecha: TODAY, normalizeFecha: identityNorm }
   );
-  assert.match(text, /EN LABORATORIO SE REGISTRAN/);
-  assert.match(text, /HB 13\.5/);
+  assert.match(text, /21\/07/);
+  assert.match(text, /BH\tHb 9\.0\*/);
+  assert.match(text, /QS\tNa 128\*/);
+  var dateLines = text.split('\n').filter(function (l) {
+    return /^21\/07/.test(l.trim());
+  });
+  assert.equal(dateLines.length, 1);
 });

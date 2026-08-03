@@ -13,6 +13,7 @@ export {
 export {
   renderSomeTableGroupHtml,
   renderSomeReportTablesHtml,
+  coalesceGroupsForModal,
 } from './labs-some-table-render.mjs';
 export {
   exportSomeGroupCopy,

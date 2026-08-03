@@ -1,6 +1,6 @@
 /**
- * Auto-append lab interpretation into Eventualidades after Procesar / repo / batch.
- * Solo labs del día actual.
+ * Auto-merge lab interpretation into Eventualidades labsText after Procesar / repo / batch.
+ * Solo labs del día actual. No crea entradas clínicas nuevas.
  */
 import { patients } from '../app-state.mjs';
 import { normalizeFechaLabHistory } from '../tend-core.mjs';
@@ -8,32 +8,11 @@ import {
   buildLabEventualidadInterpretText,
   formatLocalTodayFecha,
 } from './lab-eventualidad-interpret.mjs';
-import { normalizeEventualidadText } from './eventualidades-store.mjs';
 import {
   renderEventualidadesPanel,
-  savePatientEventualidad,
+  savePatientEventualidadesLabs,
+  selectEventualidadesLabsMode,
 } from './eventualidades-panel.mjs';
-
-/**
- * @param {object|null|undefined} patient
- * @param {string} text
- * @returns {boolean}
- */
-function hasDuplicateEventualidadText(patient, text) {
-  var want = normalizeEventualidadText(text);
-  if (!want) return false;
-  var entries =
-    patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries)
-      ? patient.eventualidades.entries
-      : [];
-  var n = entries.length;
-  var start = Math.max(0, n - 8);
-  for (var i = start; i < n; i++) {
-    var e = entries[i];
-    if (e && normalizeEventualidadText(e.text) === want) return true;
-  }
-  return false;
-}
 
 function findPatientById(patientId) {
   var id = String(patientId || '');
@@ -43,6 +22,7 @@ function findPatientById(patientId) {
 }
 
 function refreshEventualidadesUi() {
+  selectEventualidadesLabsMode();
   if (typeof document === 'undefined') return;
   var mount = document.getElementById('exp-pane-eventualidades');
   if (!mount) return;
@@ -63,19 +43,17 @@ export async function autosendLabsToEventualidad(patient, labSets, opts) {
     filterToday: filterToday,
     todayFecha: o.todayFecha || formatLocalTodayFecha(),
     normalizeFecha: normalizeFechaLabHistory,
-    includeFallbackCompact: true,
   });
   if (!String(text || '').trim()) return { ok: false, reason: 'empty' };
-  if (hasDuplicateEventualidadText(patient, text)) {
-    return { ok: true, skipped: 'dup' };
-  }
-  var out = await savePatientEventualidad(patient, text);
-  if (out && out.ok) refreshEventualidadesUi();
-  return out && out.ok ? { ok: true } : { ok: false, reason: (out && out.reason) || 'save' };
+  var out = await savePatientEventualidadesLabs(patient, text, { mode: 'merge' });
+  if (out && out.ok && !out.skipped) refreshEventualidadesUi();
+  return out && out.ok
+    ? { ok: true, skipped: out.skipped }
+    : { ok: false, reason: (out && out.reason) || 'save' };
 }
 
 /**
- * After bulk store: one eventualidad per patient with newly stored sets (hoy).
+ * After bulk store: one labsText merge per patient with newly stored sets (hoy).
  * @param {Record<string, object[]>} storedByPatient
  * @param {{ showToast?: (msg: string, type?: string) => void }} [opts]
  * @returns {Promise<{ sent: number, skipped: number }>}
@@ -101,8 +79,8 @@ export async function autosendLabsEventualidadForStored(storedByPatient, opts) {
   if (sent > 0 && opts && typeof opts.showToast === 'function') {
     opts.showToast(
       sent === 1
-        ? 'Labs enviados a Eventualidades.'
-        : sent + ' pacientes: labs → Eventualidades.',
+        ? 'Labs enviados a interpretación en Eventualidades.'
+        : sent + ' pacientes: labs → interpretación en Eventualidades.',
       'success'
     );
   }

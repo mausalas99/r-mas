@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizeCloudSala,
+  displayCloudSalaLabel,
   isCloudSala,
   isLanOnlySala,
   CLOUD_SALAS,
@@ -13,6 +14,14 @@ describe('sala-allowlist', () => {
     assert.equal(normalizeCloudSala('Sala 1'), 'Sala');
     assert.equal(normalizeCloudSala('sala e'), 'Sala');
     assert.equal(normalizeCloudSala('torre-hu'), 'Torre HU');
+  });
+
+  it('keeps clinical ward for Conexión display', () => {
+    assert.equal(displayCloudSalaLabel('Sala 1'), 'Sala 1');
+    assert.equal(displayCloudSalaLabel('sala 2'), 'Sala 2');
+    assert.equal(displayCloudSalaLabel('sala e'), 'Sala E');
+    assert.equal(displayCloudSalaLabel('Torre HU'), 'Torre HU');
+    assert.equal(displayCloudSalaLabel('', 'Sala'), 'Sala');
   });
 
   it('identifies cloud salas', () => {

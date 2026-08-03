@@ -15,12 +15,40 @@
   gap: calc(10px * var(--density-space));
 }
 
+.cloud-sync-conexion-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .cloud-sync-conexion-title {
   margin: 0;
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
+  font-size: calc(15px * var(--density-font));
+  font-weight: 650;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+}
+
+.cloud-sync-conexion-sub {
+  margin: 0;
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-status-detail {
+  margin: calc(-2px * var(--density-space)) 0 0;
+  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
+  border: 1px solid color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in oklab, var(--danger, #c0392b) 8%, var(--surface));
+  font-size: calc(11px * var(--density-font));
+  line-height: 1.4;
+  color: var(--danger, #c0392b);
+}
+
+.cloud-sync-status-detail[hidden] {
+  display: none;
 }
 
 .cloud-sync-status-chip {
@@ -120,14 +148,46 @@
 
 .cloud-sync-view-bar {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(4px * var(--density-space));
+  margin: 0 0 calc(14px * var(--density-space));
+  padding: 0 0 calc(12px * var(--density-space));
+  border-bottom: 1px solid var(--divider);
+}
+
+.cloud-sync-view-back {
+  display: inline-flex;
   align-items: center;
-  gap: calc(8px * var(--density-space));
-  margin-bottom: calc(12px * var(--density-space));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--action);
+  font: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.cloud-sync-view-back:hover {
+  color: var(--action-hover, var(--action));
+}
+
+.cloud-sync-view-back-chevron {
+  font-size: calc(18px * var(--density-font));
+  font-weight: 400;
+  line-height: 1;
+  margin-right: 1px;
 }
 
 .cloud-sync-view-title {
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
+  margin: 0;
+  font-size: calc(16px * var(--density-font));
+  font-weight: 650;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
@@ -137,10 +197,14 @@
   gap: calc(12px * var(--density-space));
 }
 
+.cloud-sync-conexion-head[hidden] {
+  display: none !important;
+}
+
 .cloud-sync-status-sheet {
   display: flex;
   flex-direction: column;
-  gap: calc(14px * var(--density-space));
+  gap: calc(12px * var(--density-space));
 }
 
 .cloud-sync-status-sheet .cloud-sync-room {
@@ -151,25 +215,63 @@
   box-shadow: none;
 }
 
+.cloud-sync-settings-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  overflow: hidden;
+}
+
+.cloud-sync-settings-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12px * var(--density-space));
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+  border-bottom: 1px solid var(--divider);
+}
+
+.cloud-sync-settings-row:last-child {
+  border-bottom: none;
+}
+
+.cloud-sync-settings-row dt {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.cloud-sync-settings-row dd {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+}
+
 .cloud-sync-status-identity,
 .cloud-sync-cuenta {
   display: flex;
   flex-direction: column;
-  gap: calc(6px * var(--density-space));
-  padding: calc(12px * var(--density-space)) 0;
-  border-top: 1px solid var(--divider);
-  border-bottom: 1px solid var(--divider);
+  gap: calc(4px * var(--density-space));
+  padding: calc(4px * var(--density-space)) 2px;
 }
 
 .cloud-sync-cuenta {
-  border-bottom: none;
   gap: calc(10px * var(--density-space));
 }
 
 .cloud-sync-status-handle {
   margin: 0;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
   color: var(--text);
 }
 
@@ -179,9 +281,75 @@
   color: var(--text-muted);
 }
 
+.cloud-sync-options-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12px * var(--density-space));
+  width: 100%;
+  margin: 0;
+  padding: calc(12px * var(--density-space));
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+
+.cloud-sync-options-entry:hover {
+  border-color: color-mix(in oklab, var(--action) 28%, var(--divider));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.cloud-sync-options-entry-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cloud-sync-options-entry-title {
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+}
+
+.cloud-sync-options-entry-meta {
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+}
+
 .cloud-sync-options-list {
   display: flex;
   flex-direction: column;
+  gap: calc(14px * var(--density-space));
+}
+
+.cloud-sync-options-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6px * var(--density-space));
+}
+
+.cloud-sync-options-label {
+  margin: 0;
+  padding: 0 2px;
+  font-size: calc(10px * var(--density-font));
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-sync-options-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  overflow: hidden;
 }
 
 .cloud-sync-options-row {
@@ -191,7 +359,7 @@
   gap: calc(12px * var(--density-space));
   width: 100%;
   margin: 0;
-  padding: calc(12px * var(--density-space)) 0;
+  padding: calc(11px * var(--density-space)) calc(12px * var(--density-space));
   border: none;
   border-bottom: 1px solid var(--divider);
   background: transparent;
@@ -199,6 +367,15 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background var(--dur-fast);
+}
+
+.cloud-sync-options-card .cloud-sync-options-row:last-child {
+  border-bottom: none;
+}
+
+.cloud-sync-options-row:hover {
+  background: color-mix(in oklab, var(--action) 6%, transparent);
 }
 
 .cloud-sync-options-row:hover .cloud-sync-options-row-title {
@@ -208,12 +385,12 @@
 .cloud-sync-options-row-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .cloud-sync-options-row-title {
-  font-size: calc(12px * var(--density-font));
+  font-size: calc(13px * var(--density-font));
   font-weight: 600;
 }
 
@@ -225,7 +402,15 @@
 .cloud-sync-options-row-chevron {
   flex-shrink: 0;
   color: var(--text-muted);
-  font-size: calc(12px * var(--density-font));
+  font-size: calc(18px * var(--density-font));
+  line-height: 1;
+  font-weight: 300;
+}
+
+.cloud-sync-btn--danger-text {
+  color: var(--danger, #c0392b);
+  align-self: flex-start;
+  padding-left: 2px;
 }
 
 .cloud-sync-tabs {
@@ -471,105 +656,250 @@
   border-color: color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
 }
 
+.cloud-sync-btn--block {
+  align-self: stretch;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.cloud-sync-btn--compact {
+  padding: calc(5px * var(--density-space)) calc(9px * var(--density-space));
+  font-size: calc(11px * var(--density-font));
+  min-height: 32px;
+}
+
+.cloud-sync-btn--ghost.cloud-sync-btn--compact {
+  padding-left: calc(9px * var(--density-space));
+  border-color: transparent;
+}
+
 .cloud-sync-room--actions .cloud-sync-btn + .cloud-sync-field {
   margin-top: calc(4px * var(--density-space));
 }
 
-/* Administración nube — dense ops tables */
-
-.cloud-sync-admin-wrap {
+/* Operaciones (R4) — settings-style cards in secondary stack */
+.lan-ops-card {
   display: flex;
   flex-direction: column;
+  gap: calc(10px * var(--density-space));
+  padding: calc(12px * var(--density-space));
+  text-align: left;
+}
+
+.lan-ops-card-title {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+}
+
+.lan-ops-census-rows {
+  margin: 0;
+}
+
+.lan-ops-census-row dd {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cloud-sync-ops-host:empty {
+  display: none;
+}
+
+.lan-hub-available-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lan-hub-available-row {
+  display: flex;
   gap: calc(8px * var(--density-space));
-  margin-top: calc(4px * var(--density-space));
-  padding-top: calc(10px * var(--density-space));
-  border-top: 1px dashed var(--divider);
+  align-items: center;
+  margin-bottom: calc(6px * var(--density-space));
+  font-size: calc(12px * var(--density-font));
+}
+
+.lan-hub-available-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Administración nube — tabbed console */
+
+.cloud-sync-admin-host {
+  min-width: 0;
 }
 
 .cloud-sync-admin {
   display: flex;
   flex-direction: column;
-  gap: calc(10px * var(--density-space));
+  gap: calc(12px * var(--density-space));
+  text-align: left;
 }
 
-.cloud-sync-admin-head {
+.cloud-sync-admin-shell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-.cloud-sync-admin-title {
-  margin: 0;
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
-  color: var(--text);
+  gap: calc(12px * var(--density-space));
 }
 
 .cloud-sync-admin-bootstrap {
   display: flex;
   flex-direction: column;
   gap: calc(8px * var(--density-space));
-  padding: calc(10px * var(--density-space));
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
   border: 1px solid var(--divider);
-  border-radius: var(--radius-md, 8px);
-  background: color-mix(in oklab, var(--surface) 97%, transparent);
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+}
+
+.cloud-sync-admin-bootstrap .cloud-sync-hint {
+  margin: 0;
 }
 
 .cloud-sync-admin-bootstrap-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(6px * var(--density-space));
+  align-items: center;
+  gap: calc(8px * var(--density-space));
 }
 
-.cloud-sync-admin-block {
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
+.cloud-sync-admin-bootstrap-actions .cloud-sync-btn--primary {
+  margin-left: auto;
 }
 
-.cloud-sync-admin-block summary {
-  cursor: pointer;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  color: var(--text);
+/* Admin sections reuse .cloud-sync-tabs track; equal-width pills */
+.cloud-sync-admin-tabs.cloud-sync-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.cloud-sync-admin-block[open] summary {
-  margin-bottom: calc(8px * var(--density-space));
+.cloud-sync-admin-tabs .cloud-sync-admin-tab {
+  flex: 1 1 0;
+  min-width: 4.5rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
-.cloud-sync-admin-block--danger {
-  border-color: color-mix(in oklab, var(--danger, #c0392b) 22%, var(--divider));
+.cloud-sync-admin-tab--danger {
+  color: color-mix(in oklab, var(--danger, #c0392b) 72%, var(--text-muted));
 }
 
-.cloud-sync-admin-body {
+.cloud-sync-admin-tab--danger.is-active,
+.cloud-sync-admin-tab--danger[aria-selected='true'] {
+  color: var(--danger, #c0392b);
+  border-color: color-mix(in oklab, var(--danger, #c0392b) 35%, var(--divider));
+  background: color-mix(in oklab, var(--danger, #c0392b) 10%, var(--surface));
+}
+
+.cloud-sync-admin-panels {
+  min-height: 12rem;
+}
+
+.cloud-sync-admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space));
+}
+
+.cloud-sync-admin-panel[hidden] {
+  display: none !important;
+}
+
+.cloud-sync-admin-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(8px * var(--density-space));
+  min-height: 0;
+}
+
+.cloud-sync-admin-skeleton {
   display: flex;
   flex-direction: column;
   gap: calc(8px * var(--density-space));
+  padding: calc(4px * var(--density-space)) 0;
+}
+
+.cloud-sync-admin-skeleton-bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--divider) 70%, var(--surface));
+}
+
+.cloud-sync-admin-skeleton-bar--short {
+  width: 42%;
 }
 
 .cloud-sync-admin-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-  gap: calc(8px * var(--density-space));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
   margin: 0;
+  border: 1px solid var(--wb-frame-border, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  overflow: hidden;
+}
+
+.cloud-sync-admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+  border-bottom: 1px solid var(--divider);
+  border-right: 1px solid var(--divider);
+}
+
+.cloud-sync-admin-stat:nth-child(2n) {
+  border-right: none;
+}
+
+.cloud-sync-admin-stats__wide {
+  grid-column: 1 / -1;
+  border-right: none;
+}
+
+.cloud-sync-admin-stat:nth-last-child(-n + 2):not(.cloud-sync-admin-stats__wide) {
+  border-bottom: none;
+}
+
+.cloud-sync-admin-stats__wide:last-child {
+  border-bottom: none;
 }
 
 .cloud-sync-admin-stats dt {
   margin: 0;
   font-size: calc(10px * var(--density-font));
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .cloud-sync-admin-stats dd {
-  margin: 2px 0 0;
-  font-size: calc(13px * var(--density-font));
-  font-weight: 600;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: calc(15px * var(--density-font));
+  font-weight: 650;
   color: var(--text);
+}
+
+.cloud-sync-admin-stat-value {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+}
+
+.cloud-sync-admin-stat-meta {
+  font-size: calc(11px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .cloud-sync-admin-table-wrap {
@@ -619,14 +949,20 @@
 
 .cloud-sync-admin-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: calc(6px * var(--density-space));
+  gap: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-toolbar-label {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
 }
 
 .cloud-sync-admin-toolbar .profile-input {
-  flex: 1 1 12rem;
-  min-width: 10rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .cloud-sync-admin-ops {
@@ -650,8 +986,15 @@
   font-size: calc(12px * var(--density-font));
 }
 
+.cloud-sync-admin-danger {
+  padding: calc(12px * var(--density-space));
+  border: 1px solid color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
+  border-radius: var(--wb-card-radius, var(--radius-lg));
+  background: color-mix(in oklab, var(--danger, #c0392b) 6%, var(--surface));
+}
+
 .cloud-sync-admin-danger-list {
-  margin: 0;
+  margin: calc(8px * var(--density-space)) 0 0;
   padding-left: 1.1rem;
   font-size: calc(12px * var(--density-font));
   line-height: 1.45;

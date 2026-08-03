@@ -41,6 +41,7 @@ export function applyHoraToMs(ms, horaStr) {
   return ms + (parseInt(h[1], 10) * 3600 + parseInt(h[2], 10) * 60) * 1000;
 }
 
+/** Hora de labs a minuto (HH:MM). Los segundos no distinguen tomas clínicas. */
 export function normalizeHoraLabHistory(horaRaw) {
   if (horaRaw == null) return '';
   var t = String(horaRaw).trim();
@@ -49,10 +50,7 @@ export function normalizeHoraLabHistory(horaRaw) {
   if (!m) return '';
   var hh = Math.max(0, Math.min(23, parseInt(m[1], 10)));
   var mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
-  var ss = m[3] == null ? null : Math.max(0, Math.min(59, parseInt(m[3], 10)));
-  var out = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-  if (ss != null) out += ':' + String(ss).padStart(2, '0');
-  return out;
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
 }
 
 export function parseFechaLabToMs(fechaStr, horaStr) {

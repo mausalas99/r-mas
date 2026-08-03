@@ -15,9 +15,9 @@ import {
   renderAfterAuth,
 } from './panel-conexion-handlers.mjs';
 
-/** @returns {string} */
-export function adminShellHtml() {
-  if (!canAccessCloudAdmin(clinicalSessionContext.user)) return '';
+/** @param {boolean} [hasCloudSession] @returns {string} */
+export function adminShellHtml(hasCloudSession = false) {
+  if (!canAccessCloudAdmin(clinicalSessionContext.user, { hasCloudSession })) return '';
   return '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>';
 }
 
@@ -131,24 +131,58 @@ export function wireTeamsChangedListener(section, deps, ui) {
   });
 }
 
+/**
+ * Local snapshot for instant Conexión chrome (no network wait).
+ * @param {object} deps
+ * @param {string} normalizedSala
+ */
+export function localRoomFromSession(deps, normalizedSala) {
+  const roomId = deps.getCloudSyncRoomId();
+  const token = deps.getCloudSyncToken();
+  if (!roomId || !token) return null;
+  const snap = deps.getCloudSyncRoomSnapshot ? deps.getCloudSyncRoomSnapshot() : null;
+  const revision = Number(deps.getCloudSyncRevision() || 0) || 0;
+  return {
+    id: String(roomId),
+    revision,
+    sala: String((snap && snap.sala) || normalizedSala || ''),
+    code: String((snap && snap.code) || ''),
+    turnKey: String((snap && snap.turnKey) || ''),
+    name: String((snap && snap.name) || ''),
+  };
+}
+
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */
 export function bootstrapConexionState(section, deps, ui) {
   const roomId = deps.getCloudSyncRoomId();
   if (roomId && deps.getCloudSyncToken()) {
-    void deps.getApi().getRoom(roomId).then(function (data) {
-      ui.setCloudUser(null);
-      ui.renderConnected(data.room || data);
-    }).catch(function () {
-      deps.clearCloudSyncSession();
-      deps.onCloudRoomChange?.(false);
-      ui.renderDisconnected();
-    });
+    const optimistic = localRoomFromSession(deps, ui.normalizedSala);
+    if (optimistic) {
+      // Local snapshot is enough — skip getRoom (saves Free-tier requests).
+      // Membership is validated on the next pull/push cycle.
+      ui.renderConnected(optimistic);
+      return;
+    }
+    void deps
+      .getApi()
+      .getRoom(roomId)
+      .then(function (data) {
+        if (!section.isConnected) return;
+        ui.setCloudUser(null);
+        ui.renderConnected(data.room || data);
+      })
+      .catch(function () {
+        if (!section.isConnected) return;
+        deps.clearCloudSyncSession();
+        deps.onCloudRoomChange?.(false);
+        ui.renderDisconnected();
+      });
     return;
   }
   if (deps.getCloudSyncToken()) {
     ui.renderDisconnected();
     void ui.tryAutoEnsureTurnRoom().then(function (room) {
-      if (room) { ui.renderConnected(room); ui.startRuntime(); }
+      if (room && section.isConnected) ui.renderConnected(room);
     });
     return;
   }

@@ -272,16 +272,6 @@ html.patient-bulk-select-mode .btn-round-seen {
   overflow: hidden;
   isolation: isolate;
 }
-.patient-card::before {
-  content: '';
-  position: absolute; left: 0;
-  top: calc(7px * var(--density-space));
-  bottom: calc(7px * var(--density-space));
-  width: 3px;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  background: transparent;
-  transition: none;
-}
 .patient-card:active { cursor: grabbing; }
 .patient-card:hover {
   background: color-mix(in oklab, var(--surface) 92%, var(--lab-chip-bg));
@@ -293,7 +283,6 @@ html.patient-bulk-select-mode .btn-round-seen {
   border: 2px solid color-mix(in oklab, var(--color-accent) 55%, var(--border));
   box-shadow: var(--elev-raised);
 }
-.patient-card.active::before { background: var(--action); }
 html.dark .patient-card {
   background: color-mix(in oklab, var(--surface) 96%, var(--bg));
   box-shadow: var(--shadow-sm);

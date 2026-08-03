@@ -2,7 +2,15 @@
  * Pure cloud pull state folding (no renderer/LAN imports — safe for unit tests).
  */
 
-const ENTRY_SKIP_KEYS = new Set(['id', 'note', 'indicaciones', 'historiaClinica', 'fields']);
+const ENTRY_SKIP_KEYS = new Set([
+  'id',
+  'note',
+  'indicaciones',
+  'historiaClinica',
+  'eventualidades',
+  'monitoreo',
+  'fields',
+]);
 
 /** @param {Record<string, unknown>} sidecarMap */
 export function assembleLabHistoryFromSidecars(sidecarMap) {
@@ -23,6 +31,8 @@ function buildPatientFromCloudEntry(entry) {
     patient[key] = value;
   }
   if (entry.historiaClinica) patient.historiaClinica = entry.historiaClinica;
+  if (entry.eventualidades) patient.eventualidades = entry.eventualidades;
+  if (entry.monitoreo) patient.monitoreo = entry.monitoreo;
   return patient;
 }
 
@@ -116,7 +126,10 @@ export function foldCloudOp(fold, op) {
     return;
   }
 
-  const entryField = /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|fields)$/.exec(path);
+  const entryField =
+    /^entries\/([^/]+)\/(note|indicaciones|historiaClinica|eventualidades|monitoreo|fields)$/.exec(
+      path
+    );
   if (entryField) {
     foldEntryField(fold, entryField[1], entryField[2], value);
     return;

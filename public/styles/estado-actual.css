@@ -1793,10 +1793,64 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   font-size: calc(11px * var(--density-font, 1));
 }
 
+.ea-registro-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 2px;
+}
 .ea-registro-hint {
-  margin: 0 0 6px;
-  font-size: calc(11px * var(--density-font, 1));
-  line-height: 1.35;
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.ea-registro-meta {
+  margin: 0;
+  font-size: calc(11.5px * var(--density-font, 1));
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.ea-registro-kbd-hint {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.95em;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border, var(--divider));
+  background: color-mix(in oklab, var(--bg) 45%, var(--surface));
+  color: var(--text-muted);
+}
+.ea-registro-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+.ea-registro-section + .ea-registro-section {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, var(--divider));
+}
+.ea-registro-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.ea-registro-section-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.3;
+}
+.ea-registro-section-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* Una celda de la grilla: compacta por defecto; crece solo con alterado o lecturas previas */
@@ -1841,7 +1895,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   max-height: 5.75rem;
   min-height: 0;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 .ea-registro-modal .ea-vital-stack .ea-vital-slot .ea-vital-chip.ea-vital-box--altered {
@@ -1881,7 +1936,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal .ea-vitals-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 @media (max-width: 900px) {
@@ -1890,9 +1945,10 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   }
 }
 
-/* Modal registro — chips cuadrados; alterado expande solo la franja de hora */
+/* Modal registro — chips redondeados; overflow oculta la banda del label */
 .ea-registro-modal .ea-vitals-grid {
   align-items: start;
+  gap: 8px;
 }
 
 .ea-registro-modal .ea-vital-chip {
@@ -1902,6 +1958,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   min-width: 0;
   aspect-ratio: 1;
   max-height: 5.75rem;
+  overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 .ea-registro-modal .ea-vital-stack .ea-vital-chip {
@@ -1911,7 +1969,12 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-vital-chip.ea-vital-box--altered {
   aspect-ratio: auto;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.ea-registro-modal .ea-vital-chip .vital-label {
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .ea-registro-modal .ea-vital-chip.ea-vital-box--altered .ea-vital-value-wrap {
@@ -1954,29 +2017,29 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-vital-add-btn,
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-temp-add-btn {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 5px;
+  right: 5px;
   z-index: 6;
   appearance: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  min-width: 1.125rem;
-  min-height: 1.125rem;
-  max-width: 1.125rem;
-  max-height: 1.125rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  min-width: 1.375rem;
+  min-height: 1.375rem;
+  max-width: 1.375rem;
+  max-height: 1.375rem;
   padding: 0;
   margin: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font: inherit;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
-  border-radius: 3px;
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-  color: var(--text);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  color: var(--text-muted);
   box-sizing: border-box;
   aspect-ratio: 1;
   cursor: pointer;
@@ -2099,17 +2162,29 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal .ea-form--registro {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
+}
+
+.ea-registro-modal .ea-registro-section + .ea-registro-section {
+  margin-top: 2px;
+  padding-top: 14px;
+}
+.ea-registro-modal .ea-registro-section .lab-pref-row-label.ea-registro-section-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
 }
 
 .ea-registro-modal .ea-field--datetime {
   margin: 0;
-  max-width: none;
+  max-width: min(100%, 22rem);
   width: 100%;
 }
 
 .ea-registro-modal .ea-field--datetime .rpc-datetime-field {
-  max-width: min(100%, 26rem);
+  max-width: 100%;
 }
 
 .ea-registro-modal .ea-field--datetime .rpc-date-field__trigger.profile-input {
@@ -2132,49 +2207,112 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-registro-modal .ea-glu-block {
-  gap: 4px;
-  padding-top: 2px;
+  gap: 6px;
+  padding-top: 0;
+}
+
+.ea-registro-modal .ea-glu-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ea-registro-modal .ea-glu-add-inline {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.ea-registro-modal .ea-form--registro:has(#ea-bomba-enabled:checked) .ea-glu-add-inline {
+  display: none;
 }
 
 .ea-registro-modal .ea-glu-list.ea-glu-list--slots {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
+  align-items: start;
 }
 
-.ea-registro-modal .ea-glu-row--standard {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.ea-registro-modal .ea-glu-row--standard,
+.ea-registro-modal .ea-glu-row--extra {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(3.6rem, auto) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
   min-width: 0;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-sizing: border-box;
 }
 
 .ea-registro-modal .ea-glu-time-badge {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: calc(11px * var(--density-font, 1));
-  font-weight: 600;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
+  color: var(--text);
   line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
-.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input {
+.ea-registro-modal .ea-glu-row--standard .ea-glu-row-meta,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-row-meta {
+  grid-column: 1 / -1;
+}
+
+.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-value-input,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-time-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 5px 8px;
-  min-height: 32px;
-  font-size: calc(13px * var(--density-font, 1));
+  padding: 6px 10px;
+  min-height: 34px;
+  font-size: calc(14px * var(--density-font, 1));
+  font-variant-numeric: tabular-nums;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--input-fill);
   color: var(--text);
 }
 
-.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input:focus {
+.ea-registro-modal .ea-glu-row--extra {
+  padding-right: 2rem;
+}
+
+.ea-registro-modal .ea-glu-row--extra .ea-glu-time-input {
+  max-width: 5.5rem;
+  padding-left: 6px;
+  padding-right: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 650;
+}
+
+.ea-registro-modal .ea-glu-row--extra .ea-glu-remove-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ea-registro-modal .ea-glu-row--standard .ea-glu-value-input:focus,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-value-input:focus,
+.ea-registro-modal .ea-glu-row--extra .ea-glu-time-input:focus {
   outline: none;
   border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   box-shadow: 0 0 0 3px var(--color-focus-ring);
@@ -2309,10 +2447,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   width: 100%;
 }
 
-.ea-registro-modal .ea-glu-row--extra .ea-glu-row-meta {
-  grid-column: 1 / -1;
-}
-
 .ea-snapshot-glu-chip--altered {
   border-color: color-mix(in oklab, var(--warn) 55%, var(--divider));
   color: var(--warn);
@@ -2330,39 +2464,6 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   color: var(--success);
 }
 
-
-.ea-registro-modal .ea-glu-row--extra {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr) 36px;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
-}
-
-.ea-registro-modal .ea-glu-row--extra .ea-glu-time-input,
-.ea-registro-modal .ea-glu-row--extra .ea-glu-value-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 5px 8px;
-  min-height: 32px;
-  font-size: calc(13px * var(--density-font, 1));
-}
-
-.ea-registro-modal .ea-glu-row--extra .ea-glu-remove-btn {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-}
-
 .ea-registro-kbd-hint {
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: calc(10px * var(--density-font, 1));
@@ -2374,24 +2475,56 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   .ea-registro-modal .ea-glu-list.ea-glu-list--slots {
     grid-template-columns: 1fr;
   }
-
-  .ea-registro-modal .ea-glu-row--extra {
-    grid-template-columns: minmax(72px, 88px) minmax(0, 1fr) 36px;
-  }
 }
 
 .ea-registro-modal .ea-io-grid {
-  gap: 6px;
+  gap: 10px 12px;
   padding-top: 2px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: none;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(6.5rem, 0.85fr);
+  align-items: end;
 }
 
 .ea-registro-modal .ea-io-grid .ea-field--full {
-  grid-column: 1 / 3;
+  grid-column: 1 / -1;
+}
+
+.ea-registro-modal .ea-io-grid .ea-field {
+  margin: 0;
+  min-width: 0;
+}
+
+.ea-registro-modal .ea-io-grid .ea-input {
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  border-radius: var(--radius-md);
 }
 
 .ea-registro-modal .ea-io-balance .ea-balance-live {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
   font-size: calc(14px * var(--density-font, 1));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border, var(--divider));
+  background: color-mix(in oklab, var(--bg) 35%, var(--surface));
+  box-sizing: border-box;
+}
+.ea-registro-modal .ea-io-balance .ea-balance-live.ea-balance-live--pos {
+  color: var(--color-success-emphasis, var(--success, #15803d));
+  border-color: color-mix(in oklab, var(--color-success-emphasis, var(--success, #15803d)) 35%, var(--border));
+  background: color-mix(in oklab, var(--color-success-emphasis, var(--success, #15803d)) 10%, var(--surface));
+}
+.ea-registro-modal .ea-io-balance .ea-balance-live.ea-balance-live--neg {
+  color: var(--error, #b91c1c);
+  border-color: color-mix(in oklab, var(--error, #b91c1c) 35%, var(--border));
+  background: color-mix(in oklab, var(--error, #b91c1c) 10%, var(--surface));
 }
 
 .ea-form-toolbar {
@@ -2403,13 +2536,17 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-registro-modal {
   position: relative;
-  max-width: min(96vw, 960px);
-  width: min(96vw, 960px);
-  max-height: min(94vh, 860px);
+  max-width: min(96vw, 820px);
+  width: min(96vw, 820px);
+  max-height: min(94vh, 820px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0;
+  border: 1px solid var(--border, var(--divider));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  background: var(--surface);
 }
 
 .ea-paste-nested-backdrop {
@@ -2439,16 +2576,33 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-registro-modal-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
-  padding: 10px 16px 8px;
-  border-bottom: 1px solid var(--divider);
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border, var(--divider));
   flex-shrink: 0;
+  background: var(--surface);
+}
+.ea-registro-modal-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .ea-registro-modal-head h3 {
   margin: 0;
-  font-size: calc(15px * var(--density-font, 1));
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--text);
+}
+.ea-registro-modal-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
 }
 
 .ea-registro-modal-body {
@@ -2458,6 +2612,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   padding: 0;
   display: flex;
   flex-direction: column;
+  background: color-mix(in oklab, var(--bg) 28%, var(--surface));
 }
 
 .ea-registro-shell {
@@ -2471,7 +2626,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 10px 16px 8px;
+  padding: 14px 18px 12px;
 }
 
 .ea-registro-modal-foot {
@@ -2480,8 +2635,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 16px 12px;
-  border-top: 1px solid var(--divider);
+  padding: 12px 18px 14px;
+  border-top: 1px solid var(--border, var(--divider));
   background: var(--surface);
 }
 

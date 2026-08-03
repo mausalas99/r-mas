@@ -1,5 +1,32 @@
 const API_PREFIX = '/api/sync/v1';
 
+/** @param {Response} res @param {Record<string, unknown>} data */
+function httpErrorFromResponse(res, data) {
+  const err = new Error(data.error || data.message || res.statusText);
+  err.status = res.status;
+  err.data = data;
+  if (res.status === 429) {
+    const sec = Number(res.headers.get('Retry-After'));
+    if (Number.isFinite(sec) && sec >= 0) {
+      err.retryAfterMs = sec <= 1000 ? sec * 1000 : sec;
+    }
+  }
+  return err;
+}
+
+/** @param {string} baseUrl */
+function assertCloudBaseUrl(baseUrl) {
+  if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
+    const err = new Error('URL nube no configurada');
+    err.status = 0;
+    err.data = {
+      error: 'missing_url',
+      message: 'Configurá la URL del servicio en ⇄ → Avanzado.',
+    };
+    throw err;
+  }
+}
+
 /**
  * @param {{
  *   getBaseUrl: () => string,
@@ -14,15 +41,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
    */
   async function req(path, { method = 'GET', body } = {}) {
     const baseUrl = String(getBaseUrl() || '').replace(/\/$/, '');
-    if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
-      const err = new Error('URL nube no configurada');
-      err.status = 0;
-      err.data = {
-        error: 'missing_url',
-        message: 'Configurá la URL del servicio en ⇄ → Avanzado.',
-      };
-      throw err;
-    }
+    assertCloudBaseUrl(baseUrl);
     const headers = { Accept: 'application/json' };
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -37,12 +56,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     });
 
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const err = new Error(data.error || data.message || res.statusText);
-      err.status = res.status;
-      err.data = data;
-      throw err;
-    }
+    if (!res.ok) throw httpErrorFromResponse(res, data);
     return data;
   }
 

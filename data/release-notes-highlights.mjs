@@ -1855,10 +1855,34 @@ var RELEASE_NOTES_792 = [
   },
 ];
 
+var RELEASE_NOTES_793 = [
+  {
+    title: 'Eventualidades — Labs',
+    body:
+      'Switcher <strong>Eventualidad / Labs</strong>. La interpretación va a una caja dedicada con formato <strong>Estudios</strong>; Procesar y Actualizar labs fusionan ahí sin crear entradas clínicas nuevas.',
+  },
+  {
+    title: 'Nube más fiable',
+    body:
+      'Sync por bloque con relojes propios (monitoreo / eventualidades / censo). Labs sin PDF; polling adaptativo y error visible en el chip <strong>⇄</strong>.',
+  },
+  {
+    title: 'EA registro y labs',
+    body:
+      'El registro manual abre <strong>limpio</strong> por secciones. Labs consolidan misma fecha+hora; cuarto/cama no se pisan al sincronizar.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.3 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_792;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_793;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.3': RELEASE_NOTES_793,
   '7.9.2': RELEASE_NOTES_792,
   '7.9.1': RELEASE_NOTES_791,
   '7.9.0': RELEASE_NOTES_790,

@@ -6,6 +6,7 @@ import {
   buildSomeGroupExportModel,
   formatSomeResultado,
   renderSomeReportTablesHtml,
+  coalesceGroupsForModal,
 } from '../../../public/js/labs-some-table.mjs';
 
 const MUESTRA_LUNA = `
@@ -246,6 +247,58 @@ test('renderSomeReportTablesHtml — genera tablas por departamento', () => {
   assert.match(html, /lab-some-table--cols-2/);
   assert.match(html, /lab-some-table--cols-3/);
   assert.doesNotMatch(html, /<th>Unidades<\/th>/);
+});
+
+test('coalesceGroupsForModal — fusiona estándar, preserva cito', () => {
+  const groups = [
+    { title: 'A', rows: [{ estudio: 'HGB', resultado: '12', unidades: 'g/dL', ref: '12-16' }], tableVariant: 'standard' },
+    { title: 'B', rows: [{ estudio: 'HCT', resultado: '40', unidades: '%', ref: '35-45' }], tableVariant: 'standard' },
+    {
+      title: 'CITOQUIMICO DE LIQUIDOS CORPORALES',
+      rows: [{ estudio: 'RECUENTO', resultado: '10', unidades: '/mm3', ref: '' }],
+      tableVariant: 'cito',
+      fluidSource: 'PERITONEAL',
+    },
+    { title: 'C', rows: [{ estudio: 'PLT', resultado: '200', unidades: 'K/uL', ref: '150-400' }], tableVariant: 'standard' },
+  ];
+  const out = coalesceGroupsForModal(groups);
+  assert.equal(out.length, 3);
+  assert.equal(out[0].tableVariant, 'standard');
+  assert.equal(out[0].rows.length, 2);
+  assert.equal(out[0].rows[0].estudio, 'HGB');
+  assert.equal(out[0].rows[1].estudio, 'HCT');
+  assert.equal(out[1].tableVariant, 'cito');
+  assert.equal(out[2].rows[0].estudio, 'PLT');
+});
+
+test('renderSomeReportTablesHtml — modalLayout un thead por depto estándar', () => {
+  const parsed = {
+    departments: [
+      {
+        key: 'HEMATOLOGIA',
+        label: 'HEMATOLOGIA',
+        groups: [
+          {
+            title: 'BIOMETRIA',
+            rows: [{ estudio: 'HGB', resultado: '8.56', unidades: 'g/dL', ref: '12-15', flag: 'B', abnormal: true }],
+            tableVariant: 'standard',
+          },
+          {
+            title: 'INDICES',
+            rows: [{ estudio: 'MCV', resultado: '98', unidades: 'fL', ref: '80-98' }],
+            tableVariant: 'standard',
+          },
+        ],
+      },
+    ],
+  };
+  const html = renderSomeReportTablesHtml(parsed, { modalLayout: true, hideGroupTitles: true });
+  assert.match(html, /lab-some-tables--modal/);
+  assert.match(html, /lab-some-row--abnormal/);
+  const theads = html.match(/<thead>/g) || [];
+  assert.equal(theads.length, 1);
+  assert.match(html, /HGB/);
+  assert.match(html, /MCV/);
 });
 
 test('parseSomeReportTables — química clínica, biometría y EGO completos', () => {

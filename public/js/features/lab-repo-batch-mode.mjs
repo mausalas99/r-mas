@@ -58,13 +58,13 @@ export function syncBatchModalModeUi(singlePatientMode, row) {
     if (title) title.textContent = 'Actualizar labs';
     if (hint) {
       hint.textContent =
-        (row.nombre || 'Paciente') + ' · Reg. ' + row.registro + ' · elige el rango de fechas';
+        (row.nombre || 'Paciente') + ' · Reg. ' + row.registro + ' · elige el rango';
     }
     if (teamBlock) teamBlock.hidden = true;
     return;
   }
   if (title) title.textContent = 'Actualizar labs';
-  if (hint) hint.textContent = 'Mi equipo · rango compartido · la cola queda en la barra lateral';
+  if (hint) hint.textContent = 'Mi equipo · mismo rango para todos · progreso en la barra lateral';
   if (teamBlock) teamBlock.hidden = false;
 }
 

@@ -918,7 +918,7 @@ body.connection-dropdown-open {
   overflow: hidden;
 }
 #connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal {
-  width: min(96vw, 840px);
+  width: min(96vw, 960px);
   max-width: none;
   max-height: min(92dvh, calc(var(--app-height) - 24px));
   margin: 0;
@@ -1019,8 +1019,14 @@ body.connection-dropdown-open {
   flex-direction: column;
   gap: 0;
 }
+/* display:flex above beats the UA [hidden] rule — force hide for Nube view sync */
+.lan-connection-stack[hidden],
+.lan-connection-stack [data-cloud-secondary][hidden] {
+  display: none !important;
+}
 .lan-connection-stack > .rpc-disclosure,
 .lan-connection-stack > .lan-connect-card,
+.lan-connection-stack > .lan-ops-card,
 .lan-connection-stack > .settings-card,
 .lan-connection-stack > .settings-card-stack,
 .lan-connection-stack > .equipos-qr-compact-card,

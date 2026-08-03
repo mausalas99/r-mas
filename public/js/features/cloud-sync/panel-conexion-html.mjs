@@ -4,8 +4,6 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterJoinedTeams } from '../clinical-teams/shared.mjs';
 import { connectStepHtml } from './panel-steps-html.mjs';
-import { formatCloudRoomLabel } from './room-label.mjs';
-
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
 export const STATUS_LABELS = {
@@ -66,22 +64,29 @@ export function nextStepHtml(getToken) {
   );
 }
 
-/** @param {object} room @param {() => number} getRevision */
+/**
+ * Connected room rows. Ward name lives in the Conexión header (display sala);
+ * rows focus on turn / code / revision — avoid "Sala · Sala" noise from the cloud bucket.
+ * @param {object} room
+ * @param {() => number} getRevision
+ */
 export function roomConnectedHtml(room, getRevision) {
   const code = String(room?.code || '').trim();
   const revision = room?.revision ?? getRevision();
   const turn = String(room?.turnKey || '').trim();
-  const sala = String(room?.sala || '').trim();
-  const identity = formatCloudRoomLabel(room);
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
-    '<p class="cloud-sync-room-title">' + esc(identity || 'Sala nube') + '</p>' +
-    '<dl class="cloud-sync-room-meta">' +
-    (sala ? '<div><dt>Sala</dt><dd>' + esc(sala) + '</dd></div>' : '') +
-    (turn ? '<div><dt>Turno</dt><dd>' + esc(turn) + '</dd></div>' : '') +
-    '<div><dt>Código</dt><dd><code data-cloud-room-code>' + esc(code || '—') + '</code></dd></div>' +
-    '<div><dt>Revisión</dt><dd><span data-cloud-room-revision>' + esc(String(revision)) + '</span></dd></div></dl>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-cloud-action="leave-room">Salir de la sala</button></div>'
+    '<dl class="cloud-sync-settings-rows" aria-label="Sala nube">' +
+    (turn
+      ? '<div class="cloud-sync-settings-row"><dt>Turno</dt><dd>' + esc(turn) + '</dd></div>'
+      : '') +
+    '<div class="cloud-sync-settings-row"><dt>Código</dt><dd><code data-cloud-room-code>' +
+    esc(code || '—') +
+    '</code></dd></div>' +
+    '<div class="cloud-sync-settings-row"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
+    esc(String(revision)) +
+    '</span></dd></div></dl>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger-text" data-cloud-action="leave-room">Salir de la sala</button></div>'
   );
 }
 
@@ -119,13 +124,34 @@ export function advancedUrlHtml(url) {
   );
 }
 
-/** @param {string} normalizedSala @param {string} bodyHtml @param {CloudSyncStatus} status */
-export function conexionShellHtml(normalizedSala, bodyHtml, status) {
+/**
+ * @param {string} normalizedSala
+ * @param {string} bodyHtml
+ * @param {CloudSyncStatus} status
+ * @param {string} [detail]
+ */
+export function conexionShellHtml(normalizedSala, bodyHtml, status, detail = '') {
+  const detailText = String(detail || '').trim();
+  const showDetail = status === 'error' && !!detailText;
   return (
     '<header class="cloud-sync-conexion-head">' +
-    '<h4 class="cloud-sync-conexion-title">Conexión — ' + esc(normalizedSala) + '</h4>' +
-    '<span class="cloud-sync-status-chip ' + statusChipModifier(status) + '" data-cloud-status-chip data-status="' + esc(status) + '">' +
-    esc(STATUS_LABELS[status] || status) + '</span></header>' +
+    '<div class="cloud-sync-conexion-head-text">' +
+    '<h4 class="cloud-sync-conexion-title">Conexión</h4>' +
+    '<p class="cloud-sync-conexion-sub">' +
+    esc(normalizedSala) +
+    '</p></div>' +
+    '<span class="cloud-sync-status-chip ' +
+    statusChipModifier(status) +
+    '" data-cloud-status-chip data-status="' +
+    esc(status) +
+    '">' +
+    esc(STATUS_LABELS[status] || status) +
+    '</span></header>' +
+    '<p class="cloud-sync-status-detail" data-cloud-status-detail' +
+    (showDetail ? '' : ' hidden') +
+    '>' +
+    esc(detailText) +
+    '</p>' +
     bodyHtml
   );
 }

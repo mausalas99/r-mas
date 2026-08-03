@@ -13,6 +13,9 @@ import {
   toEventualidadDateValue,
   eventualidadDateToIso,
   normalizeEventualidadText,
+  getEventualidadesLabsText,
+  setEventualidadesLabsText,
+  mergeEventualidadesLabsText,
 } from './eventualidades-panel.mjs';
 
 test('normalizeEventualidadText uppercases clinical text', () => {
@@ -27,6 +30,23 @@ test('appendEventualidad adds id and ISO at', () => {
   assert.ok(next.entries[0].at);
   assert.equal(next.entries[0].text, 'CAÍDA EN BAÑO');
   assert.equal(next.entries[0].clientId, 'client-1');
+});
+
+test('labsText helpers set / merge / preserve on append', () => {
+  const base = { entries: [], labsText: 'BH Hb 9' };
+  assert.equal(getEventualidadesLabsText(base), 'BH HB 9');
+  const set = setEventualidadesLabsText(base, 'qs gluc 120');
+  assert.equal(set.labsText, 'QS GLUC 120');
+  assert.equal(set.entries.length, 0);
+  const merged = mergeEventualidadesLabsText(set, 'BH Hb 9');
+  assert.equal(merged.changed, true);
+  assert.match(merged.labsText, /QS GLUC 120/);
+  assert.match(merged.labsText, /BH HB 9/);
+  const dup = mergeEventualidadesLabsText(merged, 'BH Hb 9');
+  assert.equal(dup.changed, false);
+  const withEntry = appendEventualidad(merged, 'Caída', 'c1');
+  assert.equal(withEntry.labsText, merged.labsText);
+  assert.equal(withEntry.entries.length, 1);
 });
 
 test('appendEventualidad accepts custom at', () => {
@@ -57,6 +77,8 @@ test('removeEventualidad drops entry by id', () => {
   const next = removeEventualidad(base, 'ev_a');
   assert.equal(next.entries.length, 1);
   assert.equal(next.entries[0].id, 'ev_b');
+  assert.ok(next.deletedIds && next.deletedIds.ev_a);
+  assert.ok(next.updatedAt);
 });
 
 test('findEventualidadEntry returns row by id', () => {

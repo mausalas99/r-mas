@@ -7,6 +7,7 @@ import {
   lanPushPatientVersioned,
   lanFetchHostPatientRow,
   touchPatientLanUpdatedAt,
+  scheduleLiveSyncPush,
 } from './lan-sync.mjs';
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
 import {
@@ -20,20 +21,29 @@ import {
   removeEventualidad,
   formatDaySubLabel,
   groupEntriesByDay,
+  getEventualidadesLabsText,
+  setEventualidadesLabsText,
+  mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
+import {
+  renderEventualidadesLabsPane,
+  wireEventualidadesLabsBox,
+  fillEventualidadesLabsInput,
+} from './eventualidades-labs-ui.mjs';
 
 import { esc } from '../dom-escape.mjs';
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
-/** Pending compose prefill (e.g. lab interpretations from doc-queue). */
+/** Pending labs-box prefill (doc-queue / navigate). */
 let _pendingPrefillText = null;
+/** @type {'note'|'labs'} */
+let _composeMode = 'note';
 
 /**
- * Queue text into the Eventualidades compose box (nueva eventualidad).
- * Applied on next render; call after navigating to the panel.
+ * Queue text into the labs interpretation box (mismo registro Eventualidades).
  * @param {string} text
- * @returns {boolean} true if text was queued
+ * @returns {boolean}
  */
 export function queueEventualidadesPrefill(text) {
   var t = String(text || '').trim();
@@ -42,13 +52,13 @@ export function queueEventualidadesPrefill(text) {
     return false;
   }
   _editingEntryId = null;
+  _composeMode = 'labs';
   _pendingPrefillText = t;
   return true;
 }
 
 /**
- * Apply queued prefill into the compose box if the mount exists.
- * Prefer calling after `renderEventualidadesPanel` (which also applies pending).
+ * Apply queued prefill into the labs box if the mount exists.
  * @param {HTMLElement|null} [mountEl]
  * @returns {boolean}
  */
@@ -58,33 +68,52 @@ export function applyEventualidadesPrefill(mountEl) {
     mountEl ||
     (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
   if (!mount) return false;
-  return fillComposeFromPending_(mount);
+  return fillLabsFromPending_(mount);
 }
 
-function fillComposeFromPending_(mountEl) {
+function fillLabsFromPending_(mountEl) {
   if (!_pendingPrefillText || !mountEl) return false;
-  var input = mountEl.querySelector('#eventualidades-input');
-  if (!input) return false;
   var pending = _pendingPrefillText;
   _pendingPrefillText = null;
-  input.value = pending;
-  try {
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  } catch (_e) {
-    /* ignore */
-  }
-  if (typeof input.focus === 'function') {
-    try {
-      input.focus();
-    } catch (_e2) {
-      /* ignore */
-    }
-  }
-  var compose = mountEl.querySelector('.ev-compose');
-  if (compose && compose.scrollIntoView) {
-    compose.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-  return true;
+  return fillEventualidadesLabsInput(mountEl, pending, setComposeMode_);
+}
+
+/**
+ * @param {'note'|'labs'} mode
+ * @param {HTMLElement|null} [mountEl]
+ */
+function setComposeMode_(mode, mountEl) {
+  _composeMode = mode === 'labs' ? 'labs' : 'note';
+  var mount =
+    mountEl ||
+    (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
+  if (!mount) return;
+  applyComposeModeDom_(mount, _composeMode);
+}
+
+/** Prefer Labs pane (autosend / doc-queue) without rewriting text. */
+export function selectEventualidadesLabsMode() {
+  setComposeMode_('labs');
+}
+
+/**
+ * @param {HTMLElement} mountEl
+ * @param {'note'|'labs'} mode
+ */
+function applyComposeModeDom_(mountEl, mode) {
+  var dock = mountEl.querySelector('.ev-compose');
+  if (!dock) return;
+  dock.setAttribute('data-ev-mode', mode);
+  dock.querySelectorAll('.ev-compose__tab[data-ev-mode]').forEach(function (btn) {
+    var on = btn.getAttribute('data-ev-mode') === mode;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  dock.querySelectorAll('[data-ev-pane]').forEach(function (pane) {
+    var on = pane.getAttribute('data-ev-pane') === mode;
+    pane.hidden = !on;
+    pane.classList.toggle('ev-compose__pane--active', on);
+  });
 }
 
 function daySectionIsOpen(dayGroup, editingId) {
@@ -178,17 +207,37 @@ function wireEventualidadesUppercase(input) {
   });
 }
 
-function renderComposeBlock(editingEntry) {
+function renderComposeSwitcher(mode, isEdit) {
+  const active = isEdit ? 'note' : mode;
+  return (
+    '<div class="ev-compose__switch" role="tablist" aria-label="Tipo de registro">' +
+    '<span class="ev-compose__switch-pill" aria-hidden="true"></span>' +
+    '<button type="button" class="ev-compose__tab' +
+    (active === 'note' ? ' active' : '') +
+    '" role="tab" data-ev-mode="note" aria-selected="' +
+    (active === 'note' ? 'true' : 'false') +
+    '">Eventualidad</button>' +
+    '<button type="button" class="ev-compose__tab' +
+    (active === 'labs' ? ' active' : '') +
+    '" role="tab" data-ev-mode="labs" aria-selected="' +
+    (active === 'labs' ? 'true' : 'false') +
+    '"' +
+    (isEdit ? ' disabled title="Termina la edición para cambiar a Labs"' : '') +
+    '>Labs</button>' +
+    '</div>'
+  );
+}
+
+function renderNotePane(editingEntry) {
   const isEdit = !!editingEntry;
   const atValue = isEdit
     ? toEventualidadDateValue(editingEntry.at)
     : toEventualidadDateValue(new Date());
   const textValue = isEdit ? String(editingEntry.text || '') : '';
   return (
-    '<footer class="ev-compose">' +
-    '<div class="ev-compose__card' +
-    (isEdit ? ' ev-compose__card--edit' : '') +
-    '">' +
+    '<div class="ev-compose__pane" data-ev-pane="note"' +
+    (isEdit || _composeMode !== 'labs' ? '' : ' hidden') +
+    '>' +
     '<div class="ev-compose__top">' +
     '<label class="ev-compose__label" for="eventualidades-input">' +
     (isEdit ? 'Editar eventualidad' : 'Nueva eventualidad') +
@@ -212,7 +261,27 @@ function renderComposeBlock(editingEntry) {
     '<button type="button" class="ea-btn ea-btn--primary ev-compose__submit" id="eventualidades-add">' +
     (isEdit ? 'Guardar' : 'Agregar') +
     '</button>' +
-    '</div></div></div></footer>'
+    '</div></div></div>'
+  );
+}
+
+function renderComposeBlock(editingEntry, store) {
+  const isEdit = !!editingEntry;
+  const mode = isEdit ? 'note' : _composeMode;
+  return (
+    '<footer class="ev-compose" data-ev-mode="' +
+    esc(mode) +
+    '">' +
+    '<div class="ev-compose__card' +
+    (isEdit ? ' ev-compose__card--edit' : '') +
+    '">' +
+    renderComposeSwitcher(mode, isEdit) +
+    renderNotePane(editingEntry) +
+    '<div class="ev-compose__pane" data-ev-pane="labs"' +
+    (mode === 'labs' ? '' : ' hidden') +
+    '>' +
+    renderEventualidadesLabsPane(store) +
+    '</div></div></footer>'
   );
 }
 
@@ -224,7 +293,7 @@ function activePatient() {
   });
 }
 
-function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry) {
+function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, store) {
   return (
     '<div class="ev-panel">' +
     '<header class="ev-panel__head">' +
@@ -241,19 +310,22 @@ function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry) {
           })
           .join('') +
         '</div>'
-      : '<p class="ev-empty">Aún no hay eventualidades. Registra abajo lo ocurrido (puedes elegir fechas anteriores).</p>') +
+      : '<p class="ev-empty">Aún no hay eventualidades. Usa el switcher de abajo: Eventualidad o Labs.</p>') +
     '</div>' +
-    renderComposeBlock(editingEntry) +
+    renderComposeBlock(editingEntry, store) +
     '</div>'
   );
 }
 
 export function ensureEventualidades(patient) {
   if (!patient.eventualidades || typeof patient.eventualidades !== 'object') {
-    patient.eventualidades = { entries: [] };
+    patient.eventualidades = { entries: [], labsText: '' };
   }
   if (!Array.isArray(patient.eventualidades.entries)) {
     patient.eventualidades.entries = [];
+  }
+  if (patient.eventualidades.labsText == null) {
+    patient.eventualidades.labsText = '';
   }
   return patient.eventualidades;
 }
@@ -280,11 +352,44 @@ export async function savePatientEventualidad(patient, text, atIso) {
   return persistEventualidades(patient, next);
 }
 
+/**
+ * Guarda / fusiona el bloque de interpretación de labs (no crea entrada clínica).
+ * @param {object} patient
+ * @param {string} text
+ * @param {{ mode?: 'set'|'merge' }} [opts]
+ */
+export async function savePatientEventualidadesLabs(patient, text, opts) {
+  if (!patient) return { ok: false, reason: 'no-patient' };
+  const store = ensureEventualidades(patient);
+  const mode = opts && opts.mode === 'set' ? 'set' : 'merge';
+  if (mode === 'set') {
+    const next = setEventualidadesLabsText(store, text);
+    if (next.labsText === getEventualidadesLabsText(store)) {
+      return { ok: true, skipped: 'dup' };
+    }
+    return persistEventualidades(patient, next);
+  }
+  const merged = mergeEventualidadesLabsText(store, text);
+  if (!merged.changed) return { ok: true, skipped: 'dup' };
+  return persistEventualidades(patient, {
+    entries: merged.entries,
+    labsText: merged.labsText,
+  });
+}
+
 async function persistEventualidades(patient, store) {
-  patient.eventualidades = store;
+  const next =
+    store && typeof store === 'object'
+      ? Object.assign({}, store, {
+          updatedAt: store.updatedAt || new Date().toISOString(),
+        })
+      : { entries: [], updatedAt: new Date().toISOString() };
+  patient.eventualidades = next;
   touchPatientLanUpdatedAt(patient.id);
   await saveState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
+  // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
+  scheduleLiveSyncPush();
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
   });
@@ -296,12 +401,12 @@ async function persistEventualidades(patient, store) {
       const hostRow = await lanFetchHostPatientRow(patient.id);
       const mutation = createMutationBuilder('patient', patient.id)
         .captureBase(hostPatientMutationBase(patient, hostRow))
-        .set('eventualidades', store)
+        .set('eventualidades', next)
         .build();
       const out = await lanPushPatientVersioned(patient.id, mutation);
       if (out && out.ok) {
         if (out.data) Object.assign(patient, out.data);
-        else patient.eventualidades = store;
+        else patient.eventualidades = next;
         saveState();
         return;
       }
@@ -374,7 +479,29 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
   });
 }
 
+function wireEventualidadesComposeSwitcher(mountEl) {
+  const switchEl = mountEl.querySelector('.ev-compose__switch');
+  if (!switchEl || switchEl.dataset.evSwitchWired === '1') return;
+  switchEl.dataset.evSwitchWired = '1';
+  switchEl.addEventListener('click', function (ev) {
+    const btn = ev.target.closest('.ev-compose__tab[data-ev-mode]');
+    if (!btn || btn.disabled || !switchEl.contains(btn)) return;
+    const mode = btn.getAttribute('data-ev-mode') === 'labs' ? 'labs' : 'note';
+    setComposeMode_(mode, mountEl);
+    const focusId = mode === 'labs' ? '#eventualidades-labs' : '#eventualidades-input';
+    const focusEl = mountEl.querySelector(focusId);
+    if (focusEl && typeof focusEl.focus === 'function') {
+      try {
+        focusEl.focus();
+      } catch {
+        /* ignore */
+      }
+    }
+  });
+}
+
 function wireEventualidadesCompose(mountEl, patient, store) {
+  wireEventualidadesComposeSwitcher(mountEl);
   const addBtn = mountEl.querySelector('#eventualidades-add');
   const input = mountEl.querySelector('#eventualidades-input');
   const atInput = mountEl.querySelector('#eventualidades-at');
@@ -437,22 +564,28 @@ export function renderEventualidadesPanel(mountEl) {
   const store = ensureEventualidades(patient);
   const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
   if (_editingEntryId && !editingEntry) _editingEntryId = null;
+  if (_editingEntryId) _composeMode = 'note';
   const byDay = groupEntriesByDay(store.entries);
   const hasEntries = byDay.length > 0;
 
-  mountEl.innerHTML = buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry);
+  mountEl.innerHTML = buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, store);
   refreshRpcDateFields(mountEl);
   wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
   wireEventualidadesDayToggles(mountEl);
+  wireEventualidadesLabsBox(mountEl, function (next) {
+    return persistEventualidades(patient, next);
+  }, patient, store);
   wireEventualidadesCompose(mountEl, patient, store);
   wireEventualidadesTimeline(mountEl, patient, store);
-  fillComposeFromPending_(mountEl);
+  applyComposeModeDom_(mountEl, _editingEntryId ? 'note' : _composeMode);
+  fillLabsFromPending_(mountEl);
 }
 
 export function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
   _pendingPrefillText = null;
+  _composeMode = 'note';
 }
 
 /** @type {number} */

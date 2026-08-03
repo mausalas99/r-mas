@@ -12,10 +12,12 @@ import { labTimestampMsFromFechaHora } from '../lab-consolidation-cluster.mjs';
 import {
   buildLabConsolidationMergeJobs,
   buildManualLabConsolidationJobs,
+  buildSameDateTimeLabMergeJobs,
   labSetSectionSummary,
   listLabConsolidationCandidates,
   validateManualConsolidationGroup,
 } from '../lab-consolidation-plan.mjs';
+import { isGasometriaOnlyResLabs } from '../lab-history-format.mjs';
 import {
   finishLabConsolidateUi,
   wireLabConsolidateModal,
@@ -217,6 +219,19 @@ function labSetHasGasometria(set) {
   return resLabsHasGasometria(set && set.resLabs);
 }
 
+/** Solo gasometría pura — para no colapsar ABG seriadas a la misma hora. */
+function labSetIsGasometriaOnly(set) {
+  return isGasometriaOnlyResLabs(set && set.resLabs);
+}
+
+function combineConsolidationResults_(a, b) {
+  return {
+    merged: (a.merged || 0) + (b.merged || 0),
+    removedIds: [].concat(a.removedIds || [], b.removedIds || []),
+    keeperIds: [].concat(a.keeperIds || [], b.keeperIds || []),
+  };
+}
+
 function labSetTimestampMs(set) {
   return labTimestampMsFromFechaHora(set.fecha, set.hora);
 }
@@ -257,7 +272,15 @@ function mergeLabHistorySetsCluster(patientId, setsToMerge, tipoGrupo) {
   keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
   if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
   refreshSameDayAscitisForPatient(patientId, keeper.id);
-  keeper.hora = '';
+  // Conserva hora solo si todos los sets coinciden al minuto; si no, evita hora engañosa.
+  var horas = {};
+  arr.forEach(function (s) {
+    var h = String(s.hora || '').trim().slice(0, 5);
+    if (h) horas[h] = true;
+  });
+  var horaKeys = Object.keys(horas);
+  if (horaKeys.length === 1) keeper.hora = horaKeys[0];
+  else keeper.hora = '';
   for (var j = 1; j < arr.length; j++) {
     removedIds.push(String(arr[j].id));
   }
@@ -335,22 +358,29 @@ function setsByIdForPatient(patientId) {
   return map;
 }
 
-/** Auto (import): solo ventana ≤2 h. Manual UI: grupos elegidos por el usuario. */
+/** Auto (import): misma hora primero, luego ventana ≤2 h. Manual UI: grupos del usuario. */
 function runLabConsolidationForPatient(patientId, outlierGroupKeys) {
   if (!patientId || !labHistory[patientId] || labHistory[patientId].length < 2) {
     return { merged: 0, removedIds: [], keeperIds: [] };
   }
   rt.ensureParsedLabHistory(patientId);
   var sets = labHistory[patientId].slice();
-  var jobs = buildLabConsolidationMergeJobs(
-    sets,
-    labSetDayKey,
-    labSetTipo,
-    labSetTimestampMs,
-    outlierGroupKeys,
-    labSetHasGasometria
-  );
-  var result = executeLabConsolidationMergeJobs(patientId, jobs);
+  var sameDtJobs = buildSameDateTimeLabMergeJobs(sets, labSetTipo, labSetIsGasometriaOnly);
+  var sameDtResult = executeLabConsolidationMergeJobs(patientId, sameDtJobs);
+  sets = labHistory[patientId] ? labHistory[patientId].slice() : [];
+  var jobs =
+    sets.length >= 2
+      ? buildLabConsolidationMergeJobs(
+          sets,
+          labSetDayKey,
+          labSetTipo,
+          labSetTimestampMs,
+          outlierGroupKeys,
+          labSetHasGasometria
+        )
+      : [];
+  var windowResult = executeLabConsolidationMergeJobs(patientId, jobs);
+  var result = combineConsolidationResults_(sameDtResult, windowResult);
   if (result.merged) rt.rebuildEstudiosFromLabHistory(patientId);
   return result;
 }

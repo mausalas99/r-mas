@@ -87,7 +87,10 @@
 <div id="lab-some-tables-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-some-tables-modal" role="dialog" aria-modal="true" aria-labelledby="lab-some-tables-modal-title" onclick="event.stopPropagation()">
     <header class="lab-some-tables-modal-head">
-      <h3 id="lab-some-tables-modal-title">Tablas del reporte</h3>
+      <div class="lab-some-tables-modal-head-text">
+        <h3 id="lab-some-tables-modal-title">Tablas del reporte</h3>
+        <p class="lab-some-tables-modal-sub">Columnas del SOME · exportá por sección</p>
+      </div>
     </header>
     <div id="lab-some-tables-modal-body" class="lab-some-tables-modal-body"></div>
   </div>
@@ -127,7 +130,10 @@
 <div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" onclick="event.stopPropagation()">
     <header class="ea-registro-modal-head">
-      <h3 id="ea-registro-title">Registrar medición</h3>
+      <div class="ea-registro-modal-head-text">
+        <h3 id="ea-registro-title">Registrar medición</h3>
+        <p class="ea-registro-modal-sub">Estado actual · cierre de turno 00:00</p>
+      </div>
     </header>
     <div id="ea-registro-modal-body" class="ea-registro-modal-body"></div>
     <div id="ea-paste-backdrop" class="ea-paste-nested-backdrop" aria-hidden="true">
@@ -290,29 +296,39 @@
   <div class="modal lab-repo-batch-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">
       <h3 id="lab-repo-batch-title">Actualizar labs</h3>
-      <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Rango compartido · la cola queda en la barra lateral</p>
+      <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Mi equipo · rango compartido · la cola queda en la barra lateral</p>
     </div>
     <div class="lab-repo-batch-fields">
-      <div class="lab-repo-batch-dates">
-        <div class="field-group">
-          <label for="lab-repo-batch-desde">Desde</label>
-          <input id="lab-repo-batch-desde" type="date" class="rpc-date-input" />
+      <section class="lab-repo-batch-section" aria-labelledby="lab-repo-batch-range-label">
+        <div class="lab-repo-batch-section-head">
+          <h4 id="lab-repo-batch-range-label" class="lab-repo-batch-section-label">Rango</h4>
         </div>
-        <div class="field-group">
-          <label for="lab-repo-batch-hasta">Hasta</label>
-          <input id="lab-repo-batch-hasta" type="date" class="rpc-date-input" />
+        <div class="lab-repo-batch-dates">
+          <div class="field-group">
+            <label for="lab-repo-batch-desde">Desde</label>
+            <input id="lab-repo-batch-desde" type="date" class="rpc-date-input" />
+          </div>
+          <div class="field-group">
+            <label for="lab-repo-batch-hasta">Hasta</label>
+            <input id="lab-repo-batch-hasta" type="date" class="rpc-date-input" />
+          </div>
         </div>
-      </div>
+      </section>
       <div id="lab-repo-batch-team-block" class="lab-repo-batch-team-block">
-      <div class="lab-repo-batch-toolbar">
-        <div class="lab-repo-batch-toolbar-actions">
-          <button type="button" class="btn-med-secondary" id="lab-repo-batch-select-all" onclick="labRepoBatchSelectAll()">Todos</button>
-          <button type="button" class="btn-med-secondary" id="lab-repo-batch-select-active" onclick="labRepoBatchSelectActive()">Solo activo</button>
-          <button type="button" class="btn-med-secondary" id="lab-repo-batch-select-none" onclick="labRepoBatchSelectNone()">Ninguno</button>
-        </div>
-        <span id="lab-repo-batch-count" class="lab-repo-batch-count"></span>
-      </div>
-      <div id="lab-repo-batch-list" class="lab-repo-batch-list" role="group" aria-label="Pacientes de mi equipo"></div>
+        <section class="lab-repo-batch-section lab-repo-batch-section--patients" aria-labelledby="lab-repo-batch-patients-label">
+          <div class="lab-repo-batch-section-head">
+            <h4 id="lab-repo-batch-patients-label" class="lab-repo-batch-section-label">Pacientes</h4>
+            <span id="lab-repo-batch-count" class="lab-repo-batch-count"></span>
+          </div>
+          <div class="lab-repo-batch-toolbar" role="group" aria-label="Selección rápida">
+            <div class="lab-repo-batch-seg">
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-all" onclick="labRepoBatchSelectAll()">Todos</button>
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-active" onclick="labRepoBatchSelectActive()">Solo activo</button>
+              <button type="button" class="lab-repo-batch-seg-btn" id="lab-repo-batch-select-none" onclick="labRepoBatchSelectNone()">Ninguno</button>
+            </div>
+          </div>
+          <div id="lab-repo-batch-list" class="lab-repo-batch-list" role="group" aria-label="Pacientes de mi equipo"></div>
+        </section>
       </div>
       <p id="lab-repo-batch-progress" class="lab-repo-batch-progress" hidden></p>
     </div>

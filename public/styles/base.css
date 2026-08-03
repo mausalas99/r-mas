@@ -64,10 +64,6 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
 .patient-card--roundrow {
   padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
 }
-.patient-card--roundrow::before {
-  top: calc(8px * var(--density-space));
-  bottom: calc(8px * var(--density-space));
-}
 .roundrow-main {
   display: flex;
   align-items: center;

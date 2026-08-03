@@ -11,6 +11,10 @@ import {
   LAB_CONSOLIDATION_WINDOW_MS,
   resolveLabConsolidationWindowMs,
 } from './lab-consolidation-cluster.mjs';
+import {
+  findLabSetsByDateTime,
+  gasometriaFingerprintFromResLabs,
+} from './lab-history-auto-store-core.mjs';
 
 export function labDayTipoGroupKey(dayKey, tipo) {
   return String(dayKey || '') + '\x01' + labConsolidationFamily(tipo);
@@ -99,6 +103,70 @@ export function findOutlierLabConsolidationGroups(
     });
   });
   return outliers;
+}
+
+/**
+ * Misma fecha+hora (minuto): fusionar paneles complementarios (BH+GASES y QS+GASES → uno).
+ * No une gasometrías seriadas puras con valores distintos.
+ * @param {object[]} sets
+ * @param {(set: object) => string} getTipo
+ * @param {(set: object) => boolean} [isGasoOnly]
+ * @returns {Array<{ groupKey: string, kind: 'same-datetime', sets: object[] }>}
+ */
+/** @param {object[]} group @param {(set: object) => boolean} gasoFn */
+function sameDateTimeGasoFingerprintOk(group, gasoFn) {
+  if (!group.every(gasoFn)) return true;
+  var fps = Object.create(null);
+  group.forEach(function (s) {
+    var fp = gasometriaFingerprintFromResLabs(s.resLabs || []);
+    if (fp) fps[fp] = true;
+  });
+  return Object.keys(fps).length <= 1;
+}
+
+/** @param {object[]} sets @param {object} set @param {(set: object) => string} getTipo @param {(set: object) => boolean} gasoFn @param {Record<string, boolean>} seen */
+function sameDateTimeJobForSet(sets, set, getTipo, gasoFn, seen) {
+  if (!set || set.id == null) return null;
+  var tipo = getTipo(set);
+  if (tipo === 'mixed' || labConsolidationFamily(tipo) !== 'labwork') return null;
+  var fecha = String(set.fecha || '').trim();
+  var hora = String(set.hora || '').trim();
+  if (!fecha || !hora || fecha === 'Anterior') return null;
+  var group = findLabSetsByDateTime(sets, fecha, hora).filter(function (s) {
+    var t = getTipo(s);
+    return t !== 'mixed' && labConsolidationFamily(t) === 'labwork';
+  });
+  if (group.length < 2) return null;
+  var key =
+    String(group[0].fecha || '').trim() +
+    '\x01' +
+    String(group[0].hora || '')
+      .trim()
+      .slice(0, 5);
+  if (seen[key]) return null;
+  seen[key] = true;
+  if (!sameDateTimeGasoFingerprintOk(group, gasoFn)) return null;
+  return {
+    groupKey: 'dt:' + key,
+    kind: 'same-datetime',
+    sets: group.slice(),
+  };
+}
+
+export function buildSameDateTimeLabMergeJobs(sets, getTipo, isGasoOnly) {
+  var gasoFn =
+    typeof isGasoOnly === 'function'
+      ? isGasoOnly
+      : function (set) {
+          return getTipo(set) === 'gaso';
+        };
+  var seen = Object.create(null);
+  var jobs = [];
+  (sets || []).forEach(function (set) {
+    var job = sameDateTimeJobForSet(sets, set, getTipo, gasoFn, seen);
+    if (job) jobs.push(job);
+  });
+  return jobs;
 }
 
 /**

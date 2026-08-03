@@ -274,6 +274,11 @@ async function tryNubeEarlyRefresh_(deps, root, gen, force) {
   if (force) return false;
   if (!root.querySelector('.cloud-sync-conexion')) return false;
   if (typeof deps.mountCloudNubeSection !== 'function') return false;
+  // Drop LAN preflight chips left by an in-place chrome refresh (ping/red/token…).
+  root.querySelectorAll('.lan-preflight-row').forEach(function (el) {
+    el.hidden = true;
+    el.innerHTML = '';
+  });
   await deps.mountCloudNubeSection(root);
   return true;
 }
@@ -298,7 +303,14 @@ async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expan
     wireLanLwwToastPref();
     syncLanLwwOverwriteToastPrefUi();
     const nubeSection = root.querySelector('.cloud-sync-conexion');
-    syncCloudSecondaryPanels(root, nubeSection?.dataset?.cloudView || 'status');
+    const cloudView = nubeSection?.dataset?.cloudView || 'status';
+    syncCloudSecondaryPanels(root, cloudView);
+    // Re-assert after any async footer append that might have raced.
+    queueMicrotask(function () {
+      if (!root.isConnected) return;
+      const section = root.querySelector('.cloud-sync-conexion');
+      syncCloudSecondaryPanels(root, section?.dataset?.cloudView || cloudView);
+    });
     return;
   }
   return nubeOverridesLan;

@@ -1,4 +1,4 @@
-import { confirmAction, fmtRole, normalizeUsernameConfirm } from './panel-admin-helpers.mjs';
+import { confirmAction, fmtRole } from './panel-admin-helpers.mjs';
 import { setSessionAdminKey } from './panel-admin-helpers.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 import { showAdminPromptModal } from './admin-prompt-modal.mjs';
@@ -219,15 +219,13 @@ async function handleDisableUser(deps, userId, handle) {
 
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleDeleteUser(deps, userId, handle) {
-  if (!confirmAction('¿Eliminar permanentemente a @' + handle + ' de la nube?')) return;
-  const typed = await showAdminPromptModal({
-    title: 'Confirmar eliminación',
-    message: 'Escribí el usuario (@' + handle + ') para confirmar:',
-    placeholder: '@' + handle,
-    confirmLabel: 'Eliminar',
-  });
-  if (typed === null || normalizeUsernameConfirm(typed) !== normalizeUsernameConfirm(handle)) {
-    if (typed !== null) deps.toast('Confirmación incorrecta.', 'error');
+  if (
+    !confirmAction(
+      '¿Eliminar a @' +
+        handle +
+        ' de la nube?\n\nSi es dueño de una sala con otros miembros, el dueño pasa a otro. Si queda sola, se purga esa sala.'
+    )
+  ) {
     return;
   }
   try {

@@ -20,6 +20,7 @@ export {
   CLOUD_SALAS,
   LAN_ONLY_SALAS,
   normalizeCloudSala,
+  displayCloudSalaLabel,
   isCloudSala,
   isLanOnlySala,
 } from './sala-allowlist.mjs';

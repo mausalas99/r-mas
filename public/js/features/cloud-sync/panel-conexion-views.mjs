@@ -4,6 +4,7 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { hasElevatedTeamPrivileges } from '../../clinical-privileges.mjs';
 import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
+import { canAccessCloudAdmin } from './panel-admin.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -27,11 +28,13 @@ function viewBlock(id, title, body, hidden = true) {
   const bar =
     id === 'status'
       ? ''
-      : '<div class="cloud-sync-view-bar">' +
-        '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-view-back" data-cloud-action="nav-back">← Volver</button>' +
-        '<strong class="cloud-sync-view-title">' +
+      : '<header class="cloud-sync-view-bar">' +
+        '<button type="button" class="cloud-sync-view-back" data-cloud-action="nav-back">' +
+        '<span class="cloud-sync-view-back-chevron" aria-hidden="true">‹</span>' +
+        'Opciones</button>' +
+        '<h4 class="cloud-sync-view-title">' +
         esc(title) +
-        '</strong></div>';
+        '</h4></header>';
   return (
     '<div class="cloud-sync-view" data-cloud-view="' +
     esc(id) +
@@ -58,7 +61,21 @@ function optionsRow(title, meta, view) {
     '<span class="cloud-sync-options-row-meta">' +
     esc(meta) +
     '</span></span>' +
-    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">→</span></button>'
+    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button>'
+  );
+}
+
+/** @param {string} label @param {string} rowsHtml */
+function optionsGroup(label, rowsHtml) {
+  if (!rowsHtml) return '';
+  return (
+    '<section class="cloud-sync-options-group">' +
+    '<h5 class="cloud-sync-options-label">' +
+    esc(label) +
+    '</h5>' +
+    '<div class="cloud-sync-options-card">' +
+    rowsHtml +
+    '</div></section>'
   );
 }
 
@@ -104,28 +121,51 @@ function cuentaBodyHtml(cloudUser) {
  *   equipoHtml: string,
  *   adminHtml?: string,
  *   url: string,
+ *   hasCloudSession?: boolean,
  * }} opts
  */
-export function connectedViewsHtml({ cloudUser, roomHtml, equipoHtml, adminHtml = '', url }) {
-  const hasAdmin = !!String(adminHtml || '').trim();
+export function connectedViewsHtml({
+  cloudUser,
+  roomHtml,
+  equipoHtml,
+  adminHtml = '',
+  url,
+  hasCloudSession = false,
+}) {
+  const showAdmin =
+    !!String(adminHtml || '').trim() ||
+    canAccessCloudAdmin(clinicalSessionContext.user, { hasCloudSession });
+  const adminHost = showAdmin
+    ? String(adminHtml || '').trim() ||
+      '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>'
+    : '';
   const showOps = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   const statusBody =
     '<div class="cloud-sync-status-sheet">' +
     roomHtml +
     statusIdentityHtml(cloudUser) +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="nav-options">Opciones</button></div>';
+    '<button type="button" class="cloud-sync-options-entry" data-cloud-action="nav-options">' +
+    '<span class="cloud-sync-options-entry-text">' +
+    '<span class="cloud-sync-options-entry-title">Opciones</span>' +
+    '<span class="cloud-sync-options-entry-meta">Equipo, cuenta y administración</span></span>' +
+    '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button></div>';
 
-  let optionsBody = '';
-  optionsBody += optionsRow('Equipo', 'Mi rotación', 'equipo');
+  let guardiaRows = optionsRow('Equipo', 'Mi rotación', 'equipo');
   if (showOps) {
-    optionsBody += optionsRow('Operaciones', 'Equipos y censo del turno', 'ops');
+    guardiaRows += optionsRow('Operaciones', 'Equipos y censo del turno', 'ops');
   }
-  optionsBody += optionsRow('Cuenta', 'Recuperación y sesión', 'cuenta');
-  if (hasAdmin) {
-    optionsBody += optionsRow('Administración', 'Usuarios y salas', 'admin');
+  let cuentaRows = optionsRow('Cuenta', 'Recuperación y sesión', 'cuenta');
+  if (showAdmin) {
+    cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
   }
-  optionsBody += optionsRow('Diagnóstico LAN', 'Cola local · no es Nube', 'lan');
-  optionsBody += optionsRow('Avanzado', 'URL del servicio', 'advanced');
+  const sistemaRows =
+    optionsRow('Diagnóstico LAN', 'Cola local · no es Nube', 'lan') +
+    optionsRow('Avanzado', 'URL del servicio', 'advanced');
+
+  const optionsBody =
+    optionsGroup('Guardia', guardiaRows) +
+    optionsGroup('Cuenta', cuentaRows) +
+    optionsGroup('Sistema', sistemaRows);
 
   return (
     '<div class="cloud-sync-views" data-cloud-views>' +
@@ -136,13 +176,11 @@ export function connectedViewsHtml({ cloudUser, roomHtml, equipoHtml, adminHtml 
       ? viewBlock(
           'ops',
           'Operaciones',
-          '<p class="cloud-sync-hint">Crear equipos, censo global y rotación del turno.</p>'
+          '<div class="cloud-sync-ops-host" data-cloud-ops-host aria-hidden="true"></div>'
         )
       : '') +
     viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
-    (hasAdmin
-      ? viewBlock('admin', 'Administración', adminHtml)
-      : '') +
+    (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
     viewBlock(
       'lan',
       'Diagnóstico LAN',
@@ -161,7 +199,22 @@ export function connectedStepsHtml(opts) {
     equipoHtml: opts.equipoHtml,
     adminHtml: opts.masBodyHtml || opts.adminHtml || '',
     url: opts.url || '',
+    hasCloudSession: opts.hasCloudSession,
   });
+}
+
+/**
+ * Panel root that owns `.lan-connection-stack` (sibling of Nube section).
+ * @param {HTMLElement | null} from
+ * @returns {HTMLElement | null}
+ */
+export function resolveConexionPanelRoot(from) {
+  if (!from) return null;
+  if (from.id === 'lan-connection-panel-root') return from;
+  const closest = typeof from.closest === 'function' ? from.closest('#lan-connection-panel-root') : null;
+  if (closest) return closest;
+  if (from.querySelector?.('.lan-connection-stack')) return from;
+  return from.parentElement;
 }
 
 /**
@@ -170,12 +223,15 @@ export function connectedStepsHtml(opts) {
  * @param {string} view
  */
 export function syncCloudSecondaryPanels(root, view) {
-  if (!root) return;
-  const stack = root.querySelector('.lan-connection-stack');
+  const panel = resolveConexionPanelRoot(root);
+  if (!panel) return;
+  const stack = panel.querySelector('.lan-connection-stack');
   if (!stack) return;
   const showOps = view === 'ops';
   const showLan = view === 'lan';
-  stack.hidden = !showOps && !showLan;
+  const showStack = showOps || showLan;
+  stack.hidden = !showStack;
+  stack.setAttribute('data-cloud-stack-view', showOps ? 'ops' : showLan ? 'lan' : 'hidden');
   stack.querySelectorAll('[data-cloud-secondary]').forEach(function (el) {
     const kind = el.getAttribute('data-cloud-secondary');
     if (kind === 'ops') el.hidden = !showOps;
@@ -194,7 +250,12 @@ export function applyConexionView(section, view, hooks) {
   section.querySelectorAll('[data-cloud-view]').forEach(function (el) {
     el.hidden = el.getAttribute('data-cloud-view') !== next;
   });
-  syncCloudSecondaryPanels(section.parentElement, next);
+  // Home chrome (Conexión + chip) only on status — subviews get a clean page.
+  const head = section.querySelector('.cloud-sync-conexion-head');
+  if (head && section.querySelector('[data-cloud-views]')) {
+    head.hidden = next !== 'status';
+  }
+  syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
   if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
     void hooks.onAdmin();
   }

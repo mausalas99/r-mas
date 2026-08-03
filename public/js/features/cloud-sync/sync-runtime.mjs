@@ -12,7 +12,7 @@ let _activeRuntime = null;
  *   getRoomId: () => string,
  *   getRevision: () => number,
  *   setRevision: (revision: number) => void,
- *   onStatus?: (status: CloudSyncStatus) => void,
+ *   onStatus?: (status: CloudSyncStatus, detail?: string) => void,
  *   applyPullResult?: (result: unknown) => void | Promise<void>,
  * }} deps
  */

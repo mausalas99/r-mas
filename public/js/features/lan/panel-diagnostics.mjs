@@ -25,6 +25,8 @@ import { isLanElectronDesktop, isLanRemoteJoinMode } from './transport.mjs';
 import { flushLiveSyncOutbox } from './push.mjs';
 import { getLanClientId } from './runtime.mjs';
 import { recoverMonitoreoFromLanCache } from './vitals-recovery.mjs';
+import { shouldShowNubePanel } from '../cloud-sync/lan-override.mjs';
+import { getUserSala } from './panel-clinical-context.mjs';
 
 export const LAN_SYNC_DIAG_OPEN_KEY = 'rpc-lan-sync-diagnostics-open';
 
@@ -223,9 +225,23 @@ async function buildLanPreflightFromDeps(panelDeps, diagDeps, diag) {
   };
 }
 
+/** Hide leftover LAN preflight chips (e.g. after chrome refresh on a Nube sala). */
+function hideLanPreflightRow(root) {
+  if (!root) return;
+  var row = root.querySelector('.lan-preflight-row');
+  if (!row) return;
+  row.hidden = true;
+  row.innerHTML = '';
+}
+
 /** @param {PanelDiagnosticsDeps} deps @param {HTMLElement|null} root */
 async function renderLanPreflightUx(deps, root) {
   if (!root) return null;
+  // Sala/Torre HU sync via Nube — LAN ping/token/subnet lights are misleading.
+  if (shouldShowNubePanel(getUserSala())) {
+    hideLanPreflightRow(root);
+    return null;
+  }
   var diagDeps = await buildLanSyncDiagnosticsDeps(deps);
   var diag = getLanSyncDiagnostics(diagDeps);
   var preflight = await buildLanPreflightFromDeps(deps, diagDeps, diag);

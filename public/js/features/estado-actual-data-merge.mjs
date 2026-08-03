@@ -56,13 +56,20 @@ function mergeHistorialMonitoreo(localHist, remoteHist) {
 /**
  * @param {Record<string, unknown>} resEco
  * @param {Record<string, unknown>} remEco
+ * @param {string | null | undefined} localAt
+ * @param {string | null | undefined} remoteAt
  */
-function mergeEstadoClinicoScalars(resEco, remEco) {
+function mergeEstadoClinicoScalars(resEco, remEco, localAt, remoteAt) {
+  var remoteNewer = compareSavedAt(remoteAt, localAt) > 0;
   for (var sk = 0; sk < EC_SCALAR_KEYS.length; sk += 1) {
     var scalarKey = EC_SCALAR_KEYS[sk];
     var localScalar = String(resEco[scalarKey] || '').trim();
     var remoteScalar = String(remEco[scalarKey] || '').trim();
-    if (!localScalar && remoteScalar) resEco[scalarKey] = remEco[scalarKey];
+    if (remoteNewer) {
+      if (remoteScalar || !localScalar) resEco[scalarKey] = remEco[scalarKey];
+    } else if (!localScalar && remoteScalar) {
+      resEco[scalarKey] = remEco[scalarKey];
+    }
   }
 }
 
@@ -158,6 +165,25 @@ function mergeDietPendingFields(pendienteReceta, locPend, remPend) {
   }
 }
 
+/** @param {any} result @param {any} remote */
+function mergeTextoGuardadoLww(result, remote) {
+  var locT = result.textoGuardado || { text: '', savedAt: null };
+  var remT = remote.textoGuardado || { text: '', savedAt: null };
+  result.textoGuardado =
+    compareSavedAt(remT.savedAt, locT.savedAt) > 0
+      ? structuredClone(remT)
+      : structuredClone(locT);
+}
+
+/** @param {any} result @param {string} localEcAt @param {string} remoteEcAt */
+function applyEstadoClinicoUpdatedAt(result, localEcAt, remoteEcAt) {
+  if (compareSavedAt(remoteEcAt, localEcAt) > 0) {
+    result.estadoClinicoUpdatedAt = remoteEcAt;
+  } else if (localEcAt) {
+    result.estadoClinicoUpdatedAt = localEcAt;
+  }
+}
+
 /**
  * @param {unknown} localIn
  * @param {unknown} remoteIn
@@ -171,13 +197,7 @@ export function mergeMonitoreo(localIn, remoteIn) {
   /** @type {any} */
   var result = /** @type {any} */ (structuredClone(localIn));
   result.historial = mergeHistorialMonitoreo(lHist, rHist);
-
-  var locT = result.textoGuardado || { text: '', savedAt: null };
-  var remT = remote.textoGuardado || { text: '', savedAt: null };
-  result.textoGuardado =
-    compareSavedAt(remT.savedAt, locT.savedAt) > 0
-      ? structuredClone(remT)
-      : structuredClone(locT);
+  mergeTextoGuardadoLww(result, remote);
 
   /** @type {any} */
   var resEco = result.estadoClinico || emptyEstadoClinico();
@@ -188,11 +208,16 @@ export function mergeMonitoreo(localIn, remoteIn) {
   /** @type {any} */
   var remCf = remote.confirmado || {};
 
-  mergeEstadoClinicoScalars(resEco, remEco);
+  var localEcAt =
+    local && local.estadoClinicoUpdatedAt != null ? String(local.estadoClinicoUpdatedAt) : '';
+  var remoteEcAt =
+    remote && remote.estadoClinicoUpdatedAt != null ? String(remote.estadoClinicoUpdatedAt) : '';
+  mergeEstadoClinicoScalars(resEco, remEco, localEcAt, remoteEcAt);
   mergeConfirmedMedFields(resEco, resCf, remEco, remCf);
   mergeDietPending(result, resEco, resCf, local, remote);
 
   result.estadoClinico = resEco;
   result.confirmado = resCf;
+  applyEstadoClinicoUpdatedAt(result, localEcAt, remoteEcAt);
   return result;
 }

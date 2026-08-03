@@ -17,7 +17,6 @@ import {
 import {
   datetimeLocalToIso,
   isoToHHmm,
-  parseNumOrNull,
   formatEaSavedLabel,
 } from './estado-actual-panel-format.mjs';
 import {
@@ -40,7 +39,6 @@ import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { findActivePatient } from './estado-actual-panel-core.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
-import { syncEaRegistroInsulinRescateFlag } from './estado-actual-panel-registro-io.mjs';
 import {
   flushEaEstadoClinicoFieldsFromDom,
   persistEstadoClinicoAndRefresh,
@@ -140,7 +138,8 @@ export function ensureEaRegistroModalForm() {
   if (
     !body.querySelector('#ea-form') ||
     !body.querySelector('.ea-registro-shell') ||
-    !body.querySelector('[data-ea-vital-stack="tas"]')
+    !body.querySelector('[data-ea-vital-stack="tas"]') ||
+    !body.querySelector('#ea-add-glu.ea-glu-add-inline')
   ) {
     body.innerHTML = buildRegistroFormMarkup();
   }

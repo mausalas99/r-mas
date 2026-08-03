@@ -64,13 +64,17 @@ export function toastRegisterError(err, toast) {
  */
 export async function afterAuthSuccess(deps, user) {
   deps.setCloudUser({ username: user?.username || '', displayName: user?.displayName || '' });
-  await bridgeCloudIdentityToLocal({
-    username: deps.getCloudUser().username,
-    displayName: deps.getCloudUser().displayName,
-  });
-  await deps.tryAutoEnsureTurnRoom();
+  // Identity IPC + ensure-turn in parallel — don't serialize round-trips.
+  await Promise.all([
+    bridgeCloudIdentityToLocal({
+      username: deps.getCloudUser().username,
+      displayName: deps.getCloudUser().displayName,
+    }),
+    deps.tryAutoEnsureTurnRoom(),
+  ]);
+  // Mi rotación must not block "conectado" — open in background if needed.
   if (!isCutoverPending() && !userHasJoinedTeam()) {
-    await deps.handleOpenRotation();
+    void deps.handleOpenRotation();
   }
 }
 
@@ -290,6 +294,7 @@ export function renderAfterAuth(deps) {
       typeof deps.getCloudSyncRoomSnapshot === 'function'
         ? deps.getCloudSyncRoomSnapshot()
         : null;
+    // renderConnected starts the sync runtime — do not call startRuntime again.
     deps.renderConnected({
       id: roomId,
       revision: deps.getCloudSyncRevision(),
@@ -298,7 +303,6 @@ export function renderAfterAuth(deps) {
       turnKey: snap?.turnKey || '',
       name: snap?.name || '',
     });
-    deps.startRuntime();
   } else {
     deps.renderDisconnected();
   }

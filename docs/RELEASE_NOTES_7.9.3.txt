@@ -1,0 +1,26 @@
+R+ 7.9.3 (Eventualidades Labs + sync Nube)
+==========================================
+
+Fecha: 2026-08-03
+
+## Resumen
+
+**7.9.3** separa la documentación de labs en Eventualidades (pestaña Labs con texto consolidado al estilo Estudios), hace el sync Nube más fiel al turno (LWW por bloque, labs slim, polling adaptativo) y abre el registro de Estado Actual limpio, con secciones claras.
+
+## Nuevo / mejorado
+
+- **Eventualidades — Labs** — Switcher Eventualidad / Labs. La interpretación va a una caja dedicada (`labsText`) con formato Estudios (BH/QS/GASES…). Procesar SOME, Actualizar labs y la cola de documentación fusionan ahí; ya no crean entradas clínicas por cada batch.
+- **Nube — sync** — Monitoreo y eventualidades con relojes de contenido propios. Labs sin PDF/binarios; polling adaptativo y push con debounce; error visible en el chip ⇄.
+- **Nube — Conexión** — Chip con Sala 1 / Sala 2 / Sala E; Opciones agrupadas; admin con pestañas.
+- **Estado Actual — registro** — Modal por secciones (signos, glu, I/E). Abre limpio (sin prefill de vitales/IO). Estado clínico respeta `estadoClinicoUpdatedAt` al sincronizar.
+- **Labs — consolidación** — Misma fecha+hora fusiona paneles complementarios antes de la ventana ≤2 h; gasometrías seriadas distintas no colapsan. Tablas SOME más legibles.
+- **LAN / censo** — Cuarto y cama no se pisan si el remoto no trae reloj más reciente. En salas Nube se ocultan chips LAN engañosos.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.3
+
+- Mac: `R+-7.9.3-arm64.dmg`, `R+-7.9.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.3-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

@@ -5,6 +5,7 @@ import { flushEaEstadoClinicoFieldsFromDom } from '../estado-actual-panel.mjs';
 import { setSaveStateHooks } from '../../app-state.mjs';
 import { touchPatientLanUpdatedAt } from './patient-entries.mjs';
 import { getLanRuntime } from './orchestrator-runtime.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 
 export function buildEstadoActualCommand(opts) {
   return buildLanCommand({
@@ -54,8 +55,11 @@ export function registerLanSaveHooks(deps) {
   setSaveStateHooks({
     before() {
       flushEaEstadoClinicoFieldsFromDom();
+      // LAN-only: bump active patient clock on any save. Under Nube, demographic / EA
+      // edits touch lanUpdatedAt / estadoClinicoUpdatedAt explicitly so unrelated pushes
+      // (labs, notes) do not win the whole `fields` / `monitoreo` LWW paths.
       var aid = runtime.getActiveId();
-      if (activeLiveSyncRoomId && aid) touchPatientLanUpdatedAt(aid);
+      if (activeLiveSyncRoomId && aid && !isCloudSyncActive()) touchPatientLanUpdatedAt(aid);
     },
     after() {
       post();

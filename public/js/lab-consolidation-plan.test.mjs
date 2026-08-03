@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildLabConsolidationMergeJobs,
   buildManualLabConsolidationJobs,
+  buildSameDateTimeLabMergeJobs,
   countAutoLabConsolidationMerges,
   findOutlierLabConsolidationGroups,
   labDayTipoGroupKey,
@@ -11,8 +12,9 @@ import {
   validateManualConsolidationGroup,
 } from './lab-consolidation-plan.mjs';
 import { LAB_CONSOLIDATION_WINDOW_MS } from './lab-consolidation-cluster.mjs';
+import { isGasometriaOnlyResLabs } from './lab-history-format.mjs';
 
-describe('lab-consolidation-plan', () => {
+describe('lab-consolidation-plan — outliers y same-datetime', () => {
   it('findOutlierLabConsolidationGroups detecta mismo día con >2 h entre clusters', () => {
     var sets = [
       { id: 'a', day: '2026-6-12', tipo: 'labs', ms: 0 },
@@ -33,6 +35,69 @@ describe('lab-consolidation-plan', () => {
     assert.equal(outliers.length, 1);
     assert.equal(outliers[0].clusters.length, 2);
     assert.equal(outliers[0].setCount, 2);
+  });
+
+  it('buildSameDateTimeLabMergeJobs une BH+GASES con QS+GASES misma hora', () => {
+    var sets = [
+      {
+        id: '1',
+        fecha: '03/08/2026',
+        hora: '05:51',
+        tipo: 'labs',
+        resLabs: ['BH\tHb 9.42', 'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7'],
+      },
+      {
+        id: '2',
+        fecha: '03/08/2026',
+        hora: '05:51',
+        tipo: 'labs',
+        resLabs: [
+          'QS\tGlu 73',
+          'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7 AG 11.5',
+        ],
+      },
+    ];
+    var jobs = buildSameDateTimeLabMergeJobs(
+      sets,
+      function (s) {
+        return s.tipo;
+      },
+      function (s) {
+        return isGasometriaOnlyResLabs(s.resLabs);
+      }
+    );
+    assert.equal(jobs.length, 1);
+    assert.equal(jobs[0].kind, 'same-datetime');
+    assert.equal(jobs[0].sets.length, 2);
+  });
+
+  it('buildSameDateTimeLabMergeJobs no une gasos puros con valores distintos', () => {
+    var sets = [
+      {
+        id: '1',
+        fecha: '03/08/2026',
+        hora: '05:51',
+        tipo: 'gaso',
+        resLabs: ['GASES\tpH 7.32 pCO2 44'],
+      },
+      {
+        id: '2',
+        fecha: '03/08/2026',
+        hora: '05:51',
+        tipo: 'gaso',
+        resLabs: ['GASES\tpH 7.40 pCO2 30'],
+      },
+    ];
+    var jobs = buildSameDateTimeLabMergeJobs(
+      sets,
+      function (s) {
+        return s.tipo;
+      },
+      function (s) {
+        return isGasometriaOnlyResLabs(s.resLabs);
+      }
+    );
+    assert.equal(jobs.length, 0);
   });
 
   it('buildLabConsolidationMergeJobs auto solo une ≤2 h', () => {
@@ -104,6 +169,9 @@ describe('lab-consolidation-plan', () => {
     assert.equal(jobs[0].sets.length, 2);
   });
 
+});
+
+describe('lab-consolidation-plan — auto merge y manual', () => {
   it('buildLabConsolidationMergeJobs mantiene gasometría seriada aunque haya labs previos', () => {
     var sets = [
       { id: 'a', day: '2026-6-12', tipo: 'labs', ms: 0 },

@@ -5,13 +5,13 @@ import { mergeTodoListsById } from './livesync-patient-ids.mjs';
 import { mergeMonitoreo, emptyEstadoClinico } from './features/estado-actual-data.mjs';
 import { hasPendingEaProposals } from './features/estado-actual-meds.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
-import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 import { medPharmProfileUpdatedAt } from './med-pharm-profile-core.mjs';
 import { mergePatientRegistrationMeta } from './patient-registration-meta.mjs';
 import { mergeCensoPatientFieldsFromBoth } from './patient-diagnosticos.mjs';
 import { isDemoPatientId } from './demo-patient.mjs';
+import { eventualidadesUpdatedAt, mergeEventualidades } from './lan-patient-merge-eventualidades.mjs';
 
-export { isDemoPatientId };
+export { isDemoPatientId, eventualidadesUpdatedAt, mergeEventualidades };
 
 /** @param {object} entry */
 export function entryMatchKey(entry) {
@@ -57,59 +57,6 @@ function listadoTimestamp(lst) {
   if (!lst || typeof lst !== 'object') return '';
   if (lst.updatedAt) return String(lst.updatedAt);
   return docTimestamp(lst.fecha, lst.hora);
-}
-
-/** @param {unknown} store */
-export function eventualidadesUpdatedAt(store) {
-  if (!store || typeof store !== 'object') return '';
-  /** @type {{ entries?: object[], updatedAt?: string }} */
-  const s = store;
-  let best = s.updatedAt ? String(s.updatedAt) : '';
-  const entries = Array.isArray(s.entries) ? s.entries : [];
-  for (let i = 0; i < entries.length; i += 1) {
-    const row = entries[i];
-    if (!row || typeof row !== 'object') continue;
-    const at = String(/** @type {{ at?: string, updatedAt?: string }} */ (row).at || /** @type {{ updatedAt?: string }} */ (row).updatedAt || '');
-    if (compareIso(at, best) > 0) best = at;
-  }
-  return best;
-}
-
-function mergeEventualidadRow(byId, row) {
-  if (!row || typeof row !== 'object') return;
-  const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
-  if (!id) return;
-  const cur = byId.get(id);
-  const at = String(/** @type {{ at?: string }} */ (row).at || '');
-  const curAt = cur ? String(/** @type {{ at?: string }} */ (cur).at || '') : '';
-  if (!cur || compareIso(at, curAt) >= 0) byId.set(id, { ...row });
-}
-
-function appendAnonymousEventualidades(byId, leftEntries, rightEntries) {
-  const { toAdd } = filterNewEventualidades(
-    Array.from(byId.values()),
-    rightEntries.filter((row) => !String(/** @type {{ id?: string }} */ (row).id || '').trim())
-  );
-  for (const row of toAdd) {
-    byId.set('anon:' + dedupeEventualidadKey(row), { ...row });
-  }
-}
-
-/** @param {unknown} a @param {unknown} b */
-export function mergeEventualidades(a, b) {
-  const left = a && typeof a === 'object' ? /** @type {{ entries?: object[] }} */ (a) : null;
-  const right = b && typeof b === 'object' ? /** @type {{ entries?: object[] }} */ (b) : null;
-  if (!left && !right) return undefined;
-  const leftEntries = left && Array.isArray(left.entries) ? left.entries : [];
-  const rightEntries = right && Array.isArray(right.entries) ? right.entries : [];
-  const byId = new Map();
-  for (const row of leftEntries) mergeEventualidadRow(byId, row);
-  for (const row of rightEntries) mergeEventualidadRow(byId, row);
-  appendAnonymousEventualidades(byId, leftEntries, rightEntries);
-  const entries = Array.from(byId.values()).sort(function (x, y) {
-    return compareIso(String(/** @type {{ at?: string }} */ (y).at || ''), String(/** @type {{ at?: string }} */ (x).at || ''));
-  });
-  return { entries };
 }
 
 /** @param {unknown} hc */
@@ -171,9 +118,15 @@ export function monitoreoUpdatedAt(monitoreo) {
   let best = '';
   /** @type {any} */
   const m = monitoreo;
+  const ecAt =
+    m.estadoClinicoUpdatedAt != null && String(m.estadoClinicoUpdatedAt).trim()
+      ? String(m.estadoClinicoUpdatedAt)
+      : '';
+  if (ecAt) best = ecAt;
   const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
   if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) {
-    best = String(tg.savedAt);
+    const saved = String(tg.savedAt);
+    if (compareIso(saved, best) > 0) best = saved;
   }
   const hist = Array.isArray(m.historial) ? m.historial : [];
   return bestRecordedAtFromHistorial(hist, best);

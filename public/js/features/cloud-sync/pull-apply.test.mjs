@@ -73,4 +73,52 @@ describe('pull-apply cloud snapshot merge', () => {
     assert.equal(entries[0].note.texto, 'sync');
     assert.equal(entries[0].labHistory[0].id, 'l1');
   });
+
+  it('eventualidades path overrides stale packed fields copy', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, {
+      path: 'entries/p1/fields',
+      value: {
+        nombre: 'PAC',
+        eventualidades: {
+          entries: [
+            { id: 'ev_a', text: 'OLD' },
+            { id: 'ev_b', text: 'KEEP' },
+          ],
+        },
+      },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/eventualidades',
+      value: {
+        entries: [{ id: 'ev_b', text: 'KEEP' }],
+        deletedIds: { ev_a: '2026-08-03T12:00:00.000Z' },
+      },
+    });
+    const entries = opFoldToLanEntries(fold);
+    assert.deepEqual(entries[0].patient.eventualidades.entries.map((e) => e.id), ['ev_b']);
+    assert.ok(entries[0].patient.eventualidades.deletedIds.ev_a);
+  });
+
+  it('monitoreo path overrides stale packed fields copy', () => {
+    const fold = createOpFold();
+    foldCloudOp(fold, {
+      path: 'entries/p1/fields',
+      value: {
+        nombre: 'PAC',
+        cuarto: '100',
+        monitoreo: { estadoClinico: { four: '10' } },
+      },
+    });
+    foldCloudOp(fold, {
+      path: 'entries/p1/monitoreo',
+      value: {
+        estadoClinico: { four: '15' },
+        estadoClinicoUpdatedAt: '2026-08-03T12:00:00.000Z',
+      },
+    });
+    const entries = opFoldToLanEntries(fold);
+    assert.equal(entries[0].patient.cuarto, '100');
+    assert.equal(entries[0].patient.monitoreo.estadoClinico.four, '15');
+  });
 });

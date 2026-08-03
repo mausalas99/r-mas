@@ -9,6 +9,8 @@ import {
   renderRoundOverviewPanels,
 } from './features/patients.mjs';
 import { patients, saveState } from './app-state.mjs';
+import { touchPatientLanUpdatedAt } from './features/lan/patient-entries.mjs';
+import { scheduleLiveSyncPush } from './features/lan/push.mjs';
 
 function normalizePatientFieldValue(field, value) {
   if (field === 'nombre' || field === 'area' || field === 'servicio') {
@@ -67,7 +69,9 @@ export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
     if (String(p[field] || '') === String(next || '')) return;
     p[field] = next;
     applyPatientAccesoField(p, field, next);
+    touchPatientLanUpdatedAt(pid);
     refreshPatientChromeAfterUpdate();
+    scheduleLiveSyncPush();
   }
 
   return { updatePatient };

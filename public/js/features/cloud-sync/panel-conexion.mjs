@@ -1,16 +1,70 @@
-import { normalizeCloudSala } from './sala-allowlist.mjs';
+import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldShowNubePanel } from './lan-override.mjs';
 import { STATUS_LABELS, statusChipModifier } from './panel-conexion-html.mjs';
 import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs';
 import { createNubeRuntime } from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
-  adminShellHtml,
   mountAdminShell,
   wireConexionClicks,
   wireTeamsChangedListener,
 } from './panel-conexion-bootstrap.mjs';
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
+
+/** @param {HTMLElement} section @param {object} deps */
+function bindStatusChip(section, deps) {
+  return function renderStatusChip(status, detail) {
+    const chip = section.querySelector('[data-cloud-status-chip]');
+    if (!chip) return;
+    chip.textContent = STATUS_LABELS[status] || status;
+    chip.className = 'cloud-sync-status-chip ' + statusChipModifier(status);
+    chip.setAttribute('data-status', status);
+    const detailEl = section.querySelector('[data-cloud-status-detail]');
+    if (detailEl) {
+      const text = status === 'error' ? String(detail || '').trim() : '';
+      detailEl.textContent = text;
+      detailEl.hidden = !text;
+    }
+    deps.setStatus?.(status, detail);
+  };
+}
+
+/**
+ * @param {object} deps
+ * @param {{ toast: Function, renderConnected: Function }} ui
+ */
+/** @param {object} deps @param {{ toast: Function }} ui */
+function createEnsureTurn(deps, ui) {
+  let inflight = null;
+  let done = false;
+  return async function tryAutoEnsureTurnRoom() {
+    if (deps.getCloudSyncRoomId()) {
+      done = true;
+      return null;
+    }
+    if (!deps.getCloudSyncToken() || done) return null;
+    if (inflight) return inflight;
+    const { ensureTurnRoom } = await import('./ensure-turn-room.mjs');
+    // Persist room only — callers paint UI (avoids double startRuntime).
+    inflight = ensureTurnRoom({
+      api: deps.getApi(),
+      getSala: deps.getUserSala,
+      getToken: deps.getCloudSyncToken,
+      setCloudSyncRoomId: deps.setCloudSyncRoomId,
+      setCloudSyncRoomSnapshot: deps.setCloudSyncRoomSnapshot,
+      setCloudSyncRevision: deps.setCloudSyncRevision,
+      onConnected() {
+        done = true;
+        deps.onCloudRoomChange?.(true);
+      },
+      toast: ui.toast,
+    }).finally(function () {
+      inflight = null;
+      done = true;
+    });
+    return inflight;
+  };
+}
 
 /**
  * @param {HTMLElement} root
@@ -22,8 +76,7 @@ export function mountNubeSection(root, deps) {
 
   const toast = deps.toast || function () {};
   const normalizedSala = normalizeCloudSala(sala);
-  let ensureTurnInflight = null;
-  let ensureTurnDone = false;
+  const displaySala = displayCloudSalaLabel(sala);
   /** @type {{ username?: string, displayName?: string } | null} */
   let cloudUser = null;
 
@@ -31,22 +84,13 @@ export function mountNubeSection(root, deps) {
   section.className = 'cloud-sync-conexion';
   section.setAttribute('data-cloud-nube-section', '1');
 
-  function renderStatusChip(status) {
-    const chip = section.querySelector('[data-cloud-status-chip]');
-    if (!chip) return;
-    chip.textContent = STATUS_LABELS[status] || status;
-    chip.className = 'cloud-sync-status-chip ' + statusChipModifier(status);
-    chip.setAttribute('data-status', status);
-    deps.setStatus?.(status);
-  }
-
   const { startRuntime, stopRuntime } = createNubeRuntime({
     getApi: deps.getApi,
     getCloudSyncRoomId: deps.getCloudSyncRoomId,
     getCloudSyncToken: deps.getCloudSyncToken,
     getCloudSyncRevision: deps.getCloudSyncRevision,
     setCloudSyncRevision: deps.setCloudSyncRevision,
-    onStatus: renderStatusChip,
+    onStatus: bindStatusChip(section, deps),
     toast,
   });
 
@@ -54,31 +98,14 @@ export function mountNubeSection(root, deps) {
     get cloudUser() { return cloudUser; },
     set cloudUser(v) { cloudUser = v; },
     startRuntime,
-    masAdminHtml: adminShellHtml(),
+    displaySala,
   };
-  const { renderConnected, renderDisconnected } = createConexionRenderers(section, normalizedSala, deps, cloudUserRef);
-
-  async function tryAutoEnsureTurnRoom() {
-    if (deps.getCloudSyncRoomId()) { ensureTurnDone = true; return null; }
-    if (!deps.getCloudSyncToken() || ensureTurnDone) return null;
-    if (ensureTurnInflight) return ensureTurnInflight;
-    const { ensureTurnRoom } = await import('./ensure-turn-room.mjs');
-    ensureTurnInflight = ensureTurnRoom({
-      api: deps.getApi(),
-      getSala: deps.getUserSala,
-      getToken: deps.getCloudSyncToken,
-      setCloudSyncRoomId: deps.setCloudSyncRoomId,
-      setCloudSyncRoomSnapshot: deps.setCloudSyncRoomSnapshot,
-      setCloudSyncRevision: deps.setCloudSyncRevision,
-      onConnected: function (room) {
-        ensureTurnDone = true;
-        deps.onCloudRoomChange?.(true);
-        renderConnected(room);
-      },
-      toast,
-    }).finally(function () { ensureTurnInflight = null; ensureTurnDone = true; });
-    return ensureTurnInflight;
-  }
+  const { renderConnected, renderDisconnected } = createConexionRenderers(
+    section,
+    normalizedSala,
+    deps,
+    cloudUserRef
+  );
 
   const { ensureAdminOpen, toggleAdminPanel } = mountAdminShell(section, deps, toast);
   cloudUserRef.ensureAdminOpen = ensureAdminOpen;
@@ -86,7 +113,7 @@ export function mountNubeSection(root, deps) {
     normalizedSala,
     toast,
     saveUrlFromUi: () => saveUrlFromUi(section, deps.setCloudSyncUrl),
-    tryAutoEnsureTurnRoom,
+    tryAutoEnsureTurnRoom: createEnsureTurn(deps, { toast, renderConnected }),
     renderConnected,
     renderDisconnected,
     startRuntime,

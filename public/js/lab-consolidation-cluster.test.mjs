@@ -6,6 +6,7 @@ import {
   clusterByDayTipoAndTimeWindow,
   clusterLabworkByTimeWindow,
 } from './lab-consolidation-cluster.mjs';
+import { gasometriaFingerprintFromResLabs } from './lab-history-auto-store-core.mjs';
 
 describe('lab-consolidation-cluster', () => {
   it('clusterByTimeWindow une tomas consecutivas ≤2 h', () => {
@@ -155,6 +156,34 @@ describe('lab-consolidation-cluster', () => {
       }),
       ['a', 'b', 'c']
     );
+  });
+
+  it('clusterLabworkByTimeWindow une GASES lean vs rich (misma toma)', () => {
+    var lean = 'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7';
+    var rich = lean + ' AG 11.5 AGc 16.5';
+    var items = [
+      { id: 'a', hasGaso: true, ms: 0, resLabs: [lean] },
+      { id: 'b', hasGaso: true, ms: 5 * 60 * 1000, resLabs: [rich] },
+    ];
+    assert.equal(
+      gasometriaFingerprintFromResLabs([lean]),
+      gasometriaFingerprintFromResLabs([rich])
+    );
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return !!x.hasGaso;
+      },
+      undefined,
+      function (x) {
+        return gasometriaFingerprintFromResLabs(x.resLabs);
+      }
+    );
+    assert.equal(clusters.length, 1);
+    assert.equal(clusters[0].length, 2);
   });
 
   it('clusterLabworkByTimeWindow mantiene gasos con valores distintos separados', () => {

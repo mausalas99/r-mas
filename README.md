@@ -39,9 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.2](https://github.com/mausalas99/r-mas/releases/tag/v7.9.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.3](https://github.com/mausalas99/r-mas/releases/tag/v7.9.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.9.3 (Eventualidades Labs + sync Nube)
+
+- **Eventualidades Labs** — Pestaña Labs con interpretación consolidada (formato Estudios); sin spam de entradas clínicas al Procesar / Actualizar.
+- **Nube sync** — LWW por bloque + labs slim; polling/debounce más estable; Conexión con salas nombradas.
+- **EA registro / labs** — Modal limpio por secciones; consolidación misma fecha+hora; censo cuarto/cama no se pisa al sync.
+
+Notas: `docs/RELEASE_NOTES_7.9.3.txt`.
 
 ## R+ 7.9.2 (censo meds + Conexión)
 

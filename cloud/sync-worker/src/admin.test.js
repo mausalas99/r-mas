@@ -1,7 +1,43 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncError } from './errors.js';
-import { assertAdmin, timingSafeEqual } from './admin.js';
+import { assertAdmin, buildDeleteUserStatements, timingSafeEqual } from './admin.js';
+
+/** Minimal D1 stub that records SQL for delete-user cascade planning. */
+function fakeDbForDeleteUser({ ownedRoomIds = [], successorsByRoom = {} } = {}) {
+  /** @type {string[]} */
+  const sqlLog = [];
+  return {
+    sqlLog,
+    prepare(sql) {
+      const s = String(sql);
+      sqlLog.push(s);
+      return {
+        bind(...args) {
+          return {
+            async all() {
+              if (s.includes('FROM rooms WHERE owner_user_id')) {
+                return { results: ownedRoomIds.map((id) => ({ id })) };
+              }
+              return { results: [] };
+            },
+            async first() {
+              if (s.includes('FROM room_members') && s.includes('user_id !=')) {
+                const roomId = String(args[0]);
+                const uid = successorsByRoom[roomId];
+                return uid ? { user_id: uid } : null;
+              }
+              return null;
+            },
+            async run() {
+              return { success: true };
+            },
+          };
+        },
+      };
+    },
+  };
+}
 
 describe('timingSafeEqual', () => {
   it('matches equal strings', () => {
@@ -106,5 +142,35 @@ describe('assertAdmin', () => {
         ),
       SyncError
     );
+  });
+});
+
+describe('buildDeleteUserStatements', () => {
+  it('deletes sessions, memberships, and user when no owned rooms', async () => {
+    const db = fakeDbForDeleteUser();
+    const stmts = await buildDeleteUserStatements(db, 'u1');
+    assert.equal(stmts.length, 3);
+    assert.match(db.sqlLog.join('\n'), /DELETE FROM sessions/);
+  });
+
+  it('reassigns owned room when another member exists', async () => {
+    const db = fakeDbForDeleteUser({
+      ownedRoomIds: ['room-a'],
+      successorsByRoom: { 'room-a': 'u2' },
+    });
+    const stmts = await buildDeleteUserStatements(db, 'u1');
+    // UPDATE owner + sessions + members + user
+    assert.equal(stmts.length, 4);
+    assert.ok(db.sqlLog.some((s) => s.includes('UPDATE rooms SET owner_user_id')));
+    assert.ok(!db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
+  });
+
+  it('purges sole-occupant owned room before deleting user', async () => {
+    const db = fakeDbForDeleteUser({ ownedRoomIds: ['room-solo'] });
+    const stmts = await buildDeleteUserStatements(db, 'u1');
+    // 5 room purge stmts + sessions + members + user
+    assert.equal(stmts.length, 8);
+    assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
+    assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM mutations')));
   });
 });

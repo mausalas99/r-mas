@@ -105,6 +105,7 @@ function buildPatientDraft(nombre, registro, edad, sexo, area, servicio, cuarto,
     cuarto: cuarto,
     cama: cama,
     fromLab: !!isFromLab,
+    lanUpdatedAt: new Date().toISOString(),
   };
 }
 

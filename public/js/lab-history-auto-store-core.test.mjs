@@ -157,6 +157,27 @@ test('gasometriaFingerprintFromResLabs igual para mismos GASES', () => {
   assert.notEqual(a, c);
 });
 
+test('gasometriaFingerprintFromResLabs ignora AG/AGc/Delta (mismo draw)', () => {
+  var lean = gasometriaFingerprintFromResLabs([
+    'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7',
+  ]);
+  var rich = gasometriaFingerprintFromResLabs([
+    'GASES\tpH 7.32 pCO2 44 pO2 70 Lactato 0.8 Bica 22.7 AG 11.5 AGc 16.5 Delta-Delta 3.5',
+  ]);
+  assert.ok(lean);
+  assert.equal(lean, rich);
+});
+
+test('planLabHistoryDateTimeUpsert trata 05:51 y 05:51:00 como la misma hora', () => {
+  var existing = [{ id: '1', fecha: '03/08/2026', hora: '05:51', resLabs: ['BH\tHb 9'] }];
+  var plan = planLabHistoryDateTimeUpsert(existing, {
+    fecha: '03/08/2026',
+    hora: '05:51:00',
+    resLabs: ['QS\tGlu 73'],
+  });
+  assert.equal(plan.action, 'merge');
+});
+
 test('planLabHistoryDateTimeUpsert merge colapsa hermanos misma hora', () => {
   var existing = [
     { id: '1', fecha: '31/07/2026', hora: '13:51', resLabs: ['BH\tHb 12'] },

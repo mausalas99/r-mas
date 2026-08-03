@@ -15,22 +15,79 @@ export function normalizeLabLines(lines) {
   return (Array.isArray(lines) ? lines : []).map(normalizeLabLine).filter(Boolean);
 }
 
+/** Analitos que identifican la toma (ignora AG/AGc/Delta derivados). */
+var GASO_FINGERPRINT_KEYS = {
+  PH: true,
+  PCO2: true,
+  PO2: true,
+  LACTATO: true,
+  LAC: true,
+  BICA: true,
+  HCO3: true,
+  BE: true,
+};
+
 /**
- * Huella de gasometría: mismos GASES → misma clave (filtrar clones);
- * tomas seriadas con valores distintos → claves distintas.
+ * Extrae pares clave→valor de una línea GASES / interpretación.
+ * @param {string} line
+ * @returns {Record<string, string>}
+ */
+function parseGasometriaCoreValues(line) {
+  var out = Object.create(null);
+  var re =
+    /\b(pH|pCO2|pO2|Lactato|Lac|Bica|HCO3|BE)\s*[:=]?\s*(-?\d+(?:[.,]\d+)?)/gi;
+  var m;
+  while ((m = re.exec(String(line || '')))) {
+    var key = String(m[1] || '')
+      .toUpperCase()
+      .replace('Ó', 'O');
+    if (key === 'LAC') key = 'LACTATO';
+    if (key === 'HCO3') key = 'BICA';
+    if (!GASO_FINGERPRINT_KEYS[key]) continue;
+    var num = String(m[2] || '').replace(',', '.');
+    out[key] = num;
+  }
+  return out;
+}
+
+/**
+ * Huella de gasometría: mismos valores núcleo (pH/pCO2/pO2/Lactato/Bica…) → misma clave.
+ * AG/AGc/Delta no cuentan (un reporte más rico no debe crear Labs (2)).
+ * Tomas seriadas con valores distintos → claves distintas.
  */
 export function gasometriaFingerprintFromResLabs(resLabs) {
-  var parts = [];
+  var merged = Object.create(null);
   (resLabs || []).forEach(function (chunk) {
     var s = String(chunk || '').trim();
     if (!s) return;
-    if (/^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s)) {
-      parts.push(normalizeLabLine(s));
+    if (!/^GASES\b/i.test(s) && !/^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s)) {
+      return;
     }
+    var vals = parseGasometriaCoreValues(s);
+    Object.keys(vals).forEach(function (k) {
+      merged[k] = vals[k];
+    });
   });
-  if (!parts.length) return '';
-  parts.sort();
-  return parts.join('\x02');
+  var keys = Object.keys(merged).sort();
+  if (!keys.length) {
+    // Fallback: línea completa normalizada (compat tests / formato raro).
+    var parts = [];
+    (resLabs || []).forEach(function (chunk) {
+      var s = String(chunk || '').trim();
+      if (!s) return;
+      if (/^GASES\b/i.test(s) || /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(s)) {
+        parts.push(normalizeLabLine(s));
+      }
+    });
+    if (!parts.length) return '';
+    parts.sort();
+    return parts.join('\x02');
+  }
+  return keys
+    .map(function (k) {
+      return k + '=' + merged[k];
+    })
+    .join('|');
 }
 
 export function areLabSetsEquivalent(a, b) {
@@ -47,8 +104,15 @@ function normalizeDateValue(value) {
   return normalizeText(value);
 }
 
+/** Comparación de hora a minuto (05:51 y 05:51:00 → iguales). */
 function normalizeTimeValue(value) {
-  return normalizeText(value);
+  var t = normalizeText(value);
+  if (!t) return '';
+  var m = t.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return t;
+  var hh = Math.max(0, Math.min(23, parseInt(m[1], 10)));
+  var mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
 }
 
 export function isDuplicateAgainstLatest(latest, incoming) {

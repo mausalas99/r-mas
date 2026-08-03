@@ -66,7 +66,7 @@ function buildRows() {
 
 /**
  * In Sala, `notas` migrates to Historia Clínica — wrong for this queue.
- * Verbal lab documentation (Hb 9 → anemia microcítica, gaso interpretación) lives in Eventualidades.
+ * Labs del día → Eventualidades en formato Estudios (labs consolidados).
  * @param {import('./doc-queue-model.mjs').DocQueueRow} row
  * @returns {string}
  */
@@ -312,7 +312,7 @@ export function openDocQueuePanel() {
   if (focusEl && typeof focusEl.focus === 'function') {
     try {
       focusEl.focus();
-    } catch (_e) {
+    } catch {
       /* ignore */
     }
   }

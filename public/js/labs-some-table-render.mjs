@@ -32,10 +32,13 @@ function renderSomeTableBodyRowsHtml(rows, isCito) {
   var html = '';
   rows.forEach(function (r) {
     var resClass = r.abnormal ? ' lab-some-abnormal' : '';
+    var rowClass = r.abnormal ? ' class="lab-some-row--abnormal"' : '';
     var flagHtml =
-      r.flag && r.flag !== '*' ? '<span class="lab-some-flag">' + escHtml(r.flag) + '</span> ' : '';
+      r.flag && r.flag !== '*'
+        ? '<span class="lab-some-flag" aria-label="Fuera de rango">' + escHtml(r.flag) + '</span>'
+        : '';
     var resDisplay = formatSomeResultado(r);
-    html += '<tr>';
+    html += '<tr' + rowClass + '>';
     html += '<td class="lab-some-estudio">' + escHtml(r.estudio) + '</td>';
     html +=
       '<td class="lab-some-resultado' +
@@ -46,12 +49,49 @@ function renderSomeTableBodyRowsHtml(rows, isCito) {
       escHtml(r.ref || '') +
       '">' +
       flagHtml +
+      '<span class="lab-some-resultado-val">' +
       escHtml(resDisplay) +
-      '</td>';
+      '</span></td>';
     if (!isCito) html += '<td class="lab-some-ref">' + escHtml(r.ref || '') + '</td>';
     html += '</tr>';
   });
   return html;
+}
+
+/**
+ * Modal: merge consecutive standard groups so one department → one thead
+ * (avoids repeating Estudio/Resultado/Valor de Referencia).
+ * Cito groups stay separate (2 columns).
+ * @param {Array<object>} groups
+ * @returns {Array<object>}
+ */
+export function coalesceGroupsForModal(groups) {
+  var list = Array.isArray(groups) ? groups : [];
+  var out = [];
+  var bucket = null;
+  list.forEach(function (group) {
+    var g = normalizeSomeGroup(group || { rows: [] });
+    if (!(g.rows && g.rows.length)) return;
+    if (g.tableVariant === 'cito') {
+      if (bucket) {
+        out.push(bucket);
+        bucket = null;
+      }
+      out.push(g);
+      return;
+    }
+    if (!bucket) {
+      bucket = {
+        title: '',
+        rows: g.rows.slice(),
+        tableVariant: 'standard',
+      };
+      return;
+    }
+    bucket.rows = bucket.rows.concat(g.rows);
+  });
+  if (bucket) out.push(bucket);
+  return out;
 }
 
 function renderSomeGroupOpenTag_(options, isCito, tableId, deptIndex, groupIndex) {
@@ -101,11 +141,16 @@ export function renderSomeTableGroupHtml(group, opts) {
   var html = renderSomeGroupOpenTag_(options, isCito, tableId, deptIndex, groupIndex);
   html += renderSomeGroupHeaderHtml_(g, options, title, isCito);
   html += renderSomeTableToolbarHtml(options, exportLabel, deptIndex, groupIndex);
+  var colCount = isCito ? '2' : '3';
   html +=
     '<div class="lab-some-table-wrap"><table class="lab-some-table lab-some-table--cols-' +
-    (isCito ? '2' : '3') +
-    '"><thead><tr><th>Estudio</th><th>Resultado</th>' +
-    (isCito ? '' : '<th>Valor de Referencia</th>') +
+    colCount +
+    '"><colgroup>' +
+    '<col class="lab-some-col-estudio" />' +
+    '<col class="lab-some-col-resultado" />' +
+    (isCito ? '' : '<col class="lab-some-col-ref" />') +
+    '</colgroup><thead><tr><th scope="col">Estudio</th><th scope="col">Resultado</th>' +
+    (isCito ? '' : '<th scope="col">Valor de referencia</th>') +
     '</tr></thead><tbody>';
   html += renderSomeTableBodyRowsHtml(rows, isCito);
   html += '</tbody></table></div></div>';
@@ -154,7 +199,8 @@ export function renderSomeReportTablesHtml(parsed, opts) {
     } else {
       html += '<header class="lab-some-dept-header">' + escHtml(dept.label) + '</header>';
     }
-    dept.groups.forEach(function (group, gi) {
+    var groups = modalLayout ? coalesceGroupsForModal(dept.groups) : dept.groups;
+    groups.forEach(function (group, gi) {
       var tableId = 'some-' + di + '-' + gi;
       var g = normalizeSomeGroup(group);
       var exportLabel = (dept.label + (g.title ? ' — ' + g.title : '')).trim();

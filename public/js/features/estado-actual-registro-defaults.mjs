@@ -1,6 +1,7 @@
 /**
- * Defaults del modal «Registrar medición»: cierre de turno a las 00:00 de hoy,
- * glucometrías del turno previo (ayer 08:00 → hoy 00:00).
+ * Defaults del modal «Registrar medición»: cierre de turno a las 00:00 de hoy;
+ * slots estándar de glu (08:00 / 16:00 ayer · 00:00 hoy) y ventana del turno
+ * para series/charts (no se precargan valores al abrir el formulario).
  */
 import { pad2 } from './estado-actual-panel-format.mjs';
 

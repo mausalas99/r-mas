@@ -107,6 +107,7 @@ export function flushEaEstadoClinicoFieldsFromDom(patient, root) {
       }
     }
   });
+  if (changed) mon.estadoClinicoUpdatedAt = new Date().toISOString();
   return changed;
 }
 

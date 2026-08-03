@@ -18,7 +18,14 @@ export {
   renderEventualidadesPanel,
   invalidateEventualidadesPanel,
   savePatientEventualidad,
+  savePatientEventualidadesLabs,
   queueEventualidadesPrefill,
   applyEventualidadesPrefill,
+  selectEventualidadesLabsMode,
 } from './eventualidades-render.mjs';
+export {
+  getEventualidadesLabsText,
+  setEventualidadesLabsText,
+  mergeEventualidadesLabsText,
+} from './eventualidades-store.mjs';
 export { applyDriveImportEventualidades } from './eventualidades-drive.mjs';

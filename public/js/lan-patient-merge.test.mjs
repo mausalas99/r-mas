@@ -47,6 +47,17 @@ test('entryUpdatedAt incluye el recordedAt m?s reciente del historial', () => {
   assert.equal(entryUpdatedAt(e), '2026-05-21T10:00:00.000Z');
 });
 
+test('monitoreoUpdatedAt incluye estadoClinicoUpdatedAt', () => {
+  assert.equal(
+    monitoreoUpdatedAt({
+      estadoClinicoUpdatedAt: '2026-08-03T12:00:00.000Z',
+      historial: [{ id: '1', recordedAt: '2026-08-03T10:00:00.000Z' }],
+      textoGuardado: { text: '', savedAt: '2026-08-03T11:00:00.000Z' },
+    }),
+    '2026-08-03T12:00:00.000Z'
+  );
+});
+
 test('monitoreoUpdatedAt combina historial y texto guardado', () => {
   assert.equal(
     monitoreoUpdatedAt({
@@ -308,6 +319,39 @@ test('mergeEventualidades une entradas de ambos lados por id', () => {
     { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }] }
   );
   assert.equal(merged.entries.length, 2);
+});
+
+test('mergeEventualidades respeta deletedIds y no resurrecta', () => {
+  const merged = mergeEventualidades(
+    {
+      entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }],
+      deletedIds: { ev_a: '2026-06-03T12:00:00.000Z' },
+      updatedAt: '2026-06-03T12:00:00.000Z',
+    },
+    {
+      entries: [
+        { id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' },
+        { id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' },
+      ],
+    }
+  );
+  assert.equal(merged.entries.length, 1);
+  assert.equal(merged.entries[0].id, 'ev_b');
+  assert.equal(merged.deletedIds.ev_a, '2026-06-03T12:00:00.000Z');
+});
+
+test('mergeEventualidades conserva labsText no vacío', () => {
+  const merged = mergeEventualidades(
+    { entries: [], labsText: 'BH Hb 9' },
+    { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }], labsText: '' }
+  );
+  assert.equal(merged.entries.length, 1);
+  assert.equal(merged.labsText, 'BH Hb 9');
+  const both = mergeEventualidades(
+    { entries: [], labsText: 'BH' },
+    { entries: [], labsText: 'BH + QS gluc 120' }
+  );
+  assert.equal(both.labsText, 'BH + QS gluc 120');
 });
 
 test('mergePatientEntry conserva eventualidades de ambos peers', () => {
