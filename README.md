@@ -39,9 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.0](https://github.com/mausalas99/r-mas/releases/tag/v7.9.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.1](https://github.com/mausalas99/r-mas/releases/tag/v7.9.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.9.1 (recuperación Nube + borrado masivo)
+
+- **Recuperación Nube** — Código de un solo uso al registrarte; recuperar / regenerar; admin puede restablecer contraseña.
+- **Conexión por pasos** — ⇄: Conectar → Sala → Equipo → Más; sin sesión solo Conectar.
+- **Borrado masivo** — Multi-select en lista; purge local + LAN/Nube para que no regresen.
+
+Notas: `docs/RELEASE_NOTES_7.9.1.txt`.
 
 ## R+ 7.9.0 (Nube piloto Free — Sala y Torre HU)
 

@@ -1809,10 +1809,34 @@ var RELEASE_NOTES_790 = [
   },
 ];
 
+var RELEASE_NOTES_791 = [
+  {
+    title: 'Recuperar cuenta Nube',
+    body:
+      'Al registrarte recibes un <strong>código de recuperación</strong> (guárdalo). Con él recuperas la contraseña; también puedes regenerarlo. Admin puede restablecer.',
+  },
+  {
+    title: 'Conexión por pasos',
+    body:
+      'El panel ⇄ guía <strong>Conectar → Sala → Equipo → Más</strong>. Sin sesión Nube solo ves Conectar.',
+  },
+  {
+    title: 'Borrado masivo',
+    body:
+      'Selecciona varios pacientes en la lista y bórralos de una vez; el purge llega a LAN/Nube para que <strong>no regresen</strong> al sincronizar.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.1 en todas</strong> las Macs y PCs del turno el mismo día si usan Nube o borrado de pacientes con LiveSync.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_790;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_791;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.1': RELEASE_NOTES_791,
   '7.9.0': RELEASE_NOTES_790,
   '7.8.1': RELEASE_NOTES_781,
   '7.8.0': RELEASE_NOTES_780,
