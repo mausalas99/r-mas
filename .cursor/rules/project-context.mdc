@@ -134,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-03** `hybrid-h-clinical`: labs/eventualidades sheet + Pase solid + Conexión stepped panel; `eventualidades-sheet.mjs`, `lab.css`, `pase-board.css`, `cloud-sync.css`.
 - **2026-08-03** `hybrid-h-chrome`: overlay kit + toast/⌘K/shell; `ui-overlay.mjs`, `ui-toast.mjs`, `command-palette.mjs`, `sidebar.css`, `settings.css`.
 - **2026-08-03** `hybrid-h-foundation`: Hybrid H tokens light/dark/HC + `motion` façade (`springTo`); `public/tokens.css`, `public/js/ui-motion.mjs`, `design.md`.
 - **2026-08-03** `release-7.9.3`: Eventualidades Labs (`labsText`) + Nube LWW/slim/timing + EA registro limpio + consolidación labs misma hora; `eventualidades-labs-ui.mjs`, `cloud-op-slim.mjs`, `lan-patient-merge-eventualidades.mjs`, `docs/RELEASE_NOTES_7.9.3.txt`.
