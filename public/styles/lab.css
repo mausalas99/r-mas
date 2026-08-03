@@ -2697,22 +2697,46 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   font-size: calc(13px * var(--density-font));
   font-weight: 600;
   box-shadow: var(--elev-overlay);
-  transform: translateY(0) scale(1);
-  opacity: 1;
+  transform: translateY(-10px) scale(0.97);
+  opacity: 0;
+  transition:
+    transform var(--dur-normal) var(--ease-out),
+    opacity var(--dur-normal) var(--ease-out);
   max-width: 320px;
   pointer-events: auto;
   cursor: pointer;
   line-height: 1.35;
+  touch-action: pan-y;
 }
 
-.toast.toast--enter {
-  animation: toast-in var(--dur-normal) var(--ease-out);
-  animation-fill-mode: none;
+.toast.show {
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 .toast.toast--leave {
-  animation: toast-out var(--dur-fast) var(--ease-out) forwards;
+  transform: translateY(-6px) scale(0.98);
+  opacity: 0;
+  transition-duration: var(--dur-fast);
   pointer-events: none;
+}
+
+.toast-action {
+  flex-shrink: 0;
+  margin-left: 4px;
+  padding: 4px 10px;
+  border: var(--border-hairline);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-on-accent) 14%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  background: color-mix(in oklab, var(--color-on-accent) 22%, transparent);
 }
 
 .toast-glyph {
