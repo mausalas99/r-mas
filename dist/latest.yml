@@ -1,22 +1,16 @@
-version: 7.9.0
+version: 7.9.1
 files:
-  - url: R+-7.9.0-x64.exe
-    sha512: 4Y8vckZxcL6EkU6mOaGuui1XRibNBNVht/1ZWRH+Qo4o0Yz7hB5wykwXLPj4GS6F+ZvK1LpqcRxRo0ozyn+qMQ==
-    size: 121014459
-path: R+-7.9.0-x64.exe
-sha512: 4Y8vckZxcL6EkU6mOaGuui1XRibNBNVht/1ZWRH+Qo4o0Yz7hB5wykwXLPj4GS6F+ZvK1LpqcRxRo0ozyn+qMQ==
-releaseDate: '2026-08-02T20:23:03.000Z'
+  - url: R+-7.9.1-x64.exe
+    sha512: LNDhINsRDfDXQGwO0NW57893CLhuOKBMBLVjOLFfAFePOkSEckXrOUBqJbxh88zdbfjExkVOaju8c1RFfseZ+g==
+    size: 121029493
+path: R+-7.9.1-x64.exe
+sha512: LNDhINsRDfDXQGwO0NW57893CLhuOKBMBLVjOLFfAFePOkSEckXrOUBqJbxh88zdbfjExkVOaju8c1RFfseZ+g==
+releaseDate: '2026-08-03T12:16:29.000Z'
 releaseNotes: |
-  7.9.0 introduce Nube, un piloto opt-in en Cloudflare Free para sincronizar el censo del turno sin depender de un Mac anfitrión en LAN. Disponible solo para perfiles de sala Sala y Torre HU; el resto de salas sigue en LiveSync LAN como hasta ahora.
+  7.9.1 añade códigos de recuperación y un panel Conexión por pasos para Nube (Sala / Torre HU), y borrado masivo de pacientes en la lista con purge en LAN/Nube para que no regresen al sincronizar.
   
-  Nube en el panel ⇄ — Registro e inicio de sesión (usuario + contraseña) y unión a sala de turno desde el mismo panel de sincronización. Solo visible para Sala y Torre HU.
+  Código de recuperación Nube — Al registrarte recibes un código de un solo uso (guárdalo). Con él puedes recuperar la cuenta si olvidaste la contraseña; también puedes regenerarlo. Admin de programa puede restablecer contraseña.
   
-  Nube sustituye anfitrión LAN — En esas salas, cuando Nube está conectada, la autoridad del turno es la sala en la nube: no hace falta elegir ni mantener un host Mac en la red local.
+  Panel ⇄ por pasos — Conectar → Sala → Equipo → Más. Sin sesión Nube solo ves Conectar; el chrome de Conexión se reconstruye al login/logout.
   
-  Otras salas sin cambios — Interconsultas, UX, Eme y Área A (Pensionistas) permanecen en LiveSync LAN (host + PIN).
-  
-  Offline + outbox — SQLCipher local sigue siendo la caché del turno; sin Internet las ediciones se encolan y se envían al reconectar.
-  
-  Labs sin tope de sets — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
-  
-  Despliegue del worker — Desde la raíz del repo: node cloudflare/setup-sync.mjs (D1, secretos, deploy). Estimación de cuota Free: cd cloud/sync-worker && npm run estimate:free.
+  Borrado masivo — Multi-select en la lista de pacientes y borrado unificado (local + tombstone + purge en host LAN / Nube / WS) para que los borrados no reaparezcan.

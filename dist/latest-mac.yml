@@ -1,31 +1,25 @@
-version: 7.9.0
+version: 7.9.1
 files:
-  - url: R+-7.9.0-arm64.zip
-    sha512: mQWMHd+PlZzUjcJSchNpDj5nhN6pCVWYdfwZ++m/JlzucxUVHrBXg8Btvs17Sttdpn0NNVga9rSuqJgqzUDH0A==
-    size: 137465085
-  - url: R+-7.9.0-arm64.dmg
-    sha512: vUH4mOvU8VwDaK432TYCAXiqYiMvAMv441BBXr/79uKwx4rTFglU9SXE+brP+IJ0cwnc8c9U13BLRti7+6qx4w==
-    size: 143193496
-  - url: R+-7.9.0-x64.zip
-    sha512: dHMbK71W15dRFoa7yVB+Y2xwQOaML6T8ZMLoaMGokGsWijeIbKGCJfY5SmSyNlAWY138wuSmhNil5aZ+rPQQOg==
-    size: 145839182
-  - url: R+-7.9.0-x64.dmg
-    sha512: PKn5T5IWrLG+nGvYxosKx4aI0vk3728sOlKbpIuhOBnCoIFs0JxRu0cZcMlLclkjaiulMKjjqlawn8T6MuL0wQ==
-    size: 151689389
-path: R+-7.9.0-arm64.zip
-sha512: mQWMHd+PlZzUjcJSchNpDj5nhN6pCVWYdfwZ++m/JlzucxUVHrBXg8Btvs17Sttdpn0NNVga9rSuqJgqzUDH0A==
-releaseDate: '2026-08-02T20:23:03.000Z'
+  - url: R+-7.9.1-arm64.zip
+    sha512: dv9G79RiS5WI7yWTpyj/vR15W7XjEUDLbUXP46zUkr3ipK1+r6ngPPIt4t6IxyhoskezOilpOi4kLxzBxJW/Ig==
+    size: 137487931
+  - url: R+-7.9.1-arm64.dmg
+    sha512: Hq1Y38UMckWlHkneD4yEHjG7mBydaPAho7rXzCPAn3VN+djbIXwDYrk7b84Wcb1s6AmSFY+oqLLo6HOXpg1fBg==
+    size: 143235590
+  - url: R+-7.9.1-x64.zip
+    sha512: b520qtgmc88fbkWxY6zIdjyjvgDkTyj1xEGQ+YRzNhUO/mQPkFZJWSsu0SVFuyWo5mL8VQQ581kPnrgY4zQcgA==
+    size: 145862030
+  - url: R+-7.9.1-x64.dmg
+    sha512: CtpTPVvXm3C2+3+Q2fPNqpDxK7MNh4gCrW81eIhUMxi6Xn0xm6wv1EpUqIrUPi0T+aVnbXL/iZ34D1Olx3JmoA==
+    size: 151661058
+path: R+-7.9.1-arm64.zip
+sha512: dv9G79RiS5WI7yWTpyj/vR15W7XjEUDLbUXP46zUkr3ipK1+r6ngPPIt4t6IxyhoskezOilpOi4kLxzBxJW/Ig==
+releaseDate: '2026-08-03T12:16:29.000Z'
 releaseNotes: |
-  7.9.0 introduce Nube, un piloto opt-in en Cloudflare Free para sincronizar el censo del turno sin depender de un Mac anfitrión en LAN. Disponible solo para perfiles de sala Sala y Torre HU; el resto de salas sigue en LiveSync LAN como hasta ahora.
+  7.9.1 añade códigos de recuperación y un panel Conexión por pasos para Nube (Sala / Torre HU), y borrado masivo de pacientes en la lista con purge en LAN/Nube para que no regresen al sincronizar.
   
-  Nube en el panel ⇄ — Registro e inicio de sesión (usuario + contraseña) y unión a sala de turno desde el mismo panel de sincronización. Solo visible para Sala y Torre HU.
+  Código de recuperación Nube — Al registrarte recibes un código de un solo uso (guárdalo). Con él puedes recuperar la cuenta si olvidaste la contraseña; también puedes regenerarlo. Admin de programa puede restablecer contraseña.
   
-  Nube sustituye anfitrión LAN — En esas salas, cuando Nube está conectada, la autoridad del turno es la sala en la nube: no hace falta elegir ni mantener un host Mac en la red local.
+  Panel ⇄ por pasos — Conectar → Sala → Equipo → Más. Sin sesión Nube solo ves Conectar; el chrome de Conexión se reconstruye al login/logout.
   
-  Otras salas sin cambios — Interconsultas, UX, Eme y Área A (Pensionistas) permanecen en LiveSync LAN (host + PIN).
-  
-  Offline + outbox — SQLCipher local sigue siendo la caché del turno; sin Internet las ediciones se encolan y se envían al reconectar.
-  
-  Labs sin tope de sets — En el piloto no hay límite por paciente en cantidad de sets de laboratorio; el freno es la cuota de tamaño de sala (censo vivo + almacenamiento Free tier).
-  
-  Despliegue del worker — Desde la raíz del repo: node cloudflare/setup-sync.mjs (D1, secretos, deploy). Estimación de cuota Free: cd cloud/sync-worker && npm run estimate:free.
+  Borrado masivo — Multi-select en la lista de pacientes y borrado unificado (local + tombstone + purge en host LAN / Nube / WS) para que los borrados no reaparezcan.
