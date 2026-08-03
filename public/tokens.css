@@ -230,28 +230,32 @@ html.ui-density-normal {
 
 html.dark {
   --color-paper: #0c0e14;
-  --color-surface: #161922;
-  --color-ink: #e6eaf0;
-  --color-ink-muted: #9aa3b2;
-  --color-accent: #7b82f5;
-  --color-accent-hover: #959bf8;
-  --color-accent-soft: color-mix(in oklab, var(--color-accent) 14%, transparent);
-  --color-accent-soft-text: #b8bdfc;
-  --color-on-accent: #0c0e14;
-  --color-section-header-bg: color-mix(in oklab, var(--color-surface) 92%, var(--color-accent) 8%);
-  --color-channel-pill-bg: color-mix(in oklab, var(--color-accent) 55%, #4c1d95);
-  --color-channel-pill-fg: #f5f3ff;
-  --color-focus-ring: color-mix(in oklab, var(--color-accent) 22%, transparent);
-  --color-success-emphasis: #059669;
-  --color-success-emphasis-hover: #10b981;
-  --color-on-success: #ffffff;
-  --color-livesync-live: #34d399;
+  --color-surface: #14161e;
+  --color-content: #0c0e14;
+  --color-elevated: #1c1e26;
+  --color-ink: #f5f5f7;
+  --color-ink-muted: #98989d;
+  --color-accent: var(--color-ink);
+  --color-accent-hover: #ffffff;
+  --color-accent-soft: color-mix(in oklab, var(--color-ink) 12%, transparent);
+  --color-accent-soft-text: var(--color-ink);
+  --color-on-accent: #1c1c1e;
+  --color-section-header-bg: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
+  --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 18%, var(--color-surface));
+  --color-channel-pill-fg: var(--color-ink);
+  --color-focus-ring: color-mix(in oklab, var(--color-ink) 22%, transparent);
+  --color-danger: #ff453a;
+  --color-success: #30d158;
+  --color-success-emphasis: var(--color-success);
+  --color-success-emphasis-hover: color-mix(in oklab, var(--color-success) 88%, #ffffff);
+  --color-on-success: #0c0e14;
+  --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #fbbf24;
   --color-livesync-degraded: #fb923c;
-  --color-livesync-local: var(--color-accent-soft-text);
+  --color-livesync-local: var(--color-ink-muted);
   --color-livesync-idle: var(--text-muted);
-  --color-agenda-block-bg: color-mix(in oklab, var(--color-accent) 16%, var(--color-surface));
-  --color-agenda-block-border: color-mix(in oklab, var(--color-accent) 38%, var(--border));
+  --color-agenda-block-bg: color-mix(in oklab, var(--color-ink) 16%, var(--color-surface));
+  --color-agenda-block-border: color-mix(in oklab, var(--color-ink) 38%, var(--border));
   --color-update-banner-bg: #14532d;
   --color-update-banner-fg: #bbf7d0;
 
@@ -264,11 +268,11 @@ html.dark {
   --divider: rgba(148, 163, 184, 0.09);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
-  --error: #f87171;
+  --error: var(--color-danger);
   --danger: var(--error);
   --color-danger-hover-bg: color-mix(in oklab, var(--error) 14%, var(--surface));
   --warn: var(--color-livesync-syncing);
-  --success: #6ee7a8;
+  --success: var(--color-success);
   --lab-header-slate: color-mix(in oklab, #4b5563 36%, var(--surface));
   --lab-header-green: color-mix(in oklab, #065f46 40%, var(--surface));
   --lab-header-indigo: color-mix(in oklab, #4338ca 38%, var(--surface));
@@ -290,9 +294,17 @@ html.dark {
   --border-hairline: 1px solid rgba(148, 163, 184, 0.16);
   --state-hover-bg: color-mix(in oklab, var(--color-ink) 6%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-ink) 10%, transparent);
-  --overlay-bg: color-mix(in oklab, var(--surface) 84%, transparent);
+  --surface-elevated: var(--color-elevated);
+
+  --material-glass-bg: color-mix(in oklab, #282a34 78%, transparent);
+  --material-glass-blur: 28px;
+  --material-glass-saturate: 160%;
+  --material-glass-border: 1px solid color-mix(in oklab, #ffffff 12%, transparent);
+  --overlay-bg: var(--material-glass-bg);
+  --overlay-blur: var(--material-glass-blur);
+  --overlay-border: var(--material-glass-border);
   --scrim-bg: color-mix(in oklab, var(--color-ink) 68%, transparent);
-  --overlay-border: 1px solid rgba(148, 163, 184, 0.18);
+
   --input-fill: color-mix(in oklab, var(--surface) 88%, var(--bg));
   --card-body-bg: color-mix(in oklab, var(--surface) 97%, var(--bg));
   --diagram-line: #cbd5e1;
@@ -302,8 +314,8 @@ html.dark {
   --todo-prio-media: #facc15;
   --todo-prio-baja: #86efac;
 
-  --med-pharm-indicated: color-mix(in oklab, var(--color-accent) 26%, var(--surface));
-  --med-pharm-indicated-border: color-mix(in oklab, var(--color-accent) 62%, var(--text-muted));
+  --med-pharm-indicated: color-mix(in oklab, var(--color-ink) 26%, var(--surface));
+  --med-pharm-indicated-border: color-mix(in oklab, var(--color-ink) 62%, var(--text-muted));
   --med-pharm-today: color-mix(in oklab, var(--warn) 24%, var(--surface));
   --med-pharm-today-fg: var(--warn);
   --med-pharm-not-admin: color-mix(in oklab, var(--bg) 88%, var(--surface));
@@ -322,8 +334,8 @@ html.high-contrast {
   --color-surface: #ffffff;
   --color-ink: #000000;
   --color-ink-muted: #262626;
-  --color-accent: #0000b8;
-  --color-accent-hover: #000090;
+  --color-accent: #000000;
+  --color-accent-hover: #000000;
   --color-on-accent: #ffffff;
   --color-on-success: #ffffff;
   --primary: #000000;
@@ -335,9 +347,11 @@ html.high-contrast {
   --divider: var(--border);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
-  --error: #b00000;
-  --success: #006400;
-  --color-livesync-live: #006400;
+  --color-danger: #b00000;
+  --error: var(--color-danger);
+  --color-success: #006400;
+  --success: var(--color-success);
+  --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #8a5a00;
   --color-livesync-degraded: #b00000;
   --color-livesync-local: var(--color-accent);
@@ -359,7 +373,9 @@ html.high-contrast {
   --border-hairline: 1px solid var(--border);
   --state-hover-bg: color-mix(in oklab, var(--color-accent) 12%, transparent);
   --state-active-bg: color-mix(in oklab, var(--color-accent) 20%, transparent);
-  --overlay-bg: var(--surface);
+  --material-glass-bg: var(--color-surface);
+  --material-glass-blur: 0px;
+  --overlay-bg: var(--material-glass-bg);
   --overlay-blur: 0px;
   --overlay-border: 1px solid var(--border);
   --color-focus-ring: var(--color-accent);
@@ -375,8 +391,8 @@ html.high-contrast.dark {
   --color-surface: #161616;
   --color-ink: #ffffff;
   --color-ink-muted: #d1d5db;
-  --color-accent: #6ec6ff;
-  --color-accent-hover: #9edaff;
+  --color-accent: #ffffff;
+  --color-accent-hover: #ffffff;
   --color-on-accent: #000000;
   --color-on-success: #000000;
   --primary: #ffffff;
@@ -388,9 +404,11 @@ html.high-contrast.dark {
   --divider: #c4c4c4;
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);
-  --error: #ff6b6b;
-  --success: #5eea7a;
-  --color-livesync-live: #5eea7a;
+  --color-danger: #ff6b6b;
+  --error: var(--color-danger);
+  --color-success: #5eea7a;
+  --success: var(--color-success);
+  --color-livesync-live: var(--color-success);
   --color-livesync-syncing: #ffd54f;
   --color-livesync-degraded: #ff9e6b;
   --color-livesync-local: var(--color-accent);
@@ -409,6 +427,10 @@ html.high-contrast.dark {
   --shell-gap: var(--color-paper);
   --sidebar-rail-color: var(--border);
   --color-focus-ring: var(--color-accent);
+  --material-glass-bg: var(--color-surface);
+  --material-glass-blur: 0px;
+  --overlay-bg: var(--material-glass-bg);
+  --overlay-blur: 0px;
 }
 
 /* ── Motion presets (Ajustes → Animaciones). Mixto = :root defaults ── */
@@ -433,7 +455,28 @@ html.motion-expresivo {
     --dur-fast: 1ms;
     --dur-normal: 1ms;
     --dur-slow: 1ms;
+    --dur-press: 1ms;
+    --dur-ui: 1ms;
     --ease-spring: linear;
+  }
+}
+
+
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  html.dark {
+    --material-glass-bg: var(--color-elevated);
+    --material-glass-blur: 0px;
+    --material-glass-saturate: 100%;
+    --overlay-bg: var(--material-glass-bg);
+    --overlay-blur: 0px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border: color-mix(in oklab, var(--color-ink) 28%, transparent);
+    --border-hairline: 1px solid color-mix(in oklab, var(--color-ink) 28%, transparent);
   }
 }
 
