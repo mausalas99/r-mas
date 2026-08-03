@@ -1,18 +1,22 @@
-version: 7.9.2
+version: 7.9.3
 files:
-  - url: R+-7.9.2-x64.exe
-    sha512: +XCc5a2Ley+LEHNHXUL50mj7uKXXYsYN/wht2iok4LJwBGVdjUPuJeo4ZJ7n+4yWaABLoC7P+B7yvvOZmvvi6w==
-    size: 121071225
-path: R+-7.9.2-x64.exe
-sha512: +XCc5a2Ley+LEHNHXUL50mj7uKXXYsYN/wht2iok4LJwBGVdjUPuJeo4ZJ7n+4yWaABLoC7P+B7yvvOZmvvi6w==
-releaseDate: '2026-08-03T15:28:17.000Z'
+  - url: R+-7.9.3-x64.exe
+    sha512: 5DcswhPykpapFwq8Je6RfDGDe9g8Rrjh7M6wsuxK2TmEktVtWte12UOToxmVzxbLZCYkUw2JmE7cGgCKNjdpdg==
+    size: 121085514
+path: R+-7.9.3-x64.exe
+sha512: 5DcswhPykpapFwq8Je6RfDGDe9g8Rrjh7M6wsuxK2TmEktVtWte12UOToxmVzxbLZCYkUw2JmE7cGgCKNjdpdg==
+releaseDate: '2026-08-03T18:49:05.000Z'
 releaseNotes: |
-  7.9.2 alinea el censo con Estado Actual (rescates de insulina y dieta suplemento), simplifica el panel ⇄ Conexión a una hoja de estado con Opciones, y limpia membrete SOME en cultivos / SV del día.
+  7.9.3 separa la documentación de labs en Eventualidades (pestaña Labs con texto consolidado al estilo Estudios), hace el sync Nube más fiel al turno (LWW por bloque, labs slim, polling adaptativo) y abre el registro de Estado Actual limpio, con secciones claras.
   
-  Censo — ATB / Meds — Las insulinas rápidas PRN SC salen como RESCATES DE INSULINA (una línea). El suplemento nutricional SOME (ALIMENTACION… SUPLEMENTO) va a DIETA SUPLEMENTO, no como medicamento.
+  Eventualidades — Labs — Switcher Eventualidad / Labs. La interpretación va a una caja dedicada (labsText) con formato Estudios (BH/QS/GASES…). Procesar SOME, Actualizar labs y la cola de documentación fusionan ahí; ya no crean entradas clínicas por cada batch.
   
-  Conexión Nube — Vista de estado al abrir ⇄; R4 / admin / LAN avanzado en Opciones (fuera del primer viewport).
+  Nube — sync — Monitoreo y eventualidades con relojes de contenido propios. Labs sin PDF/binarios; polling adaptativo y push con debounce; error visible en el chip ⇄.
   
-  Cultivos — Filtra membrete SOME (USER / Labo) para no contaminar ATB y resultado.
+  Nube — Conexión — Chip con Sala 1 / Sala 2 / Sala E; Opciones agrupadas; admin con pestañas.
   
-  Estado Actual — signos — Prefill del modal solo con lecturas del mismo día calendario (no arrastra SV de ayer).
+  Estado Actual — registro — Modal por secciones (signos, glu, I/E). Abre limpio (sin prefill de vitales/IO). Estado clínico respeta estadoClinicoUpdatedAt al sincronizar.
+  
+  Labs — consolidación — Misma fecha+hora fusiona paneles complementarios antes de la ventana ≤2 h; gasometrías seriadas distintas no colapsan. Tablas SOME más legibles.
+  
+  LAN / censo — Cuarto y cama no se pisan si el remoto no trae reloj más reciente. En salas Nube se ocultan chips LAN engañosos.
