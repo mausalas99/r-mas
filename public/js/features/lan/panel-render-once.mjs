@@ -50,6 +50,7 @@ import { appendLanConnectionStack } from './panel-group.mjs';
 import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
 import { shouldShowNubePostAuthChrome } from '../cloud-sync/panel-session-gate.mjs';
+import { syncCloudSecondaryPanels } from '../cloud-sync/panel-conexion-views.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
@@ -79,6 +80,8 @@ function maybeAppendEquiposQrPanel_(deps, root) {
 /** @param {Parameters<typeof maybeAppendInternoQrPanel_>[0]} deps */
 async function syncLanHostBeforeRender_(deps, rankConfigured) {
   if (!rankConfigured) return;
+  // Nube (Sala/Torre) owns the turn — skip LAN host election/pin work that blocks open.
+  if (shouldUseNubeNotLan(getUserSala())) return;
   try {
     await syncLanHostClinicalMetaToDisk();
     var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
@@ -242,6 +245,27 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   maybeAppendEquiposQrPanel_(deps, root);
 }
 
+/** Nube footer: keep diagnostics/census CTA; skip QR compact fetch ("Cargando…"). */
+async function appendNubePanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop) {
+  var appendConflictDrafts = deps.runtime().appendLanConflictDraftsSection;
+  if (typeof appendConflictDrafts === 'function') {
+    void appendConflictDrafts(root);
+  }
+  await deps.appendLanSyncDiagnosticsSection(root);
+  await appendLanHostPatientsSection(root, {
+    showToast: function (msg, kind) {
+      deps.runtime().showToast(msg, kind);
+    },
+    onChanged: function () {
+      if (typeof deps.runtime().renderPatientList === 'function') deps.runtime().renderPatientList();
+    },
+  });
+  if (deps.isRenderStale(gen)) return;
+  deps.purgeDuplicateLanShiftPinCards(root);
+  restoreLanPanelExpandState(root, expandState);
+  restoreConnectionDropdownScrollTop(dropdownScrollTop);
+}
+
 
 /** @param {Parameters<typeof renderLanPanelOnce_>[0]} deps */
 async function tryNubeEarlyRefresh_(deps, root, gen, force) {
@@ -267,10 +291,14 @@ async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expan
   if (nubeOverridesLan) {
     const mainStack = appendLanConnectionStack(root);
     if (showNubePanel && isElevated) deps.buildR4Section(mainStack);
-    await appendPanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
+    // Skip LAN host census / QR compact loaders — they add open latency ("Cargando…")
+    // when the turn is already on Nube.
+    await appendNubePanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
     appendLanLwwToastRow(mainStack);
     wireLanLwwToastPref();
     syncLanLwwOverwriteToastPrefUi();
+    const nubeSection = root.querySelector('.cloud-sync-conexion');
+    syncCloudSecondaryPanels(root, nubeSection?.dataset?.cloudView || 'status');
     return;
   }
   return nubeOverridesLan;

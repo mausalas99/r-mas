@@ -96,10 +96,22 @@ export async function handleRegister(deps) {
 export function readLoginForm(section) {
   const user = section.querySelector('[data-cloud-login-user]');
   const pass = section.querySelector('[data-cloud-login-pass]');
+  const remember = section.querySelector('[data-cloud-login-remember]');
   return {
     username: normalizeUsername(String(user?.value || '')),
     password: String(pass?.value || ''),
+    remember: !!(remember && /** @type {HTMLInputElement} */ (remember).checked),
   };
+}
+
+/** @param {object} deps @param {object} room */
+function persistCloudRoom(deps, room) {
+  if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
+    deps.setCloudSyncRoomSnapshot(room);
+    return;
+  }
+  deps.setCloudSyncRoomId(room.id);
+  deps.setCloudSyncRevision(Number(room.revision) || 0);
 }
 
 /** @param {object} deps */
@@ -111,12 +123,20 @@ export async function handleLogin(deps) {
     return;
   }
   try {
-    const data = await deps.getApi().login(form);
+    const data = await deps.getApi().login({
+      username: form.username,
+      password: form.password,
+    });
     const prevToken = deps.getCloudSyncToken();
-    deps.setCloudSyncToken(data.token);
+    deps.setCloudSyncToken(data.token, { remember: form.remember });
     await maybeShowRecoveryCodeModal(data);
     await afterAuthSuccess(deps, data.user || { username: form.username });
-    deps.toast('Sesión nube iniciada.', 'success');
+    deps.toast(
+      form.remember
+        ? 'Sesión nube iniciada (se recordará en este dispositivo).'
+        : 'Sesión nube iniciada.',
+      'success'
+    );
     if (!rebuildPanelOnAuthChange(deps, prevToken)) deps.renderAfterAuth();
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo iniciar sesión.', 'error');
@@ -196,8 +216,7 @@ export async function handleCreateRoom(deps) {
   try {
     const data = await deps.getApi().createRoom({ name, sala: deps.normalizedSala });
     const room = data.room;
-    deps.setCloudSyncRoomId(room.id);
-    deps.setCloudSyncRevision(Number(room.revision) || 0);
+    persistCloudRoom(deps, room);
     deps.renderConnected(room);
     deps.toast('Sala creada: ' + room.code, 'success');
   } catch (err) {
@@ -221,8 +240,7 @@ export async function handleJoinRoom(deps) {
   try {
     const data = await deps.getApi().joinRoom({ code });
     const room = data.room;
-    deps.setCloudSyncRoomId(room.id);
-    deps.setCloudSyncRevision(Number(room.revision) || 0);
+    persistCloudRoom(deps, room);
     deps.renderConnected(room);
     deps.toast('Unido a la sala ' + room.code + '.', 'success');
   } catch (err) {
@@ -268,10 +286,17 @@ export async function handleOpenRotation(toast) {
 export function renderAfterAuth(deps) {
   const roomId = deps.getCloudSyncRoomId();
   if (roomId) {
+    const snap =
+      typeof deps.getCloudSyncRoomSnapshot === 'function'
+        ? deps.getCloudSyncRoomSnapshot()
+        : null;
     deps.renderConnected({
       id: roomId,
       revision: deps.getCloudSyncRevision(),
-      sala: normalizeCloudSala(deps.getUserSala()),
+      sala: snap?.sala || normalizeCloudSala(deps.getUserSala()),
+      code: snap?.code || '',
+      turnKey: snap?.turnKey || '',
+      name: snap?.name || '',
     });
     deps.startRuntime();
   } else {

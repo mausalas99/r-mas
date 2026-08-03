@@ -1,5 +1,6 @@
 import {
   advanceAbxMedTextForManejoDate,
+  collectDietasFromRecetaBlock,
 } from '../med-receta-core.mjs';
 import {
   MED_FIELD_KEYS,
@@ -87,10 +88,10 @@ function mergePendingDietProposal(ec, pend, _conf) {
  * @returns {boolean}
  */
 export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
-  if (!monitoreo || !recetaBlock || !Array.isArray(recetaBlock.dietas) || !recetaBlock.dietas.length) {
-    return false;
-  }
-  var merged = mergedDietFromReceta(recetaBlock.dietas);
+  if (!monitoreo || !recetaBlock) return false;
+  var dietas = collectDietasFromRecetaBlock(recetaBlock);
+  if (!dietas.length) return false;
+  var merged = mergedDietFromReceta(dietas);
   if (!mergedDietHasContent(merged)) return false;
   if (tryAutoConfirmMatchingDiet(monitoreo, merged)) return true;
   if (shouldSkipDietProposal(monitoreo, opts, merged)) return false;

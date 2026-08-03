@@ -7,6 +7,46 @@ function normalizeNutrientText(s) {
     .toUpperCase();
 }
 
+/**
+ * SOME a veces cataloga nutrición enteral/suplemento bajo MEDICAMENTOS.
+ * @param {{ nombreRaw?: unknown, viaRaw?: unknown, suspendido?: boolean }|null|undefined} item
+ * @returns {boolean}
+ */
+export function isNutritionMedicationItem(item) {
+  if (!item || item.suspendido) return false;
+  var nombre = normalizeNutrientText(item.nombreRaw);
+  if (!nombre) return false;
+  if (/\bALIMENTACION\b/.test(nombre)) return true;
+  if (/\bSUPLEMENTO\b/.test(nombre) && /\d+\s*ML\b/.test(nombre)) return true;
+  var via = normalizeNutrientText(item.viaRaw);
+  if (/\bSUPLEMENTO\b/.test(nombre) && /\b(?:GASTROSTOMIA|NASOGASTR|ENTER)/.test(via)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * @param {{ nombreRaw?: unknown, viaRaw?: unknown, dosisRaw?: unknown, frecuenciaRaw?: unknown, suspendido?: boolean }} item
+ * @param {number} [lineIndex]
+ * @returns {{ id: string, descripcionRaw: string, detalleRaw: string, kcal: null, proteinG: null, suspendido: boolean }}
+ */
+export function nutritionMedItemToDieta(item, lineIndex) {
+  var nombre = normalizeNutrientText(item && item.nombreRaw);
+  var desc = /\bSUPLEMENTO\b/.test(nombre) ? 'SUPLEMENTO' : trimStr(item && item.nombreRaw);
+  var detalle = [item && item.viaRaw, item && item.dosisRaw, item && item.frecuenciaRaw]
+    .map(trimStr)
+    .filter(Boolean)
+    .join(' · ');
+  return {
+    id: 'dieta-nutri-' + Date.now().toString(36) + '-' + (lineIndex == null ? 0 : lineIndex),
+    descripcionRaw: desc,
+    detalleRaw: detalle,
+    kcal: null,
+    proteinG: null,
+    suspendido: !!(item && item.suspendido),
+  };
+}
+
 function parseProteinGrams(t) {
   var unit = '(?:GRS?|GRAMOS?|G)';
   var patterns = [
@@ -109,6 +149,22 @@ export function mergeDietaItems(dietas) {
     if (d.proteinG != null) proteinG = d.proteinG;
   }
   return { descripcion: parts.join(' · '), kcal: kcal, proteinG: proteinG };
+}
+
+/**
+ * Dietas SOME + nutrición mal catalogada como MEDICAMENTOS.
+ * @param {{ dietas?: unknown[], items?: unknown[] }|null|undefined} block
+ * @returns {unknown[]}
+ */
+export function collectDietasFromRecetaBlock(block) {
+  var dietas = Array.isArray(block && block.dietas) ? block.dietas.slice() : [];
+  var items = Array.isArray(block && block.items) ? block.items : [];
+  for (var i = 0; i < items.length; i += 1) {
+    if (isNutritionMedicationItem(items[i])) {
+      dietas.push(nutritionMedItemToDieta(items[i], i));
+    }
+  }
+  return dietas;
 }
 
 export function buildDietProposalText(merged) {

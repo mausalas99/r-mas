@@ -6,10 +6,12 @@
         <button type="button" class="btn-sidebar-auto-hide" id="btn-sidebar-auto-hide" onclick="toggleSidebarAutoHide()" aria-pressed="false" title="Ocultar barra de pacientes (reaparece al acercar el mouse)" aria-label="Ocultar barra de pacientes">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
         </button>
-        <h2>Pacientes</h2>
+        <h2 class="visually-hidden">Pacientes</h2>
       </div>
       <div class="sidebar-header-actions">
-        <button type="button" class="btn-patient-bulk-select" id="btn-patient-bulk-select" onclick="togglePatientBulkSelect()" aria-pressed="false" title="Seleccionar varios pacientes">Seleccionar</button>
+        <button type="button" class="btn-patient-bulk-select" id="btn-patient-bulk-select" onclick="togglePatientBulkSelect()" aria-pressed="false" title="Seleccionar varios pacientes" aria-label="Seleccionar varios pacientes">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M4.5 8l1.2 1.2L8.5 6.5"/><rect x="3" y="14" width="6" height="6" rx="1"/><path d="M13 8h8"/><path d="M13 17h8"/></svg>
+        </button>
         <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
       </div>
     </div>

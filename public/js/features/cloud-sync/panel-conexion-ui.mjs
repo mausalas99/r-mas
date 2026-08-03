@@ -2,34 +2,38 @@ import {
   authFormsHtml,
   roomConnectedHtml,
   roomActionsHtml,
-  advancedUrlHtml,
   conexionShellHtml,
   equipoStepHtml,
 } from './panel-conexion-html.mjs';
-import { connectedStepsHtml } from './panel-steps-html.mjs';
+import { connectedViewsHtml, applyConexionView } from './panel-conexion-views.mjs';
 
 /**
  * @param {HTMLElement} section
  * @param {string} normalizedSala
  * @param {object} deps
- * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, masAdminHtml?: string }} ctx
+ * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, masAdminHtml?: string, ensureAdminOpen?: () => void | Promise<void> }} ctx
  */
 export function createConexionRenderers(section, normalizedSala, deps, ctx) {
   function renderShell(bodyHtml, status) {
     section.innerHTML = conexionShellHtml(normalizedSala, bodyHtml, status);
   }
 
-  function renderConnected(room) {
-    const masBodyHtml = (ctx.masAdminHtml || '') + advancedUrlHtml(deps.getCloudSyncUrl());
+  function renderConnectedBody(roomHtml) {
     renderShell(
-      connectedStepsHtml({
+      connectedViewsHtml({
         cloudUser: ctx.cloudUser,
-        roomHtml: roomConnectedHtml(room, deps.getCloudSyncRevision),
+        roomHtml,
         equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
-        masBodyHtml,
+        adminHtml: ctx.masAdminHtml || '',
+        url: deps.getCloudSyncUrl(),
       }),
       'idle'
     );
+    applyConexionView(section, 'status', { onAdmin: ctx.ensureAdminOpen });
+  }
+
+  function renderConnected(room) {
+    renderConnectedBody(roomConnectedHtml(room, deps.getCloudSyncRevision));
     ctx.startRuntime();
   }
 
@@ -39,16 +43,7 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
       renderShell(authFormsHtml(deps.getCloudSyncUrl()), 'offline');
       return;
     }
-    const masBodyHtml = (ctx.masAdminHtml || '') + advancedUrlHtml(deps.getCloudSyncUrl());
-    renderShell(
-      connectedStepsHtml({
-        cloudUser: ctx.cloudUser,
-        roomHtml: roomActionsHtml(normalizedSala),
-        equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
-        masBodyHtml,
-      }),
-      'idle'
-    );
+    renderConnectedBody(roomActionsHtml(normalizedSala));
   }
 
   return { renderConnected, renderDisconnected };

@@ -1,6 +1,7 @@
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { nextStepHtml, userHasJoinedTeam, equipoStepHtml } from './panel-conexion-html.mjs';
+import { applyConexionView } from './panel-conexion-views.mjs';
 import {
   handleRegister,
   handleLogin,
@@ -17,11 +18,7 @@ import {
 /** @returns {string} */
 export function adminShellHtml() {
   if (!canAccessCloudAdmin(clinicalSessionContext.user)) return '';
-  return (
-    '<div class="cloud-sync-admin-wrap">' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="toggle-admin" aria-expanded="false">Administración nube</button>' +
-    '<div class="cloud-sync-admin-host" data-cloud-admin-host hidden></div></div>'
-  );
+  return '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>';
 }
 
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */
@@ -38,6 +35,8 @@ export function wireConexionClicks(section, deps, ui) {
     clearCloudSyncSession: deps.clearCloudSyncSession,
     getCloudSyncRoomId: deps.getCloudSyncRoomId,
     setCloudSyncRoomId: deps.setCloudSyncRoomId,
+    getCloudSyncRoomSnapshot: deps.getCloudSyncRoomSnapshot,
+    setCloudSyncRoomSnapshot: deps.setCloudSyncRoomSnapshot,
     getCloudSyncRevision: deps.getCloudSyncRevision,
     setCloudSyncRevision: deps.setCloudSyncRevision,
     onCloudRoomChange: deps.onCloudRoomChange,
@@ -53,6 +52,10 @@ export function wireConexionClicks(section, deps, ui) {
     renderAfterAuth() { renderAfterAuth(handlerDeps); },
   };
 
+  function goView(view) {
+    applyConexionView(section, view, { onAdmin: ui.ensureAdminOpen });
+  }
+
   const clickActions = {
     register: () => void handleRegister(handlerDeps),
     login: () => void handleLogin(handlerDeps),
@@ -63,13 +66,28 @@ export function wireConexionClicks(section, deps, ui) {
     'leave-room': () => void handleLeaveRoom(handlerDeps),
     logout: () => void handleLogout(handlerDeps),
     'open-rotation': () => void handleOpenRotation(ui.toast),
-    'toggle-admin': () => void ui.toggleAdminPanel(),
+    'toggle-admin': () => void ui.ensureAdminOpen?.(),
+    'nav-options': () => goView('options'),
+    'nav-back': () => {
+      const cur = section.dataset.cloudView || 'status';
+      goView(cur === 'options' ? 'status' : 'options');
+    },
+    'save-url': () => {
+      void ui.saveUrlFromUi().then(function () {
+        ui.toast?.('URL guardada', 'success');
+      });
+    },
   };
 
   section.addEventListener('click', function (ev) {
     const btn = ev.target instanceof Element ? ev.target.closest('[data-cloud-action]') : null;
     if (!btn) return;
     const action = btn.getAttribute('data-cloud-action');
+    if (action === 'nav-view') {
+      const view = btn.getAttribute('data-cloud-view');
+      if (view) goView(view);
+      return;
+    }
     if (action && clickActions[action]) clickActions[action]();
   });
 }
@@ -82,10 +100,8 @@ function refreshConnectedEquipoStep(section, getToken) {
     return;
   }
   if (!userHasJoinedTeam() && !equipo) {
-    const step = section.querySelector('[data-cloud-step="3"]');
-    if (!step) return;
-    const head = step.querySelector('.cloud-sync-step-head');
-    if (head) head.insertAdjacentHTML('afterend', equipoStepHtml(getToken));
+    const view = section.querySelector('[data-cloud-view="equipo"] .cloud-sync-view-body');
+    if (view) view.insertAdjacentHTML('afterbegin', equipoStepHtml(getToken));
   }
 }
 
@@ -143,25 +159,16 @@ export function bootstrapConexionState(section, deps, ui) {
 export function mountAdminShell(section, deps, toast) {
   /** @type {ReturnType<import('./panel-admin.mjs').mountCloudAdminPanel> | null} */
   let adminMount = null;
-  async function toggleAdminPanel() {
+  async function ensureAdminOpen() {
     const host = section.querySelector('[data-cloud-admin-host]');
-    const btn = section.querySelector('[data-cloud-action="toggle-admin"]');
-    if (!host || !btn) return;
-    const opening = host.hasAttribute('hidden');
-    if (opening) {
-      host.removeAttribute('hidden');
-      btn.setAttribute('aria-expanded', 'true');
-      if (!adminMount) {
-        const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
-        host.textContent = '';
-        adminMount = mountCloudAdminPanel(host, { getApi: deps.getApi, toast });
-      } else {
-        adminMount.refresh?.();
-      }
+    if (!host) return;
+    if (!adminMount) {
+      const { mountCloudAdminPanel } = await import('./panel-admin.mjs');
+      host.textContent = '';
+      adminMount = mountCloudAdminPanel(host, { getApi: deps.getApi, toast });
     } else {
-      host.setAttribute('hidden', '');
-      btn.setAttribute('aria-expanded', 'false');
+      adminMount.refresh?.();
     }
   }
-  return { toggleAdminPanel };
+  return { ensureAdminOpen, toggleAdminPanel: ensureAdminOpen };
 }

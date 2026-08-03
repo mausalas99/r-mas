@@ -352,6 +352,85 @@ test('formatCultivoCondensedForCopy: cabecera con dd/mm, ATB y cuenta', () => {
   );
 });
 
+test('urocultivo sonda Klebsiella: ATB completo; no membrete USER/Labo', () => {
+  const raw = `
+Expediente:	2166042-4	Solicitud:	2607200976
+Nombre:	GARCIA CABRERA AUDELIA	Fecha Registro:	20/07/2026 07:43:15 p. m.
+Sexo:	FEMENINO	Ubicación:	EMERGENCIAS SHOCK TRAUMA SALA
+Edad:	74	Medico:	A QUIEN CORRESPONDA
+BACTERIOLOGIA
+Estudio		Resultado	Unidades	Valor de Referencia
+UROCULTIVO POR SONDA
+PRODUCTO	
+*
+MICROORGANISMO	
+*
+Klebsiella pneumoniae
+COMENTARIO:	
+*
+CUENTA DE KASS	
+*
+80,000 UFC/mL
+ANTIBIOGRAMA	
+*
+AMP/SULBACTAM
+<=8/4	S
+*
+AMPICILINA
+>16	R
+*
+CEFTRIAXONA
+<=1	S
+*
+CEFAZOLINA
+<=2	S
+*
+CIPROFLOXACINA
+<=1	S
+*
+NITROFURANTOINA
+<=32	S
+*
+GENTAMICINA
+<=4	S
+*
+LEVOFLOXACINA
+<=2	S
+*
+PIP/TAZO
+<=16	S
+*
+TRIMET/SULFA
+<=2/38	S
+*
+LAS CUENTAS MENORES A 100,000 UFC/ML PUEDEN REPRESENTAR , CONTAMINACION DE LA MUESTRA O RESPUESTA PARCIAL AL TRATAMIENTO
+MICROORGANISMO	
+*
+COMENTARIO:	
+*
+IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)
+`;
+  const out = parseCultivo_(raw, norm(raw));
+  assert.match(out, /UROCULTIVO POR SONDA 20\/07: KLEBSIELLA PNEUMONIAE/i);
+  assert.match(out, /\bATB R: AMP\b/);
+  assert.match(out, /S:.*AMP-SULB/);
+  assert.match(out, /CFTX|CFZ|CIPRO|NITRO|GENT|LVX|PIP\/TAZO|TMP\/SMX/);
+  assert.match(out, /Cuenta:\s*80,000\s*UFC\/ML/i);
+  assert.doesNotMatch(out, /USER|Labo\s*-?647|DJEG|Feme/i);
+
+  const r = procesarLabs(raw);
+  const joined = (r.resLabs || []).join('\n');
+  assert.match(joined, /\bATB R: AMP\b/);
+  assert.doesNotMatch(joined, /USER|Labo\s*-?647|DJEG|Feme/i);
+
+  const dirtyCopy = formatCultivoCondensedForCopy(
+    out + '\nUSER CP1 -647* Labo -647* DJEG 64460\nUSER CP1 -647 Labo -647 DJEG 64460 Feme 74',
+    '20/07/2026'
+  );
+  assert.match(dirtyCopy, /\bATB R: AMP\b/);
+  assert.doesNotMatch(dirtyCopy, /USER|Labo|DJEG|Feme/i);
+});
+
 test('formatCultivoCondensedForCopy: sin Preliminar ni fecha/hora del envío', () => {
   const chunk = 'ASPIRADO TRAQUEAL 29/05: PROTEUS MIRABILIS · Preliminar\nCuenta: +100,000 UFC/ML';
   const out = formatCultivoCondensedForCopy(chunk, '29/05/2026 17:11');

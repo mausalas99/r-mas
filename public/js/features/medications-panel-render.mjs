@@ -1,5 +1,9 @@
 import { medRecetaByPatient } from "../app-state.mjs";
-import { buildMedRecetaCopyText, buildMedRecetaNameOnlyText } from "../med-receta-core.mjs";
+import {
+  buildMedRecetaCopyText,
+  buildMedRecetaNameOnlyText,
+  collectDietasFromRecetaBlock,
+} from "../med-receta-core.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import {
   getMedSubview,
@@ -96,7 +100,8 @@ function renderMedPanelRecetaContent(activeId, block, cacheKey, els) {
     els.fechaEl.textContent = fechaTxt;
     els.fechaEl.title = "Última importación SOME: " + fechaTxt;
   }
-  els.listEl.innerHTML = buildMedDietHtml(block.dietas) + buildMedRecetaListHtml(activeId, block);
+  els.listEl.innerHTML =
+    buildMedDietHtml(collectDietasFromRecetaBlock(block)) + buildMedRecetaListHtml(activeId, block);
   renderMedNotaFooter();
   syncMedOutputTabChrome(els.outPre, els.outCard, block);
   if (isPaseMode()) renderPaseBoard();

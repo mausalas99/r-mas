@@ -24,6 +24,7 @@ export async function appendLanHostPatientsSection(root, opts) {
 
   const row = document.createElement('div');
   row.className = 'settings-card lan-host-patients-panel';
+  row.setAttribute('data-cloud-secondary', 'lan');
 
   const copy = document.createElement('div');
   copy.className = 'settings-card__copy';

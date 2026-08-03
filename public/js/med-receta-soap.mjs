@@ -3,6 +3,7 @@ import { getMedCatalogSoapTokens } from './med-receta-catalog.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { isPrnMedicationItem } from './med-receta-format.mjs';
 import { isInsulinRescateMedicationItem } from './insulin-rescate-detect.mjs';
+import { isNutritionMedicationItem } from './med-receta-diet.mjs';
 import {
   classifyVasopressors_,
   classifyAbx_,
@@ -169,6 +170,7 @@ function classifyByNameHeuristics_(n) {
  */
 export function shouldIncludeMedicationInSoap(item, classifyFn) {
   if (!item || item.suspendido) return false;
+  if (isNutritionMedicationItem(item)) return false;
   var blob = normalizeNombreForSoapClassify(
     [item.nombreRaw, item.dosisRaw, item.frecuenciaRaw].filter(Boolean).join(' ')
   );

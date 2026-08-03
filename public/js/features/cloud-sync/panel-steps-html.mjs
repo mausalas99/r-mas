@@ -2,29 +2,15 @@ import { esc } from '../../dom-escape.mjs';
 import {
   CLINICAL_LAN_USERNAME_HINT_HTML,
   CLINICAL_LAN_DISPLAY_NAME_HINT_HTML,
-  readRpcSettings,
 } from '../../clinical-settings.mjs';
-import { normalizeUsername } from '../../clinical-username.mjs';
-import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import { getCloudSyncRemember } from './settings.mjs';
 
-/**
- * @param {{ username?: string, displayName?: string } | null} cloudUser
- */
-function accountSummaryInnerHtml(cloudUser) {
-  const settings = readRpcSettings();
-  const handle = normalizeUsername(
-    cloudUser?.username || clinicalSessionContext.user?.username || settings.clinicalUsername || ''
-  );
-  const display =
-    cloudUser?.displayName ||
-    clinicalSessionContext.user?.clinical_name ||
-    settings.clinicalDisplayName ||
-    '';
-  return (
-    '<p><span class="cloud-sync-account-label">Usuario</span> <strong>@' + esc(handle || '—') + '</strong></p>' +
-    '<p><span class="cloud-sync-account-label">Nombre en guardia</span> <strong>' + esc(display || '—') + '</strong></p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="logout">Cerrar sesión</button>'
-  );
+function readCloudRememberChecked() {
+  try {
+    return getCloudSyncRemember();
+  } catch {
+    return false;
+  }
 }
 
 /** @param {string} url */
@@ -44,7 +30,7 @@ export function connectStepHtml(url) {
     '<div class="cloud-sync-step-head">' +
     '<strong class="cloud-sync-step-title">1 · Conectar a Nube</strong>' +
     '<span class="cloud-sync-status-chip is-pending">Modo Nube · Sin sesión</span></div>' +
-    '<p class="cloud-sync-lead">Conectate para sincronizar el censo del turno. No hace falta host LAN.</p>' +
+    '<p class="cloud-sync-lead">Conecta para sincronizar el censo del turno. No hace falta host LAN.</p>' +
     '<div class="cloud-sync-tabs" role="tablist" aria-label="Cuenta Nube">' +
     '<button type="button" class="cloud-sync-tab is-active" role="tab" aria-selected="true" data-cloud-tab="login">Entrar</button>' +
     '<button type="button" class="cloud-sync-tab" role="tab" aria-selected="false" data-cloud-tab="register">Crear</button>' +
@@ -55,6 +41,11 @@ export function connectStepHtml(url) {
     '<input type="text" class="profile-input" data-cloud-login-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" /></div>' +
     '<div class="cloud-sync-field"><label>Contraseña</label>' +
     '<input type="password" class="profile-input" data-cloud-login-pass autocomplete="current-password" /></div>' +
+    '<label class="cloud-sync-remember">' +
+    '<input type="checkbox" data-cloud-login-remember' +
+    (readCloudRememberChecked() ? ' checked' : '') +
+    ' /> Recuérdame en este dispositivo</label>' +
+    '<p class="cloud-sync-hint">Mantiene la sesión Nube al reiniciar R+. No uses esto en una Mac compartida.</p>' +
     '<button type="button" class="cloud-sync-btn" data-cloud-action="login">Entrar</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="register" role="tabpanel" hidden>' +
     '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
@@ -81,28 +72,7 @@ export function connectStepHtml(url) {
   );
 }
 
-/**
- * @param {{ cloudUser: { username?: string, displayName?: string } | null, roomHtml: string, equipoHtml: string, masBodyHtml: string }} opts
- */
-export function connectedStepsHtml({ cloudUser, roomHtml, equipoHtml, masBodyHtml }) {
-  return (
-    '<div class="cloud-sync-connected-steps">' +
-    '<div class="cloud-sync-step cloud-sync-step--account">' +
-    '<div class="cloud-sync-account-summary">' + accountSummaryInnerHtml(cloudUser) + '</div></div>' +
-    '<div class="cloud-sync-step" data-cloud-step="2">' +
-    '<div class="cloud-sync-step-head"><strong class="cloud-sync-step-title">2 · Sala del turno</strong></div>' +
-    roomHtml + '</div>' +
-    '<div class="cloud-sync-step" data-cloud-step="3">' +
-    '<div class="cloud-sync-step-head"><strong class="cloud-sync-step-title">3 · Equipo</strong></div>' +
-    equipoHtml + '</div>' +
-    '<details class="cloud-sync-mas">' +
-    '<summary class="cloud-sync-step-head cloud-sync-mas-summary"><strong class="cloud-sync-step-title">4 · Más</strong></summary>' +
-    '<div class="cloud-sync-mas-body">' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="regenerate-recovery">Regenerar código de recuperación</button>' +
-    masBodyHtml +
-    '</div></details></div>'
-  );
-}
+export { connectedViewsHtml, connectedStepsHtml } from './panel-conexion-views.mjs';
 
 /** @param {HTMLElement} section */
 export function wireCloudAuthTabs(section) {

@@ -787,3 +787,12 @@ test('parseIndicacionesPaste — bloque real usuario 2026-07-19 (14 meds, P1, di
     'incluye MEDICAMENTOS P1 (bomba)'
   );
 });
+
+test('parseIndicacionesPaste — ALIMENTACION SUPLEMENTO va a dietas, no a meds', () => {
+  var line =
+    '03/08/2026 06:04:52 a.m.\tMEDICAMENTOS\tALIMENTACION ADULTO SUPLEMENTO 237 ML\tVIA GASTROSTOMIA\t600 ML // DIVIDIDO EN 5 TOMAS (120 CC POR TOMA)\tCADA 24 HORAS\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.items.length, 0);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'SUPLEMENTO');
+});

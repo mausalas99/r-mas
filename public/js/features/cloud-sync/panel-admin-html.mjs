@@ -1,6 +1,7 @@
 import { esc } from '../../dom-escape.mjs';
 import { formatBytes } from '../../update-helpers.mjs';
 import { adminTableHtml, fmtRole } from './panel-admin-helpers.mjs';
+import { formatCloudRoomLabel } from './room-label.mjs';
 
 export function buildAdminShellHtml() {
   return (
@@ -63,6 +64,7 @@ export function resumenHtml(data) {
 export function salasTableHtml(rooms) {
   const cols = [
     { label: 'Sala', key: 'sala' },
+    { label: 'Turno', cell: (row) => esc(String(row.turnKey || '—')) },
     { label: 'Código', key: 'code' },
     { label: 'Rev.', key: 'revision' },
     { label: 'Miembros', key: 'memberCount' },
@@ -98,7 +100,7 @@ export function roomDetailHtml(data) {
     joinedAt: m.joinedAt || '',
   }));
   return (
-    '<p class="cloud-sync-room-title">Sala ' + esc(String(room.code || room.id)) + ' · ' + esc(String(room.sala || '')) + '</p>' +
+    '<p class="cloud-sync-room-title">' + esc(formatCloudRoomLabel(room)) + '</p>' +
     '<dl class="cloud-sync-room-meta">' +
     '<div><dt>ID</dt><dd>' + esc(String(room.id)) + '</dd></div>' +
     '<div><dt>Turno</dt><dd>' + esc(String(room.turnKey || '—')) + '</dd></div>' +
@@ -156,10 +158,10 @@ export function mutacionesShellHtml() {
   );
 }
 
-/** @param {Array<{ id: string, code?: string, sala?: string }>} rooms */
+/** @param {Array<{ id: string, code?: string, sala?: string, turnKey?: string, memberCount?: number }>} rooms */
 export function mutationsRoomOptionsHtml(rooms) {
   return '<option value="">— Elegí sala —</option>' + rooms.map((r) =>
-    '<option value="' + esc(String(r.id)) + '">' + esc(String(r.sala || '')) + ' · ' + esc(String(r.code || r.id)) + '</option>'
+    '<option value="' + esc(String(r.id)) + '">' + esc(formatCloudRoomLabel(r)) + '</option>'
   ).join('');
 }
 

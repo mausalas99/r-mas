@@ -355,6 +355,7 @@ function appendRecoverVitalsButton(panelDeps, diagBody) {
 function createDiagnosticsDisclosureShell() {
   var details = document.createElement('details');
   details.className = 'rpc-disclosure lan-sync-diagnostics-panel';
+  details.setAttribute('data-cloud-secondary', 'lan');
   try {
     details.open = sessionStorage.getItem(LAN_SYNC_DIAG_OPEN_KEY) === '1';
   } catch (_e) { void _e; }
@@ -367,8 +368,8 @@ function createDiagnosticsDisclosureShell() {
   sum.className =
     'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary lan-sync-diagnostics-summary';
   sum.innerHTML =
-    '<span class="settings-card__title">Estado de sincronización</span>' +
-    '<span class="settings-card__desc">Informe técnico y cola de sync</span>';
+    '<span class="settings-card__title">Diagnóstico LAN</span>' +
+    '<span class="settings-card__desc">Anfitrión local y cola outbox · no es Nube</span>';
   details.appendChild(sum);
   return details;
 }

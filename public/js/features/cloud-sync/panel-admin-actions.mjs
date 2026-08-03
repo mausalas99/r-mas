@@ -1,6 +1,7 @@
 import { confirmAction, fmtRole, normalizeUsernameConfirm } from './panel-admin-helpers.mjs';
 import { setSessionAdminKey } from './panel-admin-helpers.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
+import { showAdminPromptModal } from './admin-prompt-modal.mjs';
 import {
   loadAdminMutations,
   loadAdminResumen,
@@ -128,9 +129,12 @@ async function handleRotateCode(deps, roomId) {
 
 /** @param {object} deps @param {string} roomId @param {string} code */
 async function handlePurgeRoom(deps, roomId, code) {
-  const typed = window.prompt(
-    'Esto elimina la sala "' + code + '" y todos sus datos en la nube.\n\nEscribí el código de sala para confirmar:'
-  );
+  const typed = await showAdminPromptModal({
+    title: 'Purgar sala',
+    message: 'Esto elimina la sala "' + code + '" y todos sus datos en la nube.\n\nEscribí el código de sala para confirmar:',
+    placeholder: code,
+    confirmLabel: 'Purgar',
+  });
   if (typed === null || String(typed).trim().toUpperCase() !== String(code).trim().toUpperCase()) {
     if (typed !== null) deps.toast('Confirmación incorrecta; no se purgó.', 'error');
     return;
@@ -174,9 +178,13 @@ async function handlePromoteUser(deps, userId, handle, btn) {
 
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleResetPassword(deps, userId, handle) {
-  const temporaryPassword = window.prompt(
-    'Contraseña temporal para @' + handle + ' (mínimo 10 caracteres):'
-  );
+  const temporaryPassword = await showAdminPromptModal({
+    title: 'Restablecer contraseña',
+    message: 'Contraseña temporal para @' + handle + ' (mínimo 10 caracteres):',
+    placeholder: 'mínimo 10 caracteres',
+    confirmLabel: 'Restablecer',
+    inputType: 'password',
+  });
   if (temporaryPassword === null) return;
   if (String(temporaryPassword).length < 10) {
     deps.toast('La contraseña debe tener al menos 10 caracteres.', 'error');
@@ -212,7 +220,12 @@ async function handleDisableUser(deps, userId, handle) {
 /** @param {object} deps @param {string} userId @param {string} handle */
 async function handleDeleteUser(deps, userId, handle) {
   if (!confirmAction('¿Eliminar permanentemente a @' + handle + ' de la nube?')) return;
-  const typed = window.prompt('Escribí el usuario (@' + handle + ') para confirmar:');
+  const typed = await showAdminPromptModal({
+    title: 'Confirmar eliminación',
+    message: 'Escribí el usuario (@' + handle + ') para confirmar:',
+    placeholder: '@' + handle,
+    confirmLabel: 'Eliminar',
+  });
   if (typed === null || normalizeUsernameConfirm(typed) !== normalizeUsernameConfirm(handle)) {
     if (typed !== null) deps.toast('Confirmación incorrecta.', 'error');
     return;

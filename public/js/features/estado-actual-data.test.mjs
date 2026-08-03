@@ -279,6 +279,7 @@ test('isDietaSuplemento reconoce suplemento sin calorías', () => {
   assert.equal(isDietaSuplemento('Dieta suplemento'), true);
   assert.equal(isDietaSuplemento('*SUPLEMENTO'), true);
   assert.equal(isDietaSuplemento('* SUPLEMENTO'), true);
+  assert.equal(isDietaSuplemento('ALIMENTACION ADULTO SUPLEMENTO 237 ML'), true);
   assert.equal(isDietaSuplemento('NORMAL PICADA'), false);
   assert.equal(isDietaSuplemento(''), false);
 });

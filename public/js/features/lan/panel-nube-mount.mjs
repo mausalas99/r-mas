@@ -61,6 +61,8 @@ export async function mountCloudNubeSection(root, deps) {
     clearCloudSyncSession: settings.clearCloudSyncSession,
     getCloudSyncRoomId: settings.getCloudSyncRoomId,
     setCloudSyncRoomId: settings.setCloudSyncRoomId,
+    getCloudSyncRoomSnapshot: settings.getCloudSyncRoomSnapshot,
+    setCloudSyncRoomSnapshot: settings.setCloudSyncRoomSnapshot,
     getCloudSyncRevision: settings.getCloudSyncRevision,
     setCloudSyncRevision: settings.setCloudSyncRevision,
     getApi: function () {

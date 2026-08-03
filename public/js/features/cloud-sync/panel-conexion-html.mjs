@@ -4,6 +4,7 @@ import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterJoinedTeams } from '../clinical-teams/shared.mjs';
 import { connectStepHtml } from './panel-steps-html.mjs';
+import { formatCloudRoomLabel } from './room-label.mjs';
 
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
@@ -60,7 +61,7 @@ export function nextStepHtml(getToken) {
   return (
     '<div class="cloud-sync-next-step">' +
     '<p class="cloud-sync-next-step-lead">Siguiente paso</p>' +
-    '<p class="cloud-sync-hint">Configurá tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
+    '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
   );
 }
@@ -69,11 +70,16 @@ export function nextStepHtml(getToken) {
 export function roomConnectedHtml(room, getRevision) {
   const code = String(room?.code || '').trim();
   const revision = room?.revision ?? getRevision();
+  const turn = String(room?.turnKey || '').trim();
+  const sala = String(room?.sala || '').trim();
+  const identity = formatCloudRoomLabel(room);
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
-    '<p class="cloud-sync-room-title">Sala nube</p>' +
+    '<p class="cloud-sync-room-title">' + esc(identity || 'Sala nube') + '</p>' +
     '<dl class="cloud-sync-room-meta">' +
-    '<div><dt>Código</dt><dd><code data-cloud-room-code>' + esc(code) + '</code></dd></div>' +
+    (sala ? '<div><dt>Sala</dt><dd>' + esc(sala) + '</dd></div>' : '') +
+    (turn ? '<div><dt>Turno</dt><dd>' + esc(turn) + '</dd></div>' : '') +
+    '<div><dt>Código</dt><dd><code data-cloud-room-code>' + esc(code || '—') + '</code></dd></div>' +
     '<div><dt>Revisión</dt><dd><span data-cloud-room-revision>' + esc(String(revision)) + '</span></dd></div></dl>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-cloud-action="leave-room">Salir de la sala</button></div>'
   );
@@ -94,12 +100,22 @@ export function roomActionsHtml(normalizedSala) {
 }
 
 /** @param {string} url */
+export function advancedUrlFieldsHtml(url) {
+  return (
+    '<div class="cloud-sync-field"><label for="cloud-sync-url-connected">URL del servicio</label>' +
+    '<input id="cloud-sync-url-connected" type="url" class="profile-input" data-cloud-sync-url value="' +
+    esc(url) +
+    '" placeholder="https://…workers.dev" /></div>' +
+    '<button type="button" class="cloud-sync-btn" data-cloud-action="save-url">Guardar</button>'
+  );
+}
+
+/** @param {string} url */
 export function advancedUrlHtml(url) {
   return (
     '<details class="cloud-sync-advanced"><summary>Avanzado</summary>' +
-    '<div class="cloud-sync-field"><label for="cloud-sync-url-connected">URL del servicio</label>' +
-    '<input id="cloud-sync-url-connected" type="url" class="profile-input" data-cloud-sync-url value="' + esc(url) +
-    '" placeholder="https://…workers.dev" /></div></details>'
+    advancedUrlFieldsHtml(url) +
+    '</details>'
   );
 }
 
@@ -110,8 +126,7 @@ export function conexionShellHtml(normalizedSala, bodyHtml, status) {
     '<h4 class="cloud-sync-conexion-title">Conexión — ' + esc(normalizedSala) + '</h4>' +
     '<span class="cloud-sync-status-chip ' + statusChipModifier(status) + '" data-cloud-status-chip data-status="' + esc(status) + '">' +
     esc(STATUS_LABELS[status] || status) + '</span></header>' +
-    '<p class="cloud-sync-lead">En Sala y Torre HU la nube sustituye al anfitrión LAN. ' +
-    'Interconsultas, UX, Eme y Área A siguen en LAN.</p>' + bodyHtml
+    bodyHtml
   );
 }
 
@@ -122,7 +137,7 @@ export function equipoStepHtml(getToken) {
   }
   return (
     '<div class="cloud-sync-equipo-body" data-cloud-equipo-body>' +
-    '<p class="cloud-sync-hint">Configurá tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
+    '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
   );
 }

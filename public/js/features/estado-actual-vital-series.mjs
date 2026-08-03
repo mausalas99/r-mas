@@ -1,4 +1,9 @@
-import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
+import {
+  getDefaultRegistroRecordedAt,
+  gluPointMs,
+  isGluPointInRegistroWindow,
+  startOfLocalDay,
+} from './estado-actual-registro-defaults.mjs';
 import {
   VITAL_BASE_KEYS,
   getVitalExtraStorageKey,
@@ -11,6 +16,19 @@ import {
 } from './estado-actual-vital-series-helpers.mjs';
 
 export { pushVitalReading };
+
+/**
+ * @param {string} recordedAt
+ * @param {Date} dayStart
+ * @returns {boolean}
+ */
+function isRecordedAtSameLocalDay(recordedAt, dayStart) {
+  if (!recordedAt) return false;
+  var d = new Date(recordedAt);
+  if (isNaN(d.getTime())) return false;
+  var rowDay = startOfLocalDay(d);
+  return rowDay.getTime() === dayStart.getTime();
+}
 
 /** Máximo de lecturas del mismo signo vital en la ventana del turno (por día de registro). */
 export const MAX_VITAL_READINGS_PER_DAY = 4;
@@ -103,20 +121,33 @@ export function collectVitalReadingsInRegistroWindow(historial, vitalKey, now) {
 }
 
 /**
- * Prefill del modal: solo lecturas del turno actual (no arrastra días previos).
+ * Prefill del modal: solo lecturas del mismo día calendario del cierre (hoy 00:00).
+ * No arrastra SV de ayer aunque sigan en la ventana del turno (glu sí las usa).
  * @param {unknown[]} historial
  * @param {string} vitalKey
  * @param {Date} [now]
  * @returns {VitalReading[]}
  */
 export function mergeVitalSeriesFromHistorial(historial, vitalKey, now) {
-  return collectVitalReadingsInRegistroWindow(
-    /** @type {Array<{ recordedAt?: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, VitalReading[]>, alteredAt?: Record<string, string> }>} */ (
-      historial
-    ),
-    vitalKey,
-    now
-  ).slice(-MAX_VITAL_READINGS_PER_DAY);
+  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
+  var dayStart = getDefaultRegistroRecordedAt(ref);
+  var hist = Array.isArray(historial) ? historial : [];
+  /** @type {VitalReading[]} */
+  var all = [];
+  for (var i = 0; i < hist.length; i++) {
+    var row = hist[i];
+    if (!row || typeof row !== 'object') continue;
+    var recordedAt = /** @type {{ recordedAt?: string }} */ (row).recordedAt != null
+      ? String(/** @type {{ recordedAt?: string }} */ (row).recordedAt)
+      : '';
+    if (!isRecordedAtSameLocalDay(recordedAt, dayStart)) continue;
+    var series = vitalSeriesFromMedicion(row);
+    var list = series[vitalKey] || [];
+    for (var j = 0; j < list.length; j++) {
+      pushVitalReading(all, list[j]);
+    }
+  }
+  return all.slice(-MAX_VITAL_READINGS_PER_DAY);
 }
 
 /**

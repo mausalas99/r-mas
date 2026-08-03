@@ -21,8 +21,10 @@ export function syncPatientBulkBar() {
       n === 1 ? '1 seleccionado' : n + ' seleccionados';
   }
   if (toggleBtn) {
+    var label = on ? 'Terminar selección' : 'Seleccionar varios pacientes';
     toggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    toggleBtn.textContent = on ? 'Listo' : 'Seleccionar';
+    toggleBtn.setAttribute('aria-label', label);
+    toggleBtn.setAttribute('title', label);
     toggleBtn.classList.toggle('btn-patient-bulk-select--on', on);
   }
   document.documentElement.classList.toggle('patient-bulk-select-mode', on);

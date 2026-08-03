@@ -232,6 +232,7 @@ function ensurePanelConnectionChrome() {
       renderLanPreflightUx,
       wireLanPanelDelegation,
       resumeAutoHostDetectAndReconnect,
+      stopLanAutoDiscovery,
       focusLanShiftPinInput: function () {
         return ensurePanelInviteJoin().focusLanShiftPinInput();
       },

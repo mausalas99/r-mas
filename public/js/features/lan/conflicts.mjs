@@ -251,6 +251,7 @@ export async function appendLanConflictDraftsSection(root) {
   var card = document.createElement('div');
   card.id = 'lan-conflict-drafts-card';
   card.className = 'lan-connect-card';
+  card.setAttribute('data-cloud-secondary', 'lan');
 
   var title = document.createElement('div');
   title.className = 'lan-connect-card-title';

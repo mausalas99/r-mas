@@ -3,8 +3,12 @@ import { setCloudRoomConnected } from './lan-override.mjs';
 
 /** @param {object} deps @param {object} room */
 function applyEnsureTurnSuccess(deps, room) {
-  deps.setCloudSyncRoomId(String(room.id));
-  deps.setCloudSyncRevision(Number(room.revision) || 0);
+  if (typeof deps.setCloudSyncRoomSnapshot === 'function') {
+    deps.setCloudSyncRoomSnapshot(room);
+  } else {
+    deps.setCloudSyncRoomId(String(room.id));
+    deps.setCloudSyncRevision(Number(room.revision) || 0);
+  }
   setCloudRoomConnected(true);
   deps.onConnected?.(room);
   deps.startSyncRuntime?.();
@@ -61,6 +65,7 @@ export async function ensureTurnRoomAfterTeamJoin(toast) {
     getSala: getUserSala,
     getToken: settings.getCloudSyncToken,
     setCloudSyncRoomId: settings.setCloudSyncRoomId,
+    setCloudSyncRoomSnapshot: settings.setCloudSyncRoomSnapshot,
     setCloudSyncRevision: settings.setCloudSyncRevision,
     toast,
   });

@@ -68,6 +68,26 @@ test('sanitizeResLabsChunks preserva bloque cultivo multi-fila', () => {
   assert.match(out[2], /^ATB/);
 });
 
+test('sanitizeResLabsChunks descarta membrete USER/Labo tras cultivo', () => {
+  var out = sanitizeResLabsChunks([
+    'UROCULTIVO POR SONDA 20/07: KLEBSIELLA PNEUMONIAE\nCuenta: 80,000 UFC/ML',
+    'USER CP1 -647* Labo -647* DJEG 64460',
+    'USER CP1 -647 Labo -647 DJEG 64460 UANL -647 RS -647 MH60 64460 Feme 74',
+  ]);
+  assert.equal(out.length, 1);
+  assert.match(out[0], /KLEBSIELLA/);
+  assert.doesNotMatch(out[0], /USER|Labo|DJEG|Feme/i);
+});
+
+test('sanitizeResLabsChunks recorta USER pegado al final del chunk de cultivo', () => {
+  var out = sanitizeResLabsChunks([
+    'UROCULTIVO POR SONDA 20/07: KLEBSIELLA PNEUMONIAE\nCuenta: 80,000 UFC/ML\nUSER CP1 -647* Labo -647* DJEG 64460',
+  ]);
+  assert.equal(out.length, 1);
+  assert.match(out[0], /Cuenta:\s*80,000/i);
+  assert.doesNotMatch(out[0], /USER|Labo/i);
+});
+
 test('sanitizeResLabsChunks preserva cabeceras condensadas parseCultivo_', () => {
   var out = sanitizeResLabsChunks([
     'ASPIRADO TRAQUEAL 18/05: ESCHERICHIA COLI · BLEE\nATB R: AMP\nCuenta: +100,000 UFC/ML',

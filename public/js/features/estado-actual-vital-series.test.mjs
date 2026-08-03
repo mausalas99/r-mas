@@ -53,6 +53,24 @@ describe('estado-actual-vital-series', () => {
     );
   });
 
+  it('mergeVitalSeriesFromHistorial leaves vitals empty on a new calendar day', () => {
+    // Lecturas de ayer siguen en la ventana del turno (glu), pero el prefill de SV no las arrastra.
+    var now = new Date(2026, 7, 3, 8, 30, 0);
+    var hist = [
+      {
+        recordedAt: new Date(2026, 7, 2, 0, 0, 0).toISOString(),
+        vitalSeries: {
+          tas: [{ value: 111, time: '10:00' }],
+          tad: [{ value: 60, time: '10:00' }],
+          fc: [{ value: 64, time: '10:00' }],
+        },
+      },
+    ];
+    assert.deepEqual(mergeVitalSeriesFromHistorial(hist, 'tas', now), []);
+    assert.deepEqual(mergeVitalSeriesFromHistorial(hist, 'tad', now), []);
+    assert.deepEqual(mergeVitalSeriesFromHistorial(hist, 'fc', now), []);
+  });
+
   it('validateVitalSeriesTurnLimits blocks when unique union exceeds cap', () => {
     var now = new Date(2026, 5, 22, 12, 0, 0);
     // Cierre 00:00: lecturas sin hora caen en el fin de ventana; 08/16 son del día previo.

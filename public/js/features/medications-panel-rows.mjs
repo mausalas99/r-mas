@@ -6,6 +6,7 @@ import {
   SOAP_DESTINATION_KEYS,
   SOAP_DESTINATION_LABELS,
   shouldIncludeMedicationInSoap,
+  isNutritionMedicationItem,
 } from "../med-receta-core.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
@@ -177,6 +178,7 @@ export function buildMedRecetaListHtml(activeId, block) {
   var rows = [];
   var rescateShown = false;
   items.forEach(function (it) {
+    if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
       if (!rescateShown) {
         rows.push(buildInsulinRescateGroupRowHtml(activeId, items));

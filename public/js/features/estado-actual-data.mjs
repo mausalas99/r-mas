@@ -375,6 +375,8 @@ export function isDietaSuplemento(dietaText) {
   var t = normalizeDietaTypeLabel(dietaText);
   if (!t) return false;
   if (t === 'SUPLEMENTO') return true;
+  // SOME a veces pone el producto completo: "ALIMENTACION ADULTO SUPLEMENTO 237 ML"
+  if (/\bALIMENTACI[OÓ]N\b/.test(t) && /\bSUPLEMENTO\b/.test(t)) return true;
   if (!t.startsWith('SUPLEMENTO')) return false;
   return !/\b(NORMAL|BLANDA|LIQUIDA|LIQUID[OA]|PICAD[OA]|DIABETIC[OA]|HIPERPROTEIC[OA]|RESTRINGID[OA])\b/.test(t);
 }

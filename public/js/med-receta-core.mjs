@@ -18,6 +18,9 @@ export {
   buildDietProposalText,
   resolveDietaDescripcionRaw,
   dietProposalFingerprint,
+  isNutritionMedicationItem,
+  nutritionMedItemToDieta,
+  collectDietasFromRecetaBlock,
 } from './med-receta-diet.mjs';
 
 export {

@@ -1,6 +1,14 @@
 import { escTxt } from './labs-display.mjs';
 import { findCultivoGermenRuns, parseSensCrudasAntibiogramaSlice } from './labs-cultivo-scan.mjs';
 
+function isCultivoChromeBodyLine_(line) {
+  var t = String(line || '').trim();
+  if (!t) return true;
+  if (/^USER\b/i.test(t)) return true;
+  if (/\bLabo\s*-?\d+/i.test(t) && /\b(DJEG|UANL|Campo|Feme)\b/i.test(t)) return true;
+  return false;
+}
+
 export function formatCultivoCondensedForCopy(chunkText, _studyDateLine) {
   var lines = [];
   var chunkLines = String(chunkText || '')
@@ -9,7 +17,9 @@ export function formatCultivoCondensedForCopy(chunkText, _studyDateLine) {
     .map(function (l) {
       return l.trim();
     })
-    .filter(Boolean);
+    .filter(function (l) {
+      return l && !isCultivoChromeBodyLine_(l);
+    });
   if (!chunkLines.length) return lines.join('\n');
   var head = chunkLines[0]
     .replace(/\s*·\s*Preliminar\b/gi, '')

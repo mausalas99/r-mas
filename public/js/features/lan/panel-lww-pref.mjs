@@ -13,6 +13,7 @@ function readInitialLwwToastPref() {
 export function appendLanLwwToastRow(stack) {
   var row = document.createElement('div');
   row.className = 'settings-card settings-card--toggle';
+  row.setAttribute('data-cloud-secondary', 'lan');
 
   var copy = document.createElement('div');
   copy.className = 'settings-card__copy';

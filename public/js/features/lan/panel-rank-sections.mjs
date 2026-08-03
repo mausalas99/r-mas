@@ -242,6 +242,7 @@ async function handleFinalizarRotacion(deps) {
 function buildR4Section(deps, root) {
   var teamCard = document.createElement('div');
   teamCard.className = 'lan-connect-card lan-hub-team-create-card';
+  teamCard.setAttribute('data-cloud-secondary', 'ops');
   teamCard.innerHTML = '<div class="lan-connect-card-title">Crear equipos del mes</div>';
 
   var btnCreate = document.createElement('button');
@@ -257,6 +258,7 @@ function buildR4Section(deps, root) {
 
   var censusCard = document.createElement('div');
   censusCard.className = 'lan-connect-card lan-hub-census-card';
+  censusCard.setAttribute('data-cloud-secondary', 'ops');
   censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
 
   var teams = clinicalSessionContext.teams || [];
@@ -300,6 +302,7 @@ function buildR4Section(deps, root) {
 
   var rotCard = document.createElement('div');
   rotCard.className = 'lan-connect-card lan-hub-rotation-card';
+  rotCard.setAttribute('data-cloud-secondary', 'ops');
   rotCard.innerHTML = '<div class="lan-connect-card-title">Rotación</div>';
   var btnFinalizar = document.createElement('button');
   btnFinalizar.type = 'button';

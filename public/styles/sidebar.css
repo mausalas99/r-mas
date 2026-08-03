@@ -115,21 +115,29 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text-muted);
-  font-size: calc(11px * var(--density-font));
-  font-weight: 600;
-  padding: calc(5px * var(--density-space)) calc(10px * var(--density-space));
   cursor: pointer;
-  white-space: nowrap;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .btn-patient-bulk-select:hover,
 .btn-patient-bulk-select--on {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
   color: var(--action);
   background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+.btn-patient-bulk-select:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
+  outline-offset: 1px;
 }
 .patient-bulk-bar {
   display: flex;

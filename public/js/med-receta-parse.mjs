@@ -8,6 +8,8 @@ import {
   dietNutrientBlobFromCols,
   normalizeDietaCols,
   resolveDietaDescripcionRaw,
+  isNutritionMedicationItem,
+  nutritionMedItemToDieta,
 } from './med-receta-diet.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from './med-receta-soap.mjs';
@@ -151,7 +153,12 @@ function processIndicacionesLine_(cols, lineIndex, lineText, items, dietas, fech
   var fd = parseFechaDMYFromTimestampCell(cols[0]);
   if (fd) fechas.push(fd);
   if (isIndicacionesMedClass(tipo)) {
-    items.push(parseMedRow(cols, lineIndex, lineText));
+    var med = parseMedRow(cols, lineIndex, lineText);
+    if (isNutritionMedicationItem(med)) {
+      dietas.push(nutritionMedItemToDieta(med, lineIndex));
+      return 0;
+    }
+    items.push(med);
     return 0;
   }
   if (tipo === 'DIETAS') {

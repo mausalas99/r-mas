@@ -68,6 +68,7 @@ export function mountNubeSection(root, deps) {
       getSala: deps.getUserSala,
       getToken: deps.getCloudSyncToken,
       setCloudSyncRoomId: deps.setCloudSyncRoomId,
+      setCloudSyncRoomSnapshot: deps.setCloudSyncRoomSnapshot,
       setCloudSyncRevision: deps.setCloudSyncRevision,
       onConnected: function (room) {
         ensureTurnDone = true;
@@ -79,7 +80,8 @@ export function mountNubeSection(root, deps) {
     return ensureTurnInflight;
   }
 
-  const { toggleAdminPanel } = mountAdminShell(section, deps, toast);
+  const { ensureAdminOpen, toggleAdminPanel } = mountAdminShell(section, deps, toast);
+  cloudUserRef.ensureAdminOpen = ensureAdminOpen;
   const ui = {
     normalizedSala,
     toast,
@@ -91,6 +93,7 @@ export function mountNubeSection(root, deps) {
     stopRuntime,
     setCloudUser(u) { cloudUser = u; },
     getCloudUser() { return cloudUser; },
+    ensureAdminOpen,
     toggleAdminPanel,
   };
 

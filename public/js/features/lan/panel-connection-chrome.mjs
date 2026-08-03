@@ -14,6 +14,8 @@ import {
   wireLanLwwToastPref,
   syncLanLwwOverwriteToastPrefUi,
 } from './panel-known-sessions.mjs';
+import { shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { getUserSala } from './panel-clinical-context.mjs';
 
 export function isLanConnectionDropdownOpen() {
   var bg = document.getElementById('connection-dropdown-backdrop');
@@ -173,6 +175,65 @@ function findHubStatusRefreshTarget(root) {
   );
 }
 
+/**
+ * Opening ⇄ with chrome already mounted must not wipe/rebuild (Nube lag).
+ * @param {HTMLElement | null} root
+ * @param {() => object} runtime
+ */
+export function shouldForceRebuildOnConnectionOpen(root, runtime) {
+  return lanPanelNeedsFullRebuild(root, runtime);
+}
+
+/** @param {object} deps */
+function syncHostDetectForOpen(deps, nubeActive) {
+  if (nubeActive) {
+    if (typeof deps.stopLanAutoDiscovery === 'function') deps.stopLanAutoDiscovery();
+    return;
+  }
+  deps.resumeAutoHostDetectAndReconnect();
+}
+
+/** @param {object} deps */
+function maybeKickLanPinConnect(deps) {
+  if (!isLanSkipShiftPin()) {
+    window.setTimeout(function () {
+      deps.focusLanShiftPinInput();
+    }, 120);
+    return;
+  }
+  if (isLanSessionConfiguredForRest()) return;
+  void import('../../lan-shift-pin-connect.mjs')
+    .then(function (m) {
+      return m.tryEasyLanShiftPinConnect({ silent: true, force: true, skipCooldown: true });
+    })
+    .then(function (result) {
+      if (result && result.ok) deps.renderLanPanel({ force: true });
+    });
+}
+
+/** @param {HTMLElement | null} dd @param {HTMLElement | null} bg @param {HTMLElement | null} syncBtn @param {object} deps */
+function openConnectionDropdownUi(dd, bg, syncBtn, deps) {
+  deps.runtime().closeSettingsDropdown();
+  wireConnectionModalChromeOnce(function () {
+    setConnectionDropdownOpen(false, deps);
+  });
+  if (bg) {
+    bg.classList.add('open');
+    bg.setAttribute('aria-hidden', 'false');
+  }
+  if (dd) dd.classList.add('open');
+  document.body.classList.add('connection-dropdown-open');
+  if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
+  deps.wireLanPanelDelegation();
+  wireLanLwwToastPref();
+  syncLanLwwOverwriteToastPrefUi();
+  var nubeActive = shouldUseNubeNotLan(getUserSala());
+  syncHostDetectForOpen(deps, nubeActive);
+  var root = document.getElementById('lan-connection-panel-root');
+  deps.renderLanPanel({ force: shouldForceRebuildOnConnectionOpen(root, deps.runtime) });
+  if (!nubeActive) maybeKickLanPinConnect(deps);
+}
+
 function setConnectionDropdownOpen(open, deps) {
   var dd = document.getElementById('connection-dropdown');
   var bg = document.getElementById('connection-dropdown-backdrop');
@@ -186,36 +247,7 @@ function setConnectionDropdownOpen(open, deps) {
   }
 
   if (open) {
-    deps.runtime().closeSettingsDropdown();
-    wireConnectionModalChromeOnce(function () {
-      setConnectionDropdownOpen(false, deps);
-    });
-    if (bg) {
-      bg.classList.add('open');
-      bg.setAttribute('aria-hidden', 'false');
-    }
-    dd.classList.add('open');
-    document.body.classList.add('connection-dropdown-open');
-    if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
-    deps.wireLanPanelDelegation();
-    wireLanLwwToastPref();
-    syncLanLwwOverwriteToastPrefUi();
-    deps.resumeAutoHostDetectAndReconnect();
-    deps.renderLanPanel({ force: true });
-    if (!isLanSkipShiftPin()) {
-      window.setTimeout(function () {
-        deps.focusLanShiftPinInput();
-      }, 120);
-    }
-    if (isLanSkipShiftPin() && !isLanSessionConfiguredForRest()) {
-      void import('../../lan-shift-pin-connect.mjs')
-        .then(function (m) {
-          return m.tryEasyLanShiftPinConnect({ silent: true, force: true, skipCooldown: true });
-        })
-        .then(function (result) {
-          if (result && result.ok) deps.renderLanPanel({ force: true });
-        });
-    }
+    openConnectionDropdownUi(dd, bg, syncBtn, deps);
     return;
   }
 
@@ -234,6 +266,7 @@ function setConnectionDropdownOpen(open, deps) {
  *   renderLanPreflightUx: (root: HTMLElement) => Promise<unknown>,
  *   wireLanPanelDelegation: () => void,
  *   resumeAutoHostDetectAndReconnect: () => void,
+ *   stopLanAutoDiscovery?: () => void,
  *   focusLanShiftPinInput: () => boolean,
  * }} deps */
 export function createPanelConnectionChrome(deps) {
