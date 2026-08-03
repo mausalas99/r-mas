@@ -158,11 +158,13 @@ body.settings-dropdown-open {
   flex-direction: column;
   padding: 0;
   gap: 0;
-  background: var(--surface);
+  background: var(--material-glass-bg, var(--surface));
   color: var(--text);
   border-radius: var(--radius-container);
-  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  border: var(--material-glass-border, 1px solid color-mix(in oklab, var(--border) 90%, transparent));
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
   animation: modal-in var(--dur-normal) var(--ease-out);
   position: static;
   top: auto;
@@ -171,6 +173,13 @@ body.settings-dropdown-open {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
+}
+
+html.prefers-reduced-transparency #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-modal,
+html.no-blur #settings-dropdown-backdrop .settings-dropdown.settings-dropdown-modal {
+  background: var(--color-elevated);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .settings-dropdown-modal-head {
   display: flex;
@@ -237,8 +246,10 @@ body.settings-dropdown-open {
   display: grid;
   grid-template-columns: minmax(152px, 184px) minmax(0, 1fr);
   gap: 0;
-  border: 1px solid var(--border);
+  border: var(--border-hairline);
   border-radius: var(--radius-md);
+  background: var(--color-elevated);
+  box-shadow: none;
   overflow: hidden;
   background: color-mix(in oklab, var(--surface) 98%, var(--bg));
 }
@@ -1525,6 +1536,10 @@ body.connection-dropdown-open {
   line-height: 1.4;
   color: var(--status-warning, #b45309);
 }
+.equipos-qr-compact-card .equipos-qr-open-btn.ui-pressable {
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
 .equipos-qr-compact-card .equipos-qr-open-btn {
   flex-shrink: 0;
   min-width: 0;
@@ -2681,11 +2696,7 @@ select.profile-input.profile-select {
   margin-top: 12px;
   padding: 12px 0 6px;
   border-top: 1px solid var(--border);
-  background: linear-gradient(
-    to top,
-    var(--bg) 78%,
-    color-mix(in srgb, var(--bg) 92%, transparent)
-  );
+  background: var(--color-elevated);
 }
 .formats-defaults-save-btn {
   width: 100%;
@@ -2698,6 +2709,10 @@ select.profile-input.profile-select {
   width: min(1120px, calc(100vw - 20px));
   max-width: none;
   max-height: min(92vh, 880px);
+  background: var(--material-glass-bg, var(--surface));
+  border: var(--material-glass-border, 1px solid var(--border));
+  -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
   display: flex;
   flex-direction: column;
   gap: 10px;
