@@ -266,7 +266,8 @@ html.ui-density-guardia #lan-connection-banner {
   margin: 0;
   padding: 8px 10px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--color-accent-soft);
+  border: 1px solid color-mix(in oklab, var(--color-ink) 18%, var(--border));
   font-size: 0.82rem;
   color: var(--text);
 }
@@ -2099,8 +2100,9 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   padding: 5px 10px;
   margin-bottom: 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in oklab, var(--border) 65%, transparent);
-  background: color-mix(in oklab, var(--surface) 97%, var(--bg));
+  border: var(--border-hairline);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .guardia-panel--vitals {
