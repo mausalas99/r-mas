@@ -5,7 +5,7 @@
 > **For implementation:** Split into sub-PRs by domain if the plan is large; still one design authority.
 
 **Date:** 2026-08-03  
-**Status:** Draft for review  
+**Status:** Implemented (Spec D, 2026-08-03)  
 
 ---
 
@@ -15,11 +15,11 @@ After A–C, remaining domains still carry Hallmark indigo washes, mixed radii, 
 
 ## Goals
 
-- [ ] Expediente, Manejo (meds), Agenda, Estado Actual, Guardia board, Settings/help adopt Hybrid H.
-- [ ] Remaining modals/popovers use Spec B overlay kit (or thin wrappers).
-- [ ] Equipos / interno mobile **touch-ups** only where shared tokens apply (no separate design system).
-- [ ] Light + dark parity on primary desktop surfaces.
-- [ ] `design.md` marked Hybrid H complete; Hallmark stamp retired or historical.
+- [x] Expediente, Manejo (meds), Agenda, Estado Actual, Guardia board, Settings/help adopt Hybrid H.
+- [x] Remaining modals/popovers use Spec B overlay kit (or thin wrappers).
+- [x] Equipos / interno mobile **touch-ups** only where shared tokens apply (no separate design system).
+- [x] Light + dark parity on primary desktop surfaces.
+- [x] `design.md` marked Hybrid H complete; Hallmark stamp retired or historical.
 
 ## Non-goals
 
@@ -96,10 +96,10 @@ Maintain a short inventory in the Spec D plan (not here) of remaining overlay ca
 
 ## Success criteria
 
-- [ ] No intentional indigo brand accent left in desktop chrome/clinical surfaces.
-- [ ] Overlay kit is the default for new UI; legacy ≤ small backlog filed.
-- [ ] Program success criteria (program doc) checked off.
-- [ ] Knowledge/docs: `design.md`, `06-design-system.md`, features-index note if needed, project-context changelog.
+- [x] No intentional indigo brand accent left in desktop chrome/clinical surfaces.
+- [x] Overlay kit is the default for new UI; legacy ≤ small backlog filed.
+- [x] Program success criteria (program doc) checked off.
+- [x] Knowledge/docs: `design.md`, `06-design-system.md`, features-index note if needed, project-context changelog.
 
 ## Exit
 

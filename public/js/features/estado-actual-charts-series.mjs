@@ -28,7 +28,7 @@ const VITAL_COLOR_TOKENS = [
 ];
 
 const CHART_TOKEN_FALLBACKS = {
-  '--ea-chart-vital-1': '#4a52e8',
+  '--ea-chart-vital-1': 'var(--color-accent)',
   '--ea-chart-vital-2': '#c62828',
   '--ea-chart-vital-3': '#047857',
   '--ea-chart-vital-4': '#b45309',
@@ -37,7 +37,7 @@ const CHART_TOKEN_FALLBACKS = {
   '--ea-chart-glu': '#047857',
   '--ea-chart-io-ing': '#60a5fa',
   '--ea-chart-io-egr': '#f87171',
-  '--ea-chart-io-balance': '#4a52e8',
+  '--ea-chart-io-balance': 'var(--color-accent)',
   '--ea-chart-altered': '#b45309',
 };
 
@@ -49,7 +49,7 @@ function ensureChartColorCache() {
   /** @type {Record<string, string>} */
   var out = {};
   Object.keys(CHART_TOKEN_FALLBACKS).forEach(function (token) {
-    var fallback = CHART_TOKEN_FALLBACKS[token] || '#4a52e8';
+    var fallback = CHART_TOKEN_FALLBACKS[token] || 'var(--color-accent)';
     if (typeof document === 'undefined') {
       out[token] = fallback;
       return;
@@ -67,7 +67,7 @@ function ensureChartColorCache() {
  */
 export function chartColor(token) {
   var cache = ensureChartColorCache();
-  return cache[token] || CHART_TOKEN_FALLBACKS[token] || '#4a52e8';
+  return cache[token] || CHART_TOKEN_FALLBACKS[token] || 'var(--color-accent)';
 }
 
 /**

@@ -95,11 +95,11 @@ Springs (motion): default critically damped (`bounce: 0`); bounce only after fli
 
 ## Success criteria (program)
 
-- [ ] Guardia R1 can work a full turn in light **and** dark without contrast regressions on alterados.
-- [ ] Floating layers read as materials; workbench stays dense and calm.
-- [ ] `npm run metrics:check` does not regress; no new cold boot imports of feature modules.
-- [ ] `design.md` + `tokens.css` become the Hybrid H source of truth.
-- [ ] Phases A→D land as separate plans/PRs; program doc stays the index.
+- [x] Guardia R1 can work a full turn in light **and** dark without contrast regressions on alterados.
+- [x] Floating layers read as materials; workbench stays dense and calm.
+- [x] `npm run metrics:check` does not regress; no new cold boot imports of feature modules.
+- [x] `design.md` + `tokens.css` become the Hybrid H source of truth.
+- [x] Phases A→D land as separate plans/PRs; program doc stays the index.
 
 ## Non-goals (program)
 

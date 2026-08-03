@@ -38,3 +38,8 @@ description: "Pointer to Hybrid H UI tokens and conventions for R+."
 - Styles: `public/styles/`
 - Motion façade: `public/js/ui-motion.mjs`
 - Shell: `public/js/app-shell.mjs`
+
+
+## Hybrid H
+
+**Spec D complete (2026-08-03):** Full desktop adoption per `design.md` and program spec `2026-08-03-apple-hybrid-ui-overhaul-program.md`.

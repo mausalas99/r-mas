@@ -1,6 +1,6 @@
 # Apple Hybrid UI — Spec D Rest of App Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Finish Hybrid H across remaining desktop domains; migrate leftover high-traffic overlays to Spec B kit; retire Hallmark indigo brand accent from intentional chrome; mark design system complete.
 
@@ -45,44 +45,44 @@
 
 ### Task 1: Expediente + Manejo
 
-- [ ] **Step 1:** Expediente cards/editors solid elevated; export/generate buttons `ui-pressable` + ink/success tokens
-- [ ] **Step 2:** Plantillas / related modals → glass outer or `openDialog` if straightforward
-- [ ] **Step 3:** Med pharm “indicated” → `--color-accent-soft` (ink), not indigo wash; today/warn use warn/danger tokens
-- [ ] **Step 4:** Targeted tests if class assertions break
-- [ ] **Step 5: Commit** `style(expediente-manejo): Hybrid H solid editors + med calendar`
+- [x] **Step 1:** Expediente cards/editors solid elevated; export/generate buttons `ui-pressable` + ink/success tokens
+- [x] **Step 2:** Plantillas / related modals → glass outer or `openDialog` if straightforward
+- [x] **Step 3:** Med pharm “indicated” → `--color-accent-soft` (ink), not indigo wash; today/warn use warn/danger tokens
+- [x] **Step 4:** Targeted tests if class assertions break
+- [x] **Step 5: Commit** `style(expediente-manejo): Hybrid H solid editors + med calendar`
 
 ---
 
 ### Task 2: Agenda + Estado Actual + Guardia
 
-- [ ] **Step 1:** Agenda blocks — distinct category colors OK; no indigo brand wash on default blocks
-- [ ] **Step 2:** EA chrome solid; tabs underline/segment (no glass tabs); clipboard actions pressable; charts keep Tufte + multi-hue series; axis from tokens
-- [ ] **Step 3:** Guardia metrics strip solid; phase bar high contrast; no glass on metrics
-- [ ] **Step 4: Commit** `style(agenda-ea-guardia): Hybrid H chrome parity`
+- [x] **Step 1:** Agenda blocks — distinct category colors OK; no indigo brand wash on default blocks
+- [x] **Step 2:** EA chrome solid; tabs underline/segment (no glass tabs); clipboard actions pressable; charts keep Tufte + multi-hue series; axis from tokens
+- [x] **Step 3:** Guardia metrics strip solid; phase bar high contrast; no glass on metrics
+- [x] **Step 4: Commit** `style(agenda-ea-guardia): Hybrid H chrome parity`
 
 ---
 
 ### Task 3: Settings / help / onboarding + remaining modals
 
-- [ ] **Step 1:** Settings forms solid; strip purple/indigo gradients if any remain
-- [ ] **Step 2:** Tour/release notes motion ≤300ms; rare delight OK
-- [ ] **Step 3:** Migrate highest-traffic remaining modals from inventory (at least settings dropdown + one clinical modal)
-- [ ] **Step 4: Commit** `style(settings): Hybrid H forms + overlay migration batch`
+- [x] **Step 1:** Settings forms solid; strip purple/indigo gradients if any remain
+- [x] **Step 2:** Tour/release notes motion ≤300ms; rare delight OK
+- [x] **Step 3:** Migrate highest-traffic remaining modals from inventory (at least settings dropdown + one clinical modal)
+- [x] **Step 4: Commit** `style(settings): Hybrid H forms + overlay migration batch`
 
 ---
 
 ### Task 4: Equipos desktop + interno touch-ups
 
-- [ ] **Step 1:** Desktop equipos embeds inherit tokens; QR panel pressables
-- [ ] **Step 2:** `public/interno/interno.css` — only if contrast broken under new tokens
-- [ ] **Step 3:** `cloud/equipos-pages` — **optional appendix**; skip unless quick token sync; note in commit message if deferred
-- [ ] **Step 4: Commit** `style(equipos-interno): Hybrid H token touch-ups`
+- [x] **Step 1:** Desktop equipos embeds inherit tokens; QR panel pressables
+- [x] **Step 2:** `public/interno/interno.css` — only if contrast broken under new tokens
+- [x] **Step 3:** `cloud/equipos-pages` — **optional appendix**; skip unless quick token sync; note in commit message if deferred
+- [x] **Step 4: Commit** `style(equipos-interno): Hybrid H token touch-ups`
 
 ---
 
 ### Task 5: Indigo purge audit + docs complete
 
-- [ ] **Step 1: Search** desktop CSS/JS for brand indigo leftovers:
+- [x] **Step 1: Search** desktop CSS/JS for brand indigo leftovers:
 
 ```bash
 rg -n '#4a52e8|#3b42c9|7b82f5|5b4dc0|4a52e8' public/styles public/js --glob '!*.test.*' || true
@@ -91,25 +91,25 @@ rg -n 'var\(--accent,\s*#' public/styles || true
 
 Fix intentional brand uses; keep lab panel **header identity** colors (slate/green/indigo-as-panel-type) if they encode panel type — document exception in `design.md`.
 
-- [ ] **Step 2: Update `design.md`** — mark Hybrid H **complete**; Hallmark stamp historical only
+- [x] **Step 2: Update `design.md`** — mark Hybrid H **complete**; Hallmark stamp historical only
 
-- [ ] **Step 3: Program doc** — check success criteria boxes in `2026-08-03-apple-hybrid-ui-overhaul-program.md` (force-add if needed)
+- [x] **Step 3: Program doc** — check success criteria boxes in `2026-08-03-apple-hybrid-ui-overhaul-program.md` (force-add if needed)
 
-- [ ] **Step 4:** `docs/core/06-design-system.md` — note Spec D complete
+- [x] **Step 4:** `docs/core/06-design-system.md` — note Spec D complete
 
-- [ ] **Step 5:** `project-context.mdc` changelog `hybrid-h-complete`
+- [x] **Step 5:** `project-context.mdc` changelog `hybrid-h-complete`
 
-- [ ] **Step 6:** `npm run build:ui` && `npm run metrics:check`
+- [x] **Step 6:** `npm run build:ui` && `npm run metrics:check`
 
-- [ ] **Step 7: Commit** `docs(design): Hybrid H overhaul complete (Spec D)`
+- [x] **Step 7: Commit** `docs(design): Hybrid H overhaul complete (Spec D)`
 
 ---
 
 ### Task 6: Final smoke
 
-- [ ] Light + dark: Expediente, Manejo, Agenda, EA, Guardia, Settings, leftover modal
-- [ ] Confirm no intentional indigo accent on primary chrome
-- [ ] Overlay kit default for any new UI touched in this branch
+- [x] Light + dark: Expediente, Manejo, Agenda, EA, Guardia, Settings, leftover modal
+- [x] Confirm no intentional indigo accent on primary chrome
+- [x] Overlay kit default for any new UI touched in this branch
 
 ---
 

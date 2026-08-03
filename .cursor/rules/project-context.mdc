@@ -132,6 +132,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 ## Changelog (newest first)
 
+- **2026-08-03** `hybrid-h-complete`: Spec D rest-of-app — expediente/manejo/agenda/EA/guardia/settings + indigo purge; `design.md` complete.
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
 - **2026-08-03** `hybrid-h-clinical`: labs/eventualidades sheet + Pase solid + Conexión stepped panel; `eventualidades-sheet.mjs`, `lab.css`, `pase-board.css`, `cloud-sync.css`.

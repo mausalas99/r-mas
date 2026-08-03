@@ -2,7 +2,7 @@
 
 **Genre:** utilitarian clinical · **Theme:** Hybrid H (solid workbench + glass floating)  
 **Program:** `docs/superpowers/specs/2026-08-03-apple-hybrid-ui-overhaul-program.md`  
-**Última actualización:** Spec A foundation (2026-08-03)
+**Última actualización:** Hybrid H complete (2026-08-03)
 
 ## Principios
 
@@ -67,3 +67,13 @@ Legacy aliases (`--action`, `--surface`, `--text`, `--overlay-bg`, …) apuntan 
  * contrast: pass (tokens + HC)
  */
 ```
+
+
+## Estado del programa
+
+**Hybrid H: completo** (Specs A–D, 2026-08-03). Hallmark / Quiet workbench queda como referencia histórica.
+
+### Excepciones documentadas (no brand accent)
+
+- **Labs panel headers** (`--lab-header-indigo`, `--lab-header-green`, etc.): identidad de tipo de panel SOME, no acento de marca.
+- **Series EA/Tendencias**: multi-hue para discriminación de series; ejes/labels desde tokens.
