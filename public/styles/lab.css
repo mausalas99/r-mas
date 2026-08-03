@@ -1,12 +1,17 @@
 /* New rules: use var(--*) only; no raw hex */
 .lab-chip {
-  background: var(--lab-chip-bg); color: var(--lab-chip-txt); font-size: 11px; font-weight: 700;
-  letter-spacing: 0.4px; padding: 1px 6px; border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 28%, var(--border));
 }
 .lab-value-altered {
-  color: var(--error);
-  font-weight: bold;
+  color: var(--color-danger);
+  font-weight: 650;
   border-radius: var(--radius-sm);
   padding: 0 2px;
   background: color-mix(in oklab, var(--error) 14%, transparent);
@@ -394,9 +399,9 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-filter-chip.is-active {
-  color: var(--text);
-  background: var(--surface);
-  box-shadow: var(--elev-flat, 0 1px 2px rgba(0, 0, 0, 0.08));
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: none;
 }
 
 .todo-filter-chip:focus-visible {
@@ -1128,7 +1133,7 @@ html.dark .card-header-soft-btn:hover { background: rgba(255, 255, 255, 0.11); }
 .field-group textarea:focus {
   outline: none; border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 14%, transparent), inset 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 #lab-input { resize: none; }
 input[type="checkbox"] {
@@ -1174,7 +1179,7 @@ input[type="checkbox"]:focus-visible {
 }
 .list-row input:focus {
   outline: none; border-color: color-mix(in oklab, var(--action) 45%, var(--border));
-  background: var(--surface); box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
+  background: var(--surface); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 12%, transparent);
 }
 .list-num { font-size: 13px; font-weight: 700; color: var(--action); min-width: 22px; text-align: right; padding: 8px 0; }
 .btn-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; transition: color 0.1s, background 0.1s; min-width: 28px; min-height: 28px; }
@@ -1187,7 +1192,7 @@ input[type="checkbox"]:focus-visible {
   transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
     background var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-.btn-add-row:hover { border-style: solid; border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); box-shadow: 0 4px 12px rgba(79, 86, 255, 0.1); }
+.btn-add-row:hover { border-style: solid; border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); box-shadow: 0 4px 12px color-mix(in oklab, var(--color-accent) 10%, transparent); }
 .action-bar {
   background: var(--surface);
   border-top: 1px solid var(--divider);
@@ -1712,11 +1717,11 @@ html.lab-some-tables-modal-open .lab-copy-fab {
 .lab-some-tables--modal .lab-some-table-wrap {
   margin: 0;
   padding: 0;
-  border: 0;
-  border-radius: 0;
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
   overflow: visible;
   overflow-x: auto;
-  background: var(--surface);
+  background: var(--color-elevated);
   box-shadow: none;
 }
 .lab-some-tables--modal .lab-some-table {
@@ -1815,8 +1820,8 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   box-shadow: inset 3px 0 0 var(--error, #b91c1c);
 }
 .lab-some-tables--modal .lab-some-resultado.lab-some-abnormal {
-  color: var(--error, #b91c1c);
-  font-weight: 700;
+  color: var(--color-danger);
+  font-weight: 650;
 }
 .lab-some-tables--modal .lab-some-dept-header {
   display: none;
@@ -1829,13 +1834,21 @@ html.dark .lab-copy-fab:hover {
   background: color-mix(in oklab, var(--surface) 92%, var(--action) 8%);
 }
 .btn-generate {
-  background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent, #fff);
+  border: none;
+  border-radius: var(--radius-control);
   padding: calc(10px * var(--density-space)) calc(22px * var(--density-space));
   font-size: calc(14px * var(--density-font));
-  font-weight: 700; font-family: inherit; cursor: pointer; display: flex;
-  align-items: center; gap: calc(8px * var(--density-space)); min-height: 44px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--density-space));
+  min-height: 44px;
 }
-.btn-generate:hover:not(:disabled):not(.loading) { background: var(--action-hover); }
+.btn-generate:hover:not(:disabled):not(.loading) { background: var(--color-accent-hover); }
 .btn-generate.loading,
 .btn-save.loading {
   opacity: 0.92;
@@ -1894,17 +1907,17 @@ html.dark .btn-generate--success:hover { background: var(--color-success-emphasi
   gap: calc(7px * var(--density-space));
   min-height: 44px;
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s;
-  box-shadow: 0 2px 8px rgba(79, 86, 255, 0.08);
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--color-accent) 8%, transparent);
 }
 .btn-med-secondary:hover {
   background: color-mix(in oklab, var(--lab-chip-bg) 70%, var(--surface));
   border-color: color-mix(in oklab, var(--action) 48%, var(--border));
-  box-shadow: 0 4px 14px rgba(79, 86, 255, 0.14);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--color-accent) 14%, transparent);
 }
 .btn-med-secondary:active { transform: scale(0.96); }
 .btn-med-secondary:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.2), 0 2px 8px rgba(79, 86, 255, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 20%, transparent), 0 2px 8px color-mix(in oklab, var(--color-accent) 10%, transparent);
 }
 .btn-med-secondary--dia {
   color: color-mix(in oklab, var(--action) 88%, var(--primary));
@@ -2488,7 +2501,7 @@ html.dark .btn-med-secondary--muted:hover {
   color: var(--text-muted);
 }
 .lab-repo-batch-job--running .lab-repo-batch-job-status {
-  color: var(--accent, #2563eb);
+  color: var(--color-accent);
 }
 .lab-repo-batch-job--ok .lab-repo-batch-job-status {
   color: var(--success, #15803d);
@@ -2619,7 +2632,7 @@ html.dark .rpc-switch-thumb {
 .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new {
   background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-pill);
   padding: 8px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
-  box-shadow: 0 3px 12px rgba(79, 86, 255, 0.2);
+  box-shadow: 0 3px 12px color-mix(in oklab, var(--color-accent) 20%, transparent);
 }
 .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new:hover:not(:disabled) { filter: brightness(1.06); }
 .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new:disabled { opacity: 0.45; cursor: not-allowed; filter: none; box-shadow: none; }
@@ -2851,6 +2864,10 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
 .lab-some-table-wrap {
   overflow-x: auto;
   padding: 0 10px 10px;
+  background: var(--color-elevated);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  box-shadow: none;
 }
 .lab-some-table {
   width: 100%;
@@ -2881,8 +2898,8 @@ html.dark .lab-output-fecha { color: var(--color-accent-soft-text); border-botto
   min-width: 120px;
 }
 .lab-some-resultado.lab-some-abnormal {
-  color: var(--error);
-  font-weight: 700;
+  color: var(--color-danger);
+  font-weight: 650;
 }
 .lab-some-flag {
   color: var(--error);
@@ -2925,7 +2942,13 @@ html.dark .lab-out-ascitis-alert {
   background: color-mix(in oklab, var(--warn) 10%, var(--surface));
 }
 .lab-bh-extended-line { border-top: 1px dashed color-mix(in oklab, var(--border) 75%, transparent); margin-top: 2px; padding-top: 4px; }
-.out-line strong, .out-indent strong { font-weight: 700; color: var(--error); background: rgba(220,38,38,0.07); padding: 0 3px; border-radius: 3px; }
+.out-line strong, .out-indent strong {
+  font-weight: 650;
+  color: var(--color-danger);
+  background: color-mix(in oklab, var(--color-danger) 10%, transparent);
+  padding: 0 3px;
+  border-radius: 3px;
+}
 .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
 .indica-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; }
 .indica-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }
