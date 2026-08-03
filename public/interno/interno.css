@@ -402,7 +402,7 @@
   border-radius: 8px;
   border: 1px solid var(--border, #2a3544);
   background: rgba(61, 139, 253, 0.12);
-  color: var(--accent, #3d8bfd);
+  color: var(--color-accent, var(--action));
   font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
@@ -507,7 +507,7 @@
   min-height: 44px;
   border: none;
   border-radius: 8px;
-  background: var(--accent, #3d8bfd);
+  background: var(--color-accent, var(--action));
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
@@ -596,7 +596,7 @@
 .interno-link-btn {
   border: none;
   background: none;
-  color: var(--accent, #3d8bfd);
+  color: var(--color-accent, var(--action));
   font-size: 0.85rem;
   padding: 0.35rem 0;
   cursor: pointer;

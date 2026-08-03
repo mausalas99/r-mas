@@ -179,7 +179,7 @@ function renderCompactSummary({ cloudMode, active, hasToken, errorMsg }) {
     `<p class="settings-card__desc">${sub}</p>` +
     `</div>` +
     `<div class="settings-card__action">` +
-    `<button type="button" class="btn-settings-row equipos-qr-open-btn" data-eq-open-panel>Abrir</button>` +
+    `<button type="button" class="btn-settings-row equipos-qr-open-btn ui-pressable" data-eq-open-panel>Abrir</button>` +
     `</div></div>`
   );
 }
