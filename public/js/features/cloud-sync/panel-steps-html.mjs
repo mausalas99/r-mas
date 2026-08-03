@@ -46,7 +46,7 @@ export function connectStepHtml(url) {
     (readCloudRememberChecked() ? ' checked' : '') +
     ' /> Recuérdame en este dispositivo</label>' +
     '<p class="cloud-sync-hint">Mantiene la sesión Nube al reiniciar R+. No uses esto en una Mac compartida.</p>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="login">Entrar</button></div>' +
+    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="login">Entrar</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="register" role="tabpanel" hidden>' +
     '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
     '<input type="text" class="profile-input" data-cloud-reg-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" />' +
@@ -56,7 +56,7 @@ export function connectStepHtml(url) {
     '<p class="cloud-sync-hint">' + CLINICAL_LAN_DISPLAY_NAME_HINT_HTML + '</p></div>' +
     '<div class="cloud-sync-field"><label>Contraseña</label>' +
     '<input type="password" class="profile-input" data-cloud-reg-pass autocomplete="new-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="register">Crear cuenta</button></div>' +
+    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="register">Crear cuenta</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="recover" role="tabpanel" hidden>' +
     '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
     '<input type="text" class="profile-input" data-cloud-recover-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" /></div>' +
@@ -66,7 +66,7 @@ export function connectStepHtml(url) {
     '<input type="password" class="profile-input" data-cloud-recover-pass autocomplete="new-password" /></div>' +
     '<div class="cloud-sync-field"><label>Confirmar contraseña</label>' +
     '<input type="password" class="profile-input" data-cloud-recover-pass2 autocomplete="new-password" /></div>' +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="recover">Recuperar cuenta</button></div></div>' +
+    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="recover">Recuperar cuenta</button></div></div>' +
     advancedUrlFieldHtml(url) +
     '</div>'
   );

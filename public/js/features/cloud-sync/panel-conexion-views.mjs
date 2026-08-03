@@ -109,7 +109,7 @@ function cuentaBodyHtml(cloudUser) {
     (display
       ? '<p class="cloud-sync-status-display">' + esc(display) + '</p>'
       : '') +
-    '<button type="button" class="cloud-sync-btn" data-cloud-action="regenerate-recovery">Código de recuperación</button>' +
+    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="regenerate-recovery">Código de recuperación</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-action="logout">Cerrar sesión Nube</button></div>'
   );
 }

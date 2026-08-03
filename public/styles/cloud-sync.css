@@ -4,8 +4,11 @@
   display: flex;
   flex-direction: column;
   gap: calc(12px * var(--density-space));
-  padding: calc(12px * var(--density-space)) 0;
-  border-top: 1px solid var(--divider);
+  padding: calc(12px * var(--density-space));
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .cloud-sync-conexion-head {
@@ -39,12 +42,12 @@
 .cloud-sync-status-detail {
   margin: calc(-2px * var(--density-space)) 0 0;
   padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
-  border: 1px solid color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
-  border-radius: var(--radius-md, 8px);
-  background: color-mix(in oklab, var(--danger, #c0392b) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--color-danger) 28%, var(--divider));
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--color-danger) 8%, var(--color-elevated));
   font-size: calc(11px * var(--density-font));
   line-height: 1.4;
-  color: var(--danger, #c0392b);
+  color: var(--color-danger);
 }
 
 .cloud-sync-status-detail[hidden] {
@@ -57,13 +60,13 @@
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
-  border-radius: var(--wb-pill-radius, var(--radius-pill));
-  border: 1px solid var(--wb-pill-border, var(--border-hairline));
-  background: var(--wb-pill-bg, var(--surface));
+  border-radius: var(--radius-pill);
+  border: var(--border-hairline);
+  background: var(--color-elevated);
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  box-shadow: var(--wb-pill-shadow, none);
+  box-shadow: none;
 }
 
 .cloud-sync-status-chip::before {
@@ -75,21 +78,21 @@
 }
 
 .cloud-sync-status-chip.is-idle::before {
-  background: var(--success, #2d8a4e);
+  background: var(--color-livesync-live);
 }
 
 .cloud-sync-status-chip.is-syncing::before {
-  background: var(--action);
+  background: var(--color-livesync-syncing);
   animation: cloud-sync-pulse 1.2s ease-in-out infinite;
 }
 
 .cloud-sync-status-chip.is-pending::before,
 .cloud-sync-status-chip.is-offline::before {
-  background: var(--warning, #c47d12);
+  background: var(--color-livesync-degraded);
 }
 
 .cloud-sync-status-chip.is-error::before {
-  background: var(--danger, #c0392b);
+  background: var(--color-danger);
 }
 
 @keyframes cloud-sync-pulse {
@@ -115,10 +118,10 @@
   flex-direction: column;
   gap: calc(10px * var(--density-space));
   padding: calc(10px * var(--density-space));
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--wb-frame-shadow, none);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .cloud-sync-step-head {
@@ -131,8 +134,8 @@
 
 .cloud-sync-step-title {
   font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 650;
+  color: var(--color-accent);
 }
 
 .cloud-sync-connected-steps,
@@ -219,10 +222,11 @@
   display: flex;
   flex-direction: column;
   margin: 0;
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
   overflow: hidden;
+  box-shadow: none;
 }
 
 .cloud-sync-settings-row {
@@ -289,9 +293,9 @@
   width: 100%;
   margin: 0;
   padding: calc(12px * var(--density-space));
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
   color: var(--text);
   font: inherit;
   text-align: left;
@@ -300,8 +304,8 @@
 }
 
 .cloud-sync-options-entry:hover {
-  border-color: color-mix(in oklab, var(--action) 28%, var(--divider));
-  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--divider));
+  background: var(--state-hover-bg);
 }
 
 .cloud-sync-options-entry-text {
@@ -346,10 +350,11 @@
 .cloud-sync-options-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
   overflow: hidden;
+  box-shadow: none;
 }
 
 .cloud-sync-options-row {
@@ -375,11 +380,11 @@
 }
 
 .cloud-sync-options-row:hover {
-  background: color-mix(in oklab, var(--action) 6%, transparent);
+  background: var(--state-hover-bg);
 }
 
 .cloud-sync-options-row:hover .cloud-sync-options-row-title {
-  color: var(--action);
+  color: var(--color-accent);
 }
 
 .cloud-sync-options-row-text {
@@ -408,7 +413,7 @@
 }
 
 .cloud-sync-btn--danger-text {
-  color: var(--danger, #c0392b);
+  color: var(--color-danger);
   align-self: flex-start;
   padding-left: 2px;
 }
@@ -418,9 +423,9 @@
   flex-wrap: wrap;
   gap: calc(4px * var(--density-space));
   padding: 3px;
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-md, 8px);
-  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
 }
 
 .cloud-sync-tab {
@@ -441,14 +446,14 @@
 
 .cloud-sync-tab:hover {
   color: var(--text);
-  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  background: var(--state-hover-bg);
 }
 
 .cloud-sync-tab.is-active {
-  color: var(--text);
-  border-color: color-mix(in oklab, var(--action) 28%, var(--divider));
-  background: color-mix(in oklab, var(--action) 12%, var(--surface));
-  box-shadow: 0 1px 0 color-mix(in oklab, var(--action) 10%, transparent);
+  color: var(--color-accent);
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--divider));
+  background: var(--color-accent-soft);
+  box-shadow: none;
 }
 
 .cloud-sync-tab-panels {
@@ -462,10 +467,10 @@
 }
 
 .cloud-sync-mas {
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--wb-frame-shadow, none);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .cloud-sync-mas-summary {
@@ -512,10 +517,10 @@
   flex-direction: column;
   gap: calc(8px * var(--density-space));
   padding: calc(10px * var(--density-space));
-  border: 1px solid var(--wb-frame-border, var(--divider));
-  border-radius: var(--wb-card-radius, var(--radius-lg));
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--wb-frame-shadow, none);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .cloud-sync-room-title,
@@ -617,31 +622,34 @@
   align-self: flex-start;
   margin: 0;
   padding: calc(7px * var(--density-space)) calc(12px * var(--density-space));
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-md, 8px);
-  background: var(--surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-elevated);
   color: var(--text);
   font-family: inherit;
   font-size: calc(12px * var(--density-font));
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--dur-fast), border-color var(--dur-fast);
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast),
+    transform var(--dur-press) var(--ease-out);
 }
 
 .cloud-sync-btn:hover {
-  background: color-mix(in oklab, var(--action) 6%, var(--surface));
-  border-color: color-mix(in oklab, var(--action) 22%, var(--divider));
+  background: var(--state-hover-bg);
+  border-color: color-mix(in oklab, var(--color-accent) 22%, var(--divider));
 }
 
 .cloud-sync-btn--primary {
-  background: var(--action);
-  border-color: var(--action);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: var(--color-on-accent, #fff);
 }
 
 .cloud-sync-btn--primary:hover {
-  background: var(--action-hover, var(--action));
-  border-color: var(--action-hover, var(--action));
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 .cloud-sync-btn--ghost {
@@ -652,8 +660,20 @@
 }
 
 .cloud-sync-btn--danger {
-  color: var(--danger, #c0392b);
-  border-color: color-mix(in oklab, var(--danger, #c0392b) 28%, var(--divider));
+  color: var(--color-danger);
+  border-color: color-mix(in oklab, var(--color-danger) 35%, var(--divider));
+  background: color-mix(in oklab, var(--color-danger) 8%, var(--color-elevated));
+}
+
+.cloud-sync-btn--danger:hover {
+  background: color-mix(in oklab, var(--color-danger) 14%, var(--color-elevated));
+  border-color: color-mix(in oklab, var(--color-danger) 45%, var(--divider));
+}
+
+.cloud-sync-btn.ui-pressable:active,
+.cloud-sync-btn--primary.ui-pressable:active,
+.cloud-sync-btn--danger.ui-pressable:active {
+  transform: scale(var(--press-scale));
 }
 
 .cloud-sync-btn--block {
@@ -1082,7 +1102,7 @@
   padding: 0.55rem 0.7rem;
   cursor: pointer;
 }
-.cloud-sync-cutover-pick:hover { border-color: var(--accent, #5b4dc0); }
+.cloud-sync-cutover-pick:hover { border-color: var(--color-accent); }
 .cloud-sync-cutover-pick-user { display: block; font-weight: 600; }
 .cloud-sync-cutover-pick-meta {
   display: block;
