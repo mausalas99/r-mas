@@ -68,12 +68,14 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
 .patient-expediente-classic .card,
 #patient-expediente .listado-section,
 .patient-expediente-classic .listado-section {
-  border: none;
+  border: var(--border-hairline);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-border);
+  box-shadow: none;
   overflow: hidden;
-  background: var(--surface);
-  transition: box-shadow var(--dur-fast) var(--ease-out);
+  background: var(--color-elevated);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 html.high-contrast #patient-expediente .card,
@@ -115,7 +117,39 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 #patient-expediente .listado-section-body,
 .patient-expediente-classic .listado-section-body {
   font: var(--type-body);
-  background: var(--card-body-bg);
+  background: var(--color-elevated);
+}
+
+/* Hybrid H · expediente / HC export CTAs */
+#patient-expediente .btn-generate,
+.patient-expediente-classic .btn-generate,
+#historia-clinica-mount .hc-toolbar .btn-generate {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: none;
+}
+
+#patient-expediente .btn-generate:hover:not(:disabled):not(.loading),
+.patient-expediente-classic .btn-generate:hover:not(:disabled):not(.loading),
+#historia-clinica-mount .hc-toolbar .btn-generate:hover:not(:disabled):not(.loading) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+#patient-expediente .btn-generate--success,
+.patient-expediente-classic .btn-generate--success,
+#historia-clinica-mount .hc-toolbar .btn-generate--success {
+  background: var(--color-success-emphasis);
+  border-color: var(--color-success-emphasis);
+  color: var(--color-on-success);
+}
+
+#patient-expediente .btn-generate--success:hover:not(:disabled):not(.loading),
+.patient-expediente-classic .btn-generate--success:hover:not(:disabled):not(.loading),
+#historia-clinica-mount .hc-toolbar .btn-generate--success:hover:not(:disabled):not(.loading) {
+  background: var(--color-success-emphasis-hover);
+  border-color: var(--color-success-emphasis-hover);
 }
 
 .patient-expediente-classic .listado-row {
@@ -804,17 +838,19 @@ html.high-contrast:not(.ui-density-normal) .pase-section {
 }
 
 #appcontent-agenda .rpc-proc-agenda-block {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-flat);
+  border: 1px solid var(--color-agenda-block-border);
+  background: var(--color-agenda-block-bg);
+  box-shadow: none;
   transition:
     transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
+    background var(--dur-fast) var(--ease-out);
 }
 
 #appcontent-agenda .rpc-proc-agenda-block:hover {
-  box-shadow: var(--elev-raised);
-  background: var(--state-hover-bg);
+  box-shadow: none;
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-agenda-block-bg));
+  border-color: color-mix(in oklab, var(--color-ink) 42%, var(--color-agenda-block-border));
 }
 
 html.high-contrast #appcontent-med .card,

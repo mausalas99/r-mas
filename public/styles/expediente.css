@@ -274,11 +274,15 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
 .med-insulin-pump-alg-pill {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
-  background: rgba(59, 130, 246, 0.12); color: var(--accent, #2563eb);
-  border: 1px solid rgba(59, 130, 246, 0.25); vertical-align: baseline;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  border: 1px solid color-mix(in oklab, var(--color-ink) 28%, var(--border));
+  vertical-align: baseline;
 }
 html.dark .med-insulin-pump-alg-pill {
-  background: rgba(96, 165, 250, 0.15); color: #93c5fd; border-color: rgba(96, 165, 250, 0.35);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-soft-text);
+  border-color: color-mix(in oklab, var(--color-ink) 38%, var(--border));
 }
 .med-soap-preview-chip--insulin-pump .med-insulin-pump-alg-pill { margin-left: 8px; }
 .med-nota-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -497,6 +501,21 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-composite-pane.active {
   display: flex;
+}
+
+.patient-expediente-classic .profile-input,
+.patient-expediente-classic textarea.profile-input,
+.patient-expediente-classic select.profile-input {
+  background: var(--input-fill);
+  border: var(--border-hairline);
+  box-shadow: none;
+}
+
+.patient-expediente-classic .profile-input:focus-visible,
+.patient-expediente-classic textarea.profile-input:focus-visible,
+.patient-expediente-classic select.profile-input:focus-visible {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--border));
+  box-shadow: var(--focus-ring);
 }
 
 /* Datos del paciente solo en modal — nunca inline en el host del expediente */

@@ -1052,8 +1052,8 @@ body.rpc-med-pharm-modal-open {
 }
 
 .med-pharm-grid-scope .some-grid-unified td.day-pad.indicated.not-admin {
-  background: var(--med-pharm-not-admin);
-  box-shadow: inset 0 0 0 2px var(--med-pharm-not-admin-border);
+  background: color-mix(in oklab, var(--color-danger) 14%, var(--surface));
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--color-danger) 42%, var(--border));
 }
 
 .med-pharm-grid-scope .some-grid-unified td.day-pad.indicated.not-admin.today-col {
