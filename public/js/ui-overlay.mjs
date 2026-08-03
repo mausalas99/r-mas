@@ -483,3 +483,44 @@ export function openMenu(opts) {
     },
   };
 }
+
+/**
+ * Dev harness: bottom sheet proving drag + velocity dismiss.
+ * @returns {{ close: (reason?: string) => void }}
+ */
+export function mountHybridDemoSheet() {
+  if (typeof document === 'undefined') {
+    return { close: function () {} };
+  }
+
+  var priorScrim = document.getElementById('hybrid-demo-sheet-scrim');
+  if (priorScrim) priorScrim.remove();
+  var priorPanel = document.getElementById('hybrid-demo-sheet-panel');
+  if (priorPanel) priorPanel.remove();
+
+  var scrim = document.createElement('div');
+  scrim.id = 'hybrid-demo-sheet-scrim';
+
+  var panel = document.createElement('div');
+  panel.id = 'hybrid-demo-sheet-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  panel.setAttribute('aria-label', 'Demo sheet Hybrid H');
+  panel.innerHTML =
+    '<div class="ui-overlay-sheet__handle" aria-hidden="true"></div>' +
+    '<p style="margin:16px 20px 8px;font-size:15px;font-weight:600;color:var(--text);">Sheet de prueba</p>' +
+    '<p style="margin:0 20px 24px;font-size:13px;line-height:1.45;color:var(--text-muted);">' +
+    'Arrastrá hacia abajo para cerrar (velocidad o m\u00e1s del 30% de altura).</p>';
+
+  document.body.appendChild(scrim);
+  document.body.appendChild(panel);
+
+  return openSheet({
+    panel: panel,
+    scrim: scrim,
+    onClose: function () {
+      scrim.remove();
+      panel.remove();
+    },
+  });
+}

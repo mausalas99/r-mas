@@ -19,7 +19,7 @@ export function recoveryModalMarkup(code, title) {
   const safeCode = esc(code);
   return (
     '<div class="lab-conflict-backdrop" data-recovery-code-modal>' +
-    '<div class="lab-conflict-modal cloud-sync-recovery-modal" role="dialog" aria-modal="true">' +
+    '<div class="lab-conflict-modal cloud-sync-recovery-modal material-glass ui-overlay-dialog" role="dialog" aria-modal="true">' +
     '<h3 style="margin:0 0 10px;">' +
     heading +
     '</h3>' +

@@ -20,6 +20,13 @@
   position: fixed; inset: 0; background: var(--scrim-bg); z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
 }
+
+.lab-conflict-modal.material-glass {
+  background: var(--material-glass-bg);
+  -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  border: var(--material-glass-border);
+}
 .lab-conflict-modal {
   background: var(--surface); border-radius: 10px; padding: 20px;
   width: 90%; max-width: 400px; box-shadow: var(--shadow-md);
