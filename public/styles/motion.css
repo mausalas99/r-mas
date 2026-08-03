@@ -426,3 +426,16 @@ html.motion-sobrio .field-shake {
 html.motion-sobrio .todo-prio-chip.todo-prio-chip--pulse {
   animation: none;
 }
+
+/* Hybrid H · Spec A — press feedback (Spec B applies broadly) */
+.ui-pressable:active {
+  transform: scale(var(--press-scale));
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-pressable:active {
+    transform: none;
+    transition: none;
+  }
+}
