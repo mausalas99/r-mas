@@ -1832,10 +1832,34 @@ var RELEASE_NOTES_791 = [
   },
 ];
 
+var RELEASE_NOTES_792 = [
+  {
+    title: 'Censo — rescates y dieta',
+    body:
+      'En ATB/Meds, las insulinas rápidas PRN SC se agrupan como <strong>RESCATES DE INSULINA</strong>. El suplemento nutricional SOME aparece como <strong>DIETA SUPLEMENTO</strong>, no como medicamento.',
+  },
+  {
+    title: 'Conexión más clara',
+    body:
+      '⇄ abre con la <strong>hoja de estado</strong>; R4, admin y LAN avanzado viven en <strong>Opciones</strong>.',
+  },
+  {
+    title: 'Cultivos y signos',
+    body:
+      'Cultivos ignoran membrete SOME (USER/Labo). El prefill de signos en Estado Actual usa solo lecturas del <strong>mismo día</strong>.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.2 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_791;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_792;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.2': RELEASE_NOTES_792,
   '7.9.1': RELEASE_NOTES_791,
   '7.9.0': RELEASE_NOTES_790,
   '7.8.1': RELEASE_NOTES_781,

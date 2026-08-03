@@ -39,10 +39,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.1](https://github.com/mausalas99/r-mas/releases/tag/v7.9.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.2](https://github.com/mausalas99/r-mas/releases/tag/v7.9.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.9.2 (censo meds + Conexión)
+
+- **Censo ATB / Meds** — Rescates de insulina agrupados; suplemento nutricional como DIETA (no med).
+- **Conexión** — Hoja de estado + Opciones (admin/LAN fuera del primer viewport).
+- **Cultivos / EA** — Sin membrete SOME en cultivos; SV del modal solo del día.
+
+Notas: `docs/RELEASE_NOTES_7.9.2.txt`.
 
 ## R+ 7.9.1 (recuperación Nube + borrado masivo)
 
