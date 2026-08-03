@@ -2244,11 +2244,11 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  border: var(--border-hairline);
   border-left-width: 3px;
   border-left-color: color-mix(in oklab, var(--border) 80%, transparent);
-  background: var(--surface);
+  background: var(--color-elevated);
   box-shadow: none;
   transition:
     border-color var(--dur-fast) var(--ease-out),
@@ -2259,8 +2259,8 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 #appcontent-guardia .patient-chips-grid--guardia .patient-chip-card:hover,
 .guardia-census-panel .patient-chips-grid--guardia .patient-chip-card:hover {
   transform: none;
-  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
-  box-shadow: var(--shadow-sm);
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--border));
+  box-shadow: none;
 }
 
 #appcontent-guardia .patient-chips-grid--guardia .patient-chip-card:focus-visible,
@@ -2593,10 +2593,10 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   gap: 10px 14px;
   margin: 0 0 12px;
   padding: 10px 14px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-control);
   border: var(--border-hairline);
-  background: var(--surface);
-  box-shadow: var(--elev-raised);
+  background: var(--color-elevated);
+  box-shadow: none;
 }
 
 .guardia-phase-bar--turno {
