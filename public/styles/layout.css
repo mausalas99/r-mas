@@ -1214,7 +1214,7 @@ html:not(.ui-density-normal) .pase-empty-screen {
   box-shadow: none;
 }
 .app-tab.active {
-  color: var(--action);
+  color: var(--color-ink);
   background: transparent;
   border-bottom-color: transparent;
   box-shadow: none;
@@ -1229,6 +1229,7 @@ html.dark .app-tab:hover {
   box-shadow: none;
 }
 html.dark .app-tab.active {
+  color: var(--color-ink);
   background: transparent;
   border-bottom-color: transparent;
   box-shadow: none;
@@ -1365,4 +1366,13 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 .header-mode-seg-btn[hidden] {
   display: none !important;
+}
+
+
+/* Hybrid H — ink tab underline (indicator in motion.css) */
+html.tab-bar-indicators-ready .app-tab.active {
+  color: var(--color-ink);
+}
+.app-tab[role="tab"] {
+  transition: color var(--dur-fast) var(--ease-out);
 }

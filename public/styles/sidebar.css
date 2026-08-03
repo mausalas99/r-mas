@@ -1,7 +1,7 @@
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 aside.patient-sidebar {
   width: var(--sidebar-width);
-  background: var(--surface);
+  background: var(--color-surface);
   border: none;
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   display: flex; flex-direction: column; flex-shrink: 0;
@@ -263,7 +263,7 @@ html.patient-bulk-select-mode .btn-round-seen {
   position: relative;
   border-radius: var(--radius-md);
   border: var(--border-hairline);
-  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   transition:
     background var(--dur-fast) var(--ease-out),
@@ -274,28 +274,30 @@ html.patient-bulk-select-mode .btn-round-seen {
 }
 .patient-card:active { cursor: grabbing; }
 .patient-card:hover {
-  background: color-mix(in oklab, var(--surface) 92%, var(--lab-chip-bg));
-  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--state-hover-bg);
+  border-color: var(--border);
   box-shadow: var(--shadow-sm);
 }
 .patient-card.active {
-  background: color-mix(in oklab, var(--surface) 70%, var(--lab-chip-bg));
-  border: 2px solid color-mix(in oklab, var(--color-accent) 55%, var(--border));
-  box-shadow: var(--elev-raised);
+  background: var(--color-accent-soft);
+  border: var(--border-hairline);
+  border-left: 2.5px solid var(--color-ink);
+  box-shadow: var(--shadow-sm);
 }
 html.dark .patient-card {
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  background: var(--color-surface);
   box-shadow: var(--shadow-sm);
 }
 html.dark .patient-card:hover {
-  background: color-mix(in oklab, var(--surface) 88%, var(--action) 12%);
-  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--state-hover-bg);
+  border-color: var(--border);
   box-shadow: var(--shadow);
 }
 html.dark .patient-card.active {
-  background: color-mix(in oklab, var(--surface) 82%, var(--action) 18%);
-  border: 2px solid color-mix(in oklab, var(--color-accent) 55%, var(--border));
-  box-shadow: var(--elev-raised);
+  background: var(--color-accent-soft);
+  border: var(--border-hairline);
+  border-left: 2.5px solid var(--color-ink);
+  box-shadow: var(--shadow-sm);
 }
 .patient-card-toolbar {
   position: relative;

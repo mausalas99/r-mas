@@ -49,3 +49,12 @@ html.no-blur #tour-dock .tour-dock-inner {
   backdrop-filter: none;
   border: none;
 }
+
+/* Hybrid H: prefer material-glass utility (ui-overlay.css) on new overlay panels. */
+.settings-dropdown.material-glass,
+.connection-dropdown.material-glass {
+  background: var(--material-glass-bg);
+  -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  border: var(--material-glass-border);
+}

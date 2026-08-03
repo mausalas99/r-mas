@@ -128,7 +128,7 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   box-shadow: none;
 }
 .inner-tab.active {
-  color: var(--action);
+  color: var(--color-ink);
   background: transparent;
   border-bottom-color: transparent;
   box-shadow: none;
@@ -143,6 +143,7 @@ html.dark .inner-tab:hover {
   box-shadow: none;
 }
 html.dark .inner-tab.active {
+  color: var(--color-ink);
   background: transparent;
   border-bottom-color: transparent;
   box-shadow: none;

@@ -708,11 +708,6 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   -webkit-overflow-scrolling: touch;
 }
 
-.exp-segment-bar .tab-bar-indicator,
-.manejo-subtabs .tab-bar-indicator {
-  background: var(--action);
-}
-
 .exp-segment-btn,
 .manejo-subtab {
   flex-shrink: 0;
