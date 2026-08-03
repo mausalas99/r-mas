@@ -8,6 +8,10 @@ import { patientsBridge } from './patients-bridge.mjs';
 import { esc } from './patients-html.mjs';
 import { setPatientSearchFilter } from './patients-scope.mjs';
 import { renderPatientCardToolbarHtml, patientSidebarCardOpts } from './patients-card-html.mjs';
+import {
+  isPatientBulkSelectMode,
+  isPatientBulkSelected,
+} from './patients-bulk-select.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
 
 var _lastRondaNavIds = [];
@@ -279,6 +283,7 @@ export function openFullExpedienteFromRound(tab) {
 
 export function advanceRondaPatient(delta) {
   if (!isPaseMode()) return;
+  if (isPatientBulkSelectMode()) return;
   if (!_lastRondaNavIds.length) return;
   var cur = rt.getActiveId() != null ? String(rt.getActiveId()) : '';
   var idx = _lastRondaNavIds.indexOf(cur);
@@ -319,10 +324,12 @@ export function renderPatientRoundRowHtml(p) {
   var seen = isPatientRoundSeen(p.id);
   var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
   var aid = rt.getActiveId();
+  var bulkSelected = isPatientBulkSelectMode() && isPatientBulkSelected(p.id);
   return (
     '<div class="patient-card patient-card--roundrow ' +
     (p.id === aid ? 'active' : '') +
     (seen ? ' patient-card--roundrow-seen' : '') +
+    (bulkSelected ? ' patient-card--bulk-selected' : '') +
     '" data-patient-id="' +
     p.id +
     '" role="button" tabindex="0">' +

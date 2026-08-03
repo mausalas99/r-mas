@@ -30,6 +30,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Document export | `lib/doc-generators/`, `document-export-client.mjs` | [spec](../superpowers/specs/2026-05-30-native-document-generation-design.md) |
 | Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `cutover-*`, `panel-cutover*`), `cloud/sync-worker/` | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); first-launch migration panel |
 | LiveSync / LAN | `public/js/features/lan/`, `lan-squad/` | [spec](../superpowers/specs/2026-06-03-lan-sync-improvements-design.md) |
+| Borrado pacientes (bulk) | `patient-delete-batch.mjs`, `patients-bulk-select.mjs` | Multi-select en sidebar; tombstone + purge host/Nube para que no regresen |
 | Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md) |
 | Modo entrega | `lib/entrega/`, `clinical-entrega.mjs` | |
 | Clinical teams | `public/js/features/clinical-teams/` | |

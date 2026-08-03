@@ -7,6 +7,7 @@ import {
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isPaseMode } from './chrome.mjs';
+import { isPatientBulkSelectMode } from './patients-bulk-select.mjs';
 import {
   buildPatientListZones,
   buildRondaNavIds,
@@ -349,7 +350,7 @@ function renderPatientListFullHtml(list, bundle, opts) {
   list.innerHTML = parts.join('');
   mountActiveZoneVirtualIfNeeded(list, active, bundle.cardHtml, bundle.listCtx);
   if (opts.silent && savedScrollTop > 0) list.scrollTop = savedScrollTop;
-  mountPatientListSortables();
+  if (!isPatientBulkSelectMode()) mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
   if (!opts.silent) {
     syncGuardiaCensusPanelVisibility(rt.getSettings());

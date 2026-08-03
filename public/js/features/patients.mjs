@@ -20,7 +20,15 @@ import {
   syncClinicalCensusFiltersChrome,
 } from './patients-scope.mjs';
 import { renderPatientList } from './patients-list.mjs';
-import { selectPatient, deletePatient } from './patients-select.mjs';
+import {
+  selectPatient,
+  deletePatient,
+  confirmBulkDeletePatients,
+} from './patients-select.mjs';
+import {
+  cancelPatientBulkSelect,
+  togglePatientBulkSelect,
+} from './patients-bulk-bar.mjs';
 import { setArchivedSectionCollapsed } from './patients-list.mjs';
 import {
   onPatientSearchInput,
@@ -296,6 +304,9 @@ export const windowHandlers = {
   savePatient,
   selectPatient,
   deletePatient,
+  togglePatientBulkSelect,
+  cancelPatientBulkSelect,
+  confirmBulkDeletePatients,
   openFullExpedienteFromRound,
   returnToRoundOverview,
   closeRondaQuickMoreMenu,

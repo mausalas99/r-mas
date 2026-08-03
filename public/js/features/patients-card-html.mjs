@@ -1,8 +1,31 @@
 import { isModeSala } from '../mode-features.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
+import {
+  isPatientBulkSelectMode,
+  isPatientBulkSelected,
+} from './patients-bulk-select.mjs';
 import { rt } from './patients-runtime-state.mjs';
 
+function renderPatientBulkCheckHtml(p) {
+  if (!isPatientBulkSelectMode()) return '';
+  var on = isPatientBulkSelected(p.id);
+  return (
+    '<span class="patient-bulk-check' +
+    (on ? ' patient-bulk-check--on' : '') +
+    '" aria-hidden="true">' +
+    (on ? '✓' : '') +
+    '</span>'
+  );
+}
+
 export function renderPatientCardToolbarHtml(p, pinOn, archOn) {
+  if (isPatientBulkSelectMode()) {
+    return (
+      '<div class="patient-card-toolbar patient-card-toolbar--bulk">' +
+      renderPatientBulkCheckHtml(p) +
+      '</div>'
+    );
+  }
   var pinTitle = pinOn ? 'Quitar de fijados' : 'Fijar paciente';
   var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
   var archiveIcon = archOn
@@ -54,11 +77,13 @@ export function renderPatientCardHtml(p) {
   var pinOn = !!p.pinned;
   var archOn = !!p.archived;
   var aid = rt.getActiveId();
+  var bulkOn = isPatientBulkSelectMode() && isPatientBulkSelected(p.id);
   return (
     '<div class="patient-card ' +
       (p.id === aid ? 'active' : '') +
       (pinOn ? ' patient-card--pinned' : '') +
       (archOn ? ' patient-card--archived' : '') +
+      (bulkOn ? ' patient-card--bulk-selected' : '') +
       '" data-patient-id="' +
       p.id +
       '" role="button" tabindex="0">' +

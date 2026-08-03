@@ -14,12 +14,16 @@ import {
 import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { getUiDensity, isPaseMode } from './chrome.mjs';
 import {
-  removePatientLocally,
-  rememberPatientDeleteTombstone,
-  getActiveLiveSyncRoomId,
-  scheduleLiveSyncPush,
-} from './lan-sync.mjs';
-import { stagePatientDelete } from '../patient-delete-sync.mjs';
+  commitPatientDeletes,
+  formatPatientDeleteSummary,
+} from './lan/patient-delete-batch.mjs';
+import {
+  exitPatientBulkSelectMode,
+  getPatientBulkSelectedCount,
+  getPatientBulkSelectedIds,
+  isPatientBulkSelectMode,
+  togglePatientBulkSelected,
+} from './patients-bulk-select.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import { patchPatientListActiveHighlight } from './patients-list.mjs';
@@ -28,6 +32,7 @@ import {
   scrollActiveRondaCardIntoView,
   setRoundOverviewMode,
 } from './patients-round.mjs';
+import { syncPatientBulkBar } from './patients-bulk-bar.mjs';
 
 /** @param {string} iso */
 function formatIncomingEffectiveLabel(iso) {
@@ -84,6 +89,12 @@ function blockIncomingPreviewChartOpen(id) {
 export function selectPatient(id, opts) {
   if (id == null || id === '') return;
   opts = opts || {};
+  if (isPatientBulkSelectMode()) {
+    togglePatientBulkSelected(id);
+    patientsBridge.renderPatientList();
+    syncPatientBulkBar();
+    return;
+  }
   try {
     if (!opts.bypassIncomingBlock && blockIncomingPreviewChartOpen(id)) return;
     selectPatientCore(id);
@@ -206,17 +217,7 @@ function selectPatientCore(id) {
 
 function confirmPatientDelete(target) {
   if (target && target.archived) return true;
-  return confirm('¿Eliminar este paciente y sus notas?');
-}
-
-function syncLiveSyncPatientDelete(id, snap) {
-  rememberPatientDeleteTombstone(snap);
-  scheduleLiveSyncPush();
-  stagePatientDelete(id, snap, function () {
-    import('../lan-mutation-registry.mjs').then(function (m) {
-      m.lanMutationRegistry.dispatchLanMutation('patient-fields', id);
-    });
-  });
+  return confirm('¿Eliminar este paciente y sus notas? No volverá desde otros equipos del turno.');
 }
 
 function showEmptyPatientShell() {
@@ -227,22 +228,64 @@ function showEmptyPatientShell() {
   rt.syncWorkContextChrome();
 }
 
-export function deletePatient(e, id) {
+function afterPatientDeletesCommitted(summary, auditLabel) {
+  saveState({ immediate: true });
+  rt.addAuditEntry('patient-delete', 'ok', summary.ok || 0, auditLabel || '');
+  patientsBridge.renderPatientList();
+  syncPatientBulkBar();
+  var msg = formatPatientDeleteSummary(summary);
+  if (msg && typeof rt.showToast === 'function') {
+    var kind = summary.failed || summary.skippedOwned ? 'warn' : 'success';
+    rt.showToast(msg, kind);
+  }
+  if (rt.getActiveId()) patientsBridge.selectPatient(rt.getActiveId());
+  else showEmptyPatientShell();
+}
+
+export async function deletePatient(e, id) {
   e.stopPropagation();
+  if (isPatientBulkSelectMode()) {
+    togglePatientBulkSelected(id);
+    patientsBridge.renderPatientList();
+    syncPatientBulkBar();
+    return;
+  }
   var target = patients.find(function (p) {
     return p.id === id;
   });
+  if (!target) return;
   if (!confirmPatientDelete(target)) return;
-  var label = target ? 'Eliminar ' + (target.nombre || 'paciente') : 'Eliminar paciente';
+  var label = 'Eliminar ' + (target.nombre || 'paciente');
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
-  if (!removePatientLocally(id)) return;
-  var snap = target || { id: id, registro: '' };
-  if (getActiveLiveSyncRoomId()) {
-    syncLiveSyncPatientDelete(id, snap);
+  var summary = await commitPatientDeletes([id]);
+  afterPatientDeletesCommitted(
+    summary,
+    target.registro || target.nombre || ''
+  );
+}
+
+export async function confirmBulkDeletePatients() {
+  var ids = getPatientBulkSelectedIds();
+  if (!ids.length) {
+    if (typeof rt.showToast === 'function') rt.showToast('Selecciona al menos un paciente', 'info');
+    return;
   }
-  saveState({ immediate: true });
-  rt.addAuditEntry('patient-delete', 'ok', 1, target ? target.registro || target.nombre || '' : '');
-  patientsBridge.renderPatientList();
-  if (rt.getActiveId()) patientsBridge.selectPatient(rt.getActiveId());
-  else showEmptyPatientShell();
+  var n = getPatientBulkSelectedCount();
+  if (
+    !confirm(
+      '¿Eliminar ' +
+        n +
+        ' paciente' +
+        (n === 1 ? '' : 's') +
+        ' y sus notas? No volverán desde otros equipos del turno.'
+    )
+  ) {
+    return;
+  }
+  if (typeof rt.pushUndoSnapshot === 'function') {
+    rt.pushUndoSnapshot('Eliminar ' + n + ' pacientes');
+  }
+  var summary = await commitPatientDeletes(ids);
+  exitPatientBulkSelectMode();
+  afterPatientDeletesCommitted(summary, n + ' pacientes');
 }

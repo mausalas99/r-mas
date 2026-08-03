@@ -134,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-03** `patients-bulk-delete`: multi-select sidebar + batch delete (local + LAN/Nube purge); `patients-bulk-*.mjs`, `lan/patient-delete-batch.mjs`.
 - **2026-08-02** `cloud-sync`: rebuild ⇄ Conexión chrome on Nube login/logout (session gate); stepped UI token-without-room; `panel-session-gate.mjs`, `panel-conexion-handlers.mjs`.
 - **2026-08-02** `nube-recovery-ux`: recovery codes + admin reset; Conexión steps (Connect→Sala→Equipo→Más); logged-out shows only Connect; `cloud/sync-worker` auth-recovery, `public/js/features/cloud-sync/panel-steps-html.mjs`.
 - **2026-08-02** `patient-bulk-delete`: multi-select en lista + borrado unificado (local + tombstone + host/Nube/WS); retirado defer 30s; `patient-delete-batch.mjs`, `patients-bulk-select.mjs`.
@@ -153,5 +154,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-07-21** `doc-queue`: cola docs + labs→Eventualidades auto (Procesar/repo/Actualizar + cola); `lab-eventualidad-autosend.mjs`, `lab-eventualidad-interpret.mjs`, `lab-panel-workbench*.mjs`.
 - **2026-07-21** `lab-repo-batch`: Actualizar labs de mi equipo — set mi equipo + checkboxes, fetch IPC secuencial, cola sidebar, import silencioso/preview; `lab-repo-batch-*.mjs`, `lab-bulk-paste.mjs`.
 - **2026-07-23** `labs-7.7.3`: alta directa desde SOME (paciente nuevo sin modal intermedio), orden fijo secciones `labs-section-order.mjs`; retirados módulos teach wizard (`labs-panel-teach-*`, `lab-panel-teach-*`).
-- **2026-07-23** `labs-panels` + `labs-teach-overlay`: scaffold paneles hospitalarios (TIR/ENDO/CARD/FE/…) + PFH GGT/Prot; overlay PanelDef + sync LAN `labPanelOverlay` (wizard «Configurar lectura» removed); `labs-panel-defs.mjs`, `labs-panel-parse.mjs`, `labs-panel-overlay*.mjs`.
-- **2026-07-19** `remove-neo`: drop Neo/Casiopea companion — Enviar a Neo UI/IPC, sesion-ingreso export, tour steps `sala_casiopea_*`, Aprender R+ neo modules; curriculum v10; `labs-anion-gap` AG/AGc/UAG.

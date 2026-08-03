@@ -748,11 +748,21 @@
         </button>
         <h2>Pacientes</h2>
       </div>
-      <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
+      <div class="sidebar-header-actions">
+        <button type="button" class="btn-patient-bulk-select" id="btn-patient-bulk-select" onclick="togglePatientBulkSelect()" aria-pressed="false" title="Seleccionar varios pacientes">Seleccionar</button>
+        <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
+      </div>
     </div>
     <div class="patient-search-wrap">
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
+    </div>
+    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
+      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
+      <div class="patient-bulk-bar-actions">
+        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
+        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
+      </div>
     </div>
     <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">

@@ -105,6 +105,104 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   outline-offset: 1px;
 }
 .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; }
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-patient-bulk-select {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  padding: calc(5px * var(--density-space)) calc(10px * var(--density-space));
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-patient-bulk-select:hover,
+.btn-patient-bulk-select--on {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+.patient-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+.patient-bulk-bar[hidden] { display: none !important; }
+.patient-bulk-bar-count {
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+}
+.patient-bulk-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.btn-patient-bulk-delete {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--danger, #b42318) 88%, #000);
+  color: #fff;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  padding: calc(5px * var(--density-space)) calc(12px * var(--density-space));
+  cursor: pointer;
+}
+.btn-patient-bulk-cancel {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  padding: calc(5px * var(--density-space)) calc(10px * var(--density-space));
+  cursor: pointer;
+}
+.patient-bulk-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--action);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.patient-bulk-check--on {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
+}
+.patient-card--bulk-selected {
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+.patient-card-toolbar--bulk {
+  justify-content: flex-start;
+}
+html.patient-bulk-select-mode .btn-round-seen {
+  display: none;
+}
 .btn-add {
   background: var(--action); color: var(--color-on-accent); border: none; border-radius: var(--radius-pill);
   padding: calc(6px * var(--density-space)) calc(14px * var(--density-space));
