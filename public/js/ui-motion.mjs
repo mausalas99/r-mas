@@ -1,11 +1,79 @@
 // Vanilla helpers for field shake and async button label swaps.
 
+import { animate } from 'motion';
+
 export function prefersReducedMotion() {
   try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var media = globalThis.matchMedia;
+    if (!media && typeof window !== 'undefined') media = window.matchMedia;
+    if (!media) return false;
+    return media('(prefers-reduced-motion: reduce)').matches;
   } catch {
     return false;
   }
+}
+
+
+export function getReleaseVelocity(history, opts) {
+  opts = opts || {};
+  var axis = opts.axis === 'x' ? 'x' : 'y';
+  var windowMs = opts.windowMs == null ? 100 : opts.windowMs;
+  var list = Array.isArray(history) ? history : [];
+  var now = opts.now != null
+    ? opts.now
+    : (list.length ? list[list.length - 1].t : 0);
+  var samples = list.filter(function (p) {
+    if (!p || typeof p.t !== 'number') return false;
+    var age = now - p.t;
+    return age >= 0 && age <= windowMs;
+  });
+  if (samples.length < 2) return 0;
+  var a = samples[0];
+  var b = samples[samples.length - 1];
+  var dt = b.t - a.t;
+  if (dt <= 0) return 0;
+  var da = (Number(b[axis]) || 0) - (Number(a[axis]) || 0);
+  return da / dt;
+}
+
+function keyframeEndValue(value) {
+  if (Array.isArray(value)) return value[value.length - 1];
+  return value;
+}
+
+export function springTo(el, keyframes, options) {
+  if (!el || (typeof HTMLElement !== 'undefined' && !(el instanceof HTMLElement))
+    || (typeof HTMLElement === 'undefined' && (!el.style || typeof el.style !== 'object'))) {
+    return null;
+  }
+  options = options || {};
+  var bounce = options.bounce == null ? 0 : options.bounce;
+  var duration = options.duration == null ? 0.35 : options.duration;
+  var kf = keyframes || {};
+
+  if (prefersReducedMotion()) {
+    Object.keys(kf).forEach(function (key) {
+      var end = keyframeEndValue(kf[key]);
+      if (end == null) return;
+      if (key === 'opacity') {
+        el.style.opacity = String(end);
+      }
+    });
+    return {
+      stop: function () {},
+      finished: Promise.resolve(),
+    };
+  }
+
+  var animOpts = { type: 'spring', bounce: bounce, duration: duration };
+  if (options.velocity != null) animOpts.velocity = options.velocity;
+  var controls = animate(el, kf, animOpts);
+  return {
+    stop: function () {
+      try { controls.stop(); } catch (_e) { void _e; }
+    },
+    finished: controls.finished || Promise.resolve(),
+  };
 }
 
 export function shakeField(el) {

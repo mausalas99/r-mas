@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolvePatientFieldIds } from './ui-motion.mjs';
+import {
+  resolvePatientFieldIds,
+  getReleaseVelocity,
+  springTo,
+  prefersReducedMotion,
+} from './ui-motion.mjs';
 
 test('resolvePatientFieldIds — nombre desde lab', () => {
   assert.deepEqual(
@@ -42,4 +47,66 @@ test('resolvePatientFieldIds — área en interconsulta', () => {
     resolvePatientFieldIds('Ingresa área / departamento', false),
     ['m-servicio', 'm-area']
   );
+});
+
+test('getReleaseVelocity — empty / single sample → 0', () => {
+  assert.equal(getReleaseVelocity([]), 0);
+  assert.equal(getReleaseVelocity([{ t: 100, y: 10 }]), 0);
+});
+
+test('getReleaseVelocity — y axis over window', () => {
+  const history = [
+    { t: 900, y: 0 },
+    { t: 950, y: 20 },
+    { t: 1000, y: 50 },
+  ];
+  assert.equal(getReleaseVelocity(history, { axis: 'y', windowMs: 100, now: 1000 }), 0.5);
+});
+
+test('getReleaseVelocity — ignores samples outside window', () => {
+  const history = [
+    { t: 0, y: 0 },
+    { t: 950, y: 10 },
+    { t: 1000, y: 20 },
+  ];
+  assert.equal(getReleaseVelocity(history, { axis: 'y', windowMs: 100, now: 1000 }), 0.2);
+});
+
+test('getReleaseVelocity — x axis', () => {
+  const history = [
+    { t: 0, x: 0 },
+    { t: 100, x: -40 },
+  ];
+  assert.equal(getReleaseVelocity(history, { axis: 'x', windowMs: 200, now: 100 }), -0.4);
+});
+
+test('springTo — invalid el returns null', () => {
+  assert.equal(springTo(null, { opacity: 0 }), null);
+  assert.equal(springTo({}, { opacity: 0 }), null);
+});
+
+test('springTo — reduced motion snaps opacity on HTMLElement', async () => {
+  const prev = globalThis.matchMedia;
+  globalThis.matchMedia = (q) => ({
+    matches: String(q).includes('prefers-reduced-motion'),
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+  try {
+    assert.equal(prefersReducedMotion(), true);
+    if (typeof document === 'undefined') {
+      assert.equal(springTo(null, { opacity: 0 }), null);
+      return;
+    }
+    const el = document.createElement('div');
+    el.style.opacity = '1';
+    const ctrl = springTo(el, { opacity: 0.2 }, { bounce: 0.5 });
+    assert.ok(ctrl);
+    assert.equal(typeof ctrl.stop, 'function');
+    await ctrl.finished;
+    assert.equal(el.style.opacity, '0.2');
+  } finally {
+    globalThis.matchMedia = prev;
+  }
 });
