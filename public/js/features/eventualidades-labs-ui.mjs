@@ -112,9 +112,5 @@ export function fillEventualidadesLabsInput(mountEl, text, setMode) {
       /* ignore */
     }
   }
-  var dock = mountEl.querySelector('.ev-compose');
-  if (dock && dock.scrollIntoView) {
-    dock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
   return true;
 }
