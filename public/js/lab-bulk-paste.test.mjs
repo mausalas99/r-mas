@@ -220,7 +220,7 @@ describe('lab-bulk-paste merge and consolidation', () => {
     var morning = DEMO_SOME_LAB_REPORT.replace('Apr 11 2026 9:42AM', 'Apr 11 2026 6:00AM');
     var gasoMid = GASO_VENOSA_SOLO.replace('May 7 2026 6:43AM', 'Apr 11 2026 10:00AM');
     var gasoEve = GASO_VENOSA_SOLO
-      .replace('May 7 2026 6:43AM', 'Apr 11 2026 14:00PM')
+      .replace('May 7 2026 6:43AM', 'Apr 11 2026 11:30AM')
       .replace('7.39', '7.33');
     var items = [morning, gasoMid, gasoEve].map(function (text) {
       return { result: procesarLabs(text), reportText: text };
