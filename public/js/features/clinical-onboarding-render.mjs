@@ -43,7 +43,8 @@ import {
   buildNubePasswordFieldHtml,
   syncOnboardingNubeVisibility,
 } from './clinical-onboarding-nube.mjs';
-import { isCutoverPending } from './cloud-sync/cutover-flags.mjs';
+import { isCutoverDone, isCutoverPending } from './cloud-sync/cutover-flags.mjs';
+import { shouldShowCutoverWizard } from './cloud-sync/cutover-gate.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
 
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
@@ -173,7 +174,10 @@ function buildLanProfileFormBody(settings) {
 
 function renderLanProfileForm(host, settings) {
   const profileGatePending = needsClinicalLanProfileGate(settings);
-  const cutover = isCutoverPending();
+  const cutover = shouldShowCutoverWizard({
+    cutoverDone: isCutoverDone(),
+    cutoverPending: isCutoverPending(),
+  });
   const salaUpgrade = isCloudSalaUpgradePending(settings);
   let gateLead;
   if (profileGatePending || cutover) {
