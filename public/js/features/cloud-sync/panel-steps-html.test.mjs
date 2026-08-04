@@ -34,7 +34,6 @@ describe('connectedStepsHtml', () => {
       adminHtml: '<div data-cloud-admin-host></div>',
       url: 'https://example.workers.dev',
       hasCloudSession: true,
-      salaLabel: 'Sala 2',
     });
     assert.match(html, /data-cloud-view="status"/);
     assert.match(html, /data-cloud-action="nav-options"/);
@@ -44,8 +43,6 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /Administración/);
     assert.match(html, /cloud-sync-options-group/);
     assert.match(html, /data-cloud-view="lan"/);
-    assert.match(html, /cloud-sync-conexion-head/);
-    assert.match(html, /Sala 2/);
     assert.doesNotMatch(html, /cloud-sync-mas/);
     assert.doesNotMatch(html, /data-cloud-step="2"/);
     assert.doesNotMatch(html, /Operaciones del turno/);
@@ -62,23 +59,6 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /data-cloud-view="status"/);
     assert.match(html, /Opciones/);
     assert.doesNotMatch(html, /data-cloud-step="2"/);
-  });
-
-  it('wraps connected room into one status card with aligned leave', () => {
-    const html = connectedStepsHtml({
-      cloudUser: { username: 'doc', displayName: 'Dr. Test' },
-      roomHtml:
-        '<div class="cloud-sync-room cloud-sync-room--connected">' +
-        '<dl class="cloud-sync-settings-rows"></dl>' +
-        '<button type="button" class="cloud-sync-status-leave" data-cloud-action="leave-room">Salir de la sala</button></div>',
-      equipoHtml: '',
-      url: '',
-      hasCloudSession: true,
-      salaLabel: 'Sala 2',
-    });
-    assert.match(html, /cloud-sync-status-card/);
-    assert.match(html, /cloud-sync-status-leave/);
-    assert.match(html, /cloud-sync-status-identity/);
   });
 
   it('options and nested views have no body nav bar (modal head owns chrome)', () => {

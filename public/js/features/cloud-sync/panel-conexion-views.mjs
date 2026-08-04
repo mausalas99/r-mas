@@ -226,17 +226,27 @@ export function syncCloudSecondaryPanels(root, view) {
   const panel = resolveConexionPanelRoot(root);
   if (!panel) return;
   const stack = panel.querySelector('.lan-connection-stack');
-  if (!stack) return;
   const showOps = view === 'ops';
   const showLan = view === 'lan';
   const showStack = showOps || showLan;
-  stack.hidden = !showStack;
-  stack.setAttribute('data-cloud-stack-view', showOps ? 'ops' : showLan ? 'lan' : 'hidden');
-  stack.querySelectorAll('[data-cloud-secondary]').forEach(function (el) {
-    const kind = el.getAttribute('data-cloud-secondary');
-    if (kind === 'ops') el.hidden = !showOps;
-    else if (kind === 'lan') el.hidden = !showLan;
-  });
+  if (stack) {
+    stack.hidden = !showStack;
+    stack.setAttribute('data-cloud-stack-view', showOps ? 'ops' : showLan ? 'lan' : 'hidden');
+    stack.querySelectorAll('[data-cloud-secondary]').forEach(function (el) {
+      const kind = el.getAttribute('data-cloud-secondary');
+      if (kind === 'ops') el.hidden = !showOps;
+      else if (kind === 'lan') el.hidden = !showLan;
+    });
+  }
+  // Orphan diagnostics on panel root (refresh-in-place) — never on status home.
+  const kids = panel.children || [];
+  for (let i = 0; i < kids.length; i++) {
+    const el = kids[i];
+    const cls = String(el.className || '');
+    if (cls.split(/\s+/).includes('lan-sync-diagnostics-panel')) {
+      el.hidden = !showLan;
+    }
+  }
 }
 
 const CONEXION_MODAL_TITLES = {

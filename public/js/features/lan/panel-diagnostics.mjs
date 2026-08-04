@@ -433,7 +433,13 @@ async function refreshLanSyncDiagnosticsInPlace(deps) {
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
   var scrollTop = deps.captureConnectionDropdownScrollTop();
-  await appendLanSyncDiagnosticsSection(deps, root);
+  // Prefer the Nube secondary stack so diagnostics stay view-gated with Opciones → LAN.
+  var stack = root.querySelector('.lan-connection-stack');
+  var orphan = root.querySelector(':scope > .lan-sync-diagnostics-panel');
+  if (orphan && stack && orphan.parentElement !== stack) {
+    stack.appendChild(orphan);
+  }
+  await appendLanSyncDiagnosticsSection(deps, stack || root);
   deps.restoreConnectionDropdownScrollTop(scrollTop);
 }
 
