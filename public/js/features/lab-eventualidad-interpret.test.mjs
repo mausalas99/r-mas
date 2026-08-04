@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+// Callers must persist via savePatientEventualidadesLabs, never appendEventualidad.
+
 const {
   buildLabEventualidadInterpretText,
   consolidateLabSetsForEventualidad,
