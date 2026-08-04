@@ -39,10 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.3](https://github.com/mausalas99/r-mas/releases/tag/v7.9.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.4](https://github.com/mausalas99/r-mas/releases/tag/v7.9.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 7.9.4 (Hybrid H UI + TTD tool-time)
+
+- **Hybrid H chrome** — Materiales vidrio/sólido, springs, toast con swipe, ⌘K instantáneo, pase/labs/expediente/Conexión/Eventualidades alineados.
+- **EA Tab spine** — Tab entre signos, glu e I/E en el registro; sin saltos +1 ni controles Alterada.
+- **Conexión / Nube** — Cuenta antes de sala; sin hero LAN en salas Nube; recovery code obligatorio; Diagnóstico LAN solo cuando aplica.
+- **TTD fixes** — Paneles Tendencias/Resultados ya no quedan en blanco; censo ATB/Meds sin línea dieta; cola docs abre Labs en Eventualidades.
+
+Notas: `docs/RELEASE_NOTES_7.9.4.txt`.
 
 ## R+ 7.9.3 (Eventualidades Labs + sync Nube)
 

@@ -1878,10 +1878,34 @@ var RELEASE_NOTES_793 = [
   },
 ];
 
+var RELEASE_NOTES_794 = [
+  {
+    title: 'Hybrid H — nuevo chrome',
+    body:
+      'Materiales <strong>vidrio/sólido</strong>, springs, toast con swipe, <strong>⌘K</strong> instantáneo y paneles (pase, labs, expediente, <strong>⇄</strong>, Eventualidades) alineados al nuevo lenguaje visual.',
+  },
+  {
+    title: 'EA — Tab spine',
+    body:
+      'En el registro manual, <strong>Tab</strong> recorre signos, glu e I/E en orden clínico; sin saltos +1 ni controles Alterada.',
+  },
+  {
+    title: 'Conexión / Nube más clara',
+    body:
+      'Cuenta antes de sala; sin hero LAN en salas Nube; código de recuperación obligatorio antes de continuar.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.4 en todas</strong> las Macs y PCs del turno el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_793;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_794;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.4': RELEASE_NOTES_794,
   '7.9.3': RELEASE_NOTES_793,
   '7.9.2': RELEASE_NOTES_792,
   '7.9.1': RELEASE_NOTES_791,
