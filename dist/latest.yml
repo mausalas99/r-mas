@@ -1,11 +1,11 @@
 version: 7.9.4
 files:
   - url: R+-7.9.4-x64.exe
-    sha512: /4cK1PG7/KqVi2Kgtt11N0hbjT0NswEiO3+O8gYXzlGr7VnigkswMCgBEL8INNsSJG8R8zkymQi4WTXXAqIi5g==
-    size: 122591995
+    sha512: 7UWmusAqRyHfNRNfEC1vwTUdlyHoMWN+j8Z4Pn8REsor3KkQxdFf4WMsShBWt5bTDmp8Wxoq7iw4lpUKcSzx0Q==
+    size: 122591994
 path: R+-7.9.4-x64.exe
-sha512: /4cK1PG7/KqVi2Kgtt11N0hbjT0NswEiO3+O8gYXzlGr7VnigkswMCgBEL8INNsSJG8R8zkymQi4WTXXAqIi5g==
-releaseDate: '2026-08-04T00:51:58.000Z'
+sha512: 7UWmusAqRyHfNRNfEC1vwTUdlyHoMWN+j8Z4Pn8REsor3KkQxdFf4WMsShBWt5bTDmp8Wxoq7iw4lpUKcSzx0Q==
+releaseDate: '2026-08-04T01:19:21.000Z'
 releaseNotes: |
   7.9.4 renueva el chrome de escritorio con Hybrid H (materiales vidrio/sólido, springs, overlays unificados) y reduce tiempo de herramienta: Tab spine en el registro de EA, ⌘K más rápido, Conexión más clara en Nube y correcciones de paneles en blanco al cambiar pestañas.
   

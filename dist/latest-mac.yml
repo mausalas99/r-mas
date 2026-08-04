@@ -1,20 +1,20 @@
 version: 7.9.4
 files:
   - url: R+-7.9.4-arm64.zip
-    sha512: iFHfNIRWJFmRz0F33MzIfgRBrAIhhOIwOAvRehnkBf6kb2WzgjNM+tgSFg7bBMddcg/a5LMW0jBO4JPirLIkxA==
-    size: 139785848
+    sha512: PMO2Xlvon+7zfnI7IN82zd3cBpRRObgYzyxCWUZwNqCNKkfWTqvER6qbulFxRSgPKi6oCLxiQJ2p5UO4SAzbag==
+    size: 139785837
   - url: R+-7.9.4-arm64.dmg
-    sha512: hb9DTb4Zidu9JRSm7uGmhfr6K9ItMO0PTPOYVJ0tKd8g6iYuK2XjSx7rrLly9nVUoAkaDxg8qsUUDvWX6KbV1A==
-    size: 145659300
+    sha512: G4fffGLCIo1LO53L84mEhfyRhqIYf5axQvu1qbQS5AB/kNoAdXaWU5MwCmuHs5MjOA2zU6FEAgCwgqiAw9ScYA==
+    size: 145664344
   - url: R+-7.9.4-x64.zip
-    sha512: Qs4Fc+9U0qwmfCt4mXVg/sPC7uC75QI/chvRJ5woHfTwR+FNx3Ngnx7UXusJVnohvsG+ZlwVf4uC38GvT02VDg==
-    size: 148159904
+    sha512: OhPxbX2VBUUwLvSoQ3zXlJP8xWbcU97OHbcVEUHXSG6br3Vy3ccgapzu11g2FuuotGODvzUctT9yxjuwVMyPog==
+    size: 148159908
   - url: R+-7.9.4-x64.dmg
-    sha512: +/CgdmQyX9PO5tBm0Y5I8OHZy21fhI2nTbN7OGppjgzJwqi5CSbKA+0o0W7dRL6pZ7cEMAl2SSklOyyAyfayHA==
-    size: 154082257
+    sha512: lwdVjVeU7yoZC0O5VcNogGzrrXckLKMwrWEth3kJMq6grNkFLxsGzHlUwh8XKZDtBlhMOkZWUN6V6WXQUti+9Q==
+    size: 154072575
 path: R+-7.9.4-arm64.zip
-sha512: iFHfNIRWJFmRz0F33MzIfgRBrAIhhOIwOAvRehnkBf6kb2WzgjNM+tgSFg7bBMddcg/a5LMW0jBO4JPirLIkxA==
-releaseDate: '2026-08-04T00:51:58.000Z'
+sha512: PMO2Xlvon+7zfnI7IN82zd3cBpRRObgYzyxCWUZwNqCNKkfWTqvER6qbulFxRSgPKi6oCLxiQJ2p5UO4SAzbag==
+releaseDate: '2026-08-04T01:19:21.000Z'
 releaseNotes: |
   7.9.4 renueva el chrome de escritorio con Hybrid H (materiales vidrio/sólido, springs, overlays unificados) y reduce tiempo de herramienta: Tab spine en el registro de EA, ⌘K más rápido, Conexión más clara en Nube y correcciones de paneles en blanco al cambiar pestañas.
   
