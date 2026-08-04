@@ -38,7 +38,7 @@ async function requireMember(db, request, roomId) {
     .bind(roomId, user.id)
     .first();
   if (!row) {
-    throw new SyncError('not_member', 'No sos miembro de esta sala.');
+    throw new SyncError('not_member', 'No eres miembro de esta sala.');
   }
   return { user, room: row };
 }

@@ -9,6 +9,8 @@ test('buildHeaderPath: app tabs map to their names', () => {
   assert.equal(buildHeaderPath('lab', 'todo', SALA), 'Laboratorio');
   assert.equal(buildHeaderPath('med', 'todo', SALA), 'Manejo');
   assert.equal(buildHeaderPath('agenda', 'todo', SALA), 'Agenda');
+  assert.equal(buildHeaderPath('guardia', 'historia', SALA), 'Guardia');
+  assert.equal(buildHeaderPath('pase', 'todo', SALA), 'Pase');
 });
 
 test('buildHeaderPath: expediente shows group › section', () => {

@@ -65,8 +65,8 @@ function buildRows() {
 }
 
 /**
- * In Sala, `notas` migrates to Historia Clínica — wrong for this queue.
- * Labs del día → Eventualidades en formato Estudios (labs consolidados).
+ * In Sala, `notas` migrates to Estado actual — wrong for this queue.
+ * Documentación de labs → abrir Eventualidades (escritura manual).
  * @param {import('./doc-queue-model.mjs').DocQueueRow} row
  * @returns {string}
  */
@@ -188,13 +188,6 @@ export function refreshDocQueueBadge() {
   }
 }
 
-function findPatientById(patientId) {
-  var id = String(patientId || '');
-  return (patients || []).find(function (p) {
-    return String(p && p.id) === id;
-  });
-}
-
 function tryRenderEventualidadesPanel() {
   var mount =
     typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null;
@@ -211,8 +204,15 @@ function openEventualidadesPanel() {
   }
 }
 
+function findPatientById(patientId) {
+  var id = String(patientId || '');
+  return (patients || []).find(function (p) {
+    return p && String(p.id) === id;
+  });
+}
+
 /**
- * Auto-append today's lab interpretation as an Eventualidad, then open the panel.
+ * Merge today's lab interpretation into labsText timeline, then open Labs view.
  * @param {string} patientId
  */
 async function openEventualidadesWithLabAutoSend(patientId) {
@@ -233,15 +233,15 @@ async function openEventualidadesWithLabAutoSend(patientId) {
   if (out && out.ok) {
     if (out.skipped === 'dup') return;
     if (typeof window.showToast === 'function') {
-      window.showToast('Labs enviados a Eventualidades.', 'success');
+      window.showToast('Labs en la línea de tiempo.', 'success');
     }
     return;
   }
   if (typeof window.showToast === 'function') {
     window.showToast(
       out && out.reason === 'empty'
-        ? 'Sin labs de hoy para enviar — escribe la eventualidad'
-        : 'No se pudo guardar la eventualidad.',
+        ? 'Sin labs de hoy para la línea de tiempo.'
+        : 'No se pudo guardar la interpretación de labs.',
       out && out.reason === 'empty' ? 'info' : 'error'
     );
   }
@@ -251,7 +251,7 @@ function navigateDocQueue(patientId, cta) {
   var id = String(patientId || '');
   if (!id) return;
   var target = String(cta || 'nota');
-  // Sala remaps notas → Historia Clínica; document labs in Eventualidades instead.
+  // Sala remaps notas → Estado actual; document labs in Eventualidades instead.
   if (target === 'nota' && isModeSala(loadSettings())) {
     target = 'eventualidades';
   }
@@ -260,7 +260,20 @@ function navigateDocQueue(patientId, cta) {
     window.selectPatient(id);
   }
   if (target === 'eventualidades') {
-    void openEventualidadesWithLabAutoSend(id);
+    var row = currentRows.find(function (r) {
+      return String(r.id) === id;
+    });
+    var wantsLabs =
+      row &&
+      Array.isArray(row.reasons) &&
+      row.reasons.some(function (reason) {
+        return reason === 'labs';
+      });
+    if (wantsLabs || cta === 'labs') {
+      void openEventualidadesWithLabAutoSend(id);
+    } else {
+      openEventualidadesPanel();
+    }
     return;
   }
   var section =

@@ -167,12 +167,21 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
 .todo-row {
   display: grid;
   grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  align-items: center;
+  align-items: start;
   column-gap: 10px;
-  padding: 11px 12px;
+  padding: 12px 12px;
   border-bottom: 1px solid var(--divider);
   border-radius: var(--radius-md);
   transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+
+/* Keep Media + checkbox on the first text line, not floating mid-block */
+.todo-row > .todo-prio-chip,
+.todo-add-row > .todo-prio-chip {
+  margin-top: 6px;
+}
+.todo-row > .todo-row-actions {
+  margin-top: 4px;
 }
 
 .todo-add-row {
@@ -195,10 +204,23 @@ html.tab-bar-indicators-ready html.dark .inner-tab.active {
 .todo-row.prio-baja  {
   background: color-mix(in oklab, var(--todo-prio-baja) 6%, transparent);
 }
-.todo-row.completed { background: transparent !important; }
+.todo-row.completed {
+  background: color-mix(in oklab, var(--surface) 55%, transparent) !important;
+  opacity: 0.92;
+}
+.todo-row.completed.prio-alta,
+.todo-row.completed.prio-media,
+.todo-row.completed.prio-baja {
+  background: color-mix(in oklab, var(--surface) 55%, transparent) !important;
+}
 .todo-row.completed .todo-text-input {
   text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in oklab, var(--text-muted) 70%, transparent);
   color: var(--text-muted) !important;
+}
+.todo-row.completed .todo-prio-chip {
+  opacity: 0.7;
 }
 .todo-prio {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
@@ -240,20 +262,22 @@ html.dark .todo-text-input:focus {
 
 .todo-check-spacer {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   justify-self: center;
 }
 
 .todo-row input.todo-check[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 20px;
+  height: 20px;
   justify-self: center;
-  margin: 0;
+  /* Do not use margin:0 — it wiped the first-line offset and floated the box high */
+  margin: 6px 0 0;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--surface);
   cursor: pointer;
   transition:
@@ -263,10 +287,19 @@ html.dark .todo-text-input:focus {
 .todo-row input.todo-check[type="checkbox"]:checked {
   background: var(--action);
   border-color: var(--action);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2L6.4 11l6.1-6.5' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-size: 12px 12px;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-image: none;
+}
+.todo-row input.todo-check[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+  pointer-events: none;
 }
 .todo-row input.todo-check[type="checkbox"]:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
@@ -276,19 +309,24 @@ html.dark .todo-text-input:focus {
 .todo-add-row input[type="text"] {
   min-width: 0;
   width: 100%;
-  padding: 8px 10px;
+  min-height: 38px;
+  padding: 8px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
   font-size: 14px;
+  line-height: 1.35;
+  box-sizing: border-box;
 }
 
 .todo-add-btn,
 .todo-add-row > button.todo-add-btn {
   justify-self: stretch;
+  align-self: start;
   width: 100%;
+  min-height: 38px;
   padding: 8px 12px;
   border: 1px solid color-mix(in oklab, var(--action) 80%, var(--border));
   border-radius: var(--radius-control);
@@ -298,7 +336,9 @@ html.dark .todo-text-input:focus {
   font-weight: 600;
   font-family: inherit;
   font-size: 13px;
+  line-height: 1.2;
   white-space: nowrap;
+  box-sizing: border-box;
   transition:
     filter var(--dur-fast, 0.15s) ease,
     transform var(--dur-fast, 0.15s) ease;
@@ -340,24 +380,32 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-composer {
-  display: grid;
-  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  column-gap: 10px;
-  row-gap: 8px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
   padding: 10px 12px 12px;
 }
 
 .todo-composer > .todo-add-row {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
+  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
+  align-items: start;
   column-gap: 10px;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
+}
+
+.todo-composer > .todo-add-row > .todo-prio-chip {
+  margin-top: 6px;
+}
+.todo-composer > .todo-add-row > .todo-check-spacer {
+  margin-top: 9px;
+}
+.todo-composer > .todo-add-row > .todo-add-btn {
+  margin-top: 0;
 }
 
 .todo-toolbar {
@@ -453,13 +501,15 @@ html.dark .todo-text-input:focus {
 }
 
 .todo-due-section {
-  grid-column: 3 / -2;
+  /* Sit under the text field: skip prio + check columns + both gaps */
+  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
+  margin-right: calc(var(--todo-grid-actions) + 10px);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
   min-width: 0;
-  padding: 0;
+  padding: 0 0 2px;
 }
 
 .todo-due-section-primary {
@@ -2295,9 +2345,9 @@ html.dark .btn-med-secondary--muted:hover {
 }
 .lab-repo-batch-row {
   display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 10px 12px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
   border-radius: 0;
   border: none;
   border-bottom: 1px solid var(--border, var(--divider));
@@ -2312,7 +2362,8 @@ html.dark .btn-med-secondary--muted:hover {
   background: color-mix(in oklab, var(--action) 7%, var(--surface));
 }
 .lab-repo-batch-row:has(.lab-repo-batch-check:checked) {
-  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+  background: color-mix(in oklab, var(--action) 12%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--action);
 }
 .lab-repo-batch-row:has(.lab-repo-batch-check:focus-visible) {
   outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
@@ -2325,13 +2376,15 @@ html.dark .btn-med-secondary--muted:hover {
 .lab-repo-batch-check {
   appearance: none;
   -webkit-appearance: none;
-  margin: 2px 0 0;
+  position: relative;
+  margin: 0;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  align-self: center;
+  width: 22px;
+  height: 22px;
   border: 1.5px solid color-mix(in oklab, var(--text-muted) 55%, var(--border, var(--divider)));
-  border-radius: 4px;
-  background: var(--surface);
+  border-radius: 7px;
+  background: color-mix(in oklab, var(--surface) 70%, var(--bg));
   cursor: pointer;
   transition:
     background var(--dur-fast, 0.15s) var(--ease-out, ease),
@@ -2340,10 +2393,20 @@ html.dark .btn-med-secondary--muted:hover {
 .lab-repo-batch-check:checked {
   background: var(--action);
   border-color: var(--action);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2L6.4 11l6.1-6.5' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-size: 12px 12px;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-image: none;
+}
+.lab-repo-batch-check:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 5px;
+  height: 10px;
+  margin: 0;
+  border: solid var(--color-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -55%) rotate(45deg);
+  pointer-events: none;
 }
 .lab-repo-batch-check:disabled {
   cursor: default;

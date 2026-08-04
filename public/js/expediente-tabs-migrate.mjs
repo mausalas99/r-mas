@@ -5,14 +5,16 @@ import { isMobileWeb } from './mobile-web.mjs';
 function migrateGranularMobile(granularTab, settings) {
   if (!isMobileWeb()) return null;
   if (granularTab === 'listado' || granularTab === 'recetaHu') {
-    return isModeSala(settings) ? 'historia' : 'todo';
+    return isModeSala(settings) ? 'estadoActual' : 'todo';
   }
-  if (isModeSala(settings) && granularTab === 'vpo') return 'historia';
+  if (isModeSala(settings) && granularTab === 'vpo') return 'estadoActual';
   return null;
 }
 
 function migrateGranularSala(granularTab, settings) {
-  if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'historia';
+  if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) {
+    return 'estadoActual';
+  }
   if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
   return null;
 }

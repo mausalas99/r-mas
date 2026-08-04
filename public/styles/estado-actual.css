@@ -577,9 +577,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-snapshot-row {
   display: grid;
-  grid-template-columns: 2.35rem auto auto;
+  grid-template-columns: 2.35rem minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 4px 8px;
   padding: 4px 6px;
   border-radius: var(--radius-sm);
@@ -599,7 +598,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: baseline;
   gap: 5px;
   min-width: 0;
-  justify-self: start;
+  overflow: hidden;
 }
 
 .ea-snapshot-row-value {
@@ -611,6 +610,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-row-unit {
+  flex-shrink: 0;
   font-size: calc(10px * var(--density-font, 1));
   font-weight: 500;
   color: var(--text-muted);

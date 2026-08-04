@@ -33,7 +33,7 @@ export function isManejoSectionHidden(_settings) {
 
 export function isClinicoCompositeVisible(settings) {
   if (!isModeSala(settings)) return true;
-  // Sala: Clínico always hosts Historia ingreso; Manejo is optional via segment bar.
+  // Sala: Clínico hosts Estado actual + Eventualidades (HC pane is off-nav).
   return true;
 }
 
@@ -52,8 +52,8 @@ export function getConsolidatedTabs(settings) {
   return tabs;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'historia', 'vpo'];
-export const CLINICO_SECTIONS_SALA = ['estadoActual', 'historia', 'eventualidades'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo'];
+export const CLINICO_SECTIONS_SALA = ['estadoActual', 'eventualidades'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -127,7 +127,7 @@ function paneMountSpec(granularTab, settings) {
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    return ['estadoActual', 'historia', 'eventualidades'];
+    return ['estadoActual', 'eventualidades'];
   }
   return ['notas', 'indica', 'vpo'];
 }
@@ -150,7 +150,7 @@ export function resolveConsolidatedTarget(granularTab, settings) {
       return { tab: 'clinico', section: 'vpo' };
     }
     return isModeSala(settings)
-      ? { tab: 'clinico', section: 'historia' }
+      ? { tab: 'clinico', section: 'estadoActual' }
       : { tab: 'paciente', section: null };
   }
   return target;
@@ -179,7 +179,7 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
     resultados: 'tend',
     salida: isMobileWeb()
       ? sala
-        ? 'historia'
+        ? 'estadoActual'
         : 'todo'
       : sala
         ? 'listado'
@@ -234,7 +234,8 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
         if (section === 'historia') {
-          btn.style.display = sala ? '' : 'none';
+          // HC stays mountable (Drive / entrega) but off the day-to-day nav.
+          btn.style.display = 'none';
         } else if (section === 'estadoActual' || section === 'eventualidades') {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'vpo') {
@@ -328,10 +329,10 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;
-    var allowed = getClinicoSections(settings).indexOf(section) >= 0;
     var onClinico = target.tab === 'clinico' && target.section === section;
     var onSalida = target.tab === 'salida' && target.section === section && section === 'vpo';
-    pane.classList.toggle('active', allowed && (onClinico || onSalida));
+    // Activate by target only — historia is off-nav but still opens via Drive/entrega.
+    pane.classList.toggle('active', onClinico || onSalida);
   });
   RESULTADOS_SECTIONS.forEach(function (section) {
     var pane = paneEl(section);

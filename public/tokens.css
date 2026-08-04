@@ -91,9 +91,9 @@
   --shell-inset: 6px;
   --shell-frame-inset: 4px;
   /* Modal / panel readable gutters (settings, ⇄, team modals) */
-  --content-gutter: 14px;
-  --content-gutter-lg: 18px;
-  --stack-inner-pad: 16px;
+  --content-gutter: 20px;
+  --content-gutter-lg: 24px;
+  --stack-inner-pad: 20px;
   --shell-frame-border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
   --shell-gap: color-mix(in oklab, var(--color-ink) 5.5%, var(--color-paper));
   --shadow-sm: none;
@@ -235,11 +235,12 @@ html.dark {
   --color-elevated: #1c1e26;
   --color-ink: #f5f5f7;
   --color-ink-muted: #98989d;
-  --color-accent: var(--color-ink);
-  --color-accent-hover: #ffffff;
-  --color-accent-soft: color-mix(in oklab, var(--color-ink) 12%, transparent);
-  --color-accent-soft-text: var(--color-ink);
-  --color-on-accent: #1c1c1e;
+  /* Clinical blue accent — selected controls / CTAs (not grey-on-grey) */
+  --color-accent: #6eb6ff;
+  --color-accent-hover: #8ec7ff;
+  --color-accent-soft: color-mix(in oklab, #6eb6ff 18%, transparent);
+  --color-accent-soft-text: #b8d9ff;
+  --color-on-accent: #0c0e14;
   --color-section-header-bg: color-mix(in oklab, var(--color-ink) 8%, var(--color-surface));
   --color-channel-pill-bg: color-mix(in oklab, var(--color-ink) 18%, var(--color-surface));
   --color-channel-pill-fg: var(--color-ink);
@@ -259,12 +260,12 @@ html.dark {
   --color-update-banner-bg: #14532d;
   --color-update-banner-fg: #bbf7d0;
 
-  --primary: #c8d0dc;
+  --primary: #6eb6ff;
   --action: var(--color-accent);
   --action-hover: var(--color-accent-hover);
   --bg: var(--color-paper);
   --surface: var(--color-surface);
-  --border: rgba(148, 163, 184, 0.14);
+  --border: rgba(148, 163, 184, 0.16);
   --divider: rgba(148, 163, 184, 0.09);
   --text: var(--color-ink);
   --text-muted: var(--color-ink-muted);

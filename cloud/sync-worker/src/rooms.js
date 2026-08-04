@@ -76,7 +76,7 @@ function requireDataKey(env) {
   if (!hex || hex.length !== 64) {
     throw new SyncError(
       'error',
-      'WORKER_DATA_KEY no configurada. Agregá una clave de 64 hex en .dev.vars para desarrollo local.'
+      'WORKER_DATA_KEY no configurada. Agrega una clave de 64 hex en .dev.vars para desarrollo local.'
     );
   }
 }
@@ -264,7 +264,7 @@ async function handleLeaveRoom(db, request, roomId) {
     .first();
 
   if (!membership) {
-    throw new SyncError('not_member', 'No sos miembro de esta sala.');
+    throw new SyncError('not_member', 'No eres miembro de esta sala.');
   }
 
   await db
@@ -301,7 +301,7 @@ async function handleGetRoom(db, request, roomId) {
   const row = await getMembership(db, roomId, user.id);
 
   if (!row) {
-    throw new SyncError('not_member', 'No sos miembro de esta sala.');
+    throw new SyncError('not_member', 'No eres miembro de esta sala.');
   }
 
   return Response.json({

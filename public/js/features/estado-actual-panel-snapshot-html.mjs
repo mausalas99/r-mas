@@ -7,7 +7,10 @@ import {
   toEaSalidaText,
 } from './estado-actual-io.mjs';
 import { isGlucometriaMarkedAltered, isVitalAltered } from './estado-actual-ranges.mjs';
-import { formatEaVitalStampForSnapshot } from './estado-actual-registro-defaults.mjs';
+import {
+  formatEaVitalStampDateOnly,
+  formatEaVitalStampForSnapshot,
+} from './estado-actual-registro-defaults.mjs';
 import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
@@ -170,10 +173,10 @@ function formatBpPairValue(tas, tad) {
  */
 function resolveVitalStamp(reading, fallbackKey, snapshot) {
   if (reading && reading.recordedAt) {
-    return formatEaVitalStampForSnapshot(reading.recordedAt, reading.time);
+    return formatEaVitalStampDateOnly(reading.recordedAt, reading.time);
   }
   if (fallbackKey && snapshot.alteredAt) {
-    return formatEaVitalStampForSnapshot('', snapshot.alteredAt[fallbackKey]);
+    return formatEaVitalStampDateOnly('', snapshot.alteredAt[fallbackKey]);
   }
   return '';
 }
@@ -270,7 +273,7 @@ function renderBpSnapshotItem(snapshot) {
     label: 'T/A',
     value: formatBpPairValue(latest.tas, latest.tad),
     unit: 'mmHg',
-    stamp: formatEaVitalStampForSnapshot(latest.recordedAt, latest.time),
+    stamp: formatEaVitalStampDateOnly(latest.recordedAt, latest.time),
     vitalKey: 'bp',
     altered: isVitalAltered('tas', latest.tas) || isVitalAltered('tad', latest.tad),
     hasHistory: vitalHasHistory('bp', snapshot),

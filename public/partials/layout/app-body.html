@@ -19,13 +19,6 @@
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
-      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
-      <div class="patient-bulk-bar-actions">
-        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
-        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
-      </div>
-    </div>
     <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
       <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
@@ -38,6 +31,13 @@
       <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
     </div>
     <div class="patient-list" id="patient-list"></div>
+    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
+      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
+      <div class="patient-bulk-bar-actions">
+        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
+        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
+      </div>
+    </div>
     <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
       <div class="lab-repo-batch-queue-header">
         <div class="lab-repo-batch-queue-title-row">
@@ -480,7 +480,6 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
             </div>

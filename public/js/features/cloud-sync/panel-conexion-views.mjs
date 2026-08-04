@@ -23,25 +23,25 @@ function resolveIdentity(cloudUser) {
   return { handle, display };
 }
 
-/** @param {string} id @param {string} title @param {string} body @param {boolean} [hidden] */
-function viewBlock(id, title, body, hidden = true) {
-  const bar =
-    id === 'status'
-      ? ''
-      : '<header class="cloud-sync-view-bar">' +
-        '<button type="button" class="cloud-sync-view-back" data-cloud-action="nav-back">' +
-        '<span class="cloud-sync-view-back-chevron" aria-hidden="true">‹</span>' +
-        'Opciones</button>' +
-        '<h4 class="cloud-sync-view-title">' +
-        esc(title) +
-        '</h4></header>';
+/**
+ * @param {string} id
+ * @param {string} title
+ * @param {string} body
+ * @param {{ hidden?: boolean, backLabel?: string } | boolean} [opts]
+ */
+function viewBlock(id, title, body, opts) {
+  const hidden =
+    typeof opts === 'boolean' ? opts : !opts || opts.hidden !== false;
+  // Navigation chrome lives in the modal header (back + title + close).
+  // Body is content only — no second «‹ Conexión / Opciones» strip.
   return (
     '<div class="cloud-sync-view" data-cloud-view="' +
     esc(id) +
+    '" data-cloud-view-title="' +
+    esc(title) +
     '"' +
     (hidden ? ' hidden' : '') +
     '>' +
-    bar +
     '<div class="cloud-sync-view-body">' +
     body +
     '</div></div>'
@@ -239,6 +239,51 @@ export function syncCloudSecondaryPanels(root, view) {
   });
 }
 
+const CONEXION_MODAL_TITLES = {
+  status: 'Conexión guardia',
+  options: 'Opciones',
+  equipo: 'Equipo',
+  ops: 'Operaciones',
+  admin: 'Administración',
+  cuenta: 'Cuenta',
+  lan: 'Diagnóstico LAN',
+  advanced: 'Avanzado',
+};
+
+const CONEXION_MODAL_BACK_LABEL = {
+  options: 'Conexión',
+  equipo: 'Opciones',
+  ops: 'Opciones',
+  admin: 'Opciones',
+  cuenta: 'Opciones',
+  lan: 'Opciones',
+  advanced: 'Opciones',
+};
+
+function syncConexionModalChrome(view) {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('connection-dropdown');
+  if (!modal) return;
+  const titleEl =
+    document.getElementById('connection-dropdown-head-title') ||
+    modal.querySelector('.connection-dropdown-head-title');
+  const backBtn = document.getElementById('btn-connection-dropdown-back');
+  const backLabel = backBtn && backBtn.querySelector('.connection-dropdown-back-label');
+  const icon = modal.querySelector('.connection-dropdown-head-icon');
+  const isHome = view === 'status';
+  if (titleEl) {
+    titleEl.textContent = CONEXION_MODAL_TITLES[view] || CONEXION_MODAL_TITLES.status;
+  }
+  if (backBtn) {
+    backBtn.hidden = isHome;
+    if (backLabel) {
+      backLabel.textContent = CONEXION_MODAL_BACK_LABEL[view] || 'Opciones';
+    }
+  }
+  if (icon) icon.hidden = !isHome;
+  modal.classList.toggle('connection-dropdown-modal--subview', !isHome);
+}
+
 /**
  * @param {HTMLElement} section
  * @param {string} view
@@ -255,6 +300,8 @@ export function applyConexionView(section, view, hooks) {
   if (head && section.querySelector('[data-cloud-views]')) {
     head.hidden = next !== 'status';
   }
+  // Avoid "Conexión guardia" + body "Opciones" double chrome.
+  syncConexionModalChrome(next);
   syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
   if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
     void hooks.onAdmin();

@@ -60,7 +60,7 @@ export function nextStepHtml(getToken) {
     '<div class="cloud-sync-next-step">' +
     '<p class="cloud-sync-next-step-lead">Siguiente paso</p>' +
     '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary ui-pressable" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
   );
 }
 
@@ -76,17 +76,21 @@ export function roomConnectedHtml(room, getRevision) {
   const turn = String(room?.turnKey || '').trim();
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
-    '<dl class="cloud-sync-settings-rows" aria-label="Sala nube">' +
+    '<dl class="cloud-sync-inset-group" aria-label="Sala nube">' +
     (turn
-      ? '<div class="cloud-sync-settings-row"><dt>Turno</dt><dd>' + esc(turn) + '</dd></div>'
+      ? '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Turno</dt><dd>' +
+        esc(turn) +
+        '</dd></div>'
       : '') +
-    '<div class="cloud-sync-settings-row"><dt>Código</dt><dd><code data-cloud-room-code>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código</dt><dd><code data-cloud-room-code>' +
     esc(code || '—') +
     '</code></dd></div>' +
-    '<div class="cloud-sync-settings-row"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
     esc(String(revision)) +
     '</span></dd></div></dl>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger-text ui-pressable" data-cloud-action="leave-room">Salir de la sala</button></div>'
+    '<div class="cloud-sync-inset-group">' +
+    '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
+    '</div></div>'
   );
 }
 
@@ -97,10 +101,10 @@ export function roomActionsHtml(normalizedSala) {
     '<p class="cloud-sync-room-title">Unirse a una sala del turno</p>' +
     '<div class="cloud-sync-field"><label>Nombre de la sala (opcional)</label>' +
     '<input type="text" class="profile-input" data-cloud-room-name placeholder="Turno ' + esc(normalizedSala) + '" /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="create-room">Crear sala</button>' +
+    '<button type="button" class="cloud-sync-btn" data-cloud-action="create-room">Crear sala</button>' +
     '<div class="cloud-sync-field"><label>Código de sala</label>' +
     '<input type="text" class="profile-input" data-cloud-join-code placeholder="ABC123" /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="join-room">Unirse con código</button></div>'
+    '<button type="button" class="cloud-sync-btn" data-cloud-action="join-room">Unirse con código</button></div>'
   );
 }
 
@@ -111,7 +115,7 @@ export function advancedUrlFieldsHtml(url) {
     '<input id="cloud-sync-url-connected" type="url" class="profile-input" data-cloud-sync-url value="' +
     esc(url) +
     '" placeholder="https://…workers.dev" /></div>' +
-    '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="save-url">Guardar</button>'
+    '<button type="button" class="cloud-sync-btn" data-cloud-action="save-url">Guardar</button>'
   );
 }
 
@@ -164,6 +168,6 @@ export function equipoStepHtml(getToken) {
   return (
     '<div class="cloud-sync-equipo-body" data-cloud-equipo-body>' +
     '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary ui-pressable" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
   );
 }

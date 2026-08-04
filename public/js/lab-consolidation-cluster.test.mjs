@@ -45,6 +45,88 @@ describe('lab-consolidation-cluster', () => {
     assert.equal(clusters[0].length, 2);
   });
 
+  it('clusterLabworkByTimeWindow une gaso solitaria con labs aunque >2 h', () => {
+    // Caso guardia: gases ~03:56 + BH/QS ~06:43 (≈2 h 47 min).
+    var items = [
+      { id: 'gaso', tipo: 'gaso', ms: 0 },
+      { id: 'labs', tipo: 'labs', ms: 167 * 60 * 1000 },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return x.tipo === 'gaso';
+      }
+    );
+    assert.equal(clusters.length, 1);
+    assert.deepEqual(
+      clusters[0].map(function (x) {
+        return x.id;
+      }),
+      ['gaso', 'labs']
+    );
+  });
+
+  it('clusterLabworkByTimeWindow gaso solitaria elige el labs más cercano', () => {
+    var items = [
+      { id: 'labsAm', tipo: 'labs', ms: 0 },
+      { id: 'gaso', tipo: 'gaso', ms: 4 * 60 * 60 * 1000 },
+      { id: 'labsPm', tipo: 'labs', ms: 5 * 60 * 60 * 1000 },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return x.tipo === 'gaso';
+      }
+    );
+    assert.equal(clusters.length, 2);
+    assert.deepEqual(
+      clusters[0].map(function (x) {
+        return x.id;
+      }),
+      ['labsAm']
+    );
+    assert.deepEqual(
+      clusters[1].map(function (x) {
+        return x.id;
+      }),
+      ['gaso', 'labsPm']
+    );
+  });
+
+  it('clusterLabworkByTimeWindow no une gaso seriada lejana (>2 h del labs)', () => {
+    var items = [
+      { id: 'labs', tipo: 'labs', ms: 0 },
+      { id: 'gaso1', tipo: 'gaso', ms: 30 * 60 * 1000 },
+      { id: 'gaso2', tipo: 'gaso', ms: 90 * 60 * 1000 },
+      { id: 'gasoFar', tipo: 'gaso', ms: 4 * 60 * 60 * 1000 },
+    ];
+    var clusters = clusterLabworkByTimeWindow(
+      items,
+      function (x) {
+        return x.ms;
+      },
+      function (x) {
+        return x.tipo === 'gaso';
+      }
+    );
+    // gaso1+gaso2 seriales → solo gaso1 al labs; gasoFar solitaria pero labs ya ocupado.
+    assert.equal(clusters.length, 3);
+    assert.deepEqual(
+      clusters.map(function (c) {
+        return c.map(function (x) {
+          return x.id;
+        });
+      }),
+      [['labs', 'gaso1'], ['gaso2'], ['gasoFar']]
+    );
+  });
+
   it('clusterLabworkByTimeWindow une labs+gaso pero no gaso+gaso', () => {
     var items = [
       { id: 'labs', tipo: 'labs', ms: 0 },

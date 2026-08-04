@@ -1,5 +1,5 @@
 /**
- * Sidebar bulk-select chrome (toggle + sticky action bar).
+ * Sidebar bulk-select chrome (toggle + inset bottom action dock).
  */
 import {
   exitPatientBulkSelectMode,

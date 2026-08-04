@@ -62,7 +62,7 @@ test('renderSnapshotVitalsHtml — T/A unificada, fecha en cierre sin @ 00:00', 
   assert.doesNotMatch(html, />00:00</);
 });
 
-test('renderSnapshotVitalsHtml — muestra dd/mm HH:mm cuando hay hora clínica', () => {
+test('renderSnapshotVitalsHtml — muestra dd/mm sin hora en la franja compacta', () => {
   /** @type {any} */
   var snap = {
     vitals: { temp: 38.2 },
@@ -73,7 +73,8 @@ test('renderSnapshotVitalsHtml — muestra dd/mm HH:mm cuando hay hora clínica'
   };
   var html = renderSnapshotVitalsHtml(snap);
   assert.match(html, /ea-snapshot-row-value">38\.2<\/span>/);
-  assert.match(html, /ea-snapshot-row-stamp">22\/06 14:30</);
+  assert.match(html, /ea-snapshot-row-stamp">22\/06</);
+  assert.doesNotMatch(html, /ea-snapshot-row-stamp">22\/06 14:30</);
   assert.match(html, /ea-snapshot-row--altered/);
 });
 

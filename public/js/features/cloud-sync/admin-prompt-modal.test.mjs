@@ -11,14 +11,14 @@ describe('adminPromptModalMarkup', () => {
   it('renders title, message, and actions', () => {
     const html = adminPromptModalMarkup({
       title: 'Confirmar eliminación',
-      message: 'Escribí @demo',
+      message: 'Escribe @demo',
       placeholder: '@demo',
       confirmLabel: 'Eliminar',
       inputType: 'text',
     });
     assert.match(html, /data-admin-prompt-modal/);
     assert.match(html, /Confirmar eliminación/);
-    assert.match(html, /Escribí @demo/);
+    assert.match(html, /Escribe @demo/);
     assert.match(html, /data-admin-prompt-input/);
     assert.match(html, /data-admin-prompt-ok/);
     assert.match(html, /data-admin-prompt-cancel/);

@@ -79,8 +79,8 @@ export async function autosendLabsEventualidadForStored(storedByPatient, opts) {
   if (sent > 0 && opts && typeof opts.showToast === 'function') {
     opts.showToast(
       sent === 1
-        ? 'Labs enviados a interpretación en Eventualidades.'
-        : sent + ' pacientes: labs → interpretación en Eventualidades.',
+        ? 'Labs en la línea de tiempo (Eventualidades → Labs).'
+        : sent + ' pacientes: labs → línea de tiempo Labs.',
       'success'
     );
   }

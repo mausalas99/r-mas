@@ -54,7 +54,7 @@ const TARGETS = {
   historia_clinica: {
     appTab: 'nota',
     innerTab: 'historia',
-    selector: '#exp-segment-historia, #historia-clinica-mount',
+    selector: '#historia-clinica-mount',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },

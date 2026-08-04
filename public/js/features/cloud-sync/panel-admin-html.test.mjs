@@ -5,6 +5,8 @@ import {
   resumenHtml,
   bootstrapHtml,
   adminSkeletonHtml,
+  salasTableHtml,
+  peligroHtml,
 } from './panel-admin-html.mjs';
 
 describe('buildAdminShellHtml', () => {
@@ -44,9 +46,52 @@ describe('resumenHtml', () => {
     });
     assert.match(html, /cloud-sync-admin-stats__wide/);
     assert.match(html, /Almacenamiento/);
+    assert.match(html, /1\.0 KB/);
     assert.match(html, /cloud-sync-admin-stat-meta/);
     assert.match(html, /data-admin-action="refresh-resumen"/);
-    assert.match(html, /data-admin-action="refresh-resumen"/);
+  });
+});
+
+describe('salasTableHtml', () => {
+  it('marks Sala bucket as 1·2·E and shows KB storage', () => {
+    const html = salasTableHtml([
+      {
+        id: 'r1',
+        sala: 'Sala',
+        turnKey: '2026-08-03',
+        code: 'RC65RH',
+        revision: 1,
+        memberCount: 4,
+        storageBytes: 4096,
+      },
+      {
+        id: 'r2',
+        sala: 'Torre HU',
+        turnKey: '2026-08-03',
+        code: 'ABCD12',
+        revision: 0,
+        memberCount: 1,
+        storageBytes: 200,
+      },
+    ]);
+    assert.match(html, /cloud-sync-admin-sala-sub/);
+    assert.match(html, /1 · 2 · E/);
+    assert.match(html, /comparten el mismo espacio/);
+    assert.match(html, /4\.0 KB/);
+    assert.match(html, /200 B/);
+    assert.match(html, /Torre HU/);
+    assert.doesNotMatch(html, />Storage</);
+  });
+});
+
+describe('peligroHtml', () => {
+  it('exposes purge control instead of prose-only list', () => {
+    const html = peligroHtml();
+    assert.match(html, /data-admin-peligro-room/);
+    assert.match(html, /data-admin-action="purge-room-selected"/);
+    assert.match(html, /data-admin-tab="usuarios"/);
+    assert.doesNotMatch(html, /wrangler d1 execute/);
+    assert.doesNotMatch(html, /Usá /);
   });
 });
 

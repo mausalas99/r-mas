@@ -16,7 +16,7 @@ test('groupSections: paciente is a leaf (datos collapse is in-pane, not nav)', (
 });
 
 test('groupSections: clinico follows mode', () => {
-  assert.deepEqual(groupSections('clinico', SALA), ['estadoActual', 'historia', 'eventualidades']);
+  assert.deepEqual(groupSections('clinico', SALA), ['estadoActual', 'eventualidades']);
   assert.deepEqual(groupSections('clinico', INTER), ['notas', 'indica', 'vpo']);
 });
 

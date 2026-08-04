@@ -50,6 +50,20 @@ export function formatEaVitalStampForSnapshot(recordedAt, timeHm) {
 }
 
 /**
+ * Snapshot compacto de signos: solo `dd/mm` (sin hora) para caber en la columna angosta.
+ * @param {string | undefined} recordedAt
+ * @param {string | undefined} timeHm
+ * @returns {string}
+ */
+export function formatEaVitalStampDateOnly(recordedAt, timeHm) {
+  var full = formatEaVitalStampForSnapshot(recordedAt, timeHm);
+  var m = String(full || '')
+    .trim()
+    .match(/^(\d{1,2}\/\d{1,2})/);
+  return m ? m[1] : '';
+}
+
+/**
  * @param {Date} d
  * @returns {Date}
  */

@@ -38,7 +38,7 @@ function reconcileActiveInnerForAppMode(nowSala) {
     return;
   }
   if (nowSala && (current === "notas" || current === "indica")) {
-    switchInnerTab("historia", { forceRender: true });
+    switchInnerTab("estadoActual", { forceRender: true });
   } else if (!nowSala && current === "listado") {
     switchInnerTab("recetaHu", { forceRender: true });
   }

@@ -31,7 +31,7 @@ function patientChipBadgesHtml(p, meta, critical) {
   const markerIds = Array.isArray(p.entregaMarkers) ? p.entregaMarkers : entregaChipMarkerIds(meta);
   const markerSymbols = buildEntregaMarkerSymbolsHtml(markerIds);
   const criticalHint = critical
-    ? '<span class="patient-chip-critical-hint" title="Paciente crítico" aria-hidden="true"></span>'
+    ? '<span class="patient-chip-critical-hint" title="Paciente crítico">Crítico</span>'
     : '';
   return markerSymbols + dnr + criticalHint;
 }
@@ -63,8 +63,12 @@ export function buildPatientChipInnerHtml(p, g) {
   const name = patientChipNameHtml(p);
   const dx = String(p.dxText || 'Sin diagnóstico registrado');
   const pending = Number(p.pendingCount || 0);
-  const labs = String(p.labsSnippet || '—');
+  const labsRaw = String(p.labsSnippet || '').trim();
+  const labsEmpty = !labsRaw || labsRaw === '—' || labsRaw === '-';
+  const labs = labsEmpty ? 'Sin labs' : labsRaw;
+  const labsClass = labsEmpty ? 'patient-chip-labs is-empty' : 'patient-chip-labs';
   const vitalsTitle = escapeChipAttr(vitals.str);
+  const dxTitle = escapeChipAttr(dx);
   return {
     critical,
     innerHtml:
@@ -80,7 +84,9 @@ export function buildPatientChipInnerHtml(p, g) {
       '>' +
       name.display +
       '</p>' +
-      '<p class="patient-chip-dx">' +
+      '<p class="patient-chip-dx" title="' +
+      dxTitle +
+      '">' +
       dx +
       '</p>' +
       '<div class="patient-chip-vitals vitals-banner ' +
@@ -93,7 +99,9 @@ export function buildPatientChipInnerHtml(p, g) {
       '</span></div>' +
       '<div class="patient-chip-footer">' +
       patientChipPendingLabel(pending) +
-      '<span class="patient-chip-labs" title="' +
+      '<span class="' +
+      labsClass +
+      '" title="' +
       escapeChipAttr(labs) +
       '">' +
       labs +

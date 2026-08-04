@@ -4,14 +4,14 @@ import { renderGuardiaBoard } from '../features/guardia-board.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import { electronApi } from './electron-api.mjs';
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
+import { formatCamaCellForCenso } from '../censo-build.mjs';
 
 /** @param {Record<string, unknown>} p */
 export function mapPatientForGuardiaGrid(p) {
-  const cuarto = p.cuarto != null ? String(p.cuarto) : '';
-  const cama = p.cama != null ? String(p.cama) : '';
+  const bed_label = formatCamaCellForCenso(p) || '—';
   return {
     id: String(p.id),
-    bed_label: [cuarto, cama].filter(Boolean).join('-'),
+    bed_label,
     name: String(p.nombre || ''),
     service: String(p.servicio || p.area || ''),
     sub_area: String(p.area || ''),

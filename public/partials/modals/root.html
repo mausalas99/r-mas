@@ -684,13 +684,17 @@
 <!-- @include settings-dropdown.html -->
 
 <div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
-  <div class="modal connection-dropdown connection-dropdown-modal" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
+  <div class="modal connection-dropdown connection-dropdown-modal material-glass" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
     <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
     <header class="connection-dropdown-modal-head">
+      <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
+        <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
+        <span class="connection-dropdown-back-label">Conexión</span>
+      </button>
       <div class="connection-dropdown-head">
         <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
-        <div>
-          <div class="connection-dropdown-head-title">Conexión guardia</div>
+        <div class="connection-dropdown-head-text">
+          <div class="connection-dropdown-head-title" id="connection-dropdown-head-title">Conexión guardia</div>
           <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>

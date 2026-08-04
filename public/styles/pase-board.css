@@ -2231,21 +2231,21 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 #appcontent-guardia .patient-chips-grid--guardia,
 .guardia-census-panel .patient-chips-grid--guardia {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
+  gap: 10px;
   align-items: stretch;
 }
 
 #appcontent-guardia .patient-chips-grid--guardia .patient-chip-card,
 .guardia-census-panel .patient-chips-grid--guardia .patient-chip-card {
   position: relative;
-  padding: 10px 11px 9px;
-  min-height: 122px;
+  padding: 11px 12px 10px;
+  min-height: 132px;
   height: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   border-radius: var(--radius-control);
   border: var(--border-hairline);
   border-left-width: 3px;
@@ -2290,14 +2290,14 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 #appcontent-guardia .patient-chip-bed,
 .guardia-census-panel .patient-chip-bed {
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--text);
+  letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 58%;
+  max-width: 62%;
 }
 
 #appcontent-guardia .patient-chip-badges,
@@ -2346,10 +2346,18 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
 
 #appcontent-guardia .patient-chip-critical-hint,
 .guardia-census-panel .patient-chip-critical-hint {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--error);
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 5px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--error) 12%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--error) 40%, var(--border));
+  color: var(--error);
   flex-shrink: 0;
 }
 
@@ -2403,12 +2411,14 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   font-size: 0.75rem;
   color: var(--text-muted);
   margin: 0;
-  line-height: 1.35;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
   flex: 1 1 auto;
+  min-height: 2.1em;
 }
 
 #appcontent-guardia .patient-chip-vitals,
@@ -2550,6 +2560,12 @@ html.dark #entrega-modal-backdrop .entrega-modal-foot {
   white-space: nowrap;
   flex: 1;
   min-width: 0;
+}
+
+#appcontent-guardia .patient-chip-labs.is-empty,
+.guardia-census-panel .patient-chip-labs.is-empty {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 #appcontent-guardia .vitals-altered-badge,

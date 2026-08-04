@@ -3,19 +3,26 @@
 .cloud-sync-conexion {
   display: flex;
   flex-direction: column;
-  gap: calc(12px * var(--density-space));
-  padding: calc(12px * var(--density-space));
-  border: var(--border-hairline);
-  border-radius: var(--radius-control);
-  background: var(--color-elevated);
+  gap: calc(14px * var(--density-space));
+  padding: calc(4px * var(--density-space)) 2px calc(8px * var(--density-space));
+  border: none;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
 .cloud-sync-conexion-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: calc(10px * var(--density-space));
+  gap: calc(12px * var(--density-space));
+  /* Size locked — round with radius only; do not shrink this padding. */
+  padding: calc(14px * var(--density-space)) calc(16px * var(--density-space));
+  min-height: 56px;
+  box-sizing: border-box;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
 }
 
 .cloud-sync-conexion-head-text {
@@ -59,13 +66,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  border: var(--border-hairline);
-  background: var(--color-elevated);
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--text) 14%, var(--divider));
+  background: color-mix(in oklab, var(--text) 6%, var(--color-elevated));
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 650;
+  color: var(--text);
   box-shadow: none;
 }
 
@@ -153,9 +160,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: calc(4px * var(--density-space));
-  margin: 0 0 calc(14px * var(--density-space));
-  padding: 0 0 calc(12px * var(--density-space));
+  gap: calc(6px * var(--density-space));
+  margin: 0 0 calc(16px * var(--density-space));
+  padding: calc(2px * var(--density-space)) 0 calc(14px * var(--density-space));
   border-bottom: 1px solid var(--divider);
 }
 
@@ -200,6 +207,10 @@
   gap: calc(12px * var(--density-space));
 }
 
+.cloud-sync-view[data-cloud-view="options"] .cloud-sync-view-body {
+  gap: calc(14px * var(--density-space));
+}
+
 .cloud-sync-conexion-head[hidden] {
   display: none !important;
 }
@@ -211,6 +222,9 @@
 }
 
 .cloud-sync-status-sheet .cloud-sync-room {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12px * var(--density-space));
   padding: 0;
   border: none;
   border-radius: 0;
@@ -218,13 +232,118 @@
   box-shadow: none;
 }
 
+/* Inset grouped lists — round corners only; do not change modal/sheet width. */
+.cloud-sync-inset-group {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-hairline);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.cloud-sync-inset-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12px * var(--density-space));
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: calc(11px * var(--density-space)) calc(14px * var(--density-space));
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.cloud-sync-inset-row:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--divider);
+  pointer-events: none;
+}
+
+.cloud-sync-inset-row--kv {
+  align-items: center;
+}
+
+.cloud-sync-inset-row--kv dt {
+  margin: 0;
+  flex: 0 1 auto;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 400;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.cloud-sync-inset-row--kv dd {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: calc(13px * var(--density-font));
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cloud-sync-inset-row--kv dd code {
+  font: inherit;
+  color: inherit;
+}
+
+.cloud-sync-inset-row--action,
+.cloud-sync-inset-row--nav {
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+
+.cloud-sync-inset-row--action:hover,
+.cloud-sync-inset-row--nav:hover {
+  background: var(--state-hover-bg);
+}
+
+.cloud-sync-inset-row--danger {
+  color: var(--color-danger);
+  font-size: calc(13px * var(--density-font));
+  font-weight: 400;
+  justify-content: flex-start;
+}
+
+.cloud-sync-inset-row--danger:hover {
+  background: color-mix(in oklab, var(--color-danger) 10%, transparent);
+}
+
+.cloud-sync-inset-row--static {
+  cursor: default;
+}
+
+.cloud-sync-inset-row--nav .cloud-sync-options-entry-text,
+.cloud-sync-inset-row--nav .cloud-sync-options-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .cloud-sync-settings-rows {
   display: flex;
   flex-direction: column;
   margin: 0;
   border: var(--border-hairline);
-  border-radius: var(--radius-control);
-  background: var(--color-elevated);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
   overflow: hidden;
   box-shadow: none;
 }
@@ -292,10 +411,11 @@
   gap: calc(12px * var(--density-space));
   width: 100%;
   margin: 0;
-  padding: calc(12px * var(--density-space));
+  padding: calc(13px * var(--density-space)) calc(14px * var(--density-space));
+  min-height: 48px;
   border: var(--border-hairline);
-  border-radius: var(--radius-control);
-  background: var(--color-elevated);
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 3%, var(--color-elevated));
   color: var(--text);
   font: inherit;
   text-align: left;
@@ -328,31 +448,31 @@
 .cloud-sync-options-list {
   display: flex;
   flex-direction: column;
-  gap: calc(14px * var(--density-space));
+  gap: calc(16px * var(--density-space));
 }
 
 .cloud-sync-options-group {
   display: flex;
   flex-direction: column;
-  gap: calc(6px * var(--density-space));
+  gap: calc(8px * var(--density-space));
 }
 
 .cloud-sync-options-label {
   margin: 0;
   padding: 0 2px;
-  font-size: calc(10px * var(--density-font));
+  font-size: calc(12px * var(--density-font));
   font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--text-muted);
 }
 
 .cloud-sync-options-card {
   display: flex;
   flex-direction: column;
-  border: var(--border-hairline);
-  border-radius: var(--radius-control);
-  background: var(--color-elevated);
+  border: 1px solid color-mix(in oklab, var(--text) 10%, var(--divider));
+  border-radius: var(--radius-container);
+  background: color-mix(in oklab, var(--text) 5%, var(--color-elevated));
   overflow: hidden;
   box-shadow: none;
 }
@@ -364,7 +484,8 @@
   gap: calc(12px * var(--density-space));
   width: 100%;
   margin: 0;
-  padding: calc(11px * var(--density-space)) calc(12px * var(--density-space));
+  padding: calc(13px * var(--density-space)) calc(14px * var(--density-space));
+  min-height: 44px;
   border: none;
   border-bottom: 1px solid var(--divider);
   background: transparent;
@@ -383,8 +504,9 @@
   background: var(--state-hover-bg);
 }
 
-.cloud-sync-options-row:hover .cloud-sync-options-row-title {
-  color: var(--color-accent);
+.cloud-sync-options-row:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
+  outline-offset: -2px;
 }
 
 .cloud-sync-options-row-text {
@@ -397,6 +519,7 @@
 .cloud-sync-options-row-title {
   font-size: calc(13px * var(--density-font));
   font-weight: 600;
+  color: var(--text);
 }
 
 .cloud-sync-options-row-meta {

@@ -634,8 +634,8 @@ html.high-contrast.dark header span { color: var(--text); opacity: 1; }
 html.high-contrast.dark #today-date { color: var(--text-muted); opacity: 1; }
 html.high-contrast.dark aside.patient-sidebar { box-shadow: none; border-right: 2px solid var(--border); }
 html.high-contrast.dark .toast { background: var(--surface); color: var(--text); border: 2px solid var(--border); }
-html.high-contrast.dark .toast.success { background: var(--success); color: var(--color-on-success); }
-html.high-contrast.dark .toast.error { background: var(--error); color: var(--color-on-accent); }
+html.high-contrast.dark .toast.success { background: var(--success); color: #ffffff; }
+html.high-contrast.dark .toast.error { background: var(--error); color: #ffffff; }
 html.high-contrast.dark .lab-chip {
   background: var(--lab-chip-bg);
   color: var(--lab-chip-txt);

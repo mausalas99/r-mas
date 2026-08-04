@@ -93,7 +93,7 @@ export function shouldDismissToastSwipe(velocityX) {
 function buildToastEl(msg, kind, id, action) {
   const el = document.createElement('div');
   el.className =
-    'toast material-glass' + (kind ? ' ' + kind : '');
+    'toast' + (kind ? ' ' + kind : '');
   el.dataset.toastId = String(id);
   el.tabIndex = -1;
 

@@ -11,6 +11,7 @@ import {
   isTurnCloseHm,
   formatEaVitalPointShorthand,
   formatEaVitalStampForSnapshot,
+  formatEaVitalStampDateOnly,
 } from './estado-actual-registro-defaults.mjs';
 
 describe('estado-actual-registro-defaults', () => {
@@ -24,6 +25,13 @@ describe('estado-actual-registro-defaults', () => {
     var cierre = new Date(2026, 5, 26, 0, 0, 0).toISOString();
     assert.equal(formatEaVitalStampForSnapshot(cierre, '00:00'), '26/06');
     assert.equal(formatEaVitalStampForSnapshot(cierre, ''), '26/06');
+  });
+
+  it('formatEaVitalStampDateOnly — franja compacta sin HH:mm', () => {
+    var recordedAt = new Date(2026, 7, 2, 10, 10, 0).toISOString();
+    assert.equal(formatEaVitalStampDateOnly(recordedAt, '10:10'), '02/08');
+    assert.equal(formatEaVitalStampDateOnly(recordedAt, '00:00'), '02/08');
+    assert.equal(formatEaVitalStampDateOnly('', '10:10'), '');
   });
 
   it('formatEaVitalPointShorthand — dd/mm HH:mm local', () => {

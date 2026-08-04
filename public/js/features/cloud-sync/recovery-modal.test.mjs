@@ -168,7 +168,7 @@ describe('recoveryModalMarkup', () => {
     assert.match(html, /data-recovery-confirm/);
     assert.match(html, /data-recovery-code/);
     assert.match(html, /R\+AB3K-7NMP-Q2WX/);
-    assert.match(html, /Guardá este código de recuperación/);
+    assert.match(html, /Guarda este código de recuperación/);
     assert.match(html, /Lo guardé en un lugar seguro/);
   });
 

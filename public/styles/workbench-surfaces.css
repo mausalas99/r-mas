@@ -286,33 +286,32 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   order: 3;
   flex-shrink: 0;
   margin-top: auto;
+  /* Full-bleed footer bg (cancel shell 12px), but keep grid gutters = todo-row (shell 12 + row 12). */
   margin-left: -12px;
   margin-right: -12px;
-  display: grid;
-  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  column-gap: 10px;
-  row-gap: 8px;
-  align-items: center;
-  padding: 12px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  padding: 12px 24px 14px;
   border: none;
   border-top: 1px solid var(--border, var(--divider));
   border-radius: 0;
-  background: color-mix(in oklab, var(--bg) 30%, var(--surface));
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
   box-shadow: none;
 }
 
-/* Subgrid: Agregar vive solo en la fila del input (no se centra contra Fecha límite). */
 .exp-pendientes-mount .todo-composer > .todo-add-row {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
+  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
+  align-items: start;
   column-gap: 10px;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
 }
+
 
 .exp-pendientes-mount .todo-composer .todo-prio-chip {
   width: 100%;
@@ -349,23 +348,37 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 .exp-pendientes-mount .todo-composer .todo-add-btn {
   justify-self: stretch;
-  align-self: center;
+  align-self: start;
   width: 100%;
   min-height: 38px;
   height: 38px;
   padding: 0 12px;
   font-size: 13px;
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-pill, 999px);
   box-sizing: border-box;
+  background: var(--action);
+  color: var(--color-on-accent);
+  border: 1px solid color-mix(in oklab, var(--action) 80%, var(--border));
+}
+
+html.dark .exp-pendientes-mount .todo-composer .todo-add-btn {
+  background: var(--action);
+  color: var(--color-on-accent);
+  border-color: color-mix(in oklab, var(--action) 70%, var(--border));
+}
+
+html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
+  background: var(--action-hover);
 }
 
 .exp-pendientes-mount .todo-composer .todo-due-section {
-  grid-column: 3 / 4;
-  margin: 0;
+  /* Under input only — must not reset to margin:0 (breaks column lock) */
+  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
+  margin-right: calc(var(--todo-grid-actions) + 10px);
   padding: 0;
   border-top: none;
-  align-self: start;
-  gap: 4px;
+  align-self: stretch;
+  gap: 6px;
 }
 
 .exp-pendientes-mount .todo-composer .todo-due-section-primary {

@@ -41,7 +41,11 @@ test('buildEaIndicacionesClipboardText includes confirmed meds + bomba', () => {
   assert.match(text, /OMEPRAZOL/i);
   assert.match(text, /BOMBA DE INSULINA EN ALGORITMO 2/i);
   assert.match(text, /DIETA BLANDA/i);
-  assert.doesNotMatch(text, /^VASOPRESORES:\s*$/m);
+  assert.match(text, /^VASOPRESORES: Ninguno$/m);
+  assert.match(text, /^ANTIHIPERTENSIVOS: Ninguno$/m);
+  assert.match(text, /^TROMBOPROFILAXIS: Ninguno$/m);
+  assert.doesNotMatch(text, /^ANALGESIA:/m);
+  assert.doesNotMatch(text, /^SEDACION:/m);
 });
 
 test('pruneEmptyIndicacionesLines removes blank labels', () => {
@@ -72,4 +76,8 @@ test('buildEaIndicacionesClipboardLines keeps structure', () => {
   assert.ok(lines.some((l) => /ANALGESIA:.*PARACETAMOL/i.test(l)));
   assert.ok(lines.some((l) => /ANTIEMETICOS:.*ONDANSETRON/i.test(l)));
   assert.ok(lines.some((l) => /ANTIBIOTICOTERAPIA:.*CEFTRIAXONA/i.test(l)));
+  assert.ok(lines.some((l) => l === 'VASOPRESORES: Ninguno'));
+  assert.ok(lines.some((l) => l === 'ANTIHIPERTENSIVOS: Ninguno'));
+  assert.ok(lines.some((l) => l === 'TROMBOPROFILAXIS: Ninguno'));
+  assert.ok(!lines.some((l) => /^SEDACION:/i.test(l)));
 });

@@ -22,7 +22,7 @@ export async function applyIdentityFromForm(root, toast) {
     return null;
   }
   if (!displayName) {
-    toast('Ingresá nombre en guardia.', 'error');
+    toast('Ingresa nombre en guardia.', 'error');
     return null;
   }
   const chosenUser = { username, displayName, rank, sala };

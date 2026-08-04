@@ -34,10 +34,15 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.doesNotMatch(text, /GLUCOMETRÍAS CAPILARES \(140, ___/);
   assert.match(text, /BALANCE \+200 CC/);
   assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
-  // Formato seccional N / HD
-  assert.match(text, /ANALGESIA:.*\| ANTIEMETICOS:.*\| SEDACION:.*\| ANTIEPILEPTICOS:.*\| ANTIPARKINSONIANOS:.*\| ANTIDOTOS:/);
-  assert.match(text, /TROMBOPROFILAXIS:.*\| ANTICOAGULACION:/);
-  assert.match(text, /VASOPRESORES:.*\| ANTIHIPERTENSIVOS:/);
+  // Required HD/HI cats show Ninguno; optional empty cats are omitted
+  assert.doesNotMatch(text, /ANALGESIA:/);
+  assert.doesNotMatch(text, /ANTIEMETICOS:/);
+  assert.doesNotMatch(text, /ANTICOAGULACION:/);
+  assert.doesNotMatch(text, /DIURÉTICOS:/);
+  assert.match(text, /VASOPRESORES: Ninguno/);
+  assert.match(text, /ANTIHIPERTENSIVOS: Ninguno/);
+  assert.match(text, /TROMBOPROFILAXIS: Ninguno/);
+  assert.match(text, /ANTIBIOTICOTERAPIA: Ninguno/);
   assert.doesNotMatch(text, /RESCATES DE INSULINA/);
 });
 
@@ -72,6 +77,34 @@ test('buildEstadoActualText — rescates en NM aunque no haya glucometrías', ()
   const text = buildEstadoActualText(m.estadoClinico, { vitals: {}, glucometrias: [], io: {} }, {}, {});
   assert.match(text, /RESCATES DE INSULINA DISPONIBLES/);
   assert.doesNotMatch(text, /INSULINA: RESCATES DE INSULINA/);
+});
+
+test('buildEstadoActualText omite categorías vacías y usa Ninguno en las 4 obligatorias', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.four = '16';
+  m.estadoClinico.esferas = '3';
+  m.estadoClinico.diureticos = 'ESPIRONOLACTONA 25MG VO C/24H';
+  m.estadoClinico.abx = 'RIFAXIMINA 400MG VO C/12H DIA 14';
+  m.historial.push({
+    id: '1',
+    recordedAt: '2026-08-03T08:00:00.000Z',
+    vitals: { fr: 18, sat: 99, tas: 120, tad: 60, fc: 62, temp: 36.7 },
+    glucometrias: [],
+    io: {},
+  });
+  const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {}, {});
+  const nLine = text.split('\n').find((line) => line.startsWith('N:'));
+  const hdLine = text.split('\n').find((line) => line.startsWith('HD:'));
+  const hiLine = text.split('\n').find((line) => line.startsWith('HI:'));
+  assert.match(nLine, /ALERTA$/);
+  assert.doesNotMatch(nLine, /ANALGESIA:|ANTIEMETICOS:|SEDACION:/);
+  assert.match(
+    hdLine,
+    /VASOPRESORES: Ninguno \| ANTIHIPERTENSIVOS: Ninguno \| TROMBOPROFILAXIS: Ninguno \| DIURÉTICOS: ESPIRONOLACTONA 25MG VO C\/24H$/
+  );
+  assert.doesNotMatch(hdLine, /ANTICOAGULACION:|ANTIARRITMICOS:|ESTATINAS:/);
+  assert.match(hiLine, /ANTIBIOTICOTERAPIA: RIFAXIMINA 400MG VO C\/12H DIA 14$/);
+  assert.doesNotMatch(hiLine, /TRANSFUSIONES:/);
 });
 
 test('buildEstadoActualText — vía aérea en V y sedación en N', () => {
@@ -141,6 +174,9 @@ test('buildEstadoActualText une antihipertensivos, diuréticos y NM en formato c
   assert.match(text, /ANTIBIOTICOTERAPIA: MEROPENEM 1G IV C\/8H DIA 13/);
   assert.match(text, /LEVOTIROXINA 50MCG VO C\/24H/);
   assert.match(text, /INSULINA: INSULINA GLARGINA 10UI SC C\/24H/);
+  assert.doesNotMatch(text, /ANTICOAGULACION:/);
+  assert.doesNotMatch(text, /ESTATINAS:/);
+  assert.doesNotMatch(text, /ANALGESIA:/);
 });
 
 test('buildEstadoActualText incluye GR PROTEINA cuando proteinG está definido', () => {

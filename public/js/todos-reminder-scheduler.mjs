@@ -5,7 +5,7 @@ var deps = {
   getPatientLabel(pid) {
     return String(pid || '');
   },
-  showToast(_msg) {},
+  showToast(_msg, _type) {},
   onNotify(_payload) {},
 };
 
@@ -26,11 +26,13 @@ function clearTimeoutForKey(key) {
 
 function fireReminder(patientId, todo) {
   var label = deps.getPatientLabel(patientId);
-  var text = String(todo && todo.text != null ? todo.text : '');
-  var msg = 'Pendiente: ' + label + ' — ' + text;
-  deps.showToast(msg);
+  var text = String(todo && todo.text != null ? todo.text : '').trim();
+  var msg = text
+    ? 'Pendiente · ' + label + ' — ' + text
+    : 'Pendiente · ' + label;
+  deps.showToast(msg, 'warn');
   var title = 'Pendiente';
-  var body = label + ' — ' + text;
+  var body = text ? label + ' — ' + text : label;
   if (typeof Notification !== 'undefined') {
     new Notification(title, { body: body });
   }
@@ -81,7 +83,7 @@ function collectActiveKeysForPatient(patientId, activeKeys) {
 }
 
 /**
- * @param {{ getPatientLabel?: (patientId: string) => string, showToast?: (msg: string) => void, onNotify?: (payload: object) => void }} newDeps
+ * @param {{ getPatientLabel?: (patientId: string) => string, showToast?: (msg: string, type?: string) => void, onNotify?: (payload: object) => void }} newDeps
  */
 export function configureTodoReminderScheduler(newDeps) {
   if (newDeps && typeof newDeps === 'object') {
@@ -155,7 +157,7 @@ export function resetTodoReminderSchedulerForTests() {
     getPatientLabel(pid) {
       return String(pid || '');
     },
-    showToast(_msg) {},
+    showToast(_msg, _type) {},
     onNotify(_payload) {},
   };
 }

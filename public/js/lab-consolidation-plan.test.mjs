@@ -169,6 +169,29 @@ describe('lab-consolidation-plan — outliers y same-datetime', () => {
     assert.equal(jobs[0].sets.length, 2);
   });
 
+  it('buildLabConsolidationMergeJobs une gaso solitaria con labs >2 h (mañana)', () => {
+    var sets = [
+      { id: 'gaso', day: '2026-8-3', tipo: 'gaso', ms: 0 },
+      { id: 'labs', day: '2026-8-3', tipo: 'labs', ms: 167 * 60 * 1000 },
+    ];
+    var jobs = buildLabConsolidationMergeJobs(
+      sets,
+      function (s) {
+        return s.day;
+      },
+      function (s) {
+        return s.tipo;
+      },
+      function (s) {
+        return s.ms;
+      },
+      null
+    );
+    assert.equal(jobs.length, 1);
+    assert.equal(jobs[0].kind, 'auto');
+    assert.equal(jobs[0].sets.length, 2);
+  });
+
 });
 
 describe('lab-consolidation-plan — auto merge y manual', () => {

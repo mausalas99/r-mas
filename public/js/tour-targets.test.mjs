@@ -79,7 +79,7 @@ test('gv7 action steps require user interaction', () => {
 test('getTourTarget para historia_clinica y eventualidades en Clínico (Sala)', () => {
   const hc = getTourTarget('historia_clinica', 'sala');
   assert.equal(hc.innerTab, 'historia');
-  assert.match(hc.selector, /exp-segment-historia/);
+  assert.match(hc.selector, /historia-clinica-mount/);
   const ev = getTourTarget('eventualidades', 'sala');
   assert.equal(ev.innerTab, 'eventualidades');
   assert.match(ev.selector, /exp-segment-eventualidades/);

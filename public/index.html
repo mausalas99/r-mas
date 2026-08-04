@@ -122,8 +122,7 @@
 <link rel="stylesheet" href="/styles/rams-tufte-workbench.css">
 <link rel="stylesheet" href="/styles/mobile.css">
 <link rel="stylesheet" href="/styles/rpc-date-picker.css">
-<link rel="stylesheet" href="/styles/overlays.css">
-<link rel="stylesheet" href="/styles/ui-overlay.css">
+<link rel="stylesheet" href="/styles/overlays.css?v=hybrid-polish-3">
 <link rel="stylesheet" href="/styles/cmdk.css">
 <link rel="stylesheet" href="/styles/mobile-surfaces.css">
 <script src="/vendor/sortable.min.js"></script>
@@ -426,7 +425,7 @@
 </div>
 
 <div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal lab-repo-batch-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
+  <div class="modal lab-repo-batch-modal material-glass" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">
       <h3 id="lab-repo-batch-title">Actualizar labs</h3>
       <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Mi equipo · rango compartido · la cola queda en la barra lateral</p>
@@ -776,13 +775,6 @@
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
-      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
-      <div class="patient-bulk-bar-actions">
-        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
-        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
-      </div>
-    </div>
     <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
       <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
@@ -795,6 +787,13 @@
       <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
     </div>
     <div class="patient-list" id="patient-list"></div>
+    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
+      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
+      <div class="patient-bulk-bar-actions">
+        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
+        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
+      </div>
+    </div>
     <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
       <div class="lab-repo-batch-queue-header">
         <div class="lab-repo-batch-queue-title-row">
@@ -1237,7 +1236,6 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
             </div>
@@ -2703,13 +2701,17 @@
 
 
 <div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
-  <div class="modal connection-dropdown connection-dropdown-modal" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
+  <div class="modal connection-dropdown connection-dropdown-modal material-glass" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
     <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
     <header class="connection-dropdown-modal-head">
+      <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
+        <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
+        <span class="connection-dropdown-back-label">Conexión</span>
+      </button>
       <div class="connection-dropdown-head">
         <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
-        <div>
-          <div class="connection-dropdown-head-title">Conexión guardia</div>
+        <div class="connection-dropdown-head-text">
+          <div class="connection-dropdown-head-title" id="connection-dropdown-head-title">Conexión guardia</div>
           <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>

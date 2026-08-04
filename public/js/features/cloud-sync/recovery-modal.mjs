@@ -1,7 +1,7 @@
 import { esc } from '../../dom-escape.mjs';
 
 const DEFAULT_TITLE = 'Código de recuperación';
-const BODY_COPY = 'Guardá este código de recuperación. No lo volveremos a mostrar.';
+const BODY_COPY = 'Guarda este código de recuperación. No lo volveremos a mostrar.';
 const CHECKBOX_LABEL = 'Lo guardé en un lugar seguro';
 const CONTINUE_LABEL = 'Continuar';
 const COPY_LABEL = 'Copiar';

@@ -22,20 +22,8 @@ import {
   setEventualidadesLabsText,
   mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
-import {
-  wireEventualidadesLabsBox,
-  fillEventualidadesLabsInput,
-} from './eventualidades-labs-ui.mjs';
-import {
-  buildEventualidadesPanelHtml,
-  buildEventualidadesComposeHtml,
-} from './eventualidades-panel-html.mjs';
-import {
-  openEventualidadComposeSheet,
-  closeEventualidadComposeSheet,
-  isEventualidadComposeSheetOpen,
-} from './eventualidades-sheet.mjs';
-
+import { buildEventualidadesPanelHtml } from './eventualidades-panel-html.mjs';
+import { removeLabsTextBlock } from './eventualidades-labs-timeline.mjs';
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
@@ -43,11 +31,9 @@ const _dayOpenPrefs = new Map();
 let _pendingPrefillText = null;
 /** @type {'note'|'labs'} */
 let _composeMode = 'note';
-/** @type {HTMLElement|null} */
-let _panelMountEl = null;
 
 /**
- * Queue text into the labs interpretation box (mismo registro Eventualidades).
+ * Queue text into labsText (merge) and show Labs timeline.
  * @param {string} text
  * @returns {boolean}
  */
@@ -64,7 +50,7 @@ export function queueEventualidadesPrefill(text) {
 }
 
 /**
- * Apply queued prefill into the labs box if the mount exists.
+ * Apply queued prefill by merging into labsText if the mount exists.
  * @param {HTMLElement|null} [mountEl]
  * @returns {boolean}
  */
@@ -82,10 +68,12 @@ function fillLabsFromPending_(mountEl) {
   var pending = _pendingPrefillText;
   _pendingPrefillText = null;
   _composeMode = 'labs';
-  openComposeSheet_(mountEl, 'labs');
-  var sheetMount = document.querySelector('.ev-sheet__body');
-  if (!sheetMount) return false;
-  return fillEventualidadesLabsInput(sheetMount, pending, applyComposeModeInSheet_);
+  var patient = activePatient();
+  if (!patient) return false;
+  void savePatientEventualidadesLabs(patient, pending, { mode: 'merge' }).then(function (out) {
+    if (out && out.ok) renderEventualidadesPanel(mountEl);
+  });
+  return true;
 }
 
 /**
@@ -94,47 +82,55 @@ function fillLabsFromPending_(mountEl) {
  */
 function setComposeMode_(mode, mountEl) {
   var next = mode === 'labs' ? 'labs' : 'note';
+  var changed = _composeMode !== next;
   _composeMode = next;
   var mount =
     mountEl ||
-    _panelMountEl ||
     (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
   if (!mount) return;
-  if (isEventualidadComposeSheetOpen()) {
-    applyComposeModeInSheet_(next);
+  if (changed) {
+    renderEventualidadesPanel(mount);
     return;
   }
-  openComposeSheet_(mount, next);
+  applyComposeModeDom_(mount, _composeMode);
 }
 
-function applyComposeModeInSheet_(mode) {
-  var root = document.querySelector('.ev-compose--sheet');
-  if (!root) return;
-  root.setAttribute('data-ev-mode', mode);
-  root.querySelectorAll('.ev-compose__tab[data-ev-mode]').forEach(function (btn) {
+/** Prefer Labs timeline (autosend / doc-queue) without rewriting text. */
+export function selectEventualidadesLabsMode() {
+  setComposeMode_('labs');
+}
+
+/**
+ * @param {HTMLElement} mountEl
+ * @param {'note'|'labs'} mode
+ */
+function applyComposeModeDom_(mountEl, mode) {
+  var panel = mountEl.querySelector('.ev-panel');
+  if (panel) panel.setAttribute('data-ev-view', mode);
+  mountEl.querySelectorAll('.ev-mode-switch__tab[data-ev-mode]').forEach(function (btn) {
     var on = btn.getAttribute('data-ev-mode') === mode;
     btn.classList.toggle('active', on);
     btn.setAttribute('aria-selected', on ? 'true' : 'false');
   });
-  root.querySelectorAll('[data-ev-pane]').forEach(function (pane) {
-    var on = pane.getAttribute('data-ev-pane') === mode;
-    pane.hidden = !on;
-    pane.classList.toggle('ev-compose__pane--active', on);
-  });
-  var focusId = mode === 'labs' ? '#eventualidades-labs' : '#eventualidades-input';
-  var focusEl = root.querySelector(focusId);
-  if (focusEl && typeof focusEl.focus === 'function') {
-    try {
-      focusEl.focus();
-    } catch {
-      /* ignore */
-    }
-  }
+  var switchEl = mountEl.querySelector('.ev-mode-switch');
+  if (switchEl) switchEl.setAttribute('data-ev-mode', mode);
 }
 
-/** Prefer Labs pane (autosend / doc-queue) without rewriting text. */
-export function selectEventualidadesLabsMode() {
-  setComposeMode_('labs');
+function wireEventualidadesUppercase(input) {
+  if (!input || input.dataset.evUpperWired === '1') return;
+  input.dataset.evUpperWired = '1';
+  input.style.textTransform = 'uppercase';
+  input.addEventListener('input', function () {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const upper = toClinicalHistoryText(input.value);
+    if (upper !== input.value) {
+      input.value = upper;
+      if (start != null && end != null) {
+        input.setSelectionRange(start, end);
+      }
+    }
+  });
 }
 
 function activePatient() {
@@ -216,6 +212,7 @@ async function persistEventualidades(patient, store) {
   touchPatientLanUpdatedAt(patient.id);
   await saveState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
+  // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
   scheduleLiveSyncPush();
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
@@ -251,23 +248,6 @@ async function persistEventualidades(patient, store) {
   return { ok: true, lanDeferred: true };
 }
 
-function wireEventualidadesUppercase(input) {
-  if (!input || input.dataset.evUpperWired === '1') return;
-  input.dataset.evUpperWired = '1';
-  input.style.textTransform = 'uppercase';
-  input.addEventListener('input', function () {
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const upper = toClinicalHistoryText(input.value);
-    if (upper !== input.value) {
-      input.value = upper;
-      if (start != null && end != null) {
-        input.setSelectionRange(start, end);
-      }
-    }
-  });
-}
-
 function wireEventualidadesDayToggles(mountEl) {
   mountEl.querySelectorAll('.ev-day').forEach(function (dayEl) {
     dayEl.addEventListener('toggle', function () {
@@ -285,72 +265,31 @@ function deleteConfirmMessage(row) {
     : '';
   if (!preview) return '¿Eliminar esta eventualidad?';
   return (
-    '¿Eliminar esta eventualidad?\n\n"' + preview + (preview.length >= 80 ? '…' : '') + '"'
+    '¿Eliminar esta eventualidad?\n\n“' + preview + (preview.length >= 80 ? '…' : '') + '”'
   );
-}
-
-function composeSheetAriaLabel_(editingEntry, mode) {
-  if (editingEntry) return 'Editar eventualidad';
-  return mode === 'labs' ? 'Interpretación de laboratorios' : 'Nueva eventualidad';
-}
-
-function closeComposeAndRefresh_(panelMount, reason) {
-  closeEventualidadComposeSheet(reason);
-  if (panelMount) renderEventualidadesPanel(panelMount);
-}
-
-function openComposeSheet_(panelMount, mode) {
-  const patient = activePatient();
-  if (!patient || !panelMount) return;
-  const store = ensureEventualidades(patient);
-  const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
-  if (_editingEntryId && !editingEntry) _editingEntryId = null;
-  const composeMode = _editingEntryId ? 'note' : mode || _composeMode;
-  _composeMode = composeMode;
-
-  const sheet = openEventualidadComposeSheet({
-    panelHtml: buildEventualidadesComposeHtml(editingEntry, store, composeMode),
-    ariaLabel: composeSheetAriaLabel_(editingEntry, composeMode),
-    onClose: function () {
-      _editingEntryId = null;
-      _composeMode = 'note';
-      renderEventualidadesPanel(panelMount);
-    },
-  });
-
-  wireComposeInMount_(sheet.mountEl, panelMount, patient, store);
-}
-
-function wireComposeInMount_(mountEl, panelMount, patient, store) {
-  if (!mountEl) return;
-  refreshRpcDateFields(mountEl);
-  wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
-  wireEventualidadesLabsBox(mountEl, function (next) {
-    return persistEventualidades(patient, next);
-  }, patient, store);
-  wireEventualidadesComposeSwitcher(mountEl);
-  wireEventualidadesCompose(mountEl, panelMount, patient, store);
-  applyComposeModeInSheet_(_editingEntryId ? 'note' : _composeMode);
-}
-
-function wireEventualidadesPanelActions(mountEl) {
-  const actions = mountEl.querySelector('.ev-actions');
-  if (!actions || actions.dataset.evActionsWired === '1') return;
-  actions.dataset.evActionsWired = '1';
-  actions.addEventListener('click', function (ev) {
-    const btn = ev.target.closest('[data-ev-open-compose]');
-    if (!btn || !actions.contains(btn)) return;
-    _editingEntryId = null;
-    const mode = btn.getAttribute('data-ev-open-compose') === 'labs' ? 'labs' : 'note';
-    _composeMode = mode;
-    openComposeSheet_(mountEl, mode);
-  });
 }
 
 function wireEventualidadesTimeline(mountEl, patient, store) {
   const timeline = mountEl.querySelector('.ev-timeline');
   if (!timeline) return;
   timeline.addEventListener('click', function (ev) {
+    const labsDel = ev.target.closest('[data-ev-labs-delete]');
+    if (labsDel) {
+      const blockId = labsDel.getAttribute('data-ev-labs-delete');
+      if (!blockId) return;
+      if (!confirm('¿Eliminar esta interpretación de labs?')) return;
+      void (async function () {
+        const removed = removeLabsTextBlock(getEventualidadesLabsText(store), blockId);
+        if (!removed.changed) return;
+        const next = setEventualidadesLabsText(store, removed.labsText);
+        const out = await persistEventualidades(patient, next);
+        if (out && out.ok) {
+          rt.showToast('Interpretación eliminada.', 'success');
+          renderEventualidadesPanel(mountEl);
+        }
+      })();
+      return;
+    }
     const delBtn = ev.target.closest('[data-ev-delete]');
     if (delBtn) {
       const delId = delBtn.getAttribute('data-ev-delete');
@@ -359,10 +298,7 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
       if (!confirm(deleteConfirmMessage(row))) return;
       void (async function () {
         const next = removeEventualidad(store, delId);
-        if (_editingEntryId === delId) {
-          _editingEntryId = null;
-          closeEventualidadComposeSheet('delete');
-        }
+        if (_editingEntryId === delId) _editingEntryId = null;
         const out = await persistEventualidades(patient, next);
         if (out && out.ok) {
           rt.showToast('Eventualidad eliminada.', 'success');
@@ -376,25 +312,38 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
     const id = btn.getAttribute('data-ev-edit');
     if (!id) return;
     _editingEntryId = id;
-    _composeMode = 'note';
-    openComposeSheet_(mountEl, 'note');
+    renderEventualidadesPanel(mountEl);
+    const compose = mountEl.querySelector('.ev-compose');
+    if (compose && compose.scrollIntoView) {
+      compose.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   });
 }
 
 function wireEventualidadesComposeSwitcher(mountEl) {
-  const switchEl = mountEl.querySelector('.ev-compose__switch');
+  const switchEl = mountEl.querySelector('.ev-mode-switch');
   if (!switchEl || switchEl.dataset.evSwitchWired === '1') return;
   switchEl.dataset.evSwitchWired = '1';
   switchEl.addEventListener('click', function (ev) {
-    const btn = ev.target.closest('.ev-compose__tab[data-ev-mode]');
+    const btn = ev.target.closest('.ev-mode-switch__tab[data-ev-mode]');
     if (!btn || btn.disabled || !switchEl.contains(btn)) return;
     const mode = btn.getAttribute('data-ev-mode') === 'labs' ? 'labs' : 'note';
-    _composeMode = mode;
-    applyComposeModeInSheet_(mode);
+    setComposeMode_(mode, mountEl);
+    if (mode === 'note') {
+      const focusEl = mountEl.querySelector('#eventualidades-input');
+      if (focusEl && typeof focusEl.focus === 'function') {
+        try {
+          focusEl.focus();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
   });
 }
 
-function wireEventualidadesCompose(mountEl, panelMount, patient, store) {
+function wireEventualidadesCompose(mountEl, patient, store) {
+  wireEventualidadesComposeSwitcher(mountEl);
   const addBtn = mountEl.querySelector('#eventualidades-add');
   const input = mountEl.querySelector('#eventualidades-input');
   const atInput = mountEl.querySelector('#eventualidades-at');
@@ -419,7 +368,7 @@ function wireEventualidadesCompose(mountEl, panelMount, patient, store) {
       const wasEdit = !!_editingEntryId;
       _editingEntryId = null;
       rt.showToast(wasEdit ? 'Eventualidad actualizada.' : 'Eventualidad guardada.', 'success');
-      closeComposeAndRefresh_(panelMount, 'saved');
+      renderEventualidadesPanel(mountEl);
     }
   }
 
@@ -430,7 +379,7 @@ function wireEventualidadesCompose(mountEl, panelMount, patient, store) {
   if (cancelBtn) {
     cancelBtn.onclick = function () {
       _editingEntryId = null;
-      closeComposeAndRefresh_(panelMount, 'cancel');
+      renderEventualidadesPanel(mountEl);
     };
   }
 
@@ -442,43 +391,46 @@ function wireEventualidadesCompose(mountEl, panelMount, patient, store) {
     if (ev.key === 'Escape' && _editingEntryId) {
       ev.preventDefault();
       _editingEntryId = null;
-      closeComposeAndRefresh_(panelMount, 'escape');
+      renderEventualidadesPanel(mountEl);
     }
   });
 }
 
 export function renderEventualidadesPanel(mountEl) {
   if (!mountEl) return;
-  _panelMountEl = mountEl;
   const patient = activePatient();
   if (!patient) {
-    closeEventualidadComposeSheet('no-patient');
     mountEl.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
     return;
   }
   const store = ensureEventualidades(patient);
-  if (_editingEntryId && !findEventualidadEntry(store, _editingEntryId)) {
-    _editingEntryId = null;
-    closeEventualidadComposeSheet('stale-edit');
-  }
+  const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
+  if (_editingEntryId && !editingEntry) _editingEntryId = null;
+  if (_editingEntryId) _composeMode = 'note';
   const byDay = groupEntriesByDay(store.entries);
   const hasEntries = byDay.length > 0;
+  const timelineMode = _editingEntryId ? 'note' : _composeMode;
 
-  mountEl.innerHTML = buildEventualidadesPanelHtml(byDay, hasEntries, {
-    editingEntryId: _editingEntryId,
-    dayOpenPrefs: _dayOpenPrefs,
-  });
+  mountEl.innerHTML = buildEventualidadesPanelHtml(
+    byDay,
+    hasEntries,
+    editingEntry,
+    store,
+    timelineMode,
+    {
+      editingEntryId: _editingEntryId,
+      composeMode: _composeMode,
+      dayOpenPrefs: _dayOpenPrefs,
+    }
+  );
+  refreshRpcDateFields(mountEl);
+  wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
   wireEventualidadesDayToggles(mountEl);
-  wireEventualidadesPanelActions(mountEl);
+  wireEventualidadesComposeSwitcher(mountEl);
+  wireEventualidadesCompose(mountEl, patient, store);
   wireEventualidadesTimeline(mountEl, patient, store);
-
-  if (_pendingPrefillText) {
-    fillLabsFromPending_(mountEl);
-    return;
-  }
-  if (_editingEntryId && !isEventualidadComposeSheetOpen()) {
-    openComposeSheet_(mountEl, 'note');
-  }
+  applyComposeModeDom_(mountEl, _editingEntryId ? 'note' : _composeMode);
+  fillLabsFromPending_(mountEl);
 }
 
 export function invalidateEventualidadesPanel() {
@@ -486,7 +438,6 @@ export function invalidateEventualidadesPanel() {
   _dayOpenPrefs.clear();
   _pendingPrefillText = null;
   _composeMode = 'note';
-  closeEventualidadComposeSheet('invalidate');
 }
 
 /** @type {number} */

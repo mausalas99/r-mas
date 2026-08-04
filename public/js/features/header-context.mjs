@@ -11,11 +11,14 @@ export function buildHeaderPath(appTab, inner, settings) {
   if (appTab === 'lab') return 'Laboratorio';
   if (appTab === 'med') return 'Manejo';
   if (appTab === 'agenda') return 'Agenda';
+  if (appTab === 'guardia') return 'Guardia';
+  if (appTab === 'pase') return 'Pase';
   var granular = inner || 'todo';
   var target = resolveConsolidatedTarget(granular, settings || {});
   var path = GROUP_LABELS[target.tab] || 'Expediente';
   if (target.tab === 'paciente') return path;
   var section = target.section;
+  // Historia Clínica is off the day-to-day nav; still label the pane when open.
   if (section && SECTION_LABELS[section]) path += ' › ' + SECTION_LABELS[section];
   return path;
 }
