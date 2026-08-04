@@ -18,7 +18,11 @@ import {
   formatLocalTodayFecha,
 } from './doc-queue-model.mjs';
 import { autosendLabsToEventualidad } from './lab-eventualidad-autosend.mjs';
-import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
+import {
+  renderEventualidadesPanel,
+  selectEventualidadesLabsMode,
+} from './eventualidades-panel.mjs';
+import { eventualidadesPaneForDocQueueNav } from './doc-queue-nav.mjs';
 
 /** @type {import('./doc-queue-model.mjs').DocQueueRow[]} */
 var currentRows = [];
@@ -84,7 +88,7 @@ function effectiveNavTarget(row) {
 function primaryActionLabelForTarget(target) {
   if (target === 'labs') return 'Abrir laboratorio';
   if (target === 'pendientes') return 'Abrir pendientes';
-  if (target === 'eventualidades') return 'Abrir eventualidades';
+  if (target === 'eventualidades') return 'Abrir Labs';
   return 'Abrir nota';
 }
 
@@ -157,6 +161,8 @@ function renderList() {
         '</div>' +
         '<button type="button" class="btn-generate doc-queue-primary" data-doc-queue-nav="' +
         esc(target) +
+        '" data-doc-queue-primary-cta="' +
+        esc(r.primaryCta || '') +
         '" data-patient-id="' +
         esc(r.id) +
         '">' +
@@ -203,11 +209,19 @@ function tryRenderEventualidadesPanel() {
   return true;
 }
 
-function openEventualidadesPanel() {
+function openEventualidadesPanel(opts) {
   if (typeof window.switchAppTab === 'function') window.switchAppTab('nota');
   if (typeof window.switchInnerTab === 'function') window.switchInnerTab('eventualidades');
   if (!tryRenderEventualidadesPanel()) {
     setTimeout(tryRenderEventualidadesPanel, 80);
+  }
+  var pane = opts && opts.pane;
+  if (pane === 'labs') {
+    selectEventualidadesLabsMode();
+    setTimeout(function () {
+      var el = document.getElementById('eventualidades-labs');
+      if (el && typeof el.focus === 'function') el.focus();
+    }, 0);
   }
 }
 
@@ -215,8 +229,8 @@ function openEventualidadesPanel() {
  * Auto-append today's lab interpretation as an Eventualidad, then open the panel.
  * @param {string} patientId
  */
-async function openEventualidadesWithLabAutoSend(patientId) {
-  openEventualidadesPanel();
+async function openEventualidadesWithLabAutoSend(patientId, pane) {
+  openEventualidadesPanel({ pane: pane || 'labs' });
   var patient = findPatientById(patientId);
   if (!patient) {
     if (typeof window.showToast === 'function') {
@@ -247,7 +261,7 @@ async function openEventualidadesWithLabAutoSend(patientId) {
   }
 }
 
-function navigateDocQueue(patientId, cta) {
+function navigateDocQueue(patientId, cta, primaryCta) {
   var id = String(patientId || '');
   if (!id) return;
   var target = String(cta || 'nota');
@@ -260,7 +274,8 @@ function navigateDocQueue(patientId, cta) {
     window.selectPatient(id);
   }
   if (target === 'eventualidades') {
-    void openEventualidadesWithLabAutoSend(id);
+    var pane = eventualidadesPaneForDocQueueNav(target, primaryCta || cta);
+    void openEventualidadesWithLabAutoSend(id, pane || 'labs');
     return;
   }
   var section =
@@ -276,7 +291,11 @@ function onListClick(e) {
   var btn = t.closest('[data-doc-queue-nav]');
   if (!btn) return;
   e.preventDefault();
-  navigateDocQueue(btn.getAttribute('data-patient-id'), btn.getAttribute('data-doc-queue-nav'));
+  navigateDocQueue(
+    btn.getAttribute('data-patient-id'),
+    btn.getAttribute('data-doc-queue-nav'),
+    btn.getAttribute('data-doc-queue-primary-cta')
+  );
 }
 
 function wireOnce() {
