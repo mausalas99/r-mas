@@ -32,6 +32,24 @@ test('appendEventualidad adds id and ISO at', () => {
   assert.equal(next.entries[0].clientId, 'client-1');
 });
 
+test('save path helpers: merge/set labsText never appends clinical entries', () => {
+  const base = { entries: [{ id: 'ev_1', at: '2026-08-01T10:00:00.000Z', text: 'NOTA' }], labsText: '' };
+  const set = setEventualidadesLabsText(base, 'EN LA BIOMETRÍA SE APRECIA ANEMIA');
+  assert.equal(set.entries.length, 1);
+  assert.equal(set.entries[0].id, 'ev_1');
+  assert.match(set.labsText, /BIOMETRÍA/);
+  const merged = mergeEventualidadesLabsText(set, 'QS GLUC 120');
+  assert.equal(merged.entries.length, 1);
+  assert.match(merged.labsText, /QS GLUC 120/);
+});
+
+test('appendEventualidad does not clear labsText', () => {
+  const base = { entries: [], labsText: 'BH HB 9' };
+  const next = appendEventualidad(base, 'Caída', 'c1');
+  assert.equal(next.labsText, 'BH HB 9');
+  assert.equal(next.entries.length, 1);
+});
+
 test('labsText helpers set / merge / preserve on append', () => {
   const base = { entries: [], labsText: 'BH Hb 9' };
   assert.equal(getEventualidadesLabsText(base), 'BH HB 9');
