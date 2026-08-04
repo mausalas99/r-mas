@@ -1,31 +1,29 @@
-version: 7.9.3
+version: 7.9.4
 files:
-  - url: R+-7.9.3-arm64.zip
-    sha512: vdjUEgifdcRt5C0PeO/Q6776IEAhMnvySxAwNRILKZewZOZ/MgHGre3Zh2YSeEcYSWcZsDbpllj9sYOp2sOQgQ==
-    size: 137546465
-  - url: R+-7.9.3-arm64.dmg
-    sha512: JA2BllzcrPwILRJgqOrhwlOww8NUGMnBv5GDDWXNstQqLV+shJI9ORO6aujB1ot36tP43fhzZDHWAzGz1usAbw==
-    size: 143285448
-  - url: R+-7.9.3-x64.zip
-    sha512: kkzwHXU6PHOUFJ70+jbFD7RMod2dHW1uD+dBTd10HCQJDxqaXK21YX7aD5iCTheFxB4RRkbjSCa9sjbLQ1TWhg==
-    size: 145920539
-  - url: R+-7.9.3-x64.dmg
-    sha512: FXXFcw6isGOXeHh3OTidaEFTPG3eVUv+KiDoIzxa5Vd1FLhAkkqteJocLM2x+32SenVKpdWQvo8/96nFwgNffA==
-    size: 151712968
-path: R+-7.9.3-arm64.zip
-sha512: vdjUEgifdcRt5C0PeO/Q6776IEAhMnvySxAwNRILKZewZOZ/MgHGre3Zh2YSeEcYSWcZsDbpllj9sYOp2sOQgQ==
-releaseDate: '2026-08-03T18:49:05.000Z'
+  - url: R+-7.9.4-arm64.zip
+    sha512: iFHfNIRWJFmRz0F33MzIfgRBrAIhhOIwOAvRehnkBf6kb2WzgjNM+tgSFg7bBMddcg/a5LMW0jBO4JPirLIkxA==
+    size: 139785848
+  - url: R+-7.9.4-arm64.dmg
+    sha512: hb9DTb4Zidu9JRSm7uGmhfr6K9ItMO0PTPOYVJ0tKd8g6iYuK2XjSx7rrLly9nVUoAkaDxg8qsUUDvWX6KbV1A==
+    size: 145659300
+  - url: R+-7.9.4-x64.zip
+    sha512: Qs4Fc+9U0qwmfCt4mXVg/sPC7uC75QI/chvRJ5woHfTwR+FNx3Ngnx7UXusJVnohvsG+ZlwVf4uC38GvT02VDg==
+    size: 148159904
+  - url: R+-7.9.4-x64.dmg
+    sha512: +/CgdmQyX9PO5tBm0Y5I8OHZy21fhI2nTbN7OGppjgzJwqi5CSbKA+0o0W7dRL6pZ7cEMAl2SSklOyyAyfayHA==
+    size: 154082257
+path: R+-7.9.4-arm64.zip
+sha512: iFHfNIRWJFmRz0F33MzIfgRBrAIhhOIwOAvRehnkBf6kb2WzgjNM+tgSFg7bBMddcg/a5LMW0jBO4JPirLIkxA==
+releaseDate: '2026-08-04T00:51:58.000Z'
 releaseNotes: |
-  7.9.3 separa la documentación de labs en Eventualidades (pestaña Labs con texto consolidado al estilo Estudios), hace el sync Nube más fiel al turno (LWW por bloque, labs slim, polling adaptativo) y abre el registro de Estado Actual limpio, con secciones claras.
+  7.9.4 renueva el chrome de escritorio con Hybrid H (materiales vidrio/sólido, springs, overlays unificados) y reduce tiempo de herramienta: Tab spine en el registro de EA, ⌘K más rápido, Conexión más clara en Nube y correcciones de paneles en blanco al cambiar pestañas.
   
-  Eventualidades — Labs — Switcher Eventualidad / Labs. La interpretación va a una caja dedicada (labsText) con formato Estudios (BH/QS/GASES…). Procesar SOME, Actualizar labs y la cola de documentación fusionan ahí; ya no crean entradas clínicas por cada batch.
+  Hybrid H — chrome — Tokens light/dark/HC, utilidades material-glass, primitivas dialog/sheet/menu, toast con swipe y pausa al ocultar, ⌘K instantáneo con panel vidrio, sidebar/tabs/LiveSync chip, pase board, labs, expediente, Conexión, Eventualidades, ajustes y equipos interno alineados al nuevo lenguaje visual.
   
-  Nube — sync — Monitoreo y eventualidades con relojes de contenido propios. Labs sin PDF/binarios; polling adaptativo y push con debounce; error visible en el chip ⇄.
+  EA — Tab spine — Navegación con Tab entre signos vitales, glucometrías e I/E en el registro manual; salta +1 y controles Alterada; valores editables en orden clínico.
   
-  Nube — Conexión — Chip con Sala 1 / Sala 2 / Sala E; Opciones agrupadas; admin con pestañas.
+  Conexión / Nube — Hoja de estado: cuenta (@usuario) antes de sala; identidad en inset group; sin hero LAN en salas Nube; reconocimiento obligatorio del código de recuperación; Diagnóstico LAN huérfano solo cuando el estado Nube lo permite.
   
-  Estado Actual — registro — Modal por secciones (signos, glu, I/E). Abre limpio (sin prefill de vitales/IO). Estado clínico respeta estadoClinicoUpdatedAt al sincronizar.
+  Eventualidades / docs — Interpretación de labs permanece solo en pestaña Labs; cola «Falta documentar» abre el panel Labs de Eventualidades para deuda de labs.
   
-  Labs — consolidación — Misma fecha+hora fusiona paneles complementarios antes de la ventana ≤2 h; gasometrías seriadas distintas no colapsan. Tablas SOME más legibles.
-  
-  LAN / censo — Cuarto y cama no se pisan si el remoto no trae reloj más reciente. En salas Nube se ocultan chips LAN engañosos.
+  TTD / polish — Animación de entrada de paneles con fallback (evita Tendencias/Resultados en blanco); censo ATB/Meds sin línea de dieta; hints redundantes retirados del ⌘K.
