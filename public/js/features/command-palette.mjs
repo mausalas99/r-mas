@@ -185,14 +185,23 @@ function renderResults(query) {
       (i === 0 ? ' is-selected' : '');
     li.setAttribute('role', 'option');
     li.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    li.dataset.cmdkIndex = String(i);
     var label = document.createElement('span');
     label.className = 'cmdk-item-label';
     label.textContent = item.label;
-    var hint = document.createElement('span');
-    hint.className = 'cmdk-item-hint';
-    hint.textContent = item.hint || '';
     li.appendChild(label);
-    li.appendChild(hint);
+    var hintText = item.hint ? String(item.hint) : '';
+    if (hintText) {
+      var hint = document.createElement('span');
+      hint.className = 'cmdk-item-hint';
+      hint.textContent = hintText;
+      li.appendChild(hint);
+    }
+    li.addEventListener('pointerenter', function () {
+      if (selectedIndex === i) return;
+      selectedIndex = i;
+      syncSelection();
+    });
     li.addEventListener('click', function () {
       executeItem(item);
     });

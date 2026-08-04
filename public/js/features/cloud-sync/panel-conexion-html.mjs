@@ -87,10 +87,9 @@ export function roomConnectedHtml(room, getRevision) {
     '</code></dd></div>' +
     '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
     esc(String(revision)) +
-    '</span></dd></div></dl>' +
-    '<div class="cloud-sync-inset-group">' +
+    '</span></dd></div>' +
     '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
-    '</div></div>'
+    '</dl></div>'
   );
 }
 

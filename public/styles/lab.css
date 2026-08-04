@@ -1013,7 +1013,8 @@ html.dark .todo-text-input:focus {
 
 .tab-panel-enter {
   animation: rpc-tab-panel-in var(--dur-normal) var(--ease-out);
-  animation-fill-mode: none;
+  /* forwards: if class briefly sticks after the run, stay at opacity 1 — not 0 */
+  animation-fill-mode: forwards;
   pointer-events: auto;
 }
 

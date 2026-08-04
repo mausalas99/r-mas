@@ -60,6 +60,11 @@ export function granularMountIsEmpty(tab) {
     var ev = document.getElementById("exp-pane-eventualidades");
     return !!ev && !ev.querySelector(".ev-panel");
   }
+  if (tab === "tend") {
+    var tend = document.getElementById("tendencias-container");
+    if (!tend) return true;
+    return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty, .tend-skeleton");
+  }
   if (tab === "todo") {
     var tf = document.getElementById("todo-form");
     if (!tf) return true;

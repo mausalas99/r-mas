@@ -2,11 +2,7 @@ import {
   isInsulinRescateMedicationItem,
   INSULIN_RESCATE_NM_LABEL,
 } from './insulin-rescate-display.mjs';
-import {
-  isNutritionMedicationItem,
-  mergeDietaItems,
-  collectDietasFromRecetaBlock,
-} from './med-receta-diet.mjs';
+import { isNutritionMedicationItem } from './med-receta-diet.mjs';
 
 function medTitle(nombreRaw) {
   var s = String(nombreRaw || '').trim();
@@ -23,44 +19,15 @@ function formatDia(diaTratamiento) {
   return 'Día ' + String(Math.floor(n));
 }
 
-function normalizeDietDesc(text) {
-  return String(text || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/^[*•-]+\s*/g, '')
-    .toUpperCase()
-    .replace(/^DIETA\s+/, '');
-}
-
-function isSuplementoDietDesc(desc) {
-  if (!desc) return false;
-  if (desc === 'SUPLEMENTO' || desc.startsWith('SUPLEMENTO')) return true;
-  return /\bALIMENTACI[OÓ]N\b/.test(desc) && /\bSUPLEMENTO\b/.test(desc);
-}
-
 /**
- * @param {{ items?: Array<Record<string, unknown>>, dietas?: unknown[] }|null|undefined} block
- * @returns {string}
- */
-function formatCensoDietLine(block) {
-  var merged = mergeDietaItems(collectDietasFromRecetaBlock(block));
-  var desc = normalizeDietDesc(merged && merged.descripcion);
-  if (!desc) return '';
-  if (isSuplementoDietDesc(desc)) return 'DIETA SUPLEMENTO';
-  return 'DIETA ' + desc.slice(0, 60);
-}
-
-/**
- * Censo: dieta (si hay), rescates agrupados, luego nombre + día de tratamiento.
+ * Censo ATB/Meds: rescates agrupados, luego nombre + día de tratamiento.
+ * Dieta / nutrición se omiten (no van en esta columna).
  * @param {{ items?: Array<Record<string, unknown>>, dietas?: unknown[] }|null|undefined} block
  * @returns {string}
  */
 export function formatCensoMedsFromReceta(block) {
   if (!block) return '';
   var lines = [];
-  var dietLine = formatCensoDietLine(block);
-  if (dietLine) lines.push(dietLine);
-
   var items = Array.isArray(block.items) ? block.items : [];
   var rescateAdded = false;
   items.forEach(function (it) {

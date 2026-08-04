@@ -73,7 +73,7 @@ test('agrupa insulinas PRN SC como RESCATES DE INSULINA', () => {
   assert.equal((text.match(/RESCATES DE INSULINA/g) || []).length, 1);
 });
 
-test('suplemento nutricional sale como DIETA y no como med', () => {
+test('suplemento nutricional no sale en meds', () => {
   var text = formatCensoMedsFromReceta({
     items: [
       {
@@ -93,14 +93,15 @@ test('suplemento nutricional sale como DIETA y no como med', () => {
       },
     ],
   });
-  assert.match(text, /^DIETA SUPLEMENTO\nCEFTRIAXONA · Día 6$/);
-  assert.doesNotMatch(text, /ALIMENTACION/i);
+  assert.equal(text, 'CEFTRIAXONA · Día 6');
+  assert.doesNotMatch(text, /ALIMENTACION|DIETA/i);
 });
 
-test('dietas SOME también aparecen como DIETA', () => {
+test('dietas SOME no aparecen en meds', () => {
   var text = formatCensoMedsFromReceta({
     items: [{ nombreRaw: 'ATORVASTATINA 40 MG', suspendido: false }],
     dietas: [{ descripcionRaw: 'SUPLEMENTO', suspendido: false }],
   });
-  assert.match(text, /^DIETA SUPLEMENTO\nATORVASTATINA$/);
+  assert.equal(text, 'ATORVASTATINA');
+  assert.doesNotMatch(text, /DIETA/i);
 });

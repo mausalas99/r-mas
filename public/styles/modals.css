@@ -1413,7 +1413,7 @@ html.dark #rpc-wipe-modal { background: var(--scrim-bg); }
 }
 .rpc-wipe-danger-btn:hover { filter: brightness(0.92); }
 /* ── Tendencias de Lab ─────────────────────────────────────── */
-.tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
+.tend-empty { text-align:center; color:var(--text-muted, var(--muted)); font-size:14px; padding:40px 20px; }
 .tend-loading { opacity: 0.72; }
 .tend-inline-controls {
   display: flex;

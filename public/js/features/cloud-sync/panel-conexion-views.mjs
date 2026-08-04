@@ -85,14 +85,16 @@ function optionsGroup(label, rowsHtml) {
 function statusIdentityHtml(cloudUser) {
   const { handle, display } = resolveIdentity(cloudUser);
   return (
-    '<div class="cloud-sync-status-identity">' +
-    '<p class="cloud-sync-status-handle">@' +
+    '<div class="cloud-sync-inset-group cloud-sync-status-identity" aria-label="Cuenta">' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-sync-inset-row--identity">' +
+    '<span class="cloud-sync-options-entry-text">' +
+    '<span class="cloud-sync-status-handle">@' +
     esc(handle || '—') +
-    '</p>' +
+    '</span>' +
     (display
-      ? '<p class="cloud-sync-status-display">' + esc(display) + '</p>'
+      ? '<span class="cloud-sync-status-display">' + esc(display) + '</span>'
       : '') +
-    '</div>'
+    '</span></div></div>'
   );
 }
 
@@ -142,8 +144,8 @@ export function connectedViewsHtml({
   const showOps = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   const statusBody =
     '<div class="cloud-sync-status-sheet">' +
-    roomHtml +
     statusIdentityHtml(cloudUser) +
+    roomHtml +
     '<button type="button" class="cloud-sync-options-entry" data-cloud-action="nav-options">' +
     '<span class="cloud-sync-options-entry-text">' +
     '<span class="cloud-sync-options-entry-title">Opciones</span>' +

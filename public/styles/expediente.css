@@ -650,6 +650,44 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  color: var(--text);
+}
+
+.exp-datos-modal-close {
+  flex-shrink: 0;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.exp-datos-modal-close svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+
+.exp-datos-modal-close:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+
+.exp-datos-modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .exp-datos-modal-body {

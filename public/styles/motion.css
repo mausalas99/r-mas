@@ -339,7 +339,7 @@ html.motion-expresivo .tab-bar-indicator {
 
 .app-tab-panel-enter {
   animation: app-tab-panel-in var(--dur-normal) var(--ease-out);
-  animation-fill-mode: none;
+  animation-fill-mode: forwards;
   pointer-events: auto;
 }
 

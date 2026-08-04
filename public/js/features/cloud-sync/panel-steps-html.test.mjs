@@ -238,5 +238,7 @@ describe('roomConnectedHtml', () => {
     assert.match(html, /data-cloud-room-revision/);
     assert.match(html, /cloud-sync-inset-group/);
     assert.match(html, /leave-room/);
+    // Leave shares the same inset group as Turno/Código/Revisión (one card).
+    assert.equal((html.match(/cloud-sync-inset-group/g) || []).length, 1);
   });
 });

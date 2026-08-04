@@ -1,4 +1,4 @@
-/* ⌘K command palette — Hybrid H glass panel, instant open/close. */
+/* ⌘K command palette — Hybrid H glass shell, solid rows, instant open/close. */
 
 .cmdk-backdrop {
   position: fixed;
@@ -13,12 +13,13 @@
   top: 14vh;
   left: 0;
   right: 0;
-  width: min(560px, calc(100vw - 32px));
+  width: min(520px, calc(100vw - 32px));
   margin-inline: auto;
   border-radius: var(--radius-container);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--elev-overlay);
 }
 
 .cmdk[hidden],
@@ -32,6 +33,7 @@
   background: transparent;
   font: inherit;
   font-size: 15px;
+  font-weight: 500;
   color: var(--text);
   padding: 14px 16px;
   outline: none;
@@ -39,51 +41,65 @@
 
 .cmdk-input::placeholder {
   color: var(--text-muted);
+  font-weight: 400;
 }
 
+/* Solid results well — Spec B: glass panel, solid rows for legibility */
 .cmdk-list {
   list-style: none;
   margin: 0;
   padding: 6px;
   max-height: 46vh;
   overflow-y: auto;
+  background: var(--color-elevated);
+  border-top: 1px solid color-mix(in oklab, var(--color-ink) 6%, transparent);
 }
 
 .cmdk-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius-md) - 2px);
   cursor: pointer;
   color: var(--text);
+  /* Hover alone must not look like selection (avoids dual highlights). */
+  background: transparent;
 }
 
-.cmdk-item:hover,
-.cmdk-item.is-selected {
-  background: var(--color-elevated);
+.cmdk-item:hover {
+  background: var(--state-hover-bg);
 }
 
 .cmdk-item.is-selected {
-  box-shadow: inset 2px 0 0 var(--action);
+  background: color-mix(in oklab, var(--action) 10%, var(--color-elevated));
+}
+
+.cmdk-item.is-selected:hover {
+  background: color-mix(in oklab, var(--action) 14%, var(--color-elevated));
 }
 
 .cmdk-item-label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
 }
 
 .cmdk-item-hint {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11.5px;
+  font-weight: 500;
   flex-shrink: 0;
+  letter-spacing: 0.01em;
 }
 
-.cmdk-item--action .cmdk-item-hint {
-  color: var(--action);
-  opacity: 0.85;
+.cmdk-item-hint:empty {
+  display: none;
 }
 
 .cmdk-empty {
@@ -258,4 +274,3 @@
   gap: 8px;
   margin-top: 4px;
 }
-

@@ -179,11 +179,10 @@ function gapKeyForNav(nav) {
 
 function secondaryLinksHtml(row, primaryTarget) {
   var gaps = row.gaps || [];
-  var sala = isModeSala(loadSettings());
+  // HC stays off day-to-day nav (Drive / entrega) — no Historia/Nota secondary link.
   var candidates = [
     ['pendientes', 'Pendientes'],
     ['estadoActual', 'Estado actual'],
-    [sala ? 'historia' : 'nota', sala ? 'Historia' : 'Nota'],
     ['cultivos', 'Cultivos'],
   ];
   var links = [];

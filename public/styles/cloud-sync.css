@@ -224,7 +224,7 @@
 .cloud-sync-status-sheet .cloud-sync-room {
   display: flex;
   flex-direction: column;
-  gap: calc(12px * var(--density-space));
+  gap: 0;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -255,7 +255,7 @@
   width: 100%;
   min-height: 44px;
   margin: 0;
-  padding: calc(11px * var(--density-space)) calc(14px * var(--density-space));
+  padding: calc(11px * var(--density-space)) calc(16px * var(--density-space));
   border: none;
   background: transparent;
   color: var(--text);
@@ -267,7 +267,7 @@
 .cloud-sync-inset-row:not(:last-child)::after {
   content: '';
   position: absolute;
-  left: 14px;
+  left: 16px;
   right: 0;
   bottom: 0;
   height: 1px;
@@ -331,6 +331,13 @@
   cursor: default;
 }
 
+.cloud-sync-inset-row--identity {
+  align-items: flex-start;
+  min-height: 48px;
+  padding-top: calc(12px * var(--density-space));
+  padding-bottom: calc(12px * var(--density-space));
+}
+
 .cloud-sync-inset-row--nav .cloud-sync-options-entry-text,
 .cloud-sync-inset-row--nav .cloud-sync-options-row-text {
   flex: 1;
@@ -379,16 +386,15 @@
   text-align: right;
 }
 
-.cloud-sync-status-identity,
-.cloud-sync-cuenta {
-  display: flex;
-  flex-direction: column;
-  gap: calc(4px * var(--density-space));
-  padding: calc(4px * var(--density-space)) 2px;
+.cloud-sync-status-identity.cloud-sync-inset-group {
+  padding: 0;
 }
 
 .cloud-sync-cuenta {
+  display: flex;
+  flex-direction: column;
   gap: calc(10px * var(--density-space));
+  padding: calc(4px * var(--density-space)) 2px;
 }
 
 .cloud-sync-status-handle {
@@ -411,7 +417,7 @@
   gap: calc(12px * var(--density-space));
   width: 100%;
   margin: 0;
-  padding: calc(13px * var(--density-space)) calc(14px * var(--density-space));
+  padding: calc(13px * var(--density-space)) calc(16px * var(--density-space));
   min-height: 48px;
   border: var(--border-hairline);
   border-radius: var(--radius-container);

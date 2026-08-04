@@ -83,16 +83,50 @@ export function syncInnerTabIndicator(tab, opts) {
   syncTabBarIndicator(bar, btn);
 }
 
-export function animateTabPanelEnter(panelEl) {
-  if (!panelEl || prefersReducedMotion()) return;
+/** Max wait before forcing enter-class removal (animationend can miss after display toggles). */
+var TAB_PANEL_ENTER_FALLBACK_MS = 450;
+var enterCleanupTimers = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+/**
+ * Run opacity/transform enter once, then always clear the class.
+ * Without a timeout fallback, a missed animationend leaves the pane at opacity 0
+ * (blank Tendencias / Resultados after switching composite tabs).
+ */
+export function runTabPanelEnterAnimation(panelEl, enterClass) {
+  if (!panelEl || !enterClass) return;
+  if (prefersReducedMotion()) return;
   if (document.documentElement.classList.contains('motion-sobrio')) return;
+  if (enterCleanupTimers && enterCleanupTimers.has(panelEl)) {
+    clearTimeout(enterCleanupTimers.get(panelEl));
+    enterCleanupTimers.delete(panelEl);
+  }
   panelEl.classList.remove('tab-panel-enter', 'app-tab-panel-enter');
-  panelEl.classList.add('tab-panel-enter');
-  function onEnd() {
+  // Reflow so the animation starts from a painted, display:flex frame.
+  void panelEl.offsetWidth;
+  panelEl.classList.add(enterClass);
+  var done = false;
+  function cleanup() {
+    if (done) return;
+    done = true;
     panelEl.removeEventListener('animationend', onEnd);
-    panelEl.classList.remove('tab-panel-enter');
+    if (enterCleanupTimers) {
+      var t = enterCleanupTimers.get(panelEl);
+      if (t) clearTimeout(t);
+      enterCleanupTimers.delete(panelEl);
+    }
+    panelEl.classList.remove('tab-panel-enter', 'app-tab-panel-enter');
+  }
+  function onEnd(ev) {
+    if (ev && ev.target !== panelEl) return;
+    cleanup();
   }
   panelEl.addEventListener('animationend', onEnd);
+  var timer = setTimeout(cleanup, TAB_PANEL_ENTER_FALLBACK_MS);
+  if (enterCleanupTimers) enterCleanupTimers.set(panelEl, timer);
+}
+
+export function animateTabPanelEnter(panelEl) {
+  runTabPanelEnterAnimation(panelEl, 'tab-panel-enter');
 }
 
 /** Hide a main tab panel without display:none (avoids full layout on Expediente ↔ Med). */
@@ -113,17 +147,15 @@ export function showAppTabPanel(panelEl, animate) {
   if (!animate || !shouldAnimateAppTabPanel()) return;
   var id = panelEl.id ? String(panelEl.id) : '';
   var enterClass = id.startsWith('appcontent-') ? 'app-tab-panel-enter' : 'tab-panel-enter';
-  panelEl.classList.remove('app-tab-panel-enter', 'tab-panel-enter');
-  panelEl.classList.add(enterClass);
-  function onEnd() {
-    panelEl.removeEventListener('animationend', onEnd);
-    panelEl.classList.remove(enterClass);
-  }
-  panelEl.addEventListener('animationend', onEnd);
+  runTabPanelEnterAnimation(panelEl, enterClass);
 }
 
 export function hideAppTabPanel(panelEl) {
   if (!panelEl) return;
+  if (enterCleanupTimers && enterCleanupTimers.has(panelEl)) {
+    clearTimeout(enterCleanupTimers.get(panelEl));
+    enterCleanupTimers.delete(panelEl);
+  }
   panelEl.classList.add(APP_TAB_PANEL_HIDDEN_CLASS);
   panelEl.classList.remove('tab-panel-enter', 'app-tab-panel-enter');
 }
