@@ -49,7 +49,10 @@ import {
 import { appendLanConnectionStack } from './panel-group.mjs';
 import { appendLanLwwToastRow } from './panel-lww-pref.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
-import { shouldShowNubePostAuthChrome } from '../cloud-sync/panel-session-gate.mjs';
+import {
+  shouldShowNubePostAuthChrome,
+  shouldHidePrimaryLanChrome,
+} from '../cloud-sync/panel-session-gate.mjs';
 import { syncCloudSecondaryPanels } from '../cloud-sync/panel-conexion-views.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
@@ -267,6 +270,14 @@ async function appendNubePanelFooterSections_(deps, root, gen, expandState, drop
 }
 
 
+/** @param {HTMLElement} root @param {unknown} userSala */
+function hidePrimaryLanChromeIfNeeded_(root, userSala) {
+  if (!shouldHidePrimaryLanChrome({ cloudSala: shouldShowNubePanel(userSala) })) return;
+  root.querySelectorAll('.lan-connection-hero').forEach(function (el) {
+    el.hidden = true;
+  });
+}
+
 /** @param {Parameters<typeof renderLanPanelOnce_>[0]} deps */
 async function tryNubeEarlyRefresh_(deps, root, gen, force) {
   const userSala = getUserSala();
@@ -280,6 +291,9 @@ async function tryNubeEarlyRefresh_(deps, root, gen, force) {
     el.innerHTML = '';
   });
   await deps.mountCloudNubeSection(root);
+  hidePrimaryLanChromeIfNeeded_(root, userSala);
+  const nubeSection = root.querySelector('.cloud-sync-conexion');
+  syncCloudSecondaryPanels(root, nubeSection?.dataset?.cloudView || 'status');
   return true;
 }
 
@@ -311,6 +325,7 @@ async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expan
       const section = root.querySelector('.cloud-sync-conexion');
       syncCloudSecondaryPanels(root, section?.dataset?.cloudView || cloudView);
     });
+    hidePrimaryLanChromeIfNeeded_(root, userSala);
     return;
   }
   return nubeOverridesLan;

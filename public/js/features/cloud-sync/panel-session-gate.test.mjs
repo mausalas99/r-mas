@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { shouldShowNubePostAuthChrome, shouldForcePanelRebuildOnAuthChange } from './panel-session-gate.mjs';
+import {
+  shouldShowNubePostAuthChrome,
+  shouldForcePanelRebuildOnAuthChange,
+  shouldHidePrimaryLanChrome,
+} from './panel-session-gate.mjs';
 
 describe('shouldShowNubePostAuthChrome', () => {
   it('returns false for null, undefined, empty, or whitespace-only token', () => {
@@ -26,6 +30,20 @@ describe('shouldForcePanelRebuildOnAuthChange', () => {
     assert.equal(shouldForcePanelRebuildOnAuthChange(null, null), false);
     assert.equal(shouldForcePanelRebuildOnAuthChange('tok', 'tok2'), false);
     assert.equal(shouldForcePanelRebuildOnAuthChange('', '   '), false);
+  });
+});
+
+describe('shouldHidePrimaryLanChrome', () => {
+  it('hides when cloud sala + cloud sync active', () => {
+    assert.equal(shouldHidePrimaryLanChrome({ cloudSala: true, cloudActive: true }), true);
+  });
+
+  it('shows LAN chrome for LAN salas', () => {
+    assert.equal(shouldHidePrimaryLanChrome({ cloudSala: false, cloudActive: false }), false);
+  });
+
+  it('shows LAN chrome on cloud sala when Nube not connected', () => {
+    assert.equal(shouldHidePrimaryLanChrome({ cloudSala: true, cloudActive: false }), true);
   });
 });
 

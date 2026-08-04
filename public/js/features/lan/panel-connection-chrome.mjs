@@ -14,7 +14,8 @@ import {
   wireLanLwwToastPref,
   syncLanLwwOverwriteToastPrefUi,
 } from './panel-known-sessions.mjs';
-import { shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { shouldHidePrimaryLanChrome } from '../cloud-sync/panel-session-gate.mjs';
 import { getUserSala } from './panel-clinical-context.mjs';
 
 export function isLanConnectionDropdownOpen() {
@@ -275,8 +276,15 @@ export function createPanelConnectionChrome(deps) {
     var root = document.getElementById('lan-connection-panel-root');
     if (!root) return;
     var scrollTop = captureConnectionDropdownScrollTop();
-    var statusCard = findHubStatusRefreshTarget(root);
-    if (statusCard) refreshHubStatusCard(statusCard, lanHubStatusCopy(), deps.esc);
+    var cloudSala = shouldShowNubePanel(getUserSala());
+    if (shouldHidePrimaryLanChrome({ cloudSala })) {
+      root.querySelectorAll('.lan-connection-hero').forEach(function (el) {
+        el.hidden = true;
+      });
+    } else {
+      var statusCard = findHubStatusRefreshTarget(root);
+      if (statusCard) refreshHubStatusCard(statusCard, lanHubStatusCopy(), deps.esc);
+    }
     await deps.refreshLanSyncDiagnosticsInPlace();
     await deps.renderLanPreflightUx(root);
     restoreConnectionDropdownScrollTop(scrollTop);
