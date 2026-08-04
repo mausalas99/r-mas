@@ -21,7 +21,7 @@ function assertCloudBaseUrl(baseUrl) {
     err.status = 0;
     err.data = {
       error: 'missing_url',
-      message: 'Configurá la URL del servicio en ⇄ → Avanzado.',
+      message: 'Configura la URL del servicio en ⇄ → Avanzado.',
     };
     throw err;
   }

@@ -105,7 +105,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   margin: 0;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   border-radius: var(--radius-sm, calc(var(--radius-md) - 2px));
-  background: var(--surface);
+  background: var(--color-elevated);
   color: var(--text);
   font-family: var(--font-ui, inherit);
   font-size: calc(12px * var(--density-font, 1));
@@ -118,8 +118,17 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   white-space: nowrap;
   text-align: center;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, color 0.12s;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
   box-shadow: none;
+}
+
+.ea-btn.ui-pressable:active {
+  transform: scale(var(--press-scale));
 }
 
 .ea-btn > span,
@@ -568,9 +577,8 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-snapshot-row {
   display: grid;
-  grid-template-columns: 2.35rem auto auto;
+  grid-template-columns: 2.35rem minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 4px 8px;
   padding: 4px 6px;
   border-radius: var(--radius-sm);
@@ -590,7 +598,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   align-items: baseline;
   gap: 5px;
   min-width: 0;
-  justify-self: start;
+  overflow: hidden;
 }
 
 .ea-snapshot-row-value {
@@ -602,6 +610,7 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 }
 
 .ea-snapshot-row-unit {
+  flex-shrink: 0;
   font-size: calc(10px * var(--density-font, 1));
   font-weight: 500;
   color: var(--text-muted);
@@ -1543,17 +1552,20 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 .ea-charts-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  padding-bottom: 0;
 }
 
 .ea-charts-tab {
   appearance: none;
-  border: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
   color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
+  border-radius: 0;
+  padding: 6px 12px 5px;
   font-size: calc(12px * var(--density-font, 1));
   font-weight: 600;
   cursor: pointer;
@@ -1561,13 +1573,13 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
 
 .ea-charts-tab:hover:not(:disabled) {
   color: var(--text);
-  border-color: color-mix(in oklab, var(--color-accent) 35%, var(--divider));
+  background: transparent;
 }
 
 .ea-charts-tab--active {
-  color: var(--text);
-  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--divider));
-  background: color-mix(in oklab, var(--color-accent) 12%, var(--surface));
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: transparent;
 }
 
 .ea-charts-tab:disabled {

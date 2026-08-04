@@ -102,7 +102,7 @@ var HELP_ARTICLES = [
     title: 'Historia Clínica (Sala)',
     keywords: 'historia clinica ingreso app ahf apnp ipas lectura narrativa antecedentes padecimiento sala',
     html:
-      '<p>En modo <strong>Sala</strong>, <strong>Expediente → Clínico → Historia Clínica</strong> captura el ingreso con formato institucional.</p>' +
+      '<p>En modo <strong>Sala</strong>, la <strong>Historia Clínica</strong> de ingreso (formato institucional) ya no aparece en la barra diaria de Clínico. Se abre desde <strong>Importar desde Drive</strong> o el checklist de entrega.</p>' +
       '<ul>' +
       '<li><strong>Captura</strong> — Tres pasos: identificación y motivo; antecedentes (APP con catálogo, AHF por familiar, APNP, género/reproducción); padecimiento, datos negados e IPAS por sistemas.</li>' +
       '<li><strong>Lectura</strong> — Vista que compila secciones en prosa; <strong>Copiar texto</strong> al portapapeles.</li>' +
@@ -116,7 +116,7 @@ var HELP_ARTICLES = [
     keywords: 'eventualidades bitacora intercurrencia dia clinico sala registro',
     html:
       '<p><strong>Expediente → Clínico → Eventualidades</strong> guarda hechos clínicos del turno con fecha y texto libre (orden cronológico).</p>' +
-      '<p style="font-size:13px;color:var(--text-muted);margin:0;">Complementa <strong>Estado actual</strong> (monitoreo estructurado) y <strong>Historia Clínica</strong> (ingreso). No sustituye la nota de evolución en Interconsulta.</p>'
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">Complementa <strong>Estado actual</strong> (monitoreo estructurado). La <strong>Historia Clínica</strong> de ingreso se abre desde Drive o entrega, no desde esta barra. No sustituye la nota de evolución en Interconsulta.</p>'
   },
   {
     id: 'estado-actual',

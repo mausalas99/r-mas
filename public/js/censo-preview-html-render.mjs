@@ -133,10 +133,10 @@ export const CENSO_PREVIEW_STYLES =
   'body{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:10px;line-height:1.35;color:#1a2332;margin:0;padding:12px 14px;background:#fff}' +
   'h1{margin:0 0 2px;font-size:15px;font-weight:700;letter-spacing:-0.01em}' +
   '.sub{color:#5c6778;font-size:8.5px;margin-bottom:10px;line-height:1.4}' +
-  '.mes{text-align:center;font-weight:700;color:#4a52e8;font-size:11px;margin:-24px 0 10px;letter-spacing:0.04em}' +
+  '.mes{text-align:center;font-weight:700;color:var(--color-accent);font-size:11px;margin:-24px 0 10px;letter-spacing:0.04em}' +
   'table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}' +
   'th,td{border:1px solid #d4dae3;padding:5px 6px;word-wrap:break-word;overflow-wrap:anywhere}' +
-  'th.censo-th{background:#eef1f6;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3b42c9;vertical-align:middle;text-align:center;white-space:nowrap;line-height:1.2;padding:6px 4px}' +
+  'th.censo-th{background:#eef1f6;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--color-ink-muted);vertical-align:middle;text-align:center;white-space:nowrap;line-height:1.2;padding:6px 4px}' +
   'th.censo-th.censo-bold{font-weight:800}' +
   'tbody td.censo-data-cell{vertical-align:middle}' +
   'tr.alt td{background:#f7f8fb}' +
@@ -146,7 +146,7 @@ export const CENSO_PREVIEW_STYLES =
   'td.censo-center .censo-line{text-align:center;margin-left:auto;margin-right:auto}' +
   '.censo-line--muted{color:#5c6778;font-size:8px;font-weight:400}' +
   '.censo-line--emphasis{font-weight:700;color:#1a2332}' +
-  '.censo-line--lab-date{font-weight:700;color:#4a52e8;font-size:8px;margin-bottom:2px}' +
+  '.censo-line--lab-date{font-weight:700;color:var(--color-accent);font-size:8px;margin-bottom:2px}' +
   '.censo-line--lab-panel{font-weight:600;font-size:7.5px;font-family:"IBM Plex Mono",ui-monospace,monospace;letter-spacing:-0.01em}' +
   '.censo-line--label-led{font-size:8px;font-weight:600}' +
   'td.censo-labs .censo-line{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:7.5px;line-height:1.28}' +
@@ -159,9 +159,9 @@ export const CENSO_PREVIEW_STYLES =
   '.censo-center{text-align:center;vertical-align:middle}' +
   '.censo-bold{font-weight:700}' +
   'td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}' +
-  'td.censo-num .censo-num-val{color:#4a52e8;font-weight:700}' +
+  'td.censo-num .censo-num-val{color:var(--color-accent);font-weight:700}' +
   'td.censo-cama .censo-cama-vline{display:block;margin:0 auto}' +
-  '.censo-cama-vline{font-weight:700;font-size:9px;color:#4a52e8;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
+  '.censo-cama-vline{font-weight:700;font-size:9px;color:var(--color-accent);writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
   '.censo-paciente-nombre,.censo-line--emphasis.censo-paciente-nombre{font-weight:700;color:#1a2332}' +
   censoColgroupCssRules();
 

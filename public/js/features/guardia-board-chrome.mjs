@@ -183,10 +183,10 @@ export function pendingTodoCount(pid) {
 export function labsSnippetForPatient(pid) {
   const history = storage.getLabHistory();
   const rows = Array.isArray(history[pid]) ? history[pid] : [];
-  if (!rows.length) return '—';
+  if (!rows.length) return '';
   const last = rows[rows.length - 1];
   const text = String(last?.text || last?.raw || '').replace(/\s+/g, ' ').trim();
-  if (!text) return '—';
+  if (!text) return '';
   const line = text.split('\n').find((l) => /★|crit|alter|↑|↓/i.test(l)) || text.split('\n')[0] || text;
   return line.slice(0, 48);
 }

@@ -53,6 +53,7 @@ function dispatchSimpleAction(action, deps) {
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'search-users': () => void loadAdminUsers(deps.root, deps.getApi),
     'load-mutations': () => void loadAdminMutations(deps.root, deps.getApi, deps.toast),
+    'purge-room-selected': () => void handlePurgeRoomSelected(deps),
     'close-room-detail': () => {
       deps.setOpenRoomDetailId(null);
       void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps));
@@ -104,7 +105,7 @@ async function handlePromoteSelf(deps) {
     const me = await deps.getApi().me();
     const userId = me?.user?.id;
     if (!userId) {
-      deps.toast('Iniciá sesión en la nube primero.', 'error');
+      deps.toast('Inicia sesión en la nube primero.', 'error');
       return;
     }
     if (!confirmAction('¿Promover tu cuenta a admin en la nube?')) return;
@@ -113,6 +114,20 @@ async function handlePromoteSelf(deps) {
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo promover.', 'error');
   }
+}
+
+/** @param {object} deps */
+function handlePurgeRoomSelected(deps) {
+  const sel = deps.root.querySelector('[data-admin-peligro-room]');
+  if (!(sel instanceof HTMLSelectElement) || !sel.value) {
+    deps.toast('Elige una sala.', 'error');
+    return;
+  }
+  const roomId = sel.value;
+  const room = (deps.roomsCache || []).find(function (r) {
+    return r && r.id === roomId;
+  });
+  void handlePurgeRoom(deps, roomId, (room && room.code) || roomId);
 }
 
 /** @param {object} deps @param {string} roomId */
@@ -131,7 +146,7 @@ async function handleRotateCode(deps, roomId) {
 async function handlePurgeRoom(deps, roomId, code) {
   const typed = await showAdminPromptModal({
     title: 'Purgar sala',
-    message: 'Esto elimina la sala "' + code + '" y todos sus datos en la nube.\n\nEscribí el código de sala para confirmar:',
+    message: 'Esto elimina la sala "' + code + '" y todos sus datos en la nube.\n\nEscribe el código de sala para confirmar:',
     placeholder: code,
     confirmLabel: 'Purgar',
   });

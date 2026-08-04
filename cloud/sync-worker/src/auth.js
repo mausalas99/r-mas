@@ -48,7 +48,7 @@ export function checkRateLimit(key) {
     return;
   }
   if (entry.count >= RATE_LIMIT_MAX) {
-    throw new SyncError('invalid_credentials', 'Demasiados intentos. Esperá unos minutos.');
+    throw new SyncError('invalid_credentials', 'Demasiados intentos. Espera unos minutos.');
   }
 }
 

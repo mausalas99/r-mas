@@ -16,19 +16,19 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Lab repo / Actualizar labs | `lib/lab-repo/`, `lab-repo-import.mjs`, `lab-repo-batch-import.mjs` | Unificado: paciente activo → fechas; sin paciente → mi equipo. [scraper](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
 | Labs externos (manual) | `labs-manual-catalog.mjs`, `labs-manual-synthesize.mjs`, `features/lab-manual-entry.mjs` | [spec](../superpowers/specs/2026-07-31-labs-externos-manual-entry-design.md) — tipo + celdas → historial `origin: 'externo'` |
 | Paste-anywhere / Procesar SOME | `public/js/features/paste-smart.mjs`, `paste-smart-model.mjs` | Global paste or ⌘K → match census → confirm once → Labs |
-| Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs`, `eventualidades-labs-ui.mjs` | Labs → caja «Interpretación de laboratorios» (`labsText`) en Eventualidades (formato Estudios); no crea entradas clínicas; cola docs auto-envía labs de hoy |
+| Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs`, `eventualidades-labs-timeline.mjs` | Interpretación → `labsText` + timeline Labs (auto); [spec](../superpowers/specs/2026-08-03-labs-timeline-auto-ux-design.md) |
 | ⌘K palette (acciones) | `public/js/command-palette-model.mjs`, `features/command-palette.mjs` | Jumps + shift actions (Procesar SOME, labs batch, doc queue, EA, export, pase) |
 | Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: HC / EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
 | Cola cultivos (mi equipo) | `public/js/features/cultivo-queue-panel.mjs`, `cultivo-queue-model.mjs` | ATB pendiente / sin nota → Cultivos |
 | EA → clipboard indicaciones | `public/js/features/ea-indicaciones-clipboard.mjs` | Copiar meds confirmados + bomba a portapapeles |
 | Tendencias | `public/js/features/tendencias.mjs` | |
 | Expediente / tabs | `public/js/expediente-tabs.mjs` | |
-| Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md) |
+| Estado actual | `public/js/features/estado-actual-*.mjs` | [spec](../superpowers/specs/2026-05-26-estado-actual-monitoreo-design.md); Tab spine (skip +1/Alterada): [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md) |
 | Historia clínica | `lib/historia-clinica/`, expediente Sala | [spec](../superpowers/specs/2026-05-31-historia-clinica-institutional-format-design.md) |
 | VPO | `public/js/features/vpo.mjs`, `vpo-*.mjs` | [spec](../superpowers/specs/2026-05-29-vpo-design.md) |
 | Medicamentos / receta | `public/js/med-receta-core.mjs` | |
 | Document export | `lib/doc-generators/`, `document-export-client.mjs` | [spec](../superpowers/specs/2026-05-30-native-document-generation-design.md) |
-| Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `cutover-*`, `panel-cutover*`), `cloud/sync-worker/` | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); first-launch migration panel |
+| Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `cutover-*`, `panel-cutover*`), `cloud/sync-worker/` | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md) |
 | LiveSync / LAN | `public/js/features/lan/`, `lan-squad/` | [spec](../superpowers/specs/2026-06-03-lan-sync-improvements-design.md) |
 | Borrado pacientes (bulk) | `patient-delete-batch.mjs`, `patients-bulk-select.mjs` | Multi-select en sidebar; tombstone + purge host/Nube para que no regresen |
 | Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md) |

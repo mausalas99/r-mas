@@ -115,6 +115,38 @@ export function medsClauseOrEmpty(fieldVal) {
   return medsListForSoap(fieldVal, ', ');
 }
 
+/** Fallback when a required SOAP med category has no drugs. */
+export const SOAP_EMPTY_MED_FALLBACK = 'Ninguno';
+
+/**
+ * Build "LABEL: value" for SOAP/indicaciones. Empty optional categories return "".
+ * Required categories (always) use {@link SOAP_EMPTY_MED_FALLBACK}.
+ * @param {string} label
+ * @param {string} clause
+ * @param {{ always?: boolean }} [opts]
+ * @returns {string}
+ */
+export function soapMedCategorySegment(label, clause, opts) {
+  var val = clause != null ? String(clause).trim() : '';
+  if (val) return label + ': ' + val;
+  if (opts && opts.always) return label + ': ' + SOAP_EMPTY_MED_FALLBACK;
+  return '';
+}
+
+/**
+ * @param {Array<string|false|null|undefined>} segments
+ * @param {string} [joiner]
+ * @returns {string}
+ */
+export function joinSoapMedSegments(segments, joiner) {
+  return (segments || [])
+    .map(function (s) {
+      return s != null ? String(s).trim() : '';
+    })
+    .filter(Boolean)
+    .join(joiner != null ? joiner : ' | ');
+}
+
 const SOPORTE_MAP = {
   'Aire ambiente': 'AL AIRE AMBIENTE',
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
@@ -271,23 +303,36 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
   var antidotosClause = medsClauseOrEmpty(ec.antidotos);
   var viaAereaClause = medsClauseOrEmpty(ec.viaAerea);
   var vasopClause = medsClauseOrEmpty(ec.vasop);
+  var nMeds = joinSoapMedSegments([
+    soapMedCategorySegment('ANALGESIA', analgesiaClause),
+    soapMedCategorySegment('ANTIEMETICOS', antiemeticosClause),
+    soapMedCategorySegment('SEDACION', sedacionClause),
+    soapMedCategorySegment('ANTIEPILEPTICOS', antiepilepticosClause),
+    soapMedCategorySegment('ANTIPARKINSONIANOS', antiparkinsonianosClause),
+    soapMedCategorySegment('ANTIDOTOS', antidotosClause),
+  ]);
+  var hdMeds = joinSoapMedSegments([
+    soapMedCategorySegment('VASOPRESORES', vasopClause, { always: true }),
+    soapMedCategorySegment('ANTIHIPERTENSIVOS', medsClauseOrEmpty(ec.antihta), { always: true }),
+    soapMedCategorySegment('TROMBOPROFILAXIS', medsClauseOrEmpty(ec.antitromboticos), {
+      always: true,
+    }),
+    soapMedCategorySegment('ANTICOAGULACION', medsClauseOrEmpty(ec.anticoagulacion)),
+    soapMedCategorySegment('ANTIARRITMICOS', medsClauseOrEmpty(ec.antiarritmicos)),
+    soapMedCategorySegment('DIURÉTICOS', medsClauseOrEmpty(ec.diureticos)),
+    soapMedCategorySegment('ESTATINAS', medsClauseOrEmpty(ec.estatinas)),
+  ]);
+  var hiMeds = joinSoapMedSegments([
+    soapMedCategorySegment('ANTIBIOTICOTERAPIA', medsClauseOrEmpty(ec.abx), { always: true }),
+    soapMedCategorySegment('TRANSFUSIONES', medsClauseOrEmpty(ec.transfusiones)),
+  ]);
   return [
     'N: FOUR ' +
       num(ec.four) +
       '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' +
       num(ec.esferas) +
-      ' ESFERAS, ALERTA || ANALGESIA: ' +
-      analgesiaClause +
-      ' | ANTIEMETICOS: ' +
-      antiemeticosClause +
-      ' | SEDACION: ' +
-      sedacionClause +
-      ' | ANTIEPILEPTICOS: ' +
-      antiepilepticosClause +
-      ' | ANTIPARKINSONIANOS: ' +
-      antiparkinsonianosClause +
-      ' | ANTIDOTOS: ' +
-      antidotosClause,
+      ' ESFERAS, ALERTA' +
+      (nMeds ? ' || ' + nMeds : ''),
     'V: FR ' +
       num(v.fr) +
       ' RPM, SATO2 ' +
@@ -304,27 +349,9 @@ export function assembleSoapLines(ec, v, soporte, hiTemp, nmClause) {
       num(v.tad) +
       ' MMHG, FC ' +
       num(v.fc) +
-      ' LPM || VASOPRESORES: ' +
-      vasopClause +
-      ' | ANTIHIPERTENSIVOS: ' +
-      medsClauseOrEmpty(ec.antihta) +
-      ' | TROMBOPROFILAXIS: ' +
-      medsClauseOrEmpty(ec.antitromboticos) +
-      ' | ANTICOAGULACION: ' +
-      medsClauseOrEmpty(ec.anticoagulacion) +
-      ' | ANTIARRITMICOS: ' +
-      medsClauseOrEmpty(ec.antiarritmicos) +
-      ' | DIURÉTICOS: ' +
-      medsClauseOrEmpty(ec.diureticos) +
-      ' | ESTATINAS: ' +
-      medsClauseOrEmpty(ec.estatinas),
-    'HI: ' +
-      resolveFebrilLabel(v) +
-      ', ' +
-      hiTemp +
-      ' || ANTIBIOTICOTERAPIA: ' +
-      medsClauseOrEmpty(ec.abx) +
-      (medsClauseOrEmpty(ec.transfusiones) ? ' | TRANSFUSIONES: ' + medsClauseOrEmpty(ec.transfusiones) : ''),
+      ' LPM || ' +
+      hdMeds,
+    'HI: ' + resolveFebrilLabel(v) + ', ' + hiTemp + ' || ' + hiMeds,
     'NM: ' + nmClause,
   ];
 }

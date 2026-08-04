@@ -122,7 +122,7 @@
 <link rel="stylesheet" href="/styles/rams-tufte-workbench.css">
 <link rel="stylesheet" href="/styles/mobile.css">
 <link rel="stylesheet" href="/styles/rpc-date-picker.css">
-<link rel="stylesheet" href="/styles/overlays.css">
+<link rel="stylesheet" href="/styles/overlays.css?v=hybrid-polish-3">
 <link rel="stylesheet" href="/styles/cmdk.css">
 <link rel="stylesheet" href="/styles/mobile-surfaces.css">
 <script src="/vendor/sortable.min.js"></script>
@@ -425,7 +425,7 @@
 </div>
 
 <div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal lab-repo-batch-modal" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
+  <div class="modal lab-repo-batch-modal material-glass" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">
       <h3 id="lab-repo-batch-title">Actualizar labs</h3>
       <p id="lab-repo-batch-hint" class="lab-repo-batch-hint">Mi equipo · rango compartido · la cola queda en la barra lateral</p>
@@ -636,11 +636,11 @@
       </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
-    <button type="button" class="btn-header-icon" id="profile-toggle-btn" onclick="openProfileModal()" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+    <button type="button" class="btn-header-icon ui-pressable" id="profile-toggle-btn" onclick="openProfileModal()" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
     <span id="profile-toggle-label" class="visually-hidden">Mi Perfil</span>
-    <button type="button" class="btn-header-icon btn-livesync-header btn-livesync-header--idle" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión LAN / LiveSync"><svg class="livesync-wifi-icon btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="livesync-wifi-bar livesync-wifi-bar--3" d="M2 8.82a15 15 0 0 1 20 0"/><path class="livesync-wifi-bar livesync-wifi-bar--2" d="M5 12.55a11 11 0 0 1 14 0"/><path class="livesync-wifi-bar livesync-wifi-bar--1" d="M8.5 16.14a6 6 0 0 1 7 0"/><circle class="livesync-wifi-dot" cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg></button>
-    <button type="button" class="btn-header-icon" id="btn-open-learn" hidden onclick="openLearnHub()" title="Aprender R+" aria-label="Aprender R+"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
-    <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button type="button" class="btn-header-icon btn-livesync-header ui-pressable btn-livesync-header--idle" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión LAN / LiveSync"><svg class="livesync-wifi-icon btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="livesync-wifi-bar livesync-wifi-bar--3" d="M2 8.82a15 15 0 0 1 20 0"/><path class="livesync-wifi-bar livesync-wifi-bar--2" d="M5 12.55a11 11 0 0 1 14 0"/><path class="livesync-wifi-bar livesync-wifi-bar--1" d="M8.5 16.14a6 6 0 0 1 7 0"/><circle class="livesync-wifi-dot" cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg></button>
+    <button type="button" class="btn-header-icon ui-pressable" id="btn-open-learn" hidden onclick="openLearnHub()" title="Aprender R+" aria-label="Aprender R+"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
+    <button class="btn-header-icon ui-pressable" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button type="button" id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
   </div>
 </header>
@@ -759,7 +759,7 @@
   <aside id="patient-sidebar" class="patient-sidebar">
     <div class="sidebar-header">
       <div class="sidebar-header-title-row">
-        <button type="button" class="btn-sidebar-auto-hide" id="btn-sidebar-auto-hide" onclick="toggleSidebarAutoHide()" aria-pressed="false" title="Ocultar barra de pacientes (reaparece al acercar el mouse)" aria-label="Ocultar barra de pacientes">
+        <button type="button" class="btn-sidebar-auto-hide ui-pressable" id="btn-sidebar-auto-hide" onclick="toggleSidebarAutoHide()" aria-pressed="false" title="Ocultar barra de pacientes (reaparece al acercar el mouse)" aria-label="Ocultar barra de pacientes">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
         </button>
         <h2 class="visually-hidden">Pacientes</h2>
@@ -775,13 +775,6 @@
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
-      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
-      <div class="patient-bulk-bar-actions">
-        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
-        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
-      </div>
-    </div>
     <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
       <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
@@ -794,6 +787,13 @@
       <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
     </div>
     <div class="patient-list" id="patient-list"></div>
+    <div id="patient-bulk-bar" class="patient-bulk-bar" hidden>
+      <span id="patient-bulk-bar-count" class="patient-bulk-bar-count">0 seleccionados</span>
+      <div class="patient-bulk-bar-actions">
+        <button type="button" class="btn-patient-bulk-delete" onclick="confirmBulkDeletePatients()">Eliminar</button>
+        <button type="button" class="btn-patient-bulk-cancel" onclick="cancelPatientBulkSelect()">Cancelar</button>
+      </div>
+    </div>
     <div id="lab-repo-batch-queue" class="lab-repo-batch-queue" hidden>
       <div class="lab-repo-batch-queue-header">
         <div class="lab-repo-batch-queue-title-row">
@@ -903,7 +903,7 @@
               <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <button id="btn-procesar" class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
+              <button id="btn-procesar" class="btn-generate ui-pressable" onclick="procesarReporte()" style="min-width:140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
@@ -1236,7 +1236,6 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
             </div>
@@ -1586,7 +1585,7 @@
 
 <!-- Templates modal -->
 <div class="templates-modal-backdrop" id="templates-modal" style="display:none;" aria-hidden="true">
-  <div class="templates-modal templates-modal--wide" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
+  <div class="templates-modal templates-modal--wide material-glass" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
     <div class="templates-modal-header">
       <h3 id="templates-modal-title">Formatos clínicos en blanco</h3>
       <p class="templates-modal-lead">Edita a la izquierda; a la derecha ves cómo se verán las secciones en el expediente (Nota e Indicaciones).</p>
@@ -2097,7 +2096,7 @@
 </div>
 
 <div id="settings-dropdown-backdrop" class="modal-backdrop settings-dropdown-backdrop" aria-hidden="true">
-  <div class="modal settings-dropdown settings-dropdown-modal" id="settings-dropdown" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settings-dropdown-title" tabindex="-1" onclick="event.stopPropagation()">
+  <div class="modal settings-dropdown settings-dropdown-modal material-glass" id="settings-dropdown" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settings-dropdown-title" tabindex="-1" onclick="event.stopPropagation()">
     <header class="settings-dropdown-modal-head">
       <h3 id="settings-dropdown-title">Ajustes</h3>
       <div class="settings-dropdown-head-links">
@@ -2702,13 +2701,17 @@
 
 
 <div id="connection-dropdown-backdrop" class="modal-backdrop connection-dropdown-backdrop" aria-hidden="true">
-  <div class="modal connection-dropdown connection-dropdown-modal" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
+  <div class="modal connection-dropdown connection-dropdown-modal material-glass" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title" onclick="event.stopPropagation()">
     <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
     <header class="connection-dropdown-modal-head">
+      <button type="button" class="connection-dropdown-back" id="btn-connection-dropdown-back" data-cloud-action="nav-back" hidden>
+        <span class="connection-dropdown-back-chevron" aria-hidden="true">‹</span>
+        <span class="connection-dropdown-back-label">Conexión</span>
+      </button>
       <div class="connection-dropdown-head">
         <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
-        <div>
-          <div class="connection-dropdown-head-title">Conexión guardia</div>
+        <div class="connection-dropdown-head-text">
+          <div class="connection-dropdown-head-title" id="connection-dropdown-head-title">Conexión guardia</div>
           <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>

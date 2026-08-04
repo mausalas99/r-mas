@@ -7,6 +7,13 @@ test('formatBytes redondea MB legibles', () => {
   assert.match(formatBytes(62075776), /59\.\d+ MB/);
 });
 
+test('formatBytes usa B/KB bajo 1 MB', () => {
+  assert.equal(formatBytes(0), '0 B');
+  assert.equal(formatBytes(512), '512 B');
+  assert.equal(formatBytes(2048), '2.0 KB');
+  assert.equal(formatBytes(15360), '15 KB');
+});
+
 test('formatSpeed devuelve — sin tasa', () => {
   assert.equal(formatSpeed(0), '—');
   assert.equal(formatSpeed(-1), '—');

@@ -126,12 +126,28 @@ export function resumenHtml(data) {
 /** @param {Array<Record<string, unknown>>} rooms */
 export function salasTableHtml(rooms) {
   const cols = [
-    { label: 'Sala', key: 'sala' },
+    {
+      label: 'Sala',
+      cell: (row) => {
+        const sala = String(row.sala || '—');
+        if (sala === 'Sala') {
+          return (
+            '<span class="cloud-sync-admin-sala">' +
+            esc(sala) +
+            '</span><span class="cloud-sync-admin-sala-sub">1 · 2 · E</span>'
+          );
+        }
+        return esc(sala);
+      },
+    },
     { label: 'Turno', cell: (row) => esc(String(row.turnKey || '—')) },
     { label: 'Código', key: 'code' },
     { label: 'Rev.', key: 'revision' },
     { label: 'Miembros', key: 'memberCount' },
-    { label: 'Storage', cell: (row) => esc(formatBytes(Number(row.storageBytes) || 0)) },
+    {
+      label: 'Almacenamiento',
+      cell: (row) => esc(formatBytes(Number(row.storageBytes) || 0)),
+    },
     {
       label: 'Acciones',
       cell: (row) =>
@@ -152,6 +168,7 @@ export function salasTableHtml(rooms) {
   return (
     '<div class="cloud-sync-admin-panel-head">' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-salas">Actualizar</button></div>' +
+    '<p class="cloud-sync-hint cloud-sync-admin-salas-hint">En Nube, Sala 1, Sala 2 y Sala E comparten el mismo espacio por turno. Distinguilas por la fecha de turno.</p>' +
     adminTableHtml(rooms, cols)
   );
 }
@@ -252,7 +269,7 @@ export function mutacionesShellHtml() {
   return (
     '<div class="cloud-sync-admin-toolbar">' +
     '<label class="cloud-sync-admin-toolbar-label">Sala</label>' +
-    '<select class="profile-input" data-admin-mutations-room><option value="">— Elegí sala —</option></select>' +
+    '<select class="profile-input" data-admin-mutations-room><option value="">— Elige una sala —</option></select>' +
     '<button type="button" class="cloud-sync-btn" data-admin-action="load-mutations">Cargar</button></div>' +
     '<div data-admin-mutations-list></div>'
   );
@@ -261,7 +278,7 @@ export function mutacionesShellHtml() {
 /** @param {Array<{ id: string, code?: string, sala?: string, turnKey?: string, memberCount?: number }>} rooms */
 export function mutationsRoomOptionsHtml(rooms) {
   return (
-    '<option value="">— Elegí sala —</option>' +
+    '<option value="">— Elige una sala —</option>' +
     rooms
       .map(
         (r) =>
@@ -293,14 +310,21 @@ export function mutationsListHtml(mutations) {
 export function peligroHtml() {
   return (
     '<div class="cloud-sync-admin-danger">' +
-    '<p class="cloud-sync-hint">Las acciones destructivas afectan solo la nube del piloto (D1). ' +
-    'Los datos clínicos locales en cada Mac no se borran desde aquí.</p>' +
-    '<ul class="cloud-sync-admin-danger-list">' +
-    '<li><strong>Purgar sala</strong> — elimina miembros, mutaciones, estado y la sala. Usá la tabla en Salas.</li>' +
-    '<li><strong>Reset piloto completo</strong> — requiere acceso a Wrangler/Cloudflare: ' +
-    '<code>wrangler d1 execute</code> con el script de wipe documentado en el README del worker. ' +
-    'No ejecutar en producción sin anuncio al equipo.</li>' +
-    '<li><strong>Revocar sesiones</strong> — por usuario en la sección Usuarios.</li></ul></div>'
+    '<p class="cloud-sync-hint">Solo afecta datos en la nube del piloto (D1). Lo local en cada Mac no se borra.</p>' +
+    '<section class="cloud-sync-admin-danger-card">' +
+    '<h5 class="cloud-sync-admin-danger-title">Purgar sala</h5>' +
+    '<p class="cloud-sync-hint">Elimina miembros, mutaciones, estado y la sala.</p>' +
+    '<div class="cloud-sync-admin-toolbar">' +
+    '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-peligro-room">Sala</label>' +
+    '<select id="cloud-admin-peligro-room" class="profile-input" data-admin-peligro-room>' +
+    '<option value="">— Elige una sala —</option></select>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--danger" data-admin-action="purge-room-selected">Purgar</button>' +
+    '</div></section>' +
+    '<section class="cloud-sync-admin-danger-card">' +
+    '<h5 class="cloud-sync-admin-danger-title">Usuarios</h5>' +
+    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas.</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="usuarios">Ir a Usuarios</button>' +
+    '</section></div>'
   );
 }
 

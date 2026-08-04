@@ -1,9 +1,14 @@
 /**
  * @param {number} bytes
- * @returns {string} Ej. "12.3 MB"
+ * @returns {string} Ej. "12.3 MB", "4.2 KB", "512 B"
  */
 export function formatBytes(bytes) {
-  if (!Number.isFinite(bytes) || bytes < 0) return '0 MB';
+  if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  if (bytes < 1024 * 1024) {
+    const kb = bytes / 1024;
+    return kb >= 10 ? `${Math.round(kb)} KB` : `${kb.toFixed(1)} KB`;
+  }
   const mb = bytes / (1024 * 1024);
   if (mb >= 100) return `${Math.round(mb)} MB`;
   if (mb >= 10) return `${mb.toFixed(1)} MB`;

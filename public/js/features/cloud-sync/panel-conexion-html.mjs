@@ -76,17 +76,21 @@ export function roomConnectedHtml(room, getRevision) {
   const turn = String(room?.turnKey || '').trim();
   return (
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
-    '<dl class="cloud-sync-settings-rows" aria-label="Sala nube">' +
+    '<dl class="cloud-sync-inset-group" aria-label="Sala nube">' +
     (turn
-      ? '<div class="cloud-sync-settings-row"><dt>Turno</dt><dd>' + esc(turn) + '</dd></div>'
+      ? '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Turno</dt><dd>' +
+        esc(turn) +
+        '</dd></div>'
       : '') +
-    '<div class="cloud-sync-settings-row"><dt>Código</dt><dd><code data-cloud-room-code>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Código</dt><dd><code data-cloud-room-code>' +
     esc(code || '—') +
     '</code></dd></div>' +
-    '<div class="cloud-sync-settings-row"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
+    '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Revisión</dt><dd><span data-cloud-room-revision>' +
     esc(String(revision)) +
     '</span></dd></div></dl>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--danger-text" data-cloud-action="leave-room">Salir de la sala</button></div>'
+    '<div class="cloud-sync-inset-group">' +
+    '<button type="button" class="cloud-sync-inset-row cloud-sync-inset-row--action cloud-sync-inset-row--danger" data-cloud-action="leave-room">Salir de la sala</button>' +
+    '</div></div>'
   );
 }
 

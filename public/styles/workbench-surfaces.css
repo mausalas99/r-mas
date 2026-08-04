@@ -68,12 +68,14 @@ html.high-contrast.ui-density-normal .patient-expediente-classic {
 .patient-expediente-classic .card,
 #patient-expediente .listado-section,
 .patient-expediente-classic .listado-section {
-  border: none;
+  border: var(--border-hairline);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-border);
+  box-shadow: none;
   overflow: hidden;
-  background: var(--surface);
-  transition: box-shadow var(--dur-fast) var(--ease-out);
+  background: var(--color-elevated);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 html.high-contrast #patient-expediente .card,
@@ -115,7 +117,39 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 #patient-expediente .listado-section-body,
 .patient-expediente-classic .listado-section-body {
   font: var(--type-body);
-  background: var(--card-body-bg);
+  background: var(--color-elevated);
+}
+
+/* Hybrid H · expediente / HC export CTAs */
+#patient-expediente .btn-generate,
+.patient-expediente-classic .btn-generate,
+#historia-clinica-mount .hc-toolbar .btn-generate {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: none;
+}
+
+#patient-expediente .btn-generate:hover:not(:disabled):not(.loading),
+.patient-expediente-classic .btn-generate:hover:not(:disabled):not(.loading),
+#historia-clinica-mount .hc-toolbar .btn-generate:hover:not(:disabled):not(.loading) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+#patient-expediente .btn-generate--success,
+.patient-expediente-classic .btn-generate--success,
+#historia-clinica-mount .hc-toolbar .btn-generate--success {
+  background: var(--color-success-emphasis);
+  border-color: var(--color-success-emphasis);
+  color: var(--color-on-success);
+}
+
+#patient-expediente .btn-generate--success:hover:not(:disabled):not(.loading),
+.patient-expediente-classic .btn-generate--success:hover:not(:disabled):not(.loading),
+#historia-clinica-mount .hc-toolbar .btn-generate--success:hover:not(:disabled):not(.loading) {
+  background: var(--color-success-emphasis-hover);
+  border-color: var(--color-success-emphasis-hover);
 }
 
 .patient-expediente-classic .listado-row {
@@ -252,33 +286,32 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   order: 3;
   flex-shrink: 0;
   margin-top: auto;
+  /* Full-bleed footer bg (cancel shell 12px), but keep grid gutters = todo-row (shell 12 + row 12). */
   margin-left: -12px;
   margin-right: -12px;
-  display: grid;
-  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
-  column-gap: 10px;
-  row-gap: 8px;
-  align-items: center;
-  padding: 12px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  padding: 12px 24px 14px;
   border: none;
   border-top: 1px solid var(--border, var(--divider));
   border-radius: 0;
-  background: color-mix(in oklab, var(--bg) 30%, var(--surface));
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
   box-shadow: none;
 }
 
-/* Subgrid: Agregar vive solo en la fila del input (no se centra contra Fecha límite). */
 .exp-pendientes-mount .todo-composer > .todo-add-row {
-  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
+  grid-template-columns: var(--todo-grid-prio) var(--todo-grid-check) minmax(0, 1fr) var(--todo-grid-actions);
+  align-items: start;
   column-gap: 10px;
   margin: 0;
   padding: 0;
   border: none;
   background: transparent;
 }
+
 
 .exp-pendientes-mount .todo-composer .todo-prio-chip {
   width: 100%;
@@ -315,23 +348,37 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
 
 .exp-pendientes-mount .todo-composer .todo-add-btn {
   justify-self: stretch;
-  align-self: center;
+  align-self: start;
   width: 100%;
   min-height: 38px;
   height: 38px;
   padding: 0 12px;
   font-size: 13px;
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--radius-pill, 999px);
   box-sizing: border-box;
+  background: var(--action);
+  color: var(--color-on-accent);
+  border: 1px solid color-mix(in oklab, var(--action) 80%, var(--border));
+}
+
+html.dark .exp-pendientes-mount .todo-composer .todo-add-btn {
+  background: var(--action);
+  color: var(--color-on-accent);
+  border-color: color-mix(in oklab, var(--action) 70%, var(--border));
+}
+
+html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
+  background: var(--action-hover);
 }
 
 .exp-pendientes-mount .todo-composer .todo-due-section {
-  grid-column: 3 / 4;
-  margin: 0;
+  /* Under input only — must not reset to margin:0 (breaks column lock) */
+  margin-left: calc(var(--todo-grid-prio) + var(--todo-grid-check) + 20px);
+  margin-right: calc(var(--todo-grid-actions) + 10px);
   padding: 0;
   border-top: none;
-  align-self: start;
-  gap: 4px;
+  align-self: stretch;
+  gap: 6px;
 }
 
 .exp-pendientes-mount .todo-composer .todo-due-section-primary {
@@ -804,17 +851,19 @@ html.high-contrast:not(.ui-density-normal) .pase-section {
 }
 
 #appcontent-agenda .rpc-proc-agenda-block {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-flat);
+  border: 1px solid var(--color-agenda-block-border);
+  background: var(--color-agenda-block-bg);
+  box-shadow: none;
   transition:
     transform var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
+    background var(--dur-fast) var(--ease-out);
 }
 
 #appcontent-agenda .rpc-proc-agenda-block:hover {
-  box-shadow: var(--elev-raised);
-  background: var(--state-hover-bg);
+  box-shadow: none;
+  background: color-mix(in oklab, var(--color-ink) 6%, var(--color-agenda-block-bg));
+  border-color: color-mix(in oklab, var(--color-ink) 42%, var(--color-agenda-block-border));
 }
 
 html.high-contrast #appcontent-med .card,

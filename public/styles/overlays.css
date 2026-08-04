@@ -1,14 +1,11 @@
 /* Glass treatment for overlay surfaces (design system phase 1).
  * Content panes stay opaque; only floating chrome gets glass.
  * html.no-blur is the performance escape hatch (see spec risk #2).
- * .toast.success and .toast.error intentionally stay opaque — their higher-
- * specificity semantic color rules (in lab.css) win. Clinical urgency toasts
- * must remain unambiguous and are excluded from glass by design. */
+ * Toasts are NEVER glass (legibility). Opaque ink in lab.css / below. */
 
 .settings-dropdown,
 .connection-dropdown,
 .modal,
-.toast,
 .cmdk,
 .learn-hub-sheet,
 .interno-sheet,
@@ -25,7 +22,6 @@
   .settings-dropdown,
   .connection-dropdown,
   .modal,
-  .toast,
   .cmdk,
   .learn-hub-sheet,
   .interno-sheet,
@@ -38,7 +34,6 @@
 html.no-blur .settings-dropdown,
 html.no-blur .connection-dropdown,
 html.no-blur .modal,
-html.no-blur .toast,
 html.no-blur .cmdk,
 html.no-blur .learn-hub-sheet,
 html.no-blur .interno-sheet,
@@ -49,3 +44,79 @@ html.no-blur #tour-dock .tour-dock-inner {
   backdrop-filter: none;
   border: none;
 }
+
+/* Hybrid H: prefer material-glass utility (ui-overlay.css) on new overlay panels. */
+.settings-dropdown.material-glass,
+.connection-dropdown.material-glass {
+  background: var(--material-glass-bg);
+  -webkit-backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  backdrop-filter: blur(var(--material-glass-blur)) saturate(var(--material-glass-saturate, 180%));
+  border: var(--material-glass-border);
+}
+
+
+/* ── Hybrid H polish pass: readable toasts + Conexión glass + softer dark CTAs ── */
+.toast,
+.toast.material-glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: #1c1c1e !important;
+  color: #f5f5f7 !important;
+  border: 1px solid color-mix(in oklab, #ffffff 18%, transparent) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--elev-overlay, 0 8px 28px rgba(0,0,0,0.35)) !important;
+}
+html.dark .toast,
+html.dark .toast.material-glass {
+  background: #2c2c2e !important;
+  color: #f5f5f7 !important;
+}
+.toast.success,
+html.dark .toast.success {
+  background: #047857 !important;
+  color: #ffffff !important;
+}
+.toast.error,
+html.dark .toast.error {
+  background: #c62828 !important;
+  color: #ffffff !important;
+}
+.toast.warn,
+html.dark .toast.warn {
+  background: #b45309 !important;
+  color: #ffffff !important;
+}
+.toast.info,
+html.dark .toast.info {
+  background: #3a3a3c !important;
+  color: #f5f5f7 !important;
+}
+
+/* Connection modal: solid elevated — no glass head/body banding */
+#connection-dropdown-backdrop .connection-dropdown.connection-dropdown-modal {
+  background: var(--color-elevated, var(--surface)) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent) !important;
+}
+
+
+.cloud-sync-status-chip {
+  border-radius: 999px !important;
+  padding: 5px 12px !important;
+  border: 1px solid color-mix(in oklab, var(--text) 14%, var(--divider)) !important;
+  background: color-mix(in oklab, var(--text) 6%, var(--color-elevated)) !important;
+  color: var(--text) !important;
+  font-weight: 650 !important;
+}
+
+.cloud-sync-options-label {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  padding-left: 4px !important;
+}
+
+/* Options: no body view-bar — nav is modal head only */

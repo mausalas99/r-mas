@@ -101,7 +101,7 @@ export async function loadAdminMutations(root, getApi, toast) {
   if (!(sel instanceof HTMLSelectElement) || !list) return;
   const roomId = String(sel.value || '').trim();
   if (!roomId) {
-    toast('Elegí una sala.', 'error');
+    toast('Elige una sala.', 'error');
     return;
   }
   list.innerHTML = '<p class="cloud-sync-hint">Cargando…</p>';

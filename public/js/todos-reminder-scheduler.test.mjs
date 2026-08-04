@@ -65,7 +65,7 @@ test('schedules future reminder', () => {
 
   mock.timers.tick(60 * 60 * 1000);
   assert.equal(notifications.length, 2);
-  assert.equal(notifications[0], 'Pendiente: Juan Pérez — Revisar labs');
+  assert.equal(notifications[0], 'Pendiente · Juan Pérez — Revisar labs');
   assert.equal(notifications[1].todo.id, 'todo-1');
 });
 
@@ -81,7 +81,7 @@ test('fires immediately for past reminderAt', () => {
 
   rescheduleAllTodos(PATIENT);
   assert.equal(toasts.length, 1);
-  assert.equal(toasts[0], 'Pendiente: Cama 12 — Revisar labs');
+  assert.equal(toasts[0], 'Pendiente · Cama 12 — Revisar labs');
 });
 
 test('cancel on reschedule clears old timeout', () => {
@@ -119,6 +119,22 @@ test('completed todos not scheduled', () => {
   assert.equal(toasts.length, 0);
   mock.timers.tick(24 * 60 * 60 * 1000);
   assert.equal(toasts.length, 0);
+});
+
+test('reminder toast uses warn type', () => {
+  const calls = [];
+  configureTodoReminderScheduler({
+    getPatientLabel: () => 'Ana',
+    showToast: (msg, type) => calls.push({ msg, type }),
+  });
+
+  const past = new Date(NOW.getTime() - 1000).toISOString();
+  seedTodos([todo({ reminderAt: past, text: 'Labs' })]);
+  rescheduleAllTodos(PATIENT);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].type, 'warn');
+  assert.equal(calls[0].msg, 'Pendiente · Ana — Labs');
 });
 
 test('rescheduleAllTodos without patientId scans rpc-todos keys', () => {

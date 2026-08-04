@@ -12,26 +12,18 @@ import {
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
 import {
   rt,
-  normalizeEventualidadText,
-  toEventualidadDateValue,
   eventualidadDateToIso,
   appendEventualidad,
   updateEventualidad,
   findEventualidadEntry,
   removeEventualidad,
-  formatDaySubLabel,
   groupEntriesByDay,
   getEventualidadesLabsText,
   setEventualidadesLabsText,
   mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
-import {
-  renderEventualidadesLabsPane,
-  wireEventualidadesLabsBox,
-  fillEventualidadesLabsInput,
-} from './eventualidades-labs-ui.mjs';
-
-import { esc } from '../dom-escape.mjs';
+import { buildEventualidadesPanelHtml } from './eventualidades-panel-html.mjs';
+import { removeLabsTextBlock } from './eventualidades-labs-timeline.mjs';
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
@@ -41,7 +33,7 @@ let _pendingPrefillText = null;
 let _composeMode = 'note';
 
 /**
- * Queue text into the labs interpretation box (mismo registro Eventualidades).
+ * Queue text into labsText (merge) and show Labs timeline.
  * @param {string} text
  * @returns {boolean}
  */
@@ -58,7 +50,7 @@ export function queueEventualidadesPrefill(text) {
 }
 
 /**
- * Apply queued prefill into the labs box if the mount exists.
+ * Apply queued prefill by merging into labsText if the mount exists.
  * @param {HTMLElement|null} [mountEl]
  * @returns {boolean}
  */
@@ -75,7 +67,13 @@ function fillLabsFromPending_(mountEl) {
   if (!_pendingPrefillText || !mountEl) return false;
   var pending = _pendingPrefillText;
   _pendingPrefillText = null;
-  return fillEventualidadesLabsInput(mountEl, pending, setComposeMode_);
+  _composeMode = 'labs';
+  var patient = activePatient();
+  if (!patient) return false;
+  void savePatientEventualidadesLabs(patient, pending, { mode: 'merge' }).then(function (out) {
+    if (out && out.ok) renderEventualidadesPanel(mountEl);
+  });
+  return true;
 }
 
 /**
@@ -83,15 +81,21 @@ function fillLabsFromPending_(mountEl) {
  * @param {HTMLElement|null} [mountEl]
  */
 function setComposeMode_(mode, mountEl) {
-  _composeMode = mode === 'labs' ? 'labs' : 'note';
+  var next = mode === 'labs' ? 'labs' : 'note';
+  var changed = _composeMode !== next;
+  _composeMode = next;
   var mount =
     mountEl ||
     (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
   if (!mount) return;
+  if (changed) {
+    renderEventualidadesPanel(mount);
+    return;
+  }
   applyComposeModeDom_(mount, _composeMode);
 }
 
-/** Prefer Labs pane (autosend / doc-queue) without rewriting text. */
+/** Prefer Labs timeline (autosend / doc-queue) without rewriting text. */
 export function selectEventualidadesLabsMode() {
   setComposeMode_('labs');
 }
@@ -101,93 +105,15 @@ export function selectEventualidadesLabsMode() {
  * @param {'note'|'labs'} mode
  */
 function applyComposeModeDom_(mountEl, mode) {
-  var dock = mountEl.querySelector('.ev-compose');
-  if (!dock) return;
-  dock.setAttribute('data-ev-mode', mode);
-  dock.querySelectorAll('.ev-compose__tab[data-ev-mode]').forEach(function (btn) {
+  var panel = mountEl.querySelector('.ev-panel');
+  if (panel) panel.setAttribute('data-ev-view', mode);
+  mountEl.querySelectorAll('.ev-mode-switch__tab[data-ev-mode]').forEach(function (btn) {
     var on = btn.getAttribute('data-ev-mode') === mode;
     btn.classList.toggle('active', on);
     btn.setAttribute('aria-selected', on ? 'true' : 'false');
   });
-  dock.querySelectorAll('[data-ev-pane]').forEach(function (pane) {
-    var on = pane.getAttribute('data-ev-pane') === mode;
-    pane.hidden = !on;
-    pane.classList.toggle('ev-compose__pane--active', on);
-  });
-}
-
-function daySectionIsOpen(dayGroup, editingId) {
-  if (_dayOpenPrefs.has(dayGroup.day)) return _dayOpenPrefs.get(dayGroup.day);
-  if (dayGroup.isToday) return true;
-  if (
-    editingId &&
-    dayGroup.entries.some(function (e) {
-      return e && String(e.id) === String(editingId);
-    })
-  ) {
-    return true;
-  }
-  return false;
-}
-
-function renderEntryCard(entry, editingId) {
-  const isEditing = editingId && String(entry.id) === String(editingId);
-  return (
-    '<article class="ev-card' +
-    (isEditing ? ' ev-card--editing' : '') +
-    '" data-entry-id="' +
-    esc(entry.id) +
-    '">' +
-    '<p class="ev-card__text">' +
-    esc(normalizeEventualidadText(entry.text)) +
-    '</p>' +
-    '<footer class="ev-card__foot">' +
-    '<div class="ev-card__actions">' +
-    '<button type="button" class="ev-card__edit" data-ev-edit="' +
-    esc(entry.id) +
-    '" aria-label="Editar eventualidad">Editar</button>' +
-    '<button type="button" class="ev-card__delete" data-ev-delete="' +
-    esc(entry.id) +
-    '" aria-label="Eliminar eventualidad">Eliminar</button>' +
-    '</div></footer>' +
-    '</article>'
-  );
-}
-
-function renderDaySection(dayGroup, editingId, now) {
-  const n = dayGroup.entries.length;
-  const countLabel = n === 1 ? '1 registro' : n + ' registros';
-  const subLabel = formatDaySubLabel(dayGroup.day, now);
-  const todayClass = dayGroup.isToday ? ' ev-day--today' : '';
-  const isOpen = daySectionIsOpen(dayGroup, editingId);
-  return (
-    '<details class="ev-day' +
-    todayClass +
-    '"' +
-    (isOpen ? ' open' : '') +
-    ' data-day="' +
-    esc(dayGroup.day) +
-    '">' +
-    '<summary class="ev-day__summary">' +
-    '<span class="ev-day__chevron" aria-hidden="true"></span>' +
-    '<div class="ev-day__titles">' +
-    '<span class="ev-day__pill">' +
-    esc(dayGroup.label) +
-    '</span>' +
-    (subLabel ? '<span class="ev-day__date">' + esc(subLabel) + '</span>' : '') +
-    '</div>' +
-    '<span class="ev-day__count">' +
-    esc(countLabel) +
-    '</span>' +
-    '</summary>' +
-    '<div class="ev-day__panel">' +
-    dayGroup.entries
-      .map(function (e) {
-        return renderEntryCard(e, editingId);
-      })
-      .join('') +
-    '</div></details>'
-  );
+  var switchEl = mountEl.querySelector('.ev-mode-switch');
+  if (switchEl) switchEl.setAttribute('data-ev-mode', mode);
 }
 
 function wireEventualidadesUppercase(input) {
@@ -207,114 +133,12 @@ function wireEventualidadesUppercase(input) {
   });
 }
 
-function renderComposeSwitcher(mode, isEdit) {
-  const active = isEdit ? 'note' : mode;
-  return (
-    '<div class="ev-compose__switch" role="tablist" aria-label="Tipo de registro">' +
-    '<span class="ev-compose__switch-pill" aria-hidden="true"></span>' +
-    '<button type="button" class="ev-compose__tab' +
-    (active === 'note' ? ' active' : '') +
-    '" role="tab" data-ev-mode="note" aria-selected="' +
-    (active === 'note' ? 'true' : 'false') +
-    '">Eventualidad</button>' +
-    '<button type="button" class="ev-compose__tab' +
-    (active === 'labs' ? ' active' : '') +
-    '" role="tab" data-ev-mode="labs" aria-selected="' +
-    (active === 'labs' ? 'true' : 'false') +
-    '"' +
-    (isEdit ? ' disabled title="Termina la edición para cambiar a Labs"' : '') +
-    '>Labs</button>' +
-    '</div>'
-  );
-}
-
-function renderNotePane(editingEntry) {
-  const isEdit = !!editingEntry;
-  const atValue = isEdit
-    ? toEventualidadDateValue(editingEntry.at)
-    : toEventualidadDateValue(new Date());
-  const textValue = isEdit ? String(editingEntry.text || '') : '';
-  return (
-    '<div class="ev-compose__pane" data-ev-pane="note"' +
-    (isEdit || _composeMode !== 'labs' ? '' : ' hidden') +
-    '>' +
-    '<div class="ev-compose__top">' +
-    '<label class="ev-compose__label" for="eventualidades-input">' +
-    (isEdit ? 'Editar eventualidad' : 'Nueva eventualidad') +
-    '</label>' +
-    '<div class="ev-compose__date-slot">' +
-    '<input type="date" id="eventualidades-at" class="rpc-date-input" value="' +
-    esc(atValue) +
-    '" title="Fecha de la eventualidad" aria-label="Fecha de la eventualidad">' +
-    '</div></div>' +
-    '<textarea id="eventualidades-input" class="ev-compose__input" rows="2" placeholder="Describe lo ocurrido…">' +
-    esc(textValue) +
-    '</textarea>' +
-    '<div class="ev-compose__actions">' +
-    '<span class="ev-compose__hint">' +
-    (isEdit ? 'Puedes cambiar la fecha y el texto' : 'Elige una fecha anterior si aplica') +
-    '</span>' +
-    '<div class="ev-compose__btns">' +
-    (isEdit
-      ? '<button type="button" class="ea-btn ea-btn--ghost ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>'
-      : '') +
-    '<button type="button" class="ea-btn ea-btn--primary ev-compose__submit" id="eventualidades-add">' +
-    (isEdit ? 'Guardar' : 'Agregar') +
-    '</button>' +
-    '</div></div></div>'
-  );
-}
-
-function renderComposeBlock(editingEntry, store) {
-  const isEdit = !!editingEntry;
-  const mode = isEdit ? 'note' : _composeMode;
-  return (
-    '<footer class="ev-compose" data-ev-mode="' +
-    esc(mode) +
-    '">' +
-    '<div class="ev-compose__card' +
-    (isEdit ? ' ev-compose__card--edit' : '') +
-    '">' +
-    renderComposeSwitcher(mode, isEdit) +
-    renderNotePane(editingEntry) +
-    '<div class="ev-compose__pane" data-ev-pane="labs"' +
-    (mode === 'labs' ? '' : ' hidden') +
-    '>' +
-    renderEventualidadesLabsPane(store) +
-    '</div></div></footer>'
-  );
-}
-
 function activePatient() {
   const id = rt.getActiveId();
   if (!id) return null;
   return patients.find(function (p) {
     return String(p.id) === String(id);
   });
-}
-
-function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, store) {
-  return (
-    '<div class="ev-panel">' +
-    '<header class="ev-panel__head">' +
-    '<p class="ev-panel__hint">Bitácora cronológica de la hospitalización, agrupada por día.</p>' +
-    '</header>' +
-    '<div class="ev-timeline' +
-    (hasEntries ? '' : ' ev-timeline--empty') +
-    '" role="feed" aria-label="Eventualidades por día">' +
-    (hasEntries
-      ? '<div class="ev-timeline__days">' +
-        byDay
-          .map(function (day) {
-            return renderDaySection(day, _editingEntryId, new Date());
-          })
-          .join('') +
-        '</div>'
-      : '<p class="ev-empty">Aún no hay eventualidades. Usa el switcher de abajo: Eventualidad o Labs.</p>') +
-    '</div>' +
-    renderComposeBlock(editingEntry, store) +
-    '</div>'
-  );
 }
 
 export function ensureEventualidades(patient) {
@@ -449,6 +273,23 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
   const timeline = mountEl.querySelector('.ev-timeline');
   if (!timeline) return;
   timeline.addEventListener('click', function (ev) {
+    const labsDel = ev.target.closest('[data-ev-labs-delete]');
+    if (labsDel) {
+      const blockId = labsDel.getAttribute('data-ev-labs-delete');
+      if (!blockId) return;
+      if (!confirm('¿Eliminar esta interpretación de labs?')) return;
+      void (async function () {
+        const removed = removeLabsTextBlock(getEventualidadesLabsText(store), blockId);
+        if (!removed.changed) return;
+        const next = setEventualidadesLabsText(store, removed.labsText);
+        const out = await persistEventualidades(patient, next);
+        if (out && out.ok) {
+          rt.showToast('Interpretación eliminada.', 'success');
+          renderEventualidadesPanel(mountEl);
+        }
+      })();
+      return;
+    }
     const delBtn = ev.target.closest('[data-ev-delete]');
     if (delBtn) {
       const delId = delBtn.getAttribute('data-ev-delete');
@@ -480,21 +321,22 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
 }
 
 function wireEventualidadesComposeSwitcher(mountEl) {
-  const switchEl = mountEl.querySelector('.ev-compose__switch');
+  const switchEl = mountEl.querySelector('.ev-mode-switch');
   if (!switchEl || switchEl.dataset.evSwitchWired === '1') return;
   switchEl.dataset.evSwitchWired = '1';
   switchEl.addEventListener('click', function (ev) {
-    const btn = ev.target.closest('.ev-compose__tab[data-ev-mode]');
+    const btn = ev.target.closest('.ev-mode-switch__tab[data-ev-mode]');
     if (!btn || btn.disabled || !switchEl.contains(btn)) return;
     const mode = btn.getAttribute('data-ev-mode') === 'labs' ? 'labs' : 'note';
     setComposeMode_(mode, mountEl);
-    const focusId = mode === 'labs' ? '#eventualidades-labs' : '#eventualidades-input';
-    const focusEl = mountEl.querySelector(focusId);
-    if (focusEl && typeof focusEl.focus === 'function') {
-      try {
-        focusEl.focus();
-      } catch {
-        /* ignore */
+    if (mode === 'note') {
+      const focusEl = mountEl.querySelector('#eventualidades-input');
+      if (focusEl && typeof focusEl.focus === 'function') {
+        try {
+          focusEl.focus();
+        } catch {
+          /* ignore */
+        }
       }
     }
   });
@@ -567,14 +409,24 @@ export function renderEventualidadesPanel(mountEl) {
   if (_editingEntryId) _composeMode = 'note';
   const byDay = groupEntriesByDay(store.entries);
   const hasEntries = byDay.length > 0;
+  const timelineMode = _editingEntryId ? 'note' : _composeMode;
 
-  mountEl.innerHTML = buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, store);
+  mountEl.innerHTML = buildEventualidadesPanelHtml(
+    byDay,
+    hasEntries,
+    editingEntry,
+    store,
+    timelineMode,
+    {
+      editingEntryId: _editingEntryId,
+      composeMode: _composeMode,
+      dayOpenPrefs: _dayOpenPrefs,
+    }
+  );
   refreshRpcDateFields(mountEl);
   wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
   wireEventualidadesDayToggles(mountEl);
-  wireEventualidadesLabsBox(mountEl, function (next) {
-    return persistEventualidades(patient, next);
-  }, patient, store);
+  wireEventualidadesComposeSwitcher(mountEl);
   wireEventualidadesCompose(mountEl, patient, store);
   wireEventualidadesTimeline(mountEl, patient, store);
   applyComposeModeDom_(mountEl, _editingEntryId ? 'note' : _composeMode);

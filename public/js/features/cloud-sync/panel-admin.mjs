@@ -76,12 +76,22 @@ export function mountCloudAdminPanel(host, deps) {
   const usersEl = root.querySelector('[data-admin-usuarios]');
   if (usersEl) usersEl.innerHTML = usuariosShellHtml();
 
-  function updateMutacionesRoomSelect() {
-    const sel = root.querySelector('[data-admin-mutations-room]');
-    if (!(sel instanceof HTMLSelectElement)) return;
-    const prev = sel.value;
-    sel.innerHTML = mutationsRoomOptionsHtml(roomsCache);
-    if (prev) sel.value = prev;
+  function updateRoomSelects() {
+    const prevMut = (() => {
+      const sel = root.querySelector('[data-admin-mutations-room]');
+      return sel instanceof HTMLSelectElement ? sel.value : '';
+    })();
+    const prevPel = (() => {
+      const sel = root.querySelector('[data-admin-peligro-room]');
+      return sel instanceof HTMLSelectElement ? sel.value : '';
+    })();
+    const opts = mutationsRoomOptionsHtml(roomsCache);
+    root.querySelectorAll('[data-admin-mutations-room], [data-admin-peligro-room]').forEach(function (el) {
+      if (!(el instanceof HTMLSelectElement)) return;
+      const keep = el.hasAttribute('data-admin-mutations-room') ? prevMut : prevPel;
+      el.innerHTML = opts;
+      if (keep) el.value = keep;
+    });
   }
 
   const clickDeps = {
@@ -95,7 +105,7 @@ export function mountCloudAdminPanel(host, deps) {
     setOpenRoomDetailId(id) {
       openRoomDetailId = id;
     },
-    updateMutacionesRoomSelect,
+    updateMutacionesRoomSelect: updateRoomSelects,
   };
 
   const onAdminAction = createAdminClickHandler(clickDeps);
@@ -114,7 +124,7 @@ export function mountCloudAdminPanel(host, deps) {
     get openRoomDetailId() {
       return openRoomDetailId;
     },
-    updateMutacionesRoomSelect,
+    updateMutacionesRoomSelect: updateRoomSelects,
     loadRoomDetail: () => Promise.resolve(),
   };
 

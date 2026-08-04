@@ -1,7 +1,7 @@
 import { esc } from '../../dom-escape.mjs';
 
 const DEFAULT_TITLE = 'Código de recuperación';
-const BODY_COPY = 'Guardá este código de recuperación. No lo volveremos a mostrar.';
+const BODY_COPY = 'Guarda este código de recuperación. No lo volveremos a mostrar.';
 const CHECKBOX_LABEL = 'Lo guardé en un lugar seguro';
 const CONTINUE_LABEL = 'Continuar';
 const COPY_LABEL = 'Copiar';
@@ -17,7 +17,7 @@ export function recoveryModalMarkup(code, title) {
   const safeCode = esc(code);
   return (
     '<div class="lab-conflict-backdrop" data-recovery-code-modal>' +
-    '<div class="lab-conflict-modal cloud-sync-recovery-modal" role="dialog" aria-modal="true">' +
+    '<div class="lab-conflict-modal cloud-sync-recovery-modal material-glass ui-overlay-dialog" role="dialog" aria-modal="true">' +
     '<h3 style="margin:0 0 10px;">' +
     heading +
     '</h3>' +

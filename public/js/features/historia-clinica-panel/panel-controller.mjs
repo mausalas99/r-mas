@@ -22,11 +22,11 @@ export function renderPanel(root) {
   var toolbar =
     '<div class="hc-toolbar">' +
     (!hcState.editMode && !mobile
-      ? '<button type="button" class="btn-generate" id="hc-edit-toggle">Editar historia</button>' +
+      ? '<button type="button" class="btn-generate ui-pressable" id="hc-edit-toggle">Editar historia</button>' +
         '<button type="button" class="btn-med-secondary" id="hc-copy">Copiar historia</button>'
       : '') +
     (hcState.editMode && !mobile
-      ? '<button type="button" class="btn-generate" id="hc-save">Guardar</button>' +
+      ? '<button type="button" class="btn-generate ui-pressable" id="hc-save">Guardar</button>' +
         '<button type="button" class="btn-med-secondary" id="hc-cancel-edit">Cancelar</button>'
       : '') +
     '</div>';
@@ -64,8 +64,8 @@ export function renderPanel(root) {
     '<div class="hc-step-footer">' +
     (hcState.step > 1 ? '<button type="button" class="btn-med-secondary" id="hc-prev">Anterior</button>' : '') +
     (hcState.step < 3
-      ? '<button type="button" class="btn-generate" id="hc-next">Siguiente</button>'
-      : '<button type="button" class="btn-generate" id="hc-save">Guardar</button>') +
+      ? '<button type="button" class="btn-generate ui-pressable" id="hc-next">Siguiente</button>'
+      : '<button type="button" class="btn-generate ui-pressable" id="hc-save">Guardar</button>') +
     '</div>';
 
   mountApnpHabits(root, patient);

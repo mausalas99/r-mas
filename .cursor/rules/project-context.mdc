@@ -127,6 +127,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 - **Schema changes**: bump in `lib/db/schema.mjs`, migration + test in `lib/db/schema.test.mjs`.
 - **Spanish UI** copy; code/comments mix EN/ES like surrounding files.
 - **No scope creep**: match existing patterns; minimal diffs.
+- **Conexión / Opciones chrome (HARD):** Fix sharp corners with `border-radius` only. **Never** shrink `#connection-dropdown` / modal width (keep `min(96vw, 960px)`), padding, or Electron window size when rounding corners. Missing `.cloud-sync-inset-group` styles ≠ “make the sheet smaller.”
 
 ---
 
@@ -134,7 +135,9 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-03** `hybrid-h`: Apple Hybrid UI materials/overlays/chrome onto main; tokens + ui-overlay + Conexión/labs/pase/eventualidades polish.
 - **2026-08-03** `ttd-tooltime`: Labs pane nav + EA Tab spine + Conexión light-switch; `doc-queue-nav.mjs`, `estado-actual-panel-registro-tab.mjs`, `panel-session-gate.mjs`.
+- **2026-08-03** `eventualidades-labs-timeline`: Labs view is auto timeline (`labsText`) — no Interpretación dock; autosend restored; local color soften on Guardia/Conexión/bulk/pendientes/EV; `lab-eventualidad-autosend.mjs`, `eventualidades-panel-html.mjs`.
 - **2026-08-03** `release-7.9.3`: Eventualidades Labs (`labsText`) + Nube LWW/slim/timing + EA registro limpio + consolidación labs misma hora; `eventualidades-labs-ui.mjs`, `cloud-op-slim.mjs`, `lan-patient-merge-eventualidades.mjs`, `docs/RELEASE_NOTES_7.9.3.txt`.
 - **2026-08-03** `release-7.9.2`: censo (rescates insulina + dieta suplemento) + Conexión status/Opciones + cultivos/EA; `censo-meds-format.mjs`, `panel-conexion-views.mjs`, `docs/RELEASE_NOTES_7.9.2.txt`.
 - **2026-08-03** `release-7.9.1`: recuperación Nube (códigos + Conexión por pasos) + borrado masivo pacientes; `docs/RELEASE_NOTES_7.9.1.txt`.
@@ -152,5 +155,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-07-23** `release-7.7.4`: repo/pegado ≤2 h (BH no en series q4h); Consolidar por grupos manuales; COAG sin robar TTP→INR ni rango→TP; `lab-bulk-paste.mjs`, `lab-panel-history-consolidate-modal.mjs`, `labs-extract.mjs`.
 - **2026-07-21** `paste-smart`: paste-anywhere / Procesar SOME — global paste + ⌘K match registro/nombre → confirm once → Labs; `paste-smart*.mjs`.
 - **2026-07-21** `cultivo-queue` + `ea-clipboard`: cola cultivos (ATB pendiente / sin nota) + Copiar indicaciones EA; `cultivo-queue-*.mjs`, `ea-indicaciones-clipboard.mjs`.
-- **2026-07-21** `entrega-prep`: checklist pre-entrega mi equipo (HC / EA hoy / pendientes vencidos / cultivos sin seguimiento); `entrega-prep-checklist.mjs`, `entrega-prep-panel.mjs`.
-- **2026-07-21** `cmdk-actions`: ⌘K `action` kind (Procesar SOME, labs batch, doc queue, EA, export, pendiente, pase) + pins on empty; `command-palette-model.mjs`, `features/command-palette.mjs`.

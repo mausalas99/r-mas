@@ -18,6 +18,11 @@
   box-sizing: border-box;
 }
 
+#historia-clinica-mount .hc-toolbar .btn-generate.ui-pressable,
+#historia-clinica-mount .hc-toolbar .btn-med-secondary.ui-pressable {
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
 #historia-clinica-mount .hc-toolbar .btn-med-secondary {
   border-radius: var(--radius-pill);
   padding: calc(9px * var(--density-space)) calc(16px * var(--density-space));
@@ -50,13 +55,14 @@
 }
 
 .hc-step--active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent-soft) 65%, var(--surface));
+  color: var(--text);
 }
 
 .hc-step--done::after {
   content: ' ✓';
-  color: var(--accent);
+  color: var(--color-accent);
 }
 
 .hc-step-footer {

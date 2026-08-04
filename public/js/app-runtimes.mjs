@@ -429,7 +429,15 @@ export async function registerAllFeatureRuntimes() {
       var p = patients.find(function (row) {
         return row.id === pid;
       });
-      return p && p.name ? String(p.name) : String(pid || '');
+      if (!p) return 'Paciente';
+      var nombre = String(p.nombre || p.name || '').trim();
+      var cuarto = String(p.cuarto || '').trim();
+      var cama = String(p.cama || '').trim();
+      var bed = [cuarto && ('Cto. ' + cuarto), cama && ('Cama ' + cama)]
+        .filter(Boolean)
+        .join(' ');
+      if (nombre && bed) return nombre + ' · ' + bed;
+      return nombre || bed || 'Paciente';
     },
     showToast: showToast,
   });

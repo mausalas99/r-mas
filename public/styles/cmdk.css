@@ -1,4 +1,4 @@
-/* ⌘K command palette (premium UI phase 2). Glass comes from overlays.css. */
+/* ⌘K command palette — Hybrid H glass panel, instant open/close. */
 
 .cmdk-backdrop {
   position: fixed;
@@ -15,11 +15,10 @@
   right: 0;
   width: min(560px, calc(100vw - 32px));
   margin-inline: auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-container);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: modal-in var(--dur-normal) var(--ease-out);
 }
 
 .cmdk[hidden],
@@ -63,7 +62,7 @@
 
 .cmdk-item:hover,
 .cmdk-item.is-selected {
-  background: var(--state-hover-bg);
+  background: var(--color-elevated);
 }
 
 .cmdk-item.is-selected {
@@ -165,12 +164,6 @@
 
 .header-doc-queue-btn:hover .header-doc-queue-icon {
   opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cmdk {
-    animation: none !important;
-  }
 }
 
 /* CP3 — Paste-anywhere confirm */

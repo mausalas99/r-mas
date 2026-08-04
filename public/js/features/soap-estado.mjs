@@ -4,6 +4,10 @@ import { isModeSala } from "../mode-features.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
 import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 import { formatNmDietClause } from "./estado-actual-diet-text.mjs";
+import {
+  joinSoapMedSegments,
+  soapMedCategorySegment,
+} from "./estado-actual-text-build.mjs";
 import { SOAP_LEGACY_MED_FIELD_IDS } from "./soap-legacy-field-map.mjs";
 
 let rt = {
@@ -355,23 +359,34 @@ function buildSoapNmParts(g, num, ing, egr, balance, meds) {
 function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
   var meds = collectSoapLegacyMedClauses(g);
   var nmParts = buildSoapNmParts(g, num, ing, egr, balance, meds);
+  var nMeds = joinSoapMedSegments([
+    soapMedCategorySegment("ANALGESIA", meds.analgesia),
+    soapMedCategorySegment("ANTIEMETICOS", meds.antiemeticos),
+    soapMedCategorySegment("SEDACION", meds.sedacion),
+    soapMedCategorySegment("ANTIEPILEPTICOS", meds.antiepilepticos),
+    soapMedCategorySegment("ANTIPARKINSONIANOS", meds.antiparkinsonianos),
+    soapMedCategorySegment("ANTIDOTOS", meds.antidotos),
+  ]);
+  var hdMeds = joinSoapMedSegments([
+    soapMedCategorySegment("VASOPRESORES", meds.vasop, { always: true }),
+    soapMedCategorySegment("ANTIHIPERTENSIVOS", meds.antihta, { always: true }),
+    soapMedCategorySegment("TROMBOPROFILAXIS", meds.antitromboticos, { always: true }),
+    soapMedCategorySegment("ANTICOAGULACION", meds.anticoagulacion),
+    soapMedCategorySegment("ANTIARRITMICOS", meds.antiarritmicos),
+    soapMedCategorySegment("DIURÉTICOS", meds.diureticos),
+    soapMedCategorySegment("ESTATINAS", meds.estatinas),
+  ]);
+  var hiMeds = joinSoapMedSegments([
+    soapMedCategorySegment("ANTIBIOTICOTERAPIA", meds.abx, { always: true }),
+    soapMedCategorySegment("TRANSFUSIONES", meds.transfusiones),
+  ]);
   return [
     "N: FOUR " +
       num(g("soap-four")) +
       "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " +
       num(g("soap-esferas")) +
-      " ESFERAS, ALERTA || ANALGESIA: " +
-      meds.analgesia +
-      " | ANTIEMETICOS: " +
-      meds.antiemeticos +
-      " | SEDACION: " +
-      meds.sedacion +
-      " | ANTIEPILEPTICOS: " +
-      meds.antiepilepticos +
-      " | ANTIPARKINSONIANOS: " +
-      meds.antiparkinsonianos +
-      " | ANTIDOTOS: " +
-      meds.antidotos,
+      " ESFERAS, ALERTA" +
+      (nMeds ? " || " + nMeds : ""),
     "V: FR " +
       num(g("soap-fr")) +
       " RPM, SATO2 " +
@@ -386,25 +401,9 @@ function buildSoapObjectiveLines(g, val, num, soporte, ing, egr, balance) {
       num(g("soap-tad")) +
       " MMHG, FC " +
       num(g("soap-fc")) +
-      " LPM || VASOPRESORES: " +
-      meds.vasop +
-      " | ANTIHIPERTENSIVOS: " +
-      meds.antihta +
-      " | TROMBOPROFILAXIS: " +
-      meds.antitromboticos +
-      " | ANTICOAGULACION: " +
-      meds.anticoagulacion +
-      " | ANTIARRITMICOS: " +
-      meds.antiarritmicos +
-      " | DIURÉTICOS: " +
-      meds.diureticos +
-      " | ESTATINAS: " +
-      meds.estatinas,
-    "HI: AFEBRIL, TEMPERATURA " +
-      num(g("soap-temp")) +
-      " °C || ANTIBIOTICOTERAPIA: " +
-      meds.abx +
-      (meds.transfusiones ? " | TRANSFUSIONES: " + meds.transfusiones : ""),
+      " LPM || " +
+      hdMeds,
+    "HI: AFEBRIL, TEMPERATURA " + num(g("soap-temp")) + " °C || " + hiMeds,
     "NM: " + nmParts.join(" || "),
   ];
 }

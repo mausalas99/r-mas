@@ -81,6 +81,20 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /cloud-sync-status-identity/);
   });
 
+  it('options and nested views have no body nav bar (modal head owns chrome)', () => {
+    const html = connectedStepsHtml({
+      cloudUser: null,
+      roomHtml: '',
+      equipoHtml: '',
+      url: '',
+      hasCloudSession: true,
+    });
+    assert.match(html, /data-cloud-view="options"[^>]*data-cloud-view-title="Opciones"/);
+    assert.match(html, /data-cloud-view="cuenta"[^>]*data-cloud-view-title="Cuenta"/);
+    assert.doesNotMatch(html, /cloud-sync-view-bar/);
+    assert.doesNotMatch(html, /cloud-sync-view-back/);
+  });
+
   it('options menu lists destinations', () => {
     const html = connectedStepsHtml({
       cloudUser: null,
@@ -242,5 +256,7 @@ describe('roomConnectedHtml', () => {
     assert.match(html, /<dt>Turno<\/dt>/);
     assert.match(html, /RC65RH/);
     assert.match(html, /data-cloud-room-revision/);
+    assert.match(html, /cloud-sync-inset-group/);
+    assert.match(html, /leave-room/);
   });
 });

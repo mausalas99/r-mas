@@ -6,7 +6,6 @@
 import { patients } from '../app-state.mjs';
 import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
 import { selectPatient } from './patients.mjs';
-import { cancelOverlayClose, closeOverlayAnimated } from '../ui-motion.mjs';
 
 var ctx = null;
 var dom = null;
@@ -113,7 +112,7 @@ function ensureDom() {
   backdrop.addEventListener('click', closeCommandPalette);
 
   var panel = document.createElement('div');
-  panel.className = 'cmdk';
+  panel.className = 'cmdk material-glass';
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
@@ -242,7 +241,6 @@ function executeItem(item) {
 
 export function openCommandPalette() {
   var d = ensureDom();
-  cancelOverlayClose(d.backdrop, { panelEl: d.panel });
   d.backdrop.hidden = false;
   d.panel.hidden = false;
   d.input.value = '';
@@ -254,14 +252,8 @@ export function closeCommandPalette() {
   if (!dom) return;
   var d = dom;
   d.input.blur();
-  closeOverlayAnimated(
-    d.backdrop,
-    function () {
-      d.backdrop.hidden = true;
-      d.panel.hidden = true;
-    },
-    { panelEl: d.panel }
-  );
+  d.backdrop.hidden = true;
+  d.panel.hidden = true;
 }
 
 export var windowHandlers = {

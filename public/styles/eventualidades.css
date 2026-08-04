@@ -209,6 +209,22 @@
   transition: opacity 0.15s ease;
 }
 
+.ev-card__foot--meta {
+  justify-content: flex-start;
+  opacity: 1;
+}
+
+.ev-card__meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.ev-card--labs .ev-card__text {
+  font-variant-numeric: tabular-nums;
+}
+
 .ev-card:hover .ev-card__foot,
 .ev-card:focus-within .ev-card__foot,
 .ev-card--editing .ev-card__foot {
@@ -264,61 +280,54 @@
   background: color-mix(in oklab, var(--error) 10%, transparent);
 }
 
-/* ── Composición + switcher Eventualidad | Labs ───────────── */
-.ev-compose {
-  flex-shrink: 0;
-  padding: 0 4px 2px;
-}
-
-.ev-compose__card {
+/* ── Vista switcher Eventualidad | Labs (panel head) ───────── */
+.ev-panel__head-row {
   display: flex;
-  flex-direction: column;
-  gap: calc(8px * var(--density-space, 1));
-  padding: calc(12px * var(--density-space, 1)) calc(14px * var(--density-space, 1));
-  border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--shadow-sm);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
-.ev-compose__switch {
+.ev-mode-switch {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: stretch;
   width: 100%;
-  max-width: 280px;
+  max-width: 260px;
   padding: 3px;
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--primary) 14%, var(--surface));
-  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
   gap: 0;
 }
 
-.ev-compose__switch-pill {
+.ev-mode-switch__pill {
   position: absolute;
   top: 3px;
   bottom: 3px;
   left: 3px;
   width: calc((100% - 6px) / 2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--surface);
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 4px color-mix(in oklab, var(--text) 8%, transparent);
   pointer-events: none;
   z-index: 0;
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.ev-compose[data-ev-mode='labs'] .ev-compose__switch-pill {
+.ev-panel[data-ev-view='labs'] .ev-mode-switch__pill,
+.ev-mode-switch[data-ev-mode='labs'] .ev-mode-switch__pill {
   transform: translateX(100%);
 }
 
-.ev-compose__tab {
+.ev-mode-switch__tab {
   position: relative;
   z-index: 1;
   min-width: 0;
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font: inherit;
   font-size: 12px;
@@ -329,17 +338,34 @@
   transition: color 0.2s ease;
 }
 
-.ev-compose__tab:hover:not(:disabled) {
+.ev-mode-switch__tab:hover:not(:disabled) {
   color: var(--text);
 }
 
-.ev-compose__tab.active {
-  color: var(--primary);
+.ev-mode-switch__tab.active {
+  color: var(--text);
 }
 
-.ev-compose__tab:disabled {
+.ev-mode-switch__tab:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ── Composición (solo Eventualidad) ─────────────────────── */
+.ev-compose {
+  flex-shrink: 0;
+  padding: 0 4px 2px;
+}
+
+.ev-compose__card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1)) calc(14px * var(--density-space, 1));
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  box-shadow: none;
 }
 
 .ev-compose__pane {
@@ -622,4 +648,54 @@ html.dark .ev-compose__input:focus {
   .ev-compose__submit {
     flex: 1;
   }
+}
+
+
+/* ── Inline action strip (opens Hybrid H sheet) ───────────── */
+.ev-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 6px calc(8px * var(--density-space, 1));
+  border-top: var(--border-hairline);
+  background: var(--color-elevated);
+}
+
+.ev-actions__btn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Hybrid H compose sheet ───────────────────────────────── */
+.ev-sheet .ev-sheet__body {
+  padding: 0 calc(16px * var(--density-space, 1)) calc(20px * var(--density-space, 1));
+}
+
+.ev-compose--sheet {
+  padding: 0;
+}
+
+.ev-compose--sheet .ev-compose__card {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: calc(8px * var(--density-space, 1)) 0 0;
+}
+
+.ev-sheet__labs-preview {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1));
+  border-radius: var(--radius-md);
+}
+
+.ev-sheet__labs-preview .ev-labs__input {
+  background: var(--color-content);
+}
+
+/* Legacy inline dock hidden — compose is sheet-only */
+.ev-panel > .ev-compose:not(.ev-compose--sheet) {
+  display: none;
 }

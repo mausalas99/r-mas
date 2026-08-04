@@ -157,15 +157,28 @@ function buildGasoIdentityGroups(gasoEntries, getGasoKey, windowMs) {
   return groups;
 }
 
+function gasoGroupIsSerial(gi, gasoGroups, windowMs) {
+  var ms = gasoGroups[gi].rep.ms;
+  for (var j = 0; j < gasoGroups.length; j++) {
+    if (j === gi) continue;
+    if (Math.abs(gasoGroups[j].rep.ms - ms) <= windowMs) return true;
+  }
+  return false;
+}
+
 function assignGasoGroupsToClosestLabClusters(labClusters, gasoGroups, windowMs) {
   var assigned = labClusters.map(function () {
     return null;
   });
   var candidates = [];
   gasoGroups.forEach(function (grp, gi) {
+    // Varias gasos ≤2 h entre sí: solo empareja dentro de la ventana (toma inicial).
+    // Una sola gaso del día: se pega a los BH/QS/ESC/PFH más cercanos (mañana).
+    var serial = gasoGroupIsSerial(gi, gasoGroups, windowMs);
     labClusters.forEach(function (cluster, ci) {
       var dist = minAbsDistToCluster(grp.rep.ms, cluster);
-      if (dist <= windowMs) candidates.push({ gi: gi, ci: ci, dist: dist, ms: grp.rep.ms });
+      if (serial && dist > windowMs) return;
+      candidates.push({ gi: gi, ci: ci, dist: dist, ms: grp.rep.ms });
     });
   });
   candidates.sort(function (a, b) {
@@ -224,9 +237,10 @@ function appendUntimedLabworkClusters(out, untimed, hasGasoFn, getGasoKey) {
 }
 
 /**
- * Labs + una gasometría: ventana 2 h; empareja la gaso más cercana;
- * nunca dos gasometrías *distintas* en el mismo cluster. Clones con los
- * mismos GASES (misma huella) se agrupan y se filtran al consolidar.
+ * Labs + gasometría: empareja la gaso más cercana a BH/QS/ESC/PFH.
+ * Varias gasometrías distintas ≤2 h → solo la más cercana al labs (no absorbe la 2ª).
+ * Una sola gaso del día → se une a los labs iniciales más cercanos aunque pasen 2 h
+ * (p. ej. gases 03:56 + química 06:43). Clones con la misma huella GASES se agrupan.
  * @template T
  * @param {T[]} items
  * @param {(item: T) => number|null} getMs

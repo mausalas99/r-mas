@@ -97,13 +97,13 @@ function renderIcExpedienteTabs(bodyEl, nextBtn) {
 function renderSalaExpedienteTabs(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pestañas: <strong>Paciente</strong>, <strong>Clínico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: Historia Clínica → <strong>Estado actual</strong> → Eventualidades. <strong>Resultados</strong>: tendencias. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla en <strong>Paciente</strong>.</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. <strong>Resultados</strong>: tendencias. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla en <strong>Paciente</strong>.</p>';
   showNext(nextBtn);
 }
 
 function renderHistoriaClinica(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Expediente → Clínico → Historia Clínica</strong>: ingreso institucional en <strong>3 pasos</strong> (identificación, antecedentes APP/AHF/APNP/IPAS, padecimiento). Cambia a <strong>Lectura</strong> para ver el texto compilado y <strong>Copiar</strong>.</p>' +
+    '<p style="margin:0;line-height:1.5;"><strong>Historia Clínica</strong> (ingreso institucional en <strong>3 pasos</strong>) ya no vive en la barra diaria de Clínico. Se abre desde <strong>Importar desde Drive</strong> o el checklist de entrega cuando hace falta.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Solo en <strong>Sala</strong>. En sala en vivo (⇄) se sincroniza por paciente con el anfitrión.</p>';
   showNext(nextBtn);
 }

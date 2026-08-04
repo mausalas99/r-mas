@@ -292,7 +292,7 @@ export function mediLlevarASOAP() {
   var pendingOtros = unassignedOtrosSoapItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
   if (pendingOtros.length) {
     medToast(
-      "Elegí destino para " +
+      "Elige destino para " +
         pendingOtros.length +
         " medicamento(s) «Otros» antes de enviar a Estado Actual",
       "error"

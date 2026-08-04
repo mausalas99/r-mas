@@ -113,7 +113,7 @@ async function handleListRooms(db) {
     code: row.code,
     turnKey: row.turn_key ?? null,
     revision: row.revision,
-    storageBytes: row.storage_bytes,
+    storageBytes: Number(row.storage_bytes) || 0,
     memberCount: Number(row.member_count ?? 0),
   }));
 

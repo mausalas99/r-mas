@@ -42,11 +42,11 @@ export function validateRegisterForm(form, toast) {
     return false;
   }
   if (!form.displayName) {
-    toast('Ingresá tu nombre en guardia.', 'error');
+    toast('Ingresa tu nombre en guardia.', 'error');
     return false;
   }
   if (!form.password) {
-    toast('Ingresá una contraseña.', 'error');
+    toast('Ingresa una contraseña.', 'error');
     return false;
   }
   return true;
@@ -55,7 +55,7 @@ export function validateRegisterForm(form, toast) {
 /** @param {Error & { data?: { message?: string } }} err @param {(msg: string, kind?: string) => void} toast */
 export function toastRegisterError(err, toast) {
   const msg = err?.data?.message || err?.message || 'No se pudo registrar.';
-  toast(/not found/i.test(msg) ? 'URL nube incorrecta o vacía. Revisá Avanzado → URL del servicio.' : msg, 'error');
+  toast(/not found/i.test(msg) ? 'URL nube incorrecta o vacía. Revisa Avanzado → URL del servicio.' : msg, 'error');
 }
 
 /**
@@ -212,7 +212,7 @@ export async function handleRegenerateRecovery(deps) {
 export async function handleCreateRoom(deps) {
   await deps.saveUrlFromUi();
   if (!deps.getCloudSyncToken()) {
-    deps.toast('Iniciá sesión primero.', 'error');
+    deps.toast('Inicia sesión primero.', 'error');
     return;
   }
   const nameInput = deps.section.querySelector('[data-cloud-room-name]');
@@ -232,13 +232,13 @@ export async function handleCreateRoom(deps) {
 export async function handleJoinRoom(deps) {
   await deps.saveUrlFromUi();
   if (!deps.getCloudSyncToken()) {
-    deps.toast('Iniciá sesión primero.', 'error');
+    deps.toast('Inicia sesión primero.', 'error');
     return;
   }
   const codeInput = deps.section.querySelector('[data-cloud-join-code]');
   const code = String(codeInput?.value || '').trim();
   if (!code) {
-    deps.toast('Ingresá el código de sala.', 'error');
+    deps.toast('Ingresa el código de sala.', 'error');
     return;
   }
   try {

@@ -79,9 +79,11 @@ export function wireConexionClicks(section, deps, ui) {
     },
   };
 
-  section.addEventListener('click', function (ev) {
+  function onCloudActionClick(ev) {
     const btn = ev.target instanceof Element ? ev.target.closest('[data-cloud-action]') : null;
     if (!btn) return;
+    // Modal-head back lives outside the section; still handle it here.
+    if (!section.contains(btn) && btn.id !== 'btn-connection-dropdown-back') return;
     const action = btn.getAttribute('data-cloud-action');
     if (action === 'nav-view') {
       const view = btn.getAttribute('data-cloud-view');
@@ -89,7 +91,12 @@ export function wireConexionClicks(section, deps, ui) {
       return;
     }
     if (action && clickActions[action]) clickActions[action]();
-  });
+  }
+
+  section.addEventListener('click', onCloudActionClick);
+  document
+    .getElementById('connection-dropdown')
+    ?.addEventListener('click', onCloudActionClick);
 }
 
 /** @param {HTMLElement} section @param {() => string} getToken */

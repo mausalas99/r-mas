@@ -2,29 +2,30 @@
 type: "core"
 name: "Design System"
 status: "stable"
-description: "Pointer to Hallmark UI tokens and conventions for R+."
+description: "Pointer to Hybrid H UI tokens and conventions for R+."
 ---
 
 # Design System
 
-**Source of truth:** [`design.md`](../../design.md) and [`public/tokens.css`](../../public/tokens.css).
+**Source of truth:** [`design.md`](../../design.md) and [`public/tokens.css`](../../public/tokens.css).  
+**Program:** Apple Hybrid UI overhaul — Spec A foundation landed; Spec B+ for chrome/overlays/clinical surfaces.
 
 ## Principles (summary)
 
-- High information density without visual noise; borders and typography over color.
-- Single accent (`--color-accent`); semantic success/error only.
-- IBM Plex Sans (UI), IBM Plex Mono (labs, values).
-- No gradients on chrome or CTAs; motion 150–220ms.
+- High information density; borders and type over color.
+- Ink accent (`--color-accent` = `--color-ink`); semantic danger/success only.
+- Solid workbench + glass floating layers only (never glass-on-glass).
+- System UI for chrome; IBM Plex Mono for labs/values.
+- Dark is first-class; honor reduced motion/transparency.
 
 ## Key tokens
 
 | Token | Role |
 |-------|------|
-| `--color-paper` | App / Pase background |
-| `--color-surface` | Cards, header, sidebar |
-| `--color-ink` / `--color-ink-muted` | Text |
-| `--color-accent` | Primary actions, active tab |
-| `--color-livesync-*` | LiveSync Wi‑Fi header states |
+| `--color-paper` / `--color-surface` / `--color-content` / `--color-elevated` | Surfaces |
+| `--color-ink` / `--color-accent` | Text + actions |
+| `--material-glass-*` | Floating overlays |
+| `--color-livesync-*` | LiveSync Wi‑Fi header states (solid chips) |
 
 ## Layout modes
 
@@ -35,4 +36,10 @@ description: "Pointer to Hallmark UI tokens and conventions for R+."
 ## Related
 
 - Styles: `public/styles/`
+- Motion façade: `public/js/ui-motion.mjs`
 - Shell: `public/js/app-shell.mjs`
+
+
+## Hybrid H
+
+**Spec D complete (2026-08-03):** Full desktop adoption per `design.md` and program spec `2026-08-03-apple-hybrid-ui-overhaul-program.md`.

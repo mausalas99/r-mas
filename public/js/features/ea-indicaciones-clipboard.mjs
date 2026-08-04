@@ -5,7 +5,12 @@
 import { MED_FIELD_KEYS } from './estado-actual-data-constants.mjs';
 import { formatNmDietClause } from './estado-actual-diet-text.mjs';
 import { partitionAnalgesiaForSoap, partitionNmMedsForSoap } from './estado-actual-med-soap-split.mjs';
-import { medsClauseOrEmpty, medsListForSoap } from './estado-actual-text-build.mjs';
+import {
+  medsClauseOrEmpty,
+  medsListForSoap,
+  soapMedCategorySegment,
+  SOAP_EMPTY_MED_FALLBACK,
+} from './estado-actual-text-build.mjs';
 import { insulinPumpAlgorithmFromMonitoreo } from './estado-actual-insulin-pump.mjs';
 import { formatInsulinPumpAlgoritmoLabel } from '../insulin-pump-some-detect.mjs';
 import { hasActiveDietProposal } from './estado-actual-meds-diet.mjs';
@@ -75,24 +80,29 @@ export function buildEaIndicacionesClipboardLines(ec, bombaAlgoritmo) {
   if (nmInsulin) nmParts.push('INSULINA: ' + nmInsulin);
 
   var lines = [
-    'ANALGESIA: ' + medsClauseOrEmpty(analgesiaSplit.analgesia),
-    'ANTIEMETICOS: ' + medsClauseOrEmpty(e.antiemeticos || analgesiaSplit.antiemeticos),
-    'SEDACION: ' + medsClauseOrEmpty(e.sedacion),
-    'ANTIEPILEPTICOS: ' + medsClauseOrEmpty(e.antiepilepticos),
-    'ANTIPARKINSONIANOS: ' + medsClauseOrEmpty(e.antiparkinsonianos),
-    'ANTIDOTOS: ' + medsClauseOrEmpty(e.antidotos),
-    'VIA AEREA: ' + medsClauseOrEmpty(e.viaAerea),
-    'VASOPRESORES: ' + medsClauseOrEmpty(e.vasop),
-    'ANTIHIPERTENSIVOS: ' + medsClauseOrEmpty(e.antihta),
-    'TROMBOPROFILAXIS: ' + medsClauseOrEmpty(e.antitromboticos),
-    'ANTICOAGULACION: ' + medsClauseOrEmpty(e.anticoagulacion),
-    'ANTIARRITMICOS: ' + medsClauseOrEmpty(e.antiarritmicos),
-    'DIURETICOS: ' + medsClauseOrEmpty(e.diureticos),
-    'ESTATINAS: ' + medsClauseOrEmpty(e.estatinas),
-    'ANTIBIOTICOTERAPIA: ' + medsClauseOrEmpty(e.abx),
-    'TRANSFUSIONES: ' + medsClauseOrEmpty(e.transfusiones),
-    'NM: ' + (nmParts.length ? nmParts.join(' || ') : ''),
-  ];
+    soapMedCategorySegment('ANALGESIA', medsClauseOrEmpty(analgesiaSplit.analgesia)),
+    soapMedCategorySegment(
+      'ANTIEMETICOS',
+      medsClauseOrEmpty(e.antiemeticos || analgesiaSplit.antiemeticos)
+    ),
+    soapMedCategorySegment('SEDACION', medsClauseOrEmpty(e.sedacion)),
+    soapMedCategorySegment('ANTIEPILEPTICOS', medsClauseOrEmpty(e.antiepilepticos)),
+    soapMedCategorySegment('ANTIPARKINSONIANOS', medsClauseOrEmpty(e.antiparkinsonianos)),
+    soapMedCategorySegment('ANTIDOTOS', medsClauseOrEmpty(e.antidotos)),
+    soapMedCategorySegment('VIA AEREA', medsClauseOrEmpty(e.viaAerea)),
+    soapMedCategorySegment('VASOPRESORES', medsClauseOrEmpty(e.vasop), { always: true }),
+    soapMedCategorySegment('ANTIHIPERTENSIVOS', medsClauseOrEmpty(e.antihta), { always: true }),
+    soapMedCategorySegment('TROMBOPROFILAXIS', medsClauseOrEmpty(e.antitromboticos), {
+      always: true,
+    }),
+    soapMedCategorySegment('ANTICOAGULACION', medsClauseOrEmpty(e.anticoagulacion)),
+    soapMedCategorySegment('ANTIARRITMICOS', medsClauseOrEmpty(e.antiarritmicos)),
+    soapMedCategorySegment('DIURETICOS', medsClauseOrEmpty(e.diureticos)),
+    soapMedCategorySegment('ESTATINAS', medsClauseOrEmpty(e.estatinas)),
+    soapMedCategorySegment('ANTIBIOTICOTERAPIA', medsClauseOrEmpty(e.abx), { always: true }),
+    soapMedCategorySegment('TRANSFUSIONES', medsClauseOrEmpty(e.transfusiones)),
+    nmParts.length ? 'NM: ' + nmParts.join(' || ') : '',
+  ].filter(Boolean);
   return lines;
 }
 
@@ -123,5 +133,14 @@ export function buildEaIndicacionesClipboardText(monitoreo) {
  * @param {Record<string, unknown>|null|undefined} monitoreo
  */
 export function hasEaIndicacionesClipboardContent(monitoreo) {
-  return !!buildEaIndicacionesClipboardText(monitoreo).trim();
+  var text = buildEaIndicacionesClipboardText(monitoreo);
+  if (!text.trim()) return false;
+  // Forced "Ninguno" lines alone are not copyable content.
+  var fallback = SOAP_EMPTY_MED_FALLBACK.toLowerCase();
+  return text.split('\n').some(function (line) {
+    var colon = line.indexOf(':');
+    if (colon === -1) return !!line.trim();
+    var val = line.slice(colon + 1).trim().toLowerCase();
+    return !!val && val !== fallback;
+  });
 }

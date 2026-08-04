@@ -40,8 +40,8 @@ describe('mobile-web', () => {
     const SALA = { appMode: 'sala', hideManejoSection: false };
     assert.equal(getConsolidatedTabs(SALA).includes('salida'), false);
     assert.deepEqual(getSalidaSections(SALA), []);
-    assert.equal(migrateGranularInner('listado', SALA), 'historia');
-    assert.equal(migrateGranularInner('recetaHu', SALA), 'historia');
+    assert.equal(migrateGranularInner('listado', SALA), 'estadoActual');
+    assert.equal(migrateGranularInner('recetaHu', SALA), 'estadoActual');
   });
 
   it('syncMobileBarebonesChrome oculta controles de header', () => {
