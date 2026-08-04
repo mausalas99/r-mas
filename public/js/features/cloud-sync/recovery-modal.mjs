@@ -5,8 +5,6 @@ const BODY_COPY = 'Guardá este código de recuperación. No lo volveremos a mos
 const CHECKBOX_LABEL = 'Lo guardé en un lugar seguro';
 const CONTINUE_LABEL = 'Continuar';
 const COPY_LABEL = 'Copiar';
-const UNCHECKED_CONFIRM =
-  '¿Continuar sin confirmar que guardaste el código? No lo volveremos a mostrar.';
 
 /**
  * Pure HTML for the recovery reveal overlay (testing + innerHTML mount).
@@ -39,7 +37,7 @@ export function recoveryModalMarkup(code, title) {
     esc(CHECKBOX_LABEL) +
     '</span></label>' +
     '<div style="display:flex;justify-content:flex-end;">' +
-    '<button type="button" data-recovery-continue class="cloud-sync-btn">' +
+    '<button type="button" data-recovery-continue class="cloud-sync-btn" disabled>' +
     CONTINUE_LABEL +
     '</button></div></div></div>'
   );
@@ -62,8 +60,6 @@ function copyRecoveryCode(text) {
  * @param {() => void} resolve
  */
 function wireRecoveryModal(overlay, code, resolve) {
-  let warnedUnchecked = false;
-
   const copyBtn = overlay.querySelector('[data-recovery-copy]');
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
@@ -78,14 +74,20 @@ function wireRecoveryModal(overlay, code, resolve) {
     return;
   }
 
+  const confirmBox = overlay.querySelector('[data-recovery-confirm]');
+  if (confirmBox) {
+    /** @type {HTMLButtonElement} */ (continueBtn).disabled = true;
+    confirmBox.addEventListener('change', function () {
+      /** @type {HTMLButtonElement} */ (continueBtn).disabled =
+        !/** @type {HTMLInputElement} */ (confirmBox).checked;
+    });
+  }
+
   continueBtn.addEventListener('click', function () {
-    const confirmBox = overlay.querySelector('[data-recovery-confirm]');
     const checked = confirmBox && /** @type {HTMLInputElement} */ (confirmBox).checked;
-    if (!checked && !warnedUnchecked) {
-      warnedUnchecked = true;
-      if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-        window.confirm(UNCHECKED_CONFIRM);
-      }
+    if (!checked) {
+      if (confirmBox && typeof confirmBox.focus === 'function') confirmBox.focus();
+      return;
     }
     overlay.remove();
     resolve();

@@ -82,6 +82,7 @@ function createMiniElement(tag) {
     attributes: /** @type {Record<string, string>} */ ({}),
     _listeners: /** @type {Record<string, Function[]>} */ ({}),
     _checked: false,
+    _disabled: false,
     _text: '',
     setAttribute(k, v) {
       this.attributes[k] = String(v);
@@ -133,15 +134,27 @@ function createMiniElement(tag) {
       (this._listeners[type] ||= []).push(fn);
     },
     click() {
+      if (this._disabled) return;
       const handlers = this._listeners.click || [];
       const ev = { target: this, preventDefault() {} };
       for (const fn of handlers) fn(ev);
+    },
+    get disabled() {
+      return this._disabled;
+    },
+    set disabled(v) {
+      this._disabled = !!v;
+      if (v) this.setAttribute('disabled', '');
+      else this.attributes.disabled = undefined;
     },
     get checked() {
       return this._checked;
     },
     set checked(v) {
       this._checked = !!v;
+      const handlers = this._listeners.change || [];
+      const ev = { target: this };
+      for (const fn of handlers) fn(ev);
     },
   };
   return el;
@@ -166,6 +179,7 @@ describe('recoveryModalMarkup', () => {
     assert.match(html, /data-recovery-code-modal/);
     assert.match(html, /data-recovery-continue/);
     assert.match(html, /data-recovery-confirm/);
+    assert.match(html, /data-recovery-continue[^>]*disabled/);
     assert.match(html, /data-recovery-code/);
     assert.match(html, /R\+AB3K-7NMP-Q2WX/);
     assert.match(html, /Guardá este código de recuperación/);
@@ -227,22 +241,30 @@ describe('showRecoveryCodeModal', () => {
     assert.equal(mini.querySelector('[data-recovery-code-modal]'), null);
   });
 
-  it('resolves after continue even when checkbox unchecked', async () => {
-    let confirmCalls = 0;
-    globalThis.window = /** @type {Window} */ (
-      /** @type {unknown} */ ({
-        confirm() {
-          confirmCalls += 1;
-          return true;
-        },
-      })
-    );
+  it('does not resolve Continuar until confirm checked', async () => {
+    let settled = false;
     const p = showRecoveryCodeModal({ code: SAMPLE_CODE });
+    p.then(function () {
+      settled = true;
+    });
     const el = mini.querySelector('[data-recovery-code-modal]');
     assert.ok(el);
-    el.querySelector('[data-recovery-continue]').click();
+    const continueBtn = el.querySelector('[data-recovery-continue]');
+    const confirmBox = el.querySelector('[data-recovery-confirm]');
+    assert.ok(continueBtn);
+    assert.ok(confirmBox);
+    assert.equal(continueBtn.disabled, true);
+    continueBtn.click();
+    await new Promise(function (r) {
+      setImmediate(r);
+    });
+    assert.equal(settled, false);
+    assert.ok(mini.querySelector('[data-recovery-code-modal]'));
+    confirmBox.checked = true;
+    assert.equal(continueBtn.disabled, false);
+    continueBtn.click();
     await p;
-    assert.equal(confirmCalls, 1);
+    assert.equal(settled, true);
     assert.equal(mini.querySelector('[data-recovery-code-modal]'), null);
   });
 });
