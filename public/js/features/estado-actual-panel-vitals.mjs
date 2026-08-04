@@ -7,6 +7,7 @@ import {
 } from './estado-actual-vital-series.mjs';
 import { VITAL_KEYS, VITAL_LABELS, VITAL_UNITS } from './estado-actual-panel-constants.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
+import { applyRegistroTabSkipAttributes } from './estado-actual-panel-registro-tab.mjs';
 
 export function vitalLayerBoxKey(baseKey, layerIdx) {
   return baseKey + '__L' + layerIdx;
@@ -248,6 +249,7 @@ export function expandVitalNextLayer(form, vitalKey) {
     '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + count + '"]'
   );
   if (nextInput && 'focus' in nextInput) nextInput.focus();
+  applyRegistroTabSkipAttributes(form);
 }
 
 /**

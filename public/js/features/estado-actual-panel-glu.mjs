@@ -7,6 +7,7 @@ import {
   focusNextStandardGluOrIo,
   focusSiblingGluOrIo,
 } from './estado-actual-panel-glu-row.mjs';
+import { applyRegistroTabSkipAttributes } from './estado-actual-panel-registro-tab.mjs';
 
 export function syncGluRowAltered(row) {
   var alteredEl = /** @type {HTMLInputElement | null} */ (row.querySelector('[data-ea-glu-altered]'));
@@ -53,7 +54,10 @@ function wireGluRowKeyboard(row, buildRowFn) {
       var extraRows = list ? list.querySelectorAll('.ea-glu-row--extra') : [];
       if (row === extraRows[extraRows.length - 1]) {
         var newRow = buildRowFn();
-        if (list) list.appendChild(newRow);
+        if (list) {
+          list.appendChild(newRow);
+          applyRegistroTabSkipAttributes(/** @type {HTMLElement | null} */ (list.closest('form')));
+        }
         var focusEl = newRow.querySelector('[data-ea-glu-value]');
         if (focusEl && 'focus' in focusEl) focusEl.focus();
         return;

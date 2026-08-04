@@ -6,6 +6,10 @@ import { buildGluRow, syncEaGluMode, buildBombaRow } from './estado-actual-panel
 import { syncGluRowAltered } from './estado-actual-panel-glu.mjs';
 import { expandVitalNextLayer, syncAllVitalAddButtonVisibility, vitalLayerBoxKey } from './estado-actual-panel-vitals.mjs';
 import { syncIoBalanceFromForm, applyIoNcMode } from './estado-actual-panel-registro-io.mjs';
+import {
+  applyRegistroTabSkipAttributes,
+  handleRegistroTabKeydown,
+} from './estado-actual-panel-registro-tab.mjs';
 
 function defaultAlteredTimeFromForm(form) {
   var recEl = form.querySelector('#ea-recorded-at');
@@ -56,7 +60,10 @@ function handleFormClick(form, ev) {
   }
   if (target.id === 'ea-add-glu' || target.closest('#ea-add-glu')) {
     var gluList = form.querySelector('#ea-glu-list');
-    if (gluList) gluList.appendChild(buildGluRow());
+    if (gluList) {
+      gluList.appendChild(buildGluRow());
+      applyRegistroTabSkipAttributes(form);
+    }
     return;
   }
   if (target.id === 'ea-add-bomba' || target.closest('#ea-add-bomba')) {
@@ -111,9 +118,12 @@ export function wireFormInteractions(form) {
       if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
         ev.preventDefault();
         eaPanelBridge.registrarEstadoActualMedicion();
+        return;
       }
+      handleRegistroTabKeydown(form, ev);
     });
   }
+  applyRegistroTabSkipAttributes(form);
   syncAlteredFields(form);
   syncIoBalanceFromForm(form);
 }
