@@ -17,13 +17,31 @@ describe('ensure-turn-room', () => {
           return { room: { id: 'x' } };
         },
       },
-      getSala: () => 'UX',
+      getSala: () => 'NotAWard',
       getToken: () => 'token',
       setCloudSyncRoomId: () => {},
       setCloudSyncRevision: () => {},
     });
     assert.equal(result, null);
     assert.equal(called, false);
+  });
+
+  it('allows former LAN-only salas (UX)', async () => {
+    let called = false;
+    const result = await ensureTurnRoom({
+      api: {
+        ensureTurn: async () => {
+          called = true;
+          return { room: { id: 'ux-room' } };
+        },
+      },
+      getSala: () => 'UX',
+      getToken: () => 'token',
+      setCloudSyncRoomId: () => {},
+      setCloudSyncRevision: () => {},
+    });
+    assert.equal(result?.id, 'ux-room');
+    assert.equal(called, true);
   });
 
   it('skips when no cloud token', async () => {

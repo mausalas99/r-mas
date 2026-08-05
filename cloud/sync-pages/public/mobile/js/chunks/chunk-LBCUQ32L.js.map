@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../features/clinical-context-bar.mjs"],
-  "sourcesContent": ["import { isGuardiaMode } from './chrome.mjs';\n\n/** @returns {HTMLElement | null} */\nexport function clinicalContextBarEl() {\n  return document.getElementById('clinical-context-bar');\n}\n\n/** Show the top clinical bar when Mi rotaci\u00F3n or census filters are visible. */\nexport function syncClinicalContextBarVisibility() {\n  const bar = clinicalContextBarEl();\n  if (!bar) return;\n  const rotation = document.getElementById('clinical-rotation-section');\n  const filtersMount = document.getElementById('clinical-census-filters-mount');\n  const hasRotation = rotation && !rotation.hidden && !isGuardiaMode();\n  const hasFilters =\n    filtersMount &&\n    !filtersMount.hidden &&\n    !!document.getElementById('clinical-census-filters');\n  bar.hidden = !(hasRotation || hasFilters);\n}\n"],
-  "mappings": ";;;;;AAGO,SAAS,uBAAuB;AACrC,SAAO,SAAS,eAAe,sBAAsB;AACvD;AAGO,SAAS,mCAAmC;AACjD,QAAM,MAAM,qBAAqB;AACjC,MAAI,CAAC,IAAK;AACV,QAAM,WAAW,SAAS,eAAe,2BAA2B;AACpE,QAAM,eAAe,SAAS,eAAe,+BAA+B;AAC5E,QAAM,cAAc,YAAY,CAAC,SAAS,UAAU,CAAC,cAAc;AACnE,QAAM,aACJ,gBACA,CAAC,aAAa,UACd,CAAC,CAAC,SAAS,eAAe,yBAAyB;AACrD,MAAI,SAAS,EAAE,eAAe;AAChC;",
-  "names": []
-}

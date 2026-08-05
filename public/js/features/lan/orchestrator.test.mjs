@@ -17,6 +17,7 @@ import {
   profiledMergeLiveSyncFullBundles,
   buildEstadoActualCommand,
 } from './orchestrator.mjs';
+import { registerLanSyncPushBridge } from './push.mjs';
 
 const TEST_BEARER = 'e'.repeat(32);
 const LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';
@@ -60,6 +61,23 @@ describe('orchestrator.mjs characterization', () => {
     mockLocalStorage();
     clearActiveLiveSyncRoom();
     _resetRegistryForTest();
+    registerLanSyncPushBridge({
+      isLanSessionConfiguredForRest: () => true,
+      buildLiveSyncBundleEnvelope: async () => ({ type: 'livesync:bundle', entries: [] }),
+      saveLocalRoomSnapshot() {},
+      buildLiveSyncLocalMergeSource: () => ({}),
+      mergeLiveSyncFullBundles: () => ({}),
+      applyLiveSyncMerged: async () => {},
+      applyLiveSyncDeltas: async () => {},
+      reapplyLanPatientEntries: async () => {},
+      applyRoomSyncPhaseAfterReconcile() {},
+      fetchAndApplyClinicalOpsFromHost: async () => false,
+      syncLiveSyncStatusChrome() {},
+      acceptServerBundleConflict() {},
+      acceptServerClinicalOpsConflict() {},
+      renderLanPanel() {},
+      showToast() {},
+    });
   });
 
   it('purgeLanPatientFromHost rejects demo and empty ids', async () => {

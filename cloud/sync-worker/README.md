@@ -1,6 +1,6 @@
-# R+ Nube sync worker (7.9 Free pilot)
+# R+ Nube sync worker (7.9 Free)
 
-Cloudflare Worker + D1 room authority for **Sala** and **Torre HU**. HTTP push/pull only (no WebSockets). Equipos stays in [`../equipos-worker/`](../equipos-worker/).
+Cloudflare Worker + D1 room authority for **all clinical wards** (Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas). HTTP push/pull only (no WebSockets). Equipos stays in [`../equipos-worker/`](../equipos-worker/).
 
 **Spec:** [`../../docs/superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md`](../../docs/superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md)
 
@@ -10,10 +10,9 @@ Cloudflare Worker + D1 room authority for **Sala** and **Torre HU**. HTTP push/p
 
 | Profile sala | Sync path |
 |--------------|-----------|
-| **Sala**, **Torre HU** | Nube (this worker) when connected |
-| Interconsultas, UX, Eme, Área A/Pensionistas | LAN only (unchanged) |
+| **All clinical wards** — Sala 1, Sala 2, Sala E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas | Nube (this worker) when connected |
 
-When Nube is connected for Sala or Torre HU, **cloud room authority overrides LAN** for that turn (no host Mac required). Disconnecting Nube falls back to LAN.
+When Nube is connected, **cloud room authority** holds the turn (no host Mac required). **Offline** = local SQLCipher only — no LAN fallback. LAN LiveSync is being retired.
 
 ---
 
@@ -24,7 +23,7 @@ Release **7.9** resets **clinical user accounts** (local + cloud pilot). **Patie
 ### Desktop (each workstation)
 
 1. Install **7.9.0**.
-2. On first launch, complete **Migración de usuarios y pacientes** (snapshot → wipe users → pick/create @usuario → reclaim team/patients → Nube sync for Sala/Torre).
+2. On first launch, complete **Migración de usuarios y pacientes** (snapshot → wipe users → pick/create @usuario → reclaim team/patients → Nube sync for your ward).
 3. Shared turn patients: claimed locally and/or pulled/pushed via the cloud turn room (`ensure-turn`).
 
 User-facing copy: [`../../docs/RELEASE_NOTES_7.9.0.txt`](../../docs/RELEASE_NOTES_7.9.0.txt) § *Corte de usuarios*.
@@ -75,7 +74,7 @@ curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/promote" \
   -d '{"role":"admin"}'
 ```
 
-`role` may be `admin` or `program_admin`. After promotion, that user can open **Administración nube** in R+ (Sala/Torre, admin session).
+`role` may be `admin` or `program_admin`. After promotion, that user can open **Administración nube** in R+ (all clinical wards, admin session).
 
 ---
 
@@ -102,7 +101,7 @@ curl -s "https://YOUR-URL/api/sync/v1/ping"
 # → {"ok":true,"service":"rplus-sync"}
 ```
 
-In R+ desktop (profile sala **Sala** or **Torre HU**): **⇄** → Nube → paste Worker URL.
+In R+ desktop (any clinical ward profile sala): **⇄** → Nube → paste Worker URL.
 
 ---
 
@@ -236,7 +235,7 @@ curl -s -X POST "$BASE/api/sync/v1/auth/logout" -H "Authorization: Bearer $TOKEN
 
 ### Ensure turn room (join-or-create)
 
-Canonical room for **Sala 1**, **Sala 2**, **Sala E**, or **Torre HU** + **calendar month** key `YYYY-MM` (America/Mexico_City). One room code lasts the whole month. The desktop client calls this after **Mi rotación** — no manual room code.
+Canonical room for any allowlisted ward (**Sala 1**, **Sala 2**, **Sala E**, **Torre HU**, **Interconsultas**, **UX**, **Eme**, **Área A/Pensionistas**) + **calendar month** key `YYYY-MM` (America/Mexico_City). One room code lasts the whole month. The desktop client calls this after **Mi rotación** — no manual room code.
 
 ```bash
 curl -s -X POST "$BASE/api/sync/v1/rooms/ensure-turn" \

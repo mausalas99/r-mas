@@ -116,7 +116,7 @@ export function medsClauseOrEmpty(fieldVal) {
 }
 
 /** Fallback when a required SOAP med category has no drugs. */
-export const SOAP_EMPTY_MED_FALLBACK = 'Ninguno';
+export const SOAP_EMPTY_MED_FALLBACK = 'NINGUNO';
 
 /**
  * Build "LABEL: value" for SOAP/indicaciones. Empty optional categories return "".

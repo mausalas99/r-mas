@@ -34,15 +34,15 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.doesNotMatch(text, /GLUCOMETRÍAS CAPILARES \(140, ___/);
   assert.match(text, /BALANCE \+200 CC/);
   assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
-  // Required HD/HI cats show Ninguno; optional empty cats are omitted
+  // Required HD/HI cats show NINGUNO; optional empty cats are omitted
   assert.doesNotMatch(text, /ANALGESIA:/);
   assert.doesNotMatch(text, /ANTIEMETICOS:/);
   assert.doesNotMatch(text, /ANTICOAGULACION:/);
   assert.doesNotMatch(text, /DIURÉTICOS:/);
-  assert.match(text, /VASOPRESORES: Ninguno/);
-  assert.match(text, /ANTIHIPERTENSIVOS: Ninguno/);
-  assert.match(text, /TROMBOPROFILAXIS: Ninguno/);
-  assert.match(text, /ANTIBIOTICOTERAPIA: Ninguno/);
+  assert.match(text, /VASOPRESORES: NINGUNO/);
+  assert.match(text, /ANTIHIPERTENSIVOS: NINGUNO/);
+  assert.match(text, /TROMBOPROFILAXIS: NINGUNO/);
+  assert.match(text, /ANTIBIOTICOTERAPIA: NINGUNO/);
   assert.doesNotMatch(text, /RESCATES DE INSULINA/);
 });
 
@@ -79,7 +79,7 @@ test('buildEstadoActualText — rescates en NM aunque no haya glucometrías', ()
   assert.doesNotMatch(text, /INSULINA: RESCATES DE INSULINA/);
 });
 
-test('buildEstadoActualText omite categorías vacías y usa Ninguno en las 4 obligatorias', () => {
+test('buildEstadoActualText omite categorías vacías y usa NINGUNO en las 4 obligatorias', () => {
   const m = emptyMonitoreo();
   m.estadoClinico.four = '16';
   m.estadoClinico.esferas = '3';
@@ -100,7 +100,7 @@ test('buildEstadoActualText omite categorías vacías y usa Ninguno en las 4 obl
   assert.doesNotMatch(nLine, /ANALGESIA:|ANTIEMETICOS:|SEDACION:/);
   assert.match(
     hdLine,
-    /VASOPRESORES: Ninguno \| ANTIHIPERTENSIVOS: Ninguno \| TROMBOPROFILAXIS: Ninguno \| DIURÉTICOS: ESPIRONOLACTONA 25MG VO C\/24H$/
+    /VASOPRESORES: NINGUNO \| ANTIHIPERTENSIVOS: NINGUNO \| TROMBOPROFILAXIS: NINGUNO \| DIURÉTICOS: ESPIRONOLACTONA 25MG VO C\/24H$/
   );
   assert.doesNotMatch(hdLine, /ANTICOAGULACION:|ANTIARRITMICOS:|ESTATINAS:/);
   assert.match(hiLine, /ANTIBIOTICOTERAPIA: RIFAXIMINA 400MG VO C\/12H DIA 14$/);

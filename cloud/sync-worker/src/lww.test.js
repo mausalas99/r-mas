@@ -119,4 +119,76 @@ describe('applyOps LWW', () => {
     assert.equal(result.rejected[0].reason, 'quota_exceeded');
     assert.equal(result.state.entries.length, QUOTAS.maxLivePatients);
   });
+
+  it('tombstone fully wipes entry, labs, todos, agenda and blocks re-admit', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/fields',
+        value: { nombre: 'BORRAR', registro: '2166042-4' },
+        updatedAt: '2026-08-05T10:00:00.000Z',
+        actorId: 'a',
+      },
+      {
+        path: 'labSidecars/p1/set1',
+        value: { setAt: '2026-08-05T09:00:00.000Z', resLabs: [] },
+        updatedAt: '2026-08-05T09:00:00.000Z',
+        actorId: 'a',
+      },
+      {
+        path: 'todos/t1',
+        value: { id: 't1', patientId: 'p1', text: 'pendiente' },
+        updatedAt: '2026-08-05T10:00:00.000Z',
+        actorId: 'a',
+      },
+      {
+        path: 'agenda/a1',
+        value: { id: 'a1', patientId: 'p1', title: 'US' },
+        updatedAt: '2026-08-05T10:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 1);
+    assert.ok(s.labSidecars.p1);
+    assert.ok(s.todos.t1);
+    assert.equal(s.agenda.length, 1);
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'tombstones/p1',
+        value: { registro: '2166042-4', deletedAt: '2026-08-05T12:00:00.000Z' },
+        updatedAt: '2026-08-05T12:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 0);
+    assert.equal(s.labSidecars.p1, undefined);
+    assert.equal(s.todos.t1, undefined);
+    assert.equal(s.agenda.length, 0);
+    assert.equal(s.tombstones.p1.registro, '2166042-4');
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/fields',
+        value: { nombre: 'ZOMBIE' },
+        updatedAt: '2026-08-05T13:00:00.000Z',
+        actorId: 'b',
+      },
+      {
+        path: 'labSidecars/p1/set2',
+        value: { setAt: '2026-08-05T13:00:00.000Z' },
+        updatedAt: '2026-08-05T13:00:00.000Z',
+        actorId: 'b',
+      },
+      {
+        path: 'todos/t2',
+        value: { id: 't2', patientId: 'p1', text: 'no' },
+        updatedAt: '2026-08-05T13:00:00.000Z',
+        actorId: 'b',
+      },
+    ]));
+    assert.equal(s.entries.length, 0);
+    assert.equal(s.labSidecars.p1, undefined);
+    assert.equal(s.todos.t2, undefined);
+  });
 });

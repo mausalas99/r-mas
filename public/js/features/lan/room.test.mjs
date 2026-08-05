@@ -16,7 +16,10 @@ import {
 } from './runtime.mjs';
 import { registerLanSyncPushBridge } from './push.mjs';
 import { stopLiveSyncOutboxFlush } from './push-outbox.mjs';
-import { stopLiveSyncReconnectLoop } from './room-host-failover.mjs';
+import {
+  stopLiveSyncReconnectLoop,
+  markLiveSyncSessionResyncDone,
+} from './room-host-failover.mjs';
 import {
   registerLanSyncRoomBridge,
   ensureLanSyncRoomBridgeWired,
@@ -158,6 +161,7 @@ describe('room.mjs characterization', () => {
     clearActiveLiveSyncRoom();
     clearRoomMembership();
     clearRoomSyncPhase('sala-1');
+    markLiveSyncSessionResyncDone(false);
     initLanSyncRuntime({ lanClient: fakeLanClient() });
     delete globalThis[ROOM_BRIDGE_KEY];
     delete globalThis[PUSH_BRIDGE_KEY];
@@ -275,6 +279,7 @@ describe('room.mjs characterization', () => {
   it('joinLanRoom short-circuits when already in same live room', async () => {
     const { toasts } = wireRoomBridge();
     setActiveLiveSyncRoom('sala-same', 'Same');
+    markLiveSyncSessionResyncDone(true);
     initLanSyncRuntime({
       lanClient: fakeLanClient({ liveConnected: true, liveRoomId: 'sala-same' }),
     });

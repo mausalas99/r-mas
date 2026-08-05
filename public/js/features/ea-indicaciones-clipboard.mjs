@@ -135,7 +135,7 @@ export function buildEaIndicacionesClipboardText(monitoreo) {
 export function hasEaIndicacionesClipboardContent(monitoreo) {
   var text = buildEaIndicacionesClipboardText(monitoreo);
   if (!text.trim()) return false;
-  // Forced "Ninguno" lines alone are not copyable content.
+  // Forced "NINGUNO" lines alone are not copyable content.
   var fallback = SOAP_EMPTY_MED_FALLBACK.toLowerCase();
   return text.split('\n').some(function (line) {
     var colon = line.indexOf(':');

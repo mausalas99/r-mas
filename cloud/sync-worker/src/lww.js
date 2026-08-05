@@ -39,8 +39,14 @@ function countLivePatients(state) {
   return state.entries.filter((e) => e && e.id).length;
 }
 
+/** @param {RoomSyncState} state @param {string} patientId */
+function isTombstoned(state, patientId) {
+  return !!(state.tombstones && state.tombstones[patientId]);
+}
+
 /** @param {RoomSyncState} state @param {string} patientId @param {Record<string, unknown>} stub */
 function upsertEntryStub(state, patientId, stub) {
+  if (isTombstoned(state, patientId)) return;
   const idx = findEntryIndex(state, patientId);
   if (idx >= 0) {
     state.entries[idx] = { ...state.entries[idx], ...stub, id: patientId };
@@ -54,6 +60,7 @@ function upsertEntryStub(state, patientId, stub) {
 
 /** @param {RoomSyncState} state @param {string} patientId @param {string} field @param {unknown} value */
 function setEntryField(state, patientId, field, value) {
+  if (isTombstoned(state, patientId)) return;
   const idx = findEntryIndex(state, patientId);
   if (idx < 0) {
     if (countLivePatients(state) >= QUOTAS.maxLivePatients) {
@@ -76,12 +83,32 @@ function upsertAgendaItem(state, itemId, value) {
   }
 }
 
+/** @param {RoomSyncState} state @param {string} patientId */
+function wipePatientSidecars(state, patientId) {
+  if (state.labSidecars && state.labSidecars[patientId]) {
+    delete state.labSidecars[patientId];
+  }
+  const todos = state.todos || {};
+  for (const tid of Object.keys(todos)) {
+    const row = todos[tid];
+    if (row && String(row.patientId || '').trim() === patientId) {
+      delete todos[tid];
+    }
+  }
+  if (Array.isArray(state.agenda) && state.agenda.length) {
+    state.agenda = state.agenda.filter(function (item) {
+      return !(item && String(item.patientId || '').trim() === patientId);
+    });
+  }
+}
+
 /** @param {RoomSyncState} state @param {string} patientId @param {SyncOp} op */
 function applyTombstone(state, patientId, op) {
   const idx = findEntryIndex(state, patientId);
   if (idx >= 0) {
     state.entries.splice(idx, 1);
   }
+  wipePatientSidecars(state, patientId);
   if (!state.tombstones) state.tombstones = {};
   const meta =
     typeof op.value === 'object' && op.value !== null
@@ -127,6 +154,7 @@ function applyOpToState(state, op) {
   const labSidecar = /^labSidecars\/([^/]+)\/([^/]+)$/.exec(path);
   if (labSidecar) {
     const [, patientId, setId] = labSidecar;
+    if (isTombstoned(state, patientId)) return;
     if (!state.labSidecars[patientId]) state.labSidecars[patientId] = {};
     state.labSidecars[patientId][setId] = value;
     return;
@@ -134,6 +162,9 @@ function applyOpToState(state, op) {
 
   const todoMatch = /^todos\/([^/]+)$/.exec(path);
   if (todoMatch) {
+    const todoVal = value && typeof value === 'object' ? /** @type {{ patientId?: string }} */ (value) : null;
+    const todoPatientId = String((todoVal && todoVal.patientId) || '').trim();
+    if (todoPatientId && isTombstoned(state, todoPatientId)) return;
     state.todos[todoMatch[1]] = value;
     return;
   }

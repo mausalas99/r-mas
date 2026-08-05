@@ -38,15 +38,18 @@ describe('emptyRoomState', () => {
 });
 
 describe('create sala gate', () => {
-  it('rejects LAN-only salas for cloud create', () => {
-    const rejected = ['Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas'];
-    for (const sala of rejected) {
-      assert.equal(isCloudSala(sala), false, sala);
-    }
-  });
-
-  it('accepts normalized cloud salas', () => {
-    const allowed = ['Sala 1', 'Sala 2', 'Sala E', 'Torre HU', 'torre-hu'];
+  it('accepts all clinical wards on Nube', () => {
+    const allowed = [
+      'Sala 1',
+      'Sala 2',
+      'Sala E',
+      'Torre HU',
+      'torre-hu',
+      'Interconsultas',
+      'UX',
+      'Eme',
+      'Área A/Pensionistas',
+    ];
     for (const sala of allowed) {
       assert.equal(isCloudSala(sala), true, sala);
       assert.ok(CLOUD_SALAS.includes(normalizeCloudSala(sala)), sala);
@@ -56,20 +59,11 @@ describe('create sala gate', () => {
 
 
 describe('validateCloudSalaForRoom (ensure-turn gate)', () => {
-  it('rejects LAN-only salas', () => {
-    const rejected = ['Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas'];
-    for (const sala of rejected) {
-      assert.throws(() => validateCloudSalaForRoom(sala), (err) => {
-        assert.ok(err instanceof SyncError);
-        assert.equal(err.code, 'invalid_request');
-        return true;
-      }, sala);
+  it('accepts all clinical wards', () => {
+    const allowed = ['Sala 1', 'Interconsultas', 'UX', 'Eme', 'Área A/Pensionistas', 'torre-hu'];
+    for (const sala of allowed) {
+      assert.equal(validateCloudSalaForRoom(sala), normalizeCloudSala(sala), sala);
     }
-  });
-
-  it('accepts cloud salas and normalizes', () => {
-    assert.equal(validateCloudSalaForRoom('Sala 1'), 'Sala 1');
-    assert.equal(validateCloudSalaForRoom('torre-hu'), 'Torre HU');
   });
 
   it('rejects missing sala', () => {

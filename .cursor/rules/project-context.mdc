@@ -25,7 +25,7 @@ Electron 41 desktop app (Mac arm64/x64, Windows x64). Renderer: ES modules bundl
 
 | Layer | File | Role |
 |-------|------|------|
-| Electron main | `main.js` | Window, auto-updater, IPC, spawns LAN server |
+| Electron main | `main.js` | Window (`app://rplus` via `lib/renderer-protocol.cjs`), auto-updater, IPC, spawns ward server `:3738` |
 | Preload bridge | `preload.js` | `window.electronAPI` IPC surface |
 | LAN server | `server.js` | Express routes, doc export, interno mobile, WS hub |
 | Renderer boot | `public/js/app.js` → `app.bundle.mjs` | Feature registration via `app-runtimes.mjs` |
@@ -81,8 +81,8 @@ docs/
 | LAN sync / rooms | `lan-squad/` (`host-store/` persistence submodules, `conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-delete-batch.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-ui.mjs` |
-| Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
-| Cloud sync (Nube 7.9) | `cloud/sync-worker/` (`auth-recovery.js`, `turn-key.js` month `YYYY-MM`, migration `004-active-room.sql`), `public/js/features/cloud-sync/` (`autostart.mjs`, `panel-mobile-invite.mjs`, recovery), `cloud-mobile/` | spec Free pilot + mobile 7.9.5; opt-in ⇄ |
+| Interno mobile | `lib/interno/` (`host-store-db.cjs` census from SQLCipher), `public/interno/`, `server.js` interno routes |
+| Cloud sync (Nube) | `cloud/sync-worker/`, `public/js/features/cloud-sync/` (`autostart`, `mutate-bridge`, `cloud-ops-events`, `sync-apply` via `features/sync-apply/`), `clinical-ops-sync.mjs`, `cloud-mobile/`; LAN LiveSync HTTP off by default (`R_PLUS_ENABLE_LAN_SYNC`) | all clinical wards |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
@@ -135,6 +135,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-05** `release-7.9.8`: All clinical wards on Nube; LAN LiveSync off by default (`R_PLUS_ENABLE_LAN_SYNC=1`); `app://rplus` + `sync-apply` (Nube delete/bulk) + Worker LWW tombstone wipe; `docs/RELEASE_NOTES_7.9.8.txt`, `renderer-protocol`, `host-store-db`, `lww.js`.
 - **2026-08-05** `release-7.9.6`: Nube **Sala 1/2/E** rooms distintos + censo por alcance (R4/Admin sala-wide desktop; iPad por equipo) + prune fantasmas + EA monitoreo stub-safe; `sala-allowlist`, `pull-apply`, `patient-scope-prune`, `build:cloud-mobile`.
 - **2026-08-05** `cloud-sync`: Nube separa **Sala 1 / Sala 2 / Sala E** como rooms distintos (ya no bucket "Sala"); `sala-allowlist`, admin Salas, `ensure-turn`.
 - **2026-08-05** `release-7.9.5`: R+ Móvil Nube (`/mobile/`+QR) + sala mensual `YYYY-MM` + `active_room_id` + census autostart/seed + signos LWW + COAG + LAN restore; `docs/RELEASE_NOTES_7.9.5.txt`, `cloud-mobile/`, `autostart.mjs`, `004-active-room.sql`.
@@ -156,4 +157,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-07-31** `release-7.7.6`: whitelist resLabs (sin membrete SOME/Impresión); vitales EA solo ventana del turno + tope sin doble conteo; `labs-reslabs-sanitize.mjs`, `lab-history-format.mjs`, `estado-actual-vital-series.mjs`.
 - **2026-07-28** `release-7.7.5`: gasos repo — todas las tomas, empareja la más cercana ≤2 h, no absorbe 2ª gaso; merge QS/ESC/PFH; receta HU landscape; `lab-consolidation-cluster.mjs`, `lab-bulk-paste.mjs`, `labs-chemistry.mjs`, `generate-receta-hu.js`.
 - **2026-07-23** `release-7.7.4`: repo/pegado ≤2 h (BH no en series q4h); Consolidar por grupos manuales; COAG sin robar TTP→INR ni rango→TP; `lab-bulk-paste.mjs`, `lab-panel-history-consolidate-modal.mjs`, `labs-extract.mjs`.
-- **2026-07-21** `paste-smart`: paste-anywhere / Procesar SOME — global paste + ⌘K match registro/nombre → confirm once → Labs; `paste-smart*.mjs`.
