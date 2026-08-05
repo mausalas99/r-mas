@@ -4,6 +4,7 @@
 import { activeLiveSyncRoomId, lanClient } from './runtime.mjs';
 import { isLanSessionConfiguredForRest, lanFetchAuthed } from './transport.mjs';
 import { fetchHostPatientsList } from './host-patients-snapshot.mjs';
+import { listLanHostRoomIds, fetchRoomBundleEntries } from './host-patients-snapshot-rooms.mjs';
 import {
   fetchClinicalScopeContextFromDb,
   refreshClinicalPatientListForScope,
@@ -14,6 +15,12 @@ import {
   syncHostBundleEntityFromApplied,
 } from './entity-versions.mjs';
 import { applyLanPatientEntries } from './patient-entries.mjs';
+import {
+  findPatientEntryInBundleEntries,
+  pickLanPatientRestoreEntry,
+} from './host-patient-restore-pick.mjs';
+
+export { findPatientEntryInBundleEntries, pickLanPatientRestoreEntry };
 
 /** @type {{ runtime?: { showToast?: (msg: string, type?: string) => void } }} */
 let hostPatientDeps = {};
@@ -80,29 +87,61 @@ async function fetchHostBundlePatientEntry(pid, rid) {
   var j = await resp.json();
   var bundle = j && j.bundle;
   var entries = bundle && Array.isArray(bundle.entries) ? bundle.entries : [];
-  var entry = entries.find(function (e) {
-    return e && e.patient && String(e.patient.id) === pid;
-  });
+  var entry = findPatientEntryInBundleEntries(entries, pid);
   if (!entry) return { ok: false, error: 'patient_not_on_host' };
   return { ok: true, entry: entry };
 }
 
-/** Pull one patient row from the host sync-bundle into the local census (orphan entregas). */
+/**
+ * Resolve a restore entry: active room → other rooms → host /patients census.
+ * @param {string} pid
+ * @param {string} preferredRoomId
+ */
+export async function resolveLanPatientRestoreEntry(pid, preferredRoomId) {
+  var preferred = String(preferredRoomId || '').trim();
+  var activeEntry = null;
+  if (preferred) {
+    var primary = await fetchHostBundlePatientEntry(pid, preferred);
+    if (primary.ok) activeEntry = primary.entry;
+  }
+  var otherEntries = [];
+  if (!activeEntry) {
+    var roomIds = await listLanHostRoomIds(preferred);
+    for (var i = 0; i < roomIds.length; i += 1) {
+      var rid = roomIds[i];
+      if (rid === preferred) continue;
+      otherEntries.push(findPatientEntryInBundleEntries(await fetchRoomBundleEntries(rid), pid));
+    }
+  }
+  var hostRow = activeEntry ? null : await lanFetchHostPatientRow(pid);
+  return pickLanPatientRestoreEntry({
+    activeEntry: activeEntry,
+    otherEntries: otherEntries,
+    hostRow: hostRow,
+  });
+}
+
+/** Pull one patient from host (bundle or census) into the local census. */
 export async function restoreLanPatientFromHost(patientId) {
   var pid = String(patientId || '').trim();
   var rid = String(activeLiveSyncRoomId || '').trim();
-  if (!pid || !rid || !isLanSessionConfiguredForRest()) {
+  if (!pid || !isLanSessionConfiguredForRest()) {
     return { ok: false, error: 'not_configured' };
   }
   try {
-    var fetched = await fetchHostBundlePatientEntry(pid, rid);
+    var fetched = await resolveLanPatientRestoreEntry(pid, rid);
     if (!fetched.ok) return fetched;
     await fetchClinicalScopeContextFromDb();
     var result = applyLanPatientEntries([fetched.entry], { skipTeamScopeFilter: true });
     if (result.added || result.updated) {
       await refreshClinicalPatientListForScope({ allowLanPull: false });
     }
-    return { ok: true, added: result.added, updated: result.updated };
+    return {
+      ok: true,
+      added: result.added,
+      updated: result.updated,
+      via: fetched.via,
+    };
   } catch (err) {
     return { ok: false, error: err && err.message ? err.message : 'restore_failed' };
   }

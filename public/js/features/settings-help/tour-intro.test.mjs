@@ -38,6 +38,11 @@ describe('tour intro launch', () => {
     assert.match(src, /hideMainClinicalOnboarding/);
     assert.match(src, /setClinicalSyncModeLocalOnly\(false\)/);
     assert.match(src, /openClinicalTeamsPanel\(\{ skipProfileGate: true \}\)/);
+    const lifecycle = readFileSync(join(dir, 'tour-flow-lifecycle.mjs'), 'utf8');
+    const skipFn = lifecycle.match(/function skipGuidedTour\(\) \{[\s\S]*?\n\}/);
+    assert.ok(skipFn, 'skipGuidedTour body');
+    assert.match(skipFn[0], /postTourResumeBranch = skippedBranch/);
+    assert.match(skipFn[0], /if \(skippedBranch === 'sala'\) prepareSalaGuidedTourExitSync\(\)/);
     const roster = readFileSync(
       join(dir, '..', 'clinical-teams', 'teams-roster-shell.mjs'),
       'utf8'

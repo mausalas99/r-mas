@@ -86,7 +86,40 @@ function setRpcOffline(offline) {
 }
 function isRpcOffline() { return rpcOffline; }
 
+function isCloudMobileSurface() {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) return true;
+    if (
+      typeof document !== 'undefined' &&
+      document.documentElement &&
+      (document.documentElement.dataset.cloudMobile === '1' ||
+        document.documentElement.classList.contains('rpc-cloud-mobile'))
+    ) {
+      return true;
+    }
+  } catch (_e) {
+    void _e;
+  }
+  return false;
+}
+
 function checkRpcServerHealth() {
+  if (isCloudMobileSurface()) {
+    try {
+      rpcOffline = false;
+      setRpcOfflineVisible(false);
+      var offlineBanner = document.getElementById('rpc-offline-banner');
+      if (offlineBanner) {
+        offlineBanner.hidden = true;
+        offlineBanner.classList.remove('visible');
+      }
+      var lanBanner = document.getElementById('lan-connection-banner');
+      if (lanBanner) lanBanner.hidden = true;
+    } catch (_e) {
+      void _e;
+    }
+    return;
+  }
   try {
     fetch('/health', { method: 'GET', cache: 'no-store' })
       .then(function(r) {
@@ -114,6 +147,10 @@ function checkRpcServerHealth() {
 }
 
 function initRpcServerHealthWatch() {
+  if (isCloudMobileSurface()) {
+    checkRpcServerHealth();
+    return;
+  }
   checkRpcServerHealth();
   setInterval(checkRpcServerHealth, 15000);
 }

@@ -13,6 +13,7 @@ Records key decisions so agents and humans stay aligned with [01-vision-north-st
 
 | Date | Theme | Decision / Suggestion | Impact |
 | :--- | :--- | :--- | :--- |
+| 2026-08-05 | Architecture | **Nube room code = calendar month** (`YYYY-MM` CDMX), not daily turn. Sticky roomId always re-`ensure-turn`s to current month. | `cloud/sync-worker/src/turn-key.js`, `autostart.mjs` |
 | 2026-08-02 | Architecture | **7.9 Nube Free pilot:** for **Sala + Torre HU**, cloud room **overrides LAN** (Drive-style HTTP push/pull; no host Mac). | `cloud/sync-worker` + `public/js/features/cloud-sync/` |
 | 2026-08-02 | Product | **Allowlist:** Nube = Sala + Torre HU only. **LAN-only for now:** Interconsultas, UX, Eme, Área A/Pensionistas. Offline stays; **labs uncapped**. | Hard gate in Worker + ⇄ panel |
 | 2026-08-02 | Security | Pilot PHI at rest = AES-GCM with Worker secret; passwords = PBKDF2-SHA-256; not E2EE in V1 | Document in north star; Paid/envelope DEKs later |

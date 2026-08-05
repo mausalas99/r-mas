@@ -2,6 +2,7 @@
 
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
+import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 
 /**
  * @param {unknown} err
@@ -68,7 +69,7 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
       }
       try {
         const result = await api.push(roomId, {
-          clientMutationId: item.clientMutationId,
+          clientMutationId: resolveCloudPushMutationId(item),
           ops: sanitized.ops,
           baseRevision: item.baseRevision ?? getRevision(),
         });
@@ -96,6 +97,7 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
  *   onStatus?: (status: CloudSyncStatus, detail?: string) => void,
  *   applyPullResult?: (result: unknown) => void | Promise<void>,
  *   onStop?: (handle: { stop: () => void }) => void,
+ *   pollMobile?: boolean,
  * }} deps
  */
 export function createSyncRuntimeCycle(deps) {
@@ -126,7 +128,12 @@ export function createSyncRuntimeCycle(deps) {
 
   async function syncCycle() {
     if (stopped) return;
-    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+      if (deps.pollMobile) {
+        scheduler.armNextTimer(false);
+      }
+      return;
+    }
     if (!getRoomId()) return;
     if (!navigator.onLine) {
       setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
@@ -159,6 +166,7 @@ export function createSyncRuntimeCycle(deps) {
     syncCycle,
     pendingCount: outboxSync.pendingCount,
     getLastLocalWriteAt: function () { return lastLocalWriteAt; },
+    pollMobile: deps.pollMobile,
   });
 
   function onOnline() { void syncCycle(); }

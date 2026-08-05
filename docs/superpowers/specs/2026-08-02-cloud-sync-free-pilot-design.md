@@ -164,7 +164,7 @@ Today: device unlock passphrase + `clientId` + optional `@username` — **no** p
 
 | Concept | V1 behavior |
 |---------|-------------|
-| **Room** | Named turn container (`sala` + date label optional); holds revision + encrypted payload refs |
+| **Room** | Named month container (`sala` + `YYYY-MM` turn key in America/Mexico_City); one room code lasts the calendar month; holds revision + encrypted payload refs |
 | **Create** | Authenticated user creates room → receives **room code** (6–8 chars) + becomes `owner` |
 | **Join** | Login + room code → membership `member` |
 | **Invite** | Same room code (Drive “anyone with the link” lite); optional rotate by owner |

@@ -97,7 +97,14 @@ async function applyMobileBootSettings(mobile) {
   }
 }
 
+import { isCloudMobileClient } from './features/cloud-mobile/origin.mjs';
+
 export async function initMobileWebBoot() {
+  if (isCloudMobileClient()) {
+    const { initCloudMobileBoot } = await import('./features/cloud-mobile/boot.mjs');
+    await initCloudMobileBoot();
+    return;
+  }
   tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
   const mobile = await loadMobileBootModules();

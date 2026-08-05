@@ -17,6 +17,7 @@ import {
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
 import { shouldHidePrimaryLanChrome } from '../cloud-sync/panel-session-gate.mjs';
 import { getUserSala } from './panel-clinical-context.mjs';
+import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 
 export function isLanConnectionDropdownOpen() {
   var bg = document.getElementById('connection-dropdown-backdrop');
@@ -300,6 +301,12 @@ export function createPanelConnectionChrome(deps) {
   }
 
   function openConnectionDropdown() {
+    if (isCloudMobileClient()) {
+      const msg =
+        'R+ Móvil usa la nube automáticamente. Si no ves pacientes, deja R+ abierto en el Mac del turno y recarga.';
+      deps.runtime().showToast?.(msg, 'info');
+      return;
+    }
     setConnectionDropdownOpen(true, deps);
   }
 

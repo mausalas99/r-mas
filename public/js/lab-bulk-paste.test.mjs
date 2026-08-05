@@ -26,6 +26,7 @@ const {
   buildBulkLabPreview,
   mergeBulkParseResults,
   mergeBulkParseResultsForStorage,
+  dedupeConsolidatedLabRows,
   pickLatestDayMergedLabDisplay,
   shouldShowBulkLabPreview,
   extractLabPatientFromBulkBlock,
@@ -115,6 +116,62 @@ describe('lab-bulk-paste merge and consolidation', () => {
     var merged = mergeBulkParseResults(items);
     assert.equal(merged.length, 1);
     assert.ok(merged[0].resLabs.length > 0);
+  });
+
+  it('dedupeConsolidatedLabRows une COAG por analito (Fib no se pierde ante TP/TTP)', () => {
+    var out = dedupeConsolidatedLabRows(
+      ['COAG\tFib 283', 'COAG\tTP 14.2*  TTP 30.9  INR 1.22*', 'BH\tHb 12.8  Leu 14.4*'],
+      'labs'
+    );
+    var coag = out.find(function (r) {
+      return /^COAG\t/i.test(String(r));
+    });
+    assert.ok(coag, 'debe haber una sola fila COAG');
+    assert.match(coag, /\bFib\s+283\b/);
+    assert.match(coag, /\bTP\s+14\.2/);
+    assert.match(coag, /\bTTP\s+30\.9/);
+    assert.match(coag, /\bINR\s+1\.22/);
+    assert.equal(
+      out.filter(function (r) {
+        return /^COAG\t/i.test(String(r));
+      }).length,
+      1
+    );
+  });
+
+  it('mergeBulkParseResults conserva Fib al consolidar con TP/TTP ≤2 h (Actualizar labs)', () => {
+    var fib = `Expediente:\t1012799-0\tSolicitud:\t2608040879
+Nombre:\tJOSEFINA HERNANDEZ TRINIDAD\tFecha Registro:\tAug 4 2026 1:19PM
+HEMATOLOGIA
+FIBRINOGENO
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+FIBRINOGENO\t
+*
+283
+mg/dL\t150 - 400`;
+    var coagTp = `Expediente:\t1012799-0\tSolicitud:\t2608040800
+Nombre:\tJOSEFINA HERNANDEZ TRINIDAD\tFecha Registro:\tAug 4 2026 1:05PM
+HEMATOLOGIA
+TIEMPO DE PROTROMBINA Y TROMBOPLASTINA
+TIEMPO DE PROTROMBINA\tA
+14.20
+SEG.\t10.25 - 13.20
+INR\t*
+1.22
+TIEMPO DE TROMBOPLASTINA\t*
+30.9
+SEG\t29.1 - 38.4`;
+    var items = [fib, coagTp].map(function (text) {
+      return { result: procesarLabs(text), reportText: text };
+    });
+    var merged = mergeBulkParseResults(items);
+    assert.equal(merged.length, 1);
+    var coag = merged[0].resLabs.find(function (l) {
+      return /^COAG\t/i.test(l);
+    });
+    assert.ok(coag);
+    assert.match(coag, /\bFib\s+283\b/);
+    assert.match(coag, /\bTP\s+14\.2/);
   });
 
   it('mergeBulkParseResults mantiene cada gasometría seriada del mismo día', () => {

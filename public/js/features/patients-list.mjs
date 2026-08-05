@@ -5,6 +5,7 @@ import {
   isClinicalScopeReadyForLanPatientApply,
 } from '../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
+import { isCloudMobileClient } from './cloud-mobile/origin.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isPaseMode } from './chrome.mjs';
 import { isPatientBulkSelectMode } from './patients-bulk-select.mjs';
@@ -362,12 +363,17 @@ function renderPatientListFullHtml(list, bundle, opts) {
 function renderPatientListNow(opts) {
   opts = normalizePatientListRenderOpts(opts);
   if (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply()) {
-    if (opts.silent) return;
     var listBoot = document.getElementById('patient-list');
     if (listBoot) {
+      const cloudMsg = isCloudMobileClient()
+        ? 'Censo vacío en la nube. Deja R+ abierto en el Mac del turno unos segundos y recarga.'
+        : 'Sincronizando equipo…';
       listBoot.innerHTML =
-        '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sincronizando equipo…</div>';
+        '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">' +
+        cloudMsg +
+        '</div>';
     }
+    if (opts.silent) return;
     return;
   }
   ensurePatientUiState();
@@ -379,6 +385,14 @@ function renderPatientListNow(opts) {
   var visiblePatients = patientsVisibleInSidebar();
   reselectIfActivePatientHidden(visiblePatients);
   if (!visiblePatients.length) {
+    if (isCloudMobileClient()) {
+      renderPatientListMessage(
+        list,
+        'Sin pacientes en la nube. En el Mac del turno deja R+ abierto ~20 s y recarga esta página.',
+        opts
+      );
+      return;
+    }
     renderPatientListMessage(list, 'Sin pacientes aún', opts);
     return;
   }

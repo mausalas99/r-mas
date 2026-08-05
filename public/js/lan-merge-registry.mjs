@@ -6,6 +6,8 @@ import { mergeLiveSyncBundles } from './live-sync-room.mjs';
 import {
   mergeLanPatientEntrySources,
   filterEntriesByPatientDeletes,
+  derivePatientDeletesFromHostCensus,
+  mergePatientDeleteRecords,
 } from './lan-patient-merge.mjs';
 import { attachTodosMapToPatientEntries } from './livesync-patient-ids.mjs';
 import { mergeClinicalOpsFromSources } from './clinical-ops-lan.mjs';
@@ -34,6 +36,22 @@ const domainMergers = {
   },
 };
 
+function resolveHostSnapshotDeleteHints(sources) {
+  let hostEntries = null;
+  let snapshotEntries = null;
+  for (const src of sources || []) {
+    if (!src) continue;
+    if (src._hostCensusAuthoritative) {
+      hostEntries = Array.isArray(src.entries) ? src.entries : [];
+    }
+    if (src._localRoomSnapshot) {
+      snapshotEntries = Array.isArray(src.entries) ? src.entries : [];
+    }
+  }
+  if (!hostEntries || !snapshotEntries) return [];
+  return derivePatientDeletesFromHostCensus(snapshotEntries, hostEntries);
+}
+
 /**
  * Merge LAN room bundle sources (agenda/todos, patients, clinicalOps).
  * @param {object[]} sources
@@ -42,7 +60,12 @@ export function mergeLiveSyncFullBundles(sources) {
   const list = Array.isArray(sources) ? sources : [];
   const base = domainMergers.agendaTodosPatients(list);
   let entries = domainMergers.patientEntries(list);
-  entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
+  const patientDeletes = mergePatientDeleteRecords(
+    base.patientDeletes,
+    resolveHostSnapshotDeleteHints(list)
+  );
+  entries = filterEntriesByPatientDeletes(entries, patientDeletes);
+  base.patientDeletes = patientDeletes;
   base.entries = attachTodosMapToPatientEntries(entries, base.todos, base.todoTouchedPatientIds);
   base.clinicalOps = domainMergers.clinicalOps(list);
   var overlay = domainMergers.labPanelOverlay(list);

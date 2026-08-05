@@ -58,7 +58,7 @@ describe('salasTableHtml', () => {
       {
         id: 'r1',
         sala: 'Sala',
-        turnKey: '2026-08-03',
+        turnKey: '2026-08',
         code: 'RC65RH',
         revision: 1,
         memberCount: 4,
@@ -67,7 +67,7 @@ describe('salasTableHtml', () => {
       {
         id: 'r2',
         sala: 'Torre HU',
-        turnKey: '2026-08-03',
+        turnKey: '2026-08',
         code: 'ABCD12',
         revision: 0,
         memberCount: 1,
@@ -76,7 +76,7 @@ describe('salasTableHtml', () => {
     ]);
     assert.match(html, /cloud-sync-admin-sala-sub/);
     assert.match(html, /1 · 2 · E/);
-    assert.match(html, /comparten el mismo espacio/);
+    assert.match(html, /comparten el mismo espacio por mes/);
     assert.match(html, /4\.0 KB/);
     assert.match(html, /200 B/);
     assert.match(html, /Torre HU/);

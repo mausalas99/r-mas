@@ -93,15 +93,18 @@ function markRoomCatchingUpIfNeeded(rid, b) {
 async function mergeAndApplyReconcileSources(rid, b) {
   var sources = [];
   var local = storage.getLanRoomSnapshot(rid);
-  if (local) sources.push(local);
+  if (local) sources.push(Object.assign({}, local, { _localRoomSnapshot: true }));
   var hostBundle = await fetchHostSyncBundle(rid, b);
   var hostBundleLoaded = !!hostBundle;
-  if (hostBundle) sources.push(hostBundle);
+  if (hostBundle) sources.push(Object.assign({}, hostBundle, { _hostCensusAuthoritative: true }));
   sources.push(b.buildLiveSyncLocalMergeSource());
   if (!sources.length) return hostBundleLoaded;
   var merged = b.mergeLiveSyncFullBundles(sources);
   var bundleHadClinicalOps = !!(merged && merged.clinicalOps);
   await b.applyLiveSyncMerged(merged);
+  if (typeof b.saveLocalRoomSnapshot === 'function') {
+    b.saveLocalRoomSnapshot(rid);
+  }
   await maybeCatchUpClinicalOps(rid, b, merged, bundleHadClinicalOps);
   maybeToastEmptyMobileBundle(b, hostBundleLoaded, merged);
   return hostBundleLoaded;

@@ -5,6 +5,8 @@
 
 /** Idle pull while focused (was 20s; 45s keeps ~10 users × 12h well under 100k). */
 export const CLOUD_POLL_IDLE_MS = 45_000;
+/** Mobile Safari idle pull while visible (Free-tier budget; pause when hidden). */
+export const CLOUD_POLL_MOBILE_IDLE_MS = 30_000;
 /** Temporary faster poll after local edits / successful push. */
 export const CLOUD_POLL_ACTIVE_MS = 20_000;
 /** How long "active" mode lasts after a local write. */
@@ -17,7 +19,7 @@ export const CLOUD_PUSH_DEBOUNCE_MS = 3_000;
 export const CLOUD_PUSH_DEBOUNCE_SLOW_MS = 5_000;
 
 /**
- * @param {{ pending?: boolean, errored?: boolean, errorStreak?: number, lastLocalWriteAt?: number, now?: number }} opts
+ * @param {{ pending?: boolean, errored?: boolean, errorStreak?: number, lastLocalWriteAt?: number, now?: number, mobile?: boolean }} opts
  */
 export function nextCloudPollDelayMs(opts = {}) {
   const now = opts.now ?? Date.now();
@@ -32,6 +34,9 @@ export function nextCloudPollDelayMs(opts = {}) {
   const lastWrite = Number(opts.lastLocalWriteAt) || 0;
   if (opts.pending || (lastWrite && now - lastWrite < CLOUD_POLL_ACTIVE_WINDOW_MS)) {
     return CLOUD_POLL_ACTIVE_MS;
+  }
+  if (opts.mobile) {
+    return CLOUD_POLL_MOBILE_IDLE_MS;
   }
   return CLOUD_POLL_IDLE_MS;
 }

@@ -1,5 +1,11 @@
 import { storage } from './storage.js';
 
+if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) {
+  void import('./features/cloud-mobile/boot.mjs').then(function (mod) {
+    return mod.initCloudMobileBoot();
+  });
+}
+
 void import('./perf-markers.mjs').then(function (perf) {
   perf.perfMark('app-boot-start');
   if (typeof requestAnimationFrame === 'function') {
@@ -427,6 +433,14 @@ function runDomBootAfterState() {
           if (ensureActivePatientInSidebarScope()) return;
           void ensureLabsLoaded().then(function (mod) {
             mod.renderLabHistoryPanel();
+          });
+        })
+        .then(function () {
+          if (globalThis.__RPC_CLOUD_MOBILE__) return;
+          _rpcDeferInit(function () {
+            void import('./features/cloud-sync/autostart.mjs').then(function (mod) {
+              return mod.autostartCloudSyncIfConfigured({ toast: showToast });
+            });
           });
         });
     }

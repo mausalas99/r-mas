@@ -204,7 +204,7 @@ function updateReadme(version, title) {
       '',
     ].join('\n');
     const insertRe =
-      /(\*\*Versión estable actual:\*\*[^\n]*\n\n---\n\n)(## R\+ [\d.]+)/;
+      /(\*\*Versión estable actual:\*\*[^\n]*\n\n---\n\n+)(## R\+ [\d.]+)/;
     if (!insertRe.test(text)) {
       throw new Error(
         'README.md: no se encontró el bloque de versiones (Versión estable / --- / ## R+).'

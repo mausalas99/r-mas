@@ -14,6 +14,7 @@ import {
   handleOpenRotation,
   renderAfterAuth,
 } from './panel-conexion-handlers.mjs';
+import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -53,7 +54,15 @@ export function wireConexionClicks(section, deps, ui) {
   };
 
   function goView(view) {
-    applyConexionView(section, view, { onAdmin: ui.ensureAdminOpen });
+    applyConexionView(section, view, {
+      onAdmin: ui.ensureAdminOpen,
+      onMobile: function () {
+        mountCloudMobileInviteInHost(
+          section.querySelector('[data-cloud-mobile-invite-host]'),
+          { runtime: deps.runtime }
+        );
+      },
+    });
   }
 
   const clickActions = {

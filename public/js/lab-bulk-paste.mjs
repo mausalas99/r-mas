@@ -6,6 +6,7 @@ import {
   procesarLabs,
   looksLikeSomeLabReport,
   mergeBhResLabRows_,
+  mergeCoagResLabRows_,
   extractLabExpedienteFromReport,
   reprocessLabResultLines_,
   collectPriorRefsFromHistory,
@@ -132,6 +133,7 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   var escRows = [];
   var pfhRows = [];
   var lipasaRows = [];
+  var coagRows = [];
   var otherRows = [];
   normalized.forEach(function (row) {
     if (isBhResLabRow(row)) {
@@ -144,6 +146,7 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
     else if (key === 'ESC') escRows.push(row);
     else if (key === 'PFHS') pfhRows.push(row);
     else if (key === 'LIPASA') lipasaRows.push(row);
+    else if (key === 'COAG') coagRows.push(row);
     else otherRows.push(row);
   });
 
@@ -174,8 +177,10 @@ export function dedupeConsolidatedLabRows(rows, tipo) {
   if (bhRows.length) {
     var mergedBh = mergeBhResLabRows_(bhRows);
     if (mergedBh.bh) out.push(mergedBh.bh);
-    if (mergedBh.coag) out.push(mergedBh.coag);
+    if (mergedBh.coag) coagRows.push(mergedBh.coag);
   }
+  var mergedCoag = mergeCoagResLabRows_(coagRows);
+  if (mergedCoag) out.push(mergedCoag);
   // BH-first unshift used to leave EGO (from an earlier same-day set) stuck
   // right after BH. Canonical clinical order puts EGO after the rest.
   return sortResLabsByClinicalOrder(out);

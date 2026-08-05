@@ -10,6 +10,7 @@ import {
  *   syncCycle: () => unknown,
  *   pendingCount: () => number,
  *   getLastLocalWriteAt: () => number,
+ *   pollMobile?: boolean,
  * }} deps
  */
 export function createCloudPollScheduler(deps) {
@@ -46,6 +47,7 @@ export function createCloudPollScheduler(deps) {
             errored,
             errorStreak,
             lastLocalWriteAt: deps.getLastLocalWriteAt(),
+            mobile: deps.pollMobile,
           });
     forcedDelayMs = null;
     scheduleNext(delay);

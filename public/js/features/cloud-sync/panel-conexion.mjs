@@ -38,14 +38,10 @@ function createEnsureTurn(deps, ui) {
   let inflight = null;
   let done = false;
   return async function tryAutoEnsureTurnRoom() {
-    if (deps.getCloudSyncRoomId()) {
-      done = true;
-      return null;
-    }
     if (!deps.getCloudSyncToken() || done) return null;
     if (inflight) return inflight;
     const { ensureTurnRoom } = await import('./ensure-turn-room.mjs');
-    // Persist room only — callers paint UI (avoids double startRuntime).
+    // Always refresh to the canonical month room (not a sticky day roomId).
     inflight = ensureTurnRoom({
       api: deps.getApi(),
       getSala: deps.getUserSala,

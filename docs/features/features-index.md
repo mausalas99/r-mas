@@ -28,7 +28,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | VPO | `public/js/features/vpo.mjs`, `vpo-*.mjs` | [spec](../superpowers/specs/2026-05-29-vpo-design.md) |
 | Medicamentos / receta | `public/js/med-receta-core.mjs` | |
 | Document export | `lib/doc-generators/`, `document-export-client.mjs` | [spec](../superpowers/specs/2026-05-30-native-document-generation-design.md) |
-| Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `cutover-*`, `panel-cutover*`), `cloud/sync-worker/` | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md) |
+| Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `autostart`, `cutover-*`), `cloud/sync-worker/` (month room + `004-active-room`) | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md); mobile: [2026-08-05](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | LiveSync / LAN | `public/js/features/lan/`, `lan-squad/` | [spec](../superpowers/specs/2026-06-03-lan-sync-improvements-design.md) |
 | Borrado pacientes (bulk) | `patient-delete-batch.mjs`, `patients-bulk-select.mjs` | Multi-select en sidebar; tombstone + purge host/Nube para que no regresen |
 | Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md) |
@@ -36,6 +36,7 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `clinical-onboarding*.mjs`, `learn-hub.mjs` | |
 | Interno mobile | `lib/interno/`, `public/interno/` | [spec](../superpowers/specs/2026-06-02-interno-guardia-mobile-design.md) |
+| Cloud mobile (iPad / R+ Móvil Nube) | `cloud/sync-pages/`, `public/js/features/cloud-mobile/`, `cloud/sync-worker/` ASSETS | [spec](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) — 7.9.5; Phase B interno MIP on cloud |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
 | Settings / tours | `public/js/features/settings-help/` | |
 | Platform / backup | `public/js/features/platform/` | |

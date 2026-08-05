@@ -30,8 +30,8 @@ describe('localRoomFromSession', () => {
           id: 'room-1',
           code: 'ABC123',
           sala: 'Sala',
-          turnKey: '2026-08-03',
-          name: 'Sala 2026-08-03',
+          turnKey: '2026-08',
+          name: 'Sala 2026-08',
         }),
       },
       'Sala'
@@ -41,8 +41,8 @@ describe('localRoomFromSession', () => {
       revision: 3,
       sala: 'Sala',
       code: 'ABC123',
-      turnKey: '2026-08-03',
-      name: 'Sala 2026-08-03',
+      turnKey: '2026-08',
+      name: 'Sala 2026-08',
     });
   });
 });

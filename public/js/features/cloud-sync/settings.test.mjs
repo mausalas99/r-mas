@@ -71,7 +71,7 @@ describe('cloud sync remember me settings', () => {
       id: 'room-1',
       code: 'W8N6CW',
       sala: 'Sala',
-      turnKey: '2026-08-03',
+      turnKey: '2026-08',
       revision: 4,
     });
     assert.equal(getCloudSyncRoomId(), 'room-1');
@@ -79,7 +79,7 @@ describe('cloud sync remember me settings', () => {
       id: 'room-1',
       code: 'W8N6CW',
       sala: 'Sala',
-      turnKey: '2026-08-03',
+      turnKey: '2026-08',
       name: '',
     });
     clearCloudSyncSession();

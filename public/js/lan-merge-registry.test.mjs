@@ -150,4 +150,31 @@ describe('lan-merge-registry', () => {
     const entry = merged.entries.find((e) => e && e.patient && e.patient.id === 'p1');
     assert.equal(entry.todos.length, 0);
   });
+
+  it('host census smaller than local snapshot does not resurrect deleted patients', () => {
+    const merged = mergeLiveSyncFullBundles([
+      {
+        _localRoomSnapshot: true,
+        entries: [
+          { patient: { id: 'p1', registro: 'R1', nombre: 'Uno' } },
+          { patient: { id: 'p2', registro: 'R2', nombre: 'Dos' } },
+          { patient: { id: 'p3', registro: 'R3', nombre: 'Tres' } },
+        ],
+      },
+      {
+        _hostCensusAuthoritative: true,
+        entries: [{ patient: { id: 'p1', registro: 'R1', nombre: 'Uno' } }],
+      },
+      {
+        entries: [
+          { patient: { id: 'p1', registro: 'R1', nombre: 'Uno' } },
+          { patient: { id: 'p2', registro: 'R2', nombre: 'Dos' } },
+          { patient: { id: 'p3', registro: 'R3', nombre: 'Tres' } },
+        ],
+      },
+    ]);
+    assert.equal(merged.entries.length, 1);
+    assert.equal(merged.entries[0].patient.registro, 'R1');
+    assert.equal(merged.patientDeletes.length, 2);
+  });
 });

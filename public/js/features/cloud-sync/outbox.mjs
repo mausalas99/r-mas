@@ -23,7 +23,18 @@ export function createOutbox(deps = {}) {
   const save =
     deps.save ??
     ((rows) => {
-      localStorage.setItem(OUTBOX_STORAGE_KEY, JSON.stringify(rows));
+      try {
+        localStorage.setItem(OUTBOX_STORAGE_KEY, JSON.stringify(rows));
+      } catch (err) {
+        if (err && /** @type {{ name?: string }} */ (err).name === 'QuotaExceededError') {
+          try {
+            localStorage.removeItem(OUTBOX_STORAGE_KEY);
+          } catch {
+            /* ignore */
+          }
+        }
+        throw err;
+      }
     });
 
   /** @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number }} item */

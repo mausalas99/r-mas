@@ -68,6 +68,32 @@ test('monitoreoUpdatedAt combina historial y texto guardado', () => {
   );
 });
 
+test('monitoreoUpdatedAt usa el recordedAt más reciente del historial (no el primero)', () => {
+  assert.equal(
+    monitoreoUpdatedAt({
+      historial: [
+        { id: '1', recordedAt: '2026-08-05T08:00:00.000Z' },
+        { id: '2', recordedAt: '2026-08-05T10:00:00.000Z' },
+        { id: '3', recordedAt: '2026-08-05T12:00:00.000Z' },
+      ],
+    }),
+    '2026-08-05T12:00:00.000Z'
+  );
+});
+
+test('monitoreoUpdatedAt historial gana a textoGuardado más viejo', () => {
+  assert.equal(
+    monitoreoUpdatedAt({
+      historial: [
+        { id: '1', recordedAt: '2026-08-05T08:00:00.000Z' },
+        { id: '2', recordedAt: '2026-08-05T14:00:00.000Z' },
+      ],
+      textoGuardado: { text: 'x', savedAt: '2026-08-05T09:00:00.000Z' },
+    }),
+    '2026-08-05T14:00:00.000Z'
+  );
+});
+
 test('mergePatientEntry conserva medPharmProfile m?s reciente', () => {
   const older = {
     patient: { id: 'p', registro: 'R' },

@@ -66,6 +66,17 @@ export async function hydrateLocalPatientMonitoreoFromHost(patientId) {
   return { ok: true, changed };
 }
 
+/** Host census changed (bulk delete/admit) — peers must reconcile, not only refresh guardia. */
+async function scheduleCensusReconcileFromHost() {
+  try {
+    const { activeLiveSyncRoomId } = await import('./runtime.mjs');
+    const rid = String(activeLiveSyncRoomId || '').trim();
+    if (!rid) return;
+    const { scheduleReconcileLiveSyncRoom } = await import('./push-revision.mjs');
+    scheduleReconcileLiveSyncRoom(rid, { reason: 'host-census-updated', delayMs: 800 });
+  } catch { /* LAN optional */ }
+}
+
 /** Host Mac: interno vitals POST → IPC → refresh guardia census (LAN mode not required). */
 export function wireInternoHostSyncBridge() {
   if (typeof window === 'undefined' || !window.electronAPI) return;
@@ -92,6 +103,9 @@ export async function handleInternoHostSyncBroadcast(detail) {
     }
   }
   if (detail?.type === 'patients-updated' || detail?.type === 'guardias-updated') {
+    if (detail?.type === 'patients-updated' && !pid) {
+      await scheduleCensusReconcileFromHost();
+    }
     await refreshGuardiaCensusFromDb();
     const runtime = getLanRuntime();
     if (typeof runtime.renderPatientList === 'function') runtime.renderPatientList();

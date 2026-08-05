@@ -227,18 +227,18 @@ describe('connectedViewsHtml ops host', () => {
 });
 
 describe('roomConnectedHtml', () => {
-  it('omits opaque Sala bucket row; keeps turn code revision', () => {
+  it('omits opaque Sala bucket row; keeps month code revision', () => {
     const html = roomConnectedHtml(
-      { sala: 'Sala', turnKey: '2026-08-03', code: 'RC65RH', revision: 1 },
+      { sala: 'Sala', turnKey: '2026-08', code: 'RC65RH', revision: 1 },
       () => 0
     );
     assert.doesNotMatch(html, /<dt>Sala<\/dt>/);
-    assert.match(html, /<dt>Turno<\/dt>/);
+    assert.match(html, /<dt>Mes<\/dt>/);
     assert.match(html, /RC65RH/);
     assert.match(html, /data-cloud-room-revision/);
     assert.match(html, /cloud-sync-inset-group/);
     assert.match(html, /leave-room/);
-    // Leave shares the same inset group as Turno/Código/Revisión (one card).
+    // Leave shares the same inset group as Mes/Código/Revisión (one card).
     assert.equal((html.match(/cloud-sync-inset-group/g) || []).length, 1);
   });
 });

@@ -14,6 +14,7 @@ let _activeRuntime = null;
  *   setRevision: (revision: number) => void,
  *   onStatus?: (status: CloudSyncStatus, detail?: string) => void,
  *   applyPullResult?: (result: unknown) => void | Promise<void>,
+ *   pollMobile?: boolean,
  * }} deps
  */
 export function startCloudSyncRuntime(deps) {

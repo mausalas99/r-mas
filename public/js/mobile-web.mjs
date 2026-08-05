@@ -44,6 +44,7 @@ export function syncMobileBarebonesChrome() {
     'btn-open-settings',
     'itab-salida',
     'sidebar-censo-export-wrap',
+    'btn-header-team-sync',
   ];
   hideIds.forEach(function (id) {
     var el = document.getElementById(id);

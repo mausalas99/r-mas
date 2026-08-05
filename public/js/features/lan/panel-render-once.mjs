@@ -23,6 +23,7 @@ import {
 } from './transport.mjs';
 import { activeLiveSyncRoomId } from './runtime.mjs';
 import { appendLanPanelGuardCards_ } from './panel-render-guards.mjs';
+import { isCloudMobileClient } from '../cloud-mobile/origin.mjs';
 import { lanHubStatusCopy, shouldOmitLanHubStatusHint } from './panel-hub-status.mjs';
 import {
   patchLanPanelJoinButtons,
@@ -54,6 +55,7 @@ import {
   shouldHidePrimaryLanChrome,
 } from '../cloud-sync/panel-session-gate.mjs';
 import { syncCloudSecondaryPanels } from '../cloud-sync/panel-conexion-views.mjs';
+import { appendCloudMobileInviteCard } from '../cloud-sync/panel-mobile-invite.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
@@ -267,6 +269,7 @@ async function appendNubePanelFooterSections_(deps, root, gen, expandState, drop
   deps.purgeDuplicateLanShiftPinCards(root);
   restoreLanPanelExpandState(root, expandState);
   restoreConnectionDropdownScrollTop(dropdownScrollTop);
+  appendCloudMobileInviteCard(deps, root);
 }
 
 
@@ -384,6 +387,7 @@ async function renderLanPanelOnce_(deps, force) {
   root.innerHTML = '';
 
   if (
+    !isCloudMobileClient() &&
     appendLanPanelGuardCards_(root, {
       registered,
       clinicalUserId,

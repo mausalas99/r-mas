@@ -275,6 +275,48 @@ function extractCoagBodyFromBhLine_(line) {
   return m ? m[1].trim() : '';
 }
 
+var COAG_FIELD_MERGE_ORDER_ = ['TP', 'TTP', 'INR', 'Fib', 'DD'];
+
+function coagFieldMergeRank_(key) {
+  var i = COAG_FIELD_MERGE_ORDER_.indexOf(key);
+  return i === -1 ? 999 : i;
+}
+
+/**
+ * Une filas COAG por analito (TP/TTP/INR/Fib/DD). Evita que un COAG rico
+ * (TP/TTP) borre Fibrinógeno/DD de otra solicitud del mismo cluster.
+ * @param {string[]} rows
+ * @returns {string}
+ */
+export function mergeCoagResLabRows_(rows) {
+  var coagByKey = Object.create(null);
+  (rows || []).forEach(function (row) {
+    var body = extractCoagBodyFromBhLine_(row);
+    if (!body) return;
+    body.split(/\s{2,}/).forEach(function (tok) {
+      var t = tok.trim();
+      if (!t) return;
+      var key = t.split(/\s+/)[0];
+      var score = lineRichnessScore_(t);
+      var prev = coagByKey[key];
+      if (!prev || score > prev.score) coagByKey[key] = { tok: t, score: score };
+    });
+  });
+  var keys = Object.keys(coagByKey);
+  if (!keys.length) return '';
+  keys.sort(function (a, b) {
+    var ra = coagFieldMergeRank_(a);
+    var rb = coagFieldMergeRank_(b);
+    if (ra !== rb) return ra - rb;
+    return a.localeCompare(b);
+  });
+  return formatCoagResLabLine_(
+    keys.map(function (k) {
+      return coagByKey[k].tok;
+    })
+  );
+}
+
 function extraerSimpleBh_(labels, texto) {
   if (!texto) return '';
   for (var li = 0; li < labels.length; li++) {
@@ -481,27 +523,15 @@ export function mergeBhResLabRows_(rows) {
     }
   }
 
-  var coagByKey = Object.create(null);
+  var coagRows = [];
   list.forEach(function (row) {
     String(row)
       .split(/\r?\n/)
       .forEach(function (line) {
-        var body = extractCoagBodyFromBhLine_(line);
-        if (!body) return;
-        body.split(/\s{2,}/).forEach(function (tok) {
-          var t = tok.trim();
-          if (!t) return;
-          var key = t.split(/\s+/)[0];
-          var score = lineRichnessScore_(t);
-          var prev = coagByKey[key];
-          if (!prev || score > prev.score) coagByKey[key] = { tok: t, score: score };
-        });
+        if (extractCoagBodyFromBhLine_(line)) coagRows.push(line);
       });
   });
-  var coagTokens = Object.keys(coagByKey).map(function (k) {
-    return coagByKey[k].tok;
-  });
-  var coag = coagTokens.length ? formatCoagResLabLine_(coagTokens) : '';
+  var coag = mergeCoagResLabRows_(coagRows);
 
   var lines = best.split(/\r?\n/).filter(function (line) {
     return !/^(?:\s*Coag\.|COAG)\t/i.test(line.trim());

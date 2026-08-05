@@ -212,6 +212,133 @@ html.rpc-mobile-web #rpc-mobile-boot-banner {
   backdrop-filter: blur(var(--overlay-blur, 12px));
 }
 
+/* Nube mobile: never show LAN / local-server disconnect chrome */
+html.rpc-cloud-mobile #rpc-offline-banner,
+html[data-cloud-mobile='1'] #rpc-offline-banner,
+html.rpc-cloud-mobile #lan-connection-banner,
+html[data-cloud-mobile='1'] #lan-connection-banner {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.rpc-cloud-mobile-empty-census {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: max(56px, calc(env(safe-area-inset-top) + 48px));
+  z-index: 11000;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--color-accent, #4a52e8) 14%, var(--color-surface-elevated, #fff));
+  border: 1px solid color-mix(in oklab, var(--color-accent, #4a52e8) 35%, transparent);
+  color: var(--color-ink, #0b0d12);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--color-ink) 18%, transparent);
+}
+
+/* Full-screen login / connecting gate (modal, not a bottom bar) */
+.rpc-cloud-mobile-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: color-mix(in oklab, var(--color-ink, #0b0d12) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.rpc-cloud-mobile-gate[hidden] {
+  display: none !important;
+}
+
+body.rpc-cloud-mobile-gated {
+  overflow: hidden;
+}
+
+body.rpc-cloud-mobile-gated #app,
+body.rpc-cloud-mobile-gated .app-shell,
+body.rpc-cloud-mobile-gated main {
+  pointer-events: none;
+  user-select: none;
+}
+
+.rpc-cloud-mobile-modal {
+  width: min(100%, 400px);
+  max-height: min(90vh, 640px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border-radius: var(--radius-container, 16px);
+  box-shadow: var(--elev-overlay, 0 18px 48px color-mix(in oklab, #000 35%, transparent));
+}
+
+.rpc-cloud-mobile-modal__head {
+  padding: 18px 18px 12px;
+  border-bottom: var(--border-hairline, 1px solid color-mix(in oklab, var(--text) 10%, transparent));
+}
+
+.rpc-cloud-mobile-modal__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.rpc-cloud-mobile-modal__sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.rpc-cloud-mobile-modal__body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rpc-cloud-mobile-modal__body--center {
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+}
+
+.rpc-cloud-mobile-modal .cloud-sync-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0;
+}
+
+.rpc-cloud-mobile-modal .cloud-sync-btn {
+  width: 100%;
+}
+
+.rpc-cloud-mobile-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in oklab, var(--text) 16%, transparent);
+  border-top-color: var(--accent, #4a52e8);
+  animation: rpc-cloud-mobile-spin 0.8s linear infinite;
+}
+
+@keyframes rpc-cloud-mobile-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
 @supports not (backdrop-filter: blur(1px)) {
   html.rpc-mobile-web #rpc-mobile-boot-banner {
     background: color-mix(in oklab, var(--color-ink) 92%, var(--surface));

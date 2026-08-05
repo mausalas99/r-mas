@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLOUD_POLL_IDLE_MS,
+  CLOUD_POLL_MOBILE_IDLE_MS,
   CLOUD_POLL_ACTIVE_MS,
   CLOUD_POLL_ERROR_MIN_MS,
   nextCloudPollDelayMs,
@@ -11,6 +12,11 @@ import {
 describe('nextCloudPollDelayMs', () => {
   it('uses idle interval by default', () => {
     assert.equal(nextCloudPollDelayMs({ now: 1_000_000 }), CLOUD_POLL_IDLE_MS);
+  });
+
+  it('uses mobile idle interval when mobile and not pending/active', () => {
+    assert.equal(nextCloudPollDelayMs({ now: 1_000_000, mobile: true }), CLOUD_POLL_MOBILE_IDLE_MS);
+    assert.notEqual(CLOUD_POLL_MOBILE_IDLE_MS, CLOUD_POLL_IDLE_MS);
   });
 
   it('speeds up after recent local write', () => {

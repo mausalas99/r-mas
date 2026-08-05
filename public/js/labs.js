@@ -28,6 +28,7 @@ export {
   formatBhExtrasDisplayLine,
   parseBH_,
   mergeBhResLabRows_,
+  mergeCoagResLabRows_,
 } from './labs-bh.mjs';
 
 export {

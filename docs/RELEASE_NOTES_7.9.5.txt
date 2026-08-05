@@ -1,0 +1,53 @@
+R+ 7.9.5 (R+ Móvil en Nube + sala mensual + labs/LAN)
+======================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**7.9.5** lleva **R+ Móvil / iPad** a salas **Nube** (Sala y Torre HU): el iPad abre desde internet, inicia sesión con tu @usuario y sincroniza signos y expediente esencial sin Mac anfitrión LAN. El código de sala Nube dura **todo el mes** (`YYYY-MM` CDMX). Incluye censo que sí llega a la nube al arrancar, correcciones LWW/LAN y consolidación COAG.
+
+## Nuevo / mejorado
+
+- **iPad / R+ Móvil (Nube)** — URL pública en el Worker (`/mobile/`); login + sala activa; guardia board y EA (signos, glu, I/E) con alcance por equipo. Mensajes claros si el censo aún no está en la nube.
+- **⇄ Conexión** — En salas Nube: **Copiar enlace móvil (Nube)** + QR. En iPad, ⇄ no abre el panel LAN (aviso de recarga).
+- **Nube — sala mensual** — Código de sala = mes calendario (`YYYY-MM`, America/Mexico_City), no día. Al arrancar, `ensure-turn` refresca la sala sticky al mes actual.
+- **Nube — sala activa** — El Worker guarda `active_room_id` por usuario; el móvil resuelve `/rooms/active`. Migración D1 `004-active-room.sql`.
+- **Nube — censo al conectar** — Autostart de sync en escritorio; seed de censo (slim) con reintentos; push directo por chunks; mutation ids únicos (sin dedupe eterno del batch); pull con `needSnapshot` si faltan ops.
+- **Nube — signos LWW** — Reloj de monitoreo = `recordedAt` más reciente del historial (signos iPad/Mac ya no se rechazan como stale).
+- **Sync worker** — ASSETS `/mobile/`; poll mobile en idle; sin banner «servidor LAN» falso en Safari; outbox en memoria (sin QuotaExceeded en localStorage).
+- **LAN — censo / restore** — Borrados del host no resucitan en peers; restore busca otras salas + censo del host; reconcile guarda snapshot local.
+- **Labs — COAG** — Al consolidar, une TP/TTP/INR/Fib/DD de varias solicitudes sin que un COAG rico borre Fibrinógeno/DD.
+- **LAN móvil** — Sin cambios para Interconsultas, UX, Eme y Área A; invite LAN sigue en esas salas.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.5
+
+- Mac: `R+-7.9.5-arm64.dmg`, `R+-7.9.5-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.5-x64.exe`.
+
+Descarga **7.9.5 en todas las Macs** del turno el mismo día que habilitas iPad en Nube.
+
+**iPad:** no requiere instalación — abre el enlace desde ⇄ en Safari (Añadir a pantalla de inicio). Deja R+ abierto ~20 s en el Mac del turno la primera vez para sembrar el censo.
+
+**Operador cloud (antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run db:migrate:remote
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/mobile/" | head
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Requiere turno ya en **Nube** (7.9+). No sustituye LAN móvil en salas solo-LAN.
+- Salas diarias previas dejan de ser el default; el mes actual crea/une la sala canónica.
+- Interno MIP (QR vitals-only) en cloud: **próxima versión** (Phase B).

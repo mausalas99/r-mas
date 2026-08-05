@@ -78,7 +78,7 @@ export function roomConnectedHtml(room, getRevision) {
     '<div class="cloud-sync-room cloud-sync-room--connected">' +
     '<dl class="cloud-sync-inset-group" aria-label="Sala nube">' +
     (turn
-      ? '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Turno</dt><dd>' +
+      ? '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv"><dt>Mes</dt><dd>' +
         esc(turn) +
         '</dd></div>'
       : '') +

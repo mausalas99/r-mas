@@ -537,6 +537,9 @@ export async function joinRemoteLanHostAsClient(hostUrl, teamCode, opts) {
 
 export async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop()) return;
+  const { getUserSala } = await import('./panel-clinical-context.mjs');
+  const { shouldUseNubeNotLan } = await import('../cloud-sync/lan-override.mjs');
+  if (shouldUseNubeNotLan(getUserSala())) return;
   const { seedBundledWardConnectionPoints } = await import('../../lan-ward-host-registry.mjs');
   seedBundledWardConnectionPoints();
   if (isLanRemoteJoinMode()) {

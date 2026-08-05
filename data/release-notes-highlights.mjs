@@ -1901,10 +1901,34 @@ var RELEASE_NOTES_794 = [
   },
 ];
 
+var RELEASE_NOTES_795 = [
+  {
+    title: 'iPad / R+ Móvil en Nube',
+    body:
+      'En <strong>Sala</strong> y <strong>Torre HU</strong>: copia enlace o QR desde <strong>⇄</strong>, abre en Safari, inicia sesión y usa guardia + EA sin Mac anfitrión LAN.',
+  },
+  {
+    title: 'Un código de sala por mes',
+    body:
+      'La sala Nube dura el <strong>mes calendario</strong> (<code>YYYY-MM</code> CDMX). Al abrir R+, el censo se siembra solo; el iPad lee la sala activa.',
+  },
+  {
+    title: 'Signos, COAG y censo LAN',
+    body:
+      'Signos con <strong>recordedAt</strong> reciente ya no se pierden. Labs une <strong>TP/TTP/INR/Fib/DD</strong>. En LAN, borrados del host no resucitan.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.5 en todas</strong> las Macs el mismo día. En Nube: <code>build:cloud-mobile</code> + <code>db:migrate:remote</code> + <code>deploy</code>.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_794;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_795;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.5': RELEASE_NOTES_795,
   '7.9.4': RELEASE_NOTES_794,
   '7.9.3': RELEASE_NOTES_793,
   '7.9.2': RELEASE_NOTES_792,

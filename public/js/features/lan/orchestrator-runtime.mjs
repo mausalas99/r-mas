@@ -116,9 +116,15 @@ export function registerLanRuntime(ctx) {
   if (!ctx || typeof ctx !== "object") return;
   Object.assign(runtime, ctx);
   wireLanNetworkRefresh();
+  void import('../cloud-sync/mutate-bridge.mjs').then(function (mod) {
+    if (typeof mod.scheduleCloudSyncPush === 'function') mod.scheduleCloudSyncPush();
+  });
   void (async function () {
     const { isClinicalLocalOnlyMode, readRpcSettings } = await import('../../clinical-settings.mjs');
     if (isClinicalLocalOnlyMode(readRpcSettings())) return;
+    const { getUserSala } = await import('./panel-clinical-context.mjs');
+    const { shouldUseNubeNotLan } = await import('../cloud-sync/lan-override.mjs');
+    if (shouldUseNubeNotLan(getUserSala())) return;
     const { seedBundledWardConnectionPoints } = await import('../../lan-ward-host-registry.mjs');
     seedBundledWardConnectionPoints();
     const pin = await import('../../lan-shift-pin-connect.mjs');

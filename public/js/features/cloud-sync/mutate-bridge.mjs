@@ -2,7 +2,13 @@
  * Cloud sync mutation bridge — maps local clinical state to worker LWW ops.
  */
 import { isCloudSyncActive } from './lan-override.mjs';
-import { getCloudSyncRoomId } from './settings.mjs';
+import {
+  getCloudSyncRoomId,
+  getCloudSyncRevision,
+  setCloudSyncRevision,
+  getCloudSyncUrl,
+  getCloudSyncToken,
+} from './settings.mjs';
 import { lanNetworkProfile } from '../../lan-network-profile.mjs';
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_DEBOUNCE_SLOW_MS } from './cloud-sync-timing.mjs';
@@ -17,7 +23,9 @@ function cloudPushDebounceMs() {
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 
-export const CLOUD_BATCH_MUTATION_ID = 'cloud-room-push';
+import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
+
+export { CLOUD_BATCH_MUTATION_ID };
 
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
 const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades']);
@@ -216,6 +224,21 @@ export function mapPatientEntryToOps(entry, meta) {
 }
 
 /**
+ * Slim census seed — fields (+ clinicalOps separately). Skips labs/notes to fit quotas.
+ * @param {object} entry
+ * @param {{ actorId: string, updatedAt: string }} meta
+ * @returns {CloudSyncOp[]}
+ */
+export function mapPatientEntryToCensusSeedOps(entry, meta) {
+  if (!entry?.patient?.id) return [];
+  const patientId = String(entry.patient.id).trim();
+  if (!patientId || patientId.indexOf('demo-') === 0) return [];
+  const ops = [];
+  pushCensusFieldsOp(ops, patientId, entry.patient, meta.actorId);
+  return ops;
+}
+
+/**
  * @param {object} bundle — livesync:bundle envelope
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -253,7 +276,7 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   const ops = [];
   const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
   for (let i = 0; i < entries.length; i += 1) {
-    ops.push(...mapPatientEntryToOps(entries[i], meta));
+    ops.push(...mapPatientEntryToCensusSeedOps(entries[i], meta));
   }
   ops.push(...mapBundleTodosToOps(bundle, meta));
   ops.push(...mapBundleAgendaToOps(bundle, meta));
@@ -276,6 +299,39 @@ function enqueueOps(ops) {
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let cloudPushTimer = null;
+
+/** @type {ReturnType<typeof setTimeout> | null} */
+let cloudCensusRetryTimer = null;
+
+let cloudCensusPushRetries = 0;
+
+const CLOUD_CENSUS_PUSH_MAX_RETRIES = 16;
+
+if (typeof document !== 'undefined' && !globalThis.__RPC_CLOUD_CENSUS_PUSH_LISTENER__) {
+  globalThis.__RPC_CLOUD_CENSUS_PUSH_LISTENER__ = true;
+  document.addEventListener('rpc-clinical-ops-synced', function () {
+    if (isCloudSyncActive()) scheduleCloudSyncPush();
+  });
+}
+
+/** @param {CloudSyncOp[]} ops */
+function countPatientEntryOps(ops) {
+  let count = 0;
+  for (let i = 0; i < ops.length; i += 1) {
+    if (String(ops[i]?.path || '').startsWith('entries/')) count += 1;
+  }
+  return count;
+}
+
+function scheduleCloudCensusPushRetry() {
+  if (cloudCensusPushRetries >= CLOUD_CENSUS_PUSH_MAX_RETRIES) return;
+  cloudCensusPushRetries += 1;
+  if (cloudCensusRetryTimer) clearTimeout(cloudCensusRetryTimer);
+  cloudCensusRetryTimer = setTimeout(function () {
+    cloudCensusRetryTimer = null;
+    scheduleCloudSyncPush();
+  }, 1500);
+}
 
 /** @returns {boolean} true when cloud path handled */
 export function maybeScheduleCloudSyncPush() {
@@ -317,9 +373,92 @@ async function pushCloudBundleOps() {
     };
     ensureLiveCensusClocks(meta.updatedAt);
     const bundle = await bridge().buildLiveSyncBundleEnvelope(getCloudSyncRoomId());
-    enqueueOps(mapBundleEnvelopeToOps(bundle, meta));
+    const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
+    const cloudEntries = await collectPatientEntriesForCloudPush();
+    if (cloudEntries.length) bundle.entries = cloudEntries;
+    const ops = mapBundleEnvelopeToOps(bundle, meta);
+    const entryOps = countPatientEntryOps(ops);
+    if (!entryOps && patients.length > 0) {
+      if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
+        scheduleCloudCensusPushRetry();
+        return;
+      }
+    } else {
+      cloudCensusPushRetries = 0;
+    }
+    if (!ops.length) return;
+    enqueueOps(ops);
+  } catch (err) {
+    console.warn('[R+] cloud census push:', err?.message || err);
+  }
+}
+
+/**
+ * Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect.
+ * @returns {Promise<{ ok: boolean, reason?: string, entryOps?: number, totalOps?: number }>}
+ */
+export async function pushCloudCensusNow() {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) {
+    return { ok: false, reason: 'bridge_inactive' };
+  }
+  if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
+  if (!patients.length) return { ok: false, reason: 'no_local_patients' };
+
+  const meta = {
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: new Date().toISOString(),
+  };
+  ensureLiveCensusClocks(meta.updatedAt);
+
+  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
+  const entries = await collectPatientEntriesForCloudPush();
+  /** @type {CloudSyncOp[]} */
+  const ops = [];
+  for (let i = 0; i < entries.length; i += 1) {
+    ops.push(...mapPatientEntryToCensusSeedOps(entries[i], meta));
+  }
+
+  try {
+    const opsLan = await import('../../clinical-ops-lan.mjs');
+    if (opsLan.isClinicalOpsLanAvailable()) {
+      await opsLan.prepareClinicalOpsForLanSync();
+    }
+    const clinicalOps = opsLan.getCachedClinicalOpsSnapshot();
+    if (clinicalOps != null) {
+      ops.push(cloudOp({ path: 'clinicalOps', value: clinicalOps, ...meta }));
+    }
   } catch {
-    // Best-effort enqueue; outbox persists for retry.
+    /* clinicalOps optional */
+  }
+
+  const entryOps = countPatientEntryOps(ops);
+  if (!entryOps) {
+    return {
+      ok: false,
+      reason: 'no_entry_ops',
+      localPatients: patients.length,
+      collectedEntries: entries.length,
+    };
+  }
+
+  try {
+    const { createCloudSyncApi } = await import('./api-client.mjs');
+    const { pushCloudOpsDirect } = await import('./cloud-push-direct.mjs');
+    const api = createCloudSyncApi({
+      getBaseUrl: getCloudSyncUrl,
+      getToken: getCloudSyncToken,
+    });
+    const roomId = getCloudSyncRoomId();
+    const pushed = await pushCloudOpsDirect(
+      api,
+      roomId,
+      ops,
+      getCloudSyncRevision,
+      setCloudSyncRevision
+    );
+    return { ok: true, entryOps, totalOps: ops.length, pushed };
+  } catch (err) {
+    return { ok: false, reason: 'push_failed', message: err?.message || String(err) };
   }
 }
 

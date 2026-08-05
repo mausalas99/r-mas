@@ -152,14 +152,17 @@ function finishGuidedTour() {
 
 function skipGuidedTour() {
   if (tourState.miniTourActive) { tourBridge.endMiniTour(); return; }
+  const skippedBranch = tourState.guidedTourBranch;
   clearTourSoapButtonHighlight();
   clearTourProgress();
   markGuidedTourVersionDone();
   tourState.guidedTourActive = false;
   tourState.tourStepId = null;
+  postTourResumeBranch = skippedBranch;
   tourState.guidedTourBranch = null;
   tourState.guidedTourMode = 'base';
   clearGuidedTourModuleScope();
+  if (skippedBranch === 'sala') prepareSalaGuidedTourExitSync();
   publishTourGuardContext();
   hideTourDock();
   safeDestroyDemoAndClose();

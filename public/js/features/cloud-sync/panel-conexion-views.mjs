@@ -152,7 +152,9 @@ export function connectedViewsHtml({
     '<span class="cloud-sync-options-entry-meta">Equipo, cuenta y administración</span></span>' +
     '<span class="cloud-sync-options-row-chevron" aria-hidden="true">›</span></button></div>';
 
-  let guardiaRows = optionsRow('Equipo', 'Mi rotación', 'equipo');
+  let guardiaRows =
+    optionsRow('iPad / R+ Móvil', 'QR y enlace permanente', 'mobile') +
+    optionsRow('Equipo', 'Mi rotación', 'equipo');
   if (showOps) {
     guardiaRows += optionsRow('Operaciones', 'Equipos y censo del turno', 'ops');
   }
@@ -174,6 +176,11 @@ export function connectedViewsHtml({
     viewBlock('status', 'Conexión', statusBody, false) +
     viewBlock('options', 'Opciones', '<div class="cloud-sync-options-list">' + optionsBody + '</div>') +
     viewBlock('equipo', 'Equipo', equipoHtml) +
+    viewBlock(
+      'mobile',
+      'iPad / R+ Móvil',
+      '<div class="cloud-sync-mobile-invite-host" data-cloud-mobile-invite-host></div>'
+    ) +
     (showOps
       ? viewBlock(
           'ops',
@@ -254,6 +261,7 @@ export function syncCloudSecondaryPanels(root, view) {
 const CONEXION_MODAL_TITLES = {
   status: 'Conexión guardia',
   options: 'Opciones',
+  mobile: 'iPad / R+ Móvil',
   equipo: 'Equipo',
   ops: 'Operaciones',
   admin: 'Administración',
@@ -264,6 +272,7 @@ const CONEXION_MODAL_TITLES = {
 
 const CONEXION_MODAL_BACK_LABEL = {
   options: 'Conexión',
+  mobile: 'Opciones',
   equipo: 'Opciones',
   ops: 'Opciones',
   admin: 'Opciones',
@@ -317,5 +326,8 @@ export function applyConexionView(section, view, hooks) {
   syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
   if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
     void hooks.onAdmin();
+  }
+  if (next === 'mobile' && typeof hooks?.onMobile === 'function') {
+    void hooks.onMobile();
   }
 }

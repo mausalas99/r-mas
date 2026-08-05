@@ -103,14 +103,17 @@ function medPharmTimestamp(profile) {
  * @param {unknown} monitoreo
  */
 function bestRecordedAtFromHistorial(hist, best) {
+  let max = best;
   for (let i = 0; i < hist.length; i += 1) {
     const row = hist[i];
     if (!row || typeof row !== 'object') continue;
     const ra =
       /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
-    if (ra && compareIso(ra, best) > 0) return ra;
+    // Must scan all rows — historial is oldest-first; early return picked the oldest clock
+    // and Nube LWW rejected later client signos as stale.
+    if (ra && compareIso(ra, max) > 0) max = ra;
   }
-  return best;
+  return max;
 }
 
 export function monitoreoUpdatedAt(monitoreo) {
@@ -448,15 +451,67 @@ export function mergeLanPatientEntrySources(sources) {
  * @param {object[]} entries
  * @param {Array<{ id?: string, registro?: string, updatedAt?: string, deleted?: boolean }>} patientDeletes
  */
+function patientDeleteKey(row) {
+  const reg = String(row?.registro || '').trim();
+  if (reg) return 'reg:' + reg;
+  return 'id:' + String(row?.id || '');
+}
+
+/** Union patient delete rows by registro/id (newest updatedAt wins). */
+export function mergePatientDeleteRecords(...lists) {
+  const map = new Map();
+  for (const list of lists) {
+    for (const row of list || []) {
+      if (!row || !row.deleted) continue;
+      const k = patientDeleteKey(row);
+      if (!k) continue;
+      const cur = map.get(k);
+      if (!cur || compareIso(row.updatedAt, cur.updatedAt) >= 0) {
+        map.set(k, row);
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
+/**
+ * Patients present in a stale local snapshot but absent from the host census were
+ * purged on the LAN host and must not be resurrected on reconcile.
+ * @param {object[]} snapshotEntries
+ * @param {object[]} hostEntries
+ */
+export function derivePatientDeletesFromHostCensus(snapshotEntries, hostEntries) {
+  if (!Array.isArray(hostEntries)) return [];
+  const hostKeys = new Set();
+  for (const entry of hostEntries) {
+    const k = entryMatchKey(entry);
+    if (k) hostKeys.add(k);
+  }
+  const deletes = [];
+  const seen = new Set();
+  const now = new Date().toISOString();
+  for (const entry of snapshotEntries || []) {
+    if (!entry?.patient) continue;
+    const k = entryMatchKey(entry);
+    if (!k || hostKeys.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    deletes.push({
+      id: String(entry.patient.id || ''),
+      registro: String(entry.patient.registro || '').trim(),
+      updatedAt: now,
+      deleted: true,
+    });
+  }
+  return deletes;
+}
+
 export function filterEntriesByPatientDeletes(entries, patientDeletes) {
   if (!patientDeletes || !patientDeletes.length) return entries || [];
   const delMap = new Map();
   for (let i = 0; i < patientDeletes.length; i += 1) {
     const d = patientDeletes[i];
     if (!d || !d.deleted) continue;
-    const reg = String(d.registro || '').trim();
-    const k = reg ? 'reg:' + reg : 'id:' + String(d.id || '');
-    delMap.set(k, d);
+    delMap.set(patientDeleteKey(d), d);
   }
   if (!delMap.size) return entries || [];
   return (entries || []).filter((entry) => {

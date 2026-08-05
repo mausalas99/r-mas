@@ -39,10 +39,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.4](https://github.com/mausalas99/r-mas/releases/tag/v7.9.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.5](https://github.com/mausalas99/r-mas/releases/tag/v7.9.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 7.9.5 (R+ Móvil en Nube + sala mensual + labs/LAN)
+
+- **iPad / R+ Móvil (Nube)** — Enlace + QR desde ⇄; login en Safari; guardia + EA sin Mac anfitrión LAN (Sala / Torre HU).
+- **Sala mensual** — Código Nube = mes `YYYY-MM` (CDMX); sala activa en Worker; autostart + seed de censo al abrir R+.
+- **Signos LWW + LAN** — Monitoreo usa el `recordedAt` más reciente; borrados del host no resucitan; restore multi-sala.
+- **Labs COAG** — Consolida TP/TTP/INR/Fib/DD sin perder Fibrinógeno/DD entre solicitudes.
+
+Notas: `docs/RELEASE_NOTES_7.9.5.txt`.
 
 ## R+ 7.9.4 (Hybrid H UI + TTD tool-time)
 
