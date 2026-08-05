@@ -250,12 +250,8 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   maybeAppendEquiposQrPanel_(deps, root);
 }
 
-/** Nube footer: keep diagnostics/census CTA; skip QR compact fetch ("Cargando…"). */
+/** Nube footer: keep diagnostics/census CTA; skip LAN conflict drafts + QR compact fetch. */
 async function appendNubePanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop) {
-  var appendConflictDrafts = deps.runtime().appendLanConflictDraftsSection;
-  if (typeof appendConflictDrafts === 'function') {
-    void appendConflictDrafts(root);
-  }
   await deps.appendLanSyncDiagnosticsSection(root);
   await appendLanHostPatientsSection(root, {
     showToast: function (msg, kind) {
@@ -277,6 +273,9 @@ async function appendNubePanelFooterSections_(deps, root, gen, expandState, drop
 function hidePrimaryLanChromeIfNeeded_(root, userSala) {
   if (!shouldHidePrimaryLanChrome({ cloudSala: shouldShowNubePanel(userSala) })) return;
   root.querySelectorAll('.lan-connection-hero').forEach(function (el) {
+    el.hidden = true;
+  });
+  root.querySelectorAll('#lan-conflict-drafts-card, .lan-preflight-row').forEach(function (el) {
     el.hidden = true;
   });
 }

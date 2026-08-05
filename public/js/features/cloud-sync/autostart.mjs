@@ -60,6 +60,9 @@ export async function autostartCloudSyncIfConfigured(opts) {
 
   if (!getCloudSyncRoomId()) return null;
   setCloudRoomConnected(true);
+  void import('./detach-lan-for-nube.mjs').then(function (mod) {
+    return mod.detachLanLiveSyncForNube();
+  });
 
   const runtime = startSharedNubeRuntime({
     getApi: function () {

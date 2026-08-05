@@ -13,6 +13,7 @@ import {
 import { wireLanSyncBridges } from './orchestrator-wire.mjs';
 import { scheduleTierALanServerWarm } from './orchestrator-runtime.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
+import { wireCloudClinicalOpsSyncEvents } from '../cloud-sync/cloud-ops-events.mjs';
 import { getUserSala } from './panel-clinical-context.mjs';
 
 let _lanRuntimeStarted = false;
@@ -46,17 +47,26 @@ function wireLanHostRegistryDiscovery() {
   }
 }
 
+function isCloudSalaBootPath() {
+  const sala = getUserSala();
+  return shouldShowNubePanel(sala) || shouldUseNubeNotLan(sala);
+}
+
 export function ensureLanSyncRuntimeStarted() {
   if (typeof document === 'undefined') return;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return;
   if (_lanRuntimeStarted) return;
   _lanRuntimeStarted = true;
+
+  // Nube salas: clinical-ops push only — never mount LAN bridges / discovery / client.
+  if (isCloudSalaBootPath()) {
+    wireCloudClinicalOpsSyncEvents();
+    return;
+  }
+
   wireLanSyncBridges();
   wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();
-  if (shouldShowNubePanel(getUserSala()) || shouldUseNubeNotLan(getUserSala())) {
-    return;
-  }
   initLanClientFromStorage();
   wireLanHostRegistryDiscovery();
   if (isLanElectronDesktop()) {

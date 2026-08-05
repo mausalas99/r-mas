@@ -1,6 +1,9 @@
 /** Keep in sync with cloud/sync-worker/src/sala-allowlist.js */
-export const CLOUD_SALAS = Object.freeze(['Sala 1', 'Sala 2', 'Sala E', 'Torre HU']);
-export const LAN_ONLY_SALAS = Object.freeze([
+export const CLOUD_SALAS = Object.freeze([
+  'Sala 1',
+  'Sala 2',
+  'Sala E',
+  'Torre HU',
   'Interconsultas',
   'UX',
   'Eme',
@@ -44,9 +47,4 @@ export function displayCloudSalaLabel(clinicalRaw, roomSala) {
 /** @param {unknown} raw */
 export function isCloudSala(raw) {
   return CLOUD_SALAS.includes(normalizeCloudSala(raw));
-}
-
-/** @param {unknown} raw */
-export function isLanOnlySala(raw) {
-  return LAN_ONLY_SALAS.includes(normalizeCloudSala(raw));
 }

@@ -5,6 +5,7 @@ import {
   isBenignLanPushSkipCode,
   LAN_PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-lan-sync.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { dbApi, toast } from './shared.mjs';
 
 /** Push teams/membership to sala ⇄ (same path as @usuario; uses sticky room membership). */
@@ -62,6 +63,8 @@ let lanClinicalOpsPullInFlight = null;
 
 /** Pull host clinicalOps into this Mac so partner @usuario and teams exist locally. */
 export async function pullClinicalOpsFromLanRoom(options = {}) {
+  // Nube hydrates clinicalOps via pull-apply — skip LAN GET /clinical-ops.
+  if (isCloudSyncActive()) return false;
   const force = !!options.force;
   const now = Date.now();
   if (!force && now - lanClinicalOpsPullLastAt < LAN_CLINICAL_OPS_PULL_MIN_MS) {

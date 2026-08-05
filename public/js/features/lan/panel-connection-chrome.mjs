@@ -226,10 +226,13 @@ function openConnectionDropdownUi(dd, bg, syncBtn, deps) {
   if (dd) dd.classList.add('open');
   document.body.classList.add('connection-dropdown-open');
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
-  deps.wireLanPanelDelegation();
+  // Nube salas: Conexión uses cloud click handlers — do not mount LAN panel delegation.
+  if (!shouldShowNubePanel(getUserSala())) {
+    deps.wireLanPanelDelegation();
+  }
   wireLanLwwToastPref();
   syncLanLwwOverwriteToastPrefUi();
-  var nubeActive = shouldUseNubeNotLan(getUserSala());
+  var nubeActive = shouldUseNubeNotLan(getUserSala()) || shouldShowNubePanel(getUserSala());
   syncHostDetectForOpen(deps, nubeActive);
   var root = document.getElementById('lan-connection-panel-root');
   deps.renderLanPanel({ force: shouldForceRebuildOnConnectionOpen(root, deps.runtime) });
@@ -280,6 +283,9 @@ export function createPanelConnectionChrome(deps) {
     var cloudSala = shouldShowNubePanel(getUserSala());
     if (shouldHidePrimaryLanChrome({ cloudSala })) {
       root.querySelectorAll('.lan-connection-hero').forEach(function (el) {
+        el.hidden = true;
+      });
+      root.querySelectorAll('#lan-conflict-drafts-card, .lan-preflight-row').forEach(function (el) {
         el.hidden = true;
       });
     } else {

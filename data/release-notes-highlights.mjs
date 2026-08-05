@@ -1970,10 +1970,34 @@ var RELEASE_NOTES_797 = [
   },
 ];
 
+var RELEASE_NOTES_798 = [
+  {
+    title: 'Nube en todas las salas',
+    body:
+      '<strong>Interconsultas</strong>, <strong>UX</strong>, <strong>Eme</strong> y <strong>Área A</strong> sincronizan por Nube igual que Sala 1/2/E y Torre HU — sin Mac anfitrión LAN.',
+  },
+  {
+    title: 'LAN sync retirado',
+    body:
+      'LiveSync LAN queda <strong>apagado</strong> por defecto. El turno vive en <strong>⇄ Conexión</strong> (Nube). Offline = base local.',
+  },
+  {
+    title: 'Borrado que no vuelve',
+    body:
+      '× y borrado masivo van a Nube; el Worker limpia labs, pendientes y agenda del paciente y <strong>no lo resucita</strong> tras el tombstone.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.8 en todas</strong> las Macs el mismo día que el operador despliega el Worker. Si venías de LAN en Inters/UX/Eme/Área A, únete en ⇄.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_797;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_798;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.8': RELEASE_NOTES_798,
   '7.9.7': RELEASE_NOTES_797,
   '7.9.6': RELEASE_NOTES_796,
   '7.9.5': RELEASE_NOTES_795,

@@ -6,7 +6,7 @@ import { isClinicalOpsLanAvailable, prepareClinicalOpsForLanSync } from '../../c
 import { lanClient } from './runtime.mjs';
 import {
   pushClinicalOpsLanNow,
-  scheduleLiveSyncPush,
+  pushLiveSyncBundleNow,
   reconcileLiveSyncRoom,
 } from './push.mjs';
 import { runtime, ensureLanSyncRoomBridgeWired } from './room-bridge.mjs';
@@ -51,7 +51,7 @@ function syncLiveSyncAfterRoomJoinBody(rid) {
     .then(function () {
       if (activeLiveSyncRoomId !== rid) return;
       applyRoomSyncPhaseAfterReconcile(rid);
-      scheduleLiveSyncPush();
+      void pushLiveSyncBundleNow({ bypassPause: true });
       if (isClinicalOpsLanAvailable()) {
         void pushClinicalOpsLanNow().catch(function () {});
       }

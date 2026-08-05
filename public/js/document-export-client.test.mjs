@@ -5,6 +5,7 @@ import {
   guardDocExportBlocked,
   isDocExportBlockedByLocalServer,
   parseContentDispositionFilename,
+  requestDocumentJson,
 } from './document-export-client.mjs';
 
 describe('offline document export guards', () => {
@@ -39,6 +40,34 @@ describe('offline document export guards', () => {
       assert.equal(guardDocExportBlocked({ isRpcOffline() { return false; } }), false);
     } finally {
       globalThis.window = prev;
+    }
+  });
+});
+
+describe('requestDocumentJson IPC preference', () => {
+  it('uses electronAPI.generateDocument and never fetch when IPC exists', async () => {
+    const prev = globalThis.window;
+    const prevFetch = globalThis.fetch;
+    let fetchCalls = 0;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      return { json: async () => ({}) };
+    };
+    globalThis.window = {
+      electronAPI: {
+        async generateDocument({ kind, payload }) {
+          return { ok: true, kind, payload, fileName: 'x.docx' };
+        },
+      },
+    };
+    try {
+      const out = await requestDocumentJson('/generate', { patient: { id: '1' } });
+      assert.equal(out.ok, true);
+      assert.equal(out.kind, 'note');
+      assert.equal(fetchCalls, 0);
+    } finally {
+      globalThis.window = prev;
+      globalThis.fetch = prevFetch;
     }
   });
 });

@@ -10,6 +10,11 @@ import {
 } from './push.mjs';
 import { syncLanHostClinicalMetaToDisk } from './transport.mjs';
 import { forgetLanRoomSession } from './panel-known-sessions.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+import {
+  pushCloudClinicalOpsNow,
+  maybeScheduleCloudSyncPush,
+} from '../cloud-sync/mutate-bridge.mjs';
 
 /** @param {{
  *   runtime: () => { showToast: (msg: string, kind?: string) => void },
@@ -36,6 +41,11 @@ export function wireClinicalOpsLanSyncEvents(deps) {
   if (!document._rpcClinicalTeamsChangedLanWired) {
     document._rpcClinicalTeamsChangedLanWired = true;
     document.addEventListener('rpc-clinical-teams-changed', function () {
+      if (isCloudSyncActive()) {
+        void pushCloudClinicalOpsNow().catch(function () {});
+        maybeScheduleCloudSyncPush();
+        return;
+      }
       void pushClinicalOpsLanNow().catch(function () {});
       scheduleLiveSyncPush();
       void syncLanHostClinicalMetaToDisk();

@@ -27,10 +27,19 @@ const {
   shouldSkipGlobalJsonBodyParser,
 } = require('./lib/server-http-security.js');
 const { createInternoRouter, broadcastInterno } = require('./lib/interno/interno-router.js');
+const {
+  createInternoHostStoreFromDb,
+  createInternoStorePreferDb,
+} = require('./lib/interno/host-store-db.cjs');
 const { createEquiposRouter } = require('./lib/equipos/equipos-router.js');
 const { scheduleEquiposPhotoPurge } = require('./lib/equipos/equipos-photo-purge.mjs');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+
+/** Phase 5: LAN LiveSync HTTP/WS off by default (Nube is authority). Opt-in: R_PLUS_ENABLE_LAN_SYNC=1 */
+function isLanSyncHttpEnabled() {
+  return String(process.env.R_PLUS_ENABLE_LAN_SYNC || '').trim() === '1';
+}
 
 const appExpress = express();
 const globalJsonBodyParser = express.json({ limit: '2mb' });
@@ -133,6 +142,9 @@ appExpress.get('/join', (_req, res) => {
 });
 
 appExpress.get('/join/:ticketId', (req, res) => {
+  if (!isLanSyncHttpEnabled()) {
+    return res.redirect(302, '/mobile/');
+  }
   if (!/^req_[a-f0-9]{12}$/i.test(String(req.params.ticketId || ''))) {
     return res.status(404).send('Invalid join link');
   }
@@ -337,74 +349,92 @@ const authRouter = createAuthRouter({
 
 const httpServer = http.createServer(appExpress);
 const lanResolver = createConflictResolver({ store: lanStore });
-const { broadcast, close: closeWsHub } = attachWsHub(httpServer, {
-  getState: () => lanStore.getState(),
-  resolver: lanResolver,
-});
-
-appExpress.use('/api/lan/v1', compression({ threshold: 2048 }));
-appExpress.use('/api/lan/v1', (req, res, next) => {
-  if (req.method === 'POST' && req.path === '/auth/exchange') {
-    return authExchangeLimiter(req, res, next);
-  }
-  if (req.method === 'POST' && req.path === '/auth/tickets') {
-    return authTicketLimiter(req, res, next);
-  }
-  next();
-});
-appExpress.use('/api/lan/v1', authRouter);
-const sseHub = createSseHub();
-const sseRouter = express.Router();
-sseHub.attachSseRouter(sseRouter, { getState: () => lanStore.getState() });
-appExpress.use('/api/lan/v1', sseRouter);
-appExpress.use(
-  '/api/lan/v1',
-  createLanRouter({
-    store: lanStore,
-    broadcast,
+let broadcast = function noopBroadcast() {};
+let closeWsHub = async function noopCloseWsHub() {};
+if (isLanSyncHttpEnabled()) {
+  const hub = attachWsHub(httpServer, {
+    getState: () => lanStore.getState(),
     resolver: lanResolver,
-    getHostClinicalMeta: () => readHostClinicalMeta(userData),
-    getHealthExtras: () => {
-      let revision = 0;
-      try {
-        revision = Number(lanStore.getState()?.bundle?.revision) || 0;
-      } catch (e) {
-        console.error('[lan-health]', redactForLog({ message: e && e.message, code: e && e.code }));
-      }
-      return {
-        dbUnlocked: !!(lanDbManager?.isUnlocked?.()),
-        shiftPinActive: !!(shiftPinStore.getStatus()?.active),
-        clientId: (readHostClinicalMeta(userData) || {}).clientId || '',
-        revision,
-        repairedRoomCount: lanStore.getRepairedRoomCount?.() ?? 0,
-      };
-    },
-    sseBroadcast: (channel, obj) => sseHub.broadcast(channel, obj),
-    onClinicalOpsMerged: () => {
-      const db = getClinicalDbForInterno();
-      if (!db) return;
-      try {
-        const rows = db
-          .prepare('SELECT sala FROM sala_interno_access WHERE is_active = 1')
-          .all();
-        for (const row of rows) {
-          if (row?.sala) {
-            broadcastInterno(row.sala, { type: 'board-changed', source: 'clinical-ops' });
-          }
+  });
+  broadcast = hub.broadcast;
+  closeWsHub = hub.close;
+}
+
+if (isLanSyncHttpEnabled()) {
+  appExpress.use('/api/lan/v1', compression({ threshold: 2048 }));
+  appExpress.use('/api/lan/v1', (req, res, next) => {
+    if (req.method === 'POST' && req.path === '/auth/exchange') {
+      return authExchangeLimiter(req, res, next);
+    }
+    if (req.method === 'POST' && req.path === '/auth/tickets') {
+      return authTicketLimiter(req, res, next);
+    }
+    next();
+  });
+  appExpress.use('/api/lan/v1', authRouter);
+  const sseHub = createSseHub();
+  const sseRouter = express.Router();
+  sseHub.attachSseRouter(sseRouter, { getState: () => lanStore.getState() });
+  appExpress.use('/api/lan/v1', sseRouter);
+  appExpress.use(
+    '/api/lan/v1',
+    createLanRouter({
+      store: lanStore,
+      broadcast,
+      resolver: lanResolver,
+      getHostClinicalMeta: () => readHostClinicalMeta(userData),
+      getHealthExtras: () => {
+        let revision = 0;
+        try {
+          revision = Number(lanStore.getState()?.bundle?.revision) || 0;
+        } catch (e) {
+          console.error('[lan-health]', redactForLog({ message: e && e.message, code: e && e.code }));
         }
-      } catch (e) {
-        console.error('[interno-board]', e && e.message ? e.message : e);
-      }
-    },
-    clientIdentityStore,
-  })
-);
+        return {
+          dbUnlocked: !!(lanDbManager?.isUnlocked?.()),
+          shiftPinActive: !!(shiftPinStore.getStatus()?.active),
+          clientId: (readHostClinicalMeta(userData) || {}).clientId || '',
+          revision,
+          repairedRoomCount: lanStore.getRepairedRoomCount?.() ?? 0,
+        };
+      },
+      sseBroadcast: (channel, obj) => sseHub.broadcast(channel, obj),
+      onClinicalOpsMerged: () => {
+        const db = getClinicalDbForInterno();
+        if (!db) return;
+        try {
+          const rows = db
+            .prepare('SELECT sala FROM sala_interno_access WHERE is_active = 1')
+            .all();
+          for (const row of rows) {
+            if (row?.sala) {
+              broadcastInterno(row.sala, { type: 'board-changed', source: 'clinical-ops' });
+            }
+          }
+        } catch (e) {
+          console.error('[interno-board]', e && e.message ? e.message : e);
+        }
+      },
+      clientIdentityStore,
+    })
+  );
+} else {
+  appExpress.use('/api/lan/v1', (_req, res) => {
+    res.status(410).json({
+      error: 'lan_sync_retired',
+      message: 'LiveSync LAN retirado — usa Nube (⇄ Conexión).',
+    });
+  });
+}
 
 function getClinicalDbForInterno() {
   if (!lanDbManager || typeof lanDbManager.isUnlocked !== 'function') return null;
   if (!lanDbManager.isUnlocked()) return null;
   return typeof lanDbManager.getDb === 'function' ? lanDbManager.getDb() : null;
 }
+
+const internoDbStore = createInternoHostStoreFromDb(getClinicalDbForInterno);
+const internoBoardStore = createInternoStorePreferDb(internoDbStore, lanStore);
 
 /** @type {(obj: object) => void} */
 let onInternoHostSync = null;
@@ -416,9 +446,9 @@ function setOnInternoHostSync(fn) {
 appExpress.use(
   '/api/interno/v1',
   createInternoRouter({
-    store: lanStore,
+    store: internoBoardStore,
     getDb: getClinicalDbForInterno,
-    broadcastSync: broadcast,
+    broadcastSync: isLanSyncHttpEnabled() ? broadcast : undefined,
     onHostSync: (obj) => {
       if (typeof onInternoHostSync === 'function') onInternoHostSync(obj);
     },

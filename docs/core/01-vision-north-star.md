@@ -14,7 +14,7 @@ description: "Strategic vision, North Star metric, trade-offs, anti-goals, and d
 ## 🚩 The North Star Goal
 **"Paste the lab, print the note—before the next patient calls."**
 
-Every feature exists to shorten **Time-to-Document (TTD)** from acquired data to a compliant evolution note or order set. The goal is to make R+ the indispensable **documentation and extraction layer** for the **R1/R2 resident on a 24-hour guardia**—with the team censo shared automatically when they opt into **Nube** sync, and still fully usable **offline** or on **LAN** when the cloud is not in play.
+Every feature exists to shorten **Time-to-Document (TTD)** from acquired data to a compliant evolution note or order set. The goal is to make R+ the indispensable **documentation and extraction layer** for the **R1/R2 resident on a 24-hour guardia**—with the team censo shared via **Nube** sync across all clinical wards, and still fully usable **offline** (local SQLCipher only; no LAN fallback).
 
 ---
 
@@ -25,11 +25,11 @@ Residents on high-intensity guardia (urgencias + sala, multiple handoffs) face s
 2. **Transcription and version chaos:** Vitals and lab values are copied by hand; several residents touch the same patient without a shared, trustworthy view of the turn—silent overwrites and stale census erode team trust.
 
 ## 🛡️ The Solution & Magic Moment
-R+ provides a **single desktop workbench**—labs, expediente, notes, orders, guardia board—synchronized across the turn via **LAN LiveSync** and, opt-in, **Nube** (Cloudflare) room sync so the room stays shared without a host Mac.
+R+ provides a **single desktop workbench**—labs, expediente, notes, orders, guardia board—synchronized across the turn via **Nube** (Cloudflare) room sync for **all clinical wards** so the room stays shared without a host Mac. **LAN LiveSync** is being retired.
 
 - **✨ The Magic Moment:** The user pastes a disorganized SOME report and, in one flow, sees **structured clinical data**, **trends**, and a **formatted `.docx` evolution note** ready to print—without rebuilding Word templates or retyping values.
 - **Laboratoriazo + expediente:** SOME parsing, historial, tendencias, cultivos, and Estado actual directly attack documentation latency and copy-paste error.
-- **Team sync (⇄):** LAN host + PIN still work on the ward; **Nube (piloto)** adds Drive-style push/pull to a Cloudflare room (username/password, opt-in from the LAN panel) so the censo updates for the team even when no desktop is hosting. Offline local cache + outbox remain first-class.
+- **Team sync (⇄):** **Nube** Drive-style push/pull to a Cloudflare room (username/password, opt-in from ⇄) keeps the censo updated for the team without a host Mac. **LAN sync is being retired.** Offline local SQLCipher cache + outbox remain first-class.
 
 **Code paths (magic moment pipeline):** `public/js/labs*.mjs` → `public/js/features/tendencias.mjs` → `lib/doc-generators/note.js` via `lib/doc-export-http.js` / `document-export-client.mjs`.  
 **Cloud sync (7.9):** `cloud/sync-worker` + `public/js/features/cloud-sync/`.
@@ -40,7 +40,7 @@ R+ provides a **single desktop workbench**—labs, expediente, notes, orders, gu
 When faced with competing priorities or feature requests, the team should use these guiding trade-offs to make decisions:
 
 1. **Workflow fluidity** *even over* **feature stability theater** — the tool should disappear into guardia; friction in the UI is a defect.
-2. **Nube room authority for Sala / Torre HU** *even over* **LAN host Mac** — cloud replaces LAN for those salas; **Interconsultas / UX / Eme / Área A** stay on LAN; **offline** stays first-class.
+2. **Nube room authority for all clinical wards** *even over* **LAN host Mac** — cloud replaces LAN for **Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, and Área A/Pensionistas**; **LAN sync is being retired**; **offline** stays first-class.
 3. **Clinical safety (human-in-the-loop)** *even over* **shipping velocity** — no black-box treatment or diagnostic suggestions; explicit confirmation before high-risk actions.
 4. **Turn-wide sync reliability** *even over* **breadth for other departments** — sync trust beats expanding scope beyond the current guardia/sala mission.
 5. **Adjunct clarity** *even over* **EMR feature parity** — R+ complements the institutional record; it does not compete to become it.
@@ -51,7 +51,7 @@ To maintain focus, we explicitly say **NO** to:
 - **Unmanaged public EMR SaaS:** R+ is not a hospital system of record in the vendor cloud; the **7.9 Nube pilot** may store **encrypted-at-rest turn data** on Cloudflare Free for opted-in rooms only—not a general-purpose cloud expediente product.
 - **EMR replacement:** R+ is not the system of record; formal boundary with the hospital EMR stays explicit.
 - **Autonomous clinical decisions:** No opaque diagnostic or treatment engines; Manejo automático-style suggestions remain retired.
-- **Forced cloud:** Nube is **opt-in**; offline device unlock and LAN LiveSync must keep working without an account.
+- **Forced cloud:** Nube is **opt-in**; offline device unlock (local SQLCipher only) must keep working without an account.
 - **Tool time over patient time:** If a feature makes residents manage R+ instead of patients, it violates the North Star.
 
 ---
@@ -66,7 +66,7 @@ To maintain focus, we explicitly say **NO** to:
 ## 🗺️ Development Horizons
 To guide the Product Owner's backlog, our roadmap is bucketed into three horizons:
 
-- **📍 NOW (Current Focus):** **7.9 Nube Free pilot** — **Sala + Torre HU** sync on Cloudflare (Nube **overrides** LAN for those salas); **Interconsultas / UX / Eme / Área A** stay on LAN; offline + uncapped labs; Free-tier HTTP sync (no WebSockets yet).
+- **📍 NOW (Current Focus):** **7.9 Nube Free** — **all clinical wards** (Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas) sync on Cloudflare; Nube is room authority and **LAN sync is being retired**; offline + uncapped labs; Free-tier HTTP sync (no WebSockets yet).
 - **🚀 NEXT (Growth):** **Paid/realtime upgrade path** — Durable Object WebSockets, envelope DEKs, stronger tenancy; continue workbench maturity (entrega, teams, onboarding).
 - **🔭 LATER (Visionary):** **Institutional readiness** — RBAC, formal adjunct-vs-EMR boundary, hospital IT/legal evaluation (not claimed by software alone).
 

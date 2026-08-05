@@ -98,6 +98,41 @@ export function scheduleUntypedSafetyBundle() {
   }, UNTYPED_SAFETY_BUNDLE_DEBOUNCE_MS);
 }
 
+/**
+ * Immediate room bundle push (post-join / boot). Bypasses debounce; optional pause skip.
+ * @param {{ bypassPause?: boolean }} [opts]
+ */
+export async function pushLiveSyncBundleNow(opts) {
+  opts = opts || {};
+  if (isCloudSyncActive()) {
+    var cloudMod = await import('../cloud-sync/mutate-bridge.mjs');
+    cloudMod.maybeScheduleCloudSyncPush();
+    if (opts.bypassPause) {
+      await cloudMod.pushCloudCensusNow();
+    }
+    return;
+  }
+  var roomId = ensureEffectiveLiveSyncRoomId();
+  if (!roomId) return;
+  if (!opts.bypassPause && isBundlePushPaused(roomId)) return;
+  if (isPitchPatientIsolationActive()) return;
+  await ensureLanSyncPushBridgeWired();
+  var b = bridge();
+  var bundle = await b.buildLiveSyncBundleEnvelope(roomId);
+  b.saveLocalRoomSnapshot(roomId);
+  if (!b.isLanSessionConfiguredForRest()) return;
+  var pushResult = await pushRoomSyncBundleToHost(roomId, bundle, {
+    bypassPause: !!opts.bypassPause,
+  });
+  if (
+    pushResult !== true &&
+    pushResult !== BUNDLE_PUSH_HANDLED &&
+    !isBundlePushPaused(roomId)
+  ) {
+    void enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
+  }
+}
+
 /** Debounced room push: HTTP sync-bundle is authoritative; WS carries patches + revision hints (IM-05). */
 export function scheduleLiveSyncPush() {
   if (isCloudSyncActive()) {

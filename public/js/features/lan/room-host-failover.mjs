@@ -48,6 +48,10 @@ export function markLiveSyncSessionResyncDone(value = true) {
   _liveSyncSessionResyncDone = !!value;
 }
 
+export function isLiveSyncSessionResyncDone() {
+  return _liveSyncSessionResyncDone;
+}
+
 export function stopSurrogateFailoverTimer() {
   if (_surrogateFailoverTimer) {
     clearTimeout(_surrogateFailoverTimer);
@@ -284,10 +288,13 @@ function handleLiveReconnectTick(mem, scheduleReconnect) {
     _liveSyncReconnectAttempt = 0;
     recordAutoHostDetectSuccess();
     if (!_liveSyncSessionResyncDone) {
-      markLiveSyncSessionResyncDone(true);
-      void syncLiveSyncAfterRoomJoin(mem.roomId).then(function () {
-        return flushLiveSyncOutbox(mem.roomId);
-      });
+      void syncLiveSyncAfterRoomJoin(mem.roomId)
+        .then(function () {
+          return flushLiveSyncOutbox(mem.roomId);
+        })
+        .finally(function () {
+          markLiveSyncSessionResyncDone(true);
+        });
     }
     syncLiveSyncStatusChrome();
     scheduleReconnect();

@@ -25,6 +25,7 @@ export {
   markUntypedDirty,
   scheduleUntypedSafetyBundle,
   scheduleLiveSyncPush,
+  pushLiveSyncBundleNow,
 } from './push-schedule.mjs';
 export { pushClinicalOpsLanNow } from './push-clinical-ops.mjs';
 export { reconcileLiveSyncRoom } from './push-reconcile.mjs';

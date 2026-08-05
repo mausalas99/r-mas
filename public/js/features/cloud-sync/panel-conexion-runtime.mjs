@@ -64,7 +64,15 @@ export function startSharedNubeRuntime(deps) {
       return String(clinicalSessionContext.user?.user_id || getLanClientId() || 'local');
     },
   });
+  void import('./detach-lan-for-nube.mjs').then(function (mod) {
+    return mod.detachLanLiveSyncForNube();
+  });
   void (async function runInitialCloudSyncAndPrune() {
+    try {
+      await pushCloudCensusNow();
+    } catch {
+      /* push optional on connect */
+    }
     try {
       await sharedRuntime?.syncCycle();
     } catch {
@@ -81,7 +89,6 @@ export function startSharedNubeRuntime(deps) {
     }
   })();
   scheduleCloudSyncPush();
-  void pushCloudCensusNow();
   return sharedRuntime;
 }
 

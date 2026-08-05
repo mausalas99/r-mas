@@ -16,7 +16,7 @@ import { getUiDensity, isPaseMode } from './chrome.mjs';
 import {
   commitPatientDeletes,
   formatPatientDeleteSummary,
-} from './lan/patient-delete-batch.mjs';
+} from './sync-apply/patient-delete-batch.mjs';
 import {
   exitPatientBulkSelectMode,
   getPatientBulkSelectedCount,
@@ -235,7 +235,7 @@ function afterPatientDeletesCommitted(summary, auditLabel) {
   syncPatientBulkBar();
   var msg = formatPatientDeleteSummary(summary);
   if (msg && typeof rt.showToast === 'function') {
-    var kind = summary.failed || summary.skippedOwned ? 'warn' : 'success';
+    var kind = summary.failed ? 'warn' : 'success';
     rt.showToast(msg, kind);
   }
   if (rt.getActiveId()) patientsBridge.selectPatient(rt.getActiveId());

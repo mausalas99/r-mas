@@ -4,6 +4,7 @@ import {
   maybeMarkCloudSalaUpgrade,
   isCloudSalaUpgradePending,
   clearCloudSalaUpgradePending,
+  setCloudSalaUpgradePending,
 } from './cloud-sala-upgrade.mjs';
 
 function installLocalStorage() {
@@ -19,15 +20,18 @@ function installLocalStorage() {
 beforeEach(() => installLocalStorage());
 
 describe('maybeMarkCloudSalaUpgrade', () => {
-  it('marks pending when moving from UX to Sala', () => {
-    assert.equal(maybeMarkCloudSalaUpgrade('UX', 'Sala 2'), true);
+  it('is retired — all wards use Nube', () => {
+    assert.equal(maybeMarkCloudSalaUpgrade('UX', 'Sala 2'), false);
+    assert.equal(maybeMarkCloudSalaUpgrade('Sala', 'Torre HU'), false);
+    assert.equal(maybeMarkCloudSalaUpgrade('UX', 'Eme'), false);
+  });
+});
+
+describe('cloud sala upgrade pending flag', () => {
+  it('can still clear legacy pending flag from storage', () => {
+    setCloudSalaUpgradePending(true);
     assert.equal(isCloudSalaUpgradePending(), true);
     clearCloudSalaUpgradePending();
     assert.equal(isCloudSalaUpgradePending(), false);
-  });
-
-  it('ignores same-tier moves', () => {
-    assert.equal(maybeMarkCloudSalaUpgrade('Sala', 'Torre HU'), false);
-    assert.equal(maybeMarkCloudSalaUpgrade('UX', 'Eme'), false);
   });
 });

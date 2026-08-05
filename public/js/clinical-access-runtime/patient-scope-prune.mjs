@@ -2,7 +2,6 @@ import {
   shouldEnforceTeamPatientMirror,
   shouldUseElevatedPatientCensus,
 } from '../clinical-privileges.mjs';
-import { isCloudSyncActive } from '../features/cloud-sync/lan-override.mjs';
 import { joinedTeamIdsForUser } from '../mobile-team-patient-scope.mjs';
 import { indicaciones, labHistory, notes, patients, setPatients, saveState } from '../app-state.mjs';
 import { filterPatientsForClinicalSidebar } from '../features/patients-clinical-filter.mjs';
@@ -17,21 +16,23 @@ function dropPatientSidecars(pid) {
   if (labHistory[id]) delete labHistory[id];
 }
 
+/**
+ * Hard-delete only on iPad/PWA team mirror (joined teams ready).
+ * Desktop Nube must not wipe local charts — sidebar already filters by scope.
+ */
 function isReadyToPrunePatientsOutsideScope() {
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return false;
   if (shouldUseElevatedPatientCensus(user)) return false;
-  if (shouldEnforceTeamPatientMirror()) {
-    const ctx = clinicalSessionContext.scopeContext;
-    if (!ctx) return false;
-    return joinedTeamIdsForUser(ctx.teams, user).size > 0;
-  }
-  return isCloudSyncActive();
+  if (!shouldEnforceTeamPatientMirror()) return false;
+  const ctx = clinicalSessionContext.scopeContext;
+  if (!ctx) return false;
+  return joinedTeamIdsForUser(ctx.teams, user).size > 0;
 }
 
 /**
  * Drop patient rows (and sidecars) outside the signed-in user's clinical scope.
- * Mobile: team mirror. Desktop Nube: readable scope only (R4/Admin skip).
+ * Mobile/iPad only. Desktop keeps full local census; UI filters by team/sala.
  * @returns {number} rows removed
  */
 export function prunePatientsOutsideVisibleScope() {

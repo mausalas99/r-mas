@@ -15,17 +15,20 @@ describe('lan-override', () => {
     }
   });
 
-  it('shows Nube only for Sala/Torre', () => {
+  it('shows Nube for all clinical wards', () => {
     assert.equal(shouldShowNubePanel('Sala 1'), true);
-    assert.equal(shouldShowNubePanel('UX'), false);
+    assert.equal(shouldShowNubePanel('UX'), true);
+    assert.equal(shouldShowNubePanel('Interconsultas'), true);
+    assert.equal(shouldShowNubePanel('Eme'), true);
   });
 
-  it('uses Nube not LAN when cloud room connected for cloud sala', () => {
-    assert.equal(shouldUseNubeNotLan('UX', true), false);
+  it('uses Nube not LAN when cloud room connected for any cloud sala', () => {
+    assert.equal(shouldUseNubeNotLan('UX', true), true);
     assert.equal(shouldUseNubeNotLan('Sala 1', false), false);
     assert.equal(shouldUseNubeNotLan('Sala 1', true), true);
     setCloudRoomConnected(true);
     assert.equal(shouldUseNubeNotLan('Torre HU'), true);
+    assert.equal(shouldUseNubeNotLan('Interconsultas'), true);
   });
 
   it('isCloudSyncActive reflects connection flag', () => {

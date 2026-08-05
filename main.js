@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECUR
   process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 }
 
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage, session, protocol, net } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -20,6 +20,15 @@ const { isAllowedExternalUrl } = require('./lib/window-open-policy.cjs');
 const { PERF_CONFIG_FILE, normalizePerfConfig, readPerfConfig, writePerfConfig } = require('./lib/perf-config.js');
 const { setLanDbManager, getLanDbManager } = require('./lib/db/lan-db-bridge.cjs');
 const { installElectronLanCors } = require('./lib/electron-lan-cors.cjs');
+const {
+  registerRendererProtocolSchemes,
+  attachRendererProtocolHandler,
+  rendererAppIndexUrl,
+  shouldUseLegacyHttpRenderer,
+} = require('./lib/renderer-protocol.cjs');
+
+// Must run before app.ready — app://rplus serves public/ without :3738.
+registerRendererProtocolSchemes({ protocol });
 
 // Aceleración por hardware ACTIVADA por defecto: las animaciones del premium UI
 // (transform/opacity/backdrop-filter) componen en GPU; en software se ven
@@ -217,8 +226,12 @@ function createWindow() {
   }
   mainWindow = new BrowserWindow(winOpts);
 
-  const rendererPort = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
-  mainWindow.loadURL(`http://localhost:${rendererPort}`);
+  if (shouldUseLegacyHttpRenderer()) {
+    const rendererPort = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
+    mainWindow.loadURL(`http://localhost:${rendererPort}`);
+  } else {
+    mainWindow.loadURL(rendererAppIndexUrl());
+  }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedExternalUrl(url)) shell.openExternal(url);
@@ -1014,6 +1027,9 @@ async function unlockClinicalDbAtStartup(dbManager) {
 app.whenReady().then(async () => {
   try {
     installElectronLanCors(session.defaultSession);
+    if (!shouldUseLegacyHttpRenderer()) {
+      attachRendererProtocolHandler({ protocol, net }, path.join(__dirname, 'public'));
+    }
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
     captureDefaultUpdaterFeed();
@@ -1076,7 +1092,7 @@ app.whenReady().then(async () => {
 
     if (process.env.R_PLUS_RECOVER_CENSUS === '1') {
       try {
-        const { runRecoverCensusExport } = await import('./scripts/recover-census-export.mjs');
+        const { runRecoverCensusExport } = await import('./lib/db/recover-census-export.mjs');
         const result = await runRecoverCensusExport({ app, dbManager });
         dialog.showMessageBox({
           type: 'info',

@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { clinicalOpsMergeHadChanges } from './clinical-ops-lan.mjs';
 
-describe('clinical-ops-lan', () => {
+describe('clinical-ops-lan (compat shim)', () => {
   it('clinicalOpsMergeHadChanges is false for empty or zero stats', () => {
     assert.equal(clinicalOpsMergeHadChanges(null), false);
     assert.equal(clinicalOpsMergeHadChanges({ usersInserted: 0, usersUpdated: 0 }), false);

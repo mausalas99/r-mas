@@ -23,6 +23,47 @@ export function adminShellHtml(hasCloudSession = false) {
 }
 
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */
+function buildConexionGoView(section, deps, ui) {
+  return function goView(view) {
+    applyConexionView(section, view, {
+      onAdmin: ui.ensureAdminOpen,
+      onMobile() {
+        mountCloudMobileInviteInHost(
+          section.querySelector('[data-cloud-mobile-invite-host]'),
+          { runtime: deps.runtime }
+        );
+      },
+    });
+  };
+}
+
+/** @param {object} handlerDeps @param {object} ui @param {(view: string) => void} goView */
+function buildConexionClickActions(handlerDeps, ui, goView) {
+  return {
+    register: () => void handleRegister(handlerDeps),
+    login: () => void handleLogin(handlerDeps),
+    recover: () => void handleRecover(handlerDeps),
+    'regenerate-recovery': () => void handleRegenerateRecovery(handlerDeps),
+    'create-room': () => void handleCreateRoom(handlerDeps),
+    'join-room': () => void handleJoinRoom(handlerDeps),
+    'leave-room': () => void handleLeaveRoom(handlerDeps),
+    logout: () => void handleLogout(handlerDeps),
+    'open-rotation': () => void handleOpenRotation(ui.toast),
+    'toggle-admin': () => void ui.ensureAdminOpen?.(),
+    'nav-options': () => goView('options'),
+    'nav-back': () => {
+      const cur = handlerDeps.section.dataset.cloudView || 'status';
+      goView(cur === 'options' ? 'status' : 'options');
+    },
+    'save-url': () => {
+      void ui.saveUrlFromUi().then(function () {
+        ui.toast?.('URL guardada', 'success');
+      });
+    },
+  };
+}
+
+/** @param {HTMLElement} section @param {object} deps @param {object} ui */
 export function wireConexionClicks(section, deps, ui) {
   const handlerDeps = {
     renderLanPanel: deps.renderLanPanel,
@@ -52,41 +93,8 @@ export function wireConexionClicks(section, deps, ui) {
     handleOpenRotation: () => handleOpenRotation(ui.toast),
     renderAfterAuth() { renderAfterAuth(handlerDeps); },
   };
-
-  function goView(view) {
-    applyConexionView(section, view, {
-      onAdmin: ui.ensureAdminOpen,
-      onMobile: function () {
-        mountCloudMobileInviteInHost(
-          section.querySelector('[data-cloud-mobile-invite-host]'),
-          { runtime: deps.runtime }
-        );
-      },
-    });
-  }
-
-  const clickActions = {
-    register: () => void handleRegister(handlerDeps),
-    login: () => void handleLogin(handlerDeps),
-    recover: () => void handleRecover(handlerDeps),
-    'regenerate-recovery': () => void handleRegenerateRecovery(handlerDeps),
-    'create-room': () => void handleCreateRoom(handlerDeps),
-    'join-room': () => void handleJoinRoom(handlerDeps),
-    'leave-room': () => void handleLeaveRoom(handlerDeps),
-    logout: () => void handleLogout(handlerDeps),
-    'open-rotation': () => void handleOpenRotation(ui.toast),
-    'toggle-admin': () => void ui.ensureAdminOpen?.(),
-    'nav-options': () => goView('options'),
-    'nav-back': () => {
-      const cur = section.dataset.cloudView || 'status';
-      goView(cur === 'options' ? 'status' : 'options');
-    },
-    'save-url': () => {
-      void ui.saveUrlFromUi().then(function () {
-        ui.toast?.('URL guardada', 'success');
-      });
-    },
-  };
+  const goView = buildConexionGoView(section, deps, ui);
+  const clickActions = buildConexionClickActions(handlerDeps, ui, goView);
 
   function onCloudActionClick(ev) {
     const btn = ev.target instanceof Element ? ev.target.closest('[data-cloud-action]') : null;

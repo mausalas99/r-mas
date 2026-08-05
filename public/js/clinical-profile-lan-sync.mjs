@@ -5,6 +5,7 @@
 import { getRoomMembership, setRoomMembership } from './live-sync-membership.mjs';
 import { liveSyncRoomLabel, parseLanJoinQuery } from './lan-join-link.mjs';
 import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
+import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 /** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
 export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
@@ -152,6 +153,11 @@ export async function flushClinicalProfileToLan(opts = {}) {
   if (isClinicalLocalOnlyMode()) {
     traceFlushClinicalProfilePushSkip('NO_LAN');
     return { ok: false, code: 'NO_LAN' };
+  }
+
+  if (isCloudSyncActive()) {
+    const pushMod = await import('./features/lan/push.mjs');
+    return pushMod.pushClinicalOpsLanNow(opts);
   }
 
   await applyPendingLanInviteFromPage();

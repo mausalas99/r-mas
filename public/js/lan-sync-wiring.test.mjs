@@ -208,6 +208,30 @@ describe('LAN event and handler wiring', () => {
     );
   });
 
+  it('cloud sala boot wires cloud clinical-ops events and skips LAN kernel', () => {
+    const boot = read('features/lan/orchestrator-boot.mjs');
+    const cloudOps = read('features/cloud-sync/cloud-ops-events.mjs');
+    assert.match(cloudOps, /export function wireCloudClinicalOpsSyncEvents/);
+    assert.match(cloudOps, /pushCloudClinicalOpsNow/);
+    assert.match(boot, /wireCloudClinicalOpsSyncEvents/);
+    // Cloud early path must run before LAN wiring.
+    const cloudWireIdx = boot.indexOf('wireCloudClinicalOpsSyncEvents()');
+    const bridgesIdx = boot.indexOf('wireLanSyncBridges()');
+    const initIdx = boot.indexOf('initLanClientFromStorage()');
+    const panelIdx = boot.indexOf('wireLanPanelDelegation()');
+    assert.ok(cloudWireIdx >= 0 && bridgesIdx >= 0 && initIdx >= 0 && panelIdx >= 0);
+    assert.ok(cloudWireIdx < bridgesIdx, 'cloud events before wireLanSyncBridges');
+    assert.ok(cloudWireIdx < initIdx, 'cloud events before initLanClientFromStorage');
+    assert.ok(cloudWireIdx < panelIdx, 'cloud events before wireLanPanelDelegation');
+    assert.match(
+      boot,
+      /isCloudSalaBootPath\(\)[\s\S]*wireCloudClinicalOpsSyncEvents\(\)[\s\S]*return;/
+    );
+    // Eager module-level LAN bridge mount retired — boot owns wiring.
+    const orch = read('features/lan/orchestrator.mjs');
+    assert.doesNotMatch(orch, /^wireLanSyncBridges\(\);$/m);
+  });
+
   it('lan-sync-panel imports syncLiveSyncStatusChrome and resolveLanHostUrlAuto', () => {
     assert.match(
       lanSyncPanel,
@@ -237,7 +261,8 @@ describe('LAN event and handler wiring', () => {
     const opsIdx = lanSyncFeature.indexOf('await applyClinicalOpsLanSnapshot(merged.clinicalOps)', fnStart);
     assert.ok(opsIdx >= 0 && patientSyncIdx >= 0);
     assert.ok(opsIdx < patientSyncIdx, 'clinical ops before LAN patient apply');
-    assert.match(read('clinical-ops-lan.mjs'), /rpc-clinical-ops-synced/);
+    assert.match(read('clinical-ops-sync.mjs'), /rpc-clinical-ops-synced/);
+    assert.match(read('clinical-ops-lan.mjs'), /clinical-ops-sync\.mjs/);
   });
 
   it('applyLiveSyncMerged applies labPanelOverlay after clinicalOps', () => {
@@ -262,6 +287,13 @@ describe('LAN event and handler wiring', () => {
     const body = lanEntityVersions.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 400);
     assert.match(body, /liveSyncEntityStoreKey\('todo'/);
     assert.doesNotMatch(body, /todoEntityKey\(/);
+  });
+
+  it('sendLiveSyncMutation returns early when Nube is active', () => {
+    const fnStart = lanEntityVersions.indexOf('export function sendLiveSyncMutation');
+    assert.ok(fnStart >= 0);
+    const body = lanEntityVersions.slice(fnStart, fnStart + 200);
+    assert.match(body, /isCloudSyncActive/);
   });
 
   it('legacy conflict drafts section offers discard all', () => {
@@ -306,11 +338,16 @@ describe('LAN event and handler wiring', () => {
   });
 
   it('LAN patient entry apply refreshes Estado Actual for active patient', () => {
-    const patientEntries = read('features/lan/patient-entries.mjs');
+    const patientEntries = read('features/sync-apply/patient-entries.mjs');
     assert.match(
       patientEntries,
       /renderEstadoActualPanel\(\{ force: true, syncHeavy: true \}\)/,
       'host reconcile must repaint EA when monitoreo merges'
+    );
+    assert.match(
+      read('features/lan/patient-entries.mjs'),
+      /sync-apply\/patient-entries\.mjs/,
+      'lan patient-entries remains a Phase 3 compat shim'
     );
   });
 

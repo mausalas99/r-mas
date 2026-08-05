@@ -10,12 +10,12 @@ import { enqueueOutbox } from '../../live-sync-outbox.mjs';
 import { createMutationBuilder, wrapLiveSyncPatch } from '../../versioned-mutation.mjs';
 import { flushLiveSyncOutbox } from './push.mjs';
 import { rememberPatientDeleteTombstone } from './entity-versions.mjs';
-import { patients, setPatients } from '../../app-state.mjs';
 import {
-  clearPatientAgendaLocal,
-  clearPatientLocalStateMaps,
-  clearPatientTodosLocal,
-} from './patient-delete-local.mjs';
+  configurePatientDeleteLocal,
+  removePatientLocally,
+} from '../sync-apply/patient-delete.mjs';
+
+export { removePatientLocally, configurePatientDeleteLocal };
 
 /** @type {{
  *   lanFetchHostPatientRow?: (patientId: string) => Promise<object|null>,
@@ -26,29 +26,12 @@ import {
  * }} */
 let deleteDeps = {};
 
+/** Wire LAN host-delete deps + local removePatientLocally runtime. */
 export function configureLanPatientDelete(deps) {
-  if (deps && typeof deps === 'object') Object.assign(deleteDeps, deps);
-}
-
-export function removePatientLocally(patientId) {
-  var pid = String(patientId || '').trim();
-  if (!pid || pid.indexOf('demo-') === 0) return false;
-  if (!patients.some(function (p) {
-    return p && p.id === pid;
-  })) {
-    return false;
+  if (deps && typeof deps === 'object') {
+    Object.assign(deleteDeps, deps);
+    configurePatientDeleteLocal(deps);
   }
-  setPatients(patients.filter(function (p) {
-    return p.id !== pid;
-  }));
-  clearPatientLocalStateMaps(pid);
-  clearPatientTodosLocal(pid);
-  clearPatientAgendaLocal(pid);
-  var rt = deleteDeps.runtime;
-  if (rt && typeof rt.getActiveId === 'function' && rt.getActiveId() === pid) {
-    rt.setActiveId(patients.length ? patients[0].id : null);
-  }
-  return true;
 }
 
 async function readOwnedByOtherClientError(resp) {

@@ -3,8 +3,8 @@
  */
 import { storage } from '../../storage.js';
 import { saveState } from '../../app-state.mjs';
-import { applyLanPatientEntries } from '../lan/patient-entries.mjs';
-import { removePatientLocally } from '../lan/patient-delete.mjs';
+import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
+import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import {
   shouldEnforceTeamPatientMirror,
@@ -76,7 +76,7 @@ async function applyClinicalOpsSnapshot(clinicalOps) {
   if (clinicalOps == null) return false;
   try {
     const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot, refreshClinicalOpsSnapshotCache } =
-      await import('../../clinical-ops-lan.mjs');
+      await import('../../clinical-ops-sync.mjs');
     const { applyClinicalScopeFromLanOpsSnapshot } = await import('../../clinical-access-runtime.mjs');
     if (isClinicalOpsLanAvailable()) {
       const result = await applyClinicalOpsLanSnapshot(clinicalOps);

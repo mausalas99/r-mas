@@ -12,6 +12,8 @@ import {
 } from '../../live-sync-room.mjs';
 import { getHostBundleBases, setHostBundleBases } from '../../host-bundle-bases.mjs';
 import { waitForLiveChannelOpen } from './room.mjs';
+import { enqueueOutbox } from '../../live-sync-outbox.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 
 const LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';
 
@@ -226,6 +228,7 @@ export function buildLiveSyncMutationFromDesired(entityType, entityId, desired, 
 }
 
 export function sendLiveSyncMutation(mutation) {
+  if (isCloudSyncActive()) return;
   if (!activeLiveSyncRoomId || !mutation) return;
   var rid = String(activeLiveSyncRoomId || '').trim();
   var envelope = wrapLiveSyncPatch(rid, getLanClientId(), mutation);
@@ -249,6 +252,7 @@ export function sendLiveSyncMutation(mutation) {
     lanClient.connectLiveChannel(rid);
   } catch { /* ignored */ }
   void waitForLiveChannelOpen(rid, 4500).then(function () {
-    transmit();
+    if (transmit()) return;
+    void enqueueOutbox(rid, { kind: 'patch', payload: envelope });
   });
 }

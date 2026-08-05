@@ -1,13 +1,20 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   mapPatientEntryToOps,
   mapBundleEnvelopeToOps,
   pickCensusFields,
   labSetId,
+  pushCloudClinicalOpsNow,
 } from './mutate-bridge.mjs';
 
 const meta = { actorId: 'user-1', updatedAt: '2026-08-02T12:00:00.000Z' };
+const dir = dirname(fileURLToPath(import.meta.url));
+const mutateBridgeSrc = readFileSync(join(dir, 'mutate-bridge.mjs'), 'utf8');
+const mutateBridgeClinicalOpsSrc = readFileSync(join(dir, 'mutate-bridge-clinical-ops.mjs'), 'utf8');
 
 describe('mutate-bridge op mapping', () => {
   it('maps patient entry to note, fields, and lab sidecar ops', () => {
@@ -165,5 +172,35 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(monOp.updatedAt, '2026-08-03T09:30:00.000Z');
     assert.equal(monOp.value.estadoClinico.four, '15');
     assert.equal(ops.some((op) => op.path === 'entries/p1/note'), false);
+  });
+});
+
+describe('pushCloudClinicalOpsNow', () => {
+  it('returns bridge_inactive when cloud sync is not active', async () => {
+    const result = await pushCloudClinicalOpsNow();
+    assert.deepEqual(result, { ok: false, reason: 'bridge_inactive' });
+  });
+});
+
+describe('mutate-bridge LAN decoupling (Phase 3)', () => {
+  it('mutate-bridge source has zero features/lan imports', () => {
+    assert.equal(/features\/lan\//.test(mutateBridgeSrc), false);
+    assert.equal(/['"]\.\.\/lan\//.test(mutateBridgeSrc), false);
+    assert.equal(/push-bridge/.test(mutateBridgeSrc), false);
+    assert.equal(/buildLiveSyncBundleEnvelope/.test(mutateBridgeSrc), false);
+  });
+
+  it('mutate-bridge-clinical-ops source has zero features/lan imports', () => {
+    assert.equal(/features\/lan\//.test(mutateBridgeClinicalOpsSrc), false);
+    assert.equal(/['"]\.\.\/lan\//.test(mutateBridgeClinicalOpsSrc), false);
+    assert.match(mutateBridgeClinicalOpsSrc, /clinical-ops-sync\.mjs/);
+  });
+
+  it('pushCloudBundleOps builds from cloud-census-collect + clinicalOps snapshot', () => {
+    assert.match(mutateBridgeSrc, /collectPatientEntriesForCloudPush/);
+    assert.match(mutateBridgeSrc, /collectTodosMapForCloudPush/);
+    assert.match(mutateBridgeSrc, /collectAgendaForCloudPush/);
+    assert.match(mutateBridgeSrc, /snapshotClinicalOpsForCloud/);
+    assert.match(mutateBridgeSrc, /mapBundleEnvelopeToOps/);
   });
 });

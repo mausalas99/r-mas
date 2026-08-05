@@ -87,6 +87,15 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
 
+  it('pullClinicalOpsFromLanRoom skips LAN GET when Nube is active', () => {
+    assert.match(clinicalTeamsSrc, /isCloudSyncActive/);
+    const idx = clinicalTeamsSrc.indexOf('export async function pullClinicalOpsFromLanRoom');
+    assert.ok(idx >= 0);
+    const body = clinicalTeamsSrc.slice(idx, idx + 500);
+    assert.match(body, /isCloudSyncActive\(\)/);
+    assert.match(body, /return false/);
+  });
+
   it('joined team card offers leave team for any member', () => {
     assert.match(clinicalTeamsSrc, /clinical-teams-leave-btn/);
     assert.match(clinicalTeamsSrc, /handleLeaveTeamClick/);

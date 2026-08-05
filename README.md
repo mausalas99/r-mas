@@ -39,11 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.7](https://github.com/mausalas99/r-mas/releases/tag/v7.9.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.8](https://github.com/mausalas99/r-mas/releases/tag/v7.9.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
+
+
+## R+ 7.9.8 (Nube en todas las salas — LAN sync opt-in)
+
+- **Todas las salas en Nube** — Interconsultas, UX, Eme y Área A/Pensionistas se unen a Sala 1/2/E y Torre HU; allowlist Worker + cliente.
+- **LAN sync opt-in** — `/api/lan/v1` apagado por defecto (`R_PLUS_ENABLE_LAN_SYNC=1` para reactivar); sin fallback LAN offline.
+- **Renderer `app://rplus`** — UI sin depender de localhost:3738; interno lee censo desde SQLCipher.
+- **Borrado Nube + tombstones** — × / masivo via `sync-apply`; Worker LWW limpia labs/pendientes/agenda y no resucita.
+
+Notas: `docs/RELEASE_NOTES_7.9.8.txt`.
 
 ## R+ 7.9.7 (Nube sync fiable — pendientes, EA y mutate por entidad)
 
@@ -65,7 +75,7 @@ Notas: `docs/RELEASE_NOTES_7.9.6.txt`.
 
 ## R+ 7.9.5 (R+ Móvil en Nube + sala mensual + labs/LAN)
 
-- **iPad / R+ Móvil (Nube)** — Enlace + QR desde ⇄; login en Safari; guardia + EA sin Mac anfitrión LAN (Sala / Torre HU).
+- **iPad / R+ Móvil (Nube)** — Enlace + QR desde ⇄; login en Safari; guardia + EA sin Mac anfitrión LAN (todas las salas clínicas).
 - **Sala mensual** — Código Nube = mes `YYYY-MM` (CDMX); sala activa en Worker; autostart + seed de censo al abrir R+.
 - **Signos LWW + LAN** — Monitoreo usa el `recordedAt` más reciente; borrados del host no resucitan; restore multi-sala.
 - **Labs COAG** — Consolida TP/TTP/INR/Fib/DD sin perder Fibrinógeno/DD entre solicitudes.
@@ -105,11 +115,10 @@ Notas: `docs/RELEASE_NOTES_7.9.2.txt`.
 
 Notas: `docs/RELEASE_NOTES_7.9.1.txt`.
 
-## R+ 7.9.0 (Nube piloto Free — Sala y Torre HU)
+## R+ 7.9.0 (Nube piloto Free — todas las salas clínicas)
 
-- **Nube (Sala / Torre HU)** — Sync del turno en Cloudflare Free desde ⇄, sin Mac anfitrión LAN.
+- **Nube (todas las salas)** — Sync del turno en Cloudflare Free desde ⇄, sin Mac anfitrión LAN (Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas). LAN sync en retiro.
 - **Migración 7.9** — Reinicio de usuarios clínicos con panel de captura → @usuario → equipo → pacientes (pacientes/labs se conservan).
-- **Otras salas** — Interconsultas, UX, Eme y Área A siguen en LiveSync LAN.
 
 Notas: `docs/RELEASE_NOTES_7.9.0.txt`.
 
@@ -571,7 +580,7 @@ Las release notes detalladas de cada versión están en:
 - **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Sala**, **Clínico** incluye **Historia Clínica**, **Estado actual** y **Eventualidades**; en **Interconsulta**, Nota, Indicaciones y VPO. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
 - **Historia Clínica (Sala)** — Ingreso institucional en 3 pasos, catálogos APP/AHF/IPAS, vista **Lectura** con texto compilado, ancla de laboratorios y sincronización en sala en vivo.
 - **Eventualidades (Sala)** — Registro cronológico de hechos clínicos por día dentro de **Clínico**.
-- **Estado Actual (Sala)** — Monitoreo estructurado en **Clínico → Estado actual**: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
+- **Estado Actual (Sala)** — Monitoreo estructurado en **Clínico → Estado actual**: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y sync Nube del turno.
 - **Medicamentos** — Receta hospitalaria (TSV) en la pestaña **Manejo**, copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Nota).
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Indicaciones).
@@ -644,7 +653,7 @@ Firmar y notarizar **no acelera** el build: suele tardar más que un build sin n
 
 ## Architecture
 
-R+ is an Electron desktop app with a LAN HTTP/WS server, SQLCipher clinical store, and an esbuild-bundled renderer. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
+R+ is an Electron desktop app with SQLCipher clinical store, **Nube** turn sync (all clinical wards via `cloud/sync-worker`), and an esbuild-bundled renderer. LAN LiveSync is being retired; offline = local SQLCipher only. A LAN HTTP/WS server (`server.js`, port **3738**) remains for doc export and interno mobile. New UI work belongs in `public/js/features/*.mjs` — run `npm run build:ui` after edits; never hand-edit `public/js/chunks/` or `app.bundle.mjs`.
 
 ### Entry points
 

@@ -14,6 +14,10 @@ import { slimLabSetForCloud } from './cloud-op-slim.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_DEBOUNCE_SLOW_MS } from './cloud-sync-timing.mjs';
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../lan-patient-merge.mjs';
 import { patients } from '../../app-state.mjs';
+import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
+
+export { CLOUD_BATCH_MUTATION_ID };
+export { pushCloudClinicalOpsNow } from './mutate-bridge-clinical-ops.mjs';
 
 function cloudPushDebounceMs() {
   return lanNetworkProfile.getNetworkProfile() === 'slow'
@@ -22,10 +26,6 @@ function cloudPushDebounceMs() {
 }
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
-
-import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
-
-export { CLOUD_BATCH_MUTATION_ID };
 
 /** Packed into dedicated LWW paths — must not ride along on `fields` with a fresh batch clock. */
 const FIELD_SKIP = new Set(['historiaClinica', 'id', 'monitoreo', 'eventualidades']);
@@ -323,6 +323,18 @@ function enqueueEntityOps(clientMutationId, ops) {
   void bridgeRuntime.flush?.();
 }
 
+/** @param {unknown} clinicalOps @returns {boolean} */
+export function enqueueCloudClinicalOpsValue(clinicalOps) {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || clinicalOps == null) return false;
+  enqueueEntityOps('clinicalOps', [cloudOp({
+    path: 'clinicalOps',
+    value: clinicalOps,
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: new Date().toISOString(),
+  })]);
+  return true;
+}
+
 /** @param {CloudSyncOp[]} ops */
 function enqueueOps(ops) {
   enqueueEntityOps(CLOUD_BATCH_MUTATION_ID, ops);
@@ -405,18 +417,28 @@ async function pushCloudBundleOps() {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
   if (!getCloudSyncRoomId()) return;
   try {
-    const { ensureLanSyncPushBridgeWired, bridge } = await import('../lan/push-bridge.mjs');
-    await ensureLanSyncPushBridgeWired();
     const meta = {
       actorId: resolveCloudActorId(bridgeRuntime),
       updatedAt: new Date().toISOString(),
     };
     ensureLiveCensusClocks(meta.updatedAt);
-    const bundle = await bridge().buildLiveSyncBundleEnvelope(getCloudSyncRoomId());
-    const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
-    const cloudEntries = await collectPatientEntriesForCloudPush();
-    if (cloudEntries.length) bundle.entries = cloudEntries;
-    const ops = mapBundleEnvelopeToOps(bundle, meta);
+    const {
+      collectPatientEntriesForCloudPush,
+      collectTodosMapForCloudPush,
+      collectAgendaForCloudPush,
+    } = await import('./cloud-census-collect.mjs');
+    const { snapshotClinicalOpsForCloud } = await import('./mutate-bridge-clinical-ops.mjs');
+    const entries = await collectPatientEntriesForCloudPush();
+    const clinicalOps = await snapshotClinicalOpsForCloud();
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries,
+        todos: collectTodosMapForCloudPush(),
+        agenda: collectAgendaForCloudPush(),
+        clinicalOps,
+      },
+      meta
+    );
     const entryOps = countPatientEntryOps(ops);
     const otherOps = hasNonEntryCloudOps(ops);
     if (!entryOps && !otherOps && patients.length > 0) {
@@ -434,10 +456,7 @@ async function pushCloudBundleOps() {
   }
 }
 
-/**
- * Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect.
- * @returns {Promise<{ ok: boolean, reason?: string, entryOps?: number, totalOps?: number }>}
- */
+/** Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect. */
 export async function pushCloudCensusNow() {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) {
     return { ok: false, reason: 'bridge_inactive' };
@@ -458,18 +477,10 @@ export async function pushCloudCensusNow() {
   for (let i = 0; i < entries.length; i += 1) {
     ops.push(...mapPatientEntryToCloudBundleOps(entries[i], meta));
   }
-
-  try {
-    const opsLan = await import('../../clinical-ops-lan.mjs');
-    if (opsLan.isClinicalOpsLanAvailable()) {
-      await opsLan.prepareClinicalOpsForLanSync();
-    }
-    const clinicalOps = opsLan.getCachedClinicalOpsSnapshot();
-    if (clinicalOps != null) {
-      ops.push(cloudOp({ path: 'clinicalOps', value: clinicalOps, ...meta }));
-    }
-  } catch {
-    /* clinicalOps optional */
+  const { snapshotClinicalOpsForCloud } = await import('./mutate-bridge-clinical-ops.mjs');
+  const clinicalOps = await snapshotClinicalOpsForCloud();
+  if (clinicalOps != null) {
+    ops.push(cloudOp({ path: 'clinicalOps', value: clinicalOps, ...meta }));
   }
 
   const entryOps = countPatientEntryOps(ops);
@@ -489,10 +500,9 @@ export async function pushCloudCensusNow() {
       getBaseUrl: getCloudSyncUrl,
       getToken: getCloudSyncToken,
     });
-    const roomId = getCloudSyncRoomId();
     const pushed = await pushCloudOpsDirect(
       api,
-      roomId,
+      getCloudSyncRoomId(),
       ops,
       getCloudSyncRevision,
       setCloudSyncRevision

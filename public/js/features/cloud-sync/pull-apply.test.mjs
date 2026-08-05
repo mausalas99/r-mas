@@ -1,5 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   cloudEntryToLanEntry,
   cloudStateToLanEntries,
@@ -8,6 +11,11 @@ import {
   opFoldToLanEntries,
   assembleLabHistoryFromSidecars,
 } from './pull-apply-state.mjs';
+
+const pullApplySrc = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'pull-apply.mjs'),
+  'utf8'
+);
 
 describe('pull-apply cloud snapshot merge', () => {
   it('assembles lab sidecars into labHistory arrays', () => {
@@ -120,5 +128,15 @@ describe('pull-apply cloud snapshot merge', () => {
     const entries = opFoldToLanEntries(fold);
     assert.equal(entries[0].patient.cuarto, '100');
     assert.equal(entries[0].patient.monitoreo.estadoClinico.four, '15');
+  });
+});
+
+describe('pull-apply sync-apply wiring (Phase 3)', () => {
+  it('imports patient apply/delete from sync-apply not lan', () => {
+    assert.match(pullApplySrc, /sync-apply\/patient-entries/);
+    assert.match(pullApplySrc, /sync-apply\/patient-delete/);
+    assert.equal(/from ['"]\.\.\/lan\/patient-entries/.test(pullApplySrc), false);
+    assert.equal(/from ['"]\.\.\/lan\/patient-delete/.test(pullApplySrc), false);
+    assert.match(pullApplySrc, /clinical-ops-sync\.mjs/);
   });
 });

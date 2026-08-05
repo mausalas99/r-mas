@@ -1,0 +1,47 @@
+R+ 7.9.8 (Nube en todas las salas — LAN sync opt-in)
+========================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+**7.9.8** pone **todas las salas clínicas** en Nube (Interconsultas, UX, Eme y Área A/Pensionistas además de Sala 1/2/E y Torre HU) y retira LiveSync LAN por defecto: `/api/lan/v1` responde 410 salvo `R_PLUS_ENABLE_LAN_SYNC=1`. El escritorio carga la UI por `app://rplus` (ya no depende de :3738 para pintar). Incluye apply/mutate desacoplados de LAN, borrado Nube (× / masivo) y tombstones LWW que no resucitan labs/pendientes/agenda.
+
+## Nuevo / mejorado
+
+- **Nube — todas las salas** — Allowlist del Worker y del cliente: **Sala 1/2/E**, **Torre HU**, **Interconsultas**, **UX**, **Eme**, **Área A/Pensionistas**. Ya no hay salas «solo LAN».
+- **LAN sync opt-in** — LiveSync HTTP/WS en `:3738` apagado por defecto; sin flag, `/api/lan/v1` → `lan_sync_retired`. Dev/ops: `R_PLUS_ENABLE_LAN_SYNC=1`.
+- **Renderer `app://rplus`** — La ventana Electron sirve `public/` por protocolo custom (sin localhost:3738). Legacy: `R_PLUS_RENDERER_HTTP=1`.
+- **sync-apply / borrado Nube** — × y borrado masivo: quita local + tombstone + wipe en Nube (`features/sync-apply/`); ya no pasa por el batch LAN.
+- **Tombstones LWW (Worker)** — Al borrar, limpia entry + labs + todos + agenda y bloquea re-admit del mismo paciente en el room.
+- **Ops / interno** — `clinical-ops-sync` + eventos Nube; censo interno lee SQLCipher (`host-store-db`); Ajustes «activar sync» abre Nube (⇄) en salas cloud, no arranca LAN.
+- **Conexión** — Panel y chrome alineados al corte: sin hero LAN en salas Nube; detach LAN al unirse a Nube.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v7.9.8
+
+- Mac: `R+-7.9.8-arm64.dmg`, `R+-7.9.8-x64.dmg` (y zip para auto-update).
+- Windows: `R+-7.9.8-x64.exe`.
+
+Descarga **7.9.8 en todas las Macs** del turno el mismo día que actualizas el Worker.
+
+**Operador cloud (antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Requiere Worker con allowlist actualizada (todas las salas). Si venías de Interconsultas/UX/Eme/Área A en LAN, abre ⇄ Conexión y únete a la sala Nube del mes.
+- Offline = SQLCipher local + outbox; **sin fallback LAN** cuando Nube está desconectada.
+- LAN LiveSync solo si alguien pone `R_PLUS_ENABLE_LAN_SYNC=1` (dev / transición).
+- iPad: sin instalación — enlace desde ⇄ en Safari.

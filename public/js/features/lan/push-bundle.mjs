@@ -45,20 +45,21 @@ async function pushCommandToHost(roomId, envelope) {
 
 export { pushDeltaToHost, pushCommandToHost };
 
-export function pushRoomSyncBundleToHost(roomId, envelope) {
+export function pushRoomSyncBundleToHost(roomId, envelope, opts) {
   return ensureLanSyncPushBridgeWired().then(function () {
-    return pushRoomSyncBundleToHostBody(roomId, envelope);
+    return pushRoomSyncBundleToHostBody(roomId, envelope, opts);
   });
 }
 
-function pushRoomSyncBundleToHostBody(roomId, envelope) {
+function pushRoomSyncBundleToHostBody(roomId, envelope, opts) {
+  opts = opts || {};
   var b = bridge();
   if (typeof b.isLanSessionConfiguredForRest !== 'function' || !b.isLanSessionConfiguredForRest()) {
     return Promise.resolve(false);
   }
   var rid = String(roomId || '').trim();
   if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
-  if (isBundlePushPaused(rid)) return Promise.resolve('paused');
+  if (!opts.bypassPause && isBundlePushPaused(rid)) return Promise.resolve('paused');
   return lanFetchAuthed('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

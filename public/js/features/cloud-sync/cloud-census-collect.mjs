@@ -2,6 +2,7 @@
  * Cloud census collection — avoids LAN runtime stub race (buildPatientEntry null until registerLanRuntime).
  */
 import { patients } from '../../app-state.mjs';
+import { storage } from '../../storage.js';
 import { getLanRuntime } from '../lan/orchestrator-runtime.mjs';
 import { collectPatientEntriesForLanSync } from '../lan/orchestrator-collect.mjs';
 
@@ -29,4 +30,23 @@ export async function collectPatientEntriesForCloudPush() {
     if (entry) out.push(entry);
   }
   return out;
+}
+
+/** @returns {Record<string, unknown[]>} */
+export function collectTodosMapForCloudPush() {
+  const out = {};
+  for (let i = 0; i < patients.length; i += 1) {
+    const p = patients[i];
+    if (!p?.id || String(p.id).indexOf('demo-') === 0) continue;
+    const list = storage.getTodos(p.id);
+    if (list.length) out[p.id] = list;
+  }
+  return out;
+}
+
+/** @returns {unknown[]} */
+export function collectAgendaForCloudPush() {
+  return storage.getScheduledProcedures().filter(function (ev) {
+    return ev && String(ev.patientId || '').indexOf('demo-') !== 0;
+  });
 }

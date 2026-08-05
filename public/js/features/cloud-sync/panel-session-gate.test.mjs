@@ -42,7 +42,7 @@ describe('shouldHidePrimaryLanChrome', () => {
     assert.equal(shouldHidePrimaryLanChrome({ cloudSala: false, cloudActive: false }), false);
   });
 
-  it('shows LAN chrome on cloud sala when Nube not connected', () => {
+  it('hides primary LAN chrome on cloud sala even when Nube not connected', () => {
     assert.equal(shouldHidePrimaryLanChrome({ cloudSala: true, cloudActive: false }), true);
   });
 });

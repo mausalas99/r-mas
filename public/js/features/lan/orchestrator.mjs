@@ -45,7 +45,6 @@ import {
 } from './live-sync-emit.mjs';
 import { appendLanConflictDraftsSection } from './conflicts.mjs';
 import { touchPatientLanUpdatedAt } from './patient-entries.mjs';
-import { wireLanSyncBridges } from './orchestrator-wire.mjs';
 import { wireInternoHostSyncBridge } from './orchestrator-interno.mjs';
 import { ensureLanSyncRuntimeStarted } from './orchestrator-boot.mjs';
 
@@ -104,8 +103,7 @@ export {
   syncSettingsLanHostDiskSection,
 };
 
-wireLanSyncBridges();
-
+// LAN bridges / discovery start only via ensureLanSyncRuntimeStarted (skipped for Nube salas).
 if (typeof document !== 'undefined') {
   queueMicrotask(() => {
     wireInternoHostSyncBridge();

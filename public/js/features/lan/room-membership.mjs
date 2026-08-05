@@ -10,7 +10,12 @@ import { pushRoomSyncBundleToHost, liveSyncBundleHasPayload, scheduleLiveSyncOut
 import { bridge, runtime, ensureLanSyncRoomBridgeWired } from './room-bridge.mjs';
 import { buildLiveSyncBundleEnvelope, saveLocalRoomSnapshot, waitForLiveChannelOpen } from './room-snapshot.mjs';
 import { applyRoomSyncPhaseAfterReconcile, syncLiveSyncStatusChrome } from './room-phase-chrome.mjs';
-import { startLiveSyncReconnectLoop, stopLiveSyncReconnectLoop, markLiveSyncSessionResyncDone } from './room-host-failover.mjs';
+import {
+  startLiveSyncReconnectLoop,
+  stopLiveSyncReconnectLoop,
+  markLiveSyncSessionResyncDone,
+  isLiveSyncSessionResyncDone,
+} from './room-host-failover.mjs';
 import { syncLiveSyncAfterRoomJoin } from './room-post-join.mjs';
 
 export { syncLiveSyncAfterRoomJoin };
@@ -100,7 +105,18 @@ function ensureLanClientBaseUrl() {
 }
 
 function handleAlreadyJoinedRoom(id, silent) {
-  markLiveSyncSessionResyncDone(true);
+  if (!isLiveSyncSessionResyncDone()) {
+    void syncLiveSyncAfterRoomJoin(id)
+      .then(function () {
+        applyRoomSyncPhaseAfterReconcile(id);
+        syncLiveSyncStatusChrome();
+        bridge().patchLanPanelJoinButtons();
+      })
+      .finally(function () {
+        markLiveSyncSessionResyncDone(true);
+      });
+    return;
+  }
   applyRoomSyncPhaseAfterReconcile(id);
   syncLiveSyncStatusChrome();
   bridge().patchLanPanelJoinButtons();

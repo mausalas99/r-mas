@@ -78,10 +78,10 @@ const lanSyncPushSrc = readConcat(lanDir, [
 const lanSyncFeatureSrc =
   lanSyncSrc + '\n' + lanSyncRoomSrc + '\n' + lanSyncTransportSrc + '\n' + lanSyncPanelSrc;
 const lanSyncPushAndFeatureSrc = lanSyncFeatureSrc + '\n' + lanSyncPushSrc;
-const clinicalOpsLanSrc = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'),
-  'utf8'
-);
+const clinicalOpsLanSrc =
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-sync.mjs'), 'utf8') +
+  '\n' +
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'), 'utf8');
 const clinicalTeamsLanSrc = readConcat(clinicalTeamsDir, [
   'teams-roster-lan.mjs',
   'teams-roster-lan-dom.mjs',
@@ -124,7 +124,7 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('pushes clinical ops after joining a room', () => {
-    assert.match(lanSyncRoomSrc, /syncLiveSyncAfterRoomJoin[\s\S]*scheduleLiveSyncPush\(\)/);
+    assert.match(lanSyncRoomSrc, /syncLiveSyncAfterRoomJoin[\s\S]*pushLiveSyncBundleNow/);
     assert.match(
       lanSyncRoomSrc,
       /syncLiveSyncAfterRoomJoinBody[\s\S]*pushClinicalOpsLanNow[\s\S]*reconcileLiveSyncRoom/
@@ -143,6 +143,12 @@ describe('lan-sync clinical ops', () => {
   it('exports immediate clinical ops push after @usuario registration', () => {
     assert.match(lanSyncPushSrc, /export async function pushClinicalOpsLanNow/);
     assert.match(lanSyncSrc, /pushClinicalOpsLanNow/);
+  });
+
+  it('gates clinical-ops LAN push when Nube is active', () => {
+    const pushClinicalOpsSrc = readFileSync(join(lanDir, 'push-clinical-ops.mjs'), 'utf8');
+    assert.match(pushClinicalOpsSrc, /isCloudSyncActive/);
+    assert.match(pushClinicalOpsSrc, /pushCloudClinicalOpsNow/);
   });
 
   it('records push trace for each clinical ops skip code', () => {
@@ -252,6 +258,29 @@ describe('lan-sync clinical ops', () => {
       lanSyncPanelSrc,
       /rpc-clinical-teams-changed[\s\S]*pushClinicalOpsLanNow/
     );
+  });
+
+  it('gates teams-changed clinical-ops push when Nube is active', () => {
+    const panelDelegationSrc = readFileSync(join(lanDir, 'panel-delegation.mjs'), 'utf8');
+    assert.match(panelDelegationSrc, /isCloudSyncActive/);
+    assert.match(panelDelegationSrc, /pushCloudClinicalOpsNow/);
+  });
+
+  it('Phase 2 cloud boot owns teams-changed → pushCloudClinicalOpsNow without LAN panel', () => {
+    const cloudOpsSrc = readFileSync(
+      join(jsDir, 'features/cloud-sync/cloud-ops-events.mjs'),
+      'utf8'
+    );
+    const bootSrc = readFileSync(join(lanDir, 'orchestrator-boot.mjs'), 'utf8');
+    assert.match(cloudOpsSrc, /rpc-clinical-teams-changed[\s\S]*pushCloudClinicalOpsNow/);
+    assert.match(cloudOpsSrc, /maybeScheduleCloudSyncPush/);
+    assert.match(bootSrc, /wireCloudClinicalOpsSyncEvents/);
+    const cloudBoot = bootSrc.match(/if \(isCloudSalaBootPath\(\)\) \{[\s\S]*?return;\n  \}/);
+    assert.ok(cloudBoot, 'expected cloud sala early-return block');
+    assert.match(cloudBoot[0], /wireCloudClinicalOpsSyncEvents/);
+    assert.doesNotMatch(cloudBoot[0], /wireLanSyncBridges/);
+    assert.doesNotMatch(cloudBoot[0], /initLanClientFromStorage/);
+    assert.doesNotMatch(cloudBoot[0], /wireLanPanelDelegation/);
   });
 
   it('entrega assign pushes clinical ops so interno board receives pendientes', () => {
@@ -444,6 +473,13 @@ describe('clinical-profile-lan-sync', () => {
     assert.match(profileLanSrc, /assertLanRoomForUsernameRegister/);
     assert.match(profileLanSrc, /allowed: true/);
     assert.doesNotMatch(profileLanSrc, /allowed: false,\s*lanConfigured: true,\s*code: 'NO_ROOM'/);
+  });
+
+  it('flushClinicalProfileToLan gates on Nube via isCloudSyncActive', () => {
+    const fnStart = profileLanSrc.indexOf('export async function flushClinicalProfileToLan');
+    assert.ok(fnStart >= 0);
+    const body = profileLanSrc.slice(fnStart, fnStart + 900);
+    assert.match(body, /isCloudSyncActive/);
   });
 
   it('applies invite URL before username gate', () => {

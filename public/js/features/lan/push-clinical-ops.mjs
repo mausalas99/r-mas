@@ -10,6 +10,8 @@ import {
 } from '../../clinical-ops-lan.mjs';
 import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
 import { enqueueOutbox } from '../../live-sync-outbox.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+import { pushCloudClinicalOpsNow } from '../cloud-sync/mutate-bridge.mjs';
 import { lanClient, getLanClientId } from './runtime.mjs';
 import { bridge, ensureLanSyncPushBridgeWired } from './push-bridge.mjs';
 import { ensureEffectiveLiveSyncRoomId, lanPushResult, sendLiveBundleIfOpen, CLINICAL_OPS_HANDLED } from './push-helpers.mjs';
@@ -18,6 +20,11 @@ import { putClinicalOpsSnapshotToHost } from './push-conflict.mjs';
 var clinicalOpsLanPushInFlight = null;
 
 export async function pushClinicalOpsLanNow(opts) {
+  if (isCloudSyncActive()) {
+    const result = await pushCloudClinicalOpsNow();
+    if (result?.ok) return lanPushResult(true);
+    return lanPushResult(false, result?.reason || 'CLOUD_PUSH_FAILED');
+  }
   if (clinicalOpsLanPushInFlight) return clinicalOpsLanPushInFlight;
   clinicalOpsLanPushInFlight = pushClinicalOpsLanNowBody(opts).finally(function () {
     clinicalOpsLanPushInFlight = null;

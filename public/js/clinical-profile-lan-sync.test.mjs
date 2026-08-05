@@ -1,10 +1,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   isBenignLanPushSkipCode,
   isLanProfileNeedsConnectCode,
   resolveRoomIdForUsernameRegister,
 } from './clinical-profile-lan-sync.mjs';
+
+const profileLanSrc = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'clinical-profile-lan-sync.mjs'),
+  'utf8'
+);
 
 describe('clinical-profile-lan-sync room resolve', () => {
   it('maps clinical Sala to LiveSync room id', () => {
@@ -33,4 +41,10 @@ describe('clinical-profile-lan-sync room resolve', () => {
     );
   });
 
+  it('flushClinicalProfileToLan gates on Nube via isCloudSyncActive', () => {
+    const fnStart = profileLanSrc.indexOf('export async function flushClinicalProfileToLan');
+    assert.ok(fnStart >= 0);
+    const body = profileLanSrc.slice(fnStart, fnStart + 900);
+    assert.match(body, /isCloudSyncActive/);
+  });
 });

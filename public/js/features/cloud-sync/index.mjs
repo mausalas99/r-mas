@@ -18,11 +18,9 @@ export { startCloudSyncRuntime, stopCloudSyncRuntime } from './sync-runtime.mjs'
 
 export {
   CLOUD_SALAS,
-  LAN_ONLY_SALAS,
   normalizeCloudSala,
   displayCloudSalaLabel,
   isCloudSala,
-  isLanOnlySala,
 } from './sala-allowlist.mjs';
 
 export {
@@ -42,6 +40,7 @@ export {
   mapBundleEnvelopeToOps,
   maybeScheduleCloudSyncPush,
   scheduleCloudSyncPush,
+  pushCloudClinicalOpsNow,
 } from './mutate-bridge.mjs';
 
 export { applyCloudPullResult, applyCloudState, applyCloudOps } from './pull-apply.mjs';

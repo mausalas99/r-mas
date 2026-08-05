@@ -1,5 +1,4 @@
 import { readRpcSettings } from '../../clinical-settings.mjs';
-import { isCloudSala, isLanOnlySala } from './sala-allowlist.mjs';
 
 export const CLOUD_SALA_UPGRADE_KEY = 'cloudSyncSalaUpgrade';
 
@@ -23,9 +22,7 @@ export function clearCloudSalaUpgradePending() {
   return setCloudSalaUpgradePending(false);
 }
 
-/** LAN-only → Sala/Torre: require Nube registration via onboarding. */
-export function maybeMarkCloudSalaUpgrade(prevSala, nextSala) {
-  if (!isLanOnlySala(prevSala) || !isCloudSala(nextSala)) return false;
-  setCloudSalaUpgradePending(true);
-  return true;
+/** Retired: all clinical wards use Nube; no LAN-only → cloud migration gate. */
+export function maybeMarkCloudSalaUpgrade(_prevSala, _nextSala) {
+  return false;
 }
