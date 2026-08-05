@@ -27,7 +27,7 @@ export {
   opsToLanEntries,
 } from './pull-apply-state.mjs';
 
-/** @param {Record<string, unknown>} todosMap */
+/** @param {Record<string, unknown>} todosMap @returns {string[]} */
 function applyCloudTodosMap(todosMap) {
   const byPatient = {};
   for (const todo of Object.values(todosMap || {})) {
@@ -47,9 +47,12 @@ function applyCloudTodosMap(todosMap) {
     if (idx >= 0) byPatient[pid][idx] = row;
     else byPatient[pid].push(row);
   }
+  const changedPatients = [];
   for (const pid of Object.keys(byPatient)) {
     storage.saveTodos(pid, byPatient[pid]);
+    changedPatients.push(pid);
   }
+  return changedPatients;
 }
 
 /** @param {Record<string, unknown>} agendaMap */
@@ -103,6 +106,19 @@ function cloudPatientEntryApplyOpts() {
   };
 }
 
+async function refreshCloudTodoUIs(patientIds) {
+  const ids = Array.isArray(patientIds) ? patientIds : [];
+  if (!ids.length) return;
+  try {
+    const mod = await import('../todos-refresh.mjs');
+    if (typeof mod.refreshTodoUIsForPatients === 'function') {
+      mod.refreshTodoUIsForPatients(ids);
+    }
+  } catch {
+    /* optional */
+  }
+}
+
 async function finalizeCloudPullPatientScope() {
   try {
     const access = await import('../../clinical-access-runtime.mjs');
@@ -133,12 +149,14 @@ export async function applyCloudState(state, opts) {
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
 
-  if (!opts?.skipTodos && state.todos) applyCloudTodosMap(state.todos);
+  let todoPatients = [];
+  if (!opts?.skipTodos && state.todos) todoPatients = applyCloudTodosMap(state.todos);
   if (Array.isArray(state.agenda)) {
     storage.saveScheduledProcedures(state.agenda.filter((item) => item && !item._deleted));
   }
   const removed = applyCloudTombstones(state.tombstones || {});
   await finalizeCloudPullPatientScope();
+  await refreshCloudTodoUIs(todoPatients);
 
   if (patientSync.added || patientSync.updated || removed) {
     saveState({ immediate: true });
@@ -158,10 +176,11 @@ export async function applyCloudOps(ops) {
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
-  applyCloudTodosMap(fold.todos);
+  const todoPatients = applyCloudTodosMap(fold.todos);
   applyCloudAgendaMap(fold.agenda);
   const removed = applyCloudTombstones(fold.tombstones);
   await finalizeCloudPullPatientScope();
+  await refreshCloudTodoUIs(todoPatients);
 
   if (patientSync.added || patientSync.updated || removed) {
     saveState({ immediate: true });

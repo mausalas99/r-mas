@@ -124,6 +124,7 @@ export function registrarEstadoActualMedicion() {
     })
   );
   saveState();
+  scheduleLiveSyncPush();
   resetEaRegistroForm(null);
   if (getEaPanelRuntime().invalidateInnerTabRenderCache) getEaPanelRuntime().invalidateInnerTabRenderCache('estadoActual');
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();

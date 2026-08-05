@@ -39,10 +39,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.6](https://github.com/mausalas99/r-mas/releases/tag/v7.9.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.7](https://github.com/mausalas99/r-mas/releases/tag/v7.9.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+
+## R+ 7.9.7 (Nube sync fiable — pendientes, EA y mutate por entidad)
+
+- **Mutate por entidad** — Pendientes, agenda y bajas con `clientMutationId` propio; menos colisiones en outbox Nube.
+- **Censo push** — Reintento distingue monitoreo/campos de entradas de paciente.
+- **Pendientes tras pull** — UI de pendientes refresca al sincronizar Nube.
+- **EA → sync** — Registrar signos dispara push inmediato a Nube/LAN.
+
+Notas: `docs/RELEASE_NOTES_7.9.7.txt`.
 
 ## R+ 7.9.6 (Nube — Sala 1/2/E + censo por alcance)
 

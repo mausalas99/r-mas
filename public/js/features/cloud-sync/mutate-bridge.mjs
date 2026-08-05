@@ -307,15 +307,25 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   return ops;
 }
 
-/** @param {CloudSyncOp[]} ops */
-function enqueueOps(ops) {
+/**
+ * @param {string} clientMutationId
+ * @param {CloudSyncOp[]} ops
+ */
+function enqueueEntityOps(clientMutationId, ops) {
   if (!bridgeRuntime?.outbox || !ops.length) return;
+  const id = String(clientMutationId || '').trim();
+  if (!id) return;
   bridgeRuntime.outbox.enqueue({
-    clientMutationId: CLOUD_BATCH_MUTATION_ID,
+    clientMutationId: id,
     ops,
     baseRevision: bridgeRuntime.getRevision?.() ?? 0,
   });
   void bridgeRuntime.flush?.();
+}
+
+/** @param {CloudSyncOp[]} ops */
+function enqueueOps(ops) {
+  enqueueEntityOps(CLOUD_BATCH_MUTATION_ID, ops);
 }
 
 /** @type {ReturnType<typeof setTimeout> | null} */
@@ -342,6 +352,15 @@ function countPatientEntryOps(ops) {
     if (String(ops[i]?.path || '').startsWith('entries/')) count += 1;
   }
   return count;
+}
+
+/** @param {CloudSyncOp[]} ops */
+function hasNonEntryCloudOps(ops) {
+  for (let i = 0; i < ops.length; i += 1) {
+    const path = String(ops[i]?.path || '');
+    if (!path.startsWith('entries/')) return true;
+  }
+  return false;
 }
 
 function scheduleCloudCensusPushRetry() {
@@ -399,7 +418,8 @@ async function pushCloudBundleOps() {
     if (cloudEntries.length) bundle.entries = cloudEntries;
     const ops = mapBundleEnvelopeToOps(bundle, meta);
     const entryOps = countPatientEntryOps(ops);
-    if (!entryOps && patients.length > 0) {
+    const otherOps = hasNonEntryCloudOps(ops);
+    if (!entryOps && !otherOps && patients.length > 0) {
       if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
         scheduleCloudCensusPushRetry();
         return;
@@ -494,7 +514,7 @@ export function enqueueCloudTodoUpsert(patientId, todo) {
     updatedAt: String(todo.updatedAt || new Date().toISOString()),
   };
   const row = { ...todo, patientId: String(patientId || todo.patientId || '').trim() };
-  enqueueOps([cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
+  enqueueEntityOps(`todos/${todo.id}`, [cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
 }
 
 /**
@@ -511,7 +531,7 @@ export function enqueueCloudTodoDelete(patientId, todoRef, updatedAt) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(updatedAt || todo.updatedAt || new Date().toISOString()),
   };
-  enqueueOps([
+  enqueueEntityOps(`todos/${eid}`, [
     cloudOp({
       path: `todos/${eid}`,
       value: { id: eid, patientId, _deleted: true, updatedAt: meta.updatedAt },
@@ -527,7 +547,9 @@ export function enqueueCloudAgendaUpsert(eventObj) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(eventObj.updatedAt || new Date().toISOString()),
   };
-  enqueueOps([cloudOp({ path: `agenda/${eventObj.id}`, value: eventObj, ...meta })]);
+  enqueueEntityOps(`agenda/${eventObj.id}`, [
+    cloudOp({ path: `agenda/${eventObj.id}`, value: eventObj, ...meta }),
+  ]);
 }
 
 /** @param {string} id @param {string} [updatedAt] */
@@ -539,7 +561,7 @@ export function enqueueCloudAgendaDelete(id, updatedAt) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(updatedAt || new Date().toISOString()),
   };
-  enqueueOps([
+  enqueueEntityOps(`agenda/${eid}`, [
     cloudOp({
       path: `agenda/${eid}`,
       value: { id: eid, _deleted: true, updatedAt: meta.updatedAt },
@@ -556,7 +578,7 @@ export function enqueueCloudPatientDelete(patient) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: new Date().toISOString(),
   };
-  enqueueOps([
+  enqueueEntityOps(`tombstones/${patient.id}`, [
     cloudOp({
       path: `tombstones/${patient.id}`,
       value: { registro: patient.registro || '', deletedAt: meta.updatedAt },

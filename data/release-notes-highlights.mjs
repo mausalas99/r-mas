@@ -1947,10 +1947,34 @@ var RELEASE_NOTES_796 = [
   },
 ];
 
+var RELEASE_NOTES_797 = [
+  {
+    title: 'Mutate por entidad',
+    body:
+      'Pendientes, agenda y bajas Nube llevan su propio <code>clientMutationId</code> — menos colisiones en el outbox y sync más fiable entre Macs.',
+  },
+  {
+    title: 'Pendientes al instante',
+    body:
+      'Tras pull Nube, la UI de <strong>pendientes</strong> se refresca en los pacientes tocados (igual que en LAN).',
+  },
+  {
+    title: 'EA → sync inmediato',
+    body:
+      'Registrar signos en <strong>Estado actual</strong> dispara push al guardar; monitoreo llega al turno sin esperar otro evento.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.7 en todas</strong> las Macs el mismo día. No requiere redeploy del Worker Nube.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_796;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_797;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.7': RELEASE_NOTES_797,
   '7.9.6': RELEASE_NOTES_796,
   '7.9.5': RELEASE_NOTES_795,
   '7.9.4': RELEASE_NOTES_794,
