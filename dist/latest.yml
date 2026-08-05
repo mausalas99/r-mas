@@ -1,30 +1,24 @@
-version: 7.9.5
+version: 7.9.6
 files:
-  - url: R+-7.9.5-x64.exe
-    sha512: +M0Htx5M6RkoPweDO06LR9gdoXoWKLBvkjnhYI5LRSq9k92nwmB1V5fW2Pwrska0vxCukE+agUXQVaR0ibFtSw==
-    size: 122636666
-path: R+-7.9.5-x64.exe
-sha512: +M0Htx5M6RkoPweDO06LR9gdoXoWKLBvkjnhYI5LRSq9k92nwmB1V5fW2Pwrska0vxCukE+agUXQVaR0ibFtSw==
-releaseDate: '2026-08-05T16:24:52.000Z'
+  - url: R+-7.9.6-x64.exe
+    sha512: v4RozqxvsyWdHB0Kzwcz5XR9HeG1cY7Mav+BEtkLmZbemvWS7cb/9nJTBg0qfyV8R91T7Y8mCsOk6Adhz+SYrg==
+    size: 122641723
+path: R+-7.9.6-x64.exe
+sha512: v4RozqxvsyWdHB0Kzwcz5XR9HeG1cY7Mav+BEtkLmZbemvWS7cb/9nJTBg0qfyV8R91T7Y8mCsOk6Adhz+SYrg==
+releaseDate: '2026-08-05T17:29:59.000Z'
 releaseNotes: |
-  7.9.5 lleva R+ Móvil / iPad a salas Nube (Sala y Torre HU): el iPad abre desde internet, inicia sesión con tu @usuario y sincroniza signos y expediente esencial sin Mac anfitrión LAN. El código de sala Nube dura el mes calendario (YYYY-MM CDMX). Incluye censo que sí llega a la nube al arrancar, correcciones LWW/LAN y consolidación COAG.
+  7.9.6 separa Sala 1, Sala 2 y Sala E como salas Nube distintas (ya no un bucket genérico «Sala») y corrige el censo que ve cada residente: R1/R2 solo su equipo; R4/Admin el censo completo de la sala. Incluye limpieza de pacientes «fantasma» tras pull Nube y protección de monitoreo EA contra stubs vacíos del censo.
   
-  iPad / R+ Móvil (Nube) — URL pública en el Worker (/mobile/); login + sala activa; guardia board y EA (signos, glu, I/E) con alcance por equipo. Mensajes claros si el censo aún no está en la nube.
+  Nube — salas distintas — ensure-turn y allowlist reconocen Sala 1, Sala 2, Sala E y Torre HU como rooms separados; cada una con su código mensual YYYY-MM (CDMX).
   
-  ⇄ Conexión — En salas Nube: Copiar enlace móvil (Nube) + QR. En iPad, ⇄ no abre el panel LAN (aviso de recarga).
+  Censo por alcance — Pull Nube filtra por equipo unido; R4/Admin en escritorio ven censo completo de la sala; iPad/Safari LAN siempre por equipo (sin censo sala-wide aunque seas Admin).
   
-  Nube — sala mensual — Código de sala = mes calendario (YYYY-MM, America/Mexico_City), no día. Al arrancar, ensure-turn refresca la sala sticky al mes actual.
+  Sin fantasmas — Tras pull Nube, escritorio poda pacientes fuera de alcance y refresca sidebar/guardia; módulo compartido patient-scope-prune.
   
-  Nube — sala activa — El Worker guarda active_room_id por usuario; el móvil resuelve /rooms/active. Migración D1 004-active-room.sql.
+  EA / monitoreo — Stubs vacíos de censo Nube ya no pisan monitoreo local con datos reales.
   
-  Nube — censo al conectar — Autostart de sync en escritorio; seed de censo (slim) con reintentos; push directo por chunks; mutation ids únicos (sin dedupe eterno del batch); pull con needSnapshot si faltan ops.
+  Mutate bridge — Ops de campos/monitoreo usan relojes de contenido (no batch updatedAt); mejor mapeo de sidecars.
   
-  Nube — signos LWW — Reloj de monitoreo = recordedAt más reciente del historial (signos iPad/Mac ya no se rechazan como stale).
+  LAN — Dashboard de host y ranking de equipos más claros al asignar pacientes.
   
-  Sync worker — ASSETS /mobile/; poll mobile en idle; sin banner «servidor LAN» falso en Safari; outbox en memoria (sin QuotaExceeded en localStorage).
-  
-  LAN — censo / restore — Borrados del host no resucitan en peers; restore busca otras salas + censo del host; reconcile guarda snapshot local.
-  
-  Labs — COAG — Al consolidar, une TP/TTP/INR/Fib/DD de varias solicitudes sin que un COAG rico borre Fibrinógeno/DD.
-  
-  LAN móvil — Sin cambios para Interconsultas, UX, Eme y Área A; invite LAN sigue en esas salas.
+  Cloud mobile — build:cloud-mobile empaqueta /mobile/ en cloud/sync-pages/ para deploy del Worker.
