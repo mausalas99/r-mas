@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncError } from './errors.js';
-import { isCloudSala, normalizeCloudSala } from './sala-allowlist.js';
+import { isCloudSala, normalizeCloudSala, CLOUD_SALAS } from './sala-allowlist.js';
 import { emptyRoomState, randomRoomCode, validateCloudSalaForRoom } from './rooms.js';
 
 const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -46,10 +46,10 @@ describe('create sala gate', () => {
   });
 
   it('accepts normalized cloud salas', () => {
-    const allowed = ['Sala', 'Sala 1', 'Torre HU', 'torre-hu'];
+    const allowed = ['Sala 1', 'Sala 2', 'Sala E', 'Torre HU', 'torre-hu'];
     for (const sala of allowed) {
       assert.equal(isCloudSala(sala), true, sala);
-      assert.ok(['Sala', 'Torre HU'].includes(normalizeCloudSala(sala)));
+      assert.ok(CLOUD_SALAS.includes(normalizeCloudSala(sala)), sala);
     }
   });
 });
@@ -68,7 +68,7 @@ describe('validateCloudSalaForRoom (ensure-turn gate)', () => {
   });
 
   it('accepts cloud salas and normalizes', () => {
-    assert.equal(validateCloudSalaForRoom('Sala 1'), 'Sala');
+    assert.equal(validateCloudSalaForRoom('Sala 1'), 'Sala 1');
     assert.equal(validateCloudSalaForRoom('torre-hu'), 'Torre HU');
   });
 

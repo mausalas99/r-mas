@@ -129,8 +129,8 @@ function pushCensusFieldsOp(ops, patientId, patient, actorId) {
   );
 }
 
-/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId @param {string} batchAt */
-function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
+/** Monitoreo + eventualidades only (no HC) — fits debounced Nube bundle without note/lab quota blow-up. */
+function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt) {
   const monAt = monitoreoOpUpdatedAt(patient.monitoreo);
   if (monAt && patient.monitoreo) {
     ops.push(
@@ -152,6 +152,11 @@ function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
       })
     );
   }
+}
+
+/** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId @param {string} batchAt */
+function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
+  pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt);
   if (patient.historiaClinica) {
     ops.push(
       cloudOp({
@@ -239,6 +244,22 @@ export function mapPatientEntryToCensusSeedOps(entry, meta) {
 }
 
 /**
+ * Debounced Nube bundle: census fields + estado actual / eventualidades (not notes/labs/HC).
+ * @param {object} entry
+ * @param {{ actorId: string, updatedAt: string }} meta
+ * @returns {CloudSyncOp[]}
+ */
+export function mapPatientEntryToCloudBundleOps(entry, meta) {
+  if (!entry?.patient?.id) return [];
+  const patientId = String(entry.patient.id).trim();
+  if (!patientId || patientId.indexOf('demo-') === 0) return [];
+  const ops = [];
+  pushCensusFieldsOp(ops, patientId, entry.patient, meta.actorId);
+  pushCloudLiveClinicalOps(ops, patientId, entry.patient, meta.actorId, meta.updatedAt);
+  return ops;
+}
+
+/**
  * @param {object} bundle — livesync:bundle envelope
  * @param {{ actorId: string, updatedAt: string }} meta
  * @returns {CloudSyncOp[]}
@@ -276,7 +297,7 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   const ops = [];
   const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
   for (let i = 0; i < entries.length; i += 1) {
-    ops.push(...mapPatientEntryToCensusSeedOps(entries[i], meta));
+    ops.push(...mapPatientEntryToCloudBundleOps(entries[i], meta));
   }
   ops.push(...mapBundleTodosToOps(bundle, meta));
   ops.push(...mapBundleAgendaToOps(bundle, meta));
@@ -415,7 +436,7 @@ export async function pushCloudCensusNow() {
   /** @type {CloudSyncOp[]} */
   const ops = [];
   for (let i = 0; i < entries.length; i += 1) {
-    ops.push(...mapPatientEntryToCensusSeedOps(entries[i], meta));
+    ops.push(...mapPatientEntryToCloudBundleOps(entries[i], meta));
   }
 
   try {

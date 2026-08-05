@@ -8,13 +8,16 @@ export function dbBlobToHex(val) {
   return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** @param {{ id: string, username: string, display_name: string }} row */
+/** @param {{ id: string, username: string, display_name: string, active_room_id?: string|null }} row */
 export function userPayload(row) {
-  return {
+  const payload = {
     id: row.id,
     username: row.username,
     displayName: row.display_name ?? '',
   };
+  const activeRoomId = String(row.active_room_id || '').trim();
+  if (activeRoomId) payload.activeRoomId = activeRoomId;
+  return payload;
 }
 
 /** @param {Request} request */

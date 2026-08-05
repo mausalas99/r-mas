@@ -137,4 +137,33 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(ops.some((op) => op.path === 'todos/t1'));
     assert.ok(ops.some((op) => op.path === 'agenda/a1'));
   });
+
+  it('mapBundleEnvelopeToOps pushes monitoreo for estado actual sync', () => {
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries: [
+          {
+            patient: {
+              id: 'p1',
+              nombre: 'PAC',
+              lanUpdatedAt: '2026-08-03T09:00:00.000Z',
+              monitoreo: {
+                estadoClinico: { four: '15' },
+                estadoClinicoUpdatedAt: '2026-08-03T09:30:00.000Z',
+              },
+            },
+            note: {},
+            indicaciones: {},
+            labHistory: [],
+          },
+        ],
+      },
+      meta
+    );
+    const monOp = ops.find((op) => op.path === 'entries/p1/monitoreo');
+    assert.ok(monOp);
+    assert.equal(monOp.updatedAt, '2026-08-03T09:30:00.000Z');
+    assert.equal(monOp.value.estadoClinico.four, '15');
+    assert.equal(ops.some((op) => op.path === 'entries/p1/note'), false);
+  });
 });

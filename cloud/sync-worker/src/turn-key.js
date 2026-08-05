@@ -1,7 +1,8 @@
 export const TURN_KEY_TIMEZONE = 'America/Mexico_City';
 
 /**
- * Calendar turn key (YYYY-MM-DD) in Mexico City local date.
+ * Calendar month key (YYYY-MM) in Mexico City local time.
+ * One cloud room code lasts the whole month (not a calendar day).
  * @param {Date} [now]
  * @returns {string}
  */
@@ -18,5 +19,5 @@ export function defaultTurnKey(now = new Date()) {
   for (const part of parts) {
     if (part.type !== 'literal') map[part.type] = part.value;
   }
-  return `${map.year}-${map.month}-${map.day}`;
+  return `${map.year}-${map.month}`;
 }

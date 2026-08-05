@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../todos-priority.mjs"],
+  "sourcesContent": ["/** Prioridad de pendientes \u2014 ciclo alta \u2192 media \u2192 baja */\n\nexport var TODO_PRIORITY_CYCLE = ['alta', 'media', 'baja'];\n\nexport function normalizeTodoPriority(priority) {\n  return priority === 'alta' || priority === 'baja' ? priority : 'media';\n}\n\nexport function nextTodoPriority(priority) {\n  var current = normalizeTodoPriority(priority);\n  var idx = TODO_PRIORITY_CYCLE.indexOf(current);\n  return TODO_PRIORITY_CYCLE[(idx + 1) % TODO_PRIORITY_CYCLE.length];\n}\n\nexport function todoPriorityLabel(priority) {\n  if (priority === 'alta') return 'Alta';\n  if (priority === 'baja') return 'Baja';\n  return 'Media';\n}\n"],
+  "mappings": ";AAEO,IAAI,sBAAsB,CAAC,QAAQ,SAAS,MAAM;AAElD,SAAS,sBAAsB,UAAU;AAC9C,SAAO,aAAa,UAAU,aAAa,SAAS,WAAW;AACjE;AAEO,SAAS,iBAAiB,UAAU;AACzC,MAAI,UAAU,sBAAsB,QAAQ;AAC5C,MAAI,MAAM,oBAAoB,QAAQ,OAAO;AAC7C,SAAO,qBAAqB,MAAM,KAAK,oBAAoB,MAAM;AACnE;AAEO,SAAS,kBAAkB,UAAU;AAC1C,MAAI,aAAa,OAAQ,QAAO;AAChC,MAAI,aAAa,OAAQ,QAAO;AAChC,SAAO;AACT;",
+  "names": []
+}

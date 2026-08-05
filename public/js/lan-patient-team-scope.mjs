@@ -1,5 +1,6 @@
 import {
   shouldEnforceTeamPatientMirror,
+  shouldFilterPatientsByJoinedTeam,
   shouldUseElevatedPatientCensus,
 } from './clinical-privileges.mjs';
 import { isPatientReadableInClinicalScope } from './clinico-access.mjs';
@@ -15,7 +16,7 @@ import { isPatientVisibleOnMobileTeamMirror } from './mobile-team-patient-scope.
  */
 export function isPatientInLanTeamSyncScope(user, patient, activeGuardia = null, context = null) {
   if (!user?.user_id || !patient?.id) return false;
-  if (shouldEnforceTeamPatientMirror()) {
+  if (shouldFilterPatientsByJoinedTeam(user)) {
     return isPatientVisibleOnMobileTeamMirror(user, patient, context, activeGuardia);
   }
   if (shouldUseElevatedPatientCensus(user)) return true;

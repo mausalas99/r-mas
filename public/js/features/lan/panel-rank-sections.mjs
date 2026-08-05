@@ -2,8 +2,12 @@
  * LAN panel rank sections (R1/R2/R4) — extracted from panel.mjs.
  */
 import { filterJoinedTeams } from '../clinical-teams.mjs';
-import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
+import {
+  clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
+} from '../../clinical-access-runtime.mjs';
 import { patients } from '../../app-state.mjs';
+import { filterPatientsForClinicalSidebar } from '../patients-clinical-filter.mjs';
 import { LIVE_SYNC_SALA_DEFS } from '../../lan-join-link.mjs';
 import { esc } from '../../dom-escape.mjs';
 
@@ -233,13 +237,21 @@ async function handleFinalizarRotacion(deps) {
 /** @returns {string} */
 export function buildCensusRowsHtml() {
   var teams = clinicalSessionContext.teams || [];
-  var allPatients = patients || [];
+  var user = clinicalSessionContext.user;
+  var scope = getClinicalScopeContextForEvaluate();
+  var guardiasMap = clinicalSessionContext.guardiasMap;
+  var visiblePatients = filterPatientsForClinicalSidebar(
+    patients || [],
+    user,
+    scope,
+    guardiasMap
+  );
   return LIVE_SYNC_SALA_DEFS.map(function (d) {
     var salaName = d.key;
     var salaTeams = teams.filter(function (t) {
       return teamSalaKey(t) === salaName;
     });
-    var salaPatientCount = allPatients.filter(function (p) {
+    var salaPatientCount = visiblePatients.filter(function (p) {
       return p && String(p.sala || '') === salaName;
     }).length;
     var meta = salaTeams.length + ' eq · ' + salaPatientCount + ' pac';

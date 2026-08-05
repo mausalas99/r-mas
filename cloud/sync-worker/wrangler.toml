@@ -7,3 +7,7 @@ binding = "DB"
 database_name = "rplus-sync"
 database_id = "e8e36134-36a9-40d4-9c36-3f893e2b612c"
 migrations_dir = "schema"
+
+[assets]
+directory = "../sync-pages/public"
+binding = "ASSETS"

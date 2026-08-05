@@ -66,7 +66,7 @@ export function nextStepHtml(getToken) {
 
 /**
  * Connected room rows. Ward name lives in the Conexión header (display sala);
- * rows focus on turn / code / revision — avoid "Sala · Sala" noise from the cloud bucket.
+ * rows focus on turn / code / revision.
  * @param {object} room
  * @param {() => number} getRevision
  */

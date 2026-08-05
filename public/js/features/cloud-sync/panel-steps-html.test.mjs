@@ -229,7 +229,7 @@ describe('connectedViewsHtml ops host', () => {
 describe('roomConnectedHtml', () => {
   it('omits opaque Sala bucket row; keeps month code revision', () => {
     const html = roomConnectedHtml(
-      { sala: 'Sala', turnKey: '2026-08', code: 'RC65RH', revision: 1 },
+      { sala: 'Sala 1', turnKey: '2026-08', code: 'RC65RH', revision: 1 },
       () => 0
     );
     assert.doesNotMatch(html, /<dt>Sala<\/dt>/);

@@ -55,7 +55,7 @@ export function validateCloudSalaForRoom(salaRaw) {
   if (!salaRaw || !isCloudSala(salaRaw)) {
     throw new SyncError(
       'invalid_request',
-      'Sala no disponible en la nube. Solo Sala y Torre HU.'
+      'Sala no disponible en la nube. Solo Sala 1, Sala 2, Sala E y Torre HU.'
     );
   }
   return normalizeCloudSala(salaRaw);
@@ -143,6 +143,50 @@ async function getMembership(db, roomId, userId) {
     .first();
 }
 
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {string} userId @param {string} roomId */
+async function setUserActiveRoom(db, userId, roomId) {
+  await db
+    .prepare('UPDATE users SET active_room_id = ? WHERE id = ?')
+    .bind(roomId, userId)
+    .run();
+}
+
+/**
+ * Resolve the cloud room this user should sync against (active pointer, else best membership).
+ * @param {import('@cloudflare/workers-types').D1Database} db
+ * @param {{ id: string, active_room_id?: string|null }} user
+ */
+export async function resolveActiveRoomForUser(db, user) {
+  const { results } = await db
+    .prepare(
+      `SELECT r.id, r.code, r.name, r.sala, r.owner_user_id, r.revision,
+              r.storage_bytes, r.created_at, r.updated_at, rm.role
+       FROM room_members rm
+       JOIN rooms r ON r.id = rm.room_id
+       WHERE rm.user_id = ?
+       ORDER BY r.revision DESC, r.storage_bytes DESC, r.updated_at DESC`
+    )
+    .bind(user.id)
+    .all();
+
+  const memberships = results ?? [];
+  if (!memberships.length) return null;
+
+  const activeId = String(user.active_room_id || '').trim();
+  const activeRow = activeId
+    ? memberships.find((row) => String(row.id) === activeId)
+    : null;
+
+  const pick =
+    activeRow && Number(activeRow.revision) > 0 ? activeRow : memberships[0];
+
+  if (pick?.id && String(pick.id) !== activeId) {
+    await setUserActiveRoom(db, user.id, String(pick.id));
+  }
+
+  return roomPayload(pick);
+}
+
 /** @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 async function handleCreateRoom(env, db, request) {
   const user = await requireUser(db, request);
@@ -184,6 +228,8 @@ async function handleCreateRoom(env, db, request) {
       )
       .bind(id, hexToBytes(ciphertext), hexToBytes(iv), now),
   ]);
+
+  await setUserActiveRoom(db, user.id, id);
 
   return Response.json({
     room: roomPayload({
@@ -229,6 +275,7 @@ async function handleJoinRoom(db, request) {
     .first();
 
   if (existing) {
+    await setUserActiveRoom(db, user.id, room.id);
     return Response.json({
       room: roomPayload({ ...room, role: existing.role }),
       alreadyMember: true,
@@ -247,6 +294,8 @@ async function handleJoinRoom(db, request) {
     )
     .bind(room.id, user.id, now)
     .run();
+
+  await setUserActiveRoom(db, user.id, room.id);
 
   return Response.json({
     room: roomPayload({ ...room, role: 'member' }),
@@ -295,6 +344,16 @@ async function handleListRooms(db, request) {
   return Response.json({ rooms });
 }
 
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
+async function handleActiveRoom(db, request) {
+  const user = await requireUser(db, request);
+  const room = await resolveActiveRoomForUser(db, user);
+  if (!room) {
+    throw new SyncError('not_found', 'No tienes una sala nube activa. Únete desde escritorio primero.');
+  }
+  return Response.json({ room });
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} roomId */
 async function handleGetRoom(db, request, roomId) {
   const user = await requireUser(db, request);
@@ -317,6 +376,7 @@ async function handleEnsureTurn(env, db, request) {
 
   const body = await parseJsonBody(request);
   const sala = validateCloudSalaForRoom(body?.sala);
+  // Default: calendar month (YYYY-MM). Explicit turnKey allowed for tests/admin.
   const turnKey = String(body?.turnKey ?? '').trim() || defaultTurnKey();
   const name = `${sala} ${turnKey}`;
 
@@ -335,6 +395,7 @@ async function handleEnsureTurn(env, db, request) {
       .first();
 
     if (membership) {
+      await setUserActiveRoom(db, user.id, existingRoom.id);
       return Response.json({
         room: roomPayload({ ...existingRoom, role: membership.role }),
       });
@@ -352,6 +413,8 @@ async function handleEnsureTurn(env, db, request) {
       )
       .bind(existingRoom.id, user.id, now)
       .run();
+
+    await setUserActiveRoom(db, user.id, existingRoom.id);
 
     return Response.json({
       room: roomPayload({ ...existingRoom, role: 'member' }),
@@ -391,6 +454,8 @@ async function handleEnsureTurn(env, db, request) {
       )
       .bind(id, hexToBytes(ciphertext), hexToBytes(iv), now),
   ]);
+
+  await setUserActiveRoom(db, user.id, id);
 
   return Response.json({
     room: roomPayload({
@@ -435,6 +500,11 @@ export async function handleRooms(request, env, subpath) {
 
   if (subpath === '/ensure-turn') {
     if (method === 'POST') return handleEnsureTurn(env, db, request);
+    throw new SyncError('not_found', 'Método no permitido.');
+  }
+
+  if (subpath === '/active') {
+    if (method === 'GET') return handleActiveRoom(db, request);
     throw new SyncError('not_found', 'Método no permitido.');
   }
 

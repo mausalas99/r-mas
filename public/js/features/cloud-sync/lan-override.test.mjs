@@ -22,8 +22,8 @@ describe('lan-override', () => {
 
   it('uses Nube not LAN when cloud room connected for cloud sala', () => {
     assert.equal(shouldUseNubeNotLan('UX', true), false);
-    assert.equal(shouldUseNubeNotLan('Sala', false), false);
-    assert.equal(shouldUseNubeNotLan('Sala', true), true);
+    assert.equal(shouldUseNubeNotLan('Sala 1', false), false);
+    assert.equal(shouldUseNubeNotLan('Sala 1', true), true);
     setCloudRoomConnected(true);
     assert.equal(shouldUseNubeNotLan('Torre HU'), true);
   });

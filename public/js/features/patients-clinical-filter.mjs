@@ -7,6 +7,7 @@ import {
 } from '../clinico-access.mjs';
 import {
   shouldEnforceTeamPatientMirror,
+  shouldFilterPatientsByJoinedTeam,
   shouldUseElevatedPatientCensus,
 } from '../clinical-privileges.mjs';
 import { filterPatientsForMobileTeamMirror } from '../mobile-team-patient-scope.mjs';
@@ -30,8 +31,8 @@ export function patientForScopeEvaluate(p) {
  * @param {Map<string, object>|null|undefined} [guardiasMap]
  */
 export function filterPatientsForClinicalSidebar(patients, user, scopeContext, guardiasMap) {
-  if (!user?.user_id) return shouldEnforceTeamPatientMirror() ? [] : patients || [];
-  if (shouldEnforceTeamPatientMirror()) {
+  if (!user?.user_id) return shouldFilterPatientsByJoinedTeam(user) ? [] : patients || [];
+  if (shouldFilterPatientsByJoinedTeam(user)) {
     return filterPatientsForMobileTeamMirror(patients, user, scopeContext, guardiasMap);
   }
   if (shouldUseElevatedPatientCensus(user)) return patients || [];

@@ -20,6 +20,7 @@ import { MED_FIELD_KEYS, DIET_CALORIC_KEYS } from './estado-actual-data-constant
 import { buildEaMonitoreoRevision } from './estado-actual-data-revision.mjs';
 import { medicionHasCoreData } from './estado-actual-data-core-check.mjs';
 import { mergeMonitoreo } from './estado-actual-data-merge.mjs';
+import { monitoreoHasLanPayload } from '../lan-patient-merge.mjs';
 import { emptyEstadoClinico, emptyMonitoreo, emptyPendienteReceta } from './estado-actual-data-model.mjs';
 
 export { MED_FIELD_KEYS, DIET_CALORIC_KEYS, buildEaMonitoreoRevision, medicionHasCoreData, mergeMonitoreo };
@@ -147,9 +148,15 @@ export function mergePatientMonitoreoFromImported(target, source) {
   try {
     if ('monitoreo' in s && s.monitoreo != null && typeof s.monitoreo === 'object') {
       var incoming = JSON.parse(JSON.stringify(s.monitoreo));
-      if (t.monitoreo != null && typeof t.monitoreo === 'object') {
+      var localHasPayload =
+        t.monitoreo != null && typeof t.monitoreo === 'object' && monitoreoHasLanPayload(t.monitoreo);
+      var incomingHasPayload = monitoreoHasLanPayload(incoming);
+      // Census / Nube stubs often carry an empty monitoreo shell — never let that clobber local EA.
+      if (!incomingHasPayload && localHasPayload) {
+        /* keep local */
+      } else if (t.monitoreo != null && typeof t.monitoreo === 'object') {
         t.monitoreo = mergeMonitoreo(t.monitoreo, incoming);
-      } else {
+      } else if (incomingHasPayload) {
         t.monitoreo = incoming;
       }
     }

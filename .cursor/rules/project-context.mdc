@@ -82,7 +82,7 @@ docs/
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/` (+ `entrega-prep-checklist.mjs`), `clinical-entrega.mjs`, `entrega-prep-panel.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
-| Cloud sync (Nube 7.9) | `cloud/sync-worker/` (`auth-recovery.js`, migration `003-recovery.sql`), `public/js/features/cloud-sync/` (`panel-steps-html.mjs`, `recovery-modal.mjs`), spec `docs/superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md` — opt-in ⇄; recovery codes + stepped Conexión panel |
+| Cloud sync (Nube 7.9) | `cloud/sync-worker/` (`auth-recovery.js`, `turn-key.js` month `YYYY-MM`, migration `004-active-room.sql`), `public/js/features/cloud-sync/` (`autostart.mjs`, `panel-mobile-invite.mjs`, recovery), `cloud-mobile/` | spec Free pilot + mobile 7.9.5; opt-in ⇄ |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
 | Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
@@ -135,6 +135,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-05** `cloud-sync`: Nube separa **Sala 1 / Sala 2 / Sala E** como rooms distintos (ya no bucket "Sala"); `sala-allowlist`, admin Salas, `ensure-turn`.
+- **2026-08-05** `release-7.9.5`: R+ Móvil Nube (`/mobile/`+QR) + sala mensual `YYYY-MM` + `active_room_id` + census autostart/seed + signos LWW + COAG + LAN restore; `docs/RELEASE_NOTES_7.9.5.txt`, `cloud-mobile/`, `autostart.mjs`, `004-active-room.sql`.
 - **2026-08-03** `hybrid-h`: Apple Hybrid UI materials/overlays/chrome onto main; tokens + ui-overlay + Conexión/labs/pase/eventualidades polish.
 - **2026-08-03** `ttd-tooltime`: Labs pane nav + EA Tab spine + Conexión light-switch; `doc-queue-nav.mjs`, `estado-actual-panel-registro-tab.mjs`, `panel-session-gate.mjs`.
 - **2026-08-03** `eventualidades-labs-timeline`: Labs view is auto timeline (`labsText`) — no Interpretación dock; autosend restored; local color soften on Guardia/Conexión/bulk/pendientes/EV; `lab-eventualidad-autosend.mjs`, `eventualidades-panel-html.mjs`.
@@ -154,4 +156,3 @@ Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 - **2026-07-28** `release-7.7.5`: gasos repo — todas las tomas, empareja la más cercana ≤2 h, no absorbe 2ª gaso; merge QS/ESC/PFH; receta HU landscape; `lab-consolidation-cluster.mjs`, `lab-bulk-paste.mjs`, `labs-chemistry.mjs`, `generate-receta-hu.js`.
 - **2026-07-23** `release-7.7.4`: repo/pegado ≤2 h (BH no en series q4h); Consolidar por grupos manuales; COAG sin robar TTP→INR ni rango→TP; `lab-bulk-paste.mjs`, `lab-panel-history-consolidate-modal.mjs`, `labs-extract.mjs`.
 - **2026-07-21** `paste-smart`: paste-anywhere / Procesar SOME — global paste + ⌘K match registro/nombre → confirm once → Labs; `paste-smart*.mjs`.
-- **2026-07-21** `cultivo-queue` + `ea-clipboard`: cola cultivos (ATB pendiente / sin nota) + Copiar indicaciones EA; `cultivo-queue-*.mjs`, `ea-indicaciones-clipboard.mjs`.

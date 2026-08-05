@@ -251,5 +251,14 @@ async function handlePull(request, env, db, roomId) {
     });
   }
 
+  if (!ops.length && since < revision) {
+    const { state } = await loadRoomState(env, db, roomId);
+    return Response.json({
+      revision,
+      needSnapshot: true,
+      state,
+    });
+  }
+
   return Response.json({ revision, ops });
 }

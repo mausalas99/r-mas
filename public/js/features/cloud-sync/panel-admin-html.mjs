@@ -126,20 +126,7 @@ export function resumenHtml(data) {
 /** @param {Array<Record<string, unknown>>} rooms */
 export function salasTableHtml(rooms) {
   const cols = [
-    {
-      label: 'Sala',
-      cell: (row) => {
-        const sala = String(row.sala || '—');
-        if (sala === 'Sala') {
-          return (
-            '<span class="cloud-sync-admin-sala">' +
-            esc(sala) +
-            '</span><span class="cloud-sync-admin-sala-sub">1 · 2 · E</span>'
-          );
-        }
-        return esc(sala);
-      },
-    },
+    { label: 'Sala', key: 'sala' },
     { label: 'Mes', cell: (row) => esc(String(row.turnKey || '—')) },
     { label: 'Código', key: 'code' },
     { label: 'Rev.', key: 'revision' },
@@ -168,7 +155,7 @@ export function salasTableHtml(rooms) {
   return (
     '<div class="cloud-sync-admin-panel-head">' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="refresh-salas">Actualizar</button></div>' +
-    '<p class="cloud-sync-hint cloud-sync-admin-salas-hint">En Nube, Sala 1, Sala 2 y Sala E comparten el mismo espacio por mes. Distinguilas por el mes (YYYY-MM).</p>' +
+    '<p class="cloud-sync-hint cloud-sync-admin-salas-hint">Cada sala de guardia (Sala 1, Sala 2, Sala E, Torre HU) tiene su propio espacio por mes (YYYY-MM).</p>' +
     adminTableHtml(rooms, cols)
   );
 }

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../perf-markers.mjs"],
+  "sourcesContent": ["export function isPerfEnabled() {\n  if (globalThis.__RPLUS_PERF__) return true;\n  try {\n    return typeof localStorage !== 'undefined' && localStorage.getItem('rplus-perf') === '1';\n  } catch {\n    return false;\n  }\n}\n\nexport function perfMark(name) {\n  if (!isPerfEnabled()) return;\n  try {\n    performance.mark(name);\n  } catch (_e) { void _e; }\n}\n\nexport function perfMeasure(name, startMark, endMark) {\n  if (!isPerfEnabled()) return;\n  try {\n    performance.measure(name, startMark, endMark);\n    const entries = performance.getEntriesByName(name, 'measure');\n    const entry = entries[entries.length - 1];\n    if (entry) {\n      console.log(`[R+ perf] ${name}: ${entry.duration.toFixed(1)}ms`);\n    }\n  } catch (_e) { void _e; }\n}\n"],
+  "mappings": ";AAAO,SAAS,gBAAgB;AAC9B,MAAI,WAAW,eAAgB,QAAO;AACtC,MAAI;AACF,WAAO,OAAO,iBAAiB,eAAe,aAAa,QAAQ,YAAY,MAAM;AAAA,EACvF,QAAQ;AACN,WAAO;AAAA,EACT;AACF;AAEO,SAAS,SAAS,MAAM;AAC7B,MAAI,CAAC,cAAc,EAAG;AACtB,MAAI;AACF,gBAAY,KAAK,IAAI;AAAA,EACvB,SAAS,IAAI;AAAE,SAAK;AAAA,EAAI;AAC1B;AAEO,SAAS,YAAY,MAAM,WAAW,SAAS;AACpD,MAAI,CAAC,cAAc,EAAG;AACtB,MAAI;AACF,gBAAY,QAAQ,MAAM,WAAW,OAAO;AAC5C,UAAM,UAAU,YAAY,iBAAiB,MAAM,SAAS;AAC5D,UAAM,QAAQ,QAAQ,QAAQ,SAAS,CAAC;AACxC,QAAI,OAAO;AACT,cAAQ,IAAI,aAAa,IAAI,KAAK,MAAM,SAAS,QAAQ,CAAC,CAAC,IAAI;AAAA,IACjE;AAAA,EACF,SAAS,IAAI;AAAE,SAAK;AAAA,EAAI;AAC1B;",
+  "names": []
+}

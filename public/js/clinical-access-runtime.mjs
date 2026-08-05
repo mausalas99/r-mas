@@ -65,4 +65,5 @@ export {
 export {
   pruneMobilePatientsOutsideTeamScope,
   finalizeMobileLanPatientCensus,
+  refreshDesktopPatientListAfterScopePrune,
 } from './clinical-access-runtime/mobile.mjs';

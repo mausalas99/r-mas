@@ -9,11 +9,16 @@ import {
 } from './sala-allowlist.js';
 
 describe('normalizeCloudSala', () => {
-  it('normalizes Sala family', () => {
-    assert.equal(normalizeCloudSala('sala'), 'Sala');
-    assert.equal(normalizeCloudSala('Sala 1'), 'Sala');
-    assert.equal(normalizeCloudSala('sala 2'), 'Sala');
-    assert.equal(normalizeCloudSala('Sala E'), 'Sala');
+  it('normalizes Sala family to individual wards', () => {
+    assert.equal(normalizeCloudSala('Sala 1'), 'Sala 1');
+    assert.equal(normalizeCloudSala('sala 2'), 'Sala 2');
+    assert.equal(normalizeCloudSala('Sala E'), 'Sala E');
+    assert.equal(normalizeCloudSala('sala e'), 'Sala E');
+  });
+
+  it('does not treat bare Sala as a cloud ward', () => {
+    assert.equal(normalizeCloudSala('sala'), 'sala');
+    assert.equal(isCloudSala('Sala'), false);
   });
 
   it('normalizes Torre HU aliases', () => {
@@ -33,8 +38,9 @@ describe('normalizeCloudSala', () => {
 
 describe('isCloudSala', () => {
   it('allows cloud salas', () => {
-    assert.equal(isCloudSala('Sala'), true);
     assert.equal(isCloudSala('Sala 1'), true);
+    assert.equal(isCloudSala('Sala 2'), true);
+    assert.equal(isCloudSala('Sala E'), true);
     assert.equal(isCloudSala('Torre HU'), true);
     assert.equal(isCloudSala('torre-hu'), true);
   });

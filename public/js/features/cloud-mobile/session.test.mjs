@@ -81,7 +81,7 @@ describe('cloud-mobile pairing persistence', () => {
       auth: 'home-tok',
       room: 'RM1',
       roomId: 'id-9',
-      sala: 'Sala',
+      sala: 'Sala 1',
       user: 'ana',
     });
     clearCloudSyncSession();

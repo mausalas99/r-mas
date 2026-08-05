@@ -10,6 +10,7 @@ import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
 import { patients } from '../../app-state.mjs';
 import { readLiveSyncEntityMap } from './entity-versions.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { getLanRuntime } from './orchestrator-runtime.mjs';
 import { loadLabPanelOverlays } from '../../labs-panel-overlay-store.mjs';
 
@@ -52,12 +53,15 @@ export function collectPatientEntriesForLanSync() {
 }
 
 export function buildLiveSyncLocalMergeSource() {
+  const tombstonePatches = isCloudSyncActive()
+    ? []
+    : liveSyncDeletePatchesFromEntityMap(readLiveSyncEntityMap());
   return {
     agenda: storage.getScheduledProcedures(),
     todos: collectTodosMapForLiveSync(),
     entries: collectPatientEntriesForLanSync(),
     clinicalOps: getCachedClinicalOpsSnapshot(),
     labPanelOverlay: loadLabPanelOverlays(),
-    patches: liveSyncDeletePatchesFromEntityMap(readLiveSyncEntityMap()),
+    patches: tombstonePatches,
   };
 }

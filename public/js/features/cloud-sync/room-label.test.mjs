@@ -8,12 +8,12 @@ describe('formatCloudRoomLabel', () => {
   it('includes sala, month key, code and members', () => {
     assert.equal(
       formatCloudRoomLabel({
-        sala: 'Sala',
+        sala: 'Sala 1',
         turnKey: '2026-08',
         code: 'W8N6CW',
         memberCount: 3,
       }),
-      'Sala · 2026-08 · W8N6CW · 3 miembros'
+      'Sala 1 · 2026-08 · W8N6CW · 3 miembros'
     );
   });
 });
@@ -21,11 +21,11 @@ describe('formatCloudRoomLabel', () => {
 describe('mutationsRoomOptionsHtml', () => {
   it('labels rooms with month key for disambiguation', () => {
     const html = mutationsRoomOptionsHtml([
-      { id: '1', sala: 'Sala', code: 'RC65RH', turnKey: '2026-07', memberCount: 2 },
-      { id: '2', sala: 'Sala', code: 'W8N6CW', turnKey: '2026-08', memberCount: 1 },
+      { id: '1', sala: 'Sala 1', code: 'RC65RH', turnKey: '2026-07', memberCount: 2 },
+      { id: '2', sala: 'Sala 2', code: 'W8N6CW', turnKey: '2026-08', memberCount: 1 },
     ]);
-    assert.match(html, /Sala · 2026-07 · RC65RH · 2 miembros/);
-    assert.match(html, /Sala · 2026-08 · W8N6CW · 1 miembro/);
+    assert.match(html, /Sala 1 · 2026-07 · RC65RH · 2 miembros/);
+    assert.match(html, /Sala 2 · 2026-08 · W8N6CW · 1 miembro/);
   });
 });
 

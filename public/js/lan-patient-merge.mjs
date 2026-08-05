@@ -156,7 +156,7 @@ function monitoreoTextoGuardadoHasPayload(tg) {
 }
 
 /** @param {unknown} monitoreo */
-function monitoreoHasLanPayload(monitoreo) {
+export function monitoreoHasLanPayload(monitoreo) {
   if (!monitoreo || typeof monitoreo !== 'object') return false;
   return monitoreoHasHistorialOrText(monitoreo) || monitoreoHasClinicalFlags(monitoreo);
 }

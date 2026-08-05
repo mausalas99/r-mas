@@ -64,6 +64,24 @@ test('mergePatientMonitoreoFromImported preserva dieta confirmada local', () => 
   assert.equal(local.monitoreo.pendienteReceta.dieta, '');
 });
 
+test('mergePatientMonitoreoFromImported ignores empty Nube census monitoreo shell', () => {
+  /** @type {any} */
+  const local = {
+    monitoreo: emptyMonitoreo(),
+  };
+  local.monitoreo.historial = [
+    { id: 'm1', recordedAt: '2026-08-05T10:00:00.000Z', vitalSeries: { tas: '120/80' } },
+  ];
+  /** @type {any} */
+  const incoming = {
+    monitoreo: emptyMonitoreo(),
+  };
+  incoming.monitoreo.estadoClinicoUpdatedAt = '2026-08-05T12:00:00.000Z';
+  mergePatientMonitoreoFromImported(local, incoming);
+  assert.equal(local.monitoreo.historial.length, 1);
+  assert.equal(local.monitoreo.historial[0].vitalSeries.tas, '120/80');
+});
+
 test('mergeMonitoreo toma dieta confirmada remota si local no tiene', () => {
   const local = emptyMonitoreo();
   const remote = emptyMonitoreo();

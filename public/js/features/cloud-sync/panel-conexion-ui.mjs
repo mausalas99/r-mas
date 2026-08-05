@@ -10,7 +10,7 @@ import { adminShellHtml } from './panel-conexion-bootstrap.mjs';
 
 /**
  * @param {HTMLElement} section
- * @param {string} normalizedSala — cloud bucket for API (Sala / Torre HU)
+ * @param {string} normalizedSala — cloud ward for API (Sala 1 / Sala 2 / Sala E / Torre HU)
  * @param {object} deps
  * @param {{ cloudUser: { username?: string, displayName?: string } | null, startRuntime: () => void, ensureAdminOpen?: () => void | Promise<void>, displaySala?: string }} ctx
  */

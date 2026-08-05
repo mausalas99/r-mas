@@ -5,6 +5,11 @@ import { storage } from '../../storage.js';
 import { saveState } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../lan/patient-entries.mjs';
 import { removePatientLocally } from '../lan/patient-delete.mjs';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import {
+  shouldEnforceTeamPatientMirror,
+  shouldUseElevatedPatientCensus,
+} from '../../clinical-privileges.mjs';
 import {
   cloudStateToLanEntries,
   createOpFold,
@@ -84,15 +89,48 @@ async function applyClinicalOpsSnapshot(clinicalOps) {
   }
 }
 
+/** R4/Admin desktop ward census needs the full room; everyone else scopes at apply time. */
+function shouldSkipTeamScopeFilterOnCloudPull() {
+  if (shouldEnforceTeamPatientMirror()) return false;
+  const user = clinicalSessionContext.user;
+  return shouldUseElevatedPatientCensus(user);
+}
+
+function cloudPatientEntryApplyOpts() {
+  return {
+    skipTodos: true,
+    skipTeamScopeFilter: shouldSkipTeamScopeFilterOnCloudPull(),
+  };
+}
+
+async function finalizeCloudPullPatientScope() {
+  try {
+    const access = await import('../../clinical-access-runtime.mjs');
+    if (shouldEnforceTeamPatientMirror()) {
+      if (typeof access.finalizeMobileLanPatientCensus === 'function') {
+        await access.finalizeMobileLanPatientCensus();
+      }
+      return;
+    }
+    const pruned = access.prunePatientsOutsideClinicalScope();
+    if (pruned > 0 && typeof access.refreshDesktopPatientListAfterScopePrune === 'function') {
+      await access.refreshDesktopPatientListAfterScopePrune();
+    }
+  } catch {
+    /* optional */
+  }
+}
+
 /**
  * @param {Record<string, unknown>} state
  * @param {{ skipTodos?: boolean }} [opts]
  */
 export async function applyCloudState(state, opts) {
   if (!state) return { added: 0, updated: 0, removed: false };
+  await applyClinicalOpsSnapshot(state.clinicalOps);
   const entries = cloudStateToLanEntries(state);
   const patientSync = entries.length
-    ? applyLanPatientEntries(entries, { skipTodos: true, skipTeamScopeFilter: true })
+    ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
 
   if (!opts?.skipTodos && state.todos) applyCloudTodosMap(state.todos);
@@ -100,7 +138,7 @@ export async function applyCloudState(state, opts) {
     storage.saveScheduledProcedures(state.agenda.filter((item) => item && !item._deleted));
   }
   const removed = applyCloudTombstones(state.tombstones || {});
-  await applyClinicalOpsSnapshot(state.clinicalOps);
+  await finalizeCloudPullPatientScope();
 
   if (patientSync.added || patientSync.updated || removed) {
     saveState({ immediate: true });
@@ -115,14 +153,15 @@ export async function applyCloudOps(ops) {
   for (let i = 0; i < ops.length; i += 1) {
     foldCloudOp(fold, ops[i]);
   }
+  await applyClinicalOpsSnapshot(fold.clinicalOps);
   const entries = opFoldToLanEntries(fold);
   const patientSync = entries.length
-    ? applyLanPatientEntries(entries, { skipTodos: true, skipTeamScopeFilter: true })
+    ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
   applyCloudTodosMap(fold.todos);
   applyCloudAgendaMap(fold.agenda);
   const removed = applyCloudTombstones(fold.tombstones);
-  await applyClinicalOpsSnapshot(fold.clinicalOps);
+  await finalizeCloudPullPatientScope();
 
   if (patientSync.added || patientSync.updated || removed) {
     saveState({ immediate: true });

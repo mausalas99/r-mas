@@ -53,11 +53,11 @@ describe('resumenHtml', () => {
 });
 
 describe('salasTableHtml', () => {
-  it('marks Sala bucket as 1·2·E and shows KB storage', () => {
+  it('lists individual ward salas and shows KB storage', () => {
     const html = salasTableHtml([
       {
         id: 'r1',
-        sala: 'Sala',
+        sala: 'Sala 1',
         turnKey: '2026-08',
         code: 'RC65RH',
         revision: 1,
@@ -74,13 +74,13 @@ describe('salasTableHtml', () => {
         storageBytes: 200,
       },
     ]);
-    assert.match(html, /cloud-sync-admin-sala-sub/);
-    assert.match(html, /1 · 2 · E/);
-    assert.match(html, /comparten el mismo espacio por mes/);
+    assert.match(html, /Sala 1/);
+    assert.match(html, /propio espacio por mes/);
     assert.match(html, /4\.0 KB/);
     assert.match(html, /200 B/);
     assert.match(html, /Torre HU/);
     assert.doesNotMatch(html, />Storage</);
+    assert.doesNotMatch(html, /1 · 2 · E/);
   });
 });
 

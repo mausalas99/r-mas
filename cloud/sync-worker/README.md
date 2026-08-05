@@ -236,15 +236,15 @@ curl -s -X POST "$BASE/api/sync/v1/auth/logout" -H "Authorization: Bearer $TOKEN
 
 ### Ensure turn room (join-or-create)
 
-Canonical room for **Sala** or **Torre HU** + today’s turn key (America/Mexico_City). The desktop client calls this after **Mi rotación** — no manual room code.
+Canonical room for **Sala 1**, **Sala 2**, **Sala E**, or **Torre HU** + **calendar month** key `YYYY-MM` (America/Mexico_City). One room code lasts the whole month. The desktop client calls this after **Mi rotación** — no manual room code.
 
 ```bash
 curl -s -X POST "$BASE/api/sync/v1/rooms/ensure-turn" \
   -H "Authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' \
-  -d '{"sala":"Sala"}'
-# optional explicit turn: {"sala":"Torre HU","turnKey":"2026-08-02"}
-# → {"room":{"id":"...","code":"ABC123","sala":"Sala","turnKey":"2026-08-02",...}}
+  -d '{"sala":"Sala 1"}'
+# optional explicit month: {"sala":"Torre HU","turnKey":"2026-08"}
+# → {"room":{"id":"...","code":"ABC123","sala":"Sala 1","turnKey":"2026-08",...}}
 ```
 
 ### Create room (manual / smoke)

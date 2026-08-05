@@ -159,7 +159,7 @@ function ensureModal() {
     '</div>' +
     '<div class="modal-actions lan-host-census-actions">' +
     '<button type="button" class="btn-lan-secondary lan-host-census-purge-ghosts">Eliminar fantasmas</button>' +
-    '<button type="button" class="btn-lan-secondary lan-host-census-clear-tombstones">Limpiar tombstones</button>' +
+    '<button type="button" class="btn-lan-secondary lan-host-census-clear-tombstones">Limpiar borrados locales</button>' +
     '<button type="button" class="btn-lan-secondary lan-host-census-refresh">Actualizar</button>' +
     '<button type="button" class="btn-generate lan-host-census-close">Cerrar</button>' +
     '</div>' +
@@ -233,7 +233,9 @@ function buildCensusSummaryText(all, filtered) {
     (purgeableGhostCount < ghostCount
       ? ' · ' + (ghostCount - purgeableGhostCount) + ' de otro equipo'
       : '') +
-    (tombstoneCount ? ' · ' + tombstoneCount + ' tombstone(s) local(es)' : '') +
+    (tombstoneCount
+      ? ' · ' + tombstoneCount + ' borrado(s) local(es) (histórico, no en lista)'
+      : '') +
     ' · ' +
     all.length +
     ' en anfitrión' +
@@ -392,14 +394,14 @@ async function clearTombstonesFromDashboard(backdrop) {
   const showToast = resolveDashboardToast(opts);
   const count = countLocalPatientDeleteTombstones();
   if (!count) {
-    showToast('No hay tombstones locales de pacientes.', 'info');
+    showToast('No hay borrados locales de pacientes.', 'info');
     return;
   }
   if (
     !window.confirm(
       '¿Limpiar ' +
         count +
-        ' tombstone(s) local(es) de borrado?\n\nEsto permite que el censo vuelva a sincronizar pacientes ocultos por un «Eliminar fantasmas» previo. No borra datos del anfitrión.'
+        ' registro(s) local(es) de borrado?\n\nSon marcas de pacientes eliminados en el pasado en esta Mac — no aparecen en tu lista actual. Limpiar permite que vuelvan a sincronizarse desde Nube o LAN. No borra datos del anfitrión.'
     )
   ) {
     return;
@@ -409,12 +411,10 @@ async function clearTombstonesFromDashboard(backdrop) {
   const result = await clearLocalPatientDeleteTombstonesAndReconcile();
   if (btn) btn.disabled = false;
   if (!result.cleared) {
-    showToast('No había tombstones que limpiar.', 'info');
+    showToast('No había borrados locales que limpiar.', 'info');
     return;
   }
-  let msg =
-    result.cleared +
-    ' tombstone(s) limpiado(s).';
+  let msg = result.cleared + ' borrado(s) local(es) limpiado(s).';
   if (result.restored) msg += ' ' + result.restored + ' expediente(s) recuperado(s) del anfitrión.';
   showToast(msg, result.restored ? 'success' : 'warn');
   if (typeof opts.onChanged === 'function') opts.onChanged();
@@ -483,7 +483,22 @@ export async function refreshLanHostCensusDashboard(opts) {
   });
   backdrop._lanHostCensusRows = enriched;
   populateTeamFilter(backdrop, snap.clinicalOps);
-  if (statusEl) statusEl.textContent = '';
+  if (statusEl) {
+    const tombstoneCount = countLocalPatientDeleteTombstones();
+    const activeLocal = (patients || []).filter(function (p) {
+      return p && p.id && !p.isDemo && !p.archived;
+    }).length;
+    if (tombstoneCount > 0 && enriched.length === 0) {
+      statusEl.textContent =
+        'Hay ' +
+        tombstoneCount +
+        ' borrados locales en esta Mac (histórico). Tu lista activa tiene ' +
+        activeLocal +
+        ' paciente(s). En sala Nube el anfitrión LAN suele estar vacío. «Limpiar borrados locales» permite que expedientes antiguos vuelvan a sincronizarse si los necesitas.';
+    } else {
+      statusEl.textContent = '';
+    }
+  }
   renderLanHostCensusTable(backdrop);
 }
 
@@ -520,7 +535,7 @@ function upgradeLanHostCensusModalIfNeeded(backdrop) {
     const clearBtn = document.createElement('button');
     clearBtn.type = 'button';
     clearBtn.className = 'btn-lan-secondary lan-host-census-clear-tombstones';
-    clearBtn.textContent = 'Limpiar tombstones';
+    clearBtn.textContent = 'Limpiar borrados locales';
     if (refreshBtn) actions.insertBefore(clearBtn, refreshBtn);
     else actions.appendChild(clearBtn);
     backdrop._lanHostCensusActionsWired = false;

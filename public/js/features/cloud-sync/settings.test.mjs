@@ -70,7 +70,7 @@ describe('cloud sync remember me settings', () => {
     setCloudSyncRoomSnapshot({
       id: 'room-1',
       code: 'W8N6CW',
-      sala: 'Sala',
+      sala: 'Sala 1',
       turnKey: '2026-08',
       revision: 4,
     });
@@ -78,7 +78,7 @@ describe('cloud sync remember me settings', () => {
     assert.deepEqual(getCloudSyncRoomSnapshot(), {
       id: 'room-1',
       code: 'W8N6CW',
-      sala: 'Sala',
+      sala: 'Sala 1',
       turnKey: '2026-08',
       name: '',
     });

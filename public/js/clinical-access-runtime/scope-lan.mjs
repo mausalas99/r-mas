@@ -46,10 +46,4 @@ export function applyClinicalScopeFromLanOpsSnapshot(snapshot) {
   return true;
 }
 
-/**
- * Sidebar scope is enforced in patientsVisibleInSidebar — do not delete charts from storage.
- * @returns {number} always 0 (legacy callers kept for compatibility)
- */
-export function prunePatientsOutsideClinicalScope() {
-  return 0;
-}
+export { prunePatientsOutsideVisibleScope as prunePatientsOutsideClinicalScope } from './patient-scope-prune.mjs';

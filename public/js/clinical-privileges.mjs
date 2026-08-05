@@ -2,10 +2,27 @@
 
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
+import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 /** iPad/PWA or any browser LAN session — never full Admin/R4 ward census. */
 export function shouldEnforceTeamPatientMirror() {
   return isMobileWeb() || isWebClinicalClient();
+}
+
+/**
+ * Desktop + Nube: R1–R3 see joined-team patients only (not full sala census from cloud seed).
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} [user]
+ */
+export function shouldUseCloudTeamPatientMirror(user) {
+  if (shouldEnforceTeamPatientMirror()) return false;
+  if (shouldUseElevatedPatientCensus(user)) return false;
+  return isCloudSyncActive();
+}
+
+/** Sidebar/census team scope — mobile web or desktop Nube non-elevated. */
+export function shouldFilterPatientsByJoinedTeam(user) {
+  if (shouldEnforceTeamPatientMirror()) return true;
+  return shouldUseCloudTeamPatientMirror(user);
 }
 
 const CLINICAL_RANKS = new Set(['R1', 'R2', 'R3', 'R4']);
@@ -62,7 +79,7 @@ export function shouldUseElevatedPatientCensus(user) {
 export function shouldShowClinicalCensusFilters(user) {
   if (!user?.user_id) return false;
   if (shouldUseElevatedPatientCensus(user)) return true;
-  return shouldEnforceTeamPatientMirror();
+  return shouldFilterPatientsByJoinedTeam(user);
 }
 
 /** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */

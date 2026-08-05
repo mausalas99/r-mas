@@ -7,14 +7,14 @@ describe('localRoomFromSession', () => {
     assert.equal(
       localRoomFromSession(
         { getCloudSyncRoomId: () => '', getCloudSyncToken: () => 't' },
-        'Sala'
+        'Sala 1'
       ),
       null
     );
     assert.equal(
       localRoomFromSession(
         { getCloudSyncRoomId: () => 'r1', getCloudSyncToken: () => '' },
-        'Sala'
+        'Sala 1'
       ),
       null
     );
@@ -29,9 +29,9 @@ describe('localRoomFromSession', () => {
         getCloudSyncRoomSnapshot: () => ({
           id: 'room-1',
           code: 'ABC123',
-          sala: 'Sala',
+          sala: 'Sala 1',
           turnKey: '2026-08',
-          name: 'Sala 2026-08',
+          name: 'Sala 1 2026-08',
         }),
       },
       'Sala'
@@ -39,10 +39,10 @@ describe('localRoomFromSession', () => {
     assert.deepEqual(room, {
       id: 'room-1',
       revision: 3,
-      sala: 'Sala',
+      sala: 'Sala 1',
       code: 'ABC123',
       turnKey: '2026-08',
-      name: 'Sala 2026-08',
+      name: 'Sala 1 2026-08',
     });
   });
 });

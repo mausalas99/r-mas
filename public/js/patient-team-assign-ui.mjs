@@ -27,9 +27,15 @@ export function assignableTeamsForUser(user) {
 export function teamLabelById(teamId) {
   const id = String(teamId || '').trim();
   if (!id) return '';
-  const team = (clinicalSessionContext.teams || []).find((t) => String(t?.team_id) === id);
-  if (!team) return id;
-  return String(team.name || team.service || 'Equipo').trim() || 'Equipo';
+  const teams = [
+    ...(clinicalSessionContext.teams || []),
+    ...(clinicalSessionContext.scopeContext?.teams || []),
+    ...(clinicalSessionContext.scopeContext?.teams_archived || []),
+  ];
+  const team = teams.find((t) => String(t?.team_id) === id);
+  if (!team) return `Equipo archivado (${id.slice(0, 8)}…)`;
+  const name = String(team.name || team.service || 'Equipo').trim() || 'Equipo';
+  return team.archived_at ? `${name} (archivado)` : name;
 }
 
 /** @param {string} patientId */

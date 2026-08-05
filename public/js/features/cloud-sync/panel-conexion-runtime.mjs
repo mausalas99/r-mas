@@ -64,7 +64,22 @@ export function startSharedNubeRuntime(deps) {
       return String(clinicalSessionContext.user?.user_id || getLanClientId() || 'local');
     },
   });
-  void sharedRuntime.syncCycle();
+  void (async function runInitialCloudSyncAndPrune() {
+    try {
+      await sharedRuntime?.syncCycle();
+    } catch {
+      /* pull optional on connect */
+    }
+    try {
+      const access = await import('../../clinical-access-runtime.mjs');
+      const pruned = access.prunePatientsOutsideClinicalScope?.() || 0;
+      if (pruned > 0 && typeof access.refreshDesktopPatientListAfterScopePrune === 'function') {
+        await access.refreshDesktopPatientListAfterScopePrune();
+      }
+    } catch {
+      /* scope prune optional */
+    }
+  })();
   scheduleCloudSyncPush();
   void pushCloudCensusNow();
   return sharedRuntime;

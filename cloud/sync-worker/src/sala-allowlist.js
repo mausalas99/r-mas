@@ -1,4 +1,4 @@
-export const CLOUD_SALAS = Object.freeze(['Sala', 'Torre HU']);
+export const CLOUD_SALAS = Object.freeze(['Sala 1', 'Sala 2', 'Sala E', 'Torre HU']);
 export const LAN_ONLY_SALAS = Object.freeze([
   'Interconsultas',
   'UX',
@@ -10,7 +10,11 @@ export const LAN_ONLY_SALAS = Object.freeze([
 export function normalizeCloudSala(raw) {
   const s = String(raw || '').trim();
   const key = s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-  if (key === 'sala' || /^sala\s*[12e]$/i.test(s)) return 'Sala';
+  const salaUnit = key.match(/^sala\s*([12e])$/);
+  if (salaUnit) {
+    const unit = salaUnit[1] === 'e' ? 'E' : salaUnit[1];
+    return `Sala ${unit}`;
+  }
   if (key === 'torre hu' || key === 'torre-hu' || key === 'torrehu') return 'Torre HU';
   if (key.includes('interconsult')) return 'Interconsultas';
   if (key === 'ux') return 'UX';
