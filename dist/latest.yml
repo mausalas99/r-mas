@@ -1,24 +1,18 @@
-version: 7.9.6
+version: 7.9.7
 files:
-  - url: R+-7.9.6-x64.exe
-    sha512: v4RozqxvsyWdHB0Kzwcz5XR9HeG1cY7Mav+BEtkLmZbemvWS7cb/9nJTBg0qfyV8R91T7Y8mCsOk6Adhz+SYrg==
-    size: 122641723
-path: R+-7.9.6-x64.exe
-sha512: v4RozqxvsyWdHB0Kzwcz5XR9HeG1cY7Mav+BEtkLmZbemvWS7cb/9nJTBg0qfyV8R91T7Y8mCsOk6Adhz+SYrg==
-releaseDate: '2026-08-05T17:29:59.000Z'
+  - url: R+-7.9.7-x64.exe
+    sha512: wOgYI7D+yigQ5LCxhzewxOAhUqaUAQNtGs4gPZRuNo0QgHmAK6dhBKVY7XhVNlTnoBirjNuAKUdwYSqX5J9hcQ==
+    size: 122645150
+path: R+-7.9.7-x64.exe
+sha512: wOgYI7D+yigQ5LCxhzewxOAhUqaUAQNtGs4gPZRuNo0QgHmAK6dhBKVY7XhVNlTnoBirjNuAKUdwYSqX5J9hcQ==
+releaseDate: '2026-08-05T18:11:26.000Z'
 releaseNotes: |
-  7.9.6 separa Sala 1, Sala 2 y Sala E como salas Nube distintas (ya no un bucket genérico «Sala») y corrige el censo que ve cada residente: R1/R2 solo su equipo; R4/Admin el censo completo de la sala. Incluye limpieza de pacientes «fantasma» tras pull Nube y protección de monitoreo EA contra stubs vacíos del censo.
+  7.9.7 corrige sincronización Nube/LAN que se quedaba corta: pendientes que no refrescaban tras pull, signos EA que no salían al guardar, y ops de mutate que se pisaban en el outbox. Cada entidad (pendiente, agenda, baja) lleva su propio clientMutationId; el push de censo distingue monitoreo/campos de entradas de paciente.
   
-  Nube — salas distintas — ensure-turn y allowlist reconocen Sala 1, Sala 2, Sala E y Torre HU como rooms separados; cada una con su código mensual YYYY-MM (CDMX).
+  Mutate por entidad — Pendientes, agenda y bajas usan clientMutationId propio (no batch compartido); menos colisiones en el outbox Nube.
   
-  Censo por alcance — Pull Nube filtra por equipo unido; R4/Admin en escritorio ven censo completo de la sala; iPad/Safari LAN siempre por equipo (sin censo sala-wide aunque seas Admin).
+  Censo push — El reintento de censo reconoce ops de monitoreo/campos además de entries/; evita reintentos infinitos cuando el paciente ya tiene datos clínicos en cola.
   
-  Sin fantasmas — Tras pull Nube, escritorio poda pacientes fuera de alcance y refresca sidebar/guardia; módulo compartido patient-scope-prune.
+  Pendientes tras pull — Pull Nube refresca la UI de pendientes en los pacientes tocados (paridad con LAN).
   
-  EA / monitoreo — Stubs vacíos de censo Nube ya no pisan monitoreo local con datos reales.
-  
-  Mutate bridge — Ops de campos/monitoreo usan relojes de contenido (no batch updatedAt); mejor mapeo de sidecars.
-  
-  LAN — Dashboard de host y ranking de equipos más claros al asignar pacientes.
-  
-  Cloud mobile — build:cloud-mobile empaqueta /mobile/ en cloud/sync-pages/ para deploy del Worker.
+  EA → sync inmediato — Registrar signos en EA dispara scheduleLiveSyncPush() al guardar; monitoreo llega al turno sin esperar otro evento.
