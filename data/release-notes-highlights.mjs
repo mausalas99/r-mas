@@ -2018,12 +2018,24 @@ var RELEASE_NOTES_798 = [
 
 var RELEASE_NOTES_800 = [
   {
-    title: 'TODO',
-    body: 'Completar antes de publicar.',
+    title: 'Nube en todas las salas',
+    body:
+      '<strong>Sala 1/2/E</strong>, <strong>Torre HU</strong>, <strong>Interconsultas</strong>, <strong>UX</strong>, <strong>Eme</strong> y <strong>Área A</strong> sincronizan por ⇄ Conexión — sin Mac anfitrión LAN.',
   },
   {
-    title: 'TODO',
-    body: 'Completar antes de publicar.',
+    title: 'R+ Móvil / iPad',
+    body:
+      'El iPad abre desde internet (<code>/mobile/</code>), inicia sesión con tu @usuario y ve signos y expediente esencial con alcance por equipo.',
+  },
+  {
+    title: 'LAN sync retirado',
+    body:
+      'LiveSync LAN queda <strong>apagado</strong> por defecto. El turno vive en Nube; offline = base local SQLCipher + outbox.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.0 en todas</strong> las Macs el mismo día que el operador despliega el Worker. Si venías de LAN, únete en ⇄.',
   },
 ];
 

@@ -5,12 +5,18 @@ Fecha: 2026-08-05
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+**8.0.0** consolida el corte **Nube-first** del turno: **todas las salas clínicas** sincronizan por ⇄ Conexión (Sala 1/2/E, Torre HU, Interconsultas, UX, Eme y Área A/Pensionistas), **R+ Móvil / iPad** opera desde internet sin Mac anfitrión LAN, y el escritorio carga por **`app://rplus`** (sin depender de localhost:3738). LiveSync LAN queda **opt-in** (`R_PLUS_ENABLE_LAN_SYNC=1`). Incluye borrado Nube con tombstones LWW, censo por alcance, recuperación por códigos y pulido del modal de actualización.
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- **Nube — todas las salas** — Allowlist Worker + cliente: **Sala 1/2/E**, **Torre HU**, **Interconsultas**, **UX**, **Eme**, **Área A/Pensionistas**. Código de sala mensual `YYYY-MM` (CDMX); rooms distintos por sala física.
+- **R+ Móvil / iPad** — URL pública `/mobile/` en el Worker; login @usuario + sala activa; guardia board y EA (signos, glu, I/E) con alcance por equipo. ⇄ ofrece enlace móvil + QR en salas Nube.
+- **Censo por alcance** — R1/R2 ven su equipo; R4/Admin censo sala-wide en escritorio; iPad siempre por equipo. Prune de fantasmas tras pull Nube.
+- **LAN sync opt-in** — `/api/lan/v1` apagado por defecto (`lan_sync_retired`). Dev/ops: `R_PLUS_ENABLE_LAN_SYNC=1`. Offline = SQLCipher local + outbox; sin fallback LAN.
+- **Renderer `app://rplus`** — Electron sirve `public/` por protocolo custom. Export .docx por IPC (sin banner «servidor local» falso). Conexión humaniza errores de red en español.
+- **Borrado Nube + tombstones** — × y borrado masivo via `sync-apply`; Worker LWW limpia labs, pendientes y agenda; no resucita pacientes borrados.
+- **Conexión** — Pasos Connect → Sala → Equipo → Más; códigos de recuperación; admin reset. Panel alineado al corte Nube (sin hero LAN en salas cloud).
+- **Actualización** — Modal electron-updater sanitiza errores (sin muro HTML); notas acortadas. Worker CORS acepta `X-Sync-Admin-Key` desde `app://rplus`.
 
 ## Instalación
 
@@ -19,4 +25,24 @@ Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.0
 - Mac: `R+-8.0.0-arm64.dmg`, `R+-8.0.0-x64.dmg` (y zip para auto-update).
 - Windows: `R+-8.0.0-x64.exe`.
 
+Descarga **8.0.0 en todas las Macs** del turno el mismo día que actualizas el Worker.
+
+**Operador cloud (antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
 Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si venías de LAN en Inters/UX/Eme/Área A, abre ⇄ Conexión y únete a la sala Nube del mes.
+- iPad: sin instalación — enlace desde ⇄ en Safari.
+- LAN LiveSync solo con `R_PLUS_ENABLE_LAN_SYNC=1` (dev / transición).
+- Requiere Worker con allowlist actualizada (todas las salas + `/mobile/`).

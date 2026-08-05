@@ -49,7 +49,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 8.0.0 (estable — Nube en todas las salas + R+ Móvil + app://)
 
-- **TODO:** completar bullets en README.
+- **Nube en todas las salas** — Sala 1/2/E, Torre HU, Interconsultas, UX, Eme y Área A/Pensionistas; código mensual `YYYY-MM`; rooms distintos por sala.
+- **R+ Móvil / iPad** — `/mobile/` en el Worker; login + sala activa; guardia y EA con alcance por equipo; enlace + QR desde ⇄.
+- **LAN sync opt-in** — LiveSync apagado por defecto (`R_PLUS_ENABLE_LAN_SYNC=1`); offline = SQLCipher local + outbox.
+- **app://rplus** — Escritorio sin localhost:3738; export .docx por IPC; Conexión con errores en español; updater sin HTML crudo.
+- **Borrado Nube** — × / masivo via `sync-apply`; tombstones LWW limpian labs, pendientes y agenda.
 
 Notas: `docs/RELEASE_NOTES_8.0.0.txt`.
 ## R+ 7.9.9 (app:// polish — sin banner offline falso + updater limpio)
