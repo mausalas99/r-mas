@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.0](https://github.com/mausalas99/r-mas/releases/tag/v8.0.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.1](https://github.com/mausalas99/r-mas/releases/tag/v8.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -47,6 +47,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.1 (hotfix — pull Nube + push concurrente Worker)
+
+- **Pull Nube** — Corrige «No se pudieron aplicar los cambios de la nube» al sincronizar censo sin montar LAN.
+- **Worker push** — Mutaciones atómicas con gate de `revision` + reintento ante escrituras concurrentes del turno.
+- **Worker CORS** — Preflight acepta `X-Sync-Admin-Key` y `Accept` para admin desde Electron.
+- **Despliega Worker + app** — Mismo día: `npm run deploy` en `cloud/sync-worker` e instala 8.0.1 en todas las Macs.
+
+Notas: `docs/RELEASE_NOTES_8.0.1.txt`.
 ## R+ 8.0.0 (estable — Nube en todas las salas + R+ Móvil + app://)
 
 - **Nube en todas las salas** — Sala 1/2/E, Torre HU, Interconsultas, UX, Eme y Área A/Pensionistas; código mensual `YYYY-MM`; rooms distintos por sala.

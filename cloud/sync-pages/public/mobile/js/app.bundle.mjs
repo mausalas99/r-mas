@@ -8,21 +8,21 @@ import {
   setMedTabAttention,
   showToast,
   syncWorkContextChrome
-} from "/mobile/js/chunks/chunk-CFOBPX3S.js";
+} from "/mobile/js/chunks/chunk-UEVJWMSO.js";
 import {
   productivityWindowHandlers,
   pushUndoSnapshot,
   registerProductivityRuntime
-} from "/mobile/js/chunks/chunk-6XKTBQYX.js";
-import "/mobile/js/chunks/chunk-LSCFEKNB.js";
+} from "/mobile/js/chunks/chunk-XSA4IRJ6.js";
+import "/mobile/js/chunks/chunk-IFWA7UBL.js";
 import {
   registerProcedureAgendaRuntime,
   renderProcedureAgendaPanel,
   windowHandlers as windowHandlers11
-} from "/mobile/js/chunks/chunk-4GVXWXQ3.js";
+} from "/mobile/js/chunks/chunk-UJMKHE3G.js";
 import {
   recoverPresentationPatientsOnBoot
-} from "/mobile/js/chunks/chunk-NG2UDOEX.js";
+} from "/mobile/js/chunks/chunk-U4AKRAFK.js";
 import {
   AHF_RELATIVES,
   APP_DEDICATED_IDS,
@@ -127,29 +127,29 @@ import {
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/mobile/js/chunks/chunk-SOY3AE62.js";
-import "/mobile/js/chunks/chunk-XBMXS5VV.js";
+} from "/mobile/js/chunks/chunk-4SIVR4SA.js";
+import "/mobile/js/chunks/chunk-BKJ6JOGZ.js";
 import {
   buildPatientEntry,
   ensureUniquePatientName,
   findPatientByRegistro,
   generatePatientId
-} from "/mobile/js/chunks/chunk-E2OSHZGU.js";
+} from "/mobile/js/chunks/chunk-DPCWCVTP.js";
 import {
   windowHandlers as windowHandlers13
-} from "/mobile/js/chunks/chunk-TJANGUDX.js";
+} from "/mobile/js/chunks/chunk-SCSVSR4P.js";
 import {
   ensureActivePatientInSidebarScope,
   filterPatientsForGuardiaCensus
-} from "/mobile/js/chunks/chunk-T3QK42PG.js";
+} from "/mobile/js/chunks/chunk-TTFM7EP4.js";
 import {
   refreshAllTodoUIs,
   refreshTodoUIsForPatient,
   refreshTodoUIsForPatients,
   registerTodosRuntime,
   renderTodoForm
-} from "/mobile/js/chunks/chunk-GDIZ4JY5.js";
-import "/mobile/js/chunks/chunk-F6ZSFHBL.js";
+} from "/mobile/js/chunks/chunk-OOMYDHTA.js";
+import "/mobile/js/chunks/chunk-55V5O62J.js";
 import {
   bindLazyChartsRuntimeCtx,
   bindLazyEaVitalHistoryRuntimeCtx,
@@ -169,35 +169,35 @@ import {
   registerLazyFeatureRuntimes,
   settingsHelpRuntimeProxies,
   settingsHelpWindowHandlersLazy
-} from "/mobile/js/chunks/chunk-AODZARL2.js";
-import "/mobile/js/chunks/chunk-PBBJ5H2X.js";
+} from "/mobile/js/chunks/chunk-NHHUSR52.js";
+import "/mobile/js/chunks/chunk-YEWIPCRL.js";
 import {
   syncClinicalRotationEntryChrome,
   windowHandlers as windowHandlers5,
   wireClinicalRotationEntryControls
-} from "/mobile/js/chunks/chunk-CRNJVMXN.js";
-import "/mobile/js/chunks/chunk-J2FG6JOM.js";
-import "/mobile/js/chunks/chunk-KPXRHLK2.js";
-import "/mobile/js/chunks/chunk-MJFZPU7H.js";
-import "/mobile/js/chunks/chunk-WBAWFXL2.js";
+} from "/mobile/js/chunks/chunk-2TSPDBVD.js";
+import "/mobile/js/chunks/chunk-PKYRHIWH.js";
+import "/mobile/js/chunks/chunk-6DPIGF5S.js";
+import "/mobile/js/chunks/chunk-OSPRJYRJ.js";
+import "/mobile/js/chunks/chunk-7PDTCWFA.js";
 import "/mobile/js/chunks/chunk-GUZBLPYB.js";
-import "/mobile/js/chunks/chunk-F44WSVRB.js";
-import "/mobile/js/chunks/chunk-BO32PBBB.js";
+import "/mobile/js/chunks/chunk-YQNA53YU.js";
+import "/mobile/js/chunks/chunk-RAQX5OVN.js";
 import "/mobile/js/chunks/chunk-3QVHQ4QK.js";
 import "/mobile/js/chunks/chunk-CV62ZWIZ.js";
-import "/mobile/js/chunks/chunk-JIYDF656.js";
+import "/mobile/js/chunks/chunk-HEEVLY4I.js";
 import "/mobile/js/chunks/chunk-7R6RY2VN.js";
 import "/mobile/js/chunks/chunk-UMBBYMHN.js";
 import "/mobile/js/chunks/chunk-KZBMNVUA.js";
-import "/mobile/js/chunks/chunk-3DRRBFOD.js";
+import "/mobile/js/chunks/chunk-CA3QXIB4.js";
 import "/mobile/js/chunks/chunk-5ULB7V7I.js";
 import "/mobile/js/chunks/chunk-6IT4VYWH.js";
-import "/mobile/js/chunks/chunk-MJZZZ6BS.js";
-import "/mobile/js/chunks/chunk-HFEJXZJU.js";
+import "/mobile/js/chunks/chunk-WMJDFKKN.js";
+import "/mobile/js/chunks/chunk-J7SG2LGN.js";
 import {
   ahf_conditions_default,
   app_conditions_default
-} from "/mobile/js/chunks/chunk-DP7GRRO4.js";
+} from "/mobile/js/chunks/chunk-RXNYNYIW.js";
 import {
   applyDriveImportEventualidades,
   applyEstadoActualParsedToForm,
@@ -228,16 +228,16 @@ import {
   windowHandlers2 as windowHandlers3,
   windowHandlers3 as windowHandlers12,
   wireClinicalTeamsControls
-} from "/mobile/js/chunks/chunk-42JLIRW3.js";
+} from "/mobile/js/chunks/chunk-OJH7L2CJ.js";
 import {
   dbUnlockWindowHandlers,
   describeClinicalDbBootFailure,
   ensureClinicalDbUnlocked
-} from "/mobile/js/chunks/chunk-C6JWAOJX.js";
-import "/mobile/js/chunks/chunk-27D2U2IC.js";
+} from "/mobile/js/chunks/chunk-YREK4H2V.js";
+import "/mobile/js/chunks/chunk-HVHVRFSH.js";
 import "/mobile/js/chunks/chunk-6RH7YMAM.js";
-import "/mobile/js/chunks/chunk-VWSZSWWE.js";
-import "/mobile/js/chunks/chunk-G3CKBFQU.js";
+import "/mobile/js/chunks/chunk-K7TUQM3L.js";
+import "/mobile/js/chunks/chunk-NW6K73WP.js";
 import "/mobile/js/chunks/chunk-KW6FOZVD.js";
 import {
   buildParsedBySectionFromResLabs,
@@ -246,7 +246,7 @@ import {
   launchConfetti,
   registerChromeRuntime,
   windowHandlers as windowHandlers14
-} from "/mobile/js/chunks/chunk-4S3SGIP7.js";
+} from "/mobile/js/chunks/chunk-F55OGCCZ.js";
 import "/mobile/js/chunks/chunk-NCZWUFAX.js";
 import "/mobile/js/chunks/chunk-C6TP3H7V.js";
 import {
@@ -254,20 +254,20 @@ import {
 } from "/mobile/js/chunks/chunk-AUDHCP7J.js";
 import {
   registerEstadoActualPanelRuntime
-} from "/mobile/js/chunks/chunk-W6VEIHBN.js";
+} from "/mobile/js/chunks/chunk-OJF7SMWI.js";
 import "/mobile/js/chunks/chunk-LE7F4H7F.js";
 import "/mobile/js/chunks/chunk-FHXLE36S.js";
 import "/mobile/js/chunks/chunk-VN3HHLWO.js";
 import "/mobile/js/chunks/chunk-GHZK4QF3.js";
-import "/mobile/js/chunks/chunk-2DJOYYGY.js";
+import "/mobile/js/chunks/chunk-GJUAH75C.js";
 import {
   isMobileWeb
 } from "/mobile/js/chunks/chunk-WOP35WT6.js";
 import "/mobile/js/chunks/chunk-JDDA5EVO.js";
 import "/mobile/js/chunks/chunk-IP6FUZQW.js";
-import "/mobile/js/chunks/chunk-USYPDGC5.js";
+import "/mobile/js/chunks/chunk-ALW2M5BA.js";
 import "/mobile/js/chunks/chunk-XYU7ZICQ.js";
-import "/mobile/js/chunks/chunk-4B2EL7AC.js";
+import "/mobile/js/chunks/chunk-MBEH6ZUQ.js";
 import "/mobile/js/chunks/chunk-LYZOIXV3.js";
 import {
   bootHydrateFromDb,
@@ -282,7 +282,7 @@ import {
   saveState,
   setSaveStateHooks,
   sortLabHistoryChronological
-} from "/mobile/js/chunks/chunk-DBOG22IU.js";
+} from "/mobile/js/chunks/chunk-JZ2SPQIK.js";
 import {
   getDefaultRegistroRecordedAt,
   toDatetimeLocalValue
@@ -300,7 +300,7 @@ import "/mobile/js/chunks/chunk-I4VH6GH2.js";
 import "/mobile/js/chunks/chunk-5TQC2RCD.js";
 import {
   storage
-} from "/mobile/js/chunks/chunk-K5LSL2JC.js";
+} from "/mobile/js/chunks/chunk-76D6GOCM.js";
 import "/mobile/js/chunks/chunk-TY4AHNM4.js";
 import "/mobile/js/chunks/chunk-YAGCGSLT.js";
 import "/mobile/js/chunks/chunk-WONKP6NU.js";
@@ -322,11 +322,11 @@ import "/mobile/js/chunks/chunk-BRT2MMPP.js";
 import "/mobile/js/chunks/chunk-HMTHREEE.js";
 import "/mobile/js/chunks/chunk-CRJYUJ23.js";
 import "/mobile/js/chunks/chunk-7I2DYQ7W.js";
-import "/mobile/js/chunks/chunk-NBVTLTZL.js";
+import "/mobile/js/chunks/chunk-OEEP3MSI.js";
 import {
   isDbMode,
   isWebClinicalClient
-} from "/mobile/js/chunks/chunk-7ZS34G66.js";
+} from "/mobile/js/chunks/chunk-LMOJUVZ4.js";
 
 // public/js/features/lab-history-batch-copy-modal.mjs
 var rt = {
@@ -3792,7 +3792,7 @@ async function registerAllFeatureRuntimes() {
   installLabHistoryAuditHook();
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerTodosRuntime(ctx);
-  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-BIATH5Y6.js");
+  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-WAZLGVV3.js");
   reminderScheduler.configureTodoReminderScheduler({
     getPatientLabel: function(pid) {
       var p = patients.find(function(row) {
@@ -3843,7 +3843,7 @@ function runInitialFeatureBoot() {
 
 // public/js/app.js
 if (typeof globalThis !== "undefined" && globalThis.__RPC_CLOUD_MOBILE__) {
-  void import("/mobile/js/chunks/boot-7BS54CJY.js").then(function(mod) {
+  void import("/mobile/js/chunks/boot-X7B2NK7T.js").then(function(mod) {
     return mod.initCloudMobileBoot();
   });
 }
@@ -3912,7 +3912,7 @@ var appStateReady = (async function loadClinicalStateOnBoot() {
   }
   if (isWebClinicalClient()) {
     try {
-      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-CC6XSQXU.js");
+      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-QZWGJBTK.js");
       wipeSessionClinicalStorage({ includeLanSession: false });
     } catch (_wipeBoot) {
       void _wipeBoot;
@@ -3963,7 +3963,7 @@ setSaveStateHooks({
     }
   }
 });
-void import("/mobile/js/chunks/session-clinical-wipe-CC6XSQXU.js").then(function(mod) {
+void import("/mobile/js/chunks/session-clinical-wipe-QZWGJBTK.js").then(function(mod) {
   mod.installSessionClinicalWipeOnExit();
 });
 window.addEventListener("beforeunload", function() {
@@ -4083,7 +4083,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-YZW42K5X.js");
+      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-LFHEK3VY.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -4094,7 +4094,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-MOGJIKMJ.js");
+      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-MDR3KY4H.js");
     }
   },
   {
@@ -4117,7 +4117,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/mobile/js/chunks/clinical-access-runtime-VMQVJTMZ.js").then(function(mod) {
+      void import("/mobile/js/chunks/clinical-access-runtime-D353YS2C.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }
@@ -4132,7 +4132,7 @@ function runDomBootAfterState() {
       }).then(function() {
         if (globalThis.__RPC_CLOUD_MOBILE__) return;
         _rpcDeferInit(function() {
-          void import("/mobile/js/chunks/autostart-YYNCWNEW.js").then(function(mod) {
+          void import("/mobile/js/chunks/autostart-F2ZIU5OC.js").then(function(mod) {
             return mod.autostartCloudSyncIfConfigured({ toast: showToast });
           });
         });

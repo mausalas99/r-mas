@@ -278,6 +278,7 @@ describe('lan-sync clinical ops', () => {
     const cloudBoot = bootSrc.match(/if \(isCloudSalaBootPath\(\)\) \{[\s\S]*?return;\n  \}/);
     assert.ok(cloudBoot, 'expected cloud sala early-return block');
     assert.match(cloudBoot[0], /wireCloudClinicalOpsSyncEvents/);
+    assert.match(cloudBoot[0], /configureLanSyncDomainModules\(getLanRuntime\(\)\)/);
     assert.doesNotMatch(cloudBoot[0], /wireLanSyncBridges/);
     assert.doesNotMatch(cloudBoot[0], /initLanClientFromStorage/);
     assert.doesNotMatch(cloudBoot[0], /wireLanPanelDelegation/);

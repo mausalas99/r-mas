@@ -2039,10 +2039,29 @@ var RELEASE_NOTES_800 = [
   },
 ];
 
+var RELEASE_NOTES_801 = [
+  {
+    title: 'Pull Nube arreglado',
+    body:
+      'Al conectar en ⇄ ya no aparece <strong>«No se pudieron aplicar los cambios de la nube»</strong>: el censo remoto vuelve a aplicarse en salas Nube sin montar LAN.',
+  },
+  {
+    title: 'Push más fiable',
+    body:
+      'El Worker confirma mutaciones con <strong>revisión atómica</strong> y reintento si dos Macs/iPads escriben a la vez — menos choques al guardar.',
+  },
+  {
+    title: 'Despliega Worker + app',
+    body:
+      'Instala <strong>8.0.1 en todas</strong> las Macs y ejecuta <code>npm run deploy</code> en <code>cloud/sync-worker</code> el mismo día del turno.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_800;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_801;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.1': RELEASE_NOTES_801,
   '8.0.0': RELEASE_NOTES_800,
   '7.9.9': RELEASE_NOTES_799,
   '7.9.8': RELEASE_NOTES_798,

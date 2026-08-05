@@ -1,4 +1,5 @@
 import { decryptJson, encryptJson } from './crypto-at-rest.js';
+import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
 import { applyOps } from './lww.js';
 import { QUOTAS } from './quotas.js';
@@ -6,6 +7,8 @@ import { userFromAuthHeader } from './session.js';
 
 const PULL_REVISION_GAP = 100;
 const PULL_OPS_MAX_BYTES = 256 * 1024;
+/** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
+const MUTATION_COMMIT_ATTEMPTS = 5;
 
 /** @param {Uint8Array | ArrayBuffer | null | undefined} bytes */
 function bytesToHex(bytes) {
@@ -87,9 +90,23 @@ async function loadRoomState(env, db, roomId) {
   return { state, ciphertextHex, ivHex };
 }
 
-/** @param {unknown} state @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId @param {{ WORKER_DATA_KEY?: string }} env */
-async function saveRoomState(env, db, roomId, state) {
-  const { ciphertext, iv } = await encryptJson(env, state);
+/**
+ * Atomically bump revision + append mutation + persist encrypted state.
+ * Every write is gated on `rooms.revision = expected` so a lost race leaves no partial commit
+ * (INSERT/UPDATE with 0 changes — not a UNIQUE blast that only sometimes rolls back).
+ * @returns {Promise<{ ok: true, revision: number } | { ok: false, reason: 'stale' | 'duplicate_client' }>}
+ */
+async function commitMutationBatch(env, db, opts) {
+  const {
+    roomId,
+    expectedRevision,
+    nextRevision,
+    userId,
+    clientMutationId,
+    applied,
+    nextState,
+  } = opts;
+  const { ciphertext, iv } = await encryptJson(env, nextState);
   const storageBytes = ciphertext.length / 2 + iv.length / 2;
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
@@ -98,13 +115,82 @@ async function saveRoomState(env, db, roomId, state) {
     );
   }
   const now = new Date().toISOString();
-  await db
+  const opsJson = JSON.stringify(applied);
+  try {
+    const results = await db.batch([
+      db
+        .prepare(
+          `INSERT INTO mutations (room_id, revision, client_mutation_id, actor_id, ops_json, created_at)
+           SELECT ?, ?, ?, ?, ?, ?
+           FROM rooms WHERE id = ? AND revision = ?`
+        )
+        .bind(
+          roomId,
+          nextRevision,
+          clientMutationId,
+          userId,
+          opsJson,
+          now,
+          roomId,
+          expectedRevision
+        ),
+      db
+        .prepare(
+          `UPDATE rooms SET revision = ?, storage_bytes = ?, updated_at = ?
+           WHERE id = ? AND revision = ?`
+        )
+        .bind(nextRevision, storageBytes, now, roomId, expectedRevision),
+      db
+        .prepare(
+          `UPDATE room_state SET ciphertext = ?, iv = ?, updated_at = ?
+           WHERE room_id = ?
+             AND EXISTS (
+               SELECT 1 FROM mutations
+               WHERE room_id = ? AND client_mutation_id = ? AND revision = ?
+             )`
+        )
+        .bind(
+          hexToBytes(ciphertext),
+          hexToBytes(iv),
+          now,
+          roomId,
+          roomId,
+          clientMutationId,
+          nextRevision
+        ),
+    ]);
+    const inserted = Number(results?.[0]?.meta?.changes ?? 0);
+    const bumped = Number(results?.[1]?.meta?.changes ?? 0);
+    if (inserted !== 1 || bumped !== 1) return { ok: false, reason: 'stale' };
+    return { ok: true, revision: nextRevision };
+  } catch (err) {
+    if (!isD1UniqueConstraintError(err)) throw err;
+    const target = d1UniqueConstraintTarget(err);
+    if (target === 'client_mutation_id') return { ok: false, reason: 'duplicate_client' };
+    return { ok: false, reason: 'stale' };
+  }
+}
+
+/** @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId @param {string} clientMutationId */
+async function loadPriorMutation(db, roomId, clientMutationId) {
+  return db
     .prepare(
-      `UPDATE room_state SET ciphertext = ?, iv = ?, updated_at = ? WHERE room_id = ?`
+      `SELECT revision, ops_json FROM mutations
+       WHERE room_id = ? AND client_mutation_id = ?`
     )
-    .bind(hexToBytes(ciphertext), hexToBytes(iv), now, roomId)
-    .run();
-  return { storageBytes, now };
+    .bind(roomId, clientMutationId)
+    .first();
+}
+
+/** @param {unknown} prior @param {number} roomRevision @param {number} baseRevision */
+function priorMutationResponse(prior, roomRevision, baseRevision) {
+  const priorOps = JSON.parse(String(prior.ops_json || '[]'));
+  return Response.json({
+    revision: Number(prior.revision),
+    applied: priorOps,
+    rejected: [],
+    needPull: baseRevision < roomRevision,
+  });
 }
 
 /**
@@ -149,57 +235,59 @@ async function handleMutations(request, env, db, roomId) {
   }
   validateOpsSize(ops);
 
-  const prior = await db
-    .prepare(
-      `SELECT revision, ops_json FROM mutations
-       WHERE room_id = ? AND client_mutation_id = ?`
-    )
-    .bind(roomId, clientMutationId)
-    .first();
-
+  const prior = await loadPriorMutation(db, roomId, clientMutationId);
   if (prior) {
-    const priorOps = JSON.parse(String(prior.ops_json || '[]'));
-    return Response.json({
-      revision: Number(prior.revision),
-      applied: priorOps,
-      rejected: [],
-      needPull: baseRevision < Number(room.revision),
-    });
+    return priorMutationResponse(prior, Number(room.revision), baseRevision);
   }
 
-  const needPull = baseRevision < Number(room.revision);
-  const { state } = await loadRoomState(env, db, roomId);
-  const { state: nextState, applied, rejected } = applyOps(state, ops);
-  const { storageBytes, now } = await saveRoomState(env, db, roomId, nextState);
-  const nextRevision = Number(room.revision) + 1;
+  let lastApplied = [];
+  let lastRejected = [];
+  let lastNeedPull = baseRevision < Number(room.revision);
 
-  await db.batch([
-    db
-      .prepare(
-        `UPDATE rooms SET revision = ?, storage_bytes = ?, updated_at = ? WHERE id = ?`
-      )
-      .bind(nextRevision, storageBytes, now, roomId),
-    db
-      .prepare(
-        `INSERT INTO mutations (room_id, revision, client_mutation_id, actor_id, ops_json, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .bind(
-        roomId,
-        nextRevision,
-        clientMutationId,
-        user.id,
-        JSON.stringify(applied),
-        now
-      ),
-  ]);
+  for (let attempt = 0; attempt < MUTATION_COMMIT_ATTEMPTS; attempt++) {
+    const roomRow = await db
+      .prepare('SELECT revision FROM rooms WHERE id = ?')
+      .bind(roomId)
+      .first();
+    if (!roomRow) {
+      throw new SyncError('not_found', 'Sala no encontrada.');
+    }
+    const expectedRevision = Number(roomRow.revision);
+    lastNeedPull = baseRevision < expectedRevision;
+    const { state } = await loadRoomState(env, db, roomId);
+    const appliedResult = applyOps(state, ops);
+    lastApplied = appliedResult.applied;
+    lastRejected = appliedResult.rejected;
+    const nextRevision = expectedRevision + 1;
+    const committed = await commitMutationBatch(env, db, {
+      roomId,
+      expectedRevision,
+      nextRevision,
+      userId: user.id,
+      clientMutationId,
+      applied: lastApplied,
+      nextState: appliedResult.state,
+    });
+    if (committed.ok) {
+      return Response.json({
+        revision: committed.revision,
+        applied: lastApplied,
+        rejected: lastRejected,
+        needPull: lastNeedPull,
+      });
+    }
+    if (committed.reason === 'duplicate_client') {
+      const raced = await loadPriorMutation(db, roomId, clientMutationId);
+      if (raced) {
+        return priorMutationResponse(raced, nextRevision, baseRevision);
+      }
+    }
+  }
 
-  return Response.json({
-    revision: nextRevision,
-    applied,
-    rejected,
-    needPull,
-  });
+  throw new SyncError(
+    'revision_stale',
+    'Otro dispositivo actualizó la sala al mismo tiempo. Reintenta tras sincronizar.'
+  );
 }
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */

@@ -33,6 +33,27 @@ function createAssetsBinding(html) {
   };
 }
 
+describe('sync-worker CORS', () => {
+  it('allows X-Sync-Admin-Key on preflight for Electron app:// origin', async () => {
+    const res = await worker.fetch(
+      new Request('http://localhost/api/sync/v1/ping', {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'app://rplus',
+          'Access-Control-Request-Method': 'GET',
+          'Access-Control-Request-Headers': 'authorization,x-sync-admin-key',
+        },
+      }),
+      {}
+    );
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get('Access-Control-Allow-Origin'), 'app://rplus');
+    const allow = String(res.headers.get('Access-Control-Allow-Headers') || '');
+    assert.match(allow, /X-Sync-Admin-Key/i);
+    assert.match(allow, /Authorization/i);
+  });
+});
+
 describe('sync-worker ASSETS', () => {
   it('serves GET /mobile/ when mobile/index.html exists', async () => {
     ensureMobileIndex();

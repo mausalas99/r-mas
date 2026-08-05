@@ -1,0 +1,25 @@
+import {
+  applyClinicalOpsLanSnapshot,
+  clinicalOpsMergeHadChanges,
+  collectClinicalOpsForLanSync,
+  flushPendingClinicalOpsLanSnapshot,
+  getCachedClinicalOpsSnapshot,
+  isClinicalOpsLanAvailable,
+  mergeClinicalOpsFromSources,
+  mergeClinicalOpsSnapshotsData,
+  prepareClinicalOpsForLanSync,
+  refreshClinicalOpsSnapshotCache
+} from "/mobile/js/chunks/chunk-IAZG4W3U.js";
+export {
+  applyClinicalOpsLanSnapshot,
+  clinicalOpsMergeHadChanges,
+  collectClinicalOpsForLanSync,
+  flushPendingClinicalOpsLanSnapshot,
+  getCachedClinicalOpsSnapshot,
+  isClinicalOpsLanAvailable,
+  mergeClinicalOpsFromSources,
+  mergeClinicalOpsSnapshotsData,
+  prepareClinicalOpsForLanSync,
+  refreshClinicalOpsSnapshotCache
+};
+//# sourceMappingURL=/js/chunks/clinical-ops-sync-4EUAUEKK.js.map

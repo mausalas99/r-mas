@@ -11,7 +11,8 @@ import {
   startLanAutoDiscovery,
 } from './panel.mjs';
 import { wireLanSyncBridges } from './orchestrator-wire.mjs';
-import { scheduleTierALanServerWarm } from './orchestrator-runtime.mjs';
+import { getLanRuntime, scheduleTierALanServerWarm } from './orchestrator-runtime.mjs';
+import { configureLanSyncDomainModules } from './orchestrator-wire-config.mjs';
 import { shouldShowNubePanel, shouldUseNubeNotLan } from '../cloud-sync/lan-override.mjs';
 import { wireCloudClinicalOpsSyncEvents } from '../cloud-sync/cloud-ops-events.mjs';
 import { getUserSala } from './panel-clinical-context.mjs';
@@ -58,9 +59,10 @@ export function ensureLanSyncRuntimeStarted() {
   if (_lanRuntimeStarted) return;
   _lanRuntimeStarted = true;
 
-  // Nube salas: clinical-ops push only — never mount LAN bridges / discovery / client.
+  // Nube salas: clinical-ops + patient apply deps — never mount LAN bridges / discovery / client.
   if (isCloudSalaBootPath()) {
     wireCloudClinicalOpsSyncEvents();
+    configureLanSyncDomainModules(getLanRuntime());
     return;
   }
 

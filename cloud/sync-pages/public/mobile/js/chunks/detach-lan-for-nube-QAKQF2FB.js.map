@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../features/cloud-sync/detach-lan-for-nube.mjs"],
+  "sourcesContent": ["/**\n * Drop stale LAN LiveSync session when Nube is authoritative (avoids dual push/reconcile).\n * Kept until nothing re-attaches LAN for cloud salas (Phase 2 skips LAN boot; remove later).\n */\nexport async function detachLanLiveSyncForNube() {\n  try {\n    const { clearRoomMembership } = await import('../../live-sync-membership.mjs');\n    clearRoomMembership();\n  } catch {\n    /* optional */\n  }\n  try {\n    const { clearActiveLiveSyncRoom, lanClient } = await import('../lan/runtime.mjs');\n    clearActiveLiveSyncRoom();\n    if (lanClient && typeof lanClient.disconnectLiveChannel === 'function') {\n      lanClient.disconnectLiveChannel();\n    }\n  } catch {\n    /* optional */\n  }\n}\n"],
+  "mappings": ";AAIA,eAAsB,2BAA2B;AAC/C,MAAI;AACF,UAAM,EAAE,oBAAoB,IAAI,MAAM,OAAO,6CAAgC;AAC7E,wBAAoB;AAAA,EACtB,QAAQ;AAAA,EAER;AACA,MAAI;AACF,UAAM,EAAE,yBAAyB,UAAU,IAAI,MAAM,OAAO,gCAAoB;AAChF,4BAAwB;AACxB,QAAI,aAAa,OAAO,UAAU,0BAA0B,YAAY;AACtE,gBAAU,sBAAsB;AAAA,IAClC;AAAA,EACF,QAAQ;AAAA,EAER;AACF;",
+  "names": []
+}

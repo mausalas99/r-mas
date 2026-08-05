@@ -9,7 +9,7 @@ export function applyCors(req, res) {
   headers.set('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
   headers.set(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Sync-Token'
+    'Content-Type, Authorization, X-Sync-Token, X-Sync-Admin-Key, Accept'
   );
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }

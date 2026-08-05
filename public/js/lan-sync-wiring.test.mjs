@@ -225,7 +225,7 @@ describe('LAN event and handler wiring', () => {
     assert.ok(cloudWireIdx < panelIdx, 'cloud events before wireLanPanelDelegation');
     assert.match(
       boot,
-      /isCloudSalaBootPath\(\)[\s\S]*wireCloudClinicalOpsSyncEvents\(\)[\s\S]*return;/
+      /isCloudSalaBootPath\(\)[\s\S]*wireCloudClinicalOpsSyncEvents\(\)[\s\S]*configureLanSyncDomainModules\(getLanRuntime\(\)\)[\s\S]*return;/
     );
     // Eager module-level LAN bridge mount retired — boot owns wiring.
     const orch = read('features/lan/orchestrator.mjs');

@@ -983,7 +983,15 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 #update-modal .btn-primary:hover { background: var(--action-hover); }
 #update-modal .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 #update-modal .btn-link { background: none; border: none; color: var(--action); text-decoration: underline; padding: 8px 6px; font-size: 12px; }
-#update-modal .error-box { font-size: 13px; color: var(--error); margin-bottom: 10px; }
+#update-modal .error-box {
+  font-size: 13px;
+  color: var(--error);
+  margin-bottom: 10px;
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html {
   overflow-x: clip;
