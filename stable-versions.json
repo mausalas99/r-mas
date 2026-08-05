@@ -216,21 +216,21 @@
       "version": "7.5.9",
       "label": "7.5.9",
       "publishedAt": "2026-06-30",
-      "summary": "Recuperaci\u00f3n censo SQLCipher + tombstones/fantasmas LAN",
+      "summary": "Recuperación censo SQLCipher + tombstones/fantasmas LAN",
       "recommended": false
     },
     {
       "version": "7.5.8",
       "label": "7.5.8",
       "publishedAt": "2026-06-30",
-      "summary": "Cat\u00e1logo downgrade 7.5.7",
+      "summary": "Catálogo downgrade 7.5.7",
       "recommended": false
     },
     {
       "version": "7.5.7",
       "label": "7.5.7",
       "publishedAt": "2026-06-30",
-      "summary": "EA suplemento confirm \u2014 confirmar dieta SOME sin re-propuesta",
+      "summary": "EA suplemento confirm — confirmar dieta SOME sin re-propuesta",
       "recommended": false
     },
     {
@@ -300,7 +300,7 @@
       "version": "7.3.7",
       "label": "7.3.7",
       "publishedAt": "2026-06-14",
-      "summary": "Censo LAN estable (readmisi\u00f3n registro) + Importar Drive en expediente",
+      "summary": "Censo LAN estable (readmisión registro) + Importar Drive en expediente",
       "recommended": false
     },
     {
@@ -398,7 +398,7 @@
       "version": "7.2.3",
       "label": "7.2.3",
       "publishedAt": "2026-06-08",
-      "summary": "Anfitri\u00f3n ward empaquetado (10.0.57.52:3738)",
+      "summary": "Anfitrión ward empaquetado (10.0.57.52:3738)",
       "recommended": false
     },
     {
@@ -419,7 +419,7 @@
       "version": "7.1.10",
       "label": "7.1.10",
       "publishedAt": "2026-06-08",
-      "summary": "LAN mDNS resiliente y diagn\u00f3stico \u21c4 ampliado",
+      "summary": "LAN mDNS resiliente y diagnóstico ⇄ ampliado",
       "recommended": false
     },
     {
@@ -440,7 +440,7 @@
       "version": "7.1.7",
       "label": "7.1.7",
       "publishedAt": "2026-06-07",
-      "summary": "LAN roam entre redes \u2014 detecci\u00f3n Wi\u2011Fi y escaneo multi-subred",
+      "summary": "LAN roam entre redes — detección Wi‑Fi y escaneo multi-subred",
       "recommended": false
     },
     {
@@ -573,7 +573,7 @@
       "version": "6.5.9",
       "label": "6.5.9",
       "publishedAt": "2026-06-03",
-      "summary": "LAN directorio, fusi\u00f3n usuarios Mac/Windows, entrega y equipos.",
+      "summary": "LAN directorio, fusión usuarios Mac/Windows, entrega y equipos.",
       "recommended": false
     },
     {
@@ -608,14 +608,14 @@
       "version": "6.5.0",
       "label": "6.5.0",
       "publishedAt": "2026-05-31",
-      "summary": "\u00daltima 6.5.x publicada en GitHub (Historia Cl\u00ednica \u00b7 expediente Sala).",
+      "summary": "Última 6.5.x publicada en GitHub (Historia Clínica · expediente Sala).",
       "recommended": false
     },
     {
       "version": "6.4.2",
       "label": "6.4.2",
       "publishedAt": "2026-05-30",
-      "summary": "Estable anterior si necesitas volver m\u00e1s atr\u00e1s.",
+      "summary": "Estable anterior si necesitas volver más atrás.",
       "recommended": false
     }
   ]

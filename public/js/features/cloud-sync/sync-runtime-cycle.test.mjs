@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createSyncRuntimeCycle,
   humanizeCloudSyncErrorMessage,
+  isCloudRevisionStaleError,
 } from './sync-runtime-cycle.mjs';
 
 function makeOutbox(rows = []) {
@@ -31,6 +32,52 @@ describe('createSyncRuntimeCycle status', () => {
   it('humanizeCloudSyncErrorMessage maps Failed to fetch', () => {
     assert.match(humanizeCloudSyncErrorMessage('Failed to fetch'), /Wi|red|Nube/i);
     assert.equal(humanizeCloudSyncErrorMessage('Revisión conflictiva'), 'Revisión conflictiva');
+  });
+
+  it('isCloudRevisionStaleError detects Worker 409 codes', () => {
+    assert.equal(
+      isCloudRevisionStaleError({ status: 409, data: { error: 'revision_stale' } }),
+      true
+    );
+    assert.equal(isCloudRevisionStaleError({ status: 409, data: { error: 'conflict' } }), true);
+    assert.equal(isCloudRevisionStaleError({ status: 500, data: { error: 'error' } }), false);
+  });
+
+  it('retries push after revision_stale then reaches idle', async () => {
+    const statuses = [];
+    let pushes = 0;
+    const outbox = makeOutbox([
+      { clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }], baseRevision: 0, enqueuedAt: 1 },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 2 }),
+        push: async () => {
+          pushes += 1;
+          if (pushes === 1) {
+            const err = new Error('stale');
+            err.status = 409;
+            err.data = { error: 'revision_stale', message: 'Otro dispositivo actualizó la sala.' };
+            throw err;
+          }
+          return { revision: 3, needPull: false };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 1,
+      setRevision: () => {},
+      onStatus(status) {
+        statuses.push(status);
+      },
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(pushes, 2);
+    assert.equal(outbox.list().length, 0);
+    assert.equal(statuses[statuses.length - 1], 'idle');
   });
 
   it('keeps error after failed push (does not flip to pending)', async () => {

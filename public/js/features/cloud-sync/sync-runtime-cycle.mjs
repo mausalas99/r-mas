@@ -31,6 +31,19 @@ function errorMessage(err, fallback) {
   return humanizeCloudSyncErrorMessage(raw) || fallback;
 }
 
+/** Concurrent Nube writers; Worker returns 409 revision_stale / conflict. */
+const PUSH_STALE_RETRIES = 3;
+
+/**
+ * @param {unknown} err
+ * @returns {boolean}
+ */
+export function isCloudRevisionStaleError(err) {
+  const data = err && typeof err === 'object' ? /** @type {{ data?: { error?: string } }} */ (err) : null;
+  const code = String(data?.data?.error || '').trim();
+  return code === 'revision_stale' || code === 'conflict';
+}
+
 /**
  * @param {import('./outbox.mjs').createOutbox extends () => infer O ? O : never} outbox
  * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
@@ -86,11 +99,7 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
         continue;
       }
       try {
-        const result = await api.push(roomId, {
-          clientMutationId: resolveCloudPushMutationId(item),
-          ops: sanitized.ops,
-          baseRevision: item.baseRevision ?? getRevision(),
-        });
+        const result = await pushWithStaleRetry(roomId, item, sanitized.ops);
         outbox.remove(item.clientMutationId);
         pace.markLocalWrite();
         if (result?.revision != null) setRevision(Number(result.revision));
@@ -100,6 +109,29 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
         throw err;
       }
     }
+  }
+
+  /**
+   * @param {string} roomId
+   * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
+   * @param {unknown[]} ops
+   */
+  async function pushWithStaleRetry(roomId, item, ops) {
+    let lastErr;
+    for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
+      try {
+        return await api.push(roomId, {
+          clientMutationId: resolveCloudPushMutationId(item),
+          ops,
+          baseRevision: getRevision() ?? item.baseRevision ?? 0,
+        });
+      } catch (err) {
+        lastErr = err;
+        if (!isCloudRevisionStaleError(err) || attempt >= PUSH_STALE_RETRIES) throw err;
+        await pullLatest();
+      }
+    }
+    throw lastErr;
   }
 
   return { pullLatest, flushOutbox };

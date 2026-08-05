@@ -13,6 +13,7 @@ import {
   insulinPumpAlgorithmForMedicationItem,
   isInsulinPumpCarrierMedicationItem,
 } from './insulin-pump-some-detect.mjs';
+import { formatRhzeComboSoapShort, isRhzeComboMedicationItem } from './med-receta-tb-combo.mjs';
 
 /** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
 export function dosisBeforeSlash(dosisRaw) {
@@ -346,6 +347,7 @@ function formatSoapPrnPain_(nombre, dosisCompact, critRaw, freqNorm) {
 
 export function formatMedicationSoapShort(item, opts) {
   if (!item) return '';
+  if (isRhzeComboMedicationItem(item)) return formatRhzeComboSoapShort(item, opts);
   var nombre = compactSoapDrugName(applyNombreAccents(expandNombrePresentacion(item.nombreRaw)));
   var via = normalizeVia(item.viaRaw);
   var freqNorm = normalizeFrecuencia(item.frecuenciaRaw);

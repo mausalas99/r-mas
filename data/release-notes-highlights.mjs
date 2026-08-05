@@ -2016,10 +2016,22 @@ var RELEASE_NOTES_798 = [
   },
 ];
 
+var RELEASE_NOTES_800 = [
+  {
+    title: 'TODO',
+    body: 'Completar antes de publicar.',
+  },
+  {
+    title: 'TODO',
+    body: 'Completar antes de publicar.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_799;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_800;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.0': RELEASE_NOTES_800,
   '7.9.9': RELEASE_NOTES_799,
   '7.9.8': RELEASE_NOTES_798,
   '7.9.7': RELEASE_NOTES_797,

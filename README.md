@@ -39,13 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.9](https://github.com/mausalas99/r-mas/releases/tag/v7.9.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.0](https://github.com/mausalas99/r-mas/releases/tag/v8.0.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
 
 
+
+## R+ 8.0.0 (estable — Nube en todas las salas + R+ Móvil + app://)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_8.0.0.txt`.
 ## R+ 7.9.9 (app:// polish — sin banner offline falso + updater limpio)
 
 - **Sin banner offline falso** — En `app://rplus`, export .docx por IPC; no banner «servidor local» ni ping a `/health`.

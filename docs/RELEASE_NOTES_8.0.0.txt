@@ -1,0 +1,22 @@
+R+ 8.0.0 (estable — Nube en todas las salas + R+ Móvil + app://)
+============================================================
+
+Fecha: 2026-08-05
+
+## Resumen
+
+TODO: resumen en una o dos frases.
+
+## Nuevo / mejorado
+
+- **TODO:** punto 1
+- **TODO:** punto 2
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.0
+
+- Mac: `R+-8.0.0-arm64.dmg`, `R+-8.0.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
