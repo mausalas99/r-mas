@@ -1,20 +1,30 @@
-version: 7.9.4
+version: 7.9.5
 files:
-  - url: R+-7.9.4-x64.exe
-    sha512: 7UWmusAqRyHfNRNfEC1vwTUdlyHoMWN+j8Z4Pn8REsor3KkQxdFf4WMsShBWt5bTDmp8Wxoq7iw4lpUKcSzx0Q==
-    size: 122591994
-path: R+-7.9.4-x64.exe
-sha512: 7UWmusAqRyHfNRNfEC1vwTUdlyHoMWN+j8Z4Pn8REsor3KkQxdFf4WMsShBWt5bTDmp8Wxoq7iw4lpUKcSzx0Q==
-releaseDate: '2026-08-04T01:19:21.000Z'
+  - url: R+-7.9.5-x64.exe
+    sha512: +M0Htx5M6RkoPweDO06LR9gdoXoWKLBvkjnhYI5LRSq9k92nwmB1V5fW2Pwrska0vxCukE+agUXQVaR0ibFtSw==
+    size: 122636666
+path: R+-7.9.5-x64.exe
+sha512: +M0Htx5M6RkoPweDO06LR9gdoXoWKLBvkjnhYI5LRSq9k92nwmB1V5fW2Pwrska0vxCukE+agUXQVaR0ibFtSw==
+releaseDate: '2026-08-05T16:24:52.000Z'
 releaseNotes: |
-  7.9.4 renueva el chrome de escritorio con Hybrid H (materiales vidrio/sólido, springs, overlays unificados) y reduce tiempo de herramienta: Tab spine en el registro de EA, ⌘K más rápido, Conexión más clara en Nube y correcciones de paneles en blanco al cambiar pestañas.
+  7.9.5 lleva R+ Móvil / iPad a salas Nube (Sala y Torre HU): el iPad abre desde internet, inicia sesión con tu @usuario y sincroniza signos y expediente esencial sin Mac anfitrión LAN. El código de sala Nube dura el mes calendario (YYYY-MM CDMX). Incluye censo que sí llega a la nube al arrancar, correcciones LWW/LAN y consolidación COAG.
   
-  Hybrid H — chrome — Tokens light/dark/HC, utilidades material-glass, primitivas dialog/sheet/menu, toast con swipe y pausa al ocultar, ⌘K instantáneo con panel vidrio, sidebar/tabs/LiveSync chip, pase board, labs, expediente, Conexión, Eventualidades, ajustes y equipos interno alineados al nuevo lenguaje visual.
+  iPad / R+ Móvil (Nube) — URL pública en el Worker (/mobile/); login + sala activa; guardia board y EA (signos, glu, I/E) con alcance por equipo. Mensajes claros si el censo aún no está en la nube.
   
-  EA — Tab spine — Navegación con Tab entre signos vitales, glucometrías e I/E en el registro manual; salta +1 y controles Alterada; valores editables en orden clínico.
+  ⇄ Conexión — En salas Nube: Copiar enlace móvil (Nube) + QR. En iPad, ⇄ no abre el panel LAN (aviso de recarga).
   
-  Conexión / Nube — Hoja de estado: cuenta (@usuario) antes de sala; identidad en inset group; sin hero LAN en salas Nube; reconocimiento obligatorio del código de recuperación; Diagnóstico LAN huérfano solo cuando el estado Nube lo permite.
+  Nube — sala mensual — Código de sala = mes calendario (YYYY-MM, America/Mexico_City), no día. Al arrancar, ensure-turn refresca la sala sticky al mes actual.
   
-  Eventualidades / docs — Interpretación de labs permanece solo en pestaña Labs; cola «Falta documentar» abre el panel Labs de Eventualidades para deuda de labs.
+  Nube — sala activa — El Worker guarda active_room_id por usuario; el móvil resuelve /rooms/active. Migración D1 004-active-room.sql.
   
-  TTD / polish — Animación de entrada de paneles con fallback (evita Tendencias/Resultados en blanco); censo ATB/Meds sin línea de dieta; hints redundantes retirados del ⌘K.
+  Nube — censo al conectar — Autostart de sync en escritorio; seed de censo (slim) con reintentos; push directo por chunks; mutation ids únicos (sin dedupe eterno del batch); pull con needSnapshot si faltan ops.
+  
+  Nube — signos LWW — Reloj de monitoreo = recordedAt más reciente del historial (signos iPad/Mac ya no se rechazan como stale).
+  
+  Sync worker — ASSETS /mobile/; poll mobile en idle; sin banner «servidor LAN» falso en Safari; outbox en memoria (sin QuotaExceeded en localStorage).
+  
+  LAN — censo / restore — Borrados del host no resucitan en peers; restore busca otras salas + censo del host; reconcile guarda snapshot local.
+  
+  Labs — COAG — Al consolidar, une TP/TTP/INR/Fib/DD de varias solicitudes sin que un COAG rico borre Fibrinógeno/DD.
+  
+  LAN móvil — Sin cambios para Interconsultas, UX, Eme y Área A; invite LAN sigue en esas salas.
