@@ -135,6 +135,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-05** `release-7.9.6`: Nube **Sala 1/2/E** rooms distintos + censo por alcance (R4/Admin sala-wide desktop; iPad por equipo) + prune fantasmas + EA monitoreo stub-safe; `sala-allowlist`, `pull-apply`, `patient-scope-prune`, `build:cloud-mobile`.
 - **2026-08-05** `cloud-sync`: Nube separa **Sala 1 / Sala 2 / Sala E** como rooms distintos (ya no bucket "Sala"); `sala-allowlist`, admin Salas, `ensure-turn`.
 - **2026-08-05** `release-7.9.5`: R+ Móvil Nube (`/mobile/`+QR) + sala mensual `YYYY-MM` + `active_room_id` + census autostart/seed + signos LWW + COAG + LAN restore; `docs/RELEASE_NOTES_7.9.5.txt`, `cloud-mobile/`, `autostart.mjs`, `004-active-room.sql`.
 - **2026-08-03** `hybrid-h`: Apple Hybrid UI materials/overlays/chrome onto main; tokens + ui-overlay + Conexión/labs/pase/eventualidades polish.

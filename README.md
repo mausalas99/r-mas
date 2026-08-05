@@ -39,9 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [7.9.5](https://github.com/mausalas99/r-mas/releases/tag/v7.9.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [7.9.6](https://github.com/mausalas99/r-mas/releases/tag/v7.9.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 7.9.6 (Nube — Sala 1/2/E + censo por alcance)
+
+- **Salas Nube distintas** — Sala 1, Sala 2 y Sala E son rooms separados (no bucket «Sala»); Torre HU sin cambios.
+- **Censo por alcance** — R1/R2 ven solo su equipo; R4/Admin censo completo en escritorio; iPad siempre por equipo.
+- **Sin fantasmas** — Pull Nube poda pacientes fuera de alcance y refresca sidebar/guardia.
+- **EA protegido** — Stubs vacíos de censo Nube ya no borran monitoreo local con datos.
+
+Notas: `docs/RELEASE_NOTES_7.9.6.txt`.
 
 ## R+ 7.9.5 (R+ Móvil en Nube + sala mensual + labs/LAN)
 

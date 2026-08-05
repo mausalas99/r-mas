@@ -1924,10 +1924,34 @@ var RELEASE_NOTES_795 = [
   },
 ];
 
+var RELEASE_NOTES_796 = [
+  {
+    title: 'Sala 1 / 2 / E distintas',
+    body:
+      'En Nube cada unidad es su propia sala (<strong>Sala 1</strong>, <strong>Sala 2</strong>, <strong>Sala E</strong>, <strong>Torre HU</strong>) con código mensual <code>YYYY-MM</code>.',
+  },
+  {
+    title: 'Censo por equipo',
+    body:
+      'R1/R2 ven solo pacientes de su equipo. <strong>R4/Admin</strong> en Mac ven el censo completo de la sala. iPad siempre filtra por equipo.',
+  },
+  {
+    title: 'Sin pacientes fantasma',
+    body:
+      'Tras sincronizar con Nube, R+ quita del sidebar pacientes fuera de tu alcance y protege el monitoreo EA de stubs vacíos.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.6 en todas</strong> las Macs y despliega el Worker (<code>build:cloud-mobile</code> + <code>deploy</code>) el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_795;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_796;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.6': RELEASE_NOTES_796,
   '7.9.5': RELEASE_NOTES_795,
   '7.9.4': RELEASE_NOTES_794,
   '7.9.3': RELEASE_NOTES_793,
