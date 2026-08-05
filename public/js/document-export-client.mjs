@@ -213,9 +213,18 @@ export function canGenerateDocumentsOffline() {
   return canUseDesktopDocumentIpc();
 }
 
+/**
+ * Red «servidor local» strip is only for HTTP doc export (browser / no IPC).
+ * Desktop app://rplus uses Electron IPC — /health on :3738 is irrelevant.
+ * @returns {boolean}
+ */
+export function shouldShowLocalServerOfflineBanner(isRpcOffline) {
+  return !!isRpcOffline && !canGenerateDocumentsOffline();
+}
+
 /** @returns {boolean} true when export must be blocked (no IPC and local server offline). */
 export function isDocExportBlockedByLocalServer(isRpcOffline) {
-  return !!isRpcOffline && !canGenerateDocumentsOffline();
+  return shouldShowLocalServerOfflineBanner(isRpcOffline);
 }
 
 /**

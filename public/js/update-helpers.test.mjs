@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatBytes, formatSpeed, formatProgressLine } from './update-helpers.mjs';
+import {
+  formatBytes,
+  formatSpeed,
+  formatProgressLine,
+  sanitizeUpdaterUserMessage,
+} from './update-helpers.mjs';
 
 test('formatBytes redondea MB legibles', () => {
   assert.match(formatBytes(39258624), /37\.\d+ MB/);
@@ -27,4 +32,25 @@ test('formatProgressLine concatena partes', () => {
   });
   assert.ok(s.includes('Descargando'));
   assert.ok(s.includes('/'));
+});
+
+test('sanitizeUpdaterUserMessage collapses HTML release dumps', () => {
+  const dump =
+    '<div>R+ 7.9.4 (Hybrid H)</div>\n' +
+    'https://github.com/mausalas99/r-mas/releases/tag/v7.9.4\n' +
+    'https://rplus-sync.rmas-workersdev.workers.dev/mobile/\n' +
+    'npm run build:mac\n' +
+    'x'.repeat(500);
+  const out = sanitizeUpdaterUserMessage(dump);
+  assert.ok(out.length < 280);
+  assert.ok(!out.includes('<div'));
+  assert.ok(!/npm run build/i.test(out));
+  assert.match(out, /GitHub|actualización|versión/i);
+});
+
+test('sanitizeUpdaterUserMessage keeps short real errors', () => {
+  assert.equal(
+    sanitizeUpdaterUserMessage('sha512 checksum mismatch'),
+    'sha512 checksum mismatch'
+  );
 });

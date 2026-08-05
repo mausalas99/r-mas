@@ -1,5 +1,6 @@
 /** Update modal UI: show/hide, snooze, error rendering, panels. */
 import { setAsyncButtonLoading } from '../../../ui-motion.mjs';
+import { sanitizeUpdaterUserMessage } from '../../../update-helpers.mjs';
 import { UPDATE_SNOOZE_KEY, UPDATE_DISMISS_VER_KEY, updaterState } from './state.mjs';
 
 function resetUpdateCheckButtons() {
@@ -89,7 +90,11 @@ function renderUpdateError(msg) {
   var label = document.getElementById('update-modal-progress-label');
   var pill = document.getElementById('update-modal-version-pill');
   var notes = document.getElementById('update-modal-notes');
-  if (box) { box.style.display = 'block'; box.textContent = msg || 'Error desconocido'; }
+  var safeMsg = sanitizeUpdaterUserMessage(
+    msg,
+    'No se pudo completar la actualización. Prueba de nuevo o instala desde GitHub.'
+  );
+  if (box) { box.style.display = 'block'; box.textContent = safeMsg; }
   if (state) state.textContent = '';
   if (wrap) wrap.style.display = 'none';
   if (label) label.textContent = '';

@@ -5,12 +5,30 @@ import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 
 /**
+ * Map browser/Electron network noise to a short Spanish hint for Conexión.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function humanizeCloudSyncErrorMessage(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^failed to fetch$/i.test(s) || /networkerror when attempting to fetch/i.test(s)) {
+    return 'Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.';
+  }
+  if (/load failed|network request failed/i.test(s)) {
+    return 'No hubo respuesta de Nube. Revisa la conexión e inténtalo de nuevo.';
+  }
+  return s;
+}
+
+/**
  * @param {unknown} err
  * @param {string} fallback
  */
 function errorMessage(err, fallback) {
   const data = err && typeof err === 'object' ? /** @type {{ data?: { message?: string }, message?: string }} */ (err) : null;
-  return String(data?.data?.message || data?.message || fallback).trim() || fallback;
+  const raw = String(data?.data?.message || data?.message || fallback).trim() || fallback;
+  return humanizeCloudSyncErrorMessage(raw) || fallback;
 }
 
 /**

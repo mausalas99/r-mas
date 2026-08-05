@@ -1,6 +1,9 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSyncRuntimeCycle } from './sync-runtime-cycle.mjs';
+import {
+  createSyncRuntimeCycle,
+  humanizeCloudSyncErrorMessage,
+} from './sync-runtime-cycle.mjs';
 
 function makeOutbox(rows = []) {
   let list = rows.slice();
@@ -23,6 +26,11 @@ describe('createSyncRuntimeCycle status', () => {
   });
   after(() => {
     if (prevOnline) Object.defineProperty(globalThis.navigator, 'onLine', prevOnline);
+  });
+
+  it('humanizeCloudSyncErrorMessage maps Failed to fetch', () => {
+    assert.match(humanizeCloudSyncErrorMessage('Failed to fetch'), /Wi|red|Nube/i);
+    assert.equal(humanizeCloudSyncErrorMessage('Revisión conflictiva'), 'Revisión conflictiva');
   });
 
   it('keeps error after failed push (does not flip to pending)', async () => {

@@ -70,7 +70,11 @@ function populateUpdateAvailableDom(version, releaseNotes, isDowngrade, isRepair
   }
   syncUpdateModalChannelPill(updaterState.pendingUpdaterIsPrerelease);
   var notes = document.getElementById('update-modal-notes');
-  if (notes) notes.textContent = releaseNotes;
+  if (notes) {
+    var clipped = String(releaseNotes || '');
+    if (clipped.length > 600) clipped = clipped.slice(0, 599).replace(/\s+\S*$/, '') + '…';
+    notes.textContent = clipped;
+  }
   var state = document.getElementById('update-modal-state');
   if (state) state.textContent = 'Conectando… La descarga comenzará en breve.';
   var fill = document.getElementById('update-modal-progress-fill');

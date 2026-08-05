@@ -34,3 +34,57 @@ export function formatProgressLine(p) {
   const sp = formatSpeed(p.bytesPerSecond);
   return `Descargando ${t} / ${tot} · ${sp}`;
 }
+
+const UPDATER_MSG_MAX = 420;
+
+/**
+ * electron-updater a veces mete HTML / cuerpo de release en el error.
+ * Mostrar solo un resumen corto en el modal (sin muro rojo de markup).
+ * @param {unknown} raw
+ * @param {string} [fallback]
+ * @returns {string}
+ */
+export function sanitizeUpdaterUserMessage(raw, fallback) {
+  const fb =
+    typeof fallback === 'string' && fallback.trim()
+      ? fallback.trim()
+      : 'No se pudo completar la actualización. Prueba de nuevo o instala desde GitHub.';
+  let s = raw == null ? '' : String(raw);
+  if (!s.trim()) return fb;
+
+  // Strip tags / entities without depending on DOM (main + renderer).
+  s = s
+    .replace(/<\s*script[\s\S]*?<\/\s*script>/gi, ' ')
+    .replace(/<\s*style[\s\S]*?<\/\s*style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const looksLikeDump =
+    s.length > UPDATER_MSG_MAX ||
+    /release notes|github\.com\/.*\/releases|npm run build:|workers\.dev\/mobile/i.test(s) ||
+    /<!doctype|<html\b|<body\b|<div\b/i.test(String(raw || ''));
+
+  if (looksLikeDump) {
+    const head = s.slice(0, 180).trim();
+    const short =
+      head && !/^(R\+|7\.\d|Hybrid|Fecha:)/i.test(head)
+        ? head.replace(/\s+\S*$/, '') + '…'
+        : '';
+    if (short && short.length >= 24 && !/github\.com|npm run|workers\.dev/i.test(short)) {
+      return short + ' Usa «Abrir instalador en GitHub» si el reintento falla.';
+    }
+    return fb;
+  }
+
+  if (s.length > UPDATER_MSG_MAX) {
+    return s.slice(0, UPDATER_MSG_MAX - 1).replace(/\s+\S*$/, '') + '…';
+  }
+  return s;
+}

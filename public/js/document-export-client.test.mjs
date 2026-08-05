@@ -6,6 +6,7 @@ import {
   isDocExportBlockedByLocalServer,
   parseContentDispositionFilename,
   requestDocumentJson,
+  shouldShowLocalServerOfflineBanner,
 } from './document-export-client.mjs';
 
 describe('offline document export guards', () => {
@@ -15,6 +16,28 @@ describe('offline document export guards', () => {
     try {
       assert.equal(isDocExportBlockedByLocalServer(true), false);
       assert.equal(canGenerateDocumentsOffline(), true);
+    } finally {
+      globalThis.window = prev;
+    }
+  });
+
+  it('shouldShowLocalServerOfflineBanner is false when desktop IPC exists', () => {
+    const prev = globalThis.window;
+    globalThis.window = { electronAPI: { generateDocument() {} } };
+    try {
+      assert.equal(shouldShowLocalServerOfflineBanner(true), false);
+      assert.equal(shouldShowLocalServerOfflineBanner(false), false);
+    } finally {
+      globalThis.window = prev;
+    }
+  });
+
+  it('shouldShowLocalServerOfflineBanner is true only without IPC while offline', () => {
+    const prev = globalThis.window;
+    globalThis.window = {};
+    try {
+      assert.equal(shouldShowLocalServerOfflineBanner(true), true);
+      assert.equal(shouldShowLocalServerOfflineBanner(false), false);
     } finally {
       globalThis.window = prev;
     }

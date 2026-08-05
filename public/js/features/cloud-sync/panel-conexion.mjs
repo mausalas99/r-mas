@@ -10,6 +10,7 @@ import {
   wireTeamsChangedListener,
 } from './panel-conexion-bootstrap.mjs';
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
+import { humanizeCloudSyncErrorMessage } from './sync-runtime-cycle.mjs';
 
 /** @param {HTMLElement} section @param {object} deps */
 function bindStatusChip(section, deps) {
@@ -21,7 +22,8 @@ function bindStatusChip(section, deps) {
     chip.setAttribute('data-status', status);
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
-      const text = status === 'error' ? String(detail || '').trim() : '';
+      const text =
+        status === 'error' ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) : '';
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }

@@ -1970,6 +1970,29 @@ var RELEASE_NOTES_797 = [
   },
 ];
 
+var RELEASE_NOTES_799 = [
+  {
+    title: 'Sin banner offline falso',
+    body:
+      'En <strong>app://rplus</strong> las notas salen por IPC — ya no aparece la franja roja de «servidor local» ni se consulta <code>/health</code> en :3738.',
+  },
+  {
+    title: 'Conexión más clara',
+    body:
+      'Errores de red en ⇄ muestran un hint en español (Wi‑Fi / VPN) en lugar de <em>Failed to fetch</em>.',
+  },
+  {
+    title: 'Actualización sin muro HTML',
+    body:
+      'Si el modal de update mostró HTML crudo al bajar 7.9.8, <strong>7.9.9</strong> resume el error y acorta las notas de versión.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>7.9.9 en todas</strong> las Macs. Redeploy del Worker es opcional (solo CORS admin).',
+  },
+];
+
 var RELEASE_NOTES_798 = [
   {
     title: 'Nube en todas las salas',
@@ -1994,9 +2017,10 @@ var RELEASE_NOTES_798 = [
 ];
 
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_798;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_799;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '7.9.9': RELEASE_NOTES_799,
   '7.9.8': RELEASE_NOTES_798,
   '7.9.7': RELEASE_NOTES_797,
   '7.9.6': RELEASE_NOTES_796,

@@ -1,4 +1,5 @@
 /** Stable downgrade confirmation and fallback UI. */
+import { sanitizeUpdaterUserMessage } from '../../../update-helpers.mjs';
 import { updaterState } from './state.mjs';
 import {
   resetUpdateCheckButtons,
@@ -29,10 +30,15 @@ function renderDowngradeFallback(payload) {
   updaterState.updateModalMode = 'upgrade';
   updaterState.pendingDowngradeVersion = null;
   resetUpdateCheckButtons();
-  renderUpdateError(
-    (payload && payload.message ? payload.message : 'No se pudo descargar la versión.') +
-      ' Puedes abrir el instalador en GitHub.'
+  var raw = payload && payload.message ? payload.message : 'No se pudo descargar la versión.';
+  var safe = sanitizeUpdaterUserMessage(
+    raw,
+    'No se pudo descargar esa versión. Abre el instalador en GitHub.'
   );
+  if (safe.indexOf('GitHub') === -1) {
+    safe += ' Puedes abrir el instalador en GitHub.';
+  }
+  renderUpdateError(safe);
   var actions = document.getElementById('update-modal-actions-primary');
   if (actions && payload && (payload.manualUrl || payload.version)) {
     var openBtn = document.createElement('button');

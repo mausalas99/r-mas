@@ -1,5 +1,8 @@
 /** Pending jobs, RPC offline/health, idle lock, privacy wipe. */
-import { canGenerateDocumentsOffline } from '../../document-export-client.mjs';
+import {
+  canGenerateDocumentsOffline,
+  shouldShowLocalServerOfflineBanner,
+} from '../../document-export-client.mjs';
 import { closeSettingsDropdown } from '../settings-help/settings-dropdown.mjs';
 import { AUDIT_LOG_KEY, IDLE_LOCK_DEBOUNCE_MS, IDLE_LOCK_HASH_LS_KEY, IDLE_LOCK_LS_KEY, IDLE_LOCK_VALID_MINUTES } from './shared.mjs';
 import { addAuditEntry } from './audit.mjs';
@@ -15,7 +18,15 @@ var idleLockEnabledMinutes = 0;
 function setRpcOfflineVisible(show) {
   var b = document.getElementById('rpc-offline-banner');
   if (!b) return;
-  b.classList.toggle('visible', !!show);
+  var visible = shouldShowLocalServerOfflineBanner(show);
+  b.classList.toggle('visible', visible);
+  if (!visible) {
+    b.hidden = true;
+    b.setAttribute('aria-hidden', 'true');
+  } else {
+    b.hidden = false;
+    b.removeAttribute('aria-hidden');
+  }
 }
 
 // ── Cola de tareas en curso (pendingJobs) ─────────────────────────
@@ -76,10 +87,10 @@ function setRpcOffline(offline) {
   rpcOffline = !!offline;
   setRpcOfflineVisible(rpcOffline);
   syncOfflineButtonStates();
+  // Desktop IPC: no banner/toast — local :3738 health is not the doc path.
+  if (canGenerateDocumentsOffline()) return;
   if (!prev && rpcOffline) {
-    if (!canGenerateDocumentsOffline()) {
-      try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) { void _e; }
-    }
+    try { rt.showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) { void _e; }
   } else if (prev && !rpcOffline) {
     try { rt.showToast('Servidor local reconectado.', 'success'); } catch (_e) { void _e; }
   }
@@ -120,6 +131,11 @@ function checkRpcServerHealth() {
     }
     return;
   }
+  // app://rplus desktop: docs via IPC; /health is not served by the custom scheme.
+  if (canGenerateDocumentsOffline()) {
+    setRpcOffline(false);
+    return;
+  }
   try {
     fetch('/health', { method: 'GET', cache: 'no-store' })
       .then(function(r) {
@@ -148,6 +164,10 @@ function checkRpcServerHealth() {
 
 function initRpcServerHealthWatch() {
   if (isCloudMobileSurface()) {
+    checkRpcServerHealth();
+    return;
+  }
+  if (canGenerateDocumentsOffline()) {
     checkRpcServerHealth();
     return;
   }
