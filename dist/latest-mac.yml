@@ -1,33 +1,27 @@
-version: 7.9.8
+version: 7.9.9
 files:
-  - url: R+-7.9.8-arm64.zip
-    sha512: vdsGfXZOi0+AmTuwKAbVU+idGrLqRsnWdyI6WqM5/q4DG6yYsl+93sWpxsSJwE8GAT65P+fyzA4rRxQkhOAjbw==
-    size: 139873117
-  - url: R+-7.9.8-arm64.dmg
-    sha512: hQgv5T0UZm3giWJhE0rPoC8NkAiRm88Ha7+qUjHjbfl6pmndkyIAQ9nmw9YzB11H74dfyd/iXEWJD+AOotXZYg==
-    size: 145742410
-  - url: R+-7.9.8-x64.zip
-    sha512: MXvZPbELN1mHPD6U2LdafM5L1PK6xLyYRs6drfsXKOlMwOgswjb6FMgaclNtE8a6E+UaAbGIJe6RDnOimOVmEg==
-    size: 148247150
-  - url: R+-7.9.8-x64.dmg
-    sha512: h2KEgpX76C8P3ByTDST4zST2h+IOrlCG0QMQsaELHBdkkBw7IWLYoKoChzK6cc7X0oO67F8ng8dFHwQKthoilg==
-    size: 154167917
-path: R+-7.9.8-arm64.zip
-sha512: vdsGfXZOi0+AmTuwKAbVU+idGrLqRsnWdyI6WqM5/q4DG6yYsl+93sWpxsSJwE8GAT65P+fyzA4rRxQkhOAjbw==
-releaseDate: '2026-08-05T21:32:11.000Z'
+  - url: R+-7.9.9-arm64.zip
+    sha512: GvpigjYfucU+q0OmsBt7ClzAHr1akZSlXgUX2RkaqmV7bJORbnM9/gO2XYmvqLM52atdjrntj4HSilWsCBuuhQ==
+    size: 139879808
+  - url: R+-7.9.9-arm64.dmg
+    sha512: jNdnxOa7KjKt0AMBMvYgeTBQWXbqgYOoY0QHnvVQLWnCxWATgHfwvUPvoqdi0vSmCNXVR9q7oFcoo06E85y9Qw==
+    size: 145751622
+  - url: R+-7.9.9-x64.zip
+    sha512: HhffMmGLhaCilQ5H11clPE0j5QFnoGjakDA5NXuDCaz9+/FbT9XBeknuPDghELP/j060LNouDXytuZGXeqZ9Yg==
+    size: 148253883
+  - url: R+-7.9.9-x64.dmg
+    sha512: FbgwK+ashslToZHlQzgTDyXPqSpNUrWKAATtkWoxWviguCe6sEZ3EfM4KqW2qrHg3P9B2O1v89UAcWY7nMZf3w==
+    size: 154174630
+path: R+-7.9.9-arm64.zip
+sha512: GvpigjYfucU+q0OmsBt7ClzAHr1akZSlXgUX2RkaqmV7bJORbnM9/gO2XYmvqLM52atdjrntj4HSilWsCBuuhQ==
+releaseDate: '2026-08-05T21:55:28.000Z'
 releaseNotes: |
-  7.9.8 pone todas las salas clínicas en Nube (Interconsultas, UX, Eme y Área A/Pensionistas además de Sala 1/2/E y Torre HU) y retira LiveSync LAN por defecto: /api/lan/v1 responde 410 salvo R_PLUS_ENABLE_LAN_SYNC=1. El escritorio carga la UI por app://rplus (ya no depende de :3738 para pintar). Incluye apply/mutate desacoplados de LAN, borrado Nube (× / masivo) y tombstones LWW que no resucitan labs/pendientes/agenda.
+  7.9.9 afina el corte app://rplus de 7.9.8: ya no aparece el banner rojo «sin servidor local» cuando la app genera .docx por IPC, Conexión muestra errores de red en español en lugar de «Failed to fetch», y el modal de actualización deja de inundar con HTML de release notes. El Worker acepta X-Sync-Admin-Key en preflight desde app://rplus.
   
-  Nube — todas las salas — Allowlist del Worker y del cliente: Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas. Ya no hay salas «solo LAN».
+  Sin banner offline falso — En escritorio (app://rplus), export de notas/indicaciones/listado usa IPC; no se consulta /health en :3738 ni se muestra la franja «servidor local».
   
-  LAN sync opt-in — LiveSync HTTP/WS en :3738 apagado por defecto; sin flag, /api/lan/v1 → lan_sync_retired. Dev/ops: R_PLUS_ENABLE_LAN_SYNC=1.
+  Conexión — errores legibles — «Failed to fetch» / fallos de red → hint corto en español (Wi‑Fi / VPN / reintento) en el chip de ⇄.
   
-  Renderer app://rplus — La ventana Electron sirve public/ por protocolo custom (sin localhost:3738). Legacy: R_PLUS_RENDERER_HTTP=1.
+  Modal actualización — Errores de electron-updater se sanitizan (sin muro de HTML); notas de versión acortadas; caja de error con scroll acotado.
   
-  sync-apply / borrado Nube — × y borrado masivo: quita local + tombstone + wipe en Nube (features/sync-apply/); ya no pasa por el batch LAN.
-  
-  Tombstones LWW (Worker) — Al borrar, limpia entry + labs + todos + agenda y bloquea re-admit del mismo paciente en el room.
-  
-  Ops / interno — clinical-ops-sync + eventos Nube; censo interno lee SQLCipher (host-store-db); Ajustes «activar sync» abre Nube (⇄) en salas cloud, no arranca LAN.
-  
-  Conexión — Panel y chrome alineados al corte: sin hero LAN en salas Nube; detach LAN al unirse a Nube.
+  Worker CORS — Preflight desde app://rplus permite X-Sync-Admin-Key y Authorization (admin Nube desde Electron).
