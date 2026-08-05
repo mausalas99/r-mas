@@ -1,27 +1,33 @@
-version: 7.9.7
+version: 7.9.8
 files:
-  - url: R+-7.9.7-arm64.zip
-    sha512: +itaggbLO1VV+xs5bvxrQzteZ+EoesmXaWLDxBq8MvRIjNnVEWg0vZgBbo2O187HOXqr6M1+NK1QIcmGoQsmMQ==
-    size: 139860541
-  - url: R+-7.9.7-arm64.dmg
-    sha512: GH1sFvF1Hin3+e1RnxuSZpRoDAbtChCBw/uOOselVQGZFoh7rba2VLkKvyngxPKJYvx3hv37qSXlshhIS6y+mg==
-    size: 145740214
-  - url: R+-7.9.7-x64.zip
-    sha512: sOtncxBJnguwok9KOS2RioigSi6RVgGtTjSlAHIy3F3I9ILBX3295pr/Oq7Xuq4M2qUOnbBIMXys86Ib91wNhw==
-    size: 148234572
-  - url: R+-7.9.7-x64.dmg
-    sha512: VvbWLM4uw/HbmRqIdOIufqoysJ2Co55fDyyLTTCPD2DdpXFioWM7ciccBX259RpxXoUQka8zBBxsQRuuJFV2qA==
-    size: 154164052
-path: R+-7.9.7-arm64.zip
-sha512: +itaggbLO1VV+xs5bvxrQzteZ+EoesmXaWLDxBq8MvRIjNnVEWg0vZgBbo2O187HOXqr6M1+NK1QIcmGoQsmMQ==
-releaseDate: '2026-08-05T18:11:26.000Z'
+  - url: R+-7.9.8-arm64.zip
+    sha512: vdsGfXZOi0+AmTuwKAbVU+idGrLqRsnWdyI6WqM5/q4DG6yYsl+93sWpxsSJwE8GAT65P+fyzA4rRxQkhOAjbw==
+    size: 139873117
+  - url: R+-7.9.8-arm64.dmg
+    sha512: hQgv5T0UZm3giWJhE0rPoC8NkAiRm88Ha7+qUjHjbfl6pmndkyIAQ9nmw9YzB11H74dfyd/iXEWJD+AOotXZYg==
+    size: 145742410
+  - url: R+-7.9.8-x64.zip
+    sha512: MXvZPbELN1mHPD6U2LdafM5L1PK6xLyYRs6drfsXKOlMwOgswjb6FMgaclNtE8a6E+UaAbGIJe6RDnOimOVmEg==
+    size: 148247150
+  - url: R+-7.9.8-x64.dmg
+    sha512: h2KEgpX76C8P3ByTDST4zST2h+IOrlCG0QMQsaELHBdkkBw7IWLYoKoChzK6cc7X0oO67F8ng8dFHwQKthoilg==
+    size: 154167917
+path: R+-7.9.8-arm64.zip
+sha512: vdsGfXZOi0+AmTuwKAbVU+idGrLqRsnWdyI6WqM5/q4DG6yYsl+93sWpxsSJwE8GAT65P+fyzA4rRxQkhOAjbw==
+releaseDate: '2026-08-05T21:32:11.000Z'
 releaseNotes: |
-  7.9.7 corrige sincronización Nube/LAN que se quedaba corta: pendientes que no refrescaban tras pull, signos EA que no salían al guardar, y ops de mutate que se pisaban en el outbox. Cada entidad (pendiente, agenda, baja) lleva su propio clientMutationId; el push de censo distingue monitoreo/campos de entradas de paciente.
+  7.9.8 pone todas las salas clínicas en Nube (Interconsultas, UX, Eme y Área A/Pensionistas además de Sala 1/2/E y Torre HU) y retira LiveSync LAN por defecto: /api/lan/v1 responde 410 salvo R_PLUS_ENABLE_LAN_SYNC=1. El escritorio carga la UI por app://rplus (ya no depende de :3738 para pintar). Incluye apply/mutate desacoplados de LAN, borrado Nube (× / masivo) y tombstones LWW que no resucitan labs/pendientes/agenda.
   
-  Mutate por entidad — Pendientes, agenda y bajas usan clientMutationId propio (no batch compartido); menos colisiones en el outbox Nube.
+  Nube — todas las salas — Allowlist del Worker y del cliente: Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas. Ya no hay salas «solo LAN».
   
-  Censo push — El reintento de censo reconoce ops de monitoreo/campos además de entries/; evita reintentos infinitos cuando el paciente ya tiene datos clínicos en cola.
+  LAN sync opt-in — LiveSync HTTP/WS en :3738 apagado por defecto; sin flag, /api/lan/v1 → lan_sync_retired. Dev/ops: R_PLUS_ENABLE_LAN_SYNC=1.
   
-  Pendientes tras pull — Pull Nube refresca la UI de pendientes en los pacientes tocados (paridad con LAN).
+  Renderer app://rplus — La ventana Electron sirve public/ por protocolo custom (sin localhost:3738). Legacy: R_PLUS_RENDERER_HTTP=1.
   
-  EA → sync inmediato — Registrar signos en EA dispara scheduleLiveSyncPush() al guardar; monitoreo llega al turno sin esperar otro evento.
+  sync-apply / borrado Nube — × y borrado masivo: quita local + tombstone + wipe en Nube (features/sync-apply/); ya no pasa por el batch LAN.
+  
+  Tombstones LWW (Worker) — Al borrar, limpia entry + labs + todos + agenda y bloquea re-admit del mismo paciente en el room.
+  
+  Ops / interno — clinical-ops-sync + eventos Nube; censo interno lee SQLCipher (host-store-db); Ajustes «activar sync» abre Nube (⇄) en salas cloud, no arranca LAN.
+  
+  Conexión — Panel y chrome alineados al corte: sin hero LAN en salas Nube; detach LAN al unirse a Nube.

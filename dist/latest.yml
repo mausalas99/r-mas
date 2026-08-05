@@ -1,18 +1,24 @@
-version: 7.9.7
+version: 7.9.8
 files:
-  - url: R+-7.9.7-x64.exe
-    sha512: wOgYI7D+yigQ5LCxhzewxOAhUqaUAQNtGs4gPZRuNo0QgHmAK6dhBKVY7XhVNlTnoBirjNuAKUdwYSqX5J9hcQ==
-    size: 122645150
-path: R+-7.9.7-x64.exe
-sha512: wOgYI7D+yigQ5LCxhzewxOAhUqaUAQNtGs4gPZRuNo0QgHmAK6dhBKVY7XhVNlTnoBirjNuAKUdwYSqX5J9hcQ==
-releaseDate: '2026-08-05T18:11:26.000Z'
+  - url: R+-7.9.8-x64.exe
+    sha512: H6p5glbC13S9oL1dpBCUVb7lJeu6GAgOZgGCSfeguCHHff+REMjRnsrwoE0+mPaOAXDHBM5JVGr9LHtQ5K7ORw==
+    size: 122649223
+path: R+-7.9.8-x64.exe
+sha512: H6p5glbC13S9oL1dpBCUVb7lJeu6GAgOZgGCSfeguCHHff+REMjRnsrwoE0+mPaOAXDHBM5JVGr9LHtQ5K7ORw==
+releaseDate: '2026-08-05T21:32:11.000Z'
 releaseNotes: |
-  7.9.7 corrige sincronización Nube/LAN que se quedaba corta: pendientes que no refrescaban tras pull, signos EA que no salían al guardar, y ops de mutate que se pisaban en el outbox. Cada entidad (pendiente, agenda, baja) lleva su propio clientMutationId; el push de censo distingue monitoreo/campos de entradas de paciente.
+  7.9.8 pone todas las salas clínicas en Nube (Interconsultas, UX, Eme y Área A/Pensionistas además de Sala 1/2/E y Torre HU) y retira LiveSync LAN por defecto: /api/lan/v1 responde 410 salvo R_PLUS_ENABLE_LAN_SYNC=1. El escritorio carga la UI por app://rplus (ya no depende de :3738 para pintar). Incluye apply/mutate desacoplados de LAN, borrado Nube (× / masivo) y tombstones LWW que no resucitan labs/pendientes/agenda.
   
-  Mutate por entidad — Pendientes, agenda y bajas usan clientMutationId propio (no batch compartido); menos colisiones en el outbox Nube.
+  Nube — todas las salas — Allowlist del Worker y del cliente: Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas. Ya no hay salas «solo LAN».
   
-  Censo push — El reintento de censo reconoce ops de monitoreo/campos además de entries/; evita reintentos infinitos cuando el paciente ya tiene datos clínicos en cola.
+  LAN sync opt-in — LiveSync HTTP/WS en :3738 apagado por defecto; sin flag, /api/lan/v1 → lan_sync_retired. Dev/ops: R_PLUS_ENABLE_LAN_SYNC=1.
   
-  Pendientes tras pull — Pull Nube refresca la UI de pendientes en los pacientes tocados (paridad con LAN).
+  Renderer app://rplus — La ventana Electron sirve public/ por protocolo custom (sin localhost:3738). Legacy: R_PLUS_RENDERER_HTTP=1.
   
-  EA → sync inmediato — Registrar signos en EA dispara scheduleLiveSyncPush() al guardar; monitoreo llega al turno sin esperar otro evento.
+  sync-apply / borrado Nube — × y borrado masivo: quita local + tombstone + wipe en Nube (features/sync-apply/); ya no pasa por el batch LAN.
+  
+  Tombstones LWW (Worker) — Al borrar, limpia entry + labs + todos + agenda y bloquea re-admit del mismo paciente en el room.
+  
+  Ops / interno — clinical-ops-sync + eventos Nube; censo interno lee SQLCipher (host-store-db); Ajustes «activar sync» abre Nube (⇄) en salas cloud, no arranca LAN.
+  
+  Conexión — Panel y chrome alineados al corte: sin hero LAN en salas Nube; detach LAN al unirse a Nube.
