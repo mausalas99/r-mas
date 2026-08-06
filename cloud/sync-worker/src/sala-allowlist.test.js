@@ -20,6 +20,7 @@ describe('normalizeCloudSala', () => {
   });
 
   it('normalizes all clinical ward aliases', () => {
+    assert.equal(normalizeCloudSala('torre'), 'Torre HU');
     assert.equal(normalizeCloudSala('interconsultas'), 'Interconsultas');
     assert.equal(normalizeCloudSala('UX'), 'UX');
     assert.equal(normalizeCloudSala('eme'), 'Eme');

@@ -145,6 +145,29 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(ops.some((op) => op.path === 'agenda/a1'));
   });
 
+  it('mapBundleEnvelopeToOps injects patientId on todos from map key', () => {
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries: [],
+        todos: {
+          msgkce1rtd1kd: [
+            {
+              id: 't1',
+              text: 'IC cardio',
+              updatedAt: '2026-08-06T13:26:20.809Z',
+            },
+          ],
+        },
+      },
+      meta
+    );
+    const todoOp = ops.find((op) => op.path === 'todos/t1');
+    assert.ok(todoOp);
+    assert.equal(todoOp.value.patientId, 'msgkce1rtd1kd');
+    assert.equal(todoOp.updatedAt, '2026-08-06T13:26:20.809Z');
+    assert.notEqual(todoOp.updatedAt, meta.updatedAt);
+  });
+
   it('mapBundleEnvelopeToOps pushes monitoreo for estado actual sync', () => {
     const ops = mapBundleEnvelopeToOps(
       {

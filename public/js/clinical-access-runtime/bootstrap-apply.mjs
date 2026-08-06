@@ -24,6 +24,9 @@ async function mergeBootstrapProfileFromDb(userId) {
     clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
     clinicalSessionContext.user.is_program_admin =
       profile.is_program_admin === 1 || profileRank === 'Admin' ? 1 : 0;
+    if (profile.sala != null) {
+      persistClinicalUserBinding({ sala: String(profile.sala) });
+    }
   } catch { /* profile IPC optional */ }
 }
 

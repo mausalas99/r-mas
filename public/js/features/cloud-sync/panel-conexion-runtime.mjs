@@ -99,6 +99,14 @@ export function stopSharedNubeRuntime() {
   }
 }
 
+export function getSharedNubeRuntime() {
+  return sharedRuntime;
+}
+
+export function getSharedNubeOutbox() {
+  return sharedOutbox;
+}
+
 /**
  * @param {{
  *   getApi: () => ReturnType<import('./api-client.mjs').createCloudSyncApi>,

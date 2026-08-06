@@ -2057,10 +2057,34 @@ var RELEASE_NOTES_801 = [
   },
 ];
 
+var RELEASE_NOTES_802 = [
+  {
+    title: 'Diagnóstico Nube',
+    body:
+      'En ⇄ → <strong>Opciones</strong> → <strong>Diagnóstico Nube</strong>: cola de mutaciones, últimos errores y trazas push/pull. <strong>Copiar informe</strong> para soporte sin DevTools.',
+  },
+  {
+    title: 'Sala Torre y equipos',
+    body:
+      '<strong>torre</strong> ya normaliza a <strong>Torre HU</strong> al unirte a Nube. Al <strong>salir del equipo</strong>, las entregas activas se resuelven en lugar de bloquearte.',
+  },
+  {
+    title: 'Sync más fiable',
+    body:
+      'Todos en Nube llevan <strong>patientId</strong>; la sala de <strong>Mi rotación</strong> (SQLCipher) gana sobre ajustes viejos; al reconectar se alinea el room del turno.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.2 en todas</strong> las Macs. Si usas Torre HU, ejecuta <code>npm run deploy</code> en <code>cloud/sync-worker</code> el mismo día.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_801;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_802;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.2': RELEASE_NOTES_802,
   '8.0.1': RELEASE_NOTES_801,
   '8.0.0': RELEASE_NOTES_800,
   '7.9.9': RELEASE_NOTES_799,

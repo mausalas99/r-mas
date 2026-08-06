@@ -18,7 +18,9 @@ export function normalizeCloudSala(raw) {
     const unit = salaUnit[1] === 'e' ? 'E' : salaUnit[1];
     return `Sala ${unit}`;
   }
-  if (key === 'torre hu' || key === 'torre-hu' || key === 'torrehu') return 'Torre HU';
+  if (key === 'torre' || key === 'torre hu' || key === 'torre-hu' || key === 'torrehu') {
+    return 'Torre HU';
+  }
   if (key.includes('interconsult')) return 'Interconsultas';
   if (key === 'ux') return 'UX';
   if (key === 'eme') return 'Eme';

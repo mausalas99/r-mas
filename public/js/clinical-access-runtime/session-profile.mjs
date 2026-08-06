@@ -23,6 +23,7 @@ export async function refreshClinicalUserProfile() {
       profile.is_program_admin === 1 ? 1 : 0;
     persistClinicalUserBinding({
       isProgramAdmin: clinicalSessionContext.user.is_program_admin === 1,
+      sala: profile.sala != null ? String(profile.sala) : undefined,
     });
     void touchClinicalUserActivityRemote(userId);
   } catch { /* profile IPC optional */ }

@@ -106,6 +106,8 @@ export function renderOutput(result, opts) {
   attachSomeTablesParsed(result, src);
   appendResLabChunksToBox(box, resLabs, src, result, rt.getLabOutputPrefs(), rt);
   document.getElementById('lab-output-section').style.display = 'block';
+  var labRoot = document.getElementById('appcontent-lab');
+  if (labRoot) labRoot.classList.remove('is-lab-chunk-loading');
   syncLabOutputHistoryAfterRender(opts, result, rt);
   labPanelBridge.syncLabOutputChrome();
   rt.wireAtbRisHoverPanels(box);

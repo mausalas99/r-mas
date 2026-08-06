@@ -15,6 +15,7 @@ import {
   renderAfterAuth,
 } from './panel-conexion-handlers.mjs';
 import { mountCloudMobileInviteInHost } from './panel-mobile-invite.mjs';
+import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 
 /** @param {boolean} [hasCloudSession] @returns {string} */
 export function adminShellHtml(hasCloudSession = false) {
@@ -32,6 +33,11 @@ function buildConexionGoView(section, deps, ui) {
           section.querySelector('[data-cloud-mobile-invite-host]'),
           { runtime: deps.runtime }
         );
+      },
+      onNube() {
+        refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
+          toast: ui.toast,
+        });
       },
     });
   };
@@ -176,10 +182,22 @@ export function localRoomFromSession(deps, normalizedSala) {
   };
 }
 
+/** Reconcile sticky roomId with canonical sala+month room (ensure-turn). */
+function reconcileCanonicalCloudRoom(section, deps, ui, cachedRoomId) {
+  if (typeof ui.tryAutoEnsureTurnRoom !== 'function') return;
+  void ui.tryAutoEnsureTurnRoom().then(function (room) {
+    if (!room || !section.isConnected) return;
+    const nextId = String(room.id || '').trim();
+    if (!nextId || nextId === String(cachedRoomId || '').trim()) return;
+    ui.renderConnected(room);
+  });
+}
+
 /** @param {HTMLElement} section @param {object} deps @param {object} ui */
 export function bootstrapConexionState(section, deps, ui) {
   const roomId = deps.getCloudSyncRoomId();
   if (roomId && deps.getCloudSyncToken()) {
+    reconcileCanonicalCloudRoom(section, deps, ui, roomId);
     const optimistic = localRoomFromSession(deps, ui.normalizedSala);
     if (optimistic) {
       // Local snapshot is enough — skip getRoom (saves Free-tier requests).

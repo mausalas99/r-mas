@@ -11,6 +11,7 @@ import {
 } from './panel-conexion-bootstrap.mjs';
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
 import { humanizeCloudSyncErrorMessage } from './sync-runtime-cycle.mjs';
+import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 
 /** @param {HTMLElement} section @param {object} deps */
 function bindStatusChip(section, deps) {
@@ -28,6 +29,11 @@ function bindStatusChip(section, deps) {
       detailEl.hidden = !text;
     }
     deps.setStatus?.(status, detail);
+    if (section.dataset.cloudView === 'nube') {
+      refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
+        toast,
+      });
+    }
   };
 }
 
@@ -38,9 +44,8 @@ function bindStatusChip(section, deps) {
 /** @param {object} deps @param {{ toast: Function }} ui */
 function createEnsureTurn(deps, ui) {
   let inflight = null;
-  let done = false;
   return async function tryAutoEnsureTurnRoom() {
-    if (!deps.getCloudSyncToken() || done) return null;
+    if (!deps.getCloudSyncToken()) return null;
     if (inflight) return inflight;
     const { ensureTurnRoom } = await import('./ensure-turn-room.mjs');
     // Always refresh to the canonical month room (not a sticky day roomId).
@@ -52,13 +57,11 @@ function createEnsureTurn(deps, ui) {
       setCloudSyncRoomSnapshot: deps.setCloudSyncRoomSnapshot,
       setCloudSyncRevision: deps.setCloudSyncRevision,
       onConnected() {
-        done = true;
         deps.onCloudRoomChange?.(true);
       },
       toast: ui.toast,
     }).finally(function () {
       inflight = null;
-      done = true;
     });
     return inflight;
   };

@@ -249,7 +249,7 @@ describe('clinical-access-db', () => {
     assert.equal(findUserTeamForAutoAssign(db, u.userId), null);
   });
 
-  it('removeTeamMember blocks leave when active guardia covers team', () => {
+  it('removeTeamMember resolves active guardias and leaves team', () => {
     const leader = ensureClinicalUser(db, { clientId: 'lead-leave', rank: 'R2' });
     const r1 = ensureClinicalUser(db, { clientId: 'r1leave', rank: 'R1' });
     const team = createTeam(db, {
@@ -265,16 +265,15 @@ describe('clinical-access-db', () => {
       coveringUserId: r1.userId,
       sourceTeamId: team.team_id,
     });
-    assert.throws(
-      () => removeTeamMember(db, team.team_id, r1.userId),
-      /entregas activas/
-    );
-    db.prepare(`DELETE FROM active_guardias WHERE patient_id = ?`).run('p-leave-1');
     removeTeamMember(db, team.team_id, r1.userId);
     const row = db
       .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
       .get(team.team_id, r1.userId);
     assert.equal(row, undefined);
+    const guardia = db
+      .prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`)
+      .get('p-leave-1');
+    assert.equal(guardia?.status, 'Resolved');
   });
 
   it('buildActivePatientCountByTeam ignores LAN stubs without census chart', () => {

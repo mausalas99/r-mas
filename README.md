@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.1](https://github.com/mausalas99/r-mas/releases/tag/v8.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.2](https://github.com/mausalas99/r-mas/releases/tag/v8.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -48,6 +48,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.2 (Nube diagnóstico + sala Torre + salir de equipo)
+
+- **Diagnóstico Nube** — ⇄ → Opciones → cola, errores y trazas push/pull; copia informe para soporte.
+- **Sala Torre** — `torre` normaliza a Torre HU (cliente + Worker).
+- **Salir del equipo** — Resuelve entregas activas al salir en lugar de bloquear.
+- **Sync** — Todos con `patientId`; sala clínica desde SQLCipher; room canónico al reconectar.
+- **Despliega Worker + app** — Mismo día si usas Torre HU: `npm run deploy` en `cloud/sync-worker` e instala 8.0.2 en todas las Macs.
+
+Notas: `docs/RELEASE_NOTES_8.0.2.txt`.
 ## R+ 8.0.1 (hotfix — pull Nube + push concurrente Worker)
 
 - **Pull Nube** — Corrige «No se pudieron aplicar los cambios de la nube» al sincronizar censo sin montar LAN.

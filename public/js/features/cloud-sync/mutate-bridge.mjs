@@ -15,6 +15,7 @@ import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_DEBOUNCE_SLOW_MS } from './cloud-syn
 import { labSetTimestamp, monitoreoUpdatedAt } from '../../lan-patient-merge.mjs';
 import { patients } from '../../app-state.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
+import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 
 export { CLOUD_BATCH_MUTATION_ID };
 export { pushCloudClinicalOpsNow } from './mutate-bridge-clinical-ops.mjs';
@@ -73,6 +74,10 @@ let bridgeRuntime = null;
 /** @param {NonNullable<typeof bridgeRuntime>} deps */
 export function configureCloudMutateBridge(deps) {
   bridgeRuntime = deps;
+}
+
+export function isCloudMutateBridgeConfigured() {
+  return !!(bridgeRuntime && bridgeRuntime.outbox);
 }
 
 /** @param {{ actorId?: string, getActorId?: () => string }} [meta] */
@@ -274,7 +279,17 @@ function mapBundleTodosToOps(bundle, meta) {
     for (let j = 0; j < list.length; j += 1) {
       const todo = list[j];
       if (!todo?.id) continue;
-      ops.push(cloudOp({ path: `todos/${todo.id}`, value: todo, ...meta }));
+      const patientId = String(pid || todo.patientId || '').trim();
+      const row = { ...todo, patientId };
+      const todoAt = String(row.updatedAt || meta.updatedAt).trim() || meta.updatedAt;
+      ops.push(
+        cloudOp({
+          path: `todos/${todo.id}`,
+          value: row,
+          actorId: meta.actorId,
+          updatedAt: todoAt,
+        })
+      );
     }
   }
   return ops;
@@ -509,7 +524,13 @@ export async function pushCloudCensusNow() {
     );
     return { ok: true, entryOps, totalOps: ops.length, pushed };
   } catch (err) {
-    return { ok: false, reason: 'push_failed', message: err?.message || String(err) };
+    const message = err?.message || String(err);
+    recordCloudSyncError({
+      op: 'census',
+      code: 'push_failed',
+      message,
+    });
+    return { ok: false, reason: 'push_failed', message };
   }
 }
 

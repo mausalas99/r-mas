@@ -12,6 +12,7 @@ describe('sala-allowlist', () => {
     assert.equal(normalizeCloudSala('Sala 1'), 'Sala 1');
     assert.equal(normalizeCloudSala('sala e'), 'Sala E');
     assert.equal(normalizeCloudSala('torre-hu'), 'Torre HU');
+    assert.equal(normalizeCloudSala('torre'), 'Torre HU');
   });
 
   it('keeps clinical ward for Conexión display', () => {

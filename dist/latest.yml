@@ -1,26 +1,18 @@
-version: 8.0.0
+version: 8.0.1
 files:
-  - url: R+-8.0.0-x64.exe
-    sha512: k9sNDkdodcsuM0vIYetOifHqrEj8u2jmhgdoatvKIYL1oDImxEFSsbeUNd+zaC1B+j86CL8T8t1DRqOvAHkgRg==
-    size: 122657988
-path: R+-8.0.0-x64.exe
-sha512: k9sNDkdodcsuM0vIYetOifHqrEj8u2jmhgdoatvKIYL1oDImxEFSsbeUNd+zaC1B+j86CL8T8t1DRqOvAHkgRg==
-releaseDate: '2026-08-05T22:13:47.000Z'
+  - url: R+-8.0.1-x64.exe
+    sha512: 14wuvlN00Xc1z93jsoTQSl2nm9h5jDcoy5CwG1UkAjwu5/IomsmSLtRdy4Ek2mYxv+ph6rHRDthkjmRjV8yi3A==
+    size: 122649779
+path: R+-8.0.1-x64.exe
+sha512: 14wuvlN00Xc1z93jsoTQSl2nm9h5jDcoy5CwG1UkAjwu5/IomsmSLtRdy4Ek2mYxv+ph6rHRDthkjmRjV8yi3A==
+releaseDate: '2026-08-05T23:00:50.000Z'
 releaseNotes: |
-  8.0.0 consolida el corte Nube-first del turno: todas las salas clínicas sincronizan por ⇄ Conexión (Sala 1/2/E, Torre HU, Interconsultas, UX, Eme y Área A/Pensionistas), R+ Móvil / iPad opera desde internet sin Mac anfitrión LAN, y el escritorio carga por app://rplus (sin depender de localhost:3738). LiveSync LAN queda opt-in (R_PLUS_ENABLE_LAN_SYNC=1). Incluye borrado Nube con tombstones LWW, censo por alcance, recuperación por códigos y pulido del modal de actualización.
+  8.0.1 corrige el toast «No se pudieron aplicar los cambios de la nube» al conectar o sincronizar en salas Nube (el pull no montaba las dependencias de apply de pacientes sin LAN). En el Worker, el push ahora confirma mutaciones con revisión atómica y reintento ante carreras concurrentes entre Macs/iPads del turno.
   
-  Nube — todas las salas — Allowlist Worker + cliente: Sala 1/2/E, Torre HU, Interconsultas, UX, Eme, Área A/Pensionistas. Código de sala mensual YYYY-MM (CDMX); rooms distintos por sala física.
+  Pull Nube — apply de censo — Salas Nube configuran configureLanSyncDomainModules sin montar LAN; patient-entries hace fallback a getLanRuntime() si faltaba wiring. El censo remoto vuelve a aplicarse al conectar ⇄.
   
-  R+ Móvil / iPad — URL pública /mobile/ en el Worker; login @usuario + sala activa; guardia board y EA (signos, glu, I/E) con alcance por equipo. ⇄ ofrece enlace móvil + QR en salas Nube.
+  Worker — push atómico — commitMutationBatch gatea INSERT/UPDATE de mutación + bump de revision + cifrado de estado; hasta 5 reintentos si dos dispositivos escriben a la vez. Menos revision_stale espurios y sin commits parciales.
   
-  Censo por alcance — R1/R2 ven su equipo; R4/Admin censo sala-wide en escritorio; iPad siempre por equipo. Prune de fantasmas tras pull Nube.
+  Worker CORS — Preflight acepta X-Sync-Admin-Key y Accept (admin Nube / herramientas desde app://rplus).
   
-  LAN sync opt-in — /api/lan/v1 apagado por defecto (lan_sync_retired). Dev/ops: R_PLUS_ENABLE_LAN_SYNC=1. Offline = SQLCipher local + outbox; sin fallback LAN.
-  
-  Renderer app://rplus — Electron sirve public/ por protocolo custom. Export .docx por IPC (sin banner «servidor local» falso). Conexión humaniza errores de red en español.
-  
-  Borrado Nube + tombstones — × y borrado masivo via sync-apply; Worker LWW limpia labs, pendientes y agenda; no resucita pacientes borrados.
-  
-  Conexión — Pasos Connect → Sala → Equipo → Más; códigos de recuperación; admin reset. Panel alineado al corte Nube (sin hero LAN en salas cloud).
-  
-  Actualización — Modal electron-updater sanitiza errores (sin muro HTML); notas acortadas. Worker CORS acepta X-Sync-Admin-Key desde app://rplus.
+  Tests — patient-entries-nube.test.mjs + wiring en lan-sync-wiring / lan-sync-clinical-ops.

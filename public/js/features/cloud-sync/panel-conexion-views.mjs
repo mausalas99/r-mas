@@ -163,6 +163,7 @@ export function connectedViewsHtml({
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
   }
   const sistemaRows =
+    optionsRow('Diagnóstico Nube', 'Cola, errores y estado de sync', 'nube') +
     optionsRow('Diagnóstico LAN', 'Cola local · no es Nube', 'lan') +
     optionsRow('Avanzado', 'URL del servicio', 'advanced');
 
@@ -190,6 +191,12 @@ export function connectedViewsHtml({
       : '') +
     viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
     (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
+    viewBlock(
+      'nube',
+      'Diagnóstico Nube',
+      '<p class="cloud-sync-hint">Cola de mutaciones, últimos errores y trazas push/pull. Copia el informe para soporte.</p>' +
+        '<div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host></div>'
+    ) +
     viewBlock(
       'lan',
       'Diagnóstico LAN',
@@ -266,6 +273,7 @@ const CONEXION_MODAL_TITLES = {
   ops: 'Operaciones',
   admin: 'Administración',
   cuenta: 'Cuenta',
+  nube: 'Diagnóstico Nube',
   lan: 'Diagnóstico LAN',
   advanced: 'Avanzado',
 };
@@ -277,6 +285,7 @@ const CONEXION_MODAL_BACK_LABEL = {
   ops: 'Opciones',
   admin: 'Opciones',
   cuenta: 'Opciones',
+  nube: 'Opciones',
   lan: 'Opciones',
   advanced: 'Opciones',
 };
@@ -308,7 +317,7 @@ function syncConexionModalChrome(view) {
 /**
  * @param {HTMLElement} section
  * @param {string} view
- * @param {{ onAdmin?: () => void | Promise<void> }} [hooks]
+ * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onNube?: () => void | Promise<void> }} [hooks]
  */
 export function applyConexionView(section, view, hooks) {
   const next = String(view || 'status').trim() || 'status';
@@ -329,5 +338,8 @@ export function applyConexionView(section, view, hooks) {
   }
   if (next === 'mobile' && typeof hooks?.onMobile === 'function') {
     void hooks.onMobile();
+  }
+  if (next === 'nube' && typeof hooks?.onNube === 'function') {
+    void hooks.onNube();
   }
 }

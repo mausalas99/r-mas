@@ -18,15 +18,23 @@ export function getClinicalRank() {
 }
 
 export function getUserSala() {
-  var s = getClinicalSettings();
-  var fromSettings = String(s.clinicalSala || '').trim();
-  if (fromSettings) return fromSettings;
+  var fromSettings = '';
+  var fromUser = '';
+  try {
+    var s = getClinicalSettings();
+    fromSettings = String(s.clinicalSala || '').trim();
+  } catch {
+    /* ignore */
+  }
   try {
     var user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
-    return String(user && user.sala ? user.sala : '').trim();
+    fromUser = String(user && user.sala ? user.sala : '').trim();
   } catch {
-    return '';
+    /* ignore */
   }
+  // SQLCipher profile (Mi rotación) wins over rpc-settings when they diverge.
+  if (fromUser) return fromUser;
+  return fromSettings;
 }
 
 export function isClinicalRegistered() {

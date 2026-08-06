@@ -3,6 +3,14 @@
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
+import {
+  cloudSyncErrorCode,
+  noteCloudSyncCycle,
+  noteCloudSyncPull,
+  noteCloudSyncPush,
+  recordCloudSyncError,
+  recordCloudSyncTrace,
+} from './cloud-sync-diagnostics.mjs';
 
 /**
  * Map browser/Electron network noise to a short Spanish hint for Conexión.
@@ -80,6 +88,12 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
     const result = await api.pull(roomId, since);
     if (result?.revision != null) setRevision(Number(result.revision));
     if (applyPullResult) await applyPullResult(result);
+    noteCloudSyncPull();
+    recordCloudSyncTrace('pull', {
+      since,
+      revision: result?.revision != null ? Number(result.revision) : null,
+      opsCount: Array.isArray(result?.ops) ? result.ops.length : 0,
+    });
   }
 
   async function flushOutbox() {
@@ -104,8 +118,20 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
         pace.markLocalWrite();
         if (result?.revision != null) setRevision(Number(result.revision));
         if (result?.needPull) await pullLatest();
+        noteCloudSyncPush();
+        recordCloudSyncTrace('push', {
+          clientMutationId: item.clientMutationId,
+          opCount: sanitized.ops.length,
+          revision: result?.revision != null ? Number(result.revision) : null,
+        });
       } catch (err) {
-        setStatus('error', errorMessage(err, 'No se pudo enviar un cambio a la nube.'));
+        const msg = errorMessage(err, 'No se pudo enviar un cambio a la nube.');
+        recordCloudSyncError({
+          op: 'push',
+          code: cloudSyncErrorCode(err),
+          message: msg,
+        });
+        setStatus('error', msg);
         throw err;
       }
     }
@@ -202,13 +228,24 @@ export function createSyncRuntimeCycle(deps) {
       await pullLatest();
       outboxSync.refreshIdleStatus();
       scheduler.noteSuccess();
+      noteCloudSyncCycle(true);
     } catch (err) {
-      if (scheduler.isRateLimitedError(err)) {
-        setStatus('error', 'Nube ocupada (límite de peticiones). Reintento automático más lento.');
+      const rateLimited = scheduler.isRateLimitedError(err);
+      const msg = rateLimited
+        ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
+        : errorMessage(err, 'Error de sincronización con la nube.');
+      if (!rateLimited) {
+        recordCloudSyncError({
+          op: 'cycle',
+          code: cloudSyncErrorCode(err),
+          message: msg,
+        });
       } else {
-        setStatus('error', errorMessage(err, 'Error de sincronización con la nube.'));
+        recordCloudSyncTrace('rate_limit', { message: msg });
       }
+      setStatus('error', msg);
       scheduler.noteFailure(err);
+      noteCloudSyncCycle(false);
     }
   }
 
