@@ -18,6 +18,7 @@ import {
 } from '../../../lib/db/clinical-access-db.mjs';
 import {
   exportClinicalOpsSnapshot,
+  exportClinicalOpsSnapshotForSala,
   mergeClinicalOpsSnapshot,
   pickNewerClinicalOpsSnapshot,
   stampRotationNuevaAt,
@@ -810,6 +811,41 @@ describe('clinical-ops-sync', () => {
 
     const row = db.prepare(`SELECT name FROM teams WHERE team_id = ?`).get(team.team_id);
     assert.equal(row.name, 'Equipo renombrado');
+  });
+
+  it('exportClinicalOpsSnapshotForSala filters teams and membership by effective sala', () => {
+    const db = openDb();
+    const userS2 = ensureClinicalUser(db, { clientId: 'dev-s2', rank: 'R2' });
+    db.prepare(`UPDATE users SET sala = ? WHERE user_id = ?`).run('Sala 2', userS2.userId);
+    const userSE = ensureClinicalUser(db, { clientId: 'dev-se', rank: 'R1' });
+    db.prepare(`UPDATE users SET sala = ? WHERE user_id = ?`).run('Sala E', userSE.userId);
+
+    const teamS2 = createTeam(db, {
+      name: 'Sala 2 Team',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: userS2.userId,
+    });
+    const teamSE = createTeam(db, {
+      name: 'Dr. Sam',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala E',
+      createdBy: userSE.userId,
+    });
+    joinTeam(db, teamSE.team_id, userSE.userId, { subAreaFraction: 'A' });
+
+    const salaE = exportClinicalOpsSnapshotForSala(db, 'Sala E');
+    assert.equal(salaE.teams.length, 1);
+    assert.equal(salaE.teams[0].name, 'Dr. Sam');
+    assert.equal(salaE.team_membership.length, 1);
+    assert.equal(salaE.team_membership[0].team_id, teamSE.team_id);
+
+    const sala2 = exportClinicalOpsSnapshotForSala(db, 'Sala 2');
+    assert.equal(sala2.teams.length, 1);
+    assert.equal(sala2.teams[0].team_id, teamS2.team_id);
+    assert.equal(sala2.team_membership.length, 0);
   });
 
   it('bundle merge keeps local clinical_users when incoming omits them on rotation nueva', () => {
