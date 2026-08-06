@@ -1,26 +1,44 @@
-version: 8.0.2
+version: 8.0.3
 files:
-  - url: R+-8.0.2-x64.exe
-    sha512: lNa5T342UXdHbdakGkeKB1bjELDhgWHO0A//Bpu5QbpkF4bbGvABf02/wXeVMbB4NVugAerM1nhXITSaPWoLBg==
-    size: 122661762
-path: R+-8.0.2-x64.exe
-sha512: lNa5T342UXdHbdakGkeKB1bjELDhgWHO0A//Bpu5QbpkF4bbGvABf02/wXeVMbB4NVugAerM1nhXITSaPWoLBg==
-releaseDate: '2026-08-06T14:49:20.000Z'
+  - url: R+-8.0.3-x64.exe
+    sha512: py0UszPAfSa9EpO8/9cvfdKgaTy8HQ44yAfbBcCb8+YD5M5UypyiM4Iq2I4O5VakW0lsAd6o965T+hInGIXe4w==
+    size: 122691961
+path: R+-8.0.3-x64.exe
+sha512: py0UszPAfSa9EpO8/9cvfdKgaTy8HQ44yAfbBcCb8+YD5M5UypyiM4Iq2I4O5VakW0lsAd6o965T+hInGIXe4w==
+releaseDate: '2026-08-06T20:06:59.000Z'
 releaseNotes: |
-  8.0.2 añade Diagnóstico Nube en ⇄ (cola, errores y trazas copiables para soporte), corrige la sala Torre al unirse a Nube, deja salir del equipo resolviendo entregas activas automáticamente, y afina sync (todos con patientId, sala clínica desde SQLCipher, room canónico al reconectar).
+  8.0.3 corrige el reingreso de pacientes en Nube tras un borrado (tombstone LWW ya no bloquea un alta intencional), evita que la revisión de sync retroceda en respuestas duplicadas del Worker, deja de forzar el gate de perfil LAN en equipos que ya completaron registro, y añade asignación de usuarios Nube a equipos desde el panel Admin Nube (como el directorio LAN).
   
-  ⇄ Diagnóstico Nube — Opciones → Diagnóstico Nube: estado de sync, cola de mutaciones, últimos errores y trazas push/pull. Botón Copiar informe para soporte sin abrir DevTools.
+  Eventualidades sin Labs — Se quita la pestaña Labs / interpretación de Eventualidades. Solo bitácora clínica + formulario Agregar abajo (registro restaurado).
   
-  Sala Torre HU — torre (sin «HU») normaliza a Torre HU en cliente y Worker; evita rechazo al elegir sala en Conexión.
+  Admin Nube — Equipos — Pestaña Equipos en Conexión → Admin: lista usuarios de la nube, asigna equipo + ciclo; crea perfil clínico local si falta y sincroniza clinicalOps al turno.
   
-  Salir del equipo — Al salir, las entregas activas del equipo se resuelven en lugar de bloquear con «entregas activas».
+  Reingreso Nube — Alta de paciente empuja censo a Nube (enqueueCloudPatientAdmit); el Worker limpia tombstones cuando llega una op de entrada más nueva. Mismo registro con id nuevo también revive el censo.
   
-  Sala clínica fiable — El perfil SQLCipher (Mi rotación) gana sobre rpc-settings cuando divergen; bootstrap y refresh persisten sala en sesión.
+  Pull seguro — shouldApplyCloudTombstone ignora tombstones obsoletos si el mismo registro ya está admitido con otro patientId.
   
-  Sync Nube — Todos en push llevan patientId y updatedAt por ítem; reconexión reconcilia roomId canónico (ensure-turn); errores de push/censo/ciclo alimentan el diagnóstico.
+  Revisión estable — advanceCloudSyncRevision y el ciclo push/pull solo avanzan la revisión local; no retroceden ante clientMutationId duplicado (p. ej. clinicalOps en 541 vs sala en 779).
   
-  Labs — Quita el estado de carga del chunk al terminar de renderizar el panel.
+  Sync automático — Tras un cambio local corre el mismo ciclo que Forzar sincronización (push+pull); los clientMutationId de wire llevan enqueuedAt para que re-edits de clinicalOps/todos/agenda no los ignore el Worker; el poll no se apaga si la ventana está oculta.
   
-  Worker — d1-errors clasifica choques UNIQUE (revisión vs client_mutation_id) para reintentos más precisos.
+  Equipos al conectar — Al unirse a Nube se hace pull+push de clinicalOps por sala (sin esperar un edit en Mi rotación); hidratar desde pull ya no re-pushea en bucle.
   
-  Tests — cloud-sync-diagnostics, mutate-bridge (todos), panel-clinical-context, clinical-access-db (leave team).
+  Onboarding equipo — Tras Unirme/Crear, el paso «Únete a un equipo» se cierra solo (recarga teams de SQLCipher antes de evaluar el gate; ya no hace falta refresh).
+  
+  Sin re-registro con equipo — Si ya perteneces a un equipo, no se relanza el panel de registro; cambiar @usuario reusa el mismo user_id (no crea peer_* huérfanos).
+  
+  Copy R+ Cloud — Ayuda, tour/aprendizaje, onboarding y diálogos dejan de hablar de «LAN / Migración 7.9»; el turno se describe como R+ Cloud / Nube (⇄ Conexión).
+  
+  Censo Nube más vivo — Poll ~15 s + pull al enfocar la ventana; censo se construye sin depender del stub LAN; la barra de pacientes se refresca tras pull (nombre/datos ya no esperan un edit del otro).
+  
+  Nombre real gana — PACIENTE SIN NOMBRE (alta/SOME sin nombre) ya no pisa un nombre escrito (p. ej. Cynthia) por LWW con reloj de seed.
+  
+  Censo Leslie / equipo — En desktop el pull aplica el room completo de la sala; el filtro por equipo (asignaciones) es solo en la barra. Así no se pierden los 5 de Leslie si las asignaciones llegan después del censo.
+  
+  Gate de perfil — Dispositivos que ya tenían @usuario, nombre y sala no vuelven a ver onboarding de perfil en cada arranque.
+  
+  ⇄ Conexión — El chip de estado resuelve toast desde deps (evita ReferenceError al montar el panel).
+  
+  Worker — maybeResurrectPatientFromOp en lww.js; tests de re-admit y registro duplicado.
+  
+  Tests — lww, pull-apply, sync-runtime-cycle, settings, clinical-settings, panel-conexion, panel-admin-equipos, clinical-access-users-provision.
