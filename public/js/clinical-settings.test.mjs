@@ -85,6 +85,23 @@ describe('clinical-settings LAN profile gate', () => {
     assert.equal(next.clinicalUsername, 'mgarcia');
     assert.equal(next.clinicalDisplayName, 'Dr. García');
   });
+
+  it('auto-completes gate for devices that already finished registration', () => {
+    memory.set(
+      'rpc-settings',
+      JSON.stringify({
+        clinicalRegistered: true,
+        clinicalUsername: 'mgarcia',
+        clinicalDisplayName: 'Dr. García',
+        clinicalSala: 'Sala 1',
+        clinicalLanProfileGateVersion: '5.5.7',
+      })
+    );
+    assert.equal(needsClinicalLanProfileGate(), false);
+    const stored = JSON.parse(memory.get('rpc-settings') || '{}');
+    assert.equal(stored.clinicalLanProfileGateVersion, CLINICAL_LAN_PROFILE_GATE_VERSION);
+    assert.equal(stored.clinicalUsername, 'mgarcia');
+  });
 });
 
 describe('bundledWardShiftPin', () => {

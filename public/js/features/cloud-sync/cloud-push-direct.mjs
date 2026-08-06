@@ -55,7 +55,11 @@ export async function pushCloudOpsDirect(api, roomId, ops, getRevision, setRevis
       ops: sanitized.ops,
       baseRevision: getRevision() ?? 0,
     });
-    if (result?.revision != null) setRevision(Number(result.revision));
+    if (result?.revision != null) {
+      const next = Number(result.revision);
+      const current = Number(getRevision() ?? 0);
+      if (Number.isFinite(next) && next > current) setRevision(next);
+    }
     appliedOps += sanitized.ops.length;
   }
   return { appliedOps, chunks: chunks.length };

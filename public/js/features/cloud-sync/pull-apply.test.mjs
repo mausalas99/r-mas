@@ -131,6 +131,26 @@ describe('pull-apply cloud snapshot merge', () => {
   });
 });
 
+describe('pull-apply tombstone guard', () => {
+  it('shouldApplyCloudTombstone skips stale id when registro was re-admitted', async () => {
+    const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
+    const { patients: patientList } = await import('../../app-state.mjs');
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'p-new', registro: '2166042-4', nombre: 'REINGRESO' });
+    try {
+      assert.equal(
+        shouldApplyCloudTombstone('p-old', { registro: '2166042-4' }),
+        false
+      );
+      assert.equal(shouldApplyCloudTombstone('p-old', { registro: '' }), true);
+    } finally {
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+});
+
 describe('pull-apply sync-apply wiring (Phase 3)', () => {
   it('imports patient apply/delete from sync-apply not lan', () => {
     assert.match(pullApplySrc, /sync-apply\/patient-entries/);

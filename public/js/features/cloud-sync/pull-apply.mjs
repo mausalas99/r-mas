@@ -3,6 +3,7 @@
  */
 import { storage } from '../../storage.js';
 import { saveState } from '../../app-state.mjs';
+import { patients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
@@ -63,10 +64,26 @@ function applyCloudAgendaMap(agendaMap) {
   storage.saveScheduledProcedures(live);
 }
 
+/** @param {string} patientId @param {unknown} tombstoneMeta */
+export function shouldApplyCloudTombstone(patientId, tombstoneMeta) {
+  const pid = String(patientId || '').trim();
+  if (!pid) return false;
+  const reg = String(
+    tombstoneMeta && typeof tombstoneMeta === 'object'
+      ? /** @type {{ registro?: string }} */ (tombstoneMeta).registro || ''
+      : ''
+  ).trim();
+  if (!reg) return true;
+  return !patients.some(function (p) {
+    return p && String(p.id || '') !== pid && String(p.registro || '').trim() === reg;
+  });
+}
+
 /** @param {Record<string, unknown>} tombstones */
 function applyCloudTombstones(tombstones) {
   let removed = false;
   for (const patientId of Object.keys(tombstones || {})) {
+    if (!shouldApplyCloudTombstone(patientId, tombstones[patientId])) continue;
     if (removePatientLocally(patientId)) removed = true;
   }
   return removed;

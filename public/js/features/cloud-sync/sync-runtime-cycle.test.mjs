@@ -177,4 +177,38 @@ describe('createSyncRuntimeCycle status', () => {
     assert.ok(text.length < 600_000);
     assert.equal(outbox.list().length, 0);
   });
+
+  it('does not regress revision on duplicate clinicalOps push response', async () => {
+    let revision = 779;
+    const revisions = [];
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'clinicalOps',
+        ops: [{ path: 'clinicalOps', value: { teams: [] } }],
+        baseRevision: 541,
+        enqueuedAt: 1,
+      },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 779, ops: [] }),
+        push: async () => ({ revision: 541, needPull: false }),
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision(next) {
+        revision = Number(next);
+        revisions.push(revision);
+      },
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(revision, 779);
+    assert.ok(!revisions.includes(541));
+    assert.equal(outbox.list().length, 0);
+  });
 });

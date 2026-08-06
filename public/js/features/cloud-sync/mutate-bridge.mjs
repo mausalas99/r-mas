@@ -601,6 +601,33 @@ export function enqueueCloudAgendaDelete(id, updatedAt) {
   ]);
 }
 
+/** Push census fields for a newly admitted patient (clears Nube tombstones via LWW). */
+export function enqueueCloudPatientAdmit(patient) {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !patient?.id) return;
+  const pid = String(patient.id).trim();
+  if (!pid || pid.indexOf('demo-') === 0) return;
+  const meta = {
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: String(patient.lanUpdatedAt || new Date().toISOString()),
+  };
+  /** @type {CloudSyncOp[]} */
+  const ops = [];
+  pushCensusFieldsOp(ops, pid, patient, meta.actorId);
+  const registro = String(patient.registro || '').trim();
+  if (registro) {
+    ops.push(
+      cloudOp({
+        path: `entries/${pid}`,
+        value: { id: pid, registro },
+        ...meta,
+      })
+    );
+  }
+  if (!ops.length) return;
+  enqueueOps(ops);
+  scheduleCloudSyncPush();
+}
+
 /** @param {object} patient */
 export function enqueueCloudPatientDelete(patient) {
   if (!isCloudSyncActive() || !patient?.id || !bridgeRuntime?.outbox) return;

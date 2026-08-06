@@ -170,6 +170,17 @@ export function setCloudSyncRevision(revision) {
   writeDual(REVISION_KEY, String(Number(revision) || 0));
 }
 
+/**
+ * Apply a server revision after pull/push. Ignores stale lower values — e.g. when the
+ * Worker returns a prior mutation's revision for a duplicate `clientMutationId`.
+ * @param {number} revision
+ */
+export function advanceCloudSyncRevision(revision) {
+  const next = Number(revision) || 0;
+  if (next <= 0) return;
+  if (next > getCloudSyncRevision()) setCloudSyncRevision(next);
+}
+
 export function getCloudSyncSettings() {
   return {
     baseUrl: getCloudSyncUrl(),

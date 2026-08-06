@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.2](https://github.com/mausalas99/r-mas/releases/tag/v8.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.3](https://github.com/mausalas99/r-mas/releases/tag/v8.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -49,6 +49,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.3 (reingreso Nube + revisión estable + gate perfil)
+
+- **Reingreso Nube** — Alta empuja censo; tombstone LWW se limpia con op más nueva (mismo registro, id nuevo incluido).
+- **Revisión estable** — Sync no retrocede ante respuestas duplicadas del Worker (`clinicalOps`, push directo).
+- **Gate perfil LAN** — Equipos ya registrados no repiten onboarding de `@usuario` en cada arranque.
+- **Despliega Worker + app** — Mismo día: `npm run deploy` en `cloud/sync-worker` e instala 8.0.3 en todas las Macs.
+
+Notas: `docs/RELEASE_NOTES_8.0.3.txt`.
 ## R+ 8.0.2 (Nube diagnóstico + sala Torre + salir de equipo)
 
 - **Diagnóstico Nube** — ⇄ → Opciones → cola, errores y trazas push/pull; copia informe para soporte.

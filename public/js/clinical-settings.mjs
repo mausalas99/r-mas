@@ -1,7 +1,11 @@
 /**
  * Persist clinical identity binding in rpc-settings (device ↔ DB user).
  */
-import { normalizeUsername } from './clinical-username.mjs';
+import {
+  isLegacyMachineUsername,
+  isValidUsernameFormat,
+  normalizeUsername,
+} from './clinical-username.mjs';
 
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '7.9.0';
@@ -97,9 +101,33 @@ export function resolveClinicalClientId(settings = readRpcSettings()) {
   return 'desktop-host';
 }
 
+/**
+ * Devices that already completed registration before the 7.9 gate should not
+ * be forced through onboarding again on every restart.
+ * @param {Record<string, unknown>|null|undefined} [settings]
+ */
+export function maybeAutoCompleteLanProfileGate(settings = readRpcSettings()) {
+  if (isClinicalLocalOnlyMode(settings)) return settings;
+  if (
+    String(settings?.clinicalLanProfileGateVersion || '') === CLINICAL_LAN_PROFILE_GATE_VERSION
+  ) {
+    return settings;
+  }
+  if (settings?.clinicalRegistered !== true) return settings;
+  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  if (!isValidUsernameFormat(cachedUser)) return settings;
+  if (isLegacyMachineUsername(cachedUser, resolveClinicalClientId(settings))) return settings;
+  if (isLocalOnlyPlaceholderUsername(cachedUser)) return settings;
+  const hasName = String(settings.clinicalDisplayName || '').trim();
+  const hasSala = String(settings.clinicalSala || '').trim();
+  if (!hasName || !hasSala) return settings;
+  return markClinicalLanProfileGateComplete(settings);
+}
+
 /** @param {Record<string, unknown>|null|undefined} [settings] */
 export function needsClinicalLanProfileGate(settings = readRpcSettings()) {
   if (isClinicalLocalOnlyMode(settings)) return false;
+  settings = maybeAutoCompleteLanProfileGate(settings);
   return (
     String(settings?.clinicalLanProfileGateVersion || '') !== CLINICAL_LAN_PROFILE_GATE_VERSION
   );

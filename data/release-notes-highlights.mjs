@@ -2080,10 +2080,34 @@ var RELEASE_NOTES_802 = [
   },
 ];
 
+var RELEASE_NOTES_803 = [
+  {
+    title: 'Reingreso en Nube',
+    body:
+      'Tras borrar un paciente, un <strong>alta nueva</strong> vuelve al censo del turno. El cliente empuja censo al admitir; el Worker limpia tombstones con ops más nuevas (mismo <strong>registro</strong>, id distinto incluido).',
+  },
+  {
+    title: 'Revisión de sync estable',
+    body:
+      'La revisión local <strong>no retrocede</strong> si el Worker devuelve un número viejo en un push duplicado (p. ej. <code>clinicalOps</code>). Menos pulls en bucle y cola más predecible.',
+  },
+  {
+    title: 'Perfil LAN sin repetir',
+    body:
+      'Si ya tenías <strong>@usuario</strong>, nombre y sala guardados, R+ ya no te obliga a repetir el gate de perfil LAN en cada reinicio.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.3 en todas</strong> las Macs. Ejecuta <code>npm run deploy</code> en <code>cloud/sync-worker</code> el mismo día para el reingreso en sala.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_802;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_803;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.3': RELEASE_NOTES_803,
   '8.0.2': RELEASE_NOTES_802,
   '8.0.1': RELEASE_NOTES_801,
   '8.0.0': RELEASE_NOTES_800,

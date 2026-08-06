@@ -81,12 +81,21 @@ function createOutboxSync(outbox, setStatus) {
 function createPullPush(deps, setStatus, outboxSync, pace) {
   const { api, outbox, getRoomId, getRevision, setRevision, applyPullResult } = deps;
 
+  /** @param {number} revision */
+  function applyServerRevision(revision) {
+    const next = Number(revision);
+    if (!Number.isFinite(next) || next <= 0) return;
+    const current = Number(getRevision() ?? 0);
+    if (next <= current) return;
+    setRevision(next);
+  }
+
   async function pullLatest() {
     const roomId = getRoomId();
     if (!roomId) return;
     const since = getRevision() ?? 0;
     const result = await api.pull(roomId, since);
-    if (result?.revision != null) setRevision(Number(result.revision));
+    if (result?.revision != null) applyServerRevision(Number(result.revision));
     if (applyPullResult) await applyPullResult(result);
     noteCloudSyncPull();
     recordCloudSyncTrace('pull', {
@@ -116,7 +125,7 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
         const result = await pushWithStaleRetry(roomId, item, sanitized.ops);
         outbox.remove(item.clientMutationId);
         pace.markLocalWrite();
-        if (result?.revision != null) setRevision(Number(result.revision));
+        if (result?.revision != null) applyServerRevision(Number(result.revision));
         if (result?.needPull) await pullLatest();
         noteCloudSyncPush();
         recordCloudSyncTrace('push', {

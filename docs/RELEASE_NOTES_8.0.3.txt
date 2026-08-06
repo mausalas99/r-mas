@@ -1,0 +1,46 @@
+R+ 8.0.3 (reingreso Nube + revisión estable + gate perfil)
+============================================================
+
+Fecha: 2026-08-06
+
+## Resumen
+
+**8.0.3** corrige el **reingreso de pacientes en Nube** tras un borrado (tombstone LWW ya no bloquea un alta intencional), evita que la **revisión de sync retroceda** en respuestas duplicadas del Worker, y deja de forzar el **gate de perfil LAN** en equipos que ya completaron registro.
+
+## Nuevo / mejorado
+
+- **Reingreso Nube** — Alta de paciente empuja censo a Nube (`enqueueCloudPatientAdmit`); el Worker limpia tombstones cuando llega una op de entrada más nueva. Mismo **registro** con id nuevo también revive el censo.
+- **Pull seguro** — `shouldApplyCloudTombstone` ignora tombstones obsoletos si el mismo registro ya está admitido con otro `patientId`.
+- **Revisión estable** — `advanceCloudSyncRevision` y el ciclo push/pull solo avanzan la revisión local; no retroceden ante `clientMutationId` duplicado (p. ej. `clinicalOps` en 541 vs sala en 779).
+- **Gate perfil LAN** — Dispositivos que ya tenían `@usuario`, nombre y sala no vuelven a ver onboarding de perfil en cada arranque (`maybeAutoCompleteLanProfileGate`).
+- **⇄ Conexión** — El chip de estado resuelve `toast` desde `deps` (evita ReferenceError al montar el panel).
+- **Worker** — `maybeResurrectPatientFromOp` en `lww.js`; tests de re-admit y registro duplicado.
+- **Tests** — `lww`, `pull-apply`, `sync-runtime-cycle`, `settings`, `clinical-settings`, `panel-conexion`.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.3
+
+- Mac: `R+-8.0.3-arm64.dmg`, `R+-8.0.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.3-x64.exe`.
+
+Descarga **8.0.3 en todas las Macs** del turno. **Despliega el Worker el mismo día** — la lógica de reingreso vive en `cloud/sync-worker`.
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si en 8.0.x un paciente borrado en Nube no volvía al censo tras re-admitirlo, 8.0.3 lo corrige en cliente y Worker.
+- Sin redeploy del Worker, el cliente mejora revisión estable y gate de perfil; el **reingreso** en sala requiere Worker actualizado.
+- R+ Móvil hereda el comportamiento de tombstones al hacer pull; no hay cambios de UI móvil en esta versión.

@@ -14,6 +14,7 @@ import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { stampPatientClinicalSala } from '../clinico-access.mjs';
 import { stampPatientRegistrationMeta } from '../patient-registration-meta.mjs';
 import { clearPatientDeleteTombstoneForAdmit } from './lan-sync.mjs';
+import { enqueueCloudPatientAdmit } from './cloud-sync/mutate-bridge.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import {
   adoptTourPatientOnCommit,
@@ -228,6 +229,7 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
   if (registrationSala) patient.sala = registrationSala;
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
+  enqueueCloudPatientAdmit(patient);
   initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);
   rt.applyDefaultsToNewPatient(patient.id);
   rt.applyDefaultsToNewIndicaciones(patient.id);

@@ -120,7 +120,7 @@ describe('applyOps LWW', () => {
     assert.equal(result.state.entries.length, QUOTAS.maxLivePatients);
   });
 
-  it('tombstone fully wipes entry, labs, todos, agenda and blocks re-admit', () => {
+  it('tombstone wipes entry and blocks stale sidecar/todo sync', () => {
     let s = emptyState();
     ({ state: s } = applyOps(s, [
       {
@@ -169,26 +169,77 @@ describe('applyOps LWW', () => {
 
     ({ state: s } = applyOps(s, [
       {
-        path: 'entries/p1/fields',
-        value: { nombre: 'ZOMBIE' },
-        updatedAt: '2026-08-05T13:00:00.000Z',
-        actorId: 'b',
-      },
-      {
         path: 'labSidecars/p1/set2',
-        value: { setAt: '2026-08-05T13:00:00.000Z' },
-        updatedAt: '2026-08-05T13:00:00.000Z',
-        actorId: 'b',
+        value: { setAt: '2026-08-05T11:00:00.000Z' },
+        updatedAt: '2026-08-05T11:00:00.000Z',
+        actorId: 'a',
       },
       {
         path: 'todos/t2',
         value: { id: 't2', patientId: 'p1', text: 'no' },
-        updatedAt: '2026-08-05T13:00:00.000Z',
-        actorId: 'b',
+        updatedAt: '2026-08-05T11:00:00.000Z',
+        actorId: 'a',
       },
     ]));
     assert.equal(s.entries.length, 0);
     assert.equal(s.labSidecars.p1, undefined);
     assert.equal(s.todos.t2, undefined);
+  });
+
+  it('any actor may re-admit after tombstone with newer entry op', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/fields',
+        value: { nombre: 'BORRAR', registro: '2166042-4' },
+        updatedAt: '2026-08-05T10:00:00.000Z',
+        actorId: 'a',
+      },
+      {
+        path: 'tombstones/p1',
+        value: { registro: '2166042-4', deletedAt: '2026-08-05T12:00:00.000Z' },
+        updatedAt: '2026-08-05T12:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 0);
+    assert.ok(s.tombstones.p1);
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p1/fields',
+        value: { nombre: 'REINGRESO', registro: '2166042-4' },
+        updatedAt: '2026-08-05T13:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 1);
+    assert.equal(s.entries[0].fields.nombre, 'REINGRESO');
+    assert.equal(s.tombstones.p1, undefined);
+  });
+
+  it('new patient id with same registro clears tombstone on re-admit', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'tombstones/p-old',
+        value: { registro: '8888-1', deletedAt: '2026-08-05T12:00:00.000Z' },
+        updatedAt: '2026-08-05T12:00:00.000Z',
+        actorId: 'admin',
+      },
+    ]));
+    assert.ok(s.tombstones['p-old']);
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'entries/p-new/fields',
+        value: { nombre: 'NUEVO', registro: '8888-1' },
+        updatedAt: '2026-08-05T13:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    assert.equal(s.entries.length, 1);
+    assert.equal(s.entries[0].id, 'p-new');
+    assert.equal(s.tombstones['p-old'], undefined);
   });
 });

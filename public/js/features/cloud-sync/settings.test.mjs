@@ -9,6 +9,9 @@ import {
   setCloudSyncRoomSnapshot,
   getCloudSyncRoomSnapshot,
   getCloudSyncRoomId,
+  getCloudSyncRevision,
+  setCloudSyncRevision,
+  advanceCloudSyncRevision,
 } from './settings.mjs';
 
 function memoryStore() {
@@ -85,5 +88,16 @@ describe('cloud sync remember me settings', () => {
     clearCloudSyncSession();
     assert.equal(getCloudSyncRoomId(), '');
     assert.equal(getCloudSyncRoomSnapshot(), null);
+  });
+
+  it('advanceCloudSyncRevision ignores stale lower server revisions', () => {
+    setCloudSyncRevision(779);
+    advanceCloudSyncRevision(541);
+    assert.equal(getCloudSyncRevision(), 779);
+    advanceCloudSyncRevision(800);
+    assert.equal(getCloudSyncRevision(), 800);
+    setCloudSyncRevision(0);
+    advanceCloudSyncRevision(12);
+    assert.equal(getCloudSyncRevision(), 12);
   });
 });

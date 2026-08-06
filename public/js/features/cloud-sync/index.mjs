@@ -8,6 +8,7 @@ export {
   setCloudSyncRoomId,
   getCloudSyncRevision,
   setCloudSyncRevision,
+  advanceCloudSyncRevision,
   getCloudSyncSettings,
   clearCloudSyncSession,
 } from './settings.mjs';

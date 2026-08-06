@@ -15,6 +15,7 @@ import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 
 /** @param {HTMLElement} section @param {object} deps */
 function bindStatusChip(section, deps) {
+  const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
   return function renderStatusChip(status, detail) {
     const chip = section.querySelector('[data-cloud-status-chip]');
     if (!chip) return;

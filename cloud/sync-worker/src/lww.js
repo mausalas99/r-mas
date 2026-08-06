@@ -44,6 +44,72 @@ function isTombstoned(state, patientId) {
   return !!(state.tombstones && state.tombstones[patientId]);
 }
 
+/** @param {RoomSyncState} state @param {string} patientId */
+function getTombstoneDeletedAt(state, patientId) {
+  const meta = state.tombstones?.[patientId];
+  const ver = state.entityVersions[`tombstones/${patientId}`];
+  return String(meta?.deletedAt || ver?.updatedAt || '');
+}
+
+/** @param {string} path */
+function isPatientEntryOpPath(path) {
+  return /^entries\/[^/]+(\/fields|\/note|\/indicaciones|\/historiaClinica|\/eventualidades|\/monitoreo)?$/.test(
+    path
+  );
+}
+
+/** @param {SyncOp} op */
+function registroFromEntryOp(op) {
+  const value = op.value;
+  if (!value || typeof value !== 'object') return '';
+  const row = /** @type {{ registro?: string, fields?: { registro?: string } }} */ (value);
+  return String(row.registro || row.fields?.registro || '').trim();
+}
+
+/** @param {RoomSyncState} state @param {string} patientId */
+function clearPatientTombstone(state, patientId) {
+  if (!state.tombstones || !state.tombstones[patientId]) return;
+  delete state.tombstones[patientId];
+}
+
+/**
+ * Explicit census re-admit (any actor) clears a delete tombstone when newer.
+ * Tombstones only block stale sync sidecars/todos — not intentional alta.
+ * @param {RoomSyncState} state @param {string} patientId @param {SyncOp} op
+ */
+function tryClearTombstoneForResurrection(state, patientId, op) {
+  if (!isTombstoned(state, patientId)) return;
+  if (!isPatientEntryOpPath(op.path)) return;
+  const tombAt = getTombstoneDeletedAt(state, patientId);
+  if (tombAt && String(op.updatedAt).localeCompare(tombAt) < 0) return;
+  clearPatientTombstone(state, patientId);
+}
+
+/** @param {RoomSyncState} state @param {string} registro @param {SyncOp} op @param {string} [exceptPatientId] */
+function clearRegistroTombstonesForReAdmit(state, registro, op, exceptPatientId) {
+  const reg = String(registro || '').trim();
+  if (!reg || !state.tombstones) return;
+  const opAt = String(op.updatedAt || '');
+  for (const pid of Object.keys(state.tombstones)) {
+    if (exceptPatientId && pid === exceptPatientId) continue;
+    const meta = state.tombstones[pid];
+    if (String(meta?.registro || '').trim() !== reg) continue;
+    const tombAt = getTombstoneDeletedAt(state, pid);
+    if (tombAt && opAt.localeCompare(tombAt) < 0) continue;
+    delete state.tombstones[pid];
+  }
+}
+
+/** @param {RoomSyncState} state @param {SyncOp} op */
+function maybeResurrectPatientFromOp(state, op) {
+  const entryMatch = /^entries\/([^/]+)/.exec(op.path);
+  if (!entryMatch) return;
+  const patientId = entryMatch[1];
+  tryClearTombstoneForResurrection(state, patientId, op);
+  const registro = registroFromEntryOp(op);
+  if (registro) clearRegistroTombstonesForReAdmit(state, registro, op, patientId);
+}
+
 /** @param {RoomSyncState} state @param {string} patientId @param {Record<string, unknown>} stub */
 function upsertEntryStub(state, patientId, stub) {
   if (isTombstoned(state, patientId)) return;
@@ -123,6 +189,7 @@ function applyTombstone(state, patientId, op) {
 /** @param {RoomSyncState} state @param {SyncOp} op */
 function applyOpToState(state, op) {
   const { path, value } = op;
+  maybeResurrectPatientFromOp(state, op);
 
   if (path === 'agenda') {
     state.agenda = Array.isArray(value) ? value.slice() : [];
