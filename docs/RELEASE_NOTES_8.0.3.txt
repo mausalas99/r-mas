@@ -21,7 +21,7 @@ Fecha: 2026-08-06
 - **Copy R+ Cloud** — Ayuda, tour/aprendizaje, onboarding y diálogos dejan de hablar de «LAN / Migración 7.9»; el turno se describe como **R+ Cloud / Nube** (⇄ Conexión).
 - **Censo Nube más vivo** — Poll ~15 s + pull al enfocar la ventana; censo se construye sin depender del stub LAN; la barra de pacientes se refresca tras pull (nombre/datos ya no esperan un edit del otro).
 - **Nombre real gana** — `PACIENTE SIN NOMBRE` (alta/SOME sin nombre) ya no pisa un nombre escrito (p. ej. Cynthia) por LWW con reloj de seed.
-- **Censo Leslie / equipo** — En desktop el pull aplica todo el room de la sala; el filtro por equipo (asignaciones) es solo en la barra. Así no se pierden los 5 de Leslie si las asignaciones llegan después del censo.
+- **Censo Leslie / equipo** — En desktop el pull aplica el room completo de la sala; el filtro por equipo (asignaciones) es solo en la barra. Así no se pierden los 5 de Leslie si las asignaciones llegan después del censo.
 - **Gate de perfil** — Dispositivos que ya tenían `@usuario`, nombre y sala no vuelven a ver onboarding de perfil en cada arranque.
 - **⇄ Conexión** — El chip de estado resuelve `toast` desde `deps` (evita ReferenceError al montar el panel).
 - **Worker** — `maybeResurrectPatientFromOp` en `lww.js`; tests de re-admit y registro duplicado.

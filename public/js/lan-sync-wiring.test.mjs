@@ -212,7 +212,7 @@ describe('LAN event and handler wiring', () => {
     const boot = read('features/lan/orchestrator-boot.mjs');
     const cloudOps = read('features/cloud-sync/cloud-ops-events.mjs');
     assert.match(cloudOps, /export function wireCloudClinicalOpsSyncEvents/);
-    assert.match(cloudOps, /pushCloudClinicalOpsNow/);
+    assert.match(cloudOps, /pushClinicalOpsForSala|pushClinicalOpsForSalas/);
     assert.match(boot, /wireCloudClinicalOpsSyncEvents/);
     // Cloud early path must run before LAN wiring.
     const cloudWireIdx = boot.indexOf('wireCloudClinicalOpsSyncEvents()');
@@ -417,8 +417,17 @@ describe('clinical teams LAN publish wiring', () => {
       const body = clinicalTeams.slice(idx, end > idx ? end : idx + 2500);
       const hasPublish =
         body.includes('publishClinicalTeamsToLan') ||
+        body.includes('publishClinicalTeamsAfterChange') ||
         body.includes("dispatchEvent(new CustomEvent('rpc-clinical-teams-changed')");
-      assert.ok(hasPublish, `${fn} must publishClinicalTeamsToLan or dispatch teams-changed`);
+      // handleCreateTeamSubmit delegates to helpers that publish.
+      const createDelegates =
+        fn === 'handleCreateTeamSubmit' &&
+        /createElevatedTeam|createStandardTeam/.test(body) &&
+        /publishClinicalTeamsAfterChange/.test(clinicalTeams);
+      assert.ok(
+        hasPublish || createDelegates,
+        `${fn} must publishClinicalTeamsAfterChange / publishClinicalTeamsToLan or dispatch teams-changed`
+      );
     });
   }
 

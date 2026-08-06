@@ -76,7 +76,7 @@ describe('equiposShellHtml', () => {
     const html = equiposShellHtml();
     assert.match(html, /data-admin-equipos-search/);
     assert.match(html, /data-admin-equipos-sala/);
-    assert.match(html, /clinicalOps/);
+    assert.match(html, /sala Nube|publica a la sala/i);
     assert.match(html, /refresh-equipos/);
   });
 });

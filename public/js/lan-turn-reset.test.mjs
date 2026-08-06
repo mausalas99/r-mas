@@ -29,7 +29,7 @@ const orchestratorSrc = readFileSync(join(jsDir, 'features/lan/orchestrator.mjs'
 
 describe('lan-turn-reset', () => {
   it('exports client confirm copy', () => {
-    assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /Wi‑Fi/);
+    assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /R\+ Cloud|Wi‑Fi|⇄/);
     assert.match(LAN_TURN_RESET_CLIENT_CONFIRM, /no se borran/);
   });
 
