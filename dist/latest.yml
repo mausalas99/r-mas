@@ -1,18 +1,26 @@
-version: 8.0.1
+version: 8.0.2
 files:
-  - url: R+-8.0.1-x64.exe
-    sha512: 14wuvlN00Xc1z93jsoTQSl2nm9h5jDcoy5CwG1UkAjwu5/IomsmSLtRdy4Ek2mYxv+ph6rHRDthkjmRjV8yi3A==
-    size: 122649779
-path: R+-8.0.1-x64.exe
-sha512: 14wuvlN00Xc1z93jsoTQSl2nm9h5jDcoy5CwG1UkAjwu5/IomsmSLtRdy4Ek2mYxv+ph6rHRDthkjmRjV8yi3A==
-releaseDate: '2026-08-05T23:00:50.000Z'
+  - url: R+-8.0.2-x64.exe
+    sha512: lNa5T342UXdHbdakGkeKB1bjELDhgWHO0A//Bpu5QbpkF4bbGvABf02/wXeVMbB4NVugAerM1nhXITSaPWoLBg==
+    size: 122661762
+path: R+-8.0.2-x64.exe
+sha512: lNa5T342UXdHbdakGkeKB1bjELDhgWHO0A//Bpu5QbpkF4bbGvABf02/wXeVMbB4NVugAerM1nhXITSaPWoLBg==
+releaseDate: '2026-08-06T14:49:20.000Z'
 releaseNotes: |
-  8.0.1 corrige el toast «No se pudieron aplicar los cambios de la nube» al conectar o sincronizar en salas Nube (el pull no montaba las dependencias de apply de pacientes sin LAN). En el Worker, el push ahora confirma mutaciones con revisión atómica y reintento ante carreras concurrentes entre Macs/iPads del turno.
+  8.0.2 añade Diagnóstico Nube en ⇄ (cola, errores y trazas copiables para soporte), corrige la sala Torre al unirse a Nube, deja salir del equipo resolviendo entregas activas automáticamente, y afina sync (todos con patientId, sala clínica desde SQLCipher, room canónico al reconectar).
   
-  Pull Nube — apply de censo — Salas Nube configuran configureLanSyncDomainModules sin montar LAN; patient-entries hace fallback a getLanRuntime() si faltaba wiring. El censo remoto vuelve a aplicarse al conectar ⇄.
+  ⇄ Diagnóstico Nube — Opciones → Diagnóstico Nube: estado de sync, cola de mutaciones, últimos errores y trazas push/pull. Botón Copiar informe para soporte sin abrir DevTools.
   
-  Worker — push atómico — commitMutationBatch gatea INSERT/UPDATE de mutación + bump de revision + cifrado de estado; hasta 5 reintentos si dos dispositivos escriben a la vez. Menos revision_stale espurios y sin commits parciales.
+  Sala Torre HU — torre (sin «HU») normaliza a Torre HU en cliente y Worker; evita rechazo al elegir sala en Conexión.
   
-  Worker CORS — Preflight acepta X-Sync-Admin-Key y Accept (admin Nube / herramientas desde app://rplus).
+  Salir del equipo — Al salir, las entregas activas del equipo se resuelven en lugar de bloquear con «entregas activas».
   
-  Tests — patient-entries-nube.test.mjs + wiring en lan-sync-wiring / lan-sync-clinical-ops.
+  Sala clínica fiable — El perfil SQLCipher (Mi rotación) gana sobre rpc-settings cuando divergen; bootstrap y refresh persisten sala en sesión.
+  
+  Sync Nube — Todos en push llevan patientId y updatedAt por ítem; reconexión reconcilia roomId canónico (ensure-turn); errores de push/censo/ciclo alimentan el diagnóstico.
+  
+  Labs — Quita el estado de carga del chunk al terminar de renderizar el panel.
+  
+  Worker — d1-errors clasifica choques UNIQUE (revisión vs client_mutation_id) para reintentos más precisos.
+  
+  Tests — cloud-sync-diagnostics, mutate-bridge (todos), panel-clinical-context, clinical-access-db (leave team).

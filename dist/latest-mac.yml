@@ -1,27 +1,35 @@
-version: 8.0.1
+version: 8.0.2
 files:
-  - url: R+-8.0.1-arm64.zip
-    sha512: NAPsow/HlnJ+SN3sLLlBlzsv3M6RJL275xjXpbbsGyBh63VZBIjbTOerA9rY6Bw8/Xzdd7WK8Y18QPwRIrfZ3w==
-    size: 139885286
-  - url: R+-8.0.1-arm64.dmg
-    sha512: MGLaynTF+p7+yyM1JBCJzaCHVi6Y9UQ3mx5upyZdUdvAD3Bv1CoXSeHY+v9ndTdfKWkpIsRQSxhiG/Q4qeJ8ig==
-    size: 145759652
-  - url: R+-8.0.1-x64.zip
-    sha512: cx5Xcr5GYfNUfmOOCiRSXcqfiPt5iuwv8vtsWfif5mF/CjyFf0Fq+lVrr5LslkN67QQvOMSagkS/eP5UHtu8IA==
-    size: 148259353
-  - url: R+-8.0.1-x64.dmg
-    sha512: hhugLfJyVjPpK3528Pv2NU1QhAse9HnjvbczcjyNsJa0yuh0YuRgO+0bOiv0JXer4MSAaQQyPCn1BTRIgplFww==
-    size: 154192033
-path: R+-8.0.1-arm64.zip
-sha512: NAPsow/HlnJ+SN3sLLlBlzsv3M6RJL275xjXpbbsGyBh63VZBIjbTOerA9rY6Bw8/Xzdd7WK8Y18QPwRIrfZ3w==
-releaseDate: '2026-08-05T23:00:50.000Z'
+  - url: R+-8.0.2-arm64.zip
+    sha512: fwN1M/lhZYFWIypG9nwKDL0ZN9Vkmd/42aF7zS3mhKbN4r31rmUN67wNzXkyzDdGerfiXOoKU8HQr/JcspV9Sw==
+    size: 139897751
+  - url: R+-8.0.2-arm64.dmg
+    sha512: I8PVEe0y2dd3BZV7uLx564vQukuoMkNGN2Xf3my+/Uc1VRhGBKuk8zco85RivQhEioJMP9AMGt0N1y1AQQ5Z6A==
+    size: 145760296
+  - url: R+-8.0.2-x64.zip
+    sha512: enT76dhTwARgBCPLV964kTnJK4KzqM0i/YUU/75yCT+zxqvQszgb+j85Nt11mDVvLRA7W3YQdPgAHoEoVwN+yA==
+    size: 148271852
+  - url: R+-8.0.2-x64.dmg
+    sha512: xwhcGT+aSP96O4kiWHsI5QCIlUvebNvYxyTiuUzAd4WPHRCltMX853igTkV6W1bZRLQkgfpOrIScEdjuomTFMw==
+    size: 154226047
+path: R+-8.0.2-arm64.zip
+sha512: fwN1M/lhZYFWIypG9nwKDL0ZN9Vkmd/42aF7zS3mhKbN4r31rmUN67wNzXkyzDdGerfiXOoKU8HQr/JcspV9Sw==
+releaseDate: '2026-08-06T14:49:20.000Z'
 releaseNotes: |
-  8.0.1 corrige el toast «No se pudieron aplicar los cambios de la nube» al conectar o sincronizar en salas Nube (el pull no montaba las dependencias de apply de pacientes sin LAN). En el Worker, el push ahora confirma mutaciones con revisión atómica y reintento ante carreras concurrentes entre Macs/iPads del turno.
+  8.0.2 añade Diagnóstico Nube en ⇄ (cola, errores y trazas copiables para soporte), corrige la sala Torre al unirse a Nube, deja salir del equipo resolviendo entregas activas automáticamente, y afina sync (todos con patientId, sala clínica desde SQLCipher, room canónico al reconectar).
   
-  Pull Nube — apply de censo — Salas Nube configuran configureLanSyncDomainModules sin montar LAN; patient-entries hace fallback a getLanRuntime() si faltaba wiring. El censo remoto vuelve a aplicarse al conectar ⇄.
+  ⇄ Diagnóstico Nube — Opciones → Diagnóstico Nube: estado de sync, cola de mutaciones, últimos errores y trazas push/pull. Botón Copiar informe para soporte sin abrir DevTools.
   
-  Worker — push atómico — commitMutationBatch gatea INSERT/UPDATE de mutación + bump de revision + cifrado de estado; hasta 5 reintentos si dos dispositivos escriben a la vez. Menos revision_stale espurios y sin commits parciales.
+  Sala Torre HU — torre (sin «HU») normaliza a Torre HU en cliente y Worker; evita rechazo al elegir sala en Conexión.
   
-  Worker CORS — Preflight acepta X-Sync-Admin-Key y Accept (admin Nube / herramientas desde app://rplus).
+  Salir del equipo — Al salir, las entregas activas del equipo se resuelven en lugar de bloquear con «entregas activas».
   
-  Tests — patient-entries-nube.test.mjs + wiring en lan-sync-wiring / lan-sync-clinical-ops.
+  Sala clínica fiable — El perfil SQLCipher (Mi rotación) gana sobre rpc-settings cuando divergen; bootstrap y refresh persisten sala en sesión.
+  
+  Sync Nube — Todos en push llevan patientId y updatedAt por ítem; reconexión reconcilia roomId canónico (ensure-turn); errores de push/censo/ciclo alimentan el diagnóstico.
+  
+  Labs — Quita el estado de carga del chunk al terminar de renderizar el panel.
+  
+  Worker — d1-errors clasifica choques UNIQUE (revisión vs client_mutation_id) para reintentos más precisos.
+  
+  Tests — cloud-sync-diagnostics, mutate-bridge (todos), panel-clinical-context, clinical-access-db (leave team).
