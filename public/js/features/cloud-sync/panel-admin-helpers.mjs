@@ -27,10 +27,17 @@ export function confirmAction(message) {
   return window.confirm(message);
 }
 
-/** @param {Array<Record<string, unknown>>} rows @param {Array<{ label: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols */
-export function adminTableHtml(rows, cols) {
+/**
+ * @param {Array<Record<string, unknown>>} rows
+ * @param {Array<{ label: string, key?: string, cell?: (row: Record<string, unknown>) => string }>} cols
+ * @param {{ emptyHtml?: string }} [opts]
+ */
+export function adminTableHtml(rows, cols, opts = {}) {
   if (!rows.length) {
-    return '<p class="cloud-sync-hint">Sin registros.</p>';
+    return (
+      opts.emptyHtml ||
+      '<p class="cloud-sync-hint">Sin registros.</p>'
+    );
   }
   const head = cols.map((c) => '<th>' + esc(c.label) + '</th>').join('');
   const body = rows

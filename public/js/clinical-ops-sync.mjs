@@ -45,10 +45,11 @@ export function getCachedClinicalOpsSnapshot() {
 }
 
 /** @returns {Promise<object|null>} */
-export async function collectClinicalOpsForLanSync() {
+export async function collectClinicalOpsForLanSync(opts) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalOpsExport !== 'function') return null;
-  const res = await api.dbClinicalOpsExport();
+  const sala = String(opts?.sala || '').trim();
+  const res = await api.dbClinicalOpsExport(sala ? { sala } : {});
   if (!res || res.ok === false) return null;
   const snap = res.snapshot && typeof res.snapshot === 'object' ? res.snapshot : null;
   if (snap) {

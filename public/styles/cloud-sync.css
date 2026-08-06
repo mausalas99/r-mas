@@ -1162,6 +1162,89 @@
   background: color-mix(in oklab, var(--surface) 98%, transparent);
 }
 
+.cloud-sync-admin-equipos-hint {
+  margin-bottom: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-equipos-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+  margin-top: calc(8px * var(--density-space));
+}
+
+.cloud-sync-admin-equipos-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(8px * var(--density-space));
+  padding: calc(10px * var(--density-space));
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md, 8px);
+  background: color-mix(in oklab, var(--surface) 98%, transparent);
+}
+
+.cloud-sync-admin-equipos-row[hidden] {
+  display: none;
+}
+
+.cloud-sync-admin-equipos-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6px * var(--density-space));
+  min-width: min(100%, 14rem);
+  flex: 1 1 14rem;
+}
+
+.cloud-sync-admin-equipos-handle {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cloud-sync-admin-equipos-name {
+  color: var(--text-secondary);
+}
+
+.cloud-sync-admin-equipos-rank {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  padding: 0 0.35rem;
+  border-radius: var(--radius-sm, 4px);
+  background: color-mix(in oklab, var(--surface-elevated, var(--surface)) 90%, transparent);
+}
+
+.cloud-sync-admin-equipos-placement {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+.cloud-sync-admin-equipos-unassigned {
+  font-style: italic;
+}
+
+.cloud-sync-admin-equipos-pending {
+  font-size: 0.75em;
+  vertical-align: middle;
+}
+
+.cloud-sync-admin-equipos-assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(6px * var(--density-space));
+  flex: 1 1 16rem;
+  justify-content: flex-end;
+}
+
+.cloud-sync-admin-equipos-team,
+.cloud-sync-admin-equipos-cycle,
+.cloud-sync-admin-equipos-rank {
+  min-width: 8rem;
+  max-width: 12rem;
+}
+
 /* —— 7.9 cutover migration —— */
 .cloud-sync-cutover-host {
   position: fixed;

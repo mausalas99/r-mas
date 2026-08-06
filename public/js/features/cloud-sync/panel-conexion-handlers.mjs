@@ -1,6 +1,7 @@
 import { normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldForcePanelRebuildOnAuthChange } from './panel-session-gate.mjs';
 import { bridgeCloudIdentityToLocal } from './identity-bridge.mjs';
+import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
@@ -72,6 +73,7 @@ export async function afterAuthSuccess(deps, user) {
     }),
     deps.tryAutoEnsureTurnRoom(),
   ]);
+  await hydrateClinicalTeamsAfterCloudPull();
   // Mi rotación must not block "conectado" — open in background if needed.
   if (!isCutoverPending() && !userHasJoinedTeam()) {
     void deps.handleOpenRotation();

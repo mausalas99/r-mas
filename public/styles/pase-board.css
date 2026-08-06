@@ -4506,13 +4506,19 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
 
 .clinical-teams-member-row {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 9px 0;
   border-bottom: 1px solid var(--divider);
   font-size: 0.8125rem;
   line-height: 1.35;
+}
+
+.clinical-teams-member-row .clinical-teams-member-remove-btn {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .clinical-teams-member-row:last-child {
@@ -5245,6 +5251,25 @@ html.clinical-onboarding-active #main-area {
 .clinical-onboard-session-actions {
   margin-top: 20px;
   justify-content: flex-start;
+}
+
+.clinical-onboard-team-hints {
+  margin: 0.75rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.clinical-onboard-team-hints li + li {
+  margin-top: 0.35rem;
+}
+
+.clinical-onboard-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.25rem;
 }
 
 .clinical-onboarding-title,

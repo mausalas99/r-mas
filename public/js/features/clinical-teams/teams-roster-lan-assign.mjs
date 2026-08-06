@@ -85,7 +85,7 @@ export async function handleLanDeleteDirectoryUserClick(btn) {
     return;
   }
   const confirmed = window.confirm(
-    `¿Eliminar a «${label}» de la base clínica en esta Mac?\n\nDesaparecerá del directorio LAN. Las demás R+ en la misma sala ⇄ lo quitarán al sincronizar.`
+    `¿Eliminar a «${label}» de la base clínica en esta Mac?\n\nDesaparecerá del directorio. Las demás R+ en la misma sala Nube lo quitarán al sincronizar.`
   );
   if (!confirmed) return;
 

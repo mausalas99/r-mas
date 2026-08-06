@@ -3,14 +3,14 @@
  * Cloudflare Free ≈ 100k Worker req/day — prefer fewer polls + coalesced pushes.
  */
 
-/** Idle pull while focused (was 20s; 45s keeps ~10 users × 12h well under 100k). */
-export const CLOUD_POLL_IDLE_MS = 45_000;
+/** Idle pull while focused — peers only learn remote edits via poll (no WS). */
+export const CLOUD_POLL_IDLE_MS = 15_000;
 /** Mobile Safari idle pull while visible (Free-tier budget; pause when hidden). */
-export const CLOUD_POLL_MOBILE_IDLE_MS = 30_000;
+export const CLOUD_POLL_MOBILE_IDLE_MS = 20_000;
 /** Temporary faster poll after local edits / successful push. */
-export const CLOUD_POLL_ACTIVE_MS = 20_000;
+export const CLOUD_POLL_ACTIVE_MS = 8_000;
 /** How long "active" mode lasts after a local write. */
-export const CLOUD_POLL_ACTIVE_WINDOW_MS = 90_000;
+export const CLOUD_POLL_ACTIVE_WINDOW_MS = 120_000;
 /** Error / 429 backoff bounds. */
 export const CLOUD_POLL_ERROR_MIN_MS = 30_000;
 export const CLOUD_POLL_ERROR_MAX_MS = 5 * 60_000;

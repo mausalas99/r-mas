@@ -66,7 +66,7 @@ function renderTourDockBadge(tourBranch, prog, idx, total) {
   }
   if (tourBranch === 'guardia-v7') {
     badge.innerHTML =
-      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Guardia 7.x</span>' +
+      '<span class="tour-dock-badge-line tour-dock-badge-kicker">Guardia</span>' +
       '<span class="tour-dock-badge-line tour-dock-badge-module">Módulo ' +
       prog.chapterIndex + '/5 · ' + escapeTourHtml(prog.chapterTitle) + '</span>' +
       '<span class="tour-dock-badge-line tour-dock-badge-step">Paso ' +
@@ -99,7 +99,7 @@ function applyTourStepUserActionGate(nextBtn) {
 
 function renderQuickRouteWrap(bodyEl, nextBtn, prevBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Aprender R+</strong>: módulos de guardia 7.x o el tutorial completo en <strong>Fundamentos</strong>.</p>';
+    '<p style="margin:0;line-height:1.5;">Listo. Explora más en <strong>Aprender R+</strong>: módulos de guardia o el tutorial completo en <strong>Fundamentos</strong>.</p>';
   nextBtn.textContent = 'Finalizar';
   nextBtn.style.display = '';
   nextBtn.setAttribute('onclick', 'guidedTourFinish()');

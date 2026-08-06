@@ -6,6 +6,7 @@ import {
   LAN_PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-lan-sync.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { dbApi, toast } from './shared.mjs';
 
 /** Push teams/membership to sala ⇄ (same path as @usuario; uses sticky room membership). */
@@ -60,6 +61,116 @@ const LAN_CLINICAL_OPS_PULL_MIN_MS = 12_000;
 let lanClinicalOpsPullLastAt = 0;
 /** @type {Promise<boolean>|null} */
 let lanClinicalOpsPullInFlight = null;
+
+const CLOUD_CLINICAL_OPS_PULL_MIN_MS = 12_000;
+let cloudClinicalOpsPullLastAt = 0;
+/** @type {Promise<boolean>|null} */
+let cloudClinicalOpsPullInFlight = null;
+
+function resolveCloudDirectorySalas(options = {}) {
+  const salas = new Set();
+  const browse = normalizeCloudSala(options.sala || options.browseSala || '');
+  const home = normalizeCloudSala(options.homeSala || '');
+  if (browse && browse !== '__all__') salas.add(browse);
+  if (home) salas.add(home);
+  return [...salas];
+}
+
+/** Pull clinicalOps from Nube sala room(s) into this Mac's SQLCipher. */
+export async function pullClinicalOpsFromCloudRoom(options = {}) {
+  const force = !!options.force;
+  const now = Date.now();
+  if (!force && now - cloudClinicalOpsPullLastAt < CLOUD_CLINICAL_OPS_PULL_MIN_MS) {
+    return false;
+  }
+  if (cloudClinicalOpsPullInFlight) return cloudClinicalOpsPullInFlight;
+
+  cloudClinicalOpsPullInFlight = (async () => {
+    try {
+      const { isCloudSala } = await import('../cloud-sync/sala-allowlist.mjs');
+      const { clinicalSessionContext } = await import('../../clinical-access-runtime.mjs');
+      const { getCloudSyncToken } = await import('../cloud-sync/settings.mjs');
+      if (!getCloudSyncToken()) return false;
+
+      const salas = resolveCloudDirectorySalas({
+        sala: options.sala,
+        browseSala: options.browseSala,
+        homeSala: options.homeSala || clinicalSessionContext.user?.sala,
+      }).filter((s) => isCloudSala(s));
+
+      if (!salas.length) {
+        const { autostartCloudSyncIfConfigured } = await import('../cloud-sync/autostart.mjs');
+        const rtMod = await import('../cloud-sync/panel-conexion-runtime.mjs');
+        let runtime = rtMod.getSharedNubeRuntime();
+        if (!runtime) runtime = await autostartCloudSyncIfConfigured();
+        if (!runtime || typeof runtime.syncCycle !== 'function') return false;
+        await runtime.syncCycle();
+        return true;
+      }
+
+      const { pullClinicalOpsForSala } = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
+      // force → full snapshot once; otherwise incremental since cached sala revision
+      const pullOpts = force ? { since: 0 } : {};
+      const results = await Promise.all(
+        salas.map((sala) => pullClinicalOpsForSala(sala, pullOpts).catch(() => null))
+      );
+      return results.some((res) => res?.ok);
+    } catch {
+      return false;
+    } finally {
+      cloudClinicalOpsPullLastAt = Date.now();
+      cloudClinicalOpsPullInFlight = null;
+    }
+  })();
+  return cloudClinicalOpsPullInFlight;
+}
+
+/** Background republish of local teams to their sala rooms (does not block Mi rotación). */
+function scheduleBackgroundClinicalOpsPush(options = {}) {
+  void (async () => {
+    try {
+      const { pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
+        '../cloud-sync/cloud-clinical-ops-sala.mjs'
+      );
+      const salas = resolveCloudDirectorySalas(options);
+      const teamSalas = await listLocalTeamSalas();
+      const targets = [...new Set([...salas, ...teamSalas])].filter(Boolean);
+      if (targets.length) await pushClinicalOpsForSalas(targets);
+    } catch {
+      /* push optional */
+    }
+  })();
+}
+
+/** Refresh teams directory from Nube or LAN host before listing. */
+export async function refreshClinicalOpsDirectory(options = {}) {
+  if (isCloudSyncActive()) {
+    const pulled = await pullClinicalOpsFromCloudRoom(options);
+    // Push must not block open — create/join already call publishClinicalTeamsAfterChange.
+    if (options.push !== false) scheduleBackgroundClinicalOpsPush(options);
+    return pulled || true;
+  }
+  return pullClinicalOpsFromLanRoom(options);
+}
+
+/** Push teams/membership to the team's Nube sala room (and LAN when applicable). */
+export async function publishClinicalTeamsAfterChange(options = {}) {
+  if (isCloudSyncActive()) {
+    try {
+      const { pushClinicalOpsForSala, pushClinicalOpsForSalas, listLocalTeamSalas } = await import(
+        '../cloud-sync/cloud-clinical-ops-sala.mjs'
+      );
+      const sala = normalizeCloudSala(options.sala || '');
+      const push = sala
+        ? await pushClinicalOpsForSala(sala)
+        : await pushClinicalOpsForSalas(await listLocalTeamSalas());
+      if (push?.ok) return { ok: true, channel: 'nube' };
+    } catch {
+      /* fall through to LAN */
+    }
+  }
+  return publishClinicalTeamsToLan();
+}
 
 /** Pull host clinicalOps into this Mac so partner @usuario and teams exist locally. */
 export async function pullClinicalOpsFromLanRoom(options = {}) {

@@ -17,7 +17,7 @@ import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId, filterJoinedTeams } from './shared.mjs';
-import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
+import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
 import { resolveTeamIdForInviteInput } from './teams-invite-resolve.mjs';
 
 export { resolveTeamIdForInviteInput };
@@ -60,8 +60,9 @@ export async function joinTeamById(teamId, subAreaFraction) {
     return false;
   }
   toast(`Te uniste al equipo ${team.name || ''} (ciclo ${cycle}).`, 'success');
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  const sala = String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
+  await publishClinicalTeamsAfterChange({ sala });
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
     ensureTurnRoomAfterTeamJoin(toast)
   );

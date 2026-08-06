@@ -1,19 +1,19 @@
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
-import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
+import { needsClinicalOnboarding, needsTeamOnboarding, needsTeamOnboardingStep } from './clinical-onboarding.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 
 /** @returns {{ primary: string, sub: string, pending: boolean }|null} */
 export function buildEntryStatusEarly() {
   if (isClinicalLocalOnlyMode(readRpcSettings())) {
-    return { primary: 'Solo este equipo', sub: 'Ajeno a medicina interna · sin LAN', pending: false };
+    return { primary: 'Solo este equipo', sub: 'Ajeno a medicina interna · sin R+ Cloud', pending: false };
   }
   if (needsClinicalOnboarding()) {
     return {
       primary: 'Configura tu rotación',
-      sub: 'Usuario LAN, rango y sala — equipos después en Mi rotación',
+      sub: '@usuario, rango y sala — equipos después en Mi rotación',
       pending: true,
     };
   }
@@ -54,9 +54,10 @@ export function buildClinicalRotationEntryStatus() {
   if (early) return early;
   const user = clinicalSessionContext.user;
   const teams = filterJoinedTeams(clinicalSessionContext.teams || [], user);
+  const pending = needsTeamOnboardingStep();
   return {
     primary: buildEntryStatusPrimary(user),
     sub: buildEntryStatusSub(user, teams),
-    pending: false,
+    pending,
   };
 }

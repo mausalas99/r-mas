@@ -11,10 +11,21 @@ describe('resolveCloudPushMutationId', () => {
     assert.equal(id, 'cloud-room-push:1700000000000');
   });
 
-  it('keeps distinct mutation ids unchanged', () => {
+  it('suffixes clinicalOps and entity ids so re-edits are not Worker-deduped', () => {
     assert.equal(
-      resolveCloudPushMutationId({ clientMutationId: 'todo-1', enqueuedAt: 1 }),
-      'todo-1'
+      resolveCloudPushMutationId({ clientMutationId: 'clinicalOps', enqueuedAt: 42 }),
+      'clinicalOps:42'
+    );
+    assert.equal(
+      resolveCloudPushMutationId({ clientMutationId: 'todos/t1', enqueuedAt: 99 }),
+      'todos/t1:99'
+    );
+  });
+
+  it('falls back when clientMutationId missing', () => {
+    assert.match(
+      resolveCloudPushMutationId({ enqueuedAt: 7 }),
+      /^cloud-push:7$/
     );
   });
 });

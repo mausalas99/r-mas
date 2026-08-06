@@ -695,7 +695,4 @@ html.dark .ev-compose__input:focus {
   background: var(--color-content);
 }
 
-/* Legacy inline dock hidden — compose is sheet-only */
-.ev-panel > .ev-compose:not(.ev-compose--sheet) {
-  display: none;
-}
+/* Inline compose dock (registro de eventualidades) */

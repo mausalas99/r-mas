@@ -81,6 +81,12 @@ describe('clinical-teams', () => {
     assert.ok(CLINICAL_TEAM_SERVICES.includes('Sala'));
   });
 
+  it('Integrantes rows expose Quitar for roster managers', () => {
+    assert.match(clinicalTeamsSrc, /clinical-teams-member-remove-btn/);
+    assert.match(clinicalTeamsSrc, /handleRemoveMemberClick/);
+    assert.match(clinicalTeamsSrc, /dbClinicalUserDelete/);
+  });
+
   it('Mi rotación source has no per-team Guardia hoy checkbox', () => {
     assert.equal(clinicalTeamsSrc.includes('clinical-teams-guardia-check'), false);
     assert.equal(clinicalTeamsSrc.includes('Guardia hoy'), false);
@@ -96,18 +102,25 @@ describe('clinical-teams', () => {
     assert.match(body, /return false/);
   });
 
+  it('refreshClinicalOpsDirectory pulls from Nube when cloud sync is active', () => {
+    assert.match(clinicalTeamsSrc, /export async function pullClinicalOpsFromCloudRoom/);
+    assert.match(clinicalTeamsSrc, /export async function refreshClinicalOpsDirectory/);
+    assert.match(clinicalTeamsSrc, /pushClinicalOpsForSalas/);
+    assert.match(clinicalTeamsSrc, /export async function publishClinicalTeamsAfterChange/);
+  });
+
   it('joined team card offers leave team for any member', () => {
     assert.match(clinicalTeamsSrc, /clinical-teams-leave-btn/);
     assert.match(clinicalTeamsSrc, /handleLeaveTeamClick/);
     assert.match(clinicalTeamsSrc, /dbClinicalTeamsMemberRemove/);
   });
 
-  it('handleMyCycleSubmit publishes to LAN after cycle save', () => {
+  it('handleMyCycleSubmit publishes to Nube/LAN after cycle save', () => {
     const idx = clinicalTeamsSrc.indexOf('async function handleMyCycleSubmit');
     assert.ok(idx >= 0);
     const end = clinicalTeamsSrc.indexOf('async function resolveTeamIdForInviteInput', idx);
     const body = clinicalTeamsSrc.slice(idx, end > idx ? end : idx + 1200);
-    assert.match(body, /publishClinicalTeamsToLan/);
+    assert.match(body, /publishClinicalTeamsAfterChange/);
     assert.match(body, /rpc-clinical-teams-changed/);
   });
 

@@ -17,12 +17,7 @@ import {
   docQueueStatusLine,
   formatLocalTodayFecha,
 } from './doc-queue-model.mjs';
-import { autosendLabsToEventualidad } from './lab-eventualidad-autosend.mjs';
-import {
-  renderEventualidadesPanel,
-  selectEventualidadesLabsMode,
-} from './eventualidades-panel.mjs';
-import { eventualidadesPaneForDocQueueNav } from './doc-queue-nav.mjs';
+import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
 
 /** @type {import('./doc-queue-model.mjs').DocQueueRow[]} */
 var currentRows = [];
@@ -202,70 +197,24 @@ function tryRenderEventualidadesPanel() {
   return true;
 }
 
-function openEventualidadesPanel(opts) {
+function openEventualidadesPanel() {
   if (typeof window.switchAppTab === 'function') window.switchAppTab('nota');
   if (typeof window.switchInnerTab === 'function') window.switchInnerTab('eventualidades');
   if (!tryRenderEventualidadesPanel()) {
     setTimeout(tryRenderEventualidadesPanel, 80);
   }
-  var pane = opts && opts.pane;
-  if (pane === 'labs') {
-    selectEventualidadesLabsMode();
-    setTimeout(function () {
-      var el = document.getElementById('eventualidades-labs');
-      if (el && typeof el.focus === 'function') el.focus();
-    }, 0);
-  }
-}
-
-function findPatientById(patientId) {
-  var id = String(patientId || '');
-  return (patients || []).find(function (p) {
-    return p && String(p.id) === id;
-  });
-}
-
-/**
- * Merge today's lab interpretation into labsText timeline, then open Labs view.
- * @param {string} patientId
- */
-async function openEventualidadesWithLabAutoSend(patientId, pane) {
-  openEventualidadesPanel({ pane: pane || 'labs' });
-  var patient = findPatientById(patientId);
-  if (!patient) {
-    if (typeof window.showToast === 'function') {
-      window.showToast('Paciente no encontrado.', 'error');
-    }
-    return;
-  }
-  var sets = labHistory[String(patientId)] || [];
-  var out = await autosendLabsToEventualidad(patient, sets, {
-    filterToday: true,
-    todayFecha: formatLocalTodayFecha(),
-  });
-  tryRenderEventualidadesPanel();
-  if (out && out.ok) {
-    if (out.skipped === 'dup') return;
-    if (typeof window.showToast === 'function') {
-      window.showToast('Labs en la línea de tiempo.', 'success');
-    }
-    return;
-  }
-  if (typeof window.showToast === 'function') {
-    window.showToast(
-      out && out.reason === 'empty'
-        ? 'Sin labs de hoy para la línea de tiempo.'
-        : 'No se pudo guardar la interpretación de labs.',
-      out && out.reason === 'empty' ? 'info' : 'error'
-    );
-  }
+  setTimeout(function () {
+    var el = document.getElementById('eventualidades-input');
+    if (el && typeof el.focus === 'function') el.focus();
+  }, 0);
 }
 
 function navigateDocQueue(patientId, cta, primaryCta) {
+  void primaryCta;
   var id = String(patientId || '');
   if (!id) return;
   var target = String(cta || 'nota');
-  // Sala remaps notas → Estado actual; document labs in Eventualidades instead.
+  // Sala remaps notas → Estado actual; open Eventualidades for clinical notes.
   if (target === 'nota' && isModeSala(loadSettings())) {
     target = 'eventualidades';
   }
@@ -274,8 +223,7 @@ function navigateDocQueue(patientId, cta, primaryCta) {
     window.selectPatient(id);
   }
   if (target === 'eventualidades') {
-    var pane = eventualidadesPaneForDocQueueNav(target, primaryCta || cta);
-    void openEventualidadesWithLabAutoSend(id, pane || 'labs');
+    openEventualidadesPanel();
     return;
   }
   var section =

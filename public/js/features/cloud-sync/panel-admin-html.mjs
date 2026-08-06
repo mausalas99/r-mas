@@ -6,6 +6,7 @@ import { formatCloudRoomLabel } from './room-label.mjs';
 const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'salas', label: 'Salas' },
+  { id: 'equipos', label: 'Equipos' },
   { id: 'usuarios', label: 'Usuarios' },
   { id: 'mutaciones', label: 'Mutaciones' },
   { id: 'peligro', label: 'Peligro', danger: true },

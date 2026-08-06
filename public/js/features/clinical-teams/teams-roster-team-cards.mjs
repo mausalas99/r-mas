@@ -114,8 +114,11 @@ export function renderAddMemberCycleSelect(team) {
   </select>`;
 }
 
-/** @param {object} m */
-export function renderMemberRow(m) {
+/**
+ * @param {object} m
+ * @param {{ canRemove?: boolean, teamId?: string, callerUserId?: string }} [opts]
+ */
+export function renderMemberRow(m, opts = {}) {
   const handle = escapeHtml(m.username || m.user_id);
   const name = String(m.clinical_name || '').trim();
   const rank = escapeHtml(effectiveClinicalRank({ rank: m.rank }));
@@ -125,9 +128,19 @@ export function renderMemberRow(m) {
   const cycleHtml = cycle
     ? `<span class="clinical-teams-member-cycle">${escapeHtml(cycle)}</span>`
     : '';
+  const memberUserId = String(m.user_id || '').trim();
+  const canRemove =
+    opts.canRemove &&
+    opts.teamId &&
+    memberUserId &&
+    memberUserId !== String(opts.callerUserId || '').trim();
+  const removeBtn = canRemove
+    ? `<button type="button" class="btn-med-secondary clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`
+    : '';
   return `<li class="clinical-teams-member-row">
     <span class="clinical-teams-member-row-name">${displayName}</span>
     <span class="clinical-teams-member-row-meta">${meta}${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
+    ${removeBtn}
   </li>`;
 }
 
@@ -135,8 +148,12 @@ export function renderMemberRow(m) {
 export function renderMembersBlock(members, { compact = false, teamId = '' } = {}) {
   const list = Array.isArray(members) ? members : [];
   const count = list.length;
+  const canRemove = !!teamId && canManageTeamRoster(clinicalSessionContext.user);
+  const callerUserId = String(clinicalSessionContext.user?.user_id || '');
   const rows = count
-    ? list.map((m) => renderMemberRow(m)).join('')
+    ? list
+        .map((m) => renderMemberRow(m, { canRemove, teamId, callerUserId }))
+        .join('')
     : '<li class="clinical-teams-empty clinical-teams-empty--inline">Sin integrantes</li>';
   const heading = count === 1 ? 'Integrantes (1)' : `Integrantes (${count})`;
   const listHtml = `<ul class="clinical-teams-member-rows">${rows}</ul>`;
@@ -278,7 +295,7 @@ export function renderTeamInviteCollapsible(team, teamId) {
           <p class="clinical-teams-add-member-label">Agregar integrante</p>
           <div class="clinical-teams-add-member-fields">
             <div class="field-group clinical-teams-add-member-user">
-              <label for="clinical-add-member-${escapeAttr(tid)}">Usuario LAN</label>
+              <label for="clinical-add-member-${escapeAttr(tid)}">@usuario</label>
               <input id="clinical-add-member-${escapeAttr(tid)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(tid)}">
             </div>
             <div class="field-group clinical-teams-add-cycle-group">
@@ -287,7 +304,7 @@ export function renderTeamInviteCollapsible(team, teamId) {
             </div>
             <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
           </div>
-          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (usuario LAN, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
+          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(tid)}">Debe existir en Mi rotación (@usuario, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
         </form>`;
   return renderClinicalTeamsCollapsible({
     collapseKey: `card.${tid}.invite`,

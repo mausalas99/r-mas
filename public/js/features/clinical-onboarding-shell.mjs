@@ -45,16 +45,16 @@ export function buildSyncModeChoiceBodyHtml() {
           <button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--primary" data-sync-mode="lan">
             <span class="clinical-onboard-mode-card-head">
               ${MODE_LAN_ICON}
-              <span class="clinical-onboard-mode-card-title">Guardia en red (LAN)</span>
+              <span class="clinical-onboard-mode-card-title">Guardia con R+ Cloud</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Usuario @usuario, sala, sincronización en vivo con el equipo y <strong>Mi rotación</strong>.</span>
+            <span class="clinical-onboard-mode-card-desc">Usuario @usuario, sala, sincronización con el equipo por <strong>Nube</strong> y <strong>Mi rotación</strong>.</span>
           </button>
           <button type="button" class="clinical-onboard-mode-card" data-sync-mode="local">
             <span class="clinical-onboard-mode-card-head">
               ${MODE_LOCAL_ICON}
               <span class="clinical-onboard-mode-card-title">Solo este equipo</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Para médicos ajenos a medicina interna: sin LAN ni LiveSync; expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
+            <span class="clinical-onboard-mode-card-desc">Para médicos ajenos a medicina interna: sin R+ Cloud; expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
           </button>
         </div>`;
 }

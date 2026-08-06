@@ -58,7 +58,7 @@ const EMBEDDED_STABLE_CATALOG = {
     {
       version: '6.5.0',
       label: '6.5.0',
-      summary: 'Última 6.5.x en GitHub (Historia Clínica · expediente Sala).',
+      summary: 'Historia Clínica y expediente Sala (canal Estable en GitHub).',
       recommended: true,
     },
     {

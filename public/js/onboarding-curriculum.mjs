@@ -114,7 +114,7 @@ export const GUARDIA_V7_CHAPTERS = [
   },
   {
     id: 'ch-guardia-lan',
-    title: 'LAN y equipos',
+    title: 'R+ Cloud y equipos',
     stepIds: [
       'gv7_lan_wifi',
       'gv7_lan_pin',
@@ -166,7 +166,7 @@ export const SALA_HUB_MODULES = [
   { id: 'mod-ch3', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
   { id: 'mod-ch4', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
   { id: 'mod-ch5', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },
-  { id: 'mod-ch6', chapterId: 'ch-team', label: 'Equipo (LiveSync + móvil)', branch: 'sala' },
+  { id: 'mod-ch6', chapterId: 'ch-team', label: 'Equipo (R+ Cloud + móvil)', branch: 'sala' },
 ];
 
 export const IC_HUB_MODULES = IC_CHAPTERS.map((ch) => ({

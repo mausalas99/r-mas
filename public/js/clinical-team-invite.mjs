@@ -103,7 +103,7 @@ export function inviteCodeFailureMessage(diag) {
     case 'too_short':
       return 'Código demasiado corto. Copia los 8 caracteres del recuadro «Código de equipo» en Mi rotación.';
     case 'ambiguous':
-      return `Hay ${diag.matchCount || 2} equipos con ese prefijo en esta Mac. Pide al R2 el código completo o que te agregue desde el directorio LAN.`;
+      return `Hay ${diag.matchCount || 2} equipos con ese prefijo en esta Mac. Pide al R2 el código completo o que te agregue desde el directorio de usuarios.`;
     case 'not_in_db':
       return 'Este equipo aún no está en tu base. Conéctate a la misma sala ⇄, abre Mi rotación de nuevo (sincroniza) y reintenta; o pide que te agreguen por @usuario.';
     case 'empty':

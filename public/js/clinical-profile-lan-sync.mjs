@@ -9,13 +9,13 @@ import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 /** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
 export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
-  'Sin sala ⇄ activa el perfil queda solo en esta Mac hasta que te unas o vuelva la red.';
+  'Sin sesión de R+ Cloud el perfil queda solo en esta Mac hasta que te conectes en ⇄.';
 
 export const LAN_PROFILE_PUSH_FAILED_MSG =
-  'Perfil guardado en esta Mac, pero no se pudo publicar a la sala. Revisa conexión ⇄ e intenta Guardar perfil de nuevo.';
+  'Perfil guardado en esta Mac, pero no se pudo publicar a R+ Cloud. Revisa ⇄ Conexión e intenta Guardar perfil de nuevo.';
 
 export const LAN_PROFILE_NEEDS_CONNECT_MSG =
-  'Perfil guardado en esta Mac. Para aparecer en la guardia, conéctate a la sala del equipo: pega el enlace de invitación o escanea el anfitrión.';
+  'Perfil guardado en esta Mac. Para aparecer en la guardia, conéctate a R+ Cloud en ⇄ (cuenta y sala del equipo).';
 
 /** @param {string} [code] */
 export function isLanProfileNeedsConnectCode(code) {

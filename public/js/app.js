@@ -30,7 +30,6 @@ import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
   runInitialFeatureBoot,
-  wasV3MigratedThisBoot,
 } from './app-runtimes.mjs';
 import {
   registerAppShellContext,
@@ -399,19 +398,6 @@ function runDomBootAfterState() {
     syncMainAppTabA11y(activeAppTab);
     renderInnerTabs();
     initTabBarMotion();
-    if (
-      wasV3MigratedThisBoot() &&
-      !isMobileWeb() &&
-      !(window.electronAPI && typeof window.electronAPI.isLanDevPeer === 'function' && window.electronAPI.isLanDevPeer())
-    ) {
-      setTimeout(function () {
-        try {
-          showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.');
-        } catch (_e) {
-          void _e;
-        }
-      }, 800);
-    }
     scheduleDeferredShellInits();
     scheduleDeferredUiInits();
     initRpcDatePicker();

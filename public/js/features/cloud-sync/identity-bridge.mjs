@@ -14,10 +14,6 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
-/**
- * @param {string} sessionUserId
- * @param {string} username
- */
 /** @param {string} username */
 async function readClientId() {
   try {
@@ -54,27 +50,27 @@ async function tryClaimUsername(sessionUserId, username) {
 
 /**
  * @param {string} sessionUserId
- * @param {string} displayName
+ * @param {{ displayName?: string, rank?: string, sala?: string|null }} profile
  */
-async function tryUpsertClinicalName(sessionUserId, displayName) {
-  const name = String(displayName || '').trim();
-  if (!name) return { ok: true };
-
+async function tryUpsertClinicalProfile(sessionUserId, profile) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalProfileUpsert !== 'function') return { ok: true };
 
   const profileRes = await api.dbClinicalProfileUpsert({
     userId: sessionUserId,
-    clinicalName: name,
-    rank: String(clinicalSessionContext.user?.rank || 'R1'),
-    sala: clinicalSessionContext.user?.sala || null,
+    clinicalName: String(profile.displayName || '').trim(),
+    rank: String(profile.rank || clinicalSessionContext.user?.rank || 'R1'),
+    sala: profile.sala ?? clinicalSessionContext.user?.sala ?? null,
     isProgramAdmin: false,
   });
   if (!profileRes?.ok) {
-    return { ok: false, error: profileRes?.error || 'No se guardó el nombre clínico.' };
+    return { ok: false, error: profileRes?.error || 'No se guardó el perfil clínico.' };
   }
   if (clinicalSessionContext.user) {
-    clinicalSessionContext.user.clinical_name = name;
+    const name = String(profile.displayName || '').trim();
+    if (name) clinicalSessionContext.user.clinical_name = name;
+    if (profile.rank) clinicalSessionContext.user.rank = profile.rank;
+    if (profile.sala != null) clinicalSessionContext.user.sala = profile.sala;
   }
   return { ok: true };
 }
@@ -85,22 +81,30 @@ export function normalizeCloudIdentityUsername(raw) {
 }
 
 /**
- * After cloud register/login, sync @usuario + nombre clínico to local session.
- * @param {{ username: string, displayName: string }} params
+ * After cloud register/login, sync @usuario + perfil clínico to local session.
+ * @param {{ username: string, displayName?: string, rank?: string, sala?: string|null }} params
  */
-export async function bridgeCloudIdentityToLocal({ username, displayName }) {
+export async function bridgeCloudIdentityToLocal({ username, displayName, rank, sala }) {
   const localHandle = normalizeCloudIdentityUsername(username);
   const clinicalName = String(displayName || '').trim();
+  const clinicalRank = String(rank || clinicalSessionContext.user?.rank || 'R1');
+  const clinicalSala = sala ?? clinicalSessionContext.user?.sala ?? null;
   const sessionUserId = resolveClinicalSessionUserId();
 
   if (clinicalSessionContext.user) {
     clinicalSessionContext.user.username = localHandle;
     if (clinicalName) clinicalSessionContext.user.clinical_name = clinicalName;
+    clinicalSessionContext.user.rank = clinicalRank;
+    if (clinicalSala != null) clinicalSessionContext.user.sala = clinicalSala;
   }
 
   if (sessionUserId) {
     await tryClaimUsername(sessionUserId, localHandle);
-    if (clinicalName) await tryUpsertClinicalName(sessionUserId, clinicalName);
+    await tryUpsertClinicalProfile(sessionUserId, {
+      displayName: clinicalName,
+      rank: clinicalRank,
+      sala: clinicalSala,
+    });
   }
 
   persistClinicalUserBinding({
@@ -115,5 +119,5 @@ export async function bridgeCloudIdentityToLocal({ username, displayName }) {
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   }
 
-  return { username: localHandle, displayName: clinicalName };
+  return { username: localHandle, displayName: clinicalName, rank: clinicalRank };
 }

@@ -10,14 +10,15 @@ import {
 /** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
 export const CLINICAL_LAN_PROFILE_GATE_VERSION = '7.9.0';
 
-/** Spanish copy shown when the gate forces re-registration (LAN @usuario vs nombre en guardia). */
+/** Spanish copy when the device must confirm @usuario vs nombre en guardia (R+ Cloud). */
 export const CLINICAL_LAN_PROFILE_GATE_LEAD_HTML =
-  'Migración <strong>7.9</strong>: se reinician las cuentas en este equipo; <strong>pacientes y labs se conservan</strong>. ' +
-  'Elige tu @usuario (o crea uno nuevo). En <strong>Sala</strong> o <strong>Torre HU</strong> registras también tu ' +
-  '<strong>contraseña de Nube</strong> aquí — no copies el nombre en guardia en el campo de usuario.';
+  'Confirma tu <strong>@usuario</strong> de R+ Cloud y tu <strong>nombre en guardia</strong>. ' +
+  '<strong>Pacientes y labs se conservan</strong>. ' +
+  'En salas clínicas también registras tu <strong>contraseña de Nube</strong> aquí — ' +
+  'no copies el nombre en guardia en el campo de usuario.';
 
 export const CLINICAL_LAN_USERNAME_HINT_HTML =
-  '<strong>Usuario LAN (@usuario)</strong> — identificador único en minúsculas, sin espacios ni tildes: ' +
+  '<strong>Usuario (@usuario)</strong> — identificador único en minúsculas, sin espacios ni tildes: ' +
   'apellido + inicio del nombre, p. ej. <code>drmendoza</code> o <code>garcia</code>. ' +
   'No escribas «Dr. …» aquí.';
 
@@ -143,24 +144,38 @@ export function markClinicalLanProfileGateComplete(settings = readRpcSettings())
 }
 
 /**
- * Clears cached username/display name on device when the gate is pending so users
- * cannot accept stale prefills (e.g. machine id or placeholder names).
+ * Clears only stale machine/placeholder prefills when the gate is pending.
+ * Keeps a valid claimed @usuario + display name so re-open of registro does not
+ * spawn a second clinical identity / orphan team memberships.
  * @param {Record<string, unknown>|null|undefined} [settings]
  */
 export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
   if (!needsClinicalLanProfileGate(settings)) return settings;
   const next = { ...settings };
   let dirty = false;
-  for (const key of ['clinicalUsername', 'clinicalDisplayName']) {
-    if (next[key]) {
-      delete next[key];
-      dirty = true;
-    }
+  const clientId = resolveClinicalClientId(next);
+  const cachedUser = normalizeUsername(String(next.clinicalUsername || ''));
+  const keepUsername =
+    isValidUsernameFormat(cachedUser) &&
+    !isLegacyMachineUsername(cachedUser, clientId) &&
+    !isLocalOnlyPlaceholderUsername(cachedUser);
+  if (next.clinicalUsername && !keepUsername) {
+    delete next.clinicalUsername;
+    dirty = true;
+  }
+  const display = String(next.clinicalDisplayName || '').trim();
+  const placeholderDisplay = !display || /^usuario$/i.test(display) || /^local/i.test(display);
+  // Only wipe display with username when handle was machine/placeholder noise.
+  if (next.clinicalDisplayName && !keepUsername && placeholderDisplay) {
+    delete next.clinicalDisplayName;
+    dirty = true;
   }
   if (dirty) {
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(next));
-    } catch (_e) { void _e; }
+    } catch (_e) {
+      void _e;
+    }
   }
   return next;
 }

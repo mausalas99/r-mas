@@ -9,6 +9,8 @@ import {
   loadAdminSalas,
   loadAdminUsers,
 } from './panel-admin-data.mjs';
+import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
+import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -52,6 +54,7 @@ function dispatchSimpleAction(action, deps) {
     'refresh-resumen': () => void loadAdminResumen(deps.root, deps.getApi),
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
     'search-users': () => void loadAdminUsers(deps.root, deps.getApi),
+    'refresh-equipos': () => void equiposPanel.refresh(),
     'load-mutations': () => void loadAdminMutations(deps.root, deps.getApi, deps.toast),
     'purge-room-selected': () => void handlePurgeRoomSelected(deps),
     'close-room-detail': () => {
@@ -92,6 +95,18 @@ function dispatchRoomAction(action, btn, deps, _ctx) {
 function dispatchUserAction(action, btn, deps) {
   const userId = btn.getAttribute('data-user-id');
   const handle = btn.getAttribute('data-user-handle') || '';
+  if (action === 'assign-equipo') {
+    void deps.equiposPanel?.handleAssign(btn);
+    return;
+  }
+  if (action === 'save-equipo-rank') {
+    void deps.equiposPanel?.handleSaveRank(btn);
+    return;
+  }
+  if (action === 'purge-equipo-user') {
+    void deps.equiposPanel?.handlePurge(btn);
+    return;
+  }
   if (action === 'revoke-sessions' && userId) void handleRevokeSessions(deps, userId, handle);
   if (action === 'promote-user' && userId) void handlePromoteUser(deps, userId, handle, btn);
   if (action === 'reset-password' && userId) void handleResetPassword(deps, userId, handle);
@@ -238,16 +253,36 @@ async function handleDeleteUser(deps, userId, handle) {
     !confirmAction(
       '¿Eliminar a @' +
         handle +
-        ' de la nube?\n\nSi es dueño de una sala con otros miembros, el dueño pasa a otro. Si queda sola, se purga esa sala.'
+        ' de la nube?\n\nTambién se quitará de los equipos clínicos en esta Mac y se publicará el cambio a la sala.\n\nSi es dueño de una sala con otros miembros, el dueño pasa a otro. Si queda sola, se purga esa sala.'
     )
   ) {
     return;
   }
   try {
     await deps.getApi().adminDeleteUser(userId);
-    deps.toast('Usuario eliminado.', 'success');
+    const purged = await purgeClinicalUserMatchingCloudHandle(handle);
+    if (purged.ok) {
+      deps.toast('Usuario eliminado de la nube y de los equipos clínicos.', 'success');
+    } else if (purged.reason === 'not_local') {
+      deps.toast(
+        'Usuario eliminado de la nube. No había perfil clínico local con ese @usuario.',
+        'info'
+      );
+    } else if (purged.reason === 'no_db') {
+      deps.toast(
+        'Usuario eliminado de la nube. Abre R+ de escritorio para quitarlo también de los equipos.',
+        'warn'
+      );
+    } else {
+      deps.toast(
+        'Usuario eliminado de la nube, pero no se pudo quitar del equipo local: ' +
+          String(purged.reason || 'error'),
+        'warn'
+      );
+    }
     void loadAdminUsers(deps.root, deps.getApi);
     void loadAdminResumen(deps.root, deps.getApi);
+    void loadAdminEquipos(deps.root, deps.getApi);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo eliminar.', 'error');
   }

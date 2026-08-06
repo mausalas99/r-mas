@@ -15,6 +15,7 @@ describe('buildAdminShellHtml', () => {
     assert.match(html, /role="tablist"/);
     assert.match(html, /data-admin-tab="resumen"/);
     assert.match(html, /data-admin-tab="salas"/);
+    assert.match(html, /data-admin-tab="equipos"/);
     assert.match(html, /data-admin-tab="usuarios"/);
     assert.match(html, /data-admin-tab="mutaciones"/);
     assert.match(html, /data-admin-tab="peligro"/);

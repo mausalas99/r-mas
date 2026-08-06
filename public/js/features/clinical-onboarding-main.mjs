@@ -8,6 +8,9 @@ import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.m
 import {
   needsClinicalOnboarding,
   needsClinicalSyncModeChoice,
+  needsOnboardingShell,
+  needsProfileOnboarding,
+  needsTeamOnboardingStep,
   renderOnboardingPanelInto,
 } from './clinical-onboarding.mjs';
 import { prefillRegistrationFromUrlParams, wireClinicalRegistrationForm } from './clinical-registration.mjs';
@@ -22,6 +25,8 @@ export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
 export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
 
 let teamsChangedListenerWired = false;
+/** @type {Promise<void>|null} */
+let showMainClinicalOnboardingInflight = null;
 
 export function getClinicalOnboardingMainHost() {
   return document.getElementById(CLINICAL_ONBOARDING_MAIN_ID);
@@ -73,7 +78,7 @@ export async function readClinicalDbGateKind() {
 /** User-facing copy when onboarding cannot load the clinical session. */
 export async function describeOnboardingSessionBlock() {
   if (typeof window === 'undefined') {
-    return 'Abre la base de datos local de R+ para continuar. No necesitas red LAN ni ⇄.';
+    return 'Abre la base de datos local de R+ para continuar. No necesitas R+ Cloud ni ⇄.';
   }
   const gate = await readClinicalDbGateKind();
   if (gate === 'native_blocked') {
@@ -91,13 +96,13 @@ export async function describeOnboardingSessionBlock() {
   if (gate === 'locked') {
     return (
       'R+ está preparando el almacenamiento local de este equipo. ' +
-      'Pulsa Reintentar en unos segundos; no necesitas red LAN ni ⇄.'
+      'Pulsa Reintentar en unos segundos; no necesitas R+ Cloud ni ⇄.'
     );
   }
   if (gate === 'no_api') {
     return 'R+ no detectó el acceso a la base local. Reinicia la aplicación.';
   }
-  return 'Abre la base de datos local de R+ para continuar. No necesitas red LAN ni ⇄.';
+  return 'Abre la base de datos local de R+ para continuar. No necesitas R+ Cloud ni ⇄.';
 }
 
 /** Card HTML when session bootstrap failed (auto-unlock retries; no manual DB gate). */
@@ -131,10 +136,50 @@ export function focusMainClinicalOnboarding() {
   return true;
 }
 
+export async function refreshTeamOnboardingShellOnly() {
+  if (!needsTeamOnboardingStep()) {
+    hideMainClinicalOnboarding();
+    return;
+  }
+  const main = document.getElementById('main-area');
+  if (!main) return;
+
+  let host = getClinicalOnboardingMainHost();
+  if (!host) {
+    await showMainClinicalOnboarding();
+    return;
+  }
+
+  document.documentElement.classList.add(CLINICAL_ONBOARDING_ACTIVE_CLASS);
+  if (host.querySelector('[data-team-onboard-open]')) return;
+
+  const { renderTeamOnboardingInto, wireTeamOnboardingInteractions } = await import(
+    './clinical-onboarding-team.mjs'
+  );
+  renderTeamOnboardingInto(host, { skipCloudSync: true });
+  wireTeamOnboardingInteractions(host);
+}
+
 export async function showMainClinicalOnboarding() {
+  if (showMainClinicalOnboardingInflight) return showMainClinicalOnboardingInflight;
+  showMainClinicalOnboardingInflight = showMainClinicalOnboardingBody().finally(() => {
+    showMainClinicalOnboardingInflight = null;
+  });
+  return showMainClinicalOnboardingInflight;
+}
+
+async function showMainClinicalOnboardingBody() {
   wireTeamsChangedListenerOnce();
 
-  if (!needsClinicalOnboarding()) {
+  // Load memberships before gating — a joined team must suppress registro / paso 3.
+  try {
+    const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
+    await fetchClinicalTeamsFromDb();
+  } catch {
+    /* session optional */
+  }
+
+  if (!needsOnboardingShell()) {
     hideMainClinicalOnboarding();
     return;
   }
@@ -230,7 +275,24 @@ async function syncChromeAfterOnboardingChange() {
 }
 
 export async function refreshMainClinicalOnboardingIfNeeded() {
-  if (needsClinicalOnboarding()) await showMainClinicalOnboarding();
-  else hideMainClinicalOnboarding();
+  // Join/create dispatch rpc-clinical-teams-changed before session.teams is reloaded —
+  // refresh from SQLCipher first or the team step stays up until a full page reload.
+  try {
+    const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
+    await fetchClinicalTeamsFromDb();
+  } catch {
+    /* session optional */
+  }
+  if (!needsOnboardingShell()) {
+    hideMainClinicalOnboarding();
+    await syncChromeAfterOnboardingChange();
+    return;
+  }
+  if (!needsProfileOnboarding() && needsTeamOnboardingStep()) {
+    await refreshTeamOnboardingShellOnly();
+    await syncChromeAfterOnboardingChange();
+    return;
+  }
+  await showMainClinicalOnboarding();
   await syncChromeAfterOnboardingChange();
 }

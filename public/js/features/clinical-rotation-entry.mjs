@@ -161,7 +161,7 @@ export function syncClinicalRotationEntryChrome() {
     entryBtn.classList.toggle('is-pending', status.pending);
     const base = status.pending
       ? 'Completa rango y rotación (sala)'
-      : 'Usuario LAN, equipos y entregas';
+      : '@usuario, equipos y entregas';
     entryBtn.setAttribute('title', `${base} — ${status.primary}: ${status.sub}`);
   }
   if (entryPrimary) entryPrimary.textContent = status.primary;

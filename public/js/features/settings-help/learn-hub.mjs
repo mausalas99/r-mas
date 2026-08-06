@@ -221,7 +221,7 @@ function renderLearnHubQuickRouteCard(parts) {
     '<button type="button" class="learn-hub-module-hit learn-hub-module-hit--cta"' +
     ` data-learn-chapter="${escapeHtml(QUICK_ROUTE_HUB_MODULE.chapterId)}"` +
     ' data-learn-branch="quick-route"' +
-    ' title="Ruta rápida — lab, guardia, LAN y entrega">' +
+    ' title="Ruta rápida — lab, guardia, Nube y entrega">' +
     '<span class="learn-hub-module-index learn-hub-module-index--cta" aria-hidden="true">5′</span>' +
     '<span class="learn-hub-module-main">' +
     `<span class="learn-hub-module-title">${escapeHtml(QUICK_ROUTE_HUB_MODULE.label)}</span>` +
@@ -242,7 +242,7 @@ function renderLearnHubNovedadesTrack(parts, focusTrack, progress, tourProgress)
   );
   parts.push(
     '<summary class="learn-hub-track-title">' +
-    'Novedades 7.x' +
+    'Guardia y R+ Cloud' +
     `<span class="learn-hub-progress-pill">${guardiaCompletedCount}/5</span>` +
     '</summary>'
   );

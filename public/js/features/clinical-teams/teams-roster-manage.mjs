@@ -58,8 +58,48 @@ export function wireTeamManageModalDelegation() {
     const deleteBtn = target.closest('.clinical-teams-delete-btn');
     if (deleteBtn instanceof HTMLButtonElement) {
       void handleDeleteTeamClick(deleteBtn);
+      return;
+    }
+
+    const removeMemberBtn = target.closest('.clinical-teams-member-remove-btn');
+    if (removeMemberBtn instanceof HTMLButtonElement) {
+      void handleRemoveMemberClick(removeMemberBtn);
     }
   });
+}
+
+/** @param {HTMLButtonElement} btn */
+async function handleRemoveMemberClick(btn) {
+  const targetUserId = String(btn.dataset.userId || '').trim();
+  const label = String(btn.dataset.userLabel || '').trim() || targetUserId;
+  if (!targetUserId) return;
+
+  const ok = window.confirm(
+    `¿Quitar a «${label}» del equipo y de la base clínica en esta Mac?\n\nDesaparecerá de Integrantes al sincronizar clinicalOps con la sala.`
+  );
+  if (!ok) return;
+
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalUserDelete !== 'function') {
+    toast('Quitar integrantes requiere R+ de escritorio con base clínica desbloqueada.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  const res = await api.dbClinicalUserDelete({
+    targetUserId,
+    callerUserId: currentUserId(),
+  });
+  btn.disabled = false;
+  if (!res?.ok) {
+    toast(res?.error || 'No se pudo quitar el integrante.', 'error');
+    return;
+  }
+
+  toast('Integrante quitado.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
+  await refreshTeamsUiAfterChange();
 }
 
 /** @param {HTMLButtonElement} btn */

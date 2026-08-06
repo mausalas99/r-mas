@@ -68,19 +68,19 @@ export async function resolveClinicalTeamsPanelContext(user, joined) {
 
 export function buildClinicalTeamsHandleHint(ctx) {
   if (!ctx.displayHandle) return '';
-  return `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml(ctx.displayHandle)}</strong> — compártelo para que te agreguen a un equipo.${ctx.savedHandle !== ctx.displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para registrarlo en la red.' : ''}</p>`;
+  return `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu @usuario: <strong>@${escapeHtml(ctx.displayHandle)}</strong> — compártelo para que te agreguen a un equipo.${ctx.savedHandle !== ctx.displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para publicarlo en R+ Cloud.' : ''}</p>`;
 }
 
 export function buildClinicalProfileSectionHtml(ctx, user) {
   const clinicalName = ctx.profileGatePending ? '' : escapeHtml(user.clinical_name || '');
   const legacyBanner = ctx.legacyUsername
-    ? '<p class="clinical-teams-legacy-banner">Registra tu usuario LAN (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
+    ? '<p class="clinical-teams-legacy-banner">Registra tu @usuario (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
     : '';
   const lanDirectoryNote = ctx.canViewLanUsers
     ? ''
-    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios LAN lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> debes tener la sala <strong>⇄</strong> activa (o haberte unido con invitación); R+ publica tu perfil al guardar.</p>`;
+    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> conéctate a <strong>R+ Cloud</strong> en ⇄; R+ publica tu perfil al guardar.</p>`;
   const profileHandleBanner = ctx.displayHandle
-    ? `<p class="clinical-teams-profile-handle">Visible en la red como <strong>@${escapeHtml(ctx.displayHandle)}</strong></p>`
+    ? `<p class="clinical-teams-profile-handle">Visible en R+ Cloud como <strong>@${escapeHtml(ctx.displayHandle)}</strong></p>`
     : '';
 
   return `
@@ -91,12 +91,12 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
       ${lanDirectoryNote}
       <form id="clinical-profile-form" class="clinical-teams-create-form" novalidate>
         <div class="field-group">
-          <label for="clinical-profile-username">Usuario LAN *</label>
+          <label for="clinical-profile-username">Usuario (@usuario) *</label>
           <input id="clinical-profile-username" type="text" class="profile-input"
             value="${escapeAttr(ctx.usernameForInput)}"
             placeholder="ej. drmendoza" autocomplete="off" spellcheck="false"
             pattern="[a-z][a-z0-9_]{2,31}" required>
-          ${hintHtml('Usuario LAN (@usuario): minúsculas, sin espacios — p. ej. drmendoza. No es tu nombre en guardia.')}
+          ${hintHtml('@usuario: minúsculas, sin espacios — p. ej. drmendoza. No es tu nombre en guardia.')}
         </div>
         <div class="field-group">
           <label for="clinical-profile-name">Nombre en guardia</label>
@@ -119,7 +119,7 @@ export function buildClinicalProfileSectionHtml(ctx, user) {
             <input type="checkbox" id="clinical-profile-admin" ${ctx.programAdmin ? 'checked' : ''}>
             <span>Privilegios de administración</span>
           </label>
-          ${hintHtml('Requiere tu código al activar. Acceso total al programa: rotación, censo global y directorio LAN.')}
+          ${hintHtml('Requiere tu código al activar. Acceso total al programa: rotación, censo global y directorio de usuarios.')}
         </div>
         <div class="field-group">
           <label for="clinical-profile-sala">${ctx.programAdmin ? 'Mi sala (rango clínico)' : 'Sala'}</label>

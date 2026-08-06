@@ -8,7 +8,7 @@ const emptyCtx = {
   dayOpenPrefs: new Map(),
 };
 
-test('buildEventualidadesPanelHtml note mode: timeline + compose, no labs dock', () => {
+test('buildEventualidadesPanelHtml: timeline + compose, no Labs tab', () => {
   const html = buildEventualidadesPanelHtml(
     [
       {
@@ -28,25 +28,26 @@ test('buildEventualidadesPanelHtml note mode: timeline + compose, no labs dock',
   assert.match(html, /ev-timeline/);
   assert.match(html, /class="ev-compose"/);
   assert.match(html, /id="eventualidades-input"/);
+  assert.match(html, /id="eventualidades-add"/);
+  assert.doesNotMatch(html, /ev-mode-switch/);
+  assert.doesNotMatch(html, />Labs</);
   assert.doesNotMatch(html, /id="eventualidades-labs"/);
-  assert.doesNotMatch(html, /Interpretación de laboratorios/);
+  assert.doesNotMatch(html, /Interpretación/);
 });
 
-test('buildEventualidadesPanelHtml labs mode: timeline only, no compose dock', () => {
+test('buildEventualidadesPanelHtml empty: compose visible, no Labs copy', () => {
   const html = buildEventualidadesPanelHtml(
     [],
     false,
     null,
-    {
-      entries: [],
-      labsText: 'LABS 03/08/2026 06:45\nEN LA BIOMETRÍA SE APRECIA ANEMIA.',
-    },
+    { entries: [], labsText: 'LABS 03/08/2026\nEN LA BIOMETRÍA' },
     'labs',
     { ...emptyCtx, composeMode: 'labs' }
   );
-  assert.match(html, /data-ev-view="labs"/);
-  assert.match(html, /data-ev-timeline="labs"/);
-  assert.doesNotMatch(html, /class="ev-compose"/);
-  assert.doesNotMatch(html, /id="eventualidades-labs"/);
-  assert.doesNotMatch(html, /Interpretación de laboratorios/);
+  assert.match(html, /data-ev-view="note"/);
+  assert.match(html, /class="ev-compose"/);
+  assert.match(html, /Aún no hay eventualidades\. Agrégalas abajo\./);
+  assert.doesNotMatch(html, /ev-mode-switch/);
+  assert.doesNotMatch(html, />Labs</);
+  assert.doesNotMatch(html, /interpretaciones/i);
 });

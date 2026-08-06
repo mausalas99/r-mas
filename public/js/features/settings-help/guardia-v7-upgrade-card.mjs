@@ -48,9 +48,9 @@ export function maybeShowGuardiaV7UpgradeCard({ delayMs = 0 } = {}) {
     el.id = 'guardia-v7-upgrade-card';
     el.className = 'clinical-onboarding-card guardia-v7-upgrade-card';
     el.setAttribute('role', 'region');
-    el.setAttribute('aria-label', 'Novedades de guardia en R+ 7');
+    el.setAttribute('aria-label', 'Novedades de guardia en R+');
     el.innerHTML =
-      '<h3 class="clinical-onboarding-title">Novedades de guardia en R+ 7</h3>' +
+      '<h3 class="clinical-onboarding-title">Novedades de guardia</h3>' +
       '<p class="guardia-v7-upgrade-progress" aria-live="polite">' +
       'Progreso: <strong>' +
       progress.completed +
@@ -67,8 +67,8 @@ export function maybeShowGuardiaV7UpgradeCard({ delayMs = 0 } = {}) {
       '%"></span></div>' +
       '<ul class="guardia-v7-upgrade-bullets">' +
       '<li><strong>Modo Guardia</strong> — tablero de turno, censo y alcance por rango.</li>' +
-      '<li><strong>Modo Entrega</strong> — handoff por paciente, roster y pendientes v2.</li>' +
-      '<li><strong>LAN 7.x</strong> — PIN del turno, directorio y enlace móvil permanente.</li>' +
+      '<li><strong>Modo Entrega</strong> — handoff por paciente, roster y pendientes.</li>' +
+      '<li><strong>R+ Cloud</strong> — sala Nube, equipos y enlace móvil desde ⇄.</li>' +
       '</ul>' +
       '<div class="modal-actions guardia-v7-upgrade-actions">' +
       '<button type="button" class="btn-save" id="guardia-v7-upgrade-start">' +

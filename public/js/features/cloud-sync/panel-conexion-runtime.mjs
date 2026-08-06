@@ -57,8 +57,12 @@ export function startSharedNubeRuntime(deps) {
   configureCloudMutateBridge({
     outbox: sharedOutbox,
     getRevision: deps.getCloudSyncRevision,
+    // Same path as "Forzar sincronización": push outbox + pull peers (not push-only).
     flush: function () {
-      return sharedRuntime?.flushOutbox();
+      if (typeof sharedRuntime?.noteLocalMutation === 'function') {
+        sharedRuntime.noteLocalMutation();
+      }
+      return sharedRuntime?.syncCycle();
     },
     getActorId: function () {
       return String(clinicalSessionContext.user?.user_id || getLanClientId() || 'local');
@@ -77,6 +81,14 @@ export function startSharedNubeRuntime(deps) {
       await sharedRuntime?.syncCycle();
     } catch {
       /* pull optional on connect */
+    }
+    try {
+      // Teams live in sala rooms (not only the census room) — seed pull+push on connect
+      // so peers see equipos without waiting for a local Mi rotación edit.
+      const { syncCloudClinicalOpsOnConnect } = await import('./cloud-clinical-ops-sala.mjs');
+      await syncCloudClinicalOpsOnConnect();
+    } catch {
+      /* clinicalOps directory optional */
     }
     try {
       const access = await import('../../clinical-access-runtime.mjs');

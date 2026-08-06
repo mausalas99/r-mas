@@ -58,7 +58,7 @@ function validateUsernameForm(fields, errEl) {
   if (!isValidUsernameFormat(fields.username)) {
     showOnboardError(
       errEl,
-      'Usuario LAN inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _), p. ej. drmendoza — no tu nombre en guardia.'
+      'Usuario inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _). p. ej. drmendoza — no tu nombre en guardia.'
     );
     return false;
   }
@@ -319,7 +319,7 @@ export async function handleResumeIdentityClick() {
   const errEl = document.getElementById('onboard-error');
   const resumeBtn = document.getElementById('clinical-onboard-resume-btn');
   if (!isValidUsernameFormat(username)) {
-    showOnboardError(errEl, 'Escribe tu usuario LAN para recuperarlo.');
+    showOnboardError(errEl, 'Escribe tu @usuario para recuperarlo.');
     return;
   }
   const existing = await lookupClinicalUserByUsername(username);

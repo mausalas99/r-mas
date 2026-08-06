@@ -37,7 +37,7 @@ export function connectStepHtml(url) {
     '<button type="button" class="cloud-sync-tab" role="tab" aria-selected="false" data-cloud-tab="recover">Recuperar</button></div>' +
     '<div class="cloud-sync-tab-panels">' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="login" role="tabpanel">' +
-    '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
+    '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +
     '<input type="text" class="profile-input" data-cloud-login-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" /></div>' +
     '<div class="cloud-sync-field"><label>Contraseña</label>' +
     '<input type="password" class="profile-input" data-cloud-login-pass autocomplete="current-password" /></div>' +
@@ -48,7 +48,7 @@ export function connectStepHtml(url) {
     '<p class="cloud-sync-hint">Mantiene la sesión Nube al reiniciar R+. No uses esto en una Mac compartida.</p>' +
     '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="login">Entrar</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="register" role="tabpanel" hidden>' +
-    '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
+    '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +
     '<input type="text" class="profile-input" data-cloud-reg-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" />' +
     '<p class="cloud-sync-hint">' + CLINICAL_LAN_USERNAME_HINT_HTML + '</p></div>' +
     '<div class="cloud-sync-field"><label>Nombre en guardia</label>' +
@@ -58,7 +58,7 @@ export function connectStepHtml(url) {
     '<input type="password" class="profile-input" data-cloud-reg-pass autocomplete="new-password" /></div>' +
     '<button type="button" class="cloud-sync-btn ui-pressable" data-cloud-action="register">Crear cuenta</button></div>' +
     '<div class="cloud-sync-tab-panel" data-cloud-tab-panel="recover" role="tabpanel" hidden>' +
-    '<div class="cloud-sync-field"><label>Usuario LAN (@usuario)</label>' +
+    '<div class="cloud-sync-field"><label>Usuario (@usuario)</label>' +
     '<input type="text" class="profile-input" data-cloud-recover-user autocomplete="username" placeholder="ej. drmendoza" spellcheck="false" /></div>' +
     '<div class="cloud-sync-field"><label>Código de recuperación</label>' +
     '<input type="text" class="profile-input" data-cloud-recover-code autocomplete="off" placeholder="R+XXXX-XXXX-XXXX" spellcheck="false" /></div>' +

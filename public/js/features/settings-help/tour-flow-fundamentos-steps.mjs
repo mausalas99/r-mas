@@ -49,7 +49,7 @@ function getMapLabTeaserCopy() {
 function getIcExportsDesktopLine() {
   if (!window.electronAPI || typeof window.electronAPI.getAppVersion !== 'function') return '';
   return (
-    '<p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);">Escritorio: <strong>⇄</strong> junto a Ajustes abre LAN; sync entre equipos en <strong>Respaldos, sync y recuperación</strong>.</p>'
+    '<p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);">Escritorio: <strong>⇄</strong> junto a Ajustes abre R+ Cloud; respaldos locales en <strong>Respaldos, sync y recuperación</strong>.</p>'
   );
 }
 
@@ -219,7 +219,7 @@ function renderSalaRecetaHu(bodyEl, nextBtn) {
 function renderSalaAgenda(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">La pestaña <strong>Agenda</strong> (arriba) concentra <strong>procedimientos programados</strong> del servicio: cirugías, estudios y pendientes del turno, enlazados al paciente cuando aplica.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Con <strong>⇄ LiveSync</strong> la agenda se comparte en la sala. <strong>Siguiente</strong>: sincronización en equipo.</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Con <strong>R+ Cloud</strong> la agenda se comparte en la sala. <strong>Siguiente</strong>: sincronización en equipo.</p>';
   showNext(nextBtn);
 }
 
@@ -227,23 +227,23 @@ function renderLivesyncDesktop(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">' +
     LIVESYNC_BTN_COPY +
-    ' abre la sala en vivo: activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad u otra Mac pegas el enlace de invitación.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono Wi‑Fi para abrir el panel; aparece <strong>Siguiente</strong> cuando esté visible.</p>';
+    ' abre <strong>Conexión</strong>: inicia sesión en Nube y elige la <strong>sala</strong> de tu equipo. En iPad usa el enlace o QR de R+ Móvil.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono ⇄ / Wi‑Fi para abrir el panel; aparece <strong>Siguiente</strong> cuando esté visible.</p>';
   if (stepRequiresUserAction('livesync_desktop')) hideNext(nextBtn);
 }
 
 function renderLivesyncMobile(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En LiveSync usa <strong>Copiar enlace móvil</strong> y ábrelo en Safari (misma Wi‑Fi). ' +
+    '<p style="margin:0;line-height:1.5;">En ⇄ Conexión usa <strong>Copiar enlace / QR móvil</strong> y ábrelo en Safari. ' +
     MOBILE_SCOPE_COPY +
     '</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto y la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Inicia sesión con la <strong>misma cuenta R+ Cloud</strong> y la misma sala que en el escritorio.</p>';
   showNext(nextBtn);
 }
 
 function renderWrap(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>LiveSync</strong> y, si hace falta, el enlace móvil.</p>' +
+    '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>R+ Cloud</strong> en ⇄ y, si hace falta, el enlace móvil.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' +
     getWrapPaseShortcutKey() +
     '+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>';

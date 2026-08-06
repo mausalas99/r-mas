@@ -211,4 +211,94 @@ describe('createSyncRuntimeCycle status', () => {
     assert.ok(!revisions.includes(541));
     assert.equal(outbox.list().length, 0);
   });
+
+  it('stamps clinicalOps wire mutation id with enqueuedAt', async () => {
+    /** @type {string[]} */
+    const mutationIds = [];
+    const outbox = makeOutbox([
+      {
+        clientMutationId: 'clinicalOps',
+        ops: [{ path: 'clinicalOps', value: { teams: [] } }],
+        baseRevision: 0,
+        enqueuedAt: 12345,
+      },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async (_room, body) => {
+          mutationIds.push(String(body.clientMutationId || ''));
+          return { revision: 2 };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.deepEqual(mutationIds, ['clinicalOps:12345']);
+  });
+
+  it('exposes noteLocalMutation and listens for window focus', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('./sync-runtime-cycle.mjs', import.meta.url), 'utf8')
+    );
+    assert.match(src, /noteLocalMutation/);
+    assert.match(src, /addEventListener\('focus'/);
+    assert.match(src, /void syncCycle\(\);\s*scheduler\.armNextTimer/);
+  });
+
+  it('while hidden still flushes outbox and keeps polling armed', async () => {
+    const hadDocument = typeof globalThis.document !== 'undefined';
+    const prevDocument = globalThis.document;
+    globalThis.document = {
+      visibilityState: 'hidden',
+      addEventListener() {},
+      removeEventListener() {},
+    };
+
+    let pulls = 0;
+    let pushes = 0;
+    const outbox = makeOutbox([
+      { clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }], baseRevision: 0, enqueuedAt: 1 },
+      { clientMutationId: 'm2', ops: [{ path: 'b', value: 2 }], baseRevision: 0, enqueuedAt: 2 },
+    ]);
+    try {
+      const runtime = createSyncRuntimeCycle({
+        api: {
+          pull: async () => {
+            pulls += 1;
+            return { revision: 1, ops: [] };
+          },
+          push: async () => {
+            pushes += 1;
+            return { revision: 1 };
+          },
+        },
+        outbox,
+        getRoomId: () => 'room-1',
+        getRevision: () => 0,
+        setRevision: () => {},
+        onStatus() {},
+      });
+
+      // Constructor kicks an immediate cycle (hidden → push-only, no pull).
+      await new Promise((r) => setTimeout(r, 0));
+      assert.ok(pushes >= 1);
+      assert.equal(pulls, 0);
+      // Remaining outbox item still flushes while hidden.
+      await runtime.syncCycle();
+      assert.equal(outbox.list().length, 0);
+      assert.equal(pulls, 0);
+      runtime.stop();
+    } finally {
+      if (hadDocument) globalThis.document = prevDocument;
+      else delete globalThis.document;
+    }
+  });
 });

@@ -21,7 +21,7 @@ export function renderSyncModeChoicePanel(host) {
   host.innerHTML = buildOnboardingStageHtml({
     title: '¿Cómo usarás R+?',
     leadHtml:
-      '<p>Elige cómo usarás R+ en este equipo. Con red LAN pediremos tu perfil de guardia; en solo equipo entras directo.</p>',
+      '<p>Elige cómo usarás R+ en este equipo. Con R+ Cloud pediremos tu perfil de guardia; en solo equipo entras directo.</p>',
     bodyHtml: buildSyncModeChoiceBodyHtml(),
     stepperIndex: 1,
   });

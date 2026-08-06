@@ -18,8 +18,9 @@ function shouldDeferGuidedTourForRegistration() {
 
 export async function tryShowPostRegistrationEducationIfNeeded() {
   if (isMobileWeb() || shouldDeferGuidedTourForRegistration()) return;
-  const { needsClinicalOnboarding } = await import('../clinical-onboarding.mjs');
+  const { needsClinicalOnboarding, needsTeamOnboardingStep } = await import('../clinical-onboarding.mjs');
   if (needsClinicalOnboarding()) return;
+  if (needsTeamOnboardingStep()) return;
 
   const cur = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
   const prev = normalizeTourVersionLabel(window.__RPC_PREV_APP_VERSION__ || '');

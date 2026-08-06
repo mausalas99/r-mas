@@ -46,7 +46,7 @@ function maybeMarkGuardiaV7ChapterComplete(stepId) {
     syncLearnHubContinueVisibility();
     if (m.isGuardiaV7TrackComplete()) {
       window.setTimeout(() => {
-        rt.showToast('¡Guía de guardia 7.x completada!', 'success');
+        rt.showToast('¡Guía de guardia completada!', 'success');
       }, 500);
     }
   });

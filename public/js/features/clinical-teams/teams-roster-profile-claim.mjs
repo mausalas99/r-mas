@@ -51,7 +51,7 @@ async function tryResumeExistingUsername(username, errMsg) {
 async function submitUsernameClaim(userId, username) {
   const api = dbApi();
   if (typeof api.dbClinicalUsernameClaim !== 'function') {
-    toast('No se pudo guardar el usuario LAN.', 'error');
+    toast('No se pudo guardar el @usuario.', 'error');
     return false;
   }
   const claimRes = await api.dbClinicalUsernameClaim({ userId, username });

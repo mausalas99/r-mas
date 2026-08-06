@@ -159,4 +159,22 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     assert.equal(/from ['"]\.\.\/lan\/patient-delete/.test(pullApplySrc), false);
     assert.match(pullApplySrc, /clinical-ops-sync\.mjs/);
   });
+
+  it('hydrates teams UI after applying clinicalOps from census pull', () => {
+    assert.match(pullApplySrc, /hydrateClinicalTeamsAfterCloudPull/);
+  });
+
+  it('refreshes patient sidebar after cloud pull applies changes', () => {
+    assert.match(pullApplySrc, /refreshSidebarAfterCloudPull/);
+    assert.match(pullApplySrc, /renderPatientList/);
+  });
+
+  it('desktop Nube applies full sala census; only mobile filters at apply time', () => {
+    const start = pullApplySrc.indexOf('function shouldSkipTeamScopeFilterOnCloudPull');
+    assert.ok(start >= 0);
+    const body = pullApplySrc.slice(start, start + 500);
+    assert.match(body, /shouldEnforceTeamPatientMirror/);
+    assert.match(body, /return true/);
+    assert.doesNotMatch(body, /shouldUseElevatedPatientCensus/);
+  });
 });

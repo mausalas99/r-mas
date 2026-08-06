@@ -55,18 +55,18 @@
 
   <div class="main-col">
     <div id="lan-connection-banner" class="lan-connection-banner" role="status" aria-live="polite" hidden>
-      <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.</span>
-      <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
+      <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión a R+ Cloud. La sincronización de sala puede estar limitada hasta reconectar en ⇄.</span>
+      <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión" title="Ocultar aviso">×</button>
     </div>
     <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
     <div class="workbench-chrome">
     <div class="clinical-context-bar" id="clinical-context-bar" hidden>
       <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
-        <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="Usuario LAN, equipos de sala y entregas" onclick="void openMiRotacion()">
+        <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="@usuario, equipos de sala y entregas" onclick="void openMiRotacion()">
           <span class="app-bar-mi-rotacion-icon" aria-hidden="true">↻</span>
           <span class="app-bar-mi-rotacion-label">Mi rotación</span>
           <span class="app-bar-mi-rotacion-meta" id="clinical-rotation-entry-primary">Configura tu rotación</span>
-          <span class="visually-hidden" id="clinical-rotation-entry-sub">Usuario LAN y equipo de sala</span>
+          <span class="visually-hidden" id="clinical-rotation-entry-sub">@usuario y equipo de sala</span>
         </button>
       </div>
       <div id="clinical-census-filters-mount" class="clinical-census-filters-mount" hidden aria-hidden="true"></div>
@@ -535,7 +535,7 @@
     <div class="profile-body" id="profile-body">
       <section class="profile-block profile-block--span-full profile-block--bridge" id="profile-clinical-bridge" hidden>
         <h4 class="profile-block-title">Guardia y equipos</h4>
-        <p class="profile-hint">Usuario LAN, sala clínica, equipo y entregas. Es independiente del nombre que aparece en notas y Word abajo.</p>
+        <p class="profile-hint">@usuario, sala clínica, equipo y entregas. Es independiente del nombre que aparece en notas y Word abajo.</p>
         <button type="button" class="btn-edit-templates profile-bridge-btn" onclick="void openMiRotacion()">Abrir Mi rotación →</button>
       </section>
 

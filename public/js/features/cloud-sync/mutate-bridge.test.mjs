@@ -58,6 +58,11 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(labOp?.value?.resLabs);
   });
 
+  it('seeds missing lanUpdatedAt with a floor clock (not Date.now)', () => {
+    assert.match(mutateBridgeSrc, /CENSUS_SEED_CLOCK/);
+    assert.match(mutateBridgeSrc, /2000-01-01T00:00:00\.000Z/);
+  });
+
   it('skips fields op when patient has no lanUpdatedAt (avoids batch-clock overwrite)', () => {
     const ops = mapPatientEntryToOps(
       {

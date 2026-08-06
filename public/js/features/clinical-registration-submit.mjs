@@ -7,6 +7,7 @@ import {
   isClinicalLocalOnlyMode,
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
+import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
 import { persistLanClientConfig } from './lan/transport.mjs';
 import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 
@@ -17,28 +18,24 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
-async function retryBootstrapWithUsername_(api, clientId, username, safeRank, settings) {
-  var retry = await api.dbClinicalAccessBootstrap({
-    clientId,
-    rank: safeRank,
-    preferredUsername: username,
-    preferredUserId: String(settings.clinicalUserId || ''),
-  });
-  var userId = String(retry?.user?.userId || '');
-  if (!retry?.ok || normalizeUsername(retry?.user?.username || '') !== username) {
-    throw new Error('El usuario LAN ya está en uso.');
+async function resumeBoundUsername_(username, settings, clientId) {
+  var resumeRes = await resumeClinicalIdentityByUsername(username, settings, clientId);
+  if (!resumeRes?.ok) {
+    throw new Error(resumeRes?.error || 'Ese @usuario ya está en uso.');
   }
-  return userId;
+  return String(resumeRes.userId || '');
 }
 
 async function claimUsernameIfMismatch_(api, clientId, userId, username, safeRank, settings) {
+  void safeRank;
   var claimRes = await api.dbClinicalUsernameClaim({ userId, username });
   if (claimRes?.ok) return userId;
   var errMsg = String(claimRes?.error || '');
   if (!/ya está en uso/i.test(errMsg)) {
-    throw new Error(errMsg || 'No se pudo registrar el usuario LAN.');
+    throw new Error(errMsg || 'No se pudo registrar el @usuario.');
   }
-  return retryBootstrapWithUsername_(api, clientId, username, safeRank, settings);
+  // Resume the existing @usuario — never bootstrap a second peer_* identity.
+  return resumeBoundUsername_(username, settings, clientId);
 }
 
 async function upsertClinicalProfile_(api, userId, name, safeRank, sala) {
@@ -88,7 +85,7 @@ function validateRegistrationFields_(fields, errEl) {
   if (!isValidUsernameFormat(username)) {
     if (errEl) {
       errEl.textContent =
-        'Usuario LAN inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _), p. ej. drmendoza — no tu nombre en guardia.';
+        'Usuario inválido. Usa 3–32 letras minúsculas (a-z, 0-9, _), p. ej. drmendoza — no tu nombre en guardia.';
       errEl.hidden = false;
     }
     return null;

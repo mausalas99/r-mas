@@ -1,10 +1,18 @@
 /**
- * Cloud census collection — avoids LAN runtime stub race (buildPatientEntry null until registerLanRuntime).
+ * Cloud census collection — always uses patients-modal-commit builder (LAN runtime
+ * stub returns null on Nube boot until registerLanRuntime). Applies the same team
+ * scope as LAN for R1–R3 so peers receive the charts they can see.
  */
 import { patients } from '../../app-state.mjs';
 import { storage } from '../../storage.js';
+import { clinicalSessionContext } from '../../clinical-session-context.mjs';
+import {
+  getClinicalScopeContextForEvaluate,
+  isClinicalScopeReadyForLanPatientApply,
+} from '../../clinical-access-runtime.mjs';
+import { shouldUseElevatedPatientCensus } from '../../clinical-privileges.mjs';
+import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
 import { getLanRuntime } from '../lan/orchestrator-runtime.mjs';
-import { collectPatientEntriesForLanSync } from '../lan/orchestrator-collect.mjs';
 
 /** @returns {boolean} */
 export function isLanPatientEntryCollectorReady() {
@@ -17,10 +25,7 @@ export function isLanPatientEntryCollectorReady() {
 }
 
 /** @returns {Promise<object[]>} */
-export async function collectPatientEntriesForCloudPush() {
-  const fromLan = collectPatientEntriesForLanSync();
-  if (fromLan.length || !patients.length) return fromLan;
-
+async function buildAllLocalPatientEntries() {
   const { buildPatientEntry } = await import('../patients-modal-commit.mjs');
   const out = [];
   for (let i = 0; i < patients.length; i += 1) {
@@ -30,6 +35,31 @@ export async function collectPatientEntriesForCloudPush() {
     if (entry) out.push(entry);
   }
   return out;
+}
+
+/**
+ * @param {object[]} entries
+ * @returns {object[]}
+ */
+function scopeEntriesForCloudPush(entries) {
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return entries;
+  if (shouldUseElevatedPatientCensus(user)) return entries;
+  // Scope not ready yet — push full local census so the room is seeded; apply filters peers.
+  if (!isClinicalScopeReadyForLanPatientApply()) return entries;
+  return filterPatientEntriesForLanTeamScope(
+    entries,
+    user,
+    getClinicalScopeContextForEvaluate(),
+    clinicalSessionContext.guardiasMap
+  );
+}
+
+/** @returns {Promise<object[]>} */
+export async function collectPatientEntriesForCloudPush() {
+  if (!patients.length) return [];
+  const entries = await buildAllLocalPatientEntries();
+  return scopeEntriesForCloudPush(entries);
 }
 
 /** @returns {Record<string, unknown[]>} */

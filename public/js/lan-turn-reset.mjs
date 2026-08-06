@@ -10,7 +10,7 @@ import {
 } from './lan-ward-host-registry.mjs';
 
 export const LAN_TURN_RESET_CLIENT_CONFIRM =
-  'Saldrás de la sala ⇄, se quitará el anfitrión fijado y esta Mac dejará de actuar como servidor del turno. Tu base clínica y equipos no se borran. Después buscaremos al anfitrión del turno en la Wi‑Fi. ¿Restablecer?';
+  'Saldrás de la sala ⇄ y se limpiará el anfitrión local fijado. Tu base clínica y equipos no se borran. Después puedes volver a conectar R+ Cloud en ⇄. ¿Restablecer?';
 
 const SPLIT_BRAIN_HINT_KEY = 'rpc-lan-split-brain-hint-shown';
 

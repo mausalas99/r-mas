@@ -162,7 +162,7 @@ function showReleaseNotesModal(version) {
   var el = document.getElementById('release-notes-backdrop');
   if (!el) return;
   var title = document.getElementById('release-notes-title');
-  if (title) title.textContent = 'Novedades de R+ v' + version;
+  if (title) title.textContent = 'Novedades de R+';
   var list = document.getElementById('release-notes-list');
   if (list) {
     var notes = getCuratedReleaseNotes(version);

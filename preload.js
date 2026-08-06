@@ -260,6 +260,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalUserLookup: function(opts) {
     return ipcRenderer.invoke('db:clinical-user-lookup', opts);
   },
+  dbClinicalUserProvisionCloud: function(opts) {
+    return ipcRenderer.invoke('db:clinical-user-provision-cloud', opts);
+  },
+  dbClinicalUserAdminProfile: function(opts) {
+    return ipcRenderer.invoke('db:clinical-user-admin-profile', opts);
+  },
   dbClinicalUsersList: function(opts) {
     return ipcRenderer.invoke('db:clinical-users-list', opts);
   },
@@ -296,8 +302,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalAssignPatientToTeam: function(opts) {
     return ipcRenderer.invoke('db:clinical-assign-patient-to-team', opts);
   },
-  dbClinicalOpsExport: function() {
-    return ipcRenderer.invoke('db:clinical-ops-export');
+  dbClinicalOpsExport: function(opts) {
+    return ipcRenderer.invoke('db:clinical-ops-export', opts || {});
   },
   dbClinicalOpsMerge: function(opts) {
     return ipcRenderer.invoke('db:clinical-ops-merge', opts);

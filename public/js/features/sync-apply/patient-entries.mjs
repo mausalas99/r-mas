@@ -58,6 +58,25 @@ export function lanJsonEqual(a, b) {
 }
 
 /**
+ * Default label used when SOME/lab/cloud admit a chart without a parsed name.
+ * Must not LWW-overwrite a real name just because the placeholder got a newer clock.
+ * @param {unknown} name
+ */
+export function isPlaceholderPatientName(name) {
+  const n = String(name || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ');
+  if (!n) return true;
+  return (
+    n === 'PACIENTE SIN NOMBRE' ||
+    n === 'SIN NOMBRE' ||
+    n === 'PACIENTE' ||
+    n === 'PACIENTE SIN NOMBRE.'
+  );
+}
+
+/**
  * Prefer incoming non-empty scalars only when the remote patient clock is ahead.
  * Without clocks, keep local non-empty values (avoids cloud/LAN pulls rewriting cuarto/cama).
  * @param {Record<string, unknown>} existing
@@ -72,9 +91,29 @@ function incomingScalarsAreAuthoritative(existing, incoming) {
   return remoteAt.localeCompare(localAt) >= 0;
 }
 
+/**
+ * @param {unknown} incoming
+ * @param {unknown} local
+ * @param {boolean} takeIncoming
+ */
+function pickNombreMergeValue(incoming, local, takeIncoming) {
+  const remoteName = incoming != null ? String(incoming) : '';
+  const localName = local != null ? String(local) : '';
+  const remotePlaceholder = isPlaceholderPatientName(remoteName);
+  const localPlaceholder = isPlaceholderPatientName(localName);
+  if (!remotePlaceholder && localPlaceholder) return remoteName;
+  if (remotePlaceholder && !localPlaceholder) return localName;
+  if (takeIncoming) {
+    return remoteName.trim() !== '' ? remoteName : localName;
+  }
+  return localName.trim() !== '' ? localName : remoteName;
+}
+
 function assignLanScalarIfChanged(target, key, incoming, fallback, takeIncoming) {
   var next;
-  if (takeIncoming) {
+  if (key === 'nombre') {
+    next = pickNombreMergeValue(incoming, fallback, takeIncoming);
+  } else if (takeIncoming) {
     next = incoming != null && incoming !== '' ? incoming : fallback;
   } else {
     var localVal = target[key];

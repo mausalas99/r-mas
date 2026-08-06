@@ -20,7 +20,7 @@ import {
   currentUserId,
   filterJoinedTeams,
 } from './shared.mjs';
-import { pullClinicalOpsFromLanRoom } from './teams-guardia-bridge.mjs';
+import { refreshClinicalOpsDirectory } from './teams-guardia-bridge.mjs';
 import { wireLanUsersDirectoryControls } from './teams-roster-lan.mjs';
 import { renderCreateTeamSectionHtml, renderJoinWithCodeSectionHtml } from './teams-roster-create.mjs';
 import {
@@ -96,14 +96,17 @@ export async function tryReconcileTeamMemberships() {
 
 export { resolveDisplayLanHandle };
 
-async function maybePullClinicalOpsFromLan(skipLanPull) {
-  if (skipLanPull) return;
-  void pullClinicalOpsFromLanRoom({ timeoutMs: 12000 }).then((ok) => {
-    const bd = document.getElementById('clinical-teams-backdrop');
-    if (!ok || !bd?.classList.contains('open')) return;
-    if (isClinicalTeamsPanelUserInteracting()) return;
-    void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
+async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) {
+  if (skipPull) return;
+  const ok = await refreshClinicalOpsDirectory({
+    timeoutMs: 12000,
+    browseSala,
+    homeSala,
   });
+  const bd = document.getElementById('clinical-teams-backdrop');
+  if (!ok || !bd?.classList.contains('open')) return;
+  if (isClinicalTeamsPanelUserInteracting()) return;
+  void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
 }
 
 export async function renderClinicalTeamsPanelInto(host, opts = {}) {
@@ -116,10 +119,11 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const draft = opts.preserveDraft ? captureClinicalTeamsPanelDraft(host) : null;
 
-  await maybePullClinicalOpsFromLan(opts.skipLanPull);
+  const user = clinicalSessionContext.user || {};
+  const preBrowseSala = resolveBrowseSala(hasElevatedTeamPrivileges(user), String(user.sala || ''));
+  await maybeRefreshClinicalOpsDirectory(opts.skipLanPull, preBrowseSala, String(user.sala || ''));
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
-  const user = clinicalSessionContext.user || {};
   const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
   const ctx = await resolveClinicalTeamsPanelContext(user, joined);
   const elevated = hasElevatedTeamPrivileges(user);

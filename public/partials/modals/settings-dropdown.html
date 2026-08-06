@@ -11,7 +11,7 @@
     <div class="settings-dropdown-body" id="settings-dropdown-scroll">
       <div id="settings-clinical-sync-mode" class="settings-clinical-sync-mode" hidden>
         <p class="settings-acc-hint settings-clinical-sync-mode-lead">R+ está en modo <strong>solo este equipo</strong> (para médicos ajenos a medicina interna): sin ⇄ LiveSync, Mi rotación ni sala compartida.</p>
-        <button type="button" class="btn-settings-row" onclick="enableClinicalLanFromSettings()">Activar guardia en red (LAN)…</button>
+        <button type="button" class="btn-settings-row" onclick="enableClinicalLanFromSettings()">Activar guardia con R+ Cloud…</button>
       </div>
 
       <div class="settings-accordion-grid">
@@ -128,7 +128,7 @@
       </details>
 
       <details class="settings-accordion" id="settings-accordion-lan-host-disk" style="display: none;">
-        <summary>LAN · servidor en esta computadora</summary>
+        <summary>Avanzado · servidor local (opcional)</summary>
         <div class="settings-acc-body">
           <p class="settings-acc-hint settings-acc-hint--tight">
             Solo si esta R+ es <strong>anfitrión</strong> (puerto 3738). Con la configuración por defecto no hace falta tocar nada aquí: ⇄ genera el enlace con el código incluido. Usa este panel solo si quieres un código distinto de <strong>1234</strong> (se guarda en <code>lan-team-code.txt</code>). Tras cambiarlo, <strong>reinicia R+</strong> y vuelve a copiar la invitación.
@@ -153,10 +153,10 @@
             </div>
             <div class="settings-card">
               <div class="settings-card__copy">
-                <p class="settings-card__title">Restablecer estado LAN del host</p>
+                <p class="settings-card__title">Restablecer estado del host local</p>
               </div>
               <div class="settings-card__action">
-                <button type="button" class="btn-settings-row btn-settings-row--danger" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
+                <button type="button" class="btn-settings-row btn-settings-row--danger" onclick="resetLanSquadHostStateFromUi()">Restablecer estado del host local…</button>
               </div>
             </div>
           </div>
@@ -168,7 +168,7 @@
         <div class="settings-acc-body">
           <div class="settings-data-sync-compare">
             <div class="settings-sync-card">
-              <h4>Sala en vivo (LAN)</h4>
+              <h4>Sala en vivo (R+ Cloud)</h4>
               <p>Comparte el <strong>mismo turno</strong> en la <strong>misma red Wi‑Fi</strong>: al unirte a una sala se fusionan <strong>pacientes, notas, labs, agenda y pendientes</strong> (sin borrar los que solo tienes tú). No sustituye un respaldo completo entre turnos.</p>
             </div>
             <div class="settings-sync-card">
@@ -178,7 +178,7 @@
           </div>
           <p class="settings-sync-help-link">
             Más detalle en el centro de ayuda:
-            <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openQuickHelp('lan-vs-respaldo');">LAN vs respaldos</button>
+            <button type="button" class="btn-settings-row" onclick="closeSettingsDropdown(); openQuickHelp('lan-vs-respaldo');">Nube vs respaldos</button>
           </p>
           <div id="settings-preimport-restore-wrap" class="settings-preimport-box" style="display:none;">
             <p class="settings-preimport-label">Copia automática antes de importar todo</p>
@@ -224,7 +224,7 @@
             <div class="settings-card">
               <div class="settings-card__copy">
                 <p class="settings-card__title">Recuperar censo desde base</p>
-                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Lee pacientes guardados en SQLCipher (incluye caché LAN) aunque el sidebar esté vacío.</p>
+                <p class="settings-card__desc settings-acc-hint settings-acc-hint--tight">Lee pacientes guardados en SQLCipher (incluye caché de sync) aunque el sidebar esté vacío.</p>
               </div>
               <div class="settings-card__action">
                 <button type="button" class="btn-settings-row" onclick="exportRecoverCensusRangeJson()">Exportar censo recuperable…</button>
@@ -490,7 +490,7 @@
           <p class="settings-acc-hint settings-acc-hint--tight settings-acc-lead">R+ guarda pacientes, notas, labs, recetas y ajustes en el perfil local de Electron. Los <code>.docx</code> van a la carpeta de salida que elijas.</p>
           <p id="settings-userdata-web-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">Solo disponible en la aplicación de escritorio.</p>
           <p class="settings-acc-danger-label">Acciones irreversibles</p>
-          <p class="settings-acc-hint settings-acc-hint--danger settings-acc-lead">Borrar datos o restablecer LAN no se pueden deshacer desde Deshacer.</p>
+          <p class="settings-acc-hint settings-acc-hint--danger settings-acc-lead">Borrar datos o restablecer el host local no se pueden deshacer desde Deshacer.</p>
           <div class="settings-card-stack">
             <div class="settings-card">
               <div class="settings-card__copy">

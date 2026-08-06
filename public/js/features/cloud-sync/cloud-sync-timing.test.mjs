@@ -10,8 +10,10 @@ import {
 } from './cloud-sync-timing.mjs';
 
 describe('nextCloudPollDelayMs', () => {
-  it('uses idle interval by default', () => {
+  it('uses a short idle interval so peers see edits without Forzar', () => {
     assert.equal(nextCloudPollDelayMs({ now: 1_000_000 }), CLOUD_POLL_IDLE_MS);
+    assert.ok(CLOUD_POLL_IDLE_MS <= 20_000);
+    assert.ok(CLOUD_POLL_ACTIVE_MS <= CLOUD_POLL_IDLE_MS);
   });
 
   it('uses mobile idle interval when mobile and not pending/active', () => {

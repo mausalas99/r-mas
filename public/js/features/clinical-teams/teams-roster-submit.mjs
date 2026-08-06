@@ -11,13 +11,20 @@ import {
 } from '../../clinical-username.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
 import {
-  publishClinicalTeamsToLan,
+  publishClinicalTeamsAfterChange,
   toastTeamLanPublishResult,
   pullClinicalOpsFromLanRoom,
   resolveLocalUserIdByLanHandle,
 } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 import { closeCreateTeamPanelAfterSuccess } from './teams-roster-panel-draft.mjs';
+
+function teamSalaForId(teamId) {
+  const team = (clinicalSessionContext.teams || []).find(
+    (row) => String(row.team_id) === String(teamId || '')
+  );
+  return String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
+}
 
 function readCreateTeamBasics() {
   const name = String(document.getElementById('clinical-team-create-name')?.value || '').trim();
@@ -40,11 +47,11 @@ async function createElevatedTeam(api, { name, sala, userId }) {
     return;
   }
   closeCreateTeamPanelAfterSuccess();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
-  const lanPush = await publishClinicalTeamsToLan();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
+  const lanPush = await publishClinicalTeamsAfterChange({ sala });
   toastTeamLanPublishResult(
     lanPush,
-    'Equipo vacío creado. Asigna integrantes desde el directorio LAN.'
+    'Equipo vacío creado. Asigna integrantes desde el directorio de usuarios.'
   );
 }
 
@@ -91,8 +98,8 @@ async function createStandardTeam(api, { name, sala, userId }) {
   await autoJoinCreatorToTeam(api, teamId, userId, cycleLetter);
 
   closeCreateTeamPanelAfterSuccess();
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
-  const lanPush = await publishClinicalTeamsToLan();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
+  const lanPush = await publishClinicalTeamsAfterChange({ sala });
   toastTeamLanPublishResult(lanPush, 'Equipo creado.');
 }
 
@@ -161,8 +168,9 @@ export async function handleAddMemberSubmit(ev, form) {
 
   toast('Miembro agregado.', 'success');
   if (parsed.usernameInput instanceof HTMLInputElement) parsed.usernameInput.value = '';
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  const sala = teamSalaForId(parsed.teamId);
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
+  await publishClinicalTeamsAfterChange({ sala });
   await refreshTeamsUiAfterChange();
 }
 
@@ -233,7 +241,8 @@ export async function handleMyCycleSubmit(ev, form) {
   }
 
   toast('Ciclo actualizado.', 'success');
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  const sala = teamSalaForId(teamId);
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
+  await publishClinicalTeamsAfterChange({ sala });
   await refreshTeamsUiAfterChange();
 }

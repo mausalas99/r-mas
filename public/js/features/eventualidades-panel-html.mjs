@@ -1,13 +1,12 @@
 /**
  * HTML builders for Eventualidades panel (timeline + note compose).
- * Labs mode = timeline only (autosend → labsText); no Interpretación dock.
+ * Solo bitácora clínica — sin pestaña Labs / interpretación.
  */
 import {
   normalizeEventualidadText,
   toEventualidadDateValue,
   formatDaySubLabel,
 } from './eventualidades-store.mjs';
-import { renderLabsTimelineInnerHtml } from './eventualidades-labs-timeline.mjs';
 import { esc } from '../dom-escape.mjs';
 
 /**
@@ -89,31 +88,6 @@ function renderDaySection(dayGroup, editingId, now, dayOpenPrefs) {
   );
 }
 
-/**
- * @param {'note'|'labs'} mode
- * @param {boolean} isEdit
- */
-export function renderModeSwitcher(mode, isEdit) {
-  const active = isEdit ? 'note' : mode;
-  return (
-    '<div class="ev-mode-switch" role="tablist" aria-label="Vista Eventualidades">' +
-    '<span class="ev-mode-switch__pill" aria-hidden="true"></span>' +
-    '<button type="button" class="ev-mode-switch__tab' +
-    (active === 'note' ? ' active' : '') +
-    '" role="tab" data-ev-mode="note" aria-selected="' +
-    (active === 'note' ? 'true' : 'false') +
-    '">Eventualidad</button>' +
-    '<button type="button" class="ev-mode-switch__tab' +
-    (active === 'labs' ? ' active' : '') +
-    '" role="tab" data-ev-mode="labs" aria-selected="' +
-    (active === 'labs' ? 'true' : 'false') +
-    '"' +
-    (isEdit ? ' disabled title="Termina la edición para cambiar a Labs"' : '') +
-    '>Labs</button>' +
-    '</div>'
-  );
-}
-
 function renderNoteCompose(editingEntry) {
   const isEdit = !!editingEntry;
   const atValue = isEdit
@@ -157,70 +131,33 @@ function renderNoteCompose(editingEntry) {
  * @param {object[]} byDay
  * @param {boolean} hasEntries
  * @param {object|null} editingEntry
- * @param {object} store
- * @param {'note'|'labs'} mode
- * @param {{ editingEntryId: string|null, composeMode: 'note'|'labs', dayOpenPrefs: Map<string, boolean> }} ctx
+ * @param {object} _store unused (API compat)
+ * @param {'note'|'labs'} [_mode] unused — always note
+ * @param {{ editingEntryId: string|null, composeMode?: string, dayOpenPrefs: Map<string, boolean> }} ctx
  */
-function buildTimelineInner(byDay, hasEntries, editingEntry, store, mode, ctx) {
-  var showLabs = mode === 'labs' && !editingEntry;
-  if (showLabs) return renderLabsTimelineInnerHtml(store);
-  if (!hasEntries) {
-    return '<p class="ev-empty">Aún no hay eventualidades. Agrégalas abajo, o cambia a Labs para ver interpretaciones.</p>';
-  }
+export function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, _store, _mode, ctx) {
   var editingId = ctx.editingEntryId;
   var dayOpenPrefs = ctx.dayOpenPrefs;
+  var timelineInner = !hasEntries
+    ? '<p class="ev-empty">Aún no hay eventualidades. Agrégalas abajo.</p>'
+    : '<div class="ev-timeline__days">' +
+      byDay
+        .map(function (day) {
+          return renderDaySection(day, editingId, new Date(), dayOpenPrefs);
+        })
+        .join('') +
+      '</div>';
   return (
-    '<div class="ev-timeline__days">' +
-    byDay
-      .map(function (day) {
-        return renderDaySection(day, editingId, new Date(), dayOpenPrefs);
-      })
-      .join('') +
-    '</div>'
-  );
-}
-
-/**
- * @param {object[]} byDay
- * @param {boolean} hasEntries
- * @param {object|null} editingEntry
- * @param {object} store
- * @param {'note'|'labs'} mode
- * @param {{ editingEntryId: string|null, composeMode: 'note'|'labs', dayOpenPrefs: Map<string, boolean> }} ctx
- */
-export function buildEventualidadesPanelHtml(byDay, hasEntries, editingEntry, store, mode, ctx) {
-  var showLabsTimeline = mode === 'labs' && !editingEntry;
-  var timelineInner = buildTimelineInner(byDay, hasEntries, editingEntry, store, mode, ctx);
-  var labsEmpty = showLabsTimeline && timelineInner.indexOf('ev-empty') !== -1;
-  var hint = showLabsTimeline
-    ? 'Interpretaciones de labs por día — llegan al procesar / Actualizar / cola.'
-    : 'Bitácora cronológica de la hospitalización, agrupada por día.';
-  var aria = showLabsTimeline ? 'Interpretaciones de labs por día' : 'Eventualidades por día';
-  var emptyClass =
-    (showLabsTimeline ? labsEmpty : !hasEntries) ? ' ev-timeline--empty' : '';
-  var composeHtml = showLabsTimeline ? '' : renderNoteCompose(editingEntry);
-  return (
-    '<div class="ev-panel" data-ev-view="' +
-    esc(showLabsTimeline ? 'labs' : 'note') +
-    '">' +
+    '<div class="ev-panel" data-ev-view="note">' +
     '<header class="ev-panel__head">' +
-    '<div class="ev-panel__head-row">' +
-    renderModeSwitcher(mode, !!editingEntry) +
-    '</div>' +
-    '<p class="ev-panel__hint">' +
-    hint +
-    '</p>' +
+    '<p class="ev-panel__hint">Bitácora cronológica de la hospitalización, agrupada por día.</p>' +
     '</header>' +
     '<div class="ev-timeline' +
-    emptyClass +
-    '" role="feed" aria-label="' +
-    aria +
-    '" data-ev-timeline="' +
-    (showLabsTimeline ? 'labs' : 'note') +
-    '">' +
+    (!hasEntries ? ' ev-timeline--empty' : '') +
+    '" role="feed" aria-label="Eventualidades por día" data-ev-timeline="note">' +
     timelineInner +
     '</div>' +
-    composeHtml +
+    renderNoteCompose(editingEntry) +
     '</div>'
   );
 }

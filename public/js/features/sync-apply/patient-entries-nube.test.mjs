@@ -1,7 +1,10 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { patients } from '../../app-state.mjs';
-import { applyLanPatientEntries } from './patient-entries.mjs';
+import {
+  applyLanPatientEntries,
+  isPlaceholderPatientName,
+} from './patient-entries.mjs';
 import { registerLanRuntime } from '../lan/orchestrator-runtime.mjs';
 
 describe('applyLanPatientEntries on Nube path', () => {
@@ -50,5 +53,64 @@ describe('applyLanPatientEntries on Nube path', () => {
     });
     assert.equal(patients.length, 1);
     assert.equal(patients[0].nombre, 'PACIENTE NUBE');
+  });
+
+  it('isPlaceholderPatientName detects default admit labels', () => {
+    assert.equal(isPlaceholderPatientName('PACIENTE SIN NOMBRE'), true);
+    assert.equal(isPlaceholderPatientName('cynthia'), false);
+    assert.equal(isPlaceholderPatientName(''), true);
+  });
+
+  it('does not let PACIENTE SIN NOMBRE overwrite CYNTHIA when remote clock is newer', () => {
+    patients.push({
+      id: 'p-cynthia',
+      nombre: 'CYNTHIA',
+      registro: '1',
+      lanUpdatedAt: '2026-08-06T10:00:00.000Z',
+    });
+    const result = applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-cynthia',
+            nombre: 'PACIENTE SIN NOMBRE',
+            registro: '1',
+            lanUpdatedAt: '2026-08-06T18:00:00.000Z',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(result.updated, 1);
+    assert.equal(patients[0].nombre, 'CYNTHIA');
+  });
+
+  it('accepts a real remote name when local is still the placeholder', () => {
+    patients.push({
+      id: 'p-cynthia',
+      nombre: 'PACIENTE SIN NOMBRE',
+      registro: '1',
+      lanUpdatedAt: '2026-08-06T18:00:00.000Z',
+    });
+    applyLanPatientEntries(
+      [
+        {
+          patient: {
+            id: 'p-cynthia',
+            nombre: 'CYNTHIA LOPEZ',
+            registro: '1',
+            lanUpdatedAt: '2026-08-06T10:00:00.000Z',
+          },
+          note: {},
+          indicaciones: {},
+          labHistory: [],
+        },
+      ],
+      { skipTeamScopeFilter: true }
+    );
+    assert.equal(patients[0].nombre, 'CYNTHIA LOPEZ');
   });
 });

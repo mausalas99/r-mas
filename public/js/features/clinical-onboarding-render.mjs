@@ -35,6 +35,7 @@ import {
   needsClinicalSyncModeChoice,
   needsLocalOnlyProfile,
   needsProfileOnboarding,
+  needsTeamOnboardingStep,
   needsUsernameClaim,
 } from './clinical-onboarding-gates.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
@@ -75,6 +76,14 @@ async function tryAutoResumeCachedUsername(settings) {
 }
 
 async function renderCompletedOnboarding(host) {
+  if (needsTeamOnboardingStep()) {
+    const { renderTeamOnboardingInto, wireTeamOnboardingInteractions } = await import(
+      './clinical-onboarding-team.mjs'
+    );
+    renderTeamOnboardingInto(host);
+    wireTeamOnboardingInteractions(host);
+    return;
+  }
   const { hideMainClinicalOnboarding } = await import('./clinical-onboarding-main.mjs');
   hideMainClinicalOnboarding();
   if (host.closest('#clinical-teams-panel-body')) {
@@ -137,7 +146,7 @@ function buildLanProfileFormBody(settings) {
         <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form" novalidate>
           ${buildCutoverPickerHtml()}
           <div class="field-group">
-            <label for="onboard-username">Usuario LAN (@usuario) *</label>
+            <label for="onboard-username">Usuario (@usuario) *</label>
             <input id="onboard-username" type="text" class="profile-input" placeholder="ej. drmendoza"
               value="${escapeAttr(cachedUsername)}" required autocomplete="off" spellcheck="false">
             <p class="clinical-teams-hint">${CLINICAL_LAN_USERNAME_HINT_HTML}</p>
@@ -188,12 +197,12 @@ function renderLanProfileForm(host, settings) {
       'Completa el perfil y registra tu <strong>contraseña de Nube</strong> para sincronizar el turno.</p>';
   } else {
     gateLead =
-      '<p>Confirma tu usuario LAN, nombre en guardia, rango y rotación. En Sala/Torre HU también Nube. ' +
+      '<p>Confirma tu @usuario de R+ Cloud, nombre en guardia, rango y rotación. ' +
       'Para equipos, abre <strong>Mi rotación</strong> después.</p>';
   }
   const title =
     profileGatePending || cutover
-      ? 'Migración 7.9'
+      ? 'Confirma tu perfil'
       : salaUpgrade
         ? 'Conectar Nube'
         : 'Configura tu rotación';
@@ -252,7 +261,7 @@ export async function renderOnboardingPanelInto(host) {
     if (result.ok) {
       if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
         window.showToast(
-          'Listo. R+ queda solo en este equipo, sin sincronización LAN.',
+          'Listo. R+ queda solo en este equipo, sin R+ Cloud.',
           'success'
         );
       }

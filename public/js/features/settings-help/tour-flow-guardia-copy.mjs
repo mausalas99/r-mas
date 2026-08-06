@@ -1,4 +1,4 @@
-/** Guardia 7.x tour step copy and HTML helpers. */
+/** Guardia tour step copy and HTML helpers (R+ Cloud / Nube). */
 import { stepRequiresUserAction } from '../../tour-targets.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
@@ -8,7 +8,7 @@ export const MOBILE_SCOPE_COPY =
   'La app móvil (iPad/Safari) muestra tablero de guardia y expediente esencial; no incluye Ajustes, exportaciones Word ni todas las pestañas de escritorio.';
 
 export const LIVESYNC_BTN_COPY =
-  '<strong>LiveSync</strong> (icono <strong>Wi‑Fi</strong> junto a Ajustes)';
+  '<strong>R+ Cloud</strong> (icono <strong>⇄</strong> / Wi‑Fi junto a Ajustes)';
 
 function getClinicalRankForTour() {
   try {
@@ -45,9 +45,9 @@ const GV7_ACTION_HINT = {
   gv7_guardia_toggle:
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el botón resaltado; aparece <strong>Siguiente</strong> al activar el filtro.</p>',
   gv7_lan_wifi:
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono <strong>Wi‑Fi</strong> de LiveSync para continuar.</p>',
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono <strong>⇄</strong> de Conexión / R+ Cloud para continuar.</p>',
   gv7_mobile_link:
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Despliega <strong>iPad / R+ Móvil</strong> en el panel LiveSync.</p>',
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Despliega <strong>iPad / R+ Móvil</strong> en el panel de Conexión.</p>',
 };
 
 function buildGv7CensoR1Copy(rank) {
@@ -106,23 +106,23 @@ function getGuardiaV7StepBody(stepId) {
     gv7_lan_wifi:
       '<p style="margin:0;line-height:1.5;">' +
       LIVESYNC_BTN_COPY +
-      ': estado de red local, sala y sincronización del turno en la Wi‑Fi del hospital.</p>',
+      ': cuenta, sala y sincronización del turno por Nube (sin depender de un Mac anfitrión en la Wi‑Fi).</p>',
     gv7_lan_pin:
-      '<p style="margin:0;line-height:1.5;">El <strong>PIN del turno</strong> (válido ~12 h) permite reconectar otras Mac en otra red del hospital sin reconfigurar la sala.</p>',
+      '<p style="margin:0;line-height:1.5;">En <strong>⇄ Conexión</strong> entras con tu cuenta de R+ Cloud. La sala del equipo se elige ahí; no hace falta PIN de anfitrión local.</p>',
     gv7_lan_directorio:
-      '<p style="margin:0;line-height:1.5;">El <strong>directorio LAN</strong> muestra quién está en la sala. El anfitrión conserva el roster aunque un cliente aún no haya sincronizado.</p>',
+      '<p style="margin:0;line-height:1.5;">El <strong>directorio de usuarios</strong> en Mi rotación muestra quién está en la sala. Los cambios de equipos se sincronizan por R+ Cloud.</p>',
     gv7_lan_rotacion:
       '<p style="margin:0;line-height:1.5;"><strong>Mi rotación</strong> (barra superior): @usuario, equipos persistentes, sala y entregas. Distinto del censo del sidebar.</p>',
     gv7_mobile_link:
-      '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace permanente para iPad/móvil</strong> desde el panel LiveSync. Sirve para guardar en Safari; no caduca como el ticket de otra Mac.</p>',
+      '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace o QR de R+ Móvil</strong> desde ⇄ Conexión. Ábrelo en Safari e inicia sesión con tu cuenta Nube.</p>',
     gv7_mobile_scope:
       '<p style="margin:0;line-height:1.5;">' + MOBILE_SCOPE_COPY + '</p>',
     gv7_mobile_vs_sala:
-      '<p style="margin:0;line-height:1.5;">En LiveSync, <strong>iPad/móvil</strong> (identidad) vs <strong>otra Mac/sala</strong> (ticket de un solo uso) son invitaciones distintas.</p>',
+      '<p style="margin:0;line-height:1.5;">En R+ Cloud, <strong>iPad/móvil</strong> (sesión Nube) y el <strong>escritorio</strong> comparten la misma sala; no hace falta ticket LAN de un solo uso.</p>',
     gv7_censo_r1: buildGv7CensoR1Copy(rank),
     gv7_censo_r4: buildGv7CensoR4Copy(rank),
     gv7_censo_sync:
-      '<p style="margin:0;line-height:1.5;">La sincronización LAN es más silenciosa en 7.x: avisos discretos en el encabezado; el directorio se actualiza en segundo plano.</p>',
+      '<p style="margin:0;line-height:1.5;">La sincronización por R+ Cloud es discreta: avisos en el encabezado; equipos y censo se actualizan en segundo plano.</p>',
   };
   return bodies[stepId] || '<p style="margin:0;line-height:1.5;">Sigue el resaltado en pantalla.</p>';
 }

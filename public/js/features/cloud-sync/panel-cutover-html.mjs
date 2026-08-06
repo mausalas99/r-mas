@@ -8,8 +8,8 @@ export function cutoverShellHtml(step, body) {
   return (
     '<div class="cloud-sync-cutover-card">' +
     '<header class="cloud-sync-cutover-head">' +
-    '<p class="cloud-sync-cutover-kicker">Actualización 7.9</p>' +
-    '<h2 id="cloud-sync-cutover-title" class="cloud-sync-cutover-title">Migración de usuarios y pacientes</h2>' +
+    '<p class="cloud-sync-cutover-kicker">R+ Cloud</p>' +
+    '<h2 id="cloud-sync-cutover-title" class="cloud-sync-cutover-title">Confirma tu perfil y equipos</h2>' +
     '<p class="cloud-sync-cutover-sub">Paso ' +
     esc(String(step + 1)) +
     ' de 6</p></header>' +
@@ -24,7 +24,7 @@ export function introHtml(snapshot) {
   const nPatients = (snapshot.patients || []).length;
   const nTeams = (snapshot.teams || []).length;
   return (
-    '<p class="cloud-sync-cutover-lead">Con 7.9 se reinician las cuentas clínicas en este equipo. ' +
+    '<p class="cloud-sync-cutover-lead">Hay que confirmar las cuentas clínicas en este equipo. ' +
     '<strong>No se borran pacientes ni labs</strong>.</p>' +
     '<ul class="cloud-sync-cutover-stats">' +
     '<li><strong>' +
@@ -201,7 +201,7 @@ export function cloudHtml(chosenUser) {
 
 export function doneHtml() {
   return (
-    '<p class="cloud-sync-cutover-lead">Migración completa. Ya puedes trabajar con tu censo y equipo.</p>' +
+    '<p class="cloud-sync-cutover-lead">Listo. Ya puedes trabajar con tu censo y equipo.</p>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cutover-action="close">Entrar a R+</button>'
   );
 }

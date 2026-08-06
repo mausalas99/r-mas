@@ -7,6 +7,7 @@ import {
   isClinicalSyncModeChosen,
   isLocalOnlyPlaceholderUsername,
   needsClinicalLanProfileGate,
+  persistClinicalUserBinding,
   readRpcSettings,
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
@@ -24,7 +25,18 @@ function getClientId() {
   return resolveClinicalClientId(readRpcSettings());
 }
 
+/** True when session already belongs to at least one clinical team. */
+export function hasJoinedClinicalTeam(
+  user = clinicalSessionContext.user,
+  teams = clinicalSessionContext.teams
+) {
+  if (!user?.user_id && !normalizeUsername(user?.username || '')) return false;
+  return filterJoinedTeams(teams || [], user).length > 0;
+}
+
 export function needsUsernameClaim() {
+  // Already on a team → keep identity; never force re-claim / re-register.
+  if (hasJoinedClinicalTeam()) return false;
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return true;
   if (isLegacyMachineUsername(user.username, getClientId())) return true;
@@ -33,7 +45,9 @@ export function needsUsernameClaim() {
     const cached = String(settings.clinicalUsername || '').trim();
     if (cached && !isValidUsernameFormat(normalizeUsername(cached))) return true;
     if (cached && isLegacyMachineUsername(user.username, getClientId())) return true;
-  } catch (_e) { void _e; }
+  } catch (_e) {
+    void _e;
+  }
   const handle = normalizeUsername(user.username || '');
   return !isValidUsernameFormat(handle);
 }
@@ -42,8 +56,7 @@ export function needsUsernameClaim() {
 export function needsTeamOnboarding() {
   if (!clinicalSessionContext.user?.user_id) return true;
   if (hasElevatedTeamPrivileges(clinicalSessionContext.user)) return false;
-  const teams = clinicalSessionContext.teams || [];
-  return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
+  return !hasJoinedClinicalTeam();
 }
 
 /** First screen: LAN guardia vs solo este equipo (before any profile fields). */
@@ -51,6 +64,7 @@ export function needsClinicalSyncModeChoice() {
   if (!isDbMode()) return false;
   const settings = readRpcSettings();
   if (settings.clinicalRegistered === true) return false;
+  if (hasJoinedClinicalTeam()) return false;
   if (isClinicalSyncModeChosen(settings)) return false;
   return true;
 }
@@ -58,7 +72,15 @@ export function needsClinicalSyncModeChoice() {
 function syncSessionFromPersistedProfile(settings, user) {
   if (!user) return;
   const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
-  if (cachedUser && isValidUsernameFormat(cachedUser)) {
+  const current = normalizeUsername(user.username || '');
+  // Never overwrite a valid claimed @usuario with a different cached handle —
+  // that reopens registration and orphans team memberships.
+  const currentNeedsHandle =
+    !current ||
+    !isValidUsernameFormat(current) ||
+    isLegacyMachineUsername(current, getClientId()) ||
+    isLocalOnlyPlaceholderUsername(current);
+  if (cachedUser && isValidUsernameFormat(cachedUser) && currentNeedsHandle) {
     user.username = cachedUser;
   }
   if (!String(user.clinical_name || '').trim() && settings.clinicalDisplayName) {
@@ -113,9 +135,39 @@ function needsCloudRegistration(settings, _user) {
   return isCloudSalaUpgradePending(settings);
 }
 
+/**
+ * When the user is already on a team, settle local registration flags so gates
+ * and LAN profile reset stop clearing @usuario.
+ */
+function markJoinedTeamProfileSettled(settings, user) {
+  const username =
+    normalizeUsername(user?.username || settings.clinicalUsername || '') || undefined;
+  const displayName =
+    String(user?.clinical_name || settings.clinicalDisplayName || '').trim() || undefined;
+  const rank = String(user?.rank || settings.clinicalRank || '').trim() || undefined;
+  const sala = String(user?.sala || settings.clinicalSala || '').trim() || undefined;
+  persistClinicalUserBinding({
+    userId: user?.user_id,
+    username,
+    displayName,
+    rank,
+    sala,
+    registered: true,
+    lanProfileGateComplete: true,
+  });
+}
+
 export function needsProfileOnboarding() {
   if (!isDbMode()) return false;
   if (!clinicalSessionContext.user?.user_id) return true;
+  // Team membership is stronger than profile-gate flags — do not relaunch registro.
+  if (hasJoinedClinicalTeam()) {
+    const settings = readRpcSettings();
+    syncSessionFromPersistedProfile(settings, clinicalSessionContext.user);
+    markJoinedTeamProfileSettled(settings, clinicalSessionContext.user);
+    if (needsCloudRegistration(settings, clinicalSessionContext.user)) return true;
+    return false;
+  }
   if (needsClinicalSyncModeChoice()) return true;
   const settings = readRpcSettings();
   const user = clinicalSessionContext.user;
@@ -130,6 +182,21 @@ export function needsProfileOnboarding() {
 
 export function needsClinicalOnboarding() {
   return needsProfileOnboarding();
+}
+
+/** Perfil listo pero el residente aún no está en un equipo (no aplica R4/Admin ni solo-local). */
+export function needsTeamOnboardingStep() {
+  if (!isDbMode()) return false;
+  if (hasJoinedClinicalTeam()) return false;
+  if (needsProfileOnboarding()) return false;
+  if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  return needsTeamOnboarding();
+}
+
+/** Pantalla de onboarding (perfil o equipo) activa en #main-area. */
+export function needsOnboardingShell() {
+  if (hasJoinedClinicalTeam()) return false;
+  return needsProfileOnboarding() || needsTeamOnboardingStep();
 }
 
 export { getClientId, needsLocalOnlyProfile };

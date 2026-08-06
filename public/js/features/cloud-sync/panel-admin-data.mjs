@@ -84,7 +84,11 @@ export async function loadAdminUsers(root, getApi) {
       },
       { label: 'Acciones', cell: (u) => userActionsHtml(u) },
     ];
-    list.innerHTML = adminTableHtml(users, cols);
+    list.innerHTML = adminTableHtml(users, cols, {
+      emptyHtml:
+        '<p class="cloud-sync-hint">Sin cuentas Nube con esa búsqueda.</p>' +
+        '<p class="cloud-sync-hint">Si el @usuario solo aparece en <strong>Integrantes</strong> del equipo (p. ej. tests), ábrelo en la pestaña <strong>Equipos</strong> o en Mi rotación → directorio → <strong>Quitar</strong>.</p>',
+    });
   } catch (err) {
     list.innerHTML = adminErrorHtml(err?.data?.message || err?.message || 'No se pudieron cargar usuarios.');
   }

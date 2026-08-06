@@ -57,8 +57,20 @@ async function notifyPatientTeamAssigned(pid, tid) {
   await fetchClinicalScopeContextFromDb();
   const lan = await import('./features/lan-sync.mjs').catch(() => null);
   if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
+  // Also push census charts — teammates need the patient rows, not only the assignment.
+  try {
+    const cloud = await import('./features/cloud-sync/mutate-bridge.mjs');
+    if (typeof cloud.scheduleCloudSyncPush === 'function') cloud.scheduleCloudSyncPush();
+  } catch {
+    /* Nube optional */
+  }
   if (typeof document !== 'undefined') {
     document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
+    document.dispatchEvent(
+      new CustomEvent('rpc-clinical-teams-changed', {
+        detail: { source: 'patient-team-assign', sala: clinicalSessionContext.user?.sala },
+      })
+    );
   }
 }
 

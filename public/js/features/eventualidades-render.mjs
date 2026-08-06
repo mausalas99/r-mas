@@ -23,97 +23,46 @@ import {
   mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
 import { buildEventualidadesPanelHtml } from './eventualidades-panel-html.mjs';
-import { removeLabsTextBlock } from './eventualidades-labs-timeline.mjs';
+
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
 const _dayOpenPrefs = new Map();
-/** Pending labs-box prefill (doc-queue / navigate). */
-let _pendingPrefillText = null;
-/** @type {'note'|'labs'} */
-let _composeMode = 'note';
 
 /**
- * Queue text into labsText (merge) and show Labs timeline.
+ * Prefill note compose (legacy: doc-queue used to target labsText).
  * @param {string} text
  * @returns {boolean}
  */
 export function queueEventualidadesPrefill(text) {
   var t = String(text || '').trim();
-  if (!t) {
-    _pendingPrefillText = null;
-    return false;
-  }
+  if (!t) return false;
   _editingEntryId = null;
-  _composeMode = 'labs';
-  _pendingPrefillText = t;
+  var mount =
+    typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null;
+  if (!mount) return false;
+  var input = mount.querySelector('#eventualidades-input');
+  if (!input) return false;
+  input.value = toClinicalHistoryText(t);
+  try {
+    input.focus();
+  } catch {
+    /* ignore */
+  }
   return true;
 }
 
 /**
- * Apply queued prefill by merging into labsText if the mount exists.
  * @param {HTMLElement|null} [mountEl]
  * @returns {boolean}
  */
 export function applyEventualidadesPrefill(mountEl) {
-  if (!_pendingPrefillText) return false;
-  var mount =
-    mountEl ||
-    (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
-  if (!mount) return false;
-  return fillLabsFromPending_(mount);
+  void mountEl;
+  return false;
 }
 
-function fillLabsFromPending_(mountEl) {
-  if (!_pendingPrefillText || !mountEl) return false;
-  var pending = _pendingPrefillText;
-  _pendingPrefillText = null;
-  _composeMode = 'labs';
-  var patient = activePatient();
-  if (!patient) return false;
-  void savePatientEventualidadesLabs(patient, pending, { mode: 'merge' }).then(function (out) {
-    if (out && out.ok) renderEventualidadesPanel(mountEl);
-  });
-  return true;
-}
-
-/**
- * @param {'note'|'labs'} mode
- * @param {HTMLElement|null} [mountEl]
- */
-function setComposeMode_(mode, mountEl) {
-  var next = mode === 'labs' ? 'labs' : 'note';
-  var changed = _composeMode !== next;
-  _composeMode = next;
-  var mount =
-    mountEl ||
-    (typeof document !== 'undefined' ? document.getElementById('exp-pane-eventualidades') : null);
-  if (!mount) return;
-  if (changed) {
-    renderEventualidadesPanel(mount);
-    return;
-  }
-  applyComposeModeDom_(mount, _composeMode);
-}
-
-/** Prefer Labs timeline (autosend / doc-queue) without rewriting text. */
+/** No-op: Labs tab removed from Eventualidades. */
 export function selectEventualidadesLabsMode() {
-  setComposeMode_('labs');
-}
-
-/**
- * @param {HTMLElement} mountEl
- * @param {'note'|'labs'} mode
- */
-function applyComposeModeDom_(mountEl, mode) {
-  var panel = mountEl.querySelector('.ev-panel');
-  if (panel) panel.setAttribute('data-ev-view', mode);
-  mountEl.querySelectorAll('.ev-mode-switch__tab[data-ev-mode]').forEach(function (btn) {
-    var on = btn.getAttribute('data-ev-mode') === mode;
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-selected', on ? 'true' : 'false');
-  });
-  var switchEl = mountEl.querySelector('.ev-mode-switch');
-  if (switchEl) switchEl.setAttribute('data-ev-mode', mode);
+  /* intentionally empty */
 }
 
 function wireEventualidadesUppercase(input) {
@@ -177,7 +126,7 @@ export async function savePatientEventualidad(patient, text, atIso) {
 }
 
 /**
- * Guarda / fusiona el bloque de interpretación de labs (no crea entrada clínica).
+ * Persist labsText for sync compat (UI Labs tab removed — no auto-interpret).
  * @param {object} patient
  * @param {string} text
  * @param {{ mode?: 'set'|'merge' }} [opts]
@@ -273,23 +222,6 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
   const timeline = mountEl.querySelector('.ev-timeline');
   if (!timeline) return;
   timeline.addEventListener('click', function (ev) {
-    const labsDel = ev.target.closest('[data-ev-labs-delete]');
-    if (labsDel) {
-      const blockId = labsDel.getAttribute('data-ev-labs-delete');
-      if (!blockId) return;
-      if (!confirm('¿Eliminar esta interpretación de labs?')) return;
-      void (async function () {
-        const removed = removeLabsTextBlock(getEventualidadesLabsText(store), blockId);
-        if (!removed.changed) return;
-        const next = setEventualidadesLabsText(store, removed.labsText);
-        const out = await persistEventualidades(patient, next);
-        if (out && out.ok) {
-          rt.showToast('Interpretación eliminada.', 'success');
-          renderEventualidadesPanel(mountEl);
-        }
-      })();
-      return;
-    }
     const delBtn = ev.target.closest('[data-ev-delete]');
     if (delBtn) {
       const delId = delBtn.getAttribute('data-ev-delete');
@@ -320,30 +252,7 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
   });
 }
 
-function wireEventualidadesComposeSwitcher(mountEl) {
-  const switchEl = mountEl.querySelector('.ev-mode-switch');
-  if (!switchEl || switchEl.dataset.evSwitchWired === '1') return;
-  switchEl.dataset.evSwitchWired = '1';
-  switchEl.addEventListener('click', function (ev) {
-    const btn = ev.target.closest('.ev-mode-switch__tab[data-ev-mode]');
-    if (!btn || btn.disabled || !switchEl.contains(btn)) return;
-    const mode = btn.getAttribute('data-ev-mode') === 'labs' ? 'labs' : 'note';
-    setComposeMode_(mode, mountEl);
-    if (mode === 'note') {
-      const focusEl = mountEl.querySelector('#eventualidades-input');
-      if (focusEl && typeof focusEl.focus === 'function') {
-        try {
-          focusEl.focus();
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-  });
-}
-
 function wireEventualidadesCompose(mountEl, patient, store) {
-  wireEventualidadesComposeSwitcher(mountEl);
   const addBtn = mountEl.querySelector('#eventualidades-add');
   const input = mountEl.querySelector('#eventualidades-input');
   const atInput = mountEl.querySelector('#eventualidades-at');
@@ -406,38 +315,31 @@ export function renderEventualidadesPanel(mountEl) {
   const store = ensureEventualidades(patient);
   const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
   if (_editingEntryId && !editingEntry) _editingEntryId = null;
-  if (_editingEntryId) _composeMode = 'note';
   const byDay = groupEntriesByDay(store.entries);
   const hasEntries = byDay.length > 0;
-  const timelineMode = _editingEntryId ? 'note' : _composeMode;
 
   mountEl.innerHTML = buildEventualidadesPanelHtml(
     byDay,
     hasEntries,
     editingEntry,
     store,
-    timelineMode,
+    'note',
     {
       editingEntryId: _editingEntryId,
-      composeMode: _composeMode,
+      composeMode: 'note',
       dayOpenPrefs: _dayOpenPrefs,
     }
   );
   refreshRpcDateFields(mountEl);
   wireEventualidadesUppercase(mountEl.querySelector('#eventualidades-input'));
   wireEventualidadesDayToggles(mountEl);
-  wireEventualidadesComposeSwitcher(mountEl);
   wireEventualidadesCompose(mountEl, patient, store);
   wireEventualidadesTimeline(mountEl, patient, store);
-  applyComposeModeDom_(mountEl, _editingEntryId ? 'note' : _composeMode);
-  fillLabsFromPending_(mountEl);
 }
 
 export function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
-  _pendingPrefillText = null;
-  _composeMode = 'note';
 }
 
 /** @type {number} */

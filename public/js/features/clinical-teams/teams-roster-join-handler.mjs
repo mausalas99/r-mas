@@ -3,7 +3,7 @@ import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import { dbApi, toast, currentUserId, toastTeamWarnings } from './shared.mjs';
-import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
+import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
 
 function toastJoinSlotWarnings(team, rank) {
   const slotWarn = validateTeamRankSlot(team?.service || '', rank, team?.members || []);
@@ -31,8 +31,9 @@ export async function joinClinicalTeamByButton(teamId) {
   }
   toastTeamWarnings(res.warnings);
   toast('Te uniste al equipo.', 'success');
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  void publishClinicalTeamsToLan();
+  const sala = String(team?.sala || clinicalSessionContext.user?.sala || '').trim();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { sala } }));
+  void publishClinicalTeamsAfterChange({ sala });
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
     ensureTurnRoomAfterTeamJoin(toast)
   );

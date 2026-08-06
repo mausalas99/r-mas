@@ -88,7 +88,7 @@ function paintLanDirectoryHost(host, users, sessionUser) {
     directoryCount: users.length,
     lanDirectoryPending: pending,
   });
-  if (title) title.textContent = `Directorio de usuarios LAN (${users.length})`;
+  if (title) title.textContent = `Directorio de usuarios (${users.length})`;
 }
 
 function shouldReuseLanDirectoryFingerprint(host, fingerprint, options) {
@@ -117,7 +117,7 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   if (!api || typeof api.dbClinicalUsersList !== 'function') {
     renderLanDirectoryLoadError(
       host,
-      'Directorio solo en la app de escritorio R+ (base clínica desbloqueada). En iPad/móvil usa el censo LAN; Mi rotación con directorio requiere Mac.'
+      'Directorio solo en la app de escritorio R+ (base clínica desbloqueada). En iPad/móvil usa el censo de R+ Cloud; Mi rotación con directorio requiere Mac.'
     );
     return;
   }
@@ -134,7 +134,7 @@ export async function loadLanUsersDirectoryIntoHost(host, options = {}) {
   const fingerprint = buildLanDirectoryFingerprint(users, lanDirRt.teams);
   if (shouldReuseLanDirectoryFingerprint(host, fingerprint, options)) {
     const title = document.getElementById('clinical-lan-users-title');
-    if (title) title.textContent = `Directorio de usuarios LAN (${users.length})`;
+    if (title) title.textContent = `Directorio de usuarios (${users.length})`;
     applyLanDirectoryFilters(host);
     return;
   }

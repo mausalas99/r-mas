@@ -272,7 +272,7 @@ describe('lan-sync clinical ops', () => {
       'utf8'
     );
     const bootSrc = readFileSync(join(lanDir, 'orchestrator-boot.mjs'), 'utf8');
-    assert.match(cloudOpsSrc, /rpc-clinical-teams-changed[\s\S]*pushCloudClinicalOpsNow/);
+    assert.match(cloudOpsSrc, /rpc-clinical-teams-changed[\s\S]*pushClinicalOpsForSala/);
     assert.match(cloudOpsSrc, /maybeScheduleCloudSyncPush/);
     assert.match(bootSrc, /wireCloudClinicalOpsSyncEvents/);
     const cloudBoot = bootSrc.match(/if \(isCloudSalaBootPath\(\)\) \{[\s\S]*?return;\n  \}/);
@@ -297,7 +297,7 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('Mi rotación pulls clinical ops from host before listing teams', () => {
-    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanelInto[\s\S]*pullClinicalOpsFromLanRoom/);
+    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanelInto[\s\S]*refreshClinicalOpsDirectory/);
   });
 
   it('handles livesync revision hints from peers', () => {

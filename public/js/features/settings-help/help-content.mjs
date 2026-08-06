@@ -8,7 +8,7 @@ import { closeSettingsDropdown } from './settings-dropdown.mjs';
 var HELP_ARTICLES = [
   {
     id: 'modo-guardia',
-    title: 'Modo Guardia (7.x)',
+    title: 'Modo Guardia',
     keywords: 'guardia modo chip tablero turno censo alcance rango solo mis entregas toggle',
     html:
       '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong> en la barra superior.</p>' +
@@ -34,17 +34,16 @@ var HELP_ARTICLES = [
   },
   {
     id: 'lan-pin-turno',
-    title: 'LAN, PIN del turno y móvil',
-    keywords: 'lan livesync pin turno directorio mi rotacion ipad mobile token invitacion',
+    title: 'R+ Cloud, equipos y móvil',
+    keywords: 'nube cloud conexion livesync sala directorio mi rotacion ipad mobile qr invitacion r+ cloud',
     html:
-      '<p>La red del turno en R+ 7.x combina LiveSync, directorio y acceso móvil.</p>' +
+      '<p>El turno se sincroniza con <strong>R+ Cloud</strong> (Nube). No hace falta un Mac anfitrión en la Wi‑Fi del hospital.</p>' +
       '<ul>' +
-      '<li><strong>⇄ LiveSync</strong> — estado de red, sala y sincronización en la Wi‑Fi del hospital.</li>' +
-      '<li><strong>PIN del turno</strong> (~12 h) — reconecta otras Mac en otra subred sin reconfigurar la sala.</li>' +
-      '<li><strong>Directorio LAN</strong> — quién está en la sala; el anfitrión conserva el roster.</li>' +
-      '<li><strong>Mi rotación</strong> — @usuario, equipos persistentes y sala (distinto del censo lateral).</li>' +
-      '<li><strong>iPad/móvil</strong> — enlace permanente para Safari desde ⇄; invitación distinta a otra Mac/sala.</li>' +
-      '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores colapsables; sync LAN más silenciosa en 7.x.</li>' +
+      '<li><strong>⇄ Conexión</strong> — cuenta Nube, sala del equipo y estado de sincronización.</li>' +
+      '<li><strong>Mi rotación</strong> — @usuario, equipos e integrantes (se publican por clinicalOps a la sala).</li>' +
+      '<li><strong>Directorio de usuarios</strong> — quién está en la sala; el admin asigna a equipos.</li>' +
+      '<li><strong>iPad / R+ Móvil</strong> — enlace o QR desde ⇄; inicia sesión con la misma cuenta Nube.</li>' +
+      '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores colapsables; sync discreta en segundo plano.</li>' +
       '</ul>'
   },
   {
@@ -61,15 +60,15 @@ var HELP_ARTICLES = [
   },
   {
     id: 'lan-vs-respaldo',
-    title: 'LAN en vivo vs respaldos entre equipos',
-    keywords: 'lan wifi sala equipo respaldo sync paquete red wifi sincronizar vivo copia snapshot exportar',
+    title: 'R+ Cloud vs respaldos entre equipos',
+    keywords: 'nube cloud conexion sala equipo respaldo sync paquete sincronizar vivo copia snapshot exportar',
     html:
       '<p>R+ usa dos ideas distintas que no compiten; sirven para cosas diferentes:</p>' +
       '<ul>' +
-      '<li><strong>Sala en vivo (LAN / ⇄):</strong> trabajar en <strong>sesión</strong> con colegas en la <strong>misma red local</strong>. Es colaboración en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo. Si el anfitrión cierra R+, otra <strong>Mac o Windows</strong> con R+ de escritorio (unida con invitación) puede ser <strong>anfitrión suplente</strong> hasta que vuelva el equipo original.</li>' +
-      '<li><strong>Respaldos y sync (Ajustes → Respaldos, sync y recuperación):</strong> exportar/importar <strong>JSON</strong>, auto‑respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido clínico entre computadoras o después del turno.</li>' +
+      '<li><strong>R+ Cloud (⇄ Conexión):</strong> trabajar en <strong>sesión</strong> con el equipo en la <strong>misma sala Nube</strong>. Colaboración en tiempo real; no sustituye un respaldo local de tu historial.</li>' +
+      '<li><strong>Respaldos (Ajustes → Respaldos, sync y recuperación):</strong> exportar/importar <strong>JSON</strong>, auto‑respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido clínico entre computadoras o después del turno.</li>' +
       '</ul>' +
-      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Continuar el mismo caso en otro equipo físico? Usa <strong>exportar/importar</strong> o el paquete sync. ¿Ver en vivo lo que hace el equipo en sala? Usa <strong>LAN</strong>.</p>'
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Continuar el mismo caso en otro equipo físico sin Nube? Usa <strong>exportar/importar</strong>. ¿Ver en vivo lo que hace el equipo en sala? Usa <strong>R+ Cloud</strong> en ⇄.</p>'
   },
   {
     id: 'laboratorio',
@@ -107,7 +106,7 @@ var HELP_ARTICLES = [
       '<li><strong>Captura</strong> — Tres pasos: identificación y motivo; antecedentes (APP con catálogo, AHF por familiar, APNP, género/reproducción); padecimiento, datos negados e IPAS por sistemas.</li>' +
       '<li><strong>Lectura</strong> — Vista que compila secciones en prosa; <strong>Copiar texto</strong> al portapapeles.</li>' +
       '<li><strong>Labs de ingreso</strong> — Ancla creatinina, eTFG y estudios recientes desde el historial del paciente.</li>' +
-      '<li><strong>Sala en vivo</strong> — Se sincroniza por paciente cuando el equipo usa ⇄.</li>' +
+      '<li><strong>R+ Cloud</strong> — Se sincroniza por paciente cuando el equipo está conectado en ⇄.</li>' +
       '</ul>'
   },
   {
@@ -164,7 +163,7 @@ var HELP_ARTICLES = [
     title: 'Respaldo y portabilidad',
     keywords: 'respaldo backup copia seguridad exportar importar paciente rango sync pasarela equipos auditoria',
     html:
-      '<p><strong>¿LAN o respaldo?</strong> Lee primero <strong>LAN en vivo vs respaldos entre equipos</strong> en este centro de ayuda.</p>' +
+      '<p><strong>¿Nube o respaldo?</strong> Lee primero <strong>R+ Cloud vs respaldos entre equipos</strong> en este centro de ayuda.</p>' +
       '<p>R+ ofrece varias vías para mover o resguardar datos desde <strong>Ajustes</strong>:</p>' +
       '<ul>' +
       '<li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li>' +
@@ -178,12 +177,11 @@ var HELP_ARTICLES = [
     id: 'actualizacion',
     title: 'Actualizar R+',
     keywords:
-      'actualizacion actualizar update instalar reiniciar rollback version downgrade restaurar estable reparacion 6.5.5 native binding',
+      'actualizacion actualizar update instalar reiniciar rollback version downgrade restaurar estable reparacion native binding',
     html:
       '<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p>' +
       '<ul>' +
       '<li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación).</li>' +
-      '<li><strong>Reinstalar actualización de reparación (6.5.5)</strong>: si quedaste en <strong>6.5.4</strong> con errores nativos, usa este botón (canal Estable). Instala el parche lateral sin borrar datos.</li>' +
       '<li><strong>Restaurar versión estable</strong>: en Ajustes → Aplicación, elige una versión anterior curada y confirma. R+ intenta instalarla como una actualización; si falla (p. ej. firma en Mac), abre el instalador correcto en GitHub. Tus datos locales no se borran.</li>' +
       '<li>Si la versión elegida está por debajo del mínimo soportado, R+ bloquea la restauración automática.</li>' +
       '<li>Al detectar una versión nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li>' +

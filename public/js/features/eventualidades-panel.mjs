@@ -28,8 +28,4 @@ export {
   setEventualidadesLabsText,
   mergeEventualidadesLabsText,
 } from './eventualidades-store.mjs';
-export {
-  groupLabsTextByDay,
-  parseLabsTextDateHeader,
-} from './eventualidades-labs-timeline.mjs';
 export { applyDriveImportEventualidades } from './eventualidades-drive.mjs';

@@ -33,7 +33,7 @@ describe('clinical-settings LAN profile gate', () => {
     delete global.localStorage;
   });
 
-  it('bumps gate to 7.9.0 and clears cached username/display when pending', () => {
+  it('bumps gate to 7.9.0 and clears machine/placeholder username when pending', () => {
     memory.set(
       'rpc-settings',
       JSON.stringify({
@@ -50,6 +50,22 @@ describe('clinical-settings LAN profile gate', () => {
     assert.equal(next.clinicalUserId, 'u1');
     const stored = JSON.parse(memory.get('rpc-settings') || '{}');
     assert.equal(stored.clinicalUsername, undefined);
+  });
+
+  it('keeps a valid claimed @usuario when gate is pending', () => {
+    memory.set(
+      'rpc-settings',
+      JSON.stringify({
+        clinicalLanProfileGateVersion: '5.5.7',
+        clinicalUsername: 'drmauricios',
+        clinicalDisplayName: 'Dr. Mauricio Salas',
+        clinicalUserId: 'u1',
+      })
+    );
+    assert.equal(needsClinicalLanProfileGate(), true);
+    const next = ensureLanProfileGateDeviceReset();
+    assert.equal(next.clinicalUsername, 'drmauricios');
+    assert.equal(next.clinicalDisplayName, 'Dr. Mauricio Salas');
   });
 
   it('persistClinicalUserBinding records gate complete so re-render keeps @usuario', () => {

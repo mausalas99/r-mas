@@ -417,14 +417,20 @@ export function scheduleCloudSyncPush() {
 }
 
 /**
+ * Floor clock for patients that never got a real edit — lets empty-room seed emit
+ * `fields` without beating a peer who typed a real nombre (was Date.now() before).
+ */
+const CENSUS_SEED_CLOCK = '2000-01-01T00:00:00.000Z';
+
+/**
  * One-time census clock on live patients so empty-room seed can emit `fields`.
  * Must mutate `patients` (buildPatientEntry shallow-copies) so later pushes reuse the same clock.
  */
-function ensureLiveCensusClocks(nowIso) {
+function ensureLiveCensusClocks(_nowIso) {
   for (let i = 0; i < patients.length; i += 1) {
     const patient = patients[i];
     if (!patient || typeof patient !== 'object') continue;
-    if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = nowIso;
+    if (!String(patient.lanUpdatedAt || '').trim()) patient.lanUpdatedAt = CENSUS_SEED_CLOCK;
   }
 }
 

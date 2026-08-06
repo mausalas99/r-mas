@@ -14,6 +14,7 @@ import {
 } from './settings.mjs';
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
+import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { configureCloudMutateBridge } from './mutate-bridge.mjs';
 import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { createOutbox } from './outbox.mjs';
@@ -108,16 +109,16 @@ async function joinTurnRoom(client, chosenUser, toast, setStatus) {
 }
 
 async function pullOrSeed(client, roomId, setStatus) {
-  const revision = Number(getCloudSyncRevision() || 0);
-  setStatus('Sincronizando censo…');
-  if (revision > 0) {
-    const pull = await client.pull(roomId, 0);
-    await applyCloudPullResult(pull);
-    if (pull?.revision != null) setCloudSyncRevision(Number(pull.revision) || revision);
-    setStatus('Pull aplicado. Empujando cambios locales…');
+  setStatus('Sincronizando equipos y censo…');
+  const pull = await client.pull(roomId, 0);
+  await applyCloudPullResult(pull);
+  if (pull?.revision != null) setCloudSyncRevision(Number(pull.revision) || 0);
+  await hydrateClinicalTeamsAfterCloudPull();
+  if (Number(getCloudSyncRevision() || 0) > 0) {
+    setStatus('Sincronizado con la sala nube.');
     return;
   }
-  setStatus('Sala vacía — sembrando censo local…');
+  setStatus('Sala lista — crea o únete a un equipo en Mi rotación.');
 }
 
 function startCloudPushAndRuntime(chosenUser) {

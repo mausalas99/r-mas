@@ -9,6 +9,9 @@ import {
 } from './panel-admin-html.mjs';
 import { loadAdminResumen, loadAdminSalas } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
+import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
+import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
+import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 
 /**
  * Admin shell visibility.
@@ -75,6 +78,10 @@ export function mountCloudAdminPanel(host, deps) {
   if (mutEl) mutEl.innerHTML = mutacionesShellHtml();
   const usersEl = root.querySelector('[data-admin-usuarios]');
   if (usersEl) usersEl.innerHTML = usuariosShellHtml();
+  const equiposEl = root.querySelector('[data-admin-equipos]');
+  if (equiposEl) equiposEl.innerHTML = equiposShellHtml();
+
+  const equiposPanel = wireCloudEquiposPanel(root, { getApi: deps.getApi, toast });
 
   function updateRoomSelects() {
     const prevMut = (() => {
@@ -99,6 +106,7 @@ export function mountCloudAdminPanel(host, deps) {
     getApi: deps.getApi,
     toast,
     roomsCache,
+    equiposPanel,
     get openRoomDetailId() {
       return openRoomDetailId;
     },
@@ -113,7 +121,10 @@ export function mountCloudAdminPanel(host, deps) {
     const tabBtn = ev.target instanceof Element ? ev.target.closest('[data-admin-tab]') : null;
     if (tabBtn) {
       const tabId = tabBtn.getAttribute('data-admin-tab');
-      if (tabId) selectAdminTab(root, tabId);
+      if (tabId) {
+        selectAdminTab(root, tabId);
+        if (tabId === 'equipos') void equiposPanel.refresh();
+      }
       return;
     }
     onAdminAction(ev);

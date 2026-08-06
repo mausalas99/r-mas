@@ -1,6 +1,9 @@
 /** Mi rotación — browse/directory section HTML. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { canViewLanUserDirectory } from '../../clinical-privileges.mjs';
+import { isCloudSala } from '../cloud-sync/sala-allowlist.mjs';
+import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { dbApi, escapeHtml, escapeAttr, CLINICAL_SALAS, BROWSE_SALA_LS, renderClinicalTeamsCollapsible } from './shared.mjs';
 import {
   renderDirectoryTeamCard,
@@ -24,13 +27,13 @@ export async function resolveLanTeamMemberHintHtml(joinedTeams) {
     const roomId =
       typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
     if (!roomId) {
-      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Abre ⇄ y pulsa <strong>Unirse</strong> en la sala de guardia. Los residentes deben conectarse a tu LAN, unirse a la misma sala y registrar <strong>@usuario</strong> antes de que puedas asignarlos a un equipo.</p>`;
+      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Abre ⇄ y conéctate a <strong>R+ Cloud</strong> en la sala de guardia. Los residentes deben iniciar sesión Nube, unirse a la misma sala y registrar <strong>@usuario</strong> antes de que puedas asignarlos a un equipo.</p>`;
     }
     const canDir = canViewLanUserDirectory(clinicalSessionContext.user || {});
     if (canDir) {
-      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Estás en sala ⇄ pero el directorio aún no lista a otros. Cada Mac debe usar tu enlace/código LAN, <strong>Unirse</strong> en la misma sala y <strong>Guardar perfil</strong> con @usuario; después aparecen aquí y tú los asignas al equipo (no al revés).</p>`;
+      return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Estás en sala Nube pero el directorio aún no lista a otros. Cada Mac debe entrar en ⇄ con R+ Cloud, misma sala y <strong>Guardar perfil</strong> con @usuario; después aparecen aquí y tú los asignas al equipo (no al revés).</p>`;
     }
-    return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">En <strong>Integrantes</strong> verás compañeros cuando el admin te asigne a un equipo desde el directorio LAN. Mientras tanto: ⇄ → misma sala, @usuario guardado.</p>`;
+    return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">En <strong>Integrantes</strong> verás compañeros cuando el admin te asigne a un equipo desde el directorio. Mientras tanto: ⇄ → misma sala Nube, @usuario guardado.</p>`;
   } catch {
     return '';
   }
@@ -45,6 +48,29 @@ export function resolveBrowseSala(elevated, homeSala) {
   } catch (_e) { void _e; }
   if (!homeSala) return '__all__';
   return homeSala;
+}
+
+/** @param {boolean} elevated @param {string} browseSala @param {string} homeSala */
+function buildDirectoryEmptyMessage(elevated, browseSala, homeSala) {
+  const label =
+    browseSala === '__all__' ? 'ninguna sala' : escapeHtml(String(browseSala || homeSala));
+  const userSala = String(clinicalSessionContext.user?.sala || homeSala || '').trim();
+  if (isCloudSala(userSala) && !getCloudSyncToken()) {
+    return (
+      'Falta sesión Nube. Vuelve al paso anterior y guarda tu perfil con <strong>contraseña Nube</strong>, ' +
+      'o inicia sesión en <strong>⇄ Conexión</strong>.'
+    );
+  }
+  if (isCloudSala(userSala) && getCloudSyncToken() && !isCloudSyncActive()) {
+    return (
+      `Conecta la sala en <strong>⇄ Conexión</strong> para traer equipos de ${label}, ` +
+      'o crea uno con el botón de arriba.'
+    );
+  }
+  if (elevated) {
+    return `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`;
+  }
+  return `No hay otros equipos disponibles en ${label}. Pide código a tu R2 o espera asignación en Nube.`;
 }
 
 /** @param {boolean} elevated @param {string} browseSala */
@@ -115,11 +141,7 @@ export async function renderDirectorySectionHtml(opts) {
     : `<div class="clinical-teams-section-intro">${sectionIntro}</div>`;
 
   if (!directory.length) {
-    const label =
-      browseSala === '__all__' ? 'ninguna sala' : escapeHtml(String(browseSala || homeSala));
-    const emptyMsg = elevated
-      ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`
-      : `No hay otros equipos disponibles en ${label}.`;
+    const emptyMsg = buildDirectoryEmptyMessage(elevated, browseSala, homeSala);
     return `<section class="clinical-teams-section clinical-teams-section--directory">
       ${renderClinicalTeamsCollapsible({
         collapseKey: 'section.directory',

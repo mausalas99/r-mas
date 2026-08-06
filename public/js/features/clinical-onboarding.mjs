@@ -1,11 +1,13 @@
 /**
- * Clinical onboarding — perfil mínimo (usuario LAN, rango, sala).
- * Equipos: crear/unirse al reabrir Mi rotación, no en el wizard inicial. Barrel.
+ * Clinical onboarding — perfil mínimo (usuario LAN, rango, sala) y paso de equipo al arrancar.
  */
 import { safeRenderClinicalTeamsPanel } from './clinical-panel-host.mjs';
 export {
+  hasJoinedClinicalTeam,
   needsUsernameClaim,
   needsTeamOnboarding,
+  needsTeamOnboardingStep,
+  needsOnboardingShell,
   needsClinicalSyncModeChoice,
   needsProfileOnboarding,
   needsClinicalOnboarding,

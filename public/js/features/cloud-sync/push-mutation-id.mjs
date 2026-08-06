@@ -1,16 +1,13 @@
-import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
-
 /**
- * Worker dedupes by (room_id, client_mutation_id) forever — batch pushes need a unique wire id
- * while the outbox still coalesces on CLOUD_BATCH_MUTATION_ID locally.
+ * Worker dedupes by (room_id, client_mutation_id) forever. Local outbox coalesces on the
+ * bare `clientMutationId` (last enqueue wins); the wire id must include `enqueuedAt` so
+ * re-edits of clinicalOps / todos / agenda / census actually commit a new mutation.
  *
  * @param {{ clientMutationId?: string, enqueuedAt?: number }} entry
  */
 export function resolveCloudPushMutationId(entry) {
   const base = String(entry?.clientMutationId || '').trim();
-  if (base === CLOUD_BATCH_MUTATION_ID) {
-    const stamp = Number(entry?.enqueuedAt) || Date.now();
-    return `${base}:${stamp}`;
-  }
-  return base || `cloud-push:${Date.now()}`;
+  const stamp = Number(entry?.enqueuedAt) || Date.now();
+  if (!base) return `cloud-push:${stamp}`;
+  return `${base}:${stamp}`;
 }

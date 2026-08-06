@@ -18,7 +18,7 @@ export async function openLanUsersDirectoryModal() {
   const user = clinicalSessionContext.user || {};
   if (!canViewLanUserDirectory(user)) {
     toast(
-      'Solo R4, Admin o quien tenga privilegios de administración puede abrir el directorio LAN.',
+      'Solo R4, Admin o quien tenga privilegios de administración puede abrir el directorio de usuarios.',
       'warn'
     );
     return;

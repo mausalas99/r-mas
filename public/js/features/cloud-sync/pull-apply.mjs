@@ -6,11 +6,7 @@ import { saveState } from '../../app-state.mjs';
 import { patients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
-import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import {
-  shouldEnforceTeamPatientMirror,
-  shouldUseElevatedPatientCensus,
-} from '../../clinical-privileges.mjs';
+import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import {
   cloudStateToLanEntries,
   createOpFold,
@@ -95,25 +91,35 @@ async function applyClinicalOpsSnapshot(clinicalOps) {
     const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot, refreshClinicalOpsSnapshotCache } =
       await import('../../clinical-ops-sync.mjs');
     const { applyClinicalScopeFromLanOpsSnapshot } = await import('../../clinical-access-runtime.mjs');
+    let applied = false;
     if (isClinicalOpsLanAvailable()) {
       const result = await applyClinicalOpsLanSnapshot(clinicalOps);
       if (result.ok) {
         await refreshClinicalOpsSnapshotCache();
-        return true;
+        applied = true;
       }
-      return false;
+    } else {
+      applied = !!(await applyClinicalScopeFromLanOpsSnapshot(clinicalOps));
     }
-    return applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
+    if (applied) {
+      const { hydrateClinicalTeamsAfterCloudPull } = await import('./clinical-ops-hydrate.mjs');
+      await hydrateClinicalTeamsAfterCloudPull();
+    }
+    return applied;
   } catch {
     return false;
   }
 }
 
-/** R4/Admin desktop ward census needs the full room; everyone else scopes at apply time. */
+/**
+ * iPad/PWA: filter at apply (small cache).
+ * Desktop Nube: apply the full sala room, then filter in the sidebar by joined team /
+ * patient_team_assignment. Filtering at apply dropped Leslie charts forever when
+ * assignments arrived in a later clinicalOps pull (census revision already caught up).
+ */
 function shouldSkipTeamScopeFilterOnCloudPull() {
   if (shouldEnforceTeamPatientMirror()) return false;
-  const user = clinicalSessionContext.user;
-  return shouldUseElevatedPatientCensus(user);
+  return true;
 }
 
 function cloudPatientEntryApplyOpts() {
@@ -205,15 +211,27 @@ export async function applyCloudOps(ops) {
   return { ...patientSync, removed };
 }
 
+/** @param {{ added?: number, updated?: number, removed?: boolean }} result */
+async function refreshSidebarAfterCloudPull(result) {
+  if (!result?.added && !result?.updated && !result?.removed) return;
+  try {
+    const { renderPatientList } = await import('../patients.mjs');
+    renderPatientList({ silent: true });
+  } catch {
+    /* list optional during boot */
+  }
+}
+
 /** @param {unknown} result */
 export async function applyCloudPullResult(result) {
   if (!result || typeof result !== 'object') return { added: 0, updated: 0, removed: false };
   const row = result;
+  let applied = { added: 0, updated: 0, removed: false };
   if (row.needSnapshot && row.state) {
-    return applyCloudState(row.state);
+    applied = await applyCloudState(row.state);
+  } else if (Array.isArray(row.ops) && row.ops.length) {
+    applied = await applyCloudOps(row.ops);
   }
-  if (Array.isArray(row.ops) && row.ops.length) {
-    return applyCloudOps(row.ops);
-  }
-  return { added: 0, updated: 0, removed: false };
+  await refreshSidebarAfterCloudPull(applied);
+  return applied;
 }

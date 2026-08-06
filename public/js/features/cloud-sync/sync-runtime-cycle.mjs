@@ -211,15 +211,55 @@ export function createSyncRuntimeCycle(deps) {
   /** @type {ReturnType<typeof createCloudPollScheduler>} */
   let scheduler;
 
-  async function syncCycle() {
-    if (stopped) return;
-    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
-      if (deps.pollMobile) {
-        scheduler.armNextTimer(false);
+  /** @param {unknown} err */
+  function failCycle(err) {
+    const rateLimited = scheduler.isRateLimitedError(err);
+    const msg = rateLimited
+      ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
+      : errorMessage(err, 'Error de sincronización con la nube.');
+    if (!rateLimited) {
+      recordCloudSyncError({
+        op: 'cycle',
+        code: cloudSyncErrorCode(err),
+        message: msg,
+      });
+    } else {
+      recordCloudSyncTrace('rate_limit', { message: msg });
+    }
+    setStatus('error', msg);
+    scheduler.noteFailure(err);
+    noteCloudSyncCycle(false);
+  }
+
+  /** Push-only while hidden; always re-arms the poll timer. */
+  async function runHiddenCycle() {
+    if (outboxSync.pendingCount() > 0 && navigator.onLine) {
+      try {
+        setStatus('syncing');
+        await flushOutbox();
+        outboxSync.refreshIdleStatus();
+        scheduler.noteSuccess();
+        noteCloudSyncCycle(true);
+      } catch (err) {
+        failCycle(err);
       }
       return;
     }
-    if (!getRoomId()) return;
+    scheduler.armNextTimer(false);
+  }
+
+  async function syncCycle() {
+    if (stopped) return;
+    if (!getRoomId()) {
+      scheduler.armNextTimer(false);
+      return;
+    }
+    const hidden =
+      typeof document !== 'undefined' && document.visibilityState !== 'visible';
+    if (hidden) {
+      await runHiddenCycle();
+      return;
+    }
     if (!navigator.onLine) {
       setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
       scheduler.armNextTimer(false);
@@ -239,22 +279,7 @@ export function createSyncRuntimeCycle(deps) {
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
     } catch (err) {
-      const rateLimited = scheduler.isRateLimitedError(err);
-      const msg = rateLimited
-        ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
-        : errorMessage(err, 'Error de sincronización con la nube.');
-      if (!rateLimited) {
-        recordCloudSyncError({
-          op: 'cycle',
-          code: cloudSyncErrorCode(err),
-          message: msg,
-        });
-      } else {
-        recordCloudSyncTrace('rate_limit', { message: msg });
-      }
-      setStatus('error', msg);
-      scheduler.noteFailure(err);
-      noteCloudSyncCycle(false);
+      failCycle(err);
     }
   }
 
@@ -269,12 +294,22 @@ export function createSyncRuntimeCycle(deps) {
   function onVisibility() {
     if (document.visibilityState === 'visible') void syncCycle();
   }
+  /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
+  function onWindowFocus() { void syncCycle(); }
+
+  function noteLocalMutation() {
+    pace.markLocalWrite();
+    scheduler.armNextTimer(false);
+  }
 
   if (typeof window !== 'undefined') {
     window.addEventListener('online', onOnline);
+    window.addEventListener('focus', onWindowFocus);
     document.addEventListener('visibilitychange', onVisibility);
   }
   outboxSync.refreshIdleStatus();
+  // Immediate first cycle — do not wait a full idle interval to see peers.
+  void syncCycle();
   scheduler.armNextTimer(false);
 
   const handle = {
@@ -282,11 +317,13 @@ export function createSyncRuntimeCycle(deps) {
     getDetail: () => lastDetail,
     flushOutbox,
     syncCycle,
+    noteLocalMutation,
     stop() {
       stopped = true;
       scheduler.stop();
       if (typeof window !== 'undefined') {
         window.removeEventListener('online', onOnline);
+        window.removeEventListener('focus', onWindowFocus);
         document.removeEventListener('visibilitychange', onVisibility);
       }
       deps.onStop?.(handle);
