@@ -42,10 +42,14 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /data-cloud-view="admin"/);
     assert.match(html, /Administración/);
     assert.match(html, /cloud-sync-options-group/);
-    assert.match(html, /data-cloud-view="lan"/);
     assert.match(html, /data-cloud-view="nube"/);
     assert.match(html, /Diagnóstico Nube/);
     assert.match(html, /data-cloud-nube-diagnostics-host/);
+    assert.doesNotMatch(html, /data-cloud-view="lan"/);
+    assert.doesNotMatch(html, /Diagnóstico LAN/);
+    assert.doesNotMatch(html, /lan-host-pin/);
+    assert.doesNotMatch(html, /lan-pin-host-checkbox/);
+    assert.doesNotMatch(html, /3738/);
     assert.doesNotMatch(html, /cloud-sync-mas/);
     assert.doesNotMatch(html, /data-cloud-step="2"/);
     assert.doesNotMatch(html, /Operaciones del turno/);
@@ -90,7 +94,7 @@ describe('connectedStepsHtml', () => {
     assert.match(html, /data-cloud-view="cuenta"/);
     assert.match(html, /data-cloud-view="admin"/);
     assert.match(html, /data-cloud-view="advanced"/);
-    assert.match(html, /Diagnóstico LAN/);
+    assert.doesNotMatch(html, /Diagnóstico LAN/);
   });
 });
 

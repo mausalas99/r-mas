@@ -164,7 +164,6 @@ export function connectedViewsHtml({
   }
   const sistemaRows =
     optionsRow('Diagnóstico Nube', 'Cola, errores y estado de sync', 'nube') +
-    optionsRow('Diagnóstico LAN', 'Cola local · no es Nube', 'lan') +
     optionsRow('Avanzado', 'URL del servicio', 'advanced');
 
   const optionsBody =
@@ -196,11 +195,6 @@ export function connectedViewsHtml({
       'Diagnóstico Nube',
       '<p class="cloud-sync-hint">Cola de mutaciones, últimos errores y trazas push/pull. Copia el informe para soporte.</p>' +
         '<div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host></div>'
-    ) +
-    viewBlock(
-      'lan',
-      'Diagnóstico LAN',
-      '<p class="cloud-sync-hint">Informe del anfitrión local y cola outbox. Con Nube activa suele estar vacío.</p>'
     ) +
     viewBlock('advanced', 'Avanzado', advancedUrlFieldsHtml(url)) +
     '</div>'

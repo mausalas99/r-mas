@@ -430,6 +430,7 @@ async function appendLanSyncDiagnosticsSection(deps, root) {
 /** @param {PanelDiagnosticsDeps} deps */
 async function refreshLanSyncDiagnosticsInPlace(deps) {
   if (!deps.isLanConnectionDropdownOpen()) return;
+  if (shouldShowNubePanel(getUserSala())) return;
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
   var scrollTop = deps.captureConnectionDropdownScrollTop();

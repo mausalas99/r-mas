@@ -250,17 +250,8 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   maybeAppendEquiposQrPanel_(deps, root);
 }
 
-/** Nube footer: keep diagnostics/census CTA; skip LAN conflict drafts + QR compact fetch. */
+/** Nube footer: mobile invite only — no LAN diagnostics / host census (WS1). */
 async function appendNubePanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop) {
-  await deps.appendLanSyncDiagnosticsSection(root);
-  await appendLanHostPatientsSection(root, {
-    showToast: function (msg, kind) {
-      deps.runtime().showToast(msg, kind);
-    },
-    onChanged: function () {
-      if (typeof deps.runtime().renderPatientList === 'function') deps.runtime().renderPatientList();
-    },
-  });
   if (deps.isRenderStale(gen)) return;
   deps.purgeDuplicateLanShiftPinCards(root);
   restoreLanPanelExpandState(root, expandState);

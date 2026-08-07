@@ -288,11 +288,19 @@ export function createPanelConnectionChrome(deps) {
       root.querySelectorAll('#lan-conflict-drafts-card, .lan-preflight-row').forEach(function (el) {
         el.hidden = true;
       });
+      root.querySelectorAll('.lan-sync-diagnostics-panel').forEach(function (el) {
+        el.hidden = true;
+      });
+      var pinCb = root.querySelector('#lan-pin-host-checkbox');
+      if (pinCb && typeof pinCb.closest === 'function') {
+        var pinCard = pinCb.closest('.settings-card');
+        if (pinCard) pinCard.hidden = true;
+      }
     } else {
       var statusCard = findHubStatusRefreshTarget(root);
       if (statusCard) refreshHubStatusCard(statusCard, lanHubStatusCopy(), deps.esc);
+      await deps.refreshLanSyncDiagnosticsInPlace();
     }
-    await deps.refreshLanSyncDiagnosticsInPlace();
     await deps.renderLanPreflightUx(root);
     restoreConnectionDropdownScrollTop(scrollTop);
   }
