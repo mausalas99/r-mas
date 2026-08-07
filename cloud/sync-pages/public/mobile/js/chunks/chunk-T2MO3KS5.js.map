@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../public/js/features/cloud-sync/lan-override.mjs"],
+  "sourcesContent": ["import { isCloudSala } from './sala-allowlist.mjs';\nimport { getCloudSyncRoomId } from './settings.mjs';\n\nlet _cloudRoomConnected = false;\n\n/** @param {boolean} connected */\nexport function setCloudRoomConnected(connected) {\n  _cloudRoomConnected = !!connected;\n}\n\n/** True when a cloud room session is active (memory or persisted room id). */\nexport function isCloudSyncActive() {\n  if (_cloudRoomConnected) return true;\n  return !!getCloudSyncRoomId();\n}\n\n/** @param {unknown} profileSala */\nexport function shouldShowNubePanel(profileSala) {\n  return isCloudSala(profileSala);\n}\n\n/**\n * @param {unknown} profileSala\n * @param {boolean} [cloudRoomConnected]\n */\nexport function shouldUseNubeNotLan(profileSala, cloudRoomConnected) {\n  if (!isCloudSala(profileSala)) return false;\n  if (cloudRoomConnected != null) return !!cloudRoomConnected;\n  return isCloudSyncActive();\n}\n"],
+  "mappings": ";;;;;;;;AAGA,IAAI,sBAAsB;AAGnB,SAAS,sBAAsB,WAAW;AAC/C,wBAAsB,CAAC,CAAC;AAC1B;AAGO,SAAS,oBAAoB;AAClC,MAAI,oBAAqB,QAAO;AAChC,SAAO,CAAC,CAAC,mBAAmB;AAC9B;AAGO,SAAS,oBAAoB,aAAa;AAC/C,SAAO,YAAY,WAAW;AAChC;AAMO,SAAS,oBAAoB,aAAa,oBAAoB;AACnE,MAAI,CAAC,YAAY,WAAW,EAAG,QAAO;AACtC,MAAI,sBAAsB,KAAM,QAAO,CAAC,CAAC;AACzC,SAAO,kBAAkB;AAC3B;",
+  "names": []
+}

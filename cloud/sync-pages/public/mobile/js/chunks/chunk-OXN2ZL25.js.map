@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../../../public/js/features/cloud-mobile/origin.mjs"],
+  "sourcesContent": ["/**\n * True when this renderer session is R+ M\u00F3vil on Nube (Worker /mobile/), not ward LAN.\n */\nexport function isCloudMobileClient() {\n  if (typeof globalThis !== 'undefined' && globalThis.__RPC_CLOUD_MOBILE__) return true;\n  if (typeof document !== 'undefined') {\n    if (document.documentElement?.dataset?.cloudMobile === '1') return true;\n    if (document.documentElement?.classList?.contains('rpc-cloud-mobile')) return true;\n  }\n  if (typeof location !== 'undefined') {\n    const path = String(location.pathname || '');\n    if (/^\\/mobile(\\/|$)/i.test(path)) return true;\n  }\n  return false;\n}\n"],
+  "mappings": ";AAGO,SAAS,sBAAsB;AACpC,MAAI,OAAO,eAAe,eAAe,WAAW,qBAAsB,QAAO;AACjF,MAAI,OAAO,aAAa,aAAa;AACnC,QAAI,SAAS,iBAAiB,SAAS,gBAAgB,IAAK,QAAO;AACnE,QAAI,SAAS,iBAAiB,WAAW,SAAS,kBAAkB,EAAG,QAAO;AAAA,EAChF;AACA,MAAI,OAAO,aAAa,aAAa;AACnC,UAAM,OAAO,OAAO,SAAS,YAAY,EAAE;AAC3C,QAAI,mBAAmB,KAAK,IAAI,EAAG,QAAO;AAAA,EAC5C;AACA,SAAO;AACT;",
+  "names": []
+}

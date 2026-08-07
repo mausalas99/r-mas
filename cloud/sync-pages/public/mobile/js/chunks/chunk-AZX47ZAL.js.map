@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../features/cloud-sync/push-mutation-id.mjs"],
-  "sourcesContent": ["/**\n * Worker dedupes by (room_id, client_mutation_id) forever. Local outbox coalesces on the\n * bare `clientMutationId` (last enqueue wins); the wire id must include `enqueuedAt` so\n * re-edits of clinicalOps / todos / agenda / census actually commit a new mutation.\n *\n * @param {{ clientMutationId?: string, enqueuedAt?: number }} entry\n */\nexport function resolveCloudPushMutationId(entry) {\n  const base = String(entry?.clientMutationId || '').trim();\n  const stamp = Number(entry?.enqueuedAt) || Date.now();\n  if (!base) return `cloud-push:${stamp}`;\n  return `${base}:${stamp}`;\n}\n"],
-  "mappings": ";AAOO,SAAS,2BAA2B,OAAO;AAChD,QAAM,OAAO,OAAO,OAAO,oBAAoB,EAAE,EAAE,KAAK;AACxD,QAAM,QAAQ,OAAO,OAAO,UAAU,KAAK,KAAK,IAAI;AACpD,MAAI,CAAC,KAAM,QAAO,cAAc,KAAK;AACrC,SAAO,GAAG,IAAI,IAAI,KAAK;AACzB;",
-  "names": []
-}

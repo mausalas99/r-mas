@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../boot/boot-steps.mjs"],
-  "sourcesContent": ["/**\n * @param {Array<{ id: string, run: (ctx: object) => Promise<void> }>} steps\n * @param {object} ctx\n */\nexport async function runBootSteps(steps, ctx) {\n  for (const step of steps) {\n    try {\n      await step.run(ctx);\n    } catch (err) {\n      console.error('[boot]', step.id, err);\n      throw err;\n    }\n  }\n}\n"],
-  "mappings": ";AAIA,eAAsB,aAAa,OAAO,KAAK;AAC7C,aAAW,QAAQ,OAAO;AACxB,QAAI;AACF,YAAM,KAAK,IAAI,GAAG;AAAA,IACpB,SAAS,KAAK;AACZ,cAAQ,MAAM,UAAU,KAAK,IAAI,GAAG;AACpC,YAAM;AAAA,IACR;AAAA,EACF;AACF;",
-  "names": []
-}

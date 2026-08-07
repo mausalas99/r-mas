@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../mobile-lan-boot.mjs"],
-  "sourcesContent": ["/**\n * Mobile PWA: defer LAN join/sync until after first paint (bundle + sync no longer block UI).\n */\nimport { isMobileWeb } from './mobile-web.mjs';\n\n/** @param {() => void | Promise<void>} fn */\nexport function scheduleMobileLanWork(fn) {\n  if (!isMobileWeb()) {\n    void Promise.resolve().then(fn);\n    return;\n  }\n  const run = () => {\n    try {\n      void Promise.resolve(fn());\n    } catch (e) {\n      console.warn('[R+] mobile LAN boot:', e && e.message);\n    }\n  };\n  if (typeof requestAnimationFrame === 'function') {\n    requestAnimationFrame(() => {\n      if (typeof requestIdleCallback === 'function') {\n        requestIdleCallback(run, { timeout: 800 });\n      } else {\n        setTimeout(run, 50);\n      }\n    });\n  } else {\n    setTimeout(run, 50);\n  }\n}\n"],
-  "mappings": ";;;;;;;;;;;AAMO,SAAS,sBAAsB,IAAI;AACxC,MAAI,CAAC,YAAY,GAAG;AAClB,SAAK,QAAQ,QAAQ,EAAE,KAAK,EAAE;AAC9B;AAAA,EACF;AACA,QAAM,MAAM,MAAM;AAChB,QAAI;AACF,WAAK,QAAQ,QAAQ,GAAG,CAAC;AAAA,IAC3B,SAAS,GAAG;AACV,cAAQ,KAAK,yBAAyB,KAAK,EAAE,OAAO;AAAA,IACtD;AAAA,EACF;AACA,MAAI,OAAO,0BAA0B,YAAY;AAC/C,0BAAsB,MAAM;AAC1B,UAAI,OAAO,wBAAwB,YAAY;AAC7C,4BAAoB,KAAK,EAAE,SAAS,IAAI,CAAC;AAAA,MAC3C,OAAO;AACL,mBAAW,KAAK,EAAE;AAAA,MACpB;AAAA,IACF,CAAC;AAAA,EACH,OAAO;AACL,eAAW,KAAK,EAAE;AAAA,EACpB;AACF;",
-  "names": []
-}

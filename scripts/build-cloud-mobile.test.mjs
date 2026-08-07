@@ -1,6 +1,29 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { rewriteJsAssetPaths, buildMobileIndexHtml } from './build-cloud-mobile.mjs';
+import {
+  rewriteJsAssetPaths,
+  buildMobileIndexHtml,
+  isCloudMobileLanStripTarget,
+  createCloudMobileLanStripPlugin,
+} from './build-cloud-mobile.mjs';
+
+describe('isCloudMobileLanStripTarget', () => {
+  it('flags retired LAN modules and features/lan paths', () => {
+    assert.equal(isCloudMobileLanStripTarget('public/js/mobile-sharer-sync.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/live-sync-membership.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/features/cloud-sync/detach-lan-for-nube.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/features/lan/panel.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/features/patients.mjs'), false);
+  });
+});
+
+describe('createCloudMobileLanStripPlugin', () => {
+  it('exports an esbuild plugin with setup', () => {
+    const plugin = createCloudMobileLanStripPlugin();
+    assert.equal(plugin.name, 'cloud-mobile-strip-lan');
+    assert.equal(typeof plugin.setup, 'function');
+  });
+});
 
 describe('rewriteJsAssetPaths', () => {
   it('prefixes absolute /js/ imports with /mobile', () => {

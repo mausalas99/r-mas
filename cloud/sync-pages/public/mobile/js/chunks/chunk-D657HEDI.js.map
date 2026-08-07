@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../app-shell-lazy-panels.mjs"],
-  "sourcesContent": ["/** Lazy dynamic-import wrappers for shell sidebar panels. */\n\nfunction importLazyRoutes() {\n  return import('./lazy-feature-routes.mjs');\n}\n\nexport function shellCloseSettingsDropdown() {\n  void importLazyRoutes().then(function (routes) {\n    routes.shellCloseSettingsDropdown();\n  });\n}\n\nexport function shellToggleSettingsDropdown() {\n  void importLazyRoutes().then(function (routes) {\n    routes.shellToggleSettingsDropdown();\n  });\n}\n\nexport function shellSyncTeamSyncHeaderButton() {\n  void importLazyRoutes().then(function (routes) {\n    routes.shellSyncTeamSyncHeaderButton();\n  });\n}\n\nexport function openCommandPaletteFromShell() {\n  void import('./features/command-palette.mjs').then(function (mod) {\n    mod.openCommandPalette();\n  });\n}\n"],
-  "mappings": ";AAEA,SAAS,mBAAmB;AAC1B,SAAO,OAAO,4CAA2B;AAC3C;AAEO,SAAS,6BAA6B;AAC3C,OAAK,iBAAiB,EAAE,KAAK,SAAU,QAAQ;AAC7C,WAAO,2BAA2B;AAAA,EACpC,CAAC;AACH;AAEO,SAAS,8BAA8B;AAC5C,OAAK,iBAAiB,EAAE,KAAK,SAAU,QAAQ;AAC7C,WAAO,4BAA4B;AAAA,EACrC,CAAC;AACH;AAEO,SAAS,gCAAgC;AAC9C,OAAK,iBAAiB,EAAE,KAAK,SAAU,QAAQ;AAC7C,WAAO,8BAA8B;AAAA,EACvC,CAAC;AACH;AAEO,SAAS,8BAA8B;AAC5C,OAAK,OAAO,wCAAgC,EAAE,KAAK,SAAU,KAAK;AAChE,QAAI,mBAAmB;AAAA,EACzB,CAAC;AACH;",
-  "names": []
-}

@@ -1,14 +1,4 @@
 import {
-  productivityWindowHandlers,
-  pushUndoSnapshot,
-  registerProductivityRuntime
-} from "/mobile/js/chunks/chunk-LLY7QXGN.js";
-import {
-  registerProcedureAgendaRuntime,
-  renderProcedureAgendaPanel,
-  windowHandlers as windowHandlers10
-} from "/mobile/js/chunks/chunk-H35BPW6Y.js";
-import {
   appShellWindowHandlers,
   initModalDismiss,
   registerAppShellContext,
@@ -18,19 +8,26 @@ import {
   setMedTabAttention,
   showToast,
   syncWorkContextChrome
-} from "/mobile/js/chunks/chunk-4TPL47I2.js";
+} from "/mobile/js/chunks/chunk-465GYP45.js";
+import {
+  productivityWindowHandlers,
+  pushUndoSnapshot,
+  registerProductivityRuntime
+} from "/mobile/js/chunks/chunk-4QHM6CMQ.js";
+import {
+  registerProcedureAgendaRuntime,
+  renderProcedureAgendaPanel,
+  windowHandlers as windowHandlers11
+} from "/mobile/js/chunks/chunk-SSHUIWAL.js";
 import {
   recoverPresentationPatientsOnBoot
-} from "/mobile/js/chunks/chunk-2BQQIIYJ.js";
+} from "/mobile/js/chunks/chunk-PVAZGKSG.js";
 import {
-  AHF_RELATIVES,
-  APP_DEDICATED_IDS,
-  HC_INTERROGADO_NEGADO,
   advanceRondaPatient,
   applyDefaultsToNewIndicaciones,
   applyDefaultsToNewPatient,
-  applyDriveImportHcPatch,
   applyDriveImportLabSets,
+  applyEstadoActualParsedToForm,
   attachProfileSettingsGetter,
   buildBulkLabPreview,
   buildCultivoOutputHtmlFragments,
@@ -39,6 +36,7 @@ import {
   closeProfileModal,
   dayKeyFromLabSet,
   ensureActivePatientInSidebarScope,
+  ensureEaRegistroModalForm,
   ensureParsedLabHistory,
   ensureParsedLabHistoryCached,
   filterPatientsForGuardiaCensus,
@@ -60,7 +58,7 @@ import {
   labSetIsFromSome,
   loadSettings,
   medicationsWindowHandlers,
-  mergeHcPatch,
+  navigateToEstadoActualPanel,
   openAddModal,
   openAddModalFromLabPatient,
   openEstadoActualRegistroModal,
@@ -76,7 +74,6 @@ import {
   registerEstadoActualPasteModalRuntime,
   registerEstadoActualRegistroModalRuntime,
   registerExpedienteRuntime,
-  registerHistoriaClinicaRuntime,
   registerLabBulkPreviewModalRuntime,
   registerLabHistoryMaintRuntime,
   registerMedPharmProfileRuntime,
@@ -89,6 +86,7 @@ import {
   registerVpoRuntime,
   removeAtbRisPanelsFromBody,
   renderDiagramas,
+  renderEstadoActualPanel,
   renderIndicaForm,
   renderInnerTabs,
   renderListadoForm,
@@ -101,7 +99,7 @@ import {
   renderRoundOverviewPanels,
   renderVpo,
   requestDocumentJson,
-  scheduleLabHistoryPostSaveMaintenance,
+  resetEaRegistroForm,
   scrollActiveRondaCardIntoView,
   selectPatient,
   setRoundOverviewMode,
@@ -109,32 +107,33 @@ import {
   switchAppTab,
   switchConsolidatedTab,
   switchInnerTab,
-  syncAhfConditionsFromEntries,
   syncCensoExportButtonVisibility,
+  syncEaRegistroGluMode,
   syncInnerTabVisualOnly,
   syncLabDiagramsCollapseUI,
   syncMainAppTabA11y,
   syncProfileSectionVisibility,
   todosWindowHandlers,
   toggleLabDiagramsSection,
-  toxicomanias_substances_default,
   windowHandlers,
-  windowHandlers2 as windowHandlers4,
-  windowHandlers3 as windowHandlers5,
-  windowHandlers4 as windowHandlers7,
-  windowHandlers6 as windowHandlers8,
-  windowHandlers7 as windowHandlers11,
+  windowHandlers2 as windowHandlers6,
+  windowHandlers3 as windowHandlers7,
+  windowHandlers4 as windowHandlers8,
+  windowHandlers5 as windowHandlers9,
+  windowHandlers7 as windowHandlers10,
   windowHandlers8 as windowHandlers12,
+  windowHandlers9 as windowHandlers13,
   wireAtbRisHoverPanels,
   wireEaModalDismiss,
   wireEstadoActualPasteModal
-} from "/mobile/js/chunks/chunk-HSBDH6IY.js";
-import "/mobile/js/chunks/chunk-Y6KHZ5QO.js";
-import "/mobile/js/chunks/chunk-EXQXE6TB.js";
+} from "/mobile/js/chunks/chunk-R2GBRWQ3.js";
 import {
-  windowHandlers as windowHandlers9
-} from "/mobile/js/chunks/chunk-BUYTZU7E.js";
-import "/mobile/js/chunks/chunk-UMBBYMHN.js";
+  buildParsedBySectionFromResLabs,
+  extractParsedValues
+} from "/mobile/js/chunks/chunk-WPXKJVD2.js";
+import {
+  registerEstadoActualPanelRuntime
+} from "/mobile/js/chunks/chunk-C6U3A3QO.js";
 import {
   bindLazyChartsRuntimeCtx,
   bindLazyEaVitalHistoryRuntimeCtx,
@@ -154,112 +153,112 @@ import {
   registerLazyFeatureRuntimes,
   settingsHelpRuntimeProxies,
   settingsHelpWindowHandlersLazy
-} from "/mobile/js/chunks/chunk-AXF24LY6.js";
+} from "/mobile/js/chunks/chunk-CYVNWXHE.js";
+import "/mobile/js/chunks/chunk-EMCMETSD.js";
+import "/mobile/js/chunks/chunk-F3XP3RDZ.js";
+import "/mobile/js/chunks/chunk-KBCDDKJZ.js";
+import "/mobile/js/chunks/chunk-5C7JYUSB.js";
+import {
+  windowHandlers as windowHandlers5
+} from "/mobile/js/chunks/chunk-4FVV5X45.js";
+import "/mobile/js/chunks/chunk-6KV6OYKI.js";
+import "/mobile/js/chunks/chunk-UQ6RG7U2.js";
+import "/mobile/js/chunks/chunk-2JKGABV2.js";
+import "/mobile/js/chunks/chunk-WSJX2ILZ.js";
+import {
+  syncClinicalRotationEntryChrome,
+  windowHandlers as windowHandlers3,
+  wireClinicalRotationEntryControls
+} from "/mobile/js/chunks/chunk-FV54XRK2.js";
+import "/mobile/js/chunks/chunk-GLHG6K2U.js";
+import "/mobile/js/chunks/chunk-J6VINJP7.js";
+import "/mobile/js/chunks/chunk-QIUON47E.js";
+import "/mobile/js/chunks/chunk-S2GJRSU7.js";
+import "/mobile/js/chunks/chunk-UPP7BGNG.js";
+import "/mobile/js/chunks/chunk-4YXLG5F2.js";
+import {
+  syncSettingsLanHostDiskSection,
+  windowHandlers as windowHandlers4
+} from "/mobile/js/chunks/chunk-ZMCDERYV.js";
+import "/mobile/js/chunks/chunk-OXN2ZL25.js";
+import "/mobile/js/chunks/chunk-GNLW4YFR.js";
+import "/mobile/js/chunks/chunk-FGKC3QPA.js";
+import "/mobile/js/chunks/chunk-AIC37VNN.js";
+import "/mobile/js/chunks/chunk-W5HGKDOD.js";
 import {
   refreshAllTodoUIs,
   refreshTodoUIsForPatient,
   refreshTodoUIsForPatients,
   registerTodosRuntime,
   renderTodoForm
-} from "/mobile/js/chunks/chunk-NVXM3K7E.js";
-import "/mobile/js/chunks/chunk-IONZ2ZFS.js";
-import "/mobile/js/chunks/chunk-KZBMNVUA.js";
+} from "/mobile/js/chunks/chunk-GSMC2OHE.js";
+import "/mobile/js/chunks/chunk-S3TI3OAS.js";
+import "/mobile/js/chunks/chunk-CE75LS7G.js";
+import {
+  configureLanPatientEntries
+} from "/mobile/js/chunks/chunk-S6K5O6BP.js";
+import "/mobile/js/chunks/chunk-TBKNEONY.js";
+import "/mobile/js/chunks/chunk-OXMUDSQA.js";
 import {
   buildPatientEntry,
   ensureUniquePatientName,
   findPatientByRegistro,
   generatePatientId
-} from "/mobile/js/chunks/chunk-WNJT3PNR.js";
-import "/mobile/js/chunks/chunk-FBI436HW.js";
-import "/mobile/js/chunks/chunk-TW7GVT5U.js";
-import "/mobile/js/chunks/chunk-6IT4VYWH.js";
-import {
-  syncClinicalRotationEntryChrome,
-  windowHandlers as windowHandlers6,
-  wireClinicalRotationEntryControls
-} from "/mobile/js/chunks/chunk-N3H2EHWS.js";
-import "/mobile/js/chunks/chunk-ITC7OJUI.js";
-import "/mobile/js/chunks/chunk-GT3REIK5.js";
-import "/mobile/js/chunks/chunk-HHLKYVQY.js";
-import "/mobile/js/chunks/chunk-RL7MVLBF.js";
-import "/mobile/js/chunks/chunk-GUZBLPYB.js";
-import "/mobile/js/chunks/chunk-DIIIXM6H.js";
-import "/mobile/js/chunks/chunk-OPIWDF7L.js";
-import "/mobile/js/chunks/chunk-MJCSL5KX.js";
-import "/mobile/js/chunks/chunk-ZOXS3A7B.js";
-import "/mobile/js/chunks/chunk-IQKLEOVL.js";
-import "/mobile/js/chunks/chunk-THLT5GTC.js";
-import "/mobile/js/chunks/chunk-ITBFMRPF.js";
-import "/mobile/js/chunks/chunk-ENORL5J4.js";
-import "/mobile/js/chunks/chunk-AZX47ZAL.js";
-import "/mobile/js/chunks/chunk-LSPMPOB5.js";
-import {
-  ahf_conditions_default,
-  app_conditions_default
-} from "/mobile/js/chunks/chunk-SUICQP7V.js";
-import "/mobile/js/chunks/chunk-L4O3KENZ.js";
-import "/mobile/js/chunks/chunk-CZZUZK6P.js";
-import "/mobile/js/chunks/chunk-7R6RY2VN.js";
+} from "/mobile/js/chunks/chunk-BP4QC5UJ.js";
+import "/mobile/js/chunks/chunk-2ZXFDPTM.js";
+import "/mobile/js/chunks/chunk-YSBJHYC4.js";
+import "/mobile/js/chunks/chunk-3ETJLEUF.js";
+import "/mobile/js/chunks/chunk-ZQ44CCKF.js";
+import "/mobile/js/chunks/chunk-JYYMJKCB.js";
+import "/mobile/js/chunks/chunk-VL5J4B3E.js";
+import "/mobile/js/chunks/chunk-6OGC4PQJ.js";
 import {
   applyDriveImportEventualidades,
-  applyEstadoActualParsedToForm,
   copyToClipboardSafe,
-  emitLiveSyncTodoUpsert,
-  ensureEaRegistroModalForm,
   initClinicalAccessRuntime,
-  initRpcDatePicker,
   invalidateEventualidadesPanel,
-  navigateToEstadoActualPanel,
-  registerLanRuntime,
-  registerLanSaveHooks,
   registerSoapEstadoRuntime,
   renderEstadoActualBar,
   renderEstadoActualButton,
-  renderEstadoActualPanel,
   renderEventualidadesPanel,
   renderGuardiaBoard,
-  resetEaRegistroForm,
   resumeClinicalSession,
-  scheduleLiveSyncPush,
   splitResLabsByTipo,
-  syncEaRegistroGluMode,
   syncGuardiaModeButtonVisibility,
-  syncSettingsLanHostDiskSection,
   tryMountClinicalTeamInviteBrowserGate,
   windowHandlers as windowHandlers2,
-  windowHandlers2 as windowHandlers3,
-  windowHandlers3 as windowHandlers13,
   wireClinicalTeamsControls
-} from "/mobile/js/chunks/chunk-V7RKRU36.js";
+} from "/mobile/js/chunks/chunk-QQOJTZU6.js";
+import "/mobile/js/chunks/chunk-N74FWNUD.js";
+import "/mobile/js/chunks/chunk-PAAJVTB4.js";
+import "/mobile/js/chunks/chunk-AKP3FGXS.js";
+import {
+  isMobileWeb
+} from "/mobile/js/chunks/chunk-WD3AJTQB.js";
 import {
   dbUnlockWindowHandlers,
   describeClinicalDbBootFailure,
   ensureClinicalDbUnlocked
-} from "/mobile/js/chunks/chunk-I7TKUVLA.js";
-import "/mobile/js/chunks/chunk-OZWIHN57.js";
-import "/mobile/js/chunks/chunk-6RH7YMAM.js";
-import "/mobile/js/chunks/chunk-RI6AP5AE.js";
-import "/mobile/js/chunks/chunk-WWZFTPFJ.js";
+} from "/mobile/js/chunks/chunk-LTZPVWLE.js";
+import "/mobile/js/chunks/chunk-4NDVAGJX.js";
+import "/mobile/js/chunks/chunk-PEG2E4FB.js";
+import "/mobile/js/chunks/chunk-SFXEUBWR.js";
 import {
-  buildParsedBySectionFromResLabs,
-  extractParsedValues
-} from "/mobile/js/chunks/chunk-L2AHBXEQ.js";
+  initRpcDatePicker
+} from "/mobile/js/chunks/chunk-IVOJHSUB.js";
+import {
+  enqueueCloudTodoUpsert,
+  scheduleCloudSyncPush
+} from "/mobile/js/chunks/chunk-GTJXSHII.js";
 import {
   initChromeAppearance,
   launchConfetti,
   registerChromeRuntime,
   windowHandlers as windowHandlers14
-} from "/mobile/js/chunks/chunk-YAV7LD7W.js";
-import "/mobile/js/chunks/chunk-FQRMD6ZB.js";
+} from "/mobile/js/chunks/chunk-KPMBH6IG.js";
 import {
   migrateToV3
-} from "/mobile/js/chunks/chunk-AUDHCP7J.js";
-import "/mobile/js/chunks/chunk-NCZWUFAX.js";
-import "/mobile/js/chunks/chunk-MI3IWYVD.js";
-import "/mobile/js/chunks/chunk-VN3HHLWO.js";
-import {
-  registerEstadoActualPanelRuntime
-} from "/mobile/js/chunks/chunk-DVAK5LQO.js";
+} from "/mobile/js/chunks/chunk-BURG7PNJ.js";
 import {
   bootHydrateFromDb,
   clearWebSessionClinicalMemory,
@@ -273,62 +272,38 @@ import {
   saveState,
   setSaveStateHooks,
   sortLabHistoryChronological
-} from "/mobile/js/chunks/chunk-NFDNC4E2.js";
-import "/mobile/js/chunks/chunk-GHZK4QF3.js";
+} from "/mobile/js/chunks/chunk-LUBBZBEB.js";
 import {
   getDefaultRegistroRecordedAt,
   toDatetimeLocalValue
-} from "/mobile/js/chunks/chunk-KHHZMCJO.js";
+} from "/mobile/js/chunks/chunk-URXNXYS2.js";
 import {
   esc,
   escapeHtml
-} from "/mobile/js/chunks/chunk-NIMNG7BY.js";
-import "/mobile/js/chunks/chunk-LE7F4H7F.js";
-import "/mobile/js/chunks/chunk-FHXLE36S.js";
-import "/mobile/js/chunks/chunk-DYX4ICUP.js";
-import {
-  isMobileWeb
-} from "/mobile/js/chunks/chunk-IVC2VWFL.js";
-import "/mobile/js/chunks/chunk-IP6FUZQW.js";
-import "/mobile/js/chunks/chunk-7V3KAWVG.js";
-import "/mobile/js/chunks/chunk-VQEQYC4S.js";
-import "/mobile/js/chunks/chunk-H45VYIPQ.js";
-import "/mobile/js/chunks/chunk-XYU7ZICQ.js";
-import "/mobile/js/chunks/chunk-5X65DZ36.js";
-import "/mobile/js/chunks/chunk-A56TUI2P.js";
-import "/mobile/js/chunks/chunk-SI7XDBY4.js";
+} from "/mobile/js/chunks/chunk-64IP3Y67.js";
+import "/mobile/js/chunks/chunk-ZQE77EGT.js";
 import {
   storage
-} from "/mobile/js/chunks/chunk-MWVG4DXC.js";
-import "/mobile/js/chunks/chunk-I4NFL7CB.js";
-import "/mobile/js/chunks/chunk-4NDVAGJX.js";
-import "/mobile/js/chunks/chunk-CR432C3M.js";
-import "/mobile/js/chunks/chunk-4GV7J2JY.js";
-import "/mobile/js/chunks/chunk-TY4AHNM4.js";
-import "/mobile/js/chunks/chunk-WONKP6NU.js";
-import "/mobile/js/chunks/chunk-I4VH6GH2.js";
-import "/mobile/js/chunks/chunk-JSBTNZIE.js";
+} from "/mobile/js/chunks/chunk-RU5G223P.js";
+import "/mobile/js/chunks/chunk-CO6ZSBF2.js";
+import "/mobile/js/chunks/chunk-T4WWDITM.js";
+import "/mobile/js/chunks/chunk-QWJHEGH4.js";
+import {
+  resolveClinicalClientId
+} from "/mobile/js/chunks/chunk-7S6BFQ5R.js";
+import "/mobile/js/chunks/chunk-B4Q7USSM.js";
+import "/mobile/js/chunks/chunk-T2MO3KS5.js";
+import "/mobile/js/chunks/chunk-N2POLXHZ.js";
+import "/mobile/js/chunks/chunk-KLMIZH6A.js";
+import "/mobile/js/chunks/chunk-GPBMQXYE.js";
+import "/mobile/js/chunks/chunk-LQTSNMET.js";
+import "/mobile/js/chunks/chunk-MGEK6PHD.js";
 import {
   isDbMode,
   isWebClinicalClient
-} from "/mobile/js/chunks/chunk-IIOGZLID.js";
-import "/mobile/js/chunks/chunk-CYJ7ZDIE.js";
-import "/mobile/js/chunks/chunk-WVOQEB7T.js";
-import "/mobile/js/chunks/chunk-S4JF4KS2.js";
-import "/mobile/js/chunks/chunk-R6TRWWWV.js";
-import "/mobile/js/chunks/chunk-VTSC3E5H.js";
-import "/mobile/js/chunks/chunk-73TLMPZ4.js";
-import "/mobile/js/chunks/chunk-W6RRSTLS.js";
-import {
-  resolveClinicalClientId
-} from "/mobile/js/chunks/chunk-6WZSBH4P.js";
-import "/mobile/js/chunks/chunk-WZAOH7W5.js";
-import "/mobile/js/chunks/chunk-ZWVJD7AP.js";
-import "/mobile/js/chunks/chunk-AETSFPDT.js";
-import "/mobile/js/chunks/chunk-YYAEPGIH.js";
-import "/mobile/js/chunks/chunk-GZVXFENQ.js";
-import "/mobile/js/chunks/chunk-QPJXCZUR.js";
-import "/mobile/js/chunks/chunk-7I2DYQ7W.js";
+} from "/mobile/js/chunks/chunk-GRJDNRYE.js";
+import "/mobile/js/chunks/chunk-PIQOYX4G.js";
+import "/mobile/js/chunks/chunk-FORXNEKH.js";
 
 // public/js/features/lab-history-batch-copy-modal.mjs
 var rt = {
@@ -887,6 +862,26 @@ function mergeHeader(pipe, ficha) {
   };
 }
 
+// lib/drive-import/hc-catalog-constants.mjs
+var APP_DEDICATED_IDS = /* @__PURE__ */ new Set([
+  "cirugias",
+  "transfusiones",
+  "traumaticos",
+  "alergias"
+]);
+var AHF_RELATIVES = [
+  { id: "madre", label: "Madre", group: "padres" },
+  { id: "padre", label: "Padre", group: "padres" },
+  { id: "abuela_paterna", label: "Abuela paterna", group: "abuelos" },
+  { id: "abuelo_paterno", label: "Abuelo paterno", group: "abuelos" },
+  { id: "abuela_materna", label: "Abuela materna", group: "abuelos" },
+  { id: "abuelo_materno", label: "Abuelo materno", group: "abuelos" },
+  { id: "hermano", label: "Hermano", group: "hermanos" },
+  { id: "hermana", label: "Hermana", group: "hermanos" },
+  { id: "hijo", label: "Hijo", group: "hijos" },
+  { id: "hija", label: "Hija", group: "hijos" }
+];
+
 // lib/drive-import/hc-structured-patterns.mjs
 var NEGADO_RE = /^(?:INTERROGADO\s+Y\s+)?NEGAD/i;
 var CONDITION_PATTERNS = {
@@ -981,39 +976,6 @@ function matchCatalogConditions(text, catalog) {
   });
   return hits;
 }
-function parseMedicamentosList(text) {
-  const t = String(text || "").trim();
-  if (!t || isNegatedDriveText(t)) return [];
-  return t.split(/\s*,\s*(?=[A-ZÁÉÍÓÚÑ0-9])/).map(function(chunk) {
-    return chunk.trim();
-  }).filter(Boolean).map(function(med, idx) {
-    return {
-      id: "drv_med_" + idx,
-      medication: med,
-      route: "",
-      dosage: "",
-      frequency: ""
-    };
-  });
-}
-function matchToxicomaniasSubstances(text) {
-  const hay = String(text || "");
-  if (!hay.trim() || isNegatedDriveText(hay)) return [];
-  const hits = [];
-  Object.keys(toxicomanias_substances_default).forEach(function(id) {
-    const label = toxicomanias_substances_default[id];
-    const tokens = String(label).split(/\s*[/(]/).map(function(part) {
-      return part.trim();
-    }).filter(function(part) {
-      return part.length >= 4;
-    });
-    const matched = tokens.some(function(token) {
-      return new RegExp("\\b" + token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(hay);
-    });
-    if (matched) hits.push({ id, label });
-  });
-  return hits;
-}
 var AHF_RELATIVE_LABEL_MAP = Object.fromEntries(
   AHF_RELATIVES.map(function(rel) {
     return [rel.label.toUpperCase(), rel.id];
@@ -1022,42 +984,6 @@ var AHF_RELATIVE_LABEL_MAP = Object.fromEntries(
     ["ABUELO", "abuelo_materno"]
   ])
 );
-function parseAhfRelativeLines(text) {
-  const entries = [];
-  String(text || "").split("\n").forEach(function(raw, lineIdx) {
-    const line = raw.trim();
-    const m = /^([A-ZÁÉÍÓÚÑ\s]+)\s*[:;]\s*(.+)$/i.exec(line);
-    if (!m) return;
-    const label = m[1].trim().toUpperCase();
-    const value = m[2].trim();
-    const relativeId = AHF_RELATIVE_LABEL_MAP[label];
-    if (!relativeId || !value || isNegatedDriveText(value)) return;
-    const vitalStatus = /FINAD|FALLECID|FALLEC/i.test(value) ? "fallecido" : /\bVIV[OA]\b|\bSANO\b/i.test(value) ? "vivo" : "desconocido";
-    const conditions = matchCatalogConditions(value, ahf_conditions_default);
-    if (conditions.length) {
-      conditions.forEach(function(cond) {
-        entries.push({
-          id: "drv_ahf_" + lineIdx + "_" + relativeId + "_" + cond.id,
-          conditionId: cond.id,
-          relativeId,
-          diagnosis: value,
-          treatment: "",
-          vitalStatus
-        });
-      });
-      return;
-    }
-    entries.push({
-      id: "drv_ahf_" + lineIdx + "_" + relativeId + "_otro",
-      conditionId: "otro",
-      relativeId,
-      diagnosis: value,
-      treatment: "",
-      vitalStatus
-    });
-  });
-  return entries;
-}
 function isNegatedSubsectionBody(body) {
   const t = String(body || "").trim();
   if (!t) return true;
@@ -1115,189 +1041,31 @@ function appSubsectionShouldStrip(key, body, suggestions) {
   return false;
 }
 
-// lib/drive-import/hc-structured-build-sections.mjs
-var APP_ENTRY_SPECS = [
-  { subKey: "transfusiones", target: "app.transfusionesEntries", prefix: "Transfusi\xF3n" },
-  { subKey: "hospitalizaciones", target: "app.hospitalizaciones", prefix: "Hospitalizaci\xF3n" },
-  { subKey: "cirugias", target: "app.cirugias", prefix: "Cirug\xEDa" },
-  { subKey: "traumaticos", target: "app.traumaticosEntries", prefix: "Traumatismo" }
-];
-function pushAppConditionSuggestions(suggestions, diseaseText) {
-  matchCatalogConditions(diseaseText, app_conditions_default).forEach(function(cond) {
-    suggestions.push({
-      id: "app_cond_" + cond.id,
-      label: cond.label,
-      target: "app.conditions",
-      include: true,
-      value: cond.id,
-      sourceText: cond.label
-    });
-  });
-}
-function pushMedicamentoSuggestions(suggestions, medText) {
-  parseMedicamentosList(medText).forEach(function(med, idx) {
-    suggestions.push({
-      id: "app_med_" + idx,
-      label: "Medicamento: " + med.medication,
-      target: "app.medicamentosActuales",
-      include: true,
-      value: med,
-      sourceText: med.medication
-    });
-  });
-}
-function pushAlergiaSuggestions(suggestions, alergiasText) {
-  if (!alergiasText) return;
-  if (isNegatedDriveText(alergiasText)) {
-    suggestions.push({
-      id: "app_alergias_negado",
-      label: "Sin alergias medicamentosas conocidas",
-      target: "app.alergiasNegado",
-      include: true,
-      value: true,
-      sourceText: alergiasText
-    });
-    return;
-  }
-  alergiasText.split(/\s*,\s*/).map(function(part) {
-    return part.trim();
-  }).filter(Boolean).forEach(function(med, idx) {
-    suggestions.push({
-      id: "app_alergia_" + idx,
-      label: "Alergia: " + med,
-      target: "app.alergiaMedicamentos",
-      include: true,
-      value: { id: "drv_al_" + idx, medication: med },
-      sourceText: med
-    });
-  });
-}
-function pushInmunizacionSuggestion(suggestions, inmunText) {
-  if (!inmunText || isNegatedDriveText(inmunText)) return;
-  suggestions.push({
-    id: "app_inmunizaciones",
-    label: "Inmunizaciones: " + inmunText.slice(0, 72) + (inmunText.length > 72 ? "\u2026" : ""),
-    target: "app.inmunizaciones",
-    include: true,
-    value: inmunText,
-    sourceText: inmunText
-  });
-}
-function pushAppEntrySuggestions(suggestions, subs) {
-  APP_ENTRY_SPECS.forEach(function(spec) {
-    const body = subs[spec.subKey] || "";
-    if (!body || isNegatedDriveText(body)) return;
-    suggestions.push({
-      id: "app_" + spec.subKey,
-      label: spec.prefix + ": " + body.slice(0, 72) + (body.length > 72 ? "\u2026" : ""),
-      target: spec.target,
-      include: true,
-      value: body,
-      sourceText: body
-    });
-  });
-}
-function buildAppSectionSuggestions(key, text, suggestions) {
-  if (key !== "app" && key !== "ecd" && key !== "medicamentos") return;
-  const subs = parseAppSubsections(text);
-  const diseaseText = [subs.ecd, subs.enfermedades, subs._body, text].filter(Boolean).join("\n");
-  pushAppConditionSuggestions(suggestions, diseaseText);
-  const medText = subs.medicamentos || (key === "medicamentos" ? text : "");
-  pushMedicamentoSuggestions(suggestions, medText);
-  pushAlergiaSuggestions(suggestions, subs.alergias || "");
-  pushInmunizacionSuggestion(suggestions, subs.inmunizaciones || "");
-  pushAppEntrySuggestions(suggestions, subs);
-}
-function buildApnpSectionSuggestions(text, suggestions) {
-  String(text || "").split("\n").forEach(function(raw) {
-    const line = raw.trim();
-    const m = /^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i.exec(line);
-    if (!m) return;
-    const label = m[1].trim().toUpperCase();
-    const value = m[2].trim();
-    if (label === "TABAQUISMO" && isNegatedDriveText(value)) {
-      suggestions.push({
-        id: "apnp_tabaquismo_negado",
-        label: "Tabaquismo negado",
-        target: "apnp.tabaquismoDetail",
-        include: true,
-        value: { status: "negado" },
-        sourceText: value
-      });
-    }
-    if ((label === "ETILISMO" || label === "ALCOHOLISMO") && isNegatedDriveText(value)) {
-      suggestions.push({
-        id: "apnp_alcoholismo_negado",
-        label: "Alcoholismo negado",
-        target: "apnp.alcoholismoDetail",
-        include: true,
-        value: { status: "negado" },
-        sourceText: value
-      });
-    }
-    if (label === "TOXICOMAN\xCDAS" || label === "TOXICOMANIAS") {
-      if (isNegatedDriveText(value)) return;
-      matchToxicomaniasSubstances(value).forEach(function(sub) {
-        suggestions.push({
-          id: "apnp_tox_" + sub.id,
-          label: "Toxicoman\xEDa: " + sub.label,
-          target: "apnp.toxicomaniasEntries",
-          include: true,
-          value: {
-            id: "drv_tox_" + sub.id,
-            substanceId: sub.id,
-            customLabel: "",
-            frequency: "",
-            years: ""
-          },
-          sourceText: sub.label
-        });
-      });
-    }
-  });
-}
-function buildAhfSectionSuggestions(text, suggestions) {
-  parseAhfRelativeLines(text).forEach(function(entry) {
-    const relLabel = (AHF_RELATIVES.find(function(r) {
-      return r.id === entry.relativeId;
-    }) || {}).label || entry.relativeId;
-    suggestions.push({
-      id: entry.id,
-      label: relLabel + ": " + String(entry.diagnosis || "").slice(0, 64),
-      target: "ahf.entries",
-      include: true,
-      value: entry,
-      sourceText: entry.diagnosis
-    });
-  });
-  matchCatalogConditions(text, ahf_conditions_default).forEach(function(cond) {
-    if (suggestions.some(function(s) {
-      return s.target === "ahf.entries" && s.value && s.value.conditionId === cond.id;
-    })) {
-      return;
-    }
-    suggestions.push({
-      id: "ahf_cond_" + cond.id,
-      label: "Antecedente familiar: " + cond.label,
-      target: "ahf.conditions",
-      include: true,
-      value: cond.id,
-      sourceText: cond.label
-    });
-  });
-}
-function appendFallbackSectionSuggestions(key, text, suggestions) {
-  if (key === "ecd" && !suggestions.length) {
-    pushAppConditionSuggestions(suggestions, text);
-  }
-  if (key === "medicamentos" && !suggestions.some(function(s) {
-    return s.target === "app.medicamentosActuales";
-  })) {
-    pushMedicamentoSuggestions(suggestions, text);
-  }
-}
+// lib/drive-import/catalogs/app-conditions.json
+var app_conditions_default = {
+  parotiditis: "Parotiditis",
+  paperas: "Paperas",
+  sarampion: "Sarampi\xF3n",
+  varicela: "Varicela",
+  rubeola: "Rub\xE9ola",
+  tuberculosis: "Tuberculosis",
+  hepatitis: "Hepatitis",
+  vih: "VIH/SIDA",
+  hipertension: "Hipertensi\xF3n arterial",
+  diabetes: "Diabetes mellitus",
+  cardiopatia: "Cardiopat\xEDa",
+  enfermedadRenal: "Enfermedad renal cr\xF3nica",
+  enfermedadPulmonar: "Enfermedad pulmonar cr\xF3nica",
+  cancer: "Neoplasia",
+  transfusiones: "Transfusiones previas",
+  cirugias: "Cirug\xEDas previas",
+  traumaticos: "Antecedentes traum\xE1ticos",
+  alergias: "Alergias medicamentosas",
+  otro: "Otro"
+};
 
 // lib/drive-import/hc-structured-apply-field.mjs
+var HC_INTERROGADO_NEGADO = "Interrogado y negado";
 var PATCH_FIELD_HANDLERS = {
   conditions(block, s) {
     const list = Array.isArray(block.conditions) ? block.conditions.slice() : [];
@@ -1514,14 +1282,14 @@ function stripIntegratedAhfDescription(text, suggestions) {
 }
 
 // lib/drive-import/hc-structured-suggestions.mjs
-function buildHcStructuredSuggestions(sectionKey, text, _sections) {
-  const suggestions = [];
-  const key = String(sectionKey || "");
-  buildAppSectionSuggestions(key, text, suggestions);
-  if (key === "apnp") buildApnpSectionSuggestions(text, suggestions);
-  if (key === "ahf") buildAhfSectionSuggestions(text, suggestions);
-  appendFallbackSectionSuggestions(key, text, suggestions);
-  return suggestions;
+function syncAhfConditionsFromEntries(ahf) {
+  if (!ahf || typeof ahf !== "object") return ahf;
+  const ids = /* @__PURE__ */ new Set();
+  (ahf.entries || []).forEach(function(e) {
+    if (e && e.conditionId) ids.add(e.conditionId);
+  });
+  ahf.conditions = Array.from(ids);
+  return ahf;
 }
 function applyStructuredSuggestionsToHcPatch(hcPatch, suggestions) {
   const accepted = (suggestions || []).filter(function(s) {
@@ -1552,23 +1320,6 @@ function applyStructuredSuggestionsToHcPatch(hcPatch, suggestions) {
     out.ahf = ahf;
   }
   return out;
-}
-var STRUCTURED_SECTION_KEYS = ["app", "apnp", "ahf", "ecd", "medicamentos"];
-function collectStructuredSuggestionsFromDriveSections(sections) {
-  const all = [];
-  STRUCTURED_SECTION_KEYS.forEach(function(key) {
-    const text = String((sections || {})[key] || "").trim();
-    if (!text) return;
-    buildHcStructuredSuggestions(key, text, sections).forEach(function(s) {
-      all.push(s);
-    });
-  });
-  return all;
-}
-function enrichHcPatchWithStructuredSuggestions(hcPatch, sections) {
-  const suggestions = collectStructuredSuggestionsFromDriveSections(sections || {});
-  if (!suggestions.length) return hcPatch || {};
-  return applyStructuredSuggestionsToHcPatch(hcPatch || {}, suggestions);
 }
 
 // lib/drive-import/hc-field-parsers.mjs
@@ -1738,6 +1489,59 @@ function mapHc2(doc) {
     app,
     padecimientoActual: (sections.peea || "").trim()
   };
+}
+
+// lib/drive-import/merge-hc-patch.mjs
+function isEmptyString(v) {
+  return v == null || typeof v === "string" && !String(v).trim();
+}
+function isPlainObject(v) {
+  return v != null && typeof v === "object" && !Array.isArray(v);
+}
+function mergeObjectFill(tgt, src) {
+  const out = Object.assign({}, tgt);
+  for (const [k, v] of Object.entries(src)) {
+    if (v === void 0) continue;
+    if (isPlainObject(v)) {
+      const base = isPlainObject(out[k]) ? (
+        /** @type {Record<string, unknown>} */
+        out[k]
+      ) : {};
+      out[k] = mergeObjectFill(
+        base,
+        /** @type {Record<string, unknown>} */
+        v
+      );
+    } else if (Array.isArray(v)) {
+      if (!Array.isArray(out[k]) || !out[k].length) out[k] = v.slice();
+    } else if (isEmptyString(out[k])) {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+function mergeObjectReplace(tgt, src) {
+  const out = Object.assign({}, tgt);
+  for (const [k, v] of Object.entries(src)) {
+    if (v === void 0) continue;
+    if (isPlainObject(v) && isPlainObject(out[k])) {
+      out[k] = mergeObjectReplace(
+        /** @type {Record<string, unknown>} */
+        out[k],
+        /** @type {Record<string, unknown>} */
+        v
+      );
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+function mergeHcPatch(existing, patch, mode) {
+  const base = Object.assign({}, existing || {});
+  const p = patch || {};
+  if (mode === "replace") return mergeObjectReplace(base, p);
+  return mergeObjectFill(base, p);
 }
 
 // lib/drive-import/map-universal-hc.mjs
@@ -2159,49 +1963,6 @@ var APNP_LABELS = {
   deportesPasatiemposMascotas: "ZOONOSIS",
   dieta: "DIETA / COMBE"
 };
-function labeledObjectToEditText(value, labels) {
-  return Object.entries(value).filter(function(entry) {
-    return entry[1] != null && String(entry[1]).trim();
-  }).map(function(entry) {
-    const label = labels[entry[0]] || entry[0].toUpperCase();
-    return label + ": " + String(entry[1]).trim();
-  }).join("\n");
-}
-function descripcionDetalladaText(value) {
-  return String(
-    /** @type {{ descripcionDetallada?: string }} */
-    value.descripcionDetallada || ""
-  ).trim();
-}
-var TEXT_HC_KEYS = /* @__PURE__ */ new Set(["motivoConsulta", "padecimientoActual", "signosVitalesIngreso"]);
-function hcPatchValueToEditText(key, value) {
-  if (value == null) return "";
-  if (TEXT_HC_KEYS.has(key)) return String(value).trim();
-  if (key === "identificacion" && typeof value === "object" && !Array.isArray(value)) {
-    return labeledObjectToEditText(
-      filterIdentificacionForHcImport(
-        /** @type {Record<string, string>} */
-        value
-      ),
-      IDENT_LABELS
-    );
-  }
-  if ((key === "ahf" || key === "app") && typeof value === "object" && value) {
-    return descripcionDetalladaText(value);
-  }
-  if (key === "apnp" && typeof value === "object" && value) {
-    return labeledObjectToEditText(
-      /** @type {Record<string, string>} */
-      value,
-      APNP_LABELS
-    );
-  }
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
 function parseLabeledLines(block, labelToField) {
   const out = {};
   const reverse = {};
@@ -2496,33 +2257,7 @@ function getReviewBuildOpts(_parsed) {
   };
 }
 
-// lib/drive-import/drive-hc-sections.mjs
-var DRIVE_HC_REVIEW_ORDER = [
-  { sectionKey: "pendientes", label: "Pendientes" },
-  { sectionKey: "historiaClinica", label: "Historia cl\xEDnica" },
-  { sectionKey: "motivoConsulta", label: "Motivo de consulta" },
-  { sectionKey: "signosVitales", label: "Signos vitales de ingreso" },
-  { sectionKey: "ficha", label: "Ficha de identificaci\xF3n" },
-  { sectionKey: "ahf", label: "Antecedentes heredofamiliares" },
-  { sectionKey: "apnp", label: "Antecedentes personales no patol\xF3gicos" },
-  { sectionKey: "app", label: "Antecedentes personales patol\xF3gicos" },
-  { sectionKey: "peea", label: "Padecimiento actual / PEEA" }
-];
-function listDriveHcReviewSections(sections) {
-  const src = sections || {};
-  const out = [];
-  for (const spec of DRIVE_HC_REVIEW_ORDER) {
-    const text = String(src[spec.sectionKey] || "").trim();
-    if (!text) continue;
-    out.push({ sectionKey: spec.sectionKey, label: spec.label, text });
-  }
-  return out;
-}
-
 // lib/drive-import/drive-import-review-build.mjs
-function suggestionsForSection(sectionKey, text) {
-  return buildHcStructuredSuggestions(sectionKey, String(text || "").trim());
-}
 function buildHcReviewSteps(parsed, mode, createNew) {
   const steps = [];
   if (createNew && parsed.header && (parsed.header.nombre || parsed.header.registro)) {
@@ -2534,36 +2269,6 @@ function buildHcReviewSteps(parsed, mode, createNew) {
     });
   }
   if (mode === "eventos") return steps;
-  const driveRows = listDriveHcReviewSections(parsed.driveSections || {});
-  if (driveRows.length) {
-    driveRows.forEach(function(row) {
-      const editText = row.sectionKey === "ficha" ? filterFichaDriveText(row.text) : row.text;
-      steps.push({
-        kind: "hc",
-        driveSectionKey: row.sectionKey,
-        label: row.label,
-        include: true,
-        editText,
-        structuredSuggestions: suggestionsForSection(row.sectionKey, row.text)
-      });
-    });
-    return steps;
-  }
-  Object.keys(parsed.hcPatch || {}).filter(function(key) {
-    return !String(key).startsWith("_");
-  }).forEach(function(key) {
-    const value = parsed.hcPatch[key];
-    if (value == null) return;
-    steps.push({
-      kind: "hc",
-      key,
-      label: HC_SECTION_LABELS[key] || key,
-      include: true,
-      editText: hcPatchValueToEditText(key, value),
-      originalValue: value,
-      structuredSuggestions: suggestionsForSection(key, hcPatchValueToEditText(key, value))
-    });
-  });
   return steps;
 }
 function buildEventosReviewStep(parsed, existingEventualidades) {
@@ -3161,13 +2866,6 @@ function createPatientFromDriveHeader(header) {
   selectPatient(id);
   return patient;
 }
-async function applyDriveHcPatchIfNeeded(patient, parsed, mode, options) {
-  if (mode === "eventos") return { ok: true, lanDeferred: false };
-  const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
-    fromReview: !!options.fromReview
-  });
-  return { ok: hcRes.ok, lanDeferred: !!hcRes.lanDeferred };
-}
 async function applyDriveEventualidadesSection(patient, parsed) {
   const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
   invalidateEventualidadesPanel();
@@ -3183,10 +2881,7 @@ async function applyDriveLabSetsIfAny(patient, parsed) {
   return applyDriveImportLabSets(patient, labSets);
 }
 function resolveDriveImportNavigateTo(mode, parsed, labRes) {
-  const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function(k) {
-    return !String(k).startsWith("_");
-  });
-  let navigateTo = mode === "eventos" || !hcKeys.length ? "eventualidades" : "historia";
+  let navigateTo = mode === "eventos" ? "eventualidades" : "estadoActual";
   if (labRes.added && navigateTo === "eventualidades" && mode === "eventos") {
     navigateTo = "lab";
   }
@@ -3202,9 +2897,6 @@ async function applyDriveImportInner(parsed, options) {
   if (!patient) {
     return { ok: false, error: "no-patient" };
   }
-  const hcRes = await applyDriveHcPatchIfNeeded(patient, parsed, mode, options);
-  if (hcRes.lanDeferred) lanSyncDeferred = true;
-  if (!hcRes.ok) return { ok: false, error: "hc-conflict" };
   const evRes = await applyDriveEventualidadesSection(patient, parsed);
   if (evRes.lanDeferred) lanSyncDeferred = true;
   const labRes = await applyDriveLabSetsIfAny(patient, parsed);
@@ -3230,31 +2922,17 @@ function confirmRegistroMismatch(parsed, patient) {
     "El registro del documento (" + parsed.header.registro + ") no coincide con " + patient.registro + ". \xBFContinuar de todos modos?"
   );
 }
-function confirmReplaceMode(fromReview, mode) {
-  if (fromReview || mode !== "replace") return true;
-  return confirmDriveImportChoice(
-    "Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?"
-  );
-}
 function confirmCreateWithoutName(createNew, parsed) {
   if (!createNew || parsed.header && parsed.header.nombre) return true;
   return confirmDriveImportChoice("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?");
 }
 async function confirmImportGuards(parsed, opts) {
   const rt4 = getDriveImportRuntime();
-  const mode = getApplyMode();
   const patient = rt4.getActivePatient();
   const createNew = !patient;
   if (!confirmRegistroMismatch(parsed, patient)) return false;
-  if (!confirmReplaceMode(!!opts.fromReview, mode)) return false;
   if (!confirmCreateWithoutName(createNew, parsed)) return false;
   return true;
-}
-function enrichParsedForFastImport(parsed, fromReview) {
-  if (fromReview) return parsed;
-  return Object.assign({}, parsed, {
-    hcPatch: enrichHcPatchWithStructuredSuggestions(parsed.hcPatch || {}, parsed.driveSections || {})
-  });
 }
 function pluralSuffix(count, singular, plural) {
   return count === 1 ? singular : plural;
@@ -3284,9 +2962,8 @@ function buildLabParts(result) {
   }
   return parts;
 }
-function buildImportSuccessParts(result, mode) {
+function buildImportSuccessParts(result) {
   const parts = [];
-  if (mode !== "eventos") parts.push("HC actualizada");
   parts.push(...buildEventualidadParts(result));
   parts.push(...buildLabParts(result));
   if (result.lanSyncDeferred) {
@@ -3302,7 +2979,7 @@ function navigateAfterSuccessfulImport(result) {
   }
   if (typeof rt4.switchAppTab === "function") rt4.switchAppTab("clinico");
   if (typeof rt4.switchInnerTab === "function") {
-    rt4.switchInnerTab(result.navigateTo || "historia", { forceRender: true });
+    rt4.switchInnerTab(result.navigateTo || "estadoActual", { forceRender: true });
   }
 }
 function recordImportAudit(result, mode, createNew, fromReview) {
@@ -3332,7 +3009,6 @@ async function runDriveImport(parsed, opts) {
   if (typeof rt4.pushUndoSnapshot === "function") {
     rt4.pushUndoSnapshot("Importar desde Drive");
   }
-  parsed = enrichParsedForFastImport(parsed, !!opts.fromReview);
   const result = await applyDriveImport(parsed, {
     mode,
     activePatient: patient,
@@ -3340,16 +3016,12 @@ async function runDriveImport(parsed, opts) {
     fromReview: !!opts.fromReview
   });
   if (!result.ok) {
-    if (result.error === "hc-conflict") {
-      rt4.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.", "error");
-    } else {
-      rt4.showToast("No se pudo aplicar la importaci\xF3n", "error");
-    }
+    rt4.showToast("No se pudo aplicar la importaci\xF3n", "error");
     return;
   }
   recordImportAudit(result, mode, createNew, !!opts.fromReview);
   closeDriveImportModal();
-  rt4.showToast(buildImportSuccessParts(result, mode).join(" \xB7 "), "success");
+  rt4.showToast(buildImportSuccessParts(result).join(" \xB7 "), "success");
   navigateAfterSuccessfulImport(result);
 }
 async function finishReviewAndImport(deps) {
@@ -3676,7 +3348,7 @@ function buildRuntimeContextUiDeps() {
     buildLabSetDateLine,
     getRoundOverviewMode,
     saveState,
-    emitLiveSyncTodoUpsert,
+    emitLiveSyncTodoUpsert: enqueueCloudTodoUpsert,
     requestDocumentJson,
     handleDocumentGenerateResponse,
     guardMobileDocExport,
@@ -3761,7 +3433,7 @@ function buildRuntimeContextFeatureDeps() {
     buildPatientEntry,
     onMedicionRegistered: function() {
       settingsHelpRuntimeProxies.guidedTourAdvanceAfter("estado_actual_registro");
-      scheduleLiveSyncPush();
+      scheduleCloudSyncPush();
     },
     launchConfetti,
     renderEstadoActualBar
@@ -3789,9 +3461,8 @@ async function registerAllFeatureRuntimes() {
   await registerLazyFeatureRuntimes(ctx);
   registerLabHistoryMaintRuntime(ctx);
   installLabHistoryAuditHook();
-  registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerTodosRuntime(ctx);
-  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-L3SDIKF2.js");
+  const reminderScheduler = await import("/mobile/js/chunks/todos-reminder-scheduler-2YVXZGAR.js");
   reminderScheduler.configureTodoReminderScheduler({
     getPatientLabel: function(pid) {
       var p = patients.find(function(row) {
@@ -3817,7 +3488,6 @@ async function registerAllFeatureRuntimes() {
       }
     })
   );
-  registerHistoriaClinicaRuntime(ctx);
   registerEventualidadesRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);
@@ -3830,7 +3500,18 @@ async function registerAllFeatureRuntimes() {
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
-  registerLanRuntime(ctx);
+  configureLanPatientEntries({
+    runtime: ctx,
+    renderPatientListLanSilent: function() {
+      if (typeof ctx.renderPatientList === "function") ctx.renderPatientList();
+    }
+  });
+  void import("/mobile/js/chunks/cloud-mobile-lan-strip-E46D6SPO.js").then((mod) => {
+    mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
+  });
+  void import("/mobile/js/chunks/equipos-cloud-config-C4YK5RNS.js").then((mod) => {
+    mod.runEquiposCloudBootIfNeeded();
+  });
 }
 function runInitialFeatureBoot() {
   initChromeAppearance();
@@ -3842,11 +3523,11 @@ function runInitialFeatureBoot() {
 
 // public/js/app.js
 if (typeof globalThis !== "undefined" && globalThis.__RPC_CLOUD_MOBILE__) {
-  void import("/mobile/js/chunks/boot-AMIS6KN4.js").then(function(mod) {
+  void import("/mobile/js/chunks/boot-UIWS6DYL.js").then(function(mod) {
     return mod.initCloudMobileBoot();
   });
 }
-void import("/mobile/js/chunks/perf-markers-KDSASFOQ.js").then(function(perf) {
+void import("/mobile/js/chunks/perf-markers-YJ2GH5P6.js").then(function(perf) {
   perf.perfMark("app-boot-start");
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(function() {
@@ -3864,32 +3545,32 @@ var allWindowHandlers = Object.assign(
   {},
   dbUnlockWindowHandlers,
   windowHandlers14,
+  windowHandlers4,
   windowHandlers13,
-  windowHandlers12,
   labPanelWindowHandlersLazy,
-  windowHandlers7,
+  windowHandlers9,
   windowHandlers15,
   windowHandlers2,
-  windowHandlers3,
-  windowHandlers4,
+  windowHandlers6,
+  windowHandlers7,
   windowHandlers16,
-  windowHandlers5,
+  windowHandlers8,
   eaVitalHistoryWindowHandlersLazy,
   chartsWindowHandlersLazy,
-  windowHandlers10,
   windowHandlers11,
+  windowHandlers12,
   windowHandlers,
   productivityWindowHandlers,
   settingsHelpWindowHandlersLazy,
   platformWindowHandlersLazy,
   todosWindowHandlers,
   recetaHuWindowHandlers,
-  windowHandlers8,
+  windowHandlers10,
   commandPaletteWindowHandlersLazy,
   medicationsWindowHandlers,
   profileWindowHandlers,
-  windowHandlers9,
-  windowHandlers6,
+  windowHandlers5,
+  windowHandlers3,
   clinicalSyncModeSettingsHandlersLazy,
   appShellWindowHandlers,
   {
@@ -3911,7 +3592,7 @@ var appStateReady = (async function loadClinicalStateOnBoot() {
   }
   if (isWebClinicalClient()) {
     try {
-      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-HI7TVIUR.js");
+      const { wipeSessionClinicalStorage } = await import("/mobile/js/chunks/session-clinical-wipe-KHSEOLIU.js");
       wipeSessionClinicalStorage({ includeLanSession: false });
     } catch (_wipeBoot) {
       void _wipeBoot;
@@ -3925,7 +3606,7 @@ async function loadClinicalStateFromDb() {
   if (unlockResult && unlockResult.unlocked) {
     await bootHydrateFromDb();
     try {
-      const { flushPendingClinicalOpsLanSnapshot } = await import("/mobile/js/chunks/clinical-ops-lan-FIUHSYPD.js");
+      const { flushPendingClinicalOpsLanSnapshot } = await import("/mobile/js/chunks/clinical-ops-lan-TZ4PXVEU.js");
       const flushed = await flushPendingClinicalOpsLanSnapshot();
       if (flushed.changed && typeof document !== "undefined") {
         document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
@@ -3962,7 +3643,7 @@ setSaveStateHooks({
     }
   }
 });
-void import("/mobile/js/chunks/session-clinical-wipe-HI7TVIUR.js").then(function(mod) {
+void import("/mobile/js/chunks/session-clinical-wipe-KHSEOLIU.js").then(function(mod) {
   mod.installSessionClinicalWipeOnExit();
 });
 window.addEventListener("beforeunload", function() {
@@ -4082,7 +3763,7 @@ var CLINICAL_DB_BOOT_STEPS = [
     id: "onboarding-dynamic-import",
     async run() {
       loadSettings();
-      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-5D4T7BZW.js");
+      const mod = await import("/mobile/js/chunks/clinical-onboarding-main-6UO2PEEB.js");
       await mod.showMainClinicalOnboarding();
     }
   },
@@ -4093,7 +3774,7 @@ var CLINICAL_DB_BOOT_STEPS = [
       wireClinicalTeamsControls();
       syncClinicalRotationEntryChrome();
       syncGuardiaModeButtonVisibility();
-      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-CHOL2SRO.js");
+      ctx.teamsMod = await import("/mobile/js/chunks/clinical-teams-6PKG6CM7.js");
     }
   },
   {
@@ -4116,7 +3797,7 @@ function runDomBoot() {
 function runDomBootAfterState() {
   try {
     let finishPatientListBoot = function() {
-      void import("/mobile/js/chunks/clinical-access-runtime-AE6KBGJD.js").then(function(mod) {
+      void import("/mobile/js/chunks/clinical-access-runtime-SR4BGCT5.js").then(function(mod) {
         if (typeof mod.refreshClinicalPatientListForScope === "function") {
           return mod.refreshClinicalPatientListForScope();
         }
@@ -4131,7 +3812,7 @@ function runDomBootAfterState() {
       }).then(function() {
         if (globalThis.__RPC_CLOUD_MOBILE__) return;
         _rpcDeferInit(function() {
-          void import("/mobile/js/chunks/autostart-LAKGX5MY.js").then(function(mod) {
+          void import("/mobile/js/chunks/autostart-636AKJRV.js").then(function(mod) {
             return mod.autostartCloudSyncIfConfigured({ toast: showToast });
           });
         });
@@ -4159,7 +3840,7 @@ function runDomBootAfterState() {
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
     if (isDbMode()) {
-      void import("/mobile/js/chunks/boot-steps-EY3EV4ZW.js").then(function(boot) {
+      void import("/mobile/js/chunks/boot-steps-ZL3WGQMJ.js").then(function(boot) {
         return boot.runBootSteps(CLINICAL_DB_BOOT_STEPS, {
           settings,
           getClinicalClientId,
@@ -4202,5 +3883,11 @@ function _rpcDeferInit(fn) {
       }
     }, 200);
   }
+}
+
+// public/js/app-cloud-mobile.js
+if (typeof globalThis !== "undefined") {
+  globalThis.__RPC_CLOUD_MOBILE__ = true;
+  globalThis.__RPC_MOBILE_WEB__ = true;
 }
 //# sourceMappingURL=/js/app.bundle.js.map

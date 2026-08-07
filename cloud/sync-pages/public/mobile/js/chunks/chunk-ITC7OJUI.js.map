@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../features/clinical-onboarding.mjs"],
-  "sourcesContent": ["/**\n * Clinical onboarding \u2014 perfil m\u00EDnimo (usuario LAN, rango, sala) y paso de equipo al arrancar.\n */\nimport { safeRenderClinicalTeamsPanel } from './clinical-panel-host.mjs';\nexport {\n  hasJoinedClinicalTeam,\n  needsUsernameClaim,\n  needsTeamOnboarding,\n  needsTeamOnboardingStep,\n  needsOnboardingShell,\n  needsClinicalSyncModeChoice,\n  needsProfileOnboarding,\n  needsClinicalOnboarding,\n} from './clinical-onboarding-gates.mjs';\nexport { renderOnboardingPanelInto } from './clinical-onboarding-render.mjs';\n\nexport async function renderOnboardingPanel() {\n  await safeRenderClinicalTeamsPanel(async (host) => {\n    const { renderOnboardingPanelInto } = await import('./clinical-onboarding-render.mjs');\n    await renderOnboardingPanelInto(host);\n  });\n}\n"],
-  "mappings": ";;;;;AAgBA,eAAsB,wBAAwB;AAC5C,QAAM,6BAA6B,OAAO,SAAS;AACjD,UAAM,EAAE,2BAAAA,2BAA0B,IAAI,MAAM,OAAO,mDAAkC;AACrF,UAAMA,2BAA0B,IAAI;AAAA,EACtC,CAAC;AACH;",
-  "names": ["renderOnboardingPanelInto"]
-}

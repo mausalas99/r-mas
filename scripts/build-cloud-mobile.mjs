@@ -7,8 +7,41 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import esbuild from 'esbuild';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const CLOUD_MOBILE_ENTRY = path.join(ROOT, 'public/js/app-cloud-mobile.js');
+const LAN_STRIP_STUB = path.join(ROOT, 'public/js/stubs/cloud-mobile-lan-strip.mjs');
+
+const CLOUD_MOBILE_STRIP_BASENAMES = new Set([
+  'mobile-sharer-sync.mjs',
+  'live-sync-membership.mjs',
+  'detach-lan-for-nube.mjs',
+  'lan-config-retire.mjs',
+]);
+
+/** @param {string} modulePath */
+export function isCloudMobileLanStripTarget(modulePath) {
+  const norm = String(modulePath || '').replace(/\\/g, '/');
+  if (norm.includes('/features/lan/')) return true;
+  const base = path.basename(norm);
+  return CLOUD_MOBILE_STRIP_BASENAMES.has(base);
+}
+
+/** esbuild plugin: stub retired LAN modules in the Móvil Nube bundle only. */
+export function createCloudMobileLanStripPlugin(stubPath = LAN_STRIP_STUB) {
+  return {
+    name: 'cloud-mobile-strip-lan',
+    setup(build) {
+      build.onResolve({ filter: /.*/ }, (args) => {
+        if (args.path.includes('stubs/cloud-mobile-lan-strip')) return null;
+        const target = args.path.startsWith('.') ? path.join(args.resolveDir, args.path) : args.path;
+        if (!isCloudMobileLanStripTarget(target)) return null;
+        return { path: stubPath };
+      });
+    },
+  };
+}
 const PUBLIC = path.join(ROOT, 'public');
 const DEST = path.join(ROOT, 'cloud', 'sync-pages', 'public', 'mobile');
 
@@ -205,10 +238,84 @@ export function buildMobileManifest(manifestText) {
 
 function runUiBuild() {
   console.log('running build:ui…');
-  execSync('node scripts/build-ui.mjs && node scripts/bundle-renderer.mjs', {
+  execSync('node scripts/build-ui.mjs', {
     cwd: ROOT,
     stdio: 'inherit',
   });
+}
+
+/**
+ * Bundle R+ Móvil Nube renderer (excludes retired LAN modules via strip plugin).
+ * @param {string} outDir public/js under mobile ASSETS root (e.g. cloud/.../mobile/js)
+ */
+export async function bundleCloudMobileRenderer(outDir) {
+  if (!fs.existsSync(CLOUD_MOBILE_ENTRY)) {
+    throw new Error('missing public/js/app-cloud-mobile.js');
+  }
+  if (!fs.existsSync(LAN_STRIP_STUB)) {
+    throw new Error('missing public/js/stubs/cloud-mobile-lan-strip.mjs');
+  }
+
+  const chunksDir = path.join(outDir, 'chunks');
+  if (fs.existsSync(chunksDir)) {
+    fs.rmSync(chunksDir, { recursive: true, force: true });
+  }
+
+  const outfile = path.join(outDir, 'app.bundle.mjs');
+  const legacyOutfile = path.join(outDir, 'app.bundle.js');
+  if (fs.existsSync(outfile)) fs.unlinkSync(outfile);
+  if (fs.existsSync(legacyOutfile)) fs.unlinkSync(legacyOutfile);
+
+  const result = await esbuild.build({
+    entryPoints: [CLOUD_MOBILE_ENTRY],
+    outdir: outDir,
+    entryNames: 'app.bundle',
+    chunkNames: 'chunks/[name]-[hash]',
+    publicPath: '/js/',
+    splitting: true,
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    target: ['es2020'],
+    sourcemap: true,
+    metafile: true,
+    logLevel: 'info',
+    plugins: [createCloudMobileLanStripPlugin()],
+  });
+
+  if (!fs.existsSync(legacyOutfile)) {
+    throw new Error('cloud-mobile bundle build produced no app.bundle.js');
+  }
+  fs.renameSync(legacyOutfile, outfile);
+  const legacyMap = path.join(outDir, 'app.bundle.js.map');
+  const mjsMap = path.join(outDir, 'app.bundle.mjs.map');
+  if (fs.existsSync(legacyMap)) {
+    if (fs.existsSync(mjsMap)) fs.unlinkSync(mjsMap);
+    fs.renameSync(legacyMap, mjsMap);
+  }
+
+  const metaPath = path.join(outDir, 'app.bundle.meta.json');
+  fs.writeFileSync(metaPath, JSON.stringify(result.metafile, null, 2) + '\n');
+
+  for (const outPath of Object.keys(result.metafile.outputs)) {
+    const base = path.basename(outPath);
+    if (
+      base.includes('mobile-sharer-sync') ||
+      base.includes('detach-lan-for-nube') ||
+      base.includes('lan-config-retire') ||
+      base.includes('live-sync-membership')
+    ) {
+      throw new Error(`cloud-mobile bundle still contains LAN chunk: ${base}`);
+    }
+  }
+
+  for (const inputPath of Object.keys(result.metafile.inputs)) {
+    if (inputPath.includes('/features/lan/')) {
+      throw new Error(`cloud-mobile bundle still references features/lan: ${inputPath}`);
+    }
+  }
+
+  return result;
 }
 
 function cleanDest() {
@@ -218,27 +325,12 @@ function cleanDest() {
   fs.mkdirSync(DEST, { recursive: true });
 }
 
-function main() {
+async function main() {
   runUiBuild();
   cleanDest();
 
-  const bundleSrc = path.join(PUBLIC, 'js', 'app.bundle.mjs');
-  if (!fs.existsSync(bundleSrc)) {
-    console.error('missing public/js/app.bundle.mjs — build:ui failed?');
-    process.exit(1);
-  }
-
-  copyFile(bundleSrc, path.join(DEST, 'js', 'app.bundle.mjs'));
-
-  const chunksSrc = path.join(PUBLIC, 'js', 'chunks');
-  if (fs.existsSync(chunksSrc)) {
-    copyDir(chunksSrc, path.join(DEST, 'js', 'chunks'));
-  }
-
-  const metaSrc = path.join(PUBLIC, 'js', 'app.bundle.meta.json');
-  if (fs.existsSync(metaSrc)) {
-    copyFile(metaSrc, path.join(DEST, 'js', 'app.bundle.meta.json'));
-  }
+  console.log('bundling cloud-mobile renderer…');
+  await bundleCloudMobileRenderer(path.join(DEST, 'js'));
 
   copyFile(path.join(PUBLIC, 'tokens.css'), path.join(DEST, 'tokens.css'));
   copyDir(path.join(PUBLIC, 'styles'), path.join(DEST, 'styles'));
@@ -267,5 +359,8 @@ function main() {
 
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
-  main();
+  main().catch((err) => {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
 }

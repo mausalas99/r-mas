@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../features/settings-help/bridges.mjs"],
-  "sourcesContent": ["/** Breaks tour \u2194 help circular imports; wired from index.mjs after load. */\nexport const settingsHelpBridge = {\n  closeReleaseNotes() {},\n  closeQuickHelp() {},\n  syncLearnHubContinueVisibility() {},\n};\n"],
-  "mappings": ";AACO,IAAM,qBAAqB;AAAA,EAChC,oBAAoB;AAAA,EAAC;AAAA,EACrB,iBAAiB;AAAA,EAAC;AAAA,EAClB,iCAAiC;AAAA,EAAC;AACpC;",
-  "names": []
-}
