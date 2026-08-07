@@ -687,6 +687,7 @@ function ensureLanMdnsClientId(userDataPath) {
 }
 
 function startLanMdnsIfHosting() {
+  if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') return;
   try {
     const userData = app.getPath('userData');
     const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
@@ -714,6 +715,7 @@ function startLanMdnsIfHosting() {
 }
 
 function startUdpBeaconIfHosting() {
+  if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') return;
   try {
     const userData = app.getPath('userData');
     const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');

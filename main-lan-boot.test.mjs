@@ -53,6 +53,23 @@ test('main boot: lan-ensure-server-ready IPC registered', () => {
   );
 });
 
+test('main LAN discovery beacons only in dev ward server mode', () => {
+  const mdnsStart = MAIN_SRC.indexOf('function startLanMdnsIfHosting()');
+  const udpStart = MAIN_SRC.indexOf('function startUdpBeaconIfHosting()');
+  assert.ok(mdnsStart >= 0, 'startLanMdnsIfHosting defined');
+  assert.ok(udpStart >= 0, 'startUdpBeaconIfHosting defined');
+  const mdnsBody = MAIN_SRC.slice(mdnsStart, mdnsStart + 220);
+  const udpBody = MAIN_SRC.slice(udpStart, udpStart + 220);
+  assert.match(
+    mdnsBody,
+    /R_PLUS_DEV_WARD_SERVER[\s\S]*return;/
+  );
+  assert.match(
+    udpBody,
+    /R_PLUS_DEV_WARD_SERVER[\s\S]*return;/
+  );
+});
+
 test('main window.open uses http(s) allowlist', () => {
   assert.ok(MAIN_SRC.includes('isAllowedExternalUrl'), 'window-open policy helper');
   assert.ok(MAIN_SRC.includes('setWindowOpenHandler'), 'setWindowOpenHandler present');

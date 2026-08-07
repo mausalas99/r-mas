@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { storage } from '../../storage.js';
 import { getHostBundleBases } from '../../host-bundle-bases.mjs';
@@ -17,7 +17,14 @@ import {
   profiledMergeLiveSyncFullBundles,
   buildEstadoActualCommand,
 } from './orchestrator.mjs';
+import {
+  ensureLanSyncRuntimeStarted,
+  _resetLanBootForTest,
+  _enableBootMountRecordingForTest,
+  _getBootMountsForTest,
+} from './orchestrator-boot.mjs';
 import { registerLanSyncPushBridge } from './push.mjs';
+import { setCloudRoomConnected } from '../cloud-sync/lan-override.mjs';
 
 const TEST_BEARER = 'e'.repeat(32);
 const LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';
@@ -273,5 +280,65 @@ describe('orchestrator.mjs characterization', () => {
     });
     assert.equal(cmd.domain, 'estadoActual');
     assert.equal(cmd.payload.value, 88);
+  });
+});
+
+describe('orchestrator-boot cloud sala path', () => {
+  let origDocument;
+
+  beforeEach(() => {
+    mockLocalStorage();
+    _resetLanBootForTest();
+    setCloudRoomConnected(false);
+    origDocument = globalThis.document;
+    globalThis.document = {
+      addEventListener() {},
+      removeEventListener() {},
+      getElementById() {
+        return null;
+      },
+      querySelector() {
+        return null;
+      },
+    };
+    _enableBootMountRecordingForTest();
+  });
+
+  afterEach(() => {
+    _resetLanBootForTest();
+    setCloudRoomConnected(false);
+    globalThis.document = origDocument;
+  });
+
+  function seedNonCloudSala() {
+    localStorage.setItem('rpc-settings', JSON.stringify({ clinicalSala: 'Legacy LAN ward' }));
+  }
+
+  it('skips LAN boot graph when getUserSala is a cloud sala', () => {
+    localStorage.setItem('rpc-settings', JSON.stringify({ clinicalSala: 'Sala 1' }));
+    ensureLanSyncRuntimeStarted();
+    const mounts = _getBootMountsForTest();
+    assert.deepEqual(mounts, ['cloud-path']);
+    assert.ok(!mounts.includes('wireLanSyncBridges'));
+    assert.ok(!mounts.includes('initLanClientFromStorage'));
+  });
+
+  it('skips LAN boot graph when isCloudSyncActive is true', () => {
+    seedNonCloudSala();
+    setCloudRoomConnected(true);
+    ensureLanSyncRuntimeStarted();
+    const mounts = _getBootMountsForTest();
+    assert.deepEqual(mounts, ['cloud-path']);
+    assert.ok(!mounts.includes('wireLanSyncBridges'));
+    assert.ok(!mounts.includes('initLanClientFromStorage'));
+  });
+
+  it('mounts LAN boot graph for non-cloud sala without active cloud sync', () => {
+    seedNonCloudSala();
+    ensureLanSyncRuntimeStarted();
+    const mounts = _getBootMountsForTest();
+    assert.ok(mounts.includes('wireLanSyncBridges'));
+    assert.ok(mounts.includes('initLanClientFromStorage'));
+    assert.ok(!mounts.includes('cloud-path'));
   });
 });
