@@ -1,6 +1,7 @@
 import { handleAdmin } from './admin.js';
 import { handleAuth } from './auth.js';
 import { SyncError, jsonSyncError, syncErrorStatus } from './errors.js';
+import { handleInternoApiRoute } from './interno/routes.js';
 import { handleRooms } from './rooms.js';
 
 export const API_PREFIX = '/api/sync/v1';
@@ -19,6 +20,9 @@ export function normalizePath(pathname) {
 export async function handleApiRoute(request, env) {
   const url = new URL(request.url);
   const path = normalizePath(url.pathname);
+
+  const internoResponse = await handleInternoApiRoute(request, env);
+  if (internoResponse) return internoResponse;
 
   if (!path.startsWith(API_PREFIX)) {
     return null;

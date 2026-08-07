@@ -84,7 +84,7 @@ function validateOpsSize(ops) {
 }
 
 /** @param {{ WORKER_DATA_KEY?: string }} env @param {string} roomId */
-async function loadRoomState(env, db, roomId) {
+export async function loadRoomState(env, db, roomId) {
   const row = await db
     .prepare('SELECT ciphertext, iv FROM room_state WHERE room_id = ?')
     .bind(roomId)
@@ -104,7 +104,7 @@ async function loadRoomState(env, db, roomId) {
  * (INSERT/UPDATE with 0 changes — not a UNIQUE blast that only sometimes rolls back).
  * @returns {Promise<{ ok: true, revision: number } | { ok: false, reason: 'stale' | 'duplicate_client' }>}
  */
-async function commitMutationBatch(env, db, opts) {
+export async function commitMutationBatch(env, db, opts) {
   const {
     roomId,
     expectedRevision,
