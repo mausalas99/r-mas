@@ -56,9 +56,11 @@ import {
 } from '../cloud-sync/panel-session-gate.mjs';
 import { syncCloudSecondaryPanels } from '../cloud-sync/panel-conexion-views.mjs';
 import { appendCloudMobileInviteCard } from '../cloud-sync/panel-mobile-invite.mjs';
+import { appendInternoNubeQrPanel } from '../cloud-sync/panel-interno-qr.mjs';
 
 /** @param {ReturnType<typeof createPanelRenderOnce> extends never ? object : Parameters<typeof createPanelRenderOnce>[0]} deps */
 function maybeAppendInternoQrPanel_(deps, root) {
+  if (shouldShowNubePanel(getUserSala())) return;
   if (!isLanElectronDesktop() || !isLanHostActive()) return;
   if (!canManageInternoQr(clinicalSessionContext.user)) return;
   void resolveLanHostUrlAuto().then(function (hostBaseUrl) {
@@ -250,13 +252,17 @@ async function appendPanelFooterSections_(deps, root, gen, expandState, dropdown
   maybeAppendEquiposQrPanel_(deps, root);
 }
 
-/** Nube footer: mobile invite only — no LAN diagnostics / host census (WS1). */
+/** Nube footer: mobile invite + equipos lista (cloud); no LAN diagnostics / host census. */
 async function appendNubePanelFooterSections_(deps, root, gen, expandState, dropdownScrollTop) {
   if (deps.isRenderStale(gen)) return;
   deps.purgeDuplicateLanShiftPinCards(root);
   restoreLanPanelExpandState(root, expandState);
   restoreConnectionDropdownScrollTop(dropdownScrollTop);
   appendCloudMobileInviteCard(deps, root);
+  if (canManageInternoQr(clinicalSessionContext.user)) {
+    appendInternoNubeQrPanel(deps, root);
+  }
+  maybeAppendEquiposQrPanel_(deps, root);
 }
 
 
@@ -303,8 +309,7 @@ async function renderNubeMainStack_(deps, root, gen, userSala, isElevated, expan
   if (nubeOverridesLan) {
     const mainStack = appendLanConnectionStack(root);
     if (showNubePanel && isElevated) deps.buildR4Section(mainStack);
-    // Skip LAN host census / QR compact loaders — they add open latency ("Cargando…")
-    // when the turn is already on Nube.
+    // Skip LAN host census / interno QR — need LAN host. Equipos lista (cloud) stays in footer.
     await appendNubePanelFooterSections_(deps, mainStack, gen, expandState, dropdownScrollTop);
     appendLanLwwToastRow(mainStack);
     wireLanLwwToastPref();
