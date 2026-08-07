@@ -1,5 +1,5 @@
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.mjs';
-import { setCloudRoomConnected } from './lan-override.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 
 /** @param {object} deps @param {object} room */
 function applyEnsureTurnSuccess(deps, room) {

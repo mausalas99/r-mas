@@ -2,7 +2,7 @@
 
 import { isWebClinicalClient } from './db-storage-bridge.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from './features/cloud-sync/nube-sync-policy.mjs';
 
 /** iPad/PWA or any browser LAN session — never full Admin/R4 ward census. */
 export function shouldEnforceTeamPatientMirror() {

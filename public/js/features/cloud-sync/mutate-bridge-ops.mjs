@@ -2,7 +2,7 @@
  * Cloud sync LWW op builders — maps patient/bundle shapes to worker ops.
  */
 import { slimLabSetForCloud } from './cloud-op-slim.mjs';
-import { labSetTimestamp, monitoreoUpdatedAt } from '../../lan-patient-merge.mjs';
+import { labSetTimestamp, monitoreoUpdatedAt } from '../../patient-merge.mjs';
 
 /** @typedef {{ path: string, value: unknown, updatedAt: string, actorId: string }} CloudSyncOp */
 

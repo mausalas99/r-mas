@@ -18,7 +18,7 @@ import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
 import { configureCloudMutateBridge } from './mutate-bridge.mjs';
 import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { createOutbox } from './outbox.mjs';
-import { setCloudRoomConnected } from './lan-override.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { isCloudSala } from './sala-allowlist.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
 

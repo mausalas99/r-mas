@@ -4,7 +4,7 @@ import {
   filterPatientsForClinicalSidebar,
 } from './features/patients-clinical-filter.mjs';
 import { shouldUseElevatedPatientCensus } from './clinical-privileges.mjs';
-import { setCloudRoomConnected } from './features/cloud-sync/lan-override.mjs';
+import { setCloudRoomConnected } from './features/cloud-sync/nube-sync-policy.mjs';
 import { setCloudSyncRoomId } from './features/cloud-sync/settings.mjs';
 
 const scopeFixture = {

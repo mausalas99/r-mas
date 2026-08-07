@@ -12,7 +12,7 @@ import {
   parseClinicalTeamJoinQuery,
   tryMountClinicalTeamInviteBrowserGate,
 } from '../../clinical-team-invite.mjs';
-import { isLanSalaInvitePaste } from '../../lan-join-link.mjs';
+import { isLanSalaInvitePaste } from '../../mobile-join-link.mjs';
 import { effectiveClinicalRank } from '../../clinical-privileges.mjs';
 import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';

@@ -3,7 +3,7 @@ import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { canViewLanUserDirectory } from '../../clinical-privileges.mjs';
 import { isCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
-import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
 import { dbApi, escapeHtml, escapeAttr, CLINICAL_SALAS, BROWSE_SALA_LS, renderClinicalTeamsCollapsible } from './shared.mjs';
 import {
   renderDirectoryTeamCard,

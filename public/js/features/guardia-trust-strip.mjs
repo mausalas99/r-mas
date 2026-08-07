@@ -4,7 +4,7 @@
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { escapeHtml } from '../dom-escape.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
-import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from './cloud-sync/nube-sync-policy.mjs';
 import { getCloudSyncRoomSnapshot } from './cloud-sync/settings.mjs';
 
 /**

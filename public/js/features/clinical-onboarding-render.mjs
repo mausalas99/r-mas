@@ -24,7 +24,7 @@ import {
 } from '../clinical-username.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
-import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
+import { isLanSkipShiftPin } from '../shift-pin-stub.mjs';
 import {
   defaultLocalOnlyDisplayName,
   submitLocalOnlyProfile,

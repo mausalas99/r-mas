@@ -68,7 +68,7 @@ export function startSharedNubeRuntime(deps) {
       return String(clinicalSessionContext.user?.user_id || getCloudSyncClientId() || 'local');
     },
   });
-  void import('./detach-lan-for-nube.mjs').then(function (mod) {
+  void import('./detach-stale-room-membership.mjs').then(function (mod) {
     return mod.detachLanLiveSyncForNube();
   });
   void (async function runInitialCloudSyncAndPrune() {

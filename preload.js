@@ -83,65 +83,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       isWindows: process.platform === 'win32',
     };
   },
+  /** Dev-only ward server (`R_PLUS_DEV_WARD_SERVER=1`). Production Nube builds never bind :3738. */
   ensureLanServerReady: function() {
     if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') {
       return Promise.resolve({ ok: true, peer: false, wardServer: false });
     }
     return ipcRenderer.invoke('lan-ensure-server-ready');
-  },
-  syncLanHostClinicalMeta: function(payload) {
-    return ipcRenderer.invoke('lan-sync-host-clinical-meta', payload);
-  },
-  writeLanHostTeamCode: function(plain) {
-    return ipcRenderer.invoke('lan-host-write-team-code', plain);
-  },
-  getLanCandidateBaseUrl: function() {
-    return ipcRenderer.invoke('get-lan-candidate-base-url');
-  },
-  getLanSubnetPrefixes: function() {
-    return ipcRenderer.invoke('get-lan-subnet-prefixes');
-  },
-  onLanNetworkChanged: function(cb) {
-    ipcRenderer.on('lan-network-changed', function(_e, payload) { cb(payload); });
-  },
-  onLanMdnsPeers: function(cb) {
-    ipcRenderer.on('lan:mdns-peers', function(_e, peers) { cb(peers); });
-  },
-  onInternoHostSync: function(cb) {
-    ipcRenderer.on('rpc-interno-host-sync', function(_e, payload) { cb(payload); });
-  },
-  lanUdpDiscover: function() {
-    return ipcRenderer.invoke('lan-udp-discover');
-  },
-  resetLanSquadHostState: function() {
-    return ipcRenderer.invoke('lan-reset-squad-host-state');
-  },
-  getLanEffectiveTeamCode: function() {
-    return ipcRenderer.invoke('lan-get-effective-team-code');
-  },
-  getLanDevPeerSeedConfig: function() {
-    return ipcRenderer.invoke('lan-dev-peer-seed-config');
-  },
-  isLanDevPeer: function() {
-    return process.env.R_PLUS_LAN_PEER === '1';
-  },
-  isLanShiftPinRequired: function() {
-    return process.env.R_PLUS_LAN_REQUIRE_SHIFT_PIN === '1';
-  },
-  lanGuestWriteBearer: function(payload) {
-    return ipcRenderer.invoke('lan-guest-write-bearer', payload);
-  },
-  getLanGuestBearer: function() {
-    return ipcRenderer.invoke('lan-get-guest-bearer');
-  },
-  lanWardHostRecord: function(payload) {
-    return ipcRenderer.invoke('lan-ward-host-record', payload);
-  },
-  lanWardHostMerge: function(hints) {
-    return ipcRenderer.invoke('lan-ward-host-merge', hints);
-  },
-  lanWardHostClear: function() {
-    return ipcRenderer.invoke('lan-ward-host-clear');
   },
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);
@@ -370,14 +317,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbEquiposMergeSnapshot: function(opts) {
     return ipcRenderer.invoke('db:equipos-merge-snapshot', opts);
-  },
-  dbLanOutboxEnqueue: function(opts) {
-    return ipcRenderer.invoke('db:lan-outbox-enqueue', opts);
-  },
-  dbLanOutboxDrain: function(opts) {
-    return ipcRenderer.invoke('db:lan-outbox-drain', opts);
-  },
-  dbLanOutboxCount: function(opts) {
-    return ipcRenderer.invoke('db:lan-outbox-count', opts);
   },
 });

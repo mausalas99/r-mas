@@ -461,7 +461,7 @@ export async function registerAllFeatureRuntimes() {
       if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList();
     },
   });
-  void import('./features/cloud-sync/lan-config-retire.mjs').then((mod) => {
+  void import('./features/cloud-sync/nube-config-retire.mjs').then((mod) => {
     mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
   });
   void import('./equipos-cloud-config.mjs').then((mod) => {

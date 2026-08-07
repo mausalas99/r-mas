@@ -6,7 +6,7 @@ import {
   enqueueInternoAccessUpsert,
 } from './interno-access-sync.mjs';
 import { configureCloudMutateBridge } from './mutate-bridge.mjs';
-import { setCloudRoomConnected } from './lan-override.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 
 const SAMPLE_ROW = {
   sala: 'Sala 1',

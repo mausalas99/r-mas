@@ -13,7 +13,7 @@ import {
   getCloudSyncRoomId,
   getCloudSyncRoomSnapshot,
 } from './settings.mjs';
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { resolveCloudActorId } from './mutate-bridge.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 

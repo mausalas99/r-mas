@@ -11,7 +11,7 @@ import {
   isClinicalScopeReadyForLanPatientApply,
 } from '../../clinical-access-runtime.mjs';
 import { shouldUseElevatedPatientCensus } from '../../clinical-privileges.mjs';
-import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
+import { filterPatientEntriesForLanTeamScope } from '../../patient-team-scope.mjs';
 import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @returns {boolean} */

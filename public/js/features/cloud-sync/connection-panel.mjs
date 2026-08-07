@@ -18,7 +18,7 @@ function nubeSectionInDom() {
  * @param {{ runtime: () => object }} deps
  */
 export async function mountCloudConnectionPanel(root, deps) {
-  const { shouldShowNubePanel } = await import('./lan-override.mjs');
+  const { shouldShowNubePanel } = await import('./nube-sync-policy.mjs');
   if (!shouldShowNubePanel(getUserSala())) return;
 
   if (_cloudNubeMount && nubeSectionInDom()) {
@@ -36,7 +36,7 @@ export async function mountCloudConnectionPanel(root, deps) {
   const { createCloudSyncApi } = await import('./api-client.mjs');
   const { getSessionAdminKey } = await import('./panel-admin.mjs');
   const { mountNubeSection } = await import('./panel-nube-section.mjs');
-  const { setCloudRoomConnected } = await import('./lan-override.mjs');
+  const { setCloudRoomConnected } = await import('./nube-sync-policy.mjs');
 
   const api = createCloudSyncApi({
     getBaseUrl: settings.getCloudSyncUrl,

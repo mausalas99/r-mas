@@ -1,7 +1,7 @@
 /**
  * Cloud sync mutation bridge — maps local clinical state to worker LWW ops.
  */
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import {
   getCloudSyncRoomId,
   getCloudSyncRevision,

@@ -8,7 +8,7 @@ import {
 import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
 import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
-import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from './cloud-sync/nube-sync-policy.mjs';
 import { rt, registerPatientsRuntime as _registerRt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import {

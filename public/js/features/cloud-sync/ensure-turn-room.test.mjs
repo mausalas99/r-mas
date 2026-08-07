@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
-import { setCloudRoomConnected } from './lan-override.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 
 describe('ensure-turn-room', () => {
   beforeEach(() => {

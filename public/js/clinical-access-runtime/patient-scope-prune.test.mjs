@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { patients, notes, setPatients } from '../app-state.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
-import { setCloudRoomConnected } from '../features/cloud-sync/lan-override.mjs';
+import { setCloudRoomConnected } from '../features/cloud-sync/nube-sync-policy.mjs';
 import { prunePatientsOutsideVisibleScope } from './patient-scope-prune.mjs';
 
 function seedScope() {

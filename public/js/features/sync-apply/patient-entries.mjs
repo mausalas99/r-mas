@@ -16,7 +16,7 @@ import {
 import {
   mergeEventualidades,
   mergeLabHistorySets,
-} from '../../lan-patient-merge.mjs';
+} from '../../patient-merge.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
 import { mergeCensoPatientFields } from '../../patient-diagnosticos.mjs';
 import { mergePatientRegistrationMeta } from '../../patient-registration-meta.mjs';
@@ -27,7 +27,7 @@ import {
   isClinicalScopeReadyForLanPatientApply,
 } from '../../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
-import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
+import { filterPatientEntriesForLanTeamScope } from '../../patient-team-scope.mjs';
 
 /** @type {{
  *   runtime?: object,

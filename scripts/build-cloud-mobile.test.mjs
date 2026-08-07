@@ -10,8 +10,8 @@ import {
 describe('isCloudMobileLanStripTarget', () => {
   it('flags retired LAN modules and features/lan paths', () => {
     assert.equal(isCloudMobileLanStripTarget('public/js/mobile-sharer-sync.mjs'), true);
-    assert.equal(isCloudMobileLanStripTarget('public/js/live-sync-membership.mjs'), true);
-    assert.equal(isCloudMobileLanStripTarget('public/js/features/cloud-sync/detach-lan-for-nube.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/cloud-room-membership.mjs'), true);
+    assert.equal(isCloudMobileLanStripTarget('public/js/features/cloud-sync/detach-stale-room-membership.mjs'), true);
     assert.equal(isCloudMobileLanStripTarget('public/js/features/lan/panel.mjs'), true);
     assert.equal(isCloudMobileLanStripTarget('public/js/features/patients.mjs'), false);
   });

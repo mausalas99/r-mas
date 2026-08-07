@@ -11,7 +11,7 @@ import {
   setCloudSyncRoomSnapshot,
   getCloudSyncUrl,
 } from './settings.mjs';
-import { setCloudRoomConnected } from './lan-override.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { createCloudSyncApi } from './api-client.mjs';
 import { startSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { pushCloudCensusNow } from './mutate-bridge.mjs';
@@ -60,7 +60,7 @@ export async function autostartCloudSyncIfConfigured(opts) {
 
   if (!getCloudSyncRoomId()) return null;
   setCloudRoomConnected(true);
-  void import('./detach-lan-for-nube.mjs').then(function (mod) {
+  void import('./detach-stale-room-membership.mjs').then(function (mod) {
     return mod.detachLanLiveSyncForNube();
   });
 

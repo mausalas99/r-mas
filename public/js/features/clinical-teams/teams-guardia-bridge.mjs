@@ -5,7 +5,7 @@ import {
   isBenignLanPushSkipCode,
   LAN_PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
-import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
 import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { dbApi, toast } from './shared.mjs';
 

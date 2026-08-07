@@ -48,7 +48,7 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/cloud-sync/lan-config-retire.mjs",
+        "from": "./features/cloud-sync/nube-config-retire.mjs",
         "isDynamic": true
       },
       {

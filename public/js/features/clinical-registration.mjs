@@ -5,7 +5,7 @@ import { closeModalAnimated } from '../ui-motion.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { ensureLanProfileGateDeviceReset, isClinicalLocalOnlyMode, needsClinicalLanProfileGate, readRpcSettings } from '../clinical-settings.mjs';
 import { handleClinicalRegistrationSubmit } from './clinical-registration-submit.mjs';
-import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
+import { isLanSkipShiftPin } from '../shift-pin-stub.mjs';
 
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;

@@ -15,9 +15,9 @@ const LAN_STRIP_STUB = path.join(ROOT, 'public/js/stubs/cloud-mobile-lan-strip.m
 
 const CLOUD_MOBILE_STRIP_BASENAMES = new Set([
   'mobile-sharer-sync.mjs',
-  'live-sync-membership.mjs',
-  'detach-lan-for-nube.mjs',
-  'lan-config-retire.mjs',
+  'cloud-room-membership.mjs',
+  'detach-stale-room-membership.mjs',
+  'nube-config-retire.mjs',
 ]);
 
 /** @param {string} modulePath */
@@ -301,9 +301,9 @@ export async function bundleCloudMobileRenderer(outDir) {
     const base = path.basename(outPath);
     if (
       base.includes('mobile-sharer-sync') ||
-      base.includes('detach-lan-for-nube') ||
-      base.includes('lan-config-retire') ||
-      base.includes('live-sync-membership')
+      base.includes('detach-stale-room-membership') ||
+      base.includes('nube-config-retire') ||
+      base.includes('cloud-room-membership')
     ) {
       throw new Error(`cloud-mobile bundle still contains LAN chunk: ${base}`);
     }

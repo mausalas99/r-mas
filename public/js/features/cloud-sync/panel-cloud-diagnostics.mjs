@@ -7,7 +7,7 @@ import {
   getCloudSyncDiagnostics,
 } from './cloud-sync-diagnostics.mjs';
 import { getCloudSyncRoomSnapshot, getCloudSyncSettings } from './settings.mjs';
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { isCloudMutateBridgeConfigured } from './mutate-bridge.mjs';
 import { patients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';

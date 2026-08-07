@@ -3,7 +3,7 @@
  */
 import { fetchClinicalScopeContextFromDb } from '../clinical-access-runtime.mjs';
 import { publishClinicalTeamsToLan, toastTeamLanPublishResult } from './clinical-teams/teams-guardia-bridge.mjs';
-import { syncLanHostClinicalMetaToDisk } from '../lan-host-rank-policy.mjs';
+import { syncLanHostClinicalMetaToDisk } from '../host-meta-stub.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;

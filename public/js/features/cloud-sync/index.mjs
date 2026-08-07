@@ -29,7 +29,7 @@ export {
   shouldUseNubeNotLan,
   isCloudSyncActive,
   setCloudRoomConnected,
-} from './lan-override.mjs';
+} from './nube-sync-policy.mjs';
 
 export { mountNubeSection } from './panel-nube-section.mjs';
 

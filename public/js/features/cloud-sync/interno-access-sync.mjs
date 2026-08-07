@@ -7,7 +7,7 @@ import {
   ensureTurnRoomForSala,
   getSalaRoomCache,
 } from './cloud-clinical-ops-sala.mjs';
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import {
   enqueueInternoAccessUpsert,
   resolveCloudActorId,

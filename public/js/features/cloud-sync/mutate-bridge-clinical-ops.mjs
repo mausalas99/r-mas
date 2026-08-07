@@ -1,7 +1,7 @@
 /**
  * Dedicated clinicalOps LWW push helpers for Nube (extracted from mutate-bridge).
  */
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { enqueueCloudClinicalOpsValue } from './mutate-bridge.mjs';
 import {
   getCachedClinicalOpsSnapshot,

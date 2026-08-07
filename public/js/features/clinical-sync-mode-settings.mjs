@@ -7,7 +7,7 @@ import {
   readRpcSettings,
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
-import { shouldShowNubePanel } from './cloud-sync/lan-override.mjs';
+import { shouldShowNubePanel } from './cloud-sync/nube-sync-policy.mjs';
 
 function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {

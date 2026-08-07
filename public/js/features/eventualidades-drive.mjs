@@ -1,7 +1,7 @@
 import { saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
-import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
+import { isCloudSyncActive } from './cloud-sync/nube-sync-policy.mjs';
 import { filterNewEventualidades } from '../../../lib/drive-import/merge-eventualidades.mjs';
 import { appendEventualidad } from './eventualidades-store.mjs';
 import { ensureEventualidades } from './eventualidades-render.mjs';

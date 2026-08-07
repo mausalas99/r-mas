@@ -617,11 +617,6 @@ function isDevWardServerEnabled() {
   return process.env.R_PLUS_DEV_WARD_SERVER === '1';
 }
 
-function wardServerBaseUrl() {
-  const port = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
-  return `http://127.0.0.1:${port}`;
-}
-
 ipcMain.handle('lan-ensure-server-ready', async () => {
   if (!isDevWardServerEnabled()) {
     return { ok: true, peer: false, wardServer: false };
@@ -630,32 +625,6 @@ ipcMain.handle('lan-ensure-server-ready', async () => {
   await lanServer.startLanServer();
   return { ok: true, peer: false, wardServer: true };
 });
-
-ipcMain.handle('lan-udp-discover', async () => []);
-
-ipcMain.handle('lan-dev-peer-seed-config', () => ({ ok: false }));
-
-ipcMain.handle('lan-sync-host-clinical-meta', () => ({ ok: true, meta: {} }));
-
-ipcMain.handle('lan-host-write-team-code', () => ({ ok: false, error: 'lan_retired' }));
-
-ipcMain.handle('lan-reset-squad-host-state', () => ({ ok: true }));
-
-ipcMain.handle('lan-get-effective-team-code', () => ({ ok: false, error: 'lan_retired' }));
-
-ipcMain.handle('lan-guest-write-bearer', () => ({ ok: false, error: 'lan_retired' }));
-
-ipcMain.handle('lan-get-guest-bearer', () => ({ ok: false, error: 'lan_retired' }));
-
-ipcMain.handle('get-lan-candidate-base-url', () => wardServerBaseUrl());
-
-ipcMain.handle('get-lan-subnet-prefixes', () => []);
-
-ipcMain.handle('lan-ward-host-record', () => ({ ok: true }));
-
-ipcMain.handle('lan-ward-host-merge', () => ({ ok: true }));
-
-ipcMain.handle('lan-ward-host-clear', () => ({ ok: true }));
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {

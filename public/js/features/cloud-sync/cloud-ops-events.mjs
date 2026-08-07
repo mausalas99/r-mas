@@ -2,7 +2,7 @@
  * Cloud-safe clinical-ops event wiring for Nube salas (no LAN panel / bridges).
  * Keeps teams → sala-scoped clinicalOps push without mounting the LAN sync kernel.
  */
-import { isCloudSyncActive } from './lan-override.mjs';
+import { isCloudSyncActive } from './nube-sync-policy.mjs';
 import { normalizeCloudSala } from './sala-allowlist.mjs';
 import {
   maybeScheduleCloudSyncPush,
