@@ -7,7 +7,7 @@ import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from './clinical-settings.mjs';
 import { normalizeUsername } from './clinical-username.mjs';
 
-import { liveSyncRoomLabel, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
+import { parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
 import { getRoomMembership } from './live-sync-membership.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
 

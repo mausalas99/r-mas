@@ -3,7 +3,7 @@ import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { recordClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 import { canDeleteLanDirectoryUser } from '../../clinical-privileges.mjs';
 import { dbApi, escapeHtml, currentUserId } from './shared.mjs';
-import { lanDirRt, LAN_DIRECTORY_IPC_MIN_MS, LAN_DIRECTORY_LAN_PULL_MIN_MS } from './teams-roster-lan-state.mjs';
+import { lanDirRt, LAN_DIRECTORY_IPC_MIN_MS } from './teams-roster-lan-state.mjs';
 import {
   lanUsersModalBackdropEl,
   lanUsersModalBodyEl,

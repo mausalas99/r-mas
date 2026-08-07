@@ -251,9 +251,6 @@ function deleteAllLabHistorySets() {
     rt.showToast('No hay estudios en el historial', 'info');
     return;
   }
-  var removedIds = sets.map(function (s) {
-    return String(s.id);
-  }).filter(Boolean);
   if (
     !confirm(
       '¿Eliminar todos los estudios de laboratorio de este paciente?\n\n' +
@@ -408,9 +405,6 @@ function deleteLabHistorySet(setId) {
   if (sets.length) labHistory[pid] = sets;
   else delete labHistory[pid];
   bumpLabHistoryRevision(pid);
-  if (sid.indexOf('__idx_') !== 0) {
-    
-  }
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   labPanelBridge.setActiveLab(null);

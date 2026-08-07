@@ -30,30 +30,34 @@ export {
   opsToLanEntries,
 } from './pull-apply-state.mjs';
 
+/** @param {Record<string, unknown>} row @param {Record<string, unknown[]>} byPatient @param {Record<string, string>} map */
+function mergeCloudTodoIntoMap(row, byPatient, map) {
+  const remotePid = String(row.patientId || '').trim();
+  const id = String(row.id || '').trim();
+  if (!remotePid || !id) return;
+  const registro = String(row.registro || '').trim();
+  const pid = resolveCloudTodoLocalPatientId(remotePid, registro, patients, map);
+  if (!pid) return;
+  if (!byPatient[pid]) byPatient[pid] = storage.getTodos(pid).slice();
+  const idx = byPatient[pid].findIndex(function (t) {
+    return t && String(t.id) === id;
+  });
+  if (row._deleted) {
+    if (idx >= 0) byPatient[pid].splice(idx, 1);
+    return;
+  }
+  const stored = { ...row, patientId: pid };
+  if (idx >= 0) byPatient[pid][idx] = stored;
+  else byPatient[pid].push(stored);
+}
+
 /** @param {Record<string, unknown>} todosMap @param {Record<string, string>} [idMap] @returns {string[]} */
 function applyCloudTodosMap(todosMap, idMap) {
   const byPatient = {};
   const map = idMap && typeof idMap === 'object' ? idMap : {};
   for (const todo of Object.values(todosMap || {})) {
     if (!todo || typeof todo !== 'object') continue;
-    const row = todo;
-    const remotePid = String(row.patientId || '').trim();
-    const id = String(row.id || '').trim();
-    if (!remotePid || !id) continue;
-    const registro = String(row.registro || '').trim();
-    const pid = resolveCloudTodoLocalPatientId(remotePid, registro, patients, map);
-    if (!pid) continue;
-    if (!byPatient[pid]) byPatient[pid] = storage.getTodos(pid).slice();
-    const idx = byPatient[pid].findIndex(function (t) {
-      return t && String(t.id) === id;
-    });
-    if (row._deleted) {
-      if (idx >= 0) byPatient[pid].splice(idx, 1);
-      continue;
-    }
-    const stored = { ...row, patientId: pid };
-    if (idx >= 0) byPatient[pid][idx] = stored;
-    else byPatient[pid].push(stored);
+    mergeCloudTodoIntoMap(todo, byPatient, map);
   }
   const changedPatients = [];
   for (const pid of Object.keys(byPatient)) {

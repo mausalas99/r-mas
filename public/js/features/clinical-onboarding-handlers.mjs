@@ -19,7 +19,6 @@ import {
 } from '../clinical-username.mjs';
 import { getClientId, needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { wireSyncModeOnboardingInteractions } from './clinical-onboarding-sync-mode.mjs';
-import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import {
   applyOnboardPickUser,

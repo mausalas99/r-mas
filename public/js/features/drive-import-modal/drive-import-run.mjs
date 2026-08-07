@@ -30,7 +30,7 @@ function confirmCreateWithoutName(createNew, parsed) {
   return confirmDriveImportChoice('No se detectó nombre en el encabezado. ¿Crear paciente igualmente?');
 }
 
-async function confirmImportGuards(parsed, opts) {
+async function confirmImportGuards(parsed, _opts) {
   const rt = getDriveImportRuntime();
   const patient = rt.getActivePatient();
   const createNew = !patient;

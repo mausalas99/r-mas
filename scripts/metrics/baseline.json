@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-01T00:25:30.717Z",
-  "totalScore": 0,
-  "bootGraphHash": "dd48ea3f8d115649",
+  "updatedAt": "2026-08-07T22:08:56.865Z",
+  "totalScore": 130,
+  "bootGraphHash": "5823e515c7f1c9c4",
   "bootGraph": {
-    "hash": "dd48ea3f8d115649",
+    "hash": "5823e515c7f1c9c4",
     "imports": [
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -23,6 +23,11 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./equipos-cloud-config.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/agenda.mjs",
         "isDynamic": false
       },
@@ -39,6 +44,21 @@
       {
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/lan-config-retire.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/mutate-bridge.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/cloud-sync/panel-chrome.mjs",
         "isDynamic": false
       },
       {
@@ -98,27 +118,12 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/historia-clinica-panel.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/lab-bulk-preview-modal.mjs",
         "isDynamic": false
       },
       {
         "hub": "public/js/app-runtimes.mjs",
         "from": "./features/lab-history-batch-copy-modal.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/lan-sync.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/lan-sync.mjs",
         "isDynamic": false
       },
       {
@@ -188,6 +193,11 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
+        "from": "./features/sync-apply/patient-entries.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-runtimes.mjs",
         "from": "./features/todos.mjs",
         "isDynamic": false
       },
@@ -249,11 +259,6 @@
       {
         "hub": "public/js/app-shell.mjs",
         "from": "./app-shell-deferred.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app-shell.mjs",
-        "from": "./app-shell-lazy-panels.mjs",
         "isDynamic": false
       },
       {
@@ -325,6 +330,11 @@
         "hub": "public/js/app-shell.mjs",
         "from": "./features/profile.mjs",
         "isDynamic": false
+      },
+      {
+        "hub": "public/js/app-shell.mjs",
+        "from": "./ui-overlay.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-shell.mjs",
@@ -423,6 +433,21 @@
       },
       {
         "hub": "public/js/app.js",
+        "from": "./features/cloud-mobile/boot.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/cloud-sync/autostart.mjs",
+        "isDynamic": true
+      },
+      {
+        "hub": "public/js/app.js",
+        "from": "./features/cloud-sync/panel-chrome.mjs",
+        "isDynamic": false
+      },
+      {
+        "hub": "public/js/app.js",
         "from": "./features/db-unlock.mjs",
         "isDynamic": false
       },
@@ -464,11 +489,6 @@
       {
         "hub": "public/js/app.js",
         "from": "./features/lab-history-batch-copy-modal.mjs",
-        "isDynamic": false
-      },
-      {
-        "hub": "public/js/app.js",
-        "from": "./features/lan-sync.mjs",
         "isDynamic": false
       },
       {
@@ -579,6 +599,10 @@
     {
       "date": "2026-08-01",
       "note": "Baseline refresh totalScore=0 (was 50; paid down complexity/length; shell modularization)"
+    },
+    {
+      "date": "2026-08-07",
+      "note": "Baseline refresh totalScore=130 (was 0; LAN excision WS3 — deleted lan-squad/, features/lan/, historia-clinica; boot graph hash change)"
     }
   ]
 }

@@ -124,9 +124,6 @@ export function wireLabDedupeModal(backdrop, onConfirm) {
       rt.pushUndoSnapshot('Eliminar duplicados de historial de labs (' + nSel + ')');
     }
     const removedTotal = onConfirm(mapByPatient);
-    Object.keys(mapByPatient).forEach(function (pid) {
-      
-    });
     saveState({ immediate: true });
     labPanelBridge.renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();

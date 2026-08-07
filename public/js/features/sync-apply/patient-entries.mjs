@@ -28,7 +28,6 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
-import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @type {{
  *   runtime?: object,

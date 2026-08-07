@@ -4,7 +4,6 @@
 import { normalizeUsername, isValidUsernameFormat } from '../clinical-username.mjs';
 import {
   persistClinicalUserBinding,
-  isClinicalLocalOnlyMode,
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
