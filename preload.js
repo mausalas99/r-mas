@@ -84,6 +84,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     };
   },
   ensureLanServerReady: function() {
+    if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') {
+      return Promise.resolve({ ok: true, peer: false, wardServer: false });
+    }
     return ipcRenderer.invoke('lan-ensure-server-ready');
   },
   syncLanHostClinicalMeta: function(payload) {

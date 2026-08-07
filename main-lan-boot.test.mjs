@@ -1,5 +1,6 @@
 /**
- * Static checks for BN-01 main-process boot: parallel unlock + startLanServer before window.
+ * Static checks for main-process boot: clinical DB unlock before window;
+ * ward server :3738 only when R_PLUS_DEV_WARD_SERVER=1.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_SRC = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
+const PRELOAD_SRC = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
 
 function whenReadyBody(src) {
   const start = src.indexOf('app.whenReady().then(async () => {');
@@ -32,7 +34,7 @@ test('main boot: clinical DB unlock finishes before createWindow', () => {
   assert.ok(awaitUnlock >= 0 && awaitUnlock < createIdx, 'await unlockPromise before createWindow');
 });
 
-test('main boot: LAN server via startLanServer before createWindow', () => {
+test('main boot: production skips ward server listener on :3738', () => {
   const body = whenReadyBody(MAIN_SRC);
   const createIdx = body.indexOf('createWindow()');
   assert.ok(createIdx >= 0, 'createWindow in whenReady');
@@ -40,10 +42,18 @@ test('main boot: LAN server via startLanServer before createWindow', () => {
     !/\bawait\s+require\s*\(\s*['"]\.\/server['"]\s*\)/.test(body),
     'bare await require("./server") removed'
   );
+  assert.ok(
+    !body.includes('setOnInternoHostSync'),
+    'interno host sync forward removed from boot (vitals via cloud pull)'
+  );
+  assert.ok(MAIN_SRC.includes('isDevWardServerEnabled'), 'isDevWardServerEnabled helper defined');
+  const guardIdx = body.indexOf('isDevWardServerEnabled()');
+  assert.ok(guardIdx >= 0, 'dev ward server guard in whenReady');
+  assert.ok(guardIdx < createIdx, 'ward server guard before createWindow');
   const startIdx = body.indexOf('startLanServer');
-  assert.ok(startIdx >= 0, 'startLanServer used in whenReady');
-  assert.ok(startIdx < createIdx, 'startLanServer before createWindow');
-  assert.ok(body.includes('await lanServer.startLanServer'), 'awaits startLanServer before window');
+  assert.ok(startIdx >= 0, 'startLanServer still available for dev mode');
+  assert.ok(startIdx > guardIdx, 'startLanServer only inside dev ward server guard');
+  assert.ok(startIdx < createIdx, 'startLanServer before createWindow when enabled');
 });
 
 test('main boot: lan-ensure-server-ready IPC registered', () => {
@@ -53,6 +63,23 @@ test('main boot: lan-ensure-server-ready IPC registered', () => {
   );
 });
 
+test('main boot: lan-ensure-server-ready no-op in production', () => {
+  const handlerStart = MAIN_SRC.indexOf("ipcMain.handle('lan-ensure-server-ready'");
+  assert.ok(handlerStart >= 0, 'lan-ensure-server-ready handler');
+  const handlerSlice = MAIN_SRC.slice(handlerStart, handlerStart + 420);
+  assert.match(handlerSlice, /isDevWardServerEnabled\(\)/, 'guarded by dev ward flag');
+  assert.match(handlerSlice, /return\s*\{\s*ok:\s*true/, 'returns success without binding');
+});
+
+test('preload: ensureLanServerReady no-op without dev ward flag', () => {
+  const fnStart = PRELOAD_SRC.indexOf('ensureLanServerReady:');
+  assert.ok(fnStart >= 0, 'ensureLanServerReady exposed');
+  const fnSlice = PRELOAD_SRC.slice(fnStart, fnStart + 320);
+  assert.match(fnSlice, /R_PLUS_DEV_WARD_SERVER/, 'checks dev ward flag');
+  assert.match(fnSlice, /Promise\.resolve/, 'short-circuits without IPC');
+  assert.match(fnSlice, /ok:\s*true/, 'returns success');
+});
+
 test('main LAN discovery beacons only in dev ward server mode', () => {
   const mdnsStart = MAIN_SRC.indexOf('function startLanMdnsIfHosting()');
   const udpStart = MAIN_SRC.indexOf('function startUdpBeaconIfHosting()');
@@ -60,14 +87,8 @@ test('main LAN discovery beacons only in dev ward server mode', () => {
   assert.ok(udpStart >= 0, 'startUdpBeaconIfHosting defined');
   const mdnsBody = MAIN_SRC.slice(mdnsStart, mdnsStart + 220);
   const udpBody = MAIN_SRC.slice(udpStart, udpStart + 220);
-  assert.match(
-    mdnsBody,
-    /R_PLUS_DEV_WARD_SERVER[\s\S]*return;/
-  );
-  assert.match(
-    udpBody,
-    /R_PLUS_DEV_WARD_SERVER[\s\S]*return;/
-  );
+  assert.match(mdnsBody, /isDevWardServerEnabled[\s\S]*return;/);
+  assert.match(udpBody, /isDevWardServerEnabled[\s\S]*return;/);
 });
 
 test('main window.open uses http(s) allowlist', () => {

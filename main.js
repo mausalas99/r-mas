@@ -686,8 +686,12 @@ function ensureLanMdnsClientId(userDataPath) {
   return id;
 }
 
+function isDevWardServerEnabled() {
+  return process.env.R_PLUS_DEV_WARD_SERVER === '1';
+}
+
 function startLanMdnsIfHosting() {
-  if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') return;
+  if (!isDevWardServerEnabled()) return;
   try {
     const userData = app.getPath('userData');
     const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
@@ -715,7 +719,7 @@ function startLanMdnsIfHosting() {
 }
 
 function startUdpBeaconIfHosting() {
-  if (process.env.R_PLUS_DEV_WARD_SERVER !== '1') return;
+  if (!isDevWardServerEnabled()) return;
   try {
     const userData = app.getPath('userData');
     const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
@@ -737,6 +741,9 @@ function startUdpBeaconIfHosting() {
 
 /** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
 ipcMain.handle('lan-ensure-server-ready', async () => {
+  if (!isDevWardServerEnabled()) {
+    return { ok: true, peer: false, wardServer: false };
+  }
   const lanServer = require('./server');
   const peerMode = process.env.R_PLUS_LAN_PEER === '1';
   try {
@@ -1069,25 +1076,22 @@ app.whenReady().then(async () => {
 
     unlockPromise = unlockClinicalDbAtStartup(dbManager);
 
-    const lanServer = require('./server');
-    if (typeof lanServer.setOnInternoHostSync === 'function') {
-      lanServer.setOnInternoHostSync((payload) => {
-        safeSendToRenderer('rpc-interno-host-sync', payload);
-      });
-    }
-    try {
-      server = await lanServer.startLanServer();
-    } catch (lanErr) {
-      const peerMode = process.env.R_PLUS_LAN_PEER === '1';
-      const portBusy =
-        (lanErr && lanErr.code === 'EADDRINUSE') ||
-        (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
-      if (peerMode && portBusy) {
-        console.warn(
-          '[R+ LAN peer mode] Puerto LAN en uso — esta ventana usará el servidor del anfitrión ya abierto.'
-        );
-      } else {
-        throw lanErr;
+    if (isDevWardServerEnabled()) {
+      const lanServer = require('./server');
+      try {
+        server = await lanServer.startLanServer();
+      } catch (lanErr) {
+        const peerMode = process.env.R_PLUS_LAN_PEER === '1';
+        const portBusy =
+          (lanErr && lanErr.code === 'EADDRINUSE') ||
+          (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
+        if (peerMode && portBusy) {
+          console.warn(
+            '[R+ LAN peer mode] Puerto LAN en uso — esta ventana usará el servidor del anfitrión ya abierto.'
+          );
+        } else {
+          throw lanErr;
+        }
       }
     }
     if (unlockPromise) await unlockPromise;
