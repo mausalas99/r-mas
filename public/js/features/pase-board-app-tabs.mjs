@@ -4,7 +4,7 @@
 import { isPaseMode, isGuardiaMode } from './chrome.mjs';
 import { renderGuardiaBoard } from './guardia-board.mjs';
 import { resumeLabBulkPreviewModalIfSuspended } from './lab-bulk-preview-modal.mjs';
-import { eaHasCopyableContent, syncEaCopyFab } from './estado-actual-panel.mjs';
+import { refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import {
   ensureChartsLoaded,
   ensureLabsLoaded,
@@ -46,6 +46,8 @@ function refreshExpedienteOnNotaAppTabEnter() {
     syncInnerTabVisualOnly();
     if (granularMountIsEmpty(inner) || !isInnerTabContentFresh(inner, settings)) {
       renderGranularInnerTab(inner, granularMountIsEmpty(inner) ? { force: true } : undefined);
+    } else if (inner === 'estadoActual') {
+      refreshEaCopyFabVisibility();
     }
   });
 }
@@ -309,10 +311,8 @@ export function switchAppTab(tab) {
   else if (isPaseMode()) layoutPaseAppTab(dom, tab, prevAppTab);
   else layoutStandardAppTab(dom, tab);
 
-  var settings = rt.getSettings();
-  var inner = migrateGranularInner(rt.getActiveInner() || 'todo', settings);
   syncLabCopyFabVisibility(tab);
-  syncEaCopyFab(tab === 'nota' && inner === 'estadoActual' && eaHasCopyableContent());
+  refreshEaCopyFabVisibility();
   if (tab === 'med') rt.setMedTabAttention(false);
   syncHeaderContext(rt);
   schedulePostAppTabSwitch(tab, prevAppTab);

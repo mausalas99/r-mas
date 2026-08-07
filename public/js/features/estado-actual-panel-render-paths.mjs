@@ -27,6 +27,7 @@ import {
   captureEaPanelUiState,
   restoreEaPanelUiState,
 } from './estado-actual-panel-clinico.mjs';
+import { buildEaActionBarButtons } from './estado-actual-panel-action-bar.mjs';
 import { syncEaCopyFab } from './estado-actual-panel-actions.mjs';
 
 export function buildEaShellKey(activeId, monitoreo) {
@@ -153,9 +154,7 @@ export function renderEaFullPanelShell(mount, patient, monitoreo, activeId, save
     '<div class="estado-actual-panel">' +
     '<div class="ea-action-bar">' +
     '<div class="ea-action-bar__cluster" role="group" aria-label="Acciones de monitoreo">' +
-    '<button type="button" class="ea-btn" onclick="openEstadoActualRegistroModal()">Registro manual</button>' +
-    '<button type="button" class="ea-btn ea-btn--success" onclick="estadoActualGuardar()">Guardar</button>' +
-    '<button type="button" class="ea-btn ea-btn--accent" id="btn-ea-copiar-indicaciones" onclick="copiarEaIndicacionesClipboard()" title="Copia meds confirmados + bomba al portapapeles para pegar en Word/EMR">Copiar indicaciones</button>' +
+    buildEaActionBarButtons(getEaPanelRuntime().getSettings()) +
     '</div>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
     savedLabel +

@@ -11,6 +11,25 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
+async function notifyTeamsAfterPurge() {
+  try {
+    await publishClinicalTeamsAfterChange({
+      sala: clinicalSessionContext.user?.sala,
+    });
+  } catch {
+    /* push optional — local roster already cleaned */
+  }
+}
+
+function dispatchPurgeTeamsChanged() {
+  if (typeof document === 'undefined') return;
+  document.dispatchEvent(
+    new CustomEvent('rpc-clinical-teams-changed', {
+      detail: { source: 'cloud-admin-delete', sala: clinicalSessionContext.user?.sala },
+    })
+  );
+}
+
 /**
  * @param {string} handle — cloud username (with or without @)
  * @returns {Promise<{ ok: boolean, reason?: string, targetUserId?: string }>}
@@ -34,21 +53,7 @@ export async function purgeClinicalUserMatchingCloudHandle(handle) {
     return { ok: false, reason: String(res?.error || 'delete_failed'), targetUserId };
   }
 
-  try {
-    await publishClinicalTeamsAfterChange({
-      sala: clinicalSessionContext.user?.sala,
-    });
-  } catch {
-    /* push optional — local roster already cleaned */
-  }
-
-  if (typeof document !== 'undefined') {
-    document.dispatchEvent(
-      new CustomEvent('rpc-clinical-teams-changed', {
-        detail: { source: 'cloud-admin-delete', sala: clinicalSessionContext.user?.sala },
-      })
-    );
-  }
-
+  await notifyTeamsAfterPurge();
+  dispatchPurgeTeamsChanged();
   return { ok: true, targetUserId };
 }

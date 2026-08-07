@@ -1,9 +1,9 @@
 /** Guardia mode DOM + board rerender helpers (extracted for complexity budget). */
 
-const GUARDIA_MODE_LABEL_OFF = 'Alcance completo';
-const GUARDIA_MODE_LABEL_ON = 'Solo mis entregas';
+export const GUARDIA_MODE_LABEL_OFF = 'Censo: todos';
+export const GUARDIA_MODE_LABEL_ON = 'Censo: solo entregados';
 const GUARDIA_MODE_TOGGLE_TITLE =
-  'Filtro de la grilla: pacientes en tu alcance o solo los que te entregaron (independiente del botón Entrega).';
+  'Filtro de la grilla: todos los pacientes en tu alcance o solo los entregados a ti (independiente del botón Entrega).';
 const GUARDIA_CENSUS_FILTER_HINT_ON = 'Solo pacientes que te entregaron en este turno.';
 const GUARDIA_CENSUS_FILTER_HINT_OFF = 'Todos los pacientes en tu alcance clínico.';
 

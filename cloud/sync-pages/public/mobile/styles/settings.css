@@ -36,11 +36,62 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 .header-right {
   display: flex;
   align-items: center;
-  gap: calc(10px * var(--density-space));
+  gap: calc(12px * var(--density-space));
   position: relative;
   flex: 0 1 auto;
   min-width: 0;
   justify-content: flex-end;
+}
+.header-session-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--color-surface) 94%, transparent);
+}
+.header-session-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 2px;
+  background: color-mix(in oklab, var(--divider) 85%, transparent);
+  flex-shrink: 0;
+}
+.header-session-cluster:has(#btn-header-team-sync[style*="display: none"]) .header-session-divider,
+.header-session-cluster:has(#btn-header-team-sync[style*="display:none"]) .header-session-divider {
+  display: none;
+}
+.header-util-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.header-session-cluster .btn-header-icon {
+  min-width: 34px;
+  min-height: 34px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.header-session-cluster .btn-header-icon:hover {
+  background: var(--state-hover-bg);
+  color: var(--text);
+}
+.header-session-cluster .btn-livesync-header {
+  color: var(--livesync-tone, var(--text-muted));
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.header-session-cluster .btn-livesync-header:hover {
+  background: var(--state-hover-bg);
 }
 .btn-header-icon {
   background: var(--color-surface);
@@ -53,8 +104,9 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 }
 .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
 .btn-header-icon:hover { background: var(--surface); color: var(--text); }
-/* LiveSync header icon (misma caja cuadrada que Perfil / Ajustes) */
-.btn-header-icon.btn-livesync-header[aria-expanded="true"] {
+/* LiveSync header icon inside session cluster */
+.btn-header-icon.btn-livesync-header[aria-expanded="true"],
+.header-session-cluster .btn-livesync-header[aria-expanded="true"] {
   background: color-mix(in oklab, var(--action) 12%, var(--surface));
   border-color: color-mix(in oklab, var(--action) 28%, var(--border));
   color: var(--text);
@@ -91,6 +143,15 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
   border-color: color-mix(in oklab, var(--livesync-tone) 32%, var(--border));
   box-shadow: var(--shadow-sm);
 }
+.header-session-cluster .btn-livesync-header--live,
+.header-session-cluster .btn-livesync-header--syncing,
+.header-session-cluster .btn-livesync-header--degraded,
+.header-session-cluster .btn-livesync-header--local,
+.header-session-cluster .btn-livesync-header--idle {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
 .btn-header-icon.btn-livesync-header--live:hover,
 .btn-header-icon.btn-livesync-header--syncing:hover,
 .btn-header-icon.btn-livesync-header--degraded:hover,
@@ -98,6 +159,13 @@ html.dark .settings-theme-btn.active { background: var(--action); color: var(--c
 .btn-header-icon.btn-livesync-header--idle:hover {
   color: var(--livesync-tone);
   background: var(--color-elevated);
+}
+.header-session-cluster .btn-header-icon.btn-livesync-header--live:hover,
+.header-session-cluster .btn-header-icon.btn-livesync-header--syncing:hover,
+.header-session-cluster .btn-header-icon.btn-livesync-header--degraded:hover,
+.header-session-cluster .btn-header-icon.btn-livesync-header--local:hover,
+.header-session-cluster .btn-header-icon.btn-livesync-header--idle:hover {
+  background: var(--state-hover-bg);
 }
 .btn-livesync-header--live .livesync-wifi-bar,
 .btn-livesync-header--live .livesync-wifi-dot {

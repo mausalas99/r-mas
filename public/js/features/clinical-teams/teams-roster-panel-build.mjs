@@ -3,6 +3,7 @@ import {
   effectiveClinicalRank,
   hasProgramAdminPrivileges,
   canViewLanUserDirectory,
+  canConfigureRotation,
 } from '../../clinical-privileges.mjs';
 import {
   isLegacyMachineUsername,
@@ -154,6 +155,25 @@ export function buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint) {
     </section>`;
 }
 
+/**
+ * Visible R4/Admin block — not buried under Configuración / Zona avanzada.
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
+ */
+export function buildRotationAdminSectionHtml(user) {
+  if (!canConfigureRotation(user)) return '';
+  return `
+    <section class="clinical-teams-section clinical-teams-section--rotation" aria-label="Cambiar de rotación">
+      <div class="clinical-teams-rotation-card">
+        <h4 class="clinical-teams-section-title">Cambiar de rotación</h4>
+        <p class="clinical-teams-section-desc">Mes nuevo o cambio de equipos del servicio. Archiva equipos activos y limpia guardias del día; los residentes vuelven a crear o unirse.</p>
+        <div class="clinical-teams-advanced-rotation-actions">
+          <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
+          <button type="button" id="btn-rotation-config-open" class="btn-med-secondary">Calendario de vigencia…</button>
+        </div>
+      </div>
+    </section>`;
+}
+
 export function buildClinicalTeamsConfigSectionHtml(profileSection) {
   return `
     <section class="clinical-teams-section clinical-teams-section--more">
@@ -164,17 +184,7 @@ export function buildClinicalTeamsConfigSectionHtml(profileSection) {
         summaryHtml: `
           <h4 class="clinical-teams-section-title">Configuración</h4>
           <p class="clinical-teams-section-desc">Perfil clínico y rango.</p>`,
-        bodyHtml: `${profileSection}
-      <details class="clinical-teams-advanced-rotation">
-        <summary class="clinical-teams-advanced-rotation-summary">Zona avanzada · rotación del programa</summary>
-        <div class="clinical-teams-advanced-rotation-body">
-          <p class="clinical-teams-advanced-rotation-hint">Solo R4/Admin. Configura el calendario del ciclo o inicia una rotación nueva (archiva equipos y guardias del día).</p>
-          <div class="clinical-teams-advanced-rotation-actions">
-            <button type="button" id="btn-rotation-config-open" class="btn-med-secondary" hidden>Configuración rotación…</button>
-            <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
-          </div>
-        </div>
-      </details>`,
+        bodyHtml: profileSection,
       })}
     </section>`;
 }

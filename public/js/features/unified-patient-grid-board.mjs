@@ -1,14 +1,11 @@
 /**
- * High-density Guardia census grid with R4 ward partitioning.
+ * High-density Guardia census grid with elevated team partitioning.
  * Separate from pase-board.mjs (single-patient Pase summary view).
  */
 import { calcVitalsBanner, calcVitalsBannerForSpec } from '../../../lib/interno/vitals-banner.mjs';
-import {
-  R4_GUARDIA_SECTOR_ORDER,
-  resolveR4GuardiaSectorLabel,
-} from '../clinico-access.mjs';
 import { sortPatientsByPriorityThenBed } from '../../../lib/patient-priority-sort.mjs';
 import { buildPatientChipInnerHtml, vitalsBannerForGuardia } from './unified-patient-grid-chip-html.mjs';
+import { buildGuardiaTeamCensusGroups } from './unified-patient-grid-team-groups.mjs';
 
 export { calcVitalsBanner, vitalsBannerForGuardia };
 
@@ -69,45 +66,44 @@ export class UnifiedPatientGridBoard {
   }
 
   /**
-   * @param {Array<{ id: string, bed_label?: string, name?: string, service?: string, sub_area?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object }>} patients
+   * @param {Array<{ id: string, bed_label?: string, name?: string, service?: string, sub_area?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object, censusTeamId?: string }>} patients
    * @param {Map<string, { is_critical?: number, last_vitals_check?: string, vitals_frequency?: string }>} guardiasMap
    * @param {string} [userRank]
+   * @param {{ teams?: object[], assignments?: object[], now?: string|Date|number }} [groupCtx]
    */
-  drawCensusGrid(patients, guardiasMap, userRank = 'R1') {
+  drawCensusGrid(patients, guardiasMap, userRank = 'R1', groupCtx = {}) {
     if (!this.container) return;
     this.container.innerHTML = '';
     this.container.classList.add('patient-chips-grid', 'patient-chips-grid--guardia');
 
     if (userRank === 'R4') {
-      const followUpPatients = filterR4FollowUpPinPatients(patients);
-      const followUpIds = new Set(followUpPatients.map((p) => p.id));
-      if (followUpPatients.length > 0) {
-        this.appendDivider(R4_FOLLOWUP_PIN_LABEL);
-        this.renderBatch(followUpPatients, guardiasMap);
-      }
-
-      const assignedIds = new Set(followUpIds);
-      for (const sector of R4_GUARDIA_SECTOR_ORDER) {
-        const sectorPatients = patients.filter((p) => {
-          if (!p?.id || assignedIds.has(p.id)) return false;
-          if (resolveR4GuardiaSectorLabel(p) !== sector) return false;
-          assignedIds.add(p.id);
-          return true;
-        });
-        if (sectorPatients.length > 0) {
-          this.appendDivider(sector);
-          this.renderBatch(sectorPatients, guardiasMap);
-        }
-      }
-      const otherPatients = patients.filter((p) => p?.id && !assignedIds.has(p.id));
-      if (otherPatients.length > 0) {
-        this.appendDivider('Otros');
-        this.renderBatch(otherPatients, guardiasMap);
-      }
+      this.drawElevatedTeamCensus(patients, guardiasMap, groupCtx);
       return;
     }
 
     this.renderBatch(patients, guardiasMap);
+  }
+
+  /**
+   * @param {object[]} patients
+   * @param {Map<string, object>} guardiasMap
+   * @param {{ teams?: object[], assignments?: object[], now?: string|Date|number }} groupCtx
+   */
+  drawElevatedTeamCensus(patients, guardiasMap, groupCtx) {
+    const followUpPatients = filterR4FollowUpPinPatients(patients);
+    const followUpIds = new Set(followUpPatients.map((p) => p.id));
+    if (followUpPatients.length > 0) {
+      this.appendDivider(R4_FOLLOWUP_PIN_LABEL);
+      this.renderBatch(followUpPatients, guardiasMap);
+    }
+
+    const rest = (patients || []).filter((p) => p?.id && !followUpIds.has(p.id));
+    const groups = buildGuardiaTeamCensusGroups(rest, groupCtx);
+    for (const group of groups) {
+      if (!group.patients.length) continue;
+      this.appendDivider(group.label);
+      this.renderBatch(group.patients, guardiasMap);
+    }
   }
 
   /**

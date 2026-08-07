@@ -228,6 +228,12 @@ async function handleFinalizarRotacion(deps) {
   if (res && res.ok) {
     deps.runtime().showToast('Rotación finalizada. Crea nuevos equipos para el siguiente mes.', 'success');
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    document.dispatchEvent(new CustomEvent('rpc-guardia-rotation-changed'));
+    try {
+      var rejoin = await import('../clinical-rotation-rejoin-modal.mjs');
+      rejoin.setRotationRejoinPending(true);
+      void rejoin.maybeShowRotationRejoinModal({ force: true });
+    } catch (_e) { void _e; }
     deps.renderLanPanel({ force: true });
   } else {
     deps.runtime().showToast(res && res.error || 'No se pudo finalizar la rotación.', 'error');

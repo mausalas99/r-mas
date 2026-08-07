@@ -207,24 +207,6 @@ function wireQueuePanelDismissLayers(registry) {
     closeModalViaWindowOrHide('closeLabRepoBatchModal', 'lab-repo-batch-modal'),
     { panelSelector: '.lab-repo-batch-modal' }
   );
-  regOpenClass(
-    registry,
-    'doc-queue-modal',
-    closeModalViaWindowOrHide('closeDocQueuePanel', 'doc-queue-modal'),
-    { panelSelector: '.doc-queue-modal' }
-  );
-  regOpenClass(
-    registry,
-    'cultivo-queue-modal',
-    closeModalViaWindowOrHide('closeCultivoQueuePanel', 'cultivo-queue-modal'),
-    { panelSelector: '.cultivo-queue-modal' }
-  );
-  regOpenClass(
-    registry,
-    'entrega-prep-modal',
-    closeModalViaWindowOrHide('closeEntregaPrepPanel', 'entrega-prep-modal'),
-    { panelSelector: '.entrega-prep-modal' }
-  );
 }
 
 /** @param {ReturnType<typeof createModalDismissRegistry>} registry */

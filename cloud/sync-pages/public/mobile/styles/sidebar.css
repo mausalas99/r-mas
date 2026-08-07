@@ -503,16 +503,18 @@ html.dark .patient-drag-hovercard.patient-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: calc(2px * var(--density-space)) calc(2px * var(--density-space)) calc(1px * var(--density-space));
-  padding: calc(4px * var(--density-space)) calc(10px * var(--density-space));
-  min-height: 24px;
+  margin: calc(6px * var(--density-space)) calc(8px * var(--density-space)) calc(2px * var(--density-space));
+  padding: calc(2px * var(--density-space)) 0;
+  min-height: 20px;
   font-size: calc(10px * var(--density-font));
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--surface) 65%, var(--border));
-  border: 1px solid color-mix(in oklab, var(--divider) 72%, transparent);
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
 }
 .patient-list-section-label--pinned {
   gap: 6px;
@@ -529,23 +531,27 @@ html.dark .patient-drag-hovercard.patient-card {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: 0.02em;
+  color: var(--action);
+  text-transform: none;
 }
 .patient-list-section-toggle {
-  width: calc(100% - 4px);
-  margin: 2px 2px 1px;
+  width: calc(100% - 16px);
+  margin: 6px 8px 1px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border: 1px solid color-mix(in oklab, var(--divider) 72%, transparent);
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--surface) 65%, var(--border));
+  border: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-muted);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   font-weight: 700;
   font-size: 10px;
-  padding: calc(4px * var(--density-space)) calc(10px * var(--density-space));
-  min-height: 24px;
+  padding: calc(2px * var(--density-space)) 0;
+  min-height: 20px;
   cursor: pointer;
 }
 .patient-flag-chip {

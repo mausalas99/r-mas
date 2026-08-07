@@ -20,18 +20,29 @@ function finishNext(nextBtn) {
 }
 
 function getMapTabsCopy() {
+  var mod = getWrapPaseShortcutKey();
   if (getUiDensity() !== 'normal') {
     return (
-      '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente. Pulsa un bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
+      '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente. Pulsa un bloque o usa <strong>' +
+      mod +
+      '+1…4</strong> para abrir el detalle en vista <strong>Normal</strong> (repite el número para ciclar subvistas).</p>'
     );
   }
   if (tourState.guidedTourBranch === 'interconsulta') {
     return (
-      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Las pestañas internas del expediente vienen en el siguiente paso.</p>'
+      '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. Atajo <strong>' +
+      mod +
+      '+1…4</strong> salta entre ellas; <strong>repite ' +
+      mod +
+      '+2</strong> para ciclar Paciente → Clínico → Resultados → Salida.</p>'
     );
   }
   return (
-    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. El mapa del expediente lo verás al entrar en esa pestaña.</p>'
+    '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong>. <strong>' +
+    mod +
+    '+1…4</strong> cambia de pestaña; <strong>repite ' +
+    mod +
+    '+2</strong> rota los grupos del expediente.</p>'
   );
 }
 
@@ -88,16 +99,22 @@ function renderLabView(bodyEl, nextBtn) {
 }
 
 function renderIcExpedienteTabs(bodyEl, nextBtn) {
+  var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. Atajos: <strong>' +
+    mod +
+    '+2</strong> cicla grupos · <strong>E/T/D</strong> saltan a EA, tendencias o datos.</p>';
   showNext(nextBtn);
 }
 
 function renderSalaExpedienteTabs(bodyEl, nextBtn) {
+  var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pestañas: <strong>Paciente</strong>, <strong>Clínico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. <strong>Resultados</strong>: tendencias. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla en <strong>Paciente</strong>.</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: <strong>Estado actual</strong> → Eventualidades. Atajos: <strong>' +
+    mod +
+    '+2</strong> cicla grupos · <strong>E</strong> EA/Eventualidades · <strong>T</strong> tendencias/cultivos.</p>';
   showNext(nextBtn);
 }
 
@@ -140,16 +157,15 @@ function renderSalaTendChart(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
-function renderSalaSoap(bodyEl, nextBtn) {
-  bodyEl.innerHTML =
-    '<p style="margin:0 0 8px;line-height:1.5;"><strong>Expediente → Nota</strong>: en la tarjeta verde de evolución, el botón <strong>Plantilla SOAP</strong> está arriba a la derecha del encabezado verde (lleva resaltado).</p>' +
-    '<p style="margin:0;font-size:13px;color:var(--text-muted);">Ábrelo e inserta en evolución cuando quieras.</p>';
-  showNext(nextBtn);
-}
-
 function renderSalaMed(bodyEl, nextBtn) {
+  var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Pulsa <strong>Importar SOME</strong>, pega el bloque TSV del hospital y procesa la receta. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
+    '<p style="margin:0;line-height:1.5;">Pulsa <strong>Importar SOME</strong>, pega el bloque TSV del hospital y procesa la receta. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>' +
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
+    mod +
+    '+3</strong> cicla Manejo ↔ Perfil · <strong>' +
+    mod +
+    '+Shift+3</strong> alterna texto Completo / Nombre+Día.</p>';
   showNext(nextBtn);
 }
 
@@ -183,7 +199,8 @@ function renderEstadoActualRegistro(bodyEl, nextBtn) {
 
 function renderEstadoActualReview(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">Tras registrar, revisa tres zonas en esta pestaña: el <strong>snapshot</strong> (resumen del turno), las <strong>gráficas</strong> por familia con alertas, y el <strong>historial</strong> con texto compilado copiable a la nota.</p>' +
+    '<p style="margin:0;line-height:1.5;">Tras registrar, revisa tres zonas en esta pestaña: el <strong>snapshot</strong> (resumen del turno), las <strong>gráficas</strong> por familia con alertas, y el <strong>historial</strong> con texto compilado para la nota.</p>' +
+    '<p style="margin:10px 0 0;line-height:1.5;">En <strong>Sala</strong>, copia ese texto al expediente con el botón flotante o desde el historial. En <strong>Interconsulta</strong> verás <strong>Enviar a nota</strong> en la barra de acciones.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Desplázate si hace falta. <strong>Siguiente</strong>: <strong>Eventualidades</strong>.</p>';
   showNext(nextBtn);
 }
@@ -217,9 +234,14 @@ function renderSalaRecetaHu(bodyEl, nextBtn) {
 }
 
 function renderSalaAgenda(bodyEl, nextBtn) {
+  var mod = getWrapPaseShortcutKey();
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">La pestaña <strong>Agenda</strong> (arriba) concentra <strong>procedimientos programados</strong> del servicio: cirugías, estudios y pendientes del turno, enlazados al paciente cuando aplica.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Con <strong>R+ Cloud</strong> la agenda se comparte en la sala. <strong>Siguiente</strong>: sincronización en equipo.</p>';
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Atajos: <strong>' +
+    mod +
+    '+4</strong> abre Agenda (repite para semana actual) · <strong>' +
+    mod +
+    '+[ / ]</strong> semana anterior/siguiente. Con <strong>R+ Cloud</strong> se comparte en la sala.</p>';
   showNext(nextBtn);
 }
 
@@ -264,7 +286,6 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   ic_exports: renderIcExports,
   sala_tend: renderSalaTend,
   sala_tend_chart: renderSalaTendChart,
-  sala_soap: renderSalaSoap,
   sala_med: renderSalaMed,
   profile: renderProfile,
   servicio_default: renderServicioDefault,

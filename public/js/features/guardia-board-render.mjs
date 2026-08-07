@@ -27,6 +27,9 @@ import {
 } from './guardia-patient-action-sheet.mjs';
 import { filterPatientsForGuardiaCensus } from './patients-clinical-filter.mjs';
 import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
+import { renderGuardiaCensusEmpty } from './guardia-census-empty.mjs';
+import { syncGuardiaTrustStrip } from './guardia-trust-strip.mjs';
+import { setGuardiaMode } from '../guardia-mode-sync.mjs';
 import {
   bootstrapGuardiaCensusData,
   bootstrapGuardiaViewOnEnter,
@@ -134,7 +137,13 @@ function buildGuardiaCensusPatients(guardiasMap, gridViewContext) {
       elevatedPatientFilters
     );
   }
-  return scopedPatients.map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
+  const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
+  const teams = scope.teams || clinicalSessionContext.teams || [];
+  const assignments = scope.assignments || [];
+  const now = scope.now || new Date().toISOString();
+  return scopedPatients.map((p) =>
+    enrichPatientForGuardiaCard(p, guardiasMap, { teams, assignments, now })
+  );
 }
 
 function renderGuardiaVitalsIfTurno(turnoActivo, censusPatientIds) {
@@ -194,7 +203,23 @@ function wireGuardiaGridBoard({
       });
     }
   };
-  board.drawCensusGrid(censusPatients, guardiasMap, gridRank);
+  if (!censusPatients.length) {
+    renderGuardiaCensusEmpty(board.container, {
+      // clinicalSessionContext.guardiaMode = census filter «solo entregados» (not Guardia view).
+      filterOn: !!clinicalSessionContext.guardiaMode,
+      onShowAll: () => {
+        setGuardiaMode(false, { settings, renderGuardiaBoard, rerenderBoard: true });
+      },
+    });
+    board.stopVitalsTicker();
+    return;
+  }
+  const scope = clinicalSessionContext.scopeContext || getClinicalScopeContextForEvaluate();
+  board.drawCensusGrid(censusPatients, guardiasMap, gridRank, {
+    teams: scope.teams || clinicalSessionContext.teams || [],
+    assignments: scope.assignments || [],
+    now: scope.now || new Date().toISOString(),
+  });
   board.startVitalsTicker();
 }
 
@@ -219,6 +244,7 @@ export function renderGuardiaBoard(settings) {
 
   wireGuardiaModeToggle(settings);
   syncGuardiaRotationToolbar();
+  syncGuardiaTrustStrip();
   syncGuardiaBoardChrome({
     turnoActivo,
     entregaActive,

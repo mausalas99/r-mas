@@ -696,7 +696,7 @@ html.motion-sobrio aside.patient-sidebar .patient-card {
    4 · PASE & GUARDIA
    ═══════════════════════════════════════════════════════════ */
 
-html.ui-density-guardia .guardia-panel,
+html.ui-density-guardia .guardia-panel:not(.guardia-panel--metrics),
 html.ui-density-guardia .guardia-census-panel {
   border: var(--border-hairline);
   border-radius: var(--radius-lg);
@@ -741,11 +741,11 @@ html:not(.ui-density-normal) .pase-patient-name {
 
 
 html.ui-density-guardia .guardia-metrics-toolbar {
-  padding: 6px 10px;
-  border: var(--border-hairline);
-  border-radius: var(--radius-lg);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: var(--elev-flat);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 html.ui-density-guardia .guardia-phase-bar {
@@ -770,8 +770,9 @@ html.ui-density-guardia .entrega-proc-card:hover {
 }
 
 html.ui-density-guardia .guardia-census-count {
-  border: var(--border-hairline);
-  box-shadow: var(--elev-flat);
+  border: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 html.ui-density-guardia .btn-guardia-entrega-phase {

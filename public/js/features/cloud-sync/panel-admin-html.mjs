@@ -6,8 +6,8 @@ import { formatCloudRoomLabel } from './room-label.mjs';
 const ADMIN_TABS = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'salas', label: 'Salas' },
-  { id: 'equipos', label: 'Equipos' },
-  { id: 'usuarios', label: 'Usuarios' },
+  // Equipos + cuentas Nube (antes pestaña Usuarios) en un solo panel.
+  { id: 'equipos', label: 'Usuarios' },
   { id: 'mutaciones', label: 'Mutaciones' },
   { id: 'peligro', label: 'Peligro', danger: true },
 ];
@@ -205,41 +205,44 @@ export function roomDetailHtml(data) {
   );
 }
 
+/** @deprecated Usuarios merged into Equipos — kept for tests/import stability. */
 export function usuariosShellHtml() {
+  return equiposRedirectHintHtml();
+}
+
+function equiposRedirectHintHtml() {
   return (
-    '<div class="cloud-sync-admin-toolbar">' +
-    '<input type="search" class="profile-input" data-admin-user-search placeholder="Buscar @usuario o nombre" />' +
-    '<button type="button" class="cloud-sync-btn" data-admin-action="search-users">Buscar</button></div>' +
-    '<div data-admin-users-list><p class="cloud-sync-hint">Buscá usuarios o dejá vacío para los últimos 50.</p></div>'
+    '<p class="cloud-sync-hint">La gestión de usuarios está en la pestaña <strong>Usuarios</strong> (equipos + cuenta Nube).</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="equipos">Ir a Usuarios</button>'
   );
 }
 
-/** @param {{ id: string, username?: string }} user */
+/**
+ * Compact Nube account actions for Equipos rows (replaces the old Usuarios table).
+ * @param {{ id: string, username?: string }} user
+ */
 export function userActionsHtml(user) {
   const id = esc(String(user.id));
   const handle = esc(String(user.username || ''));
   return (
-    '<div class="cloud-sync-admin-row-actions">' +
+    '<details class="cloud-sync-admin-equipos-nube">' +
+    '<summary class="cloud-sync-admin-equipos-nube-summary">Nube</summary>' +
+    '<div class="cloud-sync-admin-row-actions cloud-sync-admin-row-actions--compact">' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="revoke-sessions" data-user-id="' +
     id +
     '" data-user-handle="' +
     handle +
-    '">Revocar sesiones</button>' +
+    '">Revocar</button>' +
     '<select class="profile-input cloud-sync-admin-role-select" data-admin-promote-role data-user-id="' +
     id +
-    '">' +
+    '" title="Rol Nube" aria-label="Rol Nube">' +
     '<option value="admin">Admin</option><option value="program_admin">Admin programa</option>' +
-    '<option value="member">Miembro</option></select>' +
+    '<option value="member" selected>Miembro</option></select>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="promote-user" data-user-id="' +
     id +
     '" data-user-handle="' +
     handle +
-    '">Cambiar rol</button>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="reset-password" data-user-id="' +
-    id +
-    '" data-user-handle="' +
-    handle +
-    '">Restablecer contraseña</button>' +
+    '">Rol</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost cloud-sync-btn--compact" data-admin-action="disable-user" data-user-id="' +
     id +
     '" data-user-handle="' +
@@ -249,7 +252,7 @@ export function userActionsHtml(user) {
     id +
     '" data-user-handle="' +
     handle +
-    '">Eliminar</button></div>'
+    '">Eliminar Nube</button></div></details>'
   );
 }
 
@@ -310,8 +313,8 @@ export function peligroHtml() {
     '</div></section>' +
     '<section class="cloud-sync-admin-danger-card">' +
     '<h5 class="cloud-sync-admin-danger-title">Usuarios</h5>' +
-    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="usuarios">Ir a Usuarios</button>' +
+    '<p class="cloud-sync-hint">Revocar sesiones, deshabilitar o borrar cuentas (pestaña Usuarios).</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-admin-tab="equipos">Ir a Usuarios</button>' +
     '</section></div>'
   );
 }

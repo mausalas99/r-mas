@@ -16,7 +16,8 @@ describe('buildAdminShellHtml', () => {
     assert.match(html, /data-admin-tab="resumen"/);
     assert.match(html, /data-admin-tab="salas"/);
     assert.match(html, /data-admin-tab="equipos"/);
-    assert.match(html, /data-admin-tab="usuarios"/);
+    assert.match(html, />Usuarios</);
+    assert.doesNotMatch(html, /data-admin-tab="usuarios"/);
     assert.match(html, /data-admin-tab="mutaciones"/);
     assert.match(html, /data-admin-tab="peligro"/);
     assert.match(html, /data-admin-section="resumen"/);
@@ -90,7 +91,7 @@ describe('peligroHtml', () => {
     const html = peligroHtml();
     assert.match(html, /data-admin-peligro-room/);
     assert.match(html, /data-admin-action="purge-room-selected"/);
-    assert.match(html, /data-admin-tab="usuarios"/);
+    assert.match(html, /data-admin-tab="equipos"/);
     assert.doesNotMatch(html, /wrangler d1 execute/);
     assert.doesNotMatch(html, /Usá /);
   });

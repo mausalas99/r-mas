@@ -93,6 +93,13 @@ export function navigateProcedureAgendaWeek(delta) {
   renderProcedureAgendaPanel();
 }
 
+/** Vuelve a la semana del turno (⌘4 repetido en Agenda). */
+export function resetProcedureAgendaWeek() {
+  if (procedureAgendaWeekOffset === 0) return;
+  procedureAgendaWeekOffset = 0;
+  renderProcedureAgendaPanel();
+}
+
 export function renderProcedureAgendaPanel() {
   var mount = document.getElementById("procedure-agenda-grid-mount");
   var rangeEl = document.getElementById("procedure-agenda-range");
@@ -226,6 +233,7 @@ export function deleteProcedureAgendaFromModal() {
 
 export const windowHandlers = {
   navigateProcedureAgendaWeek,
+  resetProcedureAgendaWeek,
   openProcedureAgendaModal,
   closeProcedureAgendaModal,
   saveProcedureAgendaFromModal,

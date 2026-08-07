@@ -8,6 +8,7 @@ import {
   R4_FOLLOWUP_PIN_LABEL,
   UnifiedPatientGridBoard,
 } from './unified-patient-grid-board.mjs';
+import { GUARDIA_UNASSIGNED_TEAM_LABEL } from './unified-patient-grid-team-groups.mjs';
 
 describe('calcVitalsBanner', () => {
   it('returns Sin signos for None frequency', () => {
@@ -96,9 +97,13 @@ describe('UnifiedPatientGridBoard', () => {
     );
   });
 
-  it('renders R4 Follow-up pin divider before sector dividers', () => {
+  it('renders R4 Follow-up pin divider before team dividers', () => {
     if (typeof document === 'undefined') return;
     const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    const teams = [
+      { team_id: 't1', name: 'Equipo A', sala: 'Sala 1' },
+      { team_id: 't2', name: 'Equipo B', sala: 'Sala 1' },
+    ];
     board.drawCensusGrid(
       [
         {
@@ -106,58 +111,65 @@ describe('UnifiedPatientGridBoard', () => {
           name: 'Follow',
           interconsult_type: 'Follow-up',
           interconsult_status: 'Active',
-          service: 'Sala A',
+          censusTeamId: 't1',
         },
-        { id: 'p1', name: 'A', service: 'Sala A' },
-        { id: 'p2', name: 'B', service: 'Eme' },
+        { id: 'p1', name: 'A', censusTeamId: 't1' },
+        { id: 'p2', name: 'B', censusTeamId: 't2' },
       ],
       new Map(),
-      'R4'
+      'R4',
+      { teams, assignments: [] }
     );
     const dividers = host.querySelectorAll('.r4-section-divider');
     assert.equal(dividers.length, 3);
     assert.equal(dividers[0].textContent, R4_FOLLOWUP_PIN_LABEL);
-    assert.equal(dividers[1].textContent, 'Sala A');
-    assert.equal(dividers[2].textContent, 'Eme');
+    assert.equal(dividers[1].textContent, 'Equipo A');
+    assert.equal(dividers[2].textContent, 'Equipo B');
     const chips = host.querySelectorAll('.patient-chip-card');
     assert.equal(chips.length, 3);
     assert.equal(chips[0].getAttribute('data-patient-id'), 'fu1');
   });
 
-  it('renders R4 sector dividers', () => {
+  it('renders R4 team dividers', () => {
     if (typeof document === 'undefined') return;
     const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    const teams = [
+      { team_id: 't1', name: 'Equipo A', sala: 'Sala 1' },
+      { team_id: 't2', name: 'Equipo B', sala: 'Sala 2' },
+    ];
     board.drawCensusGrid(
       [
-        { id: 'p1', name: 'A', service: 'Sala A' },
-        { id: 'p2', name: 'B', service: 'Eme' },
+        { id: 'p1', name: 'A', censusTeamId: 't1' },
+        { id: 'p2', name: 'B', censusTeamId: 't2' },
       ],
       new Map(),
-      'R4'
+      'R4',
+      { teams, assignments: [] }
     );
     const dividers = host.querySelectorAll('.r4-section-divider');
     assert.equal(dividers.length, 2);
-    assert.equal(dividers[0].textContent, 'Sala A');
-    assert.equal(dividers[1].textContent, 'Eme');
+    assert.equal(dividers[0].textContent, 'Equipo A');
+    assert.equal(dividers[1].textContent, 'Equipo B');
   });
 
-  it('renders R4 patients with servicio Sala and area letter', () => {
+  it('renders R4 unassigned patients under Sin equipo asignado', () => {
     if (typeof document === 'undefined') return;
     const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    const teams = [{ team_id: 't1', name: 'Equipo A', sala: 'Sala 1' }];
     board.drawCensusGrid(
       [
-        { id: 'p1', name: 'A', service: 'Sala', sub_area: 'A' },
-        { id: 'p2', name: 'B', service: 'Sala', sub_area: 'B' },
-        { id: 'p3', name: 'C', service: 'Torre HU' },
+        { id: 'p1', name: 'A', censusTeamId: 't1' },
+        { id: 'p2', name: 'B', censusTeamId: '' },
+        { id: 'p3', name: 'C' },
       ],
       new Map(),
-      'R4'
+      'R4',
+      { teams, assignments: [] }
     );
     const dividers = host.querySelectorAll('.r4-section-divider');
-    assert.equal(dividers.length, 3);
-    assert.equal(dividers[0].textContent, 'Sala A');
-    assert.equal(dividers[1].textContent, 'Sala B');
-    assert.equal(dividers[2].textContent, 'Torre HU');
+    assert.equal(dividers.length, 2);
+    assert.equal(dividers[0].textContent, 'Equipo A');
+    assert.equal(dividers[1].textContent, GUARDIA_UNASSIGNED_TEAM_LABEL);
     assert.equal(host.querySelectorAll('.patient-chip-card').length, 3);
   });
 
@@ -194,6 +206,19 @@ describe('UnifiedPatientGridBoard', () => {
     assert.ok(badges);
     assert.equal(badges.querySelectorAll('.patient-chip-symbol').length, 0);
     assert.ok(host.querySelector('.patient-chip-vitals'));
+    assert.equal(host.querySelector('.patient-chip-footer'), null);
+    assert.equal(host.textContent.includes('Sin labs'), false);
+  });
+
+  it('shows labs snippet only when present', () => {
+    if (typeof document === 'undefined') return;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid(
+      [{ id: 'p1', name: 'Test', labsSnippet: 'Hb 10.2' }],
+      new Map()
+    );
+    assert.match(host.textContent, /Hb 10\.2/);
+    assert.ok(host.querySelector('.patient-chip-labs'));
   });
 
   it('shows DNR badge when negativa_maniobras_firmada is set', () => {

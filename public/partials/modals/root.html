@@ -656,6 +656,16 @@
   </div>
 </div>
 
+<div id="guardia-fin-turno-backdrop" class="modal-backdrop guardia-fin-turno-backdrop" aria-hidden="true">
+  <div class="modal guardia-fin-turno-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-fin-turno-title" onclick="event.stopPropagation()">
+    <h3 id="guardia-fin-turno-title">Cierre de guardia</h3>
+    <div id="guardia-fin-turno-body" class="guardia-fin-turno-body"></div>
+    <div class="modal-actions guardia-fin-turno-footer">
+      <button type="button" class="btn-cancel" id="guardia-fin-turno-dismiss">Cerrar sin enviar</button>
+    </div>
+  </div>
+</div>
+
 <div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal guardia-rotation-config-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" onclick="event.stopPropagation()">
     <h3 id="guardia-rotation-config-title">Configuración rotación</h3>
@@ -678,6 +688,34 @@
         <button type="submit" class="btn-save">Guardar ciclo</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div id="inherit-patients-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal inherit-patients-modal material-glass" role="dialog" aria-modal="true" aria-labelledby="inherit-patients-title" onclick="event.stopPropagation()">
+    <h3 id="inherit-patients-title">Heredar pacientes</h3>
+    <div id="inherit-patients-body" class="inherit-patients-body"></div>
+    <div class="modal-actions inherit-patients-actions">
+      <button type="button" class="btn-cancel" id="inherit-patients-cancel">Más tarde</button>
+      <button type="button" class="btn-med-secondary" id="inherit-patients-back" hidden>Atrás</button>
+      <button type="button" class="btn-save ui-pressable" id="inherit-patients-confirm">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<div id="rotation-rejoin-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal rotation-rejoin-modal" role="dialog" aria-modal="true" aria-labelledby="rotation-rejoin-title" onclick="event.stopPropagation()">
+    <h3 id="rotation-rejoin-title">Nueva rotación</h3>
+    <div id="rotation-rejoin-lead" class="clinical-registration-lead"></div>
+    <div class="field-group">
+      <label for="rotation-rejoin-sala">Tu sala este mes</label>
+      <select id="rotation-rejoin-sala" class="profile-input" required></select>
+      <p class="profile-hint profile-hint--field">Si cambiaste de sala en la rotación, ajústala aquí antes de unirte al equipo.</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="rotation-rejoin-later">Más tarde</button>
+      <button type="button" class="btn-save" id="rotation-rejoin-open">Confirmar sala y abrir Mi rotación</button>
+    </div>
   </div>
 </div>
 

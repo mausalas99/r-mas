@@ -62,12 +62,6 @@ var ACTION_HANDLERS = {
       mod.procesarSomeFromClipboard();
     });
   },
-  'doc-queue': function () {
-    callWin('openDocQueuePanel');
-  },
-  'entrega-prep': function () {
-    callWin('openEntregaPrepPanel');
-  },
   'lab-repo-batch': function () {
     ensureLabsThen('openLabRepoBatchModal');
   },

@@ -5,6 +5,9 @@ import {
   diagnosticosTextForCenso,
   migratePatientDiagnosticosFromVpo,
   mergeCensoPatientFields,
+  preloadNoteDxFromPatient,
+  syncNoteDxFromPatient,
+  ensureNoteDxFromPatientForExport,
 } from './patient-diagnosticos.mjs';
 
 test('ensurePatientDiagnosticos normaliza list y text', () => {
@@ -59,4 +62,28 @@ test('mergeCensoPatientFields toma dx no vacíos del source', () => {
     ['IRC']
   );
   assert.equal(target.censoMedsText, 'PIP/TAZO');
+});
+
+test('preloadNoteDxFromPatient solo si nota vacía', () => {
+  var patient = { diagnosticosList: ['NAC', 'DM2'] };
+  var note = { diagnosticos: [''] };
+  assert.equal(preloadNoteDxFromPatient(note, patient), true);
+  assert.deepEqual(note.diagnosticos, ['NAC', 'DM2']);
+  note.diagnosticos = ['OTRO'];
+  assert.equal(preloadNoteDxFromPatient(note, patient), false);
+  assert.deepEqual(note.diagnosticos, ['OTRO']);
+});
+
+test('syncNoteDxFromPatient replace trae dx del censo', () => {
+  var patient = { diagnosticosList: ['IRC'] };
+  var note = { diagnosticos: ['VIEJO'] };
+  assert.equal(syncNoteDxFromPatient(note, patient, { mode: 'replace' }), true);
+  assert.deepEqual(note.diagnosticos, ['IRC']);
+});
+
+test('ensureNoteDxFromPatientForExport rellena nota vacía para Word', () => {
+  var patient = { diagnosticosList: ['NAC'] };
+  var note = { diagnosticos: ['', ''] };
+  assert.equal(ensureNoteDxFromPatientForExport(note, patient), true);
+  assert.deepEqual(note.diagnosticos, ['NAC']);
 });

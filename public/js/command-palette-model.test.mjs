@@ -16,8 +16,6 @@ const PATIENTS = [
 test('buildPaletteItems: actions, sections, app tabs, patients, and combos', () => {
   const items = buildPaletteItems(SALA, PATIENTS);
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'procesar-some'));
-  assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'doc-queue'));
-  assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'entrega-prep'));
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'lab-repo-batch'));
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'export-note'));
   assert.ok(items.some((it) => it.kind === 'action' && it.actionId === 'new-pendiente'));
@@ -67,22 +65,6 @@ test('rankPalette: "actualizar labs" → Actualizar labs', () => {
   assert.ok(top.length >= 1);
   assert.equal(top[0].kind, 'action');
   assert.equal(top[0].actionId, 'lab-repo-batch');
-});
-
-test('rankPalette: "falta documentar" → doc queue action', () => {
-  const items = buildPaletteItems(SALA, PATIENTS);
-  const top = rankPalette('falta documentar', items, 12);
-  assert.ok(top.length >= 1);
-  assert.equal(top[0].kind, 'action');
-  assert.equal(top[0].actionId, 'doc-queue');
-});
-
-test('rankPalette: "preparar entrega" → entrega prep action', () => {
-  const items = buildPaletteItems(SALA, PATIENTS);
-  const top = rankPalette('preparar entrega', items, 12);
-  assert.ok(top.length >= 1);
-  assert.equal(top[0].kind, 'action');
-  assert.equal(top[0].actionId, 'entrega-prep');
 });
 
 test('rankPalette: "exportar nota" → export action', () => {

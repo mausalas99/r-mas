@@ -7,9 +7,11 @@ let tourStepId = null;
 const GUARDIA_V7_BOARD_PANEL_STEPS = new Set([
   'gv7_guardia_tab',
   'gv7_guardia_scope',
+  'gv7_trust_strip',
   'gv7_guardia_toggle',
   'gv7_entrega_phase',
   'gv7_entrega_patient',
+  'gv7_fin_turno',
   'gv7_censo_r4',
 ]);
 

@@ -3,10 +3,10 @@
  */
 import {
   activateTurnoActivo,
-  deactivateTurnoActivo,
   getTurnoStartedAt,
 } from './entrega-roster-panel.mjs';
 import { beginEntregaPhaseFlow } from './clinical-entrega.mjs';
+import { finalizeGuardiaTurno } from './guardia-fin-turno-modal.mjs';
 
 const CLOCK_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 const LIVE_SVG = `<svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>`;
@@ -72,9 +72,11 @@ function wireGuardiaPhaseBar(callbacks) {
     const endTurnoBtn = ev.target?.closest?.('#guardia-btn-finalizar-turno');
     if (endTurnoBtn) {
       ev.preventDefault();
-      deactivateTurnoActivo();
-      stopTurnoClock();
-      callbacks.renderGuardiaBoard?.(callbacks.settings);
+      finalizeGuardiaTurno({
+        settings: callbacks.settings,
+        renderGuardiaBoard: callbacks.renderGuardiaBoard,
+        stopTurnoClock,
+      });
       return;
     }
 

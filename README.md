@@ -51,11 +51,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
-## R+ 8.0.4 (pull D1 + censo equipo iPad/desktop)
+## R+ 8.0.4 (Nube estable + guardia fin de turno + equipos)
 
 - **Pull D1 sin OOM** — Gap grande → snapshot sin cargar el historial de mutations; poda ops viejas tras cada push.
 - **clinicalOps ≠ censo** — El push de censo ya no estampa equipos/asignaciones (LWW no los borra).
-- **iPad + desktop** — iPad hidrata clinicalOps tras censo; Mac no pierde fichas sin asignación al re-render.
+- **Cierre de guardia** — Finalizar turno devuelve estudios abiertos por equipo de origen.
+- **Heredar pacientes** — Asistente al unirte a equipo nuevo; reingreso tras rotación mensual.
+- **Admin Equipos** — Selección múltiple, lote y historial de actividad (esquema v22).
 - **Despliega Worker + app** — Mismo día: `npm run deploy` en `cloud/sync-worker` e instala 8.0.4 en todas las Macs.
 
 Notas: `docs/RELEASE_NOTES_8.0.4.txt`.

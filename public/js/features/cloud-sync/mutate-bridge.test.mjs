@@ -210,6 +210,20 @@ describe('pushCloudClinicalOpsNow', () => {
   });
 });
 
+describe('enqueueCloudTodoDelete clock', () => {
+  it('does not fall back to todo.updatedAt (stale LWW vs prior upsert)', () => {
+    const fn = mutateBridgeSrc.slice(
+      mutateBridgeSrc.indexOf('export function enqueueCloudTodoDelete'),
+      mutateBridgeSrc.indexOf('export function enqueueCloudAgendaUpsert')
+    );
+    assert.match(
+      fn,
+      /updatedAt:\s*String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/
+    );
+    assert.doesNotMatch(fn, /updatedAt \|\| todo\.updatedAt/);
+  });
+});
+
 describe('mutate-bridge LAN decoupling (Phase 3)', () => {
   it('mutate-bridge source has zero features/lan imports', () => {
     assert.equal(/features\/lan\//.test(mutateBridgeSrc), false);

@@ -261,9 +261,15 @@ export function resolveMembershipCycleForUser(team, userId, userRank) {
 export function formatMemberCycleLabel(member) {
   const frac = String(member?.sub_area_fraction || '').trim();
   if (!frac) return '';
-  const rank = String(member?.rank || '');
-  if (rank === 'R2' || /^[A-F]$/i.test(frac)) return `Ciclo R2 · ${frac}`;
-  if (rank === 'R1' || /[12]$/i.test(frac)) return `Subciclo R1 · ${frac}`;
+  const rank = String(member?.rank || '').trim();
+  // Sala R1 subcycles (A1–D2) — letter shape wins.
+  if (/^[A-D][12]$/i.test(frac)) return `Subciclo R1 · ${frac.toUpperCase()}`;
+  // Prefer explicit rank so Inters/UX/Eme R3 is not labeled "Ciclo R2".
+  if (rank === 'R1') return `Subciclo R1 · ${frac}`;
+  if (rank === 'R2') return `Ciclo R2 · ${frac}`;
+  if (rank === 'R3') return `Ciclo R3 · ${frac}`;
+  if (rank === 'R4') return `Ciclo R4 · ${frac}`;
+  if (/^[A-F]$/i.test(frac)) return `Ciclo R2 · ${frac}`;
   return `Ciclo · ${frac}`;
 }
 

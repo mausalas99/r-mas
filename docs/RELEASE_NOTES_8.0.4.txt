@@ -1,13 +1,15 @@
-R+ 8.0.4 (pull D1 + censo equipo iPad/desktop)
+R+ 8.0.4 (Nube estable + guardia fin de turno + equipos)
 ============================================================
 
 Fecha: 2026-08-07
 
 ## Resumen
 
-**8.0.4** evita el **OOM del Worker** al hacer pull con historial de mutaciones grande (Sala 2), deja de mezclar **clinicalOps** en el push de censo (LWW ya no borra asignaciones), y corrige el **censo por equipo** en iPad y desktop: el iPad hidrata equipos tras el censo; en Mac no desaparecen pacientes sin asignación explícita al re-render (p. ej. Actualizar labs).
+**8.0.4** estabiliza **Nube** (Worker sin OOM, clinicalOps fuera del censo, censo por equipo en iPad/desktop), añade **cierre de guardia** con devolución de estudios por equipo, **heredar pacientes** al cambiar de equipo, **reingreso tras rotación**, atajos de expediente, tablero Guardia con franja de confianza y **admin Equipos** en lote con historial de actividad (esquema v22).
 
 ## Nuevo / mejorado
+
+### Nube y sync
 
 - **Worker — pull sin OOM** — Si el gap de revisión es grande, responde `needSnapshot` **antes** de leer filas de `mutations` (evita cargar decenas de MB en el isolate D1). Tras cada push, poda ops viejas (`revision <= room.revision - 100`).
 - **clinicalOps fuera del censo** — El push de censo ya no estampa `clinicalOps` con el reloj del bundle (LWW de documento completo podía vaciar equipos/asignaciones). Equipos van por rooms de sala (`pushClinicalOpsForSala` / seed al conectar).
@@ -16,7 +18,24 @@ Fecha: 2026-08-07
 - **Pull apply** — En iPad, no filtra por equipo hasta que el alcance clínico esté listo (si filtra antes, un clinicalOps tardío nunca reenvía filas de censo).
 - **Actualizar labs (equipo)** — Usa el mismo filtro de la barra de pacientes (no re-estrecha a asignaciones explícitas).
 - **R+ Móvil UI** — Ajustes de estilos en sync, eventualidades y pase.
-- **Tests** — `pull-strategy`, mirror desktop/iPad, autostart clinicalOps, pull-apply scope ready.
+
+### Guardia y equipos
+
+- **Cierre de guardia** — Al «Finalizar turno» se abre una hoja con estudios abiertos agrupados por equipo de origen; «Enviar» devuelve coberturas al equipo correspondiente sin borrar pendientes.
+- **Heredar pacientes** — Al unirte a un equipo nuevo, asistente en 4 pasos (destino → origen → pacientes → confirmar) para traer casos de tu equipo anterior sin reasignar uno por uno.
+- **Reingreso tras rotación** — Modal cuando se archivan equipos del mes: confirma sala y te lleva a **Mi rotación** para volver a unirte (R4/Admin: publicar equipos nuevos).
+- **Tablero Guardia** — Franja de confianza Nube/sala/equipo; censo agrupado por equipo (R4/Admin); estados vacíos con guía («Censo: todos», Mi rotación); cierre de turno integrado en la barra de fase.
+- **Admin Equipos (Nube)** — Selección múltiple, **Guardar** / **Quitar seleccionados** en lote, filtros por última actividad y asignación, botón **Equipos ago 2026**, badges con fecha/hora e historial de uso.
+- **Esquema v22** — Tabla `user_activity_log` con historial de actividad clínica por usuario (migración automática desde `last_activity_at`); alimenta badges e historial en admin Equipos.
+
+### Expediente y atajos
+
+- **Magia IC — Enviar a nota** — En Interconsulta, botón en Estado actual que vuelca EA compilado + signos vitales a la nota de evolución (con confirmación si ya hay texto).
+- **Atajos de teclado** — `⌘E`/`⌘T`/`⌘D` navegan el expediente (EA/eventualidades, tendencias/cultivos, datos); `⌘G`/`⌘I`/`⌘P`/`⌘S` cambian modo Guardia/Interconsulta/Pase/Sala (`⌘P` ya no alterna densidad).
+
+### Retirado / simplificado
+
+- **Paneles retirados** — Salen del header y de la paleta (`⌘K`): cola «Falta documentar», «Preparar entrega» (checklist) y panel «Cultivos por seguir»; la actualización de antibiograma queda en **Cultivos** del expediente.
 
 ## Instalación
 

@@ -5,12 +5,10 @@ import {
   mutacionesShellHtml,
   mutationsRoomOptionsHtml,
   peligroHtml,
-  usuariosShellHtml,
 } from './panel-admin-html.mjs';
 import { loadAdminResumen, loadAdminSalas } from './panel-admin-data.mjs';
 import { createAdminClickHandler } from './panel-admin-actions.mjs';
 import { equiposShellHtml } from './panel-admin-equipos-html.mjs';
-import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { wireCloudEquiposPanel } from './panel-admin-equipos-actions.mjs';
 
 /**
@@ -31,12 +29,10 @@ function shouldShowAdminBootstrap() {
   return !getSessionAdminKey();
 }
 
-/**
- * @param {HTMLElement} root
- * @param {string} tabId
- */
+/** @param {HTMLElement} root @param {string} tabId */
 function selectAdminTab(root, tabId) {
-  const next = String(tabId || 'resumen').trim() || 'resumen';
+  const raw = String(tabId || 'resumen').trim() || 'resumen';
+  const next = raw === 'usuarios' ? 'equipos' : raw;
   root.querySelectorAll('[data-admin-tab]').forEach(function (btn) {
     const active = btn.getAttribute('data-admin-tab') === next;
     btn.classList.toggle('is-active', active);
@@ -45,6 +41,16 @@ function selectAdminTab(root, tabId) {
   root.querySelectorAll('[data-admin-section]').forEach(function (panel) {
     panel.hidden = panel.getAttribute('data-admin-section') !== next;
   });
+}
+
+/** @param {HTMLElement} root */
+function mountAdminPanelSections(root) {
+  const peligroEl = root.querySelector('[data-admin-peligro]');
+  if (peligroEl) peligroEl.innerHTML = peligroHtml();
+  const mutEl = root.querySelector('[data-admin-mutaciones]');
+  if (mutEl) mutEl.innerHTML = mutacionesShellHtml();
+  const equiposEl = root.querySelector('[data-admin-equipos]');
+  if (equiposEl) equiposEl.innerHTML = equiposShellHtml();
 }
 
 /**
@@ -68,19 +74,9 @@ export function mountCloudAdminPanel(host, deps) {
 
   const keyInput = root.querySelector('[data-admin-key-input]');
   const savedKey = getSessionAdminKey();
-  if (keyInput instanceof HTMLInputElement && savedKey) {
-    keyInput.value = savedKey;
-  }
+  if (keyInput instanceof HTMLInputElement && savedKey) keyInput.value = savedKey;
 
-  const peligroEl = root.querySelector('[data-admin-peligro]');
-  if (peligroEl) peligroEl.innerHTML = peligroHtml();
-  const mutEl = root.querySelector('[data-admin-mutaciones]');
-  if (mutEl) mutEl.innerHTML = mutacionesShellHtml();
-  const usersEl = root.querySelector('[data-admin-usuarios]');
-  if (usersEl) usersEl.innerHTML = usuariosShellHtml();
-  const equiposEl = root.querySelector('[data-admin-equipos]');
-  if (equiposEl) equiposEl.innerHTML = equiposShellHtml();
-
+  mountAdminPanelSections(root);
   const equiposPanel = wireCloudEquiposPanel(root, { getApi: deps.getApi, toast });
 
   function updateRoomSelects() {
@@ -116,18 +112,18 @@ export function mountCloudAdminPanel(host, deps) {
     updateMutacionesRoomSelect: updateRoomSelects,
   };
 
-  const onAdminAction = createAdminClickHandler(clickDeps);
   root.addEventListener('click', function (ev) {
     const tabBtn = ev.target instanceof Element ? ev.target.closest('[data-admin-tab]') : null;
     if (tabBtn) {
       const tabId = tabBtn.getAttribute('data-admin-tab');
       if (tabId) {
         selectAdminTab(root, tabId);
-        if (tabId === 'equipos') void equiposPanel.refresh();
+        const resolved = tabId === 'usuarios' ? 'equipos' : tabId;
+        if (resolved === 'equipos') void equiposPanel.refresh();
       }
       return;
     }
-    onAdminAction(ev);
+    createAdminClickHandler(clickDeps)(ev);
   });
 
   const salasCtx = {

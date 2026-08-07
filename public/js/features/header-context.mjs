@@ -7,7 +7,19 @@ import { resolveConsolidatedTarget } from '../expediente-tabs.mjs';
 import { GROUP_LABELS, SECTION_LABELS } from '../expediente-group-row.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 
+/** Density class on <html> — avoids chrome/localStorage in pure path tests. */
+function densityPathOverride() {
+  if (typeof document === 'undefined' || !document.documentElement) return '';
+  var cls = document.documentElement.classList;
+  if (cls.contains('ui-density-guardia')) return 'Guardia';
+  if (cls.contains('ui-density-pase')) return 'Pase';
+  return '';
+}
+
 export function buildHeaderPath(appTab, inner, settings) {
+  // Density modes override the underlying app tab (lab/nota stay selected under Guardia).
+  var densityPath = densityPathOverride();
+  if (densityPath) return densityPath;
   if (appTab === 'lab') return 'Laboratorio';
   if (appTab === 'med') return 'Manejo';
   if (appTab === 'agenda') return 'Agenda';

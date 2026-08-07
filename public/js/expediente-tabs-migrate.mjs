@@ -22,7 +22,6 @@ function migrateGranularSala(granularTab, settings) {
 /** @param {string} granularTab @param {object} settings @param {Record<string, {tab:string, section?:string|null}>} granularMap */
 export function migrateGranularInner(granularTab, settings, granularMap) {
   if (!granularTab) return 'todo';
-  if (granularTab === 'estadoActual' && !isModeSala(settings)) return 'todo';
   if (granularTab === 'manejo') return isModeSala(settings) ? 'todo' : 'notas';
   if (!granularMap[granularTab]) return 'todo';
   const mobile = migrateGranularMobile(granularTab, settings);

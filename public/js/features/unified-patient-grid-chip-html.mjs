@@ -51,6 +51,25 @@ function patientChipPendingLabel(pending) {
   return `<span class="patient-chip-tasks">${pending} pend.${pending === 1 ? '' : 's'}</span>`;
 }
 
+function patientChipLabsHtml(labsRaw) {
+  const trimmed = String(labsRaw || '').trim();
+  if (!trimmed || trimmed === '—' || trimmed === '-') return '';
+  return (
+    '<span class="patient-chip-labs" title="' +
+    escapeChipAttr(trimmed) +
+    '">' +
+    trimmed +
+    '</span>'
+  );
+}
+
+function patientChipFooterHtml(pending, labsRaw) {
+  const pendingHtml = patientChipPendingLabel(pending);
+  const labsHtml = patientChipLabsHtml(labsRaw);
+  if (!pendingHtml && !labsHtml) return '';
+  return '<div class="patient-chip-footer">' + pendingHtml + labsHtml + '</div>';
+}
+
 /**
  * @param {{ id: string, bed_label?: string, name?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object, entregaMarkers?: string[] }} p
  * @param {object|undefined} g
@@ -60,20 +79,20 @@ export function buildPatientChipInnerHtml(p, g) {
   const critical = !!(p.isCritical || meta?.is_critical);
   const vitals = vitalsBannerForGuardia(meta);
   const bed = p.bed_label ? p.bed_label : '—';
+  const bedTitle = p.bed_label ? escapeChipAttr('Cama ' + p.bed_label) : '';
   const name = patientChipNameHtml(p);
   const dx = String(p.dxText || 'Sin diagnóstico registrado');
   const pending = Number(p.pendingCount || 0);
   const labsRaw = String(p.labsSnippet || '').trim();
-  const labsEmpty = !labsRaw || labsRaw === '—' || labsRaw === '-';
-  const labs = labsEmpty ? 'Sin labs' : labsRaw;
-  const labsClass = labsEmpty ? 'patient-chip-labs is-empty' : 'patient-chip-labs';
   const vitalsTitle = escapeChipAttr(vitals.str);
   const dxTitle = escapeChipAttr(dx);
   return {
     critical,
     innerHtml:
       '<div class="patient-chip-head">' +
-      '<span class="patient-chip-bed">Cama ' +
+      '<span class="patient-chip-bed"' +
+      (bedTitle ? ' title="' + bedTitle + '"' : '') +
+      '>' +
       bed +
       '</span>' +
       '<div class="patient-chip-badges">' +
@@ -97,15 +116,7 @@ export function buildPatientChipInnerHtml(p, g) {
       '<span class="patient-chip-vitals__text">' +
       vitals.str +
       '</span></div>' +
-      '<div class="patient-chip-footer">' +
-      patientChipPendingLabel(pending) +
-      '<span class="' +
-      labsClass +
-      '" title="' +
-      escapeChipAttr(labs) +
-      '">' +
-      labs +
-      '</span></div>',
+      patientChipFooterHtml(pending, labsRaw),
     vitalsSpec: resolveChipVitalsSpec(meta),
     vitalsLast: String(meta?.last_vitals_check ?? ''),
   };

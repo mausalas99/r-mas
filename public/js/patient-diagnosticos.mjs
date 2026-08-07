@@ -97,21 +97,52 @@ export function applyPatientDiagnosticosList(patient, list) {
   ensurePatientDiagnosticos(patient);
 }
 
-/** @param {{ diagnosticos?: string[] }} note @param {Record<string, unknown>} patient */
-export function preloadNoteDxFromPatient(note, patient) {
-  if (!note || !patient) return false;
-  var dx = note.diagnosticos || [];
-  var empty = !dx.some(function (d) {
+function noteDiagnosticosEmpty(note) {
+  var dx = (note && note.diagnosticos) || [];
+  return !dx.some(function (d) {
     return String(d).trim();
   });
-  if (!empty) return false;
+}
+
+function patientDiagnosticosNonEmpty(patient) {
   ensurePatientDiagnosticos(patient);
-  var from = (patient.diagnosticosList || []).filter(function (d) {
+  return (patient.diagnosticosList || []).filter(function (d) {
     return String(d).trim();
   });
+}
+
+/**
+ * Copy censo diagnoses into the note when the note dx list is empty.
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ */
+export function preloadNoteDxFromPatient(note, patient) {
+  return syncNoteDxFromPatient(note, patient, { mode: 'ifEmpty' });
+}
+
+/**
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ * @param {{ mode?: 'ifEmpty' | 'replace' }} [options]
+ * @returns {boolean} whether note.diagnosticos changed
+ */
+export function syncNoteDxFromPatient(note, patient, options) {
+  if (!note || !patient) return false;
+  var mode = (options && options.mode) || 'ifEmpty';
+  var from = patientDiagnosticosNonEmpty(patient);
   if (!from.length) return false;
+  if (mode === 'ifEmpty' && !noteDiagnosticosEmpty(note)) return false;
   note.diagnosticos = from.slice();
   return true;
+}
+
+/**
+ * Before Word export: ensure note has dx from censo if the note list is empty.
+ * @param {{ diagnosticos?: string[] }} note
+ * @param {Record<string, unknown>} patient
+ */
+export function ensureNoteDxFromPatientForExport(note, patient) {
+  return syncNoteDxFromPatient(note, patient, { mode: 'ifEmpty' });
 }
 
 function diagnosticosListHasContent(list) {

@@ -9,10 +9,17 @@ import {
 
 describe('patient-list-incremental', () => {
   it('patientCardDisplayKey changes when visible fields change', () => {
-    const ctx = { activeId: 'p1', isRonda: false };
+    const ctx = { activeId: 'p1', isRonda: false, showServicioInCard: true };
     const a = patientCardDisplayKey({ id: 'p1', nombre: 'A', cuarto: '1', cama: '2', servicio: 'S' }, ctx);
     const b = patientCardDisplayKey({ id: 'p1', nombre: 'B', cuarto: '1', cama: '2', servicio: 'S' }, ctx);
     assert.notEqual(a, b);
+  });
+
+  it('patientCardDisplayKey changes when servicio visibility toggles', () => {
+    const p = { id: 'p1', nombre: 'A', cuarto: '1', cama: '2', servicio: 'Medicina Interna' };
+    const sala = patientCardDisplayKey(p, { showServicioInCard: false });
+    const inter = patientCardDisplayKey(p, { showServicioInCard: true });
+    assert.notEqual(sala, inter);
   });
 
   it('buildPatientListZones buckets pinned, active, archived', () => {

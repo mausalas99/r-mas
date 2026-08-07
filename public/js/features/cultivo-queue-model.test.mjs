@@ -84,10 +84,9 @@ test('extract + classify + buildCultivoQueueRows', () => {
   assert.equal(candidates.length, 1);
   assert.match(candidates[0].organismo, /coli/i);
 
-  var items = classifyCultivoFollowUps(candidates, { fecha: '19/07/2026', estudios: '' }, identityNorm);
+  var items = classifyCultivoFollowUps(candidates, null, identityNorm);
   assert.ok(items.length === 1);
   assert.ok(items[0].reasons.indexOf('atb_pendiente') !== -1);
-  assert.ok(items[0].reasons.indexOf('sin_nota') !== -1);
 
   var rows = buildCultivoQueueRows(
     [
@@ -97,7 +96,7 @@ test('extract + classify + buildCultivoQueueRows', () => {
     {
       normalizeFecha: identityNorm,
       labHistoryByPatient: { p1: history, p2: [] },
-      notesByPatient: { p1: { fecha: '19/07/2026' } },
+      notesByPatient: {},
     }
   );
   assert.equal(rows.length, 1);

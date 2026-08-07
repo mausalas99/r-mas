@@ -8,6 +8,11 @@ import { userIsOnGuardiaCallToday } from '../clinico-access.mjs';
 import { effectiveClinicalRank, hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { setGuardiaMode, syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
+import { resolvePatientCensusTeamId } from './patients-clinical-filter.mjs';
+import {
+  GUARDIA_UNASSIGNED_TEAM_LABEL,
+  guardiaTeamGroupLabel,
+} from './unified-patient-grid-team-groups.mjs';
 import { vitalsBannerForGuardia } from './unified-patient-grid-board.mjs';
 import { getEntregaPhase, openEntregaModal, toggleEntregaPhase } from './clinical-entrega.mjs';
 import { mergeSalaGuardiaTodayRows } from './guardia-hoy-modal.mjs';
@@ -194,8 +199,9 @@ export function labsSnippetForPatient(pid) {
 /**
  * @param {Record<string, unknown>} p
  * @param {Map<string, object>} guardiasMap
+ * @param {{ teams?: object[], assignments?: object[], now?: string|Date|number }} [teamCtx]
  */
-export function enrichPatientForGuardiaCard(p, guardiasMap) {
+export function enrichPatientForGuardiaCard(p, guardiasMap, teamCtx = {}) {
   const base = mapPatientForGuardiaGrid(p);
   const g = guardiasMap.get(base.id);
   const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
@@ -208,6 +214,13 @@ export function enrichPatientForGuardiaCard(p, guardiasMap) {
     : 0;
   const isCritical = isGuardiaChipCritical(g);
   const entregaMarkers = g ? entregaChipMarkerIds(g) : [];
+  const teams = teamCtx.teams || [];
+  const assignments = teamCtx.assignments || [];
+  const now = teamCtx.now || new Date().toISOString();
+  const censusTeamId = resolvePatientCensusTeamId(p, teams, assignments, now);
+  const team = censusTeamId
+    ? teams.find((t) => String(t?.team_id || '') === censusTeamId)
+    : null;
   return {
     ...base,
     dxText: dxText.toUpperCase(),
@@ -216,6 +229,14 @@ export function enrichPatientForGuardiaCard(p, guardiasMap) {
     isCritical,
     entregaMarkers,
     guardiaMeta: g,
+    censusTeamId,
+    censusTeamLabel: censusTeamId
+      ? guardiaTeamGroupLabel(team)
+      : GUARDIA_UNASSIGNED_TEAM_LABEL,
+    // Keep chart fields for team / sala structural match in the grid.
+    sala: p.sala,
+    servicio: p.servicio,
+    area: p.area,
   };
 }
 
@@ -294,13 +315,11 @@ export function renderGuardiaSummaryTiles(summary, opts = {}) {
   ];
 
   host.innerHTML = stats
-    .map((stat, index) => {
+    .map((stat) => {
       const classes = ['guardia-stat'];
       if (stat.hot) classes.push('guardia-stat--hot');
       else if (stat.warn) classes.push('guardia-stat--warn');
-      const sep =
-        index > 0 ? '<span class="guardia-stat-sep" aria-hidden="true">·</span>' : '';
-      return `${sep}<div class="${classes.join(' ')}" title="${stat.title}"><span class="guardia-stat-value">${stat.value}</span><span class="guardia-stat-label">${stat.label}</span></div>`;
+      return `<div class="${classes.join(' ')}" title="${stat.title}"><span class="guardia-stat-value">${stat.value}</span><span class="guardia-stat-label">${stat.label}</span></div>`;
     })
     .join('');
 }
@@ -318,16 +337,35 @@ export function renderGuardiaCensusHead(count, state) {
   if (state.vitalsOverdue > 0) {
     parts.push(`${state.vitalsOverdue} signo${state.vitalsOverdue === 1 ? '' : 's'} vencido${state.vitalsOverdue === 1 ? '' : 's'}`);
   }
+  const byTeam = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   const sortHint = parts.length
     ? `${parts.join(' · ')} arriba · por cama`
-    : 'Orden por cama · críticos e inestables arriba';
+    : byTeam
+      ? 'Agrupados por equipo · críticos e inestables arriba · por cama'
+      : 'Orden por cama · críticos e inestables arriba';
 
   host.innerHTML = `
     <div class="guardia-census-head-inner">
-      <h2 class="guardia-section-title">Pacientes <span class="guardia-census-count">${count}</span></h2>
-      <p class="guardia-section-sub">${sortHint}</p>
+      <div class="guardia-census-head-main">
+        <h2 class="guardia-section-title">
+          <span class="guardia-section-title-label">Pacientes</span>
+          <span class="guardia-census-count">${count}</span>
+        </h2>
+        <p class="guardia-section-sub">${sortHint}</p>
+      </div>
     </div>`;
   appendGuardiaLearnNudge(host);
+}
+
+export function syncGuardiaLearnNudgeChrome() {
+  const host = document.getElementById('guardia-census-head');
+  if (!host) return;
+  void import('../guardia-v7-progress.mjs').then(function (progressMod) {
+    const inner = host.querySelector('.guardia-census-head-inner');
+    if (!inner) return;
+    const btn = inner.querySelector('.guardia-learn-nudge-btn');
+    if (progressMod.isGuardiaV7TrackComplete()) btn?.remove();
+  });
 }
 
 export function appendGuardiaLearnNudge(host) {
@@ -337,9 +375,14 @@ export function appendGuardiaLearnNudge(host) {
   ]).then(function (mods) {
     const progressMod = mods[0];
     const hubMod = mods[1];
-    if (progressMod.isGuardiaV7TrackComplete()) return;
     const inner = host.querySelector('.guardia-census-head-inner');
-    if (!inner || inner.querySelector('.guardia-learn-nudge-btn')) return;
+    if (!inner) return;
+    const existing = inner.querySelector('.guardia-learn-nudge-btn');
+    if (progressMod.isGuardiaV7TrackComplete()) {
+      existing?.remove();
+      return;
+    }
+    if (existing) return;
     const summary = progressMod.guardiaV7ProgressSummary();
     const btn = document.createElement('button');
     btn.type = 'button';

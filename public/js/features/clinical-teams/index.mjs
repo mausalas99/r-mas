@@ -42,6 +42,10 @@ export function wireClinicalTeamsControls() {
     mod.wireClinicalRotationEntryControls();
     mod.syncClinicalRotationEntryChrome();
   });
+  // Peers need rejoin modal listeners even outside Guardia board (Nube ops sync).
+  void import('../clinical-rotation.mjs').then((mod) => {
+    if (typeof mod.wireGuardiaRotationControls === 'function') mod.wireGuardiaRotationControls();
+  });
 
   if (!document._rpcClinicalTeamsChangedWired) {
     document._rpcClinicalTeamsChangedWired = true;

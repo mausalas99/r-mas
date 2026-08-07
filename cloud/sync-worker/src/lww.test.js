@@ -25,6 +25,44 @@ describe('applyOps LWW', () => {
     assert.equal(s.entries.find((e) => e.id === 'p1').note.texto, 'new');
   });
 
+  it('todo delete with fresh clock wins; same clock as upsert is stale', () => {
+    let s = emptyState();
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'todos/t1',
+        value: { id: 't1', patientId: 'p1', text: 'lab' },
+        updatedAt: '2026-08-07T10:00:00.000Z',
+        actorId: 'a',
+      },
+    ]));
+    const staleDelete = applyOps(s, [
+      {
+        path: 'todos/t1',
+        value: { id: 't1', patientId: 'p1', _deleted: true, updatedAt: '2026-08-07T10:00:00.000Z' },
+        updatedAt: '2026-08-07T10:00:00.000Z',
+        actorId: 'a',
+      },
+    ]);
+    assert.equal(staleDelete.rejected.length, 1);
+    assert.equal(staleDelete.rejected[0].reason, 'stale');
+    assert.equal(staleDelete.state.todos.t1._deleted, undefined);
+
+    ({ state: s } = applyOps(s, [
+      {
+        path: 'todos/t1',
+        value: {
+          id: 't1',
+          patientId: 'p1',
+          _deleted: true,
+          updatedAt: '2026-08-07T10:00:01.000Z',
+        },
+        updatedAt: '2026-08-07T10:00:01.000Z',
+        actorId: 'b',
+      },
+    ]));
+    assert.equal(s.todos.t1._deleted, true);
+  });
+
   it('lab sidecar append is uncapped', () => {
     let s = emptyState();
     for (let i = 0; i < 25; i++) {

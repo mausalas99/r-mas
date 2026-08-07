@@ -4,7 +4,6 @@ import { renderPatientList, selectPatient } from '../patients.mjs';
 import { patients, saveState } from '../../app-state.mjs';
 import { isTourDemoPatientId } from '../../tour-demo-patient.mjs';
 import {
-  clearTourSoapButtonHighlight,
   closeLabBulkTourHintModal,
   hideTourDock,
 } from './tour-engine.mjs';
@@ -15,7 +14,6 @@ import { tourState, publishTourGuardContext } from './tour-state.mjs';
 const rt = getSettingsHelpRuntime();
 
 function destroyDemoAndClose() {
-  clearTourSoapButtonHighlight();
   closeLabBulkTourHintModal();
   purgeTourDemoPatientsFromState();
   tourState.guidedTourActive = false;

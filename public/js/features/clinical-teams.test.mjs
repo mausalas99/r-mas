@@ -34,6 +34,10 @@ const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'teams-roster-lan-row-html.mjs',
   'teams-roster-interactions.mjs',
   'teams-roster-modal-chrome.mjs',
+  'teams-roster-join-handler.mjs',
+  'teams-roster-bring-patients.mjs',
+  'teams-roster-inherit-patients.mjs',
+  'teams-roster-inherit-patients-modal.mjs',
   'teams-invite.mjs',
   'teams-guardia-bridge.mjs',
   'index.mjs',
@@ -198,6 +202,29 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /section\.joined/);
     assert.match(clinicalTeamsSrc, /section\.directory/);
     assert.match(clinicalTeamsSrc, /card\.\$\{tid\}\.members/);
+  });
+
+  it('R4/Admin see Cambiar de rotación at top of Mi rotación', () => {
+    assert.match(clinicalTeamsSrc, /buildRotationAdminSectionHtml/);
+    assert.match(clinicalTeamsSrc, /Cambiar de rotación/);
+    assert.match(clinicalTeamsSrc, /clinical-teams-section--rotation/);
+    assert.match(clinicalTeamsSrc, /Iniciar nueva rotación/);
+    assert.match(clinicalTeamsSrc, /Calendario de vigencia/);
+    assert.equal(clinicalTeamsSrc.includes('Zona avanzada · rotación del programa'), false);
+  });
+
+  it('joining a team offers to bring local patients (LAN → Nube)', () => {
+    assert.match(clinicalTeamsSrc, /offerBringPatientsAfterTeamJoin/);
+    assert.match(clinicalTeamsSrc, /listBringableLocalPatients/);
+    assert.match(clinicalTeamsSrc, /LAN a Nube/);
+    assert.match(clinicalTeamsSrc, /no desaparezcan del censo/);
+  });
+
+  it('joined team card offers inherit patients from previous month', () => {
+    assert.match(clinicalTeamsSrc, /Heredar pacientes del mes anterior/);
+    assert.match(clinicalTeamsSrc, /openInheritPatientsModal/);
+    assert.match(clinicalTeamsSrc, /preferredPreviousTeamId/);
+    assert.match(clinicalTeamsSrc, /misma sala y ciclo/);
   });
 
   it('LAN directorio preserves collapsed rank groups across background refresh', () => {

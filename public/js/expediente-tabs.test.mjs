@@ -67,7 +67,14 @@ test('migrateGranularInner keeps known tabs and falls back to todo', () => {
   assert.equal(migrateGranularInner('recetaHu', SALA), 'recetaHu');
   assert.equal(migrateGranularInner('listado', INTER), 'todo');
   assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
-  assert.equal(migrateGranularInner('estadoActual', INTER), 'todo');
+  assert.equal(migrateGranularInner('estadoActual', INTER), 'estadoActual');
+});
+
+test('resolveConsolidatedTarget estadoActual inter routes to clinico segment', () => {
+  assert.deepEqual(resolveConsolidatedTarget('estadoActual', INTER), {
+    tab: 'clinico',
+    section: 'estadoActual',
+  });
 });
 
 test('defaultGranularForConsolidatedTab returns sensible defaults per mode', () => {
@@ -95,7 +102,7 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 });
 
 test('getClinicoSections differs by mode (manejo hidden globally)', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'vpo']);
+  assert.deepEqual(getClinicoSections(INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
   assert.deepEqual(getClinicoSections(SALA), ['estadoActual', 'eventualidades']);
 });
 
@@ -111,8 +118,8 @@ test('isManejoSectionHidden is always true (global product policy)', () => {
   assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
 });
 
-test('inter clinico sections include vpo and no manejo or historia', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'vpo']);
+test('inter clinico sections include estadoActual first, vpo, no manejo or historia', () => {
+  assert.deepEqual(getClinicoSections(INTER), ['estadoActual', 'notas', 'indica', 'vpo']);
 });
 
 test('sala salida sections include vpo between listado and recetaHu', () => {
@@ -131,7 +138,12 @@ test('interconsulta keeps clinico tab when only manejo is hidden', () => {
   assert.equal(isClinicoCompositeVisible(INTER), true);
   assert.equal(isClinicoCompositeVisible(HIDE_MANEJO_INTER), true);
   assert.equal(getConsolidatedTabs(HIDE_MANEJO_INTER).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['notas', 'indica', 'vpo']);
+  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), [
+    'estadoActual',
+    'notas',
+    'indica',
+    'vpo',
+  ]);
 });
 
 test('sala keeps clinico for estado actual when manejo is hidden', () => {

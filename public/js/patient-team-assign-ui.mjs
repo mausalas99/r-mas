@@ -6,6 +6,7 @@ import {
 import { resolvePatientTeamIdFromAssignments, stampPatientClinicalSala } from './clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from './clinical-privileges.mjs';
 import { filterJoinedTeams } from './features/clinical-teams/shared.mjs';
+import { buildTeamSelectOptions } from './features/clinical-teams/team-select-options.mjs';
 import { resolveActiveTeamFilterId } from './features/clinical-census-filters-ui.mjs';
 import { patients, saveState } from './app-state.mjs';
 
@@ -21,6 +22,11 @@ export function assignableTeamsForUser(user) {
   if (!user?.user_id) return [];
   if (hasElevatedTeamPrivileges(user)) return teams.filter((t) => t && t.team_id);
   return filterJoinedTeams(teams, user);
+}
+
+/** Admin/R4 see the full catalog; group options by sala in the select. */
+export function shouldGroupAssignableTeamsBySala(user) {
+  return hasElevatedTeamPrivileges(user);
 }
 
 /** @param {string} teamId */
@@ -118,19 +124,6 @@ export function defaultPatientRegistrationTeamId(user) {
   return '';
 }
 
-function buildTeamSelectOptions(teams, selectedTeamId) {
-  const selected = String(selectedTeamId || '');
-  return teams
-    .map(function (team) {
-      const id = String(team.team_id || '');
-      const label = String(team.name || team.service || 'Equipo').trim() || 'Equipo';
-      const sel = id && id === selected ? ' selected' : '';
-      return '<option value="' + esc(id) + '"' + sel + '>' + esc(label) + '</option>';
-    })
-    .join('');
-}
-
-/** @param {Record<string, unknown>} patient */
 /** Populate #m-team in the patient registration modal (hidden when user has no teams). */
 export function syncPatientRegistrationTeamSelect(selectedTeamId) {
   if (typeof document === 'undefined') return;
@@ -148,7 +141,10 @@ export function syncPatientRegistrationTeamSelect(selectedTeamId) {
   group.style.display = '';
   const selected = String(selectedTeamId || defaultPatientRegistrationTeamId(user) || '');
   select.innerHTML =
-    '<option value="">— Sin asignar —</option>' + buildTeamSelectOptions(teams, selected);
+    '<option value="">— Sin asignar —</option>' +
+    buildTeamSelectOptions(teams, selected, {
+      groupBySala: shouldGroupAssignableTeamsBySala(user),
+    });
   select.value = selected;
 }
 
@@ -187,6 +183,7 @@ export function buildPatientTeamAssignSectionHtml(patient) {
   const hint = teamId
     ? 'Cambia el equipo si el paciente cambió de cubeta. Solo el equipo activo verá el caso en ⇄.'
     : 'Al asignar, el paciente solo será visible para ese equipo en la red ⇄.';
+  const groupBySala = shouldGroupAssignableTeamsBySala(user);
 
   return (
     '<div class="field-group patient-team-assign-block">' +
@@ -195,7 +192,7 @@ export function buildPatientTeamAssignSectionHtml(patient) {
     '<option value="">' +
     esc(placeholder) +
     '</option>' +
-    buildTeamSelectOptions(joinedTeams, teamId) +
+    buildTeamSelectOptions(joinedTeams, teamId, { groupBySala }) +
     '</select>' +
   (teamId
     ? '<p class="profile-hint profile-hint--field">Equipo actual: <strong>' +

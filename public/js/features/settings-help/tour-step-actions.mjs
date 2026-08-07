@@ -72,7 +72,6 @@ export function persistTourProgressDebounced() {
 
 export function resetTourUiBeforeResume() {
   clearAllTourSpotlights();
-  clearTourSoapButtonHighlight();
   if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
   if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
   rt.closeProfileModal();
@@ -200,21 +199,9 @@ export function ensureConnectionExpandedForTour() {
   }
 }
 
-export function clearTourSoapButtonHighlight() {
-  var b = document.getElementById('btn-soap-template');
-  if (b) b.classList.remove('tour-spotlight-soap');
-}
+export function clearTourSoapButtonHighlight() {}
 
-export function syncTourSoapButtonHighlight() {
-  clearTourSoapButtonHighlight();
-  if (!tourState.guidedTourActive || tourState.tourStepId !== 'sala_soap') return;
-  setTimeout(function () {
-    var btn = document.getElementById('btn-soap-template');
-    if (btn && tourState.guidedTourActive && tourState.tourStepId === 'sala_soap') {
-      btn.classList.add('tour-spotlight-soap');
-    }
-  }, 120);
-}
+export function syncTourSoapButtonHighlight() {}
 
 export function getGuidedTourSteps() {
   const branch = resolveTourBranch();
@@ -431,7 +418,12 @@ function applyGuardiaTourLayoutForStep(stepId) {
       ]).then(([entrega, roster]) => {
         entrega.endEntregaPhase();
         roster.closeEntregaRosterPanel();
-        roster.deactivateTurnoActivo();
+        if (stepId === 'gv7_fin_turno') {
+          roster.activateTurnoActivo();
+          window.dispatchEvent(new CustomEvent('guardia:turno-activo'));
+        } else {
+          roster.deactivateTurnoActivo();
+        }
         document.documentElement.classList.remove('guardia-entrega-roster-open');
         if (typeof rt.renderGuardiaBoard === 'function') {
           rt.renderGuardiaBoard(rt.getSettings());
@@ -555,6 +547,11 @@ export function applyTourTargetForStep(id) {
   if (id === 'map_lab_teaser' || id === 'lab_parse') ensureTourDemoLabInputBoth();
   closeStaleModalsForTourStep(id);
   clearAllTourSpotlights();
+  if (id === 'gv7_trust_strip') {
+    void import('../guardia-trust-strip.mjs').then((m) => {
+      if (typeof m.syncGuardiaTrustStrip === 'function') m.syncGuardiaTrustStrip();
+    });
+  }
   if (!t.selector) return;
   tourApplySpotlightForStep(id, t, id === 'listado_problemas' ? 280 : 140);
 }

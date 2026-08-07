@@ -16,9 +16,11 @@ export async function claimPatientsToTeam(patientIds, teamId, deps = {}) {
     const pid = String(rawId || '').trim();
     if (!pid) continue;
     try {
-      const ok = await assign(pid, tid);
-      if (ok !== false) claimed += 1;
-      else errors.push(pid);
+      const res = await assign(pid, tid);
+      // assignPatientToTeamClinical returns { ok }; legacy callers may return boolean.
+      if (res && res.ok === false) errors.push(pid);
+      else if (res === false) errors.push(pid);
+      else claimed += 1;
     } catch (err) {
       errors.push(pid + ': ' + (err?.message || 'error'));
     }

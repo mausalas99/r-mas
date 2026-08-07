@@ -1,5 +1,5 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
-import { saveState, medRecetaByPatient } from '../app-state.mjs';
+import { saveState, medRecetaByPatient, notes } from '../app-state.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   ensureMonitoreo,
@@ -54,6 +54,8 @@ import {
   buildEaIndicacionesClipboardText,
   hasEaIndicacionesClipboardContent,
 } from './ea-indicaciones-clipboard.mjs';
+import { resolveEaNoteSend } from './estado-actual-send-note.mjs';
+import { isModeSala } from '../mode-features.mjs';
 
 function parseFormMedicion() {
   var form = document.getElementById('ea-form');
@@ -213,6 +215,79 @@ export async function estadoActualGuardarCopiar() {
   );
 }
 
+function navigateToNotasAfterEaSend() {
+  var runtime = getEaPanelRuntime();
+  if (typeof runtime.switchInnerTab === 'function') {
+    runtime.switchInnerTab('notas');
+    return;
+  }
+  if (typeof runtime.switchConsolidatedTab === 'function') {
+    runtime.switchConsolidatedTab('clinico');
+  }
+}
+
+function showEaReplaceEvolucionConfirm(onReplace) {
+  var backdrop = document.createElement('div');
+  backdrop.className = 'lab-conflict-backdrop';
+  backdrop.id = 'ea-note-confirm-backdrop';
+  backdrop.innerHTML =
+    '<div class="lab-conflict-modal">' +
+    '<h3>¿Reemplazar evolución?</h3>' +
+    '<p>La evolución ya tiene contenido. ¿Reemplazarlo con el estado actual?</p>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
+    '<button type="button" data-ea-note-cancel style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>' +
+    '<button type="button" data-ea-note-replace style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button>' +
+    '</div></div>';
+  backdrop.querySelector('[data-ea-note-cancel]').addEventListener('click', function () {
+    backdrop.remove();
+  });
+  backdrop.querySelector('[data-ea-note-replace]').addEventListener('click', function () {
+    backdrop.remove();
+    onReplace();
+  });
+  document.body.appendChild(backdrop);
+}
+
+function commitEstadoActualToNote(patient, replaceEvolucion) {
+  var activeId = getEaPanelRuntime().getActiveId();
+  if (!activeId) return;
+  ensureMonitoreo(patient);
+  flushEaEstadoClinicoFieldsFromDom(patient);
+  if (!notes[activeId]) notes[activeId] = {};
+  var note = notes[activeId];
+  var result = resolveEaNoteSend(patient, note, {
+    replaceEvolucion: replaceEvolucion,
+    getEstadoActualText: getEstadoActualTextForPatient,
+  });
+  if (result.status === 'empty') {
+    getEaPanelRuntime().showToast('No hay texto para enviar a la nota', 'error');
+    return;
+  }
+  if (result.status === 'confirm') {
+    showEaReplaceEvolucionConfirm(function () {
+      commitEstadoActualToNote(patient, true);
+    });
+    return;
+  }
+  saveState();
+  scheduleLiveSyncPush();
+  navigateToNotasAfterEaSend();
+  if (typeof getEaPanelRuntime().renderNoteForm === 'function') {
+    getEaPanelRuntime().renderNoteForm();
+  }
+  getEaPanelRuntime().showToast('Estado actual enviado a la nota ✓', 'success');
+}
+
+export function estadoActualEnviarANota() {
+  if (isModeSala(getEaPanelRuntime().getSettings())) return;
+  var patient = findActivePatient();
+  if (!patient) {
+    getEaPanelRuntime().showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  commitEstadoActualToNote(patient, false);
+}
+
 var eaCopyFabBound = false;
 
 function eaCopyFabContextActive() {
@@ -271,6 +346,11 @@ export function syncEaCopyFab(show) {
     }
   }
   document.documentElement.classList.toggle('ea-copy-fab-active', visible);
+}
+
+/** Reconcile sticky copy FAB from current tab + active patient (safe after setActiveInner). */
+export function refreshEaCopyFabVisibility() {
+  syncEaCopyFab(!!findActivePatient());
 }
 
 export function eaHasCopyableContent() {
@@ -378,6 +458,7 @@ export const windowHandlers = {
   eliminarEstadoActualMedicion,
   estadoActualGuardar,
   estadoActualGuardarCopiar,
+  estadoActualEnviarANota,
   copiarEstadoActualTexto,
   copiarEaIndicacionesClipboard,
   confirmEaMedField,

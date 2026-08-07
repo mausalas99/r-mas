@@ -102,6 +102,17 @@ export function resolveClinicalClientId(settings = readRpcSettings()) {
   return 'desktop-host';
 }
 
+/** @param {Record<string, unknown>} settings */
+function canAutoCompleteLanProfileGate(settings) {
+  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
+  if (!isValidUsernameFormat(cachedUser)) return false;
+  if (isLegacyMachineUsername(cachedUser, resolveClinicalClientId(settings))) return false;
+  if (isLocalOnlyPlaceholderUsername(cachedUser)) return false;
+  const hasName = String(settings.clinicalDisplayName || '').trim();
+  const hasSala = String(settings.clinicalSala || '').trim();
+  return !!hasName && !!hasSala;
+}
+
 /**
  * Devices that already completed registration before the 7.9 gate should not
  * be forced through onboarding again on every restart.
@@ -115,13 +126,7 @@ export function maybeAutoCompleteLanProfileGate(settings = readRpcSettings()) {
     return settings;
   }
   if (settings?.clinicalRegistered !== true) return settings;
-  const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
-  if (!isValidUsernameFormat(cachedUser)) return settings;
-  if (isLegacyMachineUsername(cachedUser, resolveClinicalClientId(settings))) return settings;
-  if (isLocalOnlyPlaceholderUsername(cachedUser)) return settings;
-  const hasName = String(settings.clinicalDisplayName || '').trim();
-  const hasSala = String(settings.clinicalSala || '').trim();
-  if (!hasName || !hasSala) return settings;
+  if (!canAutoCompleteLanProfileGate(settings)) return settings;
   return markClinicalLanProfileGateComplete(settings);
 }
 
@@ -143,6 +148,20 @@ export function markClinicalLanProfileGateComplete(settings = readRpcSettings())
   return settings;
 }
 
+/** @param {string} cachedUser @param {string} clientId */
+function shouldKeepLanProfileUsername(cachedUser, clientId) {
+  return (
+    isValidUsernameFormat(cachedUser) &&
+    !isLegacyMachineUsername(cachedUser, clientId) &&
+    !isLocalOnlyPlaceholderUsername(cachedUser)
+  );
+}
+
+/** @param {string} display */
+function isPlaceholderDisplayName(display) {
+  return !display || /^usuario$/i.test(display) || /^local/i.test(display);
+}
+
 /**
  * Clears only stale machine/placeholder prefills when the gate is pending.
  * Keeps a valid claimed @usuario + display name so re-open of registro does not
@@ -155,18 +174,14 @@ export function ensureLanProfileGateDeviceReset(settings = readRpcSettings()) {
   let dirty = false;
   const clientId = resolveClinicalClientId(next);
   const cachedUser = normalizeUsername(String(next.clinicalUsername || ''));
-  const keepUsername =
-    isValidUsernameFormat(cachedUser) &&
-    !isLegacyMachineUsername(cachedUser, clientId) &&
-    !isLocalOnlyPlaceholderUsername(cachedUser);
+  const keepUsername = shouldKeepLanProfileUsername(cachedUser, clientId);
   if (next.clinicalUsername && !keepUsername) {
     delete next.clinicalUsername;
     dirty = true;
   }
   const display = String(next.clinicalDisplayName || '').trim();
-  const placeholderDisplay = !display || /^usuario$/i.test(display) || /^local/i.test(display);
   // Only wipe display with username when handle was machine/placeholder noise.
-  if (next.clinicalDisplayName && !keepUsername && placeholderDisplay) {
+  if (next.clinicalDisplayName && !keepUsername && isPlaceholderDisplayName(display)) {
     delete next.clinicalDisplayName;
     dirty = true;
   }

@@ -1,9 +1,15 @@
-import { test } from 'node:test';
+import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildHeaderPath, buildHeaderPatientLine } from './header-context.mjs';
 
 const SALA = { appMode: 'sala' };
 const INTER = { appMode: 'interconsulta' };
+
+afterEach(() => {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.classList.remove('ui-density-guardia', 'ui-density-pase');
+  }
+});
 
 test('buildHeaderPath: app tabs map to their names', () => {
   assert.equal(buildHeaderPath('lab', 'todo', SALA), 'Laboratorio');
@@ -11,6 +17,12 @@ test('buildHeaderPath: app tabs map to their names', () => {
   assert.equal(buildHeaderPath('agenda', 'todo', SALA), 'Agenda');
   assert.equal(buildHeaderPath('guardia', 'historia', SALA), 'Guardia');
   assert.equal(buildHeaderPath('pase', 'todo', SALA), 'Pase');
+});
+
+test('buildHeaderPath: Guardia density overrides lab tab label', () => {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.add('ui-density-guardia');
+  assert.equal(buildHeaderPath('lab', 'todo', SALA), 'Guardia');
 });
 
 test('buildHeaderPath: expediente shows group › section', () => {

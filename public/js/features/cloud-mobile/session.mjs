@@ -61,6 +61,28 @@ export function readCloudMobilePairing() {
  *   sala?: string,
  *   user?: string,
  * } | null | undefined} next
+ * @param {NonNullable<ReturnType<typeof readCloudMobilePairing>>} prev
+ */
+function mergeCloudMobilePairing(next, prev) {
+  return {
+    auth: String(next.auth || prev.auth || '').trim(),
+    room: String(next.room || prev.room || '').trim(),
+    roomId: String(next.roomId || prev.roomId || '').trim(),
+    sala: String(next.sala || prev.sala || '').trim(),
+    user: String(next.user || prev.user || '')
+      .trim()
+      .replace(/^@+/, ''),
+  };
+}
+
+/**
+ * @param {{
+ *   auth?: string,
+ *   room?: string,
+ *   roomId?: string,
+ *   sala?: string,
+ *   user?: string,
+ * } | null | undefined} next
  */
 export function persistCloudMobilePairing(next) {
   if (typeof localStorage === 'undefined' || !next) return false;
@@ -72,15 +94,7 @@ export function persistCloudMobilePairing(next) {
       sala: '',
       user: '',
     };
-    const merged = {
-      auth: String(next.auth || prev.auth || '').trim(),
-      room: String(next.room || prev.room || '').trim(),
-      roomId: String(next.roomId || prev.roomId || '').trim(),
-      sala: String(next.sala || prev.sala || '').trim(),
-      user: String(next.user || prev.user || '')
-        .trim()
-        .replace(/^@+/, ''),
-    };
+    const merged = mergeCloudMobilePairing(next, prev);
     if (!merged.auth && !merged.user) return false;
     localStorage.setItem(CLOUD_MOBILE_PAIRING_KEY, JSON.stringify(merged));
     return true;

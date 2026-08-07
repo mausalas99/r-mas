@@ -13,6 +13,11 @@ import {
   wireAtbRisHoverPanels,
   removeAtbRisPanelsFromBody,
 } from './expediente-cultivos-atb-ui.mjs';
+import {
+  pendingAtbCultivoItemsForPatient,
+  refreshPatientCultivoLabsFromRepo,
+  cultivoRefreshOutcomeMessage,
+} from '../cultivo-queue-refresh.mjs';
 
 var CULTIVO_TIPO_ORDER = ['hemo', 'uro', 'cateter', 'gram', 'fungi', 'otro'];
 var CULTIVO_TIPO_LABELS = {
@@ -133,6 +138,61 @@ function filterCultivoRowsSignificantFlip(rows) {
 
 var _cultivosTableCacheKey = '';
 var CULTIVOS_CHUNK_ROWS = 40;
+var _cultivoRefreshBusy = false;
+var _cultivoToolbarWired = false;
+
+function buildCultivosToolbarHtml(patientId) {
+  var pending = pendingAtbCultivoItemsForPatient(patientId).length;
+  var title =
+    pending > 0
+      ? 'Buscar antibiograma en el repositorio para ' +
+        pending +
+        ' cultivo' +
+        (pending === 1 ? '' : 's') +
+        ' con ATB pendiente'
+      : 'No hay cultivos con ATB pendiente en este paciente';
+  return (
+    '<div class="cultivos-toolbar">' +
+    '<button type="button" class="tend-toolbar-btn cultivo-refresh-repo-btn"' +
+    (pending > 0 && !_cultivoRefreshBusy ? '' : ' disabled') +
+    (_cultivoRefreshBusy ? ' aria-busy="true"' : '') +
+    ' title="' +
+    esc(title) +
+    '">Actualizar</button>' +
+    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+    '</div>'
+  );
+}
+
+function wireCultivosToolbarOnce() {
+  if (_cultivoToolbarWired) return;
+  var container = document.getElementById('cultivos-table-container');
+  if (!container) return;
+  _cultivoToolbarWired = true;
+  container.addEventListener('click', function (ev) {
+    var btn = ev.target && ev.target.closest ? ev.target.closest('.cultivo-refresh-repo-btn') : null;
+    if (!btn || btn.disabled) return;
+    ev.preventDefault();
+    void handleCultivoRefreshClick();
+  });
+}
+
+async function handleCultivoRefreshClick() {
+  var pid = aid();
+  if (!pid || _cultivoRefreshBusy) return;
+  _cultivoRefreshBusy = true;
+  invalidateCultivosTableCache();
+  renderCultivosTable();
+  try {
+    var outcome = await refreshPatientCultivoLabsFromRepo(pid);
+    var msg = cultivoRefreshOutcomeMessage(outcome);
+    rt.showToast(msg.toast, msg.type);
+  } finally {
+    _cultivoRefreshBusy = false;
+    invalidateCultivosTableCache();
+    renderCultivosTable();
+  }
+}
 
 /** Fuerza re-render de Cultivos (p. ej. tras re-seed del tour pitch). */
 export function invalidateCultivosTableCache() {
@@ -213,6 +273,7 @@ function collectCultivoTableRowChunks(groups, rowFechaDisplayFn) {
 function renderCultivosTable() {
   var container = document.getElementById('cultivos-table-container');
   if (!container) return;
+  wireCultivosToolbarOnce();
   var pid = aid();
   if (pid) {
     var cultKey = String(pid) + '|L' + getLabHistoryRevision(pid);
@@ -251,6 +312,7 @@ function renderCultivosTable() {
       return (b._seq || 0) - (a._seq || 0);
     });
   var negStrip = buildCultivosNegStrip(negs);
+  var toolbar = buildCultivosToolbarHtml(aid());
   var thead =
     '<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th></tr></thead>';
   var built = collectCultivoTableRowChunks(groups, rowFechaDisplay);
@@ -261,7 +323,7 @@ function renderCultivosTable() {
   if (built.totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
     var shellHtml =
       negStrip +
-      '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+      toolbar +
       '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
       thead +
       '<tbody></tbody></table></div>';
@@ -270,7 +332,7 @@ function renderCultivosTable() {
   }
   container.innerHTML =
     negStrip +
-    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+    toolbar +
     '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
     thead +
     '<tbody>' +

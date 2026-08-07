@@ -114,6 +114,16 @@ export function renderAddMemberCycleSelect(team) {
   </select>`;
 }
 
+function renderMemberRemoveButton(m, handle, memberUserId, opts) {
+  const canRemove =
+    opts.canRemove &&
+    opts.teamId &&
+    memberUserId &&
+    memberUserId !== String(opts.callerUserId || '').trim();
+  if (!canRemove) return '';
+  return `<button type="button" class="btn-med-secondary clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`;
+}
+
 /**
  * @param {object} m
  * @param {{ canRemove?: boolean, teamId?: string, callerUserId?: string }} [opts]
@@ -129,14 +139,7 @@ export function renderMemberRow(m, opts = {}) {
     ? `<span class="clinical-teams-member-cycle">${escapeHtml(cycle)}</span>`
     : '';
   const memberUserId = String(m.user_id || '').trim();
-  const canRemove =
-    opts.canRemove &&
-    opts.teamId &&
-    memberUserId &&
-    memberUserId !== String(opts.callerUserId || '').trim();
-  const removeBtn = canRemove
-    ? `<button type="button" class="btn-med-secondary clinical-teams-member-remove-btn" data-user-id="${escapeAttr(memberUserId)}" data-team-id="${escapeAttr(String(opts.teamId))}" data-user-label="${escapeAttr(String(m.clinical_name || handle || memberUserId))}" title="Quitar del equipo y de la base clínica">Quitar</button>`
-    : '';
+  const removeBtn = renderMemberRemoveButton(m, handle, memberUserId, opts);
   return `<li class="clinical-teams-member-row">
     <span class="clinical-teams-member-row-name">${displayName}</span>
     <span class="clinical-teams-member-row-meta">${meta}${cycleHtml ? ` · ${cycleHtml}` : ''}</span>
@@ -218,6 +221,18 @@ export function renderMyCycleEditBlock(team, user) {
     summaryHtml: '<span class="clinical-teams-my-cycle-title">Mi ciclo en este equipo</span>',
     bodyHtml: formHtml,
   });
+}
+
+/** @param {object} team */
+export function renderInheritPatientsBox(team) {
+  const teamId = escapeAttr(String(team.team_id || ''));
+  const teamName = escapeAttr(String(team.name || 'Equipo'));
+  return `
+    <div class="clinical-teams-inherit-box">
+      <button type="button" class="btn-med-secondary clinical-teams-inherit-btn ui-pressable" data-team-id="${teamId}" data-team-name="${teamName}" title="Traer pacientes del equipo del mes anterior">
+        Heredar pacientes del mes anterior…
+      </button>
+    </div>`;
 }
 
 /** @param {object} team */
@@ -338,6 +353,7 @@ export function renderJoinedTeamCard(team) {
       ${manage.editPanelHtml}
       ${renderMembersBlock(members, { teamId })}
       ${renderMyCycleEditBlock(team, user)}
+      ${renderInheritPatientsBox(team)}
       ${renderLeaveTeamBox(team)}
       ${renderTeamInviteCollapsible(team, teamId)}
     </article>`;

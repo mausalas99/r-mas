@@ -2125,19 +2125,29 @@ var RELEASE_NOTES_804 = [
       'El pull ya no carga historiales enormes de mutaciones (evita caídas D1). Tras cada push se podan ops viejas; peers atrasados reciben <strong>snapshot</strong>.',
   },
   {
-    title: 'Equipos sin borrarse',
+    title: 'Cierre de guardia',
     body:
-      'El censo Nube ya <strong>no pisa</strong> equipos ni asignaciones. Los equipos se publican por sala al conectar.',
+      'Al <strong>Finalizar turno</strong>, revisa estudios abiertos por equipo y devuélvelos con un toque sin perder pendientes.',
   },
   {
-    title: 'iPad con fichas del equipo',
+    title: 'Heredar pacientes',
     body:
-      'Tras sincronizar el censo, R+ Móvil hidrata <strong>clinicalOps</strong> y muestra las fichas asignadas a tu equipo.',
+      'Al unirte a un equipo nuevo, asistente en 4 pasos para traer casos de tu equipo anterior sin reasignar uno por uno.',
   },
   {
-    title: 'Barra de pacientes en Mac',
+    title: 'Tablero Guardia',
     body:
-      'En desktop Nube, Actualizar labs u otros re-renders ya no vacían la barra cuando faltan asignaciones explícitas (sigue ocultando equipos ajenos).',
+      'Franja de confianza Nube/sala/equipo, censo agrupado por equipo (R4/Admin) y estados vacíos con guía clara.',
+  },
+  {
+    title: 'Admin Equipos en lote',
+    body:
+      'Selección múltiple, guardar/quitar en lote, filtros por actividad y badges con historial de uso (esquema v22).',
+  },
+  {
+    title: 'Atajos de expediente',
+    body:
+      '<strong>⌘E</strong>/<strong>⌘T</strong>/<strong>⌘D</strong> navegan EA, tendencias y datos; <strong>⌘G</strong>/<strong>⌘I</strong>/<strong>⌘P</strong>/<strong>⌘S</strong> cambian modo.',
   },
   {
     title: 'Actualiza el turno',

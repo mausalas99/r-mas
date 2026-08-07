@@ -551,6 +551,24 @@ test('formatMemberCycleLabel shows R1 subcycle', () => {
   );
 });
 
+test('formatMemberCycleLabel uses R3 for ABCD wards (not Ciclo R2)', () => {
+  assert.equal(
+    formatMemberCycleLabel({ rank: 'R3', sub_area_fraction: 'A' }),
+    'Ciclo R3 · A'
+  );
+  assert.equal(
+    formatMemberCycleLabel({ rank: 'R3', sub_area_fraction: 'B' }),
+    'Ciclo R3 · B'
+  );
+});
+
+test('formatMemberCycleLabel keeps Ciclo R2 when rank is R2', () => {
+  assert.equal(
+    formatMemberCycleLabel({ rank: 'R2', sub_area_fraction: 'A' }),
+    'Ciclo R2 · A'
+  );
+});
+
 test('getCycleConfig returns ABCD for non-Sala service', () => {
   const cfg = getCycleConfig('Eme', 'R2');
   assert.deepEqual(cfg.letters, ['A','B','C','D']);

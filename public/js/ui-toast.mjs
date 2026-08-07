@@ -182,6 +182,13 @@ function scheduleDismiss(entry, ms) {
   }, ms);
 }
 
+function dismissMsForKind(kind, opts) {
+  if (opts && typeof opts.durationMs === 'number' && opts.durationMs > 0) {
+    return opts.durationMs;
+  }
+  return kind === 'warn' ? TOAST_MS_WARN : TOAST_MS;
+}
+
 function wireSwipeDismiss(el) {
   /** @type {{ t: number, x: number, y: number }[]} */
   let pointerHistory = [];
@@ -238,7 +245,7 @@ function wireSwipeDismiss(el) {
 /**
  * @param {string} msg
  * @param {'success'|'error'|'warn'|'info'|'ok'|''} [type]
- * @param {{ action?: { label: string, onClick: () => void } }} [opts]
+ * @param {{ action?: { label: string, onClick: () => void }, durationMs?: number, onClick?: () => void }} [opts]
  */
 export function showToast(msg, type, opts) {
   if (type && typeof type === 'object' && !Array.isArray(type)) {
@@ -268,7 +275,7 @@ export function showToast(msg, type, opts) {
     pausedAt: null,
   };
   toastEntries.set(id, entry);
-  scheduleDismiss(entry, kind === 'warn' ? TOAST_MS_WARN : TOAST_MS);
+  scheduleDismiss(entry, dismissMsForKind(kind, opts));
 
   if (documentHiddenPaused || (typeof document !== 'undefined' && document.hidden)) {
     pauseToastTimer(entry);
@@ -282,10 +289,19 @@ export function showToast(msg, type, opts) {
     resumeToastTimer(entry);
   });
 
-  el.addEventListener('click', function (ev) {
-    if (ev.target && ev.target.closest && ev.target.closest('.toast-action')) return;
-    removeToastEl(el, false);
-  });
+  if (typeof opts.onClick === 'function') {
+    el.classList.add('toast--clickable');
+    el.addEventListener('click', function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('.toast-action')) return;
+      opts.onClick();
+      removeToastEl(el, false);
+    });
+  } else {
+    el.addEventListener('click', function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('.toast-action')) return;
+      removeToastEl(el, false);
+    });
+  }
 
   if (!prefersReducedMotion()) wireSwipeDismiss(el);
 }

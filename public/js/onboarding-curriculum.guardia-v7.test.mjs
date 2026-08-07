@@ -10,13 +10,13 @@ import {
   getTourStepsForChapter,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 10', () => {
-  assert.equal(CURRICULUM_VERSION, 10);
+test('CURRICULUM_VERSION is 12', () => {
+  assert.equal(CURRICULUM_VERSION, 12);
 });
 
-test('guardia-v7 has 5 chapters and 19 steps', () => {
+test('guardia-v7 has 5 chapters and 23 steps', () => {
   assert.equal(GUARDIA_V7_CHAPTERS.length, 5);
-  assert.equal(getGuardiaV7TourSteps().length, 19);
+  assert.equal(getGuardiaV7TourSteps().length, 23);
 });
 
 test('getFirstStepIdForChapter guardia-v7 branch', () => {
@@ -41,7 +41,8 @@ test('censo steps precede entrega in guardia-v7 linear order', () => {
 
 test('getTourStepsForChapter returns scoped step list', () => {
   const steps = getTourStepsForChapter('ch-guardia-modo', 'guardia-v7');
-  assert.equal(steps.length, 5);
+  assert.equal(steps.length, 6);
   assert.equal(steps[0], 'gv7_guardia_chip');
   assert.equal(steps[steps.length - 1], 'gv7_guardia_exit');
+  assert.ok(steps.includes('gv7_trust_strip'));
 });

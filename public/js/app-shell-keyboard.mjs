@@ -1,25 +1,40 @@
 /**
- * Shell keyboard shortcuts (⌘/Ctrl+digit tabs, ⌘K palette, ⌘P density, etc.).
+ * Shell keyboard shortcuts (⌘/Ctrl+digit tabs, ⌘K palette, work modes, etc.).
  */
-import {
-  getUiDensity,
-  isPaseMode,
-  isGuardiaMode,
-  setUiDensity,
-  toggleGuardiaMode,
-} from './features/chrome.mjs';
-import { toggleProfileSection } from './features/profile.mjs';
-import {
-  switchAppTab,
-  openPaseSectionInNormal,
-} from './features/pase-board.mjs';
+import { isPaseMode, isGuardiaMode } from './features/chrome.mjs';
+import { toggleProfileSection, setWorkModeFromHeader } from './features/profile.mjs';
 import {
   shellCloseSettingsDropdown,
   shellToggleSettingsDropdown,
   openCommandPaletteFromShell,
 } from './app-shell-lazy-panels.mjs';
+import {
+  isExpedienteShortcutKey,
+  runExpedienteShortcut,
+} from './app-shell-expediente-shortcuts.mjs';
+import {
+  runTabDigitShortcut,
+  runMedOutputTabShortcut,
+  runMedTabShortcut,
+  runAgendaTabShortcut,
+  runAgendaWeekNavShortcut,
+} from './app-shell-tab-shortcuts.mjs';
+import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
 
 var shellKeyboardWired = false;
+
+var WORK_MODE_SHORTCUTS = {
+  g: 'guardia',
+  i: 'interconsulta',
+  p: 'pase',
+  s: 'sala',
+};
+
+export const shellWorkModeShortcutMap = Object.freeze({ ...WORK_MODE_SHORTCUTS });
+
+export function shellWorkModeForKey(key) {
+  return WORK_MODE_SHORTCUTS[String(key || '').toLowerCase()] || null;
+}
 
 function shellShortcutFromTypingField(e) {
   var tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : '';
@@ -31,18 +46,8 @@ function shellShortcutFromTypingField(e) {
   );
 }
 
-function handleShellDigitShortcut(key) {
-  if (isPaseMode()) {
-    if (key === '1') openPaseSectionInNormal('labs');
-    if (key === '2') openPaseSectionInNormal('expediente');
-    if (key === '3') openPaseSectionInNormal('med');
-    if (key === '4' || key === '5') openPaseSectionInNormal('agenda');
-    return;
-  }
-  if (key === '1') switchAppTab('lab');
-  if (key === '2') switchAppTab('nota');
-  if (key === '3') switchAppTab('med');
-  if (key === '4' || key === '5') switchAppTab('agenda');
+function noteTabNavigationShortcutUsed() {
+  markTabShortcutsAdopted();
 }
 
 function handleShellSettingsCommaShortcut() {
@@ -62,22 +67,48 @@ function handleShellImportOverwriteShortcut(showToast) {
   );
 }
 
+function handleShellWorkModeShortcut(key) {
+  var mode = shellWorkModeForKey(key);
+  if (!mode) return false;
+  setWorkModeFromHeader(mode);
+  return true;
+}
+
 function handleShellNamedShortcut(e, key) {
   if (key === 'k' && !e.shiftKey && !e.altKey) {
     e.preventDefault();
     openCommandPaletteFromShell();
     return true;
   }
-  if (key === 'p' && !e.altKey) {
+  if (key === 'p' && e.shiftKey && !e.altKey) {
     e.preventDefault();
-    if (e.shiftKey) toggleProfileSection();
-    else if (isGuardiaMode()) setUiDensity('normal');
-    else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
+    toggleProfileSection();
     return true;
   }
-  if (key === 'g' && e.shiftKey && !e.altKey) {
+  if (!e.shiftKey && !e.altKey && key === 'm') {
+    if (shellShortcutFromTypingField(e)) return false;
     e.preventDefault();
-    toggleGuardiaMode();
+    noteTabNavigationShortcutUsed();
+    runMedTabShortcut();
+    return true;
+  }
+  if (!e.shiftKey && !e.altKey && key === 'a') {
+    if (shellShortcutFromTypingField(e)) return false;
+    e.preventDefault();
+    noteTabNavigationShortcutUsed();
+    runAgendaTabShortcut();
+    return true;
+  }
+  if (!e.shiftKey && !e.altKey && handleShellWorkModeShortcut(key)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return true;
+  }
+  if (!e.shiftKey && !e.altKey && isExpedienteShortcutKey(key)) {
+    if (shellShortcutFromTypingField(e)) return false;
+    e.preventDefault();
+    noteTabNavigationShortcutUsed();
+    runExpedienteShortcut(key);
     return true;
   }
   return false;
@@ -95,10 +126,28 @@ function handleShellCommaShortcut(e, showToast) {
 
 /** @param {(msg: string, type?: string) => void} showToast */
 function onShellModifierKeydown(e, showToast) {
+  if (isGuardiaMode()) return;
+
   var key = e.key.toLowerCase();
+
+  if (e.shiftKey && !e.altKey && key === '3') {
+    e.preventDefault();
+    noteTabNavigationShortcutUsed();
+    runMedOutputTabShortcut();
+    return;
+  }
+
+  if (!e.shiftKey && !e.altKey && (key === '[' || key === ']')) {
+    e.preventDefault();
+    noteTabNavigationShortcutUsed();
+    runAgendaWeekNavShortcut(key === '[' ? -1 : 1);
+    return;
+  }
+
   if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
     e.preventDefault();
-    handleShellDigitShortcut(key);
+    noteTabNavigationShortcutUsed();
+    runTabDigitShortcut(key);
     return;
   }
   if (handleShellNamedShortcut(e, key)) return;
@@ -116,4 +165,9 @@ export function initShellKeyboardShortcuts(showToast) {
     },
     true
   );
+}
+
+/** @internal Tests only */
+export function runShellModifierKeydownForTests(e, showToast) {
+  onShellModifierKeydown(e, showToast);
 }

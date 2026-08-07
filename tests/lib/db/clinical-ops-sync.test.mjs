@@ -9,6 +9,7 @@ import {
   archiveTeam,
   updateTeam,
   joinTeam,
+  addTeamMember,
   removeTeamMember,
   listLanDirectoryUsers,
   setTeamGuardiaToday,
@@ -613,6 +614,129 @@ describe('clinical-ops-sync', () => {
         .prepare('SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?')
         .get(team.team_id, ghostId),
       undefined
+    );
+  });
+
+  it('mergeClinicalOpsSnapshot applies admin reassignment leave on a peer that still has the old team', () => {
+    // Admin Mac moves R1 from team A → team B. Peer Mac still has membership on A.
+    // Incoming removal must apply even though peer has not recorded a local leave.
+    const adminDb = openDb();
+    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'R4' });
+    claimUsername(adminDb, { userId: leader.userId, username: 'admin_user' });
+    const teamA = createTeam(adminDb, {
+      name: 'Equipo A',
+      service: 'Sala',
+      onCallDayIndex: 1,
+      createdBy: leader.userId,
+      sala: 'Sala 1',
+    });
+    const teamB = createTeam(adminDb, {
+      name: 'Equipo B',
+      service: 'Sala',
+      onCallDayIndex: 2,
+      createdBy: leader.userId,
+      sala: 'Sala 1',
+    });
+    const r1 = ensureClinicalUser(adminDb, { clientId: 'r1-dev', rank: 'R1' });
+    claimUsername(adminDb, { userId: r1.userId, username: 'r1_user' });
+    joinTeam(adminDb, teamA.team_id, r1.userId, { subAreaFraction: 'A1' });
+    const peerBaseline = exportClinicalOpsSnapshot(adminDb);
+
+    addTeamMember(adminDb, teamB.team_id, r1.userId, {
+      subAreaFraction: 'B1',
+      exclusive: true,
+    });
+    const adminSnap = exportClinicalOpsSnapshot(adminDb);
+
+    const peerDb = openDb();
+    mergeClinicalOpsSnapshot(peerDb, peerBaseline, exportClinicalOpsSnapshot(peerDb));
+    assert.ok(
+      peerDb
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamA.team_id, r1.userId)
+    );
+
+    mergeClinicalOpsSnapshot(peerDb, adminSnap, exportClinicalOpsSnapshot(peerDb));
+
+    const stillOnA = peerDb
+      .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(teamA.team_id, r1.userId);
+    const onB = peerDb
+      .prepare(`SELECT sub_area_fraction FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(teamB.team_id, r1.userId);
+    assert.equal(stillOnA, undefined, 'peer must leave old team after admin reassignment');
+    assert.equal(onB?.sub_area_fraction, 'B1');
+  });
+
+  it('mergeClinicalOpsSnapshot remaps leave tombstones to local @username user_id', () => {
+    const peerDb = openDb();
+    const leader = ensureClinicalUser(peerDb, { clientId: 'admin', rank: 'R4' });
+    claimUsername(peerDb, { userId: leader.userId, username: 'admin_user' });
+    const teamA = createTeam(peerDb, {
+      name: 'Equipo A',
+      service: 'Sala',
+      onCallDayIndex: 1,
+      createdBy: leader.userId,
+      sala: 'Sala 1',
+    });
+    const teamB = createTeam(peerDb, {
+      name: 'Equipo B',
+      service: 'Sala',
+      onCallDayIndex: 2,
+      createdBy: leader.userId,
+      sala: 'Sala 1',
+    });
+    const localR1 = ensureClinicalUser(peerDb, { clientId: 'peer-mac', rank: 'R1' });
+    claimUsername(peerDb, { userId: localR1.userId, username: 'r1doc' });
+    joinTeam(peerDb, teamA.team_id, localR1.userId, { subAreaFraction: 'A1' });
+    const peerLocal = exportClinicalOpsSnapshot(peerDb);
+
+    const hostUserId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    const incoming = {
+      ...peerLocal,
+      exportedAt: new Date().toISOString(),
+      clinical_users: [
+        {
+          user_id: hostUserId,
+          username: 'r1doc',
+          rank: 'R1',
+          clinical_name: 'R1 Doc',
+          sala: 'Sala 1',
+          is_program_admin: 0,
+        },
+      ],
+      team_membership: [
+        { team_id: teamB.team_id, user_id: hostUserId, sub_area_fraction: 'B1' },
+      ],
+      team_membership_removals: [
+        {
+          team_id: teamA.team_id,
+          user_id: hostUserId,
+          removed_at: '2099-01-01T00:00:00.000Z',
+        },
+      ],
+      team_membership_rejoins: [
+        {
+          team_id: teamB.team_id,
+          user_id: hostUserId,
+          joined_at: '2099-01-01T00:00:01.000Z',
+        },
+      ],
+    };
+
+    mergeClinicalOpsSnapshot(peerDb, incoming, peerLocal);
+
+    assert.equal(
+      peerDb
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamA.team_id, localR1.userId),
+      undefined
+    );
+    assert.equal(
+      peerDb
+        .prepare(`SELECT sub_area_fraction FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamB.team_id, localR1.userId)?.sub_area_fraction,
+      'B1'
     );
   });
 

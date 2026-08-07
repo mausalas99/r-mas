@@ -16,17 +16,6 @@ import {
   loadSettings,
 } from './features/profile.mjs';
 import {
-  openDocQueuePanelFromShell,
-  closeDocQueuePanelFromShell,
-  refreshDocQueueBadgeFromShell,
-  openEntregaPrepPanelFromShell,
-  closeEntregaPrepPanelFromShell,
-  refreshEntregaPrepBadgeFromShell,
-  openCultivoQueuePanelFromShell,
-  closeCultivoQueuePanelFromShell,
-  refreshCultivoQueueBadgeFromShell,
-} from './app-shell-lazy-panels.mjs';
-import {
   scheduleDeferredShellInits as scheduleDeferredShellInitsImpl,
   scheduleDeferredUiInits as scheduleDeferredUiInitsImpl,
 } from './app-shell-deferred.mjs';
@@ -230,15 +219,6 @@ export const appShellWindowHandlers = {
   chooseOutputDir,
   updatePatient: patientHandlers.updatePatient,
   quickExportCurrentPatient: quickExportCurrentPatientLazy,
-  openDocQueuePanel: openDocQueuePanelFromShell,
-  closeDocQueuePanel: closeDocQueuePanelFromShell,
-  refreshDocQueueBadge: refreshDocQueueBadgeFromShell,
-  openEntregaPrepPanel: openEntregaPrepPanelFromShell,
-  closeEntregaPrepPanel: closeEntregaPrepPanelFromShell,
-  refreshEntregaPrepBadge: refreshEntregaPrepBadgeFromShell,
-  openCultivoQueuePanel: openCultivoQueuePanelFromShell,
-  closeCultivoQueuePanel: closeCultivoQueuePanelFromShell,
-  refreshCultivoQueueBadge: refreshCultivoQueueBadgeFromShell,
 };
 
 export function scheduleDeferredShellInits() {

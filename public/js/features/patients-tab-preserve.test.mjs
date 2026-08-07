@@ -20,8 +20,11 @@ describe('patient switch preserves expediente tab', () => {
     assert.equal(innerAfterPatientSwitch('cult', INTER), 'cult');
   });
 
+  it('keeps estadoActual in interconsulta when switching patients', () => {
+    assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'estadoActual');
+  });
+
   it('only migrates invalid tabs for the current mode', () => {
-    assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'todo');
     assert.equal(innerAfterPatientSwitch('notas', SALA), 'estadoActual');
   });
 });

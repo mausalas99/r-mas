@@ -148,28 +148,32 @@ export function redactCloudSecrets(text) {
     .replace(/"code"\s*:\s*"[A-Za-z0-9._+/=-]{8,}"/gi, '"code":"***"');
 }
 
-/**
- * @param {Record<string, unknown>} [deps]
- */
-export function getCloudSyncDiagnostics(deps) {
-  const d = deps && typeof deps === 'object' ? deps : {};
+/** @param {unknown} value */
+function boolOrNull(value) {
+  return value == null ? null : !!value;
+}
+
+/** @param {Record<string, unknown>} d */
+function buildDiagnosticsSnapshot(d) {
   const outbox = summarizeCloudOutbox(
     /** @type {Array<{ clientMutationId?: string, enqueuedAt?: number, baseRevision?: number, ops?: unknown[] }>} */ (
       d.outboxEntries
     )
   );
+  const roomSnapshot =
+    d.roomSnapshot && typeof d.roomSnapshot === 'object' ? { ...d.roomSnapshot } : null;
   return {
     status: String(d.status || 'unknown'),
     detail: String(d.detail || ''),
-    online: d.online == null ? null : !!d.online,
-    bridgeConfigured: d.bridgeConfigured == null ? null : !!d.bridgeConfigured,
-    runtimeActive: d.runtimeActive == null ? null : !!d.runtimeActive,
-    cloudActive: d.cloudActive == null ? null : !!d.cloudActive,
+    online: boolOrNull(d.online),
+    bridgeConfigured: boolOrNull(d.bridgeConfigured),
+    runtimeActive: boolOrNull(d.runtimeActive),
+    cloudActive: boolOrNull(d.cloudActive),
     baseUrl: String(d.baseUrl || ''),
-    tokenPresent: d.tokenPresent == null ? null : !!d.tokenPresent,
+    tokenPresent: boolOrNull(d.tokenPresent),
     roomId: String(d.roomId || ''),
     revision: Number(d.revision || 0),
-    roomSnapshot: d.roomSnapshot && typeof d.roomSnapshot === 'object' ? { ...d.roomSnapshot } : null,
+    roomSnapshot,
     localPatientCount: Number(d.localPatientCount || 0),
     outbox,
     lastPullAt,
@@ -183,6 +187,14 @@ export function getCloudSyncDiagnostics(deps) {
       return { at: e.at, op: e.op, code: e.code, message: e.message };
     }),
   };
+}
+
+/**
+ * @param {Record<string, unknown>} [deps]
+ */
+export function getCloudSyncDiagnostics(deps) {
+  const d = deps && typeof deps === 'object' ? deps : {};
+  return buildDiagnosticsSnapshot(d);
 }
 
 /**

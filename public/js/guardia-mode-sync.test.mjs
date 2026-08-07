@@ -25,7 +25,7 @@ describe('guardia-mode-sync', () => {
     assert.equal(clinicalSessionContext.guardiaMode, true);
     const boardBtn = document.getElementById('btn-guardia-mode-toggle');
     assert.equal(boardBtn.getAttribute('aria-pressed'), 'true');
-    assert.equal(boardBtn.querySelector('.guardia-mode-label').textContent, 'Solo mis entregas');
+    assert.equal(boardBtn.querySelector('.guardia-mode-label').textContent, 'Censo: solo entregados');
   });
 
   it('toggleGuardiaMode flips state', () => {

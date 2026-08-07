@@ -263,14 +263,13 @@ export function extractCultivoFollowUpCandidates(labHistory) {
  * @param {(raw: unknown) => string} [normalizeFecha]
  * @returns {CultivoQueueItem[]}
  */
-export function classifyCultivoFollowUps(candidates, note, normalizeFecha) {
+export function classifyCultivoFollowUps(candidates, _note, _normalizeFecha) {
   var items = [];
   (candidates || []).forEach(function (c) {
     if (!c || c.negativo) return;
     /** @type {CultivoQueueReason[]} */
     var reasons = [];
     if (cultivoNeedsAtbFollowUp(c, c.chunk)) reasons.push('atb_pendiente');
-    if (!noteCoversCultivoResult(note, c, normalizeFecha)) reasons.push('sin_nota');
     if (!reasons.length) return;
     items.push({
       sitio: c.sitio,
@@ -353,7 +352,6 @@ export function buildCultivoQueueRows(patients, opts) {
     var score = function (r) {
       return (
         (r.reasons.indexOf('atb_pendiente') !== -1 ? 2 : 0) +
-        (r.reasons.indexOf('sin_nota') !== -1 ? 1 : 0) +
         Math.min(r.items.length, 3)
       );
     };

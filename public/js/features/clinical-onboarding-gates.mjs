@@ -69,20 +69,27 @@ export function needsClinicalSyncModeChoice() {
   return true;
 }
 
-function syncSessionFromPersistedProfile(settings, user) {
-  if (!user) return;
+/** @param {string} current @param {string} clientId */
+function sessionHandleNeedsReplace(current, clientId) {
+  if (!current) return true;
+  if (!isValidUsernameFormat(current)) return true;
+  if (isLegacyMachineUsername(current, clientId)) return true;
+  return isLocalOnlyPlaceholderUsername(current);
+}
+
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>} user @param {string} clientId */
+function syncUsernameFromSettings(settings, user, clientId) {
   const cachedUser = normalizeUsername(String(settings.clinicalUsername || ''));
   const current = normalizeUsername(user.username || '');
   // Never overwrite a valid claimed @usuario with a different cached handle —
   // that reopens registration and orphans team memberships.
-  const currentNeedsHandle =
-    !current ||
-    !isValidUsernameFormat(current) ||
-    isLegacyMachineUsername(current, getClientId()) ||
-    isLocalOnlyPlaceholderUsername(current);
-  if (cachedUser && isValidUsernameFormat(cachedUser) && currentNeedsHandle) {
-    user.username = cachedUser;
-  }
+  if (!cachedUser || !isValidUsernameFormat(cachedUser)) return;
+  if (!sessionHandleNeedsReplace(current, clientId)) return;
+  user.username = cachedUser;
+}
+
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>} user */
+function syncSessionFieldsFromSettings(settings, user) {
   if (!String(user.clinical_name || '').trim() && settings.clinicalDisplayName) {
     user.clinical_name = String(settings.clinicalDisplayName);
   }
@@ -92,6 +99,12 @@ function syncSessionFromPersistedProfile(settings, user) {
   if (settings.clinicalRank && !String(user.rank || '').trim()) {
     user.rank = String(settings.clinicalRank);
   }
+}
+
+function syncSessionFromPersistedProfile(settings, user) {
+  if (!user) return;
+  syncUsernameFromSettings(settings, user, getClientId());
+  syncSessionFieldsFromSettings(settings, user);
 }
 
 function hasValidPersistedUsername(settings) {
@@ -135,23 +148,37 @@ function needsCloudRegistration(settings, _user) {
   return isCloudSalaUpgradePending(settings);
 }
 
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>|null|undefined} user */
+function pickSettledUsername(settings, user) {
+  return normalizeUsername(user?.username || settings.clinicalUsername || '') || undefined;
+}
+
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>|null|undefined} user */
+function pickSettledDisplayName(settings, user) {
+  return String(user?.clinical_name || settings.clinicalDisplayName || '').trim() || undefined;
+}
+
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>|null|undefined} user */
+function pickSettledRank(settings, user) {
+  return String(user?.rank || settings.clinicalRank || '').trim() || undefined;
+}
+
+/** @param {Record<string, unknown>} settings @param {Record<string, unknown>|null|undefined} user */
+function pickSettledSala(settings, user) {
+  return String(user?.sala || settings.clinicalSala || '').trim() || undefined;
+}
+
 /**
  * When the user is already on a team, settle local registration flags so gates
  * and LAN profile reset stop clearing @usuario.
  */
 function markJoinedTeamProfileSettled(settings, user) {
-  const username =
-    normalizeUsername(user?.username || settings.clinicalUsername || '') || undefined;
-  const displayName =
-    String(user?.clinical_name || settings.clinicalDisplayName || '').trim() || undefined;
-  const rank = String(user?.rank || settings.clinicalRank || '').trim() || undefined;
-  const sala = String(user?.sala || settings.clinicalSala || '').trim() || undefined;
   persistClinicalUserBinding({
     userId: user?.user_id,
-    username,
-    displayName,
-    rank,
-    sala,
+    username: pickSettledUsername(settings, user),
+    displayName: pickSettledDisplayName(settings, user),
+    rank: pickSettledRank(settings, user),
+    sala: pickSettledSala(settings, user),
     registered: true,
     lanProfileGateComplete: true,
   });

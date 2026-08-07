@@ -103,15 +103,6 @@ function membershipPairKey(row) {
   return `${teamId}\0${userId}`;
 }
 
-function buildMembershipPairKeySet(rows) {
-  const keys = new Set();
-  for (const row of rows || []) {
-    const key = membershipPairKey(row);
-    if (key) keys.add(key);
-  }
-  return keys;
-}
-
 function mergeMembershipRemovalsData(localRows, incomingRows) {
   const map = new Map();
   for (const row of [...(localRows || []), ...(incomingRows || [])]) {
@@ -144,9 +135,8 @@ function mergeMembershipRejoinsData(localRows, incomingRows) {
   return [...map.values()];
 }
 
-function reconcileMembershipRemovalsData(local, removals, rejoins) {
-  const localMembershipKeys = buildMembershipPairKeySet(local?.team_membership);
-  const localRemovalKeys = buildMembershipPairKeySet(local?.team_membership_removals);
+/** Leave tombstones win unless a rejoin is newer (admin moves must reach peers). */
+function reconcileMembershipRemovalsData(_local, removals, rejoins) {
   const rejoinByKey = new Map();
   for (const row of rejoins || []) {
     const key = membershipPairKey(row);
@@ -160,11 +150,11 @@ function reconcileMembershipRemovalsData(local, removals, rejoins) {
   return (removals || []).filter((row) => {
     const key = membershipPairKey(row);
     if (!key) return false;
-    if (localMembershipKeys.has(key) && !localRemovalKeys.has(key)) return false;
     const rejoin = rejoinByKey.get(key);
     const removedAt = String(row.removed_at || '');
     const joinedAt = String(rejoin?.joined_at || '');
-    if (rejoin && joinedAt && removedAt && joinedAt >= removedAt) return false;
+    // Equal clocks prefer leave (admin reassignment same-ms as peer's old join).
+    if (rejoin && joinedAt && removedAt && joinedAt > removedAt) return false;
     return true;
   });
 }

@@ -31,7 +31,8 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `autostart`, `cutover-*`), `cloud/sync-worker/` (month room + `004-active-room`) | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md); mobile: [2026-08-05](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | LiveSync / LAN | `public/js/features/lan/`, `lan-squad/` | [spec](../superpowers/specs/2026-06-03-lan-sync-improvements-design.md) |
 | Borrado pacientes (bulk) | `patient-delete-batch.mjs`, `patients-bulk-select.mjs` | Multi-select en sidebar; tombstone + purge host/Nube para que no regresen |
-| Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md) |
+| Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs`, `guardia-census-empty.mjs`, `guardia-fin-turno-*.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md); Nube UX + fin de guardia: [2026-08-07](../superpowers/specs/2026-08-07-magia-ic-guardia-nube-ux-design.md) |
+| Magia IC (nota ← EA/censo) | `note-from-estado-actual.mjs`, `patient-diagnosticos.mjs`, `notes-indicaciones.mjs` | [spec](../superpowers/specs/2026-08-07-magia-ic-guardia-nube-ux-design.md) |
 | Modo entrega | `lib/entrega/`, `clinical-entrega.mjs` | |
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `clinical-onboarding*.mjs`, `learn-hub.mjs` | |

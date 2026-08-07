@@ -90,9 +90,10 @@ function granularToConsolidatedMap(settings) {
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
     vpo: sala ? { tab: 'salida', section: 'vpo' } : { tab: 'clinico', section: 'vpo' },
+    // IC + sala: Estado actual lives under Clínico (panel completo).
+    estadoActual: { tab: 'clinico', section: 'estadoActual' },
   };
   if (sala) {
-    map.estadoActual = { tab: 'clinico', section: 'estadoActual' };
     map.eventualidades = { tab: 'clinico', section: 'eventualidades' };
   }
   return map;
@@ -115,9 +116,7 @@ function paneMountSpec(granularTab, settings) {
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
-    estadoActual: sala
-      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
-      : { composite: null, selector: null },
+    estadoActual: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     eventualidades: sala
       ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
       : { composite: null, selector: null },
@@ -129,7 +128,8 @@ export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
     return ['estadoActual', 'eventualidades'];
   }
-  return ['notas', 'indica', 'vpo'];
+  // IC: EA first in the row; default landing when opening Clínico stays notas.
+  return ['estadoActual', 'notas', 'indica', 'vpo'];
 }
 
 export function getSalidaSections(settings) {
@@ -236,11 +236,15 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
         if (section === 'historia') {
           // HC stays mountable (Drive / entrega) but off the day-to-day nav.
           btn.style.display = 'none';
-        } else if (section === 'estadoActual' || section === 'eventualidades') {
+        } else if (section === 'estadoActual') {
+          // IC + sala: Estado actual under Clínico.
+          btn.style.display = '';
+        } else if (section === 'eventualidades') {
           btn.style.display = sala ? '' : 'none';
         } else if (section === 'vpo') {
           btn.style.display = sala ? 'none' : '';
         } else {
+          // notas / indica: IC only
           btn.style.display = sala ? 'none' : '';
         }
       }

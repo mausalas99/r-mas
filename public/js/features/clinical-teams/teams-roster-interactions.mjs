@@ -138,6 +138,25 @@ export function wireJoinButtons() {
   });
 }
 
+export function wireInheritPatientsButtons() {
+  document.querySelectorAll('.clinical-teams-inherit-btn').forEach((btn) => {
+    if (!(btn instanceof HTMLButtonElement) || btn._rpcInheritWired) return;
+    btn._rpcInheritWired = true;
+    btn.addEventListener('click', async () => {
+      const teamId = String(btn.dataset.teamId || '');
+      const teamName = String(btn.dataset.teamName || '');
+      const { openInheritPatientsModal, wireInheritPatientsModal } = await import(
+        './teams-roster-inherit-patients-modal.mjs'
+      );
+      wireInheritPatientsModal();
+      const res = await openInheritPatientsModal({ teamId, teamName });
+      if (res && res.offered === false) {
+        toast('No hay pacientes locales del mes anterior para heredar.', 'info');
+      }
+    });
+  });
+}
+
 export function wireCopyInviteButtons() {
   document.querySelectorAll('.clinical-teams-copy-invite-btn').forEach((btn) => {
     if (!(btn instanceof HTMLButtonElement) || btn._rpcInviteWired) return;
@@ -186,6 +205,7 @@ function wireClinicalTeamsCollapsePersistence() {
 export function wireRenderedClinicalTeamsPanel(elevated) {
   wireClinicalTeamsPanelInteractions();
   wireJoinButtons();
+  wireInheritPatientsButtons();
   wireCopyInviteButtons();
   wireBrowseSalaControl(elevated);
   wireClinicalTeamsCollapsePersistence();

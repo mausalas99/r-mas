@@ -118,10 +118,16 @@ test('getTourTarget para sala_tend_chart resalta botón Gráfica', () => {
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
 });
 
-test('getTourTarget livesync_desktop resalta icono LiveSync', () => {
-  const t = getTourTarget('livesync_desktop', 'sala');
-  assert.match(t.selector || '', /team-sync/);
-  assert.equal(t.openConnection, undefined);
+test('getTourTarget gv7 trust strip y fin turno en guardia', () => {
+  const trust = getTourTarget('gv7_trust_strip', 'guardia-v7');
+  assert.match(trust.selector, /guardia-trust-strip/);
+  assert.equal(trust.openGuardiaDensity, true);
+  const fin = getTourTarget('gv7_fin_turno', 'guardia-v7');
+  assert.match(fin.selector, /guardia-phase-bar|finalizar-turno/);
+  const rejoin = getTourTarget('gv7_rotacion_rejoin', 'guardia-v7');
+  assert.match(rejoin.selector, /mi-rotacion|rotation-rejoin/);
+  const inherit = getTourTarget('gv7_inherit_patients', 'guardia-v7');
+  assert.match(inherit.selector, /mi-rotacion|inherit-patients/);
 });
 
 test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
@@ -133,9 +139,9 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 17 pasos, lab antes de expediente', () => {
+test('getInterconsultaTourSteps orden curriculum: 16 pasos, lab antes de expediente', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 16);
   assert.equal(steps.indexOf('lab_parse'), 3);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));

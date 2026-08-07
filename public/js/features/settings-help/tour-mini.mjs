@@ -89,8 +89,8 @@ var LAB_MINI_TOUR_STEPS = [
     before: function(){ rt.switchAppTab('lab'); }
   },
   {
-    badge: 'Evolución · SOAP y medicamentos',
-    body: 'En <strong>Expediente → Notas</strong> usa la <strong>plantilla SOAP</strong> para párrafos estructurados. La pestaña <strong>Medicamentos</strong> importa la receta del hospital y puede mandar dosis a SOAP o al tratamiento.',
+    badge: 'Evolución y medicamentos',
+    body: 'En <strong>Expediente → Notas</strong> completa la evolución. En modo <strong>Sala</strong>, el texto estructurado se arma en <strong>Estado actual</strong>. La pestaña <strong>Medicamentos</strong> importa la receta del hospital.',
     before: function(){ rt.switchAppTab('nota'); }
   }
 ];

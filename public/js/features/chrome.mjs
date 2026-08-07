@@ -42,7 +42,7 @@ const I18N_ES = {
   'settings.appearance': 'Apariencia',
   'settings.theme': 'Tema',
   'settings.appearanceFoot':
-    '⌘P alterna Normal/Pase. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
+    '⌘G/I/P/S cambian modo Guardia/Inter/Pase/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.',
   'settings.themeGroup': 'Tema de la aplicación',
   'settings.themeLight': 'Claro',
   'settings.themeDark': 'Oscuro',
@@ -53,7 +53,7 @@ const I18N_ES = {
   'settings.fontXLarge': 'Más grande',
   'settings.uiDensity': 'Modo de vista',
   'settings.uiDensityHint':
-    'Normal: Laboratorio, Expediente, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.',
+    'Normal: Laboratorio, Expediente, Manejo y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P abre Modo Pase.',
   'settings.densityNormal': 'Normal',
   'settings.densityPase': 'Pase',
   'settings.highContrast': 'Alto contraste',

@@ -28,6 +28,85 @@ import {
 
 let _cloudMobileBootStarted = false;
 
+function closeConnectionDropdown() {
+  try {
+    document.getElementById('connection-dropdown-backdrop')?.classList.remove('open');
+    document.getElementById('connection-dropdown')?.classList.remove('open');
+    document.body.classList.remove('connection-dropdown-open');
+  } catch {
+    /* ignore */
+  }
+}
+
+function ensureCloudMobileGate() {
+  const gate = document.getElementById('rpc-cloud-mobile-gate') || document.createElement('div');
+  gate.id = 'rpc-cloud-mobile-gate';
+  gate.className = 'rpc-cloud-mobile-gate ui-overlay-scrim';
+  gate.setAttribute('aria-live', 'polite');
+  if (!gate.parentElement) document.body.appendChild(gate);
+  return gate;
+}
+
+function createCloudMobileToast() {
+  return (msg, kind) => {
+    try {
+      showToast(msg, kind);
+    } catch {
+      /* ignore */
+    }
+  };
+}
+
+/** @param {HTMLElement} gateEl @param {(msg: string, kind?: string) => void} toast */
+async function runCloudMobilePostConnect(gateEl, toast) {
+  dismissCloudMobileGate(gateEl);
+  rewriteCloudMobileBookmarkUrl(readCloudMobileJoinUser());
+  clearCloudMobileJoinHints();
+  try {
+    await hydrateCloudMobileIdentity();
+  } catch {
+    /* pull still runs; clinicalOps may resolve user later */
+  }
+  setCloudSyncRevision(0);
+  const runtime = startCloudMobileRuntime({
+    onStatus(_status, _detail) {
+      /* optional status chip */
+    },
+    toast,
+  });
+  try {
+    await runtime?.syncCycle?.();
+    try {
+      const sala = String(getCloudSyncRoomSnapshot()?.sala || '').trim();
+      if (sala) {
+        const { pullClinicalOpsForSala } = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
+        await pullClinicalOpsForSala(sala, { since: 0 });
+      }
+    } catch {
+      /* clinicalOps directory optional */
+    }
+    try {
+      const access = await import('../../clinical-access-runtime.mjs');
+      if (typeof access.finalizeMobileLanPatientCensus === 'function') {
+        await access.finalizeMobileLanPatientCensus();
+      }
+    } catch {
+      /* scope finalize optional */
+    }
+    await notifyIfCloudMobileCensusEmpty(toast);
+    showCloudMobileEmptyCensusBanner();
+    try {
+      const patientsMod = await import('../patients.mjs');
+      patientsMod.renderPatientList();
+    } catch {
+      /* optional */
+    }
+  } catch {
+    toast('No se pudo sincronizar con la nube. Revisa la red e intenta de nuevo.', 'error');
+  }
+  document.dispatchEvent(new CustomEvent('rpc-cloud-mobile-ready'));
+}
+
 export function isCloudMobileBoot() {
   return isCloudMobileClient() && isMobileWeb();
 }
@@ -67,13 +146,7 @@ export async function initCloudMobileBoot() {
   }
 
   suppressCloudMobileLocalServerAlerts();
-  try {
-    document.getElementById('connection-dropdown-backdrop')?.classList.remove('open');
-    document.getElementById('connection-dropdown')?.classList.remove('open');
-    document.body.classList.remove('connection-dropdown-open');
-  } catch {
-    /* ignore */
-  }
+  closeConnectionDropdown();
   applyCloudMobileInviteSearch(typeof location !== 'undefined' ? location.search : '');
   restoreCloudMobilePairingFromStorage();
 
@@ -89,86 +162,20 @@ export async function initCloudMobileBoot() {
     /* ignore */
   }
 
-  const gate = document.getElementById('rpc-cloud-mobile-gate') || document.createElement('div');
-  gate.id = 'rpc-cloud-mobile-gate';
-  gate.className = 'rpc-cloud-mobile-gate ui-overlay-scrim';
-  gate.setAttribute('aria-live', 'polite');
-  if (!gate.parentElement) document.body.appendChild(gate);
-
-  const toast = (msg, kind) => {
-    try {
-      showToast(msg, kind);
-    } catch {
-      /* ignore */
-    }
+  const gate = ensureCloudMobileGate();
+  const toast = createCloudMobileToast();
+  const onConnected = () => {
+    void runCloudMobilePostConnect(gate, toast);
   };
-
-  /** @param {HTMLElement} gateEl */
-  async function onConnected(gateEl) {
-    dismissCloudMobileGate(gateEl);
-    rewriteCloudMobileBookmarkUrl(readCloudMobileJoinUser());
-    clearCloudMobileJoinHints();
-    try {
-      await hydrateCloudMobileIdentity();
-    } catch {
-      /* pull still runs; clinicalOps may resolve user later */
-    }
-    setCloudSyncRevision(0);
-    const runtime = startCloudMobileRuntime({
-      onStatus(_status, _detail) {
-        /* optional status chip */
-      },
-      toast,
-    });
-    try {
-      await runtime?.syncCycle?.();
-      // Teams/assignments may live only on the sala clinicalOps doc — pull after census
-      // so the team mirror can show assigned charts (census push no longer stamps clinicalOps).
-      try {
-        const sala = String(getCloudSyncRoomSnapshot()?.sala || '').trim();
-        if (sala) {
-          const { pullClinicalOpsForSala } = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
-          // since:0 — cached sala revision is already at head after ensureTurn, so
-          // incremental pull returns ops:[] with no state.clinicalOps.
-          await pullClinicalOpsForSala(sala, { since: 0 });
-        }
-      } catch {
-        /* clinicalOps directory optional */
-      }
-      try {
-        const access = await import('../../clinical-access-runtime.mjs');
-        if (typeof access.finalizeMobileLanPatientCensus === 'function') {
-          await access.finalizeMobileLanPatientCensus();
-        }
-      } catch {
-        /* scope finalize optional */
-      }
-      await notifyIfCloudMobileCensusEmpty(toast);
-      showCloudMobileEmptyCensusBanner();
-      try {
-        const patientsMod = await import('../patients.mjs');
-        patientsMod.renderPatientList();
-      } catch {
-        /* optional */
-      }
-    } catch {
-      toast('No se pudo sincronizar con la nube. Revisa la red e intenta de nuevo.', 'error');
-    }
-    document.dispatchEvent(new CustomEvent('rpc-cloud-mobile-ready'));
-  }
 
   if (getCloudSyncToken()) {
     showCloudMobileConnecting(gate);
     const room = await resolveCloudMobileActiveRoom();
     if (room?.id) {
-      await onConnected(gate);
+      await runCloudMobilePostConnect(gate, toast);
       return;
     }
   }
 
-  mountCloudMobileLoginShell(gate, {
-    onConnected: () => {
-      void onConnected(gate);
-    },
-  });
+  mountCloudMobileLoginShell(gate, { onConnected });
 }

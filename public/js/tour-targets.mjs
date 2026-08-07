@@ -68,8 +68,6 @@ const TARGETS = {
   sala_tend:         { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container', focus: false },
   sala_tend_chart:   { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container .tend-section-chart-btn',
                        focus: false, spotlightClass: 'tour-spotlight-action' },
-  sala_soap:         { appTab: 'nota', innerTab: 'notas',   selector: '#btn-soap-template',  focus: false,
-                       spotlightClass: 'tour-spotlight-soap' },
   estado_actual: {
     appTab: 'nota',
     innerTab: 'estadoActual',
@@ -154,6 +152,13 @@ const TARGETS = {
     openGuardiaDensity: true,
     spotlightClass: 'tour-spotlight-action',
   },
+  gv7_trust_strip: {
+    appTab: null,
+    selector: '#guardia-trust-strip',
+    focus: false,
+    openGuardiaDensity: true,
+    spotlightClass: 'tour-spotlight-action',
+  },
   gv7_guardia_toggle: {
     appTab: null,
     selector: '#btn-guardia-mode-toggle',
@@ -196,6 +201,13 @@ const TARGETS = {
     openGuardiaDensity: true,
     spotlightClass: 'tour-spotlight-action',
   },
+  gv7_fin_turno: {
+    appTab: null,
+    selector: '#guardia-phase-bar, #guardia-btn-finalizar-turno',
+    focus: false,
+    openGuardiaDensity: true,
+    spotlightClass: 'tour-spotlight-action',
+  },
   gv7_lan_wifi: {
     appTab: null,
     selector: '#btn-header-team-sync',
@@ -219,6 +231,18 @@ const TARGETS = {
   gv7_lan_rotacion: {
     appTab: null,
     selector: '#btn-sidebar-mi-rotacion',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  gv7_rotacion_rejoin: {
+    appTab: null,
+    selector: '#btn-sidebar-mi-rotacion, #rotation-rejoin-backdrop .modal',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  gv7_inherit_patients: {
+    appTab: null,
+    selector: '#btn-sidebar-mi-rotacion, #inherit-patients-backdrop .modal',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },

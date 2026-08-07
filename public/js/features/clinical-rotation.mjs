@@ -4,11 +4,17 @@
 import {
   clinicalSessionContext,
   fetchActiveRotationCycleFromDb,
+  fetchClinicalTeamsFromDb,
   fetchIncomingAssignmentsFromDb,
 } from '../clinical-access-runtime.mjs';
 
 import { canConfigureRotation as userCanConfigureRotation } from '../clinical-privileges.mjs';
 import { submitRotationConfigForm } from './clinical-rotation-config-submit.mjs';
+import {
+  maybeShowRotationRejoinModal,
+  setRotationRejoinPending,
+  wireRotationRejoinModal,
+} from './clinical-rotation-rejoin-modal.mjs';
 
 /** @param {string|Date|undefined} value */
 function toMillis(value) {
@@ -194,8 +200,23 @@ export async function confirmNuevaRotacion() {
     toast(res?.error || 'No se aplicó la nueva rotación.', 'error');
     return { ok: false };
   }
-  toast('Nueva rotación aplicada.', 'success');
+  toast('Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.', 'success');
+  setRotationRejoinPending(true);
+  try {
+    await fetchClinicalTeamsFromDb();
+  } catch {
+    /* optional */
+  }
+  const sala = String(clinicalSessionContext.user?.sala || '').trim();
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
   document.dispatchEvent(new CustomEvent('rpc-guardia-rotation-changed'));
+  try {
+    const { publishClinicalTeamsAfterChange } = await import('./clinical-teams/teams-guardia-bridge.mjs');
+    void publishClinicalTeamsAfterChange({ sala });
+  } catch {
+    /* publish optional */
+  }
+  await maybeShowRotationRejoinModal({ force: true });
   return { ok: true };
 }
 
@@ -231,6 +252,10 @@ export function wireGuardiaRotationControls() {
   wireRotationConfigFormOnce();
   syncRotationConfigButton();
   wireRotationConfigOpenControl();
+  wireRotationRejoinModal();
+  void import('./clinical-teams/teams-roster-inherit-patients-modal.mjs').then((m) =>
+    m.wireInheritPatientsModal()
+  );
 
   const bd = rotationModalEl();
   if (bd) {

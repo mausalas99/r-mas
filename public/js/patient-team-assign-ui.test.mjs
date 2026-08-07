@@ -53,4 +53,32 @@ describe('patient-team-assign-ui', () => {
     assert.equal(activePatientTeamId('p1'), 't1');
     assert.equal(activePatientTeamId('p-missing'), '');
   });
+
+  it('R2 team select only lists joined teams', () => {
+    clinicalSessionContext.teams = [
+      { team_id: 't1', name: 'Mio', sala: 'Sala 1', members: [{ user_id: 'u1' }] },
+      { team_id: 't2', name: 'Ajeno', sala: 'Sala 2', members: [{ user_id: 'other' }] },
+    ];
+    clinicalSessionContext.scopeContext.teams = clinicalSessionContext.teams;
+    const html = buildPatientTeamAssignSectionHtml({ id: 'p1' });
+    assert.match(html, /Mio/);
+    assert.doesNotMatch(html, /Ajeno/);
+    assert.doesNotMatch(html, /optgroup/);
+  });
+
+  it('Admin team select lists all teams grouped by sala', () => {
+    clinicalSessionContext.user = { user_id: 'admin1', rank: 'Admin' };
+    clinicalSessionContext.teams = [
+      { team_id: 't1', name: 'Dr. A', sala: 'Sala 1', members: [] },
+      { team_id: 't2', name: 'Dr. B', sala: 'Sala 2', members: [] },
+      { team_id: 't3', name: 'Dr. C', sala: 'Sala 1', members: [] },
+    ];
+    clinicalSessionContext.scopeContext.teams = clinicalSessionContext.teams;
+    const html = buildPatientTeamAssignSectionHtml({ id: 'p1' });
+    assert.match(html, /optgroup label="Sala 1"/);
+    assert.match(html, /optgroup label="Sala 2"/);
+    assert.match(html, /Dr\. A/);
+    assert.match(html, /Dr\. B/);
+    assert.match(html, /Dr\. C/);
+  });
 });

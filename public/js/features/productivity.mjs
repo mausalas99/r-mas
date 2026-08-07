@@ -514,7 +514,7 @@ function handleProductivityModShortcut(e, k) {
     rt.openAddModal();
     return true;
   }
-  if (k === 's') {
+  if (k === 's' && e.shiftKey) {
     e.preventDefault();
     if (!rt.getActiveId()) {
       rt.showToast('Selecciona un paciente primero', 'error');
@@ -546,8 +546,12 @@ function onProductivityKeydown(e) {
   }
   if (handlePaseRoundShortcut(e)) return;
   var mod = e.metaKey || e.ctrlKey;
-  if (!mod || e.altKey || e.shiftKey) return;
-  handleProductivityModShortcut(e, (e.key || '').toLowerCase());
+  if (!mod || e.altKey) return;
+  var k = (e.key || '').toLowerCase();
+  // G/I/P/S → modos de trabajo (app-shell-keyboard, capture)
+  if (!e.shiftKey && (k === 'g' || k === 'i' || k === 'p' || k === 's')) return;
+  if (e.shiftKey && k !== 's') return;
+  handleProductivityModShortcut(e, k);
 }
 
 export function initProductivityKeyboardShortcuts() {

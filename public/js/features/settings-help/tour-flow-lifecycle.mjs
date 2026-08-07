@@ -7,7 +7,6 @@ import {
 } from '../../clinical-settings.mjs';
 import { hideMainClinicalOnboarding } from '../clinical-onboarding-main.mjs';
 import {
-  clearTourSoapButtonHighlight,
   markGuidedTourVersionDone,
   hideTourDock,
   syncLearnHubContinueVisibility,
@@ -59,7 +58,7 @@ async function promptMiRotacionAfterSalaTourIfNeeded(branch) {
   if (!needsTeamOnboarding()) return;
 
   rt.showToast(
-    'Únete a un equipo en Mi rotación. El nombre del equipo es el nombre completo de tu R2 (ej. Dr. Gutiérrez).',
+    'Únete a un equipo en Mi rotación. Si acabas de rotar, confirma sala y revisa si debes heredar pacientes de tu equipo anterior.',
     'info'
   );
 
@@ -92,7 +91,6 @@ function completeGuidedTourWithCelebration() {
       maybeMarkFundamentosChapterComplete(tourState.tourStepId);
     }
   }
-  clearTourSoapButtonHighlight();
   clearTourProgress();
   markGuidedTourVersionDone();
   tourState.guidedTourActive = false;
@@ -153,7 +151,6 @@ function finishGuidedTour() {
 function skipGuidedTour() {
   if (tourState.miniTourActive) { tourBridge.endMiniTour(); return; }
   const skippedBranch = tourState.guidedTourBranch;
-  clearTourSoapButtonHighlight();
   clearTourProgress();
   markGuidedTourVersionDone();
   tourState.guidedTourActive = false;

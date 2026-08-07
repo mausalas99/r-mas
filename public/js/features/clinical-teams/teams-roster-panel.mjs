@@ -37,6 +37,7 @@ import {
   buildJoinedTeamsSectionHtml,
   buildClinicalTeamsConfigSectionHtml,
   buildJoinedTeamsEmptyHtml,
+  buildRotationAdminSectionHtml,
 } from './teams-roster-panel-build.mjs';
 import {
   captureClinicalTeamsPanelDraft,
@@ -144,6 +145,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   host.innerHTML = `
     ${buildClinicalTeamsHandleHint(ctx)}
+    ${buildRotationAdminSectionHtml(user)}
     ${renderCreateTeamSectionHtml()}
     ${buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint)}
     ${directorySection}

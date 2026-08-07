@@ -1,5 +1,6 @@
 import { CLINICAL_SALA_VALUES } from '../../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
+import { buildTeamSelectOptions } from './clinical-teams/team-select-options.mjs';
 import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import {
   readCensusFiltersCollapsed,
@@ -123,16 +124,14 @@ export function syncCensusTeamFilterSelect(user) {
   const unassignedOpt = censusFiltersUseFullTeamCatalog(user)
     ? `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>`
     : '';
+  // Admin/R4 with "Todas": group Equipo options by sala; single-sala filter stays flat.
+  const groupBySala =
+    censusFiltersUseFullTeamCatalog(user) &&
+    (!salaFilter || salaFilter === '__all__');
   teamSel.innerHTML =
     '<option value="">Todos los equipos</option>' +
     unassignedOpt +
-    teamsForCatalog
-      .map((t) => {
-        const id = String(t.team_id || '');
-        const label = String(t.name || id).slice(0, 40);
-        return `<option value="${id}">${label}</option>`;
-      })
-      .join('');
+    buildTeamSelectOptions(teamsForCatalog, teamFilterId, { groupBySala });
   teamSel.value = teamFilterId;
 }
 

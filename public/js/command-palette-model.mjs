@@ -38,20 +38,6 @@ export var ACTION_ITEMS = [
   },
   {
     kind: 'action',
-    actionId: 'doc-queue',
-    label: 'Falta documentar',
-    hint: '',
-    keywords: 'cola documentacion docs falta pendientes nota labs',
-  },
-  {
-    kind: 'action',
-    actionId: 'entrega-prep',
-    label: 'Preparar entrega',
-    hint: '',
-    keywords: 'entrega checklist handoff hc ea pendientes cultivos preparar',
-  },
-  {
-    kind: 'action',
     actionId: 'open-lab',
     label: 'Abrir laboratorio',
     hint: '',

@@ -23,6 +23,7 @@ const GV7_HELP_ARTICLE = {
   gv7_guardia_chip: 'modo-guardia',
   gv7_guardia_tab: 'modo-guardia',
   gv7_guardia_scope: 'modo-guardia',
+  gv7_trust_strip: 'modo-guardia',
   gv7_guardia_toggle: 'modo-guardia',
   gv7_guardia_exit: 'modo-guardia',
   gv7_censo_r1: 'modo-guardia',
@@ -32,10 +33,13 @@ const GV7_HELP_ARTICLE = {
   gv7_entrega_patient: 'modo-entrega',
   gv7_entrega_roster: 'modo-entrega',
   gv7_entrega_pendientes: 'modo-entrega',
+  gv7_fin_turno: 'modo-entrega',
   gv7_lan_wifi: 'lan-pin-turno',
   gv7_lan_pin: 'lan-pin-turno',
   gv7_lan_directorio: 'lan-pin-turno',
-  gv7_lan_rotacion: 'lan-pin-turno',
+  gv7_lan_rotacion: 'rotacion-equipos',
+  gv7_rotacion_rejoin: 'rotacion-equipos',
+  gv7_inherit_patients: 'rotacion-equipos',
   gv7_mobile_link: 'lan-pin-turno',
   gv7_mobile_scope: 'lan-pin-turno',
   gv7_mobile_vs_sala: 'lan-pin-turno',
@@ -60,8 +64,9 @@ function buildGv7CensoR1Copy(rank) {
   if (rank === 'R1') {
     return (
       '<p style="margin:0;line-height:1.5;">Como <strong>R1</strong>, el censo lateral lista pacientes de <strong>tu equipo</strong>. ' +
-      'En guardia, <strong>Solo mis entregas</strong> puede acotar aún más.</p>'
+      'En guardia, <strong>Censo: solo entregados</strong> puede acotar aún más.</p>'
     );
+
   }
   return (
     '<p style="margin:0;line-height:1.5;">Según tu rango (<strong>' +
@@ -73,12 +78,12 @@ function buildGv7CensoR1Copy(rank) {
 function buildGv7CensoR4Copy(rank) {
   if (rank === 'R4') {
     return (
-      '<p style="margin:0;line-height:1.5;">En la grilla de guardia, los <strong>divisores por equipo</strong> (colapsables) permiten ver toda la sala sin ruido.</p>'
+      '<p style="margin:0;line-height:1.5;">En la grilla de guardia, los <strong>divisores por equipo</strong> organizan el censo de la sala. Los <strong>Filtros censo</strong> (arriba) acotan por sala.</p>'
     );
   }
   return (
     '<p style="margin:0;line-height:1.5;">En rangos <strong>R1–R3</strong> la grilla se acota a tu equipo. ' +
-    'Los divisores colapsables por equipo son propios de <strong>R4</strong>.</p>'
+    'Los divisores por equipo en la grilla son propios de <strong>R4</strong>.</p>'
   );
 }
 
@@ -91,8 +96,10 @@ function getGuardiaV7StepBody(stepId) {
       '<p style="margin:0;line-height:1.5;">En <strong>Modo Guardia</strong> el centro muestra el panel de guardia: fases del turno, métricas y grilla de pacientes.</p>',
     gv7_guardia_scope:
       '<p style="margin:0;line-height:1.5;">La <strong>barra de contexto</strong> resume sala y fase del turno. Quién ves en el censo depende de tu rango — lo revisamos en el módulo <strong>Censo y alcance</strong>.</p>',
+    gv7_trust_strip:
+      '<p style="margin:0;line-height:1.5;">La franja <strong>Nube · sala · equipo</strong> confirma de un vistazo que estás sincronizado y en el equipo correcto. Si dice <strong>Sin Nube</strong>, abre ⇄ Conexión antes de confiar en el censo compartido.</p>',
     gv7_guardia_toggle:
-      '<p style="margin:0;line-height:1.5;"><strong>Solo mis entregas</strong> filtra la grilla a pacientes que te entregaron en este turno, sin cambiar el modo Entrega.</p>',
+      '<p style="margin:0;line-height:1.5;"><strong>Censo: solo entregados</strong> filtra la grilla a pacientes que te entregaron en este turno, sin cambiar el modo Entrega.</p>',
     gv7_guardia_exit:
       '<p style="margin:0;line-height:1.5;">Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal (Laboratorio, Expediente, etc.).</p>',
     gv7_entrega_phase:
@@ -103,6 +110,8 @@ function getGuardiaV7StepBody(stepId) {
       '<p style="margin:0;line-height:1.5;">El <strong>roster de entrega</strong> lista pacientes pendientes de documentar antes de pasar al turno activo.</p>',
     gv7_entrega_pendientes:
       '<p style="margin:0;line-height:1.5;"><strong>Pendientes de entrega</strong>: plantillas por servicio, handoff estructurado y seguimiento entre turnos.</p>',
+    gv7_fin_turno:
+      '<p style="margin:0;line-height:1.5;">Al <strong>finalizar turno</strong>, R+ agrupa pendientes abiertos por equipo de origen para enviar handoff diurno y liberar cobertura. No borra pendientes si cierras sin enviar.</p>',
     gv7_lan_wifi:
       '<p style="margin:0;line-height:1.5;">' +
       LIVESYNC_BTN_COPY +
@@ -113,6 +122,10 @@ function getGuardiaV7StepBody(stepId) {
       '<p style="margin:0;line-height:1.5;">El <strong>directorio de usuarios</strong> en Mi rotación muestra quién está en la sala. Los cambios de equipos se sincronizan por R+ Cloud.</p>',
     gv7_lan_rotacion:
       '<p style="margin:0;line-height:1.5;"><strong>Mi rotación</strong> (barra superior): @usuario, equipos persistentes, sala y entregas. Distinto del censo del sidebar.</p>',
+    gv7_rotacion_rejoin:
+      '<p style="margin:0;line-height:1.5;">Cada mes, R+ puede mostrar <strong>Nueva rotación</strong>: confirma tu sala y vuelve a unirte a tu equipo en Mi rotación. Los equipos anteriores se archivan; el censo se actualiza por Nube.</p>',
+    gv7_inherit_patients:
+      '<p style="margin:0;line-height:1.5;">Al unirte a un equipo nuevo, el asistente <strong>Heredar pacientes</strong> te deja traer casos de tu equipo anterior (misma sala/ciclo) sin reasignar uno por uno.</p>',
     gv7_mobile_link:
       '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace o QR de R+ Móvil</strong> desde ⇄ Conexión. Ábrelo en Safari e inicia sesión con tu cuenta Nube.</p>',
     gv7_mobile_scope:
@@ -122,7 +135,7 @@ function getGuardiaV7StepBody(stepId) {
     gv7_censo_r1: buildGv7CensoR1Copy(rank),
     gv7_censo_r4: buildGv7CensoR4Copy(rank),
     gv7_censo_sync:
-      '<p style="margin:0;line-height:1.5;">La sincronización por R+ Cloud es discreta: avisos en el encabezado; equipos y censo se actualizan en segundo plano.</p>',
+      '<p style="margin:0;line-height:1.5;">La sincronización por R+ Cloud es discreta: avisos en el encabezado; equipos y censo se actualizan en segundo plano. Si el censo está vacío, revisa la franja Nube/sala/equipo o abre Mi rotación tras rotar.</p>',
   };
   return bodies[stepId] || '<p style="margin:0;line-height:1.5;">Sigue el resaltado en pantalla.</p>';
 }

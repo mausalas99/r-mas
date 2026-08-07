@@ -18,6 +18,8 @@ import {
 } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 import { closeCreateTeamPanelAfterSuccess } from './teams-roster-panel-draft.mjs';
+import { offerBringPatientsAfterTeamJoin } from './teams-roster-bring-patients.mjs';
+import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 
 function teamSalaForId(teamId) {
   const team = (clinicalSessionContext.teams || []).find(
@@ -101,6 +103,10 @@ async function createStandardTeam(api, { name, sala, userId }) {
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true, sala } }));
   const lanPush = await publishClinicalTeamsAfterChange({ sala });
   toastTeamLanPublishResult(lanPush, 'Equipo creado.');
+  if (teamId) {
+    markClinicalEverJoinedTeam();
+    await offerBringPatientsAfterTeamJoin(teamId, name);
+  }
 }
 
 /** @param {Event} ev */

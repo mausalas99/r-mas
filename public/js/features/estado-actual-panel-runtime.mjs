@@ -10,6 +10,8 @@ let rt = {
     return {};
   },
   switchConsolidatedTab() {},
+  switchInnerTab() {},
+  renderNoteForm() {},
   copyToClipboardSafe(_text) {
     return Promise.resolve(false);
   },

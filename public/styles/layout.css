@@ -295,11 +295,14 @@ html.ui-density-normal #main-area {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 6px;
+  gap: 4px 8px;
   flex: 0 1 auto;
   min-width: 0;
   max-width: min(100%, 52vw);
   justify-content: flex-end;
+  padding-right: calc(4px * var(--density-space));
+  border-right: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  margin-right: calc(2px * var(--density-space));
 }
 
 /* Cluster hierarchy: one accent CTA max; censo PDF = secondary surface pill */
@@ -1296,8 +1299,10 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 /* Selector de modo segmentado (premium UI phase 2) — colapsa al activo */
 .header-mode-seg {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   padding: 2px;
   border: var(--border-hairline);
@@ -1309,6 +1314,10 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 .header-mode-seg-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
+  min-height: 22px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -1346,6 +1355,30 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 }
 
 /* Colapsado: solo el modo activo; expande al hover o al pulsar el activo */
+.header-mode-seg:not(:hover):not(.is-expanded) {
+  gap: 0;
+}
+
+.header-mode-seg:not(:hover):not(.is-expanded) .header-mode-seg-btn:not(.is-active):not([hidden]) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  max-width: 0;
+  min-width: 0;
+  height: 100%;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.header-mode-seg:not(:hover):not(.is-expanded) .header-mode-seg-btn.is-active {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
 .header-mode-seg-btn:not(.is-active) {
   max-width: 0;
   padding-left: 0;
@@ -1356,6 +1389,7 @@ html.tab-bar-indicators-ready html.dark .app-tab.active {
 
 .header-mode-seg:hover .header-mode-seg-btn:not([hidden]),
 .header-mode-seg.is-expanded .header-mode-seg-btn:not([hidden]) {
+  position: static;
   max-width: 9rem;
   padding-left: 8px;
   padding-right: 8px;

@@ -133,6 +133,28 @@ export function migratePatientMonitoreo(patient) {
 }
 
 /**
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>} sourceMonitoreo
+ */
+function mergeIncomingMonitoreo(target, sourceMonitoreo) {
+  var incoming = JSON.parse(JSON.stringify(sourceMonitoreo));
+  var localHasPayload =
+    target.monitoreo != null &&
+    typeof target.monitoreo === 'object' &&
+    monitoreoHasLanPayload(target.monitoreo);
+  var incomingHasPayload = monitoreoHasLanPayload(incoming);
+  // Census / Nube stubs often carry an empty monitoreo shell — never let that clobber local EA.
+  if (!incomingHasPayload && localHasPayload) {
+    return;
+  }
+  if (target.monitoreo != null && typeof target.monitoreo === 'object') {
+    target.monitoreo = mergeMonitoreo(target.monitoreo, incoming);
+  } else if (incomingHasPayload) {
+    target.monitoreo = incoming;
+  }
+}
+
+/**
  * Copia modelo de monitoreo / legacy estadoActual desde un snapshot JSON hacia `target`, luego normaliza en sitio.
  * No muta `source`. Devuelve true si hubo que persistir cambios locales (migrate).
  * @param {unknown} target
@@ -147,18 +169,7 @@ export function mergePatientMonitoreoFromImported(target, source) {
   var t = target;
   try {
     if ('monitoreo' in s && s.monitoreo != null && typeof s.monitoreo === 'object') {
-      var incoming = JSON.parse(JSON.stringify(s.monitoreo));
-      var localHasPayload =
-        t.monitoreo != null && typeof t.monitoreo === 'object' && monitoreoHasLanPayload(t.monitoreo);
-      var incomingHasPayload = monitoreoHasLanPayload(incoming);
-      // Census / Nube stubs often carry an empty monitoreo shell — never let that clobber local EA.
-      if (!incomingHasPayload && localHasPayload) {
-        /* keep local */
-      } else if (t.monitoreo != null && typeof t.monitoreo === 'object') {
-        t.monitoreo = mergeMonitoreo(t.monitoreo, incoming);
-      } else if (incomingHasPayload) {
-        t.monitoreo = incoming;
-      }
+      mergeIncomingMonitoreo(t, s.monitoreo);
     }
     if ('estadoActual' in s && s.estadoActual != null && typeof s.estadoActual === 'object') {
       t.estadoActual = JSON.parse(JSON.stringify(s.estadoActual));

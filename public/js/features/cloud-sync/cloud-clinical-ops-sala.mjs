@@ -11,7 +11,6 @@ import {
   getCloudSyncUrl,
   advanceCloudSyncRevision,
   getCloudSyncRoomId,
-  getCloudSyncRevision,
   getCloudSyncRoomSnapshot,
 } from './settings.mjs';
 import { isCloudSyncActive } from './lan-override.mjs';
@@ -138,7 +137,6 @@ export async function pushClinicalOpsForSala(sala) {
   const actorId = resolveCloudActorId();
   const updatedAt = new Date().toISOString();
   const api = createApi();
-  const cached = getSalaRoomCache(normalized);
 
   const pushed = await pushCloudOpsDirect(
     api,
@@ -163,47 +161,71 @@ export async function pushClinicalOpsForSala(sala) {
   return { ok: true, sala: normalized, roomId: String(room.id), ...pushed };
 }
 
-/** @param {string} sala @param {{ since?: number }} [opts] */
-export async function pullClinicalOpsForSala(sala, opts = {}) {
+/** @param {string} normalized @param {{ id: string }} room @param {number} revision */
+function advanceRevisionFromPull(normalized, room, revision) {
+  const next = Number(revision) || 0;
+  advanceSalaRoomRevision(normalized, next);
+  if (getCloudSyncRoomId() === String(room.id)) {
+    advanceCloudSyncRevision(next);
+  }
+}
+
+/** @param {unknown[]} ops */
+function foldClinicalOpsFromOps(ops) {
+  const fold = createOpFold();
+  for (let i = 0; i < ops.length; i += 1) foldCloudOp(fold, ops[i]);
+  return fold.clinicalOps ?? null;
+}
+
+/** @param {unknown} clinicalOps */
+async function applyClinicalOpsSnapshot(clinicalOps) {
+  const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot } = await import(
+    '../../clinical-ops-sync.mjs'
+  );
+  if (isClinicalOpsLanAvailable()) {
+    await applyClinicalOpsLanSnapshot(clinicalOps);
+    return;
+  }
+  // iPad/PWA: no SQLCipher — hydrate session scope from the snapshot directly.
+  const { applyClinicalScopeFromLanOpsSnapshot } = await import(
+    '../../clinical-access-runtime.mjs'
+  );
+  applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
+}
+
+/** @param {string} sala */
+function validateSalaPull(sala) {
   if (!getCloudSyncToken()) return { ok: false, reason: 'no_token' };
   const normalized = normalizeCloudSala(sala);
   if (!isCloudSala(normalized)) return { ok: false, reason: 'invalid_sala' };
+  return { ok: true, normalized };
+}
 
+/** @param {unknown} pull */
+function resolveClinicalOpsFromPull(pull) {
+  const ops = Array.isArray(pull?.ops) ? pull.ops : [];
+  const clinicalOps = pull?.state?.clinicalOps ?? (ops.length ? foldClinicalOpsFromOps(ops) : null);
+  return { ops, clinicalOps };
+}
+
+/** @param {string} sala @param {{ since?: number }} [opts] */
+export async function pullClinicalOpsForSala(sala, opts = {}) {
+  const validated = validateSalaPull(sala);
+  if (!validated.ok) return validated;
+
+  const normalized = validated.normalized;
   const room = await ensureTurnRoomForSala(normalized);
   if (!room?.id) return { ok: false, reason: 'no_room' };
 
   const cached = getSalaRoomCache(normalized);
   const since = opts.since != null ? Number(opts.since) || 0 : cached.revision;
-  const api = createApi();
-  const pull = await api.pull(String(room.id), since);
+  const pull = await createApi().pull(String(room.id), since);
   if (pull?.revision != null) {
-    advanceSalaRoomRevision(normalized, Number(pull.revision) || 0);
-    if (getCloudSyncRoomId() === String(room.id)) {
-      advanceCloudSyncRevision(Number(pull.revision) || 0);
-    }
+    advanceRevisionFromPull(normalized, room, pull.revision);
   }
 
-  const ops = Array.isArray(pull?.ops) ? pull.ops : [];
-  let clinicalOps = pull?.state?.clinicalOps ?? null;
-  if (!clinicalOps && ops.length) {
-    const fold = createOpFold();
-    for (let i = 0; i < ops.length; i += 1) foldCloudOp(fold, ops[i]);
-    clinicalOps = fold.clinicalOps ?? null;
-  }
-  if (clinicalOps != null) {
-    const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot } = await import(
-      '../../clinical-ops-sync.mjs'
-    );
-    if (isClinicalOpsLanAvailable()) {
-      await applyClinicalOpsLanSnapshot(clinicalOps);
-    } else {
-      // iPad/PWA: no SQLCipher — hydrate session scope from the snapshot directly.
-      const { applyClinicalScopeFromLanOpsSnapshot } = await import(
-        '../../clinical-access-runtime.mjs'
-      );
-      applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
-    }
-  }
+  const { ops, clinicalOps } = resolveClinicalOpsFromPull(pull);
+  if (clinicalOps != null) await applyClinicalOpsSnapshot(clinicalOps);
 
   await hydrateClinicalTeamsAfterCloudPull();
   return { ok: true, sala: normalized, ops: ops.length };
@@ -249,6 +271,26 @@ export async function listLocalTeamSalas() {
   return [...salas];
 }
 
+/** @param {{ homeSala?: string }} [opts] */
+function resolveConnectHomeSala(opts) {
+  return normalizeCloudSala(
+    opts.homeSala ||
+      clinicalSessionContext.user?.sala ||
+      getCloudSyncRoomSnapshot()?.sala ||
+      ''
+  );
+}
+
+/** @param {Set<string>} pullTargets */
+async function pullClinicalOpsForSalas(pullTargets) {
+  let pulled = 0;
+  for (const sala of pullTargets) {
+    const res = await pullClinicalOpsForSala(sala).catch(() => null);
+    if (res?.ok) pulled += 1;
+  }
+  return pulled;
+}
+
 /**
  * On Nube connect: pull team directories for home + known salas, then push local teams
  * so peers see them without waiting for a manual edit in Mi rotación.
@@ -260,22 +302,12 @@ export async function syncCloudClinicalOpsOnConnect(opts = {}) {
     return { ok: false, reason: 'inactive' };
   }
 
-  let homeSala = normalizeCloudSala(
-    opts.homeSala ||
-      clinicalSessionContext.user?.sala ||
-      getCloudSyncRoomSnapshot()?.sala ||
-      ''
-  );
-
+  const homeSala = resolveConnectHomeSala(opts);
   const pullTargets = new Set();
   if (isCloudSala(homeSala)) pullTargets.add(homeSala);
   for (const sala of await listLocalTeamSalas()) pullTargets.add(sala);
 
-  let pulled = 0;
-  for (const sala of pullTargets) {
-    const res = await pullClinicalOpsForSala(sala).catch(() => null);
-    if (res?.ok) pulled += 1;
-  }
+  const pulled = await pullClinicalOpsForSalas(pullTargets);
 
   // After pull, local DB may include remote teams — push all salas that now have teams.
   const pushTargets = await listLocalTeamSalas();

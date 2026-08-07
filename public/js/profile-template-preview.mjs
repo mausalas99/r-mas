@@ -58,7 +58,7 @@ export function renderNotaTemplatesPreview(t) {
       readonlyTextarea(
         7,
         ev,
-        "Estructura N / V / HD / HI / NM. Usa Plantilla SOAP o edita el formato desde Mi Perfil."
+        "Estructura N / V / HD / HI / NM. Edita el formato desde Mi Perfil."
       )
     ) +
     noteCard(

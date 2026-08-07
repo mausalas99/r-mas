@@ -7,7 +7,6 @@ import {
   loadAdminResumen,
   loadAdminRoomDetail,
   loadAdminSalas,
-  loadAdminUsers,
 } from './panel-admin-data.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
@@ -53,8 +52,11 @@ function dispatchSimpleAction(action, deps) {
     'promote-self': () => void handlePromoteSelf(deps),
     'refresh-resumen': () => void loadAdminResumen(deps.root, deps.getApi),
     'refresh-salas': () => void loadAdminSalas(deps.root, deps.getApi, buildSalasCtx(deps)),
-    'search-users': () => void loadAdminUsers(deps.root, deps.getApi),
-    'refresh-equipos': () => void equiposPanel.refresh(),
+    'search-users': () => void loadAdminEquipos(deps.root, deps.getApi),
+    'refresh-equipos': () => void deps.equiposPanel?.refresh(),
+    'seed-agosto-2026-equipos': () => void deps.equiposPanel?.seedAgosto2026?.(),
+    'save-equipos-bulk': () => void deps.equiposPanel?.handleBulkSave?.(),
+    'purge-equipos-bulk': () => void deps.equiposPanel?.handleBulkPurge?.(),
     'load-mutations': () => void loadAdminMutations(deps.root, deps.getApi, deps.toast),
     'purge-room-selected': () => void handlePurgeRoomSelected(deps),
     'close-room-detail': () => {
@@ -92,26 +94,30 @@ function dispatchRoomAction(action, btn, deps, _ctx) {
 }
 
 /** @param {string | null} action @param {Element} btn @param {object} deps */
+function dispatchEquiposUserAction(action, btn, deps) {
+  const equiposMap = {
+    'assign-equipo': () => void deps.equiposPanel?.handleAssign(btn),
+    'save-equipo-rank': () => void deps.equiposPanel?.handleSaveRank(btn),
+    'purge-equipo-user': () => void deps.equiposPanel?.handlePurge(btn),
+  };
+  if (!action || !(action in equiposMap)) return false;
+  equiposMap[action]();
+  return true;
+}
+
+/** @param {string | null} action @param {Element} btn @param {object} deps */
 function dispatchUserAction(action, btn, deps) {
+  if (dispatchEquiposUserAction(action, btn, deps)) return;
   const userId = btn.getAttribute('data-user-id');
   const handle = btn.getAttribute('data-user-handle') || '';
-  if (action === 'assign-equipo') {
-    void deps.equiposPanel?.handleAssign(btn);
-    return;
-  }
-  if (action === 'save-equipo-rank') {
-    void deps.equiposPanel?.handleSaveRank(btn);
-    return;
-  }
-  if (action === 'purge-equipo-user') {
-    void deps.equiposPanel?.handlePurge(btn);
-    return;
-  }
-  if (action === 'revoke-sessions' && userId) void handleRevokeSessions(deps, userId, handle);
-  if (action === 'promote-user' && userId) void handlePromoteUser(deps, userId, handle, btn);
-  if (action === 'reset-password' && userId) void handleResetPassword(deps, userId, handle);
-  if (action === 'disable-user' && userId) void handleDisableUser(deps, userId, handle);
-  if (action === 'delete-user' && userId) void handleDeleteUser(deps, userId, handle);
+  const userMap = {
+    'revoke-sessions': () => userId && void handleRevokeSessions(deps, userId, handle),
+    'promote-user': () => userId && void handlePromoteUser(deps, userId, handle, btn),
+    'reset-password': () => userId && void handleResetPassword(deps, userId, handle),
+    'disable-user': () => userId && void handleDisableUser(deps, userId, handle),
+    'delete-user': () => userId && void handleDeleteUser(deps, userId, handle),
+  };
+  if (action && action in userMap) userMap[action]();
 }
 
 /** @param {object} deps */
@@ -200,7 +206,7 @@ async function handlePromoteUser(deps, userId, handle, btn) {
   try {
     await deps.getApi().adminPromote(userId, role);
     deps.toast('Rol actualizado.', 'success');
-    void loadAdminUsers(deps.root, deps.getApi);
+    void loadAdminEquipos(deps.root, deps.getApi);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo cambiar el rol.', 'error');
   }
@@ -241,7 +247,7 @@ async function handleDisableUser(deps, userId, handle) {
   try {
     await deps.getApi().adminDisable(userId);
     deps.toast('Usuario deshabilitado.', 'success');
-    void loadAdminUsers(deps.root, deps.getApi);
+    void loadAdminEquipos(deps.root, deps.getApi);
   } catch (err) {
     deps.toast(err?.data?.message || err?.message || 'No se pudo deshabilitar.', 'error');
   }
@@ -280,7 +286,6 @@ async function handleDeleteUser(deps, userId, handle) {
         'warn'
       );
     }
-    void loadAdminUsers(deps.root, deps.getApi);
     void loadAdminResumen(deps.root, deps.getApi);
     void loadAdminEquipos(deps.root, deps.getApi);
   } catch (err) {

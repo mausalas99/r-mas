@@ -9,13 +9,14 @@ var HELP_ARTICLES = [
   {
     id: 'modo-guardia',
     title: 'Modo Guardia',
-    keywords: 'guardia modo chip tablero turno censo alcance rango solo mis entregas toggle',
+    keywords: 'guardia modo chip tablero turno censo alcance rango solo entregados toggle nube',
     html:
       '<p><strong>Modo Guardia</strong> es una vista de trabajo centrada en el turno: censo, entrega y monitoreo. Se abre desde el botón <strong>Guardia</strong> en la barra superior.</p>' +
       '<ul>' +
       '<li><strong>Chip Guardia</strong> — entra y sale sin bloquear Laboratorio ni Expediente.</li>' +
-      '<li><strong>Alcance</strong> — R1 ve su equipo; R4 puede ver toda la sala. La barra de contexto resume sala y turno.</li>' +
-      '<li><strong>Solo mis entregas</strong> — filtra la grilla a pacientes que te entregaron en este turno (independiente del flujo Entrega).</li>' +
+      '<li><strong>Franja Nube · sala · equipo</strong> — confirma conexión Nube, sala del turno y equipo activo antes de confiar en el censo compartido.</li>' +
+      '<li><strong>Alcance</strong> — R1 ve su equipo; R4 ve el censo de la sala (Filtros censo por sala; grilla subdividida por equipo). La barra de contexto resume sala y turno.</li>' +
+      '<li><strong>Censo: todos / solo entregados</strong> — filtra la grilla (independiente del flujo Entrega).</li>' +
       '<li>Pulsa de nuevo <strong>Guardia</strong> para volver a la vista Normal.</li>' +
       '</ul>'
   },
@@ -30,6 +31,7 @@ var HELP_ARTICLES = [
       '<li><strong>Por paciente</strong> — modal de entrega con equipo entrante, handoff y pendientes.</li>' +
       '<li><strong>Roster</strong> — lista quién falta por documentar antes de pasar al turno.</li>' +
       '<li><strong>Pendientes v2</strong> — plantillas por servicio y seguimiento estructurado entre turnos.</li>' +
+      '<li><strong>Finalizar turno</strong> — agrupa pendientes abiertos por equipo de origen para enviar handoff diurno; cerrar sin enviar no borra pendientes.</li>' +
       '</ul>'
   },
   {
@@ -43,8 +45,21 @@ var HELP_ARTICLES = [
       '<li><strong>Mi rotación</strong> — @usuario, equipos e integrantes (se publican por clinicalOps a la sala).</li>' +
       '<li><strong>Directorio de usuarios</strong> — quién está en la sala; el admin asigna a equipos.</li>' +
       '<li><strong>iPad / R+ Móvil</strong> — enlace o QR desde ⇄; inicia sesión con la misma cuenta Nube.</li>' +
-      '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores colapsables; sync discreta en segundo plano.</li>' +
+      '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores por equipo en la grilla; sync discreta en segundo plano.</li>' +
       '</ul>'
+  },
+  {
+    id: 'rotacion-equipos',
+    title: 'Rotación mensual y herencia de pacientes',
+    keywords: 'rotacion nueva rotacion rejoin heredar pacientes equipo mes sala ciclo mi rotacion unirse archivar',
+    html:
+      '<p>Cada mes los equipos de guardia rotan. R+ te guía para no perder el hilo del censo compartido.</p>' +
+      '<ul>' +
+      '<li><strong>Nueva rotación</strong> — si ya estuviste en un equipo, R+ puede pedirte confirmar sala y abrir <strong>Mi rotación</strong> para unirte al equipo del mes.</li>' +
+      '<li><strong>Heredar pacientes</strong> — al unirte a un equipo nuevo, el asistente te deja traer pacientes de tu equipo anterior (misma sala/ciclo sugerido) sin reasignar uno por uno.</li>' +
+      '<li><strong>R4 / admin</strong> — publica equipos nuevos en Mi rotación para que el resto se una.</li>' +
+      '</ul>' +
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Censo vacío tras rotar? Confirma Nube en ⇄, revisa la franja sala/equipo en Guardia y abre Mi rotación.</p>'
   },
   {
     id: 'primer-paciente',
@@ -89,8 +104,8 @@ var HELP_ARTICLES = [
     html:
       '<p>En <strong>Expediente → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p>' +
       '<ul>' +
-      '<li>La <strong>plantilla SOAP</strong> (modal) concentra subjetivo/objetivo breve, GCS, analgesia, antibióticos, antiHTA, vasopresores, temperatura, dieta, balance hídrico y glucometrías. <strong>Insertar en evolución</strong> pega el párrafo en el cuadro de texto.</li>' +
-      '<li>Desde <strong>Medicamentos</strong> puedes marcar fármacos para SOAP y abrir el modal ya relleno en analgesia / ABX / antiHTA / vasopresores.</li>' +
+      '<li>En modo <strong>Sala</strong>, el párrafo estructurado (N/V/HD/HI/NM) se arma en <strong>Estado actual</strong> y se copia a la nota.</li>' +
+      '<li>En <strong>Interconsulta</strong>, desde <strong>Medicamentos</strong> puedes volcar dosis a la plantilla SOAP o al tratamiento.</li>' +
       '<li><strong>Generar Nota (.docx)</strong> crea el documento con membrete (generador nativo en Node); la carpeta de salida está en <strong>Ajustes</strong>.</li>' +
       '<li><strong>Salida rápida</strong> exporta el paciente activo en docx, html o txt según el formato elegido.</li>' +
       '<li>Los datos se guardan por paciente en este equipo.</li>' +
@@ -130,7 +145,7 @@ var HELP_ARTICLES = [
       '<li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio útil.</li>' +
       '<li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li>' +
       '</ul>' +
-      '<p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Guardar</strong> conserva el texto por paciente; <strong>Guardar y copiar</strong> además lo lleva al portapapeles. El botón verde del encabezado abre también la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">En <strong>Sala</strong>, copia el texto compilado desde el historial o el botón flotante de copiar hacia la nota. En <strong>Interconsulta</strong>, <strong>Enviar a nota</strong> vuelca el texto a la evolución y abre la pestaña Notas (pide confirmar si ya hay texto).</p>'
   },
   {
     id: 'indicaciones',
@@ -156,6 +171,7 @@ var HELP_ARTICLES = [
       '<li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros).</li>' +
       '<li><strong>Añadir a Tratamiento</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li>' +
       '<li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li>' +
+      '<li>Atajos: <strong>Ctrl/⌘ + 3</strong> cicla Manejo actual ↔ Perfil histórico; <strong>Ctrl/⌘ + Shift + 3</strong> alterna Completa / Nombre+Día; <strong>Ctrl/⌘ + M</strong> es alias de Medicamentos.</li>' +
       '</ul>'
   },
   {
@@ -194,17 +210,21 @@ var HELP_ARTICLES = [
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
-      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal)</li>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal). <strong>Repite el mismo número</strong> para ciclar subvistas: <strong>2</strong> Paciente→Clínico→Resultados→Salida · <strong>3</strong> Manejo↔Perfil · <strong>4</strong> semana actual</li>' +
+      '<li><strong>Ctrl/⌘ + Shift + 3</strong> — Completa ↔ Nombre+Día (texto de egreso en Manejo actual)</li>' +
+      '<li><strong>Ctrl/⌘ + [</strong> / <strong>]</strong> — Semana anterior / siguiente en Agenda</li>' +
       '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
-      '<li><strong>Ctrl/⌘ + S</strong> — Guardar estado del paciente activo</li>' +
+      '<li><strong>Ctrl/⌘ + G</strong> — Modo Guardia · <strong>I</strong> — Interconsulta · <strong>P</strong> — Pase (repite para volver a Sala/Interconsulta) · <strong>S</strong> — Sala</li>' +
+      '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Medicamentos (cicla subvistas) · <strong>A</strong> — Agenda (semana actual)</li>' +
+      '<li><strong>Ctrl/⌘ + Shift + S</strong> — Guardar estado del paciente activo</li>' +
       '<li><strong>Ctrl/⌘ + K</strong> — Ir a sección o paciente</li>' +
-      '<li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li>' +
       '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
       '<li><strong>Ctrl/⌘ + Shift + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
       '<li><strong>Esc</strong> o clic fuera — Cerrar ventana modal, menús o el centro de ayuda</li>' +
       '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
-      '</ul>'
+      '</ul>' +
+      '<p style="font-size:13px;color:var(--text-muted);margin:12px 0 0;">Si cambias mucho de pestaña con el mouse, R+ puede sugerirte estos atajos tras varios clics (sin límite de tiempo); dejan de aparecer cuando empiezas a usarlos.</p>'
   },
   {
     id: 'privacidad',

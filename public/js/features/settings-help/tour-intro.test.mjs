@@ -48,7 +48,7 @@ describe('tour intro launch', () => {
       'utf8'
     );
     assert.match(roster, /skipProfileGate/);
-    assert.match(src, /nombre completo de tu R2/);
+    assert.match(src, /heredar pacientes|Mi rotación/);
     assert.match(src, /needsTeamOnboarding/);
     const state = readFileSync(join(dir, 'tour-state.mjs'), 'utf8');
     assert.match(state, /handlePostGuidedTourOnboardingResume/);
@@ -70,7 +70,6 @@ describe('tour intro launch', () => {
   it('tour-flow imports tour-engine cleanup helpers', () => {
     const lifecycle = readFileSync(join(dir, 'tour-flow-lifecycle.mjs'), 'utf8');
     assert.match(lifecycle, /from '\.\/tour-engine\.mjs'/);
-    assert.match(lifecycle, /clearTourSoapButtonHighlight/);
     assert.match(lifecycle, /syncLearnHubContinueVisibility/);
   });
 

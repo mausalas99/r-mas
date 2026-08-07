@@ -91,7 +91,7 @@ export function syncLiveSyncStatusChrome() {
   var chromeClass = liveSyncStatusChromeClass(phase);
   var detail = liveSyncStatusChromeDetail(roomLabel, phase);
   btn.className =
-    'btn-header-icon btn-livesync-header btn-livesync-header--' + chromeClass;
+    'btn-header-icon btn-livesync-header ui-pressable btn-livesync-header--' + chromeClass;
   btn.title = detail;
   btn.setAttribute('aria-label', detail);
 }

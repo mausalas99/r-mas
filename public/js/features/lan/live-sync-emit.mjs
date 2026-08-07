@@ -76,14 +76,15 @@ export function emitLiveSyncTodoDelete(patientId, todoRef, updatedAt) {
     .captureBase(base)
     .build({ roomId: activeLiveSyncRoomId, patientId: patientId, op: 'delete' });
   var tombVer = Number(base.version || 0) + 1;
+  var deleteAt = String(updatedAt || new Date().toISOString());
   rememberLiveSyncEntity('todo', eid, patientId, tombVer, {
     id: eid,
     patientId: patientId,
     _deleted: true,
-    updatedAt: String((todo && todo.updatedAt) || updatedAt || new Date().toISOString()),
+    updatedAt: deleteAt,
   });
   sendLiveSyncMutation(mutation);
-  cloudEmit('todo-delete', [patientId, todoRef, updatedAt]);
+  cloudEmit('todo-delete', [patientId, todoRef, deleteAt]);
 }
 
 export function emitLiveSyncPatientDelete(patient) {

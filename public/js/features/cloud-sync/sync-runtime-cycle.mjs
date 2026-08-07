@@ -105,6 +105,58 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
     });
   }
 
+  return createPullPushOps({
+    api,
+    outbox,
+    getRoomId,
+    getRevision,
+    setStatus,
+    outboxSync,
+    pace,
+    pullLatest,
+    applyServerRevision,
+  });
+}
+
+/**
+ * @param {object} ctx
+ */
+function createPullPushOps(ctx) {
+  const {
+    api,
+    outbox,
+    getRoomId,
+    getRevision,
+    setStatus,
+    outboxSync,
+    pace,
+    pullLatest,
+    applyServerRevision,
+  } = ctx;
+
+  /**
+   * @param {string} roomId
+   * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
+   * @param {unknown[]} ops
+   */
+  async function pushWithStaleRetry(roomId, item, ops) {
+    let lastErr;
+    for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
+      try {
+        return await api.push(roomId, {
+          clientMutationId: resolveCloudPushMutationId(item),
+          ops,
+          baseRevision: getRevision() ?? item.baseRevision ?? 0,
+        });
+      } catch (err) {
+        lastErr = err;
+        if (!isCloudRevisionStaleError(err) || attempt >= PUSH_STALE_RETRIES) throw err;
+        await pullLatest();
+      }
+    }
+    throw lastErr;
+  }
+
   async function flushOutbox() {
     const roomId = getRoomId();
     if (!roomId) return;
@@ -146,30 +198,122 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
     }
   }
 
-  /**
-   * @param {string} roomId
-   * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
-   * @param {unknown[]} ops
-   */
-  async function pushWithStaleRetry(roomId, item, ops) {
-    let lastErr;
-    for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
+  return { pullLatest, flushOutbox };
+}
+
+/**
+ * @param {object} ctx
+ */
+function createSyncCycleController(ctx) {
+  const {
+    stopped,
+    getRoomId,
+    setStatus,
+    outboxSync,
+    flushOutbox,
+    pullLatest,
+    failCycle,
+    getScheduler,
+    cycleInflightRef,
+  } = ctx;
+
+  /** Push-only while hidden; always re-arms the poll timer. */
+  async function runHiddenCycle() {
+    const scheduler = getScheduler();
+    if (outboxSync.pendingCount() > 0 && navigator.onLine) {
       try {
-        return await api.push(roomId, {
-          clientMutationId: resolveCloudPushMutationId(item),
-          ops,
-          baseRevision: getRevision() ?? item.baseRevision ?? 0,
-        });
+        setStatus('syncing');
+        await flushOutbox();
+        outboxSync.refreshIdleStatus();
+        scheduler.noteSuccess();
+        noteCloudSyncCycle(true);
       } catch (err) {
-        lastErr = err;
-        if (!isCloudRevisionStaleError(err) || attempt >= PUSH_STALE_RETRIES) throw err;
-        await pullLatest();
+        failCycle(err);
       }
+      return;
     }
-    throw lastErr;
+    scheduler.armNextTimer(false);
   }
 
-  return { pullLatest, flushOutbox };
+  async function runSyncCycleBody() {
+    const scheduler = getScheduler();
+    try {
+      setStatus('syncing');
+      await flushOutbox();
+      await pullLatest();
+      outboxSync.refreshIdleStatus();
+      scheduler.noteSuccess();
+      noteCloudSyncCycle(true);
+    } catch (err) {
+      failCycle(err);
+    }
+  }
+
+  async function syncCycle() {
+    const scheduler = getScheduler();
+    if (stopped()) return;
+    if (!getRoomId()) {
+      scheduler.armNextTimer(false);
+      return;
+    }
+    const hidden =
+      typeof document !== 'undefined' && document.visibilityState !== 'visible';
+    if (hidden) {
+      await runHiddenCycle();
+      return;
+    }
+    if (!navigator.onLine) {
+      setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
+      scheduler.armNextTimer(false);
+      return;
+    }
+    if (cycleInflightRef.current) return cycleInflightRef.current;
+    cycleInflightRef.current = runSyncCycleBody().finally(function () {
+      cycleInflightRef.current = null;
+    });
+    return cycleInflightRef.current;
+  }
+
+  return { syncCycle };
+}
+
+/**
+ * @param {object} ctx
+ */
+function attachSyncRuntimeListeners(ctx) {
+  const { syncCycle, scheduler, pace, outboxSync } = ctx;
+
+  function onOnline() { void syncCycle(); }
+  function onVisibility() {
+    if (document.visibilityState === 'visible') void syncCycle();
+  }
+  /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
+  function onWindowFocus() { void syncCycle(); }
+
+  function noteLocalMutation() {
+    pace.markLocalWrite();
+    scheduler.armNextTimer(false);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', onOnline);
+    window.addEventListener('focus', onWindowFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+  }
+  outboxSync.refreshIdleStatus();
+  void syncCycle();
+  scheduler.armNextTimer(false);
+
+  return {
+    noteLocalMutation,
+    detach() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', onOnline);
+        window.removeEventListener('focus', onWindowFocus);
+        document.removeEventListener('visibilitychange', onVisibility);
+      }
+    },
+  };
 }
 
 /**
@@ -188,7 +332,7 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
 export function createSyncRuntimeCycle(deps) {
   const { outbox, getRoomId, onStatus } = deps;
   let stopped = false;
-  let cycleInflight = null;
+  const cycleInflightRef = { current: null };
   /** @type {CloudSyncStatus} */
   let currentStatus = 'idle';
   /** @type {string} */
@@ -231,101 +375,42 @@ export function createSyncRuntimeCycle(deps) {
     noteCloudSyncCycle(false);
   }
 
-  /** Push-only while hidden; always re-arms the poll timer. */
-  async function runHiddenCycle() {
-    if (outboxSync.pendingCount() > 0 && navigator.onLine) {
-      try {
-        setStatus('syncing');
-        await flushOutbox();
-        outboxSync.refreshIdleStatus();
-        scheduler.noteSuccess();
-        noteCloudSyncCycle(true);
-      } catch (err) {
-        failCycle(err);
-      }
-      return;
-    }
-    scheduler.armNextTimer(false);
-  }
-
-  async function syncCycle() {
-    if (stopped) return;
-    if (!getRoomId()) {
-      scheduler.armNextTimer(false);
-      return;
-    }
-    const hidden =
-      typeof document !== 'undefined' && document.visibilityState !== 'visible';
-    if (hidden) {
-      await runHiddenCycle();
-      return;
-    }
-    if (!navigator.onLine) {
-      setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
-      scheduler.armNextTimer(false);
-      return;
-    }
-    if (cycleInflight) return cycleInflight;
-    cycleInflight = runSyncCycleBody().finally(function () { cycleInflight = null; });
-    return cycleInflight;
-  }
-
-  async function runSyncCycleBody() {
-    try {
-      setStatus('syncing');
-      await flushOutbox();
-      await pullLatest();
-      outboxSync.refreshIdleStatus();
-      scheduler.noteSuccess();
-      noteCloudSyncCycle(true);
-    } catch (err) {
-      failCycle(err);
-    }
-  }
+  const cycleController = createSyncCycleController({
+    stopped: () => stopped,
+    getRoomId,
+    setStatus,
+    outboxSync,
+    flushOutbox,
+    pullLatest,
+    failCycle,
+    getScheduler: () => scheduler,
+    cycleInflightRef,
+  });
 
   scheduler = createCloudPollScheduler({
-    syncCycle,
+    syncCycle: cycleController.syncCycle,
     pendingCount: outboxSync.pendingCount,
     getLastLocalWriteAt: function () { return lastLocalWriteAt; },
     pollMobile: deps.pollMobile,
   });
 
-  function onOnline() { void syncCycle(); }
-  function onVisibility() {
-    if (document.visibilityState === 'visible') void syncCycle();
-  }
-  /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
-  function onWindowFocus() { void syncCycle(); }
-
-  function noteLocalMutation() {
-    pace.markLocalWrite();
-    scheduler.armNextTimer(false);
-  }
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('online', onOnline);
-    window.addEventListener('focus', onWindowFocus);
-    document.addEventListener('visibilitychange', onVisibility);
-  }
-  outboxSync.refreshIdleStatus();
-  // Immediate first cycle — do not wait a full idle interval to see peers.
-  void syncCycle();
-  scheduler.armNextTimer(false);
+  const listeners = attachSyncRuntimeListeners({
+    syncCycle: cycleController.syncCycle,
+    scheduler,
+    pace,
+    outboxSync,
+  });
 
   const handle = {
     getStatus: () => currentStatus,
     getDetail: () => lastDetail,
     flushOutbox,
-    syncCycle,
-    noteLocalMutation,
+    syncCycle: cycleController.syncCycle,
+    noteLocalMutation: listeners.noteLocalMutation,
     stop() {
       stopped = true;
       scheduler.stop();
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('online', onOnline);
-        window.removeEventListener('focus', onWindowFocus);
-        document.removeEventListener('visibilitychange', onVisibility);
-      }
+      listeners.detach();
       deps.onStop?.(handle);
     },
   };

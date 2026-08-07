@@ -1,4 +1,3 @@
-import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { CLINICAL_SALAS } from '../clinical-teams/shared.mjs';
 import {
@@ -6,73 +5,18 @@ import {
   equiposListHtml,
   equiposSalaOptionsHtml,
 } from './panel-admin-equipos-html.mjs';
+import { mergeCloudUsersForEquipos } from './panel-admin-equipos-merge.mjs';
+import { applyEquiposClientFilters } from './panel-admin-equipos-filters.mjs';
+import { sortEquiposRowsForAdmin } from './panel-admin-equipos-sort.mjs';
+
+export { mergeCloudUsersForEquipos } from './panel-admin-equipos-merge.mjs';
+export { applyEquiposClientFilters } from './panel-admin-equipos-filters.mjs';
+export { sortEquiposRowsForAdmin } from './panel-admin-equipos-sort.mjs';
 
 /** @returns {import('../../preload.js').ElectronAPI | null} */
 function dbApi() {
   if (typeof window === 'undefined') return null;
   return window.rplusDb || window.electronAPI || null;
-}
-
-/** @param {Array<{ username?: string, user_id?: string, clinical_name?: string, rank?: string, sala?: string }>} clinicalUsers */
-function clinicalByUsername(clinicalUsers) {
-  /** @type {Map<string, object>} */
-  const map = new Map();
-  for (const u of clinicalUsers || []) {
-    const h = normalizeUsername(u?.username || '');
-    if (h) map.set(h, u);
-  }
-  return map;
-}
-
-/**
- * Cloud accounts + clinical-only roster users (test / LAN peers without Nube login).
- * @param {Array<{ id?: string, username?: string, display_name?: string, disabled?: boolean }>} cloudUsers
- * @param {object[]} clinicalUsers
- */
-export function mergeCloudUsersForEquipos(cloudUsers, clinicalUsers) {
-  const byHandle = clinicalByUsername(clinicalUsers);
-  /** @type {Set<string>} */
-  const seen = new Set();
-  /** @type {object[]} */
-  const rows = [];
-
-  for (const cloud of cloudUsers || []) {
-    if (!cloud || cloud.disabled) continue;
-    const handle = normalizeUsername(cloud.username || '');
-    if (!handle || seen.has(handle)) continue;
-    seen.add(handle);
-    const clinical = byHandle.get(handle);
-    rows.push({
-      user_id: clinical?.user_id ? String(clinical.user_id) : '',
-      username: handle,
-      clinical_name: String(clinical?.clinical_name || cloud.display_name || '').trim(),
-      rank: String(clinical?.rank || 'R1'),
-      sala: String(clinical?.sala || '').trim(),
-      cloudId: String(cloud.id || ''),
-      hasLocalProfile: Boolean(clinical?.user_id),
-      clinicalOnly: false,
-    });
-  }
-
-  for (const clinical of clinicalUsers || []) {
-    const handle = normalizeUsername(clinical?.username || '');
-    if (!handle || seen.has(handle)) continue;
-    const userId = String(clinical?.user_id || '').trim();
-    if (!userId) continue;
-    seen.add(handle);
-    rows.push({
-      user_id: userId,
-      username: handle,
-      clinical_name: String(clinical?.clinical_name || '').trim(),
-      rank: String(clinical?.rank || 'R1'),
-      sala: String(clinical?.sala || '').trim(),
-      cloudId: '',
-      hasLocalProfile: true,
-      clinicalOnly: true,
-    });
-  }
-
-  return rows.sort((a, b) => a.username.localeCompare(b.username, 'es'));
 }
 
 /** @param {object[]} teams @param {string} salaFilter */
@@ -88,29 +32,69 @@ function paintEquiposSalaSelect(root, teams) {
   const sel = root.querySelector('[data-admin-equipos-sala]');
   if (!(sel instanceof HTMLSelectElement)) return;
   const prev = sel.value;
-  const salas = [...new Set((teams || []).map((t) => String(t.sala || '').trim()).filter(Boolean))].sort(
-    (a, b) => a.localeCompare(b, 'es')
-  );
-  const ordered = CLINICAL_SALAS.filter((s) => salas.includes(s));
-  const extras = salas.filter((s) => !ordered.includes(s));
-  sel.innerHTML = equiposSalaOptionsHtml([...ordered, ...extras]);
+  const fromTeams = [
+    ...new Set((teams || []).map((t) => String(t.sala || '').trim()).filter(Boolean)),
+  ];
+  const extras = fromTeams
+    .filter((s) => !CLINICAL_SALAS.includes(s))
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  sel.innerHTML = equiposSalaOptionsHtml([...CLINICAL_SALAS, ...extras]);
   if (prev) sel.value = prev;
 }
 
-/** @param {HTMLElement} host @param {string} q @param {string} sala */
-function applyEquiposClientFilters(host, q, sala) {
-  const term = String(q || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^@+/, '');
-  const salaFilter = String(sala || '').trim();
-  host.querySelectorAll('.cloud-sync-admin-equipos-row').forEach((row) => {
-    const hay = String(row.getAttribute('data-search') || '');
-    const rowSala = String(row.getAttribute('data-sala') || '').trim();
-    const matchQ = !term || hay.includes(term);
-    const matchSala = !salaFilter || !rowSala || rowSala === salaFilter;
-    row.hidden = !(matchQ && matchSala);
+/** @param {HTMLElement} root */
+export function applyEquiposFiltersFromToolbar(root) {
+  const list = root.querySelector('[data-admin-equipos-list]');
+  if (!list) return;
+  const search = root.querySelector('[data-admin-equipos-search]');
+  const salaSel = root.querySelector('[data-admin-equipos-sala]');
+  const activitySel = root.querySelector('[data-admin-equipos-activity]');
+  const teamSel = root.querySelector('[data-admin-equipos-team-status]');
+  applyEquiposClientFilters(list, {
+    q: search instanceof HTMLInputElement ? search.value : '',
+    sala: salaSel instanceof HTMLSelectElement ? salaSel.value : '',
+    activity: activitySel instanceof HTMLSelectElement ? activitySel.value : 'all',
+    teamStatus: teamSel instanceof HTMLSelectElement ? teamSel.value : 'all',
   });
+}
+
+/**
+ * @param {import('../../preload.js').ElectronAPI} api
+ * @param {() => ReturnType<import('./api-client.mjs').createCloudSyncApi>} getApi
+ */
+async function fetchEquiposAdminPayload(api, getApi) {
+  const callerUserId = String(clinicalSessionContext.user?.user_id || '');
+  const clinicalPromise =
+    typeof api.dbClinicalUsersList === 'function'
+      ? api.dbClinicalUsersList({ callerUserId })
+      : Promise.resolve({ ok: true, users: [] });
+  const [cloudRes, teamsRes, clinicalRes] = await Promise.all([
+    getApi().adminUsers(''),
+    api.dbClinicalTeamsList(),
+    clinicalPromise,
+  ]);
+  return {
+    teams: teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [],
+    clinicalUsers: clinicalRes?.ok && Array.isArray(clinicalRes.users) ? clinicalRes.users : [],
+    cloudUsers: cloudRes?.users || [],
+  };
+}
+
+/**
+ * @param {HTMLElement} root
+ * @param {{ teams: object[], clinicalUsers: object[], cloudUsers: object[] }} payload
+ */
+function renderEquiposAdminList(root, payload) {
+  const rows = sortEquiposRowsForAdmin(
+    mergeCloudUsersForEquipos(payload.cloudUsers, payload.clinicalUsers),
+    payload.teams
+  );
+  paintEquiposSalaSelect(root, payload.teams);
+  const list = root.querySelector('[data-admin-equipos-list]');
+  if (!list) return rows;
+  list.innerHTML = equiposListHtml(rows, payload.teams);
+  applyEquiposFiltersFromToolbar(root);
+  return rows;
 }
 
 /**
@@ -131,36 +115,12 @@ export async function loadAdminEquipos(root, getApi) {
   }
 
   try {
-    const callerUserId = String(clinicalSessionContext.user?.user_id || '');
-    const [cloudRes, teamsRes, clinicalRes] = await Promise.all([
-      getApi().adminUsers(''),
-      api.dbClinicalTeamsList(),
-      typeof api.dbClinicalUsersList === 'function'
-        ? api.dbClinicalUsersList({ callerUserId })
-        : Promise.resolve({ ok: true, users: [] }),
-    ]);
-
-    const teams = teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [];
-    const clinicalUsers =
-      clinicalRes?.ok && Array.isArray(clinicalRes.users) ? clinicalRes.users : [];
-    const rows = mergeCloudUsersForEquipos(cloudRes?.users || [], clinicalUsers);
-
-    paintEquiposSalaSelect(root, teams);
-
-    const salaSel = root.querySelector('[data-admin-equipos-sala]');
-    const salaFilter = salaSel instanceof HTMLSelectElement ? salaSel.value : '';
-    const filteredTeams = filterTeamsBySala(teams, salaFilter);
-
-    list.innerHTML = equiposListHtml(rows, filteredTeams);
-
-    const search = root.querySelector('[data-admin-equipos-search]');
-    const q = search instanceof HTMLInputElement ? search.value : '';
-    applyEquiposClientFilters(list, q, salaFilter);
-
+    const payload = await fetchEquiposAdminPayload(api, getApi);
+    const rows = renderEquiposAdminList(root, payload);
     root.dispatchEvent(
       new CustomEvent('cloud-admin-equipos-loaded', {
         bubbles: true,
-        detail: { teams, rows },
+        detail: { teams: payload.teams, rows },
       })
     );
   } catch (err) {

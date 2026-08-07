@@ -4,11 +4,6 @@
  * module free of static imports of heavy feature panels.
  */
 import { isMobileWeb } from './mobile-web.mjs';
-import {
-  refreshDocQueueBadgeFromShell,
-  refreshEntregaPrepBadgeFromShell,
-  refreshCultivoQueueBadgeFromShell,
-} from './app-shell-lazy-panels.mjs';
 
 function importLazyRoutes() {
   return import('./lazy-feature-routes.mjs');
@@ -64,19 +59,6 @@ export function scheduleDeferredShellInits(_showToast) {
       mod.initPasteSmart();
     });
   });
-  _rpcDeferInit(refreshDocQueueBadgeFromShell);
-  _rpcDeferInit(refreshEntregaPrepBadgeFromShell);
-  _rpcDeferInit(refreshCultivoQueueBadgeFromShell);
-  _rpcDeferInit(function () {
-    if (typeof document === 'undefined' || !document.addEventListener) return;
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') {
-        refreshDocQueueBadgeFromShell();
-        refreshEntregaPrepBadgeFromShell();
-        refreshCultivoQueueBadgeFromShell();
-      }
-    });
-  });
   _rpcDeferInit(function () {
     void importLazyRoutes()
       .then(function (routes) {
@@ -122,6 +104,9 @@ export function scheduleDeferredUiInits(showToast) {
   _rpcDeferInit(function () {
     void import('./app-shell-keyboard.mjs').then(function (mod) {
       mod.initShellKeyboardShortcuts(showToast);
+    });
+    void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
+      mod.initKeyboardShortcutsNudge(showToast);
     });
   });
 }

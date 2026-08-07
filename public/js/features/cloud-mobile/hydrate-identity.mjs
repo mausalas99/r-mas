@@ -39,14 +39,13 @@ function applyCloudMobileSalaFromRoom(seeded) {
 /**
  * @param {{ username?: string, displayName?: string, id?: string } | null | undefined} cloudUser
  */
-export function seedCloudMobileClinicalUser(cloudUser) {
+function buildCloudMobileSeedUser(cloudUser) {
   const username = normalizeUsername(
     String(cloudUser?.username || readCloudMobileJoinUser() || '').replace(/^@+/, '')
   );
   const displayName = String(cloudUser?.displayName || '').trim();
   if (!username && !cloudUser?.id) return null;
-
-  const seeded = {
+  return {
     user_id: username || String(cloudUser?.id || 'cloud-mobile'),
     username: username || null,
     rank: 'R1',
@@ -54,11 +53,20 @@ export function seedCloudMobileClinicalUser(cloudUser) {
     clinical_name: displayName || null,
     is_program_admin: 0,
   };
+}
+
+/**
+ * @param {{ username?: string, displayName?: string, id?: string } | null | undefined} cloudUser
+ */
+export function seedCloudMobileClinicalUser(cloudUser) {
+  const seeded = buildCloudMobileSeedUser(cloudUser);
+  if (!seeded) return null;
+
   clinicalSessionContext.user = seeded;
   persistClinicalUserBinding({
     userId: seeded.user_id,
-    username: username || undefined,
-    displayName: displayName || undefined,
+    username: seeded.username || undefined,
+    displayName: seeded.clinical_name || undefined,
     registered: true,
     lanProfileGateComplete: true,
   });

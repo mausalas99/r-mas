@@ -48,6 +48,15 @@ async function tryClaimUsername(sessionUserId, username) {
   return { ok: false, error: claimRes?.error || 'No se pudo registrar @usuario.' };
 }
 
+/** @param {{ displayName?: string, rank?: string, sala?: string|null }} profile */
+function applyProfileToSession(profile) {
+  if (!clinicalSessionContext.user) return;
+  const name = String(profile.displayName || '').trim();
+  if (name) clinicalSessionContext.user.clinical_name = name;
+  if (profile.rank) clinicalSessionContext.user.rank = profile.rank;
+  if (profile.sala != null) clinicalSessionContext.user.sala = profile.sala;
+}
+
 /**
  * @param {string} sessionUserId
  * @param {{ displayName?: string, rank?: string, sala?: string|null }} profile
@@ -66,12 +75,7 @@ async function tryUpsertClinicalProfile(sessionUserId, profile) {
   if (!profileRes?.ok) {
     return { ok: false, error: profileRes?.error || 'No se guardó el perfil clínico.' };
   }
-  if (clinicalSessionContext.user) {
-    const name = String(profile.displayName || '').trim();
-    if (name) clinicalSessionContext.user.clinical_name = name;
-    if (profile.rank) clinicalSessionContext.user.rank = profile.rank;
-    if (profile.sala != null) clinicalSessionContext.user.sala = profile.sala;
-  }
+  applyProfileToSession(profile);
   return { ok: true };
 }
 

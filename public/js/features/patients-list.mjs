@@ -8,6 +8,7 @@ import { shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
 import { isCloudMobileClient } from './cloud-mobile/origin.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isPaseMode } from './chrome.mjs';
+import { isModeSala } from '../mode-features.mjs';
 import { isPatientBulkSelectMode } from './patients-bulk-select.mjs';
 import {
   buildPatientListZones,
@@ -243,6 +244,7 @@ function buildPatientListRenderBundle(filtered, isRonda) {
     activeId: rt.getActiveId(),
     isRonda: isRonda,
     isRoundSeen: isPatientRoundSeen,
+    showServicioInCard: !isModeSala(rt.getSettings()),
   };
   var onRondaNav = function (z) {
     setLastRondaNavIds(buildRondaNavIds(z));

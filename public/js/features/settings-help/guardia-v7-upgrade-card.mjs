@@ -66,9 +66,9 @@ export function maybeShowGuardiaV7UpgradeCard({ delayMs = 0 } = {}) {
       progress.percent +
       '%"></span></div>' +
       '<ul class="guardia-v7-upgrade-bullets">' +
-      '<li><strong>Modo Guardia</strong> — tablero de turno, censo y alcance por rango.</li>' +
-      '<li><strong>Modo Entrega</strong> — handoff por paciente, roster y pendientes.</li>' +
-      '<li><strong>R+ Cloud</strong> — sala Nube, equipos y enlace móvil desde ⇄.</li>' +
+      '<li><strong>Modo Guardia</strong> — tablero de turno, franja Nube/sala/equipo y alcance por rango.</li>' +
+      '<li><strong>Modo Entrega</strong> — handoff, roster, pendientes y cierre de turno.</li>' +
+      '<li><strong>R+ Cloud y rotación</strong> — sala Nube, Mi rotación, herencia de pacientes y enlace móvil.</li>' +
       '</ul>' +
       '<div class="modal-actions guardia-v7-upgrade-actions">' +
       '<button type="button" class="btn-save" id="guardia-v7-upgrade-start">' +

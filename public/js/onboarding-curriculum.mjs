@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 10;
+export const CURRICULUM_VERSION = 12;
 
 export const SALA_CHAPTERS = [
   {
@@ -67,7 +67,6 @@ export const IC_CHAPTERS = [
       'ic_expediente_tabs',
       'sala_tend',
       'sala_tend_chart',
-      'sala_soap',
       'sala_med',
       'ic_nota',
       'ic_indica',
@@ -93,6 +92,7 @@ export const GUARDIA_V7_CHAPTERS = [
       'gv7_guardia_chip',
       'gv7_guardia_tab',
       'gv7_guardia_scope',
+      'gv7_trust_strip',
       'gv7_guardia_toggle',
       'gv7_guardia_exit',
     ],
@@ -110,6 +110,7 @@ export const GUARDIA_V7_CHAPTERS = [
       'gv7_entrega_patient',
       'gv7_entrega_roster',
       'gv7_entrega_pendientes',
+      'gv7_fin_turno',
     ],
   },
   {
@@ -120,6 +121,8 @@ export const GUARDIA_V7_CHAPTERS = [
       'gv7_lan_pin',
       'gv7_lan_directorio',
       'gv7_lan_rotacion',
+      'gv7_rotacion_rejoin',
+      'gv7_inherit_patients',
     ],
   },
   {
@@ -287,5 +290,6 @@ export function migrateTourStepId(stepId, _branch) {
   ) {
     return 'estado_actual_review';
   }
+  if (stepId === 'sala_soap') return 'sala_med';
   return stepId;
 }

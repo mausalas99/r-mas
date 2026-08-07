@@ -88,29 +88,38 @@ export function wireInternoHostSyncBridge() {
   });
 }
 
+/** @param {string} pid @param {object | null | undefined} monitoreo */
+async function applyInternoMonitoreoForPatient(pid, monitoreo) {
+  if (monitoreo && typeof monitoreo === 'object') {
+    const local = await ensureLocalPatientForInternoSync(pid, monitoreo);
+    if (local) {
+      mergePatientMonitoreoFromImported(local, { monitoreo });
+      await saveState({ immediate: true });
+    }
+    return;
+  }
+  await hydrateLocalPatientMonitoreoFromHost(pid);
+}
+
+/** @param {object | null | undefined} detail @param {string} pid */
+async function refreshAfterInternoBroadcast(detail, pid) {
+  if (detail?.type === 'patients-updated' && !pid) {
+    await scheduleCensusReconcileFromHost();
+  }
+  await refreshGuardiaCensusFromDb();
+  const runtime = getLanRuntime();
+  if (typeof runtime.renderPatientList === 'function') runtime.renderPatientList();
+  document.dispatchEvent(
+    new CustomEvent('rpc-interno-vitals-synced', { detail: { patientId: pid } })
+  );
+}
+
 export async function handleInternoHostSyncBroadcast(detail) {
   const pid = String(detail?.patientId || '').trim();
   if (detail?.type === 'patients-updated' && pid) {
-    const monitoreo = detail.monitoreo;
-    if (monitoreo && typeof monitoreo === 'object') {
-      const local = await ensureLocalPatientForInternoSync(pid, monitoreo);
-      if (local) {
-        mergePatientMonitoreoFromImported(local, { monitoreo });
-        await saveState({ immediate: true });
-      }
-    } else {
-      await hydrateLocalPatientMonitoreoFromHost(pid);
-    }
+    await applyInternoMonitoreoForPatient(pid, detail.monitoreo);
   }
   if (detail?.type === 'patients-updated' || detail?.type === 'guardias-updated') {
-    if (detail?.type === 'patients-updated' && !pid) {
-      await scheduleCensusReconcileFromHost();
-    }
-    await refreshGuardiaCensusFromDb();
-    const runtime = getLanRuntime();
-    if (typeof runtime.renderPatientList === 'function') runtime.renderPatientList();
-    document.dispatchEvent(
-      new CustomEvent('rpc-interno-vitals-synced', { detail: { patientId: pid } })
-    );
+    await refreshAfterInternoBroadcast(detail, pid);
   }
 }

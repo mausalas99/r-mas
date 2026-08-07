@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulacro · UX P0–P2 guardia</title>
+  <style>
+    :root {
+      --color-paper: #eceae6;
+      --color-surface: #f7f6f3;
+      --color-elevated: #ffffff;
+      --color-ink: #1c1c1e;
+      --color-ink-muted: #6c6c70;
+      --color-accent: var(--color-ink);
+      --color-success: #248a3d;
+      --color-danger: #d70015;
+      --border: color-mix(in oklab, var(--color-ink) 14%, transparent);
+      --radius-md: 20px;
+      --radius-lg: 28px;
+      --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      --overlay-bg: color-mix(in oklab, #000 45%, transparent);
+      --material-glass-bg: color-mix(in oklab, var(--color-elevated) 82%, transparent);
+      --material-glass-blur: 20px;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --dur-ui: 220ms;
+      --warn: #b45309;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-ui);
+      background: var(--color-paper);
+      color: var(--color-ink);
+    }
+    [hidden] { display: none !important; }
+
+    .demo-banner {
+      position: sticky; top: 0; z-index: 40;
+      display: flex; flex-wrap: wrap; gap: 10px 16px;
+      align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      background: color-mix(in oklab, var(--warn) 12%, var(--color-elevated));
+      border-bottom: 1px solid color-mix(in oklab, var(--warn) 35%, var(--border));
+      font-size: 0.85rem; line-height: 1.4;
+    }
+    .demo-banner code {
+      font-family: var(--font-mono); font-size: 0.78rem;
+      background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+      padding: 2px 6px; border-radius: 6px;
+    }
+
+    .shell { max-width: 1040px; margin: 0 auto; padding: 24px 16px 64px; }
+    .shell h1 { margin: 0 0 6px; font-size: 1.4rem; letter-spacing: -0.02em; }
+    .shell .lead {
+      margin: 0 0 18px; color: var(--color-ink-muted);
+      font-size: 0.92rem; line-height: 1.5; max-width: 62ch;
+    }
+
+    .scene-nav {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 0 0 20px; padding: 0; list-style: none;
+    }
+    .scene-nav button {
+      appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem; font-weight: 600;
+      min-height: 40px; padding: 0 12px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--color-elevated); color: var(--color-ink);
+      transition: background var(--dur-ui) var(--ease-out), transform var(--dur-ui) var(--ease-out);
+    }
+    .scene-nav button:hover { background: color-mix(in oklab, var(--color-ink) 4%, var(--color-elevated)); }
+    .scene-nav button[aria-current="true"] {
+      background: var(--color-ink); color: #fff; border-color: var(--color-ink);
+    }
+    .scene-nav .sev {
+      display: inline-block; margin-right: 4px; font-size: 0.68rem;
+      opacity: 0.75; font-family: var(--font-mono);
+    }
+
+    .compare {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;
+    }
+    @media (max-width: 820px) { .compare { grid-template-columns: 1fr; } }
+
+    .pane {
+      background: var(--color-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      min-height: 420px;
+      display: flex; flex-direction: column;
+    }
+    .pane-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--color-surface);
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--color-ink-muted);
+    }
+    .pane-head .tag-bad { color: var(--color-danger); }
+    .pane-head .tag-good { color: var(--color-success); }
+    .pane-body { flex: 1; padding: 0; display: flex; flex-direction: column; }
+
+    /* Fake app chrome */
+    .app-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--color-surface);
+    }
+    .brand { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.03em; }
+    .header-spacer { flex: 1; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid transparent; background: transparent;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--color-ink-muted); cursor: default;
+    }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .mode-seg {
+      display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      font-size: 0.68rem; font-weight: 600;
+    }
+    .mode-seg span {
+      padding: 6px 8px; color: var(--color-ink-muted);
+      border-right: 1px solid var(--border);
+    }
+    .mode-seg span:last-child { border-right: 0; }
+    .mode-seg span.on { background: var(--color-ink); color: #fff; }
+
+    .turn-strip {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in oklab, var(--color-success) 6%, var(--color-elevated));
+      font-size: 0.78rem;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--color-elevated);
+      font-weight: 600; font-size: 0.75rem;
+    }
+    .chip .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--color-success);
+    }
+    .chip.muted { color: var(--color-ink-muted); font-weight: 500; }
+    .chip.action {
+      background: var(--color-ink); color: #fff; border-color: var(--color-ink);
+      cursor: pointer;
+    }
+    .chip.warn-chip {
+      border-color: color-mix(in oklab, var(--warn) 40%, var(--border));
+      background: color-mix(in oklab, var(--warn) 10%, var(--color-elevated));
+      color: var(--warn);
+    }
+
+    .app-main {
+      display: grid; grid-template-columns: 150px 1fr; flex: 1; min-height: 280px;
+    }
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 10px 8px;
+      background: var(--color-surface);
+      font-size: 0.75rem;
+    }
+    .sidebar .pt {
+      padding: 8px 8px; border-radius: 8px; margin-bottom: 4px;
+      border: 1px solid transparent;
+    }
+    .sidebar .pt.on {
+      background: var(--color-elevated);
+      border-color: var(--border);
+      font-weight: 600;
+    }
+    .content { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .tabs {
+      display: flex; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 0;
+    }
+    .tabs span {
+      padding: 8px 10px; font-size: 0.78rem; font-weight: 600;
+      color: var(--color-ink-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tabs span.on { color: var(--color-ink); border-bottom-color: var(--color-ink); }
+
+    .lab-paste {
+      border: 1px dashed color-mix(in oklab, var(--color-ink) 22%, transparent);
+      border-radius: 12px; padding: 12px; min-height: 72px;
+      background: color-mix(in oklab, var(--color-ink) 2%, var(--color-elevated));
+      font-size: 0.78rem; color: var(--color-ink-muted); font-family: var(--font-mono);
+      line-height: 1.4;
+    }
+    .row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .hint-pill {
+      font-size: 0.72rem; color: var(--color-ink-muted);
+      padding: 4px 8px; border-radius: 8px;
+      background: color-mix(in oklab, var(--color-ink) 5%, transparent);
+    }
+
+    .sticky-doc {
+      margin-top: auto;
+      display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+      padding: 10px 0 0; border-top: 1px solid var(--border);
+    }
+
+    .btn-save, .btn-cancel, .btn-secondary {
+      appearance: none; border-radius: 12px; font: inherit; font-weight: 600;
+      font-size: 0.85rem; min-height: 40px; padding: 0 14px; cursor: pointer;
+      transition: transform var(--dur-ui) var(--ease-out), background var(--dur-ui) var(--ease-out);
+    }
+    .btn-save {
+      border: 1px solid var(--color-ink); background: var(--color-ink); color: #fff;
+    }
+    .btn-save:hover { background: #000; }
+    .btn-save:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-cancel, .btn-secondary {
+      border: 1px solid var(--border); background: var(--color-elevated); color: var(--color-ink);
+    }
+    .btn-cancel:hover, .btn-secondary:hover {
+      background: color-mix(in oklab, var(--color-ink) 4%, var(--color-elevated));
+    }
+    .ui-pressable:active { transform: scale(0.97); }
+
+    .note {
+      margin: 0 0 14px; padding: 12px 14px;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--color-elevated);
+      font-size: 0.85rem; line-height: 1.45; color: var(--color-ink-muted);
+    }
+    .note strong { color: var(--color-ink); }
+
+    .lex-table {
+      width: 100%; border-collapse: collapse; font-size: 0.82rem;
+    }
+    .lex-table th, .lex-table td {
+      text-align: left; padding: 8px 10px;
+      border-bottom: 1px solid var(--border); vertical-align: top;
+    }
+    .lex-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-muted); }
+    .lex-table .strike { text-decoration: line-through; color: var(--color-ink-muted); }
+    .lex-table .keep { font-weight: 700; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      padding: 16px; background: var(--overlay-bg);
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: min(96vw, 440px); max-height: min(90vh, 620px);
+      display: flex; flex-direction: column;
+      background: var(--material-glass-bg);
+      backdrop-filter: blur(var(--material-glass-blur));
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      box-shadow: 0 24px 64px color-mix(in oklab, #000 22%, transparent);
+      padding: 20px 22px 16px;
+      animation: modalIn var(--dur-ui) var(--ease-out);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal h3 { margin: 0 0 8px; font-size: 1.12rem; letter-spacing: -0.02em; }
+    .modal .lead-m {
+      margin: 0 0 14px; font-size: 0.88rem; line-height: 1.5; color: var(--color-ink-muted);
+    }
+    .modal-body { overflow: auto; flex: 1; min-height: 0; }
+    .modal-foot {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+      padding-top: 14px; margin-top: 8px; border-top: 1px solid var(--border);
+    }
+
+    .dest-card {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 12px; background: var(--color-elevated);
+    }
+    .dest-card .eyebrow {
+      margin: 0; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-ink-muted);
+    }
+    .dest-card .name { margin: 4px 0 0; font-size: 1.1rem; font-weight: 700; }
+
+    .plist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .plist li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--color-elevated); font-size: 0.85rem;
+    }
+    .plist input { width: 18px; height: 18px; accent-color: var(--color-ink); }
+    .plist .meta { margin-left: auto; font-size: 0.72rem; color: var(--color-ink-muted); font-family: var(--font-mono); }
+
+    .source-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 6px; }
+    .source-list label {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--color-elevated); cursor: pointer; font-size: 0.84rem;
+    }
+    .source-list label:has(input:checked) {
+      border-color: var(--color-ink);
+      background: color-mix(in oklab, var(--color-ink) 4%, var(--color-elevated));
+    }
+    .source-list input { margin-top: 2px; accent-color: var(--color-ink); }
+    .source-list .reg { display: block; margin-top: 2px; font-size: 0.72rem; color: var(--color-ink-muted); }
+    .source-list .badge-s {
+      display: inline-block; margin-left: 6px; font-size: 0.68rem; font-weight: 700;
+      padding: 1px 6px; border-radius: 999px;
+      background: color-mix(in oklab, var(--color-success) 14%, transparent);
+      color: var(--color-success);
+    }
+
+    .note-form {
+      display: grid; gap: 8px; font-size: 0.78rem;
+    }
+    .note-form label { display: grid; gap: 4px; color: var(--color-ink-muted); font-weight: 600; }
+    .note-form textarea, .note-form input {
+      font: inherit; font-weight: 400; color: var(--color-ink);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px 10px; background: var(--color-elevated); min-height: 36px;
+    }
+    .note-form textarea { min-height: 56px; resize: vertical; }
+
+    .steps-old {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px;
+    }
+    .steps-old span {
+      font-size: 0.68rem; padding: 4px 8px; border-radius: 999px;
+      border: 1px solid var(--border); color: var(--color-ink-muted);
+    }
+    .steps-old span.cur {
+      background: var(--color-ink); color: #fff; border-color: var(--color-ink); font-weight: 600;
+    }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 200; padding: 10px 16px; border-radius: 12px;
+      background: var(--color-ink); color: #fff; font-size: 0.85rem; font-weight: 600;
+      opacity: 0; pointer-events: none; transition: opacity var(--dur-ui) var(--ease-out);
+    }
+    .toast.show { opacity: 1; }
+
+    .doc-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      min-height: 32px; padding: 0 10px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--color-elevated);
+      font-size: 0.72rem; font-weight: 600; color: var(--color-ink);
+    }
+    .doc-chip .badge {
+      min-width: 18px; height: 18px; border-radius: 999px;
+      background: var(--color-ink); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+    }
+
+    .stack-pain {
+      padding: 14px; font-size: 0.8rem; line-height: 1.45; color: var(--color-ink-muted);
+    }
+    .stack-pain ol { margin: 8px 0 0; padding-left: 1.2rem; }
+    .stack-pain li { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="demo-banner">
+    <div>
+      <strong>Simulacro UX</strong> · propuestas P0–P2 · Hybrid H ·
+      <code>docs/demos/ux-p0-p2-guardia-preview.html</code>
+    </div>
+    <div>No modifica la app · clickea chips y botones</div>
+  </div>
+
+  <div class="shell">
+    <h1>Cómo se vería el audit en pantalla</h1>
+    <p class="lead">
+      Cada escena compara <strong>hoy</strong> vs <strong>propuesta</strong>.
+      La magia del producto es la integración <strong>Laboratorio + Estado actual / datos del paciente → Nota de evolución (Interconsulta) → Word</strong>,
+      más predeterminados de indicaciones a un clic. Strip y transfer son soporte de turno, no el spine.
+    </p>
+
+    <ul class="scene-nav" role="tablist" aria-label="Escenas del simulacro">
+      <li><button type="button" data-scene="p1-magic" aria-current="true"><span class="sev">P1</span> Magia IC</button></li>
+      <li><button type="button" data-scene="p1-indicas"><span class="sev">P1</span> Predeterminados</button></li>
+      <li><button type="button" data-scene="p0-strip"><span class="sev">P0</span> Strip Nube</button></li>
+      <li><button type="button" data-scene="p0-transfer"><span class="sev">P0</span> Transfer + origen</button></li>
+      <li><button type="button" data-scene="p0-lexicon"><span class="sev">P0</span> Léxico</button></li>
+      <li><button type="button" data-scene="p2-queue"><span class="sev">P2</span> Cola + tours</button></li>
+    </ul>
+
+    <!-- P0 Strip -->
+    <section id="scene-p0-strip" class="scene" hidden>
+      <p class="note">
+        <strong>P0 · Strip de turno (solo lectura diaria).</strong>
+        No hay CTA «Cambiar equipo» aquí: eso es de rotación mensual en Mi rotación.
+        El strip solo responde: ¿Nube OK? ¿Qué sala? ¿Qué equipo?
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Icon-only</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <div class="mode-seg"><span class="on">Sala</span><span>IC</span><span>Guardia</span><span>Pase</span></div>
+              <span class="icon-btn" title="Conexión · R+ Cloud" aria-label="Wi-Fi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M8.5 16.14a6 6 0 0 1 7 0"/><circle cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg>
+              </span>
+              <span class="icon-btn">⚙</span>
+            </div>
+            <div class="stack-pain">
+              Para saber el estado: Wi‑Fi → Opciones → Equipo / Mi rotación.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Solo estado</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <div class="mode-seg"><span class="on">Sala</span><span>IC</span><span>Guardia</span></div>
+              <button type="button" class="doc-chip ui-pressable" id="btn-open-conexion-demo" title="Abrir Nube">
+                Nube
+              </button>
+            </div>
+            <div class="turn-strip">
+              <span class="chip"><span class="dot"></span> Conectado</span>
+              <span class="chip muted">Sala 2 · ago 2026</span>
+              <span class="chip muted">Equipo B · 4</span>
+            </div>
+            <div class="stack-pain" style="color:var(--color-ink)">
+              Uso diario = mirar. Unirse / cambiar equipo vive en <strong>Mi rotación</strong> (inicio de mes o si aún no tienes equipo).
+              Si no hay equipo: chip aviso «Sin equipo» + enlace quiet a Mi rotación — no un botón negro permanente.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- P0 Transfer -->
+    <section id="scene-p0-transfer" class="scene" hidden>
+      <p class="note">
+        <strong>P0 · Transfer post-rotación (no diario).</strong>
+        Aparece al unirte al equipo del mes o desde Mi rotación.
+        Debe quedar claro el <strong>destino</strong> (tu equipo nuevo) y el <strong>origen</strong>
+        (equipo del mes anterior / sin equipo) antes de elegir pacientes.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Apilado</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <span class="chip muted" style="margin-left:8px">Mi rotación</span>
+              <div class="header-spacer"></div>
+            </div>
+            <div class="stack-pain">
+              Tras unirte:
+              <ol>
+                <li><code>confirm()</code> ¿traer pacientes?</li>
+                <li>Modal Heredar · 4 pasos (destino → origen → lista → confirmar)</li>
+              </ol>
+              El origen ya existe en el paso 2 — no se pierde; se evita el confirm() previo y el paso destino redundante.
+              <button type="button" class="btn-secondary ui-pressable" id="btn-old-flow" style="margin-top:12px">Simular flujo viejo</button>
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Origen + lista</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <span class="chip muted">Post-join · una vez</span>
+            </div>
+            <div class="turn-strip">
+              <span class="chip warn-chip">Pacientes del mes anterior por asignar</span>
+              <button type="button" class="chip action ui-pressable" data-open-transfer>Asignar al equipo</button>
+            </div>
+            <div class="stack-pain">
+              Banner solo en ese momento (no en cada guardia). El modal pide
+              <strong>de qué equipo vienen</strong> y luego cuáles.
+              <div style="margin-top:12px">
+                <button type="button" class="btn-save ui-pressable" data-open-transfer>Abrir transfer con origen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- P0 Lexicon -->
+    <section id="scene-p0-lexicon" class="scene" hidden>
+      <p class="note">
+        <strong>P0 · Un léxico.</strong> Un solo nombre hacia el R1: <strong>Nube</strong>.
+        LiveSync / LAN / ⇄ / R+ Cloud salen del copy de primera línea (quedan en Diagnóstico avanzado).
+      </p>
+      <div class="pane" style="min-height:auto">
+        <div class="pane-head"><span class="tag-good">Diccionario R1</span></div>
+        <div class="pane-body" style="padding:12px">
+          <table class="lex-table">
+            <thead>
+              <tr><th>Hoy (confunde)</th><th>Propuesta</th><th>Dónde</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="strike">Conexión · R+ Cloud (Wi‑Fi)</td>
+                <td class="keep">Nube</td>
+                <td>Header chip</td>
+              </tr>
+              <tr>
+                <td class="strike">LiveSync / ⇄ / LAN</td>
+                <td class="keep">Nube · sala compartida</td>
+                <td>Tours, empty states</td>
+              </tr>
+              <tr>
+                <td class="strike">Directorio LAN</td>
+                <td class="keep">Compañeros en la sala</td>
+                <td>Mi rotación</td>
+              </tr>
+              <tr>
+                <td class="strike">Heredar + Traer + Asignarlos</td>
+                <td class="keep">Asignar pacientes al equipo</td>
+                <td>Post-join</td>
+              </tr>
+              <tr>
+                <td class="strike">Salida rápida (doble sentido)</td>
+                <td class="keep">Export rápido (.docx)</td>
+                <td>Nota / Ajustes</td>
+              </tr>
+              <tr>
+                <td class="strike">Equipo (LiveSync) tour</td>
+                <td class="keep">Equipo (Nube)</td>
+                <td>Aprender R+</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- P1 Magia IC -->
+    <section id="scene-p1-magic" class="scene">
+      <p class="note">
+        <strong>P1 · Magia Interconsulta.</strong>
+        No es un botón mágico. Es que <strong>Labs</strong>, <strong>Estado actual</strong> y
+        <strong>datos del paciente</strong> (diagnósticos, signos, censo) alimenten la
+        <strong>Nota de evolución</strong> y el .docx — sin reescribir a mano.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Puentes rotos</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span class="on">IC</span><span>Guardia</span></div>
+            </div>
+            <div class="stack-pain">
+              <ol>
+                <li><strong>Labs</strong> → van a Estudios de la nota (día reciente en IC). OK parcial.</li>
+                <li><strong>Estado actual</strong> es modo Sala; en IC no está en el camino. Copiar / SOAP manual.</li>
+                <li><strong>Diagnósticos del censo</strong> solo precargan si la nota está vacía; fácil perderse si ya tocaste el campo.</li>
+                <li>Signos / dieta / meds de EA no pasan solos a Tratamiento ni a Word.</li>
+              </ol>
+              Resultado: el residente vuelve a tipear lo que ya capturó.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Una columna</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span class="on">IC</span><span>Guardia</span></div>
+              <span class="doc-chip">Pérez · 402</span>
+            </div>
+            <div class="content" style="padding:12px;gap:10px" id="note-panel-demo">
+              <div class="tabs">
+                <span>Lab</span>
+                <span>EA</span>
+                <span class="on">Nota IC</span>
+                <span>Indicas</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span class="chip"><span class="dot"></span> Labs → Estudios</span>
+                <span class="chip"><span class="dot"></span> Dx censo → Diagnósticos</span>
+                <span class="chip"><span class="dot"></span> EA → Evolución / SV</span>
+              </div>
+              <div class="note-form">
+                <label>Resultados de estudios<textarea readonly>07/08  ·  GLU 142  ·  Cr 1.1  ·  …</textarea></label>
+                <label>Diagnóstico(s)<textarea readonly>1. NEUMONÍA ADQUIRIDA EN LA COMUNIDAD
+2. DM2</textarea></label>
+                <label>Evolución (desde EA / monitoreo)<textarea readonly>TA 120/70  FC 88  ·  O2 2 L  ·  …</textarea></label>
+                <label>Signos vitales
+                  <input readonly value="TA 120/70 · FC 88 · Temp 36.8 · Peso 72" />
+                </label>
+              </div>
+              <div class="sticky-doc">
+                <span class="hint-pill">Revisa → genera. Sin reescribir dx ni labs</span>
+                <button type="button" class="btn-save ui-pressable" id="btn-gen-note-2">Generar Nota (.docx)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">
+        <strong>Flujo objetivo:</strong>
+        Procesar SOME → (opcional) actualizar EA en Sala → modo IC → Nota ya trae estudios + dx del paciente + bloque EA relevante →
+        completar solo lo clínico humano → <strong>Generar Nota (.docx)</strong>.
+        Word usa los mismos slots (diagnósticos en mayúsculas, estudios, SV, tratamiento).
+      </p>
+    </section>
+
+    <!-- P1 Predeterminados indicas -->
+    <section id="scene-p1-indicas" class="scene" hidden>
+      <p class="note">
+        <strong>P1 · Predeterminados de indicaciones.</strong>
+        Hoy: Mi Perfil → Formatos clínicos, o Ajustes → Plantillas → volver a Indicaciones.
+        Propuesta: acceso desde la propia barra de Indicaciones (sin cambiar de modo a la fuerza).
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Enterrado</span></div>
+          <div class="pane-body">
+            <div class="stack-pain">
+              <ol>
+                <li>Mi Perfil → Formatos clínicos → Editar formatos de indicaciones</li>
+                <li>o Ajustes → Plantillas y flujo → Administrar plantillas…</li>
+                <li>Volver a Expediente → Indicaciones → Aplicar plantilla</li>
+              </ol>
+              Editar formatos puede forzar modo Interconsulta. Demasiados saltos para un R1 en guardia.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>En contexto</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <div class="mode-seg"><span>Sala</span><span class="on">IC</span><span>Guardia</span></div>
+            </div>
+            <div class="content" style="padding:12px;gap:10px">
+              <div class="tabs"><span>Nota</span><span class="on">Indicaciones</span><span>VPO</span></div>
+              <div class="row-actions">
+                <button type="button" class="btn-secondary ui-pressable" id="btn-pred-open">Predeterminados…</button>
+                <select style="font:inherit;font-size:0.8rem;min-height:40px;border-radius:10px;border:1px solid var(--border);padding:0 10px">
+                  <option>— Plantilla guardada —</option>
+                  <option>Dieta basal + SV q8h</option>
+                  <option>Post-op estándar</option>
+                </select>
+                <button type="button" class="btn-save ui-pressable" id="btn-apply-tpl">Aplicar</button>
+              </div>
+              <div class="note-form">
+                <label>Dieta<input value="Dieta basal · líquidos claros" readonly /></label>
+                <label>Cuidados<textarea readonly>Signos vitales c/8 h · Control de líquidos</textarea></label>
+                <label>Medicamentos<textarea readonly>Omeprazol 40 mg IV c/24 h
+…</textarea></label>
+              </div>
+              <p style="margin:0;font-size:0.78rem;color:var(--color-ink-muted)">
+                «Predeterminados…» abre el editor de formatos en un sheet sobre Indicaciones — sin ir a Perfil ni Ajustes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- P2 Queue -->
+    <section id="scene-p2-queue" class="scene" hidden>
+      <p class="note">
+        <strong>P2 · Cola + tours.</strong> Iconos sin label y tours con «LiveSync / Wi‑Fi»
+        enseñan el producto viejo. Propuesta: label + badge, tours con Nube.
+      </p>
+      <div class="compare">
+        <div class="pane">
+          <div class="pane-head"><span class="tag-bad">Hoy</span><span>Icon cluster</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <span class="icon-btn" title="Cola de documentación">📋</span>
+              <span class="icon-btn" title="Preparar entrega">✓</span>
+              <span class="icon-btn" title="Cultivos">⚗</span>
+            </div>
+            <div class="stack-pain">
+              Aprender R+ → «Equipo (LiveSync)» · intro: «móvil en la misma Wi‑Fi».
+              Journey doc aún habla de PIN / host.
+            </div>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="pane-head"><span class="tag-good">Propuesta</span><span>Labels</span></div>
+          <div class="pane-body">
+            <div class="app-header">
+              <span class="brand">R+</span>
+              <div class="header-spacer"></div>
+              <span class="doc-chip"><span class="badge">3</span> Documentar</span>
+              <span class="doc-chip">Entrega</span>
+              <span class="doc-chip">Cultivos <span class="badge" style="background:var(--warn)">2</span></span>
+            </div>
+            <div class="stack-pain">
+              Tours renombrados: «Equipo (Nube)» · intro: «Comparte el censo por Nube — sin host en la sala».
+              Entrega / Cultivos siguen accesibles; no pelean en igualdad con Generar nota.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: transfer con origen -->
+  <div class="modal-backdrop" id="modal-transfer" role="dialog" aria-modal="true" aria-labelledby="transfer-title">
+    <div class="modal" style="width:min(96vw,480px)">
+      <h3 id="transfer-title">Asignar pacientes al equipo</h3>
+      <p class="lead-m">Post-rotación · una vez. Destino fijo; elige <strong>de dónde vienen</strong> y cuáles pasan a tu censo.</p>
+      <div class="modal-body">
+        <div class="dest-card">
+          <p class="eyebrow">Destino (tu equipo nuevo)</p>
+          <p class="name">Equipo B</p>
+          <p style="margin:4px 0 0;font-size:0.8rem;color:var(--color-ink-muted)">Sala 2 · ciclo B · ago 2026</p>
+        </div>
+
+        <strong style="display:block;font-size:0.85rem;margin-bottom:8px">Origen — ¿de qué equipo heredan?</strong>
+        <ul class="source-list" id="source-list">
+          <li>
+            <label>
+              <input type="radio" name="src" value="fer" checked />
+              <span>
+                <strong>Equipo Fer</strong><span class="badge-s">Sugerido · misma sala y ciclo</span>
+                <span class="reg">Sala 2 · ciclo B · jul 2026 · 8 en este Mac</span>
+              </span>
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="radio" name="src" value="leslie" />
+              <span>
+                <strong>Equipo Leslie</strong>
+                <span class="reg">Sala 2 · ciclo A · jul 2026 · 3 en este Mac</span>
+              </span>
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="radio" name="src" value="none" />
+              <span>
+                <strong>Solo sin equipo / otros</strong>
+                <span class="reg">4 paciente(s) locales sin equipo activo</span>
+              </span>
+            </label>
+          </li>
+        </ul>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong style="font-size:0.85rem" id="plist-label">Pacientes de Equipo Fer</strong>
+          <button type="button" class="btn-secondary ui-pressable" id="btn-toggle-all" style="min-height:32px;font-size:0.75rem">Todos</button>
+        </div>
+        <ul class="plist" id="transfer-list"></ul>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-cancel ui-pressable" data-close-transfer>Ahora no</button>
+        <button type="button" class="btn-save ui-pressable" id="btn-confirm-transfer">Asignar al Equipo B</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: flujo viejo (paso fake) -->
+  <div class="modal-backdrop" id="modal-old" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>Heredar pacientes</h3>
+      <div class="steps-old" id="old-steps">
+        <span class="cur">1 Destino</span>
+        <span>2 Origen</span>
+        <span>3 Elegir</span>
+        <span>4 Confirmar</span>
+      </div>
+      <p class="lead-m" id="old-lead">Paso 1 de 4 — confirma el equipo destino.</p>
+      <div class="modal-body">
+        <div class="dest-card">
+          <p class="eyebrow">Destino</p>
+          <p class="name">Equipo B</p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-cancel ui-pressable" data-close-old>Cancelar</button>
+        <button type="button" class="btn-save ui-pressable" id="btn-old-next">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Conexión -->
+  <div class="modal-backdrop" id="modal-conexion" role="dialog" aria-modal="true">
+    <div class="modal" style="width:min(96vw,380px)">
+      <h3>Nube</h3>
+      <p class="lead-m">Estado primero. Admin y diagnóstico bajo «Más».</p>
+      <div class="modal-body">
+        <div class="dest-card">
+          <p class="eyebrow">Sala</p>
+          <p class="name">Sala 2 · ago 2026</p>
+          <p style="margin:6px 0 0;font-size:0.8rem;color:var(--color-success);font-weight:600">Al día · hace 12 s</p>
+        </div>
+        <div class="dest-card">
+          <p class="eyebrow">Equipo</p>
+          <p class="name">Equipo B</p>
+          <p style="margin:6px 0 0;font-size:0.8rem;color:var(--color-ink-muted)">4 miembros · tu ciclo B</p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-secondary ui-pressable" data-close-conexion>Más opciones</button>
+        <button type="button" class="btn-save ui-pressable" data-close-conexion>Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const scenes = [...document.querySelectorAll('.scene')];
+    const navBtns = [...document.querySelectorAll('.scene-nav button')];
+
+    function showScene(id) {
+      scenes.forEach((s) => { s.hidden = s.id !== 'scene-' + id; });
+      navBtns.forEach((b) => {
+        b.setAttribute('aria-current', b.dataset.scene === id ? 'true' : 'false');
+      });
+      history.replaceState(null, '', '#' + id);
+    }
+
+    navBtns.forEach((b) => {
+      b.addEventListener('click', () => showScene(b.dataset.scene));
+    });
+
+    const hash = (location.hash || '#p1-magic').slice(1);
+    if (navBtns.some((b) => b.dataset.scene === hash)) showScene(hash);
+    else showScene('p1-magic');
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 2200);
+    }
+
+    const transfer = document.getElementById('modal-transfer');
+    const oldModal = document.getElementById('modal-old');
+    const conexion = document.getElementById('modal-conexion');
+
+    const PATIENTS = {
+      fer: [
+        { name: 'Pérez Gómez, Juan', bed: '402', on: true },
+        { name: 'Ruiz López, Ana', bed: '318', on: true },
+        { name: 'Soto, Carlos', bed: '211', on: true },
+        { name: 'Mena, Diana', bed: 'alta', on: false },
+      ],
+      leslie: [
+        { name: 'Ortiz, Luis', bed: '105', on: true },
+        { name: 'Vega, Nora', bed: '106', on: true },
+      ],
+      none: [
+        { name: 'Sin equipo · Paciente X', bed: '—', on: true },
+        { name: 'Sin equipo · Paciente Y', bed: '—', on: false },
+      ],
+    };
+    const SOURCE_LABEL = {
+      fer: 'Equipo Fer',
+      leslie: 'Equipo Leslie',
+      none: 'sin equipo / otros',
+    };
+
+    function currentSource() {
+      const el = document.querySelector('#source-list input[name="src"]:checked');
+      return el ? el.value : 'fer';
+    }
+
+    function renderPatientList() {
+      const src = currentSource();
+      const list = PATIENTS[src] || [];
+      document.getElementById('plist-label').textContent =
+        'Pacientes de ' + SOURCE_LABEL[src];
+      document.getElementById('transfer-list').innerHTML = list
+        .map(
+          (p) =>
+            `<li><input type="checkbox" data-p${p.on ? ' checked' : ''} /><span>${p.name}</span><span class="meta">${p.bed}</span></li>`
+        )
+        .join('');
+      syncTransferCount();
+    }
+
+    function openTransfer() {
+      transfer.classList.add('open');
+      renderPatientList();
+    }
+    function closeTransfer() { transfer.classList.remove('open'); }
+
+    document.querySelectorAll('[data-open-transfer]').forEach((b) => {
+      b.addEventListener('click', openTransfer);
+    });
+    document.querySelectorAll('[data-close-transfer]').forEach((b) => {
+      b.addEventListener('click', closeTransfer);
+    });
+    transfer.addEventListener('click', (e) => {
+      if (e.target === transfer) closeTransfer();
+    });
+
+    document.getElementById('source-list').addEventListener('change', renderPatientList);
+
+    function syncTransferCount() {
+      const n = [...document.querySelectorAll('#transfer-list input[data-p]:checked')].length;
+      const btn = document.getElementById('btn-confirm-transfer');
+      const src = SOURCE_LABEL[currentSource()];
+      btn.textContent =
+        n === 0 ? 'Ninguno seleccionado' : `Asignar ${n} de ${src} → Equipo B`;
+      btn.disabled = n === 0;
+    }
+    document.getElementById('transfer-list').addEventListener('change', syncTransferCount);
+    document.getElementById('btn-toggle-all').addEventListener('click', () => {
+      const boxes = [...document.querySelectorAll('#transfer-list input[data-p]')];
+      const allOn = boxes.every((b) => b.checked);
+      boxes.forEach((b) => { b.checked = !allOn; });
+      syncTransferCount();
+    });
+    document.getElementById('btn-confirm-transfer').addEventListener('click', () => {
+      const n = [...document.querySelectorAll('#transfer-list input[data-p]:checked')].length;
+      const src = SOURCE_LABEL[currentSource()];
+      closeTransfer();
+      toast(`${n} de ${src} → Equipo B`);
+    });
+
+    /* Old 4-step flow */
+    let oldStep = 0;
+    const oldLabels = [
+      'Paso 1 de 4 — confirma el equipo destino.',
+      'Paso 2 de 4 — elige el origen (equipo del mes anterior).',
+      'Paso 3 de 4 — marca pacientes (otra pantalla).',
+      'Paso 4 de 4 — confirma otra vez.',
+    ];
+    function paintOld() {
+      const spans = [...document.querySelectorAll('#old-steps span')];
+      spans.forEach((s, i) => s.classList.toggle('cur', i === oldStep));
+      document.getElementById('old-lead').textContent = oldLabels[oldStep];
+      document.getElementById('btn-old-next').textContent = oldStep === 3 ? 'Confirmar herencia' : 'Siguiente';
+    }
+    document.getElementById('btn-old-flow').addEventListener('click', () => {
+      if (!confirm('¿Asignarlos a Equipo B? (confirm nativo de hoy)')) return;
+      oldStep = 0;
+      paintOld();
+      oldModal.classList.add('open');
+    });
+    document.getElementById('btn-old-next').addEventListener('click', () => {
+      if (oldStep < 3) {
+        oldStep += 1;
+        paintOld();
+        return;
+      }
+      oldModal.classList.remove('open');
+      toast('Listo — 4 pasos + 1 confirm() · mucho tool time');
+    });
+    document.querySelectorAll('[data-close-old]').forEach((b) => {
+      b.addEventListener('click', () => oldModal.classList.remove('open'));
+    });
+    oldModal.addEventListener('click', (e) => {
+      if (e.target === oldModal) oldModal.classList.remove('open');
+    });
+
+    document.getElementById('btn-open-conexion-demo').addEventListener('click', () => {
+      conexion.classList.add('open');
+    });
+    document.querySelectorAll('[data-close-conexion]').forEach((b) => {
+      b.addEventListener('click', () => conexion.classList.remove('open'));
+    });
+    conexion.addEventListener('click', (e) => {
+      if (e.target === conexion) conexion.classList.remove('open');
+    });
+
+    document.getElementById('btn-gen-note-2').addEventListener('click', () => {
+      toast('Word: estudios + dx del censo + SV/EA ya en la plantilla');
+    });
+    document.getElementById('btn-pred-open').addEventListener('click', () => {
+      toast('Sheet Predeterminados (Dieta / Cuidados / Meds / Estudios) — sin ir a Perfil');
+    });
+    document.getElementById('btn-apply-tpl').addEventListener('click', () => {
+      toast('Plantilla aplicada a Indicaciones');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeTransfer();
+        oldModal.classList.remove('open');
+        conexion.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -7,13 +7,14 @@ import {
   syncHeaderModeSeg,
   toggleHeaderModeSegExpand,
   collapseHeaderModeSeg,
+  exitPaseModeFromHeader,
 } from "./chrome.mjs";
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { migrateGranularInner } from "../expediente-tabs.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import { renderEstadoActualButton } from "./soap-estado.mjs";
-import { renderRoundOverviewPanels } from "./patients.mjs";
+import { renderPatientList, renderRoundOverviewPanels } from "./patients.mjs";
 import {
   switchInnerTab,
   getActiveInnerTab,
@@ -63,6 +64,7 @@ export function applyAppModeSwitchEffects() {
       if (inner === "datos" || inner === "todo") renderPatientDataPane();
     }
     rt.syncWorkContextChrome();
+    renderPatientList();
     if (isPaseMode()) renderRoundOverviewPanels();
     rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
   } catch (err) {
@@ -100,6 +102,12 @@ export function setWorkModeFromHeader(mode) {
         ? "sala"
         : "interconsulta";
   if (mode === current) {
+    if (mode === "pase") {
+      exitPaseModeFromHeader();
+      collapseHeaderModeSeg();
+      syncHeaderModeSeg();
+      return;
+    }
     toggleHeaderModeSegExpand();
     syncHeaderModeSeg();
     return;

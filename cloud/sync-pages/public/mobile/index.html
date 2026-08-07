@@ -428,45 +428,6 @@
   </div>
 </div>
 
-<div id="doc-queue-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal doc-queue-modal" role="dialog" aria-modal="true" aria-labelledby="doc-queue-title" onclick="event.stopPropagation()">
-    <div class="doc-queue-modal-head">
-      <h3 id="doc-queue-title">Falta documentar</h3>
-      <p id="doc-queue-meta" class="doc-queue-hint">De tu equipo: labs de hoy sin nota, o pendientes abiertos. Un toque abre al paciente.</p>
-    </div>
-    <div id="doc-queue-list" class="doc-queue-list" role="list" aria-label="Pacientes que faltan por documentar"></div>
-    <div class="modal-actions doc-queue-actions">
-      <button type="button" class="btn-med-secondary" id="doc-queue-close" onclick="closeDocQueuePanel()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<div id="cultivo-queue-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal doc-queue-modal cultivo-queue-modal" role="dialog" aria-modal="true" aria-labelledby="cultivo-queue-title" onclick="event.stopPropagation()">
-    <div class="doc-queue-modal-head">
-      <h3 id="cultivo-queue-title">Cultivos por seguir</h3>
-      <p id="cultivo-queue-meta" class="doc-queue-hint">De tu equipo: cultivos positivos sin antibiograma, o sin nota desde el resultado. Un toque abre Cultivos.</p>
-    </div>
-    <div id="cultivo-queue-list" class="doc-queue-list" role="list" aria-label="Pacientes con cultivos por seguir"></div>
-    <div class="modal-actions doc-queue-actions">
-      <button type="button" class="btn-med-secondary" id="cultivo-queue-close" onclick="closeCultivoQueuePanel()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
-<div id="entrega-prep-modal" class="modal-backdrop" aria-hidden="true" hidden>
-  <div class="modal entrega-prep-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-prep-title" onclick="event.stopPropagation()">
-    <div class="entrega-prep-modal-head">
-      <h3 id="entrega-prep-title">Preparar entrega</h3>
-      <p id="entrega-prep-meta" class="entrega-prep-hint">De tu equipo: HC incompleta, EA sin guardar hoy, pendientes vencidos o cultivos sin seguimiento.</p>
-    </div>
-    <div id="entrega-prep-list" class="entrega-prep-list" role="list" aria-label="Pacientes con gaps para entrega"></div>
-    <div class="modal-actions entrega-prep-actions">
-      <button type="button" class="btn-med-secondary" id="entrega-prep-close" onclick="closeEntregaPrepPanel()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <div id="lab-repo-batch-modal" class="modal-backdrop" aria-hidden="true" hidden>
   <div class="modal lab-repo-batch-modal material-glass" role="dialog" aria-modal="true" aria-labelledby="lab-repo-batch-title" onclick="event.stopPropagation()">
     <div class="lab-repo-batch-modal-head">
@@ -651,15 +612,6 @@
       <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" onclick="openCommandPalette()" title="Ir a… o acción (⌘K)" aria-label="Ir a sección, paciente o acción">
         <svg class="header-cmdk-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </button>
-      <button type="button" id="btn-doc-queue" class="header-doc-queue-btn" onclick="openDocQueuePanel()" title="Cola de documentación" aria-label="Cola de documentación">
-        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-      </button>
-      <button type="button" id="btn-entrega-prep" class="header-doc-queue-btn" onclick="openEntregaPrepPanel()" title="Preparar entrega" aria-label="Preparar entrega">
-        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-      </button>
-      <button type="button" id="btn-cultivo-queue" class="header-doc-queue-btn" onclick="openCultivoQueuePanel()" title="Cultivos por seguir" aria-label="Cultivos por seguir">
-        <svg class="header-doc-queue-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v4H9z"/><path d="M8 7h8v14H8z"/><path d="M10 11h4M10 15h4"/></svg>
-      </button>
 
       <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
         <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
@@ -679,12 +631,17 @@
       </div>
     </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
-    <button type="button" class="btn-header-icon ui-pressable" id="profile-toggle-btn" onclick="openProfileModal()" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
-    <span id="profile-toggle-label" class="visually-hidden">Mi Perfil</span>
-    <button type="button" class="btn-header-icon btn-livesync-header ui-pressable btn-livesync-header--idle" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión · R+ Cloud"><svg class="livesync-wifi-icon btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="livesync-wifi-bar livesync-wifi-bar--3" d="M2 8.82a15 15 0 0 1 20 0"/><path class="livesync-wifi-bar livesync-wifi-bar--2" d="M5 12.55a11 11 0 0 1 14 0"/><path class="livesync-wifi-bar livesync-wifi-bar--1" d="M8.5 16.14a6 6 0 0 1 7 0"/><circle class="livesync-wifi-dot" cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg></button>
-    <button type="button" class="btn-header-icon ui-pressable" id="btn-open-learn" hidden onclick="openLearnHub()" title="Aprender R+" aria-label="Aprender R+"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
-    <button class="btn-header-icon ui-pressable" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-    <button type="button" id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+    <div class="header-session-cluster" aria-label="Sesión y ajustes">
+      <button type="button" class="btn-header-icon btn-livesync-header ui-pressable btn-livesync-header--idle" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión · Nube"><svg class="livesync-wifi-icon btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="livesync-wifi-bar livesync-wifi-bar--3" d="M2 8.82a15 15 0 0 1 20 0"/><path class="livesync-wifi-bar livesync-wifi-bar--2" d="M5 12.55a11 11 0 0 1 14 0"/><path class="livesync-wifi-bar livesync-wifi-bar--1" d="M8.5 16.14a6 6 0 0 1 7 0"/><circle class="livesync-wifi-dot" cx="12" cy="20" r="1.35" fill="currentColor" stroke="none"/></svg></button>
+      <span class="header-session-divider" aria-hidden="true"></span>
+      <div class="header-util-cluster">
+      <button type="button" class="btn-header-icon ui-pressable" id="profile-toggle-btn" onclick="openProfileModal()" title="Mi Perfil" aria-label="Mi Perfil"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+      <span id="profile-toggle-label" class="visually-hidden">Mi Perfil</span>
+      <button type="button" class="btn-header-icon ui-pressable" id="btn-open-learn" hidden onclick="openLearnHub()" title="Aprender R+" aria-label="Aprender R+"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></button>
+      <button class="btn-header-icon ui-pressable" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button type="button" id="theme-toggle" class="btn-header-icon ui-pressable" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -900,6 +857,7 @@
 
     <div id="appcontent-guardia" class="appcontent-guardia app-tab-panel-hidden" style="flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="guardia-board-scroll" class="guardia-board-scroll">
+        <div id="guardia-trust-strip" class="guardia-trust-strip" hidden aria-label="Estado Nube, sala y equipo"></div>
         <div id="guardia-phase-bar" class="guardia-phase-bar" hidden aria-label="Estado del turno de guardia"></div>
         <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status visually-hidden" aria-live="polite" hidden></p>
         <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
@@ -908,8 +866,8 @@
           <div class="guardia-metrics-toolbar" id="guardia-census-scope">
             <div id="guardia-summary" class="guardia-summary guardia-summary--compact" role="group" aria-label="Indicadores del turno"></div>
             <button type="button" id="btn-guardia-entrega-phase" class="btn-guardia-entrega-phase" aria-pressed="false" title="Iniciar entrega al R1 de guardia de tu sala">Entrega</button>
-            <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Alternar entre alcance completo y solo pacientes que te entregaron.">
-              <span class="guardia-mode-label">Alcance completo</span>
+            <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode btn-guardia-mode--compact" aria-pressed="false" title="Filtro de la grilla: todos los pacientes en tu alcance o solo los entregados a ti.">
+              <span class="guardia-mode-label">Censo: todos</span>
               <span class="guardia-mode-switch" aria-hidden="true"></span>
             </button>
           </div>
@@ -1276,9 +1234,9 @@
           </div>
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
-              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
             </div>
@@ -2113,6 +2071,16 @@
   </div>
 </div>
 
+<div id="guardia-fin-turno-backdrop" class="modal-backdrop guardia-fin-turno-backdrop" aria-hidden="true">
+  <div class="modal guardia-fin-turno-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-fin-turno-title" onclick="event.stopPropagation()">
+    <h3 id="guardia-fin-turno-title">Cierre de guardia</h3>
+    <div id="guardia-fin-turno-body" class="guardia-fin-turno-body"></div>
+    <div class="modal-actions guardia-fin-turno-footer">
+      <button type="button" class="btn-cancel" id="guardia-fin-turno-dismiss">Cerrar sin enviar</button>
+    </div>
+  </div>
+</div>
+
 <div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal guardia-rotation-config-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" onclick="event.stopPropagation()">
     <h3 id="guardia-rotation-config-title">Configuración rotación</h3>
@@ -2135,6 +2103,34 @@
         <button type="submit" class="btn-save">Guardar ciclo</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div id="inherit-patients-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal inherit-patients-modal material-glass" role="dialog" aria-modal="true" aria-labelledby="inherit-patients-title" onclick="event.stopPropagation()">
+    <h3 id="inherit-patients-title">Heredar pacientes</h3>
+    <div id="inherit-patients-body" class="inherit-patients-body"></div>
+    <div class="modal-actions inherit-patients-actions">
+      <button type="button" class="btn-cancel" id="inherit-patients-cancel">Más tarde</button>
+      <button type="button" class="btn-med-secondary" id="inherit-patients-back" hidden>Atrás</button>
+      <button type="button" class="btn-save ui-pressable" id="inherit-patients-confirm">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<div id="rotation-rejoin-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal rotation-rejoin-modal" role="dialog" aria-modal="true" aria-labelledby="rotation-rejoin-title" onclick="event.stopPropagation()">
+    <h3 id="rotation-rejoin-title">Nueva rotación</h3>
+    <div id="rotation-rejoin-lead" class="clinical-registration-lead"></div>
+    <div class="field-group">
+      <label for="rotation-rejoin-sala">Tu sala este mes</label>
+      <select id="rotation-rejoin-sala" class="profile-input" required></select>
+      <p class="profile-hint profile-hint--field">Si cambiaste de sala en la rotación, ajústala aquí antes de unirte al equipo.</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="rotation-rejoin-later">Más tarde</button>
+      <button type="button" class="btn-save" id="rotation-rejoin-open">Confirmar sala y abrir Mi rotación</button>
+    </div>
   </div>
 </div>
 
@@ -2195,7 +2191,7 @@
             <button type="button" class="settings-theme-btn" id="settings-motion-expresivo" onclick="setMotionMode('expresivo')" data-i18n="settings.motionExpresivo">Expresivo</button>
           </div>
           </div>
-          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘P alterna Normal/Pase. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
+          <p class="settings-form-foot overview-hint settings-acc-hint" data-i18n="settings.appearanceFoot">⌘G/I/P/S cambian modo Guardia/Inter/Pase/Sala. Tamaño escala toda la interfaz. Mixto equilibra las animaciones.</p>
         </div>
       </details>
 

@@ -2374,6 +2374,87 @@ html.dark .tend-gaso-tip {
   overflow: hidden;
 }
 
+/* Fin de guardia — pendientes → equipos origen */
+.guardia-fin-turno-backdrop.open {
+  z-index: 207;
+}
+
+.guardia-fin-turno-modal {
+  width: min(96vw, 480px);
+  padding-bottom: 0;
+}
+
+.guardia-fin-turno-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+  max-height: min(58vh, 420px);
+  overflow: auto;
+}
+
+.guardia-fin-turno-lead {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.guardia-fin-turno-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.guardia-fin-turno-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guardia-fin-turno-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.guardia-fin-turno-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.guardia-fin-turno-team {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.guardia-fin-turno-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.guardia-fin-turno-send {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.guardia-fin-turno-footer {
+  justify-content: flex-end;
+}
+
 /* Guardia patient chip action sheet */
 .guardia-patient-action-backdrop.open {
   z-index: 206;

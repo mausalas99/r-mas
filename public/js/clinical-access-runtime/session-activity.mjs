@@ -38,7 +38,7 @@ export async function touchClinicalUserActivityRemote(userId, opts = {}) {
   }
   setLastClinicalActivityTouchAt(now);
   try {
-    const res = await api.dbClinicalUserTouch({ userId: uid });
+    const res = await api.dbClinicalUserTouch({ userId: uid, callerUserId: uid });
     if (res?.ok === false) return false;
     scheduleClinicalActivityLanPush();
     if (typeof document !== 'undefined') {

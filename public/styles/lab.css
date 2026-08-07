@@ -2838,6 +2838,12 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
 .toast.error { background: var(--error); color: var(--color-on-accent); }
 .toast.warn { background: var(--color-livesync-syncing); color: var(--color-on-accent); }
 .toast.info { background: var(--action); color: var(--color-on-accent); }
+.toast.toast--clickable {
+  cursor: pointer;
+}
+.toast.toast--clickable .toast-text {
+  padding-right: 4px;
+}
 .lab-output-fecha {
   font-family: inherit;
   font-size: 14px;
@@ -3014,6 +3020,57 @@ html.dark .lab-out-ascitis-alert {
   border-radius: 3px;
 }
 .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
+.indica-meta-bar {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(5.5rem, 0.7fr) minmax(12rem, 2fr);
+  gap: 10px 12px;
+  align-items: start;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.indica-meta-bar .indica-meta-field {
+  margin: 0;
+  min-width: 0;
+}
+
+.indica-meta-bar .indica-meta-field label {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.indica-meta-bar .indica-meta-field input,
+.indica-meta-bar .indica-meta-field textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--input-fill, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 7px 9px;
+}
+
+.indica-meta-bar .indica-meta-field textarea {
+  resize: vertical;
+  min-height: 2.6rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .indica-meta-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .indica-meta-field--medicos {
+    grid-column: 1 / -1;
+  }
+}
+
 .indica-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; }
 .indica-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }
 .indica-section-body { padding: 12px 14px; background: var(--surface); }

@@ -276,6 +276,90 @@ describe('clinical-access-db', () => {
     assert.equal(guardia?.status, 'Resolved');
   });
 
+  it('removeTeamMember resolves coverings even when source_team is another day team', () => {
+    const leader = ensureClinicalUser(db, { clientId: 'lead-leave-night', rank: 'R2' });
+    const night = ensureClinicalUser(db, { clientId: 'r1night', rank: 'R1' });
+    const membershipTeam = createTeam(db, {
+      name: 'Night Squad',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 1',
+      createdBy: leader.userId,
+    });
+    const dayTeam = createTeam(db, {
+      name: 'Day Fer',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 1',
+      createdBy: leader.userId,
+    });
+    addTeamMember(db, membershipTeam.team_id, night.userId);
+    upsertActiveGuardia(db, {
+      patientId: 'p-night-cover',
+      coveringUserId: night.userId,
+      sourceTeamId: dayTeam.team_id,
+    });
+    removeTeamMember(db, membershipTeam.team_id, night.userId);
+    assert.equal(
+      db
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(membershipTeam.team_id, night.userId),
+      undefined
+    );
+    assert.equal(
+      db.prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`).get('p-night-cover')
+        ?.status,
+      'Resolved'
+    );
+  });
+
+  it('assignPatientToTeam works while patient has Active entrega pendientes', () => {
+    const leader = ensureClinicalUser(db, { clientId: 'lead-inherit-ag', rank: 'R2' });
+    const r1 = ensureClinicalUser(db, { clientId: 'r1inherit-ag', rank: 'R1' });
+    const teamOld = createTeam(db, {
+      name: 'Old',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 1',
+      createdBy: leader.userId,
+    });
+    const teamNew = createTeam(db, {
+      name: 'New',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 1',
+      createdBy: leader.userId,
+    });
+    addTeamMember(db, teamNew.team_id, r1.userId);
+    assignPatientToTeam(db, {
+      patientId: 'p-inherit-ag',
+      teamId: teamOld.team_id,
+      effectiveAt: '2026-07-01T00:00:00.000Z',
+    });
+    upsertActiveGuardia(db, {
+      patientId: 'p-inherit-ag',
+      coveringUserId: r1.userId,
+      sourceTeamId: teamOld.team_id,
+    });
+    assignPatientToTeam(db, {
+      patientId: 'p-inherit-ag',
+      teamId: teamNew.team_id,
+      effectiveAt: '2026-08-01T00:00:00.000Z',
+    });
+    const asg = db
+      .prepare(
+        `SELECT team_id FROM patient_team_assignment WHERE patient_id = ? ORDER BY effective_at DESC LIMIT 1`
+      )
+      .get('p-inherit-ag');
+    assert.equal(asg?.team_id, teamNew.team_id);
+    assert.equal(
+      db.prepare(`SELECT status FROM active_guardias WHERE patient_id = ?`).get('p-inherit-ag')
+        ?.status,
+      'Active',
+      'heredar/asignar censo must not be blocked; leave resolves coverings separately'
+    );
+  });
+
   it('buildActivePatientCountByTeam ignores LAN stubs without census chart', () => {
     const leader = ensureClinicalUser(db, { clientId: 'lead-stub-count', rank: 'R2' });
     const team = createTeam(db, {
@@ -379,7 +463,63 @@ describe('clinical-access-db', () => {
     assert.ok(member);
   });
 
-  it('R1 can join a team that already has two R1s with a soft warning', () => {
+  it('addTeamMember exclusive moves R2/R1 off the previous team', () => {
+    const r2 = ensureClinicalUser(db, { clientId: 'r2-move', rank: 'R2', sala: 'Sala 2' });
+    const r1 = ensureClinicalUser(db, { clientId: 'r1-move', rank: 'R1', sala: 'Sala 2' });
+    const teamA = createTeam(db, {
+      name: 'Team A',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: r2.userId,
+    });
+    const teamB = createTeam(db, {
+      name: 'Team B',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: r2.userId,
+    });
+    addTeamMember(db, teamA.team_id, r2.userId, { subAreaFraction: 'A' });
+    addTeamMember(db, teamA.team_id, r1.userId, { subAreaFraction: 'A1' });
+
+    const movedR2 = addTeamMember(db, teamB.team_id, r2.userId, {
+      subAreaFraction: 'B',
+      exclusive: true,
+    });
+    assert.equal(movedR2.movedFrom, 1);
+    assert.equal(
+      db
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamA.team_id, r2.userId),
+      undefined
+    );
+    assert.ok(
+      db
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamB.team_id, r2.userId)
+    );
+
+    const movedR1 = addTeamMember(db, teamB.team_id, r1.userId, {
+      subAreaFraction: 'B1',
+      exclusive: true,
+    });
+    assert.equal(movedR1.movedFrom, 1);
+    assert.equal(
+      db
+        .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamA.team_id, r1.userId),
+      undefined
+    );
+    assert.equal(
+      db
+        .prepare(`SELECT sub_area_fraction AS f FROM team_membership WHERE team_id = ? AND user_id = ?`)
+        .get(teamB.team_id, r1.userId)?.f,
+      'B1'
+    );
+  });
+
+  it('R1 can join a team that already has two R1s with no member-count warning', () => {
     const r1a = ensureClinicalUser(db, { clientId: 'r1a-soft', rank: 'R1', sala: 'Sala 1' });
     const r1b = ensureClinicalUser(db, { clientId: 'r1b-soft', rank: 'R1', sala: 'Sala 1' });
     const r1c = ensureClinicalUser(db, { clientId: 'r1c-soft', rank: 'R1', sala: 'Sala 1' });
@@ -397,11 +537,15 @@ describe('clinical-access-db', () => {
     const row = rows.find((t) => t.team_id === team.team_id);
     assert.ok(row);
     assert.equal(row.joinEligible, true);
-    assert.match(String(row.joinWarning || ''), /recomendado máximo/);
+    assert.equal(String(row.joinWarning || ''), '');
 
     const { warnings } = joinTeam(db, team.team_id, r1c.userId);
     assert.ok(Array.isArray(warnings));
-    assert.match(String(warnings[0] || ''), /recomendado máximo/);
+    assert.equal(warnings.length, 0);
+    const member = db
+      .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(team.team_id, r1c.userId);
+    assert.ok(member);
   });
 
   it('allows more than SOFT_MAX_TEAMS_PER_SALA teams with a sala count warning', () => {
@@ -624,7 +768,7 @@ describe('clinical-access-db', () => {
     assert.throws(() => attachClinicalIdentityByUsername(db, 'nope'), /No encontramos/);
   });
 
-  it('touchClinicalUserActivity and profile upsert record last_activity_at', () => {
+  it('touchClinicalUserActivity keeps newest; profile upsert does not stamp activity', () => {
     const u = ensureClinicalUser(db, { clientId: 'activity-dev', rank: 'R2' });
     touchClinicalUserActivity(db, u.userId, '2026-06-10T10:00:00.000Z');
     let row = db.prepare('SELECT last_activity_at FROM users WHERE user_id = ?').get(u.userId);
@@ -639,7 +783,7 @@ describe('clinical-access-db', () => {
       sala: 'Sala 1',
     });
     row = db.prepare('SELECT last_activity_at FROM users WHERE user_id = ?').get(u.userId);
-    assert.ok(String(row.last_activity_at || '').length > 0);
+    assert.equal(row.last_activity_at, '2026-06-10T10:00:00.000Z');
   });
 
   it('upsertClinicalProfile requires admin code when enabling program admin', () => {
@@ -852,6 +996,23 @@ describe('clinical-access-db', () => {
       ctx.assignments.some((row) => row.patient_id === 'p-active' && row.team_id === team.team_id),
       true
     );
+  });
+
+  it('getClinicalScopeContext includes teams_archived for month handoff', () => {
+    const admin = ensureClinicalUser(db, { clientId: 'admin-arch', rank: 'Admin' });
+    const team = createTeam(db, {
+      name: 'Dr. Fer',
+      service: 'Sala',
+      onCallDayIndex: 1,
+      sala: 'Sala 2',
+      subAreaFraction: 'B',
+      createdBy: admin.userId,
+    });
+    archiveTeam(db, team.team_id, admin.userId);
+    const ctx = getClinicalScopeContext(db, admin.userId);
+    assert.ok(Array.isArray(ctx.teams_archived));
+    assert.ok(ctx.teams_archived.some((t) => t.team_id === team.team_id && t.name === 'Dr. Fer'));
+    assert.equal(ctx.teams.some((t) => t.team_id === team.team_id), false);
   });
 
   it('fetchIncomingAssignments uses only patients columns present in schema', () => {

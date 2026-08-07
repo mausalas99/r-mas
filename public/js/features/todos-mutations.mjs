@@ -79,8 +79,9 @@ export function deleteTodo(id) {
     return t.id !== id;
   });
   storage.saveTodos(aid(), todos);
-  if (victim) emitLiveSyncTodoDelete(aid(), victim);
-  else emitLiveSyncTodoDelete(aid(), { id: id, updatedAt: delAt });
+  // Always pass a fresh delete clock — reusing victim.updatedAt makes Nube LWW
+  // reject the op as stale (same updatedAt as the prior upsert).
+  emitLiveSyncTodoDelete(aid(), victim || { id: id }, delAt);
   rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
