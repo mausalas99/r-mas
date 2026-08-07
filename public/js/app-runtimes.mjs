@@ -465,6 +465,10 @@ export async function registerAllFeatureRuntimes() {
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
   registerLanRuntime(ctx);
+  // 8.0.5: one-shot LAN localStorage retire (dynamic import — no boot-graph debt).
+  void import('./features/cloud-sync/lan-config-retire.mjs').then((mod) => {
+    mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
+  });
   // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from features/lan/panel.mjs (no static import here).
 }
 
