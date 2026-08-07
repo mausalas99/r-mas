@@ -7,7 +7,6 @@ import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { appendLanHubStatusHero, appendLanHubRoomsCard } from '../lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from '../interno-qr-panel.mjs';
 import { appendEquiposQrPanel } from '../equipos-qr-panel.mjs';
-import { getEquiposCloudConfig } from '../../equipos-cloud-config.mjs';
 import { LIVE_SYNC_SALA_DEFS } from '../../lan-join-link.mjs';
 import { getPinnedHostUrl, isPinnedHostLocal } from '../../lan-host-pin.mjs';
 import { canLocalMacBeLanHost, isClinicalRankConfiguredForLan } from '../../lan-host-rank-policy.mjs';
@@ -74,13 +73,8 @@ function maybeAppendInternoQrPanel_(deps, root) {
 function maybeAppendEquiposQrPanel_(deps, root) {
   if (!isLanElectronDesktop()) return;
   if (!canManageInternoQr(clinicalSessionContext.user)) return;
-  const cloud = getEquiposCloudConfig();
-  if (!cloud.enabled && !isLanHostActive()) return;
-  void resolveLanHostUrlAuto().then(function (hostBaseUrl) {
-    void appendEquiposQrPanel(root, {
-      hostBaseUrl: hostBaseUrl,
-      userId: getClinicalUserUserId(),
-    });
+  void appendEquiposQrPanel(root, {
+    userId: getClinicalUserUserId(),
   });
 }
 

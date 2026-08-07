@@ -17,24 +17,31 @@ import {
 } from '../equipos-cloud-config.mjs';
 import { renderEquiposBoardPanel } from './equipos-board.mjs';
 
-/** @type {{ hostBaseUrl?: string, userId?: string, showToast?: (msg: string, kind?: string) => void } | null} */
+/** @type {{ userId?: string, showToast?: (msg: string, kind?: string) => void } | null} */
 let panelOpts = null;
 let modalChromeWired = false;
 
-function dbApi() {
-  return window.rplusDb || window.electronAPI || null;
+async function fetchAccessRow() {
+  const res = await equiposCloudFetch('/admin/access');
+  return res.row;
 }
 
-function normalizeHostBase(hostBase) {
-  const base = String(hostBase || '')
-    .trim()
-    .replace(/\/+$/, '');
-  return base || 'http://127.0.0.1:3738';
+async function rotateAccessToken(userId) {
+  await equiposCloudFetch('/admin/access/rotate', {
+    method: 'POST',
+    body: { rotatedBy: userId || 'admin' },
+  });
 }
 
-function lanEquiposUrl(hostBase) {
-  const host = normalizeHostBase(hostBase);
-  return `${host}/equipos`;
+async function setAccessActive(userId, active) {
+  await equiposCloudFetch('/admin/access/set-active', {
+    method: 'POST',
+    body: { active },
+  });
+}
+
+function equiposUrlForToken() {
+  return equiposCloudMobileUrl();
 }
 
 function equiposListaBackdrop() {
@@ -48,50 +55,6 @@ function equiposListaPanelHost() {
 function isEquiposListaPanelOpen() {
   const bd = equiposListaBackdrop();
   return !!(bd && bd.classList.contains('open'));
-}
-
-async function fetchAccessRow() {
-  const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) {
-    const res = await equiposCloudFetch('/admin/access');
-    return res.row;
-  }
-  const api = dbApi();
-  if (!api?.dbEquiposAccessGet) return null;
-  const res = await api.dbEquiposAccessGet();
-  return res?.row || null;
-}
-
-async function rotateAccessToken(userId) {
-  const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) {
-    await equiposCloudFetch('/admin/access/rotate', {
-      method: 'POST',
-      body: { rotatedBy: userId || 'admin' },
-    });
-    return;
-  }
-  const api = dbApi();
-  await api.dbEquiposAccessRotate({ userId });
-}
-
-async function setAccessActive(userId, active) {
-  const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) {
-    await equiposCloudFetch('/admin/access/set-active', {
-      method: 'POST',
-      body: { active },
-    });
-    return;
-  }
-  const api = dbApi();
-  await api.dbEquiposAccessSetActive({ userId, active });
-}
-
-function equiposUrlForToken(_token, hostBase) {
-  const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) return equiposCloudMobileUrl();
-  return lanEquiposUrl(hostBase);
 }
 
 function renderQueueBoardSection() {
@@ -132,13 +95,12 @@ function renderCloudSetupBlock() {
   );
 }
 
-function renderQrBlock({ url, active, cloudMode, showLanNotice, hasToken }) {
-  const mode = cloudMode ? 'Cloud' : 'LAN';
+function renderQrBlock({ url, active, hasToken }) {
   const status = active ? 'Activo' : 'Inactivo';
   if (!hasToken) {
     return (
       `<section class="equipos-qr-resident">` +
-      `<p class="equipos-qr-meta">Enlace para residentes · <strong>${mode}</strong></p>` +
+      `<p class="equipos-qr-meta">Enlace para residentes · <strong>Cloud</strong></p>` +
       `<p class="clinical-teams-empty">Aún no hay enlace. Guarda URL y clave admin, luego genera el enlace.</p>` +
       `<div class="equipos-qr-actions equipos-qr-actions--row">` +
       `<button type="button" class="btn-lan-primary" data-eq-rotate>Generar enlace</button>` +
@@ -148,10 +110,7 @@ function renderQrBlock({ url, active, cloudMode, showLanNotice, hasToken }) {
   }
   return (
     `<section class="equipos-qr-resident">` +
-    (showLanNotice
-      ? `<p class="equipos-qr-lan-notice">Modo LAN solo funciona en la red del hospital. Para enlace público, guarda la URL cloud arriba.</p>`
-      : '') +
-    `<p class="equipos-qr-meta">Enlace para residentes · <strong>${mode}</strong> · <strong>${status}</strong></p>` +
+    `<p class="equipos-qr-meta">Enlace para residentes · <strong>Cloud</strong> · <strong>${status}</strong></p>` +
     `<div class="equipos-qr-resident-grid">` +
     `<div class="equipos-qr-preview-host" data-eq-qr-preview aria-hidden="true"></div>` +
     `<div class="equipos-qr-resident-side">` +
@@ -166,12 +125,9 @@ function renderQrBlock({ url, active, cloudMode, showLanNotice, hasToken }) {
   );
 }
 
-function renderCompactSummary({ cloudMode, active, hasToken, errorMsg }) {
-  const mode = cloudMode ? 'Cloud' : 'LAN';
+function renderCompactSummary({ active, hasToken, errorMsg }) {
   const status = !hasToken ? 'Sin enlace' : active ? 'Activo' : 'Inactivo';
-  const sub = errorMsg
-    ? esc(errorMsg)
-    : `${mode} · ${status} · Lumify / EKG / US`;
+  const sub = errorMsg ? esc(errorMsg) : `Cloud · ${status} · Lumify / EKG / US`;
   return (
     `<div class="settings-card equipos-qr-compact-row">` +
     `<div class="settings-card__copy">` +
@@ -236,11 +192,9 @@ export function closeEquiposListaPanel() {
  */
 export async function openEquiposListaPanel(overrideOpts = {}) {
   const opts = {
-    hostBaseUrl: panelOpts?.hostBaseUrl,
     userId: panelOpts?.userId,
     ...overrideOpts,
   };
-  if (!opts.hostBaseUrl) opts.hostBaseUrl = normalizeHostBase('');
   wireModalChromeOnce();
 
   const bd = equiposListaBackdrop();
@@ -345,20 +299,18 @@ function wireEquiposListaQrActions(body, panelCtx, url, active, hasToken) {
 }
 
 async function refreshEquiposListaPanel(body, panelCtx) {
-  const cloudNow = getEquiposCloudConfig();
   const cloudBlock = renderCloudSetupBlock();
-  const hostBase = panelCtx.hostBase;
 
   try {
     const row = await fetchAccessRow();
     if (!row) {
-      const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: '' };
+      const summary = { active: false, hasToken: false, errorMsg: '' };
       mountEquiposListaBody(
         body,
         panelCtx,
         cloudBlock +
           renderQueueBoardSection() +
-          renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
+          renderQrBlock({ url: '', active: false, hasToken: false }),
         '',
         summary
       );
@@ -367,21 +319,13 @@ async function refreshEquiposListaPanel(body, panelCtx) {
     }
     const accessToken = String(row.access_token || '').trim();
     const hasToken = accessToken.length > 0;
-    const url = hasToken ? equiposUrlForToken(accessToken, hostBase) : '';
+    const url = hasToken ? equiposUrlForToken() : '';
     const active = row.is_active === 1;
-    const summary = { cloudMode: cloudNow.enabled, active, hasToken, errorMsg: '' };
+    const summary = { active, hasToken, errorMsg: '' };
     mountEquiposListaBody(
       body,
       panelCtx,
-      cloudBlock +
-        renderQueueBoardSection() +
-        renderQrBlock({
-          url,
-          active,
-          cloudMode: cloudNow.enabled,
-          showLanNotice: !cloudNow.enabled,
-          hasToken,
-        }),
+      cloudBlock + renderQueueBoardSection() + renderQrBlock({ url, active, hasToken }),
       accessToken,
       summary
     );
@@ -389,7 +333,7 @@ async function refreshEquiposListaPanel(body, panelCtx) {
   } catch (e) {
     const msg = String(e.message || 'No se pudo conectar.');
     const needsAdmin = /administrador|admin_required/i.test(msg);
-    const summary = { cloudMode: cloudNow.enabled, active: false, hasToken: false, errorMsg: msg };
+    const summary = { active: false, hasToken: false, errorMsg: msg };
     mountEquiposListaBody(
       body,
       panelCtx,
@@ -399,7 +343,7 @@ async function refreshEquiposListaPanel(body, panelCtx) {
         (needsAdmin
           ? `<p class="equipos-qr-lan-notice">Guarda URL y clave admin arriba, luego pulsa <strong>Generar enlace</strong>.</p>`
           : '') +
-        renderQrBlock({ url: '', active: false, cloudMode: cloudNow.enabled, showLanNotice: false, hasToken: false }),
+        renderQrBlock({ url: '', active: false, hasToken: false }),
       '',
       summary
     );
@@ -414,7 +358,6 @@ async function refreshEquiposListaPanel(body, panelCtx) {
 async function renderEquiposListaPanelInto(body, opts) {
   const panelCtx = {
     user: clinicalSessionContext.user || {},
-    hostBase: normalizeHostBase(opts.hostBaseUrl),
     toast: opts.showToast || showToast,
     opts,
   };
@@ -429,12 +372,7 @@ export async function appendEquiposQrPanel(root, opts = {}) {
   const user = clinicalSessionContext.user || {};
   if (!canManageInternoQr(user)) return;
 
-  const cloud = getEquiposCloudConfig();
-  const api = dbApi();
-  if (!cloud.enabled && !api?.dbEquiposAccessGet) return;
-
   panelOpts = {
-    hostBaseUrl: normalizeHostBase(opts.hostBaseUrl),
     userId: opts.userId || user.user_id,
   };
   wireModalChromeOnce();
@@ -460,20 +398,17 @@ export async function appendEquiposQrPanel(root, opts = {}) {
   };
 
   try {
-    const cloudNow = getEquiposCloudConfig();
     const row = await fetchAccessRow();
     const accessToken = row ? String(row.access_token || '').trim() : '';
     const hasToken = accessToken.length > 0;
     const active = row?.is_active === 1;
     paintCompact({
-      cloudMode: cloudNow.enabled,
       active,
       hasToken,
       errorMsg: '',
     });
   } catch (e) {
     paintCompact({
-      cloudMode: cloud.enabled,
       active: false,
       hasToken: false,
       errorMsg: String(e.message || ''),

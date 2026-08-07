@@ -135,7 +135,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-08-07** `8.0.5-lan-retirement`: Interno MIP on Nube — `internoAccessUpsert` sidecar + Worker routes (`/api/interno/v1` board/vitals, `/interno/:slug`); Conexión QR Internos (MIP) panel (`panel-interno-qr.mjs`); all `CLINICAL_SALA_VALUES` slugs; cloud-only push hooks; `interno-access-sync.mjs`, `cloud/sync-worker/src/interno/`.
+- **2026-08-07** `8.0.5-lan-retirement`: Interno MIP on Nube + Equipos cloud-only (default URL boot, drop LAN host gate); `interno-access-sync.mjs`, `panel-interno-qr.mjs`, `equipos-cloud-config.mjs`, `equipos-qr-panel.mjs`, `equipos-board.mjs`, `cloud/sync-worker/src/interno/`.
 - **2026-08-07** `release-8.0.4`: Worker pull snapshot-before-SELECT + mutation prune; clinicalOps fuera del censo; iPad hidrata equipos tras censo; desktop Nube conserva matches estructurales; `pull-strategy.js`, `mutate-bridge.mjs`, `mobile-team-patient-scope.mjs`.
 - **2026-08-06** `release-8.0.3`: Eventualidades sin tab Labs (solo bitácora + compose) + reingreso Nube + admin Equipos + clinicalOps por sala + sync auto; `eventualidades-panel-html.mjs`, `eventualidades-render.mjs`, `cloud-census-collect.mjs`, `sync-runtime-cycle.mjs`.
 - **2026-08-06** `release-8.0.2`: Diagnóstico Nube (cola/errores/trazas) + sala `torre`→Torre HU + salir equipo resuelve guardias + todos `patientId`; `cloud-sync-diagnostics.mjs`, `panel-cloud-diagnostics.mjs`, `clinical-access-teams-membership.mjs`.

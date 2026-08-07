@@ -469,6 +469,9 @@ export async function registerAllFeatureRuntimes() {
   void import('./features/cloud-sync/lan-config-retire.mjs').then((mod) => {
     mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
   });
+  void import('./equipos-cloud-config.mjs').then((mod) => {
+    mod.runEquiposCloudBootIfNeeded();
+  });
   // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from features/lan/panel.mjs (no static import here).
 }
 

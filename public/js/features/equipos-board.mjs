@@ -4,15 +4,11 @@
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { canManageInternoQr } from '../clinical-privileges.mjs';
 import { DEVICE_LABELS, STATUS_LABELS } from '../../equipos/equipos-rotaciones.mjs';
-import { promoteSelfToEquiposHost } from './equipos-host-failover.mjs';
 import { equiposCloudFetch, getEquiposCloudConfig } from '../equipos-cloud-config.mjs';
 import { loadEquiposHistoryPanel } from './equipos-history.mjs';
 import { showToast } from '../ui-toast.mjs';
 
 import { esc } from '../dom-escape.mjs';
-function dbApi() {
-  return window.rplusDb || window.electronAPI || null;
-}
 
 /** @param {object} dev */
 function renderDeviceRow(dev, isAdmin) {
@@ -33,64 +29,35 @@ function renderDeviceRow(dev, isAdmin) {
 
 async function fetchBoard(opts = {}) {
   const cloud = getEquiposCloudConfig();
-  if (cloud.enabled) {
-    const programToken = String(opts.programToken || '').trim();
-    if (!cloud.adminKey && !programToken) {
-      const err = new Error('Guarda URL y clave admin, luego pulsa Guardar (o Generar enlace y QR).');
-      err.code = 'admin_required';
-      throw err;
-    }
-    return equiposCloudFetch('/board', {
-      useAdminKey: !!cloud.adminKey,
-      programToken,
-    });
+  const programToken = String(opts.programToken || '').trim();
+  if (!cloud.adminKey && !programToken) {
+    const err = new Error('Guarda URL y clave admin, luego pulsa Guardar (o Generar enlace y QR).');
+    err.code = 'admin_required';
+    throw err;
   }
-  const api = dbApi();
-  if (!api?.dbEquiposBoard) return null;
-  const res = await api.dbEquiposBoard();
-  return res.board || res;
-}
-
-async function purgeQueue(deviceType) {
-  const cloud = getEquiposCloudConfig();
-  const user = clinicalSessionContext.user || {};
-  if (cloud.enabled) {
-    await equiposCloudFetch('/admin/purge-queue', {
-      method: 'POST',
-      body: {
-        deviceType,
-        adminUserId: user.user_id,
-        adminName: user.clinical_name || user.username || 'Admin',
-      },
-    });
-    return;
-  }
-  const api = dbApi();
-  await api.dbEquiposPurgeQueue({ userId: user.user_id, deviceType });
-}
-
-function renderLanHostMissing(host) {
-  host.innerHTML =
-    '<p class="clinical-teams-empty">Conecta al host ⇄ para ver equipos.</p>' +
-    '<button type="button" class="btn-lan-secondary" id="btn-equipos-promote">Actuar como anfitrión temporal</button>';
-  host.querySelector('#btn-equipos-promote')?.addEventListener('click', () => {
-    const user = clinicalSessionContext.user || {};
-    void promoteSelfToEquiposHost({
-      showToast,
-      userId: user.user_id,
-      name: user.clinical_name,
-      rank: user.rank,
-    }).then(() => renderEquiposBoardPanel(host));
+  return equiposCloudFetch('/board', {
+    useAdminKey: !!cloud.adminKey,
+    programToken,
   });
 }
 
-/** @param {boolean} cloud @param {string} [detail] */
-function renderLoadFailure(host, cloud, detail) {
+async function purgeQueue(deviceType) {
+  const user = clinicalSessionContext.user || {};
+  await equiposCloudFetch('/admin/purge-queue', {
+    method: 'POST',
+    body: {
+      deviceType,
+      adminUserId: user.user_id,
+      adminName: user.clinical_name || user.username || 'Admin',
+    },
+  });
+}
+
+/** @param {string} [detail] */
+function renderLoadFailure(host, detail) {
   const msg =
     detail ||
-    (cloud
-      ? 'No se pudo conectar al servicio cloud. Revisa URL y clave admin en ⇄ → R+ Lista de espera.'
-      : 'No se pudo cargar equipos.');
+    'No se pudo conectar al servicio cloud. Revisa URL y clave admin en ⇄ → R+ Lista de espera.';
   host.innerHTML = `<p class="clinical-teams-empty">${esc(msg)}</p>`;
 }
 
@@ -105,15 +72,13 @@ function buildEquiposAlertsHtml(alerts) {
 }
 
 function buildEquiposBoardHtml(board, cloud, isAdmin) {
-  const mobileHref = cloud.enabled ? cloud.url : '/equipos';
-  const storageHint = cloud.enabled
-    ? '<p class="equipos-board-storage-hint">Datos en Cloudflare (D1). No están en rplus-clinical.db local.</p>'
-    : '<p class="equipos-board-storage-hint">Datos en rplus-clinical.db (este Mac si es anfitrión).</p>';
   return (
     `<div class="equipos-desktop-head">` +
-    `<span class="equipos-board-mode">${cloud.enabled ? 'Cloud' : 'LAN'}</span>` +
-    `<a href="${esc(mobileHref)}" target="_blank" rel="noopener" class="btn-lan-secondary equipos-board-open-mobile">Abrir móvil</a>` +
-    `</div>${storageHint}${buildEquiposAlertsHtml(board.alerts)}` +
+    `<span class="equipos-board-mode">Cloud</span>` +
+    `<a href="${esc(cloud.url)}" target="_blank" rel="noopener" class="btn-lan-secondary equipos-board-open-mobile">Abrir móvil</a>` +
+    `</div>` +
+    '<p class="equipos-board-storage-hint">Datos en Cloudflare (D1). No están en rplus-clinical.db local.</p>' +
+    `${buildEquiposAlertsHtml(board.alerts)}` +
     `<div id="equipos-board-live">${(board.devices || []).map((d) => renderDeviceRow(d, isAdmin)).join('')}</div>` +
     `<div id="equipos-history-host" class="equipos-history-host" hidden></div>` +
     (isAdmin
@@ -152,25 +117,18 @@ export async function renderEquiposBoardPanel(hostEl, opts = {}) {
   if (!host) return;
 
   const cloud = getEquiposCloudConfig();
-  const api = dbApi();
-
-  if (cloud.enabled) {
-    host.innerHTML = '<p class="clinical-teams-empty">Cargando cola de equipos…</p>';
-  } else if (!api?.dbEquiposBoard) {
-    renderLanHostMissing(host);
-    return;
-  }
+  host.innerHTML = '<p class="clinical-teams-empty">Cargando cola de equipos…</p>';
 
   try {
     const board = await fetchBoard(opts);
     if (!board) {
-      renderLoadFailure(host, cloud.enabled);
+      renderLoadFailure(host);
       return;
     }
     const isAdmin = canManageInternoQr(clinicalSessionContext.user);
     host.innerHTML = buildEquiposBoardHtml(board, cloud, isAdmin);
     wireEquiposBoardActions(host);
   } catch (e) {
-    renderLoadFailure(host, cloud.enabled, e?.message);
+    renderLoadFailure(host, e?.message);
   }
 }

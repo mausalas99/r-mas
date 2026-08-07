@@ -12,6 +12,9 @@ const ADMIN_KEY = 'rpc-equipos-admin-key';
 export const EQUIPOS_CLOUD_DEFAULT_URL =
   'https://rmas-lista-de-espera.rmas-workersdev.workers.dev';
 
+/** One-shot 8.0.5 boot: seed default cloud URL when empty. */
+export const EQUIPOS_CLOUD_BOOT_FLAG = 'equipos-cloud-boot-v805';
+
 const LEGACY_CLOUD_URL_PATTERNS = [
   /^https?:\/\/rplus-equipos\./i,
   /laboratoriazo-lic\.workers\.dev/i,
@@ -49,17 +52,34 @@ export function normalizeEquiposCloudUrl(url) {
 /** @returns {{ enabled: boolean, url: string, adminKey: string }} */
 export function getEquiposCloudConfig() {
   const settings = readRpcSettings();
-  const rawUrl = String(settings.equiposCloudUrl || localStorage.getItem(URL_KEY) || '')
+  const rawUrl = String(
+    settings.equiposCloudUrl || localStorage.getItem(URL_KEY) || EQUIPOS_CLOUD_DEFAULT_URL
+  )
     .trim()
     .replace(/\/+$/, '');
-  const url = normalizeEquiposCloudUrl(rawUrl);
+  const url = normalizeEquiposCloudUrl(rawUrl) || EQUIPOS_CLOUD_DEFAULT_URL;
   if (url && url !== rawUrl) {
     setEquiposCloudConfig({ url, adminKey: undefined });
   }
   const adminKey = String(
     settings.equiposAdminKey || localStorage.getItem(ADMIN_KEY) || ''
   ).trim();
-  return { enabled: !!url, url, adminKey };
+  return { enabled: true, url, adminKey };
+}
+
+/**
+ * 8.0.5: persist default cloud URL when none configured (runs once per device).
+ * @returns {{ didRun: boolean }}
+ */
+export function runEquiposCloudBootIfNeeded({ storage = localStorage, now = Date.now } = {}) {
+  if (storage.getItem(EQUIPOS_CLOUD_BOOT_FLAG)) return { didRun: false };
+  const settings = readRpcSettings();
+  const rawUrl = String(settings.equiposCloudUrl || storage.getItem(URL_KEY) || '').trim();
+  if (!rawUrl) {
+    setEquiposCloudConfig({ url: EQUIPOS_CLOUD_DEFAULT_URL });
+  }
+  storage.setItem(EQUIPOS_CLOUD_BOOT_FLAG, String(now()));
+  return { didRun: true };
 }
 
 /**
