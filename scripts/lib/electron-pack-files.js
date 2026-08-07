@@ -1,6 +1,6 @@
 /**
  * Lista canónica de electron-builder `build.files` y comprobación del grafo
- * de require desde main.js y server.js (arranque Electron + backend embebido).
+ * de require desde main.js (arranque Electron; server.js es solo dev).
  *
  *   node scripts/lib/electron-pack-files.js          # validar
  *   node scripts/lib/electron-pack-files.js --write  # actualizar package.json
@@ -13,7 +13,6 @@ const PACK_FILES_BASELINE = [
   'main.js',
   'scripts/lib/release-notes-body.js',
   'preload.js',
-  'server.js',
   'lib/**/*.js',
   'lib/**/*.mjs',
   'lib/**/*.cjs',
@@ -87,11 +86,16 @@ function resolveLocalRequire(fromFile, reqPath, root) {
   return resolved;
 }
 
+/** Dev-only entry points: referenced from main.js but not shipped in release builds. */
+const DEV_ONLY_RUNTIME_FILES = new Set(['server.js', 'server-python.js']);
+
 /**
  * @param {string} entryAbs
  * @param {string} root
+ * @param {{ skipFiles?: Set<string> }} [opts]
  */
-function collectRuntimeRequires(entryAbs, root) {
+function collectRuntimeRequires(entryAbs, root, opts = {}) {
+  const skipFiles = opts.skipFiles || DEV_ONLY_RUNTIME_FILES;
   const seen = new Set();
   const queue = [entryAbs];
 
@@ -104,7 +108,10 @@ function collectRuntimeRequires(entryAbs, root) {
     const src = fs.readFileSync(abs, 'utf8');
     for (const req of localRequiresFromSource(src)) {
       const target = resolveLocalRequire(abs, req, root);
-      if (target && !seen.has(target)) queue.push(target);
+      if (!target || seen.has(target)) continue;
+      const rel = path.relative(root, target).replace(/\\/g, '/');
+      if (skipFiles.has(rel)) continue;
+      queue.push(target);
     }
   }
 
@@ -124,7 +131,7 @@ function extraPatternForUncoveredFile(rel) {
  */
 function canonicalBuildFiles(root) {
   const patterns = [...PACK_FILES_BASELINE];
-  const entryPoints = ['main.js', 'server.js'];
+  const entryPoints = ['main.js'];
   const runtime = [];
   for (const entry of entryPoints) {
     const entryAbs = path.join(root, entry);
@@ -233,9 +240,7 @@ function ensureElectronPackFiles(root, opts = {}) {
 function assertRuntimeCoveredByPatterns(root) {
   const patterns = canonicalBuildFiles(root);
   const runtime = [];
-  for (const entry of ['main.js', 'server.js']) {
-    runtime.push(...collectRuntimeRequires(path.join(root, entry), root));
-  }
+  runtime.push(...collectRuntimeRequires(path.join(root, 'main.js'), root));
   const uncovered = runtime.filter((rel) => !filePatternCovers(rel, patterns));
   if (uncovered.length) {
     throw new Error(
@@ -274,6 +279,7 @@ module.exports = {
   PACK_FILES_BASELINE,
   NATIVE_MODULE_PACK_PATTERNS,
   ASAR_UNPACK_BASELINE,
+  DEV_ONLY_RUNTIME_FILES,
   filePatternCovers,
   collectRuntimeRequires,
   canonicalBuildFiles,
@@ -310,7 +316,7 @@ if (require.main === module) {
       ensureElectronPackFiles(root, { write: false });
       assertRuntimeCoveredByPatterns(root);
       assertNativeModulesPacked(root);
-      console.log('build.files cubre el grafo de main.js + server.js y módulos nativos.');
+      console.log('build.files cubre el grafo de main.js y módulos nativos.');
     }
   } catch (err) {
     console.error(err.message || err);

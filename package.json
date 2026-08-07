@@ -143,7 +143,6 @@
       "main.js",
       "scripts/lib/release-notes-body.js",
       "preload.js",
-      "server.js",
       "lib/**/*.js",
       "lib/**/*.mjs",
       "lib/**/*.cjs",

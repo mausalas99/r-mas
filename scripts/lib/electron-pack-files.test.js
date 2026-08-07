@@ -1,5 +1,5 @@
 /**
- * Evita omitir módulos que server.js (y lan-squad) cargan al arrancar.
+ * Evita omitir módulos que main.js carga al arrancar (server.js es dev-only).
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -25,7 +25,7 @@ test('lista canónica incluye lib/**/*.js / lib/**/*.cjs', () => {
   assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.cjs'));
 });
 
-test('server.js y dependencias LAN están cubiertos por la lista canónica', () => {
+test('main.js y dependencias de arranque están cubiertos por la lista canónica', () => {
   assertRuntimeCoveredByPatterns(ROOT);
 });
 
@@ -54,23 +54,17 @@ test('ensureElectronPackFiles sin --write no modifica si ya está sincronizado',
   assert.equal(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'), before);
 });
 
-test('server.js require("./…") directo está en build.files', () => {
-  const patterns = pkg.build.files || [];
-  const serverSrc = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
-  const relRequires = [...serverSrc.matchAll(/require\('\.\/([^']+)'\)/g)].map((m) => m[1]);
-  for (const rel of relRequires) {
-    assert.ok(
-      filePatternCovers(rel, patterns),
-      `Falta "${rel}" en package.json → build.files (server.js lo requiere al iniciar)`
-    );
-  }
+test('lista canónica no incluye server.js (dev-only ward server)', () => {
+  assert.ok(!PACK_FILES_BASELINE.includes('server.js'));
+  assert.ok(!canonicalBuildFiles(ROOT).includes('server.js'));
 });
 
-test('main.js require("./…") directo está en build.files', () => {
+test('main.js require("./…") directo está en build.files (excepto server dev-only)', () => {
   const patterns = pkg.build.files || [];
   const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
   const relRequires = [...mainSrc.matchAll(/require\('\.\/([^']+)'\)/g)].map((m) => m[1]);
   for (const rel of relRequires) {
+    if (rel === 'server') continue;
     const abs = path.join(ROOT, rel);
     const resolved = fs.existsSync(abs)
       ? rel

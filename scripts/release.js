@@ -598,7 +598,7 @@ async function cmdPublish(argv) {
     const packSync = ensureElectronPackFiles(ROOT, { write: true });
     const packLine = packSync.changed
       ? `build.files actualizado (+${packSync.missing.length} / -${packSync.extra.length})`
-      : 'build.files ya coincide con server.js + lan-squad';
+      : 'build.files ya coincide con main.js';
     if (progressJson) progress.emitLog({ stream: 'meta', line: packLine });
     else console.log(packLine);
     progress.complete('pack-files');

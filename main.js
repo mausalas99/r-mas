@@ -897,7 +897,10 @@ let quitting = false;
 app.on('before-quit', (event) => {
   if (quitting) return;
   quitting = true;
-  lanNetworkWatch.stop();
+  if (!isDevWardServerEnabled()) {
+    destroyAllBrowserWindows();
+    return;
+  }
   const lanServer = require('./server');
   event.preventDefault();
 

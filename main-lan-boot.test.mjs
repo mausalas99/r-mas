@@ -80,15 +80,15 @@ test('preload: ensureLanServerReady no-op without dev ward flag', () => {
   assert.match(fnSlice, /ok:\s*true/, 'returns success');
 });
 
-test('main LAN discovery beacons only in dev ward server mode', () => {
-  const mdnsStart = MAIN_SRC.indexOf('function startLanMdnsIfHosting()');
-  const udpStart = MAIN_SRC.indexOf('function startUdpBeaconIfHosting()');
-  assert.ok(mdnsStart >= 0, 'startLanMdnsIfHosting defined');
-  assert.ok(udpStart >= 0, 'startUdpBeaconIfHosting defined');
-  const mdnsBody = MAIN_SRC.slice(mdnsStart, mdnsStart + 220);
-  const udpBody = MAIN_SRC.slice(udpStart, udpStart + 220);
-  assert.match(mdnsBody, /isDevWardServerEnabled[\s\S]*return;/);
-  assert.match(udpBody, /isDevWardServerEnabled[\s\S]*return;/);
+test('main boot: production quit skips ward server teardown', () => {
+  const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
+  assert.ok(quitStart >= 0, 'before-quit handler');
+  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 700);
+  assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
+  assert.ok(
+    !quitBlock.includes('lanNetworkWatch'),
+    'LAN network watch removed from quit path'
+  );
 });
 
 test('main window.open uses http(s) allowlist', () => {
@@ -99,13 +99,14 @@ test('main window.open uses http(s) allowlist', () => {
   assert.ok(handlerSlice.includes('isAllowedExternalUrl(url)'), 'handler gates on allowlist');
 });
 
-test('main quit: destroy windows before LAN server stop', () => {
+test('main quit: destroy windows before LAN server stop (dev ward only)', () => {
   const quitStart = MAIN_SRC.indexOf("app.on('before-quit'");
   assert.ok(quitStart >= 0, 'before-quit handler');
-  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 900);
+  const quitBlock = MAIN_SRC.slice(quitStart, quitStart + 1100);
+  assert.ok(quitBlock.includes('isDevWardServerEnabled()'), 'quit guarded by dev ward flag');
   const destroyIdx = quitBlock.indexOf('destroyAllBrowserWindows');
   const stopIdx = quitBlock.indexOf('stopLanServer');
   assert.ok(destroyIdx >= 0, 'destroyAllBrowserWindows in quit path');
-  assert.ok(stopIdx > destroyIdx, 'destroy windows before stopLanServer');
-  assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after shutdown');
+  assert.ok(stopIdx > destroyIdx, 'destroy windows before stopLanServer when dev ward enabled');
+  assert.ok(quitBlock.includes('app.exit(0)'), 'hard exit after dev ward shutdown');
 });
