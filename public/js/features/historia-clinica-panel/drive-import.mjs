@@ -1,8 +1,6 @@
 import { saveState } from '../../app-state.mjs';
-import {
-  getActiveLiveSyncRoomId,
-  isLanSessionConfiguredForRest,
-} from '../lan-sync.mjs';
+import { getActiveLiveSyncRoomId } from '../lan-sync.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import {
   markHistoriaPendingLanSync,
   schedulePendingHistoriaClinicaLanSync,
@@ -43,7 +41,7 @@ export async function applyDriveImportHcPatch(patient, patch, mode, opts) {
     data: merged,
   };
 
-  var needsBackgroundLan = !!(isLanSessionConfiguredForRest() && roomId && dirty.length);
+  var needsBackgroundLan = !isCloudSyncActive() && roomId && dirty.length;
   if (needsBackgroundLan) {
     markHistoriaPendingLanSync(patient, {
       expectedVersion: base.version,

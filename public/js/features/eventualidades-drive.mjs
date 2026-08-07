@@ -1,10 +1,8 @@
 import { saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { createMutationBuilder } from '../versioned-mutation.mjs';
-import {
-  isLanSessionConfiguredForRest,
-  lanPushPatientVersioned,
-} from './lan-sync.mjs';
+import { lanPushPatientVersioned } from './lan-sync.mjs';
+import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { filterNewEventualidades } from '../../../lib/drive-import/merge-eventualidades.mjs';
 import { appendEventualidad } from './eventualidades-store.mjs';
 import {
@@ -36,7 +34,7 @@ export async function applyDriveImportEventualidades(patient, incoming) {
   await saveState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
 
-  if (!isLanSessionConfiguredForRest()) {
+  if (isCloudSyncActive()) {
     return { ok: true, added: toAdd.length, skipped };
   }
 

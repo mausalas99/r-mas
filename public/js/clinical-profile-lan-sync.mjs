@@ -5,7 +5,9 @@
 import { getRoomMembership, setRoomMembership } from './live-sync-membership.mjs';
 import { liveSyncRoomLabel, parseLanJoinQuery } from './lan-join-link.mjs';
 import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
+import { storage } from './storage.js';
 import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
+import { getCloudSyncRoomId } from './features/cloud-sync/settings.mjs';
 
 /** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
 export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
@@ -50,15 +52,34 @@ import { resolveRoomIdForUsernameRegister } from './clinical-profile-lan-room.mj
 
 export { resolveRoomIdForUsernameRegister };
 
+function isLanClientConfigPresent() {
+  try {
+    const c = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
+    return !!(
+      c &&
+      String(c.hostUrl || '').trim() &&
+      String(c.teamCode || '').trim()
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Maps clinical Sala / invite / membership to LiveSync room before @usuario gate.
  * @param {{ roomId?: string, sala?: string, joinLive?: boolean }} [opts]
  */
 export async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
-  const lan = await import('./features/lan-sync.mjs');
-  if (!lan.isLanSessionConfiguredForRest()) {
+  if (isCloudSyncActive()) {
+    const roomId = String(getCloudSyncRoomId() || '').trim();
+    return { roomId, lanConfigured: true };
+  }
+
+  if (!isLanClientConfigPresent()) {
     return { roomId: '', lanConfigured: false };
   }
+
+  const lan = await import('./features/lan-sync.mjs');
 
   let roomId = resolveRoomIdForUsernameRegister(opts);
   if (!roomId) {
@@ -85,11 +106,12 @@ export async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
 /** Dev peer (second window): pre-seed host URL + team code from main process env. */
 export async function seedDevPeerLanConfigIfNeeded() {
   if (typeof window === 'undefined' || !window.electronAPI?.getLanDevPeerSeedConfig) return;
+  if (isCloudSyncActive()) return;
   try {
     const seed = await window.electronAPI.getLanDevPeerSeedConfig();
     if (!seed?.ok || !seed.hostUrl || !seed.teamCode) return;
     const lan = await import('./features/lan-sync.mjs');
-    if (lan.isLanSessionConfiguredForRest?.()) return;
+    if (isLanClientConfigPresent()) return;
     lan.persistLanClientConfig(seed.hostUrl, seed.teamCode);
   } catch {
     /* non-fatal */
@@ -122,7 +144,7 @@ export async function applyPendingLanInviteFromPage() {
  */
 export async function assertLanRoomForUsernameRegister(opts = {}) {
   const lan = await import('./features/lan-sync.mjs');
-  const lanConfigured = !!lan.isLanSessionConfiguredForRest?.();
+  const lanConfigured = isCloudSyncActive() || isLanClientConfigPresent();
 
   await applyPendingLanInviteFromPage();
   const ensured = await ensureLiveSyncRoomForUsernameRegister({
@@ -171,7 +193,7 @@ export async function flushClinicalProfileToLan(opts = {}) {
   }
 
   const lan = await import('./features/lan-sync.mjs');
-  if (!lan.isLanSessionConfiguredForRest?.()) {
+  if (!isLanClientConfigPresent()) {
     traceFlushClinicalProfilePushSkip('NO_LAN');
     return { ok: false, code: 'NO_LAN' };
   }

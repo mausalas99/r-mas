@@ -3,7 +3,6 @@ import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { createMutationBuilder } from '../versioned-mutation.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import {
-  isLanSessionConfiguredForRest,
   lanPushPatientVersioned,
   lanFetchHostPatientRow,
   touchPatientLanUpdatedAt,
@@ -167,7 +166,7 @@ async function persistEventualidades(patient, store) {
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
   });
-  if (!isLanSessionConfiguredForRest() || isCloudSyncActive()) {
+  if (isCloudSyncActive()) {
     return { ok: true };
   }
   void (async function () {

@@ -3,9 +3,9 @@ import { createMutationBuilder } from '../../versioned-mutation.mjs';
 import {
   lanPushHistoriaClinica,
   getActiveLiveSyncRoomId,
-  isLanSessionConfiguredForRest,
   touchPatientLanUpdatedAt,
 } from '../lan-sync.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { migrateLegacyHistoriaData } from '../../../../lib/historia-clinica/migrate-legacy.mjs';
 import { applyClinicalHistoryUppercase } from '../../../../lib/historia-clinica/clinical-text.mjs';
 import { rt } from './runtime.mjs';
@@ -72,7 +72,7 @@ export async function saveHistoria(root, patient, rerender, _skipAckCheck) {
   }
 
   var roomId = getActiveLiveSyncRoomId() || '';
-  if (isLanSessionConfiguredForRest() && roomId) {
+  if (!isCloudSyncActive() && roomId) {
     await saveHistoriaToLan(root, patient, rerender, dirty, roomId);
     return;
   }

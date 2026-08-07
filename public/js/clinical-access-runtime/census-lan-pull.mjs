@@ -1,4 +1,5 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
+import { isCloudSyncActive } from '../features/cloud-sync/lan-override.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { patients } from '../app-state.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
@@ -17,11 +18,9 @@ import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 
 /** @param {string} reason @param {number} [delayMs] */
 async function scheduleLanPatientReconcile(reason, delayMs) {
+  if (isCloudSyncActive()) return;
   try {
     const lan = await import('../features/lan-sync.mjs');
-    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
-      return;
-    }
     const rid =
       typeof lan.getActiveLiveSyncRoomId === 'function'
         ? String(lan.getActiveLiveSyncRoomId() || '').trim()
@@ -116,10 +115,8 @@ function rosterChangedFromMergeStats(stats) {
 }
 
 async function scheduleHostReconcileAfterOpsMerge() {
+  if (isCloudSyncActive()) return;
   const lan = await import('../features/lan-sync.mjs');
-  if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
-    return;
-  }
   const rid =
     typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
   if (!rid) return;

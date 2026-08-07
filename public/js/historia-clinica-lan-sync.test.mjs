@@ -1,5 +1,8 @@
 import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { markHistoriaPendingLanSync, buildHistoriaClinicaDelta } from './historia-clinica-lan-sync.mjs';
 
 describe('markHistoriaPendingLanSync', () => {
@@ -61,4 +64,13 @@ test('buildHistoriaClinicaDelta returns null for unsafe array index paths', () =
     }),
     null
   );
+});
+
+test('historia LAN flush gates on isCloudSyncActive', () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), 'historia-clinica-lan-sync.mjs'),
+    'utf8'
+  );
+  assert.match(src, /isCloudSyncActive/);
+  assert.equal(src.includes('isLanSessionConfiguredForRest'), false);
 });

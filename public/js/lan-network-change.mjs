@@ -13,6 +13,7 @@ import {
   seedBundledWardConnectionPoints,
 } from './lan-ward-host-registry.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from './clinical-settings.mjs';
+import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let _networkChangeDebounceTimer = null;
@@ -35,9 +36,12 @@ async function restartLanDiscoveryAfterNetworkChange() {
 
   const transport = await import('./features/lan/transport.mjs');
   const pin = await import('./lan-shift-pin-connect.mjs');
+  const cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  const lanSessionReady =
+    !!String(cfg.hostUrl || '').trim() && !!String(cfg.teamCode || '').trim();
   if (
-    typeof transport.isLanSessionConfiguredForRest === 'function' &&
-    !transport.isLanSessionConfiguredForRest() &&
+    !isCloudSyncActive() &&
+    !lanSessionReady &&
     typeof pin.tryEasyLanShiftPinConnect === 'function'
   ) {
     const easy = await pin.tryEasyLanShiftPinConnect({

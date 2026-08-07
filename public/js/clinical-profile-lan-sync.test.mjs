@@ -47,4 +47,8 @@ describe('clinical-profile-lan-sync room resolve', () => {
     const body = profileLanSrc.slice(fnStart, fnStart + 900);
     assert.match(body, /isCloudSyncActive/);
   });
+
+  it('does not reference isLanSessionConfiguredForRest', () => {
+    assert.equal(profileLanSrc.includes('isLanSessionConfiguredForRest'), false);
+  });
 });

@@ -8,8 +8,8 @@ import {
   lanPushHistoriaClinica,
   lanPushHistoriaClinicaDelta,
   getActiveLiveSyncRoomId,
-  isLanSessionConfiguredForRest,
 } from './features/lan-sync.mjs';
+import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 const CATALOGS = { appConditions, ahfConditions, ipasSystems };
 
@@ -189,7 +189,7 @@ export async function flushPendingHistoriaClinicaLanSync(patient) {
     return { ok: true, skipped: true };
   }
   const roomId = getActiveLiveSyncRoomId() || '';
-  if (!isLanSessionConfiguredForRest() || !roomId) {
+  if (isCloudSyncActive() || !roomId) {
     return { ok: false, deferred: true };
   }
 
@@ -231,7 +231,7 @@ export function schedulePendingHistoriaClinicaLanSync(patient) {
 }
 
 export async function flushAllPendingHistoriaClinicaLanSync() {
-  if (!isLanSessionConfiguredForRest() || !getActiveLiveSyncRoomId()) return;
+  if (isCloudSyncActive() || !getActiveLiveSyncRoomId()) return;
   const pending = patients.filter(function (p) {
     return p.historiaClinica && p.historiaClinica.pendingLanSync;
   });

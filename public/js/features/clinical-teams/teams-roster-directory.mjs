@@ -20,10 +20,8 @@ export async function resolveLanTeamMemberHintHtml(joinedTeams) {
   });
   if (!soloTeams) return '';
   try {
+    if (!isCloudSyncActive()) return '';
     const lan = await import('../lan-sync.mjs');
-    if (typeof lan.isLanSessionConfiguredForRest !== 'function' || !lan.isLanSessionConfiguredForRest()) {
-      return '';
-    }
     const roomId =
       typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
     if (!roomId) {

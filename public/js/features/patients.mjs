@@ -7,10 +7,8 @@ import {
 } from '../app-state.mjs';
 import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
 import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
-import {
-  lanSyncPatientArchivedFlag,
-  isLanSessionConfiguredForRest,
-} from './lan-sync.mjs';
+import { lanSyncPatientArchivedFlag } from './lan-sync.mjs';
+import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { rt, registerPatientsRuntime as _registerRt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import {
@@ -211,7 +209,7 @@ export function togglePatientArchived(ev, id) {
   if (!p.archived) setArchivedSectionCollapsed(false);
   saveState();
   patientsBridge.renderPatientList();
-  if (isLanSessionConfiguredForRest()) {
+  if (!isCloudSyncActive()) {
     lanSyncPatientArchivedFlag(p).catch(function () {
       rt.showToast('No se pudo sincronizar archivo con el host LAN.', 'error');
     });

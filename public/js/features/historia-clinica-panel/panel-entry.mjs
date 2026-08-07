@@ -1,7 +1,5 @@
-import {
-  getActiveLiveSyncRoomId,
-  isLanSessionConfiguredForRest,
-} from '../lan-sync.mjs';
+import { getActiveLiveSyncRoomId } from '../lan-sync.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { MOUNT_ID, activePatient } from './runtime.mjs';
 import { normalizeData } from './data-normalize.mjs';
 import { fetchHistoriaRemote, readLocalHistoria } from './fetch.mjs';
@@ -22,7 +20,7 @@ function hydrateHcStateFromLocal(patient) {
 
 async function mergeRemoteHistoriaIfNewer(patient, local) {
   const roomId = getActiveLiveSyncRoomId() || '';
-  if (!isLanSessionConfiguredForRest() || !roomId || (local && local.pendingLanSync)) return;
+  if (isCloudSyncActive() || !roomId || (local && local.pendingLanSync)) return;
   const remote = await fetchHistoriaRemote(patient.id, roomId);
   if (remote && (!local || remote.version >= local.version)) {
     hcState.version = remote.version;

@@ -75,7 +75,6 @@ async function isLanConnectCtaVisible() {
   if (isCloudSala(getUserSala())) return false;
   try {
     const lan = await import('./lan-sync.mjs');
-    if (!lan.isLanSessionConfiguredForRest?.()) return true;
     const { getRoomSyncPhase, RoomSyncPhase } = await import('../lan-sync-state.mjs');
     const roomId =
       typeof lan.getActiveLiveSyncRoomId === 'function' ? lan.getActiveLiveSyncRoomId() : '';

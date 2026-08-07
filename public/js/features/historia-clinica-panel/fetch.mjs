@@ -1,7 +1,5 @@
-import {
-  lanFetchHistoriaClinica,
-  isLanSessionConfiguredForRest,
-} from '../lan-sync.mjs';
+import { lanFetchHistoriaClinica } from '../lan-sync.mjs';
+import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { activePatient } from './runtime.mjs';
 
 export function readLocalHistoria(patient) {
@@ -14,7 +12,7 @@ export function readLocalHistoria(patient) {
 }
 
 export async function fetchHistoriaRemote(patientId, roomId) {
-  if (!isLanSessionConfiguredForRest() || !roomId) return null;
+  if (isCloudSyncActive() || !roomId) return null;
   try {
     var res = await Promise.race([
       lanFetchHistoriaClinica(patientId, roomId),
@@ -33,7 +31,7 @@ export async function fetchHistoriaRemote(patientId, roomId) {
 
 export async function fetchHistoria(patientId, roomId) {
   var local = readLocalHistoria(activePatient());
-  if (!isLanSessionConfiguredForRest() || !roomId) {
+  if (isCloudSyncActive() || !roomId) {
     return local;
   }
   if (local && local.pendingLanSync) {
