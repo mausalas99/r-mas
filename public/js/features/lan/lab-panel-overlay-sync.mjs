@@ -1,44 +1,24 @@
 /**
- * Silent LAN sync for taught lab panel overlays (room bundle labPanelOverlay).
+ * Lab panel overlay persistence — local per-Mac only (no LAN push/pull).
  */
-import {
-  loadLabPanelOverlays,
-  saveLabPanelOverlays,
-  upsertLabPanelOverlay,
-} from '../../labs-panel-overlay-store.mjs';
-import { mergeLabPanelOverlayLww } from '../../labs-panel-overlay.mjs';
+import { upsertLabPanelOverlay } from '../../labs-panel-overlay-store.mjs';
 
-/**
- * Merge host/peer overlays into local store (LWW by panelId). Never opens teach UI.
- * @param {object|null|undefined} bundle
- */
-export function applyLabPanelOverlayFromBundle(bundle) {
-  var arr = bundle && Array.isArray(bundle.labPanelOverlay) ? bundle.labPanelOverlay : null;
-  if (!arr) return;
-  var merged = mergeLabPanelOverlayLww(loadLabPanelOverlays(), arr);
-  saveLabPanelOverlays(merged);
+/** LAN bundle overlay apply retired — overlays stay on this Mac. */
+export function applyLabPanelOverlayFromBundle(_bundle) {
+  /* no-op */
 }
 
-/** Schedule sync-bundle push that includes the full local overlay array. */
+/** LAN overlay push retired — local store already persisted. */
 export function enqueueLabPanelOverlayPush() {
-  return import('./push.mjs')
-    .then(function (push) {
-      if (typeof push.scheduleLiveSyncPush === 'function') {
-        push.scheduleLiveSyncPush();
-      }
-    })
-    .catch(function () {
-      /* offline / LAN not ready — local store already persisted */
-    });
+  /* no-op */
 }
 
 /**
- * After local upsert on teach confirm: best-effort LAN push.
+ * Persist overlay after teach confirm (local only).
  * @param {object} [_record]
  */
 export function queueLabPanelOverlayLanSync(_record) {
   if (_record && _record.panelId) {
     upsertLabPanelOverlay(_record);
   }
-  void enqueueLabPanelOverlayPush();
 }
