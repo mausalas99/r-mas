@@ -159,6 +159,8 @@ function appendSalaInternoBlock(ctx, def, row) {
     mkInternoBtn(active ? 'Desactivar' : 'Activar', async () => {
       const r = await api.dbInternoAccessSetActive({ userId, sala: def.key, active: !active });
       if (r?.ok) {
+        const { pushInternoAccessToCloud } = await import('./cloud-sync/interno-access-sync.mjs');
+        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
         showToast(active ? 'Acceso interno desactivado' : 'Acceso interno activado', 'success');
         await rerender();
       } else {
@@ -172,6 +174,8 @@ function appendSalaInternoBlock(ctx, def, row) {
       if (!confirm(`¿Regenerar QR de ${def.key}? El enlace anterior dejará de funcionar.`)) return;
       const r = await api.dbInternoAccessRotate({ userId, sala: def.key });
       if (r?.ok) {
+        const { pushInternoAccessToCloud } = await import('./cloud-sync/interno-access-sync.mjs');
+        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
         showToast('Token regenerado — copia el QR de nuevo', 'success');
         await rerender();
       } else {

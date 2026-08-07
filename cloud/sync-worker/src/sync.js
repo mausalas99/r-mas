@@ -1,6 +1,11 @@
 import { decryptJson, encryptJson } from './crypto-at-rest.js';
 import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
+import {
+  applyInternoAccessUpsert,
+  isInternoAccessUpsertOp,
+  partitionSyncOps,
+} from './interno-access-sidecar.js';
 import { applyOps } from './lww.js';
 import {
   mutationPruneCeiling,
@@ -64,14 +69,15 @@ function validateOpsSize(ops) {
   }
   for (const op of ops) {
     const path = String(op?.path || '');
-    const payload = JSON.stringify(op?.value ?? null);
+    const isSidecar = isInternoAccessUpsertOp(op);
+    const payload = isSidecar ? JSON.stringify(op) : JSON.stringify(op?.value ?? null);
     const bytes = new TextEncoder().encode(payload).length;
     const isLab = path.startsWith('labSidecars/');
     const max = isLab ? QUOTAS.labMutationMaxBytes : QUOTAS.noteMaxBytes;
     if (bytes > max) {
       throw new SyncError(
         'payload_too_large',
-        `Operación demasiado grande para ${path} (máx. ${max} bytes).`
+        `Operación demasiado grande para ${isSidecar ? 'internoAccessUpsert' : path} (máx. ${max} bytes).`
       );
     }
   }
@@ -265,8 +271,14 @@ async function handleMutations(request, env, db, roomId) {
     const expectedRevision = Number(roomRow.revision);
     lastNeedPull = baseRevision < expectedRevision;
     const { state } = await loadRoomState(env, db, roomId);
-    const appliedResult = applyOps(state, ops);
-    lastApplied = appliedResult.applied;
+    const { lwwOps, sidecarOps } = partitionSyncOps(ops);
+    const appliedResult = applyOps(state, lwwOps);
+    /** @type {unknown[]} */
+    const sidecarApplied = [];
+    for (let i = 0; i < sidecarOps.length; i += 1) {
+      sidecarApplied.push(await applyInternoAccessUpsert(db, roomId, sidecarOps[i]));
+    }
+    lastApplied = [...appliedResult.applied, ...sidecarApplied];
     lastRejected = appliedResult.rejected;
     const nextRevision = expectedRevision + 1;
     const committed = await commitMutationBatch(env, db, {

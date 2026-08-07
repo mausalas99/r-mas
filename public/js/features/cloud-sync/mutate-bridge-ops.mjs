@@ -287,6 +287,33 @@ export function countPatientEntryOps(ops) {
   return count;
 }
 
+/**
+ * Sidecar op — upserts sala_interno_access in Worker D1 (not LWW room state).
+ * @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row
+ */
+export function buildInternoAccessUpsertOp(row) {
+  const sala = String(row?.sala || '').trim();
+  return {
+    type: 'internoAccessUpsert',
+    sala,
+    accessToken: String(row?.access_token || ''),
+    isActive: Number(row?.is_active) === 1,
+    rotatedAt: row?.rotated_at ? String(row.rotated_at) : null,
+    rotatedBy: row?.rotated_by ? String(row.rotated_by) : null,
+  };
+}
+
+/**
+ * Stable mutation id per sala + rotation clock (retry-safe).
+ * @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row
+ */
+export function internoAccessMutationId(row) {
+  const sala = String(row?.sala || '').trim();
+  const rotatedAt = String(row?.rotated_at || '').trim();
+  const active = Number(row?.is_active) === 1 ? '1' : '0';
+  return `internoAccess/${sala}/${rotatedAt || 'na'}/${active}`;
+}
+
 /** @param {CloudSyncOp[]} ops */
 export function hasNonEntryCloudOps(ops) {
   for (let i = 0; i < ops.length; i += 1) {

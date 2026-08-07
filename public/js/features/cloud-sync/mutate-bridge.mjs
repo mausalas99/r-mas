@@ -25,6 +25,8 @@ import {
   pickCensusFields,
   mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
+  buildInternoAccessUpsertOp,
+  internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
 
 export { CLOUD_BATCH_MUTATION_ID };
@@ -362,4 +364,13 @@ export function enqueueCloudPatientDelete(patient) {
       ...meta,
     }),
   ]);
+}
+
+/** @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row @returns {boolean} */
+export function enqueueInternoAccessUpsert(row) {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !row?.sala) return false;
+  const op = buildInternoAccessUpsertOp(row);
+  enqueueEntityOps(internoAccessMutationId(row), [op]);
+  void bridgeRuntime.flush?.();
+  return true;
 }
