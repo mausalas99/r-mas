@@ -7,7 +7,7 @@ import {
 } from '../app-state.mjs';
 import { applyProfileToNoteIfEmpty } from './notes-indicaciones.mjs';
 import { applyNotaFormatScaffoldIfEmpty } from '../profile-templates.mjs';
-import { lanSyncPatientArchivedFlag } from './lan-sync.mjs';
+import { lanSyncPatientArchivedFlag } from './lan/historia-sync.mjs';
 import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { rt, registerPatientsRuntime as _registerRt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';

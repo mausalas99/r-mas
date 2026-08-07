@@ -208,7 +208,7 @@ export async function openEquiposListaPanel(overrideOpts = {}) {
   body.scrollTop = 0;
 
   try {
-    const { closeConnectionDropdown } = await import('./lan/panel.mjs');
+    const { closeConnectionDropdown } = await import('./cloud-sync/panel-chrome.mjs');
     closeConnectionDropdown();
   } catch {
     /* ⇄ panel optional */

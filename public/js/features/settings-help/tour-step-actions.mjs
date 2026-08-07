@@ -21,7 +21,7 @@ import {
 } from '../estado-actual-registro-modal.mjs';
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { setUiDensity, isGuardiaMode } from '../chrome.mjs';
-import { openConnectionDropdown, closeConnectionDropdown } from '../lan-sync.mjs';
+import { openConnectionDropdown, closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
 import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
 import { closeLabSomeTablesModal } from '../lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from '../tendencias.mjs';

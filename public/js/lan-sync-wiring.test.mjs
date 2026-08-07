@@ -93,8 +93,8 @@ const clinicalTeams = readClinicalTeamsSources();
 const appJs = read('app.js');
 
 describe('LAN module boot wiring', () => {
-  it('app.js imports lan-sync windowHandlers', () => {
-    assert.match(appJs, /from\s+['"]\.\/features\/lan-sync\.mjs['"]/);
+  it('app.js imports lan orchestrator windowHandlers', () => {
+    assert.match(appJs, /from\s+['"]\.\/features\/lan\/orchestrator\.mjs['"]/);
     assert.match(appJs, /lanWindowHandlers|windowHandlers as lanWindowHandlers/);
   });
 
@@ -254,6 +254,14 @@ describe('LAN event and handler wiring', () => {
     assert.match(lanSyncPanel, /showInvitePaste: needsInvitePaste/);
   });
 
+  it('Nube footer keeps equipos lista de espera (Lumify/EKG/US) admin card', () => {
+    const src = read('features/lan/panel-render-once.mjs');
+    assert.match(
+      src,
+      /appendNubePanelFooterSections_[\s\S]*?maybeAppendEquiposQrPanel_\(deps, root\)/
+    );
+  });
+
   it('clinical ops merge runs before patient scope filter and emits rpc-clinical-ops-synced', () => {
     const fnStart = lanSyncFeature.indexOf('async function applyLiveSyncMerged');
     assert.ok(fnStart >= 0);
@@ -312,19 +320,19 @@ describe('LAN event and handler wiring', () => {
     );
   });
 
-  it('onMedicionRegistered schedules LAN bundle push for mobile EA vitals', () => {
+  it('onMedicionRegistered schedules cloud bundle push for mobile EA vitals', () => {
     const appRuntimes = read('app-runtimes.mjs');
     const hookStart = appRuntimes.indexOf('onMedicionRegistered: function ()');
     assert.ok(hookStart >= 0, 'onMedicionRegistered hook must exist');
     const hookBlock = appRuntimes.slice(hookStart, hookStart + 220);
     assert.match(
       hookBlock,
-      /scheduleLiveSyncPush\(\)/,
-      'vitals registration must debounce-push monitoreo to LAN host'
+      /scheduleCloudSyncPush\(\)/,
+      'vitals registration must debounce-push monitoreo to Nube outbox'
     );
   });
 
-  it('estadoActualGuardar schedules LAN bundle push after saveState', () => {
+  it('estadoActualGuardar schedules cloud bundle push after saveState', () => {
     const eaActions = read('features/estado-actual-panel-actions.mjs');
     const fnStart = eaActions.indexOf('function persistEstadoActualTexto(');
     assert.ok(fnStart >= 0, 'persistEstadoActualTexto must exist');
@@ -332,8 +340,8 @@ describe('LAN event and handler wiring', () => {
     assert.match(fnBlock, /saveState\(\)/);
     assert.match(
       fnBlock,
-      /scheduleLiveSyncPush\(\)/,
-      'Guardar must debounce-push monitoreo to LAN host'
+      /scheduleCloudSyncPush\(\)/,
+      'Guardar must debounce-push monitoreo to Nube outbox'
     );
   });
 

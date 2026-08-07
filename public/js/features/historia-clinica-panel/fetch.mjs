@@ -1,4 +1,4 @@
-import { lanFetchHistoriaClinica } from '../lan-sync.mjs';
+import { lanFetchHistoriaClinica } from '../lan/historia-sync.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { activePatient } from './runtime.mjs';
 

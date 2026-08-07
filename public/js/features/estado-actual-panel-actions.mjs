@@ -1,6 +1,6 @@
 /** EA panel actions — registro submit, guardar/copiar, propuestas. */
 import { saveState, medRecetaByPatient, notes } from '../app-state.mjs';
-import { scheduleLiveSyncPush } from './lan-sync.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
   appendMedicion,
@@ -126,7 +126,7 @@ export function registrarEstadoActualMedicion() {
     })
   );
   saveState();
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
   resetEaRegistroForm(null);
   if (getEaPanelRuntime().invalidateInnerTabRenderCache) getEaPanelRuntime().invalidateInnerTabRenderCache('estadoActual');
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();
@@ -159,7 +159,7 @@ export function eliminarEstadoActualMedicion(id) {
   ensureMonitoreo(patient);
   removeMedicion(patient.monitoreo, id);
   saveState();
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
   eaPanelBridge.renderEstadoActualPanel({ syncHeavy: true });
   getEaPanelRuntime().showToast('Medición eliminada', 'success');
 }
@@ -175,7 +175,7 @@ function persistEstadoActualTexto(patient, text) {
     savedAt: new Date().toISOString(),
   };
   saveState();
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
   renderEstadoActualBar();
   var meta = document.getElementById('ea-meta-guardado');
   if (meta && patient.monitoreo.textoGuardado.savedAt) {
@@ -270,7 +270,7 @@ function commitEstadoActualToNote(patient, replaceEvolucion) {
     return;
   }
   saveState();
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
   navigateToNotasAfterEaSend();
   if (typeof getEaPanelRuntime().renderNoteForm === 'function') {
     getEaPanelRuntime().renderNoteForm();

@@ -5,9 +5,9 @@ import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import {
   lanPushPatientVersioned,
   lanFetchHostPatientRow,
-  touchPatientLanUpdatedAt,
-  scheduleLiveSyncPush,
-} from './lan-sync.mjs';
+} from './lan/host-patient-http.mjs';
+import { touchPatientLanUpdatedAt } from './lan/patient-entries.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
 import {
@@ -162,7 +162,7 @@ async function persistEventualidades(patient, store) {
   await saveState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
   // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
   });

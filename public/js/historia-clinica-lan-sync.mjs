@@ -7,8 +7,8 @@ import ipasSystems from '../../lib/historia-clinica/catalogs/ipas-systems.json' 
 import {
   lanPushHistoriaClinica,
   lanPushHistoriaClinicaDelta,
-  getActiveLiveSyncRoomId,
-} from './features/lan-sync.mjs';
+} from './features/lan/historia-sync.mjs';
+import { getActiveLiveSyncRoomId } from './features/lan/room.mjs';
 import { isCloudSyncActive } from './features/cloud-sync/lan-override.mjs';
 
 const CATALOGS = { appConditions, ahfConditions, ipasSystems };

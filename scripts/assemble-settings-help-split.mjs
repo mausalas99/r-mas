@@ -67,7 +67,7 @@ import { getUiDensity, setUiDensity } from '../chrome.mjs';
 import {
   openConnectionDropdown,
   closeConnectionDropdown,
-} from '../lan-sync.mjs';
+} from '../cloud-sync/panel-chrome.mjs';
 import { renderPatientList, selectPatient } from '../patients.mjs';
 import { renderNoteForm, renderIndicaForm } from '../notes-indicaciones.mjs';
 import { renderPaseBoard } from '../pase-board.mjs';

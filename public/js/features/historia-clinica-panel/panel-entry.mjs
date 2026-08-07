@@ -1,4 +1,4 @@
-import { getActiveLiveSyncRoomId } from '../lan-sync.mjs';
+import { getActiveLiveSyncRoomId } from '../lan/room.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { MOUNT_ID, activePatient } from './runtime.mjs';
 import { normalizeData } from './data-normalize.mjs';

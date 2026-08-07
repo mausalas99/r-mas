@@ -1,5 +1,5 @@
 import { saveState } from '../../app-state.mjs';
-import { getActiveLiveSyncRoomId } from '../lan-sync.mjs';
+import { getActiveLiveSyncRoomId } from '../lan/room.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import {
   markHistoriaPendingLanSync,

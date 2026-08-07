@@ -1,6 +1,6 @@
 /** Pendientes — CRUD + LAN sync. */
 import { storage } from '../storage.js';
-import { emitLiveSyncTodoDelete, emitLiveSyncTodoUpsert } from './lan-sync.mjs';
+import { enqueueCloudTodoDelete, enqueueCloudTodoUpsert } from './cloud-sync/mutate-bridge.mjs';
 import { normalizeTodoPriority } from '../todos-priority.mjs';
 import { rescheduleAllTodos } from '../todos-reminder-scheduler.mjs';
 import {
@@ -40,7 +40,7 @@ export function addTodo(idPrefix, priorityOverride, dueFields) {
   }
   todos.push(row);
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoUpsert(aid(), row);
+  enqueueCloudTodoUpsert(aid(), row);
   rescheduleAllTodos(aid());
   input.value = '';
   refreshAllTodoUIs();
@@ -63,7 +63,7 @@ export function toggleTodo(id) {
   }
   found.updatedAt = nowIso;
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoUpsert(aid(), found);
+  enqueueCloudTodoUpsert(aid(), found);
   rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
@@ -81,7 +81,7 @@ export function deleteTodo(id) {
   storage.saveTodos(aid(), todos);
   // Always pass a fresh delete clock — reusing victim.updatedAt makes Nube LWW
   // reject the op as stale (same updatedAt as the prior upsert).
-  emitLiveSyncTodoDelete(aid(), victim || { id: id }, delAt);
+  enqueueCloudTodoDelete(aid(), victim || { id: id }, delAt);
   rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
@@ -96,7 +96,7 @@ export function setTodoPriority(id, priority, opts) {
   found.priority = valid;
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoUpsert(aid(), found);
+  enqueueCloudTodoUpsert(aid(), found);
   rescheduleAllTodos(aid());
   if (opts.deferResortMs) {
     setTimeout(refreshAllTodoUIs, opts.deferResortMs);
@@ -114,7 +114,7 @@ export function acknowledgeHandoffTodo(id) {
   if (!found || !isHandoffTodo(found, getClinicalUsername())) return;
   Object.assign(found, buildHandoffAckPatch(getClinicalUsername()));
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoUpsert(aid(), found);
+  enqueueCloudTodoUpsert(aid(), found);
   rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }
@@ -129,7 +129,7 @@ export function updateTodoText(id, text) {
   found.text = trimmed;
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoUpsert(aid(), found);
+  enqueueCloudTodoUpsert(aid(), found);
   rescheduleAllTodos(aid());
   refreshAllTodoUIs();
 }

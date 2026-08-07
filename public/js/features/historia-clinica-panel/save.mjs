@@ -1,10 +1,8 @@
 import { saveState } from '../../app-state.mjs';
 import { createMutationBuilder } from '../../versioned-mutation.mjs';
-import {
-  lanPushHistoriaClinica,
-  getActiveLiveSyncRoomId,
-  touchPatientLanUpdatedAt,
-} from '../lan-sync.mjs';
+import { lanPushHistoriaClinica } from '../lan/historia-sync.mjs';
+import { getActiveLiveSyncRoomId } from '../lan/room.mjs';
+import { touchPatientLanUpdatedAt } from '../lan/patient-entries.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { migrateLegacyHistoriaData } from '../../../../lib/historia-clinica/migrate-legacy.mjs';
 import { applyClinicalHistoryUppercase } from '../../../../lib/historia-clinica/clinical-text.mjs';

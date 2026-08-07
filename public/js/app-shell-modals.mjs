@@ -24,7 +24,7 @@ import { hideTourIntroModal, closeLabBulkTourHintModal } from './features/settin
 import {
   closeSettingsDropdown,
 } from './features/settings-help/settings-dropdown.mjs';
-import { closeConnectionDropdown } from './features/lan-sync.mjs';
+import { closeConnectionDropdown } from './features/cloud-sync/panel-chrome.mjs';
 import { closeQuickHelp } from './features/settings-help/help-content.mjs';
 import { closeReleaseNotes } from './features/settings-help/release-notes.mjs';
 import { hideUpdateModal } from './features/platform/updater.mjs';

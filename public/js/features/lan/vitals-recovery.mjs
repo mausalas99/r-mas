@@ -7,7 +7,7 @@ import { patients, saveState } from '../../app-state.mjs';
 import { peekOutbox } from '../../live-sync-outbox.mjs';
 import { mergeMonitoreo, ensureMonitoreo, mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
 import { monitoreoUpdatedAt } from '../../lan-patient-merge.mjs';
-import { scheduleLiveSyncPush } from '../lan-sync.mjs';
+import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
 
 const UNDO_STACK_KEY = 'rpc-undo-stack';
 
@@ -268,7 +268,7 @@ export function recoverMonitoreoFromLanCache(opts) {
 
   if (!opts.dryRun && (restored > 0 || readded > 0)) {
     saveState({ immediate: true });
-    scheduleLiveSyncPush();
+    scheduleCloudSyncPush();
   }
 
   return {

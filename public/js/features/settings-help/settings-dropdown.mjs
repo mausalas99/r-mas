@@ -2,7 +2,7 @@
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../../clinical-settings.mjs';
 import { isMobileWeb } from '../../mobile-web.mjs';
 import { closeModalAnimated } from '../../ui-motion.mjs';
-import { closeConnectionDropdown } from '../lan-sync.mjs';
+import { closeConnectionDropdown } from '../cloud-sync/panel-chrome.mjs';
 import { getSettingsHelpRuntime } from './runtime.mjs';
 
 let settingsModalChromeWired = false;

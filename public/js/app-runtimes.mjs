@@ -32,11 +32,13 @@ import {
 import {
   registerChromeRuntime,
 } from './features/chrome.mjs';
+import { registerLanRuntime } from './features/lan/orchestrator-runtime.mjs';
+import { registerLanSaveHooks } from './features/lan/orchestrator-commands.mjs';
 import {
-  registerLanRuntime,
-  registerLanSaveHooks,
-  scheduleLiveSyncPush,
-} from './features/lan-sync.mjs';
+  scheduleCloudSyncPush,
+  enqueueCloudTodoUpsert,
+} from './features/cloud-sync/mutate-bridge.mjs';
+import { syncSettingsLanHostDiskSection } from './features/lan/panel.mjs';
 import {
   registerPatientsRuntime,
   filterPatientsForGuardiaCensus,
@@ -197,10 +199,6 @@ import {
   isResLabChunkPureCultivo,
 } from './features/expediente.mjs';
 import {
-  emitLiveSyncTodoUpsert,
-  syncSettingsLanHostDiskSection,
-} from './features/lan-sync.mjs';
-import {
   renderPatientDataPane,
 } from './features/expediente.mjs';
 import {
@@ -295,7 +293,7 @@ function buildRuntimeContextUiDeps() {
     buildLabSetDateLine,
     getRoundOverviewMode,
     saveState,
-    emitLiveSyncTodoUpsert,
+    emitLiveSyncTodoUpsert: enqueueCloudTodoUpsert,
     requestDocumentJson,
     handleDocumentGenerateResponse,
     guardMobileDocExport,
@@ -386,7 +384,7 @@ function buildRuntimeContextFeatureDeps() {
     buildPatientEntry,
     onMedicionRegistered: function () {
       settingsHelpRuntimeProxies.guidedTourAdvanceAfter('estado_actual_registro');
-      scheduleLiveSyncPush();
+      scheduleCloudSyncPush();
     },
     launchConfetti,
     renderEstadoActualBar,

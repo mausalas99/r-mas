@@ -1,7 +1,7 @@
 import { saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { createMutationBuilder } from '../versioned-mutation.mjs';
-import { lanPushPatientVersioned } from './lan-sync.mjs';
+import { lanPushPatientVersioned } from './lan/host-patient-http.mjs';
 import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { filterNewEventualidades } from '../../../lib/drive-import/merge-eventualidades.mjs';
 import { appendEventualidad } from './eventualidades-store.mjs';

@@ -8,7 +8,7 @@ import {
 import { patients } from "../app-state.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { closeModalAnimated } from "../ui-motion.mjs";
-import { emitLiveSyncAgendaUpsert, emitLiveSyncAgendaDelete } from "./lan-sync.mjs";
+import { enqueueCloudAgendaUpsert, enqueueCloudAgendaDelete } from "./cloud-sync/mutate-bridge.mjs";
 import {
   buildAgendaBoardHead,
   buildAgendaTimesColumn,
@@ -205,7 +205,7 @@ export function saveProcedureAgendaFromModal() {
     next = arr.concat([eventObj]);
   }
   storage.saveScheduledProcedures(next);
-  emitLiveSyncAgendaUpsert(eventObj);
+  enqueueCloudAgendaUpsert(eventObj);
   closeProcedureAgendaModal();
   rt.showToast("Procedimiento guardado", "success");
   renderProcedureAgendaPanel();
@@ -225,7 +225,7 @@ export function deleteProcedureAgendaFromModal() {
     return e.id !== editId;
   });
   storage.saveScheduledProcedures(arr);
-  emitLiveSyncAgendaDelete(editId, delAt);
+  enqueueCloudAgendaDelete(editId, delAt);
   closeProcedureAgendaModal();
   rt.showToast("Eliminado de la agenda", "success");
   renderProcedureAgendaPanel();

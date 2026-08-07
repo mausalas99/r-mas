@@ -7,10 +7,8 @@ import { clearWebSessionClinicalMemory } from './app-state.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { prefillRegistrationFromUrlParams } from './features/clinical-registration.mjs';
 import { isMobileWeb, syncMobileBarebonesChrome } from './mobile-web.mjs';
-import {
-  configureLanFromMobileJoin,
-  closeConnectionDropdown,
-} from './features/lan-sync.mjs';
+import { configureLanFromMobileJoin } from './features/lan/transport.mjs';
+import { closeConnectionDropdown } from './features/cloud-sync/panel-chrome.mjs';
 import { shellSyncTeamSyncHeaderButton } from './app-shell-lazy-panels.mjs';
 
 function importLazyRoutes() {
