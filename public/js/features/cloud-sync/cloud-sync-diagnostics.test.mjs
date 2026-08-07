@@ -6,6 +6,8 @@ import {
   cloudSyncErrorCode,
   formatCloudDiagnosticsReport,
   getCloudSyncDiagnostics,
+  noteCloudSyncTransport,
+  noteCloudSyncWsSignal,
   recordCloudSyncError,
   recordCloudSyncTrace,
   redactCloudSecrets,
@@ -56,6 +58,15 @@ describe('cloud-sync-diagnostics', () => {
     const raw = formatCloudDiagnosticsReport(diag);
     assert.match(raw, /syncTrace/);
     assert.match(raw, /clientMutationId/);
+  });
+
+  it('includes transport and ws signal in snapshot', () => {
+    clearCloudSyncDiagnostics();
+    noteCloudSyncTransport('ws');
+    noteCloudSyncWsSignal(42);
+    const diag = getCloudSyncDiagnostics({ transport: 'ws' });
+    assert.equal(diag.transport, 'ws');
+    assert.ok(diag.lastWsSignalAt);
   });
 
   it('formatCloudDiagnosticsReport redacts bearer tokens', () => {

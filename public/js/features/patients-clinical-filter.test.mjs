@@ -78,6 +78,61 @@ test('Admin guardia census includes all patients with Todos equipos filter on de
   assert.equal(out.length, 2);
 });
 
+test('R1 desktop guardia census is sala-wide and respects equipo filter', () => {
+  const leslieTeam = {
+    team_id: 't-leslie',
+    name: 'Dra. Leslie',
+    service: 'Sala',
+    sub_area_fraction: 'A',
+    sala: 'Sala 2',
+    members: [{ user_id: 'u-drapaloma' }],
+  };
+  const christianTeam = {
+    team_id: 't-chris',
+    name: 'Dr. Christian',
+    service: 'Sala',
+    sub_area_fraction: 'B',
+    sala: 'Sala 2',
+    members: [],
+  };
+  const user = { user_id: 'u-drapaloma', rank: 'R1', sala: 'Sala 2' };
+  const census = [
+    { id: 'p-leslie', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
+    { id: 'p-chris', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
+    { id: 'p-other-sala', servicio: 'Sala', area: 'A', sala: 'Sala 1' },
+  ];
+  const scope = {
+    teams: [leslieTeam, christianTeam],
+    guardias: [],
+    assignments: [
+      { patient_id: 'p-leslie', team_id: 't-leslie', effective_at: '2026-06-01T00:00:00Z' },
+      { patient_id: 'p-chris', team_id: 't-chris', effective_at: '2026-06-01T00:00:00Z' },
+    ],
+    cycle: null,
+    now: '2026-06-02T12:00:00Z',
+    guardiaMode: false,
+    onCallGuardiaReceiver: false,
+  };
+  const allSala = filterPatientsForGuardiaCensus(census, user, scope, null, {
+    sala: '__all__',
+    teamId: '',
+    service: '',
+  });
+  assert.deepEqual(allSala.map((p) => p.id).sort(), ['p-chris', 'p-leslie']);
+  const christian = filterPatientsForGuardiaCensus(census, user, scope, null, {
+    sala: '__all__',
+    teamId: 't-chris',
+    service: '',
+  });
+  assert.deepEqual(christian.map((p) => p.id), ['p-chris']);
+  const leslie = filterPatientsForGuardiaCensus(census, user, scope, null, {
+    sala: '__all__',
+    teamId: 't-leslie',
+    service: '',
+  });
+  assert.deepEqual(leslie.map((p) => p.id), ['p-leslie']);
+});
+
 test('R4 sidebar includes all patients', () => {
   const out = filterPatientsForClinicalSidebar(
     patients,

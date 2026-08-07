@@ -38,7 +38,7 @@ describe('clinical-sync-mode-settings', () => {
     assert.match(settingsSrc, /shouldShowNubePanel/);
     assert.match(settingsSrc, /Sincronización por Nube/);
     const nubeBlock = settingsSrc.match(
-      /if \(shouldShowNubePanel\(settingsSala\(\)\)\) \{[\s\S]*?return;\n  \}/
+      /if \(shouldShowNubePanel\(settingsSala\(\)\)\) \{[\s\S]*?return;\n {2}\}/
     );
     assert.ok(nubeBlock, 'expected cloud-sala early return in enableClinicalLanFromSettings');
     assert.doesNotMatch(nubeBlock[0], /ensureLanSyncRuntimeStarted/);

@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.4](https://github.com/mausalas99/r-mas/releases/tag/v8.0.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.5](https://github.com/mausalas99/r-mas/releases/tag/v8.0.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -51,6 +51,12 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.5 (LAN retirado — Nube único + Interno MIP)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_8.0.5.txt`.
 ## R+ 8.0.4 (Nube estable + guardia fin de turno + equipos)
 
 - **Pull D1 sin OOM** — Gap grande → snapshot sin cargar el historial de mutations; poda ops viejas tras cada push.

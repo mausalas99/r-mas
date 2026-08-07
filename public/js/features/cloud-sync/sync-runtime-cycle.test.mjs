@@ -244,6 +244,32 @@ describe('createSyncRuntimeCycle status', () => {
     assert.deepEqual(mutationIds, ['clinicalOps:12345']);
   });
 
+  it('pulls before push when outbox is empty', async () => {
+    const order = [];
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => {
+          order.push('pull');
+          return { revision: 1, ops: [] };
+        },
+        push: async () => {
+          order.push('push');
+          return { revision: 1 };
+        },
+      },
+      outbox: makeOutbox(),
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.deepEqual(order, ['pull']);
+  });
+
   it('exposes noteLocalMutation and listens for window focus', async () => {
     const src = await import('node:fs').then((fs) =>
       fs.readFileSync(new URL('./sync-runtime-cycle.mjs', import.meta.url), 'utf8')

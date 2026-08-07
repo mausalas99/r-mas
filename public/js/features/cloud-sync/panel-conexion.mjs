@@ -1,8 +1,8 @@
 import { displayCloudSalaLabel, normalizeCloudSala } from './sala-allowlist.mjs';
 import { shouldShowNubePanel } from './nube-sync-policy.mjs';
-import { STATUS_LABELS, statusChipModifier } from './panel-conexion-html.mjs';
+import { statusChipModifier, formatCloudStatusChipLabel } from './panel-conexion-html.mjs';
 import { createConexionRenderers, saveUrlFromUi } from './panel-conexion-ui.mjs';
-import { createNubeRuntime } from './panel-conexion-runtime.mjs';
+import { createNubeRuntime, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import {
   bootstrapConexionState,
   mountAdminShell,
@@ -19,9 +19,11 @@ function bindStatusChip(section, deps) {
   return function renderStatusChip(status, detail) {
     const chip = section.querySelector('[data-cloud-status-chip]');
     if (!chip) return;
-    chip.textContent = STATUS_LABELS[status] || status;
+    const transport = getSharedNubeRuntime()?.getTransportState?.() || 'poll';
+    chip.textContent = formatCloudStatusChipLabel(status, transport);
     chip.className = 'cloud-sync-status-chip ' + statusChipModifier(status);
     chip.setAttribute('data-status', status);
+    chip.setAttribute('data-cloud-transport', transport);
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
       const text =

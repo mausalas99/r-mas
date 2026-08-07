@@ -166,6 +166,31 @@ export function tagPatientsForTeamFilter(list, ctx = {}) {
 }
 
 /**
+ * Guardia board census scope — full sala for desktop R1–R3 (7.0.3), not sidebar team mirror.
+ * @param {object[]} basePatients
+ * @param {object|null|undefined} user
+ * @param {object} scopeContext
+ * @param {Map<string, object>|null|undefined} [guardiasMap]
+ */
+function filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap) {
+  const soloEntregados = !!(scopeContext && scopeContext.guardiaMode);
+  const guardiaScope = {
+    ...(scopeContext || {}),
+    guardiaMode: true,
+    enforceTeamPatientScope: soloEntregados,
+  };
+  return (basePatients || []).filter(function (p) {
+    if (!p) return false;
+    const mapped = patientForScopeEvaluate(p);
+    const activeGuardia =
+      guardiasMap && typeof guardiasMap.get === 'function'
+        ? guardiasMap.get(String(p.id)) || null
+        : null;
+    return isPatientReadableInClinicalScope(user, mapped, activeGuardia, guardiaScope);
+  });
+}
+
+/**
  * Clinical scope + optional Filtros censo (elevated users).
  * @param {object[]} basePatients
  * @param {object|null|undefined} user
@@ -181,15 +206,14 @@ export function filterPatientsForGuardiaCensus(
   elevatedFilters = {}
 ) {
   if (!user?.user_id) return basePatients || [];
-  let visible = filterPatientsForClinicalSidebar(
-    basePatients,
-    user,
-    scopeContext,
-    guardiasMap
-  );
-  const applyCensusToolbarFilters =
-    shouldUseElevatedPatientCensus(user) || shouldEnforceTeamPatientMirror();
-  if (!applyCensusToolbarFilters) return visible;
+  let visible;
+  if (shouldUseElevatedPatientCensus(user)) {
+    visible = basePatients || [];
+  } else if (shouldEnforceTeamPatientMirror()) {
+    visible = filterPatientsForClinicalSidebar(basePatients, user, scopeContext, guardiasMap);
+  } else {
+    visible = filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap);
+  }
   const filterCtx = {
     teams: scopeContext.teams || [],
     assignments: scopeContext.assignments || [],

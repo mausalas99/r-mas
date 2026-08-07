@@ -9,7 +9,7 @@ import {
   getCloudSyncUrl,
   getCloudSyncToken,
 } from './settings.mjs';
-import { CLOUD_PUSH_DEBOUNCE_MS } from './cloud-sync-timing.mjs';
+import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
 import { patients } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
@@ -44,7 +44,7 @@ function cloudPushDebounceMs() {
   return CLOUD_PUSH_DEBOUNCE_MS;
 }
 
-/** @type {{ outbox?: import('./outbox.mjs').createOutbox extends (...args: any) => infer R ? R : never, getRevision?: () => number, flush?: () => void | Promise<void>, getActorId?: () => string } | null} */
+/** @type {{ outbox?: import('./outbox.mjs').createOutbox extends (...args: any) => infer R ? R : never, getRevision?: () => number, flush?: () => void | Promise<void>, noteEditing?: () => void, getActorId?: () => string } | null} */
 let bridgeRuntime = null;
 
 /** @param {NonNullable<typeof bridgeRuntime>} deps */
@@ -117,7 +117,7 @@ function scheduleCloudCensusPushRetry() {
   cloudCensusRetryTimer = setTimeout(function () {
     cloudCensusRetryTimer = null;
     scheduleCloudSyncPush();
-  }, 1500);
+  }, 800);
 }
 
 /** @returns {boolean} true when cloud path handled */
@@ -129,11 +129,13 @@ export function maybeScheduleCloudSyncPush() {
 
 export function scheduleCloudSyncPush() {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
+  bridgeRuntime.noteEditing?.();
+  const delay = cloudPushTimer ? cloudPushDebounceMs() : CLOUD_PUSH_FIRST_MS;
   if (cloudPushTimer) clearTimeout(cloudPushTimer);
   cloudPushTimer = setTimeout(function () {
     cloudPushTimer = null;
     void pushCloudBundleOps();
-  }, cloudPushDebounceMs());
+  }, delay);
 }
 
 /**

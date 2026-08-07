@@ -5,6 +5,7 @@ import { configureCloudMutateBridge, scheduleCloudSyncPush, pushCloudCensusNow }
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
+import { getCloudSyncUrl } from './settings.mjs';
 
 /** @type {ReturnType<typeof createOutbox> | null} */
 let sharedOutbox = null;
@@ -53,15 +54,20 @@ export function startSharedNubeRuntime(deps) {
         toast('No se pudieron aplicar los cambios de la nube.', 'error');
       }
     },
+    liveRoomWs: {
+      getBaseUrl: getCloudSyncUrl,
+      getToken: deps.getCloudSyncToken,
+    },
   });
   configureCloudMutateBridge({
     outbox: sharedOutbox,
     getRevision: deps.getCloudSyncRevision,
+    noteEditing: function () {
+      sharedRuntime?.noteLocalMutation?.();
+    },
     // Same path as "Forzar sincronización": push outbox + pull peers (not push-only).
     flush: function () {
-      if (typeof sharedRuntime?.noteLocalMutation === 'function') {
-        sharedRuntime.noteLocalMutation();
-      }
+      sharedRuntime?.noteLocalMutation?.();
       return sharedRuntime?.syncCycle();
     },
     getActorId: function () {

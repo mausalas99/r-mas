@@ -17,6 +17,16 @@ let lastPushAt = null;
 let lastCycleAt = null;
 /** @type {boolean | null} */
 let lastCycleOk = null;
+/** @type {'ws' | 'poll' | 'offline' | null} */
+let lastTransport = null;
+/** @type {string | null} */
+let lastWsSignalAt = null;
+/** @type {string | null} */
+let lastWsClose = null;
+/** @type {string | null} */
+let lastWsError = null;
+/** @type {string | null} */
+let lastWsUrl = null;
 
 /**
  * @param {{ op?: string, code?: string, message?: string }} entry
@@ -60,6 +70,42 @@ export function noteCloudSyncPush() {
   lastPushAt = new Date().toISOString();
 }
 
+/** @param {'ws' | 'poll' | 'offline'} transport */
+export function noteCloudSyncTransport(transport) {
+  if (transport === 'ws' || transport === 'poll' || transport === 'offline') {
+    lastTransport = transport;
+    recordCloudSyncTrace('transport', { transport });
+  }
+}
+
+/** @param {number} revision */
+export function noteCloudSyncWsSignal(revision) {
+  lastWsSignalAt = new Date().toISOString();
+  recordCloudSyncTrace('ws_revision', { revision: Number(revision) || 0 });
+}
+
+/**
+ * @param {{ url?: string, code?: number, reason?: string, message?: string }} info
+ */
+export function noteCloudSyncWsLifecycle(info) {
+  const url = String(info?.url || '').trim();
+  if (url) lastWsUrl = url;
+  if (info?.message) {
+    lastWsError = String(info.message);
+    recordCloudSyncTrace('ws_error', { message: lastWsError });
+  }
+  if (info?.code != null || info?.reason) {
+    lastWsClose = JSON.stringify({
+      code: Number(info.code) || 0,
+      reason: String(info.reason || ''),
+    });
+    recordCloudSyncTrace('ws_close', {
+      code: Number(info.code) || 0,
+      reason: String(info.reason || ''),
+    });
+  }
+}
+
 export function clearCloudSyncDiagnostics() {
   lastErrors.length = 0;
   syncTrace.length = 0;
@@ -67,6 +113,11 @@ export function clearCloudSyncDiagnostics() {
   lastPushAt = null;
   lastCycleAt = null;
   lastCycleOk = null;
+  lastTransport = null;
+  lastWsSignalAt = null;
+  lastWsClose = null;
+  lastWsError = null;
+  lastWsUrl = null;
 }
 
 /**
@@ -180,6 +231,11 @@ function buildDiagnosticsSnapshot(d) {
     lastPushAt,
     lastCycleAt,
     lastCycleOk,
+    transport: String(d.transport || lastTransport || 'poll'),
+    lastWsSignalAt,
+    lastWsClose,
+    lastWsError,
+    lastWsUrl,
     syncTrace: syncTrace.map(function (e) {
       return { at: e.at, boundary: e.boundary, data: { ...e.data } };
     }),

@@ -1,6 +1,7 @@
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
+import { createRoomSyncWs } from './room-sync-ws.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import {
@@ -8,6 +9,8 @@ import {
   noteCloudSyncCycle,
   noteCloudSyncPull,
   noteCloudSyncPush,
+  noteCloudSyncTransport,
+  noteCloudSyncWsSignal,
   recordCloudSyncError,
   recordCloudSyncTrace,
 } from './cloud-sync-diagnostics.mjs';
@@ -239,8 +242,14 @@ function createSyncCycleController(ctx) {
     const scheduler = getScheduler();
     try {
       setStatus('syncing');
-      await flushOutbox();
-      await pullLatest();
+      const pending = outboxSync.pendingCount() > 0;
+      if (pending) {
+        await flushOutbox();
+        await pullLatest();
+      } else {
+        await pullLatest();
+        await flushOutbox();
+      }
       outboxSync.refreshIdleStatus();
       scheduler.noteSuccess();
       noteCloudSyncCycle(true);
@@ -281,11 +290,16 @@ function createSyncCycleController(ctx) {
  * @param {object} ctx
  */
 function attachSyncRuntimeListeners(ctx) {
-  const { syncCycle, scheduler, pace, outboxSync } = ctx;
+  const { syncCycle, scheduler, pace, outboxSync, roomWs } = ctx;
 
   function onOnline() { void syncCycle(); }
   function onVisibility() {
-    if (document.visibilityState === 'visible') void syncCycle();
+    if (document.visibilityState === 'visible') {
+      roomWs?.resume?.();
+      void syncCycle();
+    } else {
+      roomWs?.pause?.();
+    }
   }
   /** Electron often keeps visibility=visible while unfocused — still pull on focus. */
   function onWindowFocus() { void syncCycle(); }
@@ -317,6 +331,95 @@ function attachSyncRuntimeListeners(ctx) {
 }
 
 /**
+ * @param {() => ReturnType<typeof createCloudPollScheduler>} getScheduler
+ * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
+ */
+function createSyncFailCycle(getScheduler, setStatus) {
+  return function failCycle(err) {
+    const scheduler = getScheduler();
+    const rateLimited = scheduler.isRateLimitedError(err);
+    const msg = rateLimited
+      ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
+      : errorMessage(err, 'Error de sincronización con la nube.');
+    if (!rateLimited) {
+      recordCloudSyncError({
+        op: 'cycle',
+        code: cloudSyncErrorCode(err),
+        message: msg,
+      });
+    } else {
+      recordCloudSyncTrace('rate_limit', { message: msg });
+    }
+    setStatus('error', msg);
+    scheduler.noteFailure(err);
+    noteCloudSyncCycle(false);
+  };
+}
+
+/**
+ * @param {object} deps
+ * @param {object} ctx
+ */
+function startLiveRoomSyncWs(deps, ctx) {
+  if (!deps.liveRoomWs) return null;
+  const roomWs = createRoomSyncWs({
+    getBaseUrl: deps.liveRoomWs.getBaseUrl,
+    getToken: deps.liveRoomWs.getToken,
+    getRoomId: ctx.getRoomId,
+    getRevision: deps.getRevision,
+    onRevisionHint: function (revision) {
+      noteCloudSyncWsSignal(revision);
+      const local = Number(deps.getRevision() ?? 0);
+      if (revision > local) void ctx.syncCycle();
+      ctx.scheduler.armNextTimer(false);
+    },
+    onTransportChange: function (transport) {
+      noteCloudSyncTransport(transport);
+      ctx.scheduler.armNextTimer(false);
+      ctx.onStatus?.(ctx.getCurrentStatus(), ctx.getLastDetail() || undefined);
+    },
+  });
+  roomWs.start();
+  return roomWs;
+}
+
+/**
+ * @param {object} args
+ */
+function buildSyncRuntimeHandle(args) {
+  const {
+    deps,
+    stoppedRef,
+    getCurrentStatus,
+    getLastDetail,
+    flushOutbox,
+    syncCycle,
+    noteLocalMutation,
+    roomWs,
+    scheduler,
+    listeners,
+  } = args;
+  const handle = {
+    getStatus: getCurrentStatus,
+    getDetail: getLastDetail,
+    getTransportState: function () {
+      return roomWs?.getTransportState() ?? 'poll';
+    },
+    flushOutbox,
+    syncCycle,
+    noteLocalMutation,
+    stop() {
+      stoppedRef.stopped = true;
+      roomWs?.stop();
+      scheduler.stop();
+      listeners.detach();
+      deps.onStop?.(handle);
+    },
+  };
+  return handle;
+}
+
+/**
  * @param {{
  *   api: ReturnType<import('./api-client.mjs').createCloudSyncApi>,
  *   outbox: ReturnType<import('./outbox.mjs').createOutbox>,
@@ -327,11 +430,12 @@ function attachSyncRuntimeListeners(ctx) {
  *   applyPullResult?: (result: unknown) => void | Promise<void>,
  *   onStop?: (handle: { stop: () => void }) => void,
  *   pollMobile?: boolean,
+ *   liveRoomWs?: { getBaseUrl: () => string, getToken: () => string },
  * }} deps
  */
 export function createSyncRuntimeCycle(deps) {
   const { outbox, getRoomId, onStatus } = deps;
-  let stopped = false;
+  const stoppedRef = { stopped: false };
   const cycleInflightRef = { current: null };
   /** @type {CloudSyncStatus} */
   let currentStatus = 'idle';
@@ -355,28 +459,10 @@ export function createSyncRuntimeCycle(deps) {
   /** @type {ReturnType<typeof createCloudPollScheduler>} */
   let scheduler;
 
-  /** @param {unknown} err */
-  function failCycle(err) {
-    const rateLimited = scheduler.isRateLimitedError(err);
-    const msg = rateLimited
-      ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
-      : errorMessage(err, 'Error de sincronización con la nube.');
-    if (!rateLimited) {
-      recordCloudSyncError({
-        op: 'cycle',
-        code: cloudSyncErrorCode(err),
-        message: msg,
-      });
-    } else {
-      recordCloudSyncTrace('rate_limit', { message: msg });
-    }
-    setStatus('error', msg);
-    scheduler.noteFailure(err);
-    noteCloudSyncCycle(false);
-  }
+  const failCycle = createSyncFailCycle(() => scheduler, setStatus);
 
   const cycleController = createSyncCycleController({
-    stopped: () => stopped,
+    stopped: () => stoppedRef.stopped,
     getRoomId,
     setStatus,
     outboxSync,
@@ -387,11 +473,27 @@ export function createSyncRuntimeCycle(deps) {
     cycleInflightRef,
   });
 
+  /** @type {ReturnType<typeof createRoomSyncWs> | null} */
+  let roomWs = null;
+
   scheduler = createCloudPollScheduler({
     syncCycle: cycleController.syncCycle,
     pendingCount: outboxSync.pendingCount,
     getLastLocalWriteAt: function () { return lastLocalWriteAt; },
     pollMobile: deps.pollMobile,
+    getTransportState: function () {
+      if (roomWs) return roomWs.getTransportState();
+      return typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'poll';
+    },
+  });
+
+  roomWs = startLiveRoomSyncWs(deps, {
+    getRoomId,
+    syncCycle: cycleController.syncCycle,
+    scheduler,
+    onStatus,
+    getCurrentStatus: () => currentStatus,
+    getLastDetail: () => lastDetail,
   });
 
   const listeners = attachSyncRuntimeListeners({
@@ -399,20 +501,19 @@ export function createSyncRuntimeCycle(deps) {
     scheduler,
     pace,
     outboxSync,
+    roomWs,
   });
 
-  const handle = {
-    getStatus: () => currentStatus,
-    getDetail: () => lastDetail,
+  return buildSyncRuntimeHandle({
+    deps,
+    stoppedRef,
+    getCurrentStatus: () => currentStatus,
+    getLastDetail: () => lastDetail,
     flushOutbox,
     syncCycle: cycleController.syncCycle,
     noteLocalMutation: listeners.noteLocalMutation,
-    stop() {
-      stopped = true;
-      scheduler.stop();
-      listeners.detach();
-      deps.onStop?.(handle);
-    },
-  };
-  return handle;
+    roomWs,
+    scheduler,
+    listeners,
+  });
 }

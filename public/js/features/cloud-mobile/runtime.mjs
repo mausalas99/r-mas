@@ -77,12 +77,20 @@ export function startCloudMobileRuntime({ onStatus, toast }) {
         toast?.('No se pudieron aplicar los cambios de la nube.', 'error');
       }
     },
+    liveRoomWs: {
+      getBaseUrl: getCloudSyncUrl,
+      getToken: getCloudSyncToken,
+    },
   });
 
   configureCloudMutateBridge({
     outbox: wrappedOutbox,
     getRevision: getCloudSyncRevision,
-    flush: () => runtime?.flushOutbox(),
+    noteEditing: () => runtime?.noteLocalMutation?.(),
+    flush: () => {
+      runtime?.noteLocalMutation?.();
+      return runtime?.syncCycle();
+    },
     getActorId: () =>
       String(
         clinicalSessionContext.user?.user_id ||

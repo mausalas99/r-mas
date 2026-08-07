@@ -2156,10 +2156,44 @@ var RELEASE_NOTES_804 = [
   },
 ];
 
+var RELEASE_NOTES_805 = [
+  {
+    title: 'LAN LiveSync retirado',
+    body:
+      'El turno sincroniza solo por <strong>R+ Cloud</strong>. ⇄ Conexión usa facades Nube; sin PIN de anfitrión ni beacon.',
+  },
+  {
+    title: 'Interno MIP en Nube',
+    body:
+      'QR <strong>Internos (MIP)</strong> desde ⇄ por sala (<code>/interno/{slug}</code>); tokens en D1. No requiere Wi‑Fi LAN ni Mac host.',
+  },
+  {
+    title: 'Equipos cloud-only',
+    body:
+      'Cola Lumify/EKG/US solo por Worker Nube; sin host LAN en el turno.',
+  },
+  {
+    title: 'Historia clínica fuera del expediente',
+    body:
+      'Panel HC y push <code>historiaClinica</code> retirados; texto clínico compartido en módulos comunes.',
+  },
+  {
+    title: 'Ward server solo dev',
+    body:
+      '<code>server.js</code> fuera del pack de producción. Dev local: <code>R_PLUS_DEV_WARD_SERVER=1 npm start</code>.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.5 en todas</strong> las Macs el mismo día y despliega el Worker Nube (Interno MIP + sidecars).',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_804;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_805;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.5': RELEASE_NOTES_805,
   '8.0.4': RELEASE_NOTES_804,
   '8.0.3': RELEASE_NOTES_803,
   '8.0.2': RELEASE_NOTES_802,

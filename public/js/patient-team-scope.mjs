@@ -1,5 +1,4 @@
 import {
-  shouldEnforceTeamPatientMirror,
   shouldFilterPatientsByJoinedTeam,
   shouldUseElevatedPatientCensus,
 } from './clinical-privileges.mjs';

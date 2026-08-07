@@ -14,6 +14,24 @@ export const STATUS_LABELS = {
   error: 'Error',
 };
 
+/** @param {'ws' | 'poll' | 'offline'} transport */
+export function cloudSyncTransportLabel(transport) {
+  if (transport === 'ws') return 'WS';
+  if (transport === 'offline') return '—';
+  return 'Poll';
+}
+
+/**
+ * @param {CloudSyncStatus} status
+ * @param {'ws' | 'poll' | 'offline'} [transport]
+ */
+export function formatCloudStatusChipLabel(status, transport) {
+  const base = STATUS_LABELS[status] || status;
+  if (status === 'offline' || status === 'error') return base;
+  const mode = cloudSyncTransportLabel(transport || 'poll');
+  return base + ' · ' + mode;
+}
+
 /** @param {CloudSyncStatus} status */
 export function statusChipModifier(status) {
   if (status === 'syncing') return 'is-syncing';
