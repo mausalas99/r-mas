@@ -4,7 +4,12 @@ import assert from 'node:assert/strict';
 import { storage } from '../../storage.js';
 import { pauseBundlePushForRoom } from '../../lan-sync-bundle-push.mjs';
 import { setRoomMembership } from '../../live-sync-membership.mjs';
-import { initLanSyncRuntime, setActiveLiveSyncRoom, clearActiveLiveSyncRoom } from './runtime.mjs';
+import {
+  initLanSyncRuntime,
+  setActiveLiveSyncRoom,
+  clearActiveLiveSyncRoom,
+  getLiveSyncPushTimer,
+} from './runtime.mjs';
 import {
   registerLanSyncPushBridge,
   ensureLanSyncPushBridgeWired,
@@ -16,7 +21,11 @@ import {
   sendLiveBundleIfOpen,
   emitLiveSyncRevisionHint,
   markUntypedDirty,
+  scheduleLiveSyncPush,
 } from './push.mjs';
+import { setCloudRoomConnected } from '../cloud-sync/lan-override.mjs';
+import { configureCloudMutateBridge } from '../cloud-sync/mutate-bridge.mjs';
+import { setCloudSyncRoomId } from '../cloud-sync/settings.mjs';
 
 const PUSH_BRIDGE_KEY = '__LAN_SYNC_PUSH_BRIDGE__';
 const TEST_BEARER = 'c'.repeat(32);
@@ -89,6 +98,12 @@ describe('push.mjs characterization', () => {
     stubBrowserGlobals();
     storage.saveLanConfig({ hostUrl: 'http://10.0.0.57:3738', teamCode: TEST_BEARER });
     clearActiveLiveSyncRoom();
+    setCloudRoomConnected(false);
+    setCloudSyncRoomId('');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('rpc-cloud-sync-room-id');
+    }
+    configureCloudMutateBridge(null);
     initLanSyncRuntime({ lanClient: fakeLanClient() });
     delete globalThis[PUSH_BRIDGE_KEY];
     registerLanSyncPushBridge(null);
@@ -245,6 +260,49 @@ describe('push.mjs characterization', () => {
     markUntypedDirty('', 'p1');
     markUntypedDirty('labs', '');
     assert.doesNotThrow(() => markUntypedDirty('labs', 'p1'));
+  });
+
+  it('scheduleLiveSyncPush routes to cloud scheduler when Nube is active', () => {
+    let bundleBuilt = false;
+    let lanFetchCalled = false;
+    wirePushBridge({
+      buildLiveSyncBundleEnvelope: async () => {
+        bundleBuilt = true;
+        return { type: 'livesync:bundle', entries: [{ patient: { id: 'p1' } }] };
+      },
+    });
+    initLanSyncRuntime({
+      lanClient: fakeLanClient({
+        fetch: async () => {
+          lanFetchCalled = true;
+          return { ok: true, status: 200, json: async () => ({ bundle: { revision: 1 } }) };
+        },
+      }),
+    });
+    setActiveLiveSyncRoom('sala-1');
+    setCloudRoomConnected(true);
+    const enqueued = [];
+    configureCloudMutateBridge({
+      outbox: { enqueue: (item) => enqueued.push(item) },
+      getRevision: () => 0,
+      flush: () => {},
+    });
+
+    scheduleLiveSyncPush();
+
+    assert.equal(getLiveSyncPushTimer(), null, 'LAN debounce timer must not be set');
+    assert.equal(bundleBuilt, false, 'must not build LAN bundle when Nube is active');
+    assert.equal(lanFetchCalled, false, 'must not call lan fetch when Nube is active');
+  });
+
+  it('scheduleLiveSyncPush uses LAN debounce when Nube is inactive', () => {
+    wirePushBridge();
+    setActiveLiveSyncRoom('sala-1');
+    setCloudRoomConnected(false);
+
+    scheduleLiveSyncPush();
+
+    assert.ok(getLiveSyncPushTimer(), 'LAN debounce timer should be scheduled');
   });
 
   it('pushRoomSyncBundleToHost returns paused when bundle push paused for room', async () => {

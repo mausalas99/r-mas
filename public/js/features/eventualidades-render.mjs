@@ -9,6 +9,7 @@ import {
   touchPatientLanUpdatedAt,
   scheduleLiveSyncPush,
 } from './lan-sync.mjs';
+import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
 import {
   rt,
@@ -166,7 +167,7 @@ async function persistEventualidades(patient, store) {
   import('../lan-mutation-registry.mjs').then(function (m) {
     m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
   });
-  if (!isLanSessionConfiguredForRest()) {
+  if (!isLanSessionConfiguredForRest() || isCloudSyncActive()) {
     return { ok: true };
   }
   void (async function () {
