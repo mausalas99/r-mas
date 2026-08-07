@@ -105,7 +105,7 @@ export function renderOrphanEntregasStrip(rows, opts = {}) {
 /** @param {string} patientId */
 async function tryRestoreOrphanPatientFromLan(patientId) {
   if (patientInLocalCensus(patientId)) return;
-  const lan = await import('./features/lan-sync.mjs');
+  const lan = await import('./features/cloud-sync/mutate-bridge.mjs');
   if (typeof lan.getActiveLiveSyncRoomId !== 'function' || !lan.getActiveLiveSyncRoomId()) return;
   const restored =
     typeof lan.restoreLanPatientFromHost === 'function'
@@ -159,7 +159,7 @@ async function openOrphanEntrega(btn, settings) {
 
 /** @param {string} patientId @returns {Promise<boolean>} */
 async function purgeOrphanPatientOnHost(patientId) {
-  const lan = await import('./features/lan-sync.mjs');
+  const lan = await import('./features/cloud-sync/mutate-bridge.mjs');
   const onLan =
     typeof lan.getActiveLiveSyncRoomId === 'function' && !!lan.getActiveLiveSyncRoomId();
   if (!onLan || typeof lan.purgeLanPatientFromHost !== 'function') {
@@ -189,7 +189,7 @@ async function purgeOrphanPatientOnHost(patientId) {
 /** @param {string} patientId */
 async function removeOrphanPatientLocally(patientId) {
   if (!patientInLocalCensus(patientId)) return;
-  const lanMod = await import('./features/lan-sync.mjs');
+  const lanMod = await import('./features/cloud-sync/mutate-bridge.mjs');
   if (typeof lanMod.removePatientLocally === 'function') {
     lanMod.removePatientLocally(patientId);
   }

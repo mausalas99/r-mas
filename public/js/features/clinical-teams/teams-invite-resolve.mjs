@@ -16,9 +16,9 @@ export function resolveTeamIdFromLocalTeams(raw) {
 
 export async function resolveTeamIdFromLanDirectory(raw) {
   try {
-    const lan = await import('../lan-sync.mjs');
-    if (typeof lan.refreshLanClinicalDirectoryFromRoom !== 'function') return '';
-    await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 });
+    const { pullClinicalOpsFromCloudRoom } = await import('./teams-guardia-bridge.mjs');
+    await pullClinicalOpsFromCloudRoom({ timeoutMs: 8000, force: true });
+    const { fetchClinicalTeamsFromDb } = await import('../../clinical-access-runtime.mjs');
     await fetchClinicalTeamsFromDb();
     return resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
   } catch {

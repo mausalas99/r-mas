@@ -93,25 +93,9 @@ export async function redirectLanInviteFromTeamJoinField(raw) {
   const text = String(raw || '').trim();
   if (!text) return false;
 
-  const { openConnectionDropdown, joinLanFromInviteUi } = await import('../lan-sync.mjs');
+  const { openConnectionDropdown } = await import('../cloud-sync/panel-chrome.mjs');
   if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
-
-  await new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  });
-
-  const lanInput = document.getElementById('lan-input-invite-link');
-  if (lanInput instanceof HTMLTextAreaElement || lanInput instanceof HTMLInputElement) {
-    lanInput.value = text;
-  }
-  const details = document.querySelector('.lan-connect-other-mac');
-  if (details instanceof HTMLDetailsElement) details.open = true;
-
-  toast(
-    'Ese enlace es de conexión LAN (⇄), no de equipo. Conectando desde Conexión guardia…',
-    'info'
-  );
-  if (typeof joinLanFromInviteUi === 'function') joinLanFromInviteUi();
+  toast('LiveSync LAN retirado — usa Nube en ⇄ Conexión.', 'info');
   return true;
 }
 

@@ -11,6 +11,7 @@ import {
   formatClinicalUserActivityHistory,
   formatClinicalUserLastActivity,
 } from '../../../../lib/clinical-user-activity.mjs';
+import { equiposRowHistoryButtonHtml } from './panel-admin-equipos-history-modal.mjs';
 import {
   cycleOptionsForTeam,
   rankSelectOptionsHtml,
@@ -44,16 +45,9 @@ function equiposRowActivityBadgeHtml(parts) {
   );
 }
 
-/** @param {string} historyText */
-function equiposRowHistoryLineHtml(historyText) {
-  if (!historyText) return '';
-  return (
-    '<div class="cloud-sync-admin-equipos-history" title="' +
-    esc(historyText) +
-    '">' +
-    esc(historyText) +
-    '</div>'
-  );
+/** @param {string} handle @param {string} displayName @param {Array<{ at?: string, source?: string }>|null|undefined} history */
+function equiposRowHistoryLineHtml(handle, displayName, history) {
+  return equiposRowHistoryButtonHtml(handle, displayName, history);
 }
 
 /** @param {object} row */
@@ -248,7 +242,7 @@ function equiposRowMainSectionHtml(handle, name, row, activity, placementLabel) 
     '<span class="cloud-sync-admin-equipos-placement">' +
     placementLabel +
     '</span>' +
-    equiposRowHistoryLineHtml(activity.historyText) +
+    equiposRowHistoryLineHtml(handle, String(row.clinical_name || '').trim(), row.activity_history) +
     '</div>'
   );
 }

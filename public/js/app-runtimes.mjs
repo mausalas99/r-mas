@@ -32,13 +32,12 @@ import {
 import {
   registerChromeRuntime,
 } from './features/chrome.mjs';
-import { registerLanRuntime } from './features/lan/orchestrator-runtime.mjs';
-import { registerLanSaveHooks } from './features/lan/orchestrator-commands.mjs';
 import {
   scheduleCloudSyncPush,
   enqueueCloudTodoUpsert,
 } from './features/cloud-sync/mutate-bridge.mjs';
-import { syncSettingsLanHostDiskSection } from './features/lan/panel.mjs';
+import { syncSettingsLanHostDiskSection } from './features/cloud-sync/panel-chrome.mjs';
+import { configureLanPatientEntries } from './features/sync-apply/patient-entries.mjs';
 import {
   registerPatientsRuntime,
   filterPatientsForGuardiaCensus,
@@ -135,7 +134,6 @@ import {
   renderIndicaForm,
 } from './features/notes-indicaciones.mjs';
 import {
-  scheduleLabHistoryPostSaveMaintenance,
   installLabHistoryAuditHook,
   registerLabHistoryMaintRuntime,
 } from './lab-history-set.mjs';
@@ -418,7 +416,6 @@ export async function registerAllFeatureRuntimes() {
 
   registerLabHistoryMaintRuntime(ctx);
   installLabHistoryAuditHook();
-  registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
 
   registerTodosRuntime(ctx);
   const reminderScheduler = await import('./todos-reminder-scheduler.mjs');
@@ -462,15 +459,19 @@ export async function registerAllFeatureRuntimes() {
   registerLabBulkPreviewModalRuntime(ctx);
   registerLabHistoryBatchCopyRuntime(ctx);
   registerProductivityRuntime(ctx);
-  registerLanRuntime(ctx);
-  // 8.0.5: one-shot LAN localStorage retire (dynamic import — no boot-graph debt).
+  configureLanPatientEntries({
+    runtime: ctx,
+    renderPatientListLanSilent: function () {
+      if (typeof ctx.renderPatientList === 'function') ctx.renderPatientList();
+    },
+  });
   void import('./features/cloud-sync/lan-config-retire.mjs').then((mod) => {
     mod.runLanConfigRetireIfNeeded({ showToast: ctx?.showToast });
   });
   void import('./equipos-cloud-config.mjs').then((mod) => {
     mod.runEquiposCloudBootIfNeeded();
   });
-  // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from features/lan/panel.mjs (no static import here).
+  // 7.9 Nube: cloud-sync ⇄ UI mounts lazily from connection-panel (no static import here).
 }
 
 export function runInitialFeatureBoot() {

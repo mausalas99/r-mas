@@ -1,5 +1,4 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
-import { isCloudSyncActive } from '../features/cloud-sync/lan-override.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { patients } from '../app-state.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
@@ -16,21 +15,9 @@ import {
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
 import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 
-/** @param {string} reason @param {number} [delayMs] */
-async function scheduleLanPatientReconcile(reason, delayMs) {
-  if (isCloudSyncActive()) return;
-  try {
-    const lan = await import('../features/lan-sync.mjs');
-    const rid =
-      typeof lan.getActiveLiveSyncRoomId === 'function'
-        ? String(lan.getActiveLiveSyncRoomId() || '').trim()
-        : '';
-    if (!rid) return;
-    const push = await import('../features/lan/push.mjs');
-    if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
-      push.scheduleReconcileLiveSyncRoom(rid, { reason, delayMs });
-    }
-  } catch { /* LAN optional */ }
+/** @param {string} _reason @param {number} [_delayMs] */
+async function scheduleLanPatientReconcile(_reason, _delayMs) {
+  /* LAN reconcile retired */
 }
 
 async function countMissingAssignedPatients(user, teams, assignments, localIds, now) {
@@ -115,17 +102,7 @@ function rosterChangedFromMergeStats(stats) {
 }
 
 async function scheduleHostReconcileAfterOpsMerge() {
-  if (isCloudSyncActive()) return;
-  const lan = await import('../features/lan-sync.mjs');
-  const rid =
-    typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
-  if (!rid) return;
-  const push = await import('../features/lan/push.mjs');
-  if (typeof push.scheduleReconcileLiveSyncRoom === 'function') {
-    push.scheduleReconcileLiveSyncRoom(rid, { reason: 'assignment-merge', delayMs: 2000 });
-  } else if (typeof push.reconcileLiveSyncRoom === 'function') {
-    void push.reconcileLiveSyncRoom(rid, { force: true, reason: 'assignment-merge' });
-  }
+  /* LAN reconcile retired */
 }
 
 /** One-shot host bundle pull when roster/assignments change visibility (not on every no-op merge). */

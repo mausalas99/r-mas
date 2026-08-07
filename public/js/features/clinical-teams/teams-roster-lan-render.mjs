@@ -1,6 +1,6 @@
 /** LAN directorio HTML rendering. */
 import { getCycleLetterOptionsForRank } from '../../clinico-access.mjs';
-import { getClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
+import { getClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 import { canViewLanUserDirectory } from '../../clinical-privileges.mjs';
 import { escapeHtml, escapeAttr } from './shared.mjs';
 import {

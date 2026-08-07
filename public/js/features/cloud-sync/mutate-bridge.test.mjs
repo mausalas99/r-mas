@@ -173,6 +173,27 @@ describe('mutate-bridge op mapping', () => {
     assert.notEqual(todoOp.updatedAt, meta.updatedAt);
   });
 
+  it('mapBundleEnvelopeToOps stamps registro on todos from bundle entries', () => {
+    const ops = mapBundleEnvelopeToOps(
+      {
+        entries: [
+          {
+            patient: { id: 'remote_p', registro: '2166042-4', nombre: 'PAC' },
+            note: {},
+            indicaciones: {},
+            labHistory: [],
+          },
+        ],
+        todos: {
+          remote_p: [{ id: 't1', text: 'Lab', updatedAt: '2026-08-07T12:00:00.000Z' }],
+        },
+      },
+      meta
+    );
+    const todoOp = ops.find((op) => op.path === 'todos/t1');
+    assert.equal(todoOp?.value?.registro, '2166042-4');
+  });
+
   it('mapBundleEnvelopeToOps pushes monitoreo for estado actual sync', () => {
     const ops = mapBundleEnvelopeToOps(
       {
@@ -221,6 +242,11 @@ describe('enqueueCloudTodoDelete clock', () => {
       /updatedAt:\s*String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/
     );
     assert.doesNotMatch(fn, /updatedAt \|\| todo\.updatedAt/);
+  });
+
+  it('stamps registro on todo upsert and delete payloads', () => {
+    assert.match(mutateBridgeSrc, /stampCloudTodoRow/);
+    assert.match(mutateBridgeSrc, /registroForPatientId/);
   });
 });
 

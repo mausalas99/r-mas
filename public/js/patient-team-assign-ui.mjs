@@ -61,7 +61,7 @@ export function activePatientTeamId(patientId) {
 async function notifyPatientTeamAssigned(pid, tid) {
   syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
-  const lan = await import('./features/lan-sync.mjs').catch(() => null);
+  const lan = await import('./features/cloud-sync/mutate-bridge.mjs').catch(() => null);
   if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
   // Also push census charts — teammates need the patient rows, not only the assignment.
   try {

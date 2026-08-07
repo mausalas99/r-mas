@@ -1,14 +1,14 @@
 import { patients, saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
-import { createMutationBuilder } from '../versioned-mutation.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
-import {
-  lanPushPatientVersioned,
-  lanFetchHostPatientRow,
-} from './lan/host-patient-http.mjs';
-import { touchPatientLanUpdatedAt } from './lan/patient-entries.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
-import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
+
+function touchPatientLanUpdatedAt(patientId) {
+  const p = patients.find(function (row) {
+    return String(row.id) === String(patientId);
+  });
+  if (p) p.lanUpdatedAt = new Date().toISOString();
+}
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
 import {
   rt,
@@ -163,38 +163,7 @@ async function persistEventualidades(patient, store) {
   touchClinicalSessionActivity({ force: true });
   // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
   scheduleCloudSyncPush();
-  import('../lan-mutation-registry.mjs').then(function (m) {
-    m.lanMutationRegistry.dispatchLanMutation('eventualidades', patient.id);
-  });
-  if (isCloudSyncActive()) {
-    return { ok: true };
-  }
-  void (async function () {
-    try {
-      const hostRow = await lanFetchHostPatientRow(patient.id);
-      const mutation = createMutationBuilder('patient', patient.id)
-        .captureBase(hostPatientMutationBase(patient, hostRow))
-        .set('eventualidades', next)
-        .build();
-      const out = await lanPushPatientVersioned(patient.id, mutation);
-      if (out && out.ok) {
-        if (out.data) Object.assign(patient, out.data);
-        else patient.eventualidades = next;
-        saveState();
-        return;
-      }
-      if (out && !out.ok && !out.conflict) {
-        const msg =
-          out.status === 401 || out.status === 403
-            ? 'No se pudo autenticar con el host LAN. Revisa el código de equipo.'
-            : 'No se pudo sincronizar la eventualidad con el host LAN.';
-        rt.showToast(msg, 'error');
-      }
-    } catch {
-      /* local copy already saved */
-    }
-  })();
-  return { ok: true, lanDeferred: true };
+  return { ok: true };
 }
 
 function wireEventualidadesDayToggles(mountEl) {

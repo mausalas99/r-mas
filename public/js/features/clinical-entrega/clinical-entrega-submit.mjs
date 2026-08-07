@@ -4,24 +4,17 @@ import {
   refreshGuardiaCensusFromDb,
   signOutgoingLiveSyncMutation,
 } from '../../clinical-access-runtime.mjs';
+import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
+import { pushCloudClinicalOpsNow } from '../cloud-sync/mutate-bridge-clinical-ops.mjs';
 import { dbApi, toast } from './clinical-entrega-util.mjs';
 import { buildEntregaSubmitPayload } from './clinical-entrega-submit-helpers.mjs';
 
-async function syncEntregaLanAfterSave_(patientId) {
+async function syncEntregaLanAfterSave_(_patientId) {
   try {
-    const lan = await import('./lan-sync.mjs');
-    if (typeof lan.pushClinicalOpsLanNow === 'function') {
-      await lan.pushClinicalOpsLanNow();
-    }
-    const push = await import('./lan/push.mjs');
-    if (typeof push.markUntypedDirty === 'function') {
-      push.markUntypedDirty('entrega', patientId);
-    }
-    if (typeof push.scheduleUntypedSafetyBundle === 'function') {
-      push.scheduleUntypedSafetyBundle();
-    }
+    await pushCloudClinicalOpsNow();
+    scheduleCloudSyncPush();
   } catch {
-    /* LAN optional — local entrega still saved */
+    /* optional */
   }
 }
 

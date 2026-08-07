@@ -13,7 +13,7 @@ import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { patients, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
-import { syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
+
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { isPaseMode } from './chrome.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
@@ -268,7 +268,7 @@ function deleteAllLabHistorySets() {
   }
   delete labHistory[pid];
   bumpLabHistoryRevision(pid);
-  syncLabHistoryDeletesToLan(pid, removedIds);
+  
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete-all', 'ok', sets.length, String(pid));
   labPanelBridge.setActiveLab(null);
@@ -409,7 +409,7 @@ function deleteLabHistorySet(setId) {
   else delete labHistory[pid];
   bumpLabHistoryRevision(pid);
   if (sid.indexOf('__idx_') !== 0) {
-    syncLabHistoryDeletesToLan(pid, [sid]);
+    
   }
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));

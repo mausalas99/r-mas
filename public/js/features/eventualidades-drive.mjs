@@ -1,26 +1,10 @@
 import { saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
-import { createMutationBuilder } from '../versioned-mutation.mjs';
-import { lanPushPatientVersioned } from './lan/host-patient-http.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import { isCloudSyncActive } from './cloud-sync/lan-override.mjs';
 import { filterNewEventualidades } from '../../../lib/drive-import/merge-eventualidades.mjs';
 import { appendEventualidad } from './eventualidades-store.mjs';
-import {
-  ensureEventualidades,
-  hostPatientMutationBase,
-  DRIVE_IMPORT_LAN_MS,
-} from './eventualidades-render.mjs';
-
-function driveImportLanTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise(function (_, reject) {
-      setTimeout(function () {
-        reject(new Error('lan-timeout'));
-      }, ms);
-    }),
-  ]);
-}
+import { ensureEventualidades } from './eventualidades-render.mjs';
 
 export async function applyDriveImportEventualidades(patient, incoming) {
   if (!patient) return { ok: false, added: 0, skipped: 0 };
@@ -33,24 +17,6 @@ export async function applyDriveImportEventualidades(patient, incoming) {
   patient.eventualidades = store;
   await saveState({ immediate: true });
   touchClinicalSessionActivity({ force: true });
-
-  if (isCloudSyncActive()) {
-    return { ok: true, added: toAdd.length, skipped };
-  }
-
-  const mutation = createMutationBuilder('patient', patient.id)
-    .captureBase(hostPatientMutationBase(patient, null))
-    .set('eventualidades', store)
-    .build();
-  void driveImportLanTimeout(lanPushPatientVersioned(patient.id, mutation), DRIVE_IMPORT_LAN_MS)
-    .then(function (out) {
-      if (out && out.ok) {
-        if (out.data) Object.assign(patient, out.data);
-        saveState();
-      }
-    })
-    .catch(function () {
-      /* local copy already saved */
-    });
-  return { ok: true, added: toAdd.length, skipped, lanDeferred: true };
+  if (isCloudSyncActive()) scheduleCloudSyncPush();
+  return { ok: true, added: toAdd.length, skipped };
 }

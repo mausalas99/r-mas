@@ -222,9 +222,23 @@ export function mapPatientEntryToCloudBundleOps(entry, meta) {
   return ops;
 }
 
+/** @param {object} bundle */
+function registroByPatientIdFromBundle(bundle) {
+  const out = {};
+  const entries = Array.isArray(bundle?.entries) ? bundle.entries : [];
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i];
+    const pid = String(entry?.patient?.id || '').trim();
+    const reg = String(entry?.patient?.registro || '').trim();
+    if (pid && reg) out[pid] = reg;
+  }
+  return out;
+}
+
 /** @param {object} bundle @param {{ actorId: string, updatedAt: string }} meta */
 function mapBundleTodosToOps(bundle, meta) {
   const ops = [];
+  const regByPid = registroByPatientIdFromBundle(bundle);
   const todos = bundle.todos && typeof bundle.todos === 'object' ? bundle.todos : {};
   for (const pid of Object.keys(todos)) {
     const list = Array.isArray(todos[pid]) ? todos[pid] : [];
@@ -232,7 +246,9 @@ function mapBundleTodosToOps(bundle, meta) {
       const todo = list[j];
       if (!todo?.id) continue;
       const patientId = String(pid || todo.patientId || '').trim();
+      const registro = String(todo.registro || regByPid[patientId] || '').trim();
       const row = { ...todo, patientId };
+      if (registro) row.registro = registro;
       const todoAt = String(row.updatedAt || meta.updatedAt).trim() || meta.updatedAt;
       ops.push(
         cloudOp({

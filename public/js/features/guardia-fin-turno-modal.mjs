@@ -9,7 +9,7 @@ import {
 } from '../clinical-access-runtime.mjs';
 import { teamLabelById } from '../patient-team-assign-ui.mjs';
 import { deactivateTurnoActivo } from './entrega-roster-panel.mjs';
-import { pushClinicalOpsLanNow } from './lan/push-clinical-ops.mjs';
+import { pushCloudClinicalOpsNow } from './cloud-sync/mutate-bridge-clinical-ops.mjs';
 import { buildFinTurnoSheetHtml } from './guardia-fin-turno-html.mjs';
 import {
   collectOpenPendientesBySourceTeam,
@@ -89,7 +89,7 @@ async function sendGroupByTeamKey(teamKey, settings) {
     },
   });
   try {
-    await pushClinicalOpsLanNow();
+    await pushCloudClinicalOpsNow();
   } catch {
     /* offline / LAN opt-in */
   }

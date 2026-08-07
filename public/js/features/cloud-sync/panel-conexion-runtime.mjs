@@ -4,7 +4,7 @@ import { createMemoryOutbox } from '../cloud-mobile/outbox-memory.mjs';
 import { configureCloudMutateBridge, scheduleCloudSyncPush, pushCloudCensusNow } from './mutate-bridge.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { getLanClientId } from '../lan/runtime.mjs';
+import { getCloudSyncClientId } from './client-id.mjs';
 
 /** @type {ReturnType<typeof createOutbox> | null} */
 let sharedOutbox = null;
@@ -65,7 +65,7 @@ export function startSharedNubeRuntime(deps) {
       return sharedRuntime?.syncCycle();
     },
     getActorId: function () {
-      return String(clinicalSessionContext.user?.user_id || getLanClientId() || 'local');
+      return String(clinicalSessionContext.user?.user_id || getCloudSyncClientId() || 'local');
     },
   });
   void import('./detach-lan-for-nube.mjs').then(function (mod) {

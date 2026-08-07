@@ -90,7 +90,7 @@ export async function enableClinicalLanFromSettings() {
   setClinicalSyncModeLocalOnly(false);
 
   try {
-    const lan = await import('./lan-sync.mjs');
+    const lan = await import('./cloud-sync/mutate-bridge.mjs');
     if (typeof lan.ensureLanSyncRuntimeStarted === 'function') {
       lan.ensureLanSyncRuntimeStarted();
     }

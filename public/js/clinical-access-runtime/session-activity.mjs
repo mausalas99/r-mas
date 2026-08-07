@@ -13,10 +13,10 @@ function scheduleClinicalActivityLanPush() {
   setClinicalActivityLanPushTimer(
     setTimeout(() => {
       setClinicalActivityLanPushTimer(null);
-      void import('../features/lan-sync.mjs')
+      void import('../features/cloud-sync/mutate-bridge-clinical-ops.mjs')
         .then((mod) => {
-          if (typeof mod.pushClinicalOpsLanNow === 'function') {
-            return mod.pushClinicalOpsLanNow();
+          if (typeof mod.pushCloudClinicalOpsNow === 'function') {
+            return mod.pushCloudClinicalOpsNow();
           }
         })
         .catch(() => {});

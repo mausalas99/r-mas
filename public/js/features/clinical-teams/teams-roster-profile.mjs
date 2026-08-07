@@ -3,7 +3,7 @@ import { clinicalSessionContext, refreshClinicalUserProfile } from '../../clinic
 import {
   isBenignLanPushSkipCode,
   LAN_PROFILE_PUSH_FAILED_MSG,
-} from '../../clinical-profile-lan-sync.mjs';
+} from '../../clinical-profile-cloud-stubs.mjs';
 import { hasProgramAdminPrivileges } from '../../clinical-privileges.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../../clinical-username.mjs';
 import { syncRotationConfigButton } from '../clinical-rotation.mjs';
@@ -58,7 +58,7 @@ async function resolveProgramAdminChange(adminCb, wasProgramAdmin) {
 }
 
 async function toastProfileSaveResult({ msg, usernameWillChange, sala }) {
-  const { flushClinicalProfileToLan } = await import('../../clinical-profile-lan-sync.mjs');
+  const { flushClinicalProfileToLan } = await import('../../clinical-profile-cloud-stubs.mjs');
   const lanPush = await flushClinicalProfileToLan({ sala });
   if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
@@ -112,9 +112,9 @@ export async function handleProfileFormSubmit(ev) {
   await toastProfileSaveResult({ msg, usernameWillChange, sala: fields.sala });
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed', { detail: { force: true } }));
-  void import('../lan-sync.mjs')
+  void import('../cloud-sync/mutate-bridge-clinical-ops.mjs')
     .then((mod) => {
-      if (typeof mod.pushClinicalOpsLanNow === 'function') void mod.pushClinicalOpsLanNow();
+      if (typeof mod.pushCloudClinicalOpsNow === 'function') void mod.pushCloudClinicalOpsNow();
     })
     .catch(() => {});
   void import('../patients.mjs')

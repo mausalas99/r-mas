@@ -28,7 +28,7 @@ function gitLines(cmd) {
 }
 
 function collectPaths() {
-  if (full) return ['public/js', 'lib', 'lan-squad'];
+  if (full) return ['public/js', 'lib'];
   const committed = filterTier1Paths(gitChangedFilesAgainst('main'));
   const unstaged = filterTier1Paths(gitLines('git diff --name-only HEAD'));
   const untracked = filterTier1Paths(gitLines('git ls-files --others --exclude-standard'));

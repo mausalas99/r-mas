@@ -1,46 +1,18 @@
 import { saveState } from '../../app-state.mjs';
-import { createMutationBuilder } from '../../versioned-mutation.mjs';
-import { lanPushHistoriaClinica } from '../lan/historia-sync.mjs';
-import { getActiveLiveSyncRoomId } from '../lan/room.mjs';
-import { touchPatientLanUpdatedAt } from '../lan/patient-entries.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
-import { migrateLegacyHistoriaData } from '../../../../lib/historia-clinica/migrate-legacy.mjs';
+import { scheduleCloudSyncPush } from '../cloud-sync/mutate-bridge.mjs';
 import { applyClinicalHistoryUppercase } from '../../../../lib/historia-clinica/clinical-text.mjs';
+import { patients } from '../../app-state.mjs';
 import { rt } from './runtime.mjs';
-import { CATALOGS, DATA_KEYS } from './catalogs.mjs';
+import { DATA_KEYS } from './catalogs.mjs';
 import { syncSignosVitalesIngresoFromEstadoActual } from './data-normalize.mjs';
 import { getDirtyKeys, hcState, resetDirtyKeys } from './state.mjs';
 
-function buildHistoriaMutation(patient, dirty, roomId) {
-  const builder = createMutationBuilder('historiaClinica', patient.id).captureBase(
-    Object.assign({ version: hcState.version }, hcState.data)
-  );
-  dirty.forEach(function (k) {
-    if (hcState.data[k] !== undefined) builder.set(k, hcState.data[k]);
+function touchPatientLanUpdatedAt(patientId) {
+  const p = patients.find(function (row) {
+    return String(row.id) === String(patientId);
   });
-  return builder.build({
-    roomId,
-    patientId: patient.id,
-    clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
-    audit: { sections: dirty, safety: hcState.pendingAck },
-  });
-}
-
-async function saveHistoriaToLan(root, patient, rerender, dirty, roomId) {
-  const mutation = buildHistoriaMutation(patient, dirty, roomId);
-  const out = await lanPushHistoriaClinica(patient.id, mutation);
-  if (out && out.conflict) return;
-  if (!out || !out.ok) return;
-  hcState.version = out.version;
-  hcState.data = migrateLegacyHistoriaData(out.data, CATALOGS);
-  patient.historiaClinica = { version: hcState.version, data: Object.assign({}, hcState.data) };
-  saveState();
-  touchPatientLanUpdatedAt(patient.id);
-  hcState.editMode = false;
-  hcState.pendingAck = [];
-  resetDirtyKeys();
-  if (typeof rerender === 'function') rerender(root);
-  rt.showToast('Historia clínica guardada.', 'success');
+  if (p) p.lanUpdatedAt = new Date().toISOString();
 }
 
 function saveHistoriaLocally(root, patient, rerender) {
@@ -53,6 +25,7 @@ function saveHistoriaLocally(root, patient, rerender) {
   touchPatientLanUpdatedAt(patient.id);
   if (typeof rerender === 'function') rerender(root);
   rt.showToast('Historia clínica guardada.', 'success');
+  if (isCloudSyncActive()) scheduleCloudSyncPush();
 }
 
 export async function saveHistoria(root, patient, rerender, _skipAckCheck) {
@@ -69,11 +42,6 @@ export async function saveHistoria(root, patient, rerender, _skipAckCheck) {
     dirty = DATA_KEYS.slice();
   }
 
-  var roomId = getActiveLiveSyncRoomId() || '';
-  if (!isCloudSyncActive() && roomId) {
-    await saveHistoriaToLan(root, patient, rerender, dirty, roomId);
-    return;
-  }
-
+  void dirty;
   saveHistoriaLocally(root, patient, rerender);
 }

@@ -29,7 +29,7 @@ export function canAutostartCloudSync() {
  */
 export async function autostartCloudSyncIfConfigured(opts) {
   if (!canAutostartCloudSync()) return null;
-  const { getUserSala } = await import('../lan/panel-clinical-context.mjs');
+  const { getUserSala } = await import('./panel-clinical-context.mjs');
   if (!isCloudSala(getUserSala())) return null;
 
   try {

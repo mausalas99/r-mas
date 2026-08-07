@@ -109,8 +109,8 @@ export function setEquiposCloudConfig(cfg) {
   }
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {
-    void _e;
+  } catch {
+    /* localStorage optional */
   }
 }
 
@@ -150,7 +150,7 @@ export async function equiposCloudFetch(path, opts = {}) {
       headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });
-  } catch (_e) {
+  } catch {
     const hint =
       cfg.url.includes('.workers') && !cfg.url.includes('.workers.dev')
         ? 'La URL debe terminar en .workers.dev'

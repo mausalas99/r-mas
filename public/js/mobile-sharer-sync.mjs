@@ -6,7 +6,7 @@
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from './clinical-settings.mjs';
 import { normalizeUsername } from './clinical-username.mjs';
-import { rememberLiveSyncRoomMembership } from './clinical-profile-lan-sync.mjs';
+
 import { liveSyncRoomLabel, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
 import { getRoomMembership } from './live-sync-membership.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
@@ -77,9 +77,8 @@ function buildMobileSharerBinding(userRaw, name, rank, sala) {
   return binding;
 }
 
-function rememberMobileSharerRoom(roomId) {
-  if (!roomId) return;
-  rememberLiveSyncRoomMembership(roomId, liveSyncRoomLabel(roomId) || roomId);
+function rememberMobileSharerRoom(_roomId) {
+  /* cloud mobile — room membership handled by Nube session */
 }
 
 /**

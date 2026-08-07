@@ -59,7 +59,7 @@ export async function ensureTurnRoomAfterTeamJoin(toast) {
     getBaseUrl: settings.getCloudSyncUrl,
     getToken: settings.getCloudSyncToken,
   });
-  const { getUserSala } = await import('../lan/panel-clinical-context.mjs');
+  const { getUserSala } = await import('./panel-clinical-context.mjs');
   return ensureTurnRoom({
     api,
     getSala: getUserSala,

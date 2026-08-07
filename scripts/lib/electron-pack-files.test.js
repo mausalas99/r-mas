@@ -20,8 +20,7 @@ const {
 const ROOT = path.join(__dirname, '../..');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
-test('lista canónica incluye lan-squad y lib/**/*.js / lib/**/*.cjs', () => {
-  assert.ok(PACK_FILES_BASELINE.includes('lan-squad/**/*'));
+test('lista canónica incluye lib/**/*.js / lib/**/*.cjs', () => {
   assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.js'));
   assert.ok(PACK_FILES_BASELINE.includes('lib/**/*.cjs'));
 });

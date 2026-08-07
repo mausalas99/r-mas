@@ -9,8 +9,14 @@ import {
   renderRoundOverviewPanels,
 } from './features/patients.mjs';
 import { patients, saveState } from './app-state.mjs';
-import { touchPatientLanUpdatedAt } from './features/lan/patient-entries.mjs';
-import { scheduleLiveSyncPush } from './features/lan/push.mjs';
+import { scheduleCloudSyncPush } from './features/cloud-sync/mutate-bridge.mjs';
+
+function touchPatientLanUpdatedAt(pid) {
+  const p = patients.find(function (row) {
+    return String(row.id) === String(pid);
+  });
+  if (p) p.lanUpdatedAt = new Date().toISOString();
+}
 
 function normalizePatientFieldValue(field, value) {
   if (field === 'nombre' || field === 'area' || field === 'servicio') {
@@ -71,7 +77,7 @@ export function createPatientUpdateHandler(shellCtx, syncWorkContextChrome) {
     applyPatientAccesoField(p, field, next);
     touchPatientLanUpdatedAt(pid);
     refreshPatientChromeAfterUpdate();
-    scheduleLiveSyncPush();
+    scheduleCloudSyncPush();
   }
 
   return { updatePatient };

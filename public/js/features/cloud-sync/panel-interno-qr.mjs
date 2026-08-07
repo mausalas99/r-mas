@@ -6,7 +6,7 @@ import { CLINICAL_SALA_VALUES, clinicalSalaRoomSlug } from '../../../../lib/clin
 import { copyInternoQrImage, downloadInternoQrPng, drawInternoQrCanvas } from '../../interno-qr-render.mjs';
 import { getCloudSyncUrl } from './settings.mjs';
 import { pushInternoAccessToCloud } from './interno-access-sync.mjs';
-import { getClinicalUserUserId } from '../lan/panel-clinical-context.mjs';
+import { getClinicalUserUserId } from './panel-clinical-context.mjs';
 
 export const CLOUD_INTERNO_QR_OPEN_KEY = 'rpc-cloud-interno-qr-open';
 
@@ -102,9 +102,74 @@ function appendInternoNubeCollapsible(root, opts) {
  * @param {object} ctx
  * @param {{ key: string, slug: string }} def
  * @param {object} row
+ * @param {string} url
+ * @param {boolean} active
+ */
+function buildInternoSalaActionButtons(ctx, def, url, active) {
+  const { api, userId, showToast, rerender } = ctx;
+  const btnRow = document.createElement('div');
+  btnRow.style.display = 'flex';
+  btnRow.style.flexWrap = 'wrap';
+  btnRow.style.gap = '6px';
+  btnRow.style.marginTop = '6px';
+
+  btnRow.appendChild(
+    mkBtn(active ? 'Desactivar' : 'Activar', async () => {
+      const r = await api.dbInternoAccessSetActive({ userId, sala: def.key, active: !active });
+      if (r?.ok) {
+        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
+        showToast(active ? 'Acceso interno desactivado' : 'Acceso interno activado', 'success');
+        await rerender();
+      } else {
+        showToast(r?.error || 'Error', 'error');
+      }
+    })
+  );
+
+  btnRow.appendChild(
+    mkBtn('Regenerar token', async () => {
+      if (!confirm(`¿Regenerar QR de ${def.key}? El enlace anterior dejará de funcionar.`)) return;
+      const r = await api.dbInternoAccessRotate({ userId, sala: def.key });
+      if (r?.ok) {
+        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
+        showToast('Token regenerado — copia el QR de nuevo', 'success');
+        await rerender();
+      } else {
+        showToast(r?.error || 'Error', 'error');
+      }
+    })
+  );
+
+  if (!url) return btnRow;
+
+  btnRow.appendChild(
+    mkBtn('Copiar enlace', async () => {
+      const ok = await copyToClipboardSafe(url);
+      showToast(ok ? 'Enlace copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
+    })
+  );
+  btnRow.appendChild(
+    mkBtn('Copiar QR', () => {
+      void copyInternoQrImage(url, showToast);
+    })
+  );
+  btnRow.appendChild(
+    mkBtn('Descargar QR', () => {
+      const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
+      downloadInternoQrPng(url, `qr-interno-${slug}.png`);
+      showToast('QR descargado en alta resolución.', 'success');
+    })
+  );
+  return btnRow;
+}
+
+/**
+ * @param {object} ctx
+ * @param {{ key: string, slug: string }} def
+ * @param {object} row
  */
 function appendSalaInternoNubeBlock(ctx, def, row) {
-  const { api, userId, showToast, card, rerender } = ctx;
+  const { card } = ctx;
   const active = row.is_active === 1;
   const token = String(row.access_token || '');
   const url = token ? buildInternoNubeUrl(def.key, token) : '';
@@ -140,61 +205,7 @@ function appendSalaInternoNubeBlock(ctx, def, row) {
     block.appendChild(qrHost);
   }
 
-  const btnRow = document.createElement('div');
-  btnRow.style.display = 'flex';
-  btnRow.style.flexWrap = 'wrap';
-  btnRow.style.gap = '6px';
-  btnRow.style.marginTop = '6px';
-
-  btnRow.appendChild(
-    mkBtn(active ? 'Desactivar' : 'Activar', async () => {
-      const r = await api.dbInternoAccessSetActive({ userId, sala: def.key, active: !active });
-      if (r?.ok) {
-        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
-        showToast(active ? 'Acceso interno desactivado' : 'Acceso interno activado', 'success');
-        await rerender();
-      } else {
-        showToast(r?.error || 'Error', 'error');
-      }
-    })
-  );
-
-  btnRow.appendChild(
-    mkBtn('Regenerar token', async () => {
-      if (!confirm(`¿Regenerar QR de ${def.key}? El enlace anterior dejará de funcionar.`)) return;
-      const r = await api.dbInternoAccessRotate({ userId, sala: def.key });
-      if (r?.ok) {
-        void pushInternoAccessToCloud(def.key, r.row).catch(() => {});
-        showToast('Token regenerado — copia el QR de nuevo', 'success');
-        await rerender();
-      } else {
-        showToast(r?.error || 'Error', 'error');
-      }
-    })
-  );
-
-  if (url) {
-    btnRow.appendChild(
-      mkBtn('Copiar enlace', async () => {
-        const ok = await copyToClipboardSafe(url);
-        showToast(ok ? 'Enlace copiado' : 'No se pudo copiar', ok ? 'success' : 'error');
-      })
-    );
-    btnRow.appendChild(
-      mkBtn('Copiar QR', () => {
-        void copyInternoQrImage(url, showToast);
-      })
-    );
-    btnRow.appendChild(
-      mkBtn('Descargar QR', () => {
-        const slug = def.slug || def.key.toLowerCase().replace(/\s+/g, '-');
-        downloadInternoQrPng(url, `qr-interno-${slug}.png`);
-        showToast('QR descargado en alta resolución.', 'success');
-      })
-    );
-  }
-
-  block.appendChild(btnRow);
+  block.appendChild(buildInternoSalaActionButtons(ctx, def, url, active));
   card.appendChild(block);
 }
 

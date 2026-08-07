@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 
-const TIER1_RE = /^(public\/js\/|lib\/|lan-squad\/)/;
+const TIER1_RE = /^(public\/js\/|lib\/)/;
 const LINTABLE_RE = /\.(mjs|js|cjs)$/;
 
 export function filterTier1Paths(paths) {

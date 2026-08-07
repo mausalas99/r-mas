@@ -29,7 +29,7 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
-import { getLanRuntime } from '../lan/orchestrator-runtime.mjs';
+import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @type {{
  *   runtime?: object,
@@ -46,7 +46,23 @@ function lanRuntime() {
   if (configured && typeof configured.ensureUniquePatientName === 'function') {
     return configured;
   }
-  return getLanRuntime();
+  return {
+    findPatientByRegistro: function () {
+      return null;
+    },
+    ensureUniquePatientName: function (name) {
+      return name;
+    },
+    applyImportEntry: function () {
+      return null;
+    },
+    getActiveId: function () {
+      return null;
+    },
+    renderNoteForm: function () {},
+    renderLabHistoryPanel: function () {},
+    renderEstadoActualPanel: function () {},
+  };
 }
 
 export function lanJsonEqual(a, b) {

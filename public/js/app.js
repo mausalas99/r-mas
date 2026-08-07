@@ -42,7 +42,7 @@ import {
 } from './app-shell.mjs';
 import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
 import { windowHandlers as chromeWindowHandlers } from './features/chrome.mjs';
-import { windowHandlers as lanWindowHandlers } from './features/lan/orchestrator.mjs';
+import { windowHandlers as lanWindowHandlers } from './features/cloud-sync/panel-chrome.mjs';
 import {
   windowHandlers as patientsWindowHandlers,
   renderPatientList,

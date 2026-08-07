@@ -1,5 +1,5 @@
 import { notes, saveState } from '../app-state.mjs';
-import { syncLabHistoryDeletesToLan } from '../lab-history-lan-sync.mjs';
+
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 
@@ -125,7 +125,7 @@ export function wireLabDedupeModal(backdrop, onConfirm) {
     }
     const removedTotal = onConfirm(mapByPatient);
     Object.keys(mapByPatient).forEach(function (pid) {
-      syncLabHistoryDeletesToLan(pid, mapByPatient[pid]);
+      
     });
     saveState({ immediate: true });
     labPanelBridge.renderLabHistoryPanel();

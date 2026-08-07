@@ -4,7 +4,7 @@
  */
 import { patients } from '../../app-state.mjs';
 import { removePatientLocally } from './patient-delete.mjs';
-import { rememberPatientDeleteTombstone } from '../lan/entity-versions.mjs';
+import { rememberPatientDeleteTombstone } from './entity-versions-stub.mjs';
 import { enqueueCloudPatientDelete } from '../cloud-sync/mutate-bridge.mjs';
 
 function snapForId(patientId, list) {

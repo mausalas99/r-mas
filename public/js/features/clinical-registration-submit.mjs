@@ -8,8 +8,6 @@ import {
   resolveClinicalClientId,
 } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
-import { persistLanClientConfig } from './lan/transport.mjs';
-import { isLanSkipShiftPin } from '../lan-shift-pin-bypass.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
@@ -100,22 +98,8 @@ function validateRegistrationFields_(fields, errEl) {
   return { username, safeRank: RANKS.includes(fields.rank) ? fields.rank : 'R1' };
 }
 
-async function connectShiftPinIfNeeded_(shiftPin, sala, _runtime) {
-  if (isClinicalLocalOnlyMode()) return;
-  if (isLanSkipShiftPin()) {
-    var { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
-    await tryEasyLanShiftPinConnect({ sala, force: true });
-    return;
-  }
-  if (!shiftPin) return;
-  var { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
-  var connected = await connectLanWithShiftPin(shiftPin, { sala });
-  if (!connected && typeof window.showToast === 'function') {
-    window.showToast(
-      'No se encontró anfitrión con ese PIN. Puedes intentarlo en ⇄ (Wi‑Fi) o Mi rotación → Conectar al turno.',
-      'warning'
-    );
-  }
+async function connectShiftPinIfNeeded_(_shiftPin, _sala, _runtime) {
+  /* LAN shift-pin connect retired — Nube is authority. */
 }
 
 function readRpcSettingsFromStorage_() {
@@ -149,13 +133,7 @@ function resolvePendingRegistration_(deps) {
 }
 
 function maybePersistMobilePairing_() {
-  var params = new URLSearchParams(window.location.search);
-  var host = params.get('host') || '';
-  var code = params.get('code') || '';
-  if (!host || !code) return;
-  try {
-    persistLanClientConfig(host, code);
-  } catch (_e) { void _e; }
+  /* legacy mobile LAN pairing retired */
 }
 
 /**
@@ -194,7 +172,7 @@ export async function handleClinicalRegistrationSubmit(deps) {
     LAN_PROFILE_PUSH_FAILED_MSG,
     isBenignLanPushSkipCode,
     notifyLanProfilePushResult,
-  } = await import('../clinical-profile-lan-sync.mjs');
+  } = await import('../clinical-profile-cloud-stubs.mjs');
   var lanRoom = await assertLanRoomForUsernameRegister({ sala });
 
   try {

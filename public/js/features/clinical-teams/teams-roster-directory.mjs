@@ -21,9 +21,8 @@ export async function resolveLanTeamMemberHintHtml(joinedTeams) {
   if (!soloTeams) return '';
   try {
     if (!isCloudSyncActive()) return '';
-    const lan = await import('../lan-sync.mjs');
-    const roomId =
-      typeof lan.getActiveLiveSyncRoomId === 'function' ? String(lan.getActiveLiveSyncRoomId() || '').trim() : '';
+    const { getCloudSyncRoomId } = await import('../cloud-sync/settings.mjs');
+    const roomId = String(getCloudSyncRoomId() || '').trim();
     if (!roomId) {
       return `<p class="clinical-teams-section-desc clinical-teams-lan-member-hint">Abre ⇄ y conéctate a <strong>R+ Cloud</strong> en la sala de guardia. Los residentes deben iniciar sesión Nube, unirse a la misma sala y registrar <strong>@usuario</strong> antes de que puedas asignarlos a un equipo.</p>`;
     }

@@ -6,6 +6,9 @@ import {
   remapTodosPatientIds,
   remapAgendaPatientIds,
   attachTodosMapToPatientEntries,
+  resolveCloudTodoLocalPatientId,
+  registroForPatientId,
+  stampCloudTodoRow,
 } from './livesync-patient-ids.mjs';
 
 describe('livesync-patient-ids', () => {
@@ -74,6 +77,23 @@ describe('livesync-patient-ids', () => {
     const agenda = [{ id: 'e1', patientId: 'remote_x', procedure: 'Cirugía' }];
     const out = remapAgendaPatientIds(agenda, idMap);
     assert.equal(out[0].patientId, 'local_x');
+  });
+
+  it('resolveCloudTodoLocalPatientId maps remote id to local by registro', () => {
+    const patients = [{ id: 'local_a', registro: 'REG1', nombre: 'A' }];
+    assert.equal(
+      resolveCloudTodoLocalPatientId('remote_a', 'REG1', patients, {}),
+      'local_a'
+    );
+    assert.equal(resolveCloudTodoLocalPatientId('local_a', '', patients, {}), 'local_a');
+  });
+
+  it('stampCloudTodoRow adds registro from patients list', () => {
+    const patients = [{ id: 'p1', registro: '99' }];
+    const row = stampCloudTodoRow('p1', { id: 't1', text: 'x' }, patients);
+    assert.equal(row.patientId, 'p1');
+    assert.equal(row.registro, '99');
+    assert.equal(registroForPatientId(patients, 'p1'), '99');
   });
 
   it('mergeTodoListsById — newer updatedAt wins and keeps due fields from winner', () => {

@@ -62,7 +62,7 @@ async function refreshBootstrapScopeAndCensus() {
     });
   }
   if (typeof document !== 'undefined') {
-    void import('../clinical-profile-lan-sync.mjs')
+    void import('../clinical-profile-cloud-stubs.mjs')
       .then((mod) => mod.flushClinicalProfileToLan())
       .catch(() => {});
   }

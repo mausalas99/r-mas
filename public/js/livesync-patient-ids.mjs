@@ -7,6 +7,42 @@ export function findPatientIdByRegistro(patients, registro) {
   return row && row.id ? String(row.id) : '';
 }
 
+/** @param {object[]} patients @param {string} patientId */
+export function registroForPatientId(patients, patientId) {
+  const pid = String(patientId || '').trim();
+  if (!pid || !Array.isArray(patients)) return '';
+  const row = patients.find((p) => p && String(p.id || '') === pid);
+  return String(row?.registro || '').trim();
+}
+
+/**
+ * Nube pull: map remote todo patientId to this device's id (same registro, distinto uuid).
+ * @param {string} remotePatientId
+ * @param {string} [registro]
+ * @param {object[]} patients
+ * @param {Record<string, string>} [idMap]
+ */
+export function resolveCloudTodoLocalPatientId(remotePatientId, registro, patients, idMap) {
+  const remotePid = String(remotePatientId || '').trim();
+  if (!remotePid) return '';
+  const map = idMap && typeof idMap === 'object' ? idMap : {};
+  if (map[remotePid]) return String(map[remotePid]).trim();
+  return resolveLiveSyncLocalPatientId(remotePid, registro, patients);
+}
+
+/**
+ * @param {string} patientId
+ * @param {Record<string, unknown>} todo
+ * @param {object[]} patients
+ */
+export function stampCloudTodoRow(patientId, todo, patients) {
+  const pid = String(patientId || todo?.patientId || '').trim();
+  const registro = String(todo?.registro || registroForPatientId(patients, pid)).trim();
+  const row = { ...todo, patientId: pid };
+  if (registro) row.registro = registro;
+  return row;
+}
+
 export function resolveLiveSyncLocalPatientId(remotePatientId, registro, patients) {
   const byReg = findPatientIdByRegistro(patients, registro);
   if (byReg) return byReg;

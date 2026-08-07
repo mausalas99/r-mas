@@ -31,7 +31,7 @@ function gitLines(cmd) {
 }
 
 function collectPaths() {
-  if (full) return ['public/js', 'lib', 'lan-squad'];
+  if (full) return ['public/js', 'lib'];
   if (staged) return lintablePaths(filterTier1Paths(gitLines('git diff --cached --name-only')));
   const committed = filterTier1Paths(gitChangedFilesAgainst('main'));
   const unstaged = filterTier1Paths(gitLines('git diff --name-only HEAD'));

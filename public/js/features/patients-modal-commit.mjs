@@ -13,7 +13,7 @@ import { storage } from '../storage.js';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { stampPatientClinicalSala } from '../clinico-access.mjs';
 import { stampPatientRegistrationMeta } from '../patient-registration-meta.mjs';
-import { clearPatientDeleteTombstoneForAdmit } from './lan/entity-versions.mjs';
+import { clearPatientDeleteTombstoneForAdmit } from './sync-apply/entity-versions-stub.mjs';
 import { enqueueCloudPatientAdmit } from './cloud-sync/mutate-bridge.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import {

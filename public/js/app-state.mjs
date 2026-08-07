@@ -182,8 +182,8 @@ export function initAppState() {
   if (stripLabs.ran && stripLabs.patientsChanged > 0) {
     saveState({ immediate: true });
     try {
-      import('./features/lan-sync.mjs').then(function (m) {
-        if (m && typeof m.scheduleLiveSyncPush === 'function') m.scheduleLiveSyncPush();
+      import('./features/cloud-sync/mutate-bridge.mjs').then(function (m) {
+        if (m && typeof m.scheduleCloudSyncPush === 'function') m.scheduleCloudSyncPush();
       });
     } catch (_e) {
       void _e;

@@ -12,7 +12,7 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { shouldUseElevatedPatientCensus } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../lan-patient-team-scope.mjs';
-import { getLanRuntime } from '../lan/orchestrator-runtime.mjs';
+import { buildPatientEntry } from '../patients-modal-commit.mjs';
 
 /** @returns {boolean} */
 export function isLanPatientEntryCollectorReady() {
@@ -21,7 +21,7 @@ export function isLanPatientEntryCollectorReady() {
     return p && p.id && String(p.id).indexOf('demo-') !== 0;
   });
   if (!first?.id) return true;
-  return !!getLanRuntime().buildPatientEntry(first.id);
+  return !!buildPatientEntry(first.id);
 }
 
 /** @returns {Promise<object[]>} */

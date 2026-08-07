@@ -18,7 +18,7 @@ const writeBaseline = process.argv.includes('--write-baseline');
 function runEslintJson() {
   try {
     const raw = execSync(
-      'npx eslint public/js lib lan-squad --format json --max-warnings 99999',
+      'npx eslint public/js lib --format json --max-warnings 99999',
       { cwd: ROOT, encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 }
     );
     return JSON.parse(raw);
@@ -67,7 +67,7 @@ function runDependencyCruiser() {
   const outPath = path.join(ROOT, 'scripts/metrics/.depcruise.json');
   try {
     execSync(
-      `npx depcruise public/js lib lan-squad --config .dependency-cruiser.cjs -T json -o scripts/metrics/.depcruise.json`,
+      `npx depcruise public/js lib --config .dependency-cruiser.cjs -T json -o scripts/metrics/.depcruise.json`,
       { cwd: ROOT, stdio: 'pipe' }
     );
     const raw = JSON.parse(fs.readFileSync(outPath, 'utf8'));

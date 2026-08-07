@@ -10,6 +10,7 @@ import {
 } from './panel-admin-data.mjs';
 import { loadAdminEquipos } from './panel-admin-equipos-data.mjs';
 import { purgeClinicalUserMatchingCloudHandle } from './panel-admin-clinical-purge.mjs';
+import { openEquiposActivityHistoryFromButton } from './panel-admin-equipos-history-modal.mjs';
 
 /**
  * @param {HTMLElement} root
@@ -99,6 +100,7 @@ function dispatchEquiposUserAction(action, btn, deps) {
     'assign-equipo': () => void deps.equiposPanel?.handleAssign(btn),
     'save-equipo-rank': () => void deps.equiposPanel?.handleSaveRank(btn),
     'purge-equipo-user': () => void deps.equiposPanel?.handlePurge(btn),
+    'equipos-activity-history': () => openEquiposActivityHistoryFromButton(btn),
   };
   if (!action || !(action in equiposMap)) return false;
   equiposMap[action]();

@@ -7,7 +7,36 @@ import {
   mergeClinicalOpsFromSourcesData,
   mergeClinicalOpsSnapshotsData,
 } from './clinical-ops-bundle-merge.mjs';
-import { recordClinicalOpsTrace } from './lan-sync-diagnostics.mjs';
+
+const MAX_OPS_TRACE = 12;
+
+/** @type {{ at: string, boundary: string, data: Record<string, unknown> }[]} */
+const clinicalOpsTrace = [];
+
+/**
+ * @param {string} boundary
+ * @param {Record<string, unknown>} [data]
+ */
+export function recordClinicalOpsTrace(boundary, data) {
+  const row = {
+    at: new Date().toISOString(),
+    boundary: String(boundary || 'unknown'),
+    data: data && typeof data === 'object' ? { ...data } : {},
+  };
+  clinicalOpsTrace.unshift(row);
+  if (clinicalOpsTrace.length > MAX_OPS_TRACE) clinicalOpsTrace.length = MAX_OPS_TRACE;
+}
+
+/** @returns {{ at: string, boundary: string, data: Record<string, unknown> }[]} */
+export function getClinicalOpsTrace() {
+  return clinicalOpsTrace.map(function (e) {
+    return { at: e.at, boundary: e.boundary, data: { ...e.data } };
+  });
+}
+
+export function clearClinicalOpsTrace() {
+  clinicalOpsTrace.length = 0;
+}
 
 let cachedSnapshot = null;
 /** @type {object|null} */

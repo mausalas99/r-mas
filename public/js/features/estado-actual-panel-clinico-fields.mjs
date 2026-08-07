@@ -7,9 +7,15 @@ import {
 } from './estado-actual-data.mjs';
 import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 import { markDietAsManuallyConfirmed } from './estado-actual-meds-diet.mjs';
-import { saveState } from '../app-state.mjs';
-import { touchPatientLanUpdatedAt } from './lan/patient-entries.mjs';
-import { scheduleLiveSyncPush } from './lan/push.mjs';
+import { saveState, patients } from '../app-state.mjs';
+import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+
+function touchPatientLanUpdatedAt(patientId) {
+  const p = patients.find(function (row) {
+    return String(row.id) === String(patientId);
+  });
+  if (p) p.lanUpdatedAt = new Date().toISOString();
+}
 
 /**
  * @param {Record<string, unknown>} pendienteReceta
@@ -97,5 +103,5 @@ export function applyEstadoClinicoFieldChange(el, patient) {
   else if (key === 'kcal') applyKcalFieldChange(monitoreo, patient);
   if (patient.id) touchPatientLanUpdatedAt(String(patient.id));
   saveState();
-  scheduleLiveSyncPush();
+  scheduleCloudSyncPush();
 }

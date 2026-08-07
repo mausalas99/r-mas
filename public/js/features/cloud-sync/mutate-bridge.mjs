@@ -9,9 +9,9 @@ import {
   getCloudSyncUrl,
   getCloudSyncToken,
 } from './settings.mjs';
-import { lanNetworkProfile } from '../../lan-network-profile.mjs';
-import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_DEBOUNCE_SLOW_MS } from './cloud-sync-timing.mjs';
+import { CLOUD_PUSH_DEBOUNCE_MS } from './cloud-sync-timing.mjs';
 import { patients } from '../../app-state.mjs';
+import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import {
@@ -41,9 +41,7 @@ export {
 };
 
 function cloudPushDebounceMs() {
-  return lanNetworkProfile.getNetworkProfile() === 'slow'
-    ? CLOUD_PUSH_DEBOUNCE_SLOW_MS
-    : CLOUD_PUSH_DEBOUNCE_MS;
+  return CLOUD_PUSH_DEBOUNCE_MS;
 }
 
 /** @type {{ outbox?: import('./outbox.mjs').createOutbox extends (...args: any) => infer R ? R : never, getRevision?: () => number, flush?: () => void | Promise<void>, getActorId?: () => string } | null} */
@@ -264,7 +262,7 @@ export function enqueueCloudTodoUpsert(patientId, todo) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(todo.updatedAt || new Date().toISOString()),
   };
-  const row = { ...todo, patientId: String(patientId || todo.patientId || '').trim() };
+  const row = stampCloudTodoRow(patientId, todo, patients);
   enqueueEntityOps(`todos/${todo.id}`, [cloudOp({ path: `todos/${todo.id}`, value: row, ...meta })]);
 }
 
@@ -283,10 +281,14 @@ export function enqueueCloudTodoDelete(patientId, todoRef, updatedAt) {
     actorId: resolveCloudActorId(bridgeRuntime),
     updatedAt: String(updatedAt || new Date().toISOString()),
   };
+  const pid = String(patientId || '').trim();
+  const registro = registroForPatientId(patients, pid);
+  const tomb = { id: eid, patientId: pid, _deleted: true, updatedAt: meta.updatedAt };
+  if (registro) tomb.registro = registro;
   enqueueEntityOps(`todos/${eid}`, [
     cloudOp({
       path: `todos/${eid}`,
-      value: { id: eid, patientId, _deleted: true, updatedAt: meta.updatedAt },
+      value: tomb,
       ...meta,
     }),
   ]);

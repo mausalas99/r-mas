@@ -613,307 +613,49 @@ ipcMain.handle('select-output-dir', async () => {
   return chosen;
 });
 
-ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
-  try {
-    const userData = app.getPath('userData');
-    const token = String(plain || '').trim();
-    const filePath = path.join(userData, 'lan-team-code.txt');
-    fs.writeFileSync(filePath, token, 'utf8');
-    const { reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
-    const dbManager = getLanDbManager();
-    const db =
-      dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
-        ? dbManager.getDb()
-        : null;
-    reconcileLanHostTeamCode({
-      hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
-      plainToken: token,
-      db,
-    });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
-
-/** Borra el estado del host LAN (salas/pacientes en ese JSON). Útil tras error HTTP 500 por cambio de código. */
-ipcMain.handle('lan-reset-squad-host-state', () => {
-  try {
-    const userData = app.getPath('userData');
-    const filePath = path.join(userData, 'lan-squad-host-state.json');
-    const hostStateDir = path.join(userData, 'lan-host');
-    if (fs.existsSync(hostStateDir)) {
-      fs.rmSync(hostStateDir, { recursive: true, force: true });
-    }
-    for (const suffix of ['', '.pre-shard-backup', '.migrated']) {
-      const p = suffix ? `${filePath}${suffix}` : filePath;
-      if (fs.existsSync(p)) {
-        fs.unlinkSync(p);
-      }
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
-
-ipcMain.handle('lan-get-effective-team-code', () => {
-  try {
-    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
-    return readLanTeamCodeFile({ userDataPath: app.getPath('userData') });
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
-
-const { createLanMdnsService, buildTeamHashSync } = require('./lan-squad/lan-mdns-service.js');
-const { createUdpBeacon } = require('./lan-squad/lan-udp-beacon.js');
-const crypto = require('node:crypto');
-
-let _lanMdnsService = null;
-let _udpBeacon = null;
-
-function ensureLanMdnsClientId(userDataPath) {
-  const idPath = path.join(String(userDataPath || ''), 'lan-mdns-client-id.txt');
-  try {
-    const existing = fs.readFileSync(idPath, 'utf8').trim();
-    if (existing) return existing;
-  } catch (_e) { /* ignored */ }
-  const id = `lc_main_${crypto.randomBytes(6).toString('hex')}`;
-  try {
-    fs.writeFileSync(idPath, id + '\n', 'utf8');
-  } catch (_e) { /* ignored */ }
-  return id;
-}
-
 function isDevWardServerEnabled() {
   return process.env.R_PLUS_DEV_WARD_SERVER === '1';
 }
 
-function startLanMdnsIfHosting() {
-  if (!isDevWardServerEnabled()) return;
-  try {
-    const userData = app.getPath('userData');
-    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
-    const teamResult = readLanTeamCodeFile({ userDataPath: userData });
-    if (!teamResult?.ok || !teamResult.code) return;
-    const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
-    const meta = readHostClinicalMeta(userData) || {};
-    const clientId = ensureLanMdnsClientId(userData);
-    const startedAt = meta.startedAt || Date.now();
-    const rank = meta.rank || 'R1';
-    const teamHash = buildTeamHashSync(teamResult.code);
-    if (_lanMdnsService) _lanMdnsService.stop();
-    _lanMdnsService = createLanMdnsService({ clientId, startedAt, rank, teamHash }, (peers) => {
-      const json = JSON.stringify(peers || []);
-      const now = Date.now();
-      if (json === _lastMdnsPeersJson && now - _lastMdnsPeersSentAt < 2000) return;
-      _lastMdnsPeersJson = json;
-      _lastMdnsPeersSentAt = now;
-      safeSendToRenderer('lan:mdns-peers', peers);
-    });
-    _lanMdnsService.start();
-  } catch (_e) {
-    // Non-critical — mDNS unavailable (e.g. firewall, no network)
-  }
+function wardServerBaseUrl() {
+  const port = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
+  return `http://127.0.0.1:${port}`;
 }
 
-function startUdpBeaconIfHosting() {
-  if (!isDevWardServerEnabled()) return;
-  try {
-    const userData = app.getPath('userData');
-    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
-    const teamResult = readLanTeamCodeFile({ userDataPath: userData });
-    if (!teamResult?.ok || !teamResult.code) return;
-    const { readHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
-    const meta = readHostClinicalMeta(userData) || {};
-    const clientId = ensureLanMdnsClientId(userData);
-    const startedAt = meta.startedAt || Date.now();
-    const rank = meta.rank || 'R1';
-    const teamHash = buildTeamHashSync(teamResult.code);
-    if (_udpBeacon) _udpBeacon.stop();
-    _udpBeacon = createUdpBeacon({ clientId, startedAt, rank, teamHash, port: 3739 });
-    _udpBeacon.startListening().catch(() => {});
-  } catch (_e) {
-    // Non-critical — UDP beacon unavailable
-  }
-}
-
-/** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
 ipcMain.handle('lan-ensure-server-ready', async () => {
   if (!isDevWardServerEnabled()) {
     return { ok: true, peer: false, wardServer: false };
   }
   const lanServer = require('./server');
-  const peerMode = process.env.R_PLUS_LAN_PEER === '1';
-  try {
-    await lanServer.startLanServer();
-  } catch (lanErr) {
-    const portBusy =
-      (lanErr && lanErr.code === 'EADDRINUSE') ||
-      (lanErr && lanErr.message && /EADDRINUSE|already in use|3738|3739/.test(String(lanErr.message)));
-    if (!(peerMode && portBusy)) throw lanErr;
-  }
-  if (!peerMode) {
-    try {
-      const { ensureHostStartedAt } = require('./lan-squad/host-clinical-meta.js');
-      ensureHostStartedAt(app.getPath('userData'));
-    } catch (_e) {
-      // non-fatal — renderer may sync meta later
-    }
-    startLanMdnsIfHosting();
-    startUdpBeaconIfHosting();
-    try {
-      const lanServer = require('./server');
-      const reg =
-        typeof lanServer.getLanWardHostRegistry === 'function'
-          ? lanServer.getLanWardHostRegistry()
-          : getWardHostRegistryForIpc();
-      reg.seedFromCandidateBaseUrl(pickLanCandidateBaseUrl());
-    } catch (_wardSeed) { /* ignored */ }
-  }
-  return { ok: true, peer: peerMode };
+  await lanServer.startLanServer();
+  return { ok: true, peer: false, wardServer: true };
 });
 
-ipcMain.handle('lan-udp-discover', async () => {
-  if (!_udpBeacon) return [];
-  return _udpBeacon.discover(500);
-});
+ipcMain.handle('lan-udp-discover', async () => []);
 
-/** Dev peer window (npm run dev:lan-peer-app): seed LAN client config toward local host. */
-ipcMain.handle('lan-dev-peer-seed-config', () => {
-  if (process.env.R_PLUS_LAN_PEER !== '1') return { ok: false };
-  const hostUrl = String(process.env.R_PLUS_LAN_DEV_PEER_HOST || 'http://127.0.0.1:3738').trim();
-  const teamCode = String(process.env.R_PLUS_LAN_DEV_PEER_CODE || '').trim();
-  if (!hostUrl || teamCode.length < 32) return { ok: false };
-  return { ok: true, hostUrl, teamCode };
-});
+ipcMain.handle('lan-dev-peer-seed-config', () => ({ ok: false }));
 
-ipcMain.handle('lan-sync-host-clinical-meta', (_e, payload) => {
-  try {
-    const { writeHostClinicalMeta } = require('./lan-squad/host-clinical-meta.js');
-    const body = writeHostClinicalMeta(app.getPath('userData'), payload || {});
-    return { ok: true, meta: body };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('lan-sync-host-clinical-meta', () => ({ ok: true, meta: {} }));
 
-ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
-  const token = String(payload?.token || '').trim();
-  if (!token || token.length < 32) return { ok: false, error: 'invalid_token' };
-  try {
-    const userData = app.getPath('userData');
-    const {
-      writeLanGuestBearerFile,
-      recoverLocalHostTeamCodeIfGuestOverwrite,
-      lanTeamCodePath,
-    } = require('./lan-squad/effective-team-code.js');
-    const hostStatePath = path.join(userData, 'lan-squad-host-state.json');
-    const dbManager = getLanDbManager();
-    const db =
-      dbManager && typeof dbManager.isUnlocked === 'function' && dbManager.isUnlocked()
-        ? dbManager.getDb()
-        : null;
-    const written = writeLanGuestBearerFile({ userDataPath: userData, token });
-    if (!written.ok) return written;
-    // Heal 7.2.0 bug: guest bearer had overwritten lan-team-code.txt.
-    let hostToken = '';
-    try {
-      hostToken = fs.readFileSync(lanTeamCodePath(userData), 'utf8').split(/\r?\n/, 1)[0].trim();
-    } catch (_e) { /* ignored */ }
-    if (hostToken && hostToken === token) {
-      recoverLocalHostTeamCodeIfGuestOverwrite({ userDataPath: userData, hostStatePath, db });
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('lan-host-write-team-code', () => ({ ok: false, error: 'lan_retired' }));
 
-ipcMain.handle('lan-get-guest-bearer', () => {
-  try {
-    const { readLanGuestBearerFile } = require('./lan-squad/effective-team-code.js');
-    return readLanGuestBearerFile({ userDataPath: app.getPath('userData') });
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('lan-reset-squad-host-state', () => ({ ok: true }));
 
-const {
-  pickLanCandidateBaseUrl,
-  listPrivateIpv4SubnetPrefixes,
-} = require('./lan-squad/lan-candidate-url.js');
-const { createLanNetworkWatch } = require('./lan-squad/lan-network-watch.js');
-const { createWardHostRegistry } = require('./lan-squad/ward-host-registry.js');
+ipcMain.handle('lan-get-effective-team-code', () => ({ ok: false, error: 'lan_retired' }));
 
-let _wardHostRegistryIpc = null;
-function getWardHostRegistryForIpc() {
-  if (!_wardHostRegistryIpc) {
-    _wardHostRegistryIpc = createWardHostRegistry({
-      filePath: path.join(app.getPath('userData'), 'lan-ward-host-registry.json'),
-    });
-  }
-  return _wardHostRegistryIpc;
-}
+ipcMain.handle('lan-guest-write-bearer', () => ({ ok: false, error: 'lan_retired' }));
 
-ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
+ipcMain.handle('lan-get-guest-bearer', () => ({ ok: false, error: 'lan_retired' }));
 
-ipcMain.handle('get-lan-subnet-prefixes', () => listPrivateIpv4SubnetPrefixes());
+ipcMain.handle('get-lan-candidate-base-url', () => wardServerBaseUrl());
 
-ipcMain.handle('lan-ward-host-record', (_e, payload) => {
-  try {
-    const url = String(payload && payload.url ? payload.url : '').trim();
-    if (!url) return { ok: false, error: 'missing_url' };
-    getWardHostRegistryForIpc().recordUrl(url, {
-      source: payload && payload.source === 'client' ? 'client' : 'host',
-    });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('get-lan-subnet-prefixes', () => []);
 
-ipcMain.handle('lan-ward-host-merge', (_e, hints) => {
-  try {
-    getWardHostRegistryForIpc().merge(hints && typeof hints === 'object' ? hints : {});
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('lan-ward-host-record', () => ({ ok: true }));
 
-ipcMain.handle('lan-ward-host-clear', () => {
-  try {
-    getWardHostRegistryForIpc().clear();
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e && e.message ? e.message : String(e) };
-  }
-});
+ipcMain.handle('lan-ward-host-merge', () => ({ ok: true }));
 
-let _lastMdnsPeersJson = '';
-let _lastMdnsPeersSentAt = 0;
-
-const lanNetworkWatch = createLanNetworkWatch((payload) => {
-  try {
-    const reg = getWardHostRegistryForIpc();
-    if (payload.candidateBaseUrl) {
-      reg.recordUrl(payload.candidateBaseUrl, { source: 'host' });
-    }
-    if (Array.isArray(payload.prefixes)) {
-      for (const p of payload.prefixes) reg.recordPrefix(p);
-    }
-  } catch (_wardNet) { /* ignored */ }
-  safeSendToRenderer('lan-network-changed', payload);
-  if (_lanMdnsService) {
-    if (payload.candidateBaseUrl) {
-      _lanMdnsService.restart(payload.candidateBaseUrl);
-    } else {
-      _lanMdnsService.stop();
-    }
-  }
-}, { intervalMs: 10000 });
+ipcMain.handle('lan-ward-host-clear', () => ({ ok: true }));
 
 ipcMain.handle('clipboard-write-text', (_e, text) => {
   try {
@@ -1120,17 +862,9 @@ app.whenReady().then(async () => {
 
     try {
       const userData = app.getPath('userData');
-      const { readLanTeamCodeFile, reconcileLanHostTeamCode } = require('./lan-squad/effective-team-code.js');
-      const team = readLanTeamCodeFile({ userDataPath: userData });
-      if (team.ok && team.code) {
-        reconcileLanHostTeamCode({
-          hostStatePath: path.join(userData, 'lan-squad-host-state.json'),
-          plainToken: team.code,
-          db: dbManager.isUnlocked() ? dbManager.getDb() : null,
-        });
-      }
-    } catch (reconcileErr) {
-      console.error('[lan]', reconcileErr && reconcileErr.message ? reconcileErr.message : reconcileErr);
+      void userData;
+    } catch (_reconcileErr) {
+      /* LAN host reconcile retired */
     }
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
@@ -1143,7 +877,6 @@ app.whenReady().then(async () => {
   }
   createWindow();
   buildMenu();
-  lanNetworkWatch.start();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

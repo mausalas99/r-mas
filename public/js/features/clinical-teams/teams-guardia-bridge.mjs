@@ -4,7 +4,7 @@
 import {
   isBenignLanPushSkipCode,
   LAN_PROFILE_PUSH_FAILED_MSG,
-} from '../../clinical-profile-lan-sync.mjs';
+} from '../../clinical-profile-cloud-stubs.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { dbApi, toast } from './shared.mjs';
@@ -12,14 +12,14 @@ import { dbApi, toast } from './shared.mjs';
 /** Push teams/membership to sala ⇄ (same path as @usuario; uses sticky room membership). */
 export async function publishClinicalTeamsToLan() {
   try {
-    const mod = await import('../lan-sync.mjs');
-    if (typeof mod.pushClinicalOpsLanNow === 'function') {
-      return mod.pushClinicalOpsLanNow();
+    const mod = await import('../cloud-sync/mutate-bridge-clinical-ops.mjs');
+    if (typeof mod.pushCloudClinicalOpsNow === 'function') {
+      return mod.pushCloudClinicalOpsNow();
     }
   } catch {
-    /* LAN optional */
+    /* optional */
   }
-  return { ok: false, code: 'NO_LAN' };
+  return { ok: false, code: 'NO_CLOUD' };
 }
 
 /** @param {{ ok?: boolean, code?: string }} lanPush */
@@ -56,11 +56,6 @@ export function toastTeamLanPublishResult(lanPush, localOkMessage) {
   }
   toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warn');
 }
-
-const LAN_CLINICAL_OPS_PULL_MIN_MS = 12_000;
-let lanClinicalOpsPullLastAt = 0;
-/** @type {Promise<boolean>|null} */
-let lanClinicalOpsPullInFlight = null;
 
 const CLOUD_CLINICAL_OPS_PULL_MIN_MS = 12_000;
 let cloudClinicalOpsPullLastAt = 0;
@@ -173,29 +168,8 @@ export async function publishClinicalTeamsAfterChange(options = {}) {
 }
 
 /** Pull host clinicalOps into this Mac so partner @usuario and teams exist locally. */
-export async function pullClinicalOpsFromLanRoom(options = {}) {
-  // Nube hydrates clinicalOps via pull-apply — skip LAN GET /clinical-ops.
-  if (isCloudSyncActive()) return false;
-  const force = !!options.force;
-  const now = Date.now();
-  if (!force && now - lanClinicalOpsPullLastAt < LAN_CLINICAL_OPS_PULL_MIN_MS) {
-    return false;
-  }
-  if (lanClinicalOpsPullInFlight) return lanClinicalOpsPullInFlight;
-  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 8000);
-  lanClinicalOpsPullInFlight = (async () => {
-    try {
-      const lan = await import('../lan-sync.mjs');
-      if (typeof lan.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-      return !!(await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs }));
-    } catch {
-      return false;
-    } finally {
-      lanClinicalOpsPullLastAt = Date.now();
-      lanClinicalOpsPullInFlight = null;
-    }
-  })();
-  return lanClinicalOpsPullInFlight;
+export async function pullClinicalOpsFromLanRoom(_options = {}) {
+  return false;
 }
 
 /** @param {string} handle — normalized @usuario without @ */

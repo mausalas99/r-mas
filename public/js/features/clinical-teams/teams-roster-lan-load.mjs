@@ -1,6 +1,6 @@
 /** LAN directorio load, reload, fingerprint, draft preservation. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
-import { recordClinicalOpsTrace } from '../../lan-sync-diagnostics.mjs';
+import { recordClinicalOpsTrace } from '../../clinical-ops-sync.mjs';
 import { canDeleteLanDirectoryUser } from '../../clinical-privileges.mjs';
 import { dbApi, escapeHtml, currentUserId } from './shared.mjs';
 import { lanDirRt, LAN_DIRECTORY_IPC_MIN_MS, LAN_DIRECTORY_LAN_PULL_MIN_MS } from './teams-roster-lan-state.mjs';
@@ -220,21 +220,6 @@ export async function refreshLanDirectoryFromHostUi(options = {}) {
   }
 }
 
-export async function pullLanDirectoryFromHostIfDue(options = {}) {
-  const force = !!options.force;
-  const now = Date.now();
-  if (!force && now - lanDirRt.lanPullLastAt < LAN_DIRECTORY_LAN_PULL_MIN_MS) {
-    return false;
-  }
-  lanDirRt.lanPullLastAt = now;
-  try {
-    const lanMod = await import('../lan-sync.mjs');
-    if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
-    return !!(await lanMod.refreshLanClinicalDirectoryFromRoom({
-      timeoutMs: 12_000,
-      allRooms: true,
-    }));
-  } catch {
-    return false;
-  }
+export async function pullLanDirectoryFromHostIfDue() {
+  return false;
 }

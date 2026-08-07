@@ -6,7 +6,7 @@ import {
   syncHighContrastButtons,
   syncUiDensityButtons,
 } from "./chrome.mjs";
-import { syncSettingsLanHostDiskSection } from "./lan/panel.mjs";
+import { syncSettingsLanHostDiskSection } from './cloud-sync/panel-chrome.mjs';
 import {
   syncUpdateChannelUI,
   syncUpdateTelemetryUI,

@@ -1,4 +1,3 @@
-import { lanFetchHistoriaClinica } from '../lan/historia-sync.mjs';
 import { isCloudSyncActive } from '../cloud-sync/lan-override.mjs';
 import { activePatient } from './runtime.mjs';
 
@@ -7,39 +6,20 @@ export function readLocalHistoria(patient) {
   return {
     version: Number(patient.historiaClinica.version || 0),
     data: patient.historiaClinica.data,
-    pendingLanSync: !!patient.historiaClinica.pendingLanSync,
+    pendingLanSync: false,
   };
 }
 
-export async function fetchHistoriaRemote(patientId, roomId) {
-  if (isCloudSyncActive() || !roomId) return null;
-  try {
-    var res = await Promise.race([
-      lanFetchHistoriaClinica(patientId, roomId),
-      new Promise(function (_, reject) {
-        setTimeout(function () {
-          reject(new Error('historia_fetch_timeout'));
-        }, 4000);
-      }),
-    ]);
-    if (!res || !res.ok || res.missing) return null;
-    return { version: Number(res.version || 0), data: res.data };
-  } catch {
-    return null;
-  }
+export async function fetchHistoriaRemote(_patientId, _roomId) {
+  void isCloudSyncActive;
+  return null;
 }
 
-export async function fetchHistoria(patientId, roomId) {
-  var local = readLocalHistoria(activePatient());
-  if (isCloudSyncActive() || !roomId) {
-    return local;
-  }
-  if (local && local.pendingLanSync) {
-    return local;
-  }
-  var remote = await fetchHistoriaRemote(patientId, roomId);
-  if (!remote) return local;
-  var localVer = local ? local.version : 0;
-  if (local && localVer > remote.version) return local;
-  return remote;
+export async function loadHistoriaForPatient(patient) {
+  if (!patient) return null;
+  return readLocalHistoria(patient);
+}
+
+export function getHistoriaPatient() {
+  return activePatient();
 }

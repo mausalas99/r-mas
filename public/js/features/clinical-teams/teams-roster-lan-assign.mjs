@@ -101,7 +101,7 @@ export async function handleLanDeleteDirectoryUserClick(btn) {
   }
 
   toast('Usuario eliminado de esta Mac.', 'success');
-  const { isBenignLanPushSkipCode } = await import('../../clinical-profile-lan-sync.mjs');
+  const { isBenignLanPushSkipCode } = await import('../../clinical-profile-cloud-stubs.mjs');
   const lanPush = await publishClinicalTeamsToLan();
   if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(
@@ -163,9 +163,9 @@ export async function handleLanAssignButtonClick(btn) {
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await publishClinicalTeamsToLan();
   try {
-    const lan = await import('../lan-sync.mjs');
-    if (typeof lan.scheduleLiveSyncPush === 'function') lan.scheduleLiveSyncPush();
-  } catch { /* LAN optional */ }
+    const { scheduleCloudSyncPush } = await import('../cloud-sync/mutate-bridge.mjs');
+    scheduleCloudSyncPush();
+  } catch { /* optional */ }
   await fetchClinicalTeamsFromDb();
   const { reloadLanUsersDirectoryAfterMutation } = await import('./teams-roster-lan-load.mjs');
   await reloadLanUsersDirectoryAfterMutation();

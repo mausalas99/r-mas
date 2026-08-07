@@ -9,6 +9,11 @@ import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { isClinicalScopeReadyForLanPatientApply } from '../../clinical-access-runtime/scope-lan.mjs';
 import {
+  buildLiveSyncPatientIdMap,
+  remapAgendaPatientIds,
+  resolveCloudTodoLocalPatientId,
+} from '../../livesync-patient-ids.mjs';
+import {
   cloudStateToLanEntries,
   createOpFold,
   foldCloudOp,
@@ -25,15 +30,19 @@ export {
   opsToLanEntries,
 } from './pull-apply-state.mjs';
 
-/** @param {Record<string, unknown>} todosMap @returns {string[]} */
-function applyCloudTodosMap(todosMap) {
+/** @param {Record<string, unknown>} todosMap @param {Record<string, string>} [idMap] @returns {string[]} */
+function applyCloudTodosMap(todosMap, idMap) {
   const byPatient = {};
+  const map = idMap && typeof idMap === 'object' ? idMap : {};
   for (const todo of Object.values(todosMap || {})) {
     if (!todo || typeof todo !== 'object') continue;
     const row = todo;
-    const pid = String(row.patientId || '').trim();
+    const remotePid = String(row.patientId || '').trim();
     const id = String(row.id || '').trim();
-    if (!pid || !id) continue;
+    if (!remotePid || !id) continue;
+    const registro = String(row.registro || '').trim();
+    const pid = resolveCloudTodoLocalPatientId(remotePid, registro, patients, map);
+    if (!pid) continue;
     if (!byPatient[pid]) byPatient[pid] = storage.getTodos(pid).slice();
     const idx = byPatient[pid].findIndex(function (t) {
       return t && String(t.id) === id;
@@ -42,8 +51,9 @@ function applyCloudTodosMap(todosMap) {
       if (idx >= 0) byPatient[pid].splice(idx, 1);
       continue;
     }
-    if (idx >= 0) byPatient[pid][idx] = row;
-    else byPatient[pid].push(row);
+    const stored = { ...row, patientId: pid };
+    if (idx >= 0) byPatient[pid][idx] = stored;
+    else byPatient[pid].push(stored);
   }
   const changedPatients = [];
   for (const pid of Object.keys(byPatient)) {
@@ -53,12 +63,12 @@ function applyCloudTodosMap(todosMap) {
   return changedPatients;
 }
 
-/** @param {Record<string, unknown>} agendaMap */
-function applyCloudAgendaMap(agendaMap) {
+/** @param {Record<string, unknown>} agendaMap @param {Record<string, string>} [idMap] */
+function applyCloudAgendaMap(agendaMap, idMap) {
   const live = Object.values(agendaMap || {}).filter(function (item) {
     return item && typeof item === 'object' && !item._deleted;
   });
-  storage.saveScheduledProcedures(live);
+  storage.saveScheduledProcedures(remapAgendaPatientIds(live, idMap || {}));
 }
 
 /** @param {string} patientId @param {unknown} tombstoneMeta */
@@ -169,14 +179,22 @@ export async function applyCloudState(state, opts) {
   if (!state) return { added: 0, updated: 0, removed: false };
   await applyClinicalOpsSnapshot(state.clinicalOps);
   const entries = cloudStateToLanEntries(state);
+  const idMap = buildLiveSyncPatientIdMap(entries, patients, {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
 
   let todoPatients = [];
-  if (!opts?.skipTodos && state.todos) todoPatients = applyCloudTodosMap(state.todos);
+  if (!opts?.skipTodos && state.todos) todoPatients = applyCloudTodosMap(state.todos, idMap);
   if (Array.isArray(state.agenda)) {
-    storage.saveScheduledProcedures(state.agenda.filter((item) => item && !item._deleted));
+    applyCloudAgendaMap(
+      Object.fromEntries(
+        state.agenda
+          .filter((item) => item && item.id)
+          .map((item) => [String(item.id), item])
+      ),
+      idMap
+    );
   }
   const removed = applyCloudTombstones(state.tombstones || {});
   await finalizeCloudPullPatientScope();
@@ -197,11 +215,12 @@ export async function applyCloudOps(ops) {
   }
   await applyClinicalOpsSnapshot(fold.clinicalOps);
   const entries = opFoldToLanEntries(fold);
+  const idMap = buildLiveSyncPatientIdMap(entries, patients, {});
   const patientSync = entries.length
     ? applyLanPatientEntries(entries, cloudPatientEntryApplyOpts())
     : { added: 0, updated: 0 };
-  const todoPatients = applyCloudTodosMap(fold.todos);
-  applyCloudAgendaMap(fold.agenda);
+  const todoPatients = applyCloudTodosMap(fold.todos, idMap);
+  applyCloudAgendaMap(fold.agenda, idMap);
   const removed = applyCloudTombstones(fold.tombstones);
   await finalizeCloudPullPatientScope();
   await refreshCloudTodoUIs(todoPatients);

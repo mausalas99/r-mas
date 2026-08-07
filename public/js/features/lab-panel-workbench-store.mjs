@@ -14,7 +14,7 @@ import { primaryTipoForLabSet } from '../lab-history-format.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
 import { notes, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
-import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
+
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
 import { renderLabHistoryPanel, refreshSameDayAscitisForPatient } from './lab-panel-history.mjs';
@@ -298,7 +298,7 @@ export async function applyDriveImportLabSets(patient, labSets) {
 function finalizeLabHistoryImport(patientId) {
   var consolidation = autoConsolidateLabHistoryForPatient(patientId);
   if (consolidation.merged > 0) {
-    syncLabHistoryConsolidationToLan(patientId, consolidation);
+    
     if (typeof rt.addAuditEntry === 'function') {
       rt.addAuditEntry('lab-history-auto-consolidate', 'ok', consolidation.merged, String(patientId));
     }

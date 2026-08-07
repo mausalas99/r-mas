@@ -26,7 +26,9 @@ if (baseline.totalScore == null) {
   failed = true;
 }
 
-const changed = filterLintableTier1Paths(gitChangedFilesAgainst('main'));
+const changed = filterLintableTier1Paths(gitChangedFilesAgainst('main')).filter((p) =>
+  fs.existsSync(path.join(ROOT, p))
+);
 if (changed.length) {
   try {
     execSync(`npx eslint ${changed.map((p) => JSON.stringify(p)).join(' ')} --max-warnings 0`, {

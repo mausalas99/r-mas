@@ -14,7 +14,6 @@ const PACK_FILES_BASELINE = [
   'scripts/lib/release-notes-body.js',
   'preload.js',
   'server.js',
-  'lan-squad/**/*',
   'lib/**/*.js',
   'lib/**/*.mjs',
   'lib/**/*.cjs',

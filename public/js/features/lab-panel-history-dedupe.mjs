@@ -25,7 +25,7 @@ import {
   tipoLabel,
 } from './lab-panel-history-consolidate-modal.mjs';
 import { preferKeeperSetIdFromConsolidateResult } from './lab-panel-history-consolidate-refresh.mjs';
-import { syncLabHistoryConsolidationToLan } from '../lab-history-lan-sync.mjs';
+
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labSetIdForHistory, clearLabHistoryDateSelectCache, dedupeConsolidatedRowsBySection, refreshSameDayAscitisForPatient, setLabHistorySelectedSetId } from './lab-panel-history.mjs';
 import { buildLabDedupeModalHtml, wireLabDedupeModal } from './lab-panel-history-dedupe-modal.mjs';
@@ -483,7 +483,7 @@ function consolidateLabHistoryByDayAndTipo() {
       rt.pushUndoSnapshot('Consolidar historial de labs (grupos manuales)');
     }
     var result = runManualLabConsolidationForPatient(patientId, groups);
-    syncLabHistoryConsolidationToLan(patientId, result);
+    
     var preferSetId = preferKeeperSetIdFromConsolidateResult(result);
     if (preferSetId) setLabHistorySelectedSetId(patientId, preferSetId);
     finishLabConsolidateUi(patientId, result.merged);

@@ -145,8 +145,8 @@ function startCloudPushAndRuntime(chosenUser) {
 
 async function scheduleOptionalPush() {
   try {
-    const lan = await import('../lan-sync.mjs');
-    if (typeof lan.scheduleLiveSyncPush === 'function') lan.scheduleLiveSyncPush();
+    const { scheduleCloudSyncPush } = await import('./mutate-bridge.mjs');
+    scheduleCloudSyncPush();
   } catch {
     /* optional */
   }

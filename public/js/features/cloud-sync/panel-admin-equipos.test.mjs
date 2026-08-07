@@ -292,9 +292,11 @@ describe('equiposListHtml', () => {
       ],
       []
     );
-    assert.match(html, /cloud-sync-admin-equipos-history/);
-    assert.match(html, /Historial:/);
-    assert.match(html, /Creado/);
+    assert.match(html, /cloud-sync-admin-equipos-history-btn/);
+    assert.match(html, /data-admin-action="equipos-activity-history"/);
+    assert.match(html, /data-equipos-history=/);
+    assert.match(html, /session/);
+    assert.match(html, /seed_created/);
   });
 
   it('scopes Equipo options to the row sala', () => {

@@ -20,7 +20,6 @@ const RELEASE_STAGE_PATHS = [
   'public/js/',
   'public/partials/',
   'public/styles/',
-  'lan-squad/',
   'generate-censo.js',
   'generate-censo.layout.test.js',
   'generate-censo.test.js',

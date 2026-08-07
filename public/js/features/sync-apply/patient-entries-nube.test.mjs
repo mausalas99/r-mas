@@ -4,8 +4,8 @@ import { patients } from '../../app-state.mjs';
 import {
   applyLanPatientEntries,
   isPlaceholderPatientName,
+  configureLanPatientEntries,
 } from './patient-entries.mjs';
-import { registerLanRuntime } from '../lan/orchestrator-runtime.mjs';
 
 describe('applyLanPatientEntries on Nube path', () => {
   /** @type {typeof patients} */
@@ -14,7 +14,7 @@ describe('applyLanPatientEntries on Nube path', () => {
   beforeEach(() => {
     patientsBefore = patients.slice();
     patients.length = 0;
-    registerLanRuntime({
+    configureLanPatientEntries({
       ensureUniquePatientName(name) {
         return String(name || 'PACIENTE');
       },

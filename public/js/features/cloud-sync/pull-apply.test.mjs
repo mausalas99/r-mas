@@ -131,6 +131,53 @@ describe('pull-apply cloud snapshot merge', () => {
   });
 });
 
+describe('pull-apply cloud todo registro remap', () => {
+  it('applyCloudOps stores todos under local patient id by registro', async () => {
+    const { storage } = await import('../../storage.js');
+    const { patients: patientList } = await import('../../app-state.mjs');
+    const saved = {};
+    const origGet = storage.getTodos;
+    const origSave = storage.saveTodos;
+    const origAgenda = storage.saveScheduledProcedures;
+    const before = patientList.slice();
+    patientList.length = 0;
+    patientList.push({ id: 'local_a', registro: 'REG1', nombre: 'A' });
+    storage.getTodos = function (pid) {
+      return saved[pid] ? saved[pid].slice() : [];
+    };
+    storage.saveTodos = function (pid, list) {
+      saved[pid] = list;
+    };
+    storage.saveScheduledProcedures = function () {};
+    try {
+      const { applyCloudOps } = await import('./pull-apply.mjs');
+      await applyCloudOps([
+        {
+          path: 'todos/t1',
+          value: {
+            id: 't1',
+            patientId: 'remote_a',
+            registro: 'REG1',
+            text: 'Lab',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        },
+      ]);
+      assert.ok(saved.local_a);
+      assert.equal(saved.local_a.length, 1);
+      assert.equal(saved.local_a[0].text, 'Lab');
+      assert.equal(saved.local_a[0].patientId, 'local_a');
+      assert.equal(saved.remote_a, undefined);
+    } finally {
+      storage.getTodos = origGet;
+      storage.saveTodos = origSave;
+      storage.saveScheduledProcedures = origAgenda;
+      patientList.length = 0;
+      patientList.push(...before);
+    }
+  });
+});
+
 describe('pull-apply tombstone guard', () => {
   it('shouldApplyCloudTombstone skips stale id when registro was re-admitted', async () => {
     const { shouldApplyCloudTombstone } = await import('./pull-apply.mjs');
@@ -177,5 +224,10 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     assert.match(body, /isClinicalScopeReadyForLanPatientApply/);
     assert.match(body, /return true/);
     assert.doesNotMatch(body, /shouldUseElevatedPatientCensus/);
+  });
+
+  it('remaps cloud todos by registro on pull apply', () => {
+    assert.match(pullApplySrc, /resolveCloudTodoLocalPatientId/);
+    assert.match(pullApplySrc, /buildLiveSyncPatientIdMap/);
   });
 });

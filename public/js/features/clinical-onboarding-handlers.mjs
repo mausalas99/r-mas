@@ -88,7 +88,7 @@ async function claimUsernameIfNeeded(api, sessionUserId, username, sala, setting
   const needsClaim = shouldClaimClinicalUsername(currentHandle, username, getClientId());
   if (!needsClaim) return { ok: true, needsClaim: false, sessionUserId, settings };
 
-  const { assertLanRoomForUsernameRegister } = await import('../clinical-profile-lan-sync.mjs');
+  const { assertLanRoomForUsernameRegister } = await import('../clinical-profile-cloud-stubs.mjs');
   await assertLanRoomForUsernameRegister({ sala });
 
   if (typeof api.dbClinicalUsernameClaim !== 'function') {
@@ -139,22 +139,8 @@ async function upsertClinicalProfile(api, sessionUserId, fields, errEl) {
   return true;
 }
 
-async function connectShiftPinIfProvided(shiftPin, sala) {
-  if (isClinicalLocalOnlyMode()) return;
-  if (isLanSkipShiftPin()) {
-    const { tryEasyLanShiftPinConnect } = await import('../lan-shift-pin-connect.mjs');
-    await tryEasyLanShiftPinConnect({ sala, force: true });
-    return;
-  }
-  if (!shiftPin) return;
-  const { connectLanWithShiftPin } = await import('../lan-shift-pin-connect.mjs');
-  const connected = await connectLanWithShiftPin(shiftPin, { sala });
-  if (!connected) {
-    toast(
-      'No se encontró anfitrión con ese PIN del turno. Revisa Wi‑Fi o pide un PIN nuevo al R4.',
-      'warning'
-    );
-  }
+async function connectShiftPinIfProvided(_shiftPin, _sala) {
+  /* LAN shift-pin connect retired */
 }
 
 async function pushProfileToLanAndNotify(sala, needsClaim) {
@@ -165,7 +151,7 @@ async function pushProfileToLanAndNotify(sala, needsClaim) {
     isBenignLanPushSkipCode,
     isLanProfileNeedsConnectCode,
     notifyLanProfilePushResult,
-  } = await import('../clinical-profile-lan-sync.mjs');
+  } = await import('../clinical-profile-cloud-stubs.mjs');
   const lanPush = await flushClinicalProfileToLan({
     sala: sala || clinicalSessionContext.user?.sala,
   });

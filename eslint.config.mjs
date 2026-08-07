@@ -24,8 +24,6 @@ const tier1 = {
     'lib/**/*.mjs',
     'lib/**/*.js',
     'lib/**/*.cjs',
-    'lan-squad/**/*.js',
-    'lan-squad/**/*.cjs',
   ],
   languageOptions: {
     ecmaVersion: 'latest',
@@ -44,7 +42,7 @@ const tier1 = {
 };
 
 const tier1Commonjs = {
-  files: ['lib/**/*.cjs', 'lan-squad/**/*.cjs', 'public/js/**/*.cjs'],
+  files: ['lib/**/*.cjs', 'public/js/**/*.cjs'],
   languageOptions: {
     sourceType: 'commonjs',
     globals: { ...globals.node, module: 'readonly', require: 'readonly', exports: 'writable' },
@@ -74,7 +72,6 @@ const tier1Tests = {
     '**/*.test.mjs',
     '**/*.test.js',
     'public/js/**/*.test.mjs',
-    'lan-squad/**/*.test.js',
     'lib/**/*.test.mjs',
   ],
   rules: {
