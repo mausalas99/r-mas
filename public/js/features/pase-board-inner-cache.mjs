@@ -12,15 +12,10 @@ import {
   defaultGranularForConsolidatedTab,
   migrateGranularInner,
 } from '../expediente-tabs.mjs';
-import {
-  renderEstadoActualPanel,
-} from './estado-actual-panel.mjs';
+import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
 import { renderVpo } from './vpo.mjs';
 import { ensureChartsLoaded } from '../lazy-feature-routes.mjs';
 import { renderNoteForm, renderIndicaForm } from './notes-indicaciones.mjs';
-import {
-  renderHistoriaClinicaPanel,
-} from './historia-clinica-panel.mjs';
 import { renderEventualidadesPanel } from './eventualidades-panel.mjs';
 import {
   renderPatientDataPane,
@@ -227,12 +222,6 @@ function renderTendInnerTab(tab, opts) {
   }, opts);
 }
 
-function renderHistoriaInnerTab(tab, opts) {
-  renderHeavyInnerTab(tab, function (done) {
-    renderHistoriaClinicaPanel({ onReady: done });
-  }, opts);
-}
-
 function renderLightGranularTab(tab) {
   if (tab === 'datos' || tab === 'todo') renderPatientDataPane();
   if (tab === 'cult') renderCultivosTable();
@@ -257,7 +246,6 @@ var GRANULAR_TAB_RENDERERS = {
     renderIndicaForm();
     markInnerTabRendered(tab);
   },
-  historia: renderHistoriaInnerTab,
   eventualidades: function (tab) {
     renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
     markInnerTabRendered(tab);

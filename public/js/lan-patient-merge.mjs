@@ -192,7 +192,6 @@ export function entryUpdatedAt(entry) {
     listadoTimestamp(entry.listadoProblemas),
     monitoreoUpdatedAt(p.monitoreo),
     eventualidadesUpdatedAt(p.eventualidades),
-    historiaClinicaUpdatedAt(p.historiaClinica),
   ];
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   for (let i = 0; i < labs.length; i += 1) {
@@ -352,9 +351,6 @@ function buildMergedPatientEntry(a, b, patient, first, second) {
   const mergedEventualidades = mergeEventualidades(first.patient?.eventualidades, second.patient?.eventualidades);
   if (mergedEventualidades) patient.eventualidades = mergedEventualidades;
 
-  const mergedHc = mergeHistoriaClinica(first.patient?.historiaClinica, second.patient?.historiaClinica);
-  if (mergedHc) patient.historiaClinica = mergedHc;
-
   // pickPatientFields only whitelists demographics — restore censo/dx from both sides.
   mergeCensoPatientFieldsFromBoth(patient, first.patient, second.patient);
 
@@ -405,9 +401,6 @@ function clonePatientShell(patRaw) {
   const monSrc = patient.monitoreo;
   if (monSrc != null && typeof monSrc === 'object') {
     patient.monitoreo = structuredClone(monSrc);
-  }
-  if (patient.historiaClinica != null && typeof patient.historiaClinica === 'object') {
-    patient.historiaClinica = structuredClone(patient.historiaClinica);
   }
   return patient;
 }

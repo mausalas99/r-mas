@@ -68,7 +68,6 @@ function purgeTourDemoPatientsFromState() {
 var TOUR_STEPS_USE_DEMO_PEREZ = {
   servicio_default: true,
   sala_expediente_tabs: true,
-  historia_clinica: true,
   estado_actual: true,
   estado_actual_registro: true,
   estado_actual_review: true,

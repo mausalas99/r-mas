@@ -28,15 +28,6 @@ function monitoreoOpUpdatedAt(monitoreo) {
   return String(monitoreoUpdatedAt(monitoreo) || '').trim();
 }
 
-/** @param {unknown} hc @param {string} fallback */
-function historiaOpUpdatedAt(hc, fallback) {
-  if (!hc || typeof hc !== 'object') return fallback;
-  /** @type {{ data?: { meta?: { updatedAt?: unknown } }, updatedAt?: unknown }} */
-  const row = hc;
-  const at = String(row.data?.meta?.updatedAt || row.updatedAt || '').trim();
-  return at || fallback;
-}
-
 /** @param {unknown} ev @param {string} fallback */
 function eventualidadesOpUpdatedAt(ev, fallback) {
   if (!ev || typeof ev !== 'object') return fallback;
@@ -120,16 +111,6 @@ export function pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batch
 /** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} patient @param {string} actorId @param {string} batchAt */
 function pushClinicalBlockOps(ops, patientId, patient, actorId, batchAt) {
   pushCloudLiveClinicalOps(ops, patientId, patient, actorId, batchAt);
-  if (patient.historiaClinica) {
-    ops.push(
-      cloudOp({
-        path: `entries/${patientId}/historiaClinica`,
-        value: patient.historiaClinica,
-        actorId,
-        updatedAt: historiaOpUpdatedAt(patient.historiaClinica, batchAt),
-      })
-    );
-  }
 }
 
 /** @param {CloudSyncOp[]} ops @param {string} patientId @param {object} entry @param {string} actorId @param {string} batchAt */

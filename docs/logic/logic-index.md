@@ -18,7 +18,6 @@ description: "Parsers, sync engines, and algorithm modules."
 | LAN bundle merge | `lan-squad/bundle-merge.js` | Peer bundles → merged turn state |
 | LAN sync kernel (renderer) | `public/js/features/lan/orchestrator.mjs` (façade) + `conflicts.mjs`, `entity-versions.mjs`, `patient-entries.mjs`, `patient-delete.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs` | Room join → bundle merge/apply, LWW, typed mutations; characterization: `orchestrator.test.mjs` |
 | Conflict LWW | `lan-squad/lww-utils.js`, `lan-conflict-*` | Overlapping edits → winner |
-| HC compile | `lib/historia-clinica/compile-narrative.mjs` | HC sections → narrative text |
 | Perfil farmacoterapéutico ventana | `public/js/med-pharm-view-window.mjs` | Perfil mensual + `fimiFecha` → columnas visibles cross-mes |
 | Clinical safety | `lib/clinical-safety-rules/evaluate.mjs` | Calc input → pass / block |
 | Drive import | `lib/drive-import/*.mjs` | Google Doc → HC/eventualidades patch |

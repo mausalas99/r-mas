@@ -8,9 +8,6 @@ import {
   markOpenedDetailFromPaseBoard,
 } from './chrome.mjs';
 import { isModeSala } from '../mode-features.mjs';
-import {
-  invalidateHistoriaClinicaPanel,
-} from './historia-clinica-panel.mjs';
 import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
 import { invalidateEaPanelCache, refreshEaCopyFabVisibility } from './estado-actual-panel.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
@@ -107,7 +104,6 @@ export function refreshExpedienteForAppModeChange() {
   cancelDeferredIdleWork();
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
-  invalidateHistoriaClinicaPanel();
   invalidateEventualidadesPanel();
   invalidateInnerTabRenderCache();
   var settings = rt.getSettings();
@@ -125,7 +121,6 @@ export function refreshExpedienteAfterPatientSelect(opts) {
   cancelDeferredIdleWork();
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
-  invalidateHistoriaClinicaPanel();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   var forceRender = !!opts.patientChanged || granularMountIsEmpty(tab);

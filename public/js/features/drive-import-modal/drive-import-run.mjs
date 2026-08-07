@@ -1,6 +1,5 @@
 import { applyDriveImport } from '../drive-import-apply.mjs';
 import { applyReviewStepsToParsed } from '../../../../lib/drive-import/drive-import-review.mjs';
-import { enrichHcPatchWithStructuredSuggestions } from '../../../../lib/drive-import/hc-structured-extract.mjs';
 import { getDriveImportRuntime } from './drive-import-state.mjs';
 import { getApplyMode } from './drive-import-dom.mjs';
 import { getParsed, hasApprovedReviewContent } from './drive-import-parse.mjs';
@@ -26,13 +25,6 @@ function confirmRegistroMismatch(parsed, patient) {
   );
 }
 
-function confirmReplaceMode(fromReview, mode) {
-  if (fromReview || mode !== 'replace') return true;
-  return confirmDriveImportChoice(
-    'Se sobrescribirán las secciones de Historia clínica presentes en el documento. ¿Continuar?'
-  );
-}
-
 function confirmCreateWithoutName(createNew, parsed) {
   if (!createNew || (parsed.header && parsed.header.nombre)) return true;
   return confirmDriveImportChoice('No se detectó nombre en el encabezado. ¿Crear paciente igualmente?');
@@ -40,20 +32,11 @@ function confirmCreateWithoutName(createNew, parsed) {
 
 async function confirmImportGuards(parsed, opts) {
   const rt = getDriveImportRuntime();
-  const mode = getApplyMode();
   const patient = rt.getActivePatient();
   const createNew = !patient;
   if (!confirmRegistroMismatch(parsed, patient)) return false;
-  if (!confirmReplaceMode(!!opts.fromReview, mode)) return false;
   if (!confirmCreateWithoutName(createNew, parsed)) return false;
   return true;
-}
-
-function enrichParsedForFastImport(parsed, fromReview) {
-  if (fromReview) return parsed;
-  return Object.assign({}, parsed, {
-    hcPatch: enrichHcPatchWithStructuredSuggestions(parsed.hcPatch || {}, parsed.driveSections || {}),
-  });
 }
 
 function pluralSuffix(count, singular, plural) {
@@ -105,9 +88,8 @@ function buildLabParts(result) {
   return parts;
 }
 
-function buildImportSuccessParts(result, mode) {
+function buildImportSuccessParts(result) {
   const parts = [];
-  if (mode !== 'eventos') parts.push('HC actualizada');
   parts.push(...buildEventualidadParts(result));
   parts.push(...buildLabParts(result));
   if (result.lanSyncDeferred) {
@@ -124,7 +106,7 @@ function navigateAfterSuccessfulImport(result) {
   }
   if (typeof rt.switchAppTab === 'function') rt.switchAppTab('clinico');
   if (typeof rt.switchInnerTab === 'function') {
-    rt.switchInnerTab(result.navigateTo || 'historia', { forceRender: true });
+    rt.switchInnerTab(result.navigateTo || 'estadoActual', { forceRender: true });
   }
 }
 
@@ -163,8 +145,6 @@ export async function runDriveImport(parsed, opts) {
     rt.pushUndoSnapshot('Importar desde Drive');
   }
 
-  parsed = enrichParsedForFastImport(parsed, !!opts.fromReview);
-
   const result = await applyDriveImport(parsed, {
     mode: mode,
     activePatient: patient,
@@ -173,17 +153,13 @@ export async function runDriveImport(parsed, opts) {
   });
 
   if (!result.ok) {
-    if (result.error === 'hc-conflict') {
-      rt.showToast('Conflicto al guardar Historia clínica en LAN. Recarga e intenta de nuevo.', 'error');
-    } else {
-      rt.showToast('No se pudo aplicar la importación', 'error');
-    }
+    rt.showToast('No se pudo aplicar la importación', 'error');
     return;
   }
 
   recordImportAudit(result, mode, createNew, !!opts.fromReview);
   closeDriveImportModal();
-  rt.showToast(buildImportSuccessParts(result, mode).join(' · '), 'success');
+  rt.showToast(buildImportSuccessParts(result).join(' · '), 'success');
   navigateAfterSuccessfulImport(result);
 }
 

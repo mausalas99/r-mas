@@ -30,7 +30,6 @@ function buildPatientFromCloudEntry(entry) {
     if (ENTRY_SKIP_KEYS.has(key)) continue;
     patient[key] = value;
   }
-  if (entry.historiaClinica) patient.historiaClinica = entry.historiaClinica;
   if (entry.eventualidades) patient.eventualidades = entry.eventualidades;
   if (entry.monitoreo) patient.monitoreo = entry.monitoreo;
   return patient;

@@ -14,7 +14,6 @@ export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
 const CLINICO_GRANULAR_TABS = [
   'notas',
   'indica',
-  'historia',
   'estadoActual',
   'eventualidades',
   'vpo',
@@ -64,7 +63,6 @@ const GRANULAR_PANE_ORDER = [
   'datos',
   'notas',
   'indica',
-  'historia',
   'tend',
   'cult',
   'listado',
@@ -84,7 +82,6 @@ function granularToConsolidatedMap(settings) {
     todo: { tab: 'paciente', section: null },
     notas: { tab: 'clinico', section: 'notas' },
     indica: { tab: 'clinico', section: 'indica' },
-    historia: { tab: 'clinico', section: 'historia' },
     tend: { tab: 'resultados', section: 'tend' },
     cult: { tab: 'resultados', section: 'cult' },
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
@@ -111,7 +108,6 @@ function paneMountSpec(granularTab, settings) {
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
-    historia: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     tend: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
@@ -229,14 +225,11 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'historia', 'estadoActual', 'eventualidades', 'vpo'].forEach(
+    ['notas', 'indica', 'estadoActual', 'eventualidades', 'vpo'].forEach(
       function (section) {
         var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
         if (!btn) return;
-        if (section === 'historia') {
-          // HC stays mountable (Drive / entrega) but off the day-to-day nav.
-          btn.style.display = 'none';
-        } else if (section === 'estadoActual') {
+        if (section === 'estadoActual') {
           // IC + sala: Estado actual under Clínico.
           btn.style.display = '';
         } else if (section === 'eventualidades') {
@@ -335,7 +328,7 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
     if (!pane) return;
     var onClinico = target.tab === 'clinico' && target.section === section;
     var onSalida = target.tab === 'salida' && target.section === section && section === 'vpo';
-    // Activate by target only — historia is off-nav but still opens via Drive/entrega.
+    // Activate by target only.
     pane.classList.toggle('active', onClinico || onSalida);
   });
   RESULTADOS_SECTIONS.forEach(function (section) {

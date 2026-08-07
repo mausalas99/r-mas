@@ -9,7 +9,6 @@ import {
   entryUpdatedAt,
   monitoreoUpdatedAt,
   mergeEventualidades,
-  mergeHistoriaClinica,
   cloneEntry,
 } from './lan-patient-merge.mjs';
 import { emptyMonitoreo } from './features/estado-actual-data.mjs';
@@ -465,37 +464,4 @@ test('mergePatientEntry no borra diagnósticos locales si el peer reciente viene
     (m.patient.diagnosticosList || []).filter(Boolean),
     ['NEUMONÍA']
   );
-});
-
-test('mergeHistoriaClinica gana la versi?n m?s alta', () => {
-  const merged = mergeHistoriaClinica(
-    { version: 2, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' }, dx: 'old' } },
-    { version: 3, data: { meta: { updatedAt: '2026-06-02T10:00:00.000Z' }, dx: 'new' } }
-  );
-  assert.equal(merged.version, 3);
-  assert.equal(merged.data.dx, 'new');
-});
-
-test('mergePatientEntry fusiona historia cl?nica por versi?n', () => {
-  const a = {
-    patient: {
-      id: 'p1',
-      registro: 'R1',
-      historiaClinica: { version: 1, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' } } },
-    },
-    note: { fecha: '01/06/2026' },
-    labHistory: [],
-  };
-  const b = {
-    patient: {
-      id: 'p1',
-      registro: 'R1',
-      historiaClinica: { version: 2, data: { meta: { updatedAt: '2026-06-02T10:00:00.000Z' }, dx: 'peer' } },
-    },
-    note: { fecha: '02/06/2026' },
-    labHistory: [],
-  };
-  const m = mergePatientEntry(a, b);
-  assert.equal(m.patient.historiaClinica.version, 2);
-  assert.equal(m.patient.historiaClinica.data.dx, 'peer');
 });

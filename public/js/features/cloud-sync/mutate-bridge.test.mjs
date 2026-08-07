@@ -25,7 +25,6 @@ describe('mutate-bridge op mapping', () => {
           nombre: 'PACIENTE UNO',
           registro: '12345',
           lanUpdatedAt: '2026-08-02T11:00:00.000Z',
-          historiaClinica: { version: 1, data: { motivo: 'dolor' } },
         },
         note: { texto: 'Evolución' },
         indicaciones: { items: [] },
@@ -45,7 +44,6 @@ describe('mutate-bridge op mapping', () => {
     assert.ok(paths.includes('entries/p1/fields'));
     assert.ok(paths.includes('entries/p1/note'));
     assert.ok(paths.includes('entries/p1/indicaciones'));
-    assert.ok(paths.includes('entries/p1/historiaClinica'));
     assert.ok(paths.includes('labSidecars/p1/lab-1'));
 
     const fieldsOp = ops.find((op) => op.path === 'entries/p1/fields');

@@ -278,12 +278,6 @@ export function buildPatientEntry(patientId) {
   if (patient.monitoreo != null && typeof patient.monitoreo === 'object') {
     patientSnap.monitoreo = structuredClone(patient.monitoreo);
   }
-  if (patientSnap.historiaClinica != null && typeof patientSnap.historiaClinica === 'object') {
-    const hc = structuredClone(patientSnap.historiaClinica);
-    delete hc.pendingLanSync;
-    delete hc.lanSyncPending;
-    patientSnap.historiaClinica = hc;
-  }
   return {
     patient: patientSnap,
     note: notes[patientId] || {},

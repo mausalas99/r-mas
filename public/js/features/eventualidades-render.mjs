@@ -9,7 +9,7 @@ function touchPatientLanUpdatedAt(patientId) {
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
 }
-import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
+import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import {
   rt,
   eventualidadDateToIso,

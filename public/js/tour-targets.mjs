@@ -51,13 +51,6 @@ const TARGETS = {
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
-  historia_clinica: {
-    appTab: 'nota',
-    innerTab: 'historia',
-    selector: '#historia-clinica-mount',
-    focus: false,
-    spotlightClass: 'tour-spotlight-action',
-  },
   eventualidades: {
     appTab: 'nota',
     innerTab: 'eventualidades',

@@ -2,7 +2,7 @@
  * Guardia census — patient chip action sheet (expediente vs eventualidad).
  */
 import { patients } from '../app-state.mjs';
-import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
+import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 import { getUiDensity, setUiDensity } from './chrome.mjs';
 import {
   normalizeEventualidadText,

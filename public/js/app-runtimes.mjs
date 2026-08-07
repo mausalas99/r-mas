@@ -100,9 +100,6 @@ import {
 import {
   registerExpedienteRuntime,
 } from './features/expediente.mjs';
-import {
-  registerHistoriaClinicaRuntime,
-} from './features/historia-clinica-panel.mjs';
 import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
 import {
   extractParsedValues,
@@ -446,7 +443,6 @@ export async function registerAllFeatureRuntimes() {
       },
     })
   );
-  registerHistoriaClinicaRuntime(ctx);
   registerEventualidadesRuntime(ctx);
   registerExpedienteRuntime(ctx);
   registerNotesIndicacionesRuntime(ctx);

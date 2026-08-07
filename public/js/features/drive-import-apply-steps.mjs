@@ -1,7 +1,6 @@
 import { patients } from '../app-state.mjs';
 import { applyDefaultsToNewPatient } from '../app-shell.mjs';
 import { generatePatientId, selectPatient, ensureUniquePatientName } from './patients.mjs';
-import { applyDriveImportHcPatch } from './historia-clinica-panel.mjs';
 import {
   applyDriveImportEventualidades,
   invalidateEventualidadesPanel,
@@ -32,13 +31,6 @@ export function createPatientFromDriveImport(parsed, createNew) {
   return patient;
 }
 
-/** @param {object} patient @param {object} parsed @param {string} mode @param {boolean} fromReview */
-export async function applyDriveImportHcStep(patient, parsed, mode, fromReview) {
-  if (mode === 'eventos') return { ok: true, lanDeferred: false };
-  const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, { fromReview });
-  return { ok: hcRes.ok, lanDeferred: !!hcRes.lanDeferred };
-}
-
 /** @param {object} patient @param {object} parsed */
 export async function applyDriveImportEventosStep(patient, parsed) {
   const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
@@ -57,8 +49,7 @@ export async function applyDriveImportLabsStep(patient, parsed) {
 
 /** @param {string} mode @param {object} parsed @param {{ added: number }} labRes */
 export function resolveDriveImportNavigateTo(mode, parsed, labRes) {
-  const hcKeys = Object.keys(parsed.hcPatch || {}).filter((k) => !String(k).startsWith('_'));
-  let navigateTo = mode === 'eventos' || !hcKeys.length ? 'eventualidades' : 'historia';
+  let navigateTo = mode === 'eventos' ? 'eventualidades' : 'estadoActual';
   if (labRes.added && navigateTo === 'eventualidades' && mode === 'eventos') navigateTo = 'lab';
   return navigateTo;
 }

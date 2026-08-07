@@ -42,7 +42,6 @@ lib/                  Node-side shared logic (importable from main/server)
   doc-generators/     Native .docx (note, indicaciones, listado)
   entrega/            Modo entrega pendientes (v2 templates + completion)
   interno/            Mobile interno/guardia board, QR, vitals, scope
-  historia-clinica/   HC compile, defaults, migration
   drive-import/       Google Drive HC/labs import parsers
  lab-repo/           Intrahospital lab portal scraper (ASP.NET HTML parse, PDF fetch)
 
@@ -84,7 +83,6 @@ docs/
 | Interno mobile | `lib/interno/` (`host-store-db.cjs` census from SQLCipher), `public/interno/`, `server.js` interno routes |
 | Cloud sync (Nube) | `cloud/sync-worker/`, `public/js/features/cloud-sync/` (`autostart`, `mutate-bridge`, `cloud-ops-events`, `sync-apply` via `features/sync-apply/`), `clinical-ops-sync.mjs`, `cloud-mobile/`; LAN LiveSync HTTP off by default (`R_PLUS_ENABLE_LAN_SYNC`) | all clinical wards |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs`, `features/equipos-{board,qr-panel}.mjs` | LAN `:3738` **or** Cloudflare Worker queue |
-| Historia clínica | `lib/historia-clinica/`, expediente features |
 | Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
 | Labs / tendencias | `public/js/labs*.mjs`, `labs-default-refs.mjs` (rangos estándar / previos si SOME sin refs), `labs-reslabs-sanitize.mjs` (whitelist paneles en resLabs), `labs-panel-defs.mjs` / `labs-panel-parse.mjs` / `labs-panel-overlay*.mjs` (paneles + overlay LAN), `cultivo-block-core.mjs`, `features/tendencias.mjs`, `lab-panel.mjs`, `features/lan/lab-panel-overlay-sync.mjs`, paste-anywhere `features/paste-smart*.mjs` |
 | Lab repo scraper | `lib/lab-repo/` (`portal-client.mjs`, `portal-html.mjs`, fixtures); spec `docs/superpowers/specs/2026-06-27-lab-repo-scraper-design.md` |
@@ -136,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
 - **2026-08-07** `8.0.5-lan-retirement-ws3-4`: `server.js` excluded from electron-builder release pack; dev ward server via `R_PLUS_DEV_WARD_SERVER=1`; `electron-pack-files.js`, `main.js`, `package.json`.
+- **2026-08-07** `8.0.5-lan-retirement-ws3-3`: Historia clínica removed from product — `lib/historia-clinica/`, expediente HC panel, Nube `historiaClinica` push; `lib/clinical-text.mjs`, drive-import catalogs.
 - **2026-08-07** `8.0.5-lan-retirement-ws3-2`: deleted `lan-squad/` + `features/lan/`; cloud `panel-chrome`/`connection-panel`; ward `server.js` doc export + interno/equipos only; `lib/team-code.js`, `lib/write-queue.js`.
 - **2026-08-07** `8.0.5-lan-retirement`: Interno MIP on Nube + Equipos cloud-only; ward server :3738 off in production (`R_PLUS_DEV_WARD_SERVER=1` dev only); WS3-1 cloud-sync facades (`panel-chrome.mjs`, `mutate-bridge`) replace `lan-sync` barrel imports; `main.js`, `preload.js`, `interno-access-sync.mjs`, `equipos-cloud-config.mjs`, `cloud/sync-worker/src/interno/`.
 - **2026-08-07** `release-8.0.4`: Worker pull snapshot-before-SELECT + mutation prune; clinicalOps fuera del censo; iPad hidrata equipos tras censo; desktop Nube conserva matches estructurales; `pull-strategy.js`, `mutate-bridge.mjs`, `mobile-team-patient-scope.mjs`.

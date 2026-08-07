@@ -15,7 +15,6 @@ import {
 } from '../../app-state.mjs';
 import {
   mergeEventualidades,
-  mergeHistoriaClinica,
   mergeLabHistorySets,
 } from '../../lan-patient-merge.mjs';
 import { mergePatientMonitoreoFromImported } from '../estado-actual-data.mjs';
@@ -227,13 +226,6 @@ function applyLanPatientNested(existing, entry, p) {
       changed = true;
     }
   }
-  if (p.historiaClinica && typeof p.historiaClinica === 'object') {
-    var mergedHc = mergeHistoriaClinica(existing.historiaClinica, p.historiaClinica);
-    if (mergedHc && !lanJsonEqual(existing.historiaClinica, mergedHc)) {
-      existing.historiaClinica = mergedHc;
-      changed = true;
-    }
-  }
   if (applyLanPatientCharts(existing, entry)) changed = true;
   var monBefore = JSON.stringify(existing);
   mergePatientMonitoreoFromImported(existing, p);
@@ -326,9 +318,6 @@ function seedNewPatientArtifacts(remoteId, entry) {
 function attachOptionalPatientFields(newPat, patient) {
   if (patient.eventualidades && typeof patient.eventualidades === 'object') {
     newPat.eventualidades = patient.eventualidades;
-  }
-  if (patient.historiaClinica && typeof patient.historiaClinica === 'object') {
-    newPat.historiaClinica = structuredClone(patient.historiaClinica);
   }
 }
 

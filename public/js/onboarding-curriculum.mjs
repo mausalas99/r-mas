@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 12;
+export const CURRICULUM_VERSION = 13;
 
 export const SALA_CHAPTERS = [
   {
@@ -18,7 +18,6 @@ export const SALA_CHAPTERS = [
     title: 'Expediente · Clínico',
     stepIds: [
       'sala_expediente_tabs',
-      'historia_clinica',
       'estado_actual',
       'estado_actual_registro',
       'estado_actual_review',
@@ -291,5 +290,6 @@ export function migrateTourStepId(stepId, _branch) {
     return 'estado_actual_review';
   }
   if (stepId === 'sala_soap') return 'sala_med';
+  if (stepId === 'historia_clinica') return 'estado_actual';
   return stepId;
 }

@@ -1,4 +1,4 @@
-import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
+import { toClinicalHistoryText } from '../../../lib/clinical-text.mjs';
 
 export function normalizeEventualidadText(text) {
   return toClinicalHistoryText(text).trim();

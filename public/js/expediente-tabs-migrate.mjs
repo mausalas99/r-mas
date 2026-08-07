@@ -12,6 +12,7 @@ function migrateGranularMobile(granularTab, settings) {
 }
 
 function migrateGranularSala(granularTab, settings) {
+  if (granularTab === 'historia') return 'estadoActual';
   if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) {
     return 'estadoActual';
   }

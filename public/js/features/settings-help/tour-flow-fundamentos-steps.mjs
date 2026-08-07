@@ -118,13 +118,6 @@ function renderSalaExpedienteTabs(bodyEl, nextBtn) {
   showNext(nextBtn);
 }
 
-function renderHistoriaClinica(bodyEl, nextBtn) {
-  bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;"><strong>Historia Clínica</strong> (ingreso institucional en <strong>3 pasos</strong>) ya no vive en la barra diaria de Clínico. Se abre desde <strong>Importar desde Drive</strong> o el checklist de entrega cuando hace falta.</p>' +
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Solo en <strong>Sala</strong>. En sala en vivo (⇄) se sincroniza por paciente con el anfitrión.</p>';
-  showNext(nextBtn);
-}
-
 function renderIcNota(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente (motor nativo en Node; no requiere Python). Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
@@ -280,7 +273,6 @@ const FUNDAMENTOS_STEP_HANDLERS = {
   lab_view: renderLabView,
   ic_expediente_tabs: renderIcExpedienteTabs,
   sala_expediente_tabs: renderSalaExpedienteTabs,
-  historia_clinica: renderHistoriaClinica,
   ic_nota: renderIcNota,
   ic_indica: renderIcIndica,
   ic_exports: renderIcExports,

@@ -1,7 +1,6 @@
 import { patients, saveState } from '../app-state.mjs';
 import { applyDefaultsToNewPatient } from '../app-shell.mjs';
 import { generatePatientId, selectPatient, ensureUniquePatientName } from './patients.mjs';
-import { applyDriveImportHcPatch } from './historia-clinica-panel.mjs';
 import { applyDriveImportEventualidades } from './eventualidades-panel.mjs';
 import { invalidateEventualidadesPanel } from './eventualidades-panel.mjs';
 import { applyDriveImportLabSets } from './lab-panel.mjs';
@@ -41,14 +40,6 @@ function createPatientFromDriveHeader(header) {
   return patient;
 }
 
-async function applyDriveHcPatchIfNeeded(patient, parsed, mode, options) {
-  if (mode === 'eventos') return { ok: true, lanDeferred: false };
-  const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
-    fromReview: !!options.fromReview,
-  });
-  return { ok: hcRes.ok, lanDeferred: !!hcRes.lanDeferred };
-}
-
 async function applyDriveEventualidadesSection(patient, parsed) {
   const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
   invalidateEventualidadesPanel();
@@ -66,10 +57,7 @@ async function applyDriveLabSetsIfAny(patient, parsed) {
 }
 
 function resolveDriveImportNavigateTo(mode, parsed, labRes) {
-  const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function (k) {
-    return !String(k).startsWith('_');
-  });
-  let navigateTo = mode === 'eventos' || !hcKeys.length ? 'eventualidades' : 'historia';
+  let navigateTo = mode === 'eventos' ? 'eventualidades' : 'estadoActual';
   if (labRes.added && navigateTo === 'eventualidades' && mode === 'eventos') {
     navigateTo = 'lab';
   }
@@ -88,10 +76,6 @@ async function applyDriveImportInner(parsed, options) {
   if (!patient) {
     return { ok: false, error: 'no-patient' };
   }
-
-  const hcRes = await applyDriveHcPatchIfNeeded(patient, parsed, mode, options);
-  if (hcRes.lanDeferred) lanSyncDeferred = true;
-  if (!hcRes.ok) return { ok: false, error: 'hc-conflict' };
 
   const evRes = await applyDriveEventualidadesSection(patient, parsed);
   if (evRes.lanDeferred) lanSyncDeferred = true;

@@ -7,13 +7,13 @@ import {
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 
-test('getSalaTourSteps orden overhaul: lab primero, clinico HC EA Eventualidades, salida VPO receta agenda', () => {
+test('getSalaTourSteps orden overhaul: lab primero, clinico EA Eventualidades, salida VPO receta agenda', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 22);
+  assert.equal(steps.length, 21);
   assert.ok(!steps.includes('lab_bulk_separator'));
   assert.ok(!steps.includes('sala_manejo'));
+  assert.ok(!steps.includes('historia_clinica'));
   assert.equal(steps.indexOf('servicio_default'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.indexOf('estado_actual'), steps.indexOf('historia_clinica') + 1);
   assert.equal(steps.indexOf('estado_actual_registro'), steps.indexOf('estado_actual') + 1);
   assert.equal(steps.indexOf('estado_actual_review'), steps.indexOf('estado_actual_registro') + 1);
   assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual_review') + 1);
@@ -76,10 +76,7 @@ test('gv7 action steps require user interaction', () => {
   assert.equal(stepRequiresUserAction('livesync_desktop'), true);
 });
 
-test('getTourTarget para historia_clinica y eventualidades en Clínico (Sala)', () => {
-  const hc = getTourTarget('historia_clinica', 'sala');
-  assert.equal(hc.innerTab, 'historia');
-  assert.match(hc.selector, /historia-clinica-mount/);
+test('getTourTarget para eventualidades en Clínico (Sala)', () => {
   const ev = getTourTarget('eventualidades', 'sala');
   assert.equal(ev.innerTab, 'eventualidades');
   assert.match(ev.selector, /exp-segment-eventualidades/);
