@@ -35,9 +35,9 @@ var HELP_ARTICLES = [
       '</ul>'
   },
   {
-    id: 'lan-pin-turno',
+    id: 'nube-conexion-turno',
     title: 'R+ Cloud, equipos y móvil',
-    keywords: 'nube cloud conexion livesync sala directorio mi rotacion ipad mobile qr invitacion r+ cloud',
+    keywords: 'nube cloud conexion livesync sala directorio mi rotacion ipad mobile qr invitacion r+ cloud interno mip',
     html:
       '<p>El turno se sincroniza con <strong>R+ Cloud</strong> (Nube). No hace falta un Mac anfitrión en la Wi‑Fi del hospital.</p>' +
       '<ul>' +
@@ -45,6 +45,7 @@ var HELP_ARTICLES = [
       '<li><strong>Mi rotación</strong> — @usuario, equipos e integrantes (se publican por clinicalOps a la sala).</li>' +
       '<li><strong>Directorio de usuarios</strong> — quién está en la sala; el admin asigna a equipos.</li>' +
       '<li><strong>iPad / R+ Móvil</strong> — enlace o QR desde ⇄; inicia sesión con la misma cuenta Nube.</li>' +
+      '<li><strong>QR Internos (MIP)</strong> — enlace Nube para pregrado; sin IP local ni LAN.</li>' +
       '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores por equipo en la grilla; sync discreta en segundo plano.</li>' +
       '</ul>'
   },
@@ -74,7 +75,7 @@ var HELP_ARTICLES = [
       '</ul>'
   },
   {
-    id: 'lan-vs-respaldo',
+    id: 'nube-vs-respaldo',
     title: 'R+ Cloud vs respaldos entre equipos',
     keywords: 'nube cloud conexion sala equipo respaldo sync paquete sincronizar vivo copia snapshot exportar',
     html:

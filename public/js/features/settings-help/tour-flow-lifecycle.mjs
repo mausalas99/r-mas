@@ -26,7 +26,7 @@ const rt = getSettingsHelpRuntime();
 /** Set when guided tour ends; consumed by handlePostGuidedTourOnboardingResume. */
 let postTourResumeBranch = null;
 
-/** Sala tour implies LAN; dismiss sync-mode overlay before guided-tour-running is cleared. */
+/** Sala tour exit — dismiss sync-mode overlay before guided-tour-running is cleared. */
 function prepareSalaGuidedTourExitSync() {
   if (!isClinicalSyncModeChosen(readRpcSettings())) {
     setClinicalSyncModeLocalOnly(false);

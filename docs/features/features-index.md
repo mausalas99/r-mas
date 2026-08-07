@@ -12,13 +12,13 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | Feature | Code path | Doc / spec |
 |---------|-----------|------------|
 | Laboratorio / SOME | `public/js/labs*.mjs`, `lab-panel.mjs` | Magic moment pipeline |
-| Lab panel overlay | `labs-panel-overlay*.mjs`, `features/lan/lab-panel-overlay-sync.mjs` | PanelDef overlay + LAN `labPanelOverlay` (sin wizard) |
+| Lab panel overlay | `labs-panel-overlay*.mjs`, `labs-panel-overlay-sync.mjs` | PanelDef overlay en censo Nube (sin wizard) |
 | Lab repo / Actualizar labs | `lib/lab-repo/`, `lab-repo-import.mjs`, `lab-repo-batch-import.mjs` | Unificado: paciente activo → fechas; sin paciente → mi equipo. [scraper](../superpowers/specs/2026-06-27-lab-repo-scraper-design.md) |
 | Labs externos (manual) | `labs-manual-catalog.mjs`, `labs-manual-synthesize.mjs`, `features/lab-manual-entry.mjs` | [spec](../superpowers/specs/2026-07-31-labs-externos-manual-entry-design.md) — tipo + celdas → historial `origin: 'externo'` |
 | Paste-anywhere / Procesar SOME | `public/js/features/paste-smart.mjs`, `paste-smart-model.mjs` | Global paste or ⌘K → match census → confirm once → Labs |
 | Cola documentación (mi equipo) | `public/js/features/doc-queue-panel.mjs`, `doc-queue-model.mjs`, `lab-eventualidad-interpret.mjs`, `lab-eventualidad-autosend.mjs`, `eventualidades-labs-timeline.mjs` | Interpretación → `labsText` + timeline Labs (auto); [spec](../superpowers/specs/2026-08-03-labs-timeline-auto-ux-design.md) |
 | ⌘K palette (acciones) | `public/js/command-palette-model.mjs`, `features/command-palette.mjs` | Jumps + shift actions (Procesar SOME, labs batch, doc queue, EA, export, pase) |
-| Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: HC / EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
+| Preparar entrega (checklist) | `lib/entrega/entrega-prep-checklist.mjs`, `public/js/features/entrega-prep-panel.mjs` | Mi equipo: EA hoy / pendientes vencidos / cultivos sin seguimiento → 1 clic |
 | Cola cultivos (mi equipo) | `public/js/features/cultivo-queue-panel.mjs`, `cultivo-queue-model.mjs` | ATB pendiente / sin nota → Cultivos |
 | EA → clipboard indicaciones | `public/js/features/ea-indicaciones-clipboard.mjs` | Copiar meds confirmados + bomba a portapapeles |
 | Tendencias | `public/js/features/tendencias.mjs` | |
@@ -27,16 +27,15 @@ When adding a feature, create `feat-<name>.md` here and link from this table.
 | VPO | `public/js/features/vpo.mjs`, `vpo-*.mjs` | [spec](../superpowers/specs/2026-05-29-vpo-design.md) |
 | Medicamentos / receta | `public/js/med-receta-core.mjs` | |
 | Document export | `lib/doc-generators/`, `document-export-client.mjs` | [spec](../superpowers/specs/2026-05-30-native-document-generation-design.md) |
-| Cloud sync (Nube 7.9) | `public/js/features/cloud-sync/` (`panel-conexion`, `autostart`, `cutover-*`), `cloud/sync-worker/` (month room + `004-active-room`) | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md); mobile: [2026-08-05](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
-| LiveSync / LAN | `public/js/features/lan/`, `lan-squad/` | [spec](../superpowers/specs/2026-06-03-lan-sync-improvements-design.md) |
+| Cloud sync (Nube) | `public/js/features/cloud-sync/` (`panel-conexion`, `autostart`, `mutate-bridge`), `cloud/sync-worker/` (month room + `004-active-room`) | [spec](../superpowers/specs/2026-08-02-cloud-sync-free-pilot-design.md); Conexión light-switch: [2026-08-03](../superpowers/specs/2026-08-03-ttd-retyping-tooltime-design.md); mobile: [2026-08-05](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | Borrado pacientes (bulk) | `patient-delete-batch.mjs`, `patients-bulk-select.mjs` | Multi-select en sidebar; tombstone + purge host/Nube para que no regresen |
 | Guardia board | `public/js/features/guardia-board.mjs`, `guardia-phase-bar.mjs`, `guardia-census-empty.mjs`, `guardia-fin-turno-*.mjs` | [spec](../superpowers/specs/2026-06-05-guardia-panel-overhaul-design.md); Nube UX + fin de guardia: [2026-08-07](../superpowers/specs/2026-08-07-magia-ic-guardia-nube-ux-design.md) |
 | Magia IC (nota ← EA/censo) | `note-from-estado-actual.mjs`, `patient-diagnosticos.mjs`, `notes-indicaciones.mjs` | [spec](../superpowers/specs/2026-08-07-magia-ic-guardia-nube-ux-design.md) |
 | Modo entrega | `lib/entrega/`, `clinical-entrega.mjs` | |
 | Clinical teams | `public/js/features/clinical-teams/` | |
 | Onboarding / Learn Hub | `clinical-onboarding*.mjs`, `learn-hub.mjs` | |
-| Interno mobile | `lib/interno/`, `public/interno/` | [spec](../superpowers/specs/2026-06-02-interno-guardia-mobile-design.md) |
-| Cloud mobile (iPad / R+ Móvil Nube) | `cloud/sync-pages/`, `public/js/features/cloud-mobile/`, `cloud/sync-worker/` ASSETS | [spec](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) — 7.9.5; Phase B interno MIP on cloud |
+| Interno MIP (Nube) | `panel-interno-qr.mjs`, `interno-access-sync.mjs`, `cloud/sync-worker/src/interno/` | [feat-interno-mip-nube.md](./feat-interno-mip-nube.md); QR ⇄ → `/interno/{sala}` |
+| Cloud mobile (iPad / R+ Móvil Nube) | `cloud/sync-pages/`, `public/js/features/cloud-mobile/`, `cloud/sync-worker/` ASSETS | [spec](../superpowers/specs/2026-08-05-cloud-mobile-ipad-design.md) |
 | Equipos (Lumify/EKG/US) | `lib/equipos/`, `public/equipos/`, `cloud/equipos-worker/`, `equipos-cloud-config.mjs` | [spec](../superpowers/specs/2026-06-23-equipos-tracking-design.md); cloud deploy: `cloud/equipos-worker/README.md` |
 | Settings / tours | `public/js/features/settings-help/` | |
 | Platform / backup | `public/js/features/platform/` | |

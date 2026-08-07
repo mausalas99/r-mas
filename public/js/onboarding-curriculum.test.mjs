@@ -12,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 13 without Historia clínica tour step', () => {
-  assert.equal(CURRICULUM_VERSION, 13);
+test('CURRICULUM_VERSION is 14 without LAN PIN tour step', () => {
+  assert.equal(CURRICULUM_VERSION, 14);
 });
 
 test('getSalaTourSteps has 21 base steps without Historia clínica', () => {
@@ -58,6 +58,10 @@ test('getChapterProgressLabel quick-route uses linear index', () => {
   assert.match(label.chapterTitle, /Ruta rápida/i);
 });
 
+test('migrateTourStepId maps retired gv7_lan_pin to directorio', () => {
+  assert.equal(migrateTourStepId('gv7_lan_pin', 'guardia-v7'), 'gv7_lan_directorio');
+});
+
 test('migrateTourStepId maps legacy estado_actual substeps', () => {
   assert.equal(migrateTourStepId('estado_actual_charts', 'sala'), 'estado_actual_review');
   assert.equal(migrateTourStepId('sala_soap', 'interconsulta'), 'sala_med');
@@ -81,9 +85,10 @@ test('guardia-v7 censo chapter precedes entrega', () => {
   assert.equal(getChapterForStep('gv7_censo_r1', 'guardia-v7').id, 'ch-guardia-censo');
   assert.equal(getChapterForStep('gv7_trust_strip', 'guardia-v7').id, 'ch-guardia-modo');
   assert.equal(getChapterForStep('gv7_fin_turno', 'guardia-v7').id, 'ch-guardia-entrega');
-  assert.equal(getChapterForStep('gv7_inherit_patients', 'guardia-v7').id, 'ch-guardia-lan');
+  assert.equal(getChapterForStep('gv7_inherit_patients', 'guardia-v7').id, 'ch-guardia-nube');
   const steps = getGuardiaV7TourSteps();
-  assert.equal(steps.length, 23);
+  assert.equal(steps.length, 22);
+  assert.ok(!steps.includes('gv7_lan_pin'));
   assert.ok(steps.indexOf('gv7_censo_sync') < steps.indexOf('gv7_entrega_phase'));
   assert.ok(steps.indexOf('gv7_trust_strip') < steps.indexOf('gv7_guardia_toggle'));
   assert.ok(steps.indexOf('gv7_entrega_pendientes') < steps.indexOf('gv7_fin_turno'));

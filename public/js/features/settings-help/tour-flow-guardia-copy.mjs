@@ -34,15 +34,14 @@ const GV7_HELP_ARTICLE = {
   gv7_entrega_roster: 'modo-entrega',
   gv7_entrega_pendientes: 'modo-entrega',
   gv7_fin_turno: 'modo-entrega',
-  gv7_lan_wifi: 'lan-pin-turno',
-  gv7_lan_pin: 'lan-pin-turno',
-  gv7_lan_directorio: 'lan-pin-turno',
+  gv7_lan_wifi: 'nube-conexion-turno',
+  gv7_lan_directorio: 'nube-conexion-turno',
   gv7_lan_rotacion: 'rotacion-equipos',
   gv7_rotacion_rejoin: 'rotacion-equipos',
   gv7_inherit_patients: 'rotacion-equipos',
-  gv7_mobile_link: 'lan-pin-turno',
-  gv7_mobile_scope: 'lan-pin-turno',
-  gv7_mobile_vs_sala: 'lan-pin-turno',
+  gv7_mobile_link: 'nube-conexion-turno',
+  gv7_mobile_scope: 'nube-conexion-turno',
+  gv7_mobile_vs_sala: 'nube-conexion-turno',
 };
 
 const GV7_ACTION_HINT = {
@@ -115,9 +114,7 @@ function getGuardiaV7StepBody(stepId) {
     gv7_lan_wifi:
       '<p style="margin:0;line-height:1.5;">' +
       LIVESYNC_BTN_COPY +
-      ': cuenta, sala y sincronización del turno por Nube (sin depender de un Mac anfitrión en la Wi‑Fi).</p>',
-    gv7_lan_pin:
-      '<p style="margin:0;line-height:1.5;">En <strong>⇄ Conexión</strong> entras con tu cuenta de R+ Cloud. La sala del equipo se elige ahí; no hace falta PIN de anfitrión local.</p>',
+      ': cuenta, sala y sincronización del turno por Nube (sin Mac anfitrión ni escaneo de red local).</p>',
     gv7_lan_directorio:
       '<p style="margin:0;line-height:1.5;">El <strong>directorio de usuarios</strong> en Mi rotación muestra quién está en la sala. Los cambios de equipos se sincronizan por R+ Cloud.</p>',
     gv7_lan_rotacion:
@@ -131,7 +128,7 @@ function getGuardiaV7StepBody(stepId) {
     gv7_mobile_scope:
       '<p style="margin:0;line-height:1.5;">' + MOBILE_SCOPE_COPY + '</p>',
     gv7_mobile_vs_sala:
-      '<p style="margin:0;line-height:1.5;">En R+ Cloud, <strong>iPad/móvil</strong> (sesión Nube) y el <strong>escritorio</strong> comparten la misma sala; no hace falta ticket LAN de un solo uso.</p>',
+      '<p style="margin:0;line-height:1.5;">En R+ Cloud, <strong>iPad/móvil</strong> (sesión Nube) y el <strong>escritorio</strong> comparten la misma sala; el enlace o QR de ⇄ Conexión basta para unirse.</p>',
     gv7_censo_r1: buildGv7CensoR1Copy(rank),
     gv7_censo_r4: buildGv7CensoR4Copy(rank),
     gv7_censo_sync:

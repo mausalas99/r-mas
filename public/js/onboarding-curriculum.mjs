@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 13;
+export const CURRICULUM_VERSION = 14;
 
 export const SALA_CHAPTERS = [
   {
@@ -113,11 +113,10 @@ export const GUARDIA_V7_CHAPTERS = [
     ],
   },
   {
-    id: 'ch-guardia-lan',
+    id: 'ch-guardia-nube',
     title: 'R+ Cloud y equipos',
     stepIds: [
       'gv7_lan_wifi',
-      'gv7_lan_pin',
       'gv7_lan_directorio',
       'gv7_lan_rotacion',
       'gv7_rotacion_rejoin',
@@ -291,5 +290,6 @@ export function migrateTourStepId(stepId, _branch) {
   }
   if (stepId === 'sala_soap') return 'sala_med';
   if (stepId === 'historia_clinica') return 'estado_actual';
+  if (stepId === 'gv7_lan_pin') return 'gv7_lan_directorio';
   return stepId;
 }

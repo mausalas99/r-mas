@@ -261,10 +261,10 @@ function isConnectionDropdownOpenForTour() {
 }
 
 function isMobileInviteExpandedForTour() {
-  var details = document.querySelector('details.lan-invite-collapsible--mobile');
+  var details = document.querySelector('.lan-invite-collapsible--mobile');
   if (details && details.open) return true;
-  var pairing = document.getElementById('lan-pairing-display-mobile');
-  return !!(pairing && !pairing.hidden);
+  var qrHost = document.querySelector('.cloud-mobile-invite-qr-host');
+  return !!(qrHost && qrHost.querySelector('canvas'));
 }
 
 function isGuardiaEntregasFilterActiveForTour() {
@@ -368,7 +368,6 @@ var TOUR_DOCK_LEFT_STEPS = {
   livesync_desktop: 1,
   livesync_mobile: 1,
   gv7_lan_wifi: 1,
-  gv7_lan_pin: 1,
   gv7_mobile_link: 1,
   gv7_mobile_scope: 1,
   gv7_mobile_vs_sala: 1,
