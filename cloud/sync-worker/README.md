@@ -203,6 +203,26 @@ curl -s -X POST "$BASE/api/sync/v1/admin/users/$USER_ID/reset-password" \
 
 See also [Admin API](#admin-api-r4--program-admin).
 
+### Interno MIP access (migration 005)
+
+Apply `schema/005-interno-access.sql` via migrations after deploy:
+
+```bash
+cd cloud/sync-worker
+npm run db:migrate:remote   # production
+# npm run db:migrate:local  # local dev
+```
+
+Adds `sala_interno_access` — per-sala Interno mobile access tokens for Nube (replaces LAN-hosted Interno board auth):
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `sala` | TEXT PK | Clinical ward key (e.g. `Sala 1`, `Torre HU`) |
+| `access_token` | TEXT | Bearer token for `/interno/*` routes |
+| `is_active` | INTEGER | `1` = Interno board enabled for sala |
+| `rotated_at` | TEXT | Last token rotation timestamp |
+| `rotated_by` | TEXT | User id that rotated the token |
+
 ## Secrets
 
 | Secret | Purpose |
