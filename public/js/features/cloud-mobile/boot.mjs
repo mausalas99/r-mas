@@ -122,6 +122,27 @@ export async function initCloudMobileBoot() {
     });
     try {
       await runtime?.syncCycle?.();
+      // Teams/assignments may live only on the sala clinicalOps doc — pull after census
+      // so the team mirror can show assigned charts (census push no longer stamps clinicalOps).
+      try {
+        const sala = String(getCloudSyncRoomSnapshot()?.sala || '').trim();
+        if (sala) {
+          const { pullClinicalOpsForSala } = await import('../cloud-sync/cloud-clinical-ops-sala.mjs');
+          // since:0 — cached sala revision is already at head after ensureTurn, so
+          // incremental pull returns ops:[] with no state.clinicalOps.
+          await pullClinicalOpsForSala(sala, { since: 0 });
+        }
+      } catch {
+        /* clinicalOps directory optional */
+      }
+      try {
+        const access = await import('../../clinical-access-runtime.mjs');
+        if (typeof access.finalizeMobileLanPatientCensus === 'function') {
+          await access.finalizeMobileLanPatientCensus();
+        }
+      } catch {
+        /* scope finalize optional */
+      }
       await notifyIfCloudMobileCensusEmpty(toast);
       showCloudMobileEmptyCensusBanner();
       try {

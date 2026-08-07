@@ -191,8 +191,18 @@ export async function pullClinicalOpsForSala(sala, opts = {}) {
     clinicalOps = fold.clinicalOps ?? null;
   }
   if (clinicalOps != null) {
-    const { applyClinicalOpsLanSnapshot } = await import('../../clinical-ops-sync.mjs');
-    await applyClinicalOpsLanSnapshot(clinicalOps);
+    const { isClinicalOpsLanAvailable, applyClinicalOpsLanSnapshot } = await import(
+      '../../clinical-ops-sync.mjs'
+    );
+    if (isClinicalOpsLanAvailable()) {
+      await applyClinicalOpsLanSnapshot(clinicalOps);
+    } else {
+      // iPad/PWA: no SQLCipher — hydrate session scope from the snapshot directly.
+      const { applyClinicalScopeFromLanOpsSnapshot } = await import(
+        '../../clinical-access-runtime.mjs'
+      );
+      applyClinicalScopeFromLanOpsSnapshot(clinicalOps);
+    }
   }
 
   await hydrateClinicalTeamsAfterCloudPull();

@@ -1,0 +1,47 @@
+R+ 8.0.4 (pull D1 + censo equipo iPad/desktop)
+============================================================
+
+Fecha: 2026-08-07
+
+## Resumen
+
+**8.0.4** evita el **OOM del Worker** al hacer pull con historial de mutaciones grande (Sala 2), deja de mezclar **clinicalOps** en el push de censo (LWW ya no borra asignaciones), y corrige el **censo por equipo** en iPad y desktop: el iPad hidrata equipos tras el censo; en Mac no desaparecen pacientes sin asignación explícita al re-render (p. ej. Actualizar labs).
+
+## Nuevo / mejorado
+
+- **Worker — pull sin OOM** — Si el gap de revisión es grande, responde `needSnapshot` **antes** de leer filas de `mutations` (evita cargar decenas de MB en el isolate D1). Tras cada push, poda ops viejas (`revision <= room.revision - 100`).
+- **clinicalOps fuera del censo** — El push de censo ya no estampa `clinicalOps` con el reloj del bundle (LWW de documento completo podía vaciar equipos/asignaciones). Equipos van por rooms de sala (`pushClinicalOpsForSala` / seed al conectar).
+- **iPad — censo con equipos** — Tras el sync de censo, pull de `clinicalOps` con `since:0` e hidratación de alcance en sesión (sin SQLCipher); finalize del mirror de equipo. Así aparecen las fichas asignadas.
+- **Desktop — barra estable** — Alcance Nube conserva pacientes locales sin asignación que encajan estructuralmente en un equipo unido; Actualizar labs / selectPatient ya no vacía la barra. iPad sigue siendo solo asignación + guardia.
+- **Pull apply** — En iPad, no filtra por equipo hasta que el alcance clínico esté listo (si filtra antes, un clinicalOps tardío nunca reenvía filas de censo).
+- **Actualizar labs (equipo)** — Usa el mismo filtro de la barra de pacientes (no re-estrecha a asignaciones explícitas).
+- **R+ Móvil UI** — Ajustes de estilos en sync, eventualidades y pase.
+- **Tests** — `pull-strategy`, mirror desktop/iPad, autostart clinicalOps, pull-apply scope ready.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v8.0.4
+
+- Mac: `R+-8.0.4-arm64.dmg`, `R+-8.0.4-x64.dmg` (y zip para auto-update).
+- Windows: `R+-8.0.4-x64.exe`.
+
+Descarga **8.0.4 en todas las Macs** del turno. **Despliega el Worker el mismo día** — la poda de mutaciones y el pull por snapshot viven en `cloud/sync-worker`.
+
+**Operador cloud (recomendado antes del turno):**
+
+```bash
+cd /Users/mauriciosalas/R+
+npm run build:cloud-mobile
+cd cloud/sync-worker
+npm run deploy
+cd ../..
+curl -sS "https://rplus-sync.rmas-workersdev.workers.dev/api/sync/v1/ping"
+```
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+
+## Notas
+
+- Si en 8.0.3 el pull de Nube crasheaba el Worker en salas con mucho historial, 8.0.4 lo corrige (redeploy obligatorio).
+- Si el iPad quedaba sin pacientes pese a tener equipo, o la Mac perdía fichas al actualizar labs, actualiza app + Worker.
+- Peers atrasados >100 revisiones reciben snapshot; no necesitan el log antiguo de ops.

@@ -2,11 +2,13 @@ import { decryptJson, encryptJson } from './crypto-at-rest.js';
 import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
 import { applyOps } from './lww.js';
+import {
+  mutationPruneCeiling,
+  shouldReturnSnapshotPull,
+} from './pull-strategy.js';
 import { QUOTAS } from './quotas.js';
 import { userFromAuthHeader } from './session.js';
 
-const PULL_REVISION_GAP = 100;
-const PULL_OPS_MAX_BYTES = 256 * 1024;
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
 const MUTATION_COMMIT_ATTEMPTS = 5;
 
@@ -162,6 +164,14 @@ async function commitMutationBatch(env, db, opts) {
     const inserted = Number(results?.[0]?.meta?.changes ?? 0);
     const bumped = Number(results?.[1]?.meta?.changes ?? 0);
     if (inserted !== 1 || bumped !== 1) return { ok: false, reason: 'stale' };
+    // Drop ops history outside the incremental window — unbounded mutations OOMs D1 pull.
+    const pruneAt = mutationPruneCeiling(nextRevision);
+    if (pruneAt > 0) {
+      await db
+        .prepare('DELETE FROM mutations WHERE room_id = ? AND revision <= ?')
+        .bind(roomId, pruneAt)
+        .run();
+    }
     return { ok: true, revision: nextRevision };
   } catch (err) {
     if (!isD1UniqueConstraintError(err)) throw err;
@@ -310,6 +320,17 @@ async function handlePull(request, env, db, roomId) {
   }
 
   const gap = revision - since;
+  // CRITICAL: check gap BEFORE selecting mutations. Loading 1000+ ops_json rows
+  // (tens of MB) into the D1 isolate exceeds memory and resets the DB.
+  if (shouldReturnSnapshotPull(gap)) {
+    const { state } = await loadRoomState(env, db, roomId);
+    return Response.json({
+      revision,
+      needSnapshot: true,
+      state,
+    });
+  }
+
   const { results } = await db
     .prepare(
       `SELECT revision, ops_json FROM mutations
@@ -326,17 +347,16 @@ async function handlePull(request, env, db, roomId) {
   for (const row of rows) {
     const chunk = String(row.ops_json || '[]');
     cumulativeBytes += new TextEncoder().encode(chunk).length;
+    if (shouldReturnSnapshotPull(gap, cumulativeBytes)) {
+      const { state } = await loadRoomState(env, db, roomId);
+      return Response.json({
+        revision,
+        needSnapshot: true,
+        state,
+      });
+    }
     const parsed = JSON.parse(chunk);
     if (Array.isArray(parsed)) ops.push(...parsed);
-  }
-
-  if (gap > PULL_REVISION_GAP || cumulativeBytes > PULL_OPS_MAX_BYTES) {
-    const { state } = await loadRoomState(env, db, roomId);
-    return Response.json({
-      revision,
-      needSnapshot: true,
-      state,
-    });
   }
 
   if (!ops.length && since < revision) {

@@ -316,9 +316,8 @@ export function mapBundleEnvelopeToOps(bundle, meta) {
   }
   ops.push(...mapBundleTodosToOps(bundle, meta));
   ops.push(...mapBundleAgendaToOps(bundle, meta));
-  if (bundle.clinicalOps != null) {
-    ops.push(cloudOp({ path: 'clinicalOps', value: bundle.clinicalOps, ...meta }));
-  }
+  // clinicalOps lives in sala-scoped rooms via pushClinicalOpsForSala — never stamp it
+  // with census bundle "now" (LWW whole-doc replace could wipe team assignments).
   return ops;
 }
 
@@ -365,12 +364,8 @@ let cloudCensusPushRetries = 0;
 
 const CLOUD_CENSUS_PUSH_MAX_RETRIES = 16;
 
-if (typeof document !== 'undefined' && !globalThis.__RPC_CLOUD_CENSUS_PUSH_LISTENER__) {
-  globalThis.__RPC_CLOUD_CENSUS_PUSH_LISTENER__ = true;
-  document.addEventListener('rpc-clinical-ops-synced', function () {
-    if (isCloudSyncActive()) scheduleCloudSyncPush();
-  });
-}
+// Do not echo-push census on rpc-clinical-ops-synced — that re-stamped clinicalOps/census
+// after every pull merge and could hide charts when the sidebar re-filtered by team.
 
 /** @param {CloudSyncOp[]} ops */
 function countPatientEntryOps(ops) {
@@ -448,15 +443,12 @@ async function pushCloudBundleOps() {
       collectTodosMapForCloudPush,
       collectAgendaForCloudPush,
     } = await import('./cloud-census-collect.mjs');
-    const { snapshotClinicalOpsForCloud } = await import('./mutate-bridge-clinical-ops.mjs');
     const entries = await collectPatientEntriesForCloudPush();
-    const clinicalOps = await snapshotClinicalOpsForCloud();
     const ops = mapBundleEnvelopeToOps(
       {
         entries,
         todos: collectTodosMapForCloudPush(),
         agenda: collectAgendaForCloudPush(),
-        clinicalOps,
       },
       meta
     );
@@ -497,11 +489,6 @@ export async function pushCloudCensusNow() {
   const ops = [];
   for (let i = 0; i < entries.length; i += 1) {
     ops.push(...mapPatientEntryToCloudBundleOps(entries[i], meta));
-  }
-  const { snapshotClinicalOpsForCloud } = await import('./mutate-bridge-clinical-ops.mjs');
-  const clinicalOps = await snapshotClinicalOpsForCloud();
-  if (clinicalOps != null) {
-    ops.push(cloudOp({ path: 'clinicalOps', value: clinicalOps, ...meta }));
   }
 
   const entryOps = countPatientEntryOps(ops);

@@ -144,7 +144,15 @@ Default assumptions (**10 users × 12 h × 45 s idle poll** + light edits, 3s pu
 |----------|------------|-------------|
 | Worker requests | 100k | 45s idle / 20s after edits when visible + coalesced push |
 | D1 rows written | 100k | Coalesced mutations |
-| D1 storage | 500 MB / DB | Room storage quota |
+| D1 storage | 500 MB / DB | Room storage quota + **mutation retention** (below) |
+
+### Mutation retention (ops log)
+
+`room_state` (encrypted snapshot) is the source of truth. The `mutations` table is only an incremental tail for peers within ~100 revisions.
+
+- After each successful push, the Worker deletes mutations with `revision <= room.revision - 100`.
+- Pulls with a larger gap return `needSnapshot: true` **without** loading the full ops history (avoids D1 isolate OOM).
+- Peers that fall behind simply re-apply the snapshot; they do not need ancient ops rows.
 
 Override assumptions: `USERS=15 HOURS=8 POLL_SEC=45 npm run estimate:free`
 

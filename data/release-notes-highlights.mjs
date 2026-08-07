@@ -2118,10 +2118,39 @@ var RELEASE_NOTES_803 = [
   },
 ];
 
+var RELEASE_NOTES_804 = [
+  {
+    title: 'Nube más estable (Worker)',
+    body:
+      'El pull ya no carga historiales enormes de mutaciones (evita caídas D1). Tras cada push se podan ops viejas; peers atrasados reciben <strong>snapshot</strong>.',
+  },
+  {
+    title: 'Equipos sin borrarse',
+    body:
+      'El censo Nube ya <strong>no pisa</strong> equipos ni asignaciones. Los equipos se publican por sala al conectar.',
+  },
+  {
+    title: 'iPad con fichas del equipo',
+    body:
+      'Tras sincronizar el censo, R+ Móvil hidrata <strong>clinicalOps</strong> y muestra las fichas asignadas a tu equipo.',
+  },
+  {
+    title: 'Barra de pacientes en Mac',
+    body:
+      'En desktop Nube, Actualizar labs u otros re-renders ya no vacían la barra cuando faltan asignaciones explícitas (sigue ocultando equipos ajenos).',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.4 en todas</strong> las Macs del turno el mismo día. El operador debe desplegar el Worker Nube (pull/poda).',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_803;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_804;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.4': RELEASE_NOTES_804,
   '8.0.3': RELEASE_NOTES_803,
   '8.0.2': RELEASE_NOTES_802,
   '8.0.1': RELEASE_NOTES_801,

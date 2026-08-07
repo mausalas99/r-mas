@@ -34,6 +34,14 @@ describe('cloud-clinical-ops-sala', () => {
     assert.match(src, /pushCloudOpsDirect/);
   });
 
+  it('pullClinicalOpsForSala hydrates iPad scope without SQLCipher merge', () => {
+    const start = src.indexOf('export async function pullClinicalOpsForSala');
+    assert.ok(start >= 0);
+    const body = src.slice(start, start + 1600);
+    assert.match(body, /isClinicalOpsLanAvailable/);
+    assert.match(body, /applyClinicalScopeFromLanOpsSnapshot/);
+  });
+
   it('syncCloudClinicalOpsOnConnect pulls then pushes local team salas', () => {
     const start = src.indexOf('export async function syncCloudClinicalOpsOnConnect');
     assert.ok(start >= 0);

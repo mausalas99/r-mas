@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.3](https://github.com/mausalas99/r-mas/releases/tag/v8.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.4](https://github.com/mausalas99/r-mas/releases/tag/v8.0.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -50,6 +50,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.4 (pull D1 + censo equipo iPad/desktop)
+
+- **Pull D1 sin OOM** — Gap grande → snapshot sin cargar el historial de mutations; poda ops viejas tras cada push.
+- **clinicalOps ≠ censo** — El push de censo ya no estampa equipos/asignaciones (LWW no los borra).
+- **iPad + desktop** — iPad hidrata clinicalOps tras censo; Mac no pierde fichas sin asignación al re-render.
+- **Despliega Worker + app** — Mismo día: `npm run deploy` en `cloud/sync-worker` e instala 8.0.4 en todas las Macs.
+
+Notas: `docs/RELEASE_NOTES_8.0.4.txt`.
 ## R+ 8.0.3 (reingreso Nube + revisión estable + gate perfil)
 
 - **Reingreso Nube** — Alta empuja censo; tombstone LWW se limpia con op más nueva (mismo registro, id nuevo incluido).

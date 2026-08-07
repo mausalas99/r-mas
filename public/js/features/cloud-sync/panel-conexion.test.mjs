@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const panelConexionSrc = readFileSync(join(here, 'panel-conexion.mjs'), 'utf8');
 const panelRuntimeSrc = readFileSync(join(here, 'panel-conexion-runtime.mjs'), 'utf8');
+const autostartSrc = readFileSync(join(here, 'autostart.mjs'), 'utf8');
 
 describe('panel-conexion status chip', () => {
   it('bindStatusChip resolves toast from deps (not outer mount scope)', () => {
@@ -29,5 +30,12 @@ describe('panel-conexion-runtime auto sync', () => {
 
   it('seeds sala clinicalOps (equipos) on connect without waiting for a local edit', () => {
     assert.match(panelRuntimeSrc, /syncCloudClinicalOpsOnConnect/);
+  });
+});
+
+describe('autostart Nube seed', () => {
+  it('publishes clinicalOps after census seed (iPad needs assignments)', () => {
+    assert.match(autostartSrc, /pushCloudCensusNow/);
+    assert.match(autostartSrc, /syncCloudClinicalOpsOnConnect/);
   });
 });

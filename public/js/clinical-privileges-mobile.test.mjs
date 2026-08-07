@@ -117,7 +117,8 @@ test('R1 desktop Nube mirrors joined team instead of full sala census', () => {
   setCloudRoomConnected(true);
   const census = [
     { id: 'p-mine', servicio: 'Sala', area: 'A', sala: 'Sala 2' },
-    { id: 'p-sala', servicio: 'Sala', area: 'B', sala: 'Sala 2' },
+    // Other slice, unassigned — must not appear (not structural match to equipo B)
+    { id: 'p-sala', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
   ];
   const out = filterPatientsForClinicalSidebar(
     census,
@@ -125,6 +126,29 @@ test('R1 desktop Nube mirrors joined team instead of full sala census', () => {
     scopeFixture
   );
   assert.deepEqual(out.map((p) => p.id), ['p-mine']);
+});
+
+test('R1 desktop Nube keeps unassigned structural match after sidebar re-filter', () => {
+  delete globalThis.__RPC_MOBILE_WEB__;
+  delete globalThis.window;
+  setCloudRoomConnected(true);
+  const census = [
+    { id: 'p-mine', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
+    { id: 'p-slice', servicio: 'Sala', area: 'Sala B', sala: 'Sala 2' },
+    { id: 'p-other', servicio: 'Sala', area: 'Sala A', sala: 'Sala 2' },
+  ];
+  const out = filterPatientsForClinicalSidebar(
+    census,
+    { user_id: 'u-r1', rank: 'R1', sala: 'Sala 2' },
+    {
+      ...scopeFixture,
+      assignments: [
+        { patient_id: 'p-mine', team_id: 't1', effective_at: '2026-06-01T00:00:00Z' },
+        { patient_id: 'p-other', team_id: 't-other', effective_at: '2026-06-01T00:00:00Z' },
+      ],
+    }
+  );
+  assert.deepEqual(out.map((p) => p.id).sort(), ['p-mine', 'p-slice']);
 });
 
 test('R1 desktop LAN without Nube keeps same-sala census', () => {

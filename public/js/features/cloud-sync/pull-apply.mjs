@@ -7,6 +7,7 @@ import { patients } from '../../app-state.mjs';
 import { applyLanPatientEntries } from '../sync-apply/patient-entries.mjs';
 import { removePatientLocally } from '../sync-apply/patient-delete.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
+import { isClinicalScopeReadyForLanPatientApply } from '../../clinical-access-runtime/scope-lan.mjs';
 import {
   cloudStateToLanEntries,
   createOpFold,
@@ -112,14 +113,14 @@ async function applyClinicalOpsSnapshot(clinicalOps) {
 }
 
 /**
- * iPad/PWA: filter at apply (small cache).
- * Desktop Nube: apply the full sala room, then filter in the sidebar by joined team /
- * patient_team_assignment. Filtering at apply dropped Leslie charts forever when
- * assignments arrived in a later clinicalOps pull (census revision already caught up).
+ * Desktop Nube: always apply the full sala room; sidebar filters by team.
+ * iPad/PWA: filter at apply only once joined teams are ready. If clinicalOps has not
+ * hydrated yet, keep entries — otherwise a later clinicalOps revision never re-sends
+ * census rows (revision already caught up) and the iPad stays empty forever.
  */
 function shouldSkipTeamScopeFilterOnCloudPull() {
-  if (shouldEnforceTeamPatientMirror()) return false;
-  return true;
+  if (!shouldEnforceTeamPatientMirror()) return true;
+  return !isClinicalScopeReadyForLanPatientApply();
 }
 
 function cloudPatientEntryApplyOpts() {

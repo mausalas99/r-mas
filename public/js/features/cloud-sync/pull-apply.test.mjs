@@ -169,11 +169,12 @@ describe('pull-apply sync-apply wiring (Phase 3)', () => {
     assert.match(pullApplySrc, /renderPatientList/);
   });
 
-  it('desktop Nube applies full sala census; only mobile filters at apply time', () => {
+  it('desktop Nube applies full sala census; mobile keeps entries until team scope is ready', () => {
     const start = pullApplySrc.indexOf('function shouldSkipTeamScopeFilterOnCloudPull');
     assert.ok(start >= 0);
-    const body = pullApplySrc.slice(start, start + 500);
+    const body = pullApplySrc.slice(start, start + 700);
     assert.match(body, /shouldEnforceTeamPatientMirror/);
+    assert.match(body, /isClinicalScopeReadyForLanPatientApply/);
     assert.match(body, /return true/);
     assert.doesNotMatch(body, /shouldUseElevatedPatientCensus/);
   });

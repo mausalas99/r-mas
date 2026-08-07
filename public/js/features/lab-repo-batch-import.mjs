@@ -1,11 +1,6 @@
 /** Bulk lab-repo update for mi equipo: sequential IPC + sidebar job queue. */
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { esc } from '../dom-escape.mjs';
-import {
-  clinicalSessionContext,
-  getClinicalScopeContextForEvaluate,
-} from '../clinical-access-runtime.mjs';
-import { isPatientAssignedToJoinedTeam } from '../mobile-team-patient-scope.mjs';
 import { patientsVisibleInSidebar } from './patients-scope.mjs';
 import { registerLabPanelRuntime, rt } from './lab-panel-runtime-state.mjs';
 import {
@@ -67,17 +62,12 @@ function teamPatients() {
   if (typeof rt.getLabRepoBatchTeamPatients === 'function') {
     return rt.getLabRepoBatchTeamPatients() || [];
   }
-  var user = clinicalSessionContext.user;
-  var scope = getClinicalScopeContextForEvaluate();
-  if (!user || !user.user_id) return [];
-  var userId = String(user.user_id);
-  var census =
-    typeof rt.getLabRepoBatchCensusPatients === 'function'
-      ? rt.getLabRepoBatchCensusPatients() || []
-      : patientsVisibleInSidebar() || [];
-  return census.filter(function (p) {
-    return p && isPatientAssignedToJoinedTeam(String(p.id), scope, userId);
-  });
+  // Same team/sala filter as the sidebar — do not re-narrow to explicit assignments only
+  // (that hid unassigned structural matches and looked like “patients disappeared”).
+  if (typeof rt.getLabRepoBatchCensusPatients === 'function') {
+    return rt.getLabRepoBatchCensusPatients() || [];
+  }
+  return patientsVisibleInSidebar() || [];
 }
 
 function batchConfirmLabel(selectedCount) {

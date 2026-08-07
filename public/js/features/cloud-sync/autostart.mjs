@@ -86,11 +86,21 @@ export async function autostartCloudSyncIfConfigured(opts) {
       const result = await pushCloudCensusNow();
       if (result?.ok) {
         console.info('[R+] Nube censo subido:', result.entryOps, 'pacientes');
-        return;
+        break;
       }
-      if (result?.reason === 'no_local_patients' || result?.reason === 'bridge_inactive') return;
+      if (result?.reason === 'no_local_patients' || result?.reason === 'bridge_inactive') break;
+      if (attempt === 7) {
+        console.warn('[R+] Nube: no se pudo subir el censo tras varios intentos.');
+      }
     }
-    console.warn('[R+] Nube: no se pudo subir el censo tras varios intentos.');
+    // Census push no longer stamps clinicalOps — publish teams/assignments so iPad
+    // team-mirror can keep charts (same path as Conexión connect).
+    try {
+      const { syncCloudClinicalOpsOnConnect } = await import('./cloud-clinical-ops-sala.mjs');
+      await syncCloudClinicalOpsOnConnect();
+    } catch (err) {
+      console.warn('[R+] Nube clinicalOps seed:', err?.message || err);
+    }
   })();
 
   return runtime;

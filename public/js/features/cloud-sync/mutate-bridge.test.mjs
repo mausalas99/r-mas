@@ -224,11 +224,19 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     assert.match(mutateBridgeClinicalOpsSrc, /clinical-ops-sync\.mjs/);
   });
 
-  it('pushCloudBundleOps builds from cloud-census-collect + clinicalOps snapshot', () => {
+  it('pushCloudBundleOps builds from cloud-census-collect without clinicalOps stamp', () => {
     assert.match(mutateBridgeSrc, /collectPatientEntriesForCloudPush/);
     assert.match(mutateBridgeSrc, /collectTodosMapForCloudPush/);
     assert.match(mutateBridgeSrc, /collectAgendaForCloudPush/);
-    assert.match(mutateBridgeSrc, /snapshotClinicalOpsForCloud/);
     assert.match(mutateBridgeSrc, /mapBundleEnvelopeToOps/);
+    assert.doesNotMatch(
+      mutateBridgeSrc,
+      /rpc-clinical-ops-synced[\s\S]{0,120}scheduleCloudSyncPush/
+    );
+    const bundleFn = mutateBridgeSrc.slice(
+      mutateBridgeSrc.indexOf('export function mapBundleEnvelopeToOps'),
+      mutateBridgeSrc.indexOf('export function mapBundleEnvelopeToOps') + 900
+    );
+    assert.doesNotMatch(bundleFn, /path: 'clinicalOps'/);
   });
 });
