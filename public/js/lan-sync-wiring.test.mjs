@@ -424,8 +424,12 @@ describe('clinical teams LAN publish wiring', () => {
         fn === 'handleCreateTeamSubmit' &&
         /createElevatedTeam|createStandardTeam/.test(body) &&
         /publishClinicalTeamsAfterChange/.test(clinicalTeams);
+      const joinDelegates =
+        fn === 'joinTeamById' &&
+        body.includes('finalizeSuccessfulTeamJoin') &&
+        /publishClinicalTeamsAfterChange/.test(clinicalTeams);
       assert.ok(
-        hasPublish || createDelegates,
+        hasPublish || createDelegates || joinDelegates,
         `${fn} must publishClinicalTeamsAfterChange / publishClinicalTeamsToLan or dispatch teams-changed`
       );
     });
