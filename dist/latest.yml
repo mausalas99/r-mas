@@ -1,44 +1,42 @@
-version: 8.0.3
+version: 8.0.4
 files:
-  - url: R+-8.0.3-x64.exe
-    sha512: py0UszPAfSa9EpO8/9cvfdKgaTy8HQ44yAfbBcCb8+YD5M5UypyiM4Iq2I4O5VakW0lsAd6o965T+hInGIXe4w==
-    size: 122691961
-path: R+-8.0.3-x64.exe
-sha512: py0UszPAfSa9EpO8/9cvfdKgaTy8HQ44yAfbBcCb8+YD5M5UypyiM4Iq2I4O5VakW0lsAd6o965T+hInGIXe4w==
-releaseDate: '2026-08-06T20:06:59.000Z'
+  - url: R+-8.0.4-x64.exe
+    sha512: I1/T9g/99U9yQX/YjYWwqsrJSSsLPbz4XrH8i6TeB7bBiFXCF07Y5VZincD/ZXetbOEZaxxmPnjPgjGADS3FyA==
+    size: 122777245
+path: R+-8.0.4-x64.exe
+sha512: I1/T9g/99U9yQX/YjYWwqsrJSSsLPbz4XrH8i6TeB7bBiFXCF07Y5VZincD/ZXetbOEZaxxmPnjPgjGADS3FyA==
+releaseDate: '2026-08-07T21:01:41.000Z'
 releaseNotes: |
-  8.0.3 corrige el reingreso de pacientes en Nube tras un borrado (tombstone LWW ya no bloquea un alta intencional), evita que la revisión de sync retroceda en respuestas duplicadas del Worker, deja de forzar el gate de perfil LAN en equipos que ya completaron registro, y añade asignación de usuarios Nube a equipos desde el panel Admin Nube (como el directorio LAN).
+  8.0.4 estabiliza Nube (Worker sin OOM, clinicalOps fuera del censo, censo por equipo en iPad/desktop), añade cierre de guardia con devolución de estudios por equipo, heredar pacientes al cambiar de equipo, reingreso tras rotación, atajos de expediente, tablero Guardia con franja de confianza y admin Equipos en lote con historial de actividad (esquema v22).
   
-  Eventualidades sin Labs — Se quita la pestaña Labs / interpretación de Eventualidades. Solo bitácora clínica + formulario Agregar abajo (registro restaurado).
+  Worker — pull sin OOM — Si el gap de revisión es grande, responde needSnapshot antes de leer filas de mutations (evita cargar decenas de MB en el isolate D1). Tras cada push, poda ops viejas (revision <= room.revision - 100).
   
-  Admin Nube — Equipos — Pestaña Equipos en Conexión → Admin: lista usuarios de la nube, asigna equipo + ciclo; crea perfil clínico local si falta y sincroniza clinicalOps al turno.
+  clinicalOps fuera del censo — El push de censo ya no estampa clinicalOps con el reloj del bundle (LWW de documento completo podía vaciar equipos/asignaciones). Equipos van por rooms de sala (pushClinicalOpsForSala / seed al conectar).
   
-  Reingreso Nube — Alta de paciente empuja censo a Nube (enqueueCloudPatientAdmit); el Worker limpia tombstones cuando llega una op de entrada más nueva. Mismo registro con id nuevo también revive el censo.
+  iPad — censo con equipos — Tras el sync de censo, pull de clinicalOps con since:0 e hidratación de alcance en sesión (sin SQLCipher); finalize del mirror de equipo. Así aparecen las fichas asignadas.
   
-  Pull seguro — shouldApplyCloudTombstone ignora tombstones obsoletos si el mismo registro ya está admitido con otro patientId.
+  Desktop — barra estable — Alcance Nube conserva pacientes locales sin asignación que encajan estructuralmente en un equipo unido; Actualizar labs / selectPatient ya no vacía la barra. iPad sigue siendo solo asignación + guardia.
   
-  Revisión estable — advanceCloudSyncRevision y el ciclo push/pull solo avanzan la revisión local; no retroceden ante clientMutationId duplicado (p. ej. clinicalOps en 541 vs sala en 779).
+  Pull apply — En iPad, no filtra por equipo hasta que el alcance clínico esté listo (si filtra antes, un clinicalOps tardío nunca reenvía filas de censo).
   
-  Sync automático — Tras un cambio local corre el mismo ciclo que Forzar sincronización (push+pull); los clientMutationId de wire llevan enqueuedAt para que re-edits de clinicalOps/todos/agenda no los ignore el Worker; el poll no se apaga si la ventana está oculta.
+  Actualizar labs (equipo) — Usa el mismo filtro de la barra de pacientes (no re-estrecha a asignaciones explícitas).
   
-  Equipos al conectar — Al unirse a Nube se hace pull+push de clinicalOps por sala (sin esperar un edit en Mi rotación); hidratar desde pull ya no re-pushea en bucle.
+  R+ Móvil UI — Ajustes de estilos en sync, eventualidades y pase.
   
-  Onboarding equipo — Tras Unirme/Crear, el paso «Únete a un equipo» se cierra solo (recarga teams de SQLCipher antes de evaluar el gate; ya no hace falta refresh).
+  Cierre de guardia — Al «Finalizar turno» se abre una hoja con estudios abiertos agrupados por equipo de origen; «Enviar» devuelve coberturas al equipo correspondiente sin borrar pendientes.
   
-  Sin re-registro con equipo — Si ya perteneces a un equipo, no se relanza el panel de registro; cambiar @usuario reusa el mismo user_id (no crea peer_* huérfanos).
+  Heredar pacientes — Al unirte a un equipo nuevo, asistente en 4 pasos (destino → origen → pacientes → confirmar) para traer casos de tu equipo anterior sin reasignar uno por uno.
   
-  Copy R+ Cloud — Ayuda, tour/aprendizaje, onboarding y diálogos dejan de hablar de «LAN / Migración 7.9»; el turno se describe como R+ Cloud / Nube (⇄ Conexión).
+  Reingreso tras rotación — Modal cuando se archivan equipos del mes: confirma sala y te lleva a Mi rotación para volver a unirte (R4/Admin: publicar equipos nuevos).
   
-  Censo Nube más vivo — Poll ~15 s + pull al enfocar la ventana; censo se construye sin depender del stub LAN; la barra de pacientes se refresca tras pull (nombre/datos ya no esperan un edit del otro).
+  Tablero Guardia — Franja de confianza Nube/sala/equipo; censo agrupado por equipo (R4/Admin); estados vacíos con guía («Censo: todos», Mi rotación); cierre de turno integrado en la barra de fase.
   
-  Nombre real gana — PACIENTE SIN NOMBRE (alta/SOME sin nombre) ya no pisa un nombre escrito (p. ej. Cynthia) por LWW con reloj de seed.
+  Admin Equipos (Nube) — Selección múltiple, Guardar / Quitar seleccionados en lote, filtros por última actividad y asignación, botón Equipos ago 2026, badges con fecha/hora e historial de uso.
   
-  Censo Leslie / equipo — En desktop el pull aplica el room completo de la sala; el filtro por equipo (asignaciones) es solo en la barra. Así no se pierden los 5 de Leslie si las asignaciones llegan después del censo.
+  Esquema v22 — Tabla user_activity_log con historial de actividad clínica por usuario (migración automática desde last_activity_at); alimenta badges e historial en admin Equipos.
   
-  Gate de perfil — Dispositivos que ya tenían @usuario, nombre y sala no vuelven a ver onboarding de perfil en cada arranque.
+  Magia IC — Enviar a nota — En Interconsulta, botón en Estado actual que vuelca EA compilado + signos vitales a la nota de evolución (con confirmación si ya hay texto).
   
-  ⇄ Conexión — El chip de estado resuelve toast desde deps (evita ReferenceError al montar el panel).
+  Atajos de teclado — ⌘E/⌘T/⌘D navegan el expediente (EA/eventualidades, tendencias/cultivos, datos); ⌘G/⌘I/⌘P/⌘S cambian modo Guardia/Interconsulta/Pase/Sala (⌘P ya no alterna densidad).
   
-  Worker — maybeResurrectPatientFromOp en lww.js; tests de re-admit y registro duplicado.
-  
-  Tests — lww, pull-apply, sync-runtime-cycle, settings, clinical-settings, panel-conexion, panel-admin-equipos, clinical-access-users-provision.
+  Paneles retirados — Salen del header y de la paleta (⌘K): cola «Falta documentar», «Preparar entrega» (checklist) y panel «Cultivos por seguir»; la actualización de antibiograma queda en Cultivos del expediente.
