@@ -78,7 +78,7 @@ test('Admin guardia census includes all patients with Todos equipos filter on de
   assert.equal(out.length, 2);
 });
 
-test('R1 desktop guardia census is sala-wide and respects equipo filter', () => {
+test('R1 desktop guardia census mirrors joined team after team pick', () => {
   const leslieTeam = {
     team_id: 't-leslie',
     name: 'Dra. Leslie',
@@ -113,18 +113,18 @@ test('R1 desktop guardia census is sala-wide and respects equipo filter', () => 
     guardiaMode: false,
     onCallGuardiaReceiver: false,
   };
-  const allSala = filterPatientsForGuardiaCensus(census, user, scope, null, {
+  const mine = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: '',
     service: '',
   });
-  assert.deepEqual(allSala.map((p) => p.id).sort(), ['p-chris', 'p-leslie']);
+  assert.deepEqual(mine.map((p) => p.id), ['p-leslie']);
   const christian = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: 't-chris',
     service: '',
   });
-  assert.deepEqual(christian.map((p) => p.id), ['p-chris']);
+  assert.deepEqual(christian.map((p) => p.id), []);
   const leslie = filterPatientsForGuardiaCensus(census, user, scope, null, {
     sala: '__all__',
     teamId: 't-leslie',

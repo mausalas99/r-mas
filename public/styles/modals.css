@@ -656,6 +656,203 @@ html.dark .tour-spotlight-soap { outline-color: var(--color-accent-soft-text) !i
 }
 .btn-tour-next:hover { background: var(--action-hover); }
 .btn-tour-next:disabled { opacity: 0.45; cursor: not-allowed; }
+/* ── Atajos (cheat sheet) — cmdk-style rows, sin .modal legacy ─ */
+.shortcuts-backdrop {
+  z-index: var(--z-modal);
+}
+.shortcuts-backdrop.open {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10vh 20px 24px;
+}
+.shortcuts-sheet {
+  width: min(760px, 94vw);
+  max-height: min(78vh, 720px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-container, 16px);
+  overflow: hidden;
+  box-shadow: var(--elev-overlay);
+  background: var(--color-elevated, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.shortcuts-chrome {
+  flex-shrink: 0;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--divider, var(--border));
+  background: var(--color-elevated, var(--surface));
+}
+.shortcuts-chrome-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.shortcuts-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.25;
+}
+.shortcuts-lead {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.shortcuts-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.shortcuts-close:hover {
+  color: var(--text);
+  background: var(--state-hover-bg, color-mix(in oklab, var(--action) 8%, transparent));
+}
+.shortcuts-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, 0 0 0 3px color-mix(in oklab, var(--action) 28%, transparent));
+}
+.shortcuts-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px 12px;
+  background: color-mix(in oklab, var(--color-elevated, var(--surface)) 96%, var(--bg));
+}
+.shortcuts-section + .shortcuts-section {
+  margin-top: 10px;
+}
+.shortcuts-section-title {
+  margin: 0;
+  padding: 8px 10px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.shortcuts-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.shortcuts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: calc(var(--radius-md) - 2px);
+}
+.shortcuts-row:hover {
+  background: var(--state-hover-bg, color-mix(in oklab, var(--action) 6%, transparent));
+}
+.shortcuts-row-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.shortcuts-row-label {
+  font-size: 13.5px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.35;
+}
+.shortcuts-row-hint {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+.shortcuts-key-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 6px;
+  border-radius: var(--radius-field, 8px);
+  background: color-mix(in oklab, var(--bg) 70%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--surface) 60%, transparent);
+}
+.shortcuts-key {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  min-width: 20px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 50%, transparent);
+  text-align: center;
+}
+.shortcuts-key--hint {
+  display: inline-block;
+  vertical-align: baseline;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+.shortcuts-foot {
+  flex-shrink: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--divider, color-mix(in oklab, var(--border) 70%, transparent));
+  display: flex;
+  justify-content: center;
+  background: color-mix(in oklab, var(--color-elevated, var(--surface)) 98%, var(--bg));
+}
+.shortcuts-foot-link {
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--action);
+  cursor: pointer;
+  border-radius: var(--radius-field);
+  transition: background var(--dur-fast) ease;
+}
+.shortcuts-foot-link:hover {
+  background: color-mix(in oklab, var(--action) 10%, transparent);
+}
+.shortcuts-backdrop--peek {
+  background: color-mix(in oklab, var(--scrim-bg, rgba(0, 0, 0, 0.45)) 50%, transparent);
+  pointer-events: none;
+}
+.shortcuts-backdrop--peek .shortcuts-sheet {
+  pointer-events: auto;
+  box-shadow: var(--elev-overlay), 0 0 0 1px color-mix(in oklab, var(--action) 16%, transparent);
+}
+
 /* ── Centro de ayuda (bloque L) ────────────────────────────── */
 .help-center-modal { width: 720px; max-width: 95vw; padding: 22px 22px 18px; }
 html.dark .help-center-modal { background: var(--surface); color: var(--text); }

@@ -28,6 +28,9 @@ import {
   applyMedCatalogOverlay,
   dosisBeforeSlash,
   extractRecetaNameOnlyDose,
+  listDietCandidatesFromRecetaBlock,
+  isNutritionMedicationItem,
+  isParenteralNutritionText,
 } from '../../../public/js/med-receta-core.mjs';
 
 var SAMPLE_MIXED =
@@ -206,7 +209,7 @@ test('formatMedicationEgresoLine — METRONIDAZOL con día 3', () => {
   });
   assert.equal(
     line,
-    'METRONIDAZOL 500 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 500 MG VÍA INTRAVENOSA CADA 8 HORAS (DÍA 3 DE TRATAMIENTO).'
+    'METRONIDAZOL 500 MG TABLETA || TOMAR 1 TABLETA (500 MG) VÍA ORAL CADA 8 HORAS (DÍA 3 DE TRATAMIENTO).'
   );
 });
 
@@ -220,7 +223,7 @@ test('formatMedicationEgresoLine — ONDANSETRON PRN', () => {
   });
   assert.equal(
     line,
-    'ONDANSETRÓN 8 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 8 MG VÍA INTRAVENOSA CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.'
+    'ONDANSETRÓN 8 MG TABLETA || TOMAR 1 TABLETA (8 MG) VÍA ORAL CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.'
   );
 });
 
@@ -234,7 +237,7 @@ test('formatMedicationEgresoLine — ONDANSETRON PRN con NAUSEA y VOMITO', () =>
   });
   assert.equal(
     line,
-    'ONDANSETRÓN 8 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 8 MG VÍA INTRAVENOSA CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.'
+    'ONDANSETRÓN 8 MG TABLETA || TOMAR 1 TABLETA (8 MG) VÍA ORAL CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.'
   );
 });
 
@@ -293,8 +296,8 @@ test('buildMedRecetaNameOnlyText incluye nombre, via+dosis, frecuencia y día', 
   ];
   var t = buildMedRecetaNameOnlyText(items);
   var lines = t.split('\n');
-  assert.equal(lines[0], 'METRONIDAZOL 500MG IV C/8H DIA 3');
-  assert.equal(lines[1], 'OMEPRAZOL 40MG IV C/12H');
+  assert.equal(lines[0], 'METRONIDAZOL 500MG VO C/8H DIA 3');
+  assert.equal(lines[1], 'OMEPRAZOL 40MG VO C/12H');
 });
 
 test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
@@ -309,7 +312,7 @@ test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
     },
   ];
   var t = buildMedRecetaNameOnlyText(items);
-  assert.equal(t, 'OMEPRAZOL 40MG IV C/12H DIA 4');
+  assert.equal(t, 'OMEPRAZOL 40MG VO C/12H DIA 4');
 });
 
 test('extractRecetaNameOnlyDose — infusión con VEL.INF MCG/MIN (norepinefrina)', () => {
@@ -402,10 +405,10 @@ test('bloque dorado — 12 medicamentos del spec', () => {
     'LACTULOSA 10 G JARABE || TOMAR 15 ML VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'LOSARTÁN 50 MG TABLETA || TOMAR 1 TABLETA (50 MG) VÍA ORAL CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'MAGALDRATO/DIMETICONA 800/100 MG GEL || TOMAR 15 ML VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
-    'METRONIDAZOL 500 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 500 MG VÍA INTRAVENOSA CADA 8 HORAS (DÍA 3 DE TRATAMIENTO).',
-    'OMEPRAZOL 40 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 40 MG VÍA INTRAVENOSA CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
-    'ONDANSETRÓN 8 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 8 MG VÍA INTRAVENOSA CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.',
-    'PARACETAMOL 1 G SOLUCIÓN INYECTABLE || ADMINISTRAR 1 G VÍA INTRAVENOSA CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
+    'METRONIDAZOL 500 MG TABLETA || TOMAR 1 TABLETA (500 MG) VÍA ORAL CADA 8 HORAS (DÍA 3 DE TRATAMIENTO).',
+    'OMEPRAZOL 40 MG TABLETA || TOMAR 1 TABLETA (40 MG) VÍA ORAL CADA 24 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
+    'ONDANSETRÓN 8 MG TABLETA || TOMAR 1 TABLETA (8 MG) VÍA ORAL CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.',
+    'PARACETAMOL 500 MG TABLETA || TOMAR 1 TABLETA (500 MG) VÍA ORAL CADA 8 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'POLIETILENGLICOL 3350 17 G POLVO || TOMAR 17 G VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'PREGABALINA 75 MG CÁPSULA || TOMAR 1 CÁPSULA (75 MG) VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
     'SENÓSIDOS A-B 8.6 MG TABLETA || TOMAR 1 TABLETA (8.6 MG) VÍA ORAL CADA 12 HORAS, SIN SUSPENDER HASTA NUEVO AVISO.',
@@ -507,6 +510,16 @@ test('formatMedicationSoapShort — indicación compacta', () => {
       suspendido: false,
     }),
     'NIFEDIPINO 60MG VO C/12H'
+  );
+  assert.equal(
+    formatMedicationSoapShort({
+      nombreRaw: 'PARACETAMOL 1 G SOL INY 100 ML (*)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1 G //',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      suspendido: false,
+    }),
+    'PARACETAMOL 500MG VO C/8H'
   );
   assert.equal(
     formatMedicationSoapShort({
@@ -795,4 +808,37 @@ test('parseIndicacionesPaste — ALIMENTACION SUPLEMENTO va a dietas, no a meds'
   assert.equal(r.items.length, 0);
   assert.equal(r.dietas.length, 1);
   assert.equal(r.dietas[0].descripcionRaw, 'SUPLEMENTO');
+});
+
+test('parseIndicacionesPaste — NUTRICION PARENTERAL en MEDICAMENTOS va a dietas', () => {
+  var line =
+    '08/08/2026 08:45:13 a.m.\tMEDICAMENTOS\tNUTRICION PARENTERAL CENTRAL 1400 KCAL BOLSA 1540 ML\tVIA INTRAVENOSA\t1400 KCAL //\tCADA 24 HORAS\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.items.length, 0);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(isNutritionMedicationItem({ nombreRaw: 'NUTRICION PARENTERAL TOTAL BOLSA' }), true);
+  assert.match(r.dietas[0].descripcionRaw, /PARENTERAL/i);
+  assert.equal(r.dietas[0].kcal, 1400);
+});
+
+test('parseIndicacionesPaste — DIETAS *PARENTERAL KAVIBEN normaliza producto y kcal', () => {
+  var line = '08/08/2026 08:47:04 a.m.\tDIETAS\t*PARENTERAL\t\tKAVIBEN 1400 KCAL\t\tNW';
+  var r = parseIndicacionesPaste(line);
+  assert.equal(r.dietas.length, 1);
+  assert.equal(r.dietas[0].descripcionRaw, 'PARENTERAL — KAVIBEN');
+  assert.equal(r.dietas[0].kcal, 1400);
+  assert.equal(isParenteralNutritionText(r.dietas[0].descripcionRaw), true);
+});
+
+test('listDietCandidatesFromRecetaBlock — KAVIBEN y NPT como opciones distintas', () => {
+  var paste =
+    '08/08/2026 08:47:04 a.m.\tDIETAS\t*PARENTERAL\t\tKAVIBEN 1400 KCAL\t\tNW\n' +
+    '08/08/2026 08:45:13 a.m.\tMEDICAMENTOS\tNUTRICION PARENTERAL CENTRAL 1400 KCAL BOLSA 1540 ML\tVIA INTRAVENOSA\t1400 KCAL //\tCADA 24 HORAS\tNW\n' +
+    '08/08/2026 12:00:58 p.m.\tMEDICAMENTOS\tNUTRICION PARENTERAL TOTAL BOLSA\tVIA INTRAVENOSA\t1 BOLSA //\tCADA 24 HORAS\tNW';
+  var r = parseIndicacionesPaste(paste);
+  var candidates = listDietCandidatesFromRecetaBlock({ dietas: r.dietas, items: r.items });
+  assert.equal(candidates.length, 3);
+  assert.match(candidates[0].descripcion, /KAVIBEN/i);
+  assert.match(candidates[1].descripcion, /NPT central/i);
+  assert.match(candidates[2].descripcion, /NPT calculada/i);
 });

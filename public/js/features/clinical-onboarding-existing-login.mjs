@@ -22,7 +22,7 @@ import {
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { getClientId, hasPersistedClinicalProfile } from './clinical-onboarding-gates.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
-import { handleSyncModeBack } from './clinical-onboarding-sync-mode.mjs';
+import { wireOnboardingModeBackButtons } from './clinical-onboarding-sync-mode.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import { bridgeCloudIdentityToLocal } from './cloud-sync/identity-bridge.mjs';
 import { createCloudSyncApi } from './cloud-sync/api-client.mjs';
@@ -328,11 +328,7 @@ export function wireExistingAccountLoginInteractions() {
     form.addEventListener('submit', (ev) => void handleExistingAccountLoginSubmit(ev));
   }
 
-  const backBtn = document.getElementById('clinical-onboard-existing-back-btn');
-  if (backBtn && !backBtn._rpcExistingBackWired) {
-    backBtn._rpcExistingBackWired = true;
-    backBtn.addEventListener('click', () => void handleSyncModeBack());
-  }
+  wireOnboardingModeBackButtons();
 
   const switchBtn = document.getElementById('clinical-onboard-switch-existing-btn');
   if (switchBtn && !switchBtn._rpcSwitchExistingWired) {

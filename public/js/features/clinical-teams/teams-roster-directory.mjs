@@ -70,11 +70,27 @@ function buildDirectoryEmptyMessage(elevated, browseSala, homeSala) {
   return `No hay otros equipos disponibles en ${label}. Pide código a tu R2 o espera asignación en Nube.`;
 }
 
-/** @param {boolean} elevated @param {string} browseSala */
-function buildDirectorySectionTitle(elevated, browseSala) {
-  if (!elevated) return `Otros equipos · ${escapeHtml(browseSala)}`;
-  if (browseSala === '__all__') return 'Explorar · todas las salas';
-  return `Explorar · ${escapeHtml(browseSala)}`;
+/** @param {boolean} elevated @param {string} browseSala @param {number} count */
+function buildDirectorySectionTitle(elevated, browseSala, count = 0) {
+  const countLabel = count > 0 ? `${count} equipo${count === 1 ? '' : 's'} · ` : '';
+  if (!elevated) {
+    return `${countLabel}Equipos disponibles · ${escapeHtml(browseSala)}`;
+  }
+  if (browseSala === '__all__') {
+    return count > 0 ? `${countLabel}Explorar · todas las salas` : 'Explorar · todas las salas';
+  }
+  return count > 0
+    ? `${countLabel}Explorar · ${escapeHtml(browseSala)}`
+    : `Explorar · ${escapeHtml(browseSala)}`;
+}
+
+/** @param {boolean} elevated @param {number} count */
+function buildDirectorySectionDesc(elevated, count) {
+  if (count <= 0) return 'Equipos de la sala a los que puedes unirte.';
+  if (elevated) {
+    return 'Equipos publicados en Nube — asigna residentes o únete si corresponde.';
+  }
+  return 'Tu R2 o R4 ya publicó estos equipos en Nube. Elige el tuyo y pulsa <strong>Unirme</strong>.';
 }
 
 /** @param {boolean} elevated @param {string} browseSala */
@@ -112,11 +128,14 @@ function renderDirectoryTeamEntry(team, elevated) {
 
 /**
  * @param {{ userId: string, elevated: boolean, browseSala: string, homeSala: string }} opts
+ * @returns {Promise<{ html: string, count: number }>}
  */
 export async function renderDirectorySectionHtml(opts) {
   const { userId, elevated, browseSala, homeSala } = opts;
   const api = dbApi();
-  if (!api || typeof api.dbClinicalTeamsListBySala !== 'function') return '';
+  if (!api || typeof api.dbClinicalTeamsListBySala !== 'function') {
+    return { html: '', count: 0 };
+  }
 
   const listOpts =
     elevated && browseSala === '__all__'
@@ -126,10 +145,12 @@ export async function renderDirectorySectionHtml(opts) {
   const res = await api.dbClinicalTeamsListBySala(listOpts);
   const directory = (res?.ok && Array.isArray(res.teams) ? res.teams : []).filter((t) => !t.isMember);
   const browseControl = buildDirectoryBrowseControl(elevated, browseSala);
-  const sectionTitle = buildDirectorySectionTitle(elevated, browseSala || homeSala);
+  const salaLabel = browseSala || homeSala;
+  const sectionTitle = buildDirectorySectionTitle(elevated, salaLabel, directory.length);
+  const sectionDesc = buildDirectorySectionDesc(elevated, directory.length);
   const sectionIntro = `
         <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
-        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>`;
+        <p class="clinical-teams-section-desc">${sectionDesc}</p>`;
   const headRow = browseControl
     ? `<div class="clinical-teams-section-head-row clinical-teams-collapse-summary-head">
         <div class="clinical-teams-section-intro">${sectionIntro}</div>
@@ -139,7 +160,8 @@ export async function renderDirectorySectionHtml(opts) {
 
   if (!directory.length) {
     const emptyMsg = buildDirectoryEmptyMessage(elevated, browseSala, homeSala);
-    return `<section class="clinical-teams-section clinical-teams-section--directory">
+    return {
+      html: `<section class="clinical-teams-section clinical-teams-section--directory">
       ${renderClinicalTeamsCollapsible({
         collapseKey: 'section.directory',
         defaultOpen: true,
@@ -147,19 +169,24 @@ export async function renderDirectorySectionHtml(opts) {
         summaryHtml: headRow,
         bodyHtml: `<p class="clinical-teams-empty">${emptyMsg}</p>`,
       })}
-    </section>`;
+    </section>`,
+      count: 0,
+    };
   }
 
   const cards = directory.map((team) => renderDirectoryTeamEntry(team, elevated)).join('');
 
-  return `
-    <section class="clinical-teams-section clinical-teams-section--directory">
+  return {
+    html: `
+    <section class="clinical-teams-section clinical-teams-section--directory clinical-teams-section--directory-has-teams">
       ${renderClinicalTeamsCollapsible({
         collapseKey: 'section.directory',
         defaultOpen: true,
         className: 'clinical-teams-collapse--section',
         summaryHtml: headRow,
-        bodyHtml: `<div class="clinical-teams-list">${cards}</div>`,
+        bodyHtml: `<div class="clinical-teams-list clinical-teams-list--directory">${cards}</div>`,
       })}
-    </section>`;
+    </section>`,
+    count: directory.length,
+  };
 }

@@ -16,7 +16,10 @@ export function isCloudSyncActive() {
 
 /** @param {unknown} profileSala */
 export function shouldShowNubePanel(profileSala) {
-  return isCloudSala(profileSala);
+  const sala = String(profileSala || '').trim();
+  // Pre-profile / mid-onboarding: still mount login + sala setup in ⇄ Conexión.
+  if (!sala) return true;
+  return isCloudSala(sala);
 }
 
 /**

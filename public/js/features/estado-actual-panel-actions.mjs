@@ -33,7 +33,7 @@ import {
   confirmDietProposal,
   discardDietProposal,
 } from './estado-actual-meds.mjs';
-import { backfillDietPendingMacrosFromReceta } from './estado-actual-meds-diet.mjs';
+import { backfillDietPendingMacrosFromReceta, selectDietOption } from './estado-actual-meds-diet.mjs';
 import { renderEstadoActualBar } from './soap-estado.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
@@ -440,6 +440,14 @@ export function discardEaDietProposal() {
   persistEstadoClinicoAndRefresh(patient.monitoreo, 'Propuesta de dieta descartada', patient);
 }
 
+export function selectEaDietOption(index) {
+  var patient = findActivePatient();
+  if (!patient) return;
+  ensureMonitoreo(patient);
+  if (!selectDietOption(patient.monitoreo, index)) return;
+  persistEstadoClinicoAndRefresh(patient.monitoreo, null, patient);
+}
+
 export function confirmAllEaMedProposals() {
   var patient = findActivePatient();
   if (!patient) return;
@@ -465,6 +473,7 @@ export const windowHandlers = {
   discardEaMedProposal,
   confirmEaDietProposal,
   discardEaDietProposal,
+  selectEaDietOption,
   confirmAllEaMedProposals,
   toggleEaEstadoClinico,
   applyEstadoActualParsedToForm,

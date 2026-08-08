@@ -45,16 +45,17 @@ describe('clinical-rotation-rejoin-modal', () => {
     assert.match(src, /setRotationRejoinPending\(false\)/);
   });
 
-  it('buildRotationRejoinLeadHtml mentions nueva rotación for residents', () => {
+  it('buildRotationRejoinLeadHtml mentions existing teams for residents', () => {
     const html = buildRotationRejoinLeadHtml({ rank: 'R2', sala: 'Sala 2' });
     assert.match(html, /nueva rotación/i);
     assert.match(html, /Sala 2/);
-    assert.match(html, /Mi rotación/);
+    assert.match(html, /publicó equipos/i);
+    assert.match(html, /elige el tuyo/i);
   });
 
-  it('buildRotationRejoinLeadHtml tells R4 to create teams', () => {
+  it('buildRotationRejoinLeadHtml tells R4 to publish teams', () => {
     const html = buildRotationRejoinLeadHtml({ rank: 'R4', sala: 'Sala 1' });
-    assert.match(html, /crea o publica/i);
+    assert.match(html, /publica los equipos/i);
     assert.match(html, /Sala 1/);
   });
 });

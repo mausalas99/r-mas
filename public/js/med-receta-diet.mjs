@@ -7,6 +7,34 @@ function normalizeNutrientText(s) {
     .toUpperCase();
 }
 
+/** @param {unknown} text */
+export function isParenteralNutritionText(text) {
+  var t = normalizeNutrientText(text);
+  if (!t) return false;
+  if (/\bPARENTERAL\b/.test(t)) return true;
+  if (/\bNUTRICION\s+PARENTERAL\b/.test(t)) return true;
+  if (/\bNPT\b/.test(t)) return true;
+  if (/\bKAVIBEN\b/.test(t)) return true;
+  if (/\bSMOFKABIVEN\b/.test(t)) return true;
+  if (/\bOLICLINOMEL\b/.test(t)) return true;
+  return false;
+}
+
+/**
+ * @param {unknown} text
+ * @returns {string}
+ */
+function parenteralProductLabel(text) {
+  var t = normalizeNutrientText(text);
+  if (/\bKAVIBEN\b/.test(t)) return 'KAVIBEN';
+  if (/\bSMOFKABIVEN\b/.test(t)) return 'SMOFKABIVEN';
+  if (/\bOLICLINOMEL\b/.test(t)) return 'OLICLINOMEL';
+  if (/\bNUTRICION\s+PARENTERAL\s+TOTAL\b/.test(t)) return 'NPT calculada';
+  if (/\bNUTRICION\s+PARENTERAL\s+CENTRAL\b/.test(t)) return 'NPT central';
+  if (/\bNUTRICION\s+PARENTERAL\b/.test(t)) return 'NPT';
+  return '';
+}
+
 /**
  * SOME a veces cataloga nutrición enteral/suplemento bajo MEDICAMENTOS.
  * @param {{ nombreRaw?: unknown, viaRaw?: unknown, suspendido?: boolean }|null|undefined} item
@@ -16,6 +44,7 @@ export function isNutritionMedicationItem(item) {
   if (!item || item.suspendido) return false;
   var nombre = normalizeNutrientText(item.nombreRaw);
   if (!nombre) return false;
+  if (/\bNUTRICION\s+PARENTERAL\b/.test(nombre)) return true;
   if (/\bALIMENTACION\b/.test(nombre)) return true;
   if (/\bSUPLEMENTO\b/.test(nombre) && /\d+\s*ML\b/.test(nombre)) return true;
   var via = normalizeNutrientText(item.viaRaw);
@@ -32,7 +61,20 @@ export function isNutritionMedicationItem(item) {
  */
 export function nutritionMedItemToDieta(item, lineIndex) {
   var nombre = normalizeNutrientText(item && item.nombreRaw);
-  var desc = /\bSUPLEMENTO\b/.test(nombre) ? 'SUPLEMENTO' : trimStr(item && item.nombreRaw);
+  var blob = [item && item.nombreRaw, item && item.dosisRaw, item && item.frecuenciaRaw]
+    .map(trimStr)
+    .filter(Boolean)
+    .join(' ');
+  var nutrients = extractDietNutrients(blob);
+  var desc;
+  if (/\bNUTRICION\s+PARENTERAL\b/.test(nombre)) {
+    var product = parenteralProductLabel(blob);
+    desc = product ? 'PARENTERAL — ' + product : 'PARENTERAL';
+  } else if (/\bSUPLEMENTO\b/.test(nombre)) {
+    desc = 'SUPLEMENTO';
+  } else {
+    desc = trimStr(item && item.nombreRaw);
+  }
   var detalle = [item && item.viaRaw, item && item.dosisRaw, item && item.frecuenciaRaw]
     .map(trimStr)
     .filter(Boolean)
@@ -41,8 +83,8 @@ export function nutritionMedItemToDieta(item, lineIndex) {
     id: 'dieta-nutri-' + Date.now().toString(36) + '-' + (lineIndex == null ? 0 : lineIndex),
     descripcionRaw: desc,
     detalleRaw: detalle,
-    kcal: null,
-    proteinG: null,
+    kcal: nutrients.kcal,
+    proteinG: nutrients.proteinG,
     suspendido: !!(item && item.suspendido),
   };
 }
@@ -131,22 +173,102 @@ export function dietProposalFingerprint(merged) {
   );
 }
 
-export function mergeDietaItems(dietas) {
+/**
+ * Normaliza fila DIETAS *PARENTERAL + detalle (p. ej. KAVIBEN 1400 KCAL).
+ * @param {{ descripcionRaw?: unknown, detalleRaw?: unknown, kcal?: unknown, proteinG?: unknown }} d
+ */
+export function normalizeParenteralDietaItem(d) {
+  if (!d) return d;
+  var desc = trimStr(d.descripcionRaw).replace(/^\*+/, '');
+  if (/^PARENTERAL\s*(?:[—\-]|·)\s*\S/.test(desc)) {
+    return Object.assign({}, d, { descripcionRaw: desc });
+  }
+  var detalle = trimStr(d.detalleRaw);
+  var blob = [desc, detalle].filter(Boolean).join(' ');
+  if (!isParenteralNutritionText(blob)) return d;
+  var nutrients = extractDietNutrients(blob);
+  var product = parenteralProductLabel(blob);
+  var next = Object.assign({}, d);
+  next.descripcionRaw = product ? 'PARENTERAL — ' + product : 'PARENTERAL';
+  if (next.kcal == null && nutrients.kcal != null) next.kcal = nutrients.kcal;
+  if (next.proteinG == null && nutrients.proteinG != null) next.proteinG = nutrients.proteinG;
+  return next;
+}
+
+/**
+ * @param {{ descripcionRaw?: unknown, detalleRaw?: unknown, kcal?: unknown, proteinG?: unknown }} d
+ * @returns {{ descripcion: string, kcal: number | null, proteinG: number | null }}
+ */
+export function dietaItemToMerged(d) {
+  var normalized = normalizeParenteralDietaItem(d);
+  var desc = trimStr(normalized && normalized.descripcionRaw);
+  if (!desc) {
+    var det = trimStr(normalized && normalized.detalleRaw);
+    if (det && !isDietNutrientCell(det)) desc = det;
+  }
+  return {
+    descripcion: desc,
+    kcal: normalized && normalized.kcal != null ? normalized.kcal : null,
+    proteinG: normalized && normalized.proteinG != null ? normalized.proteinG : null,
+  };
+}
+
+/**
+ * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} merged
+ * @returns {string}
+ */
+export function dietCandidateFingerprint(merged) {
+  return dietProposalFingerprint(merged);
+}
+
+/**
+ * Opciones de dieta distintas (no concatena parenteral/enteral en conflicto).
+ * @param {unknown[]} dietas
+ * @returns {Array<{ id: string, label: string, descripcion: string, kcal: number | null, proteinG: number | null, source: string }>}
+ */
+export function listDietCandidates(dietas) {
   var list = Array.isArray(dietas) ? dietas : [];
+  /** @type {Array<{ id: string, label: string, descripcion: string, kcal: number | null, proteinG: number | null, source: string }>} */
+  var out = [];
+  var seen = {};
+  for (var i = 0; i < list.length; i += 1) {
+    var d = list[i];
+    if (!d || d.suspendido) continue;
+    var merged = dietaItemToMerged(d);
+    if (!trimStr(merged.descripcion) && merged.kcal == null && merged.proteinG == null) continue;
+    var fp = dietCandidateFingerprint(merged);
+    if (seen[fp]) continue;
+    seen[fp] = true;
+    var label = buildDietProposalText(merged);
+    out.push({
+      id: 'diet-opt-' + i + '-' + fp.slice(0, 24),
+      label: label,
+      descripcion: merged.descripcion,
+      kcal: merged.kcal,
+      proteinG: merged.proteinG,
+      source: String(d.id || '').indexOf('dieta-nutri-') === 0 ? 'medicamentos' : 'dietas',
+    });
+  }
+  return out;
+}
+
+export function mergeDietaItems(dietas) {
+  var candidates = listDietCandidates(dietas);
+  if (!candidates.length) return { descripcion: '', kcal: null, proteinG: null };
+  if (candidates.length === 1) {
+    return {
+      descripcion: candidates[0].descripcion,
+      kcal: candidates[0].kcal,
+      proteinG: candidates[0].proteinG,
+    };
+  }
   var parts = [];
   var kcal = null;
   var proteinG = null;
-  for (var i = 0; i < list.length; i += 1) {
-    var d = list[i];
-    if (!d) continue;
-    var desc = trimStr(d.descripcionRaw);
-    if (!desc) {
-      var det = trimStr(d.detalleRaw);
-      if (det && !isDietNutrientCell(det)) desc = det;
-    }
-    if (desc) parts.push(desc);
-    if (d.kcal != null) kcal = d.kcal;
-    if (d.proteinG != null) proteinG = d.proteinG;
+  for (var i = 0; i < candidates.length; i += 1) {
+    if (candidates[i].descripcion) parts.push(candidates[i].descripcion);
+    if (candidates[i].kcal != null) kcal = candidates[i].kcal;
+    if (candidates[i].proteinG != null) proteinG = candidates[i].proteinG;
   }
   return { descripcion: parts.join(' · '), kcal: kcal, proteinG: proteinG };
 }
@@ -157,7 +279,9 @@ export function mergeDietaItems(dietas) {
  * @returns {unknown[]}
  */
 export function collectDietasFromRecetaBlock(block) {
-  var dietas = Array.isArray(block && block.dietas) ? block.dietas.slice() : [];
+  var dietas = Array.isArray(block && block.dietas)
+    ? block.dietas.map(normalizeParenteralDietaItem)
+    : [];
   var items = Array.isArray(block && block.items) ? block.items : [];
   for (var i = 0; i < items.length; i += 1) {
     if (isNutritionMedicationItem(items[i])) {
@@ -165,6 +289,14 @@ export function collectDietasFromRecetaBlock(block) {
     }
   }
   return dietas;
+}
+
+/**
+ * @param {{ dietas?: unknown[], items?: unknown[] }|null|undefined} block
+ * @returns {ReturnType<typeof listDietCandidates>}
+ */
+export function listDietCandidatesFromRecetaBlock(block) {
+  return listDietCandidates(collectDietasFromRecetaBlock(block));
 }
 
 export function buildDietProposalText(merged) {

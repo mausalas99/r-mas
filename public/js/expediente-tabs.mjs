@@ -3,7 +3,6 @@
  */
 import { isModeSala } from './mode-features.mjs';
 import { isMobileWeb } from './mobile-web.mjs';
-import { openPatientDatosModal, openPatientDatosModalForPatient } from './patient-datos-modal.mjs';
 
 export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
@@ -355,11 +354,4 @@ export function syncConsolidatedPaneVisibility(granularTab, settings, opts) {
     datosPane.hidden = !datosInModal;
   }
   if (todoPane) todoPane.classList.toggle('active', target.tab === 'paciente');
-  if (granularTab === 'datos') {
-    if (opts.datosPatientId != null && opts.datosPatientId !== '') {
-      openPatientDatosModalForPatient(opts.datosPatientId);
-    } else {
-      openPatientDatosModal();
-    }
-  }
 }

@@ -2235,10 +2235,34 @@ var RELEASE_NOTES_807 = [
   },
 ];
 
+var RELEASE_NOTES_808 = [
+  {
+    title: 'Soporte respiratorio en EA',
+    body:
+      'Estado Actual con modalidades (litros, alto flujo, VMNI, VM, TQT), parámetros por tier y cálculos: PaFi, driving pressure, ROX y ml/kg.',
+  },
+  {
+    title: 'Dieta parenteral',
+    body:
+      'Paste SOME reconoce <strong>KAVIBEN</strong>, <strong>SMOFKABIVEN</strong> y NPT; extrae kcal/proteína y etiqueta <strong>PARENTERAL</strong> en EA.',
+  },
+  {
+    title: 'Diagnóstico Nube',
+    body:
+      '⇄ → Opciones: dashboard legible, guías de corrección y reintento de cola sin perder sesión.',
+  },
+  {
+    title: 'Recuérdame tras actualizar',
+    body:
+      'Token Nube guardado omite onboarding al instalar <strong>8.0.8</strong> — sin migración de base ni cierre de sesión.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_807;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_808;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.8': RELEASE_NOTES_808,
   '8.0.7': RELEASE_NOTES_807,
   '8.0.6': RELEASE_NOTES_806,
   '8.0.5': RELEASE_NOTES_805,

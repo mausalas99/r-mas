@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.7](https://github.com/mausalas99/r-mas/releases/tag/v8.0.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.8](https://github.com/mausalas99/r-mas/releases/tag/v8.0.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -54,6 +54,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.8 (EA ventilatorio + dieta parenteral + KV lite)
+
+- **Soporte respiratorio** — Estado Actual con modalidades, parámetros y cálculos (PaFi, driving pressure, ROX).
+- **Dieta parenteral** — KAVIBEN, SMOFKABIVEN y NPT desde paste SOME con macros.
+- **Diagnóstico Nube** — Dashboard legible en ⇄ → Opciones con guías y reintento de cola.
+- **KV lite** — Worker: caché de revisiones solo en push; circuit breaker al cupo diario.
+- **Recuérdame** — Sesión Nube se conserva al actualizar (sin migración ni logout forzado).
+
+Notas: `docs/RELEASE_NOTES_8.0.8.txt`.
 ## R+ 8.0.7 (rotación staging + Recuérdame + heredar pacientes)
 
 - **Equipos staging** — Nuevos equipos quedan inactivos hasta nueva rotación; auto-join bloqueado, R4 asigna.
@@ -66,7 +76,6 @@ Notas: `docs/RELEASE_NOTES_8.0.7.txt`.
 
 - **Ya tengo cuenta** — Onboarding con login Nube, Recuérdame y sync de censo/equipos sin crear @usuario nuevo.
 - **Modales Conexión** — Recuperación, admin e historial Equipos se apilan sobre ⇄ (z-index corregido).
-- **setup-sync** — Provisión opcional de KV CACHE para hints de revisión del Worker.
 
 Notas: `docs/RELEASE_NOTES_8.0.6.txt`.
 ## R+ 8.0.5 (LAN retirado — Nube único + Interno MIP)

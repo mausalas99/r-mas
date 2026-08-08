@@ -10,13 +10,30 @@ import {
   toEaSalidaText,
 } from './features/estado-actual-io.mjs';
 
+import { formatSoporteVentilatorioClause } from './features/estado-actual-ventilatorio.mjs';
+
 const SOPORTE_LABEL = {
   'Aire ambiente': 'AL AIRE AMBIENTE',
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
+  'Mascarilla simple': 'POR MASCARILLA SIMPLE',
+  'Mascarilla reservorio': 'POR MASCARILLA CON RESERVORIO',
   'Alto flujo': 'POR ALTO FLUJO',
-  'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+  VMNI: 'CON VMNI',
+  'VM no invasiva': 'CON VMNI',
+  'Ventilación mecánica': 'CON VENTILACIÓN MECÁNICA',
   Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
+
+/**
+ * @param {Record<string, unknown>} ec
+ */
+function resolveCensoSoporteLabel(ec) {
+  if (!ec || typeof ec !== 'object') return SOPORTE_LABEL['Aire ambiente'];
+  var clause = formatSoporteVentilatorioClause(ec);
+  if (clause && clause !== 'AL AIRE AMBIENTE') return clause;
+  var key = ec.soporte != null ? String(ec.soporte).trim() : '';
+  return SOPORTE_LABEL[key] || 'AL AIRE AMBIENTE';
+}
 
 /**
  * @param {unknown} n
@@ -125,9 +142,8 @@ function appendCensoGluLine(lines, glu) {
 
 function appendCensoSatLine(lines, v, ctx) {
   if (v.sat == null || v.sat === '') return;
-  var soporteKey = ctx.soporte != null ? String(ctx.soporte).trim() : '';
   var soporte =
-    SOPORTE_LABEL[soporteKey] ||
+    resolveCensoSoporteLabel(ctx) ||
     (ctx.soporteHint ? toEaSalidaText(ctx.soporteHint) : '') ||
     SOPORTE_LABEL['Aire ambiente'];
   lines.push('SAT: ' + v.sat + '% ' + soporte);

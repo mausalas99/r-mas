@@ -357,13 +357,34 @@ describe('clinical-onboarding helpers', () => {
     }
   });
 
-  it('local-only skips second profile screen', () => {
+  it('local-only shows confirm screen with back to sync mode choice', () => {
     const renderSrc = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-render.mjs'),
       'utf8'
     );
-    assert.equal(renderSrc.includes('renderLocalOnlyProfilePanel'), false);
-    assert.match(renderSrc, /submitLocalOnlyProfile/);
+    const handlersSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-handlers.mjs'),
+      'utf8'
+    );
+    assert.match(renderSrc, /renderLocalOnlyConfirmPanel/);
+    assert.match(renderSrc, /clinical-onboard-local-confirm-btn/);
+    assert.match(renderSrc, /clinical-onboard-mode-back-btn/);
+    assert.match(handlersSrc, /handleLocalOnlyConfirmClick/);
+    assert.match(handlersSrc, /submitLocalOnlyProfile/);
+  });
+
+  it('profile and existing-login steps offer Cambiar modo back to step 1', () => {
+    const renderSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-render.mjs'),
+      'utf8'
+    );
+    const syncSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-sync-mode.mjs'),
+      'utf8'
+    );
+    assert.match(renderSrc, /clinical-onboard-mode-back-btn/);
+    assert.match(syncSrc, /wireOnboardingModeBackButtons/);
+    assert.match(syncSrc, /handleSyncModeBack/);
   });
 
   it('registration submit resumes taken @usuario instead of bootstrapping a peer row', () => {

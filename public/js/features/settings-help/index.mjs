@@ -21,6 +21,12 @@ import {
   onHelpListKeydown,
 } from './help-content.mjs';
 import {
+  openShortcutsModal,
+  closeShortcutsModal,
+  closeShortcutsPeek,
+  openShortcutsHelpCenter,
+} from './shortcuts-modal.mjs';
+import {
   openLearnHub,
   closeLearnHub,
   syncLearnAprenderChrome,
@@ -126,6 +132,9 @@ export const settingsHelpWindowHandlers = {
   onHelpSearchInput,
   onHelpSearchKeydown,
   onHelpListKeydown,
+  openShortcutsModal,
+  closeShortcutsModal,
+  openShortcutsHelpCenter,
   closeReleaseNotes,
   startMiniTour,
   startHelpTourMain,

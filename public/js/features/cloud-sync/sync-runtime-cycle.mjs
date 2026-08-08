@@ -4,6 +4,7 @@ import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
 import { createRoomSyncWs } from './room-sync-ws.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
+import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncCycle,
@@ -14,33 +15,6 @@ import {
   recordCloudSyncError,
   recordCloudSyncTrace,
 } from './cloud-sync-diagnostics.mjs';
-
-/**
- * Map browser/Electron network noise to a short Spanish hint for Conexión.
- * @param {string} raw
- * @returns {string}
- */
-export function humanizeCloudSyncErrorMessage(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return '';
-  if (/^failed to fetch$/i.test(s) || /networkerror when attempting to fetch/i.test(s)) {
-    return 'Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.';
-  }
-  if (/load failed|network request failed/i.test(s)) {
-    return 'No hubo respuesta de Nube. Revisa la conexión e inténtalo de nuevo.';
-  }
-  return s;
-}
-
-/**
- * @param {unknown} err
- * @param {string} fallback
- */
-function errorMessage(err, fallback) {
-  const data = err && typeof err === 'object' ? /** @type {{ data?: { message?: string }, message?: string }} */ (err) : null;
-  const raw = String(data?.data?.message || data?.message || fallback).trim() || fallback;
-  return humanizeCloudSyncErrorMessage(raw) || fallback;
-}
 
 /** Concurrent Nube writers; Worker returns 409 revision_stale / conflict. */
 const PUSH_STALE_RETRIES = 3;
@@ -96,6 +70,9 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
   async function pullLatest() {
     const roomId = getRoomId();
     if (!roomId) return;
+    if (!api || typeof api.pull !== 'function') {
+      throw new Error('Cliente Nube no configurado');
+    }
     const since = getRevision() ?? 0;
     const result = await api.pull(roomId, since);
     if (result?.revision != null) applyServerRevision(Number(result.revision));
@@ -143,6 +120,9 @@ function createPullPushOps(ctx) {
    * @param {unknown[]} ops
    */
   async function pushWithStaleRetry(roomId, item, ops) {
+    if (!api || typeof api.push !== 'function') {
+      throw new Error('Cliente Nube no configurado');
+    }
     let lastErr;
     for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
       try {
@@ -189,7 +169,7 @@ function createPullPushOps(ctx) {
           revision: result?.revision != null ? Number(result.revision) : null,
         });
       } catch (err) {
-        const msg = errorMessage(err, 'No se pudo enviar un cambio a la nube.');
+        const msg = cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.');
         recordCloudSyncError({
           op: 'push',
           code: cloudSyncErrorCode(err),
@@ -340,7 +320,7 @@ function createSyncFailCycle(getScheduler, setStatus) {
     const rateLimited = scheduler.isRateLimitedError(err);
     const msg = rateLimited
       ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
-      : errorMessage(err, 'Error de sincronización con la nube.');
+      : cloudSyncErrorMessage(err, 'Error de sincronización con la nube.');
     if (!rateLimited) {
       recordCloudSyncError({
         op: 'cycle',

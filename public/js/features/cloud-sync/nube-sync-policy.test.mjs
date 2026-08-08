@@ -22,6 +22,15 @@ describe('nube-sync-policy', () => {
     assert.equal(shouldShowNubePanel('Eme'), true);
   });
 
+  it('shows Nube panel before profile sala is chosen', () => {
+    assert.equal(shouldShowNubePanel(''), true);
+    assert.equal(shouldShowNubePanel(null), true);
+  });
+
+  it('hides Nube panel for unknown sala labels', () => {
+    assert.equal(shouldShowNubePanel('Laboratorio'), false);
+  });
+
   it('uses Nube not LAN when cloud room connected for any cloud sala', () => {
     assert.equal(shouldUseNubeNotLan('UX', true), true);
     assert.equal(shouldUseNubeNotLan('Sala 1', false), false);

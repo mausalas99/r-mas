@@ -54,14 +54,23 @@ export function buildRotationRejoinLeadHtml(user) {
     return (
       '<p>Se archivaron los equipos del mes anterior' +
       (sala ? ` en <strong>${escapeHtml(sala)}</strong>` : '') +
-      '. Confirma tu sala y <strong>crea o publica</strong> los equipos nuevos en Mi rotación para que el resto se una.</p>'
+      '. Confirma tu sala y <strong>publica los equipos nuevos</strong> en Mi rotación para que el resto se una.</p>'
     );
   }
   return (
     '<p>Hay <strong>nueva rotación</strong>: los equipos anteriores ya no están activos' +
     (sala ? ` (sala actual: <strong>${escapeHtml(sala)}</strong>)` : '') +
-    '. Confirma tu sala del mes y únete a tu equipo en Mi rotación.</p>'
+    '. Tu R2 o R4 ya publicó equipos nuevos en Nube — confirma tu sala y <strong>elige el tuyo</strong> en Mi rotación.</p>'
   );
+}
+
+function updateRotationRejoinOpenButton() {
+  const btn = document.getElementById('rotation-rejoin-open');
+  if (!(btn instanceof HTMLButtonElement)) return;
+  const elevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
+  btn.textContent = elevated
+    ? 'Confirmar sala y abrir Mi rotación'
+    : 'Confirmar sala y elegir equipo';
 }
 
 function currentJoinedCount() {
@@ -104,6 +113,7 @@ export function openRotationRejoinModal() {
   if (!bd) return;
   fillLead();
   fillSalaSelect();
+  updateRotationRejoinOpenButton();
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
   const select = document.getElementById('rotation-rejoin-sala');

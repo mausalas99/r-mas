@@ -59,6 +59,8 @@
 .btn-conflict-secondary .btn-conflict-hint { color: var(--text-muted); opacity: 0.95; }
 /* ── Clinical sync conflict viewer ───────────────────── */
 .clinical-conflict-backdrop { z-index: var(--z-modal-nested); }
+/* Child dialogs opened from Conexión (--z-modal-nested) */
+.lab-conflict-backdrop--stacked { z-index: calc(var(--z-modal-nested) + 10); }
 .clinical-conflict-modal {
   width: min(94vw, 760px);
   max-width: min(94vw, 760px);

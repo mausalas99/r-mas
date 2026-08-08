@@ -57,8 +57,8 @@ function modKeyLabel() {
 }
 
 function openAtajosHelp() {
-  void import('./features/settings-help/help-content.mjs').then(function (mod) {
-    if (typeof mod.openQuickHelp === 'function') mod.openQuickHelp('atajos');
+  void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
+    if (typeof mod.openShortcutsModal === 'function') mod.openShortcutsModal();
   });
 }
 

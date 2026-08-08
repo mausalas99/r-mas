@@ -3,11 +3,25 @@
   "updatedAt": "2026-08-08",
   "entries": [
     {
+      "version": "8.0.8",
+      "label": "8.0.8",
+      "publishedAt": "2026-08-08",
+      "summary": "EA ventilatorio + dieta parenteral + KV lite",
+      "recommended": true
+    },
+    {
+      "version": "8.0.7",
+      "label": "8.0.7",
+      "publishedAt": "2026-08-08",
+      "summary": "Release estable 8.0.7",
+      "recommended": false
+    },
+    {
       "version": "8.0.6",
       "label": "8.0.6",
       "publishedAt": "2026-08-08",
       "summary": "Release estable 8.0.6",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "8.0.5",

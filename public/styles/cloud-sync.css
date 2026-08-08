@@ -1647,6 +1647,330 @@
 }
 
 
+/* Diagnóstico Nube — dashboard (Conexión inset style) */
+.cloud-sync-diag-dashboard-host {
+  margin-bottom: calc(10px * var(--density-space));
+}
+
+.cloud-nube-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space));
+}
+
+.cloud-nube-dash-card {
+  margin: 0;
+}
+
+.cloud-nube-dash-head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding-bottom: calc(10px * var(--density-space));
+}
+
+.cloud-nube-dash-head-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.cloud-nube-dash-chip {
+  font-size: calc(12px * var(--density-font));
+}
+
+.cloud-nube-dash-room {
+  font-size: calc(13px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.cloud-nube-dash-subline {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.cloud-nube-dash-kv dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cloud-nube-dash-kv[data-status='warn'] dd {
+  color: color-mix(in oklab, var(--color-warning, #f59e0b) 82%, var(--text));
+}
+
+.cloud-nube-dash-kv[data-status='error'] dd {
+  color: var(--color-danger);
+}
+
+.cloud-nube-dash-kv-muted {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.cloud-nube-dash-pipeline-wrap {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding-top: calc(4px * var(--density-space));
+}
+
+.cloud-nube-dash-pipeline-label {
+  font-size: calc(10px * var(--density-font));
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-nube-dash-pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cloud-nube-dash-pipe {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--radius-control);
+  background: color-mix(in oklab, var(--text) 4%, transparent);
+}
+
+.cloud-nube-dash-pipe-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 3px;
+  border-radius: 999px;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cloud-nube-dash-pipe[data-state='ok'] .cloud-nube-dash-pipe-dot {
+  background: var(--color-livesync-live, #16a34a);
+}
+
+.cloud-nube-dash-pipe[data-state='warn'] .cloud-nube-dash-pipe-dot,
+.cloud-nube-dash-pipe[data-state='info'] .cloud-nube-dash-pipe-dot {
+  background: var(--color-livesync-degraded, #f59e0b);
+}
+
+.cloud-nube-dash-pipe[data-state='error'] .cloud-nube-dash-pipe-dot {
+  background: var(--color-danger);
+}
+
+.cloud-nube-dash-pipe-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.cloud-nube-dash-pipe-text small {
+  font-size: calc(10px * var(--density-font));
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.cloud-nube-dash-outbox-head,
+.cloud-nube-dash-alerts-head {
+  font-size: calc(10px * var(--density-font));
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cloud-nube-dash-outbox-row dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.cloud-nube-dash-outbox-track {
+  display: block;
+  width: 72px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 8%, var(--divider));
+  overflow: hidden;
+}
+
+.cloud-nube-dash-outbox-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-warning, #f59e0b) 72%, var(--text));
+  min-width: 4px;
+}
+
+.cloud-nube-dash-alerts-card .cloud-sync-inset-row--static {
+  align-items: flex-start;
+}
+
+.cloud-nube-dash-alert {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  font: inherit;
+}
+
+.cloud-nube-dash-alert-body {
+  display: contents;
+}
+
+.cloud-nube-dash-alert-title {
+  grid-column: 1;
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.cloud-nube-dash-alert-detail,
+.cloud-nube-dash-alert-hint {
+  grid-column: 1;
+  font-size: calc(11px * var(--density-font));
+  line-height: 1.45;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.cloud-nube-dash-alert-cta {
+  grid-column: 1;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 600;
+  color: var(--color-info, #3b82f6);
+  margin-top: 2px;
+}
+
+.cloud-nube-dash-alert > .cloud-sync-options-row-chevron {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  margin-top: 1px;
+}
+
+.cloud-nube-dash-alert[data-severity='error'] .cloud-nube-dash-alert-title {
+  color: var(--color-danger);
+}
+
+.cloud-nube-dash-pipe[data-cloud-diag-pipe-fix] {
+  cursor: pointer;
+}
+
+.cloud-nube-fix-modal {
+  max-width: min(96vw, 420px);
+  gap: 12px;
+}
+
+.cloud-nube-fix-title {
+  margin: 0;
+  font-size: calc(15px * var(--density-font));
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.cloud-nube-fix-summary {
+  margin: 0;
+  font-size: calc(13px * var(--density-font));
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.cloud-nube-fix-steps {
+  margin: 0;
+  padding: 0 0 0 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: decimal;
+  list-style-position: outside;
+}
+
+.cloud-nube-fix-step {
+  font-size: calc(13px * var(--density-font));
+  line-height: 1.5;
+  color: var(--text);
+  padding-left: 0.2em;
+}
+
+.cloud-nube-fix-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cloud-nube-fix-actions .cloud-sync-btn {
+  min-width: 96px;
+}
+
+.cloud-nube-dash-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cloud-nube-dash-actions .cloud-sync-btn {
+  width: 100%;
+}
+
+.cloud-sync-diag-technical {
+  margin: calc(4px * var(--density-space)) 0 calc(8px * var(--density-space));
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+}
+
+.cloud-sync-diag-technical > summary {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cloud-sync-diag-technical[open] > summary {
+  margin-bottom: 6px;
+}
+
+.cloud-sync-diag-technical .cloud-sync-diagnostics-pre {
+  margin-top: 0;
+}
+
+@media (max-width: 520px) {
+  .cloud-nube-dash-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cloud-nube-dash-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Onboarding migration (Configura tu rotación) */
 .clinical-onboard-cutover-block { margin: 0 0 1rem; }
 .clinical-onboard-cutover-lead { margin: 0 0 0.5rem; font-size: 0.92rem; }

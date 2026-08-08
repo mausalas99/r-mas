@@ -14,6 +14,7 @@ import {
   isInsulinPumpCarrierMedicationItem,
 } from './insulin-pump-some-detect.mjs';
 import { formatRhzeComboSoapShort, isRhzeComboMedicationItem } from './med-receta-tb-combo.mjs';
+import { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
 
 /** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
 export function dosisBeforeSlash(dosisRaw) {
@@ -197,6 +198,7 @@ function instructionAmountPhrase(_item, viaNorm, dosisPrincipal, nombreExpandido
  * @param {{ fechaActualizacion?: string, refDate?: Date }} [opts]
  */
 export function formatMedicationEgresoLine(item, opts) {
+  item = applyIvToOralForEgreso(item, opts);
   var viaNorm = normalizeVia(item.viaRaw);
   var nombreExpandido = applyNombreAccents(expandNombrePresentacion(item.nombreRaw));
   var dosisPrincipal = dosisBeforeSlash(item.dosisRaw);
@@ -206,12 +208,16 @@ export function formatMedicationEgresoLine(item, opts) {
   if (prn) {
     var critRaw = extractPrnTail(item.dosisRaw);
     if (!critRaw) critRaw = freqNorm;
+    var prnAmount =
+      viaNorm === 'VÍA ORAL'
+        ? instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido)
+        : 'ADMINISTRAR ' + dosisPrincipal;
     if (/HIPOGLUCEMIA/i.test(critRaw)) {
       var hypo = polishHypoPrnCriterion(critRaw);
       return (
         nombreExpandido +
-        ' || ADMINISTRAR ' +
-        dosisPrincipal +
+        ' || ' +
+        prnAmount +
         ' ' +
         viaNorm +
         ' ' +
@@ -223,8 +229,8 @@ export function formatMedicationEgresoLine(item, opts) {
       var cadaN = extractCadaHorasFromCrit(critRaw) || normalizeFrecuencia('CADA 8 HORAS');
       return (
         nombreExpandido +
-        ' || ADMINISTRAR ' +
-        dosisPrincipal +
+        ' || ' +
+        prnAmount +
         ' ' +
         viaNorm +
         ' ' +
@@ -347,6 +353,7 @@ function formatSoapPrnPain_(nombre, dosisCompact, critRaw, freqNorm) {
 
 export function formatMedicationSoapShort(item, opts) {
   if (!item) return '';
+  item = applyIvToOralForEgreso(item, opts);
   if (isRhzeComboMedicationItem(item)) return formatRhzeComboSoapShort(item, opts);
   var nombre = compactSoapDrugName(applyNombreAccents(expandNombrePresentacion(item.nombreRaw)));
   var via = normalizeVia(item.viaRaw);

@@ -3,6 +3,7 @@ import {
   applyDietaSuplementoPolicy,
   isDietaSuplemento,
   isDietaAyuno,
+  isDietaParenteral,
   stripDietaMacroSuffixFromLabel,
 } from './estado-actual-data.mjs';
 
@@ -124,6 +125,58 @@ export function clearDietPending(monitoreo) {
 }
 
 /**
+ * @param {Record<string, unknown>} monitoreo
+ */
+export function clearDietOptions(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  delete monitoreo.dietOptions;
+  delete monitoreo.dietOptionSelected;
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @returns {unknown[]}
+ */
+export function getDietOptions(monitoreo) {
+  return Array.isArray(monitoreo && monitoreo.dietOptions) ? monitoreo.dietOptions : [];
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @param {unknown[]} candidates
+ */
+export function storeDietOptions(monitoreo, candidates) {
+  if (!monitoreo || typeof monitoreo !== 'object') return;
+  monitoreo.dietOptions = Array.isArray(candidates) ? candidates.slice() : [];
+  monitoreo.dietOptionSelected = 0;
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} candidate
+ */
+export function writeDietProposalFromCandidate(monitoreo, candidate) {
+  writeDietProposal(monitoreo, {
+    descripcion: candidate.descripcion,
+    kcal: candidate.kcal,
+    proteinG: candidate.proteinG,
+  });
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @param {number} index
+ */
+export function selectDietOption(monitoreo, index) {
+  var options = getDietOptions(monitoreo);
+  if (!options.length || index < 0 || index >= options.length) return false;
+  monitoreo.dietOptionSelected = index;
+  var candidate = options[index];
+  writeDietProposalFromCandidate(monitoreo, candidate);
+  return true;
+}
+
+/**
  * Estado clínico ya coincide con SOME — marcar confirmada sin re-propuesta (evita wipe diario).
  * @param {Record<string, unknown>} monitoreo
  * @param {{ descripcion?: string, kcal?: unknown, proteinG?: unknown }} merged
@@ -156,6 +209,7 @@ export function markDietAsManuallyConfirmed(monitoreo) {
   }
   /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
   clearDietPending(monitoreo);
+  clearDietOptions(monitoreo);
 }
 
 /**
@@ -179,9 +233,13 @@ export function writeDietProposal(monitoreo, merged) {
   dietaText = stripDietaMacroSuffixFromLabel(dietaText) || String(dietaText || '').trim();
   if (isDietaSuplemento(dietaText)) dietaText = 'SUPLEMENTO';
   monitoreo.pendienteReceta.dieta = dietaText;
-  if (!applyDietaSuplementoPolicy(monitoreo.pendienteReceta)) {
-    if (merged.kcal != null) monitoreo.pendienteReceta.kcal = String(merged.kcal);
-    if (merged.proteinG != null) monitoreo.pendienteReceta.proteinG = String(merged.proteinG);
+  if (!applyDietaSuplementoPolicy(monitoreo.pendienteReceta) && !isDietaParenteral(dietaText)) {
+    monitoreo.pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
+    monitoreo.pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
+  } else if (isDietaParenteral(dietaText)) {
+    monitoreo.pendienteReceta.kcal = merged.kcal != null ? String(merged.kcal) : '';
+    monitoreo.pendienteReceta.proteinG = merged.proteinG != null ? String(merged.proteinG) : '';
+    monitoreo.pendienteReceta.kcalKg = '';
   }
   if (!monitoreo.confirmado || typeof monitoreo.confirmado !== 'object') {
     monitoreo.confirmado = {};

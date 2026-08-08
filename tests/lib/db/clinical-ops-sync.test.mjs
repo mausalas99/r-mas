@@ -944,13 +944,6 @@ describe('clinical-ops-sync', () => {
     const userSE = ensureClinicalUser(db, { clientId: 'dev-se', rank: 'R1' });
     db.prepare(`UPDATE users SET sala = ? WHERE user_id = ?`).run('Sala E', userSE.userId);
 
-    const teamS2 = createTeam(db, {
-      name: 'Sala 2 Team',
-      service: 'Sala',
-      onCallDayIndex: 0,
-      sala: 'Sala 2',
-      createdBy: userS2.userId,
-    });
     const teamSE = createTeam(db, {
       name: 'Dr. Sam',
       service: 'Sala',
@@ -959,6 +952,13 @@ describe('clinical-ops-sync', () => {
       createdBy: userSE.userId,
     });
     joinTeam(db, teamSE.team_id, userSE.userId, { subAreaFraction: 'A' });
+    const teamS2 = createTeam(db, {
+      name: 'Sala 2 Team',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: userS2.userId,
+    });
 
     const salaE = exportClinicalOpsSnapshotForSala(db, 'Sala E');
     assert.equal(salaE.teams.length, 1);

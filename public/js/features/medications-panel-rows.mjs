@@ -7,6 +7,8 @@ import {
   SOAP_DESTINATION_LABELS,
   shouldIncludeMedicationInSoap,
   isNutritionMedicationItem,
+  listDietCandidates,
+  buildDietProposalText,
 } from "../med-receta-core.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { insulinPumpAlgorithmForMedicationItem, insulinPumpMedLabelHtml } from "../insulin-pump-some-detect.mjs";
@@ -22,23 +24,47 @@ import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 
 export function buildMedDietHtml(dietas) {
   if (!dietas || !dietas.length) return "";
-  var mergedDiet = mergeDietaItems(dietas);
+  var candidates = listDietCandidates(dietas);
+  if (!candidates.length) return "";
+  if (candidates.length === 1) {
+    var mergedDiet = candidates[0];
+    return (
+      '<div class="med-receta-diet-card" style="margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2, rgba(0,0,0,.02));">' +
+      '<div style="font-weight:600;font-size:12px;margin-bottom:6px;">Dieta detectada</div>' +
+      '<div>' +
+      esc(mergedDiet.descripcion || "—") +
+      "</div>" +
+      (mergedDiet.kcal != null
+        ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' +
+          esc(String(mergedDiet.kcal)) +
+          " kcal</div>"
+        : "") +
+      (mergedDiet.proteinG != null
+        ? '<div style="font-size:12px;color:var(--text-muted);">' +
+          esc(String(mergedDiet.proteinG)) +
+          " g proteína</div>"
+        : "") +
+      "</div>"
+    );
+  }
   return (
     '<div class="med-receta-diet-card" style="margin-bottom:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2, rgba(0,0,0,.02));">' +
-    '<div style="font-weight:600;font-size:12px;margin-bottom:6px;">Dieta detectada</div>' +
-    '<div>' +
-    esc(mergedDiet.descripcion || "—") +
-    "</div>" +
-    (mergedDiet.kcal != null
-      ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' +
-        esc(String(mergedDiet.kcal)) +
-        " kcal</div>"
-      : "") +
-    (mergedDiet.proteinG != null
-      ? '<div style="font-size:12px;color:var(--text-muted);">' +
-        esc(String(mergedDiet.proteinG)) +
-        " g proteína</div>"
-      : "") +
+    '<div style="font-weight:600;font-size:12px;margin-bottom:6px;">Dietas detectadas (' +
+    candidates.length +
+    ")</div>" +
+    candidates
+      .map(function (opt) {
+        return (
+          '<div style="margin-top:6px;font-size:13px;">' +
+          esc(opt.label || buildDietProposalText(opt)) +
+          (opt.source === "medicamentos"
+            ? ' <span style="font-size:11px;color:var(--text-muted);">(medicamentos)</span>'
+            : "") +
+          "</div>"
+        );
+      })
+      .join("") +
+    '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Elige cuál aplicar en Estado Actual.</div>' +
     "</div>"
   );
 }

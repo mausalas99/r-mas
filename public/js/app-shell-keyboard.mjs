@@ -20,8 +20,11 @@ import {
   runAgendaWeekNavShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
+import { SHORTCUTS_HOLD_MS } from './features/settings-help/shortcuts-data.mjs';
 
 var shellKeyboardWired = false;
+var metaHoldTimer = null;
+var metaChordUsed = false;
 
 var WORK_MODE_SHORTCUTS = {
   g: 'guardia',
@@ -44,6 +47,52 @@ function shellShortcutFromTypingField(e) {
     tag === 'SELECT' ||
     (e.target && e.target.isContentEditable)
   );
+}
+
+function isModifierHoldKey(key) {
+  if (typeof navigator !== 'undefined' && navigator.platform && /Mac/i.test(navigator.platform)) {
+    return key === 'Meta';
+  }
+  return key === 'Control';
+}
+
+function clearMetaHoldTimer() {
+  if (metaHoldTimer) {
+    clearTimeout(metaHoldTimer);
+    metaHoldTimer = null;
+  }
+}
+
+function closeShortcutsPeekIfOpen() {
+  void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
+    if (typeof mod.closeShortcutsPeek === 'function') mod.closeShortcutsPeek();
+  });
+}
+
+function scheduleShortcutsPeek() {
+  clearMetaHoldTimer();
+  metaHoldTimer = setTimeout(function () {
+    metaHoldTimer = null;
+    if (!metaChordUsed) {
+      void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
+        if (typeof mod.isShortcutsModalOpen === 'function' && mod.isShortcutsModalOpen()) return;
+        if (typeof mod.openShortcutsModal === 'function') mod.openShortcutsModal();
+      });
+    }
+  }, SHORTCUTS_HOLD_MS);
+}
+
+function onModifierHoldKeydown(e) {
+  if (!isModifierHoldKey(e.key)) return;
+  if (isGuardiaMode()) return;
+  if (shellShortcutFromTypingField(e)) return;
+  metaChordUsed = false;
+  scheduleShortcutsPeek();
+}
+
+function onModifierHoldKeyup(e) {
+  if (!isModifierHoldKey(e.key)) return;
+  clearMetaHoldTimer();
 }
 
 function noteTabNavigationShortcutUsed() {
@@ -168,6 +217,12 @@ function handleShellMedOutputShortcut(e, key) {
 function onShellModifierKeydown(e, showToast) {
   if (isGuardiaMode()) return;
 
+  if ((e.metaKey || e.ctrlKey) && !isModifierHoldKey(e.key)) {
+    metaChordUsed = true;
+    clearMetaHoldTimer();
+    closeShortcutsPeekIfOpen();
+  }
+
   var key = e.key.toLowerCase();
 
   if (handleShellMedOutputShortcut(e, key)) return;
@@ -181,6 +236,8 @@ function onShellModifierKeydown(e, showToast) {
 export function initShellKeyboardShortcuts(showToast) {
   if (shellKeyboardWired) return;
   shellKeyboardWired = true;
+  document.addEventListener('keydown', onModifierHoldKeydown, true);
+  document.addEventListener('keyup', onModifierHoldKeyup, true);
   document.addEventListener(
     'keydown',
     function (e) {

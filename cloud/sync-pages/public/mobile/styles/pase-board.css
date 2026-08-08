@@ -5977,6 +5977,13 @@ html.ui-density-guardia #btn-clinical-lan-connect {
   font-weight: 600;
 }
 
+/* Opened from Mi rotación — must stack above #clinical-teams-backdrop (same --z-modal, later in DOM). */
+#inherit-patients-backdrop.modal-backdrop.open,
+#rotation-rejoin-backdrop.modal-backdrop.open,
+#guardia-rotation-config-backdrop.modal-backdrop.open {
+  z-index: var(--z-clinical-lan-users);
+}
+
 .rotation-rejoin-modal {
   max-width: min(96vw, 440px);
 }

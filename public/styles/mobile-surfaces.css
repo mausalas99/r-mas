@@ -247,9 +247,10 @@ html[data-cloud-mobile='1'] #lan-connection-banner {
   justify-content: center;
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: color-mix(in oklab, var(--color-ink, #0b0d12) 55%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* Solid scrim — material-solid-elevated is not linked on /mobile/ */
+  background: color-mix(in oklab, var(--color-paper, #eceae6) 90%, var(--color-ink, #0b0d12));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .rpc-cloud-mobile-gate[hidden] {
@@ -265,6 +266,7 @@ body.rpc-cloud-mobile-gated .app-shell,
 body.rpc-cloud-mobile-gated main {
   pointer-events: none;
   user-select: none;
+  visibility: hidden;
 }
 
 .rpc-cloud-mobile-modal {
@@ -276,12 +278,19 @@ body.rpc-cloud-mobile-gated main {
   gap: 0;
   padding: 0;
   border-radius: var(--radius-container, 16px);
-  box-shadow: var(--elev-overlay, 0 18px 48px color-mix(in oklab, #000 35%, transparent));
+  background: var(--color-elevated, #ffffff);
+  border: 1px solid color-mix(in oklab, var(--color-ink, #0b0d12) 16%, transparent);
+  box-shadow:
+    0 20px 50px color-mix(in oklab, var(--color-ink, #0b0d12) 24%, transparent),
+    0 2px 8px color-mix(in oklab, var(--color-ink, #0b0d12) 10%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .rpc-cloud-mobile-modal__head {
   padding: 18px 18px 12px;
-  border-bottom: var(--border-hairline, 1px solid color-mix(in oklab, var(--text) 10%, transparent));
+  border-bottom: 1px solid color-mix(in oklab, var(--color-ink, #0b0d12) 12%, transparent);
+  background: var(--color-elevated, #ffffff);
 }
 
 .rpc-cloud-mobile-modal__title {
@@ -304,6 +313,7 @@ body.rpc-cloud-mobile-gated main {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: var(--color-elevated, #ffffff);
 }
 
 .rpc-cloud-mobile-modal__body--center {
@@ -321,6 +331,10 @@ body.rpc-cloud-mobile-gated main {
 
 .rpc-cloud-mobile-modal .cloud-sync-btn {
   width: 100%;
+}
+
+.rpc-cloud-mobile-modal .profile-input {
+  background: var(--input-fill, var(--color-elevated, #ffffff));
 }
 
 .rpc-cloud-mobile-spinner {
@@ -342,6 +356,14 @@ body.rpc-cloud-mobile-gated main {
 @supports not (backdrop-filter: blur(1px)) {
   html.rpc-mobile-web #rpc-mobile-boot-banner {
     background: color-mix(in oklab, var(--color-ink) 92%, var(--surface));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .rpc-cloud-mobile-gate {
+    background: var(--color-paper, #eceae6);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

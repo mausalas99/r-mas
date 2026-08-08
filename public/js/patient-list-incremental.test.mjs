@@ -33,6 +33,20 @@ describe('patient-list-incremental', () => {
     assert.equal(zones.archived.length, 1);
   });
 
+  it('buildPatientListZones sortByBed orders active patients by cuarto/cama', () => {
+    const zones = buildPatientListZones(
+      [
+        { id: 'b', nombre: 'B', pinned: false, archived: false, cuarto: '305', cama: '1' },
+        { id: 'a', nombre: 'A', pinned: false, archived: false, cuarto: '201', cama: '2' },
+      ],
+      { sortByBed: true }
+    );
+    assert.deepEqual(
+      zones.active.map((p) => p.id),
+      ['a', 'b']
+    );
+  });
+
   it('trySilentPatientListPatch updates only changed card text', () => {
     if (typeof document === 'undefined') return;
     const list = document.createElement('div');

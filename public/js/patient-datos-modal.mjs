@@ -2,7 +2,45 @@
  * Modal de datos del paciente (expediente → pestaña Paciente).
  */
 
+import { migrateGranularInner } from './expediente-tabs.mjs';
+import { rt } from './features/pase-board-runtime.mjs';
+
 var dismissWired = false;
+/** @type {{ appTab: string, innerTab: string } | null} */
+var datosModalRestore = null;
+
+function captureDatosModalRestoreIfNeeded() {
+  var backdrop = getBackdrop();
+  if (backdrop && backdrop.classList.contains('open')) return;
+  if (typeof rt.getActiveAppTab !== 'function' || typeof rt.getActiveInner !== 'function') return;
+  datosModalRestore = {
+    appTab: rt.getActiveAppTab(),
+    innerTab: rt.getActiveInner() || 'todo',
+  };
+}
+
+function restoreDatosModalContext() {
+  if (!datosModalRestore) return;
+  var ctx = datosModalRestore;
+  datosModalRestore = null;
+  var settings = typeof rt.getSettings === 'function' ? rt.getSettings() : {};
+  var targetInner = migrateGranularInner(ctx.innerTab || 'todo', settings);
+  if (
+    typeof rt.switchAppTab === 'function' &&
+    ctx.appTab &&
+    typeof rt.getActiveAppTab === 'function' &&
+    rt.getActiveAppTab() !== ctx.appTab
+  ) {
+    rt.switchAppTab(ctx.appTab);
+  }
+  if (typeof rt.setActiveInner === 'function' && typeof rt.getActiveInner === 'function') {
+    var currentInner = migrateGranularInner(rt.getActiveInner() || 'todo', settings);
+    if (currentInner !== targetInner) {
+      rt.setActiveInner(targetInner);
+      if (typeof rt.syncInnerTabVisualOnly === 'function') rt.syncInnerTabVisualOnly();
+    }
+  }
+}
 
 function getBackdrop() {
   return document.getElementById('exp-datos-modal-backdrop');
@@ -44,12 +82,17 @@ export function closePatientDatosModal() {
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   returnDatosPaneToHost();
+  restoreDatosModalContext();
+  if (typeof rt.refreshExpedienteAfterPatientSelect === 'function') {
+    rt.refreshExpedienteAfterPatientSelect();
+  }
 }
 
 /**
  * @param {string|number|null|undefined} [patientId] When set, render that patient (not only activeId).
  */
 export function openPatientDatosModal(patientId) {
+  captureDatosModalRestoreIfNeeded();
   var backdrop = getBackdrop();
   if (!backdrop) return;
   ensureDatosPaneInModal();
@@ -59,7 +102,7 @@ export function openPatientDatosModal(patientId) {
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
   var closeBtn = backdrop.querySelector('.exp-datos-modal-close');
-  if (closeBtn instanceof HTMLElement) closeBtn.focus();
+  if (closeBtn && typeof closeBtn.focus === 'function') closeBtn.focus();
 }
 
 /** Open datos modal for a specific patient (caller should selectPatient first). */

@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { localRoomFromSession } from './panel-conexion-bootstrap.mjs';
 
 describe('localRoomFromSession', () => {
@@ -44,5 +45,14 @@ describe('localRoomFromSession', () => {
       turnKey: '2026-08',
       name: 'Sala 1 2026-08',
     });
+  });
+
+  it('re-renders when snapshot code is missing', () => {
+    const src = readFileSync(
+      new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
+      'utf8'
+    );
+    assert.match(src, /!snapCode/);
+    assert.match(src, /roomCode/);
   });
 });

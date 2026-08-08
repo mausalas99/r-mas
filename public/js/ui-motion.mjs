@@ -228,6 +228,15 @@ function swapLabelText(label, nextText, options) {
   label.addEventListener('transitionend', onDone);
 }
 
+/** Cancel in-flight close animation before re-opening the same modal backdrop. */
+export function prepareModalBackdropOpen(backdropEl) {
+  if (!backdropEl || !(backdropEl instanceof HTMLElement)) return;
+  backdropEl._uiModalCloseGen = (backdropEl._uiModalCloseGen || 0) + 1;
+  backdropEl.classList.remove('closing');
+  backdropEl.setAttribute('aria-hidden', 'false');
+  backdropEl.classList.add('open');
+}
+
 /**
  * Close a modal: state + callback first, then canvas-style exit motion (non-blocking).
  * @param {HTMLElement|null|undefined} backdropEl
@@ -238,6 +247,8 @@ export function closeModalAnimated(backdropEl, done) {
     if (typeof done === 'function') done();
     return;
   }
+  var closeGen = (backdropEl._uiModalCloseGen || 0) + 1;
+  backdropEl._uiModalCloseGen = closeGen;
   backdropEl.setAttribute('aria-hidden', 'true');
   if (typeof done === 'function') done();
 
@@ -256,6 +267,7 @@ export function closeModalAnimated(backdropEl, done) {
   var settled = false;
   function settle() {
     if (settled) return;
+    if (backdropEl._uiModalCloseGen !== closeGen) return;
     settled = true;
     backdropEl.removeEventListener('animationend', onEnd);
     backdropEl.classList.remove('closing');

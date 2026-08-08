@@ -14,7 +14,12 @@ import {
   mergedDietFromReceta,
   mergedDietHasContent,
   clearDietPending,
+  clearDietOptions,
+  writeDietProposalFromCandidate,
+  storeDietOptions,
+  getDietOptions,
 } from './estado-actual-meds-diet.mjs';
+import { listDietCandidatesFromRecetaBlock } from '../med-receta-core.mjs';
 import { stripDietaMacroSuffixFromLabel } from './estado-actual-data.mjs';
 import {
   DIET_PENDING_KEYS,
@@ -89,9 +94,27 @@ function mergePendingDietProposal(ec, pend, _conf) {
  */
 export function applyDietProposalFromRecetaBlock(monitoreo, recetaBlock, opts) {
   if (!monitoreo || !recetaBlock) return false;
-  var dietas = collectDietasFromRecetaBlock(recetaBlock);
-  if (!dietas.length) return false;
-  var merged = mergedDietFromReceta(dietas);
+  var candidates = listDietCandidatesFromRecetaBlock(recetaBlock);
+  if (!candidates.length) return false;
+  if (candidates.length > 1) {
+    storeDietOptions(monitoreo, candidates);
+    var selected = candidates[0];
+    var merged = {
+      descripcion: selected.descripcion,
+      kcal: selected.kcal,
+      proteinG: selected.proteinG,
+    };
+    if (!mergedDietHasContent(merged)) return false;
+    if (tryAutoConfirmMatchingDiet(monitoreo, merged)) {
+      clearDietOptions(monitoreo);
+      return true;
+    }
+    if (shouldSkipDietProposal(monitoreo, opts, merged)) return false;
+    writeDietProposalFromCandidate(monitoreo, selected);
+    return true;
+  }
+  var merged = mergedDietFromReceta(collectDietasFromRecetaBlock(recetaBlock));
+  clearDietOptions(monitoreo);
   if (!mergedDietHasContent(merged)) return false;
   if (tryAutoConfirmMatchingDiet(monitoreo, merged)) return true;
   if (shouldSkipDietProposal(monitoreo, opts, merged)) return false;
@@ -273,6 +296,7 @@ export function confirmDietProposal(monitoreo) {
   }
   /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
   clearDietPending(monitoreo);
+  clearDietOptions(monitoreo);
 }
 
 export function discardDietProposal(monitoreo) {
@@ -280,6 +304,7 @@ export function discardDietProposal(monitoreo) {
   DIET_PENDING_KEYS.forEach(function (k) {
     monitoreo.pendienteReceta[k] = '';
   });
+  clearDietOptions(monitoreo);
 }
 
 export function confirmAllMedProposals(monitoreo) {

@@ -1,7 +1,11 @@
 import { patients, notes } from '../app-state.mjs';
 import { storage } from '../storage.js';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
-import { shakePatientFieldsForError, closeModalAnimated } from '../ui-motion.mjs';
+import {
+  shakePatientFieldsForError,
+  closeModalAnimated,
+  prepareModalBackdropOpen,
+} from '../ui-motion.mjs';
 import {
   isModeSala,
   getDefaultServicio,
@@ -120,7 +124,7 @@ export function openAddModal() {
   syncPatientRegistrationTeamSelect();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
-  document.getElementById('modal').classList.add('open');
+  prepareModalBackdropOpen(document.getElementById('modal'));
   setTimeout(function () {
     _focusPatientAdmissionField(false);
   }, 120);
@@ -179,7 +183,7 @@ function fillLabPatientModalFields(p) {
   syncPatientRegistrationTeamSelect();
   syncPatientRegistrationSalaSelect();
   wirePatientRegistrationSalaControls();
-  document.getElementById('modal').classList.add('open');
+  prepareModalBackdropOpen(document.getElementById('modal'));
   setTimeout(function () {
     _focusPatientAdmissionField(true);
   }, 120);

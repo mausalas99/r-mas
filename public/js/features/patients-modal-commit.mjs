@@ -173,11 +173,12 @@ async function finalizeMobilePatientCommit(patient, fromBulkPreview) {
       return p && String(p.id) === String(patient.id);
     });
     if (dropIdx >= 0) patients.splice(dropIdx, 1);
+    saveState();
     rt.showToast(
       'En R+ Móvil solo ves pacientes asignados a tu equipo (p. ej. Dra. Melissa). Regístralos en la Mac o asígnalos allí.',
       'warn'
     );
-    return;
+    return false;
   }
   rt.showToast('Paciente agregado', 'success');
   try {
@@ -189,6 +190,7 @@ async function finalizeMobilePatientCommit(patient, fromBulkPreview) {
   var activeId = resolveTourActivePatientId(patient.id);
   if (fromBulkPreview) completeBulkPreviewPatientRegistration(activeId);
   else patientsBridge.selectPatient(activeId, { bypassIncomingBlock: true });
+  return true;
 }
 
 async function finalizeDesktopPatientCommit(patient, fromBulkPreview) {
@@ -200,6 +202,7 @@ async function finalizeDesktopPatientCommit(patient, fromBulkPreview) {
     patientsBridge.selectPatient(activeId, { bypassIncomingBlock: true });
     rt.showToast('Paciente agregado', 'success');
   }
+  return true;
 }
 
 function resolvePendingLabAfterCommit(isFromLab, fromBulkPreview) {
@@ -236,32 +239,46 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
   patients.push(patient);
   saveState();
   var onSaved = pendingAddPatientSavedCallback;
-  pendingAddPatientSavedCallback = null;
   var fromBulkPreview = pendingAddPatientFromBulkPreview;
-  pendingAddPatientFromBulkPreview = false;
-  dismissAddPatientModal();
-  var pendingLab = resolvePendingLabAfterCommit(isFromLab, fromBulkPreview);
-  if (isMobileWeb()) void finalizeMobilePatientCommit(patient, fromBulkPreview);
-  else void finalizeDesktopPatientCommit(patient, fromBulkPreview);
-  if (adoptResult.afterCommit) {
+  clearPendingAddPatientCallbacks();
+
+  void (async function () {
+    var committed = false;
     try {
-      adoptResult.afterCommit(patient);
+      if (isMobileWeb()) {
+        committed = await finalizeMobilePatientCommit(patient, fromBulkPreview);
+      } else {
+        committed = await finalizeDesktopPatientCommit(patient, fromBulkPreview);
+      }
     } catch (e) {
       console.error(e);
+      rt.showToast('No se pudo completar el alta', 'error');
+      committed = false;
     }
-  }
-  if (onSaved) {
-    try {
-      onSaved(patient);
-    } catch (e) {
-      console.error(e);
+    if (!committed) return;
+
+    dismissAddPatientModal();
+    var pendingLab = resolvePendingLabAfterCommit(isFromLab, fromBulkPreview);
+    if (adoptResult.afterCommit) {
+      try {
+        adoptResult.afterCommit(patient);
+      } catch (e) {
+        console.error(e);
+      }
     }
-  }
-  if (pendingLab) {
-    rt.restoreActiveLab(pendingLab);
-    rt.enviarLabsANota();
-    rt.consumeActiveLab();
-  }
+    if (onSaved) {
+      try {
+        onSaved(patient);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    if (pendingLab) {
+      rt.restoreActiveLab(pendingLab);
+      rt.enviarLabsANota();
+      rt.consumeActiveLab();
+    }
+  })();
 }
 
 export function generatePatientId() {

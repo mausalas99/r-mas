@@ -1,6 +1,10 @@
 export const CLINICAL_CENSUS_FILTERS_COLLAPSED_LS = 'rpc.clinicalCensusFiltersCollapsed';
 export const CLINICAL_CENSUS_FILTER_TEAM_LS = 'rpc.clinicalCensusFilterTeam';
-import { hasElevatedTeamPrivileges, shouldEnforceTeamPatientMirror } from '../clinical-privileges.mjs';
+import {
+  hasElevatedTeamPrivileges,
+  shouldEnforceTeamPatientMirror,
+  shouldFilterPatientsByJoinedTeam,
+} from '../clinical-privileges.mjs';
 import { filterJoinedTeams } from './clinical-teams/shared.mjs';
 
 export const CENSUS_TEAM_FILTER_ALL = '__all__';
@@ -91,7 +95,7 @@ export function resolveCensusTeamFilterId(user, teamsForCatalog, priorTeamId = '
   const pref = readElevatedTeamFilterPreference(storage);
   if (pref.pinned) return pref.teamId;
   if (prior) return prior;
-  if (shouldEnforceTeamPatientMirror() && !censusFiltersUseFullTeamCatalog(user)) {
+  if (shouldFilterPatientsByJoinedTeam(user) && !hasElevatedTeamPrivileges(user)) {
     return resolveActiveTeamFilterId(user, teamsForCatalog);
   }
   return resolveElevatedTeamFilterId(user, teamsForCatalog, storage);

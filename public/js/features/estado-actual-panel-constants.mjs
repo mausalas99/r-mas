@@ -27,7 +27,10 @@ export const VITAL_UNITS = {
 export const SOPORTE_OPTIONS = [
   'Aire ambiente',
   'Puntillas nasales',
+  'Mascarilla simple',
+  'Mascarilla reservorio',
   'Alto flujo',
-  'VM no invasiva',
+  'VMNI',
+  'Ventilación mecánica',
   'Traqueostomía',
 ];

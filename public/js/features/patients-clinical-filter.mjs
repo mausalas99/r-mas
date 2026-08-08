@@ -166,17 +166,20 @@ export function tagPatientsForTeamFilter(list, ctx = {}) {
 }
 
 /**
- * Guardia board census scope — full sala for desktop R1–R3 (7.0.3), not sidebar team mirror.
+ * Scope via clinico-access when not using assignment/structural team mirror.
+ * Joined teams → strict team filter; otherwise same-sala census for R1–R3.
+ * «Solo entregados» toggle sets guardiaMode + enforceTeamPatientScope on scopeContext.
  * @param {object[]} basePatients
  * @param {object|null|undefined} user
  * @param {object} scopeContext
  * @param {Map<string, object>|null|undefined} [guardiasMap]
  */
 function filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap) {
-  const soloEntregados = !!(scopeContext && scopeContext.guardiaMode);
+  const ctx = scopeContext || {};
+  const soloEntregados = !!ctx.guardiaMode;
   const guardiaScope = {
-    ...(scopeContext || {}),
-    guardiaMode: true,
+    ...ctx,
+    guardiaMode: soloEntregados,
     enforceTeamPatientScope: soloEntregados,
   };
   return (basePatients || []).filter(function (p) {
@@ -209,7 +212,7 @@ export function filterPatientsForGuardiaCensus(
   let visible;
   if (shouldUseElevatedPatientCensus(user)) {
     visible = basePatients || [];
-  } else if (shouldEnforceTeamPatientMirror()) {
+  } else if (shouldFilterPatientsByJoinedTeam(user)) {
     visible = filterPatientsForClinicalSidebar(basePatients, user, scopeContext, guardiasMap);
   } else {
     visible = filterPatientsForGuardiaSalaScope(basePatients, user, scopeContext, guardiasMap);

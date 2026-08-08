@@ -10,7 +10,7 @@ import {
   wireTeamsChangedListener,
 } from './panel-conexion-bootstrap.mjs';
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
-import { humanizeCloudSyncErrorMessage } from './sync-runtime-cycle.mjs';
+import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
 
 /** @param {HTMLElement} section @param {object} deps */

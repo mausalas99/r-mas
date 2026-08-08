@@ -1,5 +1,5 @@
 /** Estado clínico general section + DOM sync. */
-import { patients, medRecetaByPatient, saveState } from '../app-state.mjs';
+import { patients, medRecetaByPatient, saveState, labHistory } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
 import {
   ensureMonitoreo,
@@ -9,6 +9,7 @@ import {
   syncDietKcalFromWeight,
   computeDietKcalTotal,
   isDietaSuplemento,
+  isDietaParenteral,
 } from './estado-actual-data.mjs';
 import {
   hasPendingEaProposals,
@@ -16,15 +17,15 @@ import {
   estadoClinicoForText,
   resolveManejoFechaActualizacion,
 } from './estado-actual-meds.mjs';
+import { getDietOptions } from './estado-actual-meds-diet.mjs';
 import { renderMedCategoryGrid, wireMedCategoryGrid } from './estado-actual-med-ui.mjs';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
 import { getEaPanelRuntime } from './estado-actual-panel-runtime.mjs';
 import { eaPanelBridge } from './estado-actual-panel-bridge.mjs';
 import { renderEstadoClinicoBodyHtml } from './estado-actual-panel-clinico-html.mjs';
-import {
-  hasDietProposal,
-  applyEstadoClinicoFieldChange,
-} from './estado-actual-panel-clinico-fields.mjs';
+import { applyEstadoClinicoFieldChange, hasDietProposal } from './estado-actual-panel-clinico-fields.mjs';
+import { syncSoporteParamsVisibility } from './estado-actual-panel-soporte-html.mjs';
+import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 
 /**
@@ -40,9 +41,10 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var dietPending = hasDietProposal(pend);
   var ec = estadoClinicoForDisplay(monitoreo, eaManejoFechaOpts(activeId));
   var dietaSuplemento = isDietaSuplemento(ec.dieta);
+  var dietaParenteral = isDietaParenteral(ec.dieta);
   var dietWeight = resolveDietWeightKg({ patientPeso: patient && patient.peso, pesoRef: ec.pesoRef });
   var kcalDisplay = ec.kcal;
-  if ((!dietPending || !String(pend.kcal || '').trim()) && dietWeight != null) {
+  if ((!dietPending || !String(pend.kcal || '').trim()) && dietWeight != null && !dietaParenteral) {
     var kcalComputed = computeDietKcalTotal(ec.kcalKg, dietWeight);
     if (kcalComputed != null) kcalDisplay = String(kcalComputed);
   }
@@ -52,13 +54,35 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
       : 'Peso para cálculo: — (captura peso en Datos del paciente)';
   var medFieldsHtml = renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient);
   var anyPending = hasPendingEaProposals(pend);
+  var dietOptions = getDietOptions(monitoreo);
+  var dietOptionSelected =
+    monitoreo && monitoreo.dietOptionSelected != null ? Number(monitoreo.dietOptionSelected) : 0;
+  var snap = deriveSnapshot(monitoreo);
+  var vitalsCtx = {
+    fr: snap && snap.vitals ? snap.vitals.fr : '',
+    sat: snap && snap.vitals ? snap.vitals.sat : '',
+    pesoKg: patient && patient.peso,
+    lab: resolveVentilatorioLabContext(activeId, labHistory),
+  };
 
   return (
     '<details class="ea-estado-clinico ea-card"' +
     (anyPending ? ' open' : '') +
     '>' +
     '<summary>Estado clínico general</summary>' +
-    renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kcalDisplay, dietWeightHint, medFieldsHtml, anyPending) +
+    renderEstadoClinicoBodyHtml(
+      ec,
+      dietPending,
+      dietaSuplemento,
+      kcalDisplay,
+      dietWeightHint,
+      medFieldsHtml,
+      anyPending,
+      dietOptions,
+      dietOptionSelected,
+      dietaParenteral,
+      vitalsCtx
+    ) +
     '</details>'
   );
 }
@@ -148,10 +172,24 @@ function wireEstadoClinicoInteractions(mount, patient) {
   if (!mount || !patient) return;
   mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
     var tag = (el.tagName || '').toUpperCase();
-    var handler = function () { applyEstadoClinicoFieldChange(el, patient); };
+    var handler = function () {
+      applyEstadoClinicoFieldChange(el, patient);
+      if (el.getAttribute('data-ea-ec') === 'soporte') {
+        syncSoporteParamsVisibility(mount, el.value);
+        eaPanelBridge.renderEstadoActualPanel({
+          dataOnly: true,
+          refreshClinico: true,
+          skipChartsSummary: true,
+        });
+      }
+    };
     if (tag === 'SELECT') el.addEventListener('change', handler);
     else el.addEventListener('input', handler);
   });
+  var soporteSel = mount.querySelector('[data-ea-ec="soporte"]');
+  if (soporteSel && 'value' in soporteSel) {
+    syncSoporteParamsVisibility(mount, soporteSel.value);
+  }
   wireMedCategoryGrid(mount, {
     patient: patient,
     medRecetaByPatient: medRecetaByPatient,
@@ -174,7 +212,12 @@ function generateEstadoActualText(monitoreo, patient, activeId) {
     estadoClinicoForText(monitoreo, eaManejoFechaOpts(id)),
     snapshot,
     { balanceTurno: balanceTurno(monitoreo) },
-    { patientPeso: patient && patient.peso, recetaBlock: recetaBlock, bombaAlgoritmo: monitoreo.bombaInsulinaAlgoritmo ?? null }
+    {
+      patientId: patient && patient.id,
+      patientPeso: patient && patient.peso,
+      recetaBlock: recetaBlock,
+      bombaAlgoritmo: monitoreo.bombaInsulinaAlgoritmo ?? null,
+    }
   );
 }
 

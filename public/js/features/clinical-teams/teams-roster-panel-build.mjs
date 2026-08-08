@@ -189,6 +189,44 @@ export function buildClinicalTeamsConfigSectionHtml(profileSection) {
     </section>`;
 }
 
-export function buildJoinedTeamsEmptyHtml(displayHandle) {
+export function buildJoinedTeamsEmptyHtml(displayHandle, pickTeamMode = false) {
+  if (pickTeamMode) {
+    return '<p class="clinical-teams-empty clinical-teams-empty--section">Aún no te has unido. Elige un equipo disponible arriba y pulsa <strong>Unirme</strong>.</p>';
+  }
   return `<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. ${displayHandle ? 'Pide que te agreguen con tu @usuario o ' : ''}explora equipos en tu sala abajo.</p>`;
+}
+
+/**
+ * Banner when residents should pick from existing teams (nueva rotación or directory already populated).
+ * @param {{ directoryCount: number, sala: string, elevated: boolean, rejoinPending: boolean }} opts
+ */
+export function buildPickTeamsBannerHtml(opts) {
+  const { directoryCount, sala, elevated, rejoinPending } = opts;
+  if (directoryCount <= 0) return '';
+
+  const salaLabel = sala ? escapeHtml(sala) : 'tu sala';
+  const countLabel = `${directoryCount} equipo${directoryCount === 1 ? '' : 's'}`;
+
+  if (elevated) {
+    const lead = rejoinPending
+      ? `Nueva rotación: hay <strong>${countLabel}</strong> ya publicados en <strong>${salaLabel}</strong>. Asigna residentes o crea equipos adicionales si hace falta.`
+      : `Hay <strong>${countLabel}</strong> en <strong>${salaLabel}</strong> listos para asignar residentes.`;
+    return `<div class="clinical-teams-pick-banner clinical-teams-pick-banner--elevated" role="status">${lead}</div>`;
+  }
+
+  const lead = rejoinPending
+    ? `Nueva rotación: tu R2 o R4 ya publicó <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo abajo — no hace falta crear uno nuevo.`
+    : `Ya hay <strong>${countLabel}</strong> en <strong>${salaLabel}</strong>. Elige el tuyo y pulsa <strong>Unirme</strong>.`;
+  return `<div class="clinical-teams-pick-banner" role="status">${lead}</div>`;
+}
+
+/**
+ * @param {number} joinedCount
+ * @param {number} directoryCount
+ * @param {boolean} elevated
+ */
+export function shouldUsePickTeamPanelLayout(joinedCount, directoryCount, elevated) {
+  if (directoryCount <= 0) return false;
+  if (joinedCount > 0) return false;
+  return !elevated;
 }

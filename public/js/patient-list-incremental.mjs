@@ -2,17 +2,33 @@
  * Incremental sidebar patient list updates (LAN sync — no full list flash).
  */
 
+import { comparePatientsByBed } from '../../lib/patient-bed-sort.mjs';
 import { patientCardDisplayKey } from './patient-list-display-key.mjs';
 
 export { patientCardDisplayKey };
 
-/** @param {object[]} filtered */
-export function buildPatientListZones(filtered) {
-  return {
+/** @param {object[]} rows */
+function sortZoneByBed(rows) {
+  return rows.slice().sort(comparePatientsByBed);
+}
+
+/**
+ * @param {object[]} filtered
+ * @param {{ sortByBed?: boolean }|undefined} [options]
+ */
+export function buildPatientListZones(filtered, options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const zones = {
     pinned: filtered.filter((p) => p.pinned && !p.archived),
     active: filtered.filter((p) => !p.pinned && !p.archived),
     archived: filtered.filter((p) => !!p.archived),
   };
+  if (opts.sortByBed) {
+    zones.pinned = sortZoneByBed(zones.pinned);
+    zones.active = sortZoneByBed(zones.active);
+    zones.archived = sortZoneByBed(zones.archived);
+  }
+  return zones;
 }
 
 /** @param {{ pinned: object[], active: object[], archived: object[] }} zones @param {boolean} archivedCollapsed */

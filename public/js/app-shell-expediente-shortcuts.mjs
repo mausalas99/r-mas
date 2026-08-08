@@ -4,6 +4,7 @@
 import { migrateGranularInner } from './expediente-tabs.mjs';
 import { isModeSala } from './mode-features.mjs';
 import { getActiveInnerTab, switchInnerTab } from './features/pase-board.mjs';
+import { openPatientDatosModal } from './patient-datos-modal.mjs';
 import { rt } from './features/pase-board-runtime.mjs';
 
 var EXPEDIENTE_SHORTCUT_KEYS = { e: 1, t: 1, d: 1 };
@@ -41,10 +42,15 @@ export function resolveExpedienteShortcutTarget(key, currentInner, settings) {
 }
 
 export function runExpedienteShortcut(key) {
+  var k = String(key || '').toLowerCase();
   var settings = typeof rt.getSettings === 'function' ? rt.getSettings() : {};
   var current = getActiveInnerTab();
-  var target = resolveExpedienteShortcutTarget(key, current, settings);
+  var target = resolveExpedienteShortcutTarget(k, current, settings);
   if (!target) return false;
+  if (k === 'd') {
+    openPatientDatosModal();
+    return true;
+  }
   if (target === migrateGranularInner(current || 'todo', settings)) return true;
   switchInnerTab(target);
   return true;

@@ -76,4 +76,22 @@ DIMERO D\t A 2276 ng/mL 0.0 - 500.0`;
     const coagLine = coagSet.resLabs.find((l) => /^COAG\t/i.test(l));
     assert.match(coagLine, /DD\s+2276/);
   });
+
+  it('dímero D con UEF y membrete Campo no inventa Fib fantasma', () => {
+    const ddCampo = `Expediente:\t2227949-0\tSolicitud:\t2608080013
+Nombre:\tFABIOLA MARISOL CASTAÑEDA GARAY\tFecha Registro:\tAug 8 2026 12:37AM
+HEMATOLOGIA
+DIMERO D
+DIMERO D\tA\n881\nng/mL\t0.0 - 500.0
+UEF (UNIDADES EQUIVALENTES DE FIBRINOGENO\t*
+COMENTARIO\t*
+Campo 12234309 Labo -647 DJEG 64460 UANL`;
+    const { coagVisible } = parseBH_(ddCampo);
+    const { resLabs } = procesarLabs(ddCampo);
+    assert.match(coagVisible, /DD\s+881/);
+    assert.doesNotMatch(coagVisible, /\bFib\b/);
+    const coag = resLabs.find((l) => /^COAG\t/.test(l));
+    assert.ok(coag);
+    assert.doesNotMatch(coag, /\bFib\b/);
+  });
 });

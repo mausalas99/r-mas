@@ -68,6 +68,8 @@ test('migrateGranularInner keeps known tabs and falls back to todo', () => {
   assert.equal(migrateGranularInner('listado', INTER), 'todo');
   assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
   assert.equal(migrateGranularInner('estadoActual', INTER), 'estadoActual');
+  assert.equal(migrateGranularInner('datos', INTER), 'todo');
+  assert.equal(migrateGranularInner('datos', SALA), 'todo');
 });
 
 test('resolveConsolidatedTarget estadoActual inter routes to clinico segment', () => {

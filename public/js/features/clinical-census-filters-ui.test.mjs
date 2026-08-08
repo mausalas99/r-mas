@@ -158,6 +158,23 @@ describe('clinical census team filter', () => {
     const oneTeam = [{ ...teams[0], members: [{ user_id: 'u9' }] }];
     assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
   });
+
+  it('resolveCensusTeamFilterId defaults to joined team for R1 desktop Nube', async () => {
+    delete globalThis.__RPC_MOBILE_WEB__;
+    delete globalThis.window;
+    const { setCloudRoomConnected } = await import('./cloud-sync/nube-sync-policy.mjs');
+    setCloudRoomConnected(true);
+    const mem = new Map();
+    const storage = {
+      getItem: (k) => mem.get(k) ?? null,
+      setItem: (k, v) => mem.set(k, v),
+      removeItem: (k) => mem.delete(k),
+    };
+    const r1 = { user_id: 'u9', rank: 'R1', sala: 'Sala 1' };
+    const oneTeam = [{ ...teams[0], members: [{ user_id: 'u9' }] }];
+    assert.equal(resolveCensusTeamFilterId(r1, oneTeam, '', storage), 't1');
+    setCloudRoomConnected(false);
+  });
 });
 
 describe('clinical census filters collapse storage', () => {

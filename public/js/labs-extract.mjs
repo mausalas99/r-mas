@@ -233,6 +233,8 @@ function parseCoagValorRango_(sub) {
   if (!sub) return null;
   // Quitar bloque TESTIGO interno si quedó en la ventana
   var clean = String(sub).replace(/TESTIGO[\s\S]*$/i, ' ');
+  // Membrete SOME (Campo/Labo + id) no es resultado de coagulación
+  clean = clean.replace(/\b(?:Campo|Labo)\s*-?\d+/gi, ' ');
   var mRango = clean.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
   var min = mRango ? parseFloat(mRango[1].replace(',', '.')) : null;
   var max = mRango ? parseFloat(mRango[2].replace(',', '.')) : null;
@@ -244,8 +246,21 @@ function parseCoagValorRango_(sub) {
   return { valor: mValor[1], min: min, max: max };
 }
 
+function isFibrinogenoNombre_(nombre) {
+  return /^FIBRIN[OÓ]GENO$/.test(String(nombre || ''));
+}
+
+function isUefFibrinogenoMatch_(tUpper, idx) {
+  var before = tUpper.substring(Math.max(0, idx - 48), idx);
+  if (/\bUEF\b/.test(before)) return true;
+  return /EQUIVALENTES\s+DE\s*$/i.test(before.trimEnd());
+}
+
 function shouldSkipCoagMatch_(tUpper, nombre, idx) {
   if (nombre === 'TIEMPO DE PROTROMBINA' && isCoagPanelTitleAfter_(tUpper, idx, nombre.length)) {
+    return true;
+  }
+  if (isFibrinogenoNombre_(nombre) && isUefFibrinogenoMatch_(tUpper, idx)) {
     return true;
   }
   if (nombre !== 'INR') return false;
@@ -259,12 +274,19 @@ function isImplausibleInr_(valorStr, maxInr) {
   return isFinite(inrN) && inrN > maxInr;
 }
 
+/** Fibrinógeno >2000 mg/dL suele ser id de membrete SOME, no resultado clínico. */
+function isImplausibleFib_(valorStr) {
+  var fibN = parseFloat(String(valorStr || '').replace(',', '.'));
+  return !isFinite(fibN) || fibN < 10 || fibN > 2000;
+}
+
 function tryParseCoagAt_(texto, tUpper, nombre, idx, maxInr) {
   if (shouldSkipCoagMatch_(tUpper, nombre, idx)) return null;
   var subStart = idx + nombre.length;
   var parsed = parseCoagValorRango_(texto.substring(subStart, coagWindowEnd_(tUpper, subStart, nombre)));
   if (!parsed) return null;
   if (nombre === 'INR' && isImplausibleInr_(parsed.valor, maxInr)) return null;
+  if (isFibrinogenoNombre_(nombre) && isImplausibleFib_(parsed.valor)) return null;
   return parsed;
 }
 

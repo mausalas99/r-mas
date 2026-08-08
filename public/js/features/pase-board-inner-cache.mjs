@@ -58,7 +58,7 @@ export function granularMountIsEmpty(tab) {
   if (tab === "tend") {
     var tend = document.getElementById("tendencias-container");
     if (!tend) return true;
-    return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty, .tend-skeleton");
+    return !tend.querySelector(".tend-grid, .tend-toolbar, .tend-empty");
   }
   if (tab === "todo") {
     var tf = document.getElementById("todo-form");

@@ -29,6 +29,7 @@ import {
   resolveLanTeamMemberHintHtml,
 } from './teams-roster-directory.mjs';
 import { renderJoinedTeamCard } from './teams-roster-team-cards.mjs';
+import { isRotationRejoinPending } from '../clinical-rotation-rejoin-modal.mjs';
 import {
   resolveDisplayLanHandle,
   resolveClinicalTeamsPanelContext,
@@ -38,6 +39,8 @@ import {
   buildClinicalTeamsConfigSectionHtml,
   buildJoinedTeamsEmptyHtml,
   buildRotationAdminSectionHtml,
+  buildPickTeamsBannerHtml,
+  shouldUsePickTeamPanelLayout,
 } from './teams-roster-panel-build.mjs';
 import {
   captureClinicalTeamsPanelDraft,
@@ -131,26 +134,65 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
 
   const joinedHtml = joined.length
     ? joined.map((team) => renderJoinedTeamCard(team)).join('')
-    : buildJoinedTeamsEmptyHtml(ctx.displayHandle);
+    : buildJoinedTeamsEmptyHtml(ctx.displayHandle, false);
   const profileSection = buildClinicalProfileSectionHtml(ctx, user);
   const browseSala = resolveBrowseSala(elevated, ctx.sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
   const lanMemberHint = await resolveLanTeamMemberHintHtml(joined);
-  const directorySection = await renderDirectorySectionHtml({
+  const { html: directorySection, count: directoryCount } = await renderDirectorySectionHtml({
     userId,
     elevated,
     browseSala,
     homeSala: ctx.sala,
   });
 
-  host.innerHTML = `
-    ${buildClinicalTeamsHandleHint(ctx)}
-    ${buildRotationAdminSectionHtml(user)}
-    ${renderCreateTeamSectionHtml()}
-    ${buildJoinedTeamsSectionHtml(ctx, joinedHtml, lanMemberHint)}
+  const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
+  const rejoinPending = isRotationRejoinPending();
+  const pickBanner = buildPickTeamsBannerHtml({
+    directoryCount,
+    sala: browseSala === '__all__' ? ctx.sala : browseSala || ctx.sala,
+    elevated,
+    rejoinPending,
+  });
+
+  const joinedContentHtml = joined.length ? joinedHtml : buildJoinedTeamsEmptyHtml(ctx.displayHandle, pickTeamLayout);
+  const joinedSection = buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
+
+  host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
+
+  const createSection = renderCreateTeamSectionHtml();
+  const rotationSection = buildRotationAdminSectionHtml(user);
+  const configSection = buildClinicalTeamsConfigSectionHtml(profileSection);
+  const handleHint = buildClinicalTeamsHandleHint(ctx);
+
+  if (pickTeamLayout) {
+    host.innerHTML = `
+    ${pickBanner}
+    ${directorySection}
+    ${handleHint}
+    ${joinedSection}
+    ${createSection}
+    ${joinCodeSection}
+    ${configSection}`;
+  } else {
+    host.innerHTML = `
+    ${handleHint}
+    ${rotationSection}
+    ${createSection}
+    ${joinedSection}
     ${directorySection}
     ${joinCodeSection}
-    ${buildClinicalTeamsConfigSectionHtml(profileSection)}`;
+    ${configSection}`;
+  }
+
+  if (pickTeamLayout) {
+    requestAnimationFrame(() => {
+      host.querySelector('.clinical-teams-section--directory')?.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    });
+  }
 
   wireLanUsersDirectoryControls();
   syncRotationConfigButton();

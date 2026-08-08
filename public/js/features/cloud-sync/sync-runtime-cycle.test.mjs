@@ -2,9 +2,9 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createSyncRuntimeCycle,
-  humanizeCloudSyncErrorMessage,
   isCloudRevisionStaleError,
 } from './sync-runtime-cycle.mjs';
+import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 
 function makeOutbox(rows = []) {
   let list = rows.slice();
@@ -112,6 +112,30 @@ describe('createSyncRuntimeCycle status', () => {
     const errorIdx = statuses.findIndex((s) => s.status === 'error');
     assert.ok(errorIdx >= 0);
     assert.ok(!statuses.slice(errorIdx + 1).some((s) => s.status === 'pending'));
+  });
+
+  it('reports configured-client error when api.push is missing', async () => {
+    const statuses = [];
+    const outbox = makeOutbox([
+      { clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }], baseRevision: 0, enqueuedAt: 1 },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: { pull: async () => ({ revision: 1 }) },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus(status, detail) {
+        statuses.push({ status, detail });
+      },
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    const last = statuses[statuses.length - 1];
+    assert.equal(last.status, 'error');
+    assert.match(String(last.detail || ''), /cliente de nube no está listo para enviar|enlace con nube no está listo/i);
   });
 
   it('reaches idle when pull succeeds and outbox empty', async () => {

@@ -400,6 +400,22 @@ export function isDietaSuplemento(dietaText) {
 }
 
 /**
+ * Nutrición parenteral (NPT/KAVIBEN): kcal fija desde SOME, sin cálculo por kg.
+ * @param {unknown} dietaText
+ * @returns {boolean}
+ */
+export function isDietaParenteral(dietaText) {
+  var t = normalizeDietaTypeLabel(dietaText);
+  if (!t) return false;
+  if (/\bPARENTERAL\b/.test(t)) return true;
+  if (/\bNPT\b/.test(t)) return true;
+  if (/\bKAVIBEN\b/.test(t)) return true;
+  if (/\bSMOFKABIVEN\b/.test(t)) return true;
+  if (/\bOLICLINOMEL\b/.test(t)) return true;
+  return false;
+}
+
+/**
  * @param {Record<string, unknown> | null | undefined} record
  */
 export function clearDietCaloricFields(record) {
@@ -455,7 +471,7 @@ export function computeDietKcalKgFromTotal(kcalTotal, weightKg) {
  */
 export function syncDietKcalFromWeight(estadoClinico, weightKg) {
   if (!estadoClinico || typeof estadoClinico !== 'object' || weightKg == null) return false;
-  if (isDietaSuplemento(estadoClinico.dieta)) return false;
+  if (isDietaSuplemento(estadoClinico.dieta) || isDietaParenteral(estadoClinico.dieta)) return false;
   var total = computeDietKcalTotal(estadoClinico.kcalKg, weightKg);
   if (total == null) return false;
   estadoClinico.kcal = String(total);

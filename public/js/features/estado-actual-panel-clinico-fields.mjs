@@ -9,6 +9,7 @@ import { DIET_PENDING_KEYS } from './estado-actual-meds.mjs';
 import { markDietAsManuallyConfirmed } from './estado-actual-meds-diet.mjs';
 import { saveState, patients } from '../app-state.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { normalizeSoporteValue } from './estado-actual-ventilatorio.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
   const p = patients.find(function (row) {
@@ -90,6 +91,7 @@ export function applyEstadoClinicoFieldChange(el, patient) {
   var key = el.getAttribute('data-ea-ec');
   if (!key) return;
   var val = 'value' in el ? String(el.value) : '';
+  if (key === 'soporte') val = normalizeSoporteValue(val);
   if (String(monitoreo.estadoClinico[key] || '') === val) return;
   monitoreo.estadoClinico[key] = val;
   monitoreo.estadoClinicoUpdatedAt = new Date().toISOString();

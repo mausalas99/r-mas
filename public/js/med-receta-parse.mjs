@@ -10,6 +10,7 @@ import {
   resolveDietaDescripcionRaw,
   isNutritionMedicationItem,
   nutritionMedItemToDieta,
+  normalizeParenteralDietaItem,
 } from './med-receta-diet.mjs';
 import { normalizeNombreForSoapClassify } from './med-receta-nombre.mjs';
 import { classifyMedicationSoapCategory, shouldIncludeMedicationInSoap } from './med-receta-soap.mjs';
@@ -124,14 +125,14 @@ function parseDietaRow(cols, lineIndex) {
   var norm = normalizeDietaCols(cols);
   var detalleRaw = trimStr(norm[4]) || trimStr(norm[5]);
   var nutrients = extractDietNutrients(dietNutrientBlobFromCols(norm));
-  return {
+  return normalizeParenteralDietaItem({
     id: 'dieta-' + Date.now().toString(36) + '-' + lineIndex,
     descripcionRaw: resolveDietaDescripcionRaw(cols, norm),
     detalleRaw: detalleRaw,
     kcal: nutrients.kcal,
     proteinG: nutrients.proteinG,
     suspendido: false,
-  };
+  });
 }
 
 function padIndicacionesCols_(cols) {

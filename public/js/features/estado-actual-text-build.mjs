@@ -12,6 +12,10 @@ import {
   vitalAlteredTimeForDisplay,
   formatEaVitalPointShorthand,
 } from './estado-actual-registro-defaults.mjs';
+import {
+  formatSoporteVentilatorioClause,
+  formatVentilatorioCalcClause,
+} from './estado-actual-ventilatorio.mjs';
 
 /** Máximo de antigüedad del pico febril para documentarlo en SOAP. */
 export const TEMP_PICO_MAX_AGE_MS = 5 * 24 * 60 * 60 * 1000;
@@ -147,20 +151,12 @@ export function joinSoapMedSegments(segments, joiner) {
     .join(joiner != null ? joiner : ' | ');
 }
 
-const SOPORTE_MAP = {
-  'Aire ambiente': 'AL AIRE AMBIENTE',
-  'Puntillas nasales': 'POR PUNTILLAS NASALES',
-  'Alto flujo': 'POR ALTO FLUJO',
-  'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
-  Traqueostomía: 'CON TRAQUEOSTOMÍA',
-};
-
 /**
  * @param {Record<string, unknown>} ec
+ * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown }} [ctx]
  */
-export function resolveSoporteClause(ec) {
-  var soporteKey = ec.soporte != null ? String(ec.soporte) : '';
-  return SOPORTE_MAP[soporteKey] || 'AL AIRE AMBIENTE';
+export function resolveSoporteClause(ec, ctx) {
+  return formatSoporteVentilatorioClause(ec) + formatVentilatorioCalcClause(ec, ctx);
 }
 
 /**

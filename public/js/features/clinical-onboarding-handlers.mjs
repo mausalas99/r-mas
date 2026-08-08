@@ -18,7 +18,10 @@ import {
   shouldClaimClinicalUsername,
 } from '../clinical-username.mjs';
 import { getClientId, needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
-import { wireSyncModeOnboardingInteractions } from './clinical-onboarding-sync-mode.mjs';
+import {
+  wireOnboardingModeBackButtons,
+  wireSyncModeOnboardingInteractions,
+} from './clinical-onboarding-sync-mode.mjs';
 import { wireExistingAccountLoginInteractions } from './clinical-onboarding-existing-login.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import {
@@ -26,6 +29,10 @@ import {
   syncOnboardingNubeVisibility,
 } from './clinical-onboarding-nube.mjs';
 import { finishOnboardingCloudAndCutover } from './clinical-onboarding-cloud-finish.mjs';
+import {
+  defaultLocalOnlyDisplayName,
+  submitLocalOnlyProfile,
+} from './clinical-onboarding-local-submit.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -347,9 +354,33 @@ export async function handleResumeIdentityClick() {
   }
 }
 
+export async function handleLocalOnlyConfirmClick() {
+  const confirmBtn = document.getElementById('clinical-onboard-local-confirm-btn');
+  const errEl = document.getElementById('onboard-local-only-error');
+  if (confirmBtn instanceof HTMLButtonElement) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Preparando…';
+  }
+  const settings = readRpcSettings();
+  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
+  try {
+    const result = await submitLocalOnlyProfile(defaultLocalOnlyDisplayName(), rank, errEl);
+    if (!result.ok) return;
+    toast('Listo. R+ queda solo en este equipo, sin R+ Cloud.', 'success');
+    const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+    await refreshMainClinicalOnboardingIfNeeded();
+  } finally {
+    if (confirmBtn instanceof HTMLButtonElement) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Entrar a R+';
+    }
+  }
+}
+
 export async function wireOnboardingInteractions() {
   wireSyncModeOnboardingInteractions();
   wireExistingAccountLoginInteractions();
+  wireOnboardingModeBackButtons();
 
   const form = document.getElementById('clinical-onboard-username-form');
   if (form && !form._rpcOnboardWired) {
@@ -361,6 +392,12 @@ export async function wireOnboardingInteractions() {
   if (resumeBtn && !resumeBtn._rpcResumeWired) {
     resumeBtn._rpcResumeWired = true;
     resumeBtn.addEventListener('click', () => void handleResumeIdentityClick());
+  }
+
+  const localConfirmBtn = document.getElementById('clinical-onboard-local-confirm-btn');
+  if (localConfirmBtn && !localConfirmBtn._rpcLocalConfirmWired) {
+    localConfirmBtn._rpcLocalConfirmWired = true;
+    localConfirmBtn.addEventListener('click', () => void handleLocalOnlyConfirmClick());
   }
 
   wireOnboardingNubeExtras();

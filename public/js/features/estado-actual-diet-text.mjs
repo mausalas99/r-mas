@@ -1,4 +1,4 @@
-import { isDietaSuplemento, isDietaAyuno } from './estado-actual-data.mjs';
+import { isDietaSuplemento, isDietaAyuno, isDietaParenteral } from './estado-actual-data.mjs';
 
 /**
  * @param {unknown} v
@@ -28,6 +28,10 @@ export function formatNmDietClause(fields, kcalDisplay, opts) {
   fields = fields || {};
   if (isDietaAyuno(fields.dieta)) return 'DIETA AYUNO';
   if (isDietaSuplemento(fields.dieta)) return 'DIETA SUPLEMENTO';
+  if (isDietaParenteral(fields.dieta)) {
+    var parenteralKcal = kcalDisplay != null && String(kcalDisplay).trim() !== '' ? kcalDisplay : fields.kcal;
+    return 'DIETA PARENTERAL' + (parenteralKcal != null && String(parenteralKcal).trim() !== '' ? ' (' + numPlaceholder(parenteralKcal) + ' KCAL)' : '');
+  }
   var proteinClause = '';
   if (
     opts.includeProtein !== false &&

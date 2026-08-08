@@ -163,7 +163,7 @@ export function connectedViewsHtml({
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
   }
   const sistemaRows =
-    optionsRow('Diagnóstico Nube', 'Cola, errores y estado de sync', 'nube') +
+    optionsRow('Diagnóstico Nube', 'Dashboard de estado y alertas', 'nube') +
     optionsRow('Avanzado', 'URL del servicio', 'advanced');
 
   const optionsBody =
@@ -193,8 +193,7 @@ export function connectedViewsHtml({
     viewBlock(
       'nube',
       'Diagnóstico Nube',
-      '<p class="cloud-sync-hint">Cola de mutaciones, últimos errores y trazas push/pull. Copia el informe para soporte.</p>' +
-        '<div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host></div>'
+      '<div class="cloud-sync-nube-diagnostics-host" data-cloud-nube-diagnostics-host></div>'
     ) +
     viewBlock('advanced', 'Avanzado', advancedUrlFieldsHtml(url)) +
     '</div>'

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { backfillDietPendingMacrosFromReceta } from './estado-actual-meds-diet.mjs';
+import { backfillDietPendingMacrosFromReceta, selectDietOption, getDietOptions } from './estado-actual-meds-diet.mjs';
 import {
   applyDietProposalFromRecetaBlock,
   confirmDietProposal,
@@ -300,4 +300,33 @@ test('estadoClinicoForDisplay muestra propuesta de dieta pendiente', () => {
   assert.equal(ec.dieta, 'NORMAL ALTA EN FIBRA');
   assert.equal(ec.kcal, '2000');
   assert.equal(ec.proteinG, '80');
+});
+
+test('applyDietProposalFromRecetaBlock — parenteral múltiple ofrece opciones y permite elegir', () => {
+  const m = emptyMonitoreo();
+  const block = {
+    dietas: [
+      {
+        descripcionRaw: 'PARENTERAL — KAVIBEN',
+        detalleRaw: 'KAVIBEN 1400 KCAL',
+        kcal: 1400,
+        proteinG: null,
+      },
+      {
+        descripcionRaw: 'PARENTERAL — NPT calculada',
+        detalleRaw: 'VIA INTRAVENOSA',
+        kcal: null,
+        proteinG: null,
+        id: 'dieta-nutri-x',
+      },
+    ],
+    items: [],
+  };
+  assert.equal(applyDietProposalFromRecetaBlock(m, block), true);
+  assert.equal(getDietOptions(m).length, 2);
+  assert.match(String(m.pendienteReceta.dieta), /KAVIBEN/i);
+  assert.equal(m.pendienteReceta.kcal, '1400');
+  assert.equal(selectDietOption(m, 1), true);
+  assert.match(String(m.pendienteReceta.dieta), /NPT calculada/i);
+  assert.equal(m.pendienteReceta.kcal, '');
 });

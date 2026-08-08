@@ -26,6 +26,7 @@ import {
 } from './features/settings-help/settings-dropdown.mjs';
 import { closeConnectionDropdown } from './features/cloud-sync/panel-chrome.mjs';
 import { closeQuickHelp } from './features/settings-help/help-content.mjs';
+import { closeShortcutsModal } from './features/settings-help/shortcuts-modal.mjs';
 import { closeReleaseNotes } from './features/settings-help/release-notes.mjs';
 import { hideUpdateModal } from './features/platform/updater.mjs';
 import { closeWipeDataModal } from './features/platform/offline.mjs';
@@ -144,6 +145,9 @@ function wireModalDismissLayers(registry) {
   regOverlay(registry, 'templates-modal', closeTemplatesModal);
   regOverlay(registry, 'extra-templates-modal', closeExtraTemplatesManager);
   regOpenClass(registry, 'unified-search-backdrop', closeUnifiedSearch);
+  regOpenClass(registry, 'shortcuts-backdrop', closeShortcutsModal, {
+    panelSelector: '.shortcuts-sheet',
+  });
   regOpenClass(registry, 'help-quick-backdrop', closeQuickHelp);
   regOpenClass(registry, 'release-notes-backdrop', closeReleaseNotes, {
     panelSelector: '.release-notes-modal',

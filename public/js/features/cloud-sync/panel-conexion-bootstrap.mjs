@@ -185,11 +185,15 @@ export function localRoomFromSession(deps, normalizedSala) {
 /** Reconcile sticky roomId with canonical sala+month room (ensure-turn). */
 function reconcileCanonicalCloudRoom(section, deps, ui, cachedRoomId) {
   if (typeof ui.tryAutoEnsureTurnRoom !== 'function') return;
+  const snapCode = String(deps.getCloudSyncRoomSnapshot?.()?.code || '').trim();
   void ui.tryAutoEnsureTurnRoom().then(function (room) {
     if (!room || !section.isConnected) return;
     const nextId = String(room.id || '').trim();
-    if (!nextId || nextId === String(cachedRoomId || '').trim()) return;
-    ui.renderConnected(room);
+    const cachedId = String(cachedRoomId || '').trim();
+    const roomCode = String(room.code || '').trim();
+    if (roomCode && (!snapCode || (nextId && nextId !== cachedId))) {
+      ui.renderConnected(room);
+    }
   });
 }
 

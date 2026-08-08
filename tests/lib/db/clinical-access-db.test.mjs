@@ -12,6 +12,7 @@ import {
   fetchActiveGuardias,
   upsertRotationCycle,
   getActiveRotationCycle,
+  archiveRotationAndTeams,
   createTeam,
   addTeamMember,
   removeTeamMember,
@@ -28,6 +29,7 @@ import {
   attachClinicalIdentityByUsername,
   migrateTeamMemberships,
   listTeamsBySala,
+  listTeamsForRenderer,
   buildActivePatientCountByTeam,
   buildLanAssignmentCountByTeam,
   loadCensusPatientIdSet,
@@ -1124,5 +1126,39 @@ describe('clinical-access-db', () => {
         }),
       /No puedes eliminar tu propio usuario/
     );
+  });
+
+  it('stages new teams while current rotation is active and promotes them on nueva rotación', () => {
+    const leader = ensureClinicalUser(db, { clientId: 'lead-rot-stage', rank: 'R4' });
+    const r1 = ensureClinicalUser(db, { clientId: 'r1-rot-stage', rank: 'R1' });
+    const current = createTeam(db, {
+      name: 'Dr. Fer',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: leader.userId,
+    });
+    assert.equal(current.rotation_active, 1);
+    const incoming = createTeam(db, {
+      name: 'Dra. Leslie',
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala: 'Sala 2',
+      createdBy: leader.userId,
+    });
+    assert.equal(incoming.rotation_active, 0);
+
+    const browse = listTeamsBySala(db, { sala: 'Sala 2', forUserId: r1.userId });
+    assert.ok(browse.some((t) => t.team_id === current.team_id));
+    assert.ok(!browse.some((t) => t.team_id === incoming.team_id));
+
+    addTeamMember(db, incoming.team_id, r1.userId);
+    const rendererTeams = listTeamsForRenderer(db, r1.userId);
+    assert.ok(rendererTeams.some((t) => t.team_id === incoming.team_id));
+
+    archiveRotationAndTeams(db);
+    assert.ok(getTeamById(db, current.team_id).archived_at);
+    assert.equal(getTeamById(db, incoming.team_id).rotation_active, 1);
+    assert.equal(getTeamById(db, incoming.team_id).archived_at, null);
   });
 });

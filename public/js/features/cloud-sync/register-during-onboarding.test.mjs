@@ -18,10 +18,14 @@ describe('registerCloudDuringOnboarding', () => {
     assert.match(src, /hydrateClinicalTeamsAfterCloudPull/);
   });
 
-  it('exposes login and post-auth sync helpers for onboarding', () => {
-    assert.match(src, /export async function loginCloudDuringOnboarding/);
-    assert.match(src, /export async function completeCloudOnboardingSync/);
-    assert.match(src, /setCloudSyncToken\(data\.token, \{ remember \}\)/);
+  it('persists room snapshot (incl. código) during ensure-turn', () => {
+    assert.match(src, /setCloudSyncRoomSnapshot/);
+    assert.match(src, /setCloudSyncRoomSnapshot,\s*\n\s*setCloudSyncRevision/);
+  });
+
+  it('starts shared Nube runtime (api wired via startSharedNubeRuntime, not bare getApi on cycle)', () => {
+    assert.match(src, /startSharedNubeRuntime/);
+    assert.doesNotMatch(src, /startCloudSyncRuntime/);
   });
 });
 

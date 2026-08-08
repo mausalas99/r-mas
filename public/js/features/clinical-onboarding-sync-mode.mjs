@@ -72,3 +72,18 @@ export function wireSyncModeOnboardingInteractions() {
     });
   }
 }
+
+const ONBOARDING_MODE_BACK_BUTTON_IDS = [
+  'clinical-onboard-mode-back-btn',
+  'clinical-onboard-existing-back-btn',
+];
+
+/** Wire «Cambiar modo» on any step-2 screen to return to sync mode choice. */
+export function wireOnboardingModeBackButtons() {
+  for (const id of ONBOARDING_MODE_BACK_BUTTON_IDS) {
+    const backBtn = document.getElementById(id);
+    if (!backBtn || backBtn._rpcModeBackWired) continue;
+    backBtn._rpcModeBackWired = true;
+    backBtn.addEventListener('click', () => void handleSyncModeBack());
+  }
+}

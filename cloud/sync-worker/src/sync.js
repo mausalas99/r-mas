@@ -13,7 +13,7 @@ import {
 } from './pull-strategy.js';
 import { QUOTAS } from './quotas.js';
 import { notifyRoomRevision } from './room-sync-notify.js';
-import { getCachedRoomRevision, setCachedRoomRevision } from './kv-revision-cache.mjs';
+import { getCachedRoomRevision } from './kv-revision-cache.mjs';
 import { userFromAuthHeader } from './session.js';
 
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
@@ -293,7 +293,6 @@ async function handleMutations(request, env, db, roomId) {
       nextState: appliedResult.state,
     });
     if (committed.ok) {
-      await setCachedRoomRevision(env.CACHE, roomId, committed.revision);
       await notifyRoomRevision(env, roomId, committed.revision);
       return Response.json({
         revision: committed.revision,
@@ -336,7 +335,6 @@ async function handlePull(request, env, db, roomId) {
   }
 
   const revision = Number(room.revision);
-  await setCachedRoomRevision(env.CACHE, roomId, revision);
   if (since >= revision) {
     return Response.json({ revision, ops: [] });
   }

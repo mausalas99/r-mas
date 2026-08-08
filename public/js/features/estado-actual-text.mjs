@@ -8,6 +8,8 @@ import {
 import { normalizeEaTextInputs } from './estado-actual-text-inputs.mjs';
 import { patientHasInsulinRescatesInReceta } from './estado-actual-glu-rescue.mjs';
 import { detectInsulinPumpAlgorithmFromRecetaBlock } from '../insulin-pump-some-detect.mjs';
+import { labHistory } from '../app-state.mjs';
+import { resolveVentilatorioLabContext } from './estado-actual-ventilatorio-labs.mjs';
 
 /**
  * Pure SOAP Estado Actual texto (sin Subjetivo): snapshot SV/glu/io + estado clínico + balance de turno.
@@ -20,7 +22,13 @@ import { detectInsulinPumpAlgorithmFromRecetaBlock } from '../insulin-pump-some-
 export function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   options = options || {};
   var ctx = normalizeEaTextInputs(estadoClinico, snapshot, balances);
-  var soporte = resolveSoporteClause(ctx.ec);
+  var labCtx = options.patientId ? resolveVentilatorioLabContext(options.patientId, labHistory) : null;
+  var soporte = resolveSoporteClause(ctx.ec, {
+    fr: ctx.v.fr,
+    sat: ctx.v.sat,
+    pesoKg: options.patientPeso,
+    lab: labCtx,
+  });
   var hiTemp = buildHiTempClause(ctx.v, ctx.snapAlt, ctx.tempPeakAt, options.now);
   var kcalDisplay = resolveKcalDisplay(ctx.ec, options);
   var rescatesInSome =

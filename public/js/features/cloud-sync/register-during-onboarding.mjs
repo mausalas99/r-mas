@@ -9,15 +9,14 @@ import {
   setCloudSyncToken,
   setCloudSyncRoomId,
   setCloudSyncRevision,
+  setCloudSyncRoomSnapshot,
   getCloudSyncRoomId,
   getCloudSyncRevision,
 } from './settings.mjs';
 import { ensureTurnRoom } from './ensure-turn-room.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { hydrateClinicalTeamsAfterCloudPull } from './clinical-ops-hydrate.mjs';
-import { configureCloudMutateBridge } from './mutate-bridge.mjs';
-import { startCloudSyncRuntime } from './sync-runtime.mjs';
-import { createOutbox } from './outbox.mjs';
+import { startSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 import { isCloudSala } from './sala-allowlist.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
@@ -160,6 +159,7 @@ async function joinTurnRoom(client, chosenUser, toast, setStatus) {
     getSala: () => chosenUser.sala,
     getToken: getCloudSyncToken,
     setCloudSyncRoomId,
+    setCloudSyncRoomSnapshot,
     setCloudSyncRevision,
     onConnected: () => setCloudRoomConnected(true),
     toast,
@@ -186,25 +186,14 @@ async function pullOrSeed(client, roomId, setStatus) {
   setStatus('Sala lista — crea o únete a un equipo en Mi rotación.');
 }
 
-function startCloudPushAndRuntime(chosenUser) {
-  const outbox = createOutbox();
-  configureCloudMutateBridge({
+function startCloudPushAndRuntime() {
+  startSharedNubeRuntime({
     getApi: createApi,
-    getRoomId: getCloudSyncRoomId,
-    getToken: getCloudSyncToken,
-    getRevision: getCloudSyncRevision,
-    setRevision: setCloudSyncRevision,
-    outbox,
-    getActorId: () => chosenUser.username || 'local',
-  });
-  startCloudSyncRuntime({
-    getApi: createApi,
-    getRoomId: getCloudSyncRoomId,
-    getToken: getCloudSyncToken,
-    getRevision: getCloudSyncRevision,
-    setRevision: setCloudSyncRevision,
-    outbox,
-    getActorId: () => chosenUser.username || 'local',
+    getCloudSyncRoomId,
+    getCloudSyncToken,
+    getCloudSyncRevision,
+    setCloudSyncRevision,
+    onStatus: function () {},
   });
 }
 

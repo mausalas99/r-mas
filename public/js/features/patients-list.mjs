@@ -237,7 +237,7 @@ function renderPatientListMessage(list, msg, opts) {
 }
 
 function buildPatientListRenderBundle(filtered, isRonda) {
-  var zones = buildPatientListZones(filtered);
+  var zones = buildPatientListZones(filtered, { sortByBed: isMobileWeb() });
   var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
   var archivedCollapsed = isArchivedSectionCollapsed();
   var listCtx = {

@@ -142,7 +142,7 @@ Planning model: **~47 R1** (most edits) + **~10** R2/R3/R4 (mostly readers); **~
 
 | Resource | Free / day | V1 behavior |
 |----------|------------|-------------|
-| Worker requests | 100k | 45s idle / 20s after edits when visible + coalesced push |
+| Worker requests | 100k | Poll + coalesced push; KV revision hints optional (read on pull, write on push only) |
 | D1 rows written | 100k | Coalesced mutations |
 | D1 storage | 500 MB / DB | Room storage quota + **mutation retention** (below) |
 

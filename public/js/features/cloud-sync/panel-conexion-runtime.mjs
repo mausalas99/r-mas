@@ -26,7 +26,10 @@ let sharedRuntime = null;
  */
 export function startSharedNubeRuntime(deps) {
   const roomId = deps.getCloudSyncRoomId();
-  if (!roomId || !deps.getCloudSyncToken()) return null;
+  const token = deps.getCloudSyncToken();
+  if (!roomId || !token) return null;
+  const api = deps.getApi();
+  if (!api || typeof api.pull !== 'function' || typeof api.push !== 'function') return null;
   if (sharedRuntime) {
     sharedRuntime.stop();
     sharedRuntime = null;
@@ -41,7 +44,7 @@ export function startSharedNubeRuntime(deps) {
   }
   const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
   sharedRuntime = startCloudSyncRuntime({
-    api: deps.getApi(),
+    api,
     outbox: sharedOutbox,
     getRoomId: deps.getCloudSyncRoomId,
     getRevision: deps.getCloudSyncRevision,

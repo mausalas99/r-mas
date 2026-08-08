@@ -298,8 +298,12 @@ function soapBalanceText(ing, egr) {
 var SOAP_SOPORTE_MAP = {
   'Aire ambiente': 'AL AIRE AMBIENTE',
   'Puntillas nasales': 'POR PUNTILLAS NASALES',
+  'Mascarilla simple': 'POR MASCARILLA SIMPLE',
+  'Mascarilla reservorio': 'POR MASCARILLA CON RESERVORIO',
   'Alto flujo': 'POR ALTO FLUJO',
-  'VM no invasiva': 'CON VENTILACIÓN MECÁNICA NO INVASIVA',
+  VMNI: 'CON VMNI',
+  'VM no invasiva': 'CON VMNI',
+  'Ventilación mecánica': 'CON VENTILACIÓN MECÁNICA',
   Traqueostomía: 'CON TRAQUEOSTOMÍA',
 };
 

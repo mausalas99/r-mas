@@ -25,10 +25,6 @@ import {
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import { renderSyncModeChoicePanel } from './clinical-onboarding-sync-mode.mjs';
 import { isLanSkipShiftPin } from '../shift-pin-stub.mjs';
-import {
-  defaultLocalOnlyDisplayName,
-  submitLocalOnlyProfile,
-} from './clinical-onboarding-local-submit.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import {
   getClientId,
@@ -184,9 +180,25 @@ function buildLanProfileFormBody(settings) {
             <button type="submit" class="btn-save">Guardar perfil</button>
             <button type="button" id="clinical-onboard-switch-existing-btn" class="btn-med-secondary">Ya tengo cuenta Nube</button>
             <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
+            <button type="button" id="clinical-onboard-mode-back-btn" class="btn-med-secondary">Cambiar modo</button>
           </div>
         </form>
       </div>`;
+}
+
+function renderLocalOnlyConfirmPanel(host) {
+  host.innerHTML = buildOnboardingStageHtml({
+    title: 'Solo este equipo',
+    leadHtml:
+      '<p>Los expedientes y notas quedan solo en esta Mac. Sin Nube, rotaciones ni sala compartida.</p>',
+    stepperIndex: 2,
+    bodyHtml: `
+      <p id="onboard-local-only-error" class="clinical-registration-error" hidden></p>
+      <div class="modal-actions clinical-onboard-form-actions">
+        <button type="button" class="btn-save" id="clinical-onboard-local-confirm-btn">Entrar a R+</button>
+        <button type="button" id="clinical-onboard-mode-back-btn" class="btn-med-secondary">Cambiar modo</button>
+      </div>`,
+  });
 }
 
 function renderLanProfileForm(host, settings) {
@@ -277,27 +289,8 @@ export async function renderOnboardingPanelInto(host) {
       await renderCompletedOnboarding(host);
       return;
     }
-    const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
-    const result = await submitLocalOnlyProfile(defaultLocalOnlyDisplayName(), rank, null);
-    if (result.ok) {
-      if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-        window.showToast(
-          'Listo. R+ queda solo en este equipo, sin R+ Cloud.',
-          'success'
-        );
-      }
-      await renderCompletedOnboarding(host);
-      return;
-    }
-    host.innerHTML = buildOnboardingStageHtml({
-      title: 'Perfil local',
-      leadHtml: `<p class="clinical-registration-error">${escapeHtml(
-        result.error || 'No se pudo activar el modo solo en este equipo.'
-      )}</p>`,
-      bodyHtml: `<div class="modal-actions clinical-onboard-session-actions"><button type="button" class="btn-save" id="clinical-onboard-retry-session-btn">Reintentar</button></div>`,
-    });
-    const { wireOnboardingSessionRecoveryOnce } = await import('./clinical-onboarding-main.mjs');
-    wireOnboardingSessionRecoveryOnce(host);
+    renderLocalOnlyConfirmPanel(host);
+    await wireOnboardingInteractions();
     return;
   }
 

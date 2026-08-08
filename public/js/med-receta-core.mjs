@@ -18,8 +18,13 @@ export {
   buildDietProposalText,
   resolveDietaDescripcionRaw,
   dietProposalFingerprint,
+  isParenteralNutritionText,
   isNutritionMedicationItem,
   nutritionMedItemToDieta,
+  normalizeParenteralDietaItem,
+  dietaItemToMerged,
+  listDietCandidates,
+  listDietCandidatesFromRecetaBlock,
   collectDietasFromRecetaBlock,
 } from './med-receta-diet.mjs';
 
@@ -43,6 +48,8 @@ export {
   buildMedRecetaNameOnlyText,
   isPrnMedicationItem,
 } from './med-receta-format.mjs';
+
+export { applyIvToOralForEgreso } from './med-receta-iv-oral.mjs';
 
 export {
   SOAP_DESTINATION_KEYS,
