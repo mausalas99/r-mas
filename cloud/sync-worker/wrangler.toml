@@ -2,6 +2,14 @@ name = "rplus-sync"
 main = "src/index.js"
 compatibility_date = "2026-06-01"
 
+[[durable_objects.bindings]]
+name = "ROOM_SYNC_HUB"
+class_name = "RoomSyncHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomSyncHub"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "rplus-sync"
@@ -11,3 +19,10 @@ migrations_dir = "schema"
 [assets]
 directory = "../sync-pages/public"
 binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "c9d2d049ff9f4124a3bfb95db8dfe220"
+
+[triggers]
+crons = ["0 6 * * *"]

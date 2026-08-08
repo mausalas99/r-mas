@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-07T22:08:56.865Z",
-  "totalScore": 130,
+  "updatedAt": "2026-08-07T23:19:18.007Z",
+  "totalScore": 0,
   "bootGraphHash": "5823e515c7f1c9c4",
   "bootGraph": {
     "hash": "5823e515c7f1c9c4",
@@ -48,13 +48,13 @@
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/cloud-sync/nube-config-retire.mjs",
-        "isDynamic": true
+        "from": "./features/cloud-sync/mutate-bridge.mjs",
+        "isDynamic": false
       },
       {
         "hub": "public/js/app-runtimes.mjs",
-        "from": "./features/cloud-sync/mutate-bridge.mjs",
-        "isDynamic": false
+        "from": "./features/cloud-sync/nube-config-retire.mjs",
+        "isDynamic": true
       },
       {
         "hub": "public/js/app-runtimes.mjs",
@@ -603,6 +603,10 @@
     {
       "date": "2026-08-07",
       "note": "Baseline refresh totalScore=130 (was 0; LAN excision WS3 — deleted lan-squad/, features/lan/, historia-clinica; boot graph hash change)"
+    },
+    {
+      "date": "2026-08-07",
+      "note": "Baseline refresh totalScore=0"
     }
   ]
 }

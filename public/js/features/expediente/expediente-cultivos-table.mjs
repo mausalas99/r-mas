@@ -150,12 +150,15 @@ function buildCultivosToolbarHtml(patientId) {
         ' cultivo' +
         (pending === 1 ? '' : 's') +
         ' con ATB pendiente'
-      : 'No hay cultivos con ATB pendiente en este paciente';
+      : 'Consultar repositorio (no hay cultivos con ATB pendiente)';
+  var btnClass = 'tend-toolbar-btn cultivo-refresh-repo-btn';
+  if (pending === 0) btnClass += ' cultivo-refresh-idle';
   return (
     '<div class="cultivos-toolbar">' +
-    '<button type="button" class="tend-toolbar-btn cultivo-refresh-repo-btn"' +
-    (pending > 0 && !_cultivoRefreshBusy ? '' : ' disabled') +
-    (_cultivoRefreshBusy ? ' aria-busy="true"' : '') +
+    '<button type="button" class="' +
+    btnClass +
+    '"' +
+    (_cultivoRefreshBusy ? ' disabled aria-busy="true"' : '') +
     ' title="' +
     esc(title) +
     '">Actualizar</button>' +
@@ -227,20 +230,36 @@ function rowFechaDisplay(r) {
   return r.studyDate || '—';
 }
 
-function buildCultivosNegStrip(negs) {
+export function buildCultivosNegStrip(negs) {
   if (!negs.length) return '';
-  var parts = negs.map(function (r) {
-    var fd = rowFechaDisplay(r);
-    var lab = r.tipoLabel || '';
-    return lab + ' · ' + fd + ' · ' + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + '…' : r.sitio);
-  });
+  var chips = negs
+    .map(function (r) {
+      var fd = rowFechaDisplay(r);
+      var sitio = r.sitio || '—';
+      return (
+        '<li class="cultivos-neg-chip">' +
+        '<span class="cultivos-neg-chip-tipo">' +
+        esc(r.tipoLabel || '') +
+        '</span> · ' +
+        esc(fd) +
+        ' · ' +
+        esc(sitio) +
+        '</li>'
+      );
+    })
+    .join('');
   return (
-    '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) · ' +
-    parts
-      .map(function (p) {
-        return '<span>' + esc(p) + '</span>';
-      })
-      .join(' <span class="cultivos-neg-sep">|</span> ') +
+    '<div class="cultivos-neg-strip" role="status">' +
+    '<div class="cultivos-neg-header">' +
+    '<strong>Cultivos negativos</strong>' +
+    '<span class="cultivos-neg-count">' +
+    negs.length +
+    '</span>' +
+    '</div>' +
+    '<p class="cultivos-neg-hint">En la tabla, por tipo y fecha</p>' +
+    '<ul class="cultivos-neg-chips">' +
+    chips +
+    '</ul>' +
     '</div>'
   );
 }

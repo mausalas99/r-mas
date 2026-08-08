@@ -11,6 +11,13 @@ export function applyCors(req, res) {
     'Access-Control-Allow-Headers',
     'Content-Type, Authorization, X-Sync-Token, X-Sync-Admin-Key, Accept'
   );
+
+  // WebSocket upgrade: never rebuild — copying body drops `webSocket` (client code 1006).
+  // Cross-origin WS handshakes do not need CORS headers on the 101 response.
+  if (res.webSocket) {
+    return res;
+  }
+
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 

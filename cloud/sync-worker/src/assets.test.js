@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import worker from './index.js';
+import worker from './worker-app.mjs';
 
 const PAGES_ROOT = path.join(process.cwd(), 'cloud/sync-pages/public');
 const MOBILE_INDEX = path.join(PAGES_ROOT, 'mobile/index.html');

@@ -1,11 +1,6 @@
 import { SyncError } from './errors.js';
-import {
-  normalizeUsername,
-  validatePassword,
-  checkRateLimit,
-  recordFailure,
-  clearFailures,
-} from './auth.js';
+import { normalizeUsername, validatePassword } from './auth-util.js';
+import { checkRateLimit, recordFailure, clearFailures } from './rate-limit.mjs';
 import { dbBlobToHex, userPayload, parseJsonBody } from './auth-util.js';
 import { hashPassword } from './password.js';
 import { hashRecoveryCode, verifyRecoveryCode, generateRecoveryCode } from './recovery-code.js';

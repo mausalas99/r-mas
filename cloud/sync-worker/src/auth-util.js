@@ -1,5 +1,30 @@
 import { SyncError } from './errors.js';
 
+const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
+const MIN_PASSWORD_LEN = 10;
+
+/** @param {string} u */
+export function normalizeUsername(u) {
+  return String(u ?? '').trim().toLowerCase();
+}
+
+/** @param {string} username */
+export function validateUsername(username) {
+  if (!USERNAME_RE.test(username)) {
+    throw new SyncError(
+      'invalid_request',
+      'Usuario inválido: 3–32 caracteres, letras, números, . _ -'
+    );
+  }
+}
+
+/** @param {string} password */
+export function validatePassword(password) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LEN) {
+    throw new SyncError('invalid_request', `Contraseña debe tener al menos ${MIN_PASSWORD_LEN} caracteres.`);
+  }
+}
+
 /** @param {unknown} val */
 export function dbBlobToHex(val) {
   if (!val) return '';

@@ -1,7 +1,14 @@
 import { SyncError } from './errors.js';
 import { hashPassword, verifyPassword } from './password.js';
+import {
+  checkRateLimit,
+  clearFailures,
+  clientIp,
+  rateLimitKey,
+  recordFailure,
+} from './rate-limit.mjs';
 import { createSession, revokeSession, userFromAuthHeader } from './session.js';
-import { dbBlobToHex, userPayload, parseJsonBody } from './auth-util.js';
+import { dbBlobToHex, userPayload, parseJsonBody, normalizeUsername, validateUsername, validatePassword } from './auth-util.js';
 import {
   mintRecoveryForUser,
   userNeedsRecoveryMint,
@@ -9,78 +16,7 @@ import {
   handleRegenerateRecovery,
 } from './auth-recovery.js';
 
-const USERNAME_RE = /^[a-z0-9._-]{3,32}$/i;
-const MIN_PASSWORD_LEN = 10;
-const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-
-/** @type {Map<string, { count: number, resetAt: number }>} */
-const failureCounts = new Map();
-
-/** @param {string} u */
-export function normalizeUsername(u) {
-  return String(u ?? '').trim().toLowerCase();
-}
-
-/** @param {string} username */
-export function validateUsername(username) {
-  if (!USERNAME_RE.test(username)) {
-    throw new SyncError(
-      'invalid_request',
-      'Usuario inválido: 3–32 caracteres, letras, números, . _ -'
-    );
-  }
-}
-
-/** @param {string} password */
-export function validatePassword(password) {
-  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LEN) {
-    throw new SyncError('invalid_request', `Contraseña debe tener al menos ${MIN_PASSWORD_LEN} caracteres.`);
-  }
-}
-
-/** @param {string} key */
-export function checkRateLimit(key) {
-  const now = Date.now();
-  const entry = failureCounts.get(key);
-  if (!entry || now >= entry.resetAt) {
-    failureCounts.delete(key);
-    return;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) {
-    throw new SyncError('invalid_credentials', 'Demasiados intentos. Espera unos minutos.');
-  }
-}
-
-/** @param {string} key */
-export function recordFailure(key) {
-  const now = Date.now();
-  const entry = failureCounts.get(key);
-  if (!entry || now >= entry.resetAt) {
-    failureCounts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return;
-  }
-  entry.count += 1;
-}
-
-/** @param {string} key */
-export function clearFailures(key) {
-  failureCounts.delete(key);
-}
-
-/** @param {Request} request @param {string} ip */
-function rateLimitKey(request, ip, username) {
-  return `${normalizeUsername(username)}|${ip}`;
-}
-
-/** @param {Request} request */
-function clientIp(request) {
-  return (
-    request.headers.get('CF-Connecting-IP') ||
-    request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ||
-    'unknown'
-  );
-}
+export { normalizeUsername, validateUsername, validatePassword } from './auth-util.js';
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request @param {string} ip */
 async function handleRegister(db, request, ip) {
@@ -92,7 +28,8 @@ async function handleRegister(db, request, ip) {
   validateUsername(username);
   validatePassword(password);
 
-  const rlKey = rateLimitKey(request, ip, username);
+  const rlKey = rateLimitKey(ip, username);
+  checkRateLimit(rateLimitKey(ip));
   checkRateLimit(rlKey);
 
   const existing = await db
@@ -148,7 +85,8 @@ async function handleLogin(db, request, ip) {
     throw new SyncError('invalid_request', 'Usuario y contraseña requeridos.');
   }
 
-  const rlKey = rateLimitKey(request, ip, username);
+  const rlKey = rateLimitKey(ip, username);
+  checkRateLimit(rateLimitKey(ip));
   checkRateLimit(rlKey);
 
   const row = await db

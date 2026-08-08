@@ -12,6 +12,8 @@ import {
   shouldReturnSnapshotPull,
 } from './pull-strategy.js';
 import { QUOTAS } from './quotas.js';
+import { notifyRoomRevision } from './room-sync-notify.js';
+import { getCachedRoomRevision, setCachedRoomRevision } from './kv-revision-cache.mjs';
 import { userFromAuthHeader } from './session.js';
 
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
@@ -211,7 +213,7 @@ function priorMutationResponse(prior, roomRevision, baseRevision) {
 
 /**
  * @param {Request} request
- * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string }} env
+ * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env
  * @param {string} roomId
  * @param {'mutations' | 'pull'} sub
  */
@@ -291,6 +293,8 @@ async function handleMutations(request, env, db, roomId) {
       nextState: appliedResult.state,
     });
     if (committed.ok) {
+      await setCachedRoomRevision(env.CACHE, roomId, committed.revision);
+      await notifyRoomRevision(env, roomId, committed.revision);
       return Response.json({
         revision: committed.revision,
         applied: lastApplied,
@@ -312,11 +316,16 @@ async function handleMutations(request, env, db, roomId) {
   );
 }
 
-/** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
+/** @param {Request} request @param {{ WORKER_DATA_KEY?: string, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handlePull(request, env, db, roomId) {
   await requireMember(db, request, roomId);
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
+
+  const cachedRevision = await getCachedRoomRevision(env.CACHE, roomId);
+  if (cachedRevision != null && since >= cachedRevision) {
+    return Response.json({ revision: cachedRevision, ops: [] });
+  }
 
   const room = await db
     .prepare('SELECT revision FROM rooms WHERE id = ?')
@@ -327,6 +336,7 @@ async function handlePull(request, env, db, roomId) {
   }
 
   const revision = Number(room.revision);
+  await setCachedRoomRevision(env.CACHE, roomId, revision);
   if (since >= revision) {
     return Response.json({ revision, ops: [] });
   }

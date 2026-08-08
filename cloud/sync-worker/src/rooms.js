@@ -3,6 +3,7 @@ import { SyncError } from './errors.js';
 import { QUOTAS } from './quotas.js';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.js';
 import { defaultTurnKey } from './turn-key.js';
+import { handleRoomLive } from './room-live.js';
 import { handleSync } from './sync.js';
 import { userFromAuthHeader } from './session.js';
 
@@ -506,6 +507,11 @@ export async function handleRooms(request, env, subpath) {
   if (subpath === '/active') {
     if (method === 'GET') return handleActiveRoom(db, request);
     throw new SyncError('not_found', 'Método no permitido.');
+  }
+
+  const liveMatch = /^\/([^/]+)\/live$/.exec(subpath);
+  if (liveMatch) {
+    return handleRoomLive(request, env, liveMatch[1]);
   }
 
   const syncMatch = /^\/([^/]+)\/(mutations|pull)$/.exec(subpath);

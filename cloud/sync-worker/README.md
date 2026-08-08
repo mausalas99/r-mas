@@ -138,7 +138,7 @@ Dashboard → **rplus-sync** → Domains & Routes → e.g. `sync.tudominio.org`,
 npm run estimate:free
 ```
 
-Default assumptions (**10 users × 12 h × 45 s idle poll** + light edits, 3s push debounce) stay under **100k requests/day** and **100k D1 writes/day**. Poll runs only while the app is focused; backs off on 429.
+Planning model: **~47 R1** (most edits) + **~10** R2/R3/R4 (mostly readers); **~60 accounts** soft rollout estimate. Defaults: 28 + 8 concurrent focused. Poll-only exceeds Free at institutional scale — **realtime DO + relaxed poll** is the intended path (see `docs/superpowers/specs/2026-08-07-cloud-sync-realtime-do-design.md`).
 
 | Resource | Free / day | V1 behavior |
 |----------|------------|-------------|
@@ -154,7 +154,14 @@ Default assumptions (**10 users × 12 h × 45 s idle poll** + light edits, 3s pu
 - Pulls with a larger gap return `needSnapshot: true` **without** loading the full ops history (avoids D1 isolate OOM).
 - Peers that fall behind simply re-apply the snapshot; they do not need ancient ops rows.
 
-Override assumptions: `USERS=15 HOURS=8 POLL_SEC=45 npm run estimate:free`
+Override assumptions:
+
+```bash
+npm run estimate:free
+REALTIME=1 npm run estimate:free
+CONCURRENT_EDITORS=47 REALTIME=1 npm run estimate:free   # stress: all R1 focused
+EDITORS=47 VIEWERS=5 CONCURRENT_EDITORS=25 REALTIME=1 npm run estimate:free
+```
 
 ## Auth
 

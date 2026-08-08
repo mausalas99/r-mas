@@ -20,6 +20,19 @@ export async function createSession(db, userId, ttlDays = 14) {
   return { token, expiresAt: expires.toISOString() };
 }
 
+/** Bearer header or `access_token` query (WebSocket clients). */
+export async function userFromRequest(db, request) {
+  const url = new URL(request.url);
+  const q = String(url.searchParams.get('access_token') || '').trim();
+  if (q) {
+    return userFromAuthHeader(
+      db,
+      new Request(request.url, { headers: { Authorization: `Bearer ${q}` } })
+    );
+  }
+  return userFromAuthHeader(db, request);
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 export async function userFromAuthHeader(db, request) {
   const h = request.headers.get('Authorization') || '';

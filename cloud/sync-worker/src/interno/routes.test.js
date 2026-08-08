@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { encryptJson } from '../crypto-at-rest.js';
-import worker from '../index.js';
+import worker from '../worker-app.mjs';
 import { salaFromSlug, normalizeInternoSala } from './sala-slug.js';
 import { authenticateInterno } from './auth.js';
 import { readInternoBoard } from './board.js';
