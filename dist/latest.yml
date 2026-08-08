@@ -1,24 +1,26 @@
-version: 8.0.6
+version: 8.0.7
 files:
-  - url: R+-8.0.6-x64.exe
-    sha512: sr+UHeF8fy7VwuWRDJKykVP8aOAT8QJ0aypSEjwVhnoqjlAjklnfDvH3GSJeyEPOOslfahe3fAMtUlf7QVlP/Q==
-    size: 122127722
-path: R+-8.0.6-x64.exe
-sha512: sr+UHeF8fy7VwuWRDJKykVP8aOAT8QJ0aypSEjwVhnoqjlAjklnfDvH3GSJeyEPOOslfahe3fAMtUlf7QVlP/Q==
-releaseDate: '2026-08-08T00:43:03.000Z'
+  - url: R+-8.0.7-x64.exe
+    sha512: bz9B5VqspzQdAfHQO+6ibZ/ifxDtCEWGxIQ7C6oHFUlWeblhtlk57j6V0pzPyYVruTBj5yY68GQNQO1zUF/yAQ==
+    size: 122121712
+path: R+-8.0.7-x64.exe
+sha512: bz9B5VqspzQdAfHQO+6ibZ/ifxDtCEWGxIQ7C6oHFUlWeblhtlk57j6V0pzPyYVruTBj5yY68GQNQO1zUF/yAQ==
+releaseDate: '2026-08-08T01:16:55.000Z'
 releaseNotes: |
-  8.0.6 mejora el primer arranque en Nube: al elegir modo de uso puedes iniciar sesión con cuenta existente (recuérdame + pull de censo/equipos) sin pasar por «crear cuenta». Los modales hijos de ⇄ Conexión (código de recuperación, admin, historial Equipos) se apilan correctamente sobre el panel. El script setup-sync puede provisionar el namespace KV CACHE del Worker.
+  8.0.7 corrige el cambio de rotación mensual: los equipos nuevos quedan en *staging* (rotation_active=0) hasta que R4 inicia la nueva rotación; el modal de reingreso solo aparece cuando corresponde (no por heurísticas de censo). Recuérdame salta onboarding y rehidrata perfil tras actualizar la app. Heredar pacientes solo en ventana de handoff (preview de mes o tras nueva rotación).
   
-  Ya tengo cuenta — Tercera tarjeta en «¿Cómo usarás R+?»: login con @usuario + contraseña Nube, rotación y Recuérdame; sincroniza censo y equipos al terminar.
+  Equipos en staging — Si el mes sigue activo, crear equipo lo marca rotation_active=0; al «Iniciar nueva rotación» se archivan los viejos y se promueven los entrantes.
   
-  Crear cuenta separado — El flujo de registro en perfil ya no mezcla radio «crear / login»; solo crea cuenta nueva.
+  Unirse a equipo — Auto-join bloqueado en equipos aún no activos; R4 puede asignar desde el directorio.
   
-  Reanudar sesión — Si «Recuérdame» dejó token pero faltaban flags de perfil, el onboarding completa sync sin volver a pedir contraseña.
+  Mi rotación — Lista equipos de la rotación actual + equipos staged donde ya eres miembro.
   
-  Copy y iconos — Tarjetas Nube / login / solo equipo con iconos cloud y llave; sin referencias a LAN en el paso de modo.
+  Modal reingreso — Solo cuando R4/Admin inicia nueva rotación o un peer recibe rotationNuevaAt por Nube (ya no por caída heurística de equipos unidos).
   
-  Modales apilados — Código de recuperación, prompt admin y historial Equipos usan lab-conflict-backdrop--stacked (z-index sobre ⇄ Conexión).
+  Heredar pacientes — Botón en tarjeta de equipo; visible en ventana previa al cierre de mes o tras nueva rotación (no al unirte cualquier día).
   
-  Recuérdame en registro — registerCloudDuringOnboarding respeta «Recuérdame» al guardar token.
+  Recuérdame confiable — Token Nube guardado omite «¿Cómo usarás R+?» y completa perfil/sync al abrir (también tras actualizar de 8.0.6).
   
-  setup-sync — Tras D1, intenta crear namespace KV rplus-sync-cache y escribir binding CACHE en wrangler.toml (opcional; el Worker funciona sin él).
+  Usuario desde Nube — Si el @local era legado de máquina, se rehidrata con /me del Worker.
+  
+  Ya tengo cuenta Nube — Botón en el formulario de perfil para cambiar al flujo de login existente.

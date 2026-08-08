@@ -1,33 +1,35 @@
-version: 8.0.6
+version: 8.0.7
 files:
-  - url: R+-8.0.6-arm64.zip
-    sha512: KDHHFouJl8kr0Ew848UeoZeH4jVUxl1z8TBM40DYMrM2HlJJg4Lr6KlI3hg9ATK2YQSAm/JA+XXQRBUTDNf51Q==
-    size: 139219006
-  - url: R+-8.0.6-arm64.dmg
-    sha512: xuKiiodGCnkSvWcDkt5SmDud2SIA2q5AheyWANj/n8ydPs5juVC00rsGBp8ELKnBFDHFRyFM3NzZC3DFvG4ALw==
-    size: 145067413
-  - url: R+-8.0.6-x64.zip
-    sha512: dLUSgh03I/CdPM+v1PpcL75FFvBwwIK8h4d8wmEqimDGz0NXyEcA7qLWts56JL93bm+QjKNM3LvYJBrOIwkCCQ==
-    size: 147593056
-  - url: R+-8.0.6-x64.dmg
-    sha512: mWE2YThuNAAZypODsWZlHDZR2jtV3rf+eNR8pgZJTHIXVIvG5N8cAz7lmHBiUS9fq1ntXybS4KHSjxwB84C5BA==
-    size: 153463799
-path: R+-8.0.6-arm64.zip
-sha512: KDHHFouJl8kr0Ew848UeoZeH4jVUxl1z8TBM40DYMrM2HlJJg4Lr6KlI3hg9ATK2YQSAm/JA+XXQRBUTDNf51Q==
-releaseDate: '2026-08-08T00:43:02.000Z'
+  - url: R+-8.0.7-arm64.zip
+    sha512: w3zG3ESFYrqCe35cZD7HsC0Z0/ykbi3n3ctnGuiy69eY1llDFmDm0oND+YR6M4rGmyy8nTQ/EK5TNiwlezlnVg==
+    size: 139225606
+  - url: R+-8.0.7-arm64.dmg
+    sha512: B8yO95Pm4rjA4p+9fRshQHtk9Q7/mZe+PrfcHv6d2XS1dG0dTsvkKyqkSciLtQH0f4TML6V2L62MU9dE/dkZnQ==
+    size: 145040906
+  - url: R+-8.0.7-x64.zip
+    sha512: EHobl2BQv8KpzWQDg2l/Cm4d9MsnTIYtnmn2yPr29uTjD09r0+hZnEMf1rJRvrKSo468YwqH4H5PA44LANsqJQ==
+    size: 147599645
+  - url: R+-8.0.7-x64.dmg
+    sha512: 3Zyiybb5Jm1KLyLLq43eHVek5cBRVROVo6F17T1ziPQfBqK7iCELvMRXi8NTBUTQXBBnLqBDZoyujVnqBGutTQ==
+    size: 153476495
+path: R+-8.0.7-arm64.zip
+sha512: w3zG3ESFYrqCe35cZD7HsC0Z0/ykbi3n3ctnGuiy69eY1llDFmDm0oND+YR6M4rGmyy8nTQ/EK5TNiwlezlnVg==
+releaseDate: '2026-08-08T01:16:55.000Z'
 releaseNotes: |
-  8.0.6 mejora el primer arranque en Nube: al elegir modo de uso puedes iniciar sesión con cuenta existente (recuérdame + pull de censo/equipos) sin pasar por «crear cuenta». Los modales hijos de ⇄ Conexión (código de recuperación, admin, historial Equipos) se apilan correctamente sobre el panel. El script setup-sync puede provisionar el namespace KV CACHE del Worker.
+  8.0.7 corrige el cambio de rotación mensual: los equipos nuevos quedan en *staging* (rotation_active=0) hasta que R4 inicia la nueva rotación; el modal de reingreso solo aparece cuando corresponde (no por heurísticas de censo). Recuérdame salta onboarding y rehidrata perfil tras actualizar la app. Heredar pacientes solo en ventana de handoff (preview de mes o tras nueva rotación).
   
-  Ya tengo cuenta — Tercera tarjeta en «¿Cómo usarás R+?»: login con @usuario + contraseña Nube, rotación y Recuérdame; sincroniza censo y equipos al terminar.
+  Equipos en staging — Si el mes sigue activo, crear equipo lo marca rotation_active=0; al «Iniciar nueva rotación» se archivan los viejos y se promueven los entrantes.
   
-  Crear cuenta separado — El flujo de registro en perfil ya no mezcla radio «crear / login»; solo crea cuenta nueva.
+  Unirse a equipo — Auto-join bloqueado en equipos aún no activos; R4 puede asignar desde el directorio.
   
-  Reanudar sesión — Si «Recuérdame» dejó token pero faltaban flags de perfil, el onboarding completa sync sin volver a pedir contraseña.
+  Mi rotación — Lista equipos de la rotación actual + equipos staged donde ya eres miembro.
   
-  Copy y iconos — Tarjetas Nube / login / solo equipo con iconos cloud y llave; sin referencias a LAN en el paso de modo.
+  Modal reingreso — Solo cuando R4/Admin inicia nueva rotación o un peer recibe rotationNuevaAt por Nube (ya no por caída heurística de equipos unidos).
   
-  Modales apilados — Código de recuperación, prompt admin y historial Equipos usan lab-conflict-backdrop--stacked (z-index sobre ⇄ Conexión).
+  Heredar pacientes — Botón en tarjeta de equipo; visible en ventana previa al cierre de mes o tras nueva rotación (no al unirte cualquier día).
   
-  Recuérdame en registro — registerCloudDuringOnboarding respeta «Recuérdame» al guardar token.
+  Recuérdame confiable — Token Nube guardado omite «¿Cómo usarás R+?» y completa perfil/sync al abrir (también tras actualizar de 8.0.6).
   
-  setup-sync — Tras D1, intenta crear namespace KV rplus-sync-cache y escribir binding CACHE en wrangler.toml (opcional; el Worker funciona sin él).
+  Usuario desde Nube — Si el @local era legado de máquina, se rehidrata con /me del Worker.
+  
+  Ya tengo cuenta Nube — Botón en el formulario de perfil para cambiar al flujo de login existente.
