@@ -69,15 +69,15 @@ test('ops-sync refresh does not eagerly reconcile LAN on every merge', () => {
     'utf8'
   );
   assert.match(src, /allowLanPull: false/);
-  assert.match(src, /scheduleReconcileLiveSyncRoom/);
+  assert.match(src, /LAN reconcile retired/);
   assert.match(src, /clinicalOpsSyncedRefreshTimer/);
 });
 
-test('census LAN reconcile skips when Nube is active', () => {
+test('census LAN reconcile retired when Nube is active', () => {
   const src = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
     'utf8'
   );
-  assert.match(src, /isCloudSyncActive/);
-  assert.equal(src.includes('isLanSessionConfiguredForRest'), false);
+  assert.match(src, /scheduleLanPatientReconcile/);
+  assert.doesNotMatch(src, /scheduleReconcileLiveSyncRoom/);
 });

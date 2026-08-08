@@ -1,4 +1,4 @@
-import { pickDiffKeys, summarizeConflictFieldValue, formatFieldLabel } from '../lan-conflict-silent-match.mjs';
+import { pickDiffKeys, summarizeConflictFieldValue, formatFieldLabel } from '../clinical-conflict-silent-match.mjs';
 
 import { escHtml } from '../dom-escape.mjs';
 function formatConflictValue(value, fieldKey) {

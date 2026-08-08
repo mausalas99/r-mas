@@ -1,4 +1,4 @@
-import { formatFieldLabel } from '../lan-conflict-silent-match.mjs';
+import { formatFieldLabel } from '../clinical-conflict-silent-match.mjs';
 
 import { escHtml } from '../dom-escape.mjs';
 const ENTITY_LABELS = {

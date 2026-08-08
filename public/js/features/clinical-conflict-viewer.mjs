@@ -3,7 +3,7 @@ import {
   pickDiffKeys,
   summarizeConflictFieldValue,
   formatFieldLabel,
-} from '../lan-conflict-silent-match.mjs';
+} from '../clinical-conflict-silent-match.mjs';
 import { buildClinicalConflictModalHtml, wireClinicalConflictModal } from './clinical-conflict-modal.mjs';
 
 export { conflictSnapshotsMatchForAutoResolve, pickDiffKeys, summarizeConflictFieldValue, formatFieldLabel };

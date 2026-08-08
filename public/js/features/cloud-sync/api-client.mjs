@@ -62,6 +62,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
 
   return {
     ping: () => req('/ping'),
+    meta: () => req('/meta'),
     register: (body) => req('/auth/register', { method: 'POST', body }),
     login: (body) => req('/auth/login', { method: 'POST', body }),
     logout: () => req('/auth/logout', { method: 'POST', body: {} }),

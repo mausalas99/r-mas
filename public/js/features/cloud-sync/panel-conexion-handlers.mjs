@@ -6,8 +6,6 @@ import { isValidUsernameFormat, normalizeUsername } from '../../clinical-usernam
 import { isCutoverPending } from './cutover-flags.mjs';
 import { userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { showRecoveryCodeModal } from './recovery-modal.mjs';
-
-
 /** @param {object} deps @param {unknown} prevToken */
 function rebuildPanelOnAuthChange(deps, prevToken) {
   if (shouldForcePanelRebuildOnAuthChange(prevToken, deps.getCloudSyncToken())) {

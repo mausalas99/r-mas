@@ -10,13 +10,13 @@ import {
   getTourStepsForChapter,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 12', () => {
-  assert.equal(CURRICULUM_VERSION, 12);
+test('CURRICULUM_VERSION is 14', () => {
+  assert.equal(CURRICULUM_VERSION, 14);
 });
 
-test('guardia-v7 has 5 chapters and 23 steps', () => {
+test('guardia-v7 has 5 chapters and 22 steps', () => {
   assert.equal(GUARDIA_V7_CHAPTERS.length, 5);
-  assert.equal(getGuardiaV7TourSteps().length, 23);
+  assert.equal(getGuardiaV7TourSteps().length, 22);
 });
 
 test('getFirstStepIdForChapter guardia-v7 branch', () => {

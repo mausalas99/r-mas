@@ -6,25 +6,24 @@ import { fileURLToPath } from 'node:url';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const mutationsSrc = readFileSync(join(dir, 'todos-mutations.mjs'), 'utf8');
-const emitSrc = readFileSync(join(dir, 'lan/live-sync-emit.mjs'), 'utf8');
+const bridgeSrc = readFileSync(join(dir, 'cloud-sync/mutate-bridge.mjs'), 'utf8');
 
 describe('deleteTodo cloud clock', () => {
-  it('passes a fresh delAt into emitLiveSyncTodoDelete (not only when victim missing)', () => {
+  it('passes a fresh delAt into enqueueCloudTodoDelete (not only when victim missing)', () => {
     const fn = mutationsSrc.slice(
       mutationsSrc.indexOf('export function deleteTodo'),
       mutationsSrc.indexOf('export function setTodoPriority')
     );
-    assert.match(fn, /emitLiveSyncTodoDelete\(aid\(\), victim \|\| \{ id: id \}, delAt\)/);
-    assert.doesNotMatch(fn, /if \(victim\) emitLiveSyncTodoDelete/);
+    assert.match(fn, /enqueueCloudTodoDelete\(aid\(\), victim \|\| \{ id: id \}, delAt\)/);
+    assert.doesNotMatch(fn, /if \(victim\) enqueueCloudTodoDelete/);
   });
 
-  it('emitLiveSyncTodoDelete prefers delete clock over todo.updatedAt for Nube', () => {
-    const fn = emitSrc.slice(
-      emitSrc.indexOf('export function emitLiveSyncTodoDelete'),
-      emitSrc.indexOf('export function emitLiveSyncPatientDelete')
+  it('enqueueCloudTodoDelete uses a fresh delete clock for Nube tombstones', () => {
+    const fn = bridgeSrc.slice(
+      bridgeSrc.indexOf('export function enqueueCloudTodoDelete'),
+      bridgeSrc.indexOf('export function enqueueCloudAgendaUpsert')
     );
-    assert.match(fn, /var deleteAt = String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/);
-    assert.match(fn, /cloudEmit\('todo-delete', \[patientId, todoRef, deleteAt\]\)/);
-    assert.doesNotMatch(fn, /todo && todo\.updatedAt\) \|\| updatedAt/);
+    assert.match(fn, /updatedAt: String\(updatedAt \|\| new Date\(\)\.toISOString\(\)\)/);
+    assert.match(fn, /_deleted: true/);
   });
 });

@@ -97,12 +97,10 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
 
-  it('pullClinicalOpsFromLanRoom skips LAN GET when Nube is active', () => {
-    assert.match(clinicalTeamsSrc, /isCloudSyncActive/);
+  it('pullClinicalOpsFromLanRoom is retired (always false)', () => {
     const idx = clinicalTeamsSrc.indexOf('export async function pullClinicalOpsFromLanRoom');
     assert.ok(idx >= 0);
-    const body = clinicalTeamsSrc.slice(idx, idx + 500);
-    assert.match(body, /isCloudSyncActive\(\)/);
+    const body = clinicalTeamsSrc.slice(idx, idx + 120);
     assert.match(body, /return false/);
   });
 
@@ -160,13 +158,12 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
   });
 
-  it('silent Mi rotación refresh skips LAN pull to avoid ops-sync loop', () => {
+  it('silent Mi rotación refresh skips redundant pull to avoid ops-sync loop', () => {
     assert.match(clinicalTeamsSrc, /skipLanPull/);
     assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanel\(\{ silent: true, skipLanPull: true/);
     assert.match(clinicalTeamsSrc, /isClinicalTeamsPanelUserInteracting/);
     assert.match(clinicalTeamsSrc, /captureClinicalTeamsPanelDraft/);
     assert.match(clinicalTeamsSrc, /restoreClinicalTeamsPanelDraft/);
-    assert.match(clinicalTeamsSrc, /LAN_CLINICAL_OPS_PULL_MIN_MS/);
     assert.match(clinicalTeamsSrc, /opsSyncedTeamsRefreshTimer/);
   });
 
@@ -187,10 +184,10 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('window.prompt('), false);
   });
 
-  it('team join field redirects ⇄ sala links to Conexión guardia', () => {
+  it('team join field redirects ⇄ sala links to Conexión Nube', () => {
     assert.match(clinicalTeamsSrc, /isLanSalaInvitePaste/);
     assert.match(clinicalTeamsSrc, /redirectLanInviteFromTeamJoinField/);
-    assert.match(clinicalTeamsSrc, /joinLanFromInviteUi/);
+    assert.match(clinicalTeamsSrc, /LiveSync LAN retirado/);
   });
 
   it('Mi rotación sections and team cards use persisted collapsible blocks', () => {

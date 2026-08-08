@@ -7,6 +7,7 @@ import {
 } from './panel-conexion-html.mjs';
 import { connectedViewsHtml, applyConexionView } from './panel-conexion-views.mjs';
 import { adminShellHtml } from './panel-conexion-bootstrap.mjs';
+import { wireCloudAuthTabs } from './panel-steps-html.mjs';
 
 /**
  * @param {HTMLElement} section
@@ -50,6 +51,7 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
     const hasToken = !!deps.getCloudSyncToken();
     if (!hasToken) {
       renderShell(authFormsHtml(deps.getCloudSyncUrl()), 'offline');
+      wireCloudAuthTabs(section);
       return;
     }
     renderConnectedBody(roomActionsHtml(displaySala));
