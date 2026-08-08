@@ -1,35 +1,33 @@
-version: 8.0.5
+version: 8.0.6
 files:
-  - url: R+-8.0.5-arm64.zip
-    sha512: wYJ9XH06HM7aok4/aicQjNxxA3oE2AnmhnfufIfn18ZzwhINNpC8ddjNmTnDe6eYH72cGB9M6/NXljxxpk/GiA==
-    size: 139209185
-  - url: R+-8.0.5-arm64.dmg
-    sha512: Neo9C3Y6mBHbLhr/0gtVCXUbnoapOUtVgKljOL9OBYabvq9fzd3GibDFIeCypfDkTz31MNLZTvsaP4Ic05I4Ew==
-    size: 145039745
-  - url: R+-8.0.5-x64.zip
-    sha512: CKZXBkvjmtofI/CepSO/JGpCI1yd3jQ6uxIghLU0YhV1PgWwIQ/dvL4OUsF3aJNUX8nbDaJWTiKfP7Gkytf34Q==
-    size: 147583290
-  - url: R+-8.0.5-x64.dmg
-    sha512: DhmtZuDzwhJdNqM1fK7sf3yIhSBd6jAfPF9i1VBxSS1ZwUTYTnUklQvlHYNy3++vVLJzACY40nLSvWvPoxzStQ==
-    size: 153471046
-path: R+-8.0.5-arm64.zip
-sha512: wYJ9XH06HM7aok4/aicQjNxxA3oE2AnmhnfufIfn18ZzwhINNpC8ddjNmTnDe6eYH72cGB9M6/NXljxxpk/GiA==
-releaseDate: '2026-08-08T00:18:02.000Z'
+  - url: R+-8.0.6-arm64.zip
+    sha512: KDHHFouJl8kr0Ew848UeoZeH4jVUxl1z8TBM40DYMrM2HlJJg4Lr6KlI3hg9ATK2YQSAm/JA+XXQRBUTDNf51Q==
+    size: 139219006
+  - url: R+-8.0.6-arm64.dmg
+    sha512: xuKiiodGCnkSvWcDkt5SmDud2SIA2q5AheyWANj/n8ydPs5juVC00rsGBp8ELKnBFDHFRyFM3NzZC3DFvG4ALw==
+    size: 145067413
+  - url: R+-8.0.6-x64.zip
+    sha512: dLUSgh03I/CdPM+v1PpcL75FFvBwwIK8h4d8wmEqimDGz0NXyEcA7qLWts56JL93bm+QjKNM3LvYJBrOIwkCCQ==
+    size: 147593056
+  - url: R+-8.0.6-x64.dmg
+    sha512: mWE2YThuNAAZypODsWZlHDZR2jtV3rf+eNR8pgZJTHIXVIvG5N8cAz7lmHBiUS9fq1ntXybS4KHSjxwB84C5BA==
+    size: 153463799
+path: R+-8.0.6-arm64.zip
+sha512: KDHHFouJl8kr0Ew848UeoZeH4jVUxl1z8TBM40DYMrM2HlJJg4Lr6KlI3hg9ATK2YQSAm/JA+XXQRBUTDNf51Q==
+releaseDate: '2026-08-08T00:43:02.000Z'
 releaseNotes: |
-  8.0.5 completa la jubilación de LAN LiveSync: el turno clínico sincroniza solo por R+ Cloud; el servidor ward :3738 ya no va empaquetado en producción (dev: R_PLUS_DEV_WARD_SERVER=1). Interno MIP y Equipos operan en Nube; se retira Historia clínica del expediente y del push Nube. Tours y documentación reflejan Conexión Nube (sin PIN/beacon/LAN).
+  8.0.6 mejora el primer arranque en Nube: al elegir modo de uso puedes iniciar sesión con cuenta existente (recuérdame + pull de censo/equipos) sin pasar por «crear cuenta». Los modales hijos de ⇄ Conexión (código de recuperación, admin, historial Equipos) se apilan correctamente sobre el panel. El script setup-sync puede provisionar el namespace KV CACHE del Worker.
   
-  LAN LiveSync retirado — Eliminados lan-squad/ y features/lan/ del producto; ⇄ Conexión usa facades cloud-sync/ (panel-chrome, mutate-bridge, connection-panel).
+  Ya tengo cuenta — Tercera tarjeta en «¿Cómo usarás R+?»: login con @usuario + contraseña Nube, rotación y Recuérdame; sincroniza censo y equipos al terminar.
   
-  Escritorio sin ward server en release — server.js fuera del pack de electron-builder; export .docx e interno dev bajo R_PLUS_DEV_WARD_SERVER=1.
+  Crear cuenta separado — El flujo de registro en perfil ya no mezcla radio «crear / login»; solo crea cuenta nueva.
   
-  Offline intacto — SQLCipher local + respaldos JSON; Nube sigue opt-in desde ⇄.
+  Reanudar sesión — Si «Recuérdame» dejó token pero faltaban flags de perfil, el onboarding completa sync sin volver a pedir contraseña.
   
-  QR Internos (MIP) en ⇄ — Enlace/QR Nube por sala (/interno/{slug}); tokens en D1 vía sidecar internoAccessUpsert (migración 005-interno-access.sql).
+  Copy y iconos — Tarjetas Nube / login / solo equipo con iconos cloud y llave; sin referencias a LAN en el paso de modo.
   
-  Equipos cloud-only — Cola Lumify/EKG/US solo por Worker (equipos-cloud-config); sin host LAN.
+  Modales apilados — Código de recuperación, prompt admin y historial Equipos usan lab-conflict-backdrop--stacked (z-index sobre ⇄ Conexión).
   
-  Historia clínica retirada — Panel HC, parsers dedicados y push historiaClinica fuera del expediente; texto clínico compartido en lib/clinical-text.mjs.
+  Recuérdame en registro — registerCloudDuringOnboarding respeta «Recuérdame» al guardar token.
   
-  Drive import — Catálogos HC conservados solo para revisión/apply legacy donde aplique.
-  
-  Tours Guardia/Sala: pasos de PIN LAN y beacon eliminados; copy y ayuda apuntan a ⇄ Conexión Nube, Mi rotación e iPad/R+ Móvil.
+  setup-sync — Tras D1, intenta crear namespace KV rplus-sync-cache y escribir binding CACHE en wrangler.toml (opcional; el Worker funciona sin él).

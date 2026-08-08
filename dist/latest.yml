@@ -1,26 +1,24 @@
-version: 8.0.5
+version: 8.0.6
 files:
-  - url: R+-8.0.5-x64.exe
-    sha512: lluNC/efKr8jcfEfCI6vW8lHzbEroQzN8i2it5Jt5eyrmemfQUJCFK4RMpko/mQr0mmHjTStM0+mzQBCu8+3Xg==
-    size: 122133763
-path: R+-8.0.5-x64.exe
-sha512: lluNC/efKr8jcfEfCI6vW8lHzbEroQzN8i2it5Jt5eyrmemfQUJCFK4RMpko/mQr0mmHjTStM0+mzQBCu8+3Xg==
-releaseDate: '2026-08-08T00:18:02.000Z'
+  - url: R+-8.0.6-x64.exe
+    sha512: sr+UHeF8fy7VwuWRDJKykVP8aOAT8QJ0aypSEjwVhnoqjlAjklnfDvH3GSJeyEPOOslfahe3fAMtUlf7QVlP/Q==
+    size: 122127722
+path: R+-8.0.6-x64.exe
+sha512: sr+UHeF8fy7VwuWRDJKykVP8aOAT8QJ0aypSEjwVhnoqjlAjklnfDvH3GSJeyEPOOslfahe3fAMtUlf7QVlP/Q==
+releaseDate: '2026-08-08T00:43:03.000Z'
 releaseNotes: |
-  8.0.5 completa la jubilación de LAN LiveSync: el turno clínico sincroniza solo por R+ Cloud; el servidor ward :3738 ya no va empaquetado en producción (dev: R_PLUS_DEV_WARD_SERVER=1). Interno MIP y Equipos operan en Nube; se retira Historia clínica del expediente y del push Nube. Tours y documentación reflejan Conexión Nube (sin PIN/beacon/LAN).
+  8.0.6 mejora el primer arranque en Nube: al elegir modo de uso puedes iniciar sesión con cuenta existente (recuérdame + pull de censo/equipos) sin pasar por «crear cuenta». Los modales hijos de ⇄ Conexión (código de recuperación, admin, historial Equipos) se apilan correctamente sobre el panel. El script setup-sync puede provisionar el namespace KV CACHE del Worker.
   
-  LAN LiveSync retirado — Eliminados lan-squad/ y features/lan/ del producto; ⇄ Conexión usa facades cloud-sync/ (panel-chrome, mutate-bridge, connection-panel).
+  Ya tengo cuenta — Tercera tarjeta en «¿Cómo usarás R+?»: login con @usuario + contraseña Nube, rotación y Recuérdame; sincroniza censo y equipos al terminar.
   
-  Escritorio sin ward server en release — server.js fuera del pack de electron-builder; export .docx e interno dev bajo R_PLUS_DEV_WARD_SERVER=1.
+  Crear cuenta separado — El flujo de registro en perfil ya no mezcla radio «crear / login»; solo crea cuenta nueva.
   
-  Offline intacto — SQLCipher local + respaldos JSON; Nube sigue opt-in desde ⇄.
+  Reanudar sesión — Si «Recuérdame» dejó token pero faltaban flags de perfil, el onboarding completa sync sin volver a pedir contraseña.
   
-  QR Internos (MIP) en ⇄ — Enlace/QR Nube por sala (/interno/{slug}); tokens en D1 vía sidecar internoAccessUpsert (migración 005-interno-access.sql).
+  Copy y iconos — Tarjetas Nube / login / solo equipo con iconos cloud y llave; sin referencias a LAN en el paso de modo.
   
-  Equipos cloud-only — Cola Lumify/EKG/US solo por Worker (equipos-cloud-config); sin host LAN.
+  Modales apilados — Código de recuperación, prompt admin y historial Equipos usan lab-conflict-backdrop--stacked (z-index sobre ⇄ Conexión).
   
-  Historia clínica retirada — Panel HC, parsers dedicados y push historiaClinica fuera del expediente; texto clínico compartido en lib/clinical-text.mjs.
+  Recuérdame en registro — registerCloudDuringOnboarding respeta «Recuérdame» al guardar token.
   
-  Drive import — Catálogos HC conservados solo para revisión/apply legacy donde aplique.
-  
-  Tours Guardia/Sala: pasos de PIN LAN y beacon eliminados; copy y ayuda apuntan a ⇄ Conexión Nube, Mi rotación e iPad/R+ Móvil.
+  setup-sync — Tras D1, intenta crear namespace KV rplus-sync-cache y escribir binding CACHE en wrangler.toml (opcional; el Worker funciona sin él).
