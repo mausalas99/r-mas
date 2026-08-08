@@ -141,6 +141,7 @@
     },
     "files": [
       "main.js",
+      "data/release-notes-highlights.mjs",
       "scripts/lib/release-notes-body.js",
       "preload.js",
       "lib/**/*.js",

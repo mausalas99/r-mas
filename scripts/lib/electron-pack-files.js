@@ -11,6 +11,7 @@ const path = require('path');
 
 const PACK_FILES_BASELINE = [
   'main.js',
+  'data/release-notes-highlights.mjs',
   'scripts/lib/release-notes-body.js',
   'preload.js',
   'lib/**/*.js',

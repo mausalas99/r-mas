@@ -59,6 +59,14 @@ test('lista canónica no incluye server.js (dev-only ward server)', () => {
   assert.ok(!canonicalBuildFiles(ROOT).includes('server.js'));
 });
 
+test('release-notes highlights data está en build.files', () => {
+  const patterns = canonicalBuildFiles(ROOT);
+  assert.ok(
+    filePatternCovers('data/release-notes-highlights.mjs', patterns),
+    'Falta data/release-notes-highlights.mjs en build.files (lazy settings-help lo importa en runtime)'
+  );
+});
+
 test('main.js require("./…") directo está en build.files (excepto server dev-only)', () => {
   const patterns = pkg.build.files || [];
   const mainSrc = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8');
