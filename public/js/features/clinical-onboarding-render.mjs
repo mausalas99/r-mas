@@ -41,9 +41,10 @@ import {
 import {
   needsExistingAccountLogin,
   renderExistingAccountLoginPanel,
-  tryCompleteExistingAccountFromStoredSession,
+  tryResumeOnboardingFromStoredCloudToken,
   wireExistingAccountLoginInteractions,
 } from './clinical-onboarding-existing-login.mjs';
+import { getCloudSyncToken } from './cloud-sync/settings.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 import {
   buildCutoverPickerHtml,
@@ -181,6 +182,7 @@ function buildLanProfileFormBody(settings) {
           <p id="onboard-error" class="clinical-registration-error" hidden></p>
           <div class="modal-actions clinical-onboard-form-actions">
             <button type="submit" class="btn-save">Guardar perfil</button>
+            <button type="button" id="clinical-onboard-switch-existing-btn" class="btn-med-secondary">Ya tengo cuenta Nube</button>
             <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
           </div>
         </form>
@@ -258,11 +260,16 @@ export async function renderOnboardingPanelInto(host) {
   }
 
   if (needsExistingAccountLogin(settings)) {
-    const resumed = await tryCompleteExistingAccountFromStoredSession();
+    const resumed = await tryResumeOnboardingFromStoredCloudToken();
     if (resumed) return;
     renderExistingAccountLoginPanel(host, settings);
     wireExistingAccountLoginInteractions();
     return;
+  }
+
+  if (getCloudSyncToken()) {
+    const resumed = await tryResumeOnboardingFromStoredCloudToken();
+    if (resumed) return;
   }
 
   if (isClinicalLocalOnlyMode(settings)) {

@@ -1,33 +1,23 @@
 /**
- * Modal after «Iniciar nueva rotación»: confirm sala + open Mi rotación to join teams.
- * Peers see it when Nube/LAN sync archives teams (joined count drops to 0).
+ * Modal after R4/Admin «Iniciar nueva rotación» (local) or rotationNuevaAt from Nube sync (peers).
  */
 import { clinicalSessionContext, fetchClinicalTeamsFromDb } from '../clinical-access-runtime.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import { isClinicalLocalOnlyMode, readRpcSettings } from '../clinical-settings.mjs';
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
+import { needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { CLINICAL_SALAS, filterJoinedTeams } from './clinical-teams/shared.mjs';
 
-const EVER_JOINED_KEY = 'rpc-clinical-ever-joined-team';
 const PENDING_REJOIN_KEY = 'rpc-rotation-rejoin-pending';
+const EVER_JOINED_KEY = 'rpc-clinical-ever-joined-team';
 
 let wired = false;
-/** @type {number|null} */
-let lastJoinedCount = null;
 
 export function markClinicalEverJoinedTeam() {
   try {
     localStorage.setItem(EVER_JOINED_KEY, '1');
   } catch {
     /* ignore */
-  }
-}
-
-export function hasClinicalEverJoinedTeam() {
-  try {
-    return localStorage.getItem(EVER_JOINED_KEY) === '1';
-  } catch {
-    return false;
   }
 }
 
@@ -49,15 +39,12 @@ export function isRotationRejoinPending() {
 }
 
 /**
- * @param {{ everJoined?: boolean, joinedCount?: number, force?: boolean, localOnly?: boolean, pending?: boolean }} opts
+ * @param {{ joinedCount?: number, pending?: boolean }} opts
  */
 export function shouldOfferRotationRejoin(opts = {}) {
-  if (opts.localOnly) return false;
   const joined = Number(opts.joinedCount || 0);
   if (joined > 0) return false;
-  if (opts.force) return true;
-  if (opts.pending) return true;
-  return !!opts.everJoined;
+  return !!opts.pending;
 }
 
 export function buildRotationRejoinLeadHtml(user) {
@@ -88,7 +75,10 @@ function backdropEl() {
 function fillSalaSelect() {
   const select = document.getElementById('rotation-rejoin-sala');
   if (!(select instanceof HTMLSelectElement)) return;
-  const current = String(clinicalSessionContext.user?.sala || '').trim();
+  const settings = readRpcSettings();
+  const current = String(
+    clinicalSessionContext.user?.sala || settings.clinicalSala || ''
+  ).trim();
   select.innerHTML =
     '<option value="">— Seleccionar sala —</option>' +
     CLINICAL_SALAS.map(
@@ -120,12 +110,15 @@ export function openRotationRejoinModal() {
   if (select instanceof HTMLSelectElement) select.focus();
 }
 
-/**
- * @param {{ force?: boolean }} [opts]
- */
-export async function maybeShowRotationRejoinModal(opts = {}) {
+/** Show modal only when R4/Admin (or peer sync) set the pending flag. */
+export async function maybeShowRotationRejoinModal() {
   if (typeof document === 'undefined') return false;
   if (isClinicalLocalOnlyMode(readRpcSettings())) return false;
+  if (needsProfileOnboarding()) {
+    setRotationRejoinPending(false);
+    return false;
+  }
+  if (!isRotationRejoinPending()) return false;
 
   try {
     await fetchClinicalTeamsFromDb();
@@ -134,24 +127,14 @@ export async function maybeShowRotationRejoinModal(opts = {}) {
   }
 
   const joinedCount = currentJoinedCount();
-  lastJoinedCount = joinedCount;
   if (joinedCount > 0) {
-    markClinicalEverJoinedTeam();
     setRotationRejoinPending(false);
     closeRotationRejoinModal();
     return false;
   }
 
-  const offer = shouldOfferRotationRejoin({
-    force: !!opts.force,
-    joinedCount,
-    everJoined: hasClinicalEverJoinedTeam(),
-    pending: isRotationRejoinPending(),
-    localOnly: false,
-  });
-  if (!offer) return false;
+  if (!shouldOfferRotationRejoin({ joinedCount, pending: true })) return false;
 
-  setRotationRejoinPending(true);
   openRotationRejoinModal();
   try {
     const main = await import('./clinical-onboarding-main.mjs');
@@ -160,6 +143,12 @@ export async function maybeShowRotationRejoinModal(opts = {}) {
     /* onboarding optional */
   }
   return true;
+}
+
+/** R4/Admin «Iniciar nueva rotación» or peer after rotationNuevaAt from Nube. */
+export async function promptRotationRejoinAfterNuevaRotacion() {
+  setRotationRejoinPending(true);
+  return maybeShowRotationRejoinModal();
 }
 
 async function persistSalaFromModal() {
@@ -188,36 +177,10 @@ async function handleOpenMiRotacion() {
   await openClinicalTeamsPanel();
 }
 
-/**
- * After ops sync / rotation event: detect join-count drop (nueva rotación on peer).
- */
-export async function onClinicalOpsMaybeRotationRejoin() {
-  try {
-    await fetchClinicalTeamsFromDb();
-  } catch {
-    return;
-  }
-  const n = currentJoinedCount();
-  if (lastJoinedCount == null) {
-    lastJoinedCount = n;
-    if (n > 0) markClinicalEverJoinedTeam();
-    if (n === 0 && (hasClinicalEverJoinedTeam() || isRotationRejoinPending())) {
-      await maybeShowRotationRejoinModal();
-    }
-    return;
-  }
-  if (lastJoinedCount > 0 && n === 0) {
-    setRotationRejoinPending(true);
-    lastJoinedCount = 0;
-    await maybeShowRotationRejoinModal({ force: true });
-    return;
-  }
-  lastJoinedCount = n;
-  if (n > 0) {
-    markClinicalEverJoinedTeam();
-    setRotationRejoinPending(false);
-    closeRotationRejoinModal();
-  }
+function onClinicalOpsRotationNuevaSynced(event) {
+  const applied = Number(event?.detail?.mergeStats?.rotationNuevaApplied || 0) > 0;
+  if (!applied) return;
+  void promptRotationRejoinAfterNuevaRotacion();
 }
 
 export function wireRotationRejoinModal() {
@@ -231,25 +194,18 @@ export function wireRotationRejoinModal() {
     });
   }
   document.getElementById('rotation-rejoin-later')?.addEventListener('click', () => {
+    setRotationRejoinPending(false);
     closeRotationRejoinModal();
   });
   document.getElementById('rotation-rejoin-open')?.addEventListener('click', () => {
     void handleOpenMiRotacion();
   });
 
-  document.addEventListener('rpc-guardia-rotation-changed', () => {
-    void maybeShowRotationRejoinModal({ force: true });
-  });
-  document.addEventListener('rpc-clinical-ops-synced', () => {
-    void onClinicalOpsMaybeRotationRejoin();
-  });
+  document.addEventListener('rpc-clinical-ops-synced', onClinicalOpsRotationNuevaSynced);
   document.addEventListener('rpc-clinical-teams-changed', () => {
-    const n = currentJoinedCount();
-    if (n > 0) {
-      markClinicalEverJoinedTeam();
+    if (currentJoinedCount() > 0) {
       setRotationRejoinPending(false);
       closeRotationRejoinModal();
-      lastJoinedCount = n;
     }
   });
 }

@@ -49,7 +49,7 @@ describe('clinical-onboarding-main', () => {
     );
     const start = mainSrc.indexOf('async function showMainClinicalOnboardingBody');
     assert.ok(start >= 0);
-    const body = mainSrc.slice(start, start + 700);
+    const body = mainSrc.slice(start, start + 1400);
     assert.match(body, /fetchClinicalTeamsFromDb/);
     const fetchIdx = body.indexOf('fetchClinicalTeamsFromDb');
     const gateIdx = body.indexOf('needsOnboardingShell');

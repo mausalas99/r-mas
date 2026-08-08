@@ -19,7 +19,6 @@ import { ensureClinicalPanelSession } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId, filterJoinedTeams } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
 import { resolveTeamIdForInviteInput } from './teams-invite-resolve.mjs';
-import { offerBringPatientsAfterTeamJoin } from './teams-roster-bring-patients.mjs';
 import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 
 export { resolveTeamIdForInviteInput };
@@ -49,7 +48,6 @@ async function finalizeSuccessfulTeamJoin(team, teamId, cycle) {
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
     ensureTurnRoomAfterTeamJoin(toast)
   );
-  await offerBringPatientsAfterTeamJoin(teamId, team.name || '');
   const { refreshTeamsUiAfterChange } = await import('./teams-roster.mjs');
   await refreshTeamsUiAfterChange();
 }

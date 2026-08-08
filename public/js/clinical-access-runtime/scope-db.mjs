@@ -28,7 +28,10 @@ export async function fetchClinicalTeamsFromDb() {
     clinicalSessionContext.teams = [];
     return [];
   }
-  const res = await api.dbClinicalTeamsList();
+  const userId = clinicalSessionContext.user?.user_id;
+  const res = await api.dbClinicalTeamsList(
+    userId ? { userId: String(userId) } : {}
+  );
   if (!res || res.ok === false) {
     clinicalSessionContext.teams = [];
     return [];

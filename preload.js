@@ -186,8 +186,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbRotationIncomingAssignments: function() {
     return ipcRenderer.invoke('db:rotation-incoming-assignments');
   },
-  dbClinicalTeamsList: function() {
-    return ipcRenderer.invoke('db:clinical-teams-list');
+  dbClinicalTeamsList: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-list', opts || {});
   },
   dbClinicalTeamsListBySala: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-list-by-sala', opts);

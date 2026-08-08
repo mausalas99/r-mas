@@ -1,9 +1,12 @@
 /**
- * After joining / creating a team (esp. LAN → Nube): offer to assign local
+ * After joining / creating a team (esp. LAN → Nube): optionally assign local
  * patients that would otherwise disappear from the Nube team-scoped census.
  *
  * On Nube, charts need an assignment to a joined team (or be unassigned +
  * structural). Stale LAN team_ids leave patients invisible after update+join.
+ *
+ * Not auto-opened on join — use the team card «Heredar pacientes» button or
+ * call this explicitly when appropriate (e.g. post–nueva rotación flows).
  *
  * HARD BOUNDARY — census assignment only. Never read/write `active_guardias`
  * or Modo Entrega. Active pendientes must not block heredar/traer or leave

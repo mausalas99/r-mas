@@ -11,15 +11,21 @@ import {
   isClinicalExistingAccountPath,
   persistClinicalUserBinding,
   readRpcSettings,
+  resolveClinicalClientId,
   setClinicalExistingAccountPath,
 } from '../clinical-settings.mjs';
-import { normalizeUsername, isValidUsernameFormat } from '../clinical-username.mjs';
+import {
+  isLegacyMachineUsername,
+  isValidUsernameFormat,
+  normalizeUsername,
+} from '../clinical-username.mjs';
 import { escapeHtml, escapeAttr } from '../dom-escape.mjs';
 import { getClientId, hasPersistedClinicalProfile } from './clinical-onboarding-gates.mjs';
 import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
 import { handleSyncModeBack } from './clinical-onboarding-sync-mode.mjs';
 import { CLINICAL_SALAS } from './clinical-teams/shared.mjs';
 import { bridgeCloudIdentityToLocal } from './cloud-sync/identity-bridge.mjs';
+import { createCloudSyncApi } from './cloud-sync/api-client.mjs';
 import {
   completeCloudOnboardingSync,
   loginCloudDuringOnboarding,
@@ -251,34 +257,68 @@ export async function handleExistingAccountLoginSubmit(ev) {
   }
 }
 
-/** Resume sync when remember-me left a token but profile flags were cleared. */
-export async function tryCompleteExistingAccountFromStoredSession() {
-  const settings = readRpcSettings();
-  if (!needsExistingAccountLogin(settings)) return false;
+/** Resume profile + sync when Recuérdame left a Nube token (also after app updates). */
+export async function tryResumeOnboardingFromStoredCloudToken() {
   const token = getCloudSyncToken();
   if (!token) return false;
 
-  const username = normalizeUsername(
+  const settings = readRpcSettings();
+  const sala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '').trim();
+  if (!isCloudSala(sala)) return false;
+
+  const clientId = resolveClinicalClientId(settings);
+  let username = normalizeUsername(
     String(settings.clinicalUsername || clinicalSessionContext.user?.username || '')
   );
-  const sala = String(settings.clinicalSala || clinicalSessionContext.user?.sala || '').trim();
-  if (!isValidUsernameFormat(username) || !isCloudSala(sala)) return false;
+  let displayName = String(
+    settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
+  ).trim();
+  const rank = String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
 
-  const toast = () => {};
-  const setStatus = () => {};
+  const handleInvalid =
+    !isValidUsernameFormat(username) || isLegacyMachineUsername(username, clientId);
+
+  if (handleInvalid) {
+    try {
+      const client = createCloudSyncApi({
+        getBaseUrl: getCloudSyncUrl,
+        getToken: getCloudSyncToken,
+      });
+      const data = await client.me();
+      const cloudUser = data?.user || {};
+      const cloudHandle = normalizeUsername(String(cloudUser.username || ''));
+      if (!isValidUsernameFormat(cloudHandle)) return false;
+      username = cloudHandle;
+      if (!displayName) {
+        displayName = String(cloudUser.displayName || '').trim();
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  if (!isValidUsernameFormat(username)) return false;
+
   const out = await finishExistingAccountProfile({
     username,
-    displayName: String(settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''),
+    displayName: displayName || username,
     sala,
-    rank: String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1'),
-    toast,
-    setStatus,
+    rank,
+    toast: () => {},
+    setStatus: () => {},
   });
   if (!out.ok) return false;
 
   const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
   await refreshMainClinicalOnboardingIfNeeded();
   return true;
+}
+
+/** Resume sync when remember-me left a token but profile flags were cleared. */
+export async function tryCompleteExistingAccountFromStoredSession() {
+  const settings = readRpcSettings();
+  if (!needsExistingAccountLogin(settings) && !getCloudSyncToken()) return false;
+  return tryResumeOnboardingFromStoredCloudToken();
 }
 
 export function wireExistingAccountLoginInteractions() {
@@ -292,5 +332,14 @@ export function wireExistingAccountLoginInteractions() {
   if (backBtn && !backBtn._rpcExistingBackWired) {
     backBtn._rpcExistingBackWired = true;
     backBtn.addEventListener('click', () => void handleSyncModeBack());
+  }
+
+  const switchBtn = document.getElementById('clinical-onboard-switch-existing-btn');
+  if (switchBtn && !switchBtn._rpcSwitchExistingWired) {
+    switchBtn._rpcSwitchExistingWired = true;
+    switchBtn.addEventListener('click', () => {
+      setClinicalExistingAccountPath(true);
+      void import('./clinical-onboarding-main.mjs').then((m) => m.refreshMainClinicalOnboardingIfNeeded());
+    });
   }
 }

@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.6](https://github.com/mausalas99/r-mas/releases/tag/v8.0.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.7](https://github.com/mausalas99/r-mas/releases/tag/v8.0.7) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -53,6 +53,15 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.7 (rotación staging + Recuérdame + heredar pacientes)
+
+- **Equipos staging** — Nuevos equipos quedan inactivos hasta nueva rotación; auto-join bloqueado, R4 asigna.
+- **Modal reingreso** — Solo tras «Iniciar nueva rotación» (local o sync Nube), no por heurística de censo.
+- **Heredar pacientes** — Solo en handoff de mes o tras nueva rotación; botón en tarjeta de equipo.
+- **Recuérdame** — Salta onboarding y rehidrata perfil tras actualizar; botón «Ya tengo cuenta Nube» en perfil.
+
+Notas: `docs/RELEASE_NOTES_8.0.7.txt`.
 ## R+ 8.0.6 (onboarding Nube — ya tengo cuenta + modales Conexión)
 
 - **Ya tengo cuenta** — Onboarding con login Nube, Recuérdame y sync de censo/equipos sin crear @usuario nuevo.

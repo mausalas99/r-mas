@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFeatureSrc } from '../../../scripts/lib/read-feature-src.mjs';
@@ -36,6 +37,7 @@ const clinicalTeamsSrc = readFeatureSrc(featureDir, [
   'teams-roster-modal-chrome.mjs',
   'teams-roster-join-handler.mjs',
   'teams-roster-bring-patients.mjs',
+  'teams-roster-inherit-gate.mjs',
   'teams-roster-inherit-patients.mjs',
   'teams-roster-inherit-patients-modal.mjs',
   'teams-invite.mjs',
@@ -210,8 +212,13 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('Zona avanzada · rotación del programa'), false);
   });
 
-  it('joining a team offers to bring local patients (LAN → Nube)', () => {
-    assert.match(clinicalTeamsSrc, /offerBringPatientsAfterTeamJoin/);
+  it('joining a team does not auto-open inherit; bring is opt-in on team card', () => {
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
+    const submitSrc = readFileSync(join(featureDir, 'teams-roster-submit.mjs'), 'utf8');
+    assert.doesNotMatch(joinHandlerSrc, /offerBringPatientsAfterTeamJoin/);
+    assert.doesNotMatch(inviteSrc, /offerBringPatientsAfterTeamJoin/);
+    assert.doesNotMatch(submitSrc, /offerBringPatientsAfterTeamJoin/);
     assert.match(clinicalTeamsSrc, /listBringableLocalPatients/);
     assert.match(clinicalTeamsSrc, /LAN a Nube/);
     assert.match(clinicalTeamsSrc, /no desaparezcan del censo/);
@@ -219,9 +226,16 @@ describe('clinical-teams', () => {
 
   it('joined team card offers inherit patients from previous month', () => {
     assert.match(clinicalTeamsSrc, /Heredar pacientes del mes anterior/);
+    assert.match(clinicalTeamsSrc, /shouldShowInheritPatientsUi/);
     assert.match(clinicalTeamsSrc, /openInheritPatientsModal/);
     assert.match(clinicalTeamsSrc, /preferredPreviousTeamId/);
     assert.match(clinicalTeamsSrc, /misma sala y ciclo/);
+  });
+
+  it('inherit patients modal stacks above Mi rotación backdrop', () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../styles/pase-board.css'), 'utf8');
+    assert.match(css, /#inherit-patients-backdrop\.modal-backdrop\.open/);
+    assert.match(css, /z-index:\s*var\(--z-clinical-lan-users\)/);
   });
 
   it('LAN directorio preserves collapsed rank groups across background refresh', () => {

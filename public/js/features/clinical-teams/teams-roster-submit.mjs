@@ -18,7 +18,6 @@ import {
 } from './teams-guardia-bridge.mjs';
 import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 import { closeCreateTeamPanelAfterSuccess } from './teams-roster-panel-draft.mjs';
-import { offerBringPatientsAfterTeamJoin } from './teams-roster-bring-patients.mjs';
 import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 
 function teamSalaForId(teamId) {
@@ -105,7 +104,6 @@ async function createStandardTeam(api, { name, sala, userId }) {
   toastTeamLanPublishResult(lanPush, 'Equipo creado.');
   if (teamId) {
     markClinicalEverJoinedTeam();
-    await offerBringPatientsAfterTeamJoin(teamId, name);
   }
 }
 

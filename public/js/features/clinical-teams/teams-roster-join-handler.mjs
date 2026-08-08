@@ -4,7 +4,6 @@ import { inferMembershipCycleForJoin } from '../../clinico-access.mjs';
 import { validateTeamRankSlot } from '../../../../lib/clinical-team-composition.mjs';
 import { dbApi, toast, currentUserId, toastTeamWarnings } from './shared.mjs';
 import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
-import { offerBringPatientsAfterTeamJoin } from './teams-roster-bring-patients.mjs';
 import { markClinicalEverJoinedTeam } from '../clinical-rotation-rejoin-modal.mjs';
 
 function toastJoinSlotWarnings(team, rank) {
@@ -40,5 +39,4 @@ export async function joinClinicalTeamByButton(teamId) {
   void import('../cloud-sync/ensure-turn-room.mjs').then(({ ensureTurnRoomAfterTeamJoin }) =>
     ensureTurnRoomAfterTeamJoin(toast)
   );
-  await offerBringPatientsAfterTeamJoin(teamId, team?.name || '');
 }

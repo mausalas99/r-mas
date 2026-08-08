@@ -1,37 +1,48 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   shouldOfferRotationRejoin,
   buildRotationRejoinLeadHtml,
 } from './clinical-rotation-rejoin-modal.mjs';
 
 describe('clinical-rotation-rejoin-modal', () => {
-  it('shouldOfferRotationRejoin is true when force or pending without teams', () => {
-    assert.equal(shouldOfferRotationRejoin({ force: true, joinedCount: 0 }), true);
-    assert.equal(
-      shouldOfferRotationRejoin({ pending: true, joinedCount: 0, everJoined: false }),
-      true
-    );
-    assert.equal(
-      shouldOfferRotationRejoin({ everJoined: true, joinedCount: 0 }),
-      true
-    );
+  it('shouldOfferRotationRejoin only when pending and not joined', () => {
+    assert.equal(shouldOfferRotationRejoin({ pending: true, joinedCount: 0 }), true);
+    assert.equal(shouldOfferRotationRejoin({ pending: false, joinedCount: 0 }), false);
+    assert.equal(shouldOfferRotationRejoin({ pending: true, joinedCount: 1 }), false);
   });
 
-  it('shouldOfferRotationRejoin is false when already joined or local-only', () => {
-    assert.equal(shouldOfferRotationRejoin({ force: true, joinedCount: 2 }), false);
-    assert.equal(
-      shouldOfferRotationRejoin({ everJoined: true, joinedCount: 1 }),
-      false
+  it('modal is triggered only by R4 init or rotationNuevaAt sync', () => {
+    const modalSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-rotation-rejoin-modal.mjs'),
+      'utf8'
     );
-    assert.equal(
-      shouldOfferRotationRejoin({ force: true, localOnly: true, joinedCount: 0 }),
-      false
+    const rotationSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-rotation.mjs'),
+      'utf8'
     );
-    assert.equal(
-      shouldOfferRotationRejoin({ everJoined: false, pending: false, joinedCount: 0 }),
-      false
+    const mergeSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../../lib/db/clinical-ops-sync-merge.mjs'),
+      'utf8'
     );
+    assert.match(modalSrc, /promptRotationRejoinAfterNuevaRotacion/);
+    assert.match(modalSrc, /rotationNuevaApplied/);
+    assert.doesNotMatch(modalSrc, /rpc-guardia-rotation-changed/);
+    assert.doesNotMatch(modalSrc, /lastJoinedCount/);
+    assert.match(rotationSrc, /promptRotationRejoinAfterNuevaRotacion/);
+    assert.match(mergeSrc, /stats\.rotationNuevaApplied = 1/);
+  });
+
+  it('suppresses rejoin modal while profile onboarding is pending', () => {
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-rotation-rejoin-modal.mjs'),
+      'utf8'
+    );
+    assert.match(src, /needsProfileOnboarding/);
+    assert.match(src, /setRotationRejoinPending\(false\)/);
   });
 
   it('buildRotationRejoinLeadHtml mentions nueva rotación for residents', () => {

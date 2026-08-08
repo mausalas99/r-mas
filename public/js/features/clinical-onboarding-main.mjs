@@ -179,6 +179,20 @@ async function showMainClinicalOnboardingBody() {
     /* session optional */
   }
 
+  try {
+    const { getCloudSyncToken } = await import('./cloud-sync/settings.mjs');
+    if (getCloudSyncToken()) {
+      const { tryResumeOnboardingFromStoredCloudToken } = await import(
+        './clinical-onboarding-existing-login.mjs'
+      );
+      await tryResumeOnboardingFromStoredCloudToken();
+      const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
+      await fetchClinicalTeamsFromDb();
+    }
+  } catch {
+    /* resume optional */
+  }
+
   if (!needsOnboardingShell()) {
     hideMainClinicalOnboarding();
     return;

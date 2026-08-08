@@ -20,6 +20,8 @@ import {
   normalizeUsername,
 } from '../clinical-username.mjs';
 import { isCloudSalaUpgradePending } from './cloud-sync/cloud-sala-upgrade.mjs';
+import { getCloudSyncToken } from './cloud-sync/settings.mjs';
+import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 
 function getClientId() {
   return resolveClinicalClientId(readRpcSettings());
@@ -65,6 +67,7 @@ export function needsClinicalSyncModeChoice() {
   const settings = readRpcSettings();
   if (settings.clinicalRegistered === true) return false;
   if (hasJoinedClinicalTeam()) return false;
+  if (hasTrustedCloudRememberMe(settings)) return false;
   if (isClinicalSyncModeChosen(settings)) return false;
   return true;
 }
@@ -184,15 +187,49 @@ function markJoinedTeamProfileSettled(settings, user) {
   });
 }
 
+function hasTrustedCloudRememberMe(settings = readRpcSettings(), user = clinicalSessionContext.user) {
+  if (!getCloudSyncToken()) return false;
+  const sala = String(settings.clinicalSala || user?.sala || '').trim();
+  if (!isCloudSala(sala)) return false;
+  if (hasJoinedClinicalTeam(user, clinicalSessionContext.teams)) return true;
+  return hasValidPersistedUsername(settings);
+}
+
+function settleTrustedCloudRememberMe(settings, user) {
+  syncSessionFromPersistedProfile(settings, user);
+  if (hasJoinedClinicalTeam(user, clinicalSessionContext.teams)) {
+    markJoinedTeamProfileSettled(settings, user);
+    return;
+  }
+  if (hasValidPersistedUsername(settings)) {
+    persistClinicalUserBinding({
+      userId: user?.user_id,
+      username: pickSettledUsername(settings, user),
+      displayName: pickSettledDisplayName(settings, user),
+      rank: pickSettledRank(settings, user),
+      sala: pickSettledSala(settings, user),
+      registered: true,
+      lanProfileGateComplete: true,
+    });
+  }
+}
+
 export function needsProfileOnboarding() {
   if (!isDbMode()) return false;
   if (!clinicalSessionContext.user?.user_id) return true;
+  const settingsEarly = readRpcSettings();
+  const userEarly = clinicalSessionContext.user;
+  if (hasTrustedCloudRememberMe(settingsEarly, userEarly)) {
+    settleTrustedCloudRememberMe(settingsEarly, userEarly);
+    if (needsCloudRegistration(settingsEarly, userEarly)) return true;
+    return false;
+  }
   // Team membership is stronger than profile-gate flags — do not relaunch registro.
   if (hasJoinedClinicalTeam()) {
-    const settings = readRpcSettings();
-    syncSessionFromPersistedProfile(settings, clinicalSessionContext.user);
-    markJoinedTeamProfileSettled(settings, clinicalSessionContext.user);
-    if (needsCloudRegistration(settings, clinicalSessionContext.user)) return true;
+    const joinedSettings = readRpcSettings();
+    syncSessionFromPersistedProfile(joinedSettings, clinicalSessionContext.user);
+    markJoinedTeamProfileSettled(joinedSettings, clinicalSessionContext.user);
+    if (needsCloudRegistration(joinedSettings, clinicalSessionContext.user)) return true;
     return false;
   }
   if (needsClinicalSyncModeChoice()) return true;

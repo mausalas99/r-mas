@@ -11,8 +11,7 @@ import {
 import { canConfigureRotation as userCanConfigureRotation } from '../clinical-privileges.mjs';
 import { submitRotationConfigForm } from './clinical-rotation-config-submit.mjs';
 import {
-  maybeShowRotationRejoinModal,
-  setRotationRejoinPending,
+  promptRotationRejoinAfterNuevaRotacion,
   wireRotationRejoinModal,
 } from './clinical-rotation-rejoin-modal.mjs';
 
@@ -201,7 +200,6 @@ export async function confirmNuevaRotacion() {
     return { ok: false };
   }
   toast('Nueva rotación aplicada. Cada residente debe unirse a su equipo nuevo.', 'success');
-  setRotationRejoinPending(true);
   try {
     await fetchClinicalTeamsFromDb();
   } catch {
@@ -216,7 +214,7 @@ export async function confirmNuevaRotacion() {
   } catch {
     /* publish optional */
   }
-  await maybeShowRotationRejoinModal({ force: true });
+  await promptRotationRejoinAfterNuevaRotacion();
   return { ok: true };
 }
 

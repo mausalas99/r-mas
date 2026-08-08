@@ -12,6 +12,7 @@ import { teamInviteCode } from '../../clinical-team-invite.mjs';
 import { effectiveClinicalRank, canManageTeamRoster } from '../../clinical-privileges.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { escapeHtml, escapeAttr, CLINICAL_SALAS, renderClinicalTeamsCollapsible } from './shared.mjs';
+import { shouldShowInheritPatientsUi } from './teams-roster-inherit-gate.mjs';
 
 /** @param {string} teamId @param {object[]} assignments @param {string|Date} now */
 export function countLocalCensusPatientsForTeam(teamId, assignments, now) {
@@ -353,7 +354,7 @@ export function renderJoinedTeamCard(team) {
       ${manage.editPanelHtml}
       ${renderMembersBlock(members, { teamId })}
       ${renderMyCycleEditBlock(team, user)}
-      ${renderInheritPatientsBox(team)}
+      ${shouldShowInheritPatientsUi() ? renderInheritPatientsBox(team) : ''}
       ${renderLeaveTeamBox(team)}
       ${renderTeamInviteCollapsible(team, teamId)}
     </article>`;

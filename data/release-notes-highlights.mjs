@@ -2212,10 +2212,34 @@ var RELEASE_NOTES_806 = [
   },
 ];
 
+var RELEASE_NOTES_807 = [
+  {
+    title: 'Equipos en staging',
+    body:
+      'Equipos nuevos del mes entrante quedan inactivos hasta que R4 inicia la <strong>nueva rotación</strong>; luego se activan y archivan los viejos.',
+  },
+  {
+    title: 'Heredar pacientes',
+    body:
+      'Solo en ventana de cambio de mes o tras nueva rotación — botón en la tarjeta del equipo, no al unirte cualquier día.',
+  },
+  {
+    title: 'Recuérdame tras actualizar',
+    body:
+      'Token Nube guardado omite onboarding y rehidrata @usuario desde Nube si hace falta.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.7</strong> en todas las Macs; compatible con peers 8.0.6 en el mismo turno.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_806;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_807;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.7': RELEASE_NOTES_807,
   '8.0.6': RELEASE_NOTES_806,
   '8.0.5': RELEASE_NOTES_805,
   '8.0.4': RELEASE_NOTES_804,

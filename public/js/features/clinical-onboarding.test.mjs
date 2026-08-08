@@ -10,6 +10,7 @@ import {
   isClinicalSyncModeChosen,
   isLocalOnlyPlaceholderUsername,
   needsClinicalLanProfileGate,
+  setClinicalExistingAccountPath,
   setClinicalSyncModeLocalOnly,
 } from '../clinical-settings.mjs';
 import { needsClinicalOnboarding, needsClinicalSyncModeChoice, needsTeamOnboarding, needsTeamOnboardingStep, needsOnboardingShell } from './clinical-onboarding.mjs';
@@ -107,7 +108,6 @@ describe('clinical-onboarding helpers', () => {
   });
 
   it('existing account path gates login until profile is persisted', async () => {
-    const { setClinicalExistingAccountPath } = await import('../clinical-settings.mjs');
     const { needsExistingAccountLogin } = await import('./clinical-onboarding-existing-login.mjs');
     const store = { 'rpc-settings': '{}' };
     const ls = {
@@ -136,6 +136,35 @@ describe('clinical-onboarding helpers', () => {
       if (prevLs === undefined) delete globalThis.localStorage;
       else globalThis.localStorage = prevLs;
     }
+  });
+
+  it('stored cloud token resume uses auth/me when local handle is machine id', () => {
+    const loginSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-existing-login.mjs'),
+      'utf8'
+    );
+    const renderSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-render.mjs'),
+      'utf8'
+    );
+    assert.match(loginSrc, /export async function tryResumeOnboardingFromStoredCloudToken/);
+    assert.match(loginSrc, /client\.me\(\)/);
+    assert.match(loginSrc, /isLegacyMachineUsername/);
+    assert.match(renderSrc, /tryResumeOnboardingFromStoredCloudToken/);
+    assert.match(renderSrc, /getCloudSyncToken\(\)/);
+  });
+
+  it('boot onboarding resumes remember-me cloud session before showing registro', async () => {
+    const mainSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-main.mjs'),
+      'utf8'
+    );
+    const gatesSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-gates.mjs'),
+      'utf8'
+    );
+    assert.match(mainSrc, /tryResumeOnboardingFromStoredCloudToken/);
+    assert.match(gatesSrc, /hasTrustedCloudRememberMe/);
   });
 
   it('needsTeamOnboarding is false for R4 and Admin without a team', () => {
