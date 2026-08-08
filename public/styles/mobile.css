@@ -1,11 +1,55 @@
 /* Hallmark · utilitarian clinical · theme: Quiet workbench · design.md */
 /* ── Expediente: pestaña Cultivos (tabla) ───────────────────── */
 .cultivos-neg-strip {
-  font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-bottom: 12px; padding: 10px 12px;
-  border-radius: 10px; border: 1px solid var(--border); background: var(--lab-chip-bg);
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--success) 28%, var(--border));
+  background: color-mix(in oklab, var(--success) 7%, var(--surface));
 }
-.cultivos-neg-strip strong { color: var(--text); margin-right: 6px; }
-.cultivos-neg-sep { opacity: 0.45; margin: 0 4px; }
+.cultivos-neg-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.cultivos-neg-strip strong { color: var(--text); font-size: 13px; }
+.cultivos-neg-count {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--success) 16%, var(--surface));
+  color: var(--success);
+}
+.cultivos-neg-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.cultivos-neg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cultivos-neg-chip {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  max-width: 100%;
+  word-break: break-word;
+}
+.cultivos-neg-chip-tipo { font-weight: 600; color: var(--primary); }
+.cultivos-toolbar .cultivo-refresh-idle { opacity: 0.72; }
 .cultivos-toolbar {
   display: flex;
   align-items: center;
