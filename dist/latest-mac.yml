@@ -1,20 +1,20 @@
 version: 8.0.8
 files:
   - url: R+-8.0.8-arm64.zip
-    sha512: JheILCZPUTtnwT86BENWQmopgtowBcpllgbtJGtCr4VRT8+A7rHmg1pmwaDjpwXbQJ2y9g9NG+SHphD1s4nPWw==
-    size: 139298250
+    sha512: SeZGa4UG6QS242OSihe+xzaZAE3haKABOgBZHW1iGY1c4PO6Bcw9Br6bvl4AaooZC3s1yMbvoSuUEIUZZrG+jw==
+    size: 139332627
   - url: R+-8.0.8-arm64.dmg
-    sha512: T1ZBbhD/gwR6dpt6aY1s/Xaxj/LGP9AyRHSXw8V+XX935pLpL2YGJPznyiLGY7uOUskTouTD68h+PaPS8a42oA==
-    size: 145133529
+    sha512: TfXTXNB0QMkMbTDOX6260HUpXp9WtXgZPMFMOzkTVE4fjMfi4qrR/bXkJCTP4RHMKpmzd9bFyQhdBVrK9qZ8DQ==
+    size: 145165371
   - url: R+-8.0.8-x64.zip
-    sha512: 1KGDAzFTO6U//ondDrckOrJPt21E7+scJJpjaTBmrLLwEDFLP8DR4D/5fRB4ruHwK+mJcRJt+22UqZYKWZi4kQ==
-    size: 147672319
+    sha512: x+RqJ6ts1E/EmI1du6z4Kg2XalvhaifQbA5xLFccdZaUhYqF3NPNtMrrxhJtvj84tSJNDHWZ/yjids6rLQ9ovQ==
+    size: 147706697
   - url: R+-8.0.8-x64.dmg
-    sha512: 3xTZw8yIpyS3WrKkE//TizqkAorEwxGJn7CitimM7nUBN5AShMjzO4HkkFFbBlGWIIUj0hYkv1W3gorahN5bbQ==
-    size: 153578333
+    sha512: /c1v3fU2K0gO0X147VDeJZOGsFDQMP95k6usTxcOqdPp0hx0Sr4ws3hYpwdvy78H7gjDkuzzOgBjQSu8k7MZNQ==
+    size: 153629365
 path: R+-8.0.8-arm64.zip
-sha512: JheILCZPUTtnwT86BENWQmopgtowBcpllgbtJGtCr4VRT8+A7rHmg1pmwaDjpwXbQJ2y9g9NG+SHphD1s4nPWw==
-releaseDate: '2026-08-08T19:14:27.000Z'
+sha512: SeZGa4UG6QS242OSihe+xzaZAE3haKABOgBZHW1iGY1c4PO6Bcw9Br6bvl4AaooZC3s1yMbvoSuUEIUZZrG+jw==
+releaseDate: '2026-08-08T19:34:40.000Z'
 releaseNotes: |
   8.0.8 añade soporte respiratorio en Estado Actual (PaFi, driving pressure, ROX, ml/kg), dieta parenteral (KAVIBEN, SMOFKABIVEN, NPT) en paste SOME y un dashboard de diagnóstico Nube más claro. En el Worker, la caché KV de revisiones pasa a modo lite (solo escritura en push, sin TTL). Recuérdame y token Nube se conservan al actualizar — sin migración de base ni cierre de sesión forzado.
   

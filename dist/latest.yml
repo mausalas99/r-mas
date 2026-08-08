@@ -1,11 +1,11 @@
 version: 8.0.8
 files:
   - url: R+-8.0.8-x64.exe
-    sha512: 5TUaGLHJkwXfgQmn1WC73/UDiwp36zUierikdVXS3uyMwDI2/v5CETWARMW4Lt5OGknNb/6mRzessVqWfKZCIA==
-    size: 122203392
+    sha512: TPp9rCo0faTSHOnzhhNslIqEEzJf4tCkvXer7JpThCM28rU051WcqJrRh9FuAGmVOi6IU5uC2ANTf6x5fMDxYg==
+    size: 122235825
 path: R+-8.0.8-x64.exe
-sha512: 5TUaGLHJkwXfgQmn1WC73/UDiwp36zUierikdVXS3uyMwDI2/v5CETWARMW4Lt5OGknNb/6mRzessVqWfKZCIA==
-releaseDate: '2026-08-08T19:14:27.000Z'
+sha512: TPp9rCo0faTSHOnzhhNslIqEEzJf4tCkvXer7JpThCM28rU051WcqJrRh9FuAGmVOi6IU5uC2ANTf6x5fMDxYg==
+releaseDate: '2026-08-08T19:34:40.000Z'
 releaseNotes: |
   8.0.8 añade soporte respiratorio en Estado Actual (PaFi, driving pressure, ROX, ml/kg), dieta parenteral (KAVIBEN, SMOFKABIVEN, NPT) en paste SOME y un dashboard de diagnóstico Nube más claro. En el Worker, la caché KV de revisiones pasa a modo lite (solo escritura en push, sin TTL). Recuérdame y token Nube se conservan al actualizar — sin migración de base ni cierre de sesión forzado.
   
