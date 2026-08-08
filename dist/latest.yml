@@ -1,26 +1,32 @@
-version: 8.0.7
+version: 8.0.8
 files:
-  - url: R+-8.0.7-x64.exe
-    sha512: bz9B5VqspzQdAfHQO+6ibZ/ifxDtCEWGxIQ7C6oHFUlWeblhtlk57j6V0pzPyYVruTBj5yY68GQNQO1zUF/yAQ==
-    size: 122121712
-path: R+-8.0.7-x64.exe
-sha512: bz9B5VqspzQdAfHQO+6ibZ/ifxDtCEWGxIQ7C6oHFUlWeblhtlk57j6V0pzPyYVruTBj5yY68GQNQO1zUF/yAQ==
-releaseDate: '2026-08-08T01:16:55.000Z'
+  - url: R+-8.0.8-x64.exe
+    sha512: 5TUaGLHJkwXfgQmn1WC73/UDiwp36zUierikdVXS3uyMwDI2/v5CETWARMW4Lt5OGknNb/6mRzessVqWfKZCIA==
+    size: 122203392
+path: R+-8.0.8-x64.exe
+sha512: 5TUaGLHJkwXfgQmn1WC73/UDiwp36zUierikdVXS3uyMwDI2/v5CETWARMW4Lt5OGknNb/6mRzessVqWfKZCIA==
+releaseDate: '2026-08-08T19:14:27.000Z'
 releaseNotes: |
-  8.0.7 corrige el cambio de rotación mensual: los equipos nuevos quedan en *staging* (rotation_active=0) hasta que R4 inicia la nueva rotación; el modal de reingreso solo aparece cuando corresponde (no por heurísticas de censo). Recuérdame salta onboarding y rehidrata perfil tras actualizar la app. Heredar pacientes solo en ventana de handoff (preview de mes o tras nueva rotación).
+  8.0.8 añade soporte respiratorio en Estado Actual (PaFi, driving pressure, ROX, ml/kg), dieta parenteral (KAVIBEN, SMOFKABIVEN, NPT) en paste SOME y un dashboard de diagnóstico Nube más claro. En el Worker, la caché KV de revisiones pasa a modo lite (solo escritura en push, sin TTL). Recuérdame y token Nube se conservan al actualizar — sin migración de base ni cierre de sesión forzado.
   
-  Equipos en staging — Si el mes sigue activo, crear equipo lo marca rotation_active=0; al «Iniciar nueva rotación» se archivan los viejos y se promueven los entrantes.
+  Soporte respiratorio — Modalidad (litros, alto flujo, VMNI, VM, TQT) con campos por tier y cálculos clínicos (PaFi, SpO2/FiO2, driving pressure, ROX, ml/kg, Tobin RRS).
   
-  Unirse a equipo — Auto-join bloqueado en equipos aún no activos; R4 puede asignar desde el directorio.
+  Gasometría — Integración con labs para PaFi cuando aplica.
   
-  Mi rotación — Lista equipos de la rotación actual + equipos staged donde ya eres miembro.
+  Paste SOME — NUTRICION PARENTERAL, KAVIBEN, SMOFKABIVEN, OLICLINOMEL y NPT se clasifican como dieta (no medicamento).
   
-  Modal reingreso — Solo cuando R4/Admin inicia nueva rotación o un peer recibe rotationNuevaAt por Nube (ya no por caída heurística de equipos unidos).
+  Macros — kcal y proteína extraídos del texto; etiqueta PARENTERAL — producto en EA y censo.
   
-  Heredar pacientes — Botón en tarjeta de equipo; visible en ventana previa al cierre de mes o tras nueva rotación (no al unirte cualquier día).
+  Diagnóstico Nube — Dashboard legible en ⇄ → Opciones con guías de corrección y reintento de cola.
   
-  Recuérdame confiable — Token Nube guardado omite «¿Cómo usarás R+?» y completa perfil/sync al abrir (también tras actualizar de 8.0.6).
+  Conexión estable — Menos parpadeo de sala al reconectar; panel Nube visible también en onboarding previo a perfil.
   
-  Usuario desde Nube — Si el @local era legado de máquina, se rehidrata con /me del Worker.
+  Recuérdame — Sin cambios de contrato: token persistido omite onboarding tras actualizar (compatible con 8.0.7).
   
-  Ya tengo cuenta Nube — Botón en el formulario de perfil para cambiar al flujo de login existente.
+  Revision cache — Lectura en pull; un put solo tras push exitoso (sin TTL ni escrituras duplicadas).
+  
+  Circuit breaker — Al cupo diario KV Free, pivota a D1 hasta reset UTC.
+  
+  Cambiar modo — Botón en perfil y «Ya tengo cuenta» para volver al paso 1.
+  
+  Solo mi equipo — Pantalla de confirmación antes de registrar perfil local.
