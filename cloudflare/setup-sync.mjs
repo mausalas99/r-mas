@@ -157,6 +157,52 @@ function ensureD1() {
   return dbId;
 }
 
+function getKvNamespaceId(toml) {
+  const m = /binding\s*=\s*"CACHE"[\s\S]*?id\s*=\s*"([^"]+)"/.exec(toml);
+  return m ? m[1] : '';
+}
+
+function setKvNamespaceId(toml, id) {
+  if (!/binding\s*=\s*"CACHE"/.test(toml)) {
+    return (
+      toml +
+      `\n[[kv_namespaces]]\nbinding = "CACHE"\nid = "${id}"\n`
+    );
+  }
+  return toml.replace(
+    /(binding\s*=\s*"CACHE"[\s\S]*?id\s*=\s*)"[^"]*"/,
+    `$1"${id}"`
+  );
+}
+
+function ensureKvNamespace() {
+  let toml = readToml();
+  let kvId = getKvNamespaceId(toml);
+  if (!isPlaceholder(kvId) && kvId) {
+    log(`KV CACHE already configured: ${kvId}`);
+    return kvId;
+  }
+
+  log('Creating KV namespace "rplus-sync-cache" (optional revision read cache)…');
+  try {
+    const out = runCapture('npx wrangler kv namespace create rplus-sync-cache');
+    console.log(out);
+    const idMatch = /id\s*=\s*"([a-f0-9]+)"/i.exec(out);
+    kvId = idMatch ? idMatch[1] : '';
+    if (!kvId) {
+      log('Could not parse KV id — skip CACHE binding (Worker still works).');
+      return '';
+    }
+    writeToml(setKvNamespaceId(readToml(), kvId));
+    log(`Updated wrangler.toml → CACHE id = "${kvId}"`);
+    return kvId;
+  } catch (e) {
+    log('KV create skipped or failed — deploy without CACHE binding is fine.');
+    console.error(String(e.stderr || e.stdout || e.message || e));
+    return '';
+  }
+}
+
 function migrateRemote() {
   log('Applying D1 schema (remote)…');
   try {
@@ -342,6 +388,7 @@ async function main() {
   ensureDependencies();
   ensureLoggedIn();
   ensureD1();
+  ensureKvNamespace();
   migrateRemote();
   await ensureDataKeySecret();
   await ensureAdminKeySecret();

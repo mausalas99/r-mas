@@ -133,6 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-08** `release-8.0.6`: onboarding **Ya tengo cuenta** (login Nube + recuérdame + sync); modales Conexión apilados; `clinical-onboarding-existing-login.mjs`, `stacked-overlay.mjs`, `setup-sync.mjs`.
 - **2026-08-07** `release-8.0.5`: **LAN LiveSync retired** — `lan-squad/` + `features/lan/` removed; Nube-only sync (`cloud-sync/`); ward `server.js` dev-only (`R_PLUS_DEV_WARD_SERVER=1`); Historia clínica removed; Interno MIP + Equipos cloud-only; R+ Móvil dedicated bundle; docs/tours (`RELEASE_NOTES_8.0.5.txt`, `feat-interno-mip-nube.md`, `01-vision-north-star.md`).
 - **2026-08-07** `release-8.0.4`: Worker pull snapshot-before-SELECT + mutation prune; clinicalOps fuera del censo; iPad hidrata equipos tras censo; desktop Nube conserva matches estructurales; `pull-strategy.js`, `mutate-bridge.mjs`, `mobile-team-patient-scope.mjs`.
 - **2026-08-06** `release-8.0.3`: Eventualidades sin tab Labs (solo bitácora + compose) + reingreso Nube + admin Equipos + clinicalOps por sala + sync auto; `eventualidades-panel-html.mjs`, `eventualidades-render.mjs`, `cloud-census-collect.mjs`, `sync-runtime-cycle.mjs`.
