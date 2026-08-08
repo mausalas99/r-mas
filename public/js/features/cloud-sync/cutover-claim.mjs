@@ -1,4 +1,8 @@
-import { assignPatientToTeamClinical } from '../../patient-team-assign-ui.mjs';
+/** Lazy import avoids expediente ↔ patient-team-assign circular load in tests. */
+async function defaultAssignPatientToTeam(patientId, teamId) {
+  const { assignPatientToTeamClinical } = await import('../../patient-team-assign-ui.mjs');
+  return assignPatientToTeamClinical(patientId, teamId);
+}
 
 /**
  * @param {string[]} patientIds
@@ -7,7 +11,7 @@ import { assignPatientToTeamClinical } from '../../patient-team-assign-ui.mjs';
  */
 export async function claimPatientsToTeam(patientIds, teamId, deps = {}) {
   const tid = String(teamId || '').trim();
-  const assign = typeof deps.assign === 'function' ? deps.assign : assignPatientToTeamClinical;
+  const assign = typeof deps.assign === 'function' ? deps.assign : defaultAssignPatientToTeam;
   const errors = [];
   let claimed = 0;
   if (!tid) return { claimed: 0, errors: ['Sin equipo'] };
