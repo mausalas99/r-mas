@@ -69,14 +69,10 @@ export function buildNubePasswordFieldHtml(prefilledSala) {
     ' placeholder="mín. 10 caracteres">' +
     '<p class="clinical-teams-hint">' +
     (upgrade
-      ? 'Tu rotación ahora es Sala/Torre: crea o entra a Nube con esta contraseña (misma @usuario).'
+      ? 'Tu rotación ahora es Sala/Torre: crea tu cuenta Nube con esta contraseña (misma @usuario).'
       : 'Obligatoria en <strong>Sala</strong> / <strong>Torre HU</strong>. URL: ') +
     (upgrade ? '' : escapeHtml(getCloudSyncUrl())) +
     '</p>' +
-    '<div class="clinical-onboard-nube-mode">' +
-    '<label class="clinical-onboard-nube-radio"><input type="radio" name="onboard-nube-mode" value="register" checked> Crear cuenta</label>' +
-    '<label class="clinical-onboard-nube-radio"><input type="radio" name="onboard-nube-mode" value="login"> Ya tengo cuenta</label>' +
-    '</div>' +
     '<p id="onboard-nube-status" class="clinical-teams-hint" aria-live="polite"></p>' +
     '</div>'
   );
@@ -102,12 +98,9 @@ export function syncOnboardingNubeVisibility(root = document) {
 
 export function readOnboardingNubeFields(root = document) {
   const pass = root.querySelector?.('#onboard-nube-password') || document.getElementById('onboard-nube-password');
-  const modeEl =
-    root.querySelector?.('input[name="onboard-nube-mode"]:checked') ||
-    document.querySelector('input[name="onboard-nube-mode"]:checked');
   return {
     password: String(pass?.value || ''),
-    mode: modeEl?.value === 'login' ? 'login' : 'register',
+    mode: 'register',
   };
 }
 

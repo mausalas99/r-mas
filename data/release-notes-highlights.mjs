@@ -2189,10 +2189,34 @@ var RELEASE_NOTES_805 = [
   },
 ];
 
+var RELEASE_NOTES_806 = [
+  {
+    title: 'Ya tengo cuenta en onboarding',
+    body:
+      'Login Nube con @usuario, <strong>Recuérdame</strong> y pull de censo/equipos — sin crear cuenta duplicada.',
+  },
+  {
+    title: 'Modales sobre Conexión',
+    body:
+      'Código de recuperación, admin e historial Equipos se apilan correctamente sobre el panel ⇄.',
+  },
+  {
+    title: 'Reinstalar en Mac nueva',
+    body:
+      'Elige <strong>Ya tengo cuenta</strong> en «¿Cómo usarás R+?» en lugar de registrar de nuevo.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.0.6</strong> en todas las Macs; compatible con peers 8.0.5 en el mismo turno.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_805;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_806;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.6': RELEASE_NOTES_806,
   '8.0.5': RELEASE_NOTES_805,
   '8.0.4': RELEASE_NOTES_804,
   '8.0.3': RELEASE_NOTES_803,

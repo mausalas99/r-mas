@@ -19,6 +19,7 @@ import {
 } from '../clinical-username.mjs';
 import { getClientId, needsProfileOnboarding } from './clinical-onboarding-gates.mjs';
 import { wireSyncModeOnboardingInteractions } from './clinical-onboarding-sync-mode.mjs';
+import { wireExistingAccountLoginInteractions } from './clinical-onboarding-existing-login.mjs';
 import { isCloudSala } from './cloud-sync/sala-allowlist.mjs';
 import {
   applyOnboardPickUser,
@@ -348,6 +349,7 @@ export async function handleResumeIdentityClick() {
 
 export async function wireOnboardingInteractions() {
   wireSyncModeOnboardingInteractions();
+  wireExistingAccountLoginInteractions();
 
   const form = document.getElementById('clinical-onboard-username-form');
   if (form && !form._rpcOnboardWired) {

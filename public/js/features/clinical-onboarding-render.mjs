@@ -38,6 +38,12 @@ import {
   needsTeamOnboardingStep,
   needsUsernameClaim,
 } from './clinical-onboarding-gates.mjs';
+import {
+  needsExistingAccountLogin,
+  renderExistingAccountLoginPanel,
+  tryCompleteExistingAccountFromStoredSession,
+  wireExistingAccountLoginInteractions,
+} from './clinical-onboarding-existing-login.mjs';
 import { wireOnboardingInteractions } from './clinical-onboarding-handlers.mjs';
 import {
   buildCutoverPickerHtml,
@@ -248,6 +254,14 @@ export async function renderOnboardingPanelInto(host) {
   if (needsClinicalSyncModeChoice()) {
     renderSyncModeChoicePanel(host);
     await wireOnboardingInteractions();
+    return;
+  }
+
+  if (needsExistingAccountLogin(settings)) {
+    const resumed = await tryCompleteExistingAccountFromStoredSession();
+    if (resumed) return;
+    renderExistingAccountLoginPanel(host, settings);
+    wireExistingAccountLoginInteractions();
     return;
   }
 

@@ -95,6 +95,49 @@ describe('clinical-onboarding helpers', () => {
     }
   });
 
+  it('sync mode choice offers Nube, existing account, and offline paths', () => {
+    const shellSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'clinical-onboarding-shell.mjs'),
+      'utf8'
+    );
+    assert.match(shellSrc, /data-sync-mode="nube"/);
+    assert.match(shellSrc, /data-sync-mode="existing"/);
+    assert.match(shellSrc, /data-sync-mode="local"/);
+    assert.match(shellSrc, /Ya tengo cuenta/);
+  });
+
+  it('existing account path gates login until profile is persisted', async () => {
+    const { setClinicalExistingAccountPath } = await import('../clinical-settings.mjs');
+    const { needsExistingAccountLogin } = await import('./clinical-onboarding-existing-login.mjs');
+    const store = { 'rpc-settings': '{}' };
+    const ls = {
+      getItem(k) {
+        return store[k];
+      },
+      setItem(k, v) {
+        store[k] = v;
+      },
+    };
+    const prevLs = globalThis.localStorage;
+    globalThis.localStorage = ls;
+    try {
+      setClinicalExistingAccountPath(true);
+      assert.equal(needsExistingAccountLogin(), true);
+      store['rpc-settings'] = JSON.stringify({
+        clinicalOnboardingExistingAccount: true,
+        clinicalRegistered: true,
+        clinicalUsername: 'drmendoza',
+        clinicalDisplayName: 'Dr. Mendoza',
+        clinicalSala: 'Sala 1',
+        clinicalLanProfileGateVersion: CLINICAL_LAN_PROFILE_GATE_VERSION,
+      });
+      assert.equal(needsExistingAccountLogin(), false);
+    } finally {
+      if (prevLs === undefined) delete globalThis.localStorage;
+      else globalThis.localStorage = prevLs;
+    }
+  });
+
   it('needsTeamOnboarding is false for R4 and Admin without a team', () => {
     const prevUser = clinicalSessionContext.user;
     const prevTeams = clinicalSessionContext.teams;

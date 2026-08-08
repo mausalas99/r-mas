@@ -17,6 +17,12 @@ describe('registerCloudDuringOnboarding', () => {
   it('hydrates teams after cloud pull', () => {
     assert.match(src, /hydrateClinicalTeamsAfterCloudPull/);
   });
+
+  it('exposes login and post-auth sync helpers for onboarding', () => {
+    assert.match(src, /export async function loginCloudDuringOnboarding/);
+    assert.match(src, /export async function completeCloudOnboardingSync/);
+    assert.match(src, /setCloudSyncToken\(data\.token, \{ remember \}\)/);
+  });
 });
 
 describe('clinical-ops-hydrate', () => {

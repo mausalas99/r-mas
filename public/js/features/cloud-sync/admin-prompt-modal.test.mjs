@@ -17,6 +17,7 @@ describe('adminPromptModalMarkup', () => {
       inputType: 'text',
     });
     assert.match(html, /data-admin-prompt-modal/);
+    assert.match(html, /lab-conflict-backdrop--stacked/);
     assert.match(html, /Confirmar eliminación/);
     assert.match(html, /Escribe @demo/);
     assert.match(html, /data-admin-prompt-input/);

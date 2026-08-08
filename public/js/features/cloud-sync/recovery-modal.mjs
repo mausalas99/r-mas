@@ -1,4 +1,5 @@
 import { esc } from '../../dom-escape.mjs';
+import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 const DEFAULT_TITLE = 'Código de recuperación';
 const BODY_COPY = 'Guarda este código de recuperación. No lo volveremos a mostrar.';
@@ -16,7 +17,7 @@ export function recoveryModalMarkup(code, title) {
   const heading = esc(title || DEFAULT_TITLE);
   const safeCode = esc(code);
   return (
-    '<div class="lab-conflict-backdrop" data-recovery-code-modal>' +
+    '<div class="' + STACKED_BACKDROP_CLASS + '" data-recovery-code-modal>' +
     '<div class="lab-conflict-modal cloud-sync-recovery-modal material-glass ui-overlay-dialog" role="dialog" aria-modal="true">' +
     '<h3 style="margin:0 0 10px;">' +
     heading +

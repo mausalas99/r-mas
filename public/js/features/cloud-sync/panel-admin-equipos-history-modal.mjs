@@ -1,5 +1,6 @@
 import { esc, escAttr } from '../../dom-escape.mjs';
 import { clinicalUserActivityHistoryEntries } from '../../../../lib/clinical-user-activity.mjs';
+import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /**
  * @param {Array<{ at?: string, source?: string }>|null|undefined} history
@@ -50,7 +51,7 @@ export function equiposActivityHistoryModalMarkup(opts) {
   const displayName = String(opts?.displayName || '').trim();
   const subtitle = displayName ? '@' + handle + ' · ' + displayName : '@' + handle;
   return (
-    '<div class="lab-conflict-backdrop" data-equipos-activity-history-modal>' +
+    '<div class="' + STACKED_BACKDROP_CLASS + '" data-equipos-activity-history-modal>' +
     '<div class="lab-conflict-modal cloud-sync-equipos-history-modal material-glass ui-overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="equipos-activity-history-title">' +
     '<div class="cloud-sync-equipos-history-modal-head">' +
     '<h3 id="equipos-activity-history-title">Historial de actividad</h3>' +

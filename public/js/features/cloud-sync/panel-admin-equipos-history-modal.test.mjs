@@ -27,6 +27,7 @@ describe('panel-admin-equipos-history-modal', () => {
       history,
     });
     assert.match(html, /data-equipos-activity-history-modal/);
+    assert.match(html, /lab-conflict-backdrop--stacked/);
     assert.match(html, /Historial de actividad/);
     assert.match(html, /@cindypsc · Cindy/);
     assert.match(html, /Sync/);

@@ -34,27 +34,36 @@ export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml, stepperInd
     </div>`;
 }
 
-const MODE_LAN_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>`;
+const MODE_NUBE_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
 
 const MODE_LOCAL_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`;
 
-/** HTML for LAN vs solo-equipo choice cards. */
+const MODE_LOGIN_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>`;
+
+/** HTML for Nube / offline / existing-account choice cards. */
 export function buildSyncModeChoiceBodyHtml() {
   return `
         <div class="clinical-onboard-mode-grid" role="group" aria-label="Modo de uso">
-          <button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--primary" data-sync-mode="lan">
+          <button type="button" class="clinical-onboard-mode-card clinical-onboard-mode-card--primary" data-sync-mode="nube">
             <span class="clinical-onboard-mode-card-head">
-              ${MODE_LAN_ICON}
+              ${MODE_NUBE_ICON}
               <span class="clinical-onboard-mode-card-title">Guardia con R+ Cloud</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Usuario @usuario, sala, sincronización con el equipo por <strong>Nube</strong> y <strong>Mi rotación</strong>.</span>
+            <span class="clinical-onboard-mode-card-desc">Crea tu @usuario, elige rotación y sincroniza censo y equipos por <strong>Nube</strong>.</span>
+          </button>
+          <button type="button" class="clinical-onboard-mode-card" data-sync-mode="existing">
+            <span class="clinical-onboard-mode-card-head">
+              ${MODE_LOGIN_ICON}
+              <span class="clinical-onboard-mode-card-title">Ya tengo cuenta</span>
+            </span>
+            <span class="clinical-onboard-mode-card-desc">Inicia sesión en Nube, recuerda este dispositivo y restaura tu censo y <strong>Mi rotación</strong>.</span>
           </button>
           <button type="button" class="clinical-onboard-mode-card" data-sync-mode="local">
             <span class="clinical-onboard-mode-card-head">
               ${MODE_LOCAL_ICON}
               <span class="clinical-onboard-mode-card-title">Solo este equipo</span>
             </span>
-            <span class="clinical-onboard-mode-card-desc">Para médicos ajenos a medicina interna: sin R+ Cloud; expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
+            <span class="clinical-onboard-mode-card-desc">Sin Nube: expedientes y notas solo en esta Mac. Sin rotaciones ni sala compartida.</span>
           </button>
         </div>`;
 }

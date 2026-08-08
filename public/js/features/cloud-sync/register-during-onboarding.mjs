@@ -36,6 +36,7 @@ function createApi() {
  *   displayName: string,
  *   sala: string,
  *   password: string,
+ *   remember?: boolean,
  *   toast?: (msg: string, kind?: string) => void,
  *   setStatus?: (msg: string) => void,
  * }} opts
@@ -57,7 +58,71 @@ export async function registerCloudDuringOnboarding(opts) {
   const client = createApi();
   setStatus(opts.mode === 'login' ? 'Iniciando sesión nube…' : 'Creando cuenta nube…');
   try {
-    await authAndBridge(client, opts.mode, chosenUser, password);
+    await authAndBridge(client, opts.mode, chosenUser, password, !!opts.remember);
+    return completeCloudOnboardingSync({
+      username: chosenUser.username,
+      displayName: chosenUser.displayName,
+      sala: chosenUser.sala,
+      toast,
+      setStatus,
+    });
+  } catch (err) {
+    const msg = err?.data?.message || err?.message || 'Error de Nube';
+    setStatus(msg);
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Login only (token + bridge) — used by onboarding "Ya tengo cuenta".
+ * @param {{ username: string, password: string, remember?: boolean, setStatus?: (msg: string) => void }} opts
+ */
+export async function loginCloudDuringOnboarding(opts) {
+  const password = String(opts.password || '');
+  if (password.length < 10) {
+    return { ok: false, error: 'Contraseña nube: mínimo 10 caracteres.' };
+  }
+  const setStatus = typeof opts.setStatus === 'function' ? opts.setStatus : () => {};
+  const client = createApi();
+  setStatus('Iniciando sesión nube…');
+  try {
+    const data = await client.login({ username: opts.username, password });
+    setCloudSyncToken(data.token, { remember: !!opts.remember });
+    const cloudUser = data.user || {};
+    const displayName = String(cloudUser.displayName || '').trim();
+    setStatus('Sesión nube iniciada.');
+    return {
+      ok: true,
+      displayName,
+      rank: String(cloudUser.rank || '').trim() || undefined,
+    };
+  } catch (err) {
+    const msg = err?.data?.message || err?.message || 'Error de Nube';
+    setStatus(msg);
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Ensure turn room, pull censo, start sync runtime (after auth).
+ * @param {{
+ *   username: string,
+ *   displayName: string,
+ *   sala: string,
+ *   toast?: (msg: string, kind?: string) => void,
+ *   setStatus?: (msg: string) => void,
+ * }} opts
+ */
+export async function completeCloudOnboardingSync(opts) {
+  const toast = typeof opts.toast === 'function' ? opts.toast : () => {};
+  const setStatus = typeof opts.setStatus === 'function' ? opts.setStatus : () => {};
+  const chosenUser = {
+    username: opts.username,
+    displayName: opts.displayName,
+    sala: opts.sala,
+  };
+  const client = createApi();
+  try {
     setStatus('Uniéndote a la sala de turno…');
     const roomId = await joinTurnRoom(client, chosenUser, toast, setStatus);
     if (!roomId) return { ok: false, error: 'No se pudo asegurar la sala nube.' };
@@ -74,14 +139,14 @@ export async function registerCloudDuringOnboarding(opts) {
   }
 }
 
-async function authAndBridge(client, mode, chosenUser, password) {
+async function authAndBridge(client, mode, chosenUser, password, remember = false) {
   const body = {
     username: chosenUser.username,
     password,
     displayName: chosenUser.displayName,
   };
   const data = mode === 'login' ? await client.login(body) : await client.register(body);
-  setCloudSyncToken(data.token);
+  setCloudSyncToken(data.token, { remember });
   if (data.recoveryCode) await showRecoveryCodeModal({ code: data.recoveryCode });
   await bridgeCloudIdentityToLocal({
     username: chosenUser.username,

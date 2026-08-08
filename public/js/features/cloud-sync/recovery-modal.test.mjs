@@ -177,6 +177,7 @@ describe('recoveryModalMarkup', () => {
   it('includes code and required data attributes', () => {
     const html = recoveryModalMarkup(SAMPLE_CODE);
     assert.match(html, /data-recovery-code-modal/);
+    assert.match(html, /lab-conflict-backdrop--stacked/);
     assert.match(html, /data-recovery-continue/);
     assert.match(html, /data-recovery-confirm/);
     assert.match(html, /data-recovery-continue[^>]*disabled/);

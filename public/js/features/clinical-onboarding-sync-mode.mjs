@@ -1,7 +1,11 @@
 /**
- * Onboarding: LAN vs solo este equipo + minimal local profile.
+ * Onboarding: Nube / ya tengo cuenta / solo este equipo.
  */
-import { readRpcSettings, setClinicalSyncModeLocalOnly } from '../clinical-settings.mjs';
+import {
+  readRpcSettings,
+  setClinicalExistingAccountPath,
+  setClinicalSyncModeLocalOnly,
+} from '../clinical-settings.mjs';
 import {
   buildOnboardingStageHtml,
   buildSyncModeChoiceBodyHtml,
@@ -21,7 +25,7 @@ export function renderSyncModeChoicePanel(host) {
   host.innerHTML = buildOnboardingStageHtml({
     title: '¿Cómo usarás R+?',
     leadHtml:
-      '<p>Elige cómo usarás R+ en este equipo. Con R+ Cloud pediremos tu perfil de guardia; en solo equipo entras directo.</p>',
+      '<p>Elige cómo usarás R+ en este equipo. Con Nube creas cuenta o entras si ya tienes una; en solo equipo trabajas sin sincronizar.</p>',
     bodyHtml: buildSyncModeChoiceBodyHtml(),
     stepperIndex: 1,
   });
@@ -33,15 +37,24 @@ async function refreshOnboardingHost() {
 }
 
 export async function handleSyncModeChoice(mode) {
-  if (mode === 'local') setClinicalSyncModeLocalOnly(true);
-  else if (mode === 'lan') setClinicalSyncModeLocalOnly(false);
-  else return;
+  if (mode === 'local') {
+    setClinicalExistingAccountPath(false);
+    setClinicalSyncModeLocalOnly(true);
+  } else if (mode === 'nube' || mode === 'lan') {
+    setClinicalExistingAccountPath(false);
+    setClinicalSyncModeLocalOnly(false);
+  } else if (mode === 'existing') {
+    setClinicalExistingAccountPath(true);
+  } else {
+    return;
+  }
   await refreshOnboardingHost();
 }
 
 export async function handleSyncModeBack() {
   const settings = readRpcSettings();
   delete settings.clinicalLocalOnly;
+  delete settings.clinicalOnboardingExistingAccount;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
   } catch (_e) { void _e; }

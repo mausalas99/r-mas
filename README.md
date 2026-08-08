@@ -39,7 +39,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.5](https://github.com/mausalas99/r-mas/releases/tag/v8.0.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.6](https://github.com/mausalas99/r-mas/releases/tag/v8.0.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -52,6 +52,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 
 
+
+## R+ 8.0.6 (onboarding Nube — ya tengo cuenta + modales Conexión)
+
+- **Ya tengo cuenta** — Onboarding con login Nube, Recuérdame y sync de censo/equipos sin crear @usuario nuevo.
+- **Modales Conexión** — Recuperación, admin e historial Equipos se apilan sobre ⇄ (z-index corregido).
+- **setup-sync** — Provisión opcional de KV CACHE para hints de revisión del Worker.
+
+Notas: `docs/RELEASE_NOTES_8.0.6.txt`.
 ## R+ 8.0.5 (LAN retirado — Nube único + Interno MIP)
 
 - **TODO:** completar bullets en README.

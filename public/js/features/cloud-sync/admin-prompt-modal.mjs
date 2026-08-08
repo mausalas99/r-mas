@@ -1,4 +1,5 @@
 import { esc } from '../../dom-escape.mjs';
+import { STACKED_BACKDROP_CLASS } from './stacked-overlay.mjs';
 
 /**
  * Electron renderer often cannot use window.prompt (returns null immediately).
@@ -50,7 +51,7 @@ export function showAdminPromptModal(opts) {
  */
 export function adminPromptModalMarkup(opts) {
   return (
-    '<div class="lab-conflict-backdrop" data-admin-prompt-modal>' +
+    '<div class="' + STACKED_BACKDROP_CLASS + '" data-admin-prompt-modal>' +
     '<div class="lab-conflict-modal cloud-sync-admin-prompt-modal" role="dialog" aria-modal="true">' +
     '<h3 style="margin:0 0 10px;">' +
     esc(opts.title) +

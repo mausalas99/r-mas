@@ -49,6 +49,26 @@ export function setClinicalSyncModeLocalOnly(localOnly) {
   return settings;
 }
 
+/** Onboarding path: login with existing Nube account (step before profile form). */
+export function isClinicalExistingAccountPath(settings = readRpcSettings()) {
+  return settings?.clinicalOnboardingExistingAccount === true;
+}
+
+/** @returns {Record<string, unknown>} */
+export function setClinicalExistingAccountPath(enabled) {
+  const settings = readRpcSettings();
+  if (enabled) {
+    settings.clinicalOnboardingExistingAccount = true;
+    settings.clinicalLocalOnly = false;
+  } else {
+    delete settings.clinicalOnboardingExistingAccount;
+  }
+  try {
+    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  } catch (_e) { void _e; }
+  return settings;
+}
+
 /** Auto @usuario assigned in solo-equipo mode; must be replaced for LAN. */
 export function isLocalOnlyPlaceholderUsername(raw) {
   return /^local_[a-z0-9_]+$/.test(normalizeUsername(raw || ''));
