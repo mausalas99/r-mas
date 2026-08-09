@@ -2,6 +2,7 @@ import { MED_FIELD_KEYS, ensureMonitoreo } from './estado-actual-data.mjs';
 import { buildMedDropdownOptions, resolveManejoFechaActualizacion } from './estado-actual-meds.mjs';
 import { handleMedGridClick } from './estado-actual-med-grid-click.mjs';
 import { advanceAbxMedTextForManejoDate, classifyMedicationSoapCategory } from '../med-receta-core.mjs';
+import { partitionNmMedLines } from '../nm-antidiabetic-detect.mjs';
 
 /** @type {Record<string, string>} */
 export const EA_MED_FIELD_LABELS = {
@@ -167,6 +168,55 @@ function medItemsListHtml(items, key) {
     .join('');
 }
 
+function medItemsListHtmlWithIndices(items, key, indices) {
+  return items
+    .map(function (item, displayIdx) {
+      var idx = indices[displayIdx];
+      return (
+        '<details class="ea-med-item">' +
+        '<summary class="ea-med-item-summary">' +
+        '<span class="ea-med-item-text">' +
+        escHtml(item) +
+        '</span>' +
+        '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
+        escAttr(key) +
+        '" data-ea-med-idx="' +
+        idx +
+        '" aria-label="Quitar medicamento">×</button>' +
+        '</summary></details>'
+      );
+    })
+    .join('');
+}
+
+function renderNmAntidiabeticSubsectionHtml(key, items) {
+  var part = partitionNmMedLines(items);
+  if (!part.antidiabeticos.length) return '';
+  var itemsHtml = medItemsListHtmlWithIndices(part.antidiabeticos, key, part.antidiabeticIndices);
+  return (
+    '<details class="ea-med-subcat ea-med-subcat--antidiabeticos" open>' +
+    '<summary class="ea-med-subcat-summary">' +
+    '<span class="ea-med-subcat-title">Antidiabéticos</span>' +
+    '<span class="ea-med-subcat-preview ea-muted">' +
+    escHtml(medCatPreviewText(part.antidiabeticos)) +
+    '</span>' +
+    '</summary>' +
+    '<div class="ea-med-subcat-body">' +
+    '<div class="ea-med-item-list">' +
+    itemsHtml +
+    '</div></div></details>'
+  );
+}
+
+function renderNmMedItemsBodyHtml(key, items) {
+  var part = partitionNmMedLines(items);
+  var antidiabeticHtml = renderNmAntidiabeticSubsectionHtml(key, items);
+  var otherHtml = part.other.length
+    ? '<div class="ea-med-item-list">' + medItemsListHtmlWithIndices(part.other, key, part.otherIndices) + '</div>'
+    : '';
+  return antidiabeticHtml + otherHtml;
+}
+
 function medPendingBlockHtml(key, pendingVal) {
   if (!pendingVal) return '';
   return (
@@ -210,7 +260,8 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
   var pendingVal = block.pendingVal;
   var label = EA_MED_FIELD_LABELS[key] || key;
   var options = buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
-  var itemsHtml = medItemsListHtml(items, key);
+  var itemsHtml =
+    key === 'nm' ? renderNmMedItemsBodyHtml(key, items) : medItemsListHtml(items, key);
   var openAttr = items.length || pendingVal ? ' open' : '';
 
   return (
@@ -230,7 +281,7 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
     '</summary>' +
     '<div class="ea-med-cat-body">' +
     medPendingBlockHtml(key, pendingVal) +
-    (itemsHtml ? '<div class="ea-med-item-list">' + itemsHtml + '</div>' : '') +
+    (itemsHtml ? (key === 'nm' ? itemsHtml : '<div class="ea-med-item-list">' + itemsHtml + '</div>') : '') +
     '<div class="ea-med-add-row">' +
     '<select class="ea-input ea-med-add-select" data-ea-med-add-select="' +
     escAttr(key) +

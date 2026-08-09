@@ -16,6 +16,15 @@ import {
   insulinRescateNmSoapFragment,
   skipRecetaItemForInsulinRescateBucket,
 } from '../insulin-rescate-display.mjs';
+import {
+  insulinPrandialNmSoapFragment,
+  skipRecetaItemForInsulinPrandialBucket,
+} from '../insulin-prandial-display.mjs';
+import {
+  potassiumReposNmSoapFragment,
+  skipRecetaItemForPotassiumReposBucket,
+} from '../potassium-repos-display.mjs';
+import { isPotassiumReposCarrierMedicationItem } from '../potassium-repos-detect.mjs';
 
 /**
  * @param {{ nombreRaw?: string, viaRaw?: string, dosisRaw?: string, frecuenciaRaw?: string, diaTratamiento?: number | null, suspendido?: boolean }} it
@@ -47,12 +56,27 @@ function maybeAddNmSpecialFragment(it, ctx, cat) {
     }
     return true;
   }
+  if (skipRecetaItemForInsulinPrandialBucket(it, ctx.list)) {
+    if (ctx.prandialNmFrag && !ctx.prandialNmAdded) {
+      ctx.arrays.nm.push(ctx.prandialNmFrag);
+      ctx.prandialNmAdded = true;
+    }
+    return true;
+  }
+  if (skipRecetaItemForPotassiumReposBucket(it, ctx.list)) {
+    if (ctx.kReposNmFrag && !ctx.kReposNmAdded) {
+      ctx.arrays.nm.push(ctx.kReposNmFrag);
+      ctx.kReposNmAdded = true;
+    }
+    return true;
+  }
   return false;
 }
 
 function pushRecetaItemToSoapBucket(it, ctx) {
   if (!it || !ctx.selMap[it.id] || it.suspendido) return;
   if (skipRecetaItemForInsulinPumpCarrier(it, ctx.list)) return;
+  if (isPotassiumReposCarrierMedicationItem(it, ctx.list)) return;
   if (!shouldIncludeMedicationInSoap(it, ctx.classifyFn)) return;
   var cat = effectiveSoapCategory(it, ctx.classifyFn);
   if (cat === 'otros') return;
@@ -90,6 +114,8 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
   });
   var pumpNmFrag = insulinPumpNmSoapFragment(list, soapSelected);
   var rescateNmFrag = insulinRescateNmSoapFragment(list, soapSelected);
+  var prandialNmFrag = insulinPrandialNmSoapFragment(list, soapSelected);
+  var kReposNmFrag = potassiumReposNmSoapFragment(list, soapSelected);
   var bucketCtx = {
     list: list,
     selMap: selMap,
@@ -99,6 +125,10 @@ export function bucketsFromRecetaItems(items, selMap, classifyFn) {
     pumpNmAdded: false,
     rescateNmFrag: rescateNmFrag,
     rescateNmAdded: false,
+    prandialNmFrag: prandialNmFrag,
+    prandialNmAdded: false,
+    kReposNmFrag: kReposNmFrag,
+    kReposNmAdded: false,
   };
   list.forEach(function (it) {
     pushRecetaItemToSoapBucket(it, bucketCtx);

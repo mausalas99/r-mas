@@ -10,7 +10,7 @@ import {
   getCloudSyncToken,
 } from './settings.mjs';
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
-import { patients } from '../../app-state.mjs';
+import { patients, labHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
 import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
@@ -25,9 +25,12 @@ import {
   pickCensusFields,
   mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
+  buildLabSidecarOpsForPatient,
   buildInternoAccessUpsertOp,
   internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
+import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
+import { prepareOutboxOpsForEnqueue } from './outbox-lab.mjs';
 
 export { CLOUD_BATCH_MUTATION_ID };
 export { pushCloudClinicalOpsNow } from './mutate-bridge-clinical-ops.mjs';
@@ -72,9 +75,11 @@ function enqueueEntityOps(clientMutationId, ops) {
   if (!bridgeRuntime?.outbox || !ops.length) return;
   const id = String(clientMutationId || '').trim();
   if (!id) return;
+  const prepared = prepareOutboxOpsForEnqueue(id, ops);
+  if (!prepared.length) return;
   bridgeRuntime.outbox.enqueue({
     clientMutationId: id,
-    ops,
+    ops: prepared,
     baseRevision: bridgeRuntime.getRevision?.() ?? 0,
   });
   void bridgeRuntime.flush?.();
@@ -104,6 +109,8 @@ let cloudPushTimer = null;
 let cloudCensusRetryTimer = null;
 
 let cloudCensusPushRetries = 0;
+
+let initialCloudSeedScheduled = false;
 
 const CLOUD_CENSUS_PUSH_MAX_RETRIES = 16;
 
@@ -156,9 +163,9 @@ function ensureLiveCensusClocks(_nowIso) {
   }
 }
 
-async function pushCloudBundleOps() {
-  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
-  if (!getCloudSyncRoomId()) return;
+async function enqueueCloudBundleOps() {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return false;
+  if (!getCloudSyncRoomId()) return false;
   try {
     const meta = {
       actorId: resolveCloudActorId(bridgeRuntime),
@@ -184,16 +191,66 @@ async function pushCloudBundleOps() {
     if (!entryOps && !otherOps && patients.length > 0) {
       if (cloudCensusPushRetries < CLOUD_CENSUS_PUSH_MAX_RETRIES) {
         scheduleCloudCensusPushRetry();
-        return;
+        return false;
       }
     } else {
       cloudCensusPushRetries = 0;
     }
-    if (!ops.length) return;
+    if (!ops.length) return false;
     enqueueOps(ops);
+    return true;
   } catch (err) {
     console.warn('[R+] cloud census push:', err?.message || err);
+    return false;
   }
+}
+
+async function pushCloudBundleOps() {
+  await enqueueCloudBundleOps();
+}
+
+/**
+ * Enqueue dirty lab sidecars for all patients (R+ Móvil backfill) — outbox path, no direct HTTP.
+ * @returns {Promise<boolean>}
+ */
+export async function enqueueCloudLabSidecarsBackfill() {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return false;
+  if (!getCloudSyncRoomId()) return false;
+
+  const meta = {
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: new Date().toISOString(),
+  };
+  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
+  const entries = await collectPatientEntriesForCloudPush();
+  let enqueued = false;
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i];
+    const patientId = String(entry?.patient?.id || '').trim();
+    if (!patientId) continue;
+    const ops = buildDirtyLabSidecarOpsForPatient(
+      patientId,
+      Array.isArray(entry.labHistory) ? entry.labHistory : [],
+      meta
+    );
+    if (!ops.length) continue;
+    enqueueEntityOps(`labSidecars/${patientId}`, ops);
+    enqueued = true;
+  }
+  return enqueued;
+}
+
+/**
+ * One-shot boot/connect seed: census bundle + lab backfill via outbox, then a single sync cycle.
+ * Avoids duplicate direct HTTP pushes that saturated D1 / DO on connect.
+ */
+export async function scheduleInitialCloudSeed() {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !getCloudSyncRoomId()) return;
+  if (initialCloudSeedScheduled) return;
+  initialCloudSeedScheduled = true;
+  await enqueueCloudBundleOps();
+  await enqueueCloudLabSidecarsBackfill();
+  await bridgeRuntime.flush?.();
 }
 
 /** Direct census seed — bypasses LAN bundle timing; used on desktop boot / ⇄ connect. */
@@ -215,7 +272,8 @@ export async function pushCloudCensusNow() {
   /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
   const ops = [];
   for (let i = 0; i < entries.length; i += 1) {
-    ops.push(...mapPatientEntryToCloudBundleOps(entries[i], meta));
+    const entry = entries[i];
+    ops.push(...mapPatientEntryToCloudBundleOps(entry, meta));
   }
 
   const entryOps = countPatientEntryOps(ops);
@@ -245,8 +303,85 @@ export async function pushCloudCensusNow() {
     return { ok: true, entryOps, totalOps: ops.length, pushed };
   } catch (err) {
     const message = err?.message || String(err);
+    void import('../cloud-mobile/lab-sync-diagnostics.mjs')
+      .then(function (labDiag) {
+        labDiag.recordLabPushAttempt({ setCount: ops.length, ok: false, reason: message, totalOps: ops.length });
+      })
+      .catch(function () {
+        /* optional */
+      });
     recordCloudSyncError({
       op: 'census',
+      code: 'push_failed',
+      message,
+    });
+    return { ok: false, reason: 'push_failed', message };
+  }
+}
+
+/** Push all lab sidecars now (backfill for R+ Móvil). */
+export async function pushCloudLabSidecarsNow() {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) {
+    return { ok: false, reason: 'bridge_inactive' };
+  }
+  if (!getCloudSyncRoomId()) return { ok: false, reason: 'no_room' };
+
+  const meta = {
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: new Date().toISOString(),
+  };
+  const { collectPatientEntriesForCloudPush } = await import('./cloud-census-collect.mjs');
+  const entries = await collectPatientEntriesForCloudPush();
+  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
+  const ops = [];
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i];
+    const patientId = String(entry?.patient?.id || '').trim();
+    if (!patientId) continue;
+    ops.push(
+      ...buildDirtyLabSidecarOpsForPatient(
+        patientId,
+        Array.isArray(entry.labHistory) ? entry.labHistory : [],
+        meta
+      )
+    );
+  }
+  if (!ops.length) return { ok: false, reason: 'no_lab_ops' };
+
+  try {
+    const { createCloudSyncApi } = await import('./api-client.mjs');
+    const { pushCloudOpsDirect } = await import('./cloud-push-direct.mjs');
+    const api = createCloudSyncApi({
+      getBaseUrl: getCloudSyncUrl,
+      getToken: getCloudSyncToken,
+    });
+    const pushed = await pushCloudOpsDirect(
+      api,
+      getCloudSyncRoomId(),
+      ops,
+      getCloudSyncRevision,
+      setCloudSyncRevision
+    );
+    void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
+      labDiag.recordLabPushAttempt({
+        setCount: ops.length,
+        ok: true,
+        totalOps: ops.length,
+      });
+    });
+    return { ok: true, labOps: ops.length, totalOps: ops.length, pushed };
+  } catch (err) {
+    const message = err?.message || String(err);
+    void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
+      labDiag.recordLabPushAttempt({
+        setCount: ops.length,
+        ok: false,
+        reason: message,
+        totalOps: ops.length,
+      });
+    });
+    recordCloudSyncError({
+      op: 'labSidecars',
       code: 'push_failed',
       message,
     });
@@ -324,6 +459,30 @@ export function enqueueCloudAgendaDelete(id, updatedAt) {
       ...meta,
     }),
   ]);
+}
+
+/** Push lab sidecars for one patient (R+ Móvil reads these on pull). */
+export function enqueueCloudLabSidecarsForPatient(patientId) {
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox) return;
+  const pid = String(patientId || '').trim();
+  if (!pid || pid.indexOf('demo-') === 0) return;
+  const labs = Array.isArray(labHistory[pid]) ? labHistory[pid] : [];
+  if (!labs.length) return;
+  const meta = {
+    actorId: resolveCloudActorId(bridgeRuntime),
+    updatedAt: new Date().toISOString(),
+  };
+  const ops = buildDirtyLabSidecarOpsForPatient(pid, labs, meta);
+  if (!ops.length) return;
+  enqueueEntityOps(`labSidecars/${pid}`, ops);
+  void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
+    labDiag.recordLabPushAttempt({
+      patientId: pid,
+      setCount: labs.length,
+      ok: true,
+      totalOps: ops.length,
+    });
+  });
 }
 
 /** Push census fields for a newly admitted patient (clears Nube tombstones via LWW). */

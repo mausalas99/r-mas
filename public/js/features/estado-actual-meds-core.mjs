@@ -18,6 +18,44 @@ export function resolveManejoFechaActualizacion(activeId, medRecetaByPatient) {
  * @param {Record<string, unknown> | null | undefined} pendienteReceta
  * @returns {boolean}
  */
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @returns {Record<string, boolean>}
+ */
+export function ensureRecetaProposalDismissed(monitoreo) {
+  if (!monitoreo.recetaProposalDismissed || typeof monitoreo.recetaProposalDismissed !== 'object') {
+    monitoreo.recetaProposalDismissed = {};
+  }
+  return /** @type {Record<string, boolean>} */ (monitoreo.recetaProposalDismissed);
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} monitoreo
+ * @param {string} key
+ */
+export function isRecetaProposalDismissed(monitoreo, key) {
+  var dismissed = monitoreo && monitoreo.recetaProposalDismissed;
+  return dismissed && typeof dismissed === 'object' && dismissed[key];
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} monitoreo
+ */
+export function clearRecetaProposalDismissed(monitoreo) {
+  if (monitoreo && monitoreo.recetaProposalDismissed) {
+    delete monitoreo.recetaProposalDismissed;
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} monitoreo
+ * @param {string} key
+ */
+export function clearRecetaProposalDismissedKey(monitoreo, key) {
+  if (!monitoreo || !key || !monitoreo.recetaProposalDismissed) return;
+  delete monitoreo.recetaProposalDismissed[key];
+}
+
 export function hasPendingEaProposals(pendienteReceta) {
   var pend = pendienteReceta && typeof pendienteReceta === 'object' ? pendienteReceta : {};
   if (

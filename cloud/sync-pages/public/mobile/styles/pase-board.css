@@ -3475,6 +3475,82 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   grid-column: 2;
 }
 
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team {
+  grid-template-columns: 1fr;
+}
+
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-pick-banner,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-handle-hint,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--create,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--more,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--join-code,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--joined,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--directory {
+  order: -2;
+}
+
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-pick-banner {
+  order: -3;
+}
+
+.clinical-teams-pick-banner {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
+  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.clinical-teams-pick-banner--elevated {
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--border));
+  background: color-mix(in oklab, var(--color-accent) 8%, var(--surface));
+}
+
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team > .clinical-teams-section--directory {
+  padding: 14px 16px;
+  border-color: color-mix(in oklab, var(--action) 24%, var(--border));
+  background: color-mix(in oklab, var(--action) 5%, var(--surface));
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
+  .clinical-teams-list--directory {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: 12px;
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
+  .clinical-teams-section--create {
+  padding: 12px 14px;
+  border-color: var(--border);
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
+  .clinical-teams-create-open-btn {
+  width: auto;
+  min-height: 36px;
+  font-size: 0.875rem;
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
+  .clinical-teams-section--joined {
+  padding: 12px 14px;
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+  border-color: var(--border);
+}
+
 #clinical-teams-backdrop .clinical-teams-section--more {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5222,7 +5298,8 @@ html.clinical-onboarding-active #main-area {
 
 .clinical-onboarding-main {
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-modal) + 2);
+  pointer-events: auto;
   flex: 1 1 auto;
   width: 100%;
   max-width: none;
@@ -5354,6 +5431,59 @@ html.clinical-onboarding-active #main-area {
 .clinical-onboarding-status {
   margin: 0;
   color: var(--text-muted);
+}
+
+.clinical-onboard-boot-loader {
+  margin-top: clamp(18px, 3vh, 28px);
+  max-width: 28rem;
+}
+
+.clinical-onboard-boot-loader-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.clinical-onboard-boot-spinner {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in oklab, var(--text) 14%, transparent);
+  border-top-color: var(--accent, #4a52e8);
+  animation: clinical-onboard-boot-spin 0.75s linear infinite;
+}
+
+.clinical-onboard-boot-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  overflow: hidden;
+}
+
+.clinical-onboard-boot-progress-bar {
+  height: 100%;
+  width: 3%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--accent, #4a52e8),
+    color-mix(in oklab, var(--accent, #4a52e8) 70%, white)
+  );
+  will-change: width;
+}
+
+@keyframes clinical-onboard-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clinical-onboard-boot-spinner {
+    animation: none;
+  }
 }
 
 .clinical-onboard-session-actions {

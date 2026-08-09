@@ -50,4 +50,15 @@ describe('sync.js mutation retention', () => {
     assert.ok(selectIdx >= 0);
     assert.ok(snapshotIdx < selectIdx, 'gap check must run before mutations SELECT');
   });
+
+  it('reads D1 revision before KV shortcut and never returns stale cached revision', () => {
+    const start = syncSrc.indexOf('async function handlePull');
+    const body = syncSrc.slice(start, start + 1400);
+    const d1Idx = body.indexOf('SELECT revision FROM rooms');
+    const kvIdx = body.indexOf('getCachedRoomRevision');
+    assert.ok(d1Idx >= 0);
+    assert.ok(kvIdx >= 0);
+    assert.ok(d1Idx < kvIdx, 'D1 revision must be read before KV shortcut');
+    assert.doesNotMatch(body, /revision: cachedRevision/);
+  });
 });

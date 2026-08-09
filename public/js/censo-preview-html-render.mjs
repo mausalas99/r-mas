@@ -4,6 +4,7 @@ import {
   censoColgroupCssRules,
   censoColgroupHtml,
   censoTheadRowHtml,
+  resolveCensoColWeights,
 } from './censo-table-columns.mjs';
 
 import { escHtml as escCensoHtml } from './dom-escape.mjs';
@@ -19,6 +20,7 @@ export function censoLineClass(role) {
 export function renderCensoLines(text, colKey) {
   var raw = String(text || '').trim();
   if (!raw) {
+    if (colKey === 'accesos' || colKey === 'cultivos' || colKey === 'pendientes') return '';
     return '<span class="censo-line censo-line--empty">—</span>';
   }
   return raw
@@ -68,6 +70,7 @@ export function renderCensoSectionCell(row, key, fallbackLabel) {
     return s.label === fallbackLabel;
   });
   if (!sec) {
+    if (key === 'accesos' || key === 'cultivos' || key === 'pendientes') return '';
     return '<span class="censo-line censo-line--empty">—</span>';
   }
   return renderCensoLines(sec.lines.join('\n'), key);
@@ -75,53 +78,85 @@ export function renderCensoSectionCell(row, key, fallbackLabel) {
 
 export function renderCensoColMultiline(row, key) {
   var v = String(row[key] || '').trim();
-  if (!v) {
-    return '<span class="censo-line censo-line--empty">—</span>';
-  }
+  if (!v) return '';
   return renderCensoLines(v, key);
 }
 
-export function buildCensoPreviewBodyHtml(rows) {
+function censoPreviewCellClass(key) {
+  if (key === 'paciente') return 'censo-paciente';
+  if (key === 'dx') return 'censo-dx';
+  if (key === 'meds') return 'censo-meds';
+  if (key === 'labs') return 'censo-labs';
+  if (key === 'signos') return 'censo-signos';
+  if (key === 'io') return 'censo-io';
+  if (key === 'accesos') return 'censo-acc';
+  if (key === 'cultivos') return 'censo-cult';
+  if (key === 'pend') return 'censo-pend';
+  if (key === 'num') return 'censo-num';
+  if (key === 'cama') return 'censo-cama';
+  return key;
+}
+
+function renderCensoPreviewCell(row, key) {
+  if (key === 'num') {
+    return (
+      '<td class="censo-data-cell censo-center censo-bold censo-num">' +
+      '<span class="censo-num-val">' +
+      escCensoHtml(row.num) +
+      '</span></td>'
+    );
+  }
+  if (key === 'cama') {
+    return (
+      '<td class="censo-data-cell censo-center censo-bold censo-cama">' +
+      renderCensoCamaCell(row.cama) +
+      '</td>'
+    );
+  }
+  if (key === 'paciente') {
+    return '<td class="censo-data-cell censo-center censo-paciente">' + renderCensoPacienteCell(row) + '</td>';
+  }
+  if (key === 'dx') {
+    return '<td class="censo-data-cell censo-center censo-dx">' + renderCensoSectionCell(row, 'dx', 'Diagnósticos') + '</td>';
+  }
+  if (key === 'meds') {
+    return '<td class="censo-data-cell censo-center censo-meds">' + renderCensoSectionCell(row, 'meds', 'ATB / Medicamentos') + '</td>';
+  }
+  if (key === 'labs') {
+    return '<td class="censo-data-cell censo-labs">' + renderCensoSectionCell(row, 'labs', 'Laboratorios') + '</td>';
+  }
+  if (key === 'signos') {
+    return '<td class="censo-data-cell censo-signos">' + renderCensoColMultiline(row, 'signosCol') + '</td>';
+  }
+  if (key === 'io') {
+    return '<td class="censo-data-cell censo-io">' + renderCensoColMultiline(row, 'ioCol') + '</td>';
+  }
+  if (key === 'accesos') {
+    return '<td class="censo-data-cell censo-acc">' + renderCensoSectionCell(row, 'accesos', 'Accesos') + '</td>';
+  }
+  if (key === 'cultivos') {
+    return '<td class="censo-data-cell censo-cult">' + renderCensoSectionCell(row, 'cultivos', 'Cultivos') + '</td>';
+  }
+  if (key === 'pend') {
+    return '<td class="censo-data-cell censo-pend">' + renderCensoSectionCell(row, 'pendientes', 'Pendientes') + '</td>';
+  }
+  return '<td class="censo-data-cell ' + censoPreviewCellClass(key) + '"></td>';
+}
+
+export function buildCensoPreviewBodyHtml(rows, weights) {
+  var cols = resolveCensoColWeights(rows || []);
+  if (weights && weights.length) cols = weights;
   return (rows || [])
     .map(function (row, idx) {
       return (
         '<tr class="' +
         (idx % 2 ? 'alt' : '') +
         '">' +
-        '<td class="censo-data-cell censo-center censo-bold censo-num">' +
-        '<span class="censo-num-val">' +
-        escCensoHtml(row.num) +
-        '</span></td>' +
-        '<td class="censo-data-cell censo-center censo-bold censo-cama">' +
-        renderCensoCamaCell(row.cama) +
-        '</td>' +
-        '<td class="censo-data-cell censo-center censo-paciente">' +
-        renderCensoPacienteCell(row) +
-        '</td>' +
-        '<td class="censo-data-cell censo-center censo-dx">' +
-        renderCensoSectionCell(row, 'dx', 'Diagnósticos') +
-        '</td>' +
-        '<td class="censo-data-cell censo-center censo-meds">' +
-        renderCensoSectionCell(row, 'meds', 'ATB / Medicamentos') +
-        '</td>' +
-        '<td class="censo-data-cell censo-labs">' +
-        renderCensoSectionCell(row, 'labs', 'Laboratorios') +
-        '</td>' +
-        '<td class="censo-data-cell censo-signos">' +
-        renderCensoColMultiline(row, 'signosCol') +
-        '</td>' +
-        '<td class="censo-data-cell censo-io">' +
-        renderCensoColMultiline(row, 'ioCol') +
-        '</td>' +
-        '<td class="censo-data-cell censo-acc">' +
-        renderCensoSectionCell(row, 'accesos', 'Accesos') +
-        '</td>' +
-        '<td class="censo-data-cell censo-cult">' +
-        renderCensoSectionCell(row, 'cultivos', 'Cultivos') +
-        '</td>' +
-        '<td class="censo-data-cell censo-pend">' +
-        renderCensoSectionCell(row, 'pendientes', 'Pendientes') +
-        '</td>' +
+        cols
+          .map(function (col) {
+            return renderCensoPreviewCell(row, col.key);
+          })
+          .join('') +
         '</tr>'
       );
     })
@@ -162,10 +197,14 @@ export const CENSO_PREVIEW_STYLES =
   'td.censo-num .censo-num-val{color:var(--color-accent);font-weight:700}' +
   'td.censo-cama .censo-cama-vline{display:block;margin:0 auto}' +
   '.censo-cama-vline{font-weight:700;font-size:9px;color:var(--color-accent);writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
-  '.censo-paciente-nombre,.censo-line--emphasis.censo-paciente-nombre{font-weight:700;color:#1a2332}' +
-  censoColgroupCssRules();
+  '.censo-paciente-nombre,.censo-line--emphasis.censo-paciente-nombre{font-weight:700;color:#1a2332}';
 
-export function buildCensoPreviewDocumentHtml(header, bodyHtml) {
+export function buildCensoPreviewStyles(weights) {
+  return CENSO_PREVIEW_STYLES + censoColgroupCssRules(weights);
+}
+
+export function buildCensoPreviewDocumentHtml(header, bodyHtml, rows) {
+  var weights = resolveCensoColWeights(rows || []);
   var titleLine = header.titleLine || 'Censo de Sala';
   var equipoLine = header.equipoLine || '';
   return (
@@ -174,7 +213,7 @@ export function buildCensoPreviewDocumentHtml(header, bodyHtml) {
     escCensoHtml(header.fecha) +
     '</title>' +
     '<style>' +
-    CENSO_PREVIEW_STYLES +
+    buildCensoPreviewStyles(weights) +
     '</style></head><body>' +
     '<h1>' +
     escCensoHtml(titleLine) +
@@ -186,10 +225,10 @@ export function buildCensoPreviewDocumentHtml(header, bodyHtml) {
     (header.fecha ? escCensoHtml(header.fecha) : '') +
     '</div>' +
     '<table><colgroup>' +
-    censoColgroupHtml() +
+    censoColgroupHtml(weights) +
     '</colgroup>' +
     '<thead><tr>' +
-    censoTheadRowHtml() +
+    censoTheadRowHtml(weights) +
     '</tr></thead>' +
     '<tbody>' +
     bodyHtml +

@@ -2,12 +2,19 @@
  * Slim cloud mutation ops so lab sidecars fit Free-pilot quotas.
  * Keep in sync with cloud/sync-worker/src/quotas.js
  *
- * Lab pipeline: PDF → parse → discard PDF. Only text (`sourceText` + `resLabs`)
- * remains locally; Nube never carries PDF/binary. If a text set still exceeds
- * the lab mutation quota, truncate `sourceText` (keep structured `resLabs`).
+ * Lab pipeline: PDF → parse → discard PDF. Nube carries **parsed** labs only
+ * (`resLabs` + `bhExtras` + fecha/hora/id) — never raw SOME `sourceText`.
  */
+import { markCloudLabOpPoison } from './cloud-lab-sidecar-index.mjs';
+
 export const CLOUD_LAB_MUTATION_MAX_BYTES = 512 * 1024;
 export const CLOUD_NOTE_MAX_BYTES = 256 * 1024;
+/** Align with cloud/sync-worker/src/quotas.js maxMutationBodyBytes (220KB). */
+export const CLOUD_PUSH_WARN_BODY_BYTES = 200 * 1024;
+export const CLOUD_PUSH_WARN_OP_BYTES = 180 * 1024;
+
+/** Parsed lab sidecar fields allowed on Nube (no raw paste text). */
+export const CLOUD_LAB_SET_ALLOWLIST = ['id', 'fecha', 'hora', 'resLabs', 'bhExtras'];
 
 /** Binary / temp artifacts — never sync (PDF is parse-only and deleted locally). */
 const LAB_DROP_KEYS = new Set([
@@ -18,6 +25,11 @@ const LAB_DROP_KEYS = new Set([
   'rawHtml',
   'html',
   '_raw',
+  'sourceText',
+  'textoBruto',
+  'labsText',
+  'reportText',
+  'parsedBySection',
 ]);
 
 /** @param {unknown} value */
@@ -30,7 +42,7 @@ export function utf8JsonBytes(value) {
 }
 
 /**
- * Copy lab set without PDF/binary keys. Keeps sourceText (parsed SOME text).
+ * Parsed lab set for Nube — strips raw SOME paste and derived blobs.
  * @param {unknown} set
  */
 export function slimLabSetForCloud(set) {
@@ -38,15 +50,41 @@ export function slimLabSetForCloud(set) {
   const src = /** @type {Record<string, unknown>} */ (set);
   /** @type {Record<string, unknown>} */
   const out = {};
-  for (const key of Object.keys(src)) {
-    if (LAB_DROP_KEYS.has(key)) continue;
+  for (const key of CLOUD_LAB_SET_ALLOWLIST) {
+    if (!(key in src)) continue;
     out[key] = src[key];
   }
   return out;
 }
 
 /**
- * If set exceeds maxBytes, shrink/drop sourceText until it fits (resLabs stay).
+ * Shrink resLabs lines until the set fits the quota.
+ * @param {Record<string, unknown>} row
+ * @param {number} maxBytes
+ */
+function fitResLabsToQuota(row, maxBytes) {
+  const lines = Array.isArray(row.resLabs) ? row.resLabs.map((line) => String(line || '')) : [];
+  if (!lines.length) return utf8JsonBytes(row) <= maxBytes ? row : null;
+
+  let lo = 0;
+  let hi = lines.length;
+  let best = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const trial = { ...row, resLabs: lines.slice(0, mid) };
+    if (utf8JsonBytes(trial) <= maxBytes) {
+      best = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (!best) return null;
+  return { ...row, resLabs: lines.slice(0, best) };
+}
+
+/**
+ * If set exceeds maxBytes, drop bhExtras then trim resLabs until it fits.
  * @param {unknown} set
  * @param {number} maxBytes
  */
@@ -56,32 +94,11 @@ export function fitLabSetToQuota(set, maxBytes = CLOUD_LAB_MUTATION_MAX_BYTES) {
   if (utf8JsonBytes(out) <= maxBytes) return out;
 
   const row = /** @type {Record<string, unknown>} */ ({ ...out });
-  const text = String(row.sourceText || '');
-  if (!text) {
-    delete row.sourceText;
-    return utf8JsonBytes(row) <= maxBytes ? row : null;
+  if (row.bhExtras) {
+    delete row.bhExtras;
+    if (utf8JsonBytes(row) <= maxBytes) return row;
   }
-
-  // Binary search max sourceText length that still fits.
-  let lo = 0;
-  let hi = text.length;
-  let best = '';
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    row.sourceText = text.slice(0, mid);
-    if (utf8JsonBytes(row) <= maxBytes) {
-      best = /** @type {string} */ (row.sourceText);
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-  if (best) {
-    row.sourceText = best;
-    return row;
-  }
-  delete row.sourceText;
-  return utf8JsonBytes(row) <= maxBytes ? row : null;
+  return fitResLabsToQuota(row, maxBytes);
 }
 
 /** @param {string} path */
@@ -116,11 +133,14 @@ export function sanitizeOpsForCloudPush(ops) {
     const slimmed = slimCloudOp(/** @type {{ path?: string, value?: unknown }} */ (ops[i]));
     if (!slimmed || typeof slimmed !== 'object') {
       dropped += 1;
+      const dropPath = String(ops[i]?.path || '');
+      if (dropPath.startsWith('labSidecars/')) markCloudLabOpPoison(dropPath);
       continue;
     }
     const path = String(slimmed.path || '');
     if (utf8JsonBytes(slimmed.value) > maxBytesForPath(path)) {
       dropped += 1;
+      if (path.startsWith('labSidecars/')) markCloudLabOpPoison(path);
       continue;
     }
     next.push(slimmed);

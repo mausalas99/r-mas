@@ -2,7 +2,9 @@
  * ⌘E / ⌘T / ⌘D — navegación rápida en expediente (Estado actual, Resultados, Datos).
  */
 import { migrateGranularInner } from './expediente-tabs.mjs';
+import { isGuardiaMode, toggleGuardiaMode } from './features/chrome.mjs';
 import { isModeSala } from './mode-features.mjs';
+import { switchAppTab } from './features/pase-board-app-tabs.mjs';
 import { getActiveInnerTab, switchInnerTab } from './features/pase-board.mjs';
 import { openPatientDatosModal } from './patient-datos-modal.mjs';
 import { rt } from './features/pase-board-runtime.mjs';
@@ -43,6 +45,10 @@ export function resolveExpedienteShortcutTarget(key, currentInner, settings) {
 
 export function runExpedienteShortcut(key) {
   var k = String(key || '').toLowerCase();
+  if (isGuardiaMode()) {
+    toggleGuardiaMode();
+    switchAppTab('nota');
+  }
   var settings = typeof rt.getSettings === 'function' ? rt.getSettings() : {};
   var current = getActiveInnerTab();
   var target = resolveExpedienteShortcutTarget(k, current, settings);

@@ -25,6 +25,10 @@ import {
   DIET_PENDING_KEYS,
   resolveManejoFechaActualizacion,
   hasPendingEaProposals,
+  ensureRecetaProposalDismissed,
+  isRecetaProposalDismissed,
+  clearRecetaProposalDismissed,
+  clearRecetaProposalDismissedKey,
 } from './estado-actual-meds-core.mjs';
 import {
   medInstructionFragmentForSoap,
@@ -229,6 +233,7 @@ export function applyRecetaProposal(monitoreo, buckets) {
   }
   for (var k of MED_FIELD_KEYS) {
     if (monitoreo.confirmado && monitoreo.confirmado[k]) continue;
+    if (isRecetaProposalDismissed(monitoreo, k)) continue;
     var val = buckets && buckets[k];
     monitoreo.pendienteReceta[k] = val != null && String(val).trim() ? String(val).trim() : '';
   }
@@ -257,6 +262,7 @@ export function confirmMedField(monitoreo, key) {
   if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === 'object') {
     monitoreo.pendienteReceta[key] = '';
   }
+  clearRecetaProposalDismissedKey(monitoreo, key);
 }
 
 /**
@@ -267,6 +273,7 @@ export function discardMedProposal(monitoreo, key) {
   if (!monitoreo || !monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== 'object') return;
   if (MED_FIELD_KEYS.includes(/** @type {typeof MED_FIELD_KEYS[number]} */ (key))) {
     monitoreo.pendienteReceta[key] = '';
+    ensureRecetaProposalDismissed(monitoreo)[key] = true;
   }
 }
 
@@ -297,6 +304,7 @@ export function confirmDietProposal(monitoreo) {
   /** @type {Record<string, boolean>} */ (monitoreo.confirmado).dieta = true;
   clearDietPending(monitoreo);
   clearDietOptions(monitoreo);
+  clearRecetaProposalDismissedKey(monitoreo, 'dieta');
 }
 
 export function discardDietProposal(monitoreo) {
@@ -305,6 +313,7 @@ export function discardDietProposal(monitoreo) {
     monitoreo.pendienteReceta[k] = '';
   });
   clearDietOptions(monitoreo);
+  ensureRecetaProposalDismissed(monitoreo).dieta = true;
 }
 
 export function confirmAllMedProposals(monitoreo) {

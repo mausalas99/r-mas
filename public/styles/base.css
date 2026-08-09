@@ -1057,7 +1057,7 @@ html.dark .avatar img {
 #update-modal .modal { border-radius: var(--radius-xl); }
 .type-mono { font-family: var(--font-mono); }
 #m-registro,
-#m-registro-manual,
+#m-registro-list .m-registro-row-input,
 #lab-output-box .out-line,
 #lab-output-box .out-indent {
   font-family: var(--font-mono);

@@ -39,22 +39,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.8](https://github.com/mausalas99/r-mas/releases/tag/v8.0.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.0.9](https://github.com/mausalas99/r-mas/releases/tag/v8.0.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 8.0.9 (reposición K + ventilatorio aire ambiente)
 
+- **Reposición de potasio** — Agrupa K IV en NM con duración de infusión del diluyente.
+- **Aire ambiente** — Sin avisos falsos de PaFi/gasometría en EA.
+- **Insulina preprandial** — Esquema SC agrupado en Manejo, EA y censo.
+- **Nube** — Pull D1-antes-KV + reintento 503; fetch por IPC sin cambiar `app://rplus` (Recuérdame intacto).
+- **Pack** — `data/release-notes-highlights.mjs` en asar; gate anti-crash de imports fuera de `public/`.
 
-
-
-
-
-
-
-
-
-
-
+Notas: `docs/RELEASE_NOTES_8.0.9.txt`.
 ## R+ 8.0.8 (EA ventilatorio + dieta parenteral + KV lite)
 
 - **Soporte respiratorio** — Estado Actual con modalidades, parámetros y cálculos (PaFi, driving pressure, ROX).

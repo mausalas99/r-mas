@@ -101,12 +101,11 @@ export function scheduleDeferredUiInits(showToast) {
       mod.initProductivityKeyboardShortcuts();
     });
   });
-  _rpcDeferInit(function () {
-    void import('./app-shell-keyboard.mjs').then(function (mod) {
-      mod.initShellKeyboardShortcuts(showToast);
-    });
-    void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
-      mod.initKeyboardShortcutsNudge(showToast);
-    });
+  // Shell shortcuts: wire as soon as shell boots (no second idle defer — sala/EA forms keep focus in inputs).
+  void import('./app-shell-keyboard.mjs').then(function (mod) {
+    mod.initShellKeyboardShortcuts(showToast);
+  });
+  void import('./keyboard-shortcuts-nudge.mjs').then(function (mod) {
+    mod.initKeyboardShortcutsNudge(showToast);
   });
 }

@@ -2,9 +2,9 @@ import { esc } from '../../dom-escape.mjs';
 import { readRpcSettings } from '../../clinical-settings.mjs';
 import { normalizeUsername } from '../../clinical-username.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
-import { hasElevatedTeamPrivileges } from '../../clinical-privileges.mjs';
 import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
+import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -141,7 +141,6 @@ export function connectedViewsHtml({
     ? String(adminHtml || '').trim() ||
       '<div class="cloud-sync-admin-host" data-cloud-admin-host></div>'
     : '';
-  const showOps = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   const statusBody =
     '<div class="cloud-sync-status-sheet">' +
     statusIdentityHtml(cloudUser) +
@@ -154,10 +153,7 @@ export function connectedViewsHtml({
 
   let guardiaRows =
     optionsRow('iPad / R+ Móvil', 'QR y enlace permanente', 'mobile') +
-    optionsRow('Equipo', 'Mi rotación', 'equipo');
-  if (showOps) {
-    guardiaRows += optionsRow('Operaciones', 'Equipos y censo del turno', 'ops');
-  }
+    optionsRow('Equipo', '@usuario, equipos y sala', 'equipo');
   let cuentaRows = optionsRow('Cuenta', 'Recuperación y sesión', 'cuenta');
   if (showAdmin) {
     cuentaRows += optionsRow('Administración', 'Usuarios, salas y clave admin', 'admin');
@@ -181,13 +177,6 @@ export function connectedViewsHtml({
       'iPad / R+ Móvil',
       '<div class="cloud-sync-mobile-invite-host" data-cloud-mobile-invite-host></div>'
     ) +
-    (showOps
-      ? viewBlock(
-          'ops',
-          'Operaciones',
-          '<div class="cloud-sync-ops-host" data-cloud-ops-host aria-hidden="true"></div>'
-        )
-      : '') +
     viewBlock('cuenta', 'Cuenta', cuentaBodyHtml(cloudUser)) +
     (showAdmin ? viewBlock('admin', 'Administración', adminHost) : '') +
     viewBlock(
@@ -305,15 +294,19 @@ function syncConexionModalChrome(view) {
   }
   if (icon) icon.hidden = !isHome;
   modal.classList.toggle('connection-dropdown-modal--subview', !isHome);
+  modal.classList.toggle('connection-dropdown-modal--equipo', view === 'equipo');
 }
 
 /**
  * @param {HTMLElement} section
  * @param {string} view
- * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onNube?: () => void | Promise<void> }} [hooks]
+ * @param {{ onAdmin?: () => void | Promise<void>, onMobile?: () => void | Promise<void>, onNube?: () => void | Promise<void>, onEquipo?: () => void | Promise<void>, onStatusHome?: () => void }} [hooks]
  */
 export function applyConexionView(section, view, hooks) {
-  const next = String(view || 'status').trim() || 'status';
+  let next = String(view || 'status').trim() || 'status';
+  if (next !== 'status' && !section.querySelector('[data-cloud-view="' + next + '"]')) {
+    next = 'status';
+  }
   section.dataset.cloudView = next;
   section.querySelectorAll('[data-cloud-view]').forEach(function (el) {
     el.hidden = el.getAttribute('data-cloud-view') !== next;
@@ -322,10 +315,14 @@ export function applyConexionView(section, view, hooks) {
   const head = section.querySelector('.cloud-sync-conexion-head');
   if (head && section.querySelector('[data-cloud-views]')) {
     head.hidden = next !== 'status';
+    if (next === 'status' && typeof hooks?.onStatusHome === 'function') {
+      hooks.onStatusHome();
+    }
   }
   // Avoid "Conexión guardia" + body "Opciones" double chrome.
   syncConexionModalChrome(next);
   syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
+  if (next !== 'equipo') setClinicalTeamsEmbedHost(null);
   if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
     void hooks.onAdmin();
   }
@@ -334,5 +331,8 @@ export function applyConexionView(section, view, hooks) {
   }
   if (next === 'nube' && typeof hooks?.onNube === 'function') {
     void hooks.onNube();
+  }
+  if (next === 'equipo' && typeof hooks?.onEquipo === 'function') {
+    void hooks.onEquipo();
   }
 }

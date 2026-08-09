@@ -43,16 +43,42 @@ describe('clinical-onboarding-main', () => {
     assert.ok(fetchIdx >= 0 && gateIdx > fetchIdx);
   });
 
-  it('showMainClinicalOnboarding loads teams before evaluating onboarding shell', async () => {
+  it('showMainClinicalOnboarding fast-paths sync mode before team fetch', async () => {
     const mainSrc = await import('node:fs').then((fs) =>
       fs.readFileSync(new URL('./clinical-onboarding-main.mjs', import.meta.url), 'utf8')
     );
     const start = mainSrc.indexOf('async function showMainClinicalOnboardingBody');
     assert.ok(start >= 0);
-    const body = mainSrc.slice(start, start + 1400);
-    assert.match(body, /fetchClinicalTeamsFromDb/);
+    const body = mainSrc.slice(start, start + 900);
+    assert.match(body, /needsClinicalSyncModeChoice/);
+    const syncIdx = body.indexOf('needsClinicalSyncModeChoice');
     const fetchIdx = body.indexOf('fetchClinicalTeamsFromDb');
-    const gateIdx = body.indexOf('needsOnboardingShell');
-    assert.ok(fetchIdx >= 0 && gateIdx > fetchIdx);
+    assert.ok(syncIdx >= 0 && fetchIdx > syncIdx);
+  });
+
+  it('showMainClinicalOnboarding animates boot progress before rendering form', async () => {
+    const mainSrc = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('./clinical-onboarding-main.mjs', import.meta.url), 'utf8')
+    );
+    assert.match(mainSrc, /animateOnboardingBootComplete/);
+    assert.match(mainSrc, /ensureOnboardingBootLoading/);
+  });
+
+  it('hideMainClinicalOnboarding notifies app shell to resume deferred boot', async () => {
+    const mainSrc = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('./clinical-onboarding-main.mjs', import.meta.url), 'utf8')
+    );
+    assert.match(mainSrc, /rpc-clinical-onboarding-finished/);
+  });
+
+  it('app.js no pre-marca deferredShellBootDone antes de runDeferredShellAfterOnboarding', async () => {
+    const appSrc = await import('node:fs').then((fs) =>
+      fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8')
+    );
+    assert.doesNotMatch(
+      appSrc,
+      /if \(!onboardingBootActive\) \{\s*deferredShellBootDone = true;\s*runDeferredShellAfterOnboarding\(\);/
+    );
+    assert.match(appSrc, /if \(!onboardingBootActive\) \{\s*runDeferredShellAfterOnboarding\(\);/);
   });
 });

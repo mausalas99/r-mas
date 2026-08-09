@@ -6,8 +6,10 @@ const {
   layoutRows,
   measureRowLineCount,
   pageTableMetrics,
+  tableLayout,
   wrapLabsCellLines,
   wrapPlainCellLines,
+  wrapPacienteCellLines,
 } = require('./generate-censo.js');
 
 function makeRow(n) {
@@ -57,9 +59,9 @@ test('labs largos aumentan altura de fila sin truncar líneas', async () => {
     return '29/05/2026 BH Hb ' + (5 + i * 0.1).toFixed(1) + '* Hto ' + (18 + i) + '*';
   }).join('\n');
 
-  var longLines = measureRowLineCount(font, fontBold, longLabs, layoutCols);
-  var shortLines = measureRowLineCount(font, fontBold, shortLabs, layoutCols);
-  assert.ok(longLines > shortLines);
+  var longMeasure = measureRowLineCount(font, fontBold, longLabs, layoutCols);
+  var shortMeasure = measureRowLineCount(font, fontBold, shortLabs, layoutCols);
+  assert.ok(longMeasure.lineCount > shortMeasure.lineCount);
 
   var pageLayouts = layoutRows([shortLabs, longLabs], font, fontBold, layoutCols);
   assert.ok(pageLayouts[0].heights[1] > pageLayouts[0].heights[0]);
@@ -97,5 +99,97 @@ test('pendientes largos se envuelven sin elipsis', async () => {
   lines.forEach(function (ln) {
     assert.doesNotMatch(ln, /…$/);
     assert.ok(font.widthOfTextAtSize(ln, 8.25) <= innerW + 0.5);
+  });
+});
+
+function makeGuardiaRow(n, overrides) {
+  var base = {
+    num: String(n),
+    cama: '21' + n + '-' + n,
+    pacienteNombre: 'PACIENTE LARGO NOMBRE ' + n,
+    pacienteMeta: '1234567-' + n + '\n40 años',
+    dx: 'DIAGNOSTICO PRINCIPAL + SECUNDARIO EN ESTUDIO',
+    meds: 'ATORVASTATINA\nLOSARTAN\nONDANSETRON',
+    labs:
+      '09/08/2026\n' +
+      'BH Hb 7.92* Hto 26.5* VCM 79* HCM 23.8* Leu 5.44 Neu 4.29 Eos 0.335 Plt 240\n' +
+      'BH ext Eri 3.33* CHCM 29.9* RDW 19.4* VPM 7.8 Lin# 0.34 Mono# 0.423 Baso# 0.051\n' +
+      'QS Glu 141* Cr 0.7 eTFG 91 BUN 15 AU 8.4* COL 78* TGL 197*\n' +
+      'ESC Na 135 Cl 103 K 4 Ca 8.6 F 3.6\n' +
+      'PFHs Alb 2.9* AST 12* ALT 8 FA 55 Prot 4.8* BT 0.4 BD 0.1 BI 0.3 LDH 112 Amil 15*',
+    signosCol: 'T°: 36.5 °C\nFC: 61 LPM\nFR: 17 RPM\nTA: 115/70 MMHG\nSAT: 98% AL AIRE AMBIENTE',
+    ioCol: 'I: 980 CC\nE: NO CUANTIFICADA\nB: +190 CC\nEVAC: 2',
+    accesos: '',
+    cultivos: '',
+    pendientes: '',
+  };
+  return Object.assign(base, overrides || {});
+}
+
+test('4 pacientes densos caben en una página sin columnas vacías', async () => {
+  var rows = [
+    makeGuardiaRow(1, {
+      pacienteNombre: 'MANUEL VAZQUEZ REYNA',
+      pacienteMeta: '1963670-6\n83 años',
+    }),
+    makeGuardiaRow(2, {
+      pacienteNombre: 'FRANCISCO SEBASTIAN RUIZ AVILA',
+      pacienteMeta: '2169877-0\n33 años',
+      labs:
+        makeGuardiaRow(2).labs +
+        '\nGASES pH 7.36 pCO2 35* pO2 51* Lactato 0.6 Bica 19.8* AG 8.3 AGc 12.8* Delta-Delta 0.2',
+    }),
+    makeGuardiaRow(3, {
+      pacienteNombre: 'FABIOLA MARISOL CASTAÑEDA GARAY',
+      pacienteMeta: '2227949-0\n29 años',
+    }),
+    makeGuardiaRow(4, {
+      pacienteNombre: 'VERONICA HERNANDEZ HILARIA',
+      pacienteMeta: '2232113-5\n48 años',
+      labs:
+        makeGuardiaRow(4).labs +
+        '\nGASES pH 7.36 pCO2 22* pO2 57* Lactato 0.5 Bica 12.4* AG 17.1* AGc 22.3* Delta-Delta 0.9',
+    }),
+  ];
+
+  var pdfDoc = await PDFDocument.create();
+  var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  var fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  var layout = tableLayout(rows);
+  assert.equal(
+    layout.cols.some(function (c) {
+      return c.key === 'accesos';
+    }),
+    false
+  );
+
+  var pages = layoutRows(rows, font, fontBold, layout);
+  assert.equal(pages.length, 1);
+  assert.equal(pages[0].rows.length, 4);
+
+  var buf = await renderCensusPdf({
+    header: { mes: 'AGOSTO 2026', fecha: '09/08/2026', servicio: 'MI' },
+    rows: rows,
+  });
+  var doc = await PDFDocument.load(buf);
+  assert.equal(doc.getPageCount(), 1);
+});
+
+test('nombre de paciente se envuelve sin elipsis', async () => {
+  var pdfDoc = await PDFDocument.create();
+  var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  var fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  var innerW = 90;
+  var lines = wrapPacienteCellLines(
+    font,
+    fontBold,
+    'FRANCISCO SEBASTIAN RUIZ AVILA\n2169877-0\n33 años',
+    innerW,
+    0
+  );
+  assert.ok(lines.length >= 2);
+  assert.match(lines.join(' '), /FRANCISCO SEBASTIAN RUIZ AVILA/);
+  lines.forEach(function (ln) {
+    assert.doesNotMatch(ln, /…$/);
   });
 });

@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 14;
+export const CURRICULUM_VERSION = 16;
 
 export const SALA_CHAPTERS = [
   {

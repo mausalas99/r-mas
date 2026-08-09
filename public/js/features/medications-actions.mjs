@@ -26,6 +26,7 @@ import {
   pruneEstadoClinicoMedsFromReceta,
   syncRecetaProposalsFromSoapSelection,
 } from "./estado-actual-meds.mjs";
+import { clearRecetaProposalDismissed, clearRecetaProposalDismissedKey } from "./estado-actual-meds-core.mjs";
 import { syncMonitoreoInsulinPumpFromReceta } from "./estado-actual-insulin-pump.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import {
@@ -45,6 +46,7 @@ import {
   setMedOutputTabState,
 } from "./medications-runtime-state.mjs";
 import { insulinRescateItemsFromList, INSULIN_RESCATE_GROUP_ID } from "../insulin-rescate-display.mjs";
+import { insulinPrandialItemsFromList, INSULIN_PRANDIAL_GROUP_ID } from "../insulin-prandial-display.mjs";
 import { getMedNotaSelMap, manejoDiaOpts } from "./medications-utils.mjs";
 import { closeMedRecetaPasteModal } from "./medications-paste-modal.mjs";
 import { patchMedRecetaRowSoapUi } from "./medications-panel-cache.mjs";
@@ -89,6 +91,18 @@ function toggleInsulinRescateGroupSelection(activeId, selected) {
   });
 }
 
+function toggleInsulinPrandialGroupSelection(activeId, selected) {
+  var block = medRecetaByPatient[activeId];
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  var m = getMedNotaSelMap(activeId);
+  insulinPrandialItemsFromList(items).forEach(function (it) {
+    var id = String(it.id || "");
+    if (!id) return;
+    if (selected) m[id] = true;
+    else delete m[id];
+  });
+}
+
 export function toggleMedRecetaInsulinRescateParaNota(selected) {
   var activeId = rt.getActiveId();
   if (!activeId) return;
@@ -102,6 +116,27 @@ export function toggleMedRecetaInsulinRescateSuspendido(suspended) {
   var activeId = rt.getActiveId();
   if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
   insulinRescateItemsFromList(medRecetaByPatient[activeId].items).forEach(function (it) {
+    it.suspendido = !!suspended;
+  });
+  saveState();
+  invalidateEaPanelCache();
+  invalidateInnerTabRenderCache("estadoActual");
+  renderMedRecetaPanel();
+}
+
+export function toggleMedRecetaInsulinPrandialParaNota(selected) {
+  var activeId = rt.getActiveId();
+  if (!activeId) return;
+  toggleInsulinPrandialGroupSelection(activeId, selected);
+  bustMedPanelCache();
+  if (!patchMedRecetaRowSoapUi(INSULIN_PRANDIAL_GROUP_ID)) renderMedRecetaPanel();
+  else renderMedNotaFooter();
+}
+
+export function toggleMedRecetaInsulinPrandialSuspendido(suspended) {
+  var activeId = rt.getActiveId();
+  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
+  insulinPrandialItemsFromList(medRecetaByPatient[activeId].items).forEach(function (it) {
     it.suspendido = !!suspended;
   });
   saveState();
@@ -241,6 +276,11 @@ function mediLlevarASOAPToEstadoActual(activeId, buckets) {
     return;
   }
   ensureMonitoreo(patient);
+  MED_FIELD_KEYS.forEach(function (k) {
+    if (buckets[k] && String(buckets[k]).trim()) {
+      clearRecetaProposalDismissedKey(patient.monitoreo, k);
+    }
+  });
   applyRecetaProposal(patient.monitoreo, buckets);
   saveState();
   invalidateEaPanelCache();
@@ -358,6 +398,7 @@ function syncEaMedsFromProcessedReceta(activeId) {
   });
   if (!patient) return;
   ensureMonitoreo(patient);
+  clearRecetaProposalDismissed(patient.monitoreo);
   var block = medRecetaByPatient[activeId];
   var items = block && Array.isArray(block.items) ? block.items : [];
   var fecha = block && block.fechaActualizacion ? String(block.fechaActualizacion).trim() : '';

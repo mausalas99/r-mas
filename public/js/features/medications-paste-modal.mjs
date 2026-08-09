@@ -57,6 +57,7 @@ export function openMedRecetaPasteModal() {
 }
 
 export function closeMedRecetaPasteModal() {
+  if (typeof document === 'undefined') return;
   var activeId = rt.getActiveId();
   if (activeId) stashMedInputForPatient(activeId);
   var bd = document.getElementById("med-receta-paste-modal");

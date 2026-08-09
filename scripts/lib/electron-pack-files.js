@@ -1,6 +1,7 @@
 /**
  * Lista canónica de electron-builder `build.files` y comprobación del grafo
  * de require desde main.js (arranque Electron; server.js es solo dev).
+ * Also gates renderer imports that escape `public/` (e.g. data/release-notes).
  *
  *   node scripts/lib/electron-pack-files.js          # validar
  *   node scripts/lib/electron-pack-files.js --write  # actualizar package.json
@@ -127,6 +128,69 @@ function extraPatternForUncoveredFile(rel) {
 }
 
 /**
+ * Walk production renderer sources under public/js (skip *.test.*).
+ * @param {string} dir
+ * @param {string[]} out
+ */
+function walkRendererSourceFiles(dir, out = []) {
+  if (!fs.existsSync(dir)) return out;
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      walkRendererSourceFiles(abs, out);
+      continue;
+    }
+    if (!/\.(mjs|js|cjs)$/.test(ent.name)) continue;
+    if (/\.test\.(mjs|js|cjs)$/.test(ent.name)) continue;
+    out.push(abs);
+  }
+  return out;
+}
+
+/** @param {string} src */
+function localEsmImportsFromSource(src) {
+  const out = [];
+  // Single-line import/export … from '…'
+  for (const m of src.matchAll(/(?:import|export)\s+(?:[^'"\n;]+?\s+from\s+)['"](\.[^'"]+)['"]/g)) {
+    out.push(m[1]);
+  }
+  // Multi-line: export { … } from '…' / import { … } from '…'
+  for (const m of src.matchAll(/(?:import|export)\s*\{[\s\S]*?\}\s*from\s*['"](\.[^'"]+)['"]/g)) {
+    out.push(m[1]);
+  }
+  // Side-effect: import './x.mjs'
+  for (const m of src.matchAll(/import\s*['"](\.[^'"]+)['"]/g)) {
+    out.push(m[1]);
+  }
+  for (const m of src.matchAll(/import\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g)) {
+    out.push(m[1]);
+  }
+  return out;
+}
+
+/**
+ * Renderer modules under public/js that import paths outside public/
+ * (e.g. data/release-notes-highlights.mjs). Those files must ship in asar.
+ * @param {string} root
+ * @returns {string[]} relative paths from repo root
+ */
+function collectRendererExternalImports(root) {
+  const publicRoot = path.join(root, 'public');
+  const jsRoot = path.join(publicRoot, 'js');
+  const found = new Set();
+  for (const abs of walkRendererSourceFiles(jsRoot)) {
+    const src = fs.readFileSync(abs, 'utf8');
+    for (const spec of localEsmImportsFromSource(src)) {
+      const target = resolveLocalRequire(abs, spec, root);
+      if (!target) continue;
+      if (target.startsWith(publicRoot + path.sep) || target === publicRoot) continue;
+      found.add(path.relative(root, target).replace(/\\/g, '/'));
+    }
+  }
+  return [...found].sort();
+}
+
+/**
  * @param {string} root
  * @returns {string[]}
  */
@@ -141,6 +205,7 @@ function canonicalBuildFiles(root) {
     }
     runtime.push(...collectRuntimeRequires(entryAbs, root));
   }
+  runtime.push(...collectRendererExternalImports(root));
   for (const rel of runtime) {
     if (filePatternCovers(rel, patterns)) continue;
     const extra = extraPatternForUncoveredFile(rel);
@@ -242,10 +307,11 @@ function assertRuntimeCoveredByPatterns(root) {
   const patterns = canonicalBuildFiles(root);
   const runtime = [];
   runtime.push(...collectRuntimeRequires(path.join(root, 'main.js'), root));
+  runtime.push(...collectRendererExternalImports(root));
   const uncovered = runtime.filter((rel) => !filePatternCovers(rel, patterns));
   if (uncovered.length) {
     throw new Error(
-      `Módulos de arranque sin cobertura en build.files:\n${uncovered.map((r) => `  - ${r}`).join('\n')}`
+      `Módulos de arranque/renderer sin cobertura en build.files:\n${uncovered.map((r) => `  - ${r}`).join('\n')}`
     );
   }
   return { patterns, runtime };
@@ -283,6 +349,7 @@ module.exports = {
   DEV_ONLY_RUNTIME_FILES,
   filePatternCovers,
   collectRuntimeRequires,
+  collectRendererExternalImports,
   canonicalBuildFiles,
   canonicalAsarUnpack,
   ensureElectronPackFiles,

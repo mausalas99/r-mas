@@ -12,9 +12,18 @@ import {
   shouldReturnSnapshotPull,
 } from './pull-strategy.js';
 import { QUOTAS } from './quotas.js';
+import {
+  checkMutationPushRateLimit,
+  tryLegacyBulkLabBackfillAck,
+  validateMutationRequest,
+} from './mutation-guard.mjs';
 import { notifyRoomRevision } from './room-sync-notify.js';
 import { getCachedRoomRevision } from './kv-revision-cache.mjs';
 import { userFromAuthHeader } from './session.js';
+import {
+  filterRoomStateLabSidecarsForMobile,
+  isLabSetWithinMobileHistoryWindow,
+} from './mobile-lab-window.js';
 
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
 const MUTATION_COMMIT_ATTEMPTS = 5;
@@ -242,8 +251,17 @@ export async function handleSync(request, env, roomId, sub) {
 
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handleMutations(request, env, db, roomId) {
+  checkMutationPushRateLimit(roomId);
   const { user, room } = await requireMember(db, request, roomId);
-  const body = await parseJsonBody(request);
+  const bodyText = await request.text();
+  const bodyBytes = new TextEncoder().encode(bodyText).length;
+  /** @type {Record<string, unknown>} */
+  let body;
+  try {
+    body = JSON.parse(bodyText);
+  } catch {
+    throw new SyncError('invalid_request', 'JSON inválido.');
+  }
   const clientMutationId = String(body?.clientMutationId || '').trim();
   const baseRevision = Number(body?.baseRevision ?? 0);
   const ops = body?.ops;
@@ -251,6 +269,16 @@ async function handleMutations(request, env, db, roomId) {
   if (!clientMutationId) {
     throw new SyncError('invalid_request', 'clientMutationId requerido.');
   }
+
+  const legacyAck = tryLegacyBulkLabBackfillAck(
+    clientMutationId,
+    ops,
+    Number(room.revision),
+    baseRevision
+  );
+  if (legacyAck) return legacyAck;
+
+  validateMutationRequest(body, bodyBytes);
   validateOpsSize(ops);
 
   const prior = await loadPriorMutation(db, roomId, clientMutationId);
@@ -315,16 +343,27 @@ async function handleMutations(request, env, db, roomId) {
   );
 }
 
+/** @param {URL} url */
+function isMobileLabPullRequest(url) {
+  return url.searchParams.get('mobile') === '1';
+}
+
+/** @param {unknown[]} ops @param {Date} now */
+function filterPullOpsForMobileLabWindow(ops, now) {
+  if (!Array.isArray(ops)) return ops;
+  return ops.filter((op) => {
+    const path = String(op?.path || '');
+    if (!path.startsWith('labSidecars/')) return true;
+    return isLabSetWithinMobileHistoryWindow(op?.value, now);
+  });
+}
+
 /** @param {Request} request @param {{ WORKER_DATA_KEY?: string, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handlePull(request, env, db, roomId) {
   await requireMember(db, request, roomId);
   const url = new URL(request.url);
   const since = Number(url.searchParams.get('since') ?? 0);
-
-  const cachedRevision = await getCachedRoomRevision(env.CACHE, roomId);
-  if (cachedRevision != null && since >= cachedRevision) {
-    return Response.json({ revision: cachedRevision, ops: [] });
-  }
+  const mobileLabWindow = isMobileLabPullRequest(url);
 
   const room = await db
     .prepare('SELECT revision FROM rooms WHERE id = ?')
@@ -339,15 +378,21 @@ async function handlePull(request, env, db, roomId) {
     return Response.json({ revision, ops: [] });
   }
 
+  const cachedRevision = await getCachedRoomRevision(env.CACHE, roomId);
+  if (cachedRevision != null && since >= cachedRevision && cachedRevision >= revision) {
+    return Response.json({ revision, ops: [] });
+  }
+
   const gap = revision - since;
   // CRITICAL: check gap BEFORE selecting mutations. Loading 1000+ ops_json rows
   // (tens of MB) into the D1 isolate exceeds memory and resets the DB.
   if (shouldReturnSnapshotPull(gap)) {
     const { state } = await loadRoomState(env, db, roomId);
+    const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
     return Response.json({
       revision,
       needSnapshot: true,
-      state,
+      state: payload,
     });
   }
 
@@ -369,10 +414,11 @@ async function handlePull(request, env, db, roomId) {
     cumulativeBytes += new TextEncoder().encode(chunk).length;
     if (shouldReturnSnapshotPull(gap, cumulativeBytes)) {
       const { state } = await loadRoomState(env, db, roomId);
+      const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
       return Response.json({
         revision,
         needSnapshot: true,
-        state,
+        state: payload,
       });
     }
     const parsed = JSON.parse(chunk);
@@ -381,12 +427,14 @@ async function handlePull(request, env, db, roomId) {
 
   if (!ops.length && since < revision) {
     const { state } = await loadRoomState(env, db, roomId);
+    const payload = mobileLabWindow ? filterRoomStateLabSidecarsForMobile(state) : state;
     return Response.json({
       revision,
       needSnapshot: true,
-      state,
+      state: payload,
     });
   }
 
-  return Response.json({ revision, ops });
+  const outOps = mobileLabWindow ? filterPullOpsForMobileLabWindow(ops) : ops;
+  return Response.json({ revision, ops: outOps });
 }

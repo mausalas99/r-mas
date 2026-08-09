@@ -16,10 +16,14 @@ export async function notifyRoomRevision(env, roomId, revision) {
 
   try {
     const stub = hub.get(hub.idFromName(id));
-    await stub.fetch('https://room-sync-hub/notify', {
-      method: 'POST',
-      body: JSON.stringify({ revision: rev, at: new Date().toISOString() }),
-    });
+    void stub
+      .fetch('https://room-sync-hub/notify', {
+        method: 'POST',
+        body: JSON.stringify({ revision: rev, at: new Date().toISOString() }),
+      })
+      .catch((err) => {
+        console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
+      });
   } catch (err) {
     console.warn('[rplus-sync] room revision notify failed:', err?.message || err);
   }

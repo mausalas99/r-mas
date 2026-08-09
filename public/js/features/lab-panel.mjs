@@ -1,4 +1,8 @@
-// Laboratorio pane — barrel: runtime registration, chrome, re-exports
+import {
+  toggleLabMobileSyncDiag,
+  copyLabMobileSyncDiag,
+  forceLabMobileSyncPull,
+} from './cloud-mobile/lab-sync-diagnostics.mjs';
 import { isPaseMode } from './chrome.mjs';
 import {
   closeLabSomeTablesModal,
@@ -265,4 +269,7 @@ export const windowHandlers = {
   openLabManualEntryModal,
   closeLabManualEntryModal,
   confirmLabManualEntry,
+  toggleLabMobileSyncDiag,
+  copyLabMobileSyncDiag,
+  forceLabMobileSyncPull,
 };

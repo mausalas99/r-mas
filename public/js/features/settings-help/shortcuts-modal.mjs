@@ -1,6 +1,6 @@
-/** Shortcuts cheat sheet modal — header button + hold ⌘/Ctrl peek. */
+/** Shortcuts cheat sheet modal — header button + ⌘/ (Ctrl+/). */
 import { esc } from '../patients-html.mjs';
-import { SHORTCUT_GROUPS, modKeyLabel, SHORTCUTS_HOLD_MS } from './shortcuts-data.mjs';
+import { SHORTCUT_GROUPS, modKeyLabel } from './shortcuts-data.mjs';
 import { openQuickHelp } from './help-content.mjs';
 
 var peekMode = false;
@@ -62,11 +62,8 @@ function renderShortcutsBody() {
   }).join('');
   var hintMod = document.getElementById('shortcuts-modal-hint-mod');
   if (hintMod) hintMod.textContent = mod;
-  var holdSec = String(Math.round(SHORTCUTS_HOLD_MS / 1000));
-  var hintSec = document.getElementById('shortcuts-hint-seconds');
-  if (hintSec) hintSec.textContent = holdSec;
   var hdrBtn = document.getElementById('btn-header-shortcuts');
-  if (hdrBtn) hdrBtn.title = 'Atajos de teclado (mantén ' + mod + ' ' + holdSec + ' s)';
+  if (hdrBtn) hdrBtn.title = 'Atajos de teclado (' + mod + '/)';
   bodyRendered = true;
 }
 

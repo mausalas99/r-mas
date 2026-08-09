@@ -22,6 +22,8 @@ import {
   destroyPatientActiveZoneVirtual,
   trySilentVirtualPatientListPatch,
 } from '../patient-list-virtual.mjs';
+import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
+import { openCompleteAdmissionModal } from './patients-modal.mjs';
 import { rt } from './patients-runtime-state.mjs';
 import { patientsBridge } from './patients-bridge.mjs';
 import {
@@ -421,6 +423,15 @@ function ensurePatientListClickDelegation() {
     if (!card) return;
     if (ev.target.closest('button, a[href], input, textarea, select')) return;
     var pid = card.getAttribute('data-patient-id');
-    if (pid) patientsBridge.selectPatient(pid);
+    if (!pid) return;
+    var patient = patients.find(function (p) {
+      return p && String(p.id) === String(pid);
+    });
+    patientsBridge.selectPatient(pid);
+    if (patient && isPatientAdmissionIncomplete(patient, rt.getSettings())) {
+      window.setTimeout(function () {
+        openCompleteAdmissionModal(pid);
+      }, 0);
+    }
   });
 }

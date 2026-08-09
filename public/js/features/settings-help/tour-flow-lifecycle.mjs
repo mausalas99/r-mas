@@ -58,14 +58,14 @@ async function promptMiRotacionAfterSalaTourIfNeeded(branch) {
   if (!needsTeamOnboarding()) return;
 
   rt.showToast(
-    'Únete a un equipo en Mi rotación. Si acabas de rotar, confirma sala y revisa si debes heredar pacientes de tu equipo anterior.',
+    'Únete a un equipo en ⇄ Conexión → Opciones → Equipo. Si acabas de rotar, confirma sala y revisa si debes heredar pacientes de tu equipo anterior.',
     'info'
   );
 
   const { ensureClinicalPanelSession } = await import('../clinical-panel-host.mjs');
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
-    rt.showToast('Cuando la sesión esté lista, abre Mi rotación en la barra superior.', 'warning');
+    rt.showToast('Cuando la sesión esté lista, abre ⇄ Conexión → Opciones → Equipo.', 'warning');
     return;
   }
 

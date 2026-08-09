@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   labRepoFetch: function(payload) {
     return ipcRenderer.invoke('lab-repo-fetch', payload);
   },
+  cloudSyncFetch: function(payload) {
+    return ipcRenderer.invoke('cloud-sync-fetch', payload);
+  },
   setUpdateChannel: function(channel) {
     ipcRenderer.send('set-update-channel', channel);
   },

@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   rewriteJsAssetPaths,
+  rewriteMobileBootScriptPaths,
   buildMobileIndexHtml,
   isCloudMobileLanStripTarget,
   createCloudMobileLanStripPlugin,
@@ -42,6 +43,19 @@ describe('rewriteJsAssetPaths', () => {
   it('does not double-prefix /mobile/js', () => {
     const src = 'import("/mobile/js/chunks/boot.js")';
     assert.equal(rewriteJsAssetPaths(src), src);
+  });
+});
+
+describe('rewriteMobileBootScriptPaths', () => {
+  it('rewrites bundle and vendor paths for mobile ASSETS', () => {
+    const src =
+      "mod.src = '/js/app.bundle.mjs';\n" +
+      "appendScript('/vendor/chart.umd.min.js', function () {});\n" +
+      'document.head.appendChild(mod);\n';
+    const out = rewriteMobileBootScriptPaths(src, '809-test');
+    assert.match(out, /\/mobile\/js\/app\.bundle\.mjs\?v=809-test/);
+    assert.match(out, /\/mobile\/vendor\/chart\.umd\.min\.js/);
+    assert.match(out, /mod\.onerror/);
   });
 });
 

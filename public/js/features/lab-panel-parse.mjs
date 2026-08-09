@@ -5,7 +5,6 @@ import {
 import {
   buildBulkLabPreview,
   shouldShowBulkLabPreview,
-  extractLabPatientFromBulkBlock,
 } from '../lab-bulk-paste.mjs';
 import {
   openLabBulkPreviewModal,
@@ -14,6 +13,7 @@ import {
 import { rt } from './lab-panel-runtime-state.mjs';
 import { labPanelBridge } from './lab-panel-bridge.mjs';
 import { finalizeBulkLabPaste } from './lab-panel-workbench.mjs';
+import { autoAdmitStubPatientsFromBulkText } from './lab-bulk-stub-admit.mjs';
 import {
   resolveLabOutputFechaBanner,
   updateLabPatientBanner,
@@ -24,27 +24,31 @@ import {
 } from './lab-panel-output-helpers.mjs';
 
 function runFinalizeWithFreshBlocks(text) {
-  var freshBlocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+  var admit = autoAdmitStubPatientsFromBulkText(text, rt.findPatientByRegistro, buildBulkLabPreview);
+  if (admit.created.length) {
+    rt.showToast(
+      admit.created.length +
+        ' paciente' +
+        (admit.created.length === 1 ? '' : 's') +
+        ' agregado' +
+        (admit.created.length === 1 ? '' : 's') +
+        ' al censo — completa ubicación',
+      'success'
+    );
+  }
+  var freshBlocks = admit.blocks;
   var freshTotal = freshBlocks.reduce(function (acc, b) {
     return acc + b.okReportCount;
   }, 0);
   finalizeBulkLabPaste(text, freshBlocks, freshTotal);
 }
 
-/** Un reporte de paciente nuevo: alta directa, sin modal de confirmar. */
+/** Un reporte de paciente nuevo: alta stub + procesar (completar ubicación desde sidebar). */
 function tryOfferAddPatientThenProcess(text, blocks) {
   if (!blocks || blocks.length !== 1) return false;
   var block = blocks[0];
   if (!shouldOfferBulkPreviewAddPatient(block)) return false;
-  if (typeof rt.openAddModalFromLabPatient !== 'function') return false;
-  var labPatient = extractLabPatientFromBulkBlock(block);
-  if (!labPatient) return false;
-  rt.openAddModalFromLabPatient(labPatient, {
-    fromBulkPreview: true,
-    onSaved: function () {
-      runFinalizeWithFreshBlocks(text);
-    },
-  });
+  runFinalizeWithFreshBlocks(text);
   return true;
 }
 

@@ -24,6 +24,10 @@ import {
 } from './session.mjs';
 import { buildCloudMobileBookmarkUrl } from './invite-url.mjs';
 import { resolveCloudMobileActiveRoom } from './resolve-active-room.mjs';
+import {
+  CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
+  withCloudMobileBootTimeout,
+} from './boot-timeout.mjs';
 
 function resolveApiBaseUrl() {
   try {
@@ -316,21 +320,30 @@ export function mountCloudMobileLoginShell(root, { onConnected }) {
       '<p class="rpc-cloud-mobile-modal__sub">Buscando tu sala nube…</p></div>' +
       '<div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center">' +
       '<span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div>';
-    void resolveCloudMobileActiveRoom().then(function (room) {
-      if (room?.id) {
-        onConnected();
-        return;
-      }
-      renderShell(section, 'join', readCloudMobileJoinCode());
-      const code = readCloudMobileJoinCode();
-      if (code) {
-        void joinCloudMobileRoomByCode(code, onConnected).then(function (ok) {
-          if (!ok && !getCloudSyncRoomId()) {
-            renderShell(section, 'join', code);
-          }
-        });
-      }
-    });
+    void withCloudMobileBootTimeout(
+      resolveCloudMobileActiveRoom(),
+      CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
+      'room_resolve_timeout'
+    )
+      .then(function (room) {
+        if (room?.id) {
+          onConnected();
+          return;
+        }
+        renderShell(section, 'join', readCloudMobileJoinCode());
+        const code = readCloudMobileJoinCode();
+        if (code) {
+          void joinCloudMobileRoomByCode(code, onConnected).then(function (ok) {
+            if (!ok && !getCloudSyncRoomId()) {
+              renderShell(section, 'join', code);
+            }
+          });
+        }
+      })
+      .catch(function () {
+        toast('No se pudo contactar la nube. Revisa la red e intenta de nuevo.', 'error');
+        renderShell(section, 'join', readCloudMobileJoinCode());
+      });
     return;
   }
 

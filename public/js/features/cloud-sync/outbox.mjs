@@ -43,11 +43,15 @@ export function createOutbox(deps = {}) {
     if (!clientMutationId) return;
 
     const rows = load().filter((row) => row.clientMutationId !== clientMutationId);
+    const enqueuedAt =
+      item.enqueuedAt != null && Number.isFinite(Number(item.enqueuedAt))
+        ? Number(item.enqueuedAt)
+        : Date.now();
     rows.push({
       clientMutationId,
       ops: Array.isArray(item.ops) ? item.ops : [],
       ...(item.baseRevision != null ? { baseRevision: Number(item.baseRevision) } : {}),
-      enqueuedAt: Date.now(),
+      enqueuedAt,
     });
     save(rows);
   }
@@ -68,5 +72,10 @@ export function createOutbox(deps = {}) {
     save([]);
   }
 
-  return { enqueue, list, remove, clear };
+  /** @param {OutboxEntry[]} nextRows */
+  function replaceAll(nextRows) {
+    save(Array.isArray(nextRows) ? nextRows.slice() : []);
+  }
+
+  return { enqueue, list, remove, clear, replaceAll };
 }

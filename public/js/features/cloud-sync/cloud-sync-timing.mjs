@@ -68,6 +68,12 @@ export function nextCloudPollDelayMs(opts = {}) {
 }
 
 /** @param {unknown} err */
+export function isCloudTransientServerError(err) {
+  const status = Number(err && typeof err === 'object' ? err.status : 0);
+  return status === 502 || status === 503 || status === 504;
+}
+
+/** @param {unknown} err */
 export function isCloudRateLimitError(err) {
   const status = Number(err && typeof err === 'object' ? err.status : 0);
   if (status === 429) return true;
@@ -75,6 +81,11 @@ export function isCloudRateLimitError(err) {
     (err && typeof err === 'object' && (err.data?.message || err.message)) || ''
   );
   return /rate.?limit|too many|429|demasiados intentos/i.test(msg);
+}
+
+/** @param {unknown} err */
+export function isCloudBackoffError(err) {
+  return isCloudTransientServerError(err) || isCloudRateLimitError(err);
 }
 
 /**

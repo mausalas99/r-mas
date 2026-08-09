@@ -12,7 +12,8 @@ function matchesEquiposSearch(hay, term) {
 
 /** @param {string} rowSala @param {string} salaFilter */
 function matchesEquiposSala(rowSala, salaFilter) {
-  return !salaFilter || !rowSala || rowSala === salaFilter;
+  if (!salaFilter) return true;
+  return rowSala === salaFilter;
 }
 
 /** @param {string} activityFlag @param {string} activity */

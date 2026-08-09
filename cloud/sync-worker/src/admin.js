@@ -1,6 +1,6 @@
 import { validatePassword } from './auth.js';
 import { mintRecoveryForUser } from './auth-recovery.js';
-import { SyncError } from './errors.js';
+import { summarizeMutationOpsJson } from './mutation-guard.mjs';
 import { hashPassword } from './password.js';
 import { QUOTAS } from './quotas.js';
 import { randomRoomCode } from './rooms.js';
@@ -226,6 +226,7 @@ async function handleRoomMutations(db, roomId, limit) {
   const mutations = (results ?? []).map((row) => {
     const opsJson = String(row.ops_json ?? '');
     const truncated = opsJson.length > OPS_JSON_TRUNC;
+    const summary = summarizeMutationOpsJson(opsJson);
     return {
       revision: row.revision,
       clientMutationId: row.client_mutation_id,
@@ -233,6 +234,11 @@ async function handleRoomMutations(db, roomId, limit) {
       opsJson: truncated ? opsJson.slice(0, OPS_JSON_TRUNC) : opsJson,
       opsJsonTruncated: truncated,
       createdAt: row.created_at,
+      opCount: summary?.opCount ?? null,
+      totalBytes: summary?.totalBytes ?? null,
+      maxOpBytes: summary?.maxOpBytes ?? null,
+      maxOpPath: summary?.maxOpPath ?? null,
+      paths: summary?.paths ?? null,
     };
   });
 

@@ -60,6 +60,9 @@ function setConnectionDropdownOpen(open) {
   }
 
   if (!open) {
+    void import('./panel-conexion-tour.mjs').then(function (m) {
+      m.resetConexionPanelOnClose();
+    });
     if (bg) closeModalAnimated(bg, finishClose);
     else finishClose();
     return;
@@ -74,7 +77,11 @@ function setConnectionDropdownOpen(open) {
   if (dd) dd.classList.add('open');
   document.body.classList.add('connection-dropdown-open');
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
-  void renderConnectionPanel({ force: true });
+  void renderConnectionPanel({ force: true }).then(function () {
+    return import('./panel-conexion-tour.mjs').then(function (m) {
+      return m.afterConnectionPanelOpened();
+    });
+  });
 }
 
 export function closeConnectionDropdown() {

@@ -242,14 +242,14 @@ function renderLivesyncDesktop(bodyEl, nextBtn) {
   bodyEl.innerHTML =
     '<p style="margin:0;line-height:1.5;">' +
     LIVESYNC_BTN_COPY +
-    ' abre <strong>Conexión</strong>: inicia sesión en Nube y elige la <strong>sala</strong> de tu equipo. En iPad usa el enlace o QR de R+ Móvil.</p>' +
+    ' abre <strong>Conexión</strong>: inicia sesión en Nube y elige la <strong>sala</strong> de tu equipo. En iPad usa el enlace o QR en <strong>Opciones → iPad / R+ Móvil</strong>.</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono ⇄ / Wi‑Fi para abrir el panel; aparece <strong>Siguiente</strong> cuando esté visible.</p>';
   if (stepRequiresUserAction('livesync_desktop')) hideNext(nextBtn);
 }
 
 function renderLivesyncMobile(bodyEl, nextBtn) {
   bodyEl.innerHTML =
-    '<p style="margin:0;line-height:1.5;">En ⇄ Conexión usa <strong>Copiar enlace / QR móvil</strong> y ábrelo en Safari. ' +
+    '<p style="margin:0;line-height:1.5;">En <strong>⇄ Conexión → Opciones → iPad / R+ Móvil</strong> copia el enlace o escanea el QR. ' +
     MOBILE_SCOPE_COPY +
     '</p>' +
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Inicia sesión con la <strong>misma cuenta R+ Cloud</strong> y la misma sala que en el escritorio.</p>';

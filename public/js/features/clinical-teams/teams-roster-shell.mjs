@@ -7,6 +7,7 @@ import {
   showClinicalTeamsPanelShell,
 } from '../clinical-panel-host.mjs';
 import { renderClinicalTeamsPanel } from './teams-roster-render.mjs';
+import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
 
 export function teamsModalEl() {
   return document.getElementById('clinical-teams-backdrop');
@@ -15,6 +16,10 @@ export function teamsModalEl() {
 function isClinicalTeamsPanelOpen() {
   const bd = teamsModalEl();
   return !!(bd && bd.classList.contains('open'));
+}
+
+export function isClinicalTeamsPanelActive() {
+  return isClinicalTeamsPanelOpen() || isEquipoEmbedActive();
 }
 
 /**
@@ -28,7 +33,7 @@ export async function refreshTeamsUiAfterChange(opts = {}) {
   const { refreshClinicalPatientListForScope } = await import('../../clinical-access-runtime.mjs');
   await refreshClinicalPatientListForScope({ allowLanPull: true });
   import('../clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
-  if (isClinicalTeamsPanelOpen()) {
+  if (isClinicalTeamsPanelActive()) {
     if (!opts.force) {
       const { isClinicalTeamsPanelUserInteracting } = await import('./teams-roster-panel-draft.mjs');
       if (isClinicalTeamsPanelUserInteracting()) return;
@@ -42,6 +47,20 @@ export async function refreshTeamsUiAfterChange(opts = {}) {
  *   skipProfileGate — post–Sala tutorial: open join-team UI even if profile onboarding pending.
  */
 export async function openClinicalTeamsPanel(opts = {}) {
+  const { openConexionEquipoPanel } = await import('../cloud-sync/panel-equipo-nav.mjs');
+  await openConexionEquipoPanel({
+    skipProfileGate: opts.skipProfileGate,
+    toast(msg, kind) {
+      if (typeof window.showToast === 'function') window.showToast(msg, kind);
+    },
+  });
+}
+
+/**
+ * Legacy modal host — fallback when ⇄ Conexión no está montado.
+ * @param {{ skipProfileGate?: boolean }} [opts]
+ */
+export async function openClinicalTeamsPanelModal(opts = {}) {
   const bd = teamsModalEl();
   if (!bd) return;
 
@@ -107,7 +126,7 @@ export async function openClinicalTeamsPanel(opts = {}) {
 
 export function closeClinicalTeamsPanel() {
   const bd = teamsModalEl();
-  if (!bd) return;
+  if (!bd?.classList.contains('open')) return;
   closeModalAnimated(bd, function () {
     document.body.classList.remove('clinical-teams-modal-open');
     void import('../lan/panel.mjs')

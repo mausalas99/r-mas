@@ -9,7 +9,12 @@ import {
   pickCensusFields,
   labSetId,
   pushCloudClinicalOpsNow,
+  configureCloudMutateBridge,
+  enqueueCloudLabSidecarsForPatient,
 } from './mutate-bridge.mjs';
+import { buildLabSidecarOpsForPatient } from './mutate-bridge-ops.mjs';
+import { labHistory } from '../../app-state.mjs';
+import { setCloudRoomConnected } from './nube-sync-policy.mjs';
 
 const meta = { actorId: 'user-1', updatedAt: '2026-08-02T12:00:00.000Z' };
 const dir = dirname(fileURLToPath(import.meta.url));
@@ -52,7 +57,7 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(noteOp?.value?.texto, 'Evolución');
     assert.equal(noteOp?.actorId, 'user-1');
     const labOp = ops.find((op) => op.path === 'labSidecars/p1/lab-1');
-    assert.equal(labOp?.value?.sourceText, 'PASTE'.repeat(1000));
+    assert.equal(labOp?.value?.sourceText, undefined);
     assert.ok(labOp?.value?.resLabs);
   });
 
@@ -220,6 +225,65 @@ describe('mutate-bridge op mapping', () => {
     assert.equal(monOp.value.estadoClinico.four, '15');
     assert.equal(ops.some((op) => op.path === 'entries/p1/note'), false);
   });
+
+  it('buildLabSidecarOpsForPatient maps lab history to sidecar paths', () => {
+    const ops = buildLabSidecarOpsForPatient(
+      'p1',
+      [{ id: 'lab-1', fecha: '2026-08-09', resLabs: ['Hb 12'] }],
+      meta
+    );
+    assert.equal(ops.length, 1);
+    assert.equal(ops[0].path, 'labSidecars/p1/lab-1');
+    assert.deepEqual(ops[0].value?.resLabs, ['Hb 12']);
+  });
+
+  it('enqueueCloudLabSidecarsForPatient enqueues only dirty lab sidecar ops', async () => {
+    const queued = [];
+    configureCloudMutateBridge({
+      outbox: {
+        enqueue(item) {
+          queued.push(item);
+        },
+      },
+      getRevision: () => 0,
+      getActorId: () => 'user-1',
+    });
+    const set = { id: 'lab-9', fecha: '2026-08-09', resLabs: ['Na 140'] };
+    labHistory.p1 = [set];
+    setCloudRoomConnected(true);
+    globalThis.localStorage = {
+      store: {},
+      getItem(key) {
+        return this.store[key] ?? null;
+      },
+      setItem(key, value) {
+        this.store[key] = String(value);
+      },
+      removeItem(key) {
+        delete this.store[key];
+      },
+    };
+    try {
+      const { noteCloudLabSidecarsFromState } = await import('./cloud-lab-sidecar-index.mjs');
+      noteCloudLabSidecarsFromState({ labSidecars: { p1: { 'lab-9': set } } });
+      enqueueCloudLabSidecarsForPatient('p1');
+      assert.equal(queued.length, 0);
+      labHistory.p1 = [
+        set,
+        { id: 'lab-10', fecha: '2026-08-08', resLabs: ['Hb 11'] },
+      ];
+      enqueueCloudLabSidecarsForPatient('p1');
+      assert.equal(queued.length, 1);
+      assert.equal(queued[0].clientMutationId, 'labSidecars/p1');
+      assert.ok(queued[0].ops.some((op) => op.path === 'labSidecars/p1/lab-10'));
+      assert.equal(queued[0].ops.some((op) => op.path === 'labSidecars/p1/lab-9'), false);
+    } finally {
+      delete labHistory.p1;
+      delete globalThis.localStorage;
+      setCloudRoomConnected(false);
+      configureCloudMutateBridge(null);
+    }
+  });
 });
 
 describe('pushCloudClinicalOpsNow', () => {
@@ -262,6 +326,10 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     assert.match(mutateBridgeClinicalOpsSrc, /clinical-ops-sync\.mjs/);
   });
 
+  it('pushCloudBundleOps does not backfill all lab sidecars on first debounced push', () => {
+    assert.doesNotMatch(mutateBridgeSrc, /cloudLabBackfillDone/);
+  });
+
   it('pushCloudBundleOps builds from cloud-census-collect without clinicalOps stamp', () => {
     assert.match(mutateBridgeSrc, /collectPatientEntriesForCloudPush/);
     assert.match(mutateBridgeSrc, /collectTodosMapForCloudPush/);
@@ -276,5 +344,12 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
       mutateBridgeSrc.indexOf('export function mapBundleEnvelopeToOps') + 900
     );
     assert.doesNotMatch(bundleFn, /path: 'clinicalOps'/);
+  });
+
+  it('initial connect seed is single outbox path (no parallel direct HTTP census push)', () => {
+    assert.match(mutateBridgeSrc, /scheduleInitialCloudSeed/);
+    assert.match(mutateBridgeSrc, /initialCloudSeedScheduled/);
+    assert.match(mutateBridgeSrc, /enqueueCloudLabSidecarsBackfill/);
+    assert.match(mutateBridgeSrc, /enqueueEntityOps\(`labSidecars\/\$\{patientId\}`/);
   });
 });

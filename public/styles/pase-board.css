@@ -5298,7 +5298,8 @@ html.clinical-onboarding-active #main-area {
 
 .clinical-onboarding-main {
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-modal) + 2);
+  pointer-events: auto;
   flex: 1 1 auto;
   width: 100%;
   max-width: none;
@@ -5430,6 +5431,59 @@ html.clinical-onboarding-active #main-area {
 .clinical-onboarding-status {
   margin: 0;
   color: var(--text-muted);
+}
+
+.clinical-onboard-boot-loader {
+  margin-top: clamp(18px, 3vh, 28px);
+  max-width: 28rem;
+}
+
+.clinical-onboard-boot-loader-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.clinical-onboard-boot-spinner {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in oklab, var(--text) 14%, transparent);
+  border-top-color: var(--accent, #4a52e8);
+  animation: clinical-onboard-boot-spin 0.75s linear infinite;
+}
+
+.clinical-onboard-boot-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text) 10%, transparent);
+  overflow: hidden;
+}
+
+.clinical-onboard-boot-progress-bar {
+  height: 100%;
+  width: 3%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--accent, #4a52e8),
+    color-mix(in oklab, var(--accent, #4a52e8) 70%, white)
+  );
+  will-change: width;
+}
+
+@keyframes clinical-onboard-boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clinical-onboard-boot-spinner {
+    animation: none;
+  }
 }
 
 .clinical-onboard-session-actions {

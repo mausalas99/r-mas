@@ -107,8 +107,8 @@ async function maybeRefreshClinicalOpsDirectory(skipPull, browseSala, homeSala) 
     browseSala,
     homeSala,
   });
-  const bd = document.getElementById('clinical-teams-backdrop');
-  if (!ok || !bd?.classList.contains('open')) return;
+  const { isClinicalTeamsPanelActive } = await import('./teams-roster-shell.mjs');
+  if (!ok || !isClinicalTeamsPanelActive()) return;
   if (isClinicalTeamsPanelUserInteracting()) return;
   void renderClinicalTeamsPanel({ silent: true, skipLanPull: true, preserveDraft: true });
 }

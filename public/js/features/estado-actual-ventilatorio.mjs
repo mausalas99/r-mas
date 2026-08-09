@@ -142,6 +142,20 @@ export function classifySiraSeverity(pafi) {
 }
 
 /**
+ * PaFi / SpO₂/FiO₂ y avisos de gasometría solo con soporte activo o parámetros de VM.
+ * @param {Record<string, unknown>} ec
+ * @returns {boolean}
+ */
+export function ventilatorioLabHintsEligible(ec) {
+  if (soporteTier(ec.soporte) != null) return true;
+  if (parseVentNum(ec.soporteFio2) != null) return true;
+  if (parseVentNum(ec.vmPeep) != null) return true;
+  if (parseVentNum(ec.vmPmeseta) != null) return true;
+  if (parseVentNum(ec.vmVt) != null) return true;
+  return false;
+}
+
+/**
  * @param {Record<string, unknown>} ec
  * @param {{ fr?: unknown, sat?: unknown, pesoKg?: unknown, lab?: { kind?: string | null, pO2?: number | null, pCO2?: number | null, pH?: number | null, sourceLabel?: string } | null }} [ctx]
  */
@@ -157,30 +171,36 @@ export function buildVentilatorioCalcHints(ec, ctx) {
   var peso = resolveIdealWeightKg(ctx.pesoKg);
 
   var hints = [];
+  var labHintsOn = ventilatorioLabHintsEligible(ec);
 
   var pao2ForPafi = null;
-  if (lab && gasometryKindSupportsPafi(lab.kind)) {
-    pao2ForPafi = lab.pO2;
-  } else if (lab && lab.kind === 'venous') {
-    hints.push('Gaso venosa: PaFi no válida — usar SpO₂/FiO₂');
-  } else if (lab && lab.kind === 'unknown' && lab.pO2 != null) {
-    hints.push('Tipo de gaso no identificado — PaFi omitida');
+  var pafi = null;
+  if (labHintsOn) {
+    if (lab && gasometryKindSupportsPafi(lab.kind)) {
+      pao2ForPafi = lab.pO2;
+    } else if (lab && lab.kind === 'venous') {
+      hints.push('Gaso venosa: PaFi no válida — usar SpO₂/FiO₂');
+    } else if (lab && lab.kind === 'unknown' && lab.pO2 != null) {
+      hints.push('Tipo de gaso no identificado — PaFi omitida');
+    }
+
+    pafi = computePafi(pao2ForPafi, fio2);
+    if (pafi != null) {
+      var sev = classifySiraSeverity(pafi);
+      hints.push('PaFi ' + pafi + (sev ? ' (' + sev + ')' : ''));
+      if (pafi < 150) hints.push('PaFi <150: valorar prono');
+      if (pafi < 100) hints.push('PaFi <100: SIRA severo');
+    }
   }
 
-  var pafi = computePafi(pao2ForPafi, fio2);
-  if (pafi != null) {
-    var sev = classifySiraSeverity(pafi);
-    hints.push('PaFi ' + pafi + (sev ? ' (' + sev + ')' : ''));
-    if (pafi < 150) hints.push('PaFi <150: valorar prono');
-    if (pafi < 100) hints.push('PaFi <100: SIRA severo');
-  }
-
-  var sf = computeSpo2Fio2(sat, fio2);
-  if (sf != null) {
-    hints.push('SpO₂/FiO₂ ' + sf);
-    if (pafi == null && sf < 315) hints.push('SpO₂/FiO₂ <315: sospecha SIRA');
-  } else if (sat != null && fio2 == null && soporteTier(ec.soporte) != null) {
-    hints.push('SatO₂ ' + sat + '% — falta FiO₂');
+  if (labHintsOn) {
+    var sf = computeSpo2Fio2(sat, fio2);
+    if (sf != null) {
+      hints.push('SpO₂/FiO₂ ' + sf);
+      if (pafi == null && sf < 315) hints.push('SpO₂/FiO₂ <315: sospecha SIRA');
+    } else if (sat != null && fio2 == null && soporteTier(ec.soporte) != null) {
+      hints.push('SatO₂ ' + sat + '% — falta FiO₂');
+    }
   }
   var dp = computeDrivingPressure(pmeseta, peep);
   if (dp != null) {

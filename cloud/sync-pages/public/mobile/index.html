@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);})();</script>
+<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");if(!g||g.hidden)return;g.innerHTML='<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v809-1786305807301).</p></div><div class="rpc-cloud-mobile-modal__body"><p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>';},18000);})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' http: https: ws: wss:; manifest-src 'self'; base-uri 'self'; form-action 'self'">
@@ -22,17 +22,32 @@
 <script>
 (function () {
   try {
-    if (!window.electronAPI) window.__RPC_WEB_CLINICAL__ = true;
+    var nav = String(navigator.userAgent || '');
+    var qs = String(location.search || '');
+    var isElectronShell =
+      /\bElectron\//i.test(nav) || /(?:^|[?&])rpc-electron=1(?:&|$)/.test(qs);
+    if (!window.electronAPI && !isElectronShell) window.__RPC_WEB_CLINICAL__ = true;
+    if (isElectronShell) window.__RPC_ELECTRON_DESKTOP__ = true;
   } catch (_eWeb) {}
 })();
 (function () {
-  try {
-    if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
-      var f = window.electronAPI.getWindowChromeFlags();
+  function applyElectronChromeClasses() {
+    try {
+      var f = null;
+      if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
+        f = window.electronAPI.getWindowChromeFlags();
+      } else if (window.__RPC_ELECTRON_DESKTOP__) {
+        var plat = String(navigator.platform || '');
+        f = { macTitleBarInset: /Mac/i.test(plat), isWindows: /Win/i.test(plat) };
+      }
       if (f && f.macTitleBarInset) document.documentElement.classList.add('electron-macos-inset-bar');
       if (f && f.isWindows) document.documentElement.classList.add('electron-windows');
-    }
-  } catch (_e) {}
+    } catch (_e) {}
+  }
+  applyElectronChromeClasses();
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', applyElectronChromeClasses);
+  }
 })();
 (function () {
   try {
@@ -167,9 +182,6 @@
 <link rel="stylesheet" href="/mobile/styles/overlays.css?v=hybrid-polish-3">
 <link rel="stylesheet" href="/mobile/styles/cmdk.css">
 <link rel="stylesheet" href="/mobile/styles/mobile-surfaces.css">
-<script src="/mobile/vendor/sortable.min.js"></script>
-<script src="/mobile/vendor/chart.umd.min.js"></script>
-<script type="module" src="/mobile/js/app.bundle.mjs"></script>
 </head>
 <body>
 <a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
@@ -611,6 +623,9 @@
       <button type="button" id="btn-header-cmdk" class="header-cmdk-hint" onclick="openCommandPalette()" title="Ir a… o acción (⌘K)" aria-label="Ir a sección, paciente o acción">
         <svg class="header-cmdk-hint-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </button>
+      <button type="button" class="btn-header-icon ui-pressable" id="btn-header-shortcuts" onclick="openShortcutsModal()" title="Atajos de teclado (⌘/)" aria-label="Ver atajos de teclado">
+        <svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>
+      </button>
 
       <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
         <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
@@ -648,10 +663,30 @@
   Sin conexión con el servidor local. No podrás generar documentos hasta reiniciar R+ o recuperar el servicio en segundo plano.
 </div>
 
+<div id="shortcuts-backdrop" class="modal-backdrop shortcuts-backdrop" aria-hidden="true" onclick="if(!event.target.closest('.shortcuts-sheet')) closeShortcutsModal()">
+  <div class="shortcuts-sheet" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title" onclick="event.stopPropagation()">
+    <div class="shortcuts-chrome">
+      <div class="shortcuts-chrome-row">
+        <h3 id="shortcuts-modal-title" class="shortcuts-title">Atajos de teclado</h3>
+        <button type="button" class="shortcuts-close" onclick="closeShortcutsModal()" aria-label="Cerrar">×</button>
+      </div>
+      <p class="shortcuts-lead" id="shortcuts-hint-bar">
+        <kbd class="shortcuts-key shortcuts-key--hint" id="shortcuts-modal-hint-mod">⌘</kbd><kbd class="shortcuts-key shortcuts-key--hint">/</kbd>
+        abre esta hoja · también el botón del encabezado
+      </p>
+    </div>
+    <div id="shortcuts-modal-body" class="shortcuts-body" aria-live="polite"></div>
+    <footer class="shortcuts-foot">
+      <button type="button" class="shortcuts-foot-link" onclick="openShortcutsHelpCenter()">Centro de ayuda completo</button>
+    </footer>
+  </div>
+</div>
+
 <div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal help-center-modal" role="dialog" aria-modal="true" aria-labelledby="help-quick-title" onclick="event.stopPropagation()">
     <div class="help-center-head">
       <h3 id="help-quick-title">Centro de ayuda</h3>
+      <button type="button" class="help-center-close" onclick="closeQuickHelp()" aria-label="Cerrar">×</button>
     </div>
     <div class="help-search-wrap">
       <input type="search" id="help-search-input" class="help-search-input"
@@ -764,17 +799,23 @@
         <h2 class="visually-hidden">Pacientes</h2>
       </div>
       <div class="sidebar-header-actions">
+        <div class="patient-filters-anchor" id="patient-filters-anchor">
+          <button type="button" class="btn-patient-filters" id="btn-patient-filters" hidden aria-expanded="false" aria-controls="clinical-census-filters-body" title="Filtros de pacientes" aria-label="Filtros de pacientes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+            <span class="btn-patient-filters-badge" id="btn-patient-filters-badge" hidden aria-hidden="true"></span>
+          </button>
+        </div>
         <button type="button" class="btn-patient-bulk-select" id="btn-patient-bulk-select" onclick="togglePatientBulkSelect()" aria-pressed="false" title="Seleccionar varios pacientes" aria-label="Seleccionar varios pacientes">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M4.5 8l1.2 1.2L8.5 6.5"/><rect x="3" y="14" width="6" height="6" rx="1"/><path d="M13 8h8"/><path d="M13 17h8"/></svg>
         </button>
         <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
       </div>
+      <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--popover" hidden aria-hidden="true"></div>
     </div>
     <div class="patient-search-wrap">
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
       <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
@@ -845,7 +886,6 @@
         <span class="app-tab-label" data-i18n="appTab.agenda">Agenda</span>
       </button>
       </div>
-      <button type="button" class="app-tabs-keys-btn" onclick="openQuickHelp('atajos')" title="Atajos de teclado" aria-label="Ver atajos de teclado"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg></button>
     </div>
     </div>
     <main id="main-area">
@@ -1442,8 +1482,20 @@
           <label>Nombre completo *</label>
           <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
         </div>
-        <div style="margin-bottom:12px;">
-          <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
+        <div style="margin-bottom:12px;" id="m-registro-manual-wrap">
+          <div class="field-group">
+            <label id="m-registro-manual-label">Registro</label>
+            <div class="vpo-toolbar" id="m-registro-toolbar" hidden>
+              <button type="button" class="btn-add-row" onclick="addRegistroModalRow()">+ Agregar registro</button>
+            </div>
+            <div class="vpo-dx-list" id="m-registro-list"></div>
+          </div>
+          <p class="profile-hint profile-hint--field" id="m-registro-manual-hint" hidden>Un expediente por caja.</p>
+          <div class="vpo-dx-paste" id="m-registro-paste-wrap" hidden style="margin-top:8px;">
+            <span class="ea-label">Pegar varios (uno por línea)</span>
+            <textarea class="ea-input" id="m-registro-paste" rows="2" placeholder="0000000-0&#10;0000001-0"></textarea>
+            <button type="button" class="btn-med-secondary" onclick="splitRegistroModalPaste()">Separar en cajas</button>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:80px 80px 70px;gap:10px;margin-bottom:12px;">
           <div class="field-group"><label>Edad *</label>
@@ -1728,8 +1780,11 @@
               <select id="soap-soporte">
                 <option value="Aire ambiente">Aire ambiente</option>
                 <option value="Puntillas nasales">Puntillas nasales</option>
+                <option value="Mascarilla simple">Mascarilla simple</option>
+                <option value="Mascarilla reservorio">Mascarilla reservorio</option>
                 <option value="Alto flujo">Alto flujo</option>
                 <option value="VMNI">VMNI</option>
+                <option value="Ventilación mecánica">Ventilación mecánica</option>
                 <option value="Traqueostomía">Traqueostomía</option>
               </select>
             </div>
@@ -2127,7 +2182,7 @@
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-cancel" id="rotation-rejoin-later">Más tarde</button>
-      <button type="button" class="btn-save" id="rotation-rejoin-open">Confirmar sala y abrir Mi rotación</button>
+      <button type="button" class="btn-save" id="rotation-rejoin-open">Confirmar sala y elegir equipo</button>
     </div>
   </div>
 </div>
@@ -2947,5 +3002,7 @@
   </div>
 </div>
 
+<script src="/mobile/js/clinical-onboarding-boot-progress.js"></script>
+<script src="/mobile/js/clinical-onboarding-early-boot.js"></script>
 </body>
 </html>

@@ -45,8 +45,33 @@ export function createCloudMobileLanStripPlugin(stubPath = LAN_STRIP_STUB) {
 const PUBLIC = path.join(ROOT, 'public');
 const DEST = path.join(ROOT, 'cloud', 'sync-pages', 'public', 'mobile');
 
-const CLOUD_FLAGS_SCRIPT =
-  '<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");e.innerHTML=\'<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div><div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center"><span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>\';document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}document.body?g():document.addEventListener("DOMContentLoaded",g);})();</script>';
+/** @param {string} [buildId] */
+export function buildCloudFlagsScript(buildId) {
+  const v = String(buildId || Date.now());
+  return (
+    '<script>globalThis.__RPC_CLOUD_MOBILE__=true;globalThis.__RPC_MOBILE_WEB__=true;' +
+    'try{document.documentElement.dataset.cloudMobile="1";document.documentElement.classList.add("rpc-cloud-mobile");}catch(_e){}' +
+    '(function(){function g(){if(document.getElementById("rpc-cloud-mobile-gate"))return;var e=document.createElement("div");' +
+    'e.id="rpc-cloud-mobile-gate";e.className="rpc-cloud-mobile-gate ui-overlay-scrim";e.setAttribute("aria-live","polite");' +
+    'e.innerHTML=\'<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="dialog" aria-modal="true">' +
+    '<div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4>' +
+    '<p class="rpc-cloud-mobile-modal__sub">Conectando al turno…</p></div>' +
+    '<div class="rpc-cloud-mobile-modal__body rpc-cloud-mobile-modal__body--center">' +
+    '<span class="rpc-cloud-mobile-spinner" aria-hidden="true"></span></div></div>\';' +
+    'document.body&&document.body.appendChild(e);document.body&&document.body.classList.add("rpc-cloud-mobile-gated")}' +
+    'document.body?g():document.addEventListener("DOMContentLoaded",g);' +
+    'setTimeout(function(){if(globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__)return;var g=document.getElementById("rpc-cloud-mobile-gate");' +
+    'if(!g||g.hidden)return;g.innerHTML=\'<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert">' +
+    '<div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4>' +
+    '<p class="rpc-cloud-mobile-modal__sub">No se pudo cargar la app (v' +
+    v +
+    ').</p></div><div class="rpc-cloud-mobile-modal__body">' +
+    '<p>Cierra esta pestaña por completo y vuelve a abrir el enlace del turno.</p>' +
+    '<button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>\';},18000);})();</script>'
+  );
+}
+
+const CLOUD_FLAGS_SCRIPT = buildCloudFlagsScript();
 
 const MOBILE_WEB_IIFE_RE =
   /\(function \(\) \{\s*try \{\s*var ls = localStorage;\s*var p = new URLSearchParams\(location\.search \|\| ''\);\s*var pathMobile[\s\S]*?\}\s*catch \(_e\) \{\}\s*\}\)\(\);/;
@@ -177,6 +202,40 @@ export function rewriteJsAssetPaths(text) {
   return String(text || '').replace(/(["'`])\/js\//g, '$1/mobile/js/');
 }
 
+/** Rewrite boot loader literals (`/js/`, `/vendor/`) for `/mobile/` ASSETS mount. */
+export function rewriteMobileBootScriptPaths(text, buildId) {
+  let out = rewriteJsAssetPaths(String(text || '').replace(/(["'`])\/vendor\//g, '$1/mobile/vendor/'));
+  const stamp = String(buildId || Date.now());
+  out = out.replace(
+    /mod\.src\s*=\s*(['"])\/mobile\/js\/app\.bundle\.mjs\1/g,
+    `mod.src = '/mobile/js/app.bundle.mjs?v=${stamp}'`
+  );
+  if (!out.includes('mod.onerror')) {
+    out = out.replace(
+      'document.head.appendChild(mod);',
+      'mod.onerror=function(){try{var g=document.getElementById("rpc-cloud-mobile-gate");if(g){g.innerHTML=\'<div class="rpc-cloud-mobile-modal material-solid-elevated ui-overlay-dialog" role="alert"><div class="rpc-cloud-mobile-modal__head"><h4 class="rpc-cloud-mobile-modal__title">R+ Móvil</h4><p class="rpc-cloud-mobile-modal__sub">Error al cargar la app.</p></div><div class="rpc-cloud-mobile-modal__body"><button type="button" class="btn-save" onclick="location.reload()">Recargar</button></div></div>\';}}catch(_e){}};document.head.appendChild(mod);'
+    );
+  }
+  return out;
+}
+
+const MOBILE_BOOT_SCRIPTS = [
+  'clinical-onboarding-boot-progress.js',
+  'clinical-onboarding-early-boot.js',
+];
+
+/** @param {string} destJsDir @param {string} buildId */
+function copyMobileBootScripts(destJsDir, buildId) {
+  for (const name of MOBILE_BOOT_SCRIPTS) {
+    const src = path.join(PUBLIC, 'js', name);
+    if (!fs.existsSync(src)) {
+      throw new Error(`build-cloud-mobile: missing public/js/${name}`);
+    }
+    const content = rewriteMobileBootScriptPaths(fs.readFileSync(src, 'utf8'), buildId);
+    writeFile(path.join(destJsDir, name), content);
+  }
+}
+
 /** @param {string} dir */
 function rewriteJsTree(dir) {
   if (!fs.existsSync(dir)) return;
@@ -195,11 +254,12 @@ function rewriteJsTree(dir) {
   }
 }
 
-export function buildMobileIndexHtml(html) {
+export function buildMobileIndexHtml(html, buildId) {
   let out = html;
+  const flagsScript = buildCloudFlagsScript(buildId);
 
   if (!out.includes('__RPC_CLOUD_MOBILE__')) {
-    out = out.replace(/<head>\s*\n/i, `<head>\n${CLOUD_FLAGS_SCRIPT}\n`);
+    out = out.replace(/<head>\s*\n/i, `<head>\n${flagsScript}\n`);
   }
 
   if (MOBILE_WEB_IIFE_RE.test(out)) {
@@ -325,12 +385,25 @@ function cleanDest() {
   fs.mkdirSync(DEST, { recursive: true });
 }
 
+function readMobileBuildId() {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+    const ver = String(pkg.version || '0').replace(/\./g, '');
+    return `${ver}-${Date.now()}`;
+  } catch {
+    return String(Date.now());
+  }
+}
+
 async function main() {
+  const buildId = readMobileBuildId();
   runUiBuild();
   cleanDest();
 
   console.log('bundling cloud-mobile renderer…');
-  await bundleCloudMobileRenderer(path.join(DEST, 'js'));
+  const jsDest = path.join(DEST, 'js');
+  await bundleCloudMobileRenderer(jsDest);
+  copyMobileBootScripts(jsDest, buildId);
 
   copyFile(path.join(PUBLIC, 'tokens.css'), path.join(DEST, 'tokens.css'));
   copyDir(path.join(PUBLIC, 'styles'), path.join(DEST, 'styles'));
@@ -348,8 +421,9 @@ async function main() {
     console.error('missing public/index.html');
     process.exit(1);
   }
-  const indexOut = buildMobileIndexHtml(fs.readFileSync(indexSrc, 'utf8'));
+  const indexOut = buildMobileIndexHtml(fs.readFileSync(indexSrc, 'utf8'), buildId);
   writeFile(path.join(DEST, 'index.html'), indexOut);
+  writeFile(path.join(DEST, 'build-id.txt'), `${buildId}\n`);
 
   // Chunks keep esbuild publicPath `/js/` — rewrite for `/mobile/` ASSETS mount.
   rewriteJsTree(path.join(DEST, 'js'));

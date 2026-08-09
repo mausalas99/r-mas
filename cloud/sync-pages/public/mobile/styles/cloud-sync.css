@@ -857,6 +857,176 @@
   display: none;
 }
 
+/* Mi rotación inline — ⇄ Opciones → Equipo */
+.connection-dropdown-modal--equipo {
+  min-height: min(84dvh, calc(var(--app-height) - 28px));
+}
+
+.connection-dropdown-modal--equipo .connection-dropdown-body {
+  overflow: hidden;
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
+.connection-dropdown-modal--equipo .cloud-sync-conexion {
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  padding-bottom: 0;
+}
+
+.connection-dropdown-modal--equipo .cloud-sync-views {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.connection-dropdown-modal--equipo .cloud-sync-views > [data-cloud-view='equipo'] {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-sync-view[data-cloud-view='equipo'] .cloud-sync-view-body {
+  padding: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cloud-sync-equipo-embed {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed {
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 0.75rem;
+  align-items: start;
+  padding: 10px 12px 12px;
+  scrollbar-gutter: stable;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-section--create,
+.cloud-sync-equipo-embed .clinical-teams-section--joined,
+.cloud-sync-equipo-embed .clinical-teams-section--directory {
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-section--rotation {
+  margin: 0;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-rotation-card {
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-rotation-card .clinical-teams-section-desc {
+  display: none;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-advanced-rotation-actions .btn-med-secondary {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: calc(11px * var(--density-font));
+}
+
+.cloud-sync-equipo-embed .clinical-teams-top-actions {
+  gap: 8px;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-top-actions--split .clinical-teams-create-open-btn,
+.cloud-sync-equipo-embed .clinical-teams-top-actions--split .clinical-teams-open-lan-users-btn {
+  min-height: 34px;
+  font-size: calc(12px * var(--density-font));
+  flex: 1 1 9rem;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-section-title {
+  font-size: 0.78rem;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-section-desc,
+.cloud-sync-equipo-embed .clinical-teams-hint {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-handle-hint,
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--create,
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--more,
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--join-code,
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--rotation {
+  grid-column: 1 / -1;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined {
+  grid-column: 1;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory {
+  grid-column: 2;
+}
+
+.cloud-sync-equipo-embed .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team {
+  grid-template-columns: 1fr;
+}
+
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-pick-banner,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-handle-hint,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-section--create,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-section--more,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-section--join-code,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-section--joined,
+.cloud-sync-equipo-embed
+  .clinical-teams-panel-body--embed.clinical-teams-panel-body--pick-team
+  > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .cloud-sync-equipo-embed .clinical-teams-panel-body--embed {
+    grid-template-columns: 1fr;
+  }
+
+  .connection-dropdown-modal--equipo {
+    min-height: min(88dvh, calc(var(--app-height) - 16px));
+  }
+
+  .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined,
+  .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--directory {
+    grid-column: 1 / -1;
+  }
+}
+
 .lan-hub-available-list {
   list-style: none;
   margin: 0;

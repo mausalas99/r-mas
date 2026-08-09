@@ -285,6 +285,23 @@ export function mutationsListHtml(mutations) {
     { label: 'Rev.', key: 'revision' },
     { label: 'Actor', key: 'actorId' },
     { label: 'Cliente', key: 'clientMutationId' },
+    { label: '#Ops', key: 'opCount' },
+    {
+      label: 'Tamaño',
+      cell: (m) => {
+        const total = Number(m.totalBytes);
+        const maxB = Number(m.maxOpBytes);
+        if (!Number.isFinite(total) && !Number.isFinite(maxB)) return '—';
+        const parts = [];
+        if (Number.isFinite(total)) parts.push(String(Math.round(total / 1024)) + ' KB');
+        if (Number.isFinite(maxB)) parts.push('max ' + String(Math.round(maxB / 1024)) + ' KB');
+        return esc(parts.join(' · '));
+      },
+    },
+    {
+      label: 'Path max',
+      cell: (m) => esc(String(m.maxOpPath || '—')),
+    },
     {
       label: 'Ops (truncado)',
       cell: (m) => {

@@ -12,6 +12,11 @@ import {
   isInsulinRescateMedicationItem,
   INSULIN_RESCATE_NM_LABEL,
 } from '../insulin-rescate-display.mjs';
+import {
+  isInsulinPrandialMedicationItem,
+  INSULIN_PRANDIAL_NM_PREFIX,
+  insulinPrandialNmSoapFragment,
+} from '../insulin-prandial-display.mjs';
 import { medInstructionFragmentForSoap } from './estado-actual-meds-receta-buckets.mjs';
 import { resolveManejoFechaActualizacion } from './estado-actual-meds-core.mjs';
 
@@ -20,6 +25,19 @@ function tryAddInsulinRescateDropdownOption(it, ctx) {
   if (!ctx.rescateAdded) {
     ctx.options.push({ value: INSULIN_RESCATE_NM_LABEL, label: INSULIN_RESCATE_NM_LABEL });
     ctx.rescateAdded = true;
+  }
+  return true;
+}
+
+function tryAddInsulinPrandialDropdownOption(it, ctx) {
+  if (ctx.category !== 'nm' || !isInsulinPrandialMedicationItem(it)) return false;
+  if (!ctx.prandialAdded) {
+    var frag = insulinPrandialNmSoapFragment(ctx.items, ctx.items);
+    ctx.options.push({
+      value: frag || INSULIN_PRANDIAL_NM_PREFIX,
+      label: frag || INSULIN_PRANDIAL_NM_PREFIX,
+    });
+    ctx.prandialAdded = true;
   }
   return true;
 }
@@ -44,6 +62,7 @@ function tryAddMedDropdownOption(it, ctx) {
     return;
   }
   if (tryAddInsulinRescateDropdownOption(it, ctx)) return;
+  if (tryAddInsulinPrandialDropdownOption(it, ctx)) return;
   var cat = effectiveSoapCategory(
     /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
     ctx.classifyFn
@@ -81,6 +100,7 @@ export function buildMedDropdownOptions(activeId, category, medRecetaByPatient, 
     options: options,
     seen: seen,
     rescateAdded: false,
+    prandialAdded: false,
   };
   items.forEach(function (it) {
     tryAddMedDropdownOption(it, dropdownCtx);

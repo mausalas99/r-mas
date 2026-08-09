@@ -77,8 +77,8 @@ export function nextStepHtml(getToken) {
   return (
     '<div class="cloud-sync-next-step">' +
     '<p class="cloud-sync-next-step-lead">Siguiente paso</p>' +
-    '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
+    '<p class="cloud-sync-hint">Configura tu equipo en ⇄ Conexión → Opciones → Equipo.</p>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Equipo</button></div>'
   );
 }
 
@@ -177,14 +177,15 @@ export function conexionShellHtml(normalizedSala, bodyHtml, status, detail = '')
   );
 }
 
-/** @param {() => string} getToken */
-export function equipoStepHtml(getToken) {
-  if (!getToken() || userHasJoinedTeam()) {
-    return '<p class="cloud-sync-hint" data-cloud-equipo-body>Equipo configurado.</p>';
-  }
+/** Inline Mi rotación host for ⇄ Opciones → Equipo. */
+export function equipoEmbedHostHtml() {
   return (
-    '<div class="cloud-sync-equipo-body" data-cloud-equipo-body>' +
-    '<p class="cloud-sync-hint">Configura tu equipo en Mi rotación para sincronizar con tu guardia.</p>' +
-    '<button type="button" class="cloud-sync-btn cloud-sync-btn--primary" data-cloud-action="open-rotation">Ir a Mi rotación</button></div>'
+    '<div class="cloud-sync-equipo-embed" data-cloud-equipo-host>' +
+    '<div class="clinical-teams-panel-body clinical-teams-panel-body--embed"></div></div>'
   );
+}
+
+/** @deprecated Use equipoEmbedHostHtml — kept for imports that passed getToken. */
+export function equipoStepHtml(_getToken) {
+  return equipoEmbedHostHtml();
 }

@@ -246,18 +246,17 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   display: flex;
   flex-direction: column;
   gap: calc(8px * var(--density-space, 1));
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   border: 1px solid var(--border, var(--divider));
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 45%, transparent);
-  overflow: hidden;
-  padding: 10px 12px 0;
+  overflow: visible;
+  padding: 10px 12px 12px;
 }
 
 .exp-pendientes-mount .todo-toolbar {
-  order: 1;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -267,26 +266,9 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   padding: 0 2px;
 }
 
-.exp-pendientes-mount .todo-list {
-  order: 2;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 0;
-}
-
-.exp-pendientes-mount .todo-empty {
-  order: 2;
-  flex: 0 0 auto;
-  min-height: 0;
-  overflow: visible;
-}
-
 .exp-pendientes-mount .todo-composer {
-  order: 3;
   flex-shrink: 0;
-  margin-top: auto;
-  /* Full-bleed footer bg (cancel shell 12px), but keep grid gutters = todo-row (shell 12 + row 12). */
+  /* Full-bleed strip (cancel shell 12px), but keep grid gutters = todo-row (shell 12 + row 12). */
   margin-left: -12px;
   margin-right: -12px;
   display: flex;
@@ -295,10 +277,25 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   align-items: stretch;
   padding: 12px 24px 14px;
   border: none;
-  border-top: 1px solid var(--border, var(--divider));
+  border-bottom: 1px solid var(--border, var(--divider));
   border-radius: 0;
   background: color-mix(in oklab, var(--bg) 55%, var(--surface));
   box-shadow: none;
+}
+
+.exp-pendientes-mount .todo-list {
+  order: 3;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+}
+
+.exp-pendientes-mount .todo-empty {
+  order: 3;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 .exp-pendientes-mount .todo-composer > .todo-add-row {

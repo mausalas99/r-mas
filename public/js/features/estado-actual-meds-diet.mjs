@@ -1,4 +1,5 @@
 import { mergeDietaItems, buildDietProposalText } from '../med-receta-core.mjs';
+import { isRecetaProposalDismissed } from './estado-actual-meds-core.mjs';
 import {
   applyDietaSuplementoPolicy,
   isDietaSuplemento,
@@ -80,6 +81,7 @@ function mergedMatchesConfirmedDiet(ec, merged) {
  */
 export function shouldSkipDietProposal(monitoreo, opts, merged) {
   opts = opts || {};
+  if (isRecetaProposalDismissed(monitoreo, 'dieta')) return true;
   if (!opts.force && hasActiveDietProposal(getPendienteReceta(monitoreo))) return true;
   var state = dietStateObjects(monitoreo);
   if (merged && mergedDietHasContent(merged) && mergedMatchesConfirmedDiet(state.ec, merged)) {

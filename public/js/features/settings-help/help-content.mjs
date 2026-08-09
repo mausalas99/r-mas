@@ -42,9 +42,9 @@ var HELP_ARTICLES = [
       '<p>El turno se sincroniza con <strong>R+ Cloud</strong> (Nube). No hace falta un Mac anfitrión en la Wi‑Fi del hospital.</p>' +
       '<ul>' +
       '<li><strong>⇄ Conexión</strong> — cuenta Nube, sala del equipo y estado de sincronización.</li>' +
-      '<li><strong>Mi rotación</strong> — @usuario, equipos e integrantes (se publican por clinicalOps a la sala).</li>' +
-      '<li><strong>Directorio de usuarios</strong> — quién está en la sala; el admin asigna a equipos.</li>' +
-      '<li><strong>iPad / R+ Móvil</strong> — enlace o QR desde ⇄; inicia sesión con la misma cuenta Nube.</li>' +
+      '<li><strong>Equipo</strong> — en <strong>⇄ Conexión → Opciones → Equipo</strong>: @usuario, equipos e integrantes (se publican por clinicalOps a la sala).</li>' +
+      '<li><strong>Directorio de usuarios</strong> — quién está en la sala; el admin asigna a equipos desde Equipo.</li>' +
+      '<li><strong>iPad / R+ Móvil</strong> — enlace o QR en <strong>⇄ → Opciones → iPad / R+ Móvil</strong>; inicia sesión con la misma cuenta Nube.</li>' +
       '<li><strong>QR Internos (MIP)</strong> — enlace Nube para pregrado; sin IP local ni LAN.</li>' +
       '<li><strong>Censo</strong> — R1 por equipo; R4 con divisores por equipo en la grilla; sync discreta en segundo plano.</li>' +
       '</ul>'
@@ -56,11 +56,11 @@ var HELP_ARTICLES = [
     html:
       '<p>Cada mes los equipos de guardia rotan. R+ te guía para no perder el hilo del censo compartido.</p>' +
       '<ul>' +
-      '<li><strong>Nueva rotación</strong> — si ya estuviste en un equipo, R+ puede pedirte confirmar sala y abrir <strong>Mi rotación</strong> para unirte al equipo del mes.</li>' +
+      '<li><strong>Nueva rotación</strong> — si ya estuviste en un equipo, R+ puede pedirte confirmar sala y abrir <strong>⇄ → Opciones → Equipo</strong> para unirte al equipo del mes.</li>' +
       '<li><strong>Heredar pacientes</strong> — al unirte a un equipo nuevo, el asistente te deja traer pacientes de tu equipo anterior (misma sala/ciclo sugerido) sin reasignar uno por uno.</li>' +
-      '<li><strong>R4 / admin</strong> — publica equipos nuevos en Mi rotación para que el resto se una.</li>' +
+      '<li><strong>R4 / admin</strong> — publica equipos nuevos en <strong>Equipo</strong> para que el resto se una.</li>' +
       '</ul>' +
-      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Censo vacío tras rotar? Confirma Nube en ⇄, revisa la franja sala/equipo en Guardia y abre Mi rotación.</p>'
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Censo vacío tras rotar? Confirma Nube en ⇄, revisa la franja sala/equipo en Guardia y abre <strong>Opciones → Equipo</strong>.</p>'
   },
   {
     id: 'primer-paciente',
@@ -206,6 +206,7 @@ var HELP_ARTICLES = [
       '<li><strong>Ctrl/⌘ + G</strong> — Modo Guardia · <strong>I</strong> — Interconsulta · <strong>P</strong> — Pase (repite para volver a Sala/Interconsulta) · <strong>S</strong> — Sala</li>' +
       '<li><strong>Ctrl/⌘ + E</strong> — Estado actual (en EA → Eventualidades en Sala) · <strong>T</strong> — Tendencias (en tendencias → Cultivos) · <strong>D</strong> — Datos del paciente · <strong>M</strong> — Medicamentos (cicla subvistas) · <strong>A</strong> — Agenda (semana actual)</li>' +
       '<li><strong>Ctrl/⌘ + Shift + S</strong> — Guardar estado del paciente activo</li>' +
+      '<li><strong>Ctrl/⌘ + /</strong> — Mostrar la hoja de atajos (también el botón del encabezado)</li>' +
       '<li><strong>Ctrl/⌘ + K</strong> — Ir a sección o paciente</li>' +
       '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
       '<li><strong>Ctrl/⌘ + Shift + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +

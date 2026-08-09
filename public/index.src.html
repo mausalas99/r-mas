@@ -20,17 +20,32 @@
 <script>
 (function () {
   try {
-    if (!window.electronAPI) window.__RPC_WEB_CLINICAL__ = true;
+    var nav = String(navigator.userAgent || '');
+    var qs = String(location.search || '');
+    var isElectronShell =
+      /\bElectron\//i.test(nav) || /(?:^|[?&])rpc-electron=1(?:&|$)/.test(qs);
+    if (!window.electronAPI && !isElectronShell) window.__RPC_WEB_CLINICAL__ = true;
+    if (isElectronShell) window.__RPC_ELECTRON_DESKTOP__ = true;
   } catch (_eWeb) {}
 })();
 (function () {
-  try {
-    if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
-      var f = window.electronAPI.getWindowChromeFlags();
+  function applyElectronChromeClasses() {
+    try {
+      var f = null;
+      if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
+        f = window.electronAPI.getWindowChromeFlags();
+      } else if (window.__RPC_ELECTRON_DESKTOP__) {
+        var plat = String(navigator.platform || '');
+        f = { macTitleBarInset: /Mac/i.test(plat), isWindows: /Win/i.test(plat) };
+      }
       if (f && f.macTitleBarInset) document.documentElement.classList.add('electron-macos-inset-bar');
       if (f && f.isWindows) document.documentElement.classList.add('electron-windows');
-    }
-  } catch (_e) {}
+    } catch (_e) {}
+  }
+  applyElectronChromeClasses();
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', applyElectronChromeClasses);
+  }
 })();
 (function () {
   try {
@@ -123,14 +138,13 @@
 <link rel="stylesheet" href="/styles/overlays.css?v=hybrid-polish-3">
 <link rel="stylesheet" href="/styles/cmdk.css">
 <link rel="stylesheet" href="/styles/mobile-surfaces.css">
-<script src="/vendor/sortable.min.js"></script>
-<script src="/vendor/chart.umd.min.js"></script>
-<script type="module" src="/js/app.bundle.mjs"></script>
 </head>
 <body>
 <!-- @include partials/chrome/overlays.html -->
 <!-- @include partials/chrome/header.html -->
 <!-- @include partials/layout/app-body.html -->
 <!-- @include partials/modals/root.html -->
+<script src="/js/clinical-onboarding-boot-progress.js"></script>
+<script src="/js/clinical-onboarding-early-boot.js"></script>
 </body>
 </html>

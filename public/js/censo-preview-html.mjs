@@ -11,7 +11,7 @@ import {
 export function renderCensoPreviewHtml(payload) {
   var header = payload.header || {};
   var rows = payload.rows || [];
-  return buildCensoPreviewDocumentHtml(header, buildCensoPreviewBodyHtml(rows));
+  return buildCensoPreviewDocumentHtml(header, buildCensoPreviewBodyHtml(rows), rows);
 }
 
 function ensureCensoPreviewModal() {

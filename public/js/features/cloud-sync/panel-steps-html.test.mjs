@@ -215,20 +215,36 @@ describe('applyConexionView', () => {
     syncCloudSecondaryPanels(/** @type {any} */ (root), 'lan');
     assert.equal(orphan.hidden, false);
   });
+
+  it('falls back to status when subview is missing from DOM', () => {
+    const section = makeNode();
+    section.className = 'cloud-sync-conexion';
+    const views = makeNode();
+    views.setAttribute('data-cloud-views', '1');
+    views.attributes['data-cloud-views'] = '1';
+    const status = makeNode({ 'data-cloud-view': 'status' });
+    views.appendChild(status);
+    section.appendChild(views);
+
+    applyConexionView(/** @type {any} */ (section), 'ops');
+    assert.equal(section.dataset.cloudView, 'status');
+    assert.equal(status.hidden, false);
+  });
 });
 
-describe('connectedViewsHtml ops host', () => {
-  it('keeps ops view as host without stacking create-teams copy', () => {
+describe('connectedViewsHtml equipo embed', () => {
+  it('embeds equipo host and omits retired Operaciones subview', () => {
     const html = connectedStepsHtml({
       cloudUser: { username: 'r4' },
       roomHtml: '',
-      equipoHtml: '',
+      equipoHtml: '<div data-cloud-equipo-host></div>',
       url: '',
       hasCloudSession: true,
     });
-    // Elevated privileges mocked via clinical session may omit ops; host markup is optional.
-    // Ensure admin path still has no details accordion remnants in options.
-    assert.match(html, /data-cloud-view="options"/);
+    assert.match(html, /data-cloud-view="equipo"/);
+    assert.match(html, /data-cloud-equipo-host/);
+    assert.doesNotMatch(html, /data-cloud-view="ops"/);
+    assert.doesNotMatch(html, /Operaciones del turno/);
     assert.doesNotMatch(html, /Crear equipos del mes/);
   });
 });

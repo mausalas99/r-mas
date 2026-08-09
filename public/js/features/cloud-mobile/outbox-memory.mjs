@@ -14,11 +14,15 @@ export function createMemoryOutbox() {
     if (!clientMutationId) return;
 
     rows = rows.filter((row) => row.clientMutationId !== clientMutationId);
+    const enqueuedAt =
+      item.enqueuedAt != null && Number.isFinite(Number(item.enqueuedAt))
+        ? Number(item.enqueuedAt)
+        : Date.now();
     rows.push({
       clientMutationId,
       ops: Array.isArray(item.ops) ? item.ops : [],
       ...(item.baseRevision != null ? { baseRevision: Number(item.baseRevision) } : {}),
-      enqueuedAt: Date.now(),
+      enqueuedAt,
     });
   }
 
@@ -38,5 +42,10 @@ export function createMemoryOutbox() {
     rows = [];
   }
 
-  return { enqueue, list, remove, clear };
+  /** @param {OutboxEntry[]} nextRows */
+  function replaceAll(nextRows) {
+    rows = Array.isArray(nextRows) ? nextRows.slice() : [];
+  }
+
+  return { enqueue, list, remove, clear, replaceAll };
 }

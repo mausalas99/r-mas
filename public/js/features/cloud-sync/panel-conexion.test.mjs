@@ -31,11 +31,20 @@ describe('panel-conexion-runtime auto sync', () => {
   it('seeds sala clinicalOps (equipos) on connect without waiting for a local edit', () => {
     assert.match(panelRuntimeSrc, /syncCloudClinicalOpsOnConnect/);
   });
+
+  it('initial seed uses outbox once (no direct census/lab HTTP push on connect)', () => {
+    assert.match(panelRuntimeSrc, /scheduleInitialCloudSeed/);
+    assert.match(panelRuntimeSrc, /deferBootCycle:\s*true/);
+    assert.doesNotMatch(panelRuntimeSrc, /pushCloudCensusNow/);
+    assert.doesNotMatch(panelRuntimeSrc, /pushCloudLabSidecarsNow/);
+    assert.doesNotMatch(panelRuntimeSrc, /scheduleCloudSyncPush/);
+  });
 });
 
 describe('autostart Nube seed', () => {
-  it('publishes clinicalOps after census seed (iPad needs assignments)', () => {
-    assert.match(autostartSrc, /pushCloudCensusNow/);
-    assert.match(autostartSrc, /syncCloudClinicalOpsOnConnect/);
+  it('delegates census/lab seed to panel-conexion-runtime (no duplicate direct push)', () => {
+    assert.doesNotMatch(autostartSrc, /pushCloudCensusNow/);
+    assert.doesNotMatch(autostartSrc, /pushCloudLabSidecarsNow/);
+    assert.match(autostartSrc, /startSharedNubeRuntime/);
   });
 });

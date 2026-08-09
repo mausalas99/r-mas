@@ -43,6 +43,65 @@ describe('createSyncRuntimeCycle status', () => {
     assert.equal(isCloudRevisionStaleError({ status: 500, data: { error: 'error' } }), false);
   });
 
+  it('retries push after transient 503 then reaches idle', async () => {
+    const statuses = [];
+    let pushes = 0;
+    const outbox = makeOutbox([
+      { clientMutationId: 'm1', ops: [{ path: 'a', value: 1 }], baseRevision: 0, enqueuedAt: 1 },
+    ]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 1, ops: [] }),
+        push: async () => {
+          pushes += 1;
+          if (pushes === 1) {
+            const err = new Error('saturated');
+            err.status = 503;
+            throw err;
+          }
+          return { revision: 2, needPull: false };
+        },
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => 0,
+      setRevision: () => {},
+      onStatus(status) {
+        statuses.push(status);
+      },
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.ok(pushes >= 2);
+    assert.equal(outbox.list().length, 0);
+    assert.equal(statuses[statuses.length - 1], 'idle');
+  });
+
+  it('downgrades local revision when pull returns empty ops and since is ahead', async () => {
+    let revision = 3266;
+    const outbox = makeOutbox([]);
+    const runtime = createSyncRuntimeCycle({
+      api: {
+        pull: async () => ({ revision: 3264, ops: [] }),
+        push: async () => ({ revision: 3265 }),
+      },
+      outbox,
+      getRoomId: () => 'room-1',
+      getRevision: () => revision,
+      setRevision(next) {
+        revision = next;
+      },
+      onStatus() {},
+    });
+
+    await runtime.syncCycle();
+    runtime.stop();
+
+    assert.equal(revision, 3264);
+  });
+
   it('retries push after revision_stale then reaches idle', async () => {
     const statuses = [];
     let pushes = 0;
@@ -160,7 +219,7 @@ describe('createSyncRuntimeCycle status', () => {
     assert.equal(statuses[statuses.length - 1], 'idle');
   });
 
-  it('truncates oversized lab sourceText before push and reaches idle', async () => {
+  it('truncates oversized resLabs before push and reaches idle', async () => {
     const pushed = [];
     const outbox = makeOutbox([
       {
@@ -168,7 +227,7 @@ describe('createSyncRuntimeCycle status', () => {
         ops: [
           {
             path: 'labSidecars/p1/1785683680719-1-0',
-            value: { id: '1785683680719-1-0', resLabs: ['BH\tHb 8'], sourceText: 'Z'.repeat(600_000) },
+            value: { id: '1785683680719-1-0', resLabs: ['BH\tHb 8', 'QS\t' + 'Na 140 '.repeat(90_000)] },
             updatedAt: 't',
             actorId: 'a',
           },
@@ -196,9 +255,10 @@ describe('createSyncRuntimeCycle status', () => {
     runtime.stop();
 
     assert.equal(pushed.length, 1);
-    const text = String(pushed[0].ops[0].value.sourceText || '');
-    assert.ok(text.length > 0);
-    assert.ok(text.length < 600_000);
+    const resLabs = pushed[0].ops[0].value.resLabs;
+    assert.ok(Array.isArray(resLabs));
+    assert.ok(resLabs.length >= 1);
+    assert.equal(pushed[0].ops[0].value.sourceText, undefined);
     assert.equal(outbox.list().length, 0);
   });
 
@@ -300,7 +360,8 @@ describe('createSyncRuntimeCycle status', () => {
     );
     assert.match(src, /noteLocalMutation/);
     assert.match(src, /addEventListener\('focus'/);
-    assert.match(src, /void syncCycle\(\);\s*scheduler\.armNextTimer/);
+    assert.match(src, /deferBootCycle/);
+    assert.match(src, /if \(!opts\.deferBootCycle\)/);
   });
 
   it('while hidden still flushes outbox and keeps polling armed', async () => {

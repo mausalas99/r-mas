@@ -7,11 +7,10 @@ import {
   isClinicalScopeReadyForLanPatientApply,
 } from '../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror, shouldShowClinicalCensusFilters } from '../clinical-privileges.mjs';
-import { isMobileWeb } from '../mobile-web.mjs';
 import {
   filterPatientsForGuardiaCensus as filterPatientsForGuardiaCensusCore,
 } from './patients-clinical-filter.mjs';
-import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
+import { censusFiltersAreActive, elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import {
   createCensusFiltersBar,
@@ -136,10 +135,24 @@ export function refreshCensusViewsAfterFilterChange() {
 }
 
 function censusFiltersMountEl() {
-  if (isMobileWeb()) {
-    return document.getElementById('clinical-census-filters-sidebar-mount');
+  return document.getElementById('clinical-census-filters-sidebar-mount');
+}
+
+function syncPatientFiltersButton(show) {
+  const btn = document.getElementById('btn-patient-filters');
+  const badge = document.getElementById('btn-patient-filters-badge');
+  if (!btn) return;
+  btn.hidden = !show;
+  btn.setAttribute('aria-hidden', show ? 'false' : 'true');
+  if (!show) {
+    btn.classList.remove('btn-patient-filters--open', 'btn-patient-filters--active');
+    btn.setAttribute('aria-expanded', 'false');
+    if (badge) badge.hidden = true;
+    return;
   }
-  return document.getElementById('clinical-census-filters-mount');
+  const active = censusFiltersAreActive();
+  btn.classList.toggle('btn-patient-filters--active', active);
+  if (badge) badge.hidden = !active;
 }
 
 function hideCensusFiltersMounts() {
@@ -162,6 +175,7 @@ export function syncClinicalCensusFiltersBar() {
   ) {
     if (bar) bar.remove();
     hideCensusFiltersMounts();
+    syncPatientFiltersButton(false);
     syncClinicalContextBarVisibility();
     return;
   }
@@ -173,11 +187,11 @@ export function syncClinicalCensusFiltersBar() {
       localStorage.removeItem('clinical.censusFilterSala');
     }
   } catch (_e) { void _e; }
-  const mobileSidebar = isMobileWeb();
   if (!bar) {
-    bar = createCensusFiltersBar(user, filtersMount, mobileSidebar);
+    bar = createCensusFiltersBar(user, filtersMount, true);
     wireCensusFilterInputs(bar, refreshCensusViewsAfterFilterChange);
   }
   syncCensusScalarFilterInputs(user);
+  syncPatientFiltersButton(true);
   syncClinicalContextBarVisibility();
 }

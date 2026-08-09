@@ -26,6 +26,7 @@ import {
 } from '../tour-demo-patient.mjs';
 import {
   assignPatientToTeamClinical,
+  defaultPatientRegistrationTeamId,
   readPatientRegistrationTeamId,
 } from '../patient-team-assign-ui.mjs';
 import { readPatientRegistrationSala } from '../patient-sala-ui.mjs';
@@ -279,6 +280,80 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
       rt.consumeActiveLab();
     }
   })();
+}
+
+/**
+ * Alta mínima desde SOME / vista previa: demografía del reporte, sin ubicación.
+ * @param {{ name?: string, expediente?: string, registro?: string, edad?: string, sexo?: string }} labPatient
+ * @param {{ teamId?: string }} [opts]
+ * @returns {object | null}
+ */
+function resolveStubPatientTeamId(opts) {
+  var teamId = opts && opts.teamId ? String(opts.teamId).trim() : '';
+  if (teamId) return teamId;
+  teamId = readPatientRegistrationTeamId();
+  if (teamId) return teamId;
+  return defaultPatientRegistrationTeamId(clinicalSessionContext.user);
+}
+
+function finalizeStubPatientSidebar(patient, teamId) {
+  var tid = resolveStubPatientTeamId({ teamId: teamId });
+  if (!tid) {
+    patientsBridge.selectPatient(patient.id, { bypassIncomingBlock: true });
+    return;
+  }
+  void assignPatientToTeamClinical(patient.id, tid).then(function (res) {
+    if (!res || !res.ok) {
+      rt.showToast('Paciente en censo, pero no se pudo asignar al equipo', 'warn');
+    }
+    patientsBridge.renderPatientList();
+    patientsBridge.selectPatient(patient.id, { bypassIncomingBlock: true });
+  });
+}
+
+export function commitStubPatientFromLab(labPatient, opts) {
+  if (!labPatient) return null;
+  var registro = String(labPatient.expediente || labPatient.registro || '').trim();
+  if (!registro) return null;
+  var existing = findPatientByRegistro(registro);
+  if (existing) return existing;
+
+  var nombreRaw = String(labPatient.name || '').trim().toUpperCase();
+  var nombre = nombreRaw || ensureUniquePatientName('PACIENTE SIN NOMBRE');
+  var edadNum = parseInt(String(labPatient.edad || '').trim(), 10);
+  var edad =
+    Number.isFinite(edadNum) && edadNum >= 0
+      ? String(edadNum)
+      : String(labPatient.edad || '').trim();
+  var sexo = labPatient.sexo === 'M' ? 'M' : 'F';
+  var ts = patientAdmissionTimestamp();
+
+  var patient = buildPatientDraft(nombre, registro, edad, sexo, '', '', '', '', true);
+  var adoptResult = adoptTourPatientOnCommit(patient, registro);
+  patient = adoptResult.patient;
+  if (handleDuplicateDemoPatient(patient)) {
+    return patients.find(function (x) {
+      return x && x.id === patient.id;
+    }) || null;
+  }
+
+  stampPatientClinicalSala(patient, clinicalSessionContext.user, {
+    teamId: readPatientRegistrationTeamId(),
+    teams: clinicalSessionContext.teams || [],
+  });
+  var registrationSala = readPatientRegistrationSala();
+  if (registrationSala) patient.sala = registrationSala;
+  stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
+  clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
+  enqueueCloudPatientAdmit(patient);
+  initPatientNotesAndIndicaciones(patient.id, ts.fecha, ts.hora);
+  rt.applyDefaultsToNewPatient(patient.id);
+  rt.applyDefaultsToNewIndicaciones(patient.id);
+  patients.push(patient);
+  saveState();
+  patientsBridge.renderPatientList();
+  finalizeStubPatientSidebar(patient, opts && opts.teamId);
+  return patient;
 }
 
 export function generatePatientId() {

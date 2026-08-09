@@ -20,6 +20,13 @@ import {
   isInsulinRescateGroupSuspended,
   isInsulinRescateMedicationItem,
 } from "../insulin-rescate-display.mjs";
+import {
+  INSULIN_PRANDIAL_GROUP_ID,
+  insulinPrandialMedLabelHtml,
+  isInsulinPrandialGroupSoapSelected,
+  isInsulinPrandialGroupSuspended,
+  isInsulinPrandialMedicationItem,
+} from "../insulin-prandial-display.mjs";
 import { esc, isMedNotaSelected } from "./medications-utils.mjs";
 
 export function buildMedDietHtml(dietas) {
@@ -134,6 +141,43 @@ function buildInsulinRescateGroupRowHtml(activeId, items) {
   );
 }
 
+function buildInsulinPrandialGroupRowHtml(activeId, items) {
+  var paraNota = isInsulinPrandialGroupSoapSelected(activeId, items, isMedNotaSelected) ? " checked" : "";
+  var chk = isInsulinPrandialGroupSuspended(items, function (id) {
+    var it = items.find(function (x) {
+      return String(x.id) === String(id);
+    });
+    return !!(it && it.suspendido);
+  })
+    ? " checked"
+    : "";
+  return (
+    '<div class="med-receta-row med-receta-row--insulin-prandial" data-med-item-id="' +
+    esc(INSULIN_PRANDIAL_GROUP_ID) +
+    '">' +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox"' +
+    chk +
+    ' title="Excluir insulina preprandial del texto de egreso"' +
+    " onchange=\"toggleMedRecetaInsulinPrandialSuspendido(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-checkcell">' +
+    '<input type="checkbox" data-med-soap-chk="1"' +
+    paraNota +
+    ' title="Incluir insulina preprandial en Estado Actual / SOAP"' +
+    " onchange=\"toggleMedRecetaInsulinPrandialParaNota(this.checked)\"" +
+    "/>" +
+    "</div>" +
+    '<div class="med-receta-name">' +
+    insulinPrandialMedLabelHtml(items, esc) +
+    "</div>" +
+    '<div class="med-receta-destcell"></div>' +
+    '<div class="med-receta-diacell"></div>' +
+    "</div>"
+  );
+}
+
 function buildMedRecetaRowHtml(activeId, it, fechaActualizacion, allItems) {
   var sid = String(it.id || "");
   var diaOpts = fechaActualizacion ? { fechaActualizacion: fechaActualizacion } : undefined;
@@ -203,12 +247,20 @@ export function buildMedRecetaListHtml(activeId, block) {
   var items = block.items || [];
   var rows = [];
   var rescateShown = false;
+  var prandialShown = false;
   items.forEach(function (it) {
     if (isNutritionMedicationItem(it)) return;
     if (isInsulinRescateMedicationItem(it)) {
       if (!rescateShown) {
         rows.push(buildInsulinRescateGroupRowHtml(activeId, items));
         rescateShown = true;
+      }
+      return;
+    }
+    if (isInsulinPrandialMedicationItem(it)) {
+      if (!prandialShown) {
+        rows.push(buildInsulinPrandialGroupRowHtml(activeId, items));
+        prandialShown = true;
       }
       return;
     }

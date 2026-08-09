@@ -34,6 +34,34 @@ export function buildOnboardingStageHtml({ title, leadHtml, bodyHtml, stepperInd
     </div>`;
 }
 
+/**
+ * @param {{ title?: string, message?: string, stepperIndex?: number|null }} [opts]
+ */
+export function buildOnboardingBootLoadingHtml(opts = {}) {
+  const title = opts.title || 'Preparando R+';
+  const message = opts.message || 'Iniciando R+…';
+  const stepper =
+    opts.stepperIndex != null
+      ? buildClinicalOnboardingStepperHtml(/** @type {1|2|3} */ (opts.stepperIndex))
+      : '';
+  return `
+    <div class="clinical-onboarding-stage">
+      <div class="clinical-onboarding-stage-inner">
+        ${stepper}
+        <h3 class="clinical-onboarding-title">${escapeHtml(title)}</h3>
+        <div class="clinical-onboard-boot-loader" role="status" aria-live="polite" aria-busy="true">
+          <div class="clinical-onboard-boot-loader-row">
+            <span class="clinical-onboard-boot-spinner" aria-hidden="true"></span>
+            <p class="clinical-onboarding-status clinical-onboard-boot-progress-label">${escapeHtml(message)}</p>
+          </div>
+          <div class="clinical-onboard-boot-progress-track" aria-hidden="true">
+            <div class="clinical-onboard-boot-progress-bar" style="width:3%"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
 const MODE_NUBE_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`;
 
 const MODE_LOCAL_ICON = `<svg class="clinical-onboard-mode-card-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`;

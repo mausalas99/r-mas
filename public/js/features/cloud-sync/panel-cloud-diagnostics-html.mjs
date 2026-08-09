@@ -127,6 +127,20 @@ export function renderCloudNubeDashboardHtml(view) {
     });
   }
 
+  if (Array.isArray(v.toxicOutbox) && v.toxicOutbox.length > 0) {
+    html +=
+      '<div class="cloud-sync-inset-row cloud-sync-inset-row--static cloud-nube-dash-toxic-head">Lotes pesados en cola</div>';
+    v.toxicOutbox.forEach(function (row) {
+      html +=
+        '<div class="cloud-sync-inset-row cloud-sync-inset-row--kv cloud-nube-dash-toxic-row" data-status="error">' +
+        '<dt>' +
+        esc(String(row.clientMutationId || 'push')) +
+        '</dt><dd>' +
+        esc(String(row.opCount || 0) + ' ops · ~' + String(row.totalLabel || '') + (row.maxOpPath ? ' · ' + row.maxOpPath : '')) +
+        '</dd></div>';
+    });
+  }
+
   html += '</div>';
 
   const hasAlerts =
@@ -162,6 +176,7 @@ export function renderCloudNubeDashboardHtml(view) {
     '<div class="cloud-nube-dash-actions">' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="retry">Reintentar cola</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="sync">Forzar sync</button>' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="prune-labs">Descartar labs en cola</button>' +
     '</div></div>';
 
   return html;

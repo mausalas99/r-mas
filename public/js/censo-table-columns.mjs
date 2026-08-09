@@ -13,14 +13,114 @@ export const CENSO_COL_WEIGHTS = [
   { key: 'pend', title: 'Pend.', weight: 78 },
 ];
 
+/** Columnas que se ocultan si ningún paciente tiene contenido. */
+export const CENSO_OPTIONAL_COL_KEYS = ['accesos', 'cultivos', 'pend'];
+
+/** Reparto del peso liberado al ocultar columnas opcionales. */
+const OPTIONAL_FREED_WEIGHT_SHARE = {
+  paciente: 0.35,
+  labs: 0.45,
+  signos: 0.12,
+  dx: 0.08,
+};
+
 /**
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function censoCellHasContent(value) {
+  var s = String(value || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  return !!s && s !== '—';
+}
+
+/**
+ * @param {Record<string, unknown>} row
+ * @param {string} key
+ * @returns {string}
+ */
+export function censoRowColumnText(row, key) {
+  if (!row) return '';
+  if (key === 'pend') return String(row.pendientes || '').trim();
+  if (key === 'paciente') {
+    return [row.pacienteNombre, row.pacienteMeta].filter(Boolean).join('\n');
+  }
+  if (key === 'signos') return String(row.signosCol || row.signos || '').trim();
+  if (key === 'io') return String(row.ioCol || '').trim();
+  var direct = row[key];
+  if (direct) return String(direct).trim();
+  var labelByKey = {
+    dx: 'Diagnósticos',
+    meds: 'ATB / Medicamentos',
+    labs: 'Laboratorios',
+    accesos: 'Accesos',
+    cultivos: 'Cultivos',
+    pend: 'Pendientes',
+  };
+  var label = labelByKey[key];
+  if (!label) return '';
+  var sec = (row.sections || []).find(function (s) {
+    return s.label === label;
+  });
+  return sec ? sec.lines.join('\n').trim() : '';
+}
+
+/**
+ * @param {Array<Record<string, unknown>>} [rows]
+ * @returns {typeof CENSO_COL_WEIGHTS}
+ */
+export function resolveCensoColWeights(rows) {
+  var optionalHidden = {};
+  CENSO_OPTIONAL_COL_KEYS.forEach(function (key) {
+    optionalHidden[key] = !(rows || []).some(function (row) {
+      return censoCellHasContent(censoRowColumnText(row, key));
+    });
+  });
+
+  var freed = 0;
+  var base = CENSO_COL_WEIGHTS.filter(function (col) {
+    if (optionalHidden[col.key]) {
+      freed += col.weight;
+      return false;
+    }
+    return true;
+  });
+
+  if (!freed) return base.slice();
+
+  var recipientSum = Object.keys(OPTIONAL_FREED_WEIGHT_SHARE).reduce(function (s, key) {
+    return base.some(function (col) {
+      return col.key === key;
+    })
+      ? s + OPTIONAL_FREED_WEIGHT_SHARE[key]
+      : s;
+  }, 0);
+
+  return base.map(function (col) {
+    var share = OPTIONAL_FREED_WEIGHT_SHARE[col.key];
+    if (!share || !recipientSum) return { key: col.key, title: col.title, weight: col.weight };
+    var extra = Math.round((freed * share) / recipientSum);
+    return { key: col.key, title: col.title, weight: col.weight + extra };
+  });
+}
+
+/**
+ * @param {typeof CENSO_COL_WEIGHTS} [weights]
  * @returns {Array<{ key: string, title: string, pct: number }>}
  */
-export function censoColumnPercents() {
-  var sum = CENSO_COL_WEIGHTS.reduce(function (s, c) {
+export function censoColumnPercents(weights) {
+  var source = weights && weights.length ? weights : CENSO_COL_WEIGHTS;
+  var sum = source.reduce(function (s, c) {
     return s + c.weight;
   }, 0);
-  var cols = CENSO_COL_WEIGHTS.map(function (c) {
+  var cols = source.map(function (c) {
     return {
       key: c.key,
       title: c.title,
@@ -38,32 +138,39 @@ export function censoColumnPercents() {
 /**
  * @returns {string} reglas col.* para vista previa HTML
  */
-export function censoColgroupCssRules() {
-  return censoColumnPercents()
+function censoColClass(key) {
+  if (key === 'paciente') return 'pac';
+  if (key === 'meds') return 'med';
+  if (key === 'labs') return 'lab';
+  return key;
+}
+
+export function censoColgroupCssRules(weights) {
+  return censoColumnPercents(weights)
     .map(function (c) {
-      var cls = c.key === 'paciente' ? 'pac' : c.key === 'meds' ? 'med' : c.key === 'labs' ? 'lab' : c.key;
-      return 'col.' + cls + '{width:' + c.pct.toFixed(3) + '%}';
+      return 'col.' + censoColClass(c.key) + '{width:' + c.pct.toFixed(3) + '%}';
     })
     .join('');
 }
 
 /**
+ * @param {typeof CENSO_COL_WEIGHTS} [weights]
  * @returns {string}
  */
-export function censoColgroupHtml() {
-  return censoColumnPercents()
+export function censoColgroupHtml(weights) {
+  return censoColumnPercents(weights)
     .map(function (c) {
-      var cls = c.key === 'paciente' ? 'pac' : c.key === 'meds' ? 'med' : c.key === 'labs' ? 'lab' : c.key;
-      return '<col class="' + cls + '">';
+      return '<col class="' + censoColClass(c.key) + '">';
     })
     .join('');
 }
 
 /**
+ * @param {typeof CENSO_COL_WEIGHTS} [weights]
  * @returns {string}
  */
-export function censoTheadRowHtml() {
-  return censoColumnPercents()
+export function censoTheadRowHtml(weights) {
+  return censoColumnPercents(weights)
     .map(function (c) {
       var bold = c.key === 'dx' || c.key === 'cama' ? ' censo-bold' : '';
       return '<th class="censo-th' + bold + '">' + c.title + '</th>';

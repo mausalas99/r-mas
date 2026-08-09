@@ -28,12 +28,21 @@ import {
 } from '../../clinical-access-runtime.mjs';
 import { shouldEnforceTeamPatientMirror } from '../../clinical-privileges.mjs';
 import { filterPatientEntriesForLanTeamScope } from '../../patient-team-scope.mjs';
+import {
+  filterLabHistorySetsForMobileReference,
+  shouldApplyMobileLabHistoryWindow,
+} from '../cloud-mobile/lab-history-window.mjs';
 
 /** @type {{
  *   runtime?: object,
  *   renderPatientListLanSilent?: () => void,
  * }} */
 let entryDeps = {};
+
+function trimMobileLabHistorySets(sets) {
+  if (!shouldApplyMobileLabHistoryWindow()) return sets;
+  return filterLabHistorySetsForMobileReference(sets);
+}
 
 export function configureLanPatientEntries(deps) {
   if (deps && typeof deps === 'object') Object.assign(entryDeps, deps);
@@ -207,8 +216,10 @@ function applyLanPatientCharts(existing, entry) {
     indicaciones[existing.id] = nextInd;
     changed = true;
   }
-  var nextLabs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
-  var mergedLabs = mergeLabHistorySets(labHistory[existing.id] || [], nextLabs);
+  var nextLabs = trimMobileLabHistorySets(Array.isArray(entry.labHistory) ? entry.labHistory : []);
+  var mergedLabs = trimMobileLabHistorySets(
+    mergeLabHistorySets(labHistory[existing.id] || [], nextLabs)
+  );
   if (!lanJsonEqual(labHistory[existing.id], mergedLabs)) {
     labHistory[existing.id] = mergedLabs;
     changed = true;
@@ -304,7 +315,9 @@ function findExistingPatient(entry) {
 function seedNewPatientArtifacts(remoteId, entry) {
   notes[remoteId] = entry.note || {};
   indicaciones[remoteId] = entry.indicaciones || {};
-  labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  labHistory[remoteId] = trimMobileLabHistorySets(
+    Array.isArray(entry.labHistory) ? entry.labHistory : []
+  );
   if (Object.prototype.hasOwnProperty.call(entry, 'medReceta') && entry.medReceta) {
     medRecetaByPatient[remoteId] = entry.medReceta;
   }

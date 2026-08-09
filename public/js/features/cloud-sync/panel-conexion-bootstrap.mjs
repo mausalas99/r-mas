@@ -1,7 +1,9 @@
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
-import { nextStepHtml, userHasJoinedTeam, equipoStepHtml } from './panel-conexion-html.mjs';
+import { nextStepHtml, userHasJoinedTeam } from './panel-conexion-html.mjs';
 import { applyConexionView } from './panel-conexion-views.mjs';
+import { mountEquipoTeamsPanel } from './panel-equipo-embed.mjs';
+import { wireClinicalTeamsFormDelegation } from '../clinical-teams/teams-roster-form-delegation.mjs';
 import {
   handleRegister,
   handleLogin,
@@ -38,6 +40,14 @@ function buildConexionGoView(section, deps, ui) {
         refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
           toast: ui.toast,
         });
+      },
+      onEquipo() {
+        mountEquipoTeamsPanel(section.querySelector('[data-cloud-equipo-host]'), {
+          toast: ui.toast,
+        });
+      },
+      onStatusHome() {
+        ui.refreshStatusChipFromRuntime?.();
       },
     });
   };
@@ -120,19 +130,7 @@ export function wireConexionClicks(section, deps, ui) {
   document
     .getElementById('connection-dropdown')
     ?.addEventListener('click', onCloudActionClick);
-}
-
-/** @param {HTMLElement} section @param {() => string} getToken */
-function refreshConnectedEquipoStep(section, getToken) {
-  const equipo = section.querySelector('[data-cloud-equipo-body]');
-  if (userHasJoinedTeam() && equipo) {
-    equipo.outerHTML = '<p class="cloud-sync-hint" data-cloud-equipo-body>Equipo configurado.</p>';
-    return;
-  }
-  if (!userHasJoinedTeam() && !equipo) {
-    const view = section.querySelector('[data-cloud-view="equipo"] .cloud-sync-view-body');
-    if (view) view.insertAdjacentHTML('afterbegin', equipoStepHtml(getToken));
-  }
+  wireClinicalTeamsFormDelegation(section);
 }
 
 /** @param {HTMLElement} section @param {() => string} getToken */
@@ -151,7 +149,10 @@ export function wireTeamsChangedListener(section, deps, ui) {
     if (!section.isConnected) return;
     const roomId = deps.getCloudSyncRoomId();
     if (roomId && deps.getCloudSyncToken()) {
-      refreshConnectedEquipoStep(section, deps.getCloudSyncToken);
+      const host = section.querySelector('[data-cloud-equipo-host]');
+      if (host && section.dataset.cloudView === 'equipo') {
+        void mountEquipoTeamsPanel(host, { toast: ui.toast });
+      }
       return;
     }
     if (deps.getCloudSyncToken()) {

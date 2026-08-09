@@ -1,7 +1,7 @@
 import { startCloudSyncRuntime } from './sync-runtime.mjs';
 import { OUTBOX_STORAGE_KEY } from './outbox.mjs';
 import { createMemoryOutbox } from '../cloud-mobile/outbox-memory.mjs';
-import { configureCloudMutateBridge, scheduleCloudSyncPush, pushCloudCensusNow } from './mutate-bridge.mjs';
+import { configureCloudMutateBridge, scheduleInitialCloudSeed } from './mutate-bridge.mjs';
 import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
@@ -61,6 +61,7 @@ export function startSharedNubeRuntime(deps) {
       getBaseUrl: getCloudSyncUrl,
       getToken: deps.getCloudSyncToken,
     },
+    deferBootCycle: true,
   });
   configureCloudMutateBridge({
     outbox: sharedOutbox,
@@ -82,16 +83,20 @@ export function startSharedNubeRuntime(deps) {
   });
   void (async function runInitialCloudSyncAndPrune() {
     try {
-      await pushCloudCensusNow();
-    } catch {
-      /* push optional on connect */
-    }
-    try {
       await sharedRuntime?.syncCycle();
     } catch {
       /* pull optional on connect */
     }
     try {
+      await scheduleInitialCloudSeed();
+    } catch {
+      /* seed optional on connect */
+    }
+    try {
+      // Brief pause after census/lab commit — avoids stacked writes + 503 on equipos push.
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 4000);
+      });
       // Teams live in sala rooms (not only the census room) — seed pull+push on connect
       // so peers see equipos without waiting for a local Mi rotación edit.
       const { syncCloudClinicalOpsOnConnect } = await import('./cloud-clinical-ops-sala.mjs');
@@ -109,7 +114,6 @@ export function startSharedNubeRuntime(deps) {
       /* scope prune optional */
     }
   })();
-  scheduleCloudSyncPush();
   return sharedRuntime;
 }
 

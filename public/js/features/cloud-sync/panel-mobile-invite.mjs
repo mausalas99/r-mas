@@ -6,46 +6,12 @@ import { buildCloudMobileJoinUrl } from '../cloud-mobile/invite-url.mjs';
 import {
   getCloudSyncUrl,
   getCloudSyncToken,
-  getCloudSyncRoomSnapshot,
 } from './settings.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { copyInternoQrImage, drawInternoQrCanvas } from '../../interno-qr-render.mjs';
 
+/** @deprecated Collapsible state key — kept for sessionStorage cleanup only. */
 export const CLOUD_INVITE_MOBILE_OPEN_KEY = 'rpc-cloud-invite-mobile-open';
-
-/**
- * @param {HTMLElement} root
- * @param {{ title: string, subtitle?: string, openKey: string, extraClass?: string, fill: (body: HTMLElement) => void }} opts
- */
-function appendCloudMobileInviteCollapsible(root, opts) {
-  const details = document.createElement('details');
-  details.className =
-    'rpc-disclosure lan-invite-collapsible lan-hub-invite-card ' + String(opts.extraClass || '');
-  try {
-    details.open = sessionStorage.getItem(opts.openKey) === '1';
-  } catch (_e) {
-    void _e;
-  }
-  details.addEventListener('toggle', function () {
-    try {
-      sessionStorage.setItem(opts.openKey, details.open ? '1' : '0');
-    } catch (_e) {
-      void _e;
-    }
-  });
-  const sum = document.createElement('summary');
-  sum.className =
-    'rpc-disclosure__summary rpc-disclosure__summary--stacked lan-settings-card-summary';
-  sum.innerHTML =
-    '<span class="settings-card__title">' + opts.title + '</span>' +
-    (opts.subtitle ? '<span class="settings-card__desc">' + opts.subtitle + '</span>' : '');
-  details.appendChild(sum);
-  const body = document.createElement('div');
-  body.className = 'rpc-disclosure__body lan-invite-collapsible-body';
-  opts.fill(body);
-  details.appendChild(body);
-  root.appendChild(details);
-}
 
 /** @param {HTMLElement} host @param {string} url */
 function mountCloudMobileQrPreview(host, url) {
@@ -81,12 +47,10 @@ async function copyCloudMobileLinkFromUi(deps, url) {
   return false;
 }
 
-/** @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps @param {HTMLElement} root */
-export function appendCloudMobileInviteCard(deps, root) {
-  if (!root) return;
-
+/** @returns {string} */
+function resolveCloudMobileInviteUrl() {
   const auth = getCloudSyncToken();
-  if (!auth) return;
+  if (!auth) return '';
 
   let user = String(
     clinicalSessionContext.user?.username ||
@@ -103,68 +67,79 @@ export function appendCloudMobileInviteCard(deps, root) {
       /* ignore */
     }
   }
-  const url = buildCloudMobileJoinUrl({
+  return buildCloudMobileJoinUrl({
     baseUrl: getCloudSyncUrl(),
     auth,
     user: user || undefined,
   });
+}
+
+/**
+ * Dedicated mobile subview — content only (modal header already titles the screen).
+ * @param {HTMLElement} body
+ * @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps
+ * @param {string} url
+ */
+function fillCloudMobileInviteBody(body, deps, url) {
+  const hint = document.createElement('p');
+  hint.className = 'lan-connect-card-hint';
+  hint.style.margin = '0 0 8px';
+  hint.innerHTML =
+    'Enlace <strong>permanente</strong> ligado a <strong>tu @usuario</strong>. ' +
+    'No cambia con la rotación — el iPad entra a tu sala nube activa. ' +
+    'Ábrelo en Safari → <strong>Añadir a pantalla de inicio</strong>.';
+  body.appendChild(hint);
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'btn-lan-primary';
+  copyBtn.style.width = '100%';
+  copyBtn.textContent = 'Copiar enlace móvil (Nube)';
+  copyBtn.onclick = function () {
+    void copyCloudMobileLinkFromUi(deps, url);
+  };
+  body.appendChild(copyBtn);
+
+  const qrRow = document.createElement('div');
+  qrRow.className = 'lan-connect-actions-row';
+  qrRow.style.marginTop = '8px';
+  const copyQrBtn = document.createElement('button');
+  copyQrBtn.type = 'button';
+  copyQrBtn.className = 'btn-lan-secondary';
+  copyQrBtn.style.flex = '1';
+  copyQrBtn.textContent = 'Copiar QR';
+  copyQrBtn.onclick = function () {
+    void copyInternoQrImage(url, function (msg, kind) {
+      deps.runtime().showToast(msg, kind);
+    });
+  };
+  qrRow.appendChild(copyQrBtn);
+  body.appendChild(qrRow);
+
+  const qrHost = document.createElement('div');
+  qrHost.className = 'cloud-mobile-invite-qr-host';
+  qrHost.style.marginTop = '8px';
+  qrHost.style.display = 'flex';
+  qrHost.style.justifyContent = 'center';
+  mountCloudMobileQrPreview(qrHost, url);
+  body.appendChild(qrHost);
+}
+
+/** @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps @param {HTMLElement} root */
+export function appendCloudMobileInviteCard(deps, root) {
+  if (!root) return;
+  const url = resolveCloudMobileInviteUrl();
   if (!url) return;
-
-  appendCloudMobileInviteCollapsible(root, {
-    title: 'iPad / R+ Móvil (Nube)',
-    subtitle: 'Emparejar dispositivo',
-    openKey: CLOUD_INVITE_MOBILE_OPEN_KEY,
-    extraClass: 'lan-invite-collapsible--mobile lan-invite-collapsible--cloud lan-hub-invite-card--mobile',
-    fill: function (body) {
-      const hint = document.createElement('p');
-      hint.className = 'lan-connect-card-hint';
-      hint.style.margin = '0 0 8px';
-      hint.innerHTML =
-        'Enlace <strong>permanente</strong> ligado a <strong>tu @usuario</strong>. ' +
-        'No cambia con la rotación — el iPad entra a tu sala nube activa. ' +
-        'Ábrelo en Safari → <strong>Añadir a pantalla de inicio</strong>.';
-      body.appendChild(hint);
-
-      const copyBtn = document.createElement('button');
-      copyBtn.type = 'button';
-      copyBtn.className = 'btn-lan-primary';
-      copyBtn.style.width = '100%';
-      copyBtn.textContent = 'Copiar enlace móvil (Nube)';
-      copyBtn.onclick = function () {
-        void copyCloudMobileLinkFromUi(deps, url);
-      };
-      body.appendChild(copyBtn);
-
-      const qrRow = document.createElement('div');
-      qrRow.className = 'lan-connect-actions-row';
-      qrRow.style.marginTop = '8px';
-      const copyQrBtn = document.createElement('button');
-      copyQrBtn.type = 'button';
-      copyQrBtn.className = 'btn-lan-secondary';
-      copyQrBtn.style.flex = '1';
-      copyQrBtn.textContent = 'Copiar QR';
-      copyQrBtn.onclick = function () {
-        void copyInternoQrImage(url, function (msg, kind) {
-          deps.runtime().showToast(msg, kind);
-        });
-      };
-      qrRow.appendChild(copyQrBtn);
-      body.appendChild(qrRow);
-
-      const qrHost = document.createElement('div');
-      qrHost.className = 'cloud-mobile-invite-qr-host';
-      qrHost.style.marginTop = '8px';
-      qrHost.style.display = 'flex';
-      qrHost.style.justifyContent = 'center';
-      mountCloudMobileQrPreview(qrHost, url);
-      body.appendChild(qrHost);
-    },
-  });
+  fillCloudMobileInviteBody(root, deps, url);
 }
 
 /** @param {HTMLElement | null} host @param {{ runtime: () => { showToast: (msg: string, kind?: string) => void } }} deps */
 export function mountCloudMobileInviteInHost(host, deps) {
   if (!host) return;
   host.replaceChildren();
-  appendCloudMobileInviteCard(deps, host);
+  const panel = document.createElement('div');
+  panel.className =
+    'cloud-mobile-invite-panel lan-invite-collapsible--mobile lan-invite-collapsible--cloud';
+  appendCloudMobileInviteCard(deps, panel);
+  if (panel.childElementCount) host.appendChild(panel);
 }

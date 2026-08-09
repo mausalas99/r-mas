@@ -5,6 +5,7 @@
  */
 import { patients } from '../app-state.mjs';
 import { buildPaletteItems, rankPalette } from '../command-palette-model.mjs';
+import { isMobileWeb } from '../mobile-web.mjs';
 import { selectPatient } from './patients.mjs';
 
 var ctx = null;
@@ -243,6 +244,7 @@ function executeItem(item) {
 }
 
 export function openCommandPalette() {
+  if (isMobileWeb()) return;
   var d = ensureDom();
   d.backdrop.hidden = false;
   d.panel.hidden = false;

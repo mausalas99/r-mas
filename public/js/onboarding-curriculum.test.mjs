@@ -12,8 +12,8 @@ import {
   migrateTourStepId,
 } from './onboarding-curriculum.mjs';
 
-test('CURRICULUM_VERSION is 14 without LAN PIN tour step', () => {
-  assert.equal(CURRICULUM_VERSION, 14);
+test('CURRICULUM_VERSION is 16 after Conexión tour navigation fix', () => {
+  assert.equal(CURRICULUM_VERSION, 16);
 });
 
 test('getSalaTourSteps has 21 base steps without Historia clínica', () => {

@@ -19,6 +19,7 @@ import {
 } from '../ui-tab-motion.mjs';
 import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { closePatientDatosModal } from '../patient-datos-modal.mjs';
+import { closeMedRecetaPasteModal } from './medications-paste-modal.mjs';
 import { syncHeaderContext } from './header-context.mjs';
 import { cancelDeferredIdleWork, scheduleAfterPaint } from '../deferred-work.mjs';
 import { rt } from './pase-board-runtime.mjs';
@@ -30,6 +31,7 @@ import {
   renderGranularInnerTab,
   syncInnerTabVisualOnly,
 } from './pase-board-inner-cache.mjs';
+import { isMobileWeb, normalizeMobileAppTab } from '../mobile-web.mjs';
 
 var APP_TAB_ROWS = [
   ['lab', 'apptab-lab', 'appcontent-lab', 'appTab.lab'],
@@ -294,6 +296,8 @@ function nextAppTabFromKey(curIndex, key, orderLen) {
 
 export function switchAppTab(tab) {
   if (tab === 'lan') tab = 'lab';
+  if (isMobileWeb()) tab = normalizeMobileAppTab(tab);
+  if (tab !== 'med') closeMedRecetaPasteModal();
   cancelExpedienteWarm();
   cancelDeferredIdleWork();
   var prevAppTab = rt.getActiveAppTab();
@@ -336,7 +340,7 @@ if (typeof document !== 'undefined') {
 (function setupMainAppTabKeyboard() {
   var list = document.getElementById('app-main-tablist');
   if (!list) return;
-  var order = ['lab', 'nota', 'med', 'agenda'];
+  var order = isMobileWeb() ? ['lab', 'nota'] : ['lab', 'nota', 'med', 'agenda'];
   list.addEventListener('keydown', function (e) {
     if (!isAppTabNavKey(e.key)) return;
     var cur = rt.getActiveAppTab() === 'lan' ? 'lab' : rt.getActiveAppTab();

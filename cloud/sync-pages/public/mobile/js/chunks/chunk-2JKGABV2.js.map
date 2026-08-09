@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/features/patients-html.mjs"],
-  "sourcesContent": ["import { esc } from '../dom-escape.mjs';\nexport { esc };\nexport function escTxtSafe(s) {\n  return String(s == null ? '' : s)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;');\n}\n"],
-  "mappings": ";AAEO,SAAS,WAAW,GAAG;AAC5B,SAAO,OAAO,KAAK,OAAO,KAAK,CAAC,EAC7B,QAAQ,MAAM,OAAO,EACrB,QAAQ,MAAM,MAAM,EACpB,QAAQ,MAAM,MAAM,EACpB,QAAQ,MAAM,QAAQ;AAC3B;",
-  "names": []
-}

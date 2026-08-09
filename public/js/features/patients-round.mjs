@@ -12,6 +12,7 @@ import {
   isPatientBulkSelectMode,
   isPatientBulkSelected,
 } from './patients-bulk-select.mjs';
+import { isPatientAdmissionIncomplete } from '../patient-admission-incomplete.mjs';
 import { renderPatientSidebarBodyHtml } from '../patient-sidebar-card.mjs';
 
 var _lastRondaNavIds = [];
@@ -325,11 +326,13 @@ export function renderPatientRoundRowHtml(p) {
   var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
   var aid = rt.getActiveId();
   var bulkSelected = isPatientBulkSelectMode() && isPatientBulkSelected(p.id);
+  var incomplete = isPatientAdmissionIncomplete(p, rt.getSettings());
   return (
     '<div class="patient-card patient-card--roundrow ' +
     (p.id === aid ? 'active' : '') +
     (seen ? ' patient-card--roundrow-seen' : '') +
     (bulkSelected ? ' patient-card--bulk-selected' : '') +
+    (incomplete ? ' patient-card--incomplete' : '') +
     '" data-patient-id="' +
     p.id +
     '" role="button" tabindex="0">' +

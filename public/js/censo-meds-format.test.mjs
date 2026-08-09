@@ -97,6 +97,44 @@ test('suplemento nutricional no sale en meds', () => {
   assert.doesNotMatch(text, /ALIMENTACION|DIETA/i);
 });
 
+test('agrupa insulinas preprandial SC en una línea NM', () => {
+  var text = formatCensoMedsFromReceta({
+    items: [
+      {
+        nombreRaw: 'INSULINA HUMANA RAPIDA',
+        viaRaw: 'VIA SUBCUTANEA',
+        dosisRaw: '8 UI // EN AM',
+        frecuenciaRaw: 'UNICA VEZ',
+        suspendido: false,
+      },
+      {
+        nombreRaw: 'INSULINA HUMANA RAPIDA',
+        viaRaw: 'VIA SUBCUTANEA',
+        dosisRaw: '8 UI // EN MEDIODIA',
+        frecuenciaRaw: 'UNICA VEZ',
+        suspendido: false,
+      },
+      {
+        nombreRaw: 'INSULINA HUMANA RAPIDA',
+        viaRaw: 'VIA SUBCUTANEA',
+        dosisRaw: '8 UI // EN PM',
+        frecuenciaRaw: 'UNICA VEZ',
+        suspendido: false,
+      },
+      {
+        nombreRaw: 'INSULINA GLARGINA',
+        viaRaw: 'VIA SUBCUTANEA',
+        dosisRaw: '25 UI //',
+        frecuenciaRaw: 'CADA 24 HORAS',
+        suspendido: false,
+      },
+    ],
+  });
+  assert.match(text, /INSULINA PREPRANDIAL: 8 UI SC PREVIO A COMIDAS/);
+  assert.match(text, /INSULINA GLARGINA/);
+  assert.equal((text.match(/INSULINA HUMANA RAPIDA/gi) || []).length, 0);
+});
+
 test('dietas SOME no aparecen en meds', () => {
   var text = formatCensoMedsFromReceta({
     items: [{ nombreRaw: 'ATORVASTATINA 40 MG', suspendido: false }],

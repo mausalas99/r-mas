@@ -342,7 +342,12 @@ export function resumeLabBulkPreviewModalIfSuspended() {
   return true;
 }
 
-export function closeLabBulkPreviewModal() {
+export function closeLabBulkPreviewModal(opts) {
+  var discard = !!(opts && opts.discard);
+  if (!discard && modalSession && pendingConfirm) {
+    suspendLabBulkPreviewModal();
+    return;
+  }
   var backdrop = document.getElementById('lab-bulk-preview-backdrop');
   var body = document.getElementById('lab-bulk-preview-body');
   pendingConfirm = null;
@@ -363,7 +368,7 @@ export function confirmLabBulkPreview() {
     rt.showToast('Nada que procesar: revisa los avisos en la tabla', 'error');
     return;
   }
-  closeLabBulkPreviewModal();
+  closeLabBulkPreviewModal({ discard: true });
   fn();
 }
 

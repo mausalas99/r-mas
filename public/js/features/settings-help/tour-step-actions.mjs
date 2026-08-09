@@ -190,13 +190,17 @@ export function ensureSettingsExpandedForTour() {
   if (!isSettingsDropdownOpen()) toggleSettingsDropdown();
 }
 
-export function ensureConnectionExpandedForTour() {
+export function ensureConnectionExpandedForTour(_stepId) {
   if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
   var dd = document.getElementById('connection-dropdown');
   if (!dd) return;
   if (!dd.classList.contains('open') && typeof openConnectionDropdown === 'function') {
     openConnectionDropdown();
+    return;
   }
+  void import('../cloud-sync/panel-conexion-tour.mjs').then(function (m) {
+    void m.afterConnectionPanelOpened();
+  });
 }
 
 export function clearTourSoapButtonHighlight() {}
@@ -490,7 +494,7 @@ function applyTourTabsForStep(id, t) {
 function applyTourOverlayChromeForStep(id, t) {
   if (t.openProfile) ensureProfileExpandedForTour();
   else rt.closeProfileModal();
-  if (t.openConnection) ensureConnectionExpandedForTour();
+  if (t.openConnection) ensureConnectionExpandedForTour(id);
   else if (t.openSettings) ensureSettingsExpandedForTour();
   else {
     if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();

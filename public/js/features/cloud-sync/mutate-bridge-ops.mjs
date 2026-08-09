@@ -133,6 +133,13 @@ function pushDocOps(ops, patientId, entry, actorId, batchAt) {
   );
 }
 
+/** @param {string} patientId @param {unknown[]} labs @param {{ actorId: string, updatedAt: string }} meta */
+export function buildLabSidecarOpsForPatient(patientId, labs, meta) {
+  const ops = [];
+  pushLabSidecarOps(ops, patientId, labs, meta.actorId, meta.updatedAt);
+  return ops;
+}
+
 /** @param {CloudSyncOp[]} ops @param {string} patientId @param {unknown[]} labs @param {string} actorId @param {string} batchAt */
 function pushLabSidecarOps(ops, patientId, labs, actorId, batchAt) {
   for (let i = 0; i < labs.length; i += 1) {

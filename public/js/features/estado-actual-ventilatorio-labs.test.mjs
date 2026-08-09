@@ -61,4 +61,14 @@ test('buildVentilatorioCalcHints — PaFi solo con gasometría arterial; SpO₂ 
   assert.ok(venousHints.some(function (h) { return /venosa: PaFi no válida/i.test(h); }));
   assert.ok(!venousHints.some(function (h) { return /^PaFi \d+/.test(h); }));
   assert.ok(venousHints.some(function (h) { return h.indexOf('SpO₂/FiO₂') >= 0; }));
+
+  var aaHints = buildVentilatorioCalcHints(
+    { soporte: 'Aire ambiente' },
+    {
+      fr: 22,
+      sat: 96,
+      lab: { kind: 'venous', pO2: 60, pCO2: 35, sourceLabel: 'Gasometría venosa · 08/05' },
+    }
+  );
+  assert.equal(aaHints.length, 0);
 });

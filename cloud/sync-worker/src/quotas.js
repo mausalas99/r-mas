@@ -8,5 +8,9 @@ export const QUOTAS = {
   maxRoomsCreatedPerUser: 10,
   noteMaxBytes: 256 * 1024,
   labMutationMaxBytes: 512 * 1024,
+  /** Align with desktop chunkCloudOps (6 lab ops × few patients). */
+  maxOpsPerMutation: 16,
+  /** Reject monster HTTP bodies before decrypt/loadRoomState. */
+  maxMutationBodyBytes: 220 * 1024,
 };
 // labs uncapped by set count

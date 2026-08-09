@@ -64,6 +64,8 @@ html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px;
   background: transparent;
+  position: relative;
+  z-index: 30;
 }
 .sidebar-header-title-row {
   display: flex;
@@ -110,6 +112,89 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+.patient-filters-anchor {
+  flex-shrink: 0;
+}
+.btn-patient-filters {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+.btn-patient-filters:hover,
+.btn-patient-filters--open {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+.btn-patient-filters--active {
+  border-color: color-mix(in oklab, var(--action) 55%, var(--border));
+  color: var(--action);
+}
+.btn-patient-filters-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--action);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+.btn-patient-filters:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
+  outline-offset: 1px;
+}
+.clinical-census-filters-mount--popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: calc(16px * var(--density-space));
+  right: calc(16px * var(--density-space));
+  width: auto;
+  z-index: 520;
+}
+.clinical-census-filters-mount--popover[hidden] {
+  display: none !important;
+}
+.clinical-census-filters--popover {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+}
+.clinical-census-filters--popover .clinical-census-filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.clinical-census-filters--popover .clinical-census-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.clinical-census-filters--popover .clinical-census-filter span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.clinical-census-filters--popover .clinical-census-filter .profile-input {
+  width: 100%;
+  min-width: 0;
 }
 .btn-patient-bulk-select {
   appearance: none;
@@ -311,6 +396,17 @@ html.dark .btn-add:hover {
   border-left: 2.5px solid var(--color-ink);
   box-shadow: var(--shadow-sm);
 }
+.patient-card--incomplete {
+  border-color: color-mix(in srgb, var(--color-warn, #d97706) 55%, var(--border));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warn, #d97706) 25%, transparent);
+}
+.patient-card--incomplete .p-name::after {
+  content: ' · incompleto';
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-warn, #d97706);
+  letter-spacing: 0.02em;
+}
 html.dark .patient-card {
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
@@ -503,9 +599,9 @@ html.dark .patient-drag-hovercard.patient-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: calc(6px * var(--density-space)) calc(8px * var(--density-space)) calc(2px * var(--density-space));
-  padding: calc(2px * var(--density-space)) 0;
-  min-height: 20px;
+  margin: calc(6px * var(--density-space)) 0 calc(4px * var(--density-space));
+  padding: calc(3px * var(--density-space)) 0 calc(6px * var(--density-space));
+  min-height: 22px;
   font-size: calc(10px * var(--density-font));
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -514,17 +610,20 @@ html.dark .patient-drag-hovercard.patient-card {
   border-radius: 0;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  border-bottom: var(--border-hairline);
 }
-.patient-list-section-label--pinned {
-  gap: 6px;
+.patient-list-section-label__lead {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5px * var(--density-space));
+  min-width: 0;
 }
 .patient-list-pin-svg {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
+  width: calc(11px * var(--density-font));
+  height: calc(11px * var(--density-font));
   color: var(--text-muted);
-  opacity: 0.92;
+  opacity: 0.88;
   display: block;
 }
 .patient-list-section-count {
@@ -535,14 +634,14 @@ html.dark .patient-drag-hovercard.patient-card {
   text-transform: none;
 }
 .patient-list-section-toggle {
-  width: calc(100% - 16px);
-  margin: 6px 8px 1px;
+  width: 100%;
+  margin: calc(6px * var(--density-space)) 0 calc(4px * var(--density-space));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   border: 0;
-  border-bottom: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  border-bottom: var(--border-hairline);
   border-radius: 0;
   background: transparent;
   color: var(--text-muted);
@@ -550,8 +649,8 @@ html.dark .patient-drag-hovercard.patient-card {
   text-transform: uppercase;
   font-weight: 700;
   font-size: 10px;
-  padding: calc(2px * var(--density-space)) 0;
-  min-height: 20px;
+  padding: calc(3px * var(--density-space)) 0 calc(6px * var(--density-space));
+  min-height: 22px;
   cursor: pointer;
 }
 .patient-flag-chip {

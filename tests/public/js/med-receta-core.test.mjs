@@ -482,6 +482,15 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('ATORVASTATINA 40 MG'), 'estatinas');
   assert.equal(classifyMedicationSoapCategory('DEXAMETASONA 8 MG'), 'nm');
   assert.equal(classifyMedicationSoapCategory('SALBUTAMOL 5 MG'), 'viaAerea');
+  assert.equal(
+    classifyMedicationSoapCategory('EPINEFRINA RACEMICA 2.25% SOLUCION 3ML VIA INHALADO C/2H'),
+    'viaAerea'
+  );
+  assert.equal(
+    classifyMedicationSoapCategory('EPINEFRINA RACEMICA 2.25% SOLUCION 3ML', '', 'C/2H', 'VIA INHALADO'),
+    'viaAerea'
+  );
+  assert.equal(classifyMedicationSoapCategory('EPINEFRINA 1 MG SOL INY', 'IV C/24H'), 'vasop');
   assert.equal(classifyMedicationSoapCategory('HALOPERIDOL 5 MG'), 'sedacion');
   assert.equal(classifyMedicationSoapCategory('LEVETIRACETAM 500 MG'), 'antiepilepticos');
   assert.equal(classifyMedicationSoapCategory('LACTULOSA JARABE'), 'nm');

@@ -455,6 +455,24 @@ describe('applyEquiposClientFilters', () => {
     document.body.innerHTML = '';
   });
 
+  it('hides rows without sala when a sala filter is active', () => {
+    if (typeof document === 'undefined') return;
+    document.body.innerHTML =
+      '<div data-admin-equipos-list>' +
+      '<article class="cloud-sync-admin-equipos-row" data-sala="" data-search="nuevo" data-activity="none" data-has-team="0">' +
+      '<select class="cloud-sync-admin-equipos-user-sala"><option value="" selected>— Elegir —</option></select>' +
+      '</article>' +
+      '<article class="cloud-sync-admin-equipos-row" data-sala="Sala 2" data-search="ana" data-activity="none" data-has-team="0">' +
+      '<select class="cloud-sync-admin-equipos-user-sala"><option value="Sala 2" selected>Sala 2</option></select>' +
+      '</article></div>';
+    const host = /** @type {HTMLElement} */ (document.querySelector('[data-admin-equipos-list]'));
+    applyEquiposClientFilters(host, { q: '', sala: 'Sala 2' });
+    const rows = [...host.querySelectorAll('.cloud-sync-admin-equipos-row')];
+    assert.equal(rows[0].hidden, true);
+    assert.equal(rows[1].hidden, false);
+    document.body.innerHTML = '';
+  });
+
   it('filters sin última actividad / unassigned without clearing checks', () => {
     if (typeof document === 'undefined') return;
     document.body.innerHTML =

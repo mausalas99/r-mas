@@ -3,11 +3,12 @@ import {
   roomConnectedHtml,
   roomActionsHtml,
   conexionShellHtml,
-  equipoStepHtml,
+  equipoEmbedHostHtml,
 } from './panel-conexion-html.mjs';
 import { connectedViewsHtml, applyConexionView } from './panel-conexion-views.mjs';
 import { adminShellHtml } from './panel-conexion-bootstrap.mjs';
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
+import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs';
 
 /**
  * @param {HTMLElement} section
@@ -24,16 +25,18 @@ export function createConexionRenderers(section, normalizedSala, deps, ctx) {
 
   function renderConnectedBody(roomHtml) {
     const hasCloudSession = !!deps.getCloudSyncToken();
+    const chip = resolveCloudConexionChipStatus();
     renderShell(
       connectedViewsHtml({
         cloudUser: ctx.cloudUser,
         roomHtml,
-        equipoHtml: equipoStepHtml(deps.getCloudSyncToken),
+        equipoHtml: equipoEmbedHostHtml(),
         adminHtml: adminShellHtml(hasCloudSession),
         url: deps.getCloudSyncUrl(),
         hasCloudSession,
       }),
-      'idle'
+      chip.status,
+      chip.detail
     );
     applyConexionView(section, 'status', { onAdmin: ctx.ensureAdminOpen });
   }

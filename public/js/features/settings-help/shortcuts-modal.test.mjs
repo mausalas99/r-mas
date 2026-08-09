@@ -27,7 +27,7 @@ describe('shortcuts-modal DOM', () => {
       '<button type="button" class="shortcuts-close"></button>' +
       '</div>' +
       '<p class="shortcuts-lead" id="shortcuts-hint-bar">' +
-      '<kbd id="shortcuts-modal-hint-mod"></kbd><span id="shortcuts-hint-seconds"></span></p>' +
+      '<kbd id="shortcuts-modal-hint-mod"></kbd></p>' +
       '</div>' +
       '<div id="shortcuts-modal-body" class="shortcuts-body"></div>' +
       '<footer class="shortcuts-foot"></footer>' +

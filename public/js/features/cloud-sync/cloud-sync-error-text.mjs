@@ -8,14 +8,28 @@ export const CLOUD_SYNC_CLIENT_NOT_READY =
 /**
  * @param {string} raw
  */
+export function isCloudSyncNetworkErrorMessage(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return false;
+  if (/^failed to fetch$/i.test(s) || /networkerror when attempting to fetch/i.test(s)) return true;
+  if (/load failed|network request failed/i.test(s)) return true;
+  if (/ERR_NETWORK_CHANGED/i.test(s)) return true;
+  if (/sin red hacia nube/i.test(s)) return true;
+  if (/no hubo respuesta de nube/i.test(s)) return true;
+  return false;
+}
+
+/**
+ * @param {string} raw
+ */
 export function humanizeCloudSyncErrorMessage(raw) {
   const s = String(raw || '').trim();
   if (!s) return '';
-  if (/^failed to fetch$/i.test(s) || /networkerror when attempting to fetch/i.test(s)) {
+  if (isCloudSyncNetworkErrorMessage(s)) {
+    if (/no hubo respuesta de nube/i.test(s)) {
+      return 'No hubo respuesta de Nube. Revisa la conexión e inténtalo de nuevo.';
+    }
     return 'Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.';
-  }
-  if (/load failed|network request failed/i.test(s)) {
-    return 'No hubo respuesta de Nube. Revisa la conexión e inténtalo de nuevo.';
   }
   return humanizeTechnicalSyncMessage(s);
 }

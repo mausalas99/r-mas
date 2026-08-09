@@ -13,6 +13,11 @@ import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { normalizeLabHistoryPatientSets } from '../storage.js';
 import { patients, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision, getLabHistoryRevision } from '../lab-history-cache.mjs';
+import {
+  filterLabHistorySetsForMobileReference,
+  shouldApplyMobileLabHistoryWindow,
+} from './cloud-mobile/lab-history-window.mjs';
+import { isMobileWeb, syncMobileLabReferenceChrome } from '../mobile-web.mjs';
 
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { isPaseMode } from './chrome.mjs';
@@ -58,11 +63,15 @@ function labSetIdForHistory(set, idx) {
 function getActivePatientLabHistory() {
   var pid = rt.getActiveId();
   if (!pid) return [];
-  return sortLabHistoryChronological(
+  var hist = sortLabHistoryChronological(
     rt.ensureParsedLabHistoryCached
       ? rt.ensureParsedLabHistoryCached(pid)
       : rt.ensureParsedLabHistory(pid, { readOnly: true })
   );
+  if (shouldApplyMobileLabHistoryWindow()) {
+    return filterLabHistorySetsForMobileReference(hist);
+  }
+  return hist;
 }
 
 function getLabHistorySelectedSetId(pid, hist) {
@@ -72,7 +81,34 @@ function getLabHistorySelectedSetId(pid, hist) {
   return labSetIdForHistory(hist[0], 0);
 }
 
+function mobileLabReferenceMode() {
+  return isMobileWeb();
+}
+
+function setLabOutputHistoryHint(hintEl, message, opts) {
+  if (!hintEl) return;
+  var mobile = opts && opts.mobileReference;
+  hintEl.style.display = 'block';
+  if (mobile) {
+    hintEl.className = 'lab-history-hint lab-mobile-reference-empty';
+    hintEl.innerHTML =
+      '<span class="lab-mobile-reference-empty-title">Estudios recientes</span>' +
+      '<span class="lab-mobile-reference-empty-lead">' +
+      esc(message) +
+      '</span>';
+    return;
+  }
+  hintEl.className = 'lab-history-hint';
+  hintEl.textContent = message;
+}
+
+function ensureMobileLabOutputShellVisible() {
+  if (!mobileLabReferenceMode()) return;
+  syncMobileLabReferenceChrome();
+}
+
 function syncLabHistoryDateSelect(opts) {
+  ensureMobileLabOutputShellVisible();
   var selectEl = document.getElementById('lab-history-date-select');
   var hintEl = document.getElementById('lab-output-history-hint');
   var moreMenu = document.querySelector('.lab-output-more');
@@ -83,11 +119,14 @@ function syncLabHistoryDateSelect(opts) {
     selectEl.hidden = true;
     selectEl.innerHTML = '';
     if (hintEl) {
-      hintEl.style.display = 'block';
-      hintEl.textContent =
-        'Selecciona un paciente en la columna izquierda para ver los estudios guardados.';
+      setLabOutputHistoryHint(
+        hintEl,
+        'Selecciona un paciente en la columna izquierda para ver los estudios guardados.',
+        { mobileReference: mobileLabReferenceMode() }
+      );
     }
     if (moreMenu) moreMenu.hidden = true;
+    if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
     return '';
   }
   var hist = getActivePatientLabHistory();
@@ -97,15 +136,21 @@ function syncLabHistoryDateSelect(opts) {
     selectEl.hidden = true;
     selectEl.innerHTML = '';
     if (hintEl) {
-      hintEl.style.display = 'block';
-      hintEl.textContent =
-        'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).';
+      setLabOutputHistoryHint(
+        hintEl,
+        shouldApplyMobileLabHistoryWindow()
+          ? 'Sin estudios en los últimos 3 días. En escritorio se procesan labs y sincronizan aquí para referencia rápida.'
+          : 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y diagramas).',
+        { mobileReference: mobileLabReferenceMode() && shouldApplyMobileLabHistoryWindow() }
+      );
     }
     if (moreMenu) moreMenu.hidden = true;
+    ensureMobileLabOutputShellVisible();
+    if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
     return '';
   }
   if (hintEl) hintEl.style.display = 'none';
-  if (moreMenu) moreMenu.hidden = false;
+  if (moreMenu) moreMenu.hidden = mobileLabReferenceMode() ? true : false;
   var selectedId = getLabHistorySelectedSetId(pid, hist);
   if (opts && opts.preferSetId) selectedId = opts.preferSetId;
   _labHistorySelectedSetId[pid] = selectedId;
@@ -145,6 +190,7 @@ function syncLabHistoryDateSelect(opts) {
     selectEl.value = selectedId;
   }
   selectEl.hidden = false;
+  if (mobileLabReferenceMode()) syncMobileLabReferenceChrome();
   return selectedId;
 }
 
@@ -182,7 +228,7 @@ function loadLabHistorySetIntoOutput(setId, opts) {
     fromHistory: true,
     silent: !!(opts && opts.silent),
   });
-  rt.renderDiagramas(set.resLabs);
+  if (!mobileLabReferenceMode()) rt.renderDiagramas(set.resLabs);
   if (!(opts && opts.silent)) announceLabHistoryReplay_(setId);
   return true;
 }
@@ -194,7 +240,8 @@ function maybeShowLabHistoryForActivePatient(opts) {
   if (!selectedId) {
     if (!labPanelBridge.getActiveLab()) {
       var sec = document.getElementById('lab-output-section');
-      if (sec) sec.style.display = 'none';
+      if (sec && !mobileLabReferenceMode()) sec.style.display = 'none';
+      else ensureMobileLabOutputShellVisible();
       labPanelBridge.syncLabOutputChrome();
     }
     return;
@@ -204,12 +251,14 @@ function maybeShowLabHistoryForActivePatient(opts) {
 }
 
 export function renderLabHistoryPanel() {
+  ensureMobileLabOutputShellVisible();
   var selectedId = syncLabHistoryDateSelect();
   if (selectedId && !labPanelBridge.getActiveLab()) {
     loadLabHistorySetIntoOutput(selectedId, { silent: true });
   } else if (!selectedId && !labPanelBridge.getActiveLab()) {
     var sec = document.getElementById('lab-output-section');
-    if (sec) sec.style.display = 'none';
+    if (sec && !mobileLabReferenceMode()) sec.style.display = 'none';
+    else ensureMobileLabOutputShellVisible();
     labPanelBridge.syncLabOutputChrome();
   }
   rt.renderRoundOverviewPanels();

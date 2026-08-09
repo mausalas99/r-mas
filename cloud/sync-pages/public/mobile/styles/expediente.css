@@ -495,6 +495,8 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  justify-content: flex-start;
+  align-items: stretch;
   gap: calc(10px * var(--density-space, 1));
   padding: calc(12px * var(--density-space, 1)) calc(14px * var(--density-space, 1));
 }
@@ -736,9 +738,13 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 }
 
 .exp-pendientes-mount {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: auto;
+  justify-content: flex-start;
+  align-items: stretch;
   padding: calc(4px * var(--density-space, 1)) calc(4px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
 }
 
@@ -858,17 +864,21 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 
 .exp-segment-body {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .exp-segment-panel {
   display: none;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
   flex-direction: column;
+  width: 100%;
 }
 
 .exp-segment-panel.active {
@@ -879,7 +889,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 .exp-segment-panel.active > #exp-pane-estado-actual,
 .exp-segment-panel.active > #exp-pane-eventualidades,
 .exp-pendientes-mount > .exp-segment-panel.active {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   width: 100%;
   display: flex;
@@ -888,7 +898,7 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 
 .exp-pendientes-mount > .exp-segment-panel {
   display: none;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   flex-direction: column;
 }
@@ -898,17 +908,15 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 }
 
 .exp-pendientes-mount > .exp-segment-panel.active > #todo-form {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* Menos trabajo de layout en paneles ocultos del expediente */
-.exp-composite-pane:not(.active) .exp-segment-panel,
-.exp-segment-panel:not(.active) {
-  content-visibility: hidden;
-  contain-intrinsic-size: auto 360px;
+/* Granular panes should live inside composite mounts — never stack in the host */
+.expediente-panes-host > .tab-content:not(.exp-composite-pane) {
+  display: none !important;
 }
 
 .drive-import-trigger {

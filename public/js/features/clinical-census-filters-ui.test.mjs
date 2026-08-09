@@ -178,18 +178,18 @@ describe('clinical census team filter', () => {
 });
 
 describe('clinical census filters collapse storage', () => {
-  it('defaults expanded', () => {
+  it('defaults collapsed (popover closed)', () => {
     const mem = new Map();
     const storage = {
       getItem: (k) => mem.get(k) ?? null,
       setItem: (k, v) => mem.set(k, v),
       removeItem: (k) => mem.delete(k),
     };
-    assert.equal(readCensusFiltersCollapsed(storage), false);
-    writeCensusFiltersCollapsed(true, storage);
-    assert.equal(mem.get(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS), '1');
     assert.equal(readCensusFiltersCollapsed(storage), true);
     writeCensusFiltersCollapsed(false, storage);
+    assert.equal(mem.get(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS), '0');
     assert.equal(readCensusFiltersCollapsed(storage), false);
+    writeCensusFiltersCollapsed(true, storage);
+    assert.equal(readCensusFiltersCollapsed(storage), true);
   });
 });

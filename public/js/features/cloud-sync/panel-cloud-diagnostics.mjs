@@ -14,6 +14,7 @@ import { isCloudMutateBridgeConfigured } from './mutate-bridge.mjs';
 import { patients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
+import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
 
 function readCloudDiagnosticsRuntime() {
   const runtime = getSharedNubeRuntime();
@@ -118,6 +119,26 @@ function runDiagnosticsSync(host, deps) {
   });
 }
 
+function runDiagnosticsPruneLabs(host, deps) {
+  const outbox = getSharedNubeOutbox();
+  if (!outbox) {
+    deps?.toast?.('Runtime Nube inactivo. Reconecta en Conexión.', 'warn');
+    return;
+  }
+  const result = pruneLabSidecarsFromOutbox(outbox);
+  const runtime = getSharedNubeRuntime();
+  runtime?.refreshIdleStatus?.();
+  if (result.removedOps > 0) {
+    deps?.toast?.(
+      'Se descartaron ' + result.removedOps + ' lab' + (result.removedOps !== 1 ? 's' : '') + ' de la cola.',
+      'info'
+    );
+  } else {
+    deps?.toast?.('No había labs pendientes en la cola.', 'info');
+  }
+  refreshCloudSyncDiagnostics(host, deps);
+}
+
 function wireDashboardActions(host, deps) {
   const panel = host.querySelector('[data-cloud-diag-dashboard]');
   if (!panel || panel.dataset.wired === '1') return;
@@ -145,6 +166,7 @@ function wireDashboardActions(host, deps) {
     const action = btn.getAttribute('data-cloud-diag-action');
     if (action === 'retry') runDiagnosticsRetry(host, deps);
     else if (action === 'sync') runDiagnosticsSync(host, deps);
+    else if (action === 'prune-labs') runDiagnosticsPruneLabs(host, deps);
   });
 }
 

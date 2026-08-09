@@ -75,8 +75,46 @@ const FIX_GUIDES = {
     steps: [
       'Confirma que hay internet y sesión activa en Conexión.',
       'Toca Reintentar cola en este panel.',
+      'Si la cola es solo labs y ya están en Nube, usa Descartar labs en cola.',
       'Si no baja el número de la cola, toca Forzar sync.',
       'Revisa las alertas de error: pueden bloquear el envío.',
+    ],
+  },
+  outbox_labs_stuck: {
+    id: 'outbox_labs_stuck',
+    title: 'Labs atorados en cola',
+    summary:
+      'Los laboratorios ya parseados no deberían re-subirse si Nube ya los tiene. Puedes vaciar solo labs sin tocar censo ni signos.',
+    steps: [
+      'Toca Forzar sync una vez (pull actualiza el índice de labs en servidor).',
+      'Si la cola sigue con labs, toca Descartar labs en cola.',
+      'Los labs siguen en tu Mac; solo se descarta el envío pendiente.',
+      'Labs nuevos o re-parseados con cambios reales se volverán a encolar solos.',
+    ],
+  },
+  toxic_legacy_lab_backfill: {
+    id: 'toxic_legacy_lab_backfill',
+    title: 'Labs en un solo push (R+ antiguo)',
+    summary:
+      'Un cliente está intentando enviar muchos labs en un solo lote (`cloud-lab-backfill`). Eso satura el servidor y bloquea la sala.',
+    steps: [
+      'Actualiza R+ en esta Mac (versión 8.0.8+ con fix de labs por paciente).',
+      'Reinicia R+ y abre Diagnóstico Nube → Reintentar cola (divide el lote).',
+      'Si otro Mac o iPad en la misma sala usa R+ viejo, actualízalo también.',
+      'Si los labs ya están en Nube: Descartar labs en cola.',
+      'Copia el informe técnico si soporte debe revisar quién empuja el lote.',
+    ],
+  },
+  toxic_outbox_chunk: {
+    id: 'toxic_outbox_chunk',
+    title: 'Lote demasiado grande en cola',
+    summary: 'Hay un push local que excede el tamaño que el servidor acepta (~200 KB por lote).',
+    steps: [
+      'Revisa «Lotes pesados en cola» en este panel: anota el path más grande.',
+      'Toca Reintentar cola (R+ actual divide o recorta el lote).',
+      'Si es solo labs y ya están en Nube: Descartar labs en cola.',
+      'Si el path es un lab con PDF o texto SOME crudo, re-parsea localmente sin re-subir el blob.',
+      'Si la cola se vacía pero siguen 503, otro dispositivo en la sala puede estar empujando — actualiza todos los R+ de la guardia.',
     ],
   },
   sync_error: {

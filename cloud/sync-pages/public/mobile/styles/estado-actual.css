@@ -8,9 +8,9 @@
 }
 
 #exp-pane-estado-actual {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 html.ea-copy-fab-active #exp-pane-estado-actual {
@@ -254,6 +254,105 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   min-width: 0;
 }
 
+.ea-field--soporte {
+  grid-column: 1 / -1;
+}
+
+.ea-soporte-vent-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ea-soporte-params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.ea-soporte-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ea-soporte-calc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ea-soporte-calc-item {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: calc(12px * var(--density-font, 1));
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--border));
+}
+
+.ea-soporte-calc-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ea-soporte-calc-chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: calc(11px * var(--density-font, 1));
+  line-height: 1.35;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--accent) 18%, var(--border));
+}
+
+.ea-soporte-lab-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--accent) 6%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--accent) 12%, var(--border));
+}
+
+.ea-soporte-lab-feed--empty .ea-soporte-lab-feed-text {
+  color: var(--text-muted);
+}
+
+.ea-soporte-lab-feed-label {
+  font-size: calc(10px * var(--density-font, 1));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ea-soporte-lab-feed-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ea-soporte-lab-feed-text {
+  font-size: calc(12px * var(--density-font, 1));
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.ea-soporte-lab-feed-values {
+  font-size: calc(12px * var(--density-font, 1));
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .ea-diet-proposal-bar {
   display: flex;
   flex-wrap: wrap;
@@ -280,6 +379,35 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.ea-diet-options {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ea-diet-options-lead {
+  margin: 0;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ea-diet-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: calc(13px * var(--density-font, 1));
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.ea-diet-option input {
+  margin-top: 3px;
   flex-shrink: 0;
 }
 
@@ -344,6 +472,46 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   gap: 8px;
   padding: 0 10px 10px;
   border-top: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+}
+
+.ea-med-subcat {
+  border: 1px solid color-mix(in oklab, var(--divider) 85%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.ea-med-subcat-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+}
+
+.ea-med-subcat-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ea-med-subcat-title {
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+.ea-med-subcat-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  font-size: calc(10px * var(--density-font, 1));
+}
+
+.ea-med-subcat-body {
+  padding: 0 8px 8px;
 }
 
 .ea-med-item-list {

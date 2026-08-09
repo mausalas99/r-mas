@@ -12,32 +12,46 @@ import {
 import { wireCloudAuthTabs } from './panel-steps-html.mjs';
 import { humanizeCloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
 import { refreshCloudSyncDiagnostics } from './panel-cloud-diagnostics.mjs';
+import { applyHeaderTeamSyncVisual } from './cloud-sync-header-chrome.mjs';
+import { resolveCloudConexionChipStatus } from './cloud-sync-status-snapshot.mjs';
 
 /** @param {HTMLElement} section @param {object} deps */
 function bindStatusChip(section, deps) {
   const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
-  return function renderStatusChip(status, detail) {
+  function renderStatusChip(status, detail) {
     const chip = section.querySelector('[data-cloud-status-chip]');
-    if (!chip) return;
-    const transport = getSharedNubeRuntime()?.getTransportState?.() || 'poll';
-    chip.textContent = formatCloudStatusChipLabel(status, transport);
-    chip.className = 'cloud-sync-status-chip ' + statusChipModifier(status);
-    chip.setAttribute('data-status', status);
-    chip.setAttribute('data-cloud-transport', transport);
+    const live = resolveCloudConexionChipStatus();
+    const resolvedStatus = live.status || status;
+    const resolvedDetail = live.detail || detail;
+    const transport = live.transport || getSharedNubeRuntime()?.getTransportState?.() || 'poll';
+    if (chip) {
+      chip.textContent = formatCloudStatusChipLabel(resolvedStatus, transport);
+      chip.className = 'cloud-sync-status-chip ' + statusChipModifier(resolvedStatus);
+      chip.setAttribute('data-status', resolvedStatus);
+      chip.setAttribute('data-cloud-transport', transport);
+    }
     const detailEl = section.querySelector('[data-cloud-status-detail]');
     if (detailEl) {
       const text =
-        status === 'error' ? humanizeCloudSyncErrorMessage(String(detail || '').trim()) : '';
+        resolvedStatus === 'error'
+          ? humanizeCloudSyncErrorMessage(String(resolvedDetail || '').trim())
+          : '';
       detailEl.textContent = text;
       detailEl.hidden = !text;
     }
-    deps.setStatus?.(status, detail);
+    applyHeaderTeamSyncVisual(resolvedStatus, transport);
+    deps.setStatus?.(resolvedStatus, resolvedDetail);
     if (section.dataset.cloudView === 'nube') {
       refreshCloudSyncDiagnostics(section.querySelector('[data-cloud-nube-diagnostics-host]'), {
         toast,
       });
     }
-  };
+  }
+  function refreshStatusChipFromRuntime() {
+    const live = resolveCloudConexionChipStatus();
+    renderStatusChip(live.status, live.detail);
+  }
+  return { renderStatusChip, refreshStatusChipFromRuntime };
 }
 
 /**
@@ -88,20 +102,28 @@ export function mountNubeSection(root, deps) {
   section.className = 'cloud-sync-conexion';
   section.setAttribute('data-cloud-nube-section', '1');
 
-  const { startRuntime, stopRuntime } = createNubeRuntime({
+  const statusChip = bindStatusChip(section, deps);
+
+  const { startRuntime: startRuntimeInner, stopRuntime } = createNubeRuntime({
     getApi: deps.getApi,
     getCloudSyncRoomId: deps.getCloudSyncRoomId,
     getCloudSyncToken: deps.getCloudSyncToken,
     getCloudSyncRevision: deps.getCloudSyncRevision,
     setCloudSyncRevision: deps.setCloudSyncRevision,
-    onStatus: bindStatusChip(section, deps),
+    onStatus: statusChip.renderStatusChip,
     toast,
   });
+
+  function startRuntime() {
+    startRuntimeInner();
+    statusChip.refreshStatusChipFromRuntime();
+  }
 
   const cloudUserRef = {
     get cloudUser() { return cloudUser; },
     set cloudUser(v) { cloudUser = v; },
     startRuntime,
+    refreshStatusChipFromRuntime: statusChip.refreshStatusChipFromRuntime,
     displaySala,
   };
   const { renderConnected, renderDisconnected } = createConexionRenderers(
@@ -124,6 +146,7 @@ export function mountNubeSection(root, deps) {
     stopRuntime,
     setCloudUser(u) { cloudUser = u; },
     getCloudUser() { return cloudUser; },
+    refreshStatusChipFromRuntime: statusChip.refreshStatusChipFromRuntime,
     ensureAdminOpen,
     toggleAdminPanel,
   };

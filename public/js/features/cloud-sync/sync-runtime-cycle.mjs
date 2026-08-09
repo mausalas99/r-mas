@@ -1,10 +1,17 @@
 /** @typedef {'idle' | 'syncing' | 'pending' | 'offline' | 'error'} CloudSyncStatus */
 
 import { sanitizeOpsForCloudPush } from './cloud-op-slim.mjs';
+import { chunkCloudOps } from './cloud-push-direct.mjs';
 import { createRoomSyncWs } from './room-sync-ws.mjs';
 import { createCloudPollScheduler } from './sync-runtime-schedule.mjs';
 import { resolveCloudPushMutationId } from './push-mutation-id.mjs';
 import { cloudSyncErrorMessage } from './cloud-sync-error-text.mjs';
+import { isCloudTransientServerError } from './cloud-sync-timing.mjs';
+import {
+  noteCloudLabSidecarsFromPullResult,
+  noteCloudLabSidecarOpsPushed,
+} from './cloud-lab-sidecar-index.mjs';
+import { drainSyncedLabSidecarsFromOutbox, splitLabBackfillInOutbox } from './outbox-lab.mjs';
 import {
   cloudSyncErrorCode,
   noteCloudSyncCycle,
@@ -18,6 +25,18 @@ import {
 
 /** Concurrent Nube writers; Worker returns 409 revision_stale / conflict. */
 const PUSH_STALE_RETRIES = 3;
+/** Transient 502/503/504 from saturated Worker / D1. */
+const PUSH_TRANSIENT_RETRIES = 3;
+const PUSH_TRANSIENT_DELAY_MS = 2000;
+
+/**
+ * @param {number} ms
+ */
+function delayMs(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
 
 /**
  * @param {unknown} err
@@ -56,7 +75,7 @@ function createOutboxSync(outbox, setStatus) {
  * @param {{ markLocalWrite: () => void }} pace
  */
 function createPullPush(deps, setStatus, outboxSync, pace) {
-  const { api, outbox, getRoomId, getRevision, setRevision, applyPullResult } = deps;
+  const { api, outbox, getRoomId, getRevision, setRevision, applyPullResult, pollMobile } = deps;
 
   /** @param {number} revision */
   function applyServerRevision(revision) {
@@ -67,6 +86,18 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
     setRevision(next);
   }
 
+  /** @param {number} revision @param {number} since @param {number} opsCount */
+  function reconcileServerRevision(revision, since, opsCount) {
+    const next = Number(revision);
+    if (!Number.isFinite(next) || next <= 0) return;
+    const sinceNum = Number(since) || 0;
+    if (opsCount === 0 && sinceNum >= next) {
+      setRevision(next);
+      return;
+    }
+    applyServerRevision(next);
+  }
+
   async function pullLatest() {
     const roomId = getRoomId();
     if (!roomId) return;
@@ -74,14 +105,40 @@ function createPullPush(deps, setStatus, outboxSync, pace) {
       throw new Error('Cliente Nube no configurado');
     }
     const since = getRevision() ?? 0;
-    const result = await api.pull(roomId, since);
-    if (result?.revision != null) applyServerRevision(Number(result.revision));
+    const result = await api.pull(roomId, since, pollMobile ? { mobile: true } : undefined);
+    const opsCount = Array.isArray(result?.ops) ? result.ops.length : 0;
+    if (result?.revision != null) {
+      reconcileServerRevision(Number(result.revision), since, opsCount);
+    }
+    let labIngress = null;
+    if (pollMobile) {
+      try {
+        const labDiag = await import('../cloud-mobile/lab-sync-diagnostics.mjs');
+        const raw = result?.state ? labDiag.countLabSidecarsInState(result.state) : { patients: 0, sets: 0 };
+        const labOpsInPayload = labDiag.countLabOpsInPullResult(result);
+        labIngress = {
+          needSnapshot: !!result?.needSnapshot,
+          revision: result?.revision != null ? Number(result.revision) : null,
+          opsCount: Array.isArray(result?.ops) ? result.ops.length : 0,
+          labOpsInPayload: labOpsInPayload,
+          rawSidecars: raw,
+          filteredSidecars: raw,
+        };
+        labDiag.recordLabPullIngress(labIngress);
+      } catch {
+        /* optional */
+      }
+    }
     if (applyPullResult) await applyPullResult(result);
+    noteCloudLabSidecarsFromPullResult(result);
+    drainSyncedLabSidecarsFromOutbox(outbox);
+    outboxSync.refreshIdleStatus();
     noteCloudSyncPull();
     recordCloudSyncTrace('pull', {
       since,
       revision: result?.revision != null ? Number(result.revision) : null,
       opsCount: Array.isArray(result?.ops) ? result.ops.length : 0,
+      labOpsInPayload: labIngress?.labOpsInPayload ?? null,
     });
   }
 
@@ -118,26 +175,67 @@ function createPullPushOps(ctx) {
    * @param {string} roomId
    * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
    * @param {unknown[]} ops
+   * @param {number} [chunkIndex]
    */
-  async function pushWithStaleRetry(roomId, item, ops) {
+  async function pushSingleWithStaleRetry(roomId, item, ops, chunkIndex) {
     if (!api || typeof api.push !== 'function') {
       throw new Error('Cliente Nube no configurado');
     }
+    const suffix = chunkIndex != null ? `:c${chunkIndex}` : '';
     let lastErr;
+    let transientAttempts = 0;
     for (let attempt = 0; attempt <= PUSH_STALE_RETRIES; attempt++) {
       try {
         return await api.push(roomId, {
-          clientMutationId: resolveCloudPushMutationId(item),
+          clientMutationId: `${resolveCloudPushMutationId(item)}${suffix}`,
           ops,
           baseRevision: getRevision() ?? item.baseRevision ?? 0,
         });
       } catch (err) {
         lastErr = err;
+        if (
+          isCloudTransientServerError(err) &&
+          transientAttempts < PUSH_TRANSIENT_RETRIES
+        ) {
+          transientAttempts += 1;
+          await delayMs(PUSH_TRANSIENT_DELAY_MS * transientAttempts);
+          continue;
+        }
         if (!isCloudRevisionStaleError(err) || attempt >= PUSH_STALE_RETRIES) throw err;
         await pullLatest();
       }
     }
     throw lastErr;
+  }
+
+  /**
+   * @param {string} roomId
+   * @param {{ clientMutationId: string, baseRevision?: number, enqueuedAt?: number }} item
+   * @param {unknown[]} ops
+   */
+  async function pushWithStaleRetry(roomId, item, ops) {
+    const chunks = chunkCloudOps(ops);
+    if (!chunks.length) return null;
+    let lastResult = null;
+    for (let i = 0; i < chunks.length; i += 1) {
+      const sanitized = sanitizeOpsForCloudPush(chunks[i]);
+      if (!sanitized.ops.length) continue;
+      const chunkItem = {
+        clientMutationId: item.clientMutationId,
+        enqueuedAt: (item.enqueuedAt || Date.now()) + i,
+        baseRevision: item.baseRevision,
+      };
+      lastResult = await pushSingleWithStaleRetry(
+        roomId,
+        chunkItem,
+        sanitized.ops,
+        chunks.length > 1 ? i : undefined,
+      );
+      if (lastResult?.revision != null) applyServerRevision(Number(lastResult.revision));
+      noteCloudLabSidecarOpsPushed(sanitized.ops);
+      if (lastResult?.needPull) await pullLatest();
+    }
+    return lastResult;
   }
 
   async function flushOutbox() {
@@ -147,11 +245,18 @@ function createPullPushOps(ctx) {
       setStatus(outboxSync.pendingCount() > 0 ? 'pending' : 'offline');
       return;
     }
+    splitLabBackfillInOutbox(outbox);
     const pending = outbox.list();
     if (pending.length === 0) return;
     setStatus('syncing');
     for (const item of pending) {
       const sanitized = sanitizeOpsForCloudPush(item.ops);
+      if (sanitized.dropped > 0) {
+        recordCloudSyncTrace('push_drop', {
+          clientMutationId: item.clientMutationId,
+          dropped: sanitized.dropped,
+        });
+      }
       if (!sanitized.ops.length) {
         outbox.remove(item.clientMutationId);
         continue;
@@ -159,9 +264,9 @@ function createPullPushOps(ctx) {
       try {
         const result = await pushWithStaleRetry(roomId, item, sanitized.ops);
         outbox.remove(item.clientMutationId);
+        noteCloudLabSidecarOpsPushed(sanitized.ops);
         pace.markLocalWrite();
         if (result?.revision != null) applyServerRevision(Number(result.revision));
-        if (result?.needPull) await pullLatest();
         noteCloudSyncPush();
         recordCloudSyncTrace('push', {
           clientMutationId: item.clientMutationId,
@@ -169,6 +274,11 @@ function createPullPushOps(ctx) {
           revision: result?.revision != null ? Number(result.revision) : null,
         });
       } catch (err) {
+        drainSyncedLabSidecarsFromOutbox(outbox);
+        const stillPending = outbox.list().some(function (row) {
+          return String(row?.clientMutationId || '') === String(item.clientMutationId || '');
+        });
+        if (!stillPending) continue;
         const msg = cloudSyncErrorMessage(err, 'No se pudo enviar un cambio a la nube.');
         recordCloudSyncError({
           op: 'push',
@@ -268,9 +378,10 @@ function createSyncCycleController(ctx) {
 
 /**
  * @param {object} ctx
+ * @param {{ deferBootCycle?: boolean }} [opts]
  */
-function attachSyncRuntimeListeners(ctx) {
-  const { syncCycle, scheduler, pace, outboxSync, roomWs } = ctx;
+function attachSyncRuntimeListeners(ctx, opts = {}) {
+  const { syncCycle, scheduler, pace, outboxSync, roomWs, setStatus, getCurrentStatus } = ctx;
 
   function onOnline() { void syncCycle(); }
   function onVisibility() {
@@ -286,6 +397,9 @@ function attachSyncRuntimeListeners(ctx) {
 
   function noteLocalMutation() {
     pace.markLocalWrite();
+    if (outboxSync.pendingCount() > 0 && getCurrentStatus() === 'idle') {
+      setStatus('pending');
+    }
     scheduler.armNextTimer(false);
   }
 
@@ -295,7 +409,9 @@ function attachSyncRuntimeListeners(ctx) {
     document.addEventListener('visibilitychange', onVisibility);
   }
   outboxSync.refreshIdleStatus();
-  void syncCycle();
+  if (!opts.deferBootCycle) {
+    void syncCycle();
+  }
   scheduler.armNextTimer(false);
 
   return {
@@ -314,23 +430,31 @@ function attachSyncRuntimeListeners(ctx) {
  * @param {() => ReturnType<typeof createCloudPollScheduler>} getScheduler
  * @param {(status: CloudSyncStatus, detail?: string) => void} setStatus
  */
-function createSyncFailCycle(getScheduler, setStatus) {
+function createSyncFailCycle(getScheduler, setStatus, pendingCount) {
   return function failCycle(err) {
     const scheduler = getScheduler();
-    const rateLimited = scheduler.isRateLimitedError(err);
-    const msg = rateLimited
+    const transient = isCloudTransientServerError(err);
+    const rate429 = Number(err && typeof err === 'object' ? err.status : 0) === 429;
+    const msg = rate429
       ? 'Nube ocupada (límite de peticiones). Reintento automático más lento.'
-      : cloudSyncErrorMessage(err, 'Error de sincronización con la nube.');
-    if (!rateLimited) {
+      : transient
+        ? 'Servidor Nube saturado. Reintento automático en breve.'
+        : cloudSyncErrorMessage(err, 'Error de sincronización con la nube.');
+    const backoff = transient || rate429 || scheduler.isRateLimitedError(err);
+    if (backoff) {
+      recordCloudSyncTrace('rate_limit', { message: msg });
+    } else {
       recordCloudSyncError({
         op: 'cycle',
         code: cloudSyncErrorCode(err),
         message: msg,
       });
-    } else {
-      recordCloudSyncTrace('rate_limit', { message: msg });
     }
-    setStatus('error', msg);
+    if (transient && pendingCount() === 0) {
+      setStatus('idle');
+    } else {
+      setStatus('error', msg);
+    }
     scheduler.noteFailure(err);
     noteCloudSyncCycle(false);
   };
@@ -411,6 +535,7 @@ function buildSyncRuntimeHandle(args) {
  *   onStop?: (handle: { stop: () => void }) => void,
  *   pollMobile?: boolean,
  *   liveRoomWs?: { getBaseUrl: () => string, getToken: () => string },
+ *   deferBootCycle?: boolean,
  * }} deps
  */
 export function createSyncRuntimeCycle(deps) {
@@ -439,7 +564,11 @@ export function createSyncRuntimeCycle(deps) {
   /** @type {ReturnType<typeof createCloudPollScheduler>} */
   let scheduler;
 
-  const failCycle = createSyncFailCycle(() => scheduler, setStatus);
+  const failCycle = createSyncFailCycle(
+    () => scheduler,
+    setStatus,
+    outboxSync.pendingCount
+  );
 
   const cycleController = createSyncCycleController({
     stopped: () => stoppedRef.stopped,
@@ -476,13 +605,18 @@ export function createSyncRuntimeCycle(deps) {
     getLastDetail: () => lastDetail,
   });
 
-  const listeners = attachSyncRuntimeListeners({
-    syncCycle: cycleController.syncCycle,
-    scheduler,
-    pace,
-    outboxSync,
-    roomWs,
-  });
+  const listeners = attachSyncRuntimeListeners(
+    {
+      syncCycle: cycleController.syncCycle,
+      scheduler,
+      pace,
+      outboxSync,
+      roomWs,
+      setStatus,
+      getCurrentStatus: () => currentStatus,
+    },
+    { deferBootCycle: deps.deferBootCycle }
+  );
 
   return buildSyncRuntimeHandle({
     deps,

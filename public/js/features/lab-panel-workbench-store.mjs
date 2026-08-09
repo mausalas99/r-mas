@@ -14,6 +14,7 @@ import { primaryTipoForLabSet } from '../lab-history-format.mjs';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory } from '../tend-core.mjs';
 import { notes, labHistory, saveState } from '../app-state.mjs';
 import { bumpLabHistoryRevision } from '../lab-history-cache.mjs';
+import { enqueueCloudLabSidecarsForPatient } from './cloud-sync/mutate-bridge.mjs';
 
 import { sanitizeResLabsChunks } from '../labs-reslabs-sanitize.mjs';
 import { rt } from './lab-panel-runtime-state.mjs';
@@ -304,6 +305,7 @@ function finalizeLabHistoryImport(patientId) {
     }
   }
   rt.rebuildEstudiosFromLabHistory(patientId);
+  enqueueCloudLabSidecarsForPatient(patientId);
 }
 
 function storeBulkLabBlocks(blocks, processable) {

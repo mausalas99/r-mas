@@ -18,7 +18,9 @@ test('partitionNmMedsForSoap separa insulina, rescates y otros NM', () => {
   );
   assert.equal(split.rescatesDisponibles, true);
   assert.equal(split.insulin, '');
+  assert.match(split.antidiabeticos, /METFORMINA/i);
+  assert.match(split.antidiabeticos, /RESCATES DE INSULINA/i);
   assert.match(split.other, /OMEPRAZOL/i);
-  assert.match(split.other, /METFORMINA/i);
+  assert.doesNotMatch(split.other, /METFORMINA/i);
   assert.doesNotMatch(split.other, /RESCATES DE INSULINA/i);
 });

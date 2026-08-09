@@ -114,7 +114,7 @@ function wireRoomLiveSocket(ctx, url) {
   const ws = ctx.wsRef.current;
   ws.onopen = function () {
     ctx.onOpen();
-    noteCloudSyncWsLifecycle({ url: redactedUrl });
+    noteCloudSyncWsLifecycle({ url: redactedUrl, open: true });
   };
   ws.onmessage = function (ev) {
     ctx.signal.handleMessage(ev.data);

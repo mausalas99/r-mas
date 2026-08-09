@@ -1,5 +1,7 @@
 const API_PREFIX = '/api/sync/v1';
 
+import { cloudSyncHttpFetch } from './api-transport.mjs';
+
 /** @param {Response} res @param {Record<string, unknown>} data */
 function httpErrorFromResponse(res, data) {
   const err = new Error(data.error || data.message || res.statusText);
@@ -49,7 +51,7 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     if (adminKey) headers['X-Sync-Admin-Key'] = adminKey;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-    const res = await fetch(`${baseUrl}${API_PREFIX}${path}`, {
+    const res = await cloudSyncHttpFetch(`${baseUrl}${API_PREFIX}${path}`, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -77,7 +79,11 @@ export function createCloudSyncApi({ getBaseUrl, getToken, getAdminKey }) {
     activeRoom: () => req('/rooms/active'),
     getRoom: (roomId) => req(`/rooms/${roomId}`),
     leaveRoom: (roomId) => req(`/rooms/${roomId}/leave`, { method: 'POST', body: {} }),
-    pull: (roomId, since) => req(`/rooms/${roomId}/pull?since=${encodeURIComponent(since)}`),
+    pull: (roomId, since, opts) => {
+      const q = new URLSearchParams({ since: String(since ?? 0) });
+      if (opts?.mobile) q.set('mobile', '1');
+      return req(`/rooms/${roomId}/pull?${q.toString()}`);
+    },
     push: (roomId, body) => req(`/rooms/${roomId}/mutations`, { method: 'POST', body }),
 
     adminOverview: () => req('/admin/overview'),

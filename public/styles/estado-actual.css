@@ -8,9 +8,9 @@
 }
 
 #exp-pane-estado-actual {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 html.ea-copy-fab-active #exp-pane-estado-actual {
@@ -472,6 +472,46 @@ html.ea-copy-fab-active #exp-pane-estado-actual {
   gap: 8px;
   padding: 0 10px 10px;
   border-top: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+}
+
+.ea-med-subcat {
+  border: 1px solid color-mix(in oklab, var(--divider) 85%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+}
+
+.ea-med-subcat-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+}
+
+.ea-med-subcat-summary::-webkit-details-marker {
+  display: none;
+}
+
+.ea-med-subcat-title {
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+.ea-med-subcat-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  font-size: calc(10px * var(--density-font, 1));
+}
+
+.ea-med-subcat-body {
+  padding: 0 8px 8px;
 }
 
 .ea-med-item-list {

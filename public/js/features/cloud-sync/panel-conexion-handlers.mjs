@@ -279,10 +279,10 @@ export async function handleLogout(deps) {
 /** @param {(msg: string, kind?: string) => void} toast */
 export async function handleOpenRotation(toast) {
   try {
-    const { openMiRotacion } = await import('../clinical-rotation-entry.mjs');
-    await openMiRotacion();
+    const { openConexionEquipoPanel } = await import('./panel-equipo-nav.mjs');
+    await openConexionEquipoPanel({ toast });
   } catch {
-    toast('No se pudo abrir Mi rotación.', 'error');
+    toast('No se pudo abrir equipos.', 'error');
   }
 }
 

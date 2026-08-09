@@ -5,6 +5,8 @@ import { isPrnMedicationItem } from './med-receta-format.mjs';
 import { isInsulinRescateMedicationItem } from './insulin-rescate-detect.mjs';
 import { isNutritionMedicationItem } from './med-receta-diet.mjs';
 import {
+  isInhaledRouteMed_,
+  isRacemicEpinephrine_,
   classifyVasopressors_,
   classifyAbx_,
   classifyAnalgesia_,
@@ -101,7 +103,12 @@ export const SOAP_DESTINATION_LABELS = {
  */
 export function effectiveSoapCategory(item, classifyFn) {
   if (!item) return 'otros';
-  var auto = classifyFn(item.nombreRaw, item.dosisRaw);
+  var auto = classifyFn(
+    item.nombreRaw,
+    item.dosisRaw,
+    item.frecuenciaRaw,
+    item.viaRaw
+  );
   if (auto !== 'otros') return auto;
   var ov = trimStr(item.soapCatOverride);
   if (ov && SOAP_DESTINATION_KEYS.indexOf(ov) >= 0) return ov;
@@ -137,7 +144,6 @@ function classifyByCatalogTokens_(n, o) {
 }
 
 const NAME_HEURISTIC_CLASSIFIERS = [
-  [classifyVasopressors_, 'vasop'],
   [classifyAbx_, 'abx'],
   [classifyTransfusiones_, 'transfusiones'],
   [classifyAnalgesia_, 'analgesia'],
@@ -148,6 +154,7 @@ const NAME_HEURISTIC_CLASSIFIERS = [
   [classifyEstatinas_, 'estatinas'],
   [classifyAntiarritmicos_, 'antiarritmicos'],
   [classifyViaAerea_, 'viaAerea'],
+  [classifyVasopressors_, 'vasop'],
   [classifySedacion_, 'sedacion'],
   [classifyAntiepilepticos_, 'antiepilepticos'],
   [classifyAntiparkinsonianos_, 'antiparkinsonianos'],
@@ -183,17 +190,26 @@ export function shouldIncludeMedicationInSoap(item, classifyFn) {
   return true;
 }
 
-export function classifyMedicationSoapCategory(nombreRaw, dosisRaw) {
+export function classifyMedicationSoapCategory(nombreRaw, dosisRaw, frecuenciaRaw, viaRaw) {
   var n = normalizeNombreForSoapClassify(nombreRaw);
-  var doseBlob = normalizeNombreForSoapClassify([nombreRaw, dosisRaw].filter(Boolean).join(' '));
+  var classifyBlob = normalizeNombreForSoapClassify(
+    [nombreRaw, dosisRaw, frecuenciaRaw, viaRaw].filter(Boolean).join(' ')
+  );
   if (isAspirinNombre(n)) {
-    var mg = extractMgDoseFromMedBlob(doseBlob);
+    var mg = extractMgDoseFromMedBlob(classifyBlob);
     if (mg == null || mg <= 160) return 'antitromboticos';
     return 'analgesia';
   }
+  if (isRacemicEpinephrine_(classifyBlob)) return 'viaAerea';
+  if (isInhaledRouteMed_(classifyBlob) && /\b(EPINEFRINA|ADRENALINA)\b/.test(classifyBlob)) {
+    return 'viaAerea';
+  }
   var fromCatalog = classifyByCatalogTokens_(n, getMedCatalogSoapTokens());
+  if (fromCatalog === 'vasop' && (isRacemicEpinephrine_(classifyBlob) || isInhaledRouteMed_(classifyBlob))) {
+    return 'viaAerea';
+  }
   if (fromCatalog) return fromCatalog;
-  var fromHeuristic = classifyByNameHeuristics_(n);
+  var fromHeuristic = classifyByNameHeuristics_(classifyBlob);
   if (fromHeuristic) return fromHeuristic;
   return 'otros';
 }

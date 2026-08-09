@@ -50,7 +50,7 @@ const GV7_ACTION_HINT = {
   gv7_lan_wifi:
     '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa el icono <strong>⇄</strong> de Conexión / R+ Cloud para continuar.</p>',
   gv7_mobile_link:
-    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Despliega <strong>iPad / R+ Móvil</strong> en el panel de Conexión.</p>',
+    '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tutorial abre <strong>iPad / R+ Móvil</strong> en Conexión. Copia el enlace o escanea el QR.</p>',
 };
 
 function buildGv7CensoR1Copy(rank) {
@@ -116,15 +116,15 @@ function getGuardiaV7StepBody(stepId) {
       LIVESYNC_BTN_COPY +
       ': cuenta, sala y sincronización del turno por Nube (sin Mac anfitrión ni escaneo de red local).</p>',
     gv7_lan_directorio:
-      '<p style="margin:0;line-height:1.5;">El <strong>directorio de usuarios</strong> en Mi rotación muestra quién está en la sala. Los cambios de equipos se sincronizan por R+ Cloud.</p>',
+      '<p style="margin:0;line-height:1.5;">El <strong>directorio de usuarios</strong> en <strong>⇄ Conexión → Opciones → Equipo</strong> muestra quién está en la sala. Los cambios de equipos se sincronizan por R+ Cloud.</p>',
     gv7_lan_rotacion:
-      '<p style="margin:0;line-height:1.5;"><strong>Mi rotación</strong> (barra superior): @usuario, equipos persistentes, sala y entregas. Distinto del censo del sidebar.</p>',
+      '<p style="margin:0;line-height:1.5;"><strong>Equipo</strong> en ⇄ Conexión (<strong>Opciones → Equipo</strong>): @usuario, equipos persistentes, sala y entregas. Distinto del censo del sidebar.</p>',
     gv7_rotacion_rejoin:
-      '<p style="margin:0;line-height:1.5;">Cada mes, R+ puede mostrar <strong>Nueva rotación</strong>: confirma tu sala y vuelve a unirte a tu equipo en Mi rotación. Los equipos anteriores se archivan; el censo se actualiza por Nube.</p>',
+      '<p style="margin:0;line-height:1.5;">Cada mes, R+ puede mostrar <strong>Nueva rotación</strong>: confirma tu sala y vuelve a unirte a tu equipo en <strong>⇄ → Opciones → Equipo</strong>. Los equipos anteriores se archivan; el censo se actualiza por Nube.</p>',
     gv7_inherit_patients:
       '<p style="margin:0;line-height:1.5;">Al unirte a un equipo nuevo, el asistente <strong>Heredar pacientes</strong> te deja traer casos de tu equipo anterior (misma sala/ciclo) sin reasignar uno por uno.</p>',
     gv7_mobile_link:
-      '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace o QR de R+ Móvil</strong> desde ⇄ Conexión. Ábrelo en Safari e inicia sesión con tu cuenta Nube.</p>',
+      '<p style="margin:0;line-height:1.5;">Copia el <strong>enlace o QR de R+ Móvil</strong> desde <strong>⇄ Conexión → Opciones → iPad / R+ Móvil</strong>. Ábrelo en Safari e inicia sesión con tu cuenta Nube.</p>',
     gv7_mobile_scope:
       '<p style="margin:0;line-height:1.5;">' + MOBILE_SCOPE_COPY + '</p>',
     gv7_mobile_vs_sala:
@@ -132,7 +132,7 @@ function getGuardiaV7StepBody(stepId) {
     gv7_censo_r1: buildGv7CensoR1Copy(rank),
     gv7_censo_r4: buildGv7CensoR4Copy(rank),
     gv7_censo_sync:
-      '<p style="margin:0;line-height:1.5;">La sincronización por R+ Cloud es discreta: avisos en el encabezado; equipos y censo se actualizan en segundo plano. Si el censo está vacío, revisa la franja Nube/sala/equipo o abre Mi rotación tras rotar.</p>',
+      '<p style="margin:0;line-height:1.5;">La sincronización por R+ Cloud es discreta: avisos en el encabezado; equipos y censo se actualizan en segundo plano. Si el censo está vacío, revisa la franja Nube/sala/equipo o abre <strong>⇄ → Opciones → Equipo</strong> tras rotar.</p>',
   };
   return bodies[stepId] || '<p style="margin:0;line-height:1.5;">Sigue el resaltado en pantalla.</p>';
 }

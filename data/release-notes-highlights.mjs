@@ -2258,10 +2258,34 @@ var RELEASE_NOTES_808 = [
   },
 ];
 
+var RELEASE_NOTES_809 = [
+  {
+    title: 'Reposición de potasio',
+    body:
+      'Paste SOME agrupa cloruro/fosfato/acetato de K IV en NM como <strong>REPOSICIÓN DE POTASIO</strong>, con duración de infusión del diluyente.',
+  },
+  {
+    title: 'Aire ambiente sin PaFi falsa',
+    body:
+      'Estado Actual no muestra avisos de PaFi ni gasometría cuando el soporte es <strong>aire ambiente</strong>.',
+  },
+  {
+    title: 'Insulina preprandial',
+    body:
+      'Esquema SC agrupado en Manejo, EA y censo — selección y suspensión en bloque.',
+  },
+  {
+    title: 'Nube más fiable',
+    body:
+      'Pull lee revisión en D1 antes de KV; reintento en 503. Fetch Nube por IPC desde <strong>app://rplus</strong> — sin cambiar origen ni perder Recuérdame.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_808;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_809;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.0.9': RELEASE_NOTES_809,
   '8.0.8': RELEASE_NOTES_808,
   '8.0.7': RELEASE_NOTES_807,
   '8.0.6': RELEASE_NOTES_806,

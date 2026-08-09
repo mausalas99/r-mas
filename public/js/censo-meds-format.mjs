@@ -2,6 +2,10 @@ import {
   isInsulinRescateMedicationItem,
   INSULIN_RESCATE_NM_LABEL,
 } from './insulin-rescate-display.mjs';
+import {
+  isInsulinPrandialMedicationItem,
+  insulinPrandialNmSoapFragment,
+} from './insulin-prandial-display.mjs';
 import { isNutritionMedicationItem } from './med-receta-diet.mjs';
 
 function medTitle(nombreRaw) {
@@ -30,6 +34,7 @@ export function formatCensoMedsFromReceta(block) {
   var lines = [];
   var items = Array.isArray(block.items) ? block.items : [];
   var rescateAdded = false;
+  var prandialAdded = false;
   items.forEach(function (it) {
     if (!it || it.suspendido) return;
     if (isNutritionMedicationItem(it)) return;
@@ -37,6 +42,14 @@ export function formatCensoMedsFromReceta(block) {
       if (!rescateAdded) {
         lines.push(INSULIN_RESCATE_NM_LABEL);
         rescateAdded = true;
+      }
+      return;
+    }
+    if (isInsulinPrandialMedicationItem(it)) {
+      if (!prandialAdded) {
+        var prandialLine = insulinPrandialNmSoapFragment(items, items);
+        if (prandialLine) lines.push(prandialLine);
+        prandialAdded = true;
       }
       return;
     }

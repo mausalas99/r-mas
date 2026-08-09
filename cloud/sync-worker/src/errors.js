@@ -21,6 +21,7 @@ export function syncErrorStatus(err) {
   }
   if (code === 'not_found') return 404;
   if (code === 'not_implemented') return 501;
+  if (code === 'rate_limited') return 429;
   if (code === 'payload_too_large') return 413;
   if (code === 'error') return 500;
   return 400;

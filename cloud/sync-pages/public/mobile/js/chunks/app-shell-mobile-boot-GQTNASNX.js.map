@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../../../../public/js/app-shell-mobile-boot.mjs"],
-  "sourcesContent": ["/**\n * Mobile web boot \u2014 cloud-mobile only (ward LAN mobile retired in 8.0.5).\n */\nimport { initCloudMobileBoot } from './features/cloud-mobile/boot.mjs';\n\nexport function setMobileBootBanner(visible, text) {\n  const el = document.getElementById('rpc-mobile-boot-banner');\n  if (!el) return;\n  if (text) el.textContent = text;\n  el.classList.toggle('is-visible', !!visible);\n}\n\nexport async function initMobileWebBoot() {\n  await initCloudMobileBoot();\n}\n"],
-  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAKO,SAAS,oBAAoB,SAAS,MAAM;AACjD,QAAM,KAAK,SAAS,eAAe,wBAAwB;AAC3D,MAAI,CAAC,GAAI;AACT,MAAI,KAAM,IAAG,cAAc;AAC3B,KAAG,UAAU,OAAO,cAAc,CAAC,CAAC,OAAO;AAC7C;AAEA,eAAsB,oBAAoB;AACxC,QAAM,oBAAoB;AAC5B;",
-  "names": []
-}

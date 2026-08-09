@@ -45,6 +45,7 @@ import {
   openAddModal,
   openAddModalFromLab,
   openAddModalFromLabPatient,
+  openCompleteAdmissionModal,
   closeModal,
   confirmCloseAddPatientModal,
   savePatient,
@@ -57,6 +58,7 @@ import {
   findPatientByRegistro,
   ensureUniquePatientName,
 } from './patients-modal-commit.mjs';
+import { patientRegistroModalWindowHandlers } from '../patient-registro-modal-ui.mjs';
 
 patientsBridge.renderPatientList = renderPatientList;
 patientsBridge.selectPatient = selectPatient;
@@ -274,6 +276,7 @@ export {
   openAddModal,
   openAddModalFromLab,
   openAddModalFromLabPatient,
+  openCompleteAdmissionModal,
   closeModal,
   confirmCloseAddPatientModal,
   savePatient,
@@ -296,6 +299,7 @@ export const windowHandlers = {
   toggleSidebarAutoHide,
   openAddModal,
   openAddModalFromLab,
+  openCompleteAdmissionModal,
   closeModal,
   savePatient,
   selectPatient,
@@ -306,4 +310,5 @@ export const windowHandlers = {
   openFullExpedienteFromRound,
   returnToRoundOverview,
   closeRondaQuickMoreMenu,
+  ...patientRegistroModalWindowHandlers,
 };

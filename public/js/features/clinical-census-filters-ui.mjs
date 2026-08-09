@@ -134,16 +134,17 @@ export function reconcileCensusTeamFilterForSala(teamId, teamsForSala) {
 /** @param {Storage|undefined} storage */
 export function readCensusFiltersCollapsed(storage = globalThis.localStorage) {
   try {
-    return storage?.getItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS) === '1';
+    const raw = storage?.getItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS);
+    if (raw == null) return true;
+    return raw === '1';
   } catch {
-    return false;
+    return true;
   }
 }
 
 /** @param {boolean} collapsed @param {Storage|undefined} storage */
 export function writeCensusFiltersCollapsed(collapsed, storage = globalThis.localStorage) {
   try {
-    if (collapsed) storage?.setItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS, '1');
-    else storage?.removeItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS);
+    storage?.setItem(CLINICAL_CENSUS_FILTERS_COLLAPSED_LS, collapsed ? '1' : '0');
   } catch (_e) { void _e; }
 }

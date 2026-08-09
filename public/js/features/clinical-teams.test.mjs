@@ -212,6 +212,13 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('Zona avanzada · rotación del programa'), false);
   });
 
+  it('joining a team closes Mi rotación after success', () => {
+    const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
+    const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');
+    assert.match(joinHandlerSrc, /closeClinicalTeamsPanel\(\)/);
+    assert.match(inviteSrc, /closeClinicalTeamsPanel\(\)/);
+  });
+
   it('joining a team does not auto-open inherit; bring is opt-in on team card', () => {
     const joinHandlerSrc = readFileSync(join(featureDir, 'teams-roster-join-handler.mjs'), 'utf8');
     const inviteSrc = readFileSync(join(featureDir, 'teams-invite.mjs'), 'utf8');

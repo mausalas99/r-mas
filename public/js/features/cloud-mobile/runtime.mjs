@@ -70,6 +70,8 @@ export function startCloudMobileRuntime({ onStatus, toast }) {
           showCloudMobileEmptyCensusBanner();
           const patientsMod = await import('../patients.mjs');
           patientsMod.renderPatientList();
+          const { refreshMobileLabReferencePanel } = await import('../../mobile-web.mjs');
+          refreshMobileLabReferencePanel();
         } catch {
           /* optional */
         }
@@ -107,4 +109,8 @@ export function startCloudMobileRuntime({ onStatus, toast }) {
 export function stopCloudMobileRuntime() {
   stopCloudSyncRuntime();
   _runtime = null;
+}
+
+export function getCloudMobileRuntime() {
+  return _runtime;
 }

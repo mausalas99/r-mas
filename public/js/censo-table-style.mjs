@@ -78,7 +78,10 @@ export function classifyCensoTableLine(line, colKey, lineIndex) {
   if (!s || s === '—') return 'default';
 
   if (colKey === 'paciente') {
-    return lineIndex === 0 ? 'emphasis' : 'muted';
+    if (/^\d/.test(s) || /\baños\b/i.test(s) || /^FIUX:/i.test(s) || /^[A-Z]{2,4}:/.test(s)) {
+      return 'muted';
+    }
+    return 'emphasis';
   }
   if (colKey === 'labs') {
     if (LAB_DATE_RE.test(s)) return 'lab-date';

@@ -18,7 +18,12 @@ import {
   renderSyncModeChoicePanel,
   wireSyncModeOnboardingInteractions,
 } from './clinical-onboarding-sync-mode.mjs';
-import { buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
+import { buildOnboardingBootLoadingHtml, buildOnboardingStageHtml } from './clinical-onboarding-shell.mjs';
+import {
+  animateOnboardingBootComplete,
+  startOnboardingBootProgress,
+  stopOnboardingBootProgress,
+} from './clinical-onboarding-boot-progress.mjs';
 
 import { escapeHtml } from '../dom-escape.mjs';
 export const CLINICAL_ONBOARDING_MAIN_ID = 'clinical-onboarding-main';
@@ -27,6 +32,25 @@ export const CLINICAL_ONBOARDING_ACTIVE_CLASS = 'clinical-onboarding-active';
 let teamsChangedListenerWired = false;
 /** @type {Promise<void>|null} */
 let showMainClinicalOnboardingInflight = null;
+/** @type {(() => void)|null} */
+let bootProgressStopper = null;
+
+function ensureOnboardingBootLoading(host, opts = {}) {
+  const hasLoader = host.querySelector('.clinical-onboard-boot-loader');
+  if (!hasLoader) {
+    stopOnboardingBootProgress(host);
+    if (bootProgressStopper) {
+      bootProgressStopper();
+      bootProgressStopper = null;
+    }
+    host.innerHTML = buildOnboardingBootLoadingHtml(opts);
+    bootProgressStopper = startOnboardingBootProgress(host);
+    return;
+  }
+  if (!bootProgressStopper) {
+    bootProgressStopper = startOnboardingBootProgress(host);
+  }
+}
 
 export function getClinicalOnboardingMainHost() {
   return document.getElementById(CLINICAL_ONBOARDING_MAIN_ID);
@@ -48,6 +72,9 @@ export function hideMainClinicalOnboarding() {
   document.documentElement.classList.remove(CLINICAL_ONBOARDING_ACTIVE_CLASS);
   const host = getClinicalOnboardingMainHost();
   if (host) host.remove();
+  if (typeof document !== 'undefined') {
+    document.dispatchEvent(new CustomEvent('rpc-clinical-onboarding-finished'));
+  }
   void import('./clinical-rotation-entry.mjs').then((m) => m.syncClinicalRotationEntryChrome());
   void import('./settings-help/tour-engine.mjs').then((m) => {
     if (typeof m.tryShowPostRegistrationEducationIfNeeded === 'function') {
@@ -136,6 +163,59 @@ export function focusMainClinicalOnboarding() {
   return true;
 }
 
+function ensureOnboardingMainHost() {
+  const main = document.getElementById('main-area');
+  if (!main) return null;
+
+  let host = getClinicalOnboardingMainHost();
+  if (!host) {
+    host = document.createElement('div');
+    host.id = CLINICAL_ONBOARDING_MAIN_ID;
+    host.className = 'clinical-onboarding-main';
+    host.setAttribute('role', 'region');
+    host.setAttribute(
+      'aria-label',
+      isClinicalLocalOnlyMode(readRpcSettings())
+        ? 'Configura tu perfil local'
+        : 'Configura tu rotación'
+    );
+    main.prepend(host);
+  }
+
+  document.documentElement.classList.add(CLINICAL_ONBOARDING_ACTIVE_CLASS);
+  return host;
+}
+
+function mountSyncModeChoiceOnboarding(host) {
+  renderSyncModeChoicePanel(host);
+  wireSyncModeOnboardingInteractions();
+  void import('./settings-help/learn-hub.mjs').then((m) => {
+    if (typeof m.syncLearnAprenderChrome === 'function') m.syncLearnAprenderChrome();
+  });
+}
+
+/** Step 1 only needs rpc-settings — show before DB unlock / clinical bootstrap. */
+export function showEarlySyncModeOnboardingIfNeeded() {
+  if (typeof document === 'undefined' || !isDbMode()) return false;
+  if (!needsClinicalSyncModeChoice()) return false;
+  wireTeamsChangedListenerOnce();
+  const host = ensureOnboardingMainHost();
+  if (!host) return false;
+  if (typeof window !== 'undefined' && window.__RPC_EARLY_SYNC_MODE_CHOSEN__) {
+    const chosen = window.__RPC_EARLY_SYNC_MODE_CHOSEN__;
+    delete window.__RPC_EARLY_SYNC_MODE_CHOSEN__;
+    void refreshMainClinicalOnboardingIfNeeded();
+    void chosen;
+    return true;
+  }
+  if (host.querySelector('.clinical-onboard-mode-grid')) {
+    wireSyncModeOnboardingInteractions();
+    return true;
+  }
+  mountSyncModeChoiceOnboarding(host);
+  return true;
+}
+
 export async function refreshTeamOnboardingShellOnly() {
   if (!needsTeamOnboardingStep()) {
     hideMainClinicalOnboarding();
@@ -171,6 +251,12 @@ export async function showMainClinicalOnboarding() {
 async function showMainClinicalOnboardingBody() {
   wireTeamsChangedListenerOnce();
 
+  if (needsClinicalSyncModeChoice()) {
+    const host = ensureOnboardingMainHost();
+    if (host) mountSyncModeChoiceOnboarding(host);
+    return;
+  }
+
   // Load memberships before gating — a joined team must suppress registro / paso 3.
   try {
     const { fetchClinicalTeamsFromDb } = await import('../clinical-access-runtime.mjs');
@@ -198,39 +284,12 @@ async function showMainClinicalOnboardingBody() {
     return;
   }
 
-  const main = document.getElementById('main-area');
-  if (!main) return;
+  const host = ensureOnboardingMainHost();
+  if (!host) return;
 
-  let host = getClinicalOnboardingMainHost();
-  if (!host) {
-    host = document.createElement('div');
-    host.id = CLINICAL_ONBOARDING_MAIN_ID;
-    host.className = 'clinical-onboarding-main';
-    host.setAttribute('role', 'region');
-    host.setAttribute(
-      'aria-label',
-      isClinicalLocalOnlyMode(readRpcSettings())
-        ? 'Configura tu perfil local'
-        : 'Configura tu rotación'
-    );
-    main.prepend(host);
-  }
-
-  document.documentElement.classList.add(CLINICAL_ONBOARDING_ACTIVE_CLASS);
-  void import('./settings-help/learn-hub.mjs').then((m) => {
-    if (typeof m.syncLearnAprenderChrome === 'function') m.syncLearnAprenderChrome();
-  });
-
-  if (needsClinicalSyncModeChoice()) {
-    renderSyncModeChoicePanel(host);
-    wireSyncModeOnboardingInteractions();
-    return;
-  }
-
-  host.innerHTML = buildOnboardingStageHtml({
+  ensureOnboardingBootLoading(host, {
     title: 'Preparando R+',
-    leadHtml: '<p class="clinical-onboarding-status">Preparando almacenamiento local…</p>',
-    bodyHtml: '',
+    message: 'Preparando almacenamiento local…',
   });
 
   const dbReady = await ensureClinicalDbUnlocked();
@@ -259,12 +318,18 @@ async function showMainClinicalOnboardingBody() {
     return;
   }
 
-  host.innerHTML = buildOnboardingStageHtml({
+  ensureOnboardingBootLoading(host, {
     title: 'Preparando R+',
-    leadHtml: '<p class="clinical-onboarding-status">Cargando…</p>',
-    bodyHtml: '',
+    message: 'Cargando formulario…',
+    stepperIndex: 2,
   });
   try {
+    stopOnboardingBootProgress(host);
+    if (bootProgressStopper) {
+      bootProgressStopper();
+      bootProgressStopper = null;
+    }
+    await animateOnboardingBootComplete(host, 'Listo');
     await renderOnboardingPanelInto(host);
     prefillRegistrationFromUrlParams();
     wireClinicalRegistrationForm();

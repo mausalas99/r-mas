@@ -29,8 +29,20 @@
           <label>Nombre completo *</label>
           <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
         </div>
-        <div style="margin-bottom:12px;">
-          <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
+        <div style="margin-bottom:12px;" id="m-registro-manual-wrap">
+          <div class="field-group">
+            <label id="m-registro-manual-label">Registro</label>
+            <div class="vpo-toolbar" id="m-registro-toolbar" hidden>
+              <button type="button" class="btn-add-row" onclick="addRegistroModalRow()">+ Agregar registro</button>
+            </div>
+            <div class="vpo-dx-list" id="m-registro-list"></div>
+          </div>
+          <p class="profile-hint profile-hint--field" id="m-registro-manual-hint" hidden>Un expediente por caja.</p>
+          <div class="vpo-dx-paste" id="m-registro-paste-wrap" hidden style="margin-top:8px;">
+            <span class="ea-label">Pegar varios (uno por línea)</span>
+            <textarea class="ea-input" id="m-registro-paste" rows="2" placeholder="0000000-0&#10;0000001-0"></textarea>
+            <button type="button" class="btn-med-secondary" onclick="splitRegistroModalPaste()">Separar en cajas</button>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:80px 80px 70px;gap:10px;margin-bottom:12px;">
           <div class="field-group"><label>Edad *</label>

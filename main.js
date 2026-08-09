@@ -228,7 +228,7 @@ function createWindow() {
 
   if (shouldUseLegacyHttpRenderer()) {
     const rendererPort = Number(process.env.R_PLUS_LAN_HTTP_PORT) || 3738;
-    mainWindow.loadURL(`http://localhost:${rendererPort}`);
+    mainWindow.loadURL(`http://localhost:${rendererPort}/?rpc-electron=1`);
   } else {
     mainWindow.loadURL(rendererAppIndexUrl());
   }
@@ -646,6 +646,21 @@ ipcMain.handle('lab-repo-fetch', async (_e, payload) => {
     };
   }
 });
+
+ipcMain.handle('cloud-sync-fetch', async (_e, payload) => {
+  try {
+    const { cloudSyncNetFetch } = require('./lib/cloud-sync-ipc-fetch.cjs');
+    return await cloudSyncNetFetch(net, payload || {});
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      statusText: String(err?.message || err),
+      data: { error: String(err?.message || err) },
+      retryAfterMs: null,
+    };
+  }
+});
 function getTargetWebContents() {
   const focused = BrowserWindow.getFocusedWindow();
   if (focused && !focused.isDestroyed()) return focused.webContents;
@@ -692,7 +707,8 @@ function buildMenu() {
         { label: 'Cortar', accelerator: 'CmdOrCtrl+X', click: webContentsMenuAction('cut') },
         { label: 'Copiar', accelerator: 'CmdOrCtrl+C', click: webContentsMenuAction('copy') },
         { label: 'Pegar', accelerator: 'CmdOrCtrl+V', click: webContentsMenuAction('paste') },
-        { label: 'Seleccionar todo', accelerator: 'CmdOrCtrl+A', click: webContentsMenuAction('selectAll') },
+        // Sin accelerator: ⌘A es atajo de app → pestaña Agenda (app-shell-keyboard.mjs).
+        { label: 'Seleccionar todo', click: webContentsMenuAction('selectAll') },
       ],
     },
     {
@@ -880,7 +896,7 @@ app.on('before-quit', (event) => {
   const flushCap = new Promise((r) => setTimeout(r, 3000));
   Promise.race([lanServer.flushHostStoreNow().catch(() => {}), flushCap])
     .then(() => {
-      // Renderer loads from localhost:3738 — drop windows before httpServer.close().
+      // Dev ward HTTP (:3738) — drop windows before httpServer.close().
       destroyAllBrowserWindows();
       return lanServer.stopLanServer();
     })

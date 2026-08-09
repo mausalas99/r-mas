@@ -20,9 +20,8 @@ const JOIN_CODE_FIELD_IDS = [
   'clinical-team-join-code-cycle',
 ];
 
-function teamsBackdropEl() {
-  return document.getElementById('clinical-teams-backdrop');
-}
+import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
+import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
 
 function readFieldValue(id) {
   const el = document.getElementById(id);
@@ -85,7 +84,7 @@ function hasDraftTextInTeamsPanel() {
   const joinCode = document.getElementById('clinical-team-join-code-input');
   if (joinCode instanceof HTMLInputElement && joinCode.value.trim()) return true;
 
-  const host = document.getElementById('clinical-teams-panel-body');
+  const host = getClinicalTeamsPanelHost();
   if (!host) return false;
   for (const input of host.querySelectorAll('.clinical-teams-add-member-input')) {
     if (input instanceof HTMLInputElement && input.value.trim()) return true;
@@ -95,21 +94,24 @@ function hasDraftTextInTeamsPanel() {
 
 /** True when a silent refresh would disrupt an open sub-panel or draft fields. */
 export function isClinicalTeamsPanelUserInteracting() {
-  const bd = teamsBackdropEl();
-  if (!bd?.classList.contains('open')) return false;
+  if (!isEquipoEmbedActive()) {
+    const bd = document.getElementById('clinical-teams-backdrop');
+    if (!bd?.classList.contains('open')) return false;
+  }
 
   const createPanel = document.getElementById('clinical-team-create-panel');
   if (createPanel instanceof HTMLElement && !createPanel.hidden) return true;
 
   if (document.querySelector('.clinical-teams-edit-panel:not([hidden])')) return true;
 
+  const host = getClinicalTeamsPanelHost();
   const active = document.activeElement;
-  if (active instanceof HTMLElement && bd.contains(active)) {
+  if (host && active instanceof HTMLElement && host.contains(active)) {
     if (active.matches('input, textarea, select')) return true;
     if (
       active instanceof HTMLOptionElement &&
       active.parentElement instanceof HTMLSelectElement &&
-      bd.contains(active.parentElement)
+      host.contains(active.parentElement)
     ) {
       return true;
     }

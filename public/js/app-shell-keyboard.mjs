@@ -1,7 +1,6 @@
 /**
  * Shell keyboard shortcuts (⌘/Ctrl+digit tabs, ⌘K palette, work modes, etc.).
  */
-import { isGuardiaMode } from './features/chrome.mjs';
 import { toggleProfileSection, setWorkModeFromHeader } from './features/profile.mjs';
 import {
   shellCloseSettingsDropdown,
@@ -20,11 +19,8 @@ import {
   runAgendaWeekNavShortcut,
 } from './app-shell-tab-shortcuts.mjs';
 import { markTabShortcutsAdopted } from './keyboard-shortcuts-nudge.mjs';
-import { SHORTCUTS_HOLD_MS } from './features/settings-help/shortcuts-data.mjs';
 
 var shellKeyboardWired = false;
-var metaHoldTimer = null;
-var metaChordUsed = false;
 
 var WORK_MODE_SHORTCUTS = {
   g: 'guardia',
@@ -49,54 +45,30 @@ function shellShortcutFromTypingField(e) {
   );
 }
 
-function isModifierHoldKey(key) {
-  if (typeof navigator !== 'undefined' && navigator.platform && /Mac/i.test(navigator.platform)) {
-    return key === 'Meta';
-  }
-  return key === 'Control';
-}
-
-function clearMetaHoldTimer() {
-  if (metaHoldTimer) {
-    clearTimeout(metaHoldTimer);
-    metaHoldTimer = null;
-  }
-}
-
-function closeShortcutsPeekIfOpen() {
-  void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
-    if (typeof mod.closeShortcutsPeek === 'function') mod.closeShortcutsPeek();
-  });
-}
-
-function scheduleShortcutsPeek() {
-  clearMetaHoldTimer();
-  metaHoldTimer = setTimeout(function () {
-    metaHoldTimer = null;
-    if (!metaChordUsed) {
-      void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
-        if (typeof mod.isShortcutsModalOpen === 'function' && mod.isShortcutsModalOpen()) return;
-        if (typeof mod.openShortcutsModal === 'function') mod.openShortcutsModal();
-      });
-    }
-  }, SHORTCUTS_HOLD_MS);
-}
-
-function onModifierHoldKeydown(e) {
-  if (!isModifierHoldKey(e.key)) return;
-  if (isGuardiaMode()) return;
-  if (shellShortcutFromTypingField(e)) return;
-  metaChordUsed = false;
-  scheduleShortcutsPeek();
-}
-
-function onModifierHoldKeyup(e) {
-  if (!isModifierHoldKey(e.key)) return;
-  clearMetaHoldTimer();
+/** Slash shortcut — layout-tolerant (⌘/ on US, ⌘⇧7 on some ES layouts). */
+function isShellSlashShortcut(e, key) {
+  if (key === '/' || key === '?') return true;
+  var code = e && e.code ? String(e.code) : '';
+  return code === 'Slash' || code === 'NumpadDivide';
 }
 
 function noteTabNavigationShortcutUsed() {
   markTabShortcutsAdopted();
+}
+
+function openShortcutsModalFromShortcut() {
+  void import('./features/settings-help/shortcuts-modal.mjs').then(function (mod) {
+    if (typeof mod.openShortcutsModal === 'function') mod.openShortcutsModal();
+  });
+}
+
+/** ⌘/ or Ctrl+/ — show shortcuts cheat sheet (not bare ⌘ hold: conflicts with macOS ⌘Tab). */
+function handleShellShortcutsSlashShortcut(e, key) {
+  if (!isShellSlashShortcut(e, key)) return false;
+  if (e.altKey) return false;
+  e.preventDefault();
+  openShortcutsModalFromShortcut();
+  return true;
 }
 
 function handleShellSettingsCommaShortcut() {
@@ -140,14 +112,12 @@ function handleShellProfileShortcut(e, key) {
 function handleShellTabLetterShortcut(e, key) {
   if (e.shiftKey || e.altKey) return false;
   if (key === 'm') {
-    if (shellShortcutFromTypingField(e)) return false;
     e.preventDefault();
     noteTabNavigationShortcutUsed();
     runMedTabShortcut();
     return true;
   }
   if (key === 'a') {
-    if (shellShortcutFromTypingField(e)) return false;
     e.preventDefault();
     noteTabNavigationShortcutUsed();
     runAgendaTabShortcut();
@@ -158,7 +128,6 @@ function handleShellTabLetterShortcut(e, key) {
 
 function handleShellExpedienteShortcut(e, key) {
   if (e.shiftKey || e.altKey || !isExpedienteShortcutKey(key)) return false;
-  if (shellShortcutFromTypingField(e)) return false;
   e.preventDefault();
   noteTabNavigationShortcutUsed();
   runExpedienteShortcut(key);
@@ -166,6 +135,7 @@ function handleShellExpedienteShortcut(e, key) {
 }
 
 function handleShellNamedShortcut(e, key) {
+  if (handleShellShortcutsSlashShortcut(e, key)) return true;
   if (handleShellPaletteShortcut(e, key)) return true;
   if (handleShellProfileShortcut(e, key)) return true;
   if (handleShellTabLetterShortcut(e, key)) return true;
@@ -215,14 +185,6 @@ function handleShellMedOutputShortcut(e, key) {
 
 /** @param {(msg: string, type?: string) => void} showToast */
 function onShellModifierKeydown(e, showToast) {
-  if (isGuardiaMode()) return;
-
-  if ((e.metaKey || e.ctrlKey) && !isModifierHoldKey(e.key)) {
-    metaChordUsed = true;
-    clearMetaHoldTimer();
-    closeShortcutsPeekIfOpen();
-  }
-
   var key = e.key.toLowerCase();
 
   if (handleShellMedOutputShortcut(e, key)) return;
@@ -236,8 +198,6 @@ function onShellModifierKeydown(e, showToast) {
 export function initShellKeyboardShortcuts(showToast) {
   if (shellKeyboardWired) return;
   shellKeyboardWired = true;
-  document.addEventListener('keydown', onModifierHoldKeydown, true);
-  document.addEventListener('keyup', onModifierHoldKeyup, true);
   document.addEventListener(
     'keydown',
     function (e) {
@@ -250,4 +210,9 @@ export function initShellKeyboardShortcuts(showToast) {
 /** @internal Tests only */
 export function runShellModifierKeydownForTests(e, showToast) {
   onShellModifierKeydown(e, showToast);
+}
+
+/** @internal Tests only */
+export function isShellSlashShortcutForTests(e, key) {
+  return isShellSlashShortcut(e, key);
 }

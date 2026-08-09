@@ -12,6 +12,8 @@ import {
   CLOUD_POLL_ERROR_MIN_MS,
   nextCloudPollDelayMs,
   isCloudRateLimitError,
+  isCloudBackoffError,
+  isCloudTransientServerError,
 } from './cloud-sync-timing.mjs';
 
 describe('nextCloudPollDelayMs', () => {
@@ -80,5 +82,12 @@ describe('isCloudRateLimitError', () => {
     assert.equal(isCloudRateLimitError({ status: 429 }), true);
     assert.equal(isCloudRateLimitError({ message: 'Demasiados intentos' }), true);
     assert.equal(isCloudRateLimitError({ status: 500 }), false);
+  });
+
+  it('treats transient 503 as rate-limit class for backoff', () => {
+    assert.equal(isCloudTransientServerError({ status: 503 }), true);
+    assert.equal(isCloudBackoffError({ status: 503 }), true);
+    assert.equal(isCloudRateLimitError({ status: 503 }), false);
+    assert.equal(isCloudTransientServerError({ status: 500 }), false);
   });
 });

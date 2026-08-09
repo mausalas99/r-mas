@@ -4,6 +4,7 @@ import {
   cloudSyncErrorMessage,
   humanizeCloudSyncErrorMessage,
   humanizeTechnicalSyncMessage,
+  isCloudSyncNetworkErrorMessage,
 } from './cloud-sync-error-text.mjs';
 
 describe('cloud-sync-error-text', () => {
@@ -21,6 +22,12 @@ describe('cloud-sync-error-text', () => {
 
   it('humanizeCloudSyncErrorMessage maps failed to fetch', () => {
     assert.match(humanizeCloudSyncErrorMessage('Failed to fetch'), /Sin red/i);
+  });
+
+  it('isCloudSyncNetworkErrorMessage recognizes transport failures', () => {
+    assert.equal(isCloudSyncNetworkErrorMessage('Failed to fetch'), true);
+    assert.equal(isCloudSyncNetworkErrorMessage('Sin red hacia Nube'), true);
+    assert.equal(isCloudSyncNetworkErrorMessage('revision_stale'), false);
   });
 
   it('cloudSyncErrorMessage uses worker message when present', () => {

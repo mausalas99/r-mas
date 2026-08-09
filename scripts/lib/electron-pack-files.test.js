@@ -10,6 +10,7 @@ const {
   NATIVE_MODULE_PACK_PATTERNS,
   ASAR_UNPACK_BASELINE,
   filePatternCovers,
+  collectRendererExternalImports,
   canonicalBuildFiles,
   canonicalAsarUnpack,
   assertRuntimeCoveredByPatterns,
@@ -65,6 +66,21 @@ test('release-notes highlights data está en build.files', () => {
     filePatternCovers('data/release-notes-highlights.mjs', patterns),
     'Falta data/release-notes-highlights.mjs en build.files (lazy settings-help lo importa en runtime)'
   );
+});
+
+test('imports del renderer fuera de public/ quedan en build.files (anti crash asar)', () => {
+  const external = collectRendererExternalImports(ROOT);
+  assert.ok(
+    external.includes('data/release-notes-highlights.mjs'),
+    'settings-help → data/release-notes-highlights.mjs debe detectarse'
+  );
+  const patterns = canonicalBuildFiles(ROOT);
+  for (const rel of external) {
+    assert.ok(
+      filePatternCovers(rel, patterns),
+      `Falta "${rel}" en build.files (import renderer fuera de public/ — crash en app.asar)`
+    );
+  }
 });
 
 test('main.js require("./…") directo está en build.files (excepto server dev-only)', () => {

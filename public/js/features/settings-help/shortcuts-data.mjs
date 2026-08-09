@@ -1,8 +1,5 @@
 /** Structured keyboard shortcuts for the shortcuts modal (Spanish labels). */
 
-/** Hold ⌘/Ctrl alone before opening cheat sheet from keyboard. */
-export const SHORTCUTS_HOLD_MS = 2000;
-
 export function modKeyLabel() {
   if (typeof navigator !== 'undefined' && navigator.platform && /Mac/i.test(navigator.platform)) {
     return '⌘';
@@ -51,6 +48,7 @@ export const SHORTCUT_GROUPS = [
   {
     title: 'Aplicación',
     items: [
+      { keys: ['⌘', '/'], label: 'Mostrar esta hoja de atajos' },
       { keys: ['⌘', 'K'], label: 'Ir a sección, paciente o acción' },
       { keys: ['⌘', ','], label: 'Ajustes' },
       { keys: ['⌘', '⇧', 'P'], label: 'Mi Perfil' },

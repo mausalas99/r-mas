@@ -17,6 +17,10 @@ import {
   INSULIN_RESCATE_NM_LABEL,
 } from '../insulin-rescate-display.mjs';
 import {
+  isInsulinPrandialMedicationItem,
+  insulinPrandialNmSoapFragment,
+} from '../insulin-prandial-display.mjs';
+import {
   detectInsulinPumpAlgorithmFromRecetaItems,
   formatInsulinPumpAlgoritmoLabel,
 } from '../insulin-pump-some-detect.mjs';
@@ -100,6 +104,7 @@ export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualiza
       return;
     }
     if (isInsulinRescateMedicationItem(it)) return;
+    if (isInsulinPrandialMedicationItem(it)) return;
     var cat = effectiveSoapCategory(
       /** @type {{ nombreRaw?: string, soapCatOverride?: string }} */ (it),
       classifyFn
@@ -122,6 +127,10 @@ export function allowedSoapFragmentsByCategory(items, classifyFn, fechaActualiza
   }
   if (patientHasInsulinRescateMeds(list) && byCat.nm) {
     byCat.nm.push(INSULIN_RESCATE_NM_LABEL);
+  }
+  var prandialFrag = insulinPrandialNmSoapFragment(list, list);
+  if (prandialFrag && byCat.nm) {
+    byCat.nm.push(prandialFrag);
   }
   return byCat;
 }

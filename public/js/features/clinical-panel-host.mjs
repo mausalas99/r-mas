@@ -14,8 +14,17 @@ import {
 } from './db-unlock.mjs';
 import { buildTextSkeletonPanel } from '../ui-skeleton.mjs';
 
-/** Panel body inside the visible Mi rotación backdrop. */
+/** @type {HTMLElement | null} */
+let clinicalTeamsEmbedHost = null;
+
+/** @param {HTMLElement | null} host */
+export function setClinicalTeamsEmbedHost(host) {
+  clinicalTeamsEmbedHost = host && host.isConnected ? host : null;
+}
+
+/** Panel body — inline ⇄ Equipo embed when active, else modal body. */
 export function getClinicalTeamsPanelHost() {
+  if (clinicalTeamsEmbedHost?.isConnected) return clinicalTeamsEmbedHost;
   const bd = document.getElementById('clinical-teams-backdrop');
   if (bd) {
     const scoped = bd.querySelector('#clinical-teams-panel-body');

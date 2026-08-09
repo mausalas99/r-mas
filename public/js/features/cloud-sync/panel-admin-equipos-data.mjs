@@ -8,10 +8,18 @@ import {
 import { mergeCloudUsersForEquipos } from './panel-admin-equipos-merge.mjs';
 import { applyEquiposClientFilters } from './panel-admin-equipos-filters.mjs';
 import { sortEquiposRowsForAdmin } from './panel-admin-equipos-sort.mjs';
+import {
+  countVisibleEquiposRows,
+  paintEquiposFilterSummary,
+} from './panel-admin-equipos-summary.mjs';
 
 export { mergeCloudUsersForEquipos } from './panel-admin-equipos-merge.mjs';
 export { applyEquiposClientFilters } from './panel-admin-equipos-filters.mjs';
 export { sortEquiposRowsForAdmin } from './panel-admin-equipos-sort.mjs';
+export { equiposFilterSummaryText } from './panel-admin-equipos-summary.mjs';
+
+/** @type {{ overview: object | null, rooms: object[] }} */
+let equiposAdminMeta = { overview: null, rooms: [] };
 
 /** @returns {import('../../preload.js').ElectronAPI | null} */
 function dbApi() {
@@ -50,11 +58,19 @@ export function applyEquiposFiltersFromToolbar(root) {
   const salaSel = root.querySelector('[data-admin-equipos-sala]');
   const activitySel = root.querySelector('[data-admin-equipos-activity]');
   const teamSel = root.querySelector('[data-admin-equipos-team-status]');
+  const sala = salaSel instanceof HTMLSelectElement ? salaSel.value : '';
   applyEquiposClientFilters(list, {
     q: search instanceof HTMLInputElement ? search.value : '',
-    sala: salaSel instanceof HTMLSelectElement ? salaSel.value : '',
+    sala,
     activity: activitySel instanceof HTMLSelectElement ? activitySel.value : 'all',
     teamStatus: teamSel instanceof HTMLSelectElement ? teamSel.value : 'all',
+  });
+  const counts = countVisibleEquiposRows(list);
+  paintEquiposFilterSummary(root, {
+    ...counts,
+    overview: equiposAdminMeta.overview,
+    salaFilter: sala,
+    rooms: equiposAdminMeta.rooms,
   });
 }
 
@@ -68,15 +84,19 @@ async function fetchEquiposAdminPayload(api, getApi) {
     typeof api.dbClinicalUsersList === 'function'
       ? api.dbClinicalUsersList({ callerUserId })
       : Promise.resolve({ ok: true, users: [] });
-  const [cloudRes, teamsRes, clinicalRes] = await Promise.all([
+  const [cloudRes, teamsRes, clinicalRes, overviewRes, roomsRes] = await Promise.all([
     getApi().adminUsers(''),
     api.dbClinicalTeamsList(),
     clinicalPromise,
+    getApi().adminOverview().catch(() => null),
+    getApi().adminRooms().catch(() => ({ rooms: [] })),
   ]);
   return {
     teams: teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [],
     clinicalUsers: clinicalRes?.ok && Array.isArray(clinicalRes.users) ? clinicalRes.users : [],
     cloudUsers: cloudRes?.users || [],
+    overview: overviewRes,
+    rooms: roomsRes?.rooms || [],
   };
 }
 
@@ -85,6 +105,10 @@ async function fetchEquiposAdminPayload(api, getApi) {
  * @param {{ teams: object[], clinicalUsers: object[], cloudUsers: object[] }} payload
  */
 function renderEquiposAdminList(root, payload) {
+  equiposAdminMeta = {
+    overview: payload.overview || null,
+    rooms: Array.isArray(payload.rooms) ? payload.rooms : [],
+  };
   const rows = sortEquiposRowsForAdmin(
     mergeCloudUsersForEquipos(payload.cloudUsers, payload.clinicalUsers),
     payload.teams

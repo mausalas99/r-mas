@@ -1,6 +1,11 @@
 /**
  * Partición de campos de medicamentos para plantilla SOAP de Estado Actual.
  */
+import {
+  INSULIN_NM_LINE_RE,
+  RESCATE_NM_LINE_RE,
+  partitionNmMedLines,
+} from '../nm-antidiabetic-detect.mjs';
 
 /**
  * @param {unknown} fieldVal
@@ -32,11 +37,6 @@ function joinMedPipeItems(items) {
 var ANTIEMETIC_LINE_RE =
   /\b(ONDANSETRON|GRANISETRON|PALONOSETRON|METOCLOPRAMIDA|DROPERIDOL|DIMENHIDRINATO|BUTILHIOSCINA|BROMURO\s+DE\s+BUTILHIOSCINA|BUSCAPINA)\b/i;
 
-var INSULIN_NM_LINE_RE =
-  /\b(INSULINA|GLARGINA|DEGLUDEC|DETEMIR|NPH|ASPARTA|LISPRO|GLULISINA|HUMANA\s+RAPIDA)\b/i;
-
-var RESCATE_NM_LINE_RE = /\bRESCATES\s+DE\s+INSULINA\b/i;
-
 /**
  * @param {unknown} fieldVal
  * @returns {{ analgesia: string, antiemeticos: string }}
@@ -55,25 +55,26 @@ export function partitionAnalgesiaForSoap(fieldVal) {
 
 /**
  * @param {unknown} fieldVal
- * @returns {{ other: string, insulin: string, rescatesDisponibles: boolean }}
+ * @returns {{ other: string, insulin: string, antidiabeticos: string, rescatesDisponibles: boolean }}
  */
 export function partitionNmMedsForSoap(fieldVal) {
-  /** @type {string[]} */
-  var other = [];
+  var part = partitionNmMedLines(parseMedPipeItems(fieldVal));
   /** @type {string[]} */
   var insulin = [];
-  var rescatesDisponibles = false;
-  parseMedPipeItems(fieldVal).forEach(function (line) {
-    if (RESCATE_NM_LINE_RE.test(line)) {
-      rescatesDisponibles = true;
-      return;
+  part.antidiabeticos.forEach(function (line) {
+    if (
+      INSULIN_NM_LINE_RE.test(line) &&
+      !RESCATE_NM_LINE_RE.test(line) &&
+      !/^INSULINA\s+PREPRANDIAL:/i.test(line) &&
+      !/BOMBA\s+DE\s+INSULINA/i.test(line)
+    ) {
+      insulin.push(line);
     }
-    if (INSULIN_NM_LINE_RE.test(line)) insulin.push(line);
-    else other.push(line);
   });
   return {
-    other: joinMedPipeItems(other),
+    antidiabeticos: joinMedPipeItems(part.antidiabeticos),
+    other: joinMedPipeItems(part.other),
     insulin: joinMedPipeItems(insulin),
-    rescatesDisponibles: rescatesDisponibles,
+    rescatesDisponibles: part.rescatesDisponibles,
   };
 }

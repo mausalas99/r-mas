@@ -9,17 +9,23 @@
         <h2 class="visually-hidden">Pacientes</h2>
       </div>
       <div class="sidebar-header-actions">
+        <div class="patient-filters-anchor" id="patient-filters-anchor">
+          <button type="button" class="btn-patient-filters" id="btn-patient-filters" hidden aria-expanded="false" aria-controls="clinical-census-filters-body" title="Filtros de pacientes" aria-label="Filtros de pacientes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+            <span class="btn-patient-filters-badge" id="btn-patient-filters-badge" hidden aria-hidden="true"></span>
+          </button>
+        </div>
         <button type="button" class="btn-patient-bulk-select" id="btn-patient-bulk-select" onclick="togglePatientBulkSelect()" aria-pressed="false" title="Seleccionar varios pacientes" aria-label="Seleccionar varios pacientes">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M4.5 8l1.2 1.2L8.5 6.5"/><rect x="3" y="14" width="6" height="6" rx="1"/><path d="M13 8h8"/><path d="M13 17h8"/></svg>
         </button>
         <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
       </div>
+      <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--popover" hidden aria-hidden="true"></div>
     </div>
     <div class="patient-search-wrap">
       <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
-    <div id="clinical-census-filters-sidebar-mount" class="clinical-census-filters-mount clinical-census-filters-mount--sidebar" hidden aria-hidden="true"></div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
       <button type="button" class="btn-export-censo-sidebar" id="btn-export-censo-sidebar" onclick="exportCensoPdfFromHelp()" title="Generar PDF del censo de guardia">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>

@@ -48,8 +48,17 @@ export function isDbMode() {
   );
 }
 
+/** Electron desktop shell — not Safari/iPad LAN web client. */
+export function isElectronDesktopShell() {
+  if (typeof window === 'undefined') return false;
+  if (isDbMode()) return true;
+  if (window.__RPC_ELECTRON_DESKTOP__) return true;
+  return /\bElectron\//i.test(String(navigator.userAgent || ''));
+}
+
 /** Safari/iPad/PWA LAN client — no SQLCipher; team mirror scope always applies. */
 export function isWebClinicalClient() {
+  if (isElectronDesktopShell()) return false;
   return typeof window !== 'undefined' && !isDbMode();
 }
 

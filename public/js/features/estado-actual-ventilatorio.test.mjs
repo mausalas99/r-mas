@@ -102,6 +102,18 @@ test('buildVentilatorioCalcHints — alertas SIRA y protección pulmonar', () =>
   assert.ok(hints.some(function (h) { return h.indexOf('P meseta ≥30') >= 0; }));
 });
 
+test('resolveSoporteClause — aire ambiente sin hints de PaFi con gaso venosa', () => {
+  var clause = resolveSoporteClause(
+    { soporte: 'Aire ambiente' },
+    {
+      fr: 22,
+      sat: 96,
+      lab: { kind: 'venous', pO2: 60, pCO2: 35, sourceLabel: 'Gasometría venosa · 08/08' },
+    }
+  );
+  assert.equal(clause, 'AL AIRE AMBIENTE');
+});
+
 test('resolveSoporteClause incluye índices calculados', () => {
   var clause = resolveSoporteClause(
     {

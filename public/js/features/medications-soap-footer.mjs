@@ -9,9 +9,16 @@ import {
 } from "../insulin-pump-some-detect.mjs";
 import { skipRecetaItemForInsulinPumpCarrier } from "../insulin-pump-receta-display.mjs";
 import {
+  isAntidiabeticRecetaItem,
+} from "../nm-antidiabetic-detect.mjs";
+import {
   isInsulinRescateMedicationItem,
   insulinRescateMedLabelHtml,
 } from "../insulin-rescate-display.mjs";
+import {
+  isInsulinPrandialMedicationItem,
+  insulinPrandialMedLabelHtml,
+} from "../insulin-prandial-display.mjs";
 import { rt } from "./medications-runtime-state.mjs";
 import { esc, getMedNotaSelMap } from "./medications-utils.mjs";
 
@@ -34,29 +41,42 @@ function groupSoapPreviewItems(soapItems, allItems) {
     transfusiones: [],
     vasop: [],
     nm: [],
+    nmAntidiabeticos: [],
     otros: [],
   };
   var pumpAlg = detectInsulinPumpAlgorithmFromRecetaItems(allItems || []);
   var pumpChipAdded = false;
   var rescateChipAdded = false;
+  var prandialChipAdded = false;
   soapItems.forEach(function (it) {
     if (skipRecetaItemForInsulinPumpCarrier(it, allItems || [])) return;
     if (!shouldIncludeMedicationInSoap(it, classifyMedicationSoapCategory)) return;
     if (pumpAlg != null && isInsulinIvMedicationItem(it)) {
       if (!pumpChipAdded) {
-        groups.nm.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
+        groups.nmAntidiabeticos.push({ _insulinPumpChip: true, _algorithm: pumpAlg });
         pumpChipAdded = true;
       }
       return;
     }
     if (isInsulinRescateMedicationItem(it)) {
       if (!rescateChipAdded) {
-        groups.nm.push({ _insulinRescateChip: true });
+        groups.nmAntidiabeticos.push({ _insulinRescateChip: true });
         rescateChipAdded = true;
       }
       return;
     }
+    if (isInsulinPrandialMedicationItem(it)) {
+      if (!prandialChipAdded) {
+        groups.nmAntidiabeticos.push({ _insulinPrandialChip: true, _allItems: allItems || [] });
+        prandialChipAdded = true;
+      }
+      return;
+    }
     var cat = effectiveSoapCategory(it, classifyMedicationSoapCategory);
+    if (cat === "nm" && isAntidiabeticRecetaItem(it)) {
+      groups.nmAntidiabeticos.push(it);
+      return;
+    }
     if (cat === "otros") groups.otros.push(it);
     else if (groups[cat]) groups[cat].push(it);
     else groups.otros.push(it);
@@ -78,6 +98,13 @@ function chipsForSoapItems(arr) {
         return (
           '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-rescate" title="Rescates de insulina PRN (SOME)">' +
           insulinRescateMedLabelHtml(esc) +
+          "</span>"
+        );
+      }
+      if (it && it._insulinPrandialChip) {
+        return (
+          '<span class="med-soap-preview-chip med-soap-preview-chip--insulin-prandial" title="Insulina preprandial SC (SOME)">' +
+          insulinPrandialMedLabelHtml(it._allItems || [], esc) +
           "</span>"
         );
       }
@@ -131,7 +158,8 @@ function buildSoapPreviewHtml(soapItems, allItems) {
     soapPreviewSection("abx", "Antibióticos / antifúngicos", groups) +
     soapPreviewSection("transfusiones", "Transfusiones", groups) +
     soapPreviewSection("vasop", "Vasopresores / inotrópicos", groups) +
-    soapPreviewSection("nm", "NM (insulina, tiroides, etc.)", groups) +
+    soapPreviewSection("nmAntidiabeticos", "Antidiabéticos", groups) +
+    soapPreviewSection("nm", "NM (soporte, crónicos, etc.)", groups) +
     soapPreviewSection("otros", "Otros — elegí destino en el listado", groups) +
     "</div>"
   );

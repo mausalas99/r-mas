@@ -1,5 +1,9 @@
 /** Nube sync diagnostics ring buffer and support report. */
 
+import { utf8JsonBytes, CLOUD_PUSH_WARN_BODY_BYTES, CLOUD_PUSH_WARN_OP_BYTES } from './cloud-op-slim.mjs';
+import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
+import { isCloudSyncNetworkErrorMessage } from './cloud-sync-error-text.mjs';
+
 const MAX_ERRORS = 8;
 const MAX_TRACE = 16;
 
@@ -56,10 +60,20 @@ export function recordCloudSyncTrace(boundary, data) {
   if (syncTrace.length > MAX_TRACE) syncTrace.length = MAX_TRACE;
 }
 
+export function clearCloudSyncErrors() {
+  lastErrors.length = 0;
+}
+
+export function clearCloudSyncWsFaults() {
+  lastWsError = null;
+  lastWsClose = null;
+}
+
 /** @param {boolean} ok */
 export function noteCloudSyncCycle(ok) {
   lastCycleAt = new Date().toISOString();
   lastCycleOk = !!ok;
+  if (ok) clearCloudSyncErrors();
 }
 
 export function noteCloudSyncPull() {
@@ -89,6 +103,12 @@ export function noteCloudSyncWsSignal(revision) {
  */
 export function noteCloudSyncWsLifecycle(info) {
   const url = String(info?.url || '').trim();
+  if (info?.open) {
+    if (url) lastWsUrl = url;
+    clearCloudSyncWsFaults();
+    recordCloudSyncTrace('ws_open', { url: url || lastWsUrl || '' });
+    return;
+  }
   if (url) lastWsUrl = url;
   if (info?.message) {
     lastWsError = String(info.message);
@@ -107,7 +127,7 @@ export function noteCloudSyncWsLifecycle(info) {
 }
 
 export function clearCloudSyncDiagnostics() {
-  lastErrors.length = 0;
+  clearCloudSyncErrors();
   syncTrace.length = 0;
   lastPullAt = null;
   lastPushAt = null;
@@ -115,9 +135,8 @@ export function clearCloudSyncDiagnostics() {
   lastCycleOk = null;
   lastTransport = null;
   lastWsSignalAt = null;
-  lastWsClose = null;
-  lastWsError = null;
   lastWsUrl = null;
+  clearCloudSyncWsFaults();
 }
 
 /**
@@ -155,6 +174,7 @@ export function classifyCloudOpPath(path) {
   if (p.includes('/fields')) return 'censo';
   if (p.startsWith('agenda/')) return 'agenda';
   if (p.startsWith('tombstones/')) return 'delete';
+  if (p.startsWith('labSidecars/')) return 'labs';
   if (p.startsWith('patients/')) return 'patient';
   return 'other';
 }
@@ -175,17 +195,72 @@ export function summarizeCloudOutbox(entries) {
       byKind[kind] = (byKind[kind] || 0) + 1;
     });
     const enqueuedAt = Number(item.enqueuedAt || 0) || 0;
+    let totalBytes = 0;
+    let maxOpBytes = 0;
+    let maxOpPath = '';
+    for (let oi = 0; oi < ops.length; oi += 1) {
+      const op = ops[oi];
+      const bytes = utf8JsonBytes(op);
+      totalBytes += bytes;
+      if (bytes > maxOpBytes) {
+        maxOpBytes = bytes;
+        maxOpPath = readOpPath(op);
+      }
+    }
     return {
       clientMutationId: String(item.clientMutationId || ''),
       enqueuedAt: enqueuedAt || null,
       ageMs: enqueuedAt ? Math.max(0, Date.now() - enqueuedAt) : 0,
       baseRevision: item.baseRevision != null ? Number(item.baseRevision) : null,
       opCount: ops.length,
+      totalBytes,
+      maxOpBytes,
+      maxOpPath: maxOpPath || null,
       paths: paths.slice(0, 16),
       kinds,
     };
   });
   return { count: rows.length, byKind, entries: summary };
+}
+
+/**
+ * @param {{ totalBytes?: number, maxOpBytes?: number, clientMutationId?: string, opCount?: number }} row
+ */
+export function isToxicCloudOutboxEntry(row) {
+  if (!row || typeof row !== 'object') return false;
+  const totalBytes = Number(row.totalBytes) || 0;
+  const maxOpBytes = Number(row.maxOpBytes) || 0;
+  const opCount = Number(row.opCount) || 0;
+  const id = String(row.clientMutationId || '');
+  if (id === CLOUD_LAB_BACKFILL_MUTATION_ID && opCount > 1) return true;
+  if (totalBytes > CLOUD_PUSH_WARN_BODY_BYTES) return true;
+  if (maxOpBytes > CLOUD_PUSH_WARN_OP_BYTES) return true;
+  return false;
+}
+
+/**
+ * @param {Array<{ clientMutationId?: string, enqueuedAt?: number, baseRevision?: number, ops?: unknown[] }>} entries
+ */
+export function findWorstCloudOutboxEntry(entries) {
+  const summary = summarizeCloudOutbox(entries);
+  let worst = null;
+  for (let i = 0; i < summary.entries.length; i += 1) {
+    const row = summary.entries[i];
+    if (!worst || Number(row.totalBytes) > Number(worst.totalBytes)) worst = row;
+  }
+  return worst;
+}
+
+/**
+ * @param {Array<{ clientMutationId?: string, enqueuedAt?: number, baseRevision?: number, ops?: unknown[] }>} entries
+ */
+export function listToxicCloudOutboxEntries(entries) {
+  const summary = summarizeCloudOutbox(entries);
+  return summary.entries
+    .filter(isToxicCloudOutboxEntry)
+    .sort(function (a, b) {
+      return Number(b.totalBytes) - Number(a.totalBytes);
+    });
 }
 
 /**
@@ -251,6 +326,21 @@ function buildDiagnosticsSnapshot(d) {
 export function getCloudSyncDiagnostics(deps) {
   const d = deps && typeof deps === 'object' ? deps : {};
   return buildDiagnosticsSnapshot(d);
+}
+
+/**
+ * True when sync is failing and recent errors look like transport/network (not auth/quota).
+ * @param {ReturnType<typeof getCloudSyncDiagnostics>} [diag]
+ */
+export function hasActiveCloudNetworkFailure(diag) {
+  const d = diag && typeof diag === 'object' ? diag : getCloudSyncDiagnostics();
+  const syncFailing = d.lastCycleOk === false || String(d.status || '') === 'error';
+  if (!syncFailing) return false;
+  const messages = [
+    String(d.detail || ''),
+    ...(Array.isArray(d.lastErrors) ? d.lastErrors.map((entry) => String(entry?.message || '')) : []),
+  ];
+  return messages.some((message) => isCloudSyncNetworkErrorMessage(message));
 }
 
 /**

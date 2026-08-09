@@ -1,5 +1,5 @@
 import { isCloudMobileClient } from './origin.mjs';
-import { isMobileWeb, syncMobileBarebonesChrome } from '../../mobile-web.mjs';
+import { syncMobileBarebonesChrome } from '../../mobile-web.mjs';
 import {
   wipeSessionClinicalStorage,
   installSessionClinicalWipeOnExit,
@@ -9,13 +9,16 @@ import { setCloudSyncUrl } from '../cloud-sync/settings.mjs';
 import {
   mountCloudMobileLoginShell,
   rewriteCloudMobileBookmarkUrl,
-  showCloudMobileConnecting,
   dismissCloudMobileGate,
 } from './login-ui.mjs';
 import { startCloudMobileRuntime } from './runtime.mjs';
 import { hydrateCloudMobileIdentity } from './hydrate-identity.mjs';
 import { resolveCloudMobileActiveRoom, notifyIfCloudMobileCensusEmpty, showCloudMobileEmptyCensusBanner } from './resolve-active-room.mjs';
 import { showToast } from '../../ui-toast.mjs';
+import {
+  CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
+  withCloudMobileBootTimeout,
+} from './boot-timeout.mjs';
 import {
   applyCloudMobileInviteSearch,
   clearCloudMobileJoinHints,
@@ -98,6 +101,8 @@ async function runCloudMobilePostConnect(gateEl, toast) {
     try {
       const patientsMod = await import('../patients.mjs');
       patientsMod.renderPatientList();
+      const { refreshMobileLabReferencePanel } = await import('../../mobile-web.mjs');
+      refreshMobileLabReferencePanel();
     } catch {
       /* optional */
     }
@@ -108,7 +113,7 @@ async function runCloudMobilePostConnect(gateEl, toast) {
 }
 
 export function isCloudMobileBoot() {
-  return isCloudMobileClient() && isMobileWeb();
+  return isCloudMobileClient();
 }
 
 /** Hide LAN / local-server alerts — Nube mobile never uses :3738. */
@@ -168,14 +173,38 @@ export async function initCloudMobileBoot() {
     void runCloudMobilePostConnect(gate, toast);
   };
 
-  if (getCloudSyncToken()) {
-    showCloudMobileConnecting(gate);
-    const room = await resolveCloudMobileActiveRoom();
-    if (room?.id) {
-      await runCloudMobilePostConnect(gate, toast);
-      return;
+  try {
+    // Bundle loaded — release the inline HTML gate; reconnect must not block the UI.
+    dismissCloudMobileGate(gate);
+    try {
+      if (typeof globalThis !== 'undefined') globalThis.__RPC_CLOUD_MOBILE_BUNDLE_BOOTED__ = true;
+    } catch {
+      /* ignore */
     }
-  }
 
-  mountCloudMobileLoginShell(gate, { onConnected });
+    if (getCloudSyncToken()) {
+      let room = null;
+      try {
+        room = await withCloudMobileBootTimeout(
+          resolveCloudMobileActiveRoom(),
+          CLOUD_MOBILE_ROOM_RESOLVE_TIMEOUT_MS,
+          'room_resolve_timeout'
+        );
+      } catch {
+        toast('No se pudo contactar la nube. Revisa la red e intenta de nuevo.', 'error');
+        mountCloudMobileLoginShell(gate, { onConnected });
+        return;
+      }
+      if (room?.id) {
+        void runCloudMobilePostConnect(gate, toast);
+        return;
+      }
+    }
+    mountCloudMobileLoginShell(gate, { onConnected });
+  } catch (err) {
+    console.error('[R+ Móvil] boot error:', err);
+    dismissCloudMobileGate(gate);
+    toast('No se pudo iniciar R+ Móvil. Recarga la página.', 'error');
+    mountCloudMobileLoginShell(gate, { onConnected });
+  }
 }

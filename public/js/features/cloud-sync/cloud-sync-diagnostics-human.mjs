@@ -1,8 +1,17 @@
 /** Human-readable Nube sync diagnostics — verdict, facts, and issue explanations. */
 
-import { STATUS_LABELS } from './panel-conexion-html.mjs';
-import { CLOUD_SYNC_CLIENT_NOT_READY, humanizeTechnicalSyncMessage } from './cloud-sync-error-text.mjs';
+import { CLOUD_LAB_BACKFILL_MUTATION_ID } from './constants.mjs';
+import {
+  CLOUD_PUSH_WARN_BODY_BYTES,
+} from './cloud-op-slim.mjs';
+import { isToxicCloudOutboxEntry } from './cloud-sync-diagnostics.mjs';
+import {
+  CLOUD_SYNC_CLIENT_NOT_READY,
+  humanizeTechnicalSyncMessage,
+  isCloudSyncNetworkErrorMessage,
+} from './cloud-sync-error-text.mjs';
 import { resolveCloudErrorFixId } from './cloud-nube-fix-guides.mjs';
+import { STATUS_LABELS } from './panel-conexion-html.mjs';
 
 const WS_CLOSE_EXPLAIN = {
   1000: 'Cierre normal del canal en vivo.',
@@ -58,6 +67,7 @@ const OUTBOX_KIND_LABELS = {
   delete: 'borrados',
   patient: 'paciente',
   clinicalOps: 'operaciones',
+  labs: 'labs',
   other: 'otros',
 };
 
@@ -162,9 +172,6 @@ function formatRoomLabel(snapshot, roomId) {
   return id || 'Sin sala';
 }
 
-/**
- * @param {Record<string, number>} byKind
- */
 function formatOutboxKinds(byKind) {
   const rows = Object.entries(byKind || {})
     .filter(function (pair) {
@@ -175,6 +182,88 @@ function formatOutboxKinds(byKind) {
       return Number(pair[1]) + ' ' + label;
     });
   return rows.join(', ');
+}
+
+/**
+ * @param {number} bytes
+ */
+function formatCloudDiagBytes(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return String(n) + ' B';
+  if (n < 1024 * 1024) return String(Math.round(n / 1024)) + ' KB';
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/**
+ * @param {{ clientMutationId?: string, opCount?: number, totalBytes?: number, maxOpPath?: string | null, maxOpBytes?: number }} row
+ */
+function formatToxicOutboxDetail(row) {
+  const id = String(row.clientMutationId || 'push');
+  const total = formatCloudDiagBytes(row.totalBytes);
+  let detail =
+    '«' +
+    id +
+    '»: ' +
+    String(row.opCount || 0) +
+    ' ops, ~' +
+    total +
+    ' total.';
+  const maxPath = String(row.maxOpPath || '').trim();
+  if (maxPath) {
+    detail += ' Mayor: ' + maxPath + ' (~' + formatCloudDiagBytes(row.maxOpBytes) + ').';
+  }
+  if (Number(row.totalBytes) > CLOUD_PUSH_WARN_BODY_BYTES) {
+    detail += ' Límite servidor ~' + formatCloudDiagBytes(CLOUD_PUSH_WARN_BODY_BYTES) + '.';
+  }
+  return detail;
+}
+
+/**
+ * @param {ReturnType<typeof import('./cloud-sync-diagnostics.mjs').getCloudSyncDiagnostics>} diag
+ */
+function isSyncFailureActive(diag) {
+  const status = String(diag.status || 'unknown');
+  return status === 'error' || diag.lastCycleOk === false;
+}
+
+/**
+ * @param {ReturnType<typeof import('./cloud-sync-diagnostics.mjs').getCloudSyncDiagnostics>} diag
+ * @param {string} transport
+ * @param {{ code: number, reason: string }} wsClose
+ */
+function isWsCloseStillActive(diag, transport, wsClose) {
+  const code = Number(wsClose.code) || 0;
+  if (!code || code === 1000 || code === 1001) return false;
+  if (transport === 'ws') {
+    return code === 1008 || code === 1011;
+  }
+  if (code === 1006) {
+    return isSyncFailureActive(diag);
+  }
+  return true;
+}
+
+/**
+ * @param {ReturnType<typeof import('./cloud-sync-diagnostics.mjs').getCloudSyncDiagnostics>} diag
+ * @param {string} transport
+ */
+function isWsErrorStillActive(diag, transport) {
+  if (!diag.lastWsError) return false;
+  if (transport === 'ws') return false;
+  return isSyncFailureActive(diag) || transport === 'offline' || diag.online === false;
+}
+
+/**
+ * @param {Array<{ op: string, explain: string, at: string, code: string, fixId: string }>} rows
+ */
+function dedupeRecentErrors(rows) {
+  const seen = new Set();
+  return rows.filter(function (row) {
+    const key = row.op + '\0' + row.explain;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -189,21 +278,26 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
   const outboxCount = Number(d.outbox?.count || 0);
   const wsClose = parseWsClose(d.lastWsClose);
   const issues = [];
-  const recentErrors = (d.lastErrors || []).map(function (entry) {
-    const human = humanizeCloudSyncError(entry);
-    return {
-      at: formatCloudDiagWhen(entry.at, now),
-      op: human.op,
-      explain: human.explain,
-      code: String(entry.code || ''),
-      fixId: resolveCloudErrorFixId({
-        op: entry.op,
-        code: entry.code,
-        message: entry.message,
-        explain: human.explain,
-      }),
-    };
-  });
+  const syncFailing = isSyncFailureActive(d);
+  const recentErrors = syncFailing
+    ? dedupeRecentErrors(
+        (d.lastErrors || []).map(function (entry) {
+          const human = humanizeCloudSyncError(entry);
+          return {
+            at: formatCloudDiagWhen(entry.at, now),
+            op: human.op,
+            explain: human.explain,
+            code: String(entry.code || ''),
+            fixId: resolveCloudErrorFixId({
+              op: entry.op,
+              code: entry.code,
+              message: entry.message,
+              explain: human.explain,
+            }),
+          };
+        })
+      )
+    : [];
 
   if (d.online === false) {
     issues.push({
@@ -211,6 +305,19 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
       severity: 'warn',
       title: 'Sin internet',
       detail: 'No hay conexión de red. Los cambios se guardan localmente hasta recuperar red.',
+    });
+  } else if (
+    syncFailing &&
+    (recentErrors.some((row) => isCloudSyncNetworkErrorMessage(row.explain)) ||
+      isCloudSyncNetworkErrorMessage(d.detail))
+  ) {
+    issues.push({
+      fixId: 'network_unreachable',
+      severity: 'error',
+      title: 'Sin contacto estable con Nube',
+      detail:
+        'El dispositivo reporta internet, pero las peticiones a Nube fallan (Failed to fetch). Revisa Wi‑Fi, VPN o firewall; recarga R+ y reintenta cuando la red sea estable.',
+      hint: 'El servidor de Nube puede estar bien; el problema suele ser la ruta de red del dispositivo.',
     });
   }
 
@@ -272,7 +379,30 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
     });
   }
 
-  if (status === 'error') {
+  const toxicRows = (Array.isArray(d.outbox?.entries) ? d.outbox.entries : [])
+    .filter(isToxicCloudOutboxEntry)
+    .sort(function (a, b) {
+      return Number(b.totalBytes) - Number(a.totalBytes);
+    });
+  if (toxicRows.length > 0) {
+    const worst = toxicRows[0];
+    const legacyBackfill =
+      String(worst.clientMutationId || '') === CLOUD_LAB_BACKFILL_MUTATION_ID &&
+      Number(worst.opCount) > 1;
+    issues.push({
+      fixId: legacyBackfill ? 'toxic_legacy_lab_backfill' : 'toxic_outbox_chunk',
+      severity: 'error',
+      title: legacyBackfill
+        ? 'Labs en lote obsoleto (cliente antiguo)'
+        : 'Lote pesado bloqueando la cola',
+      detail: formatToxicOutboxDetail(worst),
+      hint: legacyBackfill
+        ? 'Actualiza R+ en esta Mac y en cualquier otra en la sala; luego «Reintentar cola» divide por paciente.'
+        : '«Descartar labs en cola» si ya están en Nube, o «Reintentar cola» tras actualizar R+.',
+    });
+  }
+
+  if (status === 'error' && recentErrors.length === 0) {
     issues.push({
       fixId: 'sync_error',
       severity: 'error',
@@ -290,7 +420,7 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
     });
   }
 
-  if (d.lastCycleOk === false) {
+  if (d.lastCycleOk === false && recentErrors.length === 0) {
     issues.push({
       fixId: 'cycle_failed',
       severity: 'error',
@@ -299,7 +429,7 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
     });
   }
 
-  if (d.lastWsError) {
+  if (isWsErrorStillActive(d, transport)) {
     issues.push({
       fixId: 'ws_error',
       severity: 'warn',
@@ -308,7 +438,7 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
     });
   }
 
-  if (wsClose.code && wsClose.code !== 1000 && wsClose.code !== 1001) {
+  if (isWsCloseStillActive(d, transport, wsClose)) {
     const abnormal = wsClose.code === 1006;
     const severity =
       wsClose.code === 1008 || wsClose.code === 1011 ? 'error' : abnormal && transport === 'poll' ? 'info' : 'warn';
@@ -568,6 +698,18 @@ export function buildCloudDiagnosticsHumanView(diag, nowMs) {
     tiles,
     pipeline,
     outboxBreakdown,
+    toxicOutbox: toxicRows.slice(0, 3).map(function (row) {
+      return {
+        clientMutationId: String(row.clientMutationId || ''),
+        opCount: Number(row.opCount) || 0,
+        totalBytes: Number(row.totalBytes) || 0,
+        totalLabel: formatCloudDiagBytes(row.totalBytes),
+        maxOpPath: row.maxOpPath || null,
+        maxOpBytes: Number(row.maxOpBytes) || 0,
+        maxOpLabel: formatCloudDiagBytes(row.maxOpBytes),
+        detail: formatToxicOutboxDetail(row),
+      };
+    }),
     issues,
     recentErrors,
   };

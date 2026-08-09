@@ -23,14 +23,16 @@ export function equiposShellHtml() {
     '<option value="">Todas</option></select>' +
     '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-equipos-activity">Uso</label>' +
     '<select id="cloud-admin-equipos-activity" class="profile-input" data-admin-equipos-activity>' +
-    '<option value="all">Todos</option>' +
+    '<option value="all" selected>Todos</option>' +
     '<option value="has">Con última actividad</option>' +
-    '<option value="none" selected>Sin última actividad</option></select>' +
+    '<option value="none">Sin última actividad</option></select>' +
     '<label class="cloud-sync-admin-toolbar-label" for="cloud-admin-equipos-team-status">Equipo</label>' +
     '<select id="cloud-admin-equipos-team-status" class="profile-input" data-admin-equipos-team-status>' +
-    '<option value="all">Todos</option>' +
-    '<option value="unassigned" selected>Sin equipo</option>' +
+    '<option value="all" selected>Todos</option>' +
+    '<option value="unassigned">Sin equipo</option>' +
     '<option value="assigned">Con equipo</option></select></div>' +
+    '<p class="cloud-sync-hint cloud-sync-admin-equipos-summary" data-admin-equipos-summary title="Usuarios = filas de esta lista (perfil clínico + cuenta Nube). Cuentas Nube = @usuarios únicos. Membresías = inscripciones en salas de sync (un usuario en varias salas cuenta varias veces).">' +
+    'Cargando resumen…</p>' +
     '<div class="cloud-sync-admin-equipos-bulk">' +
     '<label class="cloud-sync-admin-equipos-select-all-label">' +
     '<input type="checkbox" class="cloud-sync-admin-equipos-check" data-admin-equipos-select-all /> Seleccionar visibles</label>' +

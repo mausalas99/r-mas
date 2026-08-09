@@ -1,7 +1,7 @@
 import { CLINICAL_SALA_VALUES } from '../../../lib/clinical-salas.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { buildTeamSelectOptions } from './clinical-teams/team-select-options.mjs';
-import { elevatedPatientFilters } from './clinical-census-filters-state.mjs';
+import { censusFiltersAreActive, elevatedPatientFilters } from './clinical-census-filters-state.mjs';
 import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
@@ -13,7 +13,7 @@ import {
   censusFiltersUseFullTeamCatalog,
 } from './clinical-census-filters-ui.mjs';
 
-function buildCensusFiltersBarHtml(user, mobileSidebar) {
+function buildCensusFiltersBodyHtml(user, mobileSidebar) {
   const showSalaFilter = !mobileSidebar || censusFiltersUseFullTeamCatalog(user);
   const salaBlock = showSalaFilter
     ? '<label class="clinical-census-filter"><span>Sala</span>' +
@@ -23,9 +23,6 @@ function buildCensusFiltersBarHtml(user, mobileSidebar) {
       '</select></label>'
     : '';
   return (
-    '<button type="button" id="btn-clinical-census-filters-toggle" class="clinical-census-filters-toggle" aria-expanded="true" aria-controls="clinical-census-filters-body">' +
-    '<span class="clinical-census-filters-toggle-label">Filtros censo</span>' +
-    '<span class="clinical-census-filters-chevron" aria-hidden="true"></span></button>' +
     '<div id="clinical-census-filters-body" class="clinical-census-filters-body">' +
     salaBlock +
     '<label class="clinical-census-filter"><span>Equipo</span>' +
@@ -39,53 +36,87 @@ function buildCensusFiltersBarHtml(user, mobileSidebar) {
   );
 }
 
-function wireCensusFiltersCollapse(bar) {
-  const applyCensusFiltersCollapsedUi = (collapsed) => {
-    const toggleBtn = document.getElementById('btn-clinical-census-filters-toggle');
-    const body = document.getElementById('clinical-census-filters-body');
-    if (!toggleBtn || !body) return;
-    toggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    body.hidden = collapsed;
-    bar.classList.toggle('is-collapsed', collapsed);
+function syncPatientFiltersTriggerUi(bar, collapsed) {
+  const triggerBtn = document.getElementById('btn-patient-filters');
+  const mount = document.getElementById('clinical-census-filters-sidebar-mount');
+  const body = document.getElementById('clinical-census-filters-body');
+  if (!triggerBtn || !mount || !body) return;
+  triggerBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  triggerBtn.classList.toggle('btn-patient-filters--open', !collapsed);
+  triggerBtn.classList.toggle('btn-patient-filters--active', censusFiltersAreActive());
+  mount.hidden = collapsed;
+  mount.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+  body.hidden = collapsed;
+  bar.classList.toggle('is-collapsed', collapsed);
+  const badge = document.getElementById('btn-patient-filters-badge');
+  if (badge) badge.hidden = !censusFiltersAreActive();
+}
+
+function wirePatientFiltersPopover(bar) {
+  const applyCollapsed = (collapsed) => {
+    writeCensusFiltersCollapsed(collapsed);
+    syncPatientFiltersTriggerUi(bar, collapsed);
   };
 
-  applyCensusFiltersCollapsedUi(readCensusFiltersCollapsed());
+  applyCollapsed(readCensusFiltersCollapsed());
 
-  const toggleBtn = bar.querySelector('#btn-clinical-census-filters-toggle');
-  if (toggleBtn && !toggleBtn._rpcCensusToggleWired) {
-    toggleBtn._rpcCensusToggleWired = true;
-    toggleBtn.addEventListener('click', () => {
+  const triggerBtn = document.getElementById('btn-patient-filters');
+  if (triggerBtn && !triggerBtn._rpcPatientFiltersWired) {
+    triggerBtn._rpcPatientFiltersWired = true;
+    triggerBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
       const next = !bar.classList.contains('is-collapsed');
-      writeCensusFiltersCollapsed(next);
-      applyCensusFiltersCollapsedUi(next);
+      applyCollapsed(next);
+    });
+  }
+
+  if (!bar._rpcPatientFiltersOutsideWired) {
+    bar._rpcPatientFiltersOutsideWired = true;
+    document.addEventListener('click', (event) => {
+      if (bar.classList.contains('is-collapsed')) return;
+      const target = /** @type {Node|null} */ (event.target);
+      const anchor = document.getElementById('patient-filters-anchor');
+      const mount = document.getElementById('clinical-census-filters-sidebar-mount');
+      if (!target) return;
+      if (anchor?.contains(target) || mount?.contains(target) || bar.contains(target)) return;
+      applyCollapsed(true);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !bar.classList.contains('is-collapsed')) {
+        applyCollapsed(true);
+      }
     });
   }
 }
 
 /** @param {HTMLElement} bar @param {() => void} refreshCensusViews */
 export function wireCensusFilterInputs(bar, refreshCensusViews) {
-  wireCensusFiltersCollapse(bar);
+  wirePatientFiltersPopover(bar);
   const salaSel = bar.querySelector('#clinical-filter-sala');
   const teamSel = bar.querySelector('#clinical-filter-team');
   const serviceInp = bar.querySelector('#clinical-filter-service');
+  const onFilterChange = () => {
+    syncPatientFiltersTriggerUi(bar, bar.classList.contains('is-collapsed'));
+    refreshCensusViews();
+  };
   if (salaSel) {
     salaSel.addEventListener('change', () => {
       elevatedPatientFilters.sala = String(salaSel.value || '__all__');
       syncCensusTeamFilterSelect(clinicalSessionContext.user);
-      refreshCensusViews();
+      onFilterChange();
     });
   }
   if (teamSel) {
     teamSel.addEventListener('change', () => {
       elevatedPatientFilters.teamId = String(teamSel.value || '');
       writeElevatedTeamFilterPreference(elevatedPatientFilters.teamId);
-      refreshCensusViews();
+      onFilterChange();
     });
   }
   if (serviceInp) {
     serviceInp.addEventListener('input', () => {
       elevatedPatientFilters.service = String(serviceInp.value || '').trim();
-      refreshCensusViews();
+      onFilterChange();
     });
   }
 }
@@ -95,15 +126,15 @@ export function createCensusFiltersBar(user, filtersMount, mobileSidebar) {
   const bar = document.createElement('div');
   bar.id = 'clinical-census-filters';
   bar.className =
-    'clinical-census-filters clinical-census-filters--toolbar' +
+    'clinical-census-filters clinical-census-filters--popover' +
     (mobileSidebar ? ' clinical-census-filters--mobile-sidebar' : '');
-  bar.innerHTML = buildCensusFiltersBarHtml(user, mobileSidebar);
+  bar.innerHTML = buildCensusFiltersBodyHtml(user, mobileSidebar);
   if (bar.parentElement && bar.parentElement !== filtersMount) {
     bar.remove();
   }
   filtersMount.appendChild(bar);
-  filtersMount.hidden = false;
-  filtersMount.setAttribute('aria-hidden', 'false');
+  filtersMount.hidden = readCensusFiltersCollapsed();
+  filtersMount.setAttribute('aria-hidden', readCensusFiltersCollapsed() ? 'true' : 'false');
   return bar;
 }
 
@@ -124,7 +155,6 @@ export function syncCensusTeamFilterSelect(user) {
   const unassignedOpt = censusFiltersUseFullTeamCatalog(user)
     ? `<option value="${CENSUS_TEAM_FILTER_UNASSIGNED}">Sin equipo asignado</option>`
     : '';
-  // Admin/R4 with "Todas": group Equipo options by sala; single-sala filter stays flat.
   const groupBySala =
     censusFiltersUseFullTeamCatalog(user) &&
     (!salaFilter || salaFilter === '__all__');
@@ -145,5 +175,9 @@ export function syncCensusScalarFilterInputs(user) {
   syncCensusTeamFilterSelect(user);
   if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
     serviceInp.value = elevatedPatientFilters.service;
+  }
+  const bar = document.getElementById('clinical-census-filters');
+  if (bar) {
+    syncPatientFiltersTriggerUi(bar, bar.classList.contains('is-collapsed'));
   }
 }

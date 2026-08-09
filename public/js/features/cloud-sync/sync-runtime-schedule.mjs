@@ -1,5 +1,6 @@
 import {
   isCloudRateLimitError,
+  isCloudBackoffError,
   nextCloudPollDelayMs,
   retryAfterMsFromError,
 } from './cloud-sync-timing.mjs';
@@ -63,7 +64,7 @@ export function createCloudPollScheduler(deps) {
   /** @param {unknown} err */
   function noteFailure(err) {
     errorStreak += 1;
-    if (isCloudRateLimitError(err)) {
+    if (isCloudBackoffError(err)) {
       forcedDelayMs = retryAfterMsFromError(err);
     }
     armNextTimer(true);
@@ -79,6 +80,6 @@ export function createCloudPollScheduler(deps) {
     noteSuccess,
     noteFailure,
     stop,
-    isRateLimitedError: isCloudRateLimitError,
+    isRateLimitedError: isCloudBackoffError,
   };
 }

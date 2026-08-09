@@ -42,7 +42,26 @@ describe('cloud-sync-diagnostics-human', () => {
     assert.equal(formatCloudDiagWhen('2026-08-08T14:58:00.000Z', now), 'hace 2 min');
   });
 
-  it('buildCloudDiagnosticsHumanView flags WS 1006 as info when on poll fallback', () => {
+  it('buildCloudDiagnosticsHumanView flags WS 1006 as info when on poll fallback and sync failing', () => {
+    const view = buildCloudDiagnosticsHumanView({
+      status: 'error',
+      online: true,
+      tokenPresent: true,
+      roomId: 'room-1',
+      revision: 42,
+      transport: 'poll',
+      lastWsClose: '{"code":1006,"reason":""}',
+      lastCycleOk: false,
+      outbox: { count: 0, byKind: {} },
+    });
+    const wsIssue = view.issues.find(function (item) {
+      return item.title.includes('interrumpido');
+    });
+    assert.ok(wsIssue);
+    assert.equal(wsIssue.severity, 'info');
+  });
+
+  it('buildCloudDiagnosticsHumanView hides stale WS 1006 when sync is healthy on poll', () => {
     const view = buildCloudDiagnosticsHumanView({
       status: 'idle',
       online: true,
@@ -51,15 +70,41 @@ describe('cloud-sync-diagnostics-human', () => {
       revision: 42,
       transport: 'poll',
       lastWsClose: '{"code":1006,"reason":""}',
+      lastCycleOk: true,
       outbox: { count: 0, byKind: {} },
     });
     assert.equal(view.verdict.level, 'ok');
     const wsIssue = view.issues.find(function (item) {
       return item.title.includes('interrumpido');
     });
-    assert.ok(wsIssue);
-    assert.equal(wsIssue.severity, 'info');
-    assert.match(wsIssue.hint || '', /sondeo HTTP/i);
+    assert.equal(wsIssue, undefined);
+  });
+
+  it('buildCloudDiagnosticsHumanView hides stale lastErrors after sync recovered', () => {
+    const view = buildCloudDiagnosticsHumanView({
+      status: 'idle',
+      online: true,
+      tokenPresent: true,
+      roomId: 'room-1',
+      transport: 'poll',
+      lastCycleOk: true,
+      outbox: { count: 0, byKind: {} },
+      lastErrors: [
+        {
+          at: '2026-08-08T14:00:00.000Z',
+          op: 'cycle',
+          code: '',
+          message: 'Sin red hacia Nube',
+        },
+      ],
+    });
+    assert.equal(view.recentErrors.length, 0);
+    assert.equal(
+      view.issues.find(function (item) {
+        return item.title === 'Error de sincronización';
+      }),
+      undefined
+    );
   });
 
   it('buildCloudDiagnosticsHumanView is error when push failed and outbox pending', () => {
@@ -92,6 +137,79 @@ describe('cloud-sync-diagnostics-human', () => {
     });
     assert.equal(queueTile.value, '2');
     assert.equal(queueTile.status, 'error');
+  });
+
+  it('buildCloudDiagnosticsHumanView dedupes repeated sync errors while failing', () => {
+    const view = buildCloudDiagnosticsHumanView({
+      status: 'error',
+      detail: 'Sin red hacia Nube',
+      online: false,
+      tokenPresent: true,
+      roomId: 'room-1',
+      transport: 'poll',
+      lastCycleOk: false,
+      outbox: { count: 4, byKind: { censo: 4 } },
+      lastErrors: [
+        {
+          at: '2026-08-08T15:00:00.000Z',
+          op: 'cycle',
+          code: '',
+          message: 'Sin red hacia Nube',
+        },
+        {
+          at: '2026-08-08T14:59:00.000Z',
+          op: 'cycle',
+          code: '',
+          message: 'Sin red hacia Nube',
+        },
+        {
+          at: '2026-08-08T14:58:00.000Z',
+          op: 'push',
+          code: '',
+          message: 'Sin red hacia Nube',
+        },
+      ],
+    });
+    assert.equal(view.recentErrors.length, 2);
+    assert.equal(
+      view.issues.filter(function (item) {
+        return item.title === 'Error de sincronización';
+      }).length,
+      0
+    );
+    assert.equal(
+      view.issues.filter(function (item) {
+        return item.title === 'El último ciclo de sync falló';
+      }).length,
+      0
+    );
+  });
+
+  it('buildCloudDiagnosticsHumanView flags unstable network when online is true', () => {
+    const view = buildCloudDiagnosticsHumanView({
+      status: 'error',
+      detail: 'Sin red hacia Nube. Revisa Wi‑Fi / VPN e inténtalo de nuevo.',
+      online: true,
+      tokenPresent: true,
+      roomId: 'room-1',
+      transport: 'ws',
+      lastCycleOk: false,
+      outbox: { count: 1, byKind: { censo: 4 } },
+      lastErrors: [
+        {
+          at: '2026-08-08T15:00:00.000Z',
+          op: 'push',
+          code: '',
+          message: 'Failed to fetch',
+        },
+      ],
+    });
+    const networkIssue = view.issues.find(function (item) {
+      return item.fixId === 'network_unreachable';
+    });
+    assert.ok(networkIssue);
+    assert.equal(networkIssue.severity, 'error');
+    assert.match(networkIssue.detail, /internet/i);
   });
 
   it('buildCloudDiagnosticsHumanView exposes live channel tile for ws reconnect', () => {

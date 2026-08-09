@@ -122,7 +122,8 @@ const TARGETS = {
                        openProfile: true },
   wrap:              { appTab: null,   selector: 'aside .sidebar-header',                    focus: false },
   quick_wrap:        { appTab: null,   selector: '#btn-open-learn, aside .sidebar-header', focus: false },
-  livesync_desktop:  { appTab: null,   selector: '#btn-header-team-sync',                    focus: false,
+  livesync_desktop:  { appTab: null,   selector: '#btn-header-team-sync, #connection-dropdown',                    focus: false,
+                       openConnection: true,
                        spotlightClass: 'tour-spotlight-action' },
   livesync_mobile:   { appTab: null,   selector: '#connection-dropdown', focus: false, openConnection: true },
   gv7_guardia_chip: {
@@ -203,52 +204,63 @@ const TARGETS = {
   },
   gv7_lan_wifi: {
     appTab: null,
-    selector: '#btn-header-team-sync',
+    selector: '#btn-header-team-sync, #connection-dropdown',
     focus: false,
+    openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_lan_directorio: {
     appTab: null,
-    selector: '#connection-dropdown .cloud-sync-step, #connection-dropdown [data-cloud-step]',
+    selector:
+      '[data-cloud-view="equipo"] .clinical-teams-section--directory, #connection-dropdown',
     focus: false,
     openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_lan_rotacion: {
     appTab: null,
-    selector: '#btn-sidebar-mi-rotacion',
+    selector:
+      '[data-cloud-view="equipo"] .cloud-sync-equipo-embed, [data-cloud-equipo-host], #connection-dropdown',
     focus: false,
+    openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_rotacion_rejoin: {
     appTab: null,
-    selector: '#btn-sidebar-mi-rotacion, #rotation-rejoin-backdrop .modal',
+    selector:
+      '[data-cloud-view="equipo"] .clinical-teams-section--rotation, #connection-dropdown',
     focus: false,
+    openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_inherit_patients: {
     appTab: null,
-    selector: '#btn-sidebar-mi-rotacion, #inherit-patients-backdrop .modal',
+    selector:
+      '[data-cloud-view="equipo"] .clinical-teams-inherit-btn, #connection-dropdown',
     focus: false,
+    openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_mobile_link: {
     appTab: null,
-    selector: '.lan-invite-collapsible--mobile, .cloud-mobile-invite-qr-host, [data-cloud-mobile-invite-host]',
+    selector:
+      '[data-cloud-view="mobile"] .cloud-mobile-invite-host, .cloud-mobile-invite-qr-host, [data-cloud-mobile-invite-host]',
     focus: false,
     openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_mobile_scope: {
     appTab: null,
-    selector: '.cloud-mobile-invite-qr-host, .cloud-sync-mobile-invite-host, .lan-invite-collapsible--mobile',
+    selector:
+      '[data-cloud-view="mobile"] .cloud-mobile-invite-qr-host, .cloud-sync-mobile-invite-host, .lan-invite-collapsible--mobile',
     focus: false,
     openConnection: true,
     spotlightClass: 'tour-spotlight-action',
   },
   gv7_mobile_vs_sala: {
     appTab: null,
-    selector: '.lan-hub-interno-details--nube, .cloud-interno-qr-host, #connection-dropdown',
+    selector:
+      '[data-cloud-view="mobile"] .cloud-mobile-invite-host, [data-cloud-mobile-invite-host], #connection-dropdown',
     focus: false,
     openConnection: true,
     spotlightClass: 'tour-spotlight-action',

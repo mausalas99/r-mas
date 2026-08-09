@@ -103,6 +103,36 @@ test('discardMedProposal clears pendiente without touching estadoClinico', () =>
   discardMedProposal(m, 'vasop');
   assert.equal(m.pendienteReceta.vasop, '');
   assert.equal(m.estadoClinico.vasop, 'NORADRENALINA');
+  assert.equal(m.recetaProposalDismissed.vasop, true);
+});
+
+test('discardMedProposal blocks passive re-proposal from SOME sync', () => {
+  const m = emptyMonitoreo();
+  m.pendienteReceta.vasop = 'DOPAMINA 5 MCG/KG/MIN';
+  discardMedProposal(m, 'vasop');
+  applyRecetaProposal(m, { vasop: 'DOPAMINA 5 MCG/KG/MIN' });
+  assert.equal(m.pendienteReceta.vasop, '');
+  syncRecetaProposalsFromSoapSelection(
+    'p1',
+    m,
+    {
+      p1: {
+        items: [
+          {
+            id: 'v1',
+            nombreRaw: 'DOPAMINA',
+            viaRaw: 'VIA INTRAVENOSA',
+            dosisRaw: '5 MCG/KG/MIN',
+            frecuenciaRaw: 'C/24H',
+            suspendido: false,
+          },
+        ],
+      },
+    },
+    { p1: { v1: true } },
+    classifyMedicationSoapCategory
+  );
+  assert.equal(m.pendienteReceta.vasop, '');
 });
 
 test('confirmAllMedProposals confirms every pending field', () => {

@@ -6,47 +6,50 @@ import {
   fitLabSetToQuota,
   sanitizeOpsForCloudPush,
   utf8JsonBytes,
+  CLOUD_LAB_SET_ALLOWLIST,
 } from './cloud-op-slim.mjs';
 
 describe('slimLabSetForCloud', () => {
-  it('drops PDF artifacts and keeps sourceText + resLabs', () => {
+  it('keeps parsed fields only (no raw SOME sourceText)', () => {
     const slim = slimLabSetForCloud({
       id: 'lab-1',
       fecha: '03/08/2026',
+      hora: '08:30',
       resLabs: ['BH\tHb 12'],
-      sourceText: 'Informe SOME texto',
+      bhExtras: { leu: '7' },
+      sourceText: 'Informe SOME texto completo',
+      textoBruto: 'bruto',
+      parsedBySection: { BH: { Hb: '12' } },
       pdfBase64: 'JVBERi0x',
-      pdfData: 'AAA',
     });
-    assert.equal(slim.id, 'lab-1');
-    assert.equal(slim.sourceText, 'Informe SOME texto');
+    assert.deepEqual(Object.keys(slim).sort(), ['bhExtras', 'fecha', 'hora', 'id', 'resLabs']);
+    assert.equal(slim.sourceText, undefined);
+    assert.equal(slim.parsedBySection, undefined);
     assert.deepEqual(slim.resLabs, ['BH\tHb 12']);
-    assert.equal(slim.pdfBase64, undefined);
-    assert.equal(slim.pdfData, undefined);
+    assert.equal(CLOUD_LAB_SET_ALLOWLIST.includes('sourceText'), false);
   });
 });
 
 describe('fitLabSetToQuota', () => {
-  it('truncates oversized sourceText so the set fits', () => {
+  it('trims resLabs lines when parsed payload is still too large', () => {
     const fitted = fitLabSetToQuota({
       id: 'big',
-      resLabs: ['BH\tHb 8'],
-      sourceText: 'Z'.repeat(600_000),
+      resLabs: ['BH\t' + 'Hb 8 '.repeat(80_000), 'QS\tNa 140'],
     });
     assert.ok(fitted);
     assert.ok(utf8JsonBytes(fitted) <= CLOUD_LAB_MUTATION_MAX_BYTES);
-    assert.ok(String(fitted.sourceText || '').length > 0);
-    assert.ok(String(fitted.sourceText).length < 600_000);
-    assert.deepEqual(fitted.resLabs, ['BH\tHb 8']);
+    assert.ok(Array.isArray(fitted.resLabs));
+    assert.ok(fitted.resLabs.length >= 1);
+    assert.equal(fitted.sourceText, undefined);
   });
 });
 
 describe('sanitizeOpsForCloudPush', () => {
-  it('keeps truncated text labs and drops impossible fat blobs', () => {
+  it('keeps parsed lab ops and drops impossible fat blobs', () => {
     const { ops, dropped } = sanitizeOpsForCloudPush([
       {
         path: 'labSidecars/p1/ok',
-        value: { id: 'ok', resLabs: ['Hb 12'], sourceText: 'B'.repeat(700_000) },
+        value: { id: 'ok', resLabs: ['Hb 12'], sourceText: 'ignored raw' },
         updatedAt: 't',
         actorId: 'a',
       },
@@ -66,7 +69,8 @@ describe('sanitizeOpsForCloudPush', () => {
     assert.equal(ops.length, 2);
     assert.equal(dropped, 1);
     const lab = ops.find((op) => op.path === 'labSidecars/p1/ok');
-    assert.ok(lab?.value?.sourceText);
+    assert.ok(lab?.value?.resLabs);
+    assert.equal(lab?.value?.sourceText, undefined);
     assert.ok(utf8JsonBytes(lab.value) <= CLOUD_LAB_MUTATION_MAX_BYTES);
     assert.ok(ops.some((op) => op.path === 'entries/p1/note'));
   });

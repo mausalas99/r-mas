@@ -8,12 +8,12 @@ import {
   cancelAdminCodeModal,
   wireAdminCodeModalControls,
 } from './shared.mjs';
-import { handleJoinWithCodeSubmit } from './teams-invite.mjs';
 import {
   closeLanUsersDirectoryModal,
   lanUsersModalBackdropEl,
   wireLanUsersDirectoryControls,
 } from './teams-roster-lan.mjs';
+import { wireClinicalTeamsFormDelegation } from './teams-roster-form-delegation.mjs';
 
 function teamsModalBackdrop() {
   return document.getElementById('clinical-teams-backdrop');
@@ -36,32 +36,7 @@ export function wireClinicalTeamsModalChrome() {
         }
       });
     }
-    if (!bd._rpcTeamsSubmitDelegated) {
-      bd._rpcTeamsSubmitDelegated = true;
-      bd.addEventListener('submit', (ev) => {
-        const form = ev.target;
-        if (!(form instanceof HTMLFormElement)) return;
-        if (form.id === 'clinical-profile-form') {
-          ev.preventDefault();
-          void loadRoster().then((m) => m.handleProfileFormSubmit(ev));
-        } else if (form.id === 'clinical-team-create-form') {
-          ev.preventDefault();
-          void loadRoster().then((m) => m.handleCreateTeamSubmit(ev));
-        } else if (form.classList.contains('clinical-teams-add-member-form')) {
-          ev.preventDefault();
-          void loadRoster().then((m) => m.handleAddMemberSubmit(ev, form));
-        } else if (form.classList.contains('clinical-teams-my-cycle-form')) {
-          ev.preventDefault();
-          void loadRoster().then((m) => m.handleMyCycleSubmit(ev, form));
-        } else if (form.id === 'clinical-team-join-code-form') {
-          ev.preventDefault();
-          void handleJoinWithCodeSubmit(ev);
-        } else if (form.classList.contains('clinical-teams-edit-form')) {
-          ev.preventDefault();
-          void loadRoster().then((m) => m.handleEditTeamSubmit(ev, form));
-        }
-      });
-    }
+    wireClinicalTeamsFormDelegation(bd);
   }
 
   const closeBtn = document.getElementById('btn-clinical-teams-close');
