@@ -1,5 +1,6 @@
 import { validatePassword } from './auth.js';
 import { mintRecoveryForUser } from './auth-recovery.js';
+import { SyncError } from './errors.js';
 import { summarizeMutationOpsJson } from './mutation-guard.mjs';
 import { hashPassword } from './password.js';
 import { QUOTAS } from './quotas.js';

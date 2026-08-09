@@ -30,10 +30,6 @@ describe('panel-equipo embed', () => {
   it('tour opens mobile subview for iPad module', () => {
     const tourSrc = readFileSync(join(dir, 'panel-conexion-tour.mjs'), 'utf8');
     assert.match(tourSrc, /gv7_mobile_link: 'mobile'/);
-    const actionsSrc = readFileSync(
-      join(dir, '../settings-help/tour-step-actions.mjs'),
-      'utf8'
-    );
-    assert.match(actionsSrc, /prepareConexionPanelForTour/);
+    assert.match(tourSrc, /prepareConexionPanelForTour/);
   });
 });
