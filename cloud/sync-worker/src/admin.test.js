@@ -1,7 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncError } from './errors.js';
-import { assertAdmin, buildDeleteUserStatements, timingSafeEqual } from './admin.js';
+import {
+  assertAdmin,
+  buildDeleteUserStatements,
+  buildPurgeRoomStatements,
+  timingSafeEqual,
+} from './admin.js';
 
 /** Minimal D1 stub that records SQL for delete-user cascade planning. */
 function fakeDbForDeleteUser({ ownedRoomIds = [], successorsByRoom = {} } = {}) {
@@ -168,9 +173,20 @@ describe('buildDeleteUserStatements', () => {
   it('purges sole-occupant owned room before deleting user', async () => {
     const db = fakeDbForDeleteUser({ ownedRoomIds: ['room-solo'] });
     const stmts = await buildDeleteUserStatements(db, 'u1');
-    // 5 room purge stmts + sessions + members + user
-    assert.equal(stmts.length, 8);
+    // 6 room purge stmts + sessions + members + user
+    assert.equal(stmts.length, 9);
     assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
     assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM mutations')));
+    assert.ok(db.sqlLog.some((s) => s.includes('active_room_id = NULL')));
+  });
+});
+
+describe('buildPurgeRoomStatements', () => {
+  it('clears active_room_id before deleting the room row', () => {
+    const db = fakeDbForDeleteUser();
+    const stmts = buildPurgeRoomStatements(db, 'room-fork');
+    assert.equal(stmts.length, 6);
+    assert.match(db.sqlLog[0], /active_room_id = NULL/);
+    assert.ok(db.sqlLog.some((s) => s.includes('DELETE FROM rooms')));
   });
 });

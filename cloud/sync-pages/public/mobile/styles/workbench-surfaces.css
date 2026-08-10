@@ -179,6 +179,7 @@ html.high-contrast .patient-expediente-classic .listado-section:hover {
   padding: calc(16px * var(--density-space, 1)) calc(18px * var(--density-space, 1))
     calc(20px * var(--density-space, 1));
   gap: calc(12px * var(--density-space, 1));
+  overflow: visible;
 }
 
 /* Pendientes: sin ventana contenedora — filas flotantes */
@@ -460,6 +461,23 @@ html.dark .exp-pendientes-mount .todo-composer .todo-add-btn:hover {
   border-radius: var(--radius-lg);
   box-shadow: var(--elev-raised);
   background: var(--surface);
+}
+
+/* EA inside expediente segment — one outer frame; inner sections stay inset */
+.patient-expediente-classic .exp-segment-panel #exp-pane-estado-actual {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.patient-expediente-classic .exp-segment-panel .estado-actual-panel {
+  padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  gap: calc(12px * var(--density-space, 1));
+}
+
+.patient-expediente-classic .exp-segment-panel .ea-estado-clinico {
+  max-width: 100%;
 }
 
 #patient-expediente .ea-action-bar,

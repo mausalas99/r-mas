@@ -1,8 +1,6 @@
-import { setCachedRoomRevision } from './kv-revision-cache.mjs';
-
 /**
  * Notify room DO peers after a successful D1 mutation commit.
- * @param {{ ROOM_SYNC_HUB?: import('@cloudflare/workers-types').DurableObjectNamespace, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env
+ * @param {{ ROOM_SYNC_HUB?: import('@cloudflare/workers-types').DurableObjectNamespace }} env
  * @param {string} roomId
  * @param {number} revision
  */
@@ -11,8 +9,6 @@ export async function notifyRoomRevision(env, roomId, revision) {
   const id = String(roomId || '').trim();
   const rev = Number(revision);
   if (!hub || !id || !Number.isFinite(rev) || rev <= 0) return;
-
-  await setCachedRoomRevision(env.CACHE, id, rev);
 
   try {
     const stub = hub.get(hub.idFromName(id));

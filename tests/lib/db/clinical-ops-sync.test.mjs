@@ -668,6 +668,51 @@ describe('clinical-ops-sync', () => {
     assert.equal(onB?.sub_area_fraction, 'B1');
   });
 
+  it('mergeClinicalOpsSnapshot drops peer-only self team when admin assigns exclusive membership', () => {
+    const adminDb = openDb();
+    const leader = ensureClinicalUser(adminDb, { clientId: 'admin', rank: 'R4' });
+    claimUsername(adminDb, { userId: leader.userId, username: 'admin_user' });
+    const teamMarisol = createTeam(adminDb, {
+      name: 'Dra. Marisol',
+      service: 'Sala',
+      onCallDayIndex: 1,
+      createdBy: leader.userId,
+      sala: 'Sala E',
+    });
+    const r1Admin = ensureClinicalUser(adminDb, { clientId: 'r1-admin', rank: 'R1' });
+    claimUsername(adminDb, { userId: r1Admin.userId, username: 'aironpc' });
+    addTeamMember(adminDb, teamMarisol.team_id, r1Admin.userId, {
+      subAreaFraction: 'A1',
+      exclusive: true,
+    });
+    const adminSnap = exportClinicalOpsSnapshot(adminDb);
+
+    const peerDb = openDb();
+    const r1Peer = ensureClinicalUser(peerDb, { clientId: 'r1-peer', rank: 'R1' });
+    claimUsername(peerDb, { userId: r1Peer.userId, username: 'aironpc' });
+    const selfTeam = createTeam(peerDb, {
+      name: 'DR AIRON',
+      service: 'Sala',
+      onCallDayIndex: 2,
+      createdBy: r1Peer.userId,
+      sala: 'Sala E',
+    });
+    joinTeam(peerDb, selfTeam.team_id, r1Peer.userId, { subAreaFraction: 'A1' });
+    const peerLocal = exportClinicalOpsSnapshot(peerDb);
+
+    const out = mergeClinicalOpsSnapshot(peerDb, adminSnap, peerLocal);
+    assert.ok(out.stats.membershipExclusivePruned >= 1);
+
+    const onSelf = peerDb
+      .prepare(`SELECT 1 AS ok FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(selfTeam.team_id, r1Peer.userId);
+    const onMarisol = peerDb
+      .prepare(`SELECT sub_area_fraction FROM team_membership WHERE team_id = ? AND user_id = ?`)
+      .get(teamMarisol.team_id, r1Peer.userId);
+    assert.equal(onSelf, undefined, 'self-created team membership must be dropped');
+    assert.equal(onMarisol?.sub_area_fraction, 'A1');
+  });
+
   it('mergeClinicalOpsSnapshot remaps leave tombstones to local @username user_id', () => {
     const peerDb = openDb();
     const leader = ensureClinicalUser(peerDb, { clientId: 'admin', rank: 'R4' });

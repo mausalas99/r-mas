@@ -20,9 +20,5 @@ migrations_dir = "schema"
 directory = "../sync-pages/public"
 binding = "ASSETS"
 
-[[kv_namespaces]]
-binding = "CACHE"
-id = "c9d2d049ff9f4124a3bfb95db8dfe220"
-
 [triggers]
 crons = ["0 6 * * *"]

@@ -188,6 +188,24 @@ async function handleRotateCode(db, roomId) {
   return Response.json({ ok: true, code });
 }
 
+/**
+ * Clear active_room pointers before DELETE rooms (users.active_room_id FK).
+ * @param {import('@cloudflare/workers-types').D1Database} db
+ * @param {string} roomId
+ */
+export function buildPurgeRoomStatements(db, roomId) {
+  return [
+    db
+      .prepare('UPDATE users SET active_room_id = NULL WHERE active_room_id = ?')
+      .bind(roomId),
+    db.prepare('DELETE FROM room_members WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM mutations WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
+    db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId),
+  ];
+}
+
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handlePurgeRoom(db, roomId) {
   const room = await db.prepare('SELECT id FROM rooms WHERE id = ?').bind(roomId).first();
@@ -195,13 +213,7 @@ async function handlePurgeRoom(db, roomId) {
     throw new SyncError('not_found', 'Sala no encontrada.');
   }
 
-  await db.batch([
-    db.prepare('DELETE FROM room_members WHERE room_id = ?').bind(roomId),
-    db.prepare('DELETE FROM mutations WHERE room_id = ?').bind(roomId),
-    db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
-    db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
-    db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId),
-  ]);
+  await db.batch(buildPurgeRoomStatements(db, roomId));
 
   return Response.json({ ok: true });
 }
@@ -382,13 +394,7 @@ export async function buildDeleteUserStatements(db, userId) {
           .bind(String(successor.user_id), now, roomId)
       );
     } else {
-      stmts.push(
-        db.prepare('DELETE FROM room_members WHERE room_id = ?').bind(roomId),
-        db.prepare('DELETE FROM mutations WHERE room_id = ?').bind(roomId),
-        db.prepare('DELETE FROM room_state WHERE room_id = ?').bind(roomId),
-        db.prepare('DELETE FROM tombstones WHERE room_id = ?').bind(roomId),
-        db.prepare('DELETE FROM rooms WHERE id = ?').bind(roomId)
-      );
+      stmts.push(...buildPurgeRoomStatements(db, roomId));
     }
   }
 

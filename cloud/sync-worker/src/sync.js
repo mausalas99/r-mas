@@ -18,7 +18,6 @@ import {
   validateMutationRequest,
 } from './mutation-guard.mjs';
 import { notifyRoomRevision } from './room-sync-notify.js';
-import { getCachedRoomRevision } from './kv-revision-cache.mjs';
 import { userFromAuthHeader } from './session.js';
 import {
   filterRoomStateLabSidecarsForMobile,
@@ -204,7 +203,7 @@ function priorMutationResponse(prior, roomRevision, baseRevision) {
 
 /**
  * @param {Request} request
- * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env
+ * @param {{ DB?: import('@cloudflare/workers-types').D1Database, WORKER_DATA_KEY?: string }} env
  * @param {string} roomId
  * @param {'mutations' | 'pull'} sub
  */
@@ -340,7 +339,7 @@ function filterPullOpsForMobileLabWindow(ops, now) {
   });
 }
 
-/** @param {Request} request @param {{ WORKER_DATA_KEY?: string, CACHE?: import('@cloudflare/workers-types').KVNamespace }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
+/** @param {Request} request @param {{ WORKER_DATA_KEY?: string }} env @param {import('@cloudflare/workers-types').D1Database} db @param {string} roomId */
 async function handlePull(request, env, db, roomId) {
   await requireMember(db, request, roomId);
   const url = new URL(request.url);
@@ -357,11 +356,6 @@ async function handlePull(request, env, db, roomId) {
 
   const revision = Number(room.revision);
   if (since >= revision) {
-    return Response.json({ revision, ops: [] });
-  }
-
-  const cachedRevision = await getCachedRoomRevision(env.CACHE, roomId);
-  if (cachedRevision != null && since >= cachedRevision && cachedRevision >= revision) {
     return Response.json({ revision, ops: [] });
   }
 

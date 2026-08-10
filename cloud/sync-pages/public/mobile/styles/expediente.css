@@ -874,15 +874,25 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 
 .exp-segment-panel {
   display: none;
-  flex: 0 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
   overflow: visible;
   flex-direction: column;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .exp-segment-panel.active {
   display: flex;
+}
+
+/* Clínico / EA: la tarjeta crece con el <details> abierto; scroll en .exp-segment-body */
+.exp-segment-body--clinico > .exp-segment-panel.active {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 /* Tendencias / Cultivos: llenan el composite (el flex auto de pendientes no aplica aquí). */
@@ -903,8 +913,9 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 .exp-segment-panel.active > #exp-pane-estado-actual,
 .exp-segment-panel.active > #exp-pane-eventualidades,
 .exp-pendientes-mount > .exp-segment-panel.active {
-  flex: 0 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
