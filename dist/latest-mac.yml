@@ -1,43 +1,43 @@
-version: 8.0.9
+version: 8.1.0
 files:
-  - url: R+-8.0.9-arm64.zip
-    sha512: FGuD19aZRJCWxi4k/ScVebs1GvdCfSPouzhQ5nyHL/aEfiVoZ81UCyPmczRrwpurWFc9IzboconC5dyJurCUzA==
-    size: 139499532
-  - url: R+-8.0.9-arm64.dmg
-    sha512: QHV1626PS6yNhlEM+2hqzEIT4QhGP4l/6G+ZPIpts1SVynVZGm8zg4mH8VjkEqojS78/1Mo0233liDH13MZjrw==
-    size: 145328252
-  - url: R+-8.0.9-x64.zip
-    sha512: SZ3cZ7TJo2+opganHSSiGjRrIs0FhihO6bwYCob5z5EdNz3KF8JJ6rtXbuZ/aJ8pON5eyG2p/sJWr96IRigXxA==
-    size: 147873625
-  - url: R+-8.0.9-x64.dmg
-    sha512: H684JwouM0u0S12Ew+LTv1UMzMqbsyWu+OYQahz29rCTCM/hKy6mVu7jZ2od6rl4g5GVM74uCGlaOmyMuBOokg==
-    size: 153783278
-path: R+-8.0.9-arm64.zip
-sha512: FGuD19aZRJCWxi4k/ScVebs1GvdCfSPouzhQ5nyHL/aEfiVoZ81UCyPmczRrwpurWFc9IzboconC5dyJurCUzA==
-releaseDate: '2026-08-10T12:57:36.000Z'
+  - url: R+-8.1.0-arm64.zip
+    sha512: 28w7Sbp1cp733Aj7RvPZYYpNvTUG4d4XbbKlBULfo9A0fLrWDH3apuarhFzRg6fPg4G5ilwa0ySIqYpIrGZRyg==
+    size: 139544663
+  - url: R+-8.1.0-arm64.dmg
+    sha512: oPZCF0cfPLBBmFSZ+1EOJWmEK6opyUUJIVtGC5J4EkQB3OaH7VDq5NmrVHIzXwP9PQzh3/Bb/xNOCuo8cgdgwA==
+    size: 145387175
+  - url: R+-8.1.0-x64.zip
+    sha512: ituQtIIfQb6cNkJgkiAJrNRqsGPo8/lnR8qVwvgi1Rrw47qdRsdYIO2rsYs1hE2ftL6irCEYFUixKd/MWa9xVg==
+    size: 147918733
+  - url: R+-8.1.0-x64.dmg
+    sha512: waRdApugKpuXmSsyun8Qh+OBSGweZ9cBeeQ90b3VVRSqSBiLUQnDr7PXiS6/NBP9NHfUYuTpyTB/aUnNdXrSig==
+    size: 153819320
+path: R+-8.1.0-arm64.zip
+sha512: 28w7Sbp1cp733Aj7RvPZYYpNvTUG4d4XbbKlBULfo9A0fLrWDH3apuarhFzRg6fPg4G5ilwa0ySIqYpIrGZRyg==
+releaseDate: '2026-08-10T19:59:47.000Z'
 releaseNotes: |
-  8.0.9 agrupa reposición de potasio IV en Estado Actual / NM (con duración de infusión), evita avisos falsos de PaFi en aire ambiente, y agrupa insulina preprandial. La Nube endurece pull y borrados (D1 antes de KV, tombstones coalescidos, cupo de push ampliado, snapshot JSON en Free) y corrige Tendencias/Cultivos en escritorio. El origen sigue en app://rplus con fetch Nube por IPC — sin wipe al actualizar desde 8.0.8.
+  8.1.0 corrige el censo cross-sala en Nube: expediente, labs y asignaciones van al room de la sala operativa del equipo (no solo la sala activa de la Mac). Tendencias muestra marcadores de eventualidades en las gráficas y permite alta con categoría/fecha. El Worker elimina la caché KV de revisión (pull solo D1). Incluye mejoras de filtros de censo, EA ventilatorio y roster de equipos.
   
-  Reposición de potasio — Cloruro / fosfato / acetato de K IV se agrupan en NM como REPOSICIÓN DE POTASIO, con duración del diluyente (p. ej. PARA 20 HORAS).
+  Expediente al room correcto — Pacientes asignados a un equipo de otra sala (p. ej. Torre HU) sincronizan expediente, labs y censo al room Nube de esa sala, aunque la Mac esté en Sala 1/2/E.
   
-  Aire ambiente — Sin hints de PaFi / gasometría cuando el soporte es aire ambiente (no soporte activo ni parámetros de VM).
+  Asignación de equipo — Al asignar paciente a equipo de otra sala, se empuja censo y expediente al room destino.
   
-  Insulina preprandial — Esquema SC agrupado en Manejo, EA y censo; selección y suspensión en bloque.
+  Reconciliación Nube — Tras asignaciones clinicalOps, si faltan expedientes en esta Mac, pull automático del room de la sala (reemplaza reconcile LAN).
   
-  Borrados en lote — Tombstones de pacientes se coalescen en un solo push (presupuesto por mutación HTTP); Diagnóstico Nube refresca pendientes en vivo.
+  Worker — Eliminada caché KV de revisión; pull lee revisión solo en D1 (menos complejidad, menos cupo KV).
   
-  Worker Free — room_state nuevo en JSON UTF-8 (sin AES-GCM por push); blobs legacy siguen desencriptando. Cupo de push por sala sube a 120.
+  Marcadores en gráficas — Transfusión, biopsia, procedimiento y otro aparecen como puntos coloreados en Tendencias (un marcador por día).
   
-  Pull fiable — Revisión D1 antes de KV; reconcile de revisión; reintento en 503.
+  Alta desde Tendencias — Modal con categoría, fecha y detalle (producto en transfusiones).
   
-  Fetch por IPC — cloud-sync-fetch en main evita CORS del renderer; no se cambia el origen de la UI (sigue app://rplus).
+  Campo kind — Eventualidades guardan categoría explícita además del texto libre.
   
-  Tendencias / Cultivos — Remount de paneles del expediente tras reset DOM (ya no quedan en blanco en escritorio).
+  Ventilatorio — Refinamientos en hints PaFi/ROX, aire ambiente y gasometría venosa.
   
-  Equipo en ⇄ — Menos parpadeo al hidratar Nube; scroll del roster en el scrollport del modal.
+  NM — Mejoras en grid de categorías y vacíos.
   
-  Pack asar — data/release-notes-highlights.mjs en build.files; gate de release escanea imports del renderer fuera de public/.
+  Filtros de censo — Barra de filtros con popover anclado al sidebar; preferencias persisten al recrear la barra.
   
-  Agregar por registro / completar ingreso incompleto.
+  Roster equipos — UX de pick-team para residentes con equipos en directorio.
   
-  R+ Móvil — historial de labs acotado; pestañas Lab/Nota; outbox notifica cambios al diagnóstico.
+  Estilos actualizados para EA, expediente y workbench surfaces.
