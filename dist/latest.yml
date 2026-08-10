@@ -1,32 +1,34 @@
-version: 8.0.8
+version: 8.0.9
 files:
-  - url: R+-8.0.8-x64.exe
-    sha512: TPp9rCo0faTSHOnzhhNslIqEEzJf4tCkvXer7JpThCM28rU051WcqJrRh9FuAGmVOi6IU5uC2ANTf6x5fMDxYg==
-    size: 122235825
-path: R+-8.0.8-x64.exe
-sha512: TPp9rCo0faTSHOnzhhNslIqEEzJf4tCkvXer7JpThCM28rU051WcqJrRh9FuAGmVOi6IU5uC2ANTf6x5fMDxYg==
-releaseDate: '2026-08-08T19:34:40.000Z'
+  - url: R+-8.0.9-x64.exe
+    sha512: lwp3viMgsEn7w7+Er0L880LIQej7sWriQn8gmaUjqp8PbZdwPuoe/O962bkz8XzBvg28FGaeuChxWMcrkx5gwQ==
+    size: 122359334
+path: R+-8.0.9-x64.exe
+sha512: lwp3viMgsEn7w7+Er0L880LIQej7sWriQn8gmaUjqp8PbZdwPuoe/O962bkz8XzBvg28FGaeuChxWMcrkx5gwQ==
+releaseDate: '2026-08-10T12:57:36.000Z'
 releaseNotes: |
-  8.0.8 añade soporte respiratorio en Estado Actual (PaFi, driving pressure, ROX, ml/kg), dieta parenteral (KAVIBEN, SMOFKABIVEN, NPT) en paste SOME y un dashboard de diagnóstico Nube más claro. En el Worker, la caché KV de revisiones pasa a modo lite (solo escritura en push, sin TTL). Recuérdame y token Nube se conservan al actualizar — sin migración de base ni cierre de sesión forzado.
+  8.0.9 agrupa reposición de potasio IV en Estado Actual / NM (con duración de infusión), evita avisos falsos de PaFi en aire ambiente, y agrupa insulina preprandial. La Nube endurece pull y borrados (D1 antes de KV, tombstones coalescidos, cupo de push ampliado, snapshot JSON en Free) y corrige Tendencias/Cultivos en escritorio. El origen sigue en app://rplus con fetch Nube por IPC — sin wipe al actualizar desde 8.0.8.
   
-  Soporte respiratorio — Modalidad (litros, alto flujo, VMNI, VM, TQT) con campos por tier y cálculos clínicos (PaFi, SpO2/FiO2, driving pressure, ROX, ml/kg, Tobin RRS).
+  Reposición de potasio — Cloruro / fosfato / acetato de K IV se agrupan en NM como REPOSICIÓN DE POTASIO, con duración del diluyente (p. ej. PARA 20 HORAS).
   
-  Gasometría — Integración con labs para PaFi cuando aplica.
+  Aire ambiente — Sin hints de PaFi / gasometría cuando el soporte es aire ambiente (no soporte activo ni parámetros de VM).
   
-  Paste SOME — NUTRICION PARENTERAL, KAVIBEN, SMOFKABIVEN, OLICLINOMEL y NPT se clasifican como dieta (no medicamento).
+  Insulina preprandial — Esquema SC agrupado en Manejo, EA y censo; selección y suspensión en bloque.
   
-  Macros — kcal y proteína extraídos del texto; etiqueta PARENTERAL — producto en EA y censo.
+  Borrados en lote — Tombstones de pacientes se coalescen en un solo push (presupuesto por mutación HTTP); Diagnóstico Nube refresca pendientes en vivo.
   
-  Diagnóstico Nube — Dashboard legible en ⇄ → Opciones con guías de corrección y reintento de cola.
+  Worker Free — room_state nuevo en JSON UTF-8 (sin AES-GCM por push); blobs legacy siguen desencriptando. Cupo de push por sala sube a 120.
   
-  Conexión estable — Menos parpadeo de sala al reconectar; panel Nube visible también en onboarding previo a perfil.
+  Pull fiable — Revisión D1 antes de KV; reconcile de revisión; reintento en 503.
   
-  Recuérdame — Sin cambios de contrato: token persistido omite onboarding tras actualizar (compatible con 8.0.7).
+  Fetch por IPC — cloud-sync-fetch en main evita CORS del renderer; no se cambia el origen de la UI (sigue app://rplus).
   
-  Revision cache — Lectura en pull; un put solo tras push exitoso (sin TTL ni escrituras duplicadas).
+  Tendencias / Cultivos — Remount de paneles del expediente tras reset DOM (ya no quedan en blanco en escritorio).
   
-  Circuit breaker — Al cupo diario KV Free, pivota a D1 hasta reset UTC.
+  Equipo en ⇄ — Menos parpadeo al hidratar Nube; scroll del roster en el scrollport del modal.
   
-  Cambiar modo — Botón en perfil y «Ya tengo cuenta» para volver al paso 1.
+  Pack asar — data/release-notes-highlights.mjs en build.files; gate de release escanea imports del renderer fuera de public/.
   
-  Solo mi equipo — Pantalla de confirmación antes de registrar perfil local.
+  Agregar por registro / completar ingreso incompleto.
+  
+  R+ Móvil — historial de labs acotado; pestañas Lab/Nota; outbox notifica cambios al diagnóstico.
