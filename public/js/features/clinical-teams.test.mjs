@@ -184,6 +184,15 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /clinical-admin-code-backdrop/);
     assert.match(clinicalTeamsSrc, /promptAdminAccessCode/);
     assert.equal(clinicalTeamsSrc.includes('window.prompt('), false);
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../styles/pase-board.css'),
+      'utf8'
+    );
+    assert.match(
+      css,
+      /#clinical-admin-code-backdrop\.modal-backdrop\.clinical-admin-code-backdrop/
+    );
+    assert.match(css, /z-index:\s*var\(--z-clinical-admin\)/);
   });
 
   it('team join field redirects ⇄ sala links to Conexión Nube', () => {
@@ -273,5 +282,11 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /buildLanDirectoryFingerprint/);
     assert.doesNotMatch(clinicalTeamsSrc, /rpc-clinical-ops-synced[\s\S]*scheduleLanDirectory/);
     assert.doesNotMatch(clinicalTeamsSrc, /setInterval[\s\S]*scheduleLanDirectory/);
+  });
+
+  it('skips Equipo UI refresh on cloud-hydrate to avoid flash', () => {
+    assert.match(clinicalTeamsSrc, /source === 'cloud-hydrate'/);
+    assert.match(clinicalTeamsSrc, /resolveClinicalTeamsScrollHost/);
+    assert.match(clinicalTeamsSrc, /connection-dropdown-scroll/);
   });
 });

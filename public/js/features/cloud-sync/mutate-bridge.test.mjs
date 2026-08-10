@@ -11,6 +11,7 @@ import {
   pushCloudClinicalOpsNow,
   configureCloudMutateBridge,
   enqueueCloudLabSidecarsForPatient,
+  enqueueCloudPatientDelete,
 } from './mutate-bridge.mjs';
 import { buildLabSidecarOpsForPatient } from './mutate-bridge-ops.mjs';
 import { labHistory } from '../../app-state.mjs';
@@ -284,6 +285,43 @@ describe('mutate-bridge op mapping', () => {
       configureCloudMutateBridge(null);
     }
   });
+
+  it('enqueueCloudPatientDelete merges deletes into one cloud-tombstones row', () => {
+    /** @type {Array<{ clientMutationId: string, ops: unknown[] }>} */
+    let rows = [];
+    configureCloudMutateBridge({
+      outbox: {
+        list() {
+          return rows.slice();
+        },
+        enqueue(item) {
+          rows = rows.filter((row) => row.clientMutationId !== item.clientMutationId);
+          rows.push(item);
+        },
+        replaceAll(next) {
+          rows = Array.isArray(next) ? next.slice() : [];
+        },
+      },
+      getRevision: () => 10,
+      getActorId: () => 'user-1',
+      flush: () => {},
+    });
+    setCloudRoomConnected(true);
+    try {
+      enqueueCloudPatientDelete({ id: 'p-a', registro: '111' });
+      enqueueCloudPatientDelete({ id: 'p-b', registro: '' });
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].clientMutationId, 'cloud-tombstones');
+      assert.equal(rows[0].ops.length, 2);
+      assert.equal(rows[0].ops[0].path, 'tombstones/p-a');
+      assert.equal(rows[0].ops[0].value.registro, '111');
+      assert.equal(rows[0].ops[1].path, 'tombstones/p-b');
+      assert.equal(rows[0].ops[1].value.registro, undefined);
+    } finally {
+      setCloudRoomConnected(false);
+      configureCloudMutateBridge(null);
+    }
+  });
 });
 
 describe('pushCloudClinicalOpsNow', () => {
@@ -351,5 +389,16 @@ describe('mutate-bridge LAN decoupling (Phase 3)', () => {
     assert.match(mutateBridgeSrc, /initialCloudSeedScheduled/);
     assert.match(mutateBridgeSrc, /enqueueCloudLabSidecarsBackfill/);
     assert.match(mutateBridgeSrc, /enqueueEntityOps\(`labSidecars\/\$\{patientId\}`/);
+  });
+
+  it('patient deletes coalesce into cloud-tombstones with debounced flush', () => {
+    assert.match(mutateBridgeSrc, /CLOUD_TOMBSTONES_MUTATION_ID/);
+    assert.match(mutateBridgeSrc, /scheduleTombstoneFlush/);
+    assert.match(mutateBridgeSrc, /buildCloudTombstoneOp/);
+    assert.match(mutateBridgeSrc, /buildMergedTombstoneOps/);
+    assert.doesNotMatch(
+      mutateBridgeSrc,
+      /enqueueEntityOps\(`tombstones\/\$\{patient\.id\}`/
+    );
   });
 });

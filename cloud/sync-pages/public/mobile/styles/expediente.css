@@ -885,6 +885,20 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   display: flex;
 }
 
+/* Tendencias / Cultivos: llenan el composite (el flex auto de pendientes no aplica aquí). */
+.exp-segment-body--resultados > .exp-segment-panel.active {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.exp-segment-body--resultados > .exp-segment-panel.active > #tendencias-container,
+.exp-segment-body--resultados > .exp-segment-panel.active > #cultivos-table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
 /* Paneles granulares montados dentro del composite (Estado actual, Eventualidades, Pendientes) */
 .exp-segment-panel.active > #exp-pane-estado-actual,
 .exp-segment-panel.active > #exp-pane-eventualidades,

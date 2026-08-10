@@ -12,7 +12,7 @@ import {
 import { CLOUD_PUSH_DEBOUNCE_MS, CLOUD_PUSH_FIRST_MS } from './cloud-sync-timing.mjs';
 import { patients, labHistory } from '../../app-state.mjs';
 import { stampCloudTodoRow, registroForPatientId } from '../../livesync-patient-ids.mjs';
-import { CLOUD_BATCH_MUTATION_ID } from './constants.mjs';
+import { CLOUD_BATCH_MUTATION_ID, CLOUD_TOMBSTONES_MUTATION_ID } from './constants.mjs';
 import { recordCloudSyncError } from './cloud-sync-diagnostics.mjs';
 import {
   cloudOp,
@@ -25,12 +25,15 @@ import {
   pickCensusFields,
   mapPatientEntryToOps,
   mapPatientEntryToCensusSeedOps,
-  buildLabSidecarOpsForPatient,
   buildInternoAccessUpsertOp,
   internoAccessMutationId,
 } from './mutate-bridge-ops.mjs';
 import { buildDirtyLabSidecarOpsForPatient } from './cloud-lab-sidecar-index.mjs';
 import { prepareOutboxOpsForEnqueue } from './outbox-lab.mjs';
+import {
+  buildCloudTombstoneOp,
+  coalesceTombstoneOps,
+} from './outbox-tombstones.mjs';
 
 export { CLOUD_BATCH_MUTATION_ID };
 export { pushCloudClinicalOpsNow } from './mutate-bridge-clinical-ops.mjs';
@@ -106,6 +109,9 @@ function enqueueOps(ops) {
 let cloudPushTimer = null;
 
 /** @type {ReturnType<typeof setTimeout> | null} */
+let tombstoneFlushTimer = null;
+
+/** @type {ReturnType<typeof setTimeout> | null} */
 let cloudCensusRetryTimer = null;
 
 let cloudCensusPushRetries = 0;
@@ -142,6 +148,18 @@ export function scheduleCloudSyncPush() {
   cloudPushTimer = setTimeout(function () {
     cloudPushTimer = null;
     void pushCloudBundleOps();
+  }, delay);
+}
+
+/** Debounce delete flushes so bulk × / multi-select become one HTTP push. */
+function scheduleTombstoneFlush() {
+  if (!bridgeRuntime?.outbox) return;
+  bridgeRuntime.noteEditing?.();
+  const delay = tombstoneFlushTimer ? cloudPushDebounceMs() : CLOUD_PUSH_FIRST_MS;
+  if (tombstoneFlushTimer) clearTimeout(tombstoneFlushTimer);
+  tombstoneFlushTimer = setTimeout(function () {
+    tombstoneFlushTimer = null;
+    void bridgeRuntime?.flush?.();
   }, delay);
 }
 
@@ -514,19 +532,52 @@ export function enqueueCloudPatientAdmit(patient) {
 
 /** @param {object} patient */
 export function enqueueCloudPatientDelete(patient) {
-  if (!isCloudSyncActive() || !patient?.id || !bridgeRuntime?.outbox) return;
-  if (String(patient.id).indexOf('demo-') === 0) return;
-  const meta = {
-    actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: new Date().toISOString(),
-  };
-  enqueueEntityOps(`tombstones/${patient.id}`, [
-    cloudOp({
-      path: `tombstones/${patient.id}`,
-      value: { registro: patient.registro || '', deletedAt: meta.updatedAt },
-      ...meta,
+  if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !patient?.id) return;
+  const pid = String(patient.id).trim();
+  if (!pid || pid.indexOf('demo-') === 0) return;
+  const prepared = buildMergedTombstoneOps(pid, patient.registro || '');
+  if (!prepared) return;
+  bridgeRuntime.outbox.enqueue(prepared);
+  scheduleTombstoneFlush();
+}
+
+/**
+ * @param {string} pid
+ * @param {string} registro
+ */
+function buildMergedTombstoneOps(pid, registro) {
+  const outbox = bridgeRuntime?.outbox;
+  if (!outbox) return null;
+  // withTombstoneCoalesce wraps list() to fold legacy tombstones/* rows first
+  const existing = findCloudTombstonesEntry(outbox);
+  const ops = coalesceTombstoneOps([
+    ...(Array.isArray(existing?.ops) ? existing.ops : []),
+    buildCloudTombstoneOp(pid, {
+      registro,
+      actorId: resolveCloudActorId(bridgeRuntime),
+      updatedAt: new Date().toISOString(),
     }),
   ]);
+  const prepared = prepareOutboxOpsForEnqueue(CLOUD_TOMBSTONES_MUTATION_ID, ops);
+  if (!prepared.length) return null;
+  return {
+    clientMutationId: CLOUD_TOMBSTONES_MUTATION_ID,
+    ops: prepared,
+    baseRevision:
+      existing?.baseRevision != null
+        ? Number(existing.baseRevision)
+        : bridgeRuntime.getRevision?.() ?? 0,
+    ...(existing?.enqueuedAt != null ? { enqueuedAt: Number(existing.enqueuedAt) } : {}),
+  };
+}
+
+/** @param {{ list: () => Array<{ clientMutationId?: string, ops?: unknown[], baseRevision?: number, enqueuedAt?: number }> }} outbox */
+function findCloudTombstonesEntry(outbox) {
+  const rows = outbox.list();
+  for (let i = 0; i < rows.length; i += 1) {
+    if (String(rows[i]?.clientMutationId || '') === CLOUD_TOMBSTONES_MUTATION_ID) return rows[i];
+  }
+  return null;
 }
 
 /** @param {{ sala?: string, access_token?: string, is_active?: number, rotated_at?: string|null, rotated_by?: string|null }} row @returns {boolean} */

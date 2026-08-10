@@ -133,7 +133,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-08-09** `release-8.0.9`: reposición K + aire ambiente sin PaFi falsa + insulina preprandial; Nube pull D1-antes-KV; IPC fetch con **`app://rplus`** (sin wipe localStorage); pack gate imports→`data/`; `docs/RELEASE_NOTES_8.0.9.txt`.
+- **2026-08-10** `release-8.0.9`: reposición K + aire ambiente + insulina preprandial; Nube tombstones coalescidos + Diagnóstico live; Worker Free `room_state` JSON; Tendencias remount; pull D1-antes-KV + IPC `app://rplus`; `outbox-tombstones.mjs`, `crypto-at-rest.js`, `docs/RELEASE_NOTES_8.0.9.txt`.
 - **2026-08-09** `cloud-sync`: pull D1-before-KV (fix revision 3264 vs 3266) + reconcile revision + retry 503; DO notify no-await; seed único outbox; `sync.js`, `sync-runtime-cycle.mjs`.
 - **2026-08-08** `release-8.0.8`: EA **ventilatorio** (soporte, PaFi, ROX) + **dieta parenteral** (KAVIBEN/NPT) + diagnóstico Nube dashboard + Recuérdame sin logout al actualizar; `estado-actual-ventilatorio.mjs`, `med-receta-diet.mjs`, `panel-cloud-diagnostics.mjs`.
 - **2026-08-08** `cloud-sync`: KV **lite + pivot** — lectura en pull, un `put` solo en push (sin TTL/duplicados); circuit breaker al cupo diario → D1; `kv-revision-cache.mjs`, `sync.js`.

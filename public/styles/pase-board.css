@@ -3445,7 +3445,8 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 }
 
 #clinical-teams-backdrop .clinical-teams-panel-body {
-  overflow-x: clip;
+  /* clip+auto on axes breaks wheel scroll in Chromium/Electron — use hidden+auto */
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   flex: 1;
@@ -3918,9 +3919,14 @@ body.clinical-lan-directory-open #clinical-teams-backdrop.clinical-teams-backdro
   z-index: var(--z-clinical-teams-lower);
 }
 
-.clinical-admin-code-backdrop {
+/* Above Conexión (--z-modal-nested). ID beats .modal-backdrop in lab.css (loads later). */
+#clinical-admin-code-backdrop.modal-backdrop.clinical-admin-code-backdrop {
   z-index: var(--z-clinical-admin);
   background: color-mix(in oklab, var(--color-ink) 48%, transparent);
+}
+
+body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
+  z-index: var(--z-clinical-admin);
 }
 
 .clinical-admin-code-backdrop.open {

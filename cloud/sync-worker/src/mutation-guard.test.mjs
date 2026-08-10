@@ -12,7 +12,7 @@ import {
 describe('mutation-guard', () => {
   it('rate limits excessive pushes per room', () => {
     const roomId = 'room-rate-test';
-    for (let i = 0; i < 36; i += 1) {
+    for (let i = 0; i < 120; i += 1) {
       checkMutationPushRateLimit(roomId);
     }
     assert.throws(

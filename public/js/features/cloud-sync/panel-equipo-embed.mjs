@@ -70,6 +70,8 @@ export async function mountEquipoTeamsPanel(host, opts = {}) {
     );
     await renderClinicalTeamsPanelInto(panelHost, { skipLanPull: false });
     panelHost.scrollTop = 0;
+    const dropdownScroll = document.getElementById('connection-dropdown-scroll');
+    if (dropdownScroll instanceof HTMLElement) dropdownScroll.scrollTop = 0;
   } catch (err) {
     console.error('[Equipo]', err);
     setClinicalTeamsPanelError(

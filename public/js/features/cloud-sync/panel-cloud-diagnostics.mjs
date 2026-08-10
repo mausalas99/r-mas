@@ -15,6 +15,7 @@ import { patients } from '../../app-state.mjs';
 import { getSharedNubeOutbox, getSharedNubeRuntime } from './panel-conexion-runtime.mjs';
 import { showCloudNubeFixModal } from './cloud-nube-fix-guides.mjs';
 import { pruneLabSidecarsFromOutbox } from './outbox-lab.mjs';
+import { CLOUD_OUTBOX_CHANGED_EVENT } from './cloud-outbox-events.mjs';
 
 function readCloudDiagnosticsRuntime() {
   const runtime = getSharedNubeRuntime();
@@ -170,12 +171,56 @@ function wireDashboardActions(host, deps) {
   });
 }
 
+/** Live pendientes while Diagnóstico Nube is open (outbox drains without status flips). */
+function wireDiagnosticsLiveRefresh(host, deps) {
+  if (!host || host.dataset.diagLiveWired === '1') return;
+  host.dataset.diagLiveWired = '1';
+  let debounceTimer = null;
+  let pollTimer = null;
+
+  function refreshIfMounted() {
+    if (!host.isConnected || !host.querySelector('.cloud-sync-diagnostics')) return;
+    refreshCloudSyncDiagnostics(host, deps);
+  }
+
+  function scheduleRefresh() {
+    if (debounceTimer) return;
+    debounceTimer = setTimeout(function () {
+      debounceTimer = null;
+      refreshIfMounted();
+    }, 200);
+  }
+
+  document.addEventListener(CLOUD_OUTBOX_CHANGED_EVENT, scheduleRefresh);
+  pollTimer = setInterval(refreshIfMounted, 1500);
+
+  host._rpcDiagLiveCleanup = function () {
+    document.removeEventListener(CLOUD_OUTBOX_CHANGED_EVENT, scheduleRefresh);
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = null;
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+    delete host._rpcDiagLiveCleanup;
+    delete host.dataset.diagLiveWired;
+  };
+}
+
+/**
+ * @param {HTMLElement | null} host
+ */
+export function stopCloudSyncDiagnosticsLiveRefresh(host) {
+  if (host && typeof host._rpcDiagLiveCleanup === 'function') {
+    host._rpcDiagLiveCleanup();
+  }
+}
+
 /**
  * @param {HTMLElement | null} host
  * @param {{ toast?: (msg: string, kind?: string) => void }} [deps]
  */
 export function mountCloudSyncDiagnostics(host, deps) {
   if (!host) return;
+  stopCloudSyncDiagnosticsLiveRefresh(host);
   host.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'cloud-sync-diagnostics';
@@ -210,6 +255,7 @@ export function mountCloudSyncDiagnostics(host, deps) {
 
   host.appendChild(wrap);
   wireDashboardActions(host, deps);
+  wireDiagnosticsLiveRefresh(host, deps);
   renderCloudDiagnosticsReport(host, deps);
 }
 
@@ -223,5 +269,6 @@ export function refreshCloudSyncDiagnostics(host, deps) {
     mountCloudSyncDiagnostics(host, deps);
     return;
   }
+  wireDiagnosticsLiveRefresh(host, deps);
   renderCloudDiagnosticsReport(host, deps);
 }

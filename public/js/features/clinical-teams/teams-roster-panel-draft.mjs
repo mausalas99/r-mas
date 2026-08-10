@@ -23,6 +23,15 @@ const JOIN_CODE_FIELD_IDS = [
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { isEquipoEmbedActive } from '../cloud-sync/panel-equipo-embed.mjs';
 
+/** Scrollport for Equipo embed is #connection-dropdown-scroll; modal uses host itself. */
+export function resolveClinicalTeamsScrollHost(panelHost) {
+  if (panelHost && isEquipoEmbedActive()) {
+    const body = document.getElementById('connection-dropdown-scroll');
+    if (body instanceof HTMLElement) return body;
+  }
+  return panelHost;
+}
+
 function readFieldValue(id) {
   const el = document.getElementById(id);
   if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked;
@@ -148,9 +157,10 @@ export function captureClinicalTeamsPanelDraft(host) {
   });
 
   const adminValue = readFieldValue('clinical-profile-admin');
+  const scrollHost = resolveClinicalTeamsScrollHost(host);
 
   return {
-    scrollTop: host.scrollTop,
+    scrollTop: scrollHost instanceof HTMLElement ? scrollHost.scrollTop : 0,
     createPanelOpen: createPanel instanceof HTMLElement ? !createPanel.hidden : false,
     createOpenBtnHidden: openBtn instanceof HTMLElement ? openBtn.hidden : false,
     create: captureFieldGroup(CREATE_FIELD_IDS),
@@ -220,7 +230,10 @@ export function restoreClinicalTeamsPanelDraft(host, draft) {
   restoreBrowseSalaDraft(draft);
   restoreEditPanelsOpen(host, draft.editPanelsOpen);
   restoreAddMemberDraftRows(host, draft.addMember);
-  host.scrollTop = Number.isFinite(draft.scrollTop) ? draft.scrollTop : 0;
+  const scrollHost = resolveClinicalTeamsScrollHost(host);
+  if (scrollHost instanceof HTMLElement) {
+    scrollHost.scrollTop = Number.isFinite(draft.scrollTop) ? draft.scrollTop : 0;
+  }
 }
 
 export function closeCreateTeamPanelAfterSuccess() {

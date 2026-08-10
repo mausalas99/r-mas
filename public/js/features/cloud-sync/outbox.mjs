@@ -1,6 +1,9 @@
-/** @typedef {{ clientMutationId: string, ops: unknown[], baseRevision?: number, enqueuedAt: number }} OutboxEntry */
+import { notifyCloudOutboxChanged } from './cloud-outbox-events.mjs';
 
 export const OUTBOX_STORAGE_KEY = 'rpc-cloud-sync-outbox';
+export { CLOUD_OUTBOX_CHANGED_EVENT, notifyCloudOutboxChanged } from './cloud-outbox-events.mjs';
+
+/** @typedef {{ clientMutationId: string, ops: unknown[], baseRevision?: number, enqueuedAt: number }} OutboxEntry */
 
 /**
  * Persistent mutation outbox. Dedupes by `clientMutationId` — **last enqueue wins**
@@ -20,7 +23,7 @@ export function createOutbox(deps = {}) {
       }
     });
 
-  const save =
+  const persist =
     deps.save ??
     ((rows) => {
       try {
@@ -36,6 +39,12 @@ export function createOutbox(deps = {}) {
         throw err;
       }
     });
+
+  /** @param {OutboxEntry[]} rows */
+  function save(rows) {
+    persist(rows);
+    notifyCloudOutboxChanged();
+  }
 
   /** @param {{ clientMutationId: string, ops: unknown[], baseRevision?: number }} item */
   function enqueue(item) {

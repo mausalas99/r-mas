@@ -1,4 +1,4 @@
-import { decryptJson, encryptJson } from './crypto-at-rest.js';
+import { decodeRoomState, encodeRoomState } from './crypto-at-rest.js';
 import { d1UniqueConstraintTarget, isD1UniqueConstraintError } from './d1-errors.js';
 import { SyncError } from './errors.js';
 import {
@@ -27,21 +27,6 @@ import {
 
 /** Concurrent pushes race on (room_id, revision); retry with fresh revision. */
 const MUTATION_COMMIT_ATTEMPTS = 5;
-
-/** @param {Uint8Array | ArrayBuffer | null | undefined} bytes */
-function bytesToHex(bytes) {
-  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
-  return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-/** @param {string} hex */
-function hexToBytes(hex) {
-  const out = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return out;
-}
 
 /** @param {import('@cloudflare/workers-types').D1Database} db @param {Request} request */
 async function requireMember(db, request, roomId) {
@@ -103,14 +88,12 @@ export async function loadRoomState(env, db, roomId) {
   if (!row) {
     throw new SyncError('not_found', 'Estado de sala no encontrado.');
   }
-  const ciphertextHex = bytesToHex(row.ciphertext);
-  const ivHex = bytesToHex(row.iv);
-  const state = await decryptJson(env, ciphertextHex, ivHex);
-  return { state, ciphertextHex, ivHex };
+  const state = await decodeRoomState(env, row.ciphertext, row.iv);
+  return { state };
 }
 
 /**
- * Atomically bump revision + append mutation + persist encrypted state.
+ * Atomically bump revision + append mutation + persist room snapshot (JSON on Free).
  * Every write is gated on `rooms.revision = expected` so a lost race leaves no partial commit
  * (INSERT/UPDATE with 0 changes — not a UNIQUE blast that only sometimes rolls back).
  * @returns {Promise<{ ok: true, revision: number } | { ok: false, reason: 'stale' | 'duplicate_client' }>}
@@ -125,8 +108,7 @@ export async function commitMutationBatch(env, db, opts) {
     applied,
     nextState,
   } = opts;
-  const { ciphertext, iv } = await encryptJson(env, nextState);
-  const storageBytes = ciphertext.length / 2 + iv.length / 2;
+  const { ciphertext, iv, storageBytes } = encodeRoomState(nextState);
   if (storageBytes > QUOTAS.storageHardBytes) {
     throw new SyncError(
       'payload_too_large',
@@ -169,8 +151,8 @@ export async function commitMutationBatch(env, db, opts) {
              )`
         )
         .bind(
-          hexToBytes(ciphertext),
-          hexToBytes(iv),
+          ciphertext,
+          iv,
           now,
           roomId,
           roomId,

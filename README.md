@@ -43,12 +43,13 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-## R+ 8.0.9 (reposición K + ventilatorio aire ambiente)
+## R+ 8.0.9 (reposición K + Nube deletes + Tendencias)
 
 - **Reposición de potasio** — Agrupa K IV en NM con duración de infusión del diluyente.
 - **Aire ambiente** — Sin avisos falsos de PaFi/gasometría en EA.
 - **Insulina preprandial** — Esquema SC agrupado en Manejo, EA y censo.
-- **Nube** — Pull D1-antes-KV + reintento 503; fetch por IPC sin cambiar `app://rplus` (Recuérdame intacto).
+- **Nube** — Borrados coalescidos + Diagnóstico en vivo; Worker Free con snapshot JSON; pull D1-antes-KV; fetch por IPC sin cambiar `app://rplus`.
+- **Tendencias / Cultivos** — Remount de paneles del expediente (ya no quedan en blanco en escritorio).
 - **Pack** — `data/release-notes-highlights.mjs` en asar; gate anti-crash de imports fuera de `public/`.
 
 Notas: `docs/RELEASE_NOTES_8.0.9.txt`.

@@ -50,6 +50,8 @@ export function wireClinicalTeamsControls() {
   if (!document._rpcClinicalTeamsChangedWired) {
     document._rpcClinicalTeamsChangedWired = true;
     document.addEventListener('rpc-clinical-teams-changed', (ev) => {
+      // Cloud hydrate already refreshed session data; re-painting Equipo flashes the sheet.
+      if (ev.detail?.source === 'cloud-hydrate' && !ev.detail?.force) return;
       void refreshTeamsUiAfterChange({ force: !!ev.detail?.force });
     });
   }
@@ -59,10 +61,16 @@ export function wireClinicalTeamsControls() {
     let opsSyncedTeamsRefreshTimer = null;
     document.addEventListener('rpc-clinical-ops-synced', () => {
       if (opsSyncedTeamsRefreshTimer) clearTimeout(opsSyncedTeamsRefreshTimer);
+      // Longer debounce while Equipo is open — silent innerHTML swaps still flicker.
+      const delay = document.querySelector(
+        '#connection-dropdown.connection-dropdown-modal--equipo'
+      )
+        ? 1800
+        : 300;
       opsSyncedTeamsRefreshTimer = setTimeout(() => {
         opsSyncedTeamsRefreshTimer = null;
         void refreshTeamsUiAfterChange();
-      }, 300);
+      }, delay);
     });
   }
 }

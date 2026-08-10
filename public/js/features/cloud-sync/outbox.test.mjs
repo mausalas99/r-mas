@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createOutbox } from './outbox.mjs';
+import { createOutbox, CLOUD_OUTBOX_CHANGED_EVENT } from './outbox.mjs';
 
 describe('cloud outbox', () => {
   it('dedupes clientMutationId (last wins)', () => {
@@ -68,5 +68,43 @@ describe('cloud outbox', () => {
     ob.enqueue({ clientMutationId: 'm1', ops: [] });
     ob.clear();
     assert.equal(ob.list().length, 0);
+  });
+
+  it('notifies rpc-cloud-outbox-changed on enqueue/remove', () => {
+    assert.equal(CLOUD_OUTBOX_CHANGED_EVENT, 'rpc-cloud-outbox-changed');
+    const mem = [];
+    const ob = createOutbox({
+      load: () => mem.slice(),
+      save: (rows) => {
+        mem.length = 0;
+        mem.push(...rows);
+      },
+    });
+    let count = 0;
+    function onChange() {
+      count += 1;
+    }
+    const listeners = new Map();
+    globalThis.document = {
+      addEventListener(type, fn) {
+        listeners.set(type, fn);
+      },
+      removeEventListener(type, fn) {
+        if (listeners.get(type) === fn) listeners.delete(type);
+      },
+      dispatchEvent(ev) {
+        const fn = listeners.get(ev.type);
+        if (fn) fn(ev);
+        return true;
+      },
+    };
+    try {
+      document.addEventListener(CLOUD_OUTBOX_CHANGED_EVENT, onChange);
+      ob.enqueue({ clientMutationId: 'm1', ops: [] });
+      ob.remove('m1');
+      assert.equal(count, 2);
+    } finally {
+      delete globalThis.document;
+    }
   });
 });

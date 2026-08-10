@@ -149,10 +149,8 @@ export function wireTeamsChangedListener(section, deps, ui) {
     if (!section.isConnected) return;
     const roomId = deps.getCloudSyncRoomId();
     if (roomId && deps.getCloudSyncToken()) {
-      const host = section.querySelector('[data-cloud-equipo-host]');
-      if (host && section.dataset.cloudView === 'equipo') {
-        void mountEquipoTeamsPanel(host, { toast: ui.toast });
-      }
+      // Equipo roster refresh is owned by wireClinicalTeamsControls → refreshTeamsUiAfterChange.
+      // Remounting here (skeleton) caused intermittent flashes while Equipo was open.
       return;
     }
     if (deps.getCloudSyncToken()) {

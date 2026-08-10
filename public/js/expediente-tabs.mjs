@@ -256,7 +256,8 @@ export function applyExpedientePaneLayout(settings) {
   var sala = isModeSala(settings);
   syncConsolidatedSegmentBarVisibility(settings || {});
   var next = sala ? 'consolidated-sala' : 'consolidated-inter';
-  if (layoutMode === next) return;
+  // Always remount: host CSS hides unmounted granular panes (`display:none !important`).
+  // Skipping remount after a DOM reset left Tendencias/Cultivos blank on desktop.
   layoutMode = next;
   mountConsolidatedNested(settings || {});
   syncConsolidatedSegmentBarVisibility(settings || {});

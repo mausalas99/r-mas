@@ -3,7 +3,8 @@ import { QUOTAS } from './quotas.js';
 
 /** Per-room push budget — stops one sala (or old clients) from hammering D1. */
 const MUTATION_PUSH_WINDOW_MS = 60_000;
-const MUTATION_PUSH_MAX_PER_ROOM = 36;
+/** Guardia: several Macs + labs + deletes; was 36 then 48 and still tripped mid-turno. */
+const MUTATION_PUSH_MAX_PER_ROOM = 120;
 
 /** Legacy desktop clients enqueue all lab sidecars under one id. */
 export const LEGACY_BULK_LAB_MUTATION_ID = 'cloud-lab-backfill';

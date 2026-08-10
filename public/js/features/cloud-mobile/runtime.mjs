@@ -5,6 +5,7 @@ import { applyCloudPullResult } from '../cloud-sync/pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { createMemoryOutbox } from './outbox-memory.mjs';
 import { filterOpsForCloudMobile } from './mutation-gate.mjs';
+import { withTombstoneCoalesce } from '../cloud-sync/outbox-tombstones.mjs';
 import {
   getCloudSyncUrl,
   getCloudSyncToken,
@@ -41,16 +42,17 @@ export function startCloudMobileRuntime({ onStatus, toast }) {
     getToken: getCloudSyncToken,
   });
 
-  const outbox = createMemoryOutbox();
+  const outbox = withTombstoneCoalesce(createMemoryOutbox());
   const wrappedOutbox = {
     enqueue(item) {
       const ops = filterOpsForCloudMobile(item?.ops || []);
       if (!ops.length) return;
       outbox.enqueue({ ...item, ops });
     },
-    list: outbox.list,
-    remove: outbox.remove,
-    clear: outbox.clear,
+    list: outbox.list.bind(outbox),
+    remove: outbox.remove.bind(outbox),
+    clear: outbox.clear.bind(outbox),
+    replaceAll: outbox.replaceAll.bind(outbox),
   };
 
   const runtime = startCloudSyncRuntime({

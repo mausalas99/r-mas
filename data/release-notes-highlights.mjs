@@ -2275,6 +2275,16 @@ var RELEASE_NOTES_809 = [
       'Esquema SC agrupado en Manejo, EA y censo — selección y suspensión en bloque.',
   },
   {
+    title: 'Borrados Nube en lote',
+    body:
+      'Los tombstones de pacientes se coalescen en un solo push; Diagnóstico Nube actualiza pendientes en vivo. Worker Free guarda snapshot en JSON.',
+  },
+  {
+    title: 'Tendencias / Cultivos',
+    body:
+      'Los paneles del expediente se remontan tras reset DOM — ya no quedan en blanco en escritorio.',
+  },
+  {
     title: 'Nube más fiable',
     body:
       'Pull lee revisión en D1 antes de KV; reintento en 503. Fetch Nube por IPC desde <strong>app://rplus</strong> — sin cambiar origen ni perder Recuérdame.',

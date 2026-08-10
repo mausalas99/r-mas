@@ -6,12 +6,24 @@ import { applyCloudPullResult } from './pull-apply.mjs';
 import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { getCloudSyncClientId } from './client-id.mjs';
 import { getCloudSyncUrl } from './settings.mjs';
+import { withTombstoneCoalesce } from './outbox-tombstones.mjs';
 
 /** @type {ReturnType<typeof createOutbox> | null} */
 let sharedOutbox = null;
 
 /** @type {ReturnType<typeof startCloudSyncRuntime> | null} */
 let sharedRuntime = null;
+
+function ensureSharedOutbox() {
+  if (sharedOutbox) return sharedOutbox;
+  try {
+    localStorage.removeItem(OUTBOX_STORAGE_KEY);
+  } catch {
+    /* ignore bloated legacy outbox */
+  }
+  sharedOutbox = withTombstoneCoalesce(createMemoryOutbox());
+  return sharedOutbox;
+}
 
 /**
  * @param {{
@@ -34,14 +46,7 @@ export function startSharedNubeRuntime(deps) {
     sharedRuntime.stop();
     sharedRuntime = null;
   }
-  if (!sharedOutbox) {
-    try {
-      localStorage.removeItem(OUTBOX_STORAGE_KEY);
-    } catch {
-      /* ignore bloated legacy outbox */
-    }
-    sharedOutbox = createMemoryOutbox();
-  }
+  ensureSharedOutbox();
   const toast = typeof deps.toast === 'function' ? deps.toast : function () {};
   sharedRuntime = startCloudSyncRuntime({
     api,

@@ -550,7 +550,7 @@ describe('clinical-access-db', () => {
     assert.ok(member);
   });
 
-  it('allows more than SOFT_MAX_TEAMS_PER_SALA teams with a sala count warning', () => {
+  it('allows more than SOFT_MAX_TEAMS_PER_SALA teams with create warning but no per-team joinWarning', () => {
     for (let i = 0; i < SOFT_MAX_TEAMS_PER_SALA; i += 1) {
       const leader = ensureClinicalUser(db, {
         clientId: `sala-max-lead-${i}`,
@@ -567,6 +567,17 @@ describe('clinical-access-db', () => {
       addTeamMember(db, team.team_id, leader.userId);
     }
     assert.match(String(getSalaTeamCountWarning(db, 'Sala 1') || ''), /recomendado máximo/);
+    const joiner = ensureClinicalUser(db, {
+      clientId: 'sala-max-joiner',
+      rank: 'R1',
+      sala: 'Sala 1',
+    });
+    // Directory only lists rotation_active=1; soft-cap still counts staged teams.
+    const listed = listTeamsBySala(db, { sala: 'Sala 1', forUserId: joiner.userId });
+    assert.ok(listed.length >= 1);
+    for (const row of listed) {
+      if (!row.isMember) assert.equal(String(row.joinWarning || ''), '');
+    }
     const extraLeader = ensureClinicalUser(db, {
       clientId: 'sala-max-lead-extra',
       rank: 'R2',

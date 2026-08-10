@@ -5,6 +5,7 @@ import { clinicalSessionContext } from '../../clinical-session-context.mjs';
 import { advancedUrlFieldsHtml } from './panel-conexion-html.mjs';
 import { canAccessCloudAdmin } from './panel-admin.mjs';
 import { setClinicalTeamsEmbedHost } from '../clinical-panel-host.mjs';
+import { stopCloudSyncDiagnosticsLiveRefresh } from './panel-cloud-diagnostics.mjs';
 
 /**
  * @param {{ username?: string, displayName?: string } | null} cloudUser
@@ -323,6 +324,11 @@ export function applyConexionView(section, view, hooks) {
   syncConexionModalChrome(next);
   syncCloudSecondaryPanels(resolveConexionPanelRoot(section), next);
   if (next !== 'equipo') setClinicalTeamsEmbedHost(null);
+  if (next !== 'nube') {
+    stopCloudSyncDiagnosticsLiveRefresh(
+      section.querySelector('[data-cloud-nube-diagnostics-host]')
+    );
+  }
   if (next === 'admin' && typeof hooks?.onAdmin === 'function') {
     void hooks.onAdmin();
   }

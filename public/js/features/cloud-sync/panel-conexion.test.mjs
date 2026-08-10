@@ -9,6 +9,9 @@ const panelConexionSrc = readFileSync(join(here, 'panel-conexion.mjs'), 'utf8');
 const panelRuntimeSrc = readFileSync(join(here, 'panel-conexion-runtime.mjs'), 'utf8');
 const autostartSrc = readFileSync(join(here, 'autostart.mjs'), 'utf8');
 
+const panelDiagSrc = readFileSync(join(here, 'panel-cloud-diagnostics.mjs'), 'utf8');
+const panelViewsSrc = readFileSync(join(here, 'panel-conexion-views.mjs'), 'utf8');
+
 describe('panel-conexion status chip', () => {
   it('bindStatusChip resolves toast from deps (not outer mount scope)', () => {
     const fnStart = panelConexionSrc.indexOf('function bindStatusChip');
@@ -16,6 +19,16 @@ describe('panel-conexion status chip', () => {
     const fnBody = panelConexionSrc.slice(fnStart, fnStart + 900);
     assert.match(fnBody, /const toast = typeof deps\.toast === 'function'/);
     assert.doesNotMatch(fnBody, /refreshCloudSyncDiagnostics\([^)]*\{\s*toast,\s*\}/);
+  });
+});
+
+describe('Diagnóstico Nube live pendientes', () => {
+  it('wires outbox-changed + poll while open, stops on leave', () => {
+    assert.match(panelDiagSrc, /wireDiagnosticsLiveRefresh/);
+    assert.match(panelDiagSrc, /CLOUD_OUTBOX_CHANGED_EVENT/);
+    assert.match(panelDiagSrc, /stopCloudSyncDiagnosticsLiveRefresh/);
+    assert.match(panelViewsSrc, /stopCloudSyncDiagnosticsLiveRefresh/);
+    assert.match(panelViewsSrc, /next !== 'nube'/);
   });
 });
 

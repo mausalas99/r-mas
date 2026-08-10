@@ -55,4 +55,16 @@ describe('localRoomFromSession', () => {
     assert.match(src, /!snapCode/);
     assert.match(src, /roomCode/);
   });
+
+  it('teams-changed while connected does not remount Equipo (skeleton flash)', () => {
+    const src = readFileSync(
+      new URL('./panel-conexion-bootstrap.mjs', import.meta.url),
+      'utf8'
+    );
+    const fnStart = src.indexOf('export function wireTeamsChangedListener');
+    assert.ok(fnStart >= 0);
+    const fnBody = src.slice(fnStart, fnStart + 900);
+    assert.match(fnBody, /wireClinicalTeamsControls/);
+    assert.doesNotMatch(fnBody, /mountEquipoTeamsPanel/);
+  });
 });

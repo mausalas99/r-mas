@@ -22,6 +22,12 @@ export const CHUNK_BUDGET_BYTES = 180 * 1024;
 /** D1 SQLITE_TOOBIG guard — cap lab sidecars per push mutation. */
 export const MAX_LAB_OPS_PER_CHUNK = 6;
 
+/**
+ * Worker `QUOTAS.maxOpsPerMutation` — must stay ≤ that or push returns
+ * «Demasiadas operaciones en un push».
+ */
+export const MAX_OPS_PER_CHUNK = 16;
+
 /** @param {unknown} op */
 function isLabSidecarOp(op) {
   return String(op?.path || '').startsWith('labSidecars/');
@@ -60,8 +66,9 @@ export function chunkCloudOps(ops) {
     const bytes = utf8JsonBytes(op);
     const labCap =
       isLabSidecarOp(op) && current.length > 0 && countLabSidecarOps(current) >= MAX_LAB_OPS_PER_CHUNK;
+    const opCap = current.length >= MAX_OPS_PER_CHUNK;
     const byteCap = current.length > 0 && currentBytes + bytes > CHUNK_BUDGET_BYTES;
-    if (labCap || byteCap) flush();
+    if (labCap || opCap || byteCap) flush();
     current.push(op);
     currentBytes += bytes;
   }

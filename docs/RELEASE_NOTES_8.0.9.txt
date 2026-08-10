@@ -1,11 +1,11 @@
-R+ 8.0.9 (reposición K + ventilatorio aire ambiente)
+R+ 8.0.9 (reposición K + Nube deletes + Tendencias)
 ========================================================
 
-Fecha: 2026-08-09
+Fecha: 2026-08-10
 
 ## Resumen
 
-**8.0.9** agrupa **reposición de potasio IV** en Estado Actual / NM (con duración de infusión), evita avisos falsos de PaFi en **aire ambiente**, y agrupa **insulina preprandial**. La Nube endurece el pull (D1 antes de KV, reintento 503) y el escritorio sigue en **`app://rplus`** con fetch Nube por IPC — **sin wipe** al actualizar desde 8.0.8: mismos origen, Recuérdame, perfil y flags de cutover.
+**8.0.9** agrupa **reposición de potasio IV** en Estado Actual / NM (con duración de infusión), evita avisos falsos de PaFi en **aire ambiente**, y agrupa **insulina preprandial**. La Nube endurece pull y borrados (D1 antes de KV, tombstones coalescidos, cupo de push ampliado, snapshot JSON en Free) y corrige **Tendencias/Cultivos** en escritorio. El origen sigue en **`app://rplus`** con fetch Nube por IPC — **sin wipe** al actualizar desde 8.0.8.
 
 ## Nuevo / mejorado
 
@@ -17,14 +17,18 @@ Fecha: 2026-08-09
 
 ### Nube / escritorio
 
+- **Borrados en lote** — Tombstones de pacientes se coalescen en un solo push (presupuesto por mutación HTTP); Diagnóstico Nube refresca pendientes en vivo.
+- **Worker Free** — `room_state` nuevo en JSON UTF-8 (sin AES-GCM por push); blobs legacy siguen desencriptando. Cupo de push por sala sube a 120.
 - **Pull fiable** — Revisión D1 antes de KV; reconcile de revisión; reintento en 503.
 - **Fetch por IPC** — `cloud-sync-fetch` en main evita CORS del renderer; **no** se cambia el origen de la UI (sigue `app://rplus`).
-- **Pack asar** — `data/release-notes-highlights.mjs` en `build.files`; el gate de release escanea imports del renderer fuera de `public/` para no repetir el crash de notas al arrancar.
+- **Tendencias / Cultivos** — Remount de paneles del expediente tras reset DOM (ya no quedan en blanco en escritorio).
+- **Equipo en ⇄** — Menos parpadeo al hidratar Nube; scroll del roster en el scrollport del modal.
+- **Pack asar** — `data/release-notes-highlights.mjs` en `build.files`; gate de release escanea imports del renderer fuera de `public/`.
 
 ### Ingreso / móvil (si aplica en el turno)
 
 - **Agregar por registro** / completar ingreso incompleto.
-- **R+ Móvil** — historial de labs acotado; pestañas Lab/Nota.
+- **R+ Móvil** — historial de labs acotado; pestañas Lab/Nota; outbox notifica cambios al diagnóstico.
 
 ## Instalación
 

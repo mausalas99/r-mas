@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { encryptJson } from '../crypto-at-rest.js';
+import { encodeRoomState } from '../crypto-at-rest.js';
 import worker from '../worker-app.mjs';
 import { salaFromSlug, normalizeInternoSala } from './sala-slug.js';
 import { authenticateInterno } from './auth.js';
@@ -14,15 +14,6 @@ import { handleInternoRoutes } from './routes.js';
 import { serializePendientesJson } from '../../../../lib/entrega/entrega-pendientes.mjs';
 
 const TEST_KEY = { WORKER_DATA_KEY: 'ab'.repeat(32) };
-
-/** @param {string} hex */
-function hexToBytes(hex) {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i += 1) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
 
 /**
  * @param {{
@@ -113,10 +104,10 @@ function createInternoDb(opts = {}) {
       return results;
     },
     async setState(state) {
-      const { ciphertext, iv } = await encryptJson(TEST_KEY, state);
+      const { ciphertext, iv } = encodeRoomState(state);
       roomState = {
-        ciphertext: hexToBytes(ciphertext),
-        iv: hexToBytes(iv),
+        ciphertext,
+        iv,
       };
     },
     getRevision() {

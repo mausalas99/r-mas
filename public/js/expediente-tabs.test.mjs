@@ -14,6 +14,8 @@ import {
   isManejoSectionHidden,
   isClinicoCompositeVisible,
   getConsolidatedCompositeState,
+  applyExpedientePaneLayout,
+  resetExpedientePaneLayoutCache,
 } from './expediente-tabs.mjs';
 
 const INTER = { appMode: 'interconsulta', hideManejoSection: false };
@@ -193,4 +195,111 @@ test('getConsolidatedCompositeState keeps clinico visible in inter when only man
   assert.equal(state.clinico.visible, true);
   assert.equal(state.clinico.active, true);
   assert.equal(state.estadoActual, undefined);
+});
+
+function makeEl(id, className) {
+  const classSet = new Set(String(className || '').split(/\s+/).filter(Boolean));
+  /** @type {any} */
+  const el = {
+    id: id || '',
+    children: [],
+    parentElement: null,
+    style: {},
+    classList: {
+      add: function () {
+        for (let i = 0; i < arguments.length; i++) classSet.add(arguments[i]);
+      },
+      remove: function () {
+        for (let i = 0; i < arguments.length; i++) classSet.delete(arguments[i]);
+      },
+      contains: function (c) {
+        return classSet.has(c);
+      },
+      toggle: function (c, force) {
+        if (force === true) classSet.add(c);
+        else if (force === false) classSet.delete(c);
+        else if (classSet.has(c)) classSet.delete(c);
+        else classSet.add(c);
+      },
+    },
+    querySelector: function (sel) {
+      if (sel === '.exp-segment-body--resultados') {
+        return this._resultadosBody || null;
+      }
+      if (sel === '.exp-segment-body--clinico') return this._clinicoBody || null;
+      if (sel === '.exp-pendientes-mount') return this._pendientes || null;
+      if (sel === '.exp-segment-body--salida' || sel === '.exp-salida-mount') {
+        return this._salidaBody || null;
+      }
+      return null;
+    },
+    appendChild: function (child) {
+      if (child.parentElement && child.parentElement.children) {
+        child.parentElement.children = child.parentElement.children.filter(function (c) {
+          return c !== child;
+        });
+      }
+      child.parentElement = this;
+      this.children.push(child);
+      return child;
+    },
+  };
+  return el;
+}
+
+test('applyExpedientePaneLayout mounts Tendencias into Resultados (and remounts on 2nd call)', () => {
+  const host = makeEl('expediente-panes-host', 'expediente-panes-host');
+  const resultados = makeEl('itab-content-resultados', 'tab-content exp-composite-pane');
+  const body = makeEl('', 'exp-segment-body exp-segment-body--resultados');
+  resultados._resultadosBody = body;
+  body.parentElement = resultados;
+  const tend = makeEl('itab-content-tend', 'tab-content');
+  const cult = makeEl('itab-content-cult', 'tab-content');
+  host.appendChild(resultados);
+  host.appendChild(tend);
+  host.appendChild(cult);
+
+  const byId = {
+    'expediente-panes-host': host,
+    'itab-content-resultados': resultados,
+    'itab-content-tend': tend,
+    'itab-content-cult': cult,
+    'itab-content-paciente': makeEl('itab-content-paciente', 'tab-content exp-composite-pane'),
+    'itab-content-clinico': makeEl('itab-content-clinico', 'tab-content exp-composite-pane'),
+    'itab-content-salida': makeEl('itab-content-salida', 'tab-content exp-composite-pane'),
+    'exp-segment-clinico': makeEl('exp-segment-clinico', ''),
+    'exp-segment-salida': makeEl('exp-segment-salida', ''),
+    'itab-estadoActual': makeEl('itab-estadoActual', ''),
+  };
+  byId['itab-content-paciente']._pendientes = makeEl('', 'exp-pendientes-mount');
+  byId['itab-content-clinico']._clinicoBody = makeEl('', 'exp-segment-body--clinico');
+  byId['itab-content-salida']._salidaBody = makeEl('', 'exp-segment-body--salida');
+
+  const prevDoc = globalThis.document;
+  globalThis.document = {
+    getElementById: function (id) {
+      return byId[id] || null;
+    },
+  };
+
+  try {
+    resetExpedientePaneLayoutCache();
+    applyExpedientePaneLayout(SALA);
+    assert.equal(tend.parentElement, body);
+    assert.equal(tend.classList.contains('tab-content'), false);
+    assert.equal(tend.classList.contains('exp-segment-panel'), true);
+    assert.equal(cult.parentElement, body);
+
+    // Simulate a DOM reset that orphans tend back under the host.
+    host.appendChild(tend);
+    tend.classList.add('tab-content');
+    tend.classList.remove('exp-segment-panel');
+    applyExpedientePaneLayout(SALA);
+    assert.equal(tend.parentElement, body, 'second apply must remount Tendencias');
+    assert.equal(tend.classList.contains('exp-segment-panel'), true);
+  } finally {
+    resetExpedientePaneLayoutCache();
+    if (prevDoc === undefined) delete globalThis.document;
+    else globalThis.document = prevDoc;
+  }
 });

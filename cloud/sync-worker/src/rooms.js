@@ -1,4 +1,4 @@
-import { encryptJson } from './crypto-at-rest.js';
+import { encodeRoomState } from './crypto-at-rest.js';
 import { SyncError } from './errors.js';
 import { QUOTAS } from './quotas.js';
 import { isCloudSala, normalizeCloudSala } from './sala-allowlist.js';
@@ -31,15 +31,6 @@ export function randomRoomCode(len = 6) {
     code += ROOM_CODE_ALPHABET[bytes[i] % ROOM_CODE_ALPHABET.length];
   }
   return code;
-}
-
-/** @param {string} hex */
-function hexToBytes(hex) {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
 }
 
 /** @param {Request} request */
@@ -208,8 +199,7 @@ async function handleCreateRoom(env, db, request) {
   const code = await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
   const state = emptyRoomState();
-  const { ciphertext, iv } = await encryptJson(env, state);
-  const storageBytes = ciphertext.length / 2 + iv.length / 2;
+  const { ciphertext, iv, storageBytes } = encodeRoomState(state);
 
   await db.batch([
     db
@@ -227,7 +217,7 @@ async function handleCreateRoom(env, db, request) {
       .prepare(
         `INSERT INTO room_state (room_id, ciphertext, iv, updated_at) VALUES (?, ?, ?, ?)`
       )
-      .bind(id, hexToBytes(ciphertext), hexToBytes(iv), now),
+      .bind(id, ciphertext, iv, now),
   ]);
 
   await setUserActiveRoom(db, user.id, id);
@@ -434,8 +424,7 @@ async function handleEnsureTurn(env, db, request) {
   const code = await generateUniqueRoomCode(db);
   const now = new Date().toISOString();
   const state = emptyRoomState();
-  const { ciphertext, iv } = await encryptJson(env, state);
-  const storageBytes = ciphertext.length / 2 + iv.length / 2;
+  const { ciphertext, iv, storageBytes } = encodeRoomState(state);
 
   await db.batch([
     db
@@ -453,7 +442,7 @@ async function handleEnsureTurn(env, db, request) {
       .prepare(
         `INSERT INTO room_state (room_id, ciphertext, iv, updated_at) VALUES (?, ?, ?, ?)`
       )
-      .bind(id, hexToBytes(ciphertext), hexToBytes(iv), now),
+      .bind(id, ciphertext, iv, now),
   ]);
 
   await setUserActiveRoom(db, user.id, id);

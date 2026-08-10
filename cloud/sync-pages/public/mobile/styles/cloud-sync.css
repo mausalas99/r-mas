@@ -857,33 +857,44 @@
   display: none;
 }
 
-/* Mi rotación inline — ⇄ Opciones → Equipo */
-.connection-dropdown-modal--equipo {
-  min-height: min(84dvh, calc(var(--app-height) - 28px));
+/* Mi rotación inline — ⇄ Opciones → Equipo (near full-screen; body scrolls) */
+#connection-dropdown-backdrop
+  .connection-dropdown.connection-dropdown-modal.connection-dropdown-modal--equipo {
+  /* Grow only — HARD rule: never shrink below Conexión's min(96vw, 960px). */
+  width: min(98vw, 1280px);
+  height: min(98dvh, calc(var(--app-height) - 8px));
+  max-height: min(98dvh, calc(var(--app-height) - 8px));
+  min-height: 0;
 }
 
 .connection-dropdown-modal--equipo .connection-dropdown-body {
-  overflow: hidden;
+  /* Single scrollport — nested flex overflow was clipping without scroll in Electron */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding-top: 8px;
   padding-bottom: 10px;
+  scrollbar-gutter: stable;
 }
 
 .connection-dropdown-modal--equipo .cloud-sync-conexion {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
+  height: auto;
   gap: 0;
   padding-bottom: 0;
 }
 
 .connection-dropdown-modal--equipo .cloud-sync-views {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .connection-dropdown-modal--equipo .cloud-sync-views > [data-cloud-view='equipo'] {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -892,33 +903,32 @@
 .cloud-sync-view[data-cloud-view='equipo'] .cloud-sync-view-body {
   padding: 0;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
 .cloud-sync-equipo-embed {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .cloud-sync-equipo-embed .clinical-teams-panel-body--embed {
-  overflow-x: clip;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  flex: 1;
+  overflow: visible;
+  flex: none;
   min-height: 0;
   max-height: none;
+  height: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-auto-rows: max-content;
   column-gap: 12px;
   row-gap: 0.75rem;
+  align-content: start;
   align-items: start;
   padding: 10px 12px 12px;
-  scrollbar-gutter: stable;
 }
 
 .cloud-sync-equipo-embed .clinical-teams-section--create,
@@ -1017,8 +1027,11 @@
     grid-template-columns: 1fr;
   }
 
-  .connection-dropdown-modal--equipo {
-    min-height: min(88dvh, calc(var(--app-height) - 16px));
+  #connection-dropdown-backdrop
+    .connection-dropdown.connection-dropdown-modal.connection-dropdown-modal--equipo {
+    width: min(98vw, 1280px);
+    height: min(98dvh, calc(var(--app-height) - 4px));
+    max-height: min(98dvh, calc(var(--app-height) - 4px));
   }
 
   .cloud-sync-equipo-embed .clinical-teams-panel-body--embed > .clinical-teams-section--joined,

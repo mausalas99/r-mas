@@ -1,12 +1,6 @@
-import { decryptJson } from '../crypto-at-rest.js';
+import { decodeRoomState } from '../crypto-at-rest.js';
 import { defaultTurnKey } from '../turn-key.js';
 import { normalizeInternoSala } from './sala-slug.js';
-
-/** @param {Uint8Array | ArrayBuffer | null | undefined} bytes */
-function bytesToHex(bytes) {
-  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
-  return [...arr].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 
 /**
  * @param {import('@cloudflare/workers-types').D1Database} db
@@ -48,6 +42,5 @@ export async function loadRoomState(env, db, roomId) {
     .bind(roomId)
     .first();
   if (!row) return null;
-  const state = await decryptJson(env, bytesToHex(row.ciphertext), bytesToHex(row.iv));
-  return state;
+  return decodeRoomState(env, row.ciphertext, row.iv);
 }
