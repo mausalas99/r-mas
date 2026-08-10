@@ -2291,10 +2291,44 @@ var RELEASE_NOTES_809 = [
   },
 ];
 
+var RELEASE_NOTES_810 = [
+  {
+    title: 'Censo cross-sala',
+    body:
+      'Expediente, labs y asignaciones van al room Nube de la <strong>sala del equipo</strong> — no solo la sala activa de tu Mac.',
+  },
+  {
+    title: 'Tendencias con eventualidades',
+    body:
+      'Marcadores coloreados en gráficas (transfusión, biopsia, procedimiento) y alta con categoría/fecha desde Tendencias.',
+  },
+  {
+    title: 'Reconciliación Nube',
+    body:
+      'Tras asignar paciente a equipo, pull automático si faltan expedientes en esta Mac (reemplaza reconcile LAN).',
+  },
+  {
+    title: 'Worker más simple',
+    body:
+      'Eliminada caché KV de revisión — pull lee solo D1; menos complejidad y cupo KV.',
+  },
+  {
+    title: 'Filtros de censo',
+    body:
+      'Barra de filtros anclada al sidebar; preferencias persisten al recrear la UI.',
+  },
+  {
+    title: 'Actualiza el turno',
+    body:
+      'Instala <strong>8.1.0 en todas</strong> las Macs el mismo día y despliega el Worker Nube.',
+  },
+];
+
 /** Fallback when a version has no curated entry (keep aligned with latest stable). */
-export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_809;
+export var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = RELEASE_NOTES_810;
 
 export var RELEASE_NOTES_HIGHLIGHTS = {
+  '8.1.0': RELEASE_NOTES_810,
   '8.0.9': RELEASE_NOTES_809,
   '8.0.8': RELEASE_NOTES_808,
   '8.0.7': RELEASE_NOTES_807,

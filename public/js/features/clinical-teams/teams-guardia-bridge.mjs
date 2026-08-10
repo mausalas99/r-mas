@@ -6,6 +6,7 @@ import {
   LAN_PROFILE_PUSH_FAILED_MSG,
 } from '../../clinical-profile-cloud-stubs.mjs';
 import { isCloudSyncActive } from '../cloud-sync/nube-sync-policy.mjs';
+import { getCloudSyncToken } from '../cloud-sync/settings.mjs';
 import { normalizeCloudSala } from '../cloud-sync/sala-allowlist.mjs';
 import { dbApi, toast } from './shared.mjs';
 
@@ -139,11 +140,13 @@ function scheduleBackgroundClinicalOpsPush(options = {}) {
 
 /** Refresh teams directory from Nube or LAN host before listing. */
 export async function refreshClinicalOpsDirectory(options = {}) {
-  if (isCloudSyncActive()) {
+  // Pull team directories with Nube login alone — sala rooms are separate from census room.
+  if (getCloudSyncToken()) {
     const pulled = await pullClinicalOpsFromCloudRoom(options);
-    // Push must not block open — create/join already call publishClinicalTeamsAfterChange.
-    if (options.push !== false) scheduleBackgroundClinicalOpsPush(options);
-    return pulled || true;
+    if (options.push !== false && isCloudSyncActive()) {
+      scheduleBackgroundClinicalOpsPush(options);
+    }
+    return pulled || isCloudSyncActive();
   }
   return pullClinicalOpsFromLanRoom(options);
 }

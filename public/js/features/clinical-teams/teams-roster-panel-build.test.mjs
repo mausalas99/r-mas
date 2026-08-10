@@ -14,6 +14,10 @@ describe('teams-roster-panel-build pick-team UX', () => {
     assert.equal(shouldUsePickTeamPanelLayout(0, 3, true), false);
   });
 
+  it('shouldUsePickTeamPanelLayout is false when user already joined a team', () => {
+    assert.equal(shouldUsePickTeamPanelLayout(2, 5, false), false);
+  });
+
   it('buildPickTeamsBannerHtml highlights existing teams for residents', () => {
     const html = buildPickTeamsBannerHtml({
       directoryCount: 4,

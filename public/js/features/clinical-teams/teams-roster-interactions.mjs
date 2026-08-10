@@ -23,6 +23,7 @@ import {
   writeClinicalTeamsCollapseOpen,
 } from './shared.mjs';
 import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
+import { wireTeamManageModalDelegation } from './teams-roster-manage.mjs';
 import {
   syncCreateTeamCycleField,
   syncCreateTeamServiceFromSala,
@@ -203,6 +204,7 @@ function wireClinicalTeamsCollapsePersistence() {
 
 /** Called from render after panel HTML is injected (dynamic import avoids render↔roster cycle). */
 export function wireRenderedClinicalTeamsPanel(elevated) {
+  wireTeamManageModalDelegation();
   wireClinicalTeamsPanelInteractions();
   wireJoinButtons();
   wireInheritPatientsButtons();

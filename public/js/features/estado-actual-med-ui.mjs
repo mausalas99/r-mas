@@ -25,12 +25,8 @@ export const EA_MED_FIELD_LABELS = {
   nm: 'NM (soporte, crónicos, etc.)',
 };
 
-/**
- * @param {unknown} raw
- * @returns {string[]}
- */
-
 import { escHtml, escAttr } from '../dom-escape.mjs';
+
 export function parseMedFieldItems(raw) {
   if (raw == null || !String(raw).trim()) return [];
   return String(raw)
@@ -41,10 +37,6 @@ export function parseMedFieldItems(raw) {
     .filter(Boolean);
 }
 
-/**
- * @param {string[]} items
- * @returns {string}
- */
 export function serializeMedFieldItems(items) {
   return (items || [])
     .map(function (s) {
@@ -54,11 +46,6 @@ export function serializeMedFieldItems(items) {
     .join(' | ');
 }
 
-/**
- * @param {Record<string, unknown>} monitoreo
- * @param {string} key
- * @param {string} text
- */
 export function addMedFieldItem(monitoreo, key, text) {
   if (!monitoreo || !key || !text || !String(text).trim()) return;
   if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== 'object') {
@@ -75,11 +62,6 @@ export function addMedFieldItem(monitoreo, key, text) {
   }
 }
 
-/**
- * @param {Record<string, unknown>} monitoreo
- * @param {string} key
- * @param {number} index
- */
 export function removeMedFieldItem(monitoreo, key, index) {
   if (!monitoreo || !monitoreo.estadoClinico) return;
   var items = parseMedFieldItems(monitoreo.estadoClinico[key]);
@@ -90,25 +72,14 @@ export function removeMedFieldItem(monitoreo, key, index) {
   monitoreo.confirmado[key] = items.length > 0;
 }
 
-/**
- * @param {string[]} items
- * @returns {string}
- */
 function medCatPreviewText(items) {
-  if (!items.length) return 'Sin medicamentos';
+  if (!items.length) return '';
   var first = items[0];
   var short = first.length > 52 ? first.slice(0, 49) + '…' : first;
   if (items.length === 1) return short;
   return short + ' (+' + (items.length - 1) + ')';
 }
 
-/**
- * @param {string} key
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
- * @param {string | null} activeId
- * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
- * @returns {string}
- */
 function displayAbxLine(text, activeId, medRecetaByPatient) {
   var fecha = resolveManejoFechaActualizacion(activeId, medRecetaByPatient);
   if (!fecha || !text) return text;
@@ -127,6 +98,17 @@ function prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient) {
     if (pendingVal) pendingVal = displayAbxLine(pendingVal, activeId, medRecetaByPatient);
   }
   return { items: items, pendingVal: pendingVal };
+}
+
+/**
+ * @param {string} key
+ * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
+ * @param {string | null} activeId
+ * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
+ */
+export function medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient) {
+  var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient);
+  return block.items.length > 0 || block.pendingVal.length > 0;
 }
 
 function medCategoryBadgeHtml(pendingVal, monitoreo, key, items) {
@@ -148,22 +130,26 @@ function medSelectOptionsHtml(key, options) {
   );
 }
 
+function medItemRowHtml(item, key, idx) {
+  return (
+    '<div class="ea-med-item">' +
+    '<div class="ea-med-item-row">' +
+    '<span class="ea-med-item-text">' +
+    escHtml(item) +
+    '</span>' +
+    '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
+    escAttr(key) +
+    '" data-ea-med-idx="' +
+    idx +
+    '" aria-label="Quitar medicamento">×</button>' +
+    '</div></div>'
+  );
+}
+
 function medItemsListHtml(items, key) {
   return items
     .map(function (item, idx) {
-      return (
-        '<details class="ea-med-item">' +
-        '<summary class="ea-med-item-summary">' +
-        '<span class="ea-med-item-text">' +
-        escHtml(item) +
-        '</span>' +
-        '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
-        escAttr(key) +
-        '" data-ea-med-idx="' +
-        idx +
-        '" aria-label="Quitar medicamento">×</button>' +
-        '</summary></details>'
-      );
+      return medItemRowHtml(item, key, idx);
     })
     .join('');
 }
@@ -171,20 +157,7 @@ function medItemsListHtml(items, key) {
 function medItemsListHtmlWithIndices(items, key, indices) {
   return items
     .map(function (item, displayIdx) {
-      var idx = indices[displayIdx];
-      return (
-        '<details class="ea-med-item">' +
-        '<summary class="ea-med-item-summary">' +
-        '<span class="ea-med-item-text">' +
-        escHtml(item) +
-        '</span>' +
-        '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' +
-        escAttr(key) +
-        '" data-ea-med-idx="' +
-        idx +
-        '" aria-label="Quitar medicamento">×</button>' +
-        '</summary></details>'
-      );
+      return medItemRowHtml(item, key, indices[displayIdx]);
     })
     .join('');
 }
@@ -254,7 +227,100 @@ function medManualPanelHtml(key) {
   );
 }
 
-export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient) {
+function renderMedCategoryPickOptions(keys) {
+  if (!keys.length) {
+    return '<option value="">Todas las categorías visibles</option>';
+  }
+  return (
+    '<option value="">Tipo de medicamento…</option>' +
+    keys
+      .map(function (key) {
+        return (
+          '<option value="' +
+          escAttr(key) +
+          '">' +
+          escHtml(EA_MED_FIELD_LABELS[key] || key) +
+          '</option>'
+        );
+      })
+      .join('')
+  );
+}
+
+function renderMedCategoryAddBar(hiddenKeys) {
+  var disabled = hiddenKeys.length === 0;
+  return (
+    '<div class="ea-med-add-category-row">' +
+    '<span class="ea-med-add-category-label">Añadir medicamento</span>' +
+    '<div class="ea-med-add-category-controls">' +
+    '<select class="ea-input ea-med-pick-category" data-ea-med-pick-category"' +
+    (disabled ? ' disabled' : '') +
+    '>' +
+    renderMedCategoryPickOptions(hiddenKeys) +
+    '</select>' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-med-reveal-category" data-ea-med-reveal-category' +
+    (disabled ? ' disabled' : '') +
+    '>+ Añadir categoría</button>' +
+    '</div></div>'
+  );
+}
+
+function parseRevealedMedKeys(grid) {
+  if (!grid) return [];
+  var raw = grid.getAttribute('data-ea-med-revealed');
+  if (!raw) return [];
+  try {
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+function getShownMedCategoryKeys(grid) {
+  if (!grid) return [];
+  return Array.prototype.map.call(grid.querySelectorAll('[data-ea-med-cat]'), function (el) {
+    return el.getAttribute('data-ea-med-cat');
+  }).filter(Boolean);
+}
+
+function syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient) {
+  if (!grid) return;
+  var addBar = grid.querySelector('.ea-med-add-category-row');
+  if (!addBar) return;
+  var shown = getShownMedCategoryKeys(grid);
+  var hidden = MED_FIELD_KEYS.filter(function (key) {
+    return shown.indexOf(key) < 0;
+  });
+  var select = addBar.querySelector('[data-ea-med-pick-category]');
+  var btn = addBar.querySelector('[data-ea-med-reveal-category]');
+  if (select) {
+    select.innerHTML = renderMedCategoryPickOptions(hidden);
+    select.disabled = hidden.length === 0;
+    select.value = '';
+  }
+  if (btn) btn.disabled = hidden.length === 0;
+}
+
+function revealMedCategoryKey(mount, grid, key, ctx) {
+  if (!grid || !key) return;
+  var revealed = parseRevealedMedKeys(grid);
+  if (revealed.indexOf(key) < 0) revealed.push(key);
+  grid.setAttribute('data-ea-med-revealed', JSON.stringify(revealed));
+  var monitoreo = liveMonitoreoFromCtx(ctx);
+  if (!grid.querySelector('[data-ea-med-cat="' + key + '"]')) {
+    var addBar = grid.querySelector('.ea-med-add-category-row');
+    var html = renderMedCategoryBlock(key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient, { forceOpen: true });
+    if (addBar) addBar.insertAdjacentHTML('beforebegin', html);
+    else grid.insertAdjacentHTML('beforeend', html);
+  }
+  var det = grid.querySelector('[data-ea-med-cat="' + key + '"]');
+  if (det && 'open' in det) det.open = true;
+  syncMedCategoryAddBar(grid, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
+}
+
+export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, opts) {
+  opts = opts || {};
   var block = prepareMedBlockData(key, monitoreo, activeId, medRecetaByPatient);
   var items = block.items;
   var pendingVal = block.pendingVal;
@@ -262,7 +328,8 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
   var options = buildMedDropdownOptions(activeId, key, medRecetaByPatient, classifyMedicationSoapCategory);
   var itemsHtml =
     key === 'nm' ? renderNmMedItemsBodyHtml(key, items) : medItemsListHtml(items, key);
-  var openAttr = items.length || pendingVal ? ' open' : '';
+  var openAttr = items.length || pendingVal || opts.forceOpen ? ' open' : '';
+  var previewText = medCatPreviewText(items);
 
   return (
     '<details class="ea-med-cat" data-ea-med-cat="' +
@@ -274,9 +341,9 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
     '<span class="ea-med-cat-title">' +
     escHtml(label) +
     '</span>' +
-    '<span class="ea-med-cat-preview ea-muted">' +
-    escHtml(medCatPreviewText(items)) +
-    '</span>' +
+    (previewText
+      ? '<span class="ea-med-cat-preview ea-muted">' + escHtml(previewText) + '</span>'
+      : '') +
     medCategoryBadgeHtml(pendingVal, monitoreo, key, items) +
     '</summary>' +
     '<div class="ea-med-cat-body">' +
@@ -301,40 +368,59 @@ export function renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPati
  * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
  * @param {string | null} activeId
  * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
+ * @param {string[]} [revealedKeys]
  * @returns {string}
  */
-export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient) {
-  return MED_FIELD_KEYS.map(function (key) {
-    return renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient);
-  }).join('');
+export function renderMedCategoryGrid(monitoreo, activeId, medRecetaByPatient, revealedKeys) {
+  revealedKeys = Array.isArray(revealedKeys) ? revealedKeys : [];
+  var shownKeys = MED_FIELD_KEYS.filter(function (key) {
+    return medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient) || revealedKeys.indexOf(key) >= 0;
+  });
+  var blocks = shownKeys
+    .map(function (key) {
+      var forceOpen =
+        revealedKeys.indexOf(key) >= 0 && !medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient);
+      return renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, { forceOpen: forceOpen });
+    })
+    .join('');
+  var hiddenKeys = MED_FIELD_KEYS.filter(function (key) {
+    return shownKeys.indexOf(key) < 0;
+  });
+  return (
+    '<div class="ea-clinico-med-grid" data-ea-med-revealed="' +
+    escAttr(JSON.stringify(revealedKeys)) +
+    '">' +
+    blocks +
+    renderMedCategoryAddBar(hiddenKeys) +
+    '</div>'
+  );
 }
 
-/**
- * @param {HTMLElement | null} mount
- * @param {string} key
- * @param {ReturnType<typeof import('./estado-actual-data.mjs').emptyMonitoreo>} monitoreo
- * @param {string | null} activeId
- * @param {Record<string, { items?: unknown[] }>} medRecetaByPatient
- */
 export function refreshMedCategoryBlock(mount, key, monitoreo, activeId, medRecetaByPatient) {
   if (!mount || !key) return;
   var grid = mount.querySelector('.ea-clinico-med-grid');
   if (!grid) return;
   var existing = grid.querySelector('[data-ea-med-cat="' + key + '"]');
-  var html = renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient);
+  var hasContent = medCategoryHasContent(key, monitoreo, activeId, medRecetaByPatient);
+  var revealed = parseRevealedMedKeys(grid);
+  var isRevealed = revealed.indexOf(key) >= 0;
+  if (!hasContent && !isRevealed) {
+    if (existing) existing.remove();
+    syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient);
+    return;
+  }
+  var html = renderMedCategoryBlock(key, monitoreo, activeId, medRecetaByPatient, {
+    forceOpen: isRevealed && !hasContent,
+  });
   if (existing) {
     var wasOpen = existing.open;
     existing.outerHTML = html;
     var next = grid.querySelector('[data-ea-med-cat="' + key + '"]');
-    if (next && (wasOpen || parseMedFieldItems(monitoreo.estadoClinico && monitoreo.estadoClinico[key]).length)) {
-      next.open = true;
-    }
+    if (next && (wasOpen || hasContent || isRevealed)) next.open = true;
   }
+  syncMedCategoryAddBar(grid, monitoreo, activeId, medRecetaByPatient);
 }
 
-/**
- * @param {{ patient?: { monitoreo?: unknown }, monitoreo?: Record<string, unknown> }} ctx
- */
 function liveMonitoreoFromCtx(ctx) {
   if (ctx.patient) {
     ensureMonitoreo(ctx.patient);
@@ -343,10 +429,6 @@ function liveMonitoreoFromCtx(ctx) {
   return ctx.monitoreo || {};
 }
 
-/**
- * @param {HTMLElement | null} mount
- * @param {{ monitoreo?: Record<string, unknown>, patient?: { monitoreo?: unknown }, medRecetaByPatient: Record<string, { items?: unknown[] }>, getActiveId(): string | null, saveState(): void, syncTextarea(): void }} ctx
- */
 export function wireMedCategoryGrid(mount, ctx) {
   if (!mount) return;
   var grid = mount.querySelector('.ea-clinico-med-grid');
@@ -368,6 +450,17 @@ export function wireMedCategoryGrid(mount, ctx) {
   });
 
   grid.addEventListener('click', function (ev) {
+    var target = /** @type {HTMLElement | null} */ (ev.target);
+    if (!target || !grid.contains(target)) return;
+    if (target.closest('[data-ea-med-reveal-category]')) {
+      ev.preventDefault();
+      var pick = grid.querySelector('[data-ea-med-pick-category]');
+      if (!pick || !('value' in pick) || !/** @type {HTMLSelectElement} */ (pick).value) return;
+      var category = String(/** @type {HTMLSelectElement} */ (pick).value);
+      revealMedCategoryKey(mount, grid, category, ctx);
+      /** @type {HTMLSelectElement} */ (pick).value = '';
+      return;
+    }
     handleMedGridClick(ev, grid, mount, ctx, liveMonitoreoFromCtx, function (blockMount, key, monitoreo) {
       refreshMedCategoryBlock(blockMount, key, monitoreo, ctx.getActiveId(), ctx.medRecetaByPatient);
     });

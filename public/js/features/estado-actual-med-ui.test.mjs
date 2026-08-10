@@ -5,6 +5,8 @@ import {
   serializeMedFieldItems,
   addMedFieldItem,
   removeMedFieldItem,
+  medCategoryHasContent,
+  renderMedCategoryGrid,
 } from './estado-actual-med-ui.mjs';
 import { emptyMonitoreo } from './estado-actual-data.mjs';
 
@@ -27,4 +29,22 @@ test('removeMedFieldItem drops by index', () => {
   m.estadoClinico.nm = serializeMedFieldItems(['INSULINA GLARGINA 12UI SC C/24H', 'LEVOTIROXINA 50MCG VO C/24H']);
   removeMedFieldItem(m, 'nm', 0);
   assert.equal(m.estadoClinico.nm, 'LEVOTIROXINA 50MCG VO C/24H');
+});
+
+test('medCategoryHasContent — vacío sin propuesta', () => {
+  const m = emptyMonitoreo();
+  assert.equal(medCategoryHasContent('analgesia', m, null, {}), false);
+  m.estadoClinico.analgesia = 'PARACETAMOL 500MG';
+  assert.equal(medCategoryHasContent('analgesia', m, null, {}), true);
+});
+
+test('renderMedCategoryGrid omite categorías vacías y ofrece añadir', () => {
+  const m = emptyMonitoreo();
+  m.estadoClinico.analgesia = 'PARACETAMOL 500MG';
+  const html = renderMedCategoryGrid(m, null, {});
+  assert.match(html, /data-ea-med-cat="analgesia"/);
+  assert.doesNotMatch(html, /data-ea-med-cat="antiemeticos"/);
+  assert.match(html, /data-ea-med-pick-category/);
+  assert.match(html, /\+ Añadir categoría/);
+  assert.doesNotMatch(html, /Sin medicamentos/);
 });

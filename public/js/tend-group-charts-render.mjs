@@ -34,6 +34,7 @@ import {
   formatAxisTickValue,
   yScaleBoundsForDatasets,
 } from './tend-group-chart-helpers.mjs';
+import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './features/tendencias-event-context.mjs';
 
 function destroyCharts(state) {
   state.charts.forEach(function (ch) {
@@ -372,10 +373,12 @@ function buildPanelDatasets(ctx, items, axisMeta) {
   return { datasets: datasets, legend: legend };
 }
 
-function createPanelChart(canvas, chartLabels, datasets, fam, ctx) {
+function createPanelChart(canvas, chartLabels, datasets, fam, ctx, markerMap) {
   var yScale = buildChartYScale(fam, datasets);
+  var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
   return new ctx.deps.Chart(canvas, {
     type: 'line',
+    plugins: [eventPlugin],
     data: { labels: chartLabels, datasets: datasets },
     options: {
       responsive: true,
@@ -479,12 +482,13 @@ function renderPanelFamilyCard(fam, ctx) {
 
   var axisMeta = buildTrendAxisMeta(colSets);
   var chartLabels = axisMeta.labels;
+  var markerMap = buildEventMarkerMapForSets(colSets, ctx.state.patientId);
   var built = buildPanelDatasets(ctx, items, axisMeta);
   block.appendChild(built.legend);
   ctx.sortZone.appendChild(block);
 
   try {
-    var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx);
+    var chart = createPanelChart(canvas, chartLabels, built.datasets, fam, ctx, markerMap);
     chart._tendFamily = fam;
     chart.data.datasets.forEach(function (ds, dsIdx) {
       chart.setDatasetVisibility(dsIdx, isLegendFieldVisible(ctx.state, ds.fieldKey));

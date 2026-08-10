@@ -61,12 +61,44 @@ export function activePatientTeamId(patientId) {
 async function notifyPatientTeamAssigned(pid, tid) {
   syncLocalPatientSalaFromTeamAssignment(pid, tid);
   await fetchClinicalScopeContextFromDb();
+  const team = (clinicalSessionContext.teams || []).find(
+    (t) => String(t?.team_id || '') === String(tid || '').trim()
+  );
+  const teamSala = String(team?.sala || '').trim();
   const lan = await import('./features/cloud-sync/mutate-bridge.mjs').catch(() => null);
   if (lan?.pushClinicalOpsLanNow) await lan.pushClinicalOpsLanNow();
-  // Also push census charts — teammates need the patient rows, not only the assignment.
+  if (teamSala) {
+    try {
+      const { pushClinicalOpsForSala } = await import(
+        './features/cloud-sync/cloud-clinical-ops-sala.mjs'
+      );
+      await pushClinicalOpsForSala(teamSala);
+    } catch {
+      /* Nube optional */
+    }
+  }
+  const patient = (patients || []).find((p) => String(p?.id || '') === String(pid || '').trim());
+  const { getClinicalScopeContextForEvaluate } = await import('./clinical-access-runtime.mjs');
+  const scopeCtx = getClinicalScopeContextForEvaluate();
   try {
     const cloud = await import('./features/cloud-sync/mutate-bridge.mjs');
-    if (typeof cloud.scheduleCloudSyncPush === 'function') cloud.scheduleCloudSyncPush();
+    if (patient) {
+      const { mirrorPatientCensusToOperationalSala, patientBelongsToActiveCloudRoom } = await import(
+        './features/cloud-sync/cloud-census-sala-push.mjs'
+      );
+      await mirrorPatientCensusToOperationalSala(patient, {
+        actorId: cloud.resolveCloudActorId?.(),
+        context: scopeCtx,
+      });
+      if (
+        patientBelongsToActiveCloudRoom(patient, scopeCtx) &&
+        typeof cloud.scheduleCloudSyncPush === 'function'
+      ) {
+        cloud.scheduleCloudSyncPush();
+      }
+    } else if (typeof cloud.scheduleCloudSyncPush === 'function') {
+      cloud.scheduleCloudSyncPush();
+    }
   } catch {
     /* Nube optional */
   }
@@ -74,7 +106,7 @@ async function notifyPatientTeamAssigned(pid, tid) {
     document.dispatchEvent(new CustomEvent('rpc-patient-team-assigned', { detail: { patientId: pid, teamId: tid } }));
     document.dispatchEvent(
       new CustomEvent('rpc-clinical-teams-changed', {
-        detail: { source: 'patient-team-assign', sala: clinicalSessionContext.user?.sala },
+        detail: { source: 'patient-team-assign', sala: teamSala || clinicalSessionContext.user?.sala },
       })
     );
   }

@@ -23,6 +23,8 @@ export const tendStore = {
   _tendCardSortables: [],
   sparkCharts: {},
   detailChart: null,
+  detailContext: null,
+  detailSelectedIndex: null,
   _tendRenderState: {
     key: null,
     seriesKeys: [],

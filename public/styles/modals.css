@@ -2736,3 +2736,126 @@ html.dark .tend-gaso-tip {
   justify-content: flex-end;
 }
 
+.tend-event-compose-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 16px;
+}
+.tend-event-compose-modal {
+  width: min(92vw, 420px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px 16px;
+  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.18));
+}
+.tend-event-compose-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.tend-event-compose-hint {
+  margin: 0 0 14px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.tend-event-compose-field {
+  margin-bottom: 12px;
+}
+.tend-event-compose-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.tend-event-kind-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tend-event-kind-pill {
+  border: 1px solid var(--border);
+  background: var(--surface-elevated, var(--surface));
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.tend-event-kind-pill.is-active {
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 14%, var(--surface));
+  color: var(--text);
+}
+.tend-event-compose-text {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-elevated, var(--surface));
+}
+.tend-event-compose-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-elevated, var(--surface));
+}
+.tend-event-compose-kind-fields.is-hidden {
+  display: none;
+}
+.tend-event-compose-kind-fields + .tend-event-compose-kind-fields {
+  margin-top: 0;
+}
+.tend-event-transfusion-pills {
+  margin-bottom: 10px;
+}
+.tend-event-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.tend-event-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.tend-event-legend-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.tend-event-legend-date {
+  font-weight: 650;
+  color: var(--text);
+}
+.tend-event-legend-kind {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+.tend-event-legend-text {
+  color: var(--text-muted);
+  flex: 1 1 100%;
+}
+

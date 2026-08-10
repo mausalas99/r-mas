@@ -14,7 +14,10 @@ import { censusFiltersAreActive, elevatedPatientFilters } from './clinical-censu
 import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import {
   createCensusFiltersBar,
+  detachPatientFiltersPopover,
+  initPatientFiltersChrome,
   syncCensusScalarFilterInputs,
+  togglePatientCensusFiltersCollapsed,
   wireCensusFilterInputs,
 } from './patients-scope-filters-bar.mjs';
 import { filterPatientsForPitchTour } from '../tour-pitch-demo-seed.mjs';
@@ -121,6 +124,16 @@ export function syncClinicalCensusFiltersChrome() {
   syncClinicalCensusFiltersBar();
 }
 
+/** Embudo censo — ensure bar exists, then toggle popover. */
+export function togglePatientCensusFilters(event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  syncClinicalCensusFiltersBar();
+  togglePatientCensusFiltersCollapsed();
+}
+
 /** Filtros censo — apply toolbar state immediately, then optional LAN census pull. */
 export function refreshCensusViewsAfterFilterChange() {
   const user = clinicalSessionContext.user;
@@ -174,6 +187,7 @@ export function syncClinicalCensusFiltersBar() {
     (shouldEnforceTeamPatientMirror() && !isClinicalScopeReadyForLanPatientApply())
   ) {
     if (bar) bar.remove();
+    detachPatientFiltersPopover();
     hideCensusFiltersMounts();
     syncPatientFiltersButton(false);
     syncClinicalContextBarVisibility();
@@ -190,6 +204,8 @@ export function syncClinicalCensusFiltersBar() {
   if (!bar) {
     bar = createCensusFiltersBar(user, filtersMount, true);
     wireCensusFilterInputs(bar, refreshCensusViewsAfterFilterChange);
+  } else {
+    initPatientFiltersChrome();
   }
   syncCensusScalarFilterInputs(user);
   syncPatientFiltersButton(true);

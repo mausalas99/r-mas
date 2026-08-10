@@ -1,9 +1,10 @@
 /** Mi rotación — team edit/leave/delete delegation. */
 import { clinicalSessionContext } from '../../clinical-access-runtime.mjs';
 import { canManageTeamRoster } from '../../clinical-privileges.mjs';
+import { getClinicalTeamsPanelHost } from '../clinical-panel-host.mjs';
 import { dbApi, toast, currentUserId } from './shared.mjs';
-import { publishClinicalTeamsToLan } from './teams-guardia-bridge.mjs';
-import { refreshTeamsUiAfterChange, teamsModalEl } from './teams-roster-shell.mjs';
+import { publishClinicalTeamsAfterChange } from './teams-guardia-bridge.mjs';
+import { refreshTeamsUiAfterChange } from './teams-roster-shell.mjs';
 
 function closeTeamEditPanels(exceptPanel) {
   document.querySelectorAll('.clinical-teams-edit-panel').forEach((panel) => {
@@ -13,11 +14,7 @@ function closeTeamEditPanels(exceptPanel) {
 }
 
 function teamManageDelegationRoot() {
-  return (
-    document.getElementById('clinical-teams-panel-body') ||
-    teamsModalEl()?.querySelector('.clinical-teams-modal') ||
-    null
-  );
+  return getClinicalTeamsPanelHost();
 }
 
 export function wireTeamManageModalDelegation() {
@@ -98,7 +95,7 @@ async function handleRemoveMemberClick(btn) {
 
   toast('Integrante quitado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  await publishClinicalTeamsAfterChange();
   await refreshTeamsUiAfterChange();
 }
 
@@ -130,7 +127,7 @@ async function handleLeaveTeamClick(btn) {
 
   toast('Saliste del equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  await publishClinicalTeamsAfterChange();
   await refreshTeamsUiAfterChange();
 }
 
@@ -163,7 +160,8 @@ async function handleDeleteTeamClick(btn) {
 
   toast('Equipo eliminado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  await publishClinicalTeamsAfterChange();
+  await refreshTeamsUiAfterChange();
 }
 
 /** @param {Event} ev @param {HTMLFormElement} form */
@@ -210,5 +208,6 @@ async function submitTeamEdit(api, { teamId, name, sala, userId, form }) {
 
   toast('Equipo actualizado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await publishClinicalTeamsToLan();
+  await publishClinicalTeamsAfterChange({ sala });
+  await refreshTeamsUiAfterChange();
 }

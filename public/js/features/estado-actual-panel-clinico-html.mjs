@@ -154,9 +154,7 @@ export function renderEstadoClinicoBodyHtml(ec, dietPending, dietaSuplemento, kc
     (dietPending ? renderDietProposalBarHtml(dietOptions, dietOptionSelected == null ? 0 : dietOptionSelected) : '') +
     '</div>' +
     (dietaSuplemento || dietaParenteral ? '' : renderDietWeightHintHtml(dietWeightHint, escHtml)) +
-    '<div class="ea-clinico-med-grid">' +
     medFieldsHtml +
-    '</div>' +
     (anyPending
       ? '<div class="ea-clinico-actions">' +
         '<button type="button" class="ea-btn ea-btn--success" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button>' +

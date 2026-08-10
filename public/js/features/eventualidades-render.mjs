@@ -2,6 +2,7 @@ import { patients, saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { tendenciasBridge } from './tendencias-bridge.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
   const p = patients.find(function (row) {
@@ -113,12 +114,14 @@ export function hostPatientMutationBase(patient, hostRow) {
  * @param {object} patient
  * @param {string} text
  * @param {string} [atIso]
+ * @param {string} [kind]
+ * @param {string} [transfusionProduct]
  * @returns {Promise<{ ok: boolean, reason?: string, lanDeferred?: boolean }>}
  */
-export async function savePatientEventualidad(patient, text, atIso) {
+export async function savePatientEventualidad(patient, text, atIso, kind, transfusionProduct) {
   if (!patient) return { ok: false, reason: 'no-patient' };
   const store = ensureEventualidades(patient);
-  const next = appendEventualidad(store, text, '', atIso);
+  const next = appendEventualidad(store, text, '', atIso, kind, transfusionProduct);
   if (next.entries.length === store.entries.length) {
     return { ok: false, reason: 'empty' };
   }
@@ -163,6 +166,14 @@ async function persistEventualidades(patient, store) {
   touchClinicalSessionActivity({ force: true });
   // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
   scheduleCloudSyncPush();
+  if (
+    typeof document !== 'undefined' &&
+    document.getElementById('tendencias-container') &&
+    document.getElementById('tendencias-container').querySelector('.tend-grid') &&
+    typeof tendenciasBridge.renderTendencias === 'function'
+  ) {
+    tendenciasBridge.renderTendencias();
+  }
   return { ok: true };
 }
 

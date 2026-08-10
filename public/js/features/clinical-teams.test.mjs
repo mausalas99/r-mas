@@ -111,6 +111,18 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /export async function refreshClinicalOpsDirectory/);
     assert.match(clinicalTeamsSrc, /pushClinicalOpsForSalas/);
     assert.match(clinicalTeamsSrc, /export async function publishClinicalTeamsAfterChange/);
+    const refreshIdx = clinicalTeamsSrc.indexOf('export async function refreshClinicalOpsDirectory');
+    const refreshBody = clinicalTeamsSrc.slice(refreshIdx, refreshIdx + 420);
+    assert.match(refreshBody, /getCloudSyncToken\(\)/);
+    assert.match(refreshBody, /pullClinicalOpsFromCloudRoom/);
+  });
+
+  it('Equipo embed wires team manage clicks on the active panel host', () => {
+    const manageSrc = readFileSync(join(featureDir, 'teams-roster-manage.mjs'), 'utf8');
+    assert.match(manageSrc, /getClinicalTeamsPanelHost/);
+    const interactionsSrc = readFileSync(join(featureDir, 'teams-roster-interactions.mjs'), 'utf8');
+    assert.match(interactionsSrc, /wireTeamManageModalDelegation/);
+    assert.match(interactionsSrc, /wireRenderedClinicalTeamsPanel/);
   });
 
   it('joined team card offers leave team for any member', () => {

@@ -170,6 +170,10 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .clinical-census-filters-mount--popover[hidden] {
   display: none !important;
 }
+.clinical-census-filters-mount--popover.clinical-census-filters-mount--floating {
+  position: fixed;
+  z-index: 520;
+}
 .clinical-census-filters--popover {
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -195,6 +199,11 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .clinical-census-filters--popover .clinical-census-filter .profile-input {
   width: 100%;
   min-width: 0;
+  color: var(--text);
+}
+.clinical-census-filters--popover select.profile-input {
+  appearance: auto;
+  -webkit-appearance: menulist;
 }
 .btn-patient-bulk-select {
   appearance: none;

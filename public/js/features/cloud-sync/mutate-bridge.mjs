@@ -196,14 +196,35 @@ async function enqueueCloudBundleOps() {
       collectAgendaForCloudPush,
     } = await import('./cloud-census-collect.mjs');
     const entries = await collectPatientEntriesForCloudPush();
+    const todosMap = collectTodosMapForCloudPush();
+    const agenda = collectAgendaForCloudPush();
+    const {
+      getActiveCloudSala,
+      partitionPatientEntriesByOperationalSala,
+      pushOpsToSalaRoom,
+    } = await import('./cloud-census-sala-push.mjs');
+    const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+    const scopeCtx = getClinicalScopeContextForEvaluate();
+    const { active, crossBySala } = partitionPatientEntriesByOperationalSala(
+      entries,
+      getActiveCloudSala(),
+      scopeCtx
+    );
     const ops = mapBundleEnvelopeToOps(
       {
-        entries,
-        todos: collectTodosMapForCloudPush(),
-        agenda: collectAgendaForCloudPush(),
+        entries: active,
+        todos: todosMap,
+        agenda,
       },
       meta
     );
+    for (const [sala, salaEntries] of crossBySala) {
+      const salaOps = [];
+      for (let i = 0; i < salaEntries.length; i += 1) {
+        salaOps.push(...mapPatientEntryToCloudBundleOps(salaEntries[i], meta));
+      }
+      if (salaOps.length) void pushOpsToSalaRoom(sala, salaOps);
+    }
     const entryOps = countPatientEntryOps(ops);
     const otherOps = hasNonEntryCloudOps(ops);
     if (!entryOps && !otherOps && patients.length > 0) {
@@ -492,7 +513,19 @@ export function enqueueCloudLabSidecarsForPatient(patientId) {
   };
   const ops = buildDirtyLabSidecarOpsForPatient(pid, labs, meta);
   if (!ops.length) return;
-  enqueueEntityOps(`labSidecars/${pid}`, ops);
+  const patient = patients.find(function (p) {
+    return p && String(p.id) === pid;
+  });
+  void import('./cloud-census-sala-push.mjs').then(async function (mod) {
+    const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+    const scopeCtx = getClinicalScopeContextForEvaluate();
+    if (patient && !mod.patientBelongsToActiveCloudRoom(patient, scopeCtx)) {
+      const sala = mod.resolveOperationalPatientSala(patient, scopeCtx);
+      if (sala) void mod.pushOpsToSalaRoom(sala, ops);
+      return;
+    }
+    enqueueEntityOps(`labSidecars/${pid}`, ops);
+  });
   void import('../cloud-mobile/lab-sync-diagnostics.mjs').then(function (labDiag) {
     labDiag.recordLabPushAttempt({
       patientId: pid,
@@ -508,26 +541,20 @@ export function enqueueCloudPatientAdmit(patient) {
   if (!isCloudSyncActive() || !bridgeRuntime?.outbox || !patient?.id) return;
   const pid = String(patient.id).trim();
   if (!pid || pid.indexOf('demo-') === 0) return;
-  const meta = {
-    actorId: resolveCloudActorId(bridgeRuntime),
-    updatedAt: String(patient.lanUpdatedAt || new Date().toISOString()),
-  };
-  /** @type {import('./mutate-bridge-ops.mjs').CloudSyncOp[]} */
-  const ops = [];
-  pushCensusFieldsOp(ops, pid, patient, meta.actorId);
-  const registro = String(patient.registro || '').trim();
-  if (registro) {
-    ops.push(
-      cloudOp({
-        path: `entries/${pid}`,
-        value: { id: pid, registro },
-        ...meta,
-      })
-    );
-  }
-  if (!ops.length) return;
-  enqueueOps(ops);
-  scheduleCloudSyncPush();
+  const actorId = resolveCloudActorId(bridgeRuntime);
+  void (async function () {
+    const mod = await import('./cloud-census-sala-push.mjs');
+    const { getClinicalScopeContextForEvaluate } = await import('../../clinical-access-runtime.mjs');
+    const scopeCtx = getClinicalScopeContextForEvaluate();
+    const ops = mod.buildPatientAdmitOpsForCloud(patient, actorId);
+    if (!ops.length) return;
+    if (mod.patientBelongsToActiveCloudRoom(patient, scopeCtx)) {
+      enqueueOps(ops);
+      scheduleCloudSyncPush();
+      return;
+    }
+    await mod.mirrorPatientCensusToOperationalSala(patient, { actorId, context: scopeCtx });
+  })();
 }
 
 /** @param {object} patient */

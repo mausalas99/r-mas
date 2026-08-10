@@ -39,10 +39,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [8.0.9](https://github.com/mausalas99/r-mas/releases/tag/v8.0.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [8.1.0](https://github.com/mausalas99/r-mas/releases/tag/v8.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 8.1.0 (censo cross-sala + Tendencias eventualidades)
+
+- **Censo cross-sala** — Expediente, labs y asignaciones van al room Nube de la sala operativa del equipo (no solo la sala activa).
+- **Reconciliación Nube** — Pull automático de expedientes faltantes tras asignaciones clinicalOps.
+- **Tendencias eventualidades** — Marcadores en gráficas + alta con categoría/fecha; campo `kind` en eventualidades.
+- **Worker** — Caché KV de revisión eliminada; pull solo D1.
+- **Filtros censo** — Barra de filtros con popover persistente en sidebar.
+- **EA ventilatorio** — Refinamientos PaFi/ROX y gasometría venosa.
+
+Notas: `docs/RELEASE_NOTES_8.1.0.txt`.
 ## R+ 8.0.9 (reposición K + Nube deletes + Tendencias)
 
 - **Reposición de potasio** — Agrupa K IV en NM con duración de infusión del diluyente.

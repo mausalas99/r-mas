@@ -120,6 +120,31 @@ function runDiagnosticsSync(host, deps) {
   });
 }
 
+function runDiagnosticsRepairTeamSalas(host, deps) {
+  void import('./cloud-census-sala-push.mjs').then(function (mod) {
+    return mod.repairCensusSalasFromTeamAssignments({
+      actorId: undefined,
+    });
+  }).then(function (result) {
+    if (!result?.ok) {
+      deps?.toast?.('Nube inactiva o sin token.', 'warn');
+      refreshCloudSyncDiagnostics(host, deps);
+      return;
+    }
+    const parts = [];
+    if (result.stamped > 0) parts.push(`${result.stamped} sala(s) local actualizada(s)`);
+    if (result.mirrored > 0) parts.push(`${result.mirrored} expediente(s) reempujado(s)`);
+    deps?.toast?.(
+      parts.length ? parts.join(' · ') : 'Nada pendiente — censo ya alineado con equipos.',
+      parts.length ? 'success' : 'info'
+    );
+    refreshCloudSyncDiagnostics(host, deps);
+  }).catch(function () {
+    deps?.toast?.('Falló el reempuje de censo.', 'error');
+    refreshCloudSyncDiagnostics(host, deps);
+  });
+}
+
 function runDiagnosticsPruneLabs(host, deps) {
   const outbox = getSharedNubeOutbox();
   if (!outbox) {
@@ -167,6 +192,7 @@ function wireDashboardActions(host, deps) {
     const action = btn.getAttribute('data-cloud-diag-action');
     if (action === 'retry') runDiagnosticsRetry(host, deps);
     else if (action === 'sync') runDiagnosticsSync(host, deps);
+    else if (action === 'repair-team-salas') runDiagnosticsRepairTeamSalas(host, deps);
     else if (action === 'prune-labs') runDiagnosticsPruneLabs(host, deps);
   });
 }

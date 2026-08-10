@@ -12,6 +12,17 @@ export {
   formatDayLabel,
   formatDaySubLabel,
   groupEntriesByDay,
+  normalizeEventualidadKind,
+  inferEventualidadKind,
+  resolveEventualidadKind,
+  pickHigherPriorityKind,
+  EVENTUALIDAD_KINDS,
+  EVENTUALIDAD_KIND_LABELS,
+  resolveEventualidadEntryText,
+  buildEventualidadComposeText,
+  TRANSFUSION_PRODUCTS,
+  TRANSFUSION_PRODUCT_LABELS,
+  normalizeTransfusionProduct,
 } from './eventualidades-store.mjs';
 export { registerEventualidadesRuntime } from './eventualidades-store.mjs';
 export {

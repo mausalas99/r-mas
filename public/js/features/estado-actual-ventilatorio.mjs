@@ -142,12 +142,13 @@ export function classifySiraSeverity(pafi) {
 }
 
 /**
- * PaFi / SpO₂/FiO₂ y avisos de gasometría solo con soporte activo o parámetros de VM.
+ * PaFi / SpO₂/FiO₂ y avisos de gasometría solo cuando hay FiO₂ o VM (no O₂ por litros).
  * @param {Record<string, unknown>} ec
  * @returns {boolean}
  */
 export function ventilatorioLabHintsEligible(ec) {
-  if (soporteTier(ec.soporte) != null) return true;
+  var tier = soporteTier(ec.soporte);
+  if (tier === 'hfnc' || tier === 'vmni' || tier === 'vm' || tier === 'tqt') return true;
   if (parseVentNum(ec.soporteFio2) != null) return true;
   if (parseVentNum(ec.vmPeep) != null) return true;
   if (parseVentNum(ec.vmPmeseta) != null) return true;

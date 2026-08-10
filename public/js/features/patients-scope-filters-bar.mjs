@@ -13,6 +13,104 @@ import {
   censusFiltersUseFullTeamCatalog,
 } from './clinical-census-filters-ui.mjs';
 
+const FILTERS_MOUNT_HOME_SELECTOR = '#patient-sidebar .sidebar-header';
+let patientFiltersChromeWired = false;
+
+function censusFiltersBarEl() {
+  return document.getElementById('clinical-census-filters');
+}
+
+function filtersMountHomeEl() {
+  return document.querySelector(FILTERS_MOUNT_HOME_SELECTOR);
+}
+
+function densitySpacePx() {
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--density-space');
+    const n = parseFloat(raw);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function positionFiltersPopover(mount) {
+  const home = filtersMountHomeEl();
+  if (!home || !mount) return;
+  const rect = home.getBoundingClientRect();
+  const pad = 16 * densitySpacePx();
+  mount.style.position = 'fixed';
+  mount.style.top = `${Math.round(rect.bottom + 4)}px`;
+  mount.style.left = `${Math.round(rect.left + pad)}px`;
+  mount.style.width = `${Math.max(0, Math.round(rect.width - pad * 2))}px`;
+  mount.style.right = 'auto';
+  mount.style.zIndex = '520';
+}
+
+function clearFiltersPopoverPosition(mount) {
+  if (!mount) return;
+  mount.style.position = '';
+  mount.style.top = '';
+  mount.style.left = '';
+  mount.style.width = '';
+  mount.style.right = '';
+  mount.style.zIndex = '';
+}
+
+function attachFiltersMount(mount, open) {
+  const home = filtersMountHomeEl();
+  if (!mount || !home) return;
+  if (open) {
+    if (mount.parentElement !== document.body) document.body.appendChild(mount);
+    positionFiltersPopover(mount);
+    mount.classList.add('clinical-census-filters-mount--floating');
+    return;
+  }
+  mount.classList.remove('clinical-census-filters-mount--floating');
+  clearFiltersPopoverPosition(mount);
+  if (mount.parentElement !== home) home.appendChild(mount);
+}
+
+function applyCensusFiltersCollapsed(collapsed) {
+  const bar = censusFiltersBarEl();
+  if (!bar) return;
+  writeCensusFiltersCollapsed(collapsed);
+  syncPatientFiltersTriggerUi(bar, collapsed);
+}
+
+/** Toggle sidebar census filter popover (window handler + tests). */
+export function togglePatientCensusFiltersCollapsed() {
+  const bar = censusFiltersBarEl();
+  if (!bar) return false;
+  const willOpen = bar.classList.contains('is-collapsed');
+  applyCensusFiltersCollapsed(!willOpen);
+  return !willOpen;
+}
+
+export function initPatientFiltersChrome() {
+  if (patientFiltersChromeWired) return;
+  patientFiltersChromeWired = true;
+
+  document.addEventListener('click', (event) => {
+    const target = /** @type {Element|null} */ (event.target);
+    if (target?.closest?.('#btn-patient-filters')) return;
+    const bar = censusFiltersBarEl();
+    if (!bar || bar.classList.contains('is-collapsed')) return;
+    const anchor = document.getElementById('patient-filters-anchor');
+    const mount = document.getElementById('clinical-census-filters-sidebar-mount');
+    if (!target) return;
+    if (anchor?.contains(target) || mount?.contains(target) || bar.contains(target)) return;
+    applyCensusFiltersCollapsed(true);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const bar = censusFiltersBarEl();
+    if (event.key === 'Escape' && bar && !bar.classList.contains('is-collapsed')) {
+      applyCensusFiltersCollapsed(true);
+    }
+  });
+}
+
 function buildCensusFiltersBodyHtml(user, mobileSidebar) {
   const showSalaFilter = !mobileSidebar || censusFiltersUseFullTeamCatalog(user);
   const salaBlock = showSalaFilter
@@ -48,55 +146,36 @@ function syncPatientFiltersTriggerUi(bar, collapsed) {
   mount.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
   body.hidden = collapsed;
   bar.classList.toggle('is-collapsed', collapsed);
+  attachFiltersMount(mount, !collapsed);
   const badge = document.getElementById('btn-patient-filters-badge');
   if (badge) badge.hidden = !censusFiltersAreActive();
 }
 
-function wirePatientFiltersPopover(bar) {
-  const applyCollapsed = (collapsed) => {
-    writeCensusFiltersCollapsed(collapsed);
-    syncPatientFiltersTriggerUi(bar, collapsed);
-  };
+function wirePatientFiltersPopover() {
+  initPatientFiltersChrome();
+  applyCensusFiltersCollapsed(readCensusFiltersCollapsed());
+}
 
-  applyCollapsed(readCensusFiltersCollapsed());
-
-  const triggerBtn = document.getElementById('btn-patient-filters');
-  if (triggerBtn && !triggerBtn._rpcPatientFiltersWired) {
-    triggerBtn._rpcPatientFiltersWired = true;
-    triggerBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const next = !bar.classList.contains('is-collapsed');
-      applyCollapsed(next);
-    });
-  }
-
-  if (!bar._rpcPatientFiltersOutsideWired) {
-    bar._rpcPatientFiltersOutsideWired = true;
-    document.addEventListener('click', (event) => {
-      if (bar.classList.contains('is-collapsed')) return;
-      const target = /** @type {Node|null} */ (event.target);
-      const anchor = document.getElementById('patient-filters-anchor');
-      const mount = document.getElementById('clinical-census-filters-sidebar-mount');
-      if (!target) return;
-      if (anchor?.contains(target) || mount?.contains(target) || bar.contains(target)) return;
-      applyCollapsed(true);
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !bar.classList.contains('is-collapsed')) {
-        applyCollapsed(true);
-      }
-    });
-  }
+/** Return popover mount to the sidebar when filters chrome is torn down. */
+export function detachPatientFiltersPopover() {
+  const mount = document.getElementById('clinical-census-filters-sidebar-mount');
+  if (!mount) return;
+  attachFiltersMount(mount, false);
+  mount.hidden = true;
+  mount.setAttribute('aria-hidden', 'true');
 }
 
 /** @param {HTMLElement} bar @param {() => void} refreshCensusViews */
 export function wireCensusFilterInputs(bar, refreshCensusViews) {
-  wirePatientFiltersPopover(bar);
+  wirePatientFiltersPopover();
   const salaSel = bar.querySelector('#clinical-filter-sala');
   const teamSel = bar.querySelector('#clinical-filter-team');
   const serviceInp = bar.querySelector('#clinical-filter-service');
   const onFilterChange = () => {
-    syncPatientFiltersTriggerUi(bar, bar.classList.contains('is-collapsed'));
+    const currentBar = censusFiltersBarEl();
+    if (currentBar) {
+      syncPatientFiltersTriggerUi(currentBar, currentBar.classList.contains('is-collapsed'));
+    }
     refreshCensusViews();
   };
   if (salaSel) {
@@ -133,8 +212,10 @@ export function createCensusFiltersBar(user, filtersMount, mobileSidebar) {
     bar.remove();
   }
   filtersMount.appendChild(bar);
-  filtersMount.hidden = readCensusFiltersCollapsed();
-  filtersMount.setAttribute('aria-hidden', readCensusFiltersCollapsed() ? 'true' : 'false');
+  const collapsed = readCensusFiltersCollapsed();
+  bar.classList.toggle('is-collapsed', collapsed);
+  filtersMount.hidden = collapsed;
+  filtersMount.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
   return bar;
 }
 

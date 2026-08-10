@@ -3476,6 +3476,19 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   grid-column: 2;
 }
 
+/* Empty Mis equipos → Explorar spans full width for horizontal team grid */
+#clinical-teams-backdrop
+  .clinical-teams-panel-body:has(.clinical-teams-section--joined .clinical-teams-empty--section)
+  > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
+/* With membership → Explorar arriba, Mis equipos abajo (full width) */
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--joined,
+#clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--has-joined > .clinical-teams-section--directory {
+  grid-column: 1 / -1;
+}
+
 #clinical-teams-backdrop .clinical-teams-panel-body.clinical-teams-panel-body--pick-team {
   grid-template-columns: 1fr;
 }
@@ -3523,8 +3536,6 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
 #clinical-teams-backdrop
   .clinical-teams-panel-body.clinical-teams-panel-body--pick-team
   .clinical-teams-list--directory {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
   gap: 12px;
 }
 
@@ -4562,9 +4573,33 @@ body.connection-dropdown-open #clinical-admin-code-backdrop.modal-backdrop {
 }
 
 .clinical-teams-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.clinical-teams-list--directory {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+}
+
+.clinical-teams-list .clinical-teams-card {
+  min-height: 0;
+}
+
+.clinical-teams-list .clinical-teams-card-top--directory {
   flex-direction: column;
-  gap: 14px;
+  align-items: stretch;
+}
+
+.clinical-teams-list .clinical-teams-card-actions {
+  max-width: none;
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+
+.clinical-teams-list .clinical-teams-manage-actions {
+  justify-content: flex-start;
 }
 
 .clinical-teams-card {

@@ -3,8 +3,9 @@ import { getSetTrendValueForSeries, buildTendChartLabels } from '../tend-core.mj
 import { loadChartJs } from '../vendor-loader.mjs';
 import { rt } from './tendencias-runtime-state.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
-import { tendStore, trendSparkDomId, trendSparkChartKey } from './tendencias-state.mjs';
+import { tendStore, trendSparkDomId, trendSparkChartKey, aid } from './tendencias-state.mjs';
 import { tendRefForSeries, tendCatalogSeriesKey, tendSectionIsExpanded, toTrendAscendingSets } from './tendencias-series.mjs';
+import { buildEventMarkerMapForSets, createTendEventMarkerPlugin } from './tendencias-event-context.mjs';
 
 function tendSeriesKeySelector(seriesKey) {
   if (typeof CSS !== 'undefined' && CSS.escape) {
@@ -84,8 +85,12 @@ function mountOneTrendSparkChart(job, history, chartAnim, Chart) {
   if (!canvas2 || !Chart) return;
   var ck = trendSparkChartKey(sk2, fk2);
   var lineColor = sparkLineColorForJob(job, history);
+  var setsAscSpark = toTrendAscendingSets(job.setsDesc2);
+  var markerMap = buildEventMarkerMapForSets(setsAscSpark, aid());
+  var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: true });
   tendStore.sparkCharts[ck] = new Chart(canvas2, {
     type: 'line',
+    plugins: [eventPlugin],
     data: {
       labels: job.labels2,
       datasets: [

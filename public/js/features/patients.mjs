@@ -16,6 +16,7 @@ import {
   ensureActivePatientInSidebarScope,
   filterPatientsForGuardiaCensus,
   syncClinicalCensusFiltersChrome,
+  togglePatientCensusFilters,
 } from './patients-scope.mjs';
 import { renderPatientList } from './patients-list.mjs';
 import {
@@ -307,6 +308,7 @@ export const windowHandlers = {
   togglePatientBulkSelect,
   cancelPatientBulkSelect,
   confirmBulkDeletePatients,
+  togglePatientCensusFilters,
   openFullExpedienteFromRound,
   returnToRoundOverview,
   closeRondaQuickMoreMenu,

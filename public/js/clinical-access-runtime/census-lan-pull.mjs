@@ -1,5 +1,6 @@
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import { isCloudSyncActive } from '../features/cloud-sync/nube-sync-policy.mjs';
 import { patients } from '../app-state.mjs';
 import { clinicalSessionContext } from '../clinical-session-context.mjs';
 import {
@@ -15,9 +16,51 @@ import {
 import { fetchClinicalScopeContextFromDb, fetchClinicalTeamsFromDb } from './scope-db.mjs';
 import { getClinicalScopeContextForEvaluate } from './scope-evaluate.mjs';
 
-/** @param {string} _reason @param {number} [_delayMs] */
-async function scheduleLanPatientReconcile(_reason, _delayMs) {
-  /* LAN reconcile retired */
+/** @type {ReturnType<typeof setTimeout>|null} */
+let nubePatientReconcileTimer = null;
+/** @type {Promise<void>|null} */
+let nubePatientReconcileInFlight = null;
+
+/** Pull missing census rows from the Nube sala room after clinicalOps assignments land. */
+async function runNubePatientReconcile(_reason) {
+  if (!isCloudSyncActive()) return;
+  if (nubePatientReconcileInFlight) return nubePatientReconcileInFlight;
+
+  nubePatientReconcileInFlight = (async function () {
+    try {
+      const { getSharedNubeRuntime } = await import('../features/cloud-sync/panel-conexion-runtime.mjs');
+      const { autostartCloudSyncIfConfigured } = await import('../features/cloud-sync/autostart.mjs');
+      let runtime = getSharedNubeRuntime();
+      if (!runtime) runtime = await autostartCloudSyncIfConfigured();
+      if (!runtime || typeof runtime.syncCycle !== 'function') return;
+      await runtime.syncCycle();
+      await refreshClinicalPatientListForScope({ allowLanPull: false });
+    } catch {
+      /* Nube optional */
+    }
+  })().finally(function () {
+    nubePatientReconcileInFlight = null;
+  });
+  return nubePatientReconcileInFlight;
+}
+
+/**
+ * LAN host reconcile retired — on Nube, debounce a sala-room pull when assignments
+ * exist locally but census charts are still missing on this Mac.
+ * @param {string} _reason @param {number} [delayMs]
+ */
+async function scheduleLanPatientReconcile(_reason, delayMs) {
+  if (!isCloudSyncActive()) return;
+  const wait = Number(delayMs) || 0;
+  if (nubePatientReconcileTimer) clearTimeout(nubePatientReconcileTimer);
+  if (wait <= 0) {
+    await runNubePatientReconcile(_reason);
+    return;
+  }
+  nubePatientReconcileTimer = setTimeout(function () {
+    nubePatientReconcileTimer = null;
+    void runNubePatientReconcile(_reason);
+  }, wait);
 }
 
 async function countMissingAssignedPatients(user, teams, assignments, localIds, now) {
@@ -102,7 +145,7 @@ function rosterChangedFromMergeStats(stats) {
 }
 
 async function scheduleHostReconcileAfterOpsMerge() {
-  /* LAN reconcile retired */
+  await scheduleLanPatientReconcile('assignment-merge', 2000);
 }
 
 /** One-shot host bundle pull when roster/assignments change visibility (not on every no-op merge). */

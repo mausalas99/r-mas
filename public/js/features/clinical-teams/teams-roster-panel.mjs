@@ -146,6 +146,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     homeSala: ctx.sala,
   });
 
+  const hasJoinedTeam = joined.length > 0;
   const pickTeamLayout = shouldUsePickTeamPanelLayout(joined.length, directoryCount, elevated);
   const rejoinPending = isRotationRejoinPending();
   const pickBanner = buildPickTeamsBannerHtml({
@@ -159,6 +160,7 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
   const joinedSection = buildJoinedTeamsSectionHtml(ctx, joinedContentHtml, lanMemberHint);
 
   host.classList.toggle('clinical-teams-panel-body--pick-team', pickTeamLayout);
+  host.classList.toggle('clinical-teams-panel-body--has-joined', hasJoinedTeam);
 
   const createSection = renderCreateTeamSectionHtml();
   const rotationSection = buildRotationAdminSectionHtml(user);
@@ -173,6 +175,15 @@ export async function renderClinicalTeamsPanelInto(host, opts = {}) {
     ${joinedSection}
     ${createSection}
     ${joinCodeSection}
+    ${configSection}`;
+  } else if (hasJoinedTeam) {
+    host.innerHTML = `
+    ${handleHint}
+    ${rotationSection}
+    ${createSection}
+    ${directorySection}
+    ${joinCodeSection}
+    ${joinedSection}
     ${configSection}`;
   } else {
     host.innerHTML = `

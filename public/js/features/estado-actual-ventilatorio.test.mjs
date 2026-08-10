@@ -114,6 +114,18 @@ test('resolveSoporteClause — aire ambiente sin hints de PaFi con gaso venosa',
   assert.equal(clause, 'AL AIRE AMBIENTE');
 });
 
+test('resolveSoporteClause — puntillas nasales sin hints de gaso venosa ni falta FiO₂', () => {
+  var clause = resolveSoporteClause(
+    { soporte: 'Puntillas nasales', soporteLitros: 2 },
+    {
+      fr: 18,
+      sat: 99,
+      lab: { kind: 'venous', pO2: 60, pCO2: 35, sourceLabel: 'Gasometría venosa · 08/08' },
+    }
+  );
+  assert.equal(clause, 'POR PUNTILLAS NASALES A 2 L/MIN');
+});
+
 test('resolveSoporteClause incluye índices calculados', () => {
   var clause = resolveSoporteClause(
     {

@@ -174,6 +174,7 @@ export function renderCloudNubeDashboardHtml(view) {
 
   html +=
     '<div class="cloud-nube-dash-actions">' +
+    '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="repair-team-salas">Reempujar censo a salas de equipo</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="retry">Reintentar cola</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="sync">Forzar sync</button>' +
     '<button type="button" class="cloud-sync-btn cloud-sync-btn--ghost" data-cloud-diag-action="prune-labs">Descartar labs en cola</button>' +

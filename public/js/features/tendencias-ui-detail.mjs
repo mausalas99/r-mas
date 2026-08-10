@@ -11,6 +11,44 @@ import {
   tendParsedHistoryDesc,
   toTrendAscendingSets,
 } from './tendencias-catalog.mjs';
+import {
+  buildEventMarkerMapForSets,
+  buildTendDetailEventsLegendHtml,
+  createTendEventMarkerPlugin,
+  dayValueFromTrendChartIndex,
+  eventTooltipLinesForChartIndex,
+} from './tendencias-event-context.mjs';
+import { openTendEventComposeModal } from './tendencias-event-compose.mjs';
+
+var _tendDetailControlsWired = false;
+
+function ensureTendDetailControlsWired() {
+  if (_tendDetailControlsWired || typeof document === 'undefined') return;
+  var btn = document.getElementById('tend-detail-add-event');
+  if (!btn) return;
+  _tendDetailControlsWired = true;
+  btn.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    var ctx = tendStore.detailContext;
+    var defaultDate = '';
+    if (ctx && ctx.setsAsc && tendStore.detailSelectedIndex != null) {
+      defaultDate = dayValueFromTrendChartIndex(tendStore.detailSelectedIndex, ctx.setsAsc);
+    }
+    if (!defaultDate && ctx && ctx.setsAsc && ctx.setsAsc.length) {
+      defaultDate = dayValueFromTrendChartIndex(ctx.setsAsc.length - 1, ctx.setsAsc);
+    }
+    openTendEventComposeModal(defaultDate ? { defaultDate: defaultDate } : undefined);
+  });
+}
+
+function syncTendDetailEventsLegend(markerMap, labels) {
+  var slot = document.getElementById('tend-detail-events-slot');
+  if (!slot) return;
+  var html = buildTendDetailEventsLegendHtml(markerMap, labels);
+  slot.innerHTML = html;
+  slot.setAttribute('aria-hidden', html ? 'false' : 'true');
+}
 
 function formatDMYDate(d) {
   if (!d || isNaN(d.getTime())) return '';
@@ -180,7 +218,7 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass, yBounds) {
   );
 }
 
-function tendDetailChartOptions(title, unit) {
+function tendDetailChartOptions(title, unit, markerMap) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -190,6 +228,11 @@ function tendDetailChartOptions(title, unit) {
     },
     layout: { padding: { right: 12, left: 4, top: 8, bottom: 4 } },
     interaction: { mode: 'index', intersect: false, axis: 'x' },
+    onClick: function (_evt, elements) {
+      if (elements && elements.length) {
+        tendStore.detailSelectedIndex = elements[0].index;
+      }
+    },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -200,6 +243,10 @@ function tendDetailChartOptions(title, unit) {
         callbacks: {
           label: function (ctx) {
             return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
+          },
+          afterBody: function (items) {
+            if (!items || !items.length || !markerMap) return [];
+            return eventTooltipLinesForChartIndex(markerMap, items[0].dataIndex);
           },
         },
       },
@@ -215,14 +262,15 @@ function tendDetailChartOptions(title, unit) {
   };
 }
 
-function updateTendDetailChartInPlace(labels, values, title, ref, latest, unit) {
+function updateTendDetailChartInPlace(labels, values, title, ref, latest, unit, markerMap) {
   if (!tendStore.detailChart || !tendStore.detailChart.data || !tendStore.detailChart.data.datasets[0]) return false;
   tendStore.detailChart.data.labels = labels;
   tendStore.detailChart.data.datasets[0].label = title;
   tendStore.detailChart.data.datasets[0].data = values;
-  tendStore.detailChart.options = tendDetailChartOptions(title, unit);
+  tendStore.detailChart.options = tendDetailChartOptions(title, unit, markerMap);
   tendStore.detailChart.update('none');
   syncTendDetailVbar(ref, latest);
+  syncTendDetailEventsLegend(markerMap, labels);
   return true;
 }
 
@@ -290,6 +338,10 @@ function openTendDetailAsync(sectionKey, fieldKey) {
   var latestSet = setsDesc.length ? setsDesc[0] : null;
   var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fieldKey) : null;
   var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
+  var markerMap = buildEventMarkerMapForSets(setsAsc, aid());
+  tendStore.detailContext = { setsAsc: setsAsc, markerMap: markerMap, labels: labels };
+  tendStore.detailSelectedIndex = labels.length ? labels.length - 1 : null;
+  ensureTendDetailControlsWired();
   document.getElementById('tend-detail-title').textContent =
     title + (labelParts.unit ? ' (' + labelParts.unit + ')' : '');
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
@@ -297,6 +349,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
     vbarSlot.innerHTML = '';
     vbarSlot.setAttribute('aria-hidden', 'true');
   }
+  syncTendDetailEventsLegend(markerMap, labels);
   var backdrop = document.getElementById('tend-detail-backdrop');
   if (!backdrop) return;
   cancelOverlayClose(backdrop);
@@ -312,7 +365,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
         if (
           tendStore.detailChart &&
           tendStore.detailChart.canvas === canvas &&
-          updateTendDetailChartInPlace(labels, values, title, ref, latest, unit)
+          updateTendDetailChartInPlace(labels, values, title, ref, latest, unit, markerMap)
         ) {
           return;
         }
@@ -320,7 +373,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
           tendStore.detailChart.destroy();
           tendStore.detailChart = null;
         }
-        mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit);
+        mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit, markerMap);
       } catch (mountErr) {
         console.error('[R+ Tendencias] detail chart mount', mountErr);
         rt.showToast('Gráfica no disponible (error al dibujar). Recarga la app.', 'error');
@@ -334,7 +387,7 @@ function openTendDetailAsync(sectionKey, fieldKey) {
     });
 }
 
-function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit) {
+function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest, unit, markerMap) {
   var datasets = [
     {
       label: title,
@@ -348,12 +401,15 @@ function mountTendDetailChart(Chart, canvas, labels, values, title, ref, latest,
       fill: false,
     },
   ];
+  var eventPlugin = createTendEventMarkerPlugin(markerMap, { compact: false });
   tendStore.detailChart = new Chart(canvas, {
     type: 'line',
+    plugins: [eventPlugin],
     data: { labels: labels, datasets: datasets },
-    options: tendDetailChartOptions(title, unit),
+    options: tendDetailChartOptions(title, unit, markerMap),
   });
   syncTendDetailVbar(ref, latest);
+  syncTendDetailEventsLegend(markerMap, labels);
 }
 
 export function closeTendDetail() {
@@ -365,6 +421,13 @@ export function closeTendDetail() {
       vbarSlot.innerHTML = '';
       vbarSlot.setAttribute('aria-hidden', 'true');
     }
+    var eventsSlot = document.getElementById('tend-detail-events-slot');
+    if (eventsSlot) {
+      eventsSlot.innerHTML = '';
+      eventsSlot.setAttribute('aria-hidden', 'true');
+    }
+    tendStore.detailContext = null;
+    tendStore.detailSelectedIndex = null;
     if (tendStore.detailChart) { tendStore.detailChart.destroy(); tendStore.detailChart = null; }
   });
 }

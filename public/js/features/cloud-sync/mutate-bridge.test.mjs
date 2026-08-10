@@ -274,6 +274,8 @@ describe('mutate-bridge op mapping', () => {
         { id: 'lab-10', fecha: '2026-08-08', resLabs: ['Hb 11'] },
       ];
       enqueueCloudLabSidecarsForPatient('p1');
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
       assert.equal(queued.length, 1);
       assert.equal(queued[0].clientMutationId, 'labSidecars/p1');
       assert.ok(queued[0].ops.some((op) => op.path === 'labSidecars/p1/lab-10'));

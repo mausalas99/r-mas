@@ -63,21 +63,22 @@ test('elevated ward census schedules full host reconcile', () => {
   assert.match(src, /full-ward-census/);
 });
 
-test('ops-sync refresh does not eagerly reconcile LAN on every merge', () => {
+test('ops-sync refresh debounces Nube census pull after clinicalOps merge', () => {
   const src = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
     'utf8'
   );
   assert.match(src, /allowLanPull: false/);
-  assert.match(src, /LAN reconcile retired/);
+  assert.match(src, /runNubePatientReconcile/);
   assert.match(src, /clinicalOpsSyncedRefreshTimer/);
 });
 
-test('census LAN reconcile retired when Nube is active', () => {
+test('missing assigned patients trigger Nube sala-room syncCycle', () => {
   const src = readFileSync(
     join(dirname(fileURLToPath(import.meta.url)), 'clinical-access-runtime/census-lan-pull.mjs'),
     'utf8'
   );
   assert.match(src, /scheduleLanPatientReconcile/);
+  assert.match(src, /syncCycle/);
   assert.doesNotMatch(src, /scheduleReconcileLiveSyncRoom/);
 });

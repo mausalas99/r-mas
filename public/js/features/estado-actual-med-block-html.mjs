@@ -28,12 +28,12 @@ function buildMedCategoryItemsHtml(key, items) {
   return items
     .map(function (item, idx) {
       return (
-        '<details class="ea-med-item">' +
-        '<summary class="ea-med-item-summary">' +
+        '<div class="ea-med-item">' +
+        '<div class="ea-med-item-row">' +
         '<span class="ea-med-item-text">' + escHtml(item) + '</span>' +
         '<button type="button" class="ea-btn ea-btn--icon ea-med-item-remove" data-ea-med-remove="' + escAttr(key) +
         '" data-ea-med-idx="' + idx + '" aria-label="Quitar medicamento">×</button>' +
-        '</summary></details>'
+        '</div></div>'
       );
     })
     .join('');

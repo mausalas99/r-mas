@@ -229,8 +229,10 @@ export function commitPatientFromModal(nombre, registro, edad, sexo, area, servi
     teamId: registrationTeamId,
     teams: clinicalSessionContext.teams || [],
   });
-  const registrationSala = readPatientRegistrationSala();
-  if (registrationSala) patient.sala = registrationSala;
+  if (!registrationTeamId) {
+    const registrationSala = readPatientRegistrationSala();
+    if (registrationSala) patient.sala = registrationSala;
+  }
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   enqueueCloudPatientAdmit(patient);
@@ -341,8 +343,11 @@ export function commitStubPatientFromLab(labPatient, opts) {
     teamId: readPatientRegistrationTeamId(),
     teams: clinicalSessionContext.teams || [],
   });
-  var registrationSala = readPatientRegistrationSala();
-  if (registrationSala) patient.sala = registrationSala;
+  var stubTeamId = readPatientRegistrationTeamId();
+  if (!stubTeamId) {
+    var registrationSala = readPatientRegistrationSala();
+    if (registrationSala) patient.sala = registrationSala;
+  }
   stampPatientRegistrationMeta(patient, clinicalSessionContext.user);
   clearPatientDeleteTombstoneForAdmit(patient.id, patient.registro);
   enqueueCloudPatientAdmit(patient);

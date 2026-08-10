@@ -66,7 +66,7 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   };
 
   return (
-    '<details class="ea-estado-clinico ea-card"' +
+    '<details class="ea-estado-clinico"' +
     (anyPending ? ' open' : '') +
     '>' +
     '<summary>Estado clínico general</summary>' +

@@ -71,4 +71,14 @@ test('buildVentilatorioCalcHints — PaFi solo con gasometría arterial; SpO₂ 
     }
   );
   assert.equal(aaHints.length, 0);
+
+  var litrosHints = buildVentilatorioCalcHints(
+    { soporte: 'Puntillas nasales', soporteLitros: 2 },
+    {
+      fr: 18,
+      sat: 99,
+      lab: { kind: 'venous', pO2: 60, pCO2: 35, sourceLabel: 'Gasometría venosa · 08/05' },
+    }
+  );
+  assert.equal(litrosHints.length, 0);
 });

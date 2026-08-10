@@ -267,6 +267,20 @@
 .tend-detail-vbar .tend-range-vbar-marker {
   transition-duration: 0.18s;
 }
+.tend-detail-events-slot:empty { display: none; }
+.tend-detail-add-event-btn {
+  margin-top: 10px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--color-accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.tend-detail-add-event-btn:hover {
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+}
 .tend-range-vbar {
   position: absolute;
   left: 3px;

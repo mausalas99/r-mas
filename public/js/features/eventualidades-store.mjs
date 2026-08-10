@@ -94,6 +94,101 @@ export function setEventualidadesLabsText(store, text) {
  * @param {string} text
  * @returns {{ entries: object[], labsText: string, changed: boolean }}
  */
+/** @typedef {'transfusion'|'biopsia'|'procedimiento'|'otro'} EventualidadKind */
+
+export const EVENTUALIDAD_KINDS = ['transfusion', 'biopsia', 'procedimiento', 'otro'];
+
+export const EVENTUALIDAD_KIND_LABELS = {
+  transfusion: 'Transfusión',
+  biopsia: 'Biopsia',
+  procedimiento: 'Procedimiento',
+  otro: 'Otro',
+};
+
+/** @typedef {'eritrocitos'|'plaquetas'|'plasma'} TransfusionProduct */
+
+export const TRANSFUSION_PRODUCTS = ['eritrocitos', 'plaquetas', 'plasma'];
+
+export const TRANSFUSION_PRODUCT_LABELS = {
+  eritrocitos: 'Eritrocitos',
+  plaquetas: 'Plaquetas',
+  plasma: 'Plasma',
+};
+
+/** @param {unknown} product @returns {TransfusionProduct|null} */
+export function normalizeTransfusionProduct(product) {
+  const p = String(product == null ? '' : product)
+    .trim()
+    .toLowerCase();
+  return TRANSFUSION_PRODUCTS.includes(/** @type {TransfusionProduct} */ (p))
+    ? /** @type {TransfusionProduct} */ (p)
+    : null;
+}
+
+/**
+ * Arma el texto guardado según categoría y subcampos del compose de Tendencias.
+ * @param {{ kind?: unknown, transfusionProduct?: unknown, detail?: unknown }} fields
+ * @returns {string}
+ */
+export function buildEventualidadComposeText(fields) {
+  const kind = normalizeEventualidadKind(fields && fields.kind);
+  const detail = normalizeEventualidadText(fields && fields.detail != null ? String(fields.detail) : '');
+  const product = normalizeTransfusionProduct(fields && fields.transfusionProduct);
+  if (kind === 'transfusion') {
+    if (!product) return '';
+    const base = normalizeEventualidadText(TRANSFUSION_PRODUCT_LABELS[product]);
+    return detail ? base + ' — ' + detail : base;
+  }
+  if (kind === 'biopsia' || kind === 'procedimiento') return detail;
+  return resolveEventualidadEntryText(detail, kind);
+}
+
+const EVENTUALIDAD_KIND_PRIORITY = {
+  transfusion: 4,
+  biopsia: 3,
+  procedimiento: 2,
+  otro: 1,
+};
+
+/** @param {unknown} kind @returns {EventualidadKind|null} */
+export function normalizeEventualidadKind(kind) {
+  const k = String(kind == null ? '' : kind)
+    .trim()
+    .toLowerCase();
+  return EVENTUALIDAD_KINDS.includes(/** @type {EventualidadKind} */ (k))
+    ? /** @type {EventualidadKind} */ (k)
+    : null;
+}
+
+/** @param {string} text @returns {EventualidadKind} */
+export function inferEventualidadKind(text) {
+  const t = String(text || '').toUpperCase();
+  if (/\bTRANSFUSI|TRANSFUSIÓN|\bPFC\b|PLAQUETAS|CONCENTRADO\s+DE\s+ERIT|CONCENTRADO\s+ERIT|\bCH\b/.test(t)) {
+    return 'transfusion';
+  }
+  if (/\bBIOPSIA\b/.test(t)) return 'biopsia';
+  if (
+    /\bPROCEDIMIENTO\b|\bCIRUGÍA\b|\bCIRUGIA\b|\bCX\b|CATÉTER|CATETER|\bDRENAJE\b|\bLAVADO\b/.test(t)
+  ) {
+    return 'procedimiento';
+  }
+  return 'otro';
+}
+
+/** @param {{ kind?: unknown, text?: unknown }|null|undefined} entry @returns {EventualidadKind} */
+export function resolveEventualidadKind(entry) {
+  const explicit = normalizeEventualidadKind(entry && entry.kind);
+  if (explicit) return explicit;
+  return inferEventualidadKind(entry && entry.text != null ? String(entry.text) : '');
+}
+
+/** @param {EventualidadKind|string} a @param {EventualidadKind|string} b @returns {EventualidadKind} */
+export function pickHigherPriorityKind(a, b) {
+  const ka = normalizeEventualidadKind(a) || 'otro';
+  const kb = normalizeEventualidadKind(b) || 'otro';
+  return (EVENTUALIDAD_KIND_PRIORITY[ka] || 1) >= (EVENTUALIDAD_KIND_PRIORITY[kb] || 1) ? ka : kb;
+}
+
 export function mergeEventualidadesLabsText(store, text) {
   const next = cloneStoreShell_(store);
   const t = normalizeEventualidadText(text);
@@ -107,20 +202,34 @@ export function mergeEventualidadesLabsText(store, text) {
   return Object.assign(next, { changed: true });
 }
 
-export function appendEventualidad(store, text, clientId, atIso) {
-  const t = normalizeEventualidadText(text);
+/** @param {string} text @param {unknown} [kind] @returns {string} */
+export function resolveEventualidadEntryText(text, kind) {
+  const normalized = normalizeEventualidadText(text);
+  if (normalized) return normalized;
+  const normalizedKind = normalizeEventualidadKind(kind);
+  if (normalizedKind) return normalizeEventualidadText(EVENTUALIDAD_KIND_LABELS[normalizedKind]);
+  return '';
+}
+
+export function appendEventualidad(store, text, clientId, atIso, kind, transfusionProduct) {
+  const normalizedKind = normalizeEventualidadKind(kind);
+  const normalizedProduct = normalizeTransfusionProduct(transfusionProduct);
+  const t = resolveEventualidadEntryText(text, kind);
   const base = cloneStoreShell_(store);
   if (!t) return base;
   const at =
     atIso && String(atIso).trim()
       ? String(atIso).trim()
       : eventualidadDateToIso(toEventualidadDateValue(new Date()));
+  /** @type {{ id: string, at: string, text: string, clientId?: string, kind?: EventualidadKind, transfusionProduct?: TransfusionProduct }} */
   const entry = {
     id: 'ev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     at: at,
     text: t,
     clientId: clientId || undefined,
   };
+  if (normalizedKind) entry.kind = normalizedKind;
+  if (normalizedKind === 'transfusion' && normalizedProduct) entry.transfusionProduct = normalizedProduct;
   base.entries.push(entry);
   if (base.deletedIds && base.deletedIds[entry.id]) delete base.deletedIds[entry.id];
   return touchEventualidadesMeta_(base);
@@ -135,16 +244,32 @@ export function updateEventualidad(store, entryId, patch) {
   });
   if (idx === -1) return base;
   const cur = base.entries[idx];
+  const patchKind =
+    patch && patch.kind != null ? normalizeEventualidadKind(patch.kind) : normalizeEventualidadKind(cur.kind);
   const text =
     patch && patch.text != null
-      ? normalizeEventualidadText(patch.text)
-      : normalizeEventualidadText(cur.text);
+      ? resolveEventualidadEntryText(patch.text, patchKind || cur.kind)
+      : resolveEventualidadEntryText(cur.text, patchKind || cur.kind);
   if (!text) return base;
   const at =
     patch && patch.at != null && String(patch.at).trim()
       ? String(patch.at).trim()
       : cur.at;
-  base.entries[idx] = Object.assign({}, cur, { text: text, at: at });
+  /** @type {{ text: string, at: string, kind?: EventualidadKind, transfusionProduct?: TransfusionProduct }} */
+  const nextEntry = Object.assign({}, cur, { text: text, at: at });
+  if (patch && patch.kind != null) {
+    const normalizedKind = normalizeEventualidadKind(patch.kind);
+    if (normalizedKind) nextEntry.kind = normalizedKind;
+    else delete nextEntry.kind;
+  }
+  if (patch && patch.transfusionProduct != null) {
+    const normalizedProduct = normalizeTransfusionProduct(patch.transfusionProduct);
+    if (normalizedProduct) nextEntry.transfusionProduct = normalizedProduct;
+    else delete nextEntry.transfusionProduct;
+  } else if (nextEntry.kind !== 'transfusion') {
+    delete nextEntry.transfusionProduct;
+  }
+  base.entries[idx] = nextEntry;
   return touchEventualidadesMeta_(base);
 }
 
