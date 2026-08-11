@@ -76,6 +76,7 @@ docs/
 | Topic | Primary locations |
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs`, `lib/db/ipc-handlers.test.mjs` (fake `ipcMain` harness) |
+| Clinical repo / commands | `lib/clinical-repo/`, `public/js/clinical-repo-client.mjs`, `clinical-repo-flag.mjs`, IPC `db:clinical-command`; eventualidades flag (default off) |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `lib/db/clinical-access-*.mjs` (teams, guardia, entrega, …), `public/js/clinical-privileges.mjs`, `public/js/clinico-access.mjs` + `clinico-access-scope/` + `clinico-access-*.mjs`; session bootstrap in `clinical-access-runtime/` |
 | LAN sync / rooms | `lan-squad/` (`host-store/` persistence submodules, `conflict-resolver.js`, `bundle-merge.js`), `public/js/features/lan/` — façade `orchestrator.mjs` + `conflicts.mjs`, `entity-versions.mjs`, `patient-delete.mjs`, `patient-delete-batch.mjs`, `patient-entries.mjs`, `historia-sync.mjs`, `host-patient-http.mjs`, `live-sync-emit.mjs`, `push`, `room`, `transport`, `panel`, `runtime`; thin `features/lan-sync.mjs` barrel; root `lan-host-registry.mjs`, `lan-ward-host-registry.mjs`, `lan-sync-{state,diagnostics,bundle-push}.mjs`, `lan-delta-client.mjs`; LWW → `docs/superpowers/specs/2026-06-03-lan-conflict-lww-design.md` |
 | Clinical teams / guardia | `public/js/features/clinical-teams/` (`teams-roster-{panel,manage,create,directory,submit,shell}`, `teams-roster-lan-*`, `teams-invite`, `teams-guardia-bridge`), barrel `clinical-teams.mjs`, `clinical-rotation.mjs` |
@@ -133,6 +134,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-08-11** `clinical-repo`: P1 canonical write path — schema **v23** `clinical_change_log` + `lib/clinical-repo/` commands; eventualidades behind `clinicalRepo.eventualidades` flag; `db:clinical-command` IPC.
 - **2026-08-10** `release-8.1.0`: censo **cross-sala** (expediente/labs al room de la sala del equipo) + reconciliación Nube post-asignación + **Tendencias eventualidades** (marcadores + alta con categoría) + KV revision cache eliminado; `cloud-census-sala-push.mjs`, `census-lan-pull.mjs`, `tendencias-event-*.mjs`, `cloud/sync-worker`.
 - **2026-08-09** `cloud-sync`: pull D1-before-KV (fix revision 3264 vs 3266) + reconcile revision + retry 503; DO notify no-await; seed único outbox; `sync.js`, `sync-runtime-cycle.mjs`.
 - **2026-08-08** `release-8.0.8`: EA **ventilatorio** (soporte, PaFi, ROX) + **dieta parenteral** (KAVIBEN/NPT) + diagnóstico Nube dashboard + Recuérdame sin logout al actualizar; `estado-actual-ventilatorio.mjs`, `med-receta-diet.mjs`, `panel-cloud-diagnostics.mjs`.

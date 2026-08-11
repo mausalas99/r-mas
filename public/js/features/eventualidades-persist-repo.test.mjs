@@ -18,7 +18,7 @@ describe('eventualidades persist clinical-repo wiring', () => {
 
   it('repo path skips saveState and keeps scheduleCloudSyncPush', () => {
     const repoBranch = renderSrc.slice(
-      renderSrc.indexOf('if (useRepo)'),
+      renderSrc.indexOf('if (shouldPersistViaClinicalRepo'),
       renderSrc.indexOf('patient.eventualidades = next;\n  touchPatientLanUpdatedAt(patient.id);\n  await saveState')
     );
     assert.match(repoBranch, /executeClinicalCommand\(command/);

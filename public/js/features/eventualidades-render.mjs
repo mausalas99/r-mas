@@ -182,22 +182,41 @@ export async function savePatientEventualidadesLabs(patient, text, opts) {
  * @param {object} store
  * @param {{ type: string } & Record<string, unknown> | null} [command]
  */
-export async function persistEventualidades(patient, store, command) {
-  const next =
-    store && typeof store === 'object'
-      ? Object.assign({}, store, {
-          updatedAt: store.updatedAt || new Date().toISOString(),
-        })
-      : { entries: [], updatedAt: new Date().toISOString() };
 
-  const useRepo =
+function normalizeEventualidadesStore(store) {
+  if (store && typeof store === 'object') {
+    return Object.assign({}, store, {
+      updatedAt: store.updatedAt || new Date().toISOString(),
+    });
+  }
+  return { entries: [], updatedAt: new Date().toISOString() };
+}
+
+function refreshTendenciasAfterEventualidades() {
+  if (
+    typeof document !== 'undefined' &&
+    document.getElementById('tendencias-container') &&
+    document.getElementById('tendencias-container').querySelector('.tend-grid') &&
+    typeof tendenciasBridge.renderTendencias === 'function'
+  ) {
+    tendenciasBridge.renderTendencias();
+  }
+}
+
+function shouldPersistViaClinicalRepo(command) {
+  return !!(
     isClinicalRepoEventualidadesEnabled() &&
     canExecuteClinicalCommand() &&
     command &&
     typeof command === 'object' &&
-    command.type;
+    command.type
+  );
+}
 
-  if (useRepo) {
+export async function persistEventualidades(patient, store, command) {
+  const next = normalizeEventualidadesStore(store);
+
+  if (shouldPersistViaClinicalRepo(command)) {
     const res = await executeClinicalCommand(command, { source: 'ui' });
     if (!res || !res.ok) {
       return { ok: false, reason: (res && res.error) || 'repo_failed' };
@@ -206,14 +225,7 @@ export async function persistEventualidades(patient, store, command) {
     touchPatientLanUpdatedAt(patient.id);
     touchClinicalSessionActivity({ force: true });
     scheduleCloudSyncPush();
-    if (
-      typeof document !== 'undefined' &&
-      document.getElementById('tendencias-container') &&
-      document.getElementById('tendencias-container').querySelector('.tend-grid') &&
-      typeof tendenciasBridge.renderTendencias === 'function'
-    ) {
-      tendenciasBridge.renderTendencias();
-    }
+    refreshTendenciasAfterEventualidades();
     return { ok: true, via: 'clinical-repo', changeId: res.changeId || null };
   }
 
@@ -223,14 +235,7 @@ export async function persistEventualidades(patient, store, command) {
   touchClinicalSessionActivity({ force: true });
   // Nube: mutation registry is LAN-gated; scheduleLiveSyncPush routes to cloud outbox.
   scheduleCloudSyncPush();
-  if (
-    typeof document !== 'undefined' &&
-    document.getElementById('tendencias-container') &&
-    document.getElementById('tendencias-container').querySelector('.tend-grid') &&
-    typeof tendenciasBridge.renderTendencias === 'function'
-  ) {
-    tendenciasBridge.renderTendencias();
-  }
+  refreshTendenciasAfterEventualidades();
   return { ok: true };
 }
 
