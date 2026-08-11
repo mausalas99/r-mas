@@ -2,6 +2,8 @@ import { patients, saveState } from '../app-state.mjs';
 import { touchClinicalSessionActivity } from '../clinical-access-runtime.mjs';
 import { refreshRpcDateFields } from '../rpc-date-picker.mjs';
 import { scheduleCloudSyncPush } from './cloud-sync/mutate-bridge.mjs';
+import { isClinicalRepoEventualidadesEnabled } from '../clinical-repo-flag.mjs';
+import { canExecuteClinicalCommand, executeClinicalCommand } from '../clinical-repo-client.mjs';
 import { tendenciasBridge } from './tendencias-bridge.mjs';
 
 function touchPatientLanUpdatedAt(patientId) {
@@ -125,7 +127,17 @@ export async function savePatientEventualidad(patient, text, atIso, kind, transf
   if (next.entries.length === store.entries.length) {
     return { ok: false, reason: 'empty' };
   }
-  return persistEventualidades(patient, next);
+  const added = next.entries[next.entries.length - 1];
+  return persistEventualidades(patient, next, {
+    type: 'eventualidad.upsert',
+    patientId: String(patient.id || ''),
+    entry: {
+      text: added && added.text,
+      at: added && added.at,
+      kind: added && added.kind,
+      transfusionProduct: added && added.transfusionProduct,
+    },
+  });
 }
 
 /**
@@ -143,23 +155,68 @@ export async function savePatientEventualidadesLabs(patient, text, opts) {
     if (next.labsText === getEventualidadesLabsText(store)) {
       return { ok: true, skipped: 'dup' };
     }
-    return persistEventualidades(patient, next);
+    return persistEventualidades(patient, next, {
+      type: 'eventualidades.labs.set',
+      patientId: String(patient.id || ''),
+      text: next.labsText,
+    });
   }
   const merged = mergeEventualidadesLabsText(store, text);
   if (!merged.changed) return { ok: true, skipped: 'dup' };
-  return persistEventualidades(patient, {
-    entries: merged.entries,
-    labsText: merged.labsText,
-  });
+  return persistEventualidades(
+    patient,
+    {
+      entries: merged.entries,
+      labsText: merged.labsText,
+    },
+    {
+      type: 'eventualidades.labs.merge',
+      patientId: String(patient.id || ''),
+      text: text,
+    }
+  );
 }
 
-async function persistEventualidades(patient, store) {
+/**
+ * @param {object} patient
+ * @param {object} store
+ * @param {{ type: string } & Record<string, unknown> | null} [command]
+ */
+export async function persistEventualidades(patient, store, command) {
   const next =
     store && typeof store === 'object'
       ? Object.assign({}, store, {
           updatedAt: store.updatedAt || new Date().toISOString(),
         })
       : { entries: [], updatedAt: new Date().toISOString() };
+
+  const useRepo =
+    isClinicalRepoEventualidadesEnabled() &&
+    canExecuteClinicalCommand() &&
+    command &&
+    typeof command === 'object' &&
+    command.type;
+
+  if (useRepo) {
+    const res = await executeClinicalCommand(command, { source: 'ui' });
+    if (!res || !res.ok) {
+      return { ok: false, reason: (res && res.error) || 'repo_failed' };
+    }
+    patient.eventualidades = next;
+    touchPatientLanUpdatedAt(patient.id);
+    touchClinicalSessionActivity({ force: true });
+    scheduleCloudSyncPush();
+    if (
+      typeof document !== 'undefined' &&
+      document.getElementById('tendencias-container') &&
+      document.getElementById('tendencias-container').querySelector('.tend-grid') &&
+      typeof tendenciasBridge.renderTendencias === 'function'
+    ) {
+      tendenciasBridge.renderTendencias();
+    }
+    return { ok: true, via: 'clinical-repo', changeId: res.changeId || null };
+  }
+
   patient.eventualidades = next;
   touchPatientLanUpdatedAt(patient.id);
   await saveState({ immediate: true });
@@ -211,7 +268,11 @@ function wireEventualidadesTimeline(mountEl, patient, store) {
       void (async function () {
         const next = removeEventualidad(store, delId);
         if (_editingEntryId === delId) _editingEntryId = null;
-        const out = await persistEventualidades(patient, next);
+        const out = await persistEventualidades(patient, next, {
+          type: 'eventualidad.delete',
+          patientId: String(patient.id || ''),
+          entryId: delId,
+        });
         if (out && out.ok) {
           rt.showToast('Eventualidad eliminada.', 'success');
           renderEventualidadesPanel(mountEl);
@@ -252,7 +313,26 @@ function wireEventualidadesCompose(mountEl, patient, store) {
     } else {
       next = appendEventualidad(store, text, '', atIso);
     }
-    const out = await persistEventualidades(patient, next);
+    const command = _editingEntryId
+      ? {
+          type: 'eventualidad.upsert',
+          patientId: String(patient.id || ''),
+          entry: {
+            id: _editingEntryId,
+            text: text,
+            at: atIso,
+          },
+        }
+      : {
+          type: 'eventualidad.upsert',
+          patientId: String(patient.id || ''),
+          entry: {
+            text: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].text,
+            at: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].at,
+            kind: next.entries[next.entries.length - 1] && next.entries[next.entries.length - 1].kind,
+          },
+        };
+    const out = await persistEventualidades(patient, next, command);
     if (out && out.ok) {
       const wasEdit = !!_editingEntryId;
       _editingEntryId = null;
