@@ -20,6 +20,7 @@ description: "Parsers, sync engines, and algorithm modules."
 | Conflict LWW | `lan-squad/lww-utils.js`, `lan-conflict-*` | Overlapping edits → winner |
 | Perfil farmacoterapéutico ventana | `public/js/med-pharm-view-window.mjs` | Perfil mensual + `fimiFecha` → columnas visibles cross-mes |
 | Clinical safety | `lib/clinical-safety-rules/evaluate.mjs` | Calc input → pass / block |
+| Clinical data reckoning (P1 done) | `lib/clinical-repo/` | command → SQLCipher + change_log; eventualidades flag — [program](../superpowers/specs/2026-08-11-clinical-data-reckoning-program.md) |
 | Drive import | `lib/drive-import/*.mjs` | Google Doc → HC/eventualidades patch |
 
 **Hub:** [docs/core/08-core-architecture.md](../core/08-core-architecture.md)
