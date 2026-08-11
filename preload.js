@@ -129,6 +129,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalSaveAll: function(payload) {
     return ipcRenderer.invoke('db:clinical-save-all', payload);
   },
+  dbClinicalCommand: function(payload) {
+    return ipcRenderer.invoke('db:clinical-command', payload);
+  },
   dbAuditVerify: function(opts) {
     return ipcRenderer.invoke('db:audit-verify', opts);
   },
